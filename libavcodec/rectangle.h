@@ -99,23 +99,23 @@ static av_always_inline void fill_rectangle(void *vp, int w, int h, int stride, 
         *(uint32_t*)(p + 0+3*stride)= v;
         *(uint32_t*)(p + 4+3*stride)= v;
     }else if(w==16){
-        *(uint32_t*)(p + 0+0*stride)= v;
-        *(uint32_t*)(p + 4+0*stride)= v;
-        *(uint32_t*)(p + 8+0*stride)= v;
-        *(uint32_t*)(p +12+0*stride)= v;
-        *(uint32_t*)(p + 0+1*stride)= v;
-        *(uint32_t*)(p + 4+1*stride)= v;
-        *(uint32_t*)(p + 8+1*stride)= v;
-        *(uint32_t*)(p +12+1*stride)= v;
+        *(uint32_t*)(p + 0+0*stride)= val;
+        *(uint32_t*)(p + 4+0*stride)= val;
+        *(uint32_t*)(p + 8+0*stride)= val;
+        *(uint32_t*)(p +12+0*stride)= val;
+        *(uint32_t*)(p + 0+1*stride)= val;
+        *(uint32_t*)(p + 4+1*stride)= val;
+        *(uint32_t*)(p + 8+1*stride)= val;
+        *(uint32_t*)(p +12+1*stride)= val;
         if(h==2) return;
-        *(uint32_t*)(p + 0+2*stride)= v;
-        *(uint32_t*)(p + 4+2*stride)= v;
-        *(uint32_t*)(p + 8+2*stride)= v;
-        *(uint32_t*)(p +12+2*stride)= v;
-        *(uint32_t*)(p + 0+3*stride)= v;
-        *(uint32_t*)(p + 4+3*stride)= v;
-        *(uint32_t*)(p + 8+3*stride)= v;
-        *(uint32_t*)(p +12+3*stride)= v;
+        *(uint32_t*)(p + 0+2*stride)= val;
+        *(uint32_t*)(p + 4+2*stride)= val;
+        *(uint32_t*)(p + 8+2*stride)= val;
+        *(uint32_t*)(p +12+2*stride)= val;
+        *(uint32_t*)(p + 0+3*stride)= val;
+        *(uint32_t*)(p + 4+3*stride)= val;
+        *(uint32_t*)(p + 8+3*stride)= val;
+        *(uint32_t*)(p +12+3*stride)= val;
 #endif
     }else
         assert(0);
