@@ -1911,6 +1911,7 @@ static void stream_component_close(VideoState *is, int stream_index)
         packet_queue_end(&is->audioq);
         if (is->reformat_ctx)
             av_audio_convert_free(is->reformat_ctx);
+        is->reformat_ctx = NULL;
         break;
     case CODEC_TYPE_VIDEO:
         packet_queue_abort(&is->videoq);
