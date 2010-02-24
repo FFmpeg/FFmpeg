@@ -1132,7 +1132,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                     if(!IS_INTERLACED(mb_type) && h->ref_cache[list][idx] >= 0){\
                         h->ref_cache[list][idx] <<= 1;\
                         h->mv_cache[list][idx][1] /= 2;\
-                        h->mvd_cache[list][idx][1] /= 2;\
+                        h->mvd_cache[list][idx][1] >>=1;\
                     }
                     MAP_MVS
 #undef MAP_F2F
