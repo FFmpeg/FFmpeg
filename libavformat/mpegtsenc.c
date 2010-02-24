@@ -89,8 +89,8 @@ static void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
             b |= 0x40;
         *q++ = b;
         *q++ = s->pid;
-        *q++ = 0x10 | s->cc;
         s->cc = (s->cc + 1) & 0xf;
+        *q++ = 0x10 | s->cc;
         if (first)
             *q++ = 0; /* 0 offset */
         len1 = TS_PACKET_SIZE - (q - packet);
@@ -399,12 +399,12 @@ static int mpegts_write_header(AVFormatContext *s)
     service->pmt.opaque = s;
 
     ts->pat.pid = PAT_PID;
-    ts->pat.cc = 0;
+    ts->pat.cc = 15; // Initialize at 15 so that it wraps and be equal to 0 for the first packet we write
     ts->pat.write_packet = section_write_packet;
     ts->pat.opaque = s;
 
     ts->sdt.pid = SDT_PID;
-    ts->sdt.cc = 0;
+    ts->sdt.cc = 15;
     ts->sdt.write_packet = section_write_packet;
     ts->sdt.opaque = s;
 
@@ -647,8 +647,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             val |= 0x40;
         *q++ = val;
         *q++ = ts_st->pid;
-        *q++ = 0x10 | ts_st->cc | (write_pcr ? 0x20 : 0);
         ts_st->cc = (ts_st->cc + 1) & 0xf;
+        *q++ = 0x10 | ts_st->cc | (write_pcr ? 0x20 : 0);
         if (write_pcr) {
             // add 11, pcr references the last byte of program clock reference base
             pcr = ts->cur_pcr + (4+7)*8*90000LL / ts->mux_rate;
