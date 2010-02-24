@@ -74,7 +74,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     uint32_t fps_num, fps_den;
     AVStream *vst, *ast;
     unsigned int i;
-    uint32_t pos, prev_pos;
+    uint32_t pos, next_pos;
     uint16_t flags;
     int keyframe;
 
@@ -147,22 +147,24 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     /* frame index table */
-    pos = get_le32(pb) & ~1;
+    next_pos = get_le32(pb);
     for (i = 0; i < vst->duration; i++) {
-        prev_pos = pos;
+        pos = next_pos;
         if (i == vst->duration - 1) {
-            pos = bink->file_size;
+            next_pos = bink->file_size;
             keyframe = 0;
         } else {
-            pos = get_le32(pb);
+            next_pos = get_le32(pb);
             keyframe = pos & 1;
-            pos &= ~1;
         }
-        if (pos <= prev_pos) {
+        pos &= ~1;
+        next_pos &= ~1;
+
+        if (next_pos <= pos) {
             av_log(s, AV_LOG_ERROR, "invalid frame index table\n");
             return AVERROR(EIO);
         }
-        av_add_index_entry(vst, pos, i, pos - prev_pos, 0,
+        av_add_index_entry(vst, pos, i, next_pos - pos, 0,
                            keyframe ? AVINDEX_KEYFRAME : 0);
     }
 
