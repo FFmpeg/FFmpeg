@@ -756,8 +756,8 @@ int ff_h264_alloc_tables(H264Context *h){
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->cbp_table, big_mb_num * sizeof(uint16_t), fail)
 
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->chroma_pred_mode_table, big_mb_num * sizeof(uint8_t), fail)
-    FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mvd_table[0], 32*big_mb_num * sizeof(uint16_t), fail);
-    FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mvd_table[1], 32*big_mb_num * sizeof(uint16_t), fail);
+    FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mvd_table[0], 32*big_mb_num * sizeof(uint8_t), fail);
+    FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mvd_table[1], 32*big_mb_num * sizeof(uint8_t), fail);
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->direct_table, 32*big_mb_num * sizeof(uint8_t) , fail);
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->list_counts, big_mb_num * sizeof(uint8_t), fail)
 
