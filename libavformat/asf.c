@@ -128,11 +128,23 @@ const ff_asf_guid ff_asf_digital_signature = {
     0xfc, 0xb3, 0x11, 0x22, 0x23, 0xbd, 0xd2, 0x11, 0xb4, 0xb7, 0x00, 0xa0, 0xc9, 0x55, 0xfc, 0x6e
 };
 
+/* List of official tags at http://msdn.microsoft.com/en-us/library/dd743066(VS.85).aspx */
 const AVMetadataConv ff_asf_metadata_conv[] = {
     { "WM/AlbumArtist", "album_artist"},
     { "WM/AlbumTitle" , "album"     },
     { "Author"     , "artist"    },
+    { "Description"        , "comment"     },
+    { "WM/Composer"        , "composer"    },
+    { "WM/EncodedBy"       , "encoded_by"  },
+    { "WM/EncodingSettings", "encoder"     },
+    { "WM/Genre"           , "genre"       },
+    { "WM/Language"        , "language"    },
+    { "WM/OriginalFilename", "filename"    },
+    { "WM/PartOfSet"       , "disc"        },
+    { "WM/Publisher"       , "publisher"   },
+    { "WM/Tool"            , "encoder"     },
     { "WM/TrackNumber", "track"     },
+    { "WM/Track"           , "track"       },
 //  { "Year"       , "date"      }, TODO: conversion year<->date
     { 0 }
 };
