@@ -663,6 +663,7 @@ static void free_tables(H264Context *h){
     av_freep(&h->list_counts);
 
     av_freep(&h->mb2b_xy);
+    av_freep(&h->mb2br_xy);
     av_freep(&h->mb2b8_xy);
 
     for(i = 0; i < MAX_THREADS; i++) {
@@ -765,6 +766,7 @@ int ff_h264_alloc_tables(H264Context *h){
     h->slice_table= h->slice_table_base + s->mb_stride*2 + 1;
 
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mb2b_xy  , big_mb_num * sizeof(uint32_t), fail);
+    FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mb2br_xy , big_mb_num * sizeof(uint32_t), fail);
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mb2b8_xy , big_mb_num * sizeof(uint32_t), fail);
     for(y=0; y<s->mb_height; y++){
         for(x=0; x<s->mb_width; x++){
@@ -773,6 +775,7 @@ int ff_h264_alloc_tables(H264Context *h){
             const int b8_xy= 2*x + 2*y*h->b8_stride;
 
             h->mb2b_xy [mb_xy]= b_xy;
+            h->mb2br_xy[mb_xy]= FMO ? b_xy : (b_xy % (8*h->b_stride));
             h->mb2b8_xy[mb_xy]= b8_xy;
         }
     }
@@ -797,6 +800,7 @@ static void clone_tables(H264Context *dst, H264Context *src){
     dst->slice_table              = src->slice_table;
     dst->cbp_table                = src->cbp_table;
     dst->mb2b_xy                  = src->mb2b_xy;
+    dst->mb2br_xy                 = src->mb2br_xy;
     dst->mb2b8_xy                 = src->mb2b8_xy;
     dst->chroma_pred_mode_table   = src->chroma_pred_mode_table;
     dst->mvd_table[0]             = src->mvd_table[0];

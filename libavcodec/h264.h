@@ -61,6 +61,8 @@
 
 #define ALLOW_NOCHROMA
 
+#define FMO 0
+
 /**
  * The maximum number of slices supported by the decoder.
  * must be a power of 2
@@ -344,6 +346,7 @@ typedef struct H264Context{
     int block_offset[2*(16+8)];
 
     uint32_t *mb2b_xy; //FIXME are these 4 a good idea?
+    uint32_t *mb2br_xy;
     uint32_t *mb2b8_xy;
     int b_stride; //FIXME use s->b4_stride
     int b8_stride;
@@ -1067,13 +1070,13 @@ static void fill_decode_caches(H264Context *h, int mb_type){
             if( CABAC ) {
                 /* XXX beurk, Load mvd */
                 if(USES_LIST(top_type, list)){
-                    const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
+                    const int b_xy= h->mb2br_xy[top_xy] + 3*h->b_stride;
                     AV_COPY64(h->mvd_cache[list][scan8[0] + 0 - 1*8], h->mvd_table[list][b_xy + 0]);
                 }else{
                     AV_ZERO64(h->mvd_cache[list][scan8[0] + 0 - 1*8]);
                 }
                 if(USES_LIST(left_type[0], list)){
-                    const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
+                    const int b_xy= h->mb2br_xy[left_xy[0]] + 3;
                     AV_COPY16(h->mvd_cache[list][scan8[0] - 1 + 0*8], h->mvd_table[list][b_xy + h->b_stride*left_block[0]]);
                     AV_COPY16(h->mvd_cache[list][scan8[0] - 1 + 1*8], h->mvd_table[list][b_xy + h->b_stride*left_block[1]]);
                 }else{
@@ -1081,7 +1084,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                     AV_ZERO16(h->mvd_cache [list][scan8[0] - 1 + 1*8]);
                 }
                 if(USES_LIST(left_type[1], list)){
-                    const int b_xy= h->mb2b_xy[left_xy[1]] + 3;
+                    const int b_xy= h->mb2br_xy[left_xy[1]] + 3;
                     AV_COPY16(h->mvd_cache[list][scan8[0] - 1 + 2*8], h->mvd_table[list][b_xy + h->b_stride*left_block[2]]);
                     AV_COPY16(h->mvd_cache[list][scan8[0] - 1 + 3*8], h->mvd_table[list][b_xy + h->b_stride*left_block[3]]);
                 }else{
@@ -1421,7 +1424,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
             AV_COPY128(mv_dst + y*b_stride, mv_src + 8*y);
         }
         if( CABAC ) {
-            uint8_t (*mvd_dst)[2] = &h->mvd_table[list][b_xy];
+            uint8_t (*mvd_dst)[2] = &h->mvd_table[list][FMO ? b_xy : h->mb2br_xy[h->mb_xy]];
             uint8_t (*mvd_src)[2] = &h->mvd_cache[list][scan8[0]];
             if(IS_SKIP(mb_type))
                 fill_rectangle(mvd_dst, 4, 4, h->b_stride, 0, 2);
