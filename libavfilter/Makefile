@@ -8,8 +8,10 @@ HEADERS = avfilter.h
 
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
+       avfiltergraph.o                                                  \
        defaults.o                                                       \
        formats.o                                                        \
+       graphparser.o                                                    \
        parseutils.o                                                     \
 
 OBJS-$(CONFIG_CROP_FILTER)                   += vf_crop.o

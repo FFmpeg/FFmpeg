@@ -71,6 +71,34 @@ There exist so-called @var{source filters} that do not have a video
 input, and we expect in the future some @var{sink filters} that will
 not have video output.
 
+@chapter graph2dot
+
+The @file{graph2dot} program included in the FFmpeg @file{tools}
+directory can be used to parse a filter graph description and issue a
+corresponding textual representation in the dot language.
+
+Invoke the command:
+@example
+graph2dot -h
+@end example
+
+to see how to use @file{graph2dot}.
+
+You can then pass the dot description to the @file{dot} program (from
+the graphviz suite of programs) and obtain a graphical representation
+of the filter graph.
+
+For example the sequence of commands:
+@example
+echo @var{GRAPH_DESCRIPTION} | \
+tools/graph2dot -o graph.tmp && \
+dot -Tpng graph.tmp -o graph.png && \
+display graph.png
+@end example
+
+can be used to create and display an image representing the graph
+described by the @var{GRAPH_DESCRIPTION} string.
+
 @chapter Available video filters
 
 When you configure your FFmpeg build, you can disable any of the
