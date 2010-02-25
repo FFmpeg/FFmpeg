@@ -886,11 +886,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
 
             if(IS_INTRA4x4(mb_type)){
                 if(IS_INTRA4x4(top_type)){
-                    int8_t *mode= h->intra4x4_pred_mode + h->mb2br_xy[top_xy];
-                    h->intra4x4_pred_mode_cache[4+8*0]= mode[4];
-                    h->intra4x4_pred_mode_cache[5+8*0]= mode[5];
-                    h->intra4x4_pred_mode_cache[6+8*0]= mode[6];
-                    h->intra4x4_pred_mode_cache[7+8*0]= mode[3];
+                    AV_COPY32(h->intra4x4_pred_mode_cache+4+8*0, h->intra4x4_pred_mode + h->mb2br_xy[top_xy]);
                 }else{
                     int pred;
                     if(!(top_type & type_mask))
@@ -906,8 +902,8 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 for(i=0; i<2; i++){
                     if(IS_INTRA4x4(left_type[i])){
                         int8_t *mode= h->intra4x4_pred_mode + h->mb2br_xy[left_xy[i]];
-                        h->intra4x4_pred_mode_cache[3+8*1 + 2*8*i]= mode[left_block[0+2*i]];
-                        h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= mode[left_block[1+2*i]];
+                        h->intra4x4_pred_mode_cache[3+8*1 + 2*8*i]= mode[6-left_block[0+2*i]];
+                        h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= mode[6-left_block[1+2*i]];
                     }else{
                         int pred;
                         if(!(left_type[i] & type_mask))
