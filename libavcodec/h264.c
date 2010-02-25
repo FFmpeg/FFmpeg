@@ -52,15 +52,15 @@ static const uint8_t div6[52]={
 };
 
 void ff_h264_write_back_intra_pred_mode(H264Context *h){
-    const int mb_xy= h->mb_xy;
+    int8_t *mode= h->intra4x4_pred_mode + h->mb2br_xy[h->mb_xy];
 
-    h->intra4x4_pred_mode[mb_xy][0]= h->intra4x4_pred_mode_cache[7+8*1];
-    h->intra4x4_pred_mode[mb_xy][1]= h->intra4x4_pred_mode_cache[7+8*2];
-    h->intra4x4_pred_mode[mb_xy][2]= h->intra4x4_pred_mode_cache[7+8*3];
-    h->intra4x4_pred_mode[mb_xy][3]= h->intra4x4_pred_mode_cache[7+8*4];
-    h->intra4x4_pred_mode[mb_xy][4]= h->intra4x4_pred_mode_cache[4+8*4];
-    h->intra4x4_pred_mode[mb_xy][5]= h->intra4x4_pred_mode_cache[5+8*4];
-    h->intra4x4_pred_mode[mb_xy][6]= h->intra4x4_pred_mode_cache[6+8*4];
+    mode[0]= h->intra4x4_pred_mode_cache[7+8*1];
+    mode[1]= h->intra4x4_pred_mode_cache[7+8*2];
+    mode[2]= h->intra4x4_pred_mode_cache[7+8*3];
+    mode[3]= h->intra4x4_pred_mode_cache[7+8*4];
+    mode[4]= h->intra4x4_pred_mode_cache[4+8*4];
+    mode[5]= h->intra4x4_pred_mode_cache[5+8*4];
+    mode[6]= h->intra4x4_pred_mode_cache[6+8*4];
 }
 
 /**
