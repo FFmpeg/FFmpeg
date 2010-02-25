@@ -1430,9 +1430,9 @@ static inline void write_back_motion(H264Context *h, int mb_type){
                 AV_ZERO128(mvd_dst);
             else{
             AV_COPY64(mvd_dst, mvd_src + 8*3);
-            for(y=0; y<3; y++){
-                AV_COPY16(mvd_dst + 3 + 3 - y, mvd_src + 3 + 8*y);
-            }
+                AV_COPY16(mvd_dst + 3 + 3, mvd_src + 3 + 8*0);
+                AV_COPY16(mvd_dst + 3 + 2, mvd_src + 3 + 8*1);
+                AV_COPY16(mvd_dst + 3 + 1, mvd_src + 3 + 8*2);
             }
         }
 
