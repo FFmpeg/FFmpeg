@@ -757,8 +757,8 @@ int ff_h264_alloc_tables(H264Context *h){
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->cbp_table, big_mb_num * sizeof(uint16_t), fail)
 
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->chroma_pred_mode_table, big_mb_num * sizeof(uint8_t), fail)
-    FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mvd_table[0], 32*big_mb_num * sizeof(uint8_t), fail);
-    FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mvd_table[1], 32*big_mb_num * sizeof(uint8_t), fail);
+    FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mvd_table[0], 16*big_mb_num * sizeof(uint8_t), fail);
+    FF_ALLOCZ_OR_GOTO(h->s.avctx, h->mvd_table[1], 16*big_mb_num * sizeof(uint8_t), fail);
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->direct_table, 32*big_mb_num * sizeof(uint8_t) , fail);
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->list_counts, big_mb_num * sizeof(uint8_t), fail)
 
@@ -775,7 +775,7 @@ int ff_h264_alloc_tables(H264Context *h){
             const int b8_xy= 2*x + 2*y*h->b8_stride;
 
             h->mb2b_xy [mb_xy]= b_xy;
-            h->mb2br_xy[mb_xy]= FMO ? b_xy : (b_xy % (8*h->b_stride));
+            h->mb2br_xy[mb_xy]= 8*(FMO ? mb_xy : (mb_xy % (2*s->mb_stride)));
             h->mb2b8_xy[mb_xy]= b8_xy;
         }
     }
