@@ -347,9 +347,7 @@ typedef struct H264Context{
 
     uint32_t *mb2b_xy; //FIXME are these 4 a good idea?
     uint32_t *mb2br_xy;
-    uint32_t *mb2b8_xy;
     int b_stride; //FIXME use s->b4_stride
-    int b8_stride;
 
     int mb_linesize;   ///< may be equal to s->linesize or s->linesize*2, for mbaff
     int mb_uvlinesize;
@@ -990,12 +988,11 @@ static void fill_decode_caches(H264Context *h, int mb_type){
 
             if(USES_LIST(top_type, list)){
                 const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
-                const int b8_xy= h->mb2b8_xy[top_xy] + h->b8_stride;
                 AV_COPY128(h->mv_cache[list][scan8[0] + 0 - 1*8], s->current_picture.motion_val[list][b_xy + 0]);
                     h->ref_cache[list][scan8[0] + 0 - 1*8]=
-                    h->ref_cache[list][scan8[0] + 1 - 1*8]= s->current_picture.ref_index[list][b8_xy + 0];
+                    h->ref_cache[list][scan8[0] + 1 - 1*8]= s->current_picture.ref_index[list][4*top_xy + 2];
                     h->ref_cache[list][scan8[0] + 2 - 1*8]=
-                    h->ref_cache[list][scan8[0] + 3 - 1*8]= s->current_picture.ref_index[list][b8_xy + 1];
+                    h->ref_cache[list][scan8[0] + 3 - 1*8]= s->current_picture.ref_index[list][4*top_xy + 3];
             }else{
                 AV_ZERO128(h->mv_cache[list][scan8[0] + 0 - 1*8]);
                 AV_WN32A(&h->ref_cache[list][scan8[0] + 0 - 1*8], ((top_type ? LIST_NOT_USED : PART_NOT_AVAILABLE)&0xFF)*0x01010101);
@@ -1005,11 +1002,11 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 int cache_idx = scan8[0] - 1 + i*2*8;
                 if(USES_LIST(left_type[i], list)){
                     const int b_xy= h->mb2b_xy[left_xy[i]] + 3;
-                    const int b8_xy= h->mb2b8_xy[left_xy[i]] + 1;
+                    const int b8_xy= 4*left_xy[i] + 1;
                     AV_COPY32(h->mv_cache[list][cache_idx  ], s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[0+i*2]]);
                     AV_COPY32(h->mv_cache[list][cache_idx+8], s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[1+i*2]]);
-                        h->ref_cache[list][cache_idx  ]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[0+i*2]>>1)];
-                        h->ref_cache[list][cache_idx+8]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[1+i*2]>>1)];
+                        h->ref_cache[list][cache_idx  ]= s->current_picture.ref_index[list][b8_xy + (left_block[0+i*2]&~1)];
+                        h->ref_cache[list][cache_idx+8]= s->current_picture.ref_index[list][b8_xy + (left_block[1+i*2]&~1)];
                 }else{
                     AV_ZERO32(h->mv_cache [list][cache_idx  ]);
                     AV_ZERO32(h->mv_cache [list][cache_idx+8]);
@@ -1020,7 +1017,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
 
             if(USES_LIST(topleft_type, list)){
                 const int b_xy = h->mb2b_xy [topleft_xy] + 3 + h->b_stride + (h->topleft_partition & 2*h->b_stride);
-                const int b8_xy= h->mb2b8_xy[topleft_xy] + 1 + (h->topleft_partition & h->b8_stride);
+                const int b8_xy= 4*topleft_xy + 1 + (h->topleft_partition & 2);
                 AV_COPY32(h->mv_cache[list][scan8[0] - 1 - 1*8], s->current_picture.motion_val[list][b_xy]);
                 h->ref_cache[list][scan8[0] - 1 - 1*8]= s->current_picture.ref_index[list][b8_xy];
             }else{
@@ -1030,9 +1027,8 @@ static void fill_decode_caches(H264Context *h, int mb_type){
 
             if(USES_LIST(topright_type, list)){
                 const int b_xy= h->mb2b_xy[topright_xy] + 3*h->b_stride;
-                const int b8_xy= h->mb2b8_xy[topright_xy] + h->b8_stride;
                 AV_COPY32(h->mv_cache[list][scan8[0] + 4 - 1*8], s->current_picture.motion_val[list][b_xy]);
-                h->ref_cache[list][scan8[0] + 4 - 1*8]= s->current_picture.ref_index[list][b8_xy];
+                h->ref_cache[list][scan8[0] + 4 - 1*8]= s->current_picture.ref_index[list][4*topright_xy + 2];
             }else{
                 AV_ZERO32(h->mv_cache [list][scan8[0] + 4 - 1*8]);
                 h->ref_cache[list][scan8[0] + 4 - 1*8]= topright_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
@@ -1241,12 +1237,12 @@ static int fill_filter_caches(H264Context *h, int mb_type){
                 continue;
             }
 
-            ref = &s->current_picture.ref_index[list][h->mb2b8_xy[mb_xy]];
+            ref = &s->current_picture.ref_index[list][4*mb_xy];
             {
                 int (*ref2frm)[64] = h->ref2frm[ h->slice_num&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
                 AV_WN32A(&h->ref_cache[list][scan8[ 0]], (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101);
                 AV_WN32A(&h->ref_cache[list][scan8[ 2]], (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101);
-                ref += h->b8_stride;
+                ref += 2;
                 AV_WN32A(&h->ref_cache[list][scan8[ 8]], (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101);
                 AV_WN32A(&h->ref_cache[list][scan8[10]], (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101);
             }
@@ -1319,7 +1315,7 @@ static int fill_filter_caches(H264Context *h, int mb_type){
         for(list=0; list<h->list_count; list++){
             if(USES_LIST(top_type, list)){
                 const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
-                const int b8_xy= h->mb2b8_xy[top_xy] + h->b8_stride;
+                const int b8_xy= 4*top_xy + 2;
                 int (*ref2frm)[64] = h->ref2frm[ h->slice_table[top_xy]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
                 AV_COPY128(h->mv_cache[list][scan8[0] + 0 - 1*8], s->current_picture.motion_val[list][b_xy + 0]);
                 h->ref_cache[list][scan8[0] + 0 - 1*8]=
@@ -1334,16 +1330,16 @@ static int fill_filter_caches(H264Context *h, int mb_type){
             if(!IS_INTERLACED(mb_type^left_type[0])){
                 if(USES_LIST(left_type[0], list)){
                     const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
-                    const int b8_xy= h->mb2b8_xy[left_xy[0]] + 1;
+                    const int b8_xy= 4*left_xy[0] + 1;
                     int (*ref2frm)[64] = h->ref2frm[ h->slice_table[left_xy[0]]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
                     AV_COPY32(h->mv_cache[list][scan8[0] - 1 + 0 ], s->current_picture.motion_val[list][b_xy + h->b_stride*0]);
                     AV_COPY32(h->mv_cache[list][scan8[0] - 1 + 8 ], s->current_picture.motion_val[list][b_xy + h->b_stride*1]);
                     AV_COPY32(h->mv_cache[list][scan8[0] - 1 +16 ], s->current_picture.motion_val[list][b_xy + h->b_stride*2]);
                     AV_COPY32(h->mv_cache[list][scan8[0] - 1 +24 ], s->current_picture.motion_val[list][b_xy + h->b_stride*3]);
                     h->ref_cache[list][scan8[0] - 1 + 0 ]=
-                    h->ref_cache[list][scan8[0] - 1 + 8 ]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + h->b8_stride*0]];
+                    h->ref_cache[list][scan8[0] - 1 + 8 ]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 2*0]];
                     h->ref_cache[list][scan8[0] - 1 +16 ]=
-                    h->ref_cache[list][scan8[0] - 1 +24 ]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + h->b8_stride*1]];
+                    h->ref_cache[list][scan8[0] - 1 +24 ]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 2*1]];
                 }else{
                     AV_ZERO32(h->mv_cache [list][scan8[0] - 1 + 0 ]);
                     AV_ZERO32(h->mv_cache [list][scan8[0] - 1 + 8 ]);
@@ -1388,12 +1384,12 @@ static inline void write_back_non_zero_count(H264Context *h){
 
 static inline void write_back_motion(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
-    const int b_xy = 4*s->mb_x + 4*s->mb_y*h->b_stride;
-    const int b8_xy= 2*s->mb_x + 2*s->mb_y*h->b8_stride;
+    const int b_xy = 4*s->mb_x + 4*s->mb_y*h->b_stride; //try mb2b(8)_xy
+    const int b8_xy= 4*h->mb_xy;
     int list;
 
     if(!USES_LIST(mb_type, 0))
-        fill_rectangle(&s->current_picture.ref_index[0][b8_xy], 2, 2, h->b8_stride, (uint8_t)LIST_NOT_USED, 1);
+        fill_rectangle(&s->current_picture.ref_index[0][b8_xy], 2, 2, 2, (uint8_t)LIST_NOT_USED, 1);
 
     for(list=0; list<h->list_count; list++){
         int y, b_stride;
@@ -1424,10 +1420,10 @@ static inline void write_back_motion(H264Context *h, int mb_type){
 
         {
             int8_t *ref_index = &s->current_picture.ref_index[list][b8_xy];
-            ref_index[0+0*h->b8_stride]= h->ref_cache[list][scan8[0]];
-            ref_index[1+0*h->b8_stride]= h->ref_cache[list][scan8[4]];
-            ref_index[0+1*h->b8_stride]= h->ref_cache[list][scan8[8]];
-            ref_index[1+1*h->b8_stride]= h->ref_cache[list][scan8[12]];
+            ref_index[0+0*2]= h->ref_cache[list][scan8[0]];
+            ref_index[1+0*2]= h->ref_cache[list][scan8[4]];
+            ref_index[0+1*2]= h->ref_cache[list][scan8[8]];
+            ref_index[1+1*2]= h->ref_cache[list][scan8[12]];
         }
     }
 

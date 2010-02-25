@@ -257,7 +257,7 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
             for(i=0; i<2; i++){
                 FF_ALLOCZ_OR_GOTO(s->avctx, pic->motion_val_base[i], 2 * (b4_array_size+4)  * sizeof(int16_t), fail)
                 pic->motion_val[i]= pic->motion_val_base[i]+4;
-                FF_ALLOCZ_OR_GOTO(s->avctx, pic->ref_index[i], b8_array_size * sizeof(uint8_t), fail)
+                FF_ALLOCZ_OR_GOTO(s->avctx, pic->ref_index[i], 4*mb_array_size * sizeof(uint8_t), fail)
             }
             pic->motion_subsample_log2= 2;
         }else if(s->out_format == FMT_H263 || s->encoding || (s->avctx->debug&FF_DEBUG_MV) || (s->avctx->debug_mv)){
