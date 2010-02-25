@@ -184,7 +184,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
                                                   &stream->time_base));
 
     while ((tag = av_metadata_get(stream->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX)))
-        printf("%s=%s\n", tag->key, tag->value);
+        printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/STREAM]\n");
 }
