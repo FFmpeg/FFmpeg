@@ -203,14 +203,36 @@ static void put_guid(ByteIOContext *s, const ff_asf_guid *g)
     put_buffer(s, *g, sizeof(*g));
 }
 
-static void put_str16_nolen(ByteIOContext *s, const char *tag)
+static int put_str16_nolen(ByteIOContext *s, const char *tag)
 {
-    int c;
+    const uint8_t *q = tag;
+    int ret = 0;
 
-    do{
-        c = (uint8_t)*tag++;
-        put_le16(s, c);
-    }while(c);
+    while (*q) {
+        uint32_t ch;
+        uint16_t tmp;
+
+        GET_UTF8(ch, *q++, break;)
+        PUT_UTF16(ch, tmp, put_le16(s, tmp);ret += 2;)
+    }
+    put_le16(s, 0);
+    ret += 2;
+    return ret;
+}
+
+static void put_str16(ByteIOContext *s, const char *tag)
+{
+    int len;
+    uint8_t *pb;
+    ByteIOContext *dyn_buf;
+    if (url_open_dyn_buf(&dyn_buf) < 0)
+        return;
+
+    put_str16_nolen(dyn_buf, tag);
+    len = url_close_dyn_buf(dyn_buf, &pb);
+    put_le16(s, len);
+    put_buffer(s, pb, len);
+    av_freep(&pb);
 }
 
 static int64_t put_header(ByteIOContext *pb, const ff_asf_guid *g)
@@ -329,12 +351,22 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
     /* title and other infos */
     if (has_title) {
+        int len;
+        uint8_t *buf;
+        ByteIOContext *dyn_buf;
+
+        if (url_open_dyn_buf(&dyn_buf) < 0)
+            return AVERROR(ENOMEM);
+
         hpos = put_header(pb, &ff_asf_comment_header);
-        for (n = 0; n < FF_ARRAY_ELEMS(tags); n++)
-            put_le16(pb, tags[n] ? 2*(strlen(tags[n]->value) + 1) : 0);
-        for (n = 0; n < FF_ARRAY_ELEMS(tags); n++)
-            if (tags[n])
-                put_str16_nolen(pb, tags[n]->value);
+
+        for (n = 0; n < FF_ARRAY_ELEMS(tags); n++) {
+            len = tags[n] ? put_str16_nolen(dyn_buf, tags[n]->value) : 0;
+            put_le16(pb, len);
+        }
+        len = url_close_dyn_buf(dyn_buf, &buf);
+        put_buffer(pb, buf, len);
+        av_freep(&buf);
         end_header(pb, hpos);
     }
     if (metadata_count) {
@@ -342,11 +374,9 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         hpos = put_header(pb, &ff_asf_extended_content_header);
         put_le16(pb, metadata_count);
         while ((tag = av_metadata_get(s->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
-            put_le16(pb, 2*(strlen(tag->key) + 1));
-            put_str16_nolen(pb, tag->key);
+            put_str16(pb, tag->key);
             put_le16(pb, 0);
-            put_le16(pb, 2*(strlen(tag->value) + 1));
-            put_str16_nolen(pb, tag->value);
+            put_str16(pb, tag->value);
         }
         end_header(pb, hpos);
     }
@@ -437,6 +467,9 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     for(n=0;n<s->nb_streams;n++) {
         AVCodec *p;
         const char *desc;
+        int len;
+        uint8_t *buf;
+        ByteIOContext *dyn_buf;
 
         enc = s->streams[n]->codec;
         p = avcodec_find_encoder(enc->codec_id);
@@ -452,8 +485,17 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
             desc = "Windows Media Audio V8";
         else
             desc = p ? p->name : enc->codec_name;
-        put_le16(pb, strlen(desc) + 1); // "number of characters" = length in bytes / 2
-        put_str16_nolen(pb, desc);
+
+        if ( url_open_dyn_buf(&dyn_buf) < 0)
+            return AVERROR(ENOMEM);
+
+        put_str16_nolen(dyn_buf, desc);
+        len = url_close_dyn_buf(dyn_buf, &buf);
+        put_le16(pb, len / 2); // "number of characters" = length in bytes / 2
+
+        put_buffer(pb, buf, len);
+        av_freep(&buf);
+
         put_le16(pb, 0); /* no parameters */
 
 
