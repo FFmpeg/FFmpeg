@@ -288,15 +288,15 @@ static void opt_format(const char *arg)
     }
 }
 
-static void opt_input_file(const char *filename)
+static void opt_input_file(const char *arg)
 {
     if (input_filename) {
-        fprintf(stderr, "Input filename already specified: %s\n", filename);
+        fprintf(stderr, "Input filename already specified: %s\n", arg);
         exit(1);
     }
-    if (!strcmp(filename, "-"))
-        filename = "pipe:";
-    input_filename = filename;
+    if (!strcmp(arg, "-"))
+        arg = "pipe:";
+    input_filename = arg;
 }
 
 static void show_help(void)
