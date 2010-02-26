@@ -893,8 +893,8 @@ typedef struct AVPanScan{
     short *dct_coeff;\
 \
     /**\
-     * motion referece frame index\
-     * the order in which these are stored can depends on the codec.\
+     * motion reference frame index\
+     * the order in which these are stored can depend on the codec.\
      * - encoding: Set by user.\
      * - decoding: Set by libavcodec.\
      */\
