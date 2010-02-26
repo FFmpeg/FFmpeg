@@ -1244,6 +1244,10 @@ static int dca_decode_frame(AVCodecContext * avctx,
         } else
             s->channel_order_tab = dca_channel_reorder_nolfe[s->amode];
 
+        if (s->prim_channels > 0 &&
+            s->channel_order_tab[s->prim_channels - 1] < 0)
+            return -1;
+
         if(avctx->request_channels == 2 && s->prim_channels > 2) {
             channels = 2;
             s->output = DCA_STEREO;
