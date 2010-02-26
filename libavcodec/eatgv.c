@@ -192,6 +192,10 @@ static int tgv_decode_inter(TgvContext * s, const uint8_t *buf, const uint8_t *b
             s->block_codebook[i][15-j] = tmp[get_bits(&gb, 2)];
     }
 
+    if (get_bits_left(&gb) < vector_bits *
+        (s->avctx->height/4) * (s->avctx->width/4))
+        return -1;
+
     /* read vectors and build frame */
     for(y=0; y<s->avctx->height/4; y++)
     for(x=0; x<s->avctx->width/4; x++) {
