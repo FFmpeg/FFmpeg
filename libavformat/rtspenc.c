@@ -71,6 +71,7 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
     int n, tcp_fd;
     struct timeval tv;
     AVFormatContext *rtpctx;
+    AVPacket local_pkt;
 
     FD_ZERO(&rfds);
     tcp_fd = url_get_file_handle(rt->rtsp_hd);
@@ -96,8 +97,11 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
     rtsp_st = rt->rtsp_streams[pkt->stream_index];
     rtpctx = rtsp_st->transport_priv;
 
-    pkt->stream_index = 0;
-    return av_write_frame(rtpctx, pkt);
+    /* Use a local packet for writing to the chained muxer, otherwise
+     * the internal stream_index = 0 becomes visible to the muxer user. */
+    local_pkt = *pkt;
+    local_pkt.stream_index = 0;
+    return av_write_frame(rtpctx, &local_pkt);
 }
 
 static int rtsp_write_close(AVFormatContext *s)
