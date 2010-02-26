@@ -952,9 +952,9 @@ static void fill_decode_caches(H264Context *h, int mb_type){
         }
         // left_cbp
         if (left_type[0]) {
-            h->left_cbp = h->cbp_table[left_xy[0]] & 0x1f0;
-            h->left_cbp |= ((h->cbp_table[left_xy[0]]>>((left_block[0]&(~1))+1))&0x1) << 1;
-            h->left_cbp |= ((h->cbp_table[left_xy[1]]>>((left_block[2]&(~1))+1))&0x1) << 3;
+            h->left_cbp = (h->cbp_table[left_xy[0]] & 0x1f0)
+                        |  ((h->cbp_table[left_xy[0]]>>(left_block[0]&(~1)))&2)
+                        | (((h->cbp_table[left_xy[1]]>>(left_block[2]&(~1)))&2) << 2);
         } else {
             h->left_cbp = IS_INTRA(mb_type) ? 0x1CF : 0x00F;
         }
