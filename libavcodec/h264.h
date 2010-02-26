@@ -860,8 +860,8 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                         h->left_samples_available&= 0xFF5F;
                     }
                 }else{
-                    int left_typei = h->slice_table[left_xy[0] + s->mb_stride ] == h->slice_num
-                                    ? s->current_picture.mb_type[left_xy[0] + s->mb_stride] : 0;
+                    int left_typei = s->current_picture.mb_type[left_xy[0] + s->mb_stride];
+
                     assert(left_xy[0] == left_xy[1]);
                     if(!((left_typei & type_mask) && (left_type[0] & type_mask))){
                         h->topleft_samples_available&= 0xDF5F;
