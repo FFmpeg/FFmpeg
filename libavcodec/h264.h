@@ -795,7 +795,6 @@ static void fill_decode_neighbors(H264Context *h, int mb_type){
                 top_xy      += s->mb_stride & (((s->current_picture.mb_type[top_xy    ]>>7)&1)-1);
             }
             if (left_mb_field_flag != curr_mb_field_flag) {
-                left_xy[1] = left_xy[0] = mb_xy - 1;
                 if (curr_mb_field_flag) {
                     left_xy[1] += s->mb_stride;
                     h->left_block = left_block_options[3];
