@@ -2305,7 +2305,8 @@ static int av_encode(AVFormatContext **output_files,
         }
 
         /* finish if recording time exhausted */
-        if (av_compare_ts(pkt.pts, ist->st->time_base, recording_time + start_time, (AVRational){1, 1000000}) >= 0) {
+        if (recording_time != INT64_MAX &&
+            av_compare_ts(pkt.pts, ist->st->time_base, recording_time + start_time, (AVRational){1, 1000000}) >= 0) {
             ist->is_past_recording_time = 1;
             goto discard_packet;
         }
