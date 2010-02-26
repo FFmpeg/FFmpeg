@@ -947,24 +947,16 @@ static void fill_decode_caches(H264Context *h, int mb_type){
         // top_cbp
         if(top_type) {
             h->top_cbp = h->cbp_table[top_xy];
-        } else if(IS_INTRA(mb_type)) {
-            h->top_cbp = 0x1CF;
         } else {
-            h->top_cbp = 0x00F;
+            h->top_cbp = IS_INTRA(mb_type) ? 0x1CF : 0x00F;
         }
         // left_cbp
         if (left_type[0]) {
             h->left_cbp = h->cbp_table[left_xy[0]] & 0x1f0;
-        } else if(IS_INTRA(mb_type)) {
-            h->left_cbp = 0x1CF;
-        } else {
-            h->left_cbp = 0x00F;
-        }
-        if (left_type[0]) {
             h->left_cbp |= ((h->cbp_table[left_xy[0]]>>((left_block[0]&(~1))+1))&0x1) << 1;
-        }
-        if (left_type[1]) {
             h->left_cbp |= ((h->cbp_table[left_xy[1]]>>((left_block[2]&(~1))+1))&0x1) << 3;
+        } else {
+            h->left_cbp = IS_INTRA(mb_type) ? 0x1CF : 0x00F;
         }
     }
     }
