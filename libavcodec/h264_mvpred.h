@@ -62,14 +62,14 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
             *C = h->mv_cache[list][scan8[0]-2];
 
             if(!MB_FIELD
-               && IS_INTERLACED(mb_types[h->left_mb_xy[0]])){
-                SET_DIAG_MV(*2, >>1, h->left_mb_xy[0]+s->mb_stride, (s->mb_y&1)*2+(i>>4)-1);
+               && IS_INTERLACED(h->left_type[0])){
+                SET_DIAG_MV(*2, >>1, h->left_mb_xy[0]+s->mb_stride, (s->mb_y&1)*2+(i>>5));
                 assert(h->left_mb_xy[0] == h->left_mb_xy[1]);
             }
             if(MB_FIELD
-               && !IS_INTERLACED(mb_types[h->left_mb_xy[0]])){
+               && !IS_INTERLACED(h->left_type[0])){
                 // left shift will turn LIST_NOT_USED into PART_NOT_AVAILABLE, but that's OK.
-                SET_DIAG_MV(/2, <<1, h->left_mb_xy[i>=36], (- 1 + ((i-scan8[0])>>3)*2)&3);
+                SET_DIAG_MV(/2, <<1, h->left_mb_xy[i>=36], ((i>>2))&3);
             }
         }
 #undef SET_DIAG_MV
