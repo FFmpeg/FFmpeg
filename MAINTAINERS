@@ -113,6 +113,7 @@ Codecs:
   atrac3*                               Benjamin Larsson
   bgmc.c, bgmc.h                        Thilo Borgmann
   bink.c                                Kostya Shishkov
+  binkaudio.c                           Peter Ross
   bmp.c                                 Mans Rullgard, Kostya Shishkov
   cavs*                                 Stefan Gehrer
   celp_filters.*                        Vitor Sessak
@@ -251,6 +252,7 @@ Muxers/Demuxers:
   aiff.c                                Baptiste Coudurier
   ape.c                                 Kostya Shishkov
   avi*                                  Michael Niedermayer
+  bink.c                                Peter Ross
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
   dv.c                                  Roman Shaposhnik
