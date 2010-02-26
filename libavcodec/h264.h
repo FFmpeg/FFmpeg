@@ -1006,16 +1006,6 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 }
             }
 
-            if(USES_LIST(topleft_type, list)){
-                const int b_xy = h->mb2b_xy [topleft_xy] + 3 + h->b_stride + (h->topleft_partition & 2*h->b_stride);
-                const int b8_xy= 4*topleft_xy + 1 + (h->topleft_partition & 2);
-                AV_COPY32(h->mv_cache[list][scan8[0] - 1 - 1*8], s->current_picture.motion_val[list][b_xy]);
-                h->ref_cache[list][scan8[0] - 1 - 1*8]= s->current_picture.ref_index[list][b8_xy];
-            }else{
-                AV_ZERO32(h->mv_cache[list][scan8[0] - 1 - 1*8]);
-                h->ref_cache[list][scan8[0] - 1 - 1*8]= topleft_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
-            }
-
             if(USES_LIST(topright_type, list)){
                 const int b_xy= h->mb2b_xy[topright_xy] + 3*h->b_stride;
                 AV_COPY32(h->mv_cache[list][scan8[0] + 4 - 1*8], s->current_picture.motion_val[list][b_xy]);
@@ -1023,6 +1013,17 @@ static void fill_decode_caches(H264Context *h, int mb_type){
             }else{
                 AV_ZERO32(h->mv_cache [list][scan8[0] + 4 - 1*8]);
                 h->ref_cache[list][scan8[0] + 4 - 1*8]= topright_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+            }
+            if(h->ref_cache[list][scan8[0] + 4 - 1*8] < 0){
+                if(USES_LIST(topleft_type, list)){
+                    const int b_xy = h->mb2b_xy [topleft_xy] + 3 + h->b_stride + (h->topleft_partition & 2*h->b_stride);
+                    const int b8_xy= 4*topleft_xy + 1 + (h->topleft_partition & 2);
+                    AV_COPY32(h->mv_cache[list][scan8[0] - 1 - 1*8], s->current_picture.motion_val[list][b_xy]);
+                    h->ref_cache[list][scan8[0] - 1 - 1*8]= s->current_picture.ref_index[list][b8_xy];
+                }else{
+                    AV_ZERO32(h->mv_cache[list][scan8[0] - 1 - 1*8]);
+                    h->ref_cache[list][scan8[0] - 1 - 1*8]= topleft_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+                }
             }
 
             if((mb_type&(MB_TYPE_SKIP|MB_TYPE_DIRECT2)) && !FRAME_MBAFF)
