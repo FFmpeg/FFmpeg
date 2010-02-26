@@ -1037,9 +1037,6 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 continue;
 
             if(!(mb_type&(MB_TYPE_SKIP|MB_TYPE_DIRECT2))) {
-            h->ref_cache[list][scan8[5 ]+1] =
-            h->ref_cache[list][scan8[7 ]+1] =
-            h->ref_cache[list][scan8[13]+1] =  //FIXME remove past 3 (init somewhere else)
             h->ref_cache[list][scan8[4 ]] =
             h->ref_cache[list][scan8[12]] = PART_NOT_AVAILABLE;
             AV_ZERO32(h->mv_cache [list][scan8[4 ]]);

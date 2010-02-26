@@ -872,6 +872,10 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
         avctx->ticks_per_frame = 2;
     }
 
+    h->ref_cache[0][scan8[5 ]+1] = h->ref_cache[0][scan8[7 ]+1] = h->ref_cache[0][scan8[13]+1] =
+    h->ref_cache[1][scan8[5 ]+1] = h->ref_cache[1][scan8[7 ]+1] = h->ref_cache[1][scan8[13]+1] = PART_NOT_AVAILABLE;
+
+
     if(avctx->extradata_size > 0 && avctx->extradata && *(char *)avctx->extradata == 1){
         int i, cnt, nalsize;
         unsigned char *p = avctx->extradata;
