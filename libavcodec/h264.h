@@ -811,11 +811,18 @@ static void fill_decode_neighbors(H264Context *h, int mb_type){
     h->left_mb_xy[0] = left_xy[0];
     h->left_mb_xy[1] = left_xy[1];
     //FIXME do we need all in the context?
-    h->topleft_type = h->slice_table[topleft_xy ] == h->slice_num ? s->current_picture.mb_type[topleft_xy] : 0;
-    h->top_type     = h->slice_table[top_xy     ] == h->slice_num ? s->current_picture.mb_type[top_xy]     : 0;
-    h->topright_type= h->slice_table[topright_xy] == h->slice_num ? s->current_picture.mb_type[topright_xy]: 0;
-    h->left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
-    h->left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
+
+    h->topleft_type = s->current_picture.mb_type[topleft_xy] ;
+    h->top_type     = s->current_picture.mb_type[top_xy]     ;
+    h->topright_type= s->current_picture.mb_type[topright_xy];
+    h->left_type[0] = s->current_picture.mb_type[left_xy[0]] ;
+    h->left_type[1] = s->current_picture.mb_type[left_xy[1]] ;
+
+    if(h->slice_table[topleft_xy ] != h->slice_num) h->topleft_type = 0;
+    if(h->slice_table[top_xy     ] != h->slice_num) h->top_type     = 0;
+    if(h->slice_table[topright_xy] != h->slice_num) h->topright_type= 0;
+    if(h->slice_table[left_xy[0] ] != h->slice_num) h->left_type[0] = 0;
+    if(h->slice_table[left_xy[1] ] != h->slice_num) h->left_type[1] = 0;
 }
 
 static void fill_decode_caches(H264Context *h, int mb_type){
