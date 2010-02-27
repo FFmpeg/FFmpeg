@@ -205,7 +205,7 @@ int  ff_ivi_create_huff_from_desc(const IVIHuffDesc *cb, VLC *vlc, int flag);
 /**
  * Initializes static codes used for macroblock and block decoding.
  */
-void ff_ivi_init_static_vlc();
+void ff_ivi_init_static_vlc(void);
 
 /**
  *  Decodes a huffman codebook descriptor from the bitstream.
