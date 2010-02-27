@@ -38,7 +38,7 @@ void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
     int32_t         p0, p1, p2, p3, tmp0, tmp1, tmp2;
     int32_t         b0_1, b0_2, b1_1, b1_2, b1_3, b2_1, b2_2, b2_3, b2_4, b2_5, b2_6;
     int32_t         b3_1, b3_2, b3_3, b3_4, b3_5, b3_6, b3_7, b3_8, b3_9;
-    uint32_t        pitch, back_pitch;
+    int32_t         pitch, back_pitch;
     const IDWTELEM *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
 
     /* all bands should have the same pitch */
