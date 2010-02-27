@@ -45,6 +45,24 @@ typedef struct {
     uint8_t     xbits[16];
 } IVIHuffDesc;
 
+/**
+ *  macroblock/block huffman table descriptor
+ */
+typedef struct {
+    int32_t     tab_sel;    /// index of one of the predefined tables
+                            /// or "7" for custom one
+    VLC         *tab;       /// pointer to the table associated with tab_sel
+
+    //! the following are used only when tab_sel == 7
+    IVIHuffDesc cust_desc;  /// custom Huffman codebook descriptor
+    VLC         cust_tab;   /// vlc table for custom codebook
+} IVIHuffTab;
+
+enum {
+    IVI_MB_HUFF   = 0,      /// Huffman table is used for coding macroblocks
+    IVI_BLK_HUFF  = 1       /// Huffman table is used for coding blocks
+};
+
 extern VLC ff_ivi_mb_vlc_tabs [8]; ///< static macroblock Huffman tables
 extern VLC ff_ivi_blk_vlc_tabs[8]; ///< static block Huffman tables
 
@@ -118,10 +136,7 @@ typedef struct {
     int             glob_quant;     ///< quant base for this band
     const uint8_t   *scan;          ///< ptr to the scan pattern
 
-    int             huff_sel;       ///< huffman table for this band
-    IVIHuffDesc     huff_desc;      ///< table descriptor associated with the selector above
-    VLC             *blk_vlc;       ///< ptr to the vlc table for decoding block data
-    VLC             blk_vlc_cust;   ///< custom block vlc table
+    IVIHuffTab      blk_vlc;        ///< vlc table for decoding block data
 
     uint16_t        *dequant_intra; ///< ptr to dequant tables for intra blocks
     uint16_t        *dequant_inter; ///< ptr dequant tables for inter blocks
@@ -208,14 +223,18 @@ int  ff_ivi_create_huff_from_desc(const IVIHuffDesc *cb, VLC *vlc, int flag);
 void ff_ivi_init_static_vlc(void);
 
 /**
- *  Decodes a huffman codebook descriptor from the bitstream.
+ *  Decodes a huffman codebook descriptor from the bitstream
+ *  and selects specified huffman table.
  *
- *  @param gb   [in,out] the GetBit context
- *  @param desc [out] ptr to descriptor to be filled with data
- *  @return     selector indicating huffman table:
- *              (0...6 - predefined, 7 - custom one supplied with the bitstream)
+ *  @param gb           [in,out] the GetBit context
+ *  @param desc_coded   [in] flag signalling if table descriptor was coded
+ *  @param which_tab    [in] codebook purpose (IVI_MB_HUFF or IVI_BLK_HUFF)
+ *  @param huff_tab     [out] pointer to the descriptor of the selected table
+ *  @param avctx        [in] AVCodecContext pointer
+ *  @return             zero on success, negative value otherwise
  */
-int  ff_ivi_dec_huff_desc(GetBitContext *gb, IVIHuffDesc *desc);
+int  ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
+                          IVIHuffTab *huff_tab, AVCodecContext *avctx);
 
 /**
  *  Compares two huffman codebook descriptors.

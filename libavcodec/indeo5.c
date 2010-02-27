@@ -67,10 +67,7 @@ typedef struct {
     uint8_t         frame_flags;
     uint16_t        checksum;        ///< frame checksum
 
-    int16_t         mb_huff_sel;     ///< MB huffman table selector
-    IVIHuffDesc     mb_huff_desc;    ///< MB table descriptor associated with the selector above
-    VLC             *mb_vlc;         ///< ptr to the vlc table for decoding macroblock data
-    VLC             mb_vlc_cust;     ///< custom macroblock vlc table
+    IVIHuffTab      mb_vlc;          ///< vlc table for decoding macroblock data
 
     uint16_t        gop_hdr_size;
     uint8_t         gop_flags;
@@ -305,9 +302,6 @@ static inline void skip_hdr_extension(GetBitContext *gb)
  */
 static int decode_pic_hdr(IVI5DecContext *ctx, AVCodecContext *avctx)
 {
-    int         result;
-    IVIHuffDesc new_huff;
-
     if (get_bits(&ctx->gb, 5) != 0x1F) {
         av_log(avctx, AV_LOG_ERROR, "Invalid picture start code!\n");
         return -1;
@@ -339,28 +333,8 @@ static int decode_pic_hdr(IVI5DecContext *ctx, AVCodecContext *avctx)
             skip_hdr_extension(&ctx->gb); /* XXX: untested */
 
         /* decode macroblock huffman codebook */
-        if (ctx->frame_flags & 0x40) {
-            ctx->mb_huff_sel = ff_ivi_dec_huff_desc(&ctx->gb, &new_huff);
-            if (ctx->mb_huff_sel != 7) {
-                ctx->mb_vlc = &ff_ivi_mb_vlc_tabs[ctx->mb_huff_sel];
-            } else {
-                if (ff_ivi_huff_desc_cmp(&new_huff, &ctx->mb_huff_desc)) {
-                    ff_ivi_huff_desc_copy(&ctx->mb_huff_desc, &new_huff);
-
-                    if (ctx->mb_vlc_cust.table)
-                        free_vlc(&ctx->mb_vlc_cust);
-                    result = ff_ivi_create_huff_from_desc(&ctx->mb_huff_desc,
-                                                          &ctx->mb_vlc_cust, 0);
-                    if (result) {
-                        av_log(avctx, AV_LOG_ERROR, "Error while initializing custom macroblock vlc table!\n");
-                        return -1;
-                    }
-                }
-                ctx->mb_vlc = &ctx->mb_vlc_cust;
-            }
-        } else {
-            ctx->mb_vlc = &ff_ivi_mb_vlc_tabs[7]; /* select the default macroblock huffman table */
-        }
+        if (ff_ivi_dec_huff_desc(&ctx->gb, ctx->frame_flags & 0x40, IVI_MB_HUFF, &ctx->mb_vlc, avctx))
+            return -1;
 
         skip_bits(&ctx->gb, 3); /* FIXME: unknown meaning! */
     }
@@ -382,9 +356,8 @@ static int decode_pic_hdr(IVI5DecContext *ctx, AVCodecContext *avctx)
 static int decode_band_hdr(IVI5DecContext *ctx, IVIBandDesc *band,
                            AVCodecContext *avctx)
 {
-    int         i, result;
+    int         i;
     uint8_t     band_flags;
-    IVIHuffDesc new_huff;
 
     band_flags = get_bits(&ctx->gb, 8);
 
@@ -419,28 +392,8 @@ static int decode_band_hdr(IVI5DecContext *ctx, IVIBandDesc *band,
     band->rvmap_sel = (band_flags & 0x40) ? get_bits(&ctx->gb, 3) : 8;
 
     /* decode block huffman codebook */
-    if (band_flags & 0x80) {
-        band->huff_sel = ff_ivi_dec_huff_desc(&ctx->gb, &new_huff);
-        if (band->huff_sel != 7) {
-            band->blk_vlc = &ff_ivi_blk_vlc_tabs[band->huff_sel];
-        } else {
-            if (ff_ivi_huff_desc_cmp(&new_huff, &band->huff_desc)) {
-                ff_ivi_huff_desc_copy(&band->huff_desc, &new_huff);
-
-                if (band->blk_vlc_cust.table)
-                    free_vlc(&band->blk_vlc_cust);
-                result = ff_ivi_create_huff_from_desc(&band->huff_desc,
-                                                      &band->blk_vlc_cust, 0);
-                if (result) {
-                    av_log(avctx, AV_LOG_ERROR, "Error while initializing custom block vlc table!\n");
-                    return -1;
-                }
-            }
-            band->blk_vlc = &band->blk_vlc_cust;
-        }
-    } else {
-        band->blk_vlc = &ff_ivi_blk_vlc_tabs[7]; /* select the default macroblock huffman table */
-    }
+    if (ff_ivi_dec_huff_desc(&ctx->gb, band_flags & 0x80, IVI_BLK_HUFF, &band->blk_vlc, avctx))
+        return -1;
 
     band->checksum_present = get_bits1(&ctx->gb);
     if (band->checksum_present)
@@ -504,7 +457,7 @@ static int decode_mb_info(IVI5DecContext *ctx, IVIBandDesc *band,
 
                 mb->q_delta = 0;
                 if (!band->plane && !band->band_num && (ctx->frame_flags & 8)) {
-                    mb->q_delta = get_vlc2(&ctx->gb, ctx->mb_vlc->table,
+                    mb->q_delta = get_vlc2(&ctx->gb, ctx->mb_vlc.tab->table,
                                            IVI_VLC_BITS, 1);
                     mb->q_delta = IVI_TOSIGNED(mb->q_delta);
                 }
@@ -538,7 +491,7 @@ static int decode_mb_info(IVI5DecContext *ctx, IVIBandDesc *band,
                         if (ref_mb) mb->q_delta = ref_mb->q_delta;
                     } else if (mb->cbp || (!band->plane && !band->band_num &&
                                            (ctx->frame_flags & 8))) {
-                        mb->q_delta = get_vlc2(&ctx->gb, ctx->mb_vlc->table,
+                        mb->q_delta = get_vlc2(&ctx->gb, ctx->mb_vlc.tab->table,
                                                IVI_VLC_BITS, 1);
                         mb->q_delta = IVI_TOSIGNED(mb->q_delta);
                     }
@@ -558,10 +511,10 @@ static int decode_mb_info(IVI5DecContext *ctx, IVIBandDesc *band,
                         }
                     } else {
                         /* decode motion vector deltas */
-                        mv_delta = get_vlc2(&ctx->gb, ctx->mb_vlc->table,
+                        mv_delta = get_vlc2(&ctx->gb, ctx->mb_vlc.tab->table,
                                             IVI_VLC_BITS, 1);
                         mv_y += IVI_TOSIGNED(mv_delta);
-                        mv_delta = get_vlc2(&ctx->gb, ctx->mb_vlc->table,
+                        mv_delta = get_vlc2(&ctx->gb, ctx->mb_vlc.tab->table,
                                             IVI_VLC_BITS, 1);
                         mv_x += IVI_TOSIGNED(mv_delta);
                         mb->mv_x = mv_x;
@@ -860,8 +813,8 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
     ff_ivi_free_buffers(&ctx->planes[0]);
 
-    if (ctx->mb_vlc_cust.table)
-        free_vlc(&ctx->mb_vlc_cust);
+    if (ctx->mb_vlc.cust_tab.table)
+        free_vlc(&ctx->mb_vlc.cust_tab);
 
     if (ctx->frame.data[0])
         avctx->release_buffer(avctx, &ctx->frame);
