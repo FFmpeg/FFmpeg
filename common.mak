@@ -55,6 +55,9 @@ uninstall: uninstall-libs uninstall-headers
 # Disable suffix rules.  Most of the builtin rules are suffix rules,
 # so this saves some time on slow systems.
 .SUFFIXES:
+
+# Do not delete intermediate files from chains of implicit rules
+.SECONDARY:
 endif
 
 OBJS-$(HAVE_MMX) +=  $(MMX-OBJS-yes)
