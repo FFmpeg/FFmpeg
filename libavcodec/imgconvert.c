@@ -33,6 +33,8 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "colorspace.h"
+#include "internal.h"
+#include "imgconvert.h"
 #include "libavutil/pixdesc.h"
 
 #if HAVE_MMX
