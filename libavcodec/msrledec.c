@@ -28,6 +28,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "msrledec.h"
 
 #define FETCH_NEXT_STREAM_BYTE() \
     if (stream_ptr >= data_size) \
