@@ -1775,7 +1775,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         s->height= 16*s->mb_height - 4*FFMIN(h->sps.crop_bottom, 3);
 
     if (s->context_initialized
-        && (   s->width != s->avctx->width || s->height != s->avctx->height)) {
+        && (   s->width != s->avctx->width || s->height != s->avctx->height
+                || h->sps.sar.num != s->avctx->sample_aspect_ratio.num
+                || h->sps.sar.den != s->avctx->sample_aspect_ratio.den)) {
         if(h != h0)
             return -1;   // width / height changed during parallelized decoding
         free_tables(h);
