@@ -13,6 +13,9 @@ version 0.5.1:
 - AMR-NB decoding/encoding, AMR-WB decoding via OpenCORE libraries
 - enable symbol versioning by default for linkers that support it
 - backport av_lockmgr_register(), see doc/APIchanges for details
+- security fixes for:
+  - ASF, Ogg and MOV demuxers
+  - FFv1, H.264, HuffYUV, MLP, MPEG audio and Snow decoders
 
 
 
