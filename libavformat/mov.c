@@ -396,7 +396,7 @@ int ff_mp4_read_descr_len(ByteIOContext *pb)
     return len;
 }
 
-int mp4_read_descr(AVFormatContext *fc, ByteIOContext *pb, int *tag)
+static int mp4_read_descr(AVFormatContext *fc, ByteIOContext *pb, int *tag)
 {
     int len;
     *tag = get_byte(pb);
