@@ -769,7 +769,7 @@ AVCodec *avcodec_find_decoder_by_name(const char *name)
     return NULL;
 }
 
-int av_get_bit_rate(AVCodecContext *ctx)
+static int get_bit_rate(AVCodecContext *ctx)
 {
     int bit_rate;
     int bits_per_sample;
@@ -907,7 +907,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", pass 2");
     }
-    bitrate = av_get_bit_rate(enc);
+    bitrate = get_bit_rate(enc);
     if (bitrate != 0) {
         snprintf(buf + strlen(buf), buf_size - strlen(buf),
                  ", %d kb/s", bitrate / 1000);
