@@ -22,6 +22,7 @@
 
 #include "parser.h"
 #include "mpegvideo.h"
+#include "mpeg4video.h"
 #include "mpeg4video_parser.h"
 
 
