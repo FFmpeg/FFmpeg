@@ -1311,7 +1311,7 @@ SwsVector *sws_getIdentityVec(void)
     return sws_getConstVec(1.0, 1);
 }
 
-double sws_dcVec(SwsVector *a)
+static double sws_dcVec(SwsVector *a)
 {
     int i;
     double sum=0;
