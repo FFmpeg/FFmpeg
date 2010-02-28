@@ -22,6 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "apetag.h"
 
 #define ENABLE_DEBUG 0
 
