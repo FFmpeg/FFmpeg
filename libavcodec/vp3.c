@@ -256,9 +256,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
     int superblock_row_inc = 0;
     int mapping_index = 0;
 
-    int current_macroblock;
-    int c_fragment;
-
     static const signed char travel_width[16] = {
          1,  1,  0, -1,
          0,  0,  1,  0,
@@ -664,7 +661,6 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
             for (j = 0; j < 4; j++) {
                 int mb_x = 2*sb_x +   (j>>1);
                 int mb_y = 2*sb_y + (((j>>1)+j)&1);
-                int frags_coded = 0;
                 current_macroblock = mb_y * s->macroblock_width + mb_x;
 
                 if (mb_x >= s->macroblock_width || mb_y >= s->macroblock_height)
