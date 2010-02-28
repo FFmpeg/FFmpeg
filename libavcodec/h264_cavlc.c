@@ -789,22 +789,18 @@ decode_intra_mb:
                                 return -1;
                             }
                         }
-                    }else
-                        val= LIST_NOT_USED&0xFF;
                     fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, val, 1);
+                    }
             }
             for(list=0; list<h->list_count; list++){
-                unsigned int val;
                 if(IS_DIR(mb_type, 0, list)){
                     pred_motion(h, 0, 4, list, h->ref_cache[list][ scan8[0] ], &mx, &my);
                     mx += get_se_golomb(&s->gb);
                     my += get_se_golomb(&s->gb);
                     tprintf(s->avctx, "final mv:%d %d\n", mx, my);
 
-                    val= pack16to32(mx,my);
-                }else
-                    val=0;
-                fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, val, 4);
+                    fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
+                }
             }
         }
         else if(IS_16X8(mb_type)){
