@@ -78,6 +78,7 @@ int ff_getaddrinfo(const char *node, const char *service,
         return win_getaddrinfo(node, service, hints, res);
 #endif
 
+    *res = NULL;
     sin = av_mallocz(sizeof(struct sockaddr_in));
     if (!sin)
         return EAI_FAIL;
