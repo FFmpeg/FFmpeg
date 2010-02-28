@@ -25,6 +25,7 @@
 #include "avutil.h"
 #include "bswap.h"
 #include "sha.h"
+#include "sha1.h"
 #include "intreadwrite.h"
 
 /** hash context */
