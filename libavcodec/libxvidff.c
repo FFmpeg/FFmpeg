@@ -82,7 +82,7 @@ void xvid_correct_framerate(AVCodecContext *avctx);
  * @param avctx AVCodecContext pointer to context
  * @return Returns 0 on success, -1 on failure
  */
-av_cold int ff_xvid_encode_init(AVCodecContext *avctx)  {
+static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     int xerr, i;
     int xvid_flags = avctx->flags;
     struct xvid_context *x = avctx->priv_data;
@@ -367,7 +367,7 @@ av_cold int ff_xvid_encode_init(AVCodecContext *avctx)  {
  * @param data Pointer to AVFrame of unencoded frame
  * @return Returns 0 on success, -1 on failure
  */
-int ff_xvid_encode_frame(AVCodecContext *avctx,
+static int xvid_encode_frame(AVCodecContext *avctx,
                          unsigned char *frame, int buf_size, void *data) {
     int xerr, i;
     char *tmp;
@@ -475,7 +475,7 @@ int ff_xvid_encode_frame(AVCodecContext *avctx,
  * @param avctx AVCodecContext pointer to context
  * @return Returns 0, success guaranteed
  */
-av_cold int ff_xvid_encode_close(AVCodecContext *avctx) {
+static av_cold int xvid_encode_close(AVCodecContext *avctx) {
     struct xvid_context *x = avctx->priv_data;
 
     xvid_encore(x->encoder_handle, XVID_ENC_DESTROY, NULL, NULL);
@@ -772,9 +772,9 @@ AVCodec libxvid_encoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_XVID,
     sizeof(struct xvid_context),
-    ff_xvid_encode_init,
-    ff_xvid_encode_frame,
-    ff_xvid_encode_close,
+    xvid_encode_init,
+    xvid_encode_frame,
+    xvid_encode_close,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
 };
