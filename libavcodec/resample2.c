@@ -95,7 +95,7 @@ static double bessel(double x){
  * @param scale wanted sum of coefficients for each filter
  * @param type 0->cubic, 1->blackman nuttall windowed sinc, 2..16->kaiser windowed sinc beta=2..16
  */
-void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_count, int scale, int type){
+static void build_filter(FELEM *filter, double factor, int tap_count, int phase_count, int scale, int type){
     int ph, i;
     double x, y, w, tab[tap_count];
     const int center= (tap_count-1)/2;
@@ -189,7 +189,7 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, 
 
     c->filter_length= FFMAX((int)ceil(filter_size/factor), 1);
     c->filter_bank= av_mallocz(c->filter_length*(phase_count+1)*sizeof(FELEM));
-    av_build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, WINDOW_TYPE);
+    build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, WINDOW_TYPE);
     memcpy(&c->filter_bank[c->filter_length*phase_count+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
     c->filter_bank[c->filter_length*phase_count]= c->filter_bank[c->filter_length - 1];
 
