@@ -45,10 +45,12 @@ static int mp3_read_probe(AVProbeData *p)
     if(ff_id3v2_match(buf0)) {
         buf0 += ff_id3v2_tag_len(buf0);
     }
+    end = p->buf + p->buf_size - sizeof(uint32_t);
+    while(buf0 < end && !*buf0)
+        buf0++;
 
     max_frames = 0;
     buf = buf0;
-    end = p->buf + p->buf_size - sizeof(uint32_t);
 
     for(; buf < end; buf= buf2+1) {
         buf2 = buf;
