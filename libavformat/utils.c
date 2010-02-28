@@ -3009,6 +3009,14 @@ void dump_format(AVFormatContext *ic,
         }
         av_log(NULL, AV_LOG_INFO, "\n");
     }
+    for (i = 0; i < ic->nb_chapters; i++) {
+        AVChapter *ch = ic->chapters[i];
+        av_log(NULL, AV_LOG_INFO, "    Chapter #%d.%d: ", index, i);
+        av_log(NULL, AV_LOG_INFO, "start %f, ", ch->start * av_q2d(ch->time_base));
+        av_log(NULL, AV_LOG_INFO, "end %f\n",   ch->end   * av_q2d(ch->time_base));
+
+        dump_metadata(NULL, ch->metadata, "    ");
+    }
     if(ic->nb_programs) {
         int j, k, total = 0;
         for(j=0; j<ic->nb_programs; j++) {
