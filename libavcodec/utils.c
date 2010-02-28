@@ -37,6 +37,7 @@
 #include "opt.h"
 #include "imgconvert.h"
 #include "audioconvert.h"
+#include "libxvid_internal.h"
 #include "internal.h"
 #include <stdlib.h>
 #include <stdarg.h>
