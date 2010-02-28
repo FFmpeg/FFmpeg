@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/rtp_asf.c
+ * @file libavformat/rtpdec_asf.c
  * @brief Microsoft RTP/ASF support
  * @author Ronald S. Bultje <rbultje@ronald.bitfreak.net>
  */
@@ -29,7 +29,7 @@
 #include <libavutil/avstring.h>
 #include <libavutil/intreadwrite.h>
 #include "rtp.h"
-#include "rtp_asf.h"
+#include "rtpdec_asf.h"
 #include "rtsp.h"
 #include "asf.h"
 

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_RTP_ASF_H
-#define AVFORMAT_RTP_ASF_H
+#ifndef AVFORMAT_RTPDEC_ASF_H
+#define AVFORMAT_RTPDEC_ASF_H
 
 #include "avformat.h"
 #include "rtpdec.h"
@@ -40,4 +40,4 @@ void ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p);
 extern RTPDynamicProtocolHandler ff_ms_rtp_asf_pfv_handler,
                                  ff_ms_rtp_asf_pfa_handler;
 
-#endif /* AVFORMAT_RTP_ASF_H */
+#endif /* AVFORMAT_RTPDEC_ASF_H */

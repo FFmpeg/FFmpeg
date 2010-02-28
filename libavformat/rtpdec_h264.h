@@ -1,6 +1,6 @@
 /*
- * RTP Vorbis Protocol (RFC 5215)
- * Copyright (c) 2009 Colin McQuillan
+ * RTP H264 Protocol (RFC3984)
+ * Copyright (c) 2006 Ryan Martell
  *
  * This file is part of FFmpeg.
  *
@@ -19,27 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_RTP_VORBIS_H
-#define AVFORMAT_RTP_VORBIS_H
+#ifndef AVFORMAT_RTPDEC_H264_H
+#define AVFORMAT_RTPDEC_H264_H
 
-#include "libavcodec/avcodec.h"
 #include "rtpdec.h"
 
-/**
- * Handle a Vorbis-specific FMTP parameter
- *
- * @param codec The context of the codec
- * @param ctx Private Vorbis RTP context
- * @param attr Format-specific parameter name
- * @param value Format-specific paremeter value
- */
-int
-ff_vorbis_parse_fmtp_config(AVCodecContext * codec,
-                            void *ctx, char *attr, char *value);
+extern RTPDynamicProtocolHandler ff_h264_dynamic_handler;
 
-/**
- * Vorbis RTP callbacks.
- */
-extern RTPDynamicProtocolHandler ff_vorbis_dynamic_handler;
-
-#endif /* AVFORMAT_RTP_VORBIS_H */
+#endif /* AVFORMAT_RTPDEC_H264_H */

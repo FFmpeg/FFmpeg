@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/rtp_vorbis.c
+ * @file libavformat/rtpdec_vorbis.c
  * @brief Vorbis / RTP Code (RFC 5215)
  * @author Colin McQuillan <m.niloc@gmail.com>
  */
@@ -32,7 +32,7 @@
 #include <assert.h>
 
 #include "rtpdec.h"
-#include "rtp_vorbis.h"
+#include "rtpdec_vorbis.h"
 
 /**
  * RTP/Vorbis specific private data.

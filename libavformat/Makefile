@@ -216,10 +216,10 @@ OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o        \
                                             rtp.o         \
                                             rtpdec.o      \
                                             rtpdec_amr.o  \
+                                            rtpdec_asf.o  \
                                             rtpdec_h263.o \
-                                            rtp_asf.o     \
-                                            rtp_h264.o    \
-                                            rtp_vorbis.o
+                                            rtpdec_h264.o \
+                                            rtpdec_vorbis.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += raw.o id3v2.o
 OBJS-$(CONFIG_SIFF_DEMUXER)              += siff.o

@@ -30,11 +30,11 @@
 #include "network.h"
 
 #include "rtpdec.h"
-#include "rtp_asf.h"
-#include "rtp_h264.h"
-#include "rtp_vorbis.h"
 #include "rtpdec_amr.h"
+#include "rtpdec_asf.h"
 #include "rtpdec_h263.h"
+#include "rtpdec_h264.h"
+#include "rtpdec_vorbis.h"
 
 //#define DEBUG
 
