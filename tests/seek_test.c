@@ -60,7 +60,7 @@ static void ts_str(char buffer[60], int64_t ts, AVRational base)
 int main(int argc, char **argv)
 {
     const char *filename;
-    AVFormatContext *ic;
+    AVFormatContext *ic = NULL;
     int i, ret, stream_id;
     int64_t timestamp;
     AVFormatParameters params, *ap= &params;
@@ -78,13 +78,6 @@ int main(int argc, char **argv)
     }
 
     filename = argv[1];
-
-    /* allocate the media context */
-    ic = avformat_alloc_context();
-    if (!ic) {
-        fprintf(stderr, "Memory error\n");
-        exit(1);
-    }
 
     ret = av_open_input_file(&ic, filename, NULL, 0, ap);
     if (ret < 0) {
@@ -131,6 +124,8 @@ int main(int argc, char **argv)
         ts_str(ts_buf, timestamp, stream_id < 0 ? AV_TIME_BASE_Q : st->time_base);
         printf("ret:%-10s st:%2d flags:%d  ts:%s\n", ret_str(ret), stream_id, i&1, ts_buf);
     }
+
+    av_close_input_file(ic);
 
     return 0;
 }
