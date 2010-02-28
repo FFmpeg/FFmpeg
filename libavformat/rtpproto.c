@@ -26,6 +26,7 @@
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
+#include "rtpdec.h"
 
 #include <unistd.h>
 #include <stdarg.h>
