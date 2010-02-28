@@ -159,6 +159,7 @@ static struct addrinfo* udp_resolve_host(const char *hostname, int port,
     hints.ai_family   = family;
     hints.ai_flags = flags;
     if ((error = getaddrinfo(node, service, &hints, &res))) {
+        res = NULL;
         av_log(NULL, AV_LOG_ERROR, "udp_resolve_host: %s\n", gai_strerror(error));
     }
 
