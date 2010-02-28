@@ -797,6 +797,9 @@ static int write_trailer(AVFormatContext *s){
     while(nut->header_count<3)
         write_headers(nut, bc);
     put_flush_packet(bc);
+    av_freep(&nut->stream);
+    av_freep(&nut->time_base);
+    av_tree_destroy_free_elem(nut->syncpoints);
 
     return 0;
 }
