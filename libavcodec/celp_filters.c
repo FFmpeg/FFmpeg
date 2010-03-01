@@ -86,7 +86,7 @@ void ff_celp_lp_synthesis_filterf(float *out, const float *filter_coeffs,
 {
     int i,n;
 
-#if 0 // Unoptimized code patch for improved readability
+#if 0 // Unoptimized code path for improved readability
     for (n = 0; n < buffer_length; n++) {
         out[n] = in[n];
         for (i = 1; i <= filter_length; i++)
