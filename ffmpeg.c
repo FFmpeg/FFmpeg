@@ -1837,7 +1837,7 @@ static int av_encode(AVFormatContext **output_files,
 
     /* for each output stream, we compute the right encoding parameters */
     for(i=0;i<nb_ostreams;i++) {
-        AVMetadataTag *lang;
+        AVMetadataTag *t = NULL, *lang = NULL;
         ost = ost_table[i];
         os = output_files[ost->file_index];
         ist = ist_table[ost->source_index];
@@ -1845,9 +1845,13 @@ static int av_encode(AVFormatContext **output_files,
         codec = ost->st->codec;
         icodec = ist->st->codec;
 
-        if ((lang=av_metadata_get(ist->st->metadata, "language", NULL, 0))
-            &&   !av_metadata_get(ost->st->metadata, "language", NULL, 0))
-            av_metadata_set(&ost->st->metadata, "language", lang->value);
+        if (av_metadata_get(ist->st->metadata, "language", NULL, 0))
+            lang = av_metadata_get(ost->st->metadata, "language", NULL, 0);
+        while ((t = av_metadata_get(ist->st->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
+            if (lang && !strcmp(t->key, "language"))
+                continue;
+            av_metadata_set2(&ost->st->metadata, t->key, t->value, NULL);
+        }
 
         ost->st->disposition = ist->st->disposition;
         codec->bits_per_raw_sample= icodec->bits_per_raw_sample;
