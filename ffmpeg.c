@@ -3213,6 +3213,7 @@ static void new_video_stream(AVFormatContext *oc)
     video_disable = 0;
     av_freep(&video_codec_name);
     video_stream_copy = 0;
+    frame_pix_fmt = PIX_FMT_NONE;
 }
 
 static void new_audio_stream(AVFormatContext *oc)
