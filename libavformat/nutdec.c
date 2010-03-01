@@ -901,7 +901,6 @@ static int nut_read_close(AVFormatContext *s)
 
     av_freep(&nut->time_base);
     av_freep(&nut->stream);
-    av_tree_destroy_free_elem(nut->syncpoints);
     for(i = 1; i < nut->header_count; i++)
         av_freep(&nut->header[i]);
 

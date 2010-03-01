@@ -135,15 +135,6 @@ void av_tree_destroy(AVTreeNode *t){
     }
 }
 
-void av_tree_destroy_free_elem(AVTreeNode *t){
-    if(t){
-        av_tree_destroy_free_elem(t->child[0]);
-        av_tree_destroy_free_elem(t->child[1]);
-        av_free(t->elem);
-        av_free(t);
-    }
-}
-
 #if 0
 void av_tree_enumerate(AVTreeNode *t, void *opaque, int (*cmp)(void *opaque, void *elem), int (*enu)(void *opaque, void *elem)){
     if(t){

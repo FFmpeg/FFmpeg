@@ -78,6 +78,5 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
  */
 void *av_tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b), struct AVTreeNode **next);
 void av_tree_destroy(struct AVTreeNode *t);
-void av_tree_destroy_free_elem(struct AVTreeNode *t);
 
 #endif /* AVUTIL_TREE_H */
