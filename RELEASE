@@ -37,3 +37,48 @@ The deprecated APIs to be removed are:
 
 If at all possible, do not use the deprecated APIs. All notes on API changes
 should appear in doc/APIchanges.
+
+* 0.5.1
+
+General notes
+-------------
+
+This point release includes some minor updates to make the 0.5 release series
+usable for users that need to retain the existing behavior as closely as
+possible. The changes follow below:
+
+
+Security fixes
+--------------
+
+Various programming errors in container and codec implementations
+may lead to denial of service or the execution of arbitrary code
+if the user is tricked into opening a malformed media file or stream.
+
+Affected and updated have been the implementations of the following
+codecs and container formats:
+
+ - the Vorbis audio codec
+ - the FF Video 1 codec
+ - the MPEG audio codec
+ - the H264 video codec
+ - the MLP codec
+ - the HuffYUV codec
+ - the ASF demuxer
+ - the Ogg container implementation
+ - the MOV container implementation
+
+Symbol Versioning enabled
+-------------------------
+
+The backported symbol versioning change is enabled on platforms that support
+it. This allows users to upgrade from 0.5.1 to the upcoming 0.6 release
+without having to recompile their applications. Please note that distributors
+have to recompile applications against 0.5.1 before upgrading to 0.6.
+
+
+libx264.c backport
+------------------
+
+This release includes a backport to the libx264 wrapper that allows FFmpeg to
+be compiled against newer versions of libx264 up to API version 85.
