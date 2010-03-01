@@ -49,6 +49,7 @@ build system (configure,Makefiles)      Diego Biurrun, Mans Rullgard
 project server                          Diego Biurrun, Mans Rullgard
 mailinglists                            Michael Niedermayer, Baptiste Coudurier
 presets                                 Robert Swain
+release management                      Diego Biurrun, Reinhard Tartler
 
 
 libavutil
