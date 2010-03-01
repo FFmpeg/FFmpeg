@@ -86,6 +86,13 @@ void ff_celp_lp_synthesis_filterf(float *out, const float *filter_coeffs,
 {
     int i,n;
 
+#if 0 // Unoptimized code patch for improved readability
+    for (n = 0; n < buffer_length; n++) {
+        out[n] = in[n];
+        for (i = 1; i <= filter_length; i++)
+            out[n] -= filter_coeffs[i-1] * out[n-i];
+    }
+#else
     float out0, out1, out2, out3;
     float old_out0, old_out1, old_out2, old_out3;
     float a,b,c;
@@ -186,6 +193,7 @@ void ff_celp_lp_synthesis_filterf(float *out, const float *filter_coeffs,
         for (i = 1; i <= filter_length; i++)
             out[n] -= filter_coeffs[i-1] * out[n-i];
     }
+#endif
 }
 
 void ff_celp_lp_zero_synthesis_filterf(float *out, const float *filter_coeffs,
