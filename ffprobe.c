@@ -291,7 +291,8 @@ static void opt_format(const char *arg)
 static void opt_input_file(const char *arg)
 {
     if (input_filename) {
-        fprintf(stderr, "Input filename already specified: %s\n", arg);
+        fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
+                arg, input_filename);
         exit(1);
     }
     if (!strcmp(arg, "-"))
