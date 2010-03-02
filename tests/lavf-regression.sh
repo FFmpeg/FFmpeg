@@ -207,11 +207,13 @@ fi
 # pix_fmt conversions
 
 if [ -n "$do_pixfmt" ] ; then
+outfile="$datadir/pixfmt/"
+mkdir -p "$outfile"
 conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \
              yuvj422p yuvj444p rgb24 bgr24 rgb32 rgb565 rgb555 gray monow \
              monob yuv440p yuvj440p"
 for pix_fmt in $conversions ; do
-    file=${outfile}lavf-${pix_fmt}.yuv
+    file=${outfile}${pix_fmt}.yuv
     do_ffmpeg_nocheck $file -r 1 -t 1 -f image2 -vcodec pgmyuv -i $raw_src \
                             -f rawvideo -s 352x288 -pix_fmt $pix_fmt $target_path/$raw_dst
     do_ffmpeg $file -f rawvideo -s 352x288 -pix_fmt $pix_fmt -i $target_path/$raw_dst \
