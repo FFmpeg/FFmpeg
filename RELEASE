@@ -38,6 +38,8 @@ The deprecated APIs to be removed are:
 If at all possible, do not use the deprecated APIs. All notes on API changes
 should appear in doc/APIchanges.
 
+
+
 * 0.5.1
 
 General notes
@@ -46,7 +48,6 @@ General notes
 This point release includes some minor updates to make the 0.5 release series
 usable for users that need to retain the existing behavior as closely as
 possible. The changes follow below:
-
 
 Security fixes
 --------------
@@ -76,9 +77,27 @@ it. This allows users to upgrade from 0.5.1 to the upcoming 0.6 release
 without having to recompile their applications. Please note that distributors
 have to recompile applications against 0.5.1 before upgrading to 0.6.
 
-
 libx264.c backport
 ------------------
 
 This release includes a backport to the libx264 wrapper that allows FFmpeg to
 be compiled against newer versions of libx264 up to API version 85.
+
+licensing changes
+-----------------
+
+Previously both libswscale and our AC-3 decoder had GPLed parts. These have
+been replaced by fresh LGPL code. x86 optimizations for libswscale remain GPL,
+but the C code is fully functional. Optimizations for other architectures have
+been relicensed to LGPL.
+
+AMR-NB decoding/encoding and AMR-WB decoding is now possible through the free
+software OpenCORE libraries as an alternative to the non-free libamr libraries.
+
+We found out that libfaac contains non-free parts and is not LGPL as previously
+claimed. We have changed configure to reflect this. You now have to pass the
+--enable-nonfree option if you wish to compile with libfaac support enabled.
+
+Furthermore the non-free bits in libavcodec/fdctref.c have been rewritten. Note
+well that they were only used in a test program and never compiled into any
+FFmpeg library.
