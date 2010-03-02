@@ -290,7 +290,7 @@ $(LAVFI_TESTS):
 	@diff -u -w $(call REFFILE,lavfi,$@) $(call RESFILE,lavfi,$@)
 
 seektest: codectest lavftest tests/seek_test$(EXESUF)
-	$(SRC_PATH)/tests/seek-regression.sh $(SEEK_REFFILE) "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	$(SRC_PATH)/tests/seek-regression.sh $(SRC_PATH) "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	@echo

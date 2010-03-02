@@ -3,23 +3,25 @@
 LC_ALL=C
 export LC_ALL
 
+src_path=$1
 target_exec=$2
 target_path=$3
 
+refdir="$src_path/tests/ref/seek"
 datadir="tests/data"
 
-logfile="$datadir/seek.regression"
-reffile="$1"
+list=$(ls -1 $datadir/vsynth2/* $datadir/acodec/*)
+err=0
 
-list=$(grep '^tests/data/' "$reffile")
-rm -f $logfile
 for i in $list ; do
-    echo ---------------- >> $logfile
-    echo $i >> $logfile
-    $target_exec $target_path/tests/seek_test $target_path/$i >> $logfile
+    base=$(basename $i)
+    logfile="$datadir/$base.seek.regression"
+    reffile="$refdir/$base.ref"
+    $target_exec $target_path/tests/seek_test $target_path/$i > $logfile
+    diff -u -w "$reffile" "$logfile" || err=1
 done
 
-if diff -u -w "$reffile" "$logfile" ; then
+if [ $err = 0 ]; then
     echo
     echo seek regression test: success
     exit 0
