@@ -33,6 +33,7 @@ FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o
 OBJS-$(CONFIG_FFT)                     += fft.o $(FFT-OBJS-yes)
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_LPC)                     += lpc.o
+OBJS-$(CONFIG_LSP)                     += lsp.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
 RDFT-OBJS-$(CONFIG_HARDCODED_TABLES)   += sin_tables.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o $(RDFT-OBJS-yes)
@@ -53,7 +54,7 @@ OBJS-$(CONFIG_ALAC_ENCODER)            += alacenc.o
 OBJS-$(CONFIG_ALS_DECODER)             += alsdec.o bgmc.o mpeg4audio.o
 OBJS-$(CONFIG_AMRNB_DECODER)           += amrnbdec.o celp_filters.o   \
                                           celp_math.o acelp_filters.o \
-                                          acelp_vectors.o lsp.o       \
+                                          acelp_vectors.o             \
                                           acelp_pitch_delay.o
 OBJS-$(CONFIG_AMV_DECODER)             += sp5xdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_ANM_DECODER)             += anm.o
@@ -255,7 +256,7 @@ OBJS-$(CONFIG_PNG_ENCODER)             += png.o pngenc.o
 OBJS-$(CONFIG_PPM_DECODER)             += pnmdec.o pnm.o
 OBJS-$(CONFIG_PPM_ENCODER)             += pnmenc.o pnm.o
 OBJS-$(CONFIG_PTX_DECODER)             += ptx.o
-OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o lsp.o celp_math.o \
+OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o celp_math.o         \
                                           celp_filters.o acelp_vectors.o
 OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o mpegaudiodec.o            \
                                           mpegaudiodecheader.o mpegaudio.o \
@@ -288,7 +289,7 @@ OBJS-$(CONFIG_SGI_ENCODER)             += sgienc.o rle.o
 OBJS-$(CONFIG_SHORTEN_DECODER)         += shorten.o
 OBJS-$(CONFIG_SIPR_DECODER)            += sipr.o acelp_pitch_delay.o \
                                           celp_math.o acelp_vectors.o \
-                                          acelp_filters.o celp_filters.o lsp.o \
+                                          acelp_filters.o celp_filters.o \
                                           sipr16k.o
 OBJS-$(CONFIG_SMACKAUD_DECODER)        += smacker.o
 OBJS-$(CONFIG_SMACKER_DECODER)         += smacker.o
@@ -331,7 +332,7 @@ OBJS-$(CONFIG_TRUEMOTION2_DECODER)     += truemotion2.o
 OBJS-$(CONFIG_TRUESPEECH_DECODER)      += truespeech.o
 OBJS-$(CONFIG_TSCC_DECODER)            += tscc.o msrledec.o
 OBJS-$(CONFIG_TTA_DECODER)             += tta.o
-OBJS-$(CONFIG_TWINVQ_DECODER)          += twinvq.o lsp.o
+OBJS-$(CONFIG_TWINVQ_DECODER)          += twinvq.o
 OBJS-$(CONFIG_TXD_DECODER)             += txd.o s3tc.o
 OBJS-$(CONFIG_ULTI_DECODER)            += ulti.o
 OBJS-$(CONFIG_V210_DECODER)            += v210dec.o
@@ -366,8 +367,7 @@ OBJS-$(CONFIG_WMAV2_DECODER)           += wmadec.o wma.o aactab.o
 OBJS-$(CONFIG_WMAV2_ENCODER)           += wmaenc.o wma.o aactab.o
 OBJS-$(CONFIG_WMAVOICE_DECODER)        += wmavoice.o \
                                           celp_math.o celp_filters.o \
-                                          acelp_vectors.o acelp_filters.o \
-                                          lsp.o
+                                          acelp_vectors.o acelp_filters.o
 OBJS-$(CONFIG_WMV1_DECODER)            += msmpeg4.o msmpeg4data.o
 OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o        \
                                           msmpeg4.o msmpeg4data.o \
