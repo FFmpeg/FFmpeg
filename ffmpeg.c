@@ -2852,7 +2852,10 @@ static void opt_input_file(const char *filename)
     int64_t timestamp;
 
     if (last_asked_format) {
-        file_iformat = av_find_input_format(last_asked_format);
+        if (!(file_iformat = av_find_input_format(last_asked_format))) {
+            fprintf(stderr, "Unknown input format: '%s'\n", last_asked_format);
+            av_exit(1);
+        }
         last_asked_format = NULL;
     }
 
