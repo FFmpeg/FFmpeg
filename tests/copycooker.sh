@@ -8,7 +8,7 @@ datadir="tests/data"
 logfile="$datadir/copy.regression"
 reffile="$1"
 
-list=$(grep -oh ' ./tests/data/.*' tests/ref/*/* "$reffile")
+list=$(grep -oh ' ./tests/data/.*' tests/ref/{acodec,lavf,vsynth1}/*| sort)
 rm -f $logfile
 for i in $list ; do
     echo ---------------- >> $logfile
