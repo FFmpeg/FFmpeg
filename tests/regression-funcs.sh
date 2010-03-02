@@ -7,9 +7,8 @@
 test="${1#regtest-}"
 test_ref=$2
 raw_src_dir=$3
-outfile_prefix=$4
-target_exec=$5
-target_path=$6
+target_exec=$4
+target_path=$5
 
 datadir="./tests/data"
 target_datadir="${target_path}/${datadir}"

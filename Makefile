@@ -256,8 +256,8 @@ REFFILE = $(SRC_PATH)/tests/ref/$(1)/$(2:regtest-%=%)
 RESFILE = tests/data/$(2:regtest-%=%).$(1).regression
 
 define CODECTEST_CMD
-	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth1 tests/vsynth1 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
-	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth2 tests/vsynth2 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth1 tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth2 tests/vsynth2 "$(TARGET_EXEC)" "$(TARGET_PATH)"
 endef
 
 regtest-ref: regtest-aref regtest-vref
@@ -266,7 +266,7 @@ regtest-vref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
 	$(CODECTEST_CMD)
 
 regtest-aref: ffmpeg$(EXESUF) tests/data/asynth1.sw
-	@$(SRC_PATH)/tests/codec-regression.sh $@ acodec tests/acodec a "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@$(SRC_PATH)/tests/codec-regression.sh $@ acodec tests/acodec "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 $(VCODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
 	@echo "TEST VCODEC $(@:regtest-%=%)"
@@ -276,17 +276,17 @@ $(VCODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
 
 $(ACODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
 	@echo "TEST ACODEC $(@:regtest-%=%)"
-	@$(SRC_PATH)/tests/codec-regression.sh $@ acodec tests/acodec a "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@$(SRC_PATH)/tests/codec-regression.sh $@ acodec tests/acodec "$(TARGET_EXEC)" "$(TARGET_PATH)"
 	@diff -u -w $(call REFFILE,acodec,$@) $(call RESFILE,acodec,$@)
 
 $(LAVF_TESTS):
 	@echo "TEST LAVF  $(@:regtest-%=%)"
-	@$(SRC_PATH)/tests/lavf-regression.sh $@ lavf tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@$(SRC_PATH)/tests/lavf-regression.sh $@ lavf tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
 	@diff -u -w $(call REFFILE,lavf,$@) $(call RESFILE,lavf,$@)
 
 $(LAVFI_TESTS):
 	@echo "TEST LAVFI $(@:regtest-%=%)"
-	@$(SRC_PATH)/tests/lavfi-regression.sh $@ lavfi tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@$(SRC_PATH)/tests/lavfi-regression.sh $@ lavfi tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
 	@diff -u -w $(call REFFILE,lavfi,$@) $(call RESFILE,lavfi,$@)
 
 seektest: codectest lavftest tests/seek_test$(EXESUF)
