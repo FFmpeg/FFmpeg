@@ -7,6 +7,9 @@ src_path=$1
 target_exec=$2
 target_path=$3
 
+[ "${V-0}" -gt 0 ] && echov=echo || echov=:
+[ "${V-0}" -gt 1 ] || exec 2>/dev/null
+
 refdir="$src_path/tests/ref/seek"
 datadir="tests/data"
 
@@ -17,6 +20,8 @@ for i in $list ; do
     base=$(basename $i)
     logfile="$datadir/$base.seek.regression"
     reffile="$refdir/$base.ref"
+    echo "TEST SEEK   $base"
+    $echov $target_exec $target_path/tests/seek_test $target_path/$i
     $target_exec $target_path/tests/seek_test $target_path/$i > $logfile
     diff -u -w "$reffile" "$logfile" || err=1
 done
