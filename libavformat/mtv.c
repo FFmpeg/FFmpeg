@@ -168,8 +168,8 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
         url_fskip(pb, MTV_AUDIO_PADDING_SIZE);
 
         ret = av_get_packet(pb, pkt, MTV_ASUBCHUNK_DATA_SIZE);
-        if(ret != MTV_ASUBCHUNK_DATA_SIZE)
-            return AVERROR(EIO);
+        if(ret < 0)
+            return ret;
 
         pkt->pos -= MTV_AUDIO_PADDING_SIZE;
         pkt->stream_index = AUDIO_SID;
@@ -177,8 +177,8 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }else
     {
         ret = av_get_packet(pb, pkt, mtv->img_segment_size);
-        if(ret != mtv->img_segment_size)
-            return AVERROR(EIO);
+        if(ret < 0)
+            return ret;
 
 #if !HAVE_BIGENDIAN
 
