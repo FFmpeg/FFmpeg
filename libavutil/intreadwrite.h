@@ -194,7 +194,7 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 #elif HAVE_FAST_UNALIGNED
 
 #   define AV_RN(s, p) (((const av_alias##s*)(p))->u##s)
-#   define AV_WN(s, p, v) (((uint##s##_t*)(p))->u##s = (v))
+#   define AV_WN(s, p, v) (((av_alias##s*)(p))->u##s = (v))
 
 #else
 
