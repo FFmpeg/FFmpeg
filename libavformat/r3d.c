@@ -212,6 +212,7 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     int tmp, tmp2;
     uint64_t pos = url_ftell(s->pb);
     unsigned dts;
+    int ret;
 
     dts = get_be32(s->pb);
 
@@ -243,8 +244,8 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     tmp = atom->size - 8 - (url_ftell(s->pb) - pos);
     if (tmp < 0)
         return -1;
-
-    if (av_get_packet(s->pb, pkt, tmp) != tmp) {
+    ret = av_get_packet(s->pb, pkt, tmp);
+    if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "error reading video packet\n");
         return -1;
     }
@@ -265,6 +266,7 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     int tmp, tmp2, samples, size;
     uint64_t pos = url_ftell(s->pb);
     unsigned dts;
+    int ret;
 
     dts = get_be32(s->pb);
 
@@ -288,9 +290,10 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     size = atom->size - 8 - (url_ftell(s->pb) - pos);
     if (size < 0)
         return -1;
-    if (av_get_packet(s->pb, pkt, size) != size) {
-        av_log(s, AV_LOG_ERROR, "error reading video packet\n");
-        return -1;
+    ret = av_get_packet(s->pb, pkt, size);
+    if (ret < 0) {
+        av_log(s, AV_LOG_ERROR, "error reading audio packet\n");
+        return ret;
     }
 
     pkt->stream_index = 1;
