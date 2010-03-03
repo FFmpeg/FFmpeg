@@ -355,12 +355,6 @@ typedef struct H264Context{
     int emu_edge_width;
     int emu_edge_height;
 
-    int halfpel_flag;
-    int thirdpel_flag;
-
-    int unknown_svq3_flag;
-    int next_slice_index;
-
     SPS *sps_buffers[MAX_SPS_COUNT];
     SPS sps; ///< current sps
 
@@ -535,8 +529,6 @@ typedef struct H264Context{
 
     int mb_xy;
 
-    uint32_t svq3_watermark_key;
-
     /**
      * pic_struct in picture timing SEI message
      */
@@ -584,6 +576,13 @@ typedef struct H264Context{
     // Timestamp stuff
     int sei_buffering_period_present;  ///< Buffering period SEI flag
     int initial_cpb_removal_delay[32]; ///< Initial timestamps for CPBs
+
+    //SVQ3 specific fields
+    int halfpel_flag;
+    int thirdpel_flag;
+    int unknown_svq3_flag;
+    int next_slice_index;
+    uint32_t svq3_watermark_key;
 }H264Context;
 
 
