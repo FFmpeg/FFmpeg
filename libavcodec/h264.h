@@ -262,17 +262,6 @@ typedef struct MMCO{
  */
 typedef struct H264Context{
     MpegEncContext s;
-    int nal_ref_idc;
-    int nal_unit_type;
-    uint8_t *rbsp_buffer[2];
-    unsigned int rbsp_buffer_size[2];
-
-    /**
-      * Used to parse AVC variant of h264
-      */
-    int is_avc; ///< this flag is != 0 if codec is avc1
-    int nal_length_size; ///< Number of bytes used for nal length (1, 2 or 4)
-
     int chroma_qp[2]; //QPc
 
     int qp_thresh;      ///< QP threshold to skip loopfilter
@@ -354,23 +343,19 @@ typedef struct H264Context{
     int emu_edge_width;
     int emu_edge_height;
 
-    SPS *sps_buffers[MAX_SPS_COUNT];
     SPS sps; ///< current sps
 
-    PPS *pps_buffers[MAX_PPS_COUNT];
     /**
      * current pps
      */
     PPS pps; //FIXME move to Picture perhaps? (->no) do we need that?
 
-    uint32_t dequant4_buffer[6][52][16];
+    uint32_t dequant4_buffer[6][52][16]; //FIXME should these be moved down?
     uint32_t dequant8_buffer[2][52][64];
     uint32_t (*dequant4_coeff[6])[16];
     uint32_t (*dequant8_coeff[2])[64];
-    int dequant_coeff_pps;     ///< reinit tables when pps changes
 
     int slice_num;
-    uint16_t *slice_table_base;
     uint16_t *slice_table;     ///< slice_table_base + 2*mb_stride + 1
     int slice_type;
     int slice_type_nos;        ///< S free slice type (SI/SP are remapped to I/P)
@@ -383,28 +368,6 @@ typedef struct H264Context{
 
     DECLARE_ALIGNED_8(uint16_t, sub_mb_type)[4];
 
-    //POC stuff
-    int poc_lsb;
-    int poc_msb;
-    int delta_poc_bottom;
-    int delta_poc[2];
-    int frame_num;
-    int prev_poc_msb;             ///< poc_msb of the last reference pic for POC type 0
-    int prev_poc_lsb;             ///< poc_lsb of the last reference pic for POC type 0
-    int frame_num_offset;         ///< for POC type 2
-    int prev_frame_num_offset;    ///< for POC type 2
-    int prev_frame_num;           ///< frame_num of the last pic for POC type 1/2
-
-    /**
-     * frame_num for frames or 2*frame_num+1 for field pics.
-     */
-    int curr_pic_num;
-
-    /**
-     * max_frame_num or 2*max_frame_num for field pics.
-     */
-    int max_pic_num;
-
     //Weighted pred stuff
     int use_weight;
     int use_weight_chroma;
@@ -414,13 +377,6 @@ typedef struct H264Context{
     int luma_weight[2][48][2];
     int chroma_weight[2][48][2][2];
     int implicit_weight[48][48];
-
-    //deblock
-    int deblocking_filter;         ///< disable_deblocking_filter_idc with 1<->0
-    int slice_alpha_c0_offset;
-    int slice_beta_offset;
-
-    int redundant_pic_count;
 
     int direct_spatial_mv_pred;
     int col_parity;
@@ -436,24 +392,10 @@ typedef struct H264Context{
     unsigned int ref_count[2];   ///< counts frames or fields, depending on current mb mode
     unsigned int list_count;
     uint8_t *list_counts;            ///< Array of list_count per MB specifying the slice type
-    Picture *short_ref[32];
-    Picture *long_ref[32];
-    Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
     Picture ref_list[2][48];         /**< 0..15: frame refs, 16..47: mbaff field refs.
                                           Reordered version of default_ref_list
                                           according to picture reordering in slice header */
     int ref2frm[MAX_SLICES][2][64];  ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
-    Picture *delayed_pic[MAX_DELAYED_PIC_COUNT+2]; //FIXME size?
-    int outputed_poc;
-
-    /**
-     * memory management control operations buffer.
-     */
-    MMCO mmco[MAX_MMCO_COUNT];
-    int mmco_index;
-
-    int long_ref_count;  ///< number of actual long term references
-    int short_ref_count; ///< number of actual short term references
 
     //data partitioning
     GetBitContext intra_gb;
@@ -469,7 +411,6 @@ typedef struct H264Context{
      */
     CABACContext cabac;
     uint8_t      cabac_state[460];
-    int          cabac_init_idc;
 
     /* 0x100 -> non null luma_dc, 0x80/0x40 -> non null chroma_dc (cb/cr), 0x?0 -> chroma_cbp(0,1,2), 0x0? luma_cbp */
     uint16_t     *cbp_table;
@@ -499,6 +440,78 @@ typedef struct H264Context{
 
     int x264_build;
 
+    int mb_xy;
+
+    int is_complex;
+
+    //deblock
+    int deblocking_filter;         ///< disable_deblocking_filter_idc with 1<->0
+    int slice_alpha_c0_offset;
+    int slice_beta_offset;
+
+//=============================================================
+    //Things below are not used in the MB or more inner code
+
+    int nal_ref_idc;
+    int nal_unit_type;
+    uint8_t *rbsp_buffer[2];
+    unsigned int rbsp_buffer_size[2];
+
+    /**
+     * Used to parse AVC variant of h264
+     */
+    int is_avc; ///< this flag is != 0 if codec is avc1
+    int nal_length_size; ///< Number of bytes used for nal length (1, 2 or 4)
+
+    SPS *sps_buffers[MAX_SPS_COUNT];
+    PPS *pps_buffers[MAX_PPS_COUNT];
+
+    int dequant_coeff_pps;     ///< reinit tables when pps changes
+
+    uint16_t *slice_table_base;
+
+
+    //POC stuff
+    int poc_lsb;
+    int poc_msb;
+    int delta_poc_bottom;
+    int delta_poc[2];
+    int frame_num;
+    int prev_poc_msb;             ///< poc_msb of the last reference pic for POC type 0
+    int prev_poc_lsb;             ///< poc_lsb of the last reference pic for POC type 0
+    int frame_num_offset;         ///< for POC type 2
+    int prev_frame_num_offset;    ///< for POC type 2
+    int prev_frame_num;           ///< frame_num of the last pic for POC type 1/2
+
+    /**
+     * frame_num for frames or 2*frame_num+1 for field pics.
+     */
+    int curr_pic_num;
+
+    /**
+     * max_frame_num or 2*max_frame_num for field pics.
+     */
+    int max_pic_num;
+
+    int redundant_pic_count;
+
+    Picture *short_ref[32];
+    Picture *long_ref[32];
+    Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
+    Picture *delayed_pic[MAX_DELAYED_PIC_COUNT+2]; //FIXME size?
+    int outputed_poc;
+
+    /**
+     * memory management control operations buffer.
+     */
+    MMCO mmco[MAX_MMCO_COUNT];
+    int mmco_index;
+
+    int long_ref_count;  ///< number of actual long term references
+    int short_ref_count; ///< number of actual short term references
+
+    int          cabac_init_idc;
+
     /**
      * @defgroup multithreading Members for slice based multithreading
      * @{
@@ -526,8 +539,6 @@ typedef struct H264Context{
 
     int last_slice_type;
     /** @} */
-
-    int mb_xy;
 
     /**
      * pic_struct in picture timing SEI message
@@ -567,8 +578,6 @@ typedef struct H264Context{
      * frames.
      */
     int sei_recovery_frame_cnt;
-
-    int is_complex;
 
     int luma_weight_flag[2];   ///< 7.4.3.2 luma_weight_lX_flag
     int chroma_weight_flag[2]; ///< 7.4.3.2 chroma_weight_lX_flag
