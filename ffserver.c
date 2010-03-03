@@ -124,6 +124,8 @@ typedef struct HTTPContext {
     uint8_t *buffer_ptr, *buffer_end;
     int http_error;
     int post;
+    int chunked_encoding;
+    int chunk_size;               /* 0 if it needs to be read */
     struct HTTPContext *next;
     int got_key_frame; /* stream 0 => 1, stream 1 => 2, stream 2=> 4 */
     int64_t data_count;
@@ -2440,17 +2442,46 @@ static int http_start_receive_data(HTTPContext *c)
     c->buffer_ptr = c->buffer;
     c->buffer_end = c->buffer + FFM_PACKET_SIZE;
     c->stream->feed_opened = 1;
+    c->chunked_encoding = !!strcasestr(c->buffer, "Transfer-Encoding: chunked");
     return 0;
 }
 
 static int http_receive_data(HTTPContext *c)
 {
     HTTPContext *c1;
+    int len, loop_run = 0;
+
+    while (c->chunked_encoding && !c->chunk_size &&
+           c->buffer_end > c->buffer_ptr) {
+        /* read chunk header, if present */
+        len = recv(c->fd, c->buffer_ptr, 1, 0);
+
+        if (len < 0) {
+            if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
+                ff_neterrno() != FF_NETERROR(EINTR))
+                /* error : close connection */
+                goto fail;
+        } else if (len == 0) {
+            /* end of connection : close it */
+            goto fail;
+        } else if (c->buffer_ptr - c->buffer >= 2 &&
+                   !memcmp(c->buffer_ptr - 1, "\r\n", 2)) {
+            c->chunk_size = strtol(c->buffer, 0, 16);
+            if (c->chunk_size == 0) // end of stream
+                goto fail;
+            c->buffer_ptr = c->buffer;
+            break;
+        } else if (++loop_run > 10) {
+            /* no chunk header, abort */
+            goto fail;
+        } else {
+            c->buffer_ptr++;
+        }
+    }
 
     if (c->buffer_end > c->buffer_ptr) {
-        int len;
-
-        len = recv(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr, 0);
+        len = recv(c->fd, c->buffer_ptr,
+                   FFMIN(c->chunk_size, c->buffer_end - c->buffer_ptr), 0);
         if (len < 0) {
             if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
                 ff_neterrno() != FF_NETERROR(EINTR))
@@ -2460,6 +2491,7 @@ static int http_receive_data(HTTPContext *c)
             /* end of connection : close it */
             goto fail;
         else {
+            c->chunk_size -= len;
             c->buffer_ptr += len;
             c->data_count += len;
             update_datarate(&c->datarate, c->data_count);
