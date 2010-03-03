@@ -1703,7 +1703,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 if (track->ms_compat)
                     pkt->dts = timecode;
                 else
-                pkt->pts = timecode;
+                    pkt->pts = timecode;
                 pkt->pos = pos;
                 if (st->codec->codec_id == CODEC_ID_TEXT)
                     pkt->convergence_duration = duration;
