@@ -25,6 +25,8 @@
  */
 
 #define _BSD_SOURCE 1
+#define _NETBSD_SOURCE
+
 #include "libavformat/avformat.h"
 #if HAVE_DEV_BKTR_IOCTL_METEOR_H && HAVE_DEV_BKTR_IOCTL_BT848_H
 # include <dev/bktr/ioctl_meteor.h>
