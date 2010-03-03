@@ -1435,16 +1435,14 @@ static void implicit_weight_table(H264Context *h){
         for(ref1=0; ref1 < h->ref_count[1]; ref1++){
             int poc1 = h->ref_list[1][ref1].poc;
             int td = av_clip(poc1 - poc0, -128, 127);
+            h->implicit_weight[ref0][ref1] = 32;
             if(td){
                 int tb = av_clip(cur_poc - poc0, -128, 127);
                 int tx = (16384 + (FFABS(td) >> 1)) / td;
-                int dist_scale_factor = av_clip((tb*tx + 32) >> 6, -1024, 1023) >> 2;
-                if(dist_scale_factor < -64 || dist_scale_factor > 128)
-                    h->implicit_weight[ref0][ref1] = 32;
-                else
+                int dist_scale_factor = (tb*tx + 32) >> 8;
+                if(dist_scale_factor >= -64 && dist_scale_factor <= 128)
                     h->implicit_weight[ref0][ref1] = 64 - dist_scale_factor;
-            }else
-                h->implicit_weight[ref0][ref1] = 32;
+            }
         }
     }
 }
