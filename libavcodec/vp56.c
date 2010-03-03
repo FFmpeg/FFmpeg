@@ -26,7 +26,6 @@
 
 #include "vp56.h"
 #include "vp56data.h"
-#include "get_bits.h"
 
 
 void vp56_init_dequant(VP56Context *s, int quantizer)
@@ -696,7 +695,6 @@ av_cold void vp56_init(AVCodecContext *avctx, int flip, int has_alpha)
 av_cold int vp56_free(AVCodecContext *avctx)
 {
     VP56Context *s = avctx->priv_data;
-    int pt;
 
     av_freep(&s->qscale_table);
     av_freep(&s->above_blocks);
@@ -708,15 +706,5 @@ av_cold int vp56_free(AVCodecContext *avctx)
         avctx->release_buffer(avctx, s->framep[VP56_FRAME_GOLDEN2]);
     if (s->framep[VP56_FRAME_PREVIOUS]->data[0])
         avctx->release_buffer(avctx, s->framep[VP56_FRAME_PREVIOUS]);
-
-    for (pt=0; pt < 2; pt++) {
-        int ct, cg;
-        free_vlc(&s->dccv_vlc[pt]);
-        free_vlc(&s->runv_vlc[pt]);
-        for (ct=0; ct<3; ct++)
-            for (cg = 0; cg < 6; cg++)
-                free_vlc(&s->ract_vlc[pt][ct][cg]);
-    }
-
     return 0;
 }
