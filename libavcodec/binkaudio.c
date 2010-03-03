@@ -125,7 +125,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT)
         ff_rdft_init(&s->trans.rdft, frame_len_bits, IRIDFT);
     else if (CONFIG_BINKAUDIO_DCT_DECODER)
-        ff_dct_init(&s->trans.dct, frame_len_bits, 0);
+        ff_dct_init(&s->trans.dct, frame_len_bits, 1);
     else
         return -1;
 
@@ -211,8 +211,11 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
             }
         }
 
-        if (CONFIG_BINKAUDIO_DCT_DECODER && use_dct)
+        if (CONFIG_BINKAUDIO_DCT_DECODER && use_dct) {
+            coeffs[0] /= 0.5;
             ff_dct_calc (&s->trans.dct,  coeffs);
+            s->dsp.vector_fmul_scalar(coeffs, coeffs, s->frame_len / 2, s->frame_len);
+        }
         else if (CONFIG_BINKAUDIO_RDFT_DECODER)
             ff_rdft_calc(&s->trans.rdft, coeffs);
     }
