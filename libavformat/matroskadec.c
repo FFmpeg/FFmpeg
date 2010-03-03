@@ -143,6 +143,7 @@ typedef struct {
 
     AVStream *stream;
     int64_t end_timecode;
+    int ms_compat;
 } MatroskaTrack;
 
 typedef struct {
@@ -1244,6 +1245,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC")
             && track->codec_priv.size >= 40
             && track->codec_priv.data != NULL) {
+            track->ms_compat = 1;
             track->video.fourcc = AV_RL32(track->codec_priv.data + 16);
             codec_id = ff_codec_get_id(ff_codec_bmp_tags, track->video.fourcc);
             extradata_offset = 40;
@@ -1698,6 +1700,9 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     pkt->flags = is_keyframe;
                 pkt->stream_index = st->index;
 
+                if (track->ms_compat)
+                    pkt->dts = timecode;
+                else
                 pkt->pts = timecode;
                 pkt->pos = pos;
                 if (st->codec->codec_id == CODEC_ID_TEXT)
