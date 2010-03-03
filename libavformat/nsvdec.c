@@ -728,6 +728,10 @@ static int nsv_read_close(AVFormatContext *s)
 
     av_freep(&nsv->nsvs_file_offset);
     av_freep(&nsv->nsvs_timestamps);
+    if (nsv->ahead[0].data)
+        av_free_packet(&nsv->ahead[0]);
+    if (nsv->ahead[1].data)
+        av_free_packet(&nsv->ahead[1]);
 
 #if 0
 
