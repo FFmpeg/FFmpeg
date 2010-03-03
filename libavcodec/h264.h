@@ -411,6 +411,7 @@ typedef struct H264Context{
     int use_weight_chroma;
     int luma_log2_weight_denom;
     int chroma_log2_weight_denom;
+    //The following 2 can be changed to int8_t but that causes 10cpu cycles speedloss
     int luma_weight[2][48][2];
     int chroma_weight[2][48][2][2];
     int implicit_weight[48][48];
