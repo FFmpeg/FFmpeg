@@ -93,7 +93,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
  * @param plane plane number to decode as
  */
 #define DECLARE_DECODEPLANE(suffix, type) \
-static void decodeplane##suffix(void *dst, const uint8_t const *buf, int buf_size, int bps, int plane) \
+static void decodeplane##suffix(void *dst, const uint8_t *const buf, int buf_size, int bps, int plane) \
 { \
     GetBitContext gb; \
     int i, b; \
