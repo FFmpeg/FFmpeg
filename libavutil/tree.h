@@ -79,4 +79,17 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
 void *av_tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b), struct AVTreeNode **next);
 void av_tree_destroy(struct AVTreeNode *t);
 
+/**
+ * Applies enu(opaque, &elem) to all the elements in the tree in a given range.
+ *
+ * @param cmp a comparison function that returns < 0 for a element below the
+ *            range, > 0 for a element above the range and == 0 for a
+ *            element inside the range
+ *
+ * @note The cmp function should use the same ordering used to construct the
+ *       tree.
+ */
+void av_tree_enumerate(struct AVTreeNode *t, void *opaque, int (*cmp)(void *opaque, void *elem), int (*enu)(void *opaque, void *elem));
+
+
 #endif /* AVUTIL_TREE_H */

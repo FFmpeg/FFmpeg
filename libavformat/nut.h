@@ -110,6 +110,7 @@ int64_t ff_lsb2full(StreamContext *stream, int64_t lsb);
 int ff_nut_sp_pos_cmp(Syncpoint *a, Syncpoint *b);
 int ff_nut_sp_pts_cmp(Syncpoint *a, Syncpoint *b);
 void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts);
+void ff_nut_free_sp(NUTContext *nut);
 
 extern const Dispositions ff_nut_dispositions[];
 

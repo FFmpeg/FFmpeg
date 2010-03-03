@@ -135,7 +135,6 @@ void av_tree_destroy(AVTreeNode *t){
     }
 }
 
-#if 0
 void av_tree_enumerate(AVTreeNode *t, void *opaque, int (*cmp)(void *opaque, void *elem), int (*enu)(void *opaque, void *elem)){
     if(t){
         int v= cmp ? cmp(opaque, t->elem) : 0;
@@ -144,7 +143,6 @@ void av_tree_enumerate(AVTreeNode *t, void *opaque, int (*cmp)(void *opaque, voi
         if(v<=0) av_tree_enumerate(t->child[1], opaque, cmp, enu);
     }
 }
-#endif
 
 #ifdef TEST
 

@@ -69,6 +69,17 @@ void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts){
     }
 }
 
+static void enu_free(void *opaque, void *elem)
+{
+    av_free(elem);
+}
+
+void ff_nut_free_sp(NUTContext *nut)
+{
+    av_tree_enumerate(nut->syncpoints, NULL, NULL, enu_free);
+    av_tree_destroy(nut->syncpoints);
+}
+
 const Dispositions ff_nut_dispositions[] = {
     {"default"     , AV_DISPOSITION_DEFAULT},
     {"dub"         , AV_DISPOSITION_DUB},
