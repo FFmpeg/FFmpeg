@@ -417,10 +417,8 @@ typedef struct H264Context{
     int use_weight_chroma;
     int luma_log2_weight_denom;
     int chroma_log2_weight_denom;
-    int luma_weight[2][48];
-    int luma_offset[2][48];
-    int chroma_weight[2][48][2];
-    int chroma_offset[2][48][2];
+    int luma_weight[2][48][2];
+    int chroma_weight[2][48][2][2];
     int implicit_weight[48][48];
 
     //deblock

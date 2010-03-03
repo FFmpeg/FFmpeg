@@ -315,11 +315,11 @@ void ff_h264_fill_mbaff_ref_list(H264Context *h){
             field[1].reference = PICT_BOTTOM_FIELD;
             field[1].poc= field[1].field_poc[1];
 
-            h->luma_weight[list][16+2*i] = h->luma_weight[list][16+2*i+1] = h->luma_weight[list][i];
-            h->luma_offset[list][16+2*i] = h->luma_offset[list][16+2*i+1] = h->luma_offset[list][i];
+            h->luma_weight[list][16+2*i][0] = h->luma_weight[list][16+2*i+1][0] = h->luma_weight[list][i][0];
+            h->luma_weight[list][16+2*i][1] = h->luma_weight[list][16+2*i+1][1] = h->luma_weight[list][i][1];
             for(j=0; j<2; j++){
-                h->chroma_weight[list][16+2*i][j] = h->chroma_weight[list][16+2*i+1][j] = h->chroma_weight[list][i][j];
-                h->chroma_offset[list][16+2*i][j] = h->chroma_offset[list][16+2*i+1][j] = h->chroma_offset[list][i][j];
+                h->chroma_weight[list][16+2*i][j][0] = h->chroma_weight[list][16+2*i+1][j][0] = h->chroma_weight[list][i][j][0];
+                h->chroma_weight[list][16+2*i][j][1] = h->chroma_weight[list][16+2*i+1][j][1] = h->chroma_weight[list][i][j][1];
             }
         }
     }
