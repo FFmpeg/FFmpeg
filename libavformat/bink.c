@@ -211,18 +211,17 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         bink->remain_packet_size -= 4 + audio_size;
         bink->current_track++;
         if (audio_size > 0) {
-            /* Each audio packet reports the number of decompressed samples
-               (in bytes). We use this value to calcuate the audio PTS */
-            int reported_size = get_le32(pb) / (2 * s->streams[bink->current_track]->codec->channels);
-            url_fseek(pb, -4, SEEK_CUR);
-
             /* get one audio packet per track */
             if ((ret = av_get_packet(pb, pkt, audio_size))
                                            != audio_size)
                 return ret;
             pkt->stream_index = bink->current_track;
             pkt->pts = bink->audio_pts[bink->current_track - 1];
-            bink->audio_pts[bink->current_track -1] += reported_size;
+
+            /* Each audio packet reports the number of decompressed samples
+               (in bytes). We use this value to calcuate the audio PTS */
+            bink->audio_pts[bink->current_track -1] +=
+                AV_RL32(pkt->data) / (2 * s->streams[bink->current_track]->codec->channels);
             return 0;
         }
     }
@@ -245,6 +244,9 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
 {
     BinkDemuxContext *bink = s->priv_data;
     AVStream *vst = s->streams[0];
+
+    if (url_is_streamed(s->pb))
+        return -1;
 
     /* seek to the first frame */
     url_fseek(s->pb, vst->index_entries[0].pos, SEEK_SET);
