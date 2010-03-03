@@ -227,6 +227,7 @@ static void vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
         nodes[map[2*i+1]].count = b + !b;
     }
 
+    free_vlc(vlc);
     /* then build the huffman tree accodring to probabilities */
     ff_huff_build_tree(s->avctx, vlc, size, nodes, vp6_huff_cmp,
                        FF_HUFFMAN_FLAG_HNODE_FIRST);
