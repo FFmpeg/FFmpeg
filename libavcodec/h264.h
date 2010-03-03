@@ -305,7 +305,6 @@ typedef struct H264Context{
     unsigned int topright_samples_available;
     unsigned int left_samples_available;
     uint8_t (*top_borders[2])[16+2*8];
-    uint8_t left_border[2*(17+2*9)];
 
     /**
      * non zero coeff count cache.
