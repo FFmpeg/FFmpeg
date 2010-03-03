@@ -1077,9 +1077,6 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                     AV_ZERO16(h->mvd_cache [list][scan8[0] - 1 + 2*8]);
                     AV_ZERO16(h->mvd_cache [list][scan8[0] - 1 + 3*8]);
                 }
-                AV_ZERO16(h->mvd_cache [list][scan8[5 ]+1]);
-                AV_ZERO16(h->mvd_cache [list][scan8[7 ]+1]);
-                AV_ZERO16(h->mvd_cache [list][scan8[13]+1]); //FIXME remove past 3 (init somewhere else)
                 AV_ZERO16(h->mvd_cache [list][scan8[4 ]]);
                 AV_ZERO16(h->mvd_cache [list][scan8[12]]);
                 if(h->slice_type_nos == FF_B_TYPE){
