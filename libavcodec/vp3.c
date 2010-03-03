@@ -144,8 +144,10 @@ typedef struct Vp3DecodeContext {
     int superblock_count;
     int y_superblock_width;
     int y_superblock_height;
+    int y_superblock_count;
     int c_superblock_width;
     int c_superblock_height;
+    int c_superblock_count;
     int u_superblock_start;
     int v_superblock_start;
     unsigned char *superblock_coding;
@@ -454,6 +456,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
 
     int i, j;
     int current_fragment;
+    int plane;
 
     if (s->keyframe) {
         memset(s->superblock_coding, SB_FULLY_CODED, s->superblock_count);
@@ -539,7 +542,12 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     s->last_coded_y_fragment = s->last_coded_c_fragment = -1;
     first_c_fragment_seen = 0;
     memset(s->macroblock_coding, MODE_COPY, s->macroblock_count);
-    for (i = 0; i < s->superblock_count; i++) {
+
+    for (plane = 0; plane < 3; plane++) {
+        int sb_start = (int[]){ 0, s->u_superblock_start, s->v_superblock_start }[plane];
+        int sb_end = sb_start + (plane ? s->c_superblock_count : s->y_superblock_count);
+
+    for (i = sb_start; i < sb_end; i++) {
 
         /* iterate through all 16 fragments in a superblock */
         for (j = 0; j < 16; j++) {
@@ -574,9 +582,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                         s->all_fragments[current_fragment].next_coeff= s->coeffs + current_fragment;
                         s->coded_fragment_list[s->coded_fragment_list_index] =
                             current_fragment;
-                        if ((current_fragment >= s->fragment_start[1]) &&
-                            (s->last_coded_y_fragment == -1) &&
-                            (!first_c_fragment_seen)) {
+                        if (plane && !first_c_fragment_seen) {
                             s->first_coded_c_fragment = s->coded_fragment_list_index;
                             s->last_coded_y_fragment = s->first_coded_c_fragment - 1;
                             first_c_fragment_seen = 1;
@@ -589,6 +595,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                     }
             }
         }
+    }
     }
 
     if (!first_c_fragment_seen)
@@ -1549,8 +1556,6 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     int i, inter, plane;
     int c_width;
     int c_height;
-    int y_superblock_count;
-    int c_superblock_count;
 
     if (avctx->codec_tag == MKTAG('V','P','3','0'))
         s->version = 0;
@@ -1575,18 +1580,18 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
 
     s->y_superblock_width = (s->width + 31) / 32;
     s->y_superblock_height = (s->height + 31) / 32;
-    y_superblock_count = s->y_superblock_width * s->y_superblock_height;
+    s->y_superblock_count = s->y_superblock_width * s->y_superblock_height;
 
     /* work out the dimensions for the C planes */
     c_width = s->width / 2;
     c_height = s->height / 2;
     s->c_superblock_width = (c_width + 31) / 32;
     s->c_superblock_height = (c_height + 31) / 32;
-    c_superblock_count = s->c_superblock_width * s->c_superblock_height;
+    s->c_superblock_count = s->c_superblock_width * s->c_superblock_height;
 
-    s->superblock_count = y_superblock_count + (c_superblock_count * 2);
-    s->u_superblock_start = y_superblock_count;
-    s->v_superblock_start = s->u_superblock_start + c_superblock_count;
+    s->superblock_count = s->y_superblock_count + (s->c_superblock_count * 2);
+    s->u_superblock_start = s->y_superblock_count;
+    s->v_superblock_start = s->u_superblock_start + s->c_superblock_count;
     s->superblock_coding = av_malloc(s->superblock_count);
 
     s->macroblock_width = (s->width + 15) / 16;
