@@ -2004,9 +2004,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(   (h->pps.weighted_pred          && h->slice_type_nos == FF_P_TYPE )
        ||  (h->pps.weighted_bipred_idc==1 && h->slice_type_nos== FF_B_TYPE ) )
         pred_weight_table(h);
-    else if(h->pps.weighted_bipred_idc==2 && h->slice_type_nos== FF_B_TYPE)
+    else if(h->pps.weighted_bipred_idc==2 && h->slice_type_nos== FF_B_TYPE){
         implicit_weight_table(h);
-    else {
+    }else {
         h->use_weight = 0;
         for (i = 0; i < 2; i++) {
             h->luma_weight_flag[i]   = 0;
