@@ -122,6 +122,13 @@ static const int ModeAlphabet[6][CODING_MODE_COUNT] =
 
 };
 
+static const uint8_t hilbert_offset[16][2] = {
+    {0,0}, {1,0}, {1,1}, {0,1},
+    {0,2}, {0,3}, {1,3}, {1,2},
+    {2,2}, {2,3}, {3,3}, {3,2},
+    {3,1}, {2,1}, {2,0}, {3,0}
+};
+
 #define MIN_DEQUANT_VAL 2
 
 typedef struct Vp3DecodeContext {
@@ -1369,19 +1376,19 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
 
 /*
  * Perform the final rendering for a particular slice of data.
- * The slice number ranges from 0..(macroblock_height - 1).
+ * The slice number ranges from 0..(c_superblock_height - 1).
  */
 static void render_slice(Vp3DecodeContext *s, int slice)
 {
-    int x;
+    int x, y, i, j;
     int16_t *dequantizer;
     LOCAL_ALIGNED_16(DCTELEM, block, [64]);
     int motion_x = 0xdeadbeef, motion_y = 0xdeadbeef;
     int motion_halfpel_index;
     uint8_t *motion_source;
-    int plane;
+    int plane, first_pixel;
 
-    if (slice >= s->macroblock_height)
+    if (slice >= s->c_superblock_height)
         return;
 
     for (plane = 0; plane < 3; plane++) {
@@ -1391,9 +1398,14 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         int stride            = s->current_frame.linesize[plane];
         int plane_width       = s->width  >> !!plane;
         int plane_height      = s->height >> !!plane;
-        int y =        slice *  FRAGMENT_PIXELS << !plane ;
-        int slice_height = y + (FRAGMENT_PIXELS << !plane);
-        int i = s->fragment_start[plane] + (y>>3)*(s->fragment_width>>!!plane);
+
+        int sb_x, sb_y        = slice << !plane;
+        int slice_height      = sb_y + (plane ? 1 : 2);
+        int slice_width       = plane ? s->c_superblock_width : s->y_superblock_width;
+
+        int fragment_width    = s->fragment_width  >> !!plane;
+        int fragment_height   = s->fragment_height >> !!plane;
+        int fragment_start    = s->fragment_start[plane];
 
         if (!s->flipped_image) stride = -stride;
         if (CONFIG_GRAY && plane && (s->avctx->flags & CODEC_FLAG_GRAY))
@@ -1403,17 +1415,24 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         if(FFABS(stride) > 2048)
             return; //various tables are fixed size
 
-        /* for each fragment row in the slice (both of them)... */
-        for (; y < slice_height; y += 8) {
+        /* for each superblock row in the slice (both of them)... */
+        for (; sb_y < slice_height; sb_y++) {
 
-            /* for each fragment in a row... */
-            for (x = 0; x < plane_width; x += 8, i++) {
-                int first_pixel = y*stride + x;
+            /* for each superblock in a row... */
+            for (sb_x = 0; sb_x < slice_width; sb_x++) {
 
-                if ((i < 0) || (i >= s->fragment_count)) {
-                    av_log(s->avctx, AV_LOG_ERROR, "  vp3:render_slice(): bad fragment number (%d)\n", i);
-                    return;
-                }
+                /* for each block in a superblock... */
+                for (j = 0; j < 16; j++) {
+                    x = 4*sb_x + hilbert_offset[j][0];
+                    y = 4*sb_y + hilbert_offset[j][1];
+
+                    i = fragment_start + y*fragment_width + x;
+
+                    // bounds check
+                    if (x >= fragment_width || y >= fragment_height)
+                        continue;
+
+                first_pixel = 8*y*stride + 8*x;
 
                 /* transform if this block was coded */
                 if (s->all_fragments[i].coding_method != MODE_COPY) {
@@ -1439,8 +1458,8 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                             motion_y= (motion_y>>1) | (motion_y&1);
                         }
 
-                        src_x= (motion_x>>1) + x;
-                        src_y= (motion_y>>1) + y;
+                        src_x= (motion_x>>1) + 8*x;
+                        src_y= (motion_y>>1) + 8*y;
                         if ((motion_x == 127) || (motion_y == 127))
                             av_log(s->avctx, AV_LOG_ERROR, " help! got invalid motion vector! (%X, %X)\n", motion_x, motion_y);
 
@@ -1526,11 +1545,11 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                         stride, 8);
 
                 }
+                }
             }
-            // Filter the previous block row. We can't filter the current row yet
-            // since it needs pixels from the next row
-            if (y > 0)
-                apply_loop_filter(s, plane, (y>>3)-1, (y>>3));
+
+            // Filter up to the last row in the superblock row
+            apply_loop_filter(s, plane, 4*sb_y - !!sb_y, FFMIN(4*sb_y+3, fragment_height-1));
         }
     }
 
@@ -1542,9 +1561,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
       *     dispatch (slice - 1);
       */
 
-    // now that we've filtered the last rows, they're safe to display
-    if (slice)
-        vp3_draw_horiz_band(s, 16*slice);
+    vp3_draw_horiz_band(s, 64*slice + 64-16);
 }
 
 /*
@@ -1875,7 +1892,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     }
 
     s->last_slice_end = 0;
-    for (i = 0; i < s->macroblock_height; i++)
+    for (i = 0; i < s->c_superblock_height; i++)
         render_slice(s, i);
 
     // filter the last row
