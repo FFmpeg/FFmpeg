@@ -332,9 +332,14 @@ static int tta_decode_frame(AVCodecContext *avctx,
                 unary--;
             }
 
-            if (k)
+            if (get_bits_left(&s->gb) < k)
+                return -1;
+
+            if (k) {
+                if (k > MIN_CACHE_BITS)
+                    return -1;
                 value = (unary << k) + get_bits(&s->gb, k);
-            else
+            } else
                 value = unary;
 
             // FIXME: copy paste from original
@@ -404,6 +409,8 @@ static int tta_decode_frame(AVCodecContext *avctx,
             }
         }
 
+        if (get_bits_left(&s->gb) < 32)
+            return -1;
         skip_bits(&s->gb, 32); // frame crc
 
         // convert to output buffer
