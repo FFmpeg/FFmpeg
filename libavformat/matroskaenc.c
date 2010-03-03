@@ -536,7 +536,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         put_ebml_uint (pb, MATROSKA_ID_TRACKFLAGLACING , 0);    // no lacing (yet)
         put_ebml_float(pb, MATROSKA_ID_TRACKTIMECODESCALE, 1.0);
 
-        if ((tag = av_metadata_get(st->metadata, "description", NULL, 0)))
+        if ((tag = av_metadata_get(st->metadata, "title", NULL, 0)))
             put_ebml_string(pb, MATROSKA_ID_TRACKNAME, tag->value);
         tag = av_metadata_get(st->metadata, "language", NULL, 0);
         put_ebml_string(pb, MATROSKA_ID_TRACKLANGUAGE, tag ? tag->value:"und");
