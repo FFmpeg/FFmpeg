@@ -288,7 +288,8 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
  * be written at the location reserved for it. Otherwise, it is written
  * at the current location in the file.
  *
- * @return The file offset where the seekhead was written.
+ * @return The file offset where the seekhead was written,
+ * -1 if an error occurred.
  */
 static int64_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
 {
@@ -299,7 +300,8 @@ static int64_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
     currentpos = url_ftell(pb);
 
     if (seekhead->reserved_size > 0)
-        url_fseek(pb, seekhead->filepos, SEEK_SET);
+        if (url_fseek(pb, seekhead->filepos, SEEK_SET) < 0)
+            return -1;
 
     metaseek = start_ebml_master(pb, MATROSKA_ID_SEEKHEAD, seekhead->reserved_size);
     for (i = 0; i < seekhead->num_entries; i++) {
@@ -731,6 +733,9 @@ static int mkv_write_header(AVFormatContext *s)
     put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, 0);
     mkv->cluster_pts = 0;
 
+    if (url_is_streamed(s->pb))
+        mkv_write_seekhead(pb, mkv->main_seekhead);
+
     mkv->cues = mkv_start_cues(mkv->segment_offset);
     if (mkv->cues == NULL)
         return AVERROR(ENOMEM);
@@ -896,8 +901,10 @@ static int mkv_write_trailer(AVFormatContext *s)
 
         ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES    , cuespos);
         if (ret < 0) return ret;
-        ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_SEEKHEAD, second_seekhead);
-        if (ret < 0) return ret;
+        if (second_seekhead >= 0) {
+            ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_SEEKHEAD, second_seekhead);
+            if (ret < 0) return ret;
+        }
         mkv_write_seekhead(pb, mkv->main_seekhead);
 
         // update the duration
