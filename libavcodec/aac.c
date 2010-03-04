@@ -1948,6 +1948,7 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
     GetBitContext gb;
     enum RawDataBlockType elem_type;
     int err, elem_id, data_size_tmp;
+    int buf_consumed;
 
     init_get_bits(&gb, buf, buf_size * 8);
 
@@ -2048,7 +2049,8 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
     if (ac->output_configured)
         ac->output_configured = OC_LOCKED;
 
-    return buf_size;
+    buf_consumed = (get_bits_count(&gb) + 7) >> 3;
+    return buf_size > buf_consumed ? buf_consumed : buf_size;
 }
 
 static av_cold int aac_decode_close(AVCodecContext *avccontext)
