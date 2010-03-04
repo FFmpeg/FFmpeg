@@ -547,7 +547,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     memset(s->macroblock_coding, MODE_COPY, s->macroblock_count);
 
     for (plane = 0; plane < 3; plane++) {
-        int sb_start = (int[]){ 0, s->u_superblock_start, s->v_superblock_start }[plane];
+        int sb_start = (int[3]){ 0, s->u_superblock_start, s->v_superblock_start }[plane];
         int sb_end = sb_start + (plane ? s->c_superblock_count : s->y_superblock_count);
         int num_coded_frags = 0;
 
