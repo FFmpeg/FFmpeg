@@ -81,19 +81,19 @@ get_next:
     if (avctx->codec_id != CODEC_ID_AAC) {
         avctx->sample_rate = s->sample_rate;
 
-    /* allow downmixing to stereo (or mono for AC-3) */
-    if(avctx->request_channels > 0 &&
-            avctx->request_channels < s->channels &&
-            (avctx->request_channels <= 2 ||
-            (avctx->request_channels == 1 &&
-            (avctx->codec_id == CODEC_ID_AC3 ||
-             avctx->codec_id == CODEC_ID_EAC3)))) {
-        avctx->channels = avctx->request_channels;
-    } else {
-        avctx->channels = s->channels;
-        avctx->channel_layout = s->channel_layout;
-    }
-    avctx->frame_size = s->samples;
+        /* allow downmixing to stereo (or mono for AC-3) */
+        if(avctx->request_channels > 0 &&
+                avctx->request_channels < s->channels &&
+                (avctx->request_channels <= 2 ||
+                (avctx->request_channels == 1 &&
+                (avctx->codec_id == CODEC_ID_AC3 ||
+                 avctx->codec_id == CODEC_ID_EAC3)))) {
+            avctx->channels = avctx->request_channels;
+        } else {
+            avctx->channels = s->channels;
+            avctx->channel_layout = s->channel_layout;
+        }
+        avctx->frame_size = s->samples;
     }
 
     avctx->bit_rate = s->bit_rate;
