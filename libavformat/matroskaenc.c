@@ -725,14 +725,6 @@ static int mkv_write_header(AVFormatContext *s)
     ret = mkv_write_chapters(s);
     if (ret < 0) return ret;
 
-    ret = mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb));
-    if (ret < 0) return ret;
-
-    mkv->cluster_pos = url_ftell(pb);
-    mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER, 0);
-    put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, 0);
-    mkv->cluster_pts = 0;
-
     if (url_is_streamed(s->pb))
         mkv_write_seekhead(pb, mkv->main_seekhead);
 
@@ -849,12 +841,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int duration = pkt->duration;
     int ret;
 
-    // start a new cluster every 5 MB or 5 sec
-    if (url_ftell(pb) > mkv->cluster_pos + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
-        av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64
-               " bytes, pts %" PRIu64 "\n", url_ftell(pb), pkt->pts);
-        end_ebml_master(pb, mkv->cluster);
-
+    if (!mkv->cluster_pos) {
         ret = mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb));
         if (ret < 0) return ret;
 
@@ -880,6 +867,14 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (codec->codec_type == CODEC_TYPE_VIDEO && keyframe) {
         ret = mkv_add_cuepoint(mkv->cues, pkt, mkv->cluster_pos);
         if (ret < 0) return ret;
+    }
+
+    // start a new cluster every 5 MB or 5 sec
+    if (url_ftell(pb) > mkv->cluster_pos + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
+        av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64
+               " bytes, pts %" PRIu64 "\n", url_ftell(pb), pkt->pts);
+        end_ebml_master(pb, mkv->cluster);
+        mkv->cluster_pos = 0;
     }
 
     mkv->duration = FFMAX(mkv->duration, pkt->pts + duration);
