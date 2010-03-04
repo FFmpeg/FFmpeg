@@ -212,8 +212,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         bink->current_track++;
         if (audio_size >= 4) {
             /* get one audio packet per track */
-            if ((ret = av_get_packet(pb, pkt, audio_size))
-                                           != audio_size)
+            if ((ret = av_get_packet(pb, pkt, audio_size)) <= 0)
                 return ret;
             pkt->stream_index = bink->current_track;
             pkt->pts = bink->audio_pts[bink->current_track - 1];
