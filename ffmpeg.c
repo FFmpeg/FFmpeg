@@ -1850,7 +1850,7 @@ static int av_encode(AVFormatContext **output_files,
         while ((t = av_metadata_get(ist->st->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
             if (lang && !strcmp(t->key, "language"))
                 continue;
-            av_metadata_set2(&ost->st->metadata, t->key, t->value, NULL);
+            av_metadata_set2(&ost->st->metadata, t->key, t->value, 0);
         }
 
         ost->st->disposition = ist->st->disposition;
