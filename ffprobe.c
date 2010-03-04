@@ -318,8 +318,8 @@ static void opt_pretty(void)
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "format" },
-    { "unit",          OPT_BOOL, {(void*)&show_value_unit},   "show unit of the displayed values" },
-    { "prefix",        OPT_BOOL, {(void*)&use_value_prefix}, "use SI prefixes for the displayed values"  },
+    { "unit", OPT_BOOL, {(void*)&show_value_unit}, "show unit of the displayed values" },
+    { "prefix", OPT_BOOL, {(void*)&use_value_prefix}, "use SI prefixes for the displayed values" },
     { "byte_binary_prefix", OPT_BOOL, {(void*)&use_byte_value_binary_prefix},
       "use binary prefixes for byte units" },
     { "sexagesimal", OPT_BOOL,  {(void*)&use_value_sexagesimal_format},
@@ -327,7 +327,7 @@ static const OptionDef options[] = {
     { "pretty", 0, {(void*)&opt_pretty},
       "prettify the format of displayed values, make it more human readable" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
-    { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info"          },
+    { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
     { NULL, },
 };
 
