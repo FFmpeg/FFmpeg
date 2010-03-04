@@ -824,10 +824,18 @@ static void fill_decode_neighbors(H264Context *h, int mb_type){
     h->left_type[0] = s->current_picture.mb_type[left_xy[0]] ;
     h->left_type[1] = s->current_picture.mb_type[left_xy[1]] ;
 
+    if(FMO){
     if(h->slice_table[topleft_xy ] != h->slice_num) h->topleft_type = 0;
     if(h->slice_table[top_xy     ] != h->slice_num) h->top_type     = 0;
-    if(h->slice_table[topright_xy] != h->slice_num) h->topright_type= 0;
     if(h->slice_table[left_xy[0] ] != h->slice_num) h->left_type[0] = h->left_type[1] = 0;
+    }else{
+        if(h->slice_table[topleft_xy ] != h->slice_num){
+            h->topleft_type = 0;
+            if(h->slice_table[top_xy     ] != h->slice_num) h->top_type     = 0;
+            if(h->slice_table[left_xy[0] ] != h->slice_num) h->left_type[0] = h->left_type[1] = 0;
+        }
+    }
+    if(h->slice_table[topright_xy] != h->slice_num) h->topright_type= 0;
 }
 
 static void fill_decode_caches(H264Context *h, int mb_type){
