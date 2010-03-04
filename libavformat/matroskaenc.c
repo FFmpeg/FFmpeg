@@ -62,6 +62,7 @@ typedef struct {
 } mkv_cues;
 
 typedef struct MatroskaMuxContext {
+    ByteIOContext   *dyn_bc;
     ebml_master     segment;
     int64_t         segment_offset;
     int64_t         segment_uid;
@@ -760,10 +761,9 @@ static int ass_get_duration(const uint8_t *p)
     return end - start;
 }
 
-static int mkv_write_ass_blocks(AVFormatContext *s, AVPacket *pkt)
+static int mkv_write_ass_blocks(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = s->pb;
     int i, layer = 0, max_duration = 0, size, line_size, data_size = pkt->size;
     uint8_t *start, *end, *data = pkt->data;
     ebml_master blockgroup;
@@ -806,10 +806,10 @@ static int mkv_write_ass_blocks(AVFormatContext *s, AVPacket *pkt)
     return max_duration;
 }
 
-static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *pkt, int flags)
+static void mkv_write_block(AVFormatContext *s, ByteIOContext *pb,
+                            unsigned int blockid, AVPacket *pkt, int flags)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = s->pb;
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     uint8_t *data = NULL;
     int size = pkt->size;
@@ -832,6 +832,21 @@ static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *
         av_free(data);
 }
 
+static void mkv_flush_dynbuf(AVFormatContext *s)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    int bufsize;
+    uint8_t *dyn_buf;
+
+    if (!mkv->dyn_bc)
+        return;
+
+    bufsize = url_close_dyn_buf(mkv->dyn_bc, &dyn_buf);
+    put_buffer(s->pb, dyn_buf, bufsize);
+    av_free(dyn_buf);
+    mkv->dyn_bc = NULL;
+}
+
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -841,11 +856,17 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int duration = pkt->duration;
     int ret;
 
+    if (url_is_streamed(s->pb)) {
+        if (!mkv->dyn_bc)
+            url_open_dyn_buf(&mkv->dyn_bc);
+        pb = mkv->dyn_bc;
+    }
+
     if (!mkv->cluster_pos) {
         ret = mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb));
         if (ret < 0) return ret;
 
-        mkv->cluster_pos = url_ftell(pb);
+        mkv->cluster_pos = url_ftell(s->pb);
         mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER, 0);
         put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, pkt->pts);
         mkv->cluster_pts = pkt->pts;
@@ -853,13 +874,13 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (codec->codec_type != CODEC_TYPE_SUBTITLE) {
-        mkv_write_block(s, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
+        mkv_write_block(s, pb, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
     } else if (codec->codec_id == CODEC_ID_SSA) {
-        duration = mkv_write_ass_blocks(s, pkt);
+        duration = mkv_write_ass_blocks(s, pb, pkt);
     } else {
         ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(pkt->size));
         duration = pkt->convergence_duration;
-        mkv_write_block(s, MATROSKA_ID_BLOCK, pkt, 0);
+        mkv_write_block(s, pb, MATROSKA_ID_BLOCK, pkt, 0);
         put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
         end_ebml_master(pb, blockgroup);
     }
@@ -869,12 +890,15 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0) return ret;
     }
 
-    // start a new cluster every 5 MB or 5 sec
-    if (url_ftell(pb) > mkv->cluster_pos + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
+    // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming
+    if (url_is_streamed(s->pb) && (url_ftell(pb) > 32*1024 || pkt->pts > mkv->cluster_pts + 1000)
+        ||  url_ftell(pb) > mkv->cluster_pos + 5*1024*1024 || pkt->pts > mkv->cluster_pts + 5000) {
         av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64
                " bytes, pts %" PRIu64 "\n", url_ftell(pb), pkt->pts);
         end_ebml_master(pb, mkv->cluster);
         mkv->cluster_pos = 0;
+        if (mkv->dyn_bc)
+            mkv_flush_dynbuf(s);
     }
 
     mkv->duration = FFMAX(mkv->duration, pkt->pts + duration);
@@ -888,7 +912,12 @@ static int mkv_write_trailer(AVFormatContext *s)
     int64_t currentpos, second_seekhead, cuespos;
     int ret;
 
-    end_ebml_master(pb, mkv->cluster);
+    if (mkv->dyn_bc) {
+        end_ebml_master(mkv->dyn_bc, mkv->cluster);
+        mkv_flush_dynbuf(s);
+    } else if (mkv->cluster_pos) {
+        end_ebml_master(pb, mkv->cluster);
+    }
 
     if (!url_is_streamed(pb)) {
         cuespos = mkv_write_cues(pb, mkv->cues, s->nb_streams);
