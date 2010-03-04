@@ -1215,15 +1215,20 @@ static int fill_filter_caches(H264Context *h, int mb_type){
         }
     }
 
+    top_type     = s->current_picture.mb_type[top_xy]    ;
+    left_type[0] = s->current_picture.mb_type[left_xy[0]];
+    left_type[1] = s->current_picture.mb_type[left_xy[1]];
     if(h->deblocking_filter == 2){
-        h->top_type    = top_type     = h->slice_table[top_xy     ] == h->slice_num ? s->current_picture.mb_type[top_xy]     : 0;
-        h->left_type[0]= left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
-        h->left_type[1]= left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
+        if(h->slice_table[top_xy     ] != h->slice_num) top_type= 0;
+        if(h->slice_table[left_xy[0] ] != h->slice_num) left_type[0]= left_type[1]= 0;
     }else{
-        h->top_type    = top_type     = h->slice_table[top_xy     ] < 0xFFFF ? s->current_picture.mb_type[top_xy]     : 0;
-        h->left_type[0]= left_type[0] = h->slice_table[left_xy[0] ] < 0xFFFF ? s->current_picture.mb_type[left_xy[0]] : 0;
-        h->left_type[1]= left_type[1] = h->slice_table[left_xy[1] ] < 0xFFFF ? s->current_picture.mb_type[left_xy[1]] : 0;
+        if(h->slice_table[top_xy     ] == 0xFFFF) top_type= 0;
+        if(h->slice_table[left_xy[0] ] == 0xFFFF) left_type[0]= left_type[1] =0;
     }
+    h->top_type    = top_type    ;
+    h->left_type[0]= left_type[0];
+    h->left_type[1]= left_type[1];
+
     if(IS_INTRA(mb_type))
         return 0;
 
