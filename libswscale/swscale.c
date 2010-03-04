@@ -765,8 +765,10 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             dest+=6;\
         }\
         break;\
-    case PIX_FMT_RGB565:\
-    case PIX_FMT_BGR565:\
+    case PIX_FMT_RGB565BE:\
+    case PIX_FMT_RGB565LE:\
+    case PIX_FMT_BGR565BE:\
+    case PIX_FMT_BGR565LE:\
         {\
             const int dr1= dither_2x2_8[y&1    ][0];\
             const int dg1= dither_2x2_4[y&1    ][0];\
@@ -780,8 +782,10 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             }\
         }\
         break;\
-    case PIX_FMT_RGB555:\
-    case PIX_FMT_BGR555:\
+    case PIX_FMT_RGB555BE:\
+    case PIX_FMT_RGB555LE:\
+    case PIX_FMT_BGR555BE:\
+    case PIX_FMT_BGR555LE:\
         {\
             const int dr1= dither_2x2_8[y&1    ][0];\
             const int dg1= dither_2x2_8[y&1    ][1];\

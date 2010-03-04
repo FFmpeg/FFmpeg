@@ -33,6 +33,7 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "libavutil/x86_cpu.h"
+#include "libavutil/bswap.h"
 
 extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
@@ -596,12 +597,18 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
     const int isRgb =      c->dstFormat==PIX_FMT_RGB32
                         || c->dstFormat==PIX_FMT_RGB32_1
                         || c->dstFormat==PIX_FMT_BGR24
-                        || c->dstFormat==PIX_FMT_RGB565
-                        || c->dstFormat==PIX_FMT_RGB555
+                        || c->dstFormat==PIX_FMT_RGB565BE
+                        || c->dstFormat==PIX_FMT_RGB565LE
+                        || c->dstFormat==PIX_FMT_RGB555BE
+                        || c->dstFormat==PIX_FMT_RGB555LE
                         || c->dstFormat==PIX_FMT_RGB8
                         || c->dstFormat==PIX_FMT_RGB4
                         || c->dstFormat==PIX_FMT_RGB4_BYTE
                         || c->dstFormat==PIX_FMT_MONOBLACK;
+    const int isNotNe =    c->dstFormat==PIX_FMT_NE(RGB565LE,RGB565BE)
+                        || c->dstFormat==PIX_FMT_NE(RGB555LE,RGB555BE)
+                        || c->dstFormat==PIX_FMT_NE(BGR565LE,BGR565BE)
+                        || c->dstFormat==PIX_FMT_NE(BGR555LE,BGR555BE);
     const int bpp = c->dstFormatBpp;
     uint8_t *y_table;
     uint16_t *y_table16;
@@ -709,6 +716,9 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
             y_table16[i+2048] = (yval >> 3)          << bbase;
             yb += cy;
         }
+        if(isNotNe)
+            for (i = 0; i < 1024*3; i++)
+                y_table16[i] = bswap_16(y_table16[i]);
         fill_table(c->table_rV, 2, crv, y_table16 + yoffs);
         fill_table(c->table_gU, 2, cgu, y_table16 + yoffs + 1024);
         fill_table(c->table_bU, 2, cbu, y_table16 + yoffs + 2048);
