@@ -25,9 +25,12 @@
 #include <stdarg.h>
 
 #undef HAVE_AV_CONFIG_H
+
+#include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/avutil.h"
 #include "libavutil/lfg.h"
+#include "libavutil/pixdesc.h"
 #include "swscale.h"
 
 /* HACK Duplicated from swscale_internal.h.
@@ -186,27 +189,16 @@ end:
     return res;
 }
 
-static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
+static void selfTest(uint8_t *ref[4], int refStride[4], enum PixelFormat srcFormat, enum PixelFormat dstFormat, int w, int h)
 {
     const int flags[] = { SWS_FAST_BILINEAR,
                           SWS_BILINEAR, SWS_BICUBIC,
                           SWS_X       , SWS_POINT  , SWS_AREA, 0 };
     const int srcW = w;
     const int srcH = h;
+    int i, j, k, res = 0;
     const int dstW[] = { srcW - srcW/3, srcW, srcW + srcW/3, 0 };
     const int dstH[] = { srcH - srcH/3, srcH, srcH + srcH/3, 0 };
-    enum PixelFormat srcFormat, dstFormat;
-
-    for (srcFormat = 0; srcFormat < PIX_FMT_NB; srcFormat++) {
-        if (!sws_isSupportedInput(srcFormat) || !sws_isSupportedOutput(srcFormat))
-            continue;
-
-        for (dstFormat = 0; dstFormat < PIX_FMT_NB; dstFormat++) {
-            int i, j, k;
-            int res = 0;
-
-            if (!sws_isSupportedInput(dstFormat) || !sws_isSupportedOutput(dstFormat))
-                continue;
 
             printf("%s -> %s\n",
                    sws_format_name(srcFormat),
@@ -217,9 +209,7 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
                 for (j = 0; dstH[j] && !res; j++)
                     for (k = 0; flags[k] && !res; k++)
                         res = doTest(ref, refStride, w, h, srcFormat, dstFormat,
-                                     srcW, srcH, dstW[i], dstH[j], flags[k]);
-        }
-    }
+                                     srcW, srcH, dstW[i], dstH[j], flags[k]|SWS_PRINT_INFO);
 }
 
 #define W 96
@@ -235,12 +225,28 @@ int main(int argc, char **argv)
     int stride[4]={W, W, W, W};
     int x, y;
     struct SwsContext *sws;
+    enum PixelFormat srcFmt, dstFmt;
     AVLFG rand;
 
+    av_log_set_level(AV_LOG_INFO);
+
+    if (argc < 3) {
+        fprintf(stderr, "Usage: swscale-test SRC_PIX_FMT DST_PIX_FMT\n");
+        return -1;
+    }
+    if ((srcFmt = av_get_pix_fmt(argv[1])) == PIX_FMT_NONE) {
+        fprintf(stderr, "Unknown pixel input format name: '%s'\n", argv[1]);
+        return -1;
+    }
+    if ((dstFmt = av_get_pix_fmt(argv[2])) == PIX_FMT_NONE) {
+        fprintf(stderr, "Unknown pixel output format name: '%s'\n", argv[2]);
+        return -1;
+    }
     if (!rgb_data || !data)
         return -1;
 
-    sws= sws_getContext(W/12, H/12, PIX_FMT_RGB32, W, H, PIX_FMT_YUVA420P, SWS_BILINEAR, NULL, NULL, NULL);
+    sws= sws_getContext(W/12, H/12, PIX_FMT_RGB32, W, H, PIX_FMT_YUVA420P,
+                        SWS_BILINEAR|SWS_PRINT_INFO, NULL, NULL, NULL);
 
     av_lfg_init(&rand, 1);
 
@@ -253,7 +259,7 @@ int main(int argc, char **argv)
     sws_freeContext(sws);
     av_free(rgb_data);
 
-    selfTest(src, stride, W, H);
+    selfTest(src, stride, srcFmt, dstFmt, W, H);
     av_free(data);
 
     return 0;
