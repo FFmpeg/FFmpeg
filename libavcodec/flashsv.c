@@ -113,6 +113,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx,
     /* no supplementary picture */
     if (buf_size == 0)
         return 0;
+    if (buf_size < 4)
+        return -1;
 
     init_get_bits(&gb, buf, buf_size * 8);
 
@@ -181,6 +183,11 @@ static int flashsv_decode_frame(AVCodecContext *avctx,
 
             /* get the size of the compressed zlib chunk */
             int size = get_bits(&gb, 16);
+            if (8 * size > get_bits_left(&gb)) {
+                avctx->release_buffer(avctx, &s->frame);
+                s->frame.data[0] = NULL;
+                return -1;
+            }
 
             if (size == 0) {
                 /* no change, don't do anything */
