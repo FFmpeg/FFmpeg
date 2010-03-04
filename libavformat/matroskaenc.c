@@ -473,14 +473,14 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
             if (codec->extradata_size)
                 put_buffer(dyn_cp, codec->extradata, codec->extradata_size);
         } else {
-        if (!codec->codec_tag)
-            codec->codec_tag = ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id);
-        if (!codec->codec_tag) {
-            av_log(s, AV_LOG_ERROR, "No bmp codec ID found.");
-            ret = -1;
-        }
+            if (!codec->codec_tag)
+                codec->codec_tag = ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id);
+            if (!codec->codec_tag) {
+                av_log(s, AV_LOG_ERROR, "No bmp codec ID found.");
+                ret = -1;
+            }
 
-        ff_put_bmp_header(dyn_cp, codec, ff_codec_bmp_tags, 0);
+            ff_put_bmp_header(dyn_cp, codec, ff_codec_bmp_tags, 0);
         }
 
     } else if (codec->codec_type == CODEC_TYPE_AUDIO) {
