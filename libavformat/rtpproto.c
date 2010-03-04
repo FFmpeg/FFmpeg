@@ -193,6 +193,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     socklen_t from_len;
     int len, fd_max, n;
     fd_set rfds;
+    struct timeval tv;
 #if 0
     for(;;) {
         from_len = sizeof(from);
@@ -208,6 +209,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     }
 #else
     for(;;) {
+        if (url_interrupt_cb())
+            return AVERROR(EINTR);
         /* build fdset to listen to RTP and RTCP packets */
         FD_ZERO(&rfds);
         fd_max = s->rtp_fd;
@@ -215,7 +218,9 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
         if (s->rtcp_fd > fd_max)
             fd_max = s->rtcp_fd;
         FD_SET(s->rtcp_fd, &rfds);
-        n = select(fd_max + 1, &rfds, NULL, NULL, NULL);
+        tv.tv_sec = 0;
+        tv.tv_usec = 100 * 1000;
+        n = select(fd_max + 1, &rfds, NULL, NULL, &tv);
         if (n > 0) {
             /* first try RTCP */
             if (FD_ISSET(s->rtcp_fd, &rfds)) {
