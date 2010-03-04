@@ -478,7 +478,7 @@ static av_always_inline int lcg_random(int previous_val)
     return previous_val * 1664525 + 1013904223;
 }
 
-static void reset_predict_state(PredictorState *ps)
+static av_always_inline void reset_predict_state(PredictorState *ps)
 {
     ps->r0   = 0.0f;
     ps->r1   = 0.0f;
@@ -1247,7 +1247,7 @@ static av_always_inline float flt16_trunc(float pf)
     return pun.f;
 }
 
-static void predict(AACContext *ac, PredictorState *ps, float *coef,
+static av_always_inline void predict(AACContext *ac, PredictorState *ps, float *coef,
                     int output_enable)
 {
     const float a     = 0.953125; // 61.0 / 64
