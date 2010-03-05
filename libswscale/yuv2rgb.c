@@ -740,9 +740,9 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
         yb = -(384<<16) - oy;
         for (i = 0; i < 1024; i++) {
             uint8_t yval = av_clip_uint8((yb + 0x8000) >> 16);
-            y_table16[i     ] = (yval >> 4)          << rbase;
+            y_table16[i     ] = (yval >> 4) << rbase;
             y_table16[i+1024] = (yval >> 4) << gbase;
-            y_table16[i+2048] = (yval >> 4)          << bbase;
+            y_table16[i+2048] = (yval >> 4) << bbase;
             yb += cy;
         }
         fill_table(c->table_rV, 2, crv, y_table16 + yoffs);
