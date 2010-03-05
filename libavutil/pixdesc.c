@@ -594,6 +594,29 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,1,1,0,4},        /* B */
         },
     },
+    [PIX_FMT_RGB444BE] = {
+        .name = "rgb444be",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,0,0,3},        /* R */
+            {0,1,1,4,3},        /* G */
+            {0,1,1,0,3},        /* B */
+        },
+        .flags = PIX_FMT_BE,
+    },
+    [PIX_FMT_RGB444LE] = {
+        .name = "rgb444le",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,2,0,3},        /* R */
+            {0,1,1,4,3},        /* G */
+            {0,1,1,0,3},        /* B */
+        },
+    },
     [PIX_FMT_BGR565BE] = {
         .name = "bgr565be",
         .nb_components= 3,
@@ -638,6 +661,29 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,1,2,2,4},        /* B */
             {0,1,1,5,4},        /* G */
             {0,1,1,0,4},        /* R */
+        },
+    },
+    [PIX_FMT_BGR444BE] = {
+        .name = "bgr444be",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,0,0,3},       /* B */
+            {0,1,1,4,3},       /* G */
+            {0,1,1,0,3},       /* R */
+        },
+        .flags = PIX_FMT_BE,
+     },
+    [PIX_FMT_BGR444LE] = {
+        .name = "bgr444le",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,2,0,3},        /* B */
+            {0,1,1,4,3},        /* G */
+            {0,1,1,0,3},        /* R */
         },
     },
     [PIX_FMT_VAAPI_MOCO] = {

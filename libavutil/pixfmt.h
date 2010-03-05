@@ -127,6 +127,11 @@ enum PixelFormat {
     PIX_FMT_YUV444P16BE,  ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
     PIX_FMT_VDPAU_MPEG4,  ///< MPEG4 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
     PIX_FMT_DXVA2_VLD,    ///< HW decoding through DXVA2, Picture.data[3] contains a LPDIRECT3DSURFACE9 pointer
+
+    PIX_FMT_RGB444BE,  ///< packed RGB 4:4:4, 16bpp, (msb)4A 4R 4G 4B(lsb), big-endian, most significant bits to 0
+    PIX_FMT_RGB444LE,  ///< packed RGB 4:4:4, 16bpp, (msb)4A 4R 4G 4B(lsb), little-endian, most significant bits to 0
+    PIX_FMT_BGR444BE,  ///< packed BGR 4:4:4, 16bpp, (msb)4A 4B 4G 4R(lsb), big-endian, most significant bits to 1
+    PIX_FMT_BGR444LE,  ///< packed BGR 4:4:4, 16bpp, (msb)4A 4B 4G 4R(lsb), little-endian, most significant bits to 1
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -145,8 +150,10 @@ enum PixelFormat {
 #define PIX_FMT_RGB48  PIX_FMT_NE(RGB48BE,  RGB48LE)
 #define PIX_FMT_RGB565 PIX_FMT_NE(RGB565BE, RGB565LE)
 #define PIX_FMT_RGB555 PIX_FMT_NE(RGB555BE, RGB555LE)
+#define PIX_FMT_RGB444 PIX_FMT_NE(RGB444BE, RGB444LE)
 #define PIX_FMT_BGR565 PIX_FMT_NE(BGR565BE, BGR565LE)
 #define PIX_FMT_BGR555 PIX_FMT_NE(BGR555BE, BGR555LE)
+#define PIX_FMT_BGR444 PIX_FMT_NE(BGR444BE, BGR444LE)
 
 #define PIX_FMT_YUV420P16 PIX_FMT_NE(YUV420P16BE, YUV420P16LE)
 #define PIX_FMT_YUV422P16 PIX_FMT_NE(YUV422P16BE, YUV422P16LE)
