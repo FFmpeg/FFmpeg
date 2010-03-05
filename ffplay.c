@@ -1743,7 +1743,7 @@ static int video_thread(void *arg)
 #if CONFIG_AVFILTER
         ret = output_picture2(is, frame, pts,  -1); /* fixme: unknown pos */
 #else
-        ret = output_picture2(is, frame, pts,  pkt->pos);
+        ret = output_picture2(is, frame, pts,  pkt.pos);
         av_free_packet(&pkt);
 #endif
         if (ret < 0)
