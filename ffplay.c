@@ -2051,7 +2051,7 @@ static int decode_thread(void *arg)
         AVCodecContext *avctx = st->codec;
         ic->streams[i]->discard = AVDISCARD_ALL;
         if(avctx->codec_type >= (unsigned)CODEC_TYPE_NB)
-            exit(1);
+            continue;
         if(st_count[avctx->codec_type]++ != wanted_stream[avctx->codec_type] && wanted_stream[avctx->codec_type] >= 0)
             continue;
 
