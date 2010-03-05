@@ -248,6 +248,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 }
                 break;
             }
+        } else if (n < 0) {
+            return AVERROR(EIO);
         }
     }
 #endif
