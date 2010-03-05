@@ -32,6 +32,12 @@
 #include "libavcodec/opt.h"
 #include "libavcodec/dsputil.h"
 
+#if CONFIG_AVFILTER
+# include "libavfilter/avfilter.h"
+# include "libavfilter/avfiltergraph.h"
+# include "libavfilter/graphparser.h"
+#endif
+
 #include "cmdutils.h"
 
 #include <SDL.h>
@@ -72,7 +78,9 @@ const int program_birth_year = 2003;
 /* NOTE: the size must be big enough to compensate the hardware audio buffersize size */
 #define SAMPLE_ARRAY_SIZE (2*65536)
 
+#if !CONFIG_AVFILTER
 static int sws_flags = SWS_BICUBIC;
+#endif
 
 typedef struct PacketQueue {
     AVPacketList *first_pkt, *last_pkt;
@@ -93,6 +101,11 @@ typedef struct VideoPicture {
     int width, height; /* source height & width */
     int allocated;
     SDL_TimerID timer_id;
+    enum PixelFormat pix_fmt;
+
+#if CONFIG_AVFILTER
+    AVFilterPicRef *picref;
+#endif
 } VideoPicture;
 
 typedef struct SubPicture {
@@ -180,7 +193,9 @@ typedef struct VideoState {
     int pictq_size, pictq_rindex, pictq_windex;
     SDL_mutex *pictq_mutex;
     SDL_cond *pictq_cond;
+#if !CONFIG_AVFILTER
     struct SwsContext *img_convert_ctx;
+#endif
 
     //    QETimer *video_timer;
     char filename[1024];
@@ -191,6 +206,9 @@ typedef struct VideoState {
     int64_t last_dts_for_fault_detection;
     int64_t last_pts_for_fault_detection;
 
+#if CONFIG_AVFILTER
+    AVFilterContext *out_video_filter;          ///<the last filter in the video chain
+#endif
 } VideoState;
 
 static void show_help(void);
@@ -234,6 +252,9 @@ static int error_recognition = FF_ER_CAREFUL;
 static int error_concealment = 3;
 static int decoder_reorder_pts= -1;
 static int autoexit;
+#if CONFIG_AVFILTER
+static char *vfilters = NULL;
+#endif
 
 /* current context */
 static int is_full_screen;
@@ -668,6 +689,13 @@ static void video_image_display(VideoState *is)
 
     vp = &is->pictq[is->pictq_rindex];
     if (vp->bmp) {
+#if CONFIG_AVFILTER
+         if (vp->picref->pixel_aspect.num == 0)
+             aspect_ratio = 0;
+         else
+             aspect_ratio = av_q2d(vp->picref->pixel_aspect);
+#else
+
         /* XXX: use variable in the frame */
         if (is->video_st->sample_aspect_ratio.num)
             aspect_ratio = av_q2d(is->video_st->sample_aspect_ratio);
@@ -675,9 +703,10 @@ static void video_image_display(VideoState *is)
             aspect_ratio = av_q2d(is->video_st->codec->sample_aspect_ratio);
         else
             aspect_ratio = 0;
+#endif
         if (aspect_ratio <= 0.0)
             aspect_ratio = 1.0;
-        aspect_ratio *= (float)is->video_st->codec->width / is->video_st->codec->height;
+        aspect_ratio *= (float)vp->width / (float)vp->height;
         /* if an active format is indicated, then it overrides the
            mpeg format */
 #if 0
@@ -927,9 +956,15 @@ static int video_open(VideoState *is){
     } else if(!is_full_screen && screen_width){
         w = screen_width;
         h = screen_height;
+#if CONFIG_AVFILTER
+    }else if (is->out_video_filter && is->out_video_filter->inputs[0]){
+        w = is->out_video_filter->inputs[0]->w;
+        h = is->out_video_filter->inputs[0]->h;
+#else
     }else if (is->video_st && is->video_st->codec->width){
         w = is->video_st->codec->width;
         h = is->video_st->codec->height;
+#endif
     } else {
         w = 640;
         h = 480;
@@ -1241,12 +1276,23 @@ static void alloc_picture(void *opaque)
     if (vp->bmp)
         SDL_FreeYUVOverlay(vp->bmp);
 
-    vp->bmp = SDL_CreateYUVOverlay(is->video_st->codec->width,
-                                   is->video_st->codec->height,
+#if CONFIG_AVFILTER
+    if (vp->picref)
+        avfilter_unref_pic(vp->picref);
+    vp->picref = NULL;
+
+    vp->width   = is->out_video_filter->inputs[0]->w;
+    vp->height  = is->out_video_filter->inputs[0]->h;
+    vp->pix_fmt = is->out_video_filter->inputs[0]->format;
+#else
+    vp->width   = is->video_st->codec->width;
+    vp->height  = is->video_st->codec->height;
+    vp->pix_fmt = is->video_st->codec->pix_fmt;
+#endif
+
+    vp->bmp = SDL_CreateYUVOverlay(vp->width, vp->height,
                                    SDL_YV12_OVERLAY,
                                    screen);
-    vp->width = is->video_st->codec->width;
-    vp->height = is->video_st->codec->height;
 
     SDL_LockMutex(is->pictq_mutex);
     vp->allocated = 1;
@@ -1262,7 +1308,9 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 {
     VideoPicture *vp;
     int dst_pix_fmt;
-
+#if CONFIG_AVFILTER
+    AVPicture pict_src;
+#endif
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
     while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&
@@ -1278,8 +1326,13 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 
     /* alloc or resize hardware picture buffer */
     if (!vp->bmp ||
+#if CONFIG_AVFILTER
+        vp->width  != is->out_video_filter->inputs[0]->w ||
+        vp->height != is->out_video_filter->inputs[0]->h) {
+#else
         vp->width != is->video_st->codec->width ||
         vp->height != is->video_st->codec->height) {
+#endif
         SDL_Event event;
 
         vp->allocated = 0;
@@ -1304,6 +1357,11 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
     /* if the frame is not skipped, then display it */
     if (vp->bmp) {
         AVPicture pict;
+#if CONFIG_AVFILTER
+        if(vp->picref)
+            avfilter_unref_pic(vp->picref);
+        vp->picref = src_frame->opaque;
+#endif
 
         /* get a pointer on the bitmap */
         SDL_LockYUVOverlay (vp->bmp);
@@ -1317,18 +1375,31 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         pict.linesize[0] = vp->bmp->pitches[0];
         pict.linesize[1] = vp->bmp->pitches[2];
         pict.linesize[2] = vp->bmp->pitches[1];
+
+#if CONFIG_AVFILTER
+        pict_src.data[0] = src_frame->data[0];
+        pict_src.data[1] = src_frame->data[1];
+        pict_src.data[2] = src_frame->data[2];
+
+        pict_src.linesize[0] = src_frame->linesize[0];
+        pict_src.linesize[1] = src_frame->linesize[1];
+        pict_src.linesize[2] = src_frame->linesize[2];
+
+        //FIXME use direct rendering
+        av_picture_copy(&pict, &pict_src,
+                        vp->pix_fmt, vp->width, vp->height);
+#else
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
-            is->video_st->codec->width, is->video_st->codec->height,
-            is->video_st->codec->pix_fmt,
-            is->video_st->codec->width, is->video_st->codec->height,
+            vp->width, vp->height, vp->pix_fmt, vp->width, vp->height,
             dst_pix_fmt, sws_flags, NULL, NULL, NULL);
         if (is->img_convert_ctx == NULL) {
             fprintf(stderr, "Cannot initialize the conversion context\n");
             exit(1);
         }
         sws_scale(is->img_convert_ctx, src_frame->data, src_frame->linesize,
-                  0, is->video_st->codec->height, pict.data, pict.linesize);
+                  0, vp->height, pict.data, pict.linesize);
+#endif
         /* update the bitmap content */
         SDL_UnlockYUVOverlay(vp->bmp);
 
@@ -1386,20 +1457,12 @@ static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1, int6
     return queue_picture(is, src_frame, pts, pos);
 }
 
-static int video_thread(void *arg)
+static int get_video_frame(VideoState *is, AVFrame *frame, uint64_t *pts, AVPacket *pkt)
 {
-    VideoState *is = arg;
-    AVPacket pkt1, *pkt = &pkt1;
     int len1, got_picture, i;
-    AVFrame *frame= avcodec_alloc_frame();
-    double pts;
 
-    for(;;) {
-        while (is->paused && !is->videoq.abort_request) {
-            SDL_Delay(10);
-        }
         if (packet_queue_get(&is->videoq, pkt, 1) < 0)
-            break;
+            return -1;
 
         if(pkt->data == flush_pkt.data){
             avcodec_flush_buffers(is->video_st->codec);
@@ -1425,7 +1488,7 @@ static int video_thread(void *arg)
             is->frame_last_delay = 0;
             is->frame_timer = (double)av_gettime() / 1000000.0;
 
-            continue;
+            return 0;
         }
 
         /* NOTE: ipts is the PTS of the _first_ picture beginning in
@@ -1450,25 +1513,251 @@ static int video_thread(void *arg)
                || (decoder_reorder_pts && is->faulty_pts<is->faulty_dts)
                || pkt->dts == AV_NOPTS_VALUE)
            && frame->reordered_opaque != AV_NOPTS_VALUE)
-            pts= frame->reordered_opaque;
+            *pts= frame->reordered_opaque;
         else if(pkt->dts != AV_NOPTS_VALUE)
-            pts= pkt->dts;
+            *pts= pkt->dts;
         else
-            pts= 0;
-        pts *= av_q2d(is->video_st->time_base);
+            *pts= 0;
+
+        /* put pts into units of 1/AV_TIME_BASE */
+        *pts = av_rescale_q(pts,is->video_st->time_base, AV_TIME_BASE_Q);
 
 //            if (len1 < 0)
 //                break;
-        if (got_picture) {
-            if (output_picture2(is, frame, pts, pkt->pos) < 0)
-                goto the_end;
-        }
-        av_free_packet(pkt);
+    if (got_picture)
+        return 1;
+    return 0;
+}
+
+#if CONFIG_AVFILTER
+typedef struct {
+    VideoState *is;
+    AVFrame *frame;
+} FilterPriv;
+
+static int input_init(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    FilterPriv *priv = ctx->priv;
+    if(!opaque) return -1;
+
+    priv->is = opaque;
+    priv->frame = avcodec_alloc_frame();
+
+    return 0;
+}
+
+static void input_uninit(AVFilterContext *ctx)
+{
+    FilterPriv *priv = ctx->priv;
+    av_free(priv->frame);
+}
+
+static int input_request_frame(AVFilterLink *link)
+{
+    FilterPriv *priv = link->src->priv;
+    AVFilterPicRef *picref;
+    uint64_t pts = 0;
+    AVPacket pkt;
+    int ret;
+
+    while (!(ret = get_video_frame(priv->is, priv->frame, &pts, &pkt)))
+        av_free_packet(&pkt);
+    if (ret < 0)
+        return -1;
+
+    /* FIXME: until I figure out how to hook everything up to the codec
+     * right, we're just copying the entire frame. */
+    picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
+    av_picture_copy((AVPicture *)&picref->data, (AVPicture *)priv->frame,
+                    picref->pic->format, link->w, link->h);
+    av_free_packet(&pkt);
+
+    picref->pts = pts;
+    picref->pixel_aspect = priv->is->video_st->codec->sample_aspect_ratio;
+    avfilter_start_frame(link, avfilter_ref_pic(picref, ~0));
+    avfilter_draw_slice(link, 0, link->h, 1);
+    avfilter_end_frame(link);
+    avfilter_unref_pic(picref);
+
+    return 0;
+}
+
+static int input_query_formats(AVFilterContext *ctx)
+{
+    FilterPriv *priv = ctx->priv;
+    enum PixelFormat pix_fmts[] = {
+        priv->is->video_st->codec->pix_fmt, PIX_FMT_NONE
+    };
+
+    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    return 0;
+}
+
+static int input_config_props(AVFilterLink *link)
+{
+    FilterPriv *priv  = link->src->priv;
+    AVCodecContext *c = priv->is->video_st->codec;
+
+    link->w = c->width;
+    link->h = c->height;
+
+    return 0;
+}
+
+static AVFilter input_filter =
+{
+    .name      = "ffplay_input",
+
+    .priv_size = sizeof(FilterPriv),
+
+    .init      = input_init,
+    .uninit    = input_uninit,
+
+    .query_formats = input_query_formats,
+
+    .inputs    = (AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = (AVFilterPad[]) {{ .name = "default",
+                                    .type = CODEC_TYPE_VIDEO,
+                                    .request_frame = input_request_frame,
+                                    .config_props  = input_config_props, },
+                                  { .name = NULL }},
+};
+
+static void output_end_frame(AVFilterLink *link)
+{
+}
+
+static int output_query_formats(AVFilterContext *ctx)
+{
+    enum PixelFormat pix_fmts[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
+
+    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    return 0;
+}
+
+static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
+                                    uint64_t *pts)
+{
+    AVFilterPicRef *pic;
+
+    if(avfilter_request_frame(ctx->inputs[0]))
+        return -1;
+    if(!(pic = ctx->inputs[0]->cur_pic))
+        return -1;
+    ctx->inputs[0]->cur_pic = NULL;
+
+    frame->opaque = pic;
+    *pts          = pic->pts;
+
+    memcpy(frame->data,     pic->data,     sizeof(frame->data));
+    memcpy(frame->linesize, pic->linesize, sizeof(frame->linesize));
+
+    return 1;
+}
+
+static AVFilter output_filter =
+{
+    .name      = "ffplay_output",
+
+    .query_formats = output_query_formats,
+
+    .inputs    = (AVFilterPad[]) {{ .name          = "default",
+                                    .type          = CODEC_TYPE_VIDEO,
+                                    .end_frame     = output_end_frame,
+                                    .min_perms     = AV_PERM_READ, },
+                                  { .name = NULL }},
+    .outputs   = (AVFilterPad[]) {{ .name = NULL }},
+};
+#endif  /* CONFIG_AVFILTER */
+
+static int video_thread(void *arg)
+{
+    VideoState *is = arg;
+    AVFrame *frame= avcodec_alloc_frame();
+    uint64_t pts_int;
+    double pts;
+    int ret;
+
+#if CONFIG_AVFILTER
+    AVFilterContext *filt_src = NULL, *filt_out = NULL;
+    AVFilterGraph *graph = av_mallocz(sizeof(AVFilterGraph));
+    graph->scale_sws_opts = av_strdup("sws_flags=bilinear");
+
+    if(!(filt_src = avfilter_open(&input_filter,  "src")))   goto the_end;
+    if(!(filt_out = avfilter_open(&output_filter, "out")))   goto the_end;
+
+    if(avfilter_init_filter(filt_src, NULL, is))             goto the_end;
+    if(avfilter_init_filter(filt_out, NULL, frame))          goto the_end;
+
+
+    if(vfilters) {
+        AVFilterInOut *outputs = av_malloc(sizeof(AVFilterInOut));
+        AVFilterInOut *inputs  = av_malloc(sizeof(AVFilterInOut));
+
+        outputs->name    = av_strdup("in");
+        outputs->filter  = filt_src;
+        outputs->pad_idx = 0;
+        outputs->next    = NULL;
+
+        inputs->name    = av_strdup("out");
+        inputs->filter  = filt_out;
+        inputs->pad_idx = 0;
+        inputs->next    = NULL;
+
+        if (avfilter_graph_parse(graph, vfilters, inputs, outputs, NULL) < 0)
+            goto the_end;
+        av_freep(&vfilters);
+    } else {
+        if(avfilter_link(filt_src, 0, filt_out, 0) < 0)          goto the_end;
+    }
+    avfilter_graph_add_filter(graph, filt_src);
+    avfilter_graph_add_filter(graph, filt_out);
+
+    if(avfilter_graph_check_validity(graph, NULL))           goto the_end;
+    if(avfilter_graph_config_formats(graph, NULL))           goto the_end;
+    if(avfilter_graph_config_links(graph, NULL))             goto the_end;
+
+    is->out_video_filter = filt_out;
+#endif
+
+    for(;;) {
+#if !CONFIG_AVFILTER
+        AVPacket pkt;
+#endif
+        while (is->paused && !is->videoq.abort_request)
+            SDL_Delay(10);
+#if CONFIG_AVFILTER
+        ret = get_filtered_video_frame(filt_out, frame, &pts_int);
+#else
+        ret = get_video_frame(is, frame, &pts_int, &pkt);
+#endif
+
+        if (ret < 0) goto the_end;
+
+        if (!ret)
+            continue;
+
+        pts  = pts_int;
+        pts /= AV_TIME_BASE;
+
+#if CONFIG_AVFILTER
+        ret = output_picture2(is, frame, pts,  -1); /* fixme: unknown pos */
+#else
+        ret = output_picture2(is, frame, pts,  pkt->pos);
+        av_free_packet(&pkt);
+#endif
+        if (ret < 0)
+            goto the_end;
+
         if (step)
             if (cur_stream)
                 stream_pause(cur_stream);
     }
  the_end:
+#if CONFIG_AVFILTER
+    avfilter_graph_destroy(graph);
+    av_freep(&graph);
+#endif
     av_free(frame);
     return 0;
 }
@@ -2265,6 +2554,12 @@ static void stream_close(VideoState *is)
     /* free all pictures */
     for(i=0;i<VIDEO_PICTURE_QUEUE_SIZE; i++) {
         vp = &is->pictq[i];
+#if CONFIG_AVFILTER
+        if (vp->picref) {
+            avfilter_unref_pic(vp->picref);
+            vp->picref = NULL;
+        }
+#endif
         if (vp->bmp) {
             SDL_FreeYUVOverlay(vp->bmp);
             vp->bmp = NULL;
@@ -2274,8 +2569,10 @@ static void stream_close(VideoState *is)
     SDL_DestroyCond(is->pictq_cond);
     SDL_DestroyMutex(is->subpq_mutex);
     SDL_DestroyCond(is->subpq_cond);
+#if !CONFIG_AVFILTER
     if (is->img_convert_ctx)
         sws_freeContext(is->img_convert_ctx);
+#endif
     av_free(is);
 }
 
@@ -2367,6 +2664,9 @@ static void do_exit(void)
         av_free(avcodec_opts[i]);
     av_free(avformat_opts);
     av_free(sws_opts);
+#if CONFIG_AVFILTER
+    avfilter_uninit();
+#endif
     if (show_status)
         printf("\n");
     SDL_Quit();
@@ -2637,6 +2937,9 @@ static const OptionDef options[] = {
     { "sync", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
     { "threads", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "autoexit", OPT_BOOL | OPT_EXPERT, {(void*)&autoexit}, "exit at the end", "" },
+#if CONFIG_AVFILTER
+    { "vfilters", OPT_STRING | HAS_ARG, {(void*)&vfilters}, "video filters", "filter list" },
+#endif
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
 };
@@ -2689,13 +2992,18 @@ int main(int argc, char **argv)
     /* register all codecs, demux and protocols */
     avcodec_register_all();
     avdevice_register_all();
+#if CONFIG_AVFILTER
+    avfilter_register_all();
+#endif
     av_register_all();
 
     for(i=0; i<CODEC_TYPE_NB; i++){
         avcodec_opts[i]= avcodec_alloc_context2(i);
     }
     avformat_opts = avformat_alloc_context();
+#if !CONFIG_AVFILTER
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
+#endif
 
     show_banner();
 
