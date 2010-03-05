@@ -30,7 +30,7 @@ slices, that is, consecutive non-overlapping rectangles of dimension
 
 special converter
     These generally are unscaled converters of common
-    formats, like YUV 4:2:0/4:2:2 -> RGB15/16/24/32. Though it could also
+    formats, like YUV 4:2:0/4:2:2 -> RGB12/15/16/24/32. Though it could also
     in principle contain scalers optimized for specific common cases.
 
 Main path
