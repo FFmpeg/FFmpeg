@@ -1350,6 +1350,30 @@ void url_split(char *proto, int proto_size,
                char *path, int path_size,
                const char *url);
 
+/**
+ * Assembles a URL string from components. This is the reverse operation
+ * of url_split.
+ *
+ * Note, this requires networking to be initialized, so the caller must
+ * ensure ff_network_init has been called.
+ *
+ * @see url_split
+ *
+ * @param str the buffer to fill with the url
+ * @param size the size of the str buffer
+ * @param proto the protocol identifier, if null, the separator
+ *              after the identifier is left out, too
+ * @param authorization an optional authorization string, may be null
+ * @param hostname the host name string
+ * @param port the port number, left out from the string if negative
+ * @param fmt a generic format string for everything to add after the
+ *            host/port, may be null
+ * @return the number of characters written to the destination buffer
+ */
+int ff_url_join(char *str, int size, const char *proto,
+                const char *authorization, const char *hostname,
+                int port, const char *fmt, ...);
+
 #if LIBAVFORMAT_VERSION_MAJOR < 53
 /**
  * @deprecated Use av_match_ext() instead.
