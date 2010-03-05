@@ -1457,7 +1457,7 @@ static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1, int6
     return queue_picture(is, src_frame, pts, pos);
 }
 
-static int get_video_frame(VideoState *is, AVFrame *frame, uint64_t *pts, AVPacket *pkt)
+static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt)
 {
     int len1, got_picture, i;
 
@@ -1519,9 +1519,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame, uint64_t *pts, AVPack
         else
             *pts= 0;
 
-        /* put pts into units of 1/AV_TIME_BASE */
-        *pts = av_rescale_q(pts,is->video_st->time_base, AV_TIME_BASE_Q);
-
 //            if (len1 < 0)
 //                break;
     if (got_picture)
@@ -1556,7 +1553,7 @@ static int input_request_frame(AVFilterLink *link)
 {
     FilterPriv *priv = link->src->priv;
     AVFilterPicRef *picref;
-    uint64_t pts = 0;
+    int64_t pts = 0;
     AVPacket pkt;
     int ret;
 
@@ -1636,7 +1633,7 @@ static int output_query_formats(AVFilterContext *ctx)
 }
 
 static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
-                                    uint64_t *pts)
+                                    int64_t *pts)
 {
     AVFilterPicRef *pic;
 
@@ -1674,7 +1671,7 @@ static int video_thread(void *arg)
 {
     VideoState *is = arg;
     AVFrame *frame= avcodec_alloc_frame();
-    uint64_t pts_int;
+    int64_t pts_int;
     double pts;
     int ret;
 
@@ -1737,8 +1734,7 @@ static int video_thread(void *arg)
         if (!ret)
             continue;
 
-        pts  = pts_int;
-        pts /= AV_TIME_BASE;
+        pts = pts_int*av_q2d(is->video_st->time_base);
 
 #if CONFIG_AVFILTER
         ret = output_picture2(is, frame, pts,  -1); /* fixme: unknown pos */
