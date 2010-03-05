@@ -2651,8 +2651,10 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
         unsigned char *aDest=(CONFIG_SWSCALE_ALPHA && alpPixBuf) ? dst[3]+dstStride[3]*dstY : NULL;
 
         const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
+        const int firstLumSrcY2= vLumFilterPos[FFMIN(dstY | ((1<<c->chrDstVSubSample) - 1), dstH-1)];
         const int firstChrSrcY= vChrFilterPos[chrDstY]; //First line needed as input
         int lastLumSrcY= firstLumSrcY + vLumFilterSize -1; // Last line needed as input
+        int lastLumSrcY2=firstLumSrcY2+ vLumFilterSize -1; // Last line needed as input
         int lastChrSrcY= firstChrSrcY + vChrFilterSize -1; // Last line needed as input
         int enough_lines;
 
@@ -2669,7 +2671,8 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
                          firstChrSrcY,    lastChrSrcY,    lastInChrBuf);
 
         // Do we have enough lines in this slice to output the dstY line
-        enough_lines = lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < -((-srcSliceY - srcSliceH)>>c->chrSrcVSubSample);
+        enough_lines = lastLumSrcY2 < srcSliceY + srcSliceH && lastChrSrcY < -((-srcSliceY - srcSliceH)>>c->chrSrcVSubSample);
+
         if (!enough_lines) {
             lastLumSrcY = srcSliceY + srcSliceH - 1;
             lastChrSrcY = chrSrcSliceY + chrSrcSliceH - 1;
