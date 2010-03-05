@@ -777,8 +777,10 @@ int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_
     loss = 0;
     pf = &pix_fmt_info[dst_pix_fmt];
     if (pf->depth < ps->depth ||
-        ((dst_pix_fmt == PIX_FMT_RGB555BE || dst_pix_fmt == PIX_FMT_RGB555LE) &&
-         (src_pix_fmt == PIX_FMT_RGB565BE || src_pix_fmt == PIX_FMT_RGB565LE)))
+        ((dst_pix_fmt == PIX_FMT_RGB555BE || dst_pix_fmt == PIX_FMT_RGB555LE ||
+          dst_pix_fmt == PIX_FMT_BGR555BE || dst_pix_fmt == PIX_FMT_BGR555LE) &&
+         (src_pix_fmt == PIX_FMT_RGB565BE || src_pix_fmt == PIX_FMT_RGB565LE ||
+          src_pix_fmt == PIX_FMT_BGR565BE || src_pix_fmt == PIX_FMT_BGR565LE)))
         loss |= FF_LOSS_DEPTH;
     if (dst_desc->log2_chroma_w > src_desc->log2_chroma_w ||
         dst_desc->log2_chroma_h > src_desc->log2_chroma_h)
