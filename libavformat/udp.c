@@ -320,9 +320,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     is_output = (flags & URL_WRONLY);
 
-    if(!ff_network_init())
-        return AVERROR(EIO);
-
     s = av_mallocz(sizeof(UDPContext));
     if (!s)
         return AVERROR(ENOMEM);
@@ -482,7 +479,6 @@ static int udp_close(URLContext *h)
     if (s->is_multicast && !(h->flags & URL_WRONLY))
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
     closesocket(s->udp_fd);
-    ff_network_close();
     av_free(s);
     return 0;
 }
