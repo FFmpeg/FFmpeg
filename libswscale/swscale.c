@@ -27,7 +27,7 @@
   {BGR,RGB}{1,4,8,15,16} support dithering
 
   unscaled special converters (YV12=I420=IYUV, Y800=Y8)
-  YV12 -> {BGR,RGB}{1,4,8,15,16,24,32}
+  YV12 -> {BGR,RGB}{1,4,8,12,15,16,24,32}
   x -> x
   YUV9 -> YV12
   YUV9/YV12 -> Y800
@@ -196,6 +196,13 @@ DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_4)[2][8]={
 DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_8)[2][8]={
 {  6,   2,   6,   2,   6,   2,   6,   2, },
 {  0,   4,   0,   4,   0,   4,   0,   4, },
+};
+
+DECLARE_ALIGNED(8, const uint8_t, dither_4x4_16)[4][8]={
+{  8,   4,  11,   7,   8,   4,  11,   7, },
+{  2,  14,   1,  13,   2,  14,   1,  13, },
+{ 10,   6,   9,   5,  10,   6,   9,   5, },
+{  0,  12,   3,  15,   0,  12,   3,  15, },
 };
 
 DECLARE_ALIGNED(8, const uint8_t, dither_8x8_32)[8][8]={

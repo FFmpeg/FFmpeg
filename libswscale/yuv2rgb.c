@@ -35,6 +35,7 @@
 #include "libavutil/x86_cpu.h"
 #include "libavutil/bswap.h"
 
+extern const uint8_t dither_4x4_16[4][8];
 extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
 extern const uint8_t dither_8x8_220[8][8];
@@ -352,6 +353,32 @@ CLOSEYUV2RGBFUNC(8)
 #endif
 
 // r, g, b, dst_1, dst_2
+YUV2RGBFUNC(yuv2rgb_c_12_ordered_dither, uint16_t, 0)
+    const uint8_t *d16 = dither_4x4_16[y&3];
+#define PUTRGB12(dst,src,i,o)                                   \
+    Y = src[2*i];                                               \
+    dst[2*i]   = r[Y+d16[0+o]] + g[Y+d16[0+o]] + b[Y+d16[0+o]]; \
+    Y = src[2*i+1];                                             \
+    dst[2*i+1] = r[Y+d16[1+o]] + g[Y+d16[1+o]] + b[Y+d16[1+o]];
+
+    LOADCHROMA(0);
+    PUTRGB12(dst_1,py_1,0,0);
+    PUTRGB12(dst_2,py_2,0,0+8);
+
+    LOADCHROMA(1);
+    PUTRGB12(dst_2,py_2,1,2+8);
+    PUTRGB12(dst_1,py_1,1,2);
+
+    LOADCHROMA(2);
+    PUTRGB12(dst_1,py_1,2,4);
+    PUTRGB12(dst_2,py_2,2,4+8);
+
+    LOADCHROMA(3);
+    PUTRGB12(dst_2,py_2,3,6+8);
+    PUTRGB12(dst_1,py_1,3,6);
+CLOSEYUV2RGBFUNC(8)
+
+// r, g, b, dst_1, dst_2
 YUV2RGBFUNC(yuv2rgb_c_8_ordered_dither, uint8_t, 0)
     const uint8_t *d32 = dither_8x8_32[y&7];
     const uint8_t *d64 = dither_8x8_73[y&7];
@@ -553,6 +580,8 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
     case PIX_FMT_BGR565:
     case PIX_FMT_RGB555:
     case PIX_FMT_BGR555:     return yuv2rgb_c_16;
+    case PIX_FMT_RGB444:
+    case PIX_FMT_BGR444:     return yuv2rgb_c_12_ordered_dither;
     case PIX_FMT_RGB8:
     case PIX_FMT_BGR8:       return yuv2rgb_c_8_ordered_dither;
     case PIX_FMT_RGB4:
@@ -601,6 +630,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
                         || c->dstFormat==PIX_FMT_RGB565LE
                         || c->dstFormat==PIX_FMT_RGB555BE
                         || c->dstFormat==PIX_FMT_RGB555LE
+                        || c->dstFormat==PIX_FMT_RGB444
                         || c->dstFormat==PIX_FMT_RGB8
                         || c->dstFormat==PIX_FMT_RGB4
                         || c->dstFormat==PIX_FMT_RGB4_BYTE
@@ -700,6 +730,25 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
         fill_table(c->table_gU, 1, cgu, y_table + yoffs + 1024);
         fill_table(c->table_bU, 1, cbu, y_table + yoffs + 2048);
         fill_gv_table(c->table_gV, 1, cgv);
+        break;
+    case 12:
+        rbase = isRgb ? 8 : 0;
+        gbase = 4;
+        bbase = isRgb ? 0 : 8;
+        c->yuvTable = av_malloc(1024*3*2);
+        y_table16 = c->yuvTable;
+        yb = -(384<<16) - oy;
+        for (i = 0; i < 1024; i++) {
+            uint8_t yval = av_clip_uint8((yb + 0x8000) >> 16);
+            y_table16[i     ] = (yval >> 4)          << rbase;
+            y_table16[i+1024] = (yval >> 4) << gbase;
+            y_table16[i+2048] = (yval >> 4)          << bbase;
+            yb += cy;
+        }
+        fill_table(c->table_rV, 2, crv, y_table16 + yoffs);
+        fill_table(c->table_gU, 2, cgu, y_table16 + yoffs + 1024);
+        fill_table(c->table_bU, 2, cbu, y_table16 + yoffs + 2048);
+        fill_gv_table(c->table_gV, 2, cgv);
         break;
     case 15:
     case 16:

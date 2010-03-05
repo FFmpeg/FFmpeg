@@ -395,6 +395,7 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_RGB565LE    \
         || (x)==PIX_FMT_RGB555BE    \
         || (x)==PIX_FMT_RGB555LE    \
+        || (x)==PIX_FMT_RGB444      \
         || (x)==PIX_FMT_RGB8        \
         || (x)==PIX_FMT_RGB4        \
         || (x)==PIX_FMT_RGB4_BYTE   \
@@ -409,6 +410,7 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_BGR565LE    \
         || (x)==PIX_FMT_BGR555BE    \
         || (x)==PIX_FMT_BGR555LE    \
+        || (x)==PIX_FMT_BGR444      \
         || (x)==PIX_FMT_BGR8        \
         || (x)==PIX_FMT_BGR4        \
         || (x)==PIX_FMT_BGR4_BYTE   \
