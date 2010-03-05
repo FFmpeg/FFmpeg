@@ -26,6 +26,9 @@
 #include "libavcodec/opt.h"
 #include "os_support.h"
 #include "avformat.h"
+#if CONFIG_NETWORK
+#include "network.h"
+#endif
 
 #if LIBAVFORMAT_VERSION_MAJOR >= 53
 /** @name Logging context. */
@@ -76,6 +79,10 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     URLContext *uc;
     int err;
 
+#if CONFIG_NETWORK
+    if (!ff_network_init())
+        return AVERROR(EIO);
+#endif
     uc = av_mallocz(sizeof(URLContext) + strlen(filename) + 1);
     if (!uc) {
         err = AVERROR(ENOMEM);
@@ -93,8 +100,7 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     err = up->url_open(uc, filename, flags);
     if (err < 0) {
         av_free(uc);
-        *puc = NULL;
-        return err;
+        goto fail;
     }
 
     //We must be careful here as url_seek() could be slow, for example for http
@@ -106,6 +112,9 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     return 0;
  fail:
     *puc = NULL;
+#if CONFIG_NETWORK
+    ff_network_close();
+#endif
     return err;
 }
 
@@ -204,6 +213,9 @@ int url_close(URLContext *h)
 
     if (h->prot->url_close)
         ret = h->prot->url_close(h);
+#if CONFIG_NETWORK
+    ff_network_close();
+#endif
     av_free(h);
     return ret;
 }
