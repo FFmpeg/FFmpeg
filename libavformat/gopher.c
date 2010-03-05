@@ -95,7 +95,7 @@ static int gopher_open(URLContext *h, const char *uri, int flags)
     if (port < 0)
         port = 70;
 
-    snprintf(buf, sizeof(buf), "tcp://%s:%d", hostname, port);
+    ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
 
     s->hd = NULL;
     err = url_open(&s->hd, buf, URL_RDWR);

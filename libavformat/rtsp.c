@@ -1090,8 +1090,8 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
             /* first try in specified port range */
             if (RTSP_RTP_PORT_MIN != 0) {
                 while (j <= RTSP_RTP_PORT_MAX) {
-                    snprintf(buf, sizeof(buf), "rtp://%s?localport=%d",
-                             host, j);
+                    ff_url_join(buf, sizeof(buf), "rtp", NULL, host, -1,
+                                "?localport=%d", j);
                     /* we will use two ports per rtp stream (rtp and rtcp) */
                     j += 2;
                     if (url_open(&rtsp_st->rtp_handle, buf, URL_RDWR) == 0)
@@ -1201,8 +1201,8 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
             char url[1024];
 
             /* XXX: also use address if specified */
-            snprintf(url, sizeof(url), "rtp://%s:%d",
-                     host, reply->transports[0].server_port_min);
+            ff_url_join(url, sizeof(url), "rtp", NULL, host,
+                        reply->transports[0].server_port_min, NULL);
             if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) &&
                 rtp_set_remote_url(rtsp_st->rtp_handle, url) < 0) {
                 err = AVERROR_INVALIDDATA;
@@ -1230,8 +1230,8 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
                 port      = rtsp_st->sdp_port;
                 ttl       = rtsp_st->sdp_ttl;
             }
-            snprintf(url, sizeof(url), "rtp://%s:%d?ttl=%d",
-                     inet_ntoa(in), port, ttl);
+            ff_url_join(url, sizeof(url), "rtp", NULL, inet_ntoa(in),
+                        port, "?ttl=%d", ttl);
             if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
@@ -1388,6 +1388,9 @@ int ff_rtsp_connect(AVFormatContext *s)
     RTSPMessageHeader reply1, *reply = &reply1;
     int lower_transport_mask = 0;
     char real_challenge[64];
+
+    if (!ff_network_init())
+        return AVERROR(EIO);
 redirect:
     /* extract hostname and port */
     url_split(NULL, 0, auth, sizeof(auth),
@@ -1447,7 +1450,7 @@ redirect:
     }
 
     /* open the tcp connexion */
-    snprintf(tcpname, sizeof(tcpname), "tcp://%s:%d", host, port);
+    ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port, NULL);
     if (url_open(&rtsp_hd, tcpname, URL_RDWR) < 0) {
         err = AVERROR(EIO);
         goto fail;
@@ -1531,6 +1534,7 @@ redirect:
                s->filename);
         goto redirect;
     }
+    ff_network_close();
     return err;
 }
 #endif
@@ -1886,6 +1890,7 @@ static int rtsp_read_close(AVFormatContext *s)
 
     ff_rtsp_close_streams(s);
     url_close(rt->rtsp_hd);
+    ff_network_close();
     return 0;
 }
 
@@ -1933,6 +1938,9 @@ static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     char *content;
     char url[1024];
 
+    if (!ff_network_init())
+        return AVERROR(EIO);
+
     /* read the whole sdp file */
     /* XXX: better loading */
     content = av_malloc(SDP_MAX_SIZE);
@@ -1950,11 +1958,10 @@ static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for (i = 0; i < rt->nb_rtsp_streams; i++) {
         rtsp_st = rt->rtsp_streams[i];
 
-        snprintf(url, sizeof(url), "rtp://%s:%d?localport=%d&ttl=%d",
-                 inet_ntoa(rtsp_st->sdp_ip),
-                 rtsp_st->sdp_port,
-                 rtsp_st->sdp_port,
-                 rtsp_st->sdp_ttl);
+        ff_url_join(url, sizeof(url), "rtp", NULL,
+                    inet_ntoa(rtsp_st->sdp_ip), rtsp_st->sdp_port,
+                    "?localport=%d&ttl=%d", rtsp_st->sdp_port,
+                    rtsp_st->sdp_ttl);
         if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
             err = AVERROR_INVALIDDATA;
             goto fail;
@@ -1965,12 +1972,14 @@ static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 fail:
     ff_rtsp_close_streams(s);
+    ff_network_close();
     return err;
 }
 
 static int sdp_read_close(AVFormatContext *s)
 {
     ff_rtsp_close_streams(s);
+    ff_network_close();
     return 0;
 }
 

@@ -116,6 +116,7 @@ static int rtsp_write_close(AVFormatContext *s)
 
     ff_rtsp_close_streams(s);
     url_close(rt->rtsp_hd);
+    ff_network_close();
     return 0;
 }
 

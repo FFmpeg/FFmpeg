@@ -71,11 +71,7 @@ static int http_open_cnx(URLContext *h)
     /* needed in any case to build the host string */
     url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
               path1, sizeof(path1), s->location);
-    if (port > 0) {
-        snprintf(hoststr, sizeof(hoststr), "%s:%d", hostname, port);
-    } else {
-        av_strlcpy(hoststr, hostname, sizeof(hoststr));
-    }
+    ff_url_join(hoststr, sizeof(hoststr), NULL, NULL, hostname, port, NULL);
 
     if (use_proxy) {
         url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
@@ -90,7 +86,7 @@ static int http_open_cnx(URLContext *h)
     if (port < 0)
         port = 80;
 
-    snprintf(buf, sizeof(buf), "tcp://%s:%d", hostname, port);
+    ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
     err = url_open(&hd, buf, URL_RDWR);
     if (err < 0)
         goto fail;

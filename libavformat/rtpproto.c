@@ -67,10 +67,10 @@ int rtp_set_remote_url(URLContext *h, const char *uri)
     url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
               path, sizeof(path), uri);
 
-    snprintf(buf, sizeof(buf), "udp://%s:%d%s", hostname, port, path);
+    ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, port, "%s", path);
     udp_set_remote_url(s->rtp_hd, buf);
 
-    snprintf(buf, sizeof(buf), "udp://%s:%d%s", hostname, port + 1, path);
+    ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, port + 1, "%s", path);
     udp_set_remote_url(s->rtcp_hd, buf);
     return 0;
 }
@@ -101,7 +101,7 @@ static void build_udp_url(char *buf, int buf_size,
                           int local_port, int ttl,
                           int max_packet_size)
 {
-    snprintf(buf, buf_size, "udp://%s:%d", hostname, port);
+    ff_url_join(buf, buf_size, "udp", NULL, hostname, port, NULL);
     if (local_port >= 0)
         url_add_option(buf, buf_size, "localport=%d", local_port);
     if (ttl >= 0)
