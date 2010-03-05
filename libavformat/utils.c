@@ -2865,8 +2865,10 @@ int av_write_trailer(AVFormatContext *s)
 fail:
     if(ret == 0)
        ret=url_ferror(s->pb);
-    for(i=0;i<s->nb_streams;i++)
+    for(i=0;i<s->nb_streams;i++) {
         av_freep(&s->streams[i]->priv_data);
+        av_freep(&s->streams[i]->index_entries);
+    }
     av_freep(&s->priv_data);
     return ret;
 }
