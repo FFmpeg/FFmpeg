@@ -9,6 +9,7 @@ ifdef CONFIG_STATIC
 all: $(SUBDIR)$(LIBNAME)
 
 install-libs: install-lib$(NAME)-static
+install-headers: install-lib$(NAME)-headers install-lib$(NAME)-pkgconfig
 
 $(SUBDIR)$(LIBNAME): $(OBJS)
 	$(RM) $@
@@ -76,14 +77,13 @@ install-lib$(NAME)-static: $(SUBDIR)$(LIBNAME)
 	$$(INSTALL) -m 644 $$< "$(LIBDIR)"
 	$(LIB_INSTALL_EXTRA_CMD)
 
-install-headers::
+install-lib$(NAME)-headers: $(addprefix $(SUBDIR),$(HEADERS) $(BUILT_HEADERS))
 	mkdir -p "$(INCINSTDIR)"
+	$$(INSTALL) -m 644 $$^ "$(INCINSTDIR)"
+
+install-lib$(NAME)-pkgconfig: $(SUBDIR)lib$(NAME).pc
 	mkdir -p "$(LIBDIR)/pkgconfig"
-	$$(INSTALL) -m 644 $(addprefix "$(SRC_DIR)"/,$(HEADERS)) "$(INCINSTDIR)"
-ifdef BUILT_HEADERS
-	$$(INSTALL) -m 644 $(addprefix $(SUBDIR),$(BUILT_HEADERS)) "$(INCINSTDIR)"
-endif
-	$$(INSTALL) -m 644 $(BUILD_ROOT)/lib$(NAME)/lib$(NAME).pc "$(LIBDIR)/pkgconfig"
+	$$(INSTALL) -m 644 $$^ "$(LIBDIR)/pkgconfig"
 
 uninstall-libs::
 	-$(RM) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \
