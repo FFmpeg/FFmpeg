@@ -44,14 +44,6 @@
 /* snow.c */
 void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, int decomposition_count);
 
-/* eaidct.c */
-void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
-
-/* binkidct.c */
-void ff_bink_idct_c    (DCTELEM *block);
-void ff_bink_idct_add_c(uint8_t *dest, int linesize, DCTELEM *block);
-void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
-
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 

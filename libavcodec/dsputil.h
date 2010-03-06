@@ -96,9 +96,23 @@ void ff_vp3_h_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 void ff_vp6_filter_diag4_c(uint8_t *dst, uint8_t *src, int stride,
                            const int16_t *h_weights, const int16_t *v_weights);
 
+/* Bink functions */
+void ff_bink_idct_c    (DCTELEM *block);
+void ff_bink_idct_add_c(uint8_t *dest, int linesize, DCTELEM *block);
+void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
+
+/* CAVS functions */
+void ff_put_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_put_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride);
+
 /* VC1 functions */
 void ff_put_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd);
 void ff_avg_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd);
+
+/* EA functions */
+void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
 
 /* 1/2^n downscaling functions from imgconvert.c */
 void ff_img_copy_plane(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
