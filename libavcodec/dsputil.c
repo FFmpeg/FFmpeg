@@ -41,9 +41,6 @@
 #include "vorbis.h"
 #include "png.h"
 
-/* snow.c */
-void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, int decomposition_count);
-
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 

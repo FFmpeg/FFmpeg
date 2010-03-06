@@ -133,6 +133,8 @@ static int w53_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int 
 static int w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {assert (0); return 0;}
 #endif
 
+void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, int decomposition_count);
+
 /* C bits used by mmx/sse2/altivec */
 
 static av_always_inline void snow_interleave_line_header(int * i, int width, IDWTELEM * low, IDWTELEM * high){
