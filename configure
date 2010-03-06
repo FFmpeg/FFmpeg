@@ -2969,6 +2969,7 @@ YASM=$yasmexe
 YASMDEP=$yasmexe
 AR=$ar
 RANLIB=$ranlib
+CP=cp -p
 LN_S=$ln_s
 STRIP=$strip
 CPPFLAGS=$CPPFLAGS
