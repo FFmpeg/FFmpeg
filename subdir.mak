@@ -78,7 +78,7 @@ install-lib$(NAME)-shared: MSG = $(LIBDIR)/$(SLIBNAME)
 install-lib$(NAME)-static: $(SUBDIR)$(LIBNAME)
 	$(Q)mkdir -p "$(LIBDIR)"
 	$$(INSTALL) -m 644 $$< "$(LIBDIR)"
-	$$(LIB_INSTALL_EXTRA_CMD)
+	$(LIB_INSTALL_EXTRA_CMD)
 
 install-lib$(NAME)-headers: $(addprefix $(SUBDIR),$(HEADERS) $(BUILT_HEADERS))
 	$(Q)mkdir -p "$(INCINSTDIR)"
