@@ -96,6 +96,10 @@ void ff_vp3_h_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 void ff_vp6_filter_diag4_c(uint8_t *dst, uint8_t *src, int stride,
                            const int16_t *h_weights, const int16_t *v_weights);
 
+/* VC1 functions */
+void ff_put_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd);
+void ff_avg_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd);
+
 /* 1/2^n downscaling functions from imgconvert.c */
 void ff_img_copy_plane(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 void ff_shrink22(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
