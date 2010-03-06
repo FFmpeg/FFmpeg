@@ -431,7 +431,7 @@ static void ff_h264_idct_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
     vec_st( hv, 0, dest );                                     \
  }
 
-void ff_h264_idct8_add_altivec( uint8_t *dst, DCTELEM *dct, int stride ) {
+static void ff_h264_idct8_add_altivec( uint8_t *dst, DCTELEM *dct, int stride ) {
     vec_s16 s0, s1, s2, s3, s4, s5, s6, s7;
     vec_s16 d0, d1, d2, d3, d4, d5, d6, d7;
     vec_s16 idct0, idct1, idct2, idct3, idct4, idct5, idct6, idct7;

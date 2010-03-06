@@ -23,6 +23,7 @@
  */
 
 #include "config.h"
+#include "dsputil_altivec.h"
 
 #ifdef __APPLE__
 #undef _POSIX_C_SOURCE

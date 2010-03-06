@@ -29,6 +29,7 @@
 #include "dsputil_ppc.h"
 #include "util_altivec.h"
 #include "types_altivec.h"
+#include "dsputil_altivec.h"
 
 // Swaps two variables (used for altivec registers)
 #define SWAP(a,b) \
@@ -68,7 +69,7 @@ do { \
 
 #define FOUROF(a) {a,a,a,a}
 
-int dct_quantize_altivec(MpegEncContext* s,
+static int dct_quantize_altivec(MpegEncContext* s,
                          DCTELEM* data, int n,
                          int qscale, int* overflow)
 {
@@ -475,7 +476,7 @@ int dct_quantize_altivec(MpegEncContext* s,
 
 /* AltiVec version of dct_unquantize_h263
    this code assumes `block' is 16 bytes-aligned */
-void dct_unquantize_h263_altivec(MpegEncContext *s,
+static void dct_unquantize_h263_altivec(MpegEncContext *s,
                                  DCTELEM *block, int n, int qscale)
 {
 POWERPC_PERF_DECLARE(altivec_dct_unquantize_h263_num, 1);
@@ -571,9 +572,6 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
 POWERPC_PERF_STOP_COUNT(altivec_dct_unquantize_h263_num, nCoeffs == 63);
 }
 
-
-void idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
-void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
 
 void MPV_common_init_altivec(MpegEncContext *s)
 {

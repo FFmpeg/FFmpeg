@@ -24,6 +24,7 @@
 #include "dsputil_ppc.h"
 #include "util_altivec.h"
 #include "types_altivec.h"
+#include "dsputil_altivec.h"
 
 /*
   altivec-enhanced gmc1. ATM this code assume stride is a multiple of 8,

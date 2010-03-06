@@ -21,6 +21,7 @@
 #include "libavcodec/dsputil.h"
 #include "util_altivec.h"
 #include "types_altivec.h"
+#include "dsputil_altivec.h"
 
 static const vec_s16 constants =
     {0, 64277, 60547, 54491, 46341, 36410, 25080, 12785};

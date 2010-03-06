@@ -44,6 +44,7 @@
 #include "libavcodec/dsputil.h"
 #include "types_altivec.h"
 #include "dsputil_ppc.h"
+#include "dsputil_altivec.h"
 
 #define IDCT_HALF                                       \
     /* 1st stage */                                     \
@@ -158,9 +159,10 @@ static const vec_s16 constants[5] = {
     {19266, 26722, 25172, 22654,  19266,  22654, 25172, 26722}
 };
 
-void idct_put_altivec(uint8_t* dest, int stride, vec_s16* block)
+void idct_put_altivec(uint8_t* dest, int stride, int16_t *blk)
 {
 POWERPC_PERF_DECLARE(altivec_idct_put_num, 1);
+    vec_s16 *block = (vec_s16*)blk;
     vec_u8 tmp;
 
 #if CONFIG_POWERPC_PERF
@@ -185,9 +187,10 @@ POWERPC_PERF_START_COUNT(altivec_idct_put_num, 1);
 POWERPC_PERF_STOP_COUNT(altivec_idct_put_num, 1);
 }
 
-void idct_add_altivec(uint8_t* dest, int stride, vec_s16* block)
+void idct_add_altivec(uint8_t* dest, int stride, int16_t *blk)
 {
 POWERPC_PERF_DECLARE(altivec_idct_add_num, 1);
+    vec_s16 *block = (vec_s16*)blk;
     vec_u8 tmp;
     vec_s16 tmp2, tmp3;
     vec_u8 perm0;

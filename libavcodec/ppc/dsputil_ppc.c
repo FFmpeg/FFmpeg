@@ -26,23 +26,6 @@
 
 #include "dsputil_altivec.h"
 
-void fdct_altivec(int16_t *block);
-void gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
-                  int x16, int y16, int rounder);
-void idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
-void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
-
-void ff_vp3_idct_altivec(DCTELEM *block);
-void ff_vp3_idct_put_altivec(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_vp3_idct_add_altivec(uint8_t *dest, int line_size, DCTELEM *block);
-
-void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
-
-void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx);
-void vc1dsp_init_altivec(DSPContext* c, AVCodecContext *avctx);
-void float_init_altivec(DSPContext* c, AVCodecContext *avctx);
-void int_init_altivec(DSPContext* c, AVCodecContext *avctx);
-
 int mm_flags = 0;
 
 int mm_support(void)
@@ -133,7 +116,7 @@ distinguish, and use dcbz (32 bytes) or dcbzl (one cache line) as required.
 see <http://developer.apple.com/technotes/tn/tn2087.html>
 and <http://developer.apple.com/technotes/tn/tn2086.html>
 */
-void clear_blocks_dcbz32_ppc(DCTELEM *blocks)
+static void clear_blocks_dcbz32_ppc(DCTELEM *blocks)
 {
 POWERPC_PERF_DECLARE(powerpc_clear_blocks_dcbz32, 1);
     register int misal = ((unsigned long)blocks & 0x00000010);
@@ -166,7 +149,7 @@ POWERPC_PERF_STOP_COUNT(powerpc_clear_blocks_dcbz32, 1);
 /* same as above, when dcbzl clear a whole 128B cache line
    i.e. the PPC970 aka G5 */
 #if HAVE_DCBZL
-void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
+static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
 {
 POWERPC_PERF_DECLARE(powerpc_clear_blocks_dcbz128, 1);
     register int misal = ((unsigned long)blocks & 0x0000007f);
@@ -189,7 +172,7 @@ POWERPC_PERF_START_COUNT(powerpc_clear_blocks_dcbz128, 1);
 POWERPC_PERF_STOP_COUNT(powerpc_clear_blocks_dcbz128, 1);
 }
 #else
-void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
+static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
 {
     memset(blocks, 0, sizeof(DCTELEM)*6*64);
 }
@@ -201,7 +184,7 @@ void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
    the intended effect (Apple "fixed" dcbz)
    unfortunately this cannot be used unless the assembler
    knows about dcbzl ... */
-long check_dcbzl_effect(void)
+static long check_dcbzl_effect(void)
 {
     register char *fakedata = av_malloc(1024);
     register char *fakedata_middle;
@@ -231,7 +214,7 @@ long check_dcbzl_effect(void)
     return count;
 }
 #else
-long check_dcbzl_effect(void)
+static long check_dcbzl_effect(void)
 {
   return 0;
 }
