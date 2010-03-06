@@ -11,7 +11,7 @@ all: $(SUBDIR)$(LIBNAME)
 install-libs: install-lib$(NAME)-static
 
 $(SUBDIR)$(LIBNAME): $(OBJS)
-	rm -f $@
+	$(RM) $@
 	$(AR) rc $@ $^ $(EXTRAOBJS)
 	$(RANLIB) $@
 endif
@@ -35,12 +35,12 @@ $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
 	$(YASM) $(YASMFLAGS) -I $$(<D)/ -o $$@ $$<
 
 clean::
-	rm -f $(addprefix $(SUBDIR),*-example$(EXESUF) *-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
+	$(RM) $(addprefix $(SUBDIR),*-example$(EXESUF) *-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
 	    $(addprefix $(SUBDIR), $(foreach suffix,$(CLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS)))) \
 	    $(HOSTOBJS) $(HOSTPROGS)
 
 distclean:: clean
-	rm -f  $(addprefix $(SUBDIR),$(DISTCLEANSUFFIXES)) \
+	$(RM)  $(addprefix $(SUBDIR),$(DISTCLEANSUFFIXES)) \
             $(addprefix $(SUBDIR), $(foreach suffix,$(DISTCLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 
 ifdef CONFIG_SHARED
@@ -86,15 +86,15 @@ endif
 	install -m 644 $(BUILD_ROOT)/lib$(NAME)/lib$(NAME).pc "$(LIBDIR)/pkgconfig"
 
 uninstall-libs::
-	-rm -f "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \
+	-$(RM) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \
 	       "$(SHLIBDIR)/$(SLIBNAME)"            \
 	       "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
 	-$(SLIB_UNINSTALL_EXTRA_CMD)
-	-rm -f "$(LIBDIR)/$(LIBNAME)"
+	-$(RM) "$(LIBDIR)/$(LIBNAME)"
 
 uninstall-headers::
-	rm -f $(addprefix "$(INCINSTDIR)/",$(HEADERS))
-	rm -f "$(LIBDIR)/pkgconfig/lib$(NAME).pc"
+	$(RM) $(addprefix "$(INCINSTDIR)/",$(HEADERS))
+	$(RM) "$(LIBDIR)/pkgconfig/lib$(NAME).pc"
 	-rmdir "$(INCDIR)"
 endef
 

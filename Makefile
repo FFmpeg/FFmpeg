@@ -118,29 +118,29 @@ install-man: $(MANPAGES)
 uninstall: uninstall-progs uninstall-data uninstall-man
 
 uninstall-progs:
-	rm -f $(addprefix "$(BINDIR)/", $(ALLPROGS))
+	$(RM) $(addprefix "$(BINDIR)/", $(ALLPROGS))
 
 uninstall-data:
-	rm -rf "$(DATADIR)"
+	$(RM) -r "$(DATADIR)"
 
 uninstall-man:
-	rm -f $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
+	$(RM) $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
 
 testclean:
-	rm -rf tests/vsynth1 tests/vsynth2 tests/data
-	rm -f $(addprefix tests/,$(CLEANSUFFIXES))
-	rm -f tests/seek_test$(EXESUF) tests/seek_test.o
-	rm -f $(addprefix tests/,$(addsuffix $(HOSTEXESUF),audiogen videogen rotozoom tiny_psnr))
+	$(RM) -r tests/vsynth1 tests/vsynth2 tests/data
+	$(RM) $(addprefix tests/,$(CLEANSUFFIXES))
+	$(RM) tests/seek_test$(EXESUF) tests/seek_test.o
+	$(RM) $(addprefix tests/,$(addsuffix $(HOSTEXESUF),audiogen videogen rotozoom tiny_psnr))
 
 clean:: testclean
-	rm -f $(ALLPROGS) $(ALLPROGS_G)
-	rm -f $(CLEANSUFFIXES)
-	rm -f doc/*.html doc/*.pod doc/*.1
-	rm -f $(TOOLS)
+	$(RM) $(ALLPROGS) $(ALLPROGS_G)
+	$(RM) $(CLEANSUFFIXES)
+	$(RM) doc/*.html doc/*.pod doc/*.1
+	$(RM) $(TOOLS)
 
 distclean::
-	rm -f $(DISTCLEANSUFFIXES)
-	rm -f version.h config.* libavutil/avconfig.h
+	$(RM) $(DISTCLEANSUFFIXES)
+	$(RM) version.h config.* libavutil/avconfig.h
 
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
