@@ -1659,6 +1659,9 @@ case $target_os in
         ;;
     gnu/kfreebsd)
         ;;
+    gnu)
+        disable dv1394
+        ;;
 
     *)
         die "Unknown OS '$target_os'."
