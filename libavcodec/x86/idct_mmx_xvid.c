@@ -41,6 +41,7 @@
 
 #include <inttypes.h>
 #include "libavcodec/avcodec.h"
+#include "idct_xvid.h"
 
 //=============================================================================
 // Macros and other preprocessor constants

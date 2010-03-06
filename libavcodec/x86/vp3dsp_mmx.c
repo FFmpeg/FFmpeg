@@ -26,6 +26,7 @@
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
+#include "vp3dsp_mmx.h"
 
 extern const uint16_t ff_vp3_idct_data[];
 

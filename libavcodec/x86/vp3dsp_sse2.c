@@ -25,6 +25,7 @@
 
 #include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
+#include "vp3dsp_sse2.h"
 
 DECLARE_ALIGNED(16, const uint16_t, ff_vp3_idct_data)[7 * 8] =
 {

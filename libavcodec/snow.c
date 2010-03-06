@@ -26,6 +26,7 @@
 #include "mathops.h"
 
 #include "mpegvideo.h"
+#include "h263.h"
 
 #undef NDEBUG
 #include <assert.h>

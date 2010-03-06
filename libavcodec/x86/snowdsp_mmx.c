@@ -22,6 +22,7 @@
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/snow.h"
+#include "dsputil_mmx.h"
 
 void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width){
     const int w2= (width+1)>>1;
