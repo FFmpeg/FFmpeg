@@ -2795,8 +2795,6 @@ static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int
 
 #if CONFIG_CAVS_DECODER
 /* AVS specific */
-void ff_cavsdsp_init(DSPContext* c, AVCodecContext *avctx);
-
 void ff_put_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
     put_pixels8_c(dst, src, stride, 8);
 }
@@ -2811,12 +2809,8 @@ void ff_avg_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
 }
 #endif /* CONFIG_CAVS_DECODER */
 
-void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);
-
 #if CONFIG_VC1_DECODER
 /* VC-1 specific */
-void ff_vc1dsp_init(DSPContext* c, AVCodecContext *avctx);
-
 void ff_put_vc1_mspel_mc00_c(uint8_t *dst, uint8_t *src, int stride, int rnd) {
     put_pixels8_c(dst, src, stride, 8);
 }
@@ -2825,14 +2819,8 @@ void ff_avg_vc1_mspel_mc00_c(uint8_t *dst, uint8_t *src, int stride, int rnd) {
 }
 #endif /* CONFIG_VC1_DECODER */
 
-void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
-
 /* H264 specific */
 void ff_h264dspenc_init(DSPContext* c, AVCodecContext *avctx);
-
-#if CONFIG_RV30_DECODER
-void ff_rv30dsp_init(DSPContext* c, AVCodecContext *avctx);
-#endif /* CONFIG_RV30_DECODER */
 
 #if CONFIG_RV40_DECODER
 static void put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride){
@@ -2847,8 +2835,6 @@ static void put_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, int stride){
 static void avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, int stride){
     avg_pixels8_xy2_c(dst, src, stride, 8);
 }
-
-void ff_rv40dsp_init(DSPContext* c, AVCodecContext *avctx);
 #endif /* CONFIG_RV40_DECODER */
 
 static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int w){

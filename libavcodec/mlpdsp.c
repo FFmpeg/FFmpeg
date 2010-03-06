@@ -55,8 +55,6 @@ static void ff_mlp_filter_channel(int32_t *state, const int32_t *coeff,
     }
 }
 
-void ff_mlp_init_x86(DSPContext* c, AVCodecContext *avctx);
-
 void ff_mlp_init(DSPContext* c, AVCodecContext *avctx)
 {
     c->mlp_filter_channel = ff_mlp_filter_channel;

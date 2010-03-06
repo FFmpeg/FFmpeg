@@ -663,6 +663,14 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
+void ff_cavsdsp_init(DSPContext* c, AVCodecContext *avctx);
+void ff_rv30dsp_init(DSPContext* c, AVCodecContext *avctx);
+void ff_rv40dsp_init(DSPContext* c, AVCodecContext *avctx);
+void ff_vc1dsp_init(DSPContext* c, AVCodecContext *avctx);
+void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
+void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);
+void ff_mlp_init_x86(DSPContext* c, AVCodecContext *avctx);
+
 #if HAVE_MMX
 
 #undef emms_c
