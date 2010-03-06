@@ -150,8 +150,6 @@ int sws_isSupportedOutput(enum PixelFormat pix_fmt)
     return isSupportedOut(pix_fmt);
 }
 
-#define usePal(x) (av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL)
-
 extern const int32_t ff_yuv2rgb_coeffs[8][4];
 
 const char *sws_format_name(enum PixelFormat format)

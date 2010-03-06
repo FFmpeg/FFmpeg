@@ -92,7 +92,6 @@ untested special converters
         || (x)==PIX_FMT_UYVY422     \
         || isAnyRGB(x)              \
     )
-#define usePal(x) (av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL)
 
 #define RGB2YUV_SHIFT 15
 #define BY ( (int)(0.114*219/255*(1<<RGB2YUV_SHIFT)+0.5))

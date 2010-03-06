@@ -442,6 +442,7 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_RGB32_1     \
         || (x)==PIX_FMT_YUVA420P    \
     )
+#define usePal(x) (av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL)
 
 extern const uint64_t ff_dither4[2];
 extern const uint64_t ff_dither8[2];
