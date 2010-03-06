@@ -2966,6 +2966,7 @@ AS=$as
 LD=$ld
 DEPCC=$dep_cc
 YASM=$yasmexe
+YASMDEP=$yasmexe
 AR=$ar
 RANLIB=$ranlib
 LN_S=$ln_s

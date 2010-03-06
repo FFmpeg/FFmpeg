@@ -31,7 +31,7 @@ $(SUBDIR)%-test.o: $(SUBDIR)%-test.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c $$(CC_O) $$^
 
 $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
-	$(YASM) $(YASMFLAGS) -I $$(<D)/ -M -o $$@ $$< > $$(@:.o=.d)
+	$(YASMDEP) $(YASMFLAGS) -I $$(<D)/ -M -o $$@ $$< > $$(@:.o=.d)
 	$(YASM) $(YASMFLAGS) -I $$(<D)/ -o $$@ $$<
 
 clean::
