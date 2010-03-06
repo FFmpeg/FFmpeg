@@ -519,7 +519,7 @@ static void get_block_sizes(ALSDecContext *ctx, unsigned int *div_blocks,
         unsigned int remaining = ctx->cur_frame_length;
 
         for (b = 0; b < ctx->num_blocks; b++) {
-            if (remaining < div_blocks[b]) {
+            if (remaining <= div_blocks[b]) {
                 div_blocks[b] = remaining;
                 ctx->num_blocks = b + 1;
                 break;
