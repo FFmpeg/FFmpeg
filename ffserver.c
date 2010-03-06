@@ -2442,7 +2442,7 @@ static int http_start_receive_data(HTTPContext *c)
     c->buffer_ptr = c->buffer;
     c->buffer_end = c->buffer + FFM_PACKET_SIZE;
     c->stream->feed_opened = 1;
-    c->chunked_encoding = !!strcasestr(c->buffer, "Transfer-Encoding: chunked");
+    c->chunked_encoding = !!av_stristr(c->buffer, "Transfer-Encoding: chunked");
     return 0;
 }
 
