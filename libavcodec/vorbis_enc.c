@@ -27,6 +27,7 @@
 #include <float.h>
 #include "avcodec.h"
 #include "dsputil.h"
+#include "fft.h"
 #include "vorbis.h"
 #include "vorbis_enc_data.h"
 

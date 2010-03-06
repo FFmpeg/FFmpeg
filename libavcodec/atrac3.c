@@ -40,6 +40,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "bytestream.h"
+#include "fft.h"
 
 #include "atrac.h"
 #include "atrac3data.h"

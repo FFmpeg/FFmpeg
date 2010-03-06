@@ -32,6 +32,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "fft.h"
 #include "mpeg4audio.h"
 
 #include <stdint.h>

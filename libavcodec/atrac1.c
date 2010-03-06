@@ -35,6 +35,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "fft.h"
 
 #include "atrac.h"
 #include "atrac1data.h"

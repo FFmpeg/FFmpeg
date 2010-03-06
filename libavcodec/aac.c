@@ -80,6 +80,7 @@
 #include "internal.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "fft.h"
 #include "lpc.h"
 
 #include "aac.h"

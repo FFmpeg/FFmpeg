@@ -30,7 +30,7 @@
 #include "libavcodec/audioconvert.h"
 #include "libavcodec/colorspace.h"
 #include "libavcodec/opt.h"
-#include "libavcodec/dsputil.h"
+#include "libavcodec/fft.h"
 
 #if CONFIG_AVFILTER
 # include "libavfilter/avfilter.h"

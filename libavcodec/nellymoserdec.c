@@ -36,6 +36,7 @@
 #include "libavutil/random_seed.h"
 #include "avcodec.h"
 #include "dsputil.h"
+#include "fft.h"
 
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"

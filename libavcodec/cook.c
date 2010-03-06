@@ -52,6 +52,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "bytestream.h"
+#include "fft.h"
 
 #include "cookdata.h"
 

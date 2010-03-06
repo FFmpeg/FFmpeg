@@ -28,7 +28,8 @@
  */
 
 #include <math.h>
-#include "dsputil.h"
+#include "libavutil/mathematics.h"
+#include "fft.h"
 
 av_cold int ff_dct_init(DCTContext *s, int nbits, int inverse)
 {

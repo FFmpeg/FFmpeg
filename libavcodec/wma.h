@@ -25,6 +25,7 @@
 #include "get_bits.h"
 #include "put_bits.h"
 #include "dsputil.h"
+#include "fft.h"
 
 /* size of blocks */
 #define BLOCK_MIN_BITS 7

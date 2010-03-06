@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "fft.h"
 #include "synth_filter.h"
 
 void ff_synth_filter_float(FFTContext *imdct,

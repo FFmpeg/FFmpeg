@@ -32,6 +32,8 @@
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "dsputil.h"
+#include "fft.h"
+
 extern const uint16_t ff_wma_critical_freqs[25];
 
 #define MAX_CHANNELS 2

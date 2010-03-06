@@ -32,6 +32,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "fft.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "dcadata.h"
