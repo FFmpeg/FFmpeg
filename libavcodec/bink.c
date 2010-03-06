@@ -956,7 +956,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
     flags = AV_RL32(avctx->extradata);
     c->has_alpha = flags & BINK_FLAG_ALPHA;
-    c->swap_planes = c->version >= 'i';
+    c->swap_planes = c->version >= 'h';
     if (!bink_trees[15].table) {
         for (i = 0; i < 16; i++) {
             const int maxbits = bink_tree_lens[i][15];
