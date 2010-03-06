@@ -200,7 +200,7 @@ int opt_default(const char *opt, const char *arg){
     }
     if(!o)
         ret = av_set_string3(avformat_opts, opt, arg, 1, &o);
-    if(!o)
+    if(!o && sws_opts)
         ret = av_set_string3(sws_opts, opt, arg, 1, &o);
     if(!o){
         if(opt[0] == 'a')
