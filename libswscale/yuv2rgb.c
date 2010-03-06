@@ -630,15 +630,18 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
                         || c->dstFormat==PIX_FMT_RGB565LE
                         || c->dstFormat==PIX_FMT_RGB555BE
                         || c->dstFormat==PIX_FMT_RGB555LE
-                        || c->dstFormat==PIX_FMT_RGB444
+                        || c->dstFormat==PIX_FMT_RGB444BE
+                        || c->dstFormat==PIX_FMT_RGB444LE
                         || c->dstFormat==PIX_FMT_RGB8
                         || c->dstFormat==PIX_FMT_RGB4
                         || c->dstFormat==PIX_FMT_RGB4_BYTE
                         || c->dstFormat==PIX_FMT_MONOBLACK;
     const int isNotNe =    c->dstFormat==PIX_FMT_NE(RGB565LE,RGB565BE)
                         || c->dstFormat==PIX_FMT_NE(RGB555LE,RGB555BE)
+                        || c->dstFormat==PIX_FMT_NE(RGB444LE,RGB444BE)
                         || c->dstFormat==PIX_FMT_NE(BGR565LE,BGR565BE)
-                        || c->dstFormat==PIX_FMT_NE(BGR555LE,BGR555BE);
+                        || c->dstFormat==PIX_FMT_NE(BGR555LE,BGR555BE)
+                        || c->dstFormat==PIX_FMT_NE(BGR444LE,BGR444BE);
     const int bpp = c->dstFormatBpp;
     uint8_t *y_table;
     uint16_t *y_table16;
@@ -745,6 +748,9 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
             y_table16[i+2048] = (yval >> 4) << bbase;
             yb += cy;
         }
+        if (isNotNe)
+            for (i = 0; i < 1024*3; i++)
+                y_table16[i] = bswap_16(y_table16[i]);
         fill_table(c->table_rV, 2, crv, y_table16 + yoffs);
         fill_table(c->table_gU, 2, cgu, y_table16 + yoffs + 1024);
         fill_table(c->table_bU, 2, cbu, y_table16 + yoffs + 2048);
