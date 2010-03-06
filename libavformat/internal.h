@@ -35,4 +35,6 @@ void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
 void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
                               int (*compare)(AVFormatContext *, AVPacket *, AVPacket *));
 
+void av_read_frame_flush(AVFormatContext *s);
+
 #endif /* AVFORMAT_INTERNAL_H */
