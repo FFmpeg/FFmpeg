@@ -104,15 +104,15 @@ doc/%.1: doc/%.pod
 install: $(INSTALL_TARGETS-yes)
 
 install-progs: $(PROGS) $(INSTALL_PROGS_TARGETS-yes)
-	install -d "$(BINDIR)"
+	mkdir -p "$(BINDIR)"
 	install -c -m 755 $(PROGS) "$(BINDIR)"
 
 install-data: $(DATA_FILES)
-	install -d "$(DATADIR)"
+	mkdir -p "$(DATADIR)"
 	install -m 644 $(DATA_FILES) "$(DATADIR)"
 
 install-man: $(MANPAGES)
-	install -d "$(MANDIR)/man1"
+	mkdir -p "$(MANDIR)/man1"
 	install -m 644 $(MANPAGES) "$(MANDIR)/man1"
 
 uninstall: uninstall-progs uninstall-data uninstall-man

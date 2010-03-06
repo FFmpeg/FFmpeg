@@ -62,7 +62,7 @@ endif
 endif
 
 install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
-	install -d "$(SHLIBDIR)"
+	mkdir -p "$(SHLIBDIR)"
 	install -m 755 $$< "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
 	$(STRIP) "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
 	cd "$(SHLIBDIR)" && \
@@ -72,13 +72,13 @@ install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 	$(SLIB_INSTALL_EXTRA_CMD)
 
 install-lib$(NAME)-static: $(SUBDIR)$(LIBNAME)
-	install -d "$(LIBDIR)"
+	mkdir -p "$(LIBDIR)"
 	install -m 644 $$< "$(LIBDIR)"
 	$(LIB_INSTALL_EXTRA_CMD)
 
 install-headers::
-	install -d "$(INCINSTDIR)"
-	install -d "$(LIBDIR)/pkgconfig"
+	mkdir -p "$(INCINSTDIR)"
+	mkdir -p "$(LIBDIR)/pkgconfig"
 	install -m 644 $(addprefix "$(SRC_DIR)"/,$(HEADERS)) "$(INCINSTDIR)"
 ifdef BUILT_HEADERS
 	install -m 644 $(addprefix $(SUBDIR),$(BUILT_HEADERS)) "$(INCINSTDIR)"
