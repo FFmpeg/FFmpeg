@@ -1442,17 +1442,8 @@ static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1, int6
     is->video_clock += frame_delay;
 
 #if defined(DEBUG_SYNC) && 0
-    {
-        int ftype;
-        if (src_frame->pict_type == FF_B_TYPE)
-            ftype = 'B';
-        else if (src_frame->pict_type == FF_I_TYPE)
-            ftype = 'I';
-        else
-            ftype = 'P';
         printf("frame_type=%c clock=%0.3f pts=%0.3f\n",
-               ftype, pts, pts1);
-    }
+               av_get_pict_type_char(src_frame->pict_type), pts, pts1);
 #endif
     return queue_picture(is, src_frame, pts, pos);
 }
