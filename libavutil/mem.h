@@ -49,6 +49,8 @@
     #define DECLARE_ASM_CONST(n,t,v)    static const t v
 #endif
 
+#define DECLARE_ALIGNED_16(t, v) DECLARE_ALIGNED(16, t, v)
+#define DECLARE_ALIGNED_8(t, v)  DECLARE_ALIGNED(8, t, v)
 
 #if AV_GCC_VERSION_AT_LEAST(3,1)
     #define av_malloc_attrib __attribute__((__malloc__))

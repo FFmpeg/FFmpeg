@@ -663,9 +663,6 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
-#define DECLARE_ALIGNED_16(t, v, ...) DECLARE_ALIGNED(16, t, v)
-#define DECLARE_ALIGNED_8(t, v, ...)  DECLARE_ALIGNED(8, t, v)
-
 #if HAVE_MMX
 
 #undef emms_c
