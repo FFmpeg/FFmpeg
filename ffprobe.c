@@ -19,11 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #undef HAVE_AV_CONFIG_H
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavdevice/avdevice.h"
 #include "cmdutils.h"
 
 const char program_name[] = "FFprobe";
@@ -334,6 +337,9 @@ static const OptionDef options[] = {
 int main(int argc, char **argv)
 {
     av_register_all();
+#if CONFIG_AVDEVICE
+    avdevice_register_all();
+#endif
 
     show_banner();
     parse_options(argc, argv, options, opt_input_file);
