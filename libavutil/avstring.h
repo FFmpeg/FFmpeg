@@ -47,6 +47,19 @@ int av_strstart(const char *str, const char *pfx, const char **ptr);
 int av_stristart(const char *str, const char *pfx, const char **ptr);
 
 /**
+ * Locate the first case-independent occurrence in the string s1 of
+ * the string s2.  A zero-length string s2 is considered to match at
+ * the start of s1.
+ *
+ * This function is a case-insensitive version of the standard strstr().
+ *
+ * @param s1 string to search in
+ * @param s2 string to search for
+ * @return pointer to the located match within s1 or a null pointer if no match
+ */
+char *av_stristr(const char *s1, const char *s2);
+
+/**
  * Copy the string src to dst, but no more than size - 1 bytes, and
  * null-terminate dst.
  *

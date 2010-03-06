@@ -48,6 +48,19 @@ int av_stristart(const char *str, const char *pfx, const char **ptr)
     return !*pfx;
 }
 
+char *av_stristr(const char *s1, const char *s2)
+{
+    if (!*s2)
+        return s1;
+
+    do {
+        if (av_stristart(s1, s2, NULL))
+            return s1;
+    } while (*s1++);
+
+    return NULL;
+}
+
 size_t av_strlcpy(char *dst, const char *src, size_t size)
 {
     size_t len = 0;
