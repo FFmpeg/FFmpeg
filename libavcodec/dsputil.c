@@ -36,21 +36,13 @@
 #include "snow.h"
 #include "mpegvideo.h"
 #include "config.h"
+#include "lpc.h"
+#include "ac3dec.h"
+#include "vorbis.h"
+#include "png.h"
 
 /* snow.c */
 void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, int decomposition_count);
-
-/* vorbis.c */
-void vorbis_inverse_coupling(float *mag, float *ang, int blocksize);
-
-/* ac3dec.c */
-void ff_ac3_downmix_c(float (*samples)[256], float (*matrix)[2], int out_ch, int in_ch, int len);
-
-/* lpc.c */
-void ff_lpc_compute_autocorr(const int32_t *data, int len, int lag, double *autoc);
-
-/* pngdec.c */
-void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp);
 
 /* eaidct.c */
 void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);

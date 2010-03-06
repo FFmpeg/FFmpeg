@@ -45,6 +45,9 @@ int ff_lpc_calc_coefs(DSPContext *s,
                       int32_t coefs[][MAX_LPC_ORDER], int *shift, int use_lpc,
                       int omethod, int max_shift, int zero_shift);
 
+void ff_lpc_compute_autocorr(const int32_t *data, int len, int lag,
+                             double *autoc);
+
 #ifdef LPC_USE_DOUBLE
 #define LPC_TYPE double
 #else

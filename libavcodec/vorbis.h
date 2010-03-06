@@ -41,6 +41,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num);
 void ff_vorbis_floor1_render_list(vorbis_floor1_entry * list, int values,
                                   uint_fast16_t * y_list, int * flag,
                                   int multiplier, float * out, int samples);
+void vorbis_inverse_coupling(float *mag, float *ang, int blocksize);
 
 #define ilog(i) av_log2(2*(i))
 
