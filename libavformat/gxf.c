@@ -351,8 +351,10 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     } else
         av_log(s, AV_LOG_INFO, "UMF packet missing\n");
     url_fskip(pb, len);
+    // set a fallback value, 60000/1001 is specified for audio-only files
+    // so use that regardless of why we do not know the video frame rate.
     if (!main_timebase.num || !main_timebase.den)
-        main_timebase = (AVRational){1, 50}; // set some arbitrary fallback
+        main_timebase = (AVRational){1001, 60000};
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         av_set_pts_info(st, 32, main_timebase.num, main_timebase.den);
