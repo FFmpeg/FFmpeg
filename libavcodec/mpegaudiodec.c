@@ -101,7 +101,7 @@ DECLARE_ALIGNED(16, MPA_INT, ff_mpa_synth_window)[512];
  * Convert region offsets to region sizes and truncate
  * size to big_values.
  */
-void ff_region_offset2size(GranuleDef *g){
+static void ff_region_offset2size(GranuleDef *g){
     int i, k, j=0;
     g->region_size[2] = (576 / 2);
     for(i=0;i<3;i++) {
@@ -111,7 +111,7 @@ void ff_region_offset2size(GranuleDef *g){
     }
 }
 
-void ff_init_short_region(MPADecodeContext *s, GranuleDef *g){
+static void ff_init_short_region(MPADecodeContext *s, GranuleDef *g){
     if (g->block_type == 2)
         g->region_size[0] = (36 / 2);
     else {
@@ -125,7 +125,7 @@ void ff_init_short_region(MPADecodeContext *s, GranuleDef *g){
     g->region_size[1] = (576 / 2);
 }
 
-void ff_init_long_region(MPADecodeContext *s, GranuleDef *g, int ra1, int ra2){
+static void ff_init_long_region(MPADecodeContext *s, GranuleDef *g, int ra1, int ra2){
     int l;
     g->region_size[0] =
         band_index_long[s->sample_rate_index][ra1 + 1] >> 1;
@@ -135,7 +135,7 @@ void ff_init_long_region(MPADecodeContext *s, GranuleDef *g, int ra1, int ra2){
         band_index_long[s->sample_rate_index][l] >> 1;
 }
 
-void ff_compute_band_indexes(MPADecodeContext *s, GranuleDef *g){
+static void ff_compute_band_indexes(MPADecodeContext *s, GranuleDef *g){
     if (g->block_type == 2) {
         if (g->switch_point) {
             /* if switched mode, we handle the 36 first samples as

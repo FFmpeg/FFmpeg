@@ -80,7 +80,7 @@ av_cold int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans)
  * the two real FFTs into one complex FFT. Unmangle the results.
  * ref: http://www.engineeringproductivitytools.com/stuff/T0001/PT10.HTM
  */
-void ff_rdft_calc_c(RDFTContext* s, FFTSample* data)
+static void ff_rdft_calc_c(RDFTContext* s, FFTSample* data)
 {
     int i, i1, i2;
     FFTComplex ev, od;

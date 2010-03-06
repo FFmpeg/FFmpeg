@@ -252,7 +252,7 @@ static int at1_unpack_dequant(GetBitContext* gb, AT1SUCtx* su,
 }
 
 
-void at1_subband_synthesis(AT1Ctx *q, AT1SUCtx* su, float *pOut)
+static void at1_subband_synthesis(AT1Ctx *q, AT1SUCtx* su, float *pOut)
 {
     float temp[256];
     float iqmf_temp[512 + 46];
