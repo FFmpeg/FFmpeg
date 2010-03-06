@@ -63,7 +63,7 @@ endif
 
 install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 	mkdir -p "$(SHLIBDIR)"
-	install -m 755 $$< "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
+	$$(INSTALL) -m 755 $$< "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
 	$(STRIP) "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
 	cd "$(SHLIBDIR)" && \
 		$(LN_S) $(SLIBNAME_WITH_VERSION) $(SLIBNAME_WITH_MAJOR)
@@ -73,17 +73,17 @@ install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 
 install-lib$(NAME)-static: $(SUBDIR)$(LIBNAME)
 	mkdir -p "$(LIBDIR)"
-	install -m 644 $$< "$(LIBDIR)"
+	$$(INSTALL) -m 644 $$< "$(LIBDIR)"
 	$(LIB_INSTALL_EXTRA_CMD)
 
 install-headers::
 	mkdir -p "$(INCINSTDIR)"
 	mkdir -p "$(LIBDIR)/pkgconfig"
-	install -m 644 $(addprefix "$(SRC_DIR)"/,$(HEADERS)) "$(INCINSTDIR)"
+	$$(INSTALL) -m 644 $(addprefix "$(SRC_DIR)"/,$(HEADERS)) "$(INCINSTDIR)"
 ifdef BUILT_HEADERS
-	install -m 644 $(addprefix $(SUBDIR),$(BUILT_HEADERS)) "$(INCINSTDIR)"
+	$$(INSTALL) -m 644 $(addprefix $(SUBDIR),$(BUILT_HEADERS)) "$(INCINSTDIR)"
 endif
-	install -m 644 $(BUILD_ROOT)/lib$(NAME)/lib$(NAME).pc "$(LIBDIR)/pkgconfig"
+	$$(INSTALL) -m 644 $(BUILD_ROOT)/lib$(NAME)/lib$(NAME).pc "$(LIBDIR)/pkgconfig"
 
 uninstall-libs::
 	-$(RM) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \

@@ -105,15 +105,15 @@ install: $(INSTALL_TARGETS-yes)
 
 install-progs: $(PROGS) $(INSTALL_PROGS_TARGETS-yes)
 	mkdir -p "$(BINDIR)"
-	install -c -m 755 $(PROGS) "$(BINDIR)"
+	$(INSTALL) -c -m 755 $(PROGS) "$(BINDIR)"
 
 install-data: $(DATA_FILES)
 	mkdir -p "$(DATADIR)"
-	install -m 644 $(DATA_FILES) "$(DATADIR)"
+	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
 
 install-man: $(MANPAGES)
 	mkdir -p "$(MANDIR)/man1"
-	install -m 644 $(MANPAGES) "$(MANDIR)/man1"
+	$(INSTALL) -m 644 $(MANPAGES) "$(MANDIR)/man1"
 
 uninstall: uninstall-progs uninstall-data uninstall-man
 

@@ -3005,6 +3005,7 @@ SDL_LIBS=$sdl_libs
 SDL_CFLAGS=$sdl_cflags
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
+INSTALL=install
 EOF
 
 get_version(){
