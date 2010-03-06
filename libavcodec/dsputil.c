@@ -92,7 +92,7 @@ const uint8_t ff_zigzag248_direct[64] = {
 };
 
 /* not permutated inverse zigzag_direct + 1 for MMX quantizer */
-DECLARE_ALIGNED_16(uint16_t, inv_zigzag_direct16)[64];
+DECLARE_ALIGNED(16, uint16_t, inv_zigzag_direct16)[64];
 
 const uint8_t ff_alternate_horizontal_scan[64] = {
     0,  1,   2,  3,  8,  9, 16, 17,
@@ -4535,7 +4535,7 @@ av_cold void dsputil_static_init(void)
 
 int ff_check_alignment(void){
     static int did_fail=0;
-    DECLARE_ALIGNED_16(int, aligned);
+    DECLARE_ALIGNED(16, int, aligned);
 
     if((intptr_t)&aligned & 15){
         if(!did_fail){

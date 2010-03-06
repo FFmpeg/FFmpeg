@@ -136,7 +136,7 @@ enum cavs_mv_loc {
   MV_BWD_X3
 };
 
-DECLARE_ALIGNED_8(typedef, struct) {
+DECLARE_ALIGNED(8, typedef, struct) {
     int16_t x;
     int16_t y;
     int16_t dist;

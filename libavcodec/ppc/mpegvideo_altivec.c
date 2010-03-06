@@ -506,8 +506,8 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
 
     {
         register const vector signed short vczero = (const vector signed short)vec_splat_s16(0);
-        DECLARE_ALIGNED_16(short, qmul8) = qmul;
-        DECLARE_ALIGNED_16(short, qadd8) = qadd;
+        DECLARE_ALIGNED(16, short, qmul8) = qmul;
+        DECLARE_ALIGNED(16, short, qadd8) = qadd;
         register vector signed short blockv, qmulv, qaddv, nqaddv, temp1;
         register vector bool short blockv_null, blockv_neg;
         register short backup_0 = block[0];

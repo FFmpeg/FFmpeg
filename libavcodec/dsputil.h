@@ -709,13 +709,13 @@ static inline void emms(void)
     t (*v) __VA_ARGS__ = (void *)FFALIGN((uintptr_t)la_##v, a)
 
 #if HAVE_LOCAL_ALIGNED_8
-#   define LOCAL_ALIGNED_8(t, v, s, ...) DECLARE_ALIGNED_8(t, v) s __VA_ARGS__
+#   define LOCAL_ALIGNED_8(t, v, s, ...) DECLARE_ALIGNED(8, t, v) s __VA_ARGS__
 #else
 #   define LOCAL_ALIGNED_8(t, v, s, ...) LOCAL_ALIGNED(8, t, v, s, __VA_ARGS__)
 #endif
 
 #if HAVE_LOCAL_ALIGNED_16
-#   define LOCAL_ALIGNED_16(t, v, s, ...) DECLARE_ALIGNED_16(t, v) s __VA_ARGS__
+#   define LOCAL_ALIGNED_16(t, v, s, ...) DECLARE_ALIGNED(16, t, v) s __VA_ARGS__
 #else
 #   define LOCAL_ALIGNED_16(t, v, s, ...) LOCAL_ALIGNED(16, t, v, s, __VA_ARGS__)
 #endif
@@ -769,11 +769,11 @@ typedef struct FFTContext {
 #endif
 
 #define COSTABLE(size) \
-    COSTABLE_CONST DECLARE_ALIGNED_16(FFTSample, ff_cos_##size)[size/2]
+    COSTABLE_CONST DECLARE_ALIGNED(16, FFTSample, ff_cos_##size)[size/2]
 #define SINTABLE(size) \
-    SINTABLE_CONST DECLARE_ALIGNED_16(FFTSample, ff_sin_##size)[size/2]
+    SINTABLE_CONST DECLARE_ALIGNED(16, FFTSample, ff_sin_##size)[size/2]
 #define SINETABLE(size) \
-    SINETABLE_CONST DECLARE_ALIGNED_16(float, ff_sine_##size)[size]
+    SINETABLE_CONST DECLARE_ALIGNED(16, float, ff_sine_##size)[size]
 extern COSTABLE(16);
 extern COSTABLE(32);
 extern COSTABLE(64);

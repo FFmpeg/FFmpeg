@@ -121,7 +121,7 @@ struct vp56_context {
     /* blocks / macroblock */
     VP56mb mb_type;
     VP56Macroblock *macroblocks;
-    DECLARE_ALIGNED_16(DCTELEM, block_coeff)[6][64];
+    DECLARE_ALIGNED(16, DCTELEM, block_coeff)[6][64];
 
     /* motion vectors */
     VP56mv mv[6];  /* vectors for each block in MB */

@@ -681,8 +681,8 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     int v, col[2];
     const uint8_t *scan;
     int xoff, yoff;
-    DECLARE_ALIGNED_16(DCTELEM, block[64]);
-    DECLARE_ALIGNED_16(uint8_t, ublock[64]);
+    DECLARE_ALIGNED(16, DCTELEM, block[64]);
+    DECLARE_ALIGNED(16, uint8_t, ublock[64]);
     int coordmap[64];
 
     const int stride = c->pic.linesize[plane_idx];

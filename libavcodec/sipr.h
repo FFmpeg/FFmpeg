@@ -64,7 +64,7 @@ typedef struct {
 
     float excitation[L_INTERPOL + PITCH_MAX + 2 * L_SUBFR_16k];
 
-    DECLARE_ALIGNED_16(float, synth_buf)[LP_FILTER_ORDER + 5*SUBFR_SIZE + 6];
+    DECLARE_ALIGNED(16, float, synth_buf)[LP_FILTER_ORDER + 5*SUBFR_SIZE + 6];
 
     float lsp_history[LP_FILTER_ORDER];
     float gain_mem;

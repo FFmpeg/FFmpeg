@@ -42,7 +42,7 @@ typedef struct TgqContext {
     int width,height;
     ScanTable scantable;
     int qtable[64];
-    DECLARE_ALIGNED_16(DCTELEM, block)[6][64];
+    DECLARE_ALIGNED(16, DCTELEM, block)[6][64];
 } TgqContext;
 
 static av_cold int tgq_decode_init(AVCodecContext *avctx){

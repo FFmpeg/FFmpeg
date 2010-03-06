@@ -27,8 +27,8 @@
  */
 static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y, const uint64_t *rnd_reg)
 {
-    DECLARE_ALIGNED_8(uint64_t, AA);
-    DECLARE_ALIGNED_8(uint64_t, DD);
+    DECLARE_ALIGNED(8, uint64_t, AA);
+    DECLARE_ALIGNED(8, uint64_t, DD);
     int i;
 
     if(y==0 && x==0) {

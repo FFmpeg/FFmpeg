@@ -23,7 +23,7 @@
 #include "libavcodec/dsputil.h"
 #include "fft.h"
 
-DECLARE_ALIGNED_8(static const int, m1m1)[2] = { 1<<31, 1<<31 };
+DECLARE_ALIGNED(8, static const int, m1m1)[2] = { 1<<31, 1<<31 };
 
 #ifdef EMULATE_3DNOWEXT
 #define PSWAPD(s,d)\
