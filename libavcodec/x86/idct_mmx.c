@@ -23,6 +23,7 @@
 #include "libavutil/common.h"
 #include "libavcodec/dsputil.h"
 
+#include "dsputil_mmx.h"
 #include "mmx.h"
 
 #define ATTR_ALIGN(align) __attribute__ ((__aligned__ (align)))
@@ -593,9 +594,6 @@ void idct (int16_t * const block)                                       \
     idct_col (block, 0);                                                \
     idct_col (block, 4);                                                \
 }
-
-void ff_mmx_idct(DCTELEM *block);
-void ff_mmxext_idct(DCTELEM *block);
 
 declare_idct (ff_mmxext_idct, mmxext_table,
               mmxext_row_head, mmxext_row, mmxext_row_tail, mmxext_row_mid)

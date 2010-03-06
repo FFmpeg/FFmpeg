@@ -156,4 +156,30 @@ void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
 void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
 void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
 
+void ff_cavsdsp_init_mmx2(DSPContext* c, AVCodecContext *avctx);
+void ff_cavsdsp_init_3dnow(DSPContext* c, AVCodecContext *avctx);
+void ff_put_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
+void ff_put_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
+
+void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx);
+void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src, int stride, int rnd);
+void ff_avg_vc1_mspel_mc00_mmx2(uint8_t *dst, const uint8_t *src, int stride, int rnd);
+
+void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width);
+void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width);
+void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
+void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
+void ff_snow_inner_add_yblock_sse2(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
+                                   int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
+void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
+                                  int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
+
+void ff_lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
+                                   double *autoc);
+
+void ff_mmx_idct(DCTELEM *block);
+void ff_mmxext_idct(DCTELEM *block);
+
 #endif /* AVCODEC_X86_DSPUTIL_MMX_H */

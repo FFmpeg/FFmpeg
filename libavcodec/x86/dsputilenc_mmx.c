@@ -1348,10 +1348,6 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int si
 #endif //HAVE_SSSE3
 
 
-void ff_lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
-                                   double *autoc);
-
-
 void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     if (mm_flags & FF_MM_MMX) {

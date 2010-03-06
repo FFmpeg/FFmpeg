@@ -463,9 +463,6 @@ static void OP ## vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride,\
 VC1_MSPEL_MC(put_)
 VC1_MSPEL_MC(avg_)
 
-void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src, int stride, int rnd);
-void ff_avg_vc1_mspel_mc00_mmx2(uint8_t *dst, const uint8_t *src, int stride, int rnd);
-
 /** Macro to ease bicubic filter interpolation functions declarations */
 #define DECLARE_FUNCTION(a, b)                                          \
 static void put_vc1_mspel_mc ## a ## b ## _mmx(uint8_t *dst, const uint8_t *src, int stride, int rnd) { \

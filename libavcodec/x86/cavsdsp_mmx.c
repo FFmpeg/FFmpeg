@@ -437,11 +437,6 @@ CAVS_MC(put_, 16,mmx2)
 CAVS_MC(avg_, 8, mmx2)
 CAVS_MC(avg_, 16,mmx2)
 
-void ff_put_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
-void ff_put_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
-
 void ff_cavsdsp_init_mmx2(DSPContext* c, AVCodecContext *avctx) {
 #define dspfunc(PFX, IDX, NUM) \
     c->PFX ## _pixels_tab[IDX][ 0] = ff_ ## PFX ## NUM ## _mc00_mmx2; \
