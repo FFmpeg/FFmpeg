@@ -1676,6 +1676,11 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 int offset = 0, pkt_size = lace_size[n];
                 uint8_t *pkt_data = data;
 
+                if (lace_size[n] > size) {
+                    av_log(matroska->ctx, AV_LOG_ERROR, "Invalid packet size\n");
+                    break;
+                }
+
                 if (encodings && encodings->scope & 1) {
                     offset = matroska_decode_buffer(&pkt_data,&pkt_size, track);
                     if (offset < 0)
@@ -1727,6 +1732,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             if (timecode != AV_NOPTS_VALUE)
                 timecode = duration ? timecode + duration : AV_NOPTS_VALUE;
             data += lace_size[n];
+            size -= lace_size[n];
         }
     }
 
