@@ -47,10 +47,6 @@
 #undef main /* We don't want SDL to override our main() */
 #endif
 
-#undef exit
-#undef printf
-#undef fprintf
-
 const char program_name[] = "FFplay";
 const int program_birth_year = 2003;
 

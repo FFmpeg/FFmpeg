@@ -47,7 +47,6 @@
 #endif
 #include <errno.h>
 #include <sys/time.h>
-#undef time //needed because HAVE_AV_CONFIG_H is defined on top
 #include <time.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -56,8 +55,6 @@
 #endif
 
 #include "cmdutils.h"
-
-#undef exit
 
 const char program_name[] = "FFserver";
 const int program_birth_year = 2000;

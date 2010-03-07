@@ -66,15 +66,12 @@
 #elif HAVE_CONIO_H
 #include <conio.h>
 #endif
-#undef time //needed because HAVE_AV_CONFIG_H is defined on top
 #include <time.h>
 
 #include "cmdutils.h"
 
 #undef NDEBUG
 #include <assert.h>
-
-#undef exit
 
 const char program_name[] = "FFmpeg";
 const int program_birth_year = 2000;

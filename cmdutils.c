@@ -46,8 +46,6 @@
 #include <sys/resource.h>
 #endif
 
-#undef exit
-
 const char **opt_names;
 static int opt_name_count;
 AVCodecContext *avcodec_opts[CODEC_TYPE_NB];

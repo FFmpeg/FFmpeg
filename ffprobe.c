@@ -21,7 +21,6 @@
 
 #include "config.h"
 
-#undef HAVE_AV_CONFIG_H
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/opt.h"
