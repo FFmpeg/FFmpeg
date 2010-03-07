@@ -424,12 +424,14 @@ enum SampleFormat {
 
 /**
  * Required number of additionally allocated bytes at the end of the input bitstream for decoding.
- * This is mainly needed because some optimized bitstream readers read
- * 32 or 64 bit at once and could read over the end.<br>
+ * The first 8 bytes are needed because some optimized bitstream readers read
+ * 32 or 64 bit at once and could read over the end. The remainder is to give
+ * decoders a reasonable amount of distance to work with before checking for
+ * buffer overreads.<br>
  * Note: If the first 23 bits of the additional bytes are not 0, then damaged
  * MPEG bitstreams could cause overread and segfault.
  */
-#define FF_INPUT_BUFFER_PADDING_SIZE 8
+#define FF_INPUT_BUFFER_PADDING_SIZE 64
 
 /**
  * minimum encoding buffer size
