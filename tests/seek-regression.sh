@@ -13,7 +13,7 @@ target_path=$3
 refdir="$src_path/tests/ref/seek"
 datadir="tests/data"
 
-list=$(ls -1 $datadir/vsynth2/* $datadir/acodec/*)
+list=$(ls -1 $datadir/vsynth2/* $datadir/acodec/* $datadir/lavf/*)
 err=0
 
 for i in $list ; do
