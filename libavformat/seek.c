@@ -22,6 +22,7 @@
 
 #include "seek.h"
 #include "libavutil/mem.h"
+#include "internal.h"
 
 // NOTE: implementation should be moved here in another patch, to keep patches
 // separated.
