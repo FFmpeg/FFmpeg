@@ -22,6 +22,7 @@
 
 /* needed by inet_aton() */
 #define _SVID_SOURCE
+#define _DARWIN_C_SOURCE
 
 #include "config.h"
 #include "avformat.h"
