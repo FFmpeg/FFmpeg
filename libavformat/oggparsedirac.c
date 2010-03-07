@@ -47,9 +47,10 @@ static int dirac_header(AVFormatContext *s, int idx)
 }
 
 // various undocument things: granule is signed (only for dirac!)
-static uint64_t dirac_gptopts(AVFormatContext *s, int idx, int64_t gp,
+static uint64_t dirac_gptopts(AVFormatContext *s, int idx, uint64_t granule,
                               int64_t *dts_out)
 {
+    int64_t gp = granule;
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
 
