@@ -23,8 +23,10 @@
  * FFT and MDCT tests.
  */
 
+#include "libavutil/mathematics.h"
 #include "libavutil/lfg.h"
-#include "dsputil.h"
+#include "libavutil/log.h"
+#include "fft.h"
 #include <math.h>
 #include <unistd.h>
 #include <sys/time.h>
