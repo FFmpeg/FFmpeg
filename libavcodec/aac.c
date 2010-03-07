@@ -509,17 +509,14 @@ static av_cold int aac_decode_init(AVCodecContext *avccontext)
     int i;
 
     ac->avccontext = avccontext;
+    ac->m4ac.sample_rate = avccontext->sample_rate;
 
     if (avccontext->extradata_size > 0) {
         if (decode_audio_specific_config(ac, avccontext->extradata, avccontext->extradata_size))
             return -1;
-        avccontext->sample_rate = ac->m4ac.sample_rate;
-    } else if (avccontext->channels > 0) {
-        ac->m4ac.sample_rate = avccontext->sample_rate;
     }
 
     avccontext->sample_fmt = SAMPLE_FMT_S16;
-    avccontext->frame_size = 1024;
 
     AAC_INIT_VLC_STATIC( 0, 304);
     AAC_INIT_VLC_STATIC( 1, 270);
@@ -1950,6 +1947,7 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
     enum RawDataBlockType elem_type;
     int err, elem_id, data_size_tmp;
     int buf_consumed;
+    int samples = 1024, multiplier;
 
     init_get_bits(&gb, buf, buf_size * 8);
 
@@ -2035,6 +2033,13 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
     }
 
     spectral_to_sample(ac);
+
+    multiplier = 1;
+    samples <<= multiplier;
+    if (ac->output_configured < OC_LOCKED) {
+        avccontext->sample_rate = ac->m4ac.sample_rate << multiplier;
+        avccontext->frame_size = samples;
+    }
 
     data_size_tmp = 1024 * avccontext->channels * sizeof(int16_t);
     if (*data_size < data_size_tmp) {
