@@ -292,10 +292,10 @@ int main(int argc, char **argv)
         break;
     case TRANSFORM_RDFT:
         if (do_inverse)
-            av_log(NULL, AV_LOG_INFO,"IRDFT");
+            av_log(NULL, AV_LOG_INFO,"IDFT_C2R");
         else
-            av_log(NULL, AV_LOG_INFO,"RDFT");
-        ff_rdft_init(r, fft_nbits, do_inverse ? IRDFT : RDFT);
+            av_log(NULL, AV_LOG_INFO,"DFT_R2C");
+        ff_rdft_init(r, fft_nbits, do_inverse ? IDFT_C2R : DFT_R2C);
         fft_ref_init(fft_nbits, do_inverse);
         break;
     case TRANSFORM_DCT:

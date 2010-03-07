@@ -125,7 +125,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->coeffs_ptr[i] = s->coeffs + i * s->frame_len;
 
     if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT)
-        ff_rdft_init(&s->trans.rdft, frame_len_bits, IRIDFT);
+        ff_rdft_init(&s->trans.rdft, frame_len_bits, DFT_C2R);
     else if (CONFIG_BINKAUDIO_DCT_DECODER)
         ff_dct_init(&s->trans.dct, frame_len_bits, 1);
     else

@@ -906,7 +906,7 @@ static void video_audio_display(VideoState *s)
         nb_display_channels= FFMIN(nb_display_channels, 2);
         if(rdft_bits != s->rdft_bits){
             ff_rdft_end(&s->rdft);
-            ff_rdft_init(&s->rdft, rdft_bits, RDFT);
+            ff_rdft_init(&s->rdft, rdft_bits, DFT_R2C);
             s->rdft_bits= rdft_bits;
         }
         {

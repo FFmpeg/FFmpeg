@@ -195,10 +195,10 @@ void ff_mdct_end(FFTContext *s);
 /* Real Discrete Fourier Transform */
 
 enum RDFTransformType {
-    RDFT,
-    IRDFT,
-    RIDFT,
-    IRIDFT,
+    DFT_R2C,
+    IDFT_C2R,
+    IDFT_R2C,
+    DFT_C2R,
 };
 
 typedef struct {

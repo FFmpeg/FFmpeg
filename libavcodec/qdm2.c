@@ -1928,7 +1928,7 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    ff_rdft_init(&s->rdft_ctx, s->fft_order, IRDFT);
+    ff_rdft_init(&s->rdft_ctx, s->fft_order, IDFT_C2R);
 
     qdm2_init(s);
 
