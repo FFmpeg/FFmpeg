@@ -568,6 +568,18 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
         return -1;
     }
 
+    if (band->blk_size == 8) {
+        band->intra_base  = &ivi5_base_quant_8x8_intra[band->quant_mat][0];
+        band->inter_base  = &ivi5_base_quant_8x8_inter[band->quant_mat][0];
+        band->intra_scale = &ivi5_scale_quant_8x8_intra[band->quant_mat][0];
+        band->inter_scale = &ivi5_scale_quant_8x8_inter[band->quant_mat][0];
+    } else {
+        band->intra_base  = ivi5_base_quant_4x4_intra;
+        band->inter_base  = ivi5_base_quant_4x4_inter;
+        band->intra_scale = ivi5_scale_quant_4x4_intra;
+        band->inter_scale = ivi5_scale_quant_4x4_inter;
+    }
+
     band->rv_map = &ctx->rvmap_tabs[band->rvmap_sel];
 
     /* apply corrections to the selected rvmap table if present */
@@ -592,18 +604,6 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
             result = decode_mb_info(ctx, band, tile, avctx);
             if (result < 0)
                 break;
-
-            if (band->blk_size == 8) {
-                band->intra_base  = &ivi5_base_quant_8x8_intra[band->quant_mat][0];
-                band->inter_base  = &ivi5_base_quant_8x8_inter[band->quant_mat][0];
-                band->intra_scale = &ivi5_scale_quant_8x8_intra[band->quant_mat][0];
-                band->inter_scale = &ivi5_scale_quant_8x8_inter[band->quant_mat][0];
-            } else {
-                band->intra_base  = ivi5_base_quant_4x4_intra;
-                band->inter_base  = ivi5_base_quant_4x4_inter;
-                band->intra_scale = ivi5_scale_quant_4x4_intra;
-                band->inter_scale = ivi5_scale_quant_4x4_inter;
-            }
 
             result = ff_ivi_decode_blocks(&ctx->gb, band, tile);
             if (result < 0) {
