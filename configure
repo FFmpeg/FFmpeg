@@ -2705,7 +2705,6 @@ check_cflags -Wwrite-strings
 check_cflags -Wtype-limits
 check_cflags -Wundef
 check_cflags -Wmissing-prototypes
-check_cflags -Werror=implicit
 enabled extra_warnings && check_cflags -Winline
 
 # add some linker flags
@@ -2752,6 +2751,7 @@ elif enabled ccc; then
     add_cflags -msg_disable unreachcode
 elif enabled gcc; then
     check_cflags -fno-tree-vectorize
+    check_cflags -Werror=implicit
 elif enabled clang; then
     check_cflags -Qunused-arguments
 elif enabled armcc; then
