@@ -5,6 +5,8 @@ include $(SUBDIR)../common.mak
 LIBVERSION := $(lib$(NAME)_VERSION)
 LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
 
+$(OBJS): CPPFLAGS += -DHAVE_AV_CONFIG_H
+
 ifdef CONFIG_STATIC
 all: $(SUBDIR)$(LIBNAME)
 
