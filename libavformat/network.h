@@ -63,10 +63,7 @@ static inline void ff_network_close(void)
 #endif
 }
 
-#if !HAVE_INET_ATON
-/* in os_support.c */
-int inet_aton (const char * str, struct in_addr * add);
-#endif
+int ff_inet_aton (const char * str, struct in_addr * add);
 
 #if !HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage {

@@ -45,7 +45,7 @@
 #include <stdlib.h>
 #include <strings.h>
 
-int inet_aton (const char * str, struct in_addr * add)
+int ff_inet_aton (const char * str, struct in_addr * add)
 {
     unsigned int add1 = 0, add2 = 0, add3 = 0, add4 = 0;
 
@@ -57,6 +57,11 @@ int inet_aton (const char * str, struct in_addr * add)
     add->s_addr = htonl((add1 << 24) + (add2 << 16) + (add3 << 8) + add4);
 
     return 1;
+}
+#else
+int ff_inet_aton (const char * str, struct in_addr * add)
+{
+    return inet_aton(str, add);
 }
 #endif /* !HAVE_INET_ATON */
 
@@ -85,7 +90,7 @@ int ff_getaddrinfo(const char *node, const char *service,
     sin->sin_family = AF_INET;
 
     if (node) {
-        if (!inet_aton(node, &sin->sin_addr)) {
+        if (!ff_inet_aton(node, &sin->sin_addr)) {
             if (hints && (hints->ai_flags & AI_NUMERICHOST)) {
                 av_free(sin);
                 return EAI_FAIL;
@@ -221,7 +226,7 @@ const char *ff_gai_strerror(int ecode)
 int resolve_host(struct in_addr *sin_addr, const char *hostname)
 {
 
-    if (!inet_aton(hostname, sin_addr)) {
+    if (!ff_inet_aton(hostname, sin_addr)) {
 #if HAVE_GETADDRINFO
         struct addrinfo *ai, *cur;
         struct addrinfo hints;

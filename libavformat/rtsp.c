@@ -19,9 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* needed by inet_aton() */
-#define _SVID_SOURCE
-
 #include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
@@ -359,7 +356,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         if (strcmp(buf1, "IP4") != 0)
             return;
         get_word_sep(buf1, sizeof(buf1), "/", &p);
-        if (inet_aton(buf1, &sdp_ip) == 0)
+        if (ff_inet_aton(buf1, &sdp_ip) == 0)
             return;
         ttl = 16;
         if (*p == '/') {
@@ -803,7 +800,7 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
                 if (*p == '=') {
                     p++;
                     get_word_sep(buf, sizeof(buf), ";,", &p);
-                    if (inet_aton(buf, &ipaddr))
+                    if (ff_inet_aton(buf, &ipaddr))
                         th->destination = ntohl(ipaddr.s_addr);
                 }
             }
