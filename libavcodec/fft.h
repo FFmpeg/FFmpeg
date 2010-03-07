@@ -25,18 +25,11 @@
 #include <stdint.h>
 #include "config.h"
 #include "libavutil/mem.h"
+#include "avfft.h"
 
 /* FFT computation */
 
-/* NOTE: soon integer code will be added, so you must use the
-   FFTSample type */
-typedef float FFTSample;
-
-typedef struct FFTComplex {
-    FFTSample re, im;
-} FFTComplex;
-
-typedef struct FFTContext {
+struct FFTContext {
     int nbits;
     int inverse;
     uint16_t *revtab;
@@ -57,7 +50,7 @@ typedef struct FFTContext {
     int permutation;
 #define FF_MDCT_PERM_NONE       0
 #define FF_MDCT_PERM_INTERLEAVE 1
-} FFTContext;
+};
 
 #if CONFIG_HARDCODED_TABLES
 #define COSTABLE_CONST const
@@ -194,14 +187,7 @@ void ff_mdct_end(FFTContext *s);
 
 /* Real Discrete Fourier Transform */
 
-enum RDFTransformType {
-    DFT_R2C,
-    IDFT_C2R,
-    IDFT_R2C,
-    DFT_C2R,
-};
-
-typedef struct {
+struct RDFTContext {
     int nbits;
     int inverse;
     int sign_convention;
@@ -210,7 +196,7 @@ typedef struct {
     const FFTSample *tcos;
     SINTABLE_CONST FFTSample *tsin;
     FFTContext fft;
-} RDFTContext;
+};
 
 /**
  * Sets up a real FFT.
@@ -223,14 +209,14 @@ void ff_rdft_end(RDFTContext *s);
 
 /* Discrete Cosine Transform */
 
-typedef struct {
+struct DCTContext {
     int nbits;
     int inverse;
     FFTSample *data;
     RDFTContext rdft;
     const float *costab;
     FFTSample *csc2;
-} DCTContext;
+};
 
 /**
  * Sets up (Inverse)DCT.
