@@ -376,7 +376,7 @@ static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *d
         if (data[-1] == AMF_DATA_TYPE_STRING) {
             size = bytestream_get_be16(&data);
         } else {
-            size = bytestream_get_be32(data);
+            size = bytestream_get_be32(&data);
         }
         size = FFMIN(size, 1023);
         memcpy(buf, data, size);
