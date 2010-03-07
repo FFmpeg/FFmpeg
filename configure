@@ -1862,8 +1862,8 @@ if test -n "$sysroot"; then
             add_ldflags  --sysroot="$sysroot"
         ;;
         clang)
-            add_cppflags -isysroot="$sysroot"
-            add_ldflags -isysroot="$sysroot"
+            add_cppflags -isysroot "$sysroot"
+            add_ldflags -isysroot "$sysroot"
         ;;
     esac
 fi
