@@ -2034,7 +2034,7 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
 
     spectral_to_sample(ac);
 
-    multiplier = 1;
+    multiplier = 0;
     samples <<= multiplier;
     if (ac->output_configured < OC_LOCKED) {
         avccontext->sample_rate = ac->m4ac.sample_rate << multiplier;
