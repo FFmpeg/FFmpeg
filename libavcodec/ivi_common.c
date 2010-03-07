@@ -413,7 +413,7 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
                     if (q > 1)
                         val = val * q + FFSIGN(val) * ((q >> 1) - (q & 1));
                     trvec[pos] = val;
-                    col_flags[pos & col_mask] |= val; /* track columns containing non-zero coeffs */
+                    col_flags[pos & col_mask] |= !!val; /* track columns containing non-zero coeffs */
                 }// while
 
                 if (scan_pos >= num_coeffs && sym != rvmap->eob_sym)
