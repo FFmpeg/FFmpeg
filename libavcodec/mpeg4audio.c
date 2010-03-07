@@ -88,7 +88,9 @@ int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_si
     if (c->chan_config < FF_ARRAY_ELEMS(ff_mpeg4audio_channels))
         c->channels = ff_mpeg4audio_channels[c->chan_config];
     c->sbr = -1;
-    if (c->object_type == AOT_SBR) {
+    if (c->object_type == AOT_SBR || (c->object_type == AOT_PS &&
+        // check for W6132 Annex YYYY draft MP3onMP4
+        !(show_bits(&gb, 3) & 0x03 && !(show_bits(&gb, 9) & 0x3F)))) {
         c->ext_object_type = c->object_type;
         c->sbr = 1;
         c->ext_sample_rate = get_sample_rate(&gb, &c->ext_sampling_index);
