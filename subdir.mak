@@ -9,13 +9,14 @@ ifdef CONFIG_STATIC
 all: $(SUBDIR)$(LIBNAME)
 
 install-libs: install-lib$(NAME)-static
-install-headers: install-lib$(NAME)-headers install-lib$(NAME)-pkgconfig
 
 $(SUBDIR)$(LIBNAME): $(OBJS)
 	$(RM) $@
 	$(AR) rc $@ $^ $(EXTRAOBJS)
 	$(RANLIB) $@
 endif
+
+install-headers: install-lib$(NAME)-headers install-lib$(NAME)-pkgconfig
 
 INCINSTDIR := $(INCDIR)/lib$(NAME)
 
