@@ -24,6 +24,9 @@
 #ifndef AVCODEC_BFIN_DSPUTIL_BFIN_H
 #define AVCODEC_BFIN_DSPUTIL_BFIN_H
 
+#include "config.h"
+#include "libavcodec/dsputil.h"
+
 #if defined(__FDPIC__) && CONFIG_SRAM
 #define attribute_l1_text  __attribute__ ((l1_text))
 #define attribute_l1_data_b __attribute__((l1_data_B))
