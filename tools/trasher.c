@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <inttypes.h>
 
 static uint32_t state;
