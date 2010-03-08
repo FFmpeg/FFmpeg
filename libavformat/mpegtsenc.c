@@ -783,11 +783,22 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     ts_st->first_pts_check = 0;
 
     if (st->codec->codec_id == CODEC_ID_H264) {
+        const uint8_t *p = buf, *buf_end = p+size;
+        uint32_t state = -1;
+
         if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
-            av_log(s, AV_LOG_ERROR, "h264 bitstream malformated\n");
+            av_log(s, AV_LOG_ERROR, "h264 bitstream malformated, "
+                   "no startcode found, use -vbsf h264_mp4toannexb\n");
             return -1;
         }
-        if (pkt->data[4] != 0x09) { // AUD NAL
+
+        do {
+            p = ff_find_start_code(p, buf_end, &state);
+            //av_log(s, AV_LOG_INFO, "nal %d\n", state & 0x1f);
+        } while (p < buf_end && (state & 0x1f) != 9 &&
+                 (state & 0x1f) != 5 && (state & 0x1f) != 1);
+
+        if ((state & 0x1f) != 9) { // AUD NAL
             data = av_malloc(pkt->size+6);
             if (!data)
                 return -1;
