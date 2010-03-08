@@ -133,7 +133,7 @@ int avcodec_thread_execute(AVCodecContext *avctx, action_func* func, void *arg, 
     return 0;
 }
 
-int avcodec_thread_execute2(AVCodecContext *avctx, action_func2* func2, void *arg, int *ret, int job_count)
+static int avcodec_thread_execute2(AVCodecContext *avctx, action_func2* func2, void *arg, int *ret, int job_count)
 {
     ThreadContext *c= avctx->thread_opaque;
     c->func2 = func2;
