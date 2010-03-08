@@ -38,9 +38,6 @@
 
 #ifdef HAVE_AV_CONFIG_H
 #include "config.h"
-#endif
-
-#ifdef HAVE_AV_CONFIG_H
 #   include "intmath.h"
 #endif
 
