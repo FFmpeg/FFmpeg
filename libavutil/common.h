@@ -37,7 +37,7 @@
 #include "attributes.h"
 
 #ifdef HAVE_AV_CONFIG_H
-#include "config.h"
+#   include "config.h"
 #   include "intmath.h"
 #endif
 
