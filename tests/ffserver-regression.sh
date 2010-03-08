@@ -3,7 +3,7 @@
 #perl -e 'chomp($wd = `pwd`); print map { s!tests/data/!!; "<Stream $_>\nFile $wd/tests/data/$_\n</Stream>\n\n" } @ARGV' tests/data/a* >> tests/data/ffserver.conf
 #perl -e 'chomp($wd = `pwd`); print map { s!tests/data/!!; "<Stream $_.asf>\nFile $wd/tests/data/$_\n</Stream>\n\n" } @ARGV' tests/data/a* >> tests/data/ffserver.conf
 
-. $(dirname $0)/regression-funcs.sh
+. $(dirname $0)/md5.sh
 
 FILES=$(sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' $2 | grep -v html)
 

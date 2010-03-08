@@ -39,15 +39,7 @@ mkdir -p "$outfile"
 [ "${V-0}" -gt 0 ] && echov=echo || echov=:
 [ "${V-0}" -gt 1 ] || exec 2>$errfile
 
-if [ X"$(echo | md5sum 2> /dev/null)" != X ]; then
-    do_md5sum() { md5sum -b $1; }
-elif [ X"$(echo | md5 2> /dev/null)" != X ]; then
-    do_md5sum() { md5 $1 | sed 's#MD5 (\(.*\)) = \(.*\)#\2 *\1#'; }
-elif [ -x /sbin/md5 ]; then
-    do_md5sum() { /sbin/md5 -r $1 | sed 's# \**\./# *./#'; }
-else
-    do_md5sum() { echo No md5sum program found; }
-fi
+. $(dirname $0)/md5.sh
 
 FFMPEG_OPTS="-v 0 -y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
 
