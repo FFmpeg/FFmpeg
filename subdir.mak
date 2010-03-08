@@ -5,7 +5,7 @@ include $(SUBDIR)../common.mak
 LIBVERSION := $(lib$(NAME)_VERSION)
 LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
 
-$(OBJS): CPPFLAGS += -DHAVE_AV_CONFIG_H
+$(OBJS) $(SUBDIR)%-test.o: CPPFLAGS += -DHAVE_AV_CONFIG_H
 
 ifdef CONFIG_STATIC
 all: $(SUBDIR)$(LIBNAME)
@@ -29,10 +29,10 @@ $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
 	$$(LD) $(FFLDFLAGS) -o $$@ $$^ -l$(FULLNAME) $(FFEXTRALIBS) $$(ELIBS)
 
 $(SUBDIR)%-test.o: $(SUBDIR)%.c
-	$$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c $$(CC_O) $$^
+	$$(CC) $$(CPPFLAGS) $(CFLAGS) -DTEST -c $$(CC_O) $$^
 
 $(SUBDIR)%-test.o: $(SUBDIR)%-test.c
-	$$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c $$(CC_O) $$^
+	$$(CC) $$(CPPFLAGS) $(CFLAGS) -DTEST -c $$(CC_O) $$^
 
 $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
 	$$(YASMDEP) $(YASMFLAGS) -I $$(<D)/ -M -o $$@ $$< > $$(@:.o=.d)
