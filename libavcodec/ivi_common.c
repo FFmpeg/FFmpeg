@@ -256,6 +256,11 @@ int av_cold ff_ivi_init_tiles(IVIPlaneDesc *planes, int tile_width, int tile_hei
         t_width  = !p ? tile_width  : (tile_width  + 3) >> 2;
         t_height = !p ? tile_height : (tile_height + 3) >> 2;
 
+        if (!p && planes[0].num_bands == 4) {
+            t_width  >>= 1;
+            t_height >>= 1;
+        }
+
         for (b = 0; b < planes[p].num_bands; b++) {
             band = &planes[p].bands[b];
             x_tiles = IVI_NUM_TILES(band->width, t_width);
