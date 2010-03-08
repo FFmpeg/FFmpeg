@@ -21,6 +21,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
+#include "mpegvideo_arm.h"
 
 static void dct_unquantize_h263_intra_iwmmxt(MpegEncContext *s,
                                              DCTELEM *block, int n, int qscale)

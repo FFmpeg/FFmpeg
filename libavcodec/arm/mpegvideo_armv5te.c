@@ -22,6 +22,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
+#include "mpegvideo_arm.h"
 
 void ff_dct_unquantize_h263_armv5te(DCTELEM *block, int qmul, int qadd, int count);
 

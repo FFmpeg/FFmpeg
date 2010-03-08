@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2002 Michael Niedermayer
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,21 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
-#include "libavcodec/mpegvideo.h"
-#include "mpegvideo_arm.h"
+#ifndef AVCODEC_ARM_MPEGVIDEO_H
+#define AVCODEC_ARM_MPEGVIDEO_H
 
-void MPV_common_init_arm(MpegEncContext *s)
-{
-    /* IWMMXT support is a superset of armv5te, so
-     * allow optimized functions for armv5te unless
-     * a better iwmmxt function exists
-     */
-#if HAVE_ARMV5TE
-    MPV_common_init_armv5te(s);
+void MPV_common_init_iwmmxt(MpegEncContext *s);
+void MPV_common_init_armv5te(MpegEncContext *s);
+
 #endif
-#if HAVE_IWMMXT
-    MPV_common_init_iwmmxt(s);
-#endif
-}
