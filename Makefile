@@ -32,6 +32,8 @@ FFLIBS := avutil
 
 DATA_FILES := $(wildcard $(SRC_DIR)/ffpresets/*.ffpreset)
 
+SKIPHEADERS = cmdutils_common_opts.h
+
 include common.mak
 
 FF_LDFLAGS   := $(FFLDFLAGS)
