@@ -26,6 +26,7 @@
 
 
 #define         LP(p)           *(uint32_t*)(p)
+#define         LPC(p)          *(const uint32_t*)(p)
 
 
 #define         UNPACK(ph,pl,tt0,tt1) do { \
@@ -51,14 +52,14 @@
 #define         OP_C4(ofs) \
         ref-=ofs; \
         do { \
-                OP(LP(dest),MERGE1(LP(ref),LP(ref+4),ofs)); \
+                OP(LP(dest),MERGE1(LPC(ref),LPC(ref+4),ofs)); \
                 ref+=stride; \
                 dest+=stride; \
         } while(--height)
 
 #define        OP_C40() \
         do { \
-                OP(LP(dest),LP(ref)); \
+                OP(LP(dest),LPC(ref)); \
                 ref+=stride; \
                 dest+=stride; \
         } while(--height)
@@ -96,15 +97,15 @@ static void avg_pixels4_c(uint8_t *dest,const uint8_t *ref, const int stride,int
         ref-=ofs; \
         do { \
                 uint32_t        t0,t1; \
-                t0 = LP(ref+0); \
-                t1 = LP(ref+4); \
+                t0 = LPC(ref+0); \
+                t1 = LPC(ref+4); \
                 OP(LP(dest+0), MERGE1(t0,t1,ofs)); \
-                t0 = LP(ref+8); \
+                t0 = LPC(ref+8); \
                 OP(LP(dest+4), MERGE1(t1,t0,ofs)); \
 if (sz==16) { \
-                t1 = LP(ref+12); \
+                t1 = LPC(ref+12); \
                 OP(LP(dest+8), MERGE1(t0,t1,ofs)); \
-                t0 = LP(ref+16); \
+                t0 = LPC(ref+16); \
                 OP(LP(dest+12), MERGE1(t1,t0,ofs)); \
 } \
                 ref+=stride; \
@@ -116,11 +117,11 @@ if (sz==16) { \
 #define         OP_C0(sz,avg2) \
 { \
         do { \
-                OP(LP(dest+0), LP(ref+0)); \
-                OP(LP(dest+4), LP(ref+4)); \
+                OP(LP(dest+0), LPC(ref+0)); \
+                OP(LP(dest+4), LPC(ref+4)); \
 if (sz==16) { \
-                OP(LP(dest+8), LP(ref+8)); \
-                OP(LP(dest+12), LP(ref+12)); \
+                OP(LP(dest+8), LPC(ref+8)); \
+                OP(LP(dest+12), LPC(ref+12)); \
 } \
                 ref+=stride; \
                 dest+= stride; \
@@ -132,15 +133,15 @@ if (sz==16) { \
         ref-=ofs; \
         do { \
                 uint32_t        t0,t1; \
-                t0 = LP(ref+0); \
-                t1 = LP(ref+4); \
+                t0 = LPC(ref+0); \
+                t1 = LPC(ref+4); \
                 OP(LP(dest+0), avg2(MERGE1(t0,t1,ofs),MERGE2(t0,t1,ofs))); \
-                t0 = LP(ref+8); \
+                t0 = LPC(ref+8); \
                 OP(LP(dest+4), avg2(MERGE1(t1,t0,ofs),MERGE2(t1,t0,ofs))); \
 if (sz==16) { \
-                t1 = LP(ref+12); \
+                t1 = LPC(ref+12); \
                 OP(LP(dest+8), avg2(MERGE1(t0,t1,ofs),MERGE2(t0,t1,ofs))); \
-                t0 = LP(ref+16); \
+                t0 = LPC(ref+16); \
                 OP(LP(dest+12), avg2(MERGE1(t1,t0,ofs),MERGE2(t1,t0,ofs))); \
 } \
                 ref+=stride; \
@@ -153,23 +154,23 @@ if (sz==16) { \
 { \
         uint32_t t0,t1,t2,t3,t; \
 \
-        t0 = LP(ref+0); \
-        t1 = LP(ref+4); \
+        t0 = LPC(ref+0); \
+        t1 = LPC(ref+4); \
 if (sz==16) { \
-        t2 = LP(ref+8); \
-        t3 = LP(ref+12); \
+        t2 = LPC(ref+8); \
+        t3 = LPC(ref+12); \
 } \
         do { \
                 ref += stride; \
 \
-                t = LP(ref+0); \
+                t = LPC(ref+0); \
                 OP(LP(dest+0), avg2(t0,t)); t0 = t; \
-                t = LP(ref+4); \
+                t = LPC(ref+4); \
                 OP(LP(dest+4), avg2(t1,t)); t1 = t; \
 if (sz==16) { \
-                t = LP(ref+8); \
+                t = LPC(ref+8); \
                 OP(LP(dest+8), avg2(t2,t)); t2 = t; \
-                t = LP(ref+12); \
+                t = LPC(ref+12); \
                 OP(LP(dest+12), avg2(t3,t)); t3 = t; \
 } \
                 dest+= stride; \
@@ -181,32 +182,32 @@ if (sz==16) { \
         uint32_t t0,t1,t2,t3,t,w0,w1; \
 \
         ref-=ofs; \
-        w0 = LP(ref+0); \
-        w1 = LP(ref+4); \
+        w0 = LPC(ref+0); \
+        w1 = LPC(ref+4); \
         t0 = MERGE1(w0,w1,ofs); \
-        w0 = LP(ref+8); \
+        w0 = LPC(ref+8); \
         t1 = MERGE1(w1,w0,ofs); \
 if (sz==16) { \
-        w1 = LP(ref+12); \
+        w1 = LPC(ref+12); \
         t2 = MERGE1(w0,w1,ofs); \
-        w0 = LP(ref+16); \
+        w0 = LPC(ref+16); \
         t3 = MERGE1(w1,w0,ofs); \
 } \
         do { \
                 ref += stride; \
 \
-                w0 = LP(ref+0); \
-                w1 = LP(ref+4); \
+                w0 = LPC(ref+0); \
+                w1 = LPC(ref+4); \
                 t = MERGE1(w0,w1,ofs); \
                 OP(LP(dest+0), avg2(t0,t)); t0 = t; \
-                w0 = LP(ref+8); \
+                w0 = LPC(ref+8); \
                 t = MERGE1(w1,w0,ofs); \
                 OP(LP(dest+4), avg2(t1,t)); t1 = t; \
 if (sz==16) { \
-                w1 = LP(ref+12); \
+                w1 = LPC(ref+12); \
                 t = MERGE1(w0,w1,ofs); \
                 OP(LP(dest+8), avg2(t2,t)); t2 = t; \
-                w0 = LP(ref+16); \
+                w0 = LPC(ref+16); \
                 t = MERGE1(w1,w0,ofs); \
                 OP(LP(dest+12), avg2(t3,t)); t3 = t; \
 } \
@@ -222,34 +223,34 @@ if (sz==16) { \
         uint32_t        a0,a1,a2,a3,a4,a5,a6,a7; \
 \
         ref -= ofs; \
-        w0 = LP(ref+0); \
-        w1 = LP(ref+4); \
+        w0 = LPC(ref+0); \
+        w1 = LPC(ref+4); \
         UNPACK(a0,a1,MERGE1(w0,w1,ofs),MERGE2(w0,w1,ofs)); \
-        w0 = LP(ref+8); \
+        w0 = LPC(ref+8); \
         UNPACK(a2,a3,MERGE1(w1,w0,ofs),MERGE2(w1,w0,ofs)); \
 if (sz==16) { \
-        w1 = LP(ref+12); \
+        w1 = LPC(ref+12); \
         UNPACK(a4,a5,MERGE1(w0,w1,ofs),MERGE2(w0,w1,ofs)); \
-        w0 = LP(ref+16); \
+        w0 = LPC(ref+16); \
         UNPACK(a6,a7,MERGE1(w1,w0,ofs),MERGE2(w1,w0,ofs)); \
 } \
         do { \
                 ref+=stride; \
-                w0 = LP(ref+0); \
-                w1 = LP(ref+4); \
+                w0 = LPC(ref+0); \
+                w1 = LPC(ref+4); \
                 UNPACK(t2,t3,MERGE1(w0,w1,ofs),MERGE2(w0,w1,ofs)); \
                 OP(LP(dest+0),PACK(a0,a1,t2,t3)); \
                 a0 = t2; a1 = t3; \
-                w0 = LP(ref+8); \
+                w0 = LPC(ref+8); \
                 UNPACK(t2,t3,MERGE1(w1,w0,ofs),MERGE2(w1,w0,ofs)); \
                 OP(LP(dest+4),PACK(a2,a3,t2,t3)); \
                 a2 = t2; a3 = t3; \
 if (sz==16) { \
-                w1 = LP(ref+12); \
+                w1 = LPC(ref+12); \
                 UNPACK(t2,t3,MERGE1(w0,w1,ofs),MERGE2(w0,w1,ofs)); \
                 OP(LP(dest+8),PACK(a4,a5,t2,t3)); \
                 a4 = t2; a5 = t3; \
-                w0 = LP(ref+16); \
+                w0 = LPC(ref+16); \
                 UNPACK(t2,t3,MERGE1(w1,w0,ofs),MERGE2(w1,w0,ofs)); \
                 OP(LP(dest+12),PACK(a6,a7,t2,t3)); \
                 a6 = t2; a7 = t3; \

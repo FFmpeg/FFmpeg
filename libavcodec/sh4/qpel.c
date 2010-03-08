@@ -26,7 +26,7 @@
 static inline void OPNAME ## _pixels4_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
         do {\
-                OP(LP(dst  ),rnd_avg32(LP(src1  ),LP(src2  )) ); \
+                OP(LP(dst  ),rnd_avg32(LPC(src1  ),LPC(src2  )) ); \
                 src1+=src_stride1; \
                 src2+=src_stride2; \
                 dst+=dst_stride; \
@@ -36,7 +36,7 @@ static inline void OPNAME ## _pixels4_l2_aligned(uint8_t *dst, const uint8_t *sr
 static inline void OPNAME ## _pixels4_l2_aligned2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
         do {\
-                OP(LP(dst  ),rnd_avg32(AV_RN32(src1  ),LP(src2  )) ); \
+                OP(LP(dst  ),rnd_avg32(AV_RN32(src1  ),LPC(src2  )) ); \
                 src1+=src_stride1; \
                 src2+=src_stride2; \
                 dst+=dst_stride; \
@@ -46,10 +46,10 @@ static inline void OPNAME ## _pixels4_l2_aligned2(uint8_t *dst, const uint8_t *s
 static inline void OPNAME ## _no_rnd_pixels16_l2_aligned2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
         do {\
-                OP(LP(dst  ),no_rnd_avg32(AV_RN32(src1  ),LP(src2  )) ); \
-                OP(LP(dst+4),no_rnd_avg32(AV_RN32(src1+4),LP(src2+4)) ); \
-                OP(LP(dst+8),no_rnd_avg32(AV_RN32(src1+8),LP(src2+8)) ); \
-                OP(LP(dst+12),no_rnd_avg32(AV_RN32(src1+12),LP(src2+12)) ); \
+                OP(LP(dst  ),no_rnd_avg32(AV_RN32(src1  ),LPC(src2  )) ); \
+                OP(LP(dst+4),no_rnd_avg32(AV_RN32(src1+4),LPC(src2+4)) ); \
+                OP(LP(dst+8),no_rnd_avg32(AV_RN32(src1+8),LPC(src2+8)) ); \
+                OP(LP(dst+12),no_rnd_avg32(AV_RN32(src1+12),LPC(src2+12)) ); \
                 src1+=src_stride1; \
                 src2+=src_stride2; \
                 dst+=dst_stride; \
@@ -59,10 +59,10 @@ static inline void OPNAME ## _no_rnd_pixels16_l2_aligned2(uint8_t *dst, const ui
 static inline void OPNAME ## _pixels16_l2_aligned2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
         do {\
-                OP(LP(dst  ),rnd_avg32(AV_RN32(src1  ),LP(src2  )) ); \
-                OP(LP(dst+4),rnd_avg32(AV_RN32(src1+4),LP(src2+4)) ); \
-                OP(LP(dst+8),rnd_avg32(AV_RN32(src1+8),LP(src2+8)) ); \
-                OP(LP(dst+12),rnd_avg32(AV_RN32(src1+12),LP(src2+12)) ); \
+                OP(LP(dst  ),rnd_avg32(AV_RN32(src1  ),LPC(src2  )) ); \
+                OP(LP(dst+4),rnd_avg32(AV_RN32(src1+4),LPC(src2+4)) ); \
+                OP(LP(dst+8),rnd_avg32(AV_RN32(src1+8),LPC(src2+8)) ); \
+                OP(LP(dst+12),rnd_avg32(AV_RN32(src1+12),LPC(src2+12)) ); \
                 src1+=src_stride1; \
                 src2+=src_stride2; \
                 dst+=dst_stride; \
@@ -72,8 +72,8 @@ static inline void OPNAME ## _pixels16_l2_aligned2(uint8_t *dst, const uint8_t *
 static inline void OPNAME ## _no_rnd_pixels8_l2_aligned2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
         do { /* onlye src2 aligned */\
-                OP(LP(dst  ),no_rnd_avg32(AV_RN32(src1  ),LP(src2  )) ); \
-                OP(LP(dst+4),no_rnd_avg32(AV_RN32(src1+4),LP(src2+4)) ); \
+                OP(LP(dst  ),no_rnd_avg32(AV_RN32(src1  ),LPC(src2  )) ); \
+                OP(LP(dst+4),no_rnd_avg32(AV_RN32(src1+4),LPC(src2+4)) ); \
                 src1+=src_stride1; \
                 src2+=src_stride2; \
                 dst+=dst_stride; \
@@ -83,8 +83,8 @@ static inline void OPNAME ## _no_rnd_pixels8_l2_aligned2(uint8_t *dst, const uin
 static inline void OPNAME ## _pixels8_l2_aligned2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
         do {\
-                OP(LP(dst  ),rnd_avg32(AV_RN32(src1  ),LP(src2  )) ); \
-                OP(LP(dst+4),rnd_avg32(AV_RN32(src1+4),LP(src2+4)) ); \
+                OP(LP(dst  ),rnd_avg32(AV_RN32(src1  ),LPC(src2  )) ); \
+                OP(LP(dst+4),rnd_avg32(AV_RN32(src1+4),LPC(src2+4)) ); \
                 src1+=src_stride1; \
                 src2+=src_stride2; \
                 dst+=dst_stride; \
@@ -94,8 +94,8 @@ static inline void OPNAME ## _pixels8_l2_aligned2(uint8_t *dst, const uint8_t *s
 static inline void OPNAME ## _no_rnd_pixels8_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
         do {\
-                OP(LP(dst  ),no_rnd_avg32(LP(src1  ),LP(src2  )) ); \
-                OP(LP(dst+4),no_rnd_avg32(LP(src1+4),LP(src2+4)) ); \
+                OP(LP(dst  ),no_rnd_avg32(LPC(src1  ),LPC(src2  )) ); \
+                OP(LP(dst+4),no_rnd_avg32(LPC(src1+4),LPC(src2+4)) ); \
                 src1+=src_stride1; \
                 src2+=src_stride2; \
                 dst+=dst_stride; \
@@ -105,8 +105,8 @@ static inline void OPNAME ## _no_rnd_pixels8_l2_aligned(uint8_t *dst, const uint
 static inline void OPNAME ## _pixels8_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
         do {\
-                OP(LP(dst  ),rnd_avg32(LP(src1  ),LP(src2  )) ); \
-                OP(LP(dst+4),rnd_avg32(LP(src1+4),LP(src2+4)) ); \
+                OP(LP(dst  ),rnd_avg32(LPC(src1  ),LPC(src2  )) ); \
+                OP(LP(dst+4),rnd_avg32(LPC(src1+4),LPC(src2+4)) ); \
                 src1+=src_stride1; \
                 src2+=src_stride2; \
                 dst+=dst_stride; \
@@ -116,10 +116,10 @@ static inline void OPNAME ## _pixels8_l2_aligned(uint8_t *dst, const uint8_t *sr
 static inline void OPNAME ## _no_rnd_pixels16_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
         do {\
-                OP(LP(dst  ),no_rnd_avg32(LP(src1  ),LP(src2  )) ); \
-                OP(LP(dst+4),no_rnd_avg32(LP(src1+4),LP(src2+4)) ); \
-                OP(LP(dst+8),no_rnd_avg32(LP(src1+8),LP(src2+8)) ); \
-                OP(LP(dst+12),no_rnd_avg32(LP(src1+12),LP(src2+12)) ); \
+                OP(LP(dst  ),no_rnd_avg32(LPC(src1  ),LPC(src2  )) ); \
+                OP(LP(dst+4),no_rnd_avg32(LPC(src1+4),LPC(src2+4)) ); \
+                OP(LP(dst+8),no_rnd_avg32(LPC(src1+8),LPC(src2+8)) ); \
+                OP(LP(dst+12),no_rnd_avg32(LPC(src1+12),LPC(src2+12)) ); \
                 src1+=src_stride1; \
                 src2+=src_stride2; \
                 dst+=dst_stride; \
@@ -129,10 +129,10 @@ static inline void OPNAME ## _no_rnd_pixels16_l2_aligned(uint8_t *dst, const uin
 static inline void OPNAME ## _pixels16_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
         do {\
-                OP(LP(dst  ),rnd_avg32(LP(src1  ),LP(src2  )) ); \
-                OP(LP(dst+4),rnd_avg32(LP(src1+4),LP(src2+4)) ); \
-                OP(LP(dst+8),rnd_avg32(LP(src1+8),LP(src2+8)) ); \
-                OP(LP(dst+12),rnd_avg32(LP(src1+12),LP(src2+12)) ); \
+                OP(LP(dst  ),rnd_avg32(LPC(src1  ),LPC(src2  )) ); \
+                OP(LP(dst+4),rnd_avg32(LPC(src1+4),LPC(src2+4)) ); \
+                OP(LP(dst+8),rnd_avg32(LPC(src1+8),LPC(src2+8)) ); \
+                OP(LP(dst+12),rnd_avg32(LPC(src1+12),LPC(src2+12)) ); \
                 src1+=src_stride1; \
                 src2+=src_stride2; \
                 dst+=dst_stride; \
@@ -154,11 +154,11 @@ static inline void OPNAME ## _pixels8_l2_aligned1(uint8_t *dst, const uint8_t *s
 static inline void OPNAME ## _pixels8_l4_aligned(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
         do { \
                 uint32_t a0,a1,a2,a3; \
-                UNPACK(a0,a1,LP(src1),LP(src2)); \
-                UNPACK(a2,a3,LP(src3),LP(src4)); \
+                UNPACK(a0,a1,LPC(src1),LPC(src2)); \
+                UNPACK(a2,a3,LPC(src3),LPC(src4)); \
                 OP(LP(dst),rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,LP(src1+4),LP(src2+4)); \
-                UNPACK(a2,a3,LP(src3+4),LP(src4+4)); \
+                UNPACK(a0,a1,LPC(src1+4),LPC(src2+4)); \
+                UNPACK(a2,a3,LPC(src3+4),LPC(src4+4)); \
                 OP(LP(dst+4),rnd_PACK(a0,a1,a2,a3)); \
                 src1+=src_stride1;\
                 src2+=src_stride2;\
@@ -171,11 +171,11 @@ static inline void OPNAME ## _pixels8_l4_aligned(uint8_t *dst, const uint8_t *sr
 static inline void OPNAME ## _no_rnd_pixels8_l4_aligned(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
         do { \
                 uint32_t a0,a1,a2,a3; \
-                UNPACK(a0,a1,LP(src1),LP(src2)); \
-                UNPACK(a2,a3,LP(src3),LP(src4)); \
+                UNPACK(a0,a1,LPC(src1),LPC(src2)); \
+                UNPACK(a2,a3,LPC(src3),LPC(src4)); \
                 OP(LP(dst),no_rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,LP(src1+4),LP(src2+4)); \
-                UNPACK(a2,a3,LP(src3+4),LP(src4+4)); \
+                UNPACK(a0,a1,LPC(src1+4),LPC(src2+4)); \
+                UNPACK(a2,a3,LPC(src3+4),LPC(src4+4)); \
                 OP(LP(dst+4),no_rnd_PACK(a0,a1,a2,a3)); \
                 src1+=src_stride1;\
                 src2+=src_stride2;\
@@ -188,11 +188,11 @@ static inline void OPNAME ## _no_rnd_pixels8_l4_aligned(uint8_t *dst, const uint
 static inline void OPNAME ## _pixels8_l4_aligned0(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
         do { \
                 uint32_t a0,a1,a2,a3; /* src1 only not aligned */\
-                UNPACK(a0,a1,AV_RN32(src1),LP(src2)); \
-                UNPACK(a2,a3,LP(src3),LP(src4)); \
+                UNPACK(a0,a1,AV_RN32(src1),LPC(src2)); \
+                UNPACK(a2,a3,LPC(src3),LPC(src4)); \
                 OP(LP(dst),rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,AV_RN32(src1+4),LP(src2+4)); \
-                UNPACK(a2,a3,LP(src3+4),LP(src4+4)); \
+                UNPACK(a0,a1,AV_RN32(src1+4),LPC(src2+4)); \
+                UNPACK(a2,a3,LPC(src3+4),LPC(src4+4)); \
                 OP(LP(dst+4),rnd_PACK(a0,a1,a2,a3)); \
                 src1+=src_stride1;\
                 src2+=src_stride2;\
@@ -205,11 +205,11 @@ static inline void OPNAME ## _pixels8_l4_aligned0(uint8_t *dst, const uint8_t *s
 static inline void OPNAME ## _no_rnd_pixels8_l4_aligned0(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
         do { \
                 uint32_t a0,a1,a2,a3; \
-                UNPACK(a0,a1,AV_RN32(src1),LP(src2)); \
-                UNPACK(a2,a3,LP(src3),LP(src4)); \
+                UNPACK(a0,a1,AV_RN32(src1),LPC(src2)); \
+                UNPACK(a2,a3,LPC(src3),LPC(src4)); \
                 OP(LP(dst),no_rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,AV_RN32(src1+4),LP(src2+4)); \
-                UNPACK(a2,a3,LP(src3+4),LP(src4+4)); \
+                UNPACK(a0,a1,AV_RN32(src1+4),LPC(src2+4)); \
+                UNPACK(a2,a3,LPC(src3+4),LPC(src4+4)); \
                 OP(LP(dst+4),no_rnd_PACK(a0,a1,a2,a3)); \
                 src1+=src_stride1;\
                 src2+=src_stride2;\
@@ -222,17 +222,17 @@ static inline void OPNAME ## _no_rnd_pixels8_l4_aligned0(uint8_t *dst, const uin
 static inline void OPNAME ## _pixels16_l4_aligned(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
         do { \
                 uint32_t a0,a1,a2,a3; \
-                UNPACK(a0,a1,LP(src1),LP(src2)); \
-                UNPACK(a2,a3,LP(src3),LP(src4)); \
+                UNPACK(a0,a1,LPC(src1),LPC(src2)); \
+                UNPACK(a2,a3,LPC(src3),LPC(src4)); \
                 OP(LP(dst),rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,LP(src1+4),LP(src2+4)); \
-                UNPACK(a2,a3,LP(src3+4),LP(src4+4)); \
+                UNPACK(a0,a1,LPC(src1+4),LPC(src2+4)); \
+                UNPACK(a2,a3,LPC(src3+4),LPC(src4+4)); \
                 OP(LP(dst+8),rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,LP(src1+8),LP(src2+8)); \
-                UNPACK(a2,a3,LP(src3+8),LP(src4+8)); \
+                UNPACK(a0,a1,LPC(src1+8),LPC(src2+8)); \
+                UNPACK(a2,a3,LPC(src3+8),LPC(src4+8)); \
                 OP(LP(dst+8),rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,LP(src1+12),LP(src2+12)); \
-                UNPACK(a2,a3,LP(src3+12),LP(src4+12)); \
+                UNPACK(a0,a1,LPC(src1+12),LPC(src2+12)); \
+                UNPACK(a2,a3,LPC(src3+12),LPC(src4+12)); \
                 OP(LP(dst+12),rnd_PACK(a0,a1,a2,a3)); \
                 src1+=src_stride1;\
                 src2+=src_stride2;\
@@ -245,17 +245,17 @@ static inline void OPNAME ## _pixels16_l4_aligned(uint8_t *dst, const uint8_t *s
 static inline void OPNAME ## _no_rnd_pixels16_l4_aligned(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
         do { \
                 uint32_t a0,a1,a2,a3; \
-                UNPACK(a0,a1,LP(src1),LP(src2)); \
-                UNPACK(a2,a3,LP(src3),LP(src4)); \
+                UNPACK(a0,a1,LPC(src1),LPC(src2)); \
+                UNPACK(a2,a3,LPC(src3),LPC(src4)); \
                 OP(LP(dst),no_rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,LP(src1+4),LP(src2+4)); \
-                UNPACK(a2,a3,LP(src3+4),LP(src4+4)); \
+                UNPACK(a0,a1,LPC(src1+4),LPC(src2+4)); \
+                UNPACK(a2,a3,LPC(src3+4),LPC(src4+4)); \
                 OP(LP(dst+4),no_rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,LP(src1+8),LP(src2+8)); \
-                UNPACK(a2,a3,LP(src3+8),LP(src4+8)); \
+                UNPACK(a0,a1,LPC(src1+8),LPC(src2+8)); \
+                UNPACK(a2,a3,LPC(src3+8),LPC(src4+8)); \
                 OP(LP(dst+8),no_rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,LP(src1+12),LP(src2+12)); \
-                UNPACK(a2,a3,LP(src3+12),LP(src4+12)); \
+                UNPACK(a0,a1,LPC(src1+12),LPC(src2+12)); \
+                UNPACK(a2,a3,LPC(src3+12),LPC(src4+12)); \
                 OP(LP(dst+12),no_rnd_PACK(a0,a1,a2,a3)); \
                 src1+=src_stride1;\
                 src2+=src_stride2;\
@@ -268,17 +268,17 @@ static inline void OPNAME ## _no_rnd_pixels16_l4_aligned(uint8_t *dst, const uin
 static inline void OPNAME ## _pixels16_l4_aligned0(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
         do { /* src1 is unaligned */\
                 uint32_t a0,a1,a2,a3; \
-                UNPACK(a0,a1,AV_RN32(src1),LP(src2)); \
-                UNPACK(a2,a3,LP(src3),LP(src4)); \
+                UNPACK(a0,a1,AV_RN32(src1),LPC(src2)); \
+                UNPACK(a2,a3,LPC(src3),LPC(src4)); \
                 OP(LP(dst),rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,AV_RN32(src1+4),LP(src2+4)); \
-                UNPACK(a2,a3,LP(src3+4),LP(src4+4)); \
+                UNPACK(a0,a1,AV_RN32(src1+4),LPC(src2+4)); \
+                UNPACK(a2,a3,LPC(src3+4),LPC(src4+4)); \
                 OP(LP(dst+8),rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,AV_RN32(src1+8),LP(src2+8)); \
-                UNPACK(a2,a3,LP(src3+8),LP(src4+8)); \
+                UNPACK(a0,a1,AV_RN32(src1+8),LPC(src2+8)); \
+                UNPACK(a2,a3,LPC(src3+8),LPC(src4+8)); \
                 OP(LP(dst+8),rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,AV_RN32(src1+12),LP(src2+12)); \
-                UNPACK(a2,a3,LP(src3+12),LP(src4+12)); \
+                UNPACK(a0,a1,AV_RN32(src1+12),LPC(src2+12)); \
+                UNPACK(a2,a3,LPC(src3+12),LPC(src4+12)); \
                 OP(LP(dst+12),rnd_PACK(a0,a1,a2,a3)); \
                 src1+=src_stride1;\
                 src2+=src_stride2;\
@@ -291,17 +291,17 @@ static inline void OPNAME ## _pixels16_l4_aligned0(uint8_t *dst, const uint8_t *
 static inline void OPNAME ## _no_rnd_pixels16_l4_aligned0(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
         do { \
                 uint32_t a0,a1,a2,a3; \
-                UNPACK(a0,a1,AV_RN32(src1),LP(src2)); \
-                UNPACK(a2,a3,LP(src3),LP(src4)); \
+                UNPACK(a0,a1,AV_RN32(src1),LPC(src2)); \
+                UNPACK(a2,a3,LPC(src3),LPC(src4)); \
                 OP(LP(dst),no_rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,AV_RN32(src1+4),LP(src2+4)); \
-                UNPACK(a2,a3,LP(src3+4),LP(src4+4)); \
+                UNPACK(a0,a1,AV_RN32(src1+4),LPC(src2+4)); \
+                UNPACK(a2,a3,LPC(src3+4),LPC(src4+4)); \
                 OP(LP(dst+4),no_rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,AV_RN32(src1+8),LP(src2+8)); \
-                UNPACK(a2,a3,LP(src3+8),LP(src4+8)); \
+                UNPACK(a0,a1,AV_RN32(src1+8),LPC(src2+8)); \
+                UNPACK(a2,a3,LPC(src3+8),LPC(src4+8)); \
                 OP(LP(dst+8),no_rnd_PACK(a0,a1,a2,a3)); \
-                UNPACK(a0,a1,AV_RN32(src1+12),LP(src2+12)); \
-                UNPACK(a2,a3,LP(src3+12),LP(src4+12)); \
+                UNPACK(a0,a1,AV_RN32(src1+12),LPC(src2+12)); \
+                UNPACK(a2,a3,LPC(src3+12),LPC(src4+12)); \
                 OP(LP(dst+12),no_rnd_PACK(a0,a1,a2,a3)); \
                 src1+=src_stride1;\
                 src2+=src_stride2;\
