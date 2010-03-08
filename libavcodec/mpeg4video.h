@@ -23,6 +23,11 @@
 #ifndef AVCODEC_MPEG4VIDEO_H
 #define AVCODEC_MPEG4VIDEO_H
 
+#include <stdint.h>
+#include "get_bits.h"
+#include "mpegvideo.h"
+#include "rl.h"
+
 // shapes
 #define RECT_SHAPE       0
 #define BIN_SHAPE        1

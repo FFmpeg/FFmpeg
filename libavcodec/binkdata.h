@@ -22,6 +22,8 @@
 #ifndef AVCODEC_BINKDATA_H
 #define AVCODEC_BINKDATA_H
 
+#include <stdint.h>
+
 /** Bink DCT and residue 8x8 block scan order */
 static const uint8_t bink_scan[64] = {
      0,  1,  8,  9,  2,  3, 10, 11,

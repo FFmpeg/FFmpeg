@@ -21,7 +21,7 @@
 #ifndef AVCODEC_SYNTH_FILTER_H
 #define AVCODEC_SYNTH_FILTER_H
 
-#include "dsputil.h"
+#include "fft.h"
 
 void ff_synth_filter_float(FFTContext *imdct,
                            float *synth_buf_ptr, int *synth_buf_offset,

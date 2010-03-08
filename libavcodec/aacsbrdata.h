@@ -29,6 +29,7 @@
 #define AVCODEC_AACSBRDATA_H
 
 #include <stdint.h>
+#include "libavutil/mem.h"
 
 ///< Huffman tables for SBR
 

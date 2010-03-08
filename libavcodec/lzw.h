@@ -30,6 +30,8 @@
 #ifndef AVCODEC_LZW_H
 #define AVCODEC_LZW_H
 
+#include <stdint.h>
+
 struct PutBitContext;
 
 enum FF_LZW_MODES{
