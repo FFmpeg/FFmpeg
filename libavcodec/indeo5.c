@@ -549,7 +549,7 @@ static int decode_mb_info(IVI5DecContext *ctx, IVIBandDesc *band,
 static int decode_band(IVI5DecContext *ctx, int plane_num,
                        IVIBandDesc *band, AVCodecContext *avctx)
 {
-    int         result, i, t, idx1, idx2;
+    int         result, i, t, idx1, idx2, pos;
     IVITile     *tile;
 
     band->buf     = band->bufs[ctx->dst_buf];
@@ -590,6 +590,8 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
         FFSWAP(int16_t, band->rv_map->valtab[idx1], band->rv_map->valtab[idx2]);
     }
 
+    pos = get_bits_count(&ctx->gb);
+
     for (t = 0; t < band->num_tiles; t++) {
         tile = &band->tiles[t];
 
@@ -597,7 +599,6 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
         if (tile->is_empty) {
             ff_ivi_process_empty_tile(avctx, band, tile,
                                       (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3));
-            align_get_bits(&ctx->gb);
         } else {
             tile->data_size = ff_ivi_dec_tile_data_size(&ctx->gb);
 
@@ -606,10 +607,11 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
                 break;
 
             result = ff_ivi_decode_blocks(&ctx->gb, band, tile);
-            if (result < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Corrupted blocks data encountered!\n");
+            if (result < 0 || (get_bits_count(&ctx->gb) - pos) >> 3 != tile->data_size) {
+                av_log(avctx, AV_LOG_ERROR, "Corrupted tile data encountered!\n");
                 break;
             }
+            pos += tile->data_size << 3; // skip to next tile
         }
     }
 
@@ -631,6 +633,8 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
         }
     }
 #endif
+
+    align_get_bits(&ctx->gb);
 
     return result;
 }
