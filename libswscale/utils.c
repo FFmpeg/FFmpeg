@@ -1538,8 +1538,8 @@ void sws_freeContext(SwsContext *c)
     if (c->lumMmx2FilterCode) munmap(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize);
     if (c->chrMmx2FilterCode) munmap(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize);
 #elif HAVE_VIRTUALALLOC
-    if (c->lumMmx2FilterCode) VirtualFree(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize, MEM_RELEASE);
-    if (c->chrMmx2FilterCode) VirtualFree(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize, MEM_RELEASE);
+    if (c->lumMmx2FilterCode) VirtualFree(c->lumMmx2FilterCode, 0, MEM_RELEASE);
+    if (c->chrMmx2FilterCode) VirtualFree(c->chrMmx2FilterCode, 0, MEM_RELEASE);
 #else
     av_free(c->lumMmx2FilterCode);
     av_free(c->chrMmx2FilterCode);
