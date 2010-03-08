@@ -421,6 +421,7 @@ static int mpegts_write_header(AVFormatContext *s)
         ts_st->payload_pts = AV_NOPTS_VALUE;
         ts_st->payload_dts = AV_NOPTS_VALUE;
         ts_st->first_pts_check = 1;
+        ts_st->cc = 15;
         /* update PCR pid by using the first video stream */
         if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
             service->pcr_pid == 0x1fff)
