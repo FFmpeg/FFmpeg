@@ -40,15 +40,11 @@
 #include "faandct.h"
 #include "faanidct.h"
 #include "x86/idct_xvid.h"
+#include "dctref.h"
 
 #undef printf
 
 void *fast_memcpy(void *a, const void *b, size_t c){return memcpy(a,b,c);};
-
-/* reference fdct/idct */
-void ff_ref_fdct(DCTELEM *block);
-void ff_ref_idct(DCTELEM *block);
-void ff_ref_dct_init(void);
 
 void ff_mmx_idct(DCTELEM *data);
 void ff_mmxext_idct(DCTELEM *data);

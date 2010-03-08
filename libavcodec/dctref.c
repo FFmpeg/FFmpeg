@@ -30,6 +30,8 @@
  */
 
 #include "libavutil/mathematics.h"
+#include "dctref.h"
+
 static double coefficients[8 * 8];
 
 /**
