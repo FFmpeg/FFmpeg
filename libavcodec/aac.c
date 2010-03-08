@@ -62,7 +62,7 @@
  * N                    MIDI
  * N                    Harmonic and Individual Lines plus Noise
  * N                    Text-To-Speech Interface
- * N (in progress)      Spectral Band Replication
+ * Y                    Spectral Band Replication
  * Y (not in this code) Layer-1
  * Y (not in this code) Layer-2
  * Y (not in this code) Layer-3
@@ -86,6 +86,8 @@
 #include "aac.h"
 #include "aactab.h"
 #include "aacdectab.h"
+#include "sbr.h"
+#include "aacsbr.h"
 #include "mpeg4audio.h"
 #include "aac_parser.h"
 
@@ -180,14 +182,18 @@ static av_cold int che_configure(AACContext *ac,
     if (che_pos[type][id]) {
         if (!ac->che[type][id] && !(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
             return AVERROR(ENOMEM);
+        ff_aac_sbr_ctx_init(&ac->che[type][id]->sbr);
         if (type != TYPE_CCE) {
             ac->output_data[(*channels)++] = ac->che[type][id]->ch[0].ret;
             if (type == TYPE_CPE) {
                 ac->output_data[(*channels)++] = ac->che[type][id]->ch[1].ret;
             }
         }
-    } else
+    } else {
+        if (ac->che[type][id])
+            ff_aac_sbr_ctx_close(&ac->che[type][id]->sbr);
         av_freep(&ac->che[type][id]);
+    }
     return 0;
 }
 
@@ -529,6 +535,8 @@ static av_cold int aac_decode_init(AVCodecContext *avccontext)
     AAC_INIT_VLC_STATIC( 8, 510);
     AAC_INIT_VLC_STATIC( 9, 366);
     AAC_INIT_VLC_STATIC(10, 462);
+
+    ff_aac_sbr_init();
 
     dsputil_init(&ac->dsp, avccontext);
 
@@ -1545,23 +1553,6 @@ static int decode_cce(AACContext *ac, GetBitContext *gb, ChannelElement *che)
 }
 
 /**
- * Decode Spectral Band Replication extension data; reference: table 4.55.
- *
- * @param   crc flag indicating the presence of CRC checksum
- * @param   cnt length of TYPE_FIL syntactic element in bytes
- *
- * @return  Returns number of bytes consumed from the TYPE_FIL element.
- */
-static int decode_sbr_extension(AACContext *ac, GetBitContext *gb,
-                                int crc, int cnt)
-{
-    // TODO : sbr_extension implementation
-    av_log_missing_feature(ac->avccontext, "SBR", 0);
-    skip_bits_long(gb, 8 * cnt - 4); // -4 due to reading extension type
-    return cnt;
-}
-
-/**
  * Parse whether channels are to be excluded from Dynamic Range Compression; reference: table 4.53.
  *
  * @return  Returns number of bytes consumed.
@@ -1641,7 +1632,8 @@ static int decode_dynamic_range(DynamicRangeControl *che_drc,
  *
  * @return Returns number of bytes consumed
  */
-static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt)
+static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
+                                    ChannelElement *che, enum RawDataBlockType elem_type)
 {
     int crc_flag = 0;
     int res = cnt;
@@ -1649,7 +1641,21 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt)
     case EXT_SBR_DATA_CRC:
         crc_flag++;
     case EXT_SBR_DATA:
-        res = decode_sbr_extension(ac, gb, crc_flag, cnt);
+        if (!che) {
+            av_log(ac->avccontext, AV_LOG_ERROR, "SBR was found before the first channel element.\n");
+            return res;
+        } else if (!ac->m4ac.sbr) {
+            av_log(ac->avccontext, AV_LOG_ERROR, "SBR signaled to be not-present but was found in the bitstream.\n");
+            skip_bits_long(gb, 8 * cnt - 4);
+            return res;
+        } else if (ac->m4ac.sbr == -1 && ac->output_configured == OC_LOCKED) {
+            av_log(ac->avccontext, AV_LOG_ERROR, "Implicit SBR was found with a first occurrence after the first frame.\n");
+            skip_bits_long(gb, 8 * cnt - 4);
+            return res;
+        } else {
+            ac->m4ac.sbr = 1;
+        }
+        res = ff_decode_sbr_extension(ac, &che->sbr, gb, crc_flag, cnt, elem_type);
         break;
     case EXT_DYNAMIC_RANGE:
         res = decode_dynamic_range(&ac->che_drc, gb, cnt);
@@ -1830,8 +1836,9 @@ static void apply_independent_coupling(AACContext *ac,
     const float bias = ac->add_bias;
     const float *src = cce->ch[0].ret;
     float *dest = target->ret;
+    const int len = 1024 << (ac->m4ac.sbr == 1);
 
-    for (i = 0; i < 1024; i++)
+    for (i = 0; i < len; i++)
         dest[i] += gain * (src[i] - bias);
 }
 
@@ -1889,10 +1896,18 @@ static void spectral_to_sample(AACContext *ac)
                     apply_tns(che->ch[1].coeffs, &che->ch[1].tns, &che->ch[1].ics, 1);
                 if (type <= TYPE_CPE)
                     apply_channel_coupling(ac, che, type, i, BETWEEN_TNS_AND_IMDCT, apply_dependent_coupling);
-                if (type != TYPE_CCE || che->coup.coupling_point == AFTER_IMDCT)
+                if (type != TYPE_CCE || che->coup.coupling_point == AFTER_IMDCT) {
                     imdct_and_windowing(ac, &che->ch[0]);
-                if (type == TYPE_CPE)
+                    if (ac->m4ac.sbr > 0) {
+                        ff_sbr_dequant(ac, &che->sbr, type == TYPE_CPE ? TYPE_CPE : TYPE_SCE);
+                        ff_sbr_apply(ac, &che->sbr, 0, che->ch[0].ret, che->ch[0].ret);
+                    }
+                }
+                if (type == TYPE_CPE) {
                     imdct_and_windowing(ac, &che->ch[1]);
+                    if (ac->m4ac.sbr > 0)
+                        ff_sbr_apply(ac, &che->sbr, 1, che->ch[1].ret, che->ch[1].ret);
+                }
                 if (type <= TYPE_CCE)
                     apply_channel_coupling(ac, che, type, i, AFTER_IMDCT, apply_independent_coupling);
             }
@@ -1942,9 +1957,9 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     AACContext *ac = avccontext->priv_data;
-    ChannelElement *che = NULL;
+    ChannelElement *che = NULL, *che_prev = NULL;
     GetBitContext gb;
-    enum RawDataBlockType elem_type;
+    enum RawDataBlockType elem_type, elem_type_prev = TYPE_END;
     int err, elem_id, data_size_tmp;
     int buf_consumed;
     int samples = 1024, multiplier;
@@ -2014,7 +2029,7 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
                     return -1;
             }
             while (elem_id > 0)
-                elem_id -= decode_extension_payload(ac, &gb, elem_id);
+                elem_id -= decode_extension_payload(ac, &gb, elem_id, che_prev, elem_type_prev);
             err = 0; /* FIXME */
             break;
 
@@ -2022,6 +2037,9 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
             err = -1; /* should not happen, but keeps compiler happy */
             break;
         }
+
+        che_prev       = che;
+        elem_type_prev = elem_type;
 
         if (err)
             return err;
@@ -2034,14 +2052,14 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
 
     spectral_to_sample(ac);
 
-    multiplier = 0;
+    multiplier = (ac->m4ac.sbr == 1) ? ac->m4ac.ext_sample_rate > ac->m4ac.sample_rate : 0;
     samples <<= multiplier;
     if (ac->output_configured < OC_LOCKED) {
         avccontext->sample_rate = ac->m4ac.sample_rate << multiplier;
         avccontext->frame_size = samples;
     }
 
-    data_size_tmp = 1024 * avccontext->channels * sizeof(int16_t);
+    data_size_tmp = samples * avccontext->channels * sizeof(int16_t);
     if (*data_size < data_size_tmp) {
         av_log(avccontext, AV_LOG_ERROR,
                "Output buffer too small (%d) or trying to output too many samples (%d) for this frame.\n",
@@ -2050,7 +2068,7 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
     }
     *data_size = data_size_tmp;
 
-    ac->dsp.float_to_int16_interleave(data, (const float **)ac->output_data, 1024, avccontext->channels);
+    ac->dsp.float_to_int16_interleave(data, (const float **)ac->output_data, samples, avccontext->channels);
 
     if (ac->output_configured)
         ac->output_configured = OC_LOCKED;
@@ -2065,8 +2083,11 @@ static av_cold int aac_decode_close(AVCodecContext *avccontext)
     int i, type;
 
     for (i = 0; i < MAX_ELEM_ID; i++) {
-        for (type = 0; type < 4; type++)
+        for (type = 0; type < 4; type++) {
+            if (ac->che[type][i])
+                ff_aac_sbr_ctx_close(&ac->che[type][i]->sbr);
             av_freep(&ac->che[type][i]);
+        }
     }
 
     ff_mdct_end(&ac->mdct);

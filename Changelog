@@ -61,6 +61,7 @@ version <next>:
 - FFprobe tool
 - AMR-NB decoder
 - RTSP muxer
+- HE-AAC v1 decoder
 
 
 

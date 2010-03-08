@@ -34,6 +34,7 @@
 #include "dsputil.h"
 #include "fft.h"
 #include "mpeg4audio.h"
+#include "sbr.h"
 
 #include <stdint.h>
 
@@ -217,7 +218,7 @@ typedef struct {
     uint8_t zeroes[128];                      ///< band is not coded (used by encoder)
     DECLARE_ALIGNED(16, float, coeffs)[1024]; ///< coefficients for IMDCT
     DECLARE_ALIGNED(16, float, saved)[1024];  ///< overlap
-    DECLARE_ALIGNED(16, float, ret)[1024];    ///< PCM output
+    DECLARE_ALIGNED(16, float, ret)[2048];    ///< PCM output
     PredictorState predictor_state[MAX_PREDICTORS];
 } SingleChannelElement;
 
@@ -233,6 +234,7 @@ typedef struct {
     SingleChannelElement ch[2];
     // CCE specific
     ChannelCoupling coup;
+    SpectralBandReplication sbr;
 } ChannelElement;
 
 /**
