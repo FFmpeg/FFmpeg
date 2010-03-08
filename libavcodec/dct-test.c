@@ -44,8 +44,6 @@
 
 #undef printf
 
-void *fast_memcpy(void *a, const void *b, size_t c){return memcpy(a,b,c);};
-
 void ff_mmx_idct(DCTELEM *data);
 void ff_mmxext_idct(DCTELEM *data);
 
