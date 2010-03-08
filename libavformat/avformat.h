@@ -1339,10 +1339,6 @@ struct tm *brktimegm(time_t secs, struct tm *tm);
 const char *small_strptime(const char *p, const char *fmt,
                            struct tm *dt);
 
-struct in_addr;
-/* Deprecated, use getaddrinfo instead. */
-attribute_deprecated int resolve_host(struct in_addr *sin_addr, const char *hostname);
-
 /**
  * Splits a URL string into components. To reassemble components back into
  * a URL, use ff_url_join instead of using snprintf directly.
