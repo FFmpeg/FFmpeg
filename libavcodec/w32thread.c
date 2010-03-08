@@ -116,7 +116,7 @@ int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, vo
     return 0;
 }
 
-int avcodec_thread_execute2(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count){
+static int avcodec_thread_execute2(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count){
     ThreadContext *c= s->thread_opaque;
     int i;
     for(i=0; i<s->thread_count; i++)
