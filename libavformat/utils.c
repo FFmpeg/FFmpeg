@@ -3366,11 +3366,11 @@ void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload)
 }
 
 void ff_url_split(char *proto, int proto_size,
-               char *authorization, int authorization_size,
-               char *hostname, int hostname_size,
-               int *port_ptr,
-               char *path, int path_size,
-               const char *url)
+                  char *authorization, int authorization_size,
+                  char *hostname, int hostname_size,
+                  int *port_ptr,
+                  char *path, int path_size,
+                  const char *url)
 {
     const char *p, *ls, *at, *col, *brk;
 

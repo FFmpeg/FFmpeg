@@ -1344,11 +1344,11 @@ struct in_addr;
 attribute_deprecated int resolve_host(struct in_addr *sin_addr, const char *hostname);
 
 void ff_url_split(char *proto, int proto_size,
-               char *authorization, int authorization_size,
-               char *hostname, int hostname_size,
-               int *port_ptr,
-               char *path, int path_size,
-               const char *url);
+                  char *authorization, int authorization_size,
+                  char *hostname, int hostname_size,
+                  int *port_ptr,
+                  char *path, int path_size,
+                  const char *url);
 
 /**
  * Assembles a URL string from components. This is the reverse operation

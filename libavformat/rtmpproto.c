@@ -813,7 +813,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     rt->is_input = !(flags & URL_WRONLY);
 
     ff_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
-              path, sizeof(path), s->filename);
+                 path, sizeof(path), s->filename);
 
     if (port < 0)
         port = RTMP_DEFAULT_PORT;

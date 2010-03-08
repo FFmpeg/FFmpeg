@@ -90,7 +90,7 @@ static int gopher_open(URLContext *h, const char *uri, int flags)
 
     /* needed in any case to build the host string */
     ff_url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
-              path, sizeof(path), uri);
+                 path, sizeof(path), uri);
 
     if (port < 0)
         port = 70;

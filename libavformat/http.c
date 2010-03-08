@@ -70,12 +70,12 @@ static int http_open_cnx(URLContext *h)
  redo:
     /* needed in any case to build the host string */
     ff_url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
-              path1, sizeof(path1), s->location);
+                 path1, sizeof(path1), s->location);
     ff_url_join(hoststr, sizeof(hoststr), NULL, NULL, hostname, port, NULL);
 
     if (use_proxy) {
         ff_url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
-                  NULL, 0, proxy_path);
+                     NULL, 0, proxy_path);
         path = s->location;
     } else {
         if (path1[0] == '\0')
