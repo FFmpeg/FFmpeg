@@ -27,6 +27,7 @@
  * The simplest mpeg encoder (well, it was the simplest!).
  */
 
+#include "libavutil/intmath.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"

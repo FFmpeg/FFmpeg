@@ -56,4 +56,26 @@ extern const uint32_t ff_inverse[257];
 
 #endif /* FASTDIV */
 
+extern const uint8_t ff_sqrt_tab[256];
+
+static inline av_const unsigned int ff_sqrt(unsigned int a)
+{
+    unsigned int b;
+
+    if (a < 255) return (ff_sqrt_tab[a + 1] - 1) >> 4;
+    else if (a < (1 << 12)) b = ff_sqrt_tab[a >> 4] >> 2;
+#if !CONFIG_SMALL
+    else if (a < (1 << 14)) b = ff_sqrt_tab[a >> 6] >> 1;
+    else if (a < (1 << 16)) b = ff_sqrt_tab[a >> 8]   ;
+#endif
+    else {
+        int s = av_log2_16bit(a >> 16) >> 1;
+        unsigned int c = a >> (s + 2);
+        b = ff_sqrt_tab[c >> (s + 8)];
+        b = FASTDIV(c,b) + (b << s);
+    }
+
+    return b - (a < b * b);
+}
+
 #endif /* AVUTIL_INTMATH_H */
