@@ -397,6 +397,7 @@ static int mpegts_write_header(AVFormatContext *s)
                                  DEFAULT_PROVIDER_NAME, service_name);
     service->pmt.write_packet = section_write_packet;
     service->pmt.opaque = s;
+    service->pmt.cc = 15;
 
     ts->pat.pid = PAT_PID;
     ts->pat.cc = 15; // Initialize at 15 so that it wraps and be equal to 0 for the first packet we write
