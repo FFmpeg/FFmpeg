@@ -720,6 +720,7 @@ EXAMPLES = api
 TESTPROGS = cabac dct eval fft h264 iirfilter rangecoder snow
 TESTPROGS-$(ARCH_X86) += x86/cpuid
 TESTPROGS-$(HAVE_MMX) += motion
+TESTOBJS = dctref.o
 
 HOSTPROGS = costablegen
 
