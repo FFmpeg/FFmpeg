@@ -58,9 +58,9 @@ void fdct_altivec(DCTELEM *block);
 //void idct_altivec(DCTELEM *block);?? no routine
 
 // ARM
-void j_rev_dct_ARM(DCTELEM *data);
-void simple_idct_ARM(DCTELEM *data);
-void simple_idct_armv5te(DCTELEM *data);
+void ff_j_rev_dct_arm(DCTELEM *data);
+void ff_simple_idct_arm(DCTELEM *data);
+void ff_simple_idct_armv5te(DCTELEM *data);
 void ff_simple_idct_armv6(DCTELEM *data);
 void ff_simple_idct_neon(DCTELEM *data);
 
@@ -120,10 +120,10 @@ struct algo algos[] = {
 #endif
 
 #if ARCH_ARM
-  {"SIMPLE-ARM",      1, simple_idct_ARM,    ff_ref_idct, NO_PERM },
-  {"INT-ARM",         1, j_rev_dct_ARM,      ff_ref_idct, MMX_PERM },
+  {"SIMPLE-ARM",      1, ff_simple_idct_arm, ff_ref_idct, NO_PERM },
+  {"INT-ARM",         1, ff_j_rev_dct_arm,   ff_ref_idct, MMX_PERM },
 #if HAVE_ARMV5TE
-  {"SIMPLE-ARMV5TE",  1, simple_idct_armv5te, ff_ref_idct, NO_PERM },
+  {"SIMPLE-ARMV5TE",  1, ff_simple_idct_armv5te, ff_ref_idct, NO_PERM },
 #endif
 #if HAVE_ARMV6
   {"SIMPLE-ARMV6",    1, ff_simple_idct_armv6, ff_ref_idct, MMX_PERM },
