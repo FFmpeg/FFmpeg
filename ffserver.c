@@ -28,7 +28,6 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
-/* avformat.h defines LIBAVFORMAT_BUILD, include it before all the other libav* headers which use it */
 #include "libavformat/avformat.h"
 #include "libavformat/network.h"
 #include "libavformat/os_support.h"
