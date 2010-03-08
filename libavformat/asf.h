@@ -158,6 +158,7 @@ extern const ff_asf_guid ff_asf_simple_index_header;
 extern const ff_asf_guid ff_asf_ext_stream_embed_stream_header;
 extern const ff_asf_guid ff_asf_ext_stream_audio_stream;
 extern const ff_asf_guid ff_asf_metadata_header;
+extern const ff_asf_guid ff_asf_marker_header;
 extern const ff_asf_guid ff_asf_my_guid;
 extern const ff_asf_guid ff_asf_language_guid;
 extern const ff_asf_guid ff_asf_content_encryption;

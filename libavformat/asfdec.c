@@ -82,6 +82,7 @@ static void print_guid(const ff_asf_guid *g)
     else PRINT_IF_GUID(g, ff_asf_ext_stream_embed_stream_header);
     else PRINT_IF_GUID(g, ff_asf_ext_stream_audio_stream);
     else PRINT_IF_GUID(g, ff_asf_metadata_header);
+    else PRINT_IF_GUID(g, ff_asf_marker_header);
     else PRINT_IF_GUID(g, stream_bitrate_guid);
     else PRINT_IF_GUID(g, ff_asf_language_guid);
     else
@@ -520,6 +521,32 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_guid(pb, &g);
             v1 = get_le32(pb);
             v2 = get_le16(pb);
+        } else if (!guidcmp(&g, &ff_asf_marker_header)) {
+            int i, count, name_len;
+            char name[1024];
+
+            get_le64(pb);            // reserved 16 bytes
+            get_le64(pb);            // ...
+            count = get_le32(pb);    // markers count
+            get_le16(pb);            // reserved 2 bytes
+            name_len = get_le16(pb); // name length
+            for(i=0;i<name_len;i++){
+                get_byte(pb); // skip the name
+            }
+
+            for(i=0;i<count;i++){
+                int64_t pres_time;
+                int name_len;
+
+                get_le64(pb);             // offset, 8 bytes
+                pres_time = get_le64(pb); // presentation time
+                get_le16(pb);             // entry length
+                get_le32(pb);             // send time
+                get_le32(pb);             // flags
+                name_len = get_le32(pb);  // name length
+                get_str16_nolen(pb, name_len * 2, name, sizeof(name));
+                ff_new_chapter(s, i, (AVRational){1, 10000000}, pres_time, AV_NOPTS_VALUE, name );
+            }
 #if 0
         } else if (!guidcmp(&g, &ff_asf_codec_comment_header)) {
             int len, v1, n, num;
