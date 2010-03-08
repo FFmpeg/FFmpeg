@@ -59,7 +59,7 @@ typedef struct MpegTSWrite {
     int onid;
     int tsid;
     uint64_t cur_pcr;
-    int mux_rate;
+    int mux_rate; ///< set to 1 when VBR
 } MpegTSWrite;
 
 /* NOTE: 4 bytes must be left at the end for the crc32 */
@@ -382,11 +382,10 @@ static int mpegts_write_header(AVFormatContext *s)
     MpegTSWrite *ts = s->priv_data;
     MpegTSWriteStream *ts_st;
     MpegTSService *service;
-    AVStream *st;
+    AVStream *st, *pcr_st = NULL;
     AVMetadataTag *title;
-    int i, total_bit_rate;
+    int i;
     const char *service_name;
-    uint64_t sdt_size, pat_pmt_size, pos;
 
     ts->tsid = DEFAULT_TSID;
     ts->onid = DEFAULT_ONID;
@@ -410,7 +409,6 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->sdt.opaque = s;
 
     /* assign pids to each stream */
-    total_bit_rate = 0;
     for(i = 0;i < s->nb_streams; i++) {
         st = s->streams[i];
         ts_st = av_mallocz(sizeof(MpegTSWriteStream));
@@ -425,68 +423,22 @@ static int mpegts_write_header(AVFormatContext *s)
         ts_st->cc = 15;
         /* update PCR pid by using the first video stream */
         if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
-            service->pcr_pid == 0x1fff)
+            service->pcr_pid == 0x1fff) {
             service->pcr_pid = ts_st->pid;
-        if (st->codec->rc_max_rate)
-            total_bit_rate += st->codec->rc_max_rate;
-        else {
-            if (!st->codec->bit_rate) {
-                av_log(s, AV_LOG_WARNING,
-                       "stream %d, bit rate is not set, this will cause problems\n",
-                       st->index);
-            }
-            total_bit_rate += st->codec->bit_rate;
-        }
-        /* PES header size */
-        if (st->codec->codec_type == CODEC_TYPE_VIDEO ||
-            st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
-            /* 1 PES per frame
-             * 19 bytes of PES header
-             * on average a half TS-packet (184/2) of padding-overhead every PES */
-            total_bit_rate += (19 + 184/2)*8 / av_q2d(st->codec->time_base);
-        } else {
-            /* 1 PES per DEFAULT_PES_PAYLOAD_SIZE bytes of audio data
-             * 14 bytes of PES header
-             * on average a half TS-packet (184/2) of padding-overhead every PES */
-            total_bit_rate += (14 + 184/2) *
-                st->codec->bit_rate / DEFAULT_PES_PAYLOAD_SIZE;
+            pcr_st = st;
         }
     }
 
     /* if no video stream, use the first stream as PCR */
     if (service->pcr_pid == 0x1fff && s->nb_streams > 0) {
-        ts_st = s->streams[0]->priv_data;
+        pcr_st = s->streams[0];
+        ts_st = pcr_st->priv_data;
         service->pcr_pid = ts_st->pid;
     }
 
-    ts->mux_rate = 1; // avoid div by 0
+    ts->mux_rate = s->mux_rate ? s->mux_rate : 1;
 
-    /* write info at the start of the file, so that it will be fast to
-       find them */
-    pos = url_ftell(s->pb);
-    mpegts_write_sdt(s);
-    sdt_size = url_ftell(s->pb) - pos;
-    pos = url_ftell(s->pb);
-    mpegts_write_pat(s);
-    for(i = 0; i < ts->nb_services; i++) {
-        mpegts_write_pmt(s, ts->services[i]);
-    }
-    pat_pmt_size = url_ftell(s->pb) - pos;
-
-    if (total_bit_rate <= 8 * 1024)
-        total_bit_rate = 8 * 1024;
-
-    total_bit_rate +=
-        total_bit_rate * 4 / (TS_PACKET_SIZE-4)        + /* TS header size */
-        1000 * 8 * sdt_size     / SDT_RETRANS_TIME     + /* SDT size */
-        1000 * 8 * pat_pmt_size / PAT_RETRANS_TIME     + /* PAT+PMT size */
-        1000 * 8 * 8            / PCR_RETRANS_TIME;      /* PCR size */
-
-    if (s->mux_rate)
-        ts->mux_rate = s->mux_rate;
-    else
-        ts->mux_rate = total_bit_rate;
-
+    if (ts->mux_rate > 1) {
     service->pcr_packet_period = (ts->mux_rate * PCR_RETRANS_TIME) /
         (TS_PACKET_SIZE * 8 * 1000);
     ts->sdt_packet_period      = (ts->mux_rate * SDT_RETRANS_TIME) /
@@ -494,17 +446,38 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->pat_packet_period      = (ts->mux_rate * PAT_RETRANS_TIME) /
         (TS_PACKET_SIZE * 8 * 1000);
 
+    ts->cur_pcr = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
+    } else {
+        /* Arbitrary values, PAT/PMT could be written on key frames */
+        ts->sdt_packet_period = 200;
+        ts->pat_packet_period = 40;
+        if (pcr_st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            if (!pcr_st->codec->frame_size) {
+                av_log(s, AV_LOG_WARNING, "frame size not set\n");
+                service->pcr_packet_period =
+                    pcr_st->codec->sample_rate/(10*512);
+            } else {
+                service->pcr_packet_period =
+                    pcr_st->codec->sample_rate/(10*pcr_st->codec->frame_size);
+            }
+        } else {
+            // max delta PCR 0.1s
+            service->pcr_packet_period =
+                pcr_st->codec->time_base.den/(10*pcr_st->codec->time_base.num);
+        }
+    }
+
     // output a PCR as soon as possible
     service->pcr_packet_count = service->pcr_packet_period;
+    ts->pat_packet_count = ts->pat_packet_period-1;
+    ts->sdt_packet_count = ts->sdt_packet_period-1;
 
-    av_log(s, AV_LOG_DEBUG,
-           "calculated bitrate %d bps, muxrate %d bps, "
+    av_log(s, AV_LOG_INFO,
+           "muxrate %d bps, pcr every %d pkts, "
            "sdt every %d, pat/pmt every %d pkts\n",
-           total_bit_rate, ts->mux_rate, ts->sdt_packet_period,
-           ts->pat_packet_period);
+           ts->mux_rate, service->pcr_packet_period,
+           ts->sdt_packet_period, ts->pat_packet_period);
 
-    // adjust pcr
-    ts->cur_pcr /= ts->mux_rate;
 
     put_flush_packet(s->pb);
 
@@ -624,7 +597,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
 
         write_pcr = 0;
         if (ts_st->pid == ts_st->service->pcr_pid) {
-            ts_st->service->pcr_packet_count++;
+            if (ts->mux_rate > 1 || is_start) // VBR pcr period is based on frames
+                ts_st->service->pcr_packet_count++;
             if (ts_st->service->pcr_packet_count >=
                 ts_st->service->pcr_packet_period) {
                 ts_st->service->pcr_packet_count = 0;
@@ -632,7 +606,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             }
         }
 
-        if (dts != AV_NOPTS_VALUE && (dts - (int64_t)ts->cur_pcr) > delay) {
+        if (ts->mux_rate > 1 && dts != AV_NOPTS_VALUE &&
+            (dts - (int64_t)ts->cur_pcr) > delay) {
             /* pcr insert gets priority over null packet insert */
             if (write_pcr)
                 mpegts_insert_pcr_only(s, st);
@@ -653,7 +628,10 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         *q++ = 0x10 | ts_st->cc | (write_pcr ? 0x20 : 0);
         if (write_pcr) {
             // add 11, pcr references the last byte of program clock reference base
-            pcr = ts->cur_pcr + (4+7)*8*90000LL / ts->mux_rate;
+            if (ts->mux_rate > 1)
+                pcr = ts->cur_pcr + (4+7)*8*90000LL / ts->mux_rate;
+            else
+                pcr = dts - delay;
             if (dts != AV_NOPTS_VALUE && dts < pcr)
                 av_log(s, AV_LOG_WARNING, "dts < pcr, TS is invalid\n");
             *q++ = 7; /* AFC length */
@@ -790,7 +768,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t *buf= pkt->data;
     uint8_t *data= NULL;
     MpegTSWriteStream *ts_st = st->priv_data;
-    const uint64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
+    const uint64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE)*2;
     int64_t dts = AV_NOPTS_VALUE, pts = AV_NOPTS_VALUE;
 
     if (pkt->pts != AV_NOPTS_VALUE)
