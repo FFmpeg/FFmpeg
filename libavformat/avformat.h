@@ -1343,6 +1343,28 @@ struct in_addr;
 /* Deprecated, use getaddrinfo instead. */
 attribute_deprecated int resolve_host(struct in_addr *sin_addr, const char *hostname);
 
+/**
+ * Splits a URL string into components. To reassemble components back into
+ * a URL, use ff_url_join instead of using snprintf directly.
+ *
+ * The pointers to buffers for storing individual components may be null,
+ * in order to ignore that component. Buffers for components not found are
+ * set to empty strings. If the port isn't found, it is set to a negative
+ * value.
+ *
+ * @see ff_url_join
+ *
+ * @param proto the buffer for the protocol
+ * @param proto_size the size of the proto buffer
+ * @param authorization the buffer for the authorization
+ * @param authorization_size the size of the authorization buffer
+ * @param hostname the buffer for the host name
+ * @param hostname_size the size of the hostname buffer
+ * @param port_ptr a pointer to store the port number in
+ * @param path the buffer for the path
+ * @param path_size the size of the path buffer
+ * @param url the URL to split
+ */
 void ff_url_split(char *proto, int proto_size,
                   char *authorization, int authorization_size,
                   char *hostname, int hostname_size,
