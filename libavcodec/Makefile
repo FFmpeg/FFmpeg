@@ -708,7 +708,8 @@ OBJS-$(HAVE_MMI)                       += ps2/dsputil_mmi.o             \
 OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
                                           sparc/simple_idct_vis.o       \
 
-SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2_internal.h
+SKIPHEADERS                             = %_tablegen.h
+SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_LIBDIRAC)         += libdirac.h
 SKIPHEADERS-$(CONFIG_LIBSCHROEDINGER)  += libschroedinger.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
