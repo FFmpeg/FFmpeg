@@ -1392,13 +1392,6 @@ int ff_url_join(char *str, int size, const char *proto,
                 const char *authorization, const char *hostname,
                 int port, const char *fmt, ...);
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
-/**
- * @deprecated Use av_match_ext() instead.
- */
-attribute_deprecated int match_ext(const char *filename, const char *extensions);
-#endif
-
 /**
  * Returns a positive value if the given filename has one of the given
  * extensions, 0 otherwise.
