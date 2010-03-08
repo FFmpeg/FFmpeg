@@ -29,6 +29,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/iff.h"
 #include "avformat.h"
 
 #define ID_8SVX       MKTAG('8','S','V','X')
@@ -222,8 +223,6 @@ static int iff_read_header(AVFormatContext *s,
 
     return 0;
 }
-
-int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal);
 
 static int iff_read_packet(AVFormatContext *s,
                            AVPacket *pkt)

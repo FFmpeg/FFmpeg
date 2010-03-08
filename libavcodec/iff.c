@@ -27,6 +27,7 @@
 #include "bytestream.h"
 #include "avcodec.h"
 #include "get_bits.h"
+#include "iff.h"
 
 typedef struct {
     AVFrame frame;
