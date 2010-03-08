@@ -1299,7 +1299,7 @@ static int mpegts_probe(AVProbeData *p)
     else                                    return -1;
 #else
     /* only use the extension for safer guess */
-    if (match_ext(p->filename, "ts"))
+    if (av_match_ext(p->filename, "ts"))
         return AVPROBE_SCORE_MAX;
     else
         return 0;
