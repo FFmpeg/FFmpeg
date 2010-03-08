@@ -3365,7 +3365,7 @@ void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload)
     pkt_dump_internal(avcl, NULL, level, pkt, dump_payload);
 }
 
-void url_split(char *proto, int proto_size,
+void ff_url_split(char *proto, int proto_size,
                char *authorization, int authorization_size,
                char *hostname, int hostname_size,
                int *port_ptr,

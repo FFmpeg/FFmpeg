@@ -812,7 +812,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     s->priv_data = rt;
     rt->is_input = !(flags & URL_WRONLY);
 
-    url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
+    ff_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
               path, sizeof(path), s->filename);
 
     if (port < 0)

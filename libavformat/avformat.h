@@ -1343,7 +1343,7 @@ struct in_addr;
 /* Deprecated, use getaddrinfo instead. */
 attribute_deprecated int resolve_host(struct in_addr *sin_addr, const char *hostname);
 
-void url_split(char *proto, int proto_size,
+void ff_url_split(char *proto, int proto_size,
                char *authorization, int authorization_size,
                char *hostname, int hostname_size,
                int *port_ptr,
@@ -1352,12 +1352,12 @@ void url_split(char *proto, int proto_size,
 
 /**
  * Assembles a URL string from components. This is the reverse operation
- * of url_split.
+ * of ff_url_split.
  *
  * Note, this requires networking to be initialized, so the caller must
  * ensure ff_network_init has been called.
  *
- * @see url_split
+ * @see ff_url_split
  *
  * @param str the buffer to fill with the url
  * @param size the size of the str buffer
