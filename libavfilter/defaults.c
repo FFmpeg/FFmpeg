@@ -23,7 +23,7 @@
 #include "avfilter.h"
 
 /* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
-void avfilter_default_free_video_buffer(AVFilterPic *pic)
+static void avfilter_default_free_video_buffer(AVFilterPic *pic)
 {
     av_free(pic->data[0]);
     av_free(pic);
