@@ -183,7 +183,7 @@ static int64_t concat_seek(URLContext *h, int64_t pos, int whence)
     if (result >= 0) {
         data->current = i;
         while (i)
-            result += nodes[i--].size;
+            result += nodes[--i].size;
     }
     return result;
 }
