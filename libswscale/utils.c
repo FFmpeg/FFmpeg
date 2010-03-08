@@ -968,6 +968,8 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
             c->chrMmx2FilterCode = av_malloc(c->chrMmx2FilterCodeSize);
 #endif
 
+            if (!c->lumMmx2FilterCode || !c->chrMmx2FilterCode)
+                goto fail;
             FF_ALLOCZ_OR_GOTO(c, c->hLumFilter   , (dstW        /8+8)*sizeof(int16_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hChrFilter   , (c->chrDstW  /4+8)*sizeof(int16_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hLumFilterPos, (dstW      /2/8+8)*sizeof(int32_t), fail);
