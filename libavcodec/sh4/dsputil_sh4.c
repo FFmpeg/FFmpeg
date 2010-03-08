@@ -22,6 +22,7 @@
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
+#include "dsputil_sh4.h"
 #include "sh4.h"
 
 static void memzero_align8(void *dst,size_t size)
@@ -51,7 +52,6 @@ static void clear_blocks_sh4(DCTELEM *blocks)
         memzero_align8(blocks,sizeof(DCTELEM)*6*64);
 }
 
-void idct_sh4(DCTELEM *block);
 static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
         int i;
@@ -88,8 +88,6 @@ static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
                 block+=8;
         }
 }
-
-void dsputil_init_align(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
 {
