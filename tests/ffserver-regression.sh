@@ -14,7 +14,7 @@ echo "Waiting for feeds to startup..."
 sleep 2
 (
     cd tests/data || exit $?
-    rm -f ff-*;
+    rm -f ff-* ffserver.regression
     WGET_OPTIONS="--user-agent=NSPlayer -q --proxy=off -e verbose=off -e server_response=off"
     for file in $FILES; do
         if [ $(expr $file : "a-*") != 0 ]; then
@@ -22,16 +22,13 @@ sleep 2
         else
             wget $WGET_OPTIONS -O - http://localhost:9999/$file?date=19700101T000000Z | dd bs=1 count=20000 > ff-$file 2>/dev/null
         fi
-        MDFILES="$MDFILES ff-$file"
+        do_md5sum ff-$file >>ffserver.regression
     done
-    wait
-    # the status page is always different
-    do_md5sum $MDFILES > ffserver.regression
 )
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
 rm -f tests/feed1.ffm
-if diff -u tests/data/ffserver.regression "$1" ; then
+if diff -u "$1" tests/data/ffserver.regression; then
     echo
     echo Server regression test succeeded.
     exit 0
