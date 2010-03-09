@@ -56,7 +56,7 @@ typedef struct {
   unsigned int audio_pts, video_pts;
 } MmDemuxContext;
 
-static int mm_probe(AVProbeData *p)
+static int probe(AVProbeData *p)
 {
     int len, type, fps, w, h;
     if (p->buf_size < MM_HEADER_LEN_AV + MM_PREAMBLE_SIZE)
@@ -80,7 +80,7 @@ static int mm_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX / 2;
 }
 
-static int mm_read_header(AVFormatContext *s,
+static int read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     MmDemuxContext *mm = s->priv_data;
@@ -133,7 +133,7 @@ static int mm_read_header(AVFormatContext *s,
     return 0;
 }
 
-static int mm_read_packet(AVFormatContext *s,
+static int read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     MmDemuxContext *mm = s->priv_data;
@@ -192,7 +192,7 @@ AVInputFormat mm_demuxer = {
     "mm",
     NULL_IF_CONFIG_SMALL("American Laser Games MM format"),
     sizeof(MmDemuxContext),
-    mm_probe,
-    mm_read_header,
-    mm_read_packet,
+    probe,
+    read_header,
+    read_packet,
 };
