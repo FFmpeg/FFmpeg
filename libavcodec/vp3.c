@@ -1812,7 +1812,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     s->current_frame.reference = 3;
     if (avctx->get_buffer(avctx, &s->current_frame) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        goto error;
     }
 
     if (s->keyframe) {
@@ -1836,8 +1836,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     } else {
         if (!s->golden_frame.data[0]) {
             av_log(s->avctx, AV_LOG_ERROR, "vp3: first frame not a keyframe\n");
-            avctx->release_buffer(avctx, &s->current_frame);
-            return -1;
+            goto error;
         }
     }
 
@@ -1848,23 +1847,23 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     if (unpack_superblocks(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_superblocks\n");
-        return -1;
+        goto error;
     }
     if (unpack_modes(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_modes\n");
-        return -1;
+        goto error;
     }
     if (unpack_vectors(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_vectors\n");
-        return -1;
+        goto error;
     }
     if (unpack_block_qpis(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_block_qpis\n");
-        return -1;
+        goto error;
     }
     if (unpack_dct_coeffs(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_dct_coeffs\n");
-        return -1;
+        goto error;
     }
 
     for (i = 0; i < 3; i++) {
@@ -1906,6 +1905,11 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     s->current_frame.data[0]= NULL; /* ensure that we catch any access to this released frame */
 
     return buf_size;
+
+error:
+    if (s->current_frame.data[0])
+        avctx->release_buffer(avctx, &s->current_frame);
+    return -1;
 }
 
 /*
