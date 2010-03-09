@@ -857,14 +857,15 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
     }
 }
 
-static void read_sbr_single_channel_element(AACContext *ac,
+static int read_sbr_single_channel_element(AACContext *ac,
                                             SpectralBandReplication *sbr,
                                             GetBitContext *gb)
 {
     if (get_bits1(gb)) // bs_data_extra
         skip_bits(gb, 4); // bs_reserved
 
-    read_sbr_grid(ac, sbr, gb, &sbr->data[0]);
+    if (read_sbr_grid(ac, sbr, gb, &sbr->data[0]))
+        return -1;
     read_sbr_dtdf(sbr, gb, &sbr->data[0]);
     read_sbr_invf(sbr, gb, &sbr->data[0]);
     read_sbr_envelope(sbr, gb, &sbr->data[0], 0);
@@ -874,7 +875,7 @@ static void read_sbr_single_channel_element(AACContext *ac,
         get_bits1_vector(gb, sbr->data[0].bs_add_harmonic, sbr->n[1]);
 }
 
-static void read_sbr_channel_pair_element(AACContext *ac,
+static int read_sbr_channel_pair_element(AACContext *ac,
                                           SpectralBandReplication *sbr,
                                           GetBitContext *gb)
 {
@@ -882,7 +883,8 @@ static void read_sbr_channel_pair_element(AACContext *ac,
         skip_bits(gb, 8); // bs_reserved
 
     if ((sbr->bs_coupling = get_bits1(gb))) {
-        read_sbr_grid(ac, sbr, gb, &sbr->data[0]);
+        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0]))
+            return -1;
         copy_sbr_grid(&sbr->data[1], &sbr->data[0]);
         read_sbr_dtdf(sbr, gb, &sbr->data[0]);
         read_sbr_dtdf(sbr, gb, &sbr->data[1]);
@@ -894,8 +896,9 @@ static void read_sbr_channel_pair_element(AACContext *ac,
         read_sbr_envelope(sbr, gb, &sbr->data[1], 1);
         read_sbr_noise(sbr, gb, &sbr->data[1], 1);
     } else {
-        read_sbr_grid(ac, sbr, gb, &sbr->data[0]);
-        read_sbr_grid(ac, sbr, gb, &sbr->data[1]);
+        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0]) ||
+            read_sbr_grid(ac, sbr, gb, &sbr->data[1]))
+            return -1;
         read_sbr_dtdf(sbr, gb, &sbr->data[0]);
         read_sbr_dtdf(sbr, gb, &sbr->data[1]);
         read_sbr_invf(sbr, gb, &sbr->data[0]);
@@ -918,9 +921,15 @@ static unsigned int read_sbr_data(AACContext *ac, SpectralBandReplication *sbr,
     unsigned int cnt = get_bits_count(gb);
 
     if (id_aac == TYPE_SCE || id_aac == TYPE_CCE) {
-        read_sbr_single_channel_element(ac, sbr, gb);
+        if (read_sbr_single_channel_element(ac, sbr, gb)) {
+            sbr->start = 0;
+            return get_bits_count(gb) - cnt;
+        }
     } else if (id_aac == TYPE_CPE) {
-        read_sbr_channel_pair_element(ac, sbr, gb);
+        if (read_sbr_channel_pair_element(ac, sbr, gb)) {
+            sbr->start = 0;
+            return get_bits_count(gb) - cnt;
+        }
     } else {
         av_log(ac->avccontext, AV_LOG_ERROR,
             "Invalid bitstream - cannot apply SBR to element type %d\n", id_aac);
