@@ -1452,11 +1452,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
         return -1;
     }
-    if((!s->last_picture_ptr || !s->last_picture_ptr->data[0]) && si.type == FF_P_TYPE)
-        return -1;
     if((!s->last_picture_ptr || !s->last_picture_ptr->data[0]) && si.type == FF_B_TYPE)
-        return -1;
-    if((!s->next_picture_ptr || !s->next_picture_ptr->data[0]) && si.type == FF_B_TYPE)
         return -1;
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && si.type==FF_B_TYPE) return buf_size;
