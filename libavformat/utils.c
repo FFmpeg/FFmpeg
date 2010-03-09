@@ -1305,6 +1305,10 @@ int av_index_search_timestamp(AVStream *st, int64_t wanted_timestamp,
     a = - 1;
     b = nb_entries;
 
+    //optimize appending index entries at the end
+    if(b && entries[b-1].timestamp < wanted_timestamp)
+        a= b-1;
+
     while (b - a > 1) {
         m = (a + b) >> 1;
         timestamp = entries[m].timestamp;
