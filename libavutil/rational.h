@@ -29,7 +29,7 @@
 #define AVUTIL_RATIONAL_H
 
 #include <stdint.h>
-#include "common.h"
+#include "attributes.h"
 
 /**
  * rational number numerator/denominator

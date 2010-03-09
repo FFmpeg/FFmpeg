@@ -26,6 +26,8 @@
  * FFT/IFFT transforms.
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include "libavutil/mathematics.h"
 #include "fft.h"
 

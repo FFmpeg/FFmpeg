@@ -21,8 +21,6 @@
 #ifndef AVUTIL_X86_INTMATH_H
 #define AVUTIL_X86_INTMATH_H
 
-#include "libavutil/common.h"
-
 #define FASTDIV(a,b) \
     ({\
         int ret, dmy;\

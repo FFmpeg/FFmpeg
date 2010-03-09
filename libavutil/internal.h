@@ -35,8 +35,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include "config.h"
-#include "common.h"
-#include "mem.h"
+#include "attributes.h"
 #include "timer.h"
 
 #ifndef attribute_align_arg

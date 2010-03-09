@@ -23,6 +23,7 @@
 #include "lfg.h"
 #include "md5.h"
 #include "intreadwrite.h"
+#include "attributes.h"
 
 void av_cold av_lfg_init(AVLFG *c, unsigned int seed){
     uint8_t tmp[16]={0};
@@ -56,7 +57,7 @@ void av_bmg_get(AVLFG *lfg, double out[2])
 
 #ifdef TEST
 #include "log.h"
-#include "common.h"
+#include "timer.h"
 
 int main(void)
 {

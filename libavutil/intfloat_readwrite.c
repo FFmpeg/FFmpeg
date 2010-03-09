@@ -25,7 +25,8 @@
  * portable IEEE float/double read/write functions
  */
 
-#include "common.h"
+#include <stdint.h>
+#include <math.h>
 #include "intfloat_readwrite.h"
 
 double av_int2dbl(int64_t v){

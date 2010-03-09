@@ -26,7 +26,7 @@
 
 #include <stdint.h>
 #include "config.h"
-#include "libavutil/common.h"
+#include "libavutil/attributes.h"
 
 #define bswap_16 bswap_16
 static av_always_inline av_const uint16_t bswap_16(uint16_t x)

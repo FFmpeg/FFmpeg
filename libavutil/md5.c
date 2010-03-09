@@ -163,6 +163,7 @@ void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len){
 
 #ifdef TEST
 #include <stdio.h>
+#include <inttypes.h>
 #undef printf
 int main(void){
     uint64_t md5val;

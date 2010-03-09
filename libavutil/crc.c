@@ -19,6 +19,7 @@
  */
 
 #include "config.h"
+#include "common.h"
 #include "bswap.h"
 #include "crc.h"
 

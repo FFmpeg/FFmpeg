@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include "config.h"
-#include "libavutil/common.h"
+#include "libavutil/attributes.h"
 
 #if HAVE_INLINE_ASM
 

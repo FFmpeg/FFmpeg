@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "common.h"
+#include "attributes.h"
 
 typedef uint32_t AVCRC;
 
