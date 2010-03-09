@@ -736,10 +736,10 @@ include $(SUBDIR)../subdir.mak
 $(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dctref.o
 
 $(SUBDIR)cos_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
-	./$< > $@
+	$(G)./$< > $@
 
 $(SUBDIR)sin_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
-	./$< sin > $@
+	$(G)./$< sin > $@
 
 ifdef CONFIG_MPEGAUDIO_HP
 $(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=23
@@ -753,7 +753,7 @@ $(SUBDIR)%_tablegen$(HOSTEXESUF): $(SUBDIR)%_tablegen.c $(SUBDIR)tableprint.c
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^ $(HOSTLIBS)
 
 $(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
-	./$< > $@
+	$(G)./$< > $@
 
 ifdef CONFIG_HARDCODED_TABLES
 $(SUBDIR)mdct.o: $(SUBDIR)mdct_tables.h

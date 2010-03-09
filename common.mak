@@ -24,6 +24,7 @@ ECHO   = printf "$(1)\t%s\n" $(2)
 BRIEF  = CC AS YASM AR LD HOSTCC RANLIB STRIP CP
 SILENT = DEPCC YASMDEP RM
 MSG    = $@
+G      = @$(call ECHO,GEN,$@);
 $(foreach VAR,$(BRIEF), \
     $(eval $(VAR) = @$$(call ECHO,$(VAR),$$(MSG)); $($(VAR))))
 $(foreach VAR,$(SILENT),$(eval $(VAR) = @$($(VAR))))
@@ -57,7 +58,7 @@ $(BUILD_ROOT_REL)/version.h: $(SVN_ENTRIES)
 endif
 
 $(BUILD_ROOT_REL)/version.h: $(SRC_PATH_BARE)/version.sh config.mak
-	$< $(SRC_PATH) $@ $(EXTRA_VERSION)
+	$(G)$< $(SRC_PATH) $@ $(EXTRA_VERSION)
 
 install: install-libs install-headers
 install-libs: install-libs-yes
