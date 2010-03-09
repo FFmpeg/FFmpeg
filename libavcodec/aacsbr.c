@@ -718,18 +718,12 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
     } else if (ch_data->bs_frame_class > 1) { // VARFIX or VARVAR
         for (i = 0; i < num_rel_lead; i++)
             ch_data->t_env[i + 1] = ch_data->t_env[i] + bs_rel_bord[0][i];
-    } else { // FIXVAR
-        for (i = 0; i < num_rel_lead; i++)
-            ch_data->t_env[i + 1] = abs_bord_lead;
     }
 
     if (ch_data->bs_frame_class & 1) { // FIXVAR or VARVAR
         for (i = ch_data->bs_num_env[1] - 1; i > num_rel_lead; i--)
             ch_data->t_env[i] = ch_data->t_env[i + 1] -
                                 bs_rel_bord[1][ch_data->bs_num_env[1] - 1 - i];
-    } else { // FIXFIX or VARFIX
-        for (i = num_rel_lead; i < ch_data->bs_num_env[1]; i++)
-            ch_data->t_env[i + 1] = abs_bord_trail;
     }
 
     ch_data->bs_num_noise = (ch_data->bs_num_env[1] > 1) + 1;
