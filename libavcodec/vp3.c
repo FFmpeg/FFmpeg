@@ -1889,8 +1889,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     /* release the last frame, if it is allocated and if it is not the
      * golden frame */
-    if ((s->last_frame.data[0]) &&
-        (s->last_frame.data[0] != s->golden_frame.data[0]))
+    if (s->last_frame.data[0] && s->last_frame.type != FF_BUFFER_TYPE_COPY)
         avctx->release_buffer(avctx, &s->last_frame);
 
     /* shuffle frames (last = current) */
@@ -1900,6 +1899,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         if (s->golden_frame.data[0])
             avctx->release_buffer(avctx, &s->golden_frame);
         s->golden_frame = s->current_frame;
+        s->last_frame.type = FF_BUFFER_TYPE_COPY;
     }
 
     s->current_frame.data[0]= NULL; /* ensure that we catch any access to this released frame */
@@ -1941,9 +1941,9 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     free_vlc(&s->motion_vector_vlc);
 
     /* release all frames */
-    if (s->golden_frame.data[0] && s->golden_frame.data[0] != s->last_frame.data[0])
+    if (s->golden_frame.data[0])
         avctx->release_buffer(avctx, &s->golden_frame);
-    if (s->last_frame.data[0])
+    if (s->last_frame.data[0] && s->last_frame.type != FF_BUFFER_TYPE_COPY)
         avctx->release_buffer(avctx, &s->last_frame);
     /* no need to release the current_frame since it will always be pointing
      * to the same frame as either the golden or last frame */
