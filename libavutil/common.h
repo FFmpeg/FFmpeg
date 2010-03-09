@@ -36,11 +36,6 @@
 #include <string.h>
 #include "attributes.h"
 
-#ifdef HAVE_AV_CONFIG_H
-#   include "config.h"
-#   include "intmath.h"
-#endif
-
 //rounded division & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
@@ -62,8 +57,7 @@ extern const uint8_t ff_log2_tab[256];
 
 extern const uint8_t av_reverse[256];
 
-#ifndef av_log2
-static inline av_const int av_log2(unsigned int v)
+static inline av_const int av_log2_c(unsigned int v)
 {
     int n = 0;
     if (v & 0xffff0000) {
@@ -78,10 +72,8 @@ static inline av_const int av_log2(unsigned int v)
 
     return n;
 }
-#endif
 
-#ifndef av_log2_16bit
-static inline av_const int av_log2_16bit(unsigned int v)
+static inline av_const int av_log2_16bit_c(unsigned int v)
 {
     int n = 0;
     if (v & 0xff00) {
@@ -92,6 +84,17 @@ static inline av_const int av_log2_16bit(unsigned int v)
 
     return n;
 }
+
+#ifdef HAVE_AV_CONFIG_H
+#   include "config.h"
+#   include "intmath.h"
+#endif
+
+#ifndef av_log2
+#   define av_log2       av_log2_c
+#endif
+#ifndef av_log2_16bit
+#   define av_log2_16bit av_log2_16bit_c
 #endif
 
 /**
