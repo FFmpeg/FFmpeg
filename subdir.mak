@@ -7,6 +7,9 @@ LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
 INCINSTDIR := $(INCDIR)/lib$(NAME)
 THIS_LIB   := $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
 
+all-$(CONFIG_STATIC): $(SUBDIR)$(LIBNAME)
+all-$(CONFIG_SHARED): $(SUBDIR)$(SLIBNAME)
+
 $(SUBDIR)%-test.o: $(SUBDIR)%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c $(CC_O) $^
 
@@ -20,10 +23,6 @@ $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
 $(OBJS) $(SUBDIR)%.ho $(SUBDIR)%-test.o $(TESTOBJS): CPPFLAGS += -DHAVE_AV_CONFIG_H
 
 ifdef CONFIG_STATIC
-all: $(SUBDIR)$(LIBNAME)
-
-install-libs: install-lib$(NAME)-static
-
 $(SUBDIR)$(LIBNAME): $(OBJS)
 	$(RM) $@
 	$(AR) rc $@ $^ $(EXTRAOBJS)
@@ -31,6 +30,9 @@ $(SUBDIR)$(LIBNAME): $(OBJS)
 endif
 
 install-headers: install-lib$(NAME)-headers install-lib$(NAME)-pkgconfig
+
+install-libs-$(CONFIG_STATIC): install-lib$(NAME)-static
+install-libs-$(CONFIG_SHARED): install-lib$(NAME)-shared
 
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
@@ -46,10 +48,6 @@ distclean:: clean
             $(addprefix $(SUBDIR), $(foreach suffix,$(DISTCLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 
 ifdef CONFIG_SHARED
-all: $(SUBDIR)$(SLIBNAME)
-
-install-libs: install-lib$(NAME)-shared
-
 $(SUBDIR)$(SLIBNAME): $(SUBDIR)$(SLIBNAME_WITH_MAJOR)
 	$(Q)cd ./$(SUBDIR) && $(LN_S) $(SLIBNAME_WITH_MAJOR) $(SLIBNAME)
 

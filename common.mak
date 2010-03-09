@@ -2,7 +2,8 @@
 # common bits used by all libraries
 #
 
-all: # make "all" default target
+# first so "all" becomes default target
+all: all-yes
 
 ifndef SUBDIR
 vpath %.c   $(SRC_DIR)
@@ -59,6 +60,7 @@ $(BUILD_ROOT_REL)/version.h: $(SRC_PATH_BARE)/version.sh config.mak
 	$< $(SRC_PATH) $@ $(EXTRA_VERSION)
 
 install: install-libs install-headers
+install-libs: install-libs-yes
 
 uninstall: uninstall-libs uninstall-headers
 
