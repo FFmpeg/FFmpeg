@@ -1186,7 +1186,7 @@ mdct_select="fft"
 rdft_select="fft"
 
 # decoders / encoders / hardware accelerators
-aac_decoder_select="mdct aac_parser"
+aac_decoder_select="mdct rdft aac_parser"
 aac_encoder_select="mdct"
 ac3_decoder_select="mdct ac3_parser"
 alac_encoder_select="lpc"
