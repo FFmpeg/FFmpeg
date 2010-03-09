@@ -721,6 +721,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
     ch_data->bs_num_noise = (ch_data->bs_num_env > 1) + 1;
 
     ch_data->t_q[0] = ch_data->t_env[0];
+    ch_data->t_q[ch_data->bs_num_noise] = ch_data->t_env[ch_data->bs_num_env];
     if (ch_data->bs_num_noise > 1) {
         unsigned int idx;
         if (ch_data->bs_frame_class == FIXFIX) {
@@ -736,9 +737,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
                 idx = bs_pointer - 1;
         }
         ch_data->t_q[1] = ch_data->t_env[idx];
-        ch_data->t_q[2] = ch_data->t_env[ch_data->bs_num_env];
-    } else
-        ch_data->t_q[1] = ch_data->t_env[ch_data->bs_num_env];
+    }
 
     ch_data->e_a[0] = -(ch_data->e_a[1] != bs_num_env_old); // l_APrev
     ch_data->e_a[1] = -1;
