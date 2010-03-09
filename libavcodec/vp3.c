@@ -1809,6 +1809,12 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     if (avctx->skip_frame >= AVDISCARD_NONKEY && !s->keyframe)
         return buf_size;
 
+    s->current_frame.reference = 3;
+    if (avctx->get_buffer(avctx, &s->current_frame) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return -1;
+    }
+
     if (s->keyframe) {
         if (!s->theora)
         {
@@ -1827,35 +1833,10 @@ static int vp3_decode_frame(AVCodecContext *avctx,
                     av_log(s->avctx, AV_LOG_ERROR, "Warning, unsupported keyframe coding type?!\n");
             skip_bits(&gb, 2); /* reserved? */
         }
-
-        if (s->last_frame.data[0] == s->golden_frame.data[0]) {
-            if (s->golden_frame.data[0])
-                avctx->release_buffer(avctx, &s->golden_frame);
-            s->last_frame= s->golden_frame; /* ensure that we catch any access to this released frame */
-        } else {
-            if (s->golden_frame.data[0])
-                avctx->release_buffer(avctx, &s->golden_frame);
-            if (s->last_frame.data[0])
-                avctx->release_buffer(avctx, &s->last_frame);
-        }
-
-        s->golden_frame.reference = 3;
-        if(avctx->get_buffer(avctx, &s->golden_frame) < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "vp3: get_buffer() failed\n");
-            return -1;
-        }
-
-        /* golden frame is also the current frame */
-        s->current_frame= s->golden_frame;
     } else {
-        /* allocate a new current frame */
-        s->current_frame.reference = 3;
         if (!s->golden_frame.data[0]) {
             av_log(s->avctx, AV_LOG_ERROR, "vp3: first frame not a keyframe\n");
-            return -1;
-        }
-        if(avctx->get_buffer(avctx, &s->current_frame) < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "vp3: get_buffer() failed\n");
+            avctx->release_buffer(avctx, &s->current_frame);
             return -1;
         }
     }
@@ -1915,6 +1896,13 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     /* shuffle frames (last = current) */
     s->last_frame= s->current_frame;
+
+    if (s->keyframe) {
+        if (s->golden_frame.data[0])
+            avctx->release_buffer(avctx, &s->golden_frame);
+        s->golden_frame = s->current_frame;
+    }
+
     s->current_frame.data[0]= NULL; /* ensure that we catch any access to this released frame */
 
     return buf_size;
