@@ -987,7 +987,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
                 }
 
                 if (coeff_index + zero_run > 64) {
-                    av_log(s->avctx, AV_LOG_ERROR, "Invalid zero run of %d with"
+                    av_log(s->avctx, AV_LOG_DEBUG, "Invalid zero run of %d with"
                            " %d coeffs left\n", zero_run, 64-coeff_index);
                     zero_run = 64 - coeff_index;
                 }
