@@ -873,6 +873,8 @@ static int read_sbr_single_channel_element(AACContext *ac,
 
     if ((sbr->data[0].bs_add_harmonic_flag = get_bits1(gb)))
         get_bits1_vector(gb, sbr->data[0].bs_add_harmonic, sbr->n[1]);
+
+    return 0;
 }
 
 static int read_sbr_channel_pair_element(AACContext *ac,
@@ -913,6 +915,8 @@ static int read_sbr_channel_pair_element(AACContext *ac,
         get_bits1_vector(gb, sbr->data[0].bs_add_harmonic, sbr->n[1]);
     if ((sbr->data[1].bs_add_harmonic_flag = get_bits1(gb)))
         get_bits1_vector(gb, sbr->data[1].bs_add_harmonic, sbr->n[1]);
+
+    return 0;
 }
 
 static unsigned int read_sbr_data(AACContext *ac, SpectralBandReplication *sbr,
