@@ -83,7 +83,7 @@ FFEXTRALIBS := $(addprefix -l,$(addsuffix $(BUILDSUF),$(FFLIBS))) $(EXTRALIBS)
 FFLDFLAGS   := $(addprefix -L$(BUILD_ROOT)/lib,$(ALLFFLIBS)) $(LDFLAGS)
 
 EXAMPLES  := $(addprefix $(SUBDIR),$(addsuffix -example$(EXESUF),$(EXAMPLES)))
-OBJS      := $(addprefix $(SUBDIR),$(OBJS))
+OBJS      := $(addprefix $(SUBDIR),$(sort $(OBJS)))
 TESTOBJS  := $(addprefix $(SUBDIR),$(TESTOBJS))
 TESTPROGS := $(addprefix $(SUBDIR),$(addsuffix -test$(EXESUF),$(TESTPROGS)))
 HOSTOBJS  := $(addprefix $(SUBDIR),$(addsuffix .o,$(HOSTPROGS)))
