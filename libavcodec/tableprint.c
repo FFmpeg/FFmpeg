@@ -65,10 +65,10 @@ int main(int argc, char *argv[])
     tableinit();
 
     for (i = 0; tables[i].declaration; i++) {
-        printf(tables[i].declaration);
-        printf(" = {\n");
+        puts(tables[i].declaration);
+        puts(" = {\n");
         tables[i].printfunc(tables[i].data, tables[i].size, tables[i].size2);
-        printf("};\n");
+        puts("};\n");
     }
     return 0;
 }
