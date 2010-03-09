@@ -1300,7 +1300,7 @@ static int rtsp_setup_input_streams(AVFormatContext *s)
     snprintf(cmd, sizeof(cmd),
              "DESCRIBE %s RTSP/1.0\r\n"
              "Accept: application/sdp\r\n",
-             s->filename);
+             rt->control_uri);
     if (rt->server_type == RTSP_SERVER_REAL) {
         /**
          * The Require: attribute is needed for proper streaming from
@@ -1339,7 +1339,7 @@ static int rtsp_setup_output_streams(AVFormatContext *s)
     snprintf(cmd, sizeof(cmd),
              "ANNOUNCE %s RTSP/1.0\r\n"
              "Content-Type: application/sdp\r\n",
-             s->filename);
+             rt->control_uri);
     sdp = av_mallocz(8192);
     if (sdp == NULL)
         return AVERROR(ENOMEM);
@@ -1366,7 +1366,7 @@ static int rtsp_setup_output_streams(AVFormatContext *s)
         st->priv_data = rtsp_st;
         rtsp_st->stream_index = i;
 
-        av_strlcpy(rtsp_st->control_url, s->filename, sizeof(rtsp_st->control_url));
+        av_strlcpy(rtsp_st->control_url, rt->control_uri, sizeof(rtsp_st->control_url));
         /* Note, this must match the relative uri set in the sdp content */
         av_strlcatf(rtsp_st->control_url, sizeof(rtsp_st->control_url),
                     "/streamid=%d", i);
@@ -1469,7 +1469,7 @@ redirect:
                sizeof(rt->control_uri));
     for (rt->server_type = RTSP_SERVER_RTP;;) {
         snprintf(cmd, sizeof(cmd),
-                 "OPTIONS %s RTSP/1.0\r\n", s->filename);
+                 "OPTIONS %s RTSP/1.0\r\n", rt->control_uri);
         if (rt->server_type == RTSP_SERVER_REAL)
             av_strlcat(cmd,
                        /**
@@ -1890,7 +1890,7 @@ static int rtsp_read_close(AVFormatContext *s)
 #endif
     snprintf(cmd, sizeof(cmd),
              "TEARDOWN %s RTSP/1.0\r\n",
-             s->filename);
+             rt->control_uri);
     ff_rtsp_send_cmd_async(s, cmd);
 
     ff_rtsp_close_streams(s);

@@ -37,7 +37,7 @@ static int rtsp_write_record(AVFormatContext *s)
     snprintf(cmd, sizeof(cmd),
              "RECORD %s RTSP/1.0\r\n"
              "Range: npt=%0.3f-\r\n",
-             s->filename,
+             rt->control_uri,
              (double) 0);
     ff_rtsp_send_cmd(s, cmd, reply, NULL);
     if (reply->status_code != RTSP_STATUS_OK)
@@ -111,7 +111,7 @@ static int rtsp_write_close(AVFormatContext *s)
 
     snprintf(cmd, sizeof(cmd),
              "TEARDOWN %s RTSP/1.0\r\n",
-             s->filename);
+             rt->control_uri);
     ff_rtsp_send_cmd_async(s, cmd);
 
     ff_rtsp_close_streams(s);
