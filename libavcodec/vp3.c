@@ -1835,8 +1835,14 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         }
     } else {
         if (!s->golden_frame.data[0]) {
-            av_log(s->avctx, AV_LOG_ERROR, "vp3: first frame not a keyframe\n");
-            goto error;
+            av_log(s->avctx, AV_LOG_WARNING, "vp3: first frame not a keyframe\n");
+            s->golden_frame.reference = 3;
+            if (avctx->get_buffer(avctx, &s->golden_frame) < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+                goto error;
+            }
+            s->last_frame = s->golden_frame;
+            s->last_frame.type = FF_BUFFER_TYPE_COPY;
         }
     }
 
