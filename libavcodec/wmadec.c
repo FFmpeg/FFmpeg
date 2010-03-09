@@ -791,18 +791,18 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
     n = s->frame_len;
     incr = s->nb_channels;
     if (s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
-    for(ch = 0; ch < s->nb_channels; ch++) {
-        ptr = samples + ch;
-        iptr = s->frame_out[ch];
+        for(ch = 0; ch < s->nb_channels; ch++) {
+            ptr = samples + ch;
+            iptr = s->frame_out[ch];
 
-        for(i=0;i<n;i++) {
-            *ptr = av_clip_int16(lrintf(*iptr++));
-            ptr += incr;
+            for(i=0;i<n;i++) {
+                *ptr = av_clip_int16(lrintf(*iptr++));
+                ptr += incr;
+            }
+            /* prepare for next block */
+            memmove(&s->frame_out[ch][0], &s->frame_out[ch][s->frame_len],
+                    s->frame_len * sizeof(float));
         }
-        /* prepare for next block */
-        memmove(&s->frame_out[ch][0], &s->frame_out[ch][s->frame_len],
-                s->frame_len * sizeof(float));
-    }
     } else {
         float *output[MAX_CHANNELS];
         for (ch = 0; ch < MAX_CHANNELS; ch++)
