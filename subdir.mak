@@ -4,6 +4,8 @@ include $(SUBDIR)../common.mak
 
 LIBVERSION := $(lib$(NAME)_VERSION)
 LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
+INCINSTDIR := $(INCDIR)/lib$(NAME)
+THIS_LIB   := $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
 
 $(OBJS) $(SUBDIR)%.ho $(SUBDIR)%-test.o $(TESTOBJS): CPPFLAGS += -DHAVE_AV_CONFIG_H
 
@@ -19,10 +21,6 @@ $(SUBDIR)$(LIBNAME): $(OBJS)
 endif
 
 install-headers: install-lib$(NAME)-headers install-lib$(NAME)-pkgconfig
-
-INCINSTDIR := $(INCDIR)/lib$(NAME)
-
-THIS_LIB := $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
 
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
