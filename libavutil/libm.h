@@ -26,6 +26,7 @@
 
 #include <math.h>
 #include "config.h"
+#include "attributes.h"
 
 #if !HAVE_EXP2
 #undef exp2
