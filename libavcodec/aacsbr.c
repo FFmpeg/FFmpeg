@@ -689,7 +689,6 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         num_rel_lead                        = get_bits(gb, 2);
         num_rel_trail                       = get_bits(gb, 2);
         ch_data->bs_num_env                 = num_rel_lead + num_rel_trail + 1;
-        ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
 
         if (ch_data->bs_num_env > 5) {
             av_log(ac->avccontext, AV_LOG_ERROR,
@@ -697,6 +696,8 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
                    ch_data->bs_num_env);
             return -1;
         }
+
+        ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
 
         for (i = 0; i < num_rel_lead; i++)
             ch_data->t_env[i + 1] = ch_data->t_env[i] + 2 * get_bits(gb, 2) + 2;
