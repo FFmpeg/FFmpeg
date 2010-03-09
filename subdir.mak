@@ -22,12 +22,10 @@ $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
 
 $(OBJS) $(SUBDIR)%.ho $(SUBDIR)%-test.o $(TESTOBJS): CPPFLAGS += -DHAVE_AV_CONFIG_H
 
-ifdef CONFIG_STATIC
 $(SUBDIR)$(LIBNAME): $(OBJS)
 	$(RM) $@
 	$(AR) rc $@ $^ $(EXTRAOBJS)
 	$(RANLIB) $@
-endif
 
 install-headers: install-lib$(NAME)-headers install-lib$(NAME)-pkgconfig
 
@@ -47,7 +45,6 @@ distclean:: clean
 	$(RM)  $(addprefix $(SUBDIR),$(DISTCLEANSUFFIXES)) \
             $(addprefix $(SUBDIR), $(foreach suffix,$(DISTCLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 
-ifdef CONFIG_SHARED
 $(SUBDIR)$(SLIBNAME): $(SUBDIR)$(SLIBNAME_WITH_MAJOR)
 	$(Q)cd ./$(SUBDIR) && $(LN_S) $(SLIBNAME_WITH_MAJOR) $(SLIBNAME)
 
@@ -58,7 +55,6 @@ $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(OBJS) $(SUBDIR)lib$(NAME).ver
 
 ifdef SUBDIR
 $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(DEP_LIBS)
-endif
 endif
 
 install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
