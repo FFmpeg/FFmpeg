@@ -790,6 +790,7 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
     /* convert frame to integer */
     n = s->frame_len;
     incr = s->nb_channels;
+    if (s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
     for(ch = 0; ch < s->nb_channels; ch++) {
         ptr = samples + ch;
         iptr = s->frame_out[ch];
@@ -801,6 +802,16 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
         /* prepare for next block */
         memmove(&s->frame_out[ch][0], &s->frame_out[ch][s->frame_len],
                 s->frame_len * sizeof(float));
+    }
+    } else {
+        float *output[MAX_CHANNELS];
+        for (ch = 0; ch < MAX_CHANNELS; ch++)
+            output[ch] = s->frame_out[ch];
+        s->dsp.float_to_int16_interleave(samples, (const float **)output, n, incr);
+        for(ch = 0; ch < incr; ch++) {
+            /* prepare for next block */
+            memmove(&s->frame_out[ch][0], &s->frame_out[ch][n], n * sizeof(float));
+        }
     }
 
 #ifdef TRACE
