@@ -40,6 +40,7 @@
 #include "libavutil/fifo.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avstring.h"
+#include "libavutil/libm.h"
 #include "libavformat/os_support.h"
 
 #if HAVE_SYS_RESOURCE_H
