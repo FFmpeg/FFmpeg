@@ -618,7 +618,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
                          GetBitContext *gb, SBRData *ch_data)
 {
     int i;
-    unsigned bs_pointer;
+    unsigned bs_pointer = 0;
     // frameLengthFlag ? 15 : 16; 960 sample length frames unsupported; this value is numTimeSlots
     int abs_bord_trail = 16;
     int num_rel_lead, num_rel_trail;
@@ -630,8 +630,8 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
 
     switch (ch_data->bs_frame_class = get_bits(gb, 2)) {
     case FIXFIX:
-        ch_data->bs_num_env    = 1 << get_bits(gb, 2);
-        num_rel_lead           = ch_data->bs_num_env - 1;
+        ch_data->bs_num_env                 = 1 << get_bits(gb, 2);
+        num_rel_lead                        = ch_data->bs_num_env - 1;
         if (ch_data->bs_num_env == 1)
             ch_data->bs_amp_res = 0;
 
@@ -650,22 +650,20 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         for (i = 0; i < num_rel_lead; i++)
             ch_data->t_env[i + 1] = ch_data->t_env[i] + abs_bord_trail;
 
-        bs_pointer = 0;
-
         ch_data->bs_freq_res[1] = get_bits1(gb);
         for (i = 1; i < ch_data->bs_num_env; i++)
             ch_data->bs_freq_res[i + 1] = ch_data->bs_freq_res[1];
         break;
     case FIXVAR:
-        abs_bord_trail         += get_bits(gb, 2);
-        num_rel_trail           = get_bits(gb, 2);
-        num_rel_lead            = 0;
-        ch_data->bs_num_env     = num_rel_trail + 1;
-        ch_data->t_env[0]       = 0;
+        abs_bord_trail                     += get_bits(gb, 2);
+        num_rel_trail                       = get_bits(gb, 2);
+        ch_data->bs_num_env                 = num_rel_trail + 1;
+        ch_data->t_env[0]                   = 0;
         ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
 
         for (i = 0; i < num_rel_trail; i++)
-            ch_data->t_env[ch_data->bs_num_env - 1 - i] = ch_data->t_env[ch_data->bs_num_env - i] - 2 * get_bits(gb, 2) - 2;
+            ch_data->t_env[ch_data->bs_num_env - 1 - i] =
+                ch_data->t_env[ch_data->bs_num_env - i] - 2 * get_bits(gb, 2) - 2;
 
         bs_pointer = get_bits(gb, ceil_log2[ch_data->bs_num_env]);
 
@@ -673,9 +671,9 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
             ch_data->bs_freq_res[ch_data->bs_num_env - i] = get_bits1(gb);
         break;
     case VARFIX:
-        ch_data->t_env[0]       = get_bits(gb, 2);
-        num_rel_lead            = get_bits(gb, 2);
-        ch_data->bs_num_env     = num_rel_lead + 1;
+        ch_data->t_env[0]                   = get_bits(gb, 2);
+        num_rel_lead                        = get_bits(gb, 2);
+        ch_data->bs_num_env                 = num_rel_lead + 1;
         ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
 
         for (i = 0; i < num_rel_lead; i++)
@@ -686,11 +684,11 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         get_bits1_vector(gb, ch_data->bs_freq_res + 1, ch_data->bs_num_env);
         break;
     case VARVAR:
-        ch_data->t_env[0]       = get_bits(gb, 2);
-        abs_bord_trail         += get_bits(gb, 2);
-        num_rel_lead            = get_bits(gb, 2);
-        num_rel_trail           = get_bits(gb, 2);
-        ch_data->bs_num_env     = num_rel_lead + num_rel_trail + 1;
+        ch_data->t_env[0]                   = get_bits(gb, 2);
+        abs_bord_trail                     += get_bits(gb, 2);
+        num_rel_lead                        = get_bits(gb, 2);
+        num_rel_trail                       = get_bits(gb, 2);
+        ch_data->bs_num_env                 = num_rel_lead + num_rel_trail + 1;
         ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
 
         if (ch_data->bs_num_env > 5) {
@@ -703,7 +701,8 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         for (i = 0; i < num_rel_lead; i++)
             ch_data->t_env[i + 1] = ch_data->t_env[i] + 2 * get_bits(gb, 2) + 2;
         for (i = 0; i < num_rel_trail; i++)
-            ch_data->t_env[ch_data->bs_num_env - 1 - i] = ch_data->t_env[ch_data->bs_num_env - i] - 2 * get_bits(gb, 2) - 2;
+            ch_data->t_env[ch_data->bs_num_env - 1 - i] =
+                ch_data->t_env[ch_data->bs_num_env - i] - 2 * get_bits(gb, 2) - 2;
 
         bs_pointer = get_bits(gb, ceil_log2[ch_data->bs_num_env]);
 
@@ -720,7 +719,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
 
     ch_data->bs_num_noise = (ch_data->bs_num_env > 1) + 1;
 
-    ch_data->t_q[0] = ch_data->t_env[0];
+    ch_data->t_q[0]                     = ch_data->t_env[0];
     ch_data->t_q[ch_data->bs_num_noise] = ch_data->t_env[ch_data->bs_num_env];
     if (ch_data->bs_num_noise > 1) {
         unsigned int idx;
@@ -751,19 +750,19 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
 
 static void copy_sbr_grid(SBRData *dst, const SBRData *src) {
     //These variables are saved from the previous frame rather than copied
-    dst->bs_freq_res[0] = dst->bs_freq_res[dst->bs_num_env];
+    dst->bs_freq_res[0]    = dst->bs_freq_res[dst->bs_num_env];
     dst->t_env_num_env_old = dst->t_env[dst->bs_num_env];
-    dst->e_a[0]         = -(dst->e_a[1] != dst->bs_num_env);
+    dst->e_a[0]            = -(dst->e_a[1] != dst->bs_num_env);
 
     //These variables are read from the bitstream and therefore copied
     memcpy(dst->bs_freq_res+1, src->bs_freq_res+1, sizeof(dst->bs_freq_res)-sizeof(*dst->bs_freq_res));
     memcpy(dst->t_env,         src->t_env,         sizeof(dst->t_env));
     memcpy(dst->t_q,           src->t_q,           sizeof(dst->t_q));
-    dst->bs_num_env     = src->bs_num_env;
-    dst->bs_amp_res     = src->bs_amp_res;
-    dst->bs_num_noise   = src->bs_num_noise;
-    dst->bs_frame_class = src->bs_frame_class;
-    dst->e_a[1]         = src->e_a[1];
+    dst->bs_num_env        = src->bs_num_env;
+    dst->bs_amp_res        = src->bs_amp_res;
+    dst->bs_num_noise      = src->bs_num_noise;
+    dst->bs_frame_class    = src->bs_frame_class;
+    dst->e_a[1]            = src->e_a[1];
 }
 
 /// Read how the envelope and noise floor data is delta coded
