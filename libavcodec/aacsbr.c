@@ -30,6 +30,7 @@
 #include "sbr.h"
 #include "aacsbr.h"
 #include "aacsbrdata.h"
+#include "fft.h"
 
 #include <stdint.h>
 #include <float.h>
