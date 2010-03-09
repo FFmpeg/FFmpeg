@@ -735,7 +735,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
     ch_data->bs_num_noise = (ch_data->bs_num_env[1] > 1) + 1;
 
     ch_data->t_q[0] = ch_data->t_env[0];
-    if (ch_data->bs_num_noise > 1) { // typo in spec bases this on bs_num_env...
+    if (ch_data->bs_num_noise > 1) {
         unsigned int idx;
         if (ch_data->bs_frame_class == FIXFIX) {
             idx = ch_data->bs_num_env[1] >> 1;
