@@ -1810,6 +1810,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         return buf_size;
 
     s->current_frame.reference = 3;
+    s->current_frame.pict_type = s->keyframe ? FF_I_TYPE : FF_P_TYPE;
     if (avctx->get_buffer(avctx, &s->current_frame) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         goto error;
@@ -1836,7 +1837,9 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     } else {
         if (!s->golden_frame.data[0]) {
             av_log(s->avctx, AV_LOG_WARNING, "vp3: first frame not a keyframe\n");
+
             s->golden_frame.reference = 3;
+            s->golden_frame.pict_type = FF_I_TYPE;
             if (avctx->get_buffer(avctx, &s->golden_frame) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 goto error;
