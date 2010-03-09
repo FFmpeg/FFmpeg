@@ -7,6 +7,16 @@ LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
 INCINSTDIR := $(INCDIR)/lib$(NAME)
 THIS_LIB   := $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
 
+$(SUBDIR)%-test.o: $(SUBDIR)%.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c $(CC_O) $^
+
+$(SUBDIR)%-test.o: $(SUBDIR)%-test.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c $(CC_O) $^
+
+$(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
+	$(YASMDEP) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
+	$(YASM) $(YASMFLAGS) -I $(<D)/ -o $@ $<
+
 $(OBJS) $(SUBDIR)%.ho $(SUBDIR)%-test.o $(TESTOBJS): CPPFLAGS += -DHAVE_AV_CONFIG_H
 
 ifdef CONFIG_STATIC
@@ -25,16 +35,6 @@ install-headers: install-lib$(NAME)-headers install-lib$(NAME)-pkgconfig
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
 	$$(LD) $(FFLDFLAGS) -o $$@ $$^ -l$(FULLNAME) $(FFEXTRALIBS) $$(ELIBS)
-
-$(SUBDIR)%-test.o: $(SUBDIR)%.c
-	$$(CC) $$(CPPFLAGS) $(CFLAGS) -DTEST -c $$(CC_O) $$^
-
-$(SUBDIR)%-test.o: $(SUBDIR)%-test.c
-	$$(CC) $$(CPPFLAGS) $(CFLAGS) -DTEST -c $$(CC_O) $$^
-
-$(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
-	$$(YASMDEP) $(YASMFLAGS) -I $$(<D)/ -M -o $$@ $$< > $$(@:.o=.d)
-	$$(YASM) $(YASMFLAGS) -I $$(<D)/ -o $$@ $$<
 
 clean::
 	$(RM) $(addprefix $(SUBDIR),*-example$(EXESUF) *-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
