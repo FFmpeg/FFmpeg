@@ -698,7 +698,70 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         return -1;
     }
 
+    int abs_bord_lead  =  ch_data->bs_frame_class >= 2 ? ch_data->bs_var_bord[0] : 0;
+    // frameLengthFlag ? 15 : 16; 960 sample length frames unsupported; this value is numTimeSlots
+    int abs_bord_trail = (ch_data->bs_frame_class & 1 ? ch_data->bs_var_bord[1] : 0) + 16;
+    int n_rel_lead;
+
+    if (ch_data->bs_frame_class == FIXFIX) {
+        n_rel_lead = ch_data->bs_num_env[1] - 1;
+    } else if (ch_data->bs_frame_class == FIXVAR) {
+        n_rel_lead = 0;
+    } else if (ch_data->bs_frame_class < 4) { // VARFIX or VARVAR
+        n_rel_lead = ch_data->bs_num_rel[0];
+    } else {
+        av_log(ac->avccontext, AV_LOG_ERROR,
+               "Invalid bs_frame_class for SBR: %d\n", ch_data->bs_frame_class);
+        return -1;
+    }
+
+    ch_data->t_env_num_env_old = ch_data->t_env[ch_data->bs_num_env[0]];
+    ch_data->t_env[0]                      = abs_bord_lead;
+    ch_data->t_env[ch_data->bs_num_env[1]] = abs_bord_trail;
+
+    if (ch_data->bs_frame_class == FIXFIX) {
+        int temp = (abs_bord_trail + (ch_data->bs_num_env[1] >> 1)) /
+                   ch_data->bs_num_env[1];
+        for (i = 0; i < n_rel_lead; i++)
+            ch_data->t_env[i + 1] = ch_data->t_env[i] + temp;
+    } else if (ch_data->bs_frame_class > 1) { // VARFIX or VARVAR
+        for (i = 0; i < n_rel_lead; i++)
+            ch_data->t_env[i + 1] = ch_data->t_env[i] + ch_data->bs_rel_bord[0][i];
+    } else { // FIXVAR
+        for (i = 0; i < n_rel_lead; i++)
+            ch_data->t_env[i + 1] = abs_bord_lead;
+    }
+
+    if (ch_data->bs_frame_class & 1) { // FIXVAR or VARVAR
+        for (i = ch_data->bs_num_env[1] - 1; i > n_rel_lead; i--)
+            ch_data->t_env[i] = ch_data->t_env[i + 1] -
+                                ch_data->bs_rel_bord[1][ch_data->bs_num_env[1] - 1 - i];
+    } else { // FIXFIX or VARFIX
+        for (i = n_rel_lead; i < ch_data->bs_num_env[1]; i++)
+            ch_data->t_env[i + 1] = abs_bord_trail;
+    }
+
     ch_data->bs_num_noise = (ch_data->bs_num_env[1] > 1) + 1;
+
+    ch_data->t_q[0] = ch_data->t_env[0];
+    if (ch_data->bs_num_noise > 1) { // typo in spec bases this on bs_num_env...
+        unsigned int idx;
+        if (ch_data->bs_frame_class == FIXFIX) {
+            idx = ch_data->bs_num_env[1] >> 1;
+        } else if (ch_data->bs_frame_class & 1) { // FIXVAR or VARVAR
+            idx = ch_data->bs_num_env[1] - FFMAX(ch_data->bs_pointer - 1, 1);
+        } else { // VARFIX
+            if (!ch_data->bs_pointer)
+                idx = 1;
+            else if (ch_data->bs_pointer == 1)
+                idx = ch_data->bs_num_env[1] - 1;
+            else // bs_pointer > 1
+                idx = ch_data->bs_pointer - 1;
+        }
+        ch_data->t_q[1] = ch_data->t_env[idx];
+        ch_data->t_q[2] = ch_data->t_env[ch_data->bs_num_env[1]];
+    } else
+        ch_data->t_q[1] = ch_data->t_env[ch_data->bs_num_env[1]];
 
     return 0;
 }
@@ -707,6 +770,7 @@ static void copy_sbr_grid(SBRData *dst, const SBRData *src) {
     //These variables are saved from the previous frame rather than copied
     dst->bs_freq_res[0] = dst->bs_freq_res[dst->bs_num_env[1]];
     dst->bs_num_env[0]  = dst->bs_num_env[1];
+    dst->t_env_num_env_old = dst->t_env[dst->bs_num_env[0]];
 
     //These variables are read from the bitstream and therefore copied
     memcpy(dst->bs_freq_res+1, src->bs_freq_res+1, sizeof(dst->bs_freq_res)-sizeof(*dst->bs_freq_res));
@@ -714,6 +778,8 @@ static void copy_sbr_grid(SBRData *dst, const SBRData *src) {
     memcpy(dst->bs_var_bord,   src->bs_var_bord,   sizeof(dst->bs_var_bord));
     memcpy(dst->bs_rel_bord,   src->bs_rel_bord,   sizeof(dst->bs_rel_bord));
     memcpy(dst->bs_num_rel,    src->bs_num_rel,    sizeof(dst->bs_rel_bord));
+    memcpy(dst->t_env,         src->t_env,         sizeof(dst->t_env));
+    memcpy(dst->t_q,           src->t_q,           sizeof(dst->t_q));
     dst->bs_amp_res     = src->bs_amp_res;
     dst->bs_num_noise   = src->bs_num_noise;
     dst->bs_pointer     = src->bs_pointer;
@@ -1028,77 +1094,6 @@ int ff_decode_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
                "Expected to read %d SBR bytes actually read %d.\n", cnt, bytes_read);
     }
     return cnt;
-}
-
-/// Time/frequency Grid (14496-3 sp04 p200)
-static int sbr_time_freq_grid(AACContext *ac, SpectralBandReplication *sbr,
-                              SBRData *ch_data, int ch)
-{
-    int abs_bord_lead  =  ch_data->bs_frame_class >= 2 ? ch_data->bs_var_bord[0] : 0;
-    // frameLengthFlag ? 15 : 16; 960 sample length frames unsupported; this value is numTimeSlots
-    int abs_bord_trail = (ch_data->bs_frame_class & 1 ? ch_data->bs_var_bord[1] : 0) + 16;
-    int n_rel_lead;
-    int i;
-
-    if (ch_data->bs_frame_class == FIXFIX) {
-        n_rel_lead = ch_data->bs_num_env[1] - 1;
-    } else if (ch_data->bs_frame_class == FIXVAR) {
-        n_rel_lead = 0;
-    } else if (ch_data->bs_frame_class < 4) { // VARFIX or VARVAR
-        n_rel_lead = ch_data->bs_num_rel[0];
-    } else {
-        av_log(ac->avccontext, AV_LOG_ERROR,
-               "Invalid bs_frame_class for SBR: %d\n", ch_data->bs_frame_class);
-        return -1;
-    }
-
-    ch_data->t_env_num_env_old = ch_data->t_env[ch_data->bs_num_env[0]];
-    ch_data->t_env[0]                      = abs_bord_lead;
-    ch_data->t_env[ch_data->bs_num_env[1]] = abs_bord_trail;
-
-    if (ch_data->bs_frame_class == FIXFIX) {
-        int temp = (abs_bord_trail + (ch_data->bs_num_env[1] >> 1)) /
-                   ch_data->bs_num_env[1];
-        for (i = 0; i < n_rel_lead; i++)
-            ch_data->t_env[i + 1] = ch_data->t_env[i] + temp;
-    } else if (ch_data->bs_frame_class > 1) { // VARFIX or VARVAR
-        for (i = 0; i < n_rel_lead; i++)
-            ch_data->t_env[i + 1] = ch_data->t_env[i] + ch_data->bs_rel_bord[0][i];
-    } else { // FIXVAR
-        for (i = 0; i < n_rel_lead; i++)
-            ch_data->t_env[i + 1] = abs_bord_lead;
-    }
-
-    if (ch_data->bs_frame_class & 1) { // FIXVAR or VARVAR
-        for (i = ch_data->bs_num_env[1] - 1; i > n_rel_lead; i--)
-            ch_data->t_env[i] = ch_data->t_env[i + 1] -
-                                ch_data->bs_rel_bord[1][ch_data->bs_num_env[1] - 1 - i];
-    } else { // FIXFIX or VARFIX
-        for (i = n_rel_lead; i < ch_data->bs_num_env[1]; i++)
-            ch_data->t_env[i + 1] = abs_bord_trail;
-    }
-
-    ch_data->t_q[0] = ch_data->t_env[0];
-    if (ch_data->bs_num_noise > 1) { // typo in spec bases this on bs_num_env...
-        unsigned int idx;
-        if (ch_data->bs_frame_class == FIXFIX) {
-            idx = ch_data->bs_num_env[1] >> 1;
-        } else if (ch_data->bs_frame_class & 1) { // FIXVAR or VARVAR
-            idx = ch_data->bs_num_env[1] - FFMAX(ch_data->bs_pointer - 1, 1);
-        } else { // VARFIX
-            if (!ch_data->bs_pointer)
-                idx = 1;
-            else if (ch_data->bs_pointer == 1)
-                idx = ch_data->bs_num_env[1] - 1;
-            else // bs_pointer > 1
-                idx = ch_data->bs_pointer - 1;
-        }
-        ch_data->t_q[1] = ch_data->t_env[idx];
-        ch_data->t_q[2] = ch_data->t_env[ch_data->bs_num_env[1]];
-    } else
-        ch_data->t_q[1] = ch_data->t_env[ch_data->bs_num_env[1]];
-
-    return 0;
 }
 
 /// Dequantization and stereo decoding (14496-3 sp04 p203)
@@ -1738,12 +1733,7 @@ static void sbr_hf_assemble(float Y[2][38][64][2], const float X_high[64][40][2]
 
 void ff_sbr_dequant(AACContext *ac, SpectralBandReplication *sbr, int id_aac)
 {
-    int ch;
-
     if (sbr->start) {
-        for (ch = 0; ch < (id_aac == TYPE_CPE) + 1; ch++) {
-            sbr_time_freq_grid(ac, sbr, &sbr->data[ch], ch);
-        }
         sbr_dequant(sbr, id_aac);
     }
 }
