@@ -24,6 +24,7 @@
 #include "libavcodec/mpegvideo.h"
 #include "avformat.h"
 #include "mpegts.h"
+#include "adts.h"
 
 /* write DVB SI sections */
 
@@ -177,6 +178,7 @@ typedef struct MpegTSWriteStream {
     int64_t payload_pts;
     int64_t payload_dts;
     uint8_t payload[DEFAULT_PES_PAYLOAD_SIZE];
+    ADTSContext *adts;
 } MpegTSWriteStream;
 
 static void mpegts_write_pat(AVFormatContext *s)
@@ -426,6 +428,15 @@ static int mpegts_write_header(AVFormatContext *s)
             service->pcr_pid == 0x1fff) {
             service->pcr_pid = ts_st->pid;
             pcr_st = st;
+        }
+        if (st->codec->codec_id == CODEC_ID_AAC &&
+            st->codec->extradata_size > 0) {
+            ts_st->adts = av_mallocz(sizeof(*ts_st->adts));
+            if (!ts_st->adts)
+                return AVERROR_NOMEM;
+            if (ff_adts_decode_extradata(s, ts_st->adts, st->codec->extradata,
+                                         st->codec->extradata_size) < 0)
+                return -1;
         }
     }
 
@@ -808,6 +819,32 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
             data[5] = 0xe0; // any slice type
             buf  = data;
             size = pkt->size+6;
+        }
+    } else if (st->codec->codec_id == CODEC_ID_AAC) {
+        if (pkt->size < 2)
+            return -1;
+        if ((AV_RB16(pkt->data) & 0xfff0) != 0xfff0) {
+            ADTSContext *adts = ts_st->adts;
+            int new_size;
+            if (!adts) {
+                av_log(s, AV_LOG_ERROR, "aac bitstream not in adts format "
+                       "and extradata missing\n");
+                return -1;
+            }
+            new_size = ADTS_HEADER_SIZE+adts->pce_size+pkt->size;
+            if ((unsigned)new_size >= INT_MAX)
+                return -1;
+            data = av_malloc(new_size);
+            if (!data)
+                return AVERROR_NOMEM;
+            ff_adts_write_frame_header(adts, data, pkt->size, adts->pce_size);
+            if (adts->pce_size) {
+                memcpy(data+ADTS_HEADER_SIZE, adts->pce_data, adts->pce_size);
+                adts->pce_size = 0;
+            }
+            memcpy(data+ADTS_HEADER_SIZE+adts->pce_size, pkt->data, pkt->size);
+            buf = data;
+            size = new_size;
         }
     }
 
