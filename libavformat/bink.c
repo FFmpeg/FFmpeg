@@ -212,8 +212,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         bink->current_track++;
         if (audio_size >= 4) {
             /* get one audio packet per track */
-            if ((ret = av_get_packet(pb, pkt, audio_size)) <= 0)
-                return ret;
+            if ((ret = av_get_packet(pb, pkt, audio_size)) != audio_size)
+                return ret < 0 ? ret : AVERROR(EIO);;
             pkt->stream_index = bink->current_track;
             pkt->pts = bink->audio_pts[bink->current_track - 1];
 
@@ -230,7 +230,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     /* get video packet */
     if ((ret = av_get_packet(pb, pkt, bink->remain_packet_size))
                                    != bink->remain_packet_size)
-        return ret;
+        return ret < 0 ? ret : AVERROR(EIO);
     pkt->stream_index = 0;
     pkt->pts = bink->video_pts++;
     pkt->flags |= PKT_FLAG_KEY;
