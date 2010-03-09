@@ -64,10 +64,6 @@ typedef struct {
     unsigned           bs_add_harmonic_flag;
     unsigned           bs_num_env[2];
     uint8_t            bs_freq_res[7];
-    uint8_t            bs_var_bord[2];
-    uint8_t            bs_num_rel[2];
-    uint8_t            bs_rel_bord[2][3];
-    unsigned           bs_pointer;
     unsigned           bs_num_noise;
     uint8_t            bs_df_env[5];
     uint8_t            bs_df_noise[2];
