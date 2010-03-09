@@ -1355,6 +1355,8 @@ static int mov_write_string_data_tag(ByteIOContext *pb, const char *data, int la
         put_buffer(pb, data, strlen(data));
         return updateSize(pb, pos);
     }else{
+        if (!lang)
+            lang = ff_mov_iso639_to_lang("und", 1);
         put_be16(pb, strlen(data)); /* string length */
         put_be16(pb, lang);
         put_buffer(pb, data, strlen(data));
@@ -1395,8 +1397,6 @@ static int mov_write_string_metadata(AVFormatContext *s, ByteIOContext *pb,
             break;
         }
     }
-    if (!lang)
-        lang = ff_mov_iso639_to_lang("und", 1);
     return mov_write_string_tag(pb, name, t->value, lang, long_style);
 }
 
