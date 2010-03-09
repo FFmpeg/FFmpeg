@@ -619,15 +619,14 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
 {
     int i;
     unsigned bs_pointer;
-    int abs_bord_lead = 0;
     // frameLengthFlag ? 15 : 16; 960 sample length frames unsupported; this value is numTimeSlots
     int abs_bord_trail = 16;
     int num_rel_lead, num_rel_trail;
     unsigned bs_num_env_old = ch_data->bs_num_env;
-    uint8_t bs_rel_bord[2][3];
 
     ch_data->bs_freq_res[0] = ch_data->bs_freq_res[ch_data->bs_num_env];
     ch_data->bs_amp_res = sbr->bs_amp_res_header;
+    ch_data->t_env_num_env_old = ch_data->t_env[bs_num_env_old];
 
     switch (ch_data->bs_frame_class = get_bits(gb, 2)) {
     case FIXFIX:
@@ -643,6 +642,14 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
             return -1;
         }
 
+        ch_data->t_env[0]                   = 0;
+        ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
+
+        abs_bord_trail = (abs_bord_trail + (ch_data->bs_num_env >> 1)) /
+                   ch_data->bs_num_env;
+        for (i = 0; i < num_rel_lead; i++)
+            ch_data->t_env[i + 1] = ch_data->t_env[i] + abs_bord_trail;
+
         bs_pointer = 0;
 
         ch_data->bs_freq_res[1] = get_bits1(gb);
@@ -654,9 +661,11 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         num_rel_trail           = get_bits(gb, 2);
         num_rel_lead            = 0;
         ch_data->bs_num_env     = num_rel_trail + 1;
+        ch_data->t_env[0]       = 0;
+        ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
 
         for (i = 0; i < num_rel_trail; i++)
-            bs_rel_bord[1][i] = 2 * get_bits(gb, 2) + 2;
+            ch_data->t_env[ch_data->bs_num_env - 1 - i] = ch_data->t_env[ch_data->bs_num_env - i] - 2 * get_bits(gb, 2) - 2;
 
         bs_pointer = get_bits(gb, ceil_log2[ch_data->bs_num_env]);
 
@@ -664,23 +673,25 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
             ch_data->bs_freq_res[ch_data->bs_num_env - i] = get_bits1(gb);
         break;
     case VARFIX:
-        abs_bord_lead           = get_bits(gb, 2);
+        ch_data->t_env[0]       = get_bits(gb, 2);
         num_rel_lead            = get_bits(gb, 2);
         ch_data->bs_num_env     = num_rel_lead + 1;
+        ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
 
         for (i = 0; i < num_rel_lead; i++)
-            bs_rel_bord[0][i] = 2 * get_bits(gb, 2) + 2;
+            ch_data->t_env[i + 1] = ch_data->t_env[i] + 2 * get_bits(gb, 2) + 2;
 
         bs_pointer = get_bits(gb, ceil_log2[ch_data->bs_num_env]);
 
         get_bits1_vector(gb, ch_data->bs_freq_res + 1, ch_data->bs_num_env);
         break;
     case VARVAR:
-        abs_bord_lead           = get_bits(gb, 2);
+        ch_data->t_env[0]       = get_bits(gb, 2);
         abs_bord_trail         += get_bits(gb, 2);
         num_rel_lead            = get_bits(gb, 2);
         num_rel_trail           = get_bits(gb, 2);
         ch_data->bs_num_env     = num_rel_lead + num_rel_trail + 1;
+        ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
 
         if (ch_data->bs_num_env > 5) {
             av_log(ac->avccontext, AV_LOG_ERROR,
@@ -690,9 +701,9 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         }
 
         for (i = 0; i < num_rel_lead; i++)
-            bs_rel_bord[0][i] = 2 * get_bits(gb, 2) + 2;
+            ch_data->t_env[i + 1] = ch_data->t_env[i] + 2 * get_bits(gb, 2) + 2;
         for (i = 0; i < num_rel_trail; i++)
-            bs_rel_bord[1][i] = 2 * get_bits(gb, 2) + 2;
+            ch_data->t_env[ch_data->bs_num_env - 1 - i] = ch_data->t_env[ch_data->bs_num_env - i] - 2 * get_bits(gb, 2) - 2;
 
         bs_pointer = get_bits(gb, ceil_log2[ch_data->bs_num_env]);
 
@@ -705,26 +716,6 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
                "Invalid bitstream, bs_pointer points to a middle noise border outside the time borders table: %d\n",
                bs_pointer);
         return -1;
-    }
-
-    ch_data->t_env_num_env_old = ch_data->t_env[bs_num_env_old];
-    ch_data->t_env[0]                      = abs_bord_lead;
-    ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
-
-    if (ch_data->bs_frame_class == FIXFIX) {
-        int temp = (abs_bord_trail + (ch_data->bs_num_env >> 1)) /
-                   ch_data->bs_num_env;
-        for (i = 0; i < num_rel_lead; i++)
-            ch_data->t_env[i + 1] = ch_data->t_env[i] + temp;
-    } else if (ch_data->bs_frame_class > 1) { // VARFIX or VARVAR
-        for (i = 0; i < num_rel_lead; i++)
-            ch_data->t_env[i + 1] = ch_data->t_env[i] + bs_rel_bord[0][i];
-    }
-
-    if (ch_data->bs_frame_class & 1) { // FIXVAR or VARVAR
-        for (i = ch_data->bs_num_env - 1; i > num_rel_lead; i--)
-            ch_data->t_env[i] = ch_data->t_env[i + 1] -
-                                bs_rel_bord[1][ch_data->bs_num_env - 1 - i];
     }
 
     ch_data->bs_num_noise = (ch_data->bs_num_env > 1) + 1;
