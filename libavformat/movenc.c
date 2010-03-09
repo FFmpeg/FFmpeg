@@ -1390,11 +1390,13 @@ static int mov_write_string_metadata(AVFormatContext *s, ByteIOContext *pb,
     while ((t2 = av_metadata_get(s->metadata, tag2, t2, AV_METADATA_IGNORE_SUFFIX))) {
         len2 = strlen(t2->key);
         if (len2 == len+4 && !strcmp(t->value, t2->value)
-            && (l=ff_mov_iso639_to_lang(&t2->key[len2-3], 0)) >= 0) {
+            && (l=ff_mov_iso639_to_lang(&t2->key[len2-3], 1)) >= 0) {
             lang = l;
             break;
         }
     }
+    if (!lang)
+        lang = ff_mov_iso639_to_lang("und", 1);
     return mov_write_string_tag(pb, name, t->value, lang, long_style);
 }
 
