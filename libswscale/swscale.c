@@ -1142,7 +1142,7 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #endif
 
 #if ARCH_PPC
-#if HAVE_ALTIVEC || CONFIG_RUNTIME_CPUDETECT
+#if HAVE_ALTIVEC
 #define COMPILE_ALTIVEC
 #endif
 #endif //ARCH_PPC
@@ -1245,7 +1245,7 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     }
 
 #else
-#if ARCH_PPC
+#if ARCH_PPC && COMPILE_ALTIVEC
     if (flags & SWS_CPU_CAPS_ALTIVEC) {
         sws_init_swScale_altivec(c);
         return swScale_altivec;
