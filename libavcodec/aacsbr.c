@@ -628,6 +628,8 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         if (ch_data->bs_num_env[1] == 1)
             ch_data->bs_amp_res = 0;
 
+        ch_data->bs_pointer = 0;
+
         ch_data->bs_freq_res[1] = get_bits1(gb);
         for (i = 1; i < ch_data->bs_num_env[1]; i++)
             ch_data->bs_freq_res[i + 1] = ch_data->bs_freq_res[1];
@@ -675,6 +677,12 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         break;
     }
 
+    if (ch_data->bs_pointer > ch_data->bs_num_env[1] + 1) {
+        av_log(ac->avccontext, AV_LOG_ERROR,
+               "Invalid bitstream, bs_pointer points to a middle noise border outside the time borders table: %d\n",
+               ch_data->bs_pointer);
+        return -1;
+    }
     if (ch_data->bs_frame_class == FIXFIX && ch_data->bs_num_env[1] > 4) {
         av_log(ac->avccontext, AV_LOG_ERROR,
                "Invalid bitstream, too many SBR envelopes in FIXFIX type SBR frame: %d\n",
