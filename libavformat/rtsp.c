@@ -1381,10 +1381,12 @@ int ff_rtsp_connect(AVFormatContext *s)
     char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128];
     char *option_list, *option, *filename;
     URLContext *rtsp_hd;
-    int port, err;
+    int port, err, tcp_fd;
     RTSPMessageHeader reply1, *reply = &reply1;
     int lower_transport_mask = 0;
     char real_challenge[64];
+    struct sockaddr_storage peer;
+    socklen_t peer_len = sizeof(peer);
 
     if (!ff_network_init())
         return AVERROR(EIO);
@@ -1454,6 +1456,12 @@ redirect:
     }
     rt->rtsp_hd = rtsp_hd;
     rt->seq = 0;
+
+    tcp_fd = url_get_file_handle(rtsp_hd);
+    if (!getpeername(tcp_fd, (struct sockaddr*) &peer, &peer_len)) {
+        getnameinfo((struct sockaddr*) &peer, peer_len, host, sizeof(host),
+                    NULL, 0, NI_NUMERICHOST);
+    }
 
     /* request options supported by the server; this also detects server
      * type */
