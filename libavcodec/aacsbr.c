@@ -763,6 +763,13 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
     } else
         ch_data->t_q[1] = ch_data->t_env[ch_data->bs_num_env[1]];
 
+    ch_data->e_a[0] = -(ch_data->e_a[1] != ch_data->bs_num_env[0]); // l_APrev
+    ch_data->e_a[1] = -1;
+    if ((ch_data->bs_frame_class & 1) && ch_data->bs_pointer) { // FIXVAR or VARVAR and bs_pointer != 0
+        ch_data->e_a[1] = ch_data->bs_num_env[1] + 1 - ch_data->bs_pointer;
+    } else if ((ch_data->bs_frame_class == 2) && (ch_data->bs_pointer > 1)) // VARFIX and bs_pointer > 1
+        ch_data->e_a[1] = ch_data->bs_pointer - 1;
+
     return 0;
 }
 
@@ -771,6 +778,7 @@ static void copy_sbr_grid(SBRData *dst, const SBRData *src) {
     dst->bs_freq_res[0] = dst->bs_freq_res[dst->bs_num_env[1]];
     dst->bs_num_env[0]  = dst->bs_num_env[1];
     dst->t_env_num_env_old = dst->t_env[dst->bs_num_env[0]];
+    dst->e_a[0]         = -(dst->e_a[1] != dst->bs_num_env[0]);
 
     //These variables are read from the bitstream and therefore copied
     memcpy(dst->bs_freq_res+1, src->bs_freq_res+1, sizeof(dst->bs_freq_res)-sizeof(*dst->bs_freq_res));
@@ -784,6 +792,7 @@ static void copy_sbr_grid(SBRData *dst, const SBRData *src) {
     dst->bs_num_noise   = src->bs_num_noise;
     dst->bs_pointer     = src->bs_pointer;
     dst->bs_frame_class = src->bs_frame_class;
+    dst->e_a[1]         = src->e_a[1];
 }
 
 /// Read how the envelope and noise floor data is delta coded
@@ -1463,13 +1472,6 @@ static void sbr_mapping(AACContext *ac, SpectralBandReplication *sbr,
                         SBRData *ch_data, int e_a[2])
 {
     int e, i, m;
-
-    e_a[0] = -(e_a[1] != ch_data->bs_num_env[0]); // l_APrev
-    e_a[1] = -1;
-    if ((ch_data->bs_frame_class & 1) && ch_data->bs_pointer) { // FIXVAR or VARVAR and bs_pointer != 0
-        e_a[1] = ch_data->bs_num_env[1] + 1 - ch_data->bs_pointer;
-    } else if ((ch_data->bs_frame_class == 2) && (ch_data->bs_pointer > 1)) // VARFIX and bs_pointer > 1
-        e_a[1] = ch_data->bs_pointer - 1;
 
     memset(ch_data->s_indexmapped[1], 0, 7*sizeof(ch_data->s_indexmapped[1]));
     for (e = 0; e < ch_data->bs_num_env[1]; e++) {
