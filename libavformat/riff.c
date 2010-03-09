@@ -240,6 +240,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_AURA,         MKTAG('A', 'U', 'R', 'A') },
     { CODEC_ID_AURA2,        MKTAG('A', 'U', 'R', '2') },
     { CODEC_ID_DPX,          MKTAG('d', 'p', 'x', ' ') },
+    { CODEC_ID_KGV1,         MKTAG('K', 'G', 'V', '1') },
     { CODEC_ID_NONE,         0 }
 };
 

@@ -206,6 +206,7 @@ enum CodecID {
     CODEC_ID_BINKVIDEO,
     CODEC_ID_IFF_ILBM,
     CODEC_ID_IFF_BYTERUN1,
+    CODEC_ID_KGV1,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,

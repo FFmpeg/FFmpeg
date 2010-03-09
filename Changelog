@@ -62,6 +62,7 @@ version <next>:
 - AMR-NB decoder
 - RTSP muxer
 - HE-AAC v1 decoder
+- Kega Game Video (KGV1) decoder
 
 
 

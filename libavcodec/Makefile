@@ -167,6 +167,7 @@ OBJS-$(CONFIG_INTERPLAY_VIDEO_DECODER) += interplayvideo.o
 OBJS-$(CONFIG_JPEGLS_DECODER)          += jpeglsdec.o jpegls.o \
                                           mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_JPEGLS_ENCODER)          += jpeglsenc.o jpegls.o
+OBJS-$(CONFIG_KGV1_DECODER)            += kgv1dec.o
 OBJS-$(CONFIG_KMVC_DECODER)            += kmvc.o
 OBJS-$(CONFIG_LJPEG_ENCODER)           += ljpegenc.o mjpegenc.o mjpeg.o \
                                           mpegvideo_enc.o motion_est.o  \
