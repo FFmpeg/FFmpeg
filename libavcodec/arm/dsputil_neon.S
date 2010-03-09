@@ -240,7 +240,7 @@
         .macro pixfunc pfx name suf rnd_op args:vararg
 function ff_\pfx\name\suf\()_neon, export=1
         \name \rnd_op \args
-        .endfunc
+endfunc
         .endm
 
         .macro pixfunc2 pfx name args:vararg
@@ -250,7 +250,7 @@ function ff_\pfx\name\suf\()_neon, export=1
 
 function ff_put_h264_qpel16_mc00_neon, export=1
         mov             r3,  #16
-        .endfunc
+endfunc
 
         pixfunc  put_ pixels16
         pixfunc2 put_ pixels16_x2,  _no_rnd, vhadd.u8
@@ -259,13 +259,13 @@ function ff_put_h264_qpel16_mc00_neon, export=1
 
 function ff_avg_h264_qpel16_mc00_neon, export=1
         mov             r3,  #16
-        .endfunc
+endfunc
 
         pixfunc  avg_ pixels16,, 1
 
 function ff_put_h264_qpel8_mc00_neon, export=1
         mov             r3,  #8
-        .endfunc
+endfunc
 
         pixfunc  put_ pixels8
         pixfunc2 put_ pixels8_x2,   _no_rnd, vhadd.u8
@@ -274,7 +274,7 @@ function ff_put_h264_qpel8_mc00_neon, export=1
 
 function ff_avg_h264_qpel8_mc00_neon, export=1
         mov             r3,  #8
-        .endfunc
+endfunc
 
         pixfunc  avg_ pixels8,, 1
 
@@ -300,7 +300,7 @@ function ff_put_pixels_clamped_neon, export=1
         vst1.64         {d6},      [r1,:64], r2
         vst1.64         {d7},      [r1,:64], r2
         bx              lr
-        .endfunc
+endfunc
 
 function ff_put_signed_pixels_clamped_neon, export=1
         vmov.u8         d31, #128
@@ -337,7 +337,7 @@ function ff_put_signed_pixels_clamped_neon, export=1
         vst1.64         {d6},      [r1,:64], r2
         vst1.64         {d7},      [r1,:64], r2
         bx              lr
-        .endfunc
+endfunc
 
 function ff_add_pixels_clamped_neon, export=1
         mov             r3, r1
@@ -382,7 +382,7 @@ function ff_add_pixels_clamped_neon, export=1
         vst1.64         {d4},    [r3,:64], r2
         vst1.64         {d6},    [r3,:64], r2
         bx              lr
-        .endfunc
+endfunc
 
 function ff_float_to_int16_neon, export=1
         subs            r2,  r2,  #8
@@ -426,7 +426,7 @@ function ff_float_to_int16_neon, export=1
         vshrn.s32       d5,  q9,  #16
         vst1.64         {d4-d5},  [r0,:128]!
         bx              lr
-        .endfunc
+endfunc
 
 function ff_float_to_int16_interleave_neon, export=1
         cmp             r3, #2
@@ -719,7 +719,7 @@ function ff_float_to_int16_interleave_neon, export=1
         vld1.64         {d2-d3},  [r4,:128]!
         vcvt.s32.f32    q1,  q1,  #16
         b               6b
-        .endfunc
+endfunc
 
 function ff_vector_fmul_neon, export=1
         mov             r3,  r0
@@ -759,7 +759,7 @@ function ff_vector_fmul_neon, export=1
         vmul.f32        q9,  q1,  q3
 3:      vst1.64         {d16-d19},[r3,:128]!
         bx              lr
-        .endfunc
+endfunc
 
 function ff_vector_fmul_window_neon, export=1
 VFP     vdup.32         q8,  d0[0]
@@ -811,7 +811,7 @@ NOVFP   ldr             lr,  [sp, #16]
         vst1.64         {d20,d21},[r0,:128]!
         vst1.64         {d22,d23},[ip,:128], r5
         pop             {r4,r5,pc}
-        .endfunc
+endfunc
 
 #if CONFIG_VORBIS_DECODER
 function ff_vorbis_inverse_coupling_neon, export=1
@@ -872,7 +872,7 @@ function ff_vorbis_inverse_coupling_neon, export=1
         vst1.32         {d2-d3},  [r0,:128]!
         vst1.32         {d0-d1},  [r1,:128]!
         bx              lr
-        .endfunc
+endfunc
 #endif
 
 function ff_vector_fmul_scalar_neon, export=1
@@ -910,7 +910,7 @@ NOVFP   vdup.32         q8,  r2
         bgt             3b
         bx              lr
         .unreq          len
-        .endfunc
+endfunc
 
 function ff_vector_fmul_sv_scalar_2_neon, export=1
 VFP     vdup.32         d16, d0[0]
@@ -936,7 +936,7 @@ NOVFP   ldr             r3,  [sp]
 2:      vst1.32         {d4},[r0,:64]!
         vst1.32         {d5},[r0,:64]!
         bx              lr
-        .endfunc
+endfunc
 
 function ff_vector_fmul_sv_scalar_4_neon, export=1
 VFP     vdup.32         q10, d0[0]
@@ -975,7 +975,7 @@ NOVFP   ldr             r3,  [sp]
         subs            r3,  r3,  #4
         bgt             3b
         pop             {pc}
-        .endfunc
+endfunc
 
 function ff_sv_fmul_scalar_2_neon, export=1
 VFP     len .req r2
@@ -998,7 +998,7 @@ NOVFP   vdup.32         q8,  r2
 2:      vst1.32         {q1},[r0,:128]!
         bx              lr
         .unreq          len
-        .endfunc
+endfunc
 
 function ff_sv_fmul_scalar_4_neon, export=1
 VFP     len .req r2
@@ -1013,7 +1013,7 @@ NOVFP   vdup.32         q8,  r2
         bgt             1b
         bx              lr
         .unreq          len
-        .endfunc
+endfunc
 
 function ff_butterflies_float_neon, export=1
 1:      vld1.32         {q0},[r0,:128]
@@ -1025,7 +1025,7 @@ function ff_butterflies_float_neon, export=1
         subs            r2,  r2,  #4
         bgt             1b
         bx              lr
-        .endfunc
+endfunc
 
 function ff_scalarproduct_float_neon, export=1
         vmov.f32        q2,  #0.0
@@ -1038,7 +1038,7 @@ function ff_scalarproduct_float_neon, export=1
         vpadd.f32       d0,  d0,  d0
 NOVFP   vmov.32         r0,  d0[0]
         bx              lr
-        .endfunc
+endfunc
 
 function ff_int32_to_float_fmul_scalar_neon, export=1
 VFP     vdup.32         q0,  d0[0]
@@ -1066,7 +1066,7 @@ NOVFP   len     .req    r3
         vst1.32         {q10},[r0,:128]!
         bx              lr
         .unreq  len
-        .endfunc
+endfunc
 
 function ff_vector_fmul_reverse_neon, export=1
         add             r2,  r2,  r3,  lsl #2
@@ -1090,7 +1090,7 @@ function ff_vector_fmul_reverse_neon, export=1
         b               1b
 2:      vst1.32         {q8-q9},  [r0,:128]!
         bx              lr
-        .endfunc
+endfunc
 
 function ff_vector_fmul_add_neon, export=1
         ldr             r12, [sp]
@@ -1117,7 +1117,7 @@ function ff_vector_fmul_add_neon, export=1
         b               1b
 2:      vst1.32         {q12-q13},[r0,:128]!
         bx              lr
-        .endfunc
+endfunc
 
 function ff_vector_clipf_neon, export=1
 VFP     vdup.32         q1,  d0[1]
@@ -1143,4 +1143,4 @@ NOVFP   ldr             r2,  [sp]
 2:      vst1.f32        {q8},[r0,:128]!
         vst1.f32        {q9},[r0,:128]!
         bx              lr
-        .endfunc
+endfunc

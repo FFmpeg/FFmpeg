@@ -32,7 +32,7 @@ function ff_\type\()_pixels16\subp\()_armv6, export=1
         add             r0,  r0,  #8
         add             r1,  r1,  #8
         b               ff_\type\()_pixels8\subp\()_armv6
-.endfunc
+endfunc
 .endm
 
 call_2x_pixels          avg
@@ -61,7 +61,7 @@ function ff_put_pixels16_armv6, export=1
 
         pop             {r4-r11}
         bx              lr
-.endfunc
+endfunc
 
 function ff_put_pixels8_armv6, export=1
         push            {r4-r7}
@@ -77,7 +77,7 @@ function ff_put_pixels8_armv6, export=1
 
         pop             {r4-r7}
         bx              lr
-.endfunc
+endfunc
 
 function ff_put_pixels8_x2_armv6, export=1
         push            {r4-r11, lr}
@@ -118,7 +118,7 @@ function ff_put_pixels8_x2_armv6, export=1
         bne             1b
 
         pop             {r4-r11, pc}
-.endfunc
+endfunc
 
 function ff_put_pixels8_y2_armv6, export=1
         push            {r4-r11}
@@ -157,7 +157,7 @@ function ff_put_pixels8_y2_armv6, export=1
 
         pop             {r4-r11}
         bx              lr
-.endfunc
+endfunc
 
 function ff_put_pixels8_x2_no_rnd_armv6, export=1
         push            {r4-r9, lr}
@@ -185,7 +185,7 @@ function ff_put_pixels8_x2_no_rnd_armv6, export=1
         bne             1b
 
         pop             {r4-r9, pc}
-.endfunc
+endfunc
 
 function ff_put_pixels8_y2_no_rnd_armv6, export=1
         push            {r4-r9, lr}
@@ -210,7 +210,7 @@ function ff_put_pixels8_y2_no_rnd_armv6, export=1
         bne             1b
 
         pop             {r4-r9, pc}
-.endfunc
+endfunc
 
 function ff_avg_pixels8_armv6, export=1
         pld             [r1, r2]
@@ -260,7 +260,7 @@ function ff_avg_pixels8_armv6, export=1
         strd            r6,  r7,  [r0], r2
 
         pop             {r4-r10, pc}
-.endfunc
+endfunc
 
 function ff_add_pixels_clamped_armv6, export=1
         push            {r4-r8,lr}
@@ -287,7 +287,7 @@ function ff_add_pixels_clamped_armv6, export=1
         strd            r6,  r7,  [r1],  r2
         bgt             1b
         pop             {r4-r8,pc}
-.endfunc
+endfunc
 
 function ff_get_pixels_armv6, export=1
         pld             [r1, r2]
@@ -309,7 +309,7 @@ function ff_get_pixels_armv6, export=1
         bgt             1b
 
         pop             {r4-r8, pc}
-.endfunc
+endfunc
 
 function ff_diff_pixels_armv6, export=1
         pld             [r1, r3]
@@ -342,7 +342,7 @@ function ff_diff_pixels_armv6, export=1
         bgt             1b
 
         pop             {r4-r9, pc}
-.endfunc
+endfunc
 
 function ff_pix_abs16_armv6, export=1
         ldr             r0,  [sp]
@@ -371,7 +371,7 @@ function ff_pix_abs16_armv6, export=1
 2:
         add             r0,  r12, lr
         pop             {r4-r9, pc}
-.endfunc
+endfunc
 
 function ff_pix_abs16_x2_armv6, export=1
         ldr             r12, [sp]
@@ -426,7 +426,7 @@ function ff_pix_abs16_x2_armv6, export=1
         bgt             1b
 
         pop             {r4-r11, pc}
-.endfunc
+endfunc
 
 .macro  usad_y2         p0,  p1,  p2,  p3,  n0,  n1,  n2,  n3
         ldr             \n0, [r2]
@@ -484,7 +484,7 @@ function ff_pix_abs16_y2_armv6, export=1
         bgt             1b
 
         pop             {r4-r11, pc}
-.endfunc
+endfunc
 
 function ff_pix_abs8_armv6, export=1
         pld             [r2, r3]
@@ -514,7 +514,7 @@ function ff_pix_abs8_armv6, export=1
         usada8          lr,  r9,  r7,  lr
         add             r0,  r0,  lr
         pop             {r4-r9, pc}
-.endfunc
+endfunc
 
 function ff_sse16_armv6, export=1
         ldr             r12, [sp]
@@ -565,7 +565,7 @@ function ff_sse16_armv6, export=1
         bgt             1b
 
         pop             {r4-r9, pc}
-.endfunc
+endfunc
 
 function ff_pix_norm1_armv6, export=1
         push            {r4-r6, lr}
@@ -595,7 +595,7 @@ function ff_pix_norm1_armv6, export=1
 
         mov             r0,  lr
         pop             {r4-r6, pc}
-.endfunc
+endfunc
 
 function ff_pix_sum_armv6, export=1
         push            {r4-r7, lr}
@@ -620,4 +620,4 @@ function ff_pix_sum_armv6, export=1
         usada8          r3,  r7,  lr,  r3
         add             r0,  r2,  r3
         pop             {r4-r7, pc}
-.endfunc
+endfunc

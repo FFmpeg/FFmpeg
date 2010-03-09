@@ -78,7 +78,7 @@ function ff_vector_fmul_vfp, export=1
         fmxr            fpscr, r12
         vpop            {d8-d15}
         bx              lr
-        .endfunc
+endfunc
 
 /**
  * ARM VFP optimized implementation of 'vector_fmul_reverse_c' function.
@@ -131,7 +131,7 @@ function ff_vector_fmul_reverse_vfp, export=1
 
         vpop            {d8-d15}
         bx              lr
-        .endfunc
+endfunc
 
 #if HAVE_ARMV6
 /**
@@ -185,5 +185,5 @@ function ff_float_to_int16_vfp, export=1
 
         vpop            {d8-d11}
         pop             {r4-r8,pc}
-        .endfunc
+endfunc
 #endif

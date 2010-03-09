@@ -45,7 +45,7 @@
 function ff_pred16x16_128_dc_neon, export=1
         vmov.i8         q0,  #128
         b               .L_pred16x16_dc_end
-        .endfunc
+endfunc
 
 function ff_pred16x16_top_dc_neon, export=1
         sub             r2,  r0,  r1
@@ -54,7 +54,7 @@ function ff_pred16x16_top_dc_neon, export=1
         vrshrn.u16      d0,  q0,  #4
         vdup.8          q0,  d0[0]
         b               .L_pred16x16_dc_end
-        .endfunc
+endfunc
 
 function ff_pred16x16_left_dc_neon, export=1
         sub             r2,  r0,  #1
@@ -64,7 +64,7 @@ function ff_pred16x16_left_dc_neon, export=1
         vrshrn.u16      d0,  q0,  #4
         vdup.8          q0,  d0[0]
         b               .L_pred16x16_dc_end
-        .endfunc
+endfunc
 
 function ff_pred16x16_dc_neon, export=1
         sub             r2,  r0,  r1
@@ -87,7 +87,7 @@ function ff_pred16x16_dc_neon, export=1
         subs            r3,  r3,  #1
         bne             6b
         bx              lr
-        .endfunc
+endfunc
 
 function ff_pred16x16_hor_neon, export=1
         sub             r2,  r0,  #1
@@ -97,7 +97,7 @@ function ff_pred16x16_hor_neon, export=1
         subs            r3,  r3,  #1
         bne             1b
         bx              lr
-        .endfunc
+endfunc
 
 function ff_pred16x16_vert_neon, export=1
         sub             r0,  r0,  r1
@@ -108,7 +108,7 @@ function ff_pred16x16_vert_neon, export=1
         subs            r3,  r3,  #1
         bne             1b
         bx              lr
-        .endfunc
+endfunc
 
 function ff_pred16x16_plane_neon, export=1
         sub             r3,  r0,  r1
@@ -164,7 +164,7 @@ function ff_pred16x16_plane_neon, export=1
         subs            r3,  r3,  #1
         bne             1b
         bx              lr
-        .endfunc
+endfunc
 
         .section        .rodata
         .align          4
@@ -181,7 +181,7 @@ function ff_pred8x8_hor_neon, export=1
         subs            r3,  r3,  #1
         bne             1b
         bx              lr
-        .endfunc
+endfunc
 
 function ff_pred8x8_vert_neon, export=1
         sub             r0,  r0,  r1
@@ -192,7 +192,7 @@ function ff_pred8x8_vert_neon, export=1
         subs            r3,  r3,  #1
         bne             1b
         bx              lr
-        .endfunc
+endfunc
 
 function ff_pred8x8_plane_neon, export=1
         sub             r3,  r0,  r1
@@ -244,12 +244,12 @@ function ff_pred8x8_plane_neon, export=1
         subs            r3,  r3,  #1
         bne             1b
         bx              lr
-        .endfunc
+endfunc
 
 function ff_pred8x8_128_dc_neon, export=1
         vmov.i8         q0,  #128
         b               .L_pred8x8_dc_end
-        .endfunc
+endfunc
 
 function ff_pred8x8_top_dc_neon, export=1
         sub             r2,  r0,  r1
@@ -261,7 +261,7 @@ function ff_pred8x8_top_dc_neon, export=1
         vdup.8          d0,  d0[0]
         vtrn.32         d0,  d1
         b               .L_pred8x8_dc_end
-        .endfunc
+endfunc
 
 function ff_pred8x8_left_dc_neon, export=1
         sub             r2,  r0,  #1
@@ -272,7 +272,7 @@ function ff_pred8x8_left_dc_neon, export=1
         vdup.8          d1,  d0[1]
         vdup.8          d0,  d0[0]
         b               .L_pred8x8_dc_end
-        .endfunc
+endfunc
 
 function ff_pred8x8_dc_neon, export=1
         sub             r2,  r0,  r1
@@ -298,7 +298,7 @@ function ff_pred8x8_dc_neon, export=1
         subs            r3,  r3,  #1
         bne             6b
         bx              lr
-        .endfunc
+endfunc
 
 function ff_pred8x8_l0t_dc_neon, export=1
         sub             r2,  r0,  r1
@@ -316,7 +316,7 @@ function ff_pred8x8_l0t_dc_neon, export=1
         vdup.8          q2,  d3[2]
         vtrn.32         q0,  q2
         b               .L_pred8x8_dc_end
-        .endfunc
+endfunc
 
 function ff_pred8x8_l00_dc_neon, export=1
         sub             r2,  r0,  #1
@@ -327,7 +327,7 @@ function ff_pred8x8_l00_dc_neon, export=1
         vmov.i8         d1,  #128
         vdup.8          d0,  d0[0]
         b               .L_pred8x8_dc_end
-        .endfunc
+endfunc
 
 function ff_pred8x8_0lt_dc_neon, export=1
         sub             r2,  r0,  r1
@@ -347,7 +347,7 @@ function ff_pred8x8_0lt_dc_neon, export=1
         vdup.8          d5,  d2[5]
         vtrn.32         q0,  q2
         b               .L_pred8x8_dc_end
-        .endfunc
+endfunc
 
 function ff_pred8x8_0l0_dc_neon, export=1
         add             r2,  r0,  r1,  lsl #2
@@ -359,4 +359,4 @@ function ff_pred8x8_0l0_dc_neon, export=1
         vmov.i8         d0,  #128
         vdup.8          d1,  d1[0]
         b               .L_pred8x8_dc_end
-        .endfunc
+endfunc

@@ -122,7 +122,7 @@ function ff_imdct_half_neon, export=1
         vst2.32         {d5,d7},  [r8,:128]
 
         pop             {r4-r8,pc}
-.endfunc
+endfunc
 
 function ff_imdct_calc_neon, export=1
         push            {r4-r6,lr}
@@ -158,7 +158,7 @@ function ff_imdct_calc_neon, export=1
         bgt             1b
 
         pop             {r4-r6,pc}
-.endfunc
+endfunc
 
 function ff_mdct_calc_neon, export=1
         push            {r4-r10,lr}
@@ -300,4 +300,4 @@ function ff_mdct_calc_neon, export=1
         vst2.32         {d5,d7},  [r8,:128]
 
         pop             {r4-r10,pc}
-.endfunc
+endfunc

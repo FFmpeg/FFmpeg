@@ -237,7 +237,7 @@ function idct_row_armv6
         strh   r2, [r1, #(16*5)]
         strh   r2, [r1, #(16*7)]
         pop    {pc}
-        .endfunc
+endfunc
 
 /*
   Compute IDCT of single column, read as row.
@@ -264,7 +264,7 @@ function idct_col_armv6
         strh   r8, [r1, #(16*7)]
 
         pop    {pc}
-        .endfunc
+endfunc
 
 /*
   Compute IDCT of single column, read as row, store saturated 8-bit.
@@ -294,7 +294,7 @@ function idct_col_put_armv6
         sub    r1, r1, r2, lsl #3
 
         pop    {pc}
-        .endfunc
+endfunc
 
 /*
   Compute IDCT of single column, read as row, add/store saturated 8-bit.
@@ -349,7 +349,7 @@ function idct_col_add_armv6
         sub    r1, r1, r2, lsl #3
 
         pop    {pc}
-        .endfunc
+endfunc
 
 /*
   Compute 8 IDCT row transforms.
@@ -396,7 +396,7 @@ function ff_simple_idct_armv6, export=1
 
         add    sp, sp, #128
         pop    {r4-r11, pc}
-        .endfunc
+endfunc
 
 /* ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data); */
 function ff_simple_idct_add_armv6, export=1
@@ -413,7 +413,7 @@ function ff_simple_idct_add_armv6, export=1
 
         add    sp, sp, #(128+8)
         pop    {r4-r11, pc}
-        .endfunc
+endfunc
 
 /* ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data); */
 function ff_simple_idct_put_armv6, export=1
@@ -430,4 +430,4 @@ function ff_simple_idct_put_armv6, export=1
 
         add    sp, sp, #(128+8)
         pop    {r4-r11, pc}
-        .endfunc
+endfunc

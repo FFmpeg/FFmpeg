@@ -69,7 +69,7 @@ function ff_h264_idct_add_neon, export=1
         vst1.32         {d1[0]},  [r0,:32], r2
 
         bx              lr
-        .endfunc
+endfunc
 
 function ff_h264_idct_dc_add_neon, export=1
         vld1.16         {d2[],d3[]}, [r1,:16]
@@ -88,7 +88,7 @@ function ff_h264_idct_dc_add_neon, export=1
         vst1.32         {d1[0]},  [r0,:32], r2
         vst1.32         {d1[1]},  [r0,:32], r2
         bx              lr
-        .endfunc
+endfunc
 
 function ff_h264_idct_add16_neon, export=1
         push            {r4-r8,lr}
@@ -115,7 +115,7 @@ function ff_h264_idct_add16_neon, export=1
         add             r1,  r1,  #32
         bne             1b
         pop             {r4-r8,pc}
-        .endfunc
+endfunc
 
 function ff_h264_idct_add16intra_neon, export=1
         push            {r4-r8,lr}
@@ -140,7 +140,7 @@ function ff_h264_idct_add16intra_neon, export=1
         add             r1,  r1,  #32
         bne             1b
         pop             {r4-r8,pc}
-        .endfunc
+endfunc
 
 function ff_h264_idct_add8_neon, export=1
         push            {r4-r10,lr}
@@ -167,7 +167,7 @@ function ff_h264_idct_add8_neon, export=1
         add             r1,  r1,  #32
         bne             1b
         pop             {r4-r10,pc}
-        .endfunc
+endfunc
 
         .section .rodata
 scan8:  .byte           4+1*8, 5+1*8, 4+2*8, 5+2*8

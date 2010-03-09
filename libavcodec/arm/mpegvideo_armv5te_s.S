@@ -114,4 +114,4 @@ function ff_dct_unquantize_h263_armv5te, export=1
         strh            r9, [r0], #2
         strh            lr, [r0], #2
         pop             {r4-r9,pc}
-        .endfunc
+endfunc

@@ -74,7 +74,7 @@ function ff_vp3_v_loop_filter_neon, export=1
     vst1.64         {d0},  [ip,:64], r1
     vst1.64         {d1},  [ip,:64], r1
     bx              lr
-.endfunc
+endfunc
 
 function ff_vp3_h_loop_filter_neon, export=1
     sub             ip,  r0,  #1
@@ -107,7 +107,7 @@ function ff_vp3_h_loop_filter_neon, export=1
     vst1.16         {d0[3]}, [ip], r1
     vst1.16         {d1[3]}, [ip], r1
     bx              lr
-.endfunc
+endfunc
 
 
 function vp3_idct_start_neon
@@ -120,7 +120,7 @@ function vp3_idct_start_neon
     vadd.s16        q1,  q8,  q12
     vsub.s16        q8,  q8,  q12
     vld1.64         {d28-d31}, [r2,:128]!
-.endfunc
+endfunc
 
 function vp3_idct_core_neon
     vmull.s16       q2,  d18, xC1S7     // (ip[1] * C1) << 16
@@ -211,7 +211,7 @@ function vp3_idct_core_neon
     vadd.s16        q10, q1,  q2        // Ad = (A - C) * C4
     vsub.s16        q14, q4,  q3        // H = ip[2] * C6 - ip[6] * C2
     bx              lr
-.endfunc
+endfunc
 
 .macro VP3_IDCT_END type
 function vp3_idct_end_\type\()_neon
@@ -259,7 +259,7 @@ function vp3_idct_end_\type\()_neon
     vswp            d23, d30
 .endif
     bx              lr
-.endfunc
+endfunc
 .endm
 
 VP3_IDCT_END row
@@ -289,7 +289,7 @@ function ff_vp3_idct_neon, export=1
     vst1.64         {d24-d27}, [r0,:128]!
     vst1.64         {d28-d31}, [r0,:128]!
     bx              lr
-.endfunc
+endfunc
 
 function ff_vp3_idct_put_neon, export=1
     mov             ip,  lr
@@ -319,7 +319,7 @@ function ff_vp3_idct_put_neon, export=1
     vst1.64         {d6}, [r0,:64], r1
     vst1.64         {d7}, [r0,:64], r1
     bx              lr
-.endfunc
+endfunc
 
 function ff_vp3_idct_add_neon, export=1
     mov             ip,  lr
@@ -373,4 +373,4 @@ function ff_vp3_idct_add_neon, export=1
     vst1.64         {d6}, [r2,:64], r1
     vst1.64         {d7}, [r2,:64], r1
     bx              lr
-.endfunc
+endfunc

@@ -75,7 +75,7 @@ function ff_scalarproduct_int16_neon, export=1
         vpaddl.s32      d3,  d2
         vmov.32         r0,  d3[0]
         bx              lr
-        .endfunc
+endfunc
 
 @ scalarproduct_and_madd_int16(/*aligned*/v0,v1,v2,order,mul)
 function ff_scalarproduct_and_madd_int16_neon, export=1
@@ -115,4 +115,4 @@ function ff_scalarproduct_and_madd_int16_neon, export=1
         vpaddl.s32      d3,  d2
         vmov.32         r0,  d3[0]
         bx              lr
-        .endfunc
+endfunc

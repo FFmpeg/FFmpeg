@@ -36,7 +36,7 @@ function ff_prefetch_arm, export=1
         add             r0,  r0,  r1
         bne             ff_prefetch_arm
         bx              lr
-        .endfunc
+endfunc
 #endif
 
 .macro  ALIGN_QWORD_D shift, Rd0, Rd1, Rd2, Rd3, Rn0, Rn1, Rn2, Rn3, Rn4
@@ -151,7 +151,7 @@ function ff_put_pixels16_arm, export=1
         add             r0,  r0,  r2
         bne             4b
         pop             {r4-r11,pc}
-        .endfunc
+endfunc
 
 @ ----------------------------------------------------------------
         .align 5
@@ -203,7 +203,7 @@ function ff_put_pixels8_arm, export=1
         add             r0,  r0,  r2
         bne             4b
         pop             {r4-r5,pc}
-        .endfunc
+endfunc
 
 @ ----------------------------------------------------------------
         .align 5
@@ -263,7 +263,7 @@ function ff_put_pixels8_x2_arm, export=1
         add             r0,  r0,  r2
         bne             4b
         pop             {r4-r10,pc}
-        .endfunc
+endfunc
 
         .align 5
 function ff_put_no_rnd_pixels8_x2_arm, export=1
@@ -322,7 +322,7 @@ function ff_put_no_rnd_pixels8_x2_arm, export=1
         add             r0,  r0,  r2
         bne             4b
         pop             {r4-r10,pc}
-        .endfunc
+endfunc
 
 
 @ ----------------------------------------------------------------
@@ -422,7 +422,7 @@ function ff_put_pixels8_y2_arm, export=1
         add             r0,  r0,  r2
         bne             6b
         pop             {r4-r11,pc}
-        .endfunc
+endfunc
 
         .align 5
 function ff_put_no_rnd_pixels8_y2_arm, export=1
@@ -520,7 +520,7 @@ function ff_put_no_rnd_pixels8_y2_arm, export=1
         add             r0,  r0,  r2
         bne             6b
         pop             {r4-r11,pc}
-        .endfunc
+endfunc
 
         .ltorg
 
@@ -603,7 +603,7 @@ function ff_put_pixels8_xy2_arm, export=1
 3:      RND_XY2_EXPAND  2, lsl
         .align 5
 4:      RND_XY2_EXPAND  3, lsl
-        .endfunc
+endfunc
 
         .align 5
 function ff_put_no_rnd_pixels8_xy2_arm, export=1
@@ -619,7 +619,7 @@ function ff_put_no_rnd_pixels8_xy2_arm, export=1
 3:      RND_XY2_EXPAND  2, lsr
         .align 5
 4:      RND_XY2_EXPAND  3, lsr
-        .endfunc
+endfunc
 
         .align 5
 @ void ff_add_pixels_clamped_arm(int16_t *block, uint8_t *dest, int stride)
@@ -709,4 +709,4 @@ function ff_add_pixels_clamped_arm, export=1
 
         pop             {r4-r10}
         bx              lr
-        .endfunc
+endfunc

@@ -147,7 +147,7 @@ row_dc_only:
         strd   a3, [a1, #8]
 
         ldr    pc, [sp], #4
-        .endfunc
+endfunc
 
         .macro idct_col
         ldr    a4, [a1]              /* a4 = col[1:0] */
@@ -331,7 +331,7 @@ function idct_col_armv5te
         str    a2, [a1, #(16*4)]
 
         ldr    pc, [sp], #4
-        .endfunc
+endfunc
 
 function idct_col_put_armv5te
         str    lr, [sp, #-4]!
@@ -448,7 +448,7 @@ function idct_col_put_armv5te
         strh   a2, [v2, -lr]
 
         ldr    pc, [sp], #4
-        .endfunc
+endfunc
 
 function idct_col_add_armv5te
         str    lr, [sp, #-4]!
@@ -598,7 +598,7 @@ function idct_col_add_armv5te
         strh   a2, [v2]
 
         ldr    pc, [sp], #4
-        .endfunc
+endfunc
 
 function ff_simple_idct_armv5te, export=1
         stmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, lr}
@@ -630,7 +630,7 @@ function ff_simple_idct_armv5te, export=1
         bl     idct_col_armv5te
 
         ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
-        .endfunc
+endfunc
 
 function ff_simple_idct_add_armv5te, export=1
         stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
@@ -665,7 +665,7 @@ function ff_simple_idct_add_armv5te, export=1
 
         add    sp, sp, #8
         ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
-        .endfunc
+endfunc
 
 function ff_simple_idct_put_armv5te, export=1
         stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
@@ -700,4 +700,4 @@ function ff_simple_idct_put_armv5te, export=1
 
         add    sp, sp, #8
         ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
-        .endfunc
+endfunc
