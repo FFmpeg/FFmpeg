@@ -866,6 +866,11 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
 
+    if (ts == AV_NOPTS_VALUE) {
+        av_log(s, AV_LOG_ERROR, "Can't write packet with unknown timestamp\n");
+        return AVERROR(EINVAL);
+    }
+
     if (url_is_streamed(s->pb)) {
         if (!mkv->dyn_bc)
             url_open_dyn_buf(&mkv->dyn_bc);
