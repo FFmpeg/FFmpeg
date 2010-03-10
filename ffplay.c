@@ -965,6 +965,10 @@ static int video_open(VideoState *is){
         w = 640;
         h = 480;
     }
+    if(screen && is->width == screen->w && screen->w == w
+       && is->height== screen->h && screen->h == h)
+        return 0;
+
 #ifndef __APPLE__
     screen = SDL_SetVideoMode(w, h, 0, flags);
 #else
