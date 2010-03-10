@@ -512,6 +512,14 @@ static int ffm_probe(AVProbeData *p)
     return 0;
 }
 
+static void ffm_close(AVFormatContext *s)
+{
+    int i;
+
+    for (i = 0; i < s->nb_streams; i++)
+        av_freep(&s->streams[i]->codec->rc_eq);
+}
+
 AVInputFormat ffm_demuxer = {
     "ffm",
     NULL_IF_CONFIG_SMALL("FFM (FFserver live feed) format"),
@@ -519,6 +527,6 @@ AVInputFormat ffm_demuxer = {
     ffm_probe,
     ffm_read_header,
     ffm_read_packet,
-    NULL,
+    ffm_close,
     ffm_seek,
 };
