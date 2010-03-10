@@ -869,6 +869,8 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     memcpy(ts_st->payload + ts_st->payload_index, buf, size);
     ts_st->payload_index += size;
 
+    av_free(data);
+
     return 0;
 }
 
@@ -888,6 +890,7 @@ static int mpegts_write_end(AVFormatContext *s)
             mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
                              ts_st->payload_pts, ts_st->payload_dts);
         }
+        av_freep(&ts_st->adts);
     }
     put_flush_packet(s->pb);
 
