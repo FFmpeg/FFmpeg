@@ -66,7 +66,7 @@ uninstall: uninstall-libs uninstall-headers
 .SUFFIXES:
 
 # Do not delete intermediate files from chains of implicit rules
-.SECONDARY:
+$(OBJS):
 endif
 
 OBJS-$(HAVE_MMX) +=  $(MMX-OBJS-yes)
