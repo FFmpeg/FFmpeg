@@ -46,6 +46,8 @@ struct vfw_ctx {
 static enum PixelFormat vfw_pixfmt(DWORD biCompression, WORD biBitCount)
 {
     switch(biCompression) {
+    case MKTAG('U', 'Y', 'V', 'Y'):
+        return PIX_FMT_UYVY422;
     case MKTAG('Y', 'U', 'Y', '2'):
         return PIX_FMT_YUYV422;
     case MKTAG('I', '4', '2', '0'):
