@@ -85,7 +85,18 @@ tools/%.o: tools/%.c
 
 ffplay.o ffplay.d: CFLAGS += $(SDL_CFLAGS)
 
-cmdutils.o cmdutils.d: version.h
+VERSION_SH  = $(SRC_PATH_BARE)/version.sh
+SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
+
+.version: $(wildcard $(SVN_ENTRIES)) $(VERSION_SH) config.mak
+.version: M=@
+
+version.h .version:
+	$(M)$(VERSION_SH) $(SRC_PATH) $@ $(EXTRA_VERSION)
+	$(Q)touch .version
+
+# force version.sh to run whenever version might have changed
+-include .version
 
 alltools: $(TOOLS)
 

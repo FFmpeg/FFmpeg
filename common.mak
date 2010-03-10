@@ -54,14 +54,6 @@ CFLAGS   += $(ECFLAGS)
 
 %.c %.h: MSG = GEN
 
-SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
-ifeq ($(wildcard $(SVN_ENTRIES)),$(SVN_ENTRIES))
-$(BUILD_ROOT_REL)/version.h: $(SVN_ENTRIES)
-endif
-
-$(BUILD_ROOT_REL)/version.h: $(SRC_PATH_BARE)/version.sh config.mak
-	$(M)$< $(SRC_PATH) $@ $(EXTRA_VERSION)
-
 install: install-libs install-headers
 install-libs: install-libs-yes
 
