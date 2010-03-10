@@ -960,7 +960,7 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 #endif
 
 #if ARCH_PPC
-#if HAVE_ALTIVEC || CONFIG_RUNTIME_CPUDETECT
+#if HAVE_ALTIVEC
 #define COMPILE_ALTIVEC
 #endif
 #endif //ARCH_PPC
@@ -1649,7 +1649,7 @@ static SwsFunc getSwsFunc(int flags){
         return swScale_C;
 
 #else
-#if ARCH_PPC
+#if ARCH_PPC && COMPILE_ALTIVEC
     if (flags & SWS_CPU_CAPS_ALTIVEC)
         return swScale_altivec;
     else
