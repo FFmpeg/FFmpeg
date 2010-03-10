@@ -1897,7 +1897,7 @@ case "$arch" in
     mips|mipsel|IP*)
         arch="mips"
     ;;
-    mips64)
+    mips64*)
         arch="mips"
         subarch="mips64"
     ;;
@@ -1911,7 +1911,7 @@ case "$arch" in
     "Power Macintosh"|ppc|powerpc)
         arch="ppc"
     ;;
-    ppc64)
+    ppc64|powerpc64)
         arch="ppc"
         subarch="ppc64"
     ;;
