@@ -30,6 +30,7 @@
 #endif
 #include <strings.h>
 #include "network.h"
+#include "os_support.h"
 #include "rtsp.h"
 
 #include "rtpdec.h"
