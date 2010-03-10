@@ -27,12 +27,9 @@
 #include <inttypes.h>
 
 #include "libavcodec/dsputil.h"
+#include "dsputil_vis.h"
 
 #include "vis.h"
-
-void ff_simple_idct_put_vis(uint8_t *dest, int line_size, DCTELEM *data);
-void ff_simple_idct_add_vis(uint8_t *dest, int line_size, DCTELEM *data);
-void ff_simple_idct_vis(DCTELEM *data);
 
 /* The trick used in some of this file is the formula from the MMX
  * motion comp code, which is:

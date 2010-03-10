@@ -23,6 +23,7 @@
  */
 
 #include "libavcodec/dsputil.h"
+#include "dsputil_vis.h"
 
 static const DECLARE_ALIGNED(8, int16_t, coeffs)[28] = {
     - 1259,- 1259,- 1259,- 1259,
