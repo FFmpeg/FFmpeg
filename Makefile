@@ -93,7 +93,7 @@ SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
 .version: M=@
 
 version.h .version:
-	$(M)$(VERSION_SH) $(SRC_PATH) $@ $(EXTRA_VERSION)
+	$(M)$(VERSION_SH) $(SRC_PATH) version.h $(EXTRA_VERSION)
 	$(Q)touch .version
 
 # force version.sh to run whenever version might have changed
