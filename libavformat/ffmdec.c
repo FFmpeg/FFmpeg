@@ -512,12 +512,14 @@ static int ffm_probe(AVProbeData *p)
     return 0;
 }
 
-static void ffm_close(AVFormatContext *s)
+static int ffm_close(AVFormatContext *s)
 {
     int i;
 
     for (i = 0; i < s->nb_streams; i++)
         av_freep(&s->streams[i]->codec->rc_eq);
+
+    return 0;
 }
 
 AVInputFormat ffm_demuxer = {
