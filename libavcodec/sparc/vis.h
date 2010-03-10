@@ -223,9 +223,9 @@ do {        register void *__mem __asm__("g1"); \
 
 /* Alignment instructions.  */
 
-static inline void *vis_alignaddr(void *_ptr)
+static inline const void *vis_alignaddr(const void *_ptr)
 {
-        register void *ptr __asm__("g1");
+        register const void *ptr __asm__("g1");
 
         ptr = _ptr;
 

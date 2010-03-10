@@ -120,11 +120,9 @@ static const int16_t constants256_1024[] ATTR_ALIGN(8) =
 #define TMP30           56
 #define TMP32           58
 
-static void MC_put_o_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_o_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
-
         ref = vis_alignaddr(ref);
         do {    /* 5 cycles */
                 vis_ld64(ref[0], TMP0);
@@ -143,11 +141,9 @@ static void MC_put_o_16_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_put_o_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_o_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
-
         ref = vis_alignaddr(ref);
         do {    /* 4 cycles */
                 vis_ld64(ref[0], TMP0);
@@ -164,10 +160,9 @@ static void MC_put_o_8_vis (uint8_t * dest, const uint8_t * _ref,
 }
 
 
-static void MC_avg_o_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_o_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         int stride_8 = stride + 8;
 
         ref = vis_alignaddr(ref);
@@ -325,11 +320,9 @@ static void MC_avg_o_16_vis (uint8_t * dest, const uint8_t * _ref,
         vis_st64_2(TMP22, dest, 8);
 }
 
-static void MC_avg_o_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_o_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
-
         ref = vis_alignaddr(ref);
 
         vis_ld64(ref[0], TMP0);
@@ -419,10 +412,9 @@ static void MC_avg_o_8_vis (uint8_t * dest, const uint8_t * _ref,
         vis_st64(TMP4, dest[0]);
 }
 
-static void MC_put_x_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_x_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
 
@@ -612,10 +604,9 @@ static void MC_put_x_16_vis (uint8_t * dest, const uint8_t * _ref,
         vis_st64_2(TMP8, dest, 8);
 }
 
-static void MC_put_x_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_x_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
 
@@ -736,10 +727,9 @@ static void MC_put_x_8_vis (uint8_t * dest, const uint8_t * _ref,
         dest += stride;
 }
 
-static void MC_avg_x_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_x_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
 
@@ -827,10 +817,9 @@ static void MC_avg_x_16_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_avg_x_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_x_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
         int stride_times_2 = stride << 1;
@@ -993,11 +982,9 @@ static void MC_avg_x_8_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_put_y_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_y_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
-
         ref = vis_alignaddr(ref);
         vis_ld64(ref[0], TMP0);
 
@@ -1149,11 +1136,9 @@ static void MC_put_y_16_vis (uint8_t * dest, const uint8_t * _ref,
         vis_st64_2(TMP2, dest, 8);
 }
 
-static void MC_put_y_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_y_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
-
         ref = vis_alignaddr(ref);
         vis_ld64(ref[0], TMP0);
 
@@ -1241,10 +1226,9 @@ static void MC_put_y_8_vis (uint8_t * dest, const uint8_t * _ref,
         vis_st64(DST_0, dest[0]);
 }
 
-static void MC_avg_y_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_y_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         int stride_8 = stride + 8;
         int stride_16 = stride + 16;
 
@@ -1370,10 +1354,9 @@ static void MC_avg_y_16_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_avg_y_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_y_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         int stride_8 = stride + 8;
 
         vis_set_gsr(5 << VIS_GSR_SCALEFACT_SHIFT);
@@ -1450,10 +1433,9 @@ static void MC_avg_y_8_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_put_xy_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_xy_16_vis (uint8_t * dest, const uint8_t * ref,
                               const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
         int stride_8 = stride + 8;
@@ -1615,10 +1597,9 @@ static void MC_put_xy_16_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_put_xy_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_xy_8_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
         int stride_8 = stride + 8;
@@ -1720,10 +1701,9 @@ static void MC_put_xy_8_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_avg_xy_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_xy_16_vis (uint8_t * dest, const uint8_t * ref,
                               const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
         int stride_8 = stride + 8;
@@ -1917,10 +1897,9 @@ static void MC_avg_xy_16_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_avg_xy_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_xy_8_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
         int stride_8 = stride + 8;
@@ -2061,11 +2040,9 @@ static void MC_avg_xy_8_vis (uint8_t * dest, const uint8_t * _ref,
  *      fpadd16         f12, f10, f10
  */
 
-static void MC_put_no_round_o_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_no_round_o_16_vis (uint8_t * dest, const uint8_t * ref,
                                       const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
-
         ref = vis_alignaddr(ref);
         do {    /* 5 cycles */
                 vis_ld64(ref[0], TMP0);
@@ -2084,11 +2061,9 @@ static void MC_put_no_round_o_16_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_put_no_round_o_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_no_round_o_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
-
         ref = vis_alignaddr(ref);
         do {    /* 4 cycles */
                 vis_ld64(ref[0], TMP0);
@@ -2105,10 +2080,9 @@ static void MC_put_no_round_o_8_vis (uint8_t * dest, const uint8_t * _ref,
 }
 
 
-static void MC_avg_no_round_o_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_no_round_o_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         int stride_8 = stride + 8;
 
         ref = vis_alignaddr(ref);
@@ -2266,11 +2240,9 @@ static void MC_avg_no_round_o_16_vis (uint8_t * dest, const uint8_t * _ref,
         vis_st64_2(TMP22, dest, 8);
 }
 
-static void MC_avg_no_round_o_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_no_round_o_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
-
         ref = vis_alignaddr(ref);
 
         vis_ld64(ref[0], TMP0);
@@ -2360,10 +2332,9 @@ static void MC_avg_no_round_o_8_vis (uint8_t * dest, const uint8_t * _ref,
         vis_st64(TMP4, dest[0]);
 }
 
-static void MC_put_no_round_x_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_no_round_x_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
 
@@ -2553,10 +2524,9 @@ static void MC_put_no_round_x_16_vis (uint8_t * dest, const uint8_t * _ref,
         vis_st64_2(TMP8, dest, 8);
 }
 
-static void MC_put_no_round_x_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_no_round_x_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
 
@@ -2677,10 +2647,9 @@ static void MC_put_no_round_x_8_vis (uint8_t * dest, const uint8_t * _ref,
         dest += stride;
 }
 
-static void MC_avg_no_round_x_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_no_round_x_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
 
@@ -2768,10 +2737,9 @@ static void MC_avg_no_round_x_16_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_avg_no_round_x_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_no_round_x_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
         int stride_times_2 = stride << 1;
@@ -2934,11 +2902,9 @@ static void MC_avg_no_round_x_8_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_put_no_round_y_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_no_round_y_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
-
         ref = vis_alignaddr(ref);
         vis_ld64(ref[0], TMP0);
 
@@ -3090,11 +3056,9 @@ static void MC_put_no_round_y_16_vis (uint8_t * dest, const uint8_t * _ref,
         vis_st64_2(TMP2, dest, 8);
 }
 
-static void MC_put_no_round_y_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_no_round_y_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
-
         ref = vis_alignaddr(ref);
         vis_ld64(ref[0], TMP0);
 
@@ -3182,10 +3146,9 @@ static void MC_put_no_round_y_8_vis (uint8_t * dest, const uint8_t * _ref,
         vis_st64(DST_0, dest[0]);
 }
 
-static void MC_avg_no_round_y_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_no_round_y_16_vis (uint8_t * dest, const uint8_t * ref,
                              const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         int stride_8 = stride + 8;
         int stride_16 = stride + 16;
 
@@ -3311,10 +3274,9 @@ static void MC_avg_no_round_y_16_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_avg_no_round_y_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_no_round_y_8_vis (uint8_t * dest, const uint8_t * ref,
                             const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         int stride_8 = stride + 8;
 
         vis_set_gsr(5 << VIS_GSR_SCALEFACT_SHIFT);
@@ -3391,10 +3353,9 @@ static void MC_avg_no_round_y_8_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_put_no_round_xy_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_no_round_xy_16_vis (uint8_t * dest, const uint8_t * ref,
                                        const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
         int stride_8 = stride + 8;
@@ -3556,10 +3517,9 @@ static void MC_put_no_round_xy_16_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_put_no_round_xy_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_put_no_round_xy_8_vis (uint8_t * dest, const uint8_t * ref,
                                       const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
         int stride_8 = stride + 8;
@@ -3661,10 +3621,9 @@ static void MC_put_no_round_xy_8_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_avg_no_round_xy_16_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_no_round_xy_16_vis (uint8_t * dest, const uint8_t * ref,
                                        const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
         int stride_8 = stride + 8;
@@ -3858,10 +3817,9 @@ static void MC_avg_no_round_xy_16_vis (uint8_t * dest, const uint8_t * _ref,
         } while (--height);
 }
 
-static void MC_avg_no_round_xy_8_vis (uint8_t * dest, const uint8_t * _ref,
+static void MC_avg_no_round_xy_8_vis (uint8_t * dest, const uint8_t * ref,
                                       const int stride, int height)
 {
-        uint8_t *ref = (uint8_t *) _ref;
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
         int stride_8 = stride + 8;
