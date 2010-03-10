@@ -36,7 +36,7 @@ ELF     .eabi_attribute 25, \val
 
         .macro function name, export=0
         .macro endfunc
-        .size   \name, . - \name
+ELF     .size   \name, . - \name
         .endfunc
         .purgem endfunc
         .endm
