@@ -3058,6 +3058,7 @@ test -n "$malloc_prefix" &&
     echo "#define MALLOC_PREFIX $malloc_prefix" >>$TMPH
 
 if enabled small || disabled optimizations; then
+    echo "#undef  av_always_inline"  >> $TMPH
     echo "#define av_always_inline"  >> $TMPH
 fi
 
