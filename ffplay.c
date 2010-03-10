@@ -1462,9 +1462,10 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             //Make sure there are no long delay timers (ideally we should just flush the que but thats harder)
             for(i=0; i<VIDEO_PICTURE_QUEUE_SIZE; i++){
                 if(is->pictq[i].timer_id){
-                    SDL_RemoveTimer(is->pictq[i].timer_id);
+                    if(SDL_RemoveTimer(is->pictq[i].timer_id)){
                     is->pictq[i].timer_id=0;
                     schedule_refresh(is, 1);
+                    }
                 }
             }
             while (is->pictq_size && !is->videoq.abort_request) {
