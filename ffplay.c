@@ -828,10 +828,10 @@ static void video_audio_display(VideoState *s)
            the last buffer computation */
         if (audio_callback_time) {
             time_diff = av_gettime() - audio_callback_time;
-            delay += (time_diff * s->audio_st->codec->sample_rate) / 1000000;
+            delay -= (time_diff * s->audio_st->codec->sample_rate) / 1000000;
         }
 
-        delay -= data_used / 2;
+        delay += 2*data_used;
         if (delay < data_used)
             delay = data_used;
 
