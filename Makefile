@@ -94,8 +94,7 @@ documentation: $(addprefix doc/, developer.html faq.html ffmpeg-doc.html \
                                  general.html libavfilter.html $(ALLMANPAGES))
 
 doc/%.html: doc/%.texi
-	texi2html -monolithic -number $<
-	mv $(@F) $@
+	cd doc && texi2html -monolithic -number $(<:doc/%=%)
 
 doc/%.pod: doc/%-doc.texi
 	doc/texi2pod.pl $< $@
