@@ -37,4 +37,7 @@ void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
 
 void av_read_frame_flush(AVFormatContext *s);
 
+/** Gets the current time since NTP epoch in microseconds. */
+uint64_t ff_ntp_time(void);
+
 #endif /* AVFORMAT_INTERNAL_H */
