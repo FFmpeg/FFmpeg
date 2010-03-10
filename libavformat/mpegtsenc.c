@@ -450,14 +450,14 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->mux_rate = s->mux_rate ? s->mux_rate : 1;
 
     if (ts->mux_rate > 1) {
-    service->pcr_packet_period = (ts->mux_rate * PCR_RETRANS_TIME) /
-        (TS_PACKET_SIZE * 8 * 1000);
-    ts->sdt_packet_period      = (ts->mux_rate * SDT_RETRANS_TIME) /
-        (TS_PACKET_SIZE * 8 * 1000);
-    ts->pat_packet_period      = (ts->mux_rate * PAT_RETRANS_TIME) /
-        (TS_PACKET_SIZE * 8 * 1000);
+        service->pcr_packet_period = (ts->mux_rate * PCR_RETRANS_TIME) /
+            (TS_PACKET_SIZE * 8 * 1000);
+        ts->sdt_packet_period      = (ts->mux_rate * SDT_RETRANS_TIME) /
+            (TS_PACKET_SIZE * 8 * 1000);
+        ts->pat_packet_period      = (ts->mux_rate * PAT_RETRANS_TIME) /
+            (TS_PACKET_SIZE * 8 * 1000);
 
-    ts->cur_pcr = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
+        ts->cur_pcr = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
     } else {
         /* Arbitrary values, PAT/PMT could be written on key frames */
         ts->sdt_packet_period = 200;
