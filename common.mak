@@ -24,7 +24,6 @@ ECHO   = printf "$(1)\t%s\n" $(2)
 BRIEF  = CC AS YASM AR LD HOSTCC RANLIB STRIP CP
 SILENT = DEPCC YASMDEP RM
 MSG    = $@
-G      = @$(call ECHO,GEN,$@);
 M      = @$(call ECHO,$(MSG),$@);
 $(foreach VAR,$(BRIEF), \
     $(eval $(VAR) = @$$(call ECHO,$(VAR),$$(MSG)); $($(VAR))))
@@ -53,13 +52,15 @@ CFLAGS   += $(ECFLAGS)
 %.ver: %.v
 	$(Q)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
 
+%.c %.h: MSG = GEN
+
 SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
 ifeq ($(wildcard $(SVN_ENTRIES)),$(SVN_ENTRIES))
 $(BUILD_ROOT_REL)/version.h: $(SVN_ENTRIES)
 endif
 
 $(BUILD_ROOT_REL)/version.h: $(SRC_PATH_BARE)/version.sh config.mak
-	$(G)$< $(SRC_PATH) $@ $(EXTRA_VERSION)
+	$(M)$< $(SRC_PATH) $@ $(EXTRA_VERSION)
 
 install: install-libs install-headers
 install-libs: install-libs-yes
