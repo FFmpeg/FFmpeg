@@ -25,6 +25,7 @@ BRIEF  = CC AS YASM AR LD HOSTCC RANLIB STRIP CP
 SILENT = DEPCC YASMDEP RM
 MSG    = $@
 G      = @$(call ECHO,GEN,$@);
+M      = @$(call ECHO,$(MSG),$@);
 $(foreach VAR,$(BRIEF), \
     $(eval $(VAR) = @$$(call ECHO,$(VAR),$$(MSG)); $($(VAR))))
 $(foreach VAR,$(SILENT),$(eval $(VAR) = @$($(VAR))))

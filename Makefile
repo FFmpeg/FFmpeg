@@ -93,14 +93,17 @@ documentation: $(addprefix doc/, developer.html faq.html ffmpeg-doc.html \
                                  ffplay-doc.html ffprobe-doc.html ffserver-doc.html \
                                  general.html libavfilter.html $(ALLMANPAGES))
 
+doc/%.html: MSG = HTML
 doc/%.html: doc/%.texi
-	cd doc && texi2html -monolithic -number $(<:doc/%=%)
+	$(M)cd doc && texi2html -monolithic -number $(<:doc/%=%)
 
+doc/%.pod: MSG = POD
 doc/%.pod: doc/%-doc.texi
-	doc/texi2pod.pl $< $@
+	$(M)doc/texi2pod.pl $< $@
 
+doc/%.1: MSG = MAN
 doc/%.1: doc/%.pod
-	pod2man --section=1 --center=" " --release=" " $< > $@
+	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
 install: $(INSTALL_TARGETS-yes)
 
