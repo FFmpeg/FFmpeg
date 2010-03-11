@@ -32,18 +32,25 @@
 
 struct speex_params {
     int final_packet_duration;
+    int seq;
 };
 
 static int speex_header(AVFormatContext *s, int idx) {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
+    struct speex_params *spxp = os->private;
     AVStream *st = s->streams[idx];
     uint8_t *p = os->buf + os->pstart;
 
-    if (os->seq > 1)
+    if (!spxp) {
+        spxp = av_mallocz(sizeof(*spxp));
+        os->private = spxp;
+    }
+
+    if (spxp->seq > 1)
         return 0;
 
-    if (os->seq == 0) {
+    if (spxp->seq == 0) {
         int frames_per_packet;
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_SPEEX;
@@ -70,6 +77,7 @@ static int speex_header(AVFormatContext *s, int idx) {
     } else
         vorbis_comment(s, p, os->psize);
 
+    spxp->seq++;
     return 1;
 }
 
@@ -89,11 +97,6 @@ static int speex_packet(AVFormatContext *s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     struct speex_params *spxp = os->private;
     int packet_size = s->streams[idx]->codec->frame_size;
-
-    if (!spxp) {
-        spxp = av_mallocz(sizeof(*spxp));
-        os->private = spxp;
-    }
 
     if (os->flags & OGG_FLAG_EOS && os->lastpts != AV_NOPTS_VALUE &&
         os->granule > 0) {

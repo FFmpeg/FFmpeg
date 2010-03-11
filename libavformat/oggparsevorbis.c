@@ -166,23 +166,24 @@ vorbis_header (AVFormatContext * s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
     struct oggvorbis_private *priv;
+    int pkt_type = os->buf[os->pstart];
 
-    if (os->seq > 2)
+    if (!(pkt_type & 1))
         return 0;
 
-    if (os->seq == 0) {
+    if (!os->private) {
         os->private = av_mallocz(sizeof(struct oggvorbis_private));
         if (!os->private)
             return 0;
     }
 
-    if (os->psize < 1)
+    if (os->psize < 1 || pkt_type > 5)
         return -1;
 
     priv = os->private;
-    priv->len[os->seq] = os->psize;
-    priv->packet[os->seq] = av_mallocz(os->psize);
-    memcpy(priv->packet[os->seq], os->buf + os->pstart, os->psize);
+    priv->len[pkt_type >> 1] = os->psize;
+    priv->packet[pkt_type >> 1] = av_mallocz(os->psize);
+    memcpy(priv->packet[pkt_type >> 1], os->buf + os->pstart, os->psize);
     if (os->buf[os->pstart] == 1) {
         const uint8_t *p = os->buf + os->pstart + 7; /* skip "\001vorbis" tag */
         unsigned blocksize, bs0, bs1;
@@ -224,7 +225,7 @@ vorbis_header (AVFormatContext * s, int idx)
             fixup_vorbis_headers(s, priv, &st->codec->extradata);
     }
 
-    return os->seq < 3;
+    return 1;
 }
 
 const struct ogg_codec ff_vorbis_codec = {
