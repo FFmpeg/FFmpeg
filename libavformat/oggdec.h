@@ -134,7 +134,7 @@ ogg_gptopts (AVFormatContext * s, int i, uint64_t gp, int64_t *dts)
     struct ogg_stream *os = ogg->streams + i;
     uint64_t pts = AV_NOPTS_VALUE;
 
-    if(os->codec->gptopts){
+    if(os->codec && os->codec->gptopts){
         pts = os->codec->gptopts(s, i, gp, dts);
     } else {
         pts = gp;
