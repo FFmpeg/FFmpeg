@@ -75,6 +75,7 @@ struct ogg_stream {
     uint8_t segments[255];
     int incomplete; ///< whether we're expecting a continuation in the next page
     int page_end;   ///< current packet is the last one completed in the page
+    int keyframe_seek;
     void *private;
 };
 
