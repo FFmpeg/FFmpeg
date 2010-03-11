@@ -207,8 +207,8 @@ void ff_weighted_vector_sumf(float *out, const float *in_a, const float *in_b,
                + weight_coeff_b * in_b[i];
 }
 
-void ff_adaptative_gain_control(float *buf_out, float speech_energ,
-                                int size, float alpha, float *gain_mem)
+void ff_adaptive_gain_control(float *buf_out, float speech_energ,
+                              int size, float alpha, float *gain_mem)
 {
     int i;
     float postfilter_energ = ff_dot_productf(buf_out, buf_out, size);

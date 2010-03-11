@@ -254,7 +254,7 @@ static void sipr_decode_lp(float *lsfnew, const float *lsfold, float *Az,
 }
 
 /**
- * Evaluates the adaptative impulse response.
+ * Evaluates the adaptive impulse response.
  */
 static void eval_ir(const float *Az, int pitch_lag, float *freq,
                     float pitch_sharp_factor)
@@ -479,8 +479,8 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
             float energy = ff_dot_productf(ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i*SUBFR_SIZE,
                                            ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i*SUBFR_SIZE,
                                            SUBFR_SIZE);
-            ff_adaptative_gain_control(&synth[i * SUBFR_SIZE], energy,
-                                       SUBFR_SIZE, 0.9, &ctx->postfilter_agc);
+            ff_adaptive_gain_control(&synth[i * SUBFR_SIZE], energy,
+                                     SUBFR_SIZE, 0.9, &ctx->postfilter_agc);
         }
 
         memcpy(ctx->postfilter_syn5k0, ctx->postfilter_syn5k0 + frame_size,
