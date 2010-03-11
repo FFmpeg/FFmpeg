@@ -260,6 +260,8 @@ static int error_concealment = 3;
 static int decoder_reorder_pts= -1;
 static int autoexit;
 static int framedrop=1;
+
+static int rdftspeed=20;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
 #endif
@@ -1021,7 +1023,7 @@ static int refresh_thread(void *opaque)
             is->refresh=1;
     SDL_PushEvent(&event);
         }
-        usleep(5000); //FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
+        usleep(is->audio_st && is->show_audio ? rdftspeed*1000 : 5000); //FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
     }
     return 0;
 }
@@ -2959,6 +2961,7 @@ static const OptionDef options[] = {
 #if CONFIG_AVFILTER
     { "vfilters", OPT_STRING | HAS_ARG, {(void*)&vfilters}, "video filters", "filter list" },
 #endif
+    { "rdftspeed", OPT_INT | HAS_ARG| OPT_AUDIO | OPT_EXPERT, {(void*)&rdftspeed}, "rdft speed", "msecs" },
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
 };
