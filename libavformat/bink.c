@@ -212,15 +212,16 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         bink->current_track++;
         if (audio_size >= 4) {
             /* get one audio packet per track */
-            if ((ret = av_get_packet(pb, pkt, audio_size)) != audio_size)
-                return ret < 0 ? ret : AVERROR(EIO);;
+            if ((ret = av_get_packet(pb, pkt, audio_size)) < 0)
+                return ret;
             pkt->stream_index = bink->current_track;
             pkt->pts = bink->audio_pts[bink->current_track - 1];
 
             /* Each audio packet reports the number of decompressed samples
                (in bytes). We use this value to calcuate the audio PTS */
-            bink->audio_pts[bink->current_track -1] +=
-                AV_RL32(pkt->data) / (2 * s->streams[bink->current_track]->codec->channels);
+            if (pkt->size >= 4)
+                bink->audio_pts[bink->current_track -1] +=
+                    AV_RL32(pkt->data) / (2 * s->streams[bink->current_track]->codec->channels);
             return 0;
         } else {
             url_fseek(pb, audio_size, SEEK_CUR);
@@ -228,9 +229,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     /* get video packet */
-    if ((ret = av_get_packet(pb, pkt, bink->remain_packet_size))
-                                   != bink->remain_packet_size)
-        return ret < 0 ? ret : AVERROR(EIO);
+    if ((ret = av_get_packet(pb, pkt, bink->remain_packet_size)) < 0)
+        return ret;
     pkt->stream_index = 0;
     pkt->pts = bink->video_pts++;
     pkt->flags |= PKT_FLAG_KEY;
