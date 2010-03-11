@@ -146,18 +146,6 @@ ogg_find_codec (uint8_t * buf, int size)
 }
 
 static int
-ogg_find_stream (struct ogg * ogg, int serial)
-{
-    int i;
-
-    for (i = 0; i < ogg->nstreams; i++)
-        if (ogg->streams[i].serial == serial)
-            return i;
-
-    return -1;
-}
-
-static int
 ogg_new_stream (AVFormatContext * s, uint32_t serial)
 {
 
@@ -439,25 +427,6 @@ ogg_get_headers (AVFormatContext * s)
 
     return 0;
 }
-
-static uint64_t
-ogg_gptopts (AVFormatContext * s, int i, uint64_t gp, int64_t *dts)
-{
-    struct ogg *ogg = s->priv_data;
-    struct ogg_stream *os = ogg->streams + i;
-    uint64_t pts = AV_NOPTS_VALUE;
-
-    if(os->codec->gptopts){
-        pts = os->codec->gptopts(s, i, gp, dts);
-    } else {
-        pts = gp;
-        if (dts)
-            *dts = pts;
-    }
-
-    return pts;
-}
-
 
 static int
 ogg_get_length (AVFormatContext * s)
