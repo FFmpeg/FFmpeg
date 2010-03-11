@@ -460,6 +460,8 @@ ogg_get_length (AVFormatContext * s)
     if (idx != -1){
         s->streams[idx]->duration =
             ogg_gptopts (s, idx, ogg->streams[idx].granule, NULL);
+        if (s->streams[idx]->start_time != AV_NOPTS_VALUE)
+            s->streams[idx]->duration -= s->streams[idx]->start_time;
     }
 
     ogg->size = size;
