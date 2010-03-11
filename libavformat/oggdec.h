@@ -66,6 +66,8 @@ struct ogg_stream {
     uint64_t granule;
     int64_t lastpts;
     int64_t lastdts;
+    int64_t sync_pos;   ///< file offset of the first page needed to reconstruct the current packet
+    int64_t page_pos;   ///< file offset of the current page
     int flags;
     const struct ogg_codec *codec;
     int header;

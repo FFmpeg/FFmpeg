@@ -120,6 +120,8 @@ ogg_reset (struct ogg * ogg)
         os->granule = -1;
         os->lastpts = AV_NOPTS_VALUE;
         os->lastdts = AV_NOPTS_VALUE;
+        os->sync_pos = -1;
+        os->page_pos = 0;
         os->nsegs = 0;
         os->segp = 0;
         os->incomplete = 0;
@@ -255,6 +257,7 @@ ogg_read_page (AVFormatContext * s, int *str)
     }
 
     os = ogg->streams + idx;
+    os->page_pos = url_ftell(bc) - 27;
 
     if(os->psize > 0)
         ogg_new_buf(ogg, idx);
@@ -277,9 +280,11 @@ ogg_read_page (AVFormatContext * s, int *str)
                 if (seg < 255)
                     break;
             }
+            os->sync_pos = os->page_pos;
         }
     }else{
         os->psize = 0;
+        os->sync_pos = os->page_pos;
     }
 
     if (os->bufsize - os->bufpos < size){
@@ -303,7 +308,7 @@ ogg_read_page (AVFormatContext * s, int *str)
 }
 
 static int
-ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize)
+ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize, int64_t *fpos)
 {
     struct ogg *ogg = s->priv_data;
     int idx, i;
@@ -394,8 +399,11 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize)
             *dstart = os->pstart;
         if (dsize)
             *dsize = os->psize;
+        if (fpos)
+            *fpos = os->sync_pos;
         os->pstart += os->psize;
         os->psize = 0;
+        os->sync_pos = os->page_pos;
     }
 
     // determine whether there are more complete packets in this page
@@ -420,7 +428,7 @@ ogg_get_headers (AVFormatContext * s)
     struct ogg *ogg = s->priv_data;
 
     do{
-        if (ogg_packet (s, NULL, NULL, NULL) < 0)
+        if (ogg_packet (s, NULL, NULL, NULL, NULL) < 0)
             return -1;
     }while (!ogg->headers);
 
@@ -520,10 +528,11 @@ ogg_read_packet (AVFormatContext * s, AVPacket * pkt)
     struct ogg_stream *os;
     int idx = -1;
     int pstart, psize;
+    int64_t fpos;
 
     //Get an ogg packet
     do{
-        if (ogg_packet (s, &idx, &pstart, &psize) < 0)
+        if (ogg_packet (s, &idx, &pstart, &psize, &fpos) < 0)
             return AVERROR(EIO);
     }while (idx < 0 || !s->streams[idx]);
 
@@ -557,6 +566,7 @@ ogg_read_packet (AVFormatContext * s, AVPacket * pkt)
 
     pkt->flags = os->pflags;
     pkt->duration = os->pduration;
+    pkt->pos = fpos;
 
     return psize;
 }
