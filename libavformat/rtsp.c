@@ -1328,13 +1328,14 @@ static int rtsp_setup_input_streams(AVFormatContext *s)
     return 0;
 }
 
-static int rtsp_setup_output_streams(AVFormatContext *s)
+static int rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
 {
     RTSPState *rt = s->priv_data;
     RTSPMessageHeader reply1, *reply = &reply1;
     char cmd[1024];
     int i;
     char *sdp;
+    AVFormatContext sdp_ctx, *ctx_array[1];
 
     /* Announce the stream */
     snprintf(cmd, sizeof(cmd),
@@ -1344,7 +1345,23 @@ static int rtsp_setup_output_streams(AVFormatContext *s)
     sdp = av_mallocz(8192);
     if (sdp == NULL)
         return AVERROR(ENOMEM);
-    if (avf_sdp_create(&s, 1, sdp, 8192)) {
+    /* We create the SDP based on the RTSP AVFormatContext where we
+     * aren't allowed to change the filename field. (We create the SDP
+     * based on the RTSP context since the contexts for the RTP streams
+     * don't exist yet.) In order to specify a custom URL with the actual
+     * peer IP instead of the originally specified hostname, we create
+     * a temporary copy of the AVFormatContext, where the custom URL is set.
+     *
+     * FIXME: Create the SDP without copying the AVFormatContext.
+     * This either requires setting up the RTP stream AVFormatContexts
+     * already here (complicating things immensely) or getting a more
+     * flexible SDP creation interface.
+     */
+    sdp_ctx = *s;
+    ff_url_join(sdp_ctx.filename, sizeof(sdp_ctx.filename),
+                "rtsp", NULL, addr, -1, NULL);
+    ctx_array[0] = &sdp_ctx;
+    if (avf_sdp_create(ctx_array, 1, sdp, 8192)) {
         av_free(sdp);
         return AVERROR_INVALIDDATA;
     }
@@ -1507,7 +1524,7 @@ redirect:
     if (s->iformat)
         err = rtsp_setup_input_streams(s);
     else
-        err = rtsp_setup_output_streams(s);
+        err = rtsp_setup_output_streams(s, host);
     if (err)
         goto fail;
 
