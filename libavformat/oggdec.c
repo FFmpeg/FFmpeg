@@ -581,15 +581,14 @@ ogg_read_timestamp (AVFormatContext * s, int stream_index, int64_t * pos_arg,
     int64_t pts = AV_NOPTS_VALUE;
     int i;
     url_fseek(bc, *pos_arg, SEEK_SET);
-    while (url_ftell(bc) < pos_limit && !ogg_read_page (s, &i)) {
-        if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
-            ogg->streams[i].codec && i == stream_index) {
-            pts = ogg_gptopts(s, i, ogg->streams[i].granule, NULL);
-            // FIXME: this is the position of the packet after the one with above
-            // pts.
-            *pos_arg = url_ftell(bc);
-            break;
+    ogg_reset(ogg);
+
+    while (url_ftell(bc) < pos_limit && !ogg_packet(s, &i, NULL, NULL, pos_arg)) {
+        if (i == stream_index) {
+            pts = ogg_calc_pts(s, i, NULL);
         }
+        if (pts != AV_NOPTS_VALUE)
+            break;
     }
     ogg_reset(ogg);
     return pts;
