@@ -777,8 +777,8 @@ static void fill_block8_c(uint8_t *block, uint8_t value, int line_size, int h)
 static void scale_block_c(const uint8_t src[64]/*align 8*/, uint8_t *dst/*align 8*/, int linesize)
 {
     int i, j;
-    uint16_t *dst1 = dst;
-    uint16_t *dst2 = dst + linesize;
+    uint16_t *dst1 = (uint16_t *) dst;
+    uint16_t *dst2 = (uint16_t *)(dst + linesize);
 
     for (j = 0; j < 8; j++) {
         for (i = 0; i < 8; i++) {
