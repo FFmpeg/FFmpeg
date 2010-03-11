@@ -48,6 +48,9 @@
 #undef main /* We don't want SDL to override our main() */
 #endif
 
+#include <unistd.h>
+#include <assert.h>
+
 const char program_name[] = "FFplay";
 const int program_birth_year = 2003;
 
@@ -65,6 +68,8 @@ const int program_birth_year = 2003;
 #define AV_SYNC_THRESHOLD 0.01
 /* no AV correction is done if too big error */
 #define AV_NOSYNC_THRESHOLD 10.0
+
+#define FRAME_SKIP_FACTOR 0.05
 
 /* maximum audio speed change to get correct sync */
 #define SAMPLE_CORRECTION_PERCENT_MAX 10
@@ -93,11 +98,11 @@ typedef struct PacketQueue {
 
 typedef struct VideoPicture {
     double pts;                                  ///<presentation time stamp for this picture
+    double target_clock;                         ///<av_gettime() time at which this should be displayed ideally
     int64_t pos;                                 ///<byte position in file
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
     int allocated;
-    SDL_TimerID timer_id;
     enum PixelFormat pix_fmt;
 
 #if CONFIG_AVFILTER
@@ -119,6 +124,7 @@ enum {
 typedef struct VideoState {
     SDL_Thread *parse_tid;
     SDL_Thread *video_tid;
+    SDL_Thread *refresh_tid;
     AVInputFormat *iformat;
     int no_background;
     int abort_request;
@@ -206,6 +212,10 @@ typedef struct VideoState {
 #if CONFIG_AVFILTER
     AVFilterContext *out_video_filter;          ///<the last filter in the video chain
 #endif
+
+    float skip_frames;
+    float skip_frames_index;
+    int refresh;
 } VideoState;
 
 static void show_help(void);
@@ -249,6 +259,7 @@ static int error_recognition = FF_ER_CAREFUL;
 static int error_concealment = 3;
 static int decoder_reorder_pts= -1;
 static int autoexit;
+static int framedrop=1;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
 #endif
@@ -999,20 +1010,20 @@ static void video_display(VideoState *is)
         video_image_display(is);
 }
 
-static Uint32 sdl_refresh_timer_cb(Uint32 interval, void *opaque)
+static int refresh_thread(void *opaque)
 {
+    VideoState *is= opaque;
+    while(!is->abort_request){
     SDL_Event event;
     event.type = FF_REFRESH_EVENT;
     event.user.data1 = opaque;
+        if(!is->refresh){
+            is->refresh=1;
     SDL_PushEvent(&event);
-    return 0; /* 0 means stop timer */
-}
-
-/* schedule a video refresh in 'delay' ms */
-static SDL_TimerID schedule_refresh(VideoState *is, int delay)
-{
-    if(!delay) delay=1; //SDL seems to be buggy when the delay is 0
-    return SDL_AddTimer(delay, sdl_refresh_timer_cb, is);
+        }
+        usleep(5000); //FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
+    }
+    return 0;
 }
 
 /* get the current audio clock value */
@@ -1097,9 +1108,9 @@ static void stream_pause(VideoState *is)
     is->paused = !is->paused;
 }
 
-static double compute_frame_delay(double frame_current_pts, VideoState *is)
+static double compute_target_time(double frame_current_pts, VideoState *is)
 {
-    double actual_delay, delay, sync_threshold, diff;
+    double delay, sync_threshold, diff;
 
     /* compute nominal delay */
     delay = frame_current_pts - is->frame_last_pts;
@@ -1129,22 +1140,13 @@ static double compute_frame_delay(double frame_current_pts, VideoState *is)
                 delay = 2 * delay;
         }
     }
-
     is->frame_timer += delay;
-    /* compute the REAL delay (we need to do that to avoid
-       long term errors */
-    actual_delay = is->frame_timer - (av_gettime() / 1000000.0);
-    if (actual_delay < 0.010) {
-        /* XXX: should skip picture */
-        actual_delay = 0.010;
-    }
-
 #if defined(DEBUG_SYNC)
     printf("video: delay=%0.3f actual_delay=%0.3f pts=%0.3f A-V=%f\n",
             delay, actual_delay, frame_current_pts, -diff);
 #endif
 
-    return actual_delay;
+    return is->frame_timer;
 }
 
 /* called to display each frame */
@@ -1156,16 +1158,42 @@ static void video_refresh_timer(void *opaque)
     SubPicture *sp, *sp2;
 
     if (is->video_st) {
+retry:
         if (is->pictq_size == 0) {
-            fprintf(stderr, "Internal error detected in the SDL timer\n");
+            //nothing to do, no picture to display in the que
         } else {
+            double time= av_gettime()/1000000.0;
+            double next_target;
             /* dequeue the picture */
             vp = &is->pictq[is->pictq_rindex];
 
+            if(time < vp->target_clock)
+                return;
             /* update current video pts */
             is->video_current_pts = vp->pts;
-            is->video_current_pts_drift = is->video_current_pts - av_gettime() / 1000000.0;
+            is->video_current_pts_drift = is->video_current_pts - time;
             is->video_current_pos = vp->pos;
+            if(is->pictq_size > 1){
+                VideoPicture *nextvp= &is->pictq[(is->pictq_rindex+1)%VIDEO_PICTURE_QUEUE_SIZE];
+                assert(nextvp->target_clock >= vp->target_clock);
+                next_target= nextvp->target_clock;
+            }else{
+                next_target= vp->target_clock + is->video_clock - vp->pts; //FIXME pass durations cleanly
+            }
+            if(framedrop && time > next_target){
+                is->skip_frames *= 1.0 + FRAME_SKIP_FACTOR;
+                if(is->pictq_size > 1 || time > next_target + 0.5){
+                    /* update queue size and signal for next picture */
+                    if (++is->pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE)
+                        is->pictq_rindex = 0;
+
+                    SDL_LockMutex(is->pictq_mutex);
+                    is->pictq_size--;
+                    SDL_CondSignal(is->pictq_cond);
+                    SDL_UnlockMutex(is->pictq_mutex);
+                    goto retry;
+                }
+            }
 
             if(is->subtitle_st) {
                 if (is->subtitle_stream_changed) {
@@ -1219,7 +1247,6 @@ static void video_refresh_timer(void *opaque)
                 is->pictq_rindex = 0;
 
             SDL_LockMutex(is->pictq_mutex);
-            vp->timer_id= 0;
             is->pictq_size--;
             SDL_CondSignal(is->pictq_cond);
             SDL_UnlockMutex(is->pictq_mutex);
@@ -1227,15 +1254,11 @@ static void video_refresh_timer(void *opaque)
     } else if (is->audio_st) {
         /* draw the next audio frame */
 
-        schedule_refresh(is, 40);
-
         /* if only audio stream, then display the audio bars (better
            than nothing, just to test the implementation */
 
         /* display picture */
         video_display(is);
-    } else {
-        schedule_refresh(is, 100);
     }
     if (show_status) {
         static int64_t last_time;
@@ -1314,6 +1337,10 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 #endif
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
+
+    if(is->pictq_size>=VIDEO_PICTURE_QUEUE_SIZE && !is->refresh)
+        is->skip_frames= FFMAX(1.0 - FRAME_SKIP_FACTOR, is->skip_frames * (1.0-FRAME_SKIP_FACTOR));
+
     while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&
            !is->videoq.abort_request) {
         SDL_CondWait(is->pictq_cond, is->pictq_mutex);
@@ -1411,9 +1438,9 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         if (++is->pictq_windex == VIDEO_PICTURE_QUEUE_SIZE)
             is->pictq_windex = 0;
         SDL_LockMutex(is->pictq_mutex);
+        vp->target_clock= compute_target_time(vp->pts, is);
+
         is->pictq_size++;
-        //We must schedule in a mutex as we must store the timer id before the timer dies or might end up freeing a alraedy freed id
-        vp->timer_id= schedule_refresh(is, (int)(compute_frame_delay(vp->pts, is) * 1000 + 0.5));
         SDL_UnlockMutex(is->pictq_mutex);
     }
     return 0;
@@ -1462,12 +1489,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             SDL_LockMutex(is->pictq_mutex);
             //Make sure there are no long delay timers (ideally we should just flush the que but thats harder)
             for(i=0; i<VIDEO_PICTURE_QUEUE_SIZE; i++){
-                if(is->pictq[i].timer_id){
-                    if(SDL_RemoveTimer(is->pictq[i].timer_id)){
-                    is->pictq[i].timer_id=0;
-                    schedule_refresh(is, 1);
-                    }
-                }
+                is->pictq[i].target_clock= 0;
             }
             while (is->pictq_size && !is->videoq.abort_request) {
                 SDL_CondWait(is->pictq_cond, is->pictq_mutex);
@@ -1480,7 +1502,8 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             is->frame_last_pts= AV_NOPTS_VALUE;
             is->frame_last_delay = 0;
             is->frame_timer = (double)av_gettime() / 1000000.0;
-
+            is->skip_frames= 1;
+            is->skip_frames_index= 0;
             return 0;
         }
 
@@ -1514,8 +1537,14 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
 
 //            if (len1 < 0)
 //                break;
-    if (got_picture)
-        return 1;
+    if (got_picture){
+        is->skip_frames_index += 1;
+        if(is->skip_frames_index >= is->skip_frames){
+            is->skip_frames_index -= FFMAX(is->skip_frames, 1.0);
+            return 1;
+        }
+
+    }
     return 0;
 }
 
@@ -2364,10 +2393,8 @@ static int decode_thread(void *arg)
     if (st_index[CODEC_TYPE_VIDEO] >= 0) {
         ret= stream_component_open(is, st_index[CODEC_TYPE_VIDEO]);
     }
+    is->refresh_tid = SDL_CreateThread(refresh_thread, is);
     if(ret<0) {
-        /* add the refresh timer to draw the picture */
-        schedule_refresh(is, 40);
-
         if (!display_disable)
             is->show_audio = 2;
     }
@@ -2539,6 +2566,7 @@ static void stream_close(VideoState *is)
     /* XXX: use a special url_shutdown call to abort parse cleanly */
     is->abort_request = 1;
     SDL_WaitThread(is->parse_tid, NULL);
+    SDL_WaitThread(is->refresh_tid, NULL);
 
     /* free all pictures */
     for(i=0;i<VIDEO_PICTURE_QUEUE_SIZE; i++) {
@@ -2805,6 +2833,7 @@ static void event_loop(void)
             break;
         case FF_REFRESH_EVENT:
             video_refresh_timer(event.user.data1);
+            cur_stream->refresh=0;
             break;
         default:
             break;
@@ -2926,6 +2955,7 @@ static const OptionDef options[] = {
     { "sync", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
     { "threads", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "autoexit", OPT_BOOL | OPT_EXPERT, {(void*)&autoexit}, "exit at the end", "" },
+    { "framedrop", OPT_BOOL | OPT_EXPERT, {(void*)&framedrop}, "drop frames when cpu is too slow", "" },
 #if CONFIG_AVFILTER
     { "vfilters", OPT_STRING | HAS_ARG, {(void*)&vfilters}, "video filters", "filter list" },
 #endif
