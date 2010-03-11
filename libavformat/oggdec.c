@@ -382,6 +382,7 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize, int64_t *fpo
             os->segp = segp;
             os->psize = psize;
             ogg->headers = 1;
+            s->data_offset = os->sync_pos;
         }else{
             os->pstart += os->psize;
             os->psize = 0;
