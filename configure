@@ -315,7 +315,7 @@ filter(){
 map(){
     m=$1
     shift
-    for _; do; eval $m; done
+    for _; do eval $m; done
 }
 
 set_all(){
