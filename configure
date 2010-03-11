@@ -2947,12 +2947,8 @@ if enabled source_path_used; then
         libpostproc/Makefile
         libswscale/Makefile
     "
-    for dir in $DIRS ; do
-        mkdir -p $dir
-    done
-    for f in $FILES ; do
-        $ln_s "$source_path/$f" $f
-    done
+    map 'mkdir -p $_' $DIRS;
+    map '$ln_s "$source_path/$_" $_' $FILES
 fi
 
 enabled stripping || strip="echo skipping strip"
