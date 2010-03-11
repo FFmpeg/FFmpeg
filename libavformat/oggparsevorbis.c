@@ -153,6 +153,7 @@ fixup_vorbis_headers(AVFormatContext * as, struct oggvorbis_private *priv,
     for (i = 0; i < 3; i++) {
         memcpy(&ptr[offset], priv->packet[i], priv->len[i]);
         offset += priv->len[i];
+        av_freep(&priv->packet[i]);
     }
     *buf = av_realloc(*buf, offset + FF_INPUT_BUFFER_PADDING_SIZE);
     return offset;
