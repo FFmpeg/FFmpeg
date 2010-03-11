@@ -31,8 +31,9 @@ uint32_t ff_random_get_seed(void)
     if ((fd = open("/dev/random", O_RDONLY)) == -1)
         fd = open("/dev/urandom", O_RDONLY);
     if (fd != -1){
-        read(fd, &seed, 4);
+        int err = read(fd, &seed, 4);
         close(fd);
+        if (err == 4)
         return seed;
     }
 #ifdef AV_READ_TIME
