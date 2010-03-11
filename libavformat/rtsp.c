@@ -608,7 +608,9 @@ void ff_rtsp_close_streams(AVFormatContext *s)
     av_freep(&rt->auth_b64);
 }
 
-static void *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st, URLContext *handle) {
+static void *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st,
+                               URLContext *handle)
+{
     AVFormatContext *rtpctx;
     int ret;
     AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
