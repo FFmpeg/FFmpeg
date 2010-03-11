@@ -34,7 +34,7 @@ uint32_t ff_random_get_seed(void)
         int err = read(fd, &seed, 4);
         close(fd);
         if (err == 4)
-        return seed;
+            return seed;
     }
 #ifdef AV_READ_TIME
     seed = AV_READ_TIME();
