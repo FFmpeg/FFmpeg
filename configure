@@ -312,6 +312,12 @@ filter(){
     done
 }
 
+map(){
+    m=$1
+    shift
+    for _; do; eval $m; done
+}
+
 set_all(){
     value=$1
     shift
@@ -1577,6 +1583,9 @@ for opt do
     --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
     ;;
     --enable-debug=*) debuglevel="$optval"
+    ;;
+    --disable-everything)
+    map 'eval disable \${$(toupper ${_%s})_LIST}' $COMPONENT_LIST
     ;;
     --enable-*=*|--disable-*=*)
     eval $(echo "${opt%%=*}" | sed 's/--/action=/;s/-/ thing=/')
