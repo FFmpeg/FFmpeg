@@ -50,7 +50,7 @@ void ff_rtp_send_h263(AVFormatContext *s1, const uint8_t *buf1, int size)
 
     while (size > 0) {
         q = s->buf;
-        if ((buf1[0] == 0) && (buf1[1] == 0)) {
+        if (size >= 2 && (buf1[0] == 0) && (buf1[1] == 0)) {
             *q++ = 0x04;
             buf1 += 2;
             size -= 2;
