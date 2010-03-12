@@ -42,7 +42,7 @@ const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
 };
 
 int
-ff_vorbis_comment(AVFormatContext * as, AVMetadata **m, uint8_t *buf, int size)
+ff_vorbis_comment(AVFormatContext * as, AVMetadata **m, const uint8_t *buf, int size)
 {
     const uint8_t *p = buf;
     const uint8_t *end = buf + size;

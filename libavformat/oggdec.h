@@ -115,7 +115,7 @@ extern const struct ogg_codec ff_vorbis_codec;
 
 extern const AVMetadataConv ff_vorbiscomment_metadata_conv[];
 
-int ff_vorbis_comment(AVFormatContext *ms, AVMetadata **m, uint8_t *buf, int size);
+int ff_vorbis_comment(AVFormatContext *ms, AVMetadata **m, const uint8_t *buf, int size);
 
 static inline int
 ogg_find_stream (struct ogg * ogg, int serial)
