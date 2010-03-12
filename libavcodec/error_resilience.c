@@ -30,6 +30,13 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "h264.h"
+
+/*
+ * H264 redefines mb_intra so it is not mistakely used (its uninitialized in h264)
+ * but error concealment must support both h264 and h263 thus we must undo this
+ */
+#undef mb_intra
 
 static void decode_mb(MpegEncContext *s){
     s->dest[0] = s->current_picture.data[0] + (s->mb_y * 16* s->linesize  ) + s->mb_x * 16;
@@ -37,6 +44,22 @@ static void decode_mb(MpegEncContext *s){
     s->dest[2] = s->current_picture.data[2] + (s->mb_y * (16>>s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16>>s->chroma_x_shift);
 
     MPV_decode_mb(s, s->block);
+}
+
+/**
+ * @param stride the number of MVs to get to the next row
+ * @param mv_step the number of MVs per row or column in a macroblock
+ */
+static void set_mv_strides(MpegEncContext *s, int *mv_step, int *stride){
+    if(s->codec_id == CODEC_ID_H264){
+        H264Context *h= (void*)s;
+        assert(s->quarter_sample);
+        *mv_step= 4;
+        *stride= h->b_stride;
+    }else{
+        *mv_step= 2;
+        *stride= s->b8_stride;
+    }
 }
 
 /**
@@ -320,7 +343,9 @@ static void guess_mv(MpegEncContext *s){
     const int mb_width = s->mb_width;
     const int mb_height= s->mb_height;
     int i, depth, num_avail;
-    int mb_x, mb_y;
+    int mb_x, mb_y, mot_step, mot_stride;
+
+    set_mv_strides(s, &mot_step, &mot_stride);
 
     num_avail=0;
     for(i=0; i<s->mb_num; i++){
@@ -379,8 +404,7 @@ int score_sum=0;
                     int j;
                     int best_score=256*256*256*64;
                     int best_pred=0;
-                    const int mot_stride= s->b8_stride;
-                    const int mot_index= mb_x*2 + mb_y*2*mot_stride;
+                    const int mot_index= (mb_x + mb_y*mot_stride) * mot_step;
                     int prev_x= s->current_picture.motion_val[0][mot_index][0];
                     int prev_y= s->current_picture.motion_val[0][mot_index][1];
 
@@ -407,23 +431,23 @@ int score_sum=0;
                     none_left=0;
 
                     if(mb_x>0 && fixed[mb_xy-1]){
-                        mv_predictor[pred_count][0]= s->current_picture.motion_val[0][mot_index - 2][0];
-                        mv_predictor[pred_count][1]= s->current_picture.motion_val[0][mot_index - 2][1];
+                        mv_predictor[pred_count][0]= s->current_picture.motion_val[0][mot_index - mot_step][0];
+                        mv_predictor[pred_count][1]= s->current_picture.motion_val[0][mot_index - mot_step][1];
                         pred_count++;
                     }
                     if(mb_x+1<mb_width && fixed[mb_xy+1]){
-                        mv_predictor[pred_count][0]= s->current_picture.motion_val[0][mot_index + 2][0];
-                        mv_predictor[pred_count][1]= s->current_picture.motion_val[0][mot_index + 2][1];
+                        mv_predictor[pred_count][0]= s->current_picture.motion_val[0][mot_index + mot_step][0];
+                        mv_predictor[pred_count][1]= s->current_picture.motion_val[0][mot_index + mot_step][1];
                         pred_count++;
                     }
                     if(mb_y>0 && fixed[mb_xy-mb_stride]){
-                        mv_predictor[pred_count][0]= s->current_picture.motion_val[0][mot_index - mot_stride*2][0];
-                        mv_predictor[pred_count][1]= s->current_picture.motion_val[0][mot_index - mot_stride*2][1];
+                        mv_predictor[pred_count][0]= s->current_picture.motion_val[0][mot_index - mot_stride*mot_step][0];
+                        mv_predictor[pred_count][1]= s->current_picture.motion_val[0][mot_index - mot_stride*mot_step][1];
                         pred_count++;
                     }
                     if(mb_y+1<mb_height && fixed[mb_xy+mb_stride]){
-                        mv_predictor[pred_count][0]= s->current_picture.motion_val[0][mot_index + mot_stride*2][0];
-                        mv_predictor[pred_count][1]= s->current_picture.motion_val[0][mot_index + mot_stride*2][1];
+                        mv_predictor[pred_count][0]= s->current_picture.motion_val[0][mot_index + mot_stride*mot_step][0];
+                        mv_predictor[pred_count][1]= s->current_picture.motion_val[0][mot_index + mot_stride*mot_step][1];
                         pred_count++;
                     }
                     if(pred_count==0) continue;
