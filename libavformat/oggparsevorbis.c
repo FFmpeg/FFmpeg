@@ -41,6 +41,40 @@ const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
     { 0 }
 };
 
+static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
+{
+    int i, cnum, h, m, s, ms, keylen = strlen(key);
+    AVChapter *chapter = NULL;
+
+    if (keylen < 9 || sscanf(key, "CHAPTER%02d", &cnum) != 1)
+        return 0;
+
+    if (keylen == 9) {
+        if (sscanf(val, "%02d:%02d:%02d.%03d", &h, &m, &s, &ms) < 4)
+            return 0;
+
+        ff_new_chapter(as, cnum, (AVRational){1,1000},
+                       ms + 1000*(s + 60*(m + 60*h)),
+                       AV_NOPTS_VALUE, NULL);
+        av_free(val);
+    } else if (!strcmp(key+9, "NAME")) {
+        for(i = 0; i < as->nb_chapters; i++)
+            if (as->chapters[i]->id == cnum) {
+                chapter = as->chapters[i];
+                break;
+            }
+        if (!chapter)
+            return 0;
+
+        av_metadata_set2(&chapter->metadata, "title", val,
+                         AV_METADATA_DONT_STRDUP_VAL);
+    } else
+        return 0;
+
+    av_free(key);
+    return 1;
+}
+
 int
 ff_vorbis_comment(AVFormatContext * as, AVMetadata **m, const uint8_t *buf, int size)
 {
@@ -101,7 +135,8 @@ ff_vorbis_comment(AVFormatContext * as, AVMetadata **m, const uint8_t *buf, int 
             memcpy(ct, v, vl);
             ct[vl] = 0;
 
-            av_metadata_set2(m, tt, ct,
+            if (!ogm_chapter(as, tt, ct))
+                av_metadata_set2(m, tt, ct,
                                    AV_METADATA_DONT_STRDUP_KEY |
                                    AV_METADATA_DONT_STRDUP_VAL);
         }
