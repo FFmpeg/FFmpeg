@@ -25,6 +25,7 @@
 #include "avformat.h"
 
 extern const char * const ff_rm_metadata[4];
+extern const unsigned char ff_sipr_subpk_size[4];
 
 typedef struct RMStream RMStream;
 

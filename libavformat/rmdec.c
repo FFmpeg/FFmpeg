@@ -79,7 +79,7 @@ static const unsigned char sipr_swaps[38][2] = {
     { 67, 83 }, { 77, 80 }
 };
 
-static const unsigned char sipr_subpk_size[4] = { 29, 19, 37, 20 };
+const unsigned char ff_sipr_subpk_size[4] = { 29, 19, 37, 20 };
 
 static inline void get_strl(ByteIOContext *pb, char *buf, int buf_size, int len)
 {
@@ -237,7 +237,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
                            flavor);
                     return -1;
                 }
-                st->codec->block_align = sipr_subpk_size[flavor];
+                st->codec->block_align = ff_sipr_subpk_size[flavor];
             } else {
                 if(sub_packet_size <= 0){
                     av_log(s, AV_LOG_ERROR, "sub_packet_size is invalid\n");
