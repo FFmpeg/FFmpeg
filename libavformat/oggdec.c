@@ -364,21 +364,19 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize, int64_t *fpo
     ogg->curidx = idx;
     os->incomplete = 0;
 
-    if (!ogg->headers){
-        int hdr = os->codec->header (s, idx);
-        os->header = os->seq;
-        if (!hdr){
+    if (os->header) {
+        os->header = os->codec->header (s, idx);
+        if (!os->header){
             os->segp = segp;
             os->psize = psize;
+            if (!ogg->headers)
+                s->data_offset = os->sync_pos;
             ogg->headers = 1;
-            s->data_offset = os->sync_pos;
         }else{
             os->pstart += os->psize;
             os->psize = 0;
         }
-    }
-
-    if (os->header > -1 && os->seq > os->header){
+    } else {
         os->pflags = 0;
         os->pduration = 0;
         if (os->codec && os->codec->packet)
@@ -405,7 +403,6 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize, int64_t *fpo
             break;
         }
 
-    os->seq++;
     if (os->segp == os->nsegs)
         ogg->curidx = -1;
 

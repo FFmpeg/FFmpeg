@@ -62,7 +62,6 @@ struct ogg_stream {
     unsigned int pflags;
     unsigned int pduration;
     uint32_t serial;
-    uint32_t seq;
     uint64_t granule;
     int64_t lastpts;
     int64_t lastdts;
