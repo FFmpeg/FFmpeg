@@ -43,55 +43,55 @@ ogm_header(AVFormatContext *s, int idx)
 
     if(!(*p & 1))
         return 0;
+
     if(*p == 1) {
+        p++;
 
-    p++;
+        if(*p == 'v'){
+            int tag;
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            p += 8;
+            tag = bytestream_get_le32(&p);
+            st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag);
+            st->codec->codec_tag = tag;
+        } else if (*p == 't') {
+            st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+            st->codec->codec_id = CODEC_ID_TEXT;
+            p += 12;
+        } else {
+            uint8_t acid[5];
+            int cid;
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            p += 8;
+            bytestream_get_buffer(&p, acid, 4);
+            acid[4] = 0;
+            cid = strtol(acid, NULL, 16);
+            st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, cid);
+            st->need_parsing = AVSTREAM_PARSE_FULL;
+        }
 
-    if(*p == 'v'){
-        int tag;
-        st->codec->codec_type = CODEC_TYPE_VIDEO;
-        p += 8;
-        tag = bytestream_get_le32(&p);
-        st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag);
-        st->codec->codec_tag = tag;
-    } else if (*p == 't') {
-        st->codec->codec_type = CODEC_TYPE_SUBTITLE;
-        st->codec->codec_id = CODEC_ID_TEXT;
-        p += 12;
-    } else {
-        uint8_t acid[5];
-        int cid;
-        st->codec->codec_type = CODEC_TYPE_AUDIO;
-        p += 8;
-        bytestream_get_buffer(&p, acid, 4);
-        acid[4] = 0;
-        cid = strtol(acid, NULL, 16);
-        st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, cid);
-        st->need_parsing = AVSTREAM_PARSE_FULL;
-    }
+        p += 4;                     /* useless size field */
 
-    p += 4;                     /* useless size field */
+        time_unit   = bytestream_get_le64(&p);
+        spu         = bytestream_get_le64(&p);
+        default_len = bytestream_get_le32(&p);
 
-    time_unit   = bytestream_get_le64(&p);
-    spu         = bytestream_get_le64(&p);
-    default_len = bytestream_get_le32(&p);
+        p += 8;                     /* buffersize + bits_per_sample */
 
-    p += 8;                     /* buffersize + bits_per_sample */
-
-    if(st->codec->codec_type == CODEC_TYPE_VIDEO){
-        st->codec->width = bytestream_get_le32(&p);
-        st->codec->height = bytestream_get_le32(&p);
-        st->codec->time_base.den = spu * 10000000;
-        st->codec->time_base.num = time_unit;
-        st->time_base = st->codec->time_base;
-    } else {
-        st->codec->channels = bytestream_get_le16(&p);
-        p += 2;                 /* block_align */
-        st->codec->bit_rate = bytestream_get_le32(&p) * 8;
-        st->codec->sample_rate = spu * 10000000 / time_unit;
-        st->time_base.num = 1;
-        st->time_base.den = st->codec->sample_rate;
-    }
+        if(st->codec->codec_type == CODEC_TYPE_VIDEO){
+            st->codec->width = bytestream_get_le32(&p);
+            st->codec->height = bytestream_get_le32(&p);
+            st->codec->time_base.den = spu * 10000000;
+            st->codec->time_base.num = time_unit;
+            st->time_base = st->codec->time_base;
+        } else {
+            st->codec->channels = bytestream_get_le16(&p);
+            p += 2;                 /* block_align */
+            st->codec->bit_rate = bytestream_get_le32(&p) * 8;
+            st->codec->sample_rate = spu * 10000000 / time_unit;
+            st->time_base.num = 1;
+            st->time_base.den = st->codec->sample_rate;
+        }
     } else if (*p == 3) {
         if (os->psize > 8)
             ff_vorbis_comment(s, &st->metadata, p+7, os->psize-8);
