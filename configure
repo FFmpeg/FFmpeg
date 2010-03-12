@@ -2151,6 +2151,7 @@ case $target_os in
     netbsd)
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
+        add_cppflags -D_XOPEN_SOURCE=600
         ;;
     openbsd)
         enable malloc_aligned
