@@ -33,6 +33,7 @@
 /* For ff_codec_get_id(). */
 #include "riff.h"
 #include "isom.h"
+#include "rm.h"
 #include "matroska.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavutil/intfloat_readwrite.h"
@@ -1312,10 +1313,12 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             track->audio.out_samplerate = 8000;
             track->audio.channels = 1;
         } else if (codec_id == CODEC_ID_RA_288 || codec_id == CODEC_ID_COOK ||
-                   codec_id == CODEC_ID_ATRAC3) {
+                   codec_id == CODEC_ID_ATRAC3 || codec_id == CODEC_ID_SIPR) {
+            int flavor;
             init_put_byte(&b, track->codec_priv.data,track->codec_priv.size,
                           0, NULL, NULL, NULL, NULL);
-            url_fskip(&b, 24);
+            url_fskip(&b, 22);
+            flavor                       = get_be16(&b);
             track->audio.coded_framesize = get_be32(&b);
             url_fskip(&b, 12);
             track->audio.sub_packet_h    = get_be16(&b);
@@ -1326,6 +1329,11 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st->codec->block_align = track->audio.coded_framesize;
                 track->codec_priv.size = 0;
             } else {
+                if (codec_id == CODEC_ID_SIPR && flavor < 4) {
+                    const int sipr_bit_rate[4] = { 6504, 8496, 5000, 16000 };
+                    track->audio.sub_packet_size = ff_sipr_subpk_size[flavor];
+                    st->codec->bit_rate = sipr_bit_rate[flavor];
+                }
                 st->codec->block_align = track->audio.sub_packet_size;
                 extradata_offset = 78;
             }
@@ -1638,6 +1646,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
         for (n = 0; n < laces; n++) {
             if ((st->codec->codec_id == CODEC_ID_RA_288 ||
                  st->codec->codec_id == CODEC_ID_COOK ||
+                 st->codec->codec_id == CODEC_ID_SIPR ||
                  st->codec->codec_id == CODEC_ID_ATRAC3) &&
                  st->codec->block_align && track->audio.sub_packet_size) {
                 int a = st->codec->block_align;
@@ -1653,11 +1662,15 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                         for (x=0; x<h/2; x++)
                             memcpy(track->audio.buf+x*2*w+y*cfs,
                                    data+x*cfs, cfs);
+                    else if (st->codec->codec_id == CODEC_ID_SIPR)
+                        memcpy(track->audio.buf + y*w, data, w);
                     else
                         for (x=0; x<w/sps; x++)
                             memcpy(track->audio.buf+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), data+x*sps, sps);
 
                     if (++track->audio.sub_packet_cnt >= h) {
+                        if (st->codec->codec_id == CODEC_ID_SIPR)
+                            ff_rm_reorder_sipr_data(track->audio.buf, h, w);
                         track->audio.sub_packet_cnt = 0;
                         track->audio.pkt_cnt = h*w / a;
                     }
