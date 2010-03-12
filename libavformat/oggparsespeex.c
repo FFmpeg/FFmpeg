@@ -75,7 +75,7 @@ static int speex_header(AVFormatContext *s, int idx) {
         st->time_base.num = 1;
         st->time_base.den = st->codec->sample_rate;
     } else
-        vorbis_comment(s, p, os->psize);
+        ff_vorbis_comment(s, p, os->psize);
 
     spxp->seq++;
     return 1;

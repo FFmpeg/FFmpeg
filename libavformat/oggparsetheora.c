@@ -109,7 +109,7 @@ theora_header (AVFormatContext * s, int idx)
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
     } else if (os->buf[os->pstart] == 0x83) {
-        vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
+        ff_vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
     }
 
     st->codec->extradata = av_realloc (st->codec->extradata,

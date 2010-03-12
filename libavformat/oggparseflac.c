@@ -68,7 +68,7 @@ flac_header (AVFormatContext * s, int idx)
         st->time_base.num = 1;
         st->time_base.den = st->codec->sample_rate;
     } else if (mdt == FLAC_METADATA_TYPE_VORBIS_COMMENT) {
-        vorbis_comment (s, os->buf + os->pstart + 4, os->psize - 4);
+        ff_vorbis_comment (s, os->buf + os->pstart + 4, os->psize - 4);
     }
 
     return 1;

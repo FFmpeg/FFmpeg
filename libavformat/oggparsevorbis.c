@@ -42,7 +42,7 @@ const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
 };
 
 int
-vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
+ff_vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
 {
     const uint8_t *p = buf;
     const uint8_t *end = buf + size;
@@ -220,7 +220,7 @@ vorbis_header (AVFormatContext * s, int idx)
         st->time_base.den = st->codec->sample_rate;
     } else if (os->buf[os->pstart] == 3) {
         if (os->psize > 8)
-            vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
+            ff_vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
     } else {
         st->codec->extradata_size =
             fixup_vorbis_headers(s, priv, &st->codec->extradata);

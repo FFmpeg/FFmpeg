@@ -113,7 +113,7 @@ static int flac_read_header(AVFormatContext *s,
             }
             /* process supported blocks other than STREAMINFO */
             if (metadata_type == FLAC_METADATA_TYPE_VORBIS_COMMENT) {
-                if (vorbis_comment(s, buffer, metadata_size)) {
+                if (ff_vorbis_comment(s, buffer, metadata_size)) {
                     av_log(s, AV_LOG_WARNING, "error parsing VorbisComment metadata\n");
                 }
             }
