@@ -116,6 +116,7 @@ Configuration options:
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
   --enable-memalign-hack   emulate memalign, interferes with memory debuggers
   --enable-beos-netserver  enable BeOS netserver
+  --disable-everything     disable all components listed below
   --disable-encoder=NAME   disable encoder NAME
   --enable-encoder=NAME    enable encoder NAME
   --disable-encoders       disable all encoders
