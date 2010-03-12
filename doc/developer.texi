@@ -424,8 +424,8 @@ as well.
 Run 'make test' to test all the codecs and formats. Commands like
 'make regtest-mpeg2' can be used to run a single test. By default,
 make will abort if any test fails. To run all tests regardless,
-use make -k. To get a more verbose output, use 'V=1 make test' or
-'V=2 make test'.
+use make -k. To get a more verbose output, use 'make V=1 test' or
+'make V=2 test'.
 
 Run 'make fulltest' to test all the codecs, formats and FFserver.
 
