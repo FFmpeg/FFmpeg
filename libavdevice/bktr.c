@@ -45,6 +45,7 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <stdint.h>
 #include <strings.h>
 
 typedef struct {
@@ -53,7 +54,7 @@ typedef struct {
     int width, height;
     int frame_rate;
     int frame_rate_base;
-    u_int64_t per_frame;
+    uint64_t per_frame;
 } VideoData;
 
 
@@ -80,7 +81,7 @@ static int bktr_dev[] = { METEOR_DEV0, METEOR_DEV1, METEOR_DEV2,
 
 uint8_t *video_buf;
 size_t video_buf_size;
-u_int64_t last_frame_time;
+uint64_t last_frame_time;
 volatile sig_atomic_t nsignals;
 
 
@@ -90,7 +91,7 @@ static void catchsignal(int signal)
     return;
 }
 
-static int bktr_init(const char *video_device, int width, int height,
+static av_cold int bktr_init(const char *video_device, int width, int height,
     int format, int *video_fd, int *tuner_fd, int idev, double frequency)
 {
     struct meteor_geomet geo;
@@ -204,9 +205,9 @@ static int bktr_init(const char *video_device, int width, int height,
     return 0;
 }
 
-static void bktr_getframe(u_int64_t per_frame)
+static void bktr_getframe(uint64_t per_frame)
 {
-    u_int64_t curtime;
+    uint64_t curtime;
 
     curtime = av_gettime();
     if (!last_frame_time
@@ -265,7 +266,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->height = height;
     s->frame_rate = frame_rate;
     s->frame_rate_base = frame_rate_base;
-    s->per_frame = ((u_int64_t)1000000 * s->frame_rate_base) / s->frame_rate;
+    s->per_frame = ((uint64_t)1000000 * s->frame_rate_base) / s->frame_rate;
 
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->pix_fmt = PIX_FMT_YUV420P;
