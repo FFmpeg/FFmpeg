@@ -1649,7 +1649,7 @@ static SwsFunc getSwsFunc(int flags){
         return swScale_C;
 
 #else
-#if ARCH_PPC && COMPILE_ALTIVEC
+#if ARCH_PPC && defined COMPILE_ALTIVEC
     if (flags & SWS_CPU_CAPS_ALTIVEC)
         return swScale_altivec;
     else
