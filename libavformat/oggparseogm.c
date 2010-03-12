@@ -43,8 +43,7 @@ ogm_header(AVFormatContext *s, int idx)
 
     if(!(*p & 1))
         return 0;
-    if(*p != 1)
-        return 1;
+    if(*p == 1) {
 
     p++;
 
@@ -92,6 +91,10 @@ ogm_header(AVFormatContext *s, int idx)
         st->codec->sample_rate = spu * 10000000 / time_unit;
         st->time_base.num = 1;
         st->time_base.den = st->codec->sample_rate;
+    }
+    } else if (*p == 3) {
+        if (os->psize > 8)
+            ff_vorbis_comment(s, &st->metadata, p+7, os->psize-8);
     }
 
     return 1;
