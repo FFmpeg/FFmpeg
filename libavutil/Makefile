@@ -9,6 +9,7 @@ HEADERS = adler32.h                                                     \
           base64.h                                                      \
           common.h                                                      \
           crc.h                                                         \
+          error.h                                                       \
           fifo.h                                                        \
           intfloat_readwrite.h                                          \
           log.h                                                         \
