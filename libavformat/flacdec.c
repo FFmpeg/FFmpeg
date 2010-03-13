@@ -70,7 +70,7 @@ static int flac_read_header(AVFormatContext *s,
             }
             if (get_buffer(s->pb, buffer, metadata_size) != metadata_size) {
                 av_freep(&buffer);
-                return AVERROR_IO;
+                return AVERROR(EIO);
             }
             break;
         /* skip metadata block for unsupported types */

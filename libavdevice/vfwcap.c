@@ -240,7 +240,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if(!ap->time_base.den) {
         av_log(s, AV_LOG_ERROR, "A time base must be specified.\n");
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     ctx->s = s;
@@ -248,7 +248,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ctx->hwnd = capCreateCaptureWindow(NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, 0);
     if(!ctx->hwnd) {
         av_log(s, AV_LOG_ERROR, "Could not create capture window.\n");
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     /* If atoi fails, devnum==0 and the default device is used */
@@ -390,7 +390,7 @@ fail_bi:
 
 fail_io:
     vfw_read_close(s);
-    return AVERROR_IO;
+    return AVERROR(EIO);
 }
 
 static int vfw_read_packet(AVFormatContext *s, AVPacket *pkt)

@@ -97,7 +97,7 @@ static int sox_read_header(AVFormatContext *s,
         char *comment = av_malloc(comment_size+1);
         if (get_buffer(pb, comment, comment_size) != comment_size) {
             av_freep(&comment);
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
         comment[comment_size] = 0;
 

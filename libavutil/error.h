@@ -36,9 +36,9 @@
 
 #if LIBAVUTIL_VERSION_MAJOR < 51
 #define AVERROR_UNKNOWN     AVERROR(EINVAL)  /**< unknown error */
+#define AVERROR_IO          AVERROR(EIO)     /**< I/O error */
 #endif
 
-#define AVERROR_IO          AVERROR(EIO)     /**< I/O error */
 #define AVERROR_NUMEXPECTED AVERROR(EDOM)    /**< Number syntax expected in filename. */
 #define AVERROR_INVALIDDATA AVERROR(EINVAL)  /**< invalid data found */
 #define AVERROR_NOMEM       AVERROR(ENOMEM)  /**< not enough memory */

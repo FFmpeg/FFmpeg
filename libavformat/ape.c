@@ -338,9 +338,9 @@ static int ape_read_packet(AVFormatContext * s, AVPacket * pkt)
     uint32_t extra_size = 8;
 
     if (url_feof(s->pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
     if (ape->currentframe > ape->totalframes)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     url_fseek (s->pb, ape->frames[ape->currentframe].pos, SEEK_SET);
 

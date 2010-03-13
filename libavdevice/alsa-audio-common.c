@@ -74,7 +74,7 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
     if (res < 0) {
         av_log(ctx, AV_LOG_ERROR, "cannot open audio device %s (%s)\n",
                audio_device, snd_strerror(res));
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     res = snd_pcm_hw_params_malloc(&hw_params);
@@ -153,7 +153,7 @@ fail:
     snd_pcm_hw_params_free(hw_params);
 fail1:
     snd_pcm_close(h);
-    return AVERROR_IO;
+    return AVERROR(EIO);
 }
 
 av_cold int ff_alsa_close(AVFormatContext *s1)
@@ -175,7 +175,7 @@ int ff_alsa_xrun_recover(AVFormatContext *s1, int err)
         if (err < 0) {
             av_log(s1, AV_LOG_ERROR, "cannot recover from underrun (snd_pcm_prepare failed: %s)\n", snd_strerror(err));
 
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
     } else if (err == -ESTRPIPE) {
         av_log(s1, AV_LOG_ERROR, "-ESTRPIPE... Unsupported!\n");

@@ -293,13 +293,13 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t left      = CAF_MAX_PKT_SIZE;
 
     if (url_feof(pb))
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     /* don't read past end of data chunk */
     if (caf->data_size > 0) {
         left = (caf->data_start + caf->data_size) - url_ftell(pb);
         if (left <= 0)
-            return AVERROR_IO;
+            return AVERROR(EIO);
     }
 
     pkt_frames = caf->frames_per_packet;
@@ -317,12 +317,12 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt_size   = caf->num_bytes - st->index_entries[caf->packet_cnt].pos;
             pkt_frames = st->duration   - st->index_entries[caf->packet_cnt].timestamp;
         } else {
-            return AVERROR_IO;
+            return AVERROR(EIO);
         }
     }
 
     if (pkt_size == 0 || pkt_frames == 0 || pkt_size > left)
-        return AVERROR_IO;
+        return AVERROR(EIO);
 
     res = av_get_packet(pb, pkt, pkt_size);
     if (res < 0)
