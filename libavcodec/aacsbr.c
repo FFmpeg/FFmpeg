@@ -1132,8 +1132,7 @@ static void sbr_qmf_analysis(DSPContext *dsp, RDFTContext *rdft, const float *in
     memcpy(W[0], W[1], sizeof(W[0]));
     memcpy(x    , x+1024, (320-32)*sizeof(x[0]));
     if (scale != 1.0f)
-        for (i = 0; i < 1024; i++)
-            x[288 + i] = in[i] * scale;
+        dsp->vector_fmul_scalar(x+288, in, scale, 1024);
     else
         memcpy(x+288, in, 1024*sizeof(*x));
     for (i = 0; i < 32; i++) { // numTimeSlots*RATE = 16*2 as 960 sample frames
