@@ -286,22 +286,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
 }
 
 /*
- * This function wipes out all of the fragment data.
- */
-static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
-{
-    int i;
-
-    /* zero out all of the fragment information */
-    for (i = 0; i < s->fragment_count; i++) {
-        s->all_fragments[i].motion_x = 0;
-        s->all_fragments[i].motion_y = 0;
-        s->all_fragments[i].dc = 0;
-        s->all_fragments[i].qpi = 0;
-    }
-}
-
-/*
  * This function sets up the dequantization tables used for a particular
  * frame.
  */
@@ -1771,7 +1755,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     s->current_frame.qscale_table= s->qscale_table; //FIXME allocate individual tables per AVFrame
     s->current_frame.qstride= 0;
 
-    init_frame(s, &gb);
+    memset(s->all_fragments, 0, s->fragment_count * sizeof(Vp3Fragment));
 
     if (unpack_superblocks(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_superblocks\n");
