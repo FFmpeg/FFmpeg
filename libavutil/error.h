@@ -37,11 +37,11 @@
 #if LIBAVUTIL_VERSION_MAJOR < 51
 #define AVERROR_UNKNOWN     AVERROR(EINVAL)  /**< unknown error */
 #define AVERROR_IO          AVERROR(EIO)     /**< I/O error */
+#define AVERROR_NOMEM       AVERROR(ENOMEM)  /**< not enough memory */
 #endif
 
 #define AVERROR_NUMEXPECTED AVERROR(EDOM)    /**< Number syntax expected in filename. */
 #define AVERROR_INVALIDDATA AVERROR(EINVAL)  /**< invalid data found */
-#define AVERROR_NOMEM       AVERROR(ENOMEM)  /**< not enough memory */
 #define AVERROR_NOFMT       AVERROR(EILSEQ)  /**< unknown format */
 #define AVERROR_NOTSUPP     AVERROR(ENOSYS)  /**< Operation not supported. */
 #define AVERROR_NOENT       AVERROR(ENOENT)  /**< No such file or directory. */
