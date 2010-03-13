@@ -1126,14 +1126,14 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
  */
 static void sbr_qmf_analysis(DSPContext *dsp, RDFTContext *rdft, const float *in, float *x,
                              float z[320], float W[2][32][32][2],
-                             float bias, float scale)
+                             float scale)
 {
     int i, k;
     memcpy(W[0], W[1], sizeof(W[0]));
     memcpy(x    , x+1024, (320-32)*sizeof(x[0]));
-    if (scale != 1.0f || bias != 0.0f)
+    if (scale != 1.0f)
         for (i = 0; i < 1024; i++)
-            x[288 + i] = (in[i] - bias) * scale;
+            x[288 + i] = in[i] * scale;
     else
         memcpy(x+288, in, 1024*sizeof(*x));
     for (i = 0; i < 32; i++) { // numTimeSlots*RATE = 16*2 as 960 sample frames
@@ -1719,7 +1719,7 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int ch,
     /* decode channel */
     sbr_qmf_analysis(&ac->dsp, &sbr->rdft, in, sbr->data[ch].analysis_filterbank_samples,
                      (float*)sbr->qmf_filter_scratch,
-                     sbr->data[ch].W, ac->add_bias, 1/(-1024 * ac->sf_scale));
+                     sbr->data[ch].W, 1/(-1024 * ac->sf_scale));
     sbr_lf_gen(ac, sbr, sbr->X_low, sbr->data[ch].W);
     if (sbr->start) {
         sbr_hf_inverse_filter(sbr->alpha0, sbr->alpha1, sbr->X_low, sbr->k[0]);

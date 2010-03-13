@@ -1719,7 +1719,7 @@ static void apply_tns(float coef[1024], TemporalNoiseShaping *tns,
 /**
  * Conduct IMDCT and windowing.
  */
-static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
+static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce, float bias)
 {
     IndividualChannelStream *ics = &sce->ics;
     float *in    = sce->coeffs;
@@ -1751,29 +1751,29 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
      */
     if ((ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE) &&
             (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
-        ac->dsp.vector_fmul_window(    out,               saved,            buf,         lwindow_prev, ac->add_bias, 512);
+        ac->dsp.vector_fmul_window(    out,               saved,            buf,         lwindow_prev, bias, 512);
     } else {
         for (i = 0; i < 448; i++)
-            out[i] = saved[i] + ac->add_bias;
+            out[i] = saved[i] + bias;
 
         if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
-            ac->dsp.vector_fmul_window(out + 448 + 0*128, saved + 448,      buf + 0*128, swindow_prev, ac->add_bias, 64);
-            ac->dsp.vector_fmul_window(out + 448 + 1*128, buf + 0*128 + 64, buf + 1*128, swindow,      ac->add_bias, 64);
-            ac->dsp.vector_fmul_window(out + 448 + 2*128, buf + 1*128 + 64, buf + 2*128, swindow,      ac->add_bias, 64);
-            ac->dsp.vector_fmul_window(out + 448 + 3*128, buf + 2*128 + 64, buf + 3*128, swindow,      ac->add_bias, 64);
-            ac->dsp.vector_fmul_window(temp,              buf + 3*128 + 64, buf + 4*128, swindow,      ac->add_bias, 64);
+            ac->dsp.vector_fmul_window(out + 448 + 0*128, saved + 448,      buf + 0*128, swindow_prev, bias, 64);
+            ac->dsp.vector_fmul_window(out + 448 + 1*128, buf + 0*128 + 64, buf + 1*128, swindow,      bias, 64);
+            ac->dsp.vector_fmul_window(out + 448 + 2*128, buf + 1*128 + 64, buf + 2*128, swindow,      bias, 64);
+            ac->dsp.vector_fmul_window(out + 448 + 3*128, buf + 2*128 + 64, buf + 3*128, swindow,      bias, 64);
+            ac->dsp.vector_fmul_window(temp,              buf + 3*128 + 64, buf + 4*128, swindow,      bias, 64);
             memcpy(                    out + 448 + 4*128, temp, 64 * sizeof(float));
         } else {
-            ac->dsp.vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, ac->add_bias, 64);
+            ac->dsp.vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, bias, 64);
             for (i = 576; i < 1024; i++)
-                out[i] = buf[i-512] + ac->add_bias;
+                out[i] = buf[i-512] + bias;
         }
     }
 
     // buffer update
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         for (i = 0; i < 64; i++)
-            saved[i] = temp[64 + i] - ac->add_bias;
+            saved[i] = temp[64 + i] - bias;
         ac->dsp.vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 0, 64);
         ac->dsp.vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 0, 64);
         ac->dsp.vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 0, 64);
@@ -1884,6 +1884,7 @@ static void apply_channel_coupling(AACContext *ac, ChannelElement *cc,
 static void spectral_to_sample(AACContext *ac)
 {
     int i, type;
+    float imdct_bias = (ac->m4ac.sbr <= 0) ? ac->add_bias : 0.0f;
     for (type = 3; type >= 0; type--) {
         for (i = 0; i < MAX_ELEM_ID; i++) {
             ChannelElement *che = ac->che[type][i];
@@ -1897,14 +1898,14 @@ static void spectral_to_sample(AACContext *ac)
                 if (type <= TYPE_CPE)
                     apply_channel_coupling(ac, che, type, i, BETWEEN_TNS_AND_IMDCT, apply_dependent_coupling);
                 if (type != TYPE_CCE || che->coup.coupling_point == AFTER_IMDCT) {
-                    imdct_and_windowing(ac, &che->ch[0]);
+                    imdct_and_windowing(ac, &che->ch[0], imdct_bias);
                     if (ac->m4ac.sbr > 0) {
                         ff_sbr_dequant(ac, &che->sbr, type == TYPE_CPE ? TYPE_CPE : TYPE_SCE);
                         ff_sbr_apply(ac, &che->sbr, 0, che->ch[0].ret, che->ch[0].ret);
                     }
                 }
                 if (type == TYPE_CPE) {
-                    imdct_and_windowing(ac, &che->ch[1]);
+                    imdct_and_windowing(ac, &che->ch[1], imdct_bias);
                     if (ac->m4ac.sbr > 0)
                         ff_sbr_apply(ac, &che->sbr, 1, che->ch[1].ret, che->ch[1].ret);
                 }
