@@ -145,6 +145,7 @@ static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 
     outpicref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
     outpicref->pts = picref->pts;
+    outpicref->pos = picref->pos;
     outlink->outpic = outpicref;
 
     av_reduce(&outpicref->pixel_aspect.num, &outpicref->pixel_aspect.den,
