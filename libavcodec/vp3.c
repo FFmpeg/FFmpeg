@@ -608,8 +608,8 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
 {
     int j, k, sb_x, sb_y;
     int coding_mode;
-    int motion_x[6];
-    int motion_y[6];
+    int motion_x[4];
+    int motion_y[4];
     int last_motion_x = 0;
     int last_motion_y = 0;
     int prior_last_motion_x = 0;
@@ -619,9 +619,6 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
 
     if (s->keyframe)
         return 0;
-
-    memset(motion_x, 0, 6 * sizeof(int));
-    memset(motion_y, 0, 6 * sizeof(int));
 
     /* coding mode 0 is the VLC scheme; 1 is the fixed code scheme */
     coding_mode = get_bits1(gb);
@@ -670,7 +667,6 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
 
                 /* fetch 4 vectors from the bitstream, one for each
                  * Y fragment, then average for the C fragment vectors */
-                motion_x[4] = motion_y[4] = 0;
                 for (k = 0; k < 4; k++) {
                     current_fragment = BLOCK_Y*s->fragment_width + BLOCK_X;
                     if (s->all_fragments[current_fragment].coding_method != MODE_COPY) {
@@ -687,14 +683,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                         motion_x[k] = 0;
                         motion_y[k] = 0;
                     }
-                    motion_x[4] += motion_x[k];
-                    motion_y[4] += motion_y[k];
                 }
-
-                motion_x[5]=
-                motion_x[4]= RSHIFT(motion_x[4], 2);
-                motion_y[5]=
-                motion_y[4]= RSHIFT(motion_y[4], 2);
                 break;
 
             case MODE_INTER_LAST_MV:
@@ -740,16 +729,15 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     s->all_fragments[current_fragment].motion_y = motion_y[0];
                 }
             }
+                if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
+                    motion_x[0] = RSHIFT(motion_x[0] + motion_x[1] + motion_x[2] + motion_x[3], 2);
+                    motion_y[0] = RSHIFT(motion_y[0] + motion_y[1] + motion_y[2] + motion_y[3], 2);
+                }
             for (k = 0; k < 2; k++) {
                 current_fragment = s->fragment_start[k+1] +
                     mb_y*(s->fragment_width>>1) + mb_x;
-                if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
-                    s->all_fragments[current_fragment].motion_x = motion_x[k+4];
-                    s->all_fragments[current_fragment].motion_y = motion_y[k+4];
-                } else {
                     s->all_fragments[current_fragment].motion_x = motion_x[0];
                     s->all_fragments[current_fragment].motion_y = motion_y[0];
-                }
             }
         }
         }
