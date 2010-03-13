@@ -48,8 +48,6 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx);
 typedef struct Vp3Fragment {
     int16_t dc;
     uint8_t coding_method;
-    int8_t motion_x;
-    int8_t motion_y;
     uint8_t qpi;
 } Vp3Fragment;
 
@@ -165,6 +163,8 @@ typedef struct Vp3DecodeContext {
     Vp3Fragment *all_fragments;
     int fragment_start[3];
     int data_offset[3];
+
+    int8_t (*motion_val[2])[2];
 
     ScanTable scantable;
 
@@ -624,7 +624,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
     int prior_last_motion_y = 0;
     int current_macroblock;
     int current_fragment;
-    Vp3Fragment *frag;
+    int frag;
 
     if (s->keyframe)
         return 0;
@@ -731,19 +731,13 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 current_fragment =
                     BLOCK_Y*s->fragment_width[0] + BLOCK_X;
                 if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
-                    s->all_fragments[current_fragment].motion_x = motion_x[k];
-                    s->all_fragments[current_fragment].motion_y = motion_y[k];
+                    s->motion_val[0][current_fragment][0] = motion_x[k];
+                    s->motion_val[0][current_fragment][1] = motion_y[k];
                 } else {
-                    s->all_fragments[current_fragment].motion_x = motion_x[0];
-                    s->all_fragments[current_fragment].motion_y = motion_y[0];
+                    s->motion_val[0][current_fragment][0] = motion_x[0];
+                    s->motion_val[0][current_fragment][1] = motion_y[0];
                 }
             }
-
-#define SET_CHROMA_MV(mx, my) \
-    frag[s->fragment_start[1]].motion_x = mx; \
-    frag[s->fragment_start[1]].motion_y = my; \
-    frag[s->fragment_start[2]].motion_x = mx; \
-    frag[s->fragment_start[2]].motion_y = my
 
             if (s->chroma_y_shift) {
                 if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
@@ -752,8 +746,9 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 }
                 motion_x[0] = (motion_x[0]>>1) | (motion_x[0]&1);
                 motion_y[0] = (motion_y[0]>>1) | (motion_y[0]&1);
-                frag = s->all_fragments + mb_y*s->fragment_width[1] + mb_x;
-                SET_CHROMA_MV(motion_x[0], motion_y[0]);
+                frag = mb_y*s->fragment_width[1] + mb_x;
+                s->motion_val[1][frag][0] = motion_x[0];
+                s->motion_val[1][frag][1] = motion_y[0];
             } else if (s->chroma_x_shift) {
                 if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
                     motion_x[0] = RSHIFT(motion_x[0] + motion_x[1], 1);
@@ -767,18 +762,21 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 motion_x[0] = (motion_x[0]>>1) | (motion_x[0]&1);
                 motion_x[1] = (motion_x[1]>>1) | (motion_x[1]&1);
 
-                frag = s->all_fragments + 2*mb_y*s->fragment_width[1] + mb_x;
+                frag = 2*mb_y*s->fragment_width[1] + mb_x;
                 for (k = 0; k < 2; k++) {
-                    SET_CHROMA_MV(motion_x[k], motion_y[k]);
+                    s->motion_val[1][frag][0] = motion_x[k];
+                    s->motion_val[1][frag][1] = motion_y[k];
                     frag += s->fragment_width[1];
                 }
             } else {
                 for (k = 0; k < 4; k++) {
-                    frag = s->all_fragments + BLOCK_Y*s->fragment_width[1] + BLOCK_X;
+                    frag = BLOCK_Y*s->fragment_width[1] + BLOCK_X;
                     if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
-                        SET_CHROMA_MV(motion_x[k], motion_y[k]);
+                        s->motion_val[1][frag][0] = motion_x[k];
+                        s->motion_val[1][frag][1] = motion_y[k];
                     } else {
-                        SET_CHROMA_MV(motion_x[0], motion_y[0]);
+                        s->motion_val[1][frag][0] = motion_x[0];
+                        s->motion_val[1][frag][1] = motion_y[0];
                     }
                 }
             }
@@ -1354,6 +1352,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         int stride            = s->current_frame.linesize[plane];
         int plane_width       = s->width  >> (plane && s->chroma_x_shift);
         int plane_height      = s->height >> (plane && s->chroma_y_shift);
+        int8_t (*motion_val)[2] = s->motion_val[!!plane];
 
         int sb_x, sb_y        = slice << (!plane && s->chroma_y_shift);
         int slice_height      = sb_y + 1 + (!plane && s->chroma_y_shift);
@@ -1408,8 +1407,8 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                     if ((s->all_fragments[i].coding_method > MODE_INTRA) &&
                         (s->all_fragments[i].coding_method != MODE_USING_GOLDEN)) {
                         int src_x, src_y;
-                        motion_x = s->all_fragments[i].motion_x;
-                        motion_y = s->all_fragments[i].motion_y;
+                        motion_x = motion_val[y*fragment_width + x][0];
+                        motion_y = motion_val[y*fragment_width + x][1];
 
                         src_x= (motion_x>>1) + 8*x;
                         src_y= (motion_y>>1) + 8*y;
@@ -1568,8 +1567,11 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     s->all_fragments = av_malloc(s->fragment_count * sizeof(Vp3Fragment));
     s->coded_fragment_list[0] = av_malloc(s->fragment_count * sizeof(int));
     s->dct_tokens_base = av_malloc(64*s->fragment_count * sizeof(*s->dct_tokens_base));
+    s->motion_val[0] = av_malloc(y_fragment_count * sizeof(*s->motion_val[0]));
+    s->motion_val[1] = av_malloc(c_fragment_count * sizeof(*s->motion_val[1]));
+
     if (!s->superblock_coding || !s->all_fragments || !s->dct_tokens_base ||
-        !s->coded_fragment_list[0]) {
+        !s->coded_fragment_list[0] || !s->motion_val[0] || !s->motion_val[1]) {
         vp3_decode_end(avctx);
         return -1;
     }
@@ -1874,6 +1876,8 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     av_free(s->dct_tokens_base);
     av_free(s->superblock_fragments);
     av_free(s->macroblock_coding);
+    av_free(s->motion_val[0]);
+    av_free(s->motion_val[1]);
 
     for (i = 0; i < 16; i++) {
         free_vlc(&s->dc_vlc[i]);
