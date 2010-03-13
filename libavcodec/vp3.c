@@ -464,11 +464,6 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
 
             /* if the fragment is in bounds, check its coding status */
             current_fragment = s->superblock_fragments[i * 16 + j];
-            if (current_fragment >= s->fragment_count) {
-                av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_superblocks(): bad fragment number (%d >= %d)\n",
-                    current_fragment, s->fragment_count);
-                return 1;
-            }
             if (current_fragment != -1) {
                 int coded = s->superblock_coding[i];
 
