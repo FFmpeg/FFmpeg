@@ -1594,6 +1594,7 @@ static int input_request_frame(AVFilterLink *link)
     av_free_packet(&pkt);
 
     picref->pts = pts;
+    picref->pos = pkt.pos;
     picref->pixel_aspect = priv->is->video_st->codec->sample_aspect_ratio;
     avfilter_start_frame(link, avfilter_ref_pic(picref, ~0));
     avfilter_draw_slice(link, 0, link->h, 1);
@@ -1657,7 +1658,7 @@ static int output_query_formats(AVFilterContext *ctx)
 }
 
 static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
-                                    int64_t *pts)
+                                    int64_t *pts, int64_t *pos)
 {
     AVFilterPicRef *pic;
 
@@ -1669,6 +1670,7 @@ static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
 
     frame->opaque = pic;
     *pts          = pic->pts;
+    *pos          = pic->pos;
 
     memcpy(frame->data,     pic->data,     sizeof(frame->data));
     memcpy(frame->linesize, pic->linesize, sizeof(frame->linesize));
@@ -1695,7 +1697,7 @@ static int video_thread(void *arg)
 {
     VideoState *is = arg;
     AVFrame *frame= avcodec_alloc_frame();
-    int64_t pts_int;
+    int64_t pts_int, pos;
     double pts;
     int ret;
 
@@ -1748,7 +1750,7 @@ static int video_thread(void *arg)
         while (is->paused && !is->videoq.abort_request)
             SDL_Delay(10);
 #if CONFIG_AVFILTER
-        ret = get_filtered_video_frame(filt_out, frame, &pts_int);
+        ret = get_filtered_video_frame(filt_out, frame, &pts_int, &pos);
 #else
         ret = get_video_frame(is, frame, &pts_int, &pkt);
 #endif
@@ -1761,7 +1763,7 @@ static int video_thread(void *arg)
         pts = pts_int*av_q2d(is->video_st->time_base);
 
 #if CONFIG_AVFILTER
-        ret = output_picture2(is, frame, pts,  -1); /* fixme: unknown pos */
+        ret = output_picture2(is, frame, pts, pos);
 #else
         ret = output_picture2(is, frame, pts,  pkt.pos);
         av_free_packet(&pkt);
