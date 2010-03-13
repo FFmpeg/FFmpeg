@@ -260,105 +260,26 @@ typedef struct Vp3DecodeContext {
  */
 static int init_block_mapping(Vp3DecodeContext *s)
 {
-    int i, j;
-    signed int hilbert_walk_mb[4];
+    int sb_x, sb_y, plane;
+    int x, y, i, j = 0;
 
-    int current_fragment = 0;
-    int current_width = 0;
-    int current_height = 0;
-    int right_edge = 0;
-    int bottom_edge = 0;
-    int superblock_row_inc = 0;
-    int mapping_index = 0;
+    for (plane = 0; plane < 3; plane++) {
+        int sb_width    = plane ? s->c_superblock_width  : s->y_superblock_width;
+        int sb_height   = plane ? s->c_superblock_height : s->y_superblock_height;
+        int frag_width  = s->fragment_width  >> !!plane;
+        int frag_height = s->fragment_height >> !!plane;
 
-    static const signed char travel_width[16] = {
-         1,  1,  0, -1,
-         0,  0,  1,  0,
-         1,  0,  1,  0,
-         0, -1,  0,  1
-    };
+        for (sb_y = 0; sb_y < sb_height; sb_y++)
+            for (sb_x = 0; sb_x < sb_width; sb_x++)
+                for (i = 0; i < 16; i++) {
+                    x = 4*sb_x + hilbert_offset[i][0];
+                    y = 4*sb_y + hilbert_offset[i][1];
 
-    static const signed char travel_height[16] = {
-         0,  0,  1,  0,
-         1,  1,  0, -1,
-         0,  1,  0, -1,
-        -1,  0, -1,  0
-    };
-
-    hilbert_walk_mb[0] = 1;
-    hilbert_walk_mb[1] = s->macroblock_width;
-    hilbert_walk_mb[2] = 1;
-    hilbert_walk_mb[3] = -s->macroblock_width;
-
-    /* iterate through each superblock (all planes) and map the fragments */
-    for (i = 0; i < s->superblock_count; i++) {
-        /* time to re-assign the limits? */
-        if (i == 0) {
-
-            /* start of Y superblocks */
-            right_edge = s->fragment_width;
-            bottom_edge = s->fragment_height;
-            current_width = -1;
-            current_height = 0;
-            superblock_row_inc = 3 * s->fragment_width -
-                (s->y_superblock_width * 4 - s->fragment_width);
-
-            /* the first operation for this variable is to advance by 1 */
-            current_fragment = -1;
-
-        } else if (i == s->u_superblock_start) {
-
-            /* start of U superblocks */
-            right_edge = s->fragment_width / 2;
-            bottom_edge = s->fragment_height / 2;
-            current_width = -1;
-            current_height = 0;
-            superblock_row_inc = 3 * (s->fragment_width / 2) -
-                (s->c_superblock_width * 4 - s->fragment_width / 2);
-
-            /* the first operation for this variable is to advance by 1 */
-            current_fragment = s->fragment_start[1] - 1;
-
-        } else if (i == s->v_superblock_start) {
-
-            /* start of V superblocks */
-            right_edge = s->fragment_width / 2;
-            bottom_edge = s->fragment_height / 2;
-            current_width = -1;
-            current_height = 0;
-            superblock_row_inc = 3 * (s->fragment_width / 2) -
-                (s->c_superblock_width * 4 - s->fragment_width / 2);
-
-            /* the first operation for this variable is to advance by 1 */
-            current_fragment = s->fragment_start[2] - 1;
-
-        }
-
-        if (current_width >= right_edge - 1) {
-            /* reset width and move to next superblock row */
-            current_width = -1;
-            current_height += 4;
-
-            /* fragment is now at the start of a new superblock row */
-            current_fragment += superblock_row_inc;
-        }
-
-        /* iterate through all 16 fragments in a superblock */
-        for (j = 0; j < 16; j++) {
-            current_fragment += travel_width[j] + right_edge * travel_height[j];
-            current_width += travel_width[j];
-            current_height += travel_height[j];
-
-            /* check if the fragment is in bounds */
-            if ((current_width < right_edge) &&
-                (current_height < bottom_edge)) {
-                s->superblock_fragments[mapping_index] = current_fragment;
-            } else {
-                s->superblock_fragments[mapping_index] = -1;
-            }
-
-            mapping_index++;
-        }
+                    if (x < frag_width && y < frag_height)
+                        s->superblock_fragments[j++] = s->fragment_start[plane] + y*frag_width + x;
+                    else
+                        s->superblock_fragments[j++] = -1;
+                }
     }
 
     return 0;  /* successful path out */
