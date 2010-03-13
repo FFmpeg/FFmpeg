@@ -12,6 +12,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-03-13 - r22501 - lavu 50.12.0 - error.h
+  Move error code definitions from libavcodec/avcodec.h to
+  the new public header libavutil/error.h.
+
 2010-03-07 - r22291 - lavc 52.56.0 - avfft.h
   Add public FFT interface.
 
