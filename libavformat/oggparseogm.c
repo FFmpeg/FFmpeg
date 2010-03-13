@@ -149,6 +149,9 @@ ogm_packet(AVFormatContext *s, int idx)
     os->pstart += lb + 1;
     os->psize -= lb + 1;
 
+    while (lb--)
+        os->pduration += p[lb+1] << (lb*8);
+
     return 0;
 }
 
