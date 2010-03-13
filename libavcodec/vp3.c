@@ -294,8 +294,8 @@ static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
 
     /* zero out all of the fragment information */
     for (i = 0; i < s->fragment_count; i++) {
-        s->all_fragments[i].motion_x = 127;
-        s->all_fragments[i].motion_y = 127;
+        s->all_fragments[i].motion_x = 0;
+        s->all_fragments[i].motion_y = 0;
         s->all_fragments[i].dc = 0;
         s->all_fragments[i].qpi = 0;
     }
@@ -1402,8 +1402,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 
                         src_x= (motion_x>>1) + 8*x;
                         src_y= (motion_y>>1) + 8*y;
-                        if ((motion_x == 127) || (motion_y == 127))
-                            av_log(s->avctx, AV_LOG_ERROR, " help! got invalid motion vector! (%X, %X)\n", motion_x, motion_y);
 
                         motion_halfpel_index = motion_x & 0x01;
                         motion_source += (motion_x >> 1);
