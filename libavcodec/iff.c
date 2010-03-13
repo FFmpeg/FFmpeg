@@ -61,6 +61,7 @@ int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     IffContext *s = avctx->priv_data;
+    int err;
 
     if (avctx->bits_per_coded_sample <= 8) {
         avctx->pix_fmt = PIX_FMT_PAL8;
@@ -76,9 +77,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     s->frame.reference = 1;
-    if (avctx->get_buffer(avctx, &s->frame) < 0) {
+    if ((err = avctx->get_buffer(avctx, &s->frame) < 0)) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return AVERROR_UNKNOWN;
+        return err;
     }
 
     return avctx->bits_per_coded_sample <= 8 ?
