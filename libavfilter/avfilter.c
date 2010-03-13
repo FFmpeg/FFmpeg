@@ -171,11 +171,12 @@ int avfilter_config_links(AVFilterContext *filter)
 static void dprintf_picref(void *ctx, AVFilterPicRef *picref, int end)
 {
     dprintf(ctx,
-            "picref[%p data[%p, %p, %p, %p] linesize[%d, %d, %d, %d] pts:%"PRId64" a:%d/%d s:%dx%d]%s",
+            "picref[%p data[%p, %p, %p, %p] linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64" a:%d/%d s:%dx%d]%s",
             picref,
             picref->data    [0], picref->data    [1], picref->data    [2], picref->data    [3],
             picref->linesize[0], picref->linesize[1], picref->linesize[2], picref->linesize[3],
-            picref->pts, picref->pixel_aspect.num, picref->pixel_aspect.den, picref->w, picref->h,
+            picref->pts, picref->pos,
+            picref->pixel_aspect.num, picref->pixel_aspect.den, picref->w, picref->h,
             end ? "\n" : "");
 }
 
@@ -263,6 +264,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
         link->cur_pic = avfilter_default_get_video_buffer(link, dst->min_perms, link->w, link->h);
         link->srcpic = picref;
         link->cur_pic->pts = link->srcpic->pts;
+        link->cur_pic->pos = link->srcpic->pos;
         link->cur_pic->pixel_aspect = link->srcpic->pixel_aspect;
     }
     else

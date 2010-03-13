@@ -74,6 +74,7 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     if(out) {
         out->outpic      = avfilter_get_video_buffer(out, AV_PERM_WRITE, out->w, out->h);
         out->outpic->pts = picref->pts;
+        out->outpic->pos = picref->pos;
         out->outpic->pixel_aspect = picref->pixel_aspect;
         avfilter_start_frame(out, avfilter_ref_pic(out->outpic, ~0));
     }

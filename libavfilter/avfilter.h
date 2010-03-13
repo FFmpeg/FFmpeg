@@ -105,6 +105,7 @@ typedef struct AVFilterPicRef
     int h;                      ///< image height
 
     int64_t pts;                ///< presentation timestamp in units of 1/AV_TIME_BASE
+    int64_t pos;                ///< byte position in stream, -1 if unknown
 
     AVRational pixel_aspect;    ///< pixel aspect ratio
 
