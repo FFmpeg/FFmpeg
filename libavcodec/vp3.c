@@ -158,8 +158,8 @@ typedef struct Vp3DecodeContext {
     int macroblock_height;
 
     int fragment_count;
-    int fragment_width;
-    int fragment_height;
+    int fragment_width[2];
+    int fragment_height[2];
 
     Vp3Fragment *all_fragments;
     int fragment_start[3];
@@ -266,8 +266,8 @@ static int init_block_mapping(Vp3DecodeContext *s)
     for (plane = 0; plane < 3; plane++) {
         int sb_width    = plane ? s->c_superblock_width  : s->y_superblock_width;
         int sb_height   = plane ? s->c_superblock_height : s->y_superblock_height;
-        int frag_width  = s->fragment_width  >> !!plane;
-        int frag_height = s->fragment_height >> !!plane;
+        int frag_width  = s->fragment_width[!!plane];
+        int frag_height = s->fragment_height[!!plane];
 
         for (sb_y = 0; sb_y < sb_height; sb_y++)
             for (sb_x = 0; sb_x < sb_width; sb_x++)
@@ -559,7 +559,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                 /* coding modes are only stored if the macroblock has at least one
                  * luma block coded, otherwise it must be INTER_NO_MV */
                 for (k = 0; k < 4; k++) {
-                    current_fragment = BLOCK_Y*s->fragment_width + BLOCK_X;
+                    current_fragment = BLOCK_Y*s->fragment_width[0] + BLOCK_X;
                     if (s->all_fragments[current_fragment].coding_method != MODE_COPY)
                         break;
                 }
@@ -578,7 +578,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                 s->macroblock_coding[current_macroblock] = coding_mode;
                 for (k = 0; k < 4; k++) {
                     current_fragment =
-                        BLOCK_Y*s->fragment_width + BLOCK_X;
+                        BLOCK_Y*s->fragment_width[0] + BLOCK_X;
                     if (s->all_fragments[current_fragment].coding_method !=
                         MODE_COPY)
                         s->all_fragments[current_fragment].coding_method =
@@ -586,7 +586,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                 }
                 for (k = 0; k < 2; k++) {
                     current_fragment = s->fragment_start[k+1] +
-                        mb_y*(s->fragment_width>>1) + mb_x;
+                        mb_y*s->fragment_width[1] + mb_x;
                     if (s->all_fragments[current_fragment].coding_method !=
                         MODE_COPY)
                         s->all_fragments[current_fragment].coding_method =
@@ -668,7 +668,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 /* fetch 4 vectors from the bitstream, one for each
                  * Y fragment, then average for the C fragment vectors */
                 for (k = 0; k < 4; k++) {
-                    current_fragment = BLOCK_Y*s->fragment_width + BLOCK_X;
+                    current_fragment = BLOCK_Y*s->fragment_width[0] + BLOCK_X;
                     if (s->all_fragments[current_fragment].coding_method != MODE_COPY) {
                         if (coding_mode == 0) {
                             motion_x[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
@@ -720,7 +720,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
             /* assign the motion vectors to the correct fragments */
             for (k = 0; k < 4; k++) {
                 current_fragment =
-                    BLOCK_Y*s->fragment_width + BLOCK_X;
+                    BLOCK_Y*s->fragment_width[0] + BLOCK_X;
                 if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
                     s->all_fragments[current_fragment].motion_x = motion_x[k];
                     s->all_fragments[current_fragment].motion_y = motion_y[k];
@@ -735,7 +735,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 }
             for (k = 0; k < 2; k++) {
                 current_fragment = s->fragment_start[k+1] +
-                    mb_y*(s->fragment_width>>1) + mb_x;
+                    mb_y*s->fragment_width[1] + mb_x;
                     s->all_fragments[current_fragment].motion_x = motion_x[0];
                     s->all_fragments[current_fragment].motion_y = motion_y[0];
             }
@@ -941,7 +941,7 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
         0, residual_eob_run);
 
     /* reverse prediction of the Y-plane DC coefficients */
-    reverse_dc_prediction(s, 0, s->fragment_width, s->fragment_height);
+    reverse_dc_prediction(s, 0, s->fragment_width[0], s->fragment_height[0]);
 
     /* unpack the C plane DC coefficients */
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
@@ -953,9 +953,9 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     if (!(s->avctx->flags & CODEC_FLAG_GRAY))
     {
         reverse_dc_prediction(s, s->fragment_start[1],
-            s->fragment_width / 2, s->fragment_height / 2);
+            s->fragment_width[1], s->fragment_height[1]);
         reverse_dc_prediction(s, s->fragment_start[2],
-            s->fragment_width / 2, s->fragment_height / 2);
+            s->fragment_width[1], s->fragment_height[1]);
     }
 
     /* fetch the AC table indexes */
@@ -1158,8 +1158,8 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int ye
     int x, y;
     int *bounding_values= s->bounding_values_array+127;
 
-    int width           = s->fragment_width  >> !!plane;
-    int height          = s->fragment_height >> !!plane;
+    int width           = s->fragment_width[!!plane];
+    int height          = s->fragment_height[!!plane];
     int fragment        = s->fragment_start        [plane] + ystart * width;
     int stride          = s->current_frame.linesize[plane];
     uint8_t *plane_data = s->current_frame.data    [plane];
@@ -1316,8 +1316,8 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         int slice_height      = sb_y + (plane ? 1 : 2);
         int slice_width       = plane ? s->c_superblock_width : s->y_superblock_width;
 
-        int fragment_width    = s->fragment_width  >> !!plane;
-        int fragment_height   = s->fragment_height >> !!plane;
+        int fragment_width    = s->fragment_width[!!plane];
+        int fragment_height   = s->fragment_height[!!plane];
         int fragment_start    = s->fragment_start[plane];
 
         if (!s->flipped_image) stride = -stride;
@@ -1510,13 +1510,15 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     s->macroblock_height = (s->height + 15) / 16;
     s->macroblock_count = s->macroblock_width * s->macroblock_height;
 
-    s->fragment_width = s->width / FRAGMENT_PIXELS;
-    s->fragment_height = s->height / FRAGMENT_PIXELS;
+    s->fragment_width[0] = s->width / FRAGMENT_PIXELS;
+    s->fragment_height[0] = s->height / FRAGMENT_PIXELS;
+    s->fragment_width[1]  = s->fragment_width[0]  >> 1;
+    s->fragment_height[1] = s->fragment_height[0] >> 1;
 
     /* fragment count covers all 8x8 blocks for all 3 planes */
-    s->fragment_count = s->fragment_width * s->fragment_height * 3 / 2;
-    s->fragment_start[1] = s->fragment_width * s->fragment_height;
-    s->fragment_start[2] = s->fragment_width * s->fragment_height * 5 / 4;
+    s->fragment_count = s->fragment_width[0] * s->fragment_height[0] * 3 / 2;
+    s->fragment_start[1] = s->fragment_width[0] * s->fragment_height[0];
+    s->fragment_start[2] = s->fragment_width[0] * s->fragment_height[0] * 5 / 4;
 
     s->all_fragments = av_malloc(s->fragment_count * sizeof(Vp3Fragment));
     s->coded_fragment_list[0] = av_malloc(s->fragment_count * sizeof(int));
