@@ -105,15 +105,15 @@ documentation: $(addprefix doc/, developer.html faq.html ffmpeg-doc.html \
                                  ffplay-doc.html ffprobe-doc.html ffserver-doc.html \
                                  general.html libavfilter.html $(ALLMANPAGES))
 
-doc/%.html: MSG = HTML
+doc/%.html: TAG = HTML
 doc/%.html: doc/%.texi
 	$(M)cd doc && texi2html -monolithic -number $(<:doc/%=%)
 
-doc/%.pod: MSG = POD
+doc/%.pod: TAG = POD
 doc/%.pod: doc/%-doc.texi
 	$(M)doc/texi2pod.pl $< $@
 
-doc/%.1: MSG = MAN
+doc/%.1: TAG = MAN
 doc/%.1: doc/%.pod
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 

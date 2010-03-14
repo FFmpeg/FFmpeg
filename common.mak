@@ -24,7 +24,7 @@ ECHO   = printf "$(1)\t%s\n" $(2)
 BRIEF  = CC AS YASM AR LD HOSTCC RANLIB STRIP CP
 SILENT = DEPCC YASMDEP RM
 MSG    = $@
-M      = @$(call ECHO,$(MSG),$@);
+M      = @$(call ECHO,$(TAG),$@);
 $(foreach VAR,$(BRIEF), \
     $(eval $(VAR) = @$$(call ECHO,$(VAR),$$(MSG)); $($(VAR))))
 $(foreach VAR,$(SILENT),$(eval $(VAR) = @$($(VAR))))
@@ -52,7 +52,7 @@ CFLAGS   += $(ECFLAGS)
 %.ver: %.v
 	$(Q)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
 
-%.c %.h: MSG = GEN
+%.c %.h: TAG = GEN
 
 install: install-libs install-headers
 install-libs: install-libs-yes
