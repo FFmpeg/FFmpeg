@@ -2894,25 +2894,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
 #endif
 
-#if CONFIG_SNOW_DECODER
-        if(mm_flags & FF_MM_SSE2 & 0){
-            c->horizontal_compose97i = ff_snow_horizontal_compose97i_sse2;
-#if HAVE_7REGS
-            c->vertical_compose97i = ff_snow_vertical_compose97i_sse2;
-#endif
-            c->inner_add_yblock = ff_snow_inner_add_yblock_sse2;
-        }
-        else{
-            if(mm_flags & FF_MM_MMX2){
-            c->horizontal_compose97i = ff_snow_horizontal_compose97i_mmx;
-#if HAVE_7REGS
-            c->vertical_compose97i = ff_snow_vertical_compose97i_mmx;
-#endif
-            }
-            c->inner_add_yblock = ff_snow_inner_add_yblock_mmx;
-        }
-#endif
-
         if(mm_flags & FF_MM_3DNOW){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
             c->vector_fmul = vector_fmul_3dnow;

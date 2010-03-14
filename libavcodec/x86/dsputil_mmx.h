@@ -167,15 +167,6 @@ void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx);
 void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src, int stride, int rnd);
 void ff_avg_vc1_mspel_mc00_mmx2(uint8_t *dst, const uint8_t *src, int stride, int rnd);
 
-void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width);
-void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width);
-void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
-void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
-void ff_snow_inner_add_yblock_sse2(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
-                                   int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
-void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
-                                  int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
-
 void ff_lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                                    double *autoc);
 

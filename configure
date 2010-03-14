@@ -894,6 +894,7 @@ CONFIG_LIST="
     bzlib
     dct
     doc
+    dwt
     dxva2
     fastdiv
     ffmpeg
@@ -1276,7 +1277,8 @@ rv30_decoder_select="golomb"
 rv40_decoder_select="golomb"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
-snow_encoder_select="aandct"
+snow_decoder_select="dwt"
+snow_encoder_select="aandct dwt"
 sonic_decoder_select="golomb"
 sonic_encoder_select="golomb"
 sonic_ls_encoder_select="golomb"

@@ -37,8 +37,6 @@
 //#define DEBUG
 /* dct code */
 typedef short DCTELEM;
-typedef int DWTELEM;
-typedef short IDWTELEM;
 
 void fdct_ifast (DCTELEM *data);
 void fdct_ifast248 (DCTELEM *data);
@@ -184,10 +182,6 @@ static void a(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
 // h is limited to {width/2, width, 2*width} but never larger than 16 and never smaller then 2
 // although currently h<4 is not used as functions with width <8 are neither used nor implemented
 typedef int (*me_cmp_func)(void /*MpegEncContext*/ *s, uint8_t *blk1/*align width (8 or 16)*/, uint8_t *blk2/*align 1*/, int line_size, int h)/* __attribute__ ((const))*/;
-
-
-// for snow slices
-typedef struct slice_buffer_s slice_buffer;
 
 /**
  * Scantable.
@@ -538,11 +532,6 @@ typedef struct DSPContext {
     void (*h264_idct_add8)(uint8_t **dst/*align 16*/, const int *blockoffset, DCTELEM *block/*align 16*/, int stride, const uint8_t nnzc[6*8]);
     void (*h264_idct_add16intra)(uint8_t *dst/*align 16*/, const int *blockoffset, DCTELEM *block/*align 16*/, int stride, const uint8_t nnzc[6*8]);
 
-    /* snow wavelet */
-    void (*vertical_compose97i)(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
-    void (*horizontal_compose97i)(IDWTELEM *b, int width);
-    void (*inner_add_yblock)(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h, int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
-
     void (*prefetch)(void *mem, int stride, int h);
 
     void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
@@ -681,6 +670,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
+void ff_dsputil_init_dwt(DSPContext *c);
 void ff_cavsdsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_rv30dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_rv40dsp_init(DSPContext* c, AVCodecContext *avctx);
