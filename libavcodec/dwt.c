@@ -839,5 +839,5 @@ void ff_dwt_init(DWTContext *c)
     c->horizontal_compose97i = ff_snow_horizontal_compose97i;
     c->inner_add_yblock = ff_snow_inner_add_yblock;
 
-    if (ARCH_X86) ff_dwt_init_x86(c);
+    if (HAVE_MMX) ff_dwt_init_x86(c);
 }
