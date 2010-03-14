@@ -42,13 +42,10 @@
 #include "mpegaudio.h"
 
 #include "qdm2data.h"
+#include "qdm2_tablegen.h"
 
 #undef NDEBUG
 #include <assert.h>
-
-
-#define SOFTCLIP_THRESHOLD 27600
-#define HARDCLIP_THRESHOLD 35716
 
 
 #define QDM2_LIST_ADD(list, size, packet) \
@@ -213,69 +210,6 @@ static VLC vlc_tab_tone_level_idx_hi2;
 static VLC vlc_tab_type30;
 static VLC vlc_tab_type34;
 static VLC vlc_tab_fft_tone_offset[5];
-
-static uint16_t softclip_table[HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1];
-static float noise_table[4096];
-static uint8_t random_dequant_index[256][5];
-static uint8_t random_dequant_type24[128][3];
-static float noise_samples[128];
-
-
-static av_cold void softclip_table_init(void) {
-    int i;
-    double dfl = SOFTCLIP_THRESHOLD - 32767;
-    float delta = 1.0 / -dfl;
-    for (i = 0; i < HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1; i++)
-        softclip_table[i] = SOFTCLIP_THRESHOLD - ((int)(sin((float)i * delta) * dfl) & 0x0000FFFF);
-}
-
-
-// random generated table
-static av_cold void rnd_table_init(void) {
-    int i,j;
-    uint32_t ldw,hdw;
-    uint64_t tmp64_1;
-    uint64_t random_seed = 0;
-    float delta = 1.0 / 16384.0;
-    for(i = 0; i < 4096 ;i++) {
-        random_seed = random_seed * 214013 + 2531011;
-        noise_table[i] = (delta * (float)(((int32_t)random_seed >> 16) & 0x00007FFF)- 1.0) * 1.3;
-    }
-
-    for (i = 0; i < 256 ;i++) {
-        random_seed = 81;
-        ldw = i;
-        for (j = 0; j < 5 ;j++) {
-            random_dequant_index[i][j] = (uint8_t)((ldw / random_seed) & 0xFF);
-            ldw = (uint32_t)ldw % (uint32_t)random_seed;
-            tmp64_1 = (random_seed * 0x55555556);
-            hdw = (uint32_t)(tmp64_1 >> 32);
-            random_seed = (uint64_t)(hdw + (ldw >> 31));
-        }
-    }
-    for (i = 0; i < 128 ;i++) {
-        random_seed = 25;
-        ldw = i;
-        for (j = 0; j < 3 ;j++) {
-            random_dequant_type24[i][j] = (uint8_t)((ldw / random_seed) & 0xFF);
-            ldw = (uint32_t)ldw % (uint32_t)random_seed;
-            tmp64_1 = (random_seed * 0x66666667);
-            hdw = (uint32_t)(tmp64_1 >> 33);
-            random_seed = hdw + (ldw >> 31);
-        }
-    }
-}
-
-
-static av_cold void init_noise_samples(void) {
-    int i;
-    int random_seed = 0;
-    float delta = 1.0 / 16384.0;
-    for (i = 0; i < 128;i++) {
-        random_seed = random_seed * 214013 + 2531011;
-        noise_samples[i] = (delta * (float)((random_seed >> 16) & 0x00007fff) - 1.0);
-    }
-}
 
 static const uint16_t qdm2_vlc_offs[] = {
     0,260,566,598,894,1166,1230,1294,1678,1950,2214,2278,2310,2570,2834,3124,3448,3838,
