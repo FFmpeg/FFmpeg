@@ -1,4 +1,4 @@
 90e65096aa9ebafa3fe3f44a5a47cdc4 *./tests/data/vsynth2/error-mpeg4-adv.avi
 176588 ./tests/data/vsynth2/error-mpeg4-adv.avi
-113defd3f8daf878e0b3fc03fafb4c09 *./tests/data/error.vsynth2.out.yuv
-stddev:    9.02 PSNR: 29.02 bytes:  7603200/  7603200
+9fe1082179f80179439953c7397a46ef *./tests/data/error.vsynth2.out.yuv
+stddev:    9.00 PSNR: 29.04 bytes:  7603200/  7603200

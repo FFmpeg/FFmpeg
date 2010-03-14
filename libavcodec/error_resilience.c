@@ -548,9 +548,14 @@ int score_sum=0;
                         }
                     }
 score_sum+= best_score;
-//FIXME no need to set s->current_picture.motion_val[0][mot_index][0] explicit
-                    s->current_picture.motion_val[0][mot_index][0]= s->mv[0][0][0]= mv_predictor[best_pred][0];
-                    s->current_picture.motion_val[0][mot_index][1]= s->mv[0][0][1]= mv_predictor[best_pred][1];
+                    s->mv[0][0][0]= mv_predictor[best_pred][0];
+                    s->mv[0][0][1]= mv_predictor[best_pred][1];
+
+                    for(i=0; i<mot_step; i++)
+                        for(j=0; j<mot_step; j++){
+                            s->current_picture.motion_val[0][mot_index+i+j*mot_stride][0]= s->mv[0][0][0];
+                            s->current_picture.motion_val[0][mot_index+i+j*mot_stride][1]= s->mv[0][0][1];
+                        }
 
                     decode_mb(s);
 
