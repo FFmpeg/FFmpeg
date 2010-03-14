@@ -24,6 +24,7 @@
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
+#include "internal.h"
 #include "network.h"
 
 typedef struct {

@@ -24,6 +24,7 @@
 #include "avformat.h"
 #include <unistd.h>
 #include <strings.h>
+#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 

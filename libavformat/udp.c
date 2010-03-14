@@ -27,6 +27,7 @@
 #define _BSD_SOURCE     /* Needed for using struct ip_mreq with recent glibc */
 #include "avformat.h"
 #include <unistd.h>
+#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 #if HAVE_SYS_SELECT_H

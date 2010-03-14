@@ -29,6 +29,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/sha.h"
 #include "avformat.h"
+#include "internal.h"
 
 #include "network.h"
 

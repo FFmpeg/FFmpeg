@@ -20,6 +20,7 @@
  */
 #include "avformat.h"
 #include <unistd.h>
+#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 #if HAVE_SYS_SELECT_H

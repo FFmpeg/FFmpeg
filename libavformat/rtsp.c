@@ -29,6 +29,7 @@
 #include <sys/select.h>
 #endif
 #include <strings.h>
+#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 #include "rtsp.h"
