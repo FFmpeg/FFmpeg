@@ -86,6 +86,7 @@
 #include "aac.h"
 #include "aactab.h"
 #include "aacdectab.h"
+#include "cbrt_tablegen.h"
 #include "sbr.h"
 #include "aacsbr.h"
 #include "mpeg4audio.h"
@@ -107,8 +108,6 @@ union float754 {
 
 static VLC vlc_scalefactors;
 static VLC vlc_spectral[11];
-
-static uint32_t cbrt_tab[1<<13];
 
 static const char overread_err[] = "Input buffer exhausted before END element found\n";
 
@@ -574,13 +573,7 @@ static av_cold int aac_decode_init(AVCodecContext *avccontext)
     ff_init_ff_sine_windows(10);
     ff_init_ff_sine_windows( 7);
 
-    if (!cbrt_tab[(1<<13) - 1]) {
-        for (i = 0; i < 1<<13; i++) {
-            union float754 f;
-            f.f = cbrtf(i) * i;
-            cbrt_tab[i] = f.i;
-        }
-    }
+    cbrt_tableinit();
 
     return 0;
 }
