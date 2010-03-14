@@ -2081,8 +2081,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     common_init_after_header(avctx);
 
     // realloc slice buffer for the case that spatial_decomposition_count changed
-    slice_buffer_destroy(&s->sb);
-    slice_buffer_init(&s->sb, s->plane[0].height, (MB_SIZE >> s->block_max_depth) + s->spatial_decomposition_count * 8 + 1, s->plane[0].width, s->spatial_idwt_buffer);
+    ff_slice_buffer_destroy(&s->sb);
+    ff_slice_buffer_init(&s->sb, s->plane[0].height, (MB_SIZE >> s->block_max_depth) + s->spatial_decomposition_count * 8 + 1, s->plane[0].width, s->spatial_idwt_buffer);
 
     for(plane_index=0; plane_index<3; plane_index++){
         Plane *p= &s->plane[plane_index];
@@ -2199,10 +2199,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             y = FFMIN(p->height, slice_starty);
             end_y = FFMIN(p->height, slice_h);
             while(y < end_y)
-                slice_buffer_release(&s->sb, y++);
+                ff_slice_buffer_release(&s->sb, y++);
         }
 
-        slice_buffer_flush(&s->sb);
+        ff_slice_buffer_flush(&s->sb);
         }
 
     }
@@ -2228,7 +2228,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
 
-    slice_buffer_destroy(&s->sb);
+    ff_slice_buffer_destroy(&s->sb);
 
     common_end(s);
 
@@ -2829,9 +2829,9 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
          * to improve the score of the whole frame, thus iterative motion
          * estimation does not always converge. */
         if(s->avctx->me_cmp == FF_CMP_W97)
-            distortion = w97_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
+            distortion = ff_w97_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
         else if(s->avctx->me_cmp == FF_CMP_W53)
-            distortion = w53_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
+            distortion = ff_w53_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
         else{
             distortion = 0;
             for(i=0; i<4; i++){

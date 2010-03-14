@@ -22,7 +22,7 @@
 #include "dsputil.h"
 #include "dwt.h"
 
-void slice_buffer_init(slice_buffer * buf, int line_count, int max_allocated_lines, int line_width, IDWTELEM * base_buffer)
+void ff_slice_buffer_init(slice_buffer * buf, int line_count, int max_allocated_lines, int line_width, IDWTELEM * base_buffer)
 {
     int i;
 
@@ -40,7 +40,7 @@ void slice_buffer_init(slice_buffer * buf, int line_count, int max_allocated_lin
     buf->data_stack_top = max_allocated_lines - 1;
 }
 
-IDWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
+IDWTELEM * ff_slice_buffer_load_line(slice_buffer * buf, int line)
 {
     IDWTELEM * buffer;
 
@@ -56,7 +56,7 @@ IDWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
     return buffer;
 }
 
-void slice_buffer_release(slice_buffer * buf, int line)
+void ff_slice_buffer_release(slice_buffer * buf, int line)
 {
     IDWTELEM * buffer;
 
@@ -69,19 +69,19 @@ void slice_buffer_release(slice_buffer * buf, int line)
     buf->line[line] = NULL;
 }
 
-void slice_buffer_flush(slice_buffer * buf)
+void ff_slice_buffer_flush(slice_buffer * buf)
 {
     int i;
     for(i = 0; i < buf->line_count; i++){
         if (buf->line[i])
-            slice_buffer_release(buf, i);
+            ff_slice_buffer_release(buf, i);
     }
 }
 
-void slice_buffer_destroy(slice_buffer * buf)
+void ff_slice_buffer_destroy(slice_buffer * buf)
 {
     int i;
-    slice_buffer_flush(buf);
+    ff_slice_buffer_flush(buf);
 
     for(i = buf->data_count - 1; i >= 0; i--){
         av_freep(&buf->data_stack[i]);
@@ -817,11 +817,11 @@ static int w97_16_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int 
     return w_c(v, pix1, pix2, line_size, 16, h, 0);
 }
 
-int w53_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
+int ff_w53_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
     return w_c(v, pix1, pix2, line_size, 32, h, 1);
 }
 
-int w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
+int ff_w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
     return w_c(v, pix1, pix2, line_size, 32, h, 0);
 }
 
