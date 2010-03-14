@@ -24,6 +24,9 @@
 #ifndef AVUTIL_ERROR_H
 #define AVUTIL_ERROR_H
 
+#include <errno.h>
+#include "avutil.h"
+
 /* error handling */
 #if EINVAL > 0
 #define AVERROR(e) (-(e)) /**< Returns a negative error code from a POSIX error code, to return from library functions. */
