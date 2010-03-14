@@ -220,8 +220,11 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w, int h, int stride, i
  * @param h     height in 8 pixel blocks
  */
 static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int stride, int is_luma){
-    int b_x, b_y;
+    int b_x, b_y, mvx_stride, mvy_stride;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    set_mv_strides(s, &mvx_stride, &mvy_stride);
+    mvx_stride >>= is_luma;
+    mvy_stride *= mvx_stride;
 
     for(b_y=0; b_y<h; b_y++){
         for(b_x=0; b_x<w-1; b_x++){
@@ -233,8 +236,8 @@ static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
             int left_damage =  left_status&(DC_ERROR|AC_ERROR|MV_ERROR);
             int right_damage= right_status&(DC_ERROR|AC_ERROR|MV_ERROR);
             int offset= b_x*8 + b_y*stride*8;
-            int16_t *left_mv=  s->current_picture.motion_val[0][s->b8_stride*(b_y<<(1-is_luma)) + ( b_x   <<(1-is_luma))];
-            int16_t *right_mv= s->current_picture.motion_val[0][s->b8_stride*(b_y<<(1-is_luma)) + ((b_x+1)<<(1-is_luma))];
+            int16_t *left_mv=  s->current_picture.motion_val[0][mvy_stride*b_y + mvx_stride* b_x   ];
+            int16_t *right_mv= s->current_picture.motion_val[0][mvy_stride*b_y + mvx_stride*(b_x+1)];
 
             if(!(left_damage||right_damage)) continue; // both undamaged
 
@@ -280,8 +283,11 @@ static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
  * @param h     height in 8 pixel blocks
  */
 static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int stride, int is_luma){
-    int b_x, b_y;
+    int b_x, b_y, mvx_stride, mvy_stride;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    set_mv_strides(s, &mvx_stride, &mvy_stride);
+    mvx_stride >>= is_luma;
+    mvy_stride *= mvx_stride;
 
     for(b_y=0; b_y<h-1; b_y++){
         for(b_x=0; b_x<w; b_x++){
@@ -293,8 +299,8 @@ static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
             int top_damage =      top_status&(DC_ERROR|AC_ERROR|MV_ERROR);
             int bottom_damage= bottom_status&(DC_ERROR|AC_ERROR|MV_ERROR);
             int offset= b_x*8 + b_y*stride*8;
-            int16_t *top_mv=    s->current_picture.motion_val[0][s->b8_stride*( b_y   <<(1-is_luma)) + (b_x<<(1-is_luma))];
-            int16_t *bottom_mv= s->current_picture.motion_val[0][s->b8_stride*((b_y+1)<<(1-is_luma)) + (b_x<<(1-is_luma))];
+            int16_t *top_mv=    s->current_picture.motion_val[0][mvy_stride* b_y    + mvx_stride*b_x];
+            int16_t *bottom_mv= s->current_picture.motion_val[0][mvy_stride*(b_y+1) + mvx_stride*b_x];
 
             if(!(top_damage||bottom_damage)) continue; // both undamaged
 
