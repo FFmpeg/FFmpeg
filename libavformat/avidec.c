@@ -749,7 +749,8 @@ resync:
         if(ast->sample_size <= 1) // minorityreport.AVI block_align=1024 sample_size=1 IMA-ADPCM
             size= INT_MAX;
         else if(ast->sample_size < 32)
-            size= 64*ast->sample_size;
+            // arbitrary multiplier to avoid tiny packets for raw PCM data
+            size= 1024*ast->sample_size;
         else
             size= ast->sample_size;
 
