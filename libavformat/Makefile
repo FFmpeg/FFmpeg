@@ -100,7 +100,7 @@ OBJS-$(CONFIG_LMLM4_DEMUXER)             += lmlm4.o
 OBJS-$(CONFIG_M4V_DEMUXER)               += raw.o
 OBJS-$(CONFIG_M4V_MUXER)                 += raw.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)          += matroskadec.o matroska.o \
-                                            riff.o isom.o rm.o
+                                            riff.o isom.o rmdec.o rm.o
 OBJS-$(CONFIG_MATROSKA_MUXER)            += matroskaenc.o matroska.o \
                                             riff.o isom.o avc.o flacenc.o
 OBJS-$(CONFIG_MJPEG_DEMUXER)             += raw.o
