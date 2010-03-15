@@ -150,7 +150,7 @@ do_video_decoding
 fi
 
 if [ -n "$do_mjpeg" ] ; then
-do_video_encoding mjpeg.avi "-qscale 10" "-an -vcodec mjpeg -pix_fmt yuvj420p"
+do_video_encoding mjpeg.avi "-qscale 9" "-an -vcodec mjpeg -pix_fmt yuvj420p"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 

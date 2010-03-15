@@ -503,10 +503,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
 //        return -1;
     }
 
-    if(s->codec_id==CODEC_ID_MJPEG){
-        s->intra_quant_bias= 1<<(QUANT_BIAS_SHIFT-1); //(a + x/2)/x
-        s->inter_quant_bias= 0;
-    }else if(s->mpeg_quant || s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO){
+    if(s->mpeg_quant || s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO || s->codec_id==CODEC_ID_MJPEG){
         s->intra_quant_bias= 3<<(QUANT_BIAS_SHIFT-3); //(a + x*3/8)/x
         s->inter_quant_bias= 0;
     }else{
