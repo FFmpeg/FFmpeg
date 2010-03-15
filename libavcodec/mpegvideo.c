@@ -100,7 +100,7 @@ static const uint8_t mpeg2_dc_scale_table3[128]={
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 };
 
-const uint8_t * const mpeg2_dc_scale_table[4]={
+const uint8_t * const ff_mpeg2_dc_scale_table[4]={
     ff_mpeg1_dc_scale_table,
     mpeg2_dc_scale_table1,
     mpeg2_dc_scale_table2,
