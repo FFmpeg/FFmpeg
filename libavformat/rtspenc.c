@@ -72,20 +72,30 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
     struct timeval tv;
     AVFormatContext *rtpctx;
     AVPacket local_pkt;
+    int ret;
 
-    FD_ZERO(&rfds);
     tcp_fd = url_get_file_handle(rt->rtsp_hd);
-    FD_SET(tcp_fd, &rfds);
 
+    while (1) {
+        FD_ZERO(&rfds);
+        FD_SET(tcp_fd, &rfds);
     tv.tv_sec = 0;
     tv.tv_usec = 0;
     n = select(tcp_fd + 1, &rfds, NULL, NULL, &tv);
-    if (n > 0) {
+        if (n <= 0)
+            break;
         if (FD_ISSET(tcp_fd, &rfds)) {
             RTSPMessageHeader reply;
 
-            if (ff_rtsp_read_reply(s, &reply, NULL, 0) < 0)
+            /* Don't let ff_rtsp_read_reply handle interleaved packets,
+             * since it would block and wait for an RTSP reply on the socket
+             * (which may not be coming any time soon) if it handles
+             * interleaved packets internally. */
+            ret = ff_rtsp_read_reply(s, &reply, NULL, 1);
+            if (ret < 0)
                 return AVERROR(EPIPE);
+            if (ret == 1)
+                ff_rtsp_skip_packet(s);
             /* XXX: parse message */
             if (rt->state != RTSP_STATE_STREAMING)
                 return AVERROR(EPIPE);
