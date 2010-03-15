@@ -104,7 +104,7 @@ void avcodec_thread_free(AVCodecContext *avctx)
     av_freep(&avctx->thread_opaque);
 }
 
-int avcodec_thread_execute(AVCodecContext *avctx, action_func* func, void *arg, int *ret, int job_count, int job_size)
+static int avcodec_thread_execute(AVCodecContext *avctx, action_func* func, void *arg, int *ret, int job_count, int job_size)
 {
     ThreadContext *c= avctx->thread_opaque;
     int dummy_ret;
