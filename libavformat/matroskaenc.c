@@ -485,7 +485,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
             if (!codec->codec_tag)
                 codec->codec_tag = ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id);
             if (!codec->codec_tag) {
-                av_log(s, AV_LOG_ERROR, "No bmp codec ID found.");
+                av_log(s, AV_LOG_ERROR, "No bmp codec ID found.\n");
                 ret = -1;
             }
 
@@ -496,7 +496,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
         if (!codec->codec_tag)
             codec->codec_tag = ff_codec_get_tag(ff_codec_wav_tags, codec->codec_id);
         if (!codec->codec_tag) {
-            av_log(s, AV_LOG_ERROR, "No wav codec ID found.");
+            av_log(s, AV_LOG_ERROR, "No wav codec ID found.\n");
             ret = -1;
         }
 
