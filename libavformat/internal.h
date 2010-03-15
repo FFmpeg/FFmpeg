@@ -26,7 +26,7 @@
 
 char *ff_data_to_hex(char *buf, const uint8_t *src, int size);
 
-void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx);
+void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx);
 
 /**
  * Add packet to AVFormatContext->packet_buffer list, determining its

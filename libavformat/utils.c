@@ -2915,7 +2915,7 @@ fail:
     return ret;
 }
 
-void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx)
+void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx)
 {
     int i, j;
     AVProgram *program=NULL;

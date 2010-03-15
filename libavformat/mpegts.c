@@ -928,7 +928,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
         add_pid_to_pmt(ts, h->id, pid);
 
-        av_program_add_stream_index(ts->stream, h->id, st->index);
+        ff_program_add_stream_index(ts->stream, h->id, st->index);
 
         desc_list_len = get16(&p, p_end) & 0xfff;
         if (desc_list_len < 0)
@@ -993,7 +993,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             p = desc_end;
 
             if (prog_reg_desc == AV_RL32("HDMV") && stream_type == 0x83 && pes->sub_st) {
-                av_program_add_stream_index(ts->stream, h->id, pes->sub_st->index);
+                ff_program_add_stream_index(ts->stream, h->id, pes->sub_st->index);
                 pes->sub_st->codec->codec_tag = st->codec->codec_tag;
             }
         }
