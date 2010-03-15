@@ -35,7 +35,7 @@ void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
 void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
                               int (*compare)(AVFormatContext *, AVPacket *, AVPacket *));
 
-void av_read_frame_flush(AVFormatContext *s);
+void ff_read_frame_flush(AVFormatContext *s);
 
 #define NTP_OFFSET 2208988800ULL
 #define NTP_OFFSET_US (NTP_OFFSET * 1000000ULL)

@@ -1228,7 +1228,7 @@ int av_find_default_stream_index(AVFormatContext *s)
 /**
  * Flush the frame reader.
  */
-void av_read_frame_flush(AVFormatContext *s)
+void ff_read_frame_flush(AVFormatContext *s)
 {
     AVStream *st;
     int i, j;
@@ -1620,7 +1620,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
     if (index < 0)
         return -1;
 
-    av_read_frame_flush(s);
+    ff_read_frame_flush(s);
     if (s->iformat->read_seek){
         if(s->iformat->read_seek(s, stream_index, timestamp, flags) >= 0)
             return 0;
@@ -1638,7 +1638,7 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
     int ret;
     AVStream *st;
 
-    av_read_frame_flush(s);
+    ff_read_frame_flush(s);
 
     if(flags & AVSEEK_FLAG_BYTE)
         return av_seek_frame_byte(s, stream_index, timestamp, flags);
@@ -1673,7 +1673,7 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
     if(min_ts > ts || max_ts < ts)
         return -1;
 
-    av_read_frame_flush(s);
+    ff_read_frame_flush(s);
 
     if (s->iformat->read_seek2)
         return s->iformat->read_seek2(s, stream_index, min_ts, ts, max_ts, flags);
