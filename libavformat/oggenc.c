@@ -61,7 +61,7 @@ static int ogg_write_page(AVFormatContext *s, const uint8_t *data, int size,
     } else if (oggstream->eos)
         flags |= 4;
 
-    page_segments = FFMIN((size/255)+!!size, 255);
+    page_segments = FFMIN(size/255 + 1, 255);
 
     init_checksum(s->pb, ff_crc04C11DB7_update, 0);
     put_tag(s->pb, "OggS");
@@ -75,10 +75,9 @@ static int ogg_write_page(AVFormatContext *s, const uint8_t *data, int size,
     put_byte(s->pb, page_segments);
     for (i = 0; i < page_segments-1; i++)
         put_byte(s->pb, 255);
-    if (size) {
-        put_byte(s->pb, size - (page_segments-1)*255);
-        put_buffer(s->pb, data, size);
-    }
+    put_byte(s->pb, size - (page_segments-1)*255);
+    put_buffer(s->pb, data, size);
+
     ogg_update_checksum(s, crc_offset);
     put_flush_packet(s->pb);
     return size;
