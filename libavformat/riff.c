@@ -443,7 +443,7 @@ void ff_put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag 
 
     put_buffer(pb, enc->extradata, enc->extradata_size);
 
-    if (enc->extradata_size & 1)
+    if (!for_asf && enc->extradata_size & 1)
         put_byte(pb, 0);
 }
 #endif //CONFIG_MUXERS
