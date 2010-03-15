@@ -1144,7 +1144,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                "EBML header using unsupported features\n"
                "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
                ebml.version, ebml.doctype, ebml.doctype_version);
-        return AVERROR_NOFMT;
+        return AVERROR_PATCHWELCOME;
     }
     ebml_free(ebml_syntax, &ebml);
 
