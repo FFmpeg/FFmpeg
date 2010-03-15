@@ -861,7 +861,7 @@ void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf)
 }
 
 /* skip a RTP/TCP interleaved packet */
-static void rtsp_skip_packet(AVFormatContext *s)
+void ff_rtsp_skip_packet(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
     int ret, len, len1;
@@ -917,7 +917,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
                 if (return_on_interleaved_data) {
                     return 1;
                 } else
-                    rtsp_skip_packet(s);
+                    ff_rtsp_skip_packet(s);
             } else if (ch != '\r') {
                 if ((q - buf) < sizeof(buf) - 1)
                     *q++ = ch;

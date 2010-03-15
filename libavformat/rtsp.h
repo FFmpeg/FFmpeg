@@ -399,6 +399,11 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
                        int return_on_interleaved_data);
 
 /**
+ * Skip a RTP/TCP interleaved packet.
+ */
+void ff_rtsp_skip_packet(AVFormatContext *s);
+
+/**
  * Connect to the RTSP server and set up the individual media streams.
  * This can be used for both muxers and demuxers.
  *
