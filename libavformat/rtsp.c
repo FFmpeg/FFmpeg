@@ -917,7 +917,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
                 if (return_on_interleaved_data) {
                     return 1;
                 } else
-                rtsp_skip_packet(s);
+                    rtsp_skip_packet(s);
             } else if (ch != '\r') {
                 if ((q - buf) < sizeof(buf) - 1)
                     *q++ = ch;
