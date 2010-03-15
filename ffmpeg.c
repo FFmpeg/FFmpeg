@@ -3147,7 +3147,11 @@ static void new_video_stream(AVFormatContext *oc)
                 if(*p == video_enc->pix_fmt)
                     break;
             }
-            if(*p == -1)
+            if(*p == -1
+               && !(   video_enc->codec_id==CODEC_ID_MJPEG
+                    && video_enc->strict_std_compliance <= FF_COMPLIANCE_INOFFICIAL
+                    && (   video_enc->pix_fmt == PIX_FMT_YUV420P
+                        || video_enc->pix_fmt == PIX_FMT_YUV422P)))
                 video_enc->pix_fmt = codec->pix_fmts[0];
         }
 
