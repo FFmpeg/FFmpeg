@@ -900,12 +900,15 @@ static void do_video_out(AVFormatContext *s,
     AVFrame *final_picture, *formatted_picture, *resampling_dst, *padding_src;
     AVFrame picture_crop_temp, picture_pad_temp;
     AVCodecContext *enc, *dec;
+    double sync_ipts;
 
     avcodec_get_frame_defaults(&picture_crop_temp);
     avcodec_get_frame_defaults(&picture_pad_temp);
 
     enc = ost->st->codec;
     dec = ist->st->codec;
+
+    sync_ipts = get_sync_ipts(ost) / av_q2d(enc->time_base);
 
     /* by default, we output a single frame */
     nb_frames = 1;
@@ -914,7 +917,7 @@ static void do_video_out(AVFormatContext *s,
 
     if(video_sync_method){
         double vdelta;
-        vdelta = get_sync_ipts(ost) / av_q2d(enc->time_base) - ost->sync_opts;
+        vdelta = sync_ipts - ost->sync_opts;
         //FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (vdelta < -1.1)
             nb_frames = 0;
@@ -922,7 +925,7 @@ static void do_video_out(AVFormatContext *s,
             if(vdelta<=-0.6){
                 nb_frames=0;
             }else if(vdelta>0.6)
-            ost->sync_opts= lrintf(get_sync_ipts(ost) / av_q2d(enc->time_base));
+            ost->sync_opts= lrintf(sync_ipts);
         }else if (vdelta > 1.1)
             nb_frames = lrintf(vdelta);
 //fprintf(stderr, "vdelta:%f, ost->sync_opts:%"PRId64", ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, get_sync_ipts(ost), nb_frames);
@@ -936,7 +939,7 @@ static void do_video_out(AVFormatContext *s,
                 fprintf(stderr, "*** %d dup!\n", nb_frames-1);
         }
     }else
-        ost->sync_opts= lrintf(get_sync_ipts(ost) / av_q2d(enc->time_base));
+        ost->sync_opts= lrintf(sync_ipts);
 
     nb_frames= FFMIN(nb_frames, max_frames[CODEC_TYPE_VIDEO] - ost->frame_number);
     if (nb_frames <= 0)
