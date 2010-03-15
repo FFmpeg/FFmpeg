@@ -192,6 +192,14 @@ int64_t av_url_read_seek(URLContext *h, int stream_index,
  */
 #define AVSEEK_SIZE 0x10000
 
+/**
+ * Oring this flag as into the "whence" parameter to a seek function causes it to
+ * seek by any means (like reopening and linear reading) or other normally unreasonble
+ * means that can be extreemly slow.
+ * This may be ignored by the seek code.
+ */
+#define AVSEEK_FORCE 0x20000
+
 typedef struct URLProtocol {
     const char *name;
     int (*url_open)(URLContext *h, const char *url, int flags);
