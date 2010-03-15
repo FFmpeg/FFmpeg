@@ -243,6 +243,7 @@ Developer options (useful when working on FFmpeg itself):
   --disable-optimizations  disable compiler optimizations
   --enable-extra-warnings  enable more compiler warnings
   --disable-stripping      disable stripping of executables and shared libraries
+  --samples=PATH           location of test samples for FATE
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -1143,6 +1144,7 @@ CMDLINE_SET="
     logfile
     malloc_prefix
     nm
+    samples
     source_path
     strip
     sysinclude
@@ -3027,6 +3029,7 @@ SLIB_CREATE_DEF_CMD=${SLIB_CREATE_DEF_CMD}
 SLIB_EXTRA_CMD=${SLIB_EXTRA_CMD}
 SLIB_INSTALL_EXTRA_CMD=${SLIB_INSTALL_EXTRA_CMD}
 SLIB_UNINSTALL_EXTRA_CMD=${SLIB_UNINSTALL_EXTRA_CMD}
+SAMPLES=$samples
 EOF
 
 get_version(){

@@ -330,5 +330,15 @@ tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF)
 tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
+ifdef SAMPLES
+include $(SRC_PATH_BARE)/tests/fate.mak
+fate: $(FATE_TESTS)
+$(FATE_TESTS):
+	@echo "TEST FATE   $(@:fate-%=%)"
+	@$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)'
+else
+fate:
+	@echo "SAMPLES not specified, cannot run FATE"
+endif
 
 .PHONY: documentation *test regtest-* zlib-error alltools check config
