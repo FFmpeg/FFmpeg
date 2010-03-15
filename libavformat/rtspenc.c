@@ -79,9 +79,9 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
     while (1) {
         FD_ZERO(&rfds);
         FD_SET(tcp_fd, &rfds);
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
-    n = select(tcp_fd + 1, &rfds, NULL, NULL, &tv);
+        tv.tv_sec = 0;
+        tv.tv_usec = 0;
+        n = select(tcp_fd + 1, &rfds, NULL, NULL, &tv);
         if (n <= 0)
             break;
         if (FD_ISSET(tcp_fd, &rfds)) {
