@@ -916,8 +916,7 @@ static void do_video_out(AVFormatContext *s,
     *frame_size = 0;
 
     if(video_sync_method){
-        double vdelta;
-        vdelta = sync_ipts - ost->sync_opts;
+        double vdelta = sync_ipts - ost->sync_opts;
         //FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (vdelta < -1.1)
             nb_frames = 0;
