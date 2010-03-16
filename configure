@@ -317,7 +317,7 @@ filter(){
 map(){
     m=$1
     shift
-    for _; do eval $m; done
+    for v; do eval $m; done
 }
 
 set_all(){
@@ -1592,7 +1592,7 @@ for opt do
     --enable-debug=*) debuglevel="$optval"
     ;;
     --disable-everything)
-    map 'eval disable \${$(toupper ${_%s})_LIST}' $COMPONENT_LIST
+    map 'eval disable \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
     ;;
     --enable-*=*|--disable-*=*)
     eval $(echo "${opt%%=*}" | sed 's/--/action=/;s/-/ thing=/')
@@ -2955,8 +2955,8 @@ if enabled source_path_used; then
         libpostproc/Makefile
         libswscale/Makefile
     "
-    map 'mkdir -p $_' $DIRS;
-    map '$ln_s "$source_path/$_" $_' $FILES
+    map 'mkdir -p $v' $DIRS;
+    map '$ln_s "$source_path/$v" $v' $FILES
 fi
 
 enabled stripping || strip="echo skipping strip"
