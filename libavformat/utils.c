@@ -495,6 +495,7 @@ int ff_probe_input_buffer(ByteIOContext **pb, AVInputFormat **fmt,
                 return ret;
             }
             score = 0;
+            ret = 0;            /* error was end of file, nothing read */
         }
         pd.buf_size += ret;
         pd.buf = &buf[offset];
