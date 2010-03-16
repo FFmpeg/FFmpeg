@@ -924,14 +924,13 @@ Then you can easily test FFmpeg with Wine
 
 @subsection Compilation under Cygwin
 
-The main issue with the 1.5.x Cygwin versions is that newlib, its C library,
-does not contain llrint().  You need to upgrade to the unstable 1.7.x versions,
-or leverage the implementation in MinGW (as explained below).
+Please use Cygwin 1.7.x as the obsolete 1.5.x Cygwin versions lack
+llrint() in its C library.
 
-Just install your Cygwin with all the "Base" packages, plus the
+Install your Cygwin with all the "Base" packages, plus the
 following "Devel" ones:
 @example
-binutils, gcc-core, make, subversion, mingw-runtime
+binutils, gcc4-core, make, subversion, mingw-runtime, texi2html
 @end example
 
 And the following "Utils" one:
@@ -939,32 +938,20 @@ And the following "Utils" one:
 diffutils
 @end example
 
-The experimental gcc4 package is still buggy, hence please
-use the official gcc 3.4.4 or a 4.2.x compiled from source by yourself.
-
-Install the current binutils-20080624-2 as they work fine (the old
-binutils-20060709-1 proved buggy on shared builds).
-
-Then create a small library that just contains llrint():
-
-@example
-ar x /usr/lib/mingw/libmingwex.a llrint.o
-ar cq /usr/local/lib/libllrint.a llrint.o
-@end example
-
 Then run
 
 @example
-./configure --enable-static --disable-shared  --extra-ldflags='-L /usr/local/lib' --extra-libs='-l llrint'
+./configure --enable-static --disable-shared
 @end example
 
-to make a static build or
+to make a static build.
+
+The current @code{gcc4-core} package is buggy and needs this flag to build
+shared libraries:
 
 @example
-./configure --enable-shared --disable-static  --extra-ldflags='-L /usr/local/lib' --extra-libs='-l llrint'
+./configure --enable-shared --disable-static --extra-cflags=-fno-reorder-functions
 @end example
-
-to build shared libraries.
 
 If you want to build FFmpeg with additional libraries, download Cygwin
 "Devel" packages for Ogg and Vorbis from any Cygwin packages repository:
