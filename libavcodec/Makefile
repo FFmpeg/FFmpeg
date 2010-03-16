@@ -33,6 +33,7 @@ OBJS-$(CONFIG_DXVA2)                   += dxva2.o
 FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o
 OBJS-$(CONFIG_FFT)                     += avfft.o fft.o $(FFT-OBJS-yes)
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
+OBJS-$(CONFIG_H264DSP)                 += h264dsp.o h264idct.o h264pred.o
 OBJS-$(CONFIG_LPC)                     += lpc.o
 OBJS-$(CONFIG_LSP)                     += lsp.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
@@ -146,7 +147,7 @@ OBJS-$(CONFIG_H263_ENCODER)            += mpegvideo_enc.o mpeg4video.o      \
                                           ratecontrol.o h263.o ituh263enc.o \
                                           flvenc.o mpeg12data.o             \
                                           mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_H264_DECODER)            += h264.o h264idct.o h264pred.o         \
+OBJS-$(CONFIG_H264_DECODER)            += h264.o                               \
                                           h264_loopfilter.o h264_direct.o      \
                                           cabac.o h264_sei.o h264_ps.o         \
                                           h264_refs.o h264_cavlc.o h264_cabac.o\
@@ -282,9 +283,9 @@ OBJS-$(CONFIG_RV10_DECODER)            += rv10.o
 OBJS-$(CONFIG_RV10_ENCODER)            += rv10enc.o
 OBJS-$(CONFIG_RV20_DECODER)            += rv10.o
 OBJS-$(CONFIG_RV20_ENCODER)            += rv20enc.o
-OBJS-$(CONFIG_RV30_DECODER)            += rv30.o rv34.o h264pred.o rv30dsp.o \
+OBJS-$(CONFIG_RV30_DECODER)            += rv30.o rv34.o rv30dsp.o        \
                                           mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_RV40_DECODER)            += rv40.o rv34.o h264pred.o rv40dsp.o \
+OBJS-$(CONFIG_RV40_DECODER)            += rv40.o rv34.o rv40dsp.o        \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_SGI_DECODER)             += sgidec.o
 OBJS-$(CONFIG_SGI_ENCODER)             += sgienc.o rle.o
@@ -315,7 +316,7 @@ OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o    \
                                           mpegvideo.o error_resilience.o \
                                           ituh263enc.o mpegvideo_enc.o   \
                                           ratecontrol.o mpeg12data.o
-OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o svq3.o h264idct.o h264pred.o \
+OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o svq3.o                       \
                                           h264_loopfilter.o h264_direct.o     \
                                           h264_sei.o h264_ps.o h264_refs.o    \
                                           h264_cavlc.o h264_cabac.o cabac.o   \
@@ -538,8 +539,8 @@ OBJS-$(CONFIG_DVBSUB_PARSER)           += dvbsub_parser.o
 OBJS-$(CONFIG_DVDSUB_PARSER)           += dvdsub_parser.o
 OBJS-$(CONFIG_H261_PARSER)             += h261_parser.o
 OBJS-$(CONFIG_H263_PARSER)             += h263_parser.o
-OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264.o h264idct.o \
-                                          h264pred.o cabac.o              \
+OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264.o            \
+                                          cabac.o                         \
                                           h264_refs.o h264_sei.o h264_direct.o \
                                           h264_loopfilter.o h264_cabac.o \
                                           h264_cavlc.o h264_ps.o \
@@ -631,13 +632,16 @@ OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
                                           alpha/mpegvideo_alpha.o       \
                                           alpha/simple_idct_alpha.o     \
 
+ARM-OBJS-$(CONFIG_H264DSP)             += arm/h264dsp_init_arm.o        \
+                                          arm/h264pred_init_arm.o       \
+
 OBJS-$(ARCH_ARM)                       += arm/dsputil_init_arm.o        \
                                           arm/dsputil_arm.o             \
                                           arm/fft_init_arm.o            \
-                                          arm/h264pred_init_arm.o       \
                                           arm/jrevdct_arm.o             \
                                           arm/mpegvideo_arm.o           \
                                           arm/simple_idct_arm.o         \
+                                          $(ARM-OBJS-yes)
 
 OBJS-$(HAVE_ARMV5TE)                   += arm/dsputil_init_armv5te.o    \
                                           arm/mpegvideo_armv5te.o       \
@@ -658,7 +662,7 @@ NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
 
 NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
 
-NEON-OBJS-$(CONFIG_H264_DECODER)       += arm/h264dsp_neon.o            \
+NEON-OBJS-$(CONFIG_H264DSP)            += arm/h264dsp_neon.o            \
                                           arm/h264idct_neon.o           \
                                           arm/h264pred_neon.o           \
 
@@ -680,7 +684,7 @@ OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
 
 OBJS-$(ARCH_PPC)                       += ppc/dsputil_ppc.o             \
 
-ALTIVEC-OBJS-$(CONFIG_H264_DECODER)    += ppc/h264_altivec.o
+ALTIVEC-OBJS-$(CONFIG_H264DSP)         += ppc/h264_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP3_DECODER)     += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP5_DECODER)     += ppc/vp3dsp_altivec.o

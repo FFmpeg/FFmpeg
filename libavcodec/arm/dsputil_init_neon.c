@@ -131,69 +131,6 @@ void ff_avg_h264_chroma_mc8_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_avg_h264_chroma_mc4_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_avg_h264_chroma_mc2_neon(uint8_t *, uint8_t *, int, int, int, int);
 
-void ff_h264_v_loop_filter_luma_neon(uint8_t *pix, int stride, int alpha,
-                                     int beta, int8_t *tc0);
-void ff_h264_h_loop_filter_luma_neon(uint8_t *pix, int stride, int alpha,
-                                     int beta, int8_t *tc0);
-void ff_h264_v_loop_filter_chroma_neon(uint8_t *pix, int stride, int alpha,
-                                       int beta, int8_t *tc0);
-void ff_h264_h_loop_filter_chroma_neon(uint8_t *pix, int stride, int alpha,
-                                       int beta, int8_t *tc0);
-
-void ff_weight_h264_pixels_16x16_neon(uint8_t *ds, int stride, int log2_den,
-                                      int weight, int offset);
-void ff_weight_h264_pixels_16x8_neon(uint8_t *ds, int stride, int log2_den,
-                                     int weight, int offset);
-void ff_weight_h264_pixels_8x16_neon(uint8_t *ds, int stride, int log2_den,
-                                     int weight, int offset);
-void ff_weight_h264_pixels_8x8_neon(uint8_t *ds, int stride, int log2_den,
-                                    int weight, int offset);
-void ff_weight_h264_pixels_8x4_neon(uint8_t *ds, int stride, int log2_den,
-                                    int weight, int offset);
-void ff_weight_h264_pixels_4x8_neon(uint8_t *ds, int stride, int log2_den,
-                                    int weight, int offset);
-void ff_weight_h264_pixels_4x4_neon(uint8_t *ds, int stride, int log2_den,
-                                    int weight, int offset);
-void ff_weight_h264_pixels_4x2_neon(uint8_t *ds, int stride, int log2_den,
-                                    int weight, int offset);
-
-void ff_biweight_h264_pixels_16x16_neon(uint8_t *dst, uint8_t *src, int stride,
-                                        int log2_den, int weightd, int weights,
-                                        int offset);
-void ff_biweight_h264_pixels_16x8_neon(uint8_t *dst, uint8_t *src, int stride,
-                                       int log2_den, int weightd, int weights,
-                                       int offset);
-void ff_biweight_h264_pixels_8x16_neon(uint8_t *dst, uint8_t *src, int stride,
-                                       int log2_den, int weightd, int weights,
-                                       int offset);
-void ff_biweight_h264_pixels_8x8_neon(uint8_t *dst, uint8_t *src, int stride,
-                                      int log2_den, int weightd, int weights,
-                                      int offset);
-void ff_biweight_h264_pixels_8x4_neon(uint8_t *dst, uint8_t *src, int stride,
-                                      int log2_den, int weightd, int weights,
-                                      int offset);
-void ff_biweight_h264_pixels_4x8_neon(uint8_t *dst, uint8_t *src, int stride,
-                                      int log2_den, int weightd, int weights,
-                                      int offset);
-void ff_biweight_h264_pixels_4x4_neon(uint8_t *dst, uint8_t *src, int stride,
-                                      int log2_den, int weightd, int weights,
-                                      int offset);
-void ff_biweight_h264_pixels_4x2_neon(uint8_t *dst, uint8_t *src, int stride,
-                                      int log2_den, int weightd, int weights,
-                                      int offset);
-
-void ff_h264_idct_add_neon(uint8_t *dst, DCTELEM *block, int stride);
-void ff_h264_idct_dc_add_neon(uint8_t *dst, DCTELEM *block, int stride);
-void ff_h264_idct_add16_neon(uint8_t *dst, const int *block_offset,
-                             DCTELEM *block, int stride,
-                             const uint8_t nnzc[6*8]);
-void ff_h264_idct_add16intra_neon(uint8_t *dst, const int *block_offset,
-                                  DCTELEM *block, int stride,
-                                  const uint8_t nnzc[6*8]);
-void ff_h264_idct_add8_neon(uint8_t **dest, const int *block_offset,
-                            DCTELEM *block, int stride,
-                            const uint8_t nnzc[6*8]);
-
 void ff_vp3_v_loop_filter_neon(uint8_t *, int, int *);
 void ff_vp3_h_loop_filter_neon(uint8_t *, int, int *);
 
@@ -352,35 +289,6 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
         c->avg_h264_qpel_pixels_tab[1][13] = ff_avg_h264_qpel8_mc13_neon;
         c->avg_h264_qpel_pixels_tab[1][14] = ff_avg_h264_qpel8_mc23_neon;
         c->avg_h264_qpel_pixels_tab[1][15] = ff_avg_h264_qpel8_mc33_neon;
-
-        c->h264_v_loop_filter_luma   = ff_h264_v_loop_filter_luma_neon;
-        c->h264_h_loop_filter_luma   = ff_h264_h_loop_filter_luma_neon;
-        c->h264_v_loop_filter_chroma = ff_h264_v_loop_filter_chroma_neon;
-        c->h264_h_loop_filter_chroma = ff_h264_h_loop_filter_chroma_neon;
-
-        c->weight_h264_pixels_tab[0] = ff_weight_h264_pixels_16x16_neon;
-        c->weight_h264_pixels_tab[1] = ff_weight_h264_pixels_16x8_neon;
-        c->weight_h264_pixels_tab[2] = ff_weight_h264_pixels_8x16_neon;
-        c->weight_h264_pixels_tab[3] = ff_weight_h264_pixels_8x8_neon;
-        c->weight_h264_pixels_tab[4] = ff_weight_h264_pixels_8x4_neon;
-        c->weight_h264_pixels_tab[5] = ff_weight_h264_pixels_4x8_neon;
-        c->weight_h264_pixels_tab[6] = ff_weight_h264_pixels_4x4_neon;
-        c->weight_h264_pixels_tab[7] = ff_weight_h264_pixels_4x2_neon;
-
-        c->biweight_h264_pixels_tab[0] = ff_biweight_h264_pixels_16x16_neon;
-        c->biweight_h264_pixels_tab[1] = ff_biweight_h264_pixels_16x8_neon;
-        c->biweight_h264_pixels_tab[2] = ff_biweight_h264_pixels_8x16_neon;
-        c->biweight_h264_pixels_tab[3] = ff_biweight_h264_pixels_8x8_neon;
-        c->biweight_h264_pixels_tab[4] = ff_biweight_h264_pixels_8x4_neon;
-        c->biweight_h264_pixels_tab[5] = ff_biweight_h264_pixels_4x8_neon;
-        c->biweight_h264_pixels_tab[6] = ff_biweight_h264_pixels_4x4_neon;
-        c->biweight_h264_pixels_tab[7] = ff_biweight_h264_pixels_4x2_neon;
-
-        c->h264_idct_add        = ff_h264_idct_add_neon;
-        c->h264_idct_dc_add     = ff_h264_idct_dc_add_neon;
-        c->h264_idct_add16      = ff_h264_idct_add16_neon;
-        c->h264_idct_add16intra = ff_h264_idct_add16intra_neon;
-        c->h264_idct_add8       = ff_h264_idct_add8_neon;
     }
 
     if (CONFIG_VP3_DECODER) {

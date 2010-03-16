@@ -112,9 +112,9 @@ static void av_always_inline filter_mb_edgev( uint8_t *pix, int stride, int16_t 
         tc[1] = tc0_table[index_a][bS[1]];
         tc[2] = tc0_table[index_a][bS[2]];
         tc[3] = tc0_table[index_a][bS[3]];
-        h->s.dsp.h264_h_loop_filter_luma(pix, stride, alpha, beta, tc);
+        h->h264dsp.h264_h_loop_filter_luma(pix, stride, alpha, beta, tc);
     } else {
-        h->s.dsp.h264_h_loop_filter_luma_intra(pix, stride, alpha, beta);
+        h->h264dsp.h264_h_loop_filter_luma_intra(pix, stride, alpha, beta);
     }
 }
 static void av_always_inline filter_mb_edgecv( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h ) {
@@ -129,9 +129,9 @@ static void av_always_inline filter_mb_edgecv( uint8_t *pix, int stride, int16_t
         tc[1] = tc0_table[index_a][bS[1]]+1;
         tc[2] = tc0_table[index_a][bS[2]]+1;
         tc[3] = tc0_table[index_a][bS[3]]+1;
-        h->s.dsp.h264_h_loop_filter_chroma(pix, stride, alpha, beta, tc);
+        h->h264dsp.h264_h_loop_filter_chroma(pix, stride, alpha, beta, tc);
     } else {
-        h->s.dsp.h264_h_loop_filter_chroma_intra(pix, stride, alpha, beta);
+        h->h264dsp.h264_h_loop_filter_chroma_intra(pix, stride, alpha, beta);
     }
 }
 
@@ -282,9 +282,9 @@ static void av_always_inline filter_mb_edgeh( uint8_t *pix, int stride, int16_t 
         tc[1] = tc0_table[index_a][bS[1]];
         tc[2] = tc0_table[index_a][bS[2]];
         tc[3] = tc0_table[index_a][bS[3]];
-        h->s.dsp.h264_v_loop_filter_luma(pix, stride, alpha, beta, tc);
+        h->h264dsp.h264_v_loop_filter_luma(pix, stride, alpha, beta, tc);
     } else {
-        h->s.dsp.h264_v_loop_filter_luma_intra(pix, stride, alpha, beta);
+        h->h264dsp.h264_v_loop_filter_luma_intra(pix, stride, alpha, beta);
     }
 }
 
@@ -300,9 +300,9 @@ static void av_always_inline filter_mb_edgech( uint8_t *pix, int stride, int16_t
         tc[1] = tc0_table[index_a][bS[1]]+1;
         tc[2] = tc0_table[index_a][bS[2]]+1;
         tc[3] = tc0_table[index_a][bS[3]]+1;
-        h->s.dsp.h264_v_loop_filter_chroma(pix, stride, alpha, beta, tc);
+        h->h264dsp.h264_v_loop_filter_chroma(pix, stride, alpha, beta, tc);
     } else {
-        h->s.dsp.h264_v_loop_filter_chroma_intra(pix, stride, alpha, beta);
+        h->h264dsp.h264_v_loop_filter_chroma_intra(pix, stride, alpha, beta);
     }
 }
 
@@ -314,7 +314,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
 
     mb_xy = h->mb_xy;
 
-    if(!h->top_type || !s->dsp.h264_loop_filter_strength || h->pps.chroma_qp_diff) {
+    if(!h->top_type || !h->h264dsp.h264_loop_filter_strength || h->pps.chroma_qp_diff) {
         ff_h264_filter_mb(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize);
         return;
     }
@@ -381,7 +381,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
             int mask_edge0 = 3*((mask_edge1>>1) & ((5*left_type)>>5)&1); // (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) && (h->left_type[0] & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 : 0;
             int step =  1+(mb_type>>24); //IS_8x8DCT(mb_type) ? 2 : 1;
             edges = 4 - 3*((mb_type>>3) & !(h->cbp & 15)); //(mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
-            s->dsp.h264_loop_filter_strength( bS, h->non_zero_count_cache, h->ref_cache, h->mv_cache,
+            h->h264dsp.h264_loop_filter_strength( bS, h->non_zero_count_cache, h->ref_cache, h->mv_cache,
                                               h->list_count==2, edges, step, mask_edge0, mask_edge1, FIELD_PICTURE);
         }
         if( IS_INTRA(left_type) )

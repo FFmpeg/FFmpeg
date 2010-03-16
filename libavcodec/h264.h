@@ -32,6 +32,7 @@
 #include "dsputil.h"
 #include "cabac.h"
 #include "mpegvideo.h"
+#include "h264dsp.h"
 #include "h264pred.h"
 #include "rectangle.h"
 
@@ -262,6 +263,7 @@ typedef struct MMCO{
  */
 typedef struct H264Context{
     MpegEncContext s;
+    H264DSPContext h264dsp;
     int chroma_qp[2]; //QPc
 
     int qp_thresh;      ///< QP threshold to skip loopfilter

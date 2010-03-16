@@ -907,6 +907,7 @@ CONFIG_LIST="
     gpl
     gprof
     gray
+    h264dsp
     hardcoded_tables
     libdc1394
     libdirac
@@ -1229,7 +1230,7 @@ h263_vaapi_hwaccel_deps="va_va_h"
 h263_vaapi_hwaccel_select="vaapi h263_decoder"
 h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
-h264_decoder_select="golomb"
+h264_decoder_select="golomb h264dsp"
 h264_dxva2_hwaccel_deps="dxva2api_h"
 h264_dxva2_hwaccel_select="dxva2 h264_decoder"
 h264_vaapi_hwaccel_deps="va_va_h"
@@ -1275,8 +1276,8 @@ rv10_decoder_select="h263_decoder"
 rv10_encoder_select="h263_encoder"
 rv20_decoder_select="h263_decoder"
 rv20_encoder_select="h263_encoder"
-rv30_decoder_select="golomb"
-rv40_decoder_select="golomb"
+rv30_decoder_select="golomb h264dsp"
+rv40_decoder_select="golomb h264dsp"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
 snow_decoder_select="dwt"
@@ -1285,7 +1286,7 @@ sonic_decoder_select="golomb"
 sonic_encoder_select="golomb"
 sonic_ls_encoder_select="golomb"
 svq1_encoder_select="aandct"
-svq3_decoder_select="golomb"
+svq3_decoder_select="golomb h264dsp"
 svq3_decoder_suggest="zlib"
 theora_decoder_select="vp3_decoder"
 tiff_decoder_suggest="zlib"
@@ -1324,7 +1325,7 @@ zmbv_decoder_select="zlib"
 zmbv_encoder_select="zlib"
 
 # parsers
-h264_parser_select="golomb"
+h264_parser_select="golomb h264dsp"
 
 # bitstream_filters
 aac_adtstoasc_bsf_select="aac_parser"

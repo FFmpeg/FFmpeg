@@ -20,6 +20,7 @@
 
 #include "libavcodec/dsputil.h"
 #include "libavcodec/h264data.h"
+#include "libavcodec/h264dsp.h"
 
 #include "dsputil_ppc.h"
 #include "dsputil_altivec.h"
@@ -974,16 +975,6 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
         c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
         c->put_no_rnd_vc1_chroma_pixels_tab[0] = put_no_rnd_vc1_chroma_mc8_altivec;
         c->avg_no_rnd_vc1_chroma_pixels_tab[0] = avg_no_rnd_vc1_chroma_mc8_altivec;
-        c->h264_idct_add = ff_h264_idct_add_altivec;
-        c->h264_idct_add8 = ff_h264_idct_add8_altivec;
-        c->h264_idct_add16 = ff_h264_idct_add16_altivec;
-        c->h264_idct_add16intra = ff_h264_idct_add16intra_altivec;
-        c->h264_idct_dc_add= h264_idct_dc_add_altivec;
-        c->h264_idct8_dc_add = ff_h264_idct8_dc_add_altivec;
-        c->h264_idct8_add = ff_h264_idct8_add_altivec;
-        c->h264_idct8_add4 = ff_h264_idct8_add4_altivec;
-        c->h264_v_loop_filter_luma= h264_v_loop_filter_luma_altivec;
-        c->h264_h_loop_filter_luma= h264_h_loop_filter_luma_altivec;
 
 #define dspfunc(PFX, IDX, NUM) \
         c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_altivec; \
@@ -1006,6 +997,22 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
         dspfunc(put_h264_qpel, 0, 16);
         dspfunc(avg_h264_qpel, 0, 16);
 #undef dspfunc
+    }
+}
+
+void ff_h264dsp_init_ppc(H264DSPContext *c)
+{
+    if (has_altivec()) {
+        c->h264_idct_add = ff_h264_idct_add_altivec;
+        c->h264_idct_add8 = ff_h264_idct_add8_altivec;
+        c->h264_idct_add16 = ff_h264_idct_add16_altivec;
+        c->h264_idct_add16intra = ff_h264_idct_add16intra_altivec;
+        c->h264_idct_dc_add= h264_idct_dc_add_altivec;
+        c->h264_idct8_dc_add = ff_h264_idct8_dc_add_altivec;
+        c->h264_idct8_add = ff_h264_idct8_add_altivec;
+        c->h264_idct8_add4 = ff_h264_idct8_add4_altivec;
+        c->h264_v_loop_filter_luma= h264_v_loop_filter_luma_altivec;
+        c->h264_h_loop_filter_luma= h264_h_loop_filter_luma_altivec;
 
         c->weight_h264_pixels_tab[0] = ff_weight_h264_pixels16x16_altivec;
         c->weight_h264_pixels_tab[1] = ff_weight_h264_pixels16x8_altivec;
