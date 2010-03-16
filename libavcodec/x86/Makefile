@@ -1,7 +1,5 @@
-X86-OBJS-$(CONFIG_MLP_DECODER)         += x86/mlpdsp.o
-X86-OBJS-$(CONFIG_TRUEHD_DECODER)      += x86/mlpdsp.o
-
-OBJS-$(ARCH_X86)                       += $(X86-OBJS-yes)
+OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp.o
+OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
 
 YASM-OBJS-FFT-$(HAVE_AMD3DNOW)         += x86/fft_3dn.o
 YASM-OBJS-FFT-$(HAVE_AMD3DNOWEXT)      += x86/fft_3dn2.o

@@ -1,4 +1,4 @@
-OBJS-$(ARCH_PPC)                       += ppc/dsputil_ppc.o             \
+OBJS                                   += ppc/dsputil_ppc.o             \
 
 ALTIVEC-OBJS-$(CONFIG_H264DSP)         += ppc/h264_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o

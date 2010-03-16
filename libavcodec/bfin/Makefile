@@ -1,4 +1,4 @@
-OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
+OBJS                                   += bfin/dsputil_bfin.o           \
                                           bfin/fdct_bfin.o              \
                                           bfin/idct_bfin.o              \
                                           bfin/mpegvideo_bfin.o         \

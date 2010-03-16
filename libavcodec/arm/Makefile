@@ -1,13 +1,12 @@
-ARM-OBJS-$(CONFIG_H264DSP)             += arm/h264dsp_init_arm.o        \
+OBJS-$(CONFIG_H264DSP)                 += arm/h264dsp_init_arm.o        \
                                           arm/h264pred_init_arm.o       \
 
-OBJS-$(ARCH_ARM)                       += arm/dsputil_init_arm.o        \
+OBJS                                   += arm/dsputil_init_arm.o        \
                                           arm/dsputil_arm.o             \
                                           arm/fft_init_arm.o            \
                                           arm/jrevdct_arm.o             \
                                           arm/mpegvideo_arm.o           \
                                           arm/simple_idct_arm.o         \
-                                          $(ARM-OBJS-yes)
 
 OBJS-$(HAVE_ARMV5TE)                   += arm/dsputil_init_armv5te.o    \
                                           arm/mpegvideo_armv5te.o       \
