@@ -1920,7 +1920,7 @@ static int av_encode(AVFormatContext **output_files,
                 break;
             case CODEC_TYPE_VIDEO:
                 if (ost->st->codec->pix_fmt == PIX_FMT_NONE) {
-                    fprintf(stderr, "Video pixel format is unknown, stream cannot be decoded\n");
+                    fprintf(stderr, "Video pixel format is unknown, stream cannot be encoded\n");
                     av_exit(1);
                 }
                 ost->video_crop = ((frame_leftBand + frame_rightBand + frame_topBand + frame_bottomBand) != 0);
