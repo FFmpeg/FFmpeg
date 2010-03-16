@@ -2948,6 +2948,7 @@ if enabled source_path_used; then
         subdir.mak
         doc/texi2pod.pl
         libavcodec/Makefile
+        libavcodec/${arch}/Makefile
         libavdevice/Makefile
         libavfilter/Makefile
         libavformat/Makefile
@@ -2956,7 +2957,7 @@ if enabled source_path_used; then
         libswscale/Makefile
     "
     map 'mkdir -p $v' $DIRS;
-    map '$ln_s "$source_path/$v" $v' $FILES
+    map 'test -f "$source_path/$v" && $ln_s "$source_path/$v" $v' $FILES
 fi
 
 enabled stripping || strip="echo skipping strip"
