@@ -57,8 +57,8 @@ typedef struct {
     IVIPlaneDesc    planes[3];       ///< color planes
     const uint8_t   *frame_data;     ///< input frame data pointer
     int             buf_switch;      ///< used to switch between three buffers
-    int             dst_buf;
-    int             ref_buf;
+    int             dst_buf;         ///< buffer index for the currently decoded frame
+    int             ref_buf;         ///< inter frame reference buffer index
     uint32_t        frame_size;      ///< frame size in bytes
     int             frame_type;
     int             prev_frame_type; ///< frame type of the previous frame
