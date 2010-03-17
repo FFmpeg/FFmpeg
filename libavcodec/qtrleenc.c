@@ -68,9 +68,9 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
     s->avctx=avctx;
 
     switch (avctx->pix_fmt) {
-/*    case PIX_FMT_RGB555:
+    case PIX_FMT_RGB555BE:
         s->pixel_size = 2;
-        break;*/
+        break;
     case PIX_FMT_RGB24:
         s->pixel_size = 3;
         break;
@@ -328,6 +328,6 @@ AVCodec qtrle_encoder = {
     qtrle_encode_init,
     qtrle_encode_frame,
     qtrle_encode_end,
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_ARGB, PIX_FMT_NONE},
+    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB555BE, PIX_FMT_ARGB, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
 };
