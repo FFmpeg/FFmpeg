@@ -85,18 +85,6 @@ static AVFilterFormats *make_format_list(FormatContext *format, int flag)
     return formats;
 }
 
-static int query_formats_format(AVFilterContext *ctx)
-{
-    avfilter_set_common_formats(ctx, make_format_list(ctx->priv, 1));
-    return 0;
-}
-
-static int query_formats_noformat(AVFilterContext *ctx)
-{
-    avfilter_set_common_formats(ctx, make_format_list(ctx->priv, 0));
-    return 0;
-}
-
 static AVFilterPicRef *get_video_buffer(AVFilterLink *link, int perms,
                                         int w, int h)
 {
@@ -116,6 +104,12 @@ static void end_frame(AVFilterLink *link)
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+}
+
+static int query_formats_format(AVFilterContext *ctx)
+{
+    avfilter_set_common_formats(ctx, make_format_list(ctx->priv, 1));
+    return 0;
 }
 
 AVFilter avfilter_vf_format = {
@@ -139,6 +133,12 @@ AVFilter avfilter_vf_format = {
                                     .type            = CODEC_TYPE_VIDEO },
                                   { .name = NULL}},
 };
+
+static int query_formats_noformat(AVFilterContext *ctx)
+{
+    avfilter_set_common_formats(ctx, make_format_list(ctx->priv, 0));
+    return 0;
+}
 
 AVFilter avfilter_vf_noformat = {
     .name      = "noformat",
