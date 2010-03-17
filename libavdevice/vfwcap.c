@@ -38,7 +38,6 @@ struct vfw_ctx {
     HANDLE mutex;
     HANDLE event;
     AVPacketList *pktl;
-    AVFormatContext *s;
     unsigned int curbufsize;
     unsigned int frame_num;
 };
@@ -150,15 +149,15 @@ static void dump_bih(AVFormatContext *s, BITMAPINFOHEADER *bih)
     dstruct(s, bih, biClrImportant, "lu");
 }
 
-static int shall_we_drop(struct vfw_ctx *ctx)
+static int shall_we_drop(AVFormatContext *s)
 {
-    AVFormatContext *s = ctx->s;
+    struct vfw_ctx *ctx = s->priv_data;
     const uint8_t dropscore[] = {62, 75, 87, 100};
     const int ndropscores = FF_ARRAY_ELEMS(dropscore);
     unsigned int buffer_fullness = (ctx->curbufsize*100)/s->max_picture_buffer;
 
     if(dropscore[++ctx->frame_num%ndropscores] <= buffer_fullness) {
-        av_log(ctx->s, AV_LOG_ERROR,
+        av_log(s, AV_LOG_ERROR,
               "real-time buffer %d%% full! frame dropped!\n", buffer_fullness);
         return 1;
     }
@@ -168,14 +167,16 @@ static int shall_we_drop(struct vfw_ctx *ctx)
 
 static LRESULT CALLBACK videostream_cb(HWND hwnd, LPVIDEOHDR vdhdr)
 {
+    AVFormatContext *s;
     struct vfw_ctx *ctx;
     AVPacketList **ppktl, *pktl_next;
 
-    ctx = (struct vfw_ctx *) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    s = (AVFormatContext *) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    ctx = s->priv_data;
 
-    dump_videohdr(ctx->s, vdhdr);
+    dump_videohdr(s, vdhdr);
 
-    if(shall_we_drop(ctx))
+    if(shall_we_drop(s))
         return FALSE;
 
     WaitForSingleObject(ctx->mutex, INFINITE);
@@ -243,8 +244,6 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(EIO);
     }
 
-    ctx->s = s;
-
     ctx->hwnd = capCreateCaptureWindow(NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, 0);
     if(!ctx->hwnd) {
         av_log(s, AV_LOG_ERROR, "Could not create capture window.\n");
@@ -271,7 +270,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         goto fail_io;
     }
 
-    SetWindowLongPtr(ctx->hwnd, GWLP_USERDATA, (LONG_PTR) ctx);
+    SetWindowLongPtr(ctx->hwnd, GWLP_USERDATA, (LONG_PTR) s);
 
     st = av_new_stream(s, 0);
     if(!st) {
