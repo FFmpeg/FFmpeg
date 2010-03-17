@@ -224,6 +224,7 @@ static int audio_write_get_buf_size(VideoState *is);
 /* options specified by the user */
 static AVInputFormat *file_iformat;
 static const char *input_filename;
+static const char *window_title;
 static int fs_screen_width;
 static int fs_screen_height;
 static int screen_width = 0;
@@ -993,7 +994,9 @@ static int video_open(VideoState *is){
         fprintf(stderr, "SDL: could not set video mode - exiting\n");
         return -1;
     }
-    SDL_WM_SetCaption("FFplay", "FFplay");
+    if (!window_title)
+        window_title = input_filename;
+    SDL_WM_SetCaption(window_title, window_title);
 
     is->width = screen->w;
     is->height = screen->h;
@@ -2960,6 +2963,7 @@ static const OptionDef options[] = {
     { "threads", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "autoexit", OPT_BOOL | OPT_EXPERT, {(void*)&autoexit}, "exit at the end", "" },
     { "framedrop", OPT_BOOL | OPT_EXPERT, {(void*)&framedrop}, "drop frames when cpu is too slow", "" },
+    { "window_title", OPT_STRING | HAS_ARG, {(void*)&window_title}, "set window title", "window title" },
 #if CONFIG_AVFILTER
     { "vfilters", OPT_STRING | HAS_ARG, {(void*)&vfilters}, "video filters", "filter list" },
 #endif

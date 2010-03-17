@@ -51,6 +51,8 @@ Seek by bytes.
 Disable graphical display.
 @item -f @var{fmt}
 Force format.
+@item -window_title @var{title}
+Set window title (default is the input filename).
 @end table
 
 @section Advanced options
