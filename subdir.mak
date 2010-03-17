@@ -67,9 +67,6 @@ install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 		$(LN_S) $(SLIBNAME_WITH_VERSION) $(SLIBNAME)
 	$(SLIB_INSTALL_EXTRA_CMD)
 
-install-lib$(NAME)-static: MSG = $(LIBDIR)/$(LIBNAME)
-install-lib$(NAME)-shared: MSG = $(LIBDIR)/$(SLIBNAME)
-
 install-lib$(NAME)-static: $(SUBDIR)$(LIBNAME)
 	$(Q)mkdir -p "$(LIBDIR)"
 	$$(INSTALL) -m 644 $$< "$(LIBDIR)"
