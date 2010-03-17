@@ -57,8 +57,10 @@ typedef struct {
     IVIPlaneDesc    planes[3];       ///< color planes
     const uint8_t   *frame_data;     ///< input frame data pointer
     int             buf_switch;      ///< used to switch between three buffers
+    int             inter_scal;      ///< signals a sequence of scalable inter frames
     int             dst_buf;         ///< buffer index for the currently decoded frame
     int             ref_buf;         ///< inter frame reference buffer index
+    int             ref2_buf;        ///< temporal storage for switching buffers
     uint32_t        frame_size;      ///< frame size in bytes
     int             frame_type;
     int             prev_frame_type; ///< frame type of the previous frame
@@ -648,53 +650,38 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
  */
 static void switch_buffers(IVI5DecContext *ctx, AVCodecContext *avctx)
 {
-    switch (ctx->frame_type) {
+    switch (ctx->prev_frame_type) {
     case FRAMETYPE_INTRA:
-        ctx->buf_switch = 0;
-        ctx->dst_buf    = 0;
-        ctx->ref_buf    = 0;
-        break;
     case FRAMETYPE_INTER:
-        ctx->buf_switch &= 1;
-        /* swap buffers only if there were no droppable frames */
-        if (ctx->prev_frame_type != FRAMETYPE_INTER_NOREF &&
-            ctx->prev_frame_type != FRAMETYPE_INTER_SCAL)
-            ctx->buf_switch ^= 1;
+        ctx->buf_switch ^= 1;
         ctx->dst_buf = ctx->buf_switch;
         ctx->ref_buf = ctx->buf_switch ^ 1;
         break;
     case FRAMETYPE_INTER_SCAL:
-        if (ctx->prev_frame_type == FRAMETYPE_INTER_NOREF)
-            break;
-        if (ctx->prev_frame_type != FRAMETYPE_INTER_SCAL) {
-            ctx->buf_switch ^= 1;
-            ctx->dst_buf     = ctx->buf_switch;
-            ctx->ref_buf     = ctx->buf_switch ^ 1;
-        } else {
-            ctx->buf_switch ^= 2;
-            ctx->dst_buf = 2;
-            ctx->ref_buf = ctx->buf_switch & 1;
-            if (!(ctx->buf_switch & 2))
-                FFSWAP(int, ctx->dst_buf, ctx->ref_buf);
+        if (!ctx->inter_scal) {
+            ctx->ref2_buf   = 2;
+            ctx->inter_scal = 1;
         }
+        FFSWAP(int, ctx->dst_buf, ctx->ref2_buf);
+        ctx->ref_buf = ctx->ref2_buf;
         break;
     case FRAMETYPE_INTER_NOREF:
-        if (ctx->prev_frame_type == FRAMETYPE_INTER_SCAL) {
-            ctx->buf_switch ^= 2;
-            ctx->dst_buf = 2;
-            ctx->ref_buf = ctx->buf_switch & 1;
-            if (!(ctx->buf_switch & 2))
-                FFSWAP(int, ctx->dst_buf, ctx->ref_buf);
-        } else {
-            ctx->buf_switch ^= 1;
-            ctx->dst_buf     =  ctx->buf_switch & 1;
-            ctx->ref_buf     = (ctx->buf_switch & 1) ^ 1;
-        }
         break;
+    }
+
+    switch (ctx->frame_type) {
+    case FRAMETYPE_INTRA:
+        ctx->buf_switch = 0;
+        /* FALLTHROUGH */
+    case FRAMETYPE_INTER:
+        ctx->inter_scal = 0;
+        ctx->dst_buf = ctx->buf_switch;
+        ctx->ref_buf = ctx->buf_switch ^ 1;
+        break;
+    case FRAMETYPE_INTER_SCAL:
+    case FRAMETYPE_INTER_NOREF:
     case FRAMETYPE_NULL:
-        return;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "unsupported frame type: %d\n", ctx->frame_type);
+        break;
     }
 }
 
@@ -728,6 +715,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Couldn't allocate color planes!\n");
         return -1;
     }
+
+    ctx->buf_switch = 0;
+    ctx->inter_scal = 0;
 
     avctx->pix_fmt = PIX_FMT_YUV410P;
 
@@ -766,9 +756,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     //START_TIMER;
 
-    if (ctx->frame_type == FRAMETYPE_NULL) {
-        ctx->frame_type = ctx->prev_frame_type;
-    } else {
+    if (ctx->frame_type != FRAMETYPE_NULL) {
         for (p = 0; p < 3; p++) {
             for (b = 0; b < ctx->planes[p].num_bands; b++) {
                 result = decode_band(ctx, p, &ctx->planes[p].bands[b], avctx);
