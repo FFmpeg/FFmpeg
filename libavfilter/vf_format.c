@@ -106,6 +106,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
 }
 
+#if CONFIG_FORMAT_FILTER
 static int query_formats_format(AVFilterContext *ctx)
 {
     avfilter_set_common_formats(ctx, make_format_list(ctx->priv, 1));
@@ -133,7 +134,9 @@ AVFilter avfilter_vf_format = {
                                     .type            = CODEC_TYPE_VIDEO },
                                   { .name = NULL}},
 };
+#endif /* CONFIG_FORMAT_FILTER */
 
+#if CONFIG_NOFORMAT_FILTER
 static int query_formats_noformat(AVFilterContext *ctx)
 {
     avfilter_set_common_formats(ctx, make_format_list(ctx->priv, 0));
@@ -161,3 +164,5 @@ AVFilter avfilter_vf_noformat = {
                                     .type            = CODEC_TYPE_VIDEO },
                                   { .name = NULL}},
 };
+#endif /* CONFIG_NOFORMAT_FILTER */
+
