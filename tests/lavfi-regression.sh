@@ -17,7 +17,7 @@ rm -f "$benchfile"
 do_lavfi() {
     test_name=$1
     eval test=\$do_$test_name
-    vfilters=$2
+    vfilters="slicify=random,$2"
 
     if [ -n "$test" ] ; then
         do_video_encoding ${test_name}.nut "" "-vcodec rawvideo -vfilters $vfilters"
