@@ -43,7 +43,18 @@ static void decode_mb(MpegEncContext *s){
     s->dest[1] = s->current_picture.data[1] + (s->mb_y * (16>>s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16>>s->chroma_x_shift);
     s->dest[2] = s->current_picture.data[2] + (s->mb_y * (16>>s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16>>s->chroma_x_shift);
 
+    if(s->codec_id == CODEC_ID_H264){
+        H264Context *h= (void*)s;
+        h->mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+        memset(h->non_zero_count_cache, 0, sizeof(h->non_zero_count_cache));
+        fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, 0, 1);
+        fill_rectangle(h->mv_cache[0][ scan8[0] ], 4, 4, 8, pack16to32(s->mv[0][0][0],s->mv[0][0][1]), 4);
+        assert(h->list_count==1);
+        assert(!FRAME_MBAFF);
+        ff_h264_hl_decode_mb(h);
+    }else{
     MPV_decode_mb(s, s->block);
+    }
 }
 
 /**
