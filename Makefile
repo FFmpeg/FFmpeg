@@ -250,7 +250,17 @@ LAVF_TESTS-$(call MUXDEM,VOC)                += voc
 LAVF_TESTS-$(call MUXDEM,WAV)                += wav
 LAVF_TESTS-$(call MUXDEM,YUV4MPEGPIPE)       += yuv4mpeg
 
-LAVFI_TESTS =
+LAVFI_TESTS =           \
+    crop                \
+    crop_scale          \
+    crop_scale_vflip    \
+    crop_vflip          \
+    null                \
+    scale200            \
+    scale500            \
+    vflip               \
+    vflip_crop          \
+    vflip_vflip         \
 
 ACODEC_TESTS := $(addprefix regtest-, $(ACODEC_TESTS) $(ACODEC_TESTS-yes))
 VCODEC_TESTS := $(addprefix regtest-, $(VCODEC_TESTS) $(VCODEC_TESTS-yes))
@@ -261,8 +271,7 @@ CODEC_TESTS = $(VCODEC_TESTS) $(ACODEC_TESTS)
 
 codectest: $(CODEC_TESTS)
 lavftest:  $(LAVF_TESTS)
-
-# lavfitest: $(LAVFI_TESTS)
+lavfitest: $(LAVFI_TESTS)
 
 $(ACODEC_TESTS): regtest-aref
 $(VCODEC_TESTS): regtest-vref
