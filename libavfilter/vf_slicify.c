@@ -57,12 +57,6 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-static AVFilterPicRef *get_video_buffer(AVFilterLink *link, int perms,
-                                        int w, int h)
-{
-    return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
-}
-
 static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
     SliceContext *slice = link->dst->priv;
@@ -79,11 +73,6 @@ static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     av_log(link->dst, AV_LOG_DEBUG, "h:%d\n", slice->h);
 
     avfilter_start_frame(link->dst->outputs[0], picref);
-}
-
-static void end_frame(AVFilterLink *link)
-{
-    avfilter_end_frame(link->dst->outputs[0]);
 }
 
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
@@ -116,11 +105,11 @@ AVFilter avfilter_vf_slicify = {
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = CODEC_TYPE_VIDEO,
-                                    .get_video_buffer = get_video_buffer,
+                                    .get_video_buffer = avfilter_null_get_video_buffer,
                                     .start_frame      = start_frame,
                                     .draw_slice       = draw_slice,
                                     .config_props     = config_props,
-                                    .end_frame        = end_frame, },
+                                    .end_frame        = avfilter_null_end_frame, },
                                   { .name = NULL}},
     .outputs   = (AVFilterPad[]) {{ .name            = "default",
                                     .type            = CODEC_TYPE_VIDEO, },

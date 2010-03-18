@@ -156,12 +156,6 @@ static int config_output(AVFilterLink *link)
     return 0;
 }
 
-static AVFilterPicRef *get_video_buffer(AVFilterLink *link, int perms,
-                                        int w, int h)
-{
-    return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
-}
-
 static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
     CropContext *crop = link->dst->priv;
@@ -223,7 +217,7 @@ AVFilter avfilter_vf_crop = {
                                     .type             = CODEC_TYPE_VIDEO,
                                     .start_frame      = start_frame,
                                     .draw_slice       = draw_slice,
-                                    .get_video_buffer = get_video_buffer,
+                                    .get_video_buffer = avfilter_null_get_video_buffer,
                                     .config_props     = config_input, },
                                   { .name = NULL}},
     .outputs   = (AVFilterPad[]) {{ .name             = "default",

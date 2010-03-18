@@ -23,22 +23,6 @@
 
 #include "avfilter.h"
 
-static AVFilterPicRef *get_video_buffer(AVFilterLink *link, int perms,
-                                        int w, int h)
-{
-    return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
-}
-
-static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
-{
-    avfilter_start_frame(link->dst->outputs[0], picref);
-}
-
-static void end_frame(AVFilterLink *link)
-{
-    avfilter_end_frame(link->dst->outputs[0]);
-}
-
 AVFilter avfilter_vf_null = {
     .name      = "null",
     .description = NULL_IF_CONFIG_SMALL("Pass the source unchanged to the output."),
@@ -47,9 +31,9 @@ AVFilter avfilter_vf_null = {
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = CODEC_TYPE_VIDEO,
-                                    .get_video_buffer = get_video_buffer,
-                                    .start_frame      = start_frame,
-                                    .end_frame        = end_frame },
+                                    .get_video_buffer = avfilter_null_get_video_buffer,
+                                    .start_frame      = avfilter_null_start_frame,
+                                    .end_frame        = avfilter_null_end_frame },
                                   { .name = NULL}},
 
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
