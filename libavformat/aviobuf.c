@@ -156,7 +156,7 @@ int64_t url_fseek(ByteIOContext *s, int64_t offset, int whence)
         while(s->pos < offset && !s->eof_reached)
             fill_buffer(s);
         if (s->eof_reached)
-            return AVERROR(EPIPE);
+            return AVERROR_EOF;
         s->buf_ptr = s->buf_end + offset - s->pos;
     } else {
         int64_t res = AVERROR(EPIPE);
