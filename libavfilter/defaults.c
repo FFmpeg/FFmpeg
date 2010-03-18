@@ -165,3 +165,23 @@ int avfilter_default_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+void avfilter_null_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
+{
+    avfilter_start_frame(link->dst->outputs[0], picref);
+}
+
+void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+{
+    avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+}
+
+void avfilter_null_end_frame(AVFilterLink *link)
+{
+    avfilter_end_frame(link->dst->outputs[0]);
+}
+
+AVFilterPicRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+{
+    return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
+}
+
