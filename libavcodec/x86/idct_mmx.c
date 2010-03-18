@@ -26,8 +26,6 @@
 #include "dsputil_mmx.h"
 #include "mmx.h"
 
-#define ATTR_ALIGN(align) __attribute__ ((__aligned__ (align)))
-
 #define ROW_SHIFT 11
 #define COL_SHIFT 6
 
@@ -400,10 +398,10 @@ static inline void idct_col (int16_t * const col, const int offset)
 #define T3 43790
 #define C4 23170
 
-    static const short t1_vector[] ATTR_ALIGN(8) = {T1,T1,T1,T1};
-    static const short t2_vector[] ATTR_ALIGN(8) = {T2,T2,T2,T2};
-    static const short t3_vector[] ATTR_ALIGN(8) = {T3,T3,T3,T3};
-    static const short c4_vector[] ATTR_ALIGN(8) = {C4,C4,C4,C4};
+    DECLARE_ALIGNED(8, static const short, t1_vector)[] = {T1,T1,T1,T1};
+    DECLARE_ALIGNED(8, static const short, t2_vector)[] = {T2,T2,T2,T2};
+    DECLARE_ALIGNED(8, static const short, t3_vector)[] = {T3,T3,T3,T3};
+    DECLARE_ALIGNED(8, static const short, c4_vector)[] = {C4,C4,C4,C4};
 
     /* column code adapted from Peter Gubanov */
     /* http://www.elecard.com/peter/idct.shtml */
@@ -542,20 +540,20 @@ static inline void idct_col (int16_t * const col, const int offset)
 }
 
 
-static const int32_t rounder0[] ATTR_ALIGN(8) =
+DECLARE_ALIGNED(8, static const int32_t, rounder0)[] =
     rounder ((1 << (COL_SHIFT - 1)) - 0.5);
-static const int32_t rounder4[] ATTR_ALIGN(8) = rounder (0);
-static const int32_t rounder1[] ATTR_ALIGN(8) =
+DECLARE_ALIGNED(8, static const int32_t, rounder4)[] = rounder (0);
+DECLARE_ALIGNED(8, static const int32_t, rounder1)[] =
     rounder (1.25683487303);        /* C1*(C1/C4+C1+C7)/2 */
-static const int32_t rounder7[] ATTR_ALIGN(8) =
+DECLARE_ALIGNED(8, static const int32_t, rounder7)[] =
     rounder (-0.25);                /* C1*(C7/C4+C7-C1)/2 */
-static const int32_t rounder2[] ATTR_ALIGN(8) =
+DECLARE_ALIGNED(8, static const int32_t, rounder2)[] =
     rounder (0.60355339059);        /* C2 * (C6+C2)/2 */
-static const int32_t rounder6[] ATTR_ALIGN(8) =
+DECLARE_ALIGNED(8, static const int32_t, rounder6)[] =
     rounder (-0.25);                /* C2 * (C6-C2)/2 */
-static const int32_t rounder3[] ATTR_ALIGN(8) =
+DECLARE_ALIGNED(8, static const int32_t, rounder3)[] =
     rounder (0.087788325588);       /* C3*(-C3/C4+C3+C5)/2 */
-static const int32_t rounder5[] ATTR_ALIGN(8) =
+DECLARE_ALIGNED(8, static const int32_t, rounder5)[] =
     rounder (-0.441341716183);      /* C3*(-C5/C4+C5-C3)/2 */
 
 #undef COL_SHIFT
@@ -564,13 +562,13 @@ static const int32_t rounder5[] ATTR_ALIGN(8) =
 #define declare_idct(idct,table,idct_row_head,idct_row,idct_row_tail,idct_row_mid) \
 void idct (int16_t * const block)                                       \
 {                                                                       \
-    static const int16_t table04[] ATTR_ALIGN(16) =                     \
+    DECLARE_ALIGNED(16, static const int16_t, table04)[] =              \
         table (22725, 21407, 19266, 16384, 12873,  8867, 4520);         \
-    static const int16_t table17[] ATTR_ALIGN(16) =                     \
+    DECLARE_ALIGNED(16, static const int16_t, table17)[] =              \
         table (31521, 29692, 26722, 22725, 17855, 12299, 6270);         \
-    static const int16_t table26[] ATTR_ALIGN(16) =                     \
+    DECLARE_ALIGNED(16, static const int16_t, table26)[] =              \
         table (29692, 27969, 25172, 21407, 16819, 11585, 5906);         \
-    static const int16_t table35[] ATTR_ALIGN(16) =                     \
+    DECLARE_ALIGNED(16, static const int16_t, table35)[] =              \
         table (26722, 25172, 22654, 19266, 15137, 10426, 5315);         \
                                                                         \
     idct_row_head (block, 0*8, table04);                                \

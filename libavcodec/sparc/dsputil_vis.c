@@ -51,20 +51,18 @@
  *      fpsub16         f12, f10, f10
  */
 
-#define ATTR_ALIGN(alignd) __attribute__ ((aligned(alignd)))
-
 #define DUP4(x) {x, x, x, x}
 #define DUP8(x) {x, x, x, x, x, x, x, x}
-static const int16_t constants1[] ATTR_ALIGN(8) = DUP4 (1);
-static const int16_t constants2[] ATTR_ALIGN(8) = DUP4 (2);
-static const int16_t constants3[] ATTR_ALIGN(8) = DUP4 (3);
-static const int16_t constants6[] ATTR_ALIGN(8) = DUP4 (6);
-static const int8_t constants_fe[] ATTR_ALIGN(8) = DUP8 (0xfe);
-static const int8_t constants_7f[] ATTR_ALIGN(8) = DUP8 (0x7f);
-static const int8_t constants128[] ATTR_ALIGN(8) = DUP8 (128);
-static const int16_t constants256_512[] ATTR_ALIGN(8) =
+DECLARE_ALIGNED(8, static const int16_t, constants1)[] = DUP4 (1);
+DECLARE_ALIGNED(8, static const int16_t, constants2)[] = DUP4 (2);
+DECLARE_ALIGNED(8, static const int16_t, constants3)[] = DUP4 (3);
+DECLARE_ALIGNED(8, static const int16_t, constants6)[] = DUP4 (6);
+DECLARE_ALIGNED(8, static const int8_t, constants_fe)[] = DUP8 (0xfe);
+DECLARE_ALIGNED(8, static const int8_t, constants_7f)[] = DUP8 (0x7f);
+DECLARE_ALIGNED(8, static const int8_t, constants128)[] = DUP8 (128);
+DECLARE_ALIGNED(8, static const int16_t, constants256_512)[] =
         {256, 512, 256, 512};
-static const int16_t constants256_1024[] ATTR_ALIGN(8) =
+DECLARE_ALIGNED(8, static const int16_t, constants256_1024)[] =
         {256, 1024, 256, 1024};
 
 #define REF_0           0

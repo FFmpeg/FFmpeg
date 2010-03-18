@@ -33,8 +33,6 @@
 #include "libavutil/common.h"
 #include "libavcodec/dsputil.h"
 
-#define ATTR_ALIGN(align) __attribute__ ((__aligned__ (align)))
-
 //////////////////////////////////////////////////////////////////////
 //
 // constants for the forward DCT
@@ -55,30 +53,30 @@
 #define X8(x) x,x,x,x,x,x,x,x
 
 //concatenated table, for forward DCT transformation
-static const int16_t fdct_tg_all_16[24] ATTR_ALIGN(16) = {
+DECLARE_ALIGNED(16, static const int16_t, fdct_tg_all_16)[24] = {
     X8(13036),  // tg * (2<<16) + 0.5
     X8(27146),  // tg * (2<<16) + 0.5
     X8(-21746)  // tg * (2<<16) + 0.5
 };
 
-static const int16_t ocos_4_16[8] ATTR_ALIGN(16) = {
+DECLARE_ALIGNED(16, static const int16_t, ocos_4_16)[8] = {
     X8(23170)   //cos * (2<<15) + 0.5
 };
 
-static const int16_t fdct_one_corr[8] ATTR_ALIGN(16) = { X8(1) };
+DECLARE_ALIGNED(16, static const int16_t, fdct_one_corr)[8] = { X8(1) };
 
-static const int32_t fdct_r_row[2] ATTR_ALIGN(8) = {RND_FRW_ROW, RND_FRW_ROW };
+DECLARE_ALIGNED(8, static const int32_t, fdct_r_row)[2] = {RND_FRW_ROW, RND_FRW_ROW };
 
 static struct
 {
- const int32_t fdct_r_row_sse2[4] ATTR_ALIGN(16);
-} fdct_r_row_sse2 ATTR_ALIGN(16)=
+ DECLARE_ALIGNED(16, const int32_t, fdct_r_row_sse2)[4];
+} fdct_r_row_sse2 =
 {{
  RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW
 }};
-//static const long fdct_r_row_sse2[4] ATTR_ALIGN(16) = {RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW};
+//DECLARE_ALIGNED(16, static const long, fdct_r_row_sse2)[4] = {RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW};
 
-static const int16_t tab_frw_01234567[] ATTR_ALIGN(8) = {  // forward_dct coeff table
+DECLARE_ALIGNED(8, static const int16_t, tab_frw_01234567)[] = {  // forward_dct coeff table
   16384,   16384,   22725,   19266,
   16384,   16384,   12873,    4520,
   21407,    8867,   19266,   -4520,
@@ -154,10 +152,10 @@ static const int16_t tab_frw_01234567[] ATTR_ALIGN(8) = {  // forward_dct coeff 
 
 static struct
 {
- const int16_t tab_frw_01234567_sse2[256] ATTR_ALIGN(16);
-} tab_frw_01234567_sse2 ATTR_ALIGN(16) =
+ DECLARE_ALIGNED(16, const int16_t, tab_frw_01234567_sse2)[256];
+} tab_frw_01234567_sse2 =
 {{
-//static const int16_t tab_frw_01234567_sse2[] ATTR_ALIGN(16) = {  // forward_dct coeff table
+//DECLARE_ALIGNED(16, static const int16_t, tab_frw_01234567_sse2)[] = {  // forward_dct coeff table
 #define TABLE_SSE2 C4,  C4,  C1,  C3, -C6, -C2, -C1, -C5, \
                    C4,  C4,  C5,  C7,  C2,  C6,  C3, -C7, \
                   -C4,  C4,  C7,  C3,  C6, -C2,  C7, -C5, \
@@ -535,7 +533,7 @@ static av_always_inline void fdct_row_mmx(const int16_t *in, int16_t *out, const
 
 void ff_fdct_mmx(int16_t *block)
 {
-    int64_t align_tmp[16] ATTR_ALIGN(8);
+    DECLARE_ALIGNED(8, int64_t, align_tmp)[16];
     int16_t * block1= (int16_t*)align_tmp;
     const int16_t *table= tab_frw_01234567;
     int i;
@@ -553,7 +551,7 @@ void ff_fdct_mmx(int16_t *block)
 
 void ff_fdct_mmx2(int16_t *block)
 {
-    int64_t align_tmp[16] ATTR_ALIGN(8);
+    DECLARE_ALIGNED(8, int64_t, align_tmp)[16];
     int16_t *block1= (int16_t*)align_tmp;
     const int16_t *table= tab_frw_01234567;
     int i;
@@ -571,7 +569,7 @@ void ff_fdct_mmx2(int16_t *block)
 
 void ff_fdct_sse2(int16_t *block)
 {
-    int64_t align_tmp[16] ATTR_ALIGN(16);
+    DECLARE_ALIGNED(16, int64_t, align_tmp)[16];
     int16_t * const block1= (int16_t*)align_tmp;
 
     fdct_col_sse2(block, block1, 0);
