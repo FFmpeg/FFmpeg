@@ -459,7 +459,7 @@ Set the ISO 639 language code (3 letters) of the current video stream.
 Set pixel format. Use 'list' as parameter to show all the supported
 pixel formats.
 @item -sws_flags @var{flags}
-Set SwScaler flags (only available when compiled with swscale support).
+Set SwScaler flags.
 @item -g @var{gop_size}
 Set the group of pictures size.
 @item -intra
