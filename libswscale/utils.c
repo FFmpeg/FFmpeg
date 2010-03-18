@@ -1115,7 +1115,9 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
         av_log(c, AV_LOG_INFO, "from %s to %s%s ",
                sws_format_name(srcFormat),
 #ifdef DITHER1XBPP
-               dstFormat == PIX_FMT_BGR555 || dstFormat == PIX_FMT_BGR565 ? "dithered " : "",
+               dstFormat == PIX_FMT_BGR555 || dstFormat == PIX_FMT_BGR565 ||
+               dstFormat == PIX_FMT_RGB444BE || dstFormat == PIX_FMT_RGB444LE ||
+               dstFormat == PIX_FMT_BGR444BE || dstFormat == PIX_FMT_BGR444LE ? "dithered " : "",
 #else
                "",
 #endif
@@ -1184,6 +1186,9 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
             av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR16 converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
         else if (dstFormat==PIX_FMT_BGR555)
             av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR15 converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+        else if (dstFormat == PIX_FMT_RGB444BE || dstFormat == PIX_FMT_RGB444LE ||
+                 dstFormat == PIX_FMT_BGR444BE || dstFormat == PIX_FMT_BGR444LE)
+            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR12 converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 
         av_log(c, AV_LOG_VERBOSE, "%dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
         av_log(c, AV_LOG_DEBUG, "lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",

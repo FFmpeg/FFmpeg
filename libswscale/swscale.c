@@ -39,7 +39,7 @@
 
 /*
 tested special converters (most are tested actually, but I did not write it down ...)
- YV12 -> BGR16
+ YV12 -> BGR12/BGR16
  YV12 -> YV12
  BGR15 -> BGR16
  BGR16 -> BGR16
@@ -799,6 +799,23 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             const int dr2= dither_2x2_8[y&1    ][1];\
             const int dg2= dither_2x2_8[y&1    ][0];\
             const int db2= dither_2x2_8[(y&1)^1][1];\
+            func(uint16_t,0)\
+                ((uint16_t*)dest)[i2+0]= r[Y1+dr1] + g[Y1+dg1] + b[Y1+db1];\
+                ((uint16_t*)dest)[i2+1]= r[Y2+dr2] + g[Y2+dg2] + b[Y2+db2];\
+            }\
+        }\
+        break;\
+    case PIX_FMT_RGB444BE:\
+    case PIX_FMT_RGB444LE:\
+    case PIX_FMT_BGR444BE:\
+    case PIX_FMT_BGR444LE:\
+        {\
+            const int dr1= dither_4x4_16[y&3    ][0];\
+            const int dg1= dither_4x4_16[y&3    ][1];\
+            const int db1= dither_4x4_16[(y&3)^3][0];\
+            const int dr2= dither_4x4_16[y&3    ][1];\
+            const int dg2= dither_4x4_16[y&3    ][0];\
+            const int db2= dither_4x4_16[(y&3)^3][1];\
             func(uint16_t,0)\
                 ((uint16_t*)dest)[i2+0]= r[Y1+dr1] + g[Y1+dg1] + b[Y1+db1];\
                 ((uint16_t*)dest)[i2+1]= r[Y2+dr2] + g[Y2+dg2] + b[Y2+db2];\
