@@ -63,19 +63,18 @@ static AVFilterPicRef *get_video_buffer(AVFilterLink *link, int perms,
 static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
     FlipContext *flip = link->dst->priv;
-    AVFilterPicRef *ref2 = avfilter_ref_pic(picref, ~0);
     int i;
 
     for (i = 0; i < 4; i ++) {
         int vsub = i == 1 || i == 2 ? flip->vsub : 0;
 
-        if (ref2->data[i]) {
-            ref2->data[i] += ((link->h >> vsub)-1) * ref2->linesize[i];
-            ref2->linesize[i] = -ref2->linesize[i];
+        if (picref->data[i]) {
+            picref->data[i] += ((link->h >> vsub)-1) * picref->linesize[i];
+            picref->linesize[i] = -picref->linesize[i];
         }
     }
 
-    avfilter_start_frame(link->dst->outputs[0], ref2);
+    avfilter_start_frame(link->dst->outputs[0], picref);
 }
 
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
@@ -96,6 +95,7 @@ AVFilter avfilter_vf_vflip = {
                                     .get_video_buffer = get_video_buffer,
                                     .start_frame      = start_frame,
                                     .draw_slice       = draw_slice,
+                                    .end_frame        = avfilter_null_end_frame,
                                     .config_props     = config_input, },
                                   { .name = NULL}},
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
