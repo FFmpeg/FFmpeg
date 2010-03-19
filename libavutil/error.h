@@ -38,6 +38,7 @@
 #endif
 
 #if LIBAVUTIL_VERSION_MAJOR < 51
+#define AVERROR_INVALIDDATA AVERROR(EINVAL)  /**< Invalid data found when processing input */
 #define AVERROR_IO          AVERROR(EIO)     /**< I/O error */
 #define AVERROR_NOENT       AVERROR(ENOENT)  /**< No such file or directory. */
 #define AVERROR_NOMEM       AVERROR(ENOMEM)  /**< not enough memory */
@@ -46,13 +47,13 @@
 #endif
 
 #define AVERROR_EOF         AVERROR(EPIPE)   /**< End of file. */
-#define AVERROR_INVALIDDATA AVERROR(EINVAL)  /**< Invalid data found when processing input */
 #define AVERROR_NOFMT       AVERROR(EILSEQ)  /**< unknown format */
 #define AVERROR_NOTSUPP     AVERROR(ENOSYS)  /**< Operation not supported. */
 
 #define AVERROR_PATCHWELCOME    (-MKTAG('P','A','W','E')) /**< Not yet implemented in FFmpeg. Patches welcome. */
 
 #if LIBAVUTIL_VERSION_MAJOR > 50
+#define AVERROR_INVALIDDATA     (-MKTAG('I','N','D','A')) /**< Invalid data found when processing input */
 #define AVERROR_NUMEXPECTED     (-MKTAG('N','U','E','X')) /**< Number syntax expected in filename. */
 #endif
 
