@@ -2211,7 +2211,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
         dst[i] = FFMIN(val>>7, (1<<15)-1); // the cubic equation does overflow ...
         //dst[i] = val>>7;
     }
-#endif /* COMPILE_ALTIVEC */
+#endif /* COMPILE_TEMPLATE_ALTIVEC */
 #endif /* COMPILE_MMX */
 }
 
