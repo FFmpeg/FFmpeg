@@ -1646,6 +1646,47 @@ static void print_sdp(AVFormatContext **avc, int n)
     fflush(stdout);
 }
 
+static int copy_chapters(int infile, int outfile)
+{
+    AVFormatContext *is = input_files[infile];
+    AVFormatContext *os = output_files[outfile];
+    int i;
+
+    for (i = 0; i < is->nb_chapters; i++) {
+        AVChapter *in_ch = is->chapters[i], *out_ch;
+        AVMetadataTag *t = NULL;
+        int64_t ts_off   = av_rescale_q(start_time - input_files_ts_offset[infile],
+                                      AV_TIME_BASE_Q, in_ch->time_base);
+        int64_t rt       = (recording_time == INT64_MAX) ? INT64_MAX :
+                           av_rescale_q(recording_time, AV_TIME_BASE_Q, in_ch->time_base);
+
+
+        if (in_ch->end < ts_off)
+            continue;
+        if (rt != INT64_MAX && in_ch->start > rt + ts_off)
+            break;
+
+        out_ch = av_mallocz(sizeof(AVChapter));
+        if (!out_ch)
+            return AVERROR(ENOMEM);
+
+        out_ch->id        = in_ch->id;
+        out_ch->time_base = in_ch->time_base;
+        out_ch->start     = FFMAX(0,  in_ch->start - ts_off);
+        out_ch->end       = FFMIN(rt, in_ch->end   - ts_off);
+
+        while ((t = av_metadata_get(in_ch->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
+            av_metadata_set2(&out_ch->metadata, t->key, t->value, 0);
+
+        os->nb_chapters++;
+        os->chapters = av_realloc(os->chapters, sizeof(AVChapter)*os->nb_chapters);
+        if (!os->chapters)
+            return AVERROR(ENOMEM);
+        os->chapters[os->nb_chapters - 1] = out_ch;
+    }
+    return 0;
+}
+
 /*
  * The following code is the main loop of the file converter
  */
@@ -2132,6 +2173,16 @@ static int av_encode(AVFormatContext **output_files,
             av_metadata_set(&out_file->metadata, mtag->key, mtag->value);
         av_metadata_conv(out_file, out_file->oformat->metadata_conv,
                                     in_file->iformat->metadata_conv);
+    }
+
+    /* copy chapters from the first input file that has them*/
+    for (i = 0; i < nb_input_files; i++) {
+        if (!input_files[i]->nb_chapters)
+            continue;
+
+        for (j = 0; j < nb_output_files; j++)
+            if ((ret = copy_chapters(i, j)) < 0)
+                goto dump_format;
     }
 
     /* open files and write file headers */
