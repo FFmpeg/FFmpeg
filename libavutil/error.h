@@ -46,7 +46,7 @@
 #endif
 
 #define AVERROR_EOF         AVERROR(EPIPE)   /**< End of file. */
-#define AVERROR_INVALIDDATA AVERROR(EINVAL)  /**< invalid data found */
+#define AVERROR_INVALIDDATA AVERROR(EINVAL)  /**< Invalid data found when processing input */
 #define AVERROR_NOFMT       AVERROR(EILSEQ)  /**< unknown format */
 #define AVERROR_NOTSUPP     AVERROR(ENOSYS)  /**< Operation not supported. */
 
