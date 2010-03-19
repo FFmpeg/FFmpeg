@@ -1262,7 +1262,7 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     }
 
 #else
-#if ARCH_PPC && COMPILE_ALTIVEC
+#if ARCH_PPC && defined(COMPILE_ALTIVEC)
     if (flags & SWS_CPU_CAPS_ALTIVEC) {
         sws_init_swScale_altivec(c);
         return swScale_altivec;
