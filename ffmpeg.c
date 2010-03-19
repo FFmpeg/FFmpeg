@@ -318,14 +318,12 @@ typedef struct AVInputFile {
 
 /* init terminal so that we can grab keys */
 static struct termios oldtty;
-#endif
 
 static void term_exit(void)
 {
-#if HAVE_TERMIOS_H
     tcsetattr (0, TCSANOW, &oldtty);
-#endif
 }
+#endif
 
 static volatile int received_sigterm = 0;
 
@@ -343,6 +341,7 @@ static void term_init(void)
 
     tcgetattr (0, &tty);
     oldtty = tty;
+    atexit(term_exit);
 
     tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP
                           |INLCR|IGNCR|ICRNL|IXON);
@@ -363,10 +362,6 @@ static void term_init(void)
     signal(SIGXCPU, sigterm_handler);
 #endif
 
-    /*
-    register a function to be called at normal program termination
-    */
-    atexit(term_exit);
 #if CONFIG_BEOS_NETSERVER
     fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
 #endif
