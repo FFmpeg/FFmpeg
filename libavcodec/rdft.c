@@ -50,36 +50,6 @@ SINTABLE_CONST FFTSample * const ff_sin_tabs[] = {
     ff_sin_2048, ff_sin_4096, ff_sin_8192, ff_sin_16384, ff_sin_32768, ff_sin_65536,
 };
 
-static void ff_rdft_calc_c(RDFTContext* s, FFTSample* data);
-
-av_cold int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans)
-{
-    int n = 1 << nbits;
-    int i;
-    const double theta = (trans == DFT_R2C || trans == DFT_C2R ? -1 : 1)*2*M_PI/n;
-
-    s->nbits           = nbits;
-    s->inverse         = trans == IDFT_C2R || trans == DFT_C2R;
-    s->sign_convention = trans == IDFT_R2C || trans == DFT_C2R ? 1 : -1;
-
-    if (nbits < 4 || nbits > 16)
-        return -1;
-
-    if (ff_fft_init(&s->fft, nbits-1, trans == IDFT_C2R || trans == IDFT_R2C) < 0)
-        return -1;
-
-    ff_init_ff_cos_tabs(nbits);
-    s->tcos = ff_cos_tabs[nbits];
-    s->tsin = ff_sin_tabs[nbits]+(trans == DFT_R2C || trans == DFT_C2R)*(n>>2);
-#if !CONFIG_HARDCODED_TABLES
-    for (i = 0; i < (n>>2); i++) {
-        s->tsin[i] = sin(i*theta);
-    }
-#endif
-    s->rdft_calc   = ff_rdft_calc_c;
-    return 0;
-}
-
 /** Map one real FFT into two parallel real even and odd FFTs. Then interleave
  * the two real FFTs into one complex FFT. Unmangle the results.
  * ref: http://www.engineeringproductivitytools.com/stuff/T0001/PT10.HTM
@@ -124,6 +94,34 @@ static void ff_rdft_calc_c(RDFTContext* s, FFTSample* data)
         ff_fft_permute(&s->fft, (FFTComplex*)data);
         ff_fft_calc(&s->fft, (FFTComplex*)data);
     }
+}
+
+av_cold int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans)
+{
+    int n = 1 << nbits;
+    int i;
+    const double theta = (trans == DFT_R2C || trans == DFT_C2R ? -1 : 1)*2*M_PI/n;
+
+    s->nbits           = nbits;
+    s->inverse         = trans == IDFT_C2R || trans == DFT_C2R;
+    s->sign_convention = trans == IDFT_R2C || trans == DFT_C2R ? 1 : -1;
+
+    if (nbits < 4 || nbits > 16)
+        return -1;
+
+    if (ff_fft_init(&s->fft, nbits-1, trans == IDFT_C2R || trans == IDFT_R2C) < 0)
+        return -1;
+
+    ff_init_ff_cos_tabs(nbits);
+    s->tcos = ff_cos_tabs[nbits];
+    s->tsin = ff_sin_tabs[nbits]+(trans == DFT_R2C || trans == DFT_C2R)*(n>>2);
+#if !CONFIG_HARDCODED_TABLES
+    for (i = 0; i < (n>>2); i++) {
+        s->tsin[i] = sin(i*theta);
+    }
+#endif
+    s->rdft_calc   = ff_rdft_calc_c;
+    return 0;
 }
 
 av_cold void ff_rdft_end(RDFTContext *s)
