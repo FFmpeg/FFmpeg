@@ -1700,11 +1700,12 @@ static int video_thread(void *arg)
 {
     VideoState *is = arg;
     AVFrame *frame= avcodec_alloc_frame();
-    int64_t pts_int, pos;
+    int64_t pts_int;
     double pts;
     int ret;
 
 #if CONFIG_AVFILTER
+    int64_t pos;
     AVFilterContext *filt_src = NULL, *filt_out = NULL;
     AVFilterGraph *graph = av_mallocz(sizeof(AVFilterGraph));
     graph->scale_sws_opts = av_strdup("sws_flags=bilinear");
