@@ -63,6 +63,7 @@ version <next>:
 - RTSP muxer
 - HE-AAC v1 decoder
 - Kega Game Video (KGV1) decoder
+- VorbisComment writing for FLAC, Ogg FLAC and Ogg Speex files
 
 
 
