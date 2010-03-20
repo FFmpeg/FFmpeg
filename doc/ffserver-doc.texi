@@ -239,6 +239,8 @@ ffserver [options]
 
 @include fftools-common-opts.texi
 
+@section Main options
+
 @table @option
 @item -f @var{configfile}
 Use @file{configfile} instead of @file{/etc/ffserver.conf}.
