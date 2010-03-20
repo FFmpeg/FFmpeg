@@ -196,6 +196,7 @@ struct RDFTContext {
     const FFTSample *tcos;
     SINTABLE_CONST FFTSample *tsin;
     FFTContext fft;
+    void (*rdft_calc)(struct RDFTContext *s, FFTSample *z);
 };
 
 /**
@@ -204,8 +205,12 @@ struct RDFTContext {
  * @param trans           the type of transform
  */
 int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans);
-void ff_rdft_calc(RDFTContext *s, FFTSample *data);
 void ff_rdft_end(RDFTContext *s);
+
+static av_always_inline void ff_rdft_calc(RDFTContext *s, FFTSample *data)
+{
+    s->rdft_calc(s, data);
+}
 
 /* Discrete Cosine Transform */
 

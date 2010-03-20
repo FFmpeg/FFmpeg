@@ -50,6 +50,8 @@ SINTABLE_CONST FFTSample * const ff_sin_tabs[] = {
     ff_sin_2048, ff_sin_4096, ff_sin_8192, ff_sin_16384, ff_sin_32768, ff_sin_65536,
 };
 
+static void ff_rdft_calc_c(RDFTContext* s, FFTSample* data);
+
 av_cold int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans)
 {
     int n = 1 << nbits;
@@ -74,6 +76,7 @@ av_cold int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans)
         s->tsin[i] = sin(i*theta);
     }
 #endif
+    s->rdft_calc   = ff_rdft_calc_c;
     return 0;
 }
 
@@ -121,11 +124,6 @@ static void ff_rdft_calc_c(RDFTContext* s, FFTSample* data)
         ff_fft_permute(&s->fft, (FFTComplex*)data);
         ff_fft_calc(&s->fft, (FFTComplex*)data);
     }
-}
-
-void ff_rdft_calc(RDFTContext *s, FFTSample *data)
-{
-    ff_rdft_calc_c(s, data);
 }
 
 av_cold void ff_rdft_end(RDFTContext *s)
