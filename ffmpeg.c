@@ -318,12 +318,14 @@ typedef struct AVInputFile {
 
 /* init terminal so that we can grab keys */
 static struct termios oldtty;
+#endif
 
 static void term_exit(void)
 {
+#if HAVE_TERMIOS_H
     tcsetattr (0, TCSANOW, &oldtty);
-}
 #endif
+}
 
 static volatile int received_sigterm = 0;
 
