@@ -24,6 +24,7 @@
 
 #include "avformat.h"
 
-int ff_flac_write_header(ByteIOContext *pb, AVCodecContext *codec);
+int ff_flac_write_header(ByteIOContext *pb, AVCodecContext *codec,
+                         int last_block);
 
 #endif /* AVFORMAT_FLACENC_H */

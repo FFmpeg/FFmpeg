@@ -69,8 +69,9 @@ OBJS-$(CONFIG_FFM_MUXER)                 += ffmenc.o
 OBJS-$(CONFIG_FILMSTRIP_DEMUXER)         += filmstripdec.o
 OBJS-$(CONFIG_FILMSTRIP_MUXER)           += filmstripenc.o
 OBJS-$(CONFIG_FLAC_DEMUXER)              += flacdec.o raw.o id3v1.o \
-                                            id3v2.o oggparsevorbis.o
-OBJS-$(CONFIG_FLAC_MUXER)                += flacenc.o
+                                            id3v2.o \
+                                            vorbiscomment.o
+OBJS-$(CONFIG_FLAC_MUXER)                += flacenc.o vorbiscomment.o
 OBJS-$(CONFIG_FLIC_DEMUXER)              += flic.o
 OBJS-$(CONFIG_FLV_DEMUXER)               += flvdec.o
 OBJS-$(CONFIG_FLV_MUXER)                 += flvenc.o avc.o
@@ -148,7 +149,8 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             oggparsespeex.o  \
                                             oggparsetheora.o \
                                             oggparsevorbis.o \
-                                            riff.o
+                                            riff.o \
+                                            vorbiscomment.o
 OBJS-$(CONFIG_OGG_MUXER)                 += oggenc.o
 OBJS-$(CONFIG_OMA_DEMUXER)               += oma.o raw.o
 OBJS-$(CONFIG_PCM_ALAW_DEMUXER)          += raw.o

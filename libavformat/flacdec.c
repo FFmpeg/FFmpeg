@@ -24,6 +24,7 @@
 #include "raw.h"
 #include "id3v2.h"
 #include "oggdec.h"
+#include "vorbiscomment.h"
 
 static int flac_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)

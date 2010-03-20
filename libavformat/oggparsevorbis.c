@@ -30,17 +30,6 @@
 #include "avformat.h"
 #include "oggdec.h"
 
-/**
- * VorbisComment metadata conversion mapping.
- * from Ogg Vorbis I format specification: comment field and header specification
- * http://xiph.org/vorbis/doc/v-comment.html
- */
-const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
-    { "ALBUMARTIST", "album_artist"},
-    { "TRACKNUMBER", "track"  },
-    { 0 }
-};
-
 static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
 {
     int i, cnum, h, m, s, ms, keylen = strlen(key);

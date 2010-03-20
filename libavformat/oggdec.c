@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include "oggdec.h"
 #include "avformat.h"
+#include "vorbiscomment.h"
 
 #define MAX_PAGE_SIZE 65307
 #define DECODER_BUFFER_SIZE MAX_PAGE_SIZE
