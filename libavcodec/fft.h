@@ -217,7 +217,6 @@ static av_always_inline void ff_rdft_calc(RDFTContext *s, FFTSample *data)
 struct DCTContext {
     int nbits;
     int inverse;
-    FFTSample *data;
     RDFTContext rdft;
     const float *costab;
     FFTSample *csc2;
