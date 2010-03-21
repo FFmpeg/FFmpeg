@@ -220,6 +220,7 @@ struct DCTContext {
     RDFTContext rdft;
     const float *costab;
     FFTSample *csc2;
+    void (*dct_calc)(struct DCTContext *s, FFTSample *data);
 };
 
 /**

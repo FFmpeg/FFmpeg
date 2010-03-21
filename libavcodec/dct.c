@@ -105,7 +105,7 @@ static void ff_dct_calc_c(DCTContext *ctx, FFTSample *data)
 
 void ff_dct_calc(DCTContext *s, FFTSample *data)
 {
-    ff_dct_calc_c(s, data);
+    s->dct_calc(s, data);
 }
 
 av_cold int ff_dct_init(DCTContext *s, int nbits, int inverse)
@@ -129,6 +129,8 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, int inverse)
 
     for (i = 0; i < n/2; i++)
         s->csc2[i] = 0.5 / sin((M_PI / (2*n) * (2*i + 1)));
+
+    s->dct_calc = ff_dct_calc_c;
 
     return 0;
 }
