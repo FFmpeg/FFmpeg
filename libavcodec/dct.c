@@ -31,31 +31,6 @@
 #include "libavutil/mathematics.h"
 #include "fft.h"
 
-av_cold int ff_dct_init(DCTContext *s, int nbits, int inverse)
-{
-    int n = 1 << nbits;
-    int i;
-
-    s->nbits    = nbits;
-    s->inverse  = inverse;
-
-    ff_init_ff_cos_tabs(nbits+2);
-
-    s->costab = ff_cos_tabs[nbits+2];
-
-    s->csc2 = av_malloc(n/2 * sizeof(FFTSample));
-
-    if (ff_rdft_init(&s->rdft, nbits, inverse) < 0) {
-        av_free(s->csc2);
-        return -1;
-    }
-
-    for (i = 0; i < n/2; i++)
-        s->csc2[i] = 0.5 / sin((M_PI / (2*n) * (2*i + 1)));
-
-    return 0;
-}
-
 /* sin((M_PI * x / (2*n)) */
 #define SIN(s,n,x) (s->costab[(n) - (x)])
 
@@ -131,6 +106,31 @@ static void ff_dct_calc_c(DCTContext *ctx, FFTSample *data)
 void ff_dct_calc(DCTContext *s, FFTSample *data)
 {
     ff_dct_calc_c(s, data);
+}
+
+av_cold int ff_dct_init(DCTContext *s, int nbits, int inverse)
+{
+    int n = 1 << nbits;
+    int i;
+
+    s->nbits    = nbits;
+    s->inverse  = inverse;
+
+    ff_init_ff_cos_tabs(nbits+2);
+
+    s->costab = ff_cos_tabs[nbits+2];
+
+    s->csc2 = av_malloc(n/2 * sizeof(FFTSample));
+
+    if (ff_rdft_init(&s->rdft, nbits, inverse) < 0) {
+        av_free(s->csc2);
+        return -1;
+    }
+
+    for (i = 0; i < n/2; i++)
+        s->csc2[i] = 0.5 / sin((M_PI / (2*n) * (2*i + 1)));
+
+    return 0;
 }
 
 av_cold void ff_dct_end(DCTContext *s)
