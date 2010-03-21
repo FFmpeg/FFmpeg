@@ -42,68 +42,69 @@ static void ff_dct_calc_III_c(DCTContext *ctx, FFTSample *data)
     int n = 1 << ctx->nbits;
     int i;
 
-        float next = data[n - 1];
-        float inv_n = 1.0f / n;
+    float next = data[n - 1];
+    float inv_n = 1.0f / n;
 
-        for (i = n - 2; i >= 2; i -= 2) {
-            float val1 = data[i    ];
-            float val2 = data[i - 1] - data[i + 1];
-            float c = COS(ctx, n, i);
-            float s = SIN(ctx, n, i);
+    for (i = n - 2; i >= 2; i -= 2) {
+        float val1 = data[i    ];
+        float val2 = data[i - 1] - data[i + 1];
+        float c = COS(ctx, n, i);
+        float s = SIN(ctx, n, i);
 
-            data[i    ] = c * val1 + s * val2;
-            data[i + 1] = s * val1 - c * val2;
-        }
+        data[i    ] = c * val1 + s * val2;
+        data[i + 1] = s * val1 - c * val2;
+    }
 
-        data[1] = 2 * next;
+    data[1] = 2 * next;
 
-        ff_rdft_calc(&ctx->rdft, data);
+    ff_rdft_calc(&ctx->rdft, data);
 
-        for (i = 0; i < n / 2; i++) {
-            float tmp1 = data[i        ] * inv_n;
-            float tmp2 = data[n - i - 1] * inv_n;
-            float csc = ctx->csc2[i] * (tmp1 - tmp2);
+    for (i = 0; i < n / 2; i++) {
+        float tmp1 = data[i        ] * inv_n;
+        float tmp2 = data[n - i - 1] * inv_n;
+        float csc = ctx->csc2[i] * (tmp1 - tmp2);
 
-            tmp1 += tmp2;
-            data[i        ] = tmp1 + csc;
-            data[n - i - 1] = tmp1 - csc;
-        }
+        tmp1 += tmp2;
+        data[i        ] = tmp1 + csc;
+        data[n - i - 1] = tmp1 - csc;
+    }
 }
 
 static void ff_dct_calc_II_c(DCTContext *ctx, FFTSample *data)
 {
     int n = 1 << ctx->nbits;
     int i;
-        float next;
-        for (i=0; i < n/2; i++) {
-            float tmp1 = data[i        ];
-            float tmp2 = data[n - i - 1];
-            float s = SIN(ctx, n, 2*i + 1);
+    float next;
 
-            s *= tmp1 - tmp2;
-            tmp1 = (tmp1 + tmp2) * 0.5f;
+    for (i=0; i < n/2; i++) {
+        float tmp1 = data[i        ];
+        float tmp2 = data[n - i - 1];
+        float s = SIN(ctx, n, 2*i + 1);
 
-            data[i    ] = tmp1 + s;
-            data[n-i-1] = tmp1 - s;
-        }
+        s *= tmp1 - tmp2;
+        tmp1 = (tmp1 + tmp2) * 0.5f;
 
-        ff_rdft_calc(&ctx->rdft, data);
+        data[i    ] = tmp1 + s;
+        data[n-i-1] = tmp1 - s;
+    }
 
-        next = data[1] * 0.5;
-        data[1] *= -1;
+    ff_rdft_calc(&ctx->rdft, data);
 
-        for (i = n - 2; i >= 0; i -= 2) {
-            float inr = data[i    ];
-            float ini = data[i + 1];
-            float c = COS(ctx, n, i);
-            float s = SIN(ctx, n, i);
+    next = data[1] * 0.5;
+    data[1] *= -1;
 
-            data[i  ] = c * inr + s * ini;
+    for (i = n - 2; i >= 0; i -= 2) {
+        float inr = data[i    ];
+        float ini = data[i + 1];
+        float c = COS(ctx, n, i);
+        float s = SIN(ctx, n, i);
 
-            data[i+1] = next;
+        data[i  ] = c * inr + s * ini;
 
-            next +=     s * inr - c * ini;
-        }
+        data[i+1] = next;
+
+        next +=     s * inr - c * ini;
+    }
 }
 
 void ff_dct_calc(DCTContext *s, FFTSample *data)
