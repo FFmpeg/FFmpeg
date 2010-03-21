@@ -44,6 +44,7 @@
 #include "put_bits.h"
 #include "simple_idct.h"
 #include "dvdata.h"
+#include "dv_vlc_data.h"
 
 //#undef NDEBUG
 //#include <assert.h>
