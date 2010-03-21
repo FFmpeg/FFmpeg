@@ -43,10 +43,9 @@ int main(int argc, char *argv[])
     tableinit();
 
     for (i = 0; tables[i].declaration; i++) {
-        puts(tables[i].declaration);
-        puts(" = {\n");
+        printf("%s = {\n", tables[i].declaration);
         tables[i].printfunc(tables[i].data, tables[i].size, tables[i].size2);
-        puts("};\n");
+        printf("};\n");
     }
     return 0;
 }
