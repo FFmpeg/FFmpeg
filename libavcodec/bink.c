@@ -43,7 +43,7 @@ enum Sources {
     BINK_SRC_X_OFF,           ///< X components of motion value
     BINK_SRC_Y_OFF,           ///< Y components of motion value
     BINK_SRC_INTRA_DC,        ///< DC values for intrablocks with DCT
-    BINK_SRC_INTER_DC,        ///< DC values for intrablocks with DCT
+    BINK_SRC_INTER_DC,        ///< DC values for interblocks with DCT
     BINK_SRC_RUN,             ///< run lengths for special fill block
 
     BINK_NB_SRC
