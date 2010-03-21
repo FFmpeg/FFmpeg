@@ -560,7 +560,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
     /* if still no format found, error */
     if (!fmt) {
-        err = AVERROR_NOFMT;
+        err = AVERROR_INVALIDDATA;
         goto fail;
     }
 
