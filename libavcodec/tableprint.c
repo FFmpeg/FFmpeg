@@ -24,36 +24,11 @@
 #include <inttypes.h>
 #include "tableprint.h"
 
-#define WRITE_1D_FUNC(name, type, fmtstr, linebrk)\
-void write_##name##_array(const void *arg, int len, int dummy)\
-{\
-    const type *data = arg;\
-    int i;\
-    printf("   ");\
-    for (i = 0; i < len - 1; i++) {\
-       printf(" "fmtstr",", data[i]);\
-       if ((i & linebrk) == linebrk) printf("\n   ");\
-    }\
-    printf(" "fmtstr"\n", data[i]);\
-}
-
 WRITE_1D_FUNC(int8,   int8_t,   "%3"PRIi8, 15)
 WRITE_1D_FUNC(uint8,  uint8_t,  "0x%02"PRIx8, 15)
 WRITE_1D_FUNC(uint16, uint16_t, "0x%08"PRIx16, 7)
 WRITE_1D_FUNC(uint32, uint32_t, "0x%08"PRIx32, 7)
 WRITE_1D_FUNC(float,  float,    "%.18e", 3)
-
-#define WRITE_2D_FUNC(name, type)\
-void write_##name##_2d_array(const void *arg, int len, int len2)\
-{\
-    const type *data = arg;\
-    int i;\
-    printf("    {\n");\
-    for (i = 0; i < len; i++) {\
-        write_##name##_array(data + i * len2, len2, 0);\
-        printf(i == len - 1 ? "    }\n" : "    }, {\n");\
-    }\
-}
 
 WRITE_2D_FUNC(int8,   int8_t)
 WRITE_2D_FUNC(uint8,  uint8_t)

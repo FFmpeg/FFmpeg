@@ -24,6 +24,35 @@
 #define AVCODEC_TABLEPRINT_H
 
 #include <stdint.h>
+#include <stdio.h>
+
+#define WRITE_1D_FUNC_ARGV(name, type, linebrk, fmtstr, ...)\
+void write_##name##_array(const void *arg, int len, int dummy)\
+{\
+    const type *data = arg;\
+    int i;\
+    printf("   ");\
+    for (i = 0; i < len - 1; i++) {\
+       printf(" "fmtstr",", __VA_ARGS__);\
+       if ((i & linebrk) == linebrk) printf("\n   ");\
+    }\
+    printf(" "fmtstr"\n", __VA_ARGS__);\
+}
+
+#define WRITE_1D_FUNC(name, type, fmtstr, linebrk)\
+    WRITE_1D_FUNC_ARGV(name, type, linebrk, fmtstr, data[i])
+
+#define WRITE_2D_FUNC(name, type)\
+void write_##name##_2d_array(const void *arg, int len, int len2)\
+{\
+    const type *data = arg;\
+    int i;\
+    printf("    {\n");\
+    for (i = 0; i < len; i++) {\
+        write_##name##_array(data + i * len2, len2, 0);\
+        printf(i == len - 1 ? "    }\n" : "    }, {\n");\
+    }\
+}
 
 /**
  * \defgroup printfuncs Predefined functions for printing tables
