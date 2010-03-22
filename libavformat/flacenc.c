@@ -26,29 +26,6 @@
 #include "vorbiscomment.h"
 #include "libavcodec/bytestream.h"
 
-int ff_flac_write_header(ByteIOContext *pb, AVCodecContext *codec,
-                         int last_block)
-{
-    uint8_t header[8] = {
-        0x66, 0x4C, 0x61, 0x43, 0x00, 0x00, 0x00, 0x22
-    };
-    uint8_t *streaminfo;
-    enum FLACExtradataFormat format;
-
-    header[4] = last_block ? 0x80 : 0x00;
-    if (!ff_flac_is_extradata_valid(codec, &format, &streaminfo))
-        return -1;
-
-    /* write "fLaC" stream marker and first metadata block header if needed */
-    if (format == FLAC_EXTRADATA_FORMAT_STREAMINFO) {
-        put_buffer(pb, header, 8);
-    }
-
-    /* write STREAMINFO or full header */
-    put_buffer(pb, codec->extradata, codec->extradata_size);
-
-    return 0;
-}
 
 static int flac_write_block_padding(ByteIOContext *pb, unsigned int n_padding_bytes,
                                     int last_block)
