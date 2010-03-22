@@ -27,6 +27,7 @@
 #endif
 #include "network.h"
 #include "rtsp.h"
+#include <libavutil/intreadwrite.h>
 
 static int rtsp_write_record(AVFormatContext *s)
 {
@@ -60,6 +61,40 @@ static int rtsp_write_header(AVFormatContext *s)
         url_close(rt->rtsp_hd);
         return AVERROR_INVALIDDATA;
     }
+    return 0;
+}
+
+static int tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
+{
+    RTSPState *rt = s->priv_data;
+    AVFormatContext *rtpctx = rtsp_st->transport_priv;
+    uint8_t *buf, *ptr;
+    int size;
+    uint8_t interleave_header[4];
+
+    size = url_close_dyn_buf(rtpctx->pb, &buf);
+    ptr = buf;
+    while (size > 4) {
+        uint32_t packet_len = AV_RB32(ptr);
+        int id;
+        ptr += 4;
+        size -= 4;
+        if (packet_len > size || packet_len < 2)
+            break;
+        if (ptr[1] >= 200 && ptr[1] <= 204)
+            id = rtsp_st->interleaved_max; /* RTCP */
+        else
+            id = rtsp_st->interleaved_min; /* RTP */
+        interleave_header[0] = '$';
+        interleave_header[1] = id;
+        AV_WB16(interleave_header + 2, packet_len);
+        url_write(rt->rtsp_hd, interleave_header, 4);
+        url_write(rt->rtsp_hd, ptr, packet_len);
+        ptr += packet_len;
+        size -= packet_len;
+    }
+    av_free(buf);
+    url_open_dyn_packet_buf(&rtpctx->pb, RTSP_TCP_MAX_PACKET_SIZE);
     return 0;
 }
 
@@ -111,7 +146,14 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
      * the internal stream_index = 0 becomes visible to the muxer user. */
     local_pkt = *pkt;
     local_pkt.stream_index = 0;
-    return av_write_frame(rtpctx, &local_pkt);
+    ret = av_write_frame(rtpctx, &local_pkt);
+    /* av_write_frame does all the RTP packetization. If using TCP as
+     * transport, rtpctx->pb is only a dyn_packet_buf that queues up the
+     * packets, so we need to send them out on the TCP connection separately.
+     */
+    if (!ret && rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP)
+        ret = tcp_write_packet(s, rtsp_st);
+    return ret;
 }
 
 static int rtsp_write_close(AVFormatContext *s)
