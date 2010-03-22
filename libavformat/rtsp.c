@@ -589,7 +589,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
                         url_close_dyn_buf(rtpctx->pb, &ptr);
                         av_free(ptr);
                     } else {
-                    url_fclose(rtpctx->pb);
+                        url_fclose(rtpctx->pb);
                     }
                     av_metadata_free(&rtpctx->streams[0]->metadata);
                     av_metadata_free(&rtpctx->metadata);
@@ -651,14 +651,14 @@ static void *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st,
     rtpctx->streams[0]->codec = st->codec;
 
     if (handle) {
-    url_fdopen(&rtpctx->pb, handle);
+        url_fdopen(&rtpctx->pb, handle);
     } else
         url_open_dyn_packet_buf(&rtpctx->pb, RTSP_TCP_MAX_PACKET_SIZE);
     ret = av_write_header(rtpctx);
 
     if (ret) {
         if (handle) {
-        url_fclose(rtpctx->pb);
+            url_fclose(rtpctx->pb);
         } else {
             uint8_t *ptr;
             url_close_dyn_buf(rtpctx->pb, &ptr);
