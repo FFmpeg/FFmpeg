@@ -269,6 +269,8 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             return AVERROR(EIO);
         for(i=0; i<3; i++){
             if (url_fopen(&f[i], filename, URL_RDONLY) < 0) {
+                if(i==1)
+                    break;
                 av_log(s1, AV_LOG_ERROR, "Could not open file : %s\n",filename);
                 return AVERROR(EIO);
             }
