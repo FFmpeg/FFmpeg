@@ -1296,10 +1296,9 @@ static int rtsp_read_play(AVFormatContext *s)
     return 0;
 }
 
-static int rtsp_setup_input_streams(AVFormatContext *s)
+static int rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply)
 {
     RTSPState *rt = s->priv_data;
-    RTSPMessageHeader reply1, *reply = &reply1;
     char cmd[1024];
     unsigned char *content = NULL;
     int ret;
@@ -1531,7 +1530,7 @@ redirect:
     }
 
     if (s->iformat)
-        err = rtsp_setup_input_streams(s);
+        err = rtsp_setup_input_streams(s, reply);
     else
         err = rtsp_setup_output_streams(s, host);
     if (err)
