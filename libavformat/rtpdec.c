@@ -35,6 +35,7 @@
 #include "rtpdec_h263.h"
 #include "rtpdec_h264.h"
 #include "rtpdec_vorbis.h"
+#include "rtpdec_theora.h"
 
 //#define DEBUG
 
@@ -69,6 +70,7 @@ void av_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_h263_2000_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_h264_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vorbis_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_theora_dynamic_handler);
 
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfv_handler);
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfa_handler);
