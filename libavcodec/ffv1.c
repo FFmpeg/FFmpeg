@@ -22,7 +22,7 @@
 
 /**
  * @file libavcodec/ffv1.c
- * FF Video Codec 1 (an experimental lossless codec)
+ * FF Video Codec 1 (a lossless codec)
  */
 
 #include "avcodec.h"
