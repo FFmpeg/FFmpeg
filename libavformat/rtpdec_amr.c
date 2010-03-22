@@ -142,6 +142,15 @@ static int amr_parse_sdp_line(AVFormatContext *s, int st_index,
         while (*p && *p == ' ') p++; /* strip trailing spaces */
 
         while (ff_rtsp_next_attr_and_value(&p, attr, sizeof(attr), value, sizeof(value))) {
+            /* Some AMR SDP configurations contain "octet-align", without
+             * the trailing =1. Therefore, if the value is empty,
+             * interpret it as "1".
+             */
+            if (!strcmp(value, "")) {
+                av_log(s, AV_LOG_WARNING, "AMR fmtp attribute %s had "
+                                          "nonstandard empty value\n", attr);
+                strcpy(value, "1");
+            }
             if (!strcmp(attr, "octet-align"))
                 octet_align = atoi(value);
             else if (!strcmp(attr, "crc"))
