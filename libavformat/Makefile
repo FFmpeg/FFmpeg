@@ -71,7 +71,8 @@ OBJS-$(CONFIG_FILMSTRIP_MUXER)           += filmstripenc.o
 OBJS-$(CONFIG_FLAC_DEMUXER)              += flacdec.o raw.o id3v1.o \
                                             id3v2.o oggparsevorbis.o \
                                             vorbiscomment.o
-OBJS-$(CONFIG_FLAC_MUXER)                += flacenc.o vorbiscomment.o
+OBJS-$(CONFIG_FLAC_MUXER)                += flacenc.o flacenc_header.o \
+                                            vorbiscomment.o
 OBJS-$(CONFIG_FLIC_DEMUXER)              += flic.o
 OBJS-$(CONFIG_FLV_DEMUXER)               += flvdec.o
 OBJS-$(CONFIG_FLV_MUXER)                 += flvenc.o avc.o
@@ -103,7 +104,8 @@ OBJS-$(CONFIG_M4V_MUXER)                 += raw.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)          += matroskadec.o matroska.o \
                                             riff.o isom.o rmdec.o rm.o
 OBJS-$(CONFIG_MATROSKA_MUXER)            += matroskaenc.o matroska.o \
-                                            riff.o isom.o avc.o
+                                            riff.o isom.o avc.o \
+                                            flacenc_header.o
 OBJS-$(CONFIG_MJPEG_DEMUXER)             += raw.o
 OBJS-$(CONFIG_MJPEG_MUXER)               += raw.o
 OBJS-$(CONFIG_MLP_DEMUXER)               += raw.o id3v2.o
