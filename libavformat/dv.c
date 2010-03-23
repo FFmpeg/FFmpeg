@@ -375,7 +375,7 @@ static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
 
     offset = sys->frame_size * timestamp;
 
-    if (offset > max_offset) offset = max_offset;
+    if (size >= 0 && offset > max_offset) offset = max_offset;
     else if (offset < 0) offset = 0;
 
     return offset;
