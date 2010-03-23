@@ -53,6 +53,8 @@ Disable graphical display.
 Force format.
 @item -window_title @var{title}
 Set window title (default is the input filename).
+@item -loop @var{number}
+Loops movie playback <number> times. 0 means forever.
 @end table
 
 @section Advanced options

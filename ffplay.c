@@ -260,6 +260,7 @@ static int error_recognition = FF_ER_CAREFUL;
 static int error_concealment = 3;
 static int decoder_reorder_pts= -1;
 static int autoexit;
+static int loop=1;
 static int framedrop=1;
 
 static int rdftspeed=20;
@@ -2481,9 +2482,13 @@ static int decode_thread(void *arg)
                 packet_queue_put(&is->videoq, pkt);
             }
             SDL_Delay(10);
-            if(autoexit && is->audioq.size + is->videoq.size + is->subtitleq.size ==0){
-                ret=AVERROR_EOF;
-                goto fail;
+            if(is->audioq.size + is->videoq.size + is->subtitleq.size ==0){
+                if(loop!=1 && (!loop || --loop)){
+                    stream_seek(cur_stream, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
+                }else if(autoexit){
+                    ret=AVERROR_EOF;
+                    goto fail;
+                }
             }
             continue;
         }
@@ -2963,6 +2968,7 @@ static const OptionDef options[] = {
     { "sync", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
     { "threads", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "autoexit", OPT_BOOL | OPT_EXPERT, {(void*)&autoexit}, "exit at the end", "" },
+    { "loop", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&loop}, "set number of times the playback shall be looped", "loop count" },
     { "framedrop", OPT_BOOL | OPT_EXPERT, {(void*)&framedrop}, "drop frames when cpu is too slow", "" },
     { "window_title", OPT_STRING | HAS_ARG, {(void*)&window_title}, "set window title", "window title" },
 #if CONFIG_AVFILTER
