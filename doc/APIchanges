@@ -12,7 +12,7 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
-2010-03-15 - r22649 - lavc 52.59.0 - av_dct_init()
+2010-03-23 - r22649 - lavc 52.60.0 - av_dct_init()
   Support DCT-I and DST-I
 
 2010-03-15 - r22540 - lavf 52.56.0 - AVFormatContext.start_time_realtime
