@@ -851,14 +851,18 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
             pic->data[i]= pic_arg->data[i];
             pic->linesize[i]= pic_arg->linesize[i];
         }
-        ff_alloc_picture(s, (Picture*)pic, 1);
+        if(ff_alloc_picture(s, (Picture*)pic, 1) < 0){
+            return -1;
+        }
     }else{
         i= ff_find_unused_picture(s, 0);
 
         pic= (AVFrame*)&s->picture[i];
         pic->reference= 3;
 
-        ff_alloc_picture(s, (Picture*)pic, 0);
+        if(ff_alloc_picture(s, (Picture*)pic, 0) < 0){
+            return -1;
+        }
 
         if(   pic->data[0] + INPLACE_OFFSET == pic_arg->data[0]
            && pic->data[1] + INPLACE_OFFSET == pic_arg->data[1]
@@ -1048,7 +1052,7 @@ static int estimate_best_b_count(MpegEncContext *s){
     return best_b_count;
 }
 
-static void select_input_picture(MpegEncContext *s){
+static int select_input_picture(MpegEncContext *s){
     int i;
 
     for(i=1; i<MAX_PICTURE_COUNT; i++)
@@ -1184,7 +1188,9 @@ no_output_pic:
             Picture *pic= &s->picture[i];
 
             pic->reference              = s->reordered_input_picture[0]->reference;
-            ff_alloc_picture(s, pic, 0);
+            if(ff_alloc_picture(s, pic, 0) < 0){
+                return -1;
+            }
 
             /* mark us unused / free shared pic */
             if(s->reordered_input_picture[0]->type == FF_BUFFER_TYPE_INTERNAL)
@@ -1214,6 +1220,7 @@ no_output_pic:
     }else{
        memset(&s->new_picture, 0, sizeof(Picture));
     }
+    return 0;
 }
 
 int MPV_encode_picture(AVCodecContext *avctx,
@@ -1238,7 +1245,9 @@ int MPV_encode_picture(AVCodecContext *avctx,
     if(load_input_picture(s, pic_arg) < 0)
         return -1;
 
-    select_input_picture(s);
+    if(select_input_picture(s) < 0){
+        return -1;
+    }
 
     /* output? */
     if(s->new_picture.data[0]){
