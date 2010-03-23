@@ -116,7 +116,7 @@ void av_rdft_end(RDFTContext *s)
 
 #if CONFIG_DCT
 
-DCTContext *av_dct_init(int nbits, int inverse)
+DCTContext *av_dct_init(int nbits, enum DCTTransformType inverse)
 {
     DCTContext *s = av_malloc(sizeof(*s));
 

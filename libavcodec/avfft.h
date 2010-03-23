@@ -77,12 +77,22 @@ void av_rdft_end(RDFTContext *s);
 
 typedef struct DCTContext DCTContext;
 
+enum DCTTransformType {
+    DCT_II = 0,
+    DCT_III,
+    DCT_I,
+    DST_I,
+};
+
 /**
- * Set up (Inverse)DCT.
- * @param nbits           log2 of the length of the input array
- * @param inverse         >0 forward transform, <0 inverse transform
+ * Sets up DCT.
+ * @param nbits           size of the input array:
+ *                        (1 << nbits)     for DCT-II, DCT-III and DST-I
+ *                        (1 << nbits) + 1 for DCT-I
+ *
+ * @note the first element of the input of DST-I is ignored
  */
-DCTContext *av_dct_init(int nbits, int inverse);
+DCTContext *av_dct_init(int nbits, enum DCTTransformType type);
 void av_dct_calc(DCTContext *s, FFTSample *data);
 void av_dct_end (DCTContext *s);
 

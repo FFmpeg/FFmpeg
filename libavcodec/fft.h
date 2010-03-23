@@ -226,11 +226,14 @@ struct DCTContext {
 };
 
 /**
- * Sets up (Inverse)DCT.
- * @param nbits           log2 of the length of the input array
- * @param inverse         >0 forward transform, <0 inverse transform
+ * Sets up DCT.
+ * @param nbits           size of the input array:
+ *                        (1 << nbits)     for DCT-II, DCT-III and DST-I
+ *                        (1 << nbits) + 1 for DCT-I
+ *
+ * @note the first element of the input of DST-I is ignored
  */
-int  ff_dct_init(DCTContext *s, int nbits, int inverse);
+int  ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType type);
 void ff_dct_calc(DCTContext *s, FFTSample *data);
 void ff_dct_end (DCTContext *s);
 

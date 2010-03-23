@@ -37,6 +37,66 @@
 /* cos((M_PI * x / (2*n)) */
 #define COS(s,n,x) (s->costab[x])
 
+static void ff_dst_calc_I_c(DCTContext *ctx, FFTSample *data)
+{
+    int n = 1 << ctx->nbits;
+    int i;
+
+    data[0] = 0;
+    for(i = 1; i < n/2; i++) {
+        float tmp1 = data[i    ];
+        float tmp2 = data[n - i];
+        float s = SIN(ctx, n, 2*i);
+
+        s *= tmp1 + tmp2;
+        tmp1 = (tmp1 - tmp2) * 0.5f;
+        data[i    ] = s + tmp1;
+        data[n - i] = s - tmp1;
+    }
+
+    data[n/2] *= 2;
+    ff_rdft_calc(&ctx->rdft, data);
+
+    data[0] *= 0.5f;
+
+    for(i = 1; i < n-2; i += 2) {
+        data[i + 1] += data[i - 1];
+        data[i    ] = -data[i + 2];
+    }
+
+    data[n-1] = 0;
+}
+
+static void ff_dct_calc_I_c(DCTContext *ctx, FFTSample *data)
+{
+    int n = 1 << ctx->nbits;
+    int i;
+    float next = -0.5f * (data[0] - data[n]);
+
+    for(i = 0; i < n/2; i++) {
+        float tmp1 = data[i    ];
+        float tmp2 = data[n - i];
+        float s = SIN(ctx, n, 2*i);
+        float c = COS(ctx, n, 2*i);
+
+        c *= tmp1 - tmp2;
+        s *= tmp1 - tmp2;
+
+        next += c;
+
+        tmp1 = (tmp1 + tmp2) * 0.5f;
+        data[i    ] = tmp1 - s;
+        data[n - i] = tmp1 + s;
+    }
+
+    ff_rdft_calc(&ctx->rdft, data);
+    data[n] = data[1];
+    data[1] = next;
+
+    for(i = 3; i <= n; i += 2)
+        data[i] = data[i - 2] - data[i];
+}
+
 static void ff_dct_calc_III_c(DCTContext *ctx, FFTSample *data)
 {
     int n = 1 << ctx->nbits;
@@ -112,7 +172,7 @@ void ff_dct_calc(DCTContext *s, FFTSample *data)
     s->dct_calc(s, data);
 }
 
-av_cold int ff_dct_init(DCTContext *s, int nbits, int inverse)
+av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)
 {
     int n = 1 << nbits;
     int i;
@@ -126,7 +186,7 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, int inverse)
 
     s->csc2 = av_malloc(n/2 * sizeof(FFTSample));
 
-    if (ff_rdft_init(&s->rdft, nbits, inverse) < 0) {
+    if (ff_rdft_init(&s->rdft, nbits, inverse == DCT_III) < 0) {
         av_free(s->csc2);
         return -1;
     }
@@ -134,11 +194,12 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, int inverse)
     for (i = 0; i < n/2; i++)
         s->csc2[i] = 0.5 / sin((M_PI / (2*n) * (2*i + 1)));
 
-    if(inverse) {
-        s->dct_calc = ff_dct_calc_III_c;
-    } else
-        s->dct_calc = ff_dct_calc_II_c;
-
+    switch(inverse) {
+    case DCT_I  : s->dct_calc = ff_dct_calc_I_c; break;
+    case DCT_II : s->dct_calc = ff_dct_calc_II_c ; break;
+    case DCT_III: s->dct_calc = ff_dct_calc_III_c; break;
+    case DST_I  : s->dct_calc = ff_dst_calc_I_c; break;
+    }
     return 0;
 }
 
