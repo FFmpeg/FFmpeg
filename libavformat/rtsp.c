@@ -1463,11 +1463,11 @@ redirect:
 
             /* handle the options */
             if (!strcmp(option, "udp")) {
-                lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_UDP);
+                lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_UDP);
             } else if (!strcmp(option, "multicast")) {
-                lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_UDP_MULTICAST);
+                lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_UDP_MULTICAST);
             } else if (!strcmp(option, "tcp")) {
-                lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_TCP);
+                lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_TCP);
             } else {
                 /* Write options back into the buffer, using memmove instead
                  * of strcpy since the strings may overlap. */
