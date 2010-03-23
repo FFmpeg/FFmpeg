@@ -27,6 +27,8 @@ void ff_imdct_calc_neon(FFTContext *s, FFTSample *output, const FFTSample *input
 void ff_imdct_half_neon(FFTContext *s, FFTSample *output, const FFTSample *input);
 void ff_mdct_calc_neon(FFTContext *s, FFTSample *output, const FFTSample *input);
 
+void ff_rdft_calc_neon(struct RDFTContext *s, FFTSample *z);
+
 av_cold void ff_fft_init_arm(FFTContext *s)
 {
     if (HAVE_NEON) {
@@ -38,3 +40,11 @@ av_cold void ff_fft_init_arm(FFTContext *s)
         s->permutation  = FF_MDCT_PERM_INTERLEAVE;
     }
 }
+
+#if CONFIG_RDFT
+av_cold void ff_rdft_init_arm(RDFTContext *s)
+{
+    if (HAVE_NEON)
+        s->rdft_calc    = ff_rdft_calc_neon;
+}
+#endif

@@ -27,6 +27,8 @@ NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
 
 NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
 
+NEON-OBJS-$(CONFIG_RDFT)               += arm/rdft_neon.o               \
+
 NEON-OBJS-$(CONFIG_H264DSP)            += arm/h264dsp_neon.o            \
                                           arm/h264idct_neon.o           \
                                           arm/h264pred_neon.o           \
