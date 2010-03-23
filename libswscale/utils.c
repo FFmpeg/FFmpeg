@@ -739,7 +739,7 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     ff_yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness, contrast, saturation);
     //FIXME factorize
 
-#if ARCH_PPC && (HAVE_ALTIVEC || CONFIG_RUNTIME_CPUDETECT)
+#if ARCH_PPC && HAVE_ALTIVEC
     if (c->flags & SWS_CPU_CAPS_ALTIVEC)
         ff_yuv2rgb_init_tables_altivec(c, inv_table, brightness, contrast, saturation);
 #endif
@@ -1021,7 +1021,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
                        srcFilter->chrV, dstFilter->chrV, c->param) < 0)
             goto fail;
 
-#if ARCH_PPC && (HAVE_ALTIVEC || CONFIG_RUNTIME_CPUDETECT)
+#if ARCH_PPC && HAVE_ALTIVEC
         FF_ALLOC_OR_GOTO(c, c->vYCoeffsBank, sizeof (vector signed short)*c->vLumFilterSize*c->dstH, fail);
         FF_ALLOC_OR_GOTO(c, c->vCCoeffsBank, sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH, fail);
 
@@ -1530,7 +1530,7 @@ void sws_freeContext(SwsContext *c)
     av_freep(&c->vChrFilter);
     av_freep(&c->hLumFilter);
     av_freep(&c->hChrFilter);
-#if ARCH_PPC && (HAVE_ALTIVEC || CONFIG_RUNTIME_CPUDETECT)
+#if ARCH_PPC && HAVE_ALTIVEC
     av_freep(&c->vYCoeffsBank);
     av_freep(&c->vCCoeffsBank);
 #endif
