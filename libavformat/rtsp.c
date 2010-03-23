@@ -1451,7 +1451,9 @@ redirect:
     /* search for options */
     option_list = strchr(path, '?');
     if (option_list) {
-        filename = strchr(s->filename, '?');
+        /* Strip out the RTSP specific options, write out the rest of
+         * the options back into the same string. */
+        filename = option_list;
         while (option_list) {
             /* move the option pointer */
             option = ++option_list;
@@ -1467,8 +1469,11 @@ redirect:
             } else if (!strcmp(option, "tcp")) {
                 lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_TCP);
             } else {
-                strcpy(++filename, option);
-                filename += strlen(option);
+                /* Write options back into the buffer, using memmove instead
+                 * of strcpy since the strings may overlap. */
+                int len = strlen(option);
+                memmove(++filename, option, len);
+                filename += len;
                 if (option_list) *filename = '&';
             }
         }
@@ -1505,10 +1510,13 @@ redirect:
                     NULL, 0, NI_NUMERICHOST);
     }
 
+    /* Construct the URI used in request; this is similar to s->filename,
+     * but with authentication credentials removed and RTSP specific options
+     * stripped out. */
+    ff_url_join(rt->control_uri, sizeof(rt->control_uri), "rtsp", NULL,
+                host, port, "%s", path);
     /* request options supported by the server; this also detects server
      * type */
-    av_strlcpy(rt->control_uri, s->filename,
-               sizeof(rt->control_uri));
     for (rt->server_type = RTSP_SERVER_RTP;;) {
         snprintf(cmd, sizeof(cmd),
                  "OPTIONS %s RTSP/1.0\r\n", rt->control_uri);
