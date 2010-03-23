@@ -1449,7 +1449,7 @@ redirect:
         port = RTSP_DEFAULT_PORT;
 
     /* search for options */
-    option_list = strchr(path, '?');
+    option_list = strrchr(path, '?');
     if (option_list) {
         /* Strip out the RTSP specific options, write out the rest of
          * the options back into the same string. */
