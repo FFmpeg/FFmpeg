@@ -1559,7 +1559,6 @@ static int init_poc(H264Context *h){
  * initialize scan tables
  */
 static void init_scan_tables(H264Context *h){
-    MpegEncContext * const s = &h->s;
     int i;
     if(h->h264dsp.h264_idct_add == ff_h264_idct_add_c){ //FIXME little ugly
         memcpy(h->zigzag_scan, zigzag_scan, 16*sizeof(uint8_t));
