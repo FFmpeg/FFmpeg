@@ -850,8 +850,8 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
         }
 
         if(USES_LIST(mb_type, 0)){
-            int field_select0= p->ref_index[0][xy ];
-            int field_select1= p->ref_index[0][xy2];
+            int field_select0= p->ref_index[0][4*mb_xy  ];
+            int field_select1= p->ref_index[0][4*mb_xy+2];
             assert(field_select0==0 ||field_select0==1);
             assert(field_select1==0 ||field_select1==1);
             init_interlaced_ref(s, 0);
@@ -878,8 +878,8 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
             d+= cmp(s, x>>shift, y>>shift, x&mask, y&mask, 0, 8, field_select1, 1, cmpf, chroma_cmpf, flags);
         }
         if(USES_LIST(mb_type, 1)){
-            int field_select0= p->ref_index[1][xy ];
-            int field_select1= p->ref_index[1][xy2];
+            int field_select0= p->ref_index[1][4*mb_xy  ];
+            int field_select1= p->ref_index[1][4*mb_xy+2];
             assert(field_select0==0 ||field_select0==1);
             assert(field_select1==0 ||field_select1==1);
             init_interlaced_ref(s, 2);

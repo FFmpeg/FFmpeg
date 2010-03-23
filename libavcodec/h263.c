@@ -71,10 +71,10 @@ void ff_h263_update_motion_val(MpegEncContext * s){
                 s->p_field_mv_table[i][0][mb_xy][0]= s->mv[0][i][0];
                 s->p_field_mv_table[i][0][mb_xy][1]= s->mv[0][i][1];
             }
-            s->current_picture.ref_index[0][xy           ]=
-            s->current_picture.ref_index[0][xy        + 1]= s->field_select[0][0];
-            s->current_picture.ref_index[0][xy + wrap    ]=
-            s->current_picture.ref_index[0][xy + wrap + 1]= s->field_select[0][1];
+            s->current_picture.ref_index[0][4*mb_xy    ]=
+            s->current_picture.ref_index[0][4*mb_xy + 1]= s->field_select[0][0];
+            s->current_picture.ref_index[0][4*mb_xy + 2]=
+            s->current_picture.ref_index[0][4*mb_xy + 3]= s->field_select[0][1];
         }
 
         /* no update if 8X8 because it has been done during parsing */

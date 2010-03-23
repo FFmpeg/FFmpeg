@@ -137,7 +137,7 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
     } else if(IS_INTERLACED(colocated_mb_type)){
         s->mv_type = MV_TYPE_FIELD;
         for(i=0; i<2; i++){
-            int field_select= s->next_picture.ref_index[0][s->block_index[2*i]];
+            int field_select= s->next_picture.ref_index[0][4*mb_index + 2*i];
             s->field_select[0][i]= field_select;
             s->field_select[1][i]= i;
             if(s->top_field_first){
