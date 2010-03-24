@@ -229,5 +229,6 @@ extern const AVMetadataConv ff_asf_metadata_conv[];
 #define ASF_PL_FLAG_KEY_FRAME 0x80 //1000 0000
 
 extern AVInputFormat asf_demuxer;
+int ff_put_str16_nolen(ByteIOContext *s, const char *tag);
 
 #endif /* AVFORMAT_ASF_H */

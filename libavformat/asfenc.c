@@ -203,23 +203,6 @@ static void put_guid(ByteIOContext *s, const ff_asf_guid *g)
     put_buffer(s, *g, sizeof(*g));
 }
 
-static int put_str16_nolen(ByteIOContext *s, const char *tag)
-{
-    const uint8_t *q = tag;
-    int ret = 0;
-
-    while (*q) {
-        uint32_t ch;
-        uint16_t tmp;
-
-        GET_UTF8(ch, *q++, break;)
-        PUT_UTF16(ch, tmp, put_le16(s, tmp);ret += 2;)
-    }
-    put_le16(s, 0);
-    ret += 2;
-    return ret;
-}
-
 static void put_str16(ByteIOContext *s, const char *tag)
 {
     int len;
@@ -228,7 +211,7 @@ static void put_str16(ByteIOContext *s, const char *tag)
     if (url_open_dyn_buf(&dyn_buf) < 0)
         return;
 
-    put_str16_nolen(dyn_buf, tag);
+    ff_put_str16_nolen(dyn_buf, tag);
     len = url_close_dyn_buf(dyn_buf, &pb);
     put_le16(s, len);
     put_buffer(s, pb, len);
@@ -361,7 +344,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         hpos = put_header(pb, &ff_asf_comment_header);
 
         for (n = 0; n < FF_ARRAY_ELEMS(tags); n++) {
-            len = tags[n] ? put_str16_nolen(dyn_buf, tags[n]->value) : 0;
+            len = tags[n] ? ff_put_str16_nolen(dyn_buf, tags[n]->value) : 0;
             put_le16(pb, len);
         }
         len = url_close_dyn_buf(dyn_buf, &buf);
@@ -489,7 +472,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         if ( url_open_dyn_buf(&dyn_buf) < 0)
             return AVERROR(ENOMEM);
 
-        put_str16_nolen(dyn_buf, desc);
+        ff_put_str16_nolen(dyn_buf, desc);
         len = url_close_dyn_buf(dyn_buf, &buf);
         put_le16(pb, len / 2); // "number of characters" = length in bytes / 2
 
