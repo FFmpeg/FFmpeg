@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include <unistd.h>
@@ -27,6 +26,7 @@
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
+#include "httpauth.h"
 
 /* XXX: POST protocol is not completely implemented because ffmpeg uses
    only a subset of it. */
@@ -44,6 +44,7 @@ typedef struct {
     int64_t chunksize;      /**< Used if "Transfer-Encoding: chunked" otherwise -1. */
     int64_t off, filesize;
     char location[URL_SIZE];
+    HTTPAuthState auth_state;
 } HTTPContext;
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
@@ -60,6 +61,7 @@ static int http_open_cnx(URLContext *h)
     char path1[1024];
     char buf[1024];
     int port, use_proxy, err, location_changed = 0, redirects = 0;
+    HTTPAuthType cur_auth_type;
     HTTPContext *s = h->priv_data;
     URLContext *hd = NULL;
 
@@ -93,8 +95,16 @@ static int http_open_cnx(URLContext *h)
         goto fail;
 
     s->hd = hd;
+    cur_auth_type = s->auth_state.auth_type;
     if (http_connect(h, path, hoststr, auth, &location_changed) < 0)
         goto fail;
+    if (s->http_code == 401) {
+        if (cur_auth_type == HTTP_AUTH_NONE && s->auth_state.auth_type != HTTP_AUTH_NONE) {
+            url_close(hd);
+            goto redo;
+        } else
+            goto fail;
+    }
     if ((s->http_code == 302 || s->http_code == 303) && location_changed == 1) {
         /* url moved, get next */
         url_close(hd);
@@ -125,6 +135,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     s->filesize = -1;
     s->chunksize = -1;
     s->off = 0;
+    memset(&s->auth_state, 0, sizeof(s->auth_state));
     av_strlcpy(s->location, uri, URL_SIZE);
 
     ret = http_open_cnx(h);
@@ -193,8 +204,9 @@ static int process_line(URLContext *h, char *line, int line_count,
 
         dprintf(NULL, "http_code=%d\n", s->http_code);
 
-        /* error codes are 4xx and 5xx */
-        if (s->http_code >= 400 && s->http_code < 600)
+        /* error codes are 4xx and 5xx, but regard 401 as a success, so we
+         * don't abort until all headers have been parsed. */
+        if (s->http_code >= 400 && s->http_code < 600 && s->http_code != 401)
             return -1;
     } else {
         while (*p != '\0' && *p != ':')
@@ -225,6 +237,10 @@ static int process_line(URLContext *h, char *line, int line_count,
         } else if (!strcmp (tag, "Transfer-Encoding") && !strncasecmp(p, "chunked", 7)) {
             s->filesize = -1;
             s->chunksize = 0;
+        } else if (!strcmp (tag, "WWW-Authenticate")) {
+            ff_http_auth_handle_header(&s->auth_state, tag, p);
+        } else if (!strcmp (tag, "Authentication-Info")) {
+            ff_http_auth_handle_header(&s->auth_state, tag, p);
         }
     }
     return 1;
@@ -236,22 +252,21 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     HTTPContext *s = h->priv_data;
     int post, err;
     char line[1024];
-    char *auth_b64;
-    int auth_b64_len = (strlen(auth) + 2) / 3 * 4 + 1;
+    char *authstr = NULL;
     int64_t off = s->off;
 
 
     /* send http header */
     post = h->flags & URL_WRONLY;
-    auth_b64 = av_malloc(auth_b64_len);
-    av_base64_encode(auth_b64, auth_b64_len, auth, strlen(auth));
+    authstr = ff_http_auth_create_response(&s->auth_state, auth, path,
+                                        post ? "POST" : "GET");
     snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.1\r\n"
              "User-Agent: %s\r\n"
              "Accept: */*\r\n"
              "Range: bytes=%"PRId64"-\r\n"
              "Host: %s\r\n"
-             "Authorization: Basic %s\r\n"
+             "%s"
              "Connection: close\r\n"
              "%s"
              "\r\n",
@@ -260,10 +275,10 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              LIBAVFORMAT_IDENT,
              s->off,
              hoststr,
-             auth_b64,
+             authstr ? authstr : "",
              post ? "Transfer-Encoding: chunked\r\n" : "");
 
-    av_freep(&auth_b64);
+    av_freep(&authstr);
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
         return AVERROR(EIO);
 
