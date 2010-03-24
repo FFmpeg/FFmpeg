@@ -69,9 +69,10 @@ void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts){
     }
 }
 
-static void enu_free(void *opaque, void *elem)
+static int enu_free(void *opaque, void *elem)
 {
     av_free(elem);
+    return 0;
 }
 
 void ff_nut_free_sp(NUTContext *nut)
