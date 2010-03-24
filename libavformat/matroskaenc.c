@@ -909,7 +909,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming
-    if (url_is_streamed(s->pb) && (url_ftell(pb) > 32*1024 || ts > mkv->cluster_pts + 1000)
+    if ((url_is_streamed(s->pb) && (url_ftell(pb) > 32*1024 || ts > mkv->cluster_pts + 1000))
         ||  url_ftell(pb) > mkv->cluster_pos + 5*1024*1024 || ts > mkv->cluster_pts + 5000) {
         av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64
                " bytes, pts %" PRIu64 "\n", url_ftell(pb), ts);
