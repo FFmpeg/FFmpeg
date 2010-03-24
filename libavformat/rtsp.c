@@ -1670,7 +1670,9 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             if (tcp_fd != -1 && FD_ISSET(tcp_fd, &rfds)) {
                 RTSPMessageHeader reply;
 
-                ff_rtsp_read_reply(s, &reply, NULL, 0);
+                ret = ff_rtsp_read_reply(s, &reply, NULL, 0);
+                if (ret < 0)
+                    return ret;
                 /* XXX: parse message */
                 if (rt->state != RTSP_STATE_STREAMING)
                     return 0;
