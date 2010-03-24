@@ -974,6 +974,11 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     else
         av_free(content);
 
+    if (rt->seq != reply->seq) {
+        av_log(s, AV_LOG_WARNING, "CSeq %d expected, %d received.\n",
+            rt->seq, reply->seq);
+    }
+
     /* EOS */
     if (reply->notice == 2101 /* End-of-Stream Reached */      ||
         reply->notice == 2104 /* Start-of-Stream Reached */    ||
