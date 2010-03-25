@@ -343,9 +343,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
-    if (s->num_channels < 0 || s->num_channels > WMAPRO_MAX_CHANNELS) {
-        av_log_ask_for_sample(avctx, "invalid number of channels\n");
-        return AVERROR_NOTSUPP;
+    if (s->num_channels < 0) {
+        av_log(avctx, AV_LOG_ERROR, "invalid number of channels %d\n", s->num_channels);
+        return AVERROR_INVALIDDATA;
+    } else if (s->num_channels > WMAPRO_MAX_CHANNELS) {
+        av_log_ask_for_sample(avctx, "unsupported number of channels\n");
+        return AVERROR_PATCHWELCOME;
     }
 
     INIT_VLC_STATIC(&sf_vlc, SCALEVLCBITS, HUFF_SCALE_SIZE,
