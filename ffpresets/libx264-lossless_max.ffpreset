@@ -16,6 +16,6 @@ qmax=51
 qdiff=4
 refs=16
 directpred=1
-flags2=+mixed_refs+dct8x8+fastpskip+mbtree
+flags2=+mixed_refs+dct8x8+fastpskip
 cqp=0
 wpredp=2

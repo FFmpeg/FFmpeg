@@ -18,5 +18,5 @@ bf=3
 refs=3
 directpred=1
 trellis=1
-flags2=+mixed_refs+wpred+dct8x8+fastpskip+mbtree
+flags2=+mixed_refs+wpred+dct8x8+fastpskip
 wpredp=2
