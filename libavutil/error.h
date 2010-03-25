@@ -40,21 +40,21 @@
 #if LIBAVUTIL_VERSION_MAJOR < 51
 #define AVERROR_INVALIDDATA AVERROR(EINVAL)  /**< Invalid data found when processing input */
 #define AVERROR_IO          AVERROR(EIO)     /**< I/O error */
-#define AVERROR_NOENT       AVERROR(ENOENT)  /**< No such file or directory. */
-#define AVERROR_NOFMT       AVERROR(EILSEQ)  /**< unknown format */
-#define AVERROR_NOMEM       AVERROR(ENOMEM)  /**< not enough memory */
-#define AVERROR_NUMEXPECTED AVERROR(EDOM)    /**< Number syntax expected in filename. */
-#define AVERROR_UNKNOWN     AVERROR(EINVAL)  /**< unknown error */
+#define AVERROR_NOENT       AVERROR(ENOENT)  /**< No such file or directory */
+#define AVERROR_NOFMT       AVERROR(EILSEQ)  /**< Unknown format */
+#define AVERROR_NOMEM       AVERROR(ENOMEM)  /**< Not enough memory */
+#define AVERROR_NUMEXPECTED AVERROR(EDOM)    /**< Number syntax expected in filename */
+#define AVERROR_UNKNOWN     AVERROR(EINVAL)  /**< Unknown error */
 #endif
 
-#define AVERROR_EOF         AVERROR(EPIPE)   /**< End of file. */
-#define AVERROR_NOTSUPP     AVERROR(ENOSYS)  /**< Operation not supported. */
+#define AVERROR_EOF         AVERROR(EPIPE)   /**< End of file */
+#define AVERROR_NOTSUPP     AVERROR(ENOSYS)  /**< Operation not supported */
 
-#define AVERROR_PATCHWELCOME    (-MKTAG('P','A','W','E')) /**< Not yet implemented in FFmpeg. Patches welcome. */
+#define AVERROR_PATCHWELCOME    (-MKTAG('P','A','W','E')) /**< Not yet implemented in FFmpeg, patches welcome */
 
 #if LIBAVUTIL_VERSION_MAJOR > 50
 #define AVERROR_INVALIDDATA     (-MKTAG('I','N','D','A')) /**< Invalid data found when processing input */
-#define AVERROR_NUMEXPECTED     (-MKTAG('N','U','E','X')) /**< Number syntax expected in filename. */
+#define AVERROR_NUMEXPECTED     (-MKTAG('N','U','E','X')) /**< Number syntax expected in filename */
 #endif
 
 #endif /* AVUTIL_ERROR_H */
