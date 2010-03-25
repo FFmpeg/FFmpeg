@@ -256,7 +256,7 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
         av_free_packet(pkt);
         pkt->size = 0;
         if (ret<0)  return AVERROR(errno);
-        else        return AVERROR(EOF);
+        else        return AVERROR_EOF;
     }
     pkt->size = ret;
 
