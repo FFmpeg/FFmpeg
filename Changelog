@@ -65,6 +65,7 @@ version <next>:
 - Kega Game Video (KGV1) decoder
 - VorbisComment writing for FLAC, Ogg FLAC and Ogg Speex files
 - RTP depacketization of Theora
+- HTTP Digest authentication
 
 
 
