@@ -1505,6 +1505,12 @@ redirect:
         }
     }
 
+    /* Construct the URI used in request; this is similar to s->filename,
+     * but with authentication credentials removed and RTSP specific options
+     * stripped out. */
+    ff_url_join(rt->control_uri, sizeof(rt->control_uri), "rtsp", NULL,
+                host, port, "%s", path);
+
     /* open the tcp connexion */
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port, NULL);
     if (url_open(&rtsp_hd, tcpname, URL_RDWR) < 0) {
@@ -1520,11 +1526,6 @@ redirect:
                     NULL, 0, NI_NUMERICHOST);
     }
 
-    /* Construct the URI used in request; this is similar to s->filename,
-     * but with authentication credentials removed and RTSP specific options
-     * stripped out. */
-    ff_url_join(rt->control_uri, sizeof(rt->control_uri), "rtsp", NULL,
-                host, port, "%s", path);
     /* request options supported by the server; this also detects server
      * type */
     for (rt->server_type = RTSP_SERVER_RTP;;) {
