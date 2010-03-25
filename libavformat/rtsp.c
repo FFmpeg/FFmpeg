@@ -1006,18 +1006,16 @@ void ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
                                          int send_content_length)
 {
     RTSPState *rt = s->priv_data;
-    char buf[4096], buf1[1024];
+    char buf[4096];
 
     rt->seq++;
     snprintf(buf, sizeof(buf), "%s %s RTSP/1.0\r\n", method, url);
     if (headers)
         av_strlcat(buf, headers, sizeof(buf));
-    snprintf(buf1, sizeof(buf1), "CSeq: %d\r\n", rt->seq);
-    av_strlcat(buf, buf1, sizeof(buf));
+    av_strlcatf(buf, sizeof(buf), "CSeq: %d\r\n", rt->seq);
     if (rt->session_id[0] != '\0' && (!headers ||
         !strstr(headers, "\nIf-Match:"))) {
-        snprintf(buf1, sizeof(buf1), "Session: %s\r\n", rt->session_id);
-        av_strlcat(buf, buf1, sizeof(buf));
+        av_strlcatf(buf, sizeof(buf), "Session: %s\r\n", rt->session_id);
     }
     if (rt->auth[0]) {
         char *str = ff_http_auth_create_response(&rt->auth_state,
