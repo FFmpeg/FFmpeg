@@ -143,9 +143,6 @@ static void choose_qop(char *qop, int size)
 void ff_http_auth_handle_header(HTTPAuthState *state, const char *key,
                                 const char *value)
 {
-    if (!state)
-        return;
-
     if (!strcmp(key, "WWW-Authenticate")) {
         const char *p;
         if (av_stristart(value, "Basic ", &p) &&
