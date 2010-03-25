@@ -838,7 +838,8 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
     }
 }
 
-void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf)
+void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
+                        HTTPAuthState *auth_state)
 {
     const char *p;
 
@@ -871,6 +872,12 @@ void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf)
     } else if (av_stristart(p, "Location:", &p)) {
         skip_spaces(&p);
         av_strlcpy(reply->location, p , sizeof(reply->location));
+    } else if (av_stristart(p, "WWW-Authenticate:", &p) && auth_state) {
+        skip_spaces(&p);
+        ff_http_auth_handle_header(auth_state, "WWW-Authenticate", p);
+    } else if (av_stristart(p, "Authentication-Info:", &p) && auth_state) {
+        skip_spaces(&p);
+        ff_http_auth_handle_header(auth_state, "Authentication-Info", p);
     }
 }
 
@@ -951,7 +958,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
             get_word(buf1, sizeof(buf1), &p);
             reply->status_code = atoi(buf1);
         } else {
-            ff_rtsp_parse_line(reply, p);
+            ff_rtsp_parse_line(reply, p, &rt->auth_state);
             av_strlcat(rt->last_reply, p,    sizeof(rt->last_reply));
             av_strlcat(rt->last_reply, "\n", sizeof(rt->last_reply));
         }
