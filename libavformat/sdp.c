@@ -201,7 +201,7 @@ static char *extradata2config(AVCodecContext *c)
         return NULL;
     }
     memcpy(config, "; config=", 9);
-    ff_data_to_hex(config + 9, c->extradata, c->extradata_size);
+    ff_data_to_hex(config + 9, c->extradata, c->extradata_size, 0);
     config[9 + c->extradata_size * 2] = 0;
 
     return config;

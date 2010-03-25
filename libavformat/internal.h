@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include "avformat.h"
 
-char *ff_data_to_hex(char *buf, const uint8_t *src, int size);
+char *ff_data_to_hex(char *buf, const uint8_t *src, int size, int lowercase);
 
 void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx);
 

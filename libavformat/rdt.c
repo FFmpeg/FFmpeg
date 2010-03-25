@@ -120,8 +120,7 @@ ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
         buf[8 + i] ^= xor_table[i];
 
     av_md5_sum(zres, buf, 64);
-    ff_data_to_hex(response, zres, 16);
-    for (i=0;i<32;i++) response[i] = tolower(response[i]);
+    ff_data_to_hex(response, zres, 16, 1);
 
     /* add tail */
     strcpy (response + 32, "01d0a8e3");
