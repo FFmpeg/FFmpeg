@@ -36,11 +36,9 @@ static int rtsp_write_record(AVFormatContext *s)
     char cmd[1024];
 
     snprintf(cmd, sizeof(cmd),
-             "RECORD %s RTSP/1.0\r\n"
              "Range: npt=%0.3f-\r\n",
-             rt->control_uri,
              (double) 0);
-    ff_rtsp_send_cmd(s, cmd, reply, NULL);
+    ff_rtsp_send_cmd(s, "RECORD", rt->control_uri, cmd, reply, NULL);
     if (reply->status_code != RTSP_STATUS_OK)
         return -1;
     rt->state = RTSP_STATE_STREAMING;
@@ -159,12 +157,8 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int rtsp_write_close(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
-    char cmd[1024];
 
-    snprintf(cmd, sizeof(cmd),
-             "TEARDOWN %s RTSP/1.0\r\n",
-             rt->control_uri);
-    ff_rtsp_send_cmd_async(s, cmd);
+    ff_rtsp_send_cmd_async(s, "TEARDOWN", rt->control_uri, NULL);
 
     ff_rtsp_close_streams(s);
     url_close(rt->rtsp_hd);
