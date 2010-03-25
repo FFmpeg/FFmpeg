@@ -1060,10 +1060,19 @@ void ff_rtsp_send_cmd_with_content(AVFormatContext *s,
                                    const unsigned char *send_content,
                                    int send_content_length)
 {
+    RTSPState *rt = s->priv_data;
+    HTTPAuthType cur_auth_type;
+
+retry:
+    cur_auth_type = rt->auth_state.auth_type;
     ff_rtsp_send_cmd_with_content_async(s, method, url, header,
                                         send_content, send_content_length);
 
     ff_rtsp_read_reply(s, reply, content_ptr, 0);
+
+    if (reply->status_code == 401 && cur_auth_type == HTTP_AUTH_NONE &&
+        rt->auth_state.auth_type != HTTP_AUTH_NONE)
+        goto retry;
 }
 
 /**
@@ -1447,7 +1456,6 @@ redirect:
                  host, sizeof(host), &port, path, sizeof(path), s->filename);
     if (*auth) {
         av_strlcpy(rt->auth, auth, sizeof(rt->auth));
-        rt->auth_state.auth_type = HTTP_AUTH_BASIC;
     }
     if (port < 0)
         port = RTSP_DEFAULT_PORT;
