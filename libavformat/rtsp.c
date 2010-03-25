@@ -1038,11 +1038,11 @@ void ff_rtsp_send_cmd(AVFormatContext *s,
 }
 
 void ff_rtsp_send_cmd_with_content(AVFormatContext *s,
-                                const char *cmd,
-                                RTSPMessageHeader *reply,
-                                unsigned char **content_ptr,
-                                const unsigned char *send_content,
-                                int send_content_length)
+                                   const char *cmd,
+                                   RTSPMessageHeader *reply,
+                                   unsigned char **content_ptr,
+                                   const unsigned char *send_content,
+                                   int send_content_length)
 {
     ff_rtsp_send_cmd_with_content_async(s, cmd, send_content, send_content_length);
 
