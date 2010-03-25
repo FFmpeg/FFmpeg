@@ -242,6 +242,14 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.i_me_method = X264_ME_TESA;
     else x4->params.analyse.i_me_method = X264_ME_HEX;
 
+    x4->params.rc.i_aq_mode = avctx->aq_mode;
+    x4->params.rc.f_aq_strength = avctx->aq_strength;
+    x4->params.rc.i_lookahead = avctx->rc_lookahead;
+
+    x4->params.analyse.b_psy = avctx->flags2 & CODEC_FLAG2_PSY;
+    x4->params.analyse.f_psy_rd = avctx->psy_rd;
+    x4->params.analyse.f_psy_trellis = avctx->psy_trellis;
+
     x4->params.analyse.i_me_range         = avctx->me_range;
     x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
 
@@ -272,6 +280,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
 
     x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
+    x4->params.analyse.b_ssim = avctx->flags & CODEC_FLAG2_SSIM;
     x4->params.i_log_level    = X264_LOG_DEBUG;
 
     x4->params.b_aud          = avctx->flags2 & CODEC_FLAG2_AUD;
@@ -291,9 +300,13 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         x264_nal_t *nal;
-        int nnal, s;
+        int nnal, s, i;
 
         s = x264_encoder_headers(x4->enc, &nal, &nnal);
+
+        for (i = 0; i < nnal; i++)
+            if (nal[i].i_type == NAL_SEI)
+                av_log(avctx, AV_LOG_INFO, "%s\n", nal[i].p_payload+25);
 
         avctx->extradata      = av_malloc(s);
         avctx->extradata_size = encode_nals(avctx, avctx->extradata, s, nal, nnal, 1);
