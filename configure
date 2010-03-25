@@ -1074,6 +1074,7 @@ HAVE_LIST="
     soundcard_h
     poll_h
     setrlimit
+    strerror_r
     struct_addrinfo
     struct_ipv6_mreq
     struct_sockaddr_in6
@@ -2531,6 +2532,7 @@ check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  mkstemp
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func  setrlimit
+check_func  strerror_r
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi

@@ -30,6 +30,7 @@ OBJS = adler32.o                                                        \
        base64.o                                                         \
        crc.o                                                            \
        des.o                                                            \
+       error.o                                                          \
        fifo.o                                                           \
        intfloat_readwrite.o                                             \
        lfg.o                                                            \

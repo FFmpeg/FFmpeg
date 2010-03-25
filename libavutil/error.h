@@ -57,4 +57,14 @@
 #define AVERROR_NUMEXPECTED     (-MKTAG('N','U','E','X')) ///< Number syntax expected in filename
 #endif
 
+/**
+ * Puts a description of the AVERROR code errnum in errbuf.
+ * In case of failure the global variable errno is set to indicate the
+ * error.
+ *
+ * @param errbuf_size the size in bytes of errbuf
+ * @return 0 on success, a negative value otherwise
+ */
+int av_strerror(int errnum, char *errbuf, size_t errbuf_size);
+
 #endif /* AVUTIL_ERROR_H */
