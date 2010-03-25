@@ -493,12 +493,14 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
         }
 
     } else if (codec->codec_type == CODEC_TYPE_AUDIO) {
-        if (!codec->codec_tag)
-            codec->codec_tag = ff_codec_get_tag(ff_codec_wav_tags, codec->codec_id);
-        if (!codec->codec_tag) {
+        unsigned int tag;
+        tag = ff_codec_get_tag(ff_codec_wav_tags, codec->codec_id);
+        if (!tag) {
             av_log(s, AV_LOG_ERROR, "No wav codec ID found.\n");
             ret = -1;
         }
+        if (!codec->codec_tag)
+            codec->codec_tag = tag;
 
         ff_put_wav_header(dyn_cp, codec);
     }
