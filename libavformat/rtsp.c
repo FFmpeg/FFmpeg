@@ -612,7 +612,6 @@ void ff_rtsp_close_streams(AVFormatContext *s)
         av_close_input_stream (rt->asf_ctx);
         rt->asf_ctx = NULL;
     }
-    av_freep(&rt->auth_b64);
 }
 
 static void *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st,
@@ -1013,10 +1012,13 @@ void ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
         snprintf(buf1, sizeof(buf1), "Session: %s\r\n", rt->session_id);
         av_strlcat(buf, buf1, sizeof(buf));
     }
-    if (rt->auth_b64)
-        av_strlcatf(buf, sizeof(buf),
-                    "Authorization: Basic %s\r\n",
-                    rt->auth_b64);
+    if (rt->auth[0]) {
+        char *str = ff_http_auth_create_response(&rt->auth_state,
+                                                 rt->auth, url, method);
+        if (str)
+            av_strlcat(buf, str, sizeof(buf));
+        av_free(str);
+    }
     if (send_content_length > 0 && send_content)
         av_strlcatf(buf, sizeof(buf), "Content-Length: %d\r\n", send_content_length);
     av_strlcat(buf, "\r\n", sizeof(buf));
@@ -1437,14 +1439,8 @@ redirect:
     ff_url_split(NULL, 0, auth, sizeof(auth),
                  host, sizeof(host), &port, path, sizeof(path), s->filename);
     if (*auth) {
-        int auth_len = strlen(auth), b64_len = ((auth_len + 2) / 3) * 4 + 1;
-
-        if (!(rt->auth_b64 = av_malloc(b64_len)))
-            return AVERROR(ENOMEM);
-        if (!av_base64_encode(rt->auth_b64, b64_len, auth, auth_len)) {
-            err = AVERROR(EINVAL);
-            goto fail;
-        }
+        av_strlcpy(rt->auth, auth, sizeof(rt->auth));
+        rt->auth_state.auth_type = HTTP_AUTH_BASIC;
     }
     if (port < 0)
         port = RTSP_DEFAULT_PORT;

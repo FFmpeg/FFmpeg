@@ -26,6 +26,7 @@
 #include "rtspcodes.h"
 #include "rtpdec.h"
 #include "network.h"
+#include "httpauth.h"
 
 /**
  * Network layer over which RTP/etc packet data will be transported.
@@ -232,8 +233,11 @@ typedef struct RTSPState {
      * of RTSPMessageHeader->real_challenge */
     enum RTSPServerType server_type;
 
-    /** base64-encoded authorization lines (username:password) */
-    char *auth_b64;
+    /** plaintext authorization line (username:password) */
+    char auth[128];
+
+    /** authentication state */
+    HTTPAuthState auth_state;
 
     /** The last reply of the server to a RTSP command */
     char last_reply[2048]; /* XXX: allocate ? */
