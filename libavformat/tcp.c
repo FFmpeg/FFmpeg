@@ -147,6 +147,8 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
                     return AVERROR(ff_neterrno());
             } else return len;
         } else if (ret < 0) {
+            if (ff_neterrno() == FF_NETERROR(EINTR))
+                continue;
             return -1;
         }
     }
@@ -180,6 +182,8 @@ static int tcp_write(URLContext *h, uint8_t *buf, int size)
             size -= len;
             buf += len;
         } else if (ret < 0) {
+            if (ff_neterrno() == FF_NETERROR(EINTR))
+                continue;
             return -1;
         }
     }

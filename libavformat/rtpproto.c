@@ -251,6 +251,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 break;
             }
         } else if (n < 0) {
+            if (ff_neterrno() == FF_NETERROR(EINTR))
+                continue;
             return AVERROR(EIO);
         }
     }
