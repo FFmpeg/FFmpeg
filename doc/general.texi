@@ -737,6 +737,13 @@ getting the system headers fixed.
 For information about compiling FFmpeg on OS/2 see
 @url{http://www.edm2.com/index.php/FFmpeg}.
 
+@section (Open)Solaris
+
+GNU Make is required to build FFmpeg, so you have to invoke (@file{gmake}),
+standard Solaris Make will not work. Depending on your system configuration
+you might be using a non-POSIX-compatible default shell. Ensure that a
+POSIX-compatible shell is in your path or invoke it directly.
+
 @section Windows
 
 To get help and instructions for building FFmpeg under Windows, check out
