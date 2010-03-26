@@ -291,39 +291,17 @@ void set_context_opts(void *ctx, void *opts_ctx, int flags)
 
 void print_error(const char *filename, int err)
 {
+    char errbuf[128];
+
     switch(err) {
-    case AVERROR_NUMEXPECTED:
-        fprintf(stderr, "%s: Incorrect image filename syntax.\n"
-                "Use '%%d' to specify the image number:\n"
-                "  for img1.jpg, img2.jpg, ..., use 'img%%d.jpg';\n"
-                "  for img001.jpg, img002.jpg, ..., use 'img%%03d.jpg'.\n",
-                filename);
-        break;
-    case AVERROR_INVALIDDATA:
-        fprintf(stderr, "%s: Error while parsing header\n", filename);
-        break;
-    case AVERROR_NOFMT:
-        fprintf(stderr, "%s: Unknown format\n", filename);
-        break;
-    case AVERROR(EIO):
-        fprintf(stderr, "%s: I/O error occurred\n"
-                "Usually that means that input file is truncated and/or corrupted.\n",
-                filename);
-        break;
-    case AVERROR(ENOMEM):
-        fprintf(stderr, "%s: memory allocation error occurred\n", filename);
-        break;
-    case AVERROR(ENOENT):
-        fprintf(stderr, "%s: no such file or directory\n", filename);
-        break;
 #if CONFIG_NETWORK
     case AVERROR(FF_NETERROR(EPROTONOSUPPORT)):
         fprintf(stderr, "%s: Unsupported network protocol\n", filename);
         break;
 #endif
     default:
-        fprintf(stderr, "%s: Error while opening file\n", filename);
-        break;
+        av_strerror(err, errbuf, sizeof(errbuf));
+        fprintf(stderr, "%s: %s\n", filename, errbuf);
     }
 }
 
