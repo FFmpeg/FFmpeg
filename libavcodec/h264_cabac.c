@@ -827,13 +827,13 @@ static int decode_cabac_mb_cbp_luma( H264Context *h) {
     cbp_b = h->top_cbp;
 
     ctx = !(cbp_a & 0x02) + 2 * !(cbp_b & 0x04);
-    cbp |= get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]);
+    cbp += get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]);
     ctx = !(cbp   & 0x01) + 2 * !(cbp_b & 0x08);
-    cbp |= get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]) << 1;
+    cbp += get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]) << 1;
     ctx = !(cbp_a & 0x08) + 2 * !(cbp   & 0x01);
-    cbp |= get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]) << 2;
+    cbp += get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]) << 2;
     ctx = !(cbp   & 0x04) + 2 * !(cbp   & 0x02);
-    cbp |= get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]) << 3;
+    cbp += get_cabac_noinline(&h->cabac, &h->cabac_state[73 + ctx]) << 3;
     return cbp;
 }
 static int decode_cabac_mb_cbp_chroma( H264Context *h) {
@@ -1244,9 +1244,9 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
         }else{
             int bits;
             bits = get_cabac_noinline( &h->cabac, &h->cabac_state[27+4] ) << 3;
-            bits|= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] ) << 2;
-            bits|= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] ) << 1;
-            bits|= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] );
+            bits+= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] ) << 2;
+            bits+= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] ) << 1;
+            bits+= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] );
             if( bits < 8 ){
                 mb_type= bits + 3; /* B_Bi_16x16 through B_L1_L0_16x8 */
             }else if( bits == 13 ){
@@ -1257,7 +1257,7 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
             }else if( bits == 15 ){
                 mb_type= 22; /* B_8x8 */
             }else{
-                bits= ( bits<<1 ) | get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] );
+                bits= ( bits<<1 ) + get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] );
                 mb_type= bits - 4; /* B_L0_Bi_* through B_Bi_Bi_* */
             }
         }
