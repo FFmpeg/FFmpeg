@@ -1171,8 +1171,8 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
 
 }
 
-static void decode_cabac_residual_dc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff ) {
-    decode_cabac_residual_internal(h, block, cat, n, scantable, qmul, max_coeff, 1);
+static void decode_cabac_residual_dc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int max_coeff ) {
+    decode_cabac_residual_internal(h, block, cat, n, scantable, NULL, max_coeff, 1);
 }
 
 static void decode_cabac_residual_nondc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff ) {
@@ -1642,7 +1642,7 @@ decode_intra_mb:
         if( IS_INTRA16x16( mb_type ) ) {
             int i;
             //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 DC\n" );
-            decode_cabac_residual_dc( h, h->mb, 0, 0, dc_scan, NULL, 16);
+            decode_cabac_residual_dc( h, h->mb, 0, 0, dc_scan, 16);
 
             if( cbp&15 ) {
                 qmul = h->dequant4_coeff[0][s->qscale];
@@ -1681,7 +1681,7 @@ decode_intra_mb:
             int c;
             for( c = 0; c < 2; c++ ) {
                 //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-DC\n",c );
-                decode_cabac_residual_dc(h, h->mb + 256 + 16*4*c, 3, c, chroma_dc_scan, NULL, 4);
+                decode_cabac_residual_dc(h, h->mb + 256 + 16*4*c, 3, c, chroma_dc_scan, 4);
             }
         }
 
