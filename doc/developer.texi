@@ -303,8 +303,8 @@ send a reminder by email. Your patch should eventually be dealt with.
     Remember to do this even if you're just adding a format to a file that is
     already being compiled by some other rule, like a raw demuxer.
 @item
-    Did you add an entry to the table of supported formats or codecs in the
-    documentation?
+    Did you add an entry to the table of supported formats or codecs in
+    @file{doc/general.texi}?
 @item
     Did you add an entry in the Changelog?
 @item
