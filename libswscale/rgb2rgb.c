@@ -8,22 +8,19 @@
  *
  * This file is part of FFmpeg.
  *
- * FFmpeg is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with FFmpeg; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * The C code (not assembly, MMX, ...) of this file can be used
- * under the LGPL license.
  */
 #include <inttypes.h>
 #include "config.h"
@@ -101,7 +98,7 @@ void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t 
                      long lumStride, long chromStride, long srcStride);
 
 
-#if ARCH_X86 && CONFIG_GPL
+#if ARCH_X86
 DECLARE_ASM_CONST(8, uint64_t, mmx_null)     = 0x0000000000000000ULL;
 DECLARE_ASM_CONST(8, uint64_t, mmx_one)      = 0xFFFFFFFFFFFFFFFFULL;
 DECLARE_ASM_CONST(8, uint64_t, mask32b)      = 0x000000FF000000FFULL;
@@ -162,7 +159,7 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 #define RENAME(a) a ## _C
 #include "rgb2rgb_template.c"
 
-#if ARCH_X86 && CONFIG_GPL
+#if ARCH_X86
 
 //MMX versions
 #undef RENAME
@@ -198,7 +195,7 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 
 void sws_rgb2rgb_init(int flags)
 {
-#if (HAVE_MMX2 || HAVE_AMD3DNOW || HAVE_MMX)  && CONFIG_GPL
+#if HAVE_MMX2 || HAVE_AMD3DNOW || HAVE_MMX
     if (flags & SWS_CPU_CAPS_MMX2)
         rgb2rgb_init_MMX2();
     else if (flags & SWS_CPU_CAPS_3DNOW)

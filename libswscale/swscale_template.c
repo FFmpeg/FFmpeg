@@ -3,22 +3,19 @@
  *
  * This file is part of FFmpeg.
  *
- * FFmpeg is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with FFmpeg; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * The C code (not assembly, MMX, ...) of this file can be used
- * under the LGPL license.
  */
 
 #undef REAL_MOVNTQ
@@ -2258,7 +2255,7 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
                                         long dstWidth, const uint8_t *src, int srcW,
                                         int xInc)
 {
-#if ARCH_X86 && CONFIG_GPL
+#if ARCH_X86
 #if COMPILE_TEMPLATE_MMX2
     int32_t *filterPos = c->hLumFilterPos;
     int16_t *filter    = c->hLumFilter;
@@ -2407,7 +2404,7 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
                                         long dstWidth, const uint8_t *src1,
                                         const uint8_t *src2, int srcW, int xInc)
 {
-#if ARCH_X86 && CONFIG_GPL
+#if ARCH_X86
 #if COMPILE_TEMPLATE_MMX2
     int32_t *filterPos = c->hChrFilterPos;
     int16_t *filter    = c->hChrFilter;

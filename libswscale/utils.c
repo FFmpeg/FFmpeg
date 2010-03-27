@@ -3,22 +3,19 @@
  *
  * This file is part of FFmpeg.
  *
- * FFmpeg is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with FFmpeg; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * the C code (not assembly, mmx, ...) of this file can be used
- * under the LGPL license too
  */
 
 #define _SVID_SOURCE //needed for MAP_ANONYMOUS
@@ -508,7 +505,7 @@ fail:
     return ret;
 }
 
-#if ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT) && CONFIG_GPL
+#if ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT)
 static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *filter, int32_t *filterPos, int numSplits)
 {
     uint8_t *fragmentA;
@@ -666,7 +663,7 @@ static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *fil
 
     return fragmentPos + 1;
 }
-#endif /* ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT) && CONFIG_GPL */
+#endif /* ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT) */
 
 static void getSubSampleFactors(int *h, int *v, enum PixelFormat format)
 {
@@ -951,7 +948,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
 
     /* precalculate horizontal scaler filter coefficients */
     {
-#if ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT) && CONFIG_GPL
+#if ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT)
 // can't downscale !!!
         if (c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR)) {
             c->lumMmx2FilterCodeSize = initMMX2HScaler(      dstW, c->lumXInc, NULL, NULL, NULL, 8);
@@ -983,7 +980,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
             mprotect(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
 #endif
         } else
-#endif /* ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT) && CONFIG_GPL */
+#endif /* ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT) */
         {
             const int filterAlign=
                 (flags & SWS_CPU_CAPS_MMX) ? 4 :
@@ -1540,7 +1537,7 @@ void sws_freeContext(SwsContext *c)
     av_freep(&c->hLumFilterPos);
     av_freep(&c->hChrFilterPos);
 
-#if ARCH_X86 && CONFIG_GPL
+#if ARCH_X86
 #ifdef MAP_ANONYMOUS
     if (c->lumMmx2FilterCode) munmap(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize);
     if (c->chrMmx2FilterCode) munmap(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize);
@@ -1553,7 +1550,7 @@ void sws_freeContext(SwsContext *c)
 #endif
     c->lumMmx2FilterCode=NULL;
     c->chrMmx2FilterCode=NULL;
-#endif /* ARCH_X86 && CONFIG_GPL */
+#endif /* ARCH_X86 */
 
     av_freep(&c->yuvTable);
 
