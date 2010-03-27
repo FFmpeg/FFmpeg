@@ -118,7 +118,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     AVCodecContext *dec_ctx;
     AVCodec *dec;
     char val_str[128];
-    AVMetadataTag *tag;
+    AVMetadataTag *tag = NULL;
     char a, b, c, d;
 
     printf("[STREAM]\n");
