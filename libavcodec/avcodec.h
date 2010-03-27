@@ -604,8 +604,9 @@ typedef struct RcOverride{
 
 #define CODEC_CAP_DRAW_HORIZ_BAND 0x0001 ///< Decoder can use draw_horiz_band callback.
 /**
- * Codec uses get_buffer() for allocating buffers.
- * direct rendering method 1
+ * Codec uses get_buffer() for allocating buffers and supports custom allocators.
+ * If not set, it might not use get_buffer() at all or use operations that
+ * assume the buffer was allocated by avcodec_default_get_buffer.
  */
 #define CODEC_CAP_DR1             0x0002
 /* If 'parse_only' field is true, then avcodec_parse_frame() can be used. */
