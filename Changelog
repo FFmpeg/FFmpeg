@@ -66,6 +66,7 @@ version <next>:
 - VorbisComment writing for FLAC, Ogg FLAC and Ogg Speex files
 - RTP depacketization of Theora
 - HTTP Digest authentication
+- RTMP/RTMPT/RTMPS/RTMPE/RTMPTE protocol support via librtmp
 
 
 
