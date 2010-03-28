@@ -859,7 +859,8 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         pos2= st->index_entries[index].pos;
         ts  = st->index_entries[index].timestamp;
     }else{
-        av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pts_cmp, (void **) next_node);
+        av_tree_find(nut->syncpoints, &dummy, (void *) ff_nut_sp_pts_cmp,
+                     (void **) next_node);
         av_log(s, AV_LOG_DEBUG, "%"PRIu64"-%"PRIu64" %"PRId64"-%"PRId64"\n", next_node[0]->pos, next_node[1]->pos,
                                                     next_node[0]->ts , next_node[1]->ts);
         pos= av_gen_search(s, -1, dummy.ts, next_node[0]->pos, next_node[1]->pos, next_node[1]->pos,
@@ -868,7 +869,8 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         if(!(flags & AVSEEK_FLAG_BACKWARD)){
             dummy.pos= pos+16;
             next_node[1]= &nopts_sp;
-            av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, (void **) next_node);
+            av_tree_find(nut->syncpoints, &dummy, (void *) ff_nut_sp_pos_cmp,
+                         (void **) next_node);
             pos2= av_gen_search(s, -2, dummy.pos, next_node[0]->pos     , next_node[1]->pos, next_node[1]->pos,
                                                 next_node[0]->back_ptr, next_node[1]->back_ptr, flags, &ts, nut_read_timestamp);
             if(pos2>=0)
@@ -876,7 +878,8 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
             //FIXME dir but I think it does not matter
         }
         dummy.pos= pos;
-        sp= av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, NULL);
+        sp= av_tree_find(nut->syncpoints, &dummy, (void *) ff_nut_sp_pos_cmp,
+                         NULL);
 
         assert(sp);
         pos2= sp->back_ptr  - 15;
