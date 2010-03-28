@@ -197,7 +197,7 @@ Codecs:
   truemotion2*                          Kostya Shishkov
   truespeech.c                          Kostya Shishkov
   tscc.c                                Kostya Shishkov
-  tta.c                                 Alex Beregszaszi
+  tta.c                                 Alex Beregszaszi, Jaikrishnan Menon
   txd.c                                 Ivo van Poorten
   ulti*                                 Kostya Shishkov
   vb.c                                  Kostya Shishkov
