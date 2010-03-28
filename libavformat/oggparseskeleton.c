@@ -62,6 +62,7 @@ static int skeleton_header(AVFormatContext *s, int idx)
         if (start_den) {
             av_reduce(&start_time, &st->time_base.den, start_num, start_den, INT_MAX);
             st->time_base.num = 1;
+            os->lastpts =
             st->start_time = start_time;
         }
     } else if (!strncmp(buf, "fisbone", 8)) {
@@ -71,6 +72,7 @@ static int skeleton_header(AVFormatContext *s, int idx)
         target_idx = ogg_find_stream(ogg, AV_RL32(buf+12));
         start_granule = AV_RL64(buf+36);
         if (target_idx >= 0 && start_granule != -1) {
+            ogg->streams[target_idx].lastpts =
             s->streams[target_idx]->start_time = ogg_gptopts(s, target_idx, start_granule, NULL);
         }
     }
