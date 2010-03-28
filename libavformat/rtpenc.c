@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"
+#include "libavutil/random_seed.h"
 
 #include <unistd.h>
 
@@ -79,11 +80,10 @@ static int rtp_write_header(AVFormatContext *s1)
     if (s->payload_type < 0)
         s->payload_type = RTP_PT_PRIVATE + (st->codec->codec_type == CODEC_TYPE_AUDIO);
 
-// following 2 FIXMEs could be set based on the current time, there is normally no info leak, as RTP will likely be transmitted immediately
-    s->base_timestamp = 0; /* FIXME: was random(), what should this be? */
+    s->base_timestamp = ff_random_get_seed();
     s->timestamp = s->base_timestamp;
     s->cur_timestamp = 0;
-    s->ssrc = 0; /* FIXME: was random(), what should this be? */
+    s->ssrc = ff_random_get_seed();
     s->first_packet = 1;
     s->first_rtcp_ntp_time = ff_ntp_time();
     if (s1->start_time_realtime)
