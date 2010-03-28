@@ -34,6 +34,7 @@ const int program_birth_year = 2007;
 static int do_show_format  = 0;
 static int do_show_streams = 0;
 
+static int convert_tags                 = 0;
 static int show_value_unit              = 0;
 static int use_value_prefix             = 0;
 static int use_byte_value_binary_prefix = 0;
@@ -211,6 +212,8 @@ static void show_format(AVFormatContext *fmt_ctx)
     printf("bit_rate=%s\n",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,
                                                  unit_bit_per_second_str));
 
+    if (convert_tags)
+        av_metadata_conv(fmt_ctx, NULL, fmt_ctx->iformat->metadata_conv);
     while ((tag = av_metadata_get(fmt_ctx->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX)))
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
@@ -319,6 +322,7 @@ static void opt_pretty(void)
 
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
+    { "convert_tags", OPT_BOOL, {(void*)&convert_tags}, "convert tag names to the FFmpeg generic tag names" },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "format" },
     { "unit", OPT_BOOL, {(void*)&show_value_unit}, "show unit of the displayed values" },
     { "prefix", OPT_BOOL, {(void*)&use_value_prefix}, "use SI prefixes for the displayed values" },
