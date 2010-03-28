@@ -740,9 +740,17 @@ For information about compiling FFmpeg on OS/2 see
 @section (Open)Solaris
 
 GNU Make is required to build FFmpeg, so you have to invoke (@file{gmake}),
-standard Solaris Make will not work. Depending on your system configuration
-you might be using a non-POSIX-compatible default shell. Ensure that a
-POSIX-compatible shell is in your path or invoke it directly.
+standard Solaris Make will not work. When building with a non-c99 front-end
+(gcc, generic suncc) add either @code{--extra-libs=/usr/lib/32/values-xpg6.o}
+or @code{--extra-libs=/usr/lib/64/values-xpg6.o} to the configure options
+since the libc is not c99-compliant by default. The probes performed by
+configure may raise an exception leading to the death of configure itself
+due to a bug in the system shell. Simply invoke a different shell such as
+bash directly to work around this:
+
+@example
+bash ./configure
+@end example
 
 @section Windows
 
