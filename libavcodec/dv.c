@@ -226,7 +226,7 @@ static int dv_init_dynamic_tables(const DVprofile *d)
         } else {
             iweight1 = &dv_iweight_1080_y[0];
             iweight2 = &dv_iweight_1080_c[0];
-            }
+        }
         if (DV_PROFILE_IS_HD(d)) {
             for (c = 0; c < 4; c++) {
                 for (s = 0; s < 16; s++) {
@@ -244,12 +244,12 @@ static int dv_init_dynamic_tables(const DVprofile *d)
                         for (; i < dv_quant_areas[c]; i++) {
                             *factor1   = iweight1[i] << (dv_quant_shifts[s][c] + 1);
                             *factor2++ = (*factor1++) << 1;
-        }
-    }
+                        }
+                    }
+                }
             }
         }
     }
-}
 
     return 0;
 }
