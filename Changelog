@@ -67,6 +67,7 @@ version <next>:
 - RTP depacketization of Theora
 - HTTP Digest authentication
 - RTMP/RTMPT/RTMPS/RTMPE/RTMPTE protocol support via librtmp
+- Psygnosis YOP demuxer and video decoder
 
 
 
