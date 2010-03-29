@@ -1,0 +1,57 @@
+Writing a table generator
+
+This documentation is preliminary.
+Parts of the API are not good and should be changed.
+
+Basic concepts
+
+A table generator consists of two files, *_tablegen.c and *_tablegen.h.
+The .h file will provide the variable declarations and initialization
+code for the tables, the .c describes the tables so they can be printed
+as a header file.
+Both of these files will be compiled for the host system, so to avoid
+breakage with cross-compilation neither of them may include, directly
+or indirectly, config.h or avconfig.h.
+Due to this, the .c file or Makefile may have to provide additional defines
+or stubs, though if possible this should be avoided.
+
+The .c file
+
+This file should include the *_tablegen.h and tableprint.h files and
+anything else it needs as long as it does not depend on config.h or
+avconfig.h.
+In addition to that it must contain a void tableinit(void) function
+which initializes all tables by calling the init functions from the .h
+file.
+It must also contain a "const struct tabledef tables[]" array describing
+the tables to be generated.
+Its entries consist of (in order):
+ - a string suitable for declaring the table, up to but not including the =
+   NULL terminates the table
+ - a function to print the table - tableprint.h defines some defaults,
+   e.g. write_uint8_array to print a uint8_t array.
+ - a pointer to the table
+ - the size of the first dimension of the array
+ - if applicable, the size of the second dimension of the array
+
+The .h file
+
+This file should contain:
+ - one or more initialization functions
+ - the table variable declarations
+If CONFIG_HARDCODED_TABLES is set, the initialization functions should
+not do anything, and instead of the variable declarations the
+generated *_tables.h file should be included.
+Since that will be generated in the build directory, the path must be
+included, i.e.
+#include "libavcodec/example_tables.h"
+not
+#include "example_tables.h"
+
+Makefile changes
+
+To make the automatic table creation work, you must manually declare the
+new dependency.
+For this add a line similar to this:
+$(SUBDIR)example.o: $(SUBDIR)example_tables.h
+under the "ifdef CONFIG_HARDCODED_TABLES" section in the Makefile.
