@@ -22,7 +22,6 @@
 
 #include <stdlib.h>
 #define CONFIG_HARDCODED_TABLES 0
-#define av_cold
 #define SINETABLE_CONST
 #define SINETABLE(size) \
     float ff_sine_##size[size]

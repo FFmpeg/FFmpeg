@@ -21,7 +21,6 @@
  */
 
 #include <stdlib.h>
-#define av_cold
 #define CONFIG_HARDCODED_TABLES 0
 #include "qdm2_tablegen.h"
 #include "tableprint.h"
