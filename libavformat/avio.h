@@ -139,7 +139,12 @@ int64_t url_seek(URLContext *h, int64_t pos, int whence);
  */
 int url_close(URLContext *h);
 
+/**
+ * Returns a non-zero value if the resource indicated by url
+ * exists, 0 otherwise.
+ */
 int url_exist(const char *url);
+
 int64_t url_filesize(URLContext *h);
 
 /**
