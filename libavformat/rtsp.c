@@ -46,6 +46,12 @@
 int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
 #endif
 
+/* Timout values for socket select, in ms,
+ * and read_packet(), in seconds  */
+#define SELECT_TIMEOUT_MS 100
+#define READ_PACKET_TIMEOUT_S 10
+#define MAX_TIMEOUTS READ_PACKET_TIMEOUT_S * 1000 / SELECT_TIMEOUT_MS
+
 #define SPACE_CHARS " \t\r\n"
 /* we use memchr() instead of strchr() here because strchr() will return
  * the terminating '\0' of SPACE_CHARS instead of NULL if c is '\0'. */
@@ -1634,7 +1640,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
     fd_set rfds;
-    int fd, fd_max, n, i, ret, tcp_fd;
+    int fd, fd_max, n, i, ret, tcp_fd, timeout_cnt = 0;
     struct timeval tv;
 
     for (;;) {
@@ -1660,9 +1666,10 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             }
         }
         tv.tv_sec = 0;
-        tv.tv_usec = 100 * 1000;
+        tv.tv_usec = SELECT_TIMEOUT_MS * 1000;
         n = select(fd_max + 1, &rfds, NULL, NULL, &tv);
         if (n > 0) {
+            timeout_cnt = 0;
             for (i = 0; i < rt->nb_rtsp_streams; i++) {
                 rtsp_st = rt->rtsp_streams[i];
                 if (rtsp_st->rtp_handle) {
@@ -1688,7 +1695,10 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                     return 0;
             }
 #endif
-        }
+        } else if (n == 0 && ++timeout_cnt >= MAX_TIMEOUTS) {
+            return AVERROR(ETIME);
+        } else if (n < 0 && errno != EINTR)
+            return AVERROR(errno);
     }
 }
 
