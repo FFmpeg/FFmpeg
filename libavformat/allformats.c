@@ -207,6 +207,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (WSVQA, wsvqa);
     REGISTER_DEMUXER  (WV, wv);
     REGISTER_DEMUXER  (XA, xa);
+    REGISTER_DEMUXER  (YOP, yop);
     REGISTER_MUXDEMUX (YUV4MPEGPIPE, yuv4mpegpipe);
 
     /* external libraries */

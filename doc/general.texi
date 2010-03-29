@@ -241,6 +241,7 @@ library:
 @item Westwood Studios VQA      @tab   @tab X
     @tab Multimedia format used in Westwood Studios games.
 @item YUV4MPEG pipe             @tab X @tab X
+@item Psygnosis YOP             @tab   @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -490,6 +491,7 @@ following image formats are supported:
 @item Winnov WNV1            @tab     @tab  X
 @item WMV7                   @tab  X  @tab  X
 @item YAMAHA SMAF            @tab  X  @tab  X
+@item Psygnosis YOP Video    @tab     @tab  X
 @item ZLIB                   @tab  X  @tab  X
     @tab part of LCL, encoder experimental
 @item Zip Motion Blocks Video  @tab   X @tab  X
