@@ -46,7 +46,7 @@
 int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
 #endif
 
-/* Timout values for socket select, in ms,
+/* Timeout values for socket select, in ms,
  * and read_packet(), in seconds  */
 #define SELECT_TIMEOUT_MS 100
 #define READ_PACKET_TIMEOUT_S 10
@@ -232,7 +232,7 @@ typedef struct {
     uint32_t    offset;
 } AttrNameMap;
 
-/* All known fmtp parmeters and the corresping RTPAttrTypeEnum */
+/* All known fmtp parameters and the corresponding RTPAttrTypeEnum */
 #define ATTR_NAME_TYPE_INT 0
 #define ATTR_NAME_TYPE_STR 1
 static const AttrNameMap attr_names[]=
@@ -252,7 +252,7 @@ static const AttrNameMap attr_names[]=
     { NULL, -1, -1 },
 };
 
-/* parse the attribute line from the fmtp a line of an sdp resonse. This
+/* parse the attribute line from the fmtp a line of an sdp response. This
  * is broken out as a function because it is used in rtp_h264.c, which is
  * forthcoming. */
 int ff_rtsp_next_attr_and_value(const char **p, char *attr, int attr_size,
@@ -692,7 +692,7 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 
     if (s->oformat) {
         rtsp_st->transport_priv = rtsp_rtp_mux_open(s, st, rtsp_st->rtp_handle);
-        /* Ownage of rtp_handle is passed to the rtp mux context */
+        /* Ownership of rtp_handle is passed to the rtp mux context */
         rtsp_st->rtp_handle = NULL;
     } else if (rt->transport == RTSP_TRANSPORT_RDT)
         rtsp_st->transport_priv = ff_rdt_parse_open(s, st->index,
