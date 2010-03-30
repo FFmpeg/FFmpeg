@@ -22,6 +22,29 @@
 /**
  * @file libavcodec/ac3.h
  * Common code between the AC-3 and E-AC-3 decoders.
+ *
+ * Summary of MDCT Coefficient Grouping:
+ * The individual MDCT coefficient indices are often referred to in the
+ * (E-)AC-3 specification as frequency bins.  These bins are grouped together
+ * into subbands of 12 coefficients each.  The subbands are grouped together
+ * into bands as defined in the bitstream by the band structures, which
+ * determine the number of bands and the size of each band.  The full spectrum
+ * of 256 frequency bins is divided into 1 DC bin + 21 subbands = 253 bins.
+ * This system of grouping coefficients is used for channel bandwidth, stereo
+ * rematrixing, channel coupling, enhanced coupling, and spectral extension.
+ *
+ * +-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+-+
+ * |1|  |12|  |  [12|12|12|12]  |  |  |  |  |  |  |  |  |  |  |  |  |3|
+ * +-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+-+
+ * ~~~  ~~~~     ~~~~~~~~~~~~~                                      ~~~
+ *  |     |            |                                             |
+ *  |     |            |                    3 unused frequency bins--+
+ *  |     |            |
+ *  |     |            +--1 band containing 4 subbands
+ *  |     |
+ *  |     +--1 subband of 12 frequency bins
+ *  |
+ *  +--DC frequency bin
  */
 
 #ifndef AVCODEC_AC3DEC_H
@@ -43,6 +66,7 @@
 #define AC3_MAX_COEFS   256
 #define AC3_BLOCK_SIZE  256
 #define MAX_BLOCKS        6
+#define SPX_MAX_BANDS    17
 
 typedef struct {
     AVCodecContext *avctx;                  ///< parent context
@@ -87,6 +111,22 @@ typedef struct {
     int firstchincpl;                       ///< first channel in coupling
     int first_cpl_coords[AC3_MAX_CHANNELS]; ///< first coupling coordinates states      (firstcplcos)
     int cpl_coords[AC3_MAX_CHANNELS][18];   ///< coupling coordinates                   (cplco)
+///@}
+
+///@defgroup spx spectral extension
+///@{
+    int spx_in_use;                             ///< spectral extension in use              (spxinu)
+    uint8_t channel_uses_spx[AC3_MAX_CHANNELS]; ///< channel uses spectral extension        (chinspx)
+    int8_t spx_atten_code[AC3_MAX_CHANNELS];    ///< spx attenuation code                   (spxattencod)
+    int spx_src_start_freq;                     ///< spx start frequency bin
+    int spx_dst_end_freq;                       ///< spx end frequency bin
+    int spx_dst_start_freq;                     ///< spx starting frequency bin for copying (copystartmant)
+                                                ///< the copy region ends at the start of the spx region.
+    int num_spx_bands;                          ///< number of spx bands                    (nspxbnds)
+    uint8_t spx_band_sizes[SPX_MAX_BANDS];      ///< number of bins in each spx band
+    uint8_t first_spx_coords[AC3_MAX_CHANNELS]; ///< first spx coordinates states           (firstspxcos)
+    float spx_noise_blend[AC3_MAX_CHANNELS][SPX_MAX_BANDS]; ///< spx noise blending factor  (nblendfact)
+    float spx_signal_blend[AC3_MAX_CHANNELS][SPX_MAX_BANDS];///< spx signal blending factor (sblendfact)
 ///@}
 
 ///@defgroup aht adaptive hybrid transform
@@ -181,5 +221,12 @@ void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
 
 void ff_ac3_downmix_c(float (*samples)[256], float (*matrix)[2],
                       int out_ch, int in_ch, int len);
+
+/**
+ * Apply spectral extension to each channel by copying lower frequency
+ * coefficients to higher frequency bins and applying side information to
+ * approximate the original high frequency signal.
+ */
+void ff_eac3_apply_spectral_extension(AC3DecodeContext *s);
 
 #endif /* AVCODEC_AC3DEC_H */

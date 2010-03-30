@@ -68,6 +68,7 @@ version <next>:
 - HTTP Digest authentication
 - RTMP/RTMPT/RTMPS/RTMPE/RTMPTE protocol support via librtmp
 - Psygnosis YOP demuxer and video decoder
+- spectral extension support in the E-AC-3 decoder
 
 
 
