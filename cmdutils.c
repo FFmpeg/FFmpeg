@@ -170,7 +170,7 @@ unknown_opt:
                 *po->u.float_arg = parse_number_or_die(opt, arg, OPT_FLOAT, -1.0/0.0, 1.0/0.0);
             } else if (po->flags & OPT_FUNC2) {
                 if (po->u.func2_arg(opt, arg) < 0) {
-                    fprintf(stderr, "%s: invalid value '%s' for option '%s'\n", argv[0], arg, opt);
+                    fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg, opt);
                     exit(1);
                 }
             } else {
