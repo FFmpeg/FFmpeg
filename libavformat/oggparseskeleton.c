@@ -33,7 +33,7 @@ static int skeleton_header(AVFormatContext *s, int idx)
     int target_idx, start_time;
 
     strcpy(st->codec->codec_name, "skeleton");
-    st->codec->codec_type = CODEC_TYPE_DATA;
+    st->codec->codec_type = AVMEDIA_TYPE_DATA;
 
     if (os->psize < 8)
         return -1;

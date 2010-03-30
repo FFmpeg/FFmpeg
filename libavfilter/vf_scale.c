@@ -197,13 +197,13 @@ AVFilter avfilter_vf_scale = {
     .priv_size = sizeof(ScaleContext),
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = CODEC_TYPE_VIDEO,
+                                    .type             = AVMEDIA_TYPE_VIDEO,
                                     .start_frame      = start_frame,
                                     .draw_slice       = draw_slice,
                                     .min_perms        = AV_PERM_READ, },
                                   { .name = NULL}},
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = CODEC_TYPE_VIDEO,
+                                    .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = config_props, },
                                   { .name = NULL}},
 };

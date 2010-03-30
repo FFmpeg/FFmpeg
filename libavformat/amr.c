@@ -108,7 +108,7 @@ static int amr_read_header(AVFormatContext *s,
         st->codec->sample_rate = 8000;
     }
     st->codec->channels = 1;
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     return 0;

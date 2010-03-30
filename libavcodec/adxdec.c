@@ -168,7 +168,7 @@ static int adx_decode_frame(AVCodecContext *avctx,
 
 AVCodec adpcm_adx_decoder = {
     "adpcm_adx",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_ADPCM_ADX,
     sizeof(ADXContext),
     adx_decode_init,

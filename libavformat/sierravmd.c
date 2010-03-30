@@ -109,7 +109,7 @@ static int vmd_read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
     av_set_pts_info(vst, 33, 1, 10);
     vmd->video_stream_index = vst->index;
-    vst->codec->codec_type = CODEC_TYPE_VIDEO;
+    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id = vmd->is_indeo3 ? CODEC_ID_INDEO3 : CODEC_ID_VMDVIDEO;
     vst->codec->codec_tag = 0;  /* no fourcc */
     vst->codec->width = AV_RL16(&vmd->vmd_header[12]);
@@ -129,7 +129,7 @@ static int vmd_read_header(AVFormatContext *s,
         if (!st)
             return AVERROR(ENOMEM);
         vmd->audio_stream_index = st->index;
-        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_VMDAUDIO;
         st->codec->codec_tag = 0;  /* no fourcc */
         st->codec->channels = (vmd->vmd_header[811] & 0x80) ? 2 : 1;

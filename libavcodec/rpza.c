@@ -277,7 +277,7 @@ static av_cold int rpza_decode_end(AVCodecContext *avctx)
 
 AVCodec rpza_decoder = {
     "rpza",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_RPZA,
     sizeof(RpzaContext),
     rpza_decode_init,

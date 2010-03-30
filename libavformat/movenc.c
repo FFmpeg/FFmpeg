@@ -333,7 +333,7 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack *track) // Basic
 
     // the following fields is made of 6 bits to identify the streamtype (4 for video, 5 for audio)
     // plus 1 bit to indicate upstream and 1 bit set to 1 (reserved)
-    if(track->enc->codec_type == CODEC_TYPE_AUDIO)
+    if(track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         put_byte(pb, 0x15); // flags (= Audiostream)
     else
         put_byte(pb, 0x11); // flags (= Visualstream)
@@ -620,8 +620,8 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     else if (track->enc->codec_id == CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
     else if (track->enc->codec_id == CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
     else if (track->enc->codec_id == CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
-    else if (track->enc->codec_type == CODEC_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
-    else if (track->enc->codec_type == CODEC_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
+    else if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
+    else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
 
     return tag;
 }
@@ -642,7 +642,7 @@ static int ipod_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     int tag = track->enc->codec_tag;
 
     // keep original tag for subs, ipod supports both formats
-    if (!(track->enc->codec_type == CODEC_TYPE_SUBTITLE &&
+    if (!(track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE &&
         (tag == MKTAG('t','x','3','g') ||
          tag == MKTAG('t','e','x','t'))))
         tag = ff_codec_get_tag(codec_ipod_tags, track->enc->codec_id);
@@ -714,7 +714,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
             tag = mov_get_dv_codec_tag(s, track);
         else if (track->enc->codec_id == CODEC_ID_RAWVIDEO)
             tag = mov_get_rawvideo_codec_tag(s, track);
-        else if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
+        else if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             tag = ff_codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
             if (!tag) { // if no mac fcc found, try with Microsoft tags
                 tag = ff_codec_get_tag(ff_codec_bmp_tags, track->enc->codec_id);
@@ -722,7 +722,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
                     av_log(s, AV_LOG_INFO, "Warning, using MS style video codec tag, "
                            "the file may be unplayable!\n");
             }
-        } else if (track->enc->codec_type == CODEC_TYPE_AUDIO) {
+        } else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO) {
             tag = ff_codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
             if (!tag) { // if no mac fcc found, try with Microsoft tags
                 int ms_tag = ff_codec_get_tag(ff_codec_wav_tags, track->enc->codec_id);
@@ -732,7 +732,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
                            "the file may be unplayable!\n");
                 }
             }
-        } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE)
+        } else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)
             tag = ff_codec_get_tag(ff_codec_movsubtitle_tags, track->enc->codec_id);
     }
 
@@ -868,11 +868,11 @@ static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack *track)
     put_tag(pb, "stsd");
     put_be32(pb, 0); /* version & flags */
     put_be32(pb, 1); /* entry count */
-    if (track->enc->codec_type == CODEC_TYPE_VIDEO)
+    if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO)
         mov_write_video_tag(pb, track);
-    else if (track->enc->codec_type == CODEC_TYPE_AUDIO)
+    else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_audio_tag(pb, track);
-    else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE)
+    else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)
         mov_write_subtitle_tag(pb, track);
     return updateSize(pb, pos);
 }
@@ -918,7 +918,7 @@ static int mov_write_stts_tag(ByteIOContext *pb, MOVTrack *track)
     uint32_t atom_size;
     int i;
 
-    if (track->enc->codec_type == CODEC_TYPE_AUDIO && !track->audio_vbr) {
+    if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO && !track->audio_vbr) {
         stts_entries = av_malloc(sizeof(*stts_entries)); /* one entry */
         stts_entries[0].count = track->sampleCount;
         stts_entries[0].duration = 1;
@@ -973,12 +973,12 @@ static int mov_write_stbl_tag(ByteIOContext *pb, MOVTrack *track)
     put_tag(pb, "stbl");
     mov_write_stsd_tag(pb, track);
     mov_write_stts_tag(pb, track);
-    if (track->enc->codec_type == CODEC_TYPE_VIDEO &&
+    if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO &&
         track->hasKeyframes && track->hasKeyframes < track->entry)
         mov_write_stss_tag(pb, track, MOV_SYNC_SAMPLE);
     if (track->mode == MODE_MOV && track->flags & MOV_TRACK_STPS)
         mov_write_stss_tag(pb, track, MOV_PARTIAL_SYNC_SAMPLE);
-    if (track->enc->codec_type == CODEC_TYPE_VIDEO &&
+    if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO &&
         track->flags & MOV_TRACK_CTTS)
         mov_write_ctts_tag(pb, track);
     mov_write_stsc_tag(pb, track);
@@ -1050,13 +1050,13 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack *track)
         descr = "DataHandler";
     } else {
         hdlr = (track->mode == MODE_MOV) ? "mhlr" : "\0\0\0\0";
-        if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
+        if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             hdlr_type = "vide";
             descr = "VideoHandler";
-        } else if (track->enc->codec_type == CODEC_TYPE_AUDIO) {
+        } else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO) {
             hdlr_type = "soun";
             descr = "SoundHandler";
-        } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
+        } else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             if (track->tag == MKTAG('t','x','3','g')) hdlr_type = "sbtl";
             else                                      hdlr_type = "text";
             descr = "SubtitleHandler";
@@ -1084,11 +1084,11 @@ static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack *track)
     int64_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "minf");
-    if(track->enc->codec_type == CODEC_TYPE_VIDEO)
+    if(track->enc->codec_type == AVMEDIA_TYPE_VIDEO)
         mov_write_vmhd_tag(pb);
-    else if (track->enc->codec_type == CODEC_TYPE_AUDIO)
+    else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
-    else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
+    else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         if (track->tag == MKTAG('t','e','x','t')) mov_write_gmhd_tag(pb);
         else                                      mov_write_nmhd_tag(pb);
     }
@@ -1165,7 +1165,7 @@ static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
     put_be32(pb, 0); /* reserved */
     put_be32(pb, 0x0); /* reserved (Layer & Alternate group) */
     /* Volume, only for audio */
-    if(track->enc->codec_type == CODEC_TYPE_AUDIO)
+    if(track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         put_be16(pb, 0x0100);
     else
         put_be16(pb, 0);
@@ -1183,8 +1183,8 @@ static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
     put_be32(pb, 0x40000000); /* reserved */
 
     /* Track width and height, for visual only */
-    if(track->enc->codec_type == CODEC_TYPE_VIDEO ||
-       track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
+    if(track->enc->codec_type == AVMEDIA_TYPE_VIDEO ||
+       track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
         if(!sample_aspect_ratio || track->height != track->enc->height)
             sample_aspect_ratio = 1;
@@ -1671,7 +1671,7 @@ static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        if (st->codec->codec_type == CODEC_TYPE_VIDEO)
+        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
             has_video = 1;
         if (st->codec->codec_id == CODEC_ID_H264)
             has_h264 = 1;
@@ -1829,7 +1829,7 @@ static int mov_write_header(AVFormatContext *s)
                    "codec not currently supported in container\n", i);
             goto error;
         }
-        if(st->codec->codec_type == CODEC_TYPE_VIDEO){
+        if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
             if (track->tag == MKTAG('m','x','3','p') || track->tag == MKTAG('m','x','3','n') ||
                 track->tag == MKTAG('m','x','4','p') || track->tag == MKTAG('m','x','4','n') ||
                 track->tag == MKTAG('m','x','5','p') || track->tag == MKTAG('m','x','5','n')) {
@@ -1845,7 +1845,7 @@ static int mov_write_header(AVFormatContext *s)
                        "WARNING codec timebase is very high. If duration is too long,\n"
                        "file may not be playable by quicktime. Specify a shorter timebase\n"
                        "or choose different container.\n");
-        }else if(st->codec->codec_type == CODEC_TYPE_AUDIO){
+        }else if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO){
             track->timescale = st->codec->sample_rate;
             if(!st->codec->frame_size && !av_get_bits_per_sample(st->codec->codec_id)) {
                 av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
@@ -1868,7 +1868,7 @@ static int mov_write_header(AVFormatContext *s)
                     goto error;
                 }
             }
-        }else if(st->codec->codec_type == CODEC_TYPE_SUBTITLE){
+        }else if(st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE){
             track->timescale = st->codec->time_base.den;
         }
         if (!track->height)

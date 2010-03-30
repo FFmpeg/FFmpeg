@@ -85,7 +85,7 @@ static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     continue;
 
                   st = av_new_stream(s, id);
-                  st->codec->codec_type = CODEC_TYPE_AUDIO;
+                  st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
 
                   st->codec->block_align = wvfmt.nBlockAlign;
                   st->codec->channels = wvfmt.nChannels;
@@ -111,7 +111,7 @@ static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     continue;
 
                   st = av_new_stream(s, id);
-                  st->codec->codec_type = CODEC_TYPE_VIDEO;
+                  st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                   st->r_frame_rate.num = stream->info.dwRate;
                   st->r_frame_rate.den = stream->info.dwScale;
 

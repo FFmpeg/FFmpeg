@@ -141,7 +141,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     get_word_sep(buf, sizeof(buf), "/", &p);
     i = atoi(buf);
     switch (codec->codec_type) {
-    case CODEC_TYPE_AUDIO:
+    case AVMEDIA_TYPE_AUDIO:
         av_log(s, AV_LOG_DEBUG, "audio codec set to: %s\n", c_name);
         codec->sample_rate = RTSP_DEFAULT_AUDIO_SAMPLERATE;
         codec->channels = RTSP_DEFAULT_NB_AUDIO_CHANNELS;
@@ -161,7 +161,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
         av_log(s, AV_LOG_DEBUG, "audio channels set to: %i\n",
                codec->channels);
         break;
-    case CODEC_TYPE_VIDEO:
+    case AVMEDIA_TYPE_VIDEO:
         av_log(s, AV_LOG_DEBUG, "video codec set to: %s\n", c_name);
         break;
     default:
@@ -343,7 +343,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
     RTSPState *rt = s->priv_data;
     char buf1[64], st_type[64];
     const char *p;
-    enum CodecType codec_type;
+    enum AVMediaType codec_type;
     int payload_type, i;
     AVStream *st;
     RTSPStream *rtsp_st;
@@ -396,11 +396,11 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         s1->skip_media = 0;
         get_word(st_type, sizeof(st_type), &p);
         if (!strcmp(st_type, "audio")) {
-            codec_type = CODEC_TYPE_AUDIO;
+            codec_type = AVMEDIA_TYPE_AUDIO;
         } else if (!strcmp(st_type, "video")) {
-            codec_type = CODEC_TYPE_VIDEO;
+            codec_type = AVMEDIA_TYPE_VIDEO;
         } else if (!strcmp(st_type, "application")) {
-            codec_type = CODEC_TYPE_DATA;
+            codec_type = AVMEDIA_TYPE_DATA;
         } else {
             s1->skip_media = 1;
             return;
@@ -1181,7 +1181,7 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
              * will return an error. Therefore, we skip those streams. */
             if (rt->server_type == RTSP_SERVER_WMS &&
                 s->streams[rtsp_st->stream_index]->codec->codec_type ==
-                    CODEC_TYPE_DATA)
+                    AVMEDIA_TYPE_DATA)
                 continue;
             snprintf(transport, sizeof(transport) - 1,
                      "%s/TCP;", trans_pref);

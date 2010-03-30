@@ -57,7 +57,7 @@ flac_header (AVFormatContext * s, int idx)
 
         ff_flac_parse_streaminfo(st->codec, &si, streaminfo_start);
 
-        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_FLAC;
 
         st->codec->extradata =
@@ -78,7 +78,7 @@ static int
 old_flac_header (AVFormatContext * s, int idx)
 {
     AVStream *st = s->streams[idx];
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_FLAC;
 
     return 0;

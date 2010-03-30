@@ -335,7 +335,7 @@ static av_cold int tgv_decode_end(AVCodecContext *avctx)
 
 AVCodec eatgv_decoder = {
     "eatgv",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TGV,
     sizeof(TgvContext),
     tgv_decode_init,

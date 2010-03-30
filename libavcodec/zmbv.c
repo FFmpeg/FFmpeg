@@ -654,7 +654,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec zmbv_decoder = {
     "zmbv",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ZMBV,
     sizeof(ZmbvContext),
     decode_init,

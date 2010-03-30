@@ -2091,7 +2091,7 @@ static av_cold int aac_decode_close(AVCodecContext *avccontext)
 
 AVCodec aac_decoder = {
     "aac",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AAC,
     sizeof(AACContext),
     aac_decode_init,

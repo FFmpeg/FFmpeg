@@ -375,13 +375,13 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
 
         switch(enc->codec_type) {
-        case CODEC_TYPE_AUDIO:
+        case AVMEDIA_TYPE_AUDIO:
             wav_extra_size = 0;
             extra_size = 18 + wav_extra_size;
             extra_size2 = 8;
             break;
         default:
-        case CODEC_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO:
             wav_extra_size = enc->extradata_size;
             extra_size = 0x33 + wav_extra_size;
             extra_size2 = 0;
@@ -389,7 +389,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         }
 
         hpos = put_header(pb, &ff_asf_stream_header);
-        if (enc->codec_type == CODEC_TYPE_AUDIO) {
+        if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
             put_guid(pb, &ff_asf_audio_stream);
             put_guid(pb, &ff_asf_audio_conceal_spread);
         } else {
@@ -403,7 +403,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         put_le16(pb, n + 1); /* stream number */
         put_le32(pb, 0); /* ??? */
 
-        if (enc->codec_type == CODEC_TYPE_AUDIO) {
+        if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
             /* WAVEFORMATEX header */
             int wavsize = ff_put_wav_header(pb, enc);
             if ((enc->codec_id != CODEC_ID_MP3) && (enc->codec_id != CODEC_ID_MP2) && (enc->codec_id != CODEC_ID_ADPCM_IMA_WAV) && (enc->extradata_size==0)) {
@@ -457,9 +457,9 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         enc = s->streams[n]->codec;
         p = avcodec_find_encoder(enc->codec_id);
 
-        if(enc->codec_type == CODEC_TYPE_AUDIO)
+        if(enc->codec_type == AVMEDIA_TYPE_AUDIO)
             put_le16(pb, 2);
-        else if(enc->codec_type == CODEC_TYPE_VIDEO)
+        else if(enc->codec_type == AVMEDIA_TYPE_VIDEO)
             put_le16(pb, 1);
         else
             put_le16(pb, -1);
@@ -483,7 +483,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
 
         /* id */
-        if (enc->codec_type == CODEC_TYPE_AUDIO) {
+        if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
             put_le16(pb, 2);
             put_le16(pb, enc->codec_tag);
         } else {
@@ -722,7 +722,7 @@ static void put_frame(
             // multi payloads
             frag_len1 = asf->packet_size_left - PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS - PACKET_HEADER_MIN_SIZE - 1;
 
-            if(frag_len1 < payload_len && avst->codec->codec_type == CODEC_TYPE_AUDIO){
+            if(frag_len1 < payload_len && avst->codec->codec_type == AVMEDIA_TYPE_AUDIO){
                 flush_packet(s);
                 continue;
             }
@@ -770,7 +770,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     codec = s->streams[pkt->stream_index]->codec;
     stream = &asf->streams[pkt->stream_index];
 
-    if(codec->codec_type == CODEC_TYPE_AUDIO)
+    if(codec->codec_type == AVMEDIA_TYPE_AUDIO)
         flags &= ~PKT_FLAG_KEY;
 
     pts = (pkt->pts != AV_NOPTS_VALUE) ? pkt->pts : pkt->dts;

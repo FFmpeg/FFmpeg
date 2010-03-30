@@ -78,7 +78,7 @@ static int rtp_write_header(AVFormatContext *s1)
 
     s->payload_type = ff_rtp_get_payload_type(st->codec);
     if (s->payload_type < 0)
-        s->payload_type = RTP_PT_PRIVATE + (st->codec->codec_type == CODEC_TYPE_AUDIO);
+        s->payload_type = RTP_PT_PRIVATE + (st->codec->codec_type == AVMEDIA_TYPE_AUDIO);
 
     s->base_timestamp = ff_random_get_seed();
     s->timestamp = s->base_timestamp;
@@ -102,14 +102,14 @@ static int rtp_write_header(AVFormatContext *s1)
 
     s->max_frames_per_packet = 0;
     if (s1->max_delay) {
-        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->codec->frame_size == 0) {
                 av_log(s1, AV_LOG_ERROR, "Cannot respect max delay: frame size = 0\n");
             } else {
                 s->max_frames_per_packet = av_rescale_rnd(s1->max_delay, st->codec->sample_rate, AV_TIME_BASE * st->codec->frame_size, AV_ROUND_DOWN);
             }
         }
-        if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             /* FIXME: We should round down here... */
             s->max_frames_per_packet = av_rescale_q(s1->max_delay, (AVRational){1, 1000000}, st->codec->time_base);
         }
@@ -151,7 +151,7 @@ static int rtp_write_header(AVFormatContext *s1)
     case CODEC_ID_AAC:
         s->num_frames = 0;
     default:
-        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             av_set_pts_info(st, 32, 1, st->codec->sample_rate);
         }
         s->buf_ptr = s->buf;

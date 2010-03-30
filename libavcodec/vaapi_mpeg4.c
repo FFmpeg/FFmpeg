@@ -151,7 +151,7 @@ static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
 #if CONFIG_MPEG4_VAAPI_HWACCEL
 AVHWAccel mpeg4_vaapi_hwaccel = {
     .name           = "mpeg4_vaapi",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_MPEG4,
     .pix_fmt        = PIX_FMT_VAAPI_VLD,
     .capabilities   = 0,
@@ -165,7 +165,7 @@ AVHWAccel mpeg4_vaapi_hwaccel = {
 #if CONFIG_H263_VAAPI_HWACCEL
 AVHWAccel h263_vaapi_hwaccel = {
     .name           = "h263_vaapi",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_H263,
     .pix_fmt        = PIX_FMT_VAAPI_VLD,
     .capabilities   = 0,

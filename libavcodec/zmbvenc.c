@@ -325,7 +325,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
 AVCodec zmbv_encoder = {
     "zmbv",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ZMBV,
     sizeof(ZmbvEncContext),
     encode_init,

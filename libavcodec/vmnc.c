@@ -510,7 +510,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec vmnc_decoder = {
     "vmnc",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VMNC,
     sizeof(VmncContext),
     decode_init,

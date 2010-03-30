@@ -727,7 +727,7 @@ av_log(avctx, AV_LOG_DEBUG, "%"PRId64"\n", rdtsc()-time);
 
 AVCodec h263_decoder = {
     "h263",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H263,
     sizeof(MpegEncContext),
     ff_h263_decode_init,

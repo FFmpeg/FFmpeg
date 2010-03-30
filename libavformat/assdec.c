@@ -99,7 +99,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!st)
         return -1;
     av_set_pts_info(st, 64, 1, 100);
-    st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codec->codec_id= CODEC_ID_SSA;
 
     header_remaining= INT_MAX;

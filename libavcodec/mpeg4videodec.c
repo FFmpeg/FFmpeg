@@ -2236,7 +2236,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 AVCodec mpeg4_decoder = {
     "mpeg4",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG4,
     sizeof(MpegEncContext),
     decode_init,
@@ -2253,7 +2253,7 @@ AVCodec mpeg4_decoder = {
 #if CONFIG_MPEG4_VDPAU_DECODER
 AVCodec mpeg4_vdpau_decoder = {
     "mpeg4_vdpau",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG4,
     sizeof(MpegEncContext),
     decode_init,

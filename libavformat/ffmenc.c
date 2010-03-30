@@ -119,7 +119,7 @@ static int ffm_write_header(AVFormatContext *s)
         put_be32(pb, codec->debug);
         /* specific info */
         switch(codec->codec_type) {
-        case CODEC_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO:
             put_be32(pb, codec->time_base.num);
             put_be32(pb, codec->time_base.den);
             put_be16(pb, codec->width);
@@ -168,7 +168,7 @@ static int ffm_write_header(AVFormatContext *s)
             put_be32(pb, codec->refs);
             put_be32(pb, codec->directpred);
             break;
-        case CODEC_TYPE_AUDIO:
+        case AVMEDIA_TYPE_AUDIO:
             put_be32(pb, codec->sample_rate);
             put_le16(pb, codec->channels);
             put_le16(pb, codec->frame_size);

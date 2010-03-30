@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 63
+#define LIBAVCODEC_VERSION_MINOR 64
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -355,15 +355,27 @@ enum CodecID {
                                 * stream (only used by libavformat) */
 };
 
-enum CodecType {
-    CODEC_TYPE_UNKNOWN = -1,
-    CODEC_TYPE_VIDEO,
-    CODEC_TYPE_AUDIO,
-    CODEC_TYPE_DATA,
-    CODEC_TYPE_SUBTITLE,
-    CODEC_TYPE_ATTACHMENT,
-    CODEC_TYPE_NB
+enum AVMediaType {
+    AVMEDIA_TYPE_UNKNOWN = -1,
+    AVMEDIA_TYPE_VIDEO,
+    AVMEDIA_TYPE_AUDIO,
+    AVMEDIA_TYPE_DATA,
+    AVMEDIA_TYPE_SUBTITLE,
+    AVMEDIA_TYPE_ATTACHMENT,
+    AVMEDIA_TYPE_NB
 };
+
+#if LIBAVCODEC_VERSION_MAJOR < 53
+#define CodecType AVMediaType
+
+#define CODEC_TYPE_UNKNOWN    AVMEDIA_TYPE_UNKNOWN
+#define CODEC_TYPE_VIDEO      AVMEDIA_TYPE_VIDEO
+#define CODEC_TYPE_AUDIO      AVMEDIA_TYPE_AUDIO
+#define CODEC_TYPE_DATA       AVMEDIA_TYPE_DATA
+#define CODEC_TYPE_SUBTITLE   AVMEDIA_TYPE_SUBTITLE
+#define CODEC_TYPE_ATTACHMENT AVMEDIA_TYPE_ATTACHMENT
+#define CODEC_TYPE_NB         AVMEDIA_TYPE_NB
+#endif
 
 /**
  * all in native-endian format
@@ -1277,7 +1289,7 @@ typedef struct AVCodecContext {
     void *opaque;
 
     char codec_name[32];
-    enum CodecType codec_type; /* see CODEC_TYPE_xxx */
+    enum AVMediaType codec_type; /* see AVMEDIA_TYPE_xxx */
     enum CodecID codec_id; /* see CODEC_ID_xxx */
 
     /**
@@ -2657,7 +2669,7 @@ typedef struct AVCodec {
      * This is the primary way to find a codec from the user perspective.
      */
     const char *name;
-    enum CodecType type;
+    enum AVMediaType type;
     enum CodecID id;
     int priv_data_size;
     int (*init)(AVCodecContext *);
@@ -2701,9 +2713,9 @@ typedef struct AVHWAccel {
     /**
      * Type of codec implemented by the hardware accelerator.
      *
-     * See CODEC_TYPE_xxx
+     * See AVMEDIA_TYPE_xxx
      */
-    enum CodecType type;
+    enum AVMediaType type;
 
     /**
      * Codec implemented by the hardware accelerator.
@@ -3241,7 +3253,7 @@ void avcodec_get_context_defaults(AVCodecContext *s);
 
 /** THIS FUNCTION IS NOT YET PART OF THE PUBLIC API!
  *  we WILL change its arguments and name a few times! */
-void avcodec_get_context_defaults2(AVCodecContext *s, enum CodecType);
+void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType);
 
 /**
  * Allocates an AVCodecContext and sets its fields to default values.  The
@@ -3254,7 +3266,7 @@ AVCodecContext *avcodec_alloc_context(void);
 
 /** THIS FUNCTION IS NOT YET PART OF THE PUBLIC API!
  *  we WILL change its arguments and name a few times! */
-AVCodecContext *avcodec_alloc_context2(enum CodecType);
+AVCodecContext *avcodec_alloc_context2(enum AVMediaType);
 
 /**
  * Sets the fields of the given AVFrame to default values.

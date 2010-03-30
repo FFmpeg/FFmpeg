@@ -813,7 +813,7 @@ erasure:
 AVCodec qcelp_decoder =
 {
     .name   = "qcelp",
-    .type   = CODEC_TYPE_AUDIO,
+    .type   = AVMEDIA_TYPE_AUDIO,
     .id     = CODEC_ID_QCELP,
     .init   = qcelp_decode_init,
     .decode = qcelp_decode_frame,

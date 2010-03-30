@@ -132,7 +132,7 @@ typedef int (*DynamicPayloadPacketHandlerProc) (AVFormatContext *ctx,
 struct RTPDynamicProtocolHandler_s {
     // fields from AVRtpDynamicPayloadType_s
     const char enc_name[50];    /* XXX: still why 50 ? ;-) */
-    enum CodecType codec_type;
+    enum AVMediaType codec_type;
     enum CodecID codec_id;
 
     // may be null

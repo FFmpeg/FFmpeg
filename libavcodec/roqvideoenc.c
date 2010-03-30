@@ -1057,7 +1057,7 @@ static int roq_encode_end(AVCodecContext *avctx)
 AVCodec roq_encoder =
 {
     "roqvideo",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ROQ,
     sizeof(RoqContext),
     roq_encode_init,

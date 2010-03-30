@@ -1565,7 +1565,7 @@ static void flush(AVCodecContext *avctx)
  */
 AVCodec wmapro_decoder = {
     "wmapro",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_WMAPRO,
     sizeof(WMAProDecodeCtx),
     decode_init,

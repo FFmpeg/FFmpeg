@@ -615,7 +615,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 
 AVCodec asv1_decoder = {
     "asv1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ASV1,
     sizeof(ASV1Context),
     decode_init,
@@ -628,7 +628,7 @@ AVCodec asv1_decoder = {
 
 AVCodec asv2_decoder = {
     "asv2",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ASV2,
     sizeof(ASV1Context),
     decode_init,
@@ -642,7 +642,7 @@ AVCodec asv2_decoder = {
 #if CONFIG_ASV1_ENCODER
 AVCodec asv1_encoder = {
     "asv1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ASV1,
     sizeof(ASV1Context),
     encode_init,
@@ -656,7 +656,7 @@ AVCodec asv1_encoder = {
 #if CONFIG_ASV2_ENCODER
 AVCodec asv2_encoder = {
     "asv2",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ASV2,
     sizeof(ASV1Context),
     encode_init,

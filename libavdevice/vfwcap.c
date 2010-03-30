@@ -353,7 +353,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     codec = st->codec;
     codec->time_base = ap->time_base;
-    codec->codec_type = CODEC_TYPE_VIDEO;
+    codec->codec_type = AVMEDIA_TYPE_VIDEO;
     codec->width = width;
     codec->height = height;
     codec->pix_fmt = vfw_pixfmt(biCompression, biBitCount);

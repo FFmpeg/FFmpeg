@@ -132,7 +132,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
 AVCodec xsub_decoder = {
     "xsub",
-    CODEC_TYPE_SUBTITLE,
+    AVMEDIA_TYPE_SUBTITLE,
     CODEC_ID_XSUB,
     0,
     decode_init,

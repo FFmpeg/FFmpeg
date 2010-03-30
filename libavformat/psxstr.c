@@ -169,7 +169,7 @@ static int str_read_packet(AVFormatContext *s,
 
                     str->channels[channel].video_stream_index = st->index;
 
-                    st->codec->codec_type = CODEC_TYPE_VIDEO;
+                    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                     st->codec->codec_id   = CODEC_ID_MDEC;
                     st->codec->codec_tag  = 0;  /* no fourcc */
                     st->codec->width      = AV_RL16(&sector[0x28]);
@@ -216,7 +216,7 @@ static int str_read_packet(AVFormatContext *s,
 
                 str->channels[channel].audio_stream_index = st->index;
 
-                st->codec->codec_type  = CODEC_TYPE_AUDIO;
+                st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
                 st->codec->codec_id    = CODEC_ID_ADPCM_XA;
                 st->codec->codec_tag   = 0;  /* no fourcc */
                 st->codec->channels    = (fmt&1)?2:1;

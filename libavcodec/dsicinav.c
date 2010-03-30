@@ -345,7 +345,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
 
 AVCodec dsicinvideo_decoder = {
     "dsicinvideo",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DSICINVIDEO,
     sizeof(CinVideoContext),
     cinvideo_decode_init,
@@ -358,7 +358,7 @@ AVCodec dsicinvideo_decoder = {
 
 AVCodec dsicinaudio_decoder = {
     "dsicinaudio",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_DSICINAUDIO,
     sizeof(CinAudioContext),
     cinaudio_decode_init,

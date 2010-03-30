@@ -140,7 +140,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 
 AVCodec xl_decoder = {
     "xl",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VIXL,
     sizeof(VideoXLContext),
     decode_init,

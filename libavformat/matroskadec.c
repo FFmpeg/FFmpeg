@@ -1378,7 +1378,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
 
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
-            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_tag  = track->video.fourcc;
             st->codec->width  = track->video.pixel_width;
             st->codec->height = track->video.pixel_height;
@@ -1390,11 +1390,11 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (st->codec->codec_id != CODEC_ID_H264)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->sample_rate = track->audio.out_samplerate;
             st->codec->channels = track->audio.channels;
         } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
-            st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+            st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
         }
     }
 
@@ -1409,7 +1409,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 break;
             av_metadata_set(&st->metadata, "filename",attachements[j].filename);
             st->codec->codec_id = CODEC_ID_NONE;
-            st->codec->codec_type = CODEC_TYPE_ATTACHMENT;
+            st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
             st->codec->extradata  = av_malloc(attachements[j].bin.size);
             if(st->codec->extradata == NULL)
                 break;

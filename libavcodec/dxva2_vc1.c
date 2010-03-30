@@ -266,7 +266,7 @@ static int end_frame(AVCodecContext *avctx)
 #if CONFIG_WMV3_DXVA2_HWACCEL
 AVHWAccel wmv3_dxva2_hwaccel = {
     .name           = "wmv3_dxva2",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_WMV3,
     .pix_fmt        = PIX_FMT_DXVA2_VLD,
     .capabilities   = 0,
@@ -279,7 +279,7 @@ AVHWAccel wmv3_dxva2_hwaccel = {
 
 AVHWAccel vc1_dxva2_hwaccel = {
     .name           = "vc1_dxva2",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_VC1,
     .pix_fmt        = PIX_FMT_DXVA2_VLD,
     .capabilities   = 0,

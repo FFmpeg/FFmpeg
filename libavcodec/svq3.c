@@ -1071,7 +1071,7 @@ static int svq3_decode_frame(AVCodecContext *avctx,
 
 AVCodec svq3_decoder = {
     "svq3",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SVQ3,
     sizeof(H264Context),
     svq3_decode_init,

@@ -1136,7 +1136,7 @@ error:
 
 AVCodec mlp_decoder = {
     "mlp",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MLP,
     sizeof(MLPDecodeContext),
     mlp_decode_init,
@@ -1149,7 +1149,7 @@ AVCodec mlp_decoder = {
 #if CONFIG_TRUEHD_DECODER
 AVCodec truehd_decoder = {
     "truehd",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_TRUEHD,
     sizeof(MLPDecodeContext),
     mlp_decode_init,

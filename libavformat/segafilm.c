@@ -133,7 +133,7 @@ static int film_read_header(AVFormatContext *s,
         if (!st)
             return AVERROR(ENOMEM);
         film->video_stream_index = st->index;
-        st->codec->codec_type = CODEC_TYPE_VIDEO;
+        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id = film->video_type;
         st->codec->codec_tag = 0;  /* no fourcc */
         st->codec->width = AV_RB32(&scratch[16]);
@@ -145,7 +145,7 @@ static int film_read_header(AVFormatContext *s,
         if (!st)
             return AVERROR(ENOMEM);
         film->audio_stream_index = st->index;
-        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = film->audio_type;
         st->codec->codec_tag = 1;
         st->codec->channels = film->audio_channels;

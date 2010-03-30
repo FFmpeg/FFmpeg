@@ -74,7 +74,7 @@ static int vid_read_header(AVFormatContext *s,
     if (!stream)
         return AVERROR(ENOMEM);
     av_set_pts_info(stream, 32, 1, 60);     // 16 ms increments, i.e. 60 fps
-    stream->codec->codec_type = CODEC_TYPE_VIDEO;
+    stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     stream->codec->codec_id = CODEC_ID_BETHSOFTVID;
     stream->codec->width = get_le16(pb);
     stream->codec->height = get_le16(pb);
@@ -86,7 +86,7 @@ static int vid_read_header(AVFormatContext *s,
     stream = av_new_stream(s, 0);
     if (!stream)
         return AVERROR(ENOMEM);
-    stream->codec->codec_type = CODEC_TYPE_AUDIO;
+    stream->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     stream->codec->codec_id = CODEC_ID_PCM_U8;
     stream->codec->channels = 1;
     stream->codec->sample_rate = 11025;

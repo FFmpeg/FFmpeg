@@ -66,7 +66,7 @@ const char *ff_rtp_enc_name(int payload_type);
  * @return In case of unknown encoding name, CODEC_ID_NONE is returned;
  * otherwise, the codec id is returned
  */
-enum CodecID ff_rtp_codec_id(const char *buf, enum CodecType codec_type);
+enum CodecID ff_rtp_codec_id(const char *buf, enum AVMediaType codec_type);
 
 #define RTP_PT_PRIVATE 96
 #define RTP_VERSION 2

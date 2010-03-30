@@ -155,7 +155,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
         vst = av_new_stream(s, ctx->v_id);
         if (!vst)
             return AVERROR(ENOMEM);
-        vst->codec->codec_type = CODEC_TYPE_VIDEO;
+        vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         vst->codec->codec_id = CODEC_ID_NUV;
         vst->codec->width = width;
         vst->codec->height = height;
@@ -171,7 +171,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
         ast = av_new_stream(s, ctx->a_id);
         if (!ast)
             return AVERROR(ENOMEM);
-        ast->codec->codec_type = CODEC_TYPE_AUDIO;
+        ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         ast->codec->codec_id = CODEC_ID_PCM_S16LE;
         ast->codec->channels = 2;
         ast->codec->sample_rate = 44100;

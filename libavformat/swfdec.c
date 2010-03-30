@@ -97,7 +97,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             for (i=0; i<s->nb_streams; i++) {
                 st = s->streams[i];
-                if (st->codec->codec_type == CODEC_TYPE_VIDEO && st->id == ch_id)
+                if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && st->id == ch_id)
                     goto skip;
             }
 
@@ -109,7 +109,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             vst = av_new_stream(s, ch_id);
             if (!vst)
                 return -1;
-            vst->codec->codec_type = CODEC_TYPE_VIDEO;
+            vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             vst->codec->codec_id = ff_codec_get_id(swf_codec_tags, get_byte(pb));
             av_set_pts_info(vst, 16, 256, swf->frame_rate);
             vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
@@ -120,7 +120,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             for (i=0; i<s->nb_streams; i++) {
                 st = s->streams[i];
-                if (st->codec->codec_type == CODEC_TYPE_AUDIO && st->id == -1)
+                if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->id == -1)
                     goto skip;
             }
 
@@ -131,7 +131,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (!ast)
                 return -1;
             ast->codec->channels = 1 + (v&1);
-            ast->codec->codec_type = CODEC_TYPE_AUDIO;
+            ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             ast->codec->codec_id = ff_codec_get_id(swf_audio_codec_tags, (v>>4) & 15);
             ast->need_parsing = AVSTREAM_PARSE_FULL;
             sample_rate_code= (v>>2) & 3;
@@ -145,7 +145,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             len -= 2;
             for(i=0; i<s->nb_streams; i++) {
                 st = s->streams[i];
-                if (st->codec->codec_type == CODEC_TYPE_VIDEO && st->id == ch_id) {
+                if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && st->id == ch_id) {
                     frame = get_le16(pb);
                     av_get_packet(pb, pkt, len-2);
                     pkt->pos = pos;
@@ -157,7 +157,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
         } else if (tag == TAG_STREAMBLOCK) {
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];
-                if (st->codec->codec_type == CODEC_TYPE_AUDIO && st->id == -1) {
+                if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->id == -1) {
             if (st->codec->codec_id == CODEC_ID_MP3) {
                 url_fskip(pb, 4);
                 av_get_packet(pb, pkt, len-4);
@@ -179,7 +179,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 vst = av_new_stream(s, -2); /* -2 to avoid clash with video stream and audio stream */
                 if (!vst)
                     return -1;
-                vst->codec->codec_type = CODEC_TYPE_VIDEO;
+                vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                 vst->codec->codec_id = CODEC_ID_MJPEG;
                 av_set_pts_info(vst, 64, 256, swf->frame_rate);
                 vst->codec->time_base = (AVRational){ 256, swf->frame_rate };

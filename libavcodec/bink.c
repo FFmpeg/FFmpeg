@@ -1001,7 +1001,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec bink_decoder = {
     "binkvideo",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_BINKVIDEO,
     sizeof(BinkContext),
     decode_init,

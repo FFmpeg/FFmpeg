@@ -237,7 +237,7 @@ vorbis_header (AVFormatContext * s, int idx)
         if (bytestream_get_byte(&p) != 1) /* framing_flag */
             return -1;
 
-        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_VORBIS;
 
         st->time_base.num = 1;

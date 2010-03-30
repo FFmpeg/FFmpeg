@@ -301,13 +301,13 @@ static void sdp_write_media(char *buff, int size, AVCodecContext *c, const char 
 
     payload_type = ff_rtp_get_payload_type(c);
     if (payload_type < 0) {
-        payload_type = RTP_PT_PRIVATE + (c->codec_type == CODEC_TYPE_AUDIO);
+        payload_type = RTP_PT_PRIVATE + (c->codec_type == AVMEDIA_TYPE_AUDIO);
     }
 
     switch (c->codec_type) {
-        case CODEC_TYPE_VIDEO   : type = "video"      ; break;
-        case CODEC_TYPE_AUDIO   : type = "audio"      ; break;
-        case CODEC_TYPE_SUBTITLE: type = "text"       ; break;
+        case AVMEDIA_TYPE_VIDEO   : type = "video"      ; break;
+        case AVMEDIA_TYPE_AUDIO   : type = "audio"      ; break;
+        case AVMEDIA_TYPE_SUBTITLE: type = "text"       ; break;
         default                 : type = "application"; break;
     }
 

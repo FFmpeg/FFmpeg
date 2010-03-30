@@ -100,7 +100,7 @@ static int thp_read_header(AVFormatContext *s,
             /* The denominator and numerator are switched because 1/fps
                is required.  */
             av_set_pts_info(st, 64, thp->fps.den, thp->fps.num);
-            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_THP;
             st->codec->codec_tag = 0;  /* no fourcc */
             st->codec->width = get_be32(pb);
@@ -120,7 +120,7 @@ static int thp_read_header(AVFormatContext *s,
             if (!st)
                 return AVERROR(ENOMEM);
 
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->codec_id = CODEC_ID_ADPCM_THP;
             st->codec->codec_tag = 0;  /* no fourcc */
             st->codec->channels    = get_be32(pb); /* numChannels.  */

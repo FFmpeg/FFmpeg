@@ -250,7 +250,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 
 AVCodec mdec_decoder = {
     "mdec",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MDEC,
     sizeof(MDECContext),
     decode_init,

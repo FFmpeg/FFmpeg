@@ -260,7 +260,7 @@ static av_cold int sgi_end(AVCodecContext *avctx)
 
 AVCodec sgi_decoder = {
     "sgi",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SGI,
     sizeof(SgiState),
     sgi_init,

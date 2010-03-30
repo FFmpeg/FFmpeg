@@ -35,39 +35,39 @@ static const struct
 {
     int pt;
     const char enc_name[6];
-    enum CodecType codec_type;
+    enum AVMediaType codec_type;
     enum CodecID codec_id;
     int clock_rate;
     int audio_channels;
 } AVRtpPayloadTypes[]=
 {
-  {0, "PCMU",        CODEC_TYPE_AUDIO,   CODEC_ID_PCM_MULAW, 8000, 1},
-  {3, "GSM",         CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
-  {4, "G723",        CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
-  {5, "DVI4",        CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
-  {6, "DVI4",        CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 16000, 1},
-  {7, "LPC",         CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
-  {8, "PCMA",        CODEC_TYPE_AUDIO,   CODEC_ID_PCM_ALAW, 8000, 1},
-  {9, "G722",        CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
-  {10, "L16",        CODEC_TYPE_AUDIO,   CODEC_ID_PCM_S16BE, 44100, 2},
-  {11, "L16",        CODEC_TYPE_AUDIO,   CODEC_ID_PCM_S16BE, 44100, 1},
-  {12, "QCELP",      CODEC_TYPE_AUDIO,   CODEC_ID_QCELP, 8000, 1},
-  {13, "CN",         CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
-  {14, "MPA",        CODEC_TYPE_AUDIO,   CODEC_ID_MP2, -1, -1},
-  {14, "MPA",        CODEC_TYPE_AUDIO,   CODEC_ID_MP3, -1, -1},
-  {15, "G728",       CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
-  {16, "DVI4",       CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 11025, 1},
-  {17, "DVI4",       CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 22050, 1},
-  {18, "G729",       CODEC_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
-  {25, "CelB",       CODEC_TYPE_VIDEO,   CODEC_ID_NONE, 90000, -1},
-  {26, "JPEG",       CODEC_TYPE_VIDEO,   CODEC_ID_MJPEG, 90000, -1},
-  {28, "nv",         CODEC_TYPE_VIDEO,   CODEC_ID_NONE, 90000, -1},
-  {31, "H261",       CODEC_TYPE_VIDEO,   CODEC_ID_H261, 90000, -1},
-  {32, "MPV",        CODEC_TYPE_VIDEO,   CODEC_ID_MPEG1VIDEO, 90000, -1},
-  {32, "MPV",        CODEC_TYPE_VIDEO,   CODEC_ID_MPEG2VIDEO, 90000, -1},
-  {33, "MP2T",       CODEC_TYPE_DATA,    CODEC_ID_MPEG2TS, 90000, -1},
-  {34, "H263",       CODEC_TYPE_VIDEO,   CODEC_ID_H263, 90000, -1},
-  {-1, "",           CODEC_TYPE_UNKNOWN, CODEC_ID_NONE, -1, -1}
+  {0, "PCMU",        AVMEDIA_TYPE_AUDIO,   CODEC_ID_PCM_MULAW, 8000, 1},
+  {3, "GSM",         AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
+  {4, "G723",        AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
+  {5, "DVI4",        AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
+  {6, "DVI4",        AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 16000, 1},
+  {7, "LPC",         AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
+  {8, "PCMA",        AVMEDIA_TYPE_AUDIO,   CODEC_ID_PCM_ALAW, 8000, 1},
+  {9, "G722",        AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
+  {10, "L16",        AVMEDIA_TYPE_AUDIO,   CODEC_ID_PCM_S16BE, 44100, 2},
+  {11, "L16",        AVMEDIA_TYPE_AUDIO,   CODEC_ID_PCM_S16BE, 44100, 1},
+  {12, "QCELP",      AVMEDIA_TYPE_AUDIO,   CODEC_ID_QCELP, 8000, 1},
+  {13, "CN",         AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
+  {14, "MPA",        AVMEDIA_TYPE_AUDIO,   CODEC_ID_MP2, -1, -1},
+  {14, "MPA",        AVMEDIA_TYPE_AUDIO,   CODEC_ID_MP3, -1, -1},
+  {15, "G728",       AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
+  {16, "DVI4",       AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 11025, 1},
+  {17, "DVI4",       AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 22050, 1},
+  {18, "G729",       AVMEDIA_TYPE_AUDIO,   CODEC_ID_NONE, 8000, 1},
+  {25, "CelB",       AVMEDIA_TYPE_VIDEO,   CODEC_ID_NONE, 90000, -1},
+  {26, "JPEG",       AVMEDIA_TYPE_VIDEO,   CODEC_ID_MJPEG, 90000, -1},
+  {28, "nv",         AVMEDIA_TYPE_VIDEO,   CODEC_ID_NONE, 90000, -1},
+  {31, "H261",       AVMEDIA_TYPE_VIDEO,   CODEC_ID_H261, 90000, -1},
+  {32, "MPV",        AVMEDIA_TYPE_VIDEO,   CODEC_ID_MPEG1VIDEO, 90000, -1},
+  {32, "MPV",        AVMEDIA_TYPE_VIDEO,   CODEC_ID_MPEG2VIDEO, 90000, -1},
+  {33, "MP2T",       AVMEDIA_TYPE_DATA,    CODEC_ID_MPEG2TS, 90000, -1},
+  {34, "H263",       AVMEDIA_TYPE_VIDEO,   CODEC_ID_H263, 90000, -1},
+  {-1, "",           AVMEDIA_TYPE_UNKNOWN, CODEC_ID_NONE, -1, -1}
 };
 
 int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type)
@@ -118,7 +118,7 @@ const char *ff_rtp_enc_name(int payload_type)
     return "";
 }
 
-enum CodecID ff_rtp_codec_id(const char *buf, enum CodecType codec_type)
+enum CodecID ff_rtp_codec_id(const char *buf, enum AVMediaType codec_type)
 {
     int i;
 

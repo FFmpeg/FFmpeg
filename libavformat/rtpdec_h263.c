@@ -94,14 +94,14 @@ static int h263_handle_packet(AVFormatContext *ctx,
 
 RTPDynamicProtocolHandler ff_h263_1998_dynamic_handler = {
     .enc_name         = "H263-1998",
-    .codec_type       = CODEC_TYPE_VIDEO,
+    .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = CODEC_ID_H263,
     .parse_packet     = h263_handle_packet,
 };
 
 RTPDynamicProtocolHandler ff_h263_2000_dynamic_handler = {
     .enc_name         = "H263-2000",
-    .codec_type       = CODEC_TYPE_VIDEO,
+    .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = CODEC_ID_H263,
     .parse_packet     = h263_handle_packet,
 };

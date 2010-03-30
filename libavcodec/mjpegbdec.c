@@ -147,7 +147,7 @@ read_header:
 
 AVCodec mjpegb_decoder = {
     "mjpegb",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MJPEGB,
     sizeof(MJpegDecodeContext),
     ff_mjpeg_decode_init,

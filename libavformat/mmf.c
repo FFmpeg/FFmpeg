@@ -244,7 +244,7 @@ static int mmf_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_ADPCM_YAMAHA;
     st->codec->sample_rate = rate;
     st->codec->channels = 1;

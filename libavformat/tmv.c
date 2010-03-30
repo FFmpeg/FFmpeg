@@ -109,7 +109,7 @@ static int tmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
 
-    ast->codec->codec_type            = CODEC_TYPE_AUDIO;
+    ast->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
     ast->codec->codec_id              = CODEC_ID_PCM_U8;
     ast->codec->channels              = features & TMV_STEREO ? 2 : 1;
     ast->codec->bits_per_coded_sample = 8;
@@ -121,7 +121,7 @@ static int tmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     fps.den = tmv->audio_chunk_size;
     av_reduce(&fps.num, &fps.den, fps.num, fps.den, 0xFFFFFFFFLL);
 
-    vst->codec->codec_type = CODEC_TYPE_VIDEO;
+    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = CODEC_ID_TMV;
     vst->codec->pix_fmt    = PIX_FMT_PAL8;
     vst->codec->width      = char_cols * 8;

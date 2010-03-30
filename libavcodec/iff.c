@@ -218,7 +218,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec iff_ilbm_decoder = {
     "iff_ilbm",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_IFF_ILBM,
     sizeof(IffContext),
     decode_init,
@@ -231,7 +231,7 @@ AVCodec iff_ilbm_decoder = {
 
 AVCodec iff_byterun1_decoder = {
     "iff_byterun1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_IFF_BYTERUN1,
     sizeof(IffContext),
     decode_init,

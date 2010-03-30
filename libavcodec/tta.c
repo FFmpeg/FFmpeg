@@ -449,7 +449,7 @@ static av_cold int tta_decode_close(AVCodecContext *avctx) {
 
 AVCodec tta_decoder = {
     "tta",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_TTA,
     sizeof(TTAContext),
     tta_decode_init,

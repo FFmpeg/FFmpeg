@@ -245,7 +245,7 @@ static av_cold int tgq_decode_end(AVCodecContext *avctx){
 
 AVCodec eatgq_decoder = {
     "eatgq",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TGQ,
     sizeof(TgqContext),
     tgq_decode_init,

@@ -209,7 +209,7 @@ vorbis_handle_packet(AVFormatContext * ctx,
 
 RTPDynamicProtocolHandler ff_vorbis_dynamic_handler = {
     .enc_name         = "vorbis",
-    .codec_type       = CODEC_TYPE_AUDIO,
+    .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = CODEC_ID_VORBIS,
     .parse_sdp_a_line = NULL,
     .open             = vorbis_new_context,

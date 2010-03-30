@@ -152,7 +152,7 @@ static void build_frame_code(AVFormatContext *s){
         int start2= start + (end-start)*stream_id / s->nb_streams;
         int end2  = start + (end-start)*(stream_id+1) / s->nb_streams;
         AVCodecContext *codec = s->streams[stream_id]->codec;
-        int is_audio= codec->codec_type == CODEC_TYPE_AUDIO;
+        int is_audio= codec->codec_type == AVMEDIA_TYPE_AUDIO;
         int intra_only= /*codec->intra_only || */is_audio;
         int pred_count;
 
@@ -394,9 +394,9 @@ static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVStream *st, 
     AVCodecContext *codec = st->codec;
     put_v(bc, i);
     switch(codec->codec_type){
-    case CODEC_TYPE_VIDEO: put_v(bc, 0); break;
-    case CODEC_TYPE_AUDIO: put_v(bc, 1); break;
-    case CODEC_TYPE_SUBTITLE: put_v(bc, 2); break;
+    case AVMEDIA_TYPE_VIDEO: put_v(bc, 0); break;
+    case AVMEDIA_TYPE_AUDIO: put_v(bc, 1); break;
+    case AVMEDIA_TYPE_SUBTITLE: put_v(bc, 2); break;
     default              : put_v(bc, 3); break;
     }
     put_v(bc, 4);
@@ -415,12 +415,12 @@ static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVStream *st, 
     put_buffer(bc, codec->extradata, codec->extradata_size);
 
     switch(codec->codec_type){
-    case CODEC_TYPE_AUDIO:
+    case AVMEDIA_TYPE_AUDIO:
         put_v(bc, codec->sample_rate);
         put_v(bc, 1);
         put_v(bc, codec->channels);
         break;
-    case CODEC_TYPE_VIDEO:
+    case AVMEDIA_TYPE_VIDEO:
         put_v(bc, codec->width);
         put_v(bc, codec->height);
 

@@ -384,7 +384,7 @@ static av_cold int encode_init_ls(AVCodecContext *ctx) {
 
 AVCodec jpegls_encoder = { //FIXME avoid MPV_* lossless JPEG should not need them
     "jpegls",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_JPEGLS,
     sizeof(JpeglsContext),
     encode_init_ls,

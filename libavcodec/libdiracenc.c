@@ -393,7 +393,7 @@ static av_cold int libdirac_encode_close(AVCodecContext *avccontext)
 
 AVCodec libdirac_encoder = {
     "libdirac",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DIRAC,
     sizeof(FfmpegDiracEncoderParams),
     libdirac_encode_init,

@@ -2237,7 +2237,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec snow_decoder = {
     "snow",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SNOW,
     sizeof(SnowContext),
     decode_init,
@@ -3988,7 +3988,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
 AVCodec snow_encoder = {
     "snow",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SNOW,
     sizeof(SnowContext),
     encode_init,

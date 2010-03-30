@@ -417,7 +417,7 @@ static av_cold int xan_decode_end(AVCodecContext *avctx)
 
 AVCodec xan_wc3_decoder = {
     "xan_wc3",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_XAN_WC3,
     sizeof(XanContext),
     xan_decode_init,
@@ -431,7 +431,7 @@ AVCodec xan_wc3_decoder = {
 /*
 AVCodec xan_wc4_decoder = {
     "xan_wc4",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_XAN_WC4,
     sizeof(XanContext),
     xan_decode_init,

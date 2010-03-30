@@ -185,7 +185,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec anm_decoder = {
     "anm",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ANM,
     sizeof(AnmContext),
     decode_init,

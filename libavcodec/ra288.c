@@ -206,7 +206,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
 AVCodec ra_288_decoder =
 {
     "real_288",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_RA_288,
     sizeof(RA288Context),
     ra288_decode_init,

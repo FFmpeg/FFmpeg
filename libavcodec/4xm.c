@@ -842,7 +842,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 
 AVCodec fourxm_decoder = {
     "4xm",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_4XM,
     sizeof(FourXContext),
     decode_init,

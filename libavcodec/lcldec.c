@@ -611,7 +611,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 #if CONFIG_MSZH_DECODER
 AVCodec mszh_decoder = {
     "mszh",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSZH,
     sizeof(LclDecContext),
     decode_init,
@@ -626,7 +626,7 @@ AVCodec mszh_decoder = {
 #if CONFIG_ZLIB_DECODER
 AVCodec zlib_decoder = {
     "zlib",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ZLIB,
     sizeof(LclDecContext),
     decode_init,

@@ -140,7 +140,7 @@ static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
 
 AVHWAccel mpeg2_vaapi_hwaccel = {
     .name           = "mpeg2_vaapi",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_MPEG2VIDEO,
     .pix_fmt        = PIX_FMT_VAAPI_VLD,
     .capabilities   = 0,

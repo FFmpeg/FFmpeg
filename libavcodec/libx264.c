@@ -317,7 +317,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
 AVCodec libx264_encoder = {
     .name           = "libx264",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_H264,
     .priv_data_size = sizeof(X264Context),
     .init           = X264_init,

@@ -1413,7 +1413,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
 
 AVCodec dvbsub_decoder = {
     "dvbsub",
-    CODEC_TYPE_SUBTITLE,
+    AVMEDIA_TYPE_SUBTITLE,
     CODEC_ID_DVB_SUBTITLE,
     sizeof(DVBSubContext),
     dvbsub_init_decoder,

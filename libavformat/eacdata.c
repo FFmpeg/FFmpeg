@@ -67,7 +67,7 @@ static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_tag = 0; /* no fourcc */
     st->codec->codec_id = CODEC_ID_ADPCM_EA_XAS;
     st->codec->channels = cdata->channels;

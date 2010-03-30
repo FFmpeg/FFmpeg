@@ -107,7 +107,7 @@ static av_cold int ptx_end(AVCodecContext *avctx) {
 
 AVCodec ptx_decoder = {
     "ptx",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PTX,
     sizeof(PTXContext),
     ptx_init,

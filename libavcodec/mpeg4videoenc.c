@@ -1340,7 +1340,7 @@ void ff_mpeg4_encode_video_packet_header(MpegEncContext *s)
 
 AVCodec mpeg4_encoder = {
     "mpeg4",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG4,
     sizeof(MpegEncContext),
     encode_init,

@@ -1393,7 +1393,7 @@ void test_ac3(void)
 
 AVCodec ac3_encoder = {
     "ac3",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AC3,
     sizeof(AC3EncodeContext),
     AC3_encode_init,

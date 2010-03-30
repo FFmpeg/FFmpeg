@@ -239,7 +239,7 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
     reqasize = 4 * dv_audio_frame_size(c->sys, c->frames);
 
     switch (st->codec->codec_type) {
-    case CODEC_TYPE_VIDEO:
+    case AVMEDIA_TYPE_VIDEO:
         /* FIXME: we have to have more sensible approach than this one */
         if (c->has_video)
             av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient audio data or severe sync problem.\n", c->frames);
@@ -247,7 +247,7 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
         memcpy(*frame, data, c->sys->frame_size);
         c->has_video = 1;
         break;
-    case CODEC_TYPE_AUDIO:
+    case AVMEDIA_TYPE_AUDIO:
         for (i = 0; i < c->n_ast && st != c->ast[i]; i++);
 
           /* FIXME: we have to have more sensible approach than this one */
@@ -299,11 +299,11 @@ DVMuxContext* dv_init_mux(AVFormatContext* s)
     /* We have to sort out where audio and where video stream is */
     for (i=0; i<s->nb_streams; i++) {
         switch (s->streams[i]->codec->codec_type) {
-        case CODEC_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO:
             if (vst) return NULL;
             vst = s->streams[i];
             break;
-        case CODEC_TYPE_AUDIO:
+        case AVMEDIA_TYPE_AUDIO:
             if (c->n_ast > 1) return NULL;
             c->ast[c->n_ast++] = s->streams[i];
             break;

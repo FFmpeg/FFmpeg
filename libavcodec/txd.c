@@ -156,7 +156,7 @@ static av_cold int txd_end(AVCodecContext *avctx) {
 
 AVCodec txd_decoder = {
     "txd",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TXD,
     sizeof(TXDContext),
     txd_init,

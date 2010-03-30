@@ -646,7 +646,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     s->top_field_first = first_field(s->fd);
 
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = codec_id;
     st->codec->width = width;
     st->codec->height = height;

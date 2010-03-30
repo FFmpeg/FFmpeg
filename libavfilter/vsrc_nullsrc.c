@@ -74,7 +74,7 @@ AVFilter avfilter_vsrc_nullsrc = {
     .outputs   = (AVFilterPad[]) {
         {
             .name            = "default",
-            .type            = CODEC_TYPE_VIDEO,
+            .type            = AVMEDIA_TYPE_VIDEO,
             .config_props    = config_props,
             .request_frame   = request_frame,
         },

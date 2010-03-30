@@ -33,7 +33,7 @@ static int voc_write_header(AVFormatContext *s)
     const int version = 0x0114;
 
     if (s->nb_streams != 1
-        || s->streams[0]->codec->codec_type != CODEC_TYPE_AUDIO)
+        || s->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
         return AVERROR_PATCHWELCOME;
 
     put_buffer(pb, ff_voc_magic, sizeof(ff_voc_magic) - 1);

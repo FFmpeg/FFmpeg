@@ -817,7 +817,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 AVCodec indeo5_decoder = {
     .name           = "indeo5",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_INDEO5,
     .priv_data_size = sizeof(IVI5DecContext),
     .init           = decode_init,

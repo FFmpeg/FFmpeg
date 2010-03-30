@@ -83,14 +83,14 @@ static int64_t avi_start_new_riff(AVFormatContext *s, ByteIOContext *pb,
     return loff;
 }
 
-static char* avi_stream2fourcc(char* tag, int index, enum CodecType type)
+static char* avi_stream2fourcc(char* tag, int index, enum AVMediaType type)
 {
     tag[0] = '0';
     tag[1] = '0' + index;
-    if (type == CODEC_TYPE_VIDEO) {
+    if (type == AVMEDIA_TYPE_VIDEO) {
         tag[2] = 'd';
         tag[3] = 'c';
-    } else if (type == CODEC_TYPE_SUBTITLE) {
+    } else if (type == AVMEDIA_TYPE_SUBTITLE) {
         // note: this is not an official code
         tag[2] = 's';
         tag[3] = 'b';
@@ -136,7 +136,7 @@ static int avi_write_counters(AVFormatContext* s, int riff_id)
         } else {
             put_le32(pb, avist->audio_strm_length / au_ssize);
         }
-        if(stream->codec_type == CODEC_TYPE_VIDEO)
+        if(stream->codec_type == AVMEDIA_TYPE_VIDEO)
             nb_frames = FFMAX(nb_frames, avist->packet_count);
     }
     if(riff_id == 1) {
@@ -177,7 +177,7 @@ static int avi_write_header(AVFormatContext *s)
     for(n=0;n<s->nb_streams;n++) {
         stream = s->streams[n]->codec;
         bitrate += stream->bit_rate;
-        if (stream->codec_type == CODEC_TYPE_VIDEO)
+        if (stream->codec_type == AVMEDIA_TYPE_VIDEO)
             video_enc = stream;
     }
 
@@ -222,16 +222,16 @@ static int avi_write_header(AVFormatContext *s)
         /* stream generic header */
         strh = ff_start_tag(pb, "strh");
         switch(stream->codec_type) {
-        case CODEC_TYPE_SUBTITLE:
+        case AVMEDIA_TYPE_SUBTITLE:
             // XSUB subtitles behave like video tracks, other subtitles
             // are not (yet) supported.
             if (stream->codec_id != CODEC_ID_XSUB) break;
-        case CODEC_TYPE_VIDEO: put_tag(pb, "vids"); break;
-        case CODEC_TYPE_AUDIO: put_tag(pb, "auds"); break;
-//        case CODEC_TYPE_TEXT : put_tag(pb, "txts"); break;
-        case CODEC_TYPE_DATA : put_tag(pb, "dats"); break;
+        case AVMEDIA_TYPE_VIDEO: put_tag(pb, "vids"); break;
+        case AVMEDIA_TYPE_AUDIO: put_tag(pb, "auds"); break;
+//        case AVMEDIA_TYPE_TEXT : put_tag(pb, "txts"); break;
+        case AVMEDIA_TYPE_DATA : put_tag(pb, "dats"); break;
         }
-        if(stream->codec_type == CODEC_TYPE_VIDEO ||
+        if(stream->codec_type == AVMEDIA_TYPE_VIDEO ||
            stream->codec_id == CODEC_ID_XSUB)
             put_le32(pb, stream->codec_tag);
         else
@@ -255,9 +255,9 @@ static int avi_write_header(AVFormatContext *s)
             put_le32(pb, 0); /* length, XXX: filled later */
 
         /* suggested buffer size */ //FIXME set at the end to largest chunk
-        if(stream->codec_type == CODEC_TYPE_VIDEO)
+        if(stream->codec_type == AVMEDIA_TYPE_VIDEO)
             put_le32(pb, 1024 * 1024);
-        else if(stream->codec_type == CODEC_TYPE_AUDIO)
+        else if(stream->codec_type == AVMEDIA_TYPE_AUDIO)
             put_le32(pb, 12 * 1024);
         else
             put_le32(pb, 0);
@@ -268,17 +268,17 @@ static int avi_write_header(AVFormatContext *s)
         put_le16(pb, stream->height);
         ff_end_tag(pb, strh);
 
-      if(stream->codec_type != CODEC_TYPE_DATA){
+      if(stream->codec_type != AVMEDIA_TYPE_DATA){
         strf = ff_start_tag(pb, "strf");
         switch(stream->codec_type) {
-        case CODEC_TYPE_SUBTITLE:
+        case AVMEDIA_TYPE_SUBTITLE:
             // XSUB subtitles behave like video tracks, other subtitles
             // are not (yet) supported.
             if (stream->codec_id != CODEC_ID_XSUB) break;
-        case CODEC_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO:
             ff_put_bmp_header(pb, stream, ff_codec_bmp_tags, 0);
             break;
-        case CODEC_TYPE_AUDIO:
+        case AVMEDIA_TYPE_AUDIO:
             if (ff_put_wav_header(pb, stream) < 0) {
                 return -1;
             }
@@ -322,7 +322,7 @@ static int avi_write_header(AVFormatContext *s)
             ff_end_tag(pb, avist->indexes.indx_start);
         }
 
-        if(   stream->codec_type == CODEC_TYPE_VIDEO
+        if(   stream->codec_type == AVMEDIA_TYPE_VIDEO
            && s->streams[i]->sample_aspect_ratio.num>0
            && s->streams[i]->sample_aspect_ratio.den>0){
             int vprp= ff_start_tag(pb, "vprp");
@@ -542,7 +542,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     avi_stream2fourcc(&tag[0], stream_index, enc->codec_type);
     if(pkt->flags&PKT_FLAG_KEY)
         flags = 0x10;
-    if (enc->codec_type == CODEC_TYPE_AUDIO) {
+    if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
        avist->audio_strm_length += size;
     }
 
@@ -603,7 +603,7 @@ static int avi_write_trailer(AVFormatContext *s)
                 AVCodecContext *stream = s->streams[n]->codec;
                 AVIStream *avist= s->streams[n]->priv_data;
 
-                if (stream->codec_type == CODEC_TYPE_VIDEO) {
+                if (stream->codec_type == AVMEDIA_TYPE_VIDEO) {
                     if (nb_frames < avist->packet_count)
                         nb_frames = avist->packet_count;
                 } else {

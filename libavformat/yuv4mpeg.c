@@ -335,7 +335,7 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
     av_reduce(&raten, &rated, raten, rated, (1UL<<31)-1);
     av_set_pts_info(st, 64, rated, raten);
     st->codec->pix_fmt = pix_fmt;
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
     st->sample_aspect_ratio= (AVRational){aspectn, aspectd};
     st->codec->chroma_sample_location = chroma_sample_location;

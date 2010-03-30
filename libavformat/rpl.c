@@ -141,7 +141,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
     vst = av_new_stream(s, 0);
     if (!vst)
         return AVERROR(ENOMEM);
-    vst->codec->codec_type      = CODEC_TYPE_VIDEO;
+    vst->codec->codec_type      = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_tag       = read_line_and_int(pb, &error);  // video format
     vst->codec->width           = read_line_and_int(pb, &error);  // video width
     vst->codec->height          = read_line_and_int(pb, &error);  // video height
@@ -183,7 +183,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
         ast = av_new_stream(s, 0);
         if (!ast)
             return AVERROR(ENOMEM);
-        ast->codec->codec_type      = CODEC_TYPE_AUDIO;
+        ast->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
         ast->codec->codec_tag       = audio_format;
         ast->codec->sample_rate     = read_line_and_int(pb, &error);  // audio bitrate
         ast->codec->channels        = read_line_and_int(pb, &error);  // number of audio channels
@@ -295,7 +295,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (url_fseek(pb, index_entry->pos, SEEK_SET) < 0)
             return AVERROR(EIO);
 
-    if (stream->codec->codec_type == CODEC_TYPE_VIDEO &&
+    if (stream->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
         stream->codec->codec_tag == 124) {
         // We have to split Escape 124 frames because there are
         // multiple frames per chunk in Escape 124 samples.
@@ -327,7 +327,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
         }
 
-        if (stream->codec->codec_type == CODEC_TYPE_VIDEO) {
+        if (stream->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             // frames_per_chunk should always be one here; the header
             // parsing will warn if it isn't.
             pkt->duration = rpl->frames_per_chunk;

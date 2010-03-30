@@ -141,7 +141,7 @@ static void rv10_write_header(AVFormatContext *ctx,
 
         stream = &rm->streams[i];
 
-        if (stream->enc->codec_type == CODEC_TYPE_AUDIO) {
+        if (stream->enc->codec_type == AVMEDIA_TYPE_AUDIO) {
             desc = "The Audio Stream";
             mimetype = "audio/x-pn-realaudio";
             codec_data_size = 73;
@@ -177,7 +177,7 @@ static void rv10_write_header(AVFormatContext *ctx,
         put_str8(s, mimetype);
         put_be32(s, codec_data_size);
 
-        if (stream->enc->codec_type == CODEC_TYPE_AUDIO) {
+        if (stream->enc->codec_type == AVMEDIA_TYPE_AUDIO) {
             int coded_frame_size, fscode, sample_rate;
             sample_rate = stream->enc->sample_rate;
             coded_frame_size = (stream->enc->bit_rate *
@@ -309,7 +309,7 @@ static int rm_write_header(AVFormatContext *s)
         stream->enc = codec;
 
         switch(codec->codec_type) {
-        case CODEC_TYPE_AUDIO:
+        case AVMEDIA_TYPE_AUDIO:
             rm->audio_stream = stream;
             stream->frame_rate = (float)codec->sample_rate / (float)codec->frame_size;
             /* XXX: dummy values */
@@ -317,7 +317,7 @@ static int rm_write_header(AVFormatContext *s)
             stream->nb_packets = 0;
             stream->total_frames = stream->nb_packets;
             break;
-        case CODEC_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO:
             rm->video_stream = stream;
             stream->frame_rate = (float)codec->time_base.den / (float)codec->time_base.num;
             /* XXX: dummy values */
@@ -408,7 +408,7 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
 static int rm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     if (s->streams[pkt->stream_index]->codec->codec_type ==
-        CODEC_TYPE_AUDIO)
+        AVMEDIA_TYPE_AUDIO)
         return rm_write_audio(s, pkt->data, pkt->size, pkt->flags);
     else
         return rm_write_video(s, pkt->data, pkt->size, pkt->flags);

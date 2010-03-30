@@ -315,19 +315,19 @@ static int decode_stream_header(NUTContext *nut){
     switch(class)
     {
         case 0:
-            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tmp);
             break;
         case 1:
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, tmp);
             break;
         case 2:
-            st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+            st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
             st->codec->codec_id = ff_codec_get_id(ff_nut_subtitle_tags, tmp);
             break;
         case 3:
-            st->codec->codec_type = CODEC_TYPE_DATA;
+            st->codec->codec_type = AVMEDIA_TYPE_DATA;
             break;
         default:
             av_log(s, AV_LOG_ERROR, "unknown stream class (%d)\n", class);
@@ -349,7 +349,7 @@ static int decode_stream_header(NUTContext *nut){
         get_buffer(bc, st->codec->extradata, st->codec->extradata_size);
     }
 
-    if (st->codec->codec_type == CODEC_TYPE_VIDEO){
+    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
         GET_V(st->codec->width , tmp > 0)
         GET_V(st->codec->height, tmp > 0)
         st->sample_aspect_ratio.num= ff_get_v(bc);
@@ -359,7 +359,7 @@ static int decode_stream_header(NUTContext *nut){
             return -1;
         }
         ff_get_v(bc); /* csp type */
-    }else if (st->codec->codec_type == CODEC_TYPE_AUDIO){
+    }else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO){
         GET_V(st->codec->sample_rate , tmp > 0)
         ff_get_v(bc); // samplerate_den
         GET_V(st->codec->channels, tmp > 0)

@@ -2191,7 +2191,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
 
 AVCodec theora_decoder = {
     "theora",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_THEORA,
     sizeof(Vp3DecodeContext),
     theora_decode_init,
@@ -2206,7 +2206,7 @@ AVCodec theora_decoder = {
 
 AVCodec vp3_decoder = {
     "vp3",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VP3,
     sizeof(Vp3DecodeContext),
     vp3_decode_init,

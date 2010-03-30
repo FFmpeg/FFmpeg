@@ -214,14 +214,14 @@ AVFilter avfilter_vf_crop = {
     .init          = init,
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = CODEC_TYPE_VIDEO,
+                                    .type             = AVMEDIA_TYPE_VIDEO,
                                     .start_frame      = start_frame,
                                     .draw_slice       = draw_slice,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .config_props     = config_input, },
                                   { .name = NULL}},
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = CODEC_TYPE_VIDEO,
+                                    .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = config_output, },
                                   { .name = NULL}},
 };

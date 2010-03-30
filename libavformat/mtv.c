@@ -123,7 +123,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(ENOMEM);
 
     av_set_pts_info(st, 64, 1, mtv->video_fps);
-    st->codec->codec_type      = CODEC_TYPE_VIDEO;
+    st->codec->codec_type      = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id        = CODEC_ID_RAWVIDEO;
     st->codec->codec_tag       = MKTAG('R', 'G', 'B', mtv->img_bpp);
     st->codec->width           = mtv->img_width;
@@ -140,7 +140,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(ENOMEM);
 
     av_set_pts_info(st, 64, 1, AUDIO_SAMPLING_RATE);
-    st->codec->codec_type      = CODEC_TYPE_AUDIO;
+    st->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id        = CODEC_ID_MP3;
     st->codec->bit_rate        = mtv->audio_br;
     st->need_parsing           = AVSTREAM_PARSE_FULL;

@@ -823,7 +823,7 @@ static av_cold int imc_decode_close(AVCodecContext * avctx)
 
 AVCodec imc_decoder = {
     .name = "imc",
-    .type = CODEC_TYPE_AUDIO,
+    .type = AVMEDIA_TYPE_AUDIO,
     .id = CODEC_ID_IMC,
     .priv_data_size = sizeof(IMCContext),
     .init = imc_decode_init,

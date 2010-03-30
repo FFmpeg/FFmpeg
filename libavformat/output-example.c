@@ -65,7 +65,7 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
 
     c = st->codec;
     c->codec_id = codec_id;
-    c->codec_type = CODEC_TYPE_AUDIO;
+    c->codec_type = AVMEDIA_TYPE_AUDIO;
 
     /* put sample parameters */
     c->bit_rate = 64000;
@@ -199,7 +199,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id)
 
     c = st->codec;
     c->codec_id = codec_id;
-    c->codec_type = CODEC_TYPE_VIDEO;
+    c->codec_type = AVMEDIA_TYPE_VIDEO;
 
     /* put sample parameters */
     c->bit_rate = 400000;

@@ -795,7 +795,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->codec->extradata = descriptor->extradata;
             st->codec->extradata_size = descriptor->extradata_size;
         }
-        if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             container_ul = mxf_get_codec_ul(mxf_essence_container_uls, essence_container_ul);
             if (st->codec->codec_id == CODEC_ID_NONE)
                 st->codec->codec_id = container_ul->id;
@@ -803,7 +803,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->codec->height = descriptor->height;
             st->codec->bits_per_coded_sample = descriptor->bits_per_sample; /* Uncompressed */
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
-        } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+        } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_essence_container_uls, essence_container_ul);
             if (st->codec->codec_id == CODEC_ID_NONE)
                 st->codec->codec_id = container_ul->id;
@@ -825,7 +825,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->need_parsing = AVSTREAM_PARSE_FULL;
             }
         }
-        if (st->codec->codec_type != CODEC_TYPE_DATA && (*essence_container_ul)[15] > 0x01) {
+        if (st->codec->codec_type != AVMEDIA_TYPE_DATA && (*essence_container_ul)[15] > 0x01) {
             av_log(mxf->fc, AV_LOG_WARNING, "only frame wrapped mappings are correctly supported\n");
             st->need_parsing = AVSTREAM_PARSE_FULL;
         }

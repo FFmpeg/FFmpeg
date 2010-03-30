@@ -497,7 +497,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     }
 
     avctx->codec = codec;
-    if ((avctx->codec_type == CODEC_TYPE_UNKNOWN || avctx->codec_type == codec->type) &&
+    if ((avctx->codec_type == AVMEDIA_TYPE_UNKNOWN || avctx->codec_type == codec->type) &&
         avctx->codec_id == CODEC_ID_NONE) {
         avctx->codec_type = codec->type;
         avctx->codec_id   = codec->id;
@@ -775,20 +775,20 @@ static int get_bit_rate(AVCodecContext *ctx)
     int bits_per_sample;
 
     switch(ctx->codec_type) {
-    case CODEC_TYPE_VIDEO:
+    case AVMEDIA_TYPE_VIDEO:
         bit_rate = ctx->bit_rate;
         break;
-    case CODEC_TYPE_AUDIO:
+    case AVMEDIA_TYPE_AUDIO:
         bits_per_sample = av_get_bits_per_sample(ctx->codec_id);
         bit_rate = bits_per_sample ? ctx->sample_rate * ctx->channels * bits_per_sample : ctx->bit_rate;
         break;
-    case CODEC_TYPE_DATA:
+    case AVMEDIA_TYPE_DATA:
         bit_rate = ctx->bit_rate;
         break;
-    case CODEC_TYPE_SUBTITLE:
+    case AVMEDIA_TYPE_SUBTITLE:
         bit_rate = ctx->bit_rate;
         break;
-    case CODEC_TYPE_ATTACHMENT:
+    case AVMEDIA_TYPE_ATTACHMENT:
         bit_rate = ctx->bit_rate;
         break;
     default:
@@ -836,7 +836,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     }
 
     switch(enc->codec_type) {
-    case CODEC_TYPE_VIDEO:
+    case AVMEDIA_TYPE_VIDEO:
         snprintf(buf, buf_size,
                  "Video: %s%s",
                  codec_name, enc->mb_decision ? " (hq)" : "");
@@ -871,7 +871,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                      ", q=%d-%d", enc->qmin, enc->qmax);
         }
         break;
-    case CODEC_TYPE_AUDIO:
+    case AVMEDIA_TYPE_AUDIO:
         snprintf(buf, buf_size,
                  "Audio: %s",
                  codec_name);
@@ -886,13 +886,13 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                      ", %s", avcodec_get_sample_fmt_name(enc->sample_fmt));
         }
         break;
-    case CODEC_TYPE_DATA:
+    case AVMEDIA_TYPE_DATA:
         snprintf(buf, buf_size, "Data: %s", codec_name);
         break;
-    case CODEC_TYPE_SUBTITLE:
+    case AVMEDIA_TYPE_SUBTITLE:
         snprintf(buf, buf_size, "Subtitle: %s", codec_name);
         break;
-    case CODEC_TYPE_ATTACHMENT:
+    case AVMEDIA_TYPE_ATTACHMENT:
         snprintf(buf, buf_size, "Attachment: %s", codec_name);
         break;
     default:

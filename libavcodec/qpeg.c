@@ -313,7 +313,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 
 AVCodec qpeg_decoder = {
     "qpeg",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_QPEG,
     sizeof(QpegContext),
     decode_init,

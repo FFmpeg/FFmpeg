@@ -140,7 +140,7 @@ static av_cold int libspeex_decode_close(AVCodecContext *avctx)
 
 AVCodec libspeex_decoder = {
     "libspeex",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SPEEX,
     sizeof(LibSpeexContext),
     libspeex_decode_init,

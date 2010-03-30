@@ -244,7 +244,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec c93_decoder = {
     "c93",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_C93,
     sizeof(C93DecoderContext),
     decode_init,

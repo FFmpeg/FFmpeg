@@ -217,7 +217,7 @@ static av_cold int oggvorbis_encode_close(AVCodecContext *avccontext) {
 
 AVCodec libvorbis_encoder = {
     "libvorbis",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_VORBIS,
     sizeof(OggVorbisContext),
     oggvorbis_encode_init,

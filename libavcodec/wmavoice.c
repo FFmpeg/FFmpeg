@@ -1555,7 +1555,7 @@ static av_cold void wmavoice_flush(AVCodecContext *ctx)
 
 AVCodec wmavoice_decoder = {
     "wmavoice",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_WMAVOICE,
     sizeof(WMAVoiceContext),
     wmavoice_decode_init,

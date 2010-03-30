@@ -456,7 +456,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!nst)
                 goto fail;
             st->priv_data = nst;
-            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_tag = vtag;
             st->codec->codec_id = ff_codec_get_id(nsv_codec_video_tags, vtag);
             st->codec->width = vwidth;
@@ -487,7 +487,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!nst)
                 goto fail;
             st->priv_data = nst;
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->codec_tag = atag;
             st->codec->codec_id = ff_codec_get_id(nsv_codec_audio_tags, atag);
 

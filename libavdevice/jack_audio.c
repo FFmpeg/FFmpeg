@@ -237,7 +237,7 @@ static int audio_read_header(AVFormatContext *context, AVFormatParameters *param
         return AVERROR(ENOMEM);
     }
 
-    stream->codec->codec_type   = CODEC_TYPE_AUDIO;
+    stream->codec->codec_type   = AVMEDIA_TYPE_AUDIO;
 #if HAVE_BIGENDIAN
     stream->codec->codec_id     = CODEC_ID_PCM_F32BE;
 #else

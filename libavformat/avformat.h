@@ -804,7 +804,7 @@ AVOutputFormat *av_guess_format(const char *short_name,
  */
 enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
                             const char *filename, const char *mime_type,
-                            enum CodecType type);
+                            enum AVMediaType type);
 
 /**
  * Sends a nice hexadecimal dump of a buffer to the specified file stream.

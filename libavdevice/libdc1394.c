@@ -117,7 +117,7 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     if (!vst)
         goto out;
     av_set_pts_info(vst, 64, 1, 1000);
-    vst->codec->codec_type = CODEC_TYPE_VIDEO;
+    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id = CODEC_ID_RAWVIDEO;
     vst->codec->time_base.den = fps->frame_rate;
     vst->codec->time_base.num = 1000;

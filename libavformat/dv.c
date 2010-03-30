@@ -214,7 +214,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
            if (!c->ast[i])
                break;
            av_set_pts_info(c->ast[i], 64, 1, 30000);
-           c->ast[i]->codec->codec_type = CODEC_TYPE_AUDIO;
+           c->ast[i]->codec->codec_type = AVMEDIA_TYPE_AUDIO;
            c->ast[i]->codec->codec_id   = CODEC_ID_PCM_S16LE;
 
            av_init_packet(&c->audio_pkt[i]);
@@ -290,7 +290,7 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     c->frames = 0;
     c->abytes = 0;
 
-    c->vst->codec->codec_type = CODEC_TYPE_VIDEO;
+    c->vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     c->vst->codec->codec_id   = CODEC_ID_DVVIDEO;
     c->vst->codec->bit_rate   = 25000000;
     c->vst->start_time        = 0;

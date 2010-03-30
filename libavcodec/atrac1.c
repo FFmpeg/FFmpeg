@@ -372,7 +372,7 @@ static av_cold int atrac1_decode_end(AVCodecContext * avctx) {
 
 AVCodec atrac1_decoder = {
     .name = "atrac1",
-    .type = CODEC_TYPE_AUDIO,
+    .type = AVMEDIA_TYPE_AUDIO,
     .id = CODEC_ID_ATRAC1,
     .priv_data_size = sizeof(AT1Ctx),
     .init = atrac1_decode_init,

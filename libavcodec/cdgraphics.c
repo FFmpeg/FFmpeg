@@ -369,7 +369,7 @@ static av_cold int cdg_decode_end(AVCodecContext *avctx)
 
 AVCodec cdgraphics_decoder = {
     "cdgraphics",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_CDGRAPHICS,
     sizeof(CDGraphicsContext),
     cdg_decode_init,

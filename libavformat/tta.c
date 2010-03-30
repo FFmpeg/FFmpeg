@@ -101,7 +101,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     url_fskip(s->pb, 4); // seektable crc
 
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_TTA;
     st->codec->channels = channels;
     st->codec->sample_rate = samplerate;

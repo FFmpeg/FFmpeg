@@ -942,7 +942,7 @@ static av_cold void flush(AVCodecContext *avctx)
 AVCodec wmav1_decoder =
 {
     "wmav1",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_WMAV1,
     sizeof(WMACodecContext),
     wma_decode_init,
@@ -956,7 +956,7 @@ AVCodec wmav1_decoder =
 AVCodec wmav2_decoder =
 {
     "wmav2",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_WMAV2,
     sizeof(WMACodecContext),
     wma_decode_init,

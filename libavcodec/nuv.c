@@ -274,7 +274,7 @@ static av_cold int decode_end(AVCodecContext *avctx) {
 
 AVCodec nuv_decoder = {
     "nuv",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_NUV,
     sizeof(NuvContext),
     decode_init,

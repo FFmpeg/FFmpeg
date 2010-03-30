@@ -346,7 +346,7 @@ static av_cold int dnxhd_decode_close(AVCodecContext *avctx)
 
 AVCodec dnxhd_decoder = {
     "dnxhd",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DNXHD,
     sizeof(DNXHDContext),
     dnxhd_decode_init,

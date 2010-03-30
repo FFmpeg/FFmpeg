@@ -162,7 +162,7 @@ static int wv_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return -1;
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_WAVPACK;
     st->codec->channels = wc->chan;
     st->codec->sample_rate = wc->rate;

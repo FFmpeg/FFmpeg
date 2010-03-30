@@ -100,7 +100,7 @@ static av_cold int tmv_decode_close(AVCodecContext *avctx)
 
 AVCodec tmv_decoder = {
     .name           = "tmv",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_TMV,
     .priv_data_size = sizeof(TMVContext),
     .close          = tmv_decode_close,

@@ -168,7 +168,7 @@ static int gif_encode_close(AVCodecContext *avctx)
 
 AVCodec gif_encoder = {
     "gif",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_GIF,
     sizeof(GIFContext),
     gif_encode_init,

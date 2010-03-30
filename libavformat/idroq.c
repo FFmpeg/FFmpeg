@@ -89,7 +89,7 @@ static int roq_read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 63, 1, framerate);
     roq->video_stream_index = st->index;
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_ROQ;
     st->codec->codec_tag = 0;  /* no fourcc */
 
@@ -171,7 +171,7 @@ static int roq_read_packet(AVFormatContext *s,
                     return AVERROR(ENOMEM);
                 av_set_pts_info(st, 32, 1, RoQ_AUDIO_SAMPLE_RATE);
                 roq->audio_stream_index = st->index;
-                st->codec->codec_type = CODEC_TYPE_AUDIO;
+                st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
                 st->codec->codec_id = CODEC_ID_ROQ_DPCM;
                 st->codec->codec_tag = 0;  /* no tag */
                 st->codec->channels = roq->audio_channels = chunk_type == RoQ_SOUND_STEREO ? 2 : 1;

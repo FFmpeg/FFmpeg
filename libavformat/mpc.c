@@ -104,7 +104,7 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_MUSEPACK7;
     st->codec->channels = 2;
     st->codec->bits_per_coded_sample = 16;

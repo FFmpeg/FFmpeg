@@ -1805,7 +1805,7 @@ static void compute_status(HTTPContext *c)
                         AVStream *st = stream->streams[i];
                         AVCodec *codec = avcodec_find_encoder(st->codec->codec_id);
                         switch(st->codec->codec_type) {
-                        case CODEC_TYPE_AUDIO:
+                        case AVMEDIA_TYPE_AUDIO:
                             audio_bit_rate += st->codec->bit_rate;
                             if (codec) {
                                 if (*audio_codec_name)
@@ -1813,7 +1813,7 @@ static void compute_status(HTTPContext *c)
                                 audio_codec_name = codec->name;
                             }
                             break;
-                        case CODEC_TYPE_VIDEO:
+                        case AVMEDIA_TYPE_VIDEO:
                             video_bit_rate += st->codec->bit_rate;
                             if (codec) {
                                 if (*video_codec_name)
@@ -1821,7 +1821,7 @@ static void compute_status(HTTPContext *c)
                                 video_codec_name = codec->name;
                             }
                             break;
-                        case CODEC_TYPE_DATA:
+                        case AVMEDIA_TYPE_DATA:
                             video_bit_rate += st->codec->bit_rate;
                             break;
                         default:
@@ -1894,11 +1894,11 @@ static void compute_status(HTTPContext *c)
                 parameters[0] = 0;
 
                 switch(st->codec->codec_type) {
-                case CODEC_TYPE_AUDIO:
+                case AVMEDIA_TYPE_AUDIO:
                     type = "audio";
                     snprintf(parameters, sizeof(parameters), "%d channel(s), %d Hz", st->codec->channels, st->codec->sample_rate);
                     break;
-                case CODEC_TYPE_VIDEO:
+                case AVMEDIA_TYPE_VIDEO:
                     type = "video";
                     snprintf(parameters, sizeof(parameters), "%dx%d, q=%d-%d, fps=%d", st->codec->width, st->codec->height,
                                 st->codec->qmin, st->codec->qmax, st->codec->time_base.den / st->codec->time_base.num);
@@ -2047,7 +2047,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
     c->pts_stream_index = 0;
     for(i=0;i<c->stream->nb_streams;i++) {
         if (c->pts_stream_index == 0 &&
-            c->stream->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO) {
+            c->stream->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             c->pts_stream_index = i;
         }
     }
@@ -2210,7 +2210,7 @@ static int http_prepare_data(HTTPContext *c)
                             AVStream *st = c->fmt_in->streams[source_index];
                             pkt.stream_index = i;
                             if (pkt.flags & PKT_FLAG_KEY &&
-                                (st->codec->codec_type == CODEC_TYPE_VIDEO ||
+                                (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
                                  c->stream->nb_streams == 1))
                                 c->got_key_frame = 1;
                             if (!c->stream->send_on_key || c->got_key_frame)
@@ -3346,12 +3346,12 @@ static int add_av_stream(FFStream *feed, AVStream *st)
             av1->bit_rate == av->bit_rate) {
 
             switch(av->codec_type) {
-            case CODEC_TYPE_AUDIO:
+            case AVMEDIA_TYPE_AUDIO:
                 if (av1->channels == av->channels &&
                     av1->sample_rate == av->sample_rate)
                     goto found;
                 break;
-            case CODEC_TYPE_VIDEO:
+            case AVMEDIA_TYPE_VIDEO:
                 if (av1->width == av->width &&
                     av1->height == av->height &&
                     av1->time_base.den == av->time_base.den &&
@@ -3549,7 +3549,7 @@ static void build_feed_streams(void)
                             } else if (CHECK_CODEC(bit_rate) || CHECK_CODEC(flags)) {
                                 http_log("Codec bitrates do not match for stream %d\n", i);
                                 matches = 0;
-                            } else if (ccf->codec_type == CODEC_TYPE_VIDEO) {
+                            } else if (ccf->codec_type == AVMEDIA_TYPE_VIDEO) {
                                 if (CHECK_CODEC(time_base.den) ||
                                     CHECK_CODEC(time_base.num) ||
                                     CHECK_CODEC(width) ||
@@ -3557,7 +3557,7 @@ static void build_feed_streams(void)
                                     http_log("Codec width, height and framerate do not match for stream %d\n", i);
                                     matches = 0;
                                 }
-                            } else if (ccf->codec_type == CODEC_TYPE_AUDIO) {
+                            } else if (ccf->codec_type == AVMEDIA_TYPE_AUDIO) {
                                 if (CHECK_CODEC(sample_rate) ||
                                     CHECK_CODEC(channels) ||
                                     CHECK_CODEC(frame_size)) {
@@ -3651,8 +3651,8 @@ static void compute_bandwidth(void)
         for(i=0;i<stream->nb_streams;i++) {
             AVStream *st = stream->streams[i];
             switch(st->codec->codec_type) {
-            case CODEC_TYPE_AUDIO:
-            case CODEC_TYPE_VIDEO:
+            case AVMEDIA_TYPE_AUDIO:
+            case AVMEDIA_TYPE_VIDEO:
                 bandwidth += st->codec->bit_rate;
                 break;
             default:
@@ -3670,7 +3670,7 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
 
     /* compute default parameters */
     switch(av->codec_type) {
-    case CODEC_TYPE_AUDIO:
+    case AVMEDIA_TYPE_AUDIO:
         if (av->bit_rate == 0)
             av->bit_rate = 64000;
         if (av->sample_rate == 0)
@@ -3678,7 +3678,7 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
         if (av->channels == 0)
             av->channels = 1;
         break;
-    case CODEC_TYPE_VIDEO:
+    case AVMEDIA_TYPE_VIDEO:
         if (av->bit_rate == 0)
             av->bit_rate = 64000;
         if (av->time_base.num == 0){
@@ -3742,7 +3742,7 @@ static enum CodecID opt_audio_codec(const char *arg)
 {
     AVCodec *p= avcodec_find_encoder_by_name(arg);
 
-    if (p == NULL || p->type != CODEC_TYPE_AUDIO)
+    if (p == NULL || p->type != AVMEDIA_TYPE_AUDIO)
         return CODEC_ID_NONE;
 
     return p->id;
@@ -3752,7 +3752,7 @@ static enum CodecID opt_video_codec(const char *arg)
 {
     AVCodec *p= avcodec_find_encoder_by_name(arg);
 
-    if (p == NULL || p->type != CODEC_TYPE_VIDEO)
+    if (p == NULL || p->type != AVMEDIA_TYPE_VIDEO)
         return CODEC_ID_NONE;
 
     return p->id;
@@ -4445,12 +4445,12 @@ static int parse_ffconfig(const char *filename)
             } else {
                 if (stream->feed && stream->fmt && strcmp(stream->fmt->name, "ffm") != 0) {
                     if (audio_id != CODEC_ID_NONE) {
-                        audio_enc.codec_type = CODEC_TYPE_AUDIO;
+                        audio_enc.codec_type = AVMEDIA_TYPE_AUDIO;
                         audio_enc.codec_id = audio_id;
                         add_codec(stream, &audio_enc);
                     }
                     if (video_id != CODEC_ID_NONE) {
-                        video_enc.codec_type = CODEC_TYPE_VIDEO;
+                        video_enc.codec_type = AVMEDIA_TYPE_VIDEO;
                         video_enc.codec_id = video_id;
                         add_codec(stream, &video_enc);
                     }

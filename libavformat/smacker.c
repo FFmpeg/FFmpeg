@@ -158,7 +158,7 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->width = smk->width;
     st->codec->height = smk->height;
     st->codec->pix_fmt = PIX_FMT_PAL8;
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_SMACKVIDEO;
     st->codec->codec_tag = smk->magic;
     /* Smacker uses 100000 as internal timebase */
@@ -176,7 +176,7 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if(smk->rates[i] & 0xFFFFFF){
             ast[i] = av_new_stream(s, 0);
             smk->indexes[i] = ast[i]->index;
-            ast[i]->codec->codec_type = CODEC_TYPE_AUDIO;
+            ast[i]->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             if (smk->rates[i] & SMK_AUD_BINKAUD) {
                 ast[i]->codec->codec_id = CODEC_ID_BINKAUDIO_RDFT;
             } else if (smk->rates[i] & SMK_AUD_USEDCT) {

@@ -3771,7 +3771,7 @@ int dct_quantize_c(MpegEncContext *s,
 
 AVCodec h263_encoder = {
     "h263",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H263,
     sizeof(MpegEncContext),
     MPV_encode_init,
@@ -3783,7 +3783,7 @@ AVCodec h263_encoder = {
 
 AVCodec h263p_encoder = {
     "h263p",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H263P,
     sizeof(MpegEncContext),
     MPV_encode_init,
@@ -3795,7 +3795,7 @@ AVCodec h263p_encoder = {
 
 AVCodec msmpeg4v1_encoder = {
     "msmpeg4v1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V1,
     sizeof(MpegEncContext),
     MPV_encode_init,
@@ -3807,7 +3807,7 @@ AVCodec msmpeg4v1_encoder = {
 
 AVCodec msmpeg4v2_encoder = {
     "msmpeg4v2",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V2,
     sizeof(MpegEncContext),
     MPV_encode_init,
@@ -3819,7 +3819,7 @@ AVCodec msmpeg4v2_encoder = {
 
 AVCodec msmpeg4v3_encoder = {
     "msmpeg4",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V3,
     sizeof(MpegEncContext),
     MPV_encode_init,
@@ -3831,7 +3831,7 @@ AVCodec msmpeg4v3_encoder = {
 
 AVCodec wmv1_encoder = {
     "wmv1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_WMV1,
     sizeof(MpegEncContext),
     MPV_encode_init,

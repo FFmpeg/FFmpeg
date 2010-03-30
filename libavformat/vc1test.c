@@ -58,7 +58,7 @@ static int vc1t_read_header(AVFormatContext *s,
     if (!st)
         return -1;
 
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_WMV3;
 
     st->codec->extradata = av_malloc(VC1_EXTRADATA_SIZE);

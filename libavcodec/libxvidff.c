@@ -769,7 +769,7 @@ int xvid_ff_2pass(void *ref, int cmd, void *p1, void *p2) {
  */
 AVCodec libxvid_encoder = {
     "libxvid",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG4,
     sizeof(struct xvid_context),
     xvid_encode_init,

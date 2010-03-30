@@ -92,7 +92,7 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
 
     if (size & 1)
         size++;
-    codec->codec_type = CODEC_TYPE_AUDIO;
+    codec->codec_type = AVMEDIA_TYPE_AUDIO;
     codec->channels = get_be16(pb);
     num_frames = get_be32(pb);
     codec->bits_per_coded_sample = get_be16(pb);

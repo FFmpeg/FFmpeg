@@ -95,7 +95,7 @@ static int qcp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     s->file_size = get_le32(pb) + 8;
     url_fskip(pb, 8 + 4 + 1 + 1);    // "QLCMfmt " + chunk-size + major-version + minor-version
 
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->channels   = 1;
     get_buffer(pb, buf, 16);
     if (is_qcelp_13k_guid(buf)) {

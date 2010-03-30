@@ -52,7 +52,7 @@ static int speex_header(AVFormatContext *s, int idx) {
 
     if (spxp->seq == 0) {
         int frames_per_packet;
-        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_SPEEX;
 
         st->codec->sample_rate = AV_RL32(p + 36);

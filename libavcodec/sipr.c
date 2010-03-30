@@ -579,7 +579,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
 
 AVCodec sipr_decoder = {
     "sipr",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SIPR,
     sizeof(SiprContext),
     sipr_decoder_init,

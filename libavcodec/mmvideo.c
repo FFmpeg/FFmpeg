@@ -200,7 +200,7 @@ static av_cold int mm_decode_end(AVCodecContext *avctx)
 
 AVCodec mmvideo_decoder = {
     "mmvideo",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MMVIDEO,
     sizeof(MmContext),
     mm_decode_init,

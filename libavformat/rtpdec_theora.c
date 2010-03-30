@@ -378,7 +378,7 @@ static int theora_parse_sdp_line(AVFormatContext *s, int st_index,
 
 RTPDynamicProtocolHandler ff_theora_dynamic_handler = {
     .enc_name         = "theora",
-    .codec_type       = CODEC_TYPE_VIDEO,
+    .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = CODEC_ID_THEORA,
     .parse_sdp_a_line = theora_parse_sdp_line,
     .open             = theora_new_context,

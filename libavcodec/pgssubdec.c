@@ -454,7 +454,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
 
 AVCodec pgssub_decoder = {
     "pgssub",
-    CODEC_TYPE_SUBTITLE,
+    AVMEDIA_TYPE_SUBTITLE,
     CODEC_ID_HDMV_PGS_SUBTITLE,
     sizeof(PGSSubContext),
     init_decoder,

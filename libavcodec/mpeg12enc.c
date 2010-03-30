@@ -932,7 +932,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
 
 AVCodec mpeg1video_encoder = {
     "mpeg1video",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG1VIDEO,
     sizeof(MpegEncContext),
     encode_init,
@@ -946,7 +946,7 @@ AVCodec mpeg1video_encoder = {
 
 AVCodec mpeg2video_encoder = {
     "mpeg2video",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG2VIDEO,
     sizeof(MpegEncContext),
     encode_init,

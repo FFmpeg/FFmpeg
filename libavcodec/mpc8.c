@@ -401,7 +401,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx,
 
 AVCodec mpc8_decoder = {
     "mpc8",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MUSEPACK8,
     sizeof(MPCContext),
     mpc8_decode_init,

@@ -621,7 +621,7 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
 
 AVCodec vp6_decoder = {
     "vp6",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VP6,
     sizeof(VP56Context),
     vp6_decode_init,
@@ -635,7 +635,7 @@ AVCodec vp6_decoder = {
 /* flash version, not flipped upside-down */
 AVCodec vp6f_decoder = {
     "vp6f",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VP6F,
     sizeof(VP56Context),
     vp6_decode_init,
@@ -649,7 +649,7 @@ AVCodec vp6f_decoder = {
 /* flash version, not flipped upside-down, with alpha channel */
 AVCodec vp6a_decoder = {
     "vp6a",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VP6A,
     sizeof(VP56Context),
     vp6_decode_init,

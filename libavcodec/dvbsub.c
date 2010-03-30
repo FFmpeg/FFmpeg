@@ -404,7 +404,7 @@ static int dvbsub_encode(AVCodecContext *avctx,
 
 AVCodec dvbsub_encoder = {
     "dvbsub",
-    CODEC_TYPE_SUBTITLE,
+    AVMEDIA_TYPE_SUBTITLE,
     CODEC_ID_DVB_SUBTITLE,
     sizeof(DVBSubtitleContext),
     NULL,

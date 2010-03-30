@@ -1415,7 +1415,7 @@ static int mxf_write_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
         st->priv_data = sc;
 
-        if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (i != 0) {
                 av_log(s, AV_LOG_ERROR, "video stream must be first track\n");
                 return -1;
@@ -1455,7 +1455,7 @@ static int mxf_write_header(AVFormatContext *s)
                 mxf->edit_unit_byte_count += 16 + 4 + 4 + samples_per_frame[0]*8*4;
                 mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
             }
-        } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+        } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->codec->sample_rate != 48000) {
                 av_log(s, AV_LOG_ERROR, "only 48khz is implemented\n");
                 return -1;
@@ -1717,7 +1717,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     mxf_write_klv_fill(s);
     put_buffer(pb, sc->track_essence_element_key, 16); // write key
     if (s->oformat == &mxf_d10_muxer) {
-        if (st->codec->codec_type == CODEC_TYPE_VIDEO)
+        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
             mxf_write_d10_video_packet(s, st, pkt);
         else
             mxf_write_d10_audio_packet(s, st, pkt);

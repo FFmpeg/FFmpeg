@@ -161,7 +161,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
 AVCodec sgi_encoder = {
     "sgi",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SGI,
     sizeof(SgiContext),
     encode_init,

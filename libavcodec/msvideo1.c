@@ -333,7 +333,7 @@ static av_cold int msvideo1_decode_end(AVCodecContext *avctx)
 
 AVCodec msvideo1_decoder = {
     "msvideo1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSVIDEO1,
     sizeof(Msvideo1Context),
     msvideo1_decode_init,

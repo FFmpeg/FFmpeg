@@ -323,7 +323,7 @@ static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
 
 AVCodec h261_encoder = {
     "h261",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H261,
     sizeof(H261Context),
     MPV_encode_init,

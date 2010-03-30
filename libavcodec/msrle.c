@@ -145,7 +145,7 @@ static av_cold int msrle_decode_end(AVCodecContext *avctx)
 
 AVCodec msrle_decoder = {
     "msrle",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSRLE,
     sizeof(MsrleContext),
     msrle_decode_init,

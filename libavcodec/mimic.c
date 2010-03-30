@@ -380,7 +380,7 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
 
 AVCodec mimic_decoder = {
     "mimic",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MIMIC,
     sizeof(MimicContext),
     mimic_decode_init,

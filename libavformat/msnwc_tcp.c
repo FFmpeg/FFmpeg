@@ -80,7 +80,7 @@ static int msnwc_tcp_read_header(AVFormatContext *ctx, AVFormatParameters *ap)
         return AVERROR_NOMEM;
 
     codec = st->codec;
-    codec->codec_type = CODEC_TYPE_VIDEO;
+    codec->codec_type = AVMEDIA_TYPE_VIDEO;
     codec->codec_id = CODEC_ID_MIMIC;
     codec->codec_tag = MKTAG('M', 'L', '2', '0');
 

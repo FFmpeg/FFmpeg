@@ -110,7 +110,7 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf,
 
 AVCodec pam_encoder = {
     "pam",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PAM,
     sizeof(PNMContext),
     ff_pnm_init,

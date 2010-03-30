@@ -347,7 +347,7 @@ static void libschroedinger_flush(AVCodecContext *avccontext)
 
 AVCodec libschroedinger_decoder = {
     "libschroedinger",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DIRAC,
     sizeof(FfmpegSchroDecoderParams),
     libschroedinger_decode_init,

@@ -335,7 +335,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         av_set_pts_info(st, 64, 1, 90000);
 
         switch(st->codec->codec_type) {
-        case CODEC_TYPE_AUDIO:
+        case AVMEDIA_TYPE_AUDIO:
             if        (st->codec->codec_id == CODEC_ID_AC3) {
                 stream->id = ac3_id++;
             } else if (st->codec->codec_id == CODEC_ID_DTS) {
@@ -363,7 +363,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             stream->max_buffer_size = 4 * 1024;
             s->audio_bound++;
             break;
-        case CODEC_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO:
             stream->id = mpv_id++;
             if (st->codec->rc_buffer_size)
                 stream->max_buffer_size = 6*1024 + st->codec->rc_buffer_size/8;
@@ -379,7 +379,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
 #endif
             s->video_bound++;
             break;
-        case CODEC_TYPE_SUBTITLE:
+        case AVMEDIA_TYPE_SUBTITLE:
             stream->id = mps_id++;
             stream->max_buffer_size = 16 * 1024;
             break;
@@ -1046,7 +1046,7 @@ retry:
         /* for subtitle, a single PES packet must be generated,
            so we flush after every single subtitle packet */
         if(s->packet_size > avail_data && !flush
-           && st->codec->codec_type != CODEC_TYPE_SUBTITLE)
+           && st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE)
             return 0;
         if(avail_data==0)
             continue;
@@ -1156,7 +1156,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     int64_t pts, dts;
     PacketDesc *pkt_desc;
     const int preload= av_rescale(ctx->preload, 90000, AV_TIME_BASE);
-    const int is_iframe = st->codec->codec_type == CODEC_TYPE_VIDEO && (pkt->flags & PKT_FLAG_KEY);
+    const int is_iframe = st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & PKT_FLAG_KEY);
 
     pts= pkt->pts;
     dts= pkt->dts;

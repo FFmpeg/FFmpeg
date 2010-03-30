@@ -566,7 +566,7 @@ static int ipmovie_read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 63, 1, 1000000);
     ipmovie->video_stream_index = st->index;
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_INTERPLAY_VIDEO;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = ipmovie->video_width;
@@ -582,7 +582,7 @@ static int ipmovie_read_header(AVFormatContext *s,
             return AVERROR(ENOMEM);
         av_set_pts_info(st, 32, 1, ipmovie->audio_sample_rate);
         ipmovie->audio_stream_index = st->index;
-        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = ipmovie->audio_type;
         st->codec->codec_tag = 0;  /* no tag */
         st->codec->channels = ipmovie->audio_channels;

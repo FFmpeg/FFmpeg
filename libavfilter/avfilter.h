@@ -280,7 +280,7 @@ struct AVFilterPad
      * AVFilterPad type. Only video supported now, hopefully someone will
      * add audio in the future.
      */
-    enum CodecType type;
+    enum AVMediaType type;
 
     /**
      * Minimum required permissions on incoming buffers. Any buffer with

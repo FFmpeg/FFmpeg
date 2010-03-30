@@ -407,7 +407,7 @@ static int libschroedinger_encode_close(AVCodecContext *avccontext)
 
 AVCodec libschroedinger_encoder = {
     "libschroedinger",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DIRAC,
     sizeof(FfmpegSchroEncoderParams),
     libschroedinger_encode_init,

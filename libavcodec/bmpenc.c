@@ -133,7 +133,7 @@ static int bmp_encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_s
 
 AVCodec bmp_encoder = {
     "bmp",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_BMP,
     sizeof(BMPContext),
     bmp_encode_init,

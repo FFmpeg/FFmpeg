@@ -199,7 +199,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec tscc_decoder = {
         "camtasia",
-        CODEC_TYPE_VIDEO,
+        AVMEDIA_TYPE_VIDEO,
         CODEC_ID_TSCC,
         sizeof(CamtasiaContext),
         decode_init,

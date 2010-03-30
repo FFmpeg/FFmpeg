@@ -221,7 +221,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec eightbps_decoder = {
         "8bps",
-        CODEC_TYPE_VIDEO,
+        AVMEDIA_TYPE_VIDEO,
         CODEC_ID_8BPS,
         sizeof(EightBpsContext),
         decode_init,

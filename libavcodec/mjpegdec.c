@@ -1533,7 +1533,7 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
 
 AVCodec mjpeg_decoder = {
     "mjpeg",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MJPEG,
     sizeof(MJpegDecodeContext),
     ff_mjpeg_decode_init,
@@ -1547,7 +1547,7 @@ AVCodec mjpeg_decoder = {
 
 AVCodec thp_decoder = {
     "thp",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_THP,
     sizeof(MJpegDecodeContext),
     ff_mjpeg_decode_init,

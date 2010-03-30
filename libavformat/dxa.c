@@ -119,7 +119,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     /* now we are ready: build format streams */
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = CODEC_ID_DXA;
     st->codec->width      = w;
     st->codec->height     = h;

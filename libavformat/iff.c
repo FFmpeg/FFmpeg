@@ -119,7 +119,7 @@ static int iff_read_header(AVFormatContext *s,
 
         switch(chunk_id) {
         case ID_VHDR:
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             url_fskip(pb, 12);
             st->codec->sample_rate = get_be16(pb);
             url_fskip(pb, 1);
@@ -146,7 +146,7 @@ static int iff_read_header(AVFormatContext *s,
             break;
 
         case ID_BMHD:
-            st->codec->codec_type            = CODEC_TYPE_VIDEO;
+            st->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
             st->codec->width                 = get_be16(pb);
             st->codec->height                = get_be16(pb);
             url_fskip(pb, 4); // x, y offset
@@ -175,7 +175,7 @@ static int iff_read_header(AVFormatContext *s,
     }
 
     switch(st->codec->codec_type) {
-    case CODEC_TYPE_AUDIO:
+    case AVMEDIA_TYPE_AUDIO:
     av_set_pts_info(st, 32, 1, st->codec->sample_rate);
 
     switch(compression) {
@@ -198,7 +198,7 @@ static int iff_read_header(AVFormatContext *s,
     st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
     break;
 
-    case CODEC_TYPE_VIDEO:
+    case AVMEDIA_TYPE_VIDEO:
         switch (compression) {
         case BITMAP_RAW:
             if (st->codec->codec_tag == ID_ILBM) {
@@ -256,7 +256,7 @@ static int iff_read_packet(AVFormatContext *s,
         st->codec->extradata_size = 0;
 
         ret = get_buffer(pb, pkt->data, iff->body_size);
-    } else if (s->streams[0]->codec->codec_type == CODEC_TYPE_VIDEO) {
+    } else if (s->streams[0]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = av_get_packet(pb, pkt, iff->body_size);
     } else {
         ret = av_get_packet(pb, pkt, PACKET_SIZE);
@@ -265,13 +265,13 @@ static int iff_read_packet(AVFormatContext *s,
     if(iff->sent_bytes == 0)
         pkt->flags |= PKT_FLAG_KEY;
 
-    if(s->streams[0]->codec->codec_type == CODEC_TYPE_AUDIO) {
+    if(s->streams[0]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         iff->sent_bytes += PACKET_SIZE;
     } else {
         iff->sent_bytes = iff->body_size;
     }
     pkt->stream_index = 0;
-    if(s->streams[0]->codec->codec_type == CODEC_TYPE_AUDIO) {
+    if(s->streams[0]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         pkt->pts = iff->audio_frame_count;
         iff->audio_frame_count += ret / s->streams[0]->codec->channels;
     }

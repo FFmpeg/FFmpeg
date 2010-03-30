@@ -152,7 +152,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 
 AVCodec qdraw_decoder = {
     "qdraw",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_QDRAW,
     sizeof(QdrawContext),
     decode_init,

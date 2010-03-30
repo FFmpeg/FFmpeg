@@ -35,7 +35,7 @@ AVFilter avfilter_vsink_nullsink = {
     .inputs    = (AVFilterPad[]) {
         {
             .name            = "default",
-            .type            = CODEC_TYPE_VIDEO,
+            .type            = AVMEDIA_TYPE_VIDEO,
             .start_frame     = start_frame,
             .end_frame       = end_frame,
         },

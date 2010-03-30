@@ -59,7 +59,7 @@ void rv20_encode_picture_header(MpegEncContext *s, int picture_number){
 
 AVCodec rv20_encoder = {
     "rv20",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_RV20,
     sizeof(MpegEncContext),
     MPV_encode_init,

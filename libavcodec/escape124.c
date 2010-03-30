@@ -374,7 +374,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 
 AVCodec escape124_decoder = {
     "escape124",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ESCAPE124,
     sizeof(Escape124Context),
     escape124_decode_init,

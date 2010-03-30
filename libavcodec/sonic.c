@@ -937,7 +937,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 
 AVCodec sonic_decoder = {
     "sonic",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SONIC,
     sizeof(SonicContext),
     sonic_decode_init,
@@ -951,7 +951,7 @@ AVCodec sonic_decoder = {
 #if CONFIG_SONIC_ENCODER
 AVCodec sonic_encoder = {
     "sonic",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SONIC,
     sizeof(SonicContext),
     sonic_encode_init,
@@ -965,7 +965,7 @@ AVCodec sonic_encoder = {
 #if CONFIG_SONIC_LS_ENCODER
 AVCodec sonic_ls_encoder = {
     "sonicls",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SONIC_LS,
     sizeof(SonicContext),
     sonic_encode_init,

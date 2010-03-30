@@ -244,7 +244,7 @@ static av_cold int pcx_end(AVCodecContext *avctx) {
 
 AVCodec pcx_decoder = {
     "pcx",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PCX,
     sizeof(PCXContext),
     pcx_init,

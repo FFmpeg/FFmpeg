@@ -301,7 +301,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
 #define DPCM_DECODER(id, name, long_name_)      \
 AVCodec name ## _decoder = {                    \
     #name,                                      \
-    CODEC_TYPE_AUDIO,                           \
+    AVMEDIA_TYPE_AUDIO,                         \
     id,                                         \
     sizeof(DPCMContext),                        \
     dpcm_decode_init,                           \

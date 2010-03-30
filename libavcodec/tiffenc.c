@@ -444,7 +444,7 @@ fail:
 
 AVCodec tiff_encoder = {
     "tiff",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TIFF,
     sizeof(TiffEncoderContext),
     NULL,

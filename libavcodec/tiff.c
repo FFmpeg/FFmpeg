@@ -592,7 +592,7 @@ static av_cold int tiff_end(AVCodecContext *avctx)
 
 AVCodec tiff_decoder = {
     "tiff",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TIFF,
     sizeof(TiffContext),
     tiff_init,

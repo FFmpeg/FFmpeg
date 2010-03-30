@@ -442,19 +442,19 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             switch(tag1) {
             case MKTAG('v', 'i', 'd', 's'):
-                codec_type = CODEC_TYPE_VIDEO;
+                codec_type = AVMEDIA_TYPE_VIDEO;
 
                 ast->sample_size = 0;
                 break;
             case MKTAG('a', 'u', 'd', 's'):
-                codec_type = CODEC_TYPE_AUDIO;
+                codec_type = AVMEDIA_TYPE_AUDIO;
                 break;
             case MKTAG('t', 'x', 't', 's'):
                 //FIXME
-                codec_type = CODEC_TYPE_DATA; //CODEC_TYPE_SUB ?  FIXME
+                codec_type = AVMEDIA_TYPE_DATA; //AVMEDIA_TYPE_SUB ?  FIXME
                 break;
             case MKTAG('d', 'a', 't', 's'):
-                codec_type = CODEC_TYPE_DATA;
+                codec_type = AVMEDIA_TYPE_DATA;
                 break;
             default:
                 av_log(s, AV_LOG_ERROR, "unknown stream type %X\n", tag1);
@@ -475,11 +475,11 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     size = FFMIN(size, list_end - cur_pos);
                 st = s->streams[stream_index];
                 switch(codec_type) {
-                case CODEC_TYPE_VIDEO:
+                case AVMEDIA_TYPE_VIDEO:
                     if(amv_file_format){
                         st->codec->width=avih_width;
                         st->codec->height=avih_height;
-                        st->codec->codec_type = CODEC_TYPE_VIDEO;
+                        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                         st->codec->codec_id = CODEC_ID_AMV;
                         url_fskip(pb, size);
                         break;
@@ -497,7 +497,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le32(pb); /* ClrImportant */
 
                     if (tag1 == MKTAG('D', 'X', 'S', 'B') || tag1 == MKTAG('D','X','S','A')) {
-                        st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+                        st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
                         st->codec->codec_tag = tag1;
                         st->codec->codec_id = CODEC_ID_XSUB;
                         break;
@@ -534,7 +534,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 #ifdef DEBUG
                     print_tag("video", tag1, 0);
 #endif
-                    st->codec->codec_type = CODEC_TYPE_VIDEO;
+                    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                     st->codec->codec_tag = tag1;
                     st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag1);
                     st->need_parsing = AVSTREAM_PARSE_HEADERS; // This is needed to get the pict type which is necessary for generating correct pts.
@@ -554,7 +554,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 //                    url_fskip(pb, size - 5 * 4);
                     break;
-                case CODEC_TYPE_AUDIO:
+                case AVMEDIA_TYPE_AUDIO:
                     ff_get_wav_header(pb, st->codec, size);
                     if(ast->sample_size && st->codec->block_align && ast->sample_size != st->codec->block_align){
                         av_log(s, AV_LOG_WARNING, "sample size (%d) != block align (%d)\n", ast->sample_size, st->codec->block_align);
@@ -580,7 +580,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         st->codec->codec_id  = CODEC_ID_ADPCM_IMA_AMV;
                     break;
                 default:
-                    st->codec->codec_type = CODEC_TYPE_DATA;
+                    st->codec->codec_type = AVMEDIA_TYPE_DATA;
                     st->codec->codec_id= CODEC_ID_NONE;
                     st->codec->codec_tag= 0;
                     url_fskip(pb, size);
@@ -787,7 +787,7 @@ resync:
 //av_log(s, AV_LOG_DEBUG, "dts:%"PRId64" offset:%"PRId64" %d/%d smpl_siz:%d base:%d st:%d size:%d\n", pkt->dts, ast->frame_offset, ast->scale, ast->rate, ast->sample_size, AV_TIME_BASE, avi->stream_index, size);
             pkt->stream_index = avi->stream_index;
 
-            if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
                 AVIndexEntry *e;
                 int index;
                 assert(st->index_entries);
@@ -871,8 +871,8 @@ resync:
                 //workaround for broken small-file-bug402.avi
                 if(   d[2] == 'w' && d[3] == 'b'
                    && n==0
-                   && st ->codec->codec_type == CODEC_TYPE_VIDEO
-                   && st1->codec->codec_type == CODEC_TYPE_AUDIO
+                   && st ->codec->codec_type == AVMEDIA_TYPE_VIDEO
+                   && st1->codec->codec_type == AVMEDIA_TYPE_AUDIO
                    && ast->prefix == 'd'*256+'c'
                    && (d[2]*256+d[3] == ast1->prefix || !ast1->prefix_count)
                   ){

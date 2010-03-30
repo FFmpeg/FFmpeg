@@ -216,7 +216,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec dpx_decoder = {
     "dpx",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DPX,
     sizeof(DPXContext),
     decode_init,

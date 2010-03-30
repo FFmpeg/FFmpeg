@@ -92,7 +92,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 AVCodec r210_decoder = {
     "r210",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_R210,
     0,
     decode_init,

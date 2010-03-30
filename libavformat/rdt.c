@@ -546,10 +546,10 @@ static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
     .parse_packet     = rdt_parse_packet \
 };
 
-RDT_HANDLER(live_video, "x-pn-multirate-realvideo-live", CODEC_TYPE_VIDEO);
-RDT_HANDLER(live_audio, "x-pn-multirate-realaudio-live", CODEC_TYPE_AUDIO);
-RDT_HANDLER(video,      "x-pn-realvideo",                CODEC_TYPE_VIDEO);
-RDT_HANDLER(audio,      "x-pn-realaudio",                CODEC_TYPE_AUDIO);
+RDT_HANDLER(live_video, "x-pn-multirate-realvideo-live", AVMEDIA_TYPE_VIDEO);
+RDT_HANDLER(live_audio, "x-pn-multirate-realaudio-live", AVMEDIA_TYPE_AUDIO);
+RDT_HANDLER(video,      "x-pn-realvideo",                AVMEDIA_TYPE_VIDEO);
+RDT_HANDLER(audio,      "x-pn-realaudio",                AVMEDIA_TYPE_AUDIO);
 
 void av_register_rdt_dynamic_payload_handlers(void)
 {

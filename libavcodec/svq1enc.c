@@ -574,7 +574,7 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
 
 AVCodec svq1_encoder = {
     "svq1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SVQ1,
     sizeof(SVQ1Context),
     svq1_encode_init,

@@ -119,7 +119,7 @@ static av_cold int encode_close(AVCodecContext *avctx)
 
 AVCodec v210_encoder = {
     "v210",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_V210,
     0,
     encode_init,

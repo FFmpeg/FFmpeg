@@ -701,7 +701,7 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
 
 AVCodec alac_decoder = {
     "alac",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_ALAC,
     sizeof(ALACContext),
     alac_decode_init,

@@ -527,7 +527,7 @@ static void shorten_flush(AVCodecContext *avctx){
 
 AVCodec shorten_decoder = {
     "shorten",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SHORTEN,
     sizeof(ShortenContext),
     shorten_decode_init,

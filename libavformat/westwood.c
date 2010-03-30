@@ -148,7 +148,7 @@ static int wsaud_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, wsaud->audio_samplerate);
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = wsaud->audio_type;
     st->codec->codec_tag = 0;  /* no tag */
     st->codec->channels = wsaud->audio_channels;
@@ -226,7 +226,7 @@ static int wsvqa_read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, VQA_FRAMERATE);
     wsvqa->video_stream_index = st->index;
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_WS_VQA;
     st->codec->codec_tag = 0;  /* no fourcc */
 
@@ -251,7 +251,7 @@ static int wsvqa_read_header(AVFormatContext *s,
         if (!st)
             return AVERROR(ENOMEM);
         av_set_pts_info(st, 33, 1, VQA_FRAMERATE);
-        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         if (AV_RL16(&header[0]) == 1)
             st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
         else

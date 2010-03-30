@@ -337,7 +337,7 @@ static av_cold int bmp_decode_end(AVCodecContext *avctx)
 
 AVCodec bmp_decoder = {
     "bmp",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_BMP,
     sizeof(BMPContext),
     bmp_decode_init,

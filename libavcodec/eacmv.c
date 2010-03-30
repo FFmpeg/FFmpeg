@@ -205,7 +205,7 @@ static av_cold int cmv_decode_end(AVCodecContext *avctx){
 
 AVCodec eacmv_decoder = {
     "eacmv",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_CMV,
     sizeof(CmvContext),
     cmv_decode_init,

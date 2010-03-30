@@ -149,7 +149,7 @@ static int fourxm_read_header(AVFormatContext *s,
 
             fourxm->video_stream_index = st->index;
 
-            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_4XM;
             st->codec->extradata_size = 4;
             st->codec->extradata = av_malloc(4);
@@ -198,7 +198,7 @@ static int fourxm_read_header(AVFormatContext *s,
 
             fourxm->tracks[current_track].stream_index = st->index;
 
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->codec_tag = 0;
             st->codec->channels              = fourxm->tracks[current_track].channels;
             st->codec->sample_rate           = fourxm->tracks[current_track].sample_rate;

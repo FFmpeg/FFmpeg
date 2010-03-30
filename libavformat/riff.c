@@ -461,7 +461,7 @@ void ff_get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
     int id;
 
     id = get_le16(pb);
-    codec->codec_type = CODEC_TYPE_AUDIO;
+    codec->codec_type = AVMEDIA_TYPE_AUDIO;
     codec->codec_tag = id;
     codec->channels = get_le16(pb);
     codec->sample_rate = get_le32(pb);
@@ -527,8 +527,8 @@ void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssiz
     if(stream->frame_size && stream->sample_rate){
         *au_scale=stream->frame_size;
         *au_rate= stream->sample_rate;
-    }else if(stream->codec_type == CODEC_TYPE_VIDEO ||
-             stream->codec_type == CODEC_TYPE_SUBTITLE){
+    }else if(stream->codec_type == AVMEDIA_TYPE_VIDEO ||
+             stream->codec_type == AVMEDIA_TYPE_SUBTITLE){
         *au_scale= stream->time_base.num;
         *au_rate = stream->time_base.den;
     }else{

@@ -425,7 +425,7 @@ static int end_frame(AVCodecContext *avctx)
 
 AVHWAccel h264_dxva2_hwaccel = {
     .name           = "h264_dxva2",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_H264,
     .pix_fmt        = PIX_FMT_DXVA2_VLD,
     .capabilities   = 0,

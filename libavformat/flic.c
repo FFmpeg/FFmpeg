@@ -103,7 +103,7 @@ static int flic_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
     flic->video_stream_index = st->index;
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_FLIC;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = AV_RL16(&header[0x08]);

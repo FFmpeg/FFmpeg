@@ -86,7 +86,7 @@ AVFilter avfilter_vf_aspect = {
     .priv_size = sizeof(AspectContext),
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = CODEC_TYPE_VIDEO,
+                                    .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = frameaspect_config_props,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .start_frame      = start_frame,
@@ -94,7 +94,7 @@ AVFilter avfilter_vf_aspect = {
                                   { .name = NULL}},
 
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = CODEC_TYPE_VIDEO, },
+                                    .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };
 #endif /* CONFIG_ASPECT_FILTER */
@@ -109,14 +109,14 @@ AVFilter avfilter_vf_pixelaspect = {
     .priv_size = sizeof(AspectContext),
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = CODEC_TYPE_VIDEO,
+                                    .type             = AVMEDIA_TYPE_VIDEO,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .start_frame      = start_frame,
                                     .end_frame        = avfilter_null_end_frame },
                                   { .name = NULL}},
 
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = CODEC_TYPE_VIDEO, },
+                                    .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };
 #endif /* CONFIG_PIXELASPECT_FILTER */

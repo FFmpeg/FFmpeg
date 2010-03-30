@@ -221,8 +221,8 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     //find the streams now so that amf_parse_object doesn't need to do the lookup every time it is called.
     for(i = 0; i < s->nb_streams; i++) {
         stream = s->streams[i];
-        if     (stream->codec->codec_type == CODEC_TYPE_AUDIO) astream = stream;
-        else if(stream->codec->codec_type == CODEC_TYPE_VIDEO) vstream = stream;
+        if     (stream->codec->codec_type == AVMEDIA_TYPE_AUDIO) astream = stream;
+        else if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO) vstream = stream;
     }
 
     //parse the second object (we want a mixed array)
@@ -236,7 +236,7 @@ static AVStream *create_stream(AVFormatContext *s, int is_audio){
     AVStream *st = av_new_stream(s, is_audio);
     if (!st)
         return NULL;
-    st->codec->codec_type = is_audio ? CODEC_TYPE_AUDIO : CODEC_TYPE_VIDEO;
+    st->codec->codec_type = is_audio ? AVMEDIA_TYPE_AUDIO : AVMEDIA_TYPE_VIDEO;
     av_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     return st;
 }

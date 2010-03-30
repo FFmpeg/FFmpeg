@@ -124,7 +124,7 @@ static av_cold int aura_decode_end(AVCodecContext *avctx)
 
 AVCodec aura2_decoder = {
     "aura2",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_AURA2,
     sizeof(AuraDecodeContext),
     aura_decode_init,

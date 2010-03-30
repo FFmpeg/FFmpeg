@@ -516,7 +516,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
 #define PCM_ENCODER(id,sample_fmt_,name,long_name_) \
 AVCodec name ## _encoder = {                    \
     #name,                                      \
-    CODEC_TYPE_AUDIO,                           \
+    AVMEDIA_TYPE_AUDIO,                         \
     id,                                         \
     0,                                          \
     pcm_encode_init,                            \
@@ -534,7 +534,7 @@ AVCodec name ## _encoder = {                    \
 #define PCM_DECODER(id,sample_fmt_,name,long_name_)         \
 AVCodec name ## _decoder = {                    \
     #name,                                      \
-    CODEC_TYPE_AUDIO,                           \
+    AVMEDIA_TYPE_AUDIO,                         \
     id,                                         \
     sizeof(PCMDecode),                          \
     pcm_decode_init,                            \

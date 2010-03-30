@@ -53,7 +53,7 @@ static int sox_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
 
     if (get_le32(pb) == SOX_TAG) {
         st->codec->codec_id = CODEC_ID_PCM_S32LE;

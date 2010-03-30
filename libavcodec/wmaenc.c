@@ -386,7 +386,7 @@ static int encode_superframe(AVCodecContext *avctx,
 AVCodec wmav1_encoder =
 {
     "wmav1",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_WMAV1,
     sizeof(WMACodecContext),
     encode_init,
@@ -399,7 +399,7 @@ AVCodec wmav1_encoder =
 AVCodec wmav2_encoder =
 {
     "wmav2",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_WMAV2,
     sizeof(WMACodecContext),
     encode_init,

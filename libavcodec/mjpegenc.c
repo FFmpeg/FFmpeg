@@ -445,7 +445,7 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
 AVCodec mjpeg_encoder = {
     "mjpeg",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MJPEG,
     sizeof(MpegEncContext),
     MPV_encode_init,

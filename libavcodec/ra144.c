@@ -353,7 +353,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
 AVCodec ra_144_decoder =
 {
     "real_144",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_RA_144,
     sizeof(RA144Context),
     ra144_decode_init,

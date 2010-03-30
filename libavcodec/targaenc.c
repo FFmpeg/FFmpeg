@@ -153,7 +153,7 @@ static av_cold int targa_encode_init(AVCodecContext *avctx)
 
 AVCodec targa_encoder = {
     .name = "targa",
-    .type = CODEC_TYPE_VIDEO,
+    .type = AVMEDIA_TYPE_VIDEO,
     .id = CODEC_ID_TARGA,
     .priv_data_size = sizeof(TargaContext),
     .init = targa_encode_init,

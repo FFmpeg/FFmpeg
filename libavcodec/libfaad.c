@@ -322,7 +322,7 @@ static av_cold int faac_decode_init(AVCodecContext *avctx)
 
 AVCodec libfaad_decoder = {
     "libfaad",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AAC,
     sizeof(FAACContext),
     faac_decode_init,

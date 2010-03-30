@@ -166,7 +166,7 @@ static int flv_write_header(AVFormatContext *s)
 
     for(i=0; i<s->nb_streams; i++){
         AVCodecContext *enc = s->streams[i]->codec;
-        if (enc->codec_type == CODEC_TYPE_VIDEO) {
+        if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (s->streams[i]->r_frame_rate.den && s->streams[i]->r_frame_rate.num) {
                 framerate = av_q2d(s->streams[i]->r_frame_rate);
             } else {
@@ -275,7 +275,7 @@ static int flv_write_header(AVFormatContext *s)
         AVCodecContext *enc = s->streams[i]->codec;
         if (enc->codec_id == CODEC_ID_AAC || enc->codec_id == CODEC_ID_H264) {
             int64_t pos;
-            put_byte(pb, enc->codec_type == CODEC_TYPE_VIDEO ?
+            put_byte(pb, enc->codec_type == AVMEDIA_TYPE_VIDEO ?
                      FLV_TAG_TYPE_VIDEO : FLV_TAG_TYPE_AUDIO);
             put_be24(pb, 0); // size patched later
             put_be24(pb, 0); // ts
@@ -342,7 +342,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     else
         flags_size= 1;
 
-    if (enc->codec_type == CODEC_TYPE_VIDEO) {
+    if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
         put_byte(pb, FLV_TAG_TYPE_VIDEO);
 
         flags = enc->codec_tag;
@@ -353,7 +353,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         flags |= pkt->flags & PKT_FLAG_KEY ? FLV_FRAME_KEY : FLV_FRAME_INTER;
     } else {
-        assert(enc->codec_type == CODEC_TYPE_AUDIO);
+        assert(enc->codec_type == AVMEDIA_TYPE_AUDIO);
         flags = get_audio_flags(enc);
 
         assert(size);

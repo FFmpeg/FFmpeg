@@ -178,7 +178,7 @@ static av_cold int encode_init(AVCodecContext *avctx){
 
 AVCodec vcr1_decoder = {
     "vcr1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VCR1,
     sizeof(VCR1Context),
     decode_init,
@@ -192,7 +192,7 @@ AVCodec vcr1_decoder = {
 #if CONFIG_VCR1_ENCODER
 AVCodec vcr1_encoder = {
     "vcr1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VCR1,
     sizeof(VCR1Context),
     encode_init,

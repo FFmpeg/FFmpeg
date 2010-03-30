@@ -629,7 +629,7 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
 
 AVCodec aac_encoder = {
     "aac",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AAC,
     sizeof(AACEncContext),
     aac_encode_init,

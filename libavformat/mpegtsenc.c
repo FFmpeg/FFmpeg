@@ -255,7 +255,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 
         /* write optional descriptors here */
         switch(st->codec->codec_type) {
-        case CODEC_TYPE_AUDIO:
+        case AVMEDIA_TYPE_AUDIO:
             if (lang && strlen(lang->value) == 3) {
                 *q++ = 0x0a; /* ISO 639 language descriptor */
                 *q++ = 4;
@@ -265,7 +265,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = 0; /* undefined type */
             }
             break;
-        case CODEC_TYPE_SUBTITLE:
+        case AVMEDIA_TYPE_SUBTITLE:
             {
                 const char *language;
                 language = lang && strlen(lang->value)==3 ? lang->value : "eng";
@@ -279,7 +279,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 put16(&q, 1); /* ancillary page id */
             }
             break;
-        case CODEC_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO:
             if (stream_type == STREAM_TYPE_VIDEO_DIRAC) {
                 *q++ = 0x05; /*MPEG-2 registration descriptor*/
                 *q++ = 4;
@@ -424,7 +424,7 @@ static int mpegts_write_header(AVFormatContext *s)
         ts_st->first_pts_check = 1;
         ts_st->cc = 15;
         /* update PCR pid by using the first video stream */
-        if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
+        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
             service->pcr_pid == 0x1fff) {
             service->pcr_pid = ts_st->pid;
             pcr_st = st;
@@ -462,7 +462,7 @@ static int mpegts_write_header(AVFormatContext *s)
         /* Arbitrary values, PAT/PMT could be written on key frames */
         ts->sdt_packet_period = 200;
         ts->pat_packet_period = 40;
-        if (pcr_st->codec->codec_type == CODEC_TYPE_AUDIO) {
+        if (pcr_st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (!pcr_st->codec->frame_size) {
                 av_log(s, AV_LOG_WARNING, "frame size not set\n");
                 service->pcr_packet_period =
@@ -661,18 +661,18 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             *q++ = 0x00;
             *q++ = 0x01;
             private_code = 0;
-            if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
                 if (st->codec->codec_id == CODEC_ID_DIRAC) {
                     *q++ = 0xfd;
                 } else
                     *q++ = 0xe0;
-            } else if (st->codec->codec_type == CODEC_TYPE_AUDIO &&
+            } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
                        (st->codec->codec_id == CODEC_ID_MP2 ||
                         st->codec->codec_id == CODEC_ID_MP3)) {
                 *q++ = 0xc0;
             } else {
                 *q++ = 0xbd;
-                if (st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
+                if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                     private_code = 0x20;
                 }
             }
@@ -686,7 +686,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 header_len += 5;
                 flags |= 0x40;
             }
-            if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
                 st->codec->codec_id == CODEC_ID_DIRAC) {
                 /* set PES_extension_flag */
                 pes_extension = 1;
@@ -708,7 +708,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             *q++ = len;
             val = 0x80;
             /* data alignment indicator is required for subtitle data */
-            if (st->codec->codec_type == CODEC_TYPE_SUBTITLE)
+            if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
                 val |= 0x04;
             *q++ = val;
             *q++ = flags;
@@ -848,7 +848,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (st->codec->codec_type != CODEC_TYPE_AUDIO) {
+    if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO) {
         // for video and subtitle, write a single pes packet
         mpegts_write_pes(s, st, buf, size, pts, dts);
         av_free(data);

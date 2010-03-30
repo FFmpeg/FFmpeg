@@ -387,7 +387,7 @@ static int g726_decode_frame(AVCodecContext *avctx,
 #if CONFIG_ADPCM_G726_ENCODER
 AVCodec adpcm_g726_encoder = {
     "g726",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_ADPCM_G726,
     sizeof(G726Context),
     g726_init,
@@ -401,7 +401,7 @@ AVCodec adpcm_g726_encoder = {
 
 AVCodec adpcm_g726_decoder = {
     "g726",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_ADPCM_G726,
     sizeof(G726Context),
     g726_init,

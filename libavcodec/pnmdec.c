@@ -190,7 +190,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
 #if CONFIG_PGM_DECODER
 AVCodec pgm_decoder = {
     "pgm",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PGM,
     sizeof(PNMContext),
     ff_pnm_init,
@@ -206,7 +206,7 @@ AVCodec pgm_decoder = {
 #if CONFIG_PGMYUV_DECODER
 AVCodec pgmyuv_decoder = {
     "pgmyuv",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PGMYUV,
     sizeof(PNMContext),
     ff_pnm_init,
@@ -222,7 +222,7 @@ AVCodec pgmyuv_decoder = {
 #if CONFIG_PPM_DECODER
 AVCodec ppm_decoder = {
     "ppm",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PPM,
     sizeof(PNMContext),
     ff_pnm_init,
@@ -238,7 +238,7 @@ AVCodec ppm_decoder = {
 #if CONFIG_PBM_DECODER
 AVCodec pbm_decoder = {
     "pbm",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PBM,
     sizeof(PNMContext),
     ff_pnm_init,
@@ -254,7 +254,7 @@ AVCodec pbm_decoder = {
 #if CONFIG_PAM_DECODER
 AVCodec pam_decoder = {
     "pam",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PAM,
     sizeof(PNMContext),
     ff_pnm_init,

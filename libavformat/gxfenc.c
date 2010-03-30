@@ -644,7 +644,7 @@ static int gxf_write_header(AVFormatContext *s)
         st->priv_data = sc;
 
         sc->media_type = ff_codec_get_tag(gxf_media_types, st->codec->codec_id);
-        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->codec->codec_id != CODEC_ID_PCM_S16LE) {
                 av_log(s, AV_LOG_ERROR, "only 16 BIT PCM LE allowed for now\n");
                 return -1;
@@ -667,7 +667,7 @@ static int gxf_write_header(AVFormatContext *s)
             gxf->audio_tracks++;
             gxf->flags |= 0x04000000; /* audio is 16 bit pcm */
             media_info = 'A';
-        } else if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+        } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (i != 0) {
                 av_log(s, AV_LOG_ERROR, "video stream must be the first track\n");
                 return -1;
@@ -811,7 +811,7 @@ static int gxf_write_media_preamble(AVFormatContext *s, AVPacket *pkt, int size)
     /* If the video is frame-encoded, the frame numbers shall be represented by
      * even field numbers.
      * see SMPTE360M-2004  6.4.2.1.3 Media field number */
-    if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         field_nb = gxf->nb_fields;
     } else {
         field_nb = av_rescale_rnd(pkt->dts, gxf->time_base.den,
@@ -821,7 +821,7 @@ static int gxf_write_media_preamble(AVFormatContext *s, AVPacket *pkt, int size)
     put_byte(pb, sc->media_type);
     put_byte(pb, st->index);
     put_be32(pb, field_nb);
-    if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         put_be16(pb, 0);
         put_be16(pb, size / 2);
     } else if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO) {
@@ -859,13 +859,13 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     gxf_write_packet_header(pb, PKT_MEDIA);
     if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO && pkt->size % 4) /* MPEG-2 frames must be padded */
         padding = 4 - pkt->size % 4;
-    else if (st->codec->codec_type == CODEC_TYPE_AUDIO)
+    else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
         padding = GXF_AUDIO_PACKET_SIZE - pkt->size;
     gxf_write_media_preamble(s, pkt, pkt->size + padding);
     put_buffer(pb, pkt->data, pkt->size);
     gxf_write_padding(pb, padding);
 
-    if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (!(gxf->flt_entries_nb % 500)) {
             gxf->flt_entries = av_realloc(gxf->flt_entries,
                                           (gxf->flt_entries_nb+500)*sizeof(*gxf->flt_entries));
@@ -901,7 +901,7 @@ static int gxf_compare_field_nb(AVFormatContext *s, AVPacket *next, AVPacket *cu
     for (i = 0; i < 2; i++) {
         AVStream *st = s->streams[pkt[i]->stream_index];
         sc[i] = st->priv_data;
-        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             field_nb[i] = av_rescale_rnd(pkt[i]->dts, gxf->time_base.den,
                                          (int64_t)48000*gxf->time_base.num, AV_ROUND_UP);
             field_nb[i] &= ~1; // compare against even field number because audio must be before video
@@ -915,7 +915,7 @@ static int gxf_compare_field_nb(AVFormatContext *s, AVPacket *next, AVPacket *cu
 
 static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
-    if (pkt && s->streams[pkt->stream_index]->codec->codec_type == CODEC_TYPE_VIDEO)
+    if (pkt && s->streams[pkt->stream_index]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
         pkt->duration = 2; // enforce 2 fields
     return ff_audio_rechunk_interleave(s, out, pkt, flush,
                                av_interleave_packet_per_dts, gxf_compare_field_nb);

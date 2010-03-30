@@ -86,7 +86,7 @@ void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level, int run, in
 
 AVCodec flv_encoder = {
     "flv",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FLV1,
     sizeof(MpegEncContext),
     MPV_encode_init,

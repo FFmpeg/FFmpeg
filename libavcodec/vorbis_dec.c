@@ -1645,7 +1645,7 @@ static av_cold int vorbis_decode_close(AVCodecContext *avccontext)
 
 AVCodec vorbis_decoder = {
     "vorbis",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_VORBIS,
     sizeof(vorbis_context),
     vorbis_decode_init,

@@ -2485,7 +2485,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
 AVCodec mp1_decoder =
 {
     "mp1",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MP1,
     sizeof(MPADecodeContext),
     decode_init,
@@ -2501,7 +2501,7 @@ AVCodec mp1_decoder =
 AVCodec mp2_decoder =
 {
     "mp2",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MP2,
     sizeof(MPADecodeContext),
     decode_init,
@@ -2517,7 +2517,7 @@ AVCodec mp2_decoder =
 AVCodec mp3_decoder =
 {
     "mp3",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MP3,
     sizeof(MPADecodeContext),
     decode_init,
@@ -2533,7 +2533,7 @@ AVCodec mp3_decoder =
 AVCodec mp3adu_decoder =
 {
     "mp3adu",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MP3ADU,
     sizeof(MPADecodeContext),
     decode_init,
@@ -2549,7 +2549,7 @@ AVCodec mp3adu_decoder =
 AVCodec mp3on4_decoder =
 {
     "mp3on4",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MP3ON4,
     sizeof(MP3On4DecodeContext),
     decode_init_mp3on4,

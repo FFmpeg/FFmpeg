@@ -307,7 +307,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec eamad_decoder = {
     "eamad",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MAD,
     sizeof(MadContext),
     decode_init,

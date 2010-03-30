@@ -152,7 +152,7 @@ static av_cold int avs_decode_init(AVCodecContext * avctx)
 
 AVCodec avs_decoder = {
     "avs",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_AVS,
     sizeof(AvsContext),
     avs_decode_init,

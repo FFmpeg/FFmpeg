@@ -567,7 +567,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
 
 AVCodec vmdvideo_decoder = {
     "vmdvideo",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VMDVIDEO,
     sizeof(VmdVideoContext),
     vmdvideo_decode_init,
@@ -580,7 +580,7 @@ AVCodec vmdvideo_decoder = {
 
 AVCodec vmdaudio_decoder = {
     "vmdaudio",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_VMDAUDIO,
     sizeof(VmdAudioContext),
     vmdaudio_decode_init,

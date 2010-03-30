@@ -48,7 +48,7 @@
 
 const char **opt_names;
 static int opt_name_count;
-AVCodecContext *avcodec_opts[CODEC_TYPE_NB];
+AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 AVFormatContext *avformat_opts;
 struct SwsContext *sws_opts;
 
@@ -191,7 +191,7 @@ int opt_default(const char *opt, const char *arg){
     const AVOption *o= NULL;
     int opt_types[]={AV_OPT_FLAG_VIDEO_PARAM, AV_OPT_FLAG_AUDIO_PARAM, 0, AV_OPT_FLAG_SUBTITLE_PARAM, 0};
 
-    for(type=0; type<CODEC_TYPE_NB && ret>= 0; type++){
+    for(type=0; type<AVMEDIA_TYPE_NB && ret>= 0; type++){
         const AVOption *o2 = av_find_opt(avcodec_opts[0], opt, NULL, opt_types[type], opt_types[type]);
         if(o2)
             ret = av_set_string3(avcodec_opts[type], opt, arg, 1, &o);
@@ -202,11 +202,11 @@ int opt_default(const char *opt, const char *arg){
         ret = av_set_string3(sws_opts, opt, arg, 1, &o);
     if(!o){
         if(opt[0] == 'a')
-            ret = av_set_string3(avcodec_opts[CODEC_TYPE_AUDIO], opt+1, arg, 1, &o);
+            ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_AUDIO], opt+1, arg, 1, &o);
         else if(opt[0] == 'v')
-            ret = av_set_string3(avcodec_opts[CODEC_TYPE_VIDEO], opt+1, arg, 1, &o);
+            ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_VIDEO], opt+1, arg, 1, &o);
         else if(opt[0] == 's')
-            ret = av_set_string3(avcodec_opts[CODEC_TYPE_SUBTITLE], opt+1, arg, 1, &o);
+            ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_SUBTITLE], opt+1, arg, 1, &o);
     }
     if (o && ret < 0) {
         fprintf(stderr, "Invalid value '%s' for option '%s'\n", arg, opt);
@@ -535,13 +535,13 @@ void show_codecs(void)
         last_name= p2->name;
 
         switch(p2->type) {
-        case CODEC_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO:
             type_str = "V";
             break;
-        case CODEC_TYPE_AUDIO:
+        case AVMEDIA_TYPE_AUDIO:
             type_str = "A";
             break;
-        case CODEC_TYPE_SUBTITLE:
+        case AVMEDIA_TYPE_SUBTITLE:
             type_str = "S";
             break;
         default:

@@ -74,14 +74,14 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
         id = s->iformat->value;
         if (id == CODEC_ID_RAWVIDEO) {
-            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         } else {
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         }
         st->codec->codec_id = id;
 
         switch(st->codec->codec_type) {
-        case CODEC_TYPE_AUDIO:
+        case AVMEDIA_TYPE_AUDIO:
             st->codec->sample_rate = ap->sample_rate;
             if(ap->channels) st->codec->channels = ap->channels;
             else             st->codec->channels = 1;
@@ -90,7 +90,7 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->block_align = st->codec->bits_per_coded_sample*st->codec->channels/8;
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             break;
-        case CODEC_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO:
             if(ap->time_base.num)
                 av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
             else
@@ -253,7 +253,7 @@ static int audio_read_header(AVFormatContext *s,
     AVStream *st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = s->iformat->value;
     st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
@@ -271,7 +271,7 @@ static int video_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = s->iformat->value;
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
@@ -700,7 +700,7 @@ static int adts_aac_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = s->iformat->value;
     st->need_parsing = AVSTREAM_PARSE_FULL;
 

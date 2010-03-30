@@ -1921,7 +1921,7 @@ int ff_msmpeg4_decode_motion(MpegEncContext * s,
 
 AVCodec msmpeg4v1_decoder = {
     "msmpeg4v1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V1,
     sizeof(MpegEncContext),
     ff_msmpeg4_decode_init,
@@ -1935,7 +1935,7 @@ AVCodec msmpeg4v1_decoder = {
 
 AVCodec msmpeg4v2_decoder = {
     "msmpeg4v2",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V2,
     sizeof(MpegEncContext),
     ff_msmpeg4_decode_init,
@@ -1949,7 +1949,7 @@ AVCodec msmpeg4v2_decoder = {
 
 AVCodec msmpeg4v3_decoder = {
     "msmpeg4",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V3,
     sizeof(MpegEncContext),
     ff_msmpeg4_decode_init,
@@ -1963,7 +1963,7 @@ AVCodec msmpeg4v3_decoder = {
 
 AVCodec wmv1_decoder = {
     "wmv1",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_WMV1,
     sizeof(MpegEncContext),
     ff_msmpeg4_decode_init,
