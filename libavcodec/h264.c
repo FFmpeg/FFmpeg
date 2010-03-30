@@ -488,7 +488,7 @@ static inline void mc_part_weighted(H264Context *h, int n, int square, int chrom
                     x_offset, y_offset, qpix_put, chroma_put);
 
         if(h->use_weight == 2){
-            int weight0 = h->implicit_weight[refn0][refn1];
+            int weight0 = h->implicit_weight[refn0][refn1][s->mb_y&1];
             int weight1 = 64 - weight0;
             luma_weight_avg(  dest_y,  tmp_y,  h->  mb_linesize, 5, weight0, weight1, 0);
             chroma_weight_avg(dest_cb, tmp_cb, h->mb_uvlinesize, 5, weight0, weight1, 0);
@@ -531,7 +531,7 @@ static inline void mc_part(H264Context *h, int n, int square, int chroma_height,
                            h264_weight_func *weight_op, h264_biweight_func *weight_avg,
                            int list0, int list1){
     if((h->use_weight==2 && list0 && list1
-        && (h->implicit_weight[ h->ref_cache[0][scan8[n]] ][ h->ref_cache[1][scan8[n]] ] != 32))
+        && (h->implicit_weight[ h->ref_cache[0][scan8[n]] ][ h->ref_cache[1][scan8[n]] ][h->s.mb_y&1] != 32))
        || h->use_weight==1)
         mc_part_weighted(h, n, square, chroma_height, delta, dest_y, dest_cb, dest_cr,
                          x_offset, y_offset, qpix_put, chroma_put,
@@ -1408,21 +1408,36 @@ static int pred_weight_table(H264Context *h){
     return 0;
 }
 
-static void implicit_weight_table(H264Context *h){
+/**
+ * Initialize implicit_weight table.
+ * @param field, 0/1 initialize the weight for interlaced MBAFF
+ *                -1 initializes the rest
+ */
+static void implicit_weight_table(H264Context *h, int field){
     MpegEncContext * const s = &h->s;
-    int ref0, ref1, i;
-    int cur_poc = s->current_picture_ptr->poc;
+    int ref0, ref1, i, cur_poc, ref_start, ref_count0, ref_count1;
 
     for (i = 0; i < 2; i++) {
         h->luma_weight_flag[i]   = 0;
         h->chroma_weight_flag[i] = 0;
     }
 
-    if(   h->ref_count[0] == 1 && h->ref_count[1] == 1
+    if(field < 0){
+        cur_poc = s->current_picture_ptr->poc;
+    if(   h->ref_count[0] == 1 && h->ref_count[1] == 1 && !FRAME_MBAFF
        && h->ref_list[0][0].poc + h->ref_list[1][0].poc == 2*cur_poc){
         h->use_weight= 0;
         h->use_weight_chroma= 0;
         return;
+    }
+        ref_start= 0;
+        ref_count0= h->ref_count[0];
+        ref_count1= h->ref_count[1];
+    }else{
+        cur_poc = s->current_picture_ptr->field_poc[field];
+        ref_start= 16;
+        ref_count0= 16+2*h->ref_count[0];
+        ref_count1= 16+2*h->ref_count[1];
     }
 
     h->use_weight= 2;
@@ -1430,18 +1445,24 @@ static void implicit_weight_table(H264Context *h){
     h->luma_log2_weight_denom= 5;
     h->chroma_log2_weight_denom= 5;
 
-    for(ref0=0; ref0 < h->ref_count[0]; ref0++){
+    for(ref0=ref_start; ref0 < ref_count0; ref0++){
         int poc0 = h->ref_list[0][ref0].poc;
-        for(ref1=0; ref1 < h->ref_count[1]; ref1++){
+        for(ref1=ref_start; ref1 < ref_count1; ref1++){
             int poc1 = h->ref_list[1][ref1].poc;
             int td = av_clip(poc1 - poc0, -128, 127);
-            h->implicit_weight[ref0][ref1] = 32;
+            int w= 32;
             if(td){
                 int tb = av_clip(cur_poc - poc0, -128, 127);
                 int tx = (16384 + (FFABS(td) >> 1)) / td;
                 int dist_scale_factor = (tb*tx + 32) >> 8;
                 if(dist_scale_factor >= -64 && dist_scale_factor <= 128)
-                    h->implicit_weight[ref0][ref1] = 64 - dist_scale_factor;
+                    w = 64 - dist_scale_factor;
+            }
+            if(field<0){
+                h->implicit_weight[ref0][ref1][0]=
+                h->implicit_weight[ref0][ref1][1]= w;
+            }else{
+                h->implicit_weight[ref0][ref1][field]=w;
             }
         }
     }
@@ -2005,7 +2026,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
        ||  (h->pps.weighted_bipred_idc==1 && h->slice_type_nos== FF_B_TYPE ) )
         pred_weight_table(h);
     else if(h->pps.weighted_bipred_idc==2 && h->slice_type_nos== FF_B_TYPE){
-        implicit_weight_table(h);
+        implicit_weight_table(h, -1);
     }else {
         h->use_weight = 0;
         for (i = 0; i < 2; i++) {
@@ -2017,8 +2038,14 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(h->nal_ref_idc)
         ff_h264_decode_ref_pic_marking(h0, &s->gb);
 
-    if(FRAME_MBAFF)
+    if(FRAME_MBAFF){
         ff_h264_fill_mbaff_ref_list(h);
+
+        if(h->pps.weighted_bipred_idc==2 && h->slice_type_nos== FF_B_TYPE){
+            implicit_weight_table(h, 0);
+            implicit_weight_table(h, 1);
+        }
+    }
 
     if(h->slice_type_nos==FF_B_TYPE && !h->direct_spatial_mv_pred)
         ff_h264_direct_dist_scale_factor(h);

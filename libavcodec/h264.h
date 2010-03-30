@@ -378,7 +378,7 @@ typedef struct H264Context{
     //The following 2 can be changed to int8_t but that causes 10cpu cycles speedloss
     int luma_weight[48][2][2];
     int chroma_weight[48][2][2][2];
-    int implicit_weight[48][48];
+    int implicit_weight[48][48][2];
 
     int direct_spatial_mv_pred;
     int col_parity;
