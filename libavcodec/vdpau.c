@@ -54,7 +54,7 @@ void ff_vdpau_h264_set_reference_frames(MpegEncContext *s)
 
     for (list = 0; list < 2; ++list) {
         Picture **lp = list ? h->long_ref : h->short_ref;
-        int ls = list ? h->long_ref_count : h->short_ref_count;
+        int ls = list ? 16 : h->short_ref_count;
 
         for (i = 0; i < ls; ++i) {
             pic = lp[i];
