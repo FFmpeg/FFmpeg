@@ -12,6 +12,13 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-03-31 - r22736 - lavu 50.14.0 - AVMediaType
+  Move AVMediaType enum from libavcodec to libavutil.
+
+2010-03-31 - r22735 - lavc 52.64.0 - AVMediaType
+  Define AVMediaType enum, and use it instead of enum CodecType, which
+  is deprecated and will be dropped at the next major bump.
+
 2010-03-25 - r22684 - lavu 50.13.0 - av_strerror()
   Implement av_strerror().
 
