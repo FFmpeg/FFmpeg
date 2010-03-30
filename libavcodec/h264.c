@@ -2577,9 +2577,11 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             avctx->profile = hx->sps.profile_idc;
             avctx->level   = hx->sps.level_idc;
 
-            if (s->avctx->hwaccel && h->current_slice == 1) {
-                if (s->avctx->hwaccel->start_frame(s->avctx, NULL, 0) < 0)
+            if (h->current_slice == 1) {
+                if (s->avctx->hwaccel && s->avctx->hwaccel->start_frame(s->avctx, NULL, 0) < 0)
                     return -1;
+                if(CONFIG_H264_VDPAU_DECODER && s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+                    ff_vdpau_h264_picture_start(s);
             }
 
             s->current_picture_ptr->key_frame |=

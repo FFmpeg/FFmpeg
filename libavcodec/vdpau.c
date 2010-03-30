@@ -127,7 +127,7 @@ void ff_vdpau_add_data_chunk(MpegEncContext *s,
     render->bitstream_buffers_used++;
 }
 
-void ff_vdpau_h264_picture_complete(MpegEncContext *s)
+void ff_vdpau_h264_picture_start(MpegEncContext *s)
 {
     H264Context *h = s->avctx->priv_data;
     struct vdpau_render_state *render;
@@ -136,10 +136,6 @@ void ff_vdpau_h264_picture_complete(MpegEncContext *s)
     render = (struct vdpau_render_state *)s->current_picture_ptr->data[0];
     assert(render);
 
-    render->info.h264.slice_count = h->slice_num;
-    if (render->info.h264.slice_count < 1)
-        return;
-
     for (i = 0; i < 2; ++i) {
         int foc = s->current_picture_ptr->field_poc[i];
         if (foc == INT_MAX)
@@ -147,8 +143,22 @@ void ff_vdpau_h264_picture_complete(MpegEncContext *s)
         render->info.h264.field_order_cnt[i] = foc;
     }
 
+    render->info.h264.frame_num = h->frame_num;
+}
+
+void ff_vdpau_h264_picture_complete(MpegEncContext *s)
+{
+    H264Context *h = s->avctx->priv_data;
+    struct vdpau_render_state *render;
+
+    render = (struct vdpau_render_state *)s->current_picture_ptr->data[0];
+    assert(render);
+
+    render->info.h264.slice_count = h->slice_num;
+    if (render->info.h264.slice_count < 1)
+        return;
+
     render->info.h264.is_reference                           = (s->current_picture_ptr->reference & 3) ? VDP_TRUE : VDP_FALSE;
-    render->info.h264.frame_num                              = h->frame_num;
     render->info.h264.field_pic_flag                         = s->picture_structure != PICT_FRAME;
     render->info.h264.bottom_field_flag                      = s->picture_structure == PICT_BOTTOM_FIELD;
     render->info.h264.num_ref_frames                         = h->sps.ref_frame_count;
