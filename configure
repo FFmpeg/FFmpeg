@@ -2121,7 +2121,6 @@ esac
 
 enable $subarch
 enabled spic && enable pic
-check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable pic
 
 # OS specific
 case $target_os in
@@ -2291,6 +2290,8 @@ case $target_os in
         die "Unknown OS '$target_os'."
         ;;
 esac
+
+check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable pic
 
 set_default $PATHS_LIST
 
