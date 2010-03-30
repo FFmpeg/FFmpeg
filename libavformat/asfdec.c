@@ -638,7 +638,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
  * Load a single ASF packet into the demuxer.
  * @param s demux context
  * @param pb context to read data from
- * @returns 0 on success, <0 on error
+ * @return 0 on success, <0 on error
  */
 static int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb)
 {
@@ -801,7 +801,7 @@ static int asf_read_frame_header(AVFormatContext *s, ByteIOContext *pb){
  * @param s demux context
  * @param pb context to read data from
  * @param pkt pointer to store packet data into
- * @returns 0 if data was stored in pkt, <0 on error or 1 if more ASF
+ * @return 0 if data was stored in pkt, <0 on error or 1 if more ASF
  *          packets need to be loaded (through asf_get_packet())
  */
 static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)

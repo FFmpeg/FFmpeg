@@ -376,7 +376,7 @@ void put_flush_packet(ByteIOContext *s);
 
 /**
  * Reads size bytes from ByteIOContext into buf.
- * @returns number of bytes read or AVERROR
+ * @return number of bytes read or AVERROR
  */
 int get_buffer(ByteIOContext *s, unsigned char *buf, int size);
 
@@ -384,7 +384,7 @@ int get_buffer(ByteIOContext *s, unsigned char *buf, int size);
  * Reads size bytes from ByteIOContext into buf.
  * This reads at most 1 packet. If that is not enough fewer bytes will be
  * returned.
- * @returns number of bytes read or AVERROR
+ * @return number of bytes read or AVERROR
  */
 int get_partial_buffer(ByteIOContext *s, unsigned char *buf, int size);
 

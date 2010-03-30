@@ -1181,7 +1181,7 @@ static void decode_cabac_residual_nondc( H264Context *h, DCTELEM *block, int cat
 
 /**
  * decodes a macroblock
- * @returns 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
+ * @return 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
  */
 int ff_h264_decode_mb_cabac(H264Context *h) {
     MpegEncContext * const s = &h->s;

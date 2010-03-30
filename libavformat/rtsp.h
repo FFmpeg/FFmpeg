@@ -404,7 +404,7 @@ void ff_rtsp_send_cmd(AVFormatContext *s, const char *method,
  *                   has been fully parsed. If no more data is available
  *                   without parsing a reply, it will return an error.
  *
- * @returns 1 if a data packets is ready to be received, -1 on error,
+ * @return 1 if a data packets is ready to be received, -1 on error,
  *          and 0 on success.
  */
 int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
@@ -422,7 +422,7 @@ void ff_rtsp_skip_packet(AVFormatContext *s);
  *
  * @param s RTSP (de)muxer context
  *
- * @returns 0 on success, < 0 on error. Cleans up all allocations done
+ * @return 0 on success, < 0 on error. Cleans up all allocations done
  *          within the function on error.
  */
 int ff_rtsp_connect(AVFormatContext *s);

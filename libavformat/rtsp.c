@@ -1080,7 +1080,7 @@ retry:
 }
 
 /**
- * @returns 0 on success, <0 on error, 1 if protocol is unavailable.
+ * @return 0 on success, <0 on error, 1 if protocol is unavailable.
  */
 static int make_setup_request(AVFormatContext *s, const char *host, int port,
                               int lower_transport, const char *real_challenge)

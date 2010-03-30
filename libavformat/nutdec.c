@@ -136,7 +136,7 @@ static uint64_t find_any_startcode(ByteIOContext *bc, int64_t pos){
  * Find the given startcode.
  * @param code the startcode
  * @param pos the start position of the search, or -1 if the current position
- * @returns the position of the startcode or -1 if not found
+ * @return the position of the startcode or -1 if not found
  */
 static int64_t find_startcode(ByteIOContext *bc, uint64_t code, int64_t pos){
     for(;;){

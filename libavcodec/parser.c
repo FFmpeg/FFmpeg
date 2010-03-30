@@ -244,7 +244,7 @@ void av_parser_close(AVCodecParserContext *s)
 
 /**
  * combines the (truncated) bitstream to a complete frame
- * @returns -1 if no complete frame could be created, AVERROR(ENOMEM) if there was a memory allocation error
+ * @return -1 if no complete frame could be created, AVERROR(ENOMEM) if there was a memory allocation error
  */
 int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_size)
 {

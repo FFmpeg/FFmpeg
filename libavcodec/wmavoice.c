@@ -754,7 +754,7 @@ static void aw_pulse_set1(WMAVoiceContext *s, GetBitContext *gb,
  * @param block_num current block index
  * @param block_size amount of entries we want to read from a table
  *                   that has 1000 entries
- * @returns a (non-)random number in the [0, 1000 - block_size] range.
+ * @return a (non-)random number in the [0, 1000 - block_size] range.
  */
 static int pRNG(int frame_cntr, int block_num, int block_size)
 {
@@ -1187,7 +1187,7 @@ static void stabilize_lsps(double *lsps, int num)
  *                does not modify the state of the bitreader; it
  *                only uses it to copy the current stream position
  * @param s WMA Voice decoding context private data
- * @returns -1 if unsupported, 1 on not enough bits or 0 if OK.
+ * @return -1 if unsupported, 1 on not enough bits or 0 if OK.
  */
 static int check_bits_for_superframe(GetBitContext *orig_gb,
                                      WMAVoiceContext *s)
@@ -1391,7 +1391,7 @@ static int synth_superframe(AVCodecContext *ctx,
  * decoder).
  *
  * @param s WMA Voice decoding context private data
- * @returns 1 if not enough bits were available, or 0 on success.
+ * @return 1 if not enough bits were available, or 0 on success.
  */
 static int parse_packet_header(WMAVoiceContext *s)
 {

@@ -435,7 +435,7 @@ int mpeg4_decode_video_packet_header(MpegEncContext *s)
 /**
  * gets the average motion vector for a GMC MB.
  * @param n either 0 for the x component or 1 for y
- * @returns the average MV for a GMC MB
+ * @return the average MV for a GMC MB
  */
 static inline int get_amv(MpegEncContext *s, int n){
     int x, y, mb_v, sum, dx, dy, shift;
