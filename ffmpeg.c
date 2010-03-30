@@ -472,6 +472,36 @@ static int av_exit(int ret)
     return ret;
 }
 
+static void choose_sample_fmt(AVStream *st, AVCodec *codec)
+{
+    if(codec && codec->sample_fmts){
+        const enum SampleFormat *p= codec->sample_fmts;
+        for(; *p!=-1; p++){
+            if(*p == st->codec->sample_fmt)
+                break;
+        }
+        if(*p == -1)
+            st->codec->sample_fmt = codec->sample_fmts[0];
+    }
+}
+
+static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
+{
+    if(codec && codec->pix_fmts){
+        const enum PixelFormat *p= codec->pix_fmts;
+        for(; *p!=-1; p++){
+            if(*p == st->codec->pix_fmt)
+                break;
+        }
+        if(*p == -1
+           && !(   st->codec->codec_id==CODEC_ID_MJPEG
+                && st->codec->strict_std_compliance <= FF_COMPLIANCE_INOFFICIAL
+                && (   st->codec->pix_fmt == PIX_FMT_YUV420P
+                    || st->codec->pix_fmt == PIX_FMT_YUV422P)))
+            st->codec->pix_fmt = codec->pix_fmts[0];
+    }
+}
+
 static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 {
     int i, err;
@@ -3189,19 +3219,7 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->pix_fmt = frame_pix_fmt;
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
 
-        if(codec && codec->pix_fmts){
-            const enum PixelFormat *p= codec->pix_fmts;
-            for(; *p!=-1; p++){
-                if(*p == video_enc->pix_fmt)
-                    break;
-            }
-            if(*p == -1
-               && !(   video_enc->codec_id==CODEC_ID_MJPEG
-                    && video_enc->strict_std_compliance <= FF_COMPLIANCE_INOFFICIAL
-                    && (   video_enc->pix_fmt == PIX_FMT_YUV420P
-                        || video_enc->pix_fmt == PIX_FMT_YUV422P)))
-                video_enc->pix_fmt = codec->pix_fmts[0];
-        }
+        choose_pixel_fmt(st, codec);
 
         if (intra_only)
             video_enc->gop_size = 0;
@@ -3326,16 +3344,7 @@ static void new_audio_stream(AVFormatContext *oc)
         audio_enc->channel_layout = channel_layout;
         if (avcodec_channel_layout_num_channels(channel_layout) != audio_channels)
             audio_enc->channel_layout = 0;
-
-        if(codec && codec->sample_fmts){
-            const enum SampleFormat *p= codec->sample_fmts;
-            for(; *p!=-1; p++){
-                if(*p == audio_enc->sample_fmt)
-                    break;
-            }
-            if(*p == -1)
-                audio_enc->sample_fmt = codec->sample_fmts[0];
-        }
+        choose_sample_fmt(st, codec);
     }
     nb_ocodecs++;
     audio_enc->sample_rate = audio_sample_rate;
