@@ -126,7 +126,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = voc_get_packet(s, pkt, c93->audio, datasize - 26);
             if (ret > 0) {
                 pkt->stream_index = 1;
-                pkt->flags |= PKT_FLAG_KEY;
+                pkt->flags |= AV_PKT_FLAG_KEY;
                 return ret;
             }
         }
@@ -182,7 +182,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* only the first frame is guaranteed to not reference previous frames */
     if (c93->current_block == 0 && c93->current_frame == 0) {
-        pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= AV_PKT_FLAG_KEY;
         pkt->data[0] |= C93_FIRST_FRAME;
     }
     return 0;

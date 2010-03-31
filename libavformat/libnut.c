@@ -128,7 +128,7 @@ static int nut_write_packet(AVFormatContext * avf, AVPacket * pkt) {
     p.len = pkt->size;
     p.stream = pkt->stream_index;
     p.pts = pkt->pts;
-    p.flags = pkt->flags & PKT_FLAG_KEY ? NUT_FLAG_KEY : 0;
+    p.flags = pkt->flags & AV_PKT_FLAG_KEY ? NUT_FLAG_KEY : 0;
     p.next_pts = 0;
 
     nut_write_frame_reorder(priv->nut, &p, pkt->data);
@@ -269,7 +269,7 @@ static int nut_read_packet(AVFormatContext * avf, AVPacket * pkt) {
         return -1;
     }
 
-    if (pd.flags & NUT_FLAG_KEY) pkt->flags |= PKT_FLAG_KEY;
+    if (pd.flags & NUT_FLAG_KEY) pkt->flags |= AV_PKT_FLAG_KEY;
     pkt->pts = pd.pts;
     pkt->stream_index = pd.stream;
     pkt->pos = url_ftell(avf->pb);

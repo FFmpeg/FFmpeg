@@ -127,7 +127,7 @@ static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
         yop->video_packet.data =  NULL;
         yop->video_packet.size =  0;
         pkt->data[0]           =  yop->odd_frame;
-        pkt->flags             |= PKT_FLAG_KEY;
+        pkt->flags             |= AV_PKT_FLAG_KEY;
         yop->odd_frame         ^= 1;
         return pkt->size;
     }

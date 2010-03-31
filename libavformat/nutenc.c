@@ -603,7 +603,7 @@ static int write_header(AVFormatContext *s){
 static int get_needed_flags(NUTContext *nut, StreamContext *nus, FrameCode *fc, AVPacket *pkt){
     int flags= 0;
 
-    if(pkt->flags & PKT_FLAG_KEY                ) flags |= FLAG_KEY;
+    if(pkt->flags & AV_PKT_FLAG_KEY             ) flags |= FLAG_KEY;
     if(pkt->stream_index != fc->stream_id       ) flags |= FLAG_STREAM_ID;
     if(pkt->size / fc->size_mul                 ) flags |= FLAG_SIZE_MSB;
     if(pkt->pts - nus->last_pts != fc->pts_delta) flags |= FLAG_CODED_PTS;
@@ -644,7 +644,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     FrameCode *fc;
     int64_t coded_pts;
     int best_length, frame_code, flags, needed_flags, i, header_idx, best_header_idx;
-    int key_frame = !!(pkt->flags & PKT_FLAG_KEY);
+    int key_frame = !!(pkt->flags & AV_PKT_FLAG_KEY);
     int store_sp=0;
     int ret;
 

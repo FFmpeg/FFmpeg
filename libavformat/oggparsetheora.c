@@ -136,7 +136,7 @@ theora_gptopts(AVFormatContext *ctx, int idx, uint64_t gp, int64_t *dts)
         iframe++;
 
     if(!pframe)
-        os->pflags |= PKT_FLAG_KEY;
+        os->pflags |= AV_PKT_FLAG_KEY;
 
     if (dts)
         *dts = iframe + pframe;

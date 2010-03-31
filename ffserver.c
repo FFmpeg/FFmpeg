@@ -2199,7 +2199,7 @@ static int http_prepare_data(HTTPContext *c)
                         c->switch_pending = 0;
                         for(i=0;i<c->stream->nb_streams;i++) {
                             if (c->switch_feed_streams[i] == pkt.stream_index)
-                                if (pkt.flags & PKT_FLAG_KEY)
+                                if (pkt.flags & AV_PKT_FLAG_KEY)
                                     do_switch_stream(c, i);
                             if (c->switch_feed_streams[i] >= 0)
                                 c->switch_pending = 1;
@@ -2209,7 +2209,7 @@ static int http_prepare_data(HTTPContext *c)
                         if (c->feed_streams[i] == pkt.stream_index) {
                             AVStream *st = c->fmt_in->streams[source_index];
                             pkt.stream_index = i;
-                            if (pkt.flags & PKT_FLAG_KEY &&
+                            if (pkt.flags & AV_PKT_FLAG_KEY &&
                                 (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
                                  c->stream->nb_streams == 1))
                                 c->got_key_frame = 1;

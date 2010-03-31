@@ -210,7 +210,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
     /* packet size & key_frame */
     header[0] = pkt->stream_index;
     header[1] = 0;
-    if (pkt->flags & PKT_FLAG_KEY)
+    if (pkt->flags & AV_PKT_FLAG_KEY)
         header[1] |= FLAG_KEY_FRAME;
     AV_WB24(header+2, pkt->size);
     AV_WB24(header+5, pkt->duration);

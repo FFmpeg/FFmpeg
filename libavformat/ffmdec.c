@@ -432,7 +432,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         pkt->pos = url_ftell(s->pb);
         if (ffm->header[1] & FLAG_KEY_FRAME)
-            pkt->flags |= PKT_FLAG_KEY;
+            pkt->flags |= AV_PKT_FLAG_KEY;
 
         ffm->read_state = READ_HEADER;
         if (ffm_read_data(s, pkt->data, size, 0) != size) {

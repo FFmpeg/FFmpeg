@@ -58,7 +58,7 @@ static int vc1test_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!pkt->size)
         return 0;
-    put_le32(pb, pkt->size | ((pkt->flags & PKT_FLAG_KEY) ? 0x80000000 : 0));
+    put_le32(pb, pkt->size | ((pkt->flags & AV_PKT_FLAG_KEY) ? 0x80000000 : 0));
     put_le32(pb, pkt->pts);
     put_buffer(pb, pkt->data, pkt->size);
     put_flush_packet(pb);

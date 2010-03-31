@@ -2344,7 +2344,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     if (st->discard == AVDISCARD_ALL)
         goto retry;
-    pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? PKT_FLAG_KEY : 0;
+    pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? AV_PKT_FLAG_KEY : 0;
     pkt->pos = sample->pos;
     dprintf(s, "stream %d, pts %"PRId64", dts %"PRId64", pos 0x%"PRIx64", duration %d\n",
             pkt->stream_index, pkt->pts, pkt->dts, pkt->pos, pkt->duration);

@@ -563,7 +563,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx
         int a= av_bitstream_filter_filter(bsfc, avctx, NULL,
                                           &new_pkt.data, &new_pkt.size,
                                           pkt->data, pkt->size,
-                                          pkt->flags & PKT_FLAG_KEY);
+                                          pkt->flags & AV_PKT_FLAG_KEY);
         if(a>0){
             av_free_packet(pkt);
             new_pkt.destruct= av_destruct_packet;
@@ -768,7 +768,7 @@ need_realloc:
             pkt.size= ret;
             if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                 pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
-            pkt.flags |= PKT_FLAG_KEY;
+            pkt.flags |= AV_PKT_FLAG_KEY;
             write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
 
             ost->sync_opts += enc->frame_size;
@@ -803,7 +803,7 @@ need_realloc:
         pkt.size= ret;
         if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
             pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
-        pkt.flags |= PKT_FLAG_KEY;
+        pkt.flags |= AV_PKT_FLAG_KEY;
         write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
     }
 }
@@ -1077,7 +1077,7 @@ static void do_video_out(AVFormatContext *s,
             pkt.data= (uint8_t *)final_picture;
             pkt.size=  sizeof(AVPicture);
             pkt.pts= av_rescale_q(ost->sync_opts, enc->time_base, ost->st->time_base);
-            pkt.flags |= PKT_FLAG_KEY;
+            pkt.flags |= AV_PKT_FLAG_KEY;
 
             write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
             enc->coded_frame = old_frame;
@@ -1125,7 +1125,7 @@ static void do_video_out(AVFormatContext *s,
    pkt.dts != AV_NOPTS_VALUE ? av_rescale(pkt.dts, enc->time_base.den, AV_TIME_BASE*(int64_t)enc->time_base.num) : -1);*/
 
                 if(enc->coded_frame->key_frame)
-                    pkt.flags |= PKT_FLAG_KEY;
+                    pkt.flags |= AV_PKT_FLAG_KEY;
                 write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
                 *frame_size = ret;
                 video_size += ret;
@@ -1507,7 +1507,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
                         av_init_packet(&opkt);
 
-                        if ((!ost->frame_number && !(pkt->flags & PKT_FLAG_KEY)) && !copy_initial_nonkeyframes)
+                        if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) && !copy_initial_nonkeyframes)
                             continue;
 
                         /* no reencoding needed : output the packet directly */
@@ -1515,7 +1515,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
                         avcodec_get_frame_defaults(&avframe);
                         ost->st->codec->coded_frame= &avframe;
-                        avframe.key_frame = pkt->flags & PKT_FLAG_KEY;
+                        avframe.key_frame = pkt->flags & AV_PKT_FLAG_KEY;
 
                         if(ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
                             audio_size += data_size;
@@ -1544,7 +1544,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                            && ost->st->codec->codec_id != CODEC_ID_MPEG1VIDEO
                            && ost->st->codec->codec_id != CODEC_ID_MPEG2VIDEO
                            ) {
-                            if(av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, data_buf, data_size, pkt->flags & PKT_FLAG_KEY))
+                            if(av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, data_buf, data_size, pkt->flags & AV_PKT_FLAG_KEY))
                                 opkt.destruct= av_destruct_packet;
                         } else {
                             opkt.data = data_buf;
@@ -1627,7 +1627,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                 av_exit(1);
                             }
                             audio_size += ret;
-                            pkt.flags |= PKT_FLAG_KEY;
+                            pkt.flags |= AV_PKT_FLAG_KEY;
                             break;
                         case AVMEDIA_TYPE_VIDEO:
                             ret = avcodec_encode_video(enc, bit_buffer, bit_buffer_size, NULL);
@@ -1637,7 +1637,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             }
                             video_size += ret;
                             if(enc->coded_frame && enc->coded_frame->key_frame)
-                                pkt.flags |= PKT_FLAG_KEY;
+                                pkt.flags |= AV_PKT_FLAG_KEY;
                             if (ost->logfile && enc->stats_out) {
                                 fprintf(ost->logfile, "%s", enc->stats_out);
                             }

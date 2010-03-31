@@ -540,7 +540,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     avi_stream2fourcc(&tag[0], stream_index, enc->codec_type);
-    if(pkt->flags&PKT_FLAG_KEY)
+    if(pkt->flags&AV_PKT_FLAG_KEY)
         flags = 0x10;
     if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
        avist->audio_strm_length += size;

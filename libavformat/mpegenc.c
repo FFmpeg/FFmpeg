@@ -1156,7 +1156,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     int64_t pts, dts;
     PacketDesc *pkt_desc;
     const int preload= av_rescale(ctx->preload, 90000, AV_TIME_BASE);
-    const int is_iframe = st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & PKT_FLAG_KEY);
+    const int is_iframe = st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & AV_PKT_FLAG_KEY);
 
     pts= pkt->pts;
     dts= pkt->dts;

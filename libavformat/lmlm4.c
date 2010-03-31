@@ -104,7 +104,7 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
 
     switch (frame_type) {
         case LMLM4_I_FRAME:
-            pkt->flags = PKT_FLAG_KEY;
+            pkt->flags = AV_PKT_FLAG_KEY;
         case LMLM4_P_FRAME:
         case LMLM4_B_FRAME:
             pkt->stream_index = 0;

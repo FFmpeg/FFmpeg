@@ -620,7 +620,7 @@ null_chunk_retry:
         av_get_packet(pb, pkt, vsize);
         pkt->stream_index = st[NSV_ST_VIDEO]->index;//NSV_ST_VIDEO;
         pkt->dts = nst->frame_offset;
-        pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
+        pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? AV_PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
 /*
         for (i = 0; i < MIN(8, vsize); i++)
             PRINT(("NSV video: [%d] = %02x\n", i, pkt->data[i]));
@@ -660,7 +660,7 @@ null_chunk_retry:
         }
         av_get_packet(pb, pkt, asize);
         pkt->stream_index = st[NSV_ST_AUDIO]->index;//NSV_ST_AUDIO;
-        pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
+        pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? AV_PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
         if( nsv->state == NSV_HAS_READ_NSVS && st[NSV_ST_VIDEO] ) {
             /* on a nsvs frame we have new information on a/v sync */
             pkt->dts = (((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset-1);

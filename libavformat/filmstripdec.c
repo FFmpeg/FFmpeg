@@ -87,7 +87,7 @@ static int read_packet(AVFormatContext *s,
     url_fskip(s->pb, st->codec->width * film->leading * 4);
     if (pkt->size < 0)
         return pkt->size;
-    pkt->flags |= PKT_FLAG_KEY;
+    pkt->flags |= AV_PKT_FLAG_KEY;
     return 0;
 }
 

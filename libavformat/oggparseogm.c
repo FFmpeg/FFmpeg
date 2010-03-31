@@ -143,7 +143,7 @@ ogm_packet(AVFormatContext *s, int idx)
     int lb;
 
     if(*p & 8)
-        os->pflags |= PKT_FLAG_KEY;
+        os->pflags |= AV_PKT_FLAG_KEY;
 
     lb = ((*p & 2) << 1) | ((*p >> 6) & 3);
     os->pstart += lb + 1;

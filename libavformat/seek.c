@@ -162,7 +162,7 @@ static void search_hi_lo_keyframes(AVFormatContext *s,
 
         // Evaluate key frames with known TS (or any frames, if AVSEEK_FLAG_ANY set).
         if (pts != AV_NOPTS_VALUE &&
-            ((flg & PKT_FLAG_KEY) || (flags & AVSEEK_FLAG_ANY))) {
+            ((flg & AV_PKT_FLAG_KEY) || (flags & AVSEEK_FLAG_ANY))) {
             if (flags & AVSEEK_FLAG_BYTE) {
                 // for byte seeking, use position as timestamp
                 ts        = pos;

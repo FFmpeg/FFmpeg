@@ -103,7 +103,7 @@ static int vc1t_read_packet(AVFormatContext *s,
         return AVERROR(EIO);
     if(s->streams[0]->time_base.den == 1000)
         pkt->pts = pts;
-    pkt->flags |= keyframe ? PKT_FLAG_KEY : 0;
+    pkt->flags |= keyframe ? AV_PKT_FLAG_KEY : 0;
     pkt->pos -= 8;
 
     return pkt->size;

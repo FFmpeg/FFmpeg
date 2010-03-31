@@ -292,7 +292,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     av_new_packet(pkt, size[0] + size[1] + size[2]);
     pkt->stream_index = 0;
-    pkt->flags |= PKT_FLAG_KEY;
+    pkt->flags |= AV_PKT_FLAG_KEY;
 
     pkt->size= 0;
     for(i=0; i<3; i++){

@@ -754,7 +754,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code){
 
     pkt->stream_index = stream_id;
     if (stc->last_flags & FLAG_KEY)
-        pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= AV_PKT_FLAG_KEY;
     pkt->pts = pts;
 
     return 0;

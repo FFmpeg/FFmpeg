@@ -263,7 +263,7 @@ static int iff_read_packet(AVFormatContext *s,
     }
 
     if(iff->sent_bytes == 0)
-        pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
     if(s->streams[0]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         iff->sent_bytes += PACKET_SIZE;

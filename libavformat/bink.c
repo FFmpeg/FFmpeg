@@ -233,7 +233,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret;
     pkt->stream_index = 0;
     pkt->pts = bink->video_pts++;
-    pkt->flags |= PKT_FLAG_KEY;
+    pkt->flags |= AV_PKT_FLAG_KEY;
 
     /* -1 instructs the next call to read_packet() to read the next frame */
     bink->current_track = -1;

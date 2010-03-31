@@ -129,7 +129,7 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     av_init_packet(&dc1394->packet);
     dc1394->packet.size = avpicture_get_size(fmt->pix_fmt, fmt->width, fmt->height);
     dc1394->packet.stream_index = vst->index;
-    dc1394->packet.flags |= PKT_FLAG_KEY;
+    dc1394->packet.flags |= AV_PKT_FLAG_KEY;
 
     dc1394->current_frame = 0;
     dc1394->fps = fps->frame_rate;

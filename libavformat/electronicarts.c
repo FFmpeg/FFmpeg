@@ -520,7 +520,7 @@ static int ea_read_packet(AVFormatContext *s,
         case pQGT_TAG:
         case TGQs_TAG:
         case MADk_TAG:
-            key = PKT_FLAG_KEY;
+            key = AV_PKT_FLAG_KEY;
         case MVIf_TAG:
         case fVGT_TAG:
         case MADm_TAG:
@@ -537,7 +537,7 @@ static int ea_read_packet(AVFormatContext *s,
         case MV0K_TAG:
         case MPCh_TAG:
         case pIQT_TAG:
-            key = PKT_FLAG_KEY;
+            key = AV_PKT_FLAG_KEY;
         case MV0F_TAG:
 get_video_packet:
             ret = av_get_packet(pb, pkt, chunk_size);

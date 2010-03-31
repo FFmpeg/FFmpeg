@@ -344,7 +344,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
     // None of the Escape formats have keyframes, and the ADPCM
     // format used doesn't have keyframes.
     if (rpl->chunk_number == 0 && rpl->frame_in_part == 0)
-        pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
     return ret;
 }

@@ -437,7 +437,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = st->index;
 
     if (is_audio || ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY))
-        pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
     return ret;
 }

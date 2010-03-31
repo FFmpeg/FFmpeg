@@ -544,7 +544,7 @@ retry:
     // pflags might not be set until after this
     pts = ogg_calc_pts(s, idx, &dts);
 
-    if (os->keyframe_seek && !(os->pflags & PKT_FLAG_KEY))
+    if (os->keyframe_seek && !(os->pflags & AV_PKT_FLAG_KEY))
         goto retry;
     os->keyframe_seek = 0;
 
@@ -594,7 +594,7 @@ ogg_read_timestamp (AVFormatContext * s, int stream_index, int64_t * pos_arg,
     while (url_ftell(bc) < pos_limit && !ogg_packet(s, &i, NULL, NULL, pos_arg)) {
         if (i == stream_index) {
             pts = ogg_calc_pts(s, i, NULL);
-            if (os->keyframe_seek && !(os->pflags & PKT_FLAG_KEY))
+            if (os->keyframe_seek && !(os->pflags & AV_PKT_FLAG_KEY))
                 pts = AV_NOPTS_VALUE;
         }
         if (pts != AV_NOPTS_VALUE)

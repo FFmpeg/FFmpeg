@@ -986,14 +986,14 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 
     /* update flags */
     if(is_intra_only(st->codec))
-        pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= AV_PKT_FLAG_KEY;
     else if (pc) {
         pkt->flags = 0;
         /* keyframe computation */
         if (pc->key_frame == 1)
-            pkt->flags |= PKT_FLAG_KEY;
+            pkt->flags |= AV_PKT_FLAG_KEY;
         else if (pc->key_frame == -1 && pc->pict_type == FF_I_TYPE)
-            pkt->flags |= PKT_FLAG_KEY;
+            pkt->flags |= AV_PKT_FLAG_KEY;
     }
     if (pc)
         pkt->convergence_duration = pc->convergence_duration;
@@ -1018,7 +1018,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 compute_pkt_fields(s, st, NULL, pkt);
                 s->cur_st = NULL;
                 if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&
-                    (pkt->flags & PKT_FLAG_KEY) && pkt->dts != AV_NOPTS_VALUE) {
+                    (pkt->flags & AV_PKT_FLAG_KEY) && pkt->dts != AV_NOPTS_VALUE) {
                     ff_reduce_index(s, st->index);
                     av_add_index_entry(st, pkt->pos, pkt->dts, 0, 0, AVINDEX_KEYFRAME);
                 }
@@ -1045,7 +1045,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     pkt->destruct = NULL;
                     compute_pkt_fields(s, st, st->parser, pkt);
 
-                    if((s->iformat->flags & AVFMT_GENERIC_INDEX) && pkt->flags & PKT_FLAG_KEY){
+                    if((s->iformat->flags & AVFMT_GENERIC_INDEX) && pkt->flags & AV_PKT_FLAG_KEY){
                         ff_reduce_index(s, st->index);
                         av_add_index_entry(st, st->parser->frame_offset, pkt->dts,
                                            0, 0, AVINDEX_KEYFRAME);
@@ -1621,7 +1621,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
                 break;
             av_free_packet(&pkt);
             if(stream_index == pkt.stream_index){
-                if((pkt.flags & PKT_FLAG_KEY) && pkt.dts > timestamp)
+                if((pkt.flags & AV_PKT_FLAG_KEY) && pkt.dts > timestamp)
                     break;
             }
         }
@@ -3381,7 +3381,7 @@ static void pkt_dump_internal(void *avcl, FILE *f, int level, AVPacket *pkt, int
 #undef fprintf
 #define PRINT(...) do { if (!f) av_log(avcl, level, __VA_ARGS__); else fprintf(f, __VA_ARGS__); } while(0)
     PRINT("stream #%d:\n", pkt->stream_index);
-    PRINT("  keyframe=%d\n", ((pkt->flags & PKT_FLAG_KEY) != 0));
+    PRINT("  keyframe=%d\n", ((pkt->flags & AV_PKT_FLAG_KEY) != 0));
     PRINT("  duration=%0.3f\n", (double)pkt->duration / AV_TIME_BASE);
     /* DTS is _always_ valid after av_read_frame() */
     PRINT("  dts=");

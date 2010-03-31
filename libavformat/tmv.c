@@ -156,7 +156,7 @@ static int tmv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index  = tmv->stream_index;
     tmv->stream_index ^= 1;
-    pkt->flags        |= PKT_FLAG_KEY;
+    pkt->flags        |= AV_PKT_FLAG_KEY;
 
     return ret;
 }

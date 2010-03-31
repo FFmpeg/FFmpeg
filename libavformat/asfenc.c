@@ -668,7 +668,7 @@ static void put_payload_header(
     int val;
 
     val = stream->num;
-    if (flags & PKT_FLAG_KEY)
+    if (flags & AV_PKT_FLAG_KEY)
         val |= ASF_PL_FLAG_KEY_FRAME;
     put_byte(pb, val);
 
@@ -771,7 +771,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     stream = &asf->streams[pkt->stream_index];
 
     if(codec->codec_type == AVMEDIA_TYPE_AUDIO)
-        flags &= ~PKT_FLAG_KEY;
+        flags &= ~AV_PKT_FLAG_KEY;
 
     pts = (pkt->pts != AV_NOPTS_VALUE) ? pkt->pts : pkt->dts;
     assert(pts != AV_NOPTS_VALUE);
@@ -782,7 +782,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_frame(s, stream, s->streams[pkt->stream_index], pkt->dts, pkt->data, pkt->size, flags);
 
     /* check index */
-    if ((!asf->is_streamed) && (flags & PKT_FLAG_KEY)) {
+    if ((!asf->is_streamed) && (flags & AV_PKT_FLAG_KEY)) {
         start_sec = (int)(duration / INT64_C(10000000));
         if (start_sec != (int)(asf->last_indexed_pts / INT64_C(10000000))) {
             for(i=asf->nb_index_count;i<start_sec;i++) {

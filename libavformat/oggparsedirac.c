@@ -59,7 +59,7 @@ static uint64_t dirac_gptopts(AVFormatContext *s, int idx, uint64_t granule,
     int64_t  pts   = dts + ((gp >> 9) & 0x1fff);
 
     if (!dist)
-        os->pflags |= PKT_FLAG_KEY;
+        os->pflags |= AV_PKT_FLAG_KEY;
 
     if (dts_out)
         *dts_out = dts;
@@ -93,7 +93,7 @@ static uint64_t old_dirac_gptopts(AVFormatContext *s, int idx, uint64_t gp,
     uint64_t pframe = gp & 0x3fffffff;
 
     if (!pframe)
-        os->pflags |= PKT_FLAG_KEY;
+        os->pflags |= AV_PKT_FLAG_KEY;
 
     return iframe + pframe;
 }

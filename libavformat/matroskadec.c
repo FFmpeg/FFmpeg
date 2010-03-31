@@ -1547,7 +1547,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     flags = *data++;
     size -= 3;
     if (is_keyframe == -1)
-        is_keyframe = flags & 0x80 ? PKT_FLAG_KEY : 0;
+        is_keyframe = flags & 0x80 ? AV_PKT_FLAG_KEY : 0;
 
     if (cluster_time != (uint64_t)-1
         && (block_time >= 0 || cluster_time >= -block_time)) {

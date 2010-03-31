@@ -804,7 +804,7 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
 
     pkt->pts= timestamp;
     if (flags & 2)
-        pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
     return st->codec->codec_type == AVMEDIA_TYPE_AUDIO ? rm->audio_pkt_cnt : 0;
 }
@@ -828,7 +828,7 @@ ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
     rm->audio_pkt_cnt--;
     if ((pkt->pts = ast->audiotimestamp) != AV_NOPTS_VALUE) {
         ast->audiotimestamp = AV_NOPTS_VALUE;
-        pkt->flags = PKT_FLAG_KEY;
+        pkt->flags = AV_PKT_FLAG_KEY;
     } else
         pkt->flags = 0;
     pkt->stream_index = st->index;

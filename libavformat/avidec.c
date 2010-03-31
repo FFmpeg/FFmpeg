@@ -777,7 +777,7 @@ resync:
             size = dv_produce_packet(avi->dv_demux, pkt,
                                     pkt->data, pkt->size);
             pkt->destruct = dstr;
-            pkt->flags |= PKT_FLAG_KEY;
+            pkt->flags |= AV_PKT_FLAG_KEY;
         } else {
             /* XXX: How to handle B-frames in AVI? */
             pkt->dts = ast->frame_offset;
@@ -797,10 +797,10 @@ resync:
 
                 if(index >= 0 && e->timestamp == ast->frame_offset){
                     if (e->flags & AVINDEX_KEYFRAME)
-                        pkt->flags |= PKT_FLAG_KEY;
+                        pkt->flags |= AV_PKT_FLAG_KEY;
                 }
             } else {
-                pkt->flags |= PKT_FLAG_KEY;
+                pkt->flags |= AV_PKT_FLAG_KEY;
             }
             if(ast->sample_size)
                 ast->frame_offset += pkt->size;
@@ -885,7 +885,7 @@ resync:
 
 
             if(   (st->discard >= AVDISCARD_DEFAULT && size==0)
-               /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & PKT_FLAG_KEY))*/ //FIXME needs a little reordering
+               /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & AV_PKT_FLAG_KEY))*/ //FIXME needs a little reordering
                || st->discard >= AVDISCARD_ALL){
                 if(ast->sample_size) ast->frame_offset += pkt->size;
                 else                 ast->frame_offset++;

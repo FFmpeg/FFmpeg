@@ -888,12 +888,12 @@ static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *
             asf_st->pkt.pos =
             asf_st->packet_pos= asf->packet_pos;
 //printf("new packet: stream:%d key:%d packet_key:%d audio:%d size:%d\n",
-//asf->stream_index, asf->packet_key_frame, asf_st->pkt.flags & PKT_FLAG_KEY,
+//asf->stream_index, asf->packet_key_frame, asf_st->pkt.flags & AV_PKT_FLAG_KEY,
 //s->streams[asf->stream_index]->codec->codec_type == AVMEDIA_TYPE_AUDIO, asf->packet_obj_size);
             if (s->streams[asf->stream_index]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
                 asf->packet_key_frame = 1;
             if (asf->packet_key_frame)
-                asf_st->pkt.flags |= PKT_FLAG_KEY;
+                asf_st->pkt.flags |= AV_PKT_FLAG_KEY;
         }
 
         /* read data */
@@ -1068,7 +1068,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
         pts= pkt->pts;
 
         av_free_packet(pkt);
-        if(pkt->flags&PKT_FLAG_KEY){
+        if(pkt->flags&AV_PKT_FLAG_KEY){
             i= pkt->stream_index;
 
             asf_st= s->streams[i]->priv_data;

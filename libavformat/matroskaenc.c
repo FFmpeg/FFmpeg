@@ -866,7 +866,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = s->pb;
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
-    int keyframe = !!(pkt->flags & PKT_FLAG_KEY);
+    int keyframe = !!(pkt->flags & AV_PKT_FLAG_KEY);
     int duration = pkt->duration;
     int ret;
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;

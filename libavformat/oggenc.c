@@ -256,7 +256,7 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->codec->codec_id == CODEC_ID_THEORA) {
         int64_t pts = oggstream->vrev < 1 ? pkt->pts : pkt->pts + pkt->duration;
         int pframe_count;
-        if (pkt->flags & PKT_FLAG_KEY)
+        if (pkt->flags & AV_PKT_FLAG_KEY)
             oggstream->last_kf_pts = pts;
         pframe_count = pts - oggstream->last_kf_pts;
         // prevent frame count from overflow if key frame flag is not set

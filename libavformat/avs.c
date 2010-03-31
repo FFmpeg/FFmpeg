@@ -113,7 +113,7 @@ avs_read_video_packet(AVFormatContext * s, AVPacket * pkt,
     pkt->size = ret + palette_size;
     pkt->stream_index = avs->st_video->index;
     if (sub_type == 0)
-        pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
     return 0;
 }
@@ -134,7 +134,7 @@ static int avs_read_audio_packet(AVFormatContext * s, AVPacket * pkt)
         return ret;
 
     pkt->stream_index = avs->st_audio->index;
-    pkt->flags |= PKT_FLAG_KEY;
+    pkt->flags |= AV_PKT_FLAG_KEY;
 
     return size;
 }

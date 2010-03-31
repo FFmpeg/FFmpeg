@@ -219,7 +219,7 @@ repeat:
     if (pkt->size < 0)
         return pkt->size;
     if (p->base_record + anm->record == 0)
-        pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
     anm->record++;
     return 0;

@@ -221,7 +221,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
            c->audio_pkt[i].size         = 0;
            c->audio_pkt[i].data         = c->audio_buf[i];
            c->audio_pkt[i].stream_index = c->ast[i]->index;
-           c->audio_pkt[i].flags       |= PKT_FLAG_KEY;
+           c->audio_pkt[i].flags       |= AV_PKT_FLAG_KEY;
        }
        c->ast[i]->codec->sample_rate = dv_audio_frequency[freq];
        c->ast[i]->codec->channels    = 2;
@@ -355,7 +355,7 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     av_init_packet(pkt);
     pkt->data         = buf;
     pkt->size         = size;
-    pkt->flags       |= PKT_FLAG_KEY;
+    pkt->flags       |= AV_PKT_FLAG_KEY;
     pkt->stream_index = c->vst->id;
     pkt->pts          = c->frames;
 

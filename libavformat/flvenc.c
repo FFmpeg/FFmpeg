@@ -351,7 +351,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
             return -1;
         }
 
-        flags |= pkt->flags & PKT_FLAG_KEY ? FLV_FRAME_KEY : FLV_FRAME_INTER;
+        flags |= pkt->flags & AV_PKT_FLAG_KEY ? FLV_FRAME_KEY : FLV_FRAME_INTER;
     } else {
         assert(enc->codec_type == AVMEDIA_TYPE_AUDIO);
         flags = get_audio_flags(enc);

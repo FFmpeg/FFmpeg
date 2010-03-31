@@ -216,7 +216,7 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
             c->curstrm = 0;
         }
         if(!c->cur_frame || c->curstrm)
-            pkt->flags |= PKT_FLAG_KEY;
+            pkt->flags |= AV_PKT_FLAG_KEY;
         if (c->curstrm == -1)
             c->cur_frame++;
     }else{

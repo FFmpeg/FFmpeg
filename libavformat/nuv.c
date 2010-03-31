@@ -220,7 +220,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                     return ret;
                 // HACK: we have no idea if it is a keyframe,
                 // but if we mark none seeking will not work at all.
-                pkt->flags |= PKT_FLAG_KEY;
+                pkt->flags |= AV_PKT_FLAG_KEY;
                 pkt->pos = pos;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->v_id;
@@ -240,7 +240,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                     break;
                 }
                 ret = av_get_packet(pb, pkt, size);
-                pkt->flags |= PKT_FLAG_KEY;
+                pkt->flags |= AV_PKT_FLAG_KEY;
                 pkt->pos = pos;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->a_id;
