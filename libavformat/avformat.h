@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 59
+#define LIBAVFORMAT_VERSION_MINOR 60
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -1327,6 +1327,14 @@ int av_filename_number_test(const char *filename);
  */
 int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
 
+/**
+ * Returns a positive value if the given filename has one of the given
+ * extensions, 0 otherwise.
+ *
+ * @param extensions a comma-separated list of filename extensions
+ */
+int av_match_ext(const char *filename, const char *extensions);
+
 #ifdef HAVE_AV_CONFIG_H
 
 void ff_dynarray_add(intptr_t **tab_ptr, int *nb_ptr, intptr_t elem);
@@ -1350,14 +1358,6 @@ time_t mktimegm(struct tm *tm);
 struct tm *brktimegm(time_t secs, struct tm *tm);
 const char *small_strptime(const char *p, const char *fmt,
                            struct tm *dt);
-
-/**
- * Returns a positive value if the given filename has one of the given
- * extensions, 0 otherwise.
- *
- * @param extensions a comma-separated list of filename extensions
- */
-int av_match_ext(const char *filename, const char *extensions);
 
 #endif /* HAVE_AV_CONFIG_H */
 
