@@ -3259,6 +3259,19 @@ AVCodecContext *avcodec_alloc_context(void);
 AVCodecContext *avcodec_alloc_context2(enum AVMediaType);
 
 /**
+ * Copy the settings of the source AVCodecContext into the destination
+ * AVCodecContext. The resulting destination codec context will be
+ * unopened, i.e. you are required to call avcodec_open() before you
+ * can use this AVCodecContext to decode/encode video/audio data.
+ *
+ * @param dest target codec context, should be initialized with
+ *             avcodec_alloc_context(), but otherwise uninitialized
+ * @param src source codec context
+ * @return AVERROR() on error (e.g. memory allocation error), 0 on success
+ */
+int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src);
+
+/**
  * Sets the fields of the given AVFrame to default values.
  *
  * @param pic The AVFrame of which the fields should be set to default values.
