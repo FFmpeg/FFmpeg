@@ -1843,6 +1843,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             c = h->thread_context[i] = av_malloc(sizeof(H264Context));
             memcpy(c, h->s.thread_context[i], sizeof(MpegEncContext));
             memset(&c->s + 1, 0, sizeof(H264Context) - sizeof(MpegEncContext));
+            c->h264dsp = h->h264dsp;
             c->sps = h->sps;
             c->pps = h->pps;
             init_scan_tables(c);
