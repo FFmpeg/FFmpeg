@@ -184,7 +184,7 @@ static inline int quantize_c(DCTELEM *block, uint8_t *scantable, int qscale,
                              int intra, int separate_dc)
 {
     int i;
-    const int * const quant_3Btable = quant_coeff[qscale];
+    const int * const quant_table = quant_coeff[qscale];
     const int bias = intra ? (1 << QUANT_SHIFT) / 3 : (1 << QUANT_SHIFT) / 6;
     const unsigned int threshold1 = (1 << QUANT_SHIFT) - bias - 1;
     const unsigned int threshold2 = (threshold1 << 1);
