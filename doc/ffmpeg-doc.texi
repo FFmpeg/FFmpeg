@@ -757,8 +757,15 @@ Repeatedly loop output for formats that support looping such as animated GIF
 @item -threads @var{count}
 Thread count.
 @item -vsync @var{parameter}
-Video sync method. Video will be stretched/squeezed to match the timestamps,
-it is done by duplicating and dropping frames. With -map you can select from
+Video sync method.
+0   Each frame is passed with its timestamp from the demuxer to the muxer
+1   Frames will be duplicated and droped to achive exactly the requested
+    constant framerate.
+2   Frames are passed through with their timestamp or droped so as to prevent
+    2 frames having the same timestamp
+-1  Chooses between 1 and 2 depending on muxer capabilities. This is default.
+
+With -map you can select from
 which stream the timestamps should be taken. You can leave either video or
 audio unchanged and sync the remaining stream(s) to the unchanged one.
 @item -async @var{samples_per_second}
