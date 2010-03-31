@@ -135,7 +135,7 @@ const ff_asf_guid ff_asf_digital_signature = {
 /* List of official tags at http://msdn.microsoft.com/en-us/library/dd743066(VS.85).aspx */
 const AVMetadataConv ff_asf_metadata_conv[] = {
     { "WM/AlbumArtist"     , "album_artist"},
-    { "WM/AlbumTitle"      , "album  "     },
+    { "WM/AlbumTitle"      , "album"       },
     { "Author"             , "artist"      },
     { "Description"        , "comment"     },
     { "WM/Composer"        , "composer"    },
