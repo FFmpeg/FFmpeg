@@ -515,6 +515,7 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
     s->nb_streams = ic->nb_streams;
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st;
+        AVCodec *codec;
 
         // FIXME: a more elegant solution is needed
         st = av_mallocz(sizeof(AVStream));
@@ -524,13 +525,21 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
             print_error(filename, AVERROR(ENOMEM));
             av_exit(1);
         }
-        memcpy(st->codec, ic->streams[i]->codec, sizeof(AVCodecContext));
+        avcodec_copy_context(st->codec, ic->streams[i]->codec);
         s->streams[i] = st;
 
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && audio_stream_copy)
-            st->stream_copy = 1;
-        else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && video_stream_copy)
-            st->stream_copy = 1;
+        codec = avcodec_find_encoder(st->codec->codec_id);
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            if (audio_stream_copy) {
+                st->stream_copy = 1;
+            } else
+                choose_sample_fmt(st, codec);
+        } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (video_stream_copy) {
+                st->stream_copy = 1;
+            } else
+                choose_pixel_fmt(st, codec);
+        }
 
         if(!st->codec->thread_count)
             st->codec->thread_count = 1;

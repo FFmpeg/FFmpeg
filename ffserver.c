@@ -4039,7 +4039,6 @@ static int parse_ffconfig(const char *filename)
                         filename, line_num);
             } else {
                 FFStream *s;
-                const AVClass *class;
                 stream = av_mallocz(sizeof(FFStream));
                 get_arg(stream->filename, sizeof(stream->filename), &p);
                 q = strrchr(stream->filename, '>');
@@ -4055,15 +4054,8 @@ static int parse_ffconfig(const char *filename)
                 }
 
                 stream->fmt = ffserver_guess_format(NULL, stream->filename, NULL);
-                /* fetch avclass so AVOption works
-                 * FIXME try to use avcodec_get_context_defaults2
-                 * without changing defaults too much */
-                avcodec_get_context_defaults(&video_enc);
-                class = video_enc.av_class;
-                memset(&audio_enc, 0, sizeof(AVCodecContext));
-                memset(&video_enc, 0, sizeof(AVCodecContext));
-                audio_enc.av_class = class;
-                video_enc.av_class = class;
+                avcodec_get_context_defaults2(&video_enc, AVMEDIA_TYPE_VIDEO);
+                avcodec_get_context_defaults2(&audio_enc, AVMEDIA_TYPE_AUDIO);
                 audio_id = CODEC_ID_NONE;
                 video_id = CODEC_ID_NONE;
                 if (stream->fmt) {
