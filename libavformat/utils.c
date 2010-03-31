@@ -851,6 +851,9 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     int num, den, presentation_delayed, delay, i;
     int64_t offset;
 
+    if (s->flags & AVFMT_FLAG_NOFILLIN)
+        return;
+
     if((s->flags & AVFMT_FLAG_IGNDTS) && pkt->pts != AV_NOPTS_VALUE)
         pkt->dts= AV_NOPTS_VALUE;
 
@@ -1108,7 +1111,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             s->cur_st = st;
             st->cur_ptr = st->cur_pkt.data;
             st->cur_len = st->cur_pkt.size;
-            if (st->need_parsing && !st->parser) {
+            if (st->need_parsing && !st->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) {
                 st->parser = av_parser_init(st->codec->codec_id);
                 if (!st->parser) {
                     /* no parser available: just output the raw packets */
@@ -2139,7 +2142,7 @@ int av_find_stream_info(AVFormatContext *ic)
                 st->codec->time_base= st->time_base;
         }
         //only for the split stuff
-        if (!st->parser) {
+        if (!st->parser && !(ic->flags & AVFMT_FLAG_NOPARSE)) {
             st->parser = av_parser_init(st->codec->codec_id);
             if(st->need_parsing == AVSTREAM_PARSE_HEADERS && st->parser){
                 st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
