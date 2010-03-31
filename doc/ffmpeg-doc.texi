@@ -759,11 +759,11 @@ Thread count.
 @item -vsync @var{parameter}
 Video sync method.
 0   Each frame is passed with its timestamp from the demuxer to the muxer
-1   Frames will be duplicated and droped to achive exactly the requested
+1   Frames will be duplicated and dropped to achieve exactly the requested
     constant framerate.
-2   Frames are passed through with their timestamp or droped so as to prevent
-    2 frames having the same timestamp
--1  Chooses between 1 and 2 depending on muxer capabilities. This is default.
+2   Frames are passed through with their timestamp or dropped so as to prevent
+    2 frames from having the same timestamp
+-1  Chooses between 1 and 2 depending on muxer capabilities. This is the default method.
 
 With -map you can select from
 which stream the timestamps should be taken. You can leave either video or
