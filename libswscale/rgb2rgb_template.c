@@ -122,6 +122,43 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long s
     }
 }
 
+#define STORE_BGR24_MMX \
+            "psrlq         $8, %%mm2    \n\t" \
+            "psrlq         $8, %%mm3    \n\t" \
+            "psrlq         $8, %%mm6    \n\t" \
+            "psrlq         $8, %%mm7    \n\t" \
+            "pand "MANGLE(mask24l)", %%mm0\n\t" \
+            "pand "MANGLE(mask24l)", %%mm1\n\t" \
+            "pand "MANGLE(mask24l)", %%mm4\n\t" \
+            "pand "MANGLE(mask24l)", %%mm5\n\t" \
+            "pand "MANGLE(mask24h)", %%mm2\n\t" \
+            "pand "MANGLE(mask24h)", %%mm3\n\t" \
+            "pand "MANGLE(mask24h)", %%mm6\n\t" \
+            "pand "MANGLE(mask24h)", %%mm7\n\t" \
+            "por        %%mm2, %%mm0    \n\t" \
+            "por        %%mm3, %%mm1    \n\t" \
+            "por        %%mm6, %%mm4    \n\t" \
+            "por        %%mm7, %%mm5    \n\t" \
+ \
+            "movq       %%mm1, %%mm2    \n\t" \
+            "movq       %%mm4, %%mm3    \n\t" \
+            "psllq        $48, %%mm2    \n\t" \
+            "psllq        $32, %%mm3    \n\t" \
+            "pand "MANGLE(mask24hh)", %%mm2\n\t" \
+            "pand "MANGLE(mask24hhh)", %%mm3\n\t" \
+            "por        %%mm2, %%mm0    \n\t" \
+            "psrlq        $16, %%mm1    \n\t" \
+            "psrlq        $32, %%mm4    \n\t" \
+            "psllq        $16, %%mm5    \n\t" \
+            "por        %%mm3, %%mm1    \n\t" \
+            "pand  "MANGLE(mask24hhhh)", %%mm5\n\t" \
+            "por        %%mm5, %%mm4    \n\t" \
+ \
+            MOVNTQ"     %%mm0,   %0     \n\t" \
+            MOVNTQ"     %%mm1,  8%0     \n\t" \
+            MOVNTQ"     %%mm4, 16%0"
+
+
 static inline void RENAME(rgb32tobgr24)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     uint8_t *dest = dst;
@@ -145,43 +182,9 @@ static inline void RENAME(rgb32tobgr24)(const uint8_t *src, uint8_t *dst, long s
             "movq       %%mm1, %%mm3    \n\t"
             "movq       %%mm4, %%mm6    \n\t"
             "movq       %%mm5, %%mm7    \n\t"
-            "psrlq         $8, %%mm2    \n\t"
-            "psrlq         $8, %%mm3    \n\t"
-            "psrlq         $8, %%mm6    \n\t"
-            "psrlq         $8, %%mm7    \n\t"
-            "pand          %2, %%mm0    \n\t"
-            "pand          %2, %%mm1    \n\t"
-            "pand          %2, %%mm4    \n\t"
-            "pand          %2, %%mm5    \n\t"
-            "pand          %3, %%mm2    \n\t"
-            "pand          %3, %%mm3    \n\t"
-            "pand          %3, %%mm6    \n\t"
-            "pand          %3, %%mm7    \n\t"
-            "por        %%mm2, %%mm0    \n\t"
-            "por        %%mm3, %%mm1    \n\t"
-            "por        %%mm6, %%mm4    \n\t"
-            "por        %%mm7, %%mm5    \n\t"
-
-            "movq       %%mm1, %%mm2    \n\t"
-            "movq       %%mm4, %%mm3    \n\t"
-            "psllq        $48, %%mm2    \n\t"
-            "psllq        $32, %%mm3    \n\t"
-            "pand          %4, %%mm2    \n\t"
-            "pand          %5, %%mm3    \n\t"
-            "por        %%mm2, %%mm0    \n\t"
-            "psrlq        $16, %%mm1    \n\t"
-            "psrlq        $32, %%mm4    \n\t"
-            "psllq        $16, %%mm5    \n\t"
-            "por        %%mm3, %%mm1    \n\t"
-            "pand          %6, %%mm5    \n\t"
-            "por        %%mm5, %%mm4    \n\t"
-
-            MOVNTQ"     %%mm0,   %0     \n\t"
-            MOVNTQ"     %%mm1,  8%0     \n\t"
-            MOVNTQ"     %%mm4, 16%0"
+            STORE_BGR24_MMX
             :"=m"(*dest)
-            :"m"(*s),"m"(mask24l),
-            "m"(mask24h),"m"(mask24hh),"m"(mask24hhh),"m"(mask24hhhh)
+            :"m"(*s)
             :"memory");
         dest += 24;
         s += 32;
@@ -971,43 +974,10 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, long s
             "movq       %%mm0, %%mm2    \n\t"
             "movq       %%mm1, %%mm3    \n\t"
 
-            "psrlq         $8, %%mm2    \n\t"
-            "psrlq         $8, %%mm3    \n\t"
-            "psrlq         $8, %%mm6    \n\t"
-            "psrlq         $8, %%mm7    \n\t"
-            "pand          %2, %%mm0    \n\t"
-            "pand          %2, %%mm1    \n\t"
-            "pand          %2, %%mm4    \n\t"
-            "pand          %2, %%mm5    \n\t"
-            "pand          %3, %%mm2    \n\t"
-            "pand          %3, %%mm3    \n\t"
-            "pand          %3, %%mm6    \n\t"
-            "pand          %3, %%mm7    \n\t"
-            "por        %%mm2, %%mm0    \n\t"
-            "por        %%mm3, %%mm1    \n\t"
-            "por        %%mm6, %%mm4    \n\t"
-            "por        %%mm7, %%mm5    \n\t"
-
-            "movq       %%mm1, %%mm2    \n\t"
-            "movq       %%mm4, %%mm3    \n\t"
-            "psllq        $48, %%mm2    \n\t"
-            "psllq        $32, %%mm3    \n\t"
-            "pand          %4, %%mm2    \n\t"
-            "pand          %5, %%mm3    \n\t"
-            "por        %%mm2, %%mm0    \n\t"
-            "psrlq        $16, %%mm1    \n\t"
-            "psrlq        $32, %%mm4    \n\t"
-            "psllq        $16, %%mm5    \n\t"
-            "por        %%mm3, %%mm1    \n\t"
-            "pand          %6, %%mm5    \n\t"
-            "por        %%mm5, %%mm4    \n\t"
-
-            MOVNTQ"     %%mm0,   %0     \n\t"
-            MOVNTQ"     %%mm1,  8%0     \n\t"
-            MOVNTQ"     %%mm4, 16%0"
+            STORE_BGR24_MMX
 
             :"=m"(*d)
-            :"m"(*s),"m"(mask24l),"m"(mask24h),"m"(mask24hh),"m"(mask24hhh),"m"(mask24hhhh)
+            :"m"(*s)
             :"memory");
         d += 24;
         s += 8;
@@ -1110,43 +1080,10 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, long s
             "movq       %%mm0, %%mm2    \n\t"
             "movq       %%mm1, %%mm3    \n\t"
 
-            "psrlq         $8, %%mm2    \n\t"
-            "psrlq         $8, %%mm3    \n\t"
-            "psrlq         $8, %%mm6    \n\t"
-            "psrlq         $8, %%mm7    \n\t"
-            "pand          %2, %%mm0    \n\t"
-            "pand          %2, %%mm1    \n\t"
-            "pand          %2, %%mm4    \n\t"
-            "pand          %2, %%mm5    \n\t"
-            "pand          %3, %%mm2    \n\t"
-            "pand          %3, %%mm3    \n\t"
-            "pand          %3, %%mm6    \n\t"
-            "pand          %3, %%mm7    \n\t"
-            "por        %%mm2, %%mm0    \n\t"
-            "por        %%mm3, %%mm1    \n\t"
-            "por        %%mm6, %%mm4    \n\t"
-            "por        %%mm7, %%mm5    \n\t"
-
-            "movq       %%mm1, %%mm2    \n\t"
-            "movq       %%mm4, %%mm3    \n\t"
-            "psllq        $48, %%mm2    \n\t"
-            "psllq        $32, %%mm3    \n\t"
-            "pand          %4, %%mm2    \n\t"
-            "pand          %5, %%mm3    \n\t"
-            "por        %%mm2, %%mm0    \n\t"
-            "psrlq        $16, %%mm1    \n\t"
-            "psrlq        $32, %%mm4    \n\t"
-            "psllq        $16, %%mm5    \n\t"
-            "por        %%mm3, %%mm1    \n\t"
-            "pand          %6, %%mm5    \n\t"
-            "por        %%mm5, %%mm4    \n\t"
-
-            MOVNTQ"     %%mm0,   %0     \n\t"
-            MOVNTQ"     %%mm1,  8%0     \n\t"
-            MOVNTQ"     %%mm4, 16%0"
+            STORE_BGR24_MMX
 
             :"=m"(*d)
-            :"m"(*s),"m"(mask24l),"m"(mask24h),"m"(mask24hh),"m"(mask24hhh),"m"(mask24hhhh)
+            :"m"(*s)
             :"memory");
         d += 24;
         s += 8;
