@@ -101,6 +101,11 @@ void register_avcodec(AVCodec *codec)
 }
 #endif
 
+unsigned avcodec_get_edge_width(void)
+{
+    return EDGE_WIDTH;
+}
+
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height){
     s->coded_width = width;
     s->coded_height= height;
