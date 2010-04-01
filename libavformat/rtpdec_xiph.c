@@ -65,11 +65,11 @@ static void xiph_free_context(PayloadContext * data)
 }
 
 static int xiph_handle_packet(AVFormatContext * ctx,
-                                PayloadContext * data,
-                                AVStream * st,
-                                AVPacket * pkt,
-                                uint32_t * timestamp,
-                                const uint8_t * buf, int len, int flags)
+                              PayloadContext * data,
+                              AVStream * st,
+                              AVPacket * pkt,
+                              uint32_t * timestamp,
+                              const uint8_t * buf, int len, int flags)
 {
 
     int ident, fragmented, tdt, num_pkts, pkt_len;
@@ -286,7 +286,7 @@ parse_packed_headers(const uint8_t * packed_headers,
 
 static int xiph_parse_fmtp_pair(AVCodecContext * codec,
                                 PayloadContext *xiph_data,
-                                  char *attr, char *value)
+                                char *attr, char *value)
 {
     int result = 0;
 
