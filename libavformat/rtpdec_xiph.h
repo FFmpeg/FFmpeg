@@ -1,5 +1,5 @@
 /*
- * RTP Theora Protocol.
+ * Xiph RTP Protocols
  * Based off RFC 5215 (Vorbis RTP) and the Theora RTP draft.
  * Copyright (c) 2010 Josh Allmann
  *
@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_RTPDEC_THEORA_H
-#define AVFORMAT_RTPDEC_THEORA_H
+#ifndef AVFORMAT_RTPDEC_XIPH_H
+#define AVFORMAT_RTPDEC_XIPH_H
 
 #include "libavcodec/avcodec.h"
 #include "rtpdec.h"
@@ -31,4 +31,4 @@
  */
 extern RTPDynamicProtocolHandler ff_theora_dynamic_handler;
 
-#endif /* AVFORMAT_RTPDEC_THEORA_H */
+#endif /* AVFORMAT_RTPDEC_XIPH_H */
