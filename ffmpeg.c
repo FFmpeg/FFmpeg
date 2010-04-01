@@ -2072,8 +2072,6 @@ static int av_encode(AVFormatContext **output_files,
                 (codec->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
                 char logfilename[1024];
                 FILE *f;
-                int size;
-                char *logbuffer;
 
                 snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
                          pass_logfilename_prefix ? pass_logfilename_prefix : DEFAULT_PASS_LOGFILENAME_PREFIX,
@@ -2086,23 +2084,12 @@ static int av_encode(AVFormatContext **output_files,
                     }
                     ost->logfile = f;
                 } else {
-                    /* read the log file */
-                    f = fopen(logfilename, "r");
-                    if (!f) {
-                        fprintf(stderr, "Cannot read log file '%s' for pass-2 encoding: %s\n", logfilename, strerror(errno));
+                    char  *logbuffer;
+                    size_t logbuffer_size;
+                    if (read_file(logfilename, &logbuffer, &logbuffer_size) < 0) {
+                        fprintf(stderr, "Error reading log file '%s' for pass-2 encoding\n", logfilename);
                         av_exit(1);
                     }
-                    fseek(f, 0, SEEK_END);
-                    size = ftell(f);
-                    fseek(f, 0, SEEK_SET);
-                    logbuffer = av_malloc(size + 1);
-                    if (!logbuffer) {
-                        fprintf(stderr, "Could not allocate log buffer\n");
-                        av_exit(1);
-                    }
-                    size = fread(logbuffer, 1, size, f);
-                    fclose(f);
-                    logbuffer[size] = '\0';
                     codec->stats_in = logbuffer;
                 }
             }
