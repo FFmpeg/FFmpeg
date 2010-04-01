@@ -1558,14 +1558,71 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
 typedef struct {
     VideoState *is;
     AVFrame *frame;
+    int use_dr1;
 } FilterPriv;
+
+static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
+{
+    AVFilterContext *ctx = codec->opaque;
+    AVFilterPicRef  *ref;
+    int perms = AV_PERM_WRITE;
+    int w, h, stride[4];
+    unsigned edge;
+
+    if(pic->buffer_hints & FF_BUFFER_HINTS_VALID) {
+        if(pic->buffer_hints & FF_BUFFER_HINTS_READABLE) perms |= AV_PERM_READ;
+        if(pic->buffer_hints & FF_BUFFER_HINTS_PRESERVE) perms |= AV_PERM_PRESERVE;
+        if(pic->buffer_hints & FF_BUFFER_HINTS_REUSABLE) perms |= AV_PERM_REUSE2;
+    }
+    if(pic->reference) perms |= AV_PERM_READ | AV_PERM_PRESERVE;
+
+    w = codec->width;
+    h = codec->height;
+    avcodec_align_dimensions2(codec, &w, &h, stride);
+    edge = codec->flags & CODEC_FLAG_EMU_EDGE ? 0 : avcodec_get_edge_width();
+    w += edge << 1;
+    h += edge << 1;
+
+    if(!(ref = avfilter_get_video_buffer(ctx->outputs[0], perms, w, h)))
+        return -1;
+
+    ref->w = codec->width;
+    ref->h = codec->height;
+    for(int i = 0; i < 3; i ++) {
+        unsigned hshift = i == 0 ? 0 : av_pix_fmt_descriptors[ref->pic->format].log2_chroma_w;
+        unsigned vshift = i == 0 ? 0 : av_pix_fmt_descriptors[ref->pic->format].log2_chroma_h;
+
+        ref->data[i]    += (edge >> hshift) + ((edge * ref->linesize[i]) >> vshift);
+        pic->data[i]     = ref->data[i];
+        pic->linesize[i] = ref->linesize[i];
+    }
+    pic->opaque = ref;
+    pic->age    = INT_MAX;
+    pic->type   = FF_BUFFER_TYPE_USER;
+    return 0;
+}
+
+static void input_release_buffer(AVCodecContext *codec, AVFrame *pic)
+{
+    memset(pic->data, 0, sizeof(pic->data));
+    avfilter_unref_pic(pic->opaque);
+}
 
 static int input_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     FilterPriv *priv = ctx->priv;
+    AVCodecContext *codec;
     if(!opaque) return -1;
 
     priv->is = opaque;
+    codec    = priv->is->video_st->codec;
+    codec->opaque = ctx;
+    if(codec->codec->capabilities & CODEC_CAP_DR1) {
+        priv->use_dr1 = 1;
+        codec->get_buffer     = input_get_buffer;
+        codec->release_buffer = input_release_buffer;
+    }
+
     priv->frame = avcodec_alloc_frame();
 
     return 0;
@@ -1590,11 +1647,13 @@ static int input_request_frame(AVFilterLink *link)
     if (ret < 0)
         return -1;
 
-    /* FIXME: until I figure out how to hook everything up to the codec
-     * right, we're just copying the entire frame. */
+    if(priv->use_dr1) {
+        picref = priv->frame->opaque;
+    } else {
     picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
     av_picture_copy((AVPicture *)&picref->data, (AVPicture *)priv->frame,
                     picref->pic->format, link->w, link->h);
+    }
     av_free_packet(&pkt);
 
     picref->pts = pts;
@@ -1603,6 +1662,7 @@ static int input_request_frame(AVFilterLink *link)
     avfilter_start_frame(link, avfilter_ref_pic(picref, ~0));
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);
+    if(!priv->use_dr1)
     avfilter_unref_pic(picref);
 
     return 0;
