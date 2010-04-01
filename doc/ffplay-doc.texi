@@ -45,6 +45,8 @@ Disable audio.
 Disable video.
 @item -ss @var{pos}
 Seek to a given position in seconds.
+@item -t @var{duration}
+play <duration> seconds of audio/video
 @item -bytes
 Seek by bytes.
 @item -nodisp
