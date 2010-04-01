@@ -25,48 +25,33 @@
 #include "qdm2_tablegen.h"
 #include "tableprint.h"
 
-void tableinit(void)
+int main(void)
 {
     softclip_table_init();
     rnd_table_init();
     init_noise_samples();
-}
 
-const struct tabledef tables[] = {
-    {
-        "static const uint16_t softclip_table[HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1]",
-        write_uint16_array,
-        softclip_table,
-        HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1,
-        0
-    },
-    {
-        "static const float noise_table[4096]",
-        write_float_array,
-        noise_table,
-        4096,
-        0
-    },
-    {
-        "static const uint8_t random_dequant_index[256][5]",
-        write_uint8_2d_array,
-        random_dequant_index,
-        256,
-        5
-    },
-    {
-        "static const uint8_t random_dequant_type24[128][3]",
-        write_uint8_2d_array,
-        random_dequant_type24,
-        128,
-        3
-    },
-    {
-        "static const float noise_samples[128]",
-        write_float_array,
-        noise_samples,
-        128,
-        0
-    },
-    { NULL }
-};
+    write_fileheader();
+
+    printf("static const uint16_t softclip_table[HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1] = {\n");
+    write_uint16_array(softclip_table, HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1);
+    printf("};\n");
+
+    printf("static const float noise_table[4096] = {\n");
+    write_float_array(noise_table, 4096);
+    printf("};\n");
+
+    printf("static const uint8_t random_dequant_index[256][5] = {\n");
+    write_uint8_2d_array(random_dequant_index, 256, 5);
+    printf("};\n");
+
+    printf("static const uint8_t random_dequant_type24[128][3] = {\n");
+    write_uint8_2d_array(random_dequant_type24, 128, 3);
+    printf("};\n");
+
+    printf("static const float noise_samples[128] = {\n");
+    write_float_array(noise_samples, 128);
+    printf("};\n");
+
+    return 0;
+}

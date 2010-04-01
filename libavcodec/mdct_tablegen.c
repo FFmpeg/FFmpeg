@@ -32,29 +32,18 @@
 #include "mdct_tablegen.h"
 #include "tableprint.h"
 
-void tableinit(void)
+int main(void)
 {
     int i;
-    for (i = 5; i <= 12; i++)
+
+    write_fileheader();
+
+    for (i = 5; i <= 12; i++) {
         ff_init_ff_sine_windows(i);
+        printf("SINETABLE(%4i) = {\n", 1 << i);
+        write_float_array(ff_sine_windows[i], 1 << i);
+        printf("};\n");
+    }
+
+    return 0;
 }
-
-#define SINE_TABLE_DEF(size) \
-    { \
-        "SINETABLE("#size")", \
-        write_float_array, \
-        ff_sine_##size, \
-        size \
-    },
-
-const struct tabledef tables[] = {
-    SINE_TABLE_DEF(  32)
-    SINE_TABLE_DEF(  64)
-    SINE_TABLE_DEF( 128)
-    SINE_TABLE_DEF( 256)
-    SINE_TABLE_DEF( 512)
-    SINE_TABLE_DEF(1024)
-    SINE_TABLE_DEF(2048)
-    SINE_TABLE_DEF(4096)
-    { NULL }
-};

@@ -27,9 +27,8 @@
 #include <stdio.h>
 
 #define WRITE_1D_FUNC_ARGV(name, type, linebrk, fmtstr, ...)\
-void write_##name##_array(const void *arg, int len, int dummy)\
+void write_##name##_array(const type *data, int len)\
 {\
-    const type *data = arg;\
     int i;\
     printf("   ");\
     for (i = 0; i < len - 1; i++) {\
@@ -49,7 +48,7 @@ void write_##name##_2d_array(const void *arg, int len, int len2)\
     int i;\
     printf("    {\n");\
     for (i = 0; i < len; i++) {\
-        write_##name##_array(data + i * len2, len2, 0);\
+        write_##name##_array(data + i * len2, len2);\
         printf(i == len - 1 ? "    }\n" : "    }, {\n");\
     }\
 }
@@ -59,34 +58,17 @@ void write_##name##_2d_array(const void *arg, int len, int len2)\
  *
  * \{
  */
-void write_int8_array     (const void *, int, int);
-void write_uint8_array    (const void *, int, int);
-void write_uint16_array   (const void *, int, int);
-void write_uint32_array   (const void *, int, int);
-void write_float_array    (const void *, int, int);
+void write_int8_array     (const int8_t   *, int);
+void write_uint8_array    (const uint8_t  *, int);
+void write_uint16_array   (const uint16_t *, int);
+void write_uint32_array   (const uint32_t *, int);
+void write_float_array    (const float    *, int);
 void write_int8_2d_array  (const void *, int, int);
 void write_uint8_2d_array (const void *, int, int);
 void write_uint32_2d_array(const void *, int, int);
 /** \} */ // end of printfuncs group
 
-struct tabledef {
-    /** String that declares the array. Adding " = { ..." after it should
-     * make a valid initializer, adding "extern" before and ";" if possible
-     * should make a valid extern declaration. */
-    const char *declaration;
-    /** Function used to print the table data (i.e. the part in {}).
-     * Should be one of the predefined write_*_array functions. */
-    void (*printfunc)(const void *, int, int);
-    /** Pointer passed to the printfunc, usually a pointer to the start
-     * of the array to be printed. */
-    const void *data;
-    int size;   ///< size of the first dimension of the array
-    int size2;  ///< size of the second dimension of the array if any
-};
-
-/** Initializes all the tables described in the tables array */
-void tableinit(void);
-/** Describes the tables that should be printed */
-extern const struct tabledef tables[];
+/** Write a standard file header */
+void write_fileheader(void);
 
 #endif /* AVCODEC_TABLEPRINT_H */

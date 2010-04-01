@@ -27,18 +27,15 @@
 #include "motionpixels_tablegen.h"
 #include "tableprint.h"
 
-void tableinit(void)
+int main(void)
 {
     motionpixels_tableinit();
-}
 
-const struct tabledef tables[] = {
-    {
-        "static const YuvPixel mp_rgb_yuv_table[1 << 15]",
-        write_int8_2d_array,
-        mp_rgb_yuv_table,
-        1 << 15,
-        3
-    },
-    { NULL }
-};
+    write_fileheader();
+
+    printf("static const YuvPixel mp_rgb_yuv_table[1 << 15] = {\n");
+    write_int8_2d_array(mp_rgb_yuv_table, 1 << 15, 3);
+    printf("};\n");
+
+    return 0;
+}

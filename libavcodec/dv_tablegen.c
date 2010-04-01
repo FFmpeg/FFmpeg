@@ -33,18 +33,15 @@ WRITE_1D_FUNC_ARGV(vlc_pair, struct dv_vlc_pair, 7,
                    "{0x%"PRIx32", %"PRId8"}", data[i].vlc, data[i].size)
 WRITE_2D_FUNC(vlc_pair, struct dv_vlc_pair)
 
-void tableinit(void)
+int main(void)
 {
     dv_vlc_map_tableinit();
-}
 
-const struct tabledef tables[] = {
-    {
-        "static const struct dv_vlc_pair dv_vlc_map[DV_VLC_MAP_RUN_SIZE][DV_VLC_MAP_LEV_SIZE]",
-        write_vlc_pair_2d_array,
-        dv_vlc_map,
-        DV_VLC_MAP_RUN_SIZE,
-        DV_VLC_MAP_LEV_SIZE
-    },
-    { NULL }
-};
+    write_fileheader();
+
+    printf("static const struct dv_vlc_pair dv_vlc_map[DV_VLC_MAP_RUN_SIZE][DV_VLC_MAP_LEV_SIZE] = {\n");
+    write_vlc_pair_2d_array(dv_vlc_map, DV_VLC_MAP_RUN_SIZE, DV_VLC_MAP_LEV_SIZE);
+    printf("};\n");
+
+    return 0;
+}

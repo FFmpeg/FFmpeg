@@ -7,32 +7,39 @@ Basic concepts
 
 A table generator consists of two files, *_tablegen.c and *_tablegen.h.
 The .h file will provide the variable declarations and initialization
-code for the tables, the .c describes the tables so they can be printed
-as a header file.
+code for the tables, the .c calls the initialization code and then prints
+the tables as a header file using the tableprint.h helpers.
 Both of these files will be compiled for the host system, so to avoid
 breakage with cross-compilation neither of them may include, directly
 or indirectly, config.h or avconfig.h.
 Due to this, the .c file or Makefile may have to provide additional defines
 or stubs, though if possible this should be avoided.
+In particular, CONFIG_HARDCODED_TABLES should always be defined to 0.
 
 The .c file
 
 This file should include the *_tablegen.h and tableprint.h files and
 anything else it needs as long as it does not depend on config.h or
 avconfig.h.
-In addition to that it must contain a void tableinit(void) function
-which initializes all tables by calling the init functions from the .h
-file.
-It must also contain a "const struct tabledef tables[]" array describing
-the tables to be generated.
-Its entries consist of (in order):
- - a string suitable for declaring the table, up to but not including the =
-   NULL terminates the table
- - a function to print the table - tableprint.h defines some defaults,
-   e.g. write_uint8_array to print a uint8_t array.
- - a pointer to the table
- - the size of the first dimension of the array
- - if applicable, the size of the second dimension of the array
+In addition to that it must contain a main() function which initializes
+all tables by calling the init functions from the .h file and then prints
+them.
+The printing code typically looks like this:
+    write_fileheader();
+    printf("static const uint8_t my_array[100] = {\n");
+    write_uint8_array(my_array, 100);
+    printf("};\n");
+
+write_fileheader() adds some minor things like a "this is a generated file"
+comment and some standard includes.
+tablegen.h defines some write functions for one- and two-dimensional arrays
+for standard types - they print only the "core" parts so they are easier
+to reuse for multi-dimensional arrays so the outermost {} must be printed
+separately.
+If there's no standard function for printing the type you need, the
+WRITE_1D_FUNC_ARGV macro is a very quick way to create one.
+See libavcodec/dv_tablegen.c for an example.
+
 
 The .h file
 
