@@ -37,7 +37,6 @@
 #include "rtpdec.h"
 #include "rdt.h"
 #include "rtpdec_asf.h"
-#include "rtpdec_vorbis.h"
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP
@@ -216,9 +215,6 @@ static void sdp_parse_fmtp_config(AVCodecContext * codec, void *ctx,
             codec->extradata_size = len;
             hex_to_data(codec->extradata, value);
         }
-        break;
-    case CODEC_ID_VORBIS:
-        ff_vorbis_parse_fmtp_config(codec, ctx, attr, value);
         break;
     default:
         break;

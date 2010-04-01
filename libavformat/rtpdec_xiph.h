@@ -1,6 +1,7 @@
 /*
  * Xiph RTP Protocols
  * Based off RFC 5215 (Vorbis RTP) and the Theora RTP draft.
+ * Copyright (c) 2009 Colin McQuillian
  * Copyright (c) 2010 Josh Allmann
  *
  * This file is part of FFmpeg.
@@ -30,5 +31,10 @@
  * Theora RTP callbacks.
  */
 extern RTPDynamicProtocolHandler ff_theora_dynamic_handler;
+
+/**
+ * Vorbis RTP callbacks.
+ */
+extern RTPDynamicProtocolHandler ff_vorbis_dynamic_handler;
 
 #endif /* AVFORMAT_RTPDEC_XIPH_H */
