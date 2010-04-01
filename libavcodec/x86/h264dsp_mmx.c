@@ -964,8 +964,8 @@ static av_noinline void OPNAME ## h264_qpel4_h_lowpass_ ## MMX(uint8_t *dst, uin
 \
     __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
-        "movq %5, %%mm4             \n\t"\
-        "movq %6, %%mm5             \n\t"\
+        "movq "MANGLE(ff_pw_5) ", %%mm4\n\t"\
+        "movq "MANGLE(ff_pw_16)", %%mm5\n\t"\
         "1:                         \n\t"\
         "movd  -1(%0), %%mm1        \n\t"\
         "movd    (%0), %%mm2        \n\t"\
@@ -995,7 +995,7 @@ static av_noinline void OPNAME ## h264_qpel4_h_lowpass_ ## MMX(uint8_t *dst, uin
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
         : "+a"(src), "+c"(dst), "+g"(h)\
-        : "d"((x86_reg)srcStride), "S"((x86_reg)dstStride), "m"(ff_pw_5), "m"(ff_pw_16)\
+        : "d"((x86_reg)srcStride), "S"((x86_reg)dstStride)\
         : "memory"\
     );\
 }\
