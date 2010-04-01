@@ -1650,9 +1650,9 @@ static int input_request_frame(AVFilterLink *link)
     if(priv->use_dr1) {
         picref = avfilter_ref_pic(priv->frame->opaque, ~0);
     } else {
-    picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
-    av_picture_copy((AVPicture *)&picref->data, (AVPicture *)priv->frame,
-                    picref->pic->format, link->w, link->h);
+        picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
+        av_picture_copy((AVPicture *)&picref->data, (AVPicture *)priv->frame,
+                        picref->pic->format, link->w, link->h);
     }
     av_free_packet(&pkt);
 
