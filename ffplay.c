@@ -1648,7 +1648,7 @@ static int input_request_frame(AVFilterLink *link)
         return -1;
 
     if(priv->use_dr1) {
-        picref = priv->frame->opaque;
+        picref = avfilter_ref_pic(priv->frame->opaque, ~0);
     } else {
     picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
     av_picture_copy((AVPicture *)&picref->data, (AVPicture *)priv->frame,
@@ -1659,11 +1659,9 @@ static int input_request_frame(AVFilterLink *link)
     picref->pts = pts;
     picref->pos = pkt.pos;
     picref->pixel_aspect = priv->is->video_st->codec->sample_aspect_ratio;
-    avfilter_start_frame(link, avfilter_ref_pic(picref, ~0));
+    avfilter_start_frame(link, picref);
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);
-    if(!priv->use_dr1)
-    avfilter_unref_pic(picref);
 
     return 0;
 }
