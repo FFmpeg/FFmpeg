@@ -270,6 +270,7 @@ static int flv_read_header(AVFormatContext *s,
 
     offset = get_be32(s->pb);
     url_fseek(s->pb, offset, SEEK_SET);
+    url_fskip(s->pb, 4);
 
     s->start_time = 0;
 
@@ -295,9 +296,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t dts, pts = AV_NOPTS_VALUE;
     AVStream *st = NULL;
 
- for(;;){
+ for(;;url_fskip(s->pb, 4)){ /* pkt size is repeated at end. skip it */
     pos = url_ftell(s->pb);
-    url_fskip(s->pb, 4); /* size of previous packet */
     type = get_byte(s->pb);
     size = get_be24(s->pb);
     dts = get_be24(s->pb);
@@ -417,13 +417,16 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                         st->codec->channels, st->codec->sample_rate);
             }
 
-            return AVERROR(EAGAIN);
+            ret = AVERROR(EAGAIN);
+            goto leave;
         }
     }
 
     /* skip empty data packets */
-    if (!size)
-        return AVERROR(EAGAIN);
+    if (!size) {
+        ret = AVERROR(EAGAIN);
+        goto leave;
+    }
 
     ret= av_get_packet(s->pb, pkt, size);
     if (ret < 0) {
@@ -439,6 +442,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (is_audio || ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY))
         pkt->flags |= AV_PKT_FLAG_KEY;
 
+leave:
+    url_fskip(s->pb, 4);
     return ret;
 }
 
