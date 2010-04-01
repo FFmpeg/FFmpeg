@@ -280,7 +280,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
 
     x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
-    x4->params.analyse.b_ssim = avctx->flags & CODEC_FLAG2_SSIM;
+    x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
     x4->params.i_log_level    = X264_LOG_DEBUG;
 
     x4->params.b_aud          = avctx->flags2 & CODEC_FLAG2_AUD;
