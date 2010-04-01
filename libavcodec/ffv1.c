@@ -186,6 +186,25 @@ static const int8_t quant13[256]={
 -4,-4,-4,-4,-4,-4,-4,-4,-4,-3,-3,-3,-3,-2,-2,-1,
 };
 
+static const uint8_t ver2_state[256]= {
+   0,  10,  10,  10,  10,  16,  16,  16,  28,  16,  16,  29,  42,  49,  20,  49,
+  59,  25,  26,  26,  27,  31,  33,  33,  33,  34,  34,  37,  67,  38,  39,  39,
+  40,  40,  41,  79,  43,  44,  45,  45,  48,  48,  64,  50,  51,  52,  88,  52,
+  53,  74,  55,  57,  58,  58,  74,  60, 101,  61,  62,  84,  66,  66,  68,  69,
+  87,  82,  71,  97,  73,  73,  82,  75, 111,  77,  94,  78,  87,  81,  83,  97,
+  85,  83,  94,  86,  99,  89,  90,  99, 111,  92,  93, 134,  95,  98, 105,  98,
+ 105, 110, 102, 108, 102, 118, 103, 106, 106, 113, 109, 112, 114, 112, 116, 125,
+ 115, 116, 117, 117, 126, 119, 125, 121, 121, 123, 145, 124, 126, 131, 127, 129,
+ 165, 130, 132, 138, 133, 135, 145, 136, 137, 139, 146, 141, 143, 142, 144, 148,
+ 147, 155, 151, 149, 151, 150, 152, 157, 153, 154, 156, 168, 158, 162, 161, 160,
+ 172, 163, 169, 164, 166, 184, 167, 170, 177, 174, 171, 173, 182, 176, 180, 178,
+ 175, 189, 179, 181, 186, 183, 192, 185, 200, 187, 191, 188, 190, 197, 193, 196,
+ 197, 194, 195, 196, 198, 202, 199, 201, 210, 203, 207, 204, 205, 206, 208, 214,
+ 209, 211, 221, 212, 213, 215, 224, 216, 217, 218, 219, 220, 222, 228, 223, 225,
+ 226, 224, 227, 229, 240, 230, 231, 232, 233, 234, 235, 236, 238, 239, 237, 242,
+ 241, 243, 242, 244, 245, 246, 247, 248, 249, 250, 251, 252, 252, 253, 254, 255,
+};
+
 typedef struct VlcState{
     int16_t drift;
     uint16_t error_sum;
@@ -215,6 +234,7 @@ typedef struct FFV1Context{
     int ac;                              ///< 1=range coder <-> 0=golomb rice
     PlaneContext plane[MAX_PLANES];
     int16_t quant_table[5][256];
+    uint8_t state_transition[256];
     int run_index;
     int colorspace;
 
@@ -578,7 +598,13 @@ static void write_header(FFV1Context *f){
     memset(state, 128, sizeof(state));
 
     put_symbol(c, state, f->version, 0);
-    put_symbol(c, state, f->avctx->coder_type, 0);
+    put_symbol(c, state, f->ac, 0);
+    if(f->ac>1){
+        for(i=1; i<256; i++){
+            f->state_transition[i]=ver2_state[i];
+            put_symbol(c, state, ver2_state[i] - c->one_state[i], 1);
+        }
+    }
     put_symbol(c, state, f->colorspace, 0); //YUV cs type
     if(f->version>0)
         put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
@@ -617,7 +643,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     common_init(avctx);
 
     s->version=0;
-    s->ac= avctx->coder_type;
+    s->ac= avctx->coder_type ? 2:0;
 
     s->plane_count=2;
     for(i=0; i<256; i++){
@@ -754,6 +780,12 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         used_count += ff_rac_terminate(c);
 //printf("pos=%d\n", used_count);
         init_put_bits(&f->pb, buf + used_count, buf_size - used_count);
+    }else if (f->ac>1){
+        int i;
+        for(i=1; i<256; i++){
+            c->one_state[i]= f->state_transition[i];
+            c->zero_state[256-i]= 256-c->one_state[i];
+        }
     }
 
     if(f->colorspace==0){
@@ -967,6 +999,11 @@ static int read_header(FFV1Context *f){
 
     f->version= get_symbol(c, state, 0);
     f->ac= f->avctx->coder_type= get_symbol(c, state, 0);
+    if(f->ac>1){
+        for(i=1; i<256; i++){
+            f->state_transition[i]= get_symbol(c, state, 1) + c->one_state[i];
+        }
+    }
     f->colorspace= get_symbol(c, state, 0); //YUV cs type
     if(f->version>0)
         f->avctx->bits_per_raw_sample= get_symbol(c, state, 0);
@@ -1071,6 +1108,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }else{
         p->key_frame= 0;
     }
+    if(f->ac>1){
+        int i;
+        for(i=1; i<256; i++){
+            c->one_state[i]= f->state_transition[i];
+            c->zero_state[256-i]= 256-c->one_state[i];
+        }
+    }
+
     if(!f->plane[0].state && !f->plane[0].vlc_state)
         return -1;
 
