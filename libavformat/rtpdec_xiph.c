@@ -32,7 +32,7 @@
 #include <assert.h>
 
 #include "rtpdec.h"
-#include "rtpdec_theora.h"
+#include "rtpdec_xiph.h"
 
 /**
  * RTP/Theora specific private data.

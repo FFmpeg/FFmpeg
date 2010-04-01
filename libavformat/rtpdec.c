@@ -34,8 +34,7 @@
 #include "rtpdec_asf.h"
 #include "rtpdec_h263.h"
 #include "rtpdec_h264.h"
-#include "rtpdec_vorbis.h"
-#include "rtpdec_theora.h"
+#include "rtpdec_xiph.h"
 
 //#define DEBUG
 
