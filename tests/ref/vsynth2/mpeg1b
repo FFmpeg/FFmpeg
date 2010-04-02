@@ -1,4 +1,4 @@
-977f3caf286e8f36c6ab4c7464632f26 *./tests/data/vsynth2/mpeg1b.mpg
-229806 ./tests/data/vsynth2/mpeg1b.mpg
-f41c60846bfb8cb6dcf6071c846c82b4 *./tests/data/mpeg1b.vsynth2.out.yuv
-stddev:    4.13 PSNR: 35.80 bytes:  7603200/  7603200
+e026a2fef80c9679776d2b5c8be09338 *./tests/data/vsynth2/mpeg1b.mpg
+225198 ./tests/data/vsynth2/mpeg1b.mpg
+1150495f4bd487486ee53326c42d0bb8 *./tests/data/mpeg1b.vsynth2.out.yuv
+stddev:    4.10 PSNR: 35.86 bytes:  7603200/  7603200

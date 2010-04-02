@@ -348,7 +348,7 @@ static const AVOption options[]={
 {"bidir"           , NULL, 0, FF_OPT_TYPE_CONST, AVDISCARD_BIDIR  , INT_MIN, INT_MAX, V|D, "avdiscard"},
 {"nokey"           , NULL, 0, FF_OPT_TYPE_CONST, AVDISCARD_NONKEY , INT_MIN, INT_MAX, V|D, "avdiscard"},
 {"all"             , NULL, 0, FF_OPT_TYPE_CONST, AVDISCARD_ALL    , INT_MIN, INT_MAX, V|D, "avdiscard"},
-{"bidir_refine", "refine the two motion vectors used in bidirectional macroblocks", OFFSET(bidir_refine), FF_OPT_TYPE_INT, DEFAULT, 0, 4, V|E},
+{"bidir_refine", "refine the two motion vectors used in bidirectional macroblocks", OFFSET(bidir_refine), FF_OPT_TYPE_INT, 1, 0, 4, V|E},
 {"brd_scale", "downscales frames for dynamic B-frame decision", OFFSET(brd_scale), FF_OPT_TYPE_INT, DEFAULT, 0, 10, V|E},
 {"crf", "enables constant quality mode, and selects the quality (x264)", OFFSET(crf), FF_OPT_TYPE_FLOAT, DEFAULT, 0, 51, V|E},
 {"cqp", "constant quantization parameter rate control method", OFFSET(cqp), FF_OPT_TYPE_INT, -1, INT_MIN, INT_MAX, V|E},

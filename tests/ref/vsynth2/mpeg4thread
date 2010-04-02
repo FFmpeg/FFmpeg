@@ -1,4 +1,4 @@
-8496ffe953dc3398c657d99e962e4d77 *./tests/data/vsynth2/mpeg4-thread.avi
-250162 ./tests/data/vsynth2/mpeg4-thread.avi
-58165c879707aedeab460bab86dae4ef *./tests/data/mpeg4thread.vsynth2.out.yuv
-stddev:    3.73 PSNR: 36.68 bytes:  7603200/  7603200
+ba30d10ff70d46e7c5b7fa859ea1faa4 *./tests/data/vsynth2/mpeg4-thread.avi
+250140 ./tests/data/vsynth2/mpeg4-thread.avi
+5355deb8c7609a3f1ff2173aab1dee70 *./tests/data/mpeg4thread.vsynth2.out.yuv
+stddev:    3.69 PSNR: 36.78 bytes:  7603200/  7603200
