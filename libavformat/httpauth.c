@@ -187,7 +187,7 @@ static char *make_digest_auth(HTTPAuthState *state, const char *username,
     DigestParams *digest = &state->digest_params;
     int len;
     uint32_t cnonce_buf[2];
-    char cnonce[9];
+    char cnonce[17];
     char nc[9];
     int i;
     char A1hash[33], A2hash[33], response[33];
