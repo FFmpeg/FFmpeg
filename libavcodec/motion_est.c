@@ -1475,11 +1475,11 @@ static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
     const int ymin= c->ymin<<shift;
     const int xmax= c->xmax<<shift;
     const int ymax= c->ymax<<shift;
-    uint8_t map[8][8][8][8];
+    uint8_t map[256];
 
     memset(map,0,sizeof(map));
 #define BIDIR_MAP(fx,fy,bx,by) \
-    map[(motion_fx+fx)&7][(motion_fy+fy)&7][(motion_bx+bx)&7][(motion_by+by)&7]
+    map[((motion_fx+fx)+17*(motion_fy+fy)+63*(motion_bx+bx)+117*(motion_by+by))&255]
     BIDIR_MAP(0,0,0,0) = 1;
 
     fbmin= check_bidir_mv(s, motion_fx, motion_fy,
