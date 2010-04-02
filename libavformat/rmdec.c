@@ -849,6 +849,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
             // If there are queued audio packet return them first
             st = s->streams[rm->audio_stream_num];
             ff_rm_retrieve_cache(s, s->pb, st, st->priv_data, pkt);
+            flags = 0;
         } else {
             if (rm->old_format) {
                 RMStream *ast;
