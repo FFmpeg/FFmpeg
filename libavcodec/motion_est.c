@@ -107,22 +107,17 @@ static int get_flags(MotionEstContext *c, int direct, int chroma){
 /*! \brief compares a block (either a full macroblock or a partition thereof)
     against a proposed motion-compensated prediction of that block
  */
-static av_always_inline int cmp(MpegEncContext *s, const int x, const int y, const int subx, const int suby,
+static av_always_inline int cmp_direct_inline(MpegEncContext *s, const int x, const int y, const int subx, const int suby,
                       const int size, const int h, int ref_index, int src_index,
-                      me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, const int flags){
+                      me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, int qpel){
     MotionEstContext * const c= &s->me;
     const int stride= c->stride;
-    const int uvstride= c->uvstride;
-    const int qpel= flags&FLAG_QPEL;
-    const int chroma= flags&FLAG_CHROMA;
-    const int dxy= subx + (suby<<(1+qpel)); //FIXME log2_subpel?
     const int hx= subx + (x<<(1+qpel));
     const int hy= suby + (y<<(1+qpel));
     uint8_t * const * const ref= c->ref[ref_index];
     uint8_t * const * const src= c->src[src_index];
     int d;
     //FIXME check chroma 4mv, (no crashes ...)
-    if(flags&FLAG_DIRECT){
         assert(x >= c->xmin && hx <= c->xmax<<(qpel+1) && y >= c->ymin && hy <= c->ymax<<(qpel+1));
         if(x >= c->xmin && hx <= c->xmax<<(qpel+1) && y >= c->ymin && hy <= c->ymax<<(qpel+1)){
             const int time_pp= s->pp_time;
@@ -181,7 +176,22 @@ static av_always_inline int cmp(MpegEncContext *s, const int x, const int y, con
             d = cmp_func(s, c->temp, src[0], stride, 16);
         }else
             d= 256*256*256*32;
-    }else{
+    return d;
+}
+
+static av_always_inline int cmp_inline(MpegEncContext *s, const int x, const int y, const int subx, const int suby,
+                      const int size, const int h, int ref_index, int src_index,
+                      me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, int qpel, int chroma){
+    MotionEstContext * const c= &s->me;
+    const int stride= c->stride;
+    const int uvstride= c->uvstride;
+    const int dxy= subx + (suby<<(1+qpel)); //FIXME log2_subpel?
+    const int hx= subx + (x<<(1+qpel));
+    const int hy= suby + (y<<(1+qpel));
+    uint8_t * const * const ref= c->ref[ref_index];
+    uint8_t * const * const src= c->src[src_index];
+    int d;
+    //FIXME check chroma 4mv, (no crashes ...)
         int uvdxy;              /* no, it might not be used uninitialized */
         if(dxy){
             if(qpel){
@@ -212,16 +222,68 @@ static av_always_inline int cmp(MpegEncContext *s, const int x, const int y, con
             d += chroma_cmp_func(s, uvtemp  , src[1], uvstride, h>>1);
             d += chroma_cmp_func(s, uvtemp+8, src[2], uvstride, h>>1);
         }
-    }
-#if 0
-    if(full_pel){
-        const int index= (((y)<<ME_MAP_SHIFT) + (x))&(ME_MAP_SIZE-1);
-        score_map[index]= d;
-    }
-
-    d += (c->mv_penalty[hx - c->pred_x] + c->mv_penalty[hy - c->pred_y])*c->penalty_factor;
-#endif
     return d;
+}
+
+static int cmp_simple(MpegEncContext *s, const int x, const int y,
+                      int ref_index, int src_index,
+                      me_cmp_func cmp_func, me_cmp_func chroma_cmp_func){
+    return cmp_inline(s,x,y,0,0,0,16,ref_index,src_index, cmp_func, chroma_cmp_func, 0, 0);
+}
+
+static int cmp_fpel_internal(MpegEncContext *s, const int x, const int y,
+                      const int size, const int h, int ref_index, int src_index,
+                      me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, const int flags){
+    if(flags&FLAG_DIRECT){
+        return cmp_direct_inline(s,x,y,0,0,size,h,ref_index,src_index, cmp_func, chroma_cmp_func, flags&FLAG_QPEL);
+    }else{
+        return cmp_inline(s,x,y,0,0,size,h,ref_index,src_index, cmp_func, chroma_cmp_func, 0, flags&FLAG_CHROMA);
+    }
+}
+
+static int cmp_internal(MpegEncContext *s, const int x, const int y, const int subx, const int suby,
+                      const int size, const int h, int ref_index, int src_index,
+                      me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, const int flags){
+    if(flags&FLAG_DIRECT){
+        return cmp_direct_inline(s,x,y,subx,suby,size,h,ref_index,src_index, cmp_func, chroma_cmp_func, flags&FLAG_QPEL);
+    }else{
+        return cmp_inline(s,x,y,subx,suby,size,h,ref_index,src_index, cmp_func, chroma_cmp_func, flags&FLAG_QPEL, flags&FLAG_CHROMA);
+    }
+}
+
+static av_always_inline int cmp(MpegEncContext *s, const int x, const int y, const int subx, const int suby,
+                      const int size, const int h, int ref_index, int src_index,
+                      me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, const int flags){
+    if(av_builtin_constant_p(flags) && av_builtin_constant_p(h) && av_builtin_constant_p(size)
+       && av_builtin_constant_p(subx) && av_builtin_constant_p(suby)
+       && flags==0 && h==16 && size==0 && subx==0 && suby==0){
+        return cmp_simple(s,x,y,ref_index,src_index, cmp_func, chroma_cmp_func);
+    }else if(av_builtin_constant_p(subx) && av_builtin_constant_p(suby)
+       && subx==0 && suby==0){
+        return cmp_fpel_internal(s,x,y,size,h,ref_index,src_index, cmp_func, chroma_cmp_func,flags);
+    }else{
+        return cmp_internal(s,x,y,subx,suby,size,h,ref_index,src_index, cmp_func, chroma_cmp_func, flags);
+    }
+}
+
+static int cmp_hpel(MpegEncContext *s, const int x, const int y, const int subx, const int suby,
+                      const int size, const int h, int ref_index, int src_index,
+                      me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, const int flags){
+    if(flags&FLAG_DIRECT){
+        return cmp_direct_inline(s,x,y,subx,suby,size,h,ref_index,src_index, cmp_func, chroma_cmp_func, 0);
+    }else{
+        return cmp_inline(s,x,y,subx,suby,size,h,ref_index,src_index, cmp_func, chroma_cmp_func, 0, flags&FLAG_CHROMA);
+    }
+}
+
+static int cmp_qpel(MpegEncContext *s, const int x, const int y, const int subx, const int suby,
+                      const int size, const int h, int ref_index, int src_index,
+                      me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, const int flags){
+    if(flags&FLAG_DIRECT){
+        return cmp_direct_inline(s,x,y,subx,suby,size,h,ref_index,src_index, cmp_func, chroma_cmp_func, 1);
+    }else{
+        return cmp_inline(s,x,y,subx,suby,size,h,ref_index,src_index, cmp_func, chroma_cmp_func, 1, flags&FLAG_CHROMA);
+    }
 }
 
 #include "motion_est_template.c"

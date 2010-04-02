@@ -39,7 +39,7 @@
 {\
     const int hx= 2*(x)+(dx);\
     const int hy= 2*(y)+(dy);\
-    d= cmp(s, x, y, dx, dy, size, h, ref_index, src_index, cmp_sub, chroma_cmp_sub, flags);\
+    d= cmp_hpel(s, x, y, dx, dy, size, h, ref_index, src_index, cmp_sub, chroma_cmp_sub, flags);\
     d += (mv_penalty[hx - pred_x] + mv_penalty[hy - pred_y])*penalty_factor;\
     COPY3_IF_LT(dmin, d, bx, hx, by, hy)\
 }
@@ -266,7 +266,7 @@ inline int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
 {\
     const int hx= 4*(x)+(dx);\
     const int hy= 4*(y)+(dy);\
-    d= cmp(s, x, y, dx, dy, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);\
+    d= cmp_qpel(s, x, y, dx, dy, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);\
     d += (mv_penalty[hx - pred_x] + mv_penalty[hy - pred_y])*penalty_factor;\
     COPY3_IF_LT(dmin, d, bx, hx, by, hy)\
 }
