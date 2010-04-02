@@ -535,7 +535,7 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
     uint32_t state=0xFFFFFFFF;
 
     while(!url_feof(pb)){
-        int len, num, res, i;
+        int len, num, i;
         *pos= url_ftell(pb) - 3;
         if(rm->remaining_len > 0){
             num= rm->current_stream;
@@ -574,7 +574,7 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
 
             num = get_be16(pb);
             *timestamp = get_be32(pb);
-            res= get_byte(pb); /* reserved */
+            get_byte(pb); /* reserved */
             *flags = get_byte(pb); /* flags */
         }
         for(i=0;i<s->nb_streams;i++) {
