@@ -2988,7 +2988,7 @@ static void opt_input_file(const char *filename)
             }else{
                 found=1;
                 for(j=0; j<p->nb_stream_indexes; j++){
-                    ic->streams[p->stream_index[j]]->discard= 0;
+                    ic->streams[p->stream_index[j]]->discard= AVDISCARD_DEFAULT;
                 }
             }
         }
