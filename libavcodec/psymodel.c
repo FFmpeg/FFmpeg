@@ -80,17 +80,14 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
 {
     FFPsyPreprocessContext *ctx;
     int i;
-    float cutoff_coeff;
+    float cutoff_coeff = 0;
     ctx        = av_mallocz(sizeof(FFPsyPreprocessContext));
     ctx->avctx = avctx;
 
     if (avctx->cutoff > 0)
         cutoff_coeff = 2.0 * avctx->cutoff / avctx->sample_rate;
-    else if (avctx->flags & CODEC_FLAG_QSCALE)
-        cutoff_coeff = 1.0f / av_clip(1 + avctx->global_quality / FF_QUALITY_SCALE, 1, 8);
-    else
-        cutoff_coeff = avctx->bit_rate / (4.0f * avctx->sample_rate * avctx->channels);
 
+    if (cutoff_coeff)
     ctx->fcoeffs = ff_iir_filter_init_coeffs(FF_FILTER_TYPE_BUTTERWORTH, FF_FILTER_MODE_LOWPASS,
                                              FILT_ORDER, cutoff_coeff, 0.0, 0.0);
     if (ctx->fcoeffs) {
