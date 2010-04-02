@@ -1489,11 +1489,49 @@ static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
                           0, 16);
 
     if(s->avctx->bidir_refine){
-        int score, end;
+        int end;
+        static const uint8_t limittab[5]={0,8,32,64,80};
+        const int limit= limittab[s->avctx->bidir_refine];
+        static const int8_t vect[][4]={
+{ 0, 0, 0, 1}, { 0, 0, 0,-1}, { 0, 0, 1, 0}, { 0, 0,-1, 0}, { 0, 1, 0, 0}, { 0,-1, 0, 0}, { 1, 0, 0, 0}, {-1, 0, 0, 0},
+
+{ 0, 0, 1, 1}, { 0, 0,-1,-1}, { 0, 1, 1, 0}, { 0,-1,-1, 0}, { 1, 1, 0, 0}, {-1,-1, 0, 0}, { 1, 0, 0, 1}, {-1, 0, 0,-1},
+{ 0, 1, 0, 1}, { 0,-1, 0,-1}, { 1, 0, 1, 0}, {-1, 0,-1, 0},
+{ 0, 0,-1, 1}, { 0, 0, 1,-1}, { 0,-1, 1, 0}, { 0, 1,-1, 0}, {-1, 1, 0, 0}, { 1,-1, 0, 0}, { 1, 0, 0,-1}, {-1, 0, 0, 1},
+{ 0,-1, 0, 1}, { 0, 1, 0,-1}, {-1, 0, 1, 0}, { 1, 0,-1, 0},
+
+{ 0, 1, 1, 1}, { 0,-1,-1,-1}, { 1, 1, 1, 0}, {-1,-1,-1, 0}, { 1, 1, 0, 1}, {-1,-1, 0,-1}, { 1, 0, 1, 1}, {-1, 0,-1,-1},
+{ 0,-1, 1, 1}, { 0, 1,-1,-1}, {-1, 1, 1, 0}, { 1,-1,-1, 0}, { 1, 1, 0,-1}, {-1,-1, 0, 1}, { 1, 0,-1, 1}, {-1, 0, 1,-1},
+{ 0, 1,-1, 1}, { 0,-1, 1,-1}, { 1,-1, 1, 0}, {-1, 1,-1, 0}, {-1, 1, 0, 1}, { 1,-1, 0,-1}, { 1, 0, 1,-1}, {-1, 0,-1, 1},
+{ 0, 1, 1,-1}, { 0,-1,-1, 1}, { 1, 1,-1, 0}, {-1,-1, 1, 0}, { 1,-1, 0, 1}, {-1, 1, 0,-1}, {-1, 0, 1, 1}, { 1, 0,-1,-1},
+
+{ 1, 1, 1, 1}, {-1,-1,-1,-1},
+{ 1, 1, 1,-1}, {-1,-1,-1, 1}, { 1, 1,-1, 1}, {-1,-1, 1,-1}, { 1,-1, 1, 1}, {-1, 1,-1,-1}, {-1, 1, 1, 1}, { 1,-1,-1,-1},
+{ 1, 1,-1,-1}, {-1,-1, 1, 1}, { 1,-1,-1, 1}, {-1, 1, 1,-1}, { 1,-1, 1,-1}, {-1, 1,-1, 1},
+        };
+        static const uint8_t hash[]={
+HASH( 0, 0, 0, 1), HASH( 0, 0, 0,-1), HASH( 0, 0, 1, 0), HASH( 0, 0,-1, 0), HASH( 0, 1, 0, 0), HASH( 0,-1, 0, 0), HASH( 1, 0, 0, 0), HASH(-1, 0, 0, 0),
+
+HASH( 0, 0, 1, 1), HASH( 0, 0,-1,-1), HASH( 0, 1, 1, 0), HASH( 0,-1,-1, 0), HASH( 1, 1, 0, 0), HASH(-1,-1, 0, 0), HASH( 1, 0, 0, 1), HASH(-1, 0, 0,-1),
+HASH( 0, 1, 0, 1), HASH( 0,-1, 0,-1), HASH( 1, 0, 1, 0), HASH(-1, 0,-1, 0),
+HASH( 0, 0,-1, 1), HASH( 0, 0, 1,-1), HASH( 0,-1, 1, 0), HASH( 0, 1,-1, 0), HASH(-1, 1, 0, 0), HASH( 1,-1, 0, 0), HASH( 1, 0, 0,-1), HASH(-1, 0, 0, 1),
+HASH( 0,-1, 0, 1), HASH( 0, 1, 0,-1), HASH(-1, 0, 1, 0), HASH( 1, 0,-1, 0),
+
+HASH( 0, 1, 1, 1), HASH( 0,-1,-1,-1), HASH( 1, 1, 1, 0), HASH(-1,-1,-1, 0), HASH( 1, 1, 0, 1), HASH(-1,-1, 0,-1), HASH( 1, 0, 1, 1), HASH(-1, 0,-1,-1),
+HASH( 0,-1, 1, 1), HASH( 0, 1,-1,-1), HASH(-1, 1, 1, 0), HASH( 1,-1,-1, 0), HASH( 1, 1, 0,-1), HASH(-1,-1, 0, 1), HASH( 1, 0,-1, 1), HASH(-1, 0, 1,-1),
+HASH( 0, 1,-1, 1), HASH( 0,-1, 1,-1), HASH( 1,-1, 1, 0), HASH(-1, 1,-1, 0), HASH(-1, 1, 0, 1), HASH( 1,-1, 0,-1), HASH( 1, 0, 1,-1), HASH(-1, 0,-1, 1),
+HASH( 0, 1, 1,-1), HASH( 0,-1,-1, 1), HASH( 1, 1,-1, 0), HASH(-1,-1, 1, 0), HASH( 1,-1, 0, 1), HASH(-1, 1, 0,-1), HASH(-1, 0, 1, 1), HASH( 1, 0,-1,-1),
+
+HASH( 1, 1, 1, 1), HASH(-1,-1,-1,-1),
+HASH( 1, 1, 1,-1), HASH(-1,-1,-1, 1), HASH( 1, 1,-1, 1), HASH(-1,-1, 1,-1), HASH( 1,-1, 1, 1), HASH(-1, 1,-1,-1), HASH(-1, 1, 1, 1), HASH( 1,-1,-1,-1),
+HASH( 1, 1,-1,-1), HASH(-1,-1, 1, 1), HASH( 1,-1,-1, 1), HASH(-1, 1, 1,-1), HASH( 1,-1, 1,-1), HASH(-1, 1,-1, 1),
+};
+
 #define CHECK_BIDIR(fx,fy,bx,by)\
     if( !map[(hashidx+HASH(fx,fy,bx,by))&255]\
        &&(fx<=0 || motion_fx+fx<=xmax) && (fy<=0 || motion_fy+fy<=ymax) && (bx<=0 || motion_bx+bx<=xmax) && (by<=0 || motion_by+by<=ymax)\
        &&(fx>=0 || motion_fx+fx>=xmin) && (fy>=0 || motion_fy+fy>=ymin) && (bx>=0 || motion_bx+bx>=xmin) && (by>=0 || motion_by+by>=ymin)){\
+        int score;\
         map[(hashidx+HASH(fx,fy,bx,by))&255] = 1;\
         score= check_bidir_mv(s, motion_fx+fx, motion_fy+fy, motion_bx+bx, motion_by+by, pred_fx, pred_fy, pred_bx, pred_by, 0, 16);\
         if(score < fbmin){\
@@ -1510,34 +1548,45 @@ static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
 CHECK_BIDIR(a,b,c,d)\
 CHECK_BIDIR(-(a),-(b),-(c),-(d))
 
-#define CHECK_BIDIRR(a,b,c,d)\
-CHECK_BIDIR2(a,b,c,d)\
-CHECK_BIDIR2(b,c,d,a)\
-CHECK_BIDIR2(c,d,a,b)\
-CHECK_BIDIR2(d,a,b,c)
-
         do{
+            int i;
+            int borderdist=0;
             end=1;
 
-            CHECK_BIDIRR( 0, 0, 0, 1)
-            if(s->avctx->bidir_refine > 1){
-                CHECK_BIDIRR( 0, 0, 1, 1)
-                CHECK_BIDIR2( 0, 1, 0, 1)
-                CHECK_BIDIR2( 1, 0, 1, 0)
-                CHECK_BIDIRR( 0, 0,-1, 1)
-                CHECK_BIDIR2( 0,-1, 0, 1)
-                CHECK_BIDIR2(-1, 0, 1, 0)
-                if(s->avctx->bidir_refine > 2){
-                    CHECK_BIDIRR( 0, 1, 1, 1)
-                    CHECK_BIDIRR( 0,-1, 1, 1)
-                    CHECK_BIDIRR( 0, 1,-1, 1)
-                    CHECK_BIDIRR( 0, 1, 1,-1)
-                    if(s->avctx->bidir_refine > 3){
-                        CHECK_BIDIR2( 1, 1, 1, 1)
-                        CHECK_BIDIRR( 1, 1, 1,-1)
-                        CHECK_BIDIR2( 1, 1,-1,-1)
-                        CHECK_BIDIR2( 1,-1,-1, 1)
-                        CHECK_BIDIR2( 1,-1, 1,-1)
+            CHECK_BIDIR2(0,0,0,1)
+            CHECK_BIDIR2(0,0,1,0)
+            CHECK_BIDIR2(0,1,0,0)
+            CHECK_BIDIR2(1,0,0,0)
+
+            for(i=8; i<limit; i++){
+                int fx= motion_fx+vect[i][0];
+                int fy= motion_fy+vect[i][1];
+                int bx= motion_bx+vect[i][2];
+                int by= motion_by+vect[i][3];
+                if(borderdist<=0){
+                    int a= (xmax - FFMAX(fx,bx))|(FFMIN(fx,bx) - xmin);
+                    int b= (ymax - FFMAX(fy,by))|(FFMIN(fy,by) - ymin);
+                    if((a|b) < 0)
+                        map[(hashidx+hash[i])&255] = 1;
+                }
+                if(!map[(hashidx+hash[i])&255]){
+                    int score;
+                    map[(hashidx+hash[i])&255] = 1;
+                    score= check_bidir_mv(s, fx, fy, bx, by, pred_fx, pred_fy, pred_bx, pred_by, 0, 16);
+                    if(score < fbmin){
+                        hashidx += hash[i];
+                        fbmin= score;
+                        motion_fx=fx;
+                        motion_fy=fy;
+                        motion_bx=bx;
+                        motion_by=by;
+                        end=0;
+                        borderdist--;
+                        if(borderdist<=0){
+                            int a= FFMIN(xmax - FFMAX(fx,bx), FFMIN(fx,bx) - xmin);
+                            int b= FFMIN(ymax - FFMAX(fy,by), FFMIN(fy,by) - ymin);
+                            borderdist= FFMIN(a,b);
+                        }
                     }
                 }
             }
