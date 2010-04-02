@@ -368,7 +368,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return AVERROR(EIO);
     }
     /* take real parameters */
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = s->codec_id;
     st->codec->sample_rate = s->sample_rate;
     st->codec->channels = s->channels;
