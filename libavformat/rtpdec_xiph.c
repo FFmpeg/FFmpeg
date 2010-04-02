@@ -390,7 +390,7 @@ RTPDynamicProtocolHandler ff_theora_dynamic_handler = {
 
 RTPDynamicProtocolHandler ff_vorbis_dynamic_handler = {
     .enc_name         = "vorbis",
-    .codec_type       = CODEC_TYPE_AUDIO,
+    .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = CODEC_ID_VORBIS,
     .parse_sdp_a_line = xiph_parse_sdp_line,
     .open             = xiph_new_context,
