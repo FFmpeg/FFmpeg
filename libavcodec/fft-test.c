@@ -202,6 +202,7 @@ static void help(void)
            "-s     speed test\n"
            "-m     (I)MDCT test\n"
            "-d     (I)DCT test\n"
+           "-r     (I)RDFT test\n"
            "-i     inverse transform test\n"
            "-n b   set the transform size to 2^b\n"
            "-f x   set scale factor for output data of (I)MDCT to x\n"
