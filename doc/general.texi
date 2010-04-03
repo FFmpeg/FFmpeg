@@ -721,12 +721,19 @@ performance on systems without hardware floating point support).
 
 BeOS support is broken in mysterious ways.
 
-@section BSD
+@section OS/2
+
+For information about compiling FFmpeg on OS/2 see
+@url{http://www.edm2.com/index.php/FFmpeg}.
+
+@section Unix-like
+
+@subsection BSD
 
 BSD make will not build FFmpeg, you need to install and use GNU Make
 (@file{gmake}).
 
-@subsection FreeBSD
+@subsubsection FreeBSD
 
 FreeBSD will not compile out-of-the-box due to broken system headers.
 Passing @code{--extra-cflags=-D__BSD_VISIBLE} to configure will work
@@ -734,12 +741,7 @@ around the problem. This may have unexpected sideeffects, so use it at
 your own risk. If you care about FreeBSD, please make an attempt at
 getting the system headers fixed.
 
-@section OS/2
-
-For information about compiling FFmpeg on OS/2 see
-@url{http://www.edm2.com/index.php/FFmpeg}.
-
-@section (Open)Solaris
+@subsection (Open)Solaris
 
 GNU Make is required to build FFmpeg, so you have to invoke (@file{gmake}),
 standard Solaris Make will not work. When building with a non-c99 front-end
