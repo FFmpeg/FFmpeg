@@ -27,7 +27,7 @@ version <next>:
 - Electronic Arts Madcow decoder
 - DivX (XSUB) subtitle encoder
 - nonfree libamr support for AMR-NB/WB decoding/encoding removed
-- Experimental AAC encoder
+- experimental AAC encoder
 - RTP depacketization of ASF and RTSP from WMS servers
 - RTMP support in libavformat
 - noX handling for OPT_BOOL X options
@@ -36,7 +36,7 @@ version <next>:
 - TwinVQ decoder
 - Bluray (PGS) subtitle decoder
 - LPCM support in MPEG-TS (HDMV RID as found on Blu-ray disks)
-- Wmapro decoder
+- WMA Pro decoder
 - Core Audio Format demuxer
 - Atrac1 decoder
 - MD STUDIO audio demuxer
@@ -57,8 +57,8 @@ version <next>:
 - concat protocol
 - Indeo 5 decoder
 - RTP depacketization of AMR
-- WMAVoice decoder
-- FFprobe tool
+- WMA Voice decoder
+- ffprobe tool
 - AMR-NB decoder
 - RTSP muxer
 - HE-AAC v1 decoder
