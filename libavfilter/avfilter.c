@@ -294,14 +294,13 @@ void avfilter_end_frame(AVFilterLink *link)
 void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     uint8_t *src[4], *dst[4];
-    int i, j, hsub, vsub;
+    int i, j, vsub;
     void (*draw_slice)(AVFilterLink *, int, int, int);
 
     DPRINTF_START(NULL, draw_slice); dprintf_link(NULL, link, 0); dprintf(NULL, " y:%d h:%d dir:%d\n", y, h, slice_dir);
 
     /* copy the slice if needed for permission reasons */
     if(link->srcpic) {
-        hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
         vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
         for(i = 0; i < 4; i ++) {
