@@ -133,10 +133,10 @@ static av_cold int gif_encode_init(AVCodecContext *avctx)
     avctx->coded_frame = &s->picture;
     s->lzw = av_mallocz(ff_lzw_encode_state_size);
     if (!s->lzw)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     s->buf = av_malloc(avctx->width*avctx->height*2);
     if (!s->buf)
-         return AVERROR_NOMEM;
+         return AVERROR(ENOMEM);
     return 0;
 }
 

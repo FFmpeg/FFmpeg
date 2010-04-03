@@ -186,7 +186,7 @@ static int wc3_read_header(AVFormatContext *s,
             /* load up the name */
             buffer = av_malloc(size+1);
             if (!buffer)
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
             if ((ret = get_buffer(pb, buffer, size)) != size)
                 return AVERROR(EIO);
             buffer[size] = 0;

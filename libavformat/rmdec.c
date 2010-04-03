@@ -106,7 +106,7 @@ static int rm_read_extradata(ByteIOContext *pb, AVCodecContext *avctx, unsigned 
         return -1;
     avctx->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     avctx->extradata_size = get_buffer(pb, avctx->extradata, size);
     memset(avctx->extradata + avctx->extradata_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     if (avctx->extradata_size != size)

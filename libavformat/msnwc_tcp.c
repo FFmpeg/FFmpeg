@@ -77,7 +77,7 @@ static int msnwc_tcp_read_header(AVFormatContext *ctx, AVFormatParameters *ap)
 
     st = av_new_stream(ctx, 0);
     if(!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     codec = st->codec;
     codec->codec_type = AVMEDIA_TYPE_VIDEO;

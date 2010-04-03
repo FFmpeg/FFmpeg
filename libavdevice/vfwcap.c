@@ -284,7 +284,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st = av_new_stream(s, 0);
     if(!st) {
         vfw_read_close(s);
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     }
 
     /* Set video format */
@@ -294,7 +294,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     bi = av_malloc(bisize);
     if(!bi) {
         vfw_read_close(s);
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     }
     ret = SendMessage(ctx->hwnd, WM_CAP_GET_VIDEOFORMAT, bisize, (LPARAM) bi);
     if(!ret)

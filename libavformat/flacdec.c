@@ -67,7 +67,7 @@ static int flac_read_header(AVFormatContext *s,
         case FLAC_METADATA_TYPE_VORBIS_COMMENT:
             buffer = av_mallocz(metadata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!buffer) {
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
             }
             if (get_buffer(s->pb, buffer, metadata_size) != metadata_size) {
                 av_freep(&buffer);

@@ -352,7 +352,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     /* initialize MD5 context */
     s->md5ctx = av_malloc(av_md5_size);
     if(!s->md5ctx)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     av_md5_init(s->md5ctx);
 
     streaminfo = av_malloc(FLAC_STREAMINFO_SIZE);

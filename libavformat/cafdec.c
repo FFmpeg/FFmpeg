@@ -61,7 +61,7 @@ static int read_desc_chunk(AVFormatContext *s)
     /* new audio stream */
     st = av_new_stream(s, 0);
     if (!st)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     /* parse format description */
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;

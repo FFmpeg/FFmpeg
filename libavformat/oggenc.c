@@ -121,7 +121,7 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
     oggstream->header[0] = av_mallocz(51); // per ogg flac specs
     p = oggstream->header[0];
     if (!p)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     bytestream_put_byte(&p, 0x7F);
     bytestream_put_buffer(&p, "FLAC", 4);
     bytestream_put_byte(&p, 1); // major version
@@ -135,7 +135,7 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
     // second packet: VorbisComment
     p = ogg_write_vorbiscomment(4, bitexact, &oggstream->header_len[1], m);
     if (!p)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     oggstream->header[1] = p;
     bytestream_put_byte(&p, 0x84); // last metadata block and vorbis comment
     bytestream_put_be24(&p, oggstream->header_len[1] - 4);
@@ -157,7 +157,7 @@ static int ogg_build_speex_headers(AVCodecContext *avctx,
     // first packet: Speex header
     p = av_mallocz(SPEEX_HEADER_SIZE);
     if (!p)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     oggstream->header[0] = p;
     oggstream->header_len[0] = SPEEX_HEADER_SIZE;
     bytestream_put_buffer(&p, avctx->extradata, SPEEX_HEADER_SIZE);
@@ -166,7 +166,7 @@ static int ogg_build_speex_headers(AVCodecContext *avctx,
     // second packet: VorbisComment
     p = ogg_write_vorbiscomment(0, bitexact, &oggstream->header_len[1], m);
     if (!p)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     oggstream->header[1] = p;
 
     return 0;

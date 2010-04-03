@@ -56,7 +56,7 @@ static int ape_tag_read_field(AVFormatContext *s)
         return -1;
     value = av_malloc(size+1);
     if (!value)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     get_buffer(pb, value, size);
     value[size] = 0;
     av_metadata_set2(&s->metadata, key, value, AV_METADATA_DONT_STRDUP_VAL);

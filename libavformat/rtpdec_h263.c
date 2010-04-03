@@ -78,7 +78,7 @@ static int h263_handle_packet(AVFormatContext *ctx,
 
     if (av_new_packet(pkt, len + startcode)) {
         av_log(ctx, AV_LOG_ERROR, "Out of memory\n");
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     }
     pkt->stream_index = st->index;
     ptr = pkt->data;

@@ -433,7 +433,7 @@ static int mpegts_write_header(AVFormatContext *s)
             st->codec->extradata_size > 0) {
             ts_st->adts = av_mallocz(sizeof(*ts_st->adts));
             if (!ts_st->adts)
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
             if (ff_adts_decode_extradata(s, ts_st->adts, st->codec->extradata,
                                          st->codec->extradata_size) < 0)
                 return -1;
@@ -836,7 +836,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
                 return -1;
             data = av_malloc(new_size);
             if (!data)
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
             ff_adts_write_frame_header(adts, data, pkt->size, adts->pce_size);
             if (adts->pce_size) {
                 memcpy(data+ADTS_HEADER_SIZE, adts->pce_data, adts->pce_size);

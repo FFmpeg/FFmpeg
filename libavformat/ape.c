@@ -248,7 +248,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
     }
     ape->frames       = av_malloc(ape->totalframes * sizeof(APEFrame));
     if(!ape->frames)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     ape->firstframe   = ape->junklength + ape->descriptorlength + ape->headerlength + ape->seektablelength + ape->wavheaderlength;
     ape->currentframe = 0;
 
@@ -351,7 +351,7 @@ static int ape_read_packet(AVFormatContext * s, AVPacket * pkt)
         nblocks = ape->blocksperframe;
 
     if (av_new_packet(pkt,  ape->frames[ape->currentframe].size + extra_size) < 0)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     AV_WL32(pkt->data    , nblocks);
     AV_WL32(pkt->data + 4, ape->frames[ape->currentframe].skip);

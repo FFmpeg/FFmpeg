@@ -134,7 +134,7 @@ static int xiph_handle_packet(AVFormatContext * ctx,
 
         if (av_new_packet(pkt, data_len)) {
             av_log(ctx, AV_LOG_ERROR, "Out of memory.\n");
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         }
         pkt->stream_index = st->index;
 
@@ -189,7 +189,7 @@ static int xiph_handle_packet(AVFormatContext * ctx,
 
             if (av_new_packet(pkt, frame_size)) {
                 av_log(ctx, AV_LOG_ERROR, "Out of memory.\n");
-                return AVERROR_NOMEM;
+                return AVERROR(ENOMEM);
             }
 
             memcpy(pkt->data, xiph_data, frame_size);
@@ -272,7 +272,7 @@ parse_packed_headers(const uint8_t * packed_headers,
     ptr = codec->extradata = av_malloc(extradata_alloc);
     if (!ptr) {
         av_log(codec, AV_LOG_ERROR, "Out of memory\n");
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     }
     *ptr++ = 2;
     ptr += av_xiphlacing(ptr, length1);
@@ -331,7 +331,7 @@ static int xiph_parse_fmtp_pair(AVCodecContext * codec,
             } else {
                 av_log(codec, AV_LOG_ERROR,
                        "Out of memory while decoding SDP configuration.\n");
-                result = AVERROR_NOMEM;
+                result = AVERROR(ENOMEM);
             }
         } else {
             av_log(codec, AV_LOG_ERROR, "Packet too large\n");
@@ -356,7 +356,7 @@ static int xiph_parse_sdp_line(AVFormatContext *s, int st_index,
 
     if (!(value = av_malloc(value_size))) {
         av_log(codec, AV_LOG_ERROR, "Out of memory\n");
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     }
 
     if (av_strstart(line, "fmtp:", &p)) {

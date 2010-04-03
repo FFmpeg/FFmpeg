@@ -288,11 +288,11 @@ static int tgv_decode_frame(AVCodecContext *avctx,
         /* allocate additional 12 bytes to accomodate av_memcpy_backptr() OUTBUF_PADDED optimisation */
         s->frame.data[0] = av_malloc(s->width*s->height + 12);
         if (!s->frame.data[0])
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         s->frame.data[1] = av_malloc(AVPALETTE_SIZE);
         if (!s->frame.data[1]) {
             av_freep(&s->frame.data[0]);
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
         }
     }
     memcpy(s->frame.data[1], s->palette, AVPALETTE_SIZE);

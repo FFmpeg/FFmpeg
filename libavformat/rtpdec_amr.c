@@ -83,7 +83,7 @@ static int amr_handle_packet(AVFormatContext *ctx,
     /* Everything except the codec mode request byte should be output. */
     if (av_new_packet(pkt, len - 1)) {
         av_log(ctx, AV_LOG_ERROR, "Out of memory\n");
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
     }
     pkt->stream_index = st->index;
     ptr = pkt->data;
