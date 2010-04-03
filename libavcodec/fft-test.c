@@ -300,10 +300,10 @@ int main(int argc, char **argv)
         break;
     case TRANSFORM_DCT:
         if (do_inverse)
-            av_log(NULL, AV_LOG_INFO,"IDCT");
+            av_log(NULL, AV_LOG_INFO,"DCT_III");
         else
-            av_log(NULL, AV_LOG_INFO,"DCT");
-        ff_dct_init(d, fft_nbits, do_inverse);
+            av_log(NULL, AV_LOG_INFO,"DCT_II");
+        ff_dct_init(d, fft_nbits, do_inverse ? DCT_III : DCT_II);
         break;
     }
     av_log(NULL, AV_LOG_INFO," %d test\n", fft_size);
