@@ -728,6 +728,19 @@ For information about compiling FFmpeg on OS/2 see
 
 @section Unix-like
 
+Some parts of FFmpeg cannot be built with version 2.15 of the GNU
+assembler which is still provided by a few AMD64 distributions. To
+make sure your compiler really uses the required version of gas
+after a binutils upgrade, run:
+
+@example
+$(gcc -print-prog-name=as) --version
+@end example
+
+If not, then you should install a different compiler that has no
+hard-coded path to gas. In the worst case pass @code{--disable-asm}
+to configure.
+
 @subsection BSD
 
 BSD make will not build FFmpeg, you need to install and use GNU Make
