@@ -611,8 +611,9 @@ typedef struct AVFormatContext {
        It is deduced from the AVStream values.  */
     int64_t start_time;
     /** Decoding: duration of the stream, in AV_TIME_BASE fractional
-       seconds. NEVER set this value directly: it is deduced from the
-       AVStream values.  */
+       seconds. Only set this value if you know none of the individual stream
+       durations and also dont set any of them. This is deduced from the
+       AVStream values if not set.  */
     int64_t duration;
     /** decoding: total file size, 0 if unknown */
     int64_t file_size;
