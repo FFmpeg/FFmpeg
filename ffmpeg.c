@@ -2193,7 +2193,7 @@ static int av_transcode(AVFormatContext **output_files,
 
         mtag=NULL;
         while((mtag=av_metadata_get(in_file->metadata, "", mtag, AV_METADATA_IGNORE_SUFFIX)))
-            av_metadata_set(&out_file->metadata, mtag->key, mtag->value);
+            av_metadata_set2(&out_file->metadata, mtag->key, mtag->value, AV_METADATA_DONT_OVERWRITE);
         av_metadata_conv(out_file, out_file->oformat->metadata_conv,
                                     in_file->iformat->metadata_conv);
     }
