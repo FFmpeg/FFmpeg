@@ -402,7 +402,7 @@ static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
     infos->nb_au_headers = au_headers_length / au_header_size;
     if (!infos->au_headers || infos->au_headers_allocated < infos->nb_au_headers) {
         av_free(infos->au_headers);
-    infos->au_headers = av_malloc(sizeof(struct AUHeaders) * infos->nb_au_headers);
+        infos->au_headers = av_malloc(sizeof(struct AUHeaders) * infos->nb_au_headers);
         infos->au_headers_allocated = infos->nb_au_headers;
     }
 
