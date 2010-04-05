@@ -400,7 +400,11 @@ static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
         return -1;
 
     infos->nb_au_headers = au_headers_length / au_header_size;
+    if (!infos->au_headers || infos->au_headers_allocated < infos->nb_au_headers) {
+        av_free(infos->au_headers);
     infos->au_headers = av_malloc(sizeof(struct AUHeaders) * infos->nb_au_headers);
+        infos->au_headers_allocated = infos->nb_au_headers;
+    }
 
     /* XXX: We handle multiple AU Section as only one (need to fix this for interleaving)
        In my test, the FAAD decoder does not behave correctly when sending each AU one by one
@@ -599,6 +603,8 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
 void rtp_parse_close(RTPDemuxContext *s)
 {
     // TODO: fold this into the protocol specific data fields.
+    av_free(s->rtp_payload_data->mode);
+    av_free(s->rtp_payload_data->au_headers);
     if (!strcmp(ff_rtp_enc_name(s->payload_type), "MP2T")) {
         ff_mpegts_parse_close(s->ts);
     }

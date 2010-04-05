@@ -48,6 +48,7 @@ typedef struct rtp_payload_data
         int rap_flag;
         int streamstate;
     } *au_headers;
+    int au_headers_allocated;
     int nb_au_headers;
     int au_headers_length_bytes;
     int cur_au_index;
