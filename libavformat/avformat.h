@@ -119,6 +119,7 @@ struct AVFormatContext;
 #define AV_METADATA_IGNORE_SUFFIX   2
 #define AV_METADATA_DONT_STRDUP_KEY 4
 #define AV_METADATA_DONT_STRDUP_VAL 8
+#define AV_METADATA_DONT_OVERWRITE 16   ///< Don't overwrite existing tags.
 
 typedef struct {
     char *key;
