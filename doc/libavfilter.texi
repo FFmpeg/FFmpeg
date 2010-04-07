@@ -217,6 +217,59 @@ not specified it will use the default value of 16.
 Adding this in the beginning of filter chains should make filtering
 faster due to better use of the memory cache.
 
+@section unsharp
+
+Sharpen or blur the input video. It accepts the following parameters:
+
+@multitable @columnfractions .2 .5 .1 .1 .1
+@headitem Name @tab Description @tab Min @tab Max @tab Default
+@item @var{luma_msize_x}
+@tab Luma matrix horizontal size
+@tab 3
+@tab 13
+@tab 5
+@item @var{luma_msize_y}
+@tab Luma matrix vertical size
+@tab 3
+@tab 13
+@tab 5
+@item @var{luma_amount}
+@tab Luma effect strength
+@tab -2.0
+@tab 5.0
+@tab 1.0
+@item @var{chroma_msize_x}
+@tab Chroma matrix horizontal size
+@tab 3
+@tab 13
+@tab 0
+@item @var{chroma_msize_y}
+@tab Chroma matrix vertical size
+@tab 3
+@tab 13
+@tab 0
+@item @var{chroma_amount}
+@tab Chroma effect strength
+@tab -2.0
+@tab 5.0
+@tab 0.0
+@end multitable
+
+Negative values for the amount will blur the input video, while positive
+values will sharpen. All parameters are optional and default to the
+equivalent of the string '5:5:1.0:0:0:0.0'.
+
+@example
+# Strong luma sharpen effect parameters
+unsharp=7:7:2.5
+
+# Strong blur of both luma and chroma parameters
+unsharp=7:7:-2:7:7:-2
+
+# Use the default values with @command{ffmpeg}
+./ffmpeg -i in.avi -vfilters "unsharp" out.mp4
+@end example
+
 @section vflip
 
 Flip the input video vertically.
