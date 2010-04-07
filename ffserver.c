@@ -204,6 +204,7 @@ typedef struct FFStream {
     AVInputFormat *ifmt;       /* if non NULL, force input format */
     AVOutputFormat *fmt;
     IPAddressACL *acl;
+    char dynamic_acl[1024];
     int nb_streams;
     int prebuffer;      /* Number of millseconds early to start */
     int64_t max_time;      /* Number of milliseconds to run */
@@ -1257,14 +1258,129 @@ static void get_arg(char *buf, int buf_size, const char **pp)
     *pp = p;
 }
 
-static int validate_acl(FFStream *stream, HTTPContext *c)
+static void parse_acl_row(FFStream *stream, FFStream* feed, IPAddressACL *ext_acl,
+                         const char *p, const char *filename, int line_num)
+{
+    char arg[1024];
+    IPAddressACL acl;
+    int errors = 0;
+
+    get_arg(arg, sizeof(arg), &p);
+    if (strcasecmp(arg, "allow") == 0)
+        acl.action = IP_ALLOW;
+    else if (strcasecmp(arg, "deny") == 0)
+        acl.action = IP_DENY;
+    else {
+        fprintf(stderr, "%s:%d: ACL action '%s' is not ALLOW or DENY\n",
+                filename, line_num, arg);
+        errors++;
+    }
+
+    get_arg(arg, sizeof(arg), &p);
+
+    if (resolve_host(&acl.first, arg) != 0) {
+        fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
+                filename, line_num, arg);
+        errors++;
+    } else
+        acl.last = acl.first;
+
+    get_arg(arg, sizeof(arg), &p);
+
+    if (arg[0]) {
+        if (resolve_host(&acl.last, arg) != 0) {
+            fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
+                    filename, line_num, arg);
+            errors++;
+        }
+    }
+
+    if (!errors) {
+        IPAddressACL *nacl = av_mallocz(sizeof(*nacl));
+        IPAddressACL **naclp = 0;
+
+        acl.next = 0;
+        *nacl = acl;
+
+        if (stream)
+            naclp = &stream->acl;
+        else if (feed)
+            naclp = &feed->acl;
+        else if (ext_acl)
+            naclp = &ext_acl;
+        else {
+            fprintf(stderr, "%s:%d: ACL found not in <stream> or <feed>\n",
+                    filename, line_num);
+            errors++;
+        }
+
+        if (naclp) {
+            while (*naclp)
+                naclp = &(*naclp)->next;
+
+            *naclp = nacl;
+        }
+    }
+}
+
+
+static IPAddressACL* parse_dynamic_acl(FFStream *stream, HTTPContext *c)
+{
+    FILE* f;
+    char line[1024];
+    char  cmd[1024];
+    IPAddressACL *acl = NULL;
+    int line_num = 0;
+    const char *p;
+
+    f = fopen(stream->dynamic_acl, "r");
+    if (!f) {
+        perror(stream->dynamic_acl);
+        return NULL;
+    }
+
+    acl = av_mallocz(sizeof(IPAddressACL));
+
+    /* Build ACL */
+    for(;;) {
+        if (fgets(line, sizeof(line), f) == NULL)
+            break;
+        line_num++;
+        p = line;
+        while (isspace(*p))
+            p++;
+        if (*p == '\0' || *p == '#')
+            continue;
+        get_arg(cmd, sizeof(cmd), &p);
+
+        if (!strcasecmp(cmd, "ACL"))
+            parse_acl_row(NULL, NULL, acl, p, stream->dynamic_acl, line_num);
+    }
+    fclose(f);
+    return acl;
+}
+
+
+static void free_acl_list(IPAddressACL *in_acl)
+{
+    IPAddressACL *pacl,*pacl2;
+
+    pacl = in_acl;
+    while(pacl) {
+        pacl2 = pacl;
+        pacl = pacl->next;
+        av_freep(pacl2);
+    }
+}
+
+static int validate_acl_list(IPAddressACL *in_acl, HTTPContext *c)
 {
     enum IPAddressAction last_action = IP_DENY;
     IPAddressACL *acl;
     struct in_addr *src = &c->from_addr.sin_addr;
     unsigned long src_addr = src->s_addr;
 
-    for (acl = stream->acl; acl; acl = acl->next) {
+    for (acl = in_acl; acl; acl = acl->next) {
         if (src_addr >= acl->first.s_addr && src_addr <= acl->last.s_addr)
             return (acl->action == IP_ALLOW) ? 1 : 0;
         last_action = acl->action;
@@ -1272,6 +1388,26 @@ static int validate_acl(FFStream *stream, HTTPContext *c)
 
     /* Nothing matched, so return not the last action */
     return (last_action == IP_DENY) ? 1 : 0;
+}
+
+static int validate_acl(FFStream *stream, HTTPContext *c)
+{
+    int ret = 0;
+    IPAddressACL *acl;
+
+
+    /* if stream->acl is null validate_acl_list will return 1 */
+    ret = validate_acl_list(stream->acl, c);
+
+    if (stream->dynamic_acl[0]) {
+        acl = parse_dynamic_acl(stream, c);
+
+        ret = validate_acl_list(acl, c);
+
+        free_acl_list(acl);
+    }
+
+    return ret;
 }
 
 /* compute the real filename of a file by matching it without its
@@ -4345,61 +4481,10 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "NoAudio")) {
             audio_id = CODEC_ID_NONE;
         } else if (!strcasecmp(cmd, "ACL")) {
-            IPAddressACL acl;
-
-            get_arg(arg, sizeof(arg), &p);
-            if (strcasecmp(arg, "allow") == 0)
-                acl.action = IP_ALLOW;
-            else if (strcasecmp(arg, "deny") == 0)
-                acl.action = IP_DENY;
-            else {
-                fprintf(stderr, "%s:%d: ACL action '%s' is not ALLOW or DENY\n",
-                        filename, line_num, arg);
-                errors++;
-            }
-
-            get_arg(arg, sizeof(arg), &p);
-
-            if (resolve_host(&acl.first, arg) != 0) {
-                fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
-                        filename, line_num, arg);
-                errors++;
-            } else
-                acl.last = acl.first;
-
-            get_arg(arg, sizeof(arg), &p);
-
-            if (arg[0]) {
-                if (resolve_host(&acl.last, arg) != 0) {
-                    fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
-                            filename, line_num, arg);
-                    errors++;
-                }
-            }
-
-            if (!errors) {
-                IPAddressACL *nacl = av_mallocz(sizeof(*nacl));
-                IPAddressACL **naclp = 0;
-
-                acl.next = 0;
-                *nacl = acl;
-
-                if (stream)
-                    naclp = &stream->acl;
-                else if (feed)
-                    naclp = &feed->acl;
-                else {
-                    fprintf(stderr, "%s:%d: ACL found not in <stream> or <feed>\n",
-                            filename, line_num);
-                    errors++;
-                }
-
-                if (naclp) {
-                    while (*naclp)
-                        naclp = &(*naclp)->next;
-
-                    *naclp = nacl;
-                }
+            parse_acl_row(stream, feed, NULL, p, filename, line_num);
+        } else if (!strcasecmp(cmd, "DynamicACL")) {
+            if (stream) {
+                get_arg(stream->dynamic_acl, sizeof(stream->dynamic_acl), &p);
             }
         } else if (!strcasecmp(cmd, "RTSPOption")) {
             get_arg(arg, sizeof(arg), &p);
