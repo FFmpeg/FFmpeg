@@ -238,10 +238,6 @@ static int spdif_write_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "codec not supported\n");
         return -1;
     }
-    put_le16(s->pb, 0);
-    put_le16(s->pb, 0);
-    put_le16(s->pb, 0);
-    put_le16(s->pb, 0);
     return 0;
 }
 
