@@ -897,6 +897,11 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
 //TODO - implement ps_data for parametric stereo parsing
     switch (bs_extension_id) {
     case EXTENSION_ID_PS:
+        if (!ac->m4ac.ps) {
+            av_log(ac->avccontext, AV_LOG_ERROR, "Parametric Stereo signaled to be not-present but was found in the bitstream.\n");
+        skip_bits_long(gb, *num_bits_left); // bs_fill_bits
+        *num_bits_left = 0;
+        } else {
 #if 0
         *num_bits_left -= ff_ps_data(gb, ps);
 #else
@@ -904,6 +909,7 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
         skip_bits_long(gb, *num_bits_left); // bs_fill_bits
         *num_bits_left = 0;
 #endif
+        }
         break;
     default:
         av_log_missing_feature(ac->avccontext, "Reserved SBR extensions are", 1);
