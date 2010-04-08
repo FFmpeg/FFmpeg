@@ -516,19 +516,16 @@ int ff_probe_input_buffer(ByteIOContext **pb, AVInputFormat **fmt,
         }
     }
 
-    av_free(buf);
-
     if (!*fmt) {
+        av_free(buf);
         return AVERROR_INVALIDDATA;
     }
 
-    if (url_fseek(*pb, 0, SEEK_SET) < 0) {
-        url_fclose(*pb);
-        if (url_fopen(pb, filename, URL_RDONLY) < 0)
-            return AVERROR(EIO);
-    }
+    /* rewind. reuse probe buffer to avoid seeking */
+    if ((ret = ff_rewind_with_probe_data(*pb, buf, pd.buf_size)) < 0)
+        av_free(buf);
 
-    return 0;
+    return ret;
 }
 
 int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,

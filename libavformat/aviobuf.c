@@ -295,6 +295,7 @@ static void fill_buffer(ByteIOContext *s)
 {
     uint8_t *dst= !s->max_packet_size && s->buf_end - s->buffer < s->buffer_size ? s->buf_ptr : s->buffer;
     int len= s->buffer_size - (dst - s->buffer);
+    int max_buffer_size = s->max_packet_size ? s->max_packet_size : IO_BUFFER_SIZE;
 
     assert(s->buf_ptr == s->buf_end);
 
@@ -306,6 +307,14 @@ static void fill_buffer(ByteIOContext *s)
         if(s->buf_end > s->checksum_ptr)
             s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_end - s->checksum_ptr);
         s->checksum_ptr= s->buffer;
+    }
+
+    /* make buffer smaller in case it ended up large after probing */
+    if (s->buffer_size > max_buffer_size) {
+        url_setbufsize(s, max_buffer_size);
+
+        s->checksum_ptr = dst = s->buffer;
+        len = s->buffer_size;
     }
 
     if(s->read_packet)
@@ -608,6 +617,42 @@ static int url_resetbuf(ByteIOContext *s, int flags)
         s->buf_end = s->buffer;
         s->write_flag = 0;
     }
+    return 0;
+}
+
+int ff_rewind_with_probe_data(ByteIOContext *s, unsigned char *buf, int buf_size)
+{
+    int64_t buffer_start;
+    int buffer_size;
+    int overlap, new_size;
+
+    if (s->write_flag)
+        return AVERROR(EINVAL);
+
+    buffer_size = s->buf_end - s->buffer;
+
+    /* the buffers must touch or overlap */
+    if ((buffer_start = s->pos - buffer_size) > buf_size)
+        return AVERROR(EINVAL);
+
+    overlap = buf_size - buffer_start;
+    new_size = buf_size + buffer_size - overlap;
+
+    if (new_size > buf_size) {
+        if (!(buf = av_realloc(buf, new_size)))
+            return AVERROR(ENOMEM);
+
+        memcpy(buf + buf_size, s->buffer + overlap, buffer_size - overlap);
+        buf_size = new_size;
+    }
+
+    av_free(s->buffer);
+    s->buf_ptr = s->buffer = buf;
+    s->pos = s->buffer_size = buf_size;
+    s->buf_end = s->buf_ptr + buf_size;
+    s->eof_reached = 0;
+    s->must_flush = 0;
+
     return 0;
 }
 
