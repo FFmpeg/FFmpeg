@@ -115,8 +115,7 @@ int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_si
     }
 
     if (c->ext_object_type != AOT_SBR) {
-        int bits_left = buf_size*8 - get_bits_count(&gb);
-        for (; bits_left > 15; bits_left--) {
+        while (get_bits_left(&gb) > 15) {
             if (show_bits(&gb, 11) == 0x2b7) { // sync extension
                 get_bits(&gb, 11);
                 c->ext_object_type = get_object_type(&gb);
