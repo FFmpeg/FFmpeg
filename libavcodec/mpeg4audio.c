@@ -91,7 +91,7 @@ int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_si
     if (c->object_type == AOT_SBR || (c->object_type == AOT_PS &&
         // check for W6132 Annex YYYY draft MP3onMP4
         !(show_bits(&gb, 3) & 0x03 && !(show_bits(&gb, 9) & 0x3F)))) {
-        c->ext_object_type = c->object_type;
+        c->ext_object_type = AOT_SBR;
         c->sbr = 1;
         c->ext_sample_rate = get_sample_rate(&gb, &c->ext_sampling_index);
         c->object_type = get_object_type(&gb);
