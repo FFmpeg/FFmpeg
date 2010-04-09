@@ -739,6 +739,11 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
             if (pc && pc->repeat_pict) {
                 *pnum = (*pnum) * (1 + pc->repeat_pict);
             }
+            //If this codec can be interlaced or progressive then we need a parser to compute duration of a packet
+            //Thus if we have no parser in such case leave duration undefined.
+            if(st->codec->ticks_per_frame>1 && !pc){
+                *pnum = *pden = 0;
+            }
         }
         break;
     case AVMEDIA_TYPE_AUDIO:
