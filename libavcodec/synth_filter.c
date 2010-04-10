@@ -21,7 +21,7 @@
 #include "fft.h"
 #include "synth_filter.h"
 
-void ff_synth_filter_float(FFTContext *imdct,
+static void synth_filter_float(FFTContext *imdct,
                            float *synth_buf_ptr, int *synth_buf_offset,
                            float synth_buf2[32], const float window[512],
                            float out[32], const float in[32], float scale, float bias)
@@ -54,4 +54,11 @@ void ff_synth_filter_float(FFTContext *imdct,
         synth_buf2[i + 16] = d;
     }
     *synth_buf_offset= (*synth_buf_offset - 32)&511;
+}
+
+av_cold void ff_synth_filter_init(SynthFilterContext *c)
+{
+    c->synth_filter_float = synth_filter_float;
+
+    if (ARCH_ARM) ff_synth_filter_init_arm(c);
 }

@@ -253,6 +253,7 @@ typedef struct {
     int debug_flag;             ///< used for suppressing repeated error messages output
     DSPContext dsp;
     FFTContext imdct;
+    SynthFilterContext synth;
 } DCAContext;
 
 static const uint16_t dca_vlc_offs[] = {
@@ -775,7 +776,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
         for (; i < 32; i++)
             s->raXin[i] = 0.0;
 
-        ff_synth_filter_float(&s->imdct,
+        s->synth.synth_filter_float(&s->imdct,
                               s->subband_fir_hist[chans], &s->hist_index[chans],
                               s->subband_fir_noidea[chans], prCoeff,
                               samples_out, s->raXin, scale, bias);
@@ -1298,6 +1299,7 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
 
     dsputil_init(&s->dsp, avctx);
     ff_mdct_init(&s->imdct, 6, 1, 1.0);
+    ff_synth_filter_init(&s->synth);
 
     for(i = 0; i < 6; i++)
         s->samples_chanptr[i] = s->samples + i * 256;
