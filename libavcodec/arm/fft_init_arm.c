@@ -19,6 +19,7 @@
  */
 
 #include "libavcodec/fft.h"
+#include "libavcodec/synth_filter.h"
 
 void ff_fft_permute_neon(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_neon(FFTContext *s, FFTComplex *z);
@@ -28,6 +29,12 @@ void ff_imdct_half_neon(FFTContext *s, FFTSample *output, const FFTSample *input
 void ff_mdct_calc_neon(FFTContext *s, FFTSample *output, const FFTSample *input);
 
 void ff_rdft_calc_neon(struct RDFTContext *s, FFTSample *z);
+
+void ff_synth_filter_float_neon(FFTContext *imdct,
+                                float *synth_buf_ptr, int *synth_buf_offset,
+                                float synth_buf2[32], const float window[512],
+                                float out[32], const float in[32],
+                                float scale, float bias);
 
 av_cold void ff_fft_init_arm(FFTContext *s)
 {
@@ -46,5 +53,13 @@ av_cold void ff_rdft_init_arm(RDFTContext *s)
 {
     if (HAVE_NEON)
         s->rdft_calc    = ff_rdft_calc_neon;
+}
+#endif
+
+#if CONFIG_DCA_DECODER
+av_cold void ff_synth_filter_init_arm(SynthFilterContext *s)
+{
+    if (HAVE_NEON)
+        s->synth_filter_float = ff_synth_filter_float_neon;
 }
 #endif
