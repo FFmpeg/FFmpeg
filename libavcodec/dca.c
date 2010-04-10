@@ -230,7 +230,7 @@ typedef struct {
     /* Subband samples history (for ADPCM) */
     float subband_samples_hist[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][4];
     DECLARE_ALIGNED(16, float, subband_fir_hist)[DCA_PRIM_CHANNELS_MAX][512];
-    float subband_fir_noidea[DCA_PRIM_CHANNELS_MAX][32];
+    DECLARE_ALIGNED(16, float, subband_fir_noidea)[DCA_PRIM_CHANNELS_MAX][32];
     int hist_index[DCA_PRIM_CHANNELS_MAX];
     DECLARE_ALIGNED(16, float, raXin)[32];
 

@@ -6282,7 +6282,7 @@ static const int8_t high_freq_vq[1024][32] =
 
 /* FIR filter coefficients, they can be cut on half and maybe use float instead of double*/
 
-static const float fir_32bands_perfect[] =
+DECLARE_ALIGNED(16, static const float, fir_32bands_perfect)[] =
 {
 +1.135985195E-010,
 +7.018770981E-011,
@@ -6798,7 +6798,7 @@ static const float fir_32bands_perfect[] =
 -1.135985195E-010
 };
 
-static const float fir_32bands_nonperfect[] =
+DECLARE_ALIGNED(16, static const float, fir_32bands_nonperfect)[] =
 {
 -1.390191784E-007,
 -1.693738625E-007,
