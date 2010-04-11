@@ -28,6 +28,7 @@
 #define AVCODEC_DCADATA_H
 
 #include <stdint.h>
+#include "libavutil/mem.h"
 
 /* Generic tables */
 
