@@ -28,6 +28,8 @@
 #ifndef AVCODEC_EVAL_H
 #define AVCODEC_EVAL_H
 
+typedef struct ff_expr_s AVEvalExpr;
+
 /**
  * Parses and evaluates an expression.
  * Note, this is significantly slower than ff_parse_eval()
@@ -46,8 +48,6 @@ double ff_eval2(const char *s, const double *const_value, const char * const *co
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), const char **func2_name,
                void *opaque, const char **error);
-
-typedef struct ff_expr_s AVEvalExpr;
 
 /**
  * Parses a expression.
