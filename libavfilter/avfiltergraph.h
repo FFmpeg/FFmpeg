@@ -41,8 +41,9 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name);
 
 /**
  * Adds an existing filter instance to a filter graph.
- * @param graph  The filter graph
- * @param filter The filter to be added
+ *
+ * @param graph  the filter graph
+ * @param filter the filter to be added
  */
 int avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
 
