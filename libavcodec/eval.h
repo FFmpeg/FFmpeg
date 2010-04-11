@@ -28,7 +28,7 @@
 #ifndef AVCODEC_EVAL_H
 #define AVCODEC_EVAL_H
 
-typedef struct ff_expr_s AVExpr;
+typedef struct AVExpr AVExpr;
 
 /**
  * Parses and evaluates an expression.

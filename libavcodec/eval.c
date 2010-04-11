@@ -115,7 +115,7 @@ static int strmatch(const char *s, const char *prefix){
     return 1;
 }
 
-struct ff_expr_s {
+struct AVExpr {
     enum {
         e_value, e_const, e_func0, e_func1, e_func2,
         e_squish, e_gauss, e_ld,
@@ -130,7 +130,7 @@ struct ff_expr_s {
         double (*func1)(void *, double);
         double (*func2)(void *, double, double);
     } a;
-    AVExpr *param[2];
+    struct AVExpr *param[2];
 };
 
 static double eval_expr(Parser * p, AVExpr * e) {
