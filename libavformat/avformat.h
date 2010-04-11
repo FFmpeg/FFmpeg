@@ -1337,30 +1337,4 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
  */
 int av_match_ext(const char *filename, const char *extensions);
 
-#ifdef HAVE_AV_CONFIG_H
-
-void ff_dynarray_add(intptr_t **tab_ptr, int *nb_ptr, intptr_t elem);
-
-#ifdef __GNUC__
-#define dynarray_add(tab, nb_ptr, elem)\
-do {\
-    __typeof__(tab) _tab = (tab);\
-    __typeof__(elem) _elem = (elem);\
-    (void)sizeof(**_tab == _elem); /* check that types are compatible */\
-    ff_dynarray_add((intptr_t **)_tab, nb_ptr, (intptr_t)_elem);\
-} while(0)
-#else
-#define dynarray_add(tab, nb_ptr, elem)\
-do {\
-    ff_dynarray_add((intptr_t **)(tab), nb_ptr, (intptr_t)(elem));\
-} while(0)
-#endif
-
-time_t mktimegm(struct tm *tm);
-struct tm *brktimegm(time_t secs, struct tm *tm);
-const char *small_strptime(const char *p, const char *fmt,
-                           struct tm *dt);
-
-#endif /* HAVE_AV_CONFIG_H */
-
 #endif /* AVFORMAT_AVFORMAT_H */

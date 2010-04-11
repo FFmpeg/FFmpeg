@@ -30,6 +30,7 @@
 
 #include <stdio.h>
 #include "avformat.h"
+#include "internal.h"
 /* For ff_codec_get_id(). */
 #include "riff.h"
 #include "isom.h"

@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "internal.h"
 
 /* add one element to a dynamic array */
 void ff_dynarray_add(intptr_t **tab_ptr, int *nb_ptr, intptr_t elem)

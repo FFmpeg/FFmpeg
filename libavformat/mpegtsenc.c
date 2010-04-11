@@ -23,6 +23,7 @@
 #include "libavutil/crc.h"
 #include "libavcodec/mpegvideo.h"
 #include "avformat.h"
+#include "internal.h"
 #include "mpegts.h"
 #include "adts.h"
 
