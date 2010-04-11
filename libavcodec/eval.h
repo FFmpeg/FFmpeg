@@ -1,6 +1,4 @@
 /*
- * simple arithmetic expression evaluator
- *
  * Copyright (c) 2002 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -22,7 +20,7 @@
 
 /**
  * @file libavcodec/eval.h
- * eval header.
+ * simple arithmetic expression evaluator
  */
 
 #ifndef AVCODEC_EVAL_H
