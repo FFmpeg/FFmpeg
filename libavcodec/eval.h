@@ -28,7 +28,7 @@
 #ifndef AVCODEC_EVAL_H
 #define AVCODEC_EVAL_H
 
-typedef struct ff_expr_s AVEvalExpr;
+typedef struct ff_expr_s AVExpr;
 
 /**
  * Parses and evaluates an expression.
@@ -58,10 +58,10 @@ double ff_eval2(const char *s, const double *const_value, const char * const *co
  * @param func1_name NULL terminated array of zero terminated strings of func1 identifers
  * @param func2_name NULL terminated array of zero terminated strings of func2 identifers
  * @param error pointer to a char* which is set to an error message if something goes wrong
- * @return AVEvalExpr which must be freed with ff_eval_free by the user when it is not needed anymore
+ * @return AVExpr which must be freed with ff_eval_free by the user when it is not needed anymore
  *         NULL if anything went wrong
  */
-AVEvalExpr * ff_parse(const char *s, const char * const *const_name,
+AVExpr * ff_parse(const char *s, const char * const *const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), const char **func2_name,
                const char **error);
@@ -71,8 +71,8 @@ AVEvalExpr * ff_parse(const char *s, const char * const *const_name,
  * @param opaque a pointer which will be passed to all functions from func1 and func2
  * @return the value of the expression
  */
-double ff_parse_eval(AVEvalExpr * e, const double *const_value, void *opaque);
-void ff_eval_free(AVEvalExpr * e);
+double ff_parse_eval(AVExpr * e, const double *const_value, void *opaque);
+void ff_eval_free(AVExpr * e);
 
 /**
  * Parses the string in numstr and returns its value as a double. If

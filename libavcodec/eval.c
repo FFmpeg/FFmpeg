@@ -130,10 +130,10 @@ struct ff_expr_s {
         double (*func1)(void *, double);
         double (*func2)(void *, double, double);
     } a;
-    AVEvalExpr * param[2];
+    AVExpr *param[2];
 };
 
-static double eval_expr(Parser * p, AVEvalExpr * e) {
+static double eval_expr(Parser * p, AVExpr * e) {
     switch (e->type) {
         case e_value:  return e->value;
         case e_const:  return e->value * p->const_value[e->a.const_index];
@@ -171,17 +171,17 @@ static double eval_expr(Parser * p, AVEvalExpr * e) {
     return NAN;
 }
 
-static AVEvalExpr * parse_expr(Parser *p);
+static AVExpr * parse_expr(Parser *p);
 
-void ff_eval_free(AVEvalExpr * e) {
+void ff_eval_free(AVExpr * e) {
     if (!e) return;
     ff_eval_free(e->param[0]);
     ff_eval_free(e->param[1]);
     av_freep(&e);
 }
 
-static AVEvalExpr * parse_primary(Parser *p) {
-    AVEvalExpr * d = av_mallocz(sizeof(AVEvalExpr));
+static AVExpr * parse_primary(Parser *p) {
+    AVExpr * d = av_mallocz(sizeof(AVExpr));
     char *next= p->s;
     int i;
 
@@ -259,8 +259,8 @@ static AVEvalExpr * parse_primary(Parser *p) {
     else if( strmatch(next, "eq"    ) ) d->type = e_eq;
     else if( strmatch(next, "gte"   ) ) d->type = e_gte;
     else if( strmatch(next, "gt"    ) ) d->type = e_gt;
-    else if( strmatch(next, "lte"   ) ) { AVEvalExpr * tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gt; }
-    else if( strmatch(next, "lt"    ) ) { AVEvalExpr * tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gte; }
+    else if( strmatch(next, "lte"   ) ) { AVExpr * tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gt; }
+    else if( strmatch(next, "lt"    ) ) { AVExpr * tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gte; }
     else if( strmatch(next, "ld"    ) ) d->type = e_ld;
     else if( strmatch(next, "st"    ) ) d->type = e_st;
     else if( strmatch(next, "while" ) ) d->type = e_while;
@@ -289,8 +289,8 @@ static AVEvalExpr * parse_primary(Parser *p) {
     return d;
 }
 
-static AVEvalExpr * new_eval_expr(int type, int value, AVEvalExpr *p0, AVEvalExpr *p1){
-    AVEvalExpr * e = av_mallocz(sizeof(AVEvalExpr));
+static AVExpr * new_eval_expr(int type, int value, AVExpr *p0, AVExpr *p1){
+    AVExpr * e = av_mallocz(sizeof(AVExpr));
     if (!e)
         return NULL;
     e->type     =type   ;
@@ -300,15 +300,15 @@ static AVEvalExpr * new_eval_expr(int type, int value, AVEvalExpr *p0, AVEvalExp
     return e;
 }
 
-static AVEvalExpr * parse_pow(Parser *p, int *sign){
+static AVExpr * parse_pow(Parser *p, int *sign){
     *sign= (*p->s == '+') - (*p->s == '-');
     p->s += *sign&1;
     return parse_primary(p);
 }
 
-static AVEvalExpr * parse_factor(Parser *p){
+static AVExpr * parse_factor(Parser *p){
     int sign, sign2;
-    AVEvalExpr * e = parse_pow(p, &sign);
+    AVExpr * e = parse_pow(p, &sign);
     while(p->s[0]=='^'){
         p->s++;
         e= new_eval_expr(e_pow, 1, e, parse_pow(p, &sign2));
@@ -320,8 +320,8 @@ static AVEvalExpr * parse_factor(Parser *p){
     return e;
 }
 
-static AVEvalExpr * parse_term(Parser *p){
-    AVEvalExpr * e = parse_factor(p);
+static AVExpr * parse_term(Parser *p){
+    AVExpr * e = parse_factor(p);
     while(p->s[0]=='*' || p->s[0]=='/'){
         int c= *p->s++;
         e= new_eval_expr(c == '*' ? e_mul : e_div, 1, e, parse_factor(p));
@@ -331,8 +331,8 @@ static AVEvalExpr * parse_term(Parser *p){
     return e;
 }
 
-static AVEvalExpr * parse_subexpr(Parser *p) {
-    AVEvalExpr * e = parse_term(p);
+static AVExpr * parse_subexpr(Parser *p) {
+    AVExpr * e = parse_term(p);
     while(*p->s == '+' || *p->s == '-') {
         e= new_eval_expr(e_add, 1, e, parse_term(p));
         if (!e)
@@ -342,8 +342,8 @@ static AVEvalExpr * parse_subexpr(Parser *p) {
     return e;
 }
 
-static AVEvalExpr * parse_expr(Parser *p) {
-    AVEvalExpr * e;
+static AVExpr * parse_expr(Parser *p) {
+    AVExpr * e;
 
     if(p->stack_index <= 0) //protect against stack overflows
         return NULL;
@@ -363,7 +363,7 @@ static AVEvalExpr * parse_expr(Parser *p) {
     return e;
 }
 
-static int verify_expr(AVEvalExpr * e) {
+static int verify_expr(AVExpr * e) {
     if (!e) return 0;
     switch (e->type) {
         case e_value:
@@ -377,12 +377,12 @@ static int verify_expr(AVEvalExpr * e) {
     }
 }
 
-AVEvalExpr * ff_parse(const char *s, const char * const *const_name,
+AVExpr * ff_parse(const char *s, const char * const *const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), const char **func2_name,
                const char **error){
     Parser p;
-    AVEvalExpr *e = NULL;
+    AVExpr *e = NULL;
     char *w = av_malloc(strlen(s) + 1);
     char *wp = w;
 
@@ -412,7 +412,7 @@ end:
     return e;
 }
 
-double ff_parse_eval(AVEvalExpr * e, const double *const_value, void *opaque) {
+double ff_parse_eval(AVExpr * e, const double *const_value, void *opaque) {
     Parser p;
 
     p.const_value= const_value;
@@ -424,7 +424,7 @@ double ff_eval2(const char *s, const double *const_value, const char * const *co
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), const char **func2_name,
                void *opaque, const char **error){
-    AVEvalExpr * e = ff_parse(s, const_name, func1, func1_name, func2, func2_name, error);
+    AVExpr * e = ff_parse(s, const_name, func1, func1_name, func2, func2_name, error);
     double d;
     if (!e) return NAN;
     d = ff_parse_eval(e, const_value, opaque);
