@@ -58,7 +58,7 @@ double ff_eval2(const char *s, const double *const_value, const char * const *co
  * @param func1_name NULL terminated array of zero terminated strings of func1 identifers
  * @param func2_name NULL terminated array of zero terminated strings of func2 identifers
  * @param error pointer to a char* which is set to an error message if something goes wrong
- * @return AVExpr which must be freed with ff_eval_free by the user when it is not needed anymore
+ * @return AVExpr which must be freed with ff_free_expr() by the user when it is not needed anymore
  *         NULL if anything went wrong
  */
 AVExpr * ff_parse(const char *s, const char * const *const_name,
@@ -72,7 +72,8 @@ AVExpr * ff_parse(const char *s, const char * const *const_name,
  * @return the value of the expression
  */
 double ff_parse_eval(AVExpr * e, const double *const_value, void *opaque);
-void ff_eval_free(AVExpr * e);
+
+void ff_free_expr(AVExpr *e);
 
 /**
  * Parses the string in numstr and returns its value as a double. If

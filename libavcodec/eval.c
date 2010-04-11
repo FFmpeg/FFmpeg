@@ -173,10 +173,10 @@ static double eval_expr(Parser * p, AVExpr * e) {
 
 static AVExpr * parse_expr(Parser *p);
 
-void ff_eval_free(AVExpr * e) {
+void ff_free_expr(AVExpr * e) {
     if (!e) return;
-    ff_eval_free(e->param[0]);
-    ff_eval_free(e->param[1]);
+    ff_free_expr(e->param[0]);
+    ff_free_expr(e->param[1]);
     av_freep(&e);
 }
 
@@ -211,7 +211,7 @@ static AVExpr * parse_primary(Parser *p) {
     if(p->s==NULL){
         *p->error = "undefined constant or missing (";
         p->s= next;
-        ff_eval_free(d);
+        ff_free_expr(d);
         return NULL;
     }
     p->s++; // "("
@@ -220,7 +220,7 @@ static AVExpr * parse_primary(Parser *p) {
         d = parse_expr(p);
         if(p->s[0] != ')'){
             *p->error = "missing )";
-            ff_eval_free(d);
+            ff_free_expr(d);
             return NULL;
         }
         p->s++; // ")"
@@ -233,7 +233,7 @@ static AVExpr * parse_primary(Parser *p) {
     }
     if(p->s[0] != ')'){
         *p->error = "missing )";
-        ff_eval_free(d);
+        ff_free_expr(d);
         return NULL;
     }
     p->s++; // ")"
@@ -282,7 +282,7 @@ static AVExpr * parse_primary(Parser *p) {
         }
 
         *p->error = "unknown function";
-        ff_eval_free(d);
+        ff_free_expr(d);
         return NULL;
     }
 
@@ -404,7 +404,7 @@ AVExpr * ff_parse(const char *s, const char * const *const_name,
 
     e = parse_expr(&p);
     if (!verify_expr(e)) {
-        ff_eval_free(e);
+        ff_free_expr(e);
         e = NULL;
     }
 end:
@@ -428,7 +428,7 @@ double ff_eval2(const char *s, const double *const_value, const char * const *co
     double d;
     if (!e) return NAN;
     d = ff_parse_eval(e, const_value, opaque);
-    ff_eval_free(e);
+    ff_free_expr(e);
     return d;
 }
 

@@ -255,7 +255,7 @@ void ff_rate_control_uninit(MpegEncContext *s)
     RateControlContext *rcc= &s->rc_context;
     emms_c();
 
-    ff_eval_free(rcc->rc_eq_eval);
+    ff_free_expr(rcc->rc_eq_eval);
     av_freep(&rcc->entry);
 
 #if CONFIG_LIBXVID
