@@ -31,6 +31,7 @@ typedef struct AVExpr AVExpr;
 /**
  * Parses and evaluates an expression.
  * Note, this is significantly slower than ff_parse_eval()
+ *
  * @param s expression as a zero terminated string for example "1+2^3+5*5+sin(2/3)"
  * @param func1 NULL terminated array of function pointers for functions which take 1 argument
  * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
@@ -49,6 +50,7 @@ double ff_eval2(const char *s, const double *const_value, const char * const *co
 
 /**
  * Parses a expression.
+ *
  * @param s expression as a zero terminated string for example "1+2^3+5*5+sin(2/3)"
  * @param func1 NULL terminated array of function pointers for functions which take 1 argument
  * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
@@ -63,8 +65,10 @@ AVExpr * ff_parse(const char *s, const char * const *const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), const char **func2_name,
                const char **error);
+
 /**
  * Evaluates a previously parsed expression.
+ *
  * @param const_value a zero terminated array of values for the identifers from ff_parse const_name
  * @param opaque a pointer which will be passed to all functions from func1 and func2
  * @return the value of the expression
