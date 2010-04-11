@@ -339,7 +339,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         0
     };
 
-    bits= ff_parse_eval(rcc->rc_eq_eval, const_values, rce);
+    bits= ff_eval_expr(rcc->rc_eq_eval, const_values, rce);
     if (isnan(bits)) {
         av_log(s->avctx, AV_LOG_ERROR, "Error evaluating rc_eq \"%s\"\n", s->avctx->rc_eq);
         return -1;

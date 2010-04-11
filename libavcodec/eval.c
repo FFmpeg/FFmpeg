@@ -410,7 +410,7 @@ end:
     return e;
 }
 
-double ff_parse_eval(AVExpr * e, const double *const_value, void *opaque) {
+double ff_eval_expr(AVExpr * e, const double *const_value, void *opaque) {
     Parser p;
 
     p.const_value= const_value;
@@ -425,7 +425,7 @@ double ff_eval2(const char *s, const double *const_value, const char * const *co
     AVExpr * e = ff_parse(s, const_name, func1, func1_name, func2, func2_name, error);
     double d;
     if (!e) return NAN;
-    d = ff_parse_eval(e, const_value, opaque);
+    d = ff_eval_expr(e, const_value, opaque);
     ff_free_expr(e);
     return d;
 }
