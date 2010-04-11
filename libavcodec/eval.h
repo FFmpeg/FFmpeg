@@ -43,7 +43,7 @@ typedef struct AVExpr AVExpr;
  * @param opaque a pointer which will be passed to all functions from func1 and func2
  * @return the value of the expression
  */
-double ff_eval2(const char *s, const double *const_value, const char * const *const_name,
+double ff_parse_and_eval_expr(const char *s, const double *const_value, const char * const *const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), const char **func2_name,
                void *opaque, const char **error);

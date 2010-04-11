@@ -156,7 +156,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
                 buf[i]= val[i];
             buf[i]=0;
 
-            d = ff_eval2(buf, const_values, const_names, NULL, NULL, NULL, NULL, NULL, &error);
+            d = ff_parse_and_eval_expr(buf, const_values, const_names, NULL, NULL, NULL, NULL, NULL, &error);
             if(isnan(d)) {
                 const AVOption *o_named= av_find_opt(obj, buf, o->unit, 0, 0);
                 if(o_named && o_named->type == FF_OPT_TYPE_CONST)
