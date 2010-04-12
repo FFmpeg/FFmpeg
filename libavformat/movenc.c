@@ -1330,8 +1330,7 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVMuxContext *mov)
 static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVMuxContext *mov,
                                      AVFormatContext *s)
 {
-    int64_t pos = url_ftell(pb);
-    put_be32(pb, 0); /* size */
+    put_be32(pb, 33); /* size */
     put_tag(pb, "hdlr");
     put_be32(pb, 0);
     put_be32(pb, 0);
@@ -1340,20 +1339,20 @@ static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVMuxContext *mov,
     put_be32(pb, 0);
     put_be32(pb, 0);
     put_byte(pb, 0);
-    return updateSize(pb, pos);
+    return 33;
 }
 
 /* helper function to write a data tag with the specified string as data */
 static int mov_write_string_data_tag(ByteIOContext *pb, const char *data, int lang, int long_style)
 {
     if(long_style){
-        int64_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
+        int size = 16 + strlen(data);
+        put_be32(pb, size); /* size */
         put_tag(pb, "data");
         put_be32(pb, 1);
         put_be32(pb, 0);
         put_buffer(pb, data, strlen(data));
-        return updateSize(pb, pos);
+        return size;
     }else{
         if (!lang)
             lang = ff_mov_iso639_to_lang("und", 1);
@@ -1407,12 +1406,9 @@ static int mov_write_trkn_tag(ByteIOContext *pb, MOVMuxContext *mov,
     AVMetadataTag *t = av_metadata_get(s->metadata, "track", NULL, 0);
     int size = 0, track = t ? atoi(t->value) : 0;
     if (track) {
-        int64_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
+        put_be32(pb, 32); /* size */
         put_tag(pb, "trkn");
-        {
-            int64_t pos = url_ftell(pb);
-            put_be32(pb, 0); /* size */
+            put_be32(pb, 24); /* size */
             put_tag(pb, "data");
             put_be32(pb, 0);        // 8 bytes empty
             put_be32(pb, 0);
@@ -1420,9 +1416,7 @@ static int mov_write_trkn_tag(ByteIOContext *pb, MOVMuxContext *mov,
             put_be16(pb, track);    // track number
             put_be16(pb, 0);        // total track number
             put_be16(pb, 0);        // empty
-            updateSize(pb, pos);
-        }
-        size = updateSize(pb, pos);
+        size = 32;
     }
     return size;
 }
