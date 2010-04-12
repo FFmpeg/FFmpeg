@@ -758,7 +758,7 @@ getting the system headers fixed.
 
 GNU Make is required to build FFmpeg, so you have to invoke (@file{gmake}),
 standard Solaris Make will not work. When building with a non-c99 front-end
-(gcc, generic suncc) add either @code{--extra-libs=/usr/lib/32/values-xpg6.o}
+(gcc, generic suncc) add either @code{--extra-libs=/usr/lib/values-xpg6.o}
 or @code{--extra-libs=/usr/lib/64/values-xpg6.o} to the configure options
 since the libc is not c99-compliant by default. The probes performed by
 configure may raise an exception leading to the death of configure itself
