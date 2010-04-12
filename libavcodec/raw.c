@@ -56,11 +56,11 @@ const PixelFormatTag ff_raw_pixelFormatTags[] = {
     { PIX_FMT_UYVY422, MKTAG('A', 'V', 'u', 'p') },
     { PIX_FMT_UYVY422, MKTAG('V', 'D', 'T', 'Z') }, /* SoftLab-NSK VideoTizer */
     { PIX_FMT_GRAY8,   MKTAG('G', 'R', 'E', 'Y') },
-    { PIX_FMT_RGB555,  MKTAG('R', 'G', 'B', 15) },
-    { PIX_FMT_BGR555,  MKTAG('B', 'G', 'R', 15) },
-    { PIX_FMT_RGB565,  MKTAG('R', 'G', 'B', 16) },
-    { PIX_FMT_BGR565,  MKTAG('B', 'G', 'R', 16) },
-    { PIX_FMT_RGB565,  MKTAG( 3 ,  0 ,  0 ,  0 ) },
+    { PIX_FMT_RGB555LE, MKTAG('R', 'G', 'B', 15) },
+    { PIX_FMT_BGR555LE, MKTAG('B', 'G', 'R', 15) },
+    { PIX_FMT_RGB565LE, MKTAG('R', 'G', 'B', 16) },
+    { PIX_FMT_BGR565LE, MKTAG('B', 'G', 'R', 16) },
+    { PIX_FMT_RGB565LE, MKTAG( 3 ,  0 ,  0 ,  0) },
 
     /* quicktime */
     { PIX_FMT_UYVY422, MKTAG('2', 'v', 'u', 'y') },
