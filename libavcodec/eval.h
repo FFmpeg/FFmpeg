@@ -49,7 +49,7 @@ double ff_parse_and_eval_expr(const char *s, const double *const_value, const ch
                void *opaque, const char **error);
 
 /**
- * Parses a expression.
+ * Parses an expression.
  *
  * @param s expression as a zero terminated string for example "1+2^3+5*5+sin(2/3)"
  * @param func1 NULL terminated array of function pointers for functions which take 1 argument
