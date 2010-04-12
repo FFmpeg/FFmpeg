@@ -369,7 +369,7 @@ static int verify_expr(AVExpr * e) {
     }
 }
 
-AVExpr * ff_parse(const char *s, const char * const *const_name,
+AVExpr *ff_parse_expr(const char *s, const char * const *const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), const char **func2_name,
                const char **error){
@@ -416,7 +416,7 @@ double ff_parse_and_eval_expr(const char *s, const double *const_value, const ch
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), const char **func2_name,
                void *opaque, const char **error){
-    AVExpr * e = ff_parse(s, const_name, func1, func1_name, func2, func2_name, error);
+    AVExpr * e = ff_parse_expr(s, const_name, func1, func1_name, func2, func2_name, error);
     double d;
     if (!e) return NAN;
     d = ff_eval_expr(e, const_value, opaque);

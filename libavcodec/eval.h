@@ -61,7 +61,7 @@ double ff_parse_and_eval_expr(const char *s, const double *const_value, const ch
  * @return AVExpr which must be freed with ff_free_expr() by the user when it is not needed anymore
  *         NULL if anything went wrong
  */
-AVExpr * ff_parse(const char *s, const char * const *const_name,
+AVExpr *ff_parse_expr(const char *s, const char * const *const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), const char **func2_name,
                const char **error);
