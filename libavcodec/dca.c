@@ -757,6 +757,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
     const float *prCoeff;
     int i;
 
+    int sb_act = s->subband_activity[chans];
     int subindex;
 
     scale *= sqrt(1/8.0);
@@ -770,7 +771,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
     /* Reconstructed channel sample index */
     for (subindex = 0; subindex < 8; subindex++) {
         /* Load in one sample from each subband and clear inactive subbands */
-        for (i = 0; i < s->subband_activity[chans]; i++){
+        for (i = 0; i < sb_act; i++){
             uint32_t v = AV_RN32A(&samples_in[i][subindex]) ^ ((i-1)&2)<<30;
             AV_WN32A(&s->raXin[i], v);
         }
