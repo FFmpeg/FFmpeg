@@ -26,13 +26,7 @@
  * see http://joe.hotchkiss.com/programming/eval/eval.html
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-
-#include "libavutil/mathematics.h"
-#include "avcodec.h"
+#include "libavutil/avutil.h"
 #include "eval.h"
 
 typedef struct Parser{
