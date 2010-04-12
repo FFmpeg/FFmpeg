@@ -35,12 +35,14 @@ function ff_synth_filter_float_neon, export=1
         ldr             r2,  [sp, #12*4]        @ in
         mov             r9,  r1                 @ synth_buf
 
+VFP     vpush           {d0}
         bl              ff_imdct_half_neon
+VFP     vpop            {d0}
         pop             {r3}
 
         ldr             r5,  [sp, #9*4]         @ window
         ldr             r2,  [sp, #10*4]        @ out
-        vldr            d0,  [sp, #12*4]        @ scale, bias
+NOVFP   vldr            d0,  [sp, #12*4]        @ scale, bias
         add             r8,  r9,  #12*4
 
         mov             lr,  #64*4
