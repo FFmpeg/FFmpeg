@@ -721,6 +721,16 @@ performance on systems without hardware floating point support).
 
 BeOS support is broken in mysterious ways.
 
+@section DOS
+
+Using a cross-compiler is preferred for various reasons.
+
+@subsection DJGPP
+
+FFmpeg cannot be compiled because of broken system headers, add
+@code{--extra-cflags=-U__STRICT_ANSI__} to the configure options as a
+workaround.
+
 @section OS/2
 
 For information about compiling FFmpeg on OS/2 see
