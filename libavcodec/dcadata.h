@@ -7315,7 +7315,7 @@ DECLARE_ALIGNED(16, static const float, fir_32bands_nonperfect)[] =
 +1.390191784E-007
 };
 
-static const float lfe_fir_64[] =
+DECLARE_ALIGNED(16, static const float, lfe_fir_64)[] =
 {
     2.658434386830777e-4, 9.029330685734748e-3,
     7.939263433218002e-2, 2.425158768892288e-1,
@@ -7447,7 +7447,7 @@ static const float lfe_fir_64[] =
     3.165979683399200e-2, 1.527829794213176e-3,
 };
 
-static const float lfe_fir_128[] =
+DECLARE_ALIGNED(16, static const float, lfe_fir_128)[] =
 {
     0.00053168571, 0.15878495574, 0.68603444099, 0.15492856503,
     0.00016358691, 0.16269733012, 0.68591803312, 0.15112841129,
