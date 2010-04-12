@@ -743,8 +743,13 @@ int64_t av_url_read_fseek(ByteIOContext *s, int stream_index,
         return AVERROR(ENOSYS);
     ret = s->read_seek(h, stream_index, timestamp, flags);
     if(ret >= 0) {
+        int64_t pos;
         s->buf_ptr = s->buf_end; // Flush buffer
-        s->pos = s->seek(h, 0, SEEK_CUR);
+        pos = s->seek(h, 0, SEEK_CUR);
+        if (pos >= 0)
+            s->pos = pos;
+        else if (pos != AVERROR(ENOSYS))
+            ret = pos;
     }
     return ret;
 }
