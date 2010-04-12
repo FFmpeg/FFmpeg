@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2010 Mans Rullgard <mans@mansr.com>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,15 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_DCADSP_H
-#define AVCODEC_DCADSP_H
+#include "config.h"
+#include "libavutil/attributes.h"
+#include "libavcodec/dcadsp.h"
 
-typedef struct DCADSPContext {
-    void (*lfe_fir)(float *out, const float *in, const float *coefs,
-                    int decifactor, float scale, float bias);
-} DCADSPContext;
+void ff_dca_lfe_fir_neon(float *out, const float *in, const float *coefs,
+                         int decifactor, float scale, float bias);
 
-void ff_dcadsp_init(DCADSPContext *s);
-void ff_dcadsp_init_arm(DCADSPContext *s);
-
-#endif /* AVCODEC_DCADSP_H */
+void av_cold ff_dcadsp_init_arm(DCADSPContext *s)
+{
+    if (HAVE_NEON)
+        s->lfe_fir = ff_dca_lfe_fir_neon;
+}
