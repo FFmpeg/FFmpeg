@@ -41,6 +41,7 @@
 #include "dcahuff.h"
 #include "dca.h"
 #include "synth_filter.h"
+#include "dcadsp.h"
 
 //#define TRACE
 
@@ -256,6 +257,7 @@ typedef struct {
     DSPContext dsp;
     FFTContext imdct;
     SynthFilterContext synth;
+    DCADSPContext dcadsp;
 } DCAContext;
 
 static const uint16_t dca_vlc_offs[] = {
@@ -788,7 +790,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
     }
 }
 
-static void lfe_interpolation_fir(int decimation_select,
+static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
                                   int num_deci_sample, float *samples_in,
                                   float *samples_out, float scale,
                                   float bias)
@@ -801,7 +803,7 @@ static void lfe_interpolation_fir(int decimation_select,
      * samples_out: An array holding interpolated samples
      */
 
-    int decifactor, k, j;
+    int decifactor;
     const float *prCoeff;
     int deciindex;
 
@@ -815,25 +817,10 @@ static void lfe_interpolation_fir(int decimation_select,
     }
     /* Interpolation */
     for (deciindex = 0; deciindex < num_deci_sample; deciindex++) {
-        float *samples_out2 = samples_out + decifactor;
-        const float *cf0 = prCoeff;
-        const float *cf1 = prCoeff + 256;
-
-        /* One decimated sample generates 2*decifactor interpolated ones */
-        for (k = 0; k < decifactor; k++) {
-            float v0 = 0.0;
-            float v1 = 0.0;
-            for (j = 0; j < 256 / decifactor; j++) {
-                float s = samples_in[-j];
-                v0 += s * *cf0++;
-                v1 += s * *--cf1;
-            }
-            *samples_out++  = (v0 * scale) + bias;
-            *samples_out2++ = (v1 * scale) + bias;
-        }
-
+        s->dcadsp.lfe_fir(samples_out, samples_in, prCoeff, decifactor,
+                          scale, bias);
         samples_in++;
-        samples_out += decifactor;
+        samples_out += 2 * decifactor;
     }
 }
 
@@ -1083,7 +1070,7 @@ static int dca_subsubframe(DCAContext * s)
     if (s->output & DCA_LFE) {
         int lfe_samples = 2 * s->lfe * s->subsubframes;
 
-        lfe_interpolation_fir(s->lfe, 2 * s->lfe,
+        lfe_interpolation_fir(s, s->lfe, 2 * s->lfe,
                               s->lfe_data + lfe_samples +
                               2 * s->lfe * subsubframe,
                               &s->samples[256 * dca_lfe_index[s->amode]],
@@ -1313,6 +1300,7 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
     dsputil_init(&s->dsp, avctx);
     ff_mdct_init(&s->imdct, 6, 1, 1.0);
     ff_synth_filter_init(&s->synth);
+    ff_dcadsp_init(&s->dcadsp);
 
     for(i = 0; i < 6; i++)
         s->samples_chanptr[i] = s->samples + i * 256;
