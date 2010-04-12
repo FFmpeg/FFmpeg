@@ -30,6 +30,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "libavutil/intmath.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "dsputil.h"
@@ -907,8 +908,9 @@ static int decode_blockcode(int code, int levels, int *values)
     int offset = (levels - 1) >> 1;
 
     for (i = 0; i < 4; i++) {
-        values[i] = (code % levels) - offset;
-        code /= levels;
+        int div = FASTDIV(code, levels);
+        values[i] = code - offset - div*levels;
+        code = div;
     }
 
     if (code == 0)
