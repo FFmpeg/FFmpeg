@@ -452,6 +452,9 @@ s->bgr32=1;
     if(s->version==2){
         int method, interlace;
 
+        if (avctx->extradata_size < 4)
+            return -1;
+
         method= ((uint8_t*)avctx->extradata)[0];
         s->decorrelate= method&64 ? 1 : 0;
         s->predictor= method&63;
@@ -462,7 +465,7 @@ s->bgr32=1;
         s->interlaced= (interlace==1) ? 1 : (interlace==2) ? 0 : s->interlaced;
         s->context= ((uint8_t*)avctx->extradata)[2] & 0x40 ? 1 : 0;
 
-        if(read_huffman_tables(s, ((uint8_t*)avctx->extradata)+4, avctx->extradata_size) < 0)
+        if(read_huffman_tables(s, ((uint8_t*)avctx->extradata)+4, avctx->extradata_size-4) < 0)
             return -1;
     }else{
         switch(avctx->bits_per_coded_sample&7){
