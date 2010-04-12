@@ -802,28 +802,37 @@ static void lfe_interpolation_fir(int decimation_select,
 
     int decifactor, k, j;
     const float *prCoeff;
-
-    int interp_index = 0;       /* Index to the interpolated samples */
     int deciindex;
 
     /* Select decimation filter */
     if (decimation_select == 1) {
-        decifactor = 128;
+        decifactor = 64;
         prCoeff = lfe_fir_128;
     } else {
-        decifactor = 64;
+        decifactor = 32;
         prCoeff = lfe_fir_64;
     }
     /* Interpolation */
     for (deciindex = 0; deciindex < num_deci_sample; deciindex++) {
-        /* One decimated sample generates decifactor interpolated ones */
+        float *samples_out2 = samples_out + decifactor;
+        const float *cf0 = prCoeff;
+        const float *cf1 = prCoeff + 256;
+
+        /* One decimated sample generates 2*decifactor interpolated ones */
         for (k = 0; k < decifactor; k++) {
-            float rTmp = 0.0;
-            //FIXME the coeffs are symetric, fix that
-            for (j = 0; j < 512 / decifactor; j++)
-                rTmp += samples_in[deciindex - j] * prCoeff[k + j * decifactor];
-            samples_out[interp_index++] = (rTmp * scale) + bias;
+            float v0 = 0.0;
+            float v1 = 0.0;
+            for (j = 0; j < 256 / decifactor; j++) {
+                float s = samples_in[-j];
+                v0 += s * *cf0++;
+                v1 += s * *--cf1;
+            }
+            *samples_out++  = (v0 * scale) + bias;
+            *samples_out2++ = (v1 * scale) + bias;
         }
+
+        samples_in++;
+        samples_out += decifactor;
     }
 }
 
