@@ -44,8 +44,8 @@ typedef struct AVExpr AVExpr;
  * @return the value of the expression
  */
 double ff_parse_and_eval_expr(const char *s, const double *const_value, const char * const *const_name,
-               double (**func1)(void *, double), const char **func1_name,
-               double (**func2)(void *, double, double), const char **func2_name,
+               double (**func1)(void *, double), const char * const *func1_name,
+               double (**func2)(void *, double, double), const char * const *func2_name,
                void *opaque, const char **error);
 
 /**
@@ -62,8 +62,8 @@ double ff_parse_and_eval_expr(const char *s, const double *const_value, const ch
  *         NULL if anything went wrong
  */
 AVExpr *ff_parse_expr(const char *s, const char * const *const_name,
-               double (**func1)(void *, double), const char **func1_name,
-               double (**func2)(void *, double, double), const char **func2_name,
+               double (**func1)(void *, double), const char * const *func1_name,
+               double (**func2)(void *, double, double), const char * const *func2_name,
                const char **error);
 
 /**
