@@ -30,6 +30,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"
@@ -770,8 +771,8 @@ static void qmf_32_subbands(DCAContext * s, int chans,
     for (subindex = 0; subindex < 8; subindex++) {
         /* Load in one sample from each subband and clear inactive subbands */
         for (i = 0; i < s->subband_activity[chans]; i++){
-            if((i-1)&2) s->raXin[i] = -samples_in[i][subindex];
-            else        s->raXin[i] =  samples_in[i][subindex];
+            uint32_t v = AV_RN32A(&samples_in[i][subindex]) ^ ((i-1)&2)<<30;
+            AV_WN32A(&s->raXin[i], v);
         }
         for (; i < 32; i++)
             s->raXin[i] = 0.0;
