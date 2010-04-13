@@ -21,7 +21,7 @@
 
 /**
  * @file libavformat/librtmp.c
- * RTMP protocol based on http://rtmpdump.mplayerhq.hu librtmp
+ * RTMP protocol based on http://rtmpdump.mplayerhq.hu/ librtmp
  */
 
 #include "avformat.h"
@@ -59,7 +59,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     if (!r)
         return AVERROR(ENOMEM);
 
-    switch(av_log_get_level()) {
+    switch (av_log_get_level()) {
     default:
     case AV_LOG_FATAL:   rc = RTMP_LOGCRIT;    break;
     case AV_LOG_ERROR:   rc = RTMP_LOGERROR;   break;
@@ -84,7 +84,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         goto fail;
     }
 
-    s->priv_data = r;
+    s->priv_data   = r;
     s->is_streamed = 1;
     return 0;
 fail:
