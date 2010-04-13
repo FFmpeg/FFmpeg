@@ -919,7 +919,8 @@ static int dca_subsubframe(DCAContext * s)
     const float *quant_step_table;
 
     /* FIXME */
-    float subband_samples[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][8];
+    LOCAL_ALIGNED_16(float, subband_samples, [DCA_PRIM_CHANNELS_MAX], [DCA_SUBBANDS][8]);
+    LOCAL_ALIGNED_16(int, block, [8]);
 
     /*
      * Audio data
@@ -939,7 +940,6 @@ static int dca_subsubframe(DCAContext * s)
             int abits = s->bitalloc[k][l];
 
             float quant_step_size = quant_step_table[abits];
-            float rscale;
 
             /*
              * Determine quantization index code book and its type
@@ -953,11 +953,15 @@ static int dca_subsubframe(DCAContext * s)
              */
             if(!abits){
                 memset(subband_samples[k][l], 0, 8 * sizeof(subband_samples[0][0][0]));
-            }else if(abits >= 11 || !dca_smpl_bitalloc[abits].vlc[sel].table){
+            } else {
+                /* Deal with transients */
+                int sfi = s->transition_mode[k][l] && subsubframe >= s->transition_mode[k][l];
+                float rscale = quant_step_size * s->scale_factor[k][l][sfi] * s->scalefactor_adj[k][sel];
+
+                if(abits >= 11 || !dca_smpl_bitalloc[abits].vlc[sel].table){
                 if(abits <= 7){
                     /* Block code */
                     int block_code1, block_code2, size, levels;
-                    int block[8];
 
                     size = abits_sizes[abits-1];
                     levels = abits_levels[abits-1];
@@ -967,30 +971,20 @@ static int dca_subsubframe(DCAContext * s)
                     decode_blockcode(block_code1, levels, block);
                     block_code2 = get_bits(&s->gb, size);
                     decode_blockcode(block_code2, levels, &block[4]);
-                    for (m = 0; m < 8; m++)
-                        subband_samples[k][l][m] = block[m];
                 }else{
                     /* no coding */
                     for (m = 0; m < 8; m++)
-                        subband_samples[k][l][m] = get_sbits(&s->gb, abits - 3);
+                        block[m] = get_sbits(&s->gb, abits - 3);
                 }
             }else{
                 /* Huffman coded */
                 for (m = 0; m < 8; m++)
-                    subband_samples[k][l][m] = get_bitalloc(&s->gb, &dca_smpl_bitalloc[abits], sel);
+                    block[m] = get_bitalloc(&s->gb, &dca_smpl_bitalloc[abits], sel);
             }
 
-            /* Deal with transients */
-            if (s->transition_mode[k][l] &&
-                subsubframe >= s->transition_mode[k][l])
-                rscale = quant_step_size * s->scale_factor[k][l][1];
-            else
-                rscale = quant_step_size * s->scale_factor[k][l][0];
-
-            rscale *= s->scalefactor_adj[k][sel];
-
-            for (m = 0; m < 8; m++)
-                subband_samples[k][l][m] *= rscale;
+                s->dsp.int32_to_float_fmul_scalar(subband_samples[k][l],
+                                                  block, rscale, 8);
+            }
 
             /*
              * Inverse ADPCM if in prediction mode
