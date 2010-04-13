@@ -136,7 +136,7 @@ static int fill_vaapi_ReferenceFrames(VAPictureParameterBufferH264 *pic_param,
             return -1;
     }
 
-    for (i = 0; i < h->long_ref_count; i++) {
+    for (i = 0; i < 16; i++) {
         Picture * const pic = h->long_ref[i];
         if (pic && pic->reference && dpb_add(&dpb, pic) < 0)
             return -1;
