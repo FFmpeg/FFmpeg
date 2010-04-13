@@ -40,7 +40,7 @@ int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
                                 sizeof(AVFilterContext*) * ++graph->filter_count);
 
     if (!graph->filters)
-        return -1;
+        return AVERROR(ENOMEM);
 
     graph->filters[graph->filter_count - 1] = filter;
 
