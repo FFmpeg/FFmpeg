@@ -29,6 +29,22 @@
 #include <librtmp/rtmp.h>
 #include <librtmp/log.h>
 
+static void rtmp_log(int level, const char *fmt, va_list args)
+{
+    switch (level) {
+    default:
+    case RTMP_LOGCRIT:    level = AV_LOG_FATAL;   break;
+    case RTMP_LOGERROR:   level = AV_LOG_ERROR;   break;
+    case RTMP_LOGWARNING: level = AV_LOG_WARNING; break;
+    case RTMP_LOGINFO:    level = AV_LOG_INFO;    break;
+    case RTMP_LOGDEBUG:   level = AV_LOG_VERBOSE; break;
+    case RTMP_LOGDEBUG2:  level = AV_LOG_DEBUG;   break;
+    }
+
+    av_vlog(NULL, level, fmt, args);
+    av_log(NULL, level, "\n");
+}
+
 static int rtmp_close(URLContext *s)
 {
     RTMP *r = s->priv_data;
@@ -69,6 +85,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     case AV_LOG_DEBUG:   rc = RTMP_LOGDEBUG2;  break;
     }
     RTMP_LogSetLevel(rc);
+    RTMP_LogSetCallback(rtmp_log);
 
     RTMP_Init(r);
     if (!RTMP_SetupURL(r, s->filename)) {
