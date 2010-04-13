@@ -31,6 +31,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "h264.h"
+#include "rectangle.h"
 
 /*
  * H264 redefines mb_intra so it is not mistakely used (its uninitialized in h264)
