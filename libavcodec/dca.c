@@ -959,28 +959,28 @@ static int dca_subsubframe(DCAContext * s)
                 float rscale = quant_step_size * s->scale_factor[k][l][sfi] * s->scalefactor_adj[k][sel];
 
                 if(abits >= 11 || !dca_smpl_bitalloc[abits].vlc[sel].table){
-                if(abits <= 7){
-                    /* Block code */
-                    int block_code1, block_code2, size, levels;
+                    if(abits <= 7){
+                        /* Block code */
+                        int block_code1, block_code2, size, levels;
 
-                    size = abits_sizes[abits-1];
-                    levels = abits_levels[abits-1];
+                        size = abits_sizes[abits-1];
+                        levels = abits_levels[abits-1];
 
-                    block_code1 = get_bits(&s->gb, size);
-                    /* FIXME Should test return value */
-                    decode_blockcode(block_code1, levels, block);
-                    block_code2 = get_bits(&s->gb, size);
-                    decode_blockcode(block_code2, levels, &block[4]);
+                        block_code1 = get_bits(&s->gb, size);
+                        /* FIXME Should test return value */
+                        decode_blockcode(block_code1, levels, block);
+                        block_code2 = get_bits(&s->gb, size);
+                        decode_blockcode(block_code2, levels, &block[4]);
+                    }else{
+                        /* no coding */
+                        for (m = 0; m < 8; m++)
+                            block[m] = get_sbits(&s->gb, abits - 3);
+                    }
                 }else{
-                    /* no coding */
+                    /* Huffman coded */
                     for (m = 0; m < 8; m++)
-                        block[m] = get_sbits(&s->gb, abits - 3);
+                        block[m] = get_bitalloc(&s->gb, &dca_smpl_bitalloc[abits], sel);
                 }
-            }else{
-                /* Huffman coded */
-                for (m = 0; m < 8; m++)
-                    block[m] = get_bitalloc(&s->gb, &dca_smpl_bitalloc[abits], sel);
-            }
 
                 s->dsp.int32_to_float_fmul_scalar(subband_samples[k][l],
                                                   block, rscale, 8);
