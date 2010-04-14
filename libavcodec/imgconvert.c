@@ -602,6 +602,7 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
     case PIX_FMT_BGR4:
     case PIX_FMT_MONOWHITE:
     case PIX_FMT_MONOBLACK:
+    case PIX_FMT_Y400A:
         picture->data[0] = ptr;
         picture->data[1] = NULL;
         picture->data[2] = NULL;

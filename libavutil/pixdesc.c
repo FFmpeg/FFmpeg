@@ -779,6 +779,14 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .log2_chroma_h = 1,
         .flags = PIX_FMT_HWACCEL,
     },
+    [PIX_FMT_Y400A] = {
+        .name = "y400a",
+        .nb_components= 2,
+        .comp = {
+            {0,1,1,0,7},        /* Y */
+            {0,1,2,0,7},        /* A */
+        },
+    },
 };
 
 static enum PixelFormat get_pix_fmt_internal(const char *name)
