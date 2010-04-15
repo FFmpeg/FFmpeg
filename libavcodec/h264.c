@@ -1779,7 +1779,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     s->avctx->profile = h->sps.profile_idc;
     s->avctx->level   = h->sps.level_idc;
-    s->avctx->refs= h->sps.ref_frame_count;
+    s->avctx->refs    = h->sps.ref_frame_count;
 
     if(h == h0 && h->dequant_coeff_pps != pps_id){
         h->dequant_coeff_pps = pps_id;
