@@ -27,8 +27,8 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#define ff_neterrno() WSAGetLastError()
-#define FF_NETERROR(err) WSA##err
+#define ff_neterrno() (-WSAGetLastError())
+#define FF_NETERROR(err) (-WSA##err)
 #define WSAEAGAIN WSAEWOULDBLOCK
 #else
 #include <sys/types.h>
@@ -36,8 +36,8 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-#define ff_neterrno() errno
-#define FF_NETERROR(err) err
+#define ff_neterrno() AVERROR(errno)
+#define FF_NETERROR(err) AVERROR(err)
 #endif
 
 #if HAVE_ARPA_INET_H
