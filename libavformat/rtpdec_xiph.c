@@ -351,7 +351,6 @@ static int xiph_parse_sdp_line(AVFormatContext *s, int st_index,
     int value_size = strlen(line), attr_size = sizeof(attr), res = 0;
     AVCodecContext* codec = s->streams[st_index]->codec;
 
-    assert(codec->id == CODEC_ID_THEORA);
     assert(data);
 
     if (!(value = av_malloc(value_size))) {
