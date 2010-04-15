@@ -1777,6 +1777,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
     h->sps = *h0->sps_buffers[h->pps.sps_id];
 
+    s->avctx->profile = h->sps.profile_idc;
+    s->avctx->level   = h->sps.level_idc;
     s->avctx->refs= h->sps.ref_frame_count;
 
     if(h == h0 && h->dequant_coeff_pps != pps_id){
@@ -2818,9 +2820,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             if((err = decode_slice_header(hx, h)))
                break;
 
-            avctx->profile = hx->sps.profile_idc;
-            avctx->level   = hx->sps.level_idc;
-
             if (h->current_slice == 1) {
                 if (s->avctx->hwaccel && s->avctx->hwaccel->start_frame(s->avctx, NULL, 0) < 0)
                     return -1;
@@ -2855,9 +2854,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 
             if ((err = decode_slice_header(hx, h)) < 0)
                 break;
-
-            avctx->profile = hx->sps.profile_idc;
-            avctx->level   = hx->sps.level_idc;
 
             hx->s.data_partitioning = 1;
 
