@@ -431,7 +431,7 @@ static int
 ogg_get_length (AVFormatContext * s)
 {
     struct ogg *ogg = s->priv_data;
-    int idx = -1, i;
+    int i;
     int64_t size, end;
 
     if(url_is_streamed(s->pb))
@@ -451,15 +451,12 @@ ogg_get_length (AVFormatContext * s)
 
     while (!ogg_read_page (s, &i)){
         if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
-            ogg->streams[i].codec)
-            idx = i;
-    }
-
-    if (idx != -1){
-        s->streams[idx]->duration =
-            ogg_gptopts (s, idx, ogg->streams[idx].granule, NULL);
-        if (s->streams[idx]->start_time != AV_NOPTS_VALUE)
-            s->streams[idx]->duration -= s->streams[idx]->start_time;
+            ogg->streams[i].codec) {
+            s->streams[i]->duration =
+                ogg_gptopts (s, i, ogg->streams[i].granule, NULL);
+            if (s->streams[i]->start_time != AV_NOPTS_VALUE)
+                s->streams[i]->duration -= s->streams[i]->start_time;
+        }
     }
 
     ogg_restore (s, 0);
