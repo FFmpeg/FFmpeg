@@ -362,6 +362,9 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize, int64_t *fpo
             idx, os->psize, os->pstart);
 #endif
 
+    if (os->granule == -1)
+        av_log(s, AV_LOG_WARNING, "Page at %lld is missing granule\n", os->page_pos);
+
     ogg->curidx = idx;
     os->incomplete = 0;
 
@@ -512,8 +515,7 @@ static int64_t ogg_calc_pts(AVFormatContext *s, int idx, int64_t *dts)
             else
                 os->lastpts = ogg_gptopts(s, idx, os->granule, &os->lastdts);
             os->granule = -1LL;
-        } else
-            av_log(s, AV_LOG_WARNING, "Packet is missing granule\n");
+        }
     }
     return pts;
 }
