@@ -379,7 +379,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
 
         /* unpack the list of partially-coded superblocks */
         bit = get_bits1(gb);
-        while (current_superblock < s->superblock_count) {
+        while (current_superblock < s->superblock_count && get_bits_left(gb) > 0) {
                 current_run = get_vlc2(gb,
                     s->superblock_run_length_vlc.table, 6, 2) + 1;
                 if (current_run == 34)
@@ -409,7 +409,8 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
 
             current_superblock = 0;
             bit = get_bits1(gb);
-            while (superblocks_decoded < s->superblock_count - num_partial_superblocks) {
+            while (superblocks_decoded < s->superblock_count - num_partial_superblocks
+                   && get_bits_left(gb) > 0) {
                         current_run = get_vlc2(gb,
                             s->superblock_run_length_vlc.table, 6, 2) + 1;
                         if (current_run == 34)
@@ -458,7 +459,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
         int sb_end = sb_start + (plane ? s->c_superblock_count : s->y_superblock_count);
         int num_coded_frags = 0;
 
-    for (i = sb_start; i < sb_end; i++) {
+    for (i = sb_start; i < sb_end && get_bits_left(gb) > 0; i++) {
 
         /* iterate through all 16 fragments in a superblock */
         for (j = 0; j < 16; j++) {
@@ -542,6 +543,8 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
          * coded fragments */
         for (sb_y = 0; sb_y < s->y_superblock_height; sb_y++) {
             for (sb_x = 0; sb_x < s->y_superblock_width; sb_x++) {
+                if (get_bits_left(gb) <= 0)
+                    return -1;
 
             for (j = 0; j < 4; j++) {
                 int mb_x = 2*sb_x +   (j>>1);
@@ -636,6 +639,8 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
      * coded fragments */
     for (sb_y = 0; sb_y < s->y_superblock_height; sb_y++) {
         for (sb_x = 0; sb_x < s->y_superblock_width; sb_x++) {
+            if (get_bits_left(gb) <= 0)
+                return -1;
 
         for (j = 0; j < 4; j++) {
             int mb_x = 2*sb_x +   (j>>1);
@@ -820,7 +825,7 @@ static int unpack_block_qpis(Vp3DecodeContext *s, GetBitContext *gb)
                 bit = get_bits1(gb);
             else
                 bit ^= 1;
-        } while (blocks_decoded < num_blocks);
+        } while (blocks_decoded < num_blocks && get_bits_left(gb) > 0);
 
         num_blocks -= num_blocks_at_qpi;
     }
