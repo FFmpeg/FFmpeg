@@ -1583,7 +1583,7 @@ redirect:
             goto fail;
         lower_transport_mask &= ~(1 << lower_transport);
         if (lower_transport_mask == 0 && err == 1) {
-            err = AVERROR(FF_NETERROR(EPROTONOSUPPORT));
+            err = FF_NETERROR(EPROTONOSUPPORT);
             goto fail;
         }
     } while (err);

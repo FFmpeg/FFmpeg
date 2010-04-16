@@ -295,7 +295,7 @@ void print_error(const char *filename, int err)
 
     switch(err) {
 #if CONFIG_NETWORK
-    case AVERROR(FF_NETERROR(EPROTONOSUPPORT)):
+    case FF_NETERROR(EPROTONOSUPPORT):
         fprintf(stderr, "%s: Unsupported network protocol\n", filename);
         break;
 #endif
