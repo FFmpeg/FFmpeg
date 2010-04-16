@@ -462,7 +462,6 @@ ogg_get_length (AVFormatContext * s)
             s->streams[idx]->duration -= s->streams[idx]->start_time;
     }
 
-    ogg->size = size;
     ogg_restore (s, 0);
 
     return 0;

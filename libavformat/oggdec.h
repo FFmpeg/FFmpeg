@@ -91,7 +91,6 @@ struct ogg {
     int nstreams;
     int headers;
     int curidx;
-    uint64_t size;
     struct ogg_state *state;
 };
 
