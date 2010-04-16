@@ -1287,8 +1287,7 @@ static inline int vp3_dequant(Vp3DecodeContext *s, Vp3Fragment *frag,
             block[perm[i]] = (token >> 2) * dequantizer[perm[i]];
             s->dct_tokens[plane][i++]++;
             break;
-        default:
-            av_log(s->avctx, AV_LOG_ERROR, "internal: invalid token type\n");
+        default: // shouldn't happen
             return i;
         }
     } while (i < 64);
