@@ -3058,7 +3058,7 @@ static void opt_input_file(const char *filename)
             if(me_threshold)
                 enc->debug |= FF_DEBUG_MV;
 
-            if (enc->time_base.den != rfps || enc->time_base.num != rfps_base) {
+            if (enc->time_base.den != rfps*enc->ticks_per_frame || enc->time_base.num != rfps_base) {
 
                 if (verbose >= 0)
                     fprintf(stderr,"\nSeems stream %d codec frame rate differs from container frame rate: %2.2f (%d/%d) -> %2.2f (%d/%d)\n",
