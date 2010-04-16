@@ -811,6 +811,34 @@ static int mov_read_glbl(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+/**
+ * An strf atom is a BITMAPINFOHEADER struct. This struct is 40 bytes itself,
+ * but can have extradata appended at the end after the 40 bytes belonging
+ * to the struct.
+ */
+static int mov_read_strf(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    if (atom.size <= 40)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+
+    if((uint64_t)atom.size > (1<<30))
+        return -1;
+
+    av_free(st->codec->extradata);
+    st->codec->extradata = av_mallocz(atom.size - 40 + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codec->extradata)
+        return AVERROR(ENOMEM);
+    st->codec->extradata_size = atom.size - 40;
+    url_fskip(pb, 40);
+    get_buffer(pb, st->codec->extradata, atom.size - 40);
+    return 0;
+}
+
 static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -2161,6 +2189,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('s','t','b','l'), mov_read_default },
 { MKTAG('s','t','c','o'), mov_read_stco },
 { MKTAG('s','t','p','s'), mov_read_stps },
+{ MKTAG('s','t','r','f'), mov_read_strf },
 { MKTAG('s','t','s','c'), mov_read_stsc },
 { MKTAG('s','t','s','d'), mov_read_stsd }, /* sample description */
 { MKTAG('s','t','s','s'), mov_read_stss }, /* sync sample */
