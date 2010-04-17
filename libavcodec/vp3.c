@@ -1986,8 +1986,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     fps.num = get_bits_long(gb, 32);
     fps.den = get_bits_long(gb, 32);
     if (fps.num && fps.den) {
-        av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,
-                  fps.den, fps.num, INT_MAX);
+        av_reduce(&avctx->time_base.num, &avctx->time_base.den,
+                  fps.den, fps.num, 1<<30);
     }
 
     avctx->sample_aspect_ratio.num = get_bits_long(gb, 24);
