@@ -193,7 +193,7 @@ static int read_len_table(uint8_t *dst, GetBitContext *gb){
     return 0;
 }
 
-static int generate_bits_table(uint32_t *dst, uint8_t *len_table){
+static int generate_bits_table(uint32_t *dst, const uint8_t *len_table){
     int len, index;
     uint32_t bits=0;
 
@@ -231,7 +231,7 @@ static void heap_sift(HeapElem *h, int root, int size)
     }
 }
 
-static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
+static void generate_len_table(uint8_t *dst, const uint64_t *stats, int size){
     HeapElem h[size];
     int up[2*size];
     int len[2*size];
@@ -338,7 +338,7 @@ static void generate_joint_tables(HYuvContext *s){
     }
 }
 
-static int read_huffman_tables(HYuvContext *s, uint8_t *src, int length){
+static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length){
     GetBitContext gb;
     int i;
 
@@ -529,7 +529,7 @@ s->bgr32=1;
 #endif /* CONFIG_HUFFYUV_DECODER || CONFIG_FFVHUFF_DECODER */
 
 #if CONFIG_HUFFYUV_ENCODER || CONFIG_FFVHUFF_ENCODER
-static int store_table(HYuvContext *s, uint8_t *len, uint8_t *buf){
+static int store_table(HYuvContext *s, const uint8_t *len, uint8_t *buf){
     int i;
     int index= 0;
 
