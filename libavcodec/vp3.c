@@ -1952,6 +1952,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
     int visible_width, visible_height, colorspace;
+    int offset_x = 0, offset_y = 0;
 
     s->theora = get_bits_long(gb, 24);
     av_log(avctx, AV_LOG_DEBUG, "Theora bitstream version %X\n", s->theora);
@@ -1977,8 +1978,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
         visible_width  = get_bits_long(gb, 24);
         visible_height = get_bits_long(gb, 24);
 
-        skip_bits(gb, 8); /* offset x */
-        skip_bits(gb, 8); /* offset y */
+        offset_x = get_bits(gb, 8); /* offset x */
+        offset_y = get_bits(gb, 8); /* offset y, from bottom */
     }
 
     skip_bits(gb, 32); /* fps numerator */
@@ -2003,7 +2004,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 //    align_get_bits(gb);
 
     if (   visible_width  <= s->width  && visible_width  > s->width-16
-        && visible_height <= s->height && visible_height > s->height-16)
+        && visible_height <= s->height && visible_height > s->height-16
+        && !offset_x && (offset_y == s->height - visible_height))
         avcodec_set_dimensions(avctx, visible_width, visible_height);
     else
         avcodec_set_dimensions(avctx, s->width, s->height);
