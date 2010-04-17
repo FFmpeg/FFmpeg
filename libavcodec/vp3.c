@@ -1953,6 +1953,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     Vp3DecodeContext *s = avctx->priv_data;
     int visible_width, visible_height, colorspace;
     int offset_x = 0, offset_y = 0;
+    AVRational fps;
 
     s->theora = get_bits_long(gb, 24);
     av_log(avctx, AV_LOG_DEBUG, "Theora bitstream version %X\n", s->theora);
@@ -1982,10 +1983,15 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
         offset_y = get_bits(gb, 8); /* offset y, from bottom */
     }
 
-    skip_bits(gb, 32); /* fps numerator */
-    skip_bits(gb, 32); /* fps denumerator */
-    skip_bits(gb, 24); /* aspect numerator */
-    skip_bits(gb, 24); /* aspect denumerator */
+    fps.num = get_bits_long(gb, 32);
+    fps.den = get_bits_long(gb, 32);
+    if (fps.num && fps.den) {
+        av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,
+                  fps.den, fps.num, INT_MAX);
+    }
+
+    avctx->sample_aspect_ratio.num = get_bits_long(gb, 24);
+    avctx->sample_aspect_ratio.den = get_bits_long(gb, 24);
 
     if (s->theora < 0x030200)
         skip_bits(gb, 5); /* keyframe frequency force */
