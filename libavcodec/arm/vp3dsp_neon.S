@@ -374,3 +374,47 @@ function ff_vp3_idct_add_neon, export=1
     vst1.64         {d7}, [r2,:64], r1
     bx              lr
 endfunc
+
+function ff_vp3_idct_dc_add_neon, export=1
+    ldrsh           r2,  [r2]
+    movw            r3,  #46341
+    mul             r2,  r3,  r2
+    smulwt          r2,  r3,  r2
+    mov             r3,  r0
+    vdup.16         q15, r2
+    vrshr.s16       q15, q15, #4
+
+    vld1.8          {d0}, [r0,:64], r1
+    vld1.8          {d1}, [r0,:64], r1
+    vld1.8          {d2}, [r0,:64], r1
+    vaddw.u8        q8,  q15, d0
+    vld1.8          {d3}, [r0,:64], r1
+    vaddw.u8        q9,  q15, d1
+    vld1.8          {d4}, [r0,:64], r1
+    vaddw.u8        q10, q15, d2
+    vld1.8          {d5}, [r0,:64], r1
+    vaddw.u8        q11, q15, d3
+    vld1.8          {d6}, [r0,:64], r1
+    vaddw.u8        q12, q15, d4
+    vld1.8          {d7}, [r0,:64], r1
+    vaddw.u8        q13, q15, d5
+    vqmovun.s16     d0,  q8
+    vaddw.u8        q14, q15, d6
+    vqmovun.s16     d1,  q9
+    vaddw.u8        q15, q15, d7
+    vqmovun.s16     d2,  q10
+    vst1.8          {d0}, [r3,:64], r1
+    vqmovun.s16     d3,  q11
+    vst1.8          {d1}, [r3,:64], r1
+    vqmovun.s16     d4,  q12
+    vst1.8          {d2}, [r3,:64], r1
+    vqmovun.s16     d5,  q13
+    vst1.8          {d3}, [r3,:64], r1
+    vqmovun.s16     d6,  q14
+    vst1.8          {d4}, [r3,:64], r1
+    vqmovun.s16     d7,  q15
+    vst1.8          {d5}, [r3,:64], r1
+    vst1.8          {d6}, [r3,:64], r1
+    vst1.8          {d7}, [r3,:64], r1
+    bx              lr
+endfunc

@@ -395,3 +395,44 @@ void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block)
     ff_vp3_idct_mmx(block);
     add_pixels_clamped_mmx(block, dest, line_size);
 }
+
+void ff_vp3_idct_dc_add_mmx2(uint8_t *dest, int linesize, const DCTELEM *block)
+{
+    int dc = block[0];
+    dc = (46341*dc)>>16;
+    dc = (46341*dc + (8<<16))>>20;
+
+    __asm__ volatile(
+        "movd          %3, %%mm0 \n\t"
+        "pshufw $0, %%mm0, %%mm0 \n\t"
+        "pxor       %%mm1, %%mm1 \n\t"
+        "psubw      %%mm0, %%mm1 \n\t"
+        "packuswb   %%mm0, %%mm0 \n\t"
+        "packuswb   %%mm1, %%mm1 \n\t"
+
+#define DC_ADD \
+        "movq        (%0), %%mm2 \n\t" \
+        "movq     (%0,%1), %%mm3 \n\t" \
+        "paddusb    %%mm0, %%mm2 \n\t" \
+        "movq   (%0,%1,2), %%mm4 \n\t" \
+        "paddusb    %%mm0, %%mm3 \n\t" \
+        "movq     (%0,%2), %%mm5 \n\t" \
+        "paddusb    %%mm0, %%mm4 \n\t" \
+        "paddusb    %%mm0, %%mm5 \n\t" \
+        "psubusb    %%mm1, %%mm2 \n\t" \
+        "psubusb    %%mm1, %%mm3 \n\t" \
+        "movq       %%mm2, (%0)  \n\t" \
+        "psubusb    %%mm1, %%mm4 \n\t" \
+        "movq       %%mm3, (%0,%1) \n\t" \
+        "psubusb    %%mm1, %%mm5 \n\t" \
+        "movq       %%mm4, (%0,%1,2) \n\t" \
+        "movq       %%mm5, (%0,%2) \n\t"
+
+        DC_ADD
+        "lea    (%0,%1,4), %0 \n\t"
+        DC_ADD
+
+        : "+r"(dest)
+        : "r"((x86_reg)linesize), "r"((x86_reg)3*linesize), "r"(dc)
+    );
+}

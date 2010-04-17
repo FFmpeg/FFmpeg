@@ -223,6 +223,25 @@ void ff_vp3_idct_add_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*
     idct(dest, line_size, block, 2);
 }
 
+void ff_vp3_idct_dc_add_c(uint8_t *dest/*align 8*/, int line_size, const DCTELEM *block/*align 16*/){
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    int i, dc = block[0];
+    dc = (46341*dc)>>16;
+    dc = (46341*dc + (8<<16))>>20;
+
+    for(i = 0; i < 8; i++){
+        dest[0] = cm[dest[0]+dc];
+        dest[1] = cm[dest[1]+dc];
+        dest[2] = cm[dest[2]+dc];
+        dest[3] = cm[dest[3]+dc];
+        dest[4] = cm[dest[4]+dc];
+        dest[5] = cm[dest[5]+dc];
+        dest[6] = cm[dest[6]+dc];
+        dest[7] = cm[dest[7]+dc];
+        dest += line_size;
+    }
+}
+
 void ff_vp3_v_loop_filter_c(uint8_t *first_pixel, int stride, int *bounding_values)
 {
     unsigned char *end;

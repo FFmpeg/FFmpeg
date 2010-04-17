@@ -2653,6 +2653,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->vp3_h_loop_filter= ff_vp3_h_loop_filter_mmx2;
                 }
             }
+            if (CONFIG_VP3_DECODER) {
+                c->vp3_idct_dc_add = ff_vp3_idct_dc_add_mmx2;
+            }
 
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU) \
             c->PFX ## _pixels_tab[IDX][ 0] = PFX ## SIZE ## _mc00_ ## CPU; \

@@ -1395,8 +1395,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 
                 /* transform if this block was coded */
                 if (s->all_fragments[i].coding_method != MODE_COPY) {
-                    int intra = s->all_fragments[i].coding_method == MODE_INTRA;
-
                     if ((s->all_fragments[i].coding_method == MODE_USING_GOLDEN) ||
                         (s->all_fragments[i].coding_method == MODE_GOLDEN_MV))
                         motion_source= golden_plane;
@@ -1456,11 +1454,11 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                     }
 
                         s->dsp.clear_block(block);
-                        vp3_dequant(s, s->all_fragments + i, plane, !intra, block);
 
                     /* invert DCT and place (or add) in final output */
 
                     if (s->all_fragments[i].coding_method == MODE_INTRA) {
+                        vp3_dequant(s, s->all_fragments + i, plane, 0, block);
                         if(s->avctx->idct_algo!=FF_IDCT_VP3)
                             block[0] += 128<<3;
                         s->dsp.idct_put(
@@ -1468,10 +1466,14 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                             stride,
                             block);
                     } else {
+                        if (vp3_dequant(s, s->all_fragments + i, plane, 1, block)) {
                         s->dsp.idct_add(
                             output_plane + first_pixel,
                             stride,
                             block);
+                        } else {
+                            s->dsp.vp3_idct_dc_add(output_plane + first_pixel, stride, block);
+                        }
                     }
                 } else {
 

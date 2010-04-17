@@ -86,6 +86,7 @@ extern uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
 void ff_vp3_idct_c(DCTELEM *block/* align 16*/);
 void ff_vp3_idct_put_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 void ff_vp3_idct_add_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+void ff_vp3_idct_dc_add_c(uint8_t *dest/*align 8*/, int line_size, const DCTELEM *block/*align 16*/);
 
 void ff_vp3_v_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 void ff_vp3_h_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
@@ -373,6 +374,7 @@ typedef struct DSPContext {
     void (*x8_v_loop_filter)(uint8_t *src, int stride, int qscale);
     void (*x8_h_loop_filter)(uint8_t *src, int stride, int qscale);
 
+    void (*vp3_idct_dc_add)(uint8_t *dest/*align 8*/, int line_size, const DCTELEM *block/*align 16*/);
     void (*vp3_v_loop_filter)(uint8_t *src, int stride, int *bounding_values);
     void (*vp3_h_loop_filter)(uint8_t *src, int stride, int *bounding_values);
 
