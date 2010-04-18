@@ -36,13 +36,13 @@ void avfilter_graph_destroy(AVFilterGraph *graph)
 
 int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
 {
-    graph->filters = av_realloc(graph->filters,
-                                sizeof(AVFilterContext*) * ++graph->filter_count);
-
-    if (!graph->filters)
+    AVFilterContext **filters = av_realloc(graph->filters,
+                                           sizeof(AVFilterContext*) * (graph->filter_count+1));
+    if (!filters)
         return AVERROR(ENOMEM);
 
-    graph->filters[graph->filter_count - 1] = filter;
+    graph->filters = filters;
+    graph->filters[graph->filter_count++] = filter;
 
     return 0;
 }
