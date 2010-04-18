@@ -144,7 +144,10 @@ static int64_t rtmp_read_seek(URLContext *s, int stream_index,
         return AVERROR(ENOSYS);
 
     /* seeks are in milliseconds */
-    timestamp = av_rescale(timestamp, AV_TIME_BASE, 1000);
+    if (stream_index < 0)
+        timestamp = av_rescale_rnd(timestamp, 1000, AV_TIME_BASE,
+            flags & AVSEEK_FLAG_BACKWARD ? AV_ROUND_DOWN : AV_ROUND_UP);
+
     if (!RTMP_SendSeek(r, timestamp))
         return -1;
     return timestamp;

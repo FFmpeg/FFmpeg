@@ -449,6 +449,39 @@ leave:
     return ret;
 }
 
+static int flv_read_seek(AVFormatContext *s, int stream_index,
+    int64_t ts, int flags)
+{
+    return av_url_read_fseek(s->pb, stream_index, ts, flags);
+}
+
+#if 0 /* don't know enough to implement this */
+static int flv_read_seek2(AVFormatContext *s, int stream_index,
+    int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    int ret = AVERROR(ENOSYS);
+
+    if (ts - min_ts > (uint64_t)(max_ts - ts)) flags |= AVSEEK_FLAG_BACKWARD;
+
+    if (url_is_streamed(s->pb)) {
+        if (stream_index < 0) {
+            stream_index = av_find_default_stream_index(s);
+            if (stream_index < 0)
+                return -1;
+
+            /* timestamp for default must be expressed in AV_TIME_BASE units */
+            ts = av_rescale_rnd(ts, 1000, AV_TIME_BASE,
+                flags & AVSEEK_FLAG_BACKWARD ? AV_ROUND_DOWN : AV_ROUND_UP);
+        }
+        ret = av_url_read_fseek(s->pb, stream_index, ts, flags);
+    }
+
+    if (ret == AVERROR(ENOSYS))
+        ret = av_seek_frame(s, stream_index, ts, flags);
+    return ret;
+}
+#endif
+
 AVInputFormat flv_demuxer = {
     "flv",
     NULL_IF_CONFIG_SMALL("FLV format"),
@@ -456,6 +489,10 @@ AVInputFormat flv_demuxer = {
     flv_probe,
     flv_read_header,
     flv_read_packet,
+    .read_seek = flv_read_seek,
+#if 0
+    .read_seek2 = flv_read_seek2,
+#endif
     .extensions = "flv",
     .value = CODEC_ID_FLV1,
 };
