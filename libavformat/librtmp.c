@@ -141,7 +141,7 @@ static int64_t rtmp_read_seek(URLContext *s, int stream_index,
     RTMP *r = s->priv_data;
 
     if (flags & AVSEEK_FLAG_BYTE)
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
 
     /* seeks are in milliseconds */
     timestamp = av_rescale(timestamp, AV_TIME_BASE, 1000);
