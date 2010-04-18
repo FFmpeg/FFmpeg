@@ -197,7 +197,7 @@ int64_t url_fsize(ByteIOContext *s)
         return AVERROR(EINVAL);
 
     if (!s->seek)
-        return AVERROR(EPIPE);
+        return AVERROR(ENOSYS);
     size = s->seek(s->opaque, 0, AVSEEK_SIZE);
     if(size<0){
         if ((size = s->seek(s->opaque, -1, SEEK_END)) < 0)
