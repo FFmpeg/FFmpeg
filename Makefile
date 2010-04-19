@@ -342,7 +342,7 @@ tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
 ifdef SAMPLES
 include $(SRC_PATH_BARE)/tests/fate.mak
 fate: $(FATE_TESTS)
-$(FATE_TESTS):
+$(FATE_TESTS): ffmpeg$(EXESUF)
 	@echo "TEST FATE   $(@:fate-%=%)"
 	@$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)'
 else
