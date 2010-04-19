@@ -3042,7 +3042,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
                            RTSPMessageHeader *h)
 {
     FFStream *stream;
-    int stream_index, port;
+    int stream_index, rtp_port, rtcp_port;
     char buf[1024];
     char path1[1024];
     const char *path;
@@ -3156,11 +3156,12 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
 
     switch(rtp_c->rtp_protocol) {
     case RTSP_LOWER_TRANSPORT_UDP:
-        port = rtp_get_local_port(rtp_c->rtp_handles[stream_index]);
+        rtp_port = rtp_get_local_rtp_port(rtp_c->rtp_handles[stream_index]);
+        rtcp_port = rtp_get_local_rtcp_port(rtp_c->rtp_handles[stream_index]);
         url_fprintf(c->pb, "Transport: RTP/AVP/UDP;unicast;"
                     "client_port=%d-%d;server_port=%d-%d",
-                    th->client_port_min, th->client_port_min + 1,
-                    port, port + 1);
+                    th->client_port_min, th->client_port_max,
+                    rtp_port, rtcp_port);
         break;
     case RTSP_LOWER_TRANSPORT_TCP:
         url_fprintf(c->pb, "Transport: RTP/AVP/TCP;interleaved=%d-%d",
