@@ -242,13 +242,13 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.i_me_method = X264_ME_TESA;
     else x4->params.analyse.i_me_method = X264_ME_HEX;
 
-    x4->params.rc.i_aq_mode = avctx->aq_mode;
-    x4->params.rc.f_aq_strength = avctx->aq_strength;
-    x4->params.rc.i_lookahead = avctx->rc_lookahead;
+    x4->params.rc.i_aq_mode               = avctx->aq_mode;
+    x4->params.rc.f_aq_strength           = avctx->aq_strength;
+    x4->params.rc.i_lookahead             = avctx->rc_lookahead;
 
-    x4->params.analyse.b_psy = avctx->flags2 & CODEC_FLAG2_PSY;
-    x4->params.analyse.f_psy_rd = avctx->psy_rd;
-    x4->params.analyse.f_psy_trellis = avctx->psy_trellis;
+    x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
+    x4->params.analyse.f_psy_rd           = avctx->psy_rd;
+    x4->params.analyse.f_psy_trellis      = avctx->psy_trellis;
 
     x4->params.analyse.i_me_range         = avctx->me_range;
     x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
