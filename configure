@@ -1550,18 +1550,13 @@ INDEV_LIST=$(find_things    indev    _IN      libavdevice/alldevices.c)
 PROTOCOL_LIST=$(find_things protocol PROTOCOL libavformat/allformats.c)
 FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
 
-enable $ARCH_EXT_LIST \
-       $DECODER_LIST \
-       $ENCODER_LIST \
-       $HWACCEL_LIST \
-       $PARSER_LIST \
-       $BSF_LIST \
-       $DEMUXER_LIST \
-       $MUXER_LIST \
-       $FILTER_LIST \
-       $PROTOCOL_LIST \
-       $INDEV_LIST \
-       $OUTDEV_LIST \
+for n in $COMPONENT_LIST; do
+    v=$(toupper ${n%s})_LIST
+    eval enable \$$v
+    eval ${n}_if_any="\$$v"
+done
+
+enable $ARCH_EXT_LIST
 
 die_unknown(){
     echo "Unknown option \"$1\"."
@@ -2787,17 +2782,6 @@ fi
 
 # Find out if the .align argument is a power of two or not.
 check_asm asmalign_pot '".align 3"'
-
-enabled_any $DECODER_LIST      && enable decoders
-enabled_any $ENCODER_LIST      && enable encoders
-enabled_any $HWACCEL_LIST      && enable hwaccels
-enabled_any $BSF_LIST          && enable bsfs
-enabled_any $DEMUXER_LIST      && enable demuxers
-enabled_any $MUXER_LIST        && enable muxers
-enabled_any $FILTER_LIST       && enable filters
-enabled_any $INDEV_LIST        && enable indevs
-enabled_any $OUTDEV_LIST       && enable outdevs
-enabled_any $PROTOCOL_LIST     && enable protocols
 
 enabled_any $THREADS_LIST      && enable threads
 
