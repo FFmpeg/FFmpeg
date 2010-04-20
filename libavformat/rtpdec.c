@@ -80,6 +80,8 @@ static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int l
     if (buf[1] != 200)
         return -1;
     s->last_rtcp_ntp_time = AV_RB64(buf + 8);
+    if (s->first_rtcp_ntp_time == AV_NOPTS_VALUE)
+        s->first_rtcp_ntp_time = s->last_rtcp_ntp_time;
     s->last_rtcp_timestamp = AV_RB32(buf + 16);
     return 0;
 }
@@ -326,6 +328,7 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
         return NULL;
     s->payload_type = payload_type;
     s->last_rtcp_ntp_time = AV_NOPTS_VALUE;
+    s->first_rtcp_ntp_time = AV_NOPTS_VALUE;
     s->ic = s1;
     s->st = st;
     s->rtp_payload_data = rtp_payload_data;
@@ -433,7 +436,7 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
         /* compute pts from timestamp with received ntp_time */
         delta_timestamp = timestamp - s->last_rtcp_timestamp;
         /* convert to the PTS timebase */
-        addend = av_rescale(s->last_rtcp_ntp_time, s->st->time_base.den, (uint64_t)s->st->time_base.num << 32);
+        addend = av_rescale(s->last_rtcp_ntp_time - s->first_rtcp_ntp_time, s->st->time_base.den, (uint64_t)s->st->time_base.num << 32);
         pkt->pts = addend + delta_timestamp;
     }
 }

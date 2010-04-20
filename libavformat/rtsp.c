@@ -1796,8 +1796,27 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
     if (rt->transport == RTSP_TRANSPORT_RDT) {
         ret = ff_rdt_parse_packet(rtsp_st->transport_priv, pkt, buf, len);
-    } else
+    } else {
         ret = rtp_parse_packet(rtsp_st->transport_priv, pkt, buf, len);
+        if (ret < 0) {
+            /* Either bad packet, or a RTCP packet. Check if the
+             * first_rtcp_ntp_time field was initialized. */
+            RTPDemuxContext *rtpctx = rtsp_st->transport_priv;
+            if (rtpctx->first_rtcp_ntp_time != AV_NOPTS_VALUE) {
+                /* first_rtcp_ntp_time has been initialized for this stream,
+                 * copy the same value to all other uninitialized streams,
+                 * in order to map their timestamp origin to the same ntp time
+                 * as this one. */
+                int i;
+                for (i = 0; i < rt->nb_rtsp_streams; i++) {
+                    RTPDemuxContext *rtpctx2 = rtsp_st->transport_priv;
+                    if (rtpctx2 &&
+                        rtpctx2->first_rtcp_ntp_time == AV_NOPTS_VALUE)
+                        rtpctx2->first_rtcp_ntp_time = rtpctx->first_rtcp_ntp_time;
+                }
+            }
+        }
+    }
     if (ret < 0)
         goto redo;
     if (ret == 1)
