@@ -22,7 +22,7 @@
 
 
 /**
- * @file libavcodec/amrnbdata.h
+ * @file
  * AMR narrowband data and definitions
  */
 

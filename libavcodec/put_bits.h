@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/put_bits.h
+ * @file
  * bitstream writer API
  */
 

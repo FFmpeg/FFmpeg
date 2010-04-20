@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/filmstripdec.c
+ * @file
  * Adobe Filmstrip demuxer
  */
 

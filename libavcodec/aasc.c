@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/aasc.c
+ * @file
  * Autodesk RLE Video Decoder by Konstantin Shishkov
  */
 

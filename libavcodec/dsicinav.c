@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/dsicinav.c
+ * @file
  * Delphine Software International CIN audio/video decoders
  */
 

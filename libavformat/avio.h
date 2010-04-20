@@ -21,7 +21,7 @@
 #define AVFORMAT_AVIO_H
 
 /**
- * @file libavformat/avio.h
+ * @file
  * unbuffered I/O operations
  *
  * @warning This file has to be considered an internal but installed

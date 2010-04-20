@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/vp3.c
+ * @file
  * On2 VP3 Video Decoder
  *
  * VP3 Video Decoder by Mike Melanson (mike at multimedia.cx)

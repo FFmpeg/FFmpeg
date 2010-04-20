@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h263_parser.c
+ * @file
  * H.263 parser
  */
 

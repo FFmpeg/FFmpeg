@@ -1,5 +1,5 @@
 /**
- * @file libavutil/timer.h
+ * @file
  * high precision timer, useful to profile code
  *
  * copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>

@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/utils.c
+ * @file
  * utils.
  */
 

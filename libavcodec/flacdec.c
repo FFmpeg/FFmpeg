@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/flacdec.c
+ * @file
  * FLAC (Free Lossless Audio Codec) decoder
  * @author Alex Beregszaszi
  *

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/rv30data.h
+ * @file
  * miscellaneous RV30 tables
  */
 

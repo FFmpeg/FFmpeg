@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/ac3tab.c
+ * @file
  * tables taken directly from the AC-3 spec.
  */
 

@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/binkaudio.c
+ * @file
  * Bink Audio decoder
  *
  * Technical details here:

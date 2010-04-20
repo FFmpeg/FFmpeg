@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/mpegaudiodata.h
+ * @file
  * mpeg audio layer common tables.
  */
 

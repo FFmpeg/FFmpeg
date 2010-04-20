@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/mpegaudio.c
+ * @file
  * The simplest mpeg audio layer 2 encoder.
  */
 

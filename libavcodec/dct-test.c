@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/dct-test.c
+ * @file
  * DCT test (c) 2001 Fabrice Bellard
  * Started from sample code by Juan J. Sierralta P.
  */

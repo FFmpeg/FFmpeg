@@ -22,7 +22,7 @@
  */
 
 /**
- * @file libavcodec/mdec.c
+ * @file
  * Sony PlayStation MDEC (Motion DECoder)
  * This is very similar to intra-only MPEG-1.
  */

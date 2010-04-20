@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavutil/mem.c
+ * @file
  * default memory allocator for libavutil
  */
 

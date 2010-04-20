@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/flashsv.c
+ * @file
  * Flash Screen Video decoder
  * @author Alex Beregszaszi
  * @author Benjamin Larsson

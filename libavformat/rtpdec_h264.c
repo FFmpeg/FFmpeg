@@ -20,7 +20,7 @@
  */
 
 /**
-* @file libavformat/rtpdec_h264.c
+* @file
  * @brief H.264 / RTP Code (RFC3984)
  * @author Ryan Martell <rdm4@martellventures.com>
  *

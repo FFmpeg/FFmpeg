@@ -24,7 +24,7 @@
 #include "unary.h"
 
 /**
- * @file libavcodec/wavpack.c
+ * @file
  * WavPack lossless audio decoder
  */
 

@@ -19,7 +19,7 @@
  */
 
 /**
-* @file libavcodec/libdirac.h
+* @file
 * data structures common to libdiracenc.c and libdiracdec.c
 */
 

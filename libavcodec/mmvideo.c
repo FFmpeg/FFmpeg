@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/mmvideo.c
+ * @file
  * American Laser Games MM Video Decoder
  * by Peter Ross (pross@xvid.org)
  *

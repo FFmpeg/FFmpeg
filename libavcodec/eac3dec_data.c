@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/eac3dec_data.c
+ * @file
  * Tables taken directly from the E-AC-3 spec.
  */
 

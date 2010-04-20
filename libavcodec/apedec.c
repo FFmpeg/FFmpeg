@@ -27,7 +27,7 @@
 #include "bytestream.h"
 
 /**
- * @file libavcodec/apedec.c
+ * @file
  * Monkey's Audio lossless audio decoder
  */
 

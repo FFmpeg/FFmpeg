@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/eatgv.c
+ * @file
  * Electronic Arts TGV Video Decoder
  * by Peter Ross (pross@xvid.org)
  *

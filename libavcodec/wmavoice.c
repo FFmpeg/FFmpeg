@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/wmavoice.c
+ * @file
  * @brief Windows Media Audio Voice compatible decoder
  * @author Ronald S. Bultje <rsbultje@gmail.com>
  */

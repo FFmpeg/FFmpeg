@@ -20,7 +20,7 @@
  */
 
 /**
- * @file eatqi.c
+ * @file
  * Electronic Arts TQI Video Decoder
  * by Peter Ross <pross@xvid.org>
  *

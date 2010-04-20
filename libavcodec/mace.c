@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/mace.c
+ * @file
  * MACE decoder.
  */
 

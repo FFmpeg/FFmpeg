@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h264idct.c
+ * @file
  * H.264 IDCT.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

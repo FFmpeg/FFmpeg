@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libpostproc/postprocess_template.c
+ * @file
  * mmx/mmx2/3dnow postprocess code.
  */
 

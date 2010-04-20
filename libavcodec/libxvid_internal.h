@@ -22,7 +22,7 @@
 #define AVCODEC_LIBXVID_INTERNAL_H
 
 /**
- * @file libavcodec/libxvid_internal.h
+ * @file
  * common functions for use with the Xvid wrappers
  */
 

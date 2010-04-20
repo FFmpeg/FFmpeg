@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/h261enc.c
+ * @file
  * H.261 encoder.
  */
 

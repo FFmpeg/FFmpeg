@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/motion_est_template.c
+ * @file
  * Motion estimation template.
  */
 

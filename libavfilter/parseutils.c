@@ -18,7 +18,7 @@
  */
 
 /**
- * @file libavfilter/parseutils.c
+ * @file
  * parsing utils
  */
 

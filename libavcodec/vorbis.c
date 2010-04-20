@@ -1,5 +1,5 @@
 /**
- * @file libavcodec/vorbis.c
+ * @file
  * Common code for Vorbis I encoder and decoder
  * @author Denes Balatoni  ( dbalatoni programozo hu )
  *

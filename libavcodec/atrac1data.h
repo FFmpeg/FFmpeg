@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/atrac1data.h
+ * @file
  * Atrac 1 compatible decoder data
  */
 

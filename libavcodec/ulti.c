@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/ulti.c
+ * @file
  * IBM Ultimotion Video Decoder.
  */
 

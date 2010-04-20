@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/iff.c
+ * @file
  * IFF PBM/ILBM bitmap decoder
  */
 

@@ -23,7 +23,7 @@
  */
 
 /**
- * @file libavcodec/msmpeg4data.h
+ * @file
  * MSMPEG4 data tables.
  */
 

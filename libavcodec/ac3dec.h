@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/ac3.h
+ * @file
  * Common code between the AC-3 and E-AC-3 decoders.
  *
  * Summary of MDCT Coefficient Grouping:

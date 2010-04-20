@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h264_loopfilter.c
+ * @file
  * H.264 / AVC / MPEG4 part10 loop filter.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

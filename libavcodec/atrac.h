@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/atrac.h
+ * @file
  * Atrac common header
  */
 

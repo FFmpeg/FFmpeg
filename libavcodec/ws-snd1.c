@@ -23,7 +23,7 @@
 #include "avcodec.h"
 
 /**
- * @file libavcodec/ws-snd1.c
+ * @file
  * Westwood SNDx codecs.
  *
  * Reference documents about VQA format and its audio codecs

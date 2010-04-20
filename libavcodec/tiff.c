@@ -21,7 +21,7 @@
 
 /**
  * TIFF image decoder
- * @file libavcodec/tiff.c
+ * @file
  * @author Konstantin Shishkov
  */
 #include "avcodec.h"

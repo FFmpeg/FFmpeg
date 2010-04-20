@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/vqavideo.c
+ * @file
  * VQA Video Decoder by Mike Melanson (melanson@pcisys.net)
  * For more information about the VQA format, visit:
  *   http://wiki.multimedia.cx/index.php?title=VQA

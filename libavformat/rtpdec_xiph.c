@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavformat/rtpdec_xiph.c
+ * @file
  * @brief Xiph / RTP Code
  * @author Colin McQuillan <m.niloc@gmail.com>
  * @author Josh Allmann <joshua.allmann@gmail.com>

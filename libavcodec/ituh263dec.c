@@ -23,7 +23,7 @@
  */
 
 /**
- * @file libavcodec/ituh263dec.c
+ * @file
  * h263 decoder.
  */
 

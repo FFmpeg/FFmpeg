@@ -21,7 +21,7 @@
 
 /**
  * PCX image encoder
- * @file libavcodec/pcxenc.c
+ * @file
  * @author Daniel Verkamp
  * @sa http://www.qzx.com/pc-gpe/pcx.txt
  */

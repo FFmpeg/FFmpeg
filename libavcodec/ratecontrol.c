@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/ratecontrol.c
+ * @file
  * Rate control for video encoders.
  */
 

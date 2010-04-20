@@ -24,7 +24,7 @@
  */
 
 /**
- * @file libavcodec/svq1_cb.h
+ * @file
  * svq1 code books.
  */
 

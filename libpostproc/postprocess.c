@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libpostproc/postprocess.c
+ * @file
  * postprocessing.
  */
 

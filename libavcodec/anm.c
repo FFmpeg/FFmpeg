@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/anm.c
+ * @file
  * Deluxe Paint Animation decoder
  */
 

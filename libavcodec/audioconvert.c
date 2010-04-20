@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/audioconvert.c
+ * @file
  * audio conversion
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

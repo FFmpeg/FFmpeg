@@ -21,7 +21,7 @@
 
 /**
  * 8088flex TMV file demuxer
- * @file libavformat/tmv.c
+ * @file
  * @author Daniel Verkamp
  * @sa http://www.oldskool.org/pc/8088_Corruption
  */

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/bgmc.h
+ * @file
  * Block Gilbert-Moore decoder header
  * @author Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
  */

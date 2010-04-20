@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/eacmv.c
+ * @file
  * Electronic Arts CMV Video Decoder
  * by Peter Ross (pross@xvid.org)
  *

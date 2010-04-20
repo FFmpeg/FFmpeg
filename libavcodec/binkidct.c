@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/binkidct.c
+ * @file
  * Bink IDCT algorithm
  */
 

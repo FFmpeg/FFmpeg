@@ -17,7 +17,7 @@
  */
 
 /**
- * @file libavfilter/vsrc_nullsrc.c
+ * @file
  * null video source
  */
 

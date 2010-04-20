@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavutil/internal.h
+ * @file
  * common internal API header
  */
 

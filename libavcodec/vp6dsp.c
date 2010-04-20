@@ -1,5 +1,5 @@
 /**
- * @file libavcodec/vp6dsp.c
+ * @file
  * VP6 DSP-oriented functions
  *
  * Copyright (C) 2006  Aurelien Jacobs <aurel@gnuage.org>

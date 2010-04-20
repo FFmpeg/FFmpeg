@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/cinepak.c
+ * @file
  * Cinepak video decoder
  * by Ewald Snel <ewald@rambo.its.tudelft.nl>
  * For more information on the Cinepak algorithm, visit:

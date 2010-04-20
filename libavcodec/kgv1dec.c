@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/kgv1dec.c
+ * @file
  * Kega Game Video decoder
  */
 

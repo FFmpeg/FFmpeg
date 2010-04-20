@@ -21,7 +21,7 @@
 
 /**
  * TIFF tables
- * @file libavcodec/tiff.h
+ * @file
  * @author Konstantin Shishkov
  */
 #ifndef AVCODEC_TIFF_H

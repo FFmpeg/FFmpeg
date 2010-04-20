@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/vb.c
+ * @file
  * VB Video decoder
  */
 

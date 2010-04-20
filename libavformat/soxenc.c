@@ -24,7 +24,7 @@
 
 /**
  * SoX native format muxer
- * @file libavformat/soxenc.c
+ * @file
  * @author Daniel Verkamp
  * @sa http://wiki.multimedia.cx/index.php?title=SoX_native_intermediate_format
  */

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file libavutil/sh4/bswap.h
+ * @file
  * byte swapping routines
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file libavcodec/huffman.h
+ * @file
  * huffman tree builder and VLC generator
  * Copyright (C) 2007  Aurelien Jacobs <aurel@gnuage.org>
  *

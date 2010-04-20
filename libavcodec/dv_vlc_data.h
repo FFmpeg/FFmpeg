@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/dv_vlc_data.h
+ * @file
  * VLC constants for DV codec.
  */
 

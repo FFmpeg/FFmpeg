@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavutil/log.c
+ * @file
  * logging functions
  */
 

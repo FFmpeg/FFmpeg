@@ -22,7 +22,7 @@
 #define AVCODEC_AVCODEC_H
 
 /**
- * @file libavcodec/avcodec.h
+ * @file
  * external API header
  */
 

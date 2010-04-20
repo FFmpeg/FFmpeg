@@ -20,10 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file libavcodec/dcadata.h
- */
-
 #ifndef AVCODEC_DCADATA_H
 #define AVCODEC_DCADATA_H
 

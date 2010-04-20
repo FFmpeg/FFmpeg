@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/shorten.c
+ * @file
  * Shorten decoder
  * @author Jeff Muizelaar
  *

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/ipmovie.c
+ * @file
  * Interplay MVE file demuxer
  * by Mike Melanson (melanson@pcisys.net)
  * For more information regarding the Interplay MVE file format, visit:

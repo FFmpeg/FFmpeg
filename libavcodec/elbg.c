@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/elbg.c
+ * @file
  * Codebook Generator using the ELBG algorithm
  */
 

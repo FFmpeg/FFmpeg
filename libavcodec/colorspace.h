@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/colorspace.h
+ * @file
  * Various defines for YUV<->RGB conversion
  */
 

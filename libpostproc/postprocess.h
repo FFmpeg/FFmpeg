@@ -22,7 +22,7 @@
 #define POSTPROC_POSTPROCESS_H
 
 /**
- * @file libpostproc/postprocess.h
+ * @file
  * @brief
  *     external postprocessing API
  */

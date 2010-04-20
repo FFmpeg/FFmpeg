@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/flac.h
+ * @file
  * FLAC (Free Lossless Audio Codec) decoder/demuxer common functions
  */
 

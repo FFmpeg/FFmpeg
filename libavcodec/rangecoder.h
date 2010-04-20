@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/rangecoder.h
+ * @file
  * Range coder.
  */
 

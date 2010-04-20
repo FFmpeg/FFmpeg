@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/h264dsp.h
+ * @file
  * H.264 DSP functions.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

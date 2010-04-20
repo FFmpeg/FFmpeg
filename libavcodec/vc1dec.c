@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/vc1dec.c
+ * @file
  * VC-1 and WMV3 decoder
  *
  */

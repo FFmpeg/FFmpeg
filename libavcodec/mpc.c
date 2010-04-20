@@ -20,7 +20,8 @@
  */
 
 /**
- * @file libavcodec/mpc.c Musepack decoder core
+ * @file
+ * Musepack decoder core
  * MPEG Audio Layer 1/2 -like codec with frames of 1152 samples
  * divided into 32 subbands.
  */

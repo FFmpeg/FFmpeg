@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h264_mvpred.h
+ * @file
  * H.264 / AVC / MPEG4 part10 motion vector predicion.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

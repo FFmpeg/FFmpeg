@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/mlp_parser.h
+ * @file
  * MLP parser prototypes
  */
 

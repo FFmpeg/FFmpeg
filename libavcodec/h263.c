@@ -23,7 +23,7 @@
  */
 
 /**
- * @file libavcodec/h263.c
+ * @file
  * h263/mpeg4 codec.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file libavcodec/vp5.c
+ * @file
  * VP5 compatible video decoder
  *
  * Copyright (C) 2006  Aurelien Jacobs <aurel@gnuage.org>

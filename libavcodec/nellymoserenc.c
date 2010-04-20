@@ -22,7 +22,7 @@
  */
 
 /**
- * @file libavcodec/nellymoserenc.c
+ * @file
  * Nellymoser encoder
  * by Bartlomiej Wolowiec
  *

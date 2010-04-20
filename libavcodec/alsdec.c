@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/alsdec.c
+ * @file
  * MPEG-4 ALS decoder
  * @author Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
  */

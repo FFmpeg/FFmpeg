@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/eacdata.c
+ * @file
  * Electronic Arts cdata Format Demuxer
  * by Peter Ross (pross@xvid.org)
  *

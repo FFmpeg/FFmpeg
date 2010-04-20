@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavformat/cafdec.c
+ * @file
  * Core Audio Format demuxer
  */
 

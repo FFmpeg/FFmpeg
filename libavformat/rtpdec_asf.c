@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/rtpdec_asf.c
+ * @file
  * @brief Microsoft RTP/ASF support
  * @author Ronald S. Bultje <rbultje@ronald.bitfreak.net>
  */

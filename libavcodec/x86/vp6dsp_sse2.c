@@ -1,5 +1,5 @@
 /**
- * @file libavcodec/x86/vp6dsp_mmx.c
+ * @file
  * SSE2-optimized functions for the VP6 decoder
  *
  * Copyright (C) 2009  Zuxy Meng <zuxy.meng@gmail.com>

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/rawenc.c
+ * @file
  * Raw Video Encoder
  */
 

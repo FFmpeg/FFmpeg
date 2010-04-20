@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/ffv1.c
+ * @file
  * FF Video Codec 1 (a lossless codec)
  */
 

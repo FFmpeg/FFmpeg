@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/mm.c
+ * @file
  * American Laser Games MM Format Demuxer
  * by Peter Ross (pross@xvid.org)
  *

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file libavutil/error.h
+ * @file
  * error code definitions
  */
 

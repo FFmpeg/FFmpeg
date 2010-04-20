@@ -23,7 +23,7 @@
  */
 
 /**
- * @file libavcodec/mpegvideo_enc.c
+ * @file
  * The simplest mpeg encoder (well, it was the simplest!).
  */
 

@@ -24,7 +24,7 @@
 #include "fft.h"
 
 /**
- * @file libavcodec/rdft.c
+ * @file
  * (Inverse) Real Discrete Fourier Transforms.
  */
 

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/bethsoftvid.c
+ * @file
  * @brief Bethesda Softworks VID (.vid) file demuxer
  * @author Nicholas Tung [ntung (at. ntung com] (2007-03)
  * @sa http://wiki.multimedia.cx/index.php?title=Bethsoft_VID

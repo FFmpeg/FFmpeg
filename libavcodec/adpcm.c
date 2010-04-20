@@ -24,7 +24,7 @@
 #include "bytestream.h"
 
 /**
- * @file libavcodec/adpcm.c
+ * @file
  * ADPCM codecs.
  * First version by Francois Revol (revol@free.fr)
  * Fringe ADPCM codecs (e.g., DK3, DK4, Westwood)

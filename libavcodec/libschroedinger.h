@@ -19,7 +19,7 @@
  */
 
 /**
-* @file libavcodec/libschroedinger.h
+* @file
 * data structures common to libschroedingerdec.c and libschroedingerenc.c
 */
 

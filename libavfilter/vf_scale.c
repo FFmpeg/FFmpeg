@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavfilter/vf_scale.c
+ * @file
  * scale video filter
  */
 

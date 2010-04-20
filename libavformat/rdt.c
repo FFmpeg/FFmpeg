@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/rdt.c
+ * @file
  * @brief Realmedia RTSP protocol (RDT) support
  * @author Ronald S. Bultje <rbultje@ronald.bitfreak.net>
  */

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/eamad.c
+ * @file
  * Electronic Arts Madcow Video Decoder
  * by Peter Ross <pross@xvid.org>
  *

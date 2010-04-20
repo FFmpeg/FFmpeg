@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h264pred.c
+ * @file
  * H.264 / AVC / MPEG4 part10 prediction functions.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

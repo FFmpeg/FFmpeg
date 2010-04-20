@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavutil/pca.h
+ * @file
  * principal component analysis (PCA)
  */
 

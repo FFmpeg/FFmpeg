@@ -26,7 +26,7 @@
 #include "fft.h"
 
 /**
- * @file libavcodec/mdct.c
+ * @file
  * MDCT/IMDCT transforms.
  */
 

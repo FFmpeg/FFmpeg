@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/motion-test.c
+ * @file
  * motion test.
  */
 

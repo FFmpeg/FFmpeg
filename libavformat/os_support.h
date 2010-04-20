@@ -23,7 +23,7 @@
 #define AVFORMAT_OS_SUPPORT_H
 
 /**
- * @file libavformat/os_support.h
+ * @file
  * miscellaneous OS support macros and functions.
  */
 

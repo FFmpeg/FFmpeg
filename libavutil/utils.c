@@ -20,7 +20,7 @@
 #include "avutil.h"
 
 /**
- * @file libavutil/utils.c
+ * @file
  * various utility functions
  */
 

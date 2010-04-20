@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/4xm.c
+ * @file
  * 4XM codec.
  */
 

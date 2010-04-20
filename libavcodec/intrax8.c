@@ -17,7 +17,7 @@
  */
 
 /**
- * @file libavcodec/intrax8.c
+ * @file
  * @brief IntraX8 (J-Frame) subdecoder, used by WMV2 and VC-1
  */
 

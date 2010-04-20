@@ -43,7 +43,7 @@
 #include "dsputil_mmx.h"
 
 /*!
- * @file libavcodec/x86/idct_sse2_xvid.c
+ * @file
  * @brief SSE2 idct compatible with xvidmmx
  */
 

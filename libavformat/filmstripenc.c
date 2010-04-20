@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/filmstripenc.c
+ * @file
  * Adobe Filmstrip muxer
  */
 

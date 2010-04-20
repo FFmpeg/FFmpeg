@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h264_ps.c
+ * @file
  * H.264 / AVC / MPEG4 part10 parameter set decoding.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

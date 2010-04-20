@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/options.c
+ * @file
  * Options definition for AVCodecContext.
  */
 

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/mjpegbdec.c
+ * @file
  * Apple MJPEG-B decoder.
  */
 

@@ -57,7 +57,7 @@
  */
 
 /**
- * @file libavcodec/jfdctint.c
+ * @file
  * Independent JPEG Group's slow & accurate dct.
  */
 

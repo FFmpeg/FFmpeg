@@ -22,7 +22,7 @@
  */
 
 /**
- * @file libavcodec/fft.c
+ * @file
  * FFT/IFFT transforms.
  */
 

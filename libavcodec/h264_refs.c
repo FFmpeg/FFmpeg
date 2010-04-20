@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h264_refs.c
+ * @file
  * H.264 / AVC / MPEG4 part10  reference picture handling.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/cavsdec.c
+ * @file
  * Chinese AVS video (AVS1-P2, JiZhun profile) decoder
  * @author Stefan Gehrer <stefan.gehrer@gmx.de>
  */

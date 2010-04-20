@@ -24,7 +24,7 @@
  */
 
 /**
- * @file libavcodec/bitstream.c
+ * @file
  * bitstream api.
  */
 

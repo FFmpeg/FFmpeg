@@ -23,7 +23,7 @@
 #include "golomb.h"
 
 /**
- * @file libavcodec/sonic.c
+ * @file
  * Simple free lossless/lossy audio codec
  * Based on Paul Francis Harrison's Bonk (http://www.logarithmic.net/pfh/bonk)
  * Written and designed by Alex Beregszaszi

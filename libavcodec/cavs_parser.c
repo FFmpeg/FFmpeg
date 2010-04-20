@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/cavs_parser.c
+ * @file
  * Chinese AVS video (AVS1-P2, JiZhun profile) parser
  * @author Stefan Gehrer <stefan.gehrer@gmx.de>
  */

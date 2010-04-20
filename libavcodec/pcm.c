@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/pcm.c
+ * @file
  * PCM codecs
  */
 

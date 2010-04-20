@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/rtmpproto.c
+ * @file
  * RTMP protocol
  */
 

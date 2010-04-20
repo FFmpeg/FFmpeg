@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavfilter/vf_aspect.c
+ * @file
  * aspect ratio modification video filter
  */
 

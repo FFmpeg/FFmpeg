@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/eaidct.c
+ * @file
  * Electronic Arts TGQ/TQI/MAD IDCT algorithm
  * @author Peter Ross <pross@xvid.org>
  */

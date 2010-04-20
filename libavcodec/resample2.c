@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/resample2.c
+ * @file
  * audio resampling
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

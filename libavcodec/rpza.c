@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/rpza.c
+ * @file
  * QT RPZA Video Decoder by Roberto Togni
  * For more information about the RPZA format, visit:
  *   http://www.pcisys.net/~melanson/codecs/

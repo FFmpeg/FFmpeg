@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/vmnc.c
+ * @file
  * VMware Screen Codec (VMnc) decoder
  * As Alex Beregszaszi discovered, this is effectively RFB data dump
  */

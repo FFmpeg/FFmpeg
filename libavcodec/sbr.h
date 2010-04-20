@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/sbr.h
+ * @file
  * Spectral Band Replication definitions and structures
  * @author Robert Swain ( rob opendot cl )
  */

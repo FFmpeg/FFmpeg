@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/fft-test.c
+ * @file
  * FFT and MDCT tests.
  */
 

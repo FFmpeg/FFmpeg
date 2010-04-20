@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h264_cavlc.c
+ * @file
  * H.264 / AVC / MPEG4 part10 cavlc bitstream decoding.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

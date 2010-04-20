@@ -19,7 +19,7 @@
  */
 
 /**
-* @file libavcodec/libdirac_libschro.h
+* @file
 * data structures common to libdirac and libschroedinger
 */
 

@@ -23,7 +23,7 @@
  */
 
 /**
- * @file libavcodec/roqvideoenc.c
+ * @file
  * id RoQ encoder by Vitor. Based on the Switchblade3 library and the
  * Switchblade3 FFmpeg glue by Eric Lasota.
  */

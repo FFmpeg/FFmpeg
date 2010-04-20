@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavfilter/vf_slicify.c
+ * @file
  * video slicing filter
  */
 

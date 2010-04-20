@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/indeo5.c
+ * @file
  * Indeo Video Interactive version 5 decoder
  *
  * Indeo5 data is usually transported within .avi or .mov files.

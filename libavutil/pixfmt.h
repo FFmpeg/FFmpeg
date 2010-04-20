@@ -22,7 +22,7 @@
 #define AVUTIL_PIXFMT_H
 
 /**
- * @file libavutil/pixfmt.h
+ * @file
  * pixel format definitions
  *
  * @warning This file has to be considered an internal but installed

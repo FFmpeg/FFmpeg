@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/libgsm.c
+ * @file
  * Interface to libgsm for gsm encoding/decoding
  */
 

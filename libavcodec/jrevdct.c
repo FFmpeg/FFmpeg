@@ -60,7 +60,7 @@
  */
 
 /**
- * @file libavcodec/jrevdct.c
+ * @file
  * Independent JPEG Group's LLM idct.
  */
 

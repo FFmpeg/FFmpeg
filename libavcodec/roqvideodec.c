@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/roqvideodec.c
+ * @file
  * id RoQ Video Decoder by Dr. Tim Ferguson
  * For more information about the id RoQ format, visit:
  *   http://www.csse.monash.edu.au/~timf/

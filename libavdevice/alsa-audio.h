@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavdevice/alsa-audio.h
+ * @file
  * ALSA input and output: definitions and structures
  * @author Luca Abeni ( lucabe72 email it )
  * @author Benoit Fouet ( benoit fouet free fr )

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/aiff.h
+ * @file
  * common header for AIFF muxer and demuxer
  */
 

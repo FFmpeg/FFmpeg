@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/error_resilience.c
+ * @file
  * Error resilience / concealment.
  */
 

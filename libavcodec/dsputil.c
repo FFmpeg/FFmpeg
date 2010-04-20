@@ -23,7 +23,7 @@
  */
 
 /**
- * @file libavcodec/dsputil.c
+ * @file
  * DSP utils
  */
 

@@ -24,7 +24,7 @@
 #include "adx.h"
 
 /**
- * @file libavcodec/adxdec.c
+ * @file
  * SEGA CRI adx codecs.
  *
  * Reference documents:

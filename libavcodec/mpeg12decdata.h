@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/mpeg12decdata.h
+ * @file
  * MPEG1/2 decoder tables.
  */
 

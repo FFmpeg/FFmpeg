@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavutil/bfin/bswap.h
+ * @file
  * byte swapping routines
  */
 

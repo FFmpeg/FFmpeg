@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/xl.c
+ * @file
  * Miro VideoXL codec.
  */
 

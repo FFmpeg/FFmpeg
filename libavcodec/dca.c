@@ -22,10 +22,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file libavcodec/dca.c
- */
-
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>

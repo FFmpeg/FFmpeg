@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/atrac.c
+ * @file
  */
 
 #include <math.h>

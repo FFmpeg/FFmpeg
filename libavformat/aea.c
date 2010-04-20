@@ -20,10 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file libavformat/aea.c
- */
-
 #include "avformat.h"
 #include "raw.h"
 #include "libavutil/intreadwrite.h"

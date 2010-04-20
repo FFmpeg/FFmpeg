@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/pcm-mpeg.c
+ * @file
  * PCM codecs for encodings found in MPEG streams (DVD/Blu-ray)
  */
 

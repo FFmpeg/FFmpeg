@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavutil/mathematics.c
+ * @file
  * miscellaneous math routines and tables
  */
 

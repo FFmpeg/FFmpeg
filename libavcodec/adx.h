@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/adx.h
+ * @file
  * SEGA CRI adx codecs.
  *
  * Reference documents:

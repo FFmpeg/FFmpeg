@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h264.h
+ * @file
  * H.264 / AVC / MPEG4 part10 codec.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

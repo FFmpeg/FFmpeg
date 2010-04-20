@@ -22,7 +22,7 @@
  */
 
 /**
- * @file libavcodec/mjpeg_parser.c
+ * @file
  * MJPEG parser.
  */
 

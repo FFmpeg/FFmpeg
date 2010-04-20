@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h264-sei.c
+ * @file
  * H.264 / AVC / MPEG4 part10 sei decoding.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

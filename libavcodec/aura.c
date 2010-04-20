@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/aura.c
+ * @file
  * Aura 2 decoder
  */
 

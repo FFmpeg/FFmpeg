@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/tscc.c
+ * @file
  * TechSmith Camtasia decoder
  *
  * Fourcc: TSCC

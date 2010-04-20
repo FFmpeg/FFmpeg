@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/ivi_common.c
+ * @file
  * This file contains functions and data shared by both Indeo4 and
  * Indeo5 decoders.
  */

@@ -23,7 +23,7 @@
 #include "bytestream.h"
 
 /**
- * @file libavcodec/cdgraphics.c
+ * @file
  * @brief CD Graphics Video Decoder
  * @author Michael Tison
  * @sa http://wiki.multimedia.cx/index.php?title=CD_Graphics

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file libavutil/libm.h
+ * @file
  * Replacements for frequently missing libm functions
  */
 

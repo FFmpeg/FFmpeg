@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/eval.h
+ * @file
  * simple arithmetic expression evaluator
  */
 

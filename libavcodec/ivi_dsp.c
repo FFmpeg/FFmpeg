@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/ivi_dsp.c
+ * @file
  * DSP functions (inverse transforms, motion compensation, wavelet recompostions)
  * for Indeo Video Interactive codecs.
  */

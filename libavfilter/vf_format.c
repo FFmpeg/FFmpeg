@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavfilter/vf_format.c
+ * @file
  * format and noformat video filters
  */
 

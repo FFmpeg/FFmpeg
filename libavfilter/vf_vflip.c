@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavfilter/vf_vflip.c
+ * @file
  * video vertical flip filter
  */
 

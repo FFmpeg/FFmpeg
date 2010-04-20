@@ -22,7 +22,7 @@
 
 
 /**
- * @file libavcodec/amrnbdec.c
+ * @file
  * AMR narrowband decoder
  *
  * This decoder uses floats for simplicity and so is not bit-exact. One

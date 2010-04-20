@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/flic.c
+ * @file
  * FLI/FLC file demuxer
  * by Mike Melanson (melanson@pcisys.net)
  * for more information on the .fli/.flc file format and all of its many

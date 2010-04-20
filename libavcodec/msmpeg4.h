@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/msmpeg4.h
+ * @file
  */
 
 #ifndef AVCODEC_MSMPEG4_H

@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/dsputil.h
+ * @file
  * DSP utils.
  * note, many functions in here may use MMX which trashes the FPU state, it is
  * absolutely necessary to call emms_c() between dsp & float/double code

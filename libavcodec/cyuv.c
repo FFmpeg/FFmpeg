@@ -24,7 +24,7 @@
  */
 
 /**
- * @file libavcodec/cyuv.c
+ * @file
  * Creative YUV (CYUV) Video Decoder.
  */
 

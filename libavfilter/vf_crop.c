@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavfilter/vf_crop.c
+ * @file
  * video crop filter
  */
 

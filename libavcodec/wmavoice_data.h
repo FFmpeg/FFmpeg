@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/wmavoice_data.h
+ * @file
  * @brief Windows Media Voice (WMAVoice) tables
  * @author Ronald S. Bultje <rsbultje@gmail.com>
  */

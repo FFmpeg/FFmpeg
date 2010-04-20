@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/atrac3data.h
+ * @file
  * Atrac 3 AKA RealAudio 8 compatible decoder data
  */
 

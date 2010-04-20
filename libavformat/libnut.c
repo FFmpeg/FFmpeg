@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/libnut.c
+ * @file
  * NUT demuxing and muxing via libnut.
  * @author Oded Shimon <ods15@ods15.dyndns.org>
  */

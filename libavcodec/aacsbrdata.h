@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/aacsbrdata.h
+ * @file
  * AAC Spectral Band Replication decoding data
  * @author Robert Swain ( rob opendot cl )
  */

@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/aacsbr.c
+ * @file
  * AAC Spectral Band Replication decoding functions
  * @author Robert Swain ( rob opendot cl )
  */

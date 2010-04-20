@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavformat/bink.c
+ * @file
  * Bink demuxer
  *
  * Technical details here:

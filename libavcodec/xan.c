@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/xan.c
+ * @file
  * Xan video decoder for Wing Commander III computer game
  * by Mario Brito (mbrito@student.dei.uc.pt)
  * and Mike Melanson (melanson@pcisys.net)

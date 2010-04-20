@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/wmadec.c
+ * @file
  * WMA compatible decoder.
  * This decoder handles Microsoft Windows Media Audio data, versions 1 & 2.
  * WMA v1 is identified by audio format 0x160 in Microsoft media files

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/bgmc.c
+ * @file
  * Block Gilbert-Moore decoder as used by MPEG-4 ALS
  * @author Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
  */

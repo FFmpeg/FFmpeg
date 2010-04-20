@@ -34,7 +34,7 @@
  */
 
 /**
- * @file libavcodec/dv.c
+ * @file
  * DV codec.
  */
 #define ALT_BITSTREAM_READER

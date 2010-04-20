@@ -22,7 +22,7 @@
  */
 
 /**
- * @file libavcodec/dct.c
+ * @file
  * (Inverse) Discrete Cosine Transforms. These are also known as the
  * type II and type III DCTs respectively.
  */

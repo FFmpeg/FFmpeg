@@ -17,7 +17,7 @@
  */
 
 /**
-* @file libavcodec/intrax8dsp.c
+* @file
  *@brief IntraX8 frame subdecoder image manipulation routines
  */
 

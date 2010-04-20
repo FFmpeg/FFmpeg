@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/librtmp.c
+ * @file
  * RTMP protocol based on http://rtmpdump.mplayerhq.hu/ librtmp
  */
 

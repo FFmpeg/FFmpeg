@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavutil/attributes.h
+ * @file
  * Macro definitions for various function/variable attributes
  */
 

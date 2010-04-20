@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/asv1.c
+ * @file
  * ASUS V1/V2 codec.
  */
 

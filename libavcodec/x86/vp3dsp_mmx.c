@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/x86/vp3dsp_mmx.c
+ * @file
  * MMX-optimized functions cribbed from the original VP3 source code.
  */
 

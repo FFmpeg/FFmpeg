@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavformat/iff.c
+ * @file
  * IFF file demuxer
  * by Jaikrishnan Menon
  * for more information on the .iff file format, visit:

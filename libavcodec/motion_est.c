@@ -23,7 +23,7 @@
  */
 
 /**
- * @file libavcodec/motion_est.c
+ * @file
  * Motion estimation.
  */
 

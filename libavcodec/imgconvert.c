@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/imgconvert.c
+ * @file
  * misc image conversion routines
  */
 

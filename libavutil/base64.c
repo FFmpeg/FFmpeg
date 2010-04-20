@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavutil/base64.c
+ * @file
  * @brief Base64 encode/decode
  * @author Ryan Martell <rdm4@martellventures.com> (with lots of Michael)
  */

@@ -22,7 +22,7 @@
  */
 
 /**
- * @file libavfilter/vf_unsharp.c
+ * @file
  * blur / sharpen filter
  *
  * This code is based on:

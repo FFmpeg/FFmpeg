@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/mpeg4data.h
+ * @file
  * mpeg4 tables.
  */
 

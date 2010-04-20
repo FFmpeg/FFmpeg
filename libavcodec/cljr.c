@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/cljr.c
+ * @file
  * Cirrus Logic AccuPak codec.
  */
 

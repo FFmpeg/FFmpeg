@@ -19,7 +19,7 @@
  */
 
 /**
-* @file libavcodec/libschroedinger.c
+* @file
 * function definitions common to libschroedingerdec.c and libschroedingerenc.c
 */
 

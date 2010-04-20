@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/rv40vlc2.h
+ * @file
  * RV40 VLC tables used for macroblock information decoding
  */
 

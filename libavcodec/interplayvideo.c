@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/interplayvideo.c
+ * @file
  * Interplay MVE Video Decoder by Mike Melanson (melanson@pcisys.net)
  * For more information about the Interplay MVE format, visit:
  *   http://www.pcisys.net/~melanson/codecs/interplay-mve.txt

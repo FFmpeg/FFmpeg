@@ -20,7 +20,7 @@
  */
 
 /**
-* @file libavcodec/libopenjpeg.c
+* @file
 * JPEG 2000 decoder using libopenjpeg
 */
 

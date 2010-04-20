@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavutil/tree.h
+ * @file
  * A tree container.
  * Insertion, removal, finding equal, largest which is smaller than and
  * smallest which is larger than, all have O(log n) worst case complexity.

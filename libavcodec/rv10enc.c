@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/rv10enc.c
+ * @file
  * RV10 encoder
  */
 

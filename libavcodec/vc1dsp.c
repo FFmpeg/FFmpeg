@@ -20,7 +20,7 @@
  */
 
 /**
-* @file libavcodec/vc1dsp.c
+* @file
  * VC-1 and WMV3 decoder
  *
  */

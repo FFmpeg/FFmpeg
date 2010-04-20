@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/x86/h264_i386.h
+ * @file
  * H.264 / AVC / MPEG4 part10 codec.
  * non-MMX i386-specific optimizations for H.264
  * @author Michael Niedermayer <michaelni@gmx.at>

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/h264_cabac.c
+ * @file
  * H.264 / AVC / MPEG4 part10 cabac decoding.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

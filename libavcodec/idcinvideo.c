@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/idcinvideo.c
+ * @file
  * id Quake II Cin Video Decoder by Dr. Tim Ferguson
  * For more information about the id CIN format, visit:
  *   http://www.csse.monash.edu.au/~timf/

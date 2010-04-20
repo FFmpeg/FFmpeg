@@ -59,7 +59,7 @@
 #include "svq1.h"
 
 /**
- * @file libavcodec/svq3.c
+ * @file
  * svq3 decoder.
  */
 

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/anm.c
+ * @file
  * Deluxe Paint Animation demuxer
  */
 

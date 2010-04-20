@@ -19,7 +19,7 @@
  */
 
 /*!
- * @file libavcodec/x86/idct_xvid.h
+ * @file
  * header for Xvid IDCT functions
  */
 

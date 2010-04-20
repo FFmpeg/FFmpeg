@@ -17,7 +17,7 @@
  */
 
 /**
- * @file libavfilter/vf_null.c
+ * @file
  * null video filter
  */
 

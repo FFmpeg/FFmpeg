@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/spdif.c
+ * @file
  * IEC-61937 encapsulation of various formats, used by S/PDIF
  * @author Bartlomiej Wolowiec
  */

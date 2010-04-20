@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/jpeglsdec.h
+ * @file
  * JPEG-LS decoder.
  */
 

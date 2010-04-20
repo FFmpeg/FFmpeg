@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/rv10.c
+ * @file
  * RV10/RV20 decoder
  */
 

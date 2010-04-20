@@ -21,7 +21,7 @@
  */
 
 /**
- * @file  libavcodec/wmaprodec.c
+ * @file
  * @brief wmapro decoder implementation
  * Wmapro is an MDCT based codec comparable to wma standard or AAC.
  * The decoding therefore consists of the following steps:

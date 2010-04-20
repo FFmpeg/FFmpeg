@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/get_bits.h
+ * @file
  * bitstream reader API header.
  */
 

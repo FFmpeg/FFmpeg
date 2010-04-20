@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/psxstr.c
+ * @file
  * PSX STR file demuxer
  * by Mike Melanson (melanson@pcisys.net)
  * This module handles streams that have been ripped from Sony Playstation

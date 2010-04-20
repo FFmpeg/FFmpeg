@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/dvdata.h
+ * @file
  * Constants for DV codec.
  */
 

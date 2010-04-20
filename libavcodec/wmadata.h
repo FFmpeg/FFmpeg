@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/wmadata.h
+ * @file
  * Various WMA tables.
  */
 

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/rl.h
+ * @file
  * rl header.
  */
 

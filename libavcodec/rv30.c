@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/rv30.c
+ * @file
  * RV30 decoder
  */
 

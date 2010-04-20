@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/segafilm.c
+ * @file
  * Sega FILM (.cpk) file demuxer
  * by Mike Melanson (melanson@pcisys.net)
  * For more information regarding the Sega FILM file format, visit:

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/eatgq.c
+ * @file
  * Electronic Arts TGQ Video Decoder
  * @author Peter Ross <pross@xvid.org>
  *

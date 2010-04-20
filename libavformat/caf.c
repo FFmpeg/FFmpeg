@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/caf.c
+ * @file
  * CAF common code
  */
 

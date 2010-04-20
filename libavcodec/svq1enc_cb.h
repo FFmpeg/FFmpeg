@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/svq1enc_cb.h
+ * @file
  * svq1 code books.
  */
 

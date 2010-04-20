@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavformat/qcp.c
+ * @file
  * QCP format (.qcp) demuxer
  * @author Kenan Gillet
  * @sa RFC 3625: "The QCP File Format and Media Types for Speech Data"
