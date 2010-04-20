@@ -18,10 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/*!
- * \file libtheoraenc.c
- * \brief Theora encoder using libtheora.
- * \author Paul Richards <paul.richards@gmail.com>
+/**
+ * @file libtheoraenc.c
+ * @brief Theora encoder using libtheora.
+ * @author Paul Richards <paul.richards@gmail.com>
  *
  * A lot of this is copy / paste from other output codecs in
  * libavcodec or pure guesswork (or both).
@@ -49,9 +49,7 @@ typedef struct TheoraContext {
     int         keyframe_mask;
 } TheoraContext;
 
-/*!
-    Concatenates an ogg_packet into the extradata.
-*/
+/** Concatenates an ogg_packet into the extradata. */
 static int concatenate_packet(unsigned int* offset,
                               AVCodecContext* avc_context,
                               const ogg_packet* packet)
@@ -358,7 +356,7 @@ static av_cold int encode_close(AVCodecContext* avc_context)
     return 0;
 }
 
-/*! AVCodec struct exposed to libavcodec */
+/** AVCodec struct exposed to libavcodec */
 AVCodec libtheora_encoder = {
     .name = "libtheora",
     .type = AVMEDIA_TYPE_VIDEO,
