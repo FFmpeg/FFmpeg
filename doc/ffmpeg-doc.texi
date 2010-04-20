@@ -806,9 +806,9 @@ preset options identifies the preset file to use according to the
 following rules:
 
 First ffmpeg searches for a file named @var{arg}.ffpreset in the
-directories @file{$HOME/.ffmpeg}, and in the datadir defined at
-configuration time (usually @file{PREFIX/share/ffmpeg}) in that
-order. For example, if the argument is @code{libx264-max}, it will
+directories @file{$FFMPEG_DATADIR} (if set), and @file{$HOME/.ffmpeg}, and in
+the datadir defined at configuration time (usually @file{PREFIX/share/ffmpeg})
+in that order. For example, if the argument is @code{libx264-max}, it will
 search for the file @file{libx264-max.ffpreset}.
 
 If no such file is found, then ffmpeg will search for a file named
