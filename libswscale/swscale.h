@@ -22,7 +22,7 @@
 #define SWSCALE_SWSCALE_H
 
 /**
- * @file libswscale/swscale.h
+ * @file
  * @brief
  *     external api for the swscale stuff
  */
