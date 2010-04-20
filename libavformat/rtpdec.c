@@ -437,7 +437,7 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
         delta_timestamp = timestamp - s->last_rtcp_timestamp;
         /* convert to the PTS timebase */
         addend = av_rescale(s->last_rtcp_ntp_time - s->first_rtcp_ntp_time, s->st->time_base.den, (uint64_t)s->st->time_base.num << 32);
-        pkt->pts = addend + delta_timestamp;
+        pkt->pts = s->range_start_offset + addend + delta_timestamp;
     }
 }
 
