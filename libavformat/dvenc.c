@@ -29,7 +29,9 @@
  */
 #include <time.h>
 #include <stdarg.h>
+
 #include "avformat.h"
+#include "internal.h"
 #include "libavcodec/dvdata.h"
 #include "dv.h"
 #include "libavutil/fifo.h"
