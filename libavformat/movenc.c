@@ -1513,6 +1513,32 @@ static int mov_write_3gp_udta_tag(ByteIOContext *pb, AVFormatContext *s,
     return updateSize(pb, pos);
 }
 
+static int mov_write_chpl_tag(ByteIOContext *pb, AVFormatContext *s)
+{
+    int64_t pos = url_ftell(pb);
+    int i, nb_chapters = FFMIN(s->nb_chapters, 255);
+
+    put_be32(pb, 0);            // size
+    put_tag (pb, "chpl");
+    put_be32(pb, 0x01000000);   // version + flags
+    put_be32(pb, 0);            // unknown
+    put_byte(pb, nb_chapters);
+
+    for (i = 0; i < nb_chapters; i++) {
+        AVChapter *c = s->chapters[i];
+        AVMetadataTag *t;
+        put_be64(pb, av_rescale_q(c->start, c->time_base, (AVRational){1,10000000}));
+
+        if ((t = av_metadata_get(c->metadata, "title", NULL, 0))) {
+            int len = FFMIN(strlen(t->value), 255);
+            put_byte(pb, len);
+            put_buffer(pb, t->value, len);
+        } else
+            put_byte(pb, 0);
+    }
+    return updateSize(pb, pos);
+}
+
 static int mov_write_udta_tag(ByteIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
@@ -1550,6 +1576,9 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVMuxContext *mov,
             /* iTunes meta data */
             mov_write_meta_tag(pb_buf, mov, s);
         }
+
+        if (s->nb_chapters)
+            mov_write_chpl_tag(pb_buf, s);
 
     if ((size = url_close_dyn_buf(pb_buf, &buf)) > 0) {
         put_be32(pb, size+8);
