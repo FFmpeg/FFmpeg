@@ -125,10 +125,9 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     av_set_pts_info(st, 64, 1, mtv->video_fps);
     st->codec->codec_type      = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id        = CODEC_ID_RAWVIDEO;
-    st->codec->codec_tag       = MKTAG('R', 'G', 'B', mtv->img_bpp);
+    st->codec->pix_fmt         = PIX_FMT_RGB565;
     st->codec->width           = mtv->img_width;
     st->codec->height          = mtv->img_height;
-    st->codec->bits_per_coded_sample = mtv->img_bpp;
     st->codec->sample_rate     = mtv->video_fps;
     st->codec->extradata       = av_strdup("BottomUp");
     st->codec->extradata_size  = 9;
