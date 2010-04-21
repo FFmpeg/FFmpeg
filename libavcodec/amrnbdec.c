@@ -195,7 +195,7 @@ static enum Mode unpack_bitstream(AMRContext *p, const uint8_t *buf,
     p->bad_frame_indicator = !get_bits1(&gb); // quality bit
     skip_bits(&gb, 2);                        // two padding bits
 
-    if (mode <= MODE_DTX) {
+    if (mode < MODE_DTX) {
         uint16_t *data = (uint16_t *)&p->frame;
         const uint8_t *order = amr_unpacking_bitmaps_per_mode[mode];
         int field_size;
