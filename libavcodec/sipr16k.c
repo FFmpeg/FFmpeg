@@ -94,8 +94,8 @@ static int dec_delay3_2nd(int index, int pit_min, int pit_max,
         return 3 * pitch_lag_prev;
 }
 
-static void postfilter(float* synth, float* iir_mem, float* filt_mem[2],
-                       float* mem_preemph)
+static void postfilter(float *out_data, float* synth, float* iir_mem,
+                       float* filt_mem[2], float* mem_preemph)
 {
     float buf[30 + LP_FILTER_ORDER_16k];
     float *tmpbuf = buf + LP_FILTER_ORDER_16k;
@@ -114,15 +114,24 @@ static void postfilter(float* synth, float* iir_mem, float* filt_mem[2],
     memcpy(synth - LP_FILTER_ORDER_16k, mem_preemph,
            LP_FILTER_ORDER_16k * sizeof(*synth));
 
-    ff_celp_lp_synthesis_filterf(synth, filt_mem[0], synth, 2*L_SUBFR_16k,
+    ff_celp_lp_synthesis_filterf(synth, filt_mem[0], synth, 30,
                                  LP_FILTER_ORDER_16k);
 
-    memcpy(mem_preemph, synth + 2*L_SUBFR_16k - LP_FILTER_ORDER_16k,
+    memcpy(out_data + 30 - LP_FILTER_ORDER_16k,
+           synth    + 30 - LP_FILTER_ORDER_16k,
+           LP_FILTER_ORDER_16k * sizeof(*synth));
+
+    ff_celp_lp_synthesis_filterf(out_data + 30, filt_mem[0],
+                                 synth + 30, 2 * L_SUBFR_16k - 30,
+                                 LP_FILTER_ORDER_16k);
+
+
+    memcpy(mem_preemph, out_data + 2*L_SUBFR_16k - LP_FILTER_ORDER_16k,
            LP_FILTER_ORDER_16k * sizeof(*synth));
 
     FFSWAP(float *, filt_mem[0], filt_mem[1]);
     for (i = 0, s = 0; i < 30; i++, s += 1.0/30)
-        synth[i] = tmpbuf[i] + s * (synth[i] - tmpbuf[i]);
+        out_data[i] = tmpbuf[i] + s * (synth[i] - tmpbuf[i]);
 }
 
 /**
@@ -252,11 +261,11 @@ void ff_sipr_decode_frame_16k(SiprContext *ctx, SiprParameters *params,
     memmove(ctx->excitation, ctx->excitation + 2 * L_SUBFR_16k,
             (L_INTERPOL+PITCH_MAX) * sizeof(float));
 
-    postfilter(synth, ctx->iir_mem, ctx->filt_mem, ctx->mem_preemph);
+    postfilter(out_data, synth, ctx->iir_mem, ctx->filt_mem, ctx->mem_preemph);
 
     memcpy(ctx->iir_mem, Az[1], LP_FILTER_ORDER_16k * sizeof(float));
 
-    ctx->dsp.vector_clipf(out_data, synth, -1, 32767./(1<<15), frame_size);
+    ctx->dsp.vector_clipf(out_data, out_data, -1, 32767./(1<<15), frame_size);
 
 }
 
