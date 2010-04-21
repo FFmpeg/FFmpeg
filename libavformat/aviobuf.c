@@ -160,7 +160,7 @@ int64_t url_fseek(ByteIOContext *s, int64_t offset, int whence)
             return AVERROR_EOF;
         s->buf_ptr = s->buf_end + offset - s->pos;
     } else {
-        int64_t res = AVERROR(EPIPE);
+        int64_t res;
 
 #if CONFIG_MUXERS || CONFIG_NETWORK
         if (s->write_flag) {
@@ -168,7 +168,9 @@ int64_t url_fseek(ByteIOContext *s, int64_t offset, int whence)
             s->must_flush = 1;
         }
 #endif /* CONFIG_MUXERS || CONFIG_NETWORK */
-        if (!s->seek || (res = s->seek(s->opaque, offset, SEEK_SET)) < 0)
+        if (!s->seek)
+            return AVERROR(EPIPE);
+        if ((res = s->seek(s->opaque, offset, SEEK_SET)) < 0)
             return res;
         if (!s->write_flag)
             s->buf_end = s->buffer;
