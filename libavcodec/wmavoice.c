@@ -36,9 +36,13 @@
 #include "acelp_filters.h"
 #include "lsp.h"
 #include "libavutil/lzo.h"
+#include "avfft.h"
+#include "fft.h"
 
 #define MAX_BLOCKS           8   ///< maximum number of blocks per frame
 #define MAX_LSPS             16  ///< maximum filter order
+#define MAX_LSPS_ALIGN16     16  ///< same as #MAX_LSPS; needs to be multiple
+                                 ///< of 16 for ASM input buffer alignment
 #define MAX_FRAMES           3   ///< maximum number of frames per superframe
 #define MAX_FRAMESIZE        160 ///< maximum number of samples per frame
 #define MAX_SIGNAL_HISTORY   416 ///< maximum excitation signal history
@@ -140,8 +144,15 @@ typedef struct {
     int history_nsamples;         ///< number of samples in history for signal
                                   ///< prediction (through ACB)
 
+    /* postfilter specific values */
     int do_apf;                   ///< whether to apply the averaged
                                   ///< projection filter (APF)
+    int denoise_strength;         ///< strength of denoising in Wiener filter
+                                  ///< [0-11]
+    int denoise_tilt_corr;        ///< Whether to apply tilt correction to the
+                                  ///< Wiener filter coefficients (postfilter)
+    int dc_level;                 ///< Predicted amount of DC noise, based
+                                  ///< on which a DC removal filter is used
 
     int lsps;                     ///< number of LSPs per frame [10 or 16]
     int lsp_q_mode;               ///< defines quantizer defaults [0, 1]
@@ -244,6 +255,34 @@ typedef struct {
     float synth_history[MAX_LSPS]; ///< see #excitation_history
     /**
      * @}
+     * @defgroup post_filter Postfilter values
+     * Varibales used for postfilter implementation, mostly history for
+     * smoothing and so on, and context variables for FFT/iFFT.
+     * @{
+     */
+    RDFTContext rdft, irdft;      ///< contexts for FFT-calculation in the
+                                  ///< postfilter (for denoise filter)
+    DCTContext dct, dst;          ///< contexts for phase shift (in Hilbert
+                                  ///< transform, part of postfilter)
+    float sin[511], cos[511];     ///< 8-bit cosine/sine windows over [-pi,pi]
+                                  ///< range
+    float postfilter_agc;         ///< gain control memory, used in
+                                  ///< #adaptive_gain_control()
+    float dcf_mem[2];             ///< DC filter history
+    float zero_exc_pf[MAX_SIGNAL_HISTORY + MAX_SFRAMESIZE];
+                                  ///< zero filter output (i.e. excitation)
+                                  ///< by postfilter
+    float denoise_filter_cache[MAX_FRAMESIZE];
+    int   denoise_filter_cache_size; ///< samples in #denoise_filter_cache
+    DECLARE_ALIGNED(16, float, tilted_lpcs_pf)[0x80];
+                                  ///< aligned buffer for LPC tilting
+    DECLARE_ALIGNED(16, float, denoise_coeffs_pf)[0x80];
+                                  ///< aligned buffer for denoise coefficients
+    DECLARE_ALIGNED(16, float, synth_filter_out_buf)[80 + MAX_LSPS_ALIGN16];
+                                  ///< aligned buffer for postfilter speech
+                                  ///< synthesis
+    /**
+     * @}
      */
 } WMAVoiceContext;
 
@@ -313,6 +352,28 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
     flags                = AV_RL32(ctx->extradata + 18);
     s->spillover_bitsize = 3 + av_ceil_log2(ctx->block_align);
     s->do_apf            =    flags & 0x1;
+    if (s->do_apf) {
+        ff_rdft_init(&s->rdft,  7, DFT_R2C);
+        ff_rdft_init(&s->irdft, 7, IDFT_C2R);
+        ff_dct_init(&s->dct,  6, DCT_I);
+        ff_dct_init(&s->dst,  6, DST_I);
+
+        ff_sine_window_init(s->cos, 256);
+        memcpy(&s->sin[255], s->cos, 256 * sizeof(s->cos[0]));
+        for (n = 0; n < 255; n++) {
+            s->sin[n]       = -s->sin[510 - n];
+            s->cos[510 - n] =  s->cos[n];
+        }
+    }
+    s->denoise_strength  =   (flags >> 2) & 0xF;
+    if (s->denoise_strength >= 12) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Invalid denoise filter strength %d (max=11)\n",
+               s->denoise_strength);
+        return -1;
+    }
+    s->denoise_tilt_corr = !!(flags & 0x40);
+    s->dc_level          =   (flags >> 7) & 0xF;
     s->lsp_q_mode        = !!(flags & 0x2000);
     s->lsp_def_mode      = !!(flags & 0x4000);
     lsp16_flag           =    flags & 0x1000;
@@ -368,6 +429,366 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
 
     return 0;
 }
+
+/**
+ * @defgroup postfilter Postfilter functions
+ * Postfilter functions (gain control, wiener denoise filter, DC filter,
+ * kalman smoothening, plus surrounding code to wrap it)
+ * @{
+ */
+/**
+ * Adaptive gain control (as used in postfilter).
+ *
+ * Identical to #ff_adaptive_gain_control() in acelp_vectors.c, except
+ * that the energy here is calculated using sum(abs(...)), whereas the
+ * other codecs (e.g. AMR-NB, SIPRO) use sqrt(dotproduct(...)).
+ *
+ * @param out output buffer for filtered samples
+ * @param in input buffer containing the samples as they are after the
+ *           postfilter steps so far
+ * @param speech_synth input buffer containing speech synth before postfilter
+ * @param size input buffer size
+ * @param alpha exponential filter factor
+ * @param gain_mem pointer to filter memory (single float)
+ */
+static void adaptive_gain_control(float *out, const float *in,
+                                  const float *speech_synth,
+                                  int size, float alpha, float *gain_mem)
+{
+    int i;
+    float speech_energy = 0.0, postfilter_energy = 0.0, gain_scale_factor;
+    float mem = *gain_mem;
+
+    for (i = 0; i < size; i++) {
+        speech_energy     += fabsf(speech_synth[i]);
+        postfilter_energy += fabsf(in[i]);
+    }
+    gain_scale_factor = (1.0 - alpha) * speech_energy / postfilter_energy;
+
+    for (i = 0; i < size; i++) {
+        mem = alpha * mem + gain_scale_factor;
+        out[i] = in[i] * mem;
+    }
+
+    *gain_mem = mem;
+}
+
+/**
+ * Kalman smoothing function.
+ *
+ * This function looks back pitch +/- 3 samples back into history to find
+ * the best fitting curve (that one giving the optimal gain of the two
+ * signals, i.e. the highest dot product between the two), and then
+ * uses that signal history to smoothen the output of the speech synthesis
+ * filter.
+ *
+ * @param s WMA Voice decoding context
+ * @param pitch pitch of the speech signal
+ * @param in input speech signal
+ * @param out output pointer for smoothened signal
+ * @param size input/output buffer size
+ *
+ * @returns -1 if no smoothening took place, e.g. because no optimal
+ *          fit could be found, or 0 on success.
+ */
+static int kalman_smoothen(WMAVoiceContext *s, int pitch,
+                           const float *in, float *out, int size)
+{
+    int n;
+    float optimal_gain = 0, dot;
+    const float *ptr = &in[-FFMAX(s->min_pitch_val, pitch - 3)],
+                *end = &in[-FFMIN(s->max_pitch_val, pitch + 3)],
+                *best_hist_ptr;
+
+    /* find best fitting point in history */
+    do {
+        dot = ff_dot_productf(in, ptr, size);
+        if (dot > optimal_gain) {
+            optimal_gain  = dot;
+            best_hist_ptr = ptr;
+        }
+    } while (--ptr >= end);
+
+    if (optimal_gain <= 0)
+        return -1;
+    dot = ff_dot_productf(best_hist_ptr, best_hist_ptr, size);
+    if (dot <= 0) // would be 1.0
+        return -1;
+
+    if (optimal_gain <= dot) {
+        dot = dot / (dot + 0.6 * optimal_gain); // 0.625-1.000
+    } else
+        dot = 0.625;
+
+    /* actual smoothing */
+    for (n = 0; n < size; n++)
+        out[n] = best_hist_ptr[n] + dot * (in[n] - best_hist_ptr[n]);
+
+    return 0;
+}
+
+/**
+ * Get the tilt factor of a formant filter from its transfer function
+ * @see #tilt_factor() in amrnbdec.c, which does essentially the same,
+ *      but somehow (??) it does a speech synthesis filter in the
+ *      middle, which is missing here
+ *
+ * @param lpcs LPC coefficients
+ * @param n_lpcs Size of LPC buffer
+ * @returns the tilt factor
+ */
+static float tilt_factor(const float *lpcs, int n_lpcs)
+{
+    float rh0, rh1;
+
+    rh0 = 1.0     + ff_dot_productf(lpcs,  lpcs,    n_lpcs);
+    rh1 = lpcs[0] + ff_dot_productf(lpcs, &lpcs[1], n_lpcs - 1);
+
+    return rh1 / rh0;
+}
+
+/**
+ * Derive denoise filter coefficients (in real domain) from the LPCs.
+ */
+static void calc_input_response(WMAVoiceContext *s, float *lpcs,
+                                int fcb_type, float *coeffs, int remainder)
+{
+    float last_coeff, min = 15.0, max = -15.0;
+    float irange, angle_mul, gain_mul, range, sq;
+    int n, idx;
+
+    /* Create frequency power spectrum of speech input (i.e. RDFT of LPCs) */
+    ff_rdft_calc(&s->rdft, lpcs);
+#define log_range(var, assign) do { \
+        float tmp = log10f(assign);  var = tmp; \
+        max       = FFMAX(max, tmp); min = FFMIN(min, tmp); \
+    } while (0)
+    log_range(last_coeff,  lpcs[1]         * lpcs[1]);
+    for (n = 1; n < 64; n++)
+        log_range(lpcs[n], lpcs[n * 2]     * lpcs[n * 2] +
+                           lpcs[n * 2 + 1] * lpcs[n * 2 + 1]);
+    log_range(lpcs[0],     lpcs[0]         * lpcs[0]);
+#undef log_range
+    range    = max - min;
+    lpcs[64] = last_coeff;
+
+    /* Now, use this spectrum to pick out these frequencies with higher
+     * (relative) power/energy (which we then take to be "not noise"),
+     * and set up a table (still in lpc[]) of (relative) gains per frequency.
+     * These frequencies will be maintained, while others ("noise") will be
+     * decreased in the filter output. */
+    irange    = 64.0 / range; // so irange*(max-value) is in the range [0, 63]
+    gain_mul  = range * (fcb_type == FCB_TYPE_HARDCODED ? (5.0 / 13.0) :
+                                                          (5.0 / 14.7));
+    angle_mul = gain_mul * (8.0 * M_LN10 / M_PI);
+    for (n = 0; n <= 64; n++) {
+        float pow;
+
+        idx = FFMAX(0, lrint((max - lpcs[n]) * irange) - 1);
+        pow = wmavoice_denoise_power_table[s->denoise_strength][idx];
+        lpcs[n] = angle_mul * pow;
+
+        /* 70.57 =~ 1/log10(1.0331663) */
+        idx = (pow * gain_mul - 0.0295) * 70.570526123;
+        if (idx > 127) { // fallback if index falls outside table range
+            coeffs[n] = wmavoice_energy_table[127] *
+                        powf(1.0331663, idx - 127);
+        } else
+            coeffs[n] = wmavoice_energy_table[FFMAX(0, idx)];
+    }
+
+    /* calculate the Hilbert transform of the gains, which we do (since this
+     * is a sinus input) by doing a phase shift (in theory, H(sin())=cos()).
+     * Hilbert_Transform(RDFT(x)) = Laplace_Transform(x), which calculates the
+     * "moment" of the LPCs in this filter. */
+    ff_dct_calc(&s->dct, lpcs);
+    ff_dct_calc(&s->dst, lpcs);
+
+    /* Split out the coefficient indexes into phase/magnitude pairs */
+    idx = 255 + av_clip(lpcs[64],               -255, 255);
+    coeffs[0]  = coeffs[0]  * s->cos[idx];
+    idx = 255 + av_clip(lpcs[64] - 2 * lpcs[63], -255, 255);
+    last_coeff = coeffs[64] * s->cos[idx];
+    for (n = 63;; n--) {
+        idx = 255 + av_clip(-lpcs[64] - 2 * lpcs[n - 1], -255, 255);
+        coeffs[n * 2 + 1] = coeffs[n] * s->sin[idx];
+        coeffs[n * 2]     = coeffs[n] * s->cos[idx];
+
+        if (!--n) break;
+
+        idx = 255 + av_clip( lpcs[64] - 2 * lpcs[n - 1], -255, 255);
+        coeffs[n * 2 + 1] = coeffs[n] * s->sin[idx];
+        coeffs[n * 2]     = coeffs[n] * s->cos[idx];
+    }
+    coeffs[1] = last_coeff;
+
+    /* move into real domain */
+    ff_rdft_calc(&s->irdft, coeffs);
+
+    /* tilt correction and normalize scale */
+    memset(&coeffs[remainder], 0, sizeof(coeffs[0]) * (128 - remainder));
+    if (s->denoise_tilt_corr) {
+        float tilt_mem = 0;
+
+        coeffs[remainder - 1] = 0;
+        ff_tilt_compensation(&tilt_mem,
+                             -1.8 * tilt_factor(coeffs, remainder - 1),
+                             coeffs, remainder);
+    }
+    sq = (1.0 / 64.0) * sqrtf(1 / ff_dot_productf(coeffs, coeffs, remainder));
+    for (n = 0; n < remainder; n++)
+        coeffs[n] *= sq;
+}
+
+/**
+ * This function applies a Wiener filter on the (noisy) speech signal as
+ * a means to denoise it.
+ *
+ * - take RDFT of LPCs to get the power spectrum of the noise + speech;
+ * - using this power spectrum, calculate (for each frequency) the Wiener
+ *    filter gain, which depends on the frequency power and desired level
+ *    of noise subtraction (when set too high, this leads to artifacts)
+ *    We can do this symmetrically over the X-axis (so 0-4kHz is the inverse
+ *    of 4-8kHz);
+ * - by doing a phase shift, calculate the Hilbert transform of this array
+ *    of per-frequency filter-gains to get the filtering coefficients;
+ * - smoothen/normalize/de-tilt these filter coefficients as desired;
+ * - take RDFT of noisy sound, apply the coefficients and take its IRDFT
+ *    to get the denoised speech signal;
+ * - the leftover (i.e. output of the IRDFT on denoised speech data beyond
+ *    the frame boundary) are saved and applied to subsequent frames by an
+ *    overlap-add method (otherwise you get clicking-artifacts).
+ *
+ * @param s WMA Voice decoding context
+ * @param s fcb_type Frame (codebook) type
+ * @param synth_pf input: the noisy speech signal, output: denoised speech
+ *                 data; should be 16-byte aligned (for ASM purposes)
+ * @param size size of the speech data
+ * @param lpcs LPCs used to synthesize this frame's speech data
+ */
+static void wiener_denoise(WMAVoiceContext *s, int fcb_type,
+                           float *synth_pf, int size,
+                           const float *lpcs)
+{
+    int remainder, lim, n;
+
+    if (fcb_type != FCB_TYPE_SILENCE) {
+        float *tilted_lpcs = s->tilted_lpcs_pf,
+              *coeffs = s->denoise_coeffs_pf, tilt_mem = 0;
+
+        tilted_lpcs[0]           = 1.0;
+        memcpy(&tilted_lpcs[1], lpcs, sizeof(lpcs[0]) * s->lsps);
+        memset(&tilted_lpcs[s->lsps + 1], 0,
+               sizeof(tilted_lpcs[0]) * (128 - s->lsps - 1));
+        ff_tilt_compensation(&tilt_mem, 0.7 * tilt_factor(lpcs, s->lsps),
+                             tilted_lpcs, s->lsps + 2);
+
+        /* The IRDFT output (127 samples for 7-bit filter) beyond the frame
+         * size is applied to the next frame. All input beyond this is zero,
+         * and thus all output beyond this will go towards zero, hence we can
+         * limit to min(size-1, 127-size) as a performance consideration. */
+        remainder = FFMIN(127 - size, size - 1);
+        calc_input_response(s, tilted_lpcs, fcb_type, coeffs, remainder);
+
+        /* apply coefficients (in frequency spectrum domain), i.e. complex
+         * number multiplication */
+        memset(&synth_pf[size], 0, sizeof(synth_pf[0]) * (128 - size));
+        ff_rdft_calc(&s->rdft, synth_pf);
+        ff_rdft_calc(&s->rdft, coeffs);
+        synth_pf[0] *= coeffs[0];
+        synth_pf[1] *= coeffs[1];
+        for (n = 1; n < 128; n++) {
+            float v1 = synth_pf[n * 2], v2 = synth_pf[n * 2 + 1];
+            synth_pf[n * 2]     = v1 * coeffs[n * 2] - v2 * coeffs[n * 2 + 1];
+            synth_pf[n * 2 + 1] = v2 * coeffs[n * 2] + v1 * coeffs[n * 2 + 1];
+        }
+        ff_rdft_calc(&s->irdft, synth_pf);
+    }
+
+    /* merge filter output with the history of previous runs */
+    if (s->denoise_filter_cache_size) {
+        lim = FFMIN(s->denoise_filter_cache_size, size);
+        for (n = 0; n < lim; n++)
+            synth_pf[n] += s->denoise_filter_cache[n];
+        s->denoise_filter_cache_size -= lim;
+        memmove(s->denoise_filter_cache, &s->denoise_filter_cache[size],
+                sizeof(s->denoise_filter_cache[0]) * s->denoise_filter_cache_size);
+    }
+
+    /* move remainder of filter output into a cache for future runs */
+    if (fcb_type != FCB_TYPE_SILENCE) {
+        lim = FFMIN(remainder, s->denoise_filter_cache_size);
+        for (n = 0; n < lim; n++)
+            s->denoise_filter_cache[n] += synth_pf[size + n];
+        if (lim < remainder) {
+            memcpy(&s->denoise_filter_cache[lim], &synth_pf[size + lim],
+                   sizeof(s->denoise_filter_cache[0]) * (remainder - lim));
+            s->denoise_filter_cache_size = remainder;
+        }
+    }
+}
+
+/**
+ * Averaging projection filter, the postfilter used in WMAVoice.
+ *
+ * This uses the following steps:
+ * - A zero-synthesis filter (generate excitation from synth signal)
+ * - Kalman smoothing on excitation, based on pitch
+ * - Re-synthesized smoothened output
+ * - Iterative Wiener denoise filter
+ * - Adaptive gain filter
+ * - DC filter
+ *
+ * @param s WMAVoice decoding context
+ * @param synth Speech synthesis output (before postfilter)
+ * @param samples Output buffer for filtered samples
+ * @param size Buffer size of synth & samples
+ * @param lpcs Generated LPCs used for speech synthesis
+ * @param fcb_type Frame type (silence, hardcoded, AW-pulses or FCB-pulses)
+ * @param pitch Pitch of the input signal
+ */
+static void postfilter(WMAVoiceContext *s, const float *synth,
+                       float *samples,    int size,
+                       const float *lpcs, float *zero_exc_pf,
+                       int fcb_type,      int pitch)
+{
+    float synth_filter_in_buf[MAX_FRAMESIZE / 2],
+          *synth_pf = &s->synth_filter_out_buf[MAX_LSPS_ALIGN16],
+          *synth_filter_in = zero_exc_pf;
+
+    assert(size <= MAX_FRAMESIZE / 2);
+
+    /* generate excitation from input signal */
+    ff_celp_lp_zero_synthesis_filterf(zero_exc_pf, lpcs, synth, size, s->lsps);
+
+    if (fcb_type >= FCB_TYPE_AW_PULSES &&
+        !kalman_smoothen(s, pitch, zero_exc_pf, synth_filter_in_buf, size))
+        synth_filter_in = synth_filter_in_buf;
+
+    /* re-synthesize speech after smoothening, and keep history */
+    ff_celp_lp_synthesis_filterf(synth_pf, lpcs,
+                                 synth_filter_in, size, s->lsps);
+    memcpy(&synth_pf[-s->lsps], &synth_pf[size - s->lsps],
+           sizeof(synth_pf[0]) * s->lsps);
+
+    wiener_denoise(s, fcb_type, synth_pf, size, lpcs);
+
+    adaptive_gain_control(samples, synth_pf, synth, size, 0.99,
+                          &s->postfilter_agc);
+
+    if (s->dc_level > 8) {
+        /* remove ultra-low frequency DC noise / highpass filter;
+         * coefficients are identical to those used in SIPR decoding,
+         * and very closely resemble those used in AMR-NB decoding. */
+        ff_acelp_apply_order_2_transfer_function(samples, samples,
+            (const float[2]) { -1.99997,      1.0 },
+            (const float[2]) { -1.9330735188, 0.93589198496 },
+            0.93980580475, s->dcf_mem, size);
+    }
+}
+/**
+ * @}
+ */
 
 /**
  * Dequantize LSPs
@@ -980,6 +1401,7 @@ static void synth_block(WMAVoiceContext *s, GetBitContext *gb,
  *
  * @param ctx WMA Voice decoder context
  * @param gb bit I/O context (s->gb or one for cross-packet superframes)
+ * @param frame_idx Frame number within superframe [0-2]
  * @param samples pointer to output sample buffer, has space for at least 160
  *                samples
  * @param lsps LSP array
@@ -988,7 +1410,7 @@ static void synth_block(WMAVoiceContext *s, GetBitContext *gb,
  * @param synth target buffer for synthesized speech data
  * @return 0 on success, <0 on error.
  */
-static int synth_frame(AVCodecContext *ctx, GetBitContext *gb,
+static int synth_frame(AVCodecContext *ctx, GetBitContext *gb, int frame_idx,
                        float *samples,
                        const double *lsps, const double *prev_lsps,
                        float *excitation, float *synth)
@@ -1113,10 +1535,23 @@ static int synth_frame(AVCodecContext *ctx, GetBitContext *gb,
     /* Averaging projection filter, if applicable. Else, just copy samples
      * from synthesis buffer */
     if (s->do_apf) {
-        // FIXME this is where APF would take place, currently not implemented
-        av_log_missing_feature(ctx, "APF", 0);
-        s->do_apf = 0;
-    } //else
+        double i_lsps[MAX_LSPS];
+        float lpcs[MAX_LSPS];
+
+        for (n = 0; n < s->lsps; n++) // LSF -> LSP
+            i_lsps[n] = cos(0.5 * (prev_lsps[n] + lsps[n]));
+        ff_acelp_lspd2lpc(i_lsps, lpcs, s->lsps >> 1);
+        postfilter(s, synth, samples, 80, lpcs,
+                   &s->zero_exc_pf[s->history_nsamples + MAX_FRAMESIZE * frame_idx],
+                   frame_descs[bd_idx].fcb_type, pitch[0]);
+
+        for (n = 0; n < s->lsps; n++) // LSF -> LSP
+            i_lsps[n] = cos(lsps[n]);
+        ff_acelp_lspd2lpc(i_lsps, lpcs, s->lsps >> 1);
+        postfilter(s, &synth[80], &samples[80], 80, lpcs,
+                   &s->zero_exc_pf[s->history_nsamples + MAX_FRAMESIZE * frame_idx + 80],
+                   frame_descs[bd_idx].fcb_type, pitch[0]);
+    } else
         memcpy(samples, synth, 160 * sizeof(synth[0]));
 
     /* Cache values for next frame */
@@ -1355,7 +1790,7 @@ static int synth_superframe(AVCodecContext *ctx,
             stabilize_lsps(lsps[n], s->lsps);
         }
 
-        if ((res = synth_frame(ctx, gb,
+        if ((res = synth_frame(ctx, gb, n,
                                &samples[n * MAX_FRAMESIZE],
                                lsps[n], n == 0 ? s->prev_lsps : lsps[n - 1],
                                &excitation[s->history_nsamples + n * MAX_FRAMESIZE],
@@ -1381,6 +1816,9 @@ static int synth_superframe(AVCodecContext *ctx,
            s->lsps             * sizeof(*synth));
     memcpy(s->excitation_history, &excitation[MAX_SFRAMESIZE],
            s->history_nsamples * sizeof(*excitation));
+    if (s->do_apf)
+        memmove(s->zero_exc_pf,       &s->zero_exc_pf[MAX_SFRAMESIZE],
+                s->history_nsamples * sizeof(*s->zero_exc_pf));
 
     return 0;
 }
@@ -1535,11 +1973,26 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
     return size;
 }
 
+static av_cold int wmavoice_decode_end(AVCodecContext *ctx)
+{
+    WMAVoiceContext *s = ctx->priv_data;
+
+    if (s->do_apf) {
+        ff_rdft_end(&s->rdft);
+        ff_rdft_end(&s->irdft);
+        ff_dct_end(&s->dct);
+        ff_dct_end(&s->dst);
+    }
+
+    return 0;
+}
+
 static av_cold void wmavoice_flush(AVCodecContext *ctx)
 {
     WMAVoiceContext *s = ctx->priv_data;
     int n;
 
+    s->postfilter_agc    = 0;
     s->sframe_cache_size = 0;
     s->skip_bits_next    = 0;
     for (n = 0; n < s->lsps; n++)
@@ -1550,6 +2003,16 @@ static av_cold void wmavoice_flush(AVCodecContext *ctx)
            sizeof(*s->synth_history)      * MAX_LSPS);
     memset(s->gain_pred_err,      0,
            sizeof(s->gain_pred_err));
+
+    if (s->do_apf) {
+        memset(&s->synth_filter_out_buf[MAX_LSPS_ALIGN16 - s->lsps], 0,
+               sizeof(*s->synth_filter_out_buf) * s->lsps);
+        memset(s->dcf_mem,              0,
+               sizeof(*s->dcf_mem)              * 2);
+        memset(s->zero_exc_pf,          0,
+               sizeof(*s->zero_exc_pf)          * s->history_nsamples);
+        memset(s->denoise_filter_cache, 0, sizeof(s->denoise_filter_cache));
+    }
 }
 
 AVCodec wmavoice_decoder = {
@@ -1559,7 +2022,7 @@ AVCodec wmavoice_decoder = {
     sizeof(WMAVoiceContext),
     wmavoice_decode_init,
     NULL,
-    NULL,
+    wmavoice_decode_end,
     wmavoice_decode_packet,
     CODEC_CAP_SUBFRAMES,
     .flush     = wmavoice_flush,
