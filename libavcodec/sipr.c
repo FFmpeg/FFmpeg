@@ -490,14 +490,14 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
     memcpy(ctx->excitation, excitation - PITCH_DELAY_MAX - L_INTERPOL,
            (PITCH_DELAY_MAX + L_INTERPOL) * sizeof(float));
 
-    ff_acelp_apply_order_2_transfer_function(synth,
+    ff_acelp_apply_order_2_transfer_function(out_data, synth,
                                              (const float[2]) {-1.99997   , 1.000000000},
                                              (const float[2]) {-1.93307352, 0.935891986},
                                              0.939805806,
                                              ctx->highpass_filt_mem,
                                              frame_size);
 
-    ctx->dsp.vector_clipf(out_data, synth, -1, 32767./(1<<15), frame_size);
+    ctx->dsp.vector_clipf(out_data, out_data, -1, 32767./(1<<15), frame_size);
 
 }
 

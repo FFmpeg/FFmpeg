@@ -1044,7 +1044,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         update_state(p);
     }
 
-    ff_acelp_apply_order_2_transfer_function(buf_out, highpass_zeros,
+    ff_acelp_apply_order_2_transfer_function(buf_out, buf_out, highpass_zeros,
                                              highpass_poles, highpass_gain,
                                              p->high_pass_mem, AMR_BLOCK_SIZE);
 

@@ -92,14 +92,15 @@ void ff_acelp_high_pass_filter(int16_t* out, int hpf_f[2],
 /**
  * Apply an order 2 rational transfer function in-place.
  *
- * @param samples [in/out]
+ * @param out output buffer for filtered speech samples
+ * @param in input buffer containing speech data (may be the same as out)
  * @param zero_coeffs z^-1 and z^-2 coefficients of the numerator
  * @param pole_coeffs z^-1 and z^-2 coefficients of the denominator
  * @param gain scale factor for final output
  * @param mem intermediate values used by filter (should be 0 initially)
  * @param n number of samples
  */
-void ff_acelp_apply_order_2_transfer_function(float *samples,
+void ff_acelp_apply_order_2_transfer_function(float *out, const float *in,
                                               const float zero_coeffs[2],
                                               const float pole_coeffs[2],
                                               float gain,
