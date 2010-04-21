@@ -850,9 +850,6 @@ static int twin_decode_frame(AVCodecContext * avctx, void *data,
         return buf_size;
     }
 
-    tctx->dsp.vector_clipf(out, out, -32700./(1<<15), 32700./(1<<15),
-                           avctx->channels * mtab->size);
-
     *data_size = mtab->size*avctx->channels*4;
 
     return buf_size;

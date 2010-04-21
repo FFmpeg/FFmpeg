@@ -796,7 +796,7 @@ static int synthesis(AMRContext *p, float *lpc,
                      float fixed_gain, const float *fixed_vector,
                      float *samples, uint8_t overflow)
 {
-    int i, overflow_temp = 0;
+    int i;
     float excitation[AMR_SUBFRAME_SIZE];
 
     // if an overflow has been detected, the pitch vector is scaled down by a
@@ -831,12 +831,10 @@ static int synthesis(AMRContext *p, float *lpc,
     // detect overflow
     for (i = 0; i < AMR_SUBFRAME_SIZE; i++)
         if (fabsf(samples[i]) > AMR_SAMPLE_BOUND) {
-            overflow_temp = 1;
-            samples[i] = av_clipf(samples[i], -AMR_SAMPLE_BOUND,
-                                               AMR_SAMPLE_BOUND);
+            return 1;
         }
 
-    return overflow_temp;
+    return 0;
 }
 
 /// @}
@@ -1047,10 +1045,6 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     ff_acelp_apply_order_2_transfer_function(buf_out, buf_out, highpass_zeros,
                                              highpass_poles, highpass_gain,
                                              p->high_pass_mem, AMR_BLOCK_SIZE);
-
-    for (i = 0; i < AMR_BLOCK_SIZE; i++)
-        buf_out[i] = av_clipf(buf_out[i] * AMR_SAMPLE_SCALE,
-                              -1.0, 32767.0 / 32768.0);
 
     /* Update averaged lsf vector (used for fixed gain smoothing).
      *

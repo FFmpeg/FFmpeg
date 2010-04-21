@@ -102,10 +102,6 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     gain_block[9] = 10 * log10(sum) - 32;
 
     ff_celp_lp_synthesis_filterf(block, ractx->sp_lpc, buffer, 5, 36);
-
-    /* output */
-    for (i=0; i < 5; i++)
-        block[i] = av_clipf(block[i], -4095./4096., 4095./4096.);
 }
 
 /**

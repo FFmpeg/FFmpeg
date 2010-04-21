@@ -425,16 +425,6 @@ static const qcelp_vector * const qcelp_lspvq[5] = {
 #define QCELP_SCALE 8192.
 
 /**
- * the upper boundary of the clipping, depends on QCELP_SCALE
- */
-#define QCELP_CLIP_UPPER_BOUND (8191.75/8192.)
-
-/**
- * the lower boundary of the clipping, depends on QCELP_SCALE
- */
-#define QCELP_CLIP_LOWER_BOUND -1.
-
-/**
  * table for computing Ga (decoded linear codebook gain magnitude)
  *
  * @note The table could fit in int16_t in x*8 form, but it seems

@@ -1117,8 +1117,7 @@ static int synth_frame(AVCodecContext *ctx, GetBitContext *gb,
         av_log_missing_feature(ctx, "APF", 0);
         s->do_apf = 0;
     } //else
-        for (n = 0; n < 160; n++)
-            samples[n] = av_clipf(synth[n], -1.0, 1.0);
+        memcpy(samples, synth, 160 * sizeof(synth[0]));
 
     /* Cache values for next frame */
     s->frame_cntr++;

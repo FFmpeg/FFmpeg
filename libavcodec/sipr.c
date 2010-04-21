@@ -496,9 +496,6 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
                                              0.939805806,
                                              ctx->highpass_filt_mem,
                                              frame_size);
-
-    ctx->dsp.vector_clipf(out_data, out_data, -1, 32767./(1<<15), frame_size);
-
 }
 
 static av_cold int sipr_decoder_init(AVCodecContext * avctx)

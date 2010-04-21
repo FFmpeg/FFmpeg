@@ -264,9 +264,6 @@ void ff_sipr_decode_frame_16k(SiprContext *ctx, SiprParameters *params,
     postfilter(out_data, synth, ctx->iir_mem, ctx->filt_mem, ctx->mem_preemph);
 
     memcpy(ctx->iir_mem, Az[1], LP_FILTER_ORDER_16k * sizeof(float));
-
-    ctx->dsp.vector_clipf(out_data, out_data, -1, 32767./(1<<15), frame_size);
-
 }
 
 void ff_sipr_init_16k(SiprContext *ctx)

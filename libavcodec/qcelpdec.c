@@ -834,10 +834,6 @@ erasure:
 
     memcpy(q->formant_mem, q->formant_mem + 160, 10 * sizeof(float));
 
-    for(i=0; i<160; i++)
-        outbuffer[i] = av_clipf(outbuffer[i], QCELP_CLIP_LOWER_BOUND,
-                                QCELP_CLIP_UPPER_BOUND);
-
     memcpy(q->prev_lspf, quantized_lspf, sizeof(q->prev_lspf));
     q->prev_bitrate = q->bitrate;
 
