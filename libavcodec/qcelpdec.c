@@ -37,6 +37,7 @@
 
 #include "celp_math.h"
 #include "celp_filters.h"
+#include "acelp_filters.h"
 #include "acelp_vectors.h"
 #include "lsp.h"
 
@@ -74,6 +75,11 @@ typedef struct
     uint8_t  pitch_lag[4];
     uint16_t first16bits;
     uint8_t  warned_buf_mismatch_bitrate;
+
+    /* postfilter */
+    float    postfilter_synth_mem[10];
+    float    postfilter_agc_mem;
+    float    postfilter_tilt_mem;
 } QCELPContext;
 
 /**
@@ -695,6 +701,36 @@ static void warn_insufficient_frame_quality(AVCodecContext *avctx,
            message);
 }
 
+static void postfilter(QCELPContext *q, float *samples, float *lpc)
+{
+    static const float pow_0_775[10] = {
+        0.775000, 0.600625, 0.465484, 0.360750, 0.279582,
+        0.216676, 0.167924, 0.130141, 0.100859, 0.078166
+    }, pow_0_625[10] = {
+        0.625000, 0.390625, 0.244141, 0.152588, 0.095367,
+        0.059605, 0.037253, 0.023283, 0.014552, 0.009095
+    };
+    float lpc_s[10], lpc_p[10], pole_out[170], zero_out[160];
+    int n;
+
+    for (n = 0; n < 10; n++) {
+        lpc_s[n] = lpc[n] * pow_0_625[n];
+        lpc_p[n] = lpc[n] * pow_0_775[n];
+    }
+
+    ff_celp_lp_zero_synthesis_filterf(zero_out, lpc_s,
+                                      q->formant_mem + 10, 160, 10);
+    memcpy(pole_out, q->postfilter_synth_mem,       sizeof(float) * 10);
+    ff_celp_lp_synthesis_filterf(pole_out + 10, lpc_p, zero_out, 160, 10);
+    memcpy(q->postfilter_synth_mem, pole_out + 160, sizeof(float) * 10);
+
+    ff_tilt_compensation(&q->postfilter_tilt_mem, 0.3, pole_out + 10, 160);
+
+    ff_adaptive_gain_control(samples, pole_out + 10,
+        ff_dot_productf(q->formant_mem + 10, q->formant_mem + 10, 160),
+        160, 0.9375, &q->postfilter_agc_mem);
+}
+
 static int qcelp_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                               AVPacket *avpkt)
 {
@@ -792,14 +828,14 @@ erasure:
                                      10);
         formant_mem += 40;
     }
+
+    // postfilter, as per TIA/EIA/IS-733 2.4.8.6
+    postfilter(q, outbuffer, lpc);
+
     memcpy(q->formant_mem, q->formant_mem + 160, 10 * sizeof(float));
 
-    // FIXME: postfilter and final gain control should be here.
-    // TIA/EIA/IS-733 2.4.8.6
-
-    formant_mem = q->formant_mem + 10;
     for(i=0; i<160; i++)
-        *outbuffer++ = av_clipf(*formant_mem++, QCELP_CLIP_LOWER_BOUND,
+        outbuffer[i] = av_clipf(outbuffer[i], QCELP_CLIP_LOWER_BOUND,
                                 QCELP_CLIP_UPPER_BOUND);
 
     memcpy(q->prev_lspf, quantized_lspf, sizeof(q->prev_lspf));
