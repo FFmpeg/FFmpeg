@@ -479,7 +479,8 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
             float energy = ff_dot_productf(ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i*SUBFR_SIZE,
                                            ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i*SUBFR_SIZE,
                                            SUBFR_SIZE);
-            ff_adaptive_gain_control(&synth[i * SUBFR_SIZE], energy,
+            ff_adaptive_gain_control(&synth[i * SUBFR_SIZE],
+                                     &synth[i * SUBFR_SIZE], energy,
                                      SUBFR_SIZE, 0.9, &ctx->postfilter_agc);
         }
 

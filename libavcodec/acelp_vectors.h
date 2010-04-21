@@ -214,13 +214,14 @@ void ff_weighted_vector_sumf(float *out, const float *in_a, const float *in_b,
 /**
  * Adaptive gain control (as used in AMR postfiltering)
  *
- * @param buf_out the input speech buffer
+ * @param out output buffer for filtered speech data
+ * @param in the input speech buffer (may be the same as out)
  * @param speech_energ input energy
  * @param size the input buffer size
  * @param alpha exponential filter factor
  * @param gain_mem a pointer to the filter memory (single float of size)
  */
-void ff_adaptive_gain_control(float *buf_out, float speech_energ,
+void ff_adaptive_gain_control(float *out, const float *in, float speech_energ,
                               int size, float alpha, float *gain_mem);
 
 /**

@@ -943,7 +943,7 @@ static void postfilter(AMRContext *p, float *lpc, float *buf_out)
     ff_tilt_compensation(&p->tilt_mem, tilt_factor(lpc_n, lpc_d), buf_out,
                          AMR_SUBFRAME_SIZE);
 
-    ff_adaptive_gain_control(buf_out, speech_gain, AMR_SUBFRAME_SIZE,
+    ff_adaptive_gain_control(buf_out, buf_out, speech_gain, AMR_SUBFRAME_SIZE,
                              AMR_AGC_ALPHA, &p->postfilter_agc);
 }
 
