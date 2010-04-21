@@ -242,7 +242,7 @@ typedef struct Vp3DecodeContext {
     unsigned int hbits;
     int entries;
     int huff_code_size;
-    uint16_t huffman_table[80][32][2];
+    uint32_t huffman_table[80][32][2];
 
     uint8_t filter_limit_values[64];
     DECLARE_ALIGNED(8, int, bounding_values_array)[256+2];
@@ -882,7 +882,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
 
     while (coeff_i < num_coeffs && get_bits_left(gb) > 0) {
             /* decode a VLC into a token */
-            token = get_vlc2(gb, vlc_table, 5, 3);
+            token = get_vlc2(gb, vlc_table, 11, 3);
             /* use the token to get a zero run, a coefficient, and an eob run */
             if (token <= 6) {
                 eob_run = eob_run_base[token];
@@ -1606,61 +1606,61 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
         for (i = 0; i < 16; i++) {
 
             /* DC histograms */
-            init_vlc(&s->dc_vlc[i], 5, 32,
+            init_vlc(&s->dc_vlc[i], 11, 32,
                 &dc_bias[i][0][1], 4, 2,
                 &dc_bias[i][0][0], 4, 2, 0);
 
             /* group 1 AC histograms */
-            init_vlc(&s->ac_vlc_1[i], 5, 32,
+            init_vlc(&s->ac_vlc_1[i], 11, 32,
                 &ac_bias_0[i][0][1], 4, 2,
                 &ac_bias_0[i][0][0], 4, 2, 0);
 
             /* group 2 AC histograms */
-            init_vlc(&s->ac_vlc_2[i], 5, 32,
+            init_vlc(&s->ac_vlc_2[i], 11, 32,
                 &ac_bias_1[i][0][1], 4, 2,
                 &ac_bias_1[i][0][0], 4, 2, 0);
 
             /* group 3 AC histograms */
-            init_vlc(&s->ac_vlc_3[i], 5, 32,
+            init_vlc(&s->ac_vlc_3[i], 11, 32,
                 &ac_bias_2[i][0][1], 4, 2,
                 &ac_bias_2[i][0][0], 4, 2, 0);
 
             /* group 4 AC histograms */
-            init_vlc(&s->ac_vlc_4[i], 5, 32,
+            init_vlc(&s->ac_vlc_4[i], 11, 32,
                 &ac_bias_3[i][0][1], 4, 2,
                 &ac_bias_3[i][0][0], 4, 2, 0);
         }
     } else {
-        for (i = 0; i < 16; i++) {
 
+        for (i = 0; i < 16; i++) {
             /* DC histograms */
-            if (init_vlc(&s->dc_vlc[i], 5, 32,
-                &s->huffman_table[i][0][1], 4, 2,
-                &s->huffman_table[i][0][0], 4, 2, 0) < 0)
+            if (init_vlc(&s->dc_vlc[i], 11, 32,
+                &s->huffman_table[i][0][1], 8, 4,
+                &s->huffman_table[i][0][0], 8, 4, 0) < 0)
                 goto vlc_fail;
 
             /* group 1 AC histograms */
-            if (init_vlc(&s->ac_vlc_1[i], 5, 32,
-                &s->huffman_table[i+16][0][1], 4, 2,
-                &s->huffman_table[i+16][0][0], 4, 2, 0) < 0)
+            if (init_vlc(&s->ac_vlc_1[i], 11, 32,
+                &s->huffman_table[i+16][0][1], 8, 4,
+                &s->huffman_table[i+16][0][0], 8, 4, 0) < 0)
                 goto vlc_fail;
 
             /* group 2 AC histograms */
-            if (init_vlc(&s->ac_vlc_2[i], 5, 32,
-                &s->huffman_table[i+16*2][0][1], 4, 2,
-                &s->huffman_table[i+16*2][0][0], 4, 2, 0) < 0)
+            if (init_vlc(&s->ac_vlc_2[i], 11, 32,
+                &s->huffman_table[i+16*2][0][1], 8, 4,
+                &s->huffman_table[i+16*2][0][0], 8, 4, 0) < 0)
                 goto vlc_fail;
 
             /* group 3 AC histograms */
-            if (init_vlc(&s->ac_vlc_3[i], 5, 32,
-                &s->huffman_table[i+16*3][0][1], 4, 2,
-                &s->huffman_table[i+16*3][0][0], 4, 2, 0) < 0)
+            if (init_vlc(&s->ac_vlc_3[i], 11, 32,
+                &s->huffman_table[i+16*3][0][1], 8, 4,
+                &s->huffman_table[i+16*3][0][0], 8, 4, 0) < 0)
                 goto vlc_fail;
 
             /* group 4 AC histograms */
-            if (init_vlc(&s->ac_vlc_4[i], 5, 32,
-                &s->huffman_table[i+16*4][0][1], 4, 2,
-                &s->huffman_table[i+16*4][0][0], 4, 2, 0) < 0)
+            if (init_vlc(&s->ac_vlc_4[i], 11, 32,
+                &s->huffman_table[i+16*4][0][1], 8, 4,
+                &s->huffman_table[i+16*4][0][0], 8, 4, 0) < 0)
                 goto vlc_fail;
         }
     }
