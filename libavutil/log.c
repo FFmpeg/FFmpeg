@@ -24,6 +24,7 @@
  * logging functions
  */
 
+#include <unistd.h>
 #include "avutil.h"
 #include "log.h"
 
@@ -32,11 +33,27 @@ static
 #endif
 int av_log_level = AV_LOG_INFO;
 
+#if !HAVE_ISATTY
+#define isatty(s) 0
+#endif
+
+#undef fprintf
+static void colored_fputs(int color, const char *str){
+    if(isatty(2)){
+        fprintf(stderr, "\033[%dm\033[3%dm", color>>4, color&15);
+    }
+    fputs(str, stderr);
+    if(isatty(2)){
+        fprintf(stderr, "\033[0m");
+    }
+}
+
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix=1;
     static int count;
     static char line[1024], prev[1024];
+    static const uint8_t color[]={0x41,0x41,0x11,0x03,9,9,9};
     AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
     if(level>av_log_level)
         return;
@@ -57,7 +74,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
         fprintf(stderr, "    Last message repeated %d times\n", count);
         count=0;
     }
-    fputs(line, stderr);
+    colored_fputs(color[av_clip(level>>3, 0, 6)], line);
     strcpy(prev, line);
 }
 
