@@ -33,10 +33,10 @@ function ff_rdft_calc_neon, export=1
         lsls            r6,  r6,  #31
         bne             1f
         add             r0,  r4,  #20
-        bl              ff_fft_permute_neon
+        bl              X(ff_fft_permute_neon)
         add             r0,  r4,  #20
         mov             r1,  r5
-        bl              ff_fft_calc_neon
+        bl              X(ff_fft_calc_neon)
 1:
         ldr             r12, [r4, #0]           @ nbits
         mov             r2,  #1
@@ -143,9 +143,9 @@ function ff_rdft_calc_neon, export=1
         vst1.32         {d22},    [r5,:64]
         add             r0,  r4,  #20
         mov             r1,  r5
-        bl              ff_fft_permute_neon
+        bl              X(ff_fft_permute_neon)
         add             r0,  r4,  #20
         mov             r1,  r5
         pop             {r4-r8,lr}
-        b               ff_fft_calc_neon
+        b               X(ff_fft_calc_neon)
 endfunc
