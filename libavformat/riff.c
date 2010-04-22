@@ -180,6 +180,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_VP6,          MKTAG('V', 'P', '6', '0') },
     { CODEC_ID_VP6,          MKTAG('V', 'P', '6', '1') },
     { CODEC_ID_VP6,          MKTAG('V', 'P', '6', '2') },
+    { CODEC_ID_VP6F,         MKTAG('F', 'L', 'V', '4') },
     { CODEC_ID_ASV1,         MKTAG('A', 'S', 'V', '1') },
     { CODEC_ID_ASV2,         MKTAG('A', 'S', 'V', '2') },
     { CODEC_ID_VCR1,         MKTAG('V', 'C', 'R', '1') },
