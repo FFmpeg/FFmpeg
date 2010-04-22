@@ -127,7 +127,7 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
         break;
 
     case 3:  /* UTF-8 */
-        len = FFMIN(taglen, dstlen - 1);
+        len = FFMIN(taglen, dstlen);
         get_buffer(s->pb, dst, len);
         dst[len] = 0;
         break;
