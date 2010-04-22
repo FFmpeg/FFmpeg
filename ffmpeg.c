@@ -485,6 +485,23 @@ static void choose_sample_fmt(AVStream *st, AVCodec *codec)
     }
 }
 
+static void choose_sample_rate(AVStream *st, AVCodec *codec)
+{
+    if(codec && codec->supported_samplerates){
+        const int *p= codec->supported_samplerates;
+        int best;
+        int best_dist=INT_MAX;
+        for(; *p; p++){
+            int dist= abs(st->codec->sample_rate - *p);
+            if(dist < best_dist){
+                best_dist= dist;
+                best= *p;
+            }
+        }
+        st->codec->sample_rate= best;
+    }
+}
+
 static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
 {
     if(codec && codec->pix_fmts){
@@ -3312,6 +3329,7 @@ static void new_audio_stream(AVFormatContext *oc)
     if (audio_stream_copy) {
         st->stream_copy = 1;
         audio_enc->channels = audio_channels;
+        audio_enc->sample_rate = audio_sample_rate;
     } else {
         AVCodec *codec;
 
@@ -3333,13 +3351,14 @@ static void new_audio_stream(AVFormatContext *oc)
         }
         audio_enc->channels = audio_channels;
         audio_enc->sample_fmt = audio_sample_fmt;
+        audio_enc->sample_rate = audio_sample_rate;
         audio_enc->channel_layout = channel_layout;
         if (avcodec_channel_layout_num_channels(channel_layout) != audio_channels)
             audio_enc->channel_layout = 0;
         choose_sample_fmt(st, codec);
+        choose_sample_rate(st, codec);
     }
     nb_ocodecs++;
-    audio_enc->sample_rate = audio_sample_rate;
     audio_enc->time_base= (AVRational){1, audio_sample_rate};
     if (audio_language) {
         av_metadata_set(&st->metadata, "language", audio_language);
