@@ -27,8 +27,8 @@
  * variations, visit:
  *   http://www.compuphase.com/flic.htm
  *
- * This demuxer handles standard 0xAF11- and 0xAF12-type FLIs. It also
- * handles special FLIs from the PC game "Magic Carpet".
+ * This demuxer handles standard 0xAF11- and 0xAF12-type FLIs. It also handles
+ * special FLIs from the PC games "Magic Carpet" and "X-COM: Terror from the Deep".
  */
 
 #include "libavutil/intreadwrite.h"
@@ -42,12 +42,16 @@
 #define FLIC_CHUNK_MAGIC_2 0xF5FA
 #define FLIC_MC_SPEED 5  /* speed for Magic Carpet game FLIs */
 #define FLIC_DEFAULT_SPEED 5  /* for FLIs that have 0 speed */
+#define FLIC_TFTD_CHUNK_AUDIO 0xAAAA /* Audio chunk. Used in Terror from the Deep.
+                                        Has 10 B extra header not accounted for in the chunk header */
+#define FLIC_TFTD_SAMPLE_RATE 22050
 
 #define FLIC_HEADER_SIZE 128
 #define FLIC_PREAMBLE_SIZE 6
 
 typedef struct FlicDemuxContext {
     int video_stream_index;
+    int audio_stream_index;
     int frame_number;
 } FlicDemuxContext;
 
@@ -83,9 +87,10 @@ static int flic_read_header(AVFormatContext *s,
     FlicDemuxContext *flic = s->priv_data;
     ByteIOContext *pb = s->pb;
     unsigned char header[FLIC_HEADER_SIZE];
-    AVStream *st;
+    AVStream *st, *ast;
     int speed;
     int magic_number;
+    unsigned char preamble[FLIC_PREAMBLE_SIZE];
 
     flic->frame_number = 0;
 
@@ -123,11 +128,47 @@ static int flic_read_header(AVFormatContext *s,
     st->codec->extradata = av_malloc(FLIC_HEADER_SIZE);
     memcpy(st->codec->extradata, header, FLIC_HEADER_SIZE);
 
-    /* Time to figure out the framerate: If there is a FLIC chunk magic
-     * number at offset 0x10, assume this is from the Bullfrog game,
-     * Magic Carpet. */
-    if (AV_RL16(&header[0x10]) == FLIC_CHUNK_MAGIC_1) {
+    /* peek at the preamble to detect TFTD videos - they seem to always start with an audio chunk */
+    if (get_buffer(pb, preamble, FLIC_PREAMBLE_SIZE) != FLIC_PREAMBLE_SIZE) {
+        av_log(s, AV_LOG_ERROR, "Failed to peek at preamble\n");
+        return AVERROR(EIO);
+    }
 
+    url_fseek(pb, -FLIC_PREAMBLE_SIZE, SEEK_CUR);
+
+    /* Time to figure out the framerate:
+     * If the first preamble's magic number is 0xAAAA then this file is from
+     * X-COM: Terror from the Deep. If on the other hand there is a FLIC chunk
+     * magic number at offset 0x10 assume this file is from Magic Carpet instead.
+     * If neither of the above is true then this is a normal FLIC file.
+     */
+    if (AV_RL16(&preamble[4]) == FLIC_TFTD_CHUNK_AUDIO) {
+        /* TFTD videos have an extra 22050 Hz 8-bit mono audio stream */
+        ast = av_new_stream(s, 1);
+        if (!ast)
+            return AVERROR(ENOMEM);
+
+        flic->audio_stream_index = ast->index;
+
+        /* all audio frames are the same size, so use the size of the first chunk for block_align */
+        ast->codec->block_align = AV_RL32(&preamble[0]);
+        ast->codec->codec_type = CODEC_TYPE_AUDIO;
+        ast->codec->codec_id = CODEC_ID_PCM_U8;
+        ast->codec->codec_tag = 0;
+        ast->codec->sample_rate = FLIC_TFTD_SAMPLE_RATE;
+        ast->codec->channels = 1;
+        ast->codec->sample_fmt = SAMPLE_FMT_U8;
+        ast->codec->bit_rate = st->codec->sample_rate * 8;
+        ast->codec->bits_per_coded_sample = 8;
+        ast->codec->channel_layout = CH_LAYOUT_MONO;
+        ast->codec->extradata_size = 0;
+
+        /* Since the header information is incorrect we have to figure out the
+         * framerate using block_align and the fact that the audio is 22050 Hz.
+         * We usually have two cases: 2205 -> 10 fps and 1470 -> 15 fps */
+        av_set_pts_info(st, 64, ast->codec->block_align, FLIC_TFTD_SAMPLE_RATE);
+        av_set_pts_info(ast, 64, 1, FLIC_TFTD_SAMPLE_RATE);
+    } else if (AV_RL16(&header[0x10]) == FLIC_CHUNK_MAGIC_1) {
         av_set_pts_info(st, 64, FLIC_MC_SPEED, 70);
 
         /* rewind the stream since the first chunk is at offset 12 */
@@ -189,6 +230,25 @@ static int flic_read_packet(AVFormatContext *s,
                 av_free_packet(pkt);
                 ret = AVERROR(EIO);
             }
+            packet_read = 1;
+        } else if (magic == FLIC_TFTD_CHUNK_AUDIO) {
+            if (av_new_packet(pkt, size)) {
+                ret = AVERROR(EIO);
+                break;
+            }
+
+            /* skip useless 10B sub-header (yes, it's not accounted for in the chunk header) */
+            url_fseek(pb, 10, SEEK_CUR);
+
+            pkt->stream_index = flic->audio_stream_index;
+            pkt->pos = url_ftell(pb);
+            ret = get_buffer(pb, pkt->data, size);
+
+            if (ret != size) {
+                av_free_packet(pkt);
+                ret = AVERROR(EIO);
+            }
+
             packet_read = 1;
         } else {
             /* not interested in this chunk */
