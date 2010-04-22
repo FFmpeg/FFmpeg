@@ -40,11 +40,11 @@ int av_log_level = AV_LOG_INFO;
 #undef fprintf
 static void colored_fputs(int color, const char *str){
     if(isatty(2)){
-        fprintf(stderr, "\033[%dm\033[3%dm", color>>4, color&15);
+//        fprintf(stderr, "\033[%dm\033[3%dm", color>>4, color&15);
     }
     fputs(str, stderr);
     if(isatty(2)){
-        fprintf(stderr, "\033[0m");
+  //      fprintf(stderr, "\033[0m");
     }
 }
 
