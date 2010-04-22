@@ -1420,7 +1420,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         out_samples += 256 * s->out_channels;
     }
     *data_size = s->num_blocks * 256 * avctx->channels * sizeof (int16_t);
-    return s->frame_size;
+    return FFMIN(buf_size, s->frame_size);
 }
 
 /**
