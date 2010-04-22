@@ -4077,7 +4077,9 @@ int main(int argc, char **argv)
     int64_t ti;
 
     avcodec_register_all();
+#if CONFIG_AVDEVICE
     avdevice_register_all();
+#endif
     av_register_all();
 
 #if HAVE_ISATTY
