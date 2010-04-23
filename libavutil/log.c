@@ -25,6 +25,7 @@
  */
 
 #include <unistd.h>
+#include <stdlib.h>
 #include "avutil.h"
 #include "log.h"
 
@@ -33,17 +34,23 @@ static
 #endif
 int av_log_level = AV_LOG_INFO;
 
-#if (!HAVE_ISATTY) || defined(_WIN32)
-#define isatty(s) 0
-#endif
+static int use_ansi_color=-1;
 
 #undef fprintf
 static void colored_fputs(int color, const char *str){
-    if(isatty(2)){
+    if(use_ansi_color<0){
+#if HAVE_ISATTY && !defined(_WIN32)
+        use_ansi_color= getenv("TERM") && !getenv("NO_COLOR") && isatty(2);
+#else
+        use_ansi_color= 0;
+#endif
+    }
+
+    if(use_ansi_color){
         fprintf(stderr, "\033[%d;3%dm", color>>4, color&15);
     }
     fputs(str, stderr);
-    if(isatty(2)){
+    if(use_ansi_color){
         fprintf(stderr, "\033[0m");
     }
 }
