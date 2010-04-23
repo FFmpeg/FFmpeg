@@ -33,7 +33,7 @@ static
 #endif
 int av_log_level = AV_LOG_INFO;
 
-#if (!HAVE_ISATTY) || defined(WIN32)
+#if (!HAVE_ISATTY) || defined(_WIN32)
 #define isatty(s) 0
 #endif
 
