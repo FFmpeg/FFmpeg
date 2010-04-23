@@ -43,6 +43,11 @@
 #define llrint(x) ((long long)rint(x))
 #endif /* HAVE_LLRINT */
 
+#if !HAVE_LLRINTF
+#undef llrintf
+#define llrintf(x) ((long long)rint(x))
+#endif /* HAVE_LLRINT */
+
 #if !HAVE_LOG2
 #undef log2
 #define log2(x) (log(x) * 1.44269504088896340736)

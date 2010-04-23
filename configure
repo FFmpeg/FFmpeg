@@ -1052,6 +1052,7 @@ HAVE_LIST="
     libdc1394_1
     libdc1394_2
     llrint
+    llrintf
     local_aligned_16
     local_aligned_8
     log2
@@ -2585,6 +2586,7 @@ check_lib va/va.h vaInitialize -lva
 check_mathfunc exp2
 check_mathfunc exp2f
 check_mathfunc llrint
+check_mathfunc llrintf
 check_mathfunc log2
 check_mathfunc log2f
 check_mathfunc lrint

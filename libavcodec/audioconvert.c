@@ -26,6 +26,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/libm.h"
 #include "avcodec.h"
 #include "audioconvert.h"
 
