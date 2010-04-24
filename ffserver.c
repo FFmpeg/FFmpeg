@@ -293,7 +293,8 @@ static int rtp_new_av_stream(HTTPContext *c,
 static const char *my_program_name;
 static const char *my_program_dir;
 
-static const char *config_filename;
+static const char *config_filename = "/etc/ffserver.conf";
+
 static int ffserver_debug;
 static int ffserver_daemon;
 static int no_launch;
@@ -4646,8 +4647,6 @@ int main(int argc, char **argv)
     av_register_all();
 
     show_banner();
-
-    config_filename = "/etc/ffserver.conf";
 
     my_program_name = argv[0];
     my_program_dir = getcwd(0, 0);
