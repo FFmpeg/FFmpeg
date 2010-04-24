@@ -110,18 +110,18 @@ Below is a description of the currently available video filters.
 
 @section crop
 
-Crop the input video to x:y:width:height.
+Crop the input video to @var{x}:@var{y}:@var{width}:@var{height}.
 
 @example
 ./ffmpeg -i in.avi -vfilters "crop=0:0:0:240" out.avi
 @end example
 
-``x'' and ``y'' specify the position of the top-left corner of the
+@var{x} and @var{y} specify the position of the top-left corner of the
 output (non-cropped) area.
 
-The default value of ``x'' and ``y'' is 0.
+The default value of @var{x} and @var{y} is 0.
 
-The ``width'' and ``height'' parameters specify the width and height
+The @var{width} and @var{height} parameters specify the width and height
 of the output (non-cropped) area.
 
 A value of 0 is interpreted as the maximum possible size contained in
@@ -137,7 +137,7 @@ will delimit the rectangle with the top-left corner placed at position
 100:100 and the right-bottom corner corresponding to the right-bottom
 corner of the input image.
 
-The default value of ``width'' and ``height'' is 0.
+The default value of @var{width} and @var{height} is 0.
 
 @section format
 
@@ -179,7 +179,7 @@ Pass the source unchanged to the output.
 
 @section scale
 
-Scale the input video to width:height and/or convert the image format.
+Scale the input video to @var{width}:@var{height} and/or convert the image format.
 
 For example the command:
 
@@ -193,14 +193,14 @@ If the input image format is different from the format requested by
 the next filter, the scale filter will convert the input to the
 requested format.
 
-If the value for ``width'' or ``height'' is 0, the respective input
+If the value for @var{width} or @var{height} is 0, the respective input
 size is used for the output.
 
-If the value for ``width'' or ``height'' is -1, the scale filter will
+If the value for @var{width} or @var{height} is -1, the scale filter will
 use, for the respective output size, a value that maintains the aspect
 ratio of the input image.
 
-The default value of ``width'' and ``height'' is 0.
+The default value of @var{width} and @var{height} is 0.
 
 @section slicify
 
@@ -288,10 +288,10 @@ Null video source, never return images. It is mainly useful as a
 template and to be employed in analysis / debugging tools.
 
 It accepts as optional parameter a string of the form
-``width:height'', where ``width'' and ``height'' specify the size of
+@var{width}:@var{height}, where @var{width} and @var{height} specify the size of
 the configured source.
 
-The default values of ``width'' and ``height'' are respectively 352
+The default values of @var{width} and @var{height} are respectively 352
 and 288 (corresponding to the CIF size format).
 
 @chapter Available video sinks
