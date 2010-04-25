@@ -582,7 +582,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     struct video_data *s = s1->priv_data;
     AVStream *st;
-    int width, height;
     int res;
     uint32_t desired_format, capabilities;
     enum CodecID codec_id;
@@ -591,9 +590,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_ERROR, "Wrong size (%dx%d)\n", ap->width, ap->height);
         return -1;
     }
-
-    width = ap->width;
-    height = ap->height;
 
     if(avcodec_check_dimensions(s1, ap->width, ap->height) < 0)
         return -1;
@@ -604,8 +600,8 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
-    s->width = width;
-    s->height = height;
+    s->width  = ap->width;
+    s->height = ap->height;
 
     capabilities = 0;
     s->fd = device_open(s1, &capabilities);
@@ -614,7 +610,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     av_log(s1, AV_LOG_INFO, "[%d]Capabilities: %x\n", s->fd, capabilities);
 
-    desired_format = device_try_init(s1, ap, &width, &height, &codec_id);
+    desired_format = device_try_init(s1, ap, &s->width, &s->height, &codec_id);
     if (desired_format == 0) {
         av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
                "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, ap->pix_fmt);
@@ -628,7 +624,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return AVERROR(EIO);
 
     st->codec->pix_fmt = fmt_v4l2ff(desired_format, codec_id);
-    s->frame_size = avpicture_get_size(st->codec->pix_fmt, width, height);
+    s->frame_size = avpicture_get_size(st->codec->pix_fmt, s->width, s->height);
     if (capabilities & V4L2_CAP_STREAMING) {
         s->io_method = io_mmap;
         res = mmap_init(s1);
@@ -648,8 +644,8 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = codec_id;
-    st->codec->width = width;
-    st->codec->height = height;
+    st->codec->width = s->width;
+    st->codec->height = s->height;
     st->codec->time_base.den = ap->time_base.den;
     st->codec->time_base.num = ap->time_base.num;
     st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
