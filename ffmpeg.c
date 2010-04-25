@@ -3287,7 +3287,7 @@ static void new_video_stream(AVFormatContext *oc)
     }
     nb_ocodecs++;
     if (video_language) {
-        av_metadata_set(&st->metadata, "language", video_language);
+        av_metadata_set2(&st->metadata, "language", video_language, 0);
         av_freep(&video_language);
     }
 
@@ -3361,7 +3361,7 @@ static void new_audio_stream(AVFormatContext *oc)
     nb_ocodecs++;
     audio_enc->time_base= (AVRational){1, audio_sample_rate};
     if (audio_language) {
-        av_metadata_set(&st->metadata, "language", audio_language);
+        av_metadata_set2(&st->metadata, "language", audio_language, 0);
         av_freep(&audio_language);
     }
 
@@ -3402,7 +3402,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
     nb_ocodecs++;
 
     if (subtitle_language) {
-        av_metadata_set(&st->metadata, "language", subtitle_language);
+        av_metadata_set2(&st->metadata, "language", subtitle_language, 0);
         av_freep(&subtitle_language);
     }
 
@@ -3533,8 +3533,8 @@ static void opt_output_file(const char *filename)
         oc->timestamp = rec_timestamp;
 
         for(; metadata_count>0; metadata_count--){
-            av_metadata_set(&oc->metadata, metadata[metadata_count-1].key,
-                                           metadata[metadata_count-1].value);
+            av_metadata_set2(&oc->metadata, metadata[metadata_count-1].key,
+                                            metadata[metadata_count-1].value, 0);
         }
         av_metadata_conv(oc, oc->oformat->metadata_conv, NULL);
     }

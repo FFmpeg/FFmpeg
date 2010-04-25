@@ -121,7 +121,7 @@ static void rm_read_metadata(AVFormatContext *s, int wide)
     for (i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
         int len = wide ? get_be16(s->pb) : get_byte(s->pb);
         get_strl(s->pb, buf, sizeof(buf), len);
-        av_metadata_set(&s->metadata, ff_rm_metadata[i], buf);
+        av_metadata_set2(&s->metadata, ff_rm_metadata[i], buf, 0);
     }
 }
 

@@ -452,7 +452,7 @@ static int decode_info_header(NUTContext *nut){
             else                      metadata= &s->metadata;
             if(metadata && strcasecmp(name,"Uses")
                && strcasecmp(name,"Depends") && strcasecmp(name,"Replaces"))
-                av_metadata_set(metadata, name, str_value);
+                av_metadata_set2(metadata, name, str_value, 0);
         }
     }
 

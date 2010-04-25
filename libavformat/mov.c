@@ -86,7 +86,7 @@ static int mov_metadata_trkn(MOVContext *c, ByteIOContext *pb, unsigned len)
 
     get_be16(pb); // unknown
     snprintf(buf, sizeof(buf), "%d", get_be16(pb));
-    av_metadata_set(&c->fc->metadata, "track", buf);
+    av_metadata_set2(&c->fc->metadata, "track", buf, 0);
 
     get_be16(pb); // total tracks
 
@@ -204,10 +204,10 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
             get_buffer(pb, str, str_size);
             str[str_size] = 0;
         }
-        av_metadata_set(&c->fc->metadata, key, str);
+        av_metadata_set2(&c->fc->metadata, key, str, 0);
         if (*language && strcmp(language, "und")) {
             snprintf(key2, sizeof(key2), "%s-%s", key, language);
-            av_metadata_set(&c->fc->metadata, key2, str);
+            av_metadata_set2(&c->fc->metadata, key2, str, 0);
         }
     }
 #ifdef DEBUG_METADATA
@@ -569,10 +569,10 @@ static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     if (strcmp(type, "qt  "))
         c->isom = 1;
     av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
-    av_metadata_set(&c->fc->metadata, "major_brand", type);
+    av_metadata_set2(&c->fc->metadata, "major_brand", type, 0);
     minor_ver = get_be32(pb); /* minor version */
     snprintf(minor_ver_str, sizeof(minor_ver_str), "%d", minor_ver);
-    av_metadata_set(&c->fc->metadata, "minor_version", minor_ver_str);
+    av_metadata_set2(&c->fc->metadata, "minor_version", minor_ver_str, 0);
 
     comp_brand_size = atom.size - 8;
     if (comp_brand_size < 0)
@@ -582,7 +582,7 @@ static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         return AVERROR(ENOMEM);
     get_buffer(pb, comp_brands_str, comp_brand_size);
     comp_brands_str[comp_brand_size] = 0;
-    av_metadata_set(&c->fc->metadata, "compatible_brands", comp_brands_str);
+    av_metadata_set2(&c->fc->metadata, "compatible_brands", comp_brands_str, 0);
     av_freep(&comp_brands_str);
 
     return 0;
@@ -637,7 +637,7 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     lang = get_be16(pb); /* language */
     if (ff_mov_lang_to_iso639(lang, language))
-        av_metadata_set(&st->metadata, "language", language);
+        av_metadata_set2(&st->metadata, "language", language, 0);
     get_be16(pb); /* quality */
 
     return 0;

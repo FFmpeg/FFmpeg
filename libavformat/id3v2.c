@@ -150,7 +150,7 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
         val = dst;
 
     if (val)
-        av_metadata_set(&s->metadata, key, val);
+        av_metadata_set2(&s->metadata, key, val, 0);
 }
 
 void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)

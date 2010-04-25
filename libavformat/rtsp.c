@@ -379,11 +379,11 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         }
         break;
     case 's':
-        av_metadata_set(&s->metadata, "title", p);
+        av_metadata_set2(&s->metadata, "title", p, 0);
         break;
     case 'i':
         if (s->nb_streams == 0) {
-            av_metadata_set(&s->metadata, "comment", p);
+            av_metadata_set2(&s->metadata, "comment", p, 0);
             break;
         }
         break;

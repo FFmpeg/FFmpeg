@@ -339,7 +339,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
                 break;
             *p++ = '\0';
             PRINT(("NSV NSVf INFO: %s='%s'\n", token, value));
-            av_metadata_set(&s->metadata, token, value);
+            av_metadata_set2(&s->metadata, token, value, 0);
         }
         av_free(strings);
     }

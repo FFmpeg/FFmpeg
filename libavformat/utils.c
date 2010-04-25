@@ -2544,7 +2544,7 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int6
 #if LIBAVFORMAT_VERSION_INT < (53<<16)
     av_free(chapter->title);
 #endif
-    av_metadata_set(&chapter->metadata, "title", title);
+    av_metadata_set2(&chapter->metadata, "title", title, 0);
     chapter->id    = id;
     chapter->time_base= time_base;
     chapter->start = start;

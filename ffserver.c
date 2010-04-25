@@ -2232,10 +2232,10 @@ static int http_prepare_data(HTTPContext *c)
     switch(c->state) {
     case HTTPSTATE_SEND_DATA_HEADER:
         memset(&c->fmt_ctx, 0, sizeof(c->fmt_ctx));
-        av_metadata_set(&c->fmt_ctx.metadata, "author"   ,c->stream->author);
-        av_metadata_set(&c->fmt_ctx.metadata, "comment"  ,c->stream->comment);
-        av_metadata_set(&c->fmt_ctx.metadata, "copyright",c->stream->copyright);
-        av_metadata_set(&c->fmt_ctx.metadata, "title"    ,c->stream->title);
+        av_metadata_set2(&c->fmt_ctx.metadata, "author"   , c->stream->author   , 0);
+        av_metadata_set2(&c->fmt_ctx.metadata, "comment"  , c->stream->comment  , 0);
+        av_metadata_set2(&c->fmt_ctx.metadata, "copyright", c->stream->copyright, 0);
+        av_metadata_set2(&c->fmt_ctx.metadata, "title"    , c->stream->title    , 0);
 
         for(i=0;i<c->stream->nb_streams;i++) {
             AVStream *st;
@@ -2939,8 +2939,8 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     if (avc == NULL) {
         return -1;
     }
-    av_metadata_set(&avc->metadata, "title",
-                    stream->title[0] ? stream->title : "No Title");
+    av_metadata_set2(&avc->metadata, "title",
+                     stream->title[0] ? stream->title : "No Title", 0);
     avc->nb_streams = stream->nb_streams;
     if (stream->is_multicast) {
         snprintf(avc->filename, 1024, "rtp://%s:%d?multicast=1?ttl=%d",

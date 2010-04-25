@@ -616,7 +616,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     const char primary_tag[3] = { rfc1766[0], rfc1766[1], '\0' }; // ignore country code if any
                     const char *iso6392 = av_convert_lang_to(primary_tag, AV_LANG_ISO639_2_BIBL);
                     if (iso6392)
-                        av_metadata_set(&st->metadata, "language", iso6392);
+                        av_metadata_set2(&st->metadata, "language", iso6392, 0);
                 }
             }
         }

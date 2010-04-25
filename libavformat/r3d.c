@@ -97,7 +97,7 @@ static int r3d_read_red1(AVFormatContext *s)
 
     get_buffer(s->pb, filename, 257);
     filename[sizeof(filename)-1] = 0;
-    av_metadata_set(&st->metadata, "filename", filename);
+    av_metadata_set2(&st->metadata, "filename", filename, 0);
 
     dprintf(s, "filename %s\n", filename);
     dprintf(s, "resolution %dx%d\n", st->codec->width, st->codec->height);

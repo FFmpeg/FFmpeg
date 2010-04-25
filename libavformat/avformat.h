@@ -145,8 +145,9 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
  * @param key tag key to add to m (will be av_strduped)
  * @param value tag value to add to m (will be av_strduped)
  * @return >= 0 on success otherwise an error code <0
+ * @deprecated Use av_metadata_set2() instead.
  */
-int av_metadata_set(AVMetadata **pm, const char *key, const char *value);
+attribute_deprecated int av_metadata_set(AVMetadata **pm, const char *key, const char *value);
 #endif
 
 /**

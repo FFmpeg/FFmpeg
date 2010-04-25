@@ -192,7 +192,7 @@ static void get_string(AVFormatContext *s, const char *key,
     *q = '\0';
 
     if (*str)
-        av_metadata_set(&s->metadata, key, str);
+        av_metadata_set2(&s->metadata, key, str, 0);
 }
 
 /**
@@ -217,7 +217,7 @@ static int parse_tag(AVFormatContext *s, const uint8_t *buf)
         av_metadata_set2(&s->metadata, "track", av_d2str(buf[126]), AV_METADATA_DONT_STRDUP_VAL);
     genre = buf[127];
     if (genre <= ID3v1_GENRE_MAX)
-        av_metadata_set(&s->metadata, "genre", ff_id3v1_genre_str[genre]);
+        av_metadata_set2(&s->metadata, "genre", ff_id3v1_genre_str[genre], 0);
     return 0;
 }
 

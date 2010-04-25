@@ -133,7 +133,7 @@ void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
                         break;
                     }
         }
-        av_metadata_set(&dst, key, mtag->value);
+        av_metadata_set2(&dst, key, mtag->value, 0);
     }
     av_metadata_free(pm);
     *pm = dst;
