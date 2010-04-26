@@ -53,7 +53,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
 #endif
     fd = open(filename, access, 0666);
     if (fd == -1)
-        return AVERROR(ENOENT);
+        return AVERROR(errno);
     h->priv_data = (void *) (intptr_t) fd;
     return 0;
 }
