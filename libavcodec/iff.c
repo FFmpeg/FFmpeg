@@ -87,27 +87,44 @@ static av_cold int decode_init(AVCodecContext *avctx)
 }
 
 /**
- * Decode interleaved plane buffer
+ * Decode interleaved plane buffer up to 8bpp
+ * @param dst Destination buffer
+ * @param buf Source buffer
+ * @param buf_size
+ * @param bps bits_per_coded_sample (must be <= 8)
+ * @param plane plane number to decode as
+ */
+static void decodeplane8(uint8_t *dst, const uint8_t *const buf, int buf_size, int bps, int plane)
+{
+    GetBitContext gb;
+    int i, b;
+    init_get_bits(&gb, buf, buf_size * 8);
+    for(i = 0; i < (buf_size * 8 + bps - 1) / bps; i++) {
+        for (b = 0; b < bps; b++) {
+            dst[ i*bps + b ] |= get_bits1(&gb) << plane;
+        }
+    }
+}
+
+/**
+ * Decode interleaved plane buffer up to 24bpp
  * @param dst Destination buffer
  * @param buf Source buffer
  * @param buf_size
  * @param bps bits_per_coded_sample
  * @param plane plane number to decode as
  */
-#define DECLARE_DECODEPLANE(suffix, type) \
-static void decodeplane##suffix(void *dst, const uint8_t *const buf, int buf_size, int bps, int plane) \
-{ \
-    GetBitContext gb; \
-    int i, b; \
-    init_get_bits(&gb, buf, buf_size * 8); \
-    for(i = 0; i < (buf_size * 8 + bps - 1) / bps; i++) { \
-        for (b = 0; b < bps; b++) { \
-            ((type *)dst)[ i*bps + b ] |= get_bits1(&gb) << plane; \
-        } \
-    } \
+static void decodeplane32(uint32_t *dst, const uint8_t *const buf, int buf_size, int bps, int plane)
+{
+    GetBitContext gb;
+    int i, b;
+    init_get_bits(&gb, buf, buf_size * 8);
+    for(i = 0; i < (buf_size * 8 + bps - 1) / bps; i++) {
+        for (b = 0; b < bps; b++) {
+            dst[ i*bps + b ] |= get_bits1(&gb) << plane;
+        }
+    }
 }
-DECLARE_DECODEPLANE(8, uint8_t)
-DECLARE_DECODEPLANE(32, uint32_t)
 
 static int decode_frame_ilbm(AVCodecContext *avctx,
                             void *data, int *data_size,
