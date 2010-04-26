@@ -2802,7 +2802,7 @@ check_deps $CONFIG_LIST       \
            $OUTDEV_LIST       \
            $PROTOCOL_LIST     \
 
-enabled asm || disable $ARCH_LIST $ARCH_EXT_LIST
+enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
 echo "install prefix            $prefix"
 echo "source path               $source_path"
