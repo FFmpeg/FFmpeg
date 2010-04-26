@@ -164,7 +164,7 @@ static int device_open(AVFormatContext *ctx, uint32_t *capabilities)
         av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s : %s\n",
                  ctx->filename, strerror(errno));
 
-        return -1;
+        return AVERROR(errno);
     }
 
     res = ioctl(fd, VIDIOC_QUERYCAP, &cap);
@@ -174,20 +174,20 @@ static int device_open(AVFormatContext *ctx, uint32_t *capabilities)
         av_log(ctx, AV_LOG_ERROR, "QUERYCAP not implemented, probably V4L device but not supporting V4L2\n");
         close(fd);
 
-        return -1;
+        return AVERROR(errno);
     }
     if (res < 0) {
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
                  strerror(errno));
         close(fd);
 
-        return -1;
+        return AVERROR(errno);
     }
     if ((cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) == 0) {
         av_log(ctx, AV_LOG_ERROR, "Not a video capture device\n");
         close(fd);
 
-        return -1;
+        return AVERROR(ENODEV);
     }
     *capabilities = cap.capabilities;
 
@@ -299,27 +299,27 @@ static int mmap_init(AVFormatContext *ctx)
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_REQBUFS)\n");
         }
 
-        return -1;
+        return AVERROR(errno);
     }
 
     if (req.count < 2) {
         av_log(ctx, AV_LOG_ERROR, "Insufficient buffer memory\n");
 
-        return -1;
+        return AVERROR(ENOMEM);
     }
     s->buffers = req.count;
     s->buf_start = av_malloc(sizeof(void *) * s->buffers);
     if (s->buf_start == NULL) {
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate buffer pointers\n");
 
-        return -1;
+        return AVERROR(ENOMEM);
     }
     s->buf_len = av_malloc(sizeof(unsigned int) * s->buffers);
     if (s->buf_len == NULL) {
         av_log(ctx, AV_LOG_ERROR, "Cannot allocate buffer sizes\n");
         av_free(s->buf_start);
 
-        return -1;
+        return AVERROR(ENOMEM);
     }
 
     for (i = 0; i < req.count; i++) {
@@ -333,7 +333,7 @@ static int mmap_init(AVFormatContext *ctx)
         if (res < 0) {
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYBUF)\n");
 
-            return -1;
+            return AVERROR(errno);
         }
 
         s->buf_len[i] = buf.length;
@@ -347,7 +347,7 @@ static int mmap_init(AVFormatContext *ctx)
         if (s->buf_start[i] == MAP_FAILED) {
             av_log(ctx, AV_LOG_ERROR, "mmap: %s\n", strerror(errno));
 
-            return -1;
+            return AVERROR(errno);
         }
     }
 
@@ -405,13 +405,13 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         }
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n", strerror(errno));
 
-        return -1;
+        return AVERROR(errno);
     }
     assert (buf.index < s->buffers);
     if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
         av_log(ctx, AV_LOG_ERROR, "The v4l2 frame is %d bytes, but %d bytes are expected\n", buf.bytesused, s->frame_size);
 
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* Image is at s->buff_start[buf.index] */
@@ -427,7 +427,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate a buffer descriptor\n");
         res = ioctl (s->fd, VIDIOC_QBUF, &buf);
 
-        return -1;
+        return AVERROR(ENOMEM);
     }
     buf_descriptor->fd = s->fd;
     buf_descriptor->index = buf.index;
@@ -459,7 +459,7 @@ static int mmap_start(AVFormatContext *ctx)
         if (res < 0) {
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", strerror(errno));
 
-            return -1;
+            return AVERROR(errno);
         }
     }
 
@@ -468,7 +468,7 @@ static int mmap_start(AVFormatContext *ctx)
     if (res < 0) {
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_STREAMON): %s\n", strerror(errno));
 
-        return -1;
+        return AVERROR(errno);
     }
 
     return 0;
@@ -588,11 +588,11 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     if (ap->width <= 0 || ap->height <= 0) {
         av_log(s1, AV_LOG_ERROR, "Wrong size (%dx%d)\n", ap->width, ap->height);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if(avcodec_check_dimensions(s1, ap->width, ap->height) < 0)
-        return -1;
+        return AVERROR(EINVAL);
 
     st = av_new_stream(s1, 0);
     if (!st) {
