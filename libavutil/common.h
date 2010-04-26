@@ -151,7 +151,7 @@ static inline av_const int16_t av_clip_int16(int a)
  */
 static inline av_const int32_t av_clipl_int32(int64_t a)
 {
-    if ((a+2147483648) & ~2147483647) return (a>>63) ^ 2147483647;
+    if ((a+0x80000000u) & ~UINT64_C(0xFFFFFFFF)) return (a>>63) ^ 0x7FFFFFFF;
     else                              return a;
 }
 
