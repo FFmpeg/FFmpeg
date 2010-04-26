@@ -3447,7 +3447,7 @@ static void opt_new_subtitle_stream(void)
 static void opt_output_file(const char *filename)
 {
     AVFormatContext *oc;
-    int use_video, use_audio, use_subtitle;
+    int err, use_video, use_audio, use_subtitle;
     int input_has_video, input_has_audio, input_has_subtitle;
     AVFormatParameters params, *ap = &params;
     AVOutputFormat *file_oformat;
@@ -3572,8 +3572,8 @@ static void opt_output_file(const char *filename)
         }
 
         /* open the file */
-        if (url_fopen(&oc->pb, filename, URL_WRONLY) < 0) {
-            fprintf(stderr, "Could not open '%s'\n", filename);
+        if ((err = url_fopen(&oc->pb, filename, URL_WRONLY)) < 0) {
+            print_error(filename, err);
             av_exit(1);
         }
     }
