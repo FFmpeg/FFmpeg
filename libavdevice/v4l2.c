@@ -586,14 +586,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     uint32_t desired_format, capabilities;
     enum CodecID codec_id;
 
-    if (ap->width <= 0 || ap->height <= 0) {
-        av_log(s1, AV_LOG_ERROR, "Wrong size (%dx%d)\n", ap->width, ap->height);
-        return AVERROR(EINVAL);
-    }
-
-    if(avcodec_check_dimensions(s1, ap->width, ap->height) < 0)
-        return AVERROR(EINVAL);
-
     st = av_new_stream(s1, 0);
     if (!st) {
         return AVERROR(ENOMEM);
@@ -610,7 +602,25 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     av_log(s1, AV_LOG_INFO, "[%d]Capabilities: %x\n", s->fd, capabilities);
 
+    if (!s->width && !s->height) {
+        struct v4l2_format fmt;
+
+        av_log(s1, AV_LOG_INFO, "Size value (%dx%d) unspecified, querying the device for the current settings\n",
+               s->width, s->height);
+        fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        if (ioctl(s->fd, VIDIOC_G_FMT, &fmt) < 0) {
+            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n", strerror(errno));
+            return AVERROR(errno);
+        }
+        s->width  = fmt.fmt.pix.width;
+        s->height = fmt.fmt.pix.height;
+        av_log(s1, AV_LOG_INFO, "Setting size to value %dx%d\n", s->width, s->height);
+    }
+
     desired_format = device_try_init(s1, ap, &s->width, &s->height, &codec_id);
+    if (avcodec_check_dimensions(s1, s->width, s->height) < 0)
+        return AVERROR(EINVAL);
+
     if (desired_format == 0) {
         av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
                "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, ap->pix_fmt);
