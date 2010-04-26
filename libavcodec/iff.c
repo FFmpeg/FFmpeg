@@ -141,21 +141,21 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
     }
 
     if (avctx->pix_fmt == PIX_FMT_PAL8) {
-    for(y = 0; y < avctx->height; y++ ) {
-        uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
-        memset(row, 0, avctx->width);
-        for (plane = 0; plane < avctx->bits_per_coded_sample && buf < buf_end; plane++) {
+        for(y = 0; y < avctx->height; y++ ) {
+            uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
+            memset(row, 0, avctx->width);
+            for (plane = 0; plane < avctx->bits_per_coded_sample && buf < buf_end; plane++) {
                 decodeplane8(row, buf, FFMIN(s->planesize, buf_end - buf), avctx->bits_per_coded_sample, plane);
                 buf += s->planesize;
             }
         }
-            } else { // PIX_FMT_BGR32
+    } else { // PIX_FMT_BGR32
         for(y = 0; y < avctx->height; y++ ) {
             uint8_t *row = &s->frame.data[0][y*s->frame.linesize[0]];
             memset(row, 0, avctx->width << 2);
             for (plane = 0; plane < avctx->bits_per_coded_sample && buf < buf_end; plane++) {
                 decodeplane32((uint32_t *) row, buf, FFMIN(s->planesize, buf_end - buf), avctx->bits_per_coded_sample, plane);
-            buf += s->planesize;
+                buf += s->planesize;
             }
         }
     }
@@ -182,29 +182,29 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
 
     if (avctx->codec_tag == MKTAG('I','L','B','M')) { //interleaved
         if (avctx->pix_fmt == PIX_FMT_PAL8) {
-    for(y = 0; y < avctx->height ; y++ ) {
-        uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
-            memset(row, 0, avctx->width);
-            for (plane = 0; plane < avctx->bits_per_coded_sample; plane++) {
-                for(x = 0; x < s->planesize && buf < buf_end; ) {
-                    int8_t value = *buf++;
-                    unsigned length;
-                    if (value >= 0) {
-                        length = value + 1;
-                        memcpy(s->planebuf + x, buf, FFMIN3(length, s->planesize - x, buf_end - buf));
-                        buf += length;
-                    } else if (value > -128) {
-                        length = -value + 1;
-                        memset(s->planebuf + x, *buf++, FFMIN(length, s->planesize - x));
-                    } else { //noop
-                        continue;
+            for(y = 0; y < avctx->height ; y++ ) {
+                uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
+                memset(row, 0, avctx->width);
+                for (plane = 0; plane < avctx->bits_per_coded_sample; plane++) {
+                    for(x = 0; x < s->planesize && buf < buf_end; ) {
+                        int8_t value = *buf++;
+                        unsigned length;
+                        if (value >= 0) {
+                            length = value + 1;
+                            memcpy(s->planebuf + x, buf, FFMIN3(length, s->planesize - x, buf_end - buf));
+                            buf += length;
+                        } else if (value > -128) {
+                            length = -value + 1;
+                            memset(s->planebuf + x, *buf++, FFMIN(length, s->planesize - x));
+                        } else { //noop
+                            continue;
+                        }
+                        x += length;
                     }
-                    x += length;
-                }
                     decodeplane8(row, s->planebuf, s->planesize, avctx->bits_per_coded_sample, plane);
                 }
             }
-                } else { //PIX_FMT_BGR32
+        } else { //PIX_FMT_BGR32
             for(y = 0; y < avctx->height ; y++ ) {
                 uint8_t *row = &s->frame.data[0][y*s->frame.linesize[0]];
                 memset(row, 0, avctx->width << 2);
@@ -228,9 +228,9 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
                 }
             }
         }
-        } else {
-            for(y = 0; y < avctx->height ; y++ ) {
-                uint8_t *row = &s->frame.data[0][y*s->frame.linesize[0]];
+    } else {
+        for(y = 0; y < avctx->height ; y++ ) {
+            uint8_t *row = &s->frame.data[0][y*s->frame.linesize[0]];
             for(x = 0; x < avctx->width && buf < buf_end; ) {
                 int8_t value = *buf++;
                 unsigned length;
