@@ -600,12 +600,12 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (s->fd < 0) {
         return AVERROR(EIO);
     }
-    av_log(s1, AV_LOG_INFO, "[%d]Capabilities: %x\n", s->fd, capabilities);
+    av_log(s1, AV_LOG_VERBOSE, "[%d]Capabilities: %x\n", s->fd, capabilities);
 
     if (!s->width && !s->height) {
         struct v4l2_format fmt;
 
-        av_log(s1, AV_LOG_INFO, "Querying the device for the current frame size\n");
+        av_log(s1, AV_LOG_VERBOSE, "Querying the device for the current frame size\n");
         fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         if (ioctl(s->fd, VIDIOC_G_FMT, &fmt) < 0) {
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n", strerror(errno));
@@ -613,7 +613,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         }
         s->width  = fmt.fmt.pix.width;
         s->height = fmt.fmt.pix.height;
-        av_log(s1, AV_LOG_INFO, "Setting frame size to %dx%d\n", s->width, s->height);
+        av_log(s1, AV_LOG_VERBOSE, "Setting frame size to %dx%d\n", s->width, s->height);
     }
 
     desired_format = device_try_init(s1, ap, &s->width, &s->height, &codec_id);
