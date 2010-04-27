@@ -114,7 +114,7 @@ static int iff_read_header(AVFormatContext *s,
 
     st = av_new_stream(s, 0);
     if (!st)
-      return AVERROR(ENOMEM);
+        return AVERROR(ENOMEM);
 
     st->codec->channels = 1;
     url_fskip(pb, 8);
@@ -136,8 +136,8 @@ static int iff_read_header(AVFormatContext *s,
             url_fskip(pb, 12);
             st->codec->sample_rate = get_be16(pb);
             if (data_size >= 16) {
-            url_fskip(pb, 1);
-            compression            = get_byte(pb);
+                url_fskip(pb, 1);
+                compression        = get_byte(pb);
             }
             break;
 
@@ -170,13 +170,13 @@ static int iff_read_header(AVFormatContext *s,
             url_fskip(pb, 4); // x, y offset
             st->codec->bits_per_coded_sample = get_byte(pb);
             if (data_size >= 11) {
-            url_fskip(pb, 1); // masking
-            compression                      = get_byte(pb);
+                url_fskip(pb, 1); // masking
+                compression                  = get_byte(pb);
             }
             if (data_size >= 16) {
-            url_fskip(pb, 3); // paddding, transparent
-            st->sample_aspect_ratio.num      = get_byte(pb);
-            st->sample_aspect_ratio.den      = get_byte(pb);
+                url_fskip(pb, 3); // paddding, transparent
+                st->sample_aspect_ratio.num  = get_byte(pb);
+                st->sample_aspect_ratio.den  = get_byte(pb);
             }
             break;
 
