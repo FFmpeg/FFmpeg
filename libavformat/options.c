@@ -66,7 +66,7 @@ static const AVOption options[]={
 #undef D
 #undef DEFAULT
 
-static const AVClass av_format_context_class = { "AVFormatContext", format_to_name, options };
+static const AVClass av_format_context_class = { "AVFormatContext", format_to_name, options, LIBAVUTIL_VERSION_INT };
 
 static void avformat_get_context_defaults(AVFormatContext *s)
 {

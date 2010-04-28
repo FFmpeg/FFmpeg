@@ -48,6 +48,14 @@ typedef struct {
      * @see av_set_default_options()
      */
     const struct AVOption *option;
+
+    /**
+     * LIBAVUTIL_VERSION with which this structure was created.
+     * This is used to allow fields to be added without requireing major
+     * version bumps everywhere.
+     */
+
+    int version;
 } AVClass;
 
 /* av_log API */

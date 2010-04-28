@@ -41,7 +41,7 @@ static const char *urlcontext_to_name(void *ptr)
 }
 static const AVOption options[] = {{NULL}};
 static const AVClass urlcontext_class =
-        { "URLContext", urlcontext_to_name, options };
+        { "URLContext", urlcontext_to_name, options, LIBAVUTIL_VERSION_INT };
 /*@}*/
 #endif
 
