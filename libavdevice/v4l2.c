@@ -616,9 +616,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
 
     desired_format = device_try_init(s1, ap, &s->width, &s->height, &codec_id);
-    if (avcodec_check_dimensions(s1, s->width, s->height) < 0)
-        return AVERROR(EINVAL);
-
     if (desired_format == 0) {
         av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
                "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, ap->pix_fmt);
@@ -626,6 +623,8 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
         return AVERROR(EIO);
     }
+    if (avcodec_check_dimensions(s1, s->width, s->height) < 0)
+        return AVERROR(EINVAL);
     s->frame_format = desired_format;
 
     if( v4l2_set_parameters( s1, ap ) < 0 )
