@@ -51,7 +51,7 @@ typedef struct {
 
     /**
      * LIBAVUTIL_VERSION with which this structure was created.
-     * This is used to allow fields to be added without requireing major
+     * This is used to allow fields to be added without requiring major
      * version bumps everywhere.
      */
 
