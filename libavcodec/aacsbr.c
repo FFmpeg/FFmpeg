@@ -519,6 +519,15 @@ static int sbr_hf_calc_npatches(AACContext *ac, SpectralBandReplication *sbr)
             odd = (sb + sbr->k[0]) & 1;
         }
 
+        // Requirements (14496-3 sp04 p205) sets the maximum number of patches to 5.
+        // After this check the final number of patches can still be six which is
+        // illegal however the Coding Technologies decoder check stream has a final
+        // count of 6 patches
+        if (sbr->num_patches > 5) {
+            av_log(ac->avccontext, AV_LOG_ERROR, "Too many patches: %d\n", sbr->num_patches);
+            return -1;
+        }
+
         sbr->patch_num_subbands[sbr->num_patches]  = FFMAX(sb - usb, 0);
         sbr->patch_start_subband[sbr->num_patches] = sbr->k[0] - odd - sbr->patch_num_subbands[sbr->num_patches];
 
@@ -535,13 +544,6 @@ static int sbr_hf_calc_npatches(AACContext *ac, SpectralBandReplication *sbr)
 
     if (sbr->patch_num_subbands[sbr->num_patches-1] < 3 && sbr->num_patches > 1)
         sbr->num_patches--;
-
-    // Requirements (14496-3 sp04 p205) sets the maximum number of patches to 5
-    // However the Coding Technologies decoder check uses 6 patches
-    if (sbr->num_patches > 6) {
-        av_log(ac->avccontext, AV_LOG_ERROR, "Too many patches: %d\n", sbr->num_patches);
-        return -1;
-    }
 
     return 0;
 }
