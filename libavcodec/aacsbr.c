@@ -720,6 +720,13 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         return -1;
     }
 
+    for (i = 1; i <= ch_data->bs_num_env; i++) {
+        if (ch_data->t_env[i-1] > ch_data->t_env[i]) {
+            av_log(ac->avccontext, AV_LOG_ERROR, "Non monotone time borders\n");
+            return -1;
+        }
+    }
+
     ch_data->bs_num_noise = (ch_data->bs_num_env > 1) + 1;
 
     ch_data->t_q[0]                     = ch_data->t_env[0];
