@@ -481,19 +481,6 @@ static void vp6_parse_coeff(VP56Context *s)
     }
 }
 
-static int vp6_adjust(int v, int t)
-{
-    int V = v, s = v >> 31;
-    V ^= s;
-    V -= s;
-    if (V-t-1 >= (unsigned)(t-1))
-        return v;
-    V = 2*t - V;
-    V += s;
-    V ^= s;
-    return V;
-}
-
 static int vp6_block_variance(uint8_t *src, int stride)
 {
     int sum = 0, square_sum = 0;
@@ -592,7 +579,6 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
                      avctx->codec->id == CODEC_ID_VP6A);
     s->vp56_coord_div = vp6_coord_div;
     s->parse_vector_adjustment = vp6_parse_vector_adjustment;
-    s->adjust = vp6_adjust;
     s->filter = vp6_filter;
     s->default_models_init = vp6_default_models_init;
     s->parse_vector_models = vp6_parse_vector_models;

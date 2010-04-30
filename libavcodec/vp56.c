@@ -300,27 +300,12 @@ static void vp56_add_predictors_dc(VP56Context *s, VP56Frame ref_frame)
     }
 }
 
-static void vp56_edge_filter(VP56Context *s, uint8_t *yuv,
-                             int pix_inc, int line_inc, int t)
-{
-    int pix2_inc = 2 * pix_inc;
-    int i, v;
-
-    for (i=0; i<12; i++) {
-        v = (yuv[-pix2_inc] + 3*(yuv[0]-yuv[-pix_inc]) - yuv[pix_inc] + 4) >>3;
-        v = s->adjust(v, t);
-        yuv[-pix_inc] = av_clip_uint8(yuv[-pix_inc] + v);
-        yuv[0] = av_clip_uint8(yuv[0] - v);
-        yuv += line_inc;
-    }
-}
-
 static void vp56_deblock_filter(VP56Context *s, uint8_t *yuv,
                                 int stride, int dx, int dy)
 {
     int t = vp56_filter_threshold[s->quantizer];
-    if (dx)  vp56_edge_filter(s, yuv +         10-dx ,      1, stride, t);
-    if (dy)  vp56_edge_filter(s, yuv + stride*(10-dy), stride,      1, t);
+    if (dx)  s->vp56dsp.edge_filter_hor(yuv +         10-dx , stride, t);
+    if (dy)  s->vp56dsp.edge_filter_ver(yuv + stride*(10-dy), stride, t);
 }
 
 static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
@@ -665,6 +650,7 @@ av_cold void vp56_init(AVCodecContext *avctx, int flip, int has_alpha)
     if (avctx->idct_algo == FF_IDCT_AUTO)
         avctx->idct_algo = FF_IDCT_VP3;
     dsputil_init(&s->dsp, avctx);
+    ff_vp56dsp_init(&s->vp56dsp, avctx->codec->id);
     ff_init_scantable(s->dsp.idct_permutation, &s->scantable,ff_zigzag_direct);
 
     for (i=0; i<4; i++)

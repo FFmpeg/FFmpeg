@@ -69,23 +69,6 @@ static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
     return 1;
 }
 
-/* Gives very similar result than the vp6 version except in a few cases */
-static int vp5_adjust(int v, int t)
-{
-    int s2, s1 = v >> 31;
-    v ^= s1;
-    v -= s1;
-    v *= v < 2*t;
-    v -= t;
-    s2 = v >> 31;
-    v ^= s2;
-    v -= s2;
-    v = t - v;
-    v += s1;
-    v ^= s1;
-    return v;
-}
-
 static void vp5_parse_vector_adjustment(VP56Context *s, VP56mv *vect)
 {
     VP56RangeCoder *c = &s->c;
@@ -274,7 +257,6 @@ static av_cold int vp5_decode_init(AVCodecContext *avctx)
     vp56_init(avctx, 1, 0);
     s->vp56_coord_div = vp5_coord_div;
     s->parse_vector_adjustment = vp5_parse_vector_adjustment;
-    s->adjust = vp5_adjust;
     s->parse_coeff = vp5_parse_coeff;
     s->default_models_init = vp5_default_models_init;
     s->parse_vector_models = vp5_parse_vector_models;
