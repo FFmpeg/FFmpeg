@@ -18,17 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VP56DSP_H
-#define AVCODEC_VP56DSP_H
-
 #include <stdint.h>
+#include "libavcodec/avcodec.h"
+#include "libavcodec/vp56dsp.h"
 
-typedef struct VP56DSPContext {
-    void (*edge_filter_hor)(uint8_t *yuv, int stride, int t);
-    void (*edge_filter_ver)(uint8_t *yuv, int stride, int t);
-} VP56DSPContext;
+void ff_vp6_edge_filter_hor_neon(uint8_t *yuv, int stride, int t);
+void ff_vp6_edge_filter_ver_neon(uint8_t *yuv, int stride, int t);
 
-void ff_vp56dsp_init(VP56DSPContext *s, enum CodecID codec);
-void ff_vp56dsp_init_arm(VP56DSPContext *s, enum CodecID codec);
-
-#endif /* AVCODEC_VP56DSP_H */
+void ff_vp56dsp_init_arm(VP56DSPContext *s, enum CodecID codec)
+{
+    if (codec != CODEC_ID_VP5 && HAVE_NEON) {
+        s->edge_filter_hor = ff_vp6_edge_filter_hor_neon;
+        s->edge_filter_ver = ff_vp6_edge_filter_ver_neon;
+    }
+}

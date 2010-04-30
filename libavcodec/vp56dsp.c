@@ -83,4 +83,6 @@ void ff_vp56dsp_init(VP56DSPContext *s, enum CodecID codec)
         s->edge_filter_hor = vp6_edge_filter_hor;
         s->edge_filter_ver = vp6_edge_filter_ver;
     }
+
+    if (ARCH_ARM) ff_vp56dsp_init_arm(s, codec);
 }
