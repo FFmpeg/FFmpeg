@@ -498,6 +498,9 @@ static void choose_sample_rate(AVStream *st, AVCodec *codec)
                 best= *p;
             }
         }
+        if(best_dist){
+            av_log(st->codec, AV_LOG_WARNING, "Requested sampling rate unsupported using closest supported (%d)\n", best);
+        }
         st->codec->sample_rate= best;
     }
 }
