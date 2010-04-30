@@ -104,8 +104,7 @@ Codecs:
   8bps.c                                Roberto Togni
   8svx.c                                Jaikrishnan Menon
   aasc.c                                Kostya Shishkov
-  aac.[ch], aactab.[ch], aacdectab.h    Robert Swain
-  aacenc.* aaccoder.* aacpsy.*          Alex Converse
+  aac*, sbr.h                           Alex Converse
   ac3*                                  Justin Ruggles
   alacenc.c                             Jaikrishnan Menon
   alsdec.c                              Thilo Borgmann
