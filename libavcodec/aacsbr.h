@@ -42,10 +42,8 @@ av_cold void ff_aac_sbr_ctx_close(SpectralBandReplication *sbr);
 /** Decode one SBR element. */
 int ff_decode_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
                             GetBitContext *gb, int crc, int cnt, int id_aac);
-/** Dequantized all channels in one SBR element. */
-void ff_sbr_dequant(AACContext *ac, SpectralBandReplication *sbr, int id_aac);
-/** Apply dequantized SBR to a single AAC channel. */
-void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int ch,
-                  const float* in, float* out);
+/** Apply one SBR element to one AAC element. */
+void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
+                  float* L, float *R);
 
 #endif /* AVCODEC_AACSBR_H */

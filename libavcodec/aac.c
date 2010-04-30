@@ -1892,15 +1892,12 @@ static void spectral_to_sample(AACContext *ac)
                     apply_channel_coupling(ac, che, type, i, BETWEEN_TNS_AND_IMDCT, apply_dependent_coupling);
                 if (type != TYPE_CCE || che->coup.coupling_point == AFTER_IMDCT) {
                     imdct_and_windowing(ac, &che->ch[0], imdct_bias);
-                    if (ac->m4ac.sbr > 0) {
-                        ff_sbr_dequant(ac, &che->sbr, type == TYPE_CPE ? TYPE_CPE : TYPE_SCE);
-                        ff_sbr_apply(ac, &che->sbr, 0, che->ch[0].ret, che->ch[0].ret);
-                    }
-                }
                 if (type == TYPE_CPE) {
                     imdct_and_windowing(ac, &che->ch[1], imdct_bias);
-                    if (ac->m4ac.sbr > 0)
-                        ff_sbr_apply(ac, &che->sbr, 1, che->ch[1].ret, che->ch[1].ret);
+                }
+                    if (ac->m4ac.sbr > 0) {
+                        ff_sbr_apply(ac, &che->sbr, type, che->ch[0].ret, che->ch[1].ret);
+                    }
                 }
                 if (type <= TYPE_CCE)
                     apply_channel_coupling(ac, che, type, i, AFTER_IMDCT, apply_independent_coupling);
