@@ -174,7 +174,7 @@ static void sbr_make_f_tablelim(SpectralBandReplication *sbr)
                                                1.18509277094158210129f,   //2^(0.49/2)
                                                1.11987160404675912501f }; //2^(0.49/3)
         const float lim_bands_per_octave_warped = bands_warped[sbr->bs_limiter_bands - 1];
-        int16_t patch_borders[5];
+        int16_t patch_borders[7];
         uint16_t *in = sbr->f_tablelim + 1, *out = sbr->f_tablelim;
 
         patch_borders[0] = sbr->kx[1];
