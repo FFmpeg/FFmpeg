@@ -892,9 +892,10 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened);
  *
  * @param is_opened Whether the file is already opened; determines whether
  *                  demuxers with or without AVFMT_NOFILE are probed.
- * @param score_max minimum score required to accept a detection, set to actual
- *                  detection score afterwards.
- *                  If the score is < AVPROBE_SCORE_MAX / 4 it is recommended
+ * @param score_max A probe score larger that this is required to accept a
+ *                  detection, the variable is set to the actual detection
+ *                  score afterwards.
+ *                  If the score is <= AVPROBE_SCORE_MAX / 4 it is recommended
  *                  to retry with a larger probe buffer.
  */
 AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max);
