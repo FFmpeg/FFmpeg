@@ -153,7 +153,7 @@ static int device_open(AVFormatContext *ctx, uint32_t *capabilities)
 {
     struct v4l2_capability cap;
     int fd;
-    int res;
+    int res, err;
     int flags = O_RDWR;
 
     if (ctx->flags & AVFMT_FLAG_NONBLOCK) {
@@ -169,18 +169,18 @@ static int device_open(AVFormatContext *ctx, uint32_t *capabilities)
 
     res = ioctl(fd, VIDIOC_QUERYCAP, &cap);
     // ENOIOCTLCMD definition only availble on __KERNEL__
-    if (res < 0 && errno == 515) {
+    if (res < 0 && ((err = errno) == 515)) {
         av_log(ctx, AV_LOG_ERROR, "QUERYCAP not implemented, probably V4L device but not supporting V4L2\n");
         close(fd);
 
-        return AVERROR(errno);
+        return AVERROR(515);
     }
     if (res < 0) {
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
                  strerror(errno));
         close(fd);
 
-        return AVERROR(errno);
+        return AVERROR(err);
     }
     if ((cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) == 0) {
         av_log(ctx, AV_LOG_ERROR, "Not a video capture device\n");
