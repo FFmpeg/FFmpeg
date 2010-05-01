@@ -169,6 +169,7 @@ int main(int argc, char *argv[])
 
     if (atom_type != MOOV_ATOM) {
         printf ("last atom in file was not a moov atom\n");
+        free(ftyp_atom);
         fclose(infile);
         return 0;
     }
@@ -182,12 +183,14 @@ int main(int argc, char *argv[])
     if (!moov_atom) {
         printf ("could not allocate %"PRIu64" byte for moov atom\n",
             atom_size);
+        free(ftyp_atom);
         fclose(infile);
         return 1;
     }
     if (fread(moov_atom, atom_size, 1, infile) != 1) {
         perror(argv[1]);
         free(moov_atom);
+        free(ftyp_atom);
         fclose(infile);
         return 1;
     }
@@ -197,6 +200,7 @@ int main(int argc, char *argv[])
     if (BE_32(&moov_atom[12]) == CMOV_ATOM) {
         printf ("this utility does not support compressed moov atoms yet\n");
         free(moov_atom);
+        free(ftyp_atom);
         fclose(infile);
         return 1;
     }
@@ -213,6 +217,7 @@ int main(int argc, char *argv[])
             if (i + atom_size - 4 > moov_atom_size) {
                 printf (" bad atom size\n");
                 free(moov_atom);
+                free(ftyp_atom);
                 return 1;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
@@ -231,6 +236,7 @@ int main(int argc, char *argv[])
             if (i + atom_size - 4 > moov_atom_size) {
                 printf (" bad atom size\n");
                 free(moov_atom);
+                free(ftyp_atom);
                 return 1;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
@@ -255,6 +261,7 @@ int main(int argc, char *argv[])
     if (!infile) {
         perror(argv[1]);
         free(moov_atom);
+        free(ftyp_atom);
         return 1;
     }
 
@@ -268,6 +275,7 @@ int main(int argc, char *argv[])
         perror(argv[2]);
         fclose(outfile);
         free(moov_atom);
+        free(ftyp_atom);
         return 1;
     }
 
