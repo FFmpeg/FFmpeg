@@ -278,7 +278,7 @@ typedef struct {
                                   ///< aligned buffer for LPC tilting
     DECLARE_ALIGNED(16, float, denoise_coeffs_pf)[0x80];
                                   ///< aligned buffer for denoise coefficients
-    DECLARE_ALIGNED(16, float, synth_filter_out_buf)[80 + MAX_LSPS_ALIGN16];
+    DECLARE_ALIGNED(16, float, synth_filter_out_buf)[0x80 + MAX_LSPS_ALIGN16];
                                   ///< aligned buffer for postfilter speech
                                   ///< synthesis
     /**
