@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
     fclose(infile);
     fclose(outfile);
     free(moov_atom);
-        free(ftyp_atom);
+    free(ftyp_atom);
 
     return 0;
 
@@ -318,6 +318,6 @@ error_out:
     fclose(infile);
     fclose(outfile);
     free(moov_atom);
-        free(ftyp_atom);
+    free(ftyp_atom);
     return 1;
 }
