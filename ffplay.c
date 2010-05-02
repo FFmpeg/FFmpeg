@@ -1357,9 +1357,7 @@ static void alloc_picture(void *opaque)
 static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t pos)
 {
     VideoPicture *vp;
-#if CONFIG_AVFILTER
-    AVPicture pict_src;
-#endif
+
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
 
@@ -1429,16 +1427,8 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         pict.linesize[2] = vp->bmp->pitches[1];
 
 #if CONFIG_AVFILTER
-        pict_src.data[0] = src_frame->data[0];
-        pict_src.data[1] = src_frame->data[1];
-        pict_src.data[2] = src_frame->data[2];
-
-        pict_src.linesize[0] = src_frame->linesize[0];
-        pict_src.linesize[1] = src_frame->linesize[1];
-        pict_src.linesize[2] = src_frame->linesize[2];
-
         //FIXME use direct rendering
-        av_picture_copy(&pict, &pict_src,
+        av_picture_copy(&pict, (AVPicture *)src_frame,
                         vp->pix_fmt, vp->width, vp->height);
 #else
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
