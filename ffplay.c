@@ -771,11 +771,7 @@ static void video_image_display(VideoState *is)
 
 static inline int compute_mod(int a, int b)
 {
-    a = a % b;
-    if (a >= 0)
-        return a;
-    else
-        return a + b;
+    return a < 0 ? a%b + b : a%b;
 }
 
 static void video_audio_display(VideoState *s)
