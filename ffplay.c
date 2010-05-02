@@ -1478,7 +1478,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
  * compute the exact PTS for the picture if it is omitted in the stream
  * @param pts1 the dts of the pkt / pts of the frame
  */
-static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
+static int output_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
 {
     double frame_delay, pts;
 
@@ -1859,9 +1859,9 @@ static int video_thread(void *arg)
         pts = pts_int*av_q2d(is->video_st->time_base);
 
 #if CONFIG_AVFILTER
-        ret = output_picture2(is, frame, pts, pos);
+        ret = output_picture(is, frame, pts, pos);
 #else
-        ret = output_picture2(is, frame, pts,  pkt.pos);
+        ret = output_picture(is, frame, pts,  pkt.pos);
         av_free_packet(&pkt);
 #endif
         if (ret < 0)
