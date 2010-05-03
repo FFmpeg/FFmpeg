@@ -1731,6 +1731,7 @@ elif $cc --version 2>/dev/null | grep -q Intel; then
     AS_DEPFLAGS='-MMD'
     speed_cflags='-O3'
     size_cflags='-Os'
+    noopt_cflags='-O1'
 elif $cc -v 2>&1 | grep -q xlc; then
     cc_type=xlc
     cc_version="AV_STRINGIFY(__IBMC__)"
@@ -2738,6 +2739,8 @@ if enabled small; then
     optimizations="small"
 elif enabled optimizations; then
     add_cflags $speed_cflags
+else
+    add_cflags $noopt_cflags
 fi
 check_cflags -fno-math-errno
 check_cflags -fno-signed-zeros
