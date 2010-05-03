@@ -1750,15 +1750,15 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
         }
 
         /* synthesis */
-        sbr_x_gen(sbr, sbr->X, sbr->X_low, sbr->data[ch].Y, ch);
+        sbr_x_gen(sbr, sbr->X[ch], sbr->X_low, sbr->data[ch].Y, ch);
     }
-    sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, L, sbr->X, sbr->qmf_filter_scratch,
+    sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, L, sbr->X[0], sbr->qmf_filter_scratch,
                       sbr->data[0].synthesis_filterbank_samples,
                       &sbr->data[0].synthesis_filterbank_samples_offset,
                       downsampled,
                       ac->add_bias, -1024 * ac->sf_scale);
     if (nch == 2)
-        sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, R, sbr->X, sbr->qmf_filter_scratch,
+        sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, R, sbr->X[1], sbr->qmf_filter_scratch,
                           sbr->data[1].synthesis_filterbank_samples,
                           &sbr->data[1].synthesis_filterbank_samples_offset,
                           downsampled,

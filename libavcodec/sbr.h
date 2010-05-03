@@ -157,7 +157,7 @@ typedef struct {
     ///QMF output of the HF generator
     float              X_high[64][40][2];
     ///QMF values of the reconstructed signal
-    DECLARE_ALIGNED(16, float, X)[2][32][64];
+    DECLARE_ALIGNED(16, float, X)[2][2][32][64];
     ///Zeroth coefficient used to filter the subband signals
     float              alpha0[64][2];
     ///First coefficient used to filter the subband signals
