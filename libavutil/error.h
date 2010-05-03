@@ -60,7 +60,8 @@
 /**
  * Puts a description of the AVERROR code errnum in errbuf.
  * In case of failure the global variable errno is set to indicate the
- * error.
+ * error. Even in case of failure av_strerror() will print a generic
+ * error message indicating the errnum provided to errbuf.
  *
  * @param errbuf_size the size in bytes of errbuf
  * @return 0 on success, a negative value otherwise
