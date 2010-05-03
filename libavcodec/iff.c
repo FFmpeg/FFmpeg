@@ -32,7 +32,7 @@
 
 typedef struct {
     AVFrame frame;
-    unsigned planesize;
+    int planesize;
     uint8_t * planebuf;
 } IffContext;
 
@@ -41,7 +41,7 @@ typedef struct {
  */
 int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
 {
-    unsigned count, i;
+    int count, i;
 
     if (avctx->bits_per_coded_sample > 8) {
         av_log(avctx, AV_LOG_ERROR, "bit_per_coded_sample > 8 not supported\n");
@@ -98,8 +98,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static void decodeplane8(uint8_t *dst, const uint8_t *const buf, int buf_size, int bps, int plane)
 {
     GetBitContext gb;
-    unsigned int i;
-    const unsigned b = (buf_size * 8) + bps - 1;
+    int i;
+    const int b = (buf_size * 8) + bps - 1;
     init_get_bits(&gb, buf, buf_size * 8);
     for(i = 0; i < b; i++) {
         dst[i] |= get_bits1(&gb) << plane;
@@ -117,8 +117,8 @@ static void decodeplane8(uint8_t *dst, const uint8_t *const buf, int buf_size, i
 static void decodeplane32(uint32_t *dst, const uint8_t *const buf, int buf_size, int bps, int plane)
 {
     GetBitContext gb;
-    unsigned i;
-    const unsigned b = (buf_size * 8) + bps - 1;
+    int i;
+    const int b = (buf_size * 8) + bps - 1;
     init_get_bits(&gb, buf, buf_size * 8);
     for(i = 0; i < b; i++) {
         dst[i] |= get_bits1(&gb) << plane;
@@ -131,9 +131,9 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
 {
     IffContext *s = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
-    unsigned buf_size = avpkt->size;
+    int buf_size = avpkt->size;
     const uint8_t *buf_end = buf+buf_size;
-    unsigned y, plane;
+    int y, plane;
 
     if (avctx->reget_buffer(avctx, &s->frame) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
@@ -171,9 +171,9 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
 {
     IffContext *s = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
-    unsigned buf_size = avpkt->size;
+    int buf_size = avpkt->size;
     const uint8_t *buf_end = buf+buf_size;
-    unsigned y, plane, x;
+    int y, plane, x;
 
     if (avctx->reget_buffer(avctx, &s->frame) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
