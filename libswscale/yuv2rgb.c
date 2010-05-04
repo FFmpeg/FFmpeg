@@ -543,7 +543,7 @@ CLOSEYUV2RGBFUNC(1)
 SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
 {
     SwsFunc t = NULL;
-#if HAVE_MMX && CONFIG_GPL
+#if HAVE_MMX
      t = ff_yuv2rgb_init_mmx(c);
 #endif
 #if HAVE_VIS

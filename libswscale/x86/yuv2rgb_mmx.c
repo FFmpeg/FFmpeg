@@ -49,14 +49,22 @@ DECLARE_ASM_CONST(8, uint64_t, mmx_grnmask) = 0xfcfcfcfcfcfcfcfcULL;
 #define HAVE_MMX2 0
 #define HAVE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX
+#if CONFIG_GPL
 #include "yuv2rgb_template.c"
+#else
+#include "yuv2rgb_template2.c"
+#endif
 
 //MMX2 versions
 #undef RENAME
 #undef HAVE_MMX2
 #define HAVE_MMX2 1
 #define RENAME(a) a ## _MMX2
+#if CONFIG_GPL
 #include "yuv2rgb_template.c"
+#else
+#include "yuv2rgb_template2.c"
+#endif
 
 SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
 {
