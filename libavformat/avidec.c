@@ -887,7 +887,7 @@ resync:
             if(   (st->discard >= AVDISCARD_DEFAULT && size==0)
                /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & AV_PKT_FLAG_KEY))*/ //FIXME needs a little reordering
                || st->discard >= AVDISCARD_ALL){
-                if(ast->sample_size) ast->frame_offset += pkt->size;
+                if(ast->sample_size) ast->frame_offset += size;
                 else                 ast->frame_offset++;
                 url_fskip(pb, size);
                 goto resync;
