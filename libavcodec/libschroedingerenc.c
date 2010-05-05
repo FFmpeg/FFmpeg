@@ -164,17 +164,16 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
                                              "rate_control",
                                              SCHRO_ENCODER_RATE_CONTROL_LOSSLESS);
         } else {
-            int noise_threshold;
+            int quality;
             schro_encoder_setting_set_double(p_schro_params->encoder,
                                              "rate_control",
-                                             SCHRO_ENCODER_RATE_CONTROL_CONSTANT_NOISE_THRESHOLD);
+                                             SCHRO_ENCODER_RATE_CONTROL_CONSTANT_QUALITY);
 
-            noise_threshold = avccontext->global_quality / FF_QP2LAMBDA;
-            if (noise_threshold > 100)
-                noise_threshold = 100;
+            quality = avccontext->global_quality / FF_QP2LAMBDA;
+            if (quality > 10)
+                quality = 10;
             schro_encoder_setting_set_double(p_schro_params->encoder,
-                                             "noise_threshold",
-                                             noise_threshold);
+                                             "quality", quality);
         }
     } else {
         schro_encoder_setting_set_double(p_schro_params->encoder,
