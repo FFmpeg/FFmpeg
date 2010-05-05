@@ -292,6 +292,7 @@ void set_context_opts(void *ctx, void *opts_ctx, int flags)
 void print_error(const char *filename, int err)
 {
     char errbuf[128];
+    const char *errbuf_ptr = errbuf;
 
     switch(err) {
 #if CONFIG_NETWORK
@@ -300,8 +301,9 @@ void print_error(const char *filename, int err)
         break;
 #endif
     default:
-        av_strerror(err, errbuf, sizeof(errbuf));
-        fprintf(stderr, "%s: %s\n", filename, errbuf);
+        if (av_strerror(err, errbuf, sizeof(errbuf)) < 0)
+            errbuf_ptr = strerror(AVUNERROR(err));
+        fprintf(stderr, "%s: %s\n", filename, errbuf_ptr);
     }
 }
 
