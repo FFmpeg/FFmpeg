@@ -194,6 +194,9 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
         schro_encoder_setting_set_double(p_schro_params->encoder,
                                          "interlaced_coding", 1);
 
+    schro_encoder_setting_set_double(p_schro_params->encoder, "open_gop",
+                                     !(avccontext->flags & CODEC_FLAG_CLOSED_GOP));
+
     /* FIXME: Signal range hardcoded to 8-bit data until both libschroedinger
      * and libdirac support other bit-depth data. */
     schro_video_format_set_std_signal_range(p_schro_params->format,
