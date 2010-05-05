@@ -92,6 +92,25 @@ static void interleave_stereo(const uint8_t *src, uint8_t *dest, int size)
     }
 }
 
+/* Metadata string read */
+static int get_metadata(AVFormatContext *s,
+                        const char *const tag,
+                        const unsigned data_size)
+{
+    uint8_t *buf = ((data_size + 1) == 0) ? NULL : av_malloc(data_size + 1);
+
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    if (get_buffer(s->pb, buf, data_size) < 0) {
+        av_free(buf);
+        return AVERROR(EIO);
+    }
+    buf[data_size] = 0;
+    av_metadata_set2(&s->metadata, tag, buf, AV_METADATA_DONT_STRDUP_VAL);
+    return 0;
+}
+
 static int iff_probe(AVProbeData *p)
 {
     const uint8_t *d = p->buf;
@@ -110,7 +129,6 @@ static int iff_read_header(AVFormatContext *s,
     AVStream *st;
     uint32_t chunk_id, data_size;
     int compression = -1;
-    char *buf;
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -123,6 +141,8 @@ static int iff_read_header(AVFormatContext *s,
 
     while(!url_feof(pb)) {
         uint64_t orig_pos;
+        int res;
+        const char *metadata_tag = NULL;
         chunk_id = get_le32(pb);
         data_size = get_be32(pb);
         orig_pos = url_ftell(pb);
@@ -181,15 +201,29 @@ static int iff_read_header(AVFormatContext *s,
             break;
 
         case ID_ANNO:
-            buf = av_malloc(data_size + 1);
-            if (!buf)
-                break;
-            get_buffer(pb, buf, data_size);
-            buf[data_size] = 0;
-            av_metadata_set2(&s->metadata, "comment", buf, AV_METADATA_DONT_STRDUP_VAL);
+        case ID_TEXT:
+            metadata_tag = "comment";
+            break;
+
+        case ID_AUTH:
+            metadata_tag = "artist";
+            break;
+
+        case ID_COPYRIGHT:
+            metadata_tag = "copyright";
+            break;
+
+        case ID_NAME:
+            metadata_tag = "title";
             break;
         }
 
+        if (metadata_tag) {
+            if ((res = get_metadata(s, metadata_tag, data_size)) < 0) {
+                av_log(s, AV_LOG_ERROR, "iff: cannot allocate metadata tag %s!", metadata_tag);
+                return res;
+            }
+        }
         url_fskip(pb, data_size - (url_ftell(pb) - orig_pos) + (data_size & 1));
     }
 
