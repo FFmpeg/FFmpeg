@@ -128,6 +128,24 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
     if (SetSchroChromaFormat(avccontext) == -1)
         return -1;
 
+    if (avccontext->color_primaries == AVCOL_PRI_BT709) {
+        p_schro_params->format->colour_primaries = SCHRO_COLOUR_PRIMARY_HDTV;
+    } else if (avccontext->color_primaries == AVCOL_PRI_BT470BG) {
+        p_schro_params->format->colour_primaries = SCHRO_COLOUR_PRIMARY_SDTV_625;
+    } else if (avccontext->color_primaries == AVCOL_PRI_SMPTE170M) {
+        p_schro_params->format->colour_primaries = SCHRO_COLOUR_PRIMARY_SDTV_525;
+    }
+
+    if (avccontext->colorspace == AVCOL_SPC_BT709) {
+        p_schro_params->format->colour_matrix = SCHRO_COLOUR_MATRIX_HDTV;
+    } else if (avccontext->colorspace == AVCOL_SPC_BT470BG) {
+        p_schro_params->format->colour_matrix = SCHRO_COLOUR_MATRIX_SDTV;
+    }
+
+    if (avccontext->color_trc == AVCOL_TRC_BT709) {
+        p_schro_params->format->transfer_function = SCHRO_TRANSFER_CHAR_TV_GAMMA;
+    }
+
     if (ff_get_schro_frame_format(p_schro_params->format->chroma_format,
                                   &p_schro_params->frame_format) == -1) {
         av_log(avccontext, AV_LOG_ERROR,
