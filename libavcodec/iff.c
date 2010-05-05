@@ -72,7 +72,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    s->planesize = avctx->width >> 3;
+    s->planesize = FFALIGN(avctx->width, 16) >> 3; // Align plane size in bits to word-boundary
     s->planebuf = av_malloc(s->planesize + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!s->planebuf)
         return AVERROR(ENOMEM);
@@ -99,7 +99,7 @@ static void decodeplane8(uint8_t *dst, const uint8_t *const buf, int buf_size, i
 {
     GetBitContext gb;
     int i;
-    const int b = (buf_size * 8) + bps - 1;
+    const int b = buf_size * 8;
     init_get_bits(&gb, buf, buf_size * 8);
     for(i = 0; i < b; i++) {
         dst[i] |= get_bits1(&gb) << plane;
@@ -118,7 +118,7 @@ static void decodeplane32(uint32_t *dst, const uint8_t *const buf, int buf_size,
 {
     GetBitContext gb;
     int i;
-    const int b = (buf_size * 8) + bps - 1;
+    const int b = buf_size * 8;
     init_get_bits(&gb, buf, buf_size * 8);
     for(i = 0; i < b; i++) {
         dst[i] |= get_bits1(&gb) << plane;
