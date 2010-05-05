@@ -37,6 +37,7 @@
 #include "avcodec.h"
 #include "libdirac_libschro.h"
 #include "libschroedinger.h"
+#include "bytestream.h"
 
 
 /** libschroedinger encoder private data */
@@ -319,10 +320,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
 
             /* Parse the coded frame number from the bitstream. Bytes 14
              * through 17 represesent the frame number. */
-                p_frame_output->frame_num = (enc_buf->data[13] << 24) +
-                                            (enc_buf->data[14] << 16) +
-                                            (enc_buf->data[15] <<  8) +
-                                             enc_buf->data[16];
+            p_frame_output->frame_num = AV_RB32(enc_buf->data + 13);
 
             ff_dirac_schro_queue_push_back(&p_schro_params->enc_frame_queue,
                                            p_frame_output);
