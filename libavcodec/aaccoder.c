@@ -763,7 +763,7 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
             const float *scaled = s->scoefs   + start;
             const int size      = sce->ics.swb_sizes[g];
             int scf, prev_scf, step;
-            int min_scf = 0, max_scf = 255;
+            int min_scf = -1, max_scf = 256;
             float curdiff;
             if (maxq[w*16+g] < 21.544) {
                 sce->zeroes[w*16+g] = 1;
@@ -797,21 +797,23 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
                 }
                 prev_scf = scf;
                 curdiff = fabsf(dist - uplim[w*16+g]);
-                if (curdiff == 0.0f)
+                if (curdiff <= 1.0f)
                     step = 0;
                 else
-                    step = fabsf(log2(curdiff));
+                    step = log2(curdiff);
                 if (dist > uplim[w*16+g])
                     step = -step;
+                scf += step;
+                av_clip_uint8(scf);
+                step = scf - prev_scf;
                 if (FFABS(step) <= 1 || (step > 0 && scf >= max_scf) || (step < 0 && scf <= min_scf)) {
-                    sce->sf_idx[w*16+g] = scf;
+                    sce->sf_idx[w*16+g] = av_clip(scf, min_scf, max_scf);
                     break;
                 }
-                scf += step;
                 if (step > 0)
-                    min_scf = scf;
+                    min_scf = prev_scf;
                 else
-                    max_scf = scf;
+                    max_scf = prev_scf;
             }
             start += size;
         }
