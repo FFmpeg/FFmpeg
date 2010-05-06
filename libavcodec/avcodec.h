@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 66
+#define LIBAVCODEC_VERSION_MINOR 67
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -597,6 +597,7 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_MBTREE        0x00040000 ///< Use macroblock tree ratecontrol (x264 only)
 #define CODEC_FLAG2_PSY           0x00080000 ///< Use psycho visual optimizations.
 #define CODEC_FLAG2_SSIM          0x00100000 ///< Compute SSIM during encoding, error[] values are undefined.
+#define CODEC_FLAG2_INTRA_REFRESH 0x00200000 ///< Use periodic insertion of intra blocks instead of keyframes.
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)
@@ -2646,6 +2647,15 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int rc_lookahead;
+
+    /**
+     * Constant rate factor maximum
+     * With CRF encoding mode and VBV restrictions enabled, prevents quality from being worse
+     * than crf_max, even if doing so would violate VBV restrictions.
+     * - encoding: Set by user.
+     * - decoding: unused
+     */
+    float crf_max;
 } AVCodecContext;
 
 /**
