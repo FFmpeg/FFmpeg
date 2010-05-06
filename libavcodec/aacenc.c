@@ -174,6 +174,10 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Unsupported profile %d\n", avctx->profile);
         return -1;
     }
+    if (1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * avctx->channels) {
+        av_log(avctx, AV_LOG_ERROR, "Too many bits per frame requested\n");
+        return -1;
+    }
     s->samplerate_index = i;
 
     dsputil_init(&s->dsp, avctx);
