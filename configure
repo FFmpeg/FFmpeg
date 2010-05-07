@@ -2018,6 +2018,10 @@ elif enabled x86; then
 elif enabled sparc; then
 
     case $cpu in
+        niagara)
+            cpuflags="-mcpu=$cpu"
+            disable vis
+        ;;
         sparc64)
             cpuflags="-mcpu=v9"
         ;;
