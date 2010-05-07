@@ -200,8 +200,9 @@ static AVFilterPicRef *get_video_buffer(AVFilterLink *inlink, int perms, int w, 
     AVFilterPicRef *picref = avfilter_get_video_buffer(inlink->dst->outputs[0], perms,
                                                        w + (pad->w - pad->in_w),
                                                        h + (pad->h - pad->in_h));
+    int plane;
 
-    for (int plane = 0; plane < 4 && picref->data[plane]; plane++) {
+    for (plane = 0; plane < 4 && picref->data[plane]; plane++) {
         int hsub = (plane == 1 || plane == 2) ? pad->hsub : 0;
         int vsub = (plane == 1 || plane == 2) ? pad->vsub : 0;
 
@@ -216,9 +217,11 @@ static void start_frame(AVFilterLink *inlink, AVFilterPicRef *inpicref)
 {
     PadContext *pad = inlink->dst->priv;
     AVFilterPicRef *outpicref = avfilter_ref_pic(inpicref, ~0);
+    int plane;
+
     inlink->dst->outputs[0]->outpic = outpicref;
 
-    for (int plane = 0; plane < 4 && outpicref->data[plane]; plane++) {
+    for (plane = 0; plane < 4 && outpicref->data[plane]; plane++) {
         int hsub = (plane == 1 || plane == 2) ? pad->hsub : 0;
         int vsub = (plane == 1 || plane == 2) ? pad->vsub : 0;
 
