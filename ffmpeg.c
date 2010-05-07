@@ -385,6 +385,8 @@ static int get_filtered_video_pic(AVFilterContext *ctx,
 
     memcpy(pic2->data,     pic->data,     sizeof(pic->data));
     memcpy(pic2->linesize, pic->linesize, sizeof(pic->linesize));
+    pic2->interlaced_frame = pic->interlaced;
+    pic2->top_field_first  = pic->top_field_first;
 
     return 1;
 }
