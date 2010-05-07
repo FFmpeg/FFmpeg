@@ -177,6 +177,41 @@ input to the vflip filter.
 
 Pass the source unchanged to the output.
 
+@section pad
+
+Add paddings to the input image, and places the original input at the
+given coordinates @var{x}, @var{y}.
+
+It accepts the following parameters:
+@var{width}:@var{height}:@var{x}:@var{y}:@var{color}.
+
+Follows the description of the accepted parameters.
+
+@table @option
+@item width, height
+
+Specify the size of the output image with the paddings added. If the
+value for @var{width} or @var{height} is 0, the corresponding input size
+is used for the output.
+
+The default value of @var{width} and @var{height} is 0.
+
+@item x, y
+
+Specify the offsets where to place the input image in the padded area
+with respect to the top/left border of the output image.
+
+The default value of @var{x} and @var{y} is 0.
+
+@item color
+
+Specify the color of the padded area, it can be the name of a color
+(case insensitive match) or a 0xRRGGBB[AA] sequence.
+
+The default value of @var{color} is ``black''.
+
+@end table
+
 @section scale
 
 Scale the input video to @var{width}:@var{height} and/or convert the image format.
