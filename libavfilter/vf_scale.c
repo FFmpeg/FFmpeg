@@ -128,16 +128,16 @@ static int config_props(AVFilterLink *outlink)
     outlink->h = h;
 
     /* TODO: make algorithm configurable */
-    scale->sws = sws_getContext(inlink ->w, inlink ->h, inlink ->format,
-                                outlink->w, outlink->h, outlink->format,
-                                scale->flags, NULL, NULL, NULL);
-
     av_log(ctx, AV_LOG_INFO, "w:%d h:%d fmt:%s -> w:%d h:%d fmt:%s flags:%0x\n",
            inlink ->w, inlink ->h, av_pix_fmt_descriptors[ inlink->format].name,
            outlink->w, outlink->h, av_pix_fmt_descriptors[outlink->format].name,
            scale->flags);
 
     scale->input_is_pal = av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL;
+
+    scale->sws = sws_getContext(inlink ->w, inlink ->h, inlink ->format,
+                                outlink->w, outlink->h, outlink->format,
+                                scale->flags, NULL, NULL, NULL);
 
     return !scale->sws;
 }
