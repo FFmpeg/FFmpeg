@@ -46,6 +46,8 @@ int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
 
     memcpy(c->frame.data    , frame->data    , sizeof(frame->data));
     memcpy(c->frame.linesize, frame->linesize, sizeof(frame->linesize));
+    c->frame.interlaced_frame= frame->interlaced_frame;
+    c->frame.top_field_first = frame->top_field_first;
     c->pts = pts;
     c->pixel_aspect = pixel_aspect;
     c->has_frame = 1;
@@ -106,6 +108,8 @@ static int request_frame(AVFilterLink *link)
 
     picref->pts = c->pts;
     picref->pixel_aspect = c->pixel_aspect;
+    picref->interlaced      = c->frame.interlaced_frame;
+    picref->top_field_first = c->frame.top_field_first;
     avfilter_start_frame(link, avfilter_ref_pic(picref, ~0));
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);

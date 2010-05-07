@@ -115,6 +115,9 @@ typedef struct AVFilterPicRef
 #define AV_PERM_PRESERVE 0x04   ///< nobody else can overwrite the buffer
 #define AV_PERM_REUSE    0x08   ///< can output the buffer multiple times, with the same contents each time
 #define AV_PERM_REUSE2   0x10   ///< can output the buffer multiple times, modified each time
+
+    int interlaced;             ///< is frame interlaced
+    int top_field_first;
 } AVFilterPicRef;
 
 /**
