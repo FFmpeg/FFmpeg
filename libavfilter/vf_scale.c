@@ -46,11 +46,13 @@ typedef struct {
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     ScaleContext *scale = ctx->priv;
+    const char *p;
 
     scale->flags = SWS_BILINEAR;
     if (args){
         sscanf(args, "%d:%d", &scale->w, &scale->h);
-        sscanf(strstr(args,"flags="), "flags=%i", &scale->flags);
+        p= strstr(args,"flags=");
+        if(p) scale->flags= strtoul(p+6, NULL, 0);
     }
 
     /* sanity check params */
