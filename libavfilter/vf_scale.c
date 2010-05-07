@@ -36,6 +36,7 @@ typedef struct {
      *  -1 = keep original aspect
      */
     int w, h;
+    unsigned int flags;         ///sws flags
 
     int hsub, vsub;             ///< chroma subsampling
     int slice_y;                ///< top of current output slice
@@ -46,8 +47,11 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     ScaleContext *scale = ctx->priv;
 
-    if (args)
+    scale->flags = SWS_BILINEAR;
+    if (args){
         sscanf(args, "%d:%d", &scale->w, &scale->h);
+        sscanf(strstr(args,"flags="), "flags=%i", &scale->flags);
+    }
 
     /* sanity check params */
     if (scale->w <  -1 || scale->h <  -1) {
@@ -124,7 +128,7 @@ static int config_props(AVFilterLink *outlink)
     /* TODO: make algorithm configurable */
     scale->sws = sws_getContext(inlink ->w, inlink ->h, inlink ->format,
                                 outlink->w, outlink->h, outlink->format,
-                                SWS_BILINEAR, NULL, NULL, NULL);
+                                scale->flags, NULL, NULL, NULL);
 
     av_log(ctx, AV_LOG_INFO, "w:%d h:%d fmt:%s\n",
            outlink->w, outlink->h, av_pix_fmt_descriptors[outlink->format].name);
