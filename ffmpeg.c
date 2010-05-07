@@ -126,11 +126,6 @@ static int frame_height = 0;
 static float frame_aspect_ratio = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static enum SampleFormat audio_sample_fmt = SAMPLE_FMT_NONE;
-static int frame_padtop  = 0;
-static int frame_padbottom = 0;
-static int frame_padleft  = 0;
-static int frame_padright = 0;
-static int padcolor[3] = {16,128,128}; /* default to black */
 static int frame_topBand  = 0;
 static int frame_bottomBand = 0;
 static int frame_leftBand  = 0;
@@ -285,13 +280,6 @@ typedef struct AVOutputStream {
     int original_leftBand;
     int original_rightBand;
 
-    /* padding area sizes */
-    int video_pad;
-    int padtop;
-    int padbottom;
-    int padleft;
-    int padright;
-
     /* audio only */
     int audio_resample;
     ReSampleContext *resample; /* for audio resampling */
@@ -440,8 +428,8 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         char crop_args[255];
         AVFilterContext *filt_crop;
         snprintf(crop_args, 255, "%d:%d:%d:%d", ost->leftBand, ost->topBand,
-                 codec->width -  (frame_padleft + frame_padright),
-                 codec->height - (frame_padtop + frame_padbottom));
+                 codec->width,
+                 codec->height);
         filt_crop = avfilter_open(avfilter_get_by_name("crop"), NULL);
         if (!filt_crop)
             return -1;
@@ -454,15 +442,13 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     }
 
     if((codec->width !=
-        icodec->width - (frame_leftBand + frame_rightBand) +
-        (frame_padleft + frame_padright)) ||
-       (codec->height != icodec->height - (frame_topBand  + frame_bottomBand) +
-        (frame_padtop + frame_padbottom))) {
+        icodec->width - (frame_leftBand + frame_rightBand)) ||
+       (codec->height != icodec->height - (frame_topBand  + frame_bottomBand))) {
         char scale_args[255];
         AVFilterContext *filt_scale;
         snprintf(scale_args, 255, "%d:%d:flags=0x%X",
-                 codec->width  - (frame_padleft + frame_padright),
-                 codec->height - (frame_padtop  + frame_padbottom),
+                 codec->width,
+                 codec->height,
                  (int)av_get_int(sws_opts, "sws_flags", NULL));
         filt_scale = avfilter_open(avfilter_get_by_name("scale"), NULL);
         if (!filt_scale)
@@ -1223,18 +1209,6 @@ static void do_video_out(AVFormatContext *s,
     final_picture = formatted_picture;
     padding_src = formatted_picture;
     resampling_dst = &ost->pict_tmp;
-    if (ost->video_pad) {
-        final_picture = &ost->pict_tmp;
-        if (ost->video_resample) {
-            if (av_picture_crop((AVPicture *)&picture_pad_temp, (AVPicture *)final_picture, enc->pix_fmt, ost->padtop, ost->padleft) < 0) {
-                fprintf(stderr, "error padding picture\n");
-                if (exit_on_error)
-                    av_exit(1);
-                return;
-            }
-            resampling_dst = &picture_pad_temp;
-        }
-    }
 
     if(    (ost->resample_height != (ist->st->codec->height - (ost->topBand  + ost->bottomBand)))
         || (ost->resample_width  != (ist->st->codec->width  - (ost->leftBand + ost->rightBand)))
@@ -1281,8 +1255,8 @@ static void do_video_out(AVFormatContext *s,
                 ist->st->codec->width  - (ost->leftBand + ost->rightBand),
                 ist->st->codec->height - (ost->topBand  + ost->bottomBand),
                 ist->st->codec->pix_fmt,
-                ost->st->codec->width  - (ost->padleft  + ost->padright),
-                ost->st->codec->height - (ost->padtop   + ost->padbottom),
+                ost->st->codec->width,
+                ost->st->codec->height,
                 ost->st->codec->pix_fmt,
                 sws_flags, NULL, NULL, NULL);
             if (ost->img_resample_ctx == NULL) {
@@ -1294,12 +1268,6 @@ static void do_video_out(AVFormatContext *s,
               0, ost->resample_height, resampling_dst->data, resampling_dst->linesize);
     }
 #endif
-
-    if (ost->video_pad) {
-        av_picture_pad((AVPicture*)final_picture, (AVPicture *)padding_src,
-                enc->height, enc->width, enc->pix_fmt,
-                ost->padtop, ost->padbottom, ost->padleft, ost->padright, padcolor);
-    }
 
     /* duplicates frame if needed */
     for(i=0;i<nb_frames;i++) {
@@ -2261,31 +2229,16 @@ static int av_transcode(AVFormatContext **output_files,
                     av_exit(1);
                 }
                 ost->video_crop = ((frame_leftBand + frame_rightBand + frame_topBand + frame_bottomBand) != 0);
-                ost->video_pad = ((frame_padleft + frame_padright + frame_padtop + frame_padbottom) != 0);
                 ost->video_resample = ((codec->width != icodec->width -
-                                (frame_leftBand + frame_rightBand) +
-                                (frame_padleft + frame_padright)) ||
+                                (frame_leftBand + frame_rightBand)) ||
                         (codec->height != icodec->height -
-                                (frame_topBand  + frame_bottomBand) +
-                                (frame_padtop + frame_padbottom)) ||
+                                (frame_topBand  + frame_bottomBand)) ||
                         (codec->pix_fmt != icodec->pix_fmt));
                 if (ost->video_crop) {
                     ost->topBand    = ost->original_topBand    = frame_topBand;
                     ost->bottomBand = ost->original_bottomBand = frame_bottomBand;
                     ost->leftBand   = ost->original_leftBand   = frame_leftBand;
                     ost->rightBand  = ost->original_rightBand  = frame_rightBand;
-                }
-                if (ost->video_pad) {
-                    ost->padtop = frame_padtop;
-                    ost->padleft = frame_padleft;
-                    ost->padbottom = frame_padbottom;
-                    ost->padright = frame_padright;
-                    if (!ost->video_resample) {
-                        avcodec_get_frame_defaults(&ost->pict_tmp);
-                        if(avpicture_alloc((AVPicture*)&ost->pict_tmp, codec->pix_fmt,
-                                         codec->width, codec->height))
-                            goto fail;
-                    }
                 }
                 if (ost->video_resample) {
                     avcodec_get_frame_defaults(&ost->pict_tmp);
@@ -2299,8 +2252,8 @@ static int av_transcode(AVFormatContext **output_files,
                             icodec->width - (frame_leftBand + frame_rightBand),
                             icodec->height - (frame_topBand + frame_bottomBand),
                             icodec->pix_fmt,
-                            codec->width - (frame_padleft + frame_padright),
-                            codec->height - (frame_padtop + frame_padbottom),
+                            codec->width,
+                            codec->height,
                             codec->pix_fmt,
                             sws_flags, NULL, NULL, NULL);
                     if (ost->img_resample_ctx == NULL) {
@@ -2872,57 +2825,9 @@ static void opt_frame_size(const char *arg)
     }
 }
 
-static void opt_pad_color(const char *arg) {
-    /* Input is expected to be six hex digits similar to
-       how colors are expressed in html tags (but without the #) */
-    int rgb = strtol(arg, NULL, 16);
-    int r,g,b;
-
-    r = (rgb >> 16);
-    g = ((rgb >> 8) & 255);
-    b = (rgb & 255);
-
-    padcolor[0] = RGB_TO_Y(r,g,b);
-    padcolor[1] = RGB_TO_U(r,g,b,0);
-    padcolor[2] = RGB_TO_V(r,g,b,0);
-}
-
-static void opt_frame_pad_top(const char *arg)
-{
-    frame_padtop = atoi(arg);
-    if (frame_padtop < 0) {
-        fprintf(stderr, "Incorrect top pad size\n");
-        av_exit(1);
-    }
-}
-
-static void opt_frame_pad_bottom(const char *arg)
-{
-    frame_padbottom = atoi(arg);
-    if (frame_padbottom < 0) {
-        fprintf(stderr, "Incorrect bottom pad size\n");
-        av_exit(1);
-    }
-}
-
-
-static void opt_frame_pad_left(const char *arg)
-{
-    frame_padleft = atoi(arg);
-    if (frame_padleft < 0) {
-        fprintf(stderr, "Incorrect left pad size\n");
-        av_exit(1);
-    }
-}
-
-
-static void opt_frame_pad_right(const char *arg)
-{
-    frame_padright = atoi(arg);
-    if (frame_padright < 0) {
-        fprintf(stderr, "Incorrect right pad size\n");
-        av_exit(1);
-    }
+static void opt_pad(const char *arg) {
+    fprintf(stderr, "Please use vfilters=pad\n");
+    av_exit(1);
 }
 
 static void opt_frame_pix_fmt(const char *arg)
@@ -3226,8 +3131,8 @@ static void opt_input_file(const char *filename)
     ap->channels = audio_channels;
     ap->time_base.den = frame_rate.num;
     ap->time_base.num = frame_rate.den;
-    ap->width = frame_width + frame_padleft + frame_padright;
-    ap->height = frame_height + frame_padtop + frame_padbottom;
+    ap->width = frame_width;
+    ap->height = frame_height;
     ap->pix_fmt = frame_pix_fmt;
    // ap->sample_fmt = audio_sample_fmt; //FIXME:not implemented in libavformat
     ap->channel = video_channel;
@@ -3483,8 +3388,8 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->time_base.den = fps.num;
         video_enc->time_base.num = fps.den;
 
-        video_enc->width = frame_width + frame_padright + frame_padleft;
-        video_enc->height = frame_height + frame_padtop + frame_padbottom;
+        video_enc->width = frame_width;
+        video_enc->height = frame_height;
         video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*video_enc->height/video_enc->width, 255);
         video_enc->pix_fmt = frame_pix_fmt;
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
@@ -4277,11 +4182,11 @@ static const OptionDef options[] = {
     { "cropbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },
     { "cropleft", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_left}, "set left crop band size (in pixels)", "size" },
     { "cropright", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_right}, "set right crop band size (in pixels)", "size" },
-    { "padtop", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_pad_top}, "set top pad band size (in pixels)", "size" },
-    { "padbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_pad_bottom}, "set bottom pad band size (in pixels)", "size" },
-    { "padleft", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_pad_left}, "set left pad band size (in pixels)", "size" },
-    { "padright", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_pad_right}, "set right pad band size (in pixels)", "size" },
-    { "padcolor", HAS_ARG | OPT_VIDEO, {(void*)opt_pad_color}, "set color of pad bands (Hex 000000 thru FFFFFF)", "color" },
+    { "padtop", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "set top pad band size (in pixels)", "size" },
+    { "padbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "set bottom pad band size (in pixels)", "size" },
+    { "padleft", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "set left pad band size (in pixels)", "size" },
+    { "padright", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "set right pad band size (in pixels)", "size" },
+    { "padcolor", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "set color of pad bands (Hex 000000 thru FFFFFF)", "color" },
     { "intra", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_only}, "use only intra frames"},
     { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
