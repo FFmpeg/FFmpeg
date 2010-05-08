@@ -80,9 +80,7 @@ const int program_birth_year = 2003;
 /* NOTE: the size must be big enough to compensate the hardware audio buffersize size */
 #define SAMPLE_ARRAY_SIZE (2*65536)
 
-#if !CONFIG_AVFILTER
 static int sws_flags = SWS_BICUBIC;
-#endif
 
 typedef struct PacketQueue {
     AVPacketList *first_pkt, *last_pkt;
@@ -1766,9 +1764,11 @@ static int video_thread(void *arg)
 
 #if CONFIG_AVFILTER
     int64_t pos;
+    char sws_flags_str[128];
     AVFilterContext *filt_src = NULL, *filt_out = NULL;
     AVFilterGraph *graph = av_mallocz(sizeof(AVFilterGraph));
-    graph->scale_sws_opts = av_strdup("sws_flags=bilinear");
+    snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
+    graph->scale_sws_opts = av_strdup(sws_flags_str);
 
     if(!(filt_src = avfilter_open(&input_filter,  "src")))   goto the_end;
     if(!(filt_out = avfilter_open(&output_filter, "out")))   goto the_end;
