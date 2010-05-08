@@ -56,6 +56,12 @@ typedef struct {
      */
 
     int version;
+
+    /**
+     * Offset in the structure where log_level_offset is stored.
+     * 0 means there is no such variable
+     */
+    int log_level_offset_offset;
 } AVClass;
 
 /* av_log API */
