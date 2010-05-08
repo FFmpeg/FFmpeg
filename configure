@@ -2411,11 +2411,6 @@ EOF
 
     enabled_all armv6t2 shared !pic && enable_pic
 
-elif enabled ia64; then
-
-    # HACK: currently fails to build if .bss is > 4MB and shared libs are built
-    enabled shared && enable_weak hardcoded_tables
-
 elif enabled mips; then
 
     check_asm loongson '"dmult.g $1, $2, $3"'
