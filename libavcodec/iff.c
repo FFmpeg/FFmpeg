@@ -36,6 +36,49 @@ typedef struct {
     uint8_t * planebuf;
 } IffContext;
 
+#define LUT8_PART(plane, v)                             \
+    AV_LE2ME64C(UINT64_C(0x0000000)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x1000000)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x0010000)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x1010000)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x0000100)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x1000100)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x0010100)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x1010100)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x0000001)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x1000001)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x0010001)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x1010001)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x0000101)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x1000101)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x0010101)<<32 | v) << plane,  \
+    AV_LE2ME64C(UINT64_C(0x1010101)<<32 | v) << plane
+
+#define LUT8(plane) {                           \
+    LUT8_PART(plane, 0x0000000),                \
+    LUT8_PART(plane, 0x1000000),                \
+    LUT8_PART(plane, 0x0010000),                \
+    LUT8_PART(plane, 0x1010000),                \
+    LUT8_PART(plane, 0x0000100),                \
+    LUT8_PART(plane, 0x1000100),                \
+    LUT8_PART(plane, 0x0010100),                \
+    LUT8_PART(plane, 0x1010100),                \
+    LUT8_PART(plane, 0x0000001),                \
+    LUT8_PART(plane, 0x1000001),                \
+    LUT8_PART(plane, 0x0010001),                \
+    LUT8_PART(plane, 0x1010001),                \
+    LUT8_PART(plane, 0x0000101),                \
+    LUT8_PART(plane, 0x1000101),                \
+    LUT8_PART(plane, 0x0010101),                \
+    LUT8_PART(plane, 0x1010101),                \
+}
+
+// 8 planes * 8-bit mask
+static const uint64_t plane8_lut[8][256] = {
+    LUT8(0), LUT8(1), LUT8(2), LUT8(3),
+    LUT8(4), LUT8(5), LUT8(6), LUT8(7),
+};
+
 /**
  * Convert CMAP buffer (stored in extradata) to lavc palette format
  */
@@ -95,14 +138,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
  * @param bps bits_per_coded_sample (must be <= 8)
  * @param plane plane number to decode as
  */
-static void decodeplane8(uint8_t *dst, const uint8_t *const buf, int buf_size, int bps, int plane)
+static void decodeplane8(uint8_t *dst, const uint8_t *buf, int buf_size, int bps, int plane)
 {
-    GetBitContext gb;
-    int i;
-    const int b = buf_size * 8;
-    init_get_bits(&gb, buf, buf_size * 8);
-    for(i = 0; i < b; i++) {
-        dst[i] |= get_bits1(&gb) << plane;
+    const uint64_t *lut = plane8_lut[plane];
+    for(; --buf_size != 0; dst += 8) {
+        uint64_t v = AV_RN64A(dst) | lut[*buf++];
+        AV_WN64A(dst, v);
     }
 }
 
