@@ -141,9 +141,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static void decodeplane8(uint8_t *dst, const uint8_t *buf, int buf_size, int bps, int plane)
 {
     const uint64_t *lut = plane8_lut[plane];
-    for(; --buf_size != 0; dst += 8) {
+    while (buf_size--) {
         uint64_t v = AV_RN64A(dst) | lut[*buf++];
         AV_WN64A(dst, v);
+        dst += 8;
     }
 }
 
