@@ -64,11 +64,12 @@ const PixelFormatTag ff_raw_pixelFormatTags[] = {
     { PIX_FMT_UYVY422, MKTAG('V', 'D', 'T', 'Z') }, /* SoftLab-NSK VideoTizer */
     { PIX_FMT_UYYVYY411, MKTAG('Y', '4', '1', '1') },
     { PIX_FMT_GRAY8,   MKTAG('G', 'R', 'E', 'Y') },
+
+    /* nut */
     { PIX_FMT_RGB555LE, MKTAG('R', 'G', 'B', 15) },
     { PIX_FMT_BGR555LE, MKTAG('B', 'G', 'R', 15) },
     { PIX_FMT_RGB565LE, MKTAG('R', 'G', 'B', 16) },
     { PIX_FMT_BGR565LE, MKTAG('B', 'G', 'R', 16) },
-    { PIX_FMT_RGB565LE, MKTAG( 3 ,  0 ,  0 ,  0) },
     { PIX_FMT_RGB555BE, MKTAG(15 , 'B', 'G', 'R') },
     { PIX_FMT_BGR555BE, MKTAG(15 , 'R', 'G', 'B') },
     { PIX_FMT_RGB565BE, MKTAG(16 , 'B', 'G', 'R') },
@@ -87,6 +88,9 @@ const PixelFormatTag ff_raw_pixelFormatTags[] = {
     { PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', '2') },
     { PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', 's') },
     { PIX_FMT_PAL8,    MKTAG('W', 'R', 'A', 'W') },
+
+    /* special */
+    { PIX_FMT_RGB565LE,MKTAG( 3 ,  0 ,  0 ,  0 ) }, /* flipped RGB565LE */
 
     { PIX_FMT_NONE, 0 },
 };
