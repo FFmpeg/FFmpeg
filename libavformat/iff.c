@@ -290,7 +290,7 @@ static int iff_read_packet(AVFormatContext *s,
     if(iff->sent_bytes >= iff->body_size)
         return AVERROR(EIO);
 
-    if(s->streams[0]->codec->channels == 2) {
+    if(st->codec->channels == 2) {
         uint8_t sample_buffer[PACKET_SIZE];
 
         ret = get_buffer(pb, sample_buffer, PACKET_SIZE);
@@ -299,7 +299,7 @@ static int iff_read_packet(AVFormatContext *s,
             return AVERROR(ENOMEM);
         }
         interleave_stereo(sample_buffer, pkt->data, PACKET_SIZE);
-    } else if (s->streams[0]->codec->codec_id == CODEC_ID_RAWVIDEO) {
+    } else if (st->codec->codec_id == CODEC_ID_RAWVIDEO) {
         if(av_new_packet(pkt, iff->body_size + AVPALETTE_SIZE) < 0) {
             return AVERROR(ENOMEM);
         }
@@ -311,7 +311,7 @@ static int iff_read_packet(AVFormatContext *s,
         st->codec->extradata_size = 0;
 
         ret = get_buffer(pb, pkt->data, iff->body_size);
-    } else if (s->streams[0]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+    } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = av_get_packet(pb, pkt, iff->body_size);
     } else {
         ret = av_get_packet(pb, pkt, PACKET_SIZE);
@@ -320,15 +320,15 @@ static int iff_read_packet(AVFormatContext *s,
     if(iff->sent_bytes == 0)
         pkt->flags |= AV_PKT_FLAG_KEY;
 
-    if(s->streams[0]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+    if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         iff->sent_bytes += PACKET_SIZE;
     } else {
         iff->sent_bytes = iff->body_size;
     }
     pkt->stream_index = 0;
-    if(s->streams[0]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+    if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         pkt->pts = iff->audio_frame_count;
-        iff->audio_frame_count += ret / s->streams[0]->codec->channels;
+        iff->audio_frame_count += ret / st->codec->channels;
     }
     return ret;
 }
