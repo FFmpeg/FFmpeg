@@ -609,6 +609,11 @@ void show_pix_fmts(void)
         "FLAGS NAME            NB_COMPONENTS BITS_PER_PIXEL\n"
         "-----\n");
 
+#if !CONFIG_SWSCALE
+#   define sws_isSupportedInput(x)  0
+#   define sws_isSupportedOutput(x) 0
+#endif
+
     for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++) {
         const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[pix_fmt];
         printf("%c%c%c%c%c %-16s       %d            %2d\n",
