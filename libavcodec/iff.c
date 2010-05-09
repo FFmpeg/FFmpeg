@@ -135,10 +135,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
  * @param dst Destination buffer
  * @param buf Source buffer
  * @param buf_size
- * @param bps bits_per_coded_sample (must be <= 8)
  * @param plane plane number to decode as
  */
-static void decodeplane8(uint8_t *dst, const uint8_t *buf, int buf_size, int bps, int plane)
+static void decodeplane8(uint8_t *dst, const uint8_t *buf, int buf_size, int plane)
 {
     const uint64_t *lut = plane8_lut[plane];
     while (buf_size--) {
@@ -153,10 +152,9 @@ static void decodeplane8(uint8_t *dst, const uint8_t *buf, int buf_size, int bps
  * @param dst Destination buffer
  * @param buf Source buffer
  * @param buf_size
- * @param bps bits_per_coded_sample
  * @param plane plane number to decode as
  */
-static void decodeplane32(uint32_t *dst, const uint8_t *const buf, int buf_size, int bps, int plane)
+static void decodeplane32(uint32_t *dst, const uint8_t *const buf, int buf_size, int plane)
 {
     GetBitContext gb;
     int i;
@@ -187,7 +185,7 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
             uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
             memset(row, 0, avctx->width);
             for (plane = 0; plane < avctx->bits_per_coded_sample && buf < buf_end; plane++) {
-                decodeplane8(row, buf, FFMIN(s->planesize, buf_end - buf), avctx->bits_per_coded_sample, plane);
+                decodeplane8(row, buf, FFMIN(s->planesize, buf_end - buf), plane);
                 buf += s->planesize;
             }
         }
@@ -196,7 +194,7 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
             uint8_t *row = &s->frame.data[0][y*s->frame.linesize[0]];
             memset(row, 0, avctx->width << 2);
             for (plane = 0; plane < avctx->bits_per_coded_sample && buf < buf_end; plane++) {
-                decodeplane32((uint32_t *) row, buf, FFMIN(s->planesize, buf_end - buf), avctx->bits_per_coded_sample, plane);
+                decodeplane32((uint32_t *) row, buf, FFMIN(s->planesize, buf_end - buf), plane);
                 buf += s->planesize;
             }
         }
@@ -243,7 +241,7 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
                         }
                         x += length;
                     }
-                    decodeplane8(row, s->planebuf, s->planesize, avctx->bits_per_coded_sample, plane);
+                    decodeplane8(row, s->planebuf, s->planesize, plane);
                 }
             }
         } else { //PIX_FMT_BGR32
@@ -266,7 +264,7 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
                         }
                         x += length;
                     }
-                    decodeplane32((uint32_t *) row, s->planebuf, s->planesize, avctx->bits_per_coded_sample, plane);
+                    decodeplane32((uint32_t *) row, s->planebuf, s->planesize, plane);
                 }
             }
         }
