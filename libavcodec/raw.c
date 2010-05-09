@@ -55,6 +55,7 @@ const PixelFormatTag ff_raw_pixelFormatTags[] = {
     { PIX_FMT_UYVY422, MKTAG('A', 'V', '1', 'x') }, /* Avid 1:1x */
     { PIX_FMT_UYVY422, MKTAG('A', 'V', 'u', 'p') },
     { PIX_FMT_UYVY422, MKTAG('V', 'D', 'T', 'Z') }, /* SoftLab-NSK VideoTizer */
+    { PIX_FMT_UYYVYY411, MKTAG('Y', '4', '1', '1') },
     { PIX_FMT_GRAY8,   MKTAG('G', 'R', 'E', 'Y') },
     { PIX_FMT_RGB555LE, MKTAG('R', 'G', 'B', 15) },
     { PIX_FMT_BGR555LE, MKTAG('B', 'G', 'R', 15) },
