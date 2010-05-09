@@ -36,6 +36,13 @@ const PixelFormatTag ff_raw_pixelFormatTags[] = {
     { PIX_FMT_YUV411P, MKTAG('Y', '4', '1', 'B') },
     { PIX_FMT_YUV422P, MKTAG('Y', '4', '2', 'B') },
     { PIX_FMT_YUV422P, MKTAG('P', '4', '2', '2') },
+    /* yuvjXXX formats are deprecated hacks specific to libav*,
+       they are identical to yuvXXX  */
+    { PIX_FMT_YUVJ420P, MKTAG('I', '4', '2', '0') }, /* Planar formats */
+    { PIX_FMT_YUVJ420P, MKTAG('I', 'Y', 'U', 'V') },
+    { PIX_FMT_YUVJ420P, MKTAG('Y', 'V', '1', '2') },
+    { PIX_FMT_YUVJ422P, MKTAG('Y', '4', '2', 'B') },
+    { PIX_FMT_YUVJ422P, MKTAG('P', '4', '2', '2') },
     { PIX_FMT_GRAY8,   MKTAG('Y', '8', '0', '0') },
     { PIX_FMT_GRAY8,   MKTAG(' ', ' ', 'Y', '8') },
 
