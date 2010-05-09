@@ -457,7 +457,7 @@ fate-id-cin-video: CMD = $$BUILD_PATH/ffmpeg -i $$SAMPLES_PATH/idcin/idlog-2MB.c
 FATE_TESTS += fate-idroq-video-dpcm
 fate-idroq-video-dpcm: CMD = $$BUILD_PATH/ffmpeg -i $$SAMPLES_PATH/idroq/idlogo.roq -f framecrc -
 FATE_TESTS += fate-idroq-video-encode
-fate-idroq-video-encode: CMD =  $$BUILD_PATH/ffmpeg -t 0.2 -f image2 -vcodec pgmyuv -i $$SAMPLES_PATH/ffmpeg-synthetic/vsynth1/%02d.pgm -sws_flags +bitexact -padleft 80 -padright 80 -padtop 112 -padbottom 112 -f RoQ - | do_md5sum | cut -c-32
+fate-idroq-video-encode: CMD =  $$BUILD_PATH/ffmpeg -t 0.2 -f image2 -vcodec pgmyuv -i $$SAMPLES_PATH/ffmpeg-synthetic/vsynth1/%02d.pgm -sws_flags +bitexact -vfilters pad=512:512:80:112 -f RoQ - | do_md5sum | cut -c-32
 FATE_TESTS += fate-iff-byterun1
 fate-iff-byterun1: CMD = $$BUILD_PATH/ffmpeg -i $$SAMPLES_PATH/iff/ASH.LBM -pix_fmt rgb24 -f framecrc -
 FATE_TESTS += fate-iff-fibonacci
