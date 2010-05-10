@@ -55,7 +55,9 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
                                    int keyframe) {
     H264BSFContext *ctx = bsfc->priv_data;
     uint8_t unit_type;
-    uint32_t nal_size, cumul_size = 0;
+    int32_t nal_size;
+    uint32_t cumul_size = 0;
+    const uint8_t *buf_end = buf + buf_size;
 
     /* nothing to filter */
     if (!avctx->extradata || avctx->extradata_size < 6) {
@@ -109,6 +111,9 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
     *poutbuf_size = 0;
     *poutbuf = NULL;
     do {
+        if (buf + ctx->length_size > buf_end)
+            goto fail;
+
         if (ctx->length_size == 1)
             nal_size = buf[0];
         else if (ctx->length_size == 2)
@@ -118,6 +123,9 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
 
         buf += ctx->length_size;
         unit_type = *buf & 0x1f;
+
+        if (buf + nal_size > buf_end || nal_size < 0)
+            goto fail;
 
         /* prepend only to the first type 5 NAL unit of an IDR picture */
         if (ctx->first_idr && unit_type == 5) {
@@ -139,6 +147,11 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
     } while (cumul_size < buf_size);
 
     return 1;
+
+fail:
+    av_freep(poutbuf);
+    *poutbuf_size = 0;
+    return AVERROR(EINVAL);
 }
 
 static void h264_mp4toannexb_close(AVBitStreamFilterContext *bsfc)
