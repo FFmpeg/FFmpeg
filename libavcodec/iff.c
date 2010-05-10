@@ -79,6 +79,37 @@ static const uint64_t plane8_lut[8][256] = {
     LUT8(4), LUT8(5), LUT8(6), LUT8(7),
 };
 
+#define LUT32(plane) {                                \
+             0,          0,          0,          0,   \
+             0,          0,          0, 1 << plane,   \
+             0,          0, 1 << plane,          0,   \
+             0,          0, 1 << plane, 1 << plane,   \
+             0, 1 << plane,          0,          0,   \
+             0, 1 << plane,          0, 1 << plane,   \
+             0, 1 << plane, 1 << plane,          0,   \
+             0, 1 << plane, 1 << plane, 1 << plane,   \
+    1 << plane,          0,          0,          0,   \
+    1 << plane,          0,          0, 1 << plane,   \
+    1 << plane,          0, 1 << plane,          0,   \
+    1 << plane,          0, 1 << plane, 1 << plane,   \
+    1 << plane, 1 << plane,          0,          0,   \
+    1 << plane, 1 << plane,          0, 1 << plane,   \
+    1 << plane, 1 << plane, 1 << plane,          0,   \
+    1 << plane, 1 << plane, 1 << plane, 1 << plane,   \
+}
+
+// 32 planes * 4-bit mask * 4 lookup tables each
+static const uint32_t plane32_lut[32][16*4] = {
+    LUT32( 0), LUT32( 1), LUT32( 2), LUT32( 3),
+    LUT32( 4), LUT32( 5), LUT32( 6), LUT32( 7),
+    LUT32( 8), LUT32( 9), LUT32(10), LUT32(11),
+    LUT32(12), LUT32(13), LUT32(14), LUT32(15),
+    LUT32(16), LUT32(17), LUT32(18), LUT32(19),
+    LUT32(20), LUT32(21), LUT32(22), LUT32(23),
+    LUT32(24), LUT32(25), LUT32(26), LUT32(27),
+    LUT32(28), LUT32(29), LUT32(30), LUT32(31),
+};
+
 /**
  * Convert CMAP buffer (stored in extradata) to lavc palette format
  */
@@ -156,15 +187,22 @@ static void decodeplane8(uint8_t *dst, const uint8_t *buf, int buf_size, int pla
  * @param buf_size
  * @param plane plane number to decode as
  */
-static void decodeplane32(uint32_t *dst, const uint8_t *const buf, int buf_size, int plane)
+static void decodeplane32(uint32_t *dst, const uint8_t *buf, int buf_size, int plane)
 {
-    GetBitContext gb;
-    int i;
-    const int b = buf_size * 8;
-    init_get_bits(&gb, buf, buf_size * 8);
-    for(i = 0; i < b; i++) {
-        dst[i] |= get_bits1(&gb) << plane;
-    }
+    const uint32_t *lut = plane32_lut[plane];
+    do {
+        unsigned mask = (*buf >> 2) & ~3;
+        dst[0] |= lut[mask++];
+        dst[1] |= lut[mask++];
+        dst[2] |= lut[mask++];
+        dst[3] |= lut[mask];
+        mask = (*buf++ << 2) & 0x3F;
+        dst[4] |= lut[mask++];
+        dst[5] |= lut[mask++];
+        dst[6] |= lut[mask++];
+        dst[7] |= lut[mask];
+        dst += 8;
+    } while (--buf_size);
 }
 
 static int decode_frame_ilbm(AVCodecContext *avctx,
