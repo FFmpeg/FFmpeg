@@ -561,6 +561,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
             chans    = tag == TYPE_CPE ? 2 : 1;
             cpe      = &s->cpe[i];
             for (j = 0; j < chans; j++) {
+                s->cur_channel = start_ch + j;
                 s->coder->search_for_quantizers(avctx, s, &cpe->ch[j], s->lambda);
             }
             cpe->common_window = 0;
@@ -576,6 +577,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
                     }
                 }
             }
+            s->cur_channel = start_ch;
             if (cpe->common_window && s->coder->search_for_ms)
                 s->coder->search_for_ms(s, cpe, s->lambda);
             adjust_frame_information(s, cpe, chans);
