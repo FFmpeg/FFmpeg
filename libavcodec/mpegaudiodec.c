@@ -41,7 +41,6 @@
 
 /* WARNING: only correct for posititive numbers */
 #define FIXR(a)   ((int)((a) * FRAC_ONE + 0.5))
-#define FRAC_RND(a) (((a) + (FRAC_ONE/2)) >> FRAC_BITS)
 
 #define FIXHR(a) ((int)((a) * (1LL<<32) + 0.5))
 
