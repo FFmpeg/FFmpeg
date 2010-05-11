@@ -1535,14 +1535,22 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         g->sb_hybrid[s_index+3]= 0;
         while(code){
             static const int idxtab[16]={3,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0};
-            INTFLOAT v;
+            int v;
             int pos= s_index+idxtab[code];
             code ^= 8>>idxtab[code];
-            v = RENAME(exp_table)[ exponents[pos] ];
-//            v = RENAME(exp_table)[ (exponents[pos]&3) ] >> FFMIN(0 - (exponents[pos]>>2), 31);
-            if(get_bits1(&s->gb)) //FIXME try to flip the sign bit in int32_t, same above
+/* Following is a optimized code for
+            INTFLOAT v = RENAME(exp_table)[ exponents[pos] ];
+            if(get_bits1(&s->gb))
                 v = -v;
             g->sb_hybrid[pos] = v;
+*/
+#if CONFIG_FLOAT
+            v = AV_RN32A(RENAME(exp_table)+exponents[pos]) ^ (get_bits1(&s->gb)<<31);
+            AV_WN32A(g->sb_hybrid+pos, v);
+#else
+            v= -get_bits1(&s->gb);
+            g->sb_hybrid[pos] = (RENAME(exp_table)[ exponents[pos] ] ^ v) - v;
+#endif
         }
         s_index+=4;
     }
