@@ -100,7 +100,7 @@ static int config_input(AVFilterLink *inlink)
     PadContext *pad = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
     uint8_t rgba_color[4];
-    uint8_t rgba_map[4];
+    uint8_t rgba_map[4] = {0};
     int i, is_packed_rgb = 1;
 
     switch (inlink->format) {
