@@ -1454,7 +1454,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         /* read huffcode and compute each couple */
         for(;j>0;j--) {
             int exponent, x, y;
-            INTFLOAT v;
+            int v;
             int pos= get_bits_count(&s->gb);
 
             if (pos >= end_pos){
@@ -1481,37 +1481,36 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 x = y >> 5;
                 y = y & 0x0f;
                 if (x < 15){
-                    v = RENAME(expval_table)[ exponent ][ x ];
-//                      v = RENAME(expval_table)[ (exponent&3) ][ x ] >> FFMIN(0 - (exponent>>2), 31);
+                    READ_FLIP_SIGN(g->sb_hybrid+s_index, RENAME(expval_table)[ exponent ]+x)
                 }else{
                     x += get_bitsz(&s->gb, linbits);
                     v = l3_unscale(x, exponent);
+                    if (get_bits1(&s->gb))
+                        v = -v;
+                    g->sb_hybrid[s_index] = v;
                 }
-                if (get_bits1(&s->gb))
-                    v = -v;
-                g->sb_hybrid[s_index] = v;
                 if (y < 15){
-                    v = RENAME(expval_table)[ exponent ][ y ];
+                    READ_FLIP_SIGN(g->sb_hybrid+s_index+1, RENAME(expval_table)[ exponent ]+y)
                 }else{
                     y += get_bitsz(&s->gb, linbits);
                     v = l3_unscale(y, exponent);
+                    if (get_bits1(&s->gb))
+                        v = -v;
+                    g->sb_hybrid[s_index+1] = v;
                 }
-                if (get_bits1(&s->gb))
-                    v = -v;
-                g->sb_hybrid[s_index+1] = v;
             }else{
                 x = y >> 5;
                 y = y & 0x0f;
                 x += y;
                 if (x < 15){
-                    v = RENAME(expval_table)[ exponent ][ x ];
+                    READ_FLIP_SIGN(g->sb_hybrid+s_index+!!y, RENAME(expval_table)[ exponent ]+x)
                 }else{
                     x += get_bitsz(&s->gb, linbits);
                     v = l3_unscale(x, exponent);
+                    if (get_bits1(&s->gb))
+                        v = -v;
+                    g->sb_hybrid[s_index+!!y] = v;
                 }
-                if (get_bits1(&s->gb))
-                    v = -v;
-                g->sb_hybrid[s_index+!!y] = v;
                 g->sb_hybrid[s_index+ !y] = 0;
             }
             s_index+=2;
