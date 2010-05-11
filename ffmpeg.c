@@ -151,7 +151,7 @@ static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int qp_hist = 0;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
-AVFilterGraph *filt_graph_all = NULL;
+AVFilterGraph *graph = NULL;
 #endif
 
 static int intra_only = 0;
@@ -404,7 +404,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     AVCodecContext *icodec = ist->st->codec;
     char args[255];
 
-    filt_graph_all = av_mallocz(sizeof(AVFilterGraph));
+    graph = av_mallocz(sizeof(AVFilterGraph));
 
     if(!(ist->input_video_filter = avfilter_open(avfilter_get_by_name("buffer"), "src")))
         return -1;
@@ -419,8 +419,8 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         return -1;
 
     /* add input and output filters to the overall graph */
-    avfilter_graph_add_filter(filt_graph_all, ist->input_video_filter);
-    avfilter_graph_add_filter(filt_graph_all, ist->out_video_filter);
+    avfilter_graph_add_filter(graph, ist->input_video_filter);
+    avfilter_graph_add_filter(graph, ist->out_video_filter);
 
     curr_filter = ist->input_video_filter;
 
@@ -438,7 +438,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         if (avfilter_link(curr_filter, 0, filt_crop, 0))
             return -1;
         curr_filter = filt_crop;
-        avfilter_graph_add_filter(filt_graph_all, curr_filter);
+        avfilter_graph_add_filter(graph, curr_filter);
     }
 
     if((codec->width !=
@@ -458,7 +458,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         if (avfilter_link(curr_filter, 0, filt_scale, 0))
             return -1;
         curr_filter = filt_scale;
-        avfilter_graph_add_filter(filt_graph_all, curr_filter);
+        avfilter_graph_add_filter(graph, curr_filter);
     }
 
     if(vfilters) {
@@ -475,7 +475,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         inputs->pad_idx = 0;
         inputs->next    = NULL;
 
-        if (avfilter_graph_parse(filt_graph_all, vfilters, inputs, outputs, NULL) < 0)
+        if (avfilter_graph_parse(graph, vfilters, inputs, outputs, NULL) < 0)
             return -1;
         av_freep(&vfilters);
     } else {
@@ -486,15 +486,15 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     {
         char scale_sws_opts[128];
         snprintf(scale_sws_opts, sizeof(scale_sws_opts), "flags=0x%X", (int)av_get_int(sws_opts, "sws_flags", NULL));
-        filt_graph_all->scale_sws_opts = av_strdup(scale_sws_opts);
+        graph->scale_sws_opts = av_strdup(scale_sws_opts);
     }
 
     /* configure all the filter links */
-    if(avfilter_graph_check_validity(filt_graph_all, NULL))
+    if(avfilter_graph_check_validity(graph, NULL))
         return -1;
-    if(avfilter_graph_config_formats(filt_graph_all, NULL))
+    if(avfilter_graph_config_formats(graph, NULL))
         return -1;
-    if(avfilter_graph_config_links(filt_graph_all, NULL))
+    if(avfilter_graph_config_links(graph, NULL))
         return -1;
 
     codec->width = ist->out_video_filter->inputs[0]->w;
@@ -2665,9 +2665,9 @@ static int av_transcode(AVFormatContext **output_files,
         }
     }
 #if CONFIG_AVFILTER
-    if (filt_graph_all) {
-        avfilter_graph_destroy(filt_graph_all);
-        av_freep(&filt_graph_all);
+    if (graph) {
+        avfilter_graph_destroy(graph);
+        av_freep(&graph);
     }
 #endif
 
