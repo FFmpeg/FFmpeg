@@ -1407,6 +1407,22 @@ static void switch_buffer(MPADecodeContext *s, int *pos, int *end_pos, int *end_
     }
 }
 
+/* Following is a optimized code for
+            INTFLOAT v = *src
+            if(get_bits1(&s->gb))
+                v = -v;
+            *dst = v;
+*/
+#if CONFIG_FLOAT
+#define READ_FLIP_SIGN(dst,src)\
+            v = AV_RN32A(src) ^ (get_bits1(&s->gb)<<31);\
+            AV_WN32A(dst, v);
+#else
+#define READ_FLIP_SIGN(dst,src)\
+            v= -get_bits1(&s->gb);\
+            *(dst) = (*(src) ^ v) - v;
+#endif
+
 static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                           int16_t *exponents, int end_pos2)
 {
@@ -1538,19 +1554,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
             int v;
             int pos= s_index+idxtab[code];
             code ^= 8>>idxtab[code];
-/* Following is a optimized code for
-            INTFLOAT v = RENAME(exp_table)[ exponents[pos] ];
-            if(get_bits1(&s->gb))
-                v = -v;
-            g->sb_hybrid[pos] = v;
-*/
-#if CONFIG_FLOAT
-            v = AV_RN32A(RENAME(exp_table)+exponents[pos]) ^ (get_bits1(&s->gb)<<31);
-            AV_WN32A(g->sb_hybrid+pos, v);
-#else
-            v= -get_bits1(&s->gb);
-            g->sb_hybrid[pos] = (RENAME(exp_table)[ exponents[pos] ] ^ v) - v;
-#endif
+            READ_FLIP_SIGN(g->sb_hybrid+pos, RENAME(exp_table)+exponents[pos])
         }
         s_index+=4;
     }
