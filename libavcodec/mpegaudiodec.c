@@ -1318,24 +1318,32 @@ static int mp_decode_layer2(MPADecodeContext *s)
     return 3 * 12;
 }
 
-//FIXME optimze this shit
-static inline void lsf_sf_expand(int *slen,
+#define SPLIT(dst,sf,n)\
+    if(n==3){\
+        int m= (sf*171)>>9;\
+        dst= sf - 3*m;\
+        sf=m;\
+    }else if(n==4){\
+        dst= sf&3;\
+        sf>>=2;\
+    }else if(n==5){\
+        int m= (sf*205)>>10;\
+        dst= sf - 5*m;\
+        sf=m;\
+    }else if(n==6){\
+        int m= (sf*171)>>10;\
+        dst= sf - 6*m;\
+        sf=m;\
+    }else{\
+        dst=0;\
+    }
+
+static av_always_inline void lsf_sf_expand(int *slen,
                                  int sf, int n1, int n2, int n3)
 {
-    if (n3) {
-        slen[3] = sf % n3;
-        sf /= n3;
-    } else {
-        slen[3] = 0;
-    }
-    if (n2) {
-        slen[2] = sf % n2;
-        sf /= n2;
-    } else {
-        slen[2] = 0;
-    }
-    slen[1] = sf % n1;
-    sf /= n1;
+    SPLIT(slen[3], sf, n3)
+    SPLIT(slen[2], sf, n2)
+    SPLIT(slen[1], sf, n1)
     slen[0] = sf;
 }
 
