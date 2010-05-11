@@ -398,7 +398,7 @@ static AVFilter output_filter =
 
 static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
 {
-    AVFilterContext *curr_filter;
+    AVFilterContext *last_filter, *filter;
     /** filter graph containing all filters including input & output */
     AVCodecContext *codec = ost->st->codec;
     AVCodecContext *icodec = ist->st->codec;
@@ -422,41 +422,39 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     avfilter_graph_add_filter(graph, ist->input_video_filter);
     avfilter_graph_add_filter(graph, ist->out_video_filter);
 
-    curr_filter = ist->input_video_filter;
+    last_filter = ist->input_video_filter;
 
     if (ost->video_crop) {
-        AVFilterContext *filt_crop;
         snprintf(args, 255, "%d:%d:%d:%d", ost->leftBand, ost->topBand,
                  codec->width,
                  codec->height);
-        filt_crop = avfilter_open(avfilter_get_by_name("crop"), NULL);
-        if (!filt_crop)
+        filter = avfilter_open(avfilter_get_by_name("crop"), NULL);
+        if (!filter)
             return -1;
-        if (avfilter_init_filter(filt_crop, args, NULL))
+        if (avfilter_init_filter(filter, args, NULL))
             return -1;
-        if (avfilter_link(curr_filter, 0, filt_crop, 0))
+        if (avfilter_link(last_filter, 0, filter, 0))
             return -1;
-        curr_filter = filt_crop;
-        avfilter_graph_add_filter(graph, curr_filter);
+        last_filter = filter;
+        avfilter_graph_add_filter(graph, last_filter);
     }
 
     if((codec->width !=
         icodec->width - (frame_leftBand + frame_rightBand)) ||
        (codec->height != icodec->height - (frame_topBand  + frame_bottomBand))) {
-        AVFilterContext *filt_scale;
         snprintf(args, 255, "%d:%d:flags=0x%X",
                  codec->width,
                  codec->height,
                  (int)av_get_int(sws_opts, "sws_flags", NULL));
-        filt_scale = avfilter_open(avfilter_get_by_name("scale"), NULL);
-        if (!filt_scale)
+        filter = avfilter_open(avfilter_get_by_name("scale"), NULL);
+        if (!filter)
             return -1;
-        if (avfilter_init_filter(filt_scale, args, NULL))
+        if (avfilter_init_filter(filter, args, NULL))
             return -1;
-        if (avfilter_link(curr_filter, 0, filt_scale, 0))
+        if (avfilter_link(last_filter, 0, filter, 0))
             return -1;
-        curr_filter = filt_scale;
-        avfilter_graph_add_filter(graph, curr_filter);
+        last_filter = filter;
+        avfilter_graph_add_filter(graph, last_filter);
     }
 
     if (vfilters) {
@@ -464,7 +462,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         AVFilterInOut *inputs  = av_malloc(sizeof(AVFilterInOut));
 
         outputs->name    = av_strdup("in");
-        outputs->filter  = curr_filter;
+        outputs->filter  = last_filter;
         outputs->pad_idx = 0;
         outputs->next    = NULL;
 
@@ -477,7 +475,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
             return -1;
         av_freep(&vfilters);
     } else {
-        if (avfilter_link(curr_filter, 0, ist->out_video_filter, 0) < 0)
+        if (avfilter_link(last_filter, 0, ist->out_video_filter, 0) < 0)
             return -1;
     }
 
