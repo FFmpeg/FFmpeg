@@ -1521,7 +1521,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     AVSubtitle subtitle, *subtitle_to_free;
     int got_subtitle;
 #if CONFIG_AVFILTER
-    int loop;
+    int frame_available;
 #endif
 
     AVPacket avpkt;
@@ -1682,14 +1682,14 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 usleep(pts - now);
         }
 #if CONFIG_AVFILTER
-        loop = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
+        frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
             !ist->out_video_filter || avfilter_poll_frame(ist->out_video_filter->inputs[0]);
 #endif
         /* if output time reached then transcode raw format,
            encode packets and output them */
         if (start_time == 0 || ist->pts >= start_time)
 #if CONFIG_AVFILTER
-        while(loop) {
+        while (frame_available) {
             if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ist->out_video_filter)
                 get_filtered_video_pic(ist->out_video_filter, &ist->picref, &picture, &ist->pts);
 #endif
@@ -1782,7 +1782,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     }
                 }
 #if CONFIG_AVFILTER
-                loop =  (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
+                frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
                         ist->out_video_filter && avfilter_poll_frame(ist->out_video_filter->inputs[0]);
 #endif
             }
