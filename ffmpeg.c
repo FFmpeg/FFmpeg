@@ -425,15 +425,14 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     curr_filter = ist->input_video_filter;
 
     if(ost->video_crop) {
-        char crop_args[255];
         AVFilterContext *filt_crop;
-        snprintf(crop_args, 255, "%d:%d:%d:%d", ost->leftBand, ost->topBand,
+        snprintf(args, 255, "%d:%d:%d:%d", ost->leftBand, ost->topBand,
                  codec->width,
                  codec->height);
         filt_crop = avfilter_open(avfilter_get_by_name("crop"), NULL);
         if (!filt_crop)
             return -1;
-        if (avfilter_init_filter(filt_crop, crop_args, NULL))
+        if (avfilter_init_filter(filt_crop, args, NULL))
             return -1;
         if (avfilter_link(curr_filter, 0, filt_crop, 0))
             return -1;
@@ -444,16 +443,15 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     if((codec->width !=
         icodec->width - (frame_leftBand + frame_rightBand)) ||
        (codec->height != icodec->height - (frame_topBand  + frame_bottomBand))) {
-        char scale_args[255];
         AVFilterContext *filt_scale;
-        snprintf(scale_args, 255, "%d:%d:flags=0x%X",
+        snprintf(args, 255, "%d:%d:flags=0x%X",
                  codec->width,
                  codec->height,
                  (int)av_get_int(sws_opts, "sws_flags", NULL));
         filt_scale = avfilter_open(avfilter_get_by_name("scale"), NULL);
         if (!filt_scale)
             return -1;
-        if (avfilter_init_filter(filt_scale, scale_args, NULL))
+        if (avfilter_init_filter(filt_scale, args, NULL))
             return -1;
         if (avfilter_link(curr_filter, 0, filt_scale, 0))
             return -1;
@@ -483,11 +481,8 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
             return -1;
     }
 
-    {
-        char scale_sws_opts[128];
-        snprintf(scale_sws_opts, sizeof(scale_sws_opts), "flags=0x%X", (int)av_get_int(sws_opts, "sws_flags", NULL));
-        graph->scale_sws_opts = av_strdup(scale_sws_opts);
-    }
+        snprintf(args, sizeof(args), "flags=0x%X", (int)av_get_int(sws_opts, "sws_flags", NULL));
+        graph->scale_sws_opts = av_strdup(args);
 
     /* configure all the filter links */
     if(avfilter_graph_check_validity(graph, NULL))
