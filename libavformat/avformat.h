@@ -868,8 +868,22 @@ void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload);
  */
 void av_register_all(void);
 
-/** codec tag <-> codec id */
+/**
+ * Gets the CodecID for the given codec tag tag.
+ * If no codec id is found returns CODEC_ID_NONE.
+ *
+ * @param tags list of supported codec_id-codec_tag pairs, as stored
+ * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
+ */
 enum CodecID av_codec_get_id(const struct AVCodecTag * const *tags, unsigned int tag);
+
+/**
+ * Gets the codec tag for the given codec id id.
+ * If no codec tag is found returns 0.
+ *
+ * @param tags list of supported codec_id-codec_tag pairs, as stored
+ * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
+ */
 unsigned int av_codec_get_tag(const struct AVCodecTag * const *tags, enum CodecID id);
 
 /* media file input */
