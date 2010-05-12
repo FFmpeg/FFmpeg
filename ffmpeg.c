@@ -2819,7 +2819,7 @@ static void opt_frame_size(const char *arg)
 }
 
 static void opt_pad(const char *arg) {
-    fprintf(stderr, "Please use vfilters=pad\n");
+    fprintf(stderr, "Please use vf=pad\n");
     av_exit(1);
 }
 
@@ -4197,7 +4197,7 @@ static const OptionDef options[] = {
     { "vstats", OPT_EXPERT | OPT_VIDEO, {(void*)&opt_vstats}, "dump video coding statistics to file" },
     { "vstats_file", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_vstats_file}, "dump video coding statistics to file", "file" },
 #if CONFIG_AVFILTER
-    { "vfilters", OPT_STRING | HAS_ARG, {(void*)&vfilters}, "video filters", "filter list" },
+    { "vf", OPT_STRING | HAS_ARG, {(void*)&vfilters}, "video filters", "filter list" },
 #endif
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },

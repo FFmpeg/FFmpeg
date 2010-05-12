@@ -47,14 +47,14 @@ and the vflip filter before merging it back with the other stream by
 overlaying it on top. You can use the following command to achieve this:
 
 @example
-./ffmpeg -i in.avi -s 240x320 -vfilters "[in] split [T1], fifo, [T2] overlay= 0:240 [out]; [T1] fifo, crop=0:0:-1:240, vflip [T2]
+./ffmpeg -i in.avi -s 240x320 -vf "[in] split [T1], fifo, [T2] overlay= 0:240 [out]; [T1] fifo, crop=0:0:-1:240, vflip [T2]
 @end example
 
 where input_video.avi has a vertical resolution of 480 pixels. The
 result will be that in output the top half of the video is mirrored
 onto the bottom half.
 
-Video filters are loaded using the @var{-vfilters} option passed to
+Video filters are loaded using the @var{-vf} option passed to
 ffmpeg or to ffplay. Filters in the same linear chain are separated by
 commas. In our example, @var{split, fifo, overlay} are in one linear
 chain, and @var{fifo, crop, vflip} are in another. The points where
@@ -113,7 +113,7 @@ Below is a description of the currently available video filters.
 Crop the input video to @var{x}:@var{y}:@var{width}:@var{height}.
 
 @example
-./ffmpeg -i in.avi -vfilters "crop=0:0:0:240" out.avi
+./ffmpeg -i in.avi -vf "crop=0:0:0:240" out.avi
 @end example
 
 @var{x} and @var{y} specify the position of the top-left corner of the
@@ -151,7 +151,7 @@ for example ``yuv420p:monow:rgb24''.
 The following command:
 
 @example
-./ffmpeg -i in.avi -vfilters "format=yuv420p" out.avi
+./ffmpeg -i in.avi -vf "format=yuv420p" out.avi
 @end example
 
 will convert the input video to the format ``yuv420p''.
@@ -167,7 +167,7 @@ for example ``yuv420p:monow:rgb24''.
 The following command:
 
 @example
-./ffmpeg -i in.avi -vfilters "noformat=yuv420p, vflip" out.avi
+./ffmpeg -i in.avi -vf "noformat=yuv420p, vflip" out.avi
 @end example
 
 will make libavfilter use a format different from ``yuv420p'' for the
@@ -219,7 +219,7 @@ Scale the input video to @var{width}:@var{height} and/or convert the image forma
 For example the command:
 
 @example
-./ffmpeg -i in.avi -vfilters "scale=200:100" out.avi
+./ffmpeg -i in.avi -vf "scale=200:100" out.avi
 @end example
 
 will scale the input video to a size of 200x100.
@@ -243,7 +243,7 @@ Pass the images of input video on to next video filter as multiple
 slices.
 
 @example
-./ffmpeg -i in.avi -vfilters "slicify=32" out.avi
+./ffmpeg -i in.avi -vf "slicify=32" out.avi
 @end example
 
 The filter accepts the slice height as parameter. If the parameter is
@@ -302,7 +302,7 @@ unsharp=7:7:2.5
 unsharp=7:7:-2:7:7:-2
 
 # Use the default values with @command{ffmpeg}
-./ffmpeg -i in.avi -vfilters "unsharp" out.mp4
+./ffmpeg -i in.avi -vf "unsharp" out.mp4
 @end example
 
 @section vflip
@@ -310,7 +310,7 @@ unsharp=7:7:-2:7:7:-2
 Flip the input video vertically.
 
 @example
-./ffmpeg -i in.avi -vfilters "vflip" out.avi
+./ffmpeg -i in.avi -vf "vflip" out.avi
 @end example
 
 @chapter Available video sources
