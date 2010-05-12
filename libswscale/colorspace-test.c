@@ -79,7 +79,7 @@ int main(int argc, char **argv)
             int src_bpp;
             int dst_bpp;
             const char *name;
-            void (*func)(const uint8_t *src, uint8_t *dst, int src_size);
+            void (*func)(const uint8_t *src, uint8_t *dst, long src_size);
         } func_info[] = {
             FUNC(2, 2, rgb15to16),
             FUNC(2, 3, rgb15to24),
