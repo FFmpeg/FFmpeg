@@ -709,6 +709,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     if (avctx->codec && avctx->codec->close)
         avctx->codec->close(avctx);
     avcodec_default_free_buffers(avctx);
+    avctx->coded_frame = NULL;
     av_freep(&avctx->priv_data);
     if(avctx->codec && avctx->codec->encode)
         av_freep(&avctx->extradata);
