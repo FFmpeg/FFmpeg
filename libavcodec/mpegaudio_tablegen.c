@@ -43,8 +43,16 @@ int main(void)
     write_uint32_array(exp_table, 512);
     printf("};\n");
 
+    printf("static const float exp_table_float[512] = {\n");
+    write_float_array(exp_table_float, 512);
+    printf("};\n");
+
     printf("static const uint32_t expval_table[512][16] = {\n");
     write_uint32_2d_array(expval_table, 512, 16);
+    printf("};\n");
+
+    printf("static const float expval_table_float[512][16] = {\n");
+    write_float_2d_array(expval_table_float, 512, 16);
     printf("};\n");
 
     return 0;
