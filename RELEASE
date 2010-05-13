@@ -1,0 +1,84 @@
+Release Notes
+=============
+
+* 0.6 "Works with HTML5" May, 2010
+
+General notes
+-------------
+
+See the Changelog file for a list of significant changes.
+
+Please note that our policy on bug reports has not changed. We still only accept
+bug reports against HEAD of the FFmpeg trunk repository. If you are experiencing
+any issues with any formally released version of FFmpeg, please try a current
+version of the development code to check if the issue still exists. If it does,
+make your report against the development code following the usual bug reporting
+guidelines.
+
+
+API and other notable Changes
+-----------------------------
+
+Please see the file doc/APIchanges for programmer centric information
+
+Notably changes:
+- deprecated vhook subsystem removed
+- deprecated old scaler removed
+- nonfree libamr support for AMR-NB/WB decoding/encoding removed
+- RTMP support in libavformat
+- -formats option split into -formats, -codecs, -bsfs, and -protocols
+- ffprobe tool
+- RTMP/RTMPT/RTMPS/RTMPE/RTMPTE protocol support via librtmp
+
+
+Added Codecs:
+-------------
+
+- VQF demuxer
+- PCX encoder
+- CorePNG decoding support
+- 8088flex TMV demuxer and decoder
+- enable symbol versioning by default for linkers that support it
+- V210 decoder and encoder
+- QCP demuxer
+- SoX native format muxer and demuxer
+- AMR-NB decoding/encoding, AMR-WB decoding via OpenCORE libraries
+- DPX image decoder
+- Electronic Arts Madcow decoder
+- DivX (XSUB) subtitle encoder
+- experimental AAC encoder
+- Wave64 demuxer
+- IEC-61937 compatible Muxer
+- TwinVQ decoder
+- Bluray (PGS) subtitle decoder
+- LPCM support in MPEG-TS (HDMV RID as found on Blu-ray disks)
+- WMA Pro decoder
+- Core Audio Format demuxer
+- Atrac1 decoder
+- MD STUDIO audio demuxer
+- RF64 support in WAV demuxer
+- MPEG-4 Audio Lossless Coding (ALS) decoder
+- IV8 demuxer
+- CDG demuxer and decoder
+- R210 decoder
+- Auravision Aura 1 and 2 decoders
+- Deluxe Paint Animation playback system
+- SIPR decoder
+- Adobe Filmstrip muxer and demuxer
+- RTP depacketization of H.263
+- Bink demuxer and audio/video decoders
+- IFF PBM/ILBM bitmap decoder
+- Indeo 5 decoder
+- WMA Voice decoder
+- AMR-NB decoder
+- RTSP muxer
+- HE-AAC v1 decoder
+- Kega Game Video (KGV1) decoder
+- Psygnosis YOP demuxer and video decoder
+
+
+Notable license related changes
+-------------------------------
+
+- remaining GPL parts in AC-3 decoder converted to LGPL
+- libswscale can now be compiled in LGPL mode
