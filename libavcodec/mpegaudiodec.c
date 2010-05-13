@@ -847,8 +847,7 @@ void RENAME(ff_mpa_synth_filter)(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
     offset = *synth_buf_offset;
     synth_buf = synth_buf_ptr + offset;
 
-#if FRAC_BITS <= 15
-    assert(!CONFIG_FLOAT);
+#if FRAC_BITS <= 15 && !CONFIG_FLOAT
     dct32(tmp, sb_samples);
     for(j=0;j<32;j++) {
         /* NOTE: can cause a loss in precision if very high amplitude
