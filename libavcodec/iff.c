@@ -110,6 +110,11 @@ static const uint32_t plane32_lut[32][16*4] = {
     LUT32(28), LUT32(29), LUT32(30), LUT32(31),
 };
 
+// Gray to RGB, required for palette table of grayscale images with bpp < 8
+static av_always_inline uint32_t gray2rgb(const uint32_t x) {
+    return x << 16 | x << 8 | x;
+}
+
 /**
  * Convert CMAP buffer (stored in extradata) to lavc palette format
  */
@@ -125,8 +130,16 @@ int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
     count = 1 << avctx->bits_per_coded_sample;
     // If extradata is smaller than actually needed, fill the remaining with black.
     count = FFMIN(avctx->extradata_size / 3, count);
+    if (count) {
     for (i=0; i < count; i++) {
         pal[i] = 0xFF000000 | AV_RB24( avctx->extradata + i*3 );
+    }
+    } else { // Create gray-scale color palette for bps < 8
+        count = 1 << avctx->bits_per_coded_sample;
+
+        for (i=0; i < count; i++) {
+            pal[i] = 0xFF000000 | gray2rgb((i * 255) >> avctx->bits_per_coded_sample);
+        }
     }
     return 0;
 }
@@ -137,7 +150,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int err;
 
     if (avctx->bits_per_coded_sample <= 8) {
-        avctx->pix_fmt = PIX_FMT_PAL8;
+        avctx->pix_fmt = (avctx->bits_per_coded_sample < 8 ||
+                          avctx->extradata_size) ? PIX_FMT_PAL8
+                                                 : PIX_FMT_GRAY8;
     } else if (avctx->bits_per_coded_sample <= 32) {
         avctx->pix_fmt = PIX_FMT_BGR32;
     } else {
@@ -157,7 +172,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return err;
     }
 
-    return avctx->bits_per_coded_sample <= 8 ?
+    return (avctx->bits_per_coded_sample <= 8 &&
+            avctx->pix_fmt != PIX_FMT_GRAY8) ?
        ff_cmap_read_palette(avctx, (uint32_t*)s->frame.data[1]) : 0;
 }
 
@@ -219,7 +235,7 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
     }
 
     if (avctx->codec_tag == MKTAG('I','L','B','M')) { // interleaved
-        if (avctx->pix_fmt == PIX_FMT_PAL8) {
+        if (avctx->pix_fmt == PIX_FMT_PAL8 || avctx->pix_fmt == PIX_FMT_GRAY8) {
             for(y = 0; y < avctx->height; y++ ) {
                 uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
                 memset(row, 0, avctx->width);
@@ -238,7 +254,7 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
                 }
             }
         }
-    } else if (avctx->pix_fmt == PIX_FMT_PAL8) { // IFF-PBM
+    } else if (avctx->pix_fmt == PIX_FMT_PAL8 || avctx->pix_fmt == PIX_FMT_GRAY8) { // IFF-PBM
         for(y = 0; y < avctx->height; y++ ) {
             uint8_t *row = &s->frame.data[0][y * s->frame.linesize[0]];
             memcpy(row, buf, FFMIN(avctx->width, buf_end - buf));
@@ -267,7 +283,7 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
     }
 
     if (avctx->codec_tag == MKTAG('I','L','B','M')) { //interleaved
-        if (avctx->pix_fmt == PIX_FMT_PAL8) {
+        if (avctx->pix_fmt == PIX_FMT_PAL8 || avctx->pix_fmt == PIX_FMT_GRAY8) {
             for(y = 0; y < avctx->height ; y++ ) {
                 uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
                 memset(row, 0, avctx->width);
