@@ -65,7 +65,7 @@ Added Codecs:
 - Deluxe Paint Animation playback system
 - SIPR decoder
 - Adobe Filmstrip muxer and demuxer
-- RTP depacketization of H.263
+- RTP packetization and depacketization of H.263 and AMR
 - Bink demuxer and audio/video decoders
 - IFF PBM/ILBM bitmap decoder
 - Indeo 5 decoder
