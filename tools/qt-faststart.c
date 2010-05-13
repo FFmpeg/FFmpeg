@@ -163,6 +163,12 @@ int main(int argc, char *argv[])
             break;
         }
         atom_offset += atom_size;
+
+        /* The atom header is 8 (or 16 bytes), if the atom size (which
+         * includes these 8 or 16 bytes) is less than that, we won't be
+         * able to continue scanning sensibly after this atom, so break. */
+        if (atom_size < 8)
+            break;
     }
 
     if (atom_type != MOOV_ATOM) {
