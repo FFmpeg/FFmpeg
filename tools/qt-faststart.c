@@ -75,14 +75,14 @@
 
 int main(int argc, char *argv[])
 {
-    FILE *infile;
-    FILE *outfile;
+    FILE *infile  = NULL;
+    FILE *outfile = NULL;
     unsigned char atom_bytes[ATOM_PREAMBLE_SIZE];
     uint32_t atom_type = 0;
     uint64_t atom_size = 0;
     uint64_t atom_offset = 0;
     uint64_t last_offset;
-    unsigned char *moov_atom;
+    unsigned char *moov_atom = NULL;
     unsigned char *ftyp_atom = 0;
     uint64_t moov_atom_size;
     uint64_t ftyp_atom_size = 0;
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     infile = fopen(argv[1], "rb");
     if (!infile) {
         perror(argv[1]);
-        return 1;
+        goto error_out;
     }
 
     /* traverse through the atoms in the file to make sure that 'moov' is
@@ -121,15 +121,12 @@ int main(int argc, char *argv[])
             if (!ftyp_atom) {
                 printf ("could not allocate %"PRIu64" byte for ftyp atom\n",
                         atom_size);
-                fclose(infile);
-                return 1;
+                goto error_out;
             }
             fseeko(infile, -ATOM_PREAMBLE_SIZE, SEEK_CUR);
             if (fread(ftyp_atom, atom_size, 1, infile) != 1) {
                 perror(argv[1]);
-                free(ftyp_atom);
-                fclose(infile);
-                return 1;
+                goto error_out;
             }
             start_offset = ftello(infile);
         } else {
@@ -184,30 +181,23 @@ int main(int argc, char *argv[])
     if (!moov_atom) {
         printf ("could not allocate %"PRIu64" byte for moov atom\n",
             atom_size);
-        free(ftyp_atom);
-        fclose(infile);
-        return 1;
+        goto error_out;
     }
     if (fread(moov_atom, atom_size, 1, infile) != 1) {
         perror(argv[1]);
-        free(moov_atom);
-        free(ftyp_atom);
-        fclose(infile);
-        return 1;
+        goto error_out;
     }
 
     /* this utility does not support compressed atoms yet, so disqualify
      * files with compressed QT atoms */
     if (BE_32(&moov_atom[12]) == CMOV_ATOM) {
         printf ("this utility does not support compressed moov atoms yet\n");
-        free(moov_atom);
-        free(ftyp_atom);
-        fclose(infile);
-        return 1;
+        goto error_out;
     }
 
     /* close; will be re-opened later */
     fclose(infile);
+    infile = NULL;
 
     /* crawl through the moov chunk in search of stco or co64 atoms */
     for (i = 4; i < moov_atom_size - 4; i++) {
@@ -217,9 +207,7 @@ int main(int argc, char *argv[])
             atom_size = BE_32(&moov_atom[i - 4]);
             if (i + atom_size - 4 > moov_atom_size) {
                 printf (" bad atom size\n");
-                free(moov_atom);
-                free(ftyp_atom);
-                return 1;
+                goto error_out;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
             for (j = 0; j < offset_count; j++) {
@@ -236,9 +224,7 @@ int main(int argc, char *argv[])
             atom_size = BE_32(&moov_atom[i - 4]);
             if (i + atom_size - 4 > moov_atom_size) {
                 printf (" bad atom size\n");
-                free(moov_atom);
-                free(ftyp_atom);
-                return 1;
+                goto error_out;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
             for (j = 0; j < offset_count; j++) {
@@ -261,9 +247,7 @@ int main(int argc, char *argv[])
     infile = fopen(argv[1], "rb");
     if (!infile) {
         perror(argv[1]);
-        free(moov_atom);
-        free(ftyp_atom);
-        return 1;
+        goto error_out;
     }
 
     if (start_offset > 0) { /* seek after ftyp atom */
@@ -274,10 +258,7 @@ int main(int argc, char *argv[])
     outfile = fopen(argv[2], "wb");
     if (!outfile) {
         perror(argv[2]);
-        fclose(outfile);
-        free(moov_atom);
-        free(ftyp_atom);
-        return 1;
+        goto error_out;
     }
 
     /* dump the same ftyp atom */
@@ -324,7 +305,9 @@ int main(int argc, char *argv[])
     return 0;
 
 error_out:
+    if (infile)
     fclose(infile);
+    if (outfile)
     fclose(outfile);
     free(moov_atom);
     free(ftyp_atom);
