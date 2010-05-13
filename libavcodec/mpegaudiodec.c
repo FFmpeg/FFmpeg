@@ -43,8 +43,8 @@
 #   define SHR(a,b)       ((a)*(1.0/(1<<(b))))
 #   define compute_antialias compute_antialias_float
 #   define FIXR_OLD(a)    ((int)((a) * FRAC_ONE + 0.5))
-#   define FIXR(x)        (x)
-#   define FIXHR(x)       (x)
+#   define FIXR(x)        ((float)(x))
+#   define FIXHR(x)       ((float)(x))
 #   define MULH3(x, y, s) ((s)*(y)*(x))
 #   define MULLx(x, y, s) ((y)*(x))
 #   define RENAME(a) a ## _float
