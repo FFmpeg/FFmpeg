@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavfilter/vf_pad.c
+ * @file
  * video padding filter
  */
 
