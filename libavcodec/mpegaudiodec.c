@@ -40,7 +40,7 @@
 #include "mathops.h"
 
 #if CONFIG_FLOAT
-#   define SHR(a,b)       ((a)*(1.0/(1<<(b))))
+#   define SHR(a,b)       ((a)*(1.0f/(1<<(b))))
 #   define compute_antialias compute_antialias_float
 #   define FIXR_OLD(a)    ((int)((a) * FRAC_ONE + 0.5))
 #   define FIXR(x)        ((float)(x))
