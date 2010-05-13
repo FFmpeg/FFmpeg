@@ -96,6 +96,14 @@
 #endif
 #endif
 
+#ifndef av_alias
+#if (!defined(__ICC) || __ICC > 1110) && AV_GCC_VERSION_AT_LEAST(3,3)
+#   define av_alias __attribute__((may_alias))
+#else
+#   define av_alias
+#endif
+#endif
+
 #ifndef av_uninit
 #if defined(__GNUC__) && !defined(__ICC)
 #    define av_uninit(x) x=x
