@@ -77,15 +77,12 @@ typedef struct MOVIndex {
     MOVIentry   *cluster;
     int         audio_vbr;
     int         height; ///< active picture (w/o VBI) height for D-10/IMX
-    uint32_t    tref_tag;
-    int         tref_id; ///< trackID of the referenced track
 } MOVTrack;
 
 typedef struct MOVMuxContext {
     int     mode;
     int64_t time;
     int     nb_streams;
-    int     chapter_track; ///< qt chapter track number
     int64_t mdat_pos;
     uint64_t mdat_size;
     MOVTrack *tracks;
@@ -1186,8 +1183,8 @@ static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
     put_be32(pb, 0x40000000); /* reserved */
 
     /* Track width and height, for visual only */
-    if(st && (track->enc->codec_type == AVMEDIA_TYPE_VIDEO ||
-              track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
+    if(track->enc->codec_type == AVMEDIA_TYPE_VIDEO ||
+       track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
         if(!sample_aspect_ratio || track->height != track->enc->height)
             sample_aspect_ratio = 1;
@@ -1220,16 +1217,6 @@ static int mov_write_edts_tag(ByteIOContext *pb, MOVTrack *track)
     return 0x24;
 }
 
-static int mov_write_tref_tag(ByteIOContext *pb, MOVTrack *track)
-{
-    put_be32(pb, 20);   // size
-    put_tag(pb, "tref");
-    put_be32(pb, 12);   // size (subatom)
-    put_le32(pb, track->tref_tag);
-    put_be32(pb, track->tref_id);
-    return 20;
-}
-
 // goes at the end of each track!  ... Critical for PSP playback ("Incompatible data" without it)
 static int mov_write_uuid_tag_psp(ByteIOContext *pb, MOVTrack *mov)
 {
@@ -1257,8 +1244,6 @@ static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
     mov_write_tkhd_tag(pb, track, st);
     if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS)
         mov_write_edts_tag(pb, track);  // PSP Movies require edts box
-    if (track->tref_tag)
-        mov_write_tref_tag(pb, track);
     mov_write_mdia_tag(pb, track);
     if (track->mode == MODE_PSP)
         mov_write_uuid_tag_psp(pb,track);  // PSP Movies require this uuid box
@@ -1671,17 +1656,11 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVMuxContext *mov,
         mov->tracks[i].trackID = i+1;
     }
 
-    if (mov->chapter_track)
-        for (i=0; i<s->nb_streams; i++) {
-            mov->tracks[i].tref_tag = MKTAG('c','h','a','p');
-            mov->tracks[i].tref_id = mov->tracks[mov->chapter_track].trackID;
-        }
-
     mov_write_mvhd_tag(pb, mov);
     //mov_write_iods_tag(pb, mov);
     for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry > 0) {
-            mov_write_trak_tag(pb, &(mov->tracks[i]), i < s->nb_streams ? s->streams[i] : NULL);
+            mov_write_trak_tag(pb, &(mov->tracks[i]), s->streams[i]);
         }
     }
 
@@ -1822,6 +1801,117 @@ static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
     put_be32(pb, 0x010001); /* ? */
 }
 
+static int mov_write_header(AVFormatContext *s)
+{
+    ByteIOContext *pb = s->pb;
+    MOVMuxContext *mov = s->priv_data;
+    int i;
+
+    if (url_is_streamed(s->pb)) {
+        av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
+        return -1;
+    }
+
+    /* Default mode == MP4 */
+    mov->mode = MODE_MP4;
+
+    if (s->oformat != NULL) {
+        if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
+        else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3GP|MODE_3G2;
+        else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
+        else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
+        else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
+
+        mov_write_ftyp_tag(pb,s);
+        if (mov->mode == MODE_PSP) {
+            if (s->nb_streams != 2) {
+                av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
+                return -1;
+            }
+            mov_write_uuidprof_tag(pb,s);
+        }
+    }
+
+    mov->tracks = av_mallocz(s->nb_streams*sizeof(*mov->tracks));
+    if (!mov->tracks)
+        return AVERROR(ENOMEM);
+
+    for(i=0; i<s->nb_streams; i++){
+        AVStream *st= s->streams[i];
+        MOVTrack *track= &mov->tracks[i];
+        AVMetadataTag *lang = av_metadata_get(st->metadata, "language", NULL,0);
+
+        track->enc = st->codec;
+        track->language = ff_mov_iso639_to_lang(lang?lang->value:"und", mov->mode!=MODE_MOV);
+        if (track->language < 0)
+            track->language = 0;
+        track->mode = mov->mode;
+        track->tag = mov_find_codec_tag(s, track);
+        if (!track->tag) {
+            av_log(s, AV_LOG_ERROR, "track %d: could not find tag, "
+                   "codec not currently supported in container\n", i);
+            goto error;
+        }
+        if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
+            if (track->tag == MKTAG('m','x','3','p') || track->tag == MKTAG('m','x','3','n') ||
+                track->tag == MKTAG('m','x','4','p') || track->tag == MKTAG('m','x','4','n') ||
+                track->tag == MKTAG('m','x','5','p') || track->tag == MKTAG('m','x','5','n')) {
+                if (st->codec->width != 720 || (st->codec->height != 608 && st->codec->height != 512)) {
+                    av_log(s, AV_LOG_ERROR, "D-10/IMX must use 720x608 or 720x512 video resolution\n");
+                    goto error;
+                }
+                track->height = track->tag>>24 == 'n' ? 486 : 576;
+            }
+            track->timescale = st->codec->time_base.den;
+            if (track->mode == MODE_MOV && track->timescale > 100000)
+                av_log(s, AV_LOG_WARNING,
+                       "WARNING codec timebase is very high. If duration is too long,\n"
+                       "file may not be playable by quicktime. Specify a shorter timebase\n"
+                       "or choose different container.\n");
+        }else if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO){
+            track->timescale = st->codec->sample_rate;
+            if(!st->codec->frame_size && !av_get_bits_per_sample(st->codec->codec_id)) {
+                av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
+                goto error;
+            }else if(st->codec->frame_size > 1){ /* assume compressed audio */
+                track->audio_vbr = 1;
+            }else{
+                st->codec->frame_size = 1;
+                track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
+            }
+            if (track->mode != MODE_MOV) {
+                if (track->timescale > UINT16_MAX) {
+                    av_log(s, AV_LOG_ERROR, "track %d: output format does not support "
+                           "sample rate %dhz\n", i, track->timescale);
+                    goto error;
+                }
+                if (track->enc->codec_id == CODEC_ID_MP3 && track->timescale < 16000) {
+                    av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not supported\n",
+                           i, track->enc->sample_rate);
+                    goto error;
+                }
+            }
+        }else if(st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE){
+            track->timescale = st->codec->time_base.den;
+        }
+        if (!track->height)
+            track->height = st->codec->height;
+
+        av_set_pts_info(st, 64, 1, track->timescale);
+    }
+
+    mov_write_mdat_tag(pb, mov);
+    mov->time = s->timestamp + 0x7C25B080; //1970 based -> 1904 based
+    mov->nb_streams = s->nb_streams;
+
+    put_flush_packet(pb);
+
+    return 0;
+ error:
+    av_freep(&mov->tracks);
+    return -1;
+}
+
 static int mov_parse_mpeg2_frame(AVPacket *pkt, uint32_t *flags)
 {
     uint32_t c = -1;
@@ -1939,158 +2029,6 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-// QuickTime chapters involve an additional text track with the chapter names
-// as samples, and a tref pointing from the other tracks to the chapter one.
-static void mov_create_chapter_track(AVFormatContext *s, int tracknum)
-{
-    MOVMuxContext *mov = s->priv_data;
-    MOVTrack *track = &mov->tracks[tracknum];
-    AVPacket pkt = { .stream_index = tracknum, .flags = AV_PKT_FLAG_KEY };
-    int i, len;
-
-    track->mode = mov->mode;
-    track->tag = MKTAG('t','e','x','t');
-    track->timescale = MOV_TIMESCALE;
-    track->enc = avcodec_alloc_context();
-    track->enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
-
-    for (i = 0; i < s->nb_chapters; i++) {
-        AVChapter *c = s->chapters[i];
-        AVMetadataTag *t;
-
-        int64_t end = av_rescale_q(c->end, c->time_base, (AVRational){1,MOV_TIMESCALE});
-        pkt.pts = pkt.dts = av_rescale_q(c->start, c->time_base, (AVRational){1,MOV_TIMESCALE});
-        pkt.duration = end - pkt.dts;
-
-        if ((t = av_metadata_get(c->metadata, "title", NULL, 0))) {
-            len = strlen(t->value);
-            pkt.size = len+2;
-            pkt.data = av_malloc(pkt.size);
-            AV_WB16(pkt.data, len);
-            memcpy(pkt.data+2, t->value, len);
-            mov_write_packet(s, &pkt);
-            av_freep(&pkt.data);
-        }
-    }
-}
-
-static int mov_write_header(AVFormatContext *s)
-{
-    ByteIOContext *pb = s->pb;
-    MOVMuxContext *mov = s->priv_data;
-    int i;
-
-    if (url_is_streamed(s->pb)) {
-        av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
-        return -1;
-    }
-
-    /* Default mode == MP4 */
-    mov->mode = MODE_MP4;
-
-    if (s->oformat != NULL) {
-        if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
-        else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3GP|MODE_3G2;
-        else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
-        else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
-        else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
-
-        mov_write_ftyp_tag(pb,s);
-        if (mov->mode == MODE_PSP) {
-            if (s->nb_streams != 2) {
-                av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
-                return -1;
-            }
-            mov_write_uuidprof_tag(pb,s);
-        }
-    }
-
-    mov->nb_streams = s->nb_streams;
-    if (mov->mode & (MODE_MOV|MODE_IPOD) && s->nb_chapters)
-        mov->chapter_track = mov->nb_streams++;
-
-    mov->tracks = av_mallocz(mov->nb_streams*sizeof(*mov->tracks));
-    if (!mov->tracks)
-        return AVERROR(ENOMEM);
-
-    for(i=0; i<s->nb_streams; i++){
-        AVStream *st= s->streams[i];
-        MOVTrack *track= &mov->tracks[i];
-        AVMetadataTag *lang = av_metadata_get(st->metadata, "language", NULL,0);
-
-        track->enc = st->codec;
-        track->language = ff_mov_iso639_to_lang(lang?lang->value:"und", mov->mode!=MODE_MOV);
-        if (track->language < 0)
-            track->language = 0;
-        track->mode = mov->mode;
-        track->tag = mov_find_codec_tag(s, track);
-        if (!track->tag) {
-            av_log(s, AV_LOG_ERROR, "track %d: could not find tag, "
-                   "codec not currently supported in container\n", i);
-            goto error;
-        }
-        if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
-            if (track->tag == MKTAG('m','x','3','p') || track->tag == MKTAG('m','x','3','n') ||
-                track->tag == MKTAG('m','x','4','p') || track->tag == MKTAG('m','x','4','n') ||
-                track->tag == MKTAG('m','x','5','p') || track->tag == MKTAG('m','x','5','n')) {
-                if (st->codec->width != 720 || (st->codec->height != 608 && st->codec->height != 512)) {
-                    av_log(s, AV_LOG_ERROR, "D-10/IMX must use 720x608 or 720x512 video resolution\n");
-                    goto error;
-                }
-                track->height = track->tag>>24 == 'n' ? 486 : 576;
-            }
-            track->timescale = st->codec->time_base.den;
-            if (track->mode == MODE_MOV && track->timescale > 100000)
-                av_log(s, AV_LOG_WARNING,
-                       "WARNING codec timebase is very high. If duration is too long,\n"
-                       "file may not be playable by quicktime. Specify a shorter timebase\n"
-                       "or choose different container.\n");
-        }else if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO){
-            track->timescale = st->codec->sample_rate;
-            if(!st->codec->frame_size && !av_get_bits_per_sample(st->codec->codec_id)) {
-                av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
-                goto error;
-            }else if(st->codec->frame_size > 1){ /* assume compressed audio */
-                track->audio_vbr = 1;
-            }else{
-                st->codec->frame_size = 1;
-                track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
-            }
-            if (track->mode != MODE_MOV) {
-                if (track->timescale > UINT16_MAX) {
-                    av_log(s, AV_LOG_ERROR, "track %d: output format does not support "
-                           "sample rate %dhz\n", i, track->timescale);
-                    goto error;
-                }
-                if (track->enc->codec_id == CODEC_ID_MP3 && track->timescale < 16000) {
-                    av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not supported\n",
-                           i, track->enc->sample_rate);
-                    goto error;
-                }
-            }
-        }else if(st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE){
-            track->timescale = st->codec->time_base.den;
-        }
-        if (!track->height)
-            track->height = st->codec->height;
-
-        av_set_pts_info(st, 64, 1, track->timescale);
-    }
-
-    mov_write_mdat_tag(pb, mov);
-    mov->time = s->timestamp + 0x7C25B080; //1970 based -> 1904 based
-
-    if (mov->chapter_track)
-        mov_create_chapter_track(s, mov->chapter_track);
-
-    put_flush_packet(pb);
-
-    return 0;
- error:
-    av_freep(&mov->tracks);
-    return -1;
-}
-
 static int mov_write_trailer(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -2114,9 +2052,6 @@ static int mov_write_trailer(AVFormatContext *s)
     url_fseek(pb, moov_pos, SEEK_SET);
 
     mov_write_moov_tag(pb, mov, s);
-
-    if (mov->chapter_track)
-        av_freep(&mov->tracks[mov->chapter_track].enc);
 
     for (i=0; i<mov->nb_streams; i++) {
         av_freep(&mov->tracks[i].cluster);

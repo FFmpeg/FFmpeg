@@ -2,7 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
-version <next>:
+version 0.6:
 
 - PB-frame decoding for H.263
 - deprecated vhook subsystem removed
