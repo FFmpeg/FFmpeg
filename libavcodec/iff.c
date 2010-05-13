@@ -218,6 +218,7 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
         return -1;
     }
 
+    if (avctx->codec_tag == MKTAG('I','L','B','M')) { // interleaved
     if (avctx->pix_fmt == PIX_FMT_PAL8) {
         for(y = 0; y < avctx->height; y++ ) {
             uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
@@ -235,6 +236,13 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
                 decodeplane32((uint32_t *) row, buf, FFMIN(s->planesize, buf_end - buf), plane);
                 buf += s->planesize;
             }
+        }
+    }
+    } else if (avctx->pix_fmt == PIX_FMT_PAL8) { // IFF-PBM
+        for(y = 0; y < avctx->height; y++ ) {
+            uint8_t *row = &s->frame.data[0][y * s->frame.linesize[0]];
+            memcpy(row, buf, FFMIN(avctx->width, buf_end - buf));
+            buf += avctx->width;
         }
     }
 

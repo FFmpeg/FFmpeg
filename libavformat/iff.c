@@ -256,13 +256,7 @@ static int iff_read_header(AVFormatContext *s,
     case AVMEDIA_TYPE_VIDEO:
         switch (compression) {
         case BITMAP_RAW:
-            if (st->codec->codec_tag == ID_ILBM) {
                 st->codec->codec_id = CODEC_ID_IFF_ILBM;
-            } else {
-                st->codec->codec_id = CODEC_ID_RAWVIDEO;
-                st->codec->pix_fmt  = PIX_FMT_PAL8;
-                st->codec->codec_tag = 0;
-            }
             break;
         case BITMAP_BYTERUN1:
             st->codec->codec_id = CODEC_ID_IFF_BYTERUN1;
@@ -299,18 +293,6 @@ static int iff_read_packet(AVFormatContext *s,
             return AVERROR(ENOMEM);
         }
         interleave_stereo(sample_buffer, pkt->data, PACKET_SIZE);
-    } else if (st->codec->codec_id == CODEC_ID_RAWVIDEO) {
-        if(av_new_packet(pkt, iff->body_size + AVPALETTE_SIZE) < 0) {
-            return AVERROR(ENOMEM);
-        }
-
-        ret = ff_cmap_read_palette(st->codec, (uint32_t*)(pkt->data + iff->body_size));
-        if (ret < 0)
-            return ret;
-        av_freep(&st->codec->extradata);
-        st->codec->extradata_size = 0;
-
-        ret = get_buffer(pb, pkt->data, iff->body_size);
     } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = av_get_packet(pb, pkt, iff->body_size);
     } else {
