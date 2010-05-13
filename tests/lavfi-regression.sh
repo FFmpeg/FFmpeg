@@ -20,7 +20,7 @@ do_lavfi() {
     vfilters="slicify=random,$2"
 
     if [ -n "$test" ] ; then
-        do_video_encoding ${test_name}.nut "" "-vcodec rawvideo -vfilters $vfilters"
+        do_video_encoding ${test_name}.nut "" "-vcodec rawvideo -vf $vfilters"
     fi
 }
 
