@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     uint64_t atom_offset = 0;
     uint64_t last_offset;
     unsigned char *moov_atom = NULL;
-    unsigned char *ftyp_atom = 0;
+    unsigned char *ftyp_atom = NULL;
     uint64_t moov_atom_size;
     uint64_t ftyp_atom_size = 0;
     uint64_t i, j;
