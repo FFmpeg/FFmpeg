@@ -231,7 +231,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
 
         if (*tail || (len != 8 && len != 10)) {
             av_log(log_ctx, AV_LOG_ERROR, "Invalid 0xRRGGBB[AA] color string: '%s'\n", color_string);
-            return -1;
+            return AVERROR(EINVAL);
         }
         if (len == 10) {
             rgba_color[3] = rgba;
@@ -248,7 +248,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
                                           color_table_compare);
         if (!entry) {
             av_log(log_ctx, AV_LOG_ERROR, "Cannot find color '%s'\n", color_string);
-            return -1;
+            return AVERROR(EINVAL);
         }
         memcpy(rgba_color, entry->rgba_color, 4);
     }
