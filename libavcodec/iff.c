@@ -219,25 +219,25 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
     }
 
     if (avctx->codec_tag == MKTAG('I','L','B','M')) { // interleaved
-    if (avctx->pix_fmt == PIX_FMT_PAL8) {
-        for(y = 0; y < avctx->height; y++ ) {
-            uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
-            memset(row, 0, avctx->width);
-            for (plane = 0; plane < avctx->bits_per_coded_sample && buf < buf_end; plane++) {
-                decodeplane8(row, buf, FFMIN(s->planesize, buf_end - buf), plane);
-                buf += s->planesize;
+        if (avctx->pix_fmt == PIX_FMT_PAL8) {
+            for(y = 0; y < avctx->height; y++ ) {
+                uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
+                memset(row, 0, avctx->width);
+                for (plane = 0; plane < avctx->bits_per_coded_sample && buf < buf_end; plane++) {
+                    decodeplane8(row, buf, FFMIN(s->planesize, buf_end - buf), plane);
+                    buf += s->planesize;
+                }
+            }
+        } else { // PIX_FMT_BGR32
+            for(y = 0; y < avctx->height; y++ ) {
+                uint8_t *row = &s->frame.data[0][y*s->frame.linesize[0]];
+                memset(row, 0, avctx->width << 2);
+                for (plane = 0; plane < avctx->bits_per_coded_sample && buf < buf_end; plane++) {
+                    decodeplane32((uint32_t *) row, buf, FFMIN(s->planesize, buf_end - buf), plane);
+                    buf += s->planesize;
+                }
             }
         }
-    } else { // PIX_FMT_BGR32
-        for(y = 0; y < avctx->height; y++ ) {
-            uint8_t *row = &s->frame.data[0][y*s->frame.linesize[0]];
-            memset(row, 0, avctx->width << 2);
-            for (plane = 0; plane < avctx->bits_per_coded_sample && buf < buf_end; plane++) {
-                decodeplane32((uint32_t *) row, buf, FFMIN(s->planesize, buf_end - buf), plane);
-                buf += s->planesize;
-            }
-        }
-    }
     } else if (avctx->pix_fmt == PIX_FMT_PAL8) { // IFF-PBM
         for(y = 0; y < avctx->height; y++ ) {
             uint8_t *row = &s->frame.data[0][y * s->frame.linesize[0]];

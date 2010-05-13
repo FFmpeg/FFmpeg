@@ -256,7 +256,7 @@ static int iff_read_header(AVFormatContext *s,
     case AVMEDIA_TYPE_VIDEO:
         switch (compression) {
         case BITMAP_RAW:
-                st->codec->codec_id = CODEC_ID_IFF_ILBM;
+            st->codec->codec_id = CODEC_ID_IFF_ILBM;
             break;
         case BITMAP_BYTERUN1:
             st->codec->codec_id = CODEC_ID_IFF_BYTERUN1;
