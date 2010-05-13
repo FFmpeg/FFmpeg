@@ -306,9 +306,9 @@ int main(int argc, char *argv[])
 
 error_out:
     if (infile)
-    fclose(infile);
+        fclose(infile);
     if (outfile)
-    fclose(outfile);
+        fclose(outfile);
     free(moov_atom);
     free(ftyp_atom);
     return 1;
