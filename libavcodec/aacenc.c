@@ -201,7 +201,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     lengths[1] = ff_aac_num_swb_128[i];
     ff_psy_init(&s->psy, avctx, 2, sizes, lengths);
     s->psypp = ff_psy_preprocess_init(avctx);
-    s->coder = &ff_aac_coders[0];
+    s->coder = &ff_aac_coders[2];
 
     s->lambda = avctx->global_quality ? avctx->global_quality : 120;
 #if !CONFIG_HARDCODED_TABLES
