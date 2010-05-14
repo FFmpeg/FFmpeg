@@ -57,14 +57,14 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     pp->UsedForReferenceFlags  = 0;
     pp->NonExistingFrameFlags  = 0;
     for (i = 0, j = 0; i < FF_ARRAY_ELEMS(pp->RefFrameList); i++) {
-            const Picture *r;
-            if (j < h->short_ref_count) {
-                r = h->short_ref[j++];
-            } else {
-                r = NULL;
-                while (!r && j < h->short_ref_count + 16)
-                    r = h->long_ref[j++ - h->short_ref_count];
-            }
+        const Picture *r;
+        if (j < h->short_ref_count) {
+            r = h->short_ref[j++];
+        } else {
+            r = NULL;
+            while (!r && j < h->short_ref_count + 16)
+                r = h->long_ref[j++ - h->short_ref_count];
+        }
         if (r) {
             fill_picture_entry(&pp->RefFrameList[i],
                                ff_dxva2_get_surface_index(ctx, r),
