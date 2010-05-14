@@ -195,7 +195,7 @@ static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
         int attack_n = 0;
         for (i = 0; i < 8; i++) {
             for (j = 0; j < 128; j++) {
-                v = iir_filter(audio[(i*128+j)*ctx->avctx->channels], pch->iir_state);
+                v = iir_filter(la[(i*128+j)*ctx->avctx->channels], pch->iir_state);
                 sum += v*v;
             }
             s[i]  = sum;
