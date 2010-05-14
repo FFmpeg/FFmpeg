@@ -679,7 +679,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                         int qmaxval;
                         for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                             for (i = 0; i < sce->ics.swb_sizes[g]; i++) {
-                                maxval = fmaxf(maxval, scaled[w2*128+i]);
+                                maxval = FFMAX(maxval, scaled[w2*128+i]);
                             }
                         }
                         qmaxval = maxval * Q34 + 0.4054;
