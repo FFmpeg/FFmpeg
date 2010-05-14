@@ -330,6 +330,114 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
     }
 }
 
+static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
+                                  int win, int group_len, const float lambda)
+{
+    BandCodingPath path[120][12];
+    int w, swb, cb, start, start2, size;
+    int i, j;
+    const int max_sfb  = sce->ics.max_sfb;
+    const int run_bits = sce->ics.num_windows == 1 ? 5 : 3;
+    const int run_esc  = (1 << run_bits) - 1;
+    int idx, ppos, count;
+    int stackrun[120], stackcb[120], stack_len;
+    float next_minrd = INFINITY;
+    int next_mincb = 0;
+
+    abs_pow34_v(s->scoefs, sce->coeffs, 1024);
+    start = win*128;
+    for (cb = 0; cb < 12; cb++) {
+        path[0][cb].cost     = run_bits+4;
+        path[0][cb].prev_idx = -1;
+        path[0][cb].run      = 0;
+    }
+    for (swb = 0; swb < max_sfb; swb++) {
+        start2 = start;
+        size = sce->ics.swb_sizes[swb];
+        if (sce->zeroes[win*16 + swb]) {
+            for (cb = 0; cb < 12; cb++) {
+                path[swb+1][cb].prev_idx = cb;
+                path[swb+1][cb].cost     = path[swb][cb].cost;
+                path[swb+1][cb].run      = path[swb][cb].run + 1;
+            }
+        } else {
+            float minrd = next_minrd;
+            int mincb = next_mincb;
+            int startcb = sce->band_type[win*16+swb];
+            next_minrd = INFINITY;
+            next_mincb = 0;
+            for (cb = 0; cb < startcb; cb++) {
+                path[swb+1][cb].cost = 61450;
+                path[swb+1][cb].prev_idx = -1;
+                path[swb+1][cb].run = 0;
+            }
+            for (cb = startcb; cb < 12; cb++) {
+                float cost_stay_here, cost_get_here;
+                float rd = 0.0f;
+                for (w = 0; w < group_len; w++) {
+                    rd += quantize_band_cost(s, sce->coeffs + start + w*128,
+                                             s->scoefs + start + w*128, size,
+                                             sce->sf_idx[(win+w)*16+swb], cb,
+                                             0, INFINITY, NULL);
+                }
+                cost_stay_here = path[swb][cb].cost + rd;
+                cost_get_here  = minrd              + rd + run_bits + 4;
+                if (   run_value_bits[sce->ics.num_windows == 8][path[swb][cb].run]
+                    != run_value_bits[sce->ics.num_windows == 8][path[swb][cb].run+1])
+                    cost_stay_here += run_bits;
+                if (cost_get_here < cost_stay_here) {
+                    path[swb+1][cb].prev_idx = mincb;
+                    path[swb+1][cb].cost     = cost_get_here;
+                    path[swb+1][cb].run      = 1;
+                } else {
+                    path[swb+1][cb].prev_idx = cb;
+                    path[swb+1][cb].cost     = cost_stay_here;
+                    path[swb+1][cb].run      = path[swb][cb].run + 1;
+                }
+                if (path[swb+1][cb].cost < next_minrd) {
+                    next_minrd = path[swb+1][cb].cost;
+                    next_mincb = cb;
+                }
+            }
+        }
+        start += sce->ics.swb_sizes[swb];
+    }
+
+    //convert resulting path from backward-linked list
+    stack_len = 0;
+    idx       = 0;
+    for (cb = 1; cb < 12; cb++)
+        if (path[max_sfb][cb].cost < path[max_sfb][idx].cost)
+            idx = cb;
+    ppos = max_sfb;
+    while (ppos > 0) {
+        if (idx < 0) abort();
+        cb = idx;
+        stackrun[stack_len] = path[ppos][cb].run;
+        stackcb [stack_len] = cb;
+        idx = path[ppos-path[ppos][cb].run+1][cb].prev_idx;
+        ppos -= path[ppos][cb].run;
+        stack_len++;
+    }
+    //perform actual band info encoding
+    start = 0;
+    for (i = stack_len - 1; i >= 0; i--) {
+        put_bits(&s->pb, 4, stackcb[i]);
+        count = stackrun[i];
+        memset(sce->zeroes + win*16 + start, !stackcb[i], count);
+        //XXX: memset when band_type is also uint8_t
+        for (j = 0; j < count; j++) {
+            sce->band_type[win*16 + start] =  stackcb[i];
+            start++;
+        }
+        while (count >= run_esc) {
+            put_bits(&s->pb, run_bits, run_esc);
+            count -= run_esc;
+        }
+        put_bits(&s->pb, run_bits, count);
+    }
+}
+
 typedef struct TrellisPath {
     float cost;
     int prev;
@@ -582,6 +690,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                         else if (qmaxval <=  7) cb = 7;
                         else if (qmaxval <= 12) cb = 9;
                         else                    cb = 11;
+                        sce->band_type[w*16+g] = cb;
                         for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                             int b;
                             dist += quantize_band_cost(s, coefs + w2*128,
@@ -920,7 +1029,7 @@ AACCoefficientsEncoder ff_aac_coders[] = {
     },
     {
         search_for_quantizers_twoloop,
-        encode_window_bands_info,
+        codebook_trellis_rate,
         quantize_and_encode_band,
         search_for_ms,
     },
