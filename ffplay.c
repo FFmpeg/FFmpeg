@@ -1565,7 +1565,7 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     AVFilterContext *ctx = codec->opaque;
     AVFilterPicRef  *ref;
     int perms = AV_PERM_WRITE;
-    int w, h, stride[4];
+    int i, w, h, stride[4];
     unsigned edge;
 
     if(pic->buffer_hints & FF_BUFFER_HINTS_VALID) {
@@ -1587,7 +1587,7 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
 
     ref->w = codec->width;
     ref->h = codec->height;
-    for(int i = 0; i < 3; i ++) {
+    for(i = 0; i < 3; i ++) {
         unsigned hshift = i == 0 ? 0 : av_pix_fmt_descriptors[ref->pic->format].log2_chroma_w;
         unsigned vshift = i == 0 ? 0 : av_pix_fmt_descriptors[ref->pic->format].log2_chroma_h;
 
