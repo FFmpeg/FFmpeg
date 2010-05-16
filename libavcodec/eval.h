@@ -33,37 +33,39 @@ typedef struct AVExpr AVExpr;
  * Note, this is significantly slower than ff_eval_expr().
  *
  * @param s expression as a zero terminated string for example "1+2^3+5*5+sin(2/3)"
- * @param func1 NULL terminated array of function pointers for functions which take 1 argument
- * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
  * @param const_name NULL terminated array of zero terminated strings of constant identifers for example {"PI", "E", 0}
- * @param func1_name NULL terminated array of zero terminated strings of func1 identifers
- * @param func2_name NULL terminated array of zero terminated strings of func2 identifers
- * @param error pointer to a char* which is set to an error message if something goes wrong
  * @param const_value a zero terminated array of values for the identifers from const_name
+ * @param func1_name NULL terminated array of zero terminated strings of func1 identifers
+ * @param func1 NULL terminated array of function pointers for functions which take 1 argument
+ * @param func2_name NULL terminated array of zero terminated strings of func2 identifers
+ * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
+ * @param error pointer to a char* which is set to an error message if something goes wrong
  * @param opaque a pointer which will be passed to all functions from func1 and func2
  * @return the value of the expression
  */
-double ff_parse_and_eval_expr(const char *s, const double *const_value, const char * const *const_name,
-               double (* const *func1)(void *, double), const char * const *func1_name,
-               double (* const *func2)(void *, double, double), const char * const *func2_name,
+double ff_parse_and_eval_expr(const char *s,
+                              const char * const *const_name, const double *const_value,
+                              const char * const *func1_name, double (* const *func1)(void *, double),
+                              const char * const *func2_name, double (* const *func2)(void *, double, double),
                void *opaque, const char **error);
 
 /**
  * Parses an expression.
  *
  * @param s expression as a zero terminated string for example "1+2^3+5*5+sin(2/3)"
- * @param func1 NULL terminated array of function pointers for functions which take 1 argument
- * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
  * @param const_name NULL terminated array of zero terminated strings of constant identifers for example {"PI", "E", 0}
  * @param func1_name NULL terminated array of zero terminated strings of func1 identifers
+ * @param func1 NULL terminated array of function pointers for functions which take 1 argument
  * @param func2_name NULL terminated array of zero terminated strings of func2 identifers
+ * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
  * @param error pointer to a char* which is set to an error message if something goes wrong
  * @return AVExpr which must be freed with ff_free_expr() by the user when it is not needed anymore
  *         NULL if anything went wrong
  */
-AVExpr *ff_parse_expr(const char *s, const char * const *const_name,
-               double (* const *func1)(void *, double), const char * const *func1_name,
-               double (* const *func2)(void *, double, double), const char * const *func2_name,
+AVExpr *ff_parse_expr(const char *s,
+                      const char * const *const_name,
+                      const char * const *func1_name, double (* const *func1)(void *, double),
+                      const char * const *func2_name, double (* const *func2)(void *, double, double),
                const char **error);
 
 /**
