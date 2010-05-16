@@ -68,8 +68,8 @@ enum PixelFormat {
     PIX_FMT_YUV410P,   ///< planar YUV 4:1:0,  9bpp, (1 Cr & Cb sample per 4x4 Y samples)
     PIX_FMT_YUV411P,   ///< planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples)
     PIX_FMT_GRAY8,     ///<        Y        ,  8bpp
-    PIX_FMT_MONOWHITE, ///<        Y        ,  1bpp, 0 is white, 1 is black
-    PIX_FMT_MONOBLACK, ///<        Y        ,  1bpp, 0 is black, 1 is white
+    PIX_FMT_MONOWHITE, ///<        Y        ,  1bpp, 0 is white, 1 is black, in each byte pixels are ordered from the msb to the lsb
+    PIX_FMT_MONOBLACK, ///<        Y        ,  1bpp, 0 is black, 1 is white, in each byte pixels are ordered from the msb to the lsb
     PIX_FMT_PAL8,      ///< 8 bit with PIX_FMT_RGB32 palette
     PIX_FMT_YUVJ420P,  ///< planar YUV 4:2:0, 12bpp, full scale (JPEG)
     PIX_FMT_YUVJ422P,  ///< planar YUV 4:2:2, 16bpp, full scale (JPEG)
