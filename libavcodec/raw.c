@@ -90,7 +90,7 @@ const PixelFormatTag ff_raw_pixelFormatTags[] = {
     { PIX_FMT_YUV444P,  MKTAG('4', '4', '4', 'P') },
     { PIX_FMT_YUVJ444P, MKTAG('4', '4', '4', 'P') },
     { PIX_FMT_MONOWHITE,MKTAG('B', '1', 'W', '0') },
-    { PIX_FMT_MONOBLACK,MKTAG('B', 'O', 'W', '1') },
+    { PIX_FMT_MONOBLACK,MKTAG('B', '0', 'W', '1') },
     { PIX_FMT_BGR8,     MKTAG('B', 'G', 'R',  8 ) },
     { PIX_FMT_RGB8,     MKTAG('R', 'G', 'B',  8 ) },
     { PIX_FMT_BGR4,     MKTAG('B', 'G', 'R',  4 ) },
