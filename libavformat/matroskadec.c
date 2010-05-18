@@ -641,8 +641,10 @@ static int ebml_read_binary(ByteIOContext *pb, int length, EbmlBin *bin)
 
     bin->size = length;
     bin->pos  = url_ftell(pb);
-    if (get_buffer(pb, bin->data, length) != length)
+    if (get_buffer(pb, bin->data, length) != length) {
+        av_freep(&bin->data);
         return AVERROR(EIO);
+    }
 
     return 0;
 }
