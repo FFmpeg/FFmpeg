@@ -1154,6 +1154,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     matroska_execute_seekhead(matroska);
 
+    if (!matroska->time_scale)
+        matroska->time_scale = 1000000;
     if (matroska->duration)
         matroska->ctx->duration = matroska->duration * matroska->time_scale
                                   * 1000 / AV_TIME_BASE;
