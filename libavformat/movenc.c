@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "movenc.h"
 #include "avformat.h"
 #include "riff.h"
 #include "avio.h"
@@ -31,65 +32,6 @@
 
 #undef NDEBUG
 #include <assert.h>
-
-#define MOV_INDEX_CLUSTER_SIZE 16384
-#define MOV_TIMESCALE 1000
-
-#define MODE_MP4  0x01
-#define MODE_MOV  0x02
-#define MODE_3GP  0x04
-#define MODE_PSP  0x08 // example working PSP command line:
-// ffmpeg -i testinput.avi  -f psp -r 14.985 -s 320x240 -b 768 -ar 24000 -ab 32 M4V00001.MP4
-#define MODE_3G2  0x10
-#define MODE_IPOD 0x20
-
-typedef struct MOVIentry {
-    unsigned int size;
-    uint64_t     pos;
-    unsigned int samplesInChunk;
-    unsigned int entries;
-    int          cts;
-    int64_t      dts;
-#define MOV_SYNC_SAMPLE         0x0001
-#define MOV_PARTIAL_SYNC_SAMPLE 0x0002
-    uint32_t     flags;
-} MOVIentry;
-
-typedef struct MOVIndex {
-    int         mode;
-    int         entry;
-    unsigned    timescale;
-    uint64_t    time;
-    int64_t     trackDuration;
-    long        sampleCount;
-    long        sampleSize;
-    int         hasKeyframes;
-#define MOV_TRACK_CTTS         0x0001
-#define MOV_TRACK_STPS         0x0002
-    uint32_t    flags;
-    int         language;
-    int         trackID;
-    int         tag; ///< stsd fourcc
-    AVCodecContext *enc;
-
-    int         vosLen;
-    uint8_t     *vosData;
-    MOVIentry   *cluster;
-    int         audio_vbr;
-    int         height; ///< active picture (w/o VBI) height for D-10/IMX
-    uint32_t    tref_tag;
-    int         tref_id; ///< trackID of the referenced track
-} MOVTrack;
-
-typedef struct MOVMuxContext {
-    int     mode;
-    int64_t time;
-    int     nb_streams;
-    int     chapter_track; ///< qt chapter track number
-    int64_t mdat_pos;
-    uint64_t mdat_size;
-    MOVTrack *tracks;
-} MOVMuxContext;
 
 //FIXME support 64 bit variant with wide placeholders
 static int64_t updateSize(ByteIOContext *pb, int64_t pos)
