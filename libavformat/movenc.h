@@ -85,4 +85,6 @@ typedef struct MOVMuxContext {
     MOVTrack *tracks;
 } MOVMuxContext;
 
+int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
+
 #endif /* AVFORMAT_MOVENC_H */

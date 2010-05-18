@@ -1785,7 +1785,7 @@ static int mov_parse_mpeg2_frame(AVPacket *pkt, uint32_t *flags)
     return 0;
 }
 
-static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
+int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVMuxContext *mov = s->priv_data;
     ByteIOContext *pb = s->pb;
@@ -1910,7 +1910,7 @@ static void mov_create_chapter_track(AVFormatContext *s, int tracknum)
             pkt.data = av_malloc(pkt.size);
             AV_WB16(pkt.data, len);
             memcpy(pkt.data+2, t->value, len);
-            mov_write_packet(s, &pkt);
+            ff_mov_write_packet(s, &pkt);
             av_freep(&pkt.data);
         }
     }
@@ -2084,7 +2084,7 @@ AVOutputFormat mov_muxer = {
     CODEC_ID_AAC,
     CODEC_ID_MPEG4,
     mov_write_header,
-    mov_write_packet,
+    ff_mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag* const []){codec_movvideo_tags, codec_movaudio_tags, 0},
@@ -2100,7 +2100,7 @@ AVOutputFormat tgp_muxer = {
     CODEC_ID_AMR_NB,
     CODEC_ID_H263,
     mov_write_header,
-    mov_write_packet,
+    ff_mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
@@ -2116,7 +2116,7 @@ AVOutputFormat mp4_muxer = {
     CODEC_ID_AAC,
     CODEC_ID_MPEG4,
     mov_write_header,
-    mov_write_packet,
+    ff_mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
@@ -2132,7 +2132,7 @@ AVOutputFormat psp_muxer = {
     CODEC_ID_AAC,
     CODEC_ID_MPEG4,
     mov_write_header,
-    mov_write_packet,
+    ff_mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
@@ -2148,7 +2148,7 @@ AVOutputFormat tg2_muxer = {
     CODEC_ID_AMR_NB,
     CODEC_ID_H263,
     mov_write_header,
-    mov_write_packet,
+    ff_mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
@@ -2164,7 +2164,7 @@ AVOutputFormat ipod_muxer = {
     CODEC_ID_AAC,
     CODEC_ID_H264,
     mov_write_header,
-    mov_write_packet,
+    ff_mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_ipod_tags, 0},
