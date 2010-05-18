@@ -3843,6 +3843,7 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
             av->nsse_weight = 8;
 
         av->frame_skip_cmp = FF_CMP_DCTMAX;
+        if (!av->me_method)
         av->me_method = ME_EPZS;
         av->rc_buffer_aggressivity = 1.0;
 
