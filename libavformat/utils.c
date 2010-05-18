@@ -20,6 +20,7 @@
  */
 #include "avformat.h"
 #include "internal.h"
+#include "libavcodec/internal.h"
 #include "libavcodec/opt.h"
 #include "metadata.h"
 #include "libavutil/avstring.h"
@@ -2041,10 +2042,7 @@ enum CodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag)
             return tags[i].id;
     }
     for(i=0; tags[i].id != CODEC_ID_NONE; i++) {
-        if(   toupper((tag >> 0)&0xFF) == toupper((tags[i].tag >> 0)&0xFF)
-           && toupper((tag >> 8)&0xFF) == toupper((tags[i].tag >> 8)&0xFF)
-           && toupper((tag >>16)&0xFF) == toupper((tags[i].tag >>16)&0xFF)
-           && toupper((tag >>24)&0xFF) == toupper((tags[i].tag >>24)&0xFF))
+        if (ff_toupper4(tag) == ff_toupper4(tags[i].tag))
             return tags[i].id;
     }
     return CODEC_ID_NONE;

@@ -48,4 +48,6 @@ AVHWAccel *ff_find_hwaccel(enum CodecID codec_id, enum PixelFormat pix_fmt);
  */
 int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b);
 
+unsigned int ff_toupper4(unsigned int x);
+
 #endif /* AVCODEC_INTERNAL_H */
