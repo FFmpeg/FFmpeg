@@ -621,7 +621,7 @@ static int ebml_read_ascii(ByteIOContext *pb, int size, char **str)
     if (!(*str = av_malloc(size + 1)))
         return AVERROR(ENOMEM);
     if (get_buffer(pb, (uint8_t *) *str, size) != size) {
-        av_free(*str);
+        av_freep(str);
         return AVERROR(EIO);
     }
     (*str)[size] = '\0';
