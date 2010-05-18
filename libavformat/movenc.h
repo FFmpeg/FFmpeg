@@ -29,6 +29,8 @@
 #define MOV_INDEX_CLUSTER_SIZE 16384
 #define MOV_TIMESCALE 1000
 
+#define RTP_MAX_PACKET_SIZE 1450
+
 #define MODE_MP4  0x01
 #define MODE_MOV  0x02
 #define MODE_3GP  0x04
@@ -73,6 +75,13 @@ typedef struct MOVIndex {
     int         height; ///< active picture (w/o VBI) height for D-10/IMX
     uint32_t    tref_tag;
     int         tref_id; ///< trackID of the referenced track
+
+    int         hint_track;   ///< the track that hints this track, -1 if no hint track is set
+    int         src_track;    ///< the track that this hint track describes
+    AVFormatContext *rtp_ctx; ///< the format context for the hinting rtp muxer
+    uint32_t    prev_rtp_ts;
+    int64_t     cur_rtp_ts_unwrapped;
+    uint32_t    max_packet_size;
 } MOVTrack;
 
 typedef struct MOVMuxContext {
@@ -86,5 +95,10 @@ typedef struct MOVMuxContext {
 } MOVMuxContext;
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
+
+int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index);
+int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
+                             int track_index, int sample);
+void ff_mov_close_hinting(MOVTrack *track);
 
 #endif /* AVFORMAT_MOVENC_H */
