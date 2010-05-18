@@ -807,6 +807,16 @@ static int mpegts_push_data(MpegTSFilter *filter,
                 pes->data_index += buf_size;
             }
             buf_size = 0;
+            /* emit complete packets with known packet size
+             * decreases demuxer delay for infrequent packets like subtitles from
+             * a couple of seconds to milliseconds for properly muxed files.
+             * total_size is the number of bytes following pes_packet_length
+             * in the pes header, i.e. not counting the first 6 bytes */
+            if (pes->total_size < MAX_PES_PAYLOAD &&
+                pes->pes_header_size + pes->data_index == pes->total_size + 6) {
+                ts->stop_parse = 1;
+                new_pes_packet(pes, ts->pkt);
+            }
             break;
         case MPEGTS_SKIP:
             buf_size = 0;
