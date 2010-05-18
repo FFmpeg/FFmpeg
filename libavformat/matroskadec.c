@@ -679,7 +679,7 @@ static int matroska_ebmlnum_uint(MatroskaDemuxContext *matroska,
 {
     ByteIOContext pb;
     init_put_byte(&pb, data, size, 0, NULL, NULL, NULL, NULL);
-    return ebml_read_num(matroska, &pb, 8, num);
+    return ebml_read_num(matroska, &pb, FFMIN(size, 8), num);
 }
 
 /*
