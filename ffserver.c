@@ -2777,7 +2777,7 @@ static void rtsp_reply_header(HTTPContext *c, enum RTSPStatusCode error_number)
 {
     const char *str;
     time_t ti;
-    char *p;
+    struct tm *tm;
     char buf2[32];
 
     switch(error_number) {
@@ -2824,11 +2824,8 @@ static void rtsp_reply_header(HTTPContext *c, enum RTSPStatusCode error_number)
 
     /* output GMT time */
     ti = time(NULL);
-    p = ctime(&ti);
-    strcpy(buf2, p);
-    p = buf2 + strlen(p) - 1;
-    if (*p == '\n')
-        *p = '\0';
+    tm = gmtime(&ti);
+    strftime(buf2, sizeof(buf2), "%a, %d %b %Y %H:%M:%S", tm);
     url_fprintf(c->pb, "Date: %s GMT\r\n", buf2);
 }
 
