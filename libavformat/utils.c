@@ -2573,6 +2573,39 @@ int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
+static int validate_codec_tag(AVFormatContext *s, AVStream *st)
+{
+    const AVCodecTag *avctag;
+    int n;
+    enum CodecID id = CODEC_ID_NONE;
+    unsigned int tag = 0;
+
+    /**
+     * Check that tag + id is in the table
+     * If neither is in the table -> OK
+     * If tag is in the table with another id -> FAIL
+     * If id is in the table with another tag -> FAIL unless strict < normal
+     */
+    for (n = 0; s->oformat->codec_tag[n]; n++) {
+        avctag = s->oformat->codec_tag[n];
+        while (avctag->id != CODEC_ID_NONE) {
+            if (ff_toupper4(avctag->tag) == ff_toupper4(st->codec->codec_tag)) {
+                id = avctag->id;
+                if (id == st->codec->codec_id)
+                    return 1;
+            }
+            if (avctag->id == st->codec->codec_id)
+                tag = avctag->tag;
+            avctag++;
+        }
+    }
+    if (id != CODEC_ID_NONE)
+        return 0;
+    if (tag && (st->codec->strict_std_compliance >= FF_COMPLIANCE_NORMAL))
+        return 0;
+    return 1;
+}
+
 int av_write_header(AVFormatContext *s)
 {
     int ret, i;
@@ -2615,11 +2648,12 @@ int av_write_header(AVFormatContext *s)
 
         if(s->oformat->codec_tag){
             if(st->codec->codec_tag){
-                //FIXME
-                //check that tag + id is in the table
-                //if neither is in the table -> OK
-                //if tag is in the table with another id -> FAIL
-                //if id is in the table with another tag -> FAIL unless strict < ?
+                if (!validate_codec_tag(s, st)) {
+                    av_log(s, AV_LOG_ERROR,
+                           "Tag 0x%08x incompatible with output codec\n",
+                           st->codec->codec_tag);
+                    return AVERROR_INVALIDDATA;
+                }
             }else
                 st->codec->codec_tag= av_codec_get_tag(s->oformat->codec_tag, st->codec->codec_id);
         }
