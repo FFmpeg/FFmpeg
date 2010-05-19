@@ -210,6 +210,7 @@ enum CodecID {
     CODEC_ID_IFF_BYTERUN1,
     CODEC_ID_KGV1,
     CODEC_ID_YOP,
+    CODEC_ID_VP8,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
