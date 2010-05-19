@@ -70,6 +70,7 @@ version <next>:
 - Psygnosis YOP demuxer and video decoder
 - spectral extension support in the E-AC-3 decoder
 - unsharp video filter
+- RTP hinting in the mov/3gp/mp4 muxer
 
 
 
