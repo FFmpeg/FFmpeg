@@ -1337,6 +1337,8 @@ static int rtsp_read_play(AVFormatContext *s)
                 RTSPStream *rtsp_st = rt->rtsp_streams[i];
                 RTPDemuxContext *rtpctx = rtsp_st->transport_priv;
                 AVStream *st = NULL;
+                if (!rtpctx)
+                    continue;
                 if (rtsp_st->stream_index >= 0)
                     st = s->streams[rtsp_st->stream_index];
                 rtpctx->last_rtcp_ntp_time  = AV_NOPTS_VALUE;
