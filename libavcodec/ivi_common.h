@@ -89,7 +89,7 @@ typedef struct {
     uint32_t    buf_offs; ///< address in the output buffer for this mb
     uint8_t     type;     ///< macroblock type: 0 - INTRA, 1 - INTER
     uint8_t     cbp;      ///< coded block pattern
-    uint8_t     q_delta;  ///< quant delta
+    int8_t      q_delta;  ///< quant delta
     int8_t      mv_x;     ///< motion vector (x component)
     int8_t      mv_y;     ///< motion vector (y component)
 } IVIMbInfo;
