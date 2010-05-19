@@ -62,6 +62,14 @@ typedef struct {
      * 0 means there is no such variable
      */
     int log_level_offset_offset;
+
+    /**
+     * Offset in the structure where a pointer to the parent context for loging is stored.
+     * for example a decoder that uses eval.c could pass its AVCodecContext to eval as such
+     * parent context. And a av_log() implementation could then display the parent context
+     * can be NULL of course
+     */
+    int parent_log_context_offset;
 } AVClass;
 
 /* av_log API */
