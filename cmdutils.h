@@ -134,6 +134,15 @@ void parse_options(int argc, char **argv, const OptionDef *options,
 
 void set_context_opts(void *ctx, void *opts_ctx, int flags);
 
+/**
+ * Prints an error message to stderr, indicating filename and a human
+ * readable description of the error code err.
+ *
+ * If strerror_r() is not available the use of this function in a
+ * multithreaded application may be unsafe.
+ *
+ * @see av_strerror()
+ */
 void print_error(const char *filename, int err);
 
 void list_fmts(void (*get_fmt_string)(char *buf, int buf_size, int fmt), int nb_fmts);
