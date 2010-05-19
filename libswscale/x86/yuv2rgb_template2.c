@@ -124,16 +124,16 @@
     "paddsw    %%mm6, %%mm0\n\t"                 \
     "paddsw    %%mm6, %%mm1\n\t"                 \
     "paddsw    %%mm6, %%mm2\n\t"                 \
-\
+
+#define RGB_PACK_INTERLEAVE                  \
     /* pack and interleave even/odd pixels */    \
-    "packuswb  %%mm0, %%mm0\n\t"                 \
-    "packuswb  %%mm1, %%mm1\n\t"                 \
+    "packuswb  %%mm1, %%mm0\n\t"                 \
+    "packuswb  %%mm5, %%mm3\n\t"                 \
     "packuswb  %%mm2, %%mm2\n\t"                 \
-    "packuswb  %%mm3, %%mm3\n\t"                 \
-    "packuswb  %%mm5, %%mm5\n\t"                 \
+    "movq      %%mm0, %%mm1\n\n"                 \
     "packuswb  %%mm7, %%mm7\n\t"                 \
     "punpcklbw %%mm3, %%mm0\n\t"                 \
-    "punpcklbw %%mm5, %%mm1\n\t"                 \
+    "punpckhbw %%mm3, %%mm1\n\t"                 \
     "punpcklbw %%mm7, %%mm2\n\t"                 \
 
 #define YUV2RGB_ENDLOOP(depth)                   \
@@ -210,6 +210,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, const uint8_t *src[],
 
         YUV2RGB_INITIAL_LOAD
         YUV2RGB
+        RGB_PACK_INTERLEAVE
 #ifdef DITHER1XBPP
         DITHER_RGB
 #endif
@@ -237,6 +238,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, const uint8_t *src[],
 
         YUV2RGB_INITIAL_LOAD
         YUV2RGB
+        RGB_PACK_INTERLEAVE
 #ifdef DITHER1XBPP
         DITHER_RGB
 #endif
@@ -247,73 +249,66 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, const uint8_t *src[],
     YUV2RGB_ENDFUNC
 }
 
+#define RGB_PACK24(blue, red)\
+    "packuswb  %%mm3,      %%mm0 \n" /* R0 R2 R4 R6 R1 R3 R5 R7 */\
+    "packuswb  %%mm5,      %%mm1 \n" /* B0 B2 B4 B6 B1 B3 B5 B7 */\
+    "packuswb  %%mm7,      %%mm2 \n" /* G0 G2 G4 G6 G1 G3 G5 G7 */\
+    "movq      %%mm"red",  %%mm3 \n"\
+    "movq      %%mm"blue", %%mm6 \n"\
+    "psrlq     $32,        %%mm"red" \n" /* R1 R3 R5 R7 */\
+    "punpcklbw %%mm2,      %%mm3 \n" /* R0 G0 R2 G2 R4 G4 R6 G6 */\
+    "punpcklbw %%mm"red",  %%mm6 \n" /* B0 R1 B2 R3 B4 R5 B6 R7 */\
+    "movq      %%mm3,      %%mm5 \n"\
+    "punpckhbw %%mm"blue", %%mm2 \n" /* G1 B1 G3 B3 G5 B5 G7 B7 */\
+    "punpcklwd %%mm6,      %%mm3 \n" /* R0 G0 B0 R1 R2 G2 B2 R3 */\
+    "punpckhwd %%mm6,      %%mm5 \n" /* R4 G4 B4 R5 R6 G6 B6 R7 */\
+    RGB_PACK24_B
 
-#define RGB_PACK24(red, blue)              \
-    /* generate first packed RGB octet */  \
-    "movq      %%mm2,      %%mm5\n\t"      \
-    "movq      %%mm"blue", %%mm6\n\t"      \
-    "movq      %%mm"red",  %%mm7\n\t"      \
-    "punpcklbw %%mm5,      %%mm6\n\t"      \
-    "punpcklbw %%mm4,      %%mm7\n\t"      \
-    "movq      %%mm6,      %%mm3\n\t"      \
-    "punpcklwd %%mm7,      %%mm6\n\t"      \
-    "psrlq     $32,        %%mm3\n\t"      \
-    "movq      %%mm6,      %%mm5\n\t"      \
-    "psllq     $40,        %%mm6\n\t"      \
-    "psllq     $48,        %%mm3\n\t"      \
-    "psrlq     $32,        %%mm5\n\t"      \
-    "psrlq     $40,        %%mm6\n\t"      \
-    "psllq     $24,        %%mm5\n\t"      \
-    "por       %%mm3,      %%mm6\n\t"      \
-    "por       %%mm5,      %%mm6\n\t"      \
-    MOVNTQ "   %%mm6,      (%1)\n\t"       \
-\
-    /* generate second packed RGB octet */ \
-    "movq      %%mm"red",  %%mm7\n\t"      \
-    "movq      %%mm2,      %%mm5\n\t"      \
-    "movq      %%mm"blue", %%mm6\n\t"      \
-    "punpcklbw %%mm4,      %%mm7\n\t"      \
-    "punpcklbw %%mm5,      %%mm6\n\t"      \
-    "movq      %%mm7,      %%mm3\n\t"      \
-    "punpckhwd %%mm7,      %%mm6\n\t"      \
-    "psllq     $16,        %%mm3\n\t"      \
-    "psrlq     $32,        %%mm6\n\t"      \
-    "psrlq     $48,        %%mm3\n\t"      \
-    "psllq     $8,         %%mm6\n\t"      \
-    "movq      %%mm"red",  %%mm7\n\t"      \
-    "por       %%mm6,      %%mm3\n\t"      \
-    "movq      %%mm"blue", %%mm6\n\t"      \
-    "movq      %%mm2,      %%mm5\n\t"      \
-    "punpckhbw %%mm4,      %%mm7\n\t"      \
-    "punpckhbw %%mm5,      %%mm6\n\t"      \
-    "movq      %%mm6,      %%mm5\n\t"      \
-    "punpcklwd %%mm7,      %%mm6\n\t"      \
-    "psrlq     $16,        %%mm5\n\t"      \
-    "psllq     $56,        %%mm5\n\t"      \
-    "por       %%mm5,      %%mm3\n\t"      \
-    "psllq     $32,        %%mm6\n\t"      \
-    "por       %%mm6,      %%mm3\n\t"      \
-    MOVNTQ "   %%mm3,      8(%1)\n\t"      \
-\
-    /* generate third packed RGB octet */  \
-    "movq      %%mm"red",  %%mm7\n\t"      \
-    "movq      %%mm2,      %%mm5\n\t"      \
-    "movq      %%mm2,      %%mm3\n\t"      \
-    "movq      %%mm"blue", %%mm6\n\t"      \
-    "punpckhbw %%mm"red",  %%mm3\n\t"      \
-    "punpckhbw %%mm4,      %%mm7\n\t"      \
-    "psllq     $32,        %%mm3\n\t"      \
-    "punpckhbw %%mm5,      %%mm6\n\t"      \
-    "psrlq     $48,        %%mm3\n\t"      \
-    "punpckhwd %%mm7,      %%mm6\n\t"      \
-    "movq      %%mm6,      %%mm7\n\t"      \
-    "psrlq     $32,        %%mm6\n\t"      \
-    "psllq     $32,        %%mm7\n\t"      \
-    "psllq     $40,        %%mm6\n\t"      \
-    "psrlq     $16,        %%mm7\n\t"      \
-    "por       %%mm6,      %%mm3\n\t"      \
-    "por       %%mm7,      %%mm3\n\t"      \
-    MOVNTQ "   %%mm3,      16(%1)\n\t"     \
+#if HAVE_MMX2
+DECLARE_ASM_CONST(8, int16_t, mask1101[4]) = {-1,-1, 0,-1};
+DECLARE_ASM_CONST(8, int16_t, mask0010[4]) = { 0, 0,-1, 0};
+DECLARE_ASM_CONST(8, int16_t, mask0110[4]) = { 0,-1,-1, 0};
+DECLARE_ASM_CONST(8, int16_t, mask1001[4]) = {-1, 0, 0,-1};
+DECLARE_ASM_CONST(8, int16_t, mask0100[4]) = { 0,-1, 0, 0};
+#undef RGB_PACK24_B
+#define RGB_PACK24_B\
+    "pshufw    $0xc6,  %%mm2, %%mm1 \n"\
+    "pshufw    $0x84,  %%mm3, %%mm6 \n"\
+    "pshufw    $0x38,  %%mm5, %%mm7 \n"\
+    "pand "MANGLE(mask1101)", %%mm6 \n" /* R0 G0 B0 R1 -- -- R2 G2 */\
+    "movq      %%mm1,         %%mm0 \n"\
+    "pand "MANGLE(mask0110)", %%mm7 \n" /* -- -- R6 G6 B6 R7 -- -- */\
+    "movq      %%mm1,         %%mm2 \n"\
+    "pand "MANGLE(mask0100)", %%mm1 \n" /* -- -- G3 B3 -- -- -- -- */\
+    "psrlq       $48,         %%mm3 \n" /* B2 R3 -- -- -- -- -- -- */\
+    "pand "MANGLE(mask0010)", %%mm0 \n" /* -- -- -- -- G1 B1 -- -- */\
+    "psllq       $32,         %%mm5 \n" /* -- -- -- -- R4 G4 B4 R5 */\
+    "pand "MANGLE(mask1001)", %%mm2 \n" /* G5 B5 -- -- -- -- G7 B7 */\
+    "por       %%mm3,         %%mm1 \n"\
+    "por       %%mm6,         %%mm0 \n"\
+    "por       %%mm5,         %%mm1 \n"\
+    "por       %%mm7,         %%mm2 \n"\
+    MOVNTQ"    %%mm0,          (%1) \n"\
+    MOVNTQ"    %%mm1,         8(%1) \n"\
+    MOVNTQ"    %%mm2,        16(%1) \n"\
+
+#else
+#undef RGB_PACK24_B
+#define RGB_PACK24_B\
+    "movd      %%mm3,       (%1) \n" /* R0 G0 B0 R1 */\
+    "movd      %%mm2,      4(%1) \n" /* G1 B1 */\
+    "psrlq     $32,        %%mm3 \n"\
+    "psrlq     $16,        %%mm2 \n"\
+    "movd      %%mm3,      6(%1) \n" /* R2 G2 B2 R3 */\
+    "movd      %%mm2,     10(%1) \n" /* G3 B3 */\
+    "psrlq     $16,        %%mm2 \n"\
+    "movd      %%mm5,     12(%1) \n" /* R4 G4 B4 R5 */\
+    "movd      %%mm2,     16(%1) \n" /* G5 B5 */\
+    "psrlq     $32,        %%mm5 \n"\
+    "movd      %%mm2,     20(%1) \n" /* -- -- G7 B7 */\
+    "movd      %%mm5,     18(%1) \n" /* R6 G6 B6 R7 */\
+
+#endif
 
 static inline int RENAME(yuv420_rgb24)(SwsContext *c, const uint8_t *src[],
                                        int srcStride[],
@@ -387,6 +382,7 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, const uint8_t *src[],
 
         YUV2RGB_INITIAL_LOAD
         YUV2RGB
+        RGB_PACK_INTERLEAVE
         SET_EMPTY_ALPHA
         RGB_PACK32(REG_RED, REG_GREEN, REG_BLUE, REG_ALPHA)
 
@@ -408,6 +404,7 @@ static inline int RENAME(yuva420_rgb32)(SwsContext *c, const uint8_t *src[],
         const uint8_t *pa = src[3] + y * srcStride[3];
         YUV2RGB_INITIAL_LOAD
         YUV2RGB
+        RGB_PACK_INTERLEAVE
         LOAD_ALPHA
         RGB_PACK32(REG_RED, REG_GREEN, REG_BLUE, REG_ALPHA)
 
@@ -428,6 +425,7 @@ static inline int RENAME(yuv420_bgr32)(SwsContext *c, const uint8_t *src[],
 
         YUV2RGB_INITIAL_LOAD
         YUV2RGB
+        RGB_PACK_INTERLEAVE
         SET_EMPTY_ALPHA
         RGB_PACK32(REG_BLUE, REG_GREEN, REG_RED, REG_ALPHA)
 
@@ -449,6 +447,7 @@ static inline int RENAME(yuva420_bgr32)(SwsContext *c, const uint8_t *src[],
         const uint8_t *pa = src[3] + y * srcStride[3];
         YUV2RGB_INITIAL_LOAD
         YUV2RGB
+        RGB_PACK_INTERLEAVE
         LOAD_ALPHA
         RGB_PACK32(REG_BLUE, REG_GREEN, REG_RED, REG_ALPHA)
 
