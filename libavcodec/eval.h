@@ -39,15 +39,15 @@ typedef struct AVExpr AVExpr;
  * @param func1 NULL terminated array of function pointers for functions which take 1 argument
  * @param func2_name NULL terminated array of zero terminated strings of func2 identifers
  * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
- * @param error pointer to a char* which is set to an error message if something goes wrong
  * @param opaque a pointer which will be passed to all functions from func1 and func2
+ * @param log_ctx parent logging context
  * @return the value of the expression
  */
 double ff_parse_and_eval_expr(const char *s,
                               const char * const *const_name, const double *const_value,
                               const char * const *func1_name, double (* const *func1)(void *, double),
                               const char * const *func2_name, double (* const *func2)(void *, double, double),
-               void *opaque, const char **error);
+                              void *opaque, int log_offset, void *log_ctx);
 
 /**
  * Parses an expression.
@@ -58,7 +58,7 @@ double ff_parse_and_eval_expr(const char *s,
  * @param func1 NULL terminated array of function pointers for functions which take 1 argument
  * @param func2_name NULL terminated array of zero terminated strings of func2 identifers
  * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
- * @param error pointer to a char* which is set to an error message if something goes wrong
+ * @param log_ctx parent logging context
  * @return AVExpr which must be freed with ff_free_expr() by the user when it is not needed anymore
  *         NULL if anything went wrong
  */
@@ -66,7 +66,7 @@ AVExpr *ff_parse_expr(const char *s,
                       const char * const *const_name,
                       const char * const *func1_name, double (* const *func1)(void *, double),
                       const char * const *func2_name, double (* const *func2)(void *, double, double),
-               const char **error);
+                      int log_offset, void *log_ctx);
 
 /**
  * Evaluates a previously parsed expression.
