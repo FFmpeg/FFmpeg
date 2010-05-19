@@ -63,6 +63,7 @@ untested special converters
 #include "libavutil/intreadwrite.h"
 #include "libavutil/x86_cpu.h"
 #include "libavutil/avutil.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/bswap.h"
 #include "libavutil/pixdesc.h"
 
@@ -76,12 +77,6 @@ untested special converters
 #define DITHER1XBPP
 
 #define FAST_BGR2YV12 // use 7 bit coefficients instead of 15 bit
-
-#ifdef M_PI
-#define PI M_PI
-#else
-#define PI 3.14159265358979323846
-#endif
 
 #define isPacked(x)         (       \
            (x)==PIX_FMT_PAL8        \

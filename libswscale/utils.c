@@ -287,7 +287,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
                 }
 /*                else if (flags & SWS_X) {
                     double p= param ? param*0.01 : 0.3;
-                    coeff = d ? sin(d*PI)/(d*PI) : 1.0;
+                    coeff = d ? sin(d*M_PI)/(d*M_PI) : 1.0;
                     coeff*= pow(2.0, - p*d*d);
                 }*/
                 else if (flags & SWS_X) {
