@@ -761,20 +761,11 @@ int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int 
 static int handle_jpeg(enum PixelFormat *format)
 {
     switch (*format) {
-    case PIX_FMT_YUVJ420P:
-        *format = PIX_FMT_YUV420P;
-        return 1;
-    case PIX_FMT_YUVJ422P:
-        *format = PIX_FMT_YUV422P;
-        return 1;
-    case PIX_FMT_YUVJ444P:
-        *format = PIX_FMT_YUV444P;
-        return 1;
-    case PIX_FMT_YUVJ440P:
-        *format = PIX_FMT_YUV440P;
-        return 1;
-    default:
-        return 0;
+    case PIX_FMT_YUVJ420P: *format = PIX_FMT_YUV420P; return 1;
+    case PIX_FMT_YUVJ422P: *format = PIX_FMT_YUV422P; return 1;
+    case PIX_FMT_YUVJ444P: *format = PIX_FMT_YUV444P; return 1;
+    case PIX_FMT_YUVJ440P: *format = PIX_FMT_YUV440P; return 1;
+    default:                                          return 0;
     }
 }
 
