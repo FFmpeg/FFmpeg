@@ -294,17 +294,9 @@ void print_error(const char *filename, int err)
     char errbuf[128];
     const char *errbuf_ptr = errbuf;
 
-    switch(err) {
-#if CONFIG_NETWORK
-    case FF_NETERROR(EPROTONOSUPPORT):
-        fprintf(stderr, "%s: Unsupported network protocol\n", filename);
-        break;
-#endif
-    default:
         if (av_strerror(err, errbuf, sizeof(errbuf)) < 0)
             errbuf_ptr = strerror(AVUNERROR(err));
         fprintf(stderr, "%s: %s\n", filename, errbuf_ptr);
-    }
 }
 
 #define PRINT_LIB_VERSION(outstream,libname,LIBNAME,indent)             \
