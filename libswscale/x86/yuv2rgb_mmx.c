@@ -41,6 +41,9 @@
 DECLARE_ASM_CONST(8, uint64_t, mmx_00ffw)   = 0x00ff00ff00ff00ffULL;
 DECLARE_ASM_CONST(8, uint64_t, mmx_redmask) = 0xf8f8f8f8f8f8f8f8ULL;
 DECLARE_ASM_CONST(8, uint64_t, mmx_grnmask) = 0xfcfcfcfcfcfcfcfcULL;
+DECLARE_ASM_CONST(8, uint64_t, pb_e0) = 0xe0e0e0e0e0e0e0e0ULL;
+DECLARE_ASM_CONST(8, uint64_t, pb_03) = 0x0303030303030303ULL;
+DECLARE_ASM_CONST(8, uint64_t, pb_07) = 0x0707070707070707ULL;
 
 //MMX versions
 #undef RENAME

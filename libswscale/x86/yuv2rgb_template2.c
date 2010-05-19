@@ -162,31 +162,26 @@
     __asm__ volatile (SFENCE"\n\t"EMMS);         \
     return srcSliceH;                            \
 
+#define IF0(x)
+#define IF1(x) x
 
-#define RGB_PACK16(gmask, gshift, rshift)        \
+#define RGB_PACK16(gmask, is15)                  \
     "pand      "MANGLE(mmx_redmask)", %%mm0\n\t" \
     "pand      "MANGLE(mmx_redmask)", %%mm1\n\t" \
+    "movq      %%mm2,     %%mm3\n\t"             \
+    "psllw   $"AV_STRINGIFY(3-is15)", %%mm2\n\t" \
+    "psrlw   $"AV_STRINGIFY(5+is15)", %%mm3\n\t" \
     "psrlw     $3,        %%mm0\n\t"             \
-    "pand      "MANGLE(gmask)",       %%mm2\n\t" \
-    "movq      %%mm0,     %%mm5\n\t"             \
-    "movq      %%mm1,     %%mm6\n\t"             \
-    "movq      %%mm2,     %%mm7\n\t"             \
-    "punpcklbw %%mm4,     %%mm0\n\t"             \
-    "punpcklbw %%mm4,     %%mm1\n\t"             \
-    "punpcklbw %%mm4,     %%mm2\n\t"             \
-    "punpckhbw %%mm4,     %%mm5\n\t"             \
-    "punpckhbw %%mm4,     %%mm6\n\t"             \
-    "punpckhbw %%mm4,     %%mm7\n\t"             \
-    "psllw     $"rshift", %%mm1\n\t"             \
-    "psllw     $"rshift", %%mm6\n\t"             \
-    "psllw     $"gshift", %%mm2\n\t"             \
-    "psllw     $"gshift", %%mm7\n\t"             \
-    "por       %%mm1,     %%mm0\n\t"             \
-    "por       %%mm6,     %%mm5\n\t"             \
+    IF##is15("psrlw  $1,  %%mm1\n\t")            \
+    "pand "MANGLE(pb_e0)", %%mm2\n\t"            \
+    "pand "MANGLE(gmask)", %%mm3\n\t"            \
     "por       %%mm2,     %%mm0\n\t"             \
-    "por       %%mm7,     %%mm5\n\t"             \
+    "por       %%mm3,     %%mm1\n\t"             \
+    "movq      %%mm0,     %%mm2\n\t"             \
+    "punpcklbw %%mm1,     %%mm0\n\t"             \
+    "punpckhbw %%mm1,     %%mm2\n\t"             \
     MOVNTQ "   %%mm0,      (%1)\n\t"             \
-    MOVNTQ "   %%mm5,     8(%1)\n\t"             \
+    MOVNTQ "   %%mm2,     8(%1)\n\t"             \
 
 #define DITHER_RGB                               \
     "paddusb "BLUE_DITHER"(%4),  %%mm0\n\t"      \
@@ -214,7 +209,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, const uint8_t *src[],
 #ifdef DITHER1XBPP
         DITHER_RGB
 #endif
-        RGB_PACK16(mmx_redmask, "2", "7")
+        RGB_PACK16(pb_03, 1)
 
     YUV2RGB_ENDLOOP(2)
     YUV2RGB_OPERANDS
@@ -242,7 +237,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, const uint8_t *src[],
 #ifdef DITHER1XBPP
         DITHER_RGB
 #endif
-        RGB_PACK16(mmx_grnmask, "3", "8")
+        RGB_PACK16(pb_07, 0)
 
     YUV2RGB_ENDLOOP(2)
     YUV2RGB_OPERANDS
