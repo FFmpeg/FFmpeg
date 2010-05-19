@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
         /* keep ftyp atom */
         if (atom_type == FTYP_ATOM) {
             ftyp_atom_size = atom_size;
+            free(ftyp_atom);
             ftyp_atom = malloc(ftyp_atom_size);
             if (!ftyp_atom) {
                 printf ("could not allocate %"PRIu64" byte for ftyp atom\n",
