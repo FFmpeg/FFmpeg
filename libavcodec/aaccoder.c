@@ -804,7 +804,7 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
                 if (dist > uplim[w*16+g])
                     step = -step;
                 scf += step;
-                av_clip_uint8(scf);
+                scf = av_clip_uint8(scf);
                 step = scf - prev_scf;
                 if (FFABS(step) <= 1 || (step > 0 && scf >= max_scf) || (step < 0 && scf <= min_scf)) {
                     sce->sf_idx[w*16+g] = av_clip(scf, min_scf, max_scf);
