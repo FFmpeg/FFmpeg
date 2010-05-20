@@ -78,7 +78,7 @@ AVExpr *ff_parse_expr(const char *s,
 double ff_eval_expr(AVExpr * e, const double *const_value, void *opaque);
 
 /**
- * Frees a parsed expression previously created with ff_parse().
+ * Frees a parsed expression previously created with ff_parse_expr().
  */
 void ff_free_expr(AVExpr *e);
 
