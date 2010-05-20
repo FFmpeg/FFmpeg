@@ -75,7 +75,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     if (avctx->codec_tag == MKTAG('r','a','w',' '))
         avctx->pix_fmt = findPixelFormat(pixelFormatBpsMOV, avctx->bits_per_coded_sample);
     else if (avctx->codec_tag)
-        avctx->pix_fmt = findPixelFormat(ff_raw_pixelFormatTags, avctx->codec_tag);
+        avctx->pix_fmt = findPixelFormat(ff_raw_pix_fmt_tags, avctx->codec_tag);
     else if (avctx->bits_per_coded_sample)
         avctx->pix_fmt = findPixelFormat(pixelFormatBpsAVI, avctx->bits_per_coded_sample);
 

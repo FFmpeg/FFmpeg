@@ -27,7 +27,7 @@
 #include "avcodec.h"
 #include "raw.h"
 
-const PixelFormatTag ff_raw_pixelFormatTags[] = {
+const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { PIX_FMT_YUV420P, MKTAG('I', '4', '2', '0') }, /* Planar formats */
     { PIX_FMT_YUV420P, MKTAG('I', 'Y', 'U', 'V') },
     { PIX_FMT_YUV420P, MKTAG('Y', 'V', '1', '2') },
@@ -114,7 +114,7 @@ const PixelFormatTag ff_raw_pixelFormatTags[] = {
 
 unsigned int avcodec_pix_fmt_to_codec_tag(enum PixelFormat fmt)
 {
-    const PixelFormatTag * tags = ff_raw_pixelFormatTags;
+    const PixelFormatTag *tags = ff_raw_pix_fmt_tags;
     while (tags->pix_fmt >= 0) {
         if (tags->pix_fmt == fmt)
             return tags->fourcc;
