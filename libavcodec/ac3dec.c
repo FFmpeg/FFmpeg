@@ -1268,7 +1268,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     }
 
     /* apply spectral extension to high frequency bins */
-    if (s->spx_in_use) {
+    if (s->spx_in_use && CONFIG_EAC3_DECODER) {
         ff_eac3_apply_spectral_extension(s);
     }
 
