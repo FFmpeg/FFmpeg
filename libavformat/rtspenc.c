@@ -27,6 +27,7 @@
 #endif
 #include "network.h"
 #include "rtsp.h"
+#include "internal.h"
 #include <libavutil/intreadwrite.h>
 
 static int rtsp_write_record(AVFormatContext *s)
@@ -104,7 +105,6 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
     int n, tcp_fd;
     struct timeval tv;
     AVFormatContext *rtpctx;
-    AVPacket local_pkt;
     int ret;
 
     tcp_fd = url_get_file_handle(rt->rtsp_hd);
@@ -140,12 +140,8 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
     rtsp_st = rt->rtsp_streams[pkt->stream_index];
     rtpctx = rtsp_st->transport_priv;
 
-    /* Use a local packet for writing to the chained muxer, otherwise
-     * the internal stream_index = 0 becomes visible to the muxer user. */
-    local_pkt = *pkt;
-    local_pkt.stream_index = 0;
-    ret = av_write_frame(rtpctx, &local_pkt);
-    /* av_write_frame does all the RTP packetization. If using TCP as
+    ret = ff_write_chained(rtpctx, 0, pkt, s);
+    /* ff_write_chained does all the RTP packetization. If using TCP as
      * transport, rtpctx->pb is only a dyn_packet_buf that queues up the
      * packets, so we need to send them out on the TCP connection separately.
      */

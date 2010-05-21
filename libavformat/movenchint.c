@@ -21,6 +21,7 @@
 
 #include "movenc.h"
 #include "libavutil/intreadwrite.h"
+#include "internal.h"
 
 int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
 {
@@ -430,7 +431,6 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
     int size;
     ByteIOContext *hintbuf = NULL;
     AVPacket hint_pkt;
-    AVPacket local_pkt;
     int ret = 0, count;
 
     if (!rtp_ctx)
@@ -441,15 +441,7 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
     sample_queue_push(&trk->sample_queue, pkt, sample);
 
     /* Feed the packet to the RTP muxer */
-    local_pkt = *pkt;
-    local_pkt.stream_index = 0;
-    local_pkt.pts = av_rescale_q(pkt->pts,
-        s->streams[pkt->stream_index]->time_base,
-        rtp_ctx->streams[0]->time_base);
-    local_pkt.dts = av_rescale_q(pkt->dts,
-        s->streams[pkt->stream_index]->time_base,
-        rtp_ctx->streams[0]->time_base);
-    av_write_frame(rtp_ctx, &local_pkt);
+    ff_write_chained(rtp_ctx, 0, pkt, s);
 
     /* Fetch the output from the RTP muxer, open a new output buffer
      * for next time. */
