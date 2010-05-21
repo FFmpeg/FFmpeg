@@ -2946,6 +2946,8 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
         snprintf(avc->filename, 1024, "rtp://%s:%d?multicast=1?ttl=%d",
                  inet_ntoa(stream->multicast_ip),
                  stream->multicast_port, stream->multicast_ttl);
+    } else {
+        snprintf(avc->filename, 1024, "rtp://0.0.0.0");
     }
 
     for(i = 0; i < stream->nb_streams; i++) {
