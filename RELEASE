@@ -75,6 +75,7 @@ Added Codecs:
 - HE-AAC v1 decoder
 - Kega Game Video (KGV1) decoder
 - Psygnosis YOP demuxer and video decoder
+- RTP hinting in the mov/3gp/mp4 muxer
 
 
 Notable license related changes
