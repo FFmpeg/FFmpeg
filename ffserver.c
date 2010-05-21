@@ -2629,6 +2629,7 @@ static int http_receive_data(HTTPContext *c)
                 ff_neterrno() != FF_NETERROR(EINTR))
                 /* error : close connection */
                 goto fail;
+            return 0;
         } else if (len == 0) {
             /* end of connection : close it */
             goto fail;
