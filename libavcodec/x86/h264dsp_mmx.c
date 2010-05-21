@@ -1138,7 +1138,7 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uin
     int h=8;\
     __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
-        "movq %5, %%mm6             \n\t"\
+        "movq "MANGLE(ff_pw_5)", %%mm6\n\t"\
         "1:                         \n\t"\
         "movq    (%0), %%mm0        \n\t"\
         "movq   1(%0), %%mm2        \n\t"\
@@ -1172,7 +1172,7 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uin
         "punpcklbw %%mm7, %%mm5     \n\t"\
         "paddw %%mm3, %%mm2         \n\t"\
         "paddw %%mm5, %%mm4         \n\t"\
-        "movq %6, %%mm5             \n\t"\
+        "movq "MANGLE(ff_pw_16)", %%mm5\n\t"\
         "paddw %%mm5, %%mm2         \n\t"\
         "paddw %%mm5, %%mm4         \n\t"\
         "paddw %%mm2, %%mm0         \n\t"\
@@ -1186,7 +1186,7 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uin
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
         : "+a"(src), "+c"(dst), "+g"(h)\
-        : "d"((x86_reg)srcStride), "S"((x86_reg)dstStride), "m"(ff_pw_5), "m"(ff_pw_16)\
+        : "d"((x86_reg)srcStride), "S"((x86_reg)dstStride)\
         : "memory"\
     );\
 }\
@@ -1640,7 +1640,7 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uin
     int h=8;\
     __asm__ volatile(\
         "pxor %%xmm7, %%xmm7        \n\t"\
-        "movdqa %5, %%xmm6          \n\t"\
+        "movdqa "MANGLE(ff_pw_5)", %%xmm6\n\t"\
         "1:                         \n\t"\
         "lddqu   -2(%0), %%xmm1     \n\t"\
         "movdqa  %%xmm1, %%xmm0     \n\t"\
@@ -1660,7 +1660,7 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uin
         "paddw   %%xmm4, %%xmm1     \n\t"\
         "psllw   $2,     %%xmm2     \n\t"\
         "psubw   %%xmm1, %%xmm2     \n\t"\
-        "paddw   %6,     %%xmm0     \n\t"\
+        "paddw   "MANGLE(ff_pw_16)", %%xmm0\n\t"\
         "pmullw  %%xmm6, %%xmm2     \n\t"\
         "paddw   %%xmm0, %%xmm2     \n\t"\
         "psraw   $5,     %%xmm2     \n\t"\
@@ -1671,8 +1671,7 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uin
         "decl %2                    \n\t"\
         " jnz 1b                    \n\t"\
         : "+a"(src), "+c"(dst), "+g"(h)\
-        : "D"((x86_reg)srcStride), "S"((x86_reg)dstStride),\
-          "m"(ff_pw_5), "m"(ff_pw_16)\
+        : "D"((x86_reg)srcStride), "S"((x86_reg)dstStride)\
         : "memory"\
     );\
 }\
