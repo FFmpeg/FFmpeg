@@ -51,6 +51,20 @@ typedef struct MOVIentry {
     uint32_t     flags;
 } MOVIentry;
 
+typedef struct HintSample {
+    uint8_t *data;
+    int size;
+    int sample_number;
+    int offset;
+    int own_data;
+} HintSample;
+
+typedef struct {
+    int size;
+    int len;
+    HintSample *samples;
+} HintSampleQueue;
+
 typedef struct MOVIndex {
     int         mode;
     int         entry;
@@ -82,6 +96,8 @@ typedef struct MOVIndex {
     uint32_t    prev_rtp_ts;
     int64_t     cur_rtp_ts_unwrapped;
     uint32_t    max_packet_size;
+
+    HintSampleQueue sample_queue;
 } MOVTrack;
 
 typedef struct MOVMuxContext {
