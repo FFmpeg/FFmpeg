@@ -62,6 +62,7 @@ typedef struct SubStream {
     //! For each channel output by the matrix, the output channel to map it to
     uint8_t     ch_assign[MAX_CHANNELS];
 
+    //! Channel coding parameters for channels in the substream
     ChannelParams channel_params[MAX_CHANNELS];
 
     //! The left shift applied to random noise in 0x31ea substreams.
