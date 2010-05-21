@@ -294,7 +294,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
     return buff;
 }
 
-static void sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, int port, int ttl)
+void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, int port, int ttl)
 {
     const char *type;
     int payload_type;
@@ -352,7 +352,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
             resolve_destination(dst, sizeof(dst));
         }
         for (j = 0; j < ac[i]->nb_streams; j++) {
-            sdp_write_media(buff, size,
+            ff_sdp_write_media(buff, size,
                                   ac[i]->streams[j]->codec, dst[0] ? dst : NULL,
                                   (port > 0) ? port + j * 2 : 0, ttl);
             if (port <= 0) {
@@ -368,5 +368,10 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
 int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
 {
     return AVERROR(ENOSYS);
+}
+
+void ff_sdp_write_media(char *buff, int size, AVCodecContext *c,
+                        const char *dest_addr, int port, int ttl)
+{
 }
 #endif
