@@ -154,4 +154,18 @@ int ff_url_join(char *str, int size, const char *proto,
 void ff_sdp_write_media(char *buff, int size, AVCodecContext *c,
                         const char *dest_addr, int port, int ttl);
 
+/**
+ * Write a packet to another muxer than the one the user originally
+ * intended. Useful when chaining muxers, where one muxer internally
+ * writes a received packet to another muxer.
+ *
+ * @param dst the muxer to write the packet to
+ * @param dst_stream the stream index within dst to write the packet to
+ * @param pkt the packet to be written
+ * @param src the muxer the packet originally was intended for
+ * @return the value av_write_frame returned
+ */
+int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
+                     AVFormatContext *src);
+
 #endif /* AVFORMAT_INTERNAL_H */
