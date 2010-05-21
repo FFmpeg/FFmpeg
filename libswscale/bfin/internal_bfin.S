@@ -479,9 +479,6 @@ DEFUN(uyvytoyv12, mL3,  (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8
 
         r1 = [fp + ARG_srcStride];
         r2 = r0 + r1;
-        r1 += -8;  // i0,i1 is pre read need to correct
-        m0 = r1;
-
         i0 = r0;  // uyvy_T even
         i1 = r2;  // uyvy_B odd
 
@@ -493,6 +490,12 @@ DEFUN(uyvytoyv12, mL3,  (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8
         r0 = p5;
         p4 = p4 >> 1;
         p5 = p5 >> 2;
+
+        r2 = r0 << 1;
+        r1 = r1 << 1;
+        r1 = r1 - r2;  // srcStride + (srcStride - 2*width)
+        r1 += -8;  // i0,i1 is pre read need to correct
+        m0 = r1;
 
         r2 = [fp + ARG_chromStride];
         r0 = r0 >> 1;
@@ -549,8 +552,6 @@ DEFUN(yuyvtoyv12, mL3,  (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8
 
         r1 = [fp + ARG_srcStride];
         r2 = r0 + r1;
-        r1 += -8;  // i0,i1 is pre read need to correct
-        m0 = r1;
 
         i0 = r0;  // uyvy_T even
         i1 = r2;  // uyvy_B odd
@@ -563,6 +564,12 @@ DEFUN(yuyvtoyv12, mL3,  (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8
         r0 = p5;
         p4 = p4 >> 1;
         p5 = p5 >> 2;
+
+        r2 = r0 << 1;
+        r1 = r1 << 1;
+        r1 = r1 - r2;  // srcStride + (srcStride - 2*width)
+        r1 += -8;  // i0,i1 is pre read need to correct
+        m0 = r1;
 
         r2 = [fp + ARG_chromStride];
         r0 = r0 >> 1;
