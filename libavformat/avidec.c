@@ -650,6 +650,16 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         avi_load_index(s);
     avi->index_loaded = 1;
     avi->non_interleaved |= guess_ni_flag(s);
+    for(i=0; i<s->nb_streams; i++){
+        AVStream *st = s->streams[i];
+        if(st->nb_index_entries)
+            break;
+    }
+    if(i==s->nb_streams && avi->non_interleaved) {
+        av_log(s, AV_LOG_WARNING, "non-interleaved AVI without index, switching to interleaved\n");
+        avi->non_interleaved=0;
+    }
+
     if(avi->non_interleaved) {
         av_log(s, AV_LOG_INFO, "non-interleaved AVI\n");
         clean_index(s);
