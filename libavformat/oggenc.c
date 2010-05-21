@@ -40,7 +40,6 @@ typedef struct {
 } OGGPage;
 
 typedef struct {
-    int64_t duration;
     unsigned page_counter;
     uint8_t *header[3];
     int header_len[3];
@@ -402,7 +401,6 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
         granule = (oggstream->last_kf_pts<<oggstream->kfgshift) | pframe_count;
     } else
         granule = pkt->pts + pkt->duration;
-    oggstream->duration = granule;
 
     ret = ogg_buffer_data(s, st, pkt->data, pkt->size, granule);
     if (ret < 0)
