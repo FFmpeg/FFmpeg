@@ -31,17 +31,17 @@
             "imull %3               \n\t"\
             "shrdl %4, %%edx, %%eax \n\t"\
             : "=a"(rt), "=d"(dummy)\
-            : "a" ((int)ra), "rm" ((int)rb), "i"(shift));\
+            : "a" ((int)(ra)), "rm" ((int)(rb)), "i"(shift));\
          rt; })
 
 #define MULH(ra, rb) \
     ({ int rt, dummy;\
-     __asm__ ("imull %3\n\t" : "=d"(rt), "=a"(dummy): "a" ((int)ra), "rm" ((int)rb));\
+     __asm__ ("imull %3\n\t" : "=d"(rt), "=a"(dummy): "a" ((int)(ra)), "rm" ((int)(rb)));\
      rt; })
 
 #define MUL64(ra, rb) \
     ({ int64_t rt;\
-     __asm__ ("imull %2\n\t" : "=A"(rt) : "a" ((int)ra), "g" ((int)rb));\
+     __asm__ ("imull %2\n\t" : "=A"(rt) : "a" ((int)(ra)), "g" ((int)(rb)));\
      rt; })
 #endif
 
