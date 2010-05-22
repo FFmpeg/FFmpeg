@@ -21,6 +21,7 @@
 
 #include "libavutil/tree.h"
 #include "nut.h"
+#include "internal.h"
 
 const AVCodecTag ff_nut_subtitle_tags[] = {
     { CODEC_ID_TEXT        , MKTAG('U', 'T', 'F', '8') },

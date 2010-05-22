@@ -22,7 +22,7 @@
  */
 
 #include "avformat.h"
-#include "riff.h"
+#include "internal.h"
 #include "isom.h"
 
 /* http://www.mp4ra.org */

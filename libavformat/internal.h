@@ -24,6 +24,11 @@
 #include <stdint.h>
 #include "avformat.h"
 
+typedef struct AVCodecTag {
+    enum CodecID id;
+    unsigned int tag;
+} AVCodecTag;
+
 void ff_dynarray_add(intptr_t **tab_ptr, int *nb_ptr, intptr_t elem);
 
 #ifdef __GNUC__

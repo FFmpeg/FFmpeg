@@ -23,6 +23,7 @@
 #include "libavutil/tree.h"
 #include "libavcodec/mpegaudiodata.h"
 #include "nut.h"
+#include "internal.h"
 
 static int find_expected_header(AVCodecContext *c, int size, int key_frame, uint8_t out[64]){
     int sample_rate= c->sample_rate;

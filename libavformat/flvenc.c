@@ -20,7 +20,7 @@
  */
 #include "avformat.h"
 #include "flv.h"
-#include "riff.h"
+#include "internal.h"
 #include "avc.h"
 
 #undef NDEBUG

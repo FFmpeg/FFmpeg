@@ -30,14 +30,10 @@
 
 #include "libavcodec/avcodec.h"
 #include "avio.h"
+#include "internal.h"
 
 int64_t ff_start_tag(ByteIOContext *pb, const char *tag);
 void ff_end_tag(ByteIOContext *pb, int64_t start);
-
-typedef struct AVCodecTag {
-    enum CodecID id;
-    unsigned int tag;
-} AVCodecTag;
 
 void ff_put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf);
 int ff_put_wav_header(ByteIOContext *pb, AVCodecContext *enc);

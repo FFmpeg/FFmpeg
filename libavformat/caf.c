@@ -25,7 +25,7 @@
  */
 
 #include "avformat.h"
-#include "riff.h"
+#include "internal.h"
 #include "caf.h"
 
 /**

@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "voc.h"
+#include "internal.h"
 
 
 static int voc_probe(AVProbeData *p)
