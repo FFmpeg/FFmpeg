@@ -47,7 +47,7 @@ void ff_get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size);
 extern const AVCodecTag ff_codec_bmp_tags[];
 extern const AVCodecTag ff_codec_wav_tags[];
 
-unsigned int ff_codec_get_tag(const AVCodecTag *tags, int id);
+unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum CodecID id);
 enum CodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag);
 void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale);
 

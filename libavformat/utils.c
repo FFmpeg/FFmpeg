@@ -2024,7 +2024,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt)
     return ret;
 }
 
-unsigned int ff_codec_get_tag(const AVCodecTag *tags, int id)
+unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum CodecID id)
 {
     while (tags->id != CODEC_ID_NONE) {
         if (tags->id == id)
