@@ -2609,7 +2609,7 @@ int av_write_header(AVFormatContext *s)
     // some sanity checks
     if (s->nb_streams == 0) {
         av_log(s, AV_LOG_ERROR, "no streams\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     for(i=0;i<s->nb_streams;i++) {
@@ -2619,7 +2619,7 @@ int av_write_header(AVFormatContext *s)
         case AVMEDIA_TYPE_AUDIO:
             if(st->codec->sample_rate<=0){
                 av_log(s, AV_LOG_ERROR, "sample rate not set\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             if(!st->codec->block_align)
                 st->codec->block_align = st->codec->channels *
@@ -2628,15 +2628,15 @@ int av_write_header(AVFormatContext *s)
         case AVMEDIA_TYPE_VIDEO:
             if(st->codec->time_base.num<=0 || st->codec->time_base.den<=0){ //FIXME audio too?
                 av_log(s, AV_LOG_ERROR, "time base not set\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             if((st->codec->width<=0 || st->codec->height<=0) && !(s->oformat->flags & AVFMT_NODIMENSIONS)){
                 av_log(s, AV_LOG_ERROR, "dimensions not set\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             if(av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)){
                 av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between encoder and muxer layer\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             break;
         }
