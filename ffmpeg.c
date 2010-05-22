@@ -2291,7 +2291,7 @@ static int av_transcode(AVFormatContext **output_files,
                          pass_logfilename_prefix ? pass_logfilename_prefix : DEFAULT_PASS_LOGFILENAME_PREFIX,
                          i);
                 if (codec->flags & CODEC_FLAG_PASS1) {
-                    f = fopen(logfilename, "w");
+                    f = fopen(logfilename, "wb");
                     if (!f) {
                         fprintf(stderr, "Cannot write log file '%s' for pass-1 encoding: %s\n", logfilename, strerror(errno));
                         av_exit(1);
