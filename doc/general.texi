@@ -234,6 +234,7 @@ library:
 @item VC-1 test bitstream       @tab X @tab X
 @item WAV                       @tab X @tab X
 @item WavPack                   @tab   @tab X
+@item WebM                      @tab   @tab X
 @item Wing Commander III movie  @tab   @tab X
     @tab Multimedia format used in Origin's Wing Commander III computer game.
 @item Westwood Studios audio    @tab   @tab X

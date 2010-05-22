@@ -505,6 +505,8 @@ static EbmlSyntax matroska_clusters[] = {
     { 0 }
 };
 
+static const char *matroska_doctypes[] = { "matroska", "webm" };
+
 /*
  * Return: Whether we reached the end of a level in the hierarchy or not.
  */
@@ -825,8 +827,7 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
 static int matroska_probe(AVProbeData *p)
 {
     uint64_t total = 0;
-    int len_mask = 0x80, size = 1, n = 1;
-    static const char probe_data[] = "matroska";
+    int len_mask = 0x80, size = 1, n = 1, i;
 
     /* EBML header? */
     if (AV_RB32(p->buf) != EBML_ID_HEADER)
@@ -848,13 +849,16 @@ static int matroska_probe(AVProbeData *p)
     if (p->buf_size < 4 + size + total)
       return 0;
 
-    /* The header must contain the document type 'matroska'. For now,
+    /* The header should contain a known document type. For now,
      * we don't parse the whole header but simply check for the
      * availability of that array of characters inside the header.
      * Not fully fool-proof, but good enough. */
-    for (n = 4+size; n <= 4+size+total-(sizeof(probe_data)-1); n++)
-        if (!memcmp(p->buf+n, probe_data, sizeof(probe_data)-1))
-            return AVPROBE_SCORE_MAX;
+    for (i = 0; i < FF_ARRAY_ELEMS(matroska_doctypes); i++) {
+        int probelen = strlen(matroska_doctypes[i]);
+        for (n = 4+size; n <= 4+size+total-probelen; n++)
+            if (!memcmp(p->buf+n, matroska_doctypes[i], probelen))
+                return AVPROBE_SCORE_MAX;
+    }
 
     return 0;
 }
@@ -1141,14 +1145,23 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* First read the EBML header. */
     if (ebml_parse(matroska, ebml_syntax, &ebml)
         || ebml.version > EBML_VERSION       || ebml.max_size > sizeof(uint64_t)
-        || ebml.id_length > sizeof(uint32_t) || strcmp(ebml.doctype, "matroska")
-        || ebml.doctype_version > 2) {
+        || ebml.id_length > sizeof(uint32_t) || ebml.doctype_version > 2) {
         av_log(matroska->ctx, AV_LOG_ERROR,
                "EBML header using unsupported features\n"
                "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
                ebml.version, ebml.doctype, ebml.doctype_version);
+        ebml_free(ebml_syntax, &ebml);
         return AVERROR_PATCHWELCOME;
     }
+    for (i = 0; i < FF_ARRAY_ELEMS(matroska_doctypes); i++)
+        if (!strcmp(ebml.doctype, matroska_doctypes[i]))
+            break;
+    if (i >= FF_ARRAY_ELEMS(matroska_doctypes)) {
+        av_log(s, AV_LOG_ERROR, "Unknown EBML doctype '%s'\n", ebml.doctype);
+        ebml_free(ebml_syntax, &ebml);
+        return AVERROR_PATCHWELCOME;
+    }
+    av_metadata_set2(&s->metadata, "doctype", ebml.doctype, 0);
     ebml_free(ebml_syntax, &ebml);
 
     /* The next thing is a segment. */
