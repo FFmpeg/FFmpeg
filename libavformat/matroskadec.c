@@ -860,7 +860,8 @@ static int matroska_probe(AVProbeData *p)
                 return AVPROBE_SCORE_MAX;
     }
 
-    return 0;
+    // probably valid EBML header but no recognized doctype
+    return AVPROBE_SCORE_MAX/2;
 }
 
 static MatroskaTrack *matroska_find_track_by_num(MatroskaDemuxContext *matroska,
@@ -1157,9 +1158,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (!strcmp(ebml.doctype, matroska_doctypes[i]))
             break;
     if (i >= FF_ARRAY_ELEMS(matroska_doctypes)) {
-        av_log(s, AV_LOG_ERROR, "Unknown EBML doctype '%s'\n", ebml.doctype);
-        ebml_free(ebml_syntax, &ebml);
-        return AVERROR_PATCHWELCOME;
+        av_log(s, AV_LOG_WARNING, "Unknown EBML doctype '%s'\n", ebml.doctype);
     }
     av_metadata_set2(&s->metadata, "doctype", ebml.doctype, 0);
     ebml_free(ebml_syntax, &ebml);
