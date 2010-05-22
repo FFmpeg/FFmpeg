@@ -344,36 +344,31 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened){
 
 static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeData *pd, int score)
 {
-    AVInputFormat *fmt;
-    fmt = av_probe_input_format2(pd, 1, &score);
+    static const struct {
+        const char *name; enum CodecID id; enum AVMediaType type;
+    } fmt_id_type[] = {
+        { "aac"      , CODEC_ID_AAC       , AVMEDIA_TYPE_AUDIO },
+        { "ac3"      , CODEC_ID_AC3       , AVMEDIA_TYPE_AUDIO },
+        { "dts"      , CODEC_ID_DTS       , AVMEDIA_TYPE_AUDIO },
+        { "eac3"     , CODEC_ID_EAC3      , AVMEDIA_TYPE_AUDIO },
+        { "h264"     , CODEC_ID_H264      , AVMEDIA_TYPE_VIDEO },
+        { "m4v"      , CODEC_ID_MPEG4     , AVMEDIA_TYPE_VIDEO },
+        { "mp3"      , CODEC_ID_MP3       , AVMEDIA_TYPE_AUDIO },
+        { "mpegvideo", CODEC_ID_MPEG2VIDEO, AVMEDIA_TYPE_VIDEO },
+        { 0 }
+    };
+    AVInputFormat *fmt = av_probe_input_format2(pd, 1, &score);
 
     if (fmt) {
+        int i;
         av_log(s, AV_LOG_DEBUG, "Probe with size=%d, packets=%d detected %s with score=%d\n",
                pd->buf_size, MAX_PROBE_PACKETS - st->probe_packets, fmt->name, score);
-        if (!strcmp(fmt->name, "mp3")) {
-            st->codec->codec_id = CODEC_ID_MP3;
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        } else if (!strcmp(fmt->name, "ac3")) {
-            st->codec->codec_id = CODEC_ID_AC3;
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        } else if (!strcmp(fmt->name, "eac3")) {
-            st->codec->codec_id = CODEC_ID_EAC3;
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        } else if (!strcmp(fmt->name, "mpegvideo")) {
-            st->codec->codec_id = CODEC_ID_MPEG2VIDEO;
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        } else if (!strcmp(fmt->name, "m4v")) {
-            st->codec->codec_id = CODEC_ID_MPEG4;
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        } else if (!strcmp(fmt->name, "h264")) {
-            st->codec->codec_id = CODEC_ID_H264;
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        } else if (!strcmp(fmt->name, "dts")) {
-            st->codec->codec_id = CODEC_ID_DTS;
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        } else if (!strcmp(fmt->name, "aac")) {
-            st->codec->codec_id = CODEC_ID_AAC;
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        for (i = 0; fmt_id_type[i].name; i++) {
+            if (!strcmp(fmt->name, fmt_id_type[i].name)) {
+                st->codec->codec_id   = fmt_id_type[i].id;
+                st->codec->codec_type = fmt_id_type[i].type;
+                break;
+            }
         }
     }
     return !!fmt;
