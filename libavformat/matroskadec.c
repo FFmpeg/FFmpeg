@@ -1160,7 +1160,6 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (i >= FF_ARRAY_ELEMS(matroska_doctypes)) {
         av_log(s, AV_LOG_WARNING, "Unknown EBML doctype '%s'\n", ebml.doctype);
     }
-    av_metadata_set2(&s->metadata, "doctype", ebml.doctype, 0);
     ebml_free(ebml_syntax, &ebml);
 
     /* The next thing is a segment. */
