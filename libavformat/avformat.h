@@ -169,18 +169,6 @@ void av_metadata_conv(struct AVFormatContext *ctx,const AVMetadataConv *d_conv,
                                                   const AVMetadataConv *s_conv);
 
 /**
- * Converts metadata set according to the given conversion tables
- * @param out converted destination metadata
- * @param in metadata to be converted
- * @param d_conv destination tags format conversion table
- * @param s_conv source tags format conversion table
- */
-void av_metadata_conv_generic(AVMetadata **out,
-                              AVMetadata *in,
-                              const AVMetadataConv *d_conv,
-                              const AVMetadataConv *s_conv);
-
-/**
  * Frees all the memory allocated for an AVMetadata struct.
  */
 void av_metadata_free(AVMetadata **m);
