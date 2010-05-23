@@ -924,5 +924,6 @@ AVInputFormat nut_demuxer = {
     read_seek,
     .extensions = "nut",
     .metadata_conv = ff_nut_metadata_conv,
+    .codec_tag = (const AVCodecTag * const []) { ff_codec_bmp_tags, ff_nut_video_tags, ff_codec_wav_tags, ff_nut_subtitle_tags, 0 },
 };
 #endif

@@ -31,6 +31,39 @@ const AVCodecTag ff_nut_subtitle_tags[] = {
     { CODEC_ID_NONE        , 0                         }
 };
 
+const AVCodecTag ff_nut_video_tags[] = {
+    { CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', 15 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'R', 15 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', 16 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'R', 16 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG(15 , 'B', 'G', 'R') },
+    { CODEC_ID_RAWVIDEO, MKTAG(15 , 'R', 'G', 'B') },
+    { CODEC_ID_RAWVIDEO, MKTAG(16 , 'B', 'G', 'R') },
+    { CODEC_ID_RAWVIDEO, MKTAG(16 , 'R', 'G', 'B') },
+    { CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', 'A') },
+    { CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'R', 'A') },
+    { CODEC_ID_RAWVIDEO, MKTAG('A', 'B', 'G', 'R') },
+    { CODEC_ID_RAWVIDEO, MKTAG('A', 'R', 'G', 'B') },
+    { CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', 24 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'R', 24 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG('4', '1', '1', 'P') },
+    { CODEC_ID_RAWVIDEO, MKTAG('4', '2', '2', 'P') },
+    { CODEC_ID_RAWVIDEO, MKTAG('4', '2', '2', 'P') },
+    { CODEC_ID_RAWVIDEO, MKTAG('4', '4', '0', 'P') },
+    { CODEC_ID_RAWVIDEO, MKTAG('4', '4', '0', 'P') },
+    { CODEC_ID_RAWVIDEO, MKTAG('4', '4', '4', 'P') },
+    { CODEC_ID_RAWVIDEO, MKTAG('4', '4', '4', 'P') },
+    { CODEC_ID_RAWVIDEO, MKTAG('B', '1', 'W', '0') },
+    { CODEC_ID_RAWVIDEO, MKTAG('B', '0', 'W', '1') },
+    { CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'R',  8 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B',  8 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'R',  4 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B',  4 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', 48 ) },
+    { CODEC_ID_RAWVIDEO, MKTAG(48 , 'R', 'G', 'B') },
+    { CODEC_ID_NONE    , 0                         }
+};
+
 void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val){
     int i;
     for(i=0; i<nut->avf->nb_streams; i++){
