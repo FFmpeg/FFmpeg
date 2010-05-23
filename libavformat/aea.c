@@ -46,10 +46,9 @@ static int aea_read_probe(AVProbeData *p)
         /* Check so that the redundant bsm bytes and info bytes are valid
          * the block size mode bytes have to be the same
          * the info bytes have to be the same
-         * the block size mode and info byte can't be the same
          */
-        if (bsm_s == bsm_e && inb_s == inb_e && bsm_s != inb_s)
-            return AVPROBE_SCORE_MAX / 2;
+        if (bsm_s == bsm_e && inb_s == inb_e)
+            return AVPROBE_SCORE_MAX / 2 + 1;
     }
     return 0;
 }
