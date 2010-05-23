@@ -128,7 +128,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->h = h;
 
     /* TODO: make algorithm configurable */
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d fmt:%s -> w:%d h:%d fmt:%s flags:%0x\n",
+    av_log(ctx, AV_LOG_INFO, "w:%d h:%d fmt:%s -> w:%d h:%d fmt:%s flags:0x%0x\n",
            inlink ->w, inlink ->h, av_pix_fmt_descriptors[ inlink->format].name,
            outlink->w, outlink->h, av_pix_fmt_descriptors[outlink->format].name,
            scale->flags);
