@@ -4,6 +4,12 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+- WebM support in Matroska demuxer
+
+
+
+version 0.6:
+
 - PB-frame decoding for H.263
 - deprecated vhook subsystem removed
 - deprecated old scaler removed
@@ -71,7 +77,6 @@ version <next>:
 - spectral extension support in the E-AC-3 decoder
 - unsharp video filter
 - RTP hinting in the mov/3gp/mp4 muxer
-- WebM support in Matroska demuxer
 
 
 
