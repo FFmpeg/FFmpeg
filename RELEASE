@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-* 0.6 "Works with HTML5" May, 2010
+* 0.6 "Works with HTML 5" May, 2010
 
 General notes
 -------------
@@ -19,9 +19,9 @@ guidelines.
 API and other notable Changes
 -----------------------------
 
-Please see the file doc/APIchanges for programmer centric information
+Please see the file doc/APIchanges for programmer-centric information.
 
-Notably changes:
+Notable changes:
 - deprecated vhook subsystem removed
 - deprecated old scaler removed
 - nonfree libamr support for AMR-NB/WB decoding/encoding removed
