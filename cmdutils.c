@@ -641,7 +641,7 @@ int read_yesno(void)
 
 int read_file(const char *filename, char **bufptr, size_t *size)
 {
-    FILE *f = fopen(filename, "r");
+    FILE *f = fopen(filename, "rb");
 
     if (!f) {
         fprintf(stderr, "Cannot read file '%s': %s\n", filename, strerror(errno));
