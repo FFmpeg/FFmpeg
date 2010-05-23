@@ -23,7 +23,7 @@
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
 #define LIBAVFORMAT_VERSION_MINOR 64
-#define LIBAVFORMAT_VERSION_MICRO  0
+#define LIBAVFORMAT_VERSION_MICRO  1
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -167,6 +167,18 @@ int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int fl
  */
 void av_metadata_conv(struct AVFormatContext *ctx,const AVMetadataConv *d_conv,
                                                   const AVMetadataConv *s_conv);
+
+/**
+ * Converts metadata set according to the given conversion tables
+ * @param out converted destination metadata
+ * @param in metadata to be converted
+ * @param d_conv destination tags format conversion table
+ * @param s_conv source tags format conversion table
+ */
+void av_metadata_conv_generic(AVMetadata **out,
+                              AVMetadata *in,
+                              const AVMetadataConv *d_conv,
+                              const AVMetadataConv *s_conv);
 
 /**
  * Frees all the memory allocated for an AVMetadata struct.

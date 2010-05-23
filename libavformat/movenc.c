@@ -1452,7 +1452,7 @@ static int mov_write_ilst_tag(ByteIOContext *pb, MOVMuxContext *mov,
     put_be32(pb, 0); /* size */
     put_tag(pb, "ilst");
     mov_write_string_metadata(s, pb, "\251nam", "title"    , 1);
-    mov_write_string_metadata(s, pb, "\251ART", "author"   , 1);
+    mov_write_string_metadata(s, pb, "\251ART", "artist"   , 1);
     mov_write_string_metadata(s, pb, "aART", "album_artist", 1);
     mov_write_string_metadata(s, pb, "\251wrt", "composer" , 1);
     mov_write_string_metadata(s, pb, "\251alb", "album"    , 1);
