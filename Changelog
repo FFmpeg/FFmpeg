@@ -5,6 +5,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 - WebM support in Matroska demuxer
+- low overhead in Ogg muxing
 
 
 
@@ -77,6 +78,12 @@ version 0.6:
 - spectral extension support in the E-AC-3 decoder
 - unsharp video filter
 - RTP hinting in the mov/3gp/mp4 muxer
+- Dirac in Ogg demuxing
+- seek to keyframes in Ogg
+- 4:2:2 and 4:4:4 Theora decoding
+- 35% faster VP3/Theora decoding
+- faster AAC decoding
+- faster H.264 decoding
 
 
 
