@@ -5,7 +5,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 - WebM support in Matroska demuxer
-- low overhead in Ogg muxing
+- low overhead Ogg muxing
 
 
 
