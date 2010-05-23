@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-05-23 - r23255 - lavu 50.16.0 - av_get_random_seed
+  Add av_get_random_seed()
+
 2010-05-18 - r23161 - lavf 52.63.0 - AVFMT_FLAG_RTP_HINT
   Add AVFMT_FLAG_RTP_HINT as possible value for AVFormatContext.flags
 
