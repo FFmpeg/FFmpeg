@@ -80,10 +80,10 @@ static int rtp_write_header(AVFormatContext *s1)
     if (s->payload_type < 0)
         s->payload_type = RTP_PT_PRIVATE + (st->codec->codec_type == AVMEDIA_TYPE_AUDIO);
 
-    s->base_timestamp = ff_random_get_seed();
+    s->base_timestamp = av_get_random_seed();
     s->timestamp = s->base_timestamp;
     s->cur_timestamp = 0;
-    s->ssrc = ff_random_get_seed();
+    s->ssrc = av_get_random_seed();
     s->first_packet = 1;
     s->first_rtcp_ntp_time = ff_ntp_time();
     if (s1->start_time_realtime)

@@ -200,7 +200,7 @@ static char *make_digest_auth(HTTPAuthState *state, const char *username,
 
     /* Generate a client nonce. */
     for (i = 0; i < 2; i++)
-        cnonce_buf[i] = ff_random_get_seed();
+        cnonce_buf[i] = av_get_random_seed();
     ff_data_to_hex(cnonce, (const uint8_t*) cnonce_buf, sizeof(cnonce_buf), 1);
     cnonce[2*sizeof(cnonce_buf)] = 0;
 

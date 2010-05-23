@@ -1389,7 +1389,7 @@ static uint64_t mxf_parse_timestamp(time_t timestamp)
 static void mxf_gen_umid(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    uint32_t seed = ff_random_get_seed();
+    uint32_t seed = av_get_random_seed();
     uint64_t umid = seed + 0x5294713400000000LL;
 
     AV_WB64(mxf->umid  , umid);

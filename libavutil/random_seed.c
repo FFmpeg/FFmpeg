@@ -22,8 +22,9 @@
 #include <fcntl.h>
 #include "timer.h"
 #include "random_seed.h"
+#include "avutil.h"
 
-uint32_t ff_random_get_seed(void)
+uint32_t av_get_random_seed(void)
 {
     uint32_t seed;
     int fd;
@@ -42,3 +43,11 @@ uint32_t ff_random_get_seed(void)
     // XXX what to do ?
     return seed;
 }
+
+#if LIBAVUTIL_VERSION_MAJOR < 51
+attribute_deprecated uint32_t ff_random_get_seed(void);
+uint32_t ff_random_get_seed(void)
+{
+    return av_get_random_seed();
+}
+#endif
