@@ -1579,6 +1579,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVMuxContext *mov,
         return ret;
 
         if (mov->mode & MODE_3GP) {
+            mov_write_3gp_udta_tag(pb_buf, s, "perf", "artist");
             mov_write_3gp_udta_tag(pb_buf, s, "titl", "title");
             mov_write_3gp_udta_tag(pb_buf, s, "auth", "author");
             mov_write_3gp_udta_tag(pb_buf, s, "gnre", "genre");
