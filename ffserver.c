@@ -3381,7 +3381,6 @@ static int rtp_new_av_stream(HTTPContext *c,
     st = av_mallocz(sizeof(AVStream));
     if (!st)
         goto fail;
-    st->codec= avcodec_alloc_context();
     ctx->nb_streams = 1;
     ctx->streams[0] = st;
 
