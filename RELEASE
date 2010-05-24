@@ -101,3 +101,14 @@ claimed. We have changed configure to reflect this. You now have to pass the
 Furthermore the non-free bits in libavcodec/fdctref.c have been rewritten. Note
 well that they were only used in a test program and never compiled into any
 FFmpeg library.
+
+
+
+* 0.5.2 May 25, 2010
+
+General notes
+-------------
+
+This is a maintenance only release that addresses a small number of security
+and portability issues. Distributors and system integrators are encouraged
+to update and share their patches against this branch.
