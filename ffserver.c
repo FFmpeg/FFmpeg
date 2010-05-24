@@ -2880,7 +2880,7 @@ static int rtsp_parse_request(HTTPContext *c)
     if (*p == '\n')
         p++;
     while (*p != '\0') {
-        p1 = strchr(p, '\n');
+        p1 = memchr(p, '\n', (char *)c->buffer_ptr - p);
         if (!p1)
             break;
         p2 = p1;
