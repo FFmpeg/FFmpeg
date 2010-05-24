@@ -3456,16 +3456,28 @@ static int rtp_new_av_stream(HTTPContext *c,
 /********************************************************************/
 /* ffserver initialization */
 
-static AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec)
+static AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec, int copy)
 {
     AVStream *fst;
 
     fst = av_mallocz(sizeof(AVStream));
     if (!fst)
         return NULL;
-    fst->codec= avcodec_alloc_context();
+    if (copy) {
+        fst->codec= avcodec_alloc_context();
+        memcpy(fst->codec, codec, sizeof(AVCodecContext));
+        if (codec->extradata_size) {
+            fst->codec->extradata = av_malloc(codec->extradata_size);
+            memcpy(fst->codec->extradata, codec->extradata,
+                codec->extradata_size);
+        }
+    } else {
+        /* live streams must use the actual feed's codec since it may be
+         * updated later to carry extradata needed by the streams.
+         */
+        fst->codec = codec;
+    }
     fst->priv_data = av_mallocz(sizeof(FeedData));
-    memcpy(fst->codec, codec, sizeof(AVCodecContext));
     fst->index = stream->nb_streams;
     av_set_pts_info(fst, 33, 1, 90000);
     stream->streams[stream->nb_streams++] = fst;
@@ -3507,7 +3519,7 @@ static int add_av_stream(FFStream *feed, AVStream *st)
         }
     }
 
-    fst = add_av_stream1(feed, av);
+    fst = add_av_stream1(feed, av, 0);
     if (!fst)
         return -1;
     return feed->nb_streams - 1;
@@ -3618,7 +3630,7 @@ static void build_file_streams(void)
                 extract_mpeg4_header(infile);
 
                 for(i=0;i<infile->nb_streams;i++)
-                    add_av_stream1(stream, infile->streams[i]->codec);
+                    add_av_stream1(stream, infile->streams[i]->codec, 1);
 
                 av_close_input_file(infile);
             }
