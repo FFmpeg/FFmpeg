@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/crc.h"
+#include "libavutil/random_seed.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/flac.h"
@@ -50,6 +51,7 @@ typedef struct {
     int eos;
     unsigned page_count; ///< number of page buffered
     OGGPage page; ///< current page
+    unsigned serial_num; ///< serial number
 } OGGStreamContext;
 
 typedef struct OGGPageList {
@@ -80,7 +82,7 @@ static void ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     put_byte(s->pb, 0);
     put_byte(s->pb, page->flags | extra_flags);
     put_le64(s->pb, page->granule);
-    put_le32(s->pb, page->stream_index);
+    put_le32(s->pb, oggstream->serial_num);
     put_le32(s->pb, oggstream->page_counter++);
     crc_offset = url_ftell(s->pb);
     put_le32(s->pb, 0); // crc
@@ -280,8 +282,11 @@ static int ogg_write_header(AVFormatContext *s)
 {
     OGGStreamContext *oggstream;
     int i, j;
+
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
+        unsigned serial_num = i;
+
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
         else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
@@ -300,6 +305,18 @@ static int ogg_write_header(AVFormatContext *s)
         }
         oggstream = av_mallocz(sizeof(*oggstream));
         oggstream->page.stream_index = i;
+
+        if (!(st->codec->flags & CODEC_FLAG_BITEXACT))
+            do {
+                serial_num = av_get_random_seed();
+                for (j = 0; j < i; j++) {
+                    OGGStreamContext *sc = s->streams[j]->priv_data;
+                    if (serial_num == sc->serial_num)
+                        break;
+                }
+            } while (j < i);
+        oggstream->serial_num = serial_num;
+
         st->priv_data = oggstream;
         if (st->codec->codec_id == CODEC_ID_FLAC) {
             int err = ogg_build_flac_headers(st->codec, oggstream,
