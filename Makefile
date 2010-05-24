@@ -261,6 +261,7 @@ LAVFI_TESTS =           \
     vflip               \
     vflip_crop          \
     vflip_vflip         \
+#   lavfi_pix_fmts      \
 
 ACODEC_TESTS := $(addprefix regtest-, $(ACODEC_TESTS) $(ACODEC_TESTS-yes))
 VCODEC_TESTS := $(addprefix regtest-, $(VCODEC_TESTS) $(VCODEC_TESTS-yes))
@@ -309,7 +310,7 @@ $(LAVF_TESTS):
 	@$(SRC_PATH)/tests/lavf-regression.sh $@ lavf tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
 	@diff -u -w $(call REFFILE,lavf,$@) $(call RESFILE,lavf,$@)
 
-$(LAVFI_TESTS):
+$(LAVFI_TESTS): tools/lavfi-showfiltfmts$(EXESUF)
 	@echo "TEST LAVFI $(@:regtest-%=%)"
 	@$(SRC_PATH)/tests/lavfi-regression.sh $@ lavfi tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
 	@diff -u -w $(call REFFILE,lavfi,$@) $(call RESFILE,lavfi,$@)
