@@ -687,6 +687,7 @@ performance on systems without hardware floating point support).
 @item file         @tab X
 @item Gopher       @tab X
 @item HTTP         @tab X
+@item MMS          @tab X
 @item pipe         @tab X
 @item RTP          @tab X
 @item TCP          @tab X
