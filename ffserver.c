@@ -847,6 +847,8 @@ static void close_connection(HTTPContext *c)
         ctx = c->rtp_ctx[i];
         if (ctx) {
             av_write_trailer(ctx);
+            av_metadata_free(&ctx->metadata);
+            av_free(ctx->streams[0]);
             av_free(ctx);
         }
         h = c->rtp_handles[i];
@@ -2280,6 +2282,7 @@ static int http_prepare_data(HTTPContext *c)
             http_log("Error writing output header\n");
             return -1;
         }
+        av_metadata_free(&c->fmt_ctx.metadata);
 
         len = url_close_dyn_buf(c->fmt_ctx.pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
@@ -2954,6 +2957,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     }
     *pbuffer = av_mallocz(2048);
     avf_sdp_create(&avc, 1, *pbuffer, 2048);
+    av_metadata_free(&avc->metadata);
     av_free(avc);
 
     return strlen(*pbuffer);
@@ -3010,6 +3014,7 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
     url_fprintf(c->pb, "Content-Length: %d\r\n", content_length);
     url_fprintf(c->pb, "\r\n");
     put_buffer(c->pb, content, content_length);
+    av_free(content);
 }
 
 static HTTPContext *find_rtp_session(const char *session_id)
