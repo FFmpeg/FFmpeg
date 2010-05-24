@@ -2,6 +2,14 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version 0.5.2:
+
+- Hurd support
+- PowerPC without Altivec compilation issues
+- validate channels and samplerate in the Vorbis decoder
+
+
+
 version 0.5.1:
 
 - build system updates
