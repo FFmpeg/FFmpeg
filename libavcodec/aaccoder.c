@@ -568,18 +568,13 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                 minscale = av_clip(minscale - q0, 0, TRELLIS_STATES - 1);
                 maxscale = av_clip(maxscale - q0, 0, TRELLIS_STATES);
                 for (q = minscale; q < maxscale; q++) {
-                    float dists[12], dist;
-                    memset(dists, 0, sizeof(dists));
+                    float dist = 0;
+                    int cb = find_min_book(sce->sf_idx[w*16+g], sce->ics.group_len[w], sce->ics.swb_sizes[g], s->scoefs+start);
                     for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                         FFPsyBand *band = &s->psy.psy_bands[s->cur_channel*PSY_MAX_BANDS+(w+w2)*16+g];
-                        int cb;
-                        for (cb = 0; cb <= ESC_BT; cb++)
-                            dists[cb] += quantize_band_cost(s, coefs + w2*128, s->scoefs + start + w2*128, sce->ics.swb_sizes[g],
+                        dist += quantize_band_cost(s, coefs + w2*128, s->scoefs + start + w2*128, sce->ics.swb_sizes[g],
                                                             q + q0, cb, lambda / band->threshold, INFINITY, NULL);
                     }
-                    dist = dists[0];
-                    for (i = 1; i <= ESC_BT; i++)
-                        dist = FFMIN(dist, dists[i]);
                     minrd = FFMIN(minrd, dist);
 
                     for (i = 0; i < q1 - q0; i++) {
