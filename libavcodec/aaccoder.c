@@ -579,8 +579,6 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
 
                     for (i = 0; i < q1 - q0; i++) {
                         float cost;
-                        if (isinf(paths[idx - 1][i].cost))
-                            continue;
                         cost = paths[idx - 1][i].cost + dist
                                + ff_aac_scalefactor_bits[q - i + SCALE_DIFF_ZERO];
                         if (cost < paths[idx][q].cost) {
@@ -591,21 +589,8 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                 }
             } else {
                 for (q = 0; q < q1 - q0; q++) {
-                    if (!isinf(paths[idx - 1][q].cost)) {
                         paths[idx][q].cost = paths[idx - 1][q].cost + 1;
                         paths[idx][q].prev = q;
-                        continue;
-                    }
-                    for (i = 0; i < q1 - q0; i++) {
-                        float cost;
-                        if (isinf(paths[idx - 1][i].cost))
-                            continue;
-                        cost = paths[idx - 1][i].cost + ff_aac_scalefactor_bits[q - i + SCALE_DIFF_ZERO];
-                        if (cost < paths[idx][q].cost) {
-                            paths[idx][q].cost    = cost;
-                            paths[idx][q].prev    = i;
-                        }
-                    }
                 }
             }
             sce->zeroes[w*16+g] = !nz;
