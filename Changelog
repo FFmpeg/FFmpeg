@@ -78,6 +78,7 @@ version 0.6:
 - faster AAC decoding
 - faster H.264 decoding
 - low overhead Ogg muxing
+- WebM support in Matroska demuxer
 
 
 
