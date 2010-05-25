@@ -566,13 +566,14 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
             if (nz) {
                 int minscale, maxscale;
                 float minrd = INFINITY;
+                float maxval;
                 //minimum scalefactor index is when minimum nonzero coefficient after quantizing is not clipped
                 minscale = av_clip_uint8(log2(qmin)*4 - 69 + SCALE_ONE_POS - SCALE_DIV_512);
                 //maximum scalefactor index is when maximum coefficient after quantizing is still not zero
                 maxscale = av_clip_uint8(log2(qmax)*4 +  6 + SCALE_ONE_POS - SCALE_DIV_512);
                 minscale = av_clip(minscale - q0, 0, TRELLIS_STATES - 1);
                 maxscale = av_clip(maxscale - q0, 0, TRELLIS_STATES);
-                float maxval = find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], s->scoefs+start);
+                maxval = find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], s->scoefs+start);
                 for (q = minscale; q < maxscale; q++) {
                     float dist = 0;
                     int cb = find_min_book(maxval, sce->sf_idx[w*16+g]);
