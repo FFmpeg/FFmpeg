@@ -217,16 +217,21 @@ static void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
                                   INFINITY, NULL);
 }
 
-static int find_min_book(int sf, int group_len, int swb_size, const float *scaled) {
+static float find_max_val(int group_len, int swb_size, const float *scaled) {
     float maxval = 0.0f;
-    float Q = ff_aac_pow2sf_tab[200 - sf + SCALE_ONE_POS - SCALE_DIV_512];
-    float Q34 = sqrtf(Q * sqrtf(Q));
-    int qmaxval, cb, w2, i;
+    int w2, i;
     for (w2 = 0; w2 < group_len; w2++) {
         for (i = 0; i < swb_size; i++) {
             maxval = FFMAX(maxval, scaled[w2*128+i]);
         }
     }
+    return maxval;
+}
+
+static int find_min_book(float maxval, int sf) {
+    float Q = ff_aac_pow2sf_tab[200 - sf + SCALE_ONE_POS - SCALE_DIV_512];
+    float Q34 = sqrtf(Q * sqrtf(Q));
+    int qmaxval, cb;
     qmaxval = maxval * Q34 + 0.4054f;
     if      (qmaxval ==  0) cb = 0;
     else if (qmaxval ==  1) cb = 1;
@@ -567,9 +572,10 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                 maxscale = av_clip_uint8(log2(qmax)*4 +  6 + SCALE_ONE_POS - SCALE_DIV_512);
                 minscale = av_clip(minscale - q0, 0, TRELLIS_STATES - 1);
                 maxscale = av_clip(maxscale - q0, 0, TRELLIS_STATES);
+                float maxval = find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], s->scoefs+start);
                 for (q = minscale; q < maxscale; q++) {
                     float dist = 0;
-                    int cb = find_min_book(sce->sf_idx[w*16+g], sce->ics.group_len[w], sce->ics.swb_sizes[g], s->scoefs+start);
+                    int cb = find_min_book(maxval, sce->sf_idx[w*16+g]);
                     for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                         FFPsyBand *band = &s->psy.psy_bands[s->cur_channel*PSY_MAX_BANDS+(w+w2)*16+g];
                         dist += quantize_band_cost(s, coefs + w2*128, s->scoefs + start + w2*128, sce->ics.swb_sizes[g],
@@ -700,7 +706,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     {
                         float dist = 0.0f;
                         int bb = 0;
-                        cb = find_min_book(sce->sf_idx[w*16+g], sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled);
+                        cb = find_min_book(find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled), sce->sf_idx[w*16+g]);
                         sce->band_type[w*16+g] = cb;
                         for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                             int b;
