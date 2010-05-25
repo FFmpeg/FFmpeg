@@ -437,7 +437,7 @@ following image formats are supported:
     @tab fourcc: VP50
 @item On2 VP6                @tab     @tab  X
     @tab fourcc: VP60,VP61,VP62
- at item VP8                    @tab     @tab  X
+@item VP8                    @tab     @tab  X
     @tab fourcc: VP80, decoding supported through external library libvpx
 @item planar RGB             @tab     @tab  X
     @tab fourcc: 8BPS
