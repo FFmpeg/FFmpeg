@@ -216,6 +216,27 @@ static void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
                                   INFINITY, NULL);
 }
 
+static int find_min_book(int sf, int group_len, int swb_size, const float *scaled) {
+    float maxval = 0.0f;
+    float Q = ff_aac_pow2sf_tab[200 - sf + SCALE_ONE_POS - SCALE_DIV_512];
+    float Q34 = sqrtf(Q * sqrtf(Q));
+    int qmaxval, cb, w2, i;
+    for (w2 = 0; w2 < group_len; w2++) {
+        for (i = 0; i < swb_size; i++) {
+            maxval = FFMAX(maxval, scaled[w2*128+i]);
+        }
+    }
+    qmaxval = maxval * Q34 + 0.4054f;
+    if      (qmaxval ==  0) cb = 0;
+    else if (qmaxval ==  1) cb = 1;
+    else if (qmaxval ==  2) cb = 3;
+    else if (qmaxval <=  4) cb = 5;
+    else if (qmaxval <=  7) cb = 7;
+    else if (qmaxval <= 12) cb = 9;
+    else                    cb = 11;
+    return cb;
+}
+
 /**
  * structure used in optimal codebook search
  */
@@ -673,23 +694,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     {
                         float dist = 0.0f;
                         int bb = 0;
-                        float maxval = 0.0f;
-                        float Q = ff_aac_pow2sf_tab[200 - sce->sf_idx[w*16+g] + SCALE_ONE_POS - SCALE_DIV_512];
-                        float Q34 = sqrtf(Q * sqrtf(Q));
-                        int qmaxval;
-                        for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
-                            for (i = 0; i < sce->ics.swb_sizes[g]; i++) {
-                                maxval = FFMAX(maxval, scaled[w2*128+i]);
-                            }
-                        }
-                        qmaxval = maxval * Q34 + 0.4054;
-                        if      (qmaxval ==  0) cb = 0;
-                        else if (qmaxval ==  1) cb = 1;
-                        else if (qmaxval ==  2) cb = 3;
-                        else if (qmaxval <=  4) cb = 5;
-                        else if (qmaxval <=  7) cb = 7;
-                        else if (qmaxval <= 12) cb = 9;
-                        else                    cb = 11;
+                        cb = find_min_book(sce->sf_idx[w*16+g], sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled);
                         sce->band_type[w*16+g] = cb;
                         for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                             int b;
