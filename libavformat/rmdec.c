@@ -226,10 +226,6 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
                 return -1;
             }
 
-            if (!strcmp(buf, "cook")) st->codec->codec_id = CODEC_ID_COOK;
-            else if (!strcmp(buf, "sipr")) st->codec->codec_id = CODEC_ID_SIPR;
-            else st->codec->codec_id = CODEC_ID_ATRAC3;
-
             ast->audio_framesize = st->codec->block_align;
             if (st->codec->codec_id == CODEC_ID_SIPR) {
                 if (flavor > 3) {
@@ -259,7 +255,6 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
             get_be16(pb); get_byte(pb);
             if (version == 5)
                 get_byte(pb);
-            st->codec->codec_id = CODEC_ID_AAC;
             codecdata_length = get_be32(pb);
             if(codecdata_length + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)codecdata_length){
                 av_log(s, AV_LOG_ERROR, "codecdata_length too large\n");
