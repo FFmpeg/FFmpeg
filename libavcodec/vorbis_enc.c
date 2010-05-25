@@ -915,7 +915,7 @@ static int apply_window_and_mdct(vorbis_enc_context *venc, signed short *audio,
             float * offset = venc->samples + channel*window_len*2 + window_len;
             j = channel;
             for (i = 0; i < samples; i++, j += venc->channels)
-                offset[i] = -audio[j] / 32768. / n * win[window_len - i - 1]; //FIXME find out why the sign has to be fliped
+                offset[i] = audio[j] / 32768. / n * win[window_len - i - 1];
         }
     } else {
         for (channel = 0; channel < venc->channels; channel++)
@@ -932,7 +932,7 @@ static int apply_window_and_mdct(vorbis_enc_context *venc, signed short *audio,
             float *offset = venc->saved + channel * window_len;
             j = channel;
             for (i = 0; i < samples; i++, j += venc->channels)
-                offset[i] = -audio[j] / 32768. / n * win[i]; //FIXME find out why the sign has to be fliped
+                offset[i] = audio[j] / 32768. / n * win[i];
         }
         venc->have_saved = 1;
     } else {
