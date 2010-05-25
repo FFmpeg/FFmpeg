@@ -378,8 +378,15 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     } else {
 
         /* unpack the list of partially-coded superblocks */
-        bit = get_bits1(gb);
+        bit = get_bits1(gb) ^ 1;
+        current_run = 0;
+
         while (current_superblock < s->superblock_count && get_bits_left(gb) > 0) {
+            if (s->theora && current_run == MAXIMUM_LONG_BIT_RUN)
+                bit = get_bits1(gb);
+            else
+                bit ^= 1;
+
                 current_run = get_vlc2(gb,
                     s->superblock_run_length_vlc.table, 6, 2) + 1;
                 if (current_run == 34)
@@ -395,11 +402,6 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
             current_superblock += current_run;
             if (bit)
                 num_partial_superblocks += current_run;
-
-            if (s->theora && current_run == MAXIMUM_LONG_BIT_RUN)
-                bit = get_bits1(gb);
-            else
-                bit ^= 1;
         }
 
         /* unpack the list of fully coded superblocks if any of the blocks were
@@ -408,9 +410,17 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
             int superblocks_decoded = 0;
 
             current_superblock = 0;
-            bit = get_bits1(gb);
+            bit = get_bits1(gb) ^ 1;
+            current_run = 0;
+
             while (superblocks_decoded < s->superblock_count - num_partial_superblocks
                    && get_bits_left(gb) > 0) {
+
+                if (s->theora && current_run == MAXIMUM_LONG_BIT_RUN)
+                    bit = get_bits1(gb);
+                else
+                    bit ^= 1;
+
                         current_run = get_vlc2(gb,
                             s->superblock_run_length_vlc.table, 6, 2) + 1;
                         if (current_run == 34)
@@ -429,11 +439,6 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                 }
                 }
                 superblocks_decoded += current_run;
-
-                if (s->theora && current_run == MAXIMUM_LONG_BIT_RUN)
-                    bit = get_bits1(gb);
-                else
-                    bit ^= 1;
             }
         }
 
@@ -800,9 +805,15 @@ static int unpack_block_qpis(Vp3DecodeContext *s, GetBitContext *gb)
     for (qpi = 0; qpi < s->nqps-1 && num_blocks > 0; qpi++) {
         i = blocks_decoded = num_blocks_at_qpi = 0;
 
-        bit = get_bits1(gb);
+        bit = get_bits1(gb) ^ 1;
+        run_length = 0;
 
         do {
+            if (run_length == MAXIMUM_LONG_BIT_RUN)
+                bit = get_bits1(gb);
+            else
+                bit ^= 1;
+
             run_length = get_vlc2(gb, s->superblock_run_length_vlc.table, 6, 2) + 1;
             if (run_length == 34)
                 run_length += get_bits(gb, 12);
@@ -820,11 +831,6 @@ static int unpack_block_qpis(Vp3DecodeContext *s, GetBitContext *gb)
                     j++;
                 }
             }
-
-            if (run_length == MAXIMUM_LONG_BIT_RUN)
-                bit = get_bits1(gb);
-            else
-                bit ^= 1;
         } while (blocks_decoded < num_blocks && get_bits_left(gb) > 0);
 
         num_blocks -= num_blocks_at_qpi;
