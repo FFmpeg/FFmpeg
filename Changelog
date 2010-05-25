@@ -7,6 +7,7 @@ version <next>:
 - WebM support in Matroska demuxer
 - low overhead Ogg muxing
 - MMS-TCP support
+- VP8 decoding via libvpx
 
 
 

@@ -183,6 +183,7 @@ External library support:
   --enable-libtheora       enable Theora encoding via libtheora [no]
   --enable-libvorbis       enable Vorbis encoding via libvorbis,
                            native implementation exists [no]
+  --enable-libvpx          enable VP8 support via libvpx [no]
   --enable-libx264         enable H.264 encoding via x264 [no]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
@@ -927,6 +928,7 @@ CONFIG_LIST="
     libspeex
     libtheora
     libvorbis
+    libvpx
     libx264
     libxvid
     lpc
@@ -1349,6 +1351,7 @@ libschroedinger_encoder_deps="libschroedinger"
 libspeex_decoder_deps="libspeex"
 libtheora_encoder_deps="libtheora"
 libvorbis_encoder_deps="libvorbis"
+libvpx_decoder_deps="libvpx"
 libx264_encoder_deps="libx264"
 libxvid_encoder_deps="libxvid"
 
@@ -2617,6 +2620,7 @@ enabled libschroedinger && add_cflags $(pkg-config --cflags schroedinger-1.0) &&
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
 enabled libtheora  && require  libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
+enabled libvpx     && require2 libvpx "vpx_decoder.h vp8dx.h" "vpx_codec_dec_init_ver" -lvpx
 enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 -lm &&
                       { check_cpp_condition x264.h "X264_BUILD >= 90" ||
                         die "ERROR: libx264 version must be >= 0.90."; }
@@ -2886,6 +2890,7 @@ echo "libschroedinger enabled   ${libschroedinger-no}"
 echo "libspeex enabled          ${libspeex-no}"
 echo "libtheora enabled         ${libtheora-no}"
 echo "libvorbis enabled         ${libvorbis-no}"
+echo "libvpx enabled            ${libvpx-no}"
 echo "libx264 enabled           ${libx264-no}"
 echo "libxvid enabled           ${libxvid-no}"
 echo "zlib enabled              ${zlib-no}"
