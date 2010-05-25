@@ -752,7 +752,7 @@ static int get_packet(URLContext *s, int for_header)
                 data_size = bytestream_get_be24(&next);
                 p=next;
                 cts = bytestream_get_be24(&next);
-                cts |= bytestream_get_byte(&next);
+                cts |= bytestream_get_byte(&next) << 24;
                 if (pts==0)
                     pts=cts;
                 ts += cts - pts;
