@@ -8,6 +8,7 @@ version <next>:
 - low overhead Ogg muxing
 - MMS-TCP support
 - VP8 decoding via libvpx
+- CODEC_CAP_EXPERIMENTAL added
 
 
 
