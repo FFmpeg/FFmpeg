@@ -645,6 +645,11 @@ typedef struct RcOverride{
  * as a last resort.
  */
 #define CODEC_CAP_SUBFRAMES        0x0100
+/**
+ * Codec is experimental and is thus avoided in favor of non experimental
+ * encoders
+ */
+#define CODEC_CAP_EXPERIMENTAL     0x0200
 
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
