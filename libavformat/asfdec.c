@@ -392,6 +392,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag1);
                 if(tag1 == MKTAG('D', 'V', 'R', ' '))
                     st->need_parsing = AVSTREAM_PARSE_FULL;
+                if(st->codec->codec_id == CODEC_ID_H264)
+                    st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
             }
             pos2 = url_ftell(pb);
             url_fskip(pb, gsize - (pos2 - pos1 + 24));
