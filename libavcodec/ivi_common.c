@@ -645,7 +645,7 @@ const IVIHuffDesc ff_ivi_blk_huff_desc[8] = {
 /**
  *  Scan patterns shared between indeo4 and indeo5
  */
-const uint8_t ivi_vertical_scan_8x8[64] = {
+const uint8_t ff_ivi_vertical_scan_8x8[64] = {
     0,  8, 16, 24, 32, 40, 48, 56,
     1,  9, 17, 25, 33, 41, 49, 57,
     2, 10, 18, 26, 34, 42, 50, 58,
@@ -656,7 +656,7 @@ const uint8_t ivi_vertical_scan_8x8[64] = {
     7, 15, 23, 31, 39, 47, 55, 63
 };
 
-const uint8_t ivi_horizontal_scan_8x8[64] = {
+const uint8_t ff_ivi_horizontal_scan_8x8[64] = {
      0,  1,  2,  3,  4,  5,  6,  7,
      8,  9, 10, 11, 12, 13, 14, 15,
     16, 17, 18, 19, 20, 21, 22, 23,
@@ -667,7 +667,7 @@ const uint8_t ivi_horizontal_scan_8x8[64] = {
     56, 57, 58, 59, 60, 61, 62, 63
 };
 
-const uint8_t ivi_direct_scan_4x4[16] = {
+const uint8_t ff_ivi_direct_scan_4x4[16] = {
     0, 1, 4, 8, 5, 2, 3, 6, 9, 12, 13, 10, 7, 11, 14, 15
 };
 
