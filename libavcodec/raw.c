@@ -97,6 +97,16 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { PIX_FMT_RGB4,     MKTAG('R', 'G', 'B',  4 ) },
     { PIX_FMT_RGB48LE,  MKTAG('R', 'G', 'B', 48 ) },
     { PIX_FMT_RGB48BE,  MKTAG( 48, 'R', 'G', 'B') },
+    { PIX_FMT_GRAY16LE,    MKTAG('Y', '1',  0 , 16 ) },
+    { PIX_FMT_GRAY16BE,    MKTAG(16 ,  0 , '1', 'Y') },
+    { PIX_FMT_YUV420P16LE, MKTAG('Y', '3', 11 , 16 ) },
+    { PIX_FMT_YUV420P16BE, MKTAG(16 , 11 , '3', 'Y') },
+    { PIX_FMT_YUV422P16LE, MKTAG('Y', '3', 10 , 16 ) },
+    { PIX_FMT_YUV422P16BE, MKTAG(16 , 10 , '3', 'Y') },
+    { PIX_FMT_YUV444P16LE, MKTAG('Y', '3',  0 , 16 ) },
+    { PIX_FMT_YUV444P16BE, MKTAG(16 ,  0 , '3', 'Y') },
+    { PIX_FMT_YUVA420P,    MKTAG('Y', '4', 11 ,  8 ) },
+    { PIX_FMT_Y400A,       MKTAG('Y', '2',  0 ,  8 ) },
 
     /* quicktime */
     { PIX_FMT_UYVY422, MKTAG('2', 'v', 'u', 'y') },
