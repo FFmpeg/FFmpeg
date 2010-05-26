@@ -185,25 +185,25 @@ static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
             case 1:
                 band->inv_transform = ff_ivi_row_slant8;
                 band->dc_transform  = ff_ivi_dc_row_slant;
-                band->scan          = ivi5_scans8x8[0];
+                band->scan          = ivi_vertical_scan_8x8;
                 break;
 
             case 2:
                 band->inv_transform = ff_ivi_col_slant8;
                 band->dc_transform  = ff_ivi_dc_col_slant;
-                band->scan          = ivi5_scans8x8[1];
+                band->scan          = ivi_horizontal_scan_8x8;
                 break;
 
             case 3:
                 band->inv_transform = ff_ivi_put_pixels_8x8;
                 band->dc_transform  = ff_ivi_put_dc_pixel_8x8;
-                band->scan          = ivi5_scans8x8[1];
+                band->scan          = ivi_horizontal_scan_8x8;
                 break;
 
             case 4:
                 band->inv_transform = ff_ivi_inverse_slant_4x4;
                 band->dc_transform  = ff_ivi_dc_slant_2d;
-                band->scan          = ivi5_scan4x4;
+                band->scan          = ivi_direct_scan_4x4;
                 break;
             }
 

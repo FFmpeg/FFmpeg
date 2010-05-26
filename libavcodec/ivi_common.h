@@ -68,6 +68,14 @@ extern VLC ff_ivi_blk_vlc_tabs[8]; ///< static block Huffman tables
 
 
 /**
+ *  Common scan patterns (defined in ivi_common.c)
+ */
+extern const uint8_t ivi_vertical_scan_8x8[64];
+extern const uint8_t ivi_horizontal_scan_8x8[64];
+extern const uint8_t ivi_direct_scan_4x4[16];
+
+
+/**
  *  run-value (RLE) table descriptor
  */
 typedef struct {
