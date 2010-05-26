@@ -272,6 +272,9 @@ static int h264_parse(AVCodecParserContext *s,
             s->dts_ref_dts_delta = INT_MIN;
             s->pts_dts_delta     = INT_MIN;
         }
+        if (s->flags & PARSER_FLAG_ONCE) {
+            s->flags &= PARSER_FLAG_COMPLETE_FRAMES;
+        }
     }
 
     *poutbuf = buf;
