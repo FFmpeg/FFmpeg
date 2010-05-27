@@ -323,7 +323,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             if(buf->base[i]==NULL) return -1;
             memset(buf->base[i], 128, size[i]);
 
-            // no edge if EDEG EMU or not planar YUV
+            // no edge if EDGE EMU or not planar YUV
             if((s->flags&CODEC_FLAG_EMU_EDGE) || !size[2])
                 buf->data[i] = buf->base[i];
             else
