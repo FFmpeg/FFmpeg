@@ -9,6 +9,7 @@ version <next>:
 - MMS-TCP support
 - VP8 decoding via libvpx
 - CODEC_CAP_EXPERIMENTAL added
+- Demuxer for On2's IVF format
 
 
 
