@@ -1044,7 +1044,15 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     pkt->pts = st->parser->pts;
                     pkt->dts = st->parser->dts;
                     pkt->pos = st->parser->pos;
+                    if(pkt->data == st->cur_pkt.data && pkt->size == st->cur_pkt.size){
+                        s->cur_st = NULL;
+                        pkt->destruct= st->cur_pkt.destruct;
+                        st->cur_pkt.destruct=
+                        st->cur_pkt.data    = NULL;
+                        assert(st->cur_len == 0);
+                    }else{
                     pkt->destruct = NULL;
+                    }
                     compute_pkt_fields(s, st, st->parser, pkt);
 
                     if((s->iformat->flags & AVFMT_GENERIC_INDEX) && pkt->flags & AV_PKT_FLAG_KEY){
