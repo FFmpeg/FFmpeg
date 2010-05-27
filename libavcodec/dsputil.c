@@ -369,7 +369,7 @@ static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w)
  * @param w width of the source buffer
  * @param h height of the source buffer
  */
-void ff_emulated_edge_mc(uint8_t *buf, uint8_t *src, int linesize, int block_w, int block_h,
+void ff_emulated_edge_mc(uint8_t *buf, const uint8_t *src, int linesize, int block_w, int block_h,
                                     int src_x, int src_y, int w, int h){
     int x, y;
     int start_y, start_x, end_y, end_x;
