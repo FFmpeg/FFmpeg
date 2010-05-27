@@ -373,6 +373,7 @@ void avcodec_register_all(void)
     REGISTER_PARSER  (PNM, pnm);
     REGISTER_PARSER  (VC1, vc1);
     REGISTER_PARSER  (VP3, vp3);
+    REGISTER_PARSER  (VP8, vp8);
 
     /* bitstream filters */
     REGISTER_BSF     (AAC_ADTSTOASC, aac_adtstoasc);
