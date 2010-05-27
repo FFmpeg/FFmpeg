@@ -48,7 +48,7 @@ static int aea_read_probe(AVProbeData *p)
          * the info bytes have to be the same
          */
         if (bsm_s == bsm_e && inb_s == inb_e)
-            return AVPROBE_SCORE_MAX / 2 + 1;
+            return AVPROBE_SCORE_MAX / 4 + 1;
     }
     return 0;
 }
