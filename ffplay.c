@@ -1600,6 +1600,7 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     pic->opaque = ref;
     pic->age    = INT_MAX;
     pic->type   = FF_BUFFER_TYPE_USER;
+    pic->reordered_opaque = codec->reordered_opaque;
     return 0;
 }
 
