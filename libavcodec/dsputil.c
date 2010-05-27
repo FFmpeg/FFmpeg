@@ -945,7 +945,7 @@ static inline void OPNAME ## _pixels8_y2_c(uint8_t *block, const uint8_t *pixels
     OPNAME ## _pixels8_l2(block, pixels, pixels+line_size, line_size, line_size, line_size, h);\
 }\
 \
-static inline void OPNAME ## _pixels8_l4(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,\
+static inline void OPNAME ## _pixels8_l4(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, const uint8_t *src3, const uint8_t *src4,\
                  int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
     int i;\
     for(i=0; i<h; i++){\
@@ -997,7 +997,7 @@ static inline void OPNAME ## _pixels2_y2_c(uint8_t *block, const uint8_t *pixels
     OPNAME ## _pixels2_l2(block, pixels, pixels+line_size, line_size, line_size, line_size, h);\
 }\
 \
-static inline void OPNAME ## _no_rnd_pixels8_l4(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,\
+static inline void OPNAME ## _no_rnd_pixels8_l4(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, const uint8_t *src3, const uint8_t *src4,\
                  int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
     int i;\
     for(i=0; i<h; i++){\
@@ -1032,12 +1032,12 @@ static inline void OPNAME ## _no_rnd_pixels8_l4(uint8_t *dst, const uint8_t *src
         OP(*((uint32_t*)&dst[i*dst_stride+4]), h0+h1+(((l0+l1)>>2)&0x0F0F0F0FUL));\
     }\
 }\
-static inline void OPNAME ## _pixels16_l4(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,\
+static inline void OPNAME ## _pixels16_l4(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, const uint8_t *src3, const uint8_t *src4,\
                  int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
     OPNAME ## _pixels8_l4(dst  , src1  , src2  , src3  , src4  , dst_stride, src_stride1, src_stride2, src_stride3, src_stride4, h);\
     OPNAME ## _pixels8_l4(dst+8, src1+8, src2+8, src3+8, src4+8, dst_stride, src_stride1, src_stride2, src_stride3, src_stride4, h);\
 }\
-static inline void OPNAME ## _no_rnd_pixels16_l4(uint8_t *dst, const uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *src4,\
+static inline void OPNAME ## _no_rnd_pixels16_l4(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, const uint8_t *src3, const uint8_t *src4,\
                  int dst_stride, int src_stride1, int src_stride2,int src_stride3,int src_stride4, int h){\
     OPNAME ## _no_rnd_pixels8_l4(dst  , src1  , src2  , src3  , src4  , dst_stride, src_stride1, src_stride2, src_stride3, src_stride4, h);\
     OPNAME ## _no_rnd_pixels8_l4(dst+8, src1+8, src2+8, src3+8, src4+8, dst_stride, src_stride1, src_stride2, src_stride3, src_stride4, h);\
