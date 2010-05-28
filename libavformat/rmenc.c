@@ -61,7 +61,7 @@ static void put_str8(ByteIOContext *s, const char *tag)
 }
 
 static int rv10_write_header(AVFormatContext *ctx,
-                              int data_size, int index_pos)
+                             int data_size, int index_pos)
 {
     RMMuxContext *rm = ctx->priv_data;
     ByteIOContext *s = ctx->pb;
@@ -357,12 +357,12 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
     write_packet_header(s, stream, size, !!(flags & AV_PKT_FLAG_KEY));
 
     if (stream->enc->codec_id == CODEC_ID_AC3) {
-    /* for AC-3, the words seem to be reversed */
-    for(i=0;i<size;i+=2) {
-        buf1[i] = buf[i+1];
-        buf1[i+1] = buf[i];
-    }
-    put_buffer(pb, buf1, size);
+        /* for AC-3, the words seem to be reversed */
+        for(i=0;i<size;i+=2) {
+            buf1[i] = buf[i+1];
+            buf1[i+1] = buf[i];
+        }
+        put_buffer(pb, buf1, size);
     } else {
         put_buffer(pb, buf, size);
     }
