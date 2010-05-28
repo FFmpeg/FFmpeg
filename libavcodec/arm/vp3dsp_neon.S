@@ -377,12 +377,10 @@ endfunc
 
 function ff_vp3_idct_dc_add_neon, export=1
     ldrsh           r2,  [r2]
-    movw            r3,  #46341
-    mul             r2,  r3,  r2
-    smulwt          r2,  r3,  r2
     mov             r3,  r0
+    add             r2,  r2,  #15
     vdup.16         q15, r2
-    vrshr.s16       q15, q15, #4
+    vshr.s16        q15, q15, #5
 
     vld1.8          {d0}, [r0,:64], r1
     vld1.8          {d1}, [r0,:64], r1

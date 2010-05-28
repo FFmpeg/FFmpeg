@@ -225,9 +225,7 @@ void ff_vp3_idct_add_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*
 
 void ff_vp3_idct_dc_add_c(uint8_t *dest/*align 8*/, int line_size, const DCTELEM *block/*align 16*/){
     const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-    int i, dc = block[0];
-    dc = (46341*dc)>>16;
-    dc = (46341*dc + (8<<16))>>20;
+    int i, dc = (block[0] + 15) >> 5;
 
     for(i = 0; i < 8; i++){
         dest[0] = cm[dest[0]+dc];
