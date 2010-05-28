@@ -23,9 +23,11 @@
 #define AVFORMAT_RM_H
 
 #include "avformat.h"
+#include "internal.h"
 
 extern const char * const ff_rm_metadata[4];
 extern const unsigned char ff_sipr_subpk_size[4];
+extern const AVCodecTag ff_rm_codec_tags[];
 
 typedef struct RMStream RMStream;
 

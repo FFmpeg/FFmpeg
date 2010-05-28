@@ -49,23 +49,6 @@ typedef struct {
     int audio_pkt_cnt; ///< Output packet counter
 } RMDemuxContext;
 
-static const AVCodecTag rm_codec_tags[] = {
-    { CODEC_ID_RV10,   MKTAG('R','V','1','0') },
-    { CODEC_ID_RV20,   MKTAG('R','V','2','0') },
-    { CODEC_ID_RV20,   MKTAG('R','V','T','R') },
-    { CODEC_ID_RV30,   MKTAG('R','V','3','0') },
-    { CODEC_ID_RV40,   MKTAG('R','V','4','0') },
-    { CODEC_ID_AC3,    MKTAG('d','n','e','t') },
-    { CODEC_ID_RA_144, MKTAG('l','p','c','J') },
-    { CODEC_ID_RA_288, MKTAG('2','8','_','8') },
-    { CODEC_ID_COOK,   MKTAG('c','o','o','k') },
-    { CODEC_ID_ATRAC3, MKTAG('a','t','r','c') },
-    { CODEC_ID_SIPR,   MKTAG('s','i','p','r') },
-    { CODEC_ID_AAC,    MKTAG('r','a','a','c') },
-    { CODEC_ID_AAC,    MKTAG('r','a','c','p') },
-    { CODEC_ID_NONE },
-};
-
 static const unsigned char sipr_swaps[38][2] = {
     {  0, 63 }, {  1, 22 }, {  2, 44 }, {  3, 90 },
     {  5, 81 }, {  7, 31 }, {  8, 86 }, {  9, 58 },
@@ -197,7 +180,8 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
         }
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_tag  = AV_RL32(buf);
-        st->codec->codec_id   = ff_codec_get_id(rm_codec_tags, st->codec->codec_tag);
+        st->codec->codec_id   = ff_codec_get_id(ff_rm_codec_tags,
+                                                st->codec->codec_tag);
         switch (st->codec->codec_id) {
         case CODEC_ID_AC3:
             st->need_parsing = AVSTREAM_PARSE_FULL;
@@ -303,7 +287,8 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
             goto skip;
         }
         st->codec->codec_tag = get_le32(pb);
-        st->codec->codec_id  = ff_codec_get_id(rm_codec_tags, st->codec->codec_tag);
+        st->codec->codec_id  = ff_codec_get_id(ff_rm_codec_tags,
+                                               st->codec->codec_tag);
 //        av_log(s, AV_LOG_DEBUG, "%X %X\n", st->codec->codec_tag, MKTAG('R', 'V', '2', '0'));
         if (st->codec->codec_id == CODEC_ID_NONE)
             goto fail1;
