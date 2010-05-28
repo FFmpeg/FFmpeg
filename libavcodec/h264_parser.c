@@ -245,6 +245,14 @@ static int h264_parse(AVCodecParserContext *s,
     ParseContext *pc = &h->s.parse_context;
     int next;
 
+    if (h->first_picture) {
+        h->first_picture = 0;
+        if (avctx->extradata_size) {
+            h->s.avctx = avctx;
+            ff_h264_decode_extradata(h);
+        }
+    }
+
     if(s->flags & PARSER_FLAG_COMPLETE_FRAMES){
         next= buf_size;
     }else{
@@ -319,6 +327,7 @@ static int init(AVCodecParserContext *s)
 {
     H264Context *h = s->priv_data;
     h->thread_context[0] = h;
+    h->first_picture = 1;
     return 0;
 }
 

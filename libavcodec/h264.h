@@ -465,6 +465,7 @@ typedef struct H264Context{
     int is_avc; ///< this flag is != 0 if codec is avc1
     int nal_length_size; ///< Number of bytes used for nal length (1, 2 or 4)
 
+    int first_picture;
     SPS *sps_buffers[MAX_SPS_COUNT];
     PPS *pps_buffers[MAX_PPS_COUNT];
 
