@@ -696,17 +696,13 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     const float *scaled = s->scoefs + start;
                     int bits = 0;
                     int cb;
-                    float mindist = INFINITY;
-                    int minbits = 0;
+                    float dist = 0.0f;
 
                     if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218) {
                         start += sce->ics.swb_sizes[g];
                         continue;
                     }
                     minscaler = FFMIN(minscaler, sce->sf_idx[w*16+g]);
-                    {
-                        float dist = 0.0f;
-                        int bb = 0;
                         cb = find_min_book(find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled), sce->sf_idx[w*16+g]);
                         sce->band_type[w*16+g] = cb;
                         for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
@@ -719,13 +715,9 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                                                        lambda,
                                                        INFINITY,
                                                        &b);
-                            bb += b;
+                            bits += b;
                         }
-                            mindist = dist;
-                            minbits = bb;
-                    }
-                    dists[w*16+g] = (mindist - minbits) / lambda;
-                    bits = minbits;
+                    dists[w*16+g] = (dist - bits) / lambda;
                     if (prev != -1) {
                         bits += ff_aac_scalefactor_bits[sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO];
                     }
