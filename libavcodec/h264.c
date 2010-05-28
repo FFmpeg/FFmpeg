@@ -51,6 +51,13 @@ static const uint8_t div6[52]={
 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8,
 };
 
+static const enum PixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
+    PIX_FMT_DXVA2_VLD,
+    PIX_FMT_VAAPI_VLD,
+    PIX_FMT_YUVJ420P,
+    PIX_FMT_NONE
+};
+
 void ff_h264_write_back_intra_pred_mode(H264Context *h){
     int8_t *mode= h->intra4x4_pred_mode + h->mb2br_xy[h->mb_xy];
 
@@ -1842,7 +1849,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,
                       h->sps.num_units_in_tick, den, 1<<30);
         }
-        s->avctx->pix_fmt = s->avctx->get_format(s->avctx, s->avctx->codec->pix_fmts);
+        s->avctx->pix_fmt = s->avctx->get_format(s->avctx,
+                                                 s->avctx->color_range == AVCOL_RANGE_JPEG ?
+                                                 hwaccel_pixfmt_list_h264_jpeg_420 :
+                                                 ff_hwaccel_pixfmt_list_420);
         s->avctx->hwaccel = ff_find_hwaccel(s->avctx->codec->id, s->avctx->pix_fmt);
 
         if (MPV_common_init(s) < 0)
@@ -3382,7 +3392,6 @@ AVCodec h264_decoder = {
     /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
-    .pix_fmts= ff_hwaccel_pixfmt_list_420,
 };
 
 #if CONFIG_H264_VDPAU_DECODER
