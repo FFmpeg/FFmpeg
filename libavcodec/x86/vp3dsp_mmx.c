@@ -398,9 +398,7 @@ void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block)
 
 void ff_vp3_idct_dc_add_mmx2(uint8_t *dest, int linesize, const DCTELEM *block)
 {
-    int dc = block[0];
-    dc = (46341*dc)>>16;
-    dc = (46341*dc + (8<<16))>>20;
+    int dc = (block[0] + 15) >> 5;
 
     __asm__ volatile(
         "movd          %3, %%mm0 \n\t"
