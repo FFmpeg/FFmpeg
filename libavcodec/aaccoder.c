@@ -712,12 +712,12 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                                                    sce->ics.swb_sizes[g],
                                                    sce->sf_idx[w*16+g],
                                                    cb,
-                                                   lambda,
+                                                   1.0f,
                                                    INFINITY,
                                                    &b);
                         bits += b;
                     }
-                    dists[w*16+g] = (dist - bits) / lambda;
+                    dists[w*16+g] = dist - bits;
                     if (prev != -1) {
                         bits += ff_aac_scalefactor_bits[sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO];
                     }
