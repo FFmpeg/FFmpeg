@@ -60,7 +60,7 @@ static void put_str8(ByteIOContext *s, const char *tag)
     }
 }
 
-static void rv10_write_header(AVFormatContext *ctx,
+static int rv10_write_header(AVFormatContext *ctx,
                               int data_size, int index_pos)
 {
     RMMuxContext *rm = ctx->priv_data;
@@ -225,7 +225,13 @@ static void rv10_write_header(AVFormatContext *ctx,
             put_be32(s, 0x10); /* unknown */
             put_be16(s, stream->enc->channels);
             put_str8(s, "Int0"); /* codec name */
-            put_str8(s, "dnet"); /* codec name */
+            if (stream->enc->codec_tag) {
+                put_byte(s, 4); /* tag length */
+                put_le32(s, stream->enc->codec_tag);
+            } else {
+                av_log(ctx, AV_LOG_ERROR, "Invalid codec tag\n");
+                return -1;
+            }
             put_be16(s, 0); /* title length */
             put_be16(s, 0); /* author length */
             put_be16(s, 0); /* copyright length */
@@ -270,6 +276,7 @@ static void rv10_write_header(AVFormatContext *ctx,
 
     put_be32(s, nb_packets); /* number of packets */
     put_be32(s,0); /* next data header */
+    return 0;
 }
 
 static void write_packet_header(AVFormatContext *ctx, StreamInfo *stream,
@@ -330,7 +337,8 @@ static int rm_write_header(AVFormatContext *s)
         }
     }
 
-    rv10_write_header(s, 0, 0);
+    if (rv10_write_header(s, 0, 0))
+        return AVERROR_INVALIDDATA;
     put_flush_packet(s->pb);
     return 0;
 }
@@ -348,12 +356,16 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 
     write_packet_header(s, stream, size, !!(flags & AV_PKT_FLAG_KEY));
 
+    if (stream->enc->codec_id == CODEC_ID_AC3) {
     /* for AC-3, the words seem to be reversed */
     for(i=0;i<size;i+=2) {
         buf1[i] = buf[i+1];
         buf1[i+1] = buf[i];
     }
     put_buffer(pb, buf1, size);
+    } else {
+        put_buffer(pb, buf, size);
+    }
     put_flush_packet(pb);
     stream->nb_frames++;
     av_free(buf1);
@@ -456,4 +468,5 @@ AVOutputFormat rm_muxer = {
     rm_write_header,
     rm_write_packet,
     rm_write_trailer,
+    .codec_tag= (const AVCodecTag* const []){ff_rm_codec_tags, 0},
 };
