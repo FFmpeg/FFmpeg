@@ -76,6 +76,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"V_SNOW"           , CODEC_ID_SNOW},
     {"V_THEORA"         , CODEC_ID_THEORA},
     {"V_UNCOMPRESSED"   , CODEC_ID_RAWVIDEO},
+    {"V_VP8"            , CODEC_ID_VP8},
 
     {""                 , CODEC_ID_NONE}
 };
