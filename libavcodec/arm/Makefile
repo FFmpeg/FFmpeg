@@ -49,5 +49,6 @@ NEON-OBJS-$(CONFIG_VP6_DECODER)        += arm/vp56dsp_neon.o
 OBJS-$(HAVE_NEON)                      += arm/dsputil_init_neon.o       \
                                           arm/dsputil_neon.o            \
                                           arm/int_neon.o                \
+                                          arm/mpegvideo_neon.o          \
                                           arm/simple_idct_neon.o        \
                                           $(NEON-OBJS-yes)

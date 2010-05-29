@@ -23,6 +23,11 @@
 #include "libavcodec/mpegvideo.h"
 #include "mpegvideo_arm.h"
 
+void ff_dct_unquantize_h263_inter_neon(MpegEncContext *s, DCTELEM *block,
+                                       int n, int qscale);
+void ff_dct_unquantize_h263_intra_neon(MpegEncContext *s, DCTELEM *block,
+                                       int n, int qscale);
+
 void MPV_common_init_arm(MpegEncContext *s)
 {
     /* IWMMXT support is a superset of armv5te, so
@@ -35,4 +40,9 @@ void MPV_common_init_arm(MpegEncContext *s)
 #if HAVE_IWMMXT
     MPV_common_init_iwmmxt(s);
 #endif
+
+    if (HAVE_NEON) {
+        s->dct_unquantize_h263_intra = ff_dct_unquantize_h263_intra_neon;
+        s->dct_unquantize_h263_inter = ff_dct_unquantize_h263_inter_neon;
+    }
 }
