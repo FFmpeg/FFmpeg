@@ -205,6 +205,12 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         sps->num_reorder_frames= get_ue_golomb(&s->gb);
         get_ue_golomb(&s->gb); /*max_dec_frame_buffering*/
 
+        if(s->gb.size_in_bits < get_bits_count(&s->gb)){
+            av_log(h->s.avctx, AV_LOG_ERROR, "Overread VUI by %d bits\n", get_bits_count(&s->gb) - s->gb.size_in_bits);
+            sps->num_reorder_frames=0;
+            sps->bitstream_restriction_flag= 0;
+        }
+
         if(sps->num_reorder_frames > 16U /*max_dec_frame_buffering || max_dec_frame_buffering > 16*/){
             av_log(h->s.avctx, AV_LOG_ERROR, "illegal num_reorder_frames %d\n", sps->num_reorder_frames);
             return -1;
