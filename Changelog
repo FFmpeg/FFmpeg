@@ -1,7 +1,6 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-
 version 0.6:
 
 - PB-frame decoding for H.263
@@ -79,6 +78,7 @@ version 0.6:
 - faster H.264 decoding
 - low overhead Ogg muxing
 - WebM support in Matroska demuxer
+- VP8 decoding via libvpx
 
 
 
