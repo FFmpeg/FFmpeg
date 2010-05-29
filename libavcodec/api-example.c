@@ -39,6 +39,8 @@
 #include "libavutil/mathematics.h"
 
 #define INBUF_SIZE 4096
+#define AUDIO_INBUF_SIZE 20480
+#define AUDIO_REFILL_THRESH 4096
 
 /*
  * Audio encoding example
@@ -118,7 +120,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     int out_size, len;
     FILE *f, *outfile;
     uint8_t *outbuf;
-    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t inbuf[AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
     AVPacket avpkt;
 
     av_init_packet(&avpkt);
@@ -155,25 +157,32 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
     /* decode until eof */
     avpkt.data = inbuf;
-    for(;;) {
-        avpkt.size = fread(inbuf, 1, INBUF_SIZE, f);
-        if (avpkt.size == 0)
-            break;
+    avpkt.size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
 
-        avpkt.data = inbuf;
-        while (avpkt.size > 0) {
-            out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-            len = avcodec_decode_audio3(c, (short *)outbuf, &out_size, &avpkt);
-            if (len < 0) {
-                fprintf(stderr, "Error while decoding\n");
-                exit(1);
-            }
-            if (out_size > 0) {
-                /* if a frame has been decoded, output it */
-                fwrite(outbuf, 1, out_size, outfile);
-            }
-            avpkt.size -= len;
-            avpkt.data += len;
+    while (avpkt.size > 0) {
+        out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+        len = avcodec_decode_audio3(c, (short *)outbuf, &out_size, &avpkt);
+        if (len < 0) {
+            fprintf(stderr, "Error while decoding\n");
+            exit(1);
+        }
+        if (out_size > 0) {
+            /* if a frame has been decoded, output it */
+            fwrite(outbuf, 1, out_size, outfile);
+        }
+        avpkt.size -= len;
+        avpkt.data += len;
+        if (avpkt.size < AUDIO_REFILL_THRESH) {
+            /* Refill the input buffer, to avoid trying to decode
+             * incomplete frames. Instead of this, one could also use
+             * a parser, or use a proper container format through
+             * libavformat. */
+            memmove(inbuf, avpkt.data, avpkt.size);
+            avpkt.data = inbuf;
+            len = fread(avpkt.data + avpkt.size, 1,
+                        AUDIO_INBUF_SIZE - avpkt.size, f);
+            if (len > 0)
+                avpkt.size += len;
         }
     }
 
