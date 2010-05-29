@@ -1099,7 +1099,7 @@ AVCodec vorbis_encoder = {
     vorbis_encode_init,
     vorbis_encode_frame,
     vorbis_encode_close,
-    .capabilities= CODEC_CAP_DELAY,
+    .capabilities= CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
     .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Vorbis"),
 };
