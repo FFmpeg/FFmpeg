@@ -416,7 +416,7 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
 
                     q = (base_tab[pos] * scale_tab[quant]) >> 8;
                     if (q > 1)
-                        val = val * q + FFSIGN(val) * ((q >> 1) - (q & 1));
+                        val = val * q + FFSIGN(val) * (((q ^ 1) - 1) >> 1);
                     trvec[pos] = val;
                     col_flags[pos & col_mask] |= !!val; /* track columns containing non-zero coeffs */
                 }// while
