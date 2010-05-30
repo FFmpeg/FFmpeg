@@ -1426,6 +1426,7 @@ avformat_deps="avcodec"
 
 # programs
 ffmpeg_deps="avcodec avformat swscale"
+ffmpeg_select="buffer_filter"
 ffplay_deps="avcodec avformat swscale sdl"
 ffplay_select="rdft"
 ffprobe_deps="avcodec avformat"
