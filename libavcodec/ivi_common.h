@@ -146,8 +146,6 @@ typedef struct {
 
     IVIHuffTab      blk_vlc;        ///< vlc table for decoding block data
 
-    uint16_t        *dequant_intra; ///< ptr to dequant tables for intra blocks
-    uint16_t        *dequant_inter; ///< ptr dequant tables for inter blocks
     int             num_corr;       ///< number of correction entries
     uint8_t         corr[61*2];     ///< rvmap correction pairs
     int             rvmap_sel;      ///< rvmap table selector
