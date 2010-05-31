@@ -1850,6 +1850,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                       h->sps.num_units_in_tick, den, 1<<30);
         }
         s->avctx->pix_fmt = s->avctx->get_format(s->avctx,
+                                                 s->avctx->codec->pix_fmts ?
+                                                 s->avctx->codec->pix_fmts :
                                                  s->avctx->color_range == AVCOL_RANGE_JPEG ?
                                                  hwaccel_pixfmt_list_h264_jpeg_420 :
                                                  ff_hwaccel_pixfmt_list_420);
