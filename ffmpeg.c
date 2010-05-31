@@ -3091,6 +3091,12 @@ static enum CodecID find_codec_or_die(const char *name, int type, int encoder, i
         fprintf(stderr, "%s '%s' is experimental and might produce bad "
                 "results.\nAdd '-strict experimental' if you want to use it.\n",
                 codec_string, codec->name);
+        codec = encoder ?
+            avcodec_find_encoder(codec->id) :
+            avcodec_find_decoder(codec->id);
+        if (!(codec->capabilities & CODEC_CAP_EXPERIMENTAL))
+            fprintf(stderr, "Or use the non experimental %s '%s'.\n",
+                    codec_string, codec->name);
         av_exit(1);
     }
     return codec->id;
