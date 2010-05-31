@@ -3068,7 +3068,7 @@ static int opt_input_ts_offset(const char *opt, const char *arg)
     return 0;
 }
 
-static enum CodecID find_codec_or_die(const char *name, int type, int encoder)
+static enum CodecID find_codec_or_die(const char *name, int type, int encoder, int strict)
 {
     const char *codec_string = encoder ? "encoder" : "decoder";
     AVCodec *codec;
@@ -3084,6 +3084,13 @@ static enum CodecID find_codec_or_die(const char *name, int type, int encoder)
     }
     if(codec->type != type) {
         fprintf(stderr, "Invalid %s type '%s'\n", codec_string, name);
+        av_exit(1);
+    }
+    if(codec->capabilities & CODEC_CAP_EXPERIMENTAL &&
+       strict > FF_COMPLIANCE_EXPERIMENTAL) {
+        fprintf(stderr, "%s '%s' is experimental and might produce bad "
+                "results.\nAdd '-strict experimental' if you want to use it.\n",
+                codec_string, codec->name);
         av_exit(1);
     }
     return codec->id;
@@ -3133,9 +3140,15 @@ static void opt_input_file(const char *filename)
 
     set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM);
 
-    ic->video_codec_id   = find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0);
-    ic->audio_codec_id   = find_codec_or_die(audio_codec_name   , AVMEDIA_TYPE_AUDIO   , 0);
-    ic->subtitle_codec_id= find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0);
+    ic->video_codec_id   =
+        find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0,
+                          avcodec_opts[AVMEDIA_TYPE_VIDEO   ]->strict_std_compliance);
+    ic->audio_codec_id   =
+        find_codec_or_die(audio_codec_name   , AVMEDIA_TYPE_AUDIO   , 0,
+                          avcodec_opts[AVMEDIA_TYPE_AUDIO   ]->strict_std_compliance);
+    ic->subtitle_codec_id=
+        find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0,
+                          avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->strict_std_compliance);
     ic->flags |= AVFMT_FLAG_NONBLOCK;
 
     if(pgmyuv_compatibility_hack)
@@ -3364,7 +3377,8 @@ static void new_video_stream(AVFormatContext *oc)
         AVRational fps= frame_rate.num ? frame_rate : (AVRational){25,1};
 
         if (video_codec_name) {
-            codec_id = find_codec_or_die(video_codec_name, AVMEDIA_TYPE_VIDEO, 1);
+            codec_id = find_codec_or_die(video_codec_name, AVMEDIA_TYPE_VIDEO, 1,
+                                         video_enc->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(video_codec_name);
             output_codecs[nb_ocodecs] = codec;
         } else {
@@ -3495,7 +3509,8 @@ static void new_audio_stream(AVFormatContext *oc)
         set_context_opts(audio_enc, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
 
         if (audio_codec_name) {
-            codec_id = find_codec_or_die(audio_codec_name, AVMEDIA_TYPE_AUDIO, 1);
+            codec_id = find_codec_or_die(audio_codec_name, AVMEDIA_TYPE_AUDIO, 1,
+                                         audio_enc->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(audio_codec_name);
             output_codecs[nb_ocodecs] = codec;
         } else {
@@ -3555,7 +3570,8 @@ static void new_subtitle_stream(AVFormatContext *oc)
         st->stream_copy = 1;
     } else {
         set_context_opts(avcodec_opts[AVMEDIA_TYPE_SUBTITLE], subtitle_enc, AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
-        subtitle_enc->codec_id = find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 1);
+        subtitle_enc->codec_id = find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 1,
+                                                   subtitle_enc->strict_std_compliance);
         output_codecs[nb_ocodecs] = avcodec_find_encoder_by_name(subtitle_codec_name);
     }
     nb_ocodecs++;
