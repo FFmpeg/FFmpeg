@@ -139,6 +139,11 @@ static int au_read_header(AVFormatContext *s,
 
     codec = ff_codec_get_id(codec_au_tags, id);
 
+    if (!av_get_bits_per_sample(codec)) {
+        av_log_ask_for_sample(s, "could not determine bits per sample\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (size >= 24) {
         /* skip unused data */
         url_fseek(pb, size - 24, SEEK_CUR);
