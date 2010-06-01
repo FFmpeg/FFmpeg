@@ -620,6 +620,14 @@ static void fill_gv_table(int table[256], const int elemsize, const int inc)
     }
 }
 
+static uint16_t roundToInt16(int64_t f)
+{
+    int r= (f + (1<<15))>>16;
+         if (r<-0x7FFF) return 0x8000;
+    else if (r> 0x7FFF) return 0x7FFF;
+    else                return r;
+}
+
 av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int fullRange,
                                      int brightness, int contrast, int saturation)
 {
@@ -674,6 +682,22 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
     cgu = (cgu*contrast * saturation) >> 32;
     cgv = (cgv*contrast * saturation) >> 32;
     oy -= 256*brightness;
+
+    c->uOffset=   0x0400040004000400LL;
+    c->vOffset=   0x0400040004000400LL;
+    c->yCoeff=    roundToInt16(cy *8192) * 0x0001000100010001ULL;
+    c->vrCoeff=   roundToInt16(crv*8192) * 0x0001000100010001ULL;
+    c->ubCoeff=   roundToInt16(cbu*8192) * 0x0001000100010001ULL;
+    c->vgCoeff=   roundToInt16(cgv*8192) * 0x0001000100010001ULL;
+    c->ugCoeff=   roundToInt16(cgu*8192) * 0x0001000100010001ULL;
+    c->yOffset=   roundToInt16(oy *   8) * 0x0001000100010001ULL;
+
+    c->yuv2rgb_y_coeff  = (int16_t)roundToInt16(cy <<13);
+    c->yuv2rgb_y_offset = (int16_t)roundToInt16(oy << 9);
+    c->yuv2rgb_v2r_coeff= (int16_t)roundToInt16(crv<<13);
+    c->yuv2rgb_v2g_coeff= (int16_t)roundToInt16(cgv<<13);
+    c->yuv2rgb_u2g_coeff= (int16_t)roundToInt16(cgu<<13);
+    c->yuv2rgb_u2b_coeff= (int16_t)roundToInt16(cbu<<13);
 
     //scale coefficients by cy
     crv = ((crv << 16) + 0x8000) / cy;
