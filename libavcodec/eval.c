@@ -33,12 +33,12 @@ typedef struct Parser{
     const AVClass *class;
     int stack_index;
     char *s;
-    const double *const_value;
-    const char * const *const_name;          // NULL terminated
-    double (* const *func1)(void *, double a);           // NULL terminated
-    const char * const *func1_name;          // NULL terminated
-    double (* const *func2)(void *, double a, double b); // NULL terminated
-    const char * const *func2_name;          // NULL terminated
+    const double *const_values;
+    const char * const *const_names;          // NULL terminated
+    double (* const *funcs1)(void *, double a);           // NULL terminated
+    const char * const *func1_names;          // NULL terminated
+    double (* const *funcs2)(void *, double a, double b); // NULL terminated
+    const char * const *func2_names;          // NULL terminated
     void *opaque;
     int log_offset;
     void *log_ctx;
@@ -132,7 +132,7 @@ struct AVExpr {
 static double eval_expr(Parser * p, AVExpr * e) {
     switch (e->type) {
         case e_value:  return e->value;
-        case e_const:  return e->value * p->const_value[e->a.const_index];
+        case e_const:  return e->value * p->const_values[e->a.const_index];
         case e_func0:  return e->value * e->a.func0(eval_expr(p, e->param[0]));
         case e_func1:  return e->value * e->a.func1(p->opaque, eval_expr(p, e->param[0]));
         case e_func2:  return e->value * e->a.func2(p->opaque, eval_expr(p, e->param[0]), eval_expr(p, e->param[1]));
@@ -196,9 +196,9 @@ static int parse_primary(AVExpr **e, Parser *p)
     d->value = 1;
 
     /* named constants */
-    for(i=0; p->const_name && p->const_name[i]; i++){
-        if(strmatch(p->s, p->const_name[i])){
-            p->s+= strlen(p->const_name[i]);
+    for(i=0; p->const_names && p->const_names[i]; i++){
+        if(strmatch(p->s, p->const_names[i])){
+            p->s+= strlen(p->const_names[i]);
             d->type = e_const;
             d->a.const_index = i;
             *e = d;
@@ -269,18 +269,18 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if( strmatch(next, "st"    ) ) d->type = e_st;
     else if( strmatch(next, "while" ) ) d->type = e_while;
     else {
-        for(i=0; p->func1_name && p->func1_name[i]; i++){
-            if(strmatch(next, p->func1_name[i])){
-                d->a.func1 = p->func1[i];
+        for(i=0; p->func1_names && p->func1_names[i]; i++){
+            if(strmatch(next, p->func1_names[i])){
+                d->a.func1 = p->funcs1[i];
                 d->type = e_func1;
                 *e = d;
                 return 0;
             }
         }
 
-        for(i=0; p->func2_name && p->func2_name[i]; i++){
-            if(strmatch(next, p->func2_name[i])){
-                d->a.func2 = p->func2[i];
+        for(i=0; p->func2_names && p->func2_names[i]; i++){
+            if(strmatch(next, p->func2_names[i])){
+                d->a.func2 = p->funcs2[i];
                 d->type = e_func2;
                 *e = d;
                 return 0;
@@ -434,9 +434,9 @@ static int verify_expr(AVExpr * e) {
 }
 
 int ff_parse_expr(AVExpr **expr, const char *s,
-                      const char * const *const_name,
-                      const char * const *func1_name, double (* const *func1)(void *, double),
-                      const char * const *func2_name, double (* const *func2)(void *, double, double),
+                  const char * const *const_names,
+                  const char * const *func1_names, double (* const *funcs1)(void *, double),
+                  const char * const *func2_names, double (* const *funcs2)(void *, double, double),
                       int log_offset, void *log_ctx)
 {
     Parser p;
@@ -455,11 +455,11 @@ int ff_parse_expr(AVExpr **expr, const char *s,
     p.class      = &class;
     p.stack_index=100;
     p.s= w;
-    p.const_name = const_name;
-    p.func1      = func1;
-    p.func1_name = func1_name;
-    p.func2      = func2;
-    p.func2_name = func2_name;
+    p.const_names = const_names;
+    p.funcs1      = funcs1;
+    p.func1_names = func1_names;
+    p.funcs2      = funcs2;
+    p.func2_names = func2_names;
     p.log_offset = log_offset;
     p.log_ctx    = log_ctx;
 
@@ -476,28 +476,28 @@ end:
     return ret;
 }
 
-double ff_eval_expr(AVExpr * e, const double *const_value, void *opaque) {
+double ff_eval_expr(AVExpr *e, const double *const_values, void *opaque) {
     Parser p;
 
-    p.const_value= const_value;
+    p.const_values = const_values;
     p.opaque     = opaque;
     return eval_expr(&p, e);
 }
 
 int ff_parse_and_eval_expr(double *d, const char *s,
-                              const char * const *const_name, const double *const_value,
-                              const char * const *func1_name, double (* const *func1)(void *, double),
-                              const char * const *func2_name, double (* const *func2)(void *, double, double),
+                           const char * const *const_names, const double *const_values,
+                           const char * const *func1_names, double (* const *funcs1)(void *, double),
+                           const char * const *func2_names, double (* const *funcs2)(void *, double, double),
                               void *opaque, int log_offset, void *log_ctx)
 {
     AVExpr *e = NULL;
-    int ret = ff_parse_expr(&e, s, const_name, func1_name, func1, func2_name, func2, log_offset, log_ctx);
+    int ret = ff_parse_expr(&e, s, const_names, func1_names, funcs1, func2_names, funcs2, log_offset, log_ctx);
 
     if (ret < 0) {
         *d = NAN;
         return ret;
     }
-    *d = ff_eval_expr(e, const_value, opaque);
+    *d = ff_eval_expr(e, const_values, opaque);
     ff_free_expr(e);
     return isnan(*d) ? AVERROR(EINVAL) : 0;
 }
