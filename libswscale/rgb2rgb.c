@@ -250,22 +250,6 @@ void palette8tobgr16(const uint8_t *src, uint8_t *dst, long num_pixels, const ui
         ((uint16_t *)dst)[i] = bswap_16(((const uint16_t *)palette)[src[i]]);
 }
 
-/**
- * Palette is assumed to contain BGR15, see rgb32to15 to convert the palette.
- */
-void palette8torgb15(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
-{
-    long i;
-    for (i=0; i<num_pixels; i++)
-        ((uint16_t *)dst)[i] = ((const uint16_t *)palette)[src[i]];
-}
-void palette8tobgr15(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
-{
-    long i;
-    for (i=0; i<num_pixels; i++)
-        ((uint16_t *)dst)[i] = bswap_16(((const uint16_t *)palette)[src[i]]);
-}
-
 void rgb32to24(const uint8_t *src, uint8_t *dst, long src_size)
 {
     long i;

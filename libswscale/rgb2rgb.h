@@ -70,8 +70,6 @@ void palette8topacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const
 void palette8topacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
 void palette8torgb16(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
 void palette8tobgr16(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-void palette8torgb15(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-void palette8tobgr15(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
 
 /**
  * Height should be a multiple of 2 and width should be a multiple of 16.
