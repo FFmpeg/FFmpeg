@@ -442,7 +442,7 @@ int ff_parse_expr(AVExpr **expr, const char *s,
                   const char * const *const_names,
                   const char * const *func1_names, double (* const *funcs1)(void *, double),
                   const char * const *func2_names, double (* const *funcs2)(void *, double, double),
-                      int log_offset, void *log_ctx)
+                  int log_offset, void *log_ctx)
 {
     Parser p;
     AVExpr *e = NULL;
@@ -494,7 +494,7 @@ int ff_parse_and_eval_expr(double *d, const char *s,
                            const char * const *const_names, const double *const_values,
                            const char * const *func1_names, double (* const *funcs1)(void *, double),
                            const char * const *func2_names, double (* const *funcs2)(void *, double, double),
-                              void *opaque, int log_offset, void *log_ctx)
+                           void *opaque, int log_offset, void *log_ctx)
 {
     AVExpr *e = NULL;
     int ret = ff_parse_expr(&e, s, const_names, func1_names, funcs1, func2_names, funcs2, log_offset, log_ctx);
@@ -515,23 +515,31 @@ static double const_values[] = {
     M_E,
     0
 };
+
 static const char *const_names[] = {
     "PI",
     "E",
     0
 };
+
 int main(void)
 {
     int i;
     double d;
-    ff_parse_and_eval_expr(&d, "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+    ff_parse_and_eval_expr(&d, "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
+                           const_names, const_values,
+                           NULL, NULL, NULL, NULL, NULL, 0, NULL);
     printf("%f == 12.7\n", d);
-    ff_parse_and_eval_expr(&d, "80G/80Gi", const_names, const_values, NULL, NULL, NULL, NULL, NULL, NULL);
+    ff_parse_and_eval_expr(&d, "80G/80Gi",
+                           const_names, const_values,
+                           NULL, NULL, NULL, NULL, NULL, NULL);
     printf("%f == 0.931322575\n", d);
 
     for (i=0; i<1050; i++) {
         START_TIMER
-            ff_parse_and_eval_expr(&d, "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+            ff_parse_and_eval_expr(&d, "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
+                                   const_names, const_values,
+                                   NULL, NULL, NULL, NULL, NULL, 0, NULL);
         STOP_TIMER("ff_parse_and_eval_expr")
     }
     return 0;

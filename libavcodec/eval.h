@@ -50,7 +50,7 @@ int ff_parse_and_eval_expr(double *res, const char *s,
                            const char * const *const_names, const double *const_values,
                            const char * const *func1_names, double (* const *funcs1)(void *, double),
                            const char * const *func2_names, double (* const *funcs2)(void *, double, double),
-                              void *opaque, int log_offset, void *log_ctx);
+                           void *opaque, int log_offset, void *log_ctx);
 
 /**
  * Parses an expression.
@@ -73,7 +73,7 @@ int ff_parse_expr(AVExpr **expr, const char *s,
                   const char * const *const_names,
                   const char * const *func1_names, double (* const *funcs1)(void *, double),
                   const char * const *func2_names, double (* const *funcs2)(void *, double, double),
-                      int log_offset, void *log_ctx);
+                  int log_offset, void *log_ctx);
 
 /**
  * Evaluates a previously parsed expression.
