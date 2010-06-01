@@ -50,9 +50,9 @@ specified for the inputs.
 
 @c man end DESCRIPTION
 
-@chapter Quick Start
-
+@chapter Examples
 @c man begin EXAMPLES
+
 @section Video and Audio grabbing
 
 FFmpeg can grab video and audio from devices given that you specify the input
