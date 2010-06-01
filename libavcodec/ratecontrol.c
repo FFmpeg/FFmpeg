@@ -66,7 +66,7 @@ static inline double bits2qp(RateControlEntry *rce, double bits){
 int ff_rate_control_init(MpegEncContext *s)
 {
     RateControlContext *rcc= &s->rc_context;
-    int i;
+    int i, res;
     static const char * const const_names[]={
         "PI",
         "E",
@@ -106,10 +106,10 @@ int ff_rate_control_init(MpegEncContext *s)
     };
     emms_c();
 
-    rcc->rc_eq_eval = ff_parse_expr(s->avctx->rc_eq ? s->avctx->rc_eq : "tex^qComp", const_names, func1_names, func1, NULL, NULL, 0, s->avctx);
-    if (!rcc->rc_eq_eval) {
+    res = ff_parse_expr(&rcc->rc_eq_eval, s->avctx->rc_eq ? s->avctx->rc_eq : "tex^qComp", const_names, func1_names, func1, NULL, NULL, 0, s->avctx);
+    if (res < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error parsing rc_eq \"%s\"\n", s->avctx->rc_eq);
-        return -1;
+        return res;
     }
 
     for(i=0; i<5; i++){
