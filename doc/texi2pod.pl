@@ -241,10 +241,10 @@ while(<$inf>) {
         and $_ = "\n=head3 $1\n";
 
     # Block command handlers:
-    /^\@itemize\s+(\@[a-z]+|\*|-)/ and do {
+    /^\@itemize\s*(\@[a-z]+|\*|-)?/ and do {
         push @endwstack, $endw;
         push @icstack, $ic;
-        $ic = $1;
+        $ic = $1 ? $1 : "*";
         $_ = "\n=over 4\n";
         $endw = "itemize";
     };
