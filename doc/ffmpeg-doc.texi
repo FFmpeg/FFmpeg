@@ -917,9 +917,11 @@ FFserver (see the FFserver documentation). When FFmpeg will be a
 video player it will also be used for streaming :-)
 
 @chapter Tips
+@c man begin TIPS
 
 @itemize
-@item For streaming at very low bitrate application, use a low frame rate
+@item
+For streaming at very low bitrate application, use a low frame rate
 and a small GOP size. This is especially true for RealVideo where
 the Linux player does not seem to be very fast, so it can miss
 frames. An example is:
@@ -928,30 +930,36 @@ frames. An example is:
 ffmpeg -g 3 -r 3 -t 10 -b 50k -s qcif -f rv10 /tmp/b.rm
 @end example
 
-@item  The parameter 'q' which is displayed while encoding is the current
+@item
+The parameter 'q' which is displayed while encoding is the current
 quantizer. The value 1 indicates that a very good quality could
 be achieved. The value 31 indicates the worst quality. If q=31 appears
 too often, it means that the encoder cannot compress enough to meet
 your bitrate. You must either increase the bitrate, decrease the
 frame rate or decrease the frame size.
 
-@item If your computer is not fast enough, you can speed up the
+@item
+If your computer is not fast enough, you can speed up the
 compression at the expense of the compression ratio. You can use
 '-me zero' to speed up motion estimation, and '-intra' to disable
 motion estimation completely (you have only I-frames, which means it
 is about as good as JPEG compression).
 
-@item To have very low audio bitrates, reduce the sampling frequency
+@item
+To have very low audio bitrates, reduce the sampling frequency
 (down to 22050 Hz for MPEG audio, 22050 or 11025 for AC-3).
 
-@item To have a constant quality (but a variable bitrate), use the option
+@item
+To have a constant quality (but a variable bitrate), use the option
 '-qscale n' when 'n' is between 1 (excellent quality) and 31 (worst
 quality).
 
-@item When converting video files, you can use the '-sameq' option which
+@item
+When converting video files, you can use the '-sameq' option which
 uses the same quality factor in the encoder as in the decoder.
 It allows almost lossless encoding.
 
 @end itemize
+@c man end TIPS
 
 @bye
