@@ -1419,12 +1419,12 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
 
     if (usePal(srcFormat)) {
         switch (dstFormat) {
-        case PIX_FMT_RGB32  : conv = palette8topacked32; break;
-        case PIX_FMT_BGR32  : conv = palette8topacked32; break;
-        case PIX_FMT_BGR32_1: conv = palette8topacked32; break;
-        case PIX_FMT_RGB32_1: conv = palette8topacked32; break;
-        case PIX_FMT_RGB24  : conv = palette8topacked24; break;
-        case PIX_FMT_BGR24  : conv = palette8topacked24; break;
+        case PIX_FMT_RGB32  : conv = sws_convertPalette8ToPacked32; break;
+        case PIX_FMT_BGR32  : conv = sws_convertPalette8ToPacked32; break;
+        case PIX_FMT_BGR32_1: conv = sws_convertPalette8ToPacked32; break;
+        case PIX_FMT_RGB32_1: conv = sws_convertPalette8ToPacked32; break;
+        case PIX_FMT_RGB24  : conv = sws_convertPalette8ToPacked24; break;
+        case PIX_FMT_BGR24  : conv = sws_convertPalette8ToPacked24; break;
         }
     }
 
@@ -1957,3 +1957,26 @@ int sws_scale_ordered(SwsContext *c, const uint8_t* const src[], int srcStride[]
     return sws_scale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 }
 #endif
+
+/* Convert the palette to the same packed 32-bit format as the palette */
+void sws_convertPalette8ToPacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+{
+    long i;
+
+    for (i=0; i<num_pixels; i++)
+        ((uint32_t *) dst)[i] = ((const uint32_t *) palette)[src[i]];
+}
+
+/* Palette format: ABCD -> dst format: ABC */
+void sws_convertPalette8ToPacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+{
+    long i;
+
+    for (i=0; i<num_pixels; i++) {
+        //FIXME slow?
+        dst[0]= palette[src[i]*4+0];
+        dst[1]= palette[src[i]*4+1];
+        dst[2]= palette[src[i]*4+2];
+        dst+= 3;
+    }
+}

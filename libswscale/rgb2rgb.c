@@ -207,31 +207,15 @@ void sws_rgb2rgb_init(int flags)
         rgb2rgb_init_C();
 }
 
-/**
- * Convert the palette to the same packet 32-bit format as the palette
- */
+#if LIBSWSCALE_VERSION_MAJOR < 1
 void palette8topacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
-    long i;
-
-    for (i=0; i<num_pixels; i++)
-        ((uint32_t *) dst)[i] = ((const uint32_t *) palette)[src[i]];
+    sws_convertPalette8ToPacked32(src, dst, num_pixels, palette);
 }
 
-/**
- * Palette format: ABCD -> dst format: ABC
- */
 void palette8topacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
-    long i;
-
-    for (i=0; i<num_pixels; i++) {
-        //FIXME slow?
-        dst[0]= palette[src[i]*4+0];
-        dst[1]= palette[src[i]*4+1];
-        dst[2]= palette[src[i]*4+2];
-        dst+= 3;
-    }
+    sws_convertPalette8ToPacked24(src, dst, num_pixels, palette);
 }
 
 /**
@@ -249,6 +233,7 @@ void palette8tobgr16(const uint8_t *src, uint8_t *dst, long num_pixels, const ui
     for (i=0; i<num_pixels; i++)
         ((uint16_t *)dst)[i] = bswap_16(((const uint16_t *)palette)[src[i]]);
 }
+#endif
 
 void rgb32to24(const uint8_t *src, uint8_t *dst, long src_size)
 {
