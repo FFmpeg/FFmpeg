@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-06-01 - r31301 - lsws 0.11.0 - convertPalette API
+  Add sws_convertPalette8ToPacked32 and sws_convertPalette8ToPacked24
+
 2010-05-26 - r23334 - lavc 52.72.0 - CODEC_CAP_EXPERIMENTAL
   Add CODEC_CAP_EXPERIMENTAL flag.
 
