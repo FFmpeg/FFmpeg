@@ -34,6 +34,9 @@ void ff_vp3_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
 void ff_vp3_idct_add_neon(uint8_t *dest, int line_size, DCTELEM *data);
 void ff_vp3_idct_dc_add_neon(uint8_t *dest, int line_size, const DCTELEM *data);
 
+void ff_clear_block_neon(DCTELEM *block);
+void ff_clear_blocks_neon(DCTELEM *blocks);
+
 void ff_put_pixels16_neon(uint8_t *, const uint8_t *, int, int);
 void ff_put_pixels16_x2_neon(uint8_t *, const uint8_t *, int, int);
 void ff_put_pixels16_y2_neon(uint8_t *, const uint8_t *, int, int);
@@ -188,6 +191,9 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
             c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
         }
     }
+
+    c->clear_block  = ff_clear_block_neon;
+    c->clear_blocks = ff_clear_blocks_neon;
 
     c->put_pixels_tab[0][0] = ff_put_pixels16_neon;
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_neon;

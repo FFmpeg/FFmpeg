@@ -25,6 +25,22 @@
         preserve8
         .text
 
+function ff_clear_block_neon, export=1
+        vmov.i16        q0,  #0
+        .rept           8
+        vst1.16         {q0}, [r0,:128]!
+        .endr
+        bx              lr
+endfunc
+
+function ff_clear_blocks_neon, export=1
+        vmov.i16        q0,  #0
+        .rept           8*6
+        vst1.16         {q0}, [r0,:128]!
+        .endr
+        bx              lr
+endfunc
+
         .macro pixels16 avg=0
 .if \avg
         mov             ip,  r0
