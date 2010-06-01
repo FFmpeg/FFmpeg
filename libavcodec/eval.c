@@ -532,7 +532,7 @@ int main(void)
     printf("%f == 12.7\n", d);
     ff_parse_and_eval_expr(&d, "80G/80Gi",
                            const_names, const_values,
-                           NULL, NULL, NULL, NULL, NULL, NULL);
+                           NULL, NULL, NULL, NULL, NULL, 0, NULL);
     printf("%f == 0.931322575\n", d);
 
     for (i=0; i<1050; i++) {
