@@ -2467,8 +2467,10 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     AVStream *st;
     int i;
 
-    if (s->nb_streams >= MAX_STREAMS)
+    if (s->nb_streams >= MAX_STREAMS){
+        av_log(s, AV_LOG_ERROR, "Too many streams\n");
         return NULL;
+    }
 
     st = av_mallocz(sizeof(AVStream));
     if (!st)
