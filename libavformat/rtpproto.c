@@ -279,7 +279,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     return len;
 }
 
-static int rtp_write(URLContext *h, uint8_t *buf, int size)
+static int rtp_write(URLContext *h, const uint8_t *buf, int size)
 {
     RTPContext *s = h->priv_data;
     int ret;

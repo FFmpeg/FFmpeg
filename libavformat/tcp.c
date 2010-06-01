@@ -154,7 +154,7 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
     }
 }
 
-static int tcp_write(URLContext *h, uint8_t *buf, int size)
+static int tcp_write(URLContext *h, const uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
     int ret, size1, fd_max, len;

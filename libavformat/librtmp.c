@@ -109,7 +109,7 @@ fail:
     return rc;
 }
 
-static int rtmp_write(URLContext *s, uint8_t *buf, int size)
+static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 {
     RTMP *r = s->priv_data;
 

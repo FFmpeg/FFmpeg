@@ -456,7 +456,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
     return len;
 }
 
-static int udp_write(URLContext *h, uint8_t *buf, int size)
+static int udp_write(URLContext *h, const uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
     int ret;

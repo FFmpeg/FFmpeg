@@ -184,7 +184,7 @@ int url_read_complete(URLContext *h, unsigned char *buf, int size)
     return len;
 }
 
-int url_write(URLContext *h, unsigned char *buf, int size)
+int url_write(URLContext *h, const unsigned char *buf, int size)
 {
     int ret;
     if (!(h->flags & (URL_WRONLY | URL_RDWR)))
