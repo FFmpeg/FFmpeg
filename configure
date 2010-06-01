@@ -2590,7 +2590,7 @@ for thread in $THREADS_LIST; do
 done
 
 check_lib math.h sin -lm
-check_lib va/va.h vaInitialize -lva
+disabled vaapi || check_lib va/va.h vaInitialize -lva
 
 check_mathfunc exp2
 check_mathfunc exp2f
