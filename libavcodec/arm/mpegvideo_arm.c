@@ -22,6 +22,14 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "mpegvideo_arm.h"
+#include "asm-offsets.h"
+
+CHK_OFFS(MpegEncContext, y_dc_scale,       Y_DC_SCALE);
+CHK_OFFS(MpegEncContext, c_dc_scale,       C_DC_SCALE);
+CHK_OFFS(MpegEncContext, ac_pred,          AC_PRED);
+CHK_OFFS(MpegEncContext, block_last_index, BLOCK_LAST_INDEX);
+CHK_OFFS(MpegEncContext, inter_scantable.raster_end, INTER_SCANTAB_RASTER_END);
+CHK_OFFS(MpegEncContext, h263_aic,         H263_AIC);
 
 void ff_dct_unquantize_h263_inter_neon(MpegEncContext *s, DCTELEM *block,
                                        int n, int qscale);

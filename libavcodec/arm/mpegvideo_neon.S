@@ -19,13 +19,7 @@
  */
 
 #include "asm.S"
-
-#define Y_DC_SCALE               0xa54
-#define C_DC_SCALE               0xa58
-#define AC_PRED                  0xa80
-#define BLOCK_LAST_INDEX         0x2278
-#define INTER_SCANTAB_RASTER_END 0x2478
-#define H263_AIC                 0x2728
+#include "asm-offsets.h"
 
 function ff_dct_unquantize_h263_inter_neon, export=1
         add             r0,  r0,  #0x2200
