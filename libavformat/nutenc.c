@@ -405,7 +405,7 @@ static int write_streamheader(AVFormatContext *avctx, ByteIOContext *bc, AVStrea
     if (codec->codec_tag){
         put_le32(bc, codec->codec_tag);
     }else
-        return -1;
+        return AVERROR(EINVAL);
 
     put_v(bc, nut->stream[i].time_base - nut->time_base);
     put_v(bc, nut->stream[i].msb_pts_shift);
