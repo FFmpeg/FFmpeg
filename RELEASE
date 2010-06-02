@@ -1,10 +1,21 @@
 Release Notes
 =============
 
-* 0.6 "Works with HTML 5" May, 2010
+* 0.6 "Works with HTML5" June, 2010
 
 General notes
 -------------
+
+This release features a lot of improvements that are relevant for HTML5 video.
+The H.264 and Theora decoders are now significantly faster, the vorbis decoder
+has seen important updates and this release supports Google's newly released
+libvpx library. Please note that for license reasons, we consider binaries of
+FFmpeg and libavcodec that are linked against libvpx unredistributable. We are
+confident that the situation will improve upstream; in this case, we will
+rectify this issue in a (future) point release.
+
+Other important changes are additions of decoders for popular codecs as
+Intel Indeo 5, WMA Pro, WMA Voice and HE-AAC.
 
 See the Changelog file for a list of significant changes.
 
@@ -29,6 +40,7 @@ Notable changes:
 - -formats option split into -formats, -codecs, -bsfs, and -protocols
 - ffprobe tool
 - RTMP/RTMPT/RTMPS/RTMPE/RTMPTE protocol support via librtmp
+- CODEC_CAP_EXPERIMENTAL added
 
 
 Added Codecs:
@@ -76,6 +88,7 @@ Added Codecs:
 - Kega Game Video (KGV1) decoder
 - Psygnosis YOP demuxer and video decoder
 - RTP hinting in the mov/3gp/mp4 muxer
+- VP8 decoding via libvpx
 
 
 Notable license related changes
@@ -83,3 +96,4 @@ Notable license related changes
 
 - remaining GPL parts in AC-3 decoder converted to LGPL
 - libswscale can now be compiled in LGPL mode
+- libvpx is considered (L)GPL incompatible
