@@ -120,7 +120,6 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     AVCodec *dec;
     char val_str[128];
     AVMetadataTag *tag = NULL;
-    char a, b, c, d;
     AVRational display_aspect_ratio;
 
     printf("[STREAM]\n");
@@ -139,16 +138,9 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
         printf("codec_time_base=%d/%d\n", dec_ctx->time_base.num, dec_ctx->time_base.den);
 
         /* print AVI/FourCC tag */
-        a = dec_ctx->codec_tag     & 0xff;
-        b = dec_ctx->codec_tag>>8  & 0xff;
-        c = dec_ctx->codec_tag>>16 & 0xff;
-        d = dec_ctx->codec_tag>>24 & 0xff;
-        printf("codec_tag_string=");
-        if (isprint(a)) printf("%c", a); else printf("[%d]", a);
-        if (isprint(b)) printf("%c", b); else printf("[%d]", b);
-        if (isprint(c)) printf("%c", c); else printf("[%d]", c);
-        if (isprint(d)) printf("%c", d); else printf("[%d]", d);
-        printf("\ncodec_tag=0x%04x\n", dec_ctx->codec_tag);
+        av_get_codec_tag_string(val_str, sizeof(val_str), dec_ctx->codec_tag);
+        printf("codec_tag_string=%s\n", val_str);
+        printf("codec_tag=0x%04x\n", dec_ctx->codec_tag);
 
         switch (dec_ctx->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
