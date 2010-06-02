@@ -4300,7 +4300,7 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "AudioBitRate")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream)
-                audio_enc.bit_rate = atoi(arg) * 1000;
+                audio_enc.bit_rate = lrintf(atof(arg) * 1000);
         } else if (!strcasecmp(cmd, "AudioChannels")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream)
