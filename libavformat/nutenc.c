@@ -520,7 +520,8 @@ static int write_headers(AVFormatContext *avctx, ByteIOContext *bc){
         ret = url_open_dyn_buf(&dyn_bc);
         if(ret < 0)
             return ret;
-        write_streamheader(avctx, dyn_bc, nut->avf->streams[i], i);
+        if ((ret = write_streamheader(avctx, dyn_bc, nut->avf->streams[i], i)) < 0)
+            return ret;
         put_packet(nut, bc, dyn_bc, 1, STREAM_STARTCODE);
     }
 
@@ -554,7 +555,7 @@ static int write_headers(AVFormatContext *avctx, ByteIOContext *bc){
 static int write_header(AVFormatContext *s){
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = s->pb;
-    int i, j;
+    int i, j, ret;
 
     nut->avf= s;
 
@@ -594,7 +595,8 @@ static int write_header(AVFormatContext *s){
     put_buffer(bc, ID_STRING, strlen(ID_STRING));
     put_byte(bc, 0);
 
-    write_headers(s, bc);
+    if ((ret = write_headers(s, bc)) < 0)
+        return ret;
 
     put_flush_packet(bc);
 
