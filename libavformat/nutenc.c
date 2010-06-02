@@ -391,7 +391,8 @@ static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
     }
 }
 
-static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVStream *st, int i){
+static int write_streamheader(AVFormatContext *avctx, ByteIOContext *bc, AVStream *st, int i){
+    NUTContext *nut = avctx->priv_data;
     AVCodecContext *codec = st->codec;
     put_v(bc, i);
     switch(codec->codec_type){
@@ -504,7 +505,8 @@ static int write_streaminfo(NUTContext *nut, ByteIOContext *bc, int stream_id){
     return count;
 }
 
-static int write_headers(NUTContext *nut, ByteIOContext *bc){
+static int write_headers(AVFormatContext *avctx, ByteIOContext *bc){
+    NUTContext *nut = avctx->priv_data;
     ByteIOContext *dyn_bc;
     int i, ret;
 
@@ -518,7 +520,7 @@ static int write_headers(NUTContext *nut, ByteIOContext *bc){
         ret = url_open_dyn_buf(&dyn_bc);
         if(ret < 0)
             return ret;
-        write_streamheader(nut, dyn_bc, nut->avf->streams[i], i);
+        write_streamheader(avctx, dyn_bc, nut->avf->streams[i], i);
         put_packet(nut, bc, dyn_bc, 1, STREAM_STARTCODE);
     }
 
@@ -592,7 +594,7 @@ static int write_header(AVFormatContext *s){
     put_buffer(bc, ID_STRING, strlen(ID_STRING));
     put_byte(bc, 0);
 
-    write_headers(nut, bc);
+    write_headers(s, bc);
 
     put_flush_packet(bc);
 
@@ -653,7 +655,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
         return -1;
 
     if(1LL<<(20+3*nut->header_count) <= url_ftell(bc))
-        write_headers(nut, bc);
+        write_headers(s, bc);
 
     if(key_frame && !(nus->last_flags & FLAG_KEY))
         store_sp= 1;
@@ -797,7 +799,7 @@ static int write_trailer(AVFormatContext *s){
     ByteIOContext *bc= s->pb;
 
     while(nut->header_count<3)
-        write_headers(nut, bc);
+        write_headers(s, bc);
     put_flush_packet(bc);
     ff_nut_free_sp(nut);
     av_freep(&nut->stream);
