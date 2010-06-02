@@ -2625,8 +2625,8 @@ enabled libtheora  && require  libtheora theora/theoraenc.h th_info_init -ltheor
 enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
 enabled libvpx     && require2 libvpx "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_dec_init_ver" -lvpx
 enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 -lm &&
-                      { check_cpp_condition x264.h "X264_BUILD >= 90" ||
-                        die "ERROR: libx264 version must be >= 0.90."; }
+                      { check_cpp_condition x264.h "X264_BUILD >= 98" ||
+                        die "ERROR: libx264 version must be >= 0.98."; }
 enabled libxvid    && require  libxvid xvid.h xvid_global -lxvidcore
 enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 

@@ -89,6 +89,7 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     int nnal, i;
     x264_picture_t pic_out;
 
+    x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = X264_CSP_I420;
     x4->pic.img.i_plane = 3;
 
