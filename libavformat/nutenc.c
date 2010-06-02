@@ -404,8 +404,10 @@ static int write_streamheader(AVFormatContext *avctx, ByteIOContext *bc, AVStrea
     put_v(bc, 4);
     if (codec->codec_tag){
         put_le32(bc, codec->codec_tag);
-    }else
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "No codec tag defined for stream %d\n", i);
         return AVERROR(EINVAL);
+    }
 
     put_v(bc, nut->stream[i].time_base - nut->time_base);
     put_v(bc, nut->stream[i].msb_pts_shift);
