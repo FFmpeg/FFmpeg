@@ -15,8 +15,6 @@ rm -f "$logfile"
 rm -f "$benchfile"
 
 get_common_elements() (
-    l1=$1
-    l2=$2
     for elt1 in $1; do
         for elt2 in $2; do
             [ $elt1 = $elt2 ] && res="$res $elt1 "
