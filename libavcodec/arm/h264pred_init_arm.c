@@ -42,7 +42,6 @@ void ff_pred8x8_0lt_dc_neon(uint8_t *src, int stride);
 void ff_pred8x8_l00_dc_neon(uint8_t *src, int stride);
 void ff_pred8x8_0l0_dc_neon(uint8_t *src, int stride);
 
-#if HAVE_NEON
 static void ff_h264_pred_init_neon(H264PredContext *h, int codec_id)
 {
     h->pred8x8[VERT_PRED8x8     ] = ff_pred8x8_vert_neon;
@@ -68,7 +67,6 @@ static void ff_h264_pred_init_neon(H264PredContext *h, int codec_id)
     if (codec_id != CODEC_ID_SVQ3 && codec_id != CODEC_ID_RV40)
         h->pred16x16[PLANE_PRED8x8  ] = ff_pred16x16_plane_neon;
 }
-#endif
 
 void ff_h264_pred_init_arm(H264PredContext *h, int codec_id)
 {
