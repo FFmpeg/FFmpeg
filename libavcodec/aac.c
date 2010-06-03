@@ -113,6 +113,22 @@ static const char overread_err[] = "Input buffer exhausted before END element fo
 
 static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
 {
+    /* Some buggy encoders appear to set all elem_ids to zero and rely on
+    channels always occurring in the same order. This is expressly forbidden
+    by the spec but we will try to work around it.
+    */
+    int err_printed = 0;
+    while (ac->tags_seen_this_frame[type][elem_id] && elem_id < MAX_ELEM_ID) {
+        if (ac->output_configured < OC_LOCKED && !err_printed) {
+            av_log(ac->avccontext, AV_LOG_WARNING, "Duplicate channel tag found, attempting to remap.\n");
+            err_printed = 1;
+        }
+        elem_id++;
+    }
+    if (elem_id == MAX_ELEM_ID)
+        return NULL;
+    ac->tags_seen_this_frame[type][elem_id] = 1;
+
     if (ac->tag_che_map[type][elem_id]) {
         return ac->tag_che_map[type][elem_id];
     }
@@ -1969,6 +1985,7 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
         }
     }
 
+    memset(ac->tags_seen_this_frame, 0, sizeof(ac->tags_seen_this_frame));
     // parse
     while ((elem_type = get_bits(&gb, 3)) != TYPE_END) {
         elem_id = get_bits(&gb, 4);
