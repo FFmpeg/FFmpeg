@@ -303,7 +303,7 @@ char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
         snprintf(authstr, len, "Authorization: Basic ");
         ptr = authstr + strlen(authstr);
         av_base64_encode(ptr, auth_b64_len, auth, strlen(auth));
-        av_strlcat(ptr, "\r\n", len);
+        av_strlcat(ptr, "\r\n", len - (ptr - authstr));
     } else if (state->auth_type == HTTP_AUTH_DIGEST) {
         char *username = av_strdup(auth), *password;
 
