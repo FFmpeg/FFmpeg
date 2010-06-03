@@ -34,12 +34,12 @@ typedef struct AVExpr AVExpr;
  *
  * @param res a pointer to a double where is put the result value of
  * the expression, or NAN in case of error
- * @param s expression as a zero terminated string for example "1+2^3+5*5+sin(2/3)"
- * @param const_names NULL terminated array of zero terminated strings of constant identifers for example {"PI", "E", 0}
- * @param const_values a zero terminated array of values for the identifers from const_names
- * @param func1_names NULL terminated array of zero terminated strings of funcs1 identifers
+ * @param s expression as a zero terminated string, for example "1+2^3+5*5+sin(2/3)"
+ * @param const_names NULL terminated array of zero terminated strings of constant identifiers, for example {"PI", "E", 0}
+ * @param const_values a zero terminated array of values for the identifiers from const_names
+ * @param func1_names NULL terminated array of zero terminated strings of funcs1 identifiers
  * @param funcs1 NULL terminated array of function pointers for functions which take 1 argument
- * @param func2_names NULL terminated array of zero terminated strings of funcs2 identifers
+ * @param func2_names NULL terminated array of zero terminated strings of funcs2 identifiers
  * @param funcs2 NULL terminated array of function pointers for functions which take 2 arguments
  * @param opaque a pointer which will be passed to all functions from funcs1 and funcs2
  * @param log_ctx parent logging context
@@ -59,11 +59,11 @@ int ff_parse_and_eval_expr(double *res, const char *s,
  * value in case of successfull parsing, or NULL otherwise.
  * The pointed to AVExpr must be freed with ff_free_expr() by the user
  * when it is not needed anymore.
- * @param s expression as a zero terminated string for example "1+2^3+5*5+sin(2/3)"
- * @param const_names NULL terminated array of zero terminated strings of constant identifers for example {"PI", "E", 0}
- * @param func1_names NULL terminated array of zero terminated strings of funcs1 identifers
+ * @param s expression as a zero terminated string, for example "1+2^3+5*5+sin(2/3)"
+ * @param const_names NULL terminated array of zero terminated strings of constant identifiers, for example {"PI", "E", 0}
+ * @param func1_names NULL terminated array of zero terminated strings of funcs1 identifiers
  * @param funcs1 NULL terminated array of function pointers for functions which take 1 argument
- * @param func2_names NULL terminated array of zero terminated strings of funcs2 identifers
+ * @param func2_names NULL terminated array of zero terminated strings of funcs2 identifiers
  * @param funcs2 NULL terminated array of function pointers for functions which take 2 arguments
  * @param log_ctx parent logging context
  * @return 0 in case of success, a negative value corresponding to an
@@ -78,7 +78,7 @@ int ff_parse_expr(AVExpr **expr, const char *s,
 /**
  * Evaluates a previously parsed expression.
  *
- * @param const_values a zero terminated array of values for the identifers from ff_parse() const_names
+ * @param const_values a zero terminated array of values for the identifiers from ff_parse() const_names
  * @param opaque a pointer which will be passed to all functions from funcs1 and funcs2
  * @return the value of the expression
  */
