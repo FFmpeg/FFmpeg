@@ -955,7 +955,7 @@ static av_cold int vorbis_encode_init(AVCodecContext *avccontext)
     if (avccontext->flags & CODEC_FLAG_QSCALE)
         venc->quality = avccontext->global_quality / (float)FF_QP2LAMBDA / 10.;
     else
-        venc->quality = 1.;
+        venc->quality = 0.03;
     venc->quality *= venc->quality;
 
     avccontext->extradata_size = put_main_header(venc, (uint8_t**)&avccontext->extradata);
