@@ -139,7 +139,7 @@ static const char *video_rc_override_string=NULL;
 static int video_disable = 0;
 static int video_discard = 0;
 static char *video_codec_name = NULL;
-static int video_codec_tag = 0;
+static unsigned int video_codec_tag = 0;
 static char *video_language = NULL;
 static int same_quality = 0;
 static int do_deinterlace = 0;
@@ -162,13 +162,13 @@ static float audio_qscale = QSCALE_NONE;
 static int audio_disable = 0;
 static int audio_channels = 1;
 static char  *audio_codec_name = NULL;
-static int audio_codec_tag = 0;
+static unsigned int audio_codec_tag = 0;
 static char *audio_language = NULL;
 
 static int subtitle_disable = 0;
 static char *subtitle_codec_name = NULL;
 static char *subtitle_language = NULL;
-static int subtitle_codec_tag = 0;
+static unsigned int subtitle_codec_tag = 0;
 
 static float mux_preload= 0.5;
 static float mux_max_delay= 0.7;
