@@ -24,6 +24,19 @@ get_common_elements() (
     echo $res
 )
 
+# Returns the elements present in $1 but not in $2.
+get_exclusive_elements() (
+    for elt1 in $1; do
+        common=""
+        for elt2 in $2; do
+            [ $elt1 = $elt2 ] && common="true" && break;
+        done
+        [ -z "$common" ] && res="$res $elt1"
+    done
+
+    echo $res
+)
+
 do_lavfi() {
     test_name=$1
     eval test=\$do_$test_name
@@ -55,7 +68,12 @@ vflip
 "
 
 if [ -n "$do_lavfi_pix_fmts" ]; then
+    # exclude pixel format currently not supported by NUT and which are not supported as input
+    excluded_pix_fmts="rgb4_byte bgr4_byte rgb444le rgb444be bgr444le bgr444be"
+    excluded_pix_fmts="$excluded_pix_fmts $(ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2)"
+
     scale_out_pix_fmts=$(tools/lavfi-showfiltfmts scale | grep "^OUTPUT" | cut -d: -f2)
+    scale_out_pix_fmts=$(get_exclusive_elements "$scale_out_pix_fmts" "$excluded_pix_fmts")
 
     for filter_args in $filters_args; do
         filter=$(echo $filter_args | sed -e 's/\([^=]\+\)=.*/\1/')
