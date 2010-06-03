@@ -32,6 +32,8 @@
 #if defined(__MINGW32__) && !defined(__MINGW32CE__)
 #  include <fcntl.h>
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
+#  define stat _stati64
+#  define fstat(f,s) _fstati64((f), (s))
 #endif /* defined(__MINGW32__) && !defined(__MINGW32CE__) */
 
 static inline int is_dos_path(const char *path)
