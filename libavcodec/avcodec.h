@@ -3502,7 +3502,7 @@ attribute_deprecated int avcodec_decode_video(AVCodecContext *avctx, AVFrame *pi
  *             Use avcodec_alloc_frame to get an AVFrame, the codec will
  *             allocate memory for the actual bitmap.
  *             with default get/release_buffer(), the decoder frees/reuses the bitmap as it sees fit.
- *             with overridden get/release_buffer() the user decides into what buffer the decoder
+ *             with overridden get/release_buffer() (needs CODEC_CAP_DR1) the user decides into what buffer the decoder
  *                   decodes and the decoder tells the user once it does not need the data anymore,
  *                   the user app can at this point free/reuse/keep the memory as it sees fit.
  *
