@@ -401,8 +401,6 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
         // could use this if we wanted.
     }
 
-    av_set_pts_info(stream, 33, 1, 90000);      // 33 should be right, because the pts is 64 bit? (done elsewhere; this is a one time thing)
-
     return 0;                   // keep processing it the normal way...
 }
 
