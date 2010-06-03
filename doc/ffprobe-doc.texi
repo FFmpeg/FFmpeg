@@ -7,8 +7,7 @@
 @sp 3
 @end titlepage
 
-@chapter Introduction
-
+@chapter Description
 @c man begin DESCRIPTION
 
 FFprobe gathers information from multimedia streams and prints it in
