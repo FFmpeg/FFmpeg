@@ -8,9 +8,9 @@
 @end titlepage
 
 
-@chapter Introduction
-
+@chapter Description
 @c man begin DESCRIPTION
+
 FFserver is a streaming server for both audio and video. It supports
 several live feeds, streaming from files and time shifting on live feeds
 (you can seek to positions in the past on each live feed, provided you
