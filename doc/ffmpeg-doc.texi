@@ -888,21 +888,6 @@ The following constants are available:
 
 @c man end
 
-@ignore
-
-@setfilename ffmpeg
-@settitle FFmpeg video converter
-
-@c man begin SEEALSO
-ffserver(1), ffplay(1) and the HTML documentation of @file{ffmpeg}.
-@c man end
-
-@c man begin AUTHOR
-Fabrice Bellard
-@c man end
-
-@end ignore
-
 @section Protocols
 
 The file name can be @file{-} to read from standard input or to write
@@ -961,5 +946,20 @@ It allows almost lossless encoding.
 
 @end itemize
 @c man end TIPS
+
+@ignore
+
+@setfilename ffmpeg
+@settitle FFmpeg video converter
+
+@c man begin SEEALSO
+ffserver(1), ffplay(1) and the HTML documentation of @file{ffmpeg}.
+@c man end
+
+@c man begin AUTHOR
+Fabrice Bellard
+@c man end
+
+@end ignore
 
 @bye
