@@ -7,7 +7,7 @@ version <next>:
 - WebM support in Matroska demuxer
 - low overhead Ogg muxing
 - MMS-TCP support
-- VP8 decoding via libvpx
+- VP8 de/encoding via libvpx
 - CODEC_CAP_EXPERIMENTAL added
 - Demuxer for On2's IVF format
 
