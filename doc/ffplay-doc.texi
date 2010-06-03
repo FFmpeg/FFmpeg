@@ -148,7 +148,7 @@ Seek to percentage in file corresponding to fraction of width.
 @settitle FFplay media player
 
 @c man begin SEEALSO
-ffmpeg(1), ffserver(1) and the HTML documentation of @file{ffmpeg}.
+ffmpeg(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
 @c man end
 
 @c man begin AUTHOR

@@ -953,7 +953,7 @@ It allows almost lossless encoding.
 @settitle FFmpeg video converter
 
 @c man begin SEEALSO
-ffserver(1), ffplay(1) and the HTML documentation of @file{ffmpeg}.
+ffplay(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
 @c man end
 
 @c man begin AUTHOR

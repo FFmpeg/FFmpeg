@@ -261,8 +261,9 @@ rather than as a daemon.
 @settitle FFserver video server
 
 @c man begin SEEALSO
-ffmpeg(1), ffplay(1), the @file{ffmpeg/doc/ffserver.conf} example and
-the HTML documentation of @file{ffmpeg}.
+
+ffmpeg(1), ffplay(1), ffprobe(1), the @file{ffmpeg/doc/ffserver.conf}
+example and the FFmpeg HTML documentation
 @c man end
 
 @c man begin AUTHOR

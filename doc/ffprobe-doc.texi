@@ -113,7 +113,7 @@ with name ``STREAM''.
 @settitle FFprobe media prober
 
 @c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffserver(1)
+ffmpeg(1), ffplay(1), ffserver(1) and the FFmpeg HTML documentation
 @c man end
 
 @end ignore
