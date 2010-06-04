@@ -114,6 +114,13 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', '2') },
     { PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', 's') },
     { PIX_FMT_PAL8,    MKTAG('W', 'R', 'A', 'W') },
+    { PIX_FMT_RGB555LE,MKTAG('L', '5', '5', '5') },
+    { PIX_FMT_RGB565LE,MKTAG('L', '5', '6', '5') },
+    { PIX_FMT_RGB565BE,MKTAG('B', '5', '6', '5') },
+    { PIX_FMT_BGR24,   MKTAG('2', '4', 'B', 'G') },
+    { PIX_FMT_BGRA,    MKTAG('B', 'G', 'R', 'A') },
+    { PIX_FMT_RGBA,    MKTAG('R', 'G', 'B', 'A') },
+    { PIX_FMT_ABGR,    MKTAG('A', 'B', 'G', 'R') },
 
     /* special */
     { PIX_FMT_RGB565LE,MKTAG( 3 ,  0 ,  0 ,  0 ) }, /* flipped RGB565LE */
