@@ -703,6 +703,8 @@ static int mkv_write_header(AVFormatContext *s)
     av_lfg_init(&mkv->lfg, av_get_random_seed());
 
     mkv->tracks = av_mallocz(s->nb_streams * sizeof(*mkv->tracks));
+    if (!mkv->tracks)
+        return AVERROR(ENOMEM);
 
     ebml_header = start_ebml_master(pb, EBML_ID_HEADER, 0);
     put_ebml_uint   (pb, EBML_ID_EBMLVERSION        ,           1);
