@@ -70,7 +70,7 @@ static av_cold int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avcco
 
 #ifdef OGGVORBIS_VBR_BY_ESTIMATE
         /* variable bitrate by estimate */
-        if(vorbis_encode_ctl(vi, OV_ECTL_RATEMANAGE_AVG, NULL))
+        if(vorbis_encode_ctl(vi, OV_ECTL_RATEMANAGE2_SET, NULL))
             return -1;
 #endif
     }
