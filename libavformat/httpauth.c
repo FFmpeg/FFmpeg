@@ -294,7 +294,7 @@ char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
         return NULL;
 
     if (state->auth_type == HTTP_AUTH_BASIC) {
-        int auth_b64_len = (strlen(auth) + 2) / 3 * 4 + 1;
+        int auth_b64_len = AV_BASE64_SIZE(strlen(auth));
         int len = auth_b64_len + 30;
         char *ptr;
         authstr = av_malloc(len);
