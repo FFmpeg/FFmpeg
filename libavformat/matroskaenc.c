@@ -182,7 +182,7 @@ static void put_ebml_float(ByteIOContext *pb, unsigned int elementid, double val
 }
 
 static void put_ebml_binary(ByteIOContext *pb, unsigned int elementid,
-                            const uint8_t *buf, int size)
+                            const void *buf, int size)
 {
     put_ebml_id(pb, elementid);
     put_ebml_num(pb, size, 0);
