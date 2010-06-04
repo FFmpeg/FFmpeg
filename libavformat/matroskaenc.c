@@ -26,7 +26,8 @@
 #include "avc.h"
 #include "flacenc.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/md5.h"
+#include "libavutil/random_seed.h"
+#include "libavutil/lfg.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
 
@@ -73,7 +74,6 @@ typedef struct MatroskaMuxContext {
     ByteIOContext   *dyn_bc;
     ebml_master     segment;
     int64_t         segment_offset;
-    int64_t         segment_uid;
     ebml_master     cluster;
     int64_t         cluster_pos;        ///< file offset of the current cluster
     int64_t         cluster_pts;
@@ -84,7 +84,7 @@ typedef struct MatroskaMuxContext {
     mkv_cues        *cues;
     mkv_track       *tracks;
 
-    struct AVMD5    *md5_ctx;
+    AVLFG           lfg;
     unsigned int    audio_buffer_size;
     AVPacket        cur_audio_pkt;
 } MatroskaMuxContext;
@@ -695,13 +695,13 @@ static int mkv_write_header(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     ebml_master ebml_header, segment_info;
     AVMetadataTag *tag;
-    int ret;
+    int ret, i;
 
     if (!strcmp(s->oformat->name, "webm")) mkv->mode = MODE_WEBM;
     else                                   mkv->mode = MODE_MATROSKAv2;
 
-    mkv->md5_ctx = av_mallocz(av_md5_size);
-    av_md5_init(mkv->md5_ctx);
+    av_lfg_init(&mkv->lfg, av_get_random_seed());
+
     mkv->tracks = av_mallocz(s->nb_streams * sizeof(*mkv->tracks));
 
     ebml_header = start_ebml_master(pb, EBML_ID_HEADER, 0);
@@ -735,12 +735,13 @@ static int mkv_write_header(AVFormatContext *s)
     if ((tag = av_metadata_get(s->metadata, "title", NULL, 0)))
         put_ebml_string(pb, MATROSKA_ID_TITLE, tag->value);
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
+        uint32_t segment_uid[4];
+        for (i = 0; i < 4; i++)
+            segment_uid[i] = av_lfg_get(&mkv->lfg);
+
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP , LIBAVFORMAT_IDENT);
         put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
-
-        // reserve space to write the segment UID later
-        mkv->segment_uid = url_ftell(pb);
-        put_ebml_void(pb, 19);
+        put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
     }
 
     // reserve space for the duration
@@ -912,7 +913,6 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER, 0);
         put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, FFMAX(0, ts));
         mkv->cluster_pts = FFMAX(0, ts);
-        av_md5_update(mkv->md5_ctx, pkt->data, FFMIN(200, pkt->size));
     }
 
     if (codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
@@ -1033,18 +1033,10 @@ static int mkv_write_trailer(AVFormatContext *s)
         url_fseek(pb, mkv->duration_offset, SEEK_SET);
         put_ebml_float(pb, MATROSKA_ID_DURATION, mkv->duration);
 
-        // write the md5sum of some frames as the segment UID
-        if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
-            uint8_t segment_uid[16];
-            av_md5_final(mkv->md5_ctx, segment_uid);
-            url_fseek(pb, mkv->segment_uid, SEEK_SET);
-            put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
-        }
         url_fseek(pb, currentpos, SEEK_SET);
     }
 
     end_ebml_master(pb, mkv->segment);
-    av_free(mkv->md5_ctx);
     av_free(mkv->tracks);
     av_destruct_packet(&mkv->cur_audio_pkt);
     put_flush_packet(pb);
