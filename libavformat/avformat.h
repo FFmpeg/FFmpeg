@@ -153,7 +153,8 @@ attribute_deprecated int av_metadata_set(AVMetadata **pm, const char *key, const
 /**
  * Sets the given tag in m, overwriting an existing tag.
  * @param key tag key to add to m (will be av_strduped depending on flags)
- * @param value tag value to add to m (will be av_strduped depending on flags)
+ * @param value tag value to add to m (will be av_strduped depending on flags).
+ *        Passing a NULL value will cause an existing tag to be deleted.
  * @return >= 0 on success otherwise an error code <0
  */
 int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int flags);
