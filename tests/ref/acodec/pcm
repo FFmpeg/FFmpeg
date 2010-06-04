@@ -22,11 +22,11 @@ stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 1058444 ./tests/data/acodec/pcm_s16le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-43440f8078f2383c0dd618ad606f6830 *./tests/data/acodec/pcm_s16be.mkv
+fca887459876a7fdc4b9580691acd835 *./tests/data/acodec/pcm_s16be.mkv
  1060693 ./tests/data/acodec/pcm_s16be.mkv
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-1e63166f1672b7eb00877c697c06743c *./tests/data/acodec/pcm_s16le.mkv
+2817e2a028a9117d4809604fa0f81a80 *./tests/data/acodec/pcm_s16le.mkv
  1060693 ./tests/data/acodec/pcm_s16le.mkv
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444

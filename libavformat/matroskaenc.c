@@ -81,6 +81,8 @@ typedef struct MatroskaMuxContext {
     mkv_track       *tracks;
 
     struct AVMD5    *md5_ctx;
+    unsigned int    audio_buffer_size;
+    AVPacket        cur_audio_pkt;
 } MatroskaMuxContext;
 
 
@@ -746,6 +748,10 @@ static int mkv_write_header(AVFormatContext *s)
     if (mkv->cues == NULL)
         return AVERROR(ENOMEM);
 
+    av_init_packet(&mkv->cur_audio_pkt);
+    mkv->cur_audio_pkt.size = 0;
+    mkv->audio_buffer_size  = 0;
+
     put_flush_packet(pb);
     return 0;
 }
@@ -861,7 +867,7 @@ static void mkv_flush_dynbuf(AVFormatContext *s)
     mkv->dyn_bc = NULL;
 }
 
-static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
+static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = s->pb;
@@ -910,9 +916,38 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0) return ret;
     }
 
-    // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming
-    if ((url_is_streamed(s->pb) && (url_ftell(pb) > 32*1024 || ts > mkv->cluster_pts + 1000))
-        ||  url_ftell(pb) > mkv->cluster_pos + 5*1024*1024 || ts > mkv->cluster_pts + 5000) {
+    mkv->duration = FFMAX(mkv->duration, ts + duration);
+    return 0;
+}
+
+static int mkv_copy_packet(MatroskaMuxContext *mkv, const AVPacket *pkt)
+{
+    uint8_t *data           = mkv->cur_audio_pkt.data;
+    mkv->cur_audio_pkt      = *pkt;
+    mkv->cur_audio_pkt.data = av_fast_realloc(data, &mkv->audio_buffer_size, pkt->size);
+    if (!mkv->cur_audio_pkt.data)
+        return AVERROR(ENOMEM);
+
+    memcpy(mkv->cur_audio_pkt.data, pkt->data, pkt->size);
+    mkv->cur_audio_pkt.size = pkt->size;
+    return 0;
+}
+
+static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    ByteIOContext *pb = url_is_streamed(s->pb) ? mkv->dyn_bc : s->pb;
+    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
+    int ret, keyframe = !!(pkt->flags & AV_PKT_FLAG_KEY);
+    int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
+    int cluster_size = url_ftell(pb) - (url_is_streamed(s->pb) ? 0 : mkv->cluster_pos);
+
+    // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
+    // after 4k and on a keyframe
+    if (mkv->cluster_pos &&
+        ((url_is_streamed(s->pb) && (cluster_size > 32*1024 || ts > mkv->cluster_pts + 1000))
+         ||                      cluster_size > 5*1024*1024 || ts > mkv->cluster_pts + 5000
+         || (codec->codec_type == AVMEDIA_TYPE_VIDEO && keyframe && cluster_size > 4*1024))) {
         av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64
                " bytes, pts %" PRIu64 "\n", url_ftell(pb), ts);
         end_ebml_master(pb, mkv->cluster);
@@ -921,8 +956,23 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
             mkv_flush_dynbuf(s);
     }
 
-    mkv->duration = FFMAX(mkv->duration, ts + duration);
-    return 0;
+    // check if we have an audio packet cached
+    if (mkv->cur_audio_pkt.size > 0) {
+        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt);
+        mkv->cur_audio_pkt.size = 0;
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Could not write cached audio packet ret:%d\n", ret);
+            return ret;
+        }
+    }
+
+    // buffer an audio packet to ensure the packet containing the video
+    // keyframe's timecode is contained in the same cluster for WebM
+    if (codec->codec_type == AVMEDIA_TYPE_AUDIO)
+        ret = mkv_copy_packet(mkv, pkt);
+    else
+        ret = mkv_write_packet_internal(s, pkt);
+    return ret;
 }
 
 static int mkv_write_trailer(AVFormatContext *s)
@@ -931,6 +981,16 @@ static int mkv_write_trailer(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     int64_t currentpos, second_seekhead, cuespos;
     int ret;
+
+    // check if we have an audio packet cached
+    if (mkv->cur_audio_pkt.size > 0) {
+        ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt);
+        mkv->cur_audio_pkt.size = 0;
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Could not write cached audio packet ret:%d\n", ret);
+            return ret;
+        }
+    }
 
     if (mkv->dyn_bc) {
         end_ebml_master(mkv->dyn_bc, mkv->cluster);
@@ -970,6 +1030,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     end_ebml_master(pb, mkv->segment);
     av_free(mkv->md5_ctx);
     av_free(mkv->tracks);
+    av_destruct_packet(&mkv->cur_audio_pkt);
     put_flush_packet(pb);
     return 0;
 }
