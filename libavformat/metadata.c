@@ -117,9 +117,11 @@ void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
     AVMetadata *dst = NULL;
     const char *key;
 
+    if (d_conv == s_conv)
+        return;
+
     while((mtag=av_metadata_get(*pm, "", mtag, AV_METADATA_IGNORE_SUFFIX))) {
         key = mtag->key;
-        if (s_conv != d_conv) {
             if (s_conv)
                 for (sc=s_conv; sc->native; sc++)
                     if (!strcasecmp(key, sc->native)) {
@@ -132,7 +134,6 @@ void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
                         key = dc->native;
                         break;
                     }
-        }
         av_metadata_set2(&dst, key, mtag->value, 0);
     }
     av_metadata_free(pm);
