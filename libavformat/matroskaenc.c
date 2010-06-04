@@ -80,7 +80,6 @@ typedef struct MatroskaMuxContext {
     int64_t         duration_offset;
     int64_t         duration;
     mkv_seekhead    *main_seekhead;
-    mkv_seekhead    *cluster_seekhead;
     mkv_cues        *cues;
     mkv_track       *tracks;
 
@@ -725,8 +724,7 @@ static int mkv_write_header(AVFormatContext *s)
     // isn't more than 10 elements if we only write one of each other
     // currently defined level 1 element
     mkv->main_seekhead    = mkv_start_seekhead(pb, mkv->segment_offset, 10);
-    mkv->cluster_seekhead = mkv_start_seekhead(pb, mkv->segment_offset, 0);
-    if (mkv->main_seekhead == NULL || mkv->cluster_seekhead == NULL)
+    if (!mkv->main_seekhead)
         return AVERROR(ENOMEM);
 
     ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_INFO, url_ftell(pb));
@@ -908,9 +906,6 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (!mkv->cluster_pos) {
-        ret = mkv_add_seekhead_entry(mkv->cluster_seekhead, MATROSKA_ID_CLUSTER, url_ftell(pb));
-        if (ret < 0) return ret;
-
         mkv->cluster_pos = url_ftell(s->pb);
         mkv->cluster = start_ebml_master(pb, MATROSKA_ID_CLUSTER, 0);
         put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, FFMAX(0, ts));
@@ -997,7 +992,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = s->pb;
-    int64_t currentpos, second_seekhead, cuespos;
+    int64_t currentpos, cuespos;
     int ret;
 
     // check if we have an audio packet cached
@@ -1019,14 +1014,9 @@ static int mkv_write_trailer(AVFormatContext *s)
 
     if (!url_is_streamed(pb)) {
         cuespos = mkv_write_cues(pb, mkv->cues, s->nb_streams);
-        second_seekhead = mkv_write_seekhead(pb, mkv->cluster_seekhead);
 
         ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES    , cuespos);
         if (ret < 0) return ret;
-        if (second_seekhead >= 0) {
-            ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_SEEKHEAD, second_seekhead);
-            if (ret < 0) return ret;
-        }
         mkv_write_seekhead(pb, mkv->main_seekhead);
 
         // update the duration
