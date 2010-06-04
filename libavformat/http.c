@@ -291,6 +291,10 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     if (post) {
         /* always use chunked encoding for upload data */
         s->chunksize = 0;
+        /* Pretend that it did work. We didn't read any header yet, since
+         * we've still to send the POST data, but the code calling this
+         * function will check http_code after we return. */
+        s->http_code = 200;
         return 0;
     }
 
