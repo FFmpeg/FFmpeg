@@ -2657,6 +2657,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->vp3_idct_dc_add = ff_vp3_idct_dc_add_mmx2;
             }
 
+            if (CONFIG_VP3_DECODER
+                && (avctx->codec_id == CODEC_ID_VP3 || avctx->codec_id == CODEC_ID_THEORA)) {
+                c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_exact_mmx2;
+                c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_exact_mmx2;
+            }
+
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU) \
             c->PFX ## _pixels_tab[IDX][ 0] = PFX ## SIZE ## _mc00_ ## CPU; \
             c->PFX ## _pixels_tab[IDX][ 1] = PFX ## SIZE ## _mc10_ ## CPU; \
@@ -2743,6 +2749,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_3dnow;
                 c->avg_pixels_tab[0][3] = avg_pixels16_xy2_3dnow;
                 c->avg_pixels_tab[1][3] = avg_pixels8_xy2_3dnow;
+            }
+
+            if (CONFIG_VP3_DECODER
+                && (avctx->codec_id == CODEC_ID_VP3 || avctx->codec_id == CODEC_ID_THEORA)) {
+                c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_exact_3dnow;
+                c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_exact_3dnow;
             }
 
             SET_QPEL_FUNCS(put_qpel, 0, 16, 3dnow);
