@@ -65,7 +65,11 @@ typedef struct {
     int             write_dts;
 } mkv_track;
 
+#define MODE_MATROSKAv2 0x01
+#define MODE_WEBM       0x02
+
 typedef struct MatroskaMuxContext {
+    int             mode;
     ByteIOContext   *dyn_bc;
     ebml_master     segment;
     int64_t         segment_offset;
@@ -565,6 +569,13 @@ static int mkv_write_tracks(AVFormatContext *s)
             }
         }
 
+        if (mkv->mode == MODE_WEBM && !(codec->codec_id == CODEC_ID_VP8 ||
+                                        codec->codec_id == CODEC_ID_VORBIS)) {
+            av_log(s, AV_LOG_ERROR,
+                   "Only VP8 video and Vorbis audio are supported for WebM.\n");
+            return AVERROR(EINVAL);
+        }
+
         switch (codec->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
@@ -686,6 +697,9 @@ static int mkv_write_header(AVFormatContext *s)
     AVMetadataTag *tag;
     int ret;
 
+    if (!strcmp(s->oformat->name, "webm")) mkv->mode = MODE_WEBM;
+    else                                   mkv->mode = MODE_MATROSKAv2;
+
     mkv->md5_ctx = av_mallocz(av_md5_size);
     av_md5_init(mkv->md5_ctx);
     mkv->tracks = av_mallocz(s->nb_streams * sizeof(*mkv->tracks));
@@ -695,7 +709,7 @@ static int mkv_write_header(AVFormatContext *s)
     put_ebml_uint   (pb, EBML_ID_EBMLREADVERSION    ,           1);
     put_ebml_uint   (pb, EBML_ID_EBMLMAXIDLENGTH    ,           4);
     put_ebml_uint   (pb, EBML_ID_EBMLMAXSIZELENGTH  ,           8);
-    put_ebml_string (pb, EBML_ID_DOCTYPE            ,  "matroska");
+    put_ebml_string (pb, EBML_ID_DOCTYPE            , s->oformat->name);
     put_ebml_uint   (pb, EBML_ID_DOCTYPEVERSION     ,           2);
     put_ebml_uint   (pb, EBML_ID_DOCTYPEREADVERSION ,           2);
     end_ebml_master(pb, ebml_header);
@@ -738,8 +752,10 @@ static int mkv_write_header(AVFormatContext *s)
     ret = mkv_write_tracks(s);
     if (ret < 0) return ret;
 
-    ret = mkv_write_chapters(s);
-    if (ret < 0) return ret;
+    if (mkv->mode != MODE_WEBM) {
+        ret = mkv_write_chapters(s);
+        if (ret < 0) return ret;
+    }
 
     if (url_is_streamed(s->pb))
         mkv_write_seekhead(pb, mkv->main_seekhead);
@@ -1035,6 +1051,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+#if CONFIG_MATROSKA_MUXER
 AVOutputFormat matroska_muxer = {
     "matroska",
     NULL_IF_CONFIG_SMALL("Matroska file format"),
@@ -1050,7 +1067,25 @@ AVOutputFormat matroska_muxer = {
     .codec_tag = (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .subtitle_codec = CODEC_ID_TEXT,
 };
+#endif
 
+#if CONFIG_WEBM_MUXER
+AVOutputFormat webm_muxer = {
+    "webm",
+    NULL_IF_CONFIG_SMALL("WebM file format"),
+    "video/webm",
+    "webm",
+    sizeof(MatroskaMuxContext),
+    CODEC_ID_VORBIS,
+    CODEC_ID_VP8,
+    mkv_write_header,
+    mkv_write_packet,
+    mkv_write_trailer,
+    .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
+};
+#endif
+
+#if CONFIG_MATROSKA_AUDIO_MUXER
 AVOutputFormat matroska_audio_muxer = {
     "matroska",
     NULL_IF_CONFIG_SMALL("Matroska file format"),
@@ -1065,3 +1100,4 @@ AVOutputFormat matroska_audio_muxer = {
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
 };
+#endif
