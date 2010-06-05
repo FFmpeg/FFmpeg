@@ -304,7 +304,7 @@ $sects{NAME} = "$fn \- $tl\n";
 $sects{FOOTNOTES} .= "=back\n" if exists $sects{FOOTNOTES};
 
 for $sect (qw(NAME SYNOPSIS DESCRIPTION OPTIONS EXAMPLES ENVIRONMENT FILES
-              BUGS NOTES FOOTNOTES SEEALSO AUTHOR COPYRIGHT)) {
+              BUGS NOTES FOOTNOTES SEEALSO AUTHORS COPYRIGHT)) {
     if(exists $sects{$sect}) {
         $head = $sect;
         $head =~ s/SEEALSO/SEE ALSO/;
