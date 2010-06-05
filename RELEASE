@@ -9,12 +9,9 @@ General notes
 This release features a lot of improvements that are relevant for HTML5 video.
 The H.264 and Theora decoders are now significantly faster, the vorbis decoder
 has seen important updates and this release supports Google's newly released
-libvpx library. Please note that for license reasons, we consider binaries of
-FFmpeg and libavcodec that are linked against libvpx unredistributable. We are
-confident that the situation will improve upstream; in this case, we will
-rectify this issue in a (future) point release.
+libvpx library for the VP8 codec and WEBM container.
 
-Other important changes are additions of decoders for popular codecs as
+Other important changes are additions of decoders including, but not limited to,
 Intel Indeo 5, WMA Pro, WMA Voice and HE-AAC.
 
 See the Changelog file for a list of significant changes.
