@@ -345,8 +345,10 @@ extern int rtsp_rtp_port_max;
  * @param send_content if non-null, the data to send as request body content
  * @param send_content_length the length of the send_content data, or 0 if
  *                            send_content is null
+ *
+ * @return zero if success, nonzero otherwise
  */
-void ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
+int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
                                          const char *method, const char *url,
                                          const char *headers,
                                          const unsigned char *send_content,
@@ -356,7 +358,7 @@ void ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
  *
  * @see rtsp_send_cmd_with_content_async
  */
-void ff_rtsp_send_cmd_async(AVFormatContext *s, const char *method,
+int ff_rtsp_send_cmd_async(AVFormatContext *s, const char *method,
                             const char *url, const char *headers);
 
 /**
@@ -372,8 +374,10 @@ void ff_rtsp_send_cmd_async(AVFormatContext *s, const char *method,
  * @param send_content if non-null, the data to send as request body content
  * @param send_content_length the length of the send_content data, or 0 if
  *                            send_content is null
+ *
+ * @return zero if success, nonzero otherwise
  */
-void ff_rtsp_send_cmd_with_content(AVFormatContext *s,
+int ff_rtsp_send_cmd_with_content(AVFormatContext *s,
                                    const char *method, const char *url,
                                    const char *headers,
                                    RTSPMessageHeader *reply,
@@ -386,7 +390,7 @@ void ff_rtsp_send_cmd_with_content(AVFormatContext *s,
  *
  * @see rtsp_send_cmd_with_content
  */
-void ff_rtsp_send_cmd(AVFormatContext *s, const char *method,
+int ff_rtsp_send_cmd(AVFormatContext *s, const char *method,
                       const char *url, const char *headers,
                       RTSPMessageHeader *reply, unsigned char **content_ptr);
 

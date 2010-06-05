@@ -1001,7 +1001,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     return 0;
 }
 
-void ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
+int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
                                          const char *method, const char *url,
                                          const char *headers,
                                          const unsigned char *send_content,
@@ -1036,23 +1036,25 @@ void ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
     if (send_content_length > 0 && send_content)
         url_write(rt->rtsp_hd_out, send_content, send_content_length);
     rt->last_cmd_time = av_gettime();
+
+    return 0;
 }
 
-void ff_rtsp_send_cmd_async(AVFormatContext *s, const char *method,
+int ff_rtsp_send_cmd_async(AVFormatContext *s, const char *method,
                             const char *url, const char *headers)
 {
-    ff_rtsp_send_cmd_with_content_async(s, method, url, headers, NULL, 0);
+    return ff_rtsp_send_cmd_with_content_async(s, method, url, headers, NULL, 0);
 }
 
-void ff_rtsp_send_cmd(AVFormatContext *s, const char *method, const char *url,
+int ff_rtsp_send_cmd(AVFormatContext *s, const char *method, const char *url,
                       const char *headers, RTSPMessageHeader *reply,
                       unsigned char **content_ptr)
 {
-    ff_rtsp_send_cmd_with_content(s, method, url, headers, reply,
+    return ff_rtsp_send_cmd_with_content(s, method, url, headers, reply,
                                   content_ptr, NULL, 0);
 }
 
-void ff_rtsp_send_cmd_with_content(AVFormatContext *s,
+int ff_rtsp_send_cmd_with_content(AVFormatContext *s,
                                    const char *method, const char *url,
                                    const char *header,
                                    RTSPMessageHeader *reply,
@@ -1062,17 +1064,22 @@ void ff_rtsp_send_cmd_with_content(AVFormatContext *s,
 {
     RTSPState *rt = s->priv_data;
     HTTPAuthType cur_auth_type;
+    int ret;
 
 retry:
     cur_auth_type = rt->auth_state.auth_type;
-    ff_rtsp_send_cmd_with_content_async(s, method, url, header,
-                                        send_content, send_content_length);
+    if ((ret = ff_rtsp_send_cmd_with_content_async(s, method, url, header,
+                                        send_content, send_content_length)))
+        return ret;
 
-    ff_rtsp_read_reply(s, reply, content_ptr, 0);
+    if ((ret = ff_rtsp_read_reply(s, reply, content_ptr, 0) ) < 0)
+        return ret;
 
     if (reply->status_code == 401 && cur_auth_type == HTTP_AUTH_NONE &&
         rt->auth_state.auth_type != HTTP_AUTH_NONE)
         goto retry;
+
+    return 0;
 }
 
 /**
