@@ -524,6 +524,12 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
         reset_predict_state(&ps[i]);
 }
 
+#define AAC_INIT_VLC_STATIC(num, size) \
+    INIT_VLC_STATIC(&vlc_spectral[num], 8, ff_aac_spectral_sizes[num], \
+         ff_aac_spectral_bits[num], sizeof( ff_aac_spectral_bits[num][0]), sizeof( ff_aac_spectral_bits[num][0]), \
+        ff_aac_spectral_codes[num], sizeof(ff_aac_spectral_codes[num][0]), sizeof(ff_aac_spectral_codes[num][0]), \
+        size);
+
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
     AACContext *ac = avctx->priv_data;
