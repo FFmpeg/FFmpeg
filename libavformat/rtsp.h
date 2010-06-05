@@ -349,17 +349,17 @@ extern int rtsp_rtp_port_max;
  * @return zero if success, nonzero otherwise
  */
 int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
-                                         const char *method, const char *url,
-                                         const char *headers,
-                                         const unsigned char *send_content,
-                                         int send_content_length);
+                                        const char *method, const char *url,
+                                        const char *headers,
+                                        const unsigned char *send_content,
+                                        int send_content_length);
 /**
  * Send a command to the RTSP server without waiting for the reply.
  *
  * @see rtsp_send_cmd_with_content_async
  */
 int ff_rtsp_send_cmd_async(AVFormatContext *s, const char *method,
-                            const char *url, const char *headers);
+                           const char *url, const char *headers);
 
 /**
  * Send a command to the RTSP server and wait for the reply.
@@ -378,12 +378,12 @@ int ff_rtsp_send_cmd_async(AVFormatContext *s, const char *method,
  * @return zero if success, nonzero otherwise
  */
 int ff_rtsp_send_cmd_with_content(AVFormatContext *s,
-                                   const char *method, const char *url,
-                                   const char *headers,
-                                   RTSPMessageHeader *reply,
-                                   unsigned char **content_ptr,
-                                   const unsigned char *send_content,
-                                   int send_content_length);
+                                  const char *method, const char *url,
+                                  const char *headers,
+                                  RTSPMessageHeader *reply,
+                                  unsigned char **content_ptr,
+                                  const unsigned char *send_content,
+                                  int send_content_length);
 
 /**
  * Send a command to the RTSP server and wait for the reply.
@@ -391,8 +391,8 @@ int ff_rtsp_send_cmd_with_content(AVFormatContext *s,
  * @see rtsp_send_cmd_with_content
  */
 int ff_rtsp_send_cmd(AVFormatContext *s, const char *method,
-                      const char *url, const char *headers,
-                      RTSPMessageHeader *reply, unsigned char **content_ptr);
+                     const char *url, const char *headers,
+                     RTSPMessageHeader *reply, unsigned char **content_ptr);
 
 /**
  * Read a RTSP message from the server, or prepare to read data
