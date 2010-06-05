@@ -2654,6 +2654,10 @@ int av_write_header(AVFormatContext *s)
         }
 
         if(s->oformat->codec_tag){
+            if(st->codec->codec_tag && st->codec->codec_id == CODEC_ID_RAWVIDEO && av_codec_get_tag(s->oformat->codec_tag, st->codec->codec_id) == 0 && !validate_codec_tag(s, st)){
+                //the current rawvideo encoding system ends up setting the wrong codec_tag for avi, we override it here
+                st->codec->codec_tag= 0;
+            }
             if(st->codec->codec_tag){
                 if (!validate_codec_tag(s, st)) {
                     char tagbuf[32];
