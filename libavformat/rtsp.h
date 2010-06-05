@@ -278,6 +278,10 @@ typedef struct RTSPState {
 
     /** The synchronized start time of the output streams. */
     int64_t start_time;
+
+    /** Additional output handle, used when input and output are done
+     * separately, eg for HTTP tunneling. */
+    URLContext *rtsp_hd_out;
 } RTSPState;
 
 /**
@@ -433,5 +437,12 @@ int ff_rtsp_connect(AVFormatContext *s);
  * @param s RTSP (de)muxer context
  */
 void ff_rtsp_close_streams(AVFormatContext *s);
+
+/**
+ * Close all connection handles within the RTSP (de)muxer
+ *
+ * @param rt RTSP (de)muxer context
+ */
+void ff_rtsp_close_connections(AVFormatContext *rt);
 
 #endif /* AVFORMAT_RTSP_H */
