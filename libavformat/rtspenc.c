@@ -48,7 +48,6 @@ static int rtsp_write_record(AVFormatContext *s)
 
 static int rtsp_write_header(AVFormatContext *s)
 {
-    RTSPState *rt = s->priv_data;
     int ret;
 
     ret = ff_rtsp_connect(s);

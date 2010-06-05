@@ -1638,7 +1638,6 @@ redirect:
 static int rtsp_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
-    RTSPState *rt = s->priv_data;
     int ret;
 
     ret = ff_rtsp_connect(s);
