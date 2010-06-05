@@ -10,6 +10,7 @@ HEADERS = adler32.h                                                     \
           common.h                                                      \
           crc.h                                                         \
           error.h                                                       \
+          eval.h                                                        \
           fifo.h                                                        \
           intfloat_readwrite.h                                          \
           log.h                                                         \
@@ -32,6 +33,7 @@ OBJS = adler32.o                                                        \
        crc.o                                                            \
        des.o                                                            \
        error.o                                                          \
+       eval.o                                                           \
        fifo.o                                                           \
        intfloat_readwrite.o                                             \
        lfg.o                                                            \

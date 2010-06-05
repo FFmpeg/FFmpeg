@@ -27,7 +27,7 @@
 
 #include "avcodec.h"
 #include "opt.h"
-#include "eval.h"
+#include "libavutil/eval.h"
 
 //FIXME order them and do a bin search
 const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mask, int flags){
@@ -165,7 +165,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
                 else if(!strcmp(buf, "none"   )) d= 0;
                 else if(!strcmp(buf, "all"    )) d= ~0;
                 else {
-                    int res = ff_parse_and_eval_expr(&d, buf, const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, obj);
+                    int res = av_parse_and_eval_expr(&d, buf, const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, obj);
                     if (res < 0) {
                         av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\"\n", val);
                         return res;

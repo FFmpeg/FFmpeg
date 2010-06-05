@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "eval.h"
+#include "libavutil/eval.h"
 
 typedef struct Predictor{
     double coeff;

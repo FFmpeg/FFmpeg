@@ -11,7 +11,6 @@ OBJS = allcodecs.o                                                      \
        bitstream.o                                                      \
        bitstream_filter.o                                               \
        dsputil.o                                                        \
-       eval.o                                                           \
        faanidct.o                                                       \
        imgconvert.o                                                     \
        jrevdct.o                                                        \
