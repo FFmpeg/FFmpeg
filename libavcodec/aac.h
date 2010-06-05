@@ -235,7 +235,7 @@ typedef struct {
  * main AAC context
  */
 typedef struct {
-    AVCodecContext * avctx;
+    AVCodecContext *avctx;
 
     MPEG4AudioConfig m4ac;
 
@@ -249,8 +249,8 @@ typedef struct {
     enum ChannelPosition che_pos[4][MAX_ELEM_ID]; /**< channel element channel mapping with the
                                                    *   first index as the first 4 raw data block types
                                                    */
-    ChannelElement * che[4][MAX_ELEM_ID];
-    ChannelElement * tag_che_map[4][MAX_ELEM_ID];
+    ChannelElement          *che[4][MAX_ELEM_ID];
+    ChannelElement  *tag_che_map[4][MAX_ELEM_ID];
     uint8_t tags_seen_this_frame[4][MAX_ELEM_ID];
     int tags_mapped;
     /** @} */
