@@ -115,6 +115,10 @@ with name ``STREAM''.
 ffmpeg(1), ffplay(1), ffserver(1) and the FFmpeg HTML documentation
 @c man end
 
+@c man begin AUTHORS
+The FFmpeg developers
+@c man end
+
 @end ignore
 
 @bye

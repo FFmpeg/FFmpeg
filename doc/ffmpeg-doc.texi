@@ -956,8 +956,8 @@ file to which you want to add them.
 ffplay(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
 @c man end
 
-@c man begin AUTHOR
-Fabrice Bellard
+@c man begin AUTHORS
+The FFmpeg developers
 @c man end
 
 @end ignore

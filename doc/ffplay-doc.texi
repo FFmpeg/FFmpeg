@@ -151,8 +151,8 @@ Seek to percentage in file corresponding to fraction of width.
 ffmpeg(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
 @c man end
 
-@c man begin AUTHOR
-Fabrice Bellard
+@c man begin AUTHORS
+The FFmpeg developers
 @c man end
 
 @end ignore
