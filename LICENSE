@@ -46,7 +46,3 @@ version needs to be upgraded by passing --enable-version3 to configure.
 The nonfree external library libfaac can be hooked up in FFmpeg. You need to
 pass --enable-nonfree to configure to enable it. Employ this option with care
 as FFmpeg then becomes nonfree and unredistributable.
-
-The libvpx external library has a license that is (L)GPL incompatible. If you
-combine it with FFmpeg the resulting binaries are unredistributable. Thus you
-need to pass --enable-nonfree to configure to enable it.
