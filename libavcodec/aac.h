@@ -241,7 +241,7 @@ typedef struct {
  * main AAC context
  */
 typedef struct {
-    AVCodecContext * avccontext;
+    AVCodecContext * avctx;
 
     MPEG4AudioConfig m4ac;
 
