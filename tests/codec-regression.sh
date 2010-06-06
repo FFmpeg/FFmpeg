@@ -248,6 +248,16 @@ do_video_encoding roqav.roq "" "-vframes 5"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
+if [ -n "$do_rgb" ] ; then
+do_video_encoding rgb.avi "" "-an -vcodec rawvideo -pix_fmt bgr24"
+do_video_decoding "" "-pix_fmt yuv420p"
+fi
+
+if [ -n "$do_yuv" ] ; then
+do_video_encoding yuv.avi "" "-an -vcodec rawvideo -pix_fmt yuv420p"
+do_video_decoding "" "-pix_fmt yuv420p"
+fi
+
 if [ -n "$do_mp2" ] ; then
 do_audio_encoding mp2.mp2 "-ar 44100"
 do_audio_decoding

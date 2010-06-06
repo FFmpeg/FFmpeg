@@ -191,6 +191,7 @@ VCODEC_TESTS-$(call ENCDEC,MPEG2VIDEO)       += mpeg2 mpeg2thread
 VCODEC_TESTS-$(call ENCDEC,MPEG4)            += mpeg4 mpeg4adv mpeg4nr mpeg4thread error rc
 VCODEC_TESTS-$(call ENCDEC,MSMPEG4V1)        += msmpeg4
 VCODEC_TESTS-$(call ENCDEC,MSMPEG4V2)        += msmpeg4v2
+VCODEC_TESTS-$(call ENCDEC,RAWVIDEO)         += rgb yuv
 VCODEC_TESTS-$(call ENCDEC,ROQ)              += roq
 VCODEC_TESTS-$(call ENCDEC,RV10)             += rv10
 VCODEC_TESTS-$(call ENCDEC,RV20)             += rv20
