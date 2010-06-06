@@ -237,6 +237,10 @@ static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     uint32_t map_cnt = get_le32(pb);
     int i;
     pkt_len -= 8;
+    if (s->flags & AVFMT_FLAG_IGNIDX) {
+        url_fskip(pb, pkt_len);
+        return;
+    }
     if (map_cnt > 1000) {
         av_log(s, AV_LOG_ERROR, "too many index entries %u (%x)\n", map_cnt, map_cnt);
         map_cnt = 1000;
