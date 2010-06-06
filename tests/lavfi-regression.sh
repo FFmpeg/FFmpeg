@@ -68,9 +68,8 @@ vflip
 "
 
 if [ -n "$do_lavfi_pix_fmts" ]; then
-    # exclude pixel formats currently not supported by NUT and which are not supported as input
-    excluded_pix_fmts="rgb4_byte bgr4_byte rgb444le rgb444be bgr444le bgr444be"
-    excluded_pix_fmts="$excluded_pix_fmts $(ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2)"
+    # exclude pixel formats which are not supported as input
+    excluded_pix_fmts="$(ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2)"
 
     scale_out_pix_fmts=$(tools/lavfi-showfiltfmts scale | grep "^OUTPUT" | cut -d: -f2)
     scale_out_pix_fmts=$(get_exclusive_elements "$scale_out_pix_fmts" "$excluded_pix_fmts")
