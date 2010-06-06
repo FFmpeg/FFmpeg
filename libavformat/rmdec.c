@@ -481,7 +481,8 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if (!data_off)
         data_off = url_ftell(pb) - 18;
-    if (indx_off && url_fseek(pb, indx_off, SEEK_SET) >= 0) {
+    if (indx_off && !url_is_streamed(pb) && !(s->flags & AVFMT_FLAG_IGNIDX) &&
+        url_fseek(pb, indx_off, SEEK_SET) >= 0) {
         rm_read_index(s);
         url_fseek(pb, data_off + 18, SEEK_SET);
     }
