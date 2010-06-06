@@ -98,6 +98,8 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { PIX_FMT_RGB8,     MKTAG('R', 'G', 'B',  8 ) },
     { PIX_FMT_BGR4,     MKTAG('B', 'G', 'R',  4 ) },
     { PIX_FMT_RGB4,     MKTAG('R', 'G', 'B',  4 ) },
+    { PIX_FMT_RGB4_BYTE,MKTAG('B', '4', 'B', 'Y') },
+    { PIX_FMT_BGR4_BYTE,MKTAG('R', '4', 'B', 'Y') },
     { PIX_FMT_RGB48LE,  MKTAG('R', 'G', 'B', 48 ) },
     { PIX_FMT_RGB48BE,  MKTAG( 48, 'R', 'G', 'B') },
     { PIX_FMT_GRAY16LE,    MKTAG('Y', '1',  0 , 16 ) },
