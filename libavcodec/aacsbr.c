@@ -71,9 +71,6 @@ enum {
 static VLC vlc_sbr[10];
 static const int8_t vlc_sbr_lav[10] =
     { 60, 60, 24, 24, 31, 31, 12, 12, 31, 12 };
-static DECLARE_ALIGNED(16, float, analysis_cos_pre)[64];
-static DECLARE_ALIGNED(16, float, analysis_sin_pre)[64];
-static DECLARE_ALIGNED(16, float, analysis_cossin_post)[32][2];
 static const DECLARE_ALIGNED(16, float, zero64)[64];
 
 #define SBR_INIT_VLC_STATIC(num, size) \
@@ -116,16 +113,6 @@ av_cold void ff_aac_sbr_init(void)
     SBR_INIT_VLC_STATIC(8, 592);
     SBR_INIT_VLC_STATIC(9, 512);
 
-    for (n = 0; n < 64; n++) {
-        float pre = M_PI * n / 64;
-        analysis_cos_pre[n] = cosf(pre);
-        analysis_sin_pre[n] = sinf(pre);
-    }
-    for (k = 0; k < 32; k++) {
-        float post = M_PI * (k + 0.5) / 128;
-        analysis_cossin_post[k][0] =  4.0 * cosf(post);
-        analysis_cossin_post[k][1] = -4.0 * sinf(post);
-    }
     for (n = 1; n < 320; n++)
         sbr_qmf_window_us[320 + n] = sbr_qmf_window_us[320 - n];
     sbr_qmf_window_us[384] = -sbr_qmf_window_us[384];
@@ -142,13 +129,13 @@ av_cold void ff_aac_sbr_ctx_init(SpectralBandReplication *sbr)
     sbr->data[0].synthesis_filterbank_samples_offset = SBR_SYNTHESIS_BUF_SIZE - (1280 - 128);
     sbr->data[1].synthesis_filterbank_samples_offset = SBR_SYNTHESIS_BUF_SIZE - (1280 - 128);
     ff_mdct_init(&sbr->mdct, 7, 1, 1.0/64);
-    ff_rdft_init(&sbr->rdft, 6, IDFT_R2C);
+    ff_mdct_init(&sbr->mdct_ana, 7, 1, -2.0);
 }
 
 av_cold void ff_aac_sbr_ctx_close(SpectralBandReplication *sbr)
 {
     ff_mdct_end(&sbr->mdct);
-    ff_rdft_end(&sbr->rdft);
+    ff_mdct_end(&sbr->mdct_ana);
 }
 
 static int qsort_comparison_function_int16(const void *a, const void *b)
@@ -1139,7 +1126,7 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
  * @param   x       pointer to the beginning of the first sample window
  * @param   W       array of complex-valued samples split into subbands
  */
-static void sbr_qmf_analysis(DSPContext *dsp, RDFTContext *rdft, const float *in, float *x,
+static void sbr_qmf_analysis(DSPContext *dsp, RDFTContext *mdct, const float *in, float *x,
                              float z[320], float W[2][32][32][2],
                              float scale)
 {
@@ -1156,19 +1143,20 @@ static void sbr_qmf_analysis(DSPContext *dsp, RDFTContext *rdft, const float *in
         dsp->vector_fmul_reverse(z, sbr_qmf_window_ds, x, 320);
         for (k = 0; k < 64; k++) {
             float f = z[k] + z[k + 64] + z[k + 128] + z[k + 192] + z[k + 256];
-            z[k] = f * analysis_cos_pre[k];
-            z[k+64] = f;
+            z[k] = f;
         }
-        ff_rdft_calc(rdft, z);
-        re = z[0] * 0.5f;
-        im = 0.5f * dsp->scalarproduct_float(z+64, analysis_sin_pre, 64);
-        W[1][i][0][0] = re * analysis_cossin_post[0][0] - im * analysis_cossin_post[0][1];
-        W[1][i][0][1] = re * analysis_cossin_post[0][1] + im * analysis_cossin_post[0][0];
+        //Shuffle to IMDCT
+        z[64] = z[0];
         for (k = 1; k < 32; k++) {
-            re = z[2*k  ] - re;
-            im = z[2*k+1] - im;
-            W[1][i][k][0] = re * analysis_cossin_post[k][0] - im * analysis_cossin_post[k][1];
-            W[1][i][k][1] = re * analysis_cossin_post[k][1] + im * analysis_cossin_post[k][0];
+            z[64+2*k-1] =  z[   k];
+            z[64+2*k  ] = -z[64-k];
+        }
+        z[64+63] = z[32];
+
+        ff_imdct_half(mdct, z, z+64);
+        for (k = 0; k < 32; k++) {
+            W[1][i][k][0] = -z[63-k];
+            W[1][i][k][1] = z[k];
         }
         x += 32;
     }
@@ -1730,7 +1718,7 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
     }
     for (ch = 0; ch < nch; ch++) {
         /* decode channel */
-        sbr_qmf_analysis(&ac->dsp, &sbr->rdft, ch ? R : L, sbr->data[ch].analysis_filterbank_samples,
+        sbr_qmf_analysis(&ac->dsp, &sbr->mdct_ana, ch ? R : L, sbr->data[ch].analysis_filterbank_samples,
                          (float*)sbr->qmf_filter_scratch,
                          sbr->data[ch].W, 1/(-1024 * ac->sf_scale));
         sbr_lf_gen(ac, sbr, sbr->X_low, sbr->data[ch].W);
