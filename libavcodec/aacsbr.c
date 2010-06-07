@@ -84,7 +84,7 @@ static const DECLARE_ALIGNED(16, float, zero64)[64];
 
 av_cold void ff_aac_sbr_init(void)
 {
-    int n, k;
+    int n;
     static const struct {
         const void *sbr_codes, *sbr_bits;
         const unsigned int table_size, elem_size;
@@ -1126,7 +1126,7 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
  * @param   x       pointer to the beginning of the first sample window
  * @param   W       array of complex-valued samples split into subbands
  */
-static void sbr_qmf_analysis(DSPContext *dsp, RDFTContext *mdct, const float *in, float *x,
+static void sbr_qmf_analysis(DSPContext *dsp, FFTContext *mdct, const float *in, float *x,
                              float z[320], float W[2][32][32][2],
                              float scale)
 {
@@ -1139,7 +1139,6 @@ static void sbr_qmf_analysis(DSPContext *dsp, RDFTContext *mdct, const float *in
         memcpy(x+288, in, 1024*sizeof(*x));
     for (i = 0; i < 32; i++) { // numTimeSlots*RATE = 16*2 as 960 sample frames
                                // are not supported
-        float re, im;
         dsp->vector_fmul_reverse(z, sbr_qmf_window_ds, x, 320);
         for (k = 0; k < 64; k++) {
             float f = z[k] + z[k + 64] + z[k + 128] + z[k + 192] + z[k + 256];
