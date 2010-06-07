@@ -460,7 +460,7 @@ static int vp8_encode(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     coded_size = queue_frames(avctx, buf, buf_size, avctx->coded_frame);
 
     if (!frame && avctx->flags & CODEC_FLAG_PASS1) {
-        unsigned int b64_size = ((ctx->twopass_stats.sz + 2) / 3) * 4 + 1;
+        unsigned int b64_size = AV_BASE64_SIZE(ctx->twopass_stats.sz);
 
         avctx->stats_out = av_malloc(b64_size);
         if (!avctx->stats_out) {
