@@ -83,7 +83,6 @@ typedef struct MatroskaMuxContext {
     mkv_cues        *cues;
     mkv_track       *tracks;
 
-    AVLFG           lfg;
     unsigned int    audio_buffer_size;
     AVPacket        cur_audio_pkt;
 } MatroskaMuxContext;
@@ -699,8 +698,6 @@ static int mkv_write_header(AVFormatContext *s)
     if (!strcmp(s->oformat->name, "webm")) mkv->mode = MODE_WEBM;
     else                                   mkv->mode = MODE_MATROSKAv2;
 
-    av_lfg_init(&mkv->lfg, av_get_random_seed());
-
     mkv->tracks = av_mallocz(s->nb_streams * sizeof(*mkv->tracks));
     if (!mkv->tracks)
         return AVERROR(ENOMEM);
@@ -736,8 +733,12 @@ static int mkv_write_header(AVFormatContext *s)
         put_ebml_string(pb, MATROSKA_ID_TITLE, tag->value);
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
         uint32_t segment_uid[4];
+        AVLFG lfg;
+
+        av_lfg_init(&lfg, av_get_random_seed());
+
         for (i = 0; i < 4; i++)
-            segment_uid[i] = av_lfg_get(&mkv->lfg);
+            segment_uid[i] = av_lfg_get(&lfg);
 
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP , LIBAVFORMAT_IDENT);
         put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
