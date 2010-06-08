@@ -1195,11 +1195,11 @@ static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
                 v[63 - n] = -mdct_buf[0][62 - 2*n];
             }
         } else {
-        for (n = 1; n < 64 >> div; n+=2) {
-            X[1][i][n] = -X[1][i][n];
-        }
-        ff_imdct_half(mdct, mdct_buf[0], X[0][i]);
-        ff_imdct_half(mdct, mdct_buf[1], X[1][i]);
+            for (n = 1; n < 64; n+=2) {
+                X[1][i][n] = -X[1][i][n];
+            }
+            ff_imdct_half(mdct, mdct_buf[0], X[0][i]);
+            ff_imdct_half(mdct, mdct_buf[1], X[1][i]);
             for (n = 0; n < 64; n++) {
                 v[      n] = -mdct_buf[0][63 -   n] + mdct_buf[1][  n    ];
                 v[127 - n] =  mdct_buf[0][63 -   n] + mdct_buf[1][  n    ];
