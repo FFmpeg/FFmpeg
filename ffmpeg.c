@@ -2156,6 +2156,11 @@ static int av_transcode(AVFormatContext **output_files,
         codec->chroma_sample_location = icodec->chroma_sample_location;
 
         if (ost->st->stream_copy) {
+            uint64_t extra_size = (uint64_t)icodec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE;
+
+            if (extra_size > INT_MAX)
+                goto fail;
+
             /* if stream_copy is selected, no need to decode or encode */
             codec->codec_id = icodec->codec_id;
             codec->codec_type = icodec->codec_type;
@@ -2168,7 +2173,10 @@ static int av_transcode(AVFormatContext **output_files,
             }
 
             codec->bit_rate = icodec->bit_rate;
-            codec->extradata= icodec->extradata;
+            codec->extradata= av_mallocz(extra_size);
+            if (!codec->extradata)
+                goto fail;
+            memcpy(codec->extradata, icodec->extradata, icodec->extradata_size);
             codec->extradata_size= icodec->extradata_size;
             if(av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base) && av_q2d(ist->st->time_base) < 1.0/1000){
                 codec->time_base = icodec->time_base;
@@ -2682,6 +2690,8 @@ static int av_transcode(AVFormatContext **output_files,
         for(i=0;i<nb_ostreams;i++) {
             ost = ost_table[i];
             if (ost) {
+                if (ost->st->stream_copy)
+                    av_freep(&ost->st->codec->extradata);
                 if (ost->logfile) {
                     fclose(ost->logfile);
                     ost->logfile = NULL;
