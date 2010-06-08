@@ -26,6 +26,7 @@
 $output = 0;
 $skipping = 0;
 %sects = ();
+@sects_sequence = ();
 $section = "";
 @icstack = ();
 @endwstack = ();
@@ -102,7 +103,7 @@ while(<$inf>) {
     # Look for blocks surrounded by @c man begin SECTION ... @c man end.
     # This really oughta be @ifman ... @end ifman and the like, but such
     # would require rev'ing all other Texinfo translators.
-    /^\@c\s+man\s+begin\s+([A-Za-z ]+)/ and $sect = $1, $output = 1, next;
+    /^\@c\s+man\s+begin\s+([A-Za-z ]+)/ and $sect = $1, push (@sects_sequence, $sect), $output = 1, next;
     /^\@c\s+man\s+end/ and do {
         $sects{$sect} = "" unless exists $sects{$sect};
         $sects{$sect} .= postprocess($section);
@@ -298,8 +299,8 @@ die "No filename or title\n" unless defined $fn && defined $tl;
 $sects{NAME} = "$fn \- $tl\n";
 $sects{FOOTNOTES} .= "=back\n" if exists $sects{FOOTNOTES};
 
-for $sect (qw(NAME SYNOPSIS DESCRIPTION OPTIONS EXAMPLES ENVIRONMENT FILES
-              BUGS NOTES FOOTNOTES SEEALSO AUTHORS COPYRIGHT)) {
+unshift @sects_sequence, "NAME";
+for $sect (@sects_sequence) {
     if(exists $sects{$sect}) {
         $head = $sect;
         $head =~ s/SEEALSO/SEE ALSO/;
