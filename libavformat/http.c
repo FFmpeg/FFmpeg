@@ -45,6 +45,7 @@ typedef struct {
     int64_t off, filesize;
     char location[URL_SIZE];
     HTTPAuthState auth_state;
+    int init;
 } HTTPContext;
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
@@ -65,6 +66,7 @@ static int http_open_cnx(URLContext *h)
     HTTPContext *s = h->priv_data;
     URLContext *hd = NULL;
 
+    s->init = 1;
     proxy_path = getenv("http_proxy");
     use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&
         av_strstart(proxy_path, "http://", NULL);
@@ -123,7 +125,6 @@ static int http_open_cnx(URLContext *h)
 static int http_open(URLContext *h, const char *uri, int flags)
 {
     HTTPContext *s;
-    int ret;
 
     h->is_streamed = 1;
 
@@ -135,13 +136,11 @@ static int http_open(URLContext *h, const char *uri, int flags)
     s->filesize = -1;
     s->chunksize = -1;
     s->off = 0;
+    s->init = 0;
     memset(&s->auth_state, 0, sizeof(s->auth_state));
     av_strlcpy(s->location, uri, URL_SIZE);
 
-    ret = http_open_cnx(h);
-    if (ret != 0)
-        av_free (s);
-    return ret;
+    return 0;
 }
 static int http_getc(HTTPContext *s)
 {
@@ -322,6 +321,17 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
     HTTPContext *s = h->priv_data;
     int len;
 
+    if (!s->init) {
+        int ret = http_open_cnx(h);
+        if (ret != 0)
+            return ret;
+    }
+
+    /* A size of zero can be used to force
+     * initializaton of the connection. */
+    if (!size)
+        return 0;
+
     if (s->chunksize >= 0) {
         if (!s->chunksize) {
             char line[32];
@@ -368,6 +378,12 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
     int ret;
     char crlf[] = "\r\n";
     HTTPContext *s = h->priv_data;
+
+    if (!s->init) {
+        int ret = http_open_cnx(h);
+        if (ret != 0)
+            return ret;
+    }
 
     if (s->chunksize == -1) {
         /* headers are sent without any special encoding */
