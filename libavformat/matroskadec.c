@@ -1064,6 +1064,11 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     MatroskaLevel level;
     int i;
 
+    // we should not do any seeking in the streaming case
+    if (url_is_streamed(matroska->ctx->pb) ||
+        (matroska->ctx->flags & AVFMT_FLAG_IGNIDX))
+        return;
+
     for (i=0; i<seekhead_list->nb_elem; i++) {
         int64_t offset = seekhead[i].pos + matroska->segment_start;
 
