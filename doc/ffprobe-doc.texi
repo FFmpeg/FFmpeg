@@ -7,6 +7,16 @@
 @sp 3
 @end titlepage
 
+@chapter Synopsis
+
+The generic syntax is:
+
+@example
+@c man begin SYNOPSIS
+ffprobe [options] [@file{input_file}]
+@c man end
+@end example
+
 @chapter Description
 @c man begin DESCRIPTION
 
@@ -45,18 +55,7 @@ are prefixed by the string ``TAG:''.
 
 @c man end
 
-@chapter Invocation
-
-@section Syntax
-
-The generic syntax is:
-
-@example
-@c man begin SYNOPSIS
-ffprobe [options] [@file{input_file}]
-@c man end
-@end example
-
+@chapter Options
 @c man begin OPTIONS
 
 @include fftools-common-opts.texi

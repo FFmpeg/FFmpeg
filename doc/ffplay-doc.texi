@@ -7,6 +7,13 @@
 @sp 3
 @end titlepage
 
+@chapter Synopsis
+
+@example
+@c man begin SYNOPSIS
+ffplay [options] @file{input_file}
+@c man end
+@end example
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -16,15 +23,7 @@ libraries and the SDL library. It is mostly used as a testbed for the
 various FFmpeg APIs.
 @c man end
 
-@chapter Invocation
-
-@section Syntax
-@example
-@c man begin SYNOPSIS
-ffplay [options] @file{input_file}
-@c man end
-@end example
-
+@chapter Options
 @c man begin OPTIONS
 
 @include fftools-common-opts.texi

@@ -7,6 +7,16 @@
 @sp 3
 @end titlepage
 
+@chapter Synopsis
+
+The generic syntax is:
+
+@example
+@c man begin SYNOPSIS
+ffmpeg [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
+@c man end
+@end example
+
 @chapter Description
 @c man begin DESCRIPTION
 
@@ -50,18 +60,7 @@ specified for the inputs.
 
 @c man end DESCRIPTION
 
-@chapter Invocation
-
-@section Syntax
-
-The generic syntax is:
-
-@example
-@c man begin SYNOPSIS
-ffmpeg [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
-@c man end
-@end example
-
+@chapter Options
 @c man begin OPTIONS
 
 @include fftools-common-opts.texi

@@ -7,6 +7,15 @@
 @sp 3
 @end titlepage
 
+@chapter Synopsys
+
+The generic syntax is:
+
+@example
+@c man begin SYNOPSIS
+ffserver [options]
+@c man end
+@end example
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -226,15 +235,7 @@ You use this by adding the ?date= to the end of the URL for the stream.
 For example:   @samp{http://localhost:8080/test.asf?date=2002-07-26T23:05:00}.
 @c man end
 
-@chapter Invocation
-@section Syntax
-@example
-@c man begin SYNOPSIS
-ffserver [options]
-@c man end
-@end example
-
-@section Options
+@chapter Options
 @c man begin OPTIONS
 
 @include fftools-common-opts.texi
