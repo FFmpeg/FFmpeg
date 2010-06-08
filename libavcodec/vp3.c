@@ -1329,7 +1329,7 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
         y = s->height - y - h;
     }
 
-    cy = y >> 1;
+    cy = y >> s->chroma_y_shift;
     offset[0] = s->current_frame.linesize[0]*y;
     offset[1] = s->current_frame.linesize[1]*cy;
     offset[2] = s->current_frame.linesize[2]*cy;
