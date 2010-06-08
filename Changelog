@@ -10,6 +10,7 @@ version <next>:
 - VP8 de/encoding via libvpx
 - CODEC_CAP_EXPERIMENTAL added
 - Demuxer for On2's IVF format
+- Pictor/PC Paint decoder
 
 
 

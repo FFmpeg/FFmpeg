@@ -152,6 +152,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (PCX, pcx);
     REGISTER_ENCDEC  (PGM, pgm);
     REGISTER_ENCDEC  (PGMYUV, pgmyuv);
+    REGISTER_DECODER (PICTOR, pictor);
     REGISTER_ENCDEC  (PNG, png);
     REGISTER_ENCDEC  (PPM, ppm);
     REGISTER_DECODER (PTX, ptx);
