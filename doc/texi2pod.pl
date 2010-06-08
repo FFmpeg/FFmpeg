@@ -100,6 +100,17 @@ while(<$inf>) {
         next;
     };
 
+    /^\@include\s+(.+)$/ and do {
+        push @instack, $inf;
+        $inf = gensym();
+
+        # Try cwd and $ibase.
+        open($inf, "<" . $1)
+            or open($inf, "<" . $ibase . "/" . $1)
+                or die "cannot open $1 or $ibase/$1: $!\n";
+        next;
+    };
+
     # Look for blocks surrounded by @c man begin SECTION ... @c man end.
     # This really oughta be @ifman ... @end ifman and the like, but such
     # would require rev'ing all other Texinfo translators.
@@ -219,17 +230,6 @@ while(<$inf>) {
     }
 
     # Single line command handlers.
-
-    /^\@include\s+(.+)$/ and do {
-        push @instack, $inf;
-        $inf = gensym();
-
-        # Try cwd and $ibase.
-        open($inf, "<" . $1)
-            or open($inf, "<" . $ibase . "/" . $1)
-                or die "cannot open $1 or $ibase/$1: $!\n";
-        next;
-    };
 
     /^\@(?:section|unnumbered|unnumberedsec|center)\s+(.+)$/
         and $_ = "\n=head2 $1\n";
