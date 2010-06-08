@@ -293,6 +293,7 @@ Muxers/Demuxers:
   oggdec.c, oggdec.h                    David Conrad
   oggenc.c                              Baptiste Coudurier
   oggparse*.c                           David Conrad
+  oma.c                                 Maxim Poliakovski
   psxstr.c                              Mike Melanson
   pva.c                                 Ivo van Poorten
   r3d.c                                 Baptiste Coudurier
