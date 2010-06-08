@@ -3949,6 +3949,65 @@ static int ffserver_opt_default(const char *opt, const char *arg,
     return ret;
 }
 
+static int ffserver_opt_preset(const char *arg,
+                       AVCodecContext *avctx, int type,
+                       enum CodecID *audio_id, enum CodecID *video_id)
+{
+    FILE *f=NULL;
+    char filename[1000], tmp[1000], tmp2[1000], line[1000];
+    int i, ret = 0;
+    const char *base[3]= { getenv("FFMPEG_DATADIR"),
+                           getenv("HOME"),
+                           FFMPEG_DATADIR,
+                         };
+
+    for(i=0; i<3 && !f; i++){
+        if(!base[i])
+            continue;
+        snprintf(filename, sizeof(filename), "%s%s/%s.ffpreset", base[i], i != 1 ? "" : "/.ffmpeg", arg);
+        f= fopen(filename, "r");
+        if(!f){
+            AVCodec *codec = avcodec_find_encoder(avctx->codec_id);
+            if (codec) {
+                snprintf(filename, sizeof(filename), "%s%s/%s-%s.ffpreset", base[i],  i != 1 ? "" : "/.ffmpeg", codec->name, arg);
+                f= fopen(filename, "r");
+            }
+        }
+    }
+
+    if(!f){
+        fprintf(stderr, "File for preset '%s' not found\n", arg);
+        return 1;
+    }
+
+    while(!feof(f)){
+        int e= fscanf(f, "%999[^\n]\n", line) - 1;
+        if(line[0] == '#' && !e)
+            continue;
+        e|= sscanf(line, "%999[^=]=%999[^\n]\n", tmp, tmp2) - 2;
+        if(e){
+            fprintf(stderr, "%s: Invalid syntax: '%s'\n", filename, line);
+            ret = 1;
+            break;
+        }
+        if(!strcmp(tmp, "acodec")){
+            *audio_id = opt_audio_codec(tmp2);
+        }else if(!strcmp(tmp, "vcodec")){
+            *video_id = opt_video_codec(tmp2);
+        }else if(!strcmp(tmp, "scodec")){
+            /* opt_subtitle_codec(tmp2); */
+        }else if(ffserver_opt_default(tmp, tmp2, avctx, type) < 0){
+            fprintf(stderr, "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'\n", filename, line, tmp, tmp2);
+            ret = 1;
+            break;
+        }
+    }
+
+    fclose(f);
+
+    return ret;
+}
+
 static AVOutputFormat *ffserver_guess_format(const char *short_name, const char *filename,
                                              const char *mime_type)
 {
@@ -4402,6 +4461,23 @@ static int parse_ffconfig(const char *filename)
             }
             if (ffserver_opt_default(arg, arg2, avctx, type|AV_OPT_FLAG_ENCODING_PARAM)) {
                 ERROR("AVOption error: %s %s\n", arg, arg2);
+            }
+        } else if (!strcasecmp(cmd, "AVPresetVideo") ||
+                   !strcasecmp(cmd, "AVPresetAudio")) {
+            AVCodecContext *avctx;
+            int type;
+            get_arg(arg, sizeof(arg), &p);
+            if (!strcasecmp(cmd, "AVPresetVideo")) {
+                avctx = &video_enc;
+                video_enc.codec_id = video_id;
+                type = AV_OPT_FLAG_VIDEO_PARAM;
+            } else {
+                avctx = &audio_enc;
+                audio_enc.codec_id = audio_id;
+                type = AV_OPT_FLAG_AUDIO_PARAM;
+            }
+            if (ffserver_opt_preset(arg, avctx, type|AV_OPT_FLAG_ENCODING_PARAM, &audio_id, &video_id)) {
+                ERROR("AVPreset error: %s\n", arg);
             }
         } else if (!strcasecmp(cmd, "VideoTag")) {
             get_arg(arg, sizeof(arg), &p);
