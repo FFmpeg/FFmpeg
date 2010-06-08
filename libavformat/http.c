@@ -48,6 +48,7 @@ typedef struct {
     HTTPAuthState auth_state;
     int init;
     unsigned char headers[BUFFER_SIZE];
+    int is_chunked;
 } HTTPContext;
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
@@ -63,6 +64,11 @@ void ff_http_set_headers(URLContext *h, const char *headers)
         av_log(NULL, AV_LOG_ERROR, "No trailing CRLF found in HTTP header.\n");
 
     av_strlcpy(s->headers, headers, sizeof(s->headers));
+}
+
+void ff_http_set_chunked_transfer_encoding(URLContext *h, int is_chunked)
+{
+    ((HTTPContext*)h->priv_data)->is_chunked = is_chunked;
 }
 
 /* return non zero if error */
@@ -148,6 +154,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     h->priv_data = s;
     s->filesize = -1;
     s->chunksize = -1;
+    s->is_chunked = 1;
     s->off = 0;
     s->init = 0;
     s->hd = NULL;
@@ -311,7 +318,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              "\r\n",
              post ? "POST" : "GET",
              path,
-             post ? "Transfer-Encoding: chunked\r\n" : "",
+             post && s->is_chunked ? "Transfer-Encoding: chunked\r\n" : "",
              headers,
              authstr ? authstr : "");
 
@@ -412,7 +419,7 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
 /* used only when posting data */
 static int http_write(URLContext *h, const uint8_t *buf, int size)
 {
-    char temp[11];  /* 32-bit hex + CRLF + nul */
+    char temp[11] = "";  /* 32-bit hex + CRLF + nul */
     int ret;
     char crlf[] = "\r\n";
     HTTPContext *s = h->priv_data;
@@ -432,11 +439,16 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
      * signal EOF */
     if (size > 0) {
         /* upload data using chunked encoding */
+        if(s->is_chunked) {
         snprintf(temp, sizeof(temp), "%x\r\n", size);
+            if ((ret = url_write(s->hd, temp, strlen(temp))) < 0)
+                return ret;
+        }
 
-        if ((ret = url_write(s->hd, temp, strlen(temp))) < 0 ||
-            (ret = url_write(s->hd, buf, size)) < 0 ||
-            (ret = url_write(s->hd, crlf, sizeof(crlf) - 1)) < 0)
+        if ((ret = url_write(s->hd, buf, size)) < 0)
+            return ret;
+
+        if (s->is_chunked && (ret = url_write(s->hd, crlf, sizeof(crlf) - 1)) < 0)
             return ret;
     }
     return size;

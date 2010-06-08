@@ -39,4 +39,12 @@
  */
 void ff_http_set_headers(URLContext *h, const char *headers);
 
+/**
+ * Enables or disables chunked transfer encoding. (default is enabled)
+ *
+ * @param h URL context for this HTTP connection
+ * @param is_chunked 0 to disable chunking, nonzero otherwise.
+ */
+void ff_http_set_chunked_transfer_encoding(URLContext *h, int is_chunked);
+
 #endif /* AVFORMAT_HTTP_H */
