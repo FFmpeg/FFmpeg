@@ -25,5 +25,6 @@
 
 extern const uint8_t ff_cga_font[2048];
 extern const uint32_t ff_cga_palette[16];
+extern const uint32_t ff_ega_palette[64];
 
 #endif
