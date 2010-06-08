@@ -49,6 +49,15 @@ enum RTSPTransport {
     RTSP_TRANSPORT_NB
 };
 
+/**
+ * Transport mode for the RTSP data. This may be plain, or
+ * tunneled, which is done over HTTP.
+ */
+enum RTSPControlTransport {
+    RTSP_MODE_PLAIN,   /**< Normal RTSP */
+    RTSP_MODE_TUNNEL   /**< RTSP over HTTP (tunneling) */
+};
+
 #define RTSP_DEFAULT_PORT   554
 #define RTSP_MAX_TRANSPORTS 8
 #define RTSP_TCP_MAX_PACKET_SIZE 1472
@@ -282,6 +291,9 @@ typedef struct RTSPState {
     /** Additional output handle, used when input and output are done
      * separately, eg for HTTP tunneling. */
     URLContext *rtsp_hd_out;
+
+    /** RTSP transport mode, such as plain or tunneled. */
+    enum RTSPControlTransport control_transport;
 } RTSPState;
 
 /**

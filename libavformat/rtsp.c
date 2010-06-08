@@ -22,6 +22,7 @@
 #include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/random_seed.h"
 #include "avformat.h"
 
 #include <sys/time.h>
@@ -32,6 +33,7 @@
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
+#include "http.h"
 #include "rtsp.h"
 
 #include "rtpdec.h"
@@ -1008,8 +1010,11 @@ int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
                                         int send_content_length)
 {
     RTSPState *rt = s->priv_data;
-    char buf[4096];
+    char buf[4096], *out_buf;
+    char base64buf[AV_BASE64_SIZE(sizeof(buf))];
 
+    /* Add in RTSP headers */
+    out_buf = buf;
     rt->seq++;
     snprintf(buf, sizeof(buf), "%s %s RTSP/1.0\r\n", method, url);
     if (headers)
@@ -1030,11 +1035,23 @@ int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
         av_strlcatf(buf, sizeof(buf), "Content-Length: %d\r\n", send_content_length);
     av_strlcat(buf, "\r\n", sizeof(buf));
 
+    /* base64 encode rtsp if tunneling */
+    if (rt->control_transport == RTSP_MODE_TUNNEL) {
+        av_base64_encode(base64buf, sizeof(base64buf), buf, strlen(buf));
+        out_buf = base64buf;
+    }
+
     dprintf(s, "Sending:\n%s--\n", buf);
 
-    url_write(rt->rtsp_hd_out, buf, strlen(buf));
-    if (send_content_length > 0 && send_content)
+    url_write(rt->rtsp_hd_out, out_buf, strlen(out_buf));
+    if (send_content_length > 0 && send_content) {
+        if (rt->control_transport == RTSP_MODE_TUNNEL) {
+            av_log(s, AV_LOG_ERROR, "tunneling of RTSP requests "
+                                    "with content data not supported\n");
+            return AVERROR_PATCHWELCOME;
+        }
         url_write(rt->rtsp_hd_out, send_content, send_content_length);
+    }
     rt->last_cmd_time = av_gettime();
 
     return 0;
@@ -1485,6 +1502,7 @@ int ff_rtsp_connect(AVFormatContext *s)
     if (!ff_network_init())
         return AVERROR(EIO);
 redirect:
+    rt->control_transport = RTSP_MODE_PLAIN;
     /* extract hostname and port */
     ff_url_split(NULL, 0, auth, sizeof(auth),
                  host, sizeof(host), &port, path, sizeof(path), s->filename);
@@ -1514,6 +1532,9 @@ redirect:
                 lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_UDP_MULTICAST);
             } else if (!strcmp(option, "tcp")) {
                 lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_TCP);
+            } else if(!strcmp(option, "http")) {
+                lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_TCP);
+                rt->control_transport = RTSP_MODE_TUNNEL;
             } else {
                 /* Write options back into the buffer, using memmove instead
                  * of strcpy since the strings may overlap. */
@@ -1533,7 +1554,7 @@ redirect:
         /* Only UDP or TCP - UDP multicast isn't supported. */
         lower_transport_mask &= (1 << RTSP_LOWER_TRANSPORT_UDP) |
                                 (1 << RTSP_LOWER_TRANSPORT_TCP);
-        if (!lower_transport_mask) {
+        if (!lower_transport_mask || rt->control_transport == RTSP_MODE_TUNNEL) {
             av_log(s, AV_LOG_ERROR, "Unsupported lower transport method, "
                                     "only UDP and TCP are supported for output.\n");
             err = AVERROR(EINVAL);
@@ -1547,6 +1568,56 @@ redirect:
     ff_url_join(rt->control_uri, sizeof(rt->control_uri), "rtsp", NULL,
                 host, port, "%s", path);
 
+    if (rt->control_transport == RTSP_MODE_TUNNEL) {
+        /* set up initial handshake for tunneling */
+        char httpname[1024];
+        char sessioncookie[17];
+        char headers[1024];
+
+        ff_url_join(httpname, sizeof(httpname), "http", NULL, host, port, "%s", path);
+        snprintf(sessioncookie, sizeof(sessioncookie), "%08x%08x",
+                 av_get_random_seed(), av_get_random_seed());
+
+        /* GET requests */
+        if (url_open(&rtsp_hd, httpname, URL_RDONLY) < 0) {
+            err = AVERROR(EIO);
+            goto fail;
+        }
+
+        /* generate GET headers */
+        snprintf(headers, sizeof(headers),
+                 "x-sessioncookie: %s\r\n"
+                 "Accept: application/x-rtsp-tunnelled\r\n"
+                 "Pragma: no-cache\r\n"
+                 "Cache-Control: no-cache\r\n",
+                 sessioncookie);
+        ff_http_set_headers(rtsp_hd, headers);
+
+        /* complete the connection */
+        if (url_read(rtsp_hd, NULL, 0)) {
+            err = AVERROR(EIO);
+            goto fail;
+        }
+
+        /* POST requests */
+        if (url_open(&rtsp_hd_out, httpname, URL_WRONLY) < 0 ) {
+            err = AVERROR(EIO);
+            goto fail;
+        }
+
+        /* generate POST headers */
+        snprintf(headers, sizeof(headers),
+                 "x-sessioncookie: %s\r\n"
+                 "Content-Type: application/x-rtsp-tunnelled\r\n"
+                 "Pragma: no-cache\r\n"
+                 "Cache-Control: no-cache\r\n"
+                 "Content-Length: 32767\r\n"
+                 "Expires: Sun, 9 Jan 1972 00:00:00 GMT\r\n",
+                 sessioncookie);
+        ff_http_set_headers(rtsp_hd_out, headers);
+        ff_http_set_chunked_transfer_encoding(rtsp_hd_out, 0);
+
+    } else {
     /* open the tcp connexion */
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port, NULL);
     if (url_open(&rtsp_hd, tcpname, URL_RDWR) < 0) {
@@ -1554,6 +1625,7 @@ redirect:
         goto fail;
     }
     rtsp_hd_out = rtsp_hd;
+    }
     rt->rtsp_hd = rtsp_hd;
     rt->rtsp_hd_out = rtsp_hd_out;
     rt->seq = 0;
