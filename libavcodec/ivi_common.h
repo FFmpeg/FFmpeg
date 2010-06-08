@@ -158,8 +158,8 @@ typedef struct {
     int32_t         checksum;       ///< for debug purposes
     int             checksum_present;
     int             bufsize;        ///< band buffer size in bytes
-    const uint8_t   *intra_base;    ///< quantization matrix for intra blocks
-    const uint8_t   *inter_base;    ///< quantization matrix for inter blocks
+    const uint16_t  *intra_base;    ///< quantization matrix for intra blocks
+    const uint16_t  *inter_base;    ///< quantization matrix for inter blocks
     const uint8_t   *intra_scale;   ///< quantization coefficient for intra blocks
     const uint8_t   *inter_scale;   ///< quantization coefficient for inter blocks
 } IVIBandDesc;

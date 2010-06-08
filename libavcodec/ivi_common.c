@@ -338,7 +338,8 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
     RVMapDesc   *rvmap = band->rv_map;
     void (*mc_with_delta_func)(int16_t *buf, const int16_t *ref_buf, uint32_t pitch, int mc_type);
     void (*mc_no_delta_func)  (int16_t *buf, const int16_t *ref_buf, uint32_t pitch, int mc_type);
-    const uint8_t   *base_tab, *scale_tab;
+    const uint16_t  *base_tab;
+    const uint8_t   *scale_tab;
 
     prev_dc = 0; /* init intra prediction for the DC coefficient */
 
@@ -414,7 +415,7 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
                     if (IVI_DEBUG && !val)
                         av_log(NULL, AV_LOG_ERROR, "Val = 0 encountered!\n");
 
-                    q = (base_tab[pos] * scale_tab[quant]) >> 8;
+                    q = (base_tab[pos] * scale_tab[quant]) >> 9;
                     if (q > 1)
                         val = val * q + FFSIGN(val) * (((q ^ 1) - 1) >> 1);
                     trvec[pos] = val;
