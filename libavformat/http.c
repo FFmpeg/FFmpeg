@@ -270,7 +270,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     HTTPContext *s = h->priv_data;
     int post, err;
     char line[1024];
-    char headers[1024];
+    char headers[1024] = "";
     char *authstr = NULL;
     int64_t off = s->off;
     int len = 0;
@@ -290,7 +290,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
                           sizeof(headers) - len);
     if (!has_header(s->headers, "\r\nRange: "))
         len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Range: bytes=%"PRId64"\r\n", s->off);
+                           "Range: bytes=%"PRId64"-\r\n", s->off);
     if (!has_header(s->headers, "\r\nConnection: "))
         len += av_strlcpy(headers + len, "Connection: close\r\n",
                           sizeof(headers)-len);
