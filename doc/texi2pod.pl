@@ -102,12 +102,7 @@ while(<$inf>) {
     # Look for blocks surrounded by @c man begin SECTION ... @c man end.
     # This really oughta be @ifman ... @end ifman and the like, but such
     # would require rev'ing all other Texinfo translators.
-    /^\@c\s+man\s+begin\s+([A-Z]+)\s+([A-Za-z0-9-]+)/ and do {
-        $output = 1 if exists $defs{$2};
-        $sect = $1;
-        next;
-    };
-    /^\@c\s+man\s+begin\s+([A-Z]+)/ and $sect = $1, $output = 1, next;
+    /^\@c\s+man\s+begin\s+([A-Za-z ]+)/ and $sect = $1, $output = 1, next;
     /^\@c\s+man\s+end/ and do {
         $sects{$sect} = "" unless exists $sects{$sect};
         $sects{$sect} .= postprocess($section);
