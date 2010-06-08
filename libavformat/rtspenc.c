@@ -92,7 +92,7 @@ static int tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
         interleave_header[0] = '$';
         interleave_header[1] = id;
         AV_WB16(interleave_header + 2, packet_len);
-        url_write(rt->rtsp_hd, interleaved_packet, 4 + packet_len);
+        url_write(rt->rtsp_hd_out, interleaved_packet, 4 + packet_len);
         ptr += packet_len;
         size -= packet_len;
     }
