@@ -25,6 +25,7 @@
 #include <strings.h>
 #include "internal.h"
 #include "network.h"
+#include "http.h"
 #include "os_support.h"
 #include "httpauth.h"
 
@@ -46,12 +47,23 @@ typedef struct {
     char location[URL_SIZE];
     HTTPAuthState auth_state;
     int init;
+    unsigned char headers[BUFFER_SIZE];
 } HTTPContext;
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
                         const char *auth, int *new_location);
 static int http_write(URLContext *h, const uint8_t *buf, int size);
 
+void ff_http_set_headers(URLContext *h, const char *headers)
+{
+    HTTPContext *s = h->priv_data;
+    int len = strlen(headers);
+
+    if (len && strcmp("\r\n", headers + len - 2))
+        av_log(NULL, AV_LOG_ERROR, "No trailing CRLF found in HTTP header.\n");
+
+    av_strlcpy(s->headers, headers, sizeof(s->headers));
+}
 
 /* return non zero if error */
 static int http_open_cnx(URLContext *h)
@@ -137,6 +149,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     s->chunksize = -1;
     s->off = 0;
     s->init = 0;
+    *s->headers = '\0';
     memset(&s->auth_state, 0, sizeof(s->auth_state));
     av_strlcpy(s->location, uri, URL_SIZE);
 
@@ -245,37 +258,60 @@ static int process_line(URLContext *h, char *line, int line_count,
     return 1;
 }
 
+static inline int has_header(const char *str, const char *header)
+{
+    /* header + 2 to skip over CRLF prefix. (make sure you have one!) */
+    return av_stristart(str, header + 2, NULL) || av_stristr(str, header);
+}
+
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
                         const char *auth, int *new_location)
 {
     HTTPContext *s = h->priv_data;
     int post, err;
     char line[1024];
+    char headers[1024];
     char *authstr = NULL;
     int64_t off = s->off;
+    int len = 0;
 
 
     /* send http header */
     post = h->flags & URL_WRONLY;
     authstr = ff_http_auth_create_response(&s->auth_state, auth, path,
                                         post ? "POST" : "GET");
+
+    /* set default headers if needed */
+    if (!has_header(s->headers, "\r\nUser-Agent: "))
+       len += av_strlcatf(headers + len, sizeof(headers) - len,
+                          "User-Agent: %s\r\n", LIBAVFORMAT_IDENT);
+    if (!has_header(s->headers, "\r\nAccept: "))
+        len += av_strlcpy(headers + len, "Accept: */*\r\n",
+                          sizeof(headers) - len);
+    if (!has_header(s->headers, "\r\nRange: "))
+        len += av_strlcatf(headers + len, sizeof(headers) - len,
+                           "Range: bytes=%"PRId64"\r\n", s->off);
+    if (!has_header(s->headers, "\r\nConnection: "))
+        len += av_strlcpy(headers + len, "Connection: close\r\n",
+                          sizeof(headers)-len);
+    if (!has_header(s->headers, "\r\nHost: "))
+        len += av_strlcatf(headers + len, sizeof(headers) - len,
+                           "Host: %s\r\n", hoststr);
+
+    /* now add in custom headers */
+    av_strlcpy(headers+len, s->headers, sizeof(headers)-len);
+
     snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.1\r\n"
-             "User-Agent: %s\r\n"
-             "Accept: */*\r\n"
-             "Range: bytes=%"PRId64"-\r\n"
-             "Host: %s\r\n"
              "%s"
-             "Connection: close\r\n"
+             "%s"
              "%s"
              "\r\n",
              post ? "POST" : "GET",
              path,
-             LIBAVFORMAT_IDENT,
-             s->off,
-             hoststr,
-             authstr ? authstr : "",
-             post ? "Transfer-Encoding: chunked\r\n" : "");
+             post ? "Transfer-Encoding: chunked\r\n" : "",
+             headers,
+             authstr ? authstr : "");
 
     av_freep(&authstr);
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
