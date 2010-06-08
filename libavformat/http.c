@@ -131,6 +131,7 @@ static int http_open_cnx(URLContext *h)
  fail:
     if (hd)
         url_close(hd);
+    s->hd = NULL;
     return AVERROR(EIO);
 }
 
@@ -149,6 +150,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     s->chunksize = -1;
     s->off = 0;
     s->init = 0;
+    s->hd = NULL;
     *s->headers = '\0';
     memset(&s->auth_state, 0, sizeof(s->auth_state));
     av_strlcpy(s->location, uri, URL_SIZE);
@@ -452,7 +454,8 @@ static int http_close(URLContext *h)
         ret = ret > 0 ? 0 : ret;
     }
 
-    url_close(s->hd);
+    if (s->hd)
+        url_close(s->hd);
     av_free(s);
     return ret;
 }
