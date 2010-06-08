@@ -440,7 +440,7 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
     if (size > 0) {
         /* upload data using chunked encoding */
         if(s->is_chunked) {
-        snprintf(temp, sizeof(temp), "%x\r\n", size);
+            snprintf(temp, sizeof(temp), "%x\r\n", size);
             if ((ret = url_write(s->hd, temp, strlen(temp))) < 0)
                 return ret;
         }
