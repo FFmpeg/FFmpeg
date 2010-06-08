@@ -241,10 +241,8 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     enccfg.rc_min_quantizer = ((avctx->qmin * 5 + 1) >> 2) - 1;
     enccfg.rc_max_quantizer = ((avctx->qmax * 5 + 1) >> 2) - 1;
 
+    //_enc_init() will balk if kf_min_dist differs from max w/VPX_KF_AUTO
     if (avctx->keyint_min == avctx->gop_size)
-        enccfg.kf_mode = VPX_KF_FIXED;
-    //_enc_init() will balk if kf_min_dist is set in this case
-    if (enccfg.kf_mode != VPX_KF_AUTO)
         enccfg.kf_min_dist = avctx->keyint_min;
     enccfg.kf_max_dist     = avctx->gop_size;
 
