@@ -34,10 +34,11 @@ static
 #endif
 int av_log_level = AV_LOG_INFO;
 
+static const uint8_t color[]={0x41,0x41,0x11,0x03,9,9,9};
 static int use_color=-1;
 
 #undef fprintf
-static void colored_fputs(int color, const char *str){
+static void colored_fputs(int level, const char *str){
     if(use_color<0){
 #if HAVE_ISATTY && !defined(_WIN32)
         use_color= getenv("TERM") && !getenv("NO_COLOR") && isatty(2);
@@ -47,7 +48,7 @@ static void colored_fputs(int color, const char *str){
     }
 
     if(use_color){
-        fprintf(stderr, "\033[%d;3%dm", color>>4, color&15);
+        fprintf(stderr, "\033[%d;3%dm", color[level]>>4, color[level]&15);
     }
     fputs(str, stderr);
     if(use_color){
@@ -64,7 +65,6 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     static int print_prefix=1;
     static int count;
     static char line[1024], prev[1024];
-    static const uint8_t color[]={0x41,0x41,0x11,0x03,9,9,9};
     AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
     if(level>av_log_level)
         return;
@@ -91,7 +91,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
         fprintf(stderr, "    Last message repeated %d times\n", count);
         count=0;
     }
-    colored_fputs(color[av_clip(level>>3, 0, 6)], line);
+    colored_fputs(av_clip(level>>3, 0, 6), line);
     strcpy(prev, line);
 }
 
