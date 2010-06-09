@@ -39,7 +39,7 @@ int av_log_level = AV_LOG_INFO;
 static const uint8_t color[] = {12,12,12,14,7,7,7};
 static int16_t background, attr_orig;
 static HANDLE con;
-#define set_color(x)  SetConsoleTextAttribute(con, background | color[level])
+#define set_color(x)  SetConsoleTextAttribute(con, background | color[x])
 #define reset_color() SetConsoleTextAttribute(con, attr_orig)
 #else
 static const uint8_t color[]={0x41,0x41,0x11,0x03,9,9,9};
