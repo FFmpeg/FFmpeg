@@ -371,6 +371,8 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
         if (ret != 0)
             return ret;
     }
+    if (!s->hd)
+        return AVERROR(EIO);
 
     /* A size of zero can be used to force
      * initializaton of the connection. */
@@ -429,6 +431,8 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
         if (ret != 0)
             return ret;
     }
+    if (!s->hd)
+        return AVERROR(EIO);
 
     if (s->chunksize == -1) {
         /* headers are sent without any special encoding */
@@ -485,6 +489,8 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
         if (ret != 0)
             return ret;
     }
+    if (!s->hd)
+        return AVERROR(EIO);
 
     if (whence == AVSEEK_SIZE)
         return s->filesize;
