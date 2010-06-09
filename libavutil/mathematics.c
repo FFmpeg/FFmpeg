@@ -144,6 +144,13 @@ int av_compare_ts(int64_t ts_a, AVRational tb_a, int64_t ts_b, AVRational tb_b){
     return 0;
 }
 
+int64_t av_compare_mod(uint64_t a, uint64_t b, uint64_t mod){
+    int64_t c= (a-b) & (mod-1);
+    if(c > (mod>>1))
+        c-= mod;
+    return c;
+}
+
 #ifdef TEST
 #include "integer.h"
 #undef printf
