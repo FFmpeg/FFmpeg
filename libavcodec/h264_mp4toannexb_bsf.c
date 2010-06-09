@@ -25,8 +25,7 @@
 typedef struct H264BSFContext {
     uint8_t  length_size;
     uint8_t  first_idr;
-    uint8_t *sps_pps_data;
-    uint32_t size;
+    int      extradata_parsed;
 } H264BSFContext;
 
 static void alloc_and_copy(uint8_t **poutbuf,          int *poutbuf_size,
@@ -67,9 +66,9 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
     }
 
     /* retrieve sps and pps NAL units from extradata */
-    if (!ctx->sps_pps_data) {
+    if (!ctx->extradata_parsed) {
         uint16_t unit_size;
-        uint32_t total_size = 0;
+        uint64_t total_size = 0;
         uint8_t *out = NULL, unit_nb, sps_done = 0;
         const uint8_t *extradata = avctx->extradata+4;
         static const uint8_t nalu_header[4] = {0, 0, 0, 1};
@@ -88,11 +87,11 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         while (unit_nb--) {
             unit_size = AV_RB16(extradata);
             total_size += unit_size+4;
-            if (extradata+2+unit_size > avctx->extradata+avctx->extradata_size) {
+            if (total_size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE || extradata+2+unit_size > avctx->extradata+avctx->extradata_size) {
                 av_free(out);
                 return AVERROR(EINVAL);
             }
-            out = av_realloc(out, total_size);
+            out = av_realloc(out, total_size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!out)
                 return AVERROR(ENOMEM);
             memcpy(out+total_size-unit_size-4, nalu_header, 4);
@@ -103,9 +102,12 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
                 unit_nb = *extradata++; /* number of pps unit(s) */
         }
 
-        ctx->sps_pps_data = out;
-        ctx->size = total_size;
-        ctx->first_idr = 1;
+        memset(out + total_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+        av_free(avctx->extradata);
+        avctx->extradata      = out;
+        avctx->extradata_size = total_size;
+        ctx->first_idr        = 1;
+        ctx->extradata_parsed = 1;
     }
 
     *poutbuf_size = 0;
@@ -130,7 +132,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         /* prepend only to the first type 5 NAL unit of an IDR picture */
         if (ctx->first_idr && unit_type == 5) {
             alloc_and_copy(poutbuf, poutbuf_size,
-                           ctx->sps_pps_data, ctx->size,
+                           avctx->extradata, avctx->extradata_size,
                            buf, nal_size);
             ctx->first_idr = 0;
         }
@@ -154,16 +156,9 @@ fail:
     return AVERROR(EINVAL);
 }
 
-static void h264_mp4toannexb_close(AVBitStreamFilterContext *bsfc)
-{
-    H264BSFContext *ctx = bsfc->priv_data;
-    av_freep(&ctx->sps_pps_data);
-}
-
 AVBitStreamFilter h264_mp4toannexb_bsf = {
     "h264_mp4toannexb",
     sizeof(H264BSFContext),
     h264_mp4toannexb_filter,
-    h264_mp4toannexb_close,
 };
 
