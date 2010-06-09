@@ -34,23 +34,23 @@ static
 #endif
 int av_log_level = AV_LOG_INFO;
 
-static int use_ansi_color=-1;
+static int use_color=-1;
 
 #undef fprintf
 static void colored_fputs(int color, const char *str){
-    if(use_ansi_color<0){
+    if(use_color<0){
 #if HAVE_ISATTY && !defined(_WIN32)
-        use_ansi_color= getenv("TERM") && !getenv("NO_COLOR") && isatty(2);
+        use_color= getenv("TERM") && !getenv("NO_COLOR") && isatty(2);
 #else
-        use_ansi_color= 0;
+        use_color= 0;
 #endif
     }
 
-    if(use_ansi_color){
+    if(use_color){
         fprintf(stderr, "\033[%d;3%dm", color>>4, color&15);
     }
     fputs(str, stderr);
-    if(use_ansi_color){
+    if(use_color){
         fprintf(stderr, "\033[0m");
     }
 }
