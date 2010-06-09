@@ -34,13 +34,33 @@ static
 #endif
 int av_log_level = AV_LOG_INFO;
 
+#ifdef _WIN32
+#include <windows.h>
+static const uint8_t color[] = {12,12,12,14,7,7,7};
+static int16_t background, attr_orig;
+static HANDLE con;
+#define set_color(x)  SetConsoleTextAttribute(con, background | color[level])
+#define reset_color() SetConsoleTextAttribute(con, attr_orig)
+#else
 static const uint8_t color[]={0x41,0x41,0x11,0x03,9,9,9};
+#define set_color(x)  fprintf(stderr, "\033[%d;3%dm", color[x]>>4, color[x]&15)
+#define reset_color() fprintf(stderr, "\033[0m")
+#endif
 static int use_color=-1;
 
 #undef fprintf
 static void colored_fputs(int level, const char *str){
     if(use_color<0){
-#if HAVE_ISATTY && !defined(_WIN32)
+#ifdef _WIN32
+        CONSOLE_SCREEN_BUFFER_INFO con_info;
+        con = GetStdHandle(STD_ERROR_HANDLE);
+        use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR");
+        if (use_color) {
+            GetConsoleScreenBufferInfo(con, &con_info);
+            attr_orig  = con_info.wAttributes;
+            background = attr_orig & 0xF0;
+        }
+#elif HAVE_ISATTY
         use_color= getenv("TERM") && !getenv("NO_COLOR") && isatty(2);
 #else
         use_color= 0;
@@ -48,11 +68,11 @@ static void colored_fputs(int level, const char *str){
     }
 
     if(use_color){
-        fprintf(stderr, "\033[%d;3%dm", color[level]>>4, color[level]&15);
+        set_color(level);
     }
     fputs(str, stderr);
     if(use_color){
-        fprintf(stderr, "\033[0m");
+        reset_color();
     }
 }
 
