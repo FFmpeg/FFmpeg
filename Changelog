@@ -76,6 +76,7 @@ version 0.6:
 - 35% faster VP3/Theora decoding
 - faster AAC decoding
 - faster H.264 decoding
+- WebM support in Matroska de/muxer
 - low overhead Ogg muxing
 - WebM support in Matroska demuxer
 - VP8 de/encoding via libvpx
