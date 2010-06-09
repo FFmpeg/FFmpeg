@@ -480,6 +480,12 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
     uint8_t old_buf[BUFFER_SIZE];
     int old_buf_size;
 
+    if (!s->init) {
+        int ret = http_open_cnx(h);
+        if (ret != 0)
+            return ret;
+    }
+
     if (whence == AVSEEK_SIZE)
         return s->filesize;
     else if ((s->filesize == -1 && whence == SEEK_END) || h->is_streamed)
