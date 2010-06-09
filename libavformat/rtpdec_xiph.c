@@ -236,7 +236,7 @@ parse_packed_headers(const uint8_t * packed_headers,
 
     if (packed_headers_end - packed_headers < 9) {
         av_log(codec, AV_LOG_ERROR,
-               "Invalid %d byte packed header.",
+               "Invalid %td byte packed header.",
                packed_headers_end - packed_headers);
         return AVERROR_INVALIDDATA;
     }
@@ -258,7 +258,7 @@ parse_packed_headers(const uint8_t * packed_headers,
     if (packed_headers_end - packed_headers != length ||
         length1 > length || length2 > length - length1) {
         av_log(codec, AV_LOG_ERROR,
-               "Bad packed header lengths (%d,%d,%d,%d)\n", length1,
+               "Bad packed header lengths (%d,%d,%td,%d)\n", length1,
                length2, packed_headers_end - packed_headers, length);
         return AVERROR_INVALIDDATA;
     }
