@@ -2127,7 +2127,6 @@ enabled spic && enable pic
 case $target_os in
     haiku)
         prefix_default="$HOME/config"
-        SHFLAGS=-nostart
         enable audio_beos
         ;;
     sunos)
