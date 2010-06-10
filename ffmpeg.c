@@ -1840,7 +1840,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                     int frame_bytes = enc->frame_size*osize*enc->channels;
                                     if (allocated_audio_buf_size < frame_bytes)
                                         av_exit(1);
-                                    memset((uint8_t*)audio_buf+fifo_bytes, 0, frame_bytes - fifo_bytes);
+                                    memset(audio_buf+fifo_bytes, 0, frame_bytes - fifo_bytes);
                                 }
 
                                 ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, (short *)audio_buf);
