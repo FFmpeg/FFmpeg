@@ -78,7 +78,6 @@ version 0.6:
 - faster H.264 decoding
 - WebM support in Matroska de/muxer
 - low overhead Ogg muxing
-- WebM support in Matroska demuxer
 - VP8 de/encoding via libvpx
 - CODEC_CAP_EXPERIMENTAL added
 
