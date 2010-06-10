@@ -1121,8 +1121,10 @@ typedef struct AVCodecContext {
 
     /**
      * Pixel format, see PIX_FMT_xxx.
+     * May be set by the demuxer if known from headers.
+     * May be overriden by the decoder if it knows better.
      * - encoding: Set by user.
-     * - decoding: Set by libavcodec.
+     * - decoding: Set by user if known, overridden by libavcodec if known
      */
     enum PixelFormat pix_fmt;
 
