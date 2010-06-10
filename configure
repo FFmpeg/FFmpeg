@@ -2127,7 +2127,8 @@ enabled spic && enable pic
 case $target_os in
     haiku)
         prefix_default="/boot/common"
-        enable audio_beos
+        disable audio_beos
+        network_extralibs="-lnetwork"
         ;;
     sunos)
         FFSERVERLDFLAGS=""
