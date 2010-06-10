@@ -43,9 +43,9 @@ static int alloc_and_copy(uint8_t **poutbuf,          int *poutbuf_size,
     if (sps_pps)
         memcpy(*poutbuf+offset, sps_pps, sps_pps_size);
     memcpy(*poutbuf+sps_pps_size+nal_header_size+offset, in, in_size);
-    if (!offset)
+    if (!offset) {
         AV_WB32(*poutbuf+sps_pps_size, 1);
-    else {
+    } else {
         (*poutbuf+offset+sps_pps_size)[0] = (*poutbuf+offset+sps_pps_size)[1] = 0;
         (*poutbuf+offset+sps_pps_size)[2] = 1;
     }
@@ -127,11 +127,11 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         if (buf + ctx->length_size > buf_end)
             goto fail;
 
-        if (ctx->length_size == 1)
+        if (ctx->length_size == 1) {
             nal_size = buf[0];
-        else if (ctx->length_size == 2)
+        } else if (ctx->length_size == 2) {
             nal_size = AV_RB16(buf);
-        else
+        } else
             nal_size = AV_RB32(buf);
 
         buf += ctx->length_size;
@@ -147,8 +147,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
                                buf, nal_size) < 0)
                 goto fail;
             ctx->first_idr = 0;
-        }
-        else {
+        } else {
             if (alloc_and_copy(poutbuf, poutbuf_size,
                            NULL, 0,
                                buf, nal_size) < 0)
