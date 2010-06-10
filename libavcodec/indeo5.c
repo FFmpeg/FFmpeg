@@ -646,9 +646,8 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
  *  Switches buffers.
  *
  *  @param ctx      [in,out] ptr to the decoder context
- *  @param avctx    [in] ptr to the AVCodecContext
  */
-static void switch_buffers(IVI5DecContext *ctx, AVCodecContext *avctx)
+static void switch_buffers(IVI5DecContext *ctx)
 {
     switch (ctx->prev_frame_type) {
     case FRAMETYPE_INTRA:
@@ -752,7 +751,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         return -1;
     }
 
-    switch_buffers(ctx, avctx);
+    switch_buffers(ctx);
 
     //START_TIMER;
 
