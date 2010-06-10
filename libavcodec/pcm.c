@@ -227,6 +227,10 @@ static av_cold int pcm_decode_init(AVCodecContext * avctx)
     }
 
     avctx->sample_fmt = avctx->codec->sample_fmts[0];
+
+    if (avctx->sample_fmt == SAMPLE_FMT_S32)
+        avctx->bits_per_raw_sample = av_get_bits_per_sample(avctx->codec->id);
+
     return 0;
 }
 
