@@ -2126,7 +2126,7 @@ enabled spic && enable pic
 # OS specific
 case $target_os in
     haiku)
-        prefix_default="$HOME/config"
+        prefix_default="/boot/common"
         enable audio_beos
         ;;
     sunos)
