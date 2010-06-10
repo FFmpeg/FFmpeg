@@ -364,6 +364,8 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
 
         base_tab  = is_intra ? band->intra_base  : band->inter_base;
         scale_tab = is_intra ? band->intra_scale : band->inter_scale;
+        if (scale_tab)
+            quant = scale_tab[quant];
 
         if (!is_intra) {
             mv_x = mb->mv_x;
@@ -415,7 +417,7 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
                     if (IVI_DEBUG && !val)
                         av_log(NULL, AV_LOG_ERROR, "Val = 0 encountered!\n");
 
-                    q = (base_tab[pos] * scale_tab[quant]) >> 9;
+                    q = (base_tab[pos] * quant) >> 9;
                     if (q > 1)
                         val = val * q + FFSIGN(val) * (((q ^ 1) - 1) >> 1);
                     trvec[pos] = val;
