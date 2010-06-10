@@ -708,7 +708,6 @@ performance on systems without hardware floating point support).
 @multitable @columnfractions .4 .1 .1
 @item Name              @tab Input  @tab Output
 @item ALSA              @tab X      @tab X
-@item BEOS audio        @tab X      @tab X
 @item BKTR              @tab X      @tab
 @item DV1394            @tab X      @tab
 @item JACK              @tab X      @tab

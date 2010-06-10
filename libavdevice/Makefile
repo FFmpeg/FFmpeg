@@ -25,9 +25,6 @@ OBJS-$(CONFIG_X11_GRAB_DEVICE_INDEV)     += x11grab.o
 # external libraries
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
 
-OBJS-$(CONFIG_AUDIO_BEOS_INDEV)          += beosaudio.o
-OBJS-$(CONFIG_AUDIO_BEOS_OUTDEV)         += beosaudio.o
-
 SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa-audio.h
 
 include $(SUBDIR)../subdir.mak

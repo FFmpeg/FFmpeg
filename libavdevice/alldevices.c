@@ -40,7 +40,6 @@ void avdevice_register_all(void)
 
     /* devices */
     REGISTER_INOUTDEV (ALSA, alsa);
-    REGISTER_INOUTDEV (AUDIO_BEOS, audio_beos);
     REGISTER_INDEV    (BKTR, bktr);
     REGISTER_INDEV    (DV1394, dv1394);
     REGISTER_INDEV    (JACK, jack);

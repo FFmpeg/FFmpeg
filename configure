@@ -1387,10 +1387,6 @@ alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
 alsa_indev_extralibs="-lasound"
 alsa_outdev_deps="alsa_asoundlib_h"
 alsa_outdev_extralibs="-lasound"
-audio_beos_indev_deps="audio_beos"
-audio_beos_indev_extralibs="-lmedia -lbe"
-audio_beos_outdev_deps="audio_beos"
-audio_beos_outdev_extralibs="-lmedia -lbe"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 dv1394_indev_deps="dv1394 dv_demuxer"
 jack_indev_deps="jack_jack_h"
@@ -2127,7 +2123,6 @@ enabled spic && enable pic
 case $target_os in
     haiku)
         prefix_default="/boot/common"
-        disable audio_beos
         network_extralibs="-lnetwork"
         ;;
     sunos)
