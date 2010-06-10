@@ -115,7 +115,6 @@ Configuration options:
   --enable-runtime-cpudetect detect cpu capabilities at runtime (bigger binary)
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
   --enable-memalign-hack   emulate memalign, interferes with memory debuggers
-  --enable-beos-netserver  enable BeOS netserver
   --disable-everything     disable all components listed below
   --disable-encoder=NAME   disable encoder NAME
   --enable-encoder=NAME    enable encoder NAME
@@ -894,7 +893,6 @@ CONFIG_LIST="
     avfilter_lavf
     avformat
     avisynth
-    beos_netserver
     bzlib
     dct
     doc
@@ -2127,30 +2125,11 @@ enabled spic && enable pic
 
 # OS specific
 case $target_os in
-    beos|haiku|zeta)
+    haiku)
         prefix_default="$HOME/config"
-        # 3 gcc releases known for BeOS, each with ugly bugs
-        gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f3-)"
-        case "$gcc_version" in
-          2.9-beos-991026*|2.9-beos-000224*) echo "R5/GG gcc"
-            disable mmx
-            ;;
-          *20010315*) echo "BeBits gcc"
-            add_cflags -fno-expensive-optimizations
-            ;;
-        esac
         SHFLAGS=-nostart
-        # enable BeOS things
         enable audio_beos
-        # no need for libm, but the inet stuff
-        # Check for BONE
-        # XXX: actually should check for NOT net_server
-        if echo $BEINCLUDES | grep -q 'headers/be/bone'; then
-            network_extralibs="-lbind -lsocket"
-        else
-            enable beos_netserver
-            network_extralibs="-lnet"
-        fi ;;
+        ;;
     sunos)
         FFSERVERLDFLAGS=""
         SHFLAGS='-shared -Wl,-h,$$(@F)'

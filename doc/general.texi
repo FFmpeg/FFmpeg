@@ -725,10 +725,6 @@ performance on systems without hardware floating point support).
 
 @chapter Platform Specific information
 
-@section BeOS
-
-BeOS support is broken in mysterious ways.
-
 @section DOS
 
 Using a cross-compiler is preferred for various reasons.

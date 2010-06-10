@@ -331,7 +331,6 @@ Alpha                                   Mans Rullgard, Falk Hueffner
 ARM                                     Mans Rullgard
 AVR32                                   Mans Rullgard
 MIPS                                    Mans Rullgard
-BeOS                                    Francois Revol
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
 Linux / PowerPC                         Luca Barbato

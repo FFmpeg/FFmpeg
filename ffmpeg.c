@@ -540,10 +540,6 @@ static void term_init(void)
 #ifdef SIGXCPU
     signal(SIGXCPU, sigterm_handler);
 #endif
-
-#if CONFIG_BEOS_NETSERVER
-    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
-#endif
 }
 
 /* read a key without blocking */
@@ -552,7 +548,6 @@ static int read_key(void)
 #if HAVE_TERMIOS_H
     int n = 1;
     unsigned char ch;
-#if !CONFIG_BEOS_NETSERVER
     struct timeval tv;
     fd_set rfds;
 
@@ -561,7 +556,6 @@ static int read_key(void)
     tv.tv_sec = 0;
     tv.tv_usec = 0;
     n = select(1, &rfds, NULL, NULL, &tv);
-#endif
     if (n > 0) {
         n = read(0, &ch, 1);
         if (n == 1)
