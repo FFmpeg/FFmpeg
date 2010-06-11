@@ -247,7 +247,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (NELLYMOSER, nellymoser);
     REGISTER_DECODER (QCELP, qcelp);
     REGISTER_DECODER (QDM2, qdm2);
-    REGISTER_DECODER (RA_144, ra_144);
+    REGISTER_ENCDEC  (RA_144, ra_144);
     REGISTER_DECODER (RA_288, ra_288);
     REGISTER_DECODER (SHORTEN, shorten);
     REGISTER_DECODER (SIPR, sipr);

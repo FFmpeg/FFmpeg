@@ -89,6 +89,7 @@ version 0.6:
 - 35% faster VP3/Theora decoding
 - faster AAC decoding
 - faster H.264 decoding
+- RealAudio 1.0 (14.4K) encoder
 
 
 

@@ -23,13 +23,18 @@
 #define AVCODEC_RA144_H
 
 #include <stdint.h>
+#include "dsputil.h"
 
 #define NBLOCKS         4       ///< number of subblocks within a block
 #define BLOCKSIZE       40      ///< subblock size in 16-bit words
 #define BUFFERSIZE      146     ///< the size of the adaptive codebook
+#define FIXED_CB_SIZE   128     ///< size of fixed codebooks
+#define FRAMESIZE       20      ///< size of encoded frame
+#define LPC_ORDER       10      ///< order of LPC filter
 
 typedef struct {
     AVCodecContext *avctx;
+    DSPContext dsp;
 
     unsigned int     old_energy;        ///< previous frame energy
 
@@ -40,6 +45,8 @@ typedef struct {
     unsigned int    *lpc_coef[2];
 
     unsigned int     lpc_refl_rms[2];
+
+    int16_t curr_block[NBLOCKS * BLOCKSIZE];
 
     /** The current subblock padded by the last 10 values of the previous one. */
     int16_t curr_sblock[50];
