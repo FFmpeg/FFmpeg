@@ -26,7 +26,6 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "ra144.h"
-#include "celp_filters.h"
 
 
 static av_cold int ra144_decode_init(AVCodecContext * avctx)
@@ -45,39 +44,13 @@ static av_cold int ra144_decode_init(AVCodecContext * avctx)
 static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
                                int gval, GetBitContext *gb)
 {
-    uint16_t buffer_a[40];
-    uint16_t *block;
     int cba_idx = get_bits(gb, 7); // index of the adaptive CB, 0 if none
     int gain    = get_bits(gb, 8);
     int cb1_idx = get_bits(gb, 7);
     int cb2_idx = get_bits(gb, 7);
-    int m[3];
 
-    if (cba_idx) {
-        cba_idx += BLOCKSIZE/2 - 1;
-        ff_copy_and_dup(buffer_a, ractx->adapt_cb, cba_idx);
-        m[0] = (ff_irms(buffer_a) * gval) >> 12;
-    } else {
-        m[0] = 0;
-    }
-
-    m[1] = (ff_cb1_base[cb1_idx] * gval) >> 8;
-    m[2] = (ff_cb2_base[cb2_idx] * gval) >> 8;
-
-    memmove(ractx->adapt_cb, ractx->adapt_cb + BLOCKSIZE,
-            (BUFFERSIZE - BLOCKSIZE) * sizeof(*ractx->adapt_cb));
-
-    block = ractx->adapt_cb + BUFFERSIZE - BLOCKSIZE;
-
-    ff_add_wav(block, gain, cba_idx, m, cba_idx? buffer_a: NULL,
-               ff_cb1_vects[cb1_idx], ff_cb2_vects[cb2_idx]);
-
-    memcpy(ractx->curr_sblock, ractx->curr_sblock + 40,
-           10*sizeof(*ractx->curr_sblock));
-
-    if (ff_celp_lp_synthesis_filter(ractx->curr_sblock + 10, lpc_coefs,
-                                    block, BLOCKSIZE, 10, 1, 0xfff))
-        memset(ractx->curr_sblock, 0, 50*sizeof(*ractx->curr_sblock));
+    ff_subblock_synthesis(ractx, lpc_coefs, cba_idx, cb1_idx, cb2_idx, gval,
+                          gain);
 }
 
 /** Uncompress one block (20 bytes -> 160*2 bytes). */

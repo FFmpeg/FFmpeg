@@ -61,6 +61,9 @@ int ff_interp(RA144Context *ractx, int16_t *out, int a, int copyold,
               int energy);
 unsigned int ff_rescale_rms(unsigned int rms, unsigned int energy);
 int ff_irms(const int16_t *data);
+void ff_subblock_synthesis(RA144Context *ractx, const uint16_t *lpc_coefs,
+                           int cba_idx, int cb1_idx, int cb2_idx,
+                           int gval, int gain);
 
 extern const int16_t ff_gain_val_tab[256][3];
 extern const uint8_t ff_gain_exp_tab[256];
