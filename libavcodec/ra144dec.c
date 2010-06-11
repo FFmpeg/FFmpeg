@@ -1,0 +1,154 @@
+/*
+ * Real Audio 1.0 (14.4K)
+ *
+ * Copyright (c) 2008 Vitor Sessak
+ * Copyright (c) 2003 Nick Kurshev
+ *     Based on public domain decoder at http://www.honeypot.net/audio
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include "libavutil/intmath.h"
+#include "avcodec.h"
+#include "get_bits.h"
+#include "ra144.h"
+#include "celp_filters.h"
+
+
+static av_cold int ra144_decode_init(AVCodecContext * avctx)
+{
+    RA144Context *ractx = avctx->priv_data;
+
+    ractx->avctx = avctx;
+
+    ractx->lpc_coef[0] = ractx->lpc_tables[0];
+    ractx->lpc_coef[1] = ractx->lpc_tables[1];
+
+    avctx->sample_fmt = SAMPLE_FMT_S16;
+    return 0;
+}
+
+static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
+                               int gval, GetBitContext *gb)
+{
+    uint16_t buffer_a[40];
+    uint16_t *block;
+    int cba_idx = get_bits(gb, 7); // index of the adaptive CB, 0 if none
+    int gain    = get_bits(gb, 8);
+    int cb1_idx = get_bits(gb, 7);
+    int cb2_idx = get_bits(gb, 7);
+    int m[3];
+
+    if (cba_idx) {
+        cba_idx += BLOCKSIZE/2 - 1;
+        copy_and_dup(buffer_a, ractx->adapt_cb, cba_idx);
+        m[0] = (irms(buffer_a) * gval) >> 12;
+    } else {
+        m[0] = 0;
+    }
+
+    m[1] = (cb1_base[cb1_idx] * gval) >> 8;
+    m[2] = (cb2_base[cb2_idx] * gval) >> 8;
+
+    memmove(ractx->adapt_cb, ractx->adapt_cb + BLOCKSIZE,
+            (BUFFERSIZE - BLOCKSIZE) * sizeof(*ractx->adapt_cb));
+
+    block = ractx->adapt_cb + BUFFERSIZE - BLOCKSIZE;
+
+    add_wav(block, gain, cba_idx, m, cba_idx? buffer_a: NULL,
+            cb1_vects[cb1_idx], cb2_vects[cb2_idx]);
+
+    memcpy(ractx->curr_sblock, ractx->curr_sblock + 40,
+           10*sizeof(*ractx->curr_sblock));
+
+    if (ff_celp_lp_synthesis_filter(ractx->curr_sblock + 10, lpc_coefs,
+                                    block, BLOCKSIZE, 10, 1, 0xfff))
+        memset(ractx->curr_sblock, 0, 50*sizeof(*ractx->curr_sblock));
+}
+
+/** Uncompress one block (20 bytes -> 160*2 bytes). */
+static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
+                              int *data_size, AVPacket *avpkt)
+{
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
+    static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
+    unsigned int refl_rms[4];    // RMS of the reflection coefficients
+    uint16_t block_coefs[4][10]; // LPC coefficients of each sub-block
+    unsigned int lpc_refl[10];   // LPC reflection coefficients of the frame
+    int i, j;
+    int16_t *data = vdata;
+    unsigned int energy;
+
+    RA144Context *ractx = avctx->priv_data;
+    GetBitContext gb;
+
+    if (*data_size < 2*160)
+        return -1;
+
+    if(buf_size < 20) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Frame too small (%d bytes). Truncated file?\n", buf_size);
+        *data_size = 0;
+        return buf_size;
+    }
+    init_get_bits(&gb, buf, 20 * 8);
+
+    for (i=0; i<10; i++)
+        lpc_refl[i] = lpc_refl_cb[i][get_bits(&gb, sizes[i])];
+
+    eval_coefs(ractx->lpc_coef[0], lpc_refl);
+    ractx->lpc_refl_rms[0] = rms(lpc_refl);
+
+    energy = energy_tab[get_bits(&gb, 5)];
+
+    refl_rms[0] = interp(ractx, block_coefs[0], 1, 1, ractx->old_energy);
+    refl_rms[1] = interp(ractx, block_coefs[1], 2, energy <= ractx->old_energy,
+                    t_sqrt(energy*ractx->old_energy) >> 12);
+    refl_rms[2] = interp(ractx, block_coefs[2], 3, 0, energy);
+    refl_rms[3] = rescale_rms(ractx->lpc_refl_rms[0], energy);
+
+    int_to_int16(block_coefs[3], ractx->lpc_coef[0]);
+
+    for (i=0; i < 4; i++) {
+        do_output_subblock(ractx, block_coefs[i], refl_rms[i], &gb);
+
+        for (j=0; j < BLOCKSIZE; j++)
+            *data++ = av_clip_int16(ractx->curr_sblock[j + 10] << 2);
+    }
+
+    ractx->old_energy = energy;
+    ractx->lpc_refl_rms[1] = ractx->lpc_refl_rms[0];
+
+    FFSWAP(unsigned int *, ractx->lpc_coef[0], ractx->lpc_coef[1]);
+
+    *data_size = 2*160;
+    return 20;
+}
+
+AVCodec ra_144_decoder =
+{
+    "real_144",
+    AVMEDIA_TYPE_AUDIO,
+    CODEC_ID_RA_144,
+    sizeof(RA144Context),
+    ra144_decode_init,
+    NULL,
+    NULL,
+    ra144_decode_frame,
+    .long_name = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
+};
