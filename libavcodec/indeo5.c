@@ -90,7 +90,8 @@ typedef struct {
  */
 static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
 {
-    int             result, i, p, tile_size, pic_size_indx, mb_size, blk_size, blk_size_changed = 0;
+    int             result, i, p, tile_size, pic_size_indx, mb_size, blk_size;
+    int             quant_mat, blk_size_changed = 0;
     IVIBandDesc     *band, *band1, *band2;
     IVIPicConfig    pic_conf;
 
@@ -212,9 +213,21 @@ static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
 
             /* select dequant matrix according to plane and band number */
             if (!p) {
-                band->quant_mat = (pic_conf.luma_bands > 1) ? i+1 : 0;
+                quant_mat = (pic_conf.luma_bands > 1) ? i+1 : 0;
             } else {
-                band->quant_mat = 5;
+                quant_mat = 5;
+            }
+
+            if (band->blk_size == 8) {
+                band->intra_base  = &ivi5_base_quant_8x8_intra[quant_mat][0];
+                band->inter_base  = &ivi5_base_quant_8x8_inter[quant_mat][0];
+                band->intra_scale = &ivi5_scale_quant_8x8_intra[quant_mat][0];
+                band->inter_scale = &ivi5_scale_quant_8x8_inter[quant_mat][0];
+            } else {
+                band->intra_base  = ivi5_base_quant_4x4_intra;
+                band->inter_base  = ivi5_base_quant_4x4_inter;
+                band->intra_scale = ivi5_scale_quant_4x4_intra;
+                band->inter_scale = ivi5_scale_quant_4x4_inter;
             }
 
             if (get_bits(&ctx->gb, 2)) {
@@ -234,7 +247,10 @@ static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
         band2->mb_size       = band1->mb_size;
         band2->blk_size      = band1->blk_size;
         band2->is_halfpel    = band1->is_halfpel;
-        band2->quant_mat     = band1->quant_mat;
+        band2->intra_base    = band1->intra_base;
+        band2->inter_base    = band1->inter_base;
+        band2->intra_scale   = band1->intra_scale;
+        band2->inter_scale   = band1->inter_scale;
         band2->scan          = band1->scan;
         band2->inv_transform = band1->inv_transform;
         band2->dc_transform  = band1->dc_transform;
@@ -568,18 +584,6 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
     if (band->is_empty) {
         av_log(avctx, AV_LOG_ERROR, "Empty band encountered!\n");
         return -1;
-    }
-
-    if (band->blk_size == 8) {
-        band->intra_base  = &ivi5_base_quant_8x8_intra[band->quant_mat][0];
-        band->inter_base  = &ivi5_base_quant_8x8_inter[band->quant_mat][0];
-        band->intra_scale = &ivi5_scale_quant_8x8_intra[band->quant_mat][0];
-        band->inter_scale = &ivi5_scale_quant_8x8_inter[band->quant_mat][0];
-    } else {
-        band->intra_base  = ivi5_base_quant_4x4_intra;
-        band->inter_base  = ivi5_base_quant_4x4_inter;
-        band->intra_scale = ivi5_scale_quant_4x4_intra;
-        band->inter_scale = ivi5_scale_quant_4x4_inter;
     }
 
     band->rv_map = &ctx->rvmap_tabs[band->rvmap_sel];
