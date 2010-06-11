@@ -26,6 +26,7 @@
  */
 
 #include <values.h>
+#include <float.h>
 
 #include "avcodec.h"
 #include "put_bits.h"
