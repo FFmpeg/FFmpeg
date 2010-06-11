@@ -214,6 +214,7 @@ typedef struct {
     int num_levels;
     MatroskaLevel levels[EBML_MAX_DEPTH];
     int level_up;
+    uint32_t current_id;
 
     uint64_t time_scale;
     double   duration;
@@ -724,12 +725,14 @@ static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
 static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                       void *data)
 {
+    if (!matroska->current_id) {
     uint64_t id;
     int res = ebml_read_num(matroska, matroska->ctx->pb, 4, &id);
     if (res < 0)
         return res;
-    id |= 1 << 7*res;
-    return ebml_parse_id(matroska, syntax, id, data);
+    matroska->current_id = id | 1 << 7*res;
+    }
+    return ebml_parse_id(matroska, syntax, matroska->current_id, data);
 }
 
 static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
@@ -774,9 +777,11 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
         list->nb_elem++;
     }
 
-    if (syntax->type != EBML_PASS && syntax->type != EBML_STOP)
+    if (syntax->type != EBML_PASS && syntax->type != EBML_STOP) {
+        matroska->current_id = 0;
         if ((res = ebml_read_num(matroska, pb, 8, &length)) < 0)
             return res;
+    }
 
     switch (syntax->type) {
     case EBML_UINT:  res = ebml_read_uint  (pb, length, data);  break;
@@ -1063,6 +1068,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     MatroskaSeekhead *seekhead = seekhead_list->elem;
     uint32_t level_up = matroska->level_up;
     int64_t before_pos = url_ftell(matroska->ctx->pb);
+    uint32_t saved_id = matroska->current_id;
     MatroskaLevel level;
     int i;
 
@@ -1096,6 +1102,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
         level.length = (uint64_t)-1;
         matroska->levels[matroska->num_levels] = level;
         matroska->num_levels++;
+        matroska->current_id = 0;
 
         ebml_parse(matroska, matroska_segment, matroska);
 
@@ -1110,6 +1117,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     /* seek back */
     url_fseek(matroska->ctx->pb, before_pos, SEEK_SET);
     matroska->level_up = level_up;
+    matroska->current_id = saved_id;
 }
 
 static int matroska_aac_profile(char *codec_id)
