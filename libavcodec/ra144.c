@@ -23,7 +23,7 @@
 #include "avcodec.h"
 #include "ra144.h"
 
-const int16_t gain_val_tab[256][3] = {
+const int16_t ff_gain_val_tab[256][3] = {
     { 541, 956,  768}, { 877, 581,  568}, { 675,1574,  635}, {1248,1464,  668},
     {1246, 839, 1394}, {2560,1386,  991}, { 925, 687,  608}, {2208, 797, 1144},
     { 535, 832,  799}, { 762, 605, 1154}, { 832,1122, 1003}, {1180, 687, 1176},
@@ -90,7 +90,7 @@ const int16_t gain_val_tab[256][3] = {
     {9216,1020, 2028}, {9968, 924, 1188}, {5424, 909, 1206}, {6512, 744, 1086}
 };
 
-const uint8_t gain_exp_tab[256] = {
+const uint8_t ff_gain_exp_tab[256] = {
    15, 15, 15, 15, 15, 16, 14, 15, 14, 14, 14, 14, 14, 14, 14, 14,
    14, 13, 14, 14, 13, 14, 13, 14, 13, 13, 13, 14, 13, 13, 14, 13,
    13, 13, 13, 13, 14, 13, 12, 12, 13, 13, 13, 12, 13, 13, 13, 13,
@@ -109,7 +109,7 @@ const uint8_t gain_exp_tab[256] = {
    12, 12, 11, 12, 12, 12, 12, 13, 11, 12, 12, 12, 13, 13, 12, 12
 };
 
-const int8_t cb1_vects[128][40]={
+const int8_t ff_cb1_vects[128][40]={
     {
      38,  -4,  15,  -4,  14, -13,  12, -11,  -2,  -6,
      -6, -11, -45, -16, -11, -13,  -7,   6, -12,   4,
@@ -753,7 +753,7 @@ const int8_t cb1_vects[128][40]={
     }
 };
 
-const int8_t cb2_vects[128][40]={
+const int8_t ff_cb2_vects[128][40]={
     {
      73, -32, -60, -15, -26,  59,   2, -33,  30, -10,
      -3, -17,   8,  30,  -1, -26,  -4, -22,  10,  16,
@@ -1397,7 +1397,7 @@ const int8_t cb2_vects[128][40]={
     }
 };
 
-const uint16_t cb1_base[128]={
+const uint16_t ff_cb1_base[128]={
     19657, 18474, 18365, 17520, 21048, 18231, 18584, 16671,
     20363, 19069, 19409, 18430, 21844, 18753, 19613, 17411,
     20389, 21772, 20129, 21702, 20978, 20472, 19627, 19387,
@@ -1416,7 +1416,7 @@ const uint16_t cb1_base[128]={
     16671, 18584, 18231, 21048, 17520, 18365, 18474, 19657,
 };
 
-const uint16_t cb2_base[128]={
+const uint16_t ff_cb2_base[128]={
     12174, 13380, 13879, 13832, 13170, 13227, 13204, 12053,
     12410, 13988, 14348, 14631, 13100, 13415, 13224, 12268,
     11982, 13825, 13499, 14210, 13877, 14788, 13811, 13109,
@@ -1435,7 +1435,7 @@ const uint16_t cb2_base[128]={
     12053, 13204, 13227, 13170, 13832, 13879, 13380, 12174,
 };
 
-const int16_t energy_tab[32]={
+const int16_t ff_energy_tab[32]={
         0,    16,    20,    25,    32,    41,    51,    65,
        81,   103,   129,   163,   205,   259,   326,   410,
       516,   650,   819,  1031,  1298,  1634,  2057,  2590,
@@ -1497,12 +1497,12 @@ static const int16_t lpc_refl_cb10[4]={
      -617,   190,   802,  1483
 };
 
-const int16_t * const lpc_refl_cb[10]={
+const int16_t * const ff_lpc_refl_cb[10]={
     lpc_refl_cb1, lpc_refl_cb2, lpc_refl_cb3, lpc_refl_cb4, lpc_refl_cb5,
     lpc_refl_cb6, lpc_refl_cb7, lpc_refl_cb8, lpc_refl_cb9, lpc_refl_cb10
 };
 
-void add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
+void ff_add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
              const int8_t *s2, const int8_t *s3)
 {
     int i;
@@ -1510,7 +1510,7 @@ void add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
 
     v[0] = 0;
     for (i=!skip_first; i<3; i++)
-        v[i] = (gain_val_tab[n][i] * m[i]) >> gain_exp_tab[n];
+        v[i] = (ff_gain_val_tab[n][i] * m[i]) >> ff_gain_exp_tab[n];
 
     if (v[0]) {
         for (i=0; i < BLOCKSIZE; i++)
@@ -1525,7 +1525,7 @@ void add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
  * Copy the last offset values of *source to *target. If those values are not
  * enough to fill the target buffer, fill it with another copy of those values.
  */
-void copy_and_dup(int16_t *target, const int16_t *source, int offset)
+void ff_copy_and_dup(int16_t *target, const int16_t *source, int offset)
 {
     source += BUFFERSIZE - offset;
 
@@ -1540,7 +1540,7 @@ void copy_and_dup(int16_t *target, const int16_t *source, int offset)
  * @return 1 if one of the reflection coefficients is greater than
  *         4095, 0 if not.
  */
-int eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx)
+int ff_eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx)
 {
     int b, i, j;
     int buffer1[10];
@@ -1581,7 +1581,7 @@ int eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx)
  * Evaluate the LPC filter coefficients from the reflection coefficients.
  * Does the inverse of the eval_refl() function.
  */
-void eval_coefs(int *coefs, const int *refl)
+void ff_eval_coefs(int *coefs, const int *refl)
 {
     int buffer[10];
     int *b1 = buffer;
@@ -1601,7 +1601,7 @@ void eval_coefs(int *coefs, const int *refl)
         coefs[i] >>= 4;
 }
 
-void int_to_int16(int16_t *out, const int *inp)
+void ff_int_to_int16(int16_t *out, const int *inp)
 {
     int i;
 
@@ -1613,7 +1613,7 @@ void int_to_int16(int16_t *out, const int *inp)
  * Evaluate sqrt(x << 24). x must fit in 20 bits. This value is evaluated in an
  * odd way to make the output identical to the binary decoder.
  */
-int t_sqrt(unsigned int x)
+int ff_t_sqrt(unsigned int x)
 {
     int s = 2;
     while (x > 0xfff) {
@@ -1624,7 +1624,7 @@ int t_sqrt(unsigned int x)
     return ff_sqrt(x << 20) << s;
 }
 
-unsigned int rms(const int *data)
+unsigned int ff_rms(const int *data)
 {
     int i;
     unsigned int res = 0x10000;
@@ -1642,10 +1642,10 @@ unsigned int rms(const int *data)
         }
     }
 
-    return t_sqrt(res) >> b;
+    return ff_t_sqrt(res) >> b;
 }
 
-int interp(RA144Context *ractx, int16_t *out, int a, int copyold, int energy)
+int ff_interp(RA144Context *ractx, int16_t *out, int a, int copyold, int energy)
 {
     int work[10];
     int b = NBLOCKS - a;
@@ -1656,23 +1656,23 @@ int interp(RA144Context *ractx, int16_t *out, int a, int copyold, int energy)
     for (i=0; i<10; i++)
         out[i] = (a * ractx->lpc_coef[0][i] + b * ractx->lpc_coef[1][i])>> 2;
 
-    if (eval_refl(work, out, ractx->avctx)) {
+    if (ff_eval_refl(work, out, ractx->avctx)) {
         // The interpolated coefficients are unstable, copy either new or old
         // coefficients.
-        int_to_int16(out, ractx->lpc_coef[copyold]);
-        return rescale_rms(ractx->lpc_refl_rms[copyold], energy);
+        ff_int_to_int16(out, ractx->lpc_coef[copyold]);
+        return ff_rescale_rms(ractx->lpc_refl_rms[copyold], energy);
     } else {
-        return rescale_rms(rms(work), energy);
+        return ff_rescale_rms(ff_rms(work), energy);
     }
 }
 
-unsigned int rescale_rms(unsigned int rms, unsigned int energy)
+unsigned int ff_rescale_rms(unsigned int rms, unsigned int energy)
 {
     return (rms * energy) >> 10;
 }
 
 /** inverse root mean square */
-int irms(const int16_t *data)
+int ff_irms(const int16_t *data)
 {
     unsigned int i, sum = 0;
 
@@ -1682,5 +1682,5 @@ int irms(const int16_t *data)
     if (sum == 0)
         return 0; /* OOPS - division by zero */
 
-    return 0x20000000 / (t_sqrt(sum) >> 8);
+    return 0x20000000 / (ff_t_sqrt(sum) >> 8);
 }

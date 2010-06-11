@@ -49,25 +49,26 @@ typedef struct {
     uint16_t adapt_cb[146+2];
 } RA144Context;
 
-void add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
+void ff_add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
              const int8_t *s2, const int8_t *s3);
-void copy_and_dup(int16_t *target, const int16_t *source, int offset);
-int eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx);
-void eval_coefs(int *coefs, const int *refl);
-void int_to_int16(int16_t *out, const int *inp);
-int t_sqrt(unsigned int x);
-unsigned int rms(const int *data);
-int interp(RA144Context *ractx, int16_t *out, int a, int copyold, int energy);
-unsigned int rescale_rms(unsigned int rms, unsigned int energy);
-int irms(const int16_t *data);
+void ff_copy_and_dup(int16_t *target, const int16_t *source, int offset);
+int ff_eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx);
+void ff_eval_coefs(int *coefs, const int *refl);
+void ff_int_to_int16(int16_t *out, const int *inp);
+int ff_t_sqrt(unsigned int x);
+unsigned int ff_rms(const int *data);
+int ff_interp(RA144Context *ractx, int16_t *out, int a, int copyold,
+              int energy);
+unsigned int ff_rescale_rms(unsigned int rms, unsigned int energy);
+int ff_irms(const int16_t *data);
 
-extern const int16_t gain_val_tab[256][3];
-extern const uint8_t gain_exp_tab[256];
-extern const int8_t cb1_vects[128][40];
-extern const int8_t cb2_vects[128][40];
-extern const uint16_t cb1_base[128];
-extern const uint16_t cb2_base[128];
-extern const int16_t energy_tab[32];
-extern const int16_t * const lpc_refl_cb[10];
+extern const int16_t ff_gain_val_tab[256][3];
+extern const uint8_t ff_gain_exp_tab[256];
+extern const int8_t ff_cb1_vects[128][40];
+extern const int8_t ff_cb2_vects[128][40];
+extern const uint16_t ff_cb1_base[128];
+extern const uint16_t ff_cb2_base[128];
+extern const int16_t ff_energy_tab[32];
+extern const int16_t * const ff_lpc_refl_cb[10];
 
 #endif /* AVCODEC_RA144_H */
