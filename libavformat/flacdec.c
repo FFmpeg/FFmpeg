@@ -43,7 +43,7 @@ static int flac_read_header(AVFormatContext *s,
 
     /* skip ID3v2 header if found */
     ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
-    if (ret == ID3v2_HEADER_SIZE && ff_id3v2_match(buf)) {
+    if (ret == ID3v2_HEADER_SIZE && ff_id3v2_match(buf, ID3v2_DEFAULT_MAGIC)) {
         int len = ff_id3v2_tag_len(buf);
         url_fseek(s->pb, len - ID3v2_HEADER_SIZE, SEEK_CUR);
     } else {
@@ -130,7 +130,7 @@ static int flac_probe(AVProbeData *p)
     uint8_t *bufptr = p->buf;
     uint8_t *end    = p->buf + p->buf_size;
 
-    if(ff_id3v2_match(bufptr))
+    if(ff_id3v2_match(bufptr, ID3v2_DEFAULT_MAGIC))
         bufptr += ff_id3v2_tag_len(bufptr);
 
     if(bufptr > end-4 || memcmp(bufptr, "fLaC", 4)) return 0;

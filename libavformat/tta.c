@@ -32,7 +32,7 @@ static int tta_probe(AVProbeData *p)
 {
     const uint8_t *d = p->buf;
 
-    if (ff_id3v2_match(d))
+    if (ff_id3v2_match(d, ID3v2_DEFAULT_MAGIC))
         d += ff_id3v2_tag_len(d);
 
     if (d - p->buf >= p->buf_size)
@@ -50,7 +50,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int i, channels, bps, samplerate, datalen, framelen;
     uint64_t framepos, start_offset;
 
-    ff_id3v2_read(s);
+    ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
     if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 

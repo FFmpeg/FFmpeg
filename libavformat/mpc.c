@@ -45,7 +45,7 @@ typedef struct {
 static int mpc_probe(AVProbeData *p)
 {
     const uint8_t *d = p->buf;
-    if (ff_id3v2_match(d)) {
+    if (ff_id3v2_match(d, ID3v2_DEFAULT_MAGIC)) {
         d += ff_id3v2_tag_len(d);
     }
     if (d+3 < p->buf+p->buf_size)
@@ -67,7 +67,7 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (url_fseek(s->pb, pos, SEEK_SET) < 0)
             return -1;
         ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
-        if (ret != ID3v2_HEADER_SIZE || !ff_id3v2_match(buf)) {
+        if (ret != ID3v2_HEADER_SIZE || !ff_id3v2_match(buf, ID3v2_DEFAULT_MAGIC)) {
             av_log(s, AV_LOG_ERROR, "Not a Musepack file\n");
             return -1;
         }
@@ -82,7 +82,7 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
         /* read ID3 tags */
         if (url_fseek(s->pb, pos, SEEK_SET) < 0)
             return -1;
-        ff_id3v2_read(s);
+        ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
         get_le24(s->pb);
     }
     c->ver = get_byte(s->pb);

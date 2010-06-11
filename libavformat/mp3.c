@@ -42,7 +42,7 @@ static int mp3_read_probe(AVProbeData *p)
     AVCodecContext avctx;
 
     buf0 = p->buf;
-    if(ff_id3v2_match(buf0)) {
+    if(ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC)) {
         buf0 += ff_id3v2_tag_len(buf0);
     }
     end = p->buf + p->buf_size - sizeof(uint32_t);
@@ -148,7 +148,7 @@ static int mp3_read_header(AVFormatContext *s,
     // lcm of all mp3 sample rates
     av_set_pts_info(st, 64, 1, 14112000);
 
-    ff_id3v2_read(s);
+    ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
     off = url_ftell(s->pb);
 
     if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))

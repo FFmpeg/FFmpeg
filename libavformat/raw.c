@@ -664,7 +664,7 @@ static int adts_aac_probe(AVProbeData *p)
     uint8_t *buf;
     uint8_t *end = buf0 + p->buf_size - 7;
 
-    if (ff_id3v2_match(buf0)) {
+    if (ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC)) {
         buf0 += ff_id3v2_tag_len(buf0);
     }
     buf = buf0;
@@ -706,7 +706,7 @@ static int adts_aac_read_header(AVFormatContext *s,
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
     ff_id3v1_read(s);
-    ff_id3v2_read(s);
+    ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
 
     return 0;
 }

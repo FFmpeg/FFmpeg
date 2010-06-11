@@ -22,12 +22,13 @@
 #include "id3v2.h"
 #include "id3v1.h"
 #include "libavutil/avstring.h"
+#include "libavutil/intreadwrite.h"
 
-int ff_id3v2_match(const uint8_t *buf)
+int ff_id3v2_match(const uint8_t *buf, const char * magic)
 {
-    return  buf[0]         ==  'I' &&
-            buf[1]         ==  'D' &&
-            buf[2]         ==  '3' &&
+    return  buf[0]         == magic[0] &&
+            buf[1]         == magic[1] &&
+            buf[2]         == magic[2] &&
             buf[3]         != 0xff &&
             buf[4]         != 0xff &&
            (buf[6] & 0x80) ==    0 &&
@@ -48,7 +49,7 @@ int ff_id3v2_tag_len(const uint8_t * buf)
     return len;
 }
 
-void ff_id3v2_read(AVFormatContext *s)
+void ff_id3v2_read(AVFormatContext *s, const char *magic)
 {
     int len, ret;
     uint8_t buf[ID3v2_HEADER_SIZE];
@@ -56,7 +57,7 @@ void ff_id3v2_read(AVFormatContext *s)
     ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
     if (ret != ID3v2_HEADER_SIZE)
         return;
-    if (ff_id3v2_match(buf)) {
+    if (ff_id3v2_match(buf, magic)) {
         /* parse ID3v2 header */
         len = ((buf[6] & 0x7f) << 21) |
             ((buf[7] & 0x7f) << 14) |
