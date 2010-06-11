@@ -25,7 +25,6 @@
  * @author Francesco Lavra <francescolavra@interfree.it>
  */
 
-#include <values.h>
 #include <float.h>
 
 #include "avcodec.h"
