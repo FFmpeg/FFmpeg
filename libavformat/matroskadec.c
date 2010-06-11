@@ -235,7 +235,6 @@ typedef struct {
     AVPacket *prev_pkt;
 
     int done;
-    int has_cluster_id;
 
     /* What to skip before effectively reading a packet. */
     int skip_to_keyframe;
@@ -471,7 +470,7 @@ static EbmlSyntax matroska_segment[] = {
     { MATROSKA_ID_CUES,           EBML_NEST, 0, 0, {.n=matroska_index      } },
     { MATROSKA_ID_TAGS,           EBML_NEST, 0, 0, {.n=matroska_tags       } },
     { MATROSKA_ID_SEEKHEAD,       EBML_NEST, 0, 0, {.n=matroska_seekhead   } },
-    { MATROSKA_ID_CLUSTER,        EBML_STOP, 0, offsetof(MatroskaDemuxContext,has_cluster_id) },
+    { MATROSKA_ID_CLUSTER,        EBML_STOP },
     { 0 }
 };
 
@@ -795,7 +794,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                          matroska->segment_start = url_ftell(matroska->ctx->pb);
                      return ebml_parse_nest(matroska, syntax->def.n, data);
     case EBML_PASS:  return ebml_parse_id(matroska, syntax->def.n, id, data);
-    case EBML_STOP:  *(int *)data = 1;      return 1;
+    case EBML_STOP:  return 1;
     default:         return url_fseek(pb,length,SEEK_CUR)<0 ? AVERROR(EIO) : 0;
     }
     if (res == AVERROR_INVALIDDATA)
@@ -1797,14 +1796,8 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     int i, res;
     int64_t pos = url_ftell(matroska->ctx->pb);
     matroska->prev_pkt = NULL;
-    if (matroska->has_cluster_id){
-        /* For the first cluster we parse, its ID was already read as
-           part of matroska_read_header(), so don't read it again */
-        res = ebml_parse_id(matroska, matroska_clusters,
-                            MATROSKA_ID_CLUSTER, &cluster);
+    if (matroska->current_id)
         pos -= 4;  /* sizeof the ID which was already read */
-        matroska->has_cluster_id = 0;
-    } else
         res = ebml_parse(matroska, matroska_clusters, &cluster);
     blocks_list = &cluster.blocks;
     blocks = blocks_list->elem;
