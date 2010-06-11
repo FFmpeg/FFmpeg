@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/ra144enc.c
+ * @file
  * Real Audio 1.0 (14.4K) encoder
  * @author Francesco Lavra <francescolavra@interfree.it>
  */
