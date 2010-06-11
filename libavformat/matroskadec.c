@@ -726,8 +726,10 @@ static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
 {
     uint64_t id;
     int res = ebml_read_num(matroska, matroska->ctx->pb, 4, &id);
+    if (res < 0)
+        return res;
     id |= 1 << 7*res;
-    return res < 0 ? res : ebml_parse_id(matroska, syntax, id, data);
+    return ebml_parse_id(matroska, syntax, id, data);
 }
 
 static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
