@@ -112,7 +112,7 @@ for i in \
     ; do
     echo $i | grep '^NULL$' && continue
     egrep $i' *(\+|-|\*|/|\||&|%|)=[^=]' $* >/dev/null || echo "possibly never written:"$i >> $TMP
-    egrep '(=|\(|return).*'$i'[^=]*$'    $* >/dev/null || echo "possibly never read   :"$i >> $TMP
+    egrep '(=|\(|return).*'$i'(==|[^=])*$'    $* >/dev/null || echo "possibly never read   :"$i >> $TMP
     egrep -o $i' *((\+|-|\*|/|\||&|%|)=[^=]|\+\+|--) *(0x|)[0-9]*(;|)'   $* |\
            egrep -v $i' *= *(0x|)[0-9]{1,};'>/dev/null || echo "possibly constant     :"$i >> $TMP
 done
