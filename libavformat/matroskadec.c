@@ -657,7 +657,7 @@ static int ebml_read_binary(ByteIOContext *pb, int length, EbmlBin *bin)
  * are supposed to be sub-elements which can be read separately.
  * 0 is success, < 0 is failure.
  */
-static int ebml_read_master(MatroskaDemuxContext *matroska, int length)
+static int ebml_read_master(MatroskaDemuxContext *matroska, uint64_t length)
 {
     ByteIOContext *pb = matroska->ctx->pb;
     MatroskaLevel *level;
@@ -718,7 +718,7 @@ static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
             break;
     if (!syntax[i].id && id == MATROSKA_ID_CLUSTER &&
         matroska->num_levels > 0 &&
-        matroska->levels[matroska->num_levels-1].length == 0xffffffffffffffff)
+        matroska->levels[matroska->num_levels-1].length == 0xffffffffffffff)
         return 0;  // we reached the end of an unknown size cluster
     if (!syntax[i].id && id != EBML_ID_VOID && id != EBML_ID_CRC32)
         av_log(matroska->ctx, AV_LOG_INFO, "Unknown entry 0x%X\n", id);
