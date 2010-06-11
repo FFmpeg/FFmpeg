@@ -50,7 +50,7 @@ typedef struct {
 } RA144Context;
 
 void ff_add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
-             const int8_t *s2, const int8_t *s3);
+                const int8_t *s2, const int8_t *s3);
 void ff_copy_and_dup(int16_t *target, const int16_t *source, int offset);
 int ff_eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx);
 void ff_eval_coefs(int *coefs, const int *refl);

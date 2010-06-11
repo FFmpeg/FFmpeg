@@ -1503,7 +1503,7 @@ const int16_t * const ff_lpc_refl_cb[10]={
 };
 
 void ff_add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
-             const int8_t *s2, const int8_t *s3)
+                const int8_t *s2, const int8_t *s3)
 {
     int i;
     int v[3];
@@ -1579,7 +1579,7 @@ int ff_eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx)
 
 /**
  * Evaluate the LPC filter coefficients from the reflection coefficients.
- * Does the inverse of the eval_refl() function.
+ * Does the inverse of the ff_eval_refl() function.
  */
 void ff_eval_coefs(int *coefs, const int *refl)
 {
