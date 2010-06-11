@@ -518,7 +518,7 @@ static int ebml_level_end(MatroskaDemuxContext *matroska)
 
     if (matroska->num_levels > 0) {
         MatroskaLevel *level = &matroska->levels[matroska->num_levels - 1];
-        if (pos - level->start >= level->length) {
+        if (pos - level->start >= level->length || matroska->current_id) {
             matroska->num_levels--;
             return 1;
         }
@@ -716,6 +716,10 @@ static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
     for (i=0; syntax[i].id; i++)
         if (id == syntax[i].id)
             break;
+    if (!syntax[i].id && id == MATROSKA_ID_CLUSTER &&
+        matroska->num_levels > 0 &&
+        matroska->levels[matroska->num_levels-1].length == 0xffffffffffffffff)
+        return 0;  // we reached the end of an unknown size cluster
     if (!syntax[i].id && id != EBML_ID_VOID && id != EBML_ID_CRC32)
         av_log(matroska->ctx, AV_LOG_INFO, "Unknown entry 0x%X\n", id);
     return ebml_parse_elem(matroska, &syntax[i], data);
