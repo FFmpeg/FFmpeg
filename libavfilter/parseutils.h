@@ -34,9 +34,9 @@
  * The normal \ and ' escaping is supported. Leading and trailing
  * whitespaces are removed.
  *
- * @param term a 0-terminated list of terminating chars
  * @param buf the buffer to parse, buf will be updated to point to the
  * terminating char
+ * @param term a 0-terminated list of terminating chars
  * @return the malloced unescaped string, which must be av_freed by
  * the user
  */
