@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-06-09 - r23551 - lavu 50.19.0 - av_compare_mod()
+  Add av_compare_mod() to libavutil/mathematics.h.
+
 2010-06-05 - r23485 - lavu 50.18.0 - eval API
   Make the eval API public.
 
