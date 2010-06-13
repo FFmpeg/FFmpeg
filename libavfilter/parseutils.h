@@ -38,7 +38,7 @@
  * terminating char
  * @param term a 0-terminated list of terminating chars
  * @return the malloced unescaped string, which must be av_freed by
- * the user
+ * the user, NULL in case of allocation failure
  */
 char *av_get_token(const char **buf, const char *term);
 
