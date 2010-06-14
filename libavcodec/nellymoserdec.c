@@ -166,11 +166,11 @@ static int decode_tag(AVCodecContext * avctx,
     if (buf_size < avctx->block_align)
         return buf_size;
 
-            if (buf_size % 64) {
-                av_log(avctx, AV_LOG_DEBUG, "Tag size %d.\n", buf_size);
-                return buf_size;
-            }
-            blocks = buf_size / 64;
+    if (buf_size % 64) {
+        av_log(avctx, AV_LOG_DEBUG, "Tag size %d.\n", buf_size);
+        return buf_size;
+    }
+    blocks = buf_size / 64;
     /* Normal numbers of blocks for sample rates:
      *  8000 Hz - 1
      * 11025 Hz - 2
