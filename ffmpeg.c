@@ -2770,6 +2770,7 @@ static void opt_frame_crop_top(const char *arg)
         fprintf(stderr, "Vertical crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
         av_exit(1);
     }
+    fprintf(stderr, "-crop* is deprecated in favor of the crop avfilter\n");
     frame_height -= frame_topBand;
 }
 
@@ -2784,6 +2785,7 @@ static void opt_frame_crop_bottom(const char *arg)
         fprintf(stderr, "Vertical crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
         av_exit(1);
     }
+    fprintf(stderr, "-crop* is deprecated in favor of the crop avfilter\n");
     frame_height -= frame_bottomBand;
 }
 
@@ -2798,6 +2800,7 @@ static void opt_frame_crop_left(const char *arg)
         fprintf(stderr, "Horizontal crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
         av_exit(1);
     }
+    fprintf(stderr, "-crop* is deprecated in favor of the crop avfilter\n");
     frame_width -= frame_leftBand;
 }
 
@@ -2812,6 +2815,7 @@ static void opt_frame_crop_right(const char *arg)
         fprintf(stderr, "Horizontal crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
         av_exit(1);
     }
+    fprintf(stderr, "-crop* is deprecated in favor of the crop avfilter\n");
     frame_width -= frame_rightBand;
 }
 
@@ -4198,10 +4202,10 @@ static const OptionDef options[] = {
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format, 'list' as argument shows all the pixel formats supported", "format" },
-    { "croptop", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_top}, "set top crop band size (in pixels)", "size" },
-    { "cropbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },
-    { "cropleft", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_left}, "set left crop band size (in pixels)", "size" },
-    { "cropright", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_right}, "set right crop band size (in pixels)", "size" },
+    { "croptop", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_top}, "Deprecated, please use the crop avfilter", "size" },
+    { "cropbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_bottom}, "Deprecated, please use the crop avfilter", "size" },
+    { "cropleft", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_left}, "Deprecated, please use the crop avfilter", "size" },
+    { "cropright", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_right}, "Deprecated, please use the crop avfilter", "size" },
     { "padtop", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "set top pad band size (in pixels)", "size" },
     { "padbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "set bottom pad band size (in pixels)", "size" },
     { "padleft", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "set left pad band size (in pixels)", "size" },
