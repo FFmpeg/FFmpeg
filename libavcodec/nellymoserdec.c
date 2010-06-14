@@ -167,7 +167,7 @@ static int decode_tag(AVCodecContext * avctx,
         return buf_size;
 
     if (buf_size % 64) {
-        av_log(avctx, AV_LOG_DEBUG, "Tag size %d.\n", buf_size);
+        av_log(avctx, AV_LOG_ERROR, "Tag size %d.\n", buf_size);
         return buf_size;
     }
     blocks = buf_size / 64;
