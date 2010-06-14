@@ -279,7 +279,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
 }
 
 /**
- * Return the local port used by the UDP connexion
+ * Return the local port used by the UDP connection
  * @param s1 media file context
  * @return the local port number
  */

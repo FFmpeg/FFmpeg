@@ -1617,7 +1617,7 @@ redirect:
         ff_http_set_chunked_transfer_encoding(rtsp_hd_out, 0);
 
     } else {
-        /* open the tcp connexion */
+        /* open the tcp connection */
         ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port, NULL);
         if (url_open(&rtsp_hd, tcpname, URL_RDWR) < 0) {
             err = AVERROR(EIO);

@@ -190,7 +190,7 @@ enum RTSPServerType {
  * @todo Use ByteIOContext instead of URLContext
  */
 typedef struct RTSPState {
-    URLContext *rtsp_hd; /* RTSP TCP connexion handle */
+    URLContext *rtsp_hd; /* RTSP TCP connection handle */
 
     /** number of items in the 'rtsp_streams' variable */
     int nb_rtsp_streams;
