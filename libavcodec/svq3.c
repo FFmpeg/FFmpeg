@@ -886,7 +886,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
                 int u2 = get_bits(&gb, 8);
                 int u3 = get_bits(&gb, 2);
                 int u4 = svq3_get_ue_golomb(&gb);
-                unsigned buf_len = watermark_width*watermark_height*4;
+                unsigned long buf_len = watermark_width*watermark_height*4;
                 int offset = (get_bits_count(&gb)+7)>>3;
                 uint8_t *buf;
 
@@ -896,7 +896,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
                 buf = av_malloc(buf_len);
                 av_log(avctx, AV_LOG_DEBUG, "watermark size: %dx%d\n", watermark_width, watermark_height);
                 av_log(avctx, AV_LOG_DEBUG, "u1: %x u2: %x u3: %x compressed data size: %d offset: %d\n", u1, u2, u3, u4, offset);
-                if (uncompress(buf, (uLong*)&buf_len, extradata + 8 + offset, size - offset) != Z_OK) {
+                if (uncompress(buf, &buf_len, extradata + 8 + offset, size - offset) != Z_OK) {
                     av_log(avctx, AV_LOG_ERROR, "could not uncompress watermark logo\n");
                     av_free(buf);
                     return -1;
