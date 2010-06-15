@@ -197,13 +197,13 @@
 #endif
 
 #if HAVE_SYMVER_ASM_LABEL
-#   define FF_SYMVER(type, name, args, ver)             \
-    type ff_##name args __asm__ (#name "@" ver);        \
+#   define FF_SYMVER(type, name, args, ver)                     \
+    type ff_##name args __asm__ (EXTERN_PREFIX #name "@" ver);  \
     type ff_##name args
 #elif HAVE_SYMVER_GNU_ASM
-#   define FF_SYMVER(type, name, args, ver)             \
-    __asm__ (".symver ff_" #name "," #name "@" ver);    \
-    type ff_##name args;                                \
+#   define FF_SYMVER(type, name, args, ver)                             \
+    __asm__ (".symver ff_" #name "," EXTERN_PREFIX #name "@" ver);      \
+    type ff_##name args;                                                \
     type ff_##name args
 #endif
 
