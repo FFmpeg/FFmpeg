@@ -1084,6 +1084,9 @@ HAVE_LIST="
     struct_sockaddr_in6
     struct_sockaddr_sa_len
     struct_sockaddr_storage
+    symver
+    symver_gnu_asm
+    symver_asm_label
     sys_mman_h
     sys_resource_h
     sys_select_h
@@ -1197,6 +1200,8 @@ fast_unaligned_if_any="armv6 ppc x86"
 
 need_memalign="altivec neon sse"
 inline_asm_deps="!tms470"
+
+symver_if_any="symver_asm_label symver_gnu_asm"
 
 # subsystems
 mdct_select="fft"
@@ -2714,8 +2719,17 @@ check_ldflags '-Wl,-rpath-link,\$(BUILD_ROOT)/libpostproc -Wl,-rpath-link,\$(BUI
 check_ldflags -Wl,-Bsymbolic
 
 echo "X{};" > $TMPV
-test_ldflags -Wl,--version-script,$TMPV &&
+if test_ldflags -Wl,--version-script,$TMPV; then
     append SHFLAGS '-Wl,--version-script,\$(SUBDIR)lib\$(NAME).ver'
+    check_cc <<EOF && enable symver_asm_label
+void ff_foo(void) __asm__ ("av_foo@VERSION");
+void ff_foo(void) {}
+EOF
+    check_cc <<EOF && enable symver_gnu_asm
+__asm__(".symver ff_foo,av_foo@VERSION");
+void ff_foo(void) {}
+EOF
+fi
 
 if enabled small; then
     add_cflags $size_cflags

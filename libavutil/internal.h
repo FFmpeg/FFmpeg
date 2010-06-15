@@ -196,4 +196,15 @@
 #   define NULL_IF_CONFIG_SMALL(x) x
 #endif
 
+#if HAVE_SYMVER_ASM_LABEL
+#   define FF_SYMVER(type, name, args, ver)             \
+    type ff_##name args __asm__ (#name "@" ver);        \
+    type ff_##name args
+#elif HAVE_SYMVER_GNU_ASM
+#   define FF_SYMVER(type, name, args, ver)             \
+    __asm__ (".symver ff_" #name "," #name "@" ver);    \
+    type ff_##name args;                                \
+    type ff_##name args
+#endif
+
 #endif /* AVUTIL_INTERNAL_H */
