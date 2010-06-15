@@ -258,7 +258,7 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                     // read the rest of the packet.
                     if (length_remaining < 0
                         || length_remaining > sizeof(mms->in_buffer) - 12) {
-                        dprintf("Incoming message len %d exceeds buffer len %d\n",
+                        dprintf(NULL, "Incoming message len %d exceeds buffer len %d\n",
                             length_remaining, sizeof(mms->in_buffer) - 12);
                         return -1;
                     }
@@ -291,7 +291,7 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
 
                 if (length_remaining < 0
                         || length_remaining > sizeof(mms->in_buffer) - 8) {
-                    dprintf("Incoming data len %d exceeds buffer len %d\n",
+                    dprintf(NULL, "Incoming data len %d exceeds buffer len %d\n",
                             length_remaining, sizeof(mms->in_buffer));
                     return -1;
                 }
@@ -431,7 +431,7 @@ static int asf_header_parser(MMSContext *mms)
     while(end - p >= sizeof(ff_asf_guid) + 8) {
         uint64_t chunksize = AV_RL64(p + sizeof(ff_asf_guid));
         if (!chunksize || chunksize > end - p) {
-            dprintf("chunksize is exceptional value:%d!\n", chunksize);
+            dprintf(NULL, "chunksize is exceptional value:%d!\n", chunksize);
             return -1;
         }
         if (!memcmp(p, ff_asf_file_header, sizeof(ff_asf_guid))) {
@@ -455,7 +455,7 @@ static int asf_header_parser(MMSContext *mms)
                 mms->streams[mms->stream_num].id = stream_id;
                 mms->stream_num++;
             } else {
-                dprintf("Too many streams.\n");
+                dprintf(NULL, "Too many streams.\n");
                 return -1;
             }
         }
