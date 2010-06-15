@@ -1158,7 +1158,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     uint64_t max_start = 0;
     Ebml ebml = { 0 };
     AVStream *st;
-    int i, j;
+    int i, j, res;
 
     matroska->ctx = s;
 
@@ -1182,8 +1182,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ebml_free(ebml_syntax, &ebml);
 
     /* The next thing is a segment. */
-    if (ebml_parse(matroska, matroska_segments, matroska) < 0)
-        return -1;
+    if ((res = ebml_parse(matroska, matroska_segments, matroska)) < 0)
+        return res;
     matroska_execute_seekhead(matroska);
 
     if (!matroska->time_scale)
