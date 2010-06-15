@@ -127,6 +127,8 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { PIX_FMT_BGRA,    MKTAG('B', 'G', 'R', 'A') },
     { PIX_FMT_RGBA,    MKTAG('R', 'G', 'B', 'A') },
     { PIX_FMT_ABGR,    MKTAG('A', 'B', 'G', 'R') },
+    { PIX_FMT_GRAY16BE,MKTAG('b', '1', '6', 'g') },
+    { PIX_FMT_RGB48BE, MKTAG('b', '4', '8', 'r') },
 
     /* special */
     { PIX_FMT_RGB565LE,MKTAG( 3 ,  0 ,  0 ,  0 ) }, /* flipped RGB565LE */
