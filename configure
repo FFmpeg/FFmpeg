@@ -252,6 +252,8 @@ EOF
   exit 0
 }
 
+quotes='""'
+
 log(){
     echo "$@" >> $logfile
 }
@@ -2723,7 +2725,7 @@ if test_ldflags -Wl,--version-script,$TMPV; then
     append SHFLAGS '-Wl,--version-script,\$(SUBDIR)lib\$(NAME).ver'
     check_cc <<EOF && enable symver_asm_label
 void ff_foo(void) __asm__ ("av_foo@VERSION");
-void ff_foo(void) {}
+void ff_foo(void) { ${inline_asm+__asm__($quotes);} }
 EOF
     check_cc <<EOF && enable symver_gnu_asm
 __asm__(".symver ff_foo,av_foo@VERSION");
