@@ -1086,6 +1086,7 @@ HAVE_LIST="
     struct_sockaddr_in6
     struct_sockaddr_sa_len
     struct_sockaddr_storage
+    gnu_symbol_versioning
     sys_mman_h
     sys_resource_h
     sys_select_h
@@ -2733,7 +2734,12 @@ check_ldflags -Wl,-Bsymbolic
 
 echo "X{};" > $TMPV
 test_ldflags -Wl,--version-script,$TMPV &&
-    append SHFLAGS '-Wl,--version-script,\$(SUBDIR)lib\$(NAME).ver'
+    append SHFLAGS '-Wl,--version-script,\$(SUBDIR)lib\$(NAME).ver' &&
+    check_cc <<EOF && enable gnu_symbol_versioning
+int ff_foo();
+int ff_foo() {}
+__asm__(".symver foo,av_foo@SOME_TAG");
+EOF
 
 if enabled small; then
     add_cflags $size_cflags

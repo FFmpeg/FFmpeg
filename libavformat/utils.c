@@ -282,8 +282,54 @@ AVInputFormat *av_find_input_format(const char *short_name)
     return NULL;
 }
 
-/* memory handling */
+#if HAVE_GNU_SYMBOL_VERSIONING && LIBAVFORMAT_VERSION_MAJOR < 53
+/* compatibility trampolines for packet functions */
 
+void ff_av_destruct_packet_nofree(AVPacket *pkt);
+void ff_av_destruct_packet(AVPacket *pkt);
+int ff_av_new_packet(AVPacket *pkt, int size);
+int ff_av_dup_packet(AVPacket *pkt);
+void ff_av_free_packet(AVPacket *pkt);
+void ff_av_init_packet(AVPacket *pkt);
+
+__asm__(".symver ff_av_destruct_packet_nofree,av_destruct_packet_nofree@LIBAVFORMAT_52");
+__asm__(".symver ff_av_destruct_packet,av_destruct_packet@LIBAVFORMAT_52");
+__asm__(".symver ff_av_new_packet,av_new_packet@LIBAVFORMAT_52");
+__asm__(".symver ff_av_dup_packet,av_dup_packet@LIBAVFORMAT_52");
+__asm__(".symver ff_av_free_packet,av_free_packet@LIBAVFORMAT_52");
+__asm__(".symver ff_av_init_packet,av_init_packet@LIBAVFORMAT_52");
+
+void ff_av_destruct_packet_nofree(AVPacket *pkt)
+{
+    av_destruct_packet_nofree(pkt);
+}
+
+void ff_av_destruct_packet(AVPacket *pkt)
+{
+    av_destruct_packet(pkt);
+}
+
+int ff_av_new_packet(AVPacket *pkt, int size)
+{
+    return av_new_packet(pkt, size);
+}
+
+int ff_av_dup_packet(AVPacket *pkt)
+{
+    return av_dup_packet(pkt);
+}
+
+void ff_av_free_packet(AVPacket *pkt)
+{
+    av_free_packet(pkt);
+}
+
+void ff_av_init_packet(AVPacket *pkt)
+{
+    av_log(NULL, AV_LOG_WARNING, "diverting av_*_packet function calls to libavcodec. Recompile to improve performance\n");
+    av_init_packet(pkt);
+}
+#endif
 
 int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size)
 {
