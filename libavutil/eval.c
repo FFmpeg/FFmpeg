@@ -532,6 +532,44 @@ int main(void)
 {
     int i;
     double d;
+    const char **expr, *exprs[] = {
+        "",
+        "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
+        "80G/80Gi"
+        "1k",
+        "1Gi",
+        "1gi",
+        "1GiFoo",
+        "1k+1k",
+        "1Gi*3foo",
+        "foo",
+        "foo(",
+        "foo()",
+        "foo)",
+        "sin",
+        "sin(",
+        "sin()",
+        "sin)",
+        "sin 10",
+        "sin(1,2,3)",
+        "sin(1 )",
+        "1",
+        "1foo",
+        "bar + PI + E + 100f*2 + foo",
+        "13k + 12f - foo(1, 2)",
+        "1gi",
+        "1Gi",
+        NULL
+    };
+
+    for (expr = exprs; *expr; expr++) {
+        printf("Evaluating '%s'\n", *expr);
+        av_parse_and_eval_expr(&d, *expr,
+                               const_names, const_values,
+                               NULL, NULL, NULL, NULL, NULL, 0, NULL);
+        printf("'%s' -> %f\n\n", *expr, d);
+    }
+
     av_parse_and_eval_expr(&d, "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
                            const_names, const_values,
                            NULL, NULL, NULL, NULL, NULL, 0, NULL);
