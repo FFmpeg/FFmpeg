@@ -448,6 +448,7 @@ int av_parse_expr(AVExpr **expr, const char *s,
     AVExpr *e = NULL;
     char *w = av_malloc(strlen(s) + 1);
     char *wp = w;
+    const char *s0 = s;
     int ret = 0;
 
     if (!w)
@@ -470,6 +471,11 @@ int av_parse_expr(AVExpr **expr, const char *s,
 
     if ((ret = parse_expr(&e, &p)) < 0)
         goto end;
+    if (*p.s) {
+        av_log(&p, AV_LOG_ERROR, "Invalid chars '%s' at the end of expression '%s'\n", p.s, s0);
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
     if (!verify_expr(e)) {
         av_free_expr(e);
         ret = AVERROR(EINVAL);
