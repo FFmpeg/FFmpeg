@@ -182,7 +182,7 @@ void av_free_expr(AVExpr *e)
 static int parse_primary(AVExpr **e, Parser *p)
 {
     AVExpr *d = av_mallocz(sizeof(AVExpr));
-    char *next= p->s;
+    char *next = p->s, *s0 = p->s;
     int ret, i;
 
     if (!d)
@@ -211,7 +211,7 @@ static int parse_primary(AVExpr **e, Parser *p)
 
     p->s= strchr(p->s, '(');
     if (p->s==NULL) {
-        av_log(p, AV_LOG_ERROR, "undefined constant or missing (\n");
+        av_log(p, AV_LOG_ERROR, "Undefined constant or missing '(' in '%s'\n", s0);
         p->s= next;
         av_free_expr(d);
         return AVERROR(EINVAL);
@@ -222,7 +222,7 @@ static int parse_primary(AVExpr **e, Parser *p)
         if ((ret = parse_expr(&d, p)) < 0)
             return ret;
         if (p->s[0] != ')') {
-            av_log(p, AV_LOG_ERROR, "missing )\n");
+            av_log(p, AV_LOG_ERROR, "Missing ')' in '%s'\n", s0);
             av_free_expr(d);
             return AVERROR(EINVAL);
         }
@@ -239,7 +239,7 @@ static int parse_primary(AVExpr **e, Parser *p)
         parse_expr(&d->param[1], p);
     }
     if (p->s[0] != ')') {
-        av_log(p, AV_LOG_ERROR, "missing )\n");
+        av_log(p, AV_LOG_ERROR, "Missing ')' or too many args in '%s'\n", s0);
         av_free_expr(d);
         return AVERROR(EINVAL);
     }
@@ -290,7 +290,7 @@ static int parse_primary(AVExpr **e, Parser *p)
             }
         }
 
-        av_log(p, AV_LOG_ERROR, "unknown function\n");
+        av_log(p, AV_LOG_ERROR, "Unknown function in '%s'\n", s0);
         av_free_expr(d);
         return AVERROR(EINVAL);
     }
