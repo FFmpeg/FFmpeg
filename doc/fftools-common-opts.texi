@@ -6,6 +6,11 @@ powers of 10. The 'B' postfix multiplies the value for 8, and can be
 appended after another postfix or used alone. This allows using for
 example 'KB', 'MiB', 'G' and 'B' as postfix.
 
+Options which do not take arguments are boolean options, and set the
+corresponding value to true. They can be set to false by prefixing
+with "no" the option name, for example using "-nofoo" in the
+commandline will set to false the boolean option with name "foo".
+
 @section Generic options
 
 These options are shared amongst the ff* tools.
