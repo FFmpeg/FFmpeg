@@ -50,6 +50,12 @@ struct RTPMuxContext {
     uint8_t *buf_ptr;
 
     int max_frames_per_packet;
+
+    /**
+     * Number of bytes used for H.264 NAL length, if the MP4 syntax is used
+     * (1, 2 or 4)
+     */
+    int nal_length_size;
 };
 
 typedef struct RTPMuxContext RTPMuxContext;

@@ -131,6 +131,13 @@ static int rtp_write_header(AVFormatContext *s1)
         s->max_payload_size = n * TS_PACKET_SIZE;
         s->buf_ptr = s->buf;
         break;
+    case CODEC_ID_H264:
+        /* check for H.264 MP4 syntax */
+        if (st->codec->extradata_size > 0 && st->codec->extradata &&
+            st->codec->extradata[0] == 1) {
+            s->nal_length_size = (st->codec->extradata[4] & 0x03) + 1;
+        }
+        break;
     case CODEC_ID_AMR_NB:
     case CODEC_ID_AMR_WB:
         if (!s->max_frames_per_packet)
