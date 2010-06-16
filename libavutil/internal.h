@@ -46,6 +46,12 @@
 #endif
 #endif
 
+
+/**
+ * Marks a variable as used and prevents the compiler from optimizing it away.
+ * This is usefull for asm that accesses varibles in ways that the compiler doesnt
+ * understand
+ */
 #ifndef attribute_used
 #if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define attribute_used __attribute__((used))
@@ -196,6 +202,15 @@
 #   define NULL_IF_CONFIG_SMALL(x) x
 #endif
 
+
+/**
+ * Create a non default alias for a function with specified version.
+ * This is needed when symbols are moved from a lib to a dependancy of the lib
+ * because the gnu linker as of 2010 is buggy and fails to dynamicaly link if a symbol
+ * is not found in the lib in which it was during link time with enabled versioning
+ * even if a correctly versioned and matching symbol exists in another lib and
+ * even if it did find that would it not contain an explicit check to fail
+ */
 #if HAVE_SYMVER_ASM_LABEL
 #   define FF_SYMVER(type, name, args, ver)                     \
     type ff_##name args __asm__ (EXTERN_PREFIX #name "@" ver);  \
