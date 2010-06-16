@@ -82,4 +82,8 @@ Set the logging level used by the library.
 @item debug
 @end table
 
+By default the program logs to stderr, if coloring is supported by the
+terminal, colors are used to mark errors and warnings. Log coloring
+can be disabled setting the environment variable @env{NO_COLOR}.
+
 @end table
