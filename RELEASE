@@ -93,4 +93,3 @@ Notable license related changes
 
 - remaining GPL parts in AC-3 decoder converted to LGPL
 - libswscale can now be compiled in LGPL mode
-- libvpx is considered (L)GPL incompatible
