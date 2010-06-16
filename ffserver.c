@@ -2306,12 +2306,16 @@ static int http_prepare_data(HTTPContext *c)
         else {
             AVPacket pkt;
         redo:
-            if (av_read_frame(c->fmt_in, &pkt) < 0) {
-                if (c->stream->feed && c->stream->feed->feed_opened) {
+            ret = av_read_frame(c->fmt_in, &pkt);
+            if (ret < 0) {
+                if (c->stream->feed) {
                     /* if coming from feed, it means we reached the end of the
                        ffm file, so must wait for more data */
                     c->state = HTTPSTATE_WAIT_FEED;
                     return 1; /* state changed */
+                } else if (ret == AVERROR(EAGAIN)) {
+                    /* input not ready, come back later */
+                    return 0;
                 } else {
                     if (c->stream->loop) {
                         av_close_input_file(c->fmt_in);
