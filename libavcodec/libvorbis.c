@@ -192,7 +192,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
 
         memcpy(packets, op2->packet, l);
         context->buffer_index -= l + sizeof(ogg_packet);
-        memcpy(context->buffer, context->buffer + l + sizeof(ogg_packet), context->buffer_index);
+        memmove(context->buffer, context->buffer + l + sizeof(ogg_packet), context->buffer_index);
 //        av_log(avccontext, AV_LOG_DEBUG, "E%d\n", l);
     }
 
