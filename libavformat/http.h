@@ -18,8 +18,11 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
 #ifndef AVFORMAT_HTTP_H
 #define AVFORMAT_HTTP_H
+
+#include "avio.h"
 
 /**
  * Sets custom HTTP headers.
