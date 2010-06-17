@@ -133,8 +133,7 @@ static int rtp_write_header(AVFormatContext *s1)
         break;
     case CODEC_ID_H264:
         /* check for H.264 MP4 syntax */
-        if (st->codec->extradata_size > 0 && st->codec->extradata &&
-            st->codec->extradata[0] == 1) {
+        if (st->codec->extradata_size > 4 && st->codec->extradata[0] == 1) {
             s->nal_length_size = (st->codec->extradata[4] & 0x03) + 1;
         }
         break;
