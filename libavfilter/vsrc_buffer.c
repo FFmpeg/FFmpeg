@@ -26,7 +26,8 @@ typedef struct {
     int64_t           pts;
     AVFrame           frame;
     int               has_frame;
-    int               h, w, pix_fmt;
+    int               h, w;
+    enum PixelFormat  pix_fmt;
     AVRational        pixel_aspect;
 } BufferSourceContext;
 
