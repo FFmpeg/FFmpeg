@@ -915,6 +915,7 @@ static int rtmp_read(URLContext *s, uint8_t *buf, int size)
             buf  += data_left;
             size -= data_left;
             rt->flv_off = rt->flv_size;
+            return data_left;
         }
         if ((ret = get_packet(s, 0)) < 0)
            return ret;
