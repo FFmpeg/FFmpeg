@@ -61,6 +61,10 @@ enum IEC958DataType {
     IEC958_DTS1               = 0x0B,          ///< DTS type I   (512 samples)
     IEC958_DTS2               = 0x0C,          ///< DTS type II  (1024 samples)
     IEC958_DTS3               = 0x0D,          ///< DTS type III (2048 samples)
+    IEC958_ATRAC              = 0x0E,          ///< Atrac data
+    IEC958_ATRAC3             = 0x0F,          ///< Atrac 3 data
+    IEC958_ATRACX             = 0x10,          ///< Atrac 3 plus data
+    IEC958_WMAPRO             = 0x12,          ///< WMA 9 Professional data
     IEC958_MPEG2_AAC_LSF_2048 = 0x13,          ///< MPEG-2 AAC ADTS half-rate low sampling frequency
     IEC958_MPEG2_AAC_LSF_4096 = 0x13 | 0x20,   ///< MPEG-2 AAC ADTS quarter-rate low sampling frequency
 };
