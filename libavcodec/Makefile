@@ -228,6 +228,7 @@ OBJS-$(CONFIG_MPEG1VIDEO_ENCODER)      += mpeg12enc.o mpegvideo_enc.o \
                                           motion_est.o ratecontrol.o  \
                                           mpeg12.o mpeg12data.o       \
                                           mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MPEG2_DXVA2_HWACCEL)     += dxva2_mpeg2.o
 OBJS-$(CONFIG_MPEG2_VAAPI_HWACCEL)     += vaapi_mpeg2.o
 OBJS-$(CONFIG_MPEG2VIDEO_DECODER)      += mpeg12.o mpeg12data.o \
                                           mpegvideo.o error_resilience.o
