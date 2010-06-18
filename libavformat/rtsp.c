@@ -1594,12 +1594,14 @@ redirect:
 
         /* complete the connection */
         if (url_read(rtsp_hd, NULL, 0)) {
+            url_close(rtsp_hd);
             err = AVERROR(EIO);
             goto fail;
         }
 
         /* POST requests */
         if (url_open(&rtsp_hd_out, httpname, URL_WRONLY) < 0 ) {
+            url_close(rtsp_hd);
             err = AVERROR(EIO);
             goto fail;
         }
