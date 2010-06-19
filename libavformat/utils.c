@@ -3601,7 +3601,7 @@ int ff_url_join(char *str, int size, const char *proto,
     str[0] = '\0';
     if (proto)
         av_strlcatf(str, size, "%s://", proto);
-    if (authorization)
+    if (authorization && authorization[0])
         av_strlcatf(str, size, "%s@", authorization);
 #if CONFIG_NETWORK && defined(AF_INET6)
     /* Determine if hostname is a numerical IPv6 address,

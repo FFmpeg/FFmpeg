@@ -131,7 +131,8 @@ void ff_url_split(char *proto, int proto_size,
  * @param size the size of the str buffer
  * @param proto the protocol identifier, if null, the separator
  *              after the identifier is left out, too
- * @param authorization an optional authorization string, may be null
+ * @param authorization an optional authorization string, may be null.
+ *                      An empty string is treated the same as a null string.
  * @param hostname the host name string
  * @param port the port number, left out from the string if negative
  * @param fmt a generic format string for everything to add after the
