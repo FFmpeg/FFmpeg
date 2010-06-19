@@ -67,139 +67,52 @@ static const int huff_iid[] = {
 static VLC vlc_ps[10];
 
 /**
- * Read Inter-channel Intensity Difference parameters from the bitstream.
+ * Read Inter-channel Intensity Difference/Inter-Channel Coherence/
+ * Inter-channel Phase Difference/Overall Phase Difference parameters from the
+ * bitstream.
  *
  * @param avctx contains the current codec context
  * @param gb    pointer to the input bitstream
  * @param ps    pointer to the Parametric Stereo context
+ * @param par   pointer to the parameter to be read
  * @param e     envelope to decode
  * @param dt    1: time delta-coded, 0: frequency delta-coded
  */
-static int iid_data(AVCodecContext *avctx, GetBitContext *gb, PSContext *ps, int e, int dt)
-{
-    int b;
-    int table_idx = huff_iid[2*dt+ps->iid_quant];
-    VLC_TYPE (*vlc_table)[2] = vlc_ps[table_idx].table;
-    if (dt) {
-        int e_prev = e ? e - 1 : ps->num_env_old - 1;
-        e_prev = FFMAX(e_prev, 0);
-        for (b = 0; b < ps->nr_iid_par; b++) {
-            ps->iid_par[e][b] = ps->iid_par[e_prev][b] +
-                                get_vlc2(gb, vlc_table, 9, 3) -
-                                huff_offset[table_idx];
-            if (FFABS(ps->iid_par[e][b]) > 7 + 8 * ps->iid_quant)
-                goto err;
-        }
-    } else {
-        int prev = 0;
-        for (b = 0; b < ps->nr_iid_par; b++) {
-            prev += get_vlc2(gb, vlc_table, 9, 3) -
-                    huff_offset[table_idx];
-            ps->iid_par[e][b] = prev;
-            if (FFABS(ps->iid_par[e][b]) > 7 + 8 * ps->iid_quant)
-                goto err;
-        }
-    }
-    return 0;
-err:
-    av_log(avctx, AV_LOG_ERROR, "illegal iid\n");
-    return -1;
+#define READ_PAR_DATA(PAR, OFFSET, MASK, ERR_CONDITION) \
+static int PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSContext *ps, \
+                        int8_t (*PAR)[PS_MAX_NR_IIDICC], int table_idx, int e, int dt) \
+{ \
+    int b, num = ps->nr_ ## PAR ## _par; \
+    VLC_TYPE (*vlc_table)[2] = vlc_ps[table_idx].table; \
+    if (dt) { \
+        int e_prev = e ? e - 1 : ps->num_env_old - 1; \
+        e_prev = FFMAX(e_prev, 0); \
+        for (b = 0; b < num; b++) { \
+            int val = PAR[e_prev][b] + get_vlc2(gb, vlc_table, 9, 3) - OFFSET; \
+            if (MASK) val &= MASK; \
+            PAR[e][b] = val; \
+            if (ERR_CONDITION) \
+                goto err; \
+        } \
+    } else { \
+        int val = 0; \
+        for (b = 0; b < num; b++) { \
+            val += get_vlc2(gb, vlc_table, 9, 3) - OFFSET; \
+            if (MASK) val &= MASK; \
+            PAR[e][b] = val; \
+            if (ERR_CONDITION) \
+                goto err; \
+        } \
+    } \
+    return 0; \
+err: \
+    av_log(avctx, AV_LOG_ERROR, "illegal "#PAR"\n"); \
+    return -1; \
 }
 
-/**
- * Read Inter-Channel Coherence parameters from the bitstream.
- *
- * @param avctx contains the current codec context
- * @param gb    pointer to the input bitstream
- * @param ps    pointer to the Parametric Stereo context
- * @param e     envelope to decode
- * @param dt    1: time delta-coded, 0: frequency delta-coded
- */
-static int icc_data(AVCodecContext *avctx, GetBitContext *gb, PSContext *ps, int e, int dt)
-{
-    int b;
-    int table_idx = dt ? huff_icc_dt : huff_icc_df;
-    VLC_TYPE (*vlc_table)[2] = vlc_ps[table_idx].table;
-    if (dt) {
-        int e_prev = e ? e - 1 : ps->num_env_old - 1;
-        e_prev = FFMAX(e_prev, 0);
-        for (b = 0; b < ps->nr_icc_par; b++) {
-            ps->icc_par[e][b] = ps->icc_par[e_prev][b] + get_vlc2(gb, vlc_table, 9, 3) - huff_offset[table_idx];
-            if (ps->icc_par[e][b] > 7U)
-                goto err;
-        }
-    } else {
-        int prev = 0;
-        for (b = 0; b < ps->nr_icc_par; b++) {
-            prev += get_vlc2(gb, vlc_table, 9, 3) - huff_offset[table_idx];
-            ps->icc_par[e][b] = prev;
-            if (ps->icc_par[e][b] > 7U)
-                goto err;
-        }
-    }
-    return 0;
-err:
-    av_log(avctx, AV_LOG_ERROR, "illegal icc\n");
-    return -1;
-}
-
-/**
- * Read Inter-channel Phase Difference parameters from the bitstream.
- *
- * @param gb    pointer to the input bitstream
- * @param ps    pointer to the Parametric Stereo context
- * @param e     envelope to decode
- * @param dt    1: time delta-coded, 0: frequency delta-coded
- */
-static void ipd_data(GetBitContext *gb, PSContext *ps, int e, int dt)
-{
-    int b;
-    int table_idx = dt ? huff_ipd_dt : huff_ipd_df;
-    VLC_TYPE (*vlc_table)[2] = vlc_ps[table_idx].table;
-    if (dt) {
-        int e_prev = e ? e - 1 : ps->num_env_old - 1;
-        e_prev = FFMAX(e_prev, 0);
-        for (b = 0; b < ps->nr_ipdopd_par; b++) {
-            ps->ipd_par[e][b] = (ps->ipd_par[e_prev][b] + get_vlc2(gb, vlc_table, 9, 1)) & 0x07;
-        }
-    } else {
-        int prev = 0;
-        for (b = 0; b < ps->nr_ipdopd_par; b++) {
-            prev += get_vlc2(gb, vlc_table, 9, 3);
-            prev &= 0x07;
-            ps->ipd_par[e][b] = prev;
-        }
-    }
-}
-
-/**
- * Read Overall Phase Difference parameters from the bitstream.
- *
- * @param gb    pointer to the input bitstream
- * @param ps    pointer to the Parametric Stereo context
- * @param e     envelope to decode
- * @param dt    1: time delta-coded, 0: frequency delta-coded
- */
-static void opd_data(GetBitContext *gb, PSContext *ps, int e, int dt)
-{
-    int b;
-    int table_idx = dt ? huff_opd_dt : huff_opd_df;
-    VLC_TYPE (*vlc_table)[2] = vlc_ps[table_idx].table;
-    if (dt) {
-        int e_prev = e ? e - 1 : ps->num_env_old - 1;
-        e_prev = FFMAX(e_prev, 0);
-        for (b = 0; b < ps->nr_ipdopd_par; b++) {
-            ps->opd_par[e][b] = (ps->opd_par[e_prev][b] + get_vlc2(gb, vlc_table, 9, 1)) & 0x07;
-        }
-    } else {
-        int prev = 0;
-        for (b = 0; b < ps->nr_ipdopd_par; b++) {
-            prev += get_vlc2(gb, vlc_table, 9, 3);
-            prev &= 0x07;
-            ps->opd_par[e][b] = prev;
-        }
-    }
-}
+READ_PAR_DATA(iid,    huff_offset[table_idx],    0, FFABS(ps->iid_par[e][b]) > 7 + 8 * ps->iid_quant)
+READ_PAR_DATA(icc,    huff_offset[table_idx],    0, ps->icc_par[e][b] > 7U)
+READ_PAR_DATA(ipdopd,                      0, 0x07, 0)
 
 static int ps_extension(GetBitContext *gb, PSContext *ps, int ps_extension_id)
 {
@@ -213,9 +126,9 @@ static int ps_extension(GetBitContext *gb, PSContext *ps, int ps_extension_id)
     if (ps->enable_ipdopd) {
         for (e = 0; e < ps->num_env; e++) {
             int dt = get_bits1(gb);
-            ipd_data(gb, ps, e, dt);
+            ipdopd_data(NULL, gb, ps, ps->ipd_par, dt ? huff_ipd_dt : huff_ipd_df, e, dt);
             dt = get_bits1(gb);
-            opd_data(gb, ps, e, dt);
+            ipdopd_data(NULL, gb, ps, ps->opd_par, dt ? huff_opd_dt : huff_opd_df, e, dt);
         }
     }
     skip_bits1(gb);      //reserved_ps
@@ -281,7 +194,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
     if (ps->enable_iid) {
         for (e = 0; e < ps->num_env; e++) {
             int dt = get_bits1(gb);
-            if (iid_data(avctx, gb, ps, e, dt))
+            if (iid_data(avctx, gb, ps, ps->iid_par, huff_iid[2*dt+ps->iid_quant], e, dt))
                 goto err;
         }
     } else
@@ -290,7 +203,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
     if (ps->enable_icc)
         for (e = 0; e < ps->num_env; e++) {
             int dt = get_bits1(gb);
-            if (icc_data(avctx, gb, ps, e, dt))
+            if (icc_data(avctx, gb, ps, ps->icc_par, dt ? huff_icc_dt : huff_icc_df, e, dt))
                 goto err;
         }
     else
