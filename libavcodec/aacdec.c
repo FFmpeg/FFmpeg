@@ -67,7 +67,7 @@
  * Y (not in this code) Layer-2
  * Y (not in this code) Layer-3
  * N                    SinuSoidal Coding (Transient, Sinusoid, Noise)
- * N (planned)          Parametric Stereo
+ * Y                    Parametric Stereo
  * N                    Direct Stream Transfer
  *
  * Note: - HE AAC v1 comprises LC AAC with Spectral Band Replication.
@@ -200,7 +200,8 @@ static av_cold int che_configure(AACContext *ac,
         ff_aac_sbr_ctx_init(&ac->che[type][id]->sbr);
         if (type != TYPE_CCE) {
             ac->output_data[(*channels)++] = ac->che[type][id]->ch[0].ret;
-            if (type == TYPE_CPE) {
+            if (type == TYPE_CPE ||
+                (type == TYPE_SCE && ac->m4ac.ps == 1)) {
                 ac->output_data[(*channels)++] = ac->che[type][id]->ch[1].ret;
             }
         }
@@ -228,6 +229,7 @@ static av_cold int output_configure(AACContext *ac,
     AVCodecContext *avctx = ac->avctx;
     int i, type, channels = 0, ret;
 
+    if (new_che_pos != che_pos)
     memcpy(che_pos, new_che_pos, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
 
     if (channel_config) {
@@ -471,6 +473,8 @@ static int decode_audio_specific_config(AACContext *ac, void *data,
         av_log(ac->avctx, AV_LOG_ERROR, "invalid sampling rate index %d\n", ac->m4ac.sampling_index);
         return -1;
     }
+    if (ac->m4ac.sbr == 1 && ac->m4ac.ps == -1)
+        ac->m4ac.ps = 1;
 
     skip_bits_long(&gb, i);
 
@@ -1667,6 +1671,10 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
             av_log(ac->avctx, AV_LOG_ERROR, "Implicit SBR was found with a first occurrence after the first frame.\n");
             skip_bits_long(gb, 8 * cnt - 4);
             return res;
+        } else if (ac->m4ac.ps == -1 && ac->output_configured < OC_LOCKED && ac->avctx->channels == 1) {
+            ac->m4ac.sbr = 1;
+            ac->m4ac.ps = 1;
+            output_configure(ac, ac->che_pos, ac->che_pos, ac->m4ac.chan_config, ac->output_configured);
         } else {
             ac->m4ac.sbr = 1;
         }
@@ -1946,8 +1954,10 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
         } else if (ac->output_configured != OC_LOCKED) {
             ac->output_configured = OC_NONE;
         }
-        if (ac->output_configured != OC_LOCKED)
+        if (ac->output_configured != OC_LOCKED) {
             ac->m4ac.sbr = -1;
+            ac->m4ac.ps  = -1;
+        }
         ac->m4ac.sample_rate     = hdr_info.sample_rate;
         ac->m4ac.sampling_index  = hdr_info.sampling_index;
         ac->m4ac.object_type     = hdr_info.object_type;

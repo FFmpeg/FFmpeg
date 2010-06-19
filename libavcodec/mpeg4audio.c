@@ -131,6 +131,14 @@ int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_si
                 get_bits1(&gb); // skip 1 bit
         }
     }
+
+    //PS requires SBR
+    if (!c->sbr)
+        c->ps = 0;
+    //Limit implicit PS to the HE-AACv2 Profile
+    if ((c->ps == -1 && c->object_type != AOT_AAC_LC) || c->channels & ~0x01)
+        c->ps = 0;
+
     return specific_config_bitindex;
 }
 
