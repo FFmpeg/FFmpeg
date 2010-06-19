@@ -1573,7 +1573,7 @@ redirect:
         char sessioncookie[17];
         char headers[1024];
 
-        ff_url_join(httpname, sizeof(httpname), "http", NULL, host, port, "%s", path);
+        ff_url_join(httpname, sizeof(httpname), "http", auth, host, port, "%s", path);
         snprintf(sessioncookie, sizeof(sessioncookie), "%08x%08x",
                  av_get_random_seed(), av_get_random_seed());
 
