@@ -1483,6 +1483,7 @@ void ff_rtsp_close_connections(AVFormatContext *s)
     RTSPState *rt = s->priv_data;
     if (rt->rtsp_hd_out != rt->rtsp_hd) url_close(rt->rtsp_hd_out);
     url_close(rt->rtsp_hd);
+    rt->rtsp_hd = rt->rtsp_hd_out = NULL;
 }
 
 int ff_rtsp_connect(AVFormatContext *s)
