@@ -1490,7 +1490,6 @@ int ff_rtsp_connect(AVFormatContext *s)
     RTSPState *rt = s->priv_data;
     char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128];
     char *option_list, *option, *filename;
-    URLContext *rtsp_hd, *rtsp_hd_out;
     int port, err, tcp_fd;
     RTSPMessageHeader reply1 = {}, *reply = &reply1;
     int lower_transport_mask = 0;
@@ -1578,7 +1577,7 @@ redirect:
                  av_get_random_seed(), av_get_random_seed());
 
         /* GET requests */
-        if (url_open(&rtsp_hd, httpname, URL_RDONLY) < 0) {
+        if (url_open(&rt->rtsp_hd, httpname, URL_RDONLY) < 0) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1590,18 +1589,16 @@ redirect:
                  "Pragma: no-cache\r\n"
                  "Cache-Control: no-cache\r\n",
                  sessioncookie);
-        ff_http_set_headers(rtsp_hd, headers);
+        ff_http_set_headers(rt->rtsp_hd, headers);
 
         /* complete the connection */
-        if (url_read(rtsp_hd, NULL, 0)) {
-            url_close(rtsp_hd);
+        if (url_read(rt->rtsp_hd, NULL, 0)) {
             err = AVERROR(EIO);
             goto fail;
         }
 
         /* POST requests */
-        if (url_open(&rtsp_hd_out, httpname, URL_WRONLY) < 0 ) {
-            url_close(rtsp_hd);
+        if (url_open(&rt->rtsp_hd_out, httpname, URL_WRONLY) < 0 ) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1615,23 +1612,21 @@ redirect:
                  "Content-Length: 32767\r\n"
                  "Expires: Sun, 9 Jan 1972 00:00:00 GMT\r\n",
                  sessioncookie);
-        ff_http_set_headers(rtsp_hd_out, headers);
-        ff_http_set_chunked_transfer_encoding(rtsp_hd_out, 0);
+        ff_http_set_headers(rt->rtsp_hd_out, headers);
+        ff_http_set_chunked_transfer_encoding(rt->rtsp_hd_out, 0);
 
     } else {
         /* open the tcp connection */
         ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port, NULL);
-        if (url_open(&rtsp_hd, tcpname, URL_RDWR) < 0) {
+        if (url_open(&rt->rtsp_hd, tcpname, URL_RDWR) < 0) {
             err = AVERROR(EIO);
             goto fail;
         }
-        rtsp_hd_out = rtsp_hd;
+        rt->rtsp_hd_out = rt->rtsp_hd;
     }
-    rt->rtsp_hd = rtsp_hd;
-    rt->rtsp_hd_out = rtsp_hd_out;
     rt->seq = 0;
 
-    tcp_fd = url_get_file_handle(rtsp_hd);
+    tcp_fd = url_get_file_handle(rt->rtsp_hd);
     if (!getpeername(tcp_fd, (struct sockaddr*) &peer, &peer_len)) {
         getnameinfo((struct sockaddr*) &peer, peer_len, host, sizeof(host),
                     NULL, 0, NI_NUMERICHOST);
