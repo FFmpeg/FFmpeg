@@ -69,6 +69,8 @@
 
 static void compute_antialias_integer(MPADecodeContext *s, GranuleDef *g);
 static void compute_antialias_float(MPADecodeContext *s, GranuleDef *g);
+static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
+                               int *dither_state, OUT_INT *samples, int incr);
 
 /* vlc structure for decoding layer 3 huffman tables */
 static VLC huff_vlc[16];
@@ -305,6 +307,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
     int i, j, k;
 
     s->avctx = avctx;
+    s->apply_window_mp3 = apply_window_mp3_c;
 
     avctx->sample_fmt= OUT_FMT;
     s->error_recognition= avctx->error_recognition;
@@ -836,39 +839,18 @@ void av_cold RENAME(ff_mpa_synth_init)(MPA_INT *window)
     }
 }
 
-/* 32 sub band synthesis filter. Input: 32 sub band samples, Output:
-   32 samples. */
-/* XXX: optimize by avoiding ring buffer usage */
-void RENAME(ff_mpa_synth_filter)(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
-                         MPA_INT *window, int *dither_state,
-                         OUT_INT *samples, int incr,
-                         INTFLOAT sb_samples[SBLIMIT])
+static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
+                               int *dither_state, OUT_INT *samples, int incr)
 {
-    register MPA_INT *synth_buf;
     register const MPA_INT *w, *w2, *p;
-    int j, offset;
+    int j;
     OUT_INT *samples2;
 #if CONFIG_FLOAT
     float sum, sum2;
 #elif FRAC_BITS <= 15
-    int32_t tmp[32];
     int sum, sum2;
 #else
     int64_t sum, sum2;
-#endif
-
-    offset = *synth_buf_offset;
-    synth_buf = synth_buf_ptr + offset;
-
-#if FRAC_BITS <= 15 && !CONFIG_FLOAT
-    dct32(tmp, sb_samples);
-    for(j=0;j<32;j++) {
-        /* NOTE: can cause a loss in precision if very high amplitude
-           sound */
-        synth_buf[j] = av_clip_int16(tmp[j]);
-    }
-#else
-    dct32(synth_buf, sb_samples);
 #endif
 
     /* copy to avoid wrap */
@@ -909,10 +891,63 @@ void RENAME(ff_mpa_synth_filter)(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
     SUM8(MLSS, sum, w + 32, p);
     *samples = round_sample(&sum);
     *dither_state= sum;
+}
+
+
+/* 32 sub band synthesis filter. Input: 32 sub band samples, Output:
+   32 samples. */
+/* XXX: optimize by avoiding ring buffer usage */
+#if CONFIG_FLOAT
+void ff_mpa_synth_filter_float(MPADecodeContext *s, float *synth_buf_ptr,
+                               int *synth_buf_offset,
+                               float *window, int *dither_state,
+                               float *samples, int incr,
+                               float sb_samples[SBLIMIT])
+{
+    float *synth_buf;
+    int offset;
+
+    offset = *synth_buf_offset;
+    synth_buf = synth_buf_ptr + offset;
+
+    dct32(synth_buf, sb_samples);
+    s->apply_window_mp3(synth_buf, window, dither_state, samples, incr);
 
     offset = (offset - 32) & 511;
     *synth_buf_offset = offset;
 }
+#else
+void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
+                         MPA_INT *window, int *dither_state,
+                         OUT_INT *samples, int incr,
+                         INTFLOAT sb_samples[SBLIMIT])
+{
+    register MPA_INT *synth_buf;
+    int offset;
+#if FRAC_BITS <= 15
+    int32_t tmp[32];
+#endif
+
+    offset = *synth_buf_offset;
+    synth_buf = synth_buf_ptr + offset;
+
+#if FRAC_BITS <= 15 && !CONFIG_FLOAT
+    dct32(tmp, sb_samples);
+    for(j=0;j<32;j++) {
+        /* NOTE: can cause a loss in precision if very high amplitude
+           sound */
+        synth_buf[j] = av_clip_int16(tmp[j]);
+    }
+#else
+    dct32(synth_buf, sb_samples);
+#endif
+
+    apply_window_mp3_c(synth_buf, window, dither_state, samples, incr);
+
+    offset = (offset - 32) & 511;
+    *synth_buf_offset = offset;
+}
+#endif
 
 #define C3 FIXHR(0.86602540378443864676/2)
 
@@ -2227,7 +2262,11 @@ static int mp_decode_frame(MPADecodeContext *s,
     for(ch=0;ch<s->nb_channels;ch++) {
         samples_ptr = samples + ch;
         for(i=0;i<nb_frames;i++) {
-            RENAME(ff_mpa_synth_filter)(s->synth_buf[ch], &(s->synth_buf_offset[ch]),
+            RENAME(ff_mpa_synth_filter)(
+#if CONFIG_FLOAT
+                         s,
+#endif
+                         s->synth_buf[ch], &(s->synth_buf_offset[ch]),
                          RENAME(ff_mpa_synth_window), &s->dither_state,
                          samples_ptr, s->nb_channels,
                          s->sb_samples[ch][i]);

@@ -156,6 +156,8 @@ typedef struct MPADecodeContext {
     int dither_state;
     int error_recognition;
     AVCodecContext* avctx;
+    void (*apply_window_mp3)(MPA_INT *synth_buf, MPA_INT *window,
+                             int *dither_state, OUT_INT *samples, int incr);
 } MPADecodeContext;
 
 /* layer 3 huffman tables */
@@ -175,7 +177,8 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
                          INTFLOAT sb_samples[SBLIMIT]);
 
 void ff_mpa_synth_init_float(MPA_INT *window);
-void ff_mpa_synth_filter_float(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
+void ff_mpa_synth_filter_float(MPADecodeContext *s,
+                         MPA_INT *synth_buf_ptr, int *synth_buf_offset,
                          MPA_INT *window, int *dither_state,
                          OUT_INT *samples, int incr,
                          INTFLOAT sb_samples[SBLIMIT]);
