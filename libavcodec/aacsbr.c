@@ -393,7 +393,7 @@ static int sbr_make_f_master(AACContext *ac, SpectralBandReplication *sbr,
         k2diff = sbr->k[2] - sbr->k[0] - sbr->n_master * dk;
         if (k2diff < 0) {
             sbr->f_master[1]--;
-            sbr->f_master[2]-= (k2diff < 1);
+            sbr->f_master[2]-= (k2diff < -1);
         } else if (k2diff) {
             sbr->f_master[sbr->n_master]++;
         }
