@@ -20,6 +20,7 @@
  */
 
 #include <stdint.h>
+#include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -191,7 +192,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
             ps->border_position[e] = get_bits(gb, 5);
     } else
         for (e = 1; e <= ps->num_env; e++)
-            ps->border_position[e] = e * numQMFSlots / ps->num_env - 1;
+            ps->border_position[e] = (e * numQMFSlots >> ff_log2_tab[ps->num_env]) - 1;
 
     if (ps->enable_iid) {
         for (e = 0; e < ps->num_env; e++) {
