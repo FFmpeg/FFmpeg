@@ -283,14 +283,14 @@ err:
 static void hybrid2_re(float (*in)[2], float (*out)[32][2], const float filter[7], int len, int reverse)
 {
     int i, j;
-    for (i = 0; i < len; i++) {
-        float re_in = filter[6] * in[6+i][0];        //real inphase
+    for (i = 0; i < len; i++, in++) {
+        float re_in = filter[6] * in[6][0];          //real inphase
         float re_op = 0.0f;                          //real out of phase
-        float im_in = filter[6] * in[6+i][1];        //imag inphase
+        float im_in = filter[6] * in[6][1];          //imag inphase
         float im_op = 0.0f;                          //imag out of phase
         for (j = 0; j < 6; j += 2) {
-            re_op += filter[j+1] * (in[i+j+1][0] + in[12-j-1+i][0]);
-            im_op += filter[j+1] * (in[i+j+1][1] + in[12-j-1+i][1]);
+            re_op += filter[j+1] * (in[j+1][0] + in[12-j-1][0]);
+            im_op += filter[j+1] * (in[j+1][1] + in[12-j-1][1]);
         }
         out[ reverse][i][0] = re_in + re_op;
         out[ reverse][i][1] = im_in + im_op;
@@ -306,14 +306,14 @@ static void hybrid6_cx(float (*in)[2], float (*out)[32][2], const float (*filter
     int N = 8;
     float temp[8][2];
 
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < len; i++, in++) {
         for (ssb = 0; ssb < N; ssb++) {
-            float sum_re = filter[ssb][6][0] * in[i+6][0], sum_im = filter[ssb][6][0] * in[i+6][1];
+            float sum_re = filter[ssb][6][0] * in[6][0], sum_im = filter[ssb][6][0] * in[6][1];
             for (j = 0; j < 6; j++) {
-                float in0_re = in[i+j][0];
-                float in0_im = in[i+j][1];
-                float in1_re = in[i+12-j][0];
-                float in1_im = in[i+12-j][1];
+                float in0_re = in[j][0];
+                float in0_im = in[j][1];
+                float in1_re = in[12-j][0];
+                float in1_im = in[12-j][1];
                 sum_re += filter[ssb][j][0] * (in0_re + in1_re) - filter[ssb][j][1] * (in0_im - in1_im);
                 sum_im += filter[ssb][j][0] * (in0_im + in1_im) + filter[ssb][j][1] * (in0_re - in1_re);
             }
@@ -339,14 +339,14 @@ static void hybrid4_8_12_cx(float (*in)[2], float (*out)[32][2], const float (*f
 {
     int i, j, ssb;
 
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < len; i++, in++) {
         for (ssb = 0; ssb < N; ssb++) {
-            float sum_re = filter[ssb][6][0] * in[i+6][0], sum_im = filter[ssb][6][0] * in[i+6][1];
+            float sum_re = filter[ssb][6][0] * in[6][0], sum_im = filter[ssb][6][0] * in[6][1];
             for (j = 0; j < 6; j++) {
-                float in0_re = in[i+j][0];
-                float in0_im = in[i+j][1];
-                float in1_re = in[i+12-j][0];
-                float in1_im = in[i+12-j][1];
+                float in0_re = in[j][0];
+                float in0_im = in[j][1];
+                float in1_re = in[12-j][0];
+                float in1_im = in[12-j][1];
                 sum_re += filter[ssb][j][0] * (in0_re + in1_re) - filter[ssb][j][1] * (in0_im - in1_im);
                 sum_im += filter[ssb][j][0] * (in0_im + in1_im) + filter[ssb][j][1] * (in0_re - in1_re);
             }
