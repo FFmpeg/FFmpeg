@@ -44,7 +44,7 @@
 #define DCA_PRIM_CHANNELS_MAX (5)
 #define DCA_SUBBANDS (32)
 #define DCA_ABITS_MAX (32)      /* Should be 28 */
-#define DCA_SUBSUBFAMES_MAX (4)
+#define DCA_SUBSUBFRAMES_MAX (4)
 #define DCA_LFE_MAX (3)
 
 enum DCAMode {
@@ -222,7 +222,7 @@ typedef struct {
 
     int high_freq_vq[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];       ///< VQ encoded high frequency subbands
 
-    float lfe_data[2 * DCA_SUBSUBFAMES_MAX * DCA_LFE_MAX *
+    float lfe_data[2 * DCA_SUBSUBFRAMES_MAX * DCA_LFE_MAX *
                    2 /*history */ ];    ///< Low frequency effect data
     int lfe_scale_factor;
 
