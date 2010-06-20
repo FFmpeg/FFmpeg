@@ -81,7 +81,7 @@ static VLC vlc_ps[10];
  * @param dt    1: time delta-coded, 0: frequency delta-coded
  */
 #define READ_PAR_DATA(PAR, OFFSET, MASK, ERR_CONDITION) \
-static int PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSContext *ps, \
+static int read_ ## PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSContext *ps, \
                         int8_t (*PAR)[PS_MAX_NR_IIDICC], int table_idx, int e, int dt) \
 { \
     int b, num = ps->nr_ ## PAR ## _par; \
@@ -116,7 +116,7 @@ READ_PAR_DATA(iid,    huff_offset[table_idx],    0, FFABS(ps->iid_par[e][b]) > 7
 READ_PAR_DATA(icc,    huff_offset[table_idx],    0, ps->icc_par[e][b] > 7U)
 READ_PAR_DATA(ipdopd,                      0, 0x07, 0)
 
-static int ps_extension(GetBitContext *gb, PSContext *ps, int ps_extension_id)
+static int ps_read_extension_data(GetBitContext *gb, PSContext *ps, int ps_extension_id)
 {
     int e;
     int count = get_bits_count(gb);
@@ -128,9 +128,9 @@ static int ps_extension(GetBitContext *gb, PSContext *ps, int ps_extension_id)
     if (ps->enable_ipdopd) {
         for (e = 0; e < ps->num_env; e++) {
             int dt = get_bits1(gb);
-            ipdopd_data(NULL, gb, ps, ps->ipd_par, dt ? huff_ipd_dt : huff_ipd_df, e, dt);
+            read_ipdopd_data(NULL, gb, ps, ps->ipd_par, dt ? huff_ipd_dt : huff_ipd_df, e, dt);
             dt = get_bits1(gb);
-            ipdopd_data(NULL, gb, ps, ps->opd_par, dt ? huff_opd_dt : huff_opd_df, e, dt);
+            read_ipdopd_data(NULL, gb, ps, ps->opd_par, dt ? huff_opd_dt : huff_opd_df, e, dt);
         }
     }
     skip_bits1(gb);      //reserved_ps
@@ -196,7 +196,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
     if (ps->enable_iid) {
         for (e = 0; e < ps->num_env; e++) {
             int dt = get_bits1(gb);
-            if (iid_data(avctx, gb, ps, ps->iid_par, huff_iid[2*dt+ps->iid_quant], e, dt))
+            if (read_iid_data(avctx, gb, ps, ps->iid_par, huff_iid[2*dt+ps->iid_quant], e, dt))
                 goto err;
         }
     } else
@@ -205,7 +205,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
     if (ps->enable_icc)
         for (e = 0; e < ps->num_env; e++) {
             int dt = get_bits1(gb);
-            if (icc_data(avctx, gb, ps, ps->icc_par, dt ? huff_icc_dt : huff_icc_df, e, dt))
+            if (read_icc_data(avctx, gb, ps, ps->icc_par, dt ? huff_icc_dt : huff_icc_df, e, dt))
                 goto err;
         }
     else
@@ -219,7 +219,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
         cnt *= 8;
         while (cnt > 7) {
             int ps_extension_id = get_bits(gb, 2);
-            cnt -= 2 + ps_extension(gb, ps, ps_extension_id);
+            cnt -= 2 + ps_read_extension_data(gb, ps, ps_extension_id);
         }
         if (cnt < 0) {
             av_log(avctx, AV_LOG_ERROR, "ps extension overflow %d", cnt);
