@@ -521,7 +521,6 @@ OBJS-$(CONFIG_WEBM_MUXER)              += xiph.o mpeg4audio.o \
 OBJS-$(CONFIG_LIBDIRAC_DECODER)           += libdiracdec.o
 OBJS-$(CONFIG_LIBDIRAC_ENCODER)           += libdiracenc.o libdirac_libschro.o
 OBJS-$(CONFIG_LIBFAAC_ENCODER)            += libfaac.o
-OBJS-$(CONFIG_LIBFAAD_DECODER)            += libfaad.o
 OBJS-$(CONFIG_LIBGSM_DECODER)             += libgsm.o
 OBJS-$(CONFIG_LIBGSM_ENCODER)             += libgsm.o
 OBJS-$(CONFIG_LIBGSM_MS_DECODER)          += libgsm.o
