@@ -12,6 +12,7 @@ version <next>:
 - Demuxer for On2's IVF format
 - Pictor/PC Paint decoder
 - HE-AAC v2 decoder
+- libfaad2 wrapper removed
 
 
 
