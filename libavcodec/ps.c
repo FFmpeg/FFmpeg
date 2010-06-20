@@ -27,7 +27,9 @@
 #include "ps_tablegen.h"
 #include "psdata.c"
 
-#define PS_BASELINE 0
+#define PS_BASELINE 0  //< Operate in Baseline PS mode
+                       //< Baseline implies 10 or 20 stereo bands,
+                       //< mixing mode A, and no ipd/opd
 
 #define numQMFSlots 32 //numTimeSlots * RATE
 
