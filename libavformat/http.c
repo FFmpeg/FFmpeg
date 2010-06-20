@@ -53,7 +53,6 @@ typedef struct {
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
                         const char *auth, int *new_location);
-static int http_write(URLContext *h, const uint8_t *buf, int size);
 
 void ff_http_set_headers(URLContext *h, const char *headers)
 {
@@ -323,7 +322,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              authstr ? authstr : "");
 
     av_freep(&authstr);
-    if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
+    if (url_write(s->hd, s->buffer, strlen(s->buffer)) < 0)
         return AVERROR(EIO);
 
     /* init input buffer */
