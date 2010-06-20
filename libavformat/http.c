@@ -152,7 +152,6 @@ static int http_open(URLContext *h, const char *uri, int flags)
     }
     h->priv_data = s;
     s->filesize = -1;
-    s->chunksize = -1;
     s->is_chunked = 1;
     s->off = 0;
     s->init = 0;
@@ -331,6 +330,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     s->line_count = 0;
     s->off = 0;
     s->filesize = -1;
+    s->chunksize = -1;
     if (post) {
         /* always use chunked encoding for upload data */
         s->chunksize = 0;
