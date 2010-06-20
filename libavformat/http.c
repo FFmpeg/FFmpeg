@@ -78,11 +78,6 @@ void ff_http_set_headers(URLContext *h, const char *headers)
     av_strlcpy(s->headers, headers, sizeof(s->headers));
 }
 
-void ff_http_set_chunked_transfer_encoding(URLContext *h, int is_chunked)
-{
-    ((HTTPContext*)h->priv_data)->chunksize = is_chunked ? 0 : -1;
-}
-
 void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
 {
     memcpy(&((HTTPContext*)dest->priv_data)->auth_state,
