@@ -26,6 +26,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/dict.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "avio_internal.h"
 
@@ -1483,7 +1484,7 @@ redirect:
                  "Expires: Sun, 9 Jan 1972 00:00:00 GMT\r\n",
                  sessioncookie);
         ff_http_set_headers(rt->rtsp_hd_out, headers);
-        ff_http_set_chunked_transfer_encoding(rt->rtsp_hd_out, 0);
+        av_opt_set(rt->rtsp_hd_out->priv_data, "chunksize", "-1", 0);
 
         /* Initialize the authentication state for the POST session. The HTTP
          * protocol implementation doesn't properly handle multi-pass
