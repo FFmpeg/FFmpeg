@@ -926,6 +926,7 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
     int offset;
 #if FRAC_BITS <= 15
     int32_t tmp[32];
+    int j;
 #endif
 
     offset = *synth_buf_offset;
