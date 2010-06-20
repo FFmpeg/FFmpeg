@@ -949,20 +949,20 @@ static void stereo_processing(PSContext *ps, float (*l)[32][2], float (*r)[32][2
                 h21r += h21r_step;
                 h22r += h22r_step;
                 if (!PS_BASELINE && ps->enable_ipdopd) {
-                h11i += h11i_step;
-                h12i += h12i_step;
-                h21i += h21i_step;
-                h22i += h22i_step;
+                    h11i += h11i_step;
+                    h12i += h12i_step;
+                    h21i += h21i_step;
+                    h22i += h22i_step;
 
-                l[k][n][0] = h11r*l_re + h21r*r_re - h11i*l_im - h21i*r_im;
-                l[k][n][1] = h11r*l_im + h21r*r_im + h11i*l_re + h21i*r_re;
-                r[k][n][0] = h12r*l_re + h22r*r_re - h12i*l_im - h22i*r_im;
-                r[k][n][1] = h12r*l_im + h22r*r_im + h12i*l_re + h22i*r_re;
+                    l[k][n][0] = h11r*l_re + h21r*r_re - h11i*l_im - h21i*r_im;
+                    l[k][n][1] = h11r*l_im + h21r*r_im + h11i*l_re + h21i*r_re;
+                    r[k][n][0] = h12r*l_re + h22r*r_re - h12i*l_im - h22i*r_im;
+                    r[k][n][1] = h12r*l_im + h22r*r_im + h12i*l_re + h22i*r_re;
                 } else {
-                l[k][n][0] = h11r*l_re + h21r*r_re;
-                l[k][n][1] = h11r*l_im + h21r*r_im;
-                r[k][n][0] = h12r*l_re + h22r*r_re;
-                r[k][n][1] = h12r*l_im + h22r*r_im;
+                    l[k][n][0] = h11r*l_re + h21r*r_re;
+                    l[k][n][1] = h11r*l_im + h21r*r_im;
+                    r[k][n][0] = h12r*l_re + h22r*r_re;
+                    r[k][n][1] = h12r*l_im + h22r*r_im;
                 }
             }
         }
