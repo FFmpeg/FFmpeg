@@ -37,7 +37,6 @@
 typedef struct {
     int    start;
     int    enable_iid;
-    int    iid_mode;
     int    iid_quant;
     int    nr_iid_par;
     int    nr_ipdopd_par;

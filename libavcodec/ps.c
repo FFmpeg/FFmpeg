@@ -156,15 +156,15 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
     if (header) {     //enable_ps_header
         ps->enable_iid = get_bits1(gb);
         if (ps->enable_iid) {
-            ps->iid_mode = get_bits(gb, 3);
-            if (ps->iid_mode > 5) {
+            int iid_mode = get_bits(gb, 3);
+            if (iid_mode > 5) {
                 av_log(avctx, AV_LOG_ERROR, "iid_mode %d is reserved.\n",
-                       ps->iid_mode);
+                       iid_mode);
                 goto err;
             }
-            ps->nr_iid_par    = nr_iidicc_par_tab[ps->iid_mode];
-            ps->iid_quant     = ps->iid_mode > 2;
-            ps->nr_ipdopd_par = nr_iidopd_par_tab[ps->iid_mode];
+            ps->nr_iid_par    = nr_iidicc_par_tab[iid_mode];
+            ps->iid_quant     = iid_mode > 2;
+            ps->nr_ipdopd_par = nr_iidopd_par_tab[iid_mode];
         }
         ps->enable_icc = get_bits1(gb);
         if (ps->enable_icc) {
