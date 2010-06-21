@@ -2006,13 +2006,13 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     while ((elem_type = get_bits(&gb, 3)) != TYPE_END) {
         elem_id = get_bits(&gb, 4);
 
-        if (elem_type < TYPE_DSE && !(che=get_che(ac, elem_type, elem_id))) {
+        if (elem_type < TYPE_DSE) {
+        if (!(che=get_che(ac, elem_type, elem_id))) {
             av_log(ac->avctx, AV_LOG_ERROR, "channel element %d.%d is not allocated\n", elem_type, elem_id);
             return -1;
         }
-
-        if (elem_type < TYPE_DSE)
             samples = 1024;
+        }
 
         switch (elem_type) {
 
