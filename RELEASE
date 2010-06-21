@@ -7,9 +7,9 @@ General notes
 -------------
 
 This release features a lot of improvements that are relevant for HTML5 video.
-The H.264 and Theora decoders are now significantly faster, the vorbis decoder
+The H.264 and Theora decoders are now significantly faster, the Vorbis decoder
 has seen important updates and this release supports Google's newly released
-libvpx library for the VP8 codec and WEBM container.
+libvpx library for the VP8 codec and WebM container.
 
 Other important changes are additions of decoders including, but not limited to,
 Intel Indeo 5, WMA Pro, WMA Voice and HE-AAC.
