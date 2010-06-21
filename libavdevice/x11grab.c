@@ -260,7 +260,7 @@ paint_mouse_pointer(XImage *image, struct x11_grab *s)
     int to_line, to_column;
     int image_addr, xcim_addr;
 
-    xcim = XFixesGetCursorImage(dpy);;
+    xcim = XFixesGetCursorImage(dpy);
 
     x = xcim->x - xcim->xhot;
     y = xcim->y - xcim->yhot;
