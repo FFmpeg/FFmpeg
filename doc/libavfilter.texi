@@ -254,41 +254,38 @@ faster due to better use of the memory cache.
 
 @section unsharp
 
-Sharpen or blur the input video. It accepts the following parameters:
+Sharpen or blur the input video.
 
-@multitable @columnfractions .2 .5 .1 .1 .1
-@headitem Name @tab Description @tab Min @tab Max @tab Default
-@item @var{luma_msize_x}
-@tab Luma matrix horizontal size
-@tab 3
-@tab 13
-@tab 5
-@item @var{luma_msize_y}
-@tab Luma matrix vertical size
-@tab 3
-@tab 13
-@tab 5
-@item @var{luma_amount}
-@tab Luma effect strength
-@tab -2.0
-@tab 5.0
-@tab 1.0
-@item @var{chroma_msize_x}
-@tab Chroma matrix horizontal size
-@tab 3
-@tab 13
-@tab 0
-@item @var{chroma_msize_y}
-@tab Chroma matrix vertical size
-@tab 3
-@tab 13
-@tab 0
-@item @var{chroma_amount}
-@tab Chroma effect strength
-@tab -2.0
-@tab 5.0
-@tab 0.0
-@end multitable
+It accepts the following parameters:
+@var{luma_msize_x}:@var{luma_msize_y}:@var{luma_amount}:@var{chroma_msize_x}:@var{chroma_msize_y}:@var{chroma_amount}
+
+@table @option
+
+@item luma_msize_x
+Set the luma matrix horizontal size. It can be an integer between 3
+and 13, default value is 5.
+
+@item luma_msize_y
+Set the luma matrix vertical size. It can be an integer between 3
+and 13, default value is 5.
+
+@item luma_amount
+Set the luma effect strength. It can be a float number between -2.0
+and 5.0, default value is 1.0.
+
+@item chroma_msize_x
+Set the chroma matrix horizontal size. It can be an integer between 3
+and 13, default value is 0.
+
+@item chroma_msize_y
+Set the chroma matrix vertical size. It can be an integer between 3
+and 13, default value is 0.
+
+@item chroma_amount
+Set the chroma effect strength. It can be a float number between -2.0
+and 5.0, default value is 0.0.
+
+@end table
 
 Negative values for the amount will blur the input video, while positive
 values will sharpen. All parameters are optional and default to the
