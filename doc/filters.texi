@@ -154,7 +154,10 @@ faster due to better use of the memory cache.
 
 @section unsharp
 
-Sharpen or blur the input video. It accepts the following parameters:
+Sharpen or blur the input video.
+
+It accepts the following parameters:
+@var{luma_msize_x}:@var{luma_msize_y}:@var{luma_amount}:@var{chroma_msize_x}:@var{chroma_msize_y}:@var{chroma_amount}
 
 Negative values for the amount will blur the input video, while positive
 values will sharpen. All parameters are optional and default to the
