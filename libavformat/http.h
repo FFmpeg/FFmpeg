@@ -50,4 +50,15 @@ void ff_http_set_headers(URLContext *h, const char *headers);
  */
 void ff_http_set_chunked_transfer_encoding(URLContext *h, int is_chunked);
 
+/**
+ * Initialize the authentication state based on another HTTP URLContext.
+ * This can be used to pre-initialize the authentication parameters if
+ * they are known beforehand, to avoid having to do an initial failing
+ * request just to get the parameters.
+ *
+ * @param dest URL context whose authentication state gets updated
+ * @param src URL context whose authentication state gets copied
+ */
+void ff_http_init_auth_state(URLContext *dest, const URLContext *src);
+
 #endif /* AVFORMAT_HTTP_H */
