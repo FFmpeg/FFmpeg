@@ -108,6 +108,9 @@ documentation: $(addprefix doc/, developer.html faq.html general.html libavfilte
 
 $(HTMLPAGES) $(MANPAGES): doc/fftools-common-opts.texi
 
+doc/ffmpeg.pod doc/ffmpeg-doc.html: doc/filters.texi
+doc/ffplay.pod doc/ffplay-doc.html: doc/filters.texi
+
 doc/%.html: TAG = HTML
 doc/%.html: doc/%.texi
 	$(M)cd doc && texi2html -monolithic -number $(<:doc/%=%)

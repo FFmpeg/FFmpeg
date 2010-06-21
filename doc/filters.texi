@@ -1,0 +1,243 @@
+@chapter Video Filters
+@c man begin VIDEO FILTERS
+
+When you configure your FFmpeg build, you can disable any of the
+existing filters using --disable-filters.
+The configure output will show the video filters included in your
+build.
+
+Below is a description of the currently available video filters.
+
+@section crop
+
+Crop the input video to @var{x}:@var{y}:@var{width}:@var{height}.
+
+@example
+./ffmpeg -i in.avi -vf "crop=0:0:0:240" out.avi
+@end example
+
+@var{x} and @var{y} specify the position of the top-left corner of the
+output (non-cropped) area.
+
+The default value of @var{x} and @var{y} is 0.
+
+The @var{width} and @var{height} parameters specify the width and height
+of the output (non-cropped) area.
+
+A value of 0 is interpreted as the maximum possible size contained in
+the area delimited by the top-left corner at position x:y.
+
+For example the parameters:
+
+@example
+"crop=100:100:0:0"
+@end example
+
+will delimit the rectangle with the top-left corner placed at position
+100:100 and the right-bottom corner corresponding to the right-bottom
+corner of the input image.
+
+The default value of @var{width} and @var{height} is 0.
+
+@section format
+
+Convert the input video to one of the specified pixel formats.
+Libavfilter will try to pick one that is supported for the input to
+the next filter.
+
+The filter accepts a list of pixel format names, separated by ``:'',
+for example ``yuv420p:monow:rgb24''.
+
+The following command:
+
+@example
+./ffmpeg -i in.avi -vf "format=yuv420p" out.avi
+@end example
+
+will convert the input video to the format ``yuv420p''.
+
+@section noformat
+
+Force libavfilter not to use any of the specified pixel formats for the
+input to the next filter.
+
+The filter accepts a list of pixel format names, separated by ``:'',
+for example ``yuv420p:monow:rgb24''.
+
+The following command:
+
+@example
+./ffmpeg -i in.avi -vf "noformat=yuv420p, vflip" out.avi
+@end example
+
+will make libavfilter use a format different from ``yuv420p'' for the
+input to the vflip filter.
+
+@section null
+
+Pass the source unchanged to the output.
+
+@section pad
+
+Add paddings to the input image, and places the original input at the
+given coordinates @var{x}, @var{y}.
+
+It accepts the following parameters:
+@var{width}:@var{height}:@var{x}:@var{y}:@var{color}.
+
+Follows the description of the accepted parameters.
+
+@table @option
+@item width, height
+
+Specify the size of the output image with the paddings added. If the
+value for @var{width} or @var{height} is 0, the corresponding input size
+is used for the output.
+
+The default value of @var{width} and @var{height} is 0.
+
+@item x, y
+
+Specify the offsets where to place the input image in the padded area
+with respect to the top/left border of the output image.
+
+The default value of @var{x} and @var{y} is 0.
+
+@item color
+
+Specify the color of the padded area, it can be the name of a color
+(case insensitive match) or a 0xRRGGBB[AA] sequence.
+
+The default value of @var{color} is ``black''.
+
+@end table
+
+@section scale
+
+Scale the input video to @var{width}:@var{height} and/or convert the image format.
+
+For example the command:
+
+@example
+./ffmpeg -i in.avi -vf "scale=200:100" out.avi
+@end example
+
+will scale the input video to a size of 200x100.
+
+If the input image format is different from the format requested by
+the next filter, the scale filter will convert the input to the
+requested format.
+
+If the value for @var{width} or @var{height} is 0, the respective input
+size is used for the output.
+
+If the value for @var{width} or @var{height} is -1, the scale filter will
+use, for the respective output size, a value that maintains the aspect
+ratio of the input image.
+
+The default value of @var{width} and @var{height} is 0.
+
+@section slicify
+
+Pass the images of input video on to next video filter as multiple
+slices.
+
+@example
+./ffmpeg -i in.avi -vf "slicify=32" out.avi
+@end example
+
+The filter accepts the slice height as parameter. If the parameter is
+not specified it will use the default value of 16.
+
+Adding this in the beginning of filter chains should make filtering
+faster due to better use of the memory cache.
+
+@section unsharp
+
+Sharpen or blur the input video. It accepts the following parameters:
+
+Negative values for the amount will blur the input video, while positive
+values will sharpen. All parameters are optional and default to the
+equivalent of the string '5:5:1.0:0:0:0.0'.
+
+@table @option
+
+@item luma_msize_x
+Set the luma matrix horizontal size. It can be an integer between 3
+and 13, default value is 5.
+
+@item luma_msize_y
+Set the luma matrix vertical size. It can be an integer between 3
+and 13, default value is 5.
+
+@item luma_amount
+Set the luma effect strength. It can be a float number between -2.0
+and 5.0, default value is 1.0.
+
+@item chroma_msize_x
+Set the chroma matrix horizontal size. It can be an integer between 3
+and 13, default value is 0.
+
+@item chroma_msize_y
+Set the chroma matrix vertical size. It can be an integer between 3
+and 13, default value is 0.
+
+@item luma_amount
+Set the chroma effect strength. It can be a float number between -2.0
+and 5.0, default value is 0.0.
+
+@end table
+
+@example
+# Strong luma sharpen effect parameters
+unsharp=7:7:2.5
+
+# Strong blur of both luma and chroma parameters
+unsharp=7:7:-2:7:7:-2
+
+# Use the default values with @command{ffmpeg}
+./ffmpeg -i in.avi -vf "unsharp" out.mp4
+@end example
+
+@section vflip
+
+Flip the input video vertically.
+
+@example
+./ffmpeg -i in.avi -vf "vflip" out.avi
+@end example
+
+@c man end VIDEO FILTERS
+
+@chapter Video Sources
+@c man begin VIDEO SOURCES
+
+Below is a description of the currently available video sources.
+
+@section nullsrc
+
+Null video source, never return images. It is mainly useful as a
+template and to be employed in analysis / debugging tools.
+
+It accepts as optional parameter a string of the form
+@var{width}:@var{height}, where @var{width} and @var{height} specify the size of
+the configured source.
+
+The default values of @var{width} and @var{height} are respectively 352
+and 288 (corresponding to the CIF size format).
+
+@c man end VIDEO SOURCES
+
+@chapter Video Sinks
+@c man begin VIDEO SINKS
+
+Below is a description of the currently available video sinks.
+
+@section nullsink
+
+Null video sink, do absolutely nothing with the input video. It is
+mainly useful as a template and to be employed in analysis / debugging
+tools.
+
+@c man end VIDEO SINKS
+

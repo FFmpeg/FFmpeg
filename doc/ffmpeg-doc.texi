@@ -290,6 +290,12 @@ Add a new video stream to the current output stream.
 @item -vlang @var{code}
 Set the ISO 639 language code (3 letters) of the current video stream.
 
+@item -vf @var{filter_graph}
+@var{filter_graph} is a description of the filter graph to apply to
+the input video.
+Use the option "-filters" to show all the available filters (including
+also sources and sinks).
+
 @end table
 
 @section Advanced Video Options
@@ -945,6 +951,8 @@ The @code{-newvideo}, @code{-newaudio} and @code{-newsubtitle}
 options have to be specified immediately after the name of the output
 file to which you want to add them.
 @c man end EXAMPLES
+
+@include filters.texi
 
 @ignore
 
