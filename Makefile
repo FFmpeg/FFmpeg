@@ -13,6 +13,7 @@ PROGS      := $(addsuffix   $(EXESUF), $(PROGS-yes))
 PROGS_G     = $(addsuffix _g$(EXESUF), $(PROGS-yes))
 OBJS        = $(addsuffix .o,          $(PROGS-yes)) cmdutils.o
 MANPAGES    = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
+HTMLPAGES   = $(addprefix doc/, $(addsuffix -doc.html, $(PROGS-yes)))
 TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws pktdumper probetest qt-faststart trasher))
 HOSTPROGS   = $(addprefix tests/, audiogen videogen rotozoom tiny_psnr)
 
@@ -20,6 +21,7 @@ BASENAMES   = ffmpeg ffplay ffprobe ffserver
 ALLPROGS    = $(addsuffix   $(EXESUF), $(BASENAMES))
 ALLPROGS_G  = $(addsuffix _g$(EXESUF), $(BASENAMES))
 ALLMANPAGES = $(addsuffix .1, $(BASENAMES))
+ALLHTMLPAGES= $(addsuffix -doc.html, $(BASENAMES))
 
 FFLIBS-$(CONFIG_AVDEVICE) += avdevice
 FFLIBS-$(CONFIG_AVFILTER) += avfilter
@@ -101,9 +103,10 @@ version.h .version:
 
 alltools: $(TOOLS)
 
-documentation: $(addprefix doc/, developer.html faq.html ffmpeg-doc.html \
-                                 ffplay-doc.html ffprobe-doc.html ffserver-doc.html \
-                                 general.html libavfilter.html $(ALLMANPAGES))
+documentation: $(addprefix doc/, developer.html faq.html general.html libavfilter.html \
+                                 $(ALLHTMLPAGES) $(ALLMANPAGES))
+
+$(HTMLPAGES) $(MANPAGES): doc/fftools-common-opts.texi
 
 doc/%.html: TAG = HTML
 doc/%.html: doc/%.texi
