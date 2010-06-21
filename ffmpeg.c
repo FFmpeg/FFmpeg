@@ -1514,7 +1514,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
     void *buffer_to_free;
     static unsigned int samples_size= 0;
     AVSubtitle subtitle, *subtitle_to_free;
-    int got_subtitle;
 #if CONFIG_AVFILTER
     int frame_available;
 #endif
@@ -1609,10 +1608,10 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     break;
             case AVMEDIA_TYPE_SUBTITLE:
                 ret = avcodec_decode_subtitle2(ist->st->codec,
-                                               &subtitle, &got_subtitle, &avpkt);
+                                               &subtitle, &got_picture, &avpkt);
                 if (ret < 0)
                     goto fail_decode;
-                if (!got_subtitle) {
+                if (!got_picture) {
                     goto discard_packet;
                 }
                 subtitle_to_free = &subtitle;
