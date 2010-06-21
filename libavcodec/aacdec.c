@@ -1985,7 +1985,7 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     enum RawDataBlockType elem_type, elem_type_prev = TYPE_END;
     int err, elem_id, data_size_tmp;
     int buf_consumed;
-    int samples = 1024, multiplier;
+    int samples = 0, multiplier;
     int buf_offset;
 
     init_get_bits(&gb, buf, buf_size * 8);
@@ -2010,6 +2010,9 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
             av_log(ac->avctx, AV_LOG_ERROR, "channel element %d.%d is not allocated\n", elem_type, elem_id);
             return -1;
         }
+
+        if (elem_type < TYPE_DSE)
+            samples = 1024;
 
         switch (elem_type) {
 
@@ -2093,6 +2096,7 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     }
     *data_size = data_size_tmp;
 
+    if (samples)
     ac->dsp.float_to_int16_interleave(data, (const float **)ac->output_data, samples, avctx->channels);
 
     if (ac->output_configured)
