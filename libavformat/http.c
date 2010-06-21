@@ -48,7 +48,6 @@ typedef struct {
     HTTPAuthState auth_state;
     int init;
     unsigned char headers[BUFFER_SIZE];
-    int is_chunked;
 } HTTPContext;
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
@@ -67,7 +66,7 @@ void ff_http_set_headers(URLContext *h, const char *headers)
 
 void ff_http_set_chunked_transfer_encoding(URLContext *h, int is_chunked)
 {
-    ((HTTPContext*)h->priv_data)->is_chunked = is_chunked;
+    ((HTTPContext*)h->priv_data)->chunksize = is_chunked ? 0 : -1;
 }
 
 /* return non zero if error */
@@ -152,7 +151,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     }
     h->priv_data = s;
     s->filesize = -1;
-    s->is_chunked = 1;
+    s->chunksize = 0; /* Default to chunked POSTs */
     s->off = 0;
     s->init = 0;
     s->hd = NULL;
@@ -316,7 +315,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              "\r\n",
              post ? "POST" : "GET",
              path,
-             post && s->is_chunked ? "Transfer-Encoding: chunked\r\n" : "",
+             post && s->chunksize >= 0 ? "Transfer-Encoding: chunked\r\n" : "",
              headers,
              authstr ? authstr : "");
 
@@ -330,16 +329,14 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     s->line_count = 0;
     s->off = 0;
     s->filesize = -1;
-    s->chunksize = -1;
     if (post) {
-        /* always use chunked encoding for upload data */
-        s->chunksize = 0;
         /* Pretend that it did work. We didn't read any header yet, since
          * we've still to send the POST data, but the code calling this
          * function will check http_code after we return. */
         s->http_code = 200;
         return 0;
     }
+    s->chunksize = -1;
 
     /* wait for header */
     for(;;) {
@@ -442,16 +439,14 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
      * signal EOF */
     if (size > 0) {
         /* upload data using chunked encoding */
-        if(s->is_chunked) {
             snprintf(temp, sizeof(temp), "%x\r\n", size);
             if ((ret = url_write(s->hd, temp, strlen(temp))) < 0)
                 return ret;
-        }
 
         if ((ret = url_write(s->hd, buf, size)) < 0)
             return ret;
 
-        if (s->is_chunked && (ret = url_write(s->hd, crlf, sizeof(crlf) - 1)) < 0)
+        if ((ret = url_write(s->hd, crlf, sizeof(crlf) - 1)) < 0)
             return ret;
     }
     return size;
