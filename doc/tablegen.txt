@@ -12,6 +12,7 @@ the tables as a header file using the tableprint.h helpers.
 Both of these files will be compiled for the host system, so to avoid
 breakage with cross-compilation neither of them may include, directly
 or indirectly, config.h or avconfig.h.
+This means that e.g. libavutil/mathematics.h is ok but libavutil/libm.h is not.
 Due to this, the .c file or Makefile may have to provide additional defines
 or stubs, though if possible this should be avoided.
 In particular, CONFIG_HARDCODED_TABLES should always be defined to 0.

@@ -24,22 +24,13 @@
 #define PS_TABLEGEN_H
 
 #include <stdint.h>
-#include <math.h>
 
 #if CONFIG_HARDCODED_TABLES
 #define ps_tableinit()
 #include "libavcodec/ps_tables.h"
 #else
 #include "../libavutil/common.h"
-#ifndef M_SQRT1_2
-#define M_SQRT1_2      0.70710678118654752440  /* 1/sqrt(2) */
-#endif
-#ifndef M_PI
-#define M_PI           3.14159265358979323846  /* pi */
-#endif
-#ifndef M_SQRT2
-#define M_SQRT2        1.41421356237309504880  /* sqrt(2) */
-#endif
+#include "../libavutil/mathematics.h"
 #define NR_ALLPASS_BANDS20 30
 #define NR_ALLPASS_BANDS34 50
 #define PS_AP_LINKS 3
