@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <string.h>
 
 #ifdef __MINGW32__
 #define fseeko(x,y,z)  fseeko64(x,y,z)
@@ -96,6 +97,11 @@ int main(int argc, char *argv[])
     if (argc != 3) {
         printf ("Usage: qt-faststart <infile.mov> <outfile.mov>\n");
         return 0;
+    }
+
+    if (!strcmp(argv[1], argv[2])) {
+        fprintf(stderr, "input and output files need to be different\n");
+        return 1;
     }
 
     infile = fopen(argv[1], "rb");
