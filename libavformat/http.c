@@ -439,7 +439,7 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
      * signal EOF */
     if (size > 0) {
         /* upload data using chunked encoding */
-            snprintf(temp, sizeof(temp), "%x\r\n", size);
+        snprintf(temp, sizeof(temp), "%x\r\n", size);
 
         if ((ret = url_write(s->hd, temp, strlen(temp))) < 0 ||
             (ret = url_write(s->hd, buf, size)) < 0 ||
