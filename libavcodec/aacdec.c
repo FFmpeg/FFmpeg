@@ -2098,7 +2098,7 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     *data_size = data_size_tmp;
 
     if (samples)
-    ac->dsp.float_to_int16_interleave(data, (const float **)ac->output_data, samples, avctx->channels);
+        ac->dsp.float_to_int16_interleave(data, (const float **)ac->output_data, samples, avctx->channels);
 
     if (ac->output_configured)
         ac->output_configured = OC_LOCKED;
