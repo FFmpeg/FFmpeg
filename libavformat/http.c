@@ -434,7 +434,7 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
         return AVERROR(EIO);
 
     if (s->chunksize == -1) {
-        /* headers are sent without any special encoding */
+        /* non-chunked data is sent without any special encoding */
         return url_write(s->hd, buf, size);
     }
 
