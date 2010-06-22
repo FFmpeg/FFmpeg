@@ -109,7 +109,7 @@ static void pred4x4_vertical_vp8_c(uint8_t *src, const uint8_t *topright, int st
     const int lt= src[-1-1*stride];
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
-    uint32_t v = PACK4x8((lt + 2*t0 + t1 + 2) >> 2,
+    uint32_t v = PACK4UINT8((lt + 2*t0 + t1 + 2) >> 2,
                          (t0 + 2*t1 + t2 + 2) >> 2,
                          (t1 + 2*t2 + t3 + 2) >> 2,
                          (t2 + 2*t3 + t4 + 2) >> 2);
