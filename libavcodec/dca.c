@@ -341,9 +341,9 @@ static av_cold void dca_init_vlcs(void)
                  tmode_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
     }
 
-    for(i = 0; i < 10; i++)
-        for(j = 0; j < 7; j++){
-            if(!bitalloc_codes[i][j]) break;
+    for (i = 0; i < 10; i++)
+        for (j = 0; j < 7; j++){
+            if (!bitalloc_codes[i][j]) break;
             dca_smpl_bitalloc[i+1].offset = bitalloc_offsets[i];
             dca_smpl_bitalloc[i+1].wrap = 1 + (j > 4);
             dca_smpl_bitalloc[i+1].vlc[j].table = &dca_table[dca_vlc_offs[c]];
@@ -491,7 +491,7 @@ static int dca_parse_frame_header(DCAContext * s)
 
     /* FIXME: channels mixing levels */
     s->output = s->amode;
-    if(s->lfe) s->output |= DCA_LFE;
+    if (s->lfe) s->output |= DCA_LFE;
 
 #ifdef TRACE
     av_log(s->avctx, AV_LOG_DEBUG, "frame type: %i\n", s->frame_type);
@@ -543,7 +543,7 @@ static inline int get_scale(GetBitContext *gb, int level, int value)
    if (level < 5) {
        /* huffman encoded */
        value += get_bitalloc(gb, &dca_scalefactor, level);
-   } else if(level < 8)
+   } else if (level < 8)
        value = get_bits(gb, level + 1);
    return value;
 }
@@ -672,7 +672,7 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
 
     /* Stereo downmix coefficients */
     if (!base_channel && s->prim_channels > 2) {
-        if(s->downmix) {
+        if (s->downmix) {
             for (j = base_channel; j < s->prim_channels; j++) {
                 s->downmix_coef[j][0] = get_bits(&s->gb, 7);
                 s->downmix_coef[j][1] = get_bits(&s->gb, 7);
@@ -888,7 +888,7 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
     samples[i+256] = t * coef[0][1] + samples[i+256] * coef[1][1] + samples[i+512] * coef[2][1];
 
 #define DOWNMIX_TO_STEREO(op1, op2) \
-    for(i = 0; i < 256; i++){ \
+    for (i = 0; i < 256; i++){ \
         op1 \
         op2 \
     }
@@ -900,7 +900,7 @@ static void dca_downmix(float *samples, int srcfmt,
     float t;
     float coef[DCA_PRIM_CHANNELS_MAX][2];
 
-    for(i=0; i<DCA_PRIM_CHANNELS_MAX; i++) {
+    for (i=0; i<DCA_PRIM_CHANNELS_MAX; i++) {
         coef[i][0] = dca_downmix_coeffs[downmix_coef[i][0]];
         coef[i][1] = dca_downmix_coeffs[downmix_coef[i][1]];
     }
@@ -1000,15 +1000,15 @@ static int dca_subsubframe(DCAContext * s, int base_channel, int block_index)
             /*
              * Extract bits from the bit stream
              */
-            if(!abits){
+            if (!abits){
                 memset(subband_samples[k][l], 0, 8 * sizeof(subband_samples[0][0][0]));
             } else {
                 /* Deal with transients */
                 int sfi = s->transition_mode[k][l] && subsubframe >= s->transition_mode[k][l];
                 float rscale = quant_step_size * s->scale_factor[k][l][sfi] * s->scalefactor_adj[k][sel];
 
-                if(abits >= 11 || !dca_smpl_bitalloc[abits].vlc[sel].table){
-                    if(abits <= 7){
+                if (abits >= 11 || !dca_smpl_bitalloc[abits].vlc[sel].table){
+                    if (abits <= 7){
                         /* Block code */
                         int block_code1, block_code2, size, levels;
 
@@ -1139,17 +1139,17 @@ static int dca_subframe_footer(DCAContext * s, int base_channel)
 
     /* presumably optional information only appears in the core? */
     if (!base_channel) {
-    if (s->timestamp)
-        get_bits(&s->gb, 32);
+        if (s->timestamp)
+            get_bits(&s->gb, 32);
 
-    if (s->aux_data)
-        aux_data_count = get_bits(&s->gb, 6);
+        if (s->aux_data)
+            aux_data_count = get_bits(&s->gb, 6);
 
-    for (i = 0; i < aux_data_count; i++)
-        get_bits(&s->gb, 8);
+        for (i = 0; i < aux_data_count; i++)
+            get_bits(&s->gb, 8);
 
-    if (s->crc_present && (s->downmix || s->dynrange))
-        get_bits(&s->gb, 16);
+        if (s->crc_present && (s->downmix || s->dynrange))
+            get_bits(&s->gb, 16);
     }
 
     return 0;
@@ -1217,7 +1217,7 @@ static int dca_convert_bitstream(const uint8_t * src, int src_size, uint8_t * ds
     uint16_t *sdst = (uint16_t *) dst;
     PutBitContext pb;
 
-    if((unsigned)src_size > (unsigned)max_size) {
+    if ((unsigned)src_size > (unsigned)max_size) {
 //        av_log(NULL, AV_LOG_ERROR, "Input frame size larger then DCA_MAX_FRAME_SIZE!\n");
 //        return -1;
         src_size = max_size;
@@ -1357,7 +1357,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
             s->channel_order_tab[s->prim_channels - 1] < 0)
             return -1;
 
-        if(avctx->request_channels == 2 && s->prim_channels > 2) {
+        if (avctx->request_channels == 2 && s->prim_channels > 2) {
             channels = 2;
             s->output = DCA_STEREO;
             avctx->channel_layout = CH_LAYOUT_STEREO;
@@ -1376,7 +1376,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
     if (!avctx->channels)
         avctx->channels = channels;
 
-    if(*data_size < (s->sample_blocks / 8) * 256 * sizeof(int16_t) * channels)
+    if (*data_size < (s->sample_blocks / 8) * 256 * sizeof(int16_t) * channels)
         return -1;
     *data_size = 256 / 8 * s->sample_blocks * sizeof(int16_t) * channels;
 
@@ -1421,7 +1421,7 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
         s->samples_chanptr[i] = s->samples + i * 256;
     avctx->sample_fmt = SAMPLE_FMT_S16;
 
-    if(s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
+    if (s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
         s->add_bias = 385.0f;
         s->scale_bias = 1.0 / 32768.0;
     } else {
