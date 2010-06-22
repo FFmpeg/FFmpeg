@@ -2748,14 +2748,7 @@ static int http_receive_data(HTTPContext *c)
             for (i = 0; i < s->nb_streams; i++) {
                 AVStream *fst = feed->streams[i];
                 AVStream *st = s->streams[i];
-                memcpy(fst->codec, st->codec, sizeof(AVCodecContext));
-                if (fst->codec->extradata_size) {
-                    fst->codec->extradata = av_malloc(fst->codec->extradata_size);
-                    if (!fst->codec->extradata)
-                        goto fail;
-                    memcpy(fst->codec->extradata, st->codec->extradata,
-                           fst->codec->extradata_size);
-                }
+                avcodec_copy_context(fst->codec, st->codec);
             }
 
             av_close_input_stream(s);
