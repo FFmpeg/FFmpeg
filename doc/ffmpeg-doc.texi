@@ -99,7 +99,16 @@ Specifying a positive offset means that the corresponding
 streams are delayed by 'offset' seconds.
 
 @item -timestamp @var{time}
-Set the timestamp.
+Set the recording timestamp in the container.
+The syntax for @var{time} is:
+@example
+now|([(YYYY-MM-DD|YYYYMMDD)[T|t| ]]((HH[:MM[:SS[.m...]]])|(HH[MM[SS[.m...]]]))[Z|z])
+@end example
+If the value is "now" it takes the current time.
+Time is local time unless 'Z' or 'z' is appended, in which case it is
+interpreted as UTC.
+If the year-month-day part is not specified it takes the current
+year-month-day.
 
 @item -metadata @var{key}=@var{value}
 Set a metadata key/value pair.
