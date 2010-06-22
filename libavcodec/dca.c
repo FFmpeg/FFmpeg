@@ -223,8 +223,7 @@ typedef struct {
 
     int high_freq_vq[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];       ///< VQ encoded high frequency subbands
 
-    float lfe_data[2 * DCA_SUBSUBFRAMES_MAX * DCA_LFE_MAX *
-                   2 /*history */ ];    ///< Low frequency effect data
+    float lfe_data[2 * DCA_LFE_MAX * (DCA_BLOCKS_MAX + 4)];      ///< Low frequency effect data
     int lfe_scale_factor;
 
     /* Subband samples history (for ADPCM) */
@@ -326,13 +325,85 @@ static inline void get_array(GetBitContext *gb, int *dst, int len, int bits)
         *dst++ = get_bits(gb, bits);
 }
 
-static int dca_parse_frame_header(DCAContext * s)
+static int dca_parse_audio_coding_header(DCAContext * s)
 {
     int i, j;
     static const float adj_table[4] = { 1.0, 1.1250, 1.2500, 1.4375 };
     static const int bitlen[11] = { 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 };
     static const int thr[11] = { 0, 1, 3, 3, 3, 3, 7, 7, 7, 7, 7 };
 
+    s->total_channels    = get_bits(&s->gb, 3) + 1;
+    s->prim_channels     = s->total_channels;
+    if (s->prim_channels > DCA_PRIM_CHANNELS_MAX)
+        s->prim_channels = DCA_PRIM_CHANNELS_MAX;   /* We only support DTS core */
+
+
+    for (i = 0; i < s->prim_channels; i++) {
+        s->subband_activity[i] = get_bits(&s->gb, 5) + 2;
+        if (s->subband_activity[i] > DCA_SUBBANDS)
+            s->subband_activity[i] = DCA_SUBBANDS;
+    }
+    for (i = 0; i < s->prim_channels; i++) {
+        s->vq_start_subband[i] = get_bits(&s->gb, 5) + 1;
+        if (s->vq_start_subband[i] > DCA_SUBBANDS)
+            s->vq_start_subband[i] = DCA_SUBBANDS;
+    }
+    get_array(&s->gb, s->joint_intensity,     s->prim_channels, 3);
+    get_array(&s->gb, s->transient_huffman,   s->prim_channels, 2);
+    get_array(&s->gb, s->scalefactor_huffman, s->prim_channels, 3);
+    get_array(&s->gb, s->bitalloc_huffman,    s->prim_channels, 3);
+
+    /* Get codebooks quantization indexes */
+    memset(s->quant_index_huffman, 0, sizeof(s->quant_index_huffman));
+    for (j = 1; j < 11; j++)
+        for (i = 0; i < s->prim_channels; i++)
+            s->quant_index_huffman[i][j] = get_bits(&s->gb, bitlen[j]);
+
+    /* Get scale factor adjustment */
+    for (j = 0; j < 11; j++)
+        for (i = 0; i < s->prim_channels; i++)
+            s->scalefactor_adj[i][j] = 1;
+
+    for (j = 1; j < 11; j++)
+        for (i = 0; i < s->prim_channels; i++)
+            if (s->quant_index_huffman[i][j] < thr[j])
+                s->scalefactor_adj[i][j] = adj_table[get_bits(&s->gb, 2)];
+
+    if (s->crc_present) {
+        /* Audio header CRC check */
+        get_bits(&s->gb, 16);
+    }
+
+    s->current_subframe = 0;
+    s->current_subsubframe = 0;
+
+#ifdef TRACE
+    av_log(s->avctx, AV_LOG_DEBUG, "subframes: %i\n", s->subframes);
+    av_log(s->avctx, AV_LOG_DEBUG, "prim channels: %i\n", s->prim_channels);
+    for (i = 0; i < s->prim_channels; i++){
+        av_log(s->avctx, AV_LOG_DEBUG, "subband activity: %i\n", s->subband_activity[i]);
+        av_log(s->avctx, AV_LOG_DEBUG, "vq start subband: %i\n", s->vq_start_subband[i]);
+        av_log(s->avctx, AV_LOG_DEBUG, "joint intensity: %i\n", s->joint_intensity[i]);
+        av_log(s->avctx, AV_LOG_DEBUG, "transient mode codebook: %i\n", s->transient_huffman[i]);
+        av_log(s->avctx, AV_LOG_DEBUG, "scale factor codebook: %i\n", s->scalefactor_huffman[i]);
+        av_log(s->avctx, AV_LOG_DEBUG, "bit allocation quantizer: %i\n", s->bitalloc_huffman[i]);
+        av_log(s->avctx, AV_LOG_DEBUG, "quant index huff:");
+        for (j = 0; j < 11; j++)
+            av_log(s->avctx, AV_LOG_DEBUG, " %i",
+                   s->quant_index_huffman[i][j]);
+        av_log(s->avctx, AV_LOG_DEBUG, "\n");
+        av_log(s->avctx, AV_LOG_DEBUG, "scalefac adj:");
+        for (j = 0; j < 11; j++)
+            av_log(s->avctx, AV_LOG_DEBUG, " %1.3f", s->scalefactor_adj[i][j]);
+        av_log(s->avctx, AV_LOG_DEBUG, "\n");
+    }
+#endif
+
+  return 0;
+}
+
+static int dca_parse_frame_header(DCAContext * s)
+{
     init_get_bits(&s->gb, s->dca_buffer, s->dca_buffer_size * 8);
 
     /* Sync code */
@@ -422,74 +493,8 @@ static int dca_parse_frame_header(DCAContext * s)
 
     /* Primary audio coding header */
     s->subframes         = get_bits(&s->gb, 4) + 1;
-    s->total_channels    = get_bits(&s->gb, 3) + 1;
-    s->prim_channels     = s->total_channels;
-    if (s->prim_channels > DCA_PRIM_CHANNELS_MAX)
-        s->prim_channels = DCA_PRIM_CHANNELS_MAX;   /* We only support DTS core */
 
-
-    for (i = 0; i < s->prim_channels; i++) {
-        s->subband_activity[i] = get_bits(&s->gb, 5) + 2;
-        if (s->subband_activity[i] > DCA_SUBBANDS)
-            s->subband_activity[i] = DCA_SUBBANDS;
-    }
-    for (i = 0; i < s->prim_channels; i++) {
-        s->vq_start_subband[i] = get_bits(&s->gb, 5) + 1;
-        if (s->vq_start_subband[i] > DCA_SUBBANDS)
-            s->vq_start_subband[i] = DCA_SUBBANDS;
-    }
-    get_array(&s->gb, s->joint_intensity,     s->prim_channels, 3);
-    get_array(&s->gb, s->transient_huffman,   s->prim_channels, 2);
-    get_array(&s->gb, s->scalefactor_huffman, s->prim_channels, 3);
-    get_array(&s->gb, s->bitalloc_huffman,    s->prim_channels, 3);
-
-    /* Get codebooks quantization indexes */
-    memset(s->quant_index_huffman, 0, sizeof(s->quant_index_huffman));
-    for (j = 1; j < 11; j++)
-        for (i = 0; i < s->prim_channels; i++)
-            s->quant_index_huffman[i][j] = get_bits(&s->gb, bitlen[j]);
-
-    /* Get scale factor adjustment */
-    for (j = 0; j < 11; j++)
-        for (i = 0; i < s->prim_channels; i++)
-            s->scalefactor_adj[i][j] = 1;
-
-    for (j = 1; j < 11; j++)
-        for (i = 0; i < s->prim_channels; i++)
-            if (s->quant_index_huffman[i][j] < thr[j])
-                s->scalefactor_adj[i][j] = adj_table[get_bits(&s->gb, 2)];
-
-    if (s->crc_present) {
-        /* Audio header CRC check */
-        get_bits(&s->gb, 16);
-    }
-
-    s->current_subframe = 0;
-    s->current_subsubframe = 0;
-
-#ifdef TRACE
-    av_log(s->avctx, AV_LOG_DEBUG, "subframes: %i\n", s->subframes);
-    av_log(s->avctx, AV_LOG_DEBUG, "prim channels: %i\n", s->prim_channels);
-    for(i = 0; i < s->prim_channels; i++){
-        av_log(s->avctx, AV_LOG_DEBUG, "subband activity: %i\n", s->subband_activity[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "vq start subband: %i\n", s->vq_start_subband[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "joint intensity: %i\n", s->joint_intensity[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "transient mode codebook: %i\n", s->transient_huffman[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "scale factor codebook: %i\n", s->scalefactor_huffman[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "bit allocation quantizer: %i\n", s->bitalloc_huffman[i]);
-        av_log(s->avctx, AV_LOG_DEBUG, "quant index huff:");
-        for (j = 0; j < 11; j++)
-            av_log(s->avctx, AV_LOG_DEBUG, " %i",
-                   s->quant_index_huffman[i][j]);
-        av_log(s->avctx, AV_LOG_DEBUG, "\n");
-        av_log(s->avctx, AV_LOG_DEBUG, "scalefac adj:");
-        for (j = 0; j < 11; j++)
-            av_log(s->avctx, AV_LOG_DEBUG, " %1.3f", s->scalefactor_adj[i][j]);
-        av_log(s->avctx, AV_LOG_DEBUG, "\n");
-    }
-#endif
-
-    return 0;
+    return dca_parse_audio_coding_header(s);
 }
 
 
@@ -503,7 +508,7 @@ static inline int get_scale(GetBitContext *gb, int level, int value)
    return value;
 }
 
-static int dca_subframe_header(DCAContext * s)
+static int dca_subframe_header(DCAContext * s, int block_index)
 {
     /* Primary audio coding side information */
     int j, k;
@@ -660,10 +665,11 @@ static int dca_subframe_header(DCAContext * s)
     /* Low frequency effect data */
     if (s->lfe) {
         /* LFE samples */
-        int lfe_samples = 2 * s->lfe * s->subsubframes;
+        int lfe_samples = 2 * s->lfe * (4 + block_index);
+        int lfe_end_sample = 2 * s->lfe * (4 + block_index + s->subsubframes);
         float lfe_scale;
 
-        for (j = lfe_samples; j < lfe_samples * 2; j++) {
+        for (j = lfe_samples; j < lfe_end_sample; j++) {
             /* Signed 8 bits int */
             s->lfe_data[j] = get_sbits(&s->gb, 8);
         }
@@ -674,7 +680,7 @@ static int dca_subframe_header(DCAContext * s)
         /* Quantization step size * scale factor */
         lfe_scale = 0.035 * s->lfe_scale_factor;
 
-        for (j = lfe_samples; j < lfe_samples * 2; j++)
+        for (j = lfe_samples; j < lfe_end_sample; j++)
             s->lfe_data[j] *= lfe_scale;
     }
 
@@ -740,9 +746,11 @@ static int dca_subframe_header(DCAContext * s)
         for (k = s->vq_start_subband[j]; k < s->subband_activity[j]; k++)
             av_log(s->avctx, AV_LOG_DEBUG, "VQ index: %i\n", s->high_freq_vq[j][k]);
     if(s->lfe){
-        int lfe_samples = 2 * s->lfe * s->subsubframes;
+        int lfe_samples = 2 * s->lfe * (4 + block_index);
+        int lfe_end_sample = 2 * s->lfe * (4 + block_index + s->subsubframes[s->current_subframe]);
+
         av_log(s->avctx, AV_LOG_DEBUG, "LFE samples:\n");
-        for (j = lfe_samples; j < lfe_samples * 2; j++)
+        for (j = lfe_samples; j < lfe_end_sample; j++)
             av_log(s->avctx, AV_LOG_DEBUG, " %f", s->lfe_data[j]);
         av_log(s->avctx, AV_LOG_DEBUG, "\n");
     }
@@ -1043,6 +1051,14 @@ static int dca_subsubframe(DCAContext * s, int block_index)
             memcpy(s->subband_samples_hist[k][l], &subband_samples[k][l][4],
                         4 * sizeof(subband_samples[0][0][0]));
 
+    return 0;
+}
+
+static int dca_filter_channels(DCAContext * s, int block_index)
+{
+    float (*subband_samples)[DCA_SUBBANDS][8] = s->subband_samples[block_index];
+    int k;
+
     /* 32 subbands QMF */
     for (k = 0; k < s->prim_channels; k++) {
 /*        static float pcm_to_double[8] =
@@ -1053,18 +1069,14 @@ static int dca_subsubframe(DCAContext * s, int block_index)
     }
 
     /* Down mixing */
-
-    if (s->prim_channels > dca_channels[s->output & DCA_CHANNEL_MASK]) {
+    if (s->avctx->request_channels == 2 && s->prim_channels > 2) {
         dca_downmix(s->samples, s->amode, s->downmix_coef);
     }
 
     /* Generate LFE samples for this subsubframe FIXME!!! */
     if (s->output & DCA_LFE) {
-        int lfe_samples = 2 * s->lfe * s->subsubframes;
-
         lfe_interpolation_fir(s, s->lfe, 2 * s->lfe,
-                              s->lfe_data + lfe_samples +
-                              2 * s->lfe * subsubframe,
+                              s->lfe_data + 2 * s->lfe * (block_index + 4),
                               &s->samples[256 * dca_lfe_index[s->amode]],
                               (1.0/256.0)*s->scale_bias,  s->add_bias);
         /* Outputs 20bits pcm samples */
@@ -1077,7 +1089,6 @@ static int dca_subsubframe(DCAContext * s, int block_index)
 static int dca_subframe_footer(DCAContext * s)
 {
     int aux_data_count = 0, i;
-    int lfe_samples;
 
     /*
      * Unpack optional information
@@ -1094,11 +1105,6 @@ static int dca_subframe_footer(DCAContext * s)
 
     if (s->crc_present && (s->downmix || s->dynrange))
         get_bits(&s->gb, 16);
-
-    lfe_samples = 2 * s->lfe * s->subsubframes;
-    for (i = 0; i < lfe_samples; i++) {
-        s->lfe_data[i] = s->lfe_data[i + lfe_samples];
-    }
 
     return 0;
 }
@@ -1124,7 +1130,7 @@ static int dca_decode_block(DCAContext * s, int block_index)
         av_log(s->avctx, AV_LOG_DEBUG, "DSYNC dca_subframe_header\n");
 #endif
         /* Read subframe header */
-        if (dca_subframe_header(s))
+        if (dca_subframe_header(s, block_index))
             return -1;
     }
 
@@ -1205,6 +1211,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
 
+    int lfe_samples;
     int i;
     int16_t *samples = data;
     DCAContext *s = avctx->priv_data;
@@ -1226,6 +1233,10 @@ static int dca_decode_frame(AVCodecContext * avctx,
     //set AVCodec values with parsed data
     avctx->sample_rate = s->sample_rate;
     avctx->bit_rate = s->bit_rate;
+
+    for (i = 0; i < (s->sample_blocks / 8); i++) {
+        dca_decode_block(s, i);
+    }
 
     channels = s->prim_channels + !!s->lfe;
 
@@ -1264,10 +1275,18 @@ static int dca_decode_frame(AVCodecContext * avctx,
     if(*data_size < (s->sample_blocks / 8) * 256 * sizeof(int16_t) * channels)
         return -1;
     *data_size = 256 / 8 * s->sample_blocks * sizeof(int16_t) * channels;
+
+    /* filter to get final output */
     for (i = 0; i < (s->sample_blocks / 8); i++) {
-        dca_decode_block(s, i);
+        dca_filter_channels(s, i);
         s->dsp.float_to_int16_interleave(samples, s->samples_chanptr, 256, channels);
         samples += 256 * channels;
+    }
+
+    /* update lfe history */
+    lfe_samples = 2 * s->lfe * (s->sample_blocks / 8);
+    for (i = 0; i < 2 * s->lfe * 4; i++) {
+        s->lfe_data[i] = s->lfe_data[i + lfe_samples];
     }
 
     return buf_size;
@@ -1294,7 +1313,7 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
     ff_synth_filter_init(&s->synth);
     ff_dcadsp_init(&s->dcadsp);
 
-    for(i = 0; i < 6; i++)
+    for (i = 0; i < DCA_PRIM_CHANNELS_MAX+1; i++)
         s->samples_chanptr[i] = s->samples + i * 256;
     avctx->sample_fmt = SAMPLE_FMT_S16;
 
