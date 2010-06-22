@@ -45,6 +45,7 @@
 #define DCA_SUBBANDS (32)
 #define DCA_ABITS_MAX (32)      /* Should be 28 */
 #define DCA_SUBSUBFRAMES_MAX (4)
+#define DCA_BLOCKS_MAX (16)
 #define DCA_LFE_MAX (3)
 
 enum DCAMode {
@@ -237,6 +238,7 @@ typedef struct {
     float add_bias;             ///< output bias
     float scale_bias;           ///< output scale
 
+    DECLARE_ALIGNED(16, float, subband_samples)[DCA_BLOCKS_MAX][DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][8];
     DECLARE_ALIGNED(16, float, samples)[1536];  /* 6 * 256 = 1536, might only need 5 */
     const float *samples_chanptr[6];
 
@@ -907,7 +909,7 @@ static int decode_blockcode(int code, int levels, int *values)
 static const uint8_t abits_sizes[7] = { 7, 10, 12, 13, 15, 17, 19 };
 static const uint8_t abits_levels[7] = { 3, 5, 7, 9, 13, 17, 25 };
 
-static int dca_subsubframe(DCAContext * s)
+static int dca_subsubframe(DCAContext * s, int block_index)
 {
     int k, l;
     int subsubframe = s->current_subsubframe;
@@ -915,7 +917,7 @@ static int dca_subsubframe(DCAContext * s)
     const float *quant_step_table;
 
     /* FIXME */
-    LOCAL_ALIGNED_16(float, subband_samples, [DCA_PRIM_CHANNELS_MAX], [DCA_SUBBANDS][8]);
+    float (*subband_samples)[DCA_SUBBANDS][8] = s->subband_samples[block_index];
     LOCAL_ALIGNED_16(int, block, [8]);
 
     /*
@@ -1107,7 +1109,7 @@ static int dca_subframe_footer(DCAContext * s)
  * @param s     pointer to the DCAContext
  */
 
-static int dca_decode_block(DCAContext * s)
+static int dca_decode_block(DCAContext * s, int block_index)
 {
 
     /* Sanity check */
@@ -1130,7 +1132,7 @@ static int dca_decode_block(DCAContext * s)
 #ifdef TRACE
     av_log(s->avctx, AV_LOG_DEBUG, "DSYNC dca_subsubframe\n");
 #endif
-    if (dca_subsubframe(s))
+    if (dca_subsubframe(s, block_index))
         return -1;
 
     /* Update state */
@@ -1263,7 +1265,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
         return -1;
     *data_size = 256 / 8 * s->sample_blocks * sizeof(int16_t) * channels;
     for (i = 0; i < (s->sample_blocks / 8); i++) {
-        dca_decode_block(s);
+        dca_decode_block(s, i);
         s->dsp.float_to_int16_interleave(samples, s->samples_chanptr, 256, channels);
         samples += 256 * channels;
     }
