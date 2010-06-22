@@ -94,7 +94,7 @@ int register_protocol(URLProtocol *protocol)
 }
 #endif
 
-int url_open_protocol (URLContext **puc, struct URLProtocol *up,
+static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
                        const char *filename, int flags)
 {
     URLContext *uc;
@@ -118,17 +118,7 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     uc->flags = flags;
     uc->is_streamed = 0; /* default = not streamed */
     uc->max_packet_size = 0; /* default: stream file */
-    err = up->url_open(uc, filename, flags);
-    if (err < 0) {
-        av_free(uc);
-        goto fail;
-    }
 
-    //We must be careful here as url_seek() could be slow, for example for http
-    if(   (flags & (URL_WRONLY | URL_RDWR))
-       || !strcmp(up->name, "file"))
-        if(!uc->is_streamed && url_seek(uc, 0, SEEK_SET) < 0)
-            uc->is_streamed= 1;
     *puc = uc;
     return 0;
  fail:
@@ -139,7 +129,38 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     return err;
 }
 
-int url_open(URLContext **puc, const char *filename, int flags)
+int url_connect(URLContext* uc)
+{
+    int err = uc->prot->url_open(uc, uc->filename, uc->flags);
+    if (err)
+        return err;
+    uc->is_connected = 1;
+    //We must be careful here as url_seek() could be slow, for example for http
+    if(   (uc->flags & (URL_WRONLY | URL_RDWR))
+       || !strcmp(uc->prot->name, "file"))
+        if(!uc->is_streamed && url_seek(uc, 0, SEEK_SET) < 0)
+            uc->is_streamed= 1;
+    return 0;
+}
+
+int url_open_protocol (URLContext **puc, struct URLProtocol *up,
+                       const char *filename, int flags)
+{
+    int ret;
+
+    ret = url_alloc_for_protocol(puc, up, filename, flags);
+    if (ret)
+        goto fail;
+    ret = url_connect(*puc);
+    if (!ret)
+        return 0;
+ fail:
+    url_close(*puc);
+    *puc = NULL;
+    return ret;
+}
+
+int url_alloc(URLContext **puc, const char *filename, int flags)
 {
     URLProtocol *up;
     const char *p;
@@ -166,11 +187,25 @@ int url_open(URLContext **puc, const char *filename, int flags)
     up = first_protocol;
     while (up != NULL) {
         if (!strcmp(proto_str, up->name))
-            return url_open_protocol (puc, up, filename, flags);
+            return url_alloc_for_protocol (puc, up, filename, flags);
         up = up->next;
     }
     *puc = NULL;
     return AVERROR(ENOENT);
+}
+
+int url_open(URLContext **puc, const char *filename, int flags)
+{
+    int ret = url_alloc(puc, filename, flags);
+    if (ret)
+        return ret;
+    ret = url_connect(*puc);
+    if (!ret)
+        return 0;
+ fail:
+    url_close(*puc);
+    *puc = NULL;
+    return ret;
 }
 
 int url_read(URLContext *h, unsigned char *buf, int size)
@@ -232,7 +267,7 @@ int url_close(URLContext *h)
     int ret = 0;
     if (!h) return 0; /* can happen when url_open fails */
 
-    if (h->prot->url_close)
+    if (h->is_connected && h->prot->url_close)
         ret = h->prot->url_close(h);
 #if CONFIG_NETWORK
     ff_network_close();

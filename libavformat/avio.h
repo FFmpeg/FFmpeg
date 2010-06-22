@@ -51,6 +51,7 @@ typedef struct URLContext {
     int max_packet_size;  /**< if non zero, the stream is packetized with this max packet size */
     void *priv_data;
     char *filename; /**< specified URL */
+    int is_connected;
 } URLContext;
 
 typedef struct URLPollEntry {
@@ -78,6 +79,24 @@ typedef int URLInterruptCB(void);
  */
 int url_open_protocol (URLContext **puc, struct URLProtocol *up,
                        const char *url, int flags);
+
+/**
+ * Creates an URLContext for accessing to the resource indicated by
+ * url, but doesn't initiate the connection yet.
+ *
+ * @param puc pointer to the location where, in case of success, the
+ * function puts the pointer to the created URLContext
+ * @param flags flags which control how the resource indicated by url
+ * is to be opened
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR code in case of failure
+ */
+int url_alloc(URLContext **h, const char *url, int flags);
+
+/**
+ * Connect an URLContext that has been allocated by url_alloc
+ */
+int url_connect(URLContext *h);
 
 /**
  * Creates an URLContext for accessing to the resource indicated by
