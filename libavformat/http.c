@@ -28,6 +28,7 @@
 #include "http.h"
 #include "os_support.h"
 #include "httpauth.h"
+#include "libavcodec/opt.h"
 
 /* XXX: POST protocol is not completely implemented because ffmpeg uses
    only a subset of it. */
@@ -38,6 +39,7 @@
 #define MAX_REDIRECTS 8
 
 typedef struct {
+    const AVClass *class;
     URLContext *hd;
     unsigned char buffer[BUFFER_SIZE], *buf_ptr, *buf_end;
     int line_count;
@@ -49,6 +51,15 @@ typedef struct {
     int init;
     unsigned char headers[BUFFER_SIZE];
 } HTTPContext;
+
+#define OFFSET(x) offsetof(HTTPContext, x)
+static const AVOption options[] = {
+{"chunksize", "use chunked transfer-encoding for posts, -1 disables it, 0 enables it", OFFSET(chunksize), FF_OPT_TYPE_INT64, 0, -1, 0 }, /* Default to 0, for chunked POSTs */
+{NULL}
+};
+static const AVClass httpcontext_class = {
+    "HTTP", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+};
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
                         const char *auth, int *new_location);
@@ -152,7 +163,6 @@ static int http_open(URLContext *h, const char *uri, int flags)
     h->is_streamed = 1;
 
     s->filesize = -1;
-    s->chunksize = 0; /* Default to chunked POSTs */
     av_strlcpy(s->location, uri, URL_SIZE);
 
     return 0;
@@ -522,4 +532,5 @@ URLProtocol http_protocol = {
     http_close,
     .url_get_file_handle = http_get_file_handle,
     .priv_data_size = sizeof(HTTPContext),
+    .priv_data_class = &httpcontext_class,
 };
