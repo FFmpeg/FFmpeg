@@ -39,6 +39,7 @@
 #include "ac3dec.h"
 #include "vorbis.h"
 #include "png.h"
+#include "vp8dsp.h"
 
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
@@ -2655,6 +2656,18 @@ static void avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, int stride){
     avg_pixels8_xy2_c(dst, src, stride, 8);
 }
 #endif /* CONFIG_RV40_DECODER */
+
+#if CONFIG_VP8_DECODER
+void ff_put_vp8_pixels16_c(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) {
+    put_pixels16_c(dst, src, stride, h);
+}
+void ff_put_vp8_pixels8_c(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) {
+    put_pixels8_c(dst, src, stride, h);
+}
+void ff_put_vp8_pixels4_c(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) {
+    put_pixels4_c(dst, src, stride, h);
+}
+#endif
 
 static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int w){
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
