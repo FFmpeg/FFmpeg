@@ -72,7 +72,7 @@
  * Context for storing H.264 prediction functions
  */
 typedef struct H264PredContext{
-    void (*pred4x4  [9+3+3])(uint8_t *src, uint8_t *topright, int stride);//FIXME move to dsp?
+    void (*pred4x4  [9+3+3])(uint8_t *src, const uint8_t *topright, int stride);//FIXME move to dsp?
     void (*pred8x8l [9+3])(uint8_t *src, int topleft, int topright, int stride);
     void (*pred8x8  [4+3+4])(uint8_t *src, int stride);
     void (*pred16x16[4+3])(uint8_t *src, int stride);
