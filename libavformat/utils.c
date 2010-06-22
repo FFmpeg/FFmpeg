@@ -1189,11 +1189,11 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
             AVPacket *next_pkt= &pktl->pkt;
 
             if(genpts && next_pkt->dts != AV_NOPTS_VALUE){
+                int wrap_bits = s->streams[next_pkt->stream_index]->pts_wrap_bits;
                 while(pktl && next_pkt->pts == AV_NOPTS_VALUE){
                     if(   pktl->pkt.stream_index == next_pkt->stream_index
-                       && next_pkt->dts < pktl->pkt.dts
-                       && pktl->pkt.pts != pktl->pkt.dts //not b frame
-                       /*&& pktl->pkt.dts != AV_NOPTS_VALUE*/){
+                       && (0 > av_compare_mod(next_pkt->dts, pktl->pkt.dts, 2LL << (wrap_bits - 1)))
+                       && av_compare_mod(pktl->pkt.pts, pktl->pkt.dts, 2LL << (wrap_bits - 1))) { //not b frame
                         next_pkt->pts= pktl->pkt.dts;
                     }
                     pktl= pktl->next;
