@@ -252,12 +252,19 @@ URLProtocol *av_protocol_next(URLProtocol *p);
  * @deprecated Use av_register_protocol() instead.
  */
 attribute_deprecated int register_protocol(URLProtocol *protocol);
+
+/**
+ * @deprecated Use av_register_protocol2() instead.
+ */
+attribute_deprecated int av_register_protocol(URLProtocol *protocol);
 #endif
 
 /**
  * Registers the URLProtocol protocol.
+ *
+ * @param size the size of the URLProtocol struct referenced
  */
-int av_register_protocol(URLProtocol *protocol);
+int av_register_protocol2(URLProtocol *protocol, int size);
 
 /**
  * Bytestream IO Context.
