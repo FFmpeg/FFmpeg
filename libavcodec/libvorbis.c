@@ -171,7 +171,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
         while(vorbis_bitrate_flushpacket(&context->vd, &op)) {
             /* i'd love to say the following line is a hack, but sadly it's
              * not, apparently the end of stream decision is in libogg. */
-            if(op.bytes==1)
+            if(op.bytes==1 && op.e_o_s)
                 continue;
             memcpy(context->buffer + context->buffer_index, &op, sizeof(ogg_packet));
             context->buffer_index += sizeof(ogg_packet);
