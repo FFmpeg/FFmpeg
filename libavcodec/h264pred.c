@@ -110,9 +110,9 @@ static void pred4x4_vertical_vp8_c(uint8_t *src, const uint8_t *topright, int st
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
     uint32_t v = PACK4UINT8((lt + 2*t0 + t1 + 2) >> 2,
-                         (t0 + 2*t1 + t2 + 2) >> 2,
-                         (t1 + 2*t2 + t3 + 2) >> 2,
-                         (t2 + 2*t3 + t4 + 2) >> 2);
+                            (t0 + 2*t1 + t2 + 2) >> 2,
+                            (t1 + 2*t2 + t3 + 2) >> 2,
+                            (t2 + 2*t3 + t4 + 2) >> 2);
 
     AV_WN32A(src+0*stride, v);
     AV_WN32A(src+1*stride, v);
