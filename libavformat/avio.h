@@ -251,6 +251,8 @@ typedef struct URLProtocol {
     int64_t (*url_read_seek)(URLContext *h, int stream_index,
                              int64_t timestamp, int flags);
     int (*url_get_file_handle)(URLContext *h);
+    int priv_data_size;
+    const AVClass *priv_data_class;
 } URLProtocol;
 
 #if LIBAVFORMAT_VERSION_MAJOR < 53

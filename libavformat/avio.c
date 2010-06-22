@@ -118,6 +118,13 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
     uc->flags = flags;
     uc->is_streamed = 0; /* default = not streamed */
     uc->max_packet_size = 0; /* default: stream file */
+    if (up->priv_data_size) {
+        uc->priv_data = av_mallocz(up->priv_data_size);
+        if (up->priv_data_class) {
+            *(AVClass**)uc->priv_data = up->priv_data_class;
+            av_opt_set_defaults(uc->priv_data);
+        }
+    }
 
     *puc = uc;
     return 0;
@@ -272,6 +279,8 @@ int url_close(URLContext *h)
 #if CONFIG_NETWORK
     ff_network_close();
 #endif
+    if (h->prot->priv_data_size)
+        av_free(h->priv_data);
     av_free(h);
     return ret;
 }
