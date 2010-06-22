@@ -365,7 +365,7 @@ static void hybrid_analysis(float out[91][32][2], float in[5][44][2], float L[2]
             in[i][j+6][1] = L[1][j][i];
         }
     }
-    if(is34) {
+    if (is34) {
         hybrid4_8_12_cx(in[0], out,    f34_0_12, 12, len);
         hybrid4_8_12_cx(in[1], out+12, f34_1_8,   8, len);
         hybrid4_8_12_cx(in[2], out+20, f34_2_4,   4, len);
@@ -397,19 +397,19 @@ static void hybrid_analysis(float out[91][32][2], float in[5][44][2], float L[2]
 static void hybrid_synthesis(float out[2][38][64], float in[91][32][2], int is34, int len)
 {
     int i, n;
-    if(is34) {
+    if (is34) {
         for (n = 0; n < len; n++) {
             memset(out[0][n], 0, 5*sizeof(out[0][n][0]));
             memset(out[1][n], 0, 5*sizeof(out[1][n][0]));
-            for(i = 0; i < 12; i++) {
+            for (i = 0; i < 12; i++) {
                 out[0][n][0] += in[   i][n][0];
                 out[1][n][0] += in[   i][n][1];
             }
-            for(i = 0; i < 8; i++) {
+            for (i = 0; i < 8; i++) {
                 out[0][n][1] += in[12+i][n][0];
                 out[1][n][1] += in[12+i][n][1];
             }
-            for(i = 0; i < 4; i++) {
+            for (i = 0; i < 4; i++) {
                 out[0][n][2] += in[20+i][n][0];
                 out[1][n][2] += in[20+i][n][1];
                 out[0][n][3] += in[24+i][n][0];
