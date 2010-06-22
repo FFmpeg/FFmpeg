@@ -147,22 +147,12 @@ static int http_open_cnx(URLContext *h)
 
 static int http_open(URLContext *h, const char *uri, int flags)
 {
-    HTTPContext *s;
+    HTTPContext *s = h->priv_data;
 
     h->is_streamed = 1;
 
-    s = av_malloc(sizeof(HTTPContext));
-    if (!s) {
-        return AVERROR(ENOMEM);
-    }
-    h->priv_data = s;
     s->filesize = -1;
     s->chunksize = 0; /* Default to chunked POSTs */
-    s->off = 0;
-    s->init = 0;
-    s->hd = NULL;
-    *s->headers = '\0';
-    memset(&s->auth_state, 0, sizeof(s->auth_state));
     av_strlcpy(s->location, uri, URL_SIZE);
 
     return 0;
@@ -469,7 +459,6 @@ static int http_close(URLContext *h)
 
     if (s->hd)
         url_close(s->hd);
-    av_free(s);
     return ret;
 }
 
@@ -532,4 +521,5 @@ URLProtocol http_protocol = {
     http_seek,
     http_close,
     .url_get_file_handle = http_get_file_handle,
+    .priv_data_size = sizeof(HTTPContext),
 };
