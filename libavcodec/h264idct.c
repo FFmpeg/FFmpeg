@@ -143,24 +143,24 @@ void ff_h264_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride){
 // assumes all AC coefs are 0
 void ff_h264_idct_dc_add_c(uint8_t *dst, DCTELEM *block, int stride){
     int i, j;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int dc = (block[0] + 32) >> 6;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP + dc;
     for( j = 0; j < 4; j++ )
     {
         for( i = 0; i < 4; i++ )
-            dst[i] = cm[ dst[i] + dc ];
+            dst[i] = cm[ dst[i] ];
         dst += stride;
     }
 }
 
 void ff_h264_idct8_dc_add_c(uint8_t *dst, DCTELEM *block, int stride){
     int i, j;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int dc = (block[0] + 32) >> 6;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP + dc;
     for( j = 0; j < 8; j++ )
     {
         for( i = 0; i < 8; i++ )
-            dst[i] = cm[ dst[i] + dc ];
+            dst[i] = cm[ dst[i] ];
         dst += stride;
     }
 }
