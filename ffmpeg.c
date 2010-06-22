@@ -175,7 +175,7 @@ static float mux_max_delay= 0.7;
 
 static int64_t recording_time = INT64_MAX;
 static int64_t start_time = 0;
-static int64_t rec_timestamp = 0;
+static int64_t recording_timestamp = 0;
 static int64_t input_ts_offset = 0;
 static int file_overwrite = 0;
 static int metadata_count;
@@ -3064,9 +3064,9 @@ static int opt_start_time(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_rec_timestamp(const char *opt, const char *arg)
+static int opt_recording_timestamp(const char *opt, const char *arg)
 {
-    rec_timestamp = parse_time_or_die(opt, arg, 0) / 1000000;
+    recording_timestamp = parse_time_or_die(opt, arg, 0) / 1000000;
     return 0;
 }
 
@@ -3719,7 +3719,7 @@ static void opt_output_file(const char *filename)
             new_subtitle_stream(oc);
         }
 
-        oc->timestamp = rec_timestamp;
+        oc->timestamp = recording_timestamp;
 
         for(; metadata_count>0; metadata_count--){
             av_metadata_set2(&oc->metadata, metadata[metadata_count-1].key,
@@ -4166,7 +4166,7 @@ static const OptionDef options[] = {
     { "ss", OPT_FUNC2 | HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
     { "itsoffset", OPT_FUNC2 | HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
     { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "stream:scale" },
-    { "timestamp", OPT_FUNC2 | HAS_ARG, {(void*)opt_rec_timestamp}, "set the timestamp ('now' to set the current time)", "time" },
+    { "timestamp", OPT_FUNC2 | HAS_ARG, {(void*)opt_recording_timestamp}, "set the recording timestamp ('now' to set the current time)", "time" },
     { "metadata", OPT_FUNC2 | HAS_ARG, {(void*)opt_metadata}, "add metadata", "string=string" },
     { "dframes", OPT_INT | HAS_ARG, {(void*)&max_frames[AVMEDIA_TYPE_DATA]}, "set the number of data frames to record", "number" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark},
