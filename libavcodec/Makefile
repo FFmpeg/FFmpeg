@@ -599,7 +599,6 @@ OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
 
 # thread libraries
-OBJS-$(HAVE_BEOSTHREADS)               += beosthread.o
 OBJS-$(HAVE_OS2THREADS)                += os2thread.o
 OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o
