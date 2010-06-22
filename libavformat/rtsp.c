@@ -1578,7 +1578,7 @@ redirect:
                  av_get_random_seed(), av_get_random_seed());
 
         /* GET requests */
-        if (url_open(&rt->rtsp_hd, httpname, URL_RDONLY) < 0) {
+        if (url_alloc(&rt->rtsp_hd, httpname, URL_RDONLY) < 0) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1593,13 +1593,13 @@ redirect:
         ff_http_set_headers(rt->rtsp_hd, headers);
 
         /* complete the connection */
-        if (url_read(rt->rtsp_hd, NULL, 0)) {
+        if (url_connect(rt->rtsp_hd)) {
             err = AVERROR(EIO);
             goto fail;
         }
 
         /* POST requests */
-        if (url_open(&rt->rtsp_hd_out, httpname, URL_WRONLY) < 0 ) {
+        if (url_alloc(&rt->rtsp_hd_out, httpname, URL_WRONLY) < 0 ) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1634,6 +1634,11 @@ redirect:
          */
         ff_http_init_auth_state(rt->rtsp_hd_out, rt->rtsp_hd);
 
+        /* complete the connection */
+        if (url_connect(rt->rtsp_hd_out)) {
+            err = AVERROR(EIO);
+            goto fail;
+        }
     } else {
         /* open the tcp connection */
         ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port, NULL);
