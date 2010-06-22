@@ -1279,7 +1279,7 @@ attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
  * @param datestr String representing a date or a duration.
  * - If a date the syntax is:
  * @code
- *  [{YYYY-MM-DD|YYYYMMDD}]{T| }{HH[:MM[:SS[.m...]]][Z]|HH[MM[SS[.m...]]][Z]}
+ *  [{YYYY-MM-DD|YYYYMMDD}[T|t| ]]{{HH[:MM[:SS[.m...]]]}|{HH[MM[SS[.m...]]]}}[Z|z]
  * @endcode
  * Time is local time unless Z is appended, in which case it is
  * interpreted as UTC.
