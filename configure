@@ -2005,7 +2005,7 @@ elif enabled x86; then
             disable cmov
         ;;
         # targets that do support conditional mov (cmov)
-        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2|amdfam10)
+        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2|amdfam10|barcelona)
             cpuflags="-march=$cpu"
             enable cmov
             enable fast_cmov
