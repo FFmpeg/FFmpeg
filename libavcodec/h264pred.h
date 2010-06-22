@@ -49,6 +49,8 @@
 #define TOP_DC_PRED           10
 #define DC_128_PRED           11
 
+#define TM_VP8_PRED           9     ///< "True Motion", used instead of plane
+
 #define DIAG_DOWN_LEFT_PRED_RV40_NODOWN   12
 #define HOR_UP_PRED_RV40_NODOWN           13
 #define VERT_LEFT_PRED_RV40_NODOWN        14
