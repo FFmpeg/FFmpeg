@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-06-22 - r23706 - lavf 52.71.0 - URLProtocol.priv_data_size, priv_data_class
+  Add priv_data_size and priv_data_class to URLProtocol
+
 2010-06-22 - r23704 - lavf 52.70.0 - url_alloc(), url_connect()
   Add url_alloc() and url_connect()
 
