@@ -24,9 +24,9 @@
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "ps.h"
-#include "ps_tablegen.h"
-#include "psdata.c"
+#include "aacps.h"
+#include "aacps_tablegen.h"
+#include "aacpsdata.c"
 
 #define PS_BASELINE 0  //< Operate in Baseline PS mode
                        //< Baseline implies 10 or 20 stereo bands,

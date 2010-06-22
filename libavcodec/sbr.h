@@ -31,7 +31,7 @@
 
 #include <stdint.h>
 #include "fft.h"
-#include "ps.h"
+#include "aacps.h"
 
 /**
  * Spectral Band Replication header - spectrum parameters that invoke a reset if they differ from the previous header.

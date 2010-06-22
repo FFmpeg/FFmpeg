@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 #define CONFIG_HARDCODED_TABLES 0
-#include "ps_tablegen.h"
+#include "aacps_tablegen.h"
 #include "tableprint.h"
 
 void write_float_3d_array (const void *p, int b, int c, int d)
