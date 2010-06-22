@@ -1279,8 +1279,9 @@ attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
  * @param datestr String representing a date or a duration.
  * - If a date the syntax is:
  * @code
- *  [{YYYY-MM-DD|YYYYMMDD}[T|t| ]]{{HH[:MM[:SS[.m...]]]}|{HH[MM[SS[.m...]]]}}[Z|z]
+ *  now|{[{YYYY-MM-DD|YYYYMMDD}[T|t| ]]{{HH[:MM[:SS[.m...]]]}|{HH[MM[SS[.m...]]]}}[Z|z]}
  * @endcode
+ * If the value is "now" it takes the current time.
  * Time is local time unless Z is appended, in which case it is
  * interpreted as UTC.
  * If the year-month-day part is not specified it takes the current
