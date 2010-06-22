@@ -13,6 +13,7 @@ version <next>:
 - Pictor/PC Paint decoder
 - HE-AAC v2 decoder
 - libfaad2 wrapper removed
+- DTS-ES extension (XCh) decoding support
 
 
 
