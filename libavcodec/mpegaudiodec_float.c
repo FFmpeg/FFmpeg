@@ -22,6 +22,25 @@
 #define CONFIG_FLOAT 1
 #include "mpegaudiodec.c"
 
+void ff_mpa_synth_filter_float(MPADecodeContext *s, float *synth_buf_ptr,
+                               int *synth_buf_offset,
+                               float *window, int *dither_state,
+                               float *samples, int incr,
+                               float sb_samples[SBLIMIT])
+{
+    float *synth_buf;
+    int offset;
+
+    offset = *synth_buf_offset;
+    synth_buf = synth_buf_ptr + offset;
+
+    dct32(synth_buf, sb_samples);
+    s->apply_window_mp3(synth_buf, window, dither_state, samples, incr);
+
+    offset = (offset - 32) & 511;
+    *synth_buf_offset = offset;
+}
+
 #if CONFIG_MP1FLOAT_DECODER
 AVCodec mp1float_decoder =
 {

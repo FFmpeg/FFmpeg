@@ -897,26 +897,7 @@ static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
 /* 32 sub band synthesis filter. Input: 32 sub band samples, Output:
    32 samples. */
 /* XXX: optimize by avoiding ring buffer usage */
-#if CONFIG_FLOAT
-void ff_mpa_synth_filter_float(MPADecodeContext *s, float *synth_buf_ptr,
-                               int *synth_buf_offset,
-                               float *window, int *dither_state,
-                               float *samples, int incr,
-                               float sb_samples[SBLIMIT])
-{
-    float *synth_buf;
-    int offset;
-
-    offset = *synth_buf_offset;
-    synth_buf = synth_buf_ptr + offset;
-
-    dct32(synth_buf, sb_samples);
-    s->apply_window_mp3(synth_buf, window, dither_state, samples, incr);
-
-    offset = (offset - 32) & 511;
-    *synth_buf_offset = offset;
-}
-#else
+#if !CONFIG_FLOAT
 void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
                          MPA_INT *window, int *dither_state,
                          OUT_INT *samples, int incr,
