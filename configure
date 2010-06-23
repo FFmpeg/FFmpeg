@@ -91,7 +91,6 @@ Configuration options:
   --enable-postproc        enable GPLed postprocessing support [no]
   --disable-avfilter       disable video filter support [no]
   --enable-avfilter-lavf   video filters dependent on avformat [no]
-  --enable-os2threads      use OS/2 threads [no]
   --enable-pthreads        use pthreads [no]
   --enable-w32threads      use Win32 threads [no]
   --enable-x11grab         enable X11 grabbing [no]
@@ -953,7 +952,6 @@ CONFIG_LIST="
 "
 
 THREADS_LIST='
-    os2threads
     pthreads
     w32threads
 '
