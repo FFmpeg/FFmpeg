@@ -920,7 +920,7 @@ static void decode_blocks(SnowContext *s){
     }
 }
 
-static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, uint8_t *tmp, int stride, int b_w, int b_h, int dx, int dy){
+static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, int stride, int b_w, int b_h, int dx, int dy){
     static const uint8_t weight[64]={
     8,7,6,5,4,3,2,1,
     7,7,0,0,0,0,0,1,
@@ -1106,9 +1106,8 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, uint8_t *tmp, i
 
 #define mca(dx,dy,b_w)\
 static void mc_block_hpel ## dx ## dy ## b_w(uint8_t *dst, const uint8_t *src, int stride, int h){\
-    uint8_t tmp[stride*(b_w+HTAPS_MAX-1)];\
     assert(h==b_w);\
-    mc_block(NULL, dst, src-(HTAPS_MAX/2-1)-(HTAPS_MAX/2-1)*stride, tmp, stride, b_w, b_w, dx, dy);\
+    mc_block(NULL, dst, src-(HTAPS_MAX/2-1)-(HTAPS_MAX/2-1)*stride, stride, b_w, b_w, dx, dy);\
 }
 
 mca( 0, 0,16)
@@ -1180,7 +1179,7 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, i
         assert(b_w>1 && b_h>1);
         assert((tab_index>=0 && tab_index<4) || b_w==32);
         if((dx&3) || (dy&3) || !(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h) || (b_w&(b_w-1)) || !s->plane[plane_index].fast_mc )
-            mc_block(&s->plane[plane_index], dst, src, tmp, stride, b_w, b_h, dx, dy);
+            mc_block(&s->plane[plane_index], dst, src, stride, b_w, b_h, dx, dy);
         else if(b_w==32){
             int y;
             for(y=0; y<b_h; y+=16){
