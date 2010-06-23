@@ -91,7 +91,7 @@ Configuration options:
   --enable-postproc        enable GPLed postprocessing support [no]
   --disable-avfilter       disable video filter support [no]
   --enable-avfilter-lavf   video filters dependent on avformat [no]
-  --enable-pthreads        use pthreads [no]
+  --disable-pthreads       disable pthreads [auto]
   --enable-w32threads      use Win32 threads [no]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
@@ -2522,7 +2522,8 @@ disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads
-if enabled pthreads; then
+if ! disabled pthreads && ! enabled w32threads; then
+    enable pthreads
     if check_func pthread_create; then
         :
     elif check_func pthread_create -pthread; then
@@ -2534,7 +2535,7 @@ if enabled pthreads; then
     elif check_func pthread_create -lpthreadGC2; then
         add_extralibs -lpthreadGC2
     elif ! check_lib pthread.h pthread_create -lpthread; then
-        die "ERROR: can't find pthreads library"
+        disable pthreads
     fi
 fi
 
