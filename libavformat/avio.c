@@ -95,7 +95,7 @@ int register_protocol(URLProtocol *protocol)
 #endif
 
 static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
-                       const char *filename, int flags)
+                                   const char *filename, int flags)
 {
     URLContext *uc;
     int err;
