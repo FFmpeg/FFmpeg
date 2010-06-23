@@ -40,7 +40,7 @@ section .text align=16
 %endmacro
 
 %macro FLOAT_TO_INT16_INTERLEAVE6 1
-; void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len)
+; void float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len)
 cglobal float_to_int16_interleave6_%1, 2,7,0, dst, src, src1, src2, src3, src4, src5
 %ifdef ARCH_X86_64
     %define lend r10d
@@ -272,7 +272,7 @@ SCALARPRODUCT_LOOP 0
 
 
 
-; void ff_add_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top)
+; void add_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top)
 cglobal add_hfyu_median_prediction_mmx2, 6,6,0, dst, top, diff, w, left, left_top
     movq    mm0, [topq]
     movq    mm2, mm0
@@ -370,23 +370,23 @@ cglobal add_hfyu_median_prediction_mmx2, 6,6,0, dst, top, diff, w, left, left_to
     RET
 %endmacro
 
-; int ff_add_hfyu_left_prediction(uint8_t *dst, const uint8_t *src, int w, int left)
+; int add_hfyu_left_prediction(uint8_t *dst, const uint8_t *src, int w, int left)
 INIT_MMX
 cglobal add_hfyu_left_prediction_ssse3, 3,3,7, dst, src, w, left
 .skip_prologue:
-    mova    m5, [pb_7 GLOBAL]
-    mova    m4, [pb_zzzz3333zzzzbbbb GLOBAL]
-    mova    m3, [pb_zz11zz55zz99zzdd GLOBAL]
+    mova    m5, [pb_7]
+    mova    m4, [pb_zzzz3333zzzzbbbb]
+    mova    m3, [pb_zz11zz55zz99zzdd]
     movd    m0, leftm
     psllq   m0, 56
     ADD_HFYU_LEFT_LOOP 1
 
 INIT_XMM
 cglobal add_hfyu_left_prediction_sse4, 3,3,7, dst, src, w, left
-    mova    m5, [pb_f GLOBAL]
-    mova    m6, [pb_zzzzzzzz77777777 GLOBAL]
-    mova    m4, [pb_zzzz3333zzzzbbbb GLOBAL]
-    mova    m3, [pb_zz11zz55zz99zzdd GLOBAL]
+    mova    m5, [pb_f]
+    mova    m6, [pb_zzzzzzzz77777777]
+    mova    m4, [pb_zzzz3333zzzzbbbb]
+    mova    m3, [pb_zz11zz55zz99zzdd]
     movd    m0, leftm
     pslldq  m0, 15
     test    srcq, 15
@@ -398,7 +398,7 @@ cglobal add_hfyu_left_prediction_sse4, 3,3,7, dst, src, w, left
     ADD_HFYU_LEFT_LOOP 0
 
 
-; float ff_scalarproduct_float_sse(const float *v1, const float *v2, int len)
+; float scalarproduct_float_sse(const float *v1, const float *v2, int len)
 cglobal scalarproduct_float_sse, 3,3,2, v1, v2, offset
     neg offsetq
     shl offsetq, 2

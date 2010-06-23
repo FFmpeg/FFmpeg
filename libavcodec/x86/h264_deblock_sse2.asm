@@ -234,18 +234,18 @@ SECTION .text
 %macro DEBLOCK_P0_Q0 0
     mova    m5, m1
     pxor    m5, m2           ; p0^q0
-    pand    m5, [pb_01 GLOBAL] ; (p0^q0)&1
+    pand    m5, [pb_01] ; (p0^q0)&1
     pcmpeqb m4, m4
     pxor    m3, m4
     pavgb   m3, m0           ; (p1 - q1 + 256)>>1
-    pavgb   m3, [pb_03 GLOBAL] ; (((p1 - q1 + 256)>>1)+4)>>1 = 64+2+(p1-q1)>>2
+    pavgb   m3, [pb_03] ; (((p1 - q1 + 256)>>1)+4)>>1 = 64+2+(p1-q1)>>2
     pxor    m4, m1
     pavgb   m4, m2           ; (q0 - p0 + 256)>>1
     pavgb   m3, m5
     paddusb m3, m4           ; d+128+33
-    mova    m6, [pb_a1 GLOBAL]
+    mova    m6, [pb_a1]
     psubusb m6, m3
-    psubusb m3, [pb_a1 GLOBAL]
+    psubusb m3, [pb_a1]
     pminub  m6, m7
     pminub  m3, m7
     psubusb m1, m6
@@ -263,7 +263,7 @@ SECTION .text
     pavgb   %6, m2
     pavgb   %2, %6             ; avg(p2,avg(p0,q0))
     pxor    %6, %3
-    pand    %6, [pb_01 GLOBAL] ; (p2^avg(p0,q0))&1
+    pand    %6, [pb_01] ; (p2^avg(p0,q0))&1
     psubusb %2, %6             ; (p2+((p0+q0+1)>>1))>>1
     mova    %6, %1
     psubusb %6, %5
@@ -612,8 +612,8 @@ DEBLOCK_LUMA sse2, v, 16
     %define mask0 spill(2)
     %define mask1p spill(3)
     %define mask1q spill(4)
-    %define mpb_00 [pb_00 GLOBAL]
-    %define mpb_01 [pb_01 GLOBAL]
+    %define mpb_00 [pb_00]
+    %define mpb_01 [pb_01]
 %endif
 
 ;-----------------------------------------------------------------------------
@@ -637,7 +637,7 @@ cglobal x264_deblock_%2_luma_intra_%1, 4,6,16
     mova    q1, [r0+r1]
 %ifdef ARCH_X86_64
     pxor    mpb_00, mpb_00
-    mova    mpb_01, [pb_01 GLOBAL]
+    mova    mpb_01, [pb_01]
     LOAD_MASK r2d, r3d, t5 ; m5=beta-1, t5=alpha-1, m7=mask0
     SWAP    7, 12 ; m12=mask0
     pavgb   t5, mpb_00
@@ -656,8 +656,8 @@ cglobal x264_deblock_%2_luma_intra_%1, 4,6,16
     LOAD_MASK r2d, r3d, t5 ; m5=beta-1, t5=alpha-1, m7=mask0
     mova    m4, t5
     mova    mask0, m7
-    pavgb   m4, [pb_00 GLOBAL]
-    pavgb   m4, [pb_01 GLOBAL] ; alpha/4+1
+    pavgb   m4, [pb_00]
+    pavgb   m4, [pb_01] ; alpha/4+1
     DIFF_GT2 p0, q0, m4, m6, m7 ; m6 = |p0-q0| > alpha/4+1
     pand    m6, mask0
     DIFF_GT2 p0, p2, m5, m4, m7 ; m4 = |p2-p0| > beta-1

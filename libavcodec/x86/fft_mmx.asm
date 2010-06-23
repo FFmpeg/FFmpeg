@@ -35,7 +35,7 @@ ps_m1p1: dd 1<<31, 0
 
 %assign i 16
 %rep 13
-cextern ff_cos_ %+ i
+cextern cos_ %+ i
 %assign i i<<1
 %endrep
 
@@ -64,7 +64,7 @@ section .text align=16
     mova     %5, %3
     pfsub    %3, %4
     pfadd    %5, %4 ; {t6,t5}
-    pxor     %3, [ps_m1p1 GLOBAL] ; {t8,t7}
+    pxor     %3, [ps_m1p1] ; {t8,t7}
     mova     %6, %1
     pswapd   %3, %3
     pfadd    %1, %5 ; {r0,i0}
@@ -105,8 +105,8 @@ section .text align=16
     addps    %6, %5       ; {t1,t2,t3,t4}
     mova     %5, %3
     shufps   %5, %5, 0xb1 ; {i5,r5,i7,r7}
-    mulps    %3, [ps_root2mppm GLOBAL] ; {-r5,i5,r7,-i7}
-    mulps    %5, [ps_root2 GLOBAL]
+    mulps    %3, [ps_root2mppm] ; {-r5,i5,r7,-i7}
+    mulps    %5, [ps_root2]
     addps    %3, %5       ; {t8,t7,ta,t9}
     mova     %5, %6
     shufps   %6, %3, 0x36 ; {t3,t2,t9,t8}
@@ -309,7 +309,7 @@ fft16_sse:
     mova     m6, Z(6)
     mova     m7, Z(7)
     T4_SSE   m6, m7, m0
-    PASS_SMALL 0, [ff_cos_16 GLOBAL], [ff_cos_16+16 GLOBAL]
+    PASS_SMALL 0, [cos_16], [cos_16+16]
     ret
 
 
@@ -342,12 +342,12 @@ fft8%1:
     T2_3DN   m6, m7, Z(6), Z(7)
     pswapd   m0, m5
     pswapd   m2, m7
-    pxor     m0, [ps_m1p1 GLOBAL]
-    pxor     m2, [ps_m1p1 GLOBAL]
+    pxor     m0, [ps_m1p1]
+    pxor     m2, [ps_m1p1]
     pfsub    m5, m0
     pfadd    m7, m2
-    pfmul    m5, [ps_root2 GLOBAL]
-    pfmul    m7, [ps_root2 GLOBAL]
+    pfmul    m5, [ps_root2]
+    pfmul    m7, [ps_root2]
     T4_3DN   m1, m3, m5, m7, m0, m2
     mova   Z(5), m5
     mova   Z(7), m7
@@ -445,7 +445,7 @@ fft %+ n %+ %3%2:
     add r0, n*2 - (n2&(-2<<%1))
     call fft %+ n4 %+ %2
     sub r0, n*6 + (n2&(-2<<%1))
-    lea r1, [ff_cos_ %+ n GLOBAL]
+    lea r1, [cos_ %+ n]
     mov r2d, n4/2
     jmp pass%3%2
 
@@ -461,10 +461,10 @@ section .text
 ; On x86_32, this function does the register saving and restoring for all of fft.
 ; The others pass args in registers and don't spill anything.
 cglobal fft_dispatch%3%2, 2,5,8, z, nbits
-    lea r2, [dispatch_tab%3%2 GLOBAL]
+    lea r2, [dispatch_tab%3%2]
     mov r2, [r2 + (nbitsq-2)*gprsize]
 %ifdef PIC
-    lea r3, [$$ GLOBAL]
+    lea r3, [$$]
     add r2, r3
 %endif
     call r2

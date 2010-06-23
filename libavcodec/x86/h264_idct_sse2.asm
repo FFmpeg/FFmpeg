@@ -43,7 +43,7 @@ cglobal x264_add8x4_idct_sse2, 3,3,8
     movhps m3, [r1+56]
     IDCT4_1D 0,1,2,3,4,5
     TRANSPOSE2x4x4W 0,1,2,3,4
-    paddw m0, [pw_32 GLOBAL]
+    paddw m0, [pw_32]
     IDCT4_1D 0,1,2,3,4,5
     pxor  m7, m7
     STORE_DIFF  m0, m4, m7, [r0]

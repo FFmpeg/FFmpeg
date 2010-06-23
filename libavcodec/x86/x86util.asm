@@ -1,7 +1,10 @@
 ;*****************************************************************************
 ;* x86util.asm
 ;*****************************************************************************
-;* Copyright (C) 2008 Loren Merritt <lorenm@u.washington.edu>
+;* Copyright (C) 2008 x264 project
+;*
+;* Authors: Holger Lubitz <holger@lubitz.org>
+;*          Loren Merritt <lorenm@u.washington.edu>
 ;*
 ;* This program is free software; you can redistribute it and/or modify
 ;* it under the terms of the GNU General Public License as published by
@@ -18,11 +21,21 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111, USA.
 ;*****************************************************************************
 
+%assign FENC_STRIDE 16
+%assign FDEC_STRIDE 32
+
 %macro SBUTTERFLY 4
     mova      m%4, m%2
     punpckl%1 m%2, m%3
     punpckh%1 m%4, m%3
     SWAP %3, %4
+%endmacro
+
+%macro SBUTTERFLY2 4
+    mova      m%4, m%2
+    punpckh%1 m%2, m%3
+    punpckl%1 m%4, m%3
+    SWAP %2, %4, %3
 %endmacro
 
 %macro TRANSPOSE4x4W 5
@@ -123,13 +136,39 @@
     pabsw   %2, %2
 %endmacro
 
-%define ABS1 ABS1_MMX
-%define ABS2 ABS2_MMX
+%macro ABSB_MMX 2
+    pxor    %2, %2
+    psubb   %2, %1
+    pminub  %1, %2
+%endmacro
+
+%macro ABSB2_MMX 4
+    pxor    %3, %3
+    pxor    %4, %4
+    psubb   %3, %1
+    psubb   %4, %2
+    pminub  %1, %3
+    pminub  %2, %4
+%endmacro
+
+%macro ABSB_SSSE3 2
+    pabsb   %1, %1
+%endmacro
+
+%macro ABSB2_SSSE3 4
+    pabsb   %1, %1
+    pabsb   %2, %2
+%endmacro
 
 %macro ABS4 6
     ABS2 %1, %2, %5, %6
     ABS2 %3, %4, %5, %6
 %endmacro
+
+%define ABS1 ABS1_MMX
+%define ABS2 ABS2_MMX
+%define ABSB ABSB_MMX
+%define ABSB2 ABSB2_MMX
 
 %macro SPLATB_MMX 3
     movd      %1, [%2-3] ;to avoid crossing a cacheline
@@ -226,10 +265,10 @@
 ; %3/%4: source regs
 ; %5/%6: tmp regs
 %ifidn %1, d
-%define mask [mask_10 GLOBAL]
+%define mask [mask_10]
 %define shift 16
 %elifidn %1, q
-%define mask [mask_1100 GLOBAL]
+%define mask [mask_1100]
 %define shift 32
 %endif
 %if %0==6 ; less dependency if we have two tmp
@@ -383,10 +422,10 @@
 %macro SUMSUBD2_AB 4
     mova    %4, %1
     mova    %3, %2
-    psraw   %2, 1
-    psraw   %1, 1
-    paddw   %2, %4
-    psubw   %1, %3
+    psraw   %2, 1  ; %2: %2>>1
+    psraw   %1, 1  ; %1: %1>>1
+    paddw   %2, %4 ; %2: %2>>1+%1
+    psubw   %1, %3 ; %1: %1>>1-%2
 %endmacro
 
 %macro DCT4_1D 5
@@ -407,15 +446,26 @@
 %macro IDCT4_1D 5-6
 %ifnum %5
     SUMSUBD2_AB m%2, m%4, m%6, m%5
+    ; %2: %2>>1-%4 %4: %2+%4>>1
     SUMSUB_BA   m%3, m%1, m%6
+    ; %3: %1+%3 %1: %1-%3
     SUMSUB_BADC m%4, m%3, m%2, m%1, m%6
+    ; %4: %1+%3 + (%2+%4>>1)
+    ; %3: %1+%3 - (%2+%4>>1)
+    ; %2: %1-%3 + (%2>>1-%4)
+    ; %1: %1-%3 - (%2>>1-%4)
 %else
     SUMSUBD2_AB m%2, m%4, [%5], [%5+16]
     SUMSUB_BA   m%3, m%1
     SUMSUB_BADC m%4, m%3, m%2, m%1
 %endif
     SWAP %1, %4, %3
+    ; %1: %1+%3 + (%2+%4>>1) row0
+    ; %2: %1-%3 + (%2>>1-%4) row1
+    ; %3: %1-%3 - (%2>>1-%4) row2
+    ; %4: %1+%3 - (%2+%4>>1) row3
 %endmacro
+
 
 %macro LOAD_DIFF 5
 %ifidn %3, none
@@ -512,4 +562,3 @@
     packuswb   %1, %1
     movh       %4, %1
 %endmacro
-

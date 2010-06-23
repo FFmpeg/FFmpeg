@@ -1,24 +1,38 @@
 ;*****************************************************************************
 ;* x86inc.asm
 ;*****************************************************************************
-;* Copyright (C) 2005-2008 Loren Merritt <lorenm@u.washington.edu>
+;* Copyright (C) 2005-2008 x264 project
 ;*
-;* This file is part of FFmpeg.
+;* Authors: Loren Merritt <lorenm@u.washington.edu>
+;*          Anton Mitrofanov <BugMaster@narod.ru>
 ;*
-;* FFmpeg is free software; you can redistribute it and/or
-;* modify it under the terms of the GNU Lesser General Public
-;* License as published by the Free Software Foundation; either
-;* version 2.1 of the License, or (at your option) any later version.
+;* Permission to use, copy, modify, and/or distribute this software for any
+;* purpose with or without fee is hereby granted, provided that the above
+;* copyright notice and this permission notice appear in all copies.
 ;*
-;* FFmpeg is distributed in the hope that it will be useful,
-;* but WITHOUT ANY WARRANTY; without even the implied warranty of
-;* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-;* Lesser General Public License for more details.
-;*
-;* You should have received a copy of the GNU Lesser General Public
-;* License along with FFmpeg; if not, write to the Free Software
-;* 51, Inc., Foundation Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+;* THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+;* WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+;* MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+;* ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+;* WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+;* ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+;* OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ;*****************************************************************************
+
+; This is a header file for the x264ASM assembly language, which uses
+; NASM/YASM syntax combined with a large number of macros to provide easy
+; abstraction between different calling conventions (x86_32, win64, linux64).
+; It also has various other useful features to simplify writing the kind of
+; DSP functions that are most often used in x264.
+
+; Unlike the rest of x264, this file is available under an ISC license, as it
+; has significant usefulness outside of x264 and we want it to be available
+; to the largest audience possible.  Of course, if you modify it for your own
+; purposes to add a new feature, we strongly encourage contributing a patch
+; as this feature might be useful for others as well.  Send patches or ideas
+; to x264-devel@videolan.org .
+
+%define program_name ff
 
 %ifdef ARCH_X86_64
     %ifidn __OUTPUT_FORMAT__,win32
@@ -26,6 +40,12 @@
     %else
         %define UNIX64
     %endif
+%endif
+
+%ifdef PREFIX
+    %define mangle(x) _ %+ x
+%else
+    %define mangle(x) x
 %endif
 
 ; FIXME: All of the 64bit asm functions that take a stride as an argument
@@ -47,28 +67,16 @@
     %endif
 %endmacro
 
-; PIC support macros.
-; x86_64 can't fit 64bit address literals in most instruction types,
-; so shared objects (under the assumption that they might be anywhere
-; in memory) must use an address mode that does fit.
-; So all accesses to global variables must use this macro, e.g.
-;     mov eax, [foo GLOBAL]
-; instead of
-;     mov eax, [foo]
-;
-; x86_32 doesn't require PIC.
-; Some distros prefer shared objects to be PIC, but nothing breaks if
-; the code contains a few textrels, so we'll skip that complexity.
-
 %ifdef WIN64
     %define PIC
 %elifndef ARCH_X86_64
+; x86_32 doesn't require PIC.
+; Some distros prefer shared objects to be PIC, but nothing breaks if
+; the code contains a few textrels, so we'll skip that complexity.
     %undef PIC
 %endif
 %ifdef PIC
-    %define GLOBAL wrt rip
-%else
-    %define GLOBAL
+    default rel
 %endif
 
 ; Macros to eliminate most code duplication between x86_32 and x86_64:
@@ -163,7 +171,7 @@ DECLARE_REG_SIZE bp, bpl
     %endrep
 %endmacro
 
-DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7
+DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9
 
 %ifdef ARCH_X86_64
     %define gprsize 8
@@ -259,15 +267,11 @@ DECLARE_REG 6, rax, eax, ax,  al,  [rsp + stack_offset + 56]
     %endif
 %endmacro
 
-%macro PROLOGUE 2-4+ ; #args, #regs, #xmm_regs, arg_names...
+%macro PROLOGUE 2-4+ 0 ; #args, #regs, #xmm_regs, arg_names...
     ASSERT %2 >= %1
     %assign regs_used %2
     ASSERT regs_used <= 7
-    %if %0 > 2
-        %assign xmm_regs_used %3
-    %else
-        %assign xmm_regs_used 0
-    %endif
+    %assign xmm_regs_used %3
     ASSERT xmm_regs_used <= 16
     %if regs_used > 4
         push r4
@@ -388,7 +392,7 @@ DECLARE_REG 6, ebp, ebp, bp, null, [esp + stack_offset + 28]
     %endif
 %endmacro
 
-%macro PROLOGUE 2-4+ ; #args, #regs, arg_names...
+%macro PROLOGUE 2-4+ ; #args, #regs, #xmm_regs, arg_names...
     ASSERT %2 >= %1
     %assign regs_used %2
     ASSERT regs_used <= 7
@@ -434,10 +438,7 @@ DECLARE_REG 6, ebp, ebp, bp, null, [esp + stack_offset + 28]
 
 ; Symbol prefix for C linkage
 %macro cglobal 1-2+
-    %xdefine %1 ff_%1
-    %ifdef PREFIX
-        %xdefine %1 _ %+ %1
-    %endif
+    %xdefine %1 mangle(program_name %+ _ %+ %1)
     %xdefine %1.skip_prologue %1 %+ .skip_prologue
     %ifidn __OUTPUT_FORMAT__,elf
         global %1:function hidden
@@ -454,10 +455,20 @@ DECLARE_REG 6, ebp, ebp, bp, null, [esp + stack_offset + 28]
 %endmacro
 
 %macro cextern 1
-    %ifdef PREFIX
-        %xdefine %1 _%1
-    %endif
+    %xdefine %1 mangle(program_name %+ _ %+ %1)
     extern %1
+%endmacro
+
+;like cextern, but without the prefix
+%macro cextern_naked 1
+    %xdefine %1 mangle(%1)
+    extern %1
+%endmacro
+
+%macro const 2+
+    %xdefine %1 mangle(program_name %+ _ %+ %1)
+    global %1
+    %1: %2
 %endmacro
 
 ; This is needed for ELF, otherwise the GNU linker assumes the stack is
@@ -465,9 +476,6 @@ DECLARE_REG 6, ebp, ebp, bp, null, [esp + stack_offset + 28]
 %ifidn __OUTPUT_FORMAT__,elf
 SECTION .note.GNU-stack noalloc noexec nowrite progbits
 %endif
-
-%assign FENC_STRIDE 16
-%assign FDEC_STRIDE 32
 
 ; merge mmx and sse*
 
@@ -575,7 +583,10 @@ INIT_MMX
 %endrep
 %endmacro
 
-%macro SAVE_MM_PERMUTATION 1
+; If SAVE_MM_PERMUTATION is placed at the end of a function and given the
+; function name, then any later calls to that function will automatically
+; load the permutation, so values can be returned in mmregs.
+%macro SAVE_MM_PERMUTATION 1 ; name to save as
     %assign %%i 0
     %rep num_mmregs
     CAT_XDEFINE %1_m, %%i, m %+ %%i
@@ -583,7 +594,7 @@ INIT_MMX
     %endrep
 %endmacro
 
-%macro LOAD_MM_PERMUTATION 1
+%macro LOAD_MM_PERMUTATION 1 ; name to load from
     %assign %%i 0
     %rep num_mmregs
     CAT_XDEFINE m, %%i, %1_m %+ %%i
@@ -599,7 +610,7 @@ INIT_MMX
     %endif
 %endmacro
 
-;Substitutions that reduce instruction size but are functionally equivalent
+; Substitutions that reduce instruction size but are functionally equivalent
 %macro add 2
     %ifnum %2
         %if %2==128
