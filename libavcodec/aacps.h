@@ -24,6 +24,9 @@
 
 #include <stdint.h>
 
+#include "avcodec.h"
+#include "get_bits.h"
+
 #define PS_MAX_NUM_ENV 5
 #define PS_MAX_NR_IIDICC 34
 #define PS_MAX_NR_IPDOPD 17
