@@ -204,10 +204,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     s->coder = &ff_aac_coders[2];
 
     s->lambda = avctx->global_quality ? avctx->global_quality : 120;
-#if !CONFIG_HARDCODED_TABLES
-    for (i = 0; i < 428; i++)
-        ff_aac_pow2sf_tab[i] = pow(2, (i - 200)/4.);
-#endif /* CONFIG_HARDCODED_TABLES */
+
+    ff_aac_tableinit();
 
     if (avctx->channels > 5)
         av_log(avctx, AV_LOG_ERROR, "This encoder does not yet enforce the restrictions on LFEs. "
