@@ -787,7 +787,7 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
        omethod == ORDER_METHOD_4LEVEL ||
        omethod == ORDER_METHOD_8LEVEL) {
         int levels = 1 << omethod;
-        uint32_t bits[levels];
+        uint32_t bits[1 << ORDER_METHOD_8LEVEL];
         int order;
         int opt_index = levels-1;
         opt_order = max_order-1;
