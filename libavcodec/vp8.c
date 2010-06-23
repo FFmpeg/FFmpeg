@@ -989,8 +989,8 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
                          mb->bmv[ 2*y    * 4 + 2*x+1].y +
                          mb->bmv[(2*y+1) * 4 + 2*x  ].y +
                          mb->bmv[(2*y+1) * 4 + 2*x+1].y;
-                uvmv.x = (uvmv.x + (uvmv.x < 0 ? -2 : 2)) / 4;
-                uvmv.y = (uvmv.y + (uvmv.y < 0 ? -2 : 2)) / 4;
+                uvmv.x = (uvmv.x + 2 + (uvmv.x >> (INT_BIT-1))) >> 2;
+                uvmv.y = (uvmv.y + 2 + (uvmv.y >> (INT_BIT-1))) >> 2;
                 if (s->profile == 3) {
                     uvmv.x &= ~7;
                     uvmv.y &= ~7;
