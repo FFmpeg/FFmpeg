@@ -519,11 +519,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             // there could be a optional stream properties object to follow
             // if so the next iteration will pick it up
+            continue;
         } else if (!guidcmp(&g, &ff_asf_head1_guid)) {
             int v1, v2;
             get_guid(pb, &g);
             v1 = get_le32(pb);
             v2 = get_le16(pb);
+            continue;
         } else if (!guidcmp(&g, &ff_asf_marker_header)) {
             int i, count, name_len;
             char name[1024];
