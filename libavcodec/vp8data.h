@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// TODO: move these #define ane enum to a better header...
+// TODO: move these #define and enum to a better header...
 
 #define VP8_MAX_QUANT 127
 
