@@ -36,6 +36,7 @@
 #include "vp56data.h"
 #include "vp6data.h"
 
+#define VP6_MAX_HUFF_SIZE 12
 
 static void vp6_parse_coeff(VP56Context *s);
 static void vp6_parse_coeff_huffman(VP56Context *s);
@@ -215,7 +216,7 @@ static int vp6_huff_cmp(const void *va, const void *vb)
 static void vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
                                 const uint8_t *map, unsigned size, VLC *vlc)
 {
-    Node nodes[2*size], *tmp = &nodes[size];
+    Node nodes[2*VP6_MAX_HUFF_SIZE], *tmp = &nodes[size];
     int a, b, i;
 
     /* first compute probabilities from model */
