@@ -265,6 +265,11 @@ echolog(){
     echo "$@"
 }
 
+warn(){
+    log "WARNING: $*"
+    WARNINGS="${WARNINGS}WARNING: $*\n"
+}
+
 die(){
     echolog "$@"
     cat <<EOF
@@ -3068,6 +3073,8 @@ print_config AV_HAVE_ $TMPH /dev/null $HAVE_LIST_PUB
 echo "#endif /* AVUTIL_AVCONFIG_H */" >> $TMPH
 
 cp_if_changed $TMPH libavutil/avconfig.h
+
+test -n "$WARNINGS" && printf "\n$WARNINGS"
 
 # build pkg-config files
 
