@@ -35,6 +35,7 @@ void ff_mms_set_stream_selection(URLContext *h, AVFormatContext *format);
 #undef NDEBUG
 #include <assert.h>
 
+#define ASF_MAX_STREAMS 127
 #define FRAME_HEADER_SIZE 17
 // Fix Me! FRAME_HEADER_SIZE may be different.
 
@@ -243,6 +244,11 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             unsigned int tag1;
             int64_t pos1, pos2, start_time;
             int test_for_ext_stream_audio, is_dvr_ms_audio=0;
+
+            if (s->nb_streams == ASF_MAX_STREAMS) {
+                av_log(s, AV_LOG_ERROR, "too many streams\n");
+                return AVERROR(EINVAL);
+            }
 
             pos1 = url_ftell(pb);
 
@@ -1053,7 +1059,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
     int64_t pts;
     int64_t pos= *ppos;
     int i;
-    int64_t start_pos[s->nb_streams];
+    int64_t start_pos[ASF_MAX_STREAMS];
 
     for(i=0; i<s->nb_streams; i++){
         start_pos[i]= pos;
