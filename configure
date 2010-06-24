@@ -1856,7 +1856,8 @@ elif $cc -V 2>&1 | grep -q Sun; then
     }
 fi
 
-test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
+test -n "$cc_type" && enable $cc_type ||
+    warn "Unknown C compiler $cc, unable to select optimal CFLAGS"
 
 : ${as_default:=$cc}
 : ${dep_cc_default:=$cc}
@@ -1947,7 +1948,7 @@ case "$arch" in
     ;;
 esac
 
-is_in $arch $ARCH_LIST || echo "WARNING: unknown arch $arch"
+is_in $arch $ARCH_LIST || warn "unknown architecture $arch"
 enable $arch
 
 # Add processor-specific flags
