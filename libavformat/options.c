@@ -48,7 +48,7 @@ static const AVOption options[]={
 {"genpts", "generate pts", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_GENPTS, INT_MIN, INT_MAX, D, "fflags"},
 {"nofillin", "do not fill in missing values that can be exactly calculated", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_NOFILLIN, INT_MIN, INT_MAX, D, "fflags"},
 {"noparse", "disable AVParsers, this needs nofillin too", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_NOPARSE, INT_MIN, INT_MAX, D, "fflags"},
-{"igndts", "ingore dts", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_IGNDTS, INT_MIN, INT_MAX, D, "fflags"},
+{"igndts", "ignore dts", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_IGNDTS, INT_MIN, INT_MAX, D, "fflags"},
 {"rtphint", "add rtp hinting", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_RTP_HINT, INT_MIN, INT_MAX, E, "fflags"},
 #if LIBAVFORMAT_VERSION_INT < (53<<16)
 {"track", " set the track number", OFFSET(track), FF_OPT_TYPE_INT, DEFAULT, 0, INT_MAX, E},
