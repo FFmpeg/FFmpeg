@@ -74,7 +74,7 @@ static void apply_window(const float *buf, const float *win1,
 
             "movaps      %%xmm0, (%4,%0)          \n\t"
             "movaps      %%xmm4, (%5,%0)          \n\t"
-            "addl           $16,  %0              \n\t"
+            "add            $16,  %0              \n\t"
             "jl              1b                   \n\t"
             :"+&r"(count)
             :"r"(win1a), "r"(win2a), "r"(bufa), "r"(sum1a), "r"(sum2a)
