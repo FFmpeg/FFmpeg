@@ -183,6 +183,8 @@ void ff_mpa_synth_filter_float(MPADecodeContext *s,
                          OUT_INT *samples, int incr,
                          INTFLOAT sb_samples[SBLIMIT]);
 
+void ff_mpegaudiodec_init_mmx(MPADecodeContext *s);
+
 /* fast header check for resync */
 static inline int ff_mpa_check_header(uint32_t header){
     /* header */

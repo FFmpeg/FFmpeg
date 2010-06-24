@@ -112,7 +112,7 @@ static const int32_t scale_factor_mult2[3][3] = {
     SCALE_GEN(4.0 / 9.0), /* 9 steps */
 };
 
-DECLARE_ALIGNED(16, MPA_INT, RENAME(ff_mpa_synth_window))[512];
+DECLARE_ALIGNED(16, MPA_INT, RENAME(ff_mpa_synth_window))[512+256];
 
 /**
  * Convert region offsets to region sizes and truncate
@@ -308,7 +308,9 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
     s->avctx = avctx;
     s->apply_window_mp3 = apply_window_mp3_c;
-
+#if HAVE_MMX
+    ff_mpegaudiodec_init_mmx(s);
+#endif
     avctx->sample_fmt= OUT_FMT;
     s->error_recognition= avctx->error_recognition;
 
@@ -820,7 +822,7 @@ static inline int round_sample(int64_t *sum)
 
 void av_cold RENAME(ff_mpa_synth_init)(MPA_INT *window)
 {
-    int i;
+    int i, j;
 
     /* max = 18760, max sum over all 16 coefs : 44736 */
     for(i=0;i<257;i++) {
@@ -837,6 +839,15 @@ void av_cold RENAME(ff_mpa_synth_init)(MPA_INT *window)
         if (i != 0)
             window[512 - i] = v;
     }
+
+    // Needed for avoiding shuffles in ASM implementations
+    for(i=0; i < 8; i++)
+        for(j=0; j < 16; j++)
+            window[512+16*i+j] = window[64*i+32-j];
+
+    for(i=0; i < 8; i++)
+        for(j=0; j < 16; j++)
+            window[512+128+16*i+j] = window[64*i+48-j];
 }
 
 static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,

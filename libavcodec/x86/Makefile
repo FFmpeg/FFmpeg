@@ -10,6 +10,11 @@ YASM-OBJS-$(CONFIG_GPL)                += x86/h264_deblock_sse2.o       \
                                           x86/h264_idct_sse2.o          \
 
 MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
+MMX-OBJS-$(CONFIG_MP1FLOAT_DECODER)    += x86/mpegaudiodec_mmx.o
+MMX-OBJS-$(CONFIG_MP2FLOAT_DECODER)    += x86/mpegaudiodec_mmx.o
+MMX-OBJS-$(CONFIG_MP3FLOAT_DECODER)    += x86/mpegaudiodec_mmx.o
+MMX-OBJS-$(CONFIG_MP3ON4FLOAT_DECODER) += x86/mpegaudiodec_mmx.o
+MMX-OBJS-$(CONFIG_MP3ADUFLOAT_DECODER) += x86/mpegaudiodec_mmx.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
 MMX-OBJS-$(CONFIG_GPL)                 += x86/idct_mmx.o
 MMX-OBJS-$(CONFIG_LPC)                 += x86/lpc_mmx.o
