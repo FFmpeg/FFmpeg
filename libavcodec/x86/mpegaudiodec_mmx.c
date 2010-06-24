@@ -51,11 +51,11 @@ static void apply_window(const float *buf, const float *win1,
 
 
 #define MULT(a, b)                                 \
-    "movaps " #a "(%0,%5), %%xmm1           \n\t"  \
-    "movaps " #a "(%2,%5), %%xmm2           \n\t"  \
+    "movaps " #a "(%1,%0), %%xmm1           \n\t"  \
+    "movaps " #a "(%3,%0), %%xmm2           \n\t"  \
     "mulps         %%xmm2, %%xmm1           \n\t"  \
     "subps         %%xmm1, %%xmm0           \n\t"  \
-    "mulps  " #b "(%1,%5), %%xmm2           \n\t"  \
+    "mulps  " #b "(%2,%0), %%xmm2           \n\t"  \
     "subps         %%xmm2, %%xmm4           \n\t"  \
 
     __asm__ volatile(
@@ -72,11 +72,12 @@ static void apply_window(const float *buf, const float *win1,
             MULT(1536, 384)
             MULT(1792, 448)
 
-            "movaps      %%xmm0, (%3,%5)          \n\t"
-            "movaps      %%xmm4, (%4,%5)          \n\t"
-            "addl           $16,  %5              \n\t"
+            "movaps      %%xmm0, (%4,%0)          \n\t"
+            "movaps      %%xmm4, (%5,%0)          \n\t"
+            "addl           $16,  %0              \n\t"
             "jl              1b                   \n\t"
-            :"+&r"(win1a), "+&r"(win2a), "+&r"(bufa), "+&r"(sum1a), "+&r"(sum2a), "+&r"(count)
+            :"+&r"(count)
+            :"r"(win1a), "r"(win2a), "r"(bufa), "r"(sum1a), "r"(sum2a)
             );
 
 #undef MULT
