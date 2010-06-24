@@ -151,10 +151,15 @@ static inline void ff_mdct_calc(FFTContext *s, FFTSample *output,
 }
 
 /**
+ * Maximum window size for ff_kbd_window_init.
+ */
+#define FF_KBD_WINDOW_MAX 1024
+
+/**
  * Generate a Kaiser-Bessel Derived Window.
  * @param   window  pointer to half window
  * @param   alpha   determines window shape
- * @param   n       size of half window
+ * @param   n       size of half window, max FF_KBD_WINDOW_MAX
  */
 void ff_kbd_window_init(float *window, float alpha, int n);
 
