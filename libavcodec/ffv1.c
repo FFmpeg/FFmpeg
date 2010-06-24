@@ -957,7 +957,7 @@ static void decode_rgb_frame(FFV1Context *s, uint32_t *src, int w, int h, int st
             b += g;
             r += g;
 
-            src[x + stride*y]= b + (g<<8) + (r<<16);
+            src[x + stride*y]= b + (g<<8) + (r<<16) + (0xFF<<24);
         }
     }
 }
