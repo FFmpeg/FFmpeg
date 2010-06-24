@@ -2465,7 +2465,10 @@ EOF
     case "$objformat" in
         elf) enabled debug && append YASMFLAGS "-g dwarf2" ;;
     esac
-    disabled yasm || { check_yasm "pabsw xmm0, xmm0" && enable yasm; }
+    if ! disabled yasm; then
+        check_yasm "pabsw xmm0, xmm0" && enable yasm ||
+            warn "yasm not found, performance will suffer"
+    fi
 
     case "$cpu" in
         athlon*|opteron*|k8*|pentium|pentium-mmx|prescott|nocona|atom|geode)
