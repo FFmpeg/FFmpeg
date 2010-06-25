@@ -827,23 +827,6 @@ require2(){
     check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
 }
 
-check_foo_config(){
-    cfg=$1
-    pkg=$2
-    header=$3
-    func=$4
-    shift 4
-    disable $cfg
-    check_cmd ${pkg}-config --version
-    err=$?
-    if test "$err" = 0; then
-        temp_cflags $(${pkg}-config --cflags)
-        temp_extralibs $(${pkg}-config --libs)
-        check_lib "$@" $header $func && enable $cfg
-    fi
-    return $err
-}
-
 check_host_cc(){
     log check_host_cc "$@"
     cat > $TMPC
