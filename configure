@@ -552,7 +552,6 @@ temp_extralibs(){
 append(){
     var=$1
     shift
-    flags_saved && eval "SAVE_$var=\"\$SAVE_$var $*\""
     eval "$var=\"\$$var $*\""
 }
 
