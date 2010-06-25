@@ -28,6 +28,7 @@
 #include "libavcodec/h264dsp.h"
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/simple_idct.h"
+#include "libavcodec/ac3dec.h"
 #include "dsputil_mmx.h"
 #include "idct_xvid.h"
 
@@ -2049,7 +2050,7 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2], int out_c
     } else if(in_ch == 5 && out_ch == 1 && matrix_cmp[0][0]==matrix_cmp[2][0] && matrix_cmp[3][0]==matrix_cmp[4][0]) {
         MIX5(IF1,IF0);
     } else {
-        DECLARE_ALIGNED(16, float, matrix_simd)[in_ch][2][4];
+        DECLARE_ALIGNED(16, float, matrix_simd)[AC3_MAX_CHANNELS][2][4];
         j = 2*in_ch*sizeof(float);
         __asm__ volatile(
             "1: \n"
