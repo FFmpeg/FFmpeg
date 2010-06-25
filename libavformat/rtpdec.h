@@ -26,34 +26,6 @@
 #include "avformat.h"
 #include "rtp.h"
 
-/** Structure listing useful vars to parse RTP packet payload*/
-typedef struct rtp_payload_data
-{
-    int sizelength;
-    int indexlength;
-    int indexdeltalength;
-    int profile_level_id;
-    int streamtype;
-    int objecttype;
-    char *mode;
-
-    /** mpeg 4 AU headers */
-    struct AUHeaders {
-        int size;
-        int index;
-        int cts_flag;
-        int cts;
-        int dts_flag;
-        int dts;
-        int rap_flag;
-        int streamstate;
-    } *au_headers;
-    int au_headers_allocated;
-    int nb_au_headers;
-    int au_headers_length_bytes;
-    int cur_au_index;
-} RTPPayloadData;
-
 typedef struct PayloadContext PayloadContext;
 typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
 
@@ -61,7 +33,7 @@ typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
 #define RTP_MAX_PACKET_LENGTH 1500 /* XXX: suppress this define */
 
 typedef struct RTPDemuxContext RTPDemuxContext;
-RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, RTPPayloadData *rtp_payload_data);
+RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type);
 void rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
                                     RTPDynamicProtocolHandler *handler);
 int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
@@ -186,9 +158,6 @@ struct RTPDemuxContext {
     /* buffer for output */
     uint8_t buf[RTP_MAX_PACKET_LENGTH];
     uint8_t *buf_ptr;
-
-    /* special infos for au headers parsing */
-    RTPPayloadData *rtp_payload_data; // TODO: Move into dynamic payload handlers
 
     /* dynamic payload stuff */
     DynamicPayloadPacketHandlerProc parse_packet;     ///< This is also copied from the dynamic protocol handler structure

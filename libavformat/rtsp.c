@@ -561,8 +561,7 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
                                             rtsp_st->dynamic_handler);
     else
         rtsp_st->transport_priv = rtp_parse_open(s, st, rtsp_st->rtp_handle,
-                                         rtsp_st->sdp_payload_type,
-                                         &rtsp_st->rtp_payload_data);
+                                         rtsp_st->sdp_payload_type);
 
     if (!rtsp_st->transport_priv) {
          return AVERROR(ENOMEM);

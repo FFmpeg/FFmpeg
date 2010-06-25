@@ -315,9 +315,8 @@ void rtp_send_punch_packets(URLContext* rtp_handle)
  * open a new RTP parse context for stream 'st'. 'st' can be NULL for
  * MPEG2TS streams to indicate that they should be demuxed inside the
  * rtp demux (otherwise CODEC_ID_MPEG2TS packets are returned)
- * TODO: change this to not take rtp_payload data, and use the new dynamic payload system.
  */
-RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, RTPPayloadData *rtp_payload_data)
+RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type)
 {
     RTPDemuxContext *s;
 
@@ -329,7 +328,6 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
     s->first_rtcp_ntp_time = AV_NOPTS_VALUE;
     s->ic = s1;
     s->st = st;
-    s->rtp_payload_data = rtp_payload_data;
     rtp_init_statistics(&s->statistics, 0); // do we know the initial sequence from sdp?
     if (!strcmp(ff_rtp_enc_name(payload_type), "MP2T")) {
         s->ts = ff_mpegts_parse_open(s->ic);
@@ -528,9 +526,6 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
 
 void rtp_parse_close(RTPDemuxContext *s)
 {
-    // TODO: fold this into the protocol specific data fields.
-    av_free(s->rtp_payload_data->mode);
-    av_free(s->rtp_payload_data->au_headers);
     if (!strcmp(ff_rtp_enc_name(s->payload_type), "MP2T")) {
         ff_mpegts_parse_close(s->ts);
     }

@@ -33,7 +33,33 @@
 #include "libavcodec/get_bits.h"
 #include <strings.h>
 
-#include "rtsp.h" //XXX remove this dependency
+/** Structure listing useful vars to parse RTP packet payload*/
+struct PayloadContext
+{
+    int sizelength;
+    int indexlength;
+    int indexdeltalength;
+    int profile_level_id;
+    int streamtype;
+    int objecttype;
+    char *mode;
+
+    /** mpeg 4 AU headers */
+    struct AUHeaders {
+        int size;
+        int index;
+        int cts_flag;
+        int cts;
+        int dts_flag;
+        int dts;
+        int rap_flag;
+        int streamstate;
+    } *au_headers;
+    int au_headers_allocated;
+    int nb_au_headers;
+    int au_headers_length_bytes;
+    int cur_au_index;
+};
 
 /* return the length and optionally the data */
 static int hex_to_data(uint8_t *data, const char *p)
@@ -76,19 +102,39 @@ typedef struct {
 static const AttrNameMap attr_names[]=
 {
     { "SizeLength",       ATTR_NAME_TYPE_INT,
-      offsetof(RTPPayloadData, sizelength) },
+      offsetof(PayloadContext, sizelength) },
     { "IndexLength",      ATTR_NAME_TYPE_INT,
-      offsetof(RTPPayloadData, indexlength) },
+      offsetof(PayloadContext, indexlength) },
     { "IndexDeltaLength", ATTR_NAME_TYPE_INT,
-      offsetof(RTPPayloadData, indexdeltalength) },
+      offsetof(PayloadContext, indexdeltalength) },
     { "profile-level-id", ATTR_NAME_TYPE_INT,
-      offsetof(RTPPayloadData, profile_level_id) },
+      offsetof(PayloadContext, profile_level_id) },
     { "StreamType",       ATTR_NAME_TYPE_INT,
-      offsetof(RTPPayloadData, streamtype) },
+      offsetof(PayloadContext, streamtype) },
     { "mode",             ATTR_NAME_TYPE_STR,
-      offsetof(RTPPayloadData, mode) },
+      offsetof(PayloadContext, mode) },
     { NULL, -1, -1 },
 };
+
+static PayloadContext *new_context(void)
+{
+    return av_mallocz(sizeof(PayloadContext));
+}
+
+static void free_context(PayloadContext * data)
+{
+    int i;
+    for (i = 0; i < data->nb_au_headers; i++) {
+         /* according to rtp_parse_mp4_au, we treat multiple
+          * au headers as one, so nb_au_headers is always 1.
+          * loop anyway in case this changes.
+          * (note: changes done carelessly might lead to a double free)
+          */
+       av_free(&data->au_headers[i]);
+    }
+    av_free(data->mode);
+    av_free(data);
+}
 
 static int parse_fmtp_config(AVCodecContext * codec, char *value)
 {
@@ -104,15 +150,10 @@ static int parse_fmtp_config(AVCodecContext * codec, char *value)
     return 0;
 }
 
-static int rtp_parse_mp4_au(RTSPStream *rtsp_st, const uint8_t *buf)
+static int rtp_parse_mp4_au(PayloadContext *infos, const uint8_t *buf)
 {
     int au_headers_length, au_header_size, i;
     GetBitContext getbitcontext;
-    RTPPayloadData *infos;
-
-    infos =  &rtsp_st->rtp_payload_data;
-    if (infos == NULL)
-        return -1;
 
     /* decode the first 2 bytes where the AUHeader sections are stored
        length in bits */
@@ -158,21 +199,15 @@ static int rtp_parse_mp4_au(RTSPStream *rtsp_st, const uint8_t *buf)
 
 /* Follows RFC 3640 */
 static int aac_parse_packet(AVFormatContext *ctx,
-                            PayloadContext *data,
+                            PayloadContext *infos,
                             AVStream *st,
                             AVPacket *pkt,
                             uint32_t *timestamp,
                             const uint8_t *buf, int len, int flags)
 {
-    RTSPStream *rtsp_st = st->priv_data;
-    RTPPayloadData *infos;
-
-    if (rtp_parse_mp4_au(rtsp_st, buf))
+    if (rtp_parse_mp4_au(infos, buf))
         return -1;
 
-    infos = &rtsp_st->rtp_payload_data;
-    if (infos == NULL)
-        return -1;
     buf += infos->au_headers_length_bytes + 2;
     len -= infos->au_headers_length_bytes + 2;
 
@@ -186,15 +221,13 @@ static int aac_parse_packet(AVFormatContext *ctx,
 }
 
 static int parse_sdp_line(AVFormatContext *s, int st_index,
-                          PayloadContext *data, const char *line)
+                          PayloadContext *rtp_payload_data, const char *line)
 {
     const char *p;
     char value[4096], attr[25];
     int res = 0, i;
     AVStream *st = s->streams[st_index];
-    RTSPStream *rtsp_st = st->priv_data;
     AVCodecContext* codec = st->codec;
-    RTPPayloadData *rtp_payload_data = &rtsp_st->rtp_payload_data;
 
     if (av_strstart(line, "fmtp:", &p)) {
         // remove protocol identifier
@@ -247,7 +280,7 @@ RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler = {
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = CODEC_ID_AAC,
     .parse_sdp_a_line   = parse_sdp_line,
-    .open               = NULL,
-    .close              = NULL,
+    .open               = new_context,
+    .close              = free_context,
     .parse_packet       = aac_parse_packet
 };

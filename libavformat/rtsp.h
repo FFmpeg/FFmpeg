@@ -323,11 +323,6 @@ typedef struct RTSPStream {
     int sdp_payload_type;     /**< payload type */
     //@}
 
-    /** rtp payload parsing infos from SDP (i.e. mapping between private
-     * payload IDs and media-types (string), so that we can derive what
-     * type of payload we're dealing with (and how to parse it). */
-    RTPPayloadData rtp_payload_data;
-
     /** The following are used for dynamic protocols (rtp_*.c/rdt.c) */
     //@{
     /** handler structure */
