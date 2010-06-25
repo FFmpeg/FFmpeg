@@ -252,7 +252,8 @@ static const uint8_t subpel_filters[7][6] = {
 
 #define PUT_PIXELS(WIDTH) \
 static void put_vp8_pixels ## WIDTH ##_c(uint8_t *dst, int dststride, uint8_t *src, int srcstride, int h, int x, int y) { \
-    for (int y = 0; y < h; y++, dst+= dststride, src+= srcstride) { \
+    int y; \
+    for (y = 0; y < h; y++, dst+= dststride, src+= srcstride) { \
         memcpy(dst, src, WIDTH); \
     } \
 }
