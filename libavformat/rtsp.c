@@ -158,59 +158,6 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     return 0;
 }
 
-/* return the length and optionally the data */
-static int hex_to_data(uint8_t *data, const char *p)
-{
-    int c, len, v;
-
-    len = 0;
-    v = 1;
-    for (;;) {
-        p += strspn(p, SPACE_CHARS);
-        if (*p == '\0')
-            break;
-        c = toupper((unsigned char) *p++);
-        if (c >= '0' && c <= '9')
-            c = c - '0';
-        else if (c >= 'A' && c <= 'F')
-            c = c - 'A' + 10;
-        else
-            break;
-        v = (v << 4) | c;
-        if (v & 0x100) {
-            if (data)
-                data[len] = v;
-            len++;
-            v = 1;
-        }
-    }
-    return len;
-}
-
-static void sdp_parse_fmtp_config(AVCodecContext * codec, void *ctx,
-                                  char *attr, char *value)
-{
-    switch (codec->codec_id) {
-    case CODEC_ID_MPEG4:
-    case CODEC_ID_AAC:
-        if (!strcmp(attr, "config")) {
-            /* decode the hexa encoded parameter */
-            int len = hex_to_data(NULL, value);
-            if (codec->extradata)
-                av_free(codec->extradata);
-            codec->extradata = av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (!codec->extradata)
-                return;
-            codec->extradata_size = len;
-            hex_to_data(codec->extradata, value);
-        }
-        break;
-    default:
-        break;
-    }
-    return;
-}
-
 typedef struct {
     const char *str;
     uint16_t    type;
@@ -263,16 +210,11 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
     char value[4096];
     int i;
     RTSPStream *rtsp_st = st->priv_data;
-    AVCodecContext *codec = st->codec;
     RTPPayloadData *rtp_payload_data = &rtsp_st->rtp_payload_data;
 
     /* loop on each attribute */
     while (ff_rtsp_next_attr_and_value(&p, attr, sizeof(attr),
                                        value, sizeof(value))) {
-        /* grab the codec extra_data from the config parameter of the fmtp
-         * line */
-        sdp_parse_fmtp_config(codec, rtsp_st->dynamic_protocol_context,
-                              attr, value);
         /* Looking for a known attribute */
         for (i = 0; attr_names[i].str; ++i) {
             if (!strcasecmp(attr, attr_names[i].str)) {

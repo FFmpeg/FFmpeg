@@ -34,6 +34,7 @@
 #include "rtpdec_asf.h"
 #include "rtpdec_h263.h"
 #include "rtpdec_h264.h"
+#include "rtpdec_mpeg4.h"
 #include "rtpdec_xiph.h"
 
 //#define DEBUG
@@ -50,9 +51,6 @@
 /* statistics functions */
 RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler= NULL;
 
-static RTPDynamicProtocolHandler mp4v_es_handler= {"MP4V-ES", AVMEDIA_TYPE_VIDEO, CODEC_ID_MPEG4};
-static RTPDynamicProtocolHandler mpeg4_generic_handler= {"mpeg4-generic", AVMEDIA_TYPE_AUDIO, CODEC_ID_AAC};
-
 void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
 {
     handler->next= RTPFirstDynamicPayloadHandler;
@@ -61,8 +59,8 @@ void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
 
 void av_register_rtp_dynamic_payload_handlers(void)
 {
-    ff_register_dynamic_payload_handler(&mp4v_es_handler);
-    ff_register_dynamic_payload_handler(&mpeg4_generic_handler);
+    ff_register_dynamic_payload_handler(&ff_mp4v_es_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_mpeg4_generic_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_amr_nb_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_amr_wb_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_h263_1998_dynamic_handler);
