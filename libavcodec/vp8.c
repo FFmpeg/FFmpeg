@@ -1384,7 +1384,7 @@ static av_cold int vp8_decode_init(AVCodecContext *avctx)
 
     // intra pred needs edge emulation among other things
     if (avctx->flags&CODEC_FLAG_EMU_EDGE) {
-        av_log(avctx, AV_LOG_ERROR, "Edge emulation not supproted\n");
+        av_log(avctx, AV_LOG_ERROR, "Edge emulation not supported\n");
         return AVERROR_PATCHWELCOME;
     }
 
