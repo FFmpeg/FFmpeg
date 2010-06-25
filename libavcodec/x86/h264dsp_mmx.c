@@ -2345,7 +2345,7 @@ void ff_pred8x8_horizontal_ssse3   (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_mmx         (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_mmxext      (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_sse2        (uint8_t *src, int stride);
-void ff_pred8x8_tm_vp8_ssse3      (uint8_t *src, int stride);
+void ff_pred8x8_tm_vp8_ssse3       (uint8_t *src, int stride);
 
 void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
 {
