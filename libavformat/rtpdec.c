@@ -370,58 +370,6 @@ rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
     s->parse_packet = handler->parse_packet;
 }
 
-static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
-{
-    int au_headers_length, au_header_size, i;
-    GetBitContext getbitcontext;
-    RTPPayloadData *infos;
-
-    infos = s->rtp_payload_data;
-
-    if (infos == NULL)
-        return -1;
-
-    /* decode the first 2 bytes where the AUHeader sections are stored
-       length in bits */
-    au_headers_length = AV_RB16(buf);
-
-    if (au_headers_length > RTP_MAX_PACKET_LENGTH)
-      return -1;
-
-    infos->au_headers_length_bytes = (au_headers_length + 7) / 8;
-
-    /* skip AU headers length section (2 bytes) */
-    buf += 2;
-
-    init_get_bits(&getbitcontext, buf, infos->au_headers_length_bytes * 8);
-
-    /* XXX: Wrong if optionnal additional sections are present (cts, dts etc...) */
-    au_header_size = infos->sizelength + infos->indexlength;
-    if (au_header_size <= 0 || (au_headers_length % au_header_size != 0))
-        return -1;
-
-    infos->nb_au_headers = au_headers_length / au_header_size;
-    if (!infos->au_headers || infos->au_headers_allocated < infos->nb_au_headers) {
-        av_free(infos->au_headers);
-        infos->au_headers = av_malloc(sizeof(struct AUHeaders) * infos->nb_au_headers);
-        infos->au_headers_allocated = infos->nb_au_headers;
-    }
-
-    /* XXX: We handle multiple AU Section as only one (need to fix this for interleaving)
-       In my test, the FAAD decoder does not behave correctly when sending each AU one by one
-       but does when sending the whole as one big packet...  */
-    infos->au_headers[0].size = 0;
-    infos->au_headers[0].index = 0;
-    for (i = 0; i < infos->nb_au_headers; ++i) {
-        infos->au_headers[0].size += get_bits_long(&getbitcontext, infos->sizelength);
-        infos->au_headers[0].index = get_bits_long(&getbitcontext, infos->indexlength);
-    }
-
-    infos->nb_au_headers = 1;
-
-    return 0;
-}
-
 /**
  * This was the second switch in rtp_parse packet.  Normalizes time, if required, sets stream_index, etc.
  */
@@ -562,29 +510,6 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             }
             av_new_packet(pkt, len);
             memcpy(pkt->data, buf, len);
-            break;
-            // moved from below, verbatim.  this is because this section handles packets, and the lower switch handles
-            // timestamps.
-            // TODO: Put this into a dynamic packet handler...
-        case CODEC_ID_AAC:
-            if (rtp_parse_mp4_au(s, buf))
-                return -1;
-            {
-                RTPPayloadData *infos = s->rtp_payload_data;
-                if (infos == NULL)
-                    return -1;
-                buf += infos->au_headers_length_bytes + 2;
-                len -= infos->au_headers_length_bytes + 2;
-
-                /* XXX: Fixme we only handle the case where rtp_parse_mp4_au define
-                    one au_header */
-                av_new_packet(pkt, infos->au_headers[0].size);
-                memcpy(pkt->data, buf, infos->au_headers[0].size);
-                buf += infos->au_headers[0].size;
-                len -= infos->au_headers[0].size;
-            }
-            s->read_buf_size = len;
-            rv= 0;
             break;
         default:
             av_new_packet(pkt, len);
