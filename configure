@@ -513,42 +513,6 @@ print_config(){
     done
 }
 
-flags_saved(){
-    (: ${SAVE_CFLAGS?}) 2> /dev/null
-}
-
-save_flags(){
-    flags_saved && return
-    SAVE_CFLAGS="$CFLAGS"
-    SAVE_LDFLAGS="$LDFLAGS"
-    SAVE_extralibs="$extralibs"
-}
-
-restore_flags(){
-    flags_saved || return
-    CFLAGS="$SAVE_CFLAGS"
-    LDFLAGS="$SAVE_LDFLAGS"
-    extralibs="$SAVE_extralibs"
-    unset SAVE_CFLAGS
-    unset SAVE_LDFLAGS
-    unset SAVE_extralibs
-}
-
-temp_cflags(){
-    save_flags
-    CFLAGS="$CFLAGS $*"
-}
-
-temp_ldflags(){
-    save_flags
-    LDFLAGS="$LDFLAGS $*"
-}
-
-temp_extralibs(){
-    save_flags
-    extralibs="$extralibs $*"
-}
-
 append(){
     var=$1
     shift
