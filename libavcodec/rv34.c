@@ -103,8 +103,8 @@ static void rv34_gen_vlc(const uint8_t *bits, int size, VLC *vlc, const uint8_t 
 {
     int i;
     int counts[17] = {0}, codes[17];
-    uint16_t cw[size], syms[size];
-    uint8_t bits2[size];
+    uint16_t cw[MAX_VLC_SIZE], syms[MAX_VLC_SIZE];
+    uint8_t bits2[MAX_VLC_SIZE];
     int maxbits = 0, realsize = 0;
 
     for(i = 0; i < size; i++){
