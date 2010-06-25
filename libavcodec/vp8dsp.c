@@ -250,6 +250,16 @@ static const uint8_t subpel_filters[7][6] = {
     { 0,   1,  12, 123,   6,   0 },
 };
 
+#define PUT_PIXELS(WIDTH) \
+static void put_vp8_pixels ## WIDTH ##_c(uint8_t *dst, int dststride, uint8_t *src, int srcstride, int h, int x, int y) { \
+    for (int y = 0; y < h; y++, dst+= dststride, src+= srcstride) { \
+        memcpy(dst, src, WIDTH); \
+    } \
+}
+
+PUT_PIXELS(16)
+PUT_PIXELS(8)
+PUT_PIXELS(4)
 
 #define FILTER_6TAP(src, F, stride) \
     av_clip_uint8((F[2]*src[x+0*stride] - F[1]*src[x-1*stride] + F[0]*src[x-2*stride] + \
@@ -260,7 +270,7 @@ static const uint8_t subpel_filters[7][6] = {
                    F[3]*src[x+1*stride] - F[4]*src[x+2*stride] + 64) >> 7)
 
 #define VP8_EPEL_H(SIZE, FILTER, FILTERNAME) \
-static void put_vp8_epel ## SIZE ## _ ## FILTERNAME ## _c(uint8_t *dst, uint8_t *src, int stride, int h, int mx, int my) \
+static void put_vp8_epel ## SIZE ## _ ## FILTERNAME ## _c(uint8_t *dst, int dststride, uint8_t *src, int srcstride, int h, int mx, int my) \
 { \
     const uint8_t *filter = subpel_filters[mx-1]; \
     int x, y; \
@@ -268,37 +278,37 @@ static void put_vp8_epel ## SIZE ## _ ## FILTERNAME ## _c(uint8_t *dst, uint8_t 
     for (y = 0; y < h; y++) { \
         for (x = 0; x < SIZE; x++) \
             dst[x] = FILTER(src, filter, 1); \
-        dst += stride; \
-        src += stride; \
+        dst += dststride; \
+        src += srcstride; \
     } \
 }
 #define VP8_EPEL_V(SIZE, FILTER, FILTERNAME) \
-static void put_vp8_epel ## SIZE ## _ ## FILTERNAME ## _c(uint8_t *dst, uint8_t *src, int stride, int h, int mx, int my) \
+static void put_vp8_epel ## SIZE ## _ ## FILTERNAME ## _c(uint8_t *dst, int dststride, uint8_t *src, int srcstride, int h, int mx, int my) \
 { \
     const uint8_t *filter = subpel_filters[my-1]; \
     int x, y; \
 \
     for (y = 0; y < h; y++) { \
         for (x = 0; x < SIZE; x++) \
-            dst[x] = FILTER(src, filter, stride); \
-        dst += stride; \
-        src += stride; \
+            dst[x] = FILTER(src, filter, srcstride); \
+        dst += dststride; \
+        src += srcstride; \
     } \
 }
 #define VP8_EPEL_HV(SIZE, FILTERX, FILTERY, FILTERNAME) \
-static void put_vp8_epel ## SIZE ## _ ## FILTERNAME ## _c(uint8_t *dst, uint8_t *src, int stride, int h, int mx, int my) \
+static void put_vp8_epel ## SIZE ## _ ## FILTERNAME ## _c(uint8_t *dst, int dststride, uint8_t *src, int srcstride, int h, int mx, int my) \
 { \
     const uint8_t *filter = subpel_filters[mx-1]; \
     int x, y; \
     uint8_t tmp_array[(2*SIZE+5)*SIZE]; \
     uint8_t *tmp = tmp_array; \
-    src -= 2*stride; \
+    src -= 2*srcstride; \
 \
     for (y = 0; y < h+5; y++) { \
         for (x = 0; x < SIZE; x++) \
             tmp[x] = FILTERX(src, filter, 1); \
         tmp += SIZE; \
-        src += stride; \
+        src += srcstride; \
     } \
 \
     tmp = tmp_array + 2*SIZE; \
@@ -307,7 +317,7 @@ static void put_vp8_epel ## SIZE ## _ ## FILTERNAME ## _c(uint8_t *dst, uint8_t 
     for (y = 0; y < h; y++) { \
         for (x = 0; x < SIZE; x++) \
             dst[x] = FILTERY(tmp, filter, SIZE); \
-        dst += stride; \
+        dst += dststride; \
         tmp += SIZE; \
     } \
 }
@@ -338,7 +348,7 @@ VP8_EPEL_HV(8,  FILTER_6TAP, FILTER_6TAP, h6v6)
 VP8_EPEL_HV(4,  FILTER_6TAP, FILTER_6TAP, h6v6)
 
 #define VP8_MC_FUNC(IDX, SIZE) \
-    dsp->put_vp8_epel_pixels_tab[IDX][0][0] = ff_put_vp8_pixels ## SIZE ## _c; \
+    dsp->put_vp8_epel_pixels_tab[IDX][0][0] = put_vp8_pixels ## SIZE ## _c; \
     dsp->put_vp8_epel_pixels_tab[IDX][0][1] = put_vp8_epel ## SIZE ## _h4_c; \
     dsp->put_vp8_epel_pixels_tab[IDX][0][2] = put_vp8_epel ## SIZE ## _h6_c; \
     dsp->put_vp8_epel_pixels_tab[IDX][1][0] = put_vp8_epel ## SIZE ## _v4_c; \

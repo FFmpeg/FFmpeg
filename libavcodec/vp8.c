@@ -912,7 +912,7 @@ static inline void vp8_mc(VP8Context *s, int luma,
                           uint8_t *dst, uint8_t *src, const VP56mv *mv,
                           int x_off, int y_off, int block_w, int block_h,
                           int width, int height, int linesize,
-                          h264_chroma_mc_func mc_func[3][3])
+                          vp8_mc_func mc_func[3][3])
 {
     static const uint8_t idx[8] = { 0, 1, 2, 1, 2, 1, 2, 1 };
     int mx = (mv->x << luma)&7, mx_idx = idx[mx];
@@ -931,7 +931,7 @@ static inline void vp8_mc(VP8Context *s, int luma,
         src = s->edge_emu_buffer + 2 + linesize * 2;
     }
 
-    mc_func[my_idx][mx_idx](dst, src, linesize, block_h, mx, my);
+    mc_func[my_idx][mx_idx](dst, linesize, src, linesize, block_h, mx, my);
 }
 
 /**

@@ -27,6 +27,8 @@
 
 #include "dsputil.h"
 
+typedef void (*vp8_mc_func)(uint8_t *dst/*align 8*/, int dstStride, uint8_t *src/*align 1*/, int srcStride, int h, int x, int y);
+
 typedef struct VP8DSPContext {
     void (*vp8_luma_dc_wht)(DCTELEM block[4][4][16], DCTELEM dc[16]);
     void (*vp8_idct_add)(uint8_t *dst, DCTELEM block[16], int stride);
@@ -55,7 +57,7 @@ typedef struct VP8DSPContext {
      * third dimension: same as second dimention, for horizontal interpolation
      * so something like put_vp8_epel_pixels_tab[width>>3][2*!!my-(my&1)][2*!!mx-(mx&1)](..., mx, my)
      */
-    h264_chroma_mc_func put_vp8_epel_pixels_tab[3][3][3];
+    vp8_mc_func put_vp8_epel_pixels_tab[3][3][3];
 } VP8DSPContext;
 
 void ff_put_vp8_pixels16_c(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y);

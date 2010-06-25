@@ -2657,18 +2657,6 @@ static void avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, int stride){
 }
 #endif /* CONFIG_RV40_DECODER */
 
-#if CONFIG_VP8_DECODER
-void ff_put_vp8_pixels16_c(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) {
-    put_pixels16_c(dst, src, stride, h);
-}
-void ff_put_vp8_pixels8_c(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) {
-    put_pixels8_c(dst, src, stride, h);
-}
-void ff_put_vp8_pixels4_c(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) {
-    put_pixels4_c(dst, src, stride, h);
-}
-#endif
-
 static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int w){
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int i;
