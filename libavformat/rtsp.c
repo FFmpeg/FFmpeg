@@ -53,19 +53,6 @@ int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
 #define READ_PACKET_TIMEOUT_S 10
 #define MAX_TIMEOUTS READ_PACKET_TIMEOUT_S * 1000 / SELECT_TIMEOUT_MS
 
-#define SPACE_CHARS " \t\r\n"
-/* we use memchr() instead of strchr() here because strchr() will return
- * the terminating '\0' of SPACE_CHARS instead of NULL if c is '\0'. */
-#define redir_isspace(c) memchr(SPACE_CHARS, c, 4)
-static void skip_spaces(const char **pp)
-{
-    const char *p;
-    p = *pp;
-    while (redir_isspace(*p))
-        p++;
-    *pp = p;
-}
-
 static void get_word_until_chars(char *buf, int buf_size,
                                  const char *sep, const char **pp)
 {
@@ -73,7 +60,7 @@ static void get_word_until_chars(char *buf, int buf_size,
     char *q;
 
     p = *pp;
-    skip_spaces(&p);
+    p += strspn(p, SPACE_CHARS);
     q = buf;
     while (!strchr(sep, *p) && *p != '\0') {
         if ((q - buf) < buf_size - 1)
@@ -179,7 +166,7 @@ static int hex_to_data(uint8_t *data, const char *p)
     len = 0;
     v = 1;
     for (;;) {
-        skip_spaces(&p);
+        p += strspn(p, SPACE_CHARS);
         if (*p == '\0')
             break;
         c = toupper((unsigned char) *p++);
@@ -256,7 +243,7 @@ static const AttrNameMap attr_names[]=
 int ff_rtsp_next_attr_and_value(const char **p, char *attr, int attr_size,
                                 char *value, int value_size)
 {
-    skip_spaces(p);
+    *p += strspn(*p, SPACE_CHARS);
     if (**p) {
         get_word_sep(attr, attr_size, "=", p);
         if (**p == '=')
@@ -308,7 +295,7 @@ static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
 {
     char buf[256];
 
-    skip_spaces(&p);
+    p += strspn(p, SPACE_CHARS);
     if (!av_stristart(p, "npt=", &p))
         return;
 
@@ -547,7 +534,7 @@ static int sdp_parse(AVFormatContext *s, const char *content)
     memset(s1, 0, sizeof(SDPParseState));
     p = content;
     for (;;) {
-        skip_spaces(&p);
+        p += strspn(p, SPACE_CHARS);
         letter = *p;
         if (letter == '\0')
             break;
@@ -727,7 +714,7 @@ static void rtsp_parse_range(int *min_ptr, int *max_ptr, const char **pp)
     int v;
 
     p = *pp;
-    skip_spaces(&p);
+    p += strspn(p, SPACE_CHARS);
     v = strtol(p, (char **)&p, 10);
     if (*p == '-') {
         p++;
@@ -754,7 +741,7 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
     reply->nb_transports = 0;
 
     for (;;) {
-        skip_spaces(&p);
+        p += strspn(p, SPACE_CHARS);
         if (*p == '\0')
             break;
 
@@ -864,22 +851,22 @@ void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
     } else if (av_stristart(p, "Range:", &p)) {
         rtsp_parse_range_npt(p, &reply->range_start, &reply->range_end);
     } else if (av_stristart(p, "RealChallenge1:", &p)) {
-        skip_spaces(&p);
+        p += strspn(p, SPACE_CHARS);
         av_strlcpy(reply->real_challenge, p, sizeof(reply->real_challenge));
     } else if (av_stristart(p, "Server:", &p)) {
-        skip_spaces(&p);
+        p += strspn(p, SPACE_CHARS);
         av_strlcpy(reply->server, p, sizeof(reply->server));
     } else if (av_stristart(p, "Notice:", &p) ||
                av_stristart(p, "X-Notice:", &p)) {
         reply->notice = strtol(p, NULL, 10);
     } else if (av_stristart(p, "Location:", &p)) {
-        skip_spaces(&p);
+        p += strspn(p, SPACE_CHARS);
         av_strlcpy(reply->location, p , sizeof(reply->location));
     } else if (av_stristart(p, "WWW-Authenticate:", &p) && auth_state) {
-        skip_spaces(&p);
+        p += strspn(p, SPACE_CHARS);
         ff_http_auth_handle_header(auth_state, "WWW-Authenticate", p);
     } else if (av_stristart(p, "Authentication-Info:", &p) && auth_state) {
-        skip_spaces(&p);
+        p += strspn(p, SPACE_CHARS);
         ff_http_auth_handle_header(auth_state, "Authentication-Info", p);
     }
 }
