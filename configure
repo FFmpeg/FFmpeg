@@ -519,6 +519,12 @@ append(){
     eval "$var=\"\$$var $*\""
 }
 
+prepend(){
+    var=$1
+    shift
+    eval "$var=\"$* \$$var\""
+}
+
 add_cppflags(){
     append CPPFLAGS $($filter_cppflags "$@")
 }
@@ -536,7 +542,7 @@ add_ldflags(){
 }
 
 add_extralibs(){
-    append extralibs "$@"
+    prepend extralibs "$@"
 }
 
 check_cmd(){
