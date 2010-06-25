@@ -158,32 +158,6 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     return 0;
 }
 
-typedef struct {
-    const char *str;
-    uint16_t    type;
-    uint32_t    offset;
-} AttrNameMap;
-
-/* All known fmtp parameters and the corresponding RTPAttrTypeEnum */
-#define ATTR_NAME_TYPE_INT 0
-#define ATTR_NAME_TYPE_STR 1
-static const AttrNameMap attr_names[]=
-{
-    { "SizeLength",       ATTR_NAME_TYPE_INT,
-      offsetof(RTPPayloadData, sizelength) },
-    { "IndexLength",      ATTR_NAME_TYPE_INT,
-      offsetof(RTPPayloadData, indexlength) },
-    { "IndexDeltaLength", ATTR_NAME_TYPE_INT,
-      offsetof(RTPPayloadData, indexdeltalength) },
-    { "profile-level-id", ATTR_NAME_TYPE_INT,
-      offsetof(RTPPayloadData, profile_level_id) },
-    { "StreamType",       ATTR_NAME_TYPE_INT,
-      offsetof(RTPPayloadData, streamtype) },
-    { "mode",             ATTR_NAME_TYPE_STR,
-      offsetof(RTPPayloadData, mode) },
-    { NULL, -1, -1 },
-};
-
 /* parse the attribute line from the fmtp a line of an sdp response. This
  * is broken out as a function because it is used in rtp_h264.c, which is
  * forthcoming. */
@@ -201,32 +175,6 @@ int ff_rtsp_next_attr_and_value(const char **p, char *attr, int attr_size,
         return 1;
     }
     return 0;
-}
-
-/* parse a SDP line and save stream attributes */
-static void sdp_parse_fmtp(AVStream *st, const char *p)
-{
-    char attr[256];
-    char value[4096];
-    int i;
-    RTSPStream *rtsp_st = st->priv_data;
-    RTPPayloadData *rtp_payload_data = &rtsp_st->rtp_payload_data;
-
-    /* loop on each attribute */
-    while (ff_rtsp_next_attr_and_value(&p, attr, sizeof(attr),
-                                       value, sizeof(value))) {
-        /* Looking for a known attribute */
-        for (i = 0; attr_names[i].str; ++i) {
-            if (!strcasecmp(attr, attr_names[i].str)) {
-                if (attr_names[i].type == ATTR_NAME_TYPE_INT) {
-                    *(int *)((char *)rtp_payload_data +
-                        attr_names[i].offset) = atoi(value);
-                } else if (attr_names[i].type == ATTR_NAME_TYPE_STR)
-                    *(char **)((char *)rtp_payload_data +
-                        attr_names[i].offset) = av_strdup(value);
-            }
-        }
-    }
 }
 
 /** Parse a string p in the form of Range:npt=xx-xx, and determine the start
@@ -399,22 +347,9 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             st = s->streams[s->nb_streams - 1];
             rtsp_st = st->priv_data;
             sdp_parse_rtpmap(s, st->codec, rtsp_st, payload_type, p);
-        } else if (av_strstart(p, "fmtp:", &p)) {
+        } else if (av_strstart(p, "fmtp:", &p) ||
+                   av_strstart(p, "framesize:", &p)) {
             /* NOTE: fmtp is only supported AFTER the 'a=rtpmap:xxx' tag */
-            get_word(buf1, sizeof(buf1), &p);
-            payload_type = atoi(buf1);
-            for (i = 0; i < s->nb_streams; i++) {
-                st      = s->streams[i];
-                rtsp_st = st->priv_data;
-                if (rtsp_st->sdp_payload_type == payload_type) {
-                    if (!(rtsp_st->dynamic_handler &&
-                          rtsp_st->dynamic_handler->parse_sdp_a_line &&
-                          rtsp_st->dynamic_handler->parse_sdp_a_line(s,
-                              i, rtsp_st->dynamic_protocol_context, buf)))
-                        sdp_parse_fmtp(st, p);
-                }
-            }
-        } else if (av_strstart(p, "framesize:", &p)) {
             // let dynamic protocol handlers have a stab at the line.
             get_word(buf1, sizeof(buf1), &p);
             payload_type = atoi(buf1);

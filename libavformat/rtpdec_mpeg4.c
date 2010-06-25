@@ -30,6 +30,9 @@
 #include "rtpdec_mpeg4.h"
 #include "internal.h"
 #include "libavutil/avstring.h"
+#include <strings.h>
+
+#include "rtsp.h" //XXX remove this dependency
 
 /* return the length and optionally the data */
 static int hex_to_data(uint8_t *data, const char *p)
@@ -60,6 +63,32 @@ static int hex_to_data(uint8_t *data, const char *p)
     return len;
 }
 
+typedef struct {
+    const char *str;
+    uint16_t    type;
+    uint32_t    offset;
+} AttrNameMap;
+
+/* All known fmtp parameters and the corresponding RTPAttrTypeEnum */
+#define ATTR_NAME_TYPE_INT 0
+#define ATTR_NAME_TYPE_STR 1
+static const AttrNameMap attr_names[]=
+{
+    { "SizeLength",       ATTR_NAME_TYPE_INT,
+      offsetof(RTPPayloadData, sizelength) },
+    { "IndexLength",      ATTR_NAME_TYPE_INT,
+      offsetof(RTPPayloadData, indexlength) },
+    { "IndexDeltaLength", ATTR_NAME_TYPE_INT,
+      offsetof(RTPPayloadData, indexdeltalength) },
+    { "profile-level-id", ATTR_NAME_TYPE_INT,
+      offsetof(RTPPayloadData, profile_level_id) },
+    { "StreamType",       ATTR_NAME_TYPE_INT,
+      offsetof(RTPPayloadData, streamtype) },
+    { "mode",             ATTR_NAME_TYPE_STR,
+      offsetof(RTPPayloadData, mode) },
+    { NULL, -1, -1 },
+};
+
 static int parse_fmtp_config(AVCodecContext * codec, char *value)
 {
     /* decode the hexa encoded parameter */
@@ -79,8 +108,11 @@ static int parse_sdp_line(AVFormatContext *s, int st_index,
 {
     const char *p;
     char value[4096], attr[25];
-    int res = 0;
-    AVCodecContext* codec = s->streams[st_index]->codec;
+    int res = 0, i;
+    AVStream *st = s->streams[st_index];
+    RTSPStream *rtsp_st = st->priv_data;
+    AVCodecContext* codec = st->codec;
+    RTPPayloadData *rtp_payload_data = &rtsp_st->rtp_payload_data;
 
     if (av_strstart(line, "fmtp:", &p)) {
         // remove protocol identifier
@@ -96,6 +128,20 @@ static int parse_sdp_line(AVFormatContext *s, int st_index,
 
                 if (res < 0)
                     return res;
+            }
+
+            if (codec->codec_id == CODEC_ID_AAC) {
+                /* Looking for a known attribute */
+                for (i = 0; attr_names[i].str; ++i) {
+                    if (!strcasecmp(attr, attr_names[i].str)) {
+                        if (attr_names[i].type == ATTR_NAME_TYPE_INT) {
+                            *(int *)((char *)rtp_payload_data +
+                                attr_names[i].offset) = atoi(value);
+                        } else if (attr_names[i].type == ATTR_NAME_TYPE_STR)
+                            *(char **)((char *)rtp_payload_data +
+                                attr_names[i].offset) = av_strdup(value);
+                    }
+                }
             }
         }
     }
