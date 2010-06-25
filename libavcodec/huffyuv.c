@@ -232,9 +232,9 @@ static void heap_sift(HeapElem *h, int root, int size)
 }
 
 static void generate_len_table(uint8_t *dst, const uint64_t *stats, int size){
-    HeapElem h[size];
-    int up[2*size];
-    int len[2*size];
+    HeapElem h[256];
+    int up[2*256];
+    int len[2*256];
     int offset, i, next;
 
     for(offset=1; ; offset<<=1){
