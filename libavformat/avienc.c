@@ -225,7 +225,10 @@ static int avi_write_header(AVFormatContext *s)
         case AVMEDIA_TYPE_SUBTITLE:
             // XSUB subtitles behave like video tracks, other subtitles
             // are not (yet) supported.
-            if (stream->codec_id != CODEC_ID_XSUB) break;
+            if (stream->codec_id != CODEC_ID_XSUB) {
+                av_log(s, AV_LOG_ERROR, "Subtitle streams other than DivX XSUB are not supported by the AVI muxer.\n");
+                return AVERROR_PATCHWELCOME;
+            }
         case AVMEDIA_TYPE_VIDEO: put_tag(pb, "vids"); break;
         case AVMEDIA_TYPE_AUDIO: put_tag(pb, "auds"); break;
 //        case AVMEDIA_TYPE_TEXT : put_tag(pb, "txts"); break;
