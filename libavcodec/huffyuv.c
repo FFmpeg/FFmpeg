@@ -231,11 +231,12 @@ static void heap_sift(HeapElem *h, int root, int size)
     }
 }
 
-static void generate_len_table(uint8_t *dst, const uint64_t *stats, int size){
+static void generate_len_table(uint8_t *dst, const uint64_t *stats){
     HeapElem h[256];
     int up[2*256];
     int len[2*256];
     int offset, i, next;
+    int size = 256;
 
     for(offset=1; ; offset<<=1){
         for(i=0; i<size; i++){
@@ -646,7 +647,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     for(i=0; i<3; i++){
-        generate_len_table(s->len[i], s->stats[i], 256);
+        generate_len_table(s->len[i], s->stats[i]);
 
         if(generate_bits_table(s->bits[i], s->len[i])<0){
             return -1;
@@ -1224,7 +1225,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 
     if(s->context){
         for(i=0; i<3; i++){
-            generate_len_table(s->len[i], s->stats[i], 256);
+            generate_len_table(s->len[i], s->stats[i]);
             if(generate_bits_table(s->bits[i], s->len[i])<0)
                 return -1;
             size+= store_table(s, s->len[i], &buf[size]);
