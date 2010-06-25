@@ -202,6 +202,7 @@ typedef struct TwinContext {
 } TwinContext;
 
 #define PPC_SHAPE_CB_SIZE 64
+#define PPC_SHAPE_LEN_MAX 60
 #define SUB_AMP_MAX       4500.0
 #define MULAW_MU          100.0
 #define GAIN_BITS         8
@@ -209,6 +210,11 @@ typedef struct TwinContext {
 #define SUB_GAIN_BITS     5
 #define WINDOW_TYPE_BITS  4
 #define PGAIN_MU          200
+#define LSP_COEFS_MAX     20
+#define LSP_SPLIT_MAX     4
+#define CHANNELS_MAX      2
+#define SUBBLOCKS_MAX     16
+#define BARK_N_COEF_MAX   4
 
 /** @note not speed critical, hence not optimized */
 static void memset_float(float *buf, float val, int size)
@@ -727,14 +733,14 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
     int channels = tctx->avctx->channels;
     int sub = mtab->fmode[ftype].sub;
     int block_size = mtab->size / sub;
-    float gain[channels*sub];
-    float ppc_shape[mtab->ppc_shape_len * channels * 4];
-    uint8_t bark1[channels][sub][mtab->fmode[ftype].bark_n_coef];
-    uint8_t bark_use_hist[channels][sub];
+    float gain[CHANNELS_MAX*SUBBLOCKS_MAX];
+    float ppc_shape[PPC_SHAPE_LEN_MAX * CHANNELS_MAX * 4];
+    uint8_t bark1[CHANNELS_MAX][SUBBLOCKS_MAX][BARK_N_COEF_MAX];
+    uint8_t bark_use_hist[CHANNELS_MAX][SUBBLOCKS_MAX];
 
-    uint8_t lpc_idx1[channels];
-    uint8_t lpc_idx2[channels][tctx->mtab->lsp_split];
-    uint8_t lpc_hist_idx[channels];
+    uint8_t lpc_idx1[CHANNELS_MAX];
+    uint8_t lpc_idx2[CHANNELS_MAX][LSP_SPLIT_MAX];
+    uint8_t lpc_hist_idx[CHANNELS_MAX];
 
     int i, j, k;
 
@@ -771,7 +777,7 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
 
     for (i = 0; i < channels; i++) {
         float *chunk = out + mtab->size * i;
-        float lsp[tctx->mtab->n_lsp];
+        float lsp[LSP_COEFS_MAX];
 
         for (j = 0; j < sub; j++) {
             dec_bark_env(tctx, bark1[i][j], bark_use_hist[i][j], i,
@@ -1064,7 +1070,7 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
     tctx->avctx       = avctx;
     avctx->sample_fmt = SAMPLE_FMT_FLT;
 
-    if (avctx->channels > 2) {
+    if (avctx->channels > CHANNELS_MAX) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %i\n",
                avctx->channels);
         return -1;
