@@ -19,6 +19,7 @@
  */
 
 #include "dsputil_mmx.h"
+#include "libavcodec/h264pred.h"
 
 DECLARE_ALIGNED(8, static const uint64_t, ff_pb_3_1  ) = 0x0103010301030103ULL;
 DECLARE_ALIGNED(8, static const uint64_t, ff_pb_7_3  ) = 0x0307030703070307ULL;
@@ -2322,3 +2323,77 @@ H264_WEIGHT( 4, 8)
 H264_WEIGHT( 4, 4)
 H264_WEIGHT( 4, 2)
 
+void ff_pred16x16_vertical_mmx     (uint8_t *src, int stride);
+void ff_pred16x16_vertical_sse     (uint8_t *src, int stride);
+void ff_pred16x16_horizontal_mmx   (uint8_t *src, int stride);
+void ff_pred16x16_horizontal_mmxext(uint8_t *src, int stride);
+void ff_pred16x16_horizontal_ssse3 (uint8_t *src, int stride);
+void ff_pred16x16_dc_mmx           (uint8_t *src, int stride);
+void ff_pred16x16_dc_mmxext        (uint8_t *src, int stride);
+void ff_pred16x16_dc_sse           (uint8_t *src, int stride);
+void ff_pred16x16_dc_sse2          (uint8_t *src, int stride);
+void ff_pred16x16_dc_ssse3         (uint8_t *src, int stride);
+void ff_pred16x16_tm_vp8_mmx       (uint8_t *src, int stride);
+void ff_pred16x16_tm_vp8_mmxext    (uint8_t *src, int stride);
+void ff_pred16x16_tm_vp8_sse2      (uint8_t *src, int stride);
+void ff_pred8x8_dc_rv40_mmx        (uint8_t *src, int stride);
+void ff_pred8x8_dc_rv40_mmxext     (uint8_t *src, int stride);
+void ff_pred8x8_vertical_mmx       (uint8_t *src, int stride);
+void ff_pred8x8_horizontal_mmx     (uint8_t *src, int stride);
+void ff_pred8x8_horizontal_mmxext  (uint8_t *src, int stride);
+void ff_pred8x8_horizontal_ssse3   (uint8_t *src, int stride);
+void ff_pred8x8_tm_vp8_mmx         (uint8_t *src, int stride);
+void ff_pred8x8_tm_vp8_mmxext      (uint8_t *src, int stride);
+void ff_pred8x8_tm_vp8_sse2        (uint8_t *src, int stride);
+void ff_pred8x8_tm_vp8_ssse3      (uint8_t *src, int stride);
+
+void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
+{
+#if HAVE_YASM
+    if (mm_flags & FF_MM_MMX) {
+        h->pred16x16[VERT_PRED8x8] = ff_pred16x16_vertical_mmx;
+        h->pred16x16[HOR_PRED8x8 ] = ff_pred16x16_horizontal_mmx;
+        h->pred16x16[DC_PRED8x8  ] = ff_pred16x16_dc_mmx;
+        h->pred8x8  [VERT_PRED8x8] = ff_pred8x8_vertical_mmx;
+        h->pred8x8  [HOR_PRED8x8 ] = ff_pred8x8_horizontal_mmx;
+        if (codec_id == CODEC_ID_VP8) {
+            h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_tm_vp8_mmx;
+            h->pred8x8  [DC_PRED8x8   ] = ff_pred8x8_dc_rv40_mmx;
+            h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_mmx;
+        }
+    }
+
+    if (mm_flags & FF_MM_MMXEXT) {
+        h->pred16x16[HOR_PRED8x8 ] = ff_pred16x16_horizontal_mmxext;
+        h->pred16x16[DC_PRED8x8  ] = ff_pred16x16_dc_mmxext;
+        h->pred8x8  [HOR_PRED8x8 ] = ff_pred8x8_horizontal_mmxext;
+        if (codec_id == CODEC_ID_VP8) {
+            h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_tm_vp8_mmxext;
+            h->pred8x8  [DC_PRED8x8   ] = ff_pred8x8_dc_rv40_mmxext;
+            h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_mmxext;
+        }
+    }
+
+    if (mm_flags & FF_MM_SSE) {
+        h->pred16x16[VERT_PRED8x8] = ff_pred16x16_vertical_sse;
+        h->pred16x16[DC_PRED8x8  ] = ff_pred16x16_dc_sse;
+    }
+
+    if (mm_flags & FF_MM_SSE2) {
+        h->pred16x16[DC_PRED8x8  ] = ff_pred16x16_dc_sse2;
+        if (codec_id == CODEC_ID_VP8) {
+            h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_tm_vp8_sse2;
+            h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_sse2;
+        }
+    }
+
+    if (mm_flags & FF_MM_SSSE3) {
+        h->pred16x16[HOR_PRED8x8 ] = ff_pred16x16_horizontal_ssse3;
+        h->pred16x16[DC_PRED8x8  ] = ff_pred16x16_dc_ssse3;
+        h->pred8x8  [HOR_PRED8x8 ] = ff_pred8x8_horizontal_ssse3;
+        if (codec_id == CODEC_ID_VP8) {
+            h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_ssse3;
+        }
+    }
+#endif
+}
