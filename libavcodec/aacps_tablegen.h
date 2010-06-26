@@ -29,8 +29,8 @@
 #define ps_tableinit()
 #include "libavcodec/aacps_tables.h"
 #else
-#include "../libavutil/common.h"
-#include "../libavutil/mathematics.h"
+#include "libavutil/common.h"
+#include "libavutil/mathematics.h"
 #define NR_ALLPASS_BANDS20 30
 #define NR_ALLPASS_BANDS34 50
 #define PS_AP_LINKS 3

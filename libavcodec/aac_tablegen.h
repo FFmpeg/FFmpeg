@@ -28,7 +28,7 @@
 #if CONFIG_HARDCODED_TABLES
 #include "libavcodec/aac_tables.h"
 #else
-#include "../libavutil/mathematics.h"
+#include "libavutil/mathematics.h"
 float ff_aac_pow2sf_tab[428];
 
 void ff_aac_tableinit(void)

@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 #include <math.h>
-#include "../libavutil/attributes.h"
+#include "libavutil/attributes.h"
 
 #define SOFTCLIP_THRESHOLD 27600
 #define HARDCLIP_THRESHOLD 35716

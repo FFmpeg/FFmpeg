@@ -24,7 +24,7 @@
 #define PCM_TABLEGEN_H
 
 #include <stdint.h>
-#include "../libavutil/attributes.h"
+#include "libavutil/attributes.h"
 
 /* from g711.c by SUN microsystems (unrestricted use) */
 
