@@ -211,8 +211,6 @@ Advanced options (experts only):
   --arch=ARCH              select architecture [$arch]
   --cpu=CPU                select the minimum required CPU (affects
                            instruction selection, may crash on older CPUs)
-  --enable-powerpc-perf    enable performance report on PPC
-                           (requires enabling PMC)
   --disable-asm            disable all assembler optimizations
   --disable-altivec        disable AltiVec optimizations
   --disable-amd3dnow       disable 3DNow! optimizations
@@ -886,7 +884,6 @@ CONFIG_LIST="
     nonfree
     pic
     postproc
-    powerpc_perf
     rdft
     runtime_cpudetect
     shared
@@ -2772,7 +2769,6 @@ if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"
     echo "PPC 4xx optimizations     ${ppc4xx-no}"
     echo "dcbzl available           ${dcbzl-no}"
-    echo "performance report        ${powerpc_perf-no}"
 fi
 if enabled sparc; then
     echo "VIS enabled               ${vis-no}"

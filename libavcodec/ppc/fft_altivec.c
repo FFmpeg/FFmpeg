@@ -21,7 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "libavcodec/fft.h"
-#include "dsputil_ppc.h"
 #include "util_altivec.h"
 #include "dsputil_altivec.h"
 
@@ -38,7 +37,6 @@
  */
 static void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z)
 {
-POWERPC_PERF_DECLARE(altivec_fft_num, s->nbits >= 6);
     register const vector float vczero = (const vector float)vec_splat_u32(0.);
 
     int ln = s->nbits;
@@ -47,8 +45,6 @@ POWERPC_PERF_DECLARE(altivec_fft_num, s->nbits >= 6);
     register FFTComplex *p, *q;
     FFTComplex *cptr, *cptr1;
     int k;
-
-POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
 
     np = 1 << ln;
 
@@ -132,8 +128,6 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
         nblocks = nblocks >> 1;
         nloops = nloops << 1;
     } while (nblocks != 0);
-
-POWERPC_PERF_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
 }
 
 av_cold void ff_fft_init_altivec(FFTContext *s)

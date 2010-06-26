@@ -24,7 +24,6 @@
 #endif
 #include "libavutil/common.h"
 #include "libavcodec/dsputil.h"
-#include "dsputil_ppc.h"
 #include "dsputil_altivec.h"
 
 #define vs16(v) ((vector signed short)(v))
@@ -198,16 +197,12 @@ static vector float fdctconsts[3] = {
 
 void fdct_altivec(int16_t *block)
 {
-POWERPC_PERF_DECLARE(altivec_fdct, 1);
     vector signed short *bp;
     vector float *cp;
     vector float b00, b10, b20, b30, b40, b50, b60, b70;
     vector float b01, b11, b21, b31, b41, b51, b61, b71;
     vector float mzero, cnst, cnsts0, cnsts1, cnsts2;
     vector float x0, x1, x2, x3, x4, x5, x6, x7, x8;
-
-    POWERPC_PERF_START_COUNT(altivec_fdct, 1);
-
 
     /* setup constants {{{ */
     /* mzero = -0.0 */
@@ -487,8 +482,6 @@ POWERPC_PERF_DECLARE(altivec_fdct, 1);
 
 #undef CTS
     /* }}} */
-
-POWERPC_PERF_STOP_COUNT(altivec_fdct, 1);
 }
 
 /* vim:set foldmethod=marker foldlevel=0: */

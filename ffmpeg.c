@@ -618,11 +618,6 @@ static int av_exit(int ret)
 
     av_free(video_standard);
 
-#if CONFIG_POWERPC_PERF
-    void powerpc_display_perf_report(void);
-    powerpc_display_perf_report();
-#endif /* CONFIG_POWERPC_PERF */
-
     for (i=0;i<AVMEDIA_TYPE_NB;i++)
         av_free(avcodec_opts[i]);
     av_free(avformat_opts);

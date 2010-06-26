@@ -43,7 +43,6 @@
 #endif
 #include "libavcodec/dsputil.h"
 #include "types_altivec.h"
-#include "dsputil_ppc.h"
 #include "dsputil_altivec.h"
 
 #define IDCT_HALF                                       \
@@ -161,13 +160,9 @@ static const vec_s16 constants[5] = {
 
 void idct_put_altivec(uint8_t* dest, int stride, int16_t *blk)
 {
-POWERPC_PERF_DECLARE(altivec_idct_put_num, 1);
     vec_s16 *block = (vec_s16*)blk;
     vec_u8 tmp;
 
-#if CONFIG_POWERPC_PERF
-POWERPC_PERF_START_COUNT(altivec_idct_put_num, 1);
-#endif
     IDCT
 
 #define COPY(dest,src)                                          \
@@ -183,23 +178,16 @@ POWERPC_PERF_START_COUNT(altivec_idct_put_num, 1);
     COPY (dest, vx5)    dest += stride;
     COPY (dest, vx6)    dest += stride;
     COPY (dest, vx7)
-
-POWERPC_PERF_STOP_COUNT(altivec_idct_put_num, 1);
 }
 
 void idct_add_altivec(uint8_t* dest, int stride, int16_t *blk)
 {
-POWERPC_PERF_DECLARE(altivec_idct_add_num, 1);
     vec_s16 *block = (vec_s16*)blk;
     vec_u8 tmp;
     vec_s16 tmp2, tmp3;
     vec_u8 perm0;
     vec_u8 perm1;
     vec_u8 p0, p1, p;
-
-#if CONFIG_POWERPC_PERF
-POWERPC_PERF_START_COUNT(altivec_idct_add_num, 1);
-#endif
 
     IDCT
 
@@ -226,7 +214,5 @@ POWERPC_PERF_START_COUNT(altivec_idct_add_num, 1);
     ADD (dest, vx5, perm1)      dest += stride;
     ADD (dest, vx6, perm0)      dest += stride;
     ADD (dest, vx7, perm1)
-
-POWERPC_PERF_STOP_COUNT(altivec_idct_add_num, 1);
 }
 
