@@ -90,8 +90,8 @@ static void lsp2poly(int* f, const int16_t* lsp, int lp_half_order)
 void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order)
 {
     int i;
-    int f1[lp_half_order+1]; // (3.22)
-    int f2[lp_half_order+1]; // (3.22)
+    int f1[MAX_LP_HALF_ORDER+1]; // (3.22)
+    int f2[MAX_LP_HALF_ORDER+1]; // (3.22)
 
     lsp2poly(f1, lsp  , lp_half_order);
     lsp2poly(f2, lsp+1, lp_half_order);
@@ -111,7 +111,7 @@ void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order)
 
 void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd, const int16_t* lsp_prev, int lp_order)
 {
-    int16_t lsp_1st[lp_order]; // (0.15)
+    int16_t lsp_1st[MAX_LP_ORDER]; // (0.15)
     int i;
 
     /* LSP values for first subframe (3.2.5 of G.729, Equation 24)*/

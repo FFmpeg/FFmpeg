@@ -82,6 +82,7 @@ void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd
 
 
 #define MAX_LP_HALF_ORDER 8
+#define MAX_LP_ORDER      (2*MAX_LP_HALF_ORDER)
 
 /**
  * Reconstructs LPC coefficients from the line spectral pair frequencies.
