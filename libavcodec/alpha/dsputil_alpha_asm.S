@@ -53,11 +53,6 @@ put_pixels_axp_asm:
         .frame sp, 0, ra
         .prologue 0
 
-#if CONFIG_GPROF
-        lda     AT, _mcount
-        jsr     AT, (AT), _mcount
-#endif
-
         and     a1, 7, t0
         beq     t0, $aligned
 
@@ -150,11 +145,6 @@ put_pixels_clamped_mvi_asm:
         .frame sp, 0, ra
         .prologue 0
 
-#if CONFIG_GPROF
-        lda     AT, _mcount
-        jsr     AT, (AT), _mcount
-#endif
-
         lda     t8, -1
         lda     t9, 8           # loop counter
         zap     t8, 0xaa, t8    # 00ff00ff00ff00ff
@@ -204,11 +194,6 @@ put_pixels_clamped_mvi_asm:
 add_pixels_clamped_mvi_asm:
         .frame sp, 0, ra
         .prologue 0
-
-#if CONFIG_GPROF
-        lda     AT, _mcount
-        jsr     AT, (AT), _mcount
-#endif
 
         lda     t1, -1
         lda     th, 8

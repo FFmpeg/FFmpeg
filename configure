@@ -237,7 +237,6 @@ Advanced options (experts only):
 Developer options (useful when working on FFmpeg itself):
   --disable-debug          disable debugging symbols
   --enable-debug=LEVEL     set the debug level [$debuglevel]
-  --enable-gprof           enable profiling with gprof [$gprof]
   --disable-optimizations  disable compiler optimizations
   --enable-extra-warnings  enable more compiler warnings
   --disable-stripping      disable stripping of executables and shared libraries
@@ -857,7 +856,6 @@ CONFIG_LIST="
     fft
     golomb
     gpl
-    gprof
     gray
     h264dsp
     hardcoded_tables
@@ -2714,11 +2712,6 @@ elif enabled tms470; then
     add_cflags -pds=824 -pds=837
 fi
 
-if enabled gprof; then
-    add_cflags  -p
-    add_ldflags -p
-fi
-
 enabled_any $THREADS_LIST      && enable threads
 
 check_deps $CONFIG_LIST       \
@@ -2784,7 +2777,6 @@ fi
 if enabled sparc; then
     echo "VIS enabled               ${vis-no}"
 fi
-echo "gprof enabled             ${gprof-no}"
 echo "debug symbols             ${debug-no}"
 echo "strip symbols             ${stripping-no}"
 echo "optimizations             ${optimizations-no}"

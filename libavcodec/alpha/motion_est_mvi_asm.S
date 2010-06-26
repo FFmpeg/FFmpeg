@@ -55,11 +55,6 @@ pix_abs16x16_mvi_asm:
         .frame sp, 0, ra, 0
         .prologue 0
 
-#if CONFIG_GPROF
-        lda     AT, _mcount
-        jsr     AT, (AT), _mcount
-#endif
-
         and     a2, 7, t0
         clr     v0
         beq     t0, $aligned
