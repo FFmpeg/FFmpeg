@@ -33,8 +33,11 @@ endif
 
 ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
-CPPFLAGS := -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(CPPFLAGS)
+IFLAGS   := -I$(BUILD_ROOT_REL) -I$(SRC_PATH)
+CPPFLAGS := $(IFLAGS) $(CPPFLAGS)
 CFLAGS   += $(ECFLAGS)
+
+HOSTCFLAGS += $(IFLAGS)
 
 %.o: %.c
 	$(CCDEP)
