@@ -27,6 +27,7 @@
 #define AVUTIL_MEM_H
 
 #include "attributes.h"
+#include "avutil.h"
 
 #if defined(__ICC) && _ICC < 1200 || defined(__SUNPRO_C)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
