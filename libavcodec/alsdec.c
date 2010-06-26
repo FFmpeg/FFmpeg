@@ -734,8 +734,8 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
     // read all residuals
     if (sconf->bgmc) {
-        unsigned int delta[sub_blocks];
-        unsigned int k    [sub_blocks];
+        unsigned int delta[8];
+        unsigned int k    [8];
         unsigned int b = av_clip((av_ceil_log2(bd->block_length) - 3) >> 1, 0, 5);
         unsigned int i = start;
 
