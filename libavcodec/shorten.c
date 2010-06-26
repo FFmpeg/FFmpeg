@@ -83,6 +83,7 @@ typedef struct ShortenContext {
 
     int32_t *decoded[MAX_CHANNELS];
     int32_t *offset[MAX_CHANNELS];
+    int *coeffs;
     uint8_t *bitstream;
     int bitstream_size;
     int bitstream_index;
@@ -112,6 +113,8 @@ static av_cold int shorten_decode_init(AVCodecContext * avctx)
 static int allocate_buffers(ShortenContext *s)
 {
     int i, chan;
+    int *coeffs;
+
     for (chan=0; chan<s->channels; chan++) {
         if(FFMAX(1, s->nmean) >= UINT_MAX/sizeof(int32_t)){
             av_log(s->avctx, AV_LOG_ERROR, "nmean too large\n");
@@ -129,6 +132,12 @@ static int allocate_buffers(ShortenContext *s)
             s->decoded[chan][i] = 0;
         s->decoded[chan] += s->nwrap;
     }
+
+    coeffs = av_realloc(s->coeffs, s->nwrap * sizeof(*s->coeffs));
+    if (!coeffs)
+        return AVERROR(ENOMEM);
+    s->coeffs = coeffs;
+
     return 0;
 }
 
@@ -253,7 +262,7 @@ static int16_t * interleave_buffer(int16_t *samples, int nchan, int blocksize, i
 static void decode_subframe_lpc(ShortenContext *s, int channel, int residual_size, int pred_order)
 {
     int sum, i, j;
-    int coeffs[pred_order];
+    int *coeffs = s->coeffs;
 
     for (i=0; i<pred_order; i++)
         coeffs[i] = get_sr_golomb_shorten(&s->gb, LPCQUANT);
@@ -427,6 +436,12 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                         case FN_QLPC:
                             {
                                 int pred_order = get_ur_golomb_shorten(&s->gb, LPCQSIZE);
+                                if (pred_order > s->nwrap) {
+                                    av_log(avctx, AV_LOG_ERROR,
+                                           "invalid pred_order %d\n",
+                                           pred_order);
+                                    return -1;
+                                }
                                 for (i=0; i<pred_order; i++)
                                     s->decoded[channel][i - pred_order] -= coffset;
                                 decode_subframe_lpc(s, channel, residual_size, pred_order);
@@ -515,6 +530,7 @@ static av_cold int shorten_decode_close(AVCodecContext *avctx)
         av_freep(&s->offset[i]);
     }
     av_freep(&s->bitstream);
+    av_freep(&s->coeffs);
     return 0;
 }
 
