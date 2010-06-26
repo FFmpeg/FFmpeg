@@ -650,6 +650,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   uint8_t        *current, *previous;
   int             result, i, x, y, width, height;
   AVFrame *pict = data;
+  svq1_pmv *pmv;
 
   /* initialize bit buffer */
   init_get_bits(&s->gb,buf,buf_size*8);
@@ -692,6 +693,10 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   if(MPV_frame_start(s, avctx) < 0)
       return -1;
 
+  pmv = av_malloc((FFALIGN(s->width, 16)/8 + 3) * sizeof(*pmv));
+  if (!pmv)
+      return -1;
+
   /* decode y, u and v components */
   for (i=0; i < 3; i++) {
     int linesize;
@@ -724,13 +729,12 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 //#ifdef DEBUG_SVQ1
             av_log(s->avctx, AV_LOG_INFO, "Error in svq1_decode_block %i (keyframe)\n",result);
 //#endif
-            return result;
+            goto err;
           }
         }
         current += 16*linesize;
       }
     } else {
-      svq1_pmv pmv[width/8+3];
       /* delta frame */
       memset (pmv, 0, ((width / 8) + 3) * sizeof(svq1_pmv));
 
@@ -743,7 +747,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 #ifdef DEBUG_SVQ1
     av_log(s->avctx, AV_LOG_INFO, "Error in svq1_decode_delta_block %i\n",result);
 #endif
-            return result;
+            goto err;
           }
         }
 
@@ -761,7 +765,10 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   MPV_frame_end(s);
 
   *data_size=sizeof(AVFrame);
-  return buf_size;
+  result = buf_size;
+err:
+  av_free(pmv);
+  return result;
 }
 
 static av_cold int svq1_decode_init(AVCodecContext *avctx)
