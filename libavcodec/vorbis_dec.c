@@ -474,7 +474,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
         AV_DEBUG(" %d. floor type %d \n", i, floor_setup->floor_type);
 
         if (floor_setup->floor_type == 1) {
-            uint_fast8_t  maximum_class = 0;
+            int maximum_class = -1;
             uint_fast8_t  rangebits;
             uint_fast16_t floor1_values = 2;
 
