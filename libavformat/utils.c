@@ -3493,7 +3493,25 @@ void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload)
     pkt_dump_internal(avcl, NULL, level, pkt, dump_payload);
 }
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+attribute_deprecated
 void ff_url_split(char *proto, int proto_size,
+                  char *authorization, int authorization_size,
+                  char *hostname, int hostname_size,
+                  int *port_ptr,
+                  char *path, int path_size,
+                  const char *url)
+{
+    av_url_split(proto, proto_size,
+                 authorization, authorization_size,
+                 hostname, hostname_size,
+                 port_ptr,
+                 path, path_size,
+                 url);
+}
+#endif
+
+void av_url_split(char *proto, int proto_size,
                   char *authorization, int authorization_size,
                   char *hostname, int hostname_size,
                   int *port_ptr,

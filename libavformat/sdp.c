@@ -109,7 +109,7 @@ static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
     const char *p;
     char proto[32];
 
-    ff_url_split(proto, sizeof(proto), NULL, 0, dest_addr, size, &port, NULL, 0, url);
+    av_url_split(proto, sizeof(proto), NULL, 0, dest_addr, size, &port, NULL, 0, url);
 
     *ttl = 0;
 

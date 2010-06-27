@@ -66,7 +66,7 @@ int rtp_set_remote_url(URLContext *h, const char *uri)
     char buf[1024];
     char path[1024];
 
-    ff_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
+    av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
                  path, sizeof(path), uri);
 
     ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, port, "%s", path);
@@ -146,7 +146,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         return AVERROR(ENOMEM);
     h->priv_data = s;
 
-    ff_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &rtp_port,
+    av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &rtp_port,
                  path, sizeof(path), uri);
     /* extract parameters */
     ttl = -1;

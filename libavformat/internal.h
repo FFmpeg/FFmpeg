@@ -89,27 +89,9 @@ int ff_probe_input_buffer(ByteIOContext **pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size);
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 /**
- * Splits a URL string into components. To reassemble components back into
- * a URL, use ff_url_join instead of using snprintf directly.
- *
- * The pointers to buffers for storing individual components may be null,
- * in order to ignore that component. Buffers for components not found are
- * set to empty strings. If the port isn't found, it is set to a negative
- * value.
- *
- * @see ff_url_join
- *
- * @param proto the buffer for the protocol
- * @param proto_size the size of the proto buffer
- * @param authorization the buffer for the authorization
- * @param authorization_size the size of the authorization buffer
- * @param hostname the buffer for the host name
- * @param hostname_size the size of the hostname buffer
- * @param port_ptr a pointer to store the port number in
- * @param path the buffer for the path
- * @param path_size the size of the path buffer
- * @param url the URL to split
+ * @deprecated use av_url_split() instead
  */
 void ff_url_split(char *proto, int proto_size,
                   char *authorization, int authorization_size,
@@ -117,15 +99,16 @@ void ff_url_split(char *proto, int proto_size,
                   int *port_ptr,
                   char *path, int path_size,
                   const char *url);
+#endif
 
 /**
  * Assembles a URL string from components. This is the reverse operation
- * of ff_url_split.
+ * of av_url_split.
  *
  * Note, this requires networking to be initialized, so the caller must
  * ensure ff_network_init has been called.
  *
- * @see ff_url_split
+ * @see av_url_split
  *
  * @param str the buffer to fill with the url
  * @param size the size of the str buffer

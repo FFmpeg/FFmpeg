@@ -581,7 +581,7 @@ static int mms_open(URLContext *h, const char *uri, int flags)
         return AVERROR(ENOMEM);
 
     // only for MMS over TCP, so set proto = NULL
-    ff_url_split(NULL, 0, NULL, 0,
+    av_url_split(NULL, 0, NULL, 0,
             mms->host, sizeof(mms->host), &port, mms->path,
             sizeof(mms->path), uri);
 

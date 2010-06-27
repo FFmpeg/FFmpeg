@@ -327,7 +327,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             rtsp_st = st->priv_data;
 
             /* XXX: may need to add full url resolution */
-            ff_url_split(proto, sizeof(proto), NULL, 0, NULL, 0,
+            av_url_split(proto, sizeof(proto), NULL, 0, NULL, 0,
                          NULL, NULL, 0, p);
             if (proto[0] == '\0') {
                 /* relative control URL */
@@ -1366,7 +1366,7 @@ int ff_rtsp_connect(AVFormatContext *s)
 redirect:
     rt->control_transport = RTSP_MODE_PLAIN;
     /* extract hostname and port */
-    ff_url_split(NULL, 0, auth, sizeof(auth),
+    av_url_split(NULL, 0, auth, sizeof(auth),
                  host, sizeof(host), &port, path, sizeof(path), s->filename);
     if (*auth) {
         av_strlcpy(rt->auth, auth, sizeof(rt->auth));
