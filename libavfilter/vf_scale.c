@@ -173,7 +173,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     ScaleContext *scale = link->dst->priv;
     int out_h;
     AVFilterPicRef *cur_pic = link->cur_pic;
-    uint8_t *data[4];
+    const uint8_t *data[4];
 
     if (scale->slice_y == 0 && slice_dir == -1)
         scale->slice_y = link->dst->outputs[0]->h;
