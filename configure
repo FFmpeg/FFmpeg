@@ -2697,7 +2697,7 @@ elif enabled ccc; then
     add_cflags -msg_disable unreachcode
 elif enabled gcc; then
     check_cflags -fno-tree-vectorize
-    check_cflags -Werror=implicit
+    check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
 elif enabled clang; then
     check_cflags -Qunused-arguments
