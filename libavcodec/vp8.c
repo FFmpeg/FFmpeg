@@ -45,6 +45,7 @@ typedef struct {
     DSPContext dsp;
     VP8DSPContext vp8dsp;
     H264PredContext hpc;
+    vp8_mc_func put_pixels_tab[3][3][3];
     AVFrame frames[4];
     AVFrame *framep[4];
     uint8_t *edge_emu_buffer;
@@ -379,8 +380,13 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
     buf      += 3;
     buf_size -= 3;
 
-    if (s->profile)
-        av_log(s->avctx, AV_LOG_WARNING, "Profile %d not fully handled\n", s->profile);
+    if (s->profile > 3)
+        av_log(s->avctx, AV_LOG_WARNING, "Unknown profile %d\n", s->profile);
+
+    if (!s->profile)
+        memcpy(s->put_pixels_tab, s->vp8dsp.put_vp8_epel_pixels_tab, sizeof(s->put_pixels_tab));
+    else    // profile 1-3 use bilinear, 4+ aren't defined so whatever
+        memcpy(s->put_pixels_tab, s->vp8dsp.put_vp8_bilinear_pixels_tab, sizeof(s->put_pixels_tab));
 
     if (header_size > buf_size - 7*s->keyframe) {
         av_log(s->avctx, AV_LOG_ERROR, "Header size larger than data provided\n");
@@ -951,7 +957,7 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
         /* Y */
         vp8_mc(s, 1, dst[0], s->framep[mb->ref_frame]->data[0], &mb->mv,
                x_off, y_off, 16, 16, width, height, s->linesize,
-               s->vp8dsp.put_vp8_epel_pixels_tab[0]);
+               s->put_pixels_tab[0]);
 
         /* U/V */
         uvmv = mb->mv;
@@ -962,10 +968,10 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
         x_off >>= 1; y_off >>= 1; width >>= 1; height >>= 1;
         vp8_mc(s, 0, dst[1], s->framep[mb->ref_frame]->data[1], &uvmv,
                x_off, y_off, 8, 8, width, height, s->uvlinesize,
-               s->vp8dsp.put_vp8_epel_pixels_tab[1]);
+               s->put_pixels_tab[1]);
         vp8_mc(s, 0, dst[2], s->framep[mb->ref_frame]->data[2], &uvmv,
                x_off, y_off, 8, 8, width, height, s->uvlinesize,
-               s->vp8dsp.put_vp8_epel_pixels_tab[1]);
+               s->put_pixels_tab[1]);
     } else {
         int x, y;
 
@@ -976,7 +982,7 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
                        s->framep[mb->ref_frame]->data[0], &mb->bmv[4*y + x],
                        4*x + x_off, 4*y + y_off, 4, 4,
                        width, height, s->linesize,
-                       s->vp8dsp.put_vp8_epel_pixels_tab[2]);
+                       s->put_pixels_tab[2]);
             }
         }
 
@@ -1002,12 +1008,12 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
                        s->framep[mb->ref_frame]->data[1], &uvmv,
                        4*x + x_off, 4*y + y_off, 4, 4,
                        width, height, s->uvlinesize,
-                       s->vp8dsp.put_vp8_epel_pixels_tab[2]);
+                       s->put_pixels_tab[2]);
                 vp8_mc(s, 0, dst[2] + 4*y*s->uvlinesize + x*4,
                        s->framep[mb->ref_frame]->data[2], &uvmv,
                        4*x + x_off, 4*y + y_off, 4, 4,
                        width, height, s->uvlinesize,
-                       s->vp8dsp.put_vp8_epel_pixels_tab[2]);
+                       s->put_pixels_tab[2]);
             }
         }
     }

@@ -58,6 +58,7 @@ typedef struct VP8DSPContext {
      * so something like put_vp8_epel_pixels_tab[width>>3][2*!!my-(my&1)][2*!!mx-(mx&1)](..., mx, my)
      */
     vp8_mc_func put_vp8_epel_pixels_tab[3][3][3];
+    vp8_mc_func put_vp8_bilinear_pixels_tab[3][3][3];
 } VP8DSPContext;
 
 void ff_put_vp8_pixels16_c(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y);
