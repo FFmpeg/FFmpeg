@@ -209,7 +209,6 @@ int url_open(URLContext **puc, const char *filename, int flags)
     ret = url_connect(*puc);
     if (!ret)
         return 0;
- fail:
     url_close(*puc);
     *puc = NULL;
     return ret;
