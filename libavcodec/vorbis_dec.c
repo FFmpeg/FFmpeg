@@ -645,7 +645,7 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc)
         res_setup->partition_size = get_bits(gb, 24) + 1;
         /* Validations to prevent a buffer overflow later. */
         if (res_setup->begin>res_setup->end ||
-            res_setup->end>vc->blocksize[1] / (res_setup->type == 2 ? 1 : 2) ||
+            res_setup->end > vc->avccontext->channels * vc->blocksize[1] / (res_setup->type == 2 ? 1 : 2) ||
             (res_setup->end-res_setup->begin) / res_setup->partition_size > V_MAX_PARTITIONS) {
             av_log(vc->avccontext, AV_LOG_ERROR, "partition out of bounds: type, begin, end, size, blocksize: %"PRIdFAST16", %"PRIdFAST32", %"PRIdFAST32", %"PRIdFAST32", %"PRIdFAST32"\n", res_setup->type, res_setup->begin, res_setup->end, res_setup->partition_size, vc->blocksize[1] / 2);
             return -1;
