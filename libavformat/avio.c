@@ -121,7 +121,7 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
     if (up->priv_data_size) {
         uc->priv_data = av_mallocz(up->priv_data_size);
         if (up->priv_data_class) {
-            *(AVClass**)uc->priv_data = up->priv_data_class;
+            *(const AVClass**)uc->priv_data = up->priv_data_class;
             av_opt_set_defaults(uc->priv_data);
         }
     }
