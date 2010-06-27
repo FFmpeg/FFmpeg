@@ -27,6 +27,10 @@
 #include "celp_math.h"
 #include "celp_filters.h"
 
+#define MAX_BACKWARD_FILTER_ORDER  36
+#define MAX_BACKWARD_FILTER_LEN    40
+#define MAX_BACKWARD_FILTER_NONREC 35
+
 typedef struct {
     float sp_lpc[36];      ///< LPC coefficients for speech data (spec: A)
     float gain_lpc[10];    ///< LPC coefficients for gain        (spec: GB)
@@ -120,9 +124,9 @@ static void do_hybrid_window(int order, int n, int non_rec, float *out,
                              float *hist, float *out2, const float *window)
 {
     int i;
-    float buffer1[order + 1];
-    float buffer2[order + 1];
-    float work[order + n + non_rec];
+    float buffer1[MAX_BACKWARD_FILTER_ORDER + 1];
+    float buffer2[MAX_BACKWARD_FILTER_ORDER + 1];
+    float work[MAX_BACKWARD_FILTER_ORDER + MAX_BACKWARD_FILTER_LEN + MAX_BACKWARD_FILTER_NONREC];
 
     apply_window(work, window, hist, order + n + non_rec);
 
@@ -145,7 +149,7 @@ static void backward_filter(float *hist, float *rec, const float *window,
                             float *lpc, const float *tab,
                             int order, int n, int non_rec, int move_size)
 {
-    float temp[order+1];
+    float temp[MAX_BACKWARD_FILTER_ORDER+1];
 
     do_hybrid_window(order, n, non_rec, temp, hist, rec, window);
 
