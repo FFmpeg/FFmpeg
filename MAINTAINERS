@@ -98,6 +98,8 @@ Generic Parts:
     simple_idct.c, simple_idct.h        Michael Niedermayer
   postprocessing:
     libpostproc/*                       Michael Niedermayer
+  table generation:
+    tableprint.c, tableprint.h          Reimar Doeffinger
 
 Codecs:
   4xm.c                                 Michael Niedermayer
