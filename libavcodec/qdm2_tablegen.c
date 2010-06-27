@@ -34,7 +34,7 @@ int main(void)
     write_fileheader();
 
     printf("static const uint16_t softclip_table[HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1] = {\n");
-    write_uint16_array(softclip_table, HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1);
+    write_uint16_t_array(softclip_table, HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1);
     printf("};\n");
 
     printf("static const float noise_table[4096] = {\n");
@@ -42,11 +42,11 @@ int main(void)
     printf("};\n");
 
     printf("static const uint8_t random_dequant_index[256][5] = {\n");
-    write_uint8_2d_array(random_dequant_index, 256, 5);
+    write_uint8_t_2d_array(random_dequant_index, 256, 5);
     printf("};\n");
 
     printf("static const uint8_t random_dequant_type24[128][3] = {\n");
-    write_uint8_2d_array(random_dequant_type24, 128, 3);
+    write_uint8_t_2d_array(random_dequant_type24, 128, 3);
     printf("};\n");
 
     printf("static const float noise_samples[128] = {\n");

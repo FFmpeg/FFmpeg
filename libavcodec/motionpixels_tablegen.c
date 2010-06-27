@@ -34,7 +34,7 @@ int main(void)
     write_fileheader();
 
     printf("static const YuvPixel mp_rgb_yuv_table[1 << 15] = {\n");
-    write_int8_2d_array(mp_rgb_yuv_table, 1 << 15, 3);
+    write_int8_t_2d_array(mp_rgb_yuv_table, 1 << 15, 3);
     printf("};\n");
 
     return 0;

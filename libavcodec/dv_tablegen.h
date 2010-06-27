@@ -35,10 +35,10 @@
 #endif
 
 /* VLC encoding lookup table */
-struct dv_vlc_pair {
+typedef struct dv_vlc_pair {
    uint32_t vlc;
    uint32_t size;
-};
+} dv_vlc_pair;
 
 #if CONFIG_HARDCODED_TABLES
 #define dv_vlc_map_tableinit()
