@@ -253,10 +253,10 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
         rgba_color[2] = rgba;
     } else {
         entry = bsearch(color_string2,
-                                          color_table,
-                                          FF_ARRAY_ELEMS(color_table),
-                                          sizeof(ColorEntry),
-                                          color_table_compare);
+                        color_table,
+                        FF_ARRAY_ELEMS(color_table),
+                        sizeof(ColorEntry),
+                        color_table_compare);
         if (!entry) {
             av_log(log_ctx, AV_LOG_ERROR, "Cannot find color '%s'\n", color_string2);
             return AVERROR(EINVAL);
