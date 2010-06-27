@@ -143,7 +143,7 @@ static int asfrtp_parse_sdp_line(AVFormatContext *s, int stream_index,
 
 struct PayloadContext {
     ByteIOContext *pktbuf, pb;
-    char *buf;
+    uint8_t *buf;
 };
 
 /**
