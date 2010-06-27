@@ -96,6 +96,7 @@ static void ff_put_vp8_epel8_ ## TAPTYPE ## _ ## OPT(uint8_t *dst, \
                                              height, mx, my); \
 }
 
+#if HAVE_YASM
 TAP_W8 (mmxext, h4)
 TAP_W8 (mmxext, h6)
 TAP_W16(mmxext, h6)
@@ -108,6 +109,7 @@ TAP_W16(sse2,   v6)
 
 TAP_W16(ssse3,  h6)
 TAP_W16(ssse3,  v6)
+#endif
 
 #define HVTAP(OPT, ALIGN, TAPNUMX, TAPNUMY, SIZE, MAXHEIGHT) \
 static void ff_put_vp8_epel ## SIZE ## _h ## TAPNUMX ## v ## TAPNUMY ## _ ## OPT \
@@ -131,21 +133,25 @@ static void ff_put_vp8_epel ## SIZE ## _h ## TAPNUMX ## v ## TAPNUMY ## _ ## OPT
 HVTAP(mmxext, 8, x, y,  4,  8) \
 HVTAP(mmxext, 8, x, y,  8, 16)
 
+#if HAVE_YASM
 HVTAPMMX(4, 4)
 HVTAPMMX(4, 6)
 HVTAPMMX(6, 4)
 HVTAPMMX(6, 6)
 HVTAP(mmxext, 8, 6, 6, 16, 16)
+#endif
 
 #define HVTAPSSE2(x, y, w) \
 HVTAP(sse2,  16, x, y, w, 16) \
 HVTAP(ssse3, 16, x, y, w, 16)
 
+#if HAVE_YASM
 HVTAPSSE2(4, 4, 8)
 HVTAPSSE2(4, 6, 8)
 HVTAPSSE2(6, 4, 8)
 HVTAPSSE2(6, 6, 8)
 HVTAPSSE2(6, 6, 16)
+#endif
 
 extern void ff_vp8_idct_dc_add_mmx(uint8_t *dst, DCTELEM block[16], int stride);
 extern void ff_vp8_idct_dc_add_sse4(uint8_t *dst, DCTELEM block[16], int stride);
@@ -154,6 +160,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 {
     mm_flags = mm_support();
 
+#if HAVE_YASM
     if (mm_flags & FF_MM_MMX) {
         c->vp8_idct_dc_add                  = ff_vp8_idct_dc_add_mmx;
     }
@@ -213,4 +220,5 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
     if (mm_flags & FF_MM_SSE4) {
         c->vp8_idct_dc_add                  = ff_vp8_idct_dc_add_sse4;
     }
+#endif
 }
