@@ -65,7 +65,7 @@ char *av_get_token(const char **buf, const char *term)
 
 typedef struct {
     const char *name;            ///< a string representing the name of the color
-    uint8_t     rgba_color[4];   ///< RGBA values for the color
+    uint8_t     rgb_color[3];    ///< RGB values for the color
 } ColorEntry;
 
 static ColorEntry color_table[] = {
@@ -251,7 +251,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
             av_log(log_ctx, AV_LOG_ERROR, "Cannot find color '%s'\n", color_string);
             return AVERROR(EINVAL);
         }
-        memcpy(rgba_color, entry->rgba_color, 4);
+        memcpy(rgba_color, entry->rgb_color, 3);
     }
 
     return 0;
