@@ -81,7 +81,6 @@ typedef struct {
         } t0;
         struct vorbis_floor1_s {
             uint_fast8_t partitions;
-            uint_fast8_t maximum_class;
             uint_fast8_t partition_class[32];
             uint_fast8_t class_dimensions[16];
             uint_fast8_t class_subclasses[16];
@@ -495,8 +494,6 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             }
 
             AV_DEBUG(" maximum class %d \n", maximum_class);
-
-            floor_setup->data.t1.maximum_class = maximum_class;
 
             for (j = 0; j <= maximum_class; ++j) {
                 floor_setup->data.t1.class_dimensions[j] = get_bits(gb, 3) + 1;
