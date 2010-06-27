@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "libavutil/common.h"
 
 #define WRITE_1D_FUNC_ARGV(type, linebrk, fmtstr, ...)\
 void write_##type##_array(const type *data, int len)\
@@ -71,5 +72,24 @@ void write_float_2d_array   (const void *, int, int);
 
 /** Write a standard file header */
 void write_fileheader(void);
+
+#define WRITE_ARRAY(prefix, type, name)                 \
+    do {                                                \
+        const size_t array_size = FF_ARRAY_ELEMS(name); \
+        printf(prefix" "#type" "#name"[%zu] = {\n",     \
+               array_size);                             \
+        write_##type##_array(name, array_size);         \
+        printf("};\n");                                 \
+    } while(0)
+
+#define WRITE_2D_ARRAY(prefix, type, name)                              \
+    do {                                                                \
+        const size_t array_size1 = FF_ARRAY_ELEMS(name);                \
+        const size_t array_size2 = FF_ARRAY_ELEMS(name[0]);             \
+        printf(prefix" "#type" "#name"[%zu][%zu] = {\n",                \
+               array_size1, array_size2 );                              \
+        write_##type##_2d_array(name, array_size1, array_size2);        \
+        printf("};\n");                                                 \
+    } while(0)
 
 #endif /* AVCODEC_TABLEPRINT_H */

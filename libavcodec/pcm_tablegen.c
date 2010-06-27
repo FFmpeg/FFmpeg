@@ -32,13 +32,8 @@ int main(void)
 
     write_fileheader();
 
-    printf("static const uint8_t linear_to_alaw[1 << 14] = {\n");
-    write_uint8_t_array(linear_to_alaw, 1 << 14);
-    printf("};\n");
-
-    printf("static const uint8_t linear_to_ulaw[1 << 14] = {\n");
-    write_uint8_t_array(linear_to_ulaw, 1 << 14);
-    printf("};\n");
+    WRITE_ARRAY("static const", uint8_t, linear_to_alaw);
+    WRITE_ARRAY("static const", uint8_t, linear_to_ulaw);
 
     return 0;
 }

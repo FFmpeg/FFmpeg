@@ -31,29 +31,12 @@ int main(void)
 
     write_fileheader();
 
-    printf("static const int8_t table_4_3_exp[TABLE_4_3_SIZE] = {\n");
-    write_int8_t_array(table_4_3_exp, TABLE_4_3_SIZE);
-    printf("};\n");
-
-    printf("static const uint32_t table_4_3_value[TABLE_4_3_SIZE] = {\n");
-    write_uint32_t_array(table_4_3_value, TABLE_4_3_SIZE);
-    printf("};\n");
-
-    printf("static const uint32_t exp_table[512] = {\n");
-    write_uint32_t_array(exp_table, 512);
-    printf("};\n");
-
-    printf("static const float exp_table_float[512] = {\n");
-    write_float_array(exp_table_float, 512);
-    printf("};\n");
-
-    printf("static const uint32_t expval_table[512][16] = {\n");
-    write_uint32_t_2d_array(expval_table, 512, 16);
-    printf("};\n");
-
-    printf("static const float expval_table_float[512][16] = {\n");
-    write_float_2d_array(expval_table_float, 512, 16);
-    printf("};\n");
+    WRITE_ARRAY("static const", int8_t, table_4_3_exp);
+    WRITE_ARRAY("static const", uint32_t, table_4_3_value);
+    WRITE_ARRAY("static const", uint32_t, exp_table);
+    WRITE_ARRAY("static const", float, exp_table_float);
+    WRITE_2D_ARRAY("static const", uint32_t, expval_table);
+    WRITE_2D_ARRAY("static const", float, expval_table_float);
 
     return 0;
 }
