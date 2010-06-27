@@ -234,8 +234,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
         rgba_color[1] = rgba >> 16;
         rgba_color[2] = rgba >> 8;
         rgba_color[3] = rgba;
-    } else
-    if (!strncmp(color_string2, "0x", 2)) {
+    } else if (!strncmp(color_string2, "0x", 2)) {
         char *tail;
         int len = strlen(color_string2);
         unsigned int rgba = strtoul(color_string2, &tail, 16);
