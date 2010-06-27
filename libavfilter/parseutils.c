@@ -24,6 +24,7 @@
 
 #include <strings.h>
 #include "libavutil/avutil.h"
+#include "libavutil/avstring.h"
 #include "libavutil/random_seed.h"
 #include "parseutils.h"
 
@@ -216,22 +217,31 @@ static int color_table_compare(const void *lhs, const void *rhs)
     return strcasecmp(lhs, ((const ColorEntry *)rhs)->name);
 }
 
+#define ALPHA_SEP '@'
+
 int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
 {
-    if (!strcasecmp(color_string, "random") || !strcasecmp(color_string, "bikeshed")) {
+    char *tail, color_string2[128];
+    const ColorEntry *entry;
+    av_strlcpy(color_string2, color_string, sizeof(color_string2));
+    if ((tail = strchr(color_string2, ALPHA_SEP)))
+        *tail++ = 0;
+    rgba_color[3] = 255;
+
+    if (!strcasecmp(color_string2, "random") || !strcasecmp(color_string2, "bikeshed")) {
         int rgba = av_get_random_seed();
         rgba_color[0] = rgba >> 24;
         rgba_color[1] = rgba >> 16;
         rgba_color[2] = rgba >> 8;
         rgba_color[3] = rgba;
     } else
-    if (!strncmp(color_string, "0x", 2)) {
+    if (!strncmp(color_string2, "0x", 2)) {
         char *tail;
-        int len = strlen(color_string);
-        unsigned int rgba = strtoul(color_string, &tail, 16);
+        int len = strlen(color_string2);
+        unsigned int rgba = strtoul(color_string2, &tail, 16);
 
         if (*tail || (len != 8 && len != 10)) {
-            av_log(log_ctx, AV_LOG_ERROR, "Invalid 0xRRGGBB[AA] color string: '%s'\n", color_string);
+            av_log(log_ctx, AV_LOG_ERROR, "Invalid 0xRRGGBB[AA] color string: '%s'\n", color_string2);
             return AVERROR(EINVAL);
         }
         if (len == 10) {
@@ -242,16 +252,37 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
         rgba_color[1] = rgba >> 8;
         rgba_color[2] = rgba;
     } else {
-        const ColorEntry *entry = bsearch(color_string,
+        entry = bsearch(color_string2,
                                           color_table,
                                           FF_ARRAY_ELEMS(color_table),
                                           sizeof(ColorEntry),
                                           color_table_compare);
         if (!entry) {
-            av_log(log_ctx, AV_LOG_ERROR, "Cannot find color '%s'\n", color_string);
+            av_log(log_ctx, AV_LOG_ERROR, "Cannot find color '%s'\n", color_string2);
             return AVERROR(EINVAL);
         }
         memcpy(rgba_color, entry->rgb_color, 3);
+    }
+
+    if (tail) {
+        unsigned long int alpha;
+        const char *alpha_string = tail;
+        if (!strncmp(alpha_string, "0x", 2)) {
+            alpha = strtoul(alpha_string, &tail, 16);
+        } else {
+            alpha = strtoul(alpha_string, &tail, 10);
+            if (*tail) {
+                double d = strtod(alpha_string, &tail);
+                alpha = d * 255;
+            }
+        }
+
+        if (tail == alpha_string || *tail || alpha > 255) {
+            av_log(log_ctx, AV_LOG_ERROR, "Invalid alpha value specifier '%s' in '%s'\n",
+                   alpha_string, color_string);
+            return AVERROR(EINVAL);
+        }
+        rgba_color[3] = alpha;
     }
 
     return 0;
@@ -421,6 +452,21 @@ int main(void)
             "0xffXXee",
             "0xfoobar",
             "0xffffeeeeeeee",
+            "red@foo",
+            "random@10",
+            "0xff0000@1.0",
+            "red@",
+            "red@0xfff",
+            "red@0xf",
+            "red@2",
+            "red@0.1",
+            "red@-1",
+            "red@0.5",
+            "red@1.0",
+            "red@256",
+            "red@10foo",
+            "red@-1.0",
+            "red@-0.0",
         };
 
         av_log_set_level(AV_LOG_DEBUG);
