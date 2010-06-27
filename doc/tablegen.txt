@@ -28,8 +28,13 @@ them.
 The printing code typically looks like this:
     write_fileheader();
     printf("static const uint8_t my_array[100] = {\n");
-    write_uint8_array(my_array, 100);
+    write_uint8_t_array(my_array, 100);
     printf("};\n");
+
+This is the more generic form, in case you need to do something special.
+Usually you should instead use the short form:
+    write_fileheader();
+    WRITE_ARRAY("static const", uint8_t, my_array);
 
 write_fileheader() adds some minor things like a "this is a generated file"
 comment and some standard includes.
