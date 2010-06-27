@@ -83,9 +83,9 @@ static void unsharpen(uint8_t *dst, uint8_t *src, int dst_stride, int src_stride
     for (y = 0; y < 2 * fp->steps_y; y++)
         memset(sc[y], 0, sizeof(sc[y][0]) * (width + 2 * fp->steps_x));
 
-    for (y =- fp->steps_y; y < height + fp->steps_y; y++) {
+    for (y = -fp->steps_y; y < height + fp->steps_y; y++) {
         memset(sr, 0, sizeof(sr[0]) * (2 * fp->steps_x - 1));
-        for (x =- fp->steps_x; x < width + fp->steps_x; x++) {
+        for (x = -fp->steps_x; x < width + fp->steps_x; x++) {
             tmp1 = x <= 0 ? src[0] : x >= width ? src[width-1] : src[x];
             for (z = 0; z < fp->steps_x * 2; z += 2) {
                 tmp2 = sr[z + 0] + tmp1; sr[z + 0] = tmp1;
