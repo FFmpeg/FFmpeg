@@ -61,7 +61,7 @@ static void subshift(uint8_t s0[2][16], int s, const uint8_t *box){
     s3[0][1]=box[s3[1][13]]; s3[0][13]=box[s3[1][ 9]]; s3[0][ 9]=box[s3[1][ 5]]; s3[0][ 5]=box[s3[1][ 1]];
 }
 
-static inline int mix_core(uint32_t multbl[4][256], int a, int b, int c, int d){
+static inline int mix_core(uint32_t multbl[][256], int a, int b, int c, int d){
 #if CONFIG_SMALL
 #define ROT(x,s) ((x<<s)|(x>>(32-s)))
     return multbl[0][a] ^ ROT(multbl[0][b], 8) ^ ROT(multbl[0][c], 16) ^ ROT(multbl[0][d], 24);
@@ -70,14 +70,14 @@ static inline int mix_core(uint32_t multbl[4][256], int a, int b, int c, int d){
 #endif
 }
 
-static inline void mix(uint8_t state[2][4][4], uint32_t multbl[4][256], int s1, int s3){
+static inline void mix(uint8_t state[2][4][4], uint32_t multbl[][256], int s1, int s3){
     ((uint32_t *)(state))[0] = mix_core(multbl, state[1][0][0], state[1][s1  ][1], state[1][2][2], state[1][s3  ][3]);
     ((uint32_t *)(state))[1] = mix_core(multbl, state[1][1][0], state[1][s3-1][1], state[1][3][2], state[1][s1-1][3]);
     ((uint32_t *)(state))[2] = mix_core(multbl, state[1][2][0], state[1][s3  ][1], state[1][0][2], state[1][s1  ][3]);
     ((uint32_t *)(state))[3] = mix_core(multbl, state[1][3][0], state[1][s1-1][1], state[1][1][2], state[1][s3-1][3]);
 }
 
-static inline void crypt(AVAES *a, int s, const uint8_t *sbox, const uint32_t *multbl){
+static inline void crypt(AVAES *a, int s, const uint8_t *sbox, uint32_t multbl[][256]){
     int r;
 
     for(r=a->rounds-1; r>0; r--){
