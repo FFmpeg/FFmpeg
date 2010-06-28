@@ -219,24 +219,12 @@ static int aac_parse_packet(AVFormatContext *ctx,
     return 0;
 }
 
-static int parse_sdp_line(AVFormatContext *s, int st_index,
-                          PayloadContext *data, const char *line)
+static int parse_fmtp(AVStream *stream, PayloadContext *data,
+                      char *attr, char *value)
 {
-    const char *p;
-    char value[4096], attr[25];
-    int res = 0, i;
-    AVStream *st = s->streams[st_index];
-    AVCodecContext* codec = st->codec;
+    AVCodecContext *codec = stream->codec;
+    int res, i;
 
-    if (av_strstart(line, "fmtp:", &p)) {
-        // remove protocol identifier
-        while (*p && *p == ' ') p++; // strip spaces
-        while (*p && *p != ' ') p++; // eat protocol identifier
-        while (*p && *p == ' ') p++; // strip trailing spaces
-
-        while (ff_rtsp_next_attr_and_value(&p,
-                                           attr, sizeof(attr),
-                                           value, sizeof(value))) {
             if (!strcmp(attr, "config")) {
                 res = parse_fmtp_config(codec, value);
 
@@ -257,11 +245,18 @@ static int parse_sdp_line(AVFormatContext *s, int st_index,
                     }
                 }
             }
+    return 0;
         }
-    }
+
+static int parse_sdp_line(AVFormatContext *s, int st_index,
+                          PayloadContext *data, const char *line)
+{
+    const char *p;
+
+    if (av_strstart(line, "fmtp:", &p))
+        return ff_parse_fmtp(s->streams[st_index], data, p, parse_fmtp);
 
     return 0;
-
 }
 
 RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler = {
