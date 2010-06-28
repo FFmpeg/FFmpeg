@@ -157,6 +157,4 @@ void ff_sdp_write_media(char *buff, int size, AVCodecContext *c,
 int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
                      AVFormatContext *src);
 
-#define SPACE_CHARS " \t\r\n"
-
 #endif /* AVFORMAT_INTERNAL_H */
