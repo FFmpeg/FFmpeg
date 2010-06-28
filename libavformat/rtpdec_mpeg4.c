@@ -225,28 +225,28 @@ static int parse_fmtp(AVStream *stream, PayloadContext *data,
     AVCodecContext *codec = stream->codec;
     int res, i;
 
-            if (!strcmp(attr, "config")) {
-                res = parse_fmtp_config(codec, value);
+    if (!strcmp(attr, "config")) {
+        res = parse_fmtp_config(codec, value);
 
-                if (res < 0)
-                    return res;
-            }
+        if (res < 0)
+            return res;
+    }
 
-            if (codec->codec_id == CODEC_ID_AAC) {
-                /* Looking for a known attribute */
-                for (i = 0; attr_names[i].str; ++i) {
-                    if (!strcasecmp(attr, attr_names[i].str)) {
-                        if (attr_names[i].type == ATTR_NAME_TYPE_INT) {
-                            *(int *)((char *)data+
-                                attr_names[i].offset) = atoi(value);
-                        } else if (attr_names[i].type == ATTR_NAME_TYPE_STR)
-                            *(char **)((char *)data+
-                                attr_names[i].offset) = av_strdup(value);
-                    }
-                }
+    if (codec->codec_id == CODEC_ID_AAC) {
+        /* Looking for a known attribute */
+        for (i = 0; attr_names[i].str; ++i) {
+            if (!strcasecmp(attr, attr_names[i].str)) {
+                if (attr_names[i].type == ATTR_NAME_TYPE_INT) {
+                    *(int *)((char *)data+
+                        attr_names[i].offset) = atoi(value);
+                } else if (attr_names[i].type == ATTR_NAME_TYPE_STR)
+                    *(char **)((char *)data+
+                        attr_names[i].offset) = av_strdup(value);
             }
-    return 0;
         }
+    }
+    return 0;
+}
 
 static int parse_sdp_line(AVFormatContext *s, int st_index,
                           PayloadContext *data, const char *line)
