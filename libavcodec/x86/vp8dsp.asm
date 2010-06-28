@@ -663,8 +663,8 @@ cglobal put_vp8_bilinear%2_v_%1, 7,7,%3
     lea      r11, [bilinear_filter_vw_m]
 %endif
     pxor      m6, m6
-    mova      m4, [bilinear_filter_vw+r5d-16]
-    mova      m5, [bilinear_filter_vw+r6d-16]
+    mova      m4, [bilinear_filter_vw+r5-16]
+    mova      m5, [bilinear_filter_vw+r6-16]
 .nextrow
     movh      m0, [r2+r3*0]
     movh      m1, [r2+r3*1]
@@ -708,8 +708,8 @@ cglobal put_vp8_bilinear%2_h_%1, 7,7,%3
     lea      r11, [bilinear_filter_vw_m]
 %endif
     pxor      m6, m6
-    mova      m4, [bilinear_filter_vw+r6d-16]
-    mova      m5, [bilinear_filter_vw+r5d-16]
+    mova      m4, [bilinear_filter_vw+r6-16]
+    mova      m5, [bilinear_filter_vw+r5-16]
 .nextrow
     movh      m0, [r2+r3*0+0]
     movh      m1, [r2+r3*0+1]
@@ -758,7 +758,7 @@ cglobal put_vp8_bilinear8_v_ssse3, 7,7,5
     lea      r11, [bilinear_filter_vb_m]
 %endif
     pxor      m4, m4
-    mova      m3, [bilinear_filter_vb+r6d-16]
+    mova      m3, [bilinear_filter_vb+r6-16]
 .nextrow
     movh      m0, [r2+r3*0]
     movh      m1, [r2+r3*1]
@@ -788,7 +788,7 @@ cglobal put_vp8_bilinear8_h_ssse3, 7,7,5
 %endif
     pxor      m4, m4
     mova      m2, [filter_h2_shuf]
-    mova      m3, [bilinear_filter_vb+r5d-16]
+    mova      m3, [bilinear_filter_vb+r5-16]
 .nextrow
     movu      m0, [r2+r3*0]
     movu      m1, [r2+r3*1]
