@@ -87,6 +87,16 @@ extern void ff_put_vp8_bilinear8_h_ssse3 (uint8_t *dst, int dststride,
                                           uint8_t *src, int srcstride,
                                           int height, int mx, int my);
 
+extern void ff_put_vp8_pixels8_mmx (uint8_t *dst, int dststride,
+                                    uint8_t *src, int srcstride,
+                                    int height, int mx, int my);
+extern void ff_put_vp8_pixels16_mmx(uint8_t *dst, int dststride,
+                                    uint8_t *src, int srcstride,
+                                    int height, int mx, int my);
+extern void ff_put_vp8_pixels16_sse(uint8_t *dst, int dststride,
+                                    uint8_t *src, int srcstride,
+                                    int height, int mx, int my);
+
 #define TAP_W16(OPT, FILTERTYPE, TAPTYPE) \
 static void ff_put_vp8_ ## FILTERTYPE ## 16_ ## TAPTYPE ## _ ## OPT( \
     uint8_t *dst,  int dststride, uint8_t *src, \
@@ -218,6 +228,10 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 #if HAVE_YASM
     if (mm_flags & FF_MM_MMX) {
         c->vp8_idct_dc_add                  = ff_vp8_idct_dc_add_mmx;
+        c->put_vp8_epel_pixels_tab[0][0][0]     =
+        c->put_vp8_bilinear_pixels_tab[0][0][0] = ff_put_vp8_pixels16_mmx;
+        c->put_vp8_epel_pixels_tab[1][0][0]     =
+        c->put_vp8_bilinear_pixels_tab[1][0][0] = ff_put_vp8_pixels8_mmx;
     }
 
     /* note that 4-tap width=16 functions are missing because w=16
@@ -229,6 +243,11 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         VP8_BILINEAR_MC_FUNC(0, 16, mmxext);
         VP8_BILINEAR_MC_FUNC(1, 8, mmxext);
         VP8_BILINEAR_MC_FUNC(1, 4, mmxext);
+    }
+
+    if (mm_flags & FF_MM_SSE) {
+        c->put_vp8_epel_pixels_tab[0][0][0]     =
+        c->put_vp8_bilinear_pixels_tab[0][0][0] = ff_put_vp8_pixels16_sse;
     }
 
     if (mm_flags & FF_MM_SSE2) {

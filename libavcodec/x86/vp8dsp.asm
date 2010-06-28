@@ -810,6 +810,46 @@ cglobal put_vp8_bilinear8_h_ssse3, 7,7,5
     jg .nextrow
     REP_RET
 
+cglobal put_vp8_pixels8_mmx, 5,5
+.nextrow:
+    movq  mm0, [r2+r3*0]
+    movq  mm1, [r2+r3*1]
+    lea    r2, [r2+r3*2]
+    movq [r0+r1*0], mm0
+    movq [r0+r1*1], mm1
+    lea    r0, [r0+r1*2]
+    sub   r4d, 2
+    jg .nextrow
+    REP_RET
+
+cglobal put_vp8_pixels16_mmx, 5,5
+.nextrow:
+    movq  mm0, [r2+r3*0+0]
+    movq  mm1, [r2+r3*0+8]
+    movq  mm2, [r2+r3*1+0]
+    movq  mm3, [r2+r3*1+8]
+    lea    r2, [r2+r3*2]
+    movq [r0+r1*0+0], mm0
+    movq [r0+r1*0+8], mm1
+    movq [r0+r1*1+0], mm2
+    movq [r0+r1*1+8], mm3
+    lea    r0, [r0+r1*2]
+    sub   r4d, 2
+    jg .nextrow
+    REP_RET
+
+cglobal put_vp8_pixels16_sse, 5,5,2
+.nextrow:
+    movups xmm0, [r2+r3*0]
+    movups xmm1, [r2+r3*1]
+    lea     r2, [r2+r3*2]
+    movaps [r0+r1*0], xmm0
+    movaps [r0+r1*1], xmm1
+    lea     r0, [r0+r1*2]
+    sub    r4d, 2
+    jg .nextrow
+    REP_RET
+
 ;-----------------------------------------------------------------------------
 ; IDCT functions:
 ;
