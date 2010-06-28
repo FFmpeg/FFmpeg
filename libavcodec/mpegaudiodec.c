@@ -97,6 +97,14 @@ static int32_t csa_table[8][4];
 static float csa_table_float[8][4];
 static INTFLOAT mdct_win[8][36];
 
+static int16_t division_tab3[1<<6 ];
+static int16_t division_tab5[1<<8 ];
+static int16_t division_tab9[1<<11];
+
+static int16_t * const division_tabs[4] = {
+    division_tab3, division_tab5, NULL, division_tab9
+};
+
 /* lower 2 bits: modulo 3, higher bits: shift */
 static uint16_t scale_factor_modshift[64];
 /* [i][j]:  2^(-j/3) * FRAC_ONE * 2^(i+2) / (2^(i+2) - 1) */
@@ -398,6 +406,20 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
         int_pow_init();
         mpegaudio_tableinit();
+
+        for (i = 0; i < 4; i++)
+            if (ff_mpa_quant_bits[i] < 0)
+                for (j = 0; j < (1<<(-ff_mpa_quant_bits[i]+1)); j++) {
+                    int val1, val2, val3, steps;
+                    int val = j;
+                    steps  = ff_mpa_quant_steps[i];
+                    val1 = val % steps;
+                    val /= steps;
+                    val2 = val % steps;
+                    val3 = val / steps;
+                    division_tabs[i][j] = val1 + (val2 << 4) + (val3 << 8);
+                }
+
 
         for(i=0;i<7;i++) {
             float f;
@@ -1268,17 +1290,18 @@ static int mp_decode_layer2(MPADecodeContext *s)
                         qindex = alloc_table[j+b];
                         bits = ff_mpa_quant_bits[qindex];
                         if (bits < 0) {
+                            int v2;
                             /* 3 values at the same time */
                             v = get_bits(&s->gb, -bits);
-                            steps = ff_mpa_quant_steps[qindex];
+                            v2 = division_tabs[qindex][v];
+                            steps  = ff_mpa_quant_steps[qindex];
+
                             s->sb_samples[ch][k * 12 + l + 0][i] =
-                                l2_unscale_group(steps, v % steps, scale);
-                            v = v / steps;
+                                l2_unscale_group(steps, v2        & 15, scale);
                             s->sb_samples[ch][k * 12 + l + 1][i] =
-                                l2_unscale_group(steps, v % steps, scale);
-                            v = v / steps;
+                                l2_unscale_group(steps, (v2 >> 4) & 15, scale);
                             s->sb_samples[ch][k * 12 + l + 2][i] =
-                                l2_unscale_group(steps, v, scale);
+                                l2_unscale_group(steps,  v2 >> 8      , scale);
                         } else {
                             for(m=0;m<3;m++) {
                                 v = get_bits(&s->gb, bits);
