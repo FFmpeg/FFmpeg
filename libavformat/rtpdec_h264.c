@@ -70,8 +70,8 @@ struct PayloadContext {
 
 /* ---------------- private code */
 static int sdp_parse_fmtp_config_h264(AVStream * stream,
-                                       PayloadContext * h264_data,
-                                       char *attr, char *value)
+                                      PayloadContext * h264_data,
+                                      char *attr, char *value)
 {
     AVCodecContext *codec = stream->codec;
     assert(codec->codec_id == CODEC_ID_H264);
