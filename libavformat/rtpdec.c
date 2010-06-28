@@ -538,8 +538,14 @@ int ff_parse_fmtp(AVStream *stream, PayloadContext *data, const char *p,
                                     char *attr, char *value))
 {
     char attr[256];
-    char value[4096];
+    char *value;
     int res;
+    int value_size = strlen(p) + 1;
+
+    if (!(value = av_malloc(value_size))) {
+        av_log(stream, AV_LOG_ERROR, "Failed to allocate data for FMTP.");
+        return AVERROR(ENOMEM);
+    }
 
     // remove protocol identifier
     while (*p && *p == ' ') p++; // strip spaces
@@ -548,11 +554,14 @@ int ff_parse_fmtp(AVStream *stream, PayloadContext *data, const char *p,
 
     while (ff_rtsp_next_attr_and_value(&p,
                                        attr, sizeof(attr),
-                                       value, sizeof(value))) {
+                                       value, value_size)) {
 
         res = parse_fmtp(stream, data, attr, value);
-        if (res < 0)
+        if (res < 0 && res != AVERROR_PATCHWELCOME) {
+            av_free(value);
             return res;
+        }
     }
+    av_free(value);
     return 0;
 }
