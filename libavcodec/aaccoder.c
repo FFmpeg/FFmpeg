@@ -704,7 +704,6 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     }
                     minscaler = FFMIN(minscaler, sce->sf_idx[w*16+g]);
                     cb = find_min_book(find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled), sce->sf_idx[w*16+g]);
-                    sce->band_type[w*16+g] = cb;
                     for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                         int b;
                         dist += quantize_band_cost(s, coefs + w2*128,
@@ -748,12 +747,15 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
             start = w*128;
             for (g = 0; g < sce->ics.num_swb; g++) {
                 int prevsc = sce->sf_idx[w*16+g];
+                const float *scaled = s->scoefs + start;
                 if (dists[w*16+g] > uplims[w*16+g] && sce->sf_idx[w*16+g] > 60)
                     sce->sf_idx[w*16+g]--;
                 sce->sf_idx[w*16+g] = av_clip(sce->sf_idx[w*16+g], minscaler, minscaler + SCALE_MAX_DIFF);
                 sce->sf_idx[w*16+g] = FFMIN(sce->sf_idx[w*16+g], 219);
                 if (sce->sf_idx[w*16+g] != prevsc)
                     fflag = 1;
+                sce->band_type[w*16+g] = find_min_book(find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled), sce->sf_idx[w*16+g]);
+                start += sce->ics.swb_sizes[g];
             }
         }
         its++;
