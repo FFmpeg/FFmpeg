@@ -172,6 +172,11 @@ void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler);
 
 int ff_rtsp_next_attr_and_value(const char **p, char *attr, int attr_size, char *value, int value_size); ///< from rtsp.c, but used by rtp dynamic protocol handlers.
 
+int ff_parse_fmtp(AVStream *stream, PayloadContext *data, const char *p,
+                  int (*parse_fmtp)(AVStream *stream,
+                                    PayloadContext *data,
+                                    char *attr, char *value));
+
 void av_register_rtp_dynamic_payload_handlers(void);
 
 #endif /* AVFORMAT_RTPDEC_H */

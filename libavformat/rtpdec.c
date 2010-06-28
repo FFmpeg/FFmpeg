@@ -531,3 +531,28 @@ void rtp_parse_close(RTPDemuxContext *s)
     }
     av_free(s);
 }
+
+int ff_parse_fmtp(AVStream *stream, PayloadContext *data, const char *p,
+                  int (*parse_fmtp)(AVStream *stream,
+                                    PayloadContext *data,
+                                    char *attr, char *value))
+{
+    char attr[256];
+    char value[4096];
+    int res;
+
+    // remove protocol identifier
+    while (*p && *p == ' ') p++; // strip spaces
+    while (*p && *p != ' ') p++; // eat protocol identifier
+    while (*p && *p == ' ') p++; // strip trailing spaces
+
+    while (ff_rtsp_next_attr_and_value(&p,
+                                       attr, sizeof(attr),
+                                       value, sizeof(value))) {
+
+        res = parse_fmtp(stream, data, attr, value);
+        if (res < 0)
+            return res;
+    }
+    return 0;
+}
