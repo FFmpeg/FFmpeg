@@ -2345,6 +2345,9 @@ void ff_pred8x8_tm_vp8_mmxext      (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_sse2        (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_ssse3       (uint8_t *src, int stride);
 void ff_pred4x4_dc_mmxext          (uint8_t *src, const uint8_t *topright, int stride);
+void ff_pred4x4_tm_vp8_mmx         (uint8_t *src, const uint8_t *topright, int stride);
+void ff_pred4x4_tm_vp8_mmxext      (uint8_t *src, const uint8_t *topright, int stride);
+void ff_pred4x4_tm_vp8_ssse3       (uint8_t *src, const uint8_t *topright, int stride);
 
 #if CONFIG_H264DSP
 void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
@@ -2358,6 +2361,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
         if (codec_id == CODEC_ID_VP8) {
             h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_tm_vp8_mmx;
             h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_mmx;
+            h->pred4x4  [TM_VP8_PRED  ] = ff_pred4x4_tm_vp8_mmx;
         }
     }
 
@@ -2370,6 +2374,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
             h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_tm_vp8_mmxext;
             h->pred8x8  [DC_PRED8x8   ] = ff_pred8x8_dc_rv40_mmxext;
             h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_mmxext;
+            h->pred4x4  [TM_VP8_PRED  ] = ff_pred4x4_tm_vp8_mmxext;
         }
     }
 
@@ -2392,6 +2397,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
         h->pred8x8  [HOR_PRED8x8 ] = ff_pred8x8_horizontal_ssse3;
         if (codec_id == CODEC_ID_VP8) {
             h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_ssse3;
+            h->pred4x4  [TM_VP8_PRED  ] = ff_pred4x4_tm_vp8_ssse3;
         }
     }
 #endif

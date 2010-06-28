@@ -494,3 +494,81 @@ cglobal pred4x4_dc_mmxext, 3,5
     mov   [r0+r2*1], r3d
     mov   [r0+r2*2], r3d
     RET
+
+;-----------------------------------------------------------------------------
+; void pred4x4_tm_vp8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+;-----------------------------------------------------------------------------
+
+%macro PRED4x4_TM_MMX 1
+cglobal pred4x4_tm_vp8_%1, 3,6
+    sub        r0, r2
+    pxor      mm7, mm7
+    movd      mm0, [r0]
+    punpcklbw mm0, mm7
+    movzx     r4d, byte [r0-1]
+    mov       r5d, 2
+.loop:
+    movzx     r1d, byte [r0+r2*1-1]
+    movzx     r3d, byte [r0+r2*2-1]
+    sub       r1d, r4d
+    sub       r3d, r4d
+    movd      mm2, r1d
+    movd      mm4, r3d
+%ifidn %1, mmx
+    punpcklwd mm2, mm2
+    punpcklwd mm4, mm4
+    punpckldq mm2, mm2
+    punpckldq mm4, mm4
+%else
+    pshufw    mm2, mm2, 0
+    pshufw    mm4, mm4, 0
+%endif
+    paddw     mm2, mm0
+    paddw     mm4, mm0
+    packuswb  mm2, mm2
+    packuswb  mm4, mm4
+    movd [r0+r2*1], mm2
+    movd [r0+r2*2], mm4
+    lea        r0, [r0+r2*2]
+    dec       r5d
+    jg .loop
+    REP_RET
+%endmacro
+
+PRED4x4_TM_MMX mmx
+PRED4x4_TM_MMX mmxext
+
+cglobal pred4x4_tm_vp8_ssse3, 3,3
+    sub         r0, r2
+    movq       mm6, [tm_shuf]
+    pxor       mm1, mm1
+    movd       mm0, [r0]
+    punpcklbw  mm0, mm1
+    movd       mm7, [r0-4]
+    pshufb     mm7, mm6
+    lea         r1, [r0+r2*2]
+    movd       mm2, [r0+r2*1-4]
+    movd       mm3, [r0+r2*2-4]
+    movd       mm4, [r1+r2*1-4]
+    movd       mm5, [r1+r2*2-4]
+    pshufb     mm2, mm6
+    pshufb     mm3, mm6
+    pshufb     mm4, mm6
+    pshufb     mm5, mm6
+    psubw      mm2, mm7
+    psubw      mm3, mm7
+    psubw      mm4, mm7
+    psubw      mm5, mm7
+    paddw      mm2, mm0
+    paddw      mm3, mm0
+    paddw      mm4, mm0
+    paddw      mm5, mm0
+    packuswb   mm2, mm2
+    packuswb   mm3, mm3
+    packuswb   mm4, mm4
+    packuswb   mm5, mm5
+    movd [r0+r2*1], mm2
+    movd [r0+r2*2], mm3
+    movd [r1+r2*1], mm4
+    movd [r1+r2*2], mm5
+    RET
