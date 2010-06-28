@@ -1536,7 +1536,7 @@ for opt do
     --enable-debug=*) debuglevel="$optval"
     ;;
     --disable-everything)
-    map 'eval disable \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+    map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
     ;;
     --enable-*=*|--disable-*=*)
     eval $(echo "${opt%%=*}" | sed 's/--/action=/;s/-/ thing=/')
