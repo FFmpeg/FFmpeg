@@ -466,6 +466,10 @@ cglobal pred8x8_tm_vp8_ssse3, 2,3,6
     jg .loop
     REP_RET
 
+;-----------------------------------------------------------------------------
+; void pred4x4_dc_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+;-----------------------------------------------------------------------------
+
 cglobal pred4x4_dc_mmxext, 3,5
     pxor   mm7, mm7
     mov     r4, r0
