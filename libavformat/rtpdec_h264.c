@@ -385,20 +385,7 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
         codec->height = atoi(p + 1); // skip the -
         codec->pix_fmt = PIX_FMT_YUV420P;
     } else if (av_strstart(p, "fmtp:", &p)) {
-        char attr[256];
-        char value[4096];
-
-        // remove the protocol identifier..
-        while (*p && *p == ' ') p++; // strip spaces.
-        while (*p && *p != ' ') p++; // eat protocol identifier
-        while (*p && *p == ' ') p++; // strip trailing spaces.
-
-        /* loop on each attribute */
-        while (ff_rtsp_next_attr_and_value
-               (&p, attr, sizeof(attr), value, sizeof(value))) {
-            /* grab the codec extra_data from the config parameter of the fmtp line */
-            sdp_parse_fmtp_config_h264(stream, h264_data, attr, value);
-        }
+        return ff_parse_fmtp(stream, h264_data, p, sdp_parse_fmtp_config_h264);
     } else if (av_strstart(p, "cliprect:", &p)) {
         // could use this if we wanted.
     }
