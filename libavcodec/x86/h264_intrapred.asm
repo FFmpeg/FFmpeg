@@ -138,12 +138,7 @@ cglobal pred16x16_dc_%1, 2,7
     add       r5d, r6d
     lea       r2d, [r2+r5+16]
     shr       r2d, 5
-%ifidn %1, mmx
-    movd       m0, r2d
-    punpcklbw  m0, m0
-    punpcklwd  m0, m0
-    punpckldq  m0, m0
-%elifidn %1, mmxext
+%ifidn %1, mmxext
     movd       m0, r2d
     punpcklbw  m0, m0
     pshufw     m0, m0, 0
@@ -185,7 +180,6 @@ cglobal pred16x16_dc_%1, 2,7
 %endmacro
 
 INIT_MMX
-PRED16x16_DC    mmx, movq
 PRED16x16_DC mmxext, movq
 INIT_XMM
 PRED16x16_DC    sse, movaps
@@ -337,8 +331,7 @@ PRED8x8_H ssse3
 ; void pred8x8_dc_rv40(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8_DC 1
-cglobal pred8x8_dc_rv40_%1, 2,7
+cglobal pred8x8_dc_rv40_mmxext, 2,7
     mov       r4, r0
     sub       r0, r1
     pxor      mm0, mm0
@@ -358,16 +351,9 @@ cglobal pred8x8_dc_rv40_%1, 2,7
     add       r5d, r6d
     lea       r2d, [r2+r5+8]
     shr       r2d, 4
-%ifidn %1, mmx
-    movd      mm0, r2d
-    punpcklbw mm0, mm0
-    punpcklwd mm0, mm0
-    punpckldq mm0, mm0
-%else
     movd      mm0, r2d
     punpcklbw mm0, mm0
     pshufw    mm0, mm0, 0
-%endif
     mov       r3d, 4
 .loop:
     movq [r4+r1*0], mm0
@@ -376,11 +362,6 @@ cglobal pred8x8_dc_rv40_%1, 2,7
     dec   r3d
     jg .loop
     REP_RET
-%endmacro
-
-
-PRED8x8_DC mmx
-PRED8x8_DC mmxext
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8_tm_vp8(uint8_t *src, int stride)
@@ -484,3 +465,28 @@ cglobal pred8x8_tm_vp8_ssse3, 2,3,6
     dec         r2d
     jg .loop
     REP_RET
+
+cglobal pred4x4_dc_mmxext, 3,5
+    pxor   mm7, mm7
+    mov     r4, r0
+    sub     r0, r2
+    movd   mm0, [r0]
+    psadbw mm0, mm7
+    movzx  r1d, byte [r0+r2*1-1]
+    movd   r3d, mm0
+    add    r3d, r1d
+    movzx  r1d, byte [r0+r2*2-1]
+    lea     r0, [r0+r2*2]
+    add    r3d, r1d
+    movzx  r1d, byte [r0+r2*1-1]
+    add    r3d, r1d
+    movzx  r1d, byte [r0+r2*2-1]
+    add    r3d, r1d
+    add    r3d, 4
+    shr    r3d, 3
+    imul   r3d, 0x01010101
+    mov   [r4+r2*0], r3d
+    mov   [r0+r2*0], r3d
+    mov   [r0+r2*1], r3d
+    mov   [r0+r2*2], r3d
+    RET
