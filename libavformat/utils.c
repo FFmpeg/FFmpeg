@@ -1077,7 +1077,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     if(pkt->data == st->cur_pkt.data && pkt->size == st->cur_pkt.size){
                         s->cur_st = NULL;
                         pkt->destruct= st->cur_pkt.destruct;
-                        st->cur_pkt.destruct=
+                        st->cur_pkt.destruct= NULL;
                         st->cur_pkt.data    = NULL;
                         assert(st->cur_len == 0);
                     }else{
