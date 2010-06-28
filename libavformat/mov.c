@@ -265,9 +265,9 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
             a.size = get_be32(pb);
             a.type = get_le32(pb);
         }
-        total_size += 8;
         dprintf(c->fc, "type: %08x '%.4s' parent:'%.4s' sz: %"PRId64" %"PRId64" %"PRId64"\n",
                 a.type, (char*)&a.type, (char*)&atom.type, a.size, total_size, atom.size);
+        total_size += 8;
         if (a.size == 1) { /* 64 bit extended size */
             a.size = get_be64(pb) - 8;
             total_size += 8;
