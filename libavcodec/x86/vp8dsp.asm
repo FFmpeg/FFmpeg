@@ -98,13 +98,31 @@ sixtap_filter_v_m:   times 8 dw   2
                      times 8 dw -11
                      times 8 dw   2
 
+bilinear_filter_vw_m: times 8 dw 1
+                      times 8 dw 2
+                      times 8 dw 3
+                      times 8 dw 4
+                      times 8 dw 5
+                      times 8 dw 6
+                      times 8 dw 7
+
+bilinear_filter_vb_m: times 8 db 7, 1
+                      times 8 db 6, 2
+                      times 8 db 5, 3
+                      times 8 db 4, 4
+                      times 8 db 3, 5
+                      times 8 db 2, 6
+                      times 8 db 1, 7
+
 %ifdef PIC
-%define fourtap_filter_hw r11
-%define sixtap_filter_hw  r11
-%define fourtap_filter_hb r11
-%define sixtap_filter_hb  r11
-%define fourtap_filter_v  r11
-%define sixtap_filter_v   r11
+%define fourtap_filter_hw    r11
+%define sixtap_filter_hw     r11
+%define fourtap_filter_hb    r11
+%define sixtap_filter_hb     r11
+%define fourtap_filter_v     r11
+%define sixtap_filter_v      r11
+%define bilinear_filter_vw   r11
+%define bilinear_filter_vb   r11
 %else
 %define fourtap_filter_hw fourtap_filter_hw_m
 %define sixtap_filter_hw  sixtap_filter_hw_m
@@ -112,14 +130,16 @@ sixtap_filter_v_m:   times 8 dw   2
 %define sixtap_filter_hb  sixtap_filter_hb_m
 %define fourtap_filter_v  fourtap_filter_v_m
 %define sixtap_filter_v   sixtap_filter_v_m
+%define bilinear_filter_vw bilinear_filter_vw_m
+%define bilinear_filter_vb bilinear_filter_vb_m
 %endif
 
-filter_v4_shuf1: db 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5,  8, 6,  9, 7, 10
-filter_v4_shuf2: db 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,  7, 7,  8, 8,  9
+filter_h2_shuf:  db 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6, 6,  7,  7,  8
+filter_h4_shuf:  db 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5,  8, 6,  9,  7, 10
 
-filter_v6_shuf1: db 0, 5, 1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 6, 11,  7, 12
-filter_v6_shuf2: db 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,  7, 7,  8,  8,  9
-filter_v6_shuf3: db 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8,  9, 9, 10, 10, 11
+filter_h6_shuf1: db 0, 5, 1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 6, 11,  7, 12
+filter_h6_shuf2: db 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,  7, 7,  8,  8,  9
+filter_h6_shuf3: db 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8,  9, 9, 10, 10, 11
 
 cextern pw_4
 cextern pw_64
@@ -361,8 +381,8 @@ cglobal put_vp8_epel8_h6_sse2, 6, 6, 8
 cglobal put_vp8_epel8_h4_ssse3, 6, 6, 7
     shl      r5d, 4
     mova      m2, [pw_64]
-    mova      m3, [filter_v4_shuf1]
-    mova      m4, [filter_v4_shuf2]
+    mova      m3, [filter_h4_shuf]
+    mova      m4, [filter_h6_shuf2]
 %ifdef PIC
     lea      r11, [fourtap_filter_hb_m]
 %endif
@@ -391,8 +411,8 @@ cglobal put_vp8_epel8_h4_ssse3, 6, 6, 7
 
 cglobal put_vp8_epel8_h6_ssse3, 6, 6, 8
     lea      r5d, [r5*3]
-    mova      m3, [filter_v6_shuf1]
-    mova      m4, [filter_v6_shuf2]
+    mova      m3, [filter_h6_shuf1]
+    mova      m4, [filter_h6_shuf2]
 %ifdef PIC
     lea      r11, [sixtap_filter_hb_m]
 %endif
@@ -406,7 +426,7 @@ cglobal put_vp8_epel8_h6_ssse3, 6, 6, 8
     mova      m2, m0
     pshufb    m0, m3
     pshufb    m1, m4
-    pshufb    m2, [filter_v6_shuf3]
+    pshufb    m2, [filter_h6_shuf3]
     pmaddubsw m0, m5
     pmaddubsw m1, m6
     pmaddubsw m2, m7
@@ -631,6 +651,162 @@ cglobal put_vp8_epel8_v6_ssse3, 7, 7, 8
     add        r0, r1
     add        r2, r3
     dec        r4                          ; next row
+    jg .nextrow
+    REP_RET
+
+%macro FILTER_BILINEAR 3
+cglobal put_vp8_bilinear%2_v_%1, 7,7,%3
+    mov      r5d, 8*16
+    shl      r6d, 4
+    sub      r5d, r6d
+%ifdef PIC
+    lea      r11, [bilinear_filter_vw_m]
+%endif
+    pxor      m6, m6
+    mova      m4, [bilinear_filter_vw+r5d-16]
+    mova      m5, [bilinear_filter_vw+r6d-16]
+.nextrow
+    movh      m0, [r2+r3*0]
+    movh      m1, [r2+r3*1]
+    movh      m3, [r2+r3*2]
+    punpcklbw m0, m6
+    punpcklbw m1, m6
+    punpcklbw m3, m6
+    mova      m2, m1
+    pmullw    m0, m4
+    pmullw    m1, m5
+    pmullw    m2, m4
+    pmullw    m3, m5
+    paddsw    m0, m1
+    paddsw    m2, m3
+    psraw     m0, 2
+    psraw     m2, 2
+    pavgw     m0, m6
+    pavgw     m2, m6
+%ifidn %1, mmxext
+    packuswb  m0, m0
+    packuswb  m2, m2
+    movh [r0+r1*0], m0
+    movh [r0+r1*1], m2
+%else
+    packuswb  m0, m2
+    movh   [r0+r1*0], m0
+    movhps [r0+r1*1], m0
+%endif
+
+    lea       r0, [r0+r1*2]
+    lea       r2, [r2+r3*2]
+    sub       r4, 2
+    jg .nextrow
+    REP_RET
+
+cglobal put_vp8_bilinear%2_h_%1, 7,7,%3
+    mov      r6d, 8*16
+    shl      r5d, 4
+    sub      r6d, r5d
+%ifdef PIC
+    lea      r11, [bilinear_filter_vw_m]
+%endif
+    pxor      m6, m6
+    mova      m4, [bilinear_filter_vw+r6d-16]
+    mova      m5, [bilinear_filter_vw+r5d-16]
+.nextrow
+    movh      m0, [r2+r3*0+0]
+    movh      m1, [r2+r3*0+1]
+    movh      m2, [r2+r3*1+0]
+    movh      m3, [r2+r3*1+1]
+    punpcklbw m0, m6
+    punpcklbw m1, m6
+    punpcklbw m2, m6
+    punpcklbw m3, m6
+    pmullw    m0, m4
+    pmullw    m1, m5
+    pmullw    m2, m4
+    pmullw    m3, m5
+    paddsw    m0, m1
+    paddsw    m2, m3
+    psraw     m0, 2
+    psraw     m2, 2
+    pavgw     m0, m6
+    pavgw     m2, m6
+%ifidn %1, mmxext
+    packuswb  m0, m0
+    packuswb  m2, m2
+    movh [r0+r1*0], m0
+    movh [r0+r1*1], m2
+%else
+    packuswb  m0, m2
+    movh   [r0+r1*0], m0
+    movhps [r0+r1*1], m0
+%endif
+
+    lea       r0, [r0+r1*2]
+    lea       r2, [r2+r3*2]
+    sub       r4, 2
+    jg .nextrow
+    REP_RET
+%endmacro
+
+INIT_MMX
+FILTER_BILINEAR mmxext, 4, 0
+INIT_XMM
+FILTER_BILINEAR   sse2, 8, 7
+
+cglobal put_vp8_bilinear8_v_ssse3, 7,7,5
+    shl      r6d, 4
+%ifdef PIC
+    lea      r11, [bilinear_filter_vb_m]
+%endif
+    pxor      m4, m4
+    mova      m3, [bilinear_filter_vb+r6d-16]
+.nextrow
+    movh      m0, [r2+r3*0]
+    movh      m1, [r2+r3*1]
+    movh      m2, [r2+r3*2]
+    punpcklbw m0, m1
+    punpcklbw m1, m2
+    pmaddubsw m0, m3
+    pmaddubsw m1, m3
+    psraw     m0, 2
+    psraw     m1, 2
+    pavgw     m0, m4
+    pavgw     m1, m4
+    packuswb  m0, m1
+    movh   [r0+r1*0], m0
+    movhps [r0+r1*1], m0
+
+    lea       r0, [r0+r1*2]
+    lea       r2, [r2+r3*2]
+    sub       r4, 2
+    jg .nextrow
+    REP_RET
+
+cglobal put_vp8_bilinear8_h_ssse3, 7,7,5
+    shl      r5d, 4
+%ifdef PIC
+    lea      r11, [bilinear_filter_vb_m]
+%endif
+    pxor      m4, m4
+    mova      m2, [filter_h2_shuf]
+    mova      m3, [bilinear_filter_vb+r5d-16]
+.nextrow
+    movu      m0, [r2+r3*0]
+    movu      m1, [r2+r3*1]
+    pshufb    m0, m2
+    pshufb    m1, m2
+    pmaddubsw m0, m3
+    pmaddubsw m1, m3
+    psraw     m0, 2
+    psraw     m1, 2
+    pavgw     m0, m4
+    pavgw     m1, m4
+    packuswb  m0, m1
+    movh   [r0+r1*0], m0
+    movhps [r0+r1*1], m0
+
+    lea       r0, [r0+r1*2]
+    lea       r2, [r2+r3*2]
+    sub       r4, 2
     jg .nextrow
     REP_RET
 
