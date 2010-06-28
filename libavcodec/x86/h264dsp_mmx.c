@@ -2364,7 +2364,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
         }
     }
 
-    if (mm_flags & FF_MM_MMXEXT) {
+    if (mm_flags & FF_MM_MMX2) {
         h->pred16x16[HOR_PRED8x8 ] = ff_pred16x16_horizontal_mmxext;
         h->pred16x16[DC_PRED8x8  ] = ff_pred16x16_dc_mmxext;
         h->pred8x8  [HOR_PRED8x8 ] = ff_pred8x8_horizontal_mmxext;
