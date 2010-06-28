@@ -69,7 +69,7 @@ struct PayloadContext {
 #define DEAD_COOKIE (0xdeaddead)        ///< Cookie for the extradata; once it is freed.
 
 /* ---------------- private code */
-static void sdp_parse_fmtp_config_h264(AVStream * stream,
+static int sdp_parse_fmtp_config_h264(AVStream * stream,
                                        PayloadContext * h264_data,
                                        char *attr, char *value)
 {
@@ -155,11 +155,13 @@ static void sdp_parse_fmtp_config_h264(AVStream * stream,
                     codec->extradata_size+= sizeof(start_sequence)+packet_size;
                 } else {
                     av_log(codec, AV_LOG_ERROR, "Unable to allocate memory for extradata!");
+                    return AVERROR(ENOMEM);
                 }
             }
         }
         av_log(codec, AV_LOG_DEBUG, "Extradata set to %p (size: %d)!", codec->extradata, codec->extradata_size);
     }
+    return 0;
 }
 
 // return 0 on packet, no more left, 1 on packet, 1 on partial packet...
