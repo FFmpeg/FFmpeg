@@ -599,44 +599,54 @@ static const uint8_t *get_submv_prob(const VP56mv *left, const VP56mv *top)
 
 /**
  * Split motion vector prediction, 16.4.
+ * @returns the number of motion vectors parsed (2, 4 or 16)
  */
-static void decode_splitmvs(VP8Context    *s,  VP56RangeCoder *c,
+static int decode_splitmvs(VP8Context    *s,  VP56RangeCoder *c,
                             VP8Macroblock *mb, VP56mv         *base_mv)
 {
     int part_idx = mb->partitioning =
         vp8_rac_get_tree(c, vp8_mbsplit_tree, vp8_mbsplit_prob);
     int n, num = vp8_mbsplit_count[part_idx];
-    VP56mv part_mv[16];
+    const uint8_t *mbsplits = vp8_mbsplits[part_idx],
+                  *firstidx = vp8_mbfirstidx[part_idx];
 
     for (n = 0; n < num; n++) {
-        int k = vp8_mbfirstidx[part_idx][n];
-        const VP56mv *left  = (k & 3) ? &mb->bmv[k - 1] : &mb[-1].bmv[k + 3],
-                     *above = (k > 3) ? &mb->bmv[k - 4] : &mb[-s->mb_stride].bmv[k + 12];
-        const uint8_t *submv_prob = get_submv_prob(left, above);
+        int k = firstidx[n];
+        const VP56mv *left, *above;
+        const uint8_t *submv_prob;
+
+        if (!(k & 3)) {
+            VP8Macroblock *left_mb = &mb[-1];
+            left = &left_mb->bmv[vp8_mbsplits[left_mb->partitioning][k + 3]];
+        } else
+            left  = &mb->bmv[mbsplits[k - 1]];
+        if (k <= 3) {
+            VP8Macroblock *above_mb = &mb[-s->mb_stride];
+            above = &above_mb->bmv[vp8_mbsplits[above_mb->partitioning][k + 12]];
+        } else
+            above = &mb->bmv[mbsplits[k - 4]];
+
+        submv_prob = get_submv_prob(left, above);
 
         switch (vp8_rac_get_tree(c, vp8_submv_ref_tree, submv_prob)) {
         case VP8_SUBMVMODE_NEW4X4:
-            part_mv[n].y = base_mv->y + read_mv_component(c, s->prob->mvc[0]);
-            part_mv[n].x = base_mv->x + read_mv_component(c, s->prob->mvc[1]);
+            mb->bmv[n].y = base_mv->y + read_mv_component(c, s->prob->mvc[0]);
+            mb->bmv[n].x = base_mv->x + read_mv_component(c, s->prob->mvc[1]);
             break;
         case VP8_SUBMVMODE_ZERO4X4:
-            part_mv[n].x = 0;
-            part_mv[n].y = 0;
+            mb->bmv[n].x = 0;
+            mb->bmv[n].y = 0;
             break;
         case VP8_SUBMVMODE_LEFT4X4:
-            part_mv[n] = *left;
+            mb->bmv[n] = *left;
             break;
         case VP8_SUBMVMODE_TOP4X4:
-            part_mv[n] = *above;
+            mb->bmv[n] = *above;
             break;
         }
-
-        /* fill out over the 4x4 blocks in MB */
-        for (k = 0; k < 16; k++)
-            if (vp8_mbsplits[part_idx][k] == n) {
-                mb->bmv[k]      = part_mv[n];
-            }
     }
+
+    return num;
 }
 
 static inline void decode_intra4x4_modes(VP56RangeCoder *c, uint8_t *intra4x4,
@@ -698,8 +708,7 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
         mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_mvinter, p);
         switch (mb->mode) {
         case VP8_MVMODE_SPLIT:
-            decode_splitmvs(s, c, mb, &best);
-            mb->mv = mb->bmv[15];
+            mb->mv = mb->bmv[decode_splitmvs(s, c, mb, &best) - 1];
             break;
         case VP8_MVMODE_ZERO:
             mb->mv.x = 0;
@@ -717,8 +726,8 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
             break;
         }
         if (mb->mode != VP8_MVMODE_SPLIT) {
-            for (n = 0; n < 16; n++)
-                mb->bmv[n] = mb->mv;
+            mb->partitioning = VP8_SPLITMVMODE_NONE;
+            mb->bmv[0] = mb->mv;
         }
     } else {
         // intra MB, 16.1
@@ -1040,23 +1049,23 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
         vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
                     0, 0, 16, 8, width, height, &mb->bmv[0]);
         vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    0, 8, 16, 8, width, height, &mb->bmv[8]);
+                    0, 8, 16, 8, width, height, &mb->bmv[1]);
         break;
     case VP8_SPLITMVMODE_8x16:
         vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
                     0, 0, 8, 16, width, height, &mb->bmv[0]);
         vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    8, 0, 8, 16, width, height, &mb->bmv[2]);
+                    8, 0, 8, 16, width, height, &mb->bmv[1]);
         break;
     case VP8_SPLITMVMODE_8x8:
         vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
                     0, 0, 8, 8, width, height, &mb->bmv[0]);
         vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    8, 0, 8, 8, width, height, &mb->bmv[2]);
+                    8, 0, 8, 8, width, height, &mb->bmv[1]);
         vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    0, 8, 8, 8, width, height, &mb->bmv[8]);
+                    0, 8, 8, 8, width, height, &mb->bmv[2]);
         vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    8, 8, 8, 8, width, height, &mb->bmv[10]);
+                    8, 8, 8, 8, width, height, &mb->bmv[3]);
         break;
     }
 }
