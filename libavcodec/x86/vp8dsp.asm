@@ -939,8 +939,8 @@ cglobal vp8_idct_dc_add_sse4, 3, 3, 6
     pmulhw    %4, m6 ;20091(2)
     paddw     %3, %1
     paddw     %4, %2
-    psllw     %1, 1
-    psllw     %2, 1
+    paddw     %1, %1
+    paddw     %2, %2
     pmulhw    %1, m7 ;35468(1)
     pmulhw    %2, m7 ;35468(2)
     psubw     %1, %4
