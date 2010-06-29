@@ -930,13 +930,6 @@ cglobal vp8_idct_dc_add_sse4, 3, 3, 6
 ; void vp8_idct_add_<opt>(uint8_t *dst, DCTELEM block[16], int stride);
 ;-----------------------------------------------------------------------------
 
-; calculate %1=%2+%1; %2=%2-%1, with %3=temp register
-%macro SUMSUB 3
-    mova      %3, %1
-    paddw     %1, %2
-    psubw     %2, %3
-%endmacro
-
 ; calculate %1=mul_35468(%1)-mul_20091(%2); %2=mul_20091(%1)+mul_35468(%2)
 ;           this macro assumes that m6/m7 have words for 20091/17734 loaded
 %macro VP8_MULTIPLY_SUMSUB 4
@@ -966,25 +959,6 @@ cglobal vp8_idct_dc_add_sse4, 3, 3, 6
     SUMSUB_BA           m%2, m%1, m%5     ;tmp1, tmp2
     SWAP                 %4,  %1
     SWAP                 %4,  %3
-%endmacro
-
-; transpose a 4x4 table
-%macro TRANSPOSE4x4 5 ; output in %1/%4/%5/%3
-    mova      m%5, m%1
-    punpcklwd m%1, m%2
-    punpckhwd m%5, m%2
-    mova      m%2, m%3
-    punpcklwd m%3, m%4
-    punpckhwd m%2, m%4
-    mova      m%4, m%1
-    punpckldq m%1, m%3 ;col0
-    punpckhdq m%4, m%3 ;col1
-    mova      m%3, m%5
-    punpckldq m%5, m%2 ;col2
-    punpckhdq m%3, m%2 ;col3
-    SWAP       %4,  %2
-    SWAP       %4,  %5
-    SWAP       %4,  %3
 %endmacro
 
 INIT_MMX
