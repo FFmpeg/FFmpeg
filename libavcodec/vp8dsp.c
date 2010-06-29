@@ -214,12 +214,15 @@ static void vp8_ ## dir ## _loop_filter ## size ## _c(uint8_t *dst, int stride,\
 static void vp8_ ## dir ## _loop_filter ## size ## _inner_c(uint8_t *dst, int stride,\
                                       int flim_E, int flim_I, int hev_thresh)\
 {\
-    int i, hv;\
+    int i;\
 \
     for (i = 0; i < size; i++)\
         if (normal_limit(dst+i*stridea, strideb, flim_E, flim_I)) {\
-            hv = hev(dst+i*stridea, strideb, hev_thresh);\
-            filter_common(dst+i*stridea, strideb, hv);\
+            int hv = hev(dst+i*stridea, strideb, hev_thresh);\
+            if (hv) \
+                filter_common(dst+i*stridea, strideb, 1);\
+            else \
+                filter_common(dst+i*stridea, strideb, 0);\
         }\
 }
 
