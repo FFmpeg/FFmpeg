@@ -27,6 +27,7 @@ tm_shuf: times 8 db 0x03, 0x80
 
 SECTION .text
 
+cextern pb_1
 cextern pb_3
 
 ;-----------------------------------------------------------------------------
@@ -571,4 +572,36 @@ cglobal pred4x4_tm_vp8_ssse3, 3,3
     movd [r0+r2*2], mm3
     movd [r1+r2*1], mm4
     movd [r1+r2*2], mm5
+    RET
+
+; dest, left, right, src, tmp
+; output: %1 = (t[n-1] + t[n]*2 + t[n+1] + 2) >> 2
+%macro PRED4x4_LOWPASS 5
+    mova    %5, %2
+    pavgb   %2, %3
+    pxor    %3, %5
+    mova    %1, %4
+    pand    %3, [pb_1]
+    psubusb %2, %3
+    pavgb   %1, %2
+%endmacro
+
+;-----------------------------------------------------------------------------
+; void pred4x4_vertical_vp8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+;-----------------------------------------------------------------------------
+
+INIT_MMX
+cglobal pred4x4_vertical_vp8_mmxext, 3,3
+    sub       r0, r2
+    movd      m1, [r0-1]
+    movd      m0, [r0]
+    mova      m2, m0   ;t0 t1 t2 t3
+    punpckldq m0, [r1] ;t0 t1 t2 t3 t4 t5 t6 t7
+    lea       r1, [r0+r2*2]
+    psrlq     m0, 8    ;t1 t2 t3 t4
+    PRED4x4_LOWPASS m3, m1, m0, m2, m4
+    movd [r0+r2*1], m3
+    movd [r0+r2*2], m3
+    movd [r1+r2*1], m3
+    movd [r1+r2*2], m3
     RET
