@@ -18,5 +18,6 @@ bf=3
 refs=1
 directpred=1
 trellis=0
-flags2=+bpyramid-mixed_refs+wpred+dct8x8+fastpskip-mbtree
+flags2=+bpyramid-mixed_refs+wpred+dct8x8+fastpskip
 wpredp=0
+rc_lookahead=10

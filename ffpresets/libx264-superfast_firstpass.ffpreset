@@ -20,3 +20,4 @@ directpred=1
 trellis=0
 flags2=+bpyramid-mixed_refs+wpred-dct8x8+fastpskip-mbtree
 wpredp=0
+rc_lookahead=0
