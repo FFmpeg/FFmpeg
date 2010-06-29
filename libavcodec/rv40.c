@@ -307,7 +307,7 @@ static inline void rv40_weak_loop_filter(uint8_t *src, const int step,
     }
 }
 
-static inline void rv40_adaptive_loop_filter(uint8_t *src, const int step,
+static av_always_inline void rv40_adaptive_loop_filter(uint8_t *src, const int step,
                                              const int stride, const int dmode,
                                              const int lim_q1, const int lim_p1,
                                              const int alpha,
