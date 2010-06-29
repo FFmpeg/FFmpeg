@@ -365,3 +365,18 @@
     packuswb   %1, %1
     movh       %4, %1
 %endmacro
+
+%macro STORE_DIFFx2 8 ; add1, add2, reg1, reg2, zero, shift, source, stride
+    movh       %3, [%7]
+    movh       %4, [%7+%8]
+    punpcklbw  %3, %5
+    punpcklbw  %4, %5
+    psraw      %1, %6
+    psraw      %2, %6
+    paddw      %3, %1
+    paddw      %4, %2
+    packuswb   %3, %5
+    packuswb   %4, %5
+    movh     [%7], %3
+    movh  [%7+%8], %4
+%endmacro
