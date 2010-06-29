@@ -49,6 +49,17 @@ ELF     .type   \name, %function
 \name:
 .endm
 
+.macro  mov32   rd, val
+#if HAVE_ARMV6T2
+        movw            \rd, #(\val) & 0xffff
+    .if (\val) >> 16
+        movt            \rd, #(\val) >> 16
+    .endif
+#else
+        ldr             \rd, =\val
+#endif
+.endm
+
 .macro  movrel rd, val
 #if HAVE_ARMV6T2 && !CONFIG_PIC
         movw            \rd, #:lower16:\val
