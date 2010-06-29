@@ -21,6 +21,7 @@
 ;******************************************************************************
 
 %include "x86inc.asm"
+%include "x86util.asm"
 
 SECTION_RODATA
 
@@ -141,6 +142,7 @@ filter_h6_shuf1: db 0, 5, 1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 6, 11,  7, 12
 filter_h6_shuf2: db 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,  7, 7,  8,  8,  9
 filter_h6_shuf3: db 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8,  9, 9, 10, 10, 11
 
+cextern pw_3
 cextern pw_4
 cextern pw_64
 
@@ -919,4 +921,48 @@ cglobal vp8_idct_dc_add_sse4, 3, 3, 6
     pextrd  [r0+r2], xmm2, 1
     pextrd     [r1], xmm2, 2
     pextrd  [r1+r2], xmm2, 3
+    RET
+
+;-----------------------------------------------------------------------------
+; void vp8_luma_dc_wht_mmxext(DCTELEM block[4][4][16], DCTELEM dc[16])
+;-----------------------------------------------------------------------------
+
+%macro SCATTER_WHT 1
+    pextrw r1d, m0, %1
+    pextrw r2d, m1, %1
+    mov [r0+2*16*0], r1w
+    mov [r0+2*16*1], r2w
+    pextrw r1d, m2, %1
+    pextrw r2d, m3, %1
+    mov [r0+2*16*2], r1w
+    mov [r0+2*16*3], r2w
+%endmacro
+
+%macro HADAMARD4_1D 4
+    SUMSUB_BADC m%2, m%1, m%4, m%3
+    SUMSUB_BADC m%4, m%2, m%3, m%1
+    SWAP %1, %4, %3
+%endmacro
+
+INIT_MMX
+cglobal vp8_luma_dc_wht_mmxext, 2,3
+    movq          m0, [r1]
+    movq          m1, [r1+8]
+    movq          m2, [r1+16]
+    movq          m3, [r1+24]
+    HADAMARD4_1D  0, 1, 2, 3
+    TRANSPOSE4x4W 0, 1, 2, 3, 4
+    paddw         m0, [pw_3]
+    HADAMARD4_1D  0, 1, 2, 3
+    psraw         m0, 3
+    psraw         m1, 3
+    psraw         m2, 3
+    psraw         m3, 3
+    SCATTER_WHT   0
+    add           r0, 2*16*4
+    SCATTER_WHT   1
+    add           r0, 2*16*4
+    SCATTER_WHT   2
+    add           r0, 2*16*4
+    SCATTER_WHT   3
     RET

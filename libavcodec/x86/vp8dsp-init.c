@@ -195,6 +195,7 @@ HVBILIN(ssse3,  8, 16, 16)
 
 extern void ff_vp8_idct_dc_add_mmx(uint8_t *dst, DCTELEM block[16], int stride);
 extern void ff_vp8_idct_dc_add_sse4(uint8_t *dst, DCTELEM block[16], int stride);
+extern void ff_vp8_luma_dc_wht_mmxext(DCTELEM block[4][4][16], DCTELEM dc[16]);
 #endif
 
 #define VP8_LUMA_MC_FUNC(IDX, SIZE, OPT) \
@@ -237,6 +238,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
     /* note that 4-tap width=16 functions are missing because w=16
      * is only used for luma, and luma is always a copy or sixtap. */
     if (mm_flags & FF_MM_MMX2) {
+        c->vp8_luma_dc_wht = ff_vp8_luma_dc_wht_mmxext;
         VP8_LUMA_MC_FUNC(0, 16, mmxext);
         VP8_MC_FUNC(1, 8, mmxext);
         VP8_MC_FUNC(1, 4, mmxext);
