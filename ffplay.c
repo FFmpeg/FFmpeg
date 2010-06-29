@@ -168,6 +168,7 @@ typedef struct VideoState {
     int last_i_start;
     RDFTContext *rdft;
     int rdft_bits;
+    FFTSample *rdft_data;
     int xpos;
 
     SDL_Thread *subtitle_tid;
@@ -917,12 +918,15 @@ static void video_audio_display(VideoState *s)
         nb_display_channels= FFMIN(nb_display_channels, 2);
         if(rdft_bits != s->rdft_bits){
             av_rdft_end(s->rdft);
+            av_free(s->rdft_data);
             s->rdft = av_rdft_init(rdft_bits, DFT_R2C);
             s->rdft_bits= rdft_bits;
+            s->rdft_data= av_malloc(4*nb_freq*sizeof(*s->rdft_data));
         }
         {
-            FFTSample data[2][2*nb_freq];
+            FFTSample *data[2];
             for(ch = 0;ch < nb_display_channels; ch++) {
+                data[ch] = s->rdft_data + 2*nb_freq*ch;
                 i = i_start + ch;
                 for(x = 0; x < 2*nb_freq; x++) {
                     double w= (x-nb_freq)*(1.0/nb_freq);
