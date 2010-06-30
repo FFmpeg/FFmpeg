@@ -24,19 +24,33 @@
 #include "random_seed.h"
 #include "avutil.h"
 
+static int read_random(uint32_t *dst, const char *file)
+{
+    int fd = open(file, O_RDONLY);
+    int err = -1;
+
+    if (fd == -1)
+        return -1;
+#if HAVE_FCNTL && defined(O_NONBLOCK)
+    if (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) != -1)
+#endif
+        err = read(fd, dst, sizeof(*dst));
+    close(fd);
+
+    return err;
+}
+
 uint32_t av_get_random_seed(void)
 {
     uint32_t seed;
-    int fd;
+    int err;
 
-    if ((fd = open("/dev/random", O_RDONLY)) == -1)
-        fd = open("/dev/urandom", O_RDONLY);
-    if (fd != -1){
-        int err = read(fd, &seed, 4);
-        close(fd);
-        if (err == 4)
-            return seed;
-    }
+    err = read_random(&seed, "/dev/urandom");
+    if (err != sizeof(seed))
+        err = read_random(&seed, "/dev/random");
+    if (err == sizeof(seed))
+        return seed;
+
 #ifdef AV_READ_TIME
     seed = AV_READ_TIME();
 #endif
