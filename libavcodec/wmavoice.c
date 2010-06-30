@@ -1342,7 +1342,7 @@ static void synth_block_fcb_acb(WMAVoiceContext *s, GetBitContext *gb,
                                   wmavoice_ipol2_coeffs, 4,
                                   idx, 8, size);
         } else
-            av_memcpy_backptr(excitation, sizeof(float) * block_pitch,
+            av_memcpy_backptr((uint8_t *) excitation, sizeof(float) * block_pitch,
                               sizeof(float) * size);
     }
 
