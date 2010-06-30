@@ -1440,7 +1440,7 @@ static void mpeg_decode_sequence_display_extension(Mpeg1Context *s1)
     w= get_bits(&s->gb, 14);
     skip_bits(&s->gb, 1); //marker
     h= get_bits(&s->gb, 14);
-    skip_bits(&s->gb, 1); //marker
+    // remaining 3 bits are zero padding
 
     s1->pan_scan.width= 16*w;
     s1->pan_scan.height=16*h;
