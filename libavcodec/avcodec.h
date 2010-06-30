@@ -2989,7 +2989,7 @@ void audio_resample_close(ReSampleContext *s);
 struct AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_length, int log2_phase_count, int linear, double cutoff);
 
 /**
- * resamples.
+ * Resample an array of samples using a previously configured context.
  * @param src an array of unconsumed samples
  * @param consumed the number of samples of src which have been consumed are returned here
  * @param src_size the number of unconsumed samples available
