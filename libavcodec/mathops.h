@@ -146,12 +146,36 @@ if ((y) < (x)) {\
 #   define NEG_USR32(a,s) (((uint32_t)(a))>>(32-(s)))
 #endif
 
-#ifndef PACK4x8
-# if HAVE_BIGENDIAN
-#  define PACK4UINT8(a,b,c,d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
-# else
-#  define PACK4UINT8(a,b,c,d) (((d) << 24) | ((c) << 16) | ((b) << 8) | (a))
+#if HAVE_BIGENDIAN
+# ifndef PACK_2U8
+#   define PACK_2U8(a,b)     (((a) <<  8) | (b))
 # endif
+# ifndef PACK_4U8
+#   define PACK_4U8(a,b,c,d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
+# endif
+# ifndef PACK_2U16
+#   define PACK_2U16(a,b)    (((a) << 16) | (b))
+# endif
+#else
+# ifndef PACK_2U8
+#   define PACK_2U8(a,b)     (((b) <<  8) | (a))
+# endif
+# ifndef PACK_4U2
+#   define PACK_4U8(a,b,c,d) (((d) << 24) | ((c) << 16) | ((b) << 8) | (a))
+# endif
+# ifndef PACK_2U16
+#   define PACK_2U16(a,b)    (((b) << 16) | (a))
+# endif
+#endif
+
+#ifndef PACK_2S8
+#   define PACK_2S8(a,b)     PACK_2U8((a)&255, (b)&255)
+#endif
+#ifndef PACK_4S8
+#   define PACK_4S8(a,b,c,d) PACK_4U8((a)&255, (b)&255, (c)&255, (d)&255)
+#endif
+#ifndef PACK_2S16
+#   define PACK_2S16(a,b)    PACK_2U16((a)&0xffff, (b)&0xffff)
 #endif
 
 #endif /* AVCODEC_MATHOPS_H */
