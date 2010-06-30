@@ -200,7 +200,7 @@ void ff_copy_picture(Picture *dst, Picture *src){
 }
 
 /**
- * Releases a frame buffer
+ * Release a frame buffer
  */
 static void free_frame_buffer(MpegEncContext *s, Picture *pic)
 {
@@ -209,7 +209,7 @@ static void free_frame_buffer(MpegEncContext *s, Picture *pic)
 }
 
 /**
- * Allocates a frame buffer
+ * Allocate a frame buffer
  */
 static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
 {

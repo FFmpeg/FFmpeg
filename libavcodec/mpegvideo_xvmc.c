@@ -33,7 +33,7 @@
 #include "xvmc_internal.h"
 
 /**
- * Initializes the block field of the MpegEncContext pointer passed as
+ * Initialize the block field of the MpegEncContext pointer passed as
  * parameter after making sure that the data is not corrupted.
  * In order to implement something like direct rendering instead of decoding
  * coefficients in s->blocks and then copying them, copy them directly
@@ -48,7 +48,7 @@ void ff_xvmc_init_block(MpegEncContext *s)
 }
 
 /**
- * Fills individual block pointers, so there are no gaps in the data_block array
+ * Fill individual block pointers, so there are no gaps in the data_block array
  * in case not all blocks in the macroblock are coded.
  */
 void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
@@ -67,7 +67,7 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
 }
 
 /**
- * Finds and stores the surfaces that are used as reference frames.
+ * Find and store the surfaces that are used as reference frames.
  * This function should be called for every new field and/or frame.
  * It should be safe to call the function a few times for the same field.
  */
@@ -134,7 +134,7 @@ return -1;
 }
 
 /**
- * Completes frame/field rendering by passing any remaining blocks.
+ * Complete frame/field rendering by passing any remaining blocks.
  * Normally ff_draw_horiz_band() is called for each slice, however,
  * some leftover blocks, for example from error_resilience(), may remain.
  * It should be safe to call the function a few times for the same field.
@@ -149,8 +149,8 @@ void ff_xvmc_field_end(MpegEncContext *s)
 }
 
 /**
- * Synthesizes the data needed by XvMC to render one macroblock of data.
- * Fills all relevant fields, if necessary do IDCT.
+ * Synthesize the data needed by XvMC to render one macroblock of data.
+ * Fill all relevant fields, if necessary do IDCT.
  */
 void ff_xvmc_decode_mb(MpegEncContext *s)
 {

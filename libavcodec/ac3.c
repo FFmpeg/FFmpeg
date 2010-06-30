@@ -42,7 +42,7 @@ static const uint8_t band_start_tab[51] = {
 };
 
 /**
- * Maps each frequency coefficient bin to the critical band that contains it.
+ * Map each frequency coefficient bin to the critical band that contains it.
  */
 static const uint8_t bin_to_band_tab[253] = {
      0,
@@ -261,7 +261,7 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
 }
 
 /**
- * Initializes some tables.
+ * Initialize some tables.
  * note: This function must remain thread safe because it is called by the
  *       AVParser init code.
  */

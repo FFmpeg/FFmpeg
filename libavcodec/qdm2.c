@@ -385,7 +385,7 @@ static uint16_t qdm2_packet_checksum (const uint8_t *data, int length, int value
 
 
 /**
- * Fills a QDM2SubPacket structure with packet type, size, and data pointer.
+ * Fill a QDM2SubPacket structure with packet type, size, and data pointer.
  *
  * @param gb            bitreader context
  * @param sub_packet    packet under analysis
@@ -436,7 +436,7 @@ static QDM2SubPNode* qdm2_search_subpacket_type_in_list (QDM2SubPNode *list, int
 
 
 /**
- * Replaces 8 elements with their average value.
+ * Replace 8 elements with their average value.
  * Called by qdm2_decode_superblock before starting subblock decoding.
  *
  * @param q       context

@@ -54,17 +54,17 @@
 #define LIBAVUTIL_IDENT         "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
 
 /**
- * Returns the LIBAVUTIL_VERSION_INT constant.
+ * Return the LIBAVUTIL_VERSION_INT constant.
  */
 unsigned avutil_version(void);
 
 /**
- * Returns the libavutil build-time configuration.
+ * Return the libavutil build-time configuration.
  */
 const char *avutil_configuration(void);
 
 /**
- * Returns the libavutil license.
+ * Return the libavutil license.
  */
 const char *avutil_license(void);
 

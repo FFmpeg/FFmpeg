@@ -77,7 +77,7 @@ typedef struct IdcinContext {
 /*
  * Find the lowest probability node in a Huffman table, and mark it as
  * being assigned to a higher probability.
- * Returns the node index of the lowest unused node, or -1 if all nodes
+ * @return the node index of the lowest unused node, or -1 if all nodes
  * are used.
  */
 static int huff_smallest_node(hnode *hnodes, int num_hnodes) {

@@ -37,7 +37,7 @@ typedef struct AVFilterInOut {
 } AVFilterInOut;
 
 /**
- * Adds a graph described by a string to a graph.
+ * Add a graph described by a string to a graph.
  *
  * @param graph   the filter graph where to link the parsed graph context
  * @param filters string to be parsed

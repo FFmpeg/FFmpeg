@@ -25,7 +25,7 @@
 #include "avio.h"
 
 /**
- * Sets custom HTTP headers.
+ * Set custom HTTP headers.
  * A trailing CRLF ("\r\n") is required for custom headers.
  * Passing in an empty header string ("\0") will reset to defaults.
  *
@@ -43,7 +43,7 @@
 void ff_http_set_headers(URLContext *h, const char *headers);
 
 /**
- * Enables or disables chunked transfer encoding. (default is enabled)
+ * Enable or disable chunked transfer encoding. (default is enabled)
  *
  * @param h URL context for this HTTP connection
  * @param is_chunked 0 to disable chunking, nonzero otherwise.

@@ -98,7 +98,7 @@ typedef struct FlacEncodeContext {
 } FlacEncodeContext;
 
 /**
- * Writes streaminfo metadata block to byte array
+ * Write streaminfo metadata block to byte array
  */
 static void write_streaminfo(FlacEncodeContext *s, uint8_t *header)
 {
@@ -123,8 +123,8 @@ static void write_streaminfo(FlacEncodeContext *s, uint8_t *header)
 }
 
 /**
- * Sets blocksize based on samplerate
- * Chooses the closest predefined blocksize >= BLOCK_TIME_MS milliseconds
+ * Set blocksize based on samplerate
+ * Choose the closest predefined blocksize >= BLOCK_TIME_MS milliseconds
  */
 static int select_blocksize(int samplerate, int block_time_ms)
 {

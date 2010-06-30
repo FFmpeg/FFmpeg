@@ -24,7 +24,7 @@
 #include <stdint.h>
 
 /**
- * Decodes the base64-encoded string in in and puts the decoded
+ * Decode the base64-encoded string in in and put the decoded
  * data in out.
  *
  * @param out_size size in bytes of the out buffer, it should be at
@@ -35,7 +35,7 @@
 int av_base64_decode(uint8_t *out, const char *in, int out_size);
 
 /**
- * Encodes in base64 the data in in and puts the resulting string
+ * Encode in base64 the data in in and put the resulting string
  * in out.
  *
  * @param out_size size in bytes of the out string, it should be at

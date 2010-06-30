@@ -75,7 +75,7 @@ int xvid_ff_2pass(void *ref, int opt, void *p1, void *p2);
 void xvid_correct_framerate(AVCodecContext *avctx);
 
 /**
- * Creates the private context for the encoder.
+ * Create the private context for the encoder.
  * All buffers are allocated, settings are loaded from the user,
  * and the encoder context created.
  *
@@ -359,7 +359,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
 }
 
 /**
- * Encodes a single frame.
+ * Encode a single frame.
  *
  * @param avctx AVCodecContext pointer to context
  * @param frame Pointer to encoded frame buffer
@@ -469,7 +469,7 @@ static int xvid_encode_frame(AVCodecContext *avctx,
 }
 
 /**
- * Destroys the private context for the encoder.
+ * Destroy the private context for the encoder.
  * All buffers are freed, and the Xvid encoder context is destroyed.
  *
  * @param avctx AVCodecContext pointer to context
@@ -609,7 +609,7 @@ void xvid_correct_framerate(AVCodecContext *avctx) {
  */
 
 /**
- * Initializes the two-pass plugin and context.
+ * Initialize the two-pass plugin and context.
  *
  * @param param Input construction parameter structure
  * @param handle Private context handle
@@ -640,7 +640,7 @@ static int xvid_ff_2pass_create(xvid_plg_create_t * param,
 }
 
 /**
- * Destroys the two-pass plugin context.
+ * Destroy the two-pass plugin context.
  *
  * @param ref Context pointer for the plugin
  * @param param Destrooy context
@@ -656,7 +656,7 @@ static int xvid_ff_2pass_destroy(struct xvid_context *ref,
 }
 
 /**
- * Enables fast encode mode during the first pass.
+ * Enable fast encode mode during the first pass.
  *
  * @param ref Context pointer for the plugin
  * @param param Frame data
@@ -699,7 +699,7 @@ static int xvid_ff_2pass_before(struct xvid_context *ref,
 }
 
 /**
- * Captures statistic data and writes it during first pass.
+ * Capture statistic data and write it during first pass.
  *
  * @param ref Context pointer for the plugin
  * @param param Statistic data

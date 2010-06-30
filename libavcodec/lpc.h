@@ -56,7 +56,7 @@ void ff_lpc_compute_autocorr(const int32_t *data, int len, int lag,
 
 /**
  * Levinson-Durbin recursion.
- * Produces LPC coefficients from autocorrelation data.
+ * Produce LPC coefficients from autocorrelation data.
  */
 static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
                                     LPC_TYPE *lpc, int lpc_stride, int fail,

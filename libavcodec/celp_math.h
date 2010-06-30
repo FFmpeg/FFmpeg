@@ -43,7 +43,7 @@ int16_t ff_cos(uint16_t arg);
 int ff_exp2(uint16_t power);
 
 /**
- * Calculates log2(x).
+ * Calculate log2(x).
  * @param value function argument, 0 < value <= 7fff ffff
  *
  * @return value of (1<<15) * log2(value)

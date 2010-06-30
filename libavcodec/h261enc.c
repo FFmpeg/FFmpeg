@@ -84,7 +84,7 @@ void ff_h261_encode_picture_header(MpegEncContext * s, int picture_number){
 }
 
 /**
- * Encodes a group of blocks header.
+ * Encode a group of blocks header.
  */
 static void h261_encode_gob_header(MpegEncContext * s, int mb_line){
     H261Context * h = (H261Context *)s;

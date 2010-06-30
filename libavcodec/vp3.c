@@ -258,7 +258,7 @@ typedef struct Vp3DecodeContext {
  * superblocks <-> fragments, macroblocks <-> fragments,
  * superblocks <-> macroblocks
  *
- * Returns 0 is successful; returns 1 if *anything* went wrong.
+ * @return 0 is successful; returns 1 if *anything* went wrong.
  */
 static int init_block_mapping(Vp3DecodeContext *s)
 {
@@ -1270,7 +1270,7 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int ye
 }
 
 /**
- * Pulls DCT tokens from the 64 levels to decode and dequant the coefficients
+ * Pull DCT tokens from the 64 levels to decode and dequant the coefficients
  * for the next block in coding order
  */
 static inline int vp3_dequant(Vp3DecodeContext *s, Vp3Fragment *frag,

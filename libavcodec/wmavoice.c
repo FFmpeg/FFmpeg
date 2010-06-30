@@ -287,7 +287,7 @@ typedef struct {
 } WMAVoiceContext;
 
 /**
- * Sets up the variable bit mode (VBM) tree from container extradata.
+ * Set up the variable bit mode (VBM) tree from container extradata.
  * @param gb bit I/O context.
  *           The bit context (s->gb) should be loaded with byte 23-46 of the
  *           container extradata (i.e. the ones containing the VBM tree).

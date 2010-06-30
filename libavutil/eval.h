@@ -29,7 +29,7 @@
 typedef struct AVExpr AVExpr;
 
 /**
- * Parses and evaluates an expression.
+ * Parse and evaluate an expression.
  * Note, this is significantly slower than av_eval_expr().
  *
  * @param res a pointer to a double where is put the result value of
@@ -53,7 +53,7 @@ int av_parse_and_eval_expr(double *res, const char *s,
                            void *opaque, int log_offset, void *log_ctx);
 
 /**
- * Parses an expression.
+ * Parse an expression.
  *
  * @param expr a pointer where is put an AVExpr containing the parsed
  * value in case of successfull parsing, or NULL otherwise.
@@ -76,7 +76,7 @@ int av_parse_expr(AVExpr **expr, const char *s,
                   int log_offset, void *log_ctx);
 
 /**
- * Evaluates a previously parsed expression.
+ * Evaluate a previously parsed expression.
  *
  * @param const_values a zero terminated array of values for the identifiers from av_parse_expr() const_names
  * @param opaque a pointer which will be passed to all functions from funcs1 and funcs2
@@ -85,12 +85,12 @@ int av_parse_expr(AVExpr **expr, const char *s,
 double av_eval_expr(AVExpr *e, const double *const_values, void *opaque);
 
 /**
- * Frees a parsed expression previously created with av_parse_expr().
+ * Free a parsed expression previously created with av_parse_expr().
  */
 void av_free_expr(AVExpr *e);
 
 /**
- * Parses the string in numstr and returns its value as a double. If
+ * Parse the string in numstr and return its value as a double. If
  * the string is empty, contains only whitespaces, or does not contain
  * an initial substring that has the expected syntax for a
  * floating-point number, no conversion is performed. In this case,

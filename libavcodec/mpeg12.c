@@ -1920,7 +1920,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg){
 }
 
 /**
- * Handles slice ends.
+ * Handle slice ends.
  * @return 1 if it seems to be the last slice
  */
 static int slice_end(AVCodecContext *avctx, AVFrame *pict)
@@ -2155,7 +2155,7 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
             time_code_pictures, s->closed_gop, broken_link);
 }
 /**
- * Finds the end of the current frame in the bitstream.
+ * Find the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
  */
 int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, AVCodecParserContext *s)

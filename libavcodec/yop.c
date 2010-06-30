@@ -114,7 +114,7 @@ static av_cold int yop_decode_close(AVCodecContext *avctx)
 }
 
 /**
- * Paints a macroblock using the pattern in paint_lut.
+ * Paint a macroblock using the pattern in paint_lut.
  * @param s codec context
  * @param tag the tag that was in the nibble
  */
@@ -130,7 +130,7 @@ static void yop_paint_block(YopDecContext *s, int tag)
 }
 
 /**
- * Copies a previously painted macroblock to the current_block.
+ * Copy a previously painted macroblock to the current_block.
  * @param copy_tag the tag that was in the nibble
  */
 static int yop_copy_previous_block(YopDecContext *s, int copy_tag)
@@ -155,7 +155,7 @@ static int yop_copy_previous_block(YopDecContext *s, int copy_tag)
 }
 
 /**
- * Returns the next nibble in sequence, consuming a new byte on the input
+ * Return the next nibble in sequence, consuming a new byte on the input
  * only if necessary.
  */
 static uint8_t yop_get_next_nibble(YopDecContext *s)
@@ -173,7 +173,7 @@ static uint8_t yop_get_next_nibble(YopDecContext *s)
 }
 
 /**
- * Takes s->dstptr to the next macroblock in sequence.
+ * Take s->dstptr to the next macroblock in sequence.
  */
 static void yop_next_macroblock(YopDecContext *s)
 {

@@ -44,17 +44,17 @@
 #define LIBPOSTPROC_IDENT       "postproc" AV_STRINGIFY(LIBPOSTPROC_VERSION)
 
 /**
- * Returns the LIBPOSTPROC_VERSION_INT constant.
+ * Return the LIBPOSTPROC_VERSION_INT constant.
  */
 unsigned postproc_version(void);
 
 /**
- * Returns the libpostproc build-time configuration.
+ * Return the libpostproc build-time configuration.
  */
 const char *postproc_configuration(void);
 
 /**
- * Returns the libpostproc license.
+ * Return the libpostproc license.
  */
 const char *postproc_license(void);
 

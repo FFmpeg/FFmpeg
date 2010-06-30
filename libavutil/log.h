@@ -25,7 +25,7 @@
 #include "avutil.h"
 
 /**
- * Describes the class of an AVClass context structure. That is an
+ * Describe the class of an AVClass context structure. That is an
  * arbitrary struct of which the first field is a pointer to an
  * AVClass struct (e.g. AVCodecContext, AVFormatContext etc.).
  */
@@ -109,7 +109,7 @@ typedef struct {
 #define AV_LOG_DEBUG    48
 
 /**
- * Sends the specified message to the log if the level is less than or equal
+ * Send the specified message to the log if the level is less than or equal
  * to the current av_log_level. By default, all logging messages are sent to
  * stderr. This behavior can be altered by setting a different av_vlog callback
  * function.

@@ -117,13 +117,13 @@ void ff_ivi_dc_row_slant(const int32_t *in, int16_t *out, uint32_t pitch, int bl
 void ff_ivi_dc_col_slant(const int32_t *in, int16_t *out, uint32_t pitch, int blk_size);
 
 /**
- *  Copies the pixels into the frame buffer.
+ *  Copy the pixels into the frame buffer.
  */
 void ff_ivi_put_pixels_8x8(const int32_t *in, int16_t *out, uint32_t pitch, const uint8_t *flags);
 
 /**
- *  Copies the DC coefficient into the first pixel of the block and
- *  zeroes all others.
+ *  Copy the DC coefficient into the first pixel of the block and
+ *  zero all others.
  */
 void ff_ivi_put_dc_pixel_8x8(const int32_t *in, int16_t *out, uint32_t pitch, int blk_size);
 

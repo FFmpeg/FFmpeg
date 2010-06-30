@@ -242,7 +242,7 @@ static void build_frame_code(AVFormatContext *s){
 }
 
 /**
- * Gets the length in bytes which is needed to store val as v.
+ * Get the length in bytes which is needed to store val as v.
  */
 static int get_length(uint64_t val){
     int i=1;
@@ -269,7 +269,7 @@ static void put_tt(NUTContext *nut, StreamContext *nus, ByteIOContext *bc, uint6
 }
 
 /**
- * Stores a string as vb.
+ * Store a string as vb.
  */
 static void put_str(ByteIOContext *bc, const char *string){
     int len= strlen(string);

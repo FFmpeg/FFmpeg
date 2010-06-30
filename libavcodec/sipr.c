@@ -184,7 +184,7 @@ static void pitch_sharpening(int pitch_lag_int, float beta,
 }
 
 /**
- * Extracts decoding parameters from the input bitstream.
+ * Extract decoding parameters from the input bitstream.
  * @param parms          parameters structure
  * @param pgb            pointer to initialized GetBitContext structure
  */
@@ -254,7 +254,7 @@ static void sipr_decode_lp(float *lsfnew, const float *lsfold, float *Az,
 }
 
 /**
- * Evaluates the adaptive impulse response.
+ * Evaluate the adaptive impulse response.
  */
 static void eval_ir(const float *Az, int pitch_lag, float *freq,
                     float pitch_sharp_factor)
@@ -276,7 +276,7 @@ static void eval_ir(const float *Az, int pitch_lag, float *freq,
 }
 
 /**
- * Evaluates the convolution of a vector with a sparse vector.
+ * Evaluate the convolution of a vector with a sparse vector.
  */
 static void convolute_with_sparse(float *out, const AMRFixed *pulses,
                                   const float *shape, int length)

@@ -40,7 +40,7 @@ VLC ff_ivi_mb_vlc_tabs [8];
 VLC ff_ivi_blk_vlc_tabs[8];
 
 /**
- *  Reverses "nbits" bits of the value "val" and returns the result
+ *  Reverse "nbits" bits of the value "val" and return the result
  *  in the least significant bits.
  */
 static uint16_t inv_bits(uint16_t val, int nbits)

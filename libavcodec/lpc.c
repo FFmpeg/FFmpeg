@@ -52,7 +52,7 @@ static void apply_welch_window(const int32_t *data, int len, double *w_data)
 }
 
 /**
- * Calculates autocorrelation data from audio samples
+ * Calculate autocorrelation data from audio samples
  * A Welch window function is applied before calculation.
  */
 void ff_lpc_compute_autocorr(const int32_t *data, int len, int lag,

@@ -35,7 +35,7 @@
 #define PADDING_COLOR 0
 
 /**
- * Encodes a single color run. At most 16 bits will be used.
+ * Encode a single color run. At most 16 bits will be used.
  * \param len   length of the run, values > 255 mean "until end of line", may not be < 0.
  * \param color color to encode, only the lowest two bits are used and all others must be 0.
  */
@@ -49,7 +49,7 @@ static void put_xsub_rle(PutBitContext *pb, int len, int color)
 }
 
 /**
- * Encodes a 4-color bitmap with XSUB rle.
+ * Encode a 4-color bitmap with XSUB rle.
  *
  * The encoded bitmap may be wider than the source bitmap due to padding.
  */

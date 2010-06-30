@@ -215,7 +215,7 @@ static void decodeplane32(uint32_t *dst, const uint8_t *buf, int buf_size, int p
 }
 
 /**
- * Decodes one complete byterun1 encoded line.
+ * Decode one complete byterun1 encoded line.
  *
  * @param dst the destination buffer where to store decompressed bitstream
  * @param dst_size the destination plane size in bytes

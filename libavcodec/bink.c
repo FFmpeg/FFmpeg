@@ -106,7 +106,7 @@ enum BlockTypes {
 };
 
 /**
- * Initializes length length in all bundles.
+ * Initialize length length in all bundles.
  *
  * @param c     decoder context
  * @param width plane width
@@ -131,7 +131,7 @@ static void init_lengths(BinkContext *c, int width, int bw)
 }
 
 /**
- * Allocates memory for bundles.
+ * Allocate memory for bundles.
  *
  * @param c decoder context
  */
@@ -151,7 +151,7 @@ static av_cold void init_bundles(BinkContext *c)
 }
 
 /**
- * Frees memory used by bundles.
+ * Free memory used by bundles.
  *
  * @param c decoder context
  */
@@ -163,7 +163,7 @@ static av_cold void free_bundles(BinkContext *c)
 }
 
 /**
- * Merges two consequent lists of equal size depending on bits read.
+ * Merge two consequent lists of equal size depending on bits read.
  *
  * @param gb   context for reading bits
  * @param dst  buffer where merged list will be written to
@@ -192,7 +192,7 @@ static void merge(GetBitContext *gb, uint8_t *dst, uint8_t *src, int size)
 }
 
 /**
- * Reads information about Huffman tree used to decode data.
+ * Read information about Huffman tree used to decode data.
  *
  * @param gb   context for reading bits
  * @param tree pointer for storing tree data
@@ -233,7 +233,7 @@ static void read_tree(GetBitContext *gb, Tree *tree)
 }
 
 /**
- * Prepares bundle for decoding data.
+ * Prepare bundle for decoding data.
  *
  * @param gb          context for reading bits
  * @param c           decoder context
@@ -462,7 +462,7 @@ static int read_dcs(AVCodecContext *avctx, GetBitContext *gb, Bundle *b,
 }
 
 /**
- * Retrieves next value from bundle.
+ * Retrieve next value from bundle.
  *
  * @param c      decoder context
  * @param bundle bundle number
@@ -481,7 +481,7 @@ static inline int get_value(BinkContext *c, int bundle)
 }
 
 /**
- * Reads 8x8 block of DCT coefficients.
+ * Read 8x8 block of DCT coefficients.
  *
  * @param gb       context for reading bits
  * @param block    place for storing coefficients
@@ -583,7 +583,7 @@ static int read_dct_coeffs(GetBitContext *gb, DCTELEM block[64], const uint8_t *
 }
 
 /**
- * Reads 8x8 block with residue after motion compensation.
+ * Read 8x8 block with residue after motion compensation.
  *
  * @param gb          context for reading bits
  * @param block       place to store read data

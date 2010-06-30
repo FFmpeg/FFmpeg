@@ -424,7 +424,7 @@ static const uint16_t * const cf_table[16] = {
 };
 
 
-/** Initializes a given lookup table using a given delta
+/** Initialize a given lookup table using a given delta
  */
 static void bgmc_lut_fillp(uint8_t *lut, unsigned int *lut_status,
                            unsigned int delta)
@@ -446,7 +446,7 @@ static void bgmc_lut_fillp(uint8_t *lut, unsigned int *lut_status,
 }
 
 
-/** Retunes the index of a suitable lookup table for a given delta
+/** Retune the index of a suitable lookup table for a given delta
  */
 static uint8_t* bgmc_lut_getp(uint8_t *lut, unsigned int *lut_status,
                               unsigned int delta)
@@ -462,7 +462,7 @@ static uint8_t* bgmc_lut_getp(uint8_t *lut, unsigned int *lut_status,
 }
 
 
-/** Initializes the lookup table arrays
+/** Initialize the lookup table arrays
  */
 int ff_bgmc_init(AVCodecContext *avctx, uint8_t **cf_lut, unsigned int **cf_lut_status)
 {
@@ -479,7 +479,7 @@ int ff_bgmc_init(AVCodecContext *avctx, uint8_t **cf_lut, unsigned int **cf_lut_
 }
 
 
-/** Releases the lookup table arrays
+/** Release the lookup table arrays
  */
 void ff_bgmc_end(uint8_t **cf_lut, unsigned int **cf_lut_status)
 {
@@ -488,7 +488,7 @@ void ff_bgmc_end(uint8_t **cf_lut, unsigned int **cf_lut_status)
 }
 
 
-/** Initializes decoding and reads the first value
+/** Initialize decoding and reads the first value
  */
 void ff_bgmc_decode_init(GetBitContext *gb,
                       unsigned int *h, unsigned int *l, unsigned int *v)
@@ -507,7 +507,7 @@ void ff_bgmc_decode_end(GetBitContext *gb)
 }
 
 
-/** Reads and decodes a block Gilbert-Moore coded symbol
+/** Read and decode a block Gilbert-Moore coded symbol
  */
 void ff_bgmc_decode(GetBitContext *gb, unsigned int num, int32_t *dst,
                  unsigned int delta, unsigned int sx,

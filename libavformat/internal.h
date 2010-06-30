@@ -67,11 +67,11 @@ void ff_read_frame_flush(AVFormatContext *s);
 #define NTP_OFFSET 2208988800ULL
 #define NTP_OFFSET_US (NTP_OFFSET * 1000000ULL)
 
-/** Gets the current time since NTP epoch in microseconds. */
+/** Get the current time since NTP epoch in microseconds. */
 uint64_t ff_ntp_time(void);
 
 /**
- * Probes a bytestream to determine the input format. Each time a probe returns
+ * Probe a bytestream to determine the input format. Each time a probe returns
  * with a score that is too low, the probe buffer size is increased and another
  * attempt is made. When the maximum probe size is reached, the input format
  * with the highest score is returned.
@@ -102,7 +102,7 @@ void ff_url_split(char *proto, int proto_size,
 #endif
 
 /**
- * Assembles a URL string from components. This is the reverse operation
+ * Assemble a URL string from components. This is the reverse operation
  * of av_url_split.
  *
  * Note, this requires networking to be initialized, so the caller must
@@ -127,7 +127,7 @@ int ff_url_join(char *str, int size, const char *proto,
                 int port, const char *fmt, ...);
 
 /**
- * Appends the media-specific SDP fragment for the media stream c
+ * Append the media-specific SDP fragment for the media stream c
  * to the buffer buff.
  *
  * Note, the buffer needs to be initialized, since it is appended to

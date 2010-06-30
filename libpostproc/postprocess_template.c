@@ -1390,7 +1390,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
 #endif //HAVE_ALTIVEC
 
 /**
- * Deinterlaces the given block by linearly interpolating every second line.
+ * Deinterlace the given block by linearly interpolating every second line.
  * will be called for every 8x8 block and can read & write from line 4-15
  * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
@@ -1442,7 +1442,7 @@ static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int strid
 }
 
 /**
- * Deinterlaces the given block by cubic interpolating every second line.
+ * Deinterlace the given block by cubic interpolating every second line.
  * will be called for every 8x8 block and can read & write from line 4-15
  * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
@@ -1506,7 +1506,7 @@ DEINT_CUBIC((%%REGd, %1), (%0, %1, 8) , (%%REGd, %1, 4), (%%REGc)    , (%%REGc, 
 }
 
 /**
- * Deinterlaces the given block by filtering every second line with a (-1 4 2 4 -1) filter.
+ * Deinterlace the given block by filtering every second line with a (-1 4 2 4 -1) filter.
  * will be called for every 8x8 block and can read & write from line 4-15
  * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
@@ -1585,7 +1585,7 @@ DEINT_FF((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8) , (%%REGd, %1, 4))
 }
 
 /**
- * Deinterlaces the given block by filtering every line with a (-1 2 6 2 -1) filter.
+ * Deinterlace the given block by filtering every line with a (-1 2 6 2 -1) filter.
  * will be called for every 8x8 block and can read & write from line 4-15
  * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
@@ -1686,7 +1686,7 @@ DEINT_L5(%%mm1, %%mm0, (%%REGd, %1, 2), (%0, %1, 8)    , (%%REGd, %1, 4))
 }
 
 /**
- * Deinterlaces the given block by filtering all lines with a (1 2 1) filter.
+ * Deinterlace the given block by filtering all lines with a (1 2 1) filter.
  * will be called for every 8x8 block and can read & write from line 4-15
  * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
@@ -1788,7 +1788,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
 }
 
 /**
- * Deinterlaces the given block by applying a median filter to every second line.
+ * Deinterlace the given block by applying a median filter to every second line.
  * will be called for every 8x8 block and can read & write from line 4-15,
  * lines 0-3 have been passed through the deblock / dering filters already, but can be read, too.
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
@@ -3006,7 +3006,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                                 const QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c);
 
 /**
- * Copies a block from src to dst and fixes the blacklevel.
+ * Copy a block from src to dst and fixes the blacklevel.
  * levelFix == 0 -> do not touch the brighness & contrast
  */
 #undef REAL_SCALED_CPY
@@ -3138,7 +3138,7 @@ SIMPLE_CPY((%%REGa, %2), (%%REGa, %2, 2), (%%REGd, %3), (%%REGd, %3, 2))
 }
 
 /**
- * Duplicates the given 8 src pixels ? times upward
+ * Duplicate the given 8 src pixels ? times upward
  */
 static inline void RENAME(duplicate)(uint8_t src[], int stride)
 {
@@ -3163,7 +3163,7 @@ static inline void RENAME(duplicate)(uint8_t src[], int stride)
 }
 
 /**
- * Filters array of bytes (Y or U or V values)
+ * Filter array of bytes (Y or U or V values)
  */
 static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
                                 const QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c2)

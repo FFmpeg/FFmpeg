@@ -24,7 +24,7 @@
 #include "libavutil/common.h"
 
 /**
- * Splits a single extradata buffer into the three headers that most
+ * Split a single extradata buffer into the three headers that most
  * Xiph codecs use. (e.g. Theora and Vorbis)
  * Works both with Matroska's packing and lavc's packing.
  *

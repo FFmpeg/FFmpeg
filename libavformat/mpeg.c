@@ -196,7 +196,7 @@ static int find_prev_start_code(ByteIOContext *pb, int *size_ptr)
 #endif
 
 /**
- * Extracts stream types from a program stream map
+ * Extract stream types from a program stream map
  * According to ISO/IEC 13818-1 ('MPEG-2 Systems') table 2-35
  *
  * @return number of bytes occupied by PSM in the bitstream

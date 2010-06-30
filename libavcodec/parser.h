@@ -61,7 +61,7 @@ void ff_parse_close(AVCodecParserContext *s);
 void ff_parse1_close(AVCodecParserContext *s);
 
 /**
- * Fetches timestamps for a specific byte within the current access unit.
+ * Fetch timestamps for a specific byte within the current access unit.
  * @param off byte position within the access unit
  * @param remove Found timestamps will be removed if set to 1, kept if set to 0.
  */

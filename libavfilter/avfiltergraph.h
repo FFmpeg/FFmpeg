@@ -32,7 +32,7 @@ typedef struct AVFilterGraph {
 } AVFilterGraph;
 
 /**
- * Gets a filter instance with name name from graph.
+ * Get a filter instance with name name from graph.
  *
  * @return the pointer to the found filter instance or NULL if it
  * cannot be found.
@@ -40,7 +40,7 @@ typedef struct AVFilterGraph {
 AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name);
 
 /**
- * Adds an existing filter instance to a filter graph.
+ * Add an existing filter instance to a filter graph.
  *
  * @param graph  the filter graph
  * @param filter the filter to be added
@@ -48,7 +48,7 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name);
 int avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
 
 /**
- * Checks for the validity of graph.
+ * Check for the validity of graph.
  *
  * A graph is considered valid if all its input and output pads are
  * connected.
@@ -58,19 +58,19 @@ int avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
 int avfilter_graph_check_validity(AVFilterGraph *graphctx, AVClass *log_ctx);
 
 /**
- * Configures all the links of graphctx.
+ * Configure all the links of graphctx.
  *
  * @return 0 in case of success, a negative value otherwise
  */
 int avfilter_graph_config_links(AVFilterGraph *graphctx, AVClass *log_ctx);
 
 /**
- * Configures the formats of all the links in the graph.
+ * Configure the formats of all the links in the graph.
  */
 int avfilter_graph_config_formats(AVFilterGraph *graphctx, AVClass *log_ctx);
 
 /**
- * Frees a graph and destroys its links.
+ * Free a graph and destroy its links.
  */
 void avfilter_graph_destroy(AVFilterGraph *graph);
 

@@ -411,7 +411,7 @@ typedef void (*vc1_mspel_mc_filter_hor_16bits)(uint8_t *dst, x86_reg dst_stride,
 typedef void (*vc1_mspel_mc_filter_8bits)(uint8_t *dst, const uint8_t *src, x86_reg stride, int rnd, x86_reg offset);
 
 /**
- * Interpolates fractional pel values by applying proper vertical then
+ * Interpolate fractional pel values by applying proper vertical then
  * horizontal filter.
  *
  * @param  dst     Destination buffer for interpolated pels.

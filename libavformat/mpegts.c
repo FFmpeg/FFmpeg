@@ -239,7 +239,7 @@ static int discard_pid(MpegTSContext *ts, unsigned int pid)
 }
 
 /**
- *  Assembles PES packets out of TS packets, and then calls the "section_cb"
+ *  Assemble PES packets out of TS packets, and then call the "section_cb"
  *  function when they are complete.
  */
 static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,

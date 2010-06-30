@@ -1184,7 +1184,7 @@ static void pred8x8_horizontal_add_c(uint8_t *pix, const int *block_offset, cons
 
 
 /**
- * Sets the intra prediction function pointers.
+ * Set the intra prediction function pointers.
  */
 void ff_h264_pred_init(H264PredContext *h, int codec_id){
 //    MpegEncContext * const s = &h->s;

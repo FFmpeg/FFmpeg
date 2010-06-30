@@ -84,7 +84,7 @@ extern COSTABLE(65536);
 extern COSTABLE_CONST FFTSample* const ff_cos_tabs[17];
 
 /**
- * Initializes the cosine table in ff_cos_tabs[index]
+ * Initialize the cosine table in ff_cos_tabs[index]
  * \param index index in ff_cos_tabs array of the table to initialize
  */
 void ff_init_ff_cos_tabs(int index);
@@ -104,7 +104,7 @@ extern SINTABLE(32768);
 extern SINTABLE(65536);
 
 /**
- * Sets up a complex FFT.
+ * Set up a complex FFT.
  * @param nbits           log2 of the length of the input array
  * @param inverse         if 0 perform the forward transform, if 1 perform the inverse
  */
@@ -205,7 +205,7 @@ struct RDFTContext {
 };
 
 /**
- * Sets up a real FFT.
+ * Set up a real FFT.
  * @param nbits           log2 of the length of the input array
  * @param trans           the type of transform
  */
@@ -231,7 +231,7 @@ struct DCTContext {
 };
 
 /**
- * Sets up DCT.
+ * Set up DCT.
  * @param nbits           size of the input array:
  *                        (1 << nbits)     for DCT-II, DCT-III and DST-I
  *                        (1 << nbits) + 1 for DCT-I

@@ -49,7 +49,7 @@ typedef struct TheoraContext {
     int         keyframe_mask;
 } TheoraContext;
 
-/** Concatenates an ogg_packet into the extradata. */
+/** Concatenate an ogg_packet into the extradata. */
 static int concatenate_packet(unsigned int* offset,
                               AVCodecContext* avc_context,
                               const ogg_packet* packet)

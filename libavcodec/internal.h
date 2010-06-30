@@ -28,12 +28,12 @@
 #include "avcodec.h"
 
 /**
- * Determines whether pix_fmt is a hardware accelerated format.
+ * Determine whether pix_fmt is a hardware accelerated format.
  */
 int ff_is_hwaccel_pix_fmt(enum PixelFormat pix_fmt);
 
 /**
- * Returns the hardware accelerated codec for codec codec_id and
+ * Return the hardware accelerated codec for codec codec_id and
  * pixel format pix_fmt.
  *
  * @param codec_id the codec to match

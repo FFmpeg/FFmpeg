@@ -25,7 +25,7 @@
 #include "avcodec.h"
 
 /**
- * Decodes stream in MS RLE format into frame.
+ * Decode stream in MS RLE format into frame.
  *
  * @param avctx     codec context
  * @param pic       destination frame

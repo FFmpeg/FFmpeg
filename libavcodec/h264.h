@@ -620,7 +620,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h);
 int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length);
 
 /**
- * Decodes a network abstraction layer unit.
+ * Decode a network abstraction layer unit.
  * @param consumed is the number of bytes used as input
  * @param length is the length of the array
  * @param dst_length is the number of decoded bytes FIXME here or a decode rbsp tailing?
@@ -629,29 +629,29 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length);
 const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src, int *dst_length, int *consumed, int length);
 
 /**
- * identifies the exact end of the bitstream
+ * Identify the exact end of the bitstream
  * @return the length of the trailing, or 0 if damaged
  */
 int ff_h264_decode_rbsp_trailing(H264Context *h, const uint8_t *src);
 
 /**
- * frees any data that may have been allocated in the H264 context like SPS, PPS etc.
+ * Free any data that may have been allocated in the H264 context like SPS, PPS etc.
  */
 av_cold void ff_h264_free_context(H264Context *h);
 
 /**
- * reconstructs bitstream slice_type.
+ * Reconstruct bitstream slice_type.
  */
 int ff_h264_get_slice_type(const H264Context *h);
 
 /**
- * allocates tables.
+ * Allocate tables.
  * needs width/height
  */
 int ff_h264_alloc_tables(H264Context *h);
 
 /**
- * fills the default_ref_list.
+ * Fill the default_ref_list.
  */
 int ff_h264_fill_default_ref_list(H264Context *h);
 
@@ -660,7 +660,7 @@ void ff_h264_fill_mbaff_ref_list(H264Context *h);
 void ff_h264_remove_all_refs(H264Context *h);
 
 /**
- * Executes the reference picture marking (memory management control operations).
+ * Execute the reference picture marking (memory management control operations).
  */
 int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count);
 
@@ -668,12 +668,12 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb);
 
 
 /**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
+ * Check if the top & left blocks are available if needed & change the dc mode so it only uses the available blocks.
  */
 int ff_h264_check_intra4x4_pred_mode(H264Context *h);
 
 /**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
+ * Check if the top & left blocks are available if needed & change the dc mode so it only uses the available blocks.
  */
 int ff_h264_check_intra_pred_mode(H264Context *h, int mode);
 
@@ -686,13 +686,13 @@ av_cold int ff_h264_decode_end(AVCodecContext *avctx);
 av_cold void ff_h264_decode_init_vlc(void);
 
 /**
- * decodes a macroblock
+ * Decode a macroblock
  * @return 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
  */
 int ff_h264_decode_mb_cavlc(H264Context *h);
 
 /**
- * decodes a CABAC coded macroblock
+ * Decode a CABAC coded macroblock
  * @return 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
  */
 int ff_h264_decode_mb_cabac(H264Context *h);

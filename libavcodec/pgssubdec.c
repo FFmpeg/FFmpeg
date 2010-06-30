@@ -80,7 +80,7 @@ static av_cold int close_decoder(AVCodecContext *avctx)
 }
 
 /**
- * Decodes the RLE data.
+ * Decode the RLE data.
  *
  * The subtitle is stored as an Run Length Encoded image.
  *
@@ -141,7 +141,7 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitle *sub,
 }
 
 /**
- * Parses the picture segment packet.
+ * Parse the picture segment packet.
  *
  * The picture segment contains details on the sequence id,
  * width, height and Run Length Encoded (RLE) bitmap data.
@@ -205,7 +205,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
 }
 
 /**
- * Parses the palette segment packet.
+ * Parse the palette segment packet.
  *
  * The palette segment contains details of the palette,
  * a maximum of 256 colors can be defined.
@@ -246,7 +246,7 @@ static void parse_palette_segment(AVCodecContext *avctx,
 }
 
 /**
- * Parses the presentation segment packet.
+ * Parse the presentation segment packet.
  *
  * The presentation segment contains details on the video
  * width, video height, x & y subtitle position.
@@ -317,7 +317,7 @@ static void parse_presentation_segment(AVCodecContext *avctx,
 }
 
 /**
- * Parses the display segment packet.
+ * Parse the display segment packet.
  *
  * The display segment controls the updating of the display.
  *

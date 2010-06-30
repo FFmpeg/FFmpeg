@@ -139,7 +139,7 @@ typedef struct AVOption2 {
 
 
 /**
- * Looks for an option in obj. Looks only for the options which
+ * Look for an option in obj. Look only for the options which
  * have the flags set as specified in mask and flags (that is,
  * for which it is the case that opt->flags & mask == flags).
  *
@@ -168,7 +168,7 @@ attribute_deprecated const AVOption *av_set_string2(void *obj, const char *name,
 #endif
 
 /**
- * Sets the field of obj with the given name to value.
+ * Set the field of obj with the given name to value.
  *
  * @param[in] obj A struct whose first element is a pointer to an
  * AVClass.

@@ -80,7 +80,7 @@ typedef struct {
 
 
 /**
- *  Decodes Indeo5 GOP (Group of pictures) header.
+ *  Decode Indeo5 GOP (Group of pictures) header.
  *  This header is present in key frames only.
  *  It defines parameters for all frames in a GOP.
  *
@@ -296,7 +296,7 @@ static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
 
 
 /**
- *  Skips a header extension.
+ *  Skip a header extension.
  *
  *  @param gb   [in,out] the GetBit context
  */
@@ -312,7 +312,7 @@ static inline void skip_hdr_extension(GetBitContext *gb)
 
 
 /**
- *  Decodes Indeo5 picture header.
+ *  Decode Indeo5 picture header.
  *
  *  @param ctx      [in,out] ptr to the decoder context
  *  @param avctx    [in] ptr to the AVCodecContext
@@ -364,7 +364,7 @@ static int decode_pic_hdr(IVI5DecContext *ctx, AVCodecContext *avctx)
 
 
 /**
- *  Decodes Indeo5 band header.
+ *  Decode Indeo5 band header.
  *
  *  @param ctx      [in,out] ptr to the decoder context
  *  @param band     [in,out] ptr to the band descriptor
@@ -432,7 +432,7 @@ static int decode_band_hdr(IVI5DecContext *ctx, IVIBandDesc *band,
 
 
 /**
- *  Decodes info (block type, cbp, quant delta, motion vector)
+ *  Decode info (block type, cbp, quant delta, motion vector)
  *  for all macroblocks in the current tile.
  *
  *  @param ctx      [in,out] ptr to the decoder context
@@ -557,7 +557,7 @@ static int decode_mb_info(IVI5DecContext *ctx, IVIBandDesc *band,
 
 
 /**
- *  Decodes an Indeo5 band.
+ *  Decode an Indeo5 band.
  *
  *  @param ctx      [in,out] ptr to the decoder context
  *  @param band     [in,out] ptr to the band descriptor
@@ -647,7 +647,7 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
 
 
 /**
- *  Switches buffers.
+ *  Switch buffers.
  *
  *  @param ctx      [in,out] ptr to the decoder context
  */
@@ -690,7 +690,7 @@ static void switch_buffers(IVI5DecContext *ctx)
 
 
 /**
- *  Initializes Indeo5 decoder.
+ *  Initialize Indeo5 decoder.
  */
 static av_cold int decode_init(AVCodecContext *avctx)
 {
@@ -800,7 +800,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
 
 /**
- *  Closes Indeo5 decoder and cleans up its context.
+ *  Close Indeo5 decoder and clean up its context.
  */
 static av_cold int decode_close(AVCodecContext *avctx)
 {

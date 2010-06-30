@@ -55,7 +55,7 @@ static int rtmp_close(URLContext *s)
 }
 
 /**
- * Opens RTMP connection and verifies that the stream can be played.
+ * Open RTMP connection and verify that the stream can be played.
  *
  * URL syntax: rtmp://server[:port][/app][/playpath][ keyword=value]...
  *             where 'app' is first one or two directories in the path

@@ -1745,7 +1745,7 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
 /*******************************************************/
 
 /**
- * Returns TRUE if the stream has accurate duration in any stream.
+ * Return TRUE if the stream has accurate duration in any stream.
  *
  * @return TRUE if the stream has accurate duration for at least one component.
  */
@@ -2924,7 +2924,7 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
 }
 
 /**
- * Interleaves an AVPacket correctly so it can be muxed.
+ * Interleave an AVPacket correctly so it can be muxed.
  * @param out the interleaved packet will be output here
  * @param in the input packet
  * @param flush 1 if no further packets are available as input and all

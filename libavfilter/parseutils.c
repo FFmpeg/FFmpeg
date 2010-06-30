@@ -288,7 +288,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
 }
 
 /**
- * Stores the value in the field in ctx that is named like key.
+ * Store the value in the field in ctx that is named like key.
  * ctx must be an AVClass context, storing is done using AVOptions.
  *
  * @param buf the string to parse, buf will be updated to point at the

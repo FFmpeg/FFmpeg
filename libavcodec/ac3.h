@@ -114,7 +114,7 @@ typedef enum {
 void ac3_common_init(void);
 
 /**
- * Calculates the log power-spectral density of the input signal.
+ * Calculate the log power-spectral density of the input signal.
  * This gives a rough estimate of signal power in the frequency domain by using
  * the spectral envelope (exponents).  The psd is also separately grouped
  * into critical bands for use in the calculating the masking curve.
@@ -131,7 +131,7 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
                                int16_t *band_psd);
 
 /**
- * Calculates the masking curve.
+ * Calculate the masking curve.
  * First, the excitation is calculated using parameters in s and the signal
  * power in each critical band.  The excitation is compared with a predefined
  * hearing threshold table to produce the masking curve.  If delta bit
@@ -159,7 +159,7 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
                                int16_t *mask);
 
 /**
- * Calculates bit allocation pointers.
+ * Calculate bit allocation pointers.
  * The SNR is the difference between the masking curve and the signal.  AC-3
  * uses this value for each frequency bin to allocate bits.  The snroffset
  * parameter is a global adjustment to the SNR for all bins.

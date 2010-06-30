@@ -19,7 +19,7 @@
 
 /**
  * @file
- * Checks for AltiVec presence.
+ * Check for AltiVec presence.
  */
 
 #ifdef __APPLE__

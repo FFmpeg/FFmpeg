@@ -48,8 +48,8 @@
 
 
 /**
- * Marks a variable as used and prevents the compiler from optimizing it away.
- * This is usefull for asm that accesses varibles in ways that the compiler doesnt
+ * Mark a variable as used and prevent the compiler from optimizing it away.
+ * This is useful for asm that accesses varibles in ways that the compiler does not
  * understand
  */
 #ifndef attribute_used
@@ -192,7 +192,7 @@
 #include "libm.h"
 
 /**
- * Returns NULL if CONFIG_SMALL is true, otherwise the argument
+ * Return NULL if CONFIG_SMALL is true, otherwise the argument
  * without modification. Used to disable the definition of strings
  * (for example AVCodec long_names).
  */

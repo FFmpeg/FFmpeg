@@ -101,8 +101,8 @@ static av_cold int qcelp_decode_init(AVCodecContext *avctx)
 }
 
 /**
- * Decodes the 10 quantized LSP frequencies from the LSPV/LSP
- * transmission codes of any bitrate and checks for badly received packets.
+ * Decode the 10 quantized LSP frequencies from the LSPV/LSP
+ * transmission codes of any bitrate and check for badly received packets.
  *
  * @param q the context
  * @param lspf line spectral pair frequencies
@@ -197,7 +197,7 @@ static int decode_lspf(QCELPContext *q, float *lspf)
 }
 
 /**
- * Converts codebook transmission codes to GAIN and INDEX.
+ * Convert codebook transmission codes to GAIN and INDEX.
  *
  * @param q the context
  * @param gain array holding the decoded gain
@@ -309,7 +309,7 @@ static int codebook_sanity_check_for_rate_quarter(const uint8_t *cbgain)
 }
 
 /**
- * Computes the scaled codebook vector Cdn From INDEX and GAIN
+ * Compute the scaled codebook vector Cdn From INDEX and GAIN
  * for all rates.
  *
  * The specification lacks some information here.
@@ -564,8 +564,8 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
 }
 
 /**
- * Reconstructs LPC coefficients from the line spectral pair frequencies
- * and performs bandwidth expansion.
+ * Reconstruct LPC coefficients from the line spectral pair frequencies
+ * and perform bandwidth expansion.
  *
  * @param lspf line spectral pair frequencies
  * @param lpc linear predictive coding coefficients
@@ -594,7 +594,7 @@ static void lspf2lpc(const float *lspf, float *lpc)
 }
 
 /**
- * Interpolates LSP frequencies and computes LPC coefficients
+ * Interpolate LSP frequencies and computes LPC coefficients
  * for a given bitrate & pitch subframe.
  *
  * TIA/EIA/IS-733 2.4.3.3.4, 2.4.8.7.2

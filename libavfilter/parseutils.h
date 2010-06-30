@@ -28,8 +28,8 @@
 #include "libavcodec/opt.h"
 
 /**
- * Unescapes the given string until a non escaped terminating char,
- * and returns the token corresponding to the unescaped string.
+ * Unescape the given string until a non escaped terminating char,
+ * and return the token corresponding to the unescaped string.
  *
  * The normal \ and ' escaping is supported. Leading and trailing
  * whitespaces are removed.
@@ -43,7 +43,7 @@
 char *av_get_token(const char **buf, const char *term);
 
 /**
- * Puts the RGBA values that correspond to color_string in rgba_color.
+ * Put the RGBA values that correspond to color_string in rgba_color.
  *
  * @param color_string a string specifying a color. It can be the name of
  * a color (case insensitive match) or a 0xRRGGBB[AA] sequence,
@@ -62,7 +62,7 @@ char *av_get_token(const char **buf, const char *term);
 int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx);
 
 /**
- * Parses the key/value pairs list in opts. For each key/value pair
+ * Parse the key/value pairs list in opts. For each key/value pair
  * found, stores the value in the field in ctx that is named like the
  * key. ctx must be an AVClass context, storing is done using
  * AVOptions.

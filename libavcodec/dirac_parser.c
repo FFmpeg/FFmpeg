@@ -33,7 +33,7 @@
 #define DIRAC_PARSE_INFO_PREFIX 0x42424344
 
 /**
- * Finds the end of the current frame in the bitstream.
+ * Find the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame or -1
  */
 typedef struct DiracParseContext {

@@ -1075,7 +1075,7 @@ unsigned int av_xiphlacing(unsigned char *s, unsigned int v)
 /* Wrapper to work around the lack of mkstemp() on mingw/cygin.
  * Also, tries to create file in /tmp first, if possible.
  * *prefix can be a character constant; *filename will be allocated internally.
- * Returns file descriptor of opened file (or -1 on error)
+ * @return file descriptor of opened file (or -1 on error)
  * and opened file name in **filename. */
 int av_tempfile(char *prefix, char **filename) {
     int fd=-1;

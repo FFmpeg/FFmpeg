@@ -98,7 +98,7 @@ static inline av_const int av_log2_16bit_c(unsigned int v)
 #endif
 
 /**
- * Clips a signed integer value into the amin-amax range.
+ * Clip a signed integer value into the amin-amax range.
  * @param a value to clip
  * @param amin minimum value of the clip range
  * @param amax maximum value of the clip range
@@ -112,7 +112,7 @@ static inline av_const int av_clip(int a, int amin, int amax)
 }
 
 /**
- * Clips a signed integer value into the 0-255 range.
+ * Clip a signed integer value into the 0-255 range.
  * @param a value to clip
  * @return clipped value
  */
@@ -123,7 +123,7 @@ static inline av_const uint8_t av_clip_uint8(int a)
 }
 
 /**
- * Clips a signed integer value into the -128,127 range.
+ * Clip a signed integer value into the -128,127 range.
  * @param a value to clip
  * @return clipped value
  */
@@ -134,7 +134,7 @@ static inline av_const int8_t av_clip_int8(int a)
 }
 
 /**
- * Clips a signed integer value into the 0-65535 range.
+ * Clip a signed integer value into the 0-65535 range.
  * @param a value to clip
  * @return clipped value
  */
@@ -145,7 +145,7 @@ static inline av_const uint16_t av_clip_uint16(int a)
 }
 
 /**
- * Clips a signed integer value into the -32768,32767 range.
+ * Clip a signed integer value into the -32768,32767 range.
  * @param a value to clip
  * @return clipped value
  */
@@ -156,7 +156,7 @@ static inline av_const int16_t av_clip_int16(int a)
 }
 
 /**
- * Clips a signed 64-bit integer value into the -2147483648,2147483647 range.
+ * Clip a signed 64-bit integer value into the -2147483648,2147483647 range.
  * @param a value to clip
  * @return clipped value
  */
@@ -167,7 +167,7 @@ static inline av_const int32_t av_clipl_int32(int64_t a)
 }
 
 /**
- * Clips a float value into the amin-amax range.
+ * Clip a float value into the amin-amax range.
  * @param a value to clip
  * @param amin minimum value of the clip range
  * @param amax maximum value of the clip range
@@ -180,7 +180,7 @@ static inline av_const float av_clipf(float a, float amin, float amax)
     else               return a;
 }
 
-/** Computes ceil(log2(x)).
+/** Compute ceil(log2(x)).
  * @param x value used to compute ceil(log2(x))
  * @return computed ceiling of log2(x)
  */
@@ -194,7 +194,7 @@ static inline av_const int av_ceil_log2(int x)
 
 /*!
  * \def GET_UTF8(val, GET_BYTE, ERROR)
- * Converts a UTF-8 character (up to 4 bytes long) to its 32-bit UCS-4 encoded form
+ * Convert a UTF-8 character (up to 4 bytes long) to its 32-bit UCS-4 encoded form
  * \param val is the output and should be of type uint32_t. It holds the converted
  * UCS-4 character and should be a left value.
  * \param GET_BYTE gets UTF-8 encoded bytes from any proper source. It can be
@@ -222,7 +222,7 @@ static inline av_const int av_ceil_log2(int x)
 
 /*!
  * \def GET_UTF16(val, GET_16BIT, ERROR)
- * Converts a UTF-16 character (2 or 4 bytes) to its 32-bit UCS-4 encoded form
+ * Convert a UTF-16 character (2 or 4 bytes) to its 32-bit UCS-4 encoded form
  * \param val is the output and should be of type uint32_t. It holds the converted
  * UCS-4 character and should be a left value.
  * \param GET_16BIT gets two bytes of UTF-16 encoded data converted to native endianness.
@@ -246,7 +246,7 @@ static inline av_const int av_ceil_log2(int x)
 
 /*!
  * \def PUT_UTF8(val, tmp, PUT_BYTE)
- * Converts a 32-bit Unicode character to its UTF-8 encoded form (up to 4 bytes long).
+ * Convert a 32-bit Unicode character to its UTF-8 encoded form (up to 4 bytes long).
  * \param val is an input-only argument and should be of type uint32_t. It holds
  * a UCS-4 encoded Unicode character that is to be converted to UTF-8. If
  * val is given as a function it is executed only once.
@@ -282,7 +282,7 @@ static inline av_const int av_ceil_log2(int x)
 
 /*!
  * \def PUT_UTF16(val, tmp, PUT_16BIT)
- * Converts a 32-bit Unicode character to its UTF-16 encoded form (2 or 4 bytes).
+ * Convert a 32-bit Unicode character to its UTF-16 encoded form (2 or 4 bytes).
  * \param val is an input-only argument and should be of type uint32_t. It holds
  * a UCS-4 encoded Unicode character that is to be converted to UTF-16. If
  * val is given as a function it is executed only once.

@@ -51,7 +51,7 @@ extern struct SwsContext *sws_opts;
 int opt_default(const char *opt, const char *arg);
 
 /**
- * Sets the libav* libraries log level.
+ * Set the libav* libraries log level.
  */
 int opt_loglevel(const char *opt, const char *arg);
 
@@ -61,8 +61,8 @@ int opt_loglevel(const char *opt, const char *arg);
 int opt_timelimit(const char *opt, const char *arg);
 
 /**
- * Parses a string and returns its corresponding value as a double.
- * Exits from the application if the string cannot be correctly
+ * Parse a string and return its corresponding value as a double.
+ * Exit from the application if the string cannot be correctly
  * parsed or the corresponding value is invalid.
  *
  * @param context the context of the value to be set (e.g. the
@@ -76,8 +76,8 @@ int opt_timelimit(const char *opt, const char *arg);
 double parse_number_or_die(const char *context, const char *numstr, int type, double min, double max);
 
 /**
- * Parses a string specifying a time and returns its corresponding
- * value as a number of microseconds. Exits from the application if
+ * Parse a string specifying a time and return its corresponding
+ * value as a number of microseconds. Exit from the application if
  * the string cannot be correctly parsed.
  *
  * @param context the context of the value to be set (e.g. the
@@ -122,7 +122,7 @@ typedef struct {
 void show_help_options(const OptionDef *options, const char *msg, int mask, int value);
 
 /**
- * Parses the command line arguments.
+ * Parse the command line arguments.
  * @param options Array with the definitions required to interpret every
  * option of the form: -<option_name> [<argument>]
  * @param parse_arg_function Name of the function called to process every
@@ -135,7 +135,7 @@ void parse_options(int argc, char **argv, const OptionDef *options,
 void set_context_opts(void *ctx, void *opts_ctx, int flags);
 
 /**
- * Prints an error message to stderr, indicating filename and a human
+ * Print an error message to stderr, indicating filename and a human
  * readable description of the error code err.
  *
  * If strerror_r() is not available the use of this function in a
@@ -148,73 +148,73 @@ void print_error(const char *filename, int err);
 void list_fmts(void (*get_fmt_string)(char *buf, int buf_size, int fmt), int nb_fmts);
 
 /**
- * Prints the program banner to stderr. The banner contents depend on the
+ * Print the program banner to stderr. The banner contents depend on the
  * current version of the repository and of the libav* libraries used by
  * the program.
  */
 void show_banner(void);
 
 /**
- * Prints the version of the program to stdout. The version message
+ * Print the version of the program to stdout. The version message
  * depends on the current versions of the repository and of the libav*
  * libraries.
  */
 void show_version(void);
 
 /**
- * Prints the license of the program to stdout. The license depends on
+ * Print the license of the program to stdout. The license depends on
  * the license of the libraries compiled into the program.
  */
 void show_license(void);
 
 /**
- * Prints a listing containing all the formats supported by the
+ * Print a listing containing all the formats supported by the
  * program.
  */
 void show_formats(void);
 
 /**
- * Prints a listing containing all the codecs supported by the
+ * Print a listing containing all the codecs supported by the
  * program.
  */
 void show_codecs(void);
 
 /**
- * Prints a listing containing all the filters supported by the
+ * Print a listing containing all the filters supported by the
  * program.
  */
 void show_filters(void);
 
 /**
- * Prints a listing containing all the bit stream filters supported by the
+ * Print a listing containing all the bit stream filters supported by the
  * program.
  */
 void show_bsfs(void);
 
 /**
- * Prints a listing containing all the protocols supported by the
+ * Print a listing containing all the protocols supported by the
  * program.
  */
 void show_protocols(void);
 
 /**
- * Prints a listing containing all the pixel formats supported by the
+ * Print a listing containing all the pixel formats supported by the
  * program.
  */
 void show_pix_fmts(void);
 
 /**
- * Returns a positive value if reads from standard input a line
+ * Return a positive value if reads from standard input a line
  * starting with [yY], otherwise returns 0.
  */
 int read_yesno(void);
 
 /**
- * Reads the file with name filename, and puts its content in a newly
+ * Read the file with name filename, and put its content in a newly
  * allocated 0-terminated buffer.
  *
- * @param bufptr puts here the pointer to the newly allocated buffer
- * @param size puts here the size of the newly allocated buffer
+ * @param bufptr location where pointer to buffer is returned
+ * @param size   location where size of buffer is returned
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR error code in case of failure.
  */

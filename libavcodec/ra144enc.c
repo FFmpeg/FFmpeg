@@ -59,7 +59,7 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
 
 
 /**
- * Quantizes a value by searching a sorted table for the element with the
+ * Quantize a value by searching a sorted table for the element with the
  * nearest value
  *
  * @param value value to quantize
@@ -88,7 +88,7 @@ static int quantize(int value, const int16_t *table, unsigned int size)
 
 
 /**
- * Orthogonalizes a vector to another vector
+ * Orthogonalize a vector to another vector
  *
  * @param v vector to orthogonalize
  * @param u vector against which orthogonalization is performed
@@ -109,7 +109,7 @@ static void orthogonalize(float *v, const float *u)
 
 
 /**
- * Calculates match score and gain of an LPC-filtered vector with respect to
+ * Calculate match score and gain of an LPC-filtered vector with respect to
  * input data, possibly othogonalizing it to up to 2 other vectors
  *
  * @param work array used to calculate the filtered vector
@@ -148,7 +148,7 @@ static void get_match_score(float *work, const float *coefs, float *vect,
 
 
 /**
- * Creates a vector from the adaptive codebook at a given lag value
+ * Create a vector from the adaptive codebook at a given lag value
  *
  * @param vect array where vector is stored
  * @param cb adaptive codebook
@@ -168,7 +168,7 @@ static void create_adapt_vect(float *vect, const int16_t *cb, int lag)
 
 
 /**
- * Searches the adaptive codebook for the best entry and gain and removes its
+ * Search the adaptive codebook for the best entry and gain and remove its
  * contribution from input data
  *
  * @param adapt_cb array from which the adaptive codebook is extracted
@@ -210,7 +210,7 @@ static int adaptive_cb_search(const int16_t *adapt_cb, float *work,
 
 
 /**
- * Finds the best vector of a fixed codebook by applying an LPC filter to
+ * Find the best vector of a fixed codebook by applying an LPC filter to
  * codebook entries, possibly othogonalizing them to up to 2 other vectors and
  * matching the results with input data
  *
@@ -249,7 +249,7 @@ static void find_best_vect(float *work, const float *coefs,
 
 
 /**
- * Searches the two fixed codebooks for the best entry and gain
+ * Search the two fixed codebooks for the best entry and gain
  *
  * @param work array used to calculate LPC-filtered vectors
  * @param coefs coefficients of the LPC filter
@@ -301,7 +301,7 @@ static void fixed_cb_search(float *work, const float *coefs, float *data,
 
 
 /**
- * Encodes a subblock of the current frame
+ * Encode a subblock of the current frame
  *
  * @param ractx encoder context
  * @param sblock_data input data of the subblock

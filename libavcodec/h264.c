@@ -1690,7 +1690,7 @@ static void field_end(H264Context *h){
 }
 
 /**
- * Replicates H264 "master" context to thread contexts.
+ * Replicate H264 "master" context to thread contexts.
  */
 static void clone_slice(H264Context *dst, H264Context *src)
 {

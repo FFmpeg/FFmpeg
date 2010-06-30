@@ -26,7 +26,7 @@
 #include "metadata.h"
 
 /**
- * Calculates the length in bytes of a VorbisComment. This is the minimum
+ * Calculate the length in bytes of a VorbisComment. This is the minimum
  * size required by ff_vorbiscomment_write().
  *
  * @param m The metadata structure to be parsed. For no metadata, set to NULL.

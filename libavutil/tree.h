@@ -33,7 +33,7 @@ struct AVTreeNode;
 extern const int av_tree_node_size;
 
 /**
- * Finds an element.
+ * Find an element.
  * @param root a pointer to the root node of the tree
  * @param next If next is not NULL, then next[0] will contain the previous
  *             element and next[1] the next element. If either does not exist,
@@ -44,7 +44,7 @@ extern const int av_tree_node_size;
 void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *key, const void *b), void *next[2]);
 
 /**
- * Inserts or removes an element.
+ * Insert or remove an element.
  * If *next is NULL, then the supplied element will be removed if it exists.
  * If *next is not NULL, then the supplied element will be inserted, unless
  * it already exists in the tree.
@@ -80,7 +80,7 @@ void *av_tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key,
 void av_tree_destroy(struct AVTreeNode *t);
 
 /**
- * Applies enu(opaque, &elem) to all the elements in the tree in a given range.
+ * Apply enu(opaque, &elem) to all the elements in the tree in a given range.
  *
  * @param cmp a comparison function that returns < 0 for a element below the
  *            range, > 0 for a element above the range and == 0 for a

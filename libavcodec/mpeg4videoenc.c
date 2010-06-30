@@ -54,7 +54,7 @@ max run: 29/41
 
 
 /**
- * Returns the number of bits that encoding the 8x8 block in block would need.
+ * Return the number of bits that encoding the 8x8 block in block would need.
  * @param[in]  block_last_index last index in scantable order that refers to a non zero element in block.
  */
 static inline int get_block_rate(MpegEncContext * s, DCTELEM block[64], int block_last_index, uint8_t scantable[64]){
@@ -82,7 +82,7 @@ static inline int get_block_rate(MpegEncContext * s, DCTELEM block[64], int bloc
 
 
 /**
- * Restores the ac coefficients in block that have been changed by decide_ac_pred().
+ * Restore the ac coefficients in block that have been changed by decide_ac_pred().
  * This function also restores s->block_last_index.
  * @param[in,out] block MB coefficients, these will be restored
  * @param[in] dir ac prediction direction for each 8x8 block
@@ -113,7 +113,7 @@ static inline void restore_ac_coeffs(MpegEncContext * s, DCTELEM block[6][64], c
 }
 
 /**
- * Returns the optimal value (0 or 1) for the ac_pred element for the given MB in mpeg4.
+ * Return the optimal value (0 or 1) for the ac_pred element for the given MB in mpeg4.
  * This function will also update s->block_last_index and s->ac_val.
  * @param[in,out] block MB coefficients, these will be updated if 1 is returned
  * @param[in] dir ac prediction direction for each 8x8 block

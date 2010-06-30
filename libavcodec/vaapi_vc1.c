@@ -24,7 +24,7 @@
 #include "vc1.h"
 #include "vc1data.h"
 
-/** Translates FFmpeg MV modes to VA API */
+/** Translate FFmpeg MV modes to VA API */
 static int get_VAMvModeVC1(enum MVModes mv_mode)
 {
     switch (mv_mode) {
@@ -37,7 +37,7 @@ static int get_VAMvModeVC1(enum MVModes mv_mode)
     return 0;
 }
 
-/** Checks whether the MVTYPEMB bitplane is present */
+/** Check whether the MVTYPEMB bitplane is present */
 static inline int vc1_has_MVTYPEMB_bitplane(VC1Context *v)
 {
     if (v->mv_type_is_raw)
@@ -48,7 +48,7 @@ static inline int vc1_has_MVTYPEMB_bitplane(VC1Context *v)
               v->mv_mode2 == MV_PMODE_MIXED_MV)));
 }
 
-/** Checks whether the SKIPMB bitplane is present */
+/** Check whether the SKIPMB bitplane is present */
 static inline int vc1_has_SKIPMB_bitplane(VC1Context *v)
 {
     if (v->skip_is_raw)
@@ -57,7 +57,7 @@ static inline int vc1_has_SKIPMB_bitplane(VC1Context *v)
             (v->s.pict_type == FF_B_TYPE && !v->bi_type));
 }
 
-/** Checks whether the DIRECTMB bitplane is present */
+/** Check whether the DIRECTMB bitplane is present */
 static inline int vc1_has_DIRECTMB_bitplane(VC1Context *v)
 {
     if (v->dmb_is_raw)
@@ -65,7 +65,7 @@ static inline int vc1_has_DIRECTMB_bitplane(VC1Context *v)
     return v->s.pict_type == FF_B_TYPE && !v->bi_type;
 }
 
-/** Checks whether the ACPRED bitplane is present */
+/** Check whether the ACPRED bitplane is present */
 static inline int vc1_has_ACPRED_bitplane(VC1Context *v)
 {
     if (v->acpred_is_raw)

@@ -258,7 +258,7 @@ static float eval_lpc_spectrum(const float *lsp, float cos_val, int order)
 }
 
 /**
- * Evaluates the LPC amplitude spectrum envelope from the line spectrum pairs.
+ * Evaluate the LPC amplitude spectrum envelope from the line spectrum pairs.
  */
 static void eval_lpcenv(TwinContext *tctx, const float *cos_vals, float *lpc)
 {
@@ -291,7 +291,7 @@ static inline float get_cos(int idx, int part, const float *cos_tab, int size)
 }
 
 /**
- * Evaluates the LPC amplitude spectrum envelope from the line spectrum pairs.
+ * Evaluate the LPC amplitude spectrum envelope from the line spectrum pairs.
  * Probably for speed reasons, the coefficients are evaluated as
  * siiiibiiiisiiiibiiiisiiiibiiiisiiiibiiiis ...
  * where s is an evaluated value, i is a value interpolated from the others

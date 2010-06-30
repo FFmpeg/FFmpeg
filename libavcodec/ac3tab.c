@@ -73,7 +73,7 @@ const uint16_t ff_ac3_frame_size_tab[38][3] = {
 };
 
 /**
- * Maps audio coding mode (acmod) to number of full-bandwidth channels.
+ * Map audio coding mode (acmod) to number of full-bandwidth channels.
  * from ATSC A/52 Table 5.8 Audio Coding Mode
  */
 const uint8_t ff_ac3_channels_tab[8] = {
@@ -81,7 +81,7 @@ const uint8_t ff_ac3_channels_tab[8] = {
 };
 
 /**
- * Maps audio coding mode (acmod) to channel layout mask.
+ * Map audio coding mode (acmod) to channel layout mask.
  */
 const uint16_t ff_ac3_channel_layout_tab[8] = {
     CH_LAYOUT_STEREO,
