@@ -194,23 +194,32 @@ static inline void vp56_init_range_decoder(VP56RangeCoder *c,
 
 static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
 {
+    /* Don't put c->high in a local variable; if we do that, gcc gets
+     * the stupids and turns the code below into a branch again. */
+    int bits = c->bits;
+    unsigned long code_word = c->code_word;
     unsigned int low = 1 + (((c->high - 1) * prob) >> 8);
     unsigned int low_shift = low << 8;
-    int bit = c->code_word >= low_shift;
+    int bit = code_word >= low_shift;
     int shift;
 
+    /* Incantation to convince GCC to turn these into conditional moves
+     * instead of branches -- faster, as this branch is basically
+     * unpredictable. */
     c->high = bit ? c->high - low : low;
-    c->code_word = bit ? c->code_word - low_shift : c->code_word;
+    code_word = bit ? code_word - low_shift : code_word;
 
     /* normalize */
     shift = ff_h264_norm_shift[c->high] - 1;
-    c->high      <<= shift;
-    c->code_word <<= shift;
-    c->bits       += shift;
-    if(c->bits >= 0 && c->buffer < c->end) {
-        c->code_word |= *c->buffer++ << c->bits;
-        c->bits -= 8;
+    c->high   <<= shift;
+    code_word <<= shift;
+    bits       += shift;
+    if(bits >= 0 && c->buffer < c->end) {
+        code_word |= *c->buffer++ << bits;
+        bits -= 8;
     }
+    c->bits = bits;
+    c->code_word = code_word;
     return bit;
 }
 
