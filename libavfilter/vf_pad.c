@@ -306,7 +306,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
 AVFilter avfilter_vf_pad = {
     .name          = "pad",
-    .description   = "Add paddings to the input image.",
+    .description   = NULL_IF_CONFIG_SMALL("Add paddings to the input image."),
 
     .priv_size     = sizeof(PadContext),
     .init          = init,
