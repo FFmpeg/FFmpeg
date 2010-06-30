@@ -63,6 +63,8 @@
  * error. Even in case of failure av_strerror() will print a generic
  * error message indicating the errnum provided to errbuf.
  *
+ * @param errnum      error code to describe
+ * @param errbuf      buffer to which description is written
  * @param errbuf_size the size in bytes of errbuf
  * @return 0 on success, a negative value if a description for errnum
  * cannot be found
