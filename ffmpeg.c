@@ -121,6 +121,9 @@ static int nb_stream_maps;
 static AVMetaDataMap meta_data_maps[MAX_FILES];
 static int nb_meta_data_maps;
 
+/* indexed by output file stream index */
+static int streamid_map[MAX_STREAMS];
+
 static int frame_width  = 0;
 static int frame_height = 0;
 static float frame_aspect_ratio = 0;
@@ -3348,7 +3351,7 @@ static void new_video_stream(AVFormatContext *oc)
     AVCodecContext *video_enc;
     enum CodecID codec_id;
 
-    st = av_new_stream(oc, oc->nb_streams);
+    st = av_new_stream(oc, streamid_map[oc->nb_streams]);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         av_exit(1);
@@ -3486,7 +3489,7 @@ static void new_audio_stream(AVFormatContext *oc)
     AVCodecContext *audio_enc;
     enum CodecID codec_id;
 
-    st = av_new_stream(oc, oc->nb_streams);
+    st = av_new_stream(oc, streamid_map[oc->nb_streams]);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         av_exit(1);
@@ -3559,7 +3562,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
     AVStream *st;
     AVCodecContext *subtitle_enc;
 
-    st = av_new_stream(oc, oc->nb_streams);
+    st = av_new_stream(oc, streamid_map[oc->nb_streams]);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         av_exit(1);
@@ -3626,6 +3629,27 @@ static void opt_new_subtitle_stream(void)
     }
     oc = output_files[nb_output_files - 1];
     new_subtitle_stream(oc);
+}
+
+/* arg format is "output-stream-index:streamid-value". */
+static void opt_streamid(const char *opt, const char *arg)
+{
+    int idx;
+    char *p;
+    char idx_str[16];
+
+    strncpy(idx_str, arg, sizeof(idx_str));
+    idx_str[sizeof(idx_str)-1] = '\0';
+    p = strchr(idx_str, ':');
+    if (!p) {
+        fprintf(stderr,
+                "Invalid value '%s' for option '%s', required syntax is 'index:value'\n",
+                arg, opt);
+        av_exit(1);
+    }
+    *p++ = '\0';
+    idx = parse_number_or_die(opt, idx_str, OPT_INT, 0, MAX_STREAMS-1);
+    streamid_map[idx] = parse_number_or_die(opt, p, OPT_INT, 0, INT_MAX);
 }
 
 static void opt_output_file(const char *filename)
@@ -3775,6 +3799,8 @@ static void opt_output_file(const char *filename)
     oc->flags |= AVFMT_FLAG_NONBLOCK;
 
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM);
+
+    memset(streamid_map, 0, sizeof(streamid_map));
 }
 
 /* same option as mencoder */
@@ -4233,6 +4259,7 @@ static const OptionDef options[] = {
     { "vlang", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void *)&video_language}, "set the ISO 639 language code (3 letters) of the current video stream" , "code" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
     { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&force_fps}, "force the selected framerate, disable the best supported framerate selection" },
+    { "streamid", OPT_FUNC2 | HAS_ARG | OPT_EXPERT, {(void*)opt_streamid}, "set the value of an outfile streamid", "streamIndex:value" },
 
     /* audio options */
     { "ab", OPT_FUNC2 | HAS_ARG | OPT_AUDIO, {(void*)opt_bitrate}, "set bitrate (in bits/s)", "bitrate" },

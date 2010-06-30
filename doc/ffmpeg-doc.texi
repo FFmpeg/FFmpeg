@@ -638,6 +638,15 @@ Timestamp discontinuity delta threshold.
 Set the maximum demux-decode delay.
 @item -muxpreload @var{seconds}
 Set the initial demux-decode delay.
+@item -streamid @var{output-stream-index}:@var{new-value}
+Assign a new value to a stream's stream-id field in the next output file.
+All stream-id fields are reset to default for each output file.
+
+For example, to set the stream 0 PID to 33 and the stream 1 PID to 36 for
+an output mpegts file:
+@example
+ffmpeg -i infile -streamid 0:33 -streamid 1:36 out.ts
+@end example
 @end table
 
 @section Preset files
