@@ -51,3 +51,44 @@ const MXFCodecUL ff_mxf_codec_uls[] = {
   //{ { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x02,0x02,0x02,0x03,0x02,0x1C,0x00 }, 15,    CODEC_ID_DOLBY_E }, /* Dolby-E */
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,       CODEC_ID_NONE },
 };
+
+const MXFPixelLayout ff_mxf_pixel_layouts[] = {
+    /**
+     * See SMPTE 377M E.2.46
+     *
+     * Note: Only RGB, palette based and "abnormal" YUV pixel formats like 4:2:2:4 go here.
+     *       For regular YUV, use CDCIPictureEssenceDescriptor.
+     *
+     * Note: Do not use these for encoding descriptors for little-endian formats until we
+     *       get samples or official word from SMPTE on how/if those can be encoded.
+     */
+    {PIX_FMT_ABGR,    {'A', 8,  'B', 8,  'G', 8, 'R', 8                 }},
+    {PIX_FMT_ARGB,    {'A', 8,  'R', 8,  'G', 8, 'B', 8                 }},
+    {PIX_FMT_BGR24,   {'B', 8,  'G', 8,  'R', 8                         }},
+    {PIX_FMT_BGRA,    {'B', 8,  'G', 8,  'R', 8, 'A', 8                 }},
+    {PIX_FMT_RGB24,   {'R', 8,  'G', 8,  'B', 8                         }},
+    {PIX_FMT_RGB444BE,{'F', 4,  'R', 4,  'G', 4, 'B', 4                 }},
+    {PIX_FMT_RGB48BE, {'R', 8,  'r', 8,  'G', 8, 'g', 8, 'B', 8, 'b', 8 }},
+    {PIX_FMT_RGB48BE, {'R', 16, 'G', 16, 'B', 16                        }},
+    {PIX_FMT_RGB48LE, {'r', 8,  'R', 8,  'g', 8, 'G', 8, 'b', 8, 'B', 8 }},
+    {PIX_FMT_RGB555BE,{'F', 1,  'R', 5,  'G', 5, 'B', 5                 }},
+    {PIX_FMT_RGB565BE,{'R', 5,  'G', 6,  'B', 5                         }},
+    {PIX_FMT_RGBA,    {'R', 8,  'G', 8,  'B', 8, 'A', 8                 }},
+    {PIX_FMT_PAL8,    {'P', 8                                           }},
+};
+
+static const int num_pixel_layouts = sizeof(ff_mxf_pixel_layouts) / sizeof(*ff_mxf_pixel_layouts);
+
+int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum PixelFormat *pix_fmt)
+{
+    int x;
+
+    for(x = 0; x < num_pixel_layouts; x++) {
+        if (!memcmp(pixel_layout, ff_mxf_pixel_layouts[x].data, 16)) {
+            *pix_fmt = ff_mxf_pixel_layouts[x].pix_fmt;
+            return 0;
+        }
+    }
+
+    return -1;
+}

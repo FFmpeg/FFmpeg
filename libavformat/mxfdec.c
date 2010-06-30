@@ -101,6 +101,7 @@ typedef struct {
     int linked_track_id;
     uint8_t *extradata;
     int extradata_size;
+    enum PixelFormat pix_fmt;
 } MXFDescriptor;
 
 typedef struct {
@@ -520,25 +521,21 @@ static int mxf_read_index_table_segment(MXFIndexTableSegment *segment, ByteIOCon
 
 static void mxf_read_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
 {
-    int code;
+    int code, value, ofs = 0;
+    char layout[16] = {};
 
     do {
         code = get_byte(pb);
+        value = get_byte(pb);
         dprintf(NULL, "pixel layout: code %#x\n", code);
-        switch (code) {
-        case 0x52: /* R */
-            descriptor->bits_per_sample += get_byte(pb);
-            break;
-        case 0x47: /* G */
-            descriptor->bits_per_sample += get_byte(pb);
-            break;
-        case 0x42: /* B */
-            descriptor->bits_per_sample += get_byte(pb);
-            break;
-        default:
-            get_byte(pb);
+
+        if (ofs < 16) {
+            layout[ofs++] = code;
+            layout[ofs++] = value;
         }
     } while (code != 0); /* SMPTE 377M E.2.46 */
+
+    ff_mxf_decode_pixel_layout(layout, &descriptor->pix_fmt);
 }
 
 static int mxf_read_generic_descriptor(MXFDescriptor *descriptor, ByteIOContext *pb, int tag, int size, UID uid)
@@ -801,7 +798,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->codec->codec_id = container_ul->id;
             st->codec->width = descriptor->width;
             st->codec->height = descriptor->height;
-            st->codec->bits_per_coded_sample = descriptor->bits_per_sample; /* Uncompressed */
+            if (st->codec->codec_id == CODEC_ID_RAWVIDEO)
+                st->codec->pix_fmt = descriptor->pix_fmt;
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_essence_container_uls, essence_container_ul);
