@@ -199,12 +199,8 @@ static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
     int bit = c->code_word >= low_shift;
     int shift;
 
-    if (bit) {
-        c->high -= low;
-        c->code_word -= low_shift;
-    } else {
-        c->high = low;
-    }
+    c->high = bit ? c->high - low : low;
+    c->code_word = bit ? c->code_word - low_shift : c->code_word;
 
     /* normalize */
     shift = ff_h264_norm_shift[c->high] - 1;
