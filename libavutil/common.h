@@ -192,18 +192,16 @@ static inline av_const int av_ceil_log2(int x)
 #define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 #define MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((a) << 24))
 
-/*!
- * \def GET_UTF8(val, GET_BYTE, ERROR)
- * Convert a UTF-8 character (up to 4 bytes long) to its 32-bit UCS-4 encoded form
- * \param val is the output and should be of type uint32_t. It holds the converted
- * UCS-4 character and should be a left value.
- * \param GET_BYTE gets UTF-8 encoded bytes from any proper source. It can be
- * a function or a statement whose return value or evaluated value is of type
- * uint8_t. It will be executed up to 4 times for values in the valid UTF-8 range,
- * and up to 7 times in the general case.
- * \param ERROR action that should be taken when an invalid UTF-8 byte is returned
- * from GET_BYTE. It should be a statement that jumps out of the macro,
- * like exit(), goto, return, break, or continue.
+/**
+ * Convert a UTF-8 character (up to 4 bytes) to its 32-bit UCS-4 encoded form.
+ *
+ * @param val      Output value, must be an lvalue of type uint32_t.
+ * @param GET_BYTE Expression reading one byte from the input.
+ *                 Evaluated up to 7 times (4 for the currently
+ *                 assigned Unicode range).  With a memory buffer
+ *                 input, this could be *ptr++.
+ * @param ERROR    Expression to be evaluated on invalid input,
+ *                 typically a goto statement.
  */
 #define GET_UTF8(val, GET_BYTE, ERROR)\
     val= GET_BYTE;\
@@ -220,17 +218,14 @@ static inline av_const int av_ceil_log2(int x)
         }\
     }
 
-/*!
- * \def GET_UTF16(val, GET_16BIT, ERROR)
- * Convert a UTF-16 character (2 or 4 bytes) to its 32-bit UCS-4 encoded form
- * \param val is the output and should be of type uint32_t. It holds the converted
- * UCS-4 character and should be a left value.
- * \param GET_16BIT gets two bytes of UTF-16 encoded data converted to native endianness.
- * It can be a function or a statement whose return value or evaluated value is of type
- * uint16_t. It will be executed up to 2 times.
- * \param ERROR action that should be taken when an invalid UTF-16 surrogate is
- * returned from GET_BYTE. It should be a statement that jumps out of the macro,
- * like exit(), goto, return, break, or continue.
+/**
+ * Convert a UTF-16 character (2 or 4 bytes) to its 32-bit UCS-4 encoded form.
+ *
+ * @param val       Output value, must be an lvalue of type uint32_t.
+ * @param GET_16BIT Expression returning two bytes of UTF-16 data converted
+ *                  to native byte order.  Evaluated one or two times.
+ * @param ERROR     Expression to be evaluated on invalid input,
+ *                  typically a goto statement.
  */
 #define GET_UTF16(val, GET_16BIT, ERROR)\
     val = GET_16BIT;\
