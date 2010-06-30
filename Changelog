@@ -15,6 +15,7 @@ version <next>:
 - libfaad2 wrapper removed
 - DTS-ES extension (XCh) decoding support
 - native VP8 decoder
+- RTSP tunneling over HTTP
 
 
 
