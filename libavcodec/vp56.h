@@ -28,6 +28,7 @@
 #include "dsputil.h"
 #include "get_bits.h"
 #include "bytestream.h"
+#include "cabac.h"
 #include "vp56dsp.h"
 
 typedef struct vp56_context VP56Context;
@@ -195,6 +196,7 @@ static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
     unsigned int low = 1 + (((c->high - 1) * prob) >> 8);
     unsigned int low_shift = low << 8;
     int bit = c->code_word >= low_shift;
+    int shift;
 
     if (bit) {
         c->high -= low;
@@ -204,13 +206,13 @@ static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
     }
 
     /* normalize */
-    while (c->high < 128) {
-        c->high <<= 1;
-        c->code_word <<= 1;
-        if (--c->bits == 0 && c->buffer < c->end) {
-            c->bits = 8;
-            c->code_word |= *c->buffer++;
-        }
+    shift = ff_h264_norm_shift[c->high] - 1;
+    c->high      <<= shift;
+    c->code_word <<= shift;
+    c->bits       -= shift;
+    if(c->bits <= 0 && c->buffer < c->end) {
+        c->code_word |= *c->buffer++ << -c->bits;
+        c->bits += 8;
     }
     return bit;
 }
