@@ -670,19 +670,19 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
         }
 
         if(mb_x==0 || IS_INTRA(s->current_picture.mb_type[xy-1])){
-            *(int32_t*)mv_cache[1][0]= *(int32_t*)mv_cache[1][1];
-            *(int32_t*)mv_cache[2][0]= *(int32_t*)mv_cache[2][1];
+            AV_COPY32(mv_cache[1][0], mv_cache[1][1]);
+            AV_COPY32(mv_cache[2][0], mv_cache[2][1]);
         }else{
-            *(int32_t*)mv_cache[1][0]= *(int32_t*)s->current_picture.motion_val[0][mot_xy-1];
-            *(int32_t*)mv_cache[2][0]= *(int32_t*)s->current_picture.motion_val[0][mot_xy-1+mot_stride];
+            AV_COPY32(mv_cache[1][0], s->current_picture.motion_val[0][mot_xy-1]);
+            AV_COPY32(mv_cache[2][0], s->current_picture.motion_val[0][mot_xy-1+mot_stride]);
         }
 
         if(mb_x+1>=s->mb_width || IS_INTRA(s->current_picture.mb_type[xy+1])){
-            *(int32_t*)mv_cache[1][3]= *(int32_t*)mv_cache[1][2];
-            *(int32_t*)mv_cache[2][3]= *(int32_t*)mv_cache[2][2];
+            AV_COPY32(mv_cache[1][3], mv_cache[1][2]);
+            AV_COPY32(mv_cache[2][3], mv_cache[2][2]);
         }else{
-            *(int32_t*)mv_cache[1][3]= *(int32_t*)s->current_picture.motion_val[0][mot_xy+2];
-            *(int32_t*)mv_cache[2][3]= *(int32_t*)s->current_picture.motion_val[0][mot_xy+2+mot_stride];
+            AV_COPY32(mv_cache[1][3], s->current_picture.motion_val[0][mot_xy+2]);
+            AV_COPY32(mv_cache[2][3], s->current_picture.motion_val[0][mot_xy+2+mot_stride]);
         }
 
         mx = 0;
