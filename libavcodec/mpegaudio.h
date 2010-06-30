@@ -33,6 +33,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "fft.h"
 
 #define CONFIG_AUDIO_NONSHORT 0
 
@@ -156,6 +157,9 @@ typedef struct MPADecodeContext {
     int dither_state;
     int error_recognition;
     AVCodecContext* avctx;
+#if CONFIG_FLOAT
+    DCTContext dct;
+#endif
     void (*apply_window_mp3)(MPA_INT *synth_buf, MPA_INT *window,
                              int *dither_state, OUT_INT *samples, int incr);
 } MPADecodeContext;

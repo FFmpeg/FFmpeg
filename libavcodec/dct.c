@@ -31,6 +31,9 @@
 #include "libavutil/mathematics.h"
 #include "fft.h"
 
+#define DCT32_FLOAT
+#include "dct32.c"
+
 /* sin((M_PI * x / (2*n)) */
 #define SIN(s,n,x) (s->costab[(n) - (x)])
 
@@ -167,6 +170,11 @@ static void ff_dct_calc_II_c(DCTContext *ctx, FFTSample *data)
     }
 }
 
+static void dct32_func(DCTContext *ctx, FFTSample *data)
+{
+    ctx->dct32(data, data);
+}
+
 void ff_dct_calc(DCTContext *s, FFTSample *data)
 {
     s->dct_calc(s, data);
@@ -200,6 +208,12 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)
     case DCT_III: s->dct_calc = ff_dct_calc_III_c; break;
     case DST_I  : s->dct_calc = ff_dst_calc_I_c; break;
     }
+
+    if (inverse == DCT_II && nbits == 5)
+        s->dct_calc = dct32_func;
+
+    s->dct32 = dct32;
+
     return 0;
 }
 

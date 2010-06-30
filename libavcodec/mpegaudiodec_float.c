@@ -34,7 +34,7 @@ void ff_mpa_synth_filter_float(MPADecodeContext *s, float *synth_buf_ptr,
     offset = *synth_buf_offset;
     synth_buf = synth_buf_ptr + offset;
 
-    dct32(synth_buf, sb_samples);
+    s->dct.dct32(synth_buf, sb_samples);
     s->apply_window_mp3(synth_buf, window, dither_state, samples, incr);
 
     offset = (offset - 32) & 511;

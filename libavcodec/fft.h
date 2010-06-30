@@ -228,6 +228,7 @@ struct DCTContext {
     const float *costab;
     FFTSample *csc2;
     void (*dct_calc)(struct DCTContext *s, FFTSample *data);
+    void (*dct32)(FFTSample *out, const FFTSample *in);
 };
 
 /**
