@@ -48,7 +48,8 @@ typedef int  (*VP56ParseHeader)(VP56Context *s, const uint8_t *buf,
 
 typedef struct {
     int high;
-    int bits;
+    int bits; /* Stored negated (i.e. negative "bits" is a positive number of bits left)
+               * in order to eliminate a negate in cache refilling */
     const uint8_t *buffer;
     const uint8_t *end;
     unsigned long code_word;
@@ -185,7 +186,7 @@ static inline void vp56_init_range_decoder(VP56RangeCoder *c,
                                            const uint8_t *buf, int buf_size)
 {
     c->high = 255;
-    c->bits = 8;
+    c->bits = -8;
     c->buffer = buf;
     c->end = buf + buf_size;
     c->code_word = bytestream_get_be16(&c->buffer);
@@ -209,10 +210,10 @@ static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
     shift = ff_h264_norm_shift[c->high] - 1;
     c->high      <<= shift;
     c->code_word <<= shift;
-    c->bits       -= shift;
-    if(c->bits <= 0 && c->buffer < c->end) {
-        c->code_word |= *c->buffer++ << -c->bits;
-        c->bits += 8;
+    c->bits       += shift;
+    if(c->bits >= 0 && c->buffer < c->end) {
+        c->code_word |= *c->buffer++ << c->bits;
+        c->bits -= 8;
     }
     return bit;
 }
@@ -232,8 +233,8 @@ static inline int vp56_rac_get(VP56RangeCoder *c)
 
     /* normalize */
     c->code_word <<= 1;
-    if (--c->bits == 0 && c->buffer < c->end) {
-        c->bits = 8;
+    if (++c->bits == 0 && c->buffer < c->end) {
+        c->bits = -8;
         c->code_word |= *c->buffer++;
     }
     return bit;
