@@ -2124,7 +2124,7 @@ static void flush(AVCodecContext *avctx){
     s->last_buf_size= 0;
 }
 
-#if CONFIG_MP3ADU_DECODER
+#if CONFIG_MP3ADU_DECODER || CONFIG_MP3ADUFLOAT_DECODER
 static int decode_frame_adu(AVCodecContext * avctx,
                         void *data, int *data_size,
                         AVPacket *avpkt)
@@ -2174,9 +2174,9 @@ static int decode_frame_adu(AVCodecContext * avctx,
     *data_size = out_size;
     return buf_size;
 }
-#endif /* CONFIG_MP3ADU_DECODER */
+#endif /* CONFIG_MP3ADU_DECODER || CONFIG_MP3ADUFLOAT_DECODER */
 
-#if CONFIG_MP3ON4_DECODER
+#if CONFIG_MP3ON4_DECODER || CONFIG_MP3ON4FLOAT_DECODER
 
 /**
  * Context for MP3On4 decoder
@@ -2340,7 +2340,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     *data_size = out_size;
     return buf_size;
 }
-#endif /* CONFIG_MP3ON4_DECODER */
+#endif /* CONFIG_MP3ON4_DECODER || CONFIG_MP3ON4FLOAT_DECODER */
 
 #if !CONFIG_FLOAT
 #if CONFIG_MP1_DECODER
