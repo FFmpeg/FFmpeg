@@ -535,8 +535,10 @@ int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
                 st->codec->channels = cfg.channels;
                 if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
                     st->codec->sample_rate = ff_mpa_freq_tab[cfg.sampling_index];
+                else if (cfg.ext_sample_rate)
+                    st->codec->sample_rate = cfg.ext_sample_rate;
                 else
-                    st->codec->sample_rate = cfg.sample_rate; // ext sample rate ?
+                    st->codec->sample_rate = cfg.sample_rate;
                 dprintf(fc, "mp4a config channels %d obj %d ext obj %d "
                         "sample rate %d ext sample rate %d\n", st->codec->channels,
                         cfg.object_type, cfg.ext_object_type,
