@@ -102,6 +102,8 @@ typedef struct {
     uint_fast8_t  classbook;
     int_fast16_t  books[64][8];
     uint_fast8_t  maxpass;
+    uint_fast16_t ptns_to_read;
+    uint_fast8_t *classifs;
 } vorbis_residue;
 
 typedef struct {
@@ -194,6 +196,8 @@ static void vorbis_free(vorbis_context *vc)
     av_freep(&vc->channel_floors);
     av_freep(&vc->saved);
 
+    for (i = 0; i < vc->residue_count; i++)
+        av_free(vc->residues[i].classifs);
     av_freep(&vc->residues);
     av_freep(&vc->modes);
 
@@ -236,6 +240,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
     uint8_t  *tmp_vlc_bits;
     uint32_t *tmp_vlc_codes;
     GetBitContext *gb = &vc->gb;
+    uint_fast16_t *codebook_multiplicands;
 
     vc->codebook_count = get_bits(gb, 8) + 1;
 
@@ -244,6 +249,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
     vc->codebooks = av_mallocz(vc->codebook_count * sizeof(vorbis_codebook));
     tmp_vlc_bits  = av_mallocz(V_MAX_VLCS * sizeof(uint8_t));
     tmp_vlc_codes = av_mallocz(V_MAX_VLCS * sizeof(uint32_t));
+    codebook_multiplicands = av_malloc(V_MAX_VLCS * sizeof(*codebook_multiplicands));
 
     for (cb = 0; cb < vc->codebook_count; ++cb) {
         vorbis_codebook *codebook_setup = &vc->codebooks[cb];
@@ -336,7 +342,6 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
         if (codebook_setup->lookup_type == 1) {
             uint_fast16_t i, j, k;
             uint_fast16_t codebook_lookup_values = ff_vorbis_nth_root(entries, codebook_setup->dimensions);
-            uint_fast16_t codebook_multiplicands[codebook_lookup_values];
 
             float codebook_minimum_value = vorbisfloat2float(get_bits_long(gb, 32));
             float codebook_delta_value   = vorbisfloat2float(get_bits_long(gb, 32));
@@ -420,12 +425,14 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
 
     av_free(tmp_vlc_bits);
     av_free(tmp_vlc_codes);
+    av_free(codebook_multiplicands);
     return 0;
 
 // Error:
 error:
     av_free(tmp_vlc_bits);
     av_free(tmp_vlc_codes);
+    av_free(codebook_multiplicands);
     return -1;
 }
 
@@ -653,6 +660,12 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc)
 
         res_setup->classifications = get_bits(gb, 6) + 1;
         GET_VALIDATED_INDEX(res_setup->classbook, 8, vc->codebook_count)
+
+        res_setup->ptns_to_read =
+            (res_setup->end - res_setup->begin) / res_setup->partition_size;
+        res_setup->classifs = av_malloc(res_setup->ptns_to_read *
+                                        vc->audio_channels *
+                                        sizeof(*res_setup->classifs));
 
         AV_DEBUG("    begin %d end %d part.size %d classif.s %d classbook %d \n", res_setup->begin, res_setup->end, res_setup->partition_size,
           res_setup->classifications, res_setup->classbook);
@@ -1116,9 +1129,9 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc,
     GetBitContext *gb = &vc->gb;
     uint_fast16_t range_v[4] = { 256, 128, 86, 64 };
     uint_fast16_t range = range_v[vf->multiplier-1];
-    uint_fast16_t floor1_Y[vf->x_list_dim];
-    uint_fast16_t floor1_Y_final[vf->x_list_dim];
-    int floor1_flag[vf->x_list_dim];
+    uint_fast16_t floor1_Y[258];
+    uint_fast16_t floor1_Y_final[258];
+    int floor1_flag[258];
     uint_fast8_t class_;
     uint_fast8_t cdim;
     uint_fast8_t cbits;
@@ -1252,9 +1265,8 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
 {
     GetBitContext *gb = &vc->gb;
     uint_fast8_t c_p_c = vc->codebooks[vr->classbook].dimensions;
-    uint_fast16_t n_to_read = vr->end-vr->begin;
-    uint_fast16_t ptns_to_read = n_to_read/vr->partition_size;
-    uint_fast8_t classifs[ptns_to_read*vc->audio_channels];
+    uint_fast16_t ptns_to_read = vr->ptns_to_read;
+    uint_fast8_t *classifs = vr->classifs;
     uint_fast8_t pass;
     uint_fast8_t ch_used;
     uint_fast8_t i,j,l;
@@ -1450,12 +1462,12 @@ static int vorbis_parse_audio_packet(vorbis_context *vc)
     uint_fast8_t blockflag;
     uint_fast16_t blocksize;
     int_fast32_t i,j;
-    uint_fast8_t no_residue[vc->audio_channels];
-    uint_fast8_t do_not_decode[vc->audio_channels];
+    uint_fast8_t no_residue[255];
+    uint_fast8_t do_not_decode[255];
     vorbis_mapping *mapping;
     float *ch_res_ptr   = vc->channel_residues;
     float *ch_floor_ptr = vc->channel_floors;
-    uint_fast8_t res_chan[vc->audio_channels];
+    uint_fast8_t res_chan[255];
     uint_fast8_t res_num = 0;
     int_fast16_t retlen  = 0;
     float fadd_bias = vc->add_bias;
@@ -1587,7 +1599,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
     int buf_size       = avpkt->size;
     vorbis_context *vc = avccontext->priv_data ;
     GetBitContext *gb = &(vc->gb);
-    const float *channel_ptrs[vc->audio_channels];
+    const float *channel_ptrs[255];
     int i;
 
     int_fast16_t len;
