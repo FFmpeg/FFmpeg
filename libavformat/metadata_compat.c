@@ -108,10 +108,11 @@ void ff_metadata_demux_compat(AVFormatContext *ctx)
 
 
 #define FILL_METADATA(s, key, value) {                                        \
-    if (value && *value && !av_metadata_get(s->metadata, #key, NULL, 0))      \
+    if (!av_metadata_get(s->metadata, #key, NULL, 0))                         \
         av_metadata_set2(&s->metadata, #key, value, 0);                       \
     }
-#define FILL_METADATA_STR(s, key)  FILL_METADATA(s, key, s->key)
+#define FILL_METADATA_STR(s, key) {                                           \
+    if (s->key && *s->key)  FILL_METADATA(s, key, s->key); }
 #define FILL_METADATA_INT(s, key) {                                           \
     char number[10];                                                          \
     snprintf(number, sizeof(number), "%d", s->key);                           \
