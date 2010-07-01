@@ -1459,8 +1459,8 @@ host_libs='-lm'
 
 target_path='$(CURDIR)'
 
-# gcc stupidly only outputs the basename of targets with -MM, but we need the
-# full relative path for objects in subdirectories for non-recursive Make.
+# since the object filename is not given with the -MM flag, the compiler
+# is only able to print the basename, and we must add the path ourselves
 DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o," > $(@:.o=.d)'
 DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -MM'
 
