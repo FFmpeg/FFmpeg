@@ -16,6 +16,7 @@ version <next>:
 - DTS-ES extension (XCh) decoding support
 - native VP8 decoder
 - RTSP tunneling over HTTP
+- RTP depacketization of SVQ3
 
 
 
