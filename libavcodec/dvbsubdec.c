@@ -21,8 +21,8 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
-#include "colorspace.h"
 #include "bytestream.h"
+#include "libavutil/colorspace.h"
 
 //#define DEBUG
 //#define DEBUG_PACKET_CONTENTS

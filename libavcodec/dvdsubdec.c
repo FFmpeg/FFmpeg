@@ -20,8 +20,8 @@
  */
 #include "avcodec.h"
 #include "get_bits.h"
-#include "colorspace.h"
 #include "dsputil.h"
+#include "libavutil/colorspace.h"
 
 //#define DEBUG
 

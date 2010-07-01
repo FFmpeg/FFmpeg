@@ -24,12 +24,12 @@
 #include <math.h>
 #include <limits.h>
 #include "libavutil/avstring.h"
+#include "libavutil/colorspace.h"
 #include "libavutil/pixdesc.h"
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
 #include "libavcodec/audioconvert.h"
-#include "libavcodec/colorspace.h"
 #include "libavcodec/opt.h"
 #include "libavcodec/avfft.h"
 

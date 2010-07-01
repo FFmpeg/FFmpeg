@@ -20,7 +20,7 @@
  */
 #include "avcodec.h"
 #include "bytestream.h"
-#include "colorspace.h"
+#include "libavutil/colorspace.h"
 
 typedef struct DVBSubtitleContext {
     int hide_state;

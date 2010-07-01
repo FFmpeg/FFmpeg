@@ -27,7 +27,7 @@
 #include "avfilter.h"
 #include "parseutils.h"
 #include "libavutil/pixdesc.h"
-#include "libavcodec/colorspace.h"
+#include "libavutil/colorspace.h"
 
 typedef struct {
     int w, h;               ///< output dimensions, a value of 0 will result in the input size
