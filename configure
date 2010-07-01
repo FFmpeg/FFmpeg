@@ -988,6 +988,7 @@ HAVE_LIST="
     GetProcessMemoryInfo
     GetProcessTimes
     getrusage
+    gnu_as
     struct_rusage_ru_maxrss
     ibm_asm
     inet_aton
@@ -2116,6 +2117,7 @@ case $target_os in
         ;;
     darwin)
         enable malloc_aligned
+        as="gas-preprocessor.pl $cc"
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR) -Wl,-read_only_relocs,suppress'
         strip="${strip} -x"
         FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
@@ -2305,6 +2307,9 @@ check_cc <<EOF || die "endian test failed"
 unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
+
+check_asm gnu_as '".macro m n\n\\n:.int 0\n.endm\nm x"' ||
+    warn "GNU assembler not found, install gas-preprocessor"
 
 if enabled alpha; then
 
