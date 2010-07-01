@@ -89,6 +89,13 @@ static void print_tag(const char *str, unsigned int tag, int size)
 }
 #endif
 
+static inline int get_duration(AVIStream *ast, int len){
+    if(ast->sample_size){
+        return len;
+    }else
+        return 1;
+}
+
 static int get_riff(AVFormatContext *s, ByteIOContext *pb)
 {
     AVIContext *avi = s->priv_data;
@@ -175,10 +182,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
             if(last_pos != pos && (len || !ast->sample_size))
                 av_add_index_entry(st, pos, ast->cum_len, len, 0, key ? AVINDEX_KEYFRAME : 0);
 
-            if(ast->sample_size)
-                ast->cum_len += len;
-            else
-                ast->cum_len ++;
+            ast->cum_len += get_duration(ast, len);
             last_pos= pos;
         }else{
             int64_t offset, pos;
@@ -821,10 +825,7 @@ resync:
             } else {
                 pkt->flags |= AV_PKT_FLAG_KEY;
             }
-            if(ast->sample_size)
-                ast->frame_offset += pkt->size;
-            else
-                ast->frame_offset++;
+            ast->frame_offset += get_duration(ast, pkt->size);
         }
         ast->remaining -= size;
         if(!ast->remaining){
@@ -906,8 +907,7 @@ resync:
             if(   (st->discard >= AVDISCARD_DEFAULT && size==0)
                /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & AV_PKT_FLAG_KEY))*/ //FIXME needs a little reordering
                || st->discard >= AVDISCARD_ALL){
-                if(ast->sample_size) ast->frame_offset += size;
-                else                 ast->frame_offset++;
+                ast->frame_offset += get_duration(ast, size);
                 url_fskip(pb, size);
                 goto resync;
             }
@@ -1000,10 +1000,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
             avi->non_interleaved= 1;
         else if(len || !ast->sample_size)
             av_add_index_entry(st, pos, ast->cum_len, len, 0, (flags&AVIIF_INDEX) ? AVINDEX_KEYFRAME : 0);
-        if(ast->sample_size)
-            ast->cum_len += len;
-        else
-            ast->cum_len ++;
+        ast->cum_len += get_duration(ast, len);
         last_pos= pos;
     }
     return 0;
