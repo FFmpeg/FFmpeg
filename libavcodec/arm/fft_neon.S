@@ -320,7 +320,7 @@ function ff_fft_permute_neon, export=1
         push            {r4,lr}
         mov             r12, #1
         ldr             r2,  [r0]       @ nbits
-        ldr             r3,  [r0, #20]  @ tmp_buf
+        ldr             r3,  [r0, #12]  @ tmp_buf
         ldr             r0,  [r0, #8]   @ revtab
         lsl             r12, r12, r2
         mov             r2,  r12

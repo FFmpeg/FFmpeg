@@ -33,8 +33,6 @@ struct FFTContext {
     int nbits;
     int inverse;
     uint16_t *revtab;
-    FFTComplex *exptab;
-    FFTComplex *exptab1; /* only used by SSE code */
     FFTComplex *tmp_buf;
     int mdct_size; /* size of MDCT (i.e. number of input data * 2) */
     int mdct_bits; /* n = 2^nbits */
@@ -46,7 +44,6 @@ struct FFTContext {
     void (*imdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*imdct_half)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*mdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
-    int split_radix;
     int permutation;
 #define FF_MDCT_PERM_NONE       0
 #define FF_MDCT_PERM_INTERLEAVE 1

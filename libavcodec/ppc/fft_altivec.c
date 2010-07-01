@@ -91,5 +91,4 @@ av_cold void ff_fft_init_altivec(FFTContext *s)
 {
     if (HAVE_GNU_AS)
         s->fft_calc = ff_fft_calc_altivec;
-    s->split_radix = 1;
 }
