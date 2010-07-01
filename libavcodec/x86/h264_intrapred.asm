@@ -115,7 +115,7 @@ PRED16x16_H ssse3
 ; void pred16x16_dc(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED16x16_DC 2
+%macro PRED16x16_DC 1
 cglobal pred16x16_dc_%1, 2,7
     mov       r4, r0
     sub       r0, r1
@@ -143,10 +143,6 @@ cglobal pred16x16_dc_%1, 2,7
     movd       m0, r2d
     punpcklbw  m0, m0
     pshufw     m0, m0, 0
-%elifidn %1, sse
-    imul      r2d, 0x01010101
-    movd       m0, r2d
-    shufps     m0, m0, 0
 %elifidn %1, sse2
     movd       m0, r2d
     punpcklbw  m0, m0
@@ -161,18 +157,18 @@ cglobal pred16x16_dc_%1, 2,7
 %if mmsize==8
     mov       r3d, 8
 .loop:
-    %2 [r4+r1*0+0], m0
-    %2 [r4+r1*0+8], m0
-    %2 [r4+r1*1+0], m0
-    %2 [r4+r1*1+8], m0
+    mova [r4+r1*0+0], m0
+    mova [r4+r1*0+8], m0
+    mova [r4+r1*1+0], m0
+    mova [r4+r1*1+8], m0
 %else
     mov       r3d, 4
 .loop:
-    %2 [r4+r1*0], m0
-    %2 [r4+r1*1], m0
+    mova [r4+r1*0], m0
+    mova [r4+r1*1], m0
     lea   r4, [r4+r1*2]
-    %2 [r4+r1*0], m0
-    %2 [r4+r1*1], m0
+    mova [r4+r1*0], m0
+    mova [r4+r1*1], m0
 %endif
     lea   r4, [r4+r1*2]
     dec   r3d
@@ -181,11 +177,10 @@ cglobal pred16x16_dc_%1, 2,7
 %endmacro
 
 INIT_MMX
-PRED16x16_DC mmxext, movq
+PRED16x16_DC mmxext
 INIT_XMM
-PRED16x16_DC    sse, movaps
-PRED16x16_DC   sse2, movdqa
-PRED16x16_DC  ssse3, movdqa
+PRED16x16_DC   sse2
+PRED16x16_DC  ssse3
 
 ;-----------------------------------------------------------------------------
 ; void pred16x16_tm_vp8(uint8_t *src, int stride)

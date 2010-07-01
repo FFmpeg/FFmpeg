@@ -2329,7 +2329,6 @@ void ff_pred16x16_horizontal_mmx   (uint8_t *src, int stride);
 void ff_pred16x16_horizontal_mmxext(uint8_t *src, int stride);
 void ff_pred16x16_horizontal_ssse3 (uint8_t *src, int stride);
 void ff_pred16x16_dc_mmxext        (uint8_t *src, int stride);
-void ff_pred16x16_dc_sse           (uint8_t *src, int stride);
 void ff_pred16x16_dc_sse2          (uint8_t *src, int stride);
 void ff_pred16x16_dc_ssse3         (uint8_t *src, int stride);
 void ff_pred16x16_tm_vp8_mmx       (uint8_t *src, int stride);
@@ -2384,7 +2383,6 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
 
     if (mm_flags & FF_MM_SSE) {
         h->pred16x16[VERT_PRED8x8] = ff_pred16x16_vertical_sse;
-        h->pred16x16[DC_PRED8x8  ] = ff_pred16x16_dc_sse;
     }
 
     if (mm_flags & FF_MM_SSE2) {
