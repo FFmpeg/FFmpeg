@@ -48,8 +48,8 @@ typedef int  (*VP56ParseHeader)(VP56Context *s, const uint8_t *buf,
 
 typedef struct {
     int high;
-    int bits; /* Stored negated (i.e. negative "bits" is a positive number of bits left)
-               * in order to eliminate a negate in cache refilling */
+    int bits; /* stored negated (i.e. negative "bits" is a positive number of
+                 bits left) in order to eliminate a negate in cache refilling */
     const uint8_t *buffer;
     const uint8_t *end;
     unsigned long code_word;
