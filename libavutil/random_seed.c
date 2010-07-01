@@ -31,7 +31,7 @@ static int read_random(uint32_t *dst, const char *file)
 
     if (fd == -1)
         return -1;
-        err = read(fd, dst, sizeof(*dst));
+    err = read(fd, dst, sizeof(*dst));
     close(fd);
 
     return err;
