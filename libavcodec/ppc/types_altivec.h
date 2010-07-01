@@ -30,6 +30,7 @@
 #define vec_s16 vector signed short
 #define vec_u32 vector unsigned int
 #define vec_s32 vector signed int
+#define vec_f   vector float
 
 /***********************************************************************
  * Null vector
