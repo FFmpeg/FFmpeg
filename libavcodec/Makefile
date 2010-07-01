@@ -372,9 +372,9 @@ OBJS-$(CONFIG_VORBIS_ENCODER)          += vorbis_enc.o vorbis.o \
                                           vorbis_data.o
 OBJS-$(CONFIG_VP3_DECODER)             += vp3.o vp3dsp.o
 OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o vp56dsp.o \
-                                          vp3dsp.o
+                                          vp3dsp.o cabac.o
 OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o vp56dsp.o \
-                                          vp3dsp.o vp6dsp.o huffman.o
+                                          vp3dsp.o vp6dsp.o huffman.o cabac.o
 OBJS-$(CONFIG_VP8_DECODER)             += vp8.o vp8dsp.o vp56.o vp56data.o \
                                           h264pred.o cabac.o
 OBJS-$(CONFIG_VQA_DECODER)             += vqavideo.o
