@@ -107,11 +107,11 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     if (HAVE_ALTIVEC) ff_fft_init_altivec(s);
     if (HAVE_MMX)     ff_fft_init_mmx(s);
 
-        for(j=4; j<=nbits; j++) {
-            ff_init_ff_cos_tabs(j);
-        }
-        for(i=0; i<n; i++)
-            s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = i;
+    for(j=4; j<=nbits; j++) {
+        ff_init_ff_cos_tabs(j);
+    }
+    for(i=0; i<n; i++)
+        s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = i;
 
     return 0;
  fail:
@@ -125,9 +125,9 @@ void ff_fft_permute_c(FFTContext *s, FFTComplex *z)
     int j, np;
     const uint16_t *revtab = s->revtab;
     np = 1 << s->nbits;
-        /* TODO: handle split-radix permute in a more optimal way, probably in-place */
-        for(j=0;j<np;j++) s->tmp_buf[revtab[j]] = z[j];
-        memcpy(z, s->tmp_buf, np * sizeof(FFTComplex));
+    /* TODO: handle split-radix permute in a more optimal way, probably in-place */
+    for(j=0;j<np;j++) s->tmp_buf[revtab[j]] = z[j];
+    memcpy(z, s->tmp_buf, np * sizeof(FFTComplex));
 }
 
 av_cold void ff_fft_end(FFTContext *s)
