@@ -40,12 +40,10 @@ static int read_random(uint32_t *dst, const char *file)
 uint32_t av_get_random_seed(void)
 {
     uint32_t seed;
-    int err;
 
-    err = read_random(&seed, "/dev/urandom");
-    if (err != sizeof(seed))
-        err = read_random(&seed, "/dev/random");
-    if (err == sizeof(seed))
+    if (read_random(&seed, "/dev/urandom") == sizeof(seed))
+        return seed;
+    if (read_random(&seed, "/dev/random")  == sizeof(seed))
         return seed;
 
 #ifdef AV_READ_TIME
