@@ -325,6 +325,8 @@ static av_cold int decode_init(AVCodecContext * avctx)
 #if HAVE_MMX
     ff_mpegaudiodec_init_mmx(s);
 #endif
+    if (HAVE_ALTIVEC && CONFIG_FLOAT) ff_mpegaudiodec_init_altivec(s);
+
     avctx->sample_fmt= OUT_FMT;
     s->error_recognition= avctx->error_recognition;
 
