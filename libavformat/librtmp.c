@@ -94,7 +94,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     }
 
     if (flags & URL_WRONLY)
-        r->Link.protocol |= RTMP_FEATURE_WRITE;
+        RTMP_EnableWrite(r);
 
     if (!RTMP_Connect(r, NULL) || !RTMP_ConnectStream(r, 0)) {
         rc = -1;
@@ -127,10 +127,7 @@ static int rtmp_read_pause(URLContext *s, int pause)
 {
     RTMP *r = s->priv_data;
 
-    if (pause)
-        r->m_pauseStamp =
-            r->m_channelTimestamp[r->m_mediaChannel];
-    if (!RTMP_SendPause(r, pause, r->m_pauseStamp))
+    if (!RTMP_Pause(r, pause))
         return -1;
     return 0;
 }
@@ -157,7 +154,7 @@ static int rtmp_get_file_handle(URLContext *s)
 {
     RTMP *r = s->priv_data;
 
-    return r->m_sb.sb_socket;
+    return RTMP_Socket(r);
 }
 
 URLProtocol rtmp_protocol = {
