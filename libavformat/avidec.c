@@ -61,6 +61,8 @@ typedef struct {
     int non_interleaved;
     int stream_index;
     DVDemuxContext* dv_demux;
+    int odml_depth;
+#define MAX_ODML_DEPTH 1000
 } AVIContext;
 
 static const char avi_headers[][8] = {
@@ -190,8 +192,15 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
 
             pos = url_ftell(pb);
 
+            if(avi->odml_depth > MAX_ODML_DEPTH){
+                av_log(s, AV_LOG_ERROR, "Too deeply nested ODML indexes\n");
+                return -1;
+            }
+
             url_fseek(pb, offset+8, SEEK_SET);
+            avi->odml_depth++;
             read_braindead_odml_indx(s, frame_num);
+            avi->odml_depth--;
             frame_num += duration;
 
             url_fseek(pb, pos, SEEK_SET);
