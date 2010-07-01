@@ -2118,6 +2118,7 @@ case $target_os in
     darwin)
         enable malloc_aligned
         as="gas-preprocessor.pl $cc"
+        enabled ppc && add_asflags -force_cpusubtype_ALL
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR) -Wl,-read_only_relocs,suppress'
         strip="${strip} -x"
         FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
