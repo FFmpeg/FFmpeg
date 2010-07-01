@@ -530,7 +530,10 @@ int url_open_dyn_packet_buf(ByteIOContext **s, int max_packet_size);
 
 /**
  * Return the written size and a pointer to the buffer. The buffer
- *  must be freed with av_free().
+ * must be freed with av_free(). If the buffer is opened with
+ * url_open_dyn_buf, then padding of FF_INPUT_BUFFER_PADDING_SIZE is
+ * added; if opened with url_open_dyn_packet_buf, no padding is added.
+ *
  * @param s IO context
  * @param pbuffer pointer to a byte buffer
  * @return the length of the byte buffer
