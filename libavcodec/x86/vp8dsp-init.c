@@ -243,10 +243,10 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         c->vp8_luma_dc_wht = ff_vp8_luma_dc_wht_mmxext;
         VP8_LUMA_MC_FUNC(0, 16, mmxext);
         VP8_MC_FUNC(1, 8, mmxext);
-        VP8_MC_FUNC(1, 4, mmxext);
+        VP8_MC_FUNC(2, 4, mmxext);
         VP8_BILINEAR_MC_FUNC(0, 16, mmxext);
         VP8_BILINEAR_MC_FUNC(1, 8, mmxext);
-        VP8_BILINEAR_MC_FUNC(1, 4, mmxext);
+        VP8_BILINEAR_MC_FUNC(2, 4, mmxext);
     }
 
     if (mm_flags & FF_MM_SSE) {
