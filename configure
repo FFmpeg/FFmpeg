@@ -989,6 +989,7 @@ HAVE_LIST="
     GetProcessTimes
     getrusage
     struct_rusage_ru_maxrss
+    ibm_asm
     inet_aton
     inline_asm
     isatty
@@ -2340,6 +2341,7 @@ elif enabled ppc; then
     enable local_aligned_8 local_aligned_16
 
     check_asm dcbzl     '"dcbzl 0, 1"'
+    check_asm ibm_asm   '"add 0, 0, 0"'
     check_asm ppc4xx    '"maclhw r10, r11, r12"'
     check_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
 
