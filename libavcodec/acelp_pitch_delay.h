@@ -94,7 +94,7 @@ int ff_acelp_decode_4bit_to_2nd_delay3(
  *    with 1/6 resolution,  17  < pitch_delay <  95
  *    integers only,        95 <= pitch_delay <= 143
  *
- * \remark The routine is used in AMR @12.2k for the first and third subframes.
+ * \remark The routine is used in AMR @@12.2k for the first and third subframes.
  */
 int ff_acelp_decode_9bit_to_1st_delay6(int ac_index);
 
@@ -110,7 +110,7 @@ int ff_acelp_decode_9bit_to_1st_delay6(int ac_index);
  * Pitch delay is coded:
  *    with 1/6 resolution, -6 < pitch_delay - int(prev_pitch_delay) < 5
  *
- * \remark The routine is used in AMR @12.2k for the second and fourth subframes.
+ * \remark The routine is used in AMR @@12.2k for the second and fourth subframes.
  */
 int ff_acelp_decode_6bit_to_2nd_delay6(
         int ac_index,
