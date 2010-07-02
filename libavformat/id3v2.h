@@ -35,15 +35,15 @@
 
 /**
  * Detect ID3v2 Header.
- * @buf   must be ID3v2_HEADER_SIZE byte long
- * @magic magic bytes to identify the header, machine byte order.
+ * @param buf   must be ID3v2_HEADER_SIZE byte long
+ * @param magic magic bytes to identify the header, machine byte order.
  * If in doubt, use ID3v2_DEFAULT_MAGIC.
  */
 int ff_id3v2_match(const uint8_t *buf, const char *magic);
 
 /**
  * Get the length of an ID3v2 tag.
- * @buf must be ID3v2_HEADER_SIZE bytes long and point to the start of an
+ * @param buf must be ID3v2_HEADER_SIZE bytes long and point to the start of an
  * already detected ID3v2 tag
  */
 int ff_id3v2_tag_len(const uint8_t *buf);
