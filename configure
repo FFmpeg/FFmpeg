@@ -1761,7 +1761,8 @@ elif $cc -version 2>/dev/null | grep -q TMS470; then
     }
 elif $cc -v 2>&1 | grep -q clang; then
     cc_type=clang
-    cc_version=__VERSION__
+    $cc -dM -E $TMPC | grep -q __clang_version__ &&
+        cc_version=__clang_version__ || cc_version=__VERSION__
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
     speed_cflags='-O3'
