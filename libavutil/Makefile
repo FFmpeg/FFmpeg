@@ -13,6 +13,7 @@ HEADERS = adler32.h                                                     \
           eval.h                                                        \
           fifo.h                                                        \
           intfloat_readwrite.h                                          \
+          lfg.h                                                         \
           log.h                                                         \
           lzo.h                                                         \
           mathematics.h                                                 \
