@@ -228,18 +228,6 @@ void dsputil_init_bfin( DSPContext* c, AVCodecContext *avctx )
     c->sse[1] = ff_bfin_sse8;
     c->sse[2] = ff_bfin_sse4;
 
-
-    /**
-     * Halfpel motion compensation with rounding (a+b+1)>>1.
-     * This is an array[4][4] of motion compensation functions for 4
-     * horizontal blocksizes (8,16) and the 4 halfpel positions
-     * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
-     * @param block destination where the result is stored
-     * @param pixels source
-     * @param line_size number of bytes in a horizontal line of block
-     * @param h height
-     */
-
     c->put_pixels_tab[0][0] = bfin_put_pixels16;
     c->put_pixels_tab[0][1] = bfin_put_pixels16_x2;
     c->put_pixels_tab[0][2] = bfin_put_pixels16_y2;
