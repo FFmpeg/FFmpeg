@@ -284,6 +284,9 @@ static av_cold void init_cplscales_table (COOKContext *q) {
 
 /*************** init functions end ***********/
 
+#define DECODE_BYTES_PAD1(bytes) (3 - ((bytes)+3) % 4)
+#define DECODE_BYTES_PAD2(bytes) ((bytes) % 4 + DECODE_BYTES_PAD1(2 * (bytes)))
+
 /**
  * Cook indata decoding, every 32 bits are XORed with 0x37c511f2.
  * Why? No idea, some checksum/error detection method maybe.
@@ -304,8 +307,6 @@ static av_cold void init_cplscales_table (COOKContext *q) {
  * @param out       pointer to byte array of outdata
  * @param bytes     number of bytes
  */
-#define DECODE_BYTES_PAD1(bytes) (3 - ((bytes)+3) % 4)
-#define DECODE_BYTES_PAD2(bytes) ((bytes) % 4 + DECODE_BYTES_PAD1(2 * (bytes)))
 
 static inline int decode_bytes(const uint8_t* inbuffer, uint8_t* out, int bytes){
     int i, off;
