@@ -1428,7 +1428,7 @@ static int pred_weight_table(H264Context *h){
 
 /**
  * Initialize implicit_weight table.
- * @param field, 0/1 initialize the weight for interlaced MBAFF
+ * @param field  0/1 initialize the weight for interlaced MBAFF
  *                -1 initializes the rest
  */
 static void implicit_weight_table(H264Context *h, int field){
