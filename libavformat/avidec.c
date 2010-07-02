@@ -593,8 +593,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         st->codec->codec_id  = CODEC_ID_XAN_DPCM;
                         st->codec->codec_tag = 0;
                     }
-                    if (amv_file_format)
+                    if (amv_file_format){
                         st->codec->codec_id  = CODEC_ID_ADPCM_IMA_AMV;
+                        ast->dshow_block_align = 0;
+                    }
                     break;
                 default:
                     st->codec->codec_type = AVMEDIA_TYPE_DATA;
