@@ -54,8 +54,8 @@ int ff_acelp_decode_8bit_to_1st_delay3(int ac_index);
  * Pitch delay is coded:
  *    with 1/3 resolution, -6 < pitch_delay - int(prev_pitch_delay) < 5
  *
- * \remark The routine is used in G.729 @8k, AMR @10.2k, AMR @7.95k,
- *         AMR @7.4k for the second subframe.
+ * \remark The routine is used in G.729 @@8k, AMR @@10.2k, AMR @@7.95k,
+ *         AMR @@7.4k for the second subframe.
  */
 int ff_acelp_decode_5_6_bit_to_2nd_delay3(
         int ac_index,
@@ -74,8 +74,8 @@ int ff_acelp_decode_5_6_bit_to_2nd_delay3(
  *    with 1/3 resolution,    -2  < pitch_delay - int(prev_pitch_delay) <  1
  *    integers only,           1 <= pitch_delay - int(prev_pitch_delay) <  5
  *
- * \remark The routine is used in G.729 @6.4k, AMR @6.7k, AMR @5.9k,
- *         AMR @5.15k, AMR @4.75k for the second subframe.
+ * \remark The routine is used in G.729 @@6.4k, AMR @@6.7k, AMR @@5.9k,
+ *         AMR @@5.15k, AMR @@4.75k for the second subframe.
  */
 int ff_acelp_decode_4bit_to_2nd_delay3(
         int ac_index,

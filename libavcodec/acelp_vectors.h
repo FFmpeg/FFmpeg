@@ -47,7 +47,7 @@ typedef struct {
  *
  * Table contains only first the pulse indexes.
  *
- * Used in G.729 @8k, G.729 @4.4k, AMR @7.95k, AMR @7.40k
+ * Used in G.729 @@8k, G.729 @@4.4k, AMR @@7.95k, AMR @@7.40k
  */
 extern const uint8_t ff_fc_4pulses_8bits_tracks_13[16];
 
@@ -60,7 +60,7 @@ extern const uint8_t ff_fc_4pulses_8bits_tracks_13[16];
  *
  * @remark Track in the table should be read top-to-bottom, left-to-right.
  *
- * Used in G.729 @8k, G.729 @4.4k, AMR @7.95k, AMR @7.40k
+ * Used in G.729 @@8k, G.729 @@4.4k, AMR @@7.95k, AMR @@7.40k
  */
 extern const uint8_t ff_fc_4pulses_8bits_track_4[32];
 
@@ -76,7 +76,7 @@ extern const uint8_t ff_fc_4pulses_8bits_track_4[32];
  * @note (EE) Reference G.729D code also uses gray decoding for each
  *            pulse index before looking up the value in the table.
  *
- * Used in G.729 @6.4k (with gray coding), AMR @5.9k (without gray coding)
+ * Used in G.729 @@6.4k (with gray coding), AMR @@5.9k (without gray coding)
  */
 extern const uint8_t ff_fc_2pulses_9bits_track1[16];
 extern const uint8_t ff_fc_2pulses_9bits_track1_gray[16];
@@ -108,7 +108,7 @@ extern const uint8_t ff_fc_2pulses_9bits_track1_gray[16];
  * @note (EE.2) Reference G.729D code also uses gray decoding for each
  *              pulse index before looking up the value in the table.
  *
- * Used in G.729 @6.4k (with gray coding)
+ * Used in G.729 @@6.4k (with gray coding)
  */
 extern const uint8_t ff_fc_2pulses_9bits_track2_gray[32];
 
@@ -144,7 +144,7 @@ extern const float ff_pow_0_55[10];
  * @param pulse_count number of pulses decoded using first table
  * @param bits length of one pulse index in bits
  *
- * Used in G.729 @8k, G.729 @4.4k, G.729 @6.4k, AMR @7.95k, AMR @7.40k
+ * Used in G.729 @@8k, G.729 @@4.4k, G.729 @@6.4k, AMR @@7.95k, AMR @@7.40k
  */
 void ff_acelp_fc_pulse_per_track(int16_t* fc_v,
                                  const uint8_t *tab1,
