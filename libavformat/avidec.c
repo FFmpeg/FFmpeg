@@ -48,6 +48,7 @@ typedef struct AVIStream {
     int prefix_count;
     uint32_t pal[256];
     int has_pal;
+    int block_align;                  ///< AVCodecContext.block_align copied here for easier access
 } AVIStream;
 
 typedef struct {
@@ -92,6 +93,8 @@ static void print_tag(const char *str, unsigned int tag, int size)
 static inline int get_duration(AVIStream *ast, int len){
     if(ast->sample_size){
         return len;
+    }else if (ast->block_align){
+        return (len + ast->block_align - 1)/ast->block_align;
     }else
         return 1;
 }
@@ -569,6 +572,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     break;
                 case AVMEDIA_TYPE_AUDIO:
                     ff_get_wav_header(pb, st->codec, size);
+                    ast->block_align= st->codec->block_align;
                     if(ast->sample_size && st->codec->block_align && ast->sample_size != st->codec->block_align){
                         av_log(s, AV_LOG_WARNING, "sample size (%d) != block align (%d)\n", ast->sample_size, st->codec->block_align);
                         ast->sample_size= st->codec->block_align;
