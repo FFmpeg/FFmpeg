@@ -1411,6 +1411,7 @@ objformat="elf"
 ranlib="ranlib"
 strip_default="strip"
 yasmexe="yasm"
+nogas=":"
 
 nm_opts='-g'
 
@@ -2117,7 +2118,7 @@ case $target_os in
         ;;
     darwin)
         enable malloc_aligned
-        as="gas-preprocessor.pl $cc"
+        gas="gas-preprocessor.pl $cc"
         enabled ppc && add_asflags -force_cpusubtype_ALL
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR) -Wl,-read_only_relocs,suppress'
         strip="${strip} -x"
@@ -2309,9 +2310,6 @@ unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
-check_asm gnu_as '".macro m n\n\\n:.int 0\n.endm\nm x"' ||
-    warn "GNU assembler not found, install gas-preprocessor"
-
 if enabled alpha; then
 
     check_cflags -mieee
@@ -2319,6 +2317,7 @@ if enabled alpha; then
 elif enabled arm; then
 
     check_cflags -marm
+    nogas=die
 
     check_ld <<EOF && enable vfp_args
 __asm__ (".eabi_attribute 28, 1");
@@ -2353,6 +2352,7 @@ elif enabled ppc; then
 
     # AltiVec flags: The FSF version of GCC differs from the Apple version
     if enabled altivec; then
+        nogas=warn
         check_cflags -maltivec -mabi=altivec &&
         { check_header altivec.h && inc_altivec_h="#include <altivec.h>" ; } ||
         check_cflags -faltivec
@@ -2435,6 +2435,12 @@ EOF
         ;;
     esac
 
+fi
+
+if enabled asm; then
+    as=${gas:=$as}
+    check_asm gnu_as '".macro m n\n\\n:.int 0\n.endm\nm x"' ||
+        $nogas "GNU assembler not found, install gas-preprocessor"
 fi
 
 if check_func dlopen; then
