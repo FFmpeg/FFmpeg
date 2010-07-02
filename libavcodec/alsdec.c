@@ -454,7 +454,7 @@ static void parse_bs_info(const uint32_t bs_info, unsigned int n,
 }
 
 
-/** Read and decodes a Rice codeword.
+/** Read and decode a Rice codeword.
  */
 static int32_t decode_rice(GetBitContext *gb, unsigned int k)
 {
@@ -490,8 +490,8 @@ static void parcor_to_lpc(unsigned int k, const int32_t *par, int32_t *cof)
 }
 
 
-/** Read block switching field if necessary and sets actual block sizes.
- *  Also assures that the block sizes of the last frame correspond to the
+/** Read block switching field if necessary and set actual block sizes.
+ *  Also assure that the block sizes of the last frame correspond to the
  *  actual number of samples.
  */
 static void get_block_sizes(ALSDecContext *ctx, unsigned int *div_blocks,
@@ -980,7 +980,7 @@ static int decode_block(ALSDecContext *ctx, ALSBlockData *bd)
 }
 
 
-/** Read and decodes block data successively.
+/** Read and decode block data successively.
  */
 static int read_decode_block(ALSDecContext *ctx, ALSBlockData *bd)
 {

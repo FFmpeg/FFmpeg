@@ -204,8 +204,8 @@ void show_protocols(void);
 void show_pix_fmts(void);
 
 /**
- * Return a positive value if reads from standard input a line
- * starting with [yY], otherwise returns 0.
+ * Return a positive value if a line read from standard input
+ * starts with [yY], otherwise return 0.
  */
 int read_yesno(void);
 

@@ -48,7 +48,7 @@
 #define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
 
 /**
- * Identifie the syntax and semantics of the bitstream.
+ * Identify the syntax and semantics of the bitstream.
  * The principle is roughly:
  * Two decoders with the same ID can decode the same streams.
  * Two encoders with the same ID can encode compatible streams.
@@ -3533,7 +3533,7 @@ attribute_deprecated int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtit
 
 /**
  * Decode a subtitle message.
- * Return a negative value on error, otherwise returns the number of bytes used.
+ * Return a negative value on error, otherwise return the number of bytes used.
  * If no subtitle could be decompressed, got_sub_ptr is zero.
  * Otherwise, the subtitle is stored in *sub.
  *

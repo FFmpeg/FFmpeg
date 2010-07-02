@@ -594,7 +594,7 @@ static void lspf2lpc(const float *lspf, float *lpc)
 }
 
 /**
- * Interpolate LSP frequencies and computes LPC coefficients
+ * Interpolate LSP frequencies and compute LPC coefficients
  * for a given bitrate & pitch subframe.
  *
  * TIA/EIA/IS-733 2.4.3.3.4, 2.4.8.7.2
