@@ -945,11 +945,8 @@ mlt_compensate_output(COOKContext *q, float *decode_buffer,
  *
  * @param q                 pointer to the COOKContext
  * @param inbuffer          pointer to the inbuffer
- * @param sub_packet_size   subpacket size
  * @param outbuffer         pointer to the outbuffer
  */
-
-
 static void decode_subpacket(COOKContext *q, COOKSubpacket* p, const uint8_t *inbuffer, int16_t *outbuffer) {
     int sub_packet_size = p->size;
     /* packet dump */

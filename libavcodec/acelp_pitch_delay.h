@@ -85,8 +85,6 @@ int ff_acelp_decode_4bit_to_2nd_delay3(
  * \brief Decode pitch delay of the first subframe encoded by 9 bits
  *        with 1/6 precision.
  * \param ac_index adaptive codebook index (9 bits)
- * \param pitch_delay_min lower bound (integer) of pitch delay interval for
- *                      second subframe
  *
  * \return pitch delay in 1/6 units
  *
@@ -147,7 +145,6 @@ void ff_acelp_update_past_gain(
  * \param mr_energy mean innovation energy and fixed-point correction (7.13)
  * \param quant_energy [in/out] past quantized energies (5.10)
  * \param subframe_size length of subframe
- * \param ma_pred_order MA prediction order
  *
  * \return quantized fixed-codebook gain (14.1)
  *

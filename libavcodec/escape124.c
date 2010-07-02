@@ -200,8 +200,6 @@ static const uint16_t mask_matrix[] = {0x1,   0x2,   0x10,   0x20,
  * @param avctx decoder context
  * @param data decoded frame
  * @param data_size size of the decoded frame
- * @param buf input buffer
- * @param buf_size input buffer size
  * @return 0 success, -1 on error
  */
 static int escape124_decode_frame(AVCodecContext *avctx,

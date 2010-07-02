@@ -243,8 +243,6 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
  * @param image image to paint the mouse pointer to
  * @param s context used to retrieve original grabbing rectangle
  *          coordinates
- * @param x Mouse pointer coordinate
- * @param y Mouse pointer coordinate
  */
 static void
 paint_mouse_pointer(XImage *image, struct x11_grab *s)

@@ -1453,8 +1453,6 @@ static void apply_intensity_stereo(ChannelElement *cpe, int ms_present)
 /**
  * Decode a channel_pair_element; reference: table 4.4.
  *
- * @param   elem_id Identifies the instance of a syntax element.
- *
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static int decode_cpe(AACContext *ac, GetBitContext *gb, ChannelElement *cpe)
@@ -1495,8 +1493,6 @@ static int decode_cpe(AACContext *ac, GetBitContext *gb, ChannelElement *cpe)
 
 /**
  * Decode coupling_channel_element; reference: table 4.8.
- *
- * @param   elem_id Identifies the instance of a syntax element.
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
@@ -1864,7 +1860,6 @@ static void apply_independent_coupling(AACContext *ac,
 /**
  * channel coupling transformation interface
  *
- * @param   index   index into coupling gain array
  * @param   apply_coupling_method   pointer to (in)dependent coupling function
  */
 static void apply_channel_coupling(AACContext *ac, ChannelElement *cc,

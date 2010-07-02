@@ -942,7 +942,6 @@ static void synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int l
  * This is similar to process_subpacket_9, but for a single channel and for element [0]
  * same VLC tables as process_subpacket_9 are used.
  *
- * @param q         context
  * @param quantized_coeffs    pointer to quantized_coeffs[ch][0]
  * @param gb        bitreader context
  * @param length    packet length in bits
