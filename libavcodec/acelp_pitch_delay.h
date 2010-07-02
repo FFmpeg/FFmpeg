@@ -221,7 +221,7 @@ int16_t ff_acelp_decode_gain_code(
  * Calculate fixed gain (part of section 6.1.3 of AMR spec)
  *
  * @param fixed_gain_factor gain correction factor
- * @param fixed_energy decoded algebraic codebook vector energy
+ * @param fixed_mean_energy mean decoded algebraic codebook vector energy
  * @param prediction_error vector of the quantified predictor errors of
  *        the four previous subframes. It is updated by this function.
  * @param energy_mean desired mean innovation energy
