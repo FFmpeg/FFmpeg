@@ -429,7 +429,7 @@ int ff_wma_end(AVCodecContext *avctx)
 
 /**
  * Decode an uncompressed coefficient.
- * @param s codec context
+ * @param gb GetBitContext
  * @return the decoded coefficient
  */
 unsigned int ff_wma_get_large_val(GetBitContext* gb)
