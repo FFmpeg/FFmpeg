@@ -393,7 +393,7 @@ static inline void rv34_dequant4x4_16x16(DCTELEM *block, int Qdc, int Q)
 
 
 /**
- * @defgroup bitstream RV30/40 bitstream parsing
+ * @defgroup rv3040_bitstream RV30/40 bitstream parsing
  * @{
  */
 
