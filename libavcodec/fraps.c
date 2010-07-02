@@ -23,7 +23,7 @@
 /**
  * @file
  * Lossless Fraps 'FPS1' decoder
- * @author Roine Gustafsson <roine at users sf net>
+ * @author Roine Gustafsson (roine at users sf net)
  * @author Konstantin Shishkov
  *
  * Codec algorithm for version 0 is taken from Transcode <www.transcoding.org>

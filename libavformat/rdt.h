@@ -85,7 +85,7 @@ void ff_rdt_subscribe_rule(char *cmd, int size,
  * @param stream_id will be set to the stream ID this packet belongs to
  * @param is_keyframe will be whether this packet belongs to a keyframe
  * @param timestamp will be set to the timestamp of the packet
- * @return the amount of bytes consumed, or <0 on error
+ * @return the amount of bytes consumed, or negative on error
  */
 int ff_rdt_parse_header(const uint8_t *buf, int len,
                         int *set_id, int *seq_no, int *stream_id,

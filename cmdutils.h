@@ -124,7 +124,7 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
 /**
  * Parse the command line arguments.
  * @param options Array with the definitions required to interpret every
- * option of the form: -<option_name> [<argument>]
+ * option of the form: -option_name [argument]
  * @param parse_arg_function Name of the function called to process every
  * argument without a leading option name flag. NULL if such arguments do
  * not have to be processed.

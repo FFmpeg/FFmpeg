@@ -140,14 +140,14 @@ rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
 
     /**
      * Layout of the MLTI chunk:
-     * 4:MLTI
-     * 2:<number of streams>
+     * 4: MLTI
+     * 2: number of streams
      * Then for each stream ([number_of_streams] times):
-     *     2:<mdpr index>
-     * 2:<number of mdpr chunks>
+     *     2: mdpr index
+     * 2: number of mdpr chunks
      * Then for each mdpr chunk ([number_of_mdpr_chunks] times):
-     *     4:<size>
-     *     [size]:<data>
+     *     4: size
+     *     [size]: data
      * we skip MDPR chunks until we reach the one of the stream
      * we're interested in, and forward that ([size]+[data]) to
      * the RM demuxer to parse the stream-specific header data.
