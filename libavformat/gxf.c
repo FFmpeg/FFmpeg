@@ -191,7 +191,7 @@ static AVRational fps_tag2avr(int32_t fps) {
 
 /**
  * \brief convert UMF attributes flags to AVRational fps
- * \param fps fps value from flags
+ * \param flags UMF flags to convert
  * \return fps as AVRational, or 0 / 0 if unknown
  */
 static AVRational fps_umf2avr(uint32_t flags) {
