@@ -364,7 +364,7 @@ static av_cold int cook_decode_close(AVCodecContext *avctx)
 /**
  * Fill the gain array for the timedomain quantization.
  *
- * @param q                 pointer to the COOKContext
+ * @param gb        pointer to the GetBitContext
  * @param gaininfo  array of gain indexes
  */
 
