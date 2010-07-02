@@ -43,7 +43,6 @@ static AVCRC av_crc_table[AV_CRC_MAX][257];
 /**
  * Initialize a CRC table.
  * @param ctx must be an array of size sizeof(AVCRC)*257 or sizeof(AVCRC)*1024
- * @param cts_size size of ctx in bytes
  * @param le If 1, the lowest bit represents the coefficient for the highest
  *           exponent of the corresponding polynomial (both for poly and
  *           actual CRC).
@@ -54,6 +53,7 @@ static AVCRC av_crc_table[AV_CRC_MAX][257];
  * @param bits number of bits for the CRC
  * @param poly generator polynomial without the x**bits coefficient, in the
  *             representation as specified by le
+ * @param ctx_size size of ctx in bytes
  * @return <0 on failure
  */
 int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size){
