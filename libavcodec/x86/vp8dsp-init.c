@@ -54,6 +54,18 @@ extern void ff_put_vp8_epel8_v6_sse2  (uint8_t *dst, int dststride,
                                        uint8_t *src, int srcstride,
                                        int height, int mx, int my);
 
+extern void ff_put_vp8_epel4_h4_ssse3 (uint8_t *dst, int dststride,
+                                       uint8_t *src, int srcstride,
+                                       int height, int mx, int my);
+extern void ff_put_vp8_epel4_h6_ssse3 (uint8_t *dst, int dststride,
+                                       uint8_t *src, int srcstride,
+                                       int height, int mx, int my);
+extern void ff_put_vp8_epel4_v4_ssse3 (uint8_t *dst, int dststride,
+                                       uint8_t *src, int srcstride,
+                                       int height, int mx, int my);
+extern void ff_put_vp8_epel4_v6_ssse3 (uint8_t *dst, int dststride,
+                                       uint8_t *src, int srcstride,
+                                       int height, int mx, int my);
 extern void ff_put_vp8_epel8_h4_ssse3 (uint8_t *dst, int dststride,
                                        uint8_t *src, int srcstride,
                                        int height, int mx, int my);
@@ -173,6 +185,11 @@ HVTAPSSE2(6, 4, 8)
 HVTAPSSE2(6, 6, 8)
 HVTAPSSE2(6, 6, 16)
 
+HVTAP(ssse3, 16, 4, 4, 4, 8)
+HVTAP(ssse3, 16, 4, 6, 4, 8)
+HVTAP(ssse3, 16, 6, 4, 4, 8)
+HVTAP(ssse3, 16, 6, 6, 4, 8)
+
 #define HVBILIN(OPT, ALIGN, SIZE, MAXHEIGHT) \
 static void ff_put_vp8_bilinear ## SIZE ## _hv_ ## OPT( \
     uint8_t *dst, int dststride, uint8_t *src, \
@@ -264,6 +281,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
     if (mm_flags & FF_MM_SSSE3) {
         VP8_LUMA_MC_FUNC(0, 16, ssse3);
         VP8_MC_FUNC(1, 8, ssse3);
+        VP8_MC_FUNC(2, 4, ssse3);
         VP8_BILINEAR_MC_FUNC(0, 16, ssse3);
         VP8_BILINEAR_MC_FUNC(1, 8, ssse3);
     }

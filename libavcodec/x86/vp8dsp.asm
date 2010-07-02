@@ -44,14 +44,14 @@ sixtap_filter_hw_m:  times 4 dw   2, -11
                      times 4 dw  36, 108
                      times 4 dw -11,   2
 
-fourtap_filter_hb_m: times 8 db  -6,  -1
-                     times 8 db 123,  12
-                     times 8 db  -9,  -6
-                     times 8 db  93,  50
-                     times 8 db  -6,  -9
-                     times 8 db  50,  93
-                     times 8 db  -1,  -6
-                     times 8 db  12, 123
+fourtap_filter_hb_m: times 8 db  -6, 123
+                     times 8 db  12,  -1
+                     times 8 db  -9,  93
+                     times 8 db  50,  -6
+                     times 8 db  -6,  50
+                     times 8 db  93,  -9
+                     times 8 db  -1,  12
+                     times 8 db 123,  -6
 
 sixtap_filter_hb_m:  times 8 db   2,   1
                      times 8 db -11, 108
@@ -136,7 +136,7 @@ bilinear_filter_vb_m: times 8 db 7, 1
 %endif
 
 filter_h2_shuf:  db 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6, 6,  7,  7,  8
-filter_h4_shuf:  db 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5,  8, 6,  9,  7, 10
+filter_h4_shuf:  db 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7,  8, 8,  9,  9, 10
 
 filter_h6_shuf1: db 0, 5, 1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 6, 11,  7, 12
 filter_h6_shuf2: db 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,  7, 7,  8,  8,  9
@@ -158,6 +158,171 @@ SECTION .text
 ;                                              uint8_t *src, int srcstride,
 ;                                              int height,   int mx, int my);
 ;-----------------------------------------------------------------------------
+
+%macro FILTER_SSSE3 3
+cglobal put_vp8_epel%1_h6_ssse3, 6, 6, %2
+    lea      r5d, [r5*3]
+    mova      m3, [filter_h6_shuf2]
+    mova      m4, [filter_h6_shuf3]
+%ifdef PIC
+    lea      r11, [sixtap_filter_hb_m]
+%endif
+    mova      m5, [sixtap_filter_hb+r5*8-48] ; set up 6tap filter in bytes
+    mova      m6, [sixtap_filter_hb+r5*8-32]
+    mova      m7, [sixtap_filter_hb+r5*8-16]
+
+.nextrow
+    movu      m0, [r2-2]
+    mova      m1, m0
+    mova      m2, m0
+%ifidn %1, 4
+; For epel4, we need 9 bytes, but only 8 get loaded; to compensate, do the
+; shuffle with a memory operand
+    punpcklbw m0, [r2+3]
+%else
+    pshufb    m0, [filter_h6_shuf1]
+%endif
+    pshufb    m1, m3
+    pshufb    m2, m4
+    pmaddubsw m0, m5
+    pmaddubsw m1, m6
+    pmaddubsw m2, m7
+    paddsw    m0, m1
+    paddsw    m0, m2
+    paddsw    m0, [pw_64]
+    psraw     m0, 7
+    packuswb  m0, m0
+    movh    [r0], m0        ; store
+
+    ; go to next line
+    add       r0, r1
+    add       r2, r3
+    dec       r4            ; next row
+    jg .nextrow
+    REP_RET
+
+cglobal put_vp8_epel%1_h4_ssse3, 6, 6, %3
+    shl      r5d, 4
+    mova      m2, [pw_64]
+    mova      m3, [filter_h2_shuf]
+    mova      m4, [filter_h4_shuf]
+%ifdef PIC
+    lea      r11, [fourtap_filter_hb_m]
+%endif
+    mova      m5, [fourtap_filter_hb+r5-16] ; set up 4tap filter in bytes
+    mova      m6, [fourtap_filter_hb+r5]
+
+.nextrow
+    movu      m0, [r2-1]
+    mova      m1, m0
+    pshufb    m0, m3
+    pshufb    m1, m4
+    pmaddubsw m0, m5
+    pmaddubsw m1, m6
+    paddsw    m0, m2
+    paddsw    m0, m1
+    psraw     m0, 7
+    packuswb  m0, m0
+    movh    [r0], m0        ; store
+
+    ; go to next line
+    add       r0, r1
+    add       r2, r3
+    dec       r4            ; next row
+    jg .nextrow
+    REP_RET
+
+cglobal put_vp8_epel%1_v4_ssse3, 7, 7, %2
+    shl      r6d, 4
+%ifdef PIC
+    lea      r11, [fourtap_filter_hb_m]
+%endif
+    mova      m5, [fourtap_filter_hb+r6-16]
+    mova      m6, [fourtap_filter_hb+r6]
+    mova      m7, [pw_64]
+
+    ; read 3 lines
+    sub       r2, r3
+    movh      m0, [r2]
+    movh      m1, [r2+  r3]
+    movh      m2, [r2+2*r3]
+    add       r2, r3
+
+.nextrow
+    movh      m3, [r2+2*r3]                ; read new row
+    mova      m4, m0
+    mova      m0, m1
+    punpcklbw m4, m1
+    mova      m1, m2
+    punpcklbw m2, m3
+    pmaddubsw m4, m5
+    pmaddubsw m2, m6
+    paddsw    m4, m2
+    mova      m2, m3
+    paddsw    m4, m7
+    psraw     m4, 7
+    packuswb  m4, m4
+    movh    [r0], m4
+
+    ; go to next line
+    add        r0, r1
+    add        r2, r3
+    dec        r4                          ; next row
+    jg .nextrow
+    REP_RET
+
+cglobal put_vp8_epel%1_v6_ssse3, 7, 7, %2
+    lea      r6d, [r6*3]
+%ifdef PIC
+    lea      r11, [sixtap_filter_hb_m]
+%endif
+    lea       r6, [sixtap_filter_hb+r6*8]
+
+    ; read 5 lines
+    sub       r2, r3
+    sub       r2, r3
+    movh      m0, [r2]
+    movh      m1, [r2+r3]
+    movh      m2, [r2+r3*2]
+    lea       r2, [r2+r3*2]
+    add       r2, r3
+    movh      m3, [r2]
+    movh      m4, [r2+r3]
+
+.nextrow
+    movh      m5, [r2+2*r3]                ; read new row
+    mova      m6, m0
+    punpcklbw m6, m5
+    mova      m0, m1
+    punpcklbw m1, m2
+    mova      m7, m3
+    punpcklbw m7, m4
+    pmaddubsw m6, [r6-48]
+    pmaddubsw m1, [r6-32]
+    pmaddubsw m7, [r6-16]
+    paddsw    m6, m1
+    paddsw    m6, m7
+    mova      m1, m2
+    paddsw    m6, [pw_64]
+    mova      m2, m3
+    psraw     m6, 7
+    mova      m3, m4
+    packuswb  m6, m6
+    mova      m4, m5
+    movh    [r0], m6
+
+    ; go to next line
+    add        r0, r1
+    add        r2, r3
+    dec        r4                          ; next row
+    jg .nextrow
+    REP_RET
+%endmacro
+
+INIT_MMX
+FILTER_SSSE3 4, 0, 0
+INIT_XMM
+FILTER_SSSE3 8, 8, 7
 
 ; 4x4 block, H-only 4-tap filter
 cglobal put_vp8_epel4_h4_mmxext, 6, 6
@@ -383,72 +548,6 @@ cglobal put_vp8_epel8_h6_sse2, 6, 6, 8
     jg .nextrow
     REP_RET
 
-cglobal put_vp8_epel8_h4_ssse3, 6, 6, 7
-    shl      r5d, 4
-    mova      m2, [pw_64]
-    mova      m3, [filter_h4_shuf]
-    mova      m4, [filter_h6_shuf2]
-%ifdef PIC
-    lea      r11, [fourtap_filter_hb_m]
-%endif
-    mova      m5, [fourtap_filter_hb+r5-16] ; set up 4tap filter in bytes
-    mova      m6, [fourtap_filter_hb+r5]
-
-.nextrow
-    movu      m0, [r2-1]
-    mova      m1, m0
-    pshufb    m0, m3
-    pshufb    m1, m4
-    pmaddubsw m0, m5
-    pmaddubsw m1, m6
-    paddsw    m0, m2
-    paddsw    m0, m1
-    psraw     m0, 7
-    packuswb  m0, m0
-    movh    [r0], m0        ; store
-
-    ; go to next line
-    add       r0, r1
-    add       r2, r3
-    dec       r4            ; next row
-    jg .nextrow
-    REP_RET
-
-cglobal put_vp8_epel8_h6_ssse3, 6, 6, 8
-    lea      r5d, [r5*3]
-    mova      m3, [filter_h6_shuf1]
-    mova      m4, [filter_h6_shuf2]
-%ifdef PIC
-    lea      r11, [sixtap_filter_hb_m]
-%endif
-    mova      m5, [sixtap_filter_hb+r5*8-48] ; set up 6tap filter in bytes
-    mova      m6, [sixtap_filter_hb+r5*8-32]
-    mova      m7, [sixtap_filter_hb+r5*8-16]
-
-.nextrow
-    movu      m0, [r2-2]
-    mova      m1, m0
-    mova      m2, m0
-    pshufb    m0, m3
-    pshufb    m1, m4
-    pshufb    m2, [filter_h6_shuf3]
-    pmaddubsw m0, m5
-    pmaddubsw m1, m6
-    pmaddubsw m2, m7
-    paddsw    m0, m1
-    paddsw    m0, m2
-    paddsw    m0, [pw_64]
-    psraw     m0, 7
-    packuswb  m0, m0
-    movh    [r0], m0        ; store
-
-    ; go to next line
-    add       r0, r1
-    add       r2, r3
-    dec       r4            ; next row
-    jg .nextrow
-    REP_RET
-
 %macro FILTER_V 3
 ; 4x4 block, V-only 4-tap filter
 cglobal put_vp8_epel%2_v4_%1, 7, 7, %3
@@ -572,92 +671,6 @@ INIT_MMX
 FILTER_V mmxext, 4, 0
 INIT_XMM
 FILTER_V sse2,   8, 8
-
-cglobal put_vp8_epel8_v4_ssse3, 7, 7, 8
-    shl      r6d, 4
-%ifdef PIC
-    lea      r11, [fourtap_filter_hb_m]
-%endif
-    mova      m5, [fourtap_filter_hb+r6-16]
-    mova      m6, [fourtap_filter_hb+r6]
-    mova      m7, [pw_64]
-
-    ; read 3 lines
-    sub       r2, r3
-    movh      m0, [r2]
-    movh      m1, [r2+  r3]
-    movh      m2, [r2+2*r3]
-    add       r2, r3
-
-.nextrow
-    movh      m3, [r2+2*r3]                ; read new row
-    mova      m4, m0
-    mova      m0, m1
-    punpcklbw m4, m3
-    punpcklbw m1, m2
-    pmaddubsw m4, m5
-    pmaddubsw m1, m6
-    paddsw    m4, m1
-    mova      m1, m2
-    paddsw    m4, m7
-    mova      m2, m3
-    psraw     m4, 7
-    packuswb  m4, m4
-    movh    [r0], m4
-
-    ; go to next line
-    add        r0, r1
-    add        r2, r3
-    dec        r4                          ; next row
-    jg .nextrow
-    REP_RET
-
-cglobal put_vp8_epel8_v6_ssse3, 7, 7, 8
-    lea      r6d, [r6*3]
-%ifdef PIC
-    lea      r11, [sixtap_filter_hb_m]
-%endif
-    lea       r6, [sixtap_filter_hb+r6*8]
-
-    ; read 5 lines
-    sub       r2, r3
-    sub       r2, r3
-    movh      m0, [r2]
-    movh      m1, [r2+r3]
-    movh      m2, [r2+r3*2]
-    lea       r2, [r2+r3*2]
-    add       r2, r3
-    movh      m3, [r2]
-    movh      m4, [r2+r3]
-
-.nextrow
-    movh      m5, [r2+2*r3]                ; read new row
-    mova      m6, m0
-    punpcklbw m6, m5
-    mova      m0, m1
-    punpcklbw m1, m2
-    mova      m7, m3
-    punpcklbw m7, m4
-    pmaddubsw m6, [r6-48]
-    pmaddubsw m1, [r6-32]
-    pmaddubsw m7, [r6-16]
-    paddsw    m6, m1
-    paddsw    m6, m7
-    mova      m1, m2
-    paddsw    m6, [pw_64]
-    mova      m2, m3
-    psraw     m6, 7
-    mova      m3, m4
-    packuswb  m6, m6
-    mova      m4, m5
-    movh    [r0], m6
-
-    ; go to next line
-    add        r0, r1
-    add        r2, r3
-    dec        r4                          ; next row
-    jg .nextrow
-    REP_RET
 
 %macro FILTER_BILINEAR 3
 cglobal put_vp8_bilinear%2_v_%1, 7,7,%3
