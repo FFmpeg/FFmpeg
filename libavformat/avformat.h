@@ -396,6 +396,10 @@ typedef struct AVIndexEntry {
 #define AV_DISPOSITION_COMMENT   0x0008
 #define AV_DISPOSITION_LYRICS    0x0010
 #define AV_DISPOSITION_KARAOKE   0x0020
+/** Track should be used during playback by default.
+    Useful for subtitle track that should be displayed
+    even when user did not explicitly ask for subtitles. */
+#define AV_DISPOSITION_FORCED    0x0040
 
 /**
  * Stream structure.

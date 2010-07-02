@@ -139,6 +139,7 @@ typedef struct {
     double time_scale;
     uint64_t default_duration;
     uint64_t flag_default;
+    uint64_t flag_forced;
     MatroskaTrackVideo video;
     MatroskaTrackAudio audio;
     EbmlList encodings;
@@ -336,11 +337,11 @@ static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKDEFAULTDURATION, EBML_UINT, 0, offsetof(MatroskaTrack,default_duration) },
     { MATROSKA_ID_TRACKTIMECODESCALE,   EBML_FLOAT,0, offsetof(MatroskaTrack,time_scale), {.f=1.0} },
     { MATROSKA_ID_TRACKFLAGDEFAULT,     EBML_UINT, 0, offsetof(MatroskaTrack,flag_default), {.u=1} },
+    { MATROSKA_ID_TRACKFLAGFORCED,      EBML_UINT, 0, offsetof(MatroskaTrack,flag_forced), {.u=0} },
     { MATROSKA_ID_TRACKVIDEO,           EBML_NEST, 0, offsetof(MatroskaTrack,video), {.n=matroska_track_video} },
     { MATROSKA_ID_TRACKAUDIO,           EBML_NEST, 0, offsetof(MatroskaTrack,audio), {.n=matroska_track_audio} },
     { MATROSKA_ID_TRACKCONTENTENCODINGS,EBML_NEST, 0, 0, {.n=matroska_track_encodings} },
     { MATROSKA_ID_TRACKFLAGENABLED,     EBML_NONE },
-    { MATROSKA_ID_TRACKFLAGFORCED,      EBML_NONE },
     { MATROSKA_ID_TRACKFLAGLACING,      EBML_NONE },
     { MATROSKA_ID_CODECNAME,            EBML_NONE },
     { MATROSKA_ID_CODECDECODEALL,       EBML_NONE },
@@ -1391,6 +1392,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
         if (track->flag_default)
             st->disposition |= AV_DISPOSITION_DEFAULT;
+        if (track->flag_forced)
+            st->disposition |= AV_DISPOSITION_FORCED;
 
         if (track->default_duration)
             av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
