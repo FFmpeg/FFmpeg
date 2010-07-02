@@ -747,8 +747,7 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
  * @param i initial coeff index, 0 unless a separate DC block is coded
  * @param zero_nhood the initial prediction context for number of surrounding
  *                   all-zero blocks (only left/top, so 0-2)
- * @param qmul[0] dc dequant factor
- * @param qmul[1] ac dequant factor
+ * @param qmul array holding the dc/ac dequant factor at position 0/1
  * @return 0 if no coeffs were decoded
  *         otherwise, the index of the last coeff decoded plus one
  */
