@@ -2496,6 +2496,8 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
 
     sample = av_index_search_timestamp(st, timestamp, flags);
     dprintf(s, "stream %d, timestamp %"PRId64", sample %d\n", st->index, timestamp, sample);
+    if (sample < 0 && st->nb_index_entries && timestamp < st->index_entries[0].timestamp)
+        sample = 0;
     if (sample < 0) /* not sure what to do */
         return -1;
     sc->current_sample = sample;
