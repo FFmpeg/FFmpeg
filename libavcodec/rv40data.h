@@ -65,7 +65,7 @@ static const uint8_t rv40_luma_dc_quant[2][32] = {
 };
 
 /**
- * @begingroup loopfilter coefficients used by the RV40 loop filter
+ * @defgroup loopfilter coefficients used by the RV40 loop filter
  * @{
  */
 /**
