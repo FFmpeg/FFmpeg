@@ -1776,7 +1776,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 if (matroska->prev_pkt &&
                     timecode != AV_NOPTS_VALUE &&
                     matroska->prev_pkt->pts == timecode &&
-                    matroska->prev_pkt->stream_index == st->index)
+                    matroska->prev_pkt->stream_index == st->index &&
+                    st->codec->codec_id == CODEC_ID_SSA)
                     matroska_merge_packets(matroska->prev_pkt, pkt);
                 else {
                     dynarray_add(&matroska->packets,&matroska->num_packets,pkt);
