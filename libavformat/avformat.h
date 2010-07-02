@@ -1038,7 +1038,7 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp,
  * @param flags flags
  * @return >=0 on success, error code otherwise
  *
- * @NOTE This is part of the new seek API which is still under construction.
+ * @note This is part of the new seek API which is still under construction.
  *       Thus do not use this yet. It may change at any time, do not expect
  *       ABI compatibility yet!
  */
