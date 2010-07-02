@@ -50,7 +50,7 @@ typedef struct Rl2Context {
 /**
  * Run Length Decode a single 320x200 frame
  * @param s rl2 context
- * @param buf input buffer
+ * @param in input buffer
  * @param size input buffer size
  * @param out ouput buffer
  * @param stride stride of the output buffer

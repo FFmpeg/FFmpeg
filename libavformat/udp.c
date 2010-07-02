@@ -256,7 +256,7 @@ static int udp_port(struct sockaddr_storage *addr, int addr_len)
  *         'pkt_size=n'  : set max packet size
  *         'reuse=1'     : enable reusing the socket
  *
- * @param s1 media file context
+ * @param h media file context
  * @param uri of the remote server
  * @return zero if no error.
  */
@@ -280,7 +280,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
 
 /**
  * Return the local port used by the UDP connection
- * @param s1 media file context
+ * @param h media file context
  * @return the local port number
  */
 int udp_get_local_port(URLContext *h)

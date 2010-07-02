@@ -166,9 +166,9 @@ static void IMLT(float *pInput, float *pOutput, int odd_band)
 /**
  * Atrac 3 indata descrambling, only used for data coming from the rm container
  *
- * @param in        pointer to 8 bit array of indata
- * @param bits      amount of bits
+ * @param inbuffer  pointer to 8 bit array of indata
  * @param out       pointer to 8 bit array of outdata
+ * @param bytes     amount of bytes
  */
 
 static int decode_bytes(const uint8_t* inbuffer, uint8_t* out, int bytes){

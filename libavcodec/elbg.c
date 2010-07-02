@@ -249,7 +249,7 @@ static void update_utility_and_n_cb(elbg_data *elbg, int idx, int newutility)
  * and update elbg->error, elbg->utility and elbg->nearest_cb.
  *
  * @param elbg  Internal elbg data
- * @param indexes      {luc (low utility cell, huc (high utility cell), cluc (closest cell to low utility cell)}
+ * @param idx   {luc (low utility cell, huc (high utility cell), cluc (closest cell to low utility cell)}
  */
 static void try_shift_candidate(elbg_data *elbg, int idx[3])
 {

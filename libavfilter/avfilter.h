@@ -190,7 +190,7 @@ struct AVFilterFormats
 /**
  * Create a list of supported formats. This is intended for use in
  * AVFilter->query_formats().
- * @param pix_fmt list of pixel formats, terminated by PIX_FMT_NONE
+ * @param pix_fmts list of pixel formats, terminated by PIX_FMT_NONE
  * @return the format list, with no existing references
  */
 AVFilterFormats *avfilter_make_format_list(const enum PixelFormat *pix_fmts);

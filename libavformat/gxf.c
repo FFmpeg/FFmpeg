@@ -71,7 +71,7 @@ static int gxf_probe(AVProbeData *p) {
 /**
  * \brief gets the stream index for the track with the specified id, creates new
  *        stream if not found
- * \param stream id of stream to find / add
+ * \param id     id of stream to find / add
  * \param format stream format identifier
  */
 static int get_sindex(AVFormatContext *s, int id, int format) {

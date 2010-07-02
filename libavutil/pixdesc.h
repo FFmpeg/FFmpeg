@@ -97,7 +97,7 @@ extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
  * pixel format component c to dst.
  *
  * @param data the array containing the pointers to the planes of the image
- * @param linesizes the array containing the linesizes of the image
+ * @param linesize the array containing the linesizes of the image
  * @param desc the pixel format descriptor for the image
  * @param x the horizontal coordinate of the first pixel to read
  * @param y the vertical coordinate of the first pixel to read
@@ -118,7 +118,7 @@ void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4],
  * @param src array containing the values to write
  * @param data the array containing the pointers to the planes of the
  * image to write into. It is supposed to be zeroed.
- * @param linesizes the array containing the linesizes of the image
+ * @param linesize the array containing the linesizes of the image
  * @param desc the pixel format descriptor for the image
  * @param x the horizontal coordinate of the first pixel to write
  * @param y the vertical coordinate of the first pixel to write

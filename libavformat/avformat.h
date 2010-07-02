@@ -1259,7 +1259,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
  *
  * @param s media file handle
  * @param out the interleaved packet will be output here
- * @param in the input packet
+ * @param pkt the input packet
  * @param flush 1 if no further packets are available as input and all
  *              remaining packets should be output
  * @return 1 if a packet was output, 0 if no packet could be output,

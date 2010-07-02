@@ -131,7 +131,7 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *p,
 /**
  * Print information and contents of RTMP packet.
  *
- * @param h          output context
+ * @param ctx        output context
  * @param p          packet to dump
  */
 void ff_rtmp_packet_dump(void *ctx, RTMPPacket *p);

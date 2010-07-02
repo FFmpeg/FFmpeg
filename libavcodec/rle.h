@@ -28,7 +28,7 @@
  *                                                      Value before raw bytes is      (count ^ xor_raw) + add_raw.
  * @param outbuf Output buffer
  * @param out_size Maximum output size
- * @param ptr Input buffer
+ * @param inbuf Input buffer
  * @param bpp Bytes per pixel
  * @param w Image width
  * @return Size of output in bytes, or -1 if larger than out_size

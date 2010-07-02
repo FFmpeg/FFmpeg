@@ -52,7 +52,7 @@ typedef struct RTPContext {
  * get the local port first, then you must call this function to set
  * the remote server address.
  *
- * @param s1 media file context
+ * @param h media file context
  * @param uri of the remote server
  * @return zero if no error.
  */
@@ -317,7 +317,7 @@ static int rtp_close(URLContext *h)
 
 /**
  * Return the local rtp port used by the RTP connection
- * @param s1 media file context
+ * @param h media file context
  * @return the local port number
  */
 
@@ -329,7 +329,7 @@ int rtp_get_local_rtp_port(URLContext *h)
 
 /**
  * Return the local rtp port used by the RTP connection
- * @param s1 media file context
+ * @param h media file context
  * @return the local port number
  */
 
@@ -341,7 +341,7 @@ int rtp_get_local_port(URLContext *h)
 
 /**
  * Return the local rtcp port used by the RTP connection
- * @param s1 media file context
+ * @param h media file context
  * @return the local port number
  */
 

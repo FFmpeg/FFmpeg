@@ -631,8 +631,8 @@ static inline void prefetch_motion(MpegEncContext *s, uint8_t **pix, int dir){
  * @param dest_cr chroma cr/v destination pointer
  * @param dir direction (0->forward, 1->backward)
  * @param ref_picture array[3] of pointers to the 3 planes of the reference picture
- * @param pic_op halfpel motion compensation function (average or put normally)
- * @param pic_op qpel motion compensation function (average or put normally)
+ * @param pix_op halfpel motion compensation function (average or put normally)
+ * @param qpix_op qpel motion compensation function (average or put normally)
  * the motion vectors are taken from s->mv and the MV type from s->mv_type
  */
 static av_always_inline void MPV_motion_internal(MpegEncContext *s,

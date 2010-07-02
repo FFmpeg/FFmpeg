@@ -708,7 +708,7 @@ static void interpolate_float(COOKContext *q, float* buffer,
  * Apply transform window, overlap buffers.
  *
  * @param q                 pointer to the COOKContext
- * @param inbuffer          pointer to the mltcoefficients
+ * @param buffer1           pointer to the mltcoefficients
  * @param gains_ptr         current and previous gains
  * @param previous_buffer   pointer to the previous buffer to be used for overlapping
  */
@@ -877,7 +877,7 @@ static void joint_decode(COOKContext *q, COOKSubpacket *p, float* mlt_buffer1,
  *
  * @param q                 pointer to the COOKContext
  * @param inbuffer          pointer to raw stream data
- * @param gain_ptr          array of current/prev gain pointers
+ * @param gains_ptr         array of current/prev gain pointers
  */
 
 static inline void
@@ -923,7 +923,7 @@ saturate_output_float (COOKContext *q, int chan, int16_t *out)
  *
  * @param q                 pointer to the COOKContext
  * @param decode_buffer     pointer to the mlt coefficients
- * @param gain_ptr          array of current/prev gain pointers
+ * @param gains             array of current/prev gain pointers
  * @param previous_buffer   pointer to the previous buffer to be used for overlapping
  * @param out               pointer to the output buffer
  * @param chan              0: left or single channel, 1: right channel
