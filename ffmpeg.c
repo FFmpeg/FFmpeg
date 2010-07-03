@@ -460,6 +460,9 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         avfilter_graph_add_filter(graph, last_filter);
     }
 
+    snprintf(args, sizeof(args), "flags=0x%X", (int)av_get_int(sws_opts, "sws_flags", NULL));
+    graph->scale_sws_opts = av_strdup(args);
+
     if (vfilters) {
         AVFilterInOut *outputs = av_malloc(sizeof(AVFilterInOut));
         AVFilterInOut *inputs  = av_malloc(sizeof(AVFilterInOut));
@@ -481,9 +484,6 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         if (avfilter_link(last_filter, 0, ist->out_video_filter, 0) < 0)
             return -1;
     }
-
-    snprintf(args, sizeof(args), "flags=0x%X", (int)av_get_int(sws_opts, "sws_flags", NULL));
-    graph->scale_sws_opts = av_strdup(args);
 
     /* configure all the filter links */
     if (avfilter_graph_check_validity(graph, NULL))
