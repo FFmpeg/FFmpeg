@@ -2173,6 +2173,8 @@ static int av_transcode(AVFormatContext **output_files,
             if(av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base) && av_q2d(ist->st->time_base) < 1.0/1000){
                 codec->time_base = icodec->time_base;
                 codec->time_base.num *= icodec->ticks_per_frame;
+                av_reduce(&codec->time_base.num, &codec->time_base.den,
+                          codec->time_base.num, codec->time_base.den, INT_MAX);
             }else
                 codec->time_base = ist->st->time_base;
             switch(codec->codec_type) {
