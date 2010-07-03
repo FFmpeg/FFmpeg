@@ -1591,9 +1591,9 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
 
     ref->w = codec->width;
     ref->h = codec->height;
-    for(i = 0; i < 3; i ++) {
-        unsigned hshift = i == 0 ? 0 : av_pix_fmt_descriptors[ref->pic->format].log2_chroma_w;
-        unsigned vshift = i == 0 ? 0 : av_pix_fmt_descriptors[ref->pic->format].log2_chroma_h;
+    for(i = 0; i < 4; i ++) {
+        unsigned hshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->pic->format].log2_chroma_w : 0;
+        unsigned vshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->pic->format].log2_chroma_h : 0;
 
         if (ref->data[i]) {
             ref->data[i]    += (edge >> hshift) + ((edge * ref->linesize[i]) >> vshift);
