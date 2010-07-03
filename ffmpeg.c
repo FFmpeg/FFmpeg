@@ -662,7 +662,7 @@ static void choose_sample_rate(AVStream *st, AVCodec *codec)
 {
     if(codec && codec->supported_samplerates){
         const int *p= codec->supported_samplerates;
-        int best;//=0;
+        int best=0;
         int best_dist=INT_MAX;
         for(; *p; p++){
             int dist= abs(st->codec->sample_rate - *p);
