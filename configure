@@ -2556,8 +2556,9 @@ enabled libschroedinger && add_cflags $(pkg-config --cflags schroedinger-1.0) &&
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
 enabled libtheora  && require  libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
-enabled libvpx     && require2 libvpx "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_dec_init_ver" -lvpx &&
-                      require2 libvpx "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver" -lvpx
+enabled libvpx     && check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx &&
+                      check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_enc_init_ver -lvpx ||
+                      die "ERROR: libvpx version must be >=0.9.1"
 enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 &&
                       { check_cpp_condition x264.h "X264_BUILD >= 98" ||
                         die "ERROR: libx264 version must be >= 0.98."; }
