@@ -2549,8 +2549,8 @@ enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut
 enabled libopencore_amrnb  && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb  && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopenjpeg && require libopenjpeg openjpeg.h opj_version -lopenjpeg
-enabled librtmp    && check_lib librtmp/rtmp.h RTMP_Socket $(pkg-config --libs librtmp) ||
-                        die "ERROR: librtmp not found or RTMP_Socket() missing, librtmp version must be >= 2.2.f"
+enabled librtmp    && { check_lib librtmp/rtmp.h RTMP_Socket $(pkg-config --libs librtmp) ||
+                        die "ERROR: librtmp not found or RTMP_Socket() missing, librtmp version must be >= 2.2.f"; }
 enabled libschroedinger && add_cflags $(pkg-config --cflags schroedinger-1.0) &&
                            require libschroedinger schroedinger/schro.h schro_init $(pkg-config --libs schroedinger-1.0)
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
