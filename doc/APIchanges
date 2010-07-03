@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-06-29 - r23885 - lavc 52.79.0
+  Added FF_COMPLIANCE_UNOFFICIAL and changed all instances of FF_COMPLIANCE_INOFFICIAL to use FF_COMPLIANCE_UNOFFICIAL
+
 2010-06-28 - r23835 - lavfi 1.20.1 - av_parse_color()
   Extend av_parse_color() syntax, make it accept an alpha value specifier and
   set the alpha value to 255 by default.

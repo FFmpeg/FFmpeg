@@ -688,7 +688,7 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
         }
         if(*p == -1
            && !(   st->codec->codec_id==CODEC_ID_MJPEG
-                && st->codec->strict_std_compliance <= FF_COMPLIANCE_INOFFICIAL
+                && st->codec->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL
                 && (   st->codec->pix_fmt == PIX_FMT_YUV420P
                     || st->codec->pix_fmt == PIX_FMT_YUV422P)))
             st->codec->pix_fmt = codec->pix_fmts[0];

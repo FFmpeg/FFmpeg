@@ -17,7 +17,7 @@ version <next>:
 - native VP8 decoder
 - RTSP tunneling over HTTP
 - RTP depacketization of SVQ3
-
+- -strict inofficial replaced by -strict unofficial
 
 
 version 0.6:
