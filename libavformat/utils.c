@@ -2281,8 +2281,6 @@ int av_find_stream_info(AVFormatContext *ic)
             }
             codec_info_duration[st->index] += pkt->duration;
         }
-            st->codec_info_nb_frames++;
-
         {
             int index= pkt->stream_index;
             int64_t last= last_dts[index];
@@ -2326,6 +2324,7 @@ int av_find_stream_info(AVFormatContext *ic)
         if (!has_codec_parameters(st->codec) || !has_decode_delay_been_guessed(st))
             try_decode_frame(st, pkt);
 
+        st->codec_info_nb_frames++;
         count++;
     }
 
