@@ -38,19 +38,6 @@
 extern void *ff_fft_dispatch_altivec[2][15];
 
 #if HAVE_GNU_AS
-// Convert from simd order to C order.
-static void swizzle(vec_f *z, int n)
-{
-    int i;
-    n >>= 1;
-    for (i = 0; i < n; i += 2) {
-        vec_f re = z[i];
-        vec_f im = z[i+1];
-        z[i]   = vec_mergeh(re, im);
-        z[i+1] = vec_mergel(re, im);
-    }
-}
-
 static av_always_inline void fft_dispatch(FFTContext *s, FFTComplex *z, int do_swizzle)
 {
     register vec_f  v14 __asm__("v14") = {0,0,0,0};
@@ -84,8 +71,6 @@ static av_always_inline void fft_dispatch(FFTContext *s, FFTComplex *z, int do_s
         : "lr","ctr","r0","r4","r5","r6","r7","r8","r9","r10","r11",
           "v0","v1","v2","v3","v4","v5","v6","v7","v8","v9","v10","v11","v12","v13"
     );
-    if (do_swizzle && s->nbits <= 4)
-        swizzle((vec_f*)z, 1<<s->nbits);
 }
 
 static void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z)

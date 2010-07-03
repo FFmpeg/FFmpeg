@@ -143,28 +143,53 @@
     vaddfp  \d0,\s0,\s1
 .endm
 
-fft4_altivec:
+.macro zip d0,d1,s0,s1
+    vmrghw  \d0,\s0,\s1
+    vmrglw  \d1,\s0,\s1
+.endm
+
+.macro def_fft4 interleave
+fft4\interleave\()_altivec:
     lvx    v0, 0,r3
     lvx    v1,r9,r3
     FFT4   v0,v1,v2,v3
+.ifnb \interleave
+    zip    v0,v1,v2,v3
+    stvx   v0, 0,r3
+    stvx   v1,r9,r3
+.else
     stvx   v2, 0,r3
     stvx   v3,r9,r3
+.endif
     blr
+.endm
 
-fft8_altivec:
+.macro def_fft8 interleave
+fft8\interleave\()_altivec:
     addi   r4,r3,32
     lvx    v0, 0,r3
     lvx    v1,r9,r3
     lvx    v2, 0,r4
     lvx    v3,r9,r4
     FFT8   v0,v1,v2,v3,v4,v5,v6,v7,v8
+.ifnb \interleave
+    zip    v4,v5,v0,v1
+    zip    v6,v7,v2,v3
+    stvx   v4, 0,r3
+    stvx   v5,r9,r3
+    stvx   v6, 0,r4
+    stvx   v7,r9,r4
+.else
     stvx   v0, 0,r3
     stvx   v1,r9,r3
     stvx   v2, 0,r4
     stvx   v3,r9,r4
+.endif
     blr
+.endm
 
-fft16_altivec:
+.macro def_fft16 interleave
+fft16\interleave\()_altivec:
     addi   r5,r3,64
     addi   r6,r3,96
     addi   r4,r3,32
@@ -190,17 +215,33 @@ fft16_altivec:
     BF     v11,v13,v9,v11
     BF     v0,v4,v0,v10
     BF     v3,v7,v3,v12
+    BF     v1,v5,v1,v11
+    BF     v2,v6,v2,v13
+.ifnb \interleave
+    zip     v8, v9,v0,v1
+    zip    v10,v11,v2,v3
+    zip    v12,v13,v4,v5
+    zip    v14,v15,v6,v7
+    stvx    v8, 0,r3
+    stvx    v9,r9,r3
+    stvx   v10, 0,r4
+    stvx   v11,r9,r4
+    stvx   v12, 0,r5
+    stvx   v13,r9,r5
+    stvx   v14, 0,r6
+    stvx   v15,r9,r6
+.else
     stvx   v0, 0,r3
     stvx   v4, 0,r5
     stvx   v3,r9,r4
     stvx   v7,r9,r6
-    BF     v1,v5,v1,v11
-    BF     v2,v6,v2,v13
     stvx   v1,r9,r3
     stvx   v5,r9,r5
     stvx   v2, 0,r4
     stvx   v6, 0,r6
+.endif
     blr
+.endm
 
 // void pass(float *z, float *wre, int n)
 .macro PASS interleave, suffix
@@ -297,6 +338,9 @@ fft\n\suffix\()_altivec:
 
 .macro DECL_FFTS interleave, suffix
     .text
+    def_fft4  \suffix
+    def_fft8  \suffix
+    def_fft16 \suffix
     PASS \interleave, \suffix
     DECL_FFT \suffix, 5,   32,   16,    8
     DECL_FFT \suffix, 6,   64,   32,   16
@@ -314,9 +358,9 @@ fft\n\suffix\()_altivec:
     .rodata
     .global EXTERN_ASM\()ff_fft_dispatch\suffix\()_altivec
 EXTERN_ASM\()ff_fft_dispatch\suffix\()_altivec:
-    PTR fft4_altivec
-    PTR fft8_altivec
-    PTR fft16_altivec
+    PTR fft4\suffix\()_altivec
+    PTR fft8\suffix\()_altivec
+    PTR fft16\suffix\()_altivec
     PTR fft32\suffix\()_altivec
     PTR fft64\suffix\()_altivec
     PTR fft128\suffix\()_altivec
