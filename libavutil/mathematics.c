@@ -78,7 +78,7 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
     int64_t r=0;
     assert(c > 0);
     assert(b >=0);
-    assert(rnd >=0 && rnd<=5 && rnd!=4);
+    assert((unsigned)rnd<=5 && rnd!=4);
 
     if(a<0 && a != INT64_MIN) return -av_rescale_rnd(-a, b, c, rnd ^ ((rnd>>1)&1));
 
