@@ -85,6 +85,12 @@ extern void ff_put_vp8_bilinear4_h_mmxext(uint8_t *dst, int dststride,
 extern void ff_put_vp8_bilinear8_h_sse2  (uint8_t *dst, int dststride,
                                           uint8_t *src, int srcstride,
                                           int height, int mx, int my);
+extern void ff_put_vp8_bilinear4_h_ssse3 (uint8_t *dst, int dststride,
+                                          uint8_t *src, int srcstride,
+                                          int height, int mx, int my);
+extern void ff_put_vp8_bilinear8_h_ssse3 (uint8_t *dst, int dststride,
+                                          uint8_t *src, int srcstride,
+                                          int height, int mx, int my);
 
 extern void ff_put_vp8_bilinear4_v_mmxext(uint8_t *dst, int dststride,
                                           uint8_t *src, int srcstride,
@@ -92,12 +98,13 @@ extern void ff_put_vp8_bilinear4_v_mmxext(uint8_t *dst, int dststride,
 extern void ff_put_vp8_bilinear8_v_sse2  (uint8_t *dst, int dststride,
                                           uint8_t *src, int srcstride,
                                           int height, int mx, int my);
+extern void ff_put_vp8_bilinear4_v_ssse3 (uint8_t *dst, int dststride,
+                                          uint8_t *src, int srcstride,
+                                          int height, int mx, int my);
 extern void ff_put_vp8_bilinear8_v_ssse3 (uint8_t *dst, int dststride,
                                           uint8_t *src, int srcstride,
                                           int height, int mx, int my);
-extern void ff_put_vp8_bilinear8_h_ssse3 (uint8_t *dst, int dststride,
-                                          uint8_t *src, int srcstride,
-                                          int height, int mx, int my);
+
 
 extern void ff_put_vp8_pixels8_mmx (uint8_t *dst, int dststride,
                                     uint8_t *src, int srcstride,
@@ -207,6 +214,7 @@ HVBILIN(mmxext, 8,  8, 16)
 HVBILIN(mmxext, 8, 16, 16)
 HVBILIN(sse2,   8,  8, 16)
 HVBILIN(sse2,   8, 16, 16)
+HVBILIN(ssse3,  8,  4,  8)
 HVBILIN(ssse3,  8,  8, 16)
 HVBILIN(ssse3,  8, 16, 16)
 
@@ -284,6 +292,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         VP8_MC_FUNC(2, 4, ssse3);
         VP8_BILINEAR_MC_FUNC(0, 16, ssse3);
         VP8_BILINEAR_MC_FUNC(1, 8, ssse3);
+        VP8_BILINEAR_MC_FUNC(2, 4, ssse3);
     }
 
     if (mm_flags & FF_MM_SSE4) {

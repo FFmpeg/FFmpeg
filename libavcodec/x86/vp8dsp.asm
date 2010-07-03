@@ -770,7 +770,8 @@ FILTER_BILINEAR mmxext, 4, 0
 INIT_XMM
 FILTER_BILINEAR   sse2, 8, 7
 
-cglobal put_vp8_bilinear8_v_ssse3, 7,7,5
+%macro FILTER_BILINEAR_SSSE3 1
+cglobal put_vp8_bilinear%1_v_ssse3, 7,7
     shl      r6d, 4
 %ifdef PIC
     lea      r11, [bilinear_filter_vb_m]
@@ -789,9 +790,16 @@ cglobal put_vp8_bilinear8_v_ssse3, 7,7,5
     psraw     m1, 2
     pavgw     m0, m4
     pavgw     m1, m4
+%if mmsize==8
+    packuswb  m0, m0
+    packuswb  m1, m1
+    movh [r0+r1*0], m0
+    movh [r0+r1*1], m1
+%else
     packuswb  m0, m1
     movh   [r0+r1*0], m0
     movhps [r0+r1*1], m0
+%endif
 
     lea       r0, [r0+r1*2]
     lea       r2, [r2+r3*2]
@@ -799,7 +807,7 @@ cglobal put_vp8_bilinear8_v_ssse3, 7,7,5
     jg .nextrow
     REP_RET
 
-cglobal put_vp8_bilinear8_h_ssse3, 7,7,5
+cglobal put_vp8_bilinear%1_h_ssse3, 7,7
     shl      r5d, 4
 %ifdef PIC
     lea      r11, [bilinear_filter_vb_m]
@@ -818,15 +826,28 @@ cglobal put_vp8_bilinear8_h_ssse3, 7,7,5
     psraw     m1, 2
     pavgw     m0, m4
     pavgw     m1, m4
+%if mmsize==8
+    packuswb  m0, m0
+    packuswb  m1, m1
+    movh [r0+r1*0], m0
+    movh [r0+r1*1], m1
+%else
     packuswb  m0, m1
     movh   [r0+r1*0], m0
     movhps [r0+r1*1], m0
+%endif
 
     lea       r0, [r0+r1*2]
     lea       r2, [r2+r3*2]
     sub       r4, 2
     jg .nextrow
     REP_RET
+%endmacro
+
+INIT_MMX
+FILTER_BILINEAR_SSSE3 4
+INIT_XMM
+FILTER_BILINEAR_SSSE3 8
 
 cglobal put_vp8_pixels8_mmx, 5,5
 .nextrow:
