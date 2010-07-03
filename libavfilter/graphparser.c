@@ -81,6 +81,7 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
 
     AVFilter *filt;
     char inst_name[30];
+    char tmp_args[256];
 
     snprintf(inst_name, sizeof(inst_name), "Filter %d %s", index, filt_name);
 
@@ -102,6 +103,12 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
     if(avfilter_graph_add_filter(ctx, filt_ctx) < 0) {
         avfilter_destroy(filt_ctx);
         return NULL;
+    }
+
+    if (!strcmp(filt_name, "scale") && !strstr(args, "flags")) {
+        snprintf(tmp_args, sizeof(tmp_args), "%s:%s",
+                 args, ctx->scale_sws_opts);
+        args = tmp_args;
     }
 
     if(avfilter_init_filter(filt_ctx, args, NULL)) {
