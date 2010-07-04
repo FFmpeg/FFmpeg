@@ -49,24 +49,6 @@
 .endif
 .endm
 
-#if ARCH_PPC64
-#define PTR .quad
-.macro LOAD_PTR ra, rbase, offset
-    ld  \ra,(\offset)*8(\rbase)
-.endm
-.macro STORE_PTR ra, rbase, offset
-    std \ra,(\offset)*8(\rbase)
-.endm
-#else
-#define PTR .int
-.macro LOAD_PTR ra, rbase, offset
-    lwz \ra,(\offset)*4(\rbase)
-.endm
-.macro STORE_PTR ra, rbase, offset
-    stw \ra,(\offset)*4(\rbase)
-.endm
-#endif
-
 .macro FFT4 a0, a1, a2, a3 // in:0-1 out:2-3
     vperm   \a2,\a0,\a1,v20 // vcprm(0,1,s2,s1) // {r0,i0,r3,i2}
     vperm   \a3,\a0,\a1,v21 // vcprm(2,3,s0,s3) // {r1,i1,r2,i3}
@@ -314,18 +296,105 @@ fft_pass\suffix\()_altivec:
     blr
 .endm
 
+#define M_SQRT1_2      0.70710678118654752440  /* 1/sqrt(2) */
+
+#define WORD_0  0x00,0x01,0x02,0x03
+#define WORD_1  0x04,0x05,0x06,0x07
+#define WORD_2  0x08,0x09,0x0a,0x0b
+#define WORD_3  0x0c,0x0d,0x0e,0x0f
+#define WORD_s0 0x10,0x11,0x12,0x13
+#define WORD_s1 0x14,0x15,0x16,0x17
+#define WORD_s2 0x18,0x19,0x1a,0x1b
+#define WORD_s3 0x1c,0x1d,0x1e,0x1f
+
+#define vcprm(a, b, c, d) .byte WORD_##a, WORD_##b, WORD_##c, WORD_##d
+
+    .rodata
+    .align 4
+fft_data:
+    .float  0, 0, 0, 0
+    .float  1, 0.92387953, M_SQRT1_2, 0.38268343
+    .float  0, 0.38268343, M_SQRT1_2, 0.92387953
+    .float  -M_SQRT1_2, M_SQRT1_2, M_SQRT1_2,-M_SQRT1_2
+    .float   M_SQRT1_2, M_SQRT1_2, M_SQRT1_2, M_SQRT1_2
+    vcprm(s0,3,2,1)
+    vcprm(0,1,s2,s1)
+    vcprm(2,3,s0,s3)
+    vcprm(2,s3,3,s2)
+    vcprm(0,1,s0,s1)
+    vcprm(2,3,s2,s3)
+    vcprm(2,3,0,1)
+    vcprm(1,2,s3,s0)
+    vcprm(0,3,s2,s1)
+    vcprm(0,2,s1,s3)
+    vcprm(1,3,s0,s2)
+
+.macro lvm  b, r, regs:vararg
+    lvx     \r, 0, \b
+    addi    \b, \b, 16
+  .ifnb \regs
+    lvm     \b, \regs
+  .endif
+.endm
+
+.macro stvm b, r, regs:vararg
+    stvx    \r, 0, \b
+    addi    \b, \b, 16
+  .ifnb \regs
+    stvm    \b, \regs
+  .endif
+.endm
+
+.macro fft_calc interleave
+extfunc ff_fft_calc\interleave\()_altivec
+    mflr    r0
+    stp     r0, 2*PS(r1)
+    stpu    r1, -(160+16*PS)(r1)
+    addi    r6, r1, 16*PS
+    stvm    r6, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29
+    mfvrsave r0
+    stw     r0, 15*PS(r1)
+    li      r6, 0xfffffffc
+    mtvrsave r6
+
+    movrel  r6, fft_data
+    lvm     r6, v14, v15, v16, v17, v18, v19, v20, v21
+    lvm     r6, v22, v23, v24, v25, v26, v27, v28, v29
+
+    li      r9, 16
+    movrel  r12, X(ff_cos_tabs)
+
+    movrel  r6, fft_dispatch_tab\interleave\()_altivec
+    lwz     r3, 0(r3)
+    subi    r3, r3, 2
+    slwi    r3, r3, 2+ARCH_PPC64
+    lpx     r3, r3, r6
+    mtctr   r3
+    mr      r3, r4
+    bctrl
+
+    addi    r6, r1, 16*PS
+    lvm     r6, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29
+    lwz     r6, 15*PS(r1)
+    mtvrsave r6
+    lp      r1, 0(r1)
+    lp      r0, 2*PS(r1)
+    mtlr    r0
+    blr
+.endm
+
 .macro DECL_FFT suffix, bits, n, n2, n4
 fft\n\suffix\()_altivec:
     mflr  r0
-    STORE_PTR r0,r1,\bits-5
+    stp   r0,PS*(\bits-3)(r1)
     bl    fft\n2\()_altivec
     addi2 r3,\n*4
     bl    fft\n4\()_altivec
     addi2 r3,\n*2
     bl    fft\n4\()_altivec
     addi2 r3,\n*-6
-    LOAD_PTR r0,r1,\bits-5
-    LOAD_PTR r4,r12,\bits
+    lp    r0,PS*(\bits-3)(r1)
+    lp    r4,\bits*PS(r12)
     mtlr  r0
     li    r5,\n/16
     b     fft_pass\suffix\()_altivec
@@ -350,9 +419,11 @@ fft\n\suffix\()_altivec:
     DECL_FFT \suffix,15,32768,16384, 8192
     DECL_FFT \suffix,16,65536,32768,16384
 
+    fft_calc \suffix
+
     .rodata
-    .global EXTERN_ASM\()ff_fft_dispatch\suffix\()_altivec
-EXTERN_ASM\()ff_fft_dispatch\suffix\()_altivec:
+    .align 3
+fft_dispatch_tab\suffix\()_altivec:
     PTR fft4\suffix\()_altivec
     PTR fft8\suffix\()_altivec
     PTR fft16\suffix\()_altivec
