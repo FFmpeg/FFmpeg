@@ -40,11 +40,6 @@
 
 .text
 
-/* Apple gas doesn't support this shorthand */
-.macro mtctr rx
-    mtspr 9, \rx
-.endm
-
 .macro addi2 ra, imm // add 32-bit immediate
 .if \imm & 0xffff
     addi \ra, \ra, \imm@l
