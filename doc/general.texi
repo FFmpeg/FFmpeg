@@ -782,6 +782,12 @@ bash directly to work around this:
 bash ./configure
 @end example
 
+@subsection Darwin (MacOS X, iPhone)
+
+MacOS X on PowerPC or ARM (iPhone) requires a preprocessor from
+@url{http://github.com/yuvi/gas-preprocessor} to build the optimized
+assembler functions.
+
 @section Windows
 
 To get help and instructions for building FFmpeg under Windows, check out
