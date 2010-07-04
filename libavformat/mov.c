@@ -222,14 +222,16 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 static int mov_read_chpl(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
     int64_t start;
-    int i, nb_chapters, str_len;
+    int i, nb_chapters, str_len, version;
     char str[256+1];
 
     if ((atom.size -= 5) < 0)
         return 0;
 
-    get_be32(pb); // version + flags
-    get_be32(pb); // ???
+    version = get_byte(pb);
+    get_be24(pb);
+    if (version)
+        get_be32(pb); // ???
     nb_chapters = get_byte(pb);
 
     for (i = 0; i < nb_chapters; i++) {
