@@ -260,6 +260,8 @@ static int error_recognition = FF_ER_CAREFUL;
 static int error_concealment = 3;
 static int decoder_reorder_pts= -1;
 static int autoexit;
+static int exit_on_keydown;
+static int exit_on_mousedown;
 static int loop=1;
 static int framedrop=1;
 
@@ -2819,6 +2821,10 @@ static void event_loop(void)
         SDL_WaitEvent(&event);
         switch(event.type) {
         case SDL_KEYDOWN:
+            if (exit_on_keydown) {
+                do_exit();
+                break;
+            }
             switch(event.key.keysym.sym) {
             case SDLK_ESCAPE:
             case SDLK_q:
@@ -2887,6 +2893,10 @@ static void event_loop(void)
             }
             break;
         case SDL_MOUSEBUTTONDOWN:
+            if (exit_on_mousedown) {
+                do_exit();
+                break;
+            }
         case SDL_MOUSEMOTION:
             if(event.type ==SDL_MOUSEBUTTONDOWN){
                 x= event.button.x;
@@ -3068,6 +3078,8 @@ static const OptionDef options[] = {
     { "sync", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
     { "threads", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "autoexit", OPT_BOOL | OPT_EXPERT, {(void*)&autoexit}, "exit at the end", "" },
+    { "exitonkeydown", OPT_BOOL | OPT_EXPERT, {(void*)&exit_on_keydown}, "exit on key down", "" },
+    { "exitonmousedown", OPT_BOOL | OPT_EXPERT, {(void*)&exit_on_mousedown}, "exit on mouse down", "" },
     { "loop", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&loop}, "set number of times the playback shall be looped", "loop count" },
     { "framedrop", OPT_BOOL | OPT_EXPERT, {(void*)&framedrop}, "drop frames when cpu is too slow", "" },
     { "window_title", OPT_STRING | HAS_ARG, {(void*)&window_title}, "set window title", "window title" },

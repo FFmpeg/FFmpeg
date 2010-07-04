@@ -108,6 +108,10 @@ Select the desired subtitle stream number, counting from 0. The number
 refers to the list of all the input subtitle streams. If it is greater
 than the number of subtitle streams minus one, then the last one is
 selected, if it is negative the subtitle rendering is disabled.
+@item -exitonkeydown
+Exit if any key is pressed.
+@item -exitonmousedown
+Exit if any mouse button is pressed.
 @end table
 
 @section While playing
