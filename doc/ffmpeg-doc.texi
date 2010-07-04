@@ -235,18 +235,12 @@ Set left crop band size (in pixels).
 @item -cropright @var{size} (deprecated - use -vf crop=width:height:x:y instead)
 Set right crop band size (in pixels).
 @item -padtop @var{size}
-Set top pad band size (in pixels).
 @item -padbottom @var{size}
-Set bottom pad band size (in pixels).
 @item -padleft @var{size}
-Set left pad band size (in pixels).
 @item -padright @var{size}
-Set right pad band size (in pixels).
 @item -padcolor @var{hex_color}
-Set color of padded bands. The value for padcolor is expressed
-as a six digit hexadecimal number where the first two digits
-represent red, the middle two digits green and last two digits
-blue (default = 000000 (black)).
+All the pad options have been removed. Use -vf
+pad=width:height:x:y:color instead.
 @item -vn
 Disable video recording.
 @item -bt @var{tolerance}
