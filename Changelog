@@ -21,6 +21,7 @@ version <next>:
 - ffplay -exitonkeydown and -exitonmousedown options added
 
 
+
 version 0.6:
 
 - PB-frame decoding for H.263
