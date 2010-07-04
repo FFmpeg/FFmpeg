@@ -20,6 +20,62 @@
 
 #include "config.h"
 
+#define GLUE(a, b) a ## b
+#define JOIN(a, b) GLUE(a, b)
+#define X(s) JOIN(EXTERN_ASM, s)
+
+#if ARCH_PPC64
+
+#define PTR  .quad
+#define lp   ld
+#define lpx  ldx
+#define stp  std
+#define stpu stdu
+#define PS   8
+#define L(s) JOIN(., s)
+
+.macro extfunc name
+    .global X(\name)
+    .section .opd, "aw"
+X(\name):
+    .quad L(\name), .TOC.@tocbase, 0
+    .previous
+    .type X(\name), STT_FUNC
+L(\name):
+.endm
+
+.macro movrel rd, sym
+    ld      \rd, \sym@got(r2)
+.endm
+
+#else /* ARCH_PPC64 */
+
+#define PTR  .int
+#define lp   lwz
+#define lpx  lwzx
+#define stp  stw
+#define stpu stwu
+#define PS   4
+#define L(s) s
+
+.macro extfunc name
+    .global X(\name)
+    .type   X(\name), STT_FUNC
+X(\name):
+\name:
+.endm
+
+.macro movrel rd, sym
+#if CONFIG_PIC
+    lwz     \rd, \sym@got(r2)
+#else
+    lis     \rd, \sym@ha
+    la      \rd, \sym@l(\rd)
+#endif
+.endm
+
+#endif /* ARCH_PPC64 */
+
 #if HAVE_IBM_ASM
 
 .macro DEFINE_REG n
