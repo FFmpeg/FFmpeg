@@ -83,9 +83,6 @@ format (see examples below) so that code documentation
 can be generated automatically. All nontrivial functions should have a comment
 above them explaining what the function does, even if it is just one sentence.
 All structures and their member variables should be documented, too.
-Impersonal form must be used for the function and parameter
-descriptions, e.g. "Set the bikeshed color." is favored over "Sets the
-bikeshed color.".
 @example
 /**
  * @@file mpeg.c
