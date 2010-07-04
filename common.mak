@@ -57,6 +57,10 @@ HOSTCFLAGS += $(IFLAGS)
 
 %.c %.h: TAG = GEN
 
+# Dummy rule to stop make trying to rebuild removed or renamed headers
+%.h:
+	@:
+
 install: install-libs install-headers
 install-libs: install-libs-yes
 
