@@ -655,7 +655,12 @@ endif
 $(SUBDIR)%_tablegen$(HOSTEXESUF): $(SUBDIR)%_tablegen.c $(SUBDIR)%_tablegen.h $(SUBDIR)tableprint.c
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $(filter %.c,$^) $(HOSTLIBS)
 
-$(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
+GEN_HEADERS = cbrt_tables.h aacps_tables.h aac_tables.h dv_tables.h     \
+              mdct_tables.h mpegaudio_tables.h motionpixels_tables.h    \
+              pcm_tables.h qdm2_tables.h
+GEN_HEADERS := $(addprefix $(SUBDIR), $(GEN_HEADERS))
+
+$(GEN_HEADERS): $(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
 	$(M)./$< > $@
 
 ifdef CONFIG_HARDCODED_TABLES
