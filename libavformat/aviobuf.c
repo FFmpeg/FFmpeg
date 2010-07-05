@@ -605,8 +605,7 @@ static int url_resetbuf(ByteIOContext *s, int flags)
 #endif
 {
 #if LIBAVFORMAT_VERSION_MAJOR < 53
-    URLContext *h = s->opaque;
-    if ((flags & URL_RDWR) || (h && h->flags != flags && !h->flags & URL_RDWR))
+    if (flags & URL_RDWR)
         return AVERROR(EINVAL);
 #else
     assert(flags == URL_WRONLY || flags == URL_RDONLY);
