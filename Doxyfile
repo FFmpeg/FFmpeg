@@ -43,6 +43,109 @@ OUTPUT_DIRECTORY       = doxy
 
 OUTPUT_LANGUAGE        = English
 
+# If the BRIEF_MEMBER_DESC tag is set to YES (the default) Doxygen will
+# include brief member descriptions after the members that are listed in
+# the file and class documentation (similar to JavaDoc).
+# Set to NO to disable this.
+
+BRIEF_MEMBER_DESC      = YES
+
+# If the REPEAT_BRIEF tag is set to YES (the default) Doxygen will prepend
+# the brief description of a member or function before the detailed description.
+# Note: if both HIDE_UNDOC_MEMBERS and BRIEF_MEMBER_DESC are set to NO, the
+# brief descriptions will be completely suppressed.
+
+REPEAT_BRIEF           = YES
+
+# If the ALWAYS_DETAILED_SEC and REPEAT_BRIEF tags are both set to YES then
+# Doxygen will generate a detailed section even if there is only a brief
+# description.
+
+ALWAYS_DETAILED_SEC    = NO
+
+# If the INLINE_INHERITED_MEMB tag is set to YES, doxygen will show all inherited
+# members of a class in the documentation of that class as if those members were
+# ordinary class members. Constructors, destructors and assignment operators of
+# the base classes will not be shown.
+
+INLINE_INHERITED_MEMB  = NO
+
+# If the FULL_PATH_NAMES tag is set to YES then Doxygen will prepend the full
+# path before files name in the file list and in the header files. If set
+# to NO the shortest path that makes the file name unique will be used.
+
+FULL_PATH_NAMES        = YES
+
+# If the FULL_PATH_NAMES tag is set to YES then the STRIP_FROM_PATH tag
+# can be used to strip a user defined part of the path. Stripping is
+# only done if one of the specified strings matches the left-hand part of
+# the path. It is allowed to use relative paths in the argument list.
+
+STRIP_FROM_PATH        = .
+
+# If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter
+# (but less readable) file names. This can be useful is your file systems
+# doesn't support long names like on DOS, Mac, or CD-ROM.
+
+SHORT_NAMES            = NO
+
+# If the JAVADOC_AUTOBRIEF tag is set to YES then Doxygen
+# will interpret the first line (until the first dot) of a JavaDoc-style
+# comment as the brief description. If set to NO, the JavaDoc
+# comments  will behave just like the Qt-style comments (thus requiring an
+# explict @brief command for a brief description.
+
+JAVADOC_AUTOBRIEF      = YES
+
+# The MULTILINE_CPP_IS_BRIEF tag can be set to YES to make Doxygen
+# treat a multi-line C++ special comment block (i.e. a block of //! or ///
+# comments) as a brief description. This used to be the default behaviour.
+# The new default is to treat a multi-line C++ comment block as a detailed
+# description. Set this tag to YES if you prefer the old behaviour instead.
+
+MULTILINE_CPP_IS_BRIEF = NO
+
+# If the DETAILS_AT_TOP tag is set to YES then Doxygen
+# will output the detailed description near the top, like JavaDoc.
+# If set to NO, the detailed description appears after the member
+# documentation.
+
+DETAILS_AT_TOP         = NO
+
+# If the INHERIT_DOCS tag is set to YES (the default) then an undocumented
+# member inherits the documentation from any documented member that it
+# reimplements.
+
+INHERIT_DOCS           = YES
+
+# The TAB_SIZE tag can be used to set the number of spaces in a tab.
+# Doxygen uses this value to replace tabs by spaces in code fragments.
+
+TAB_SIZE               = 8
+
+# This tag can be used to specify a number of aliases that acts
+# as commands in the documentation. An alias has the form "name=value".
+# For example adding "sideeffect=\par Side Effects:\n" will allow you to
+# put the command \sideeffect (or @sideeffect) in the documentation, which
+# will result in a user defined paragraph with heading "Side Effects:".
+# You can put \n's in the value part of an alias to insert newlines.
+
+ALIASES                =
+
+# Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
+# only. Doxygen will then generate output that is more tailored for C.
+# For instance some of the names that are used will be different. The list
+# of all members will be omitted, etc.
+
+OPTIMIZE_OUTPUT_FOR_C  = YES
+
+# Set the OPTIMIZE_OUTPUT_JAVA tag to YES if your project consists of Java sources
+# only. Doxygen will then generate output that is more tailored for Java.
+# For instance namespaces will be presented as packages, qualified scopes
+# will look different, etc.
+
+OPTIMIZE_OUTPUT_JAVA   = NO
+
 # If the EXTRACT_ALL tag is set to YES doxygen will assume all entities in
 # documentation are documented, even if no documentation was available.
 # Private class members and static file members will be hidden unless
@@ -95,46 +198,6 @@ HIDE_FRIEND_COMPOUNDS  = NO
 
 HIDE_IN_BODY_DOCS      = NO
 
-# If the BRIEF_MEMBER_DESC tag is set to YES (the default) Doxygen will
-# include brief member descriptions after the members that are listed in
-# the file and class documentation (similar to JavaDoc).
-# Set to NO to disable this.
-
-BRIEF_MEMBER_DESC      = YES
-
-# If the REPEAT_BRIEF tag is set to YES (the default) Doxygen will prepend
-# the brief description of a member or function before the detailed description.
-# Note: if both HIDE_UNDOC_MEMBERS and BRIEF_MEMBER_DESC are set to NO, the
-# brief descriptions will be completely suppressed.
-
-REPEAT_BRIEF           = YES
-
-# If the ALWAYS_DETAILED_SEC and REPEAT_BRIEF tags are both set to YES then
-# Doxygen will generate a detailed section even if there is only a brief
-# description.
-
-ALWAYS_DETAILED_SEC    = NO
-
-# If the INLINE_INHERITED_MEMB tag is set to YES, doxygen will show all inherited
-# members of a class in the documentation of that class as if those members were
-# ordinary class members. Constructors, destructors and assignment operators of
-# the base classes will not be shown.
-
-INLINE_INHERITED_MEMB  = NO
-
-# If the FULL_PATH_NAMES tag is set to YES then Doxygen will prepend the full
-# path before files name in the file list and in the header files. If set
-# to NO the shortest path that makes the file name unique will be used.
-
-FULL_PATH_NAMES        = YES
-
-# If the FULL_PATH_NAMES tag is set to YES then the STRIP_FROM_PATH tag
-# can be used to strip a user defined part of the path. Stripping is
-# only done if one of the specified strings matches the left-hand part of
-# the path. It is allowed to use relative paths in the argument list.
-
-STRIP_FROM_PATH        = .
-
 # The INTERNAL_DOCS tag determines if documentation
 # that is typed after a \internal command is included. If the tag is set
 # to NO (the default) then the documentation will be excluded.
@@ -150,58 +213,17 @@ INTERNAL_DOCS          = NO
 
 CASE_SENSE_NAMES       = YES
 
-# If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter
-# (but less readable) file names. This can be useful is your file systems
-# doesn't support long names like on DOS, Mac, or CD-ROM.
-
-SHORT_NAMES            = NO
-
 # If the HIDE_SCOPE_NAMES tag is set to NO (the default) then Doxygen
 # will show members with their full class and namespace scopes in the
 # documentation. If set to YES the scope will be hidden.
 
 HIDE_SCOPE_NAMES       = NO
 
-# If the VERBATIM_HEADERS tag is set to YES (the default) then Doxygen
-# will generate a verbatim copy of the header file for each class for
-# which an include is specified. Set to NO to disable this.
-
-VERBATIM_HEADERS       = YES
-
 # If the SHOW_INCLUDE_FILES tag is set to YES (the default) then Doxygen
 # will put list of the files that are included by a file in the documentation
 # of that file.
 
 SHOW_INCLUDE_FILES     = YES
-
-# If the JAVADOC_AUTOBRIEF tag is set to YES then Doxygen
-# will interpret the first line (until the first dot) of a JavaDoc-style
-# comment as the brief description. If set to NO, the JavaDoc
-# comments  will behave just like the Qt-style comments (thus requiring an
-# explict @brief command for a brief description.
-
-JAVADOC_AUTOBRIEF      = YES
-
-# The MULTILINE_CPP_IS_BRIEF tag can be set to YES to make Doxygen
-# treat a multi-line C++ special comment block (i.e. a block of //! or ///
-# comments) as a brief description. This used to be the default behaviour.
-# The new default is to treat a multi-line C++ comment block as a detailed
-# description. Set this tag to YES if you prefer the old behaviour instead.
-
-MULTILINE_CPP_IS_BRIEF = NO
-
-# If the DETAILS_AT_TOP tag is set to YES then Doxygen
-# will output the detailed description near the top, like JavaDoc.
-# If set to NO, the detailed description appears after the member
-# documentation.
-
-DETAILS_AT_TOP         = NO
-
-# If the INHERIT_DOCS tag is set to YES (the default) then an undocumented
-# member inherits the documentation from any documented member that it
-# reimplements.
-
-INHERIT_DOCS           = YES
 
 # If the INLINE_INFO tag is set to YES (the default) then a tag [inline]
 # is inserted in the documentation for inline members.
@@ -221,11 +243,6 @@ SORT_MEMBER_DOCS       = YES
 # all members of a group must be documented explicitly.
 
 DISTRIBUTE_GROUP_DOC   = NO
-
-# The TAB_SIZE tag can be used to set the number of spaces in a tab.
-# Doxygen uses this value to replace tabs by spaces in code fragments.
-
-TAB_SIZE               = 8
 
 # The GENERATE_TODOLIST tag can be used to enable (YES) or
 # disable (NO) the todo list. This list is created by putting \todo
@@ -251,15 +268,6 @@ GENERATE_BUGLIST       = YES
 
 GENERATE_DEPRECATEDLIST= YES
 
-# This tag can be used to specify a number of aliases that acts
-# as commands in the documentation. An alias has the form "name=value".
-# For example adding "sideeffect=\par Side Effects:\n" will allow you to
-# put the command \sideeffect (or @sideeffect) in the documentation, which
-# will result in a user defined paragraph with heading "Side Effects:".
-# You can put \n's in the value part of an alias to insert newlines.
-
-ALIASES                =
-
 # The ENABLED_SECTIONS tag can be used to enable conditional
 # documentation sections, marked by \if sectionname ... \endif.
 
@@ -274,20 +282,6 @@ ENABLED_SECTIONS       =
 # command in the documentation regardless of this setting.
 
 MAX_INITIALIZER_LINES  = 30
-
-# Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
-# only. Doxygen will then generate output that is more tailored for C.
-# For instance some of the names that are used will be different. The list
-# of all members will be omitted, etc.
-
-OPTIMIZE_OUTPUT_FOR_C  = YES
-
-# Set the OPTIMIZE_OUTPUT_JAVA tag to YES if your project consists of Java sources
-# only. Doxygen will then generate output that is more tailored for Java.
-# For instance namespaces will be presented as packages, qualified scopes
-# will look different, etc.
-
-OPTIMIZE_OUTPUT_JAVA   = NO
 
 # Set the SHOW_USED_FILES tag to NO to disable the list of files generated
 # at the bottom of the documentation of classes and structs. If set to YES the
@@ -444,6 +438,12 @@ REFERENCED_BY_RELATION = YES
 # called/used by that function will be listed.
 
 REFERENCES_RELATION    = NO
+
+# If the VERBATIM_HEADERS tag is set to YES (the default) then Doxygen
+# will generate a verbatim copy of the header file for each class for
+# which an include is specified. Set to NO to disable this.
+
+VERBATIM_HEADERS       = YES
 
 #---------------------------------------------------------------------------
 # configuration options related to the alphabetical class index
