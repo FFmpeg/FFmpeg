@@ -81,6 +81,47 @@ static int fill_line_with_color(uint8_t *line[4], int line_step[4], int w, uint8
     return 0;
 }
 
+static void draw_rectangle(AVFilterPicRef *outpic, uint8_t *line[4], int line_step[4],
+                           int hsub, int vsub, int x, int y, int w, int h)
+{
+    int i, plane;
+    uint8_t *p;
+
+    for (plane = 0; plane < 4 && outpic->data[plane]; plane++) {
+        int hsub1 = plane == 1 || plane == 2 ? hsub : 0;
+        int vsub1 = plane == 1 || plane == 2 ? vsub : 0;
+
+        p = outpic->data[plane] + (y >> vsub1) * outpic->linesize[plane];
+        for (i = 0; i < (h >> vsub1); i++) {
+            memcpy(p + (x >> hsub1) * line_step[plane], line[plane], (w >> hsub1) * line_step[plane]);
+            p += outpic->linesize[plane];
+        }
+    }
+}
+
+static int query_formats(AVFilterContext *ctx)
+{
+    static const enum PixelFormat pix_fmts[] = {
+        PIX_FMT_ARGB,         PIX_FMT_RGBA,
+        PIX_FMT_ABGR,         PIX_FMT_BGRA,
+        PIX_FMT_RGB24,        PIX_FMT_BGR24,
+
+        PIX_FMT_YUV444P,      PIX_FMT_YUV422P,
+        PIX_FMT_YUV420P,      PIX_FMT_YUV411P,
+        PIX_FMT_YUV410P,      PIX_FMT_YUV440P,
+        PIX_FMT_YUVJ444P,     PIX_FMT_YUVJ422P,
+        PIX_FMT_YUVJ420P,     PIX_FMT_YUVJ440P,
+        PIX_FMT_YUVA420P,
+
+        PIX_FMT_NONE
+    };
+
+    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    return 0;
+}
+
+#if CONFIG_PAD_FILTER
+
 typedef struct {
     int w, h;               ///< output dimensions, a value of 0 will result in the input size
     int x, y;               ///< offsets of the input area with respect to the padded area
@@ -121,27 +162,6 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_freep(&pad->line[i]);
         pad->line_step[i] = 0;
     }
-}
-
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_ARGB,         PIX_FMT_RGBA,
-        PIX_FMT_ABGR,         PIX_FMT_BGRA,
-        PIX_FMT_RGB24,        PIX_FMT_BGR24,
-
-        PIX_FMT_YUV444P,      PIX_FMT_YUV422P,
-        PIX_FMT_YUV420P,      PIX_FMT_YUV411P,
-        PIX_FMT_YUV410P,      PIX_FMT_YUV440P,
-        PIX_FMT_YUVJ444P,     PIX_FMT_YUVJ422P,
-        PIX_FMT_YUVJ420P,     PIX_FMT_YUVJ440P,
-        PIX_FMT_YUVA420P,
-
-        PIX_FMT_NONE
-    };
-
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
-    return 0;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -244,24 +264,6 @@ static void end_frame(AVFilterLink *link)
     avfilter_unref_pic(link->cur_pic);
 }
 
-static void draw_rectangle(AVFilterPicRef *outpic, uint8_t *line[4], int line_step[4],
-                           int hsub, int vsub, int x, int y, int w, int h)
-{
-    int i, plane;
-    uint8_t *p;
-
-    for (plane = 0; plane < 4 && outpic->data[plane]; plane++) {
-        int hsub1 = plane == 1 || plane == 2 ? hsub : 0;
-        int vsub1 = plane == 1 || plane == 2 ? vsub : 0;
-
-        p = outpic->data[plane] + (y >> vsub1) * outpic->linesize[plane];
-        for (i = 0; i < (h >> vsub1); i++) {
-            memcpy(p + (x >> hsub1) * line_step[plane], line[plane], (w >> hsub1) * line_step[plane]);
-            p += outpic->linesize[plane];
-        }
-    }
-}
-
 static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir, int before_slice)
 {
     PadContext *pad = link->dst->priv;
@@ -333,3 +335,5 @@ AVFilter avfilter_vf_pad = {
                                     .config_props     = config_output, },
                                   { .name = NULL}},
 };
+
+#endif /* CONFIG_PAD_FILTER */
