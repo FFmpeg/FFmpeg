@@ -63,10 +63,10 @@ REPEAT_BRIEF           = YES
 
 ALWAYS_DETAILED_SEC    = NO
 
-# If the INLINE_INHERITED_MEMB tag is set to YES, doxygen will show all inherited
-# members of a class in the documentation of that class as if those members were
-# ordinary class members. Constructors, destructors and assignment operators of
-# the base classes will not be shown.
+# If the INLINE_INHERITED_MEMB tag is set to YES, doxygen will show all
+# inherited members of a class in the documentation of that class as if those
+# members were ordinary class members. Constructors, destructors and assignment
+# operators of the base classes will not be shown.
 
 INLINE_INHERITED_MEMB  = NO
 
@@ -77,7 +77,7 @@ INLINE_INHERITED_MEMB  = NO
 FULL_PATH_NAMES        = YES
 
 # If the FULL_PATH_NAMES tag is set to YES then the STRIP_FROM_PATH tag
-# can be used to strip a user defined part of the path. Stripping is
+# can be used to strip a user-defined part of the path. Stripping is
 # only done if one of the specified strings matches the left-hand part of
 # the path. It is allowed to use relative paths in the argument list.
 
@@ -92,8 +92,8 @@ SHORT_NAMES            = NO
 # If the JAVADOC_AUTOBRIEF tag is set to YES then Doxygen
 # will interpret the first line (until the first dot) of a JavaDoc-style
 # comment as the brief description. If set to NO, the JavaDoc
-# comments  will behave just like the Qt-style comments (thus requiring an
-# explict @brief command for a brief description.
+# comments will behave just like regular Qt-style comments
+# (thus requiring an explicit @brief command for a brief description.)
 
 JAVADOC_AUTOBRIEF      = YES
 
@@ -114,7 +114,7 @@ DETAILS_AT_TOP         = NO
 
 # If the INHERIT_DOCS tag is set to YES (the default) then an undocumented
 # member inherits the documentation from any documented member that it
-# reimplements.
+# re-implements.
 
 INHERIT_DOCS           = YES
 
@@ -127,22 +127,22 @@ TAB_SIZE               = 8
 # as commands in the documentation. An alias has the form "name=value".
 # For example adding "sideeffect=\par Side Effects:\n" will allow you to
 # put the command \sideeffect (or @sideeffect) in the documentation, which
-# will result in a user defined paragraph with heading "Side Effects:".
+# will result in a user-defined paragraph with heading "Side Effects:".
 # You can put \n's in the value part of an alias to insert newlines.
 
 ALIASES                =
 
-# Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
-# only. Doxygen will then generate output that is more tailored for C.
-# For instance some of the names that are used will be different. The list
+# Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C
+# sources only. Doxygen will then generate output that is more tailored for C.
+# For instance, some of the names that are used will be different. The list
 # of all members will be omitted, etc.
 
 OPTIMIZE_OUTPUT_FOR_C  = YES
 
-# Set the OPTIMIZE_OUTPUT_JAVA tag to YES if your project consists of Java sources
-# only. Doxygen will then generate output that is more tailored for Java.
-# For instance namespaces will be presented as packages, qualified scopes
-# will look different, etc.
+# Set the OPTIMIZE_OUTPUT_JAVA tag to YES if your project consists of Java
+# sources only. Doxygen will then generate output that is more tailored for
+# Java. For instance, namespaces will be presented as packages, qualified
+# scopes will look different, etc.
 
 OPTIMIZE_OUTPUT_JAVA   = NO
 
@@ -179,7 +179,7 @@ HIDE_UNDOC_MEMBERS     = NO
 
 # If the HIDE_UNDOC_CLASSES tag is set to YES, Doxygen will hide all
 # undocumented classes that are normally visible in the class hierarchy.
-# If set to NO (the default) these class will be included in the various
+# If set to NO (the default) these classes will be included in the various
 # overviews. This option has no effect if EXTRACT_ALL is enabled.
 
 HIDE_UNDOC_CLASSES     = NO
@@ -206,7 +206,7 @@ HIDE_IN_BODY_DOCS      = NO
 INTERNAL_DOCS          = NO
 
 # If the CASE_SENSE_NAMES tag is set to NO then Doxygen will only generate
-# file names in lower case letters. If set to YES upper case letters are also
+# file names in lower-case letters. If set to YES upper-case letters are also
 # allowed. This is useful if you have classes or files whose names only differ
 # in case and if your file system supports case sensitive file names. Windows
 # users are adviced to set this option to NO.
@@ -220,7 +220,7 @@ CASE_SENSE_NAMES       = YES
 HIDE_SCOPE_NAMES       = NO
 
 # If the SHOW_INCLUDE_FILES tag is set to YES (the default) then Doxygen
-# will put list of the files that are included by a file in the documentation
+# will put a list of the files that are included by a file in the documentation
 # of that file.
 
 SHOW_INCLUDE_FILES     = YES
@@ -274,7 +274,7 @@ GENERATE_DEPRECATEDLIST= YES
 ENABLED_SECTIONS       =
 
 # The MAX_INITIALIZER_LINES tag determines the maximum number of lines
-# the initial value of a variable or define consist of for it to appear in
+# the initial value of a variable or define consists of for it to appear in
 # the documentation. If the initializer consists of more lines than specified
 # here it will be hidden. Use a value of 0 to hide initializers completely.
 # The appearance of the initializer of individual variables and defines in the
@@ -355,8 +355,9 @@ RECURSIVE              = YES
 
 EXCLUDE                =
 
-# The EXCLUDE_SYMLINKS tag can be used select whether or not files or directories
-# that are symbolic links (a Unix filesystem feature) are excluded from the input.
+# The EXCLUDE_SYMLINKS tag can be used select whether or not files or
+# directories that are symbolic links (a Unix filesystem feature) are excluded
+# from the input.
 
 EXCLUDE_SYMLINKS       = NO
 
@@ -501,7 +502,7 @@ HTML_HEADER            =
 
 HTML_FOOTER            =
 
-# The HTML_STYLESHEET tag can be used to specify a user defined cascading
+# The HTML_STYLESHEET tag can be used to specify a user-defined cascading
 # style sheet that is used by each HTML page. It can be used to
 # fine-tune the look of the HTML output. If the tag is left blank doxygen
 # will generate a default style sheet
@@ -516,7 +517,7 @@ HTML_ALIGN_MEMBERS     = YES
 
 # If the GENERATE_HTMLHELP tag is set to YES, additional index files
 # will be generated that can be used as input for tools like the
-# Microsoft HTML help workshop to generate a compressed HTML help file (.chm)
+# Microsoft HTML help workshop to generate a compiled HTML help file (.chm)
 # of the generated HTML documentation.
 
 GENERATE_HTMLHELP      = NO
@@ -524,14 +525,14 @@ GENERATE_HTMLHELP      = NO
 # If the GENERATE_HTMLHELP tag is set to YES, the CHM_FILE tag can
 # be used to specify the file name of the resulting .chm file. You
 # can add a path in front of the file if the result should not be
-# written to the html output dir.
+# written to the html output directory.
 
 CHM_FILE               =
 
 # If the GENERATE_HTMLHELP tag is set to YES, the HHC_LOCATION tag can
 # be used to specify the location (absolute path including file name) of
-# the HTML help compiler (hhc.exe). If non empty doxygen will try to run
-# the html help compiler on the generated index.hhp.
+# the HTML help compiler (hhc.exe). If non-empty doxygen will try to run
+# the HTML help compiler on the generated index.hhp.
 
 HHC_LOCATION           =
 
@@ -548,7 +549,7 @@ GENERATE_CHI           = NO
 BINARY_TOC             = NO
 
 # The TOC_EXPAND flag can be set to YES to add extra items for group members
-# to the contents of the Html help documentation and to the tree view.
+# to the contents of the HTML help documentation and to the tree view.
 
 TOC_EXPAND             = NO
 
@@ -681,7 +682,7 @@ COMPACT_RTF            = NO
 RTF_HYPERLINKS         = NO
 
 # Load stylesheet definitions from file. Syntax is similar to doxygen's
-# config file, i.e. a series of assigments. You only have to provide
+# config file, i.e. a series of assignments. You only have to provide
 # replacements, missing definitions are set to their default value.
 
 RTF_STYLESHEET_FILE    =
@@ -849,16 +850,16 @@ EXPAND_AS_DEFINED      = declare_idct(idct, table, idct_row_head, idct_row, idct
 # If the SKIP_FUNCTION_MACROS tag is set to YES (the default) then
 # doxygen's preprocessor will remove all function-like macros that are alone
 # on a line, have an all uppercase name, and do not end with a semicolon. Such
-# function macros are typically used for boiler-plate code, and will confuse the
-# parser if not removed.
+# function macros are typically used for boiler-plate code, and will confuse
+# the parser if not removed.
 
 SKIP_FUNCTION_MACROS   = YES
 
 #---------------------------------------------------------------------------
-# Configuration::addtions related to external references
+# Configuration::additions related to external references
 #---------------------------------------------------------------------------
 
-# The TAGFILES tag can be used to specify one or more tagfiles.
+# The TAGFILES option can be used to specify one or more tagfiles.
 
 TAGFILES               =
 
@@ -889,10 +890,11 @@ PERL_PATH              = /usr/bin/perl
 #---------------------------------------------------------------------------
 
 # If the CLASS_DIAGRAMS tag is set to YES (the default) Doxygen will
-# generate a inheritance diagram (in Html, RTF and LaTeX) for classes with base or
-# super classes. Setting the tag to NO turns the diagrams off. Note that this
-# option is superceded by the HAVE_DOT option below. This is only a fallback. It is
-# recommended to install and use dot, since it yield more powerful graphs.
+# generate a inheritance diagram (in HTML, RTF and LaTeX) for classes with base
+# or super classes. Setting the tag to NO turns the diagrams off. Note that
+# this option is superseded by the HAVE_DOT option below. This is only a
+# fallback. It is recommended to install and use dot, since it yields more
+# powerful graphs.
 
 CLASS_DIAGRAMS         = YES
 
@@ -954,7 +956,7 @@ GRAPHICAL_HIERARCHY    = YES
 DOT_IMAGE_FORMAT       = png
 
 # The tag DOT_PATH can be used to specify the path where the dot tool can be
-# found. If left blank, it is assumed the dot tool can be found on the path.
+# found. If left blank, it is assumed the dot tool can be found in the path.
 
 DOT_PATH               =
 
@@ -987,13 +989,13 @@ MAX_DOT_GRAPH_HEIGHT   = 1024
 GENERATE_LEGEND        = YES
 
 # If the DOT_CLEANUP tag is set to YES (the default) Doxygen will
-# remove the intermedate dot files that are used to generate
+# remove the intermediate dot files that are used to generate
 # the various graphs.
 
 DOT_CLEANUP            = YES
 
 #---------------------------------------------------------------------------
-# Configuration::addtions related to the search engine
+# Configuration::additions related to the search engine
 #---------------------------------------------------------------------------
 
 # The SEARCHENGINE tag specifies whether or not a search engine should be
