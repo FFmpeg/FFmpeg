@@ -2114,7 +2114,7 @@ case $target_os in
         enable malloc_aligned
         ;;
     bsd/os)
-        osextralibs="-lpoll -lgnugetopt"
+        add_extralibs -lpoll -lgnugetopt
         strip="strip -d"
         ;;
     darwin)
@@ -2123,7 +2123,7 @@ case $target_os in
         enabled ppc && add_asflags -force_cpusubtype_ALL
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR) -Wl,-read_only_relocs,suppress'
         strip="${strip} -x"
-        FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
+        add_ldflags -Wl,-dynamic,-search_paths_first
         SLIBSUF=".dylib"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME).$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME).$(LIBMAJOR)$(SLIBSUF)'
@@ -2199,7 +2199,7 @@ case $target_os in
     os/2*)
         strip="lxlite"
         ln_s="cp -f"
-        FFLDFLAGS="-Zomf -Zbin-files -Zargs-wild -Zmap"
+        add_ldflags -Zomf -Zbin-files -Zargs-wild -Zmap
         SHFLAGS='$(SUBDIR)$(NAME).def -Zdll -Zomf'
         FFSERVERLDFLAGS=""
         LIBSUF="_s.a"
@@ -2233,11 +2233,6 @@ esac
 check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable pic
 
 set_default $PATHS_LIST
-
-add_extralibs $osextralibs
-
-# Combine FFLDFLAGS and the LDFLAGS environment variable.
-LDFLAGS="$FFLDFLAGS $LDFLAGS"
 
 # we need to build at least one lib type
 if ! enabled_any static shared; then
