@@ -1773,13 +1773,11 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         av_free_packet(&opkt);
                     }
                 }
-#if CONFIG_AVFILTER
-                frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
-                        ist->out_video_filter && avfilter_poll_frame(ist->out_video_filter->inputs[0]);
-#endif
             }
 
 #if CONFIG_AVFILTER
+            frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
+                              ist->out_video_filter && avfilter_poll_frame(ist->out_video_filter->inputs[0]);
             if(ist->picref)
                 avfilter_unref_pic(ist->picref);
         }
