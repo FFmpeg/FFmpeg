@@ -666,6 +666,8 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count);
 
 int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb);
 
+void ff_generate_sliding_window_mmcos(H264Context *h);
+
 
 /**
  * Check if the top & left blocks are available if needed & change the dc mode so it only uses the available blocks.
