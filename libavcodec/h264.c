@@ -1908,7 +1908,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             h->prev_frame_num++;
             h->prev_frame_num %= 1<<h->sps.log2_max_frame_num;
             s->current_picture_ptr->frame_num= h->prev_frame_num;
-            ff_h264_execute_ref_pic_marking(h, NULL, 0);
+            ff_generate_sliding_window_mmcos(h);
+            ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
         }
 
         /* See if we have a decoded first field looking for a pair... */
