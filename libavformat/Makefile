@@ -158,7 +158,7 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             vorbiscomment.o
 OBJS-$(CONFIG_OGG_MUXER)                 += oggenc.o \
                                             vorbiscomment.o
-OBJS-$(CONFIG_OMA_DEMUXER)               += oma.o raw.o id3v2.o
+OBJS-$(CONFIG_OMA_DEMUXER)               += oma.o raw.o id3v2.o id3v1.o
 OBJS-$(CONFIG_PCM_ALAW_DEMUXER)          += raw.o
 OBJS-$(CONFIG_PCM_ALAW_MUXER)            += raw.o
 OBJS-$(CONFIG_PCM_F32BE_DEMUXER)         += raw.o
