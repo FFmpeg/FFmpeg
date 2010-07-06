@@ -62,9 +62,9 @@ static int fill_line_with_color(uint8_t *line[4], int line_step[4], int w, uint8
     } else {
         int plane;
 
-        color[RED  ] = RGB_TO_Y(rgba_color[0], rgba_color[1], rgba_color[2]);
-        color[GREEN] = RGB_TO_U(rgba_color[0], rgba_color[1], rgba_color[2], 0);
-        color[BLUE ] = RGB_TO_V(rgba_color[0], rgba_color[1], rgba_color[2], 0);
+        color[RED  ] = RGB_TO_Y_CCIR(rgba_color[0], rgba_color[1], rgba_color[2]);
+        color[GREEN] = RGB_TO_U_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
+        color[BLUE ] = RGB_TO_V_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
         color[ALPHA] = rgba_color[3];
 
         for (plane = 0; plane < 4; plane++) {
