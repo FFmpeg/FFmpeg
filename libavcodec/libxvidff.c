@@ -25,11 +25,17 @@
  * @author Adam Thayer (krevnik@comcast.net)
  */
 
+/* needed for mkstemp() */
+#define _XOPEN_SOURCE 600
+
 #include <xvid.h>
 #include <unistd.h>
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
 #include "libxvid_internal.h"
+#if !HAVE_MKSTEMP
+#include <fcntl.h>
+#endif
 
 /**
  * Buffer management macros.
@@ -762,6 +768,42 @@ int xvid_ff_2pass(void *ref, int cmd, void *p1, void *p2) {
         default:
             return XVID_ERR_FAIL;
     }
+}
+
+/* Wrapper to work around the lack of mkstemp() on mingw/cygin.
+ * Also, tries to create file in /tmp first, if possible.
+ * *prefix can be a character constant; *filename will be allocated internally.
+ * @return file descriptor of opened file (or -1 on error)
+ * and opened file name in **filename. */
+int av_tempfile(char *prefix, char **filename) {
+    int fd=-1;
+#if !HAVE_MKSTEMP
+    *filename = tempnam(".", prefix);
+#else
+    size_t len = strlen(prefix) + 12; /* room for "/tmp/" and "XXXXXX\0" */
+    *filename = av_malloc(len);
+#endif
+    /* -----common section-----*/
+    if (*filename == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot allocate file name\n");
+        return -1;
+    }
+#if !HAVE_MKSTEMP
+    fd = open(*filename, O_RDWR | O_BINARY | O_CREAT, 0444);
+#else
+    snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);
+    fd = mkstemp(*filename);
+    if (fd < 0) {
+        snprintf(*filename, len, "./%sXXXXXX", prefix);
+        fd = mkstemp(*filename);
+    }
+#endif
+    /* -----common section-----*/
+    if (fd < 0) {
+        av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot open temporary file %s\n", *filename);
+        return -1;
+    }
+    return fd; /* success */
 }
 
 /**
