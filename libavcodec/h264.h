@@ -1257,7 +1257,7 @@ static inline int get_dct8x8_allowed(H264Context *h){
 /**
  * decodes a P_SKIP or B_SKIP macroblock
  */
-static void decode_mb_skip(H264Context *h){
+static void av_unused decode_mb_skip(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
     int mb_type=0;
