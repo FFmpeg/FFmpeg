@@ -235,7 +235,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         rc2pass2.version = XVID_VERSION;
         rc2pass2.bitrate = avctx->bit_rate;
 
-        fd = av_tempfile("xvidff.", &(x->twopassfile));
+        fd = ff_tempfile("xvidff.", &(x->twopassfile));
         if( fd == -1 ) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot write 2-pass pipe\n");
@@ -775,7 +775,7 @@ int xvid_ff_2pass(void *ref, int cmd, void *p1, void *p2) {
  * *prefix can be a character constant; *filename will be allocated internally.
  * @return file descriptor of opened file (or -1 on error)
  * and opened file name in **filename. */
-int av_tempfile(char *prefix, char **filename) {
+int ff_tempfile(char *prefix, char **filename) {
     int fd=-1;
 #if !HAVE_MKSTEMP
     *filename = tempnam(".", prefix);

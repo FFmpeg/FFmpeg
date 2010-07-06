@@ -40,7 +40,7 @@ int ff_xvid_rate_control_init(MpegEncContext *s){
 
 //xvid_debug=-1;
 
-    fd=av_tempfile("xvidrc.", &tmp_name);
+    fd=ff_tempfile("xvidrc.", &tmp_name);
     if (fd == -1) {
         av_log(NULL, AV_LOG_ERROR, "Can't create temporary pass2 file.\n");
         return -1;
