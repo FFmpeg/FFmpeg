@@ -30,6 +30,7 @@
 #include <math.h>
 #include "libavutil/mathematics.h"
 #include "fft.h"
+#include "x86/fft.h"
 
 #define DCT32_FLOAT
 #include "dct32.c"
@@ -213,6 +214,7 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)
         s->dct_calc = dct32_func;
 
     s->dct32 = dct32;
+    if (HAVE_MMX)     ff_dct_init_mmx(s);
 
     return 0;
 }

@@ -32,5 +32,6 @@ void ff_imdct_calc_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input
 void ff_imdct_half_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_calc_sse(FFTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_sse(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_dct32_float_sse(FFTSample *out, const FFTSample *in);
 
 #endif
