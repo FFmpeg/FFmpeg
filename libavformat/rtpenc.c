@@ -24,8 +24,6 @@
 #include "internal.h"
 #include "libavutil/random_seed.h"
 
-#include <unistd.h>
-
 #include "rtpenc.h"
 
 //#define DEBUG
