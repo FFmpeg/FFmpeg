@@ -41,6 +41,8 @@
 
 #include "psymodel.h"
 
+#define AAC_MAX_CHANNELS 6
+
 static const uint8_t swb_size_1024_96[] = {
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8,
     12, 12, 12, 12, 12, 16, 16, 24, 28, 36, 44,
@@ -166,7 +168,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate %d\n", avctx->sample_rate);
         return -1;
     }
-    if (avctx->channels > 6) {
+    if (avctx->channels > AAC_MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %d\n", avctx->channels);
         return -1;
     }
@@ -486,7 +488,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
     int i, j, chans, tag, start_ch;
     const uint8_t *chan_map = aac_chan_configs[avctx->channels-1];
     int chan_el_counter[4];
-    FFPsyWindowInfo windows[avctx->channels];
+    FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
 
     if (s->last_frame)
         return 0;
