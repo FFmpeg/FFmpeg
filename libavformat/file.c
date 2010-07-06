@@ -27,7 +27,6 @@
 #endif
 #include <unistd.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <stdlib.h>
 #include "os_support.h"
 
