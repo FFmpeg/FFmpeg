@@ -46,3 +46,5 @@ OBJS-$(HAVE_MMX)                       += x86/cpuid.o                   \
                                           x86/motion_est_mmx.o          \
                                           x86/mpegvideo_mmx.o           \
                                           x86/simple_idct_mmx.o         \
+
+MMX-OBJS-$(CONFIG_DCT)                 += x86/dct32_sse.o

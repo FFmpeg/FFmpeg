@@ -43,10 +43,12 @@ av_cold void ff_fft_init_mmx(FFTContext *s)
 #endif
 }
 
+#if CONFIG_DCT
 av_cold void ff_dct_init_mmx(DCTContext *s)
 {
     int has_vectors = mm_support();
     if (has_vectors & FF_MM_SSE && HAVE_SSE)
         s->dct32 = ff_dct32_float_sse;
 }
+#endif
 
