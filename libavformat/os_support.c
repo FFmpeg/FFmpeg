@@ -26,13 +26,13 @@
 
 #include "config.h"
 #include "avformat.h"
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/time.h>
 #include "os_support.h"
 
 #if CONFIG_NETWORK
+#include <fcntl.h>
+#include <unistd.h>
 #if !HAVE_POLL_H
+#include <sys/time.h>
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #elif HAVE_SYS_SELECT_H
