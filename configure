@@ -1125,6 +1125,7 @@ HAVE_LIST="
     attribute_may_alias
     attribute_packed
     bswap
+    cbrtf
     closesocket
     cmov
     dcbzl
@@ -2999,6 +3000,7 @@ check_lib math.h sin -lm && LIBM="-lm"
 disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersion -lcrystalhd || disable crystalhd
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
+check_mathfunc cbrtf
 check_mathfunc exp2
 check_mathfunc exp2f
 check_mathfunc llrint

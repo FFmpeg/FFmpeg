@@ -28,6 +28,11 @@
 #include "config.h"
 #include "attributes.h"
 
+#if !HAVE_CBRTF
+#undef cbrtf
+#define cbrtf(x) powf(x, 1.0/3.0)
+#endif /* HAVE_CBRTF */
+
 #if !HAVE_EXP2
 #undef exp2
 #define exp2(x) exp((x) * 0.693147180559945)
