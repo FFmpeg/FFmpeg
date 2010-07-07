@@ -40,6 +40,7 @@ ELF     .size   \name, . - \name
         .endfunc
         .purgem endfunc
     .endm
+        .text
     .if \export
         .global EXTERN_ASM\name
 EXTERN_ASM\name:
