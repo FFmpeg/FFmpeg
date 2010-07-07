@@ -396,8 +396,14 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
                 st->codec->codec_tag = tag1;
                 st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag1);
-                if(tag1 == MKTAG('D', 'V', 'R', ' '))
+                if(tag1 == MKTAG('D', 'V', 'R', ' ')){
                     st->need_parsing = AVSTREAM_PARSE_FULL;
+                    // issue658 containse wrong w/h and MS even puts a fake seq header with wrong w/h in extradata while a correct one is in te stream. maximum lameness
+                    st->codec->width  =
+                    st->codec->height = 0;
+                    av_freep(&st->codec->extradata);
+                    st->codec->extradata_size=0;
+                }
                 if(st->codec->codec_id == CODEC_ID_H264)
                     st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
             }
