@@ -804,10 +804,10 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
                     s->frame_len * sizeof(float));
         }
     } else {
-        float *output[MAX_CHANNELS];
+        const float *output[MAX_CHANNELS];
         for (ch = 0; ch < MAX_CHANNELS; ch++)
             output[ch] = s->frame_out[ch];
-        s->dsp.float_to_int16_interleave(samples, (const float **)output, n, incr);
+        s->dsp.float_to_int16_interleave(samples, output, n, incr);
         for(ch = 0; ch < incr; ch++) {
             /* prepare for next block */
             memmove(&s->frame_out[ch][0], &s->frame_out[ch][n], n * sizeof(float));
