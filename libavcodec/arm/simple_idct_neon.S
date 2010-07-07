@@ -243,7 +243,6 @@ endfunc
         .align 4
 idct_coeff_neon:
         .short W1, W2, W3, W4, W5, W6, W7, W4c
-        .previous
 
         .macro idct_start data
         push            {r4-r7, lr}
