@@ -1476,6 +1476,7 @@ static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
     const int xmax= c->xmax<<shift;
     const int ymax= c->ymax<<shift;
 #define HASH(fx,fy,bx,by) ((fx)+17*(fy)+63*(bx)+117*(by))
+#define HASH8(fx,fy,bx,by) ((uint8_t)HASH(fx,fy,bx,by))
     int hashidx= HASH(motion_fx,motion_fy, motion_bx, motion_by);
     uint8_t map[256];
 
@@ -1510,21 +1511,21 @@ static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
 { 1, 1,-1,-1}, {-1,-1, 1, 1}, { 1,-1,-1, 1}, {-1, 1, 1,-1}, { 1,-1, 1,-1}, {-1, 1,-1, 1},
         };
         static const uint8_t hash[]={
-HASH( 0, 0, 0, 1), HASH( 0, 0, 0,-1), HASH( 0, 0, 1, 0), HASH( 0, 0,-1, 0), HASH( 0, 1, 0, 0), HASH( 0,-1, 0, 0), HASH( 1, 0, 0, 0), HASH(-1, 0, 0, 0),
+HASH8( 0, 0, 0, 1), HASH8( 0, 0, 0,-1), HASH8( 0, 0, 1, 0), HASH8( 0, 0,-1, 0), HASH8( 0, 1, 0, 0), HASH8( 0,-1, 0, 0), HASH8( 1, 0, 0, 0), HASH8(-1, 0, 0, 0),
 
-HASH( 0, 0, 1, 1), HASH( 0, 0,-1,-1), HASH( 0, 1, 1, 0), HASH( 0,-1,-1, 0), HASH( 1, 1, 0, 0), HASH(-1,-1, 0, 0), HASH( 1, 0, 0, 1), HASH(-1, 0, 0,-1),
-HASH( 0, 1, 0, 1), HASH( 0,-1, 0,-1), HASH( 1, 0, 1, 0), HASH(-1, 0,-1, 0),
-HASH( 0, 0,-1, 1), HASH( 0, 0, 1,-1), HASH( 0,-1, 1, 0), HASH( 0, 1,-1, 0), HASH(-1, 1, 0, 0), HASH( 1,-1, 0, 0), HASH( 1, 0, 0,-1), HASH(-1, 0, 0, 1),
-HASH( 0,-1, 0, 1), HASH( 0, 1, 0,-1), HASH(-1, 0, 1, 0), HASH( 1, 0,-1, 0),
+HASH8( 0, 0, 1, 1), HASH8( 0, 0,-1,-1), HASH8( 0, 1, 1, 0), HASH8( 0,-1,-1, 0), HASH8( 1, 1, 0, 0), HASH8(-1,-1, 0, 0), HASH8( 1, 0, 0, 1), HASH8(-1, 0, 0,-1),
+HASH8( 0, 1, 0, 1), HASH8( 0,-1, 0,-1), HASH8( 1, 0, 1, 0), HASH8(-1, 0,-1, 0),
+HASH8( 0, 0,-1, 1), HASH8( 0, 0, 1,-1), HASH8( 0,-1, 1, 0), HASH8( 0, 1,-1, 0), HASH8(-1, 1, 0, 0), HASH8( 1,-1, 0, 0), HASH8( 1, 0, 0,-1), HASH8(-1, 0, 0, 1),
+HASH8( 0,-1, 0, 1), HASH8( 0, 1, 0,-1), HASH8(-1, 0, 1, 0), HASH8( 1, 0,-1, 0),
 
-HASH( 0, 1, 1, 1), HASH( 0,-1,-1,-1), HASH( 1, 1, 1, 0), HASH(-1,-1,-1, 0), HASH( 1, 1, 0, 1), HASH(-1,-1, 0,-1), HASH( 1, 0, 1, 1), HASH(-1, 0,-1,-1),
-HASH( 0,-1, 1, 1), HASH( 0, 1,-1,-1), HASH(-1, 1, 1, 0), HASH( 1,-1,-1, 0), HASH( 1, 1, 0,-1), HASH(-1,-1, 0, 1), HASH( 1, 0,-1, 1), HASH(-1, 0, 1,-1),
-HASH( 0, 1,-1, 1), HASH( 0,-1, 1,-1), HASH( 1,-1, 1, 0), HASH(-1, 1,-1, 0), HASH(-1, 1, 0, 1), HASH( 1,-1, 0,-1), HASH( 1, 0, 1,-1), HASH(-1, 0,-1, 1),
-HASH( 0, 1, 1,-1), HASH( 0,-1,-1, 1), HASH( 1, 1,-1, 0), HASH(-1,-1, 1, 0), HASH( 1,-1, 0, 1), HASH(-1, 1, 0,-1), HASH(-1, 0, 1, 1), HASH( 1, 0,-1,-1),
+HASH8( 0, 1, 1, 1), HASH8( 0,-1,-1,-1), HASH8( 1, 1, 1, 0), HASH8(-1,-1,-1, 0), HASH8( 1, 1, 0, 1), HASH8(-1,-1, 0,-1), HASH8( 1, 0, 1, 1), HASH8(-1, 0,-1,-1),
+HASH8( 0,-1, 1, 1), HASH8( 0, 1,-1,-1), HASH8(-1, 1, 1, 0), HASH8( 1,-1,-1, 0), HASH8( 1, 1, 0,-1), HASH8(-1,-1, 0, 1), HASH8( 1, 0,-1, 1), HASH8(-1, 0, 1,-1),
+HASH8( 0, 1,-1, 1), HASH8( 0,-1, 1,-1), HASH8( 1,-1, 1, 0), HASH8(-1, 1,-1, 0), HASH8(-1, 1, 0, 1), HASH8( 1,-1, 0,-1), HASH8( 1, 0, 1,-1), HASH8(-1, 0,-1, 1),
+HASH8( 0, 1, 1,-1), HASH8( 0,-1,-1, 1), HASH8( 1, 1,-1, 0), HASH8(-1,-1, 1, 0), HASH8( 1,-1, 0, 1), HASH8(-1, 1, 0,-1), HASH8(-1, 0, 1, 1), HASH8( 1, 0,-1,-1),
 
-HASH( 1, 1, 1, 1), HASH(-1,-1,-1,-1),
-HASH( 1, 1, 1,-1), HASH(-1,-1,-1, 1), HASH( 1, 1,-1, 1), HASH(-1,-1, 1,-1), HASH( 1,-1, 1, 1), HASH(-1, 1,-1,-1), HASH(-1, 1, 1, 1), HASH( 1,-1,-1,-1),
-HASH( 1, 1,-1,-1), HASH(-1,-1, 1, 1), HASH( 1,-1,-1, 1), HASH(-1, 1, 1,-1), HASH( 1,-1, 1,-1), HASH(-1, 1,-1, 1),
+HASH8( 1, 1, 1, 1), HASH8(-1,-1,-1,-1),
+HASH8( 1, 1, 1,-1), HASH8(-1,-1,-1, 1), HASH8( 1, 1,-1, 1), HASH8(-1,-1, 1,-1), HASH8( 1,-1, 1, 1), HASH8(-1, 1,-1,-1), HASH8(-1, 1, 1, 1), HASH8( 1,-1,-1,-1),
+HASH8( 1, 1,-1,-1), HASH8(-1,-1, 1, 1), HASH8( 1,-1,-1, 1), HASH8(-1, 1, 1,-1), HASH8( 1,-1, 1,-1), HASH8(-1, 1,-1, 1),
 };
 
 #define CHECK_BIDIR(fx,fy,bx,by)\
