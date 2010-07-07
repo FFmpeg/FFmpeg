@@ -177,7 +177,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ass_demuxer = {
     "ass",
-    NULL_IF_CONFIG_SMALL("SSA/ASS format"),
+    NULL_IF_CONFIG_SMALL("Advanced SubStation Alpha subtitle format"),
     sizeof(ASSContext),
     probe,
     read_header,
