@@ -90,13 +90,13 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         int y1 = c == 1 || c == 2 ? y>>priv->pix_desc->log2_chroma_h : y;
 
         for (i = y1; i < y1 + h1; i++) {
-            read_line(priv->line,
+            av_read_image_line(priv->line,
                       inpic->data,
                       inpic->linesize,
                       priv->pix_desc,
                       0, i, c, w1, 0);
 
-            write_line(priv->line,
+            av_write_image_line(priv->line,
                        outpic->data,
                        outpic->linesize,
                        priv->pix_desc,

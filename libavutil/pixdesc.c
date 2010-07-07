@@ -24,7 +24,7 @@
 
 #include "intreadwrite.h"
 
-void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4],
+void av_read_image_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4],
                const AVPixFmtDescriptor *desc, int x, int y, int c, int w, int read_pal_component)
 {
     AVComponentDescriptor comp= desc->comp[c];
@@ -65,7 +65,7 @@ void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4],
     }
 }
 
-void write_line(const uint16_t *src, uint8_t *data[4], const int linesize[4],
+void av_write_image_line(const uint16_t *src, uint8_t *data[4], const int linesize[4],
                 const AVPixFmtDescriptor *desc, int x, int y, int c, int w)
 {
     AVComponentDescriptor comp = desc->comp[c];
