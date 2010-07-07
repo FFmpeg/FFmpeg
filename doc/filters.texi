@@ -112,6 +112,18 @@ The default value of @var{color} is ``black''.
 
 @end table
 
+@section pixdesctest
+
+Pixel format descriptor test filter, mainly useful for internal
+testing. The output video should be equal to the input video.
+
+For example:
+@example
+format=monow, pixdesctest
+@end example
+
+can be used to test the monowhite pixel format descriptor definition.
+
 @section scale
 
 Scale the input video to @var{width}:@var{height} and/or convert the image format.

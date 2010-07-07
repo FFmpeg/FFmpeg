@@ -268,6 +268,7 @@ LAVFI_TESTS =           \
     vflip               \
     vflip_crop          \
     vflip_vflip         \
+    lavfi_pixdesc       \
 #   lavfi_pix_fmts      \
 
 ACODEC_TESTS := $(addprefix regtest-, $(ACODEC_TESTS) $(ACODEC_TESTS-yes))
