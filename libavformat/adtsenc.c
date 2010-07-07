@@ -77,7 +77,7 @@ static int adts_write_header(AVFormatContext *s)
     ADTSContext *adts = s->priv_data;
     AVCodecContext *avc = s->streams[0]->codec;
 
-    if(avc->extradata_size > 0 &&
+    if (avc->extradata_size > 0 &&
             ff_adts_decode_extradata(s, adts, avc->extradata, avc->extradata_size) < 0)
         return -1;
 
@@ -123,10 +123,10 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!pkt->size)
         return 0;
-    if(adts->write_adts) {
+    if (adts->write_adts) {
         ff_adts_write_frame_header(adts, buf, pkt->size, adts->pce_size);
         put_buffer(pb, buf, ADTS_HEADER_SIZE);
-        if(adts->pce_size) {
+        if (adts->pce_size) {
             put_buffer(pb, adts->pce_data, adts->pce_size);
             adts->pce_size = 0;
         }
