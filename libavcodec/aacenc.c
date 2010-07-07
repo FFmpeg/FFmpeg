@@ -529,7 +529,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
                 wi[j].num_windows    = 1;
                 wi[j].grouping[0]    = 1;
             } else {
-            wi[j] = ff_psy_suggest_window(&s->psy, samples2, la, start_ch + j, ics->window_sequence[0]);
+                wi[j] = ff_psy_suggest_window(&s->psy, samples2, la, start_ch + j,
+                                              ics->window_sequence[0]);
             }
             ics->window_sequence[1] = ics->window_sequence[0];
             ics->window_sequence[0] = wi[j].window_type[0];
