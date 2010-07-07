@@ -716,6 +716,7 @@ AVCodec rv10_decoder = {
     rv10_decode_end,
     rv10_decode_frame,
     CODEC_CAP_DR1,
+    .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
     .pix_fmts= ff_pixfmt_list_420,
 };
@@ -731,6 +732,7 @@ AVCodec rv20_decoder = {
     rv10_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
+    .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
     .pix_fmts= ff_pixfmt_list_420,
 };

@@ -667,5 +667,6 @@ AVCodec png_decoder = {
     decode_frame,
     CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
     NULL,
+    .max_lowres = 5,
     .long_name = NULL_IF_CONFIG_SMALL("PNG image"),
 };

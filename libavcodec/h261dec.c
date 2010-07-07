@@ -651,5 +651,6 @@ AVCodec h261_decoder = {
     h261_decode_end,
     h261_decode_frame,
     CODEC_CAP_DR1,
+    .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("H.261"),
 };

@@ -2511,6 +2511,7 @@ AVCodec mpeg1video_decoder = {
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= flush,
+    .max_lowres= 3,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
 };
 
@@ -2525,6 +2526,7 @@ AVCodec mpeg2video_decoder = {
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= flush,
+    .max_lowres= 3,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-2 video"),
 };
 
@@ -2540,6 +2542,7 @@ AVCodec mpegvideo_decoder = {
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= flush,
+    .max_lowres= 3,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
 };
 

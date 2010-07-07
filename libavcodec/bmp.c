@@ -345,5 +345,6 @@ AVCodec bmp_decoder = {
     bmp_decode_end,
     bmp_decode_frame,
     CODEC_CAP_DR1,
+    .max_lowres = 5,
     .long_name = NULL_IF_CONFIG_SMALL("BMP image"),
 };

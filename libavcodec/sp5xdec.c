@@ -204,6 +204,7 @@ AVCodec sp5x_decoder = {
     sp5x_decode_frame,
     CODEC_CAP_DR1,
     NULL,
+    .max_lowres = 5,
     .long_name = NULL_IF_CONFIG_SMALL("Sunplus JPEG (SP5X)"),
 };
 

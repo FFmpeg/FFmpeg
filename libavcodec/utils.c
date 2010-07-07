@@ -506,6 +506,13 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     }
     avctx->frame_number = 0;
     if(avctx->codec->init){
+        if(avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
+           avctx->codec->max_lowres < avctx->lowres){
+            av_log(avctx, AV_LOG_ERROR, "The maximum value for lowres supported by the decoder is %d\n",
+                   avctx->codec->max_lowres);
+            goto free_and_end;
+        }
+
         ret = avctx->codec->init(avctx);
         if (ret < 0) {
             goto free_and_end;

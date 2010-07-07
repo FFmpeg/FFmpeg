@@ -1542,6 +1542,7 @@ AVCodec mjpeg_decoder = {
     ff_mjpeg_decode_frame,
     CODEC_CAP_DR1,
     NULL,
+    .max_lowres = 8,
     .long_name = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
 };
 
@@ -1556,5 +1557,6 @@ AVCodec thp_decoder = {
     ff_mjpeg_decode_frame,
     CODEC_CAP_DR1,
     NULL,
+    .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("Nintendo Gamecube THP video"),
 };
