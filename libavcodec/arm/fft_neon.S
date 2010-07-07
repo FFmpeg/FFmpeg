@@ -364,7 +364,7 @@ fft_tab_neon:
         .word fft16384_neon
         .word fft32768_neon
         .word fft65536_neon
-        .size fft_tab_neon, . - fft_tab_neon
+ELF     .size fft_tab_neon, . - fft_tab_neon
 
         .align 4
 pmmp:   .float  +1.0, -1.0, -1.0, +1.0
