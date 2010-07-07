@@ -25,8 +25,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 20
-#define LIBAVFILTER_VERSION_MICRO  1
+#define LIBAVFILTER_VERSION_MINOR 21
+#define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -119,6 +119,19 @@ typedef struct AVFilterPicRef
     int interlaced;             ///< is frame interlaced
     int top_field_first;
 } AVFilterPicRef;
+
+/**
+ * Copy properties of src to dst, without copying the actual video
+ * data.
+ */
+static inline void avfilter_copy_picref_props(AVFilterPicRef *dst, AVFilterPicRef *src)
+{
+    dst->pts             = src->pts;
+    dst->pos             = src->pos;
+    dst->pixel_aspect    = src->pixel_aspect;
+    dst->interlaced      = src->interlaced;
+    dst->top_field_first = src->top_field_first;
+}
 
 /**
  * Add a new reference to a picture.
