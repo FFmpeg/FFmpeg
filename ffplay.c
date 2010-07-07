@@ -943,7 +943,8 @@ static void video_audio_display(VideoState *s)
             for(y=0; y<s->height; y++){
                 double w= 1/sqrt(nb_freq);
                 int a= sqrt(w*sqrt(data[0][2*y+0]*data[0][2*y+0] + data[0][2*y+1]*data[0][2*y+1]));
-                int b= sqrt(w*sqrt(data[1][2*y+0]*data[1][2*y+0] + data[1][2*y+1]*data[1][2*y+1]));
+                int b= (nb_display_channels == 2 ) ? sqrt(w*sqrt(data[1][2*y+0]*data[1][2*y+0]
+                       + data[1][2*y+1]*data[1][2*y+1])) : a;
                 a= FFMIN(a,255);
                 b= FFMIN(b,255);
                 fgcolor = SDL_MapRGB(screen->format, a, b, (a+b)/2);
