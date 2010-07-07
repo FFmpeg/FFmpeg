@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "timer.h"
+#include "time.h"
 #include "random_seed.h"
 #include "avutil.h"
 
@@ -37,6 +38,38 @@ static int read_random(uint32_t *dst, const char *file)
     return err;
 }
 
+static uint32_t get_generic_seed(void)
+{
+    int last_t=0;
+    int bits=0;
+    uint64_t random=0;
+    int i;
+    int s=0;
+
+    for(i=0;bits<64;i++){
+        int t= clock()>>s;
+        if(last_t && t != last_t){
+            if(i<10000U && s<24){
+                s++;
+                i=t=0;
+            }else{
+                random= 2*random + (i&1);
+                bits++;
+            }
+        }
+        last_t= t;
+    }
+#ifdef AV_READ_TIME
+    random ^= AV_READ_TIME();
+#else
+    random ^= clock();
+#endif
+
+    random += random>>32;
+
+    return random;
+}
+
 uint32_t av_get_random_seed(void)
 {
     uint32_t seed;
@@ -45,12 +78,7 @@ uint32_t av_get_random_seed(void)
         return seed;
     if (read_random(&seed, "/dev/random")  == sizeof(seed))
         return seed;
-
-#ifdef AV_READ_TIME
-    seed = AV_READ_TIME();
-#endif
-    // XXX what to do ?
-    return seed;
+    return get_generic_seed();
 }
 
 #if LIBAVUTIL_VERSION_MAJOR < 51
