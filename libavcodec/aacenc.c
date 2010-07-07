@@ -209,10 +209,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     ff_aac_tableinit();
 
-    if (avctx->channels > 5)
-        av_log(avctx, AV_LOG_ERROR, "This encoder does not yet enforce the restrictions on LFEs. "
-               "The output will most likely be an illegal bitstream.\n");
-
     return 0;
 }
 
@@ -527,14 +523,21 @@ static int aac_encode_frame(AVCodecContext *avctx,
         for (j = 0; j < chans; j++) {
             IndividualChannelStream *ics = &cpe->ch[j].ics;
             int k;
+            if (tag == TYPE_LFE) {
+                wi[j].window_type[0] = ONLY_LONG_SEQUENCE;
+                wi[j].window_shape   = 0;
+                wi[j].num_windows    = 1;
+                wi[j].grouping[0]    = 1;
+            } else {
             wi[j] = ff_psy_suggest_window(&s->psy, samples2, la, start_ch + j, ics->window_sequence[0]);
+            }
             ics->window_sequence[1] = ics->window_sequence[0];
             ics->window_sequence[0] = wi[j].window_type[0];
             ics->use_kb_window[1]   = ics->use_kb_window[0];
             ics->use_kb_window[0]   = wi[j].window_shape;
             ics->num_windows        = wi[j].num_windows;
             ics->swb_sizes          = s->psy.bands    [ics->num_windows == 8];
-            ics->num_swb            = s->psy.num_bands[ics->num_windows == 8];
+            ics->num_swb            = tag == TYPE_LFE ? 12 : s->psy.num_bands[ics->num_windows == 8];
             for (k = 0; k < ics->num_windows; k++)
                 ics->group_len[k] = wi[j].grouping[k];
 
