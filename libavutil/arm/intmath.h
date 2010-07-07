@@ -27,6 +27,8 @@
 #if HAVE_INLINE_ASM
 
 #if HAVE_ARMV6
+
+#define FASTDIV FASTDIV
 static inline av_const int FASTDIV(int a, int b)
 {
     int r, t;
@@ -37,7 +39,10 @@ static inline av_const int FASTDIV(int a, int b)
                      : "=&r"(r), "=&r"(t) : "r"(a), "r"(b), "r"(ff_inverse));
     return r;
 }
-#else
+
+#else /* HAVE_ARMV6 */
+
+#define FASTDIV FASTDIV
 static inline av_const int FASTDIV(int a, int b)
 {
     int r, t;
@@ -45,9 +50,8 @@ static inline av_const int FASTDIV(int a, int b)
                      : "=&r"(r), "=&r"(t) : "r"(a), "r"(ff_inverse[b]));
     return r;
 }
-#endif
 
-#define FASTDIV FASTDIV
+#endif /* HAVE_ARMV6 */
 
 #endif /* HAVE_INLINE_ASM */
 
