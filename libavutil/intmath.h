@@ -52,21 +52,7 @@ extern const uint32_t ff_inverse[257];
 #   endif
 #endif /* FASTDIV */
 
-/*
- * Get definition of av_log2_c from common.h.  In the event we got
- * here through common.h including this file, including it again will
- * be a no-op due to multi-inclusion guards, so we must duplicate the
- * fallback defines here.
- */
-
 #include "common.h"
-
-#ifndef av_log2
-#   define av_log2       av_log2_c
-#endif
-#ifndef av_log2_16bit
-#   define av_log2_16bit av_log2_16bit_c
-#endif
 
 extern const uint8_t ff_sqrt_tab[256];
 

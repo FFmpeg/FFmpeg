@@ -90,12 +90,8 @@ static inline av_const int av_log2_16bit_c(unsigned int v)
 #   include "intmath.h"
 #endif
 
-#ifndef av_log2
-#   define av_log2       av_log2_c
-#endif
-#ifndef av_log2_16bit
-#   define av_log2_16bit av_log2_16bit_c
-#endif
+/* Pull in unguarded fallback defines at the end of this file. */
+#include "common.h"
 
 /**
  * Clip a signed integer value into the amin-amax range.
@@ -312,3 +308,15 @@ static inline av_const int av_ceil_log2(int x)
 #endif /* HAVE_AV_CONFIG_H */
 
 #endif /* AVUTIL_COMMON_H */
+
+/*
+ * The following definitions are outside the multiple inclusion guard
+ * to ensure they are immediately available in intmath.h.
+ */
+
+#ifndef av_log2
+#   define av_log2       av_log2_c
+#endif
+#ifndef av_log2_16bit
+#   define av_log2_16bit av_log2_16bit_c
+#endif
