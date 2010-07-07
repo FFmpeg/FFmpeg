@@ -995,7 +995,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
     const int c = 1024 / ics->num_windows;
     const uint16_t *offsets = ics->swb_offset;
     float *coef_base = coef;
-    int err_idx;
 
     for (g = 0; g < ics->num_windows; g++)
         memset(coef + g * 128 + offsets[ics->max_sfb], 0, sizeof(float) * (c - offsets[ics->max_sfb]));
@@ -1031,7 +1030,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                 const float *vq = ff_aac_codebook_vector_vals[cbt_m1];
                 const uint16_t *cb_vector_idx = ff_aac_codebook_vector_idx[cbt_m1];
                 VLC_TYPE (*vlc_tab)[2] = vlc_spectral[cbt_m1].table;
-                const int cb_size = ff_aac_spectral_sizes[cbt_m1];
                 OPEN_READER(re, gb);
 
                 switch (cbt_m1 >> 1) {
@@ -1046,12 +1044,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
 
                             UPDATE_CACHE(re, gb);
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
-
-                            if (code >= cb_size) {
-                                err_idx = code;
-                                goto err_cb_overflow;
-                            }
-
                             cb_idx = cb_vector_idx[code];
                             cf = VMUL4(cf, vq, cb_idx, sf + idx);
                         } while (len -= 4);
@@ -1071,12 +1063,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
 
                             UPDATE_CACHE(re, gb);
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
-
-                            if (code >= cb_size) {
-                                err_idx = code;
-                                goto err_cb_overflow;
-                            }
-
 #if MIN_CACHE_BITS < 20
                             UPDATE_CACHE(re, gb);
 #endif
@@ -1100,12 +1086,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
 
                             UPDATE_CACHE(re, gb);
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
-
-                            if (code >= cb_size) {
-                                err_idx = code;
-                                goto err_cb_overflow;
-                            }
-
                             cb_idx = cb_vector_idx[code];
                             cf = VMUL2(cf, vq, cb_idx, sf + idx);
                         } while (len -= 2);
@@ -1126,12 +1106,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
 
                             UPDATE_CACHE(re, gb);
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
-
-                            if (code >= cb_size) {
-                                err_idx = code;
-                                goto err_cb_overflow;
-                            }
-
                             cb_idx = cb_vector_idx[code];
                             nnz = cb_idx >> 8 & 15;
                             sign = SHOW_UBITS(re, gb, nnz) << (cb_idx >> 12);
@@ -1161,11 +1135,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                                 *icf++ = 0;
                                 *icf++ = 0;
                                 continue;
-                            }
-
-                            if (code >= cb_size) {
-                                err_idx = code;
-                                goto err_cb_overflow;
                             }
 
                             cb_idx = cb_vector_idx[code];
@@ -1236,12 +1205,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
         }
     }
     return 0;
-
-err_cb_overflow:
-    av_log(ac->avctx, AV_LOG_ERROR,
-           "Read beyond end of ff_aac_codebook_vectors[%d][]. index %d >= %d\n",
-           band_type[idx], err_idx, ff_aac_spectral_sizes[band_type[idx]]);
-    return -1;
 }
 
 static av_always_inline float flt16_round(float pf)
