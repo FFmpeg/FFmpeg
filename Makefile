@@ -289,28 +289,32 @@ $(LAVF_TESTS) $(LAVFI_TESTS): regtest-ref
 REFFILE = $(SRC_PATH)/tests/ref/$(1)/$(2:regtest-%=%)
 RESFILE = tests/data/$(2:regtest-%=%).$(1).regression
 
-define CODECTEST_CMD
-	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth1 tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
-	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth2 tests/vsynth2 "$(TARGET_EXEC)" "$(TARGET_PATH)"
+define VCODECTEST
+	@echo "TEST VCODEC $(1:regtest-%=%)"
+	$(SRC_PATH)/tests/codec-regression.sh $(1) vsynth1 tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	$(SRC_PATH)/tests/codec-regression.sh $(1) vsynth2 tests/vsynth2 "$(TARGET_EXEC)" "$(TARGET_PATH)"
+endef
+
+define ACODECTEST
+	@echo "TEST ACODEC $(1:regtest-%=%)"
+	$(SRC_PATH)/tests/codec-regression.sh $(1) acodec tests/acodec "$(TARGET_EXEC)" "$(TARGET_PATH)"
 endef
 
 regtest-ref: regtest-aref regtest-vref
 
 regtest-vref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
-	$(CODECTEST_CMD)
+	@$(call VCODECTEST,vref)
 
 regtest-aref: ffmpeg$(EXESUF) tests/data/asynth1.sw
-	@$(SRC_PATH)/tests/codec-regression.sh $@ acodec tests/acodec "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@$(call ACODECTEST,aref)
 
 $(VCODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
-	@echo "TEST VCODEC $(@:regtest-%=%)"
-	@$(CODECTEST_CMD)
+	@$(call VCODECTEST,$@)
 	@diff -u -w $(call REFFILE,vsynth1,$@) $(call RESFILE,vsynth1,$@)
 	@diff -u -w $(call REFFILE,vsynth2,$@) $(call RESFILE,vsynth2,$@)
 
 $(ACODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
-	@echo "TEST ACODEC $(@:regtest-%=%)"
-	@$(SRC_PATH)/tests/codec-regression.sh $@ acodec tests/acodec "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@$(call ACODECTEST,$@)
 	@diff -u -w $(call REFFILE,acodec,$@) $(call RESFILE,acodec,$@)
 
 $(LAVF_TESTS):
