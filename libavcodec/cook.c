@@ -709,12 +709,12 @@ static void interpolate_float(COOKContext *q, float* buffer,
  * Apply transform window, overlap buffers.
  *
  * @param q                 pointer to the COOKContext
- * @param buffer1           pointer to the mltcoefficients
+ * @param inbuffer          pointer to the mltcoefficients
  * @param gains_ptr         current and previous gains
  * @param previous_buffer   pointer to the previous buffer to be used for overlapping
  */
 
-static void imlt_window_float (COOKContext *q, float *buffer1,
+static void imlt_window_float (COOKContext *q, float *inbuffer,
                                cook_gains *gains_ptr, float *previous_buffer)
 {
     const float fc = pow2tab[gains_ptr->previous[0] + 63];
@@ -727,7 +727,7 @@ static void imlt_window_float (COOKContext *q, float *buffer1,
 
     /* Apply window and overlap */
     for(i = 0; i < q->samples_per_channel; i++){
-        buffer1[i] = buffer1[i] * fc * q->mlt_window[i] -
+        inbuffer[i] = inbuffer[i] * fc * q->mlt_window[i] -
           previous_buffer[i] * q->mlt_window[q->samples_per_channel - 1 - i];
     }
 }
@@ -924,7 +924,7 @@ saturate_output_float (COOKContext *q, int chan, int16_t *out)
  *
  * @param q                 pointer to the COOKContext
  * @param decode_buffer     pointer to the mlt coefficients
- * @param gains             array of current/prev gain pointers
+ * @param gains_ptr         array of current/prev gain pointers
  * @param previous_buffer   pointer to the previous buffer to be used for overlapping
  * @param out               pointer to the output buffer
  * @param chan              0: left or single channel, 1: right channel
@@ -932,10 +932,10 @@ saturate_output_float (COOKContext *q, int chan, int16_t *out)
 
 static inline void
 mlt_compensate_output(COOKContext *q, float *decode_buffer,
-                      cook_gains *gains, float *previous_buffer,
+                      cook_gains *gains_ptr, float *previous_buffer,
                       int16_t *out, int chan)
 {
-    imlt_gain(q, decode_buffer, gains, previous_buffer);
+    imlt_gain(q, decode_buffer, gains_ptr, previous_buffer);
     q->saturate_output (q, chan, out);
 }
 
