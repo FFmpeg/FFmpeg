@@ -744,6 +744,9 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
 }
 
 /**
+ * @param c arithmetic bitstream reader context
+ * @param block destination for block coefficients
+ * @param probs probabilities to use when reading trees from the bitstream
  * @param i initial coeff index, 0 unless a separate DC block is coded
  * @param zero_nhood the initial prediction context for number of surrounding
  *                   all-zero blocks (only left/top, so 0-2)
@@ -924,6 +927,7 @@ static void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
  * @param width width of src/dst plane data
  * @param height height of src/dst plane data
  * @param linesize size of a single line of plane data, including padding
+ * @param mc_func motion compensation function pointers (bilinear or sixtap MC)
  */
 static inline void vp8_mc(VP8Context *s, int luma,
                           uint8_t *dst, uint8_t *src, const VP56mv *mv,
