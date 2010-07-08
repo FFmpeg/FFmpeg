@@ -1589,10 +1589,10 @@ static int http_parse_request(HTTPContext *c)
     }
 
     if (c->post == 0 && max_bandwidth < current_bandwidth) {
-        c->http_error = 200;
+        c->http_error = 503;
         q = c->buffer;
         q += snprintf(q, c->buffer_size,
-                      "HTTP/1.0 200 Server too busy\r\n"
+                      "HTTP/1.0 503 Server too busy\r\n"
                       "Content-type: text/html\r\n"
                       "\r\n"
                       "<html><head><title>Too busy</title></head><body>\r\n"
