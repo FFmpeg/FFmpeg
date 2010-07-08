@@ -510,12 +510,14 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->pat_packet_count = ts->pat_packet_period-1;
     ts->sdt_packet_count = ts->sdt_packet_period-1;
 
-    av_log(s, AV_LOG_INFO,
-           "muxrate %d bps, pcr every %d pkts, "
+    if (ts->mux_rate == 1)
+        av_log(s, AV_LOG_INFO, "muxrate VBR, ");
+    else
+        av_log(s, AV_LOG_INFO, "muxrate %d, ", ts->mux_rate);
+    av_log(s, AV_LOG_INFO, "pcr every %d pkts, "
            "sdt every %d, pat/pmt every %d pkts\n",
-           ts->mux_rate, service->pcr_packet_period,
+           service->pcr_packet_period,
            ts->sdt_packet_period, ts->pat_packet_period);
-
 
     put_flush_packet(s->pb);
 
