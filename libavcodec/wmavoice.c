@@ -660,7 +660,7 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs,
  *    overlap-add method (otherwise you get clicking-artifacts).
  *
  * @param s WMA Voice decoding context
- * @param s fcb_type Frame (codebook) type
+ * @param fcb_type Frame (codebook) type
  * @param synth_pf input: the noisy speech signal, output: denoised speech
  *                 data; should be 16-byte aligned (for ASM purposes)
  * @param size size of the speech data
@@ -744,6 +744,7 @@ static void wiener_denoise(WMAVoiceContext *s, int fcb_type,
  * @param samples Output buffer for filtered samples
  * @param size Buffer size of synth & samples
  * @param lpcs Generated LPCs used for speech synthesis
+ * @param zero_exc_pf destination for zero synthesis filter (16-byte aligned)
  * @param fcb_type Frame type (silence, hardcoded, AW-pulses or FCB-pulses)
  * @param pitch Pitch of the input signal
  */
