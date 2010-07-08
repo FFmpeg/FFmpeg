@@ -43,13 +43,13 @@ static uint32_t get_generic_seed(void)
     int last_t=0;
     int bits=0;
     uint64_t random=0;
-    int i;
+    unsigned i;
     int s=0;
 
     for(i=0;bits<64;i++){
         int t= clock()>>s;
         if(last_t && t != last_t){
-            if(i<10000U && s<24){
+            if(i<10000 && s<24){
                 s++;
                 i=t=0;
             }else{
