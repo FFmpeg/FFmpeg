@@ -747,6 +747,19 @@ static int mov_write_subtitle_tag(ByteIOContext *pb, MOVTrack *track)
     return updateSize(pb, pos);
 }
 
+static int mov_write_pasp_tag(ByteIOContext *pb, MOVTrack *track)
+{
+    AVRational sar;
+    av_reduce(&sar.num, &sar.den, track->enc->sample_aspect_ratio.num,
+              track->enc->sample_aspect_ratio.den, INT_MAX);
+
+    put_be32(pb, 16);
+    put_tag(pb, "pasp");
+    put_be32(pb, track->enc->sample_aspect_ratio.num);
+    put_be32(pb, track->enc->sample_aspect_ratio.den);
+    return 16;
+}
+
 static int mov_write_video_tag(ByteIOContext *pb, MOVTrack *track)
 {
     int64_t pos = url_ftell(pb);
@@ -807,6 +820,12 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack *track)
             mov_write_uuid_tag_ipod(pb);
     } else if(track->vosLen > 0)
         mov_write_glbl_tag(pb, track);
+
+    if (track->mode == MODE_MOV &&
+        track->enc->sample_aspect_ratio.den && track->enc->sample_aspect_ratio.num &&
+        track->enc->sample_aspect_ratio.den != track->enc->sample_aspect_ratio.num) {
+        mov_write_pasp_tag(pb, track);
+    }
 
     return updateSize(pb, pos);
 }
