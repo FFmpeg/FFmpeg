@@ -1485,7 +1485,6 @@ test_deps _muxer _demuxer                                               \
     yuv4mpegpipe=yuv4mpeg                                               \
 
 mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
-pcm_test_deps=$(echo pcm_{{a,mu}law,u8,s8,{s{16,24,32},f{32,64}}{be,le},s24daud,zork}_{en,de}coder)
 
 # default parameters
 
@@ -1619,6 +1618,8 @@ find_tests(){
 ACODEC_TESTS=$(find_tests acodec)
 VCODEC_TESTS=$(find_tests vsynth1)
 LAVF_TESTS=$(find_tests lavf)
+
+pcm_test_deps=$(map 'echo ${v%_*}_decoder $v' $(filter pcm_* $ENCODER_LIST))
 
 for n in $COMPONENT_LIST; do
     v=$(toupper ${n%s})_LIST
