@@ -1028,7 +1028,7 @@ static av_always_inline int diamond_search(MpegEncContext * s, int *best, int dm
 }
 
 /*!
-   \param P a list of candidate mvs to check before starting the
+   \param P[10][2] a list of candidate mvs to check before starting the
    iterative search. If one of the candidates is close to the optimal mv, then
    it takes fewer iterations. And it increases the chance that we find the
    optimal mv.
