@@ -16,10 +16,11 @@ API changes, most recent first:
   Rename read/write_line() to av_read/write_image_line().
 
 2010-07-07 - r24091 - lavfi 1.21.0 - avfilter_copy_picref_props()
-  Add  avfilter_copy_picref_props().
+  Add avfilter_copy_picref_props().
 
 2010-07-03 - r24021 - lavc 52.79.0
-  Added FF_COMPLIANCE_UNOFFICIAL and changed all instances of FF_COMPLIANCE_INOFFICIAL to use FF_COMPLIANCE_UNOFFICIAL
+  Add FF_COMPLIANCE_UNOFFICIAL and change all instances of
+  FF_COMPLIANCE_INOFFICIAL to use FF_COMPLIANCE_UNOFFICIAL.
 
 2010-07-02 - r23985 - lavu 50.20.0 - lfg.h
   Export av_lfg_init(), av_lfg_get(), av_mlfg_get(), and av_bmg_get() through
@@ -30,13 +31,13 @@ API changes, most recent first:
   set the alpha value to 255 by default.
 
 2010-06-22 - r23706 - lavf 52.71.0 - URLProtocol.priv_data_size, priv_data_class
-  Add priv_data_size and priv_data_class to URLProtocol
+  Add priv_data_size and priv_data_class to URLProtocol.
 
 2010-06-22 - r23704 - lavf 52.70.0 - url_alloc(), url_connect()
-  Add url_alloc() and url_connect()
+  Add url_alloc() and url_connect().
 
-2010-06-22 - r23702 - lavf 52.69.0 - av_register_protocol2
-  Add av_register_protocol2(), deprecating av_register_protocol()
+2010-06-22 - r23702 - lavf 52.69.0 - av_register_protocol2()
+  Add av_register_protocol2(), deprecating av_register_protocol().
 
 2010-06-09 - r23551 - lavu 50.19.0 - av_compare_mod()
   Add av_compare_mod() to libavutil/mathematics.h.
@@ -47,20 +48,20 @@ API changes, most recent first:
 2010-06-04 - r23461 - lavu 50.17.0 - AV_BASE64_SIZE
   Add AV_BASE64_SIZE() macro.
 
-2010-06-02 - r23421 - lavc 52.73.0 - av_get_codec_tag_string
+2010-06-02 - r23421 - lavc 52.73.0 - av_get_codec_tag_string()
   Add av_get_codec_tag_string().
 
 2010-06-01 - r31301 - lsws 0.11.0 - convertPalette API
-  Add sws_convertPalette8ToPacked32 and sws_convertPalette8ToPacked24
+  Add sws_convertPalette8ToPacked32() and sws_convertPalette8ToPacked24().
 
 2010-05-26 - r23334 - lavc 52.72.0 - CODEC_CAP_EXPERIMENTAL
   Add CODEC_CAP_EXPERIMENTAL flag.
 
-2010-05-23 - r23255 - lavu 50.16.0 - av_get_random_seed
-  Add av_get_random_seed()
+2010-05-23 - r23255 - lavu 50.16.0 - av_get_random_seed()
+  Add av_get_random_seed().
 
 2010-05-18 - r23161 - lavf 52.63.0 - AVFMT_FLAG_RTP_HINT
-  Add AVFMT_FLAG_RTP_HINT as possible value for AVFormatContext.flags
+  Add AVFMT_FLAG_RTP_HINT as possible value for AVFormatContext.flags.
 
 2010-05-09 - r23066 - lavfi 1.20.0 - AVFilterPicRef
   Add interlaced and top_field_first fields to AVFilterPicRef.
@@ -74,7 +75,7 @@ API changes, most recent first:
   existing tags.
 
 2010-04-01 - r22753 - lavc 52.66.0
-  Add avcodec_get_edge_width()
+  Add avcodec_get_edge_width().
 
 2010-03-31 - r22750 - lavc 52.65.0
   Add avcodec_copy_context().
@@ -93,7 +94,7 @@ API changes, most recent first:
   Implement av_strerror().
 
 2010-03-23 - r22649 - lavc 52.60.0 - av_dct_init()
-  Support DCT-I and DST-I
+  Support DCT-I and DST-I.
 
 2010-03-15 - r22540 - lavf 52.56.0 - AVFormatContext.start_time_realtime
   Add AVFormatContext.start_time_realtime field.
@@ -127,13 +128,13 @@ API changes, most recent first:
 2010-01-30 - r21545 - lavu 50.8.0 - av_get_pix_fmt()
   Add av_get_pix_fmt().
 
-2010-01-21 - r30381 - lsws 0.9.0 - sws_scale
+2010-01-21 - r30381 - lsws 0.9.0 - sws_scale()
   Change constness attributes of sws_scale() parameters.
 
 2010-01-10 - r21121 - lavfi 1.15.0 - avfilter_graph_config_links()
   Add a log_ctx parameter to avfilter_graph_config_links().
 
-2010-01-07 - r30236 - lsws 0.8.0 - sws_isSupported{In,Out}put
+2010-01-07 - r30236 - lsws 0.8.0 - sws_isSupported{In,Out}put()
   Add sws_isSupportedInput() and sws_isSupportedOutput() functions.
 
 2010-01-06 - r21035 - lavfi 1.14.0 - avfilter_add_colorspace()
@@ -150,7 +151,8 @@ API changes, most recent first:
   Add av_guess_format(), it should be used in place of guess_format().
 
 2009-12-13 - r20834 - lavf 52.43.0 - metadata API
-  Add av_metadata_set2(), AV_METADATA_DONT_STRDUP_KEY and AV_METADATA_DONT_STRDUP_VAL.
+  Add av_metadata_set2(), AV_METADATA_DONT_STRDUP_KEY and
+  AV_METADATA_DONT_STRDUP_VAL.
 
 2009-12-13 - r20829 - lavu 50.7.0 - avstring.h API
   Add av_d2str().
@@ -216,10 +218,10 @@ API changes, most recent first:
   When the lock manager is registered, FFmpeg is guaranteed to behave
   correctly in a multi-threaded application.
 
-2009-04-30 - r18719 - lavc 52.28.0 - av_free_packet
+2009-04-30 - r18719 - lavc 52.28.0 - av_free_packet()
   av_free_packet() is no longer an inline function. It is now exported.
 
-2009-04-11 - r18431 - lavc 52.25.0 - deprecate av_destruct_packet_nofree
+2009-04-11 - r18431 - lavc 52.25.0 - deprecate av_destruct_packet_nofree()
   Please use NULL instead. This has been supported since r16506
   (lavf > 52.23.1, lavc > 52.10.0).
 
@@ -229,7 +231,7 @@ API changes, most recent first:
   avcodec_decode_subtitle2(). These new functions take an AVPacket *pkt
   argument instead of a const uint8_t *buf / int buf_size pair.
 
-2009-04-03 - r18321 - lavu 50.3.0 - av_fifo_space
+2009-04-03 - r18321 - lavu 50.3.0 - av_fifo_space()
   Introduce the av_fifo_space() function.
 
 2009-04-02 - r18317 - lavc 52.23.0 - AVPacket
