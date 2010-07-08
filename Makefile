@@ -334,16 +334,18 @@ ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	$(SRC_PATH)/tests/ffserver-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/ffserver.conf
 
 tests/vsynth1/00.pgm: tests/videogen$(HOSTEXESUF)
-	mkdir -p tests/vsynth1
-	$(BUILD_ROOT)/$< 'tests/vsynth1/'
+	@mkdir -p tests/vsynth1
+	$(M)$(BUILD_ROOT)/$< 'tests/vsynth1/'
 
 tests/vsynth2/00.pgm: tests/rotozoom$(HOSTEXESUF)
-	mkdir -p tests/vsynth2
-	$(BUILD_ROOT)/$< 'tests/vsynth2/' $(SRC_PATH)/tests/lena.pnm
+	@mkdir -p tests/vsynth2
+	$(M)$(BUILD_ROOT)/$< 'tests/vsynth2/' $(SRC_PATH)/tests/lena.pnm
 
 tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF)
-	mkdir -p tests/data
-	$(BUILD_ROOT)/$< $@
+	@mkdir -p tests/data
+	$(M)$(BUILD_ROOT)/$< $@
+
+tests/data/asynth1.sw tests/vsynth%/00.pgm: TAG = GEN
 
 tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
