@@ -510,6 +510,15 @@ print_config(){
     done
 }
 
+print_enabled(){
+    test "$1" = -n && end=" " && shift || end="\n"
+    suf=$1
+    shift
+    for v; do
+        enabled $v && printf "%s$end" ${v%$suf};
+    done
+}
+
 append(){
     var=$1
     shift
@@ -2829,9 +2838,7 @@ echo
 for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf indev outdev; do
     echo "Enabled ${type}s:"
     eval list=\$$(toupper $type)_LIST
-    for part in $list; do
-        enabled $part && echo ${part%_*}
-    done | sort | pr -3 -t
+    print_enabled '_*' $list | sort | pr -3 -t
     echo
 done
 
