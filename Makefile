@@ -289,6 +289,9 @@ $(LAVF_TESTS) $(LAVFI_TESTS): regtest-ref
 REFFILE = $(SRC_PATH)/tests/ref/$(1)/$(2:regtest-%=%)
 RESFILE = tests/data/$(2:regtest-%=%).$(1).regression
 
+AREF = tests/data/acodec.ref.wav
+VREF = tests/data/vsynth1.ref.yuv tests/data/vsynth2.ref.yuv
+
 define VCODECTEST
 	@echo "TEST VCODEC $(1:regtest-%=%)"
 	$(SRC_PATH)/tests/codec-regression.sh $(1) vsynth1 tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
@@ -301,11 +304,13 @@ define ACODECTEST
 endef
 
 regtest-ref: regtest-aref regtest-vref
+regtest-aref: $(AREF)
+regtest-vref: $(VREF)
 
-regtest-vref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
+$(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
 	@$(call VCODECTEST,vref)
 
-regtest-aref: ffmpeg$(EXESUF) tests/data/asynth1.sw
+$(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw
 	@$(call ACODECTEST,aref)
 
 $(VCODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
