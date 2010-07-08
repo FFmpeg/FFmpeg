@@ -1396,6 +1396,97 @@ ffserver_extralibs='$ldl'
 
 doc_deps="texi2html"
 
+# tests
+
+test_deps(){
+    suf1=$1
+    suf2=$2
+    shift 2
+    for v; do
+        dep=${v%=*}
+        tests=${v#*=}
+        for name in ${tests}; do
+            eval ${name}_test_deps="'${dep}$suf1 ${dep}$suf2'"
+        done
+    done
+}
+
+test_deps _encoder _decoder                                             \
+    ac3                                                                 \
+    adpcm_g726=g726                                                     \
+    adpcm_ima_qt                                                        \
+    adpcm_ima_wav                                                       \
+    adpcm_ms                                                            \
+    adpcm_swf                                                           \
+    adpcm_yamaha=adpcm_yam                                              \
+    alac                                                                \
+    asv1                                                                \
+    asv2                                                                \
+    bmp                                                                 \
+    dnxhd="hdxhd_1080i dnxhd_720p dnxhd_720p_rd"                        \
+    dvvideo="dv dv50"                                                   \
+    ffv1                                                                \
+    flac                                                                \
+    flashsv                                                             \
+    flv                                                                 \
+    gif                                                                 \
+    h261                                                                \
+    h263="h263 h263p"                                                   \
+    huffyuv                                                             \
+    jpegls                                                              \
+    mjpeg="jpg mjpeg ljpeg"                                             \
+    mp2                                                                 \
+    mpeg1video="mpeg mpeg1b"                                            \
+    mpeg2video="mpeg2 mpeg2thread"                                      \
+    mpeg4="mpeg4 mpeg4adv mpeg4nr mpeg4thread error rc"                 \
+    msmpeg4v1=msmpeg4                                                   \
+    msmpeg4v2                                                           \
+    pbm=pbmpipe                                                         \
+    pcx                                                                 \
+    pgm="pgm pgmpipe"                                                   \
+    ppm="ppm ppmpipe"                                                   \
+    rawvideo="rgb yuv"                                                  \
+    roq                                                                 \
+    rv10                                                                \
+    rv20                                                                \
+    sgi                                                                 \
+    snow="snow snowll"                                                  \
+    svq1                                                                \
+    targa=tga                                                           \
+    tiff                                                                \
+    wmav1                                                               \
+    wmav2                                                               \
+    wmv1                                                                \
+    wmv2                                                                \
+
+test_deps _muxer _demuxer                                               \
+    aiff                                                                \
+    pcm_alaw=alaw                                                       \
+    asf                                                                 \
+    au                                                                  \
+    avi                                                                 \
+    dv=dv_fmt                                                           \
+    ffm                                                                 \
+    flv=flv_fmt                                                         \
+    gxf                                                                 \
+    matroska=mkv                                                        \
+    mmf                                                                 \
+    mov                                                                 \
+    pcm_mulaw=mulaw                                                     \
+    mxf                                                                 \
+    nut                                                                 \
+    ogg                                                                 \
+    rawvideo=pixfmt                                                     \
+    rm                                                                  \
+    swf                                                                 \
+    mpegts=ts                                                           \
+    voc                                                                 \
+    wav                                                                 \
+    yuv4mpegpipe=yuv4mpeg                                               \
+
+mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
+pcm_test_deps=$(echo pcm_{{a,mu}law,u8,s8,{s{16,24,32},f{32,64}}{be,le},s24daud,zork}_{en,de}coder)
+
 # default parameters
 
 logfile="config.log"
@@ -1521,13 +1612,21 @@ INDEV_LIST=$(find_things    indev    _IN      libavdevice/alldevices.c)
 PROTOCOL_LIST=$(find_things protocol PROTOCOL libavformat/allformats.c)
 FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
 
+find_tests(){
+    map 'echo ${v}_test' $(ls "$source_path"/tests/ref/$1)
+}
+
+ACODEC_TESTS=$(find_tests acodec)
+VCODEC_TESTS=$(find_tests vsynth1)
+LAVF_TESTS=$(find_tests lavf)
+
 for n in $COMPONENT_LIST; do
     v=$(toupper ${n%s})_LIST
     eval enable \$$v
     eval ${n}_if_any="\$$v"
 done
 
-enable $ARCH_EXT_LIST
+enable $ARCH_EXT_LIST $ACODEC_TESTS $VCODEC_TESTS $LAVF_TESTS
 
 die_unknown(){
     echo "Unknown option \"$1\"."
@@ -2753,6 +2852,9 @@ check_deps $CONFIG_LIST       \
            $INDEV_LIST        \
            $OUTDEV_LIST       \
            $PROTOCOL_LIST     \
+           $ACODEC_TESTS      \
+           $VCODEC_TESTS      \
+           $LAVF_TESTS        \
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
@@ -3022,6 +3124,12 @@ print_config CONFIG_ $TMPH config.mak $CONFIG_LIST       \
                                       $PROTOCOL_LIST     \
                                       $INDEV_LIST        \
                                       $OUTDEV_LIST       \
+
+cat >>config.mak <<EOF
+ACODEC_TESTS=$(print_enabled -n _test $ACODEC_TESTS)
+VCODEC_TESTS=$(print_enabled -n _test $VCODEC_TESTS)
+LAVF_TESTS=$(print_enabled   -n _test $LAVF_TESTS)
+EOF
 
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
 echo "endif # FFMPEG_CONFIG_MAK" >> config.mak
