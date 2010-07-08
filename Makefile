@@ -210,7 +210,7 @@ $(VCODEC_TESTS): $(VREF)
 $(LAVF_TESTS) $(LAVFI_TESTS): $(REFS)
 
 REFFILE = $(SRC_PATH)/tests/ref/$(1)/$(2:regtest-%=%)
-RESFILE = tests/data/$(2:regtest-%=%).$(1).regression
+RESFILE = tests/data/regression/$(1)/$(2:regtest-%=%)
 
 define VCODECTEST
 	@echo "TEST VCODEC $(1:regtest-%=%)"

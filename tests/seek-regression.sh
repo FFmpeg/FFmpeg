@@ -12,6 +12,9 @@ target_path=$3
 
 refdir="$src_path/tests/ref/seek"
 datadir="tests/data"
+logdir="$datadir/regression/seek"
+
+mkdir -p "$logdir"
 
 list=$(ls -1 $datadir/vsynth2/* $datadir/acodec/* $datadir/lavf/*)
 imgs=$(for i in $datadir/images/*; do echo "$i/%02d.${i##*/}"; done)
@@ -19,7 +22,7 @@ err=0
 
 for i in $list $imgs; do
     base=$(basename $i)
-    logfile="$datadir/$base.seek.regression"
+    logfile="$logdir/$base"
     reffile="$refdir/$base.ref"
     echo "TEST SEEK   $base"
     $echov $target_exec $target_path/tests/seek_test $target_path/$i
