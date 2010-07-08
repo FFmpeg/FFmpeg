@@ -201,15 +201,16 @@ codectest: $(CODEC_TESTS)
 lavftest:  $(LAVF_TESTS)
 lavfitest: $(LAVFI_TESTS)
 
-$(ACODEC_TESTS): regtest-aref
-$(VCODEC_TESTS): regtest-vref
-$(LAVF_TESTS) $(LAVFI_TESTS): regtest-ref
+AREF = tests/data/acodec.ref.wav
+VREF = tests/data/vsynth1.ref.yuv
+REFS = $(AREF) $(VREF)
+
+$(ACODEC_TESTS): $(AREF)
+$(VCODEC_TESTS): $(VREF)
+$(LAVF_TESTS) $(LAVFI_TESTS): $(REFS)
 
 REFFILE = $(SRC_PATH)/tests/ref/$(1)/$(2:regtest-%=%)
 RESFILE = tests/data/$(2:regtest-%=%).$(1).regression
-
-AREF = tests/data/acodec.ref.wav
-VREF = tests/data/vsynth1.ref.yuv tests/data/vsynth2.ref.yuv
 
 define VCODECTEST
 	@echo "TEST VCODEC $(1:regtest-%=%)"
@@ -221,10 +222,6 @@ define ACODECTEST
 	@echo "TEST ACODEC $(1:regtest-%=%)"
 	$(SRC_PATH)/tests/codec-regression.sh $(1) acodec tests/acodec "$(TARGET_EXEC)" "$(TARGET_PATH)"
 endef
-
-regtest-ref: regtest-aref regtest-vref
-regtest-aref: $(AREF)
-regtest-vref: $(VREF)
 
 $(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
 	@$(call VCODECTEST,vref)
