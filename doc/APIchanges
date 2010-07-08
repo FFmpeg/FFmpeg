@@ -12,6 +12,12 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-07-08 - r24101 - lavu 50.21.0 - pixdesc.h
+  Rename read/write_line() to av_read/write_image_line().
+
+2010-07-07 - r24091 - lavfi 1.21.0 - avfilter_copy_picref_props()
+  Add  avfilter_copy_picref_props().
+
 2010-07-03 - r24021 - lavc 52.79.0
   Added FF_COMPLIANCE_UNOFFICIAL and changed all instances of FF_COMPLIANCE_INOFFICIAL to use FF_COMPLIANCE_UNOFFICIAL
 
