@@ -40,17 +40,17 @@ static int read_random(uint32_t *dst, const char *file)
 
 static uint32_t get_generic_seed(void)
 {
-    int last_t=0;
+    clock_t last_t=0;
     int bits=0;
     uint64_t random=0;
     unsigned i;
-    int s=0;
+    float s=0.000000000001;
 
     for(i=0;bits<64;i++){
-        int t= clock()>>s;
-        if(last_t && t != last_t){
-            if(i<10000 && s<24){
-                s++;
+        clock_t t= clock();
+        if(last_t && fabs(t-last_t)>s || t==(clock_t)-1){
+            if(i<10000 && s<(1<<24)){
+                s+=s;
                 i=t=0;
             }else{
                 random= 2*random + (i&1);
