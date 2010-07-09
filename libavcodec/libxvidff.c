@@ -80,7 +80,7 @@ int xvid_strip_vol_header(AVCodecContext *avctx, unsigned char *frame, unsigned 
 int xvid_ff_2pass(void *ref, int opt, void *p1, void *p2);
 void xvid_correct_framerate(AVCodecContext *avctx);
 
-/* Wrapper to work around the lack of mkstemp() on mingw/cygin.
+/* Wrapper to work around the lack of mkstemp() on mingw.
  * Also, tries to create file in /tmp first, if possible.
  * *prefix can be a character constant; *filename will be allocated internally.
  * @return file descriptor of opened file (or -1 on error)
