@@ -181,7 +181,7 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     hdr_info->samples = hdr.num_blocks * 256;
     if(hdr.bitstream_id>10)
         hdr_info->codec_id = CODEC_ID_EAC3;
-    else
+    else if (hdr_info->codec_id == CODEC_ID_NONE)
         hdr_info->codec_id = CODEC_ID_AC3;
 
     *need_next_header = (hdr.frame_type != EAC3_FRAME_TYPE_AC3_CONVERT);
