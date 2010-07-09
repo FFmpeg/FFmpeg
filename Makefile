@@ -281,7 +281,7 @@ ifdef SAMPLES
 fate: $(FATE_TESTS)
 $(FATE_TESTS): ffmpeg$(EXESUF)
 	@echo "TEST FATE   $(@:fate-%=%)"
-	@$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)'
+	@$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)'
 else
 fate $(FATE_TESTS):
 	@echo "SAMPLES not specified, cannot run FATE"

@@ -8,12 +8,17 @@ SAMPLES_PATH=$2
 target_exec=$3
 BUILD_PATH=$4
 command=$5
+cmp=${6:-diff}
 
-ref="${base}/ref/fate/${test}"
+ref=${7:-"${base}/ref/fate/${test}"}
+fuzz=$8
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
 
 mkdir -p "$outdir"
 
 eval $target_exec $command > "$outfile" 2>/dev/null
-diff -u -w "$ref" "$outfile"
+
+case $cmp in
+    diff)   diff -u -w "$ref" "$outfile"            ;;
+esac
