@@ -85,7 +85,7 @@ void xvid_correct_framerate(AVCodecContext *avctx);
  * *prefix can be a character constant; *filename will be allocated internally.
  * @return file descriptor of opened file (or -1 on error)
  * and opened file name in **filename. */
-int ff_tempfile(char *prefix, char **filename) {
+int ff_tempfile(const char *prefix, char **filename) {
     int fd=-1;
 #if !HAVE_MKSTEMP
     *filename = tempnam(".", prefix);
