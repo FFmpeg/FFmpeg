@@ -291,4 +291,4 @@ fate fate2 $(FATE_TESTS):
 	@echo "SAMPLES not specified, cannot run FATE"
 endif
 
-.PHONY: documentation *test regtest-* zlib-error alltools check config
+.PHONY: documentation *test regtest-* alltools check config
