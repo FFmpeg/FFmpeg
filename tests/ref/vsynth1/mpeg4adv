@@ -1,16 +1,16 @@
 7d8eb01fd68d83d62a98585757704d47 *./tests/data/vsynth1/mpeg4-adv.avi
 589716 ./tests/data/vsynth1/mpeg4-adv.avi
 f8b226876b1b2c0b98fd6928fd9adbd8 *./tests/data/mpeg4adv.vsynth1.out.yuv
-stddev:    6.98 PSNR: 31.25 bytes:  7603200/  7603200
+stddev:    6.98 PSNR: 31.25 MAXDIFF:   84 bytes:  7603200/  7603200
 d6b7e724a6ad66ab5e4c5a499218b40d *./tests/data/vsynth1/mpeg4-qprd.avi
 710944 ./tests/data/vsynth1/mpeg4-qprd.avi
 e65f4c7f343fe2bad1cac44b7da5f7c4 *./tests/data/mpeg4adv.vsynth1.out.yuv
-stddev:    9.79 PSNR: 28.31 bytes:  7603200/  7603200
+stddev:    9.79 PSNR: 28.31 MAXDIFF:  176 bytes:  7603200/  7603200
 2d870c0da9ab2231ab5fc06981e70399 *./tests/data/vsynth1/mpeg4-adap.avi
 403456 ./tests/data/vsynth1/mpeg4-adap.avi
 fa2049396479b5f170aa764fed5b2a31 *./tests/data/mpeg4adv.vsynth1.out.yuv
-stddev:   14.05 PSNR: 25.17 bytes:  7603200/  7603200
+stddev:   14.05 PSNR: 25.17 MAXDIFF:  184 bytes:  7603200/  7603200
 3bf17c3d04f52988386ce106a2a58976 *./tests/data/vsynth1/mpeg4-Q.avi
 860678 ./tests/data/vsynth1/mpeg4-Q.avi
 756928496245ecc701f79eebeec8e5e6 *./tests/data/mpeg4adv.vsynth1.out.yuv
-stddev:    5.63 PSNR: 33.12 bytes:  7603200/  7603200
+stddev:    5.63 PSNR: 33.12 MAXDIFF:   70 bytes:  7603200/  7603200

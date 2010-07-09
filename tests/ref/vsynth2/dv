@@ -1,8 +1,8 @@
 bfa766f89bfeabc0ae1044f3954bed52 *./tests/data/vsynth2/dv.dv
 7200000 ./tests/data/vsynth2/dv.dv
 7ec62bd3350a6848364669e6e1e4b9cc *./tests/data/dv.vsynth2.out.yuv
-stddev:    1.71 PSNR: 43.47 bytes:  7603200/  7603200
+stddev:    1.71 PSNR: 43.47 MAXDIFF:   33 bytes:  7603200/  7603200
 00a9d8683ac6826af41bcf7223fb0389 *./tests/data/vsynth2/dv411.dv
 7200000 ./tests/data/vsynth2/dv411.dv
 7f9fa421028aabb11eaf4c6513a5a843 *./tests/data/dv.vsynth2.out.yuv
-stddev:   10.09 PSNR: 28.05 bytes:  7603200/  7603200
+stddev:   10.09 PSNR: 28.05 MAXDIFF:   60 bytes:  7603200/  7603200

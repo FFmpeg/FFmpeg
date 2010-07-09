@@ -113,6 +113,7 @@ int main(int argc,char* argv[]){
     int skip_bytes = argc<6 ? 0 : atoi(argv[5]);
     int size0=0;
     int size1=0;
+    int maxdist = 0;
 
     if(argc<3){
         printf("tiny_psnr <file1> <file2> [<elem size> [<shift> [<skip bytes>]]]\n");
@@ -139,11 +140,14 @@ int main(int argc,char* argv[]){
         for(j=0; j<FFMIN(s0,s1); j++){
             int64_t a= buf[0][j];
             int64_t b= buf[1][j];
+            int dist;
             if(len==2){
                 a= (int16_t)(a | (buf[0][++j]<<8));
                 b= (int16_t)(b | (buf[1][  j]<<8));
             }
             sse += (a-b) * (a-b);
+            dist = abs(a-b);
+            if (dist > maxdist) maxdist = dist;
         }
         size0 += s0;
         size1 += s1;
@@ -159,9 +163,10 @@ int main(int argc,char* argv[]){
     else
         psnr= 1000*F-1; //floating point free infinity :)
 
-    printf("stddev:%5d.%02d PSNR:%3d.%02d bytes:%9d/%9d\n",
+    printf("stddev:%5d.%02d PSNR:%3d.%02d MAXDIFF:%5d bytes:%9d/%9d\n",
         (int)(dev/F), (int)(dev%F),
         (int)(psnr/F), (int)(psnr%F),
+        maxdist,
         size0, size1);
     return 0;
 }

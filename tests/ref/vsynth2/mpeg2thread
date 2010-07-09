@@ -1,12 +1,12 @@
 889c754a42d7689b228853e1ece6d345 *./tests/data/vsynth2/mpeg2thread.mpg
 179650 ./tests/data/vsynth2/mpeg2thread.mpg
 8c6a7ed2eb73bd18fd2bb9829464100d *./tests/data/mpeg2thread.vsynth2.out.yuv
-stddev:    4.72 PSNR: 34.65 bytes:  7603200/  7603200
+stddev:    4.72 PSNR: 34.65 MAXDIFF:   72 bytes:  7603200/  7603200
 10b900e32809758857c596d56746e00e *./tests/data/vsynth2/mpeg2threadivlc.mpg
 178801 ./tests/data/vsynth2/mpeg2threadivlc.mpg
 8c6a7ed2eb73bd18fd2bb9829464100d *./tests/data/mpeg2thread.vsynth2.out.yuv
-stddev:    4.72 PSNR: 34.65 bytes:  7603200/  7603200
+stddev:    4.72 PSNR: 34.65 MAXDIFF:   72 bytes:  7603200/  7603200
 864d6bf2982a61e510003a518be65a2d *./tests/data/vsynth2/mpeg2reuse.mpg
 383419 ./tests/data/vsynth2/mpeg2reuse.mpg
 bb20fa080cfd2b0a687ea7376ff4f902 *./tests/data/mpeg2thread.vsynth2.out.yuv
-stddev:    4.73 PSNR: 34.63 bytes:  7603200/  7603200
+stddev:    4.73 PSNR: 34.63 MAXDIFF:   72 bytes:  7603200/  7603200

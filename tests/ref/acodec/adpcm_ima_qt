@@ -1,4 +1,4 @@
 3c06fd2f7831e3e8735b936e23ca220c *./tests/data/acodec/adpcm_qt.aiff
 281252 ./tests/data/acodec/adpcm_qt.aiff
 9580492803ba1c1a3746367b24b751c8 *./tests/data/adpcm_ima_qt.acodec.out.wav
-stddev:  914.63 PSNR: 37.10 bytes:  1058604/  1058444
+stddev:  914.63 PSNR: 37.10 MAXDIFF:34026 bytes:  1058604/  1058444
