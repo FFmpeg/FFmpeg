@@ -183,12 +183,17 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, 
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
     int phase_count= 1<<phase_shift;
 
+    if (!c)
+        return NULL;
+
     c->phase_shift= phase_shift;
     c->phase_mask= phase_count-1;
     c->linear= linear;
 
     c->filter_length= FFMAX((int)ceil(filter_size/factor), 1);
     c->filter_bank= av_mallocz(c->filter_length*(phase_count+1)*sizeof(FELEM));
+    if (!c->filter_bank)
+        goto error;
     build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, WINDOW_TYPE);
     memcpy(&c->filter_bank[c->filter_length*phase_count+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
     c->filter_bank[c->filter_length*phase_count]= c->filter_bank[c->filter_length - 1];
@@ -198,6 +203,9 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, 
     c->index= -phase_count*((c->filter_length-1)/2);
 
     return c;
+error:
+    av_free(c);
+    return NULL;
 }
 
 void av_resample_close(AVResampleContext *c){
