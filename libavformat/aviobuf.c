@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio.h"
+#include "internal.h"
 #include <stdarg.h>
 
 #define IO_BUFFER_SIZE 32768
@@ -246,6 +247,24 @@ void put_strz(ByteIOContext *s, const char *str)
         put_buffer(s, (const unsigned char *) str, strlen(str) + 1);
     else
         put_byte(s, 0);
+}
+
+int ff_get_v_length(uint64_t val){
+    int i=1;
+
+    while(val>>=7)
+        i++;
+
+    return i;
+}
+
+void ff_put_v(ByteIOContext *bc, uint64_t val){
+    int i= ff_get_v_length(val);
+
+    while(--i>0)
+        put_byte(bc, 128 | (val>>(7*i)));
+
+    put_byte(bc, val&127);
 }
 
 void put_le64(ByteIOContext *s, uint64_t val)

@@ -241,27 +241,6 @@ static void build_frame_code(AVFormatContext *s){
     nut->frame_code['N'].flags= FLAG_INVALID;
 }
 
-/**
- * Get the length in bytes which is needed to store val as v.
- */
-static int ff_get_v_length(uint64_t val){
-    int i=1;
-
-    while(val>>=7)
-        i++;
-
-    return i;
-}
-
-static void ff_put_v(ByteIOContext *bc, uint64_t val){
-    int i= ff_get_v_length(val);
-
-    while(--i>0)
-        put_byte(bc, 128 | (val>>(7*i)));
-
-    put_byte(bc, val&127);
-}
-
 static void put_tt(NUTContext *nut, StreamContext *nus, ByteIOContext *bc, uint64_t val){
     val *= nut->time_base_count;
     val += nus->time_base - nut->time_base;
