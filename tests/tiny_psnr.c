@@ -119,14 +119,14 @@ int main(int argc,char* argv[]){
     if(argc<3){
         printf("tiny_psnr <file1> <file2> [<elem size> [<shift> [<skip bytes>]]]\n");
         printf("WAV headers are skipped automatically.\n");
-        return -1;
+        return 1;
     }
 
     f[0]= fopen(argv[1], "rb");
     f[1]= fopen(argv[2], "rb");
     if(!f[0] || !f[1]){
         fprintf(stderr, "Could not open input files.\n");
-        return -1;
+        return 1;
     }
 
     for (i = 0; i < 2; i++) {
