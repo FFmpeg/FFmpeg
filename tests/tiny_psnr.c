@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <inttypes.h>
 #include <assert.h>
 
@@ -117,8 +118,7 @@ int main(int argc,char* argv[]){
 
     if(argc<3){
         printf("tiny_psnr <file1> <file2> [<elem size> [<shift> [<skip bytes>]]]\n");
-        printf("For WAV files use the following:\n");
-        printf("./tiny_psnr file1.wav file2.wav 2 0 44 to skip the header.\n");
+        printf("WAV headers are skipped automatically.\n");
         return -1;
     }
 
@@ -128,7 +128,24 @@ int main(int argc,char* argv[]){
         fprintf(stderr, "Could not open input files.\n");
         return -1;
     }
-    fseek(f[shift<0], shift < 0 ? -shift : shift, SEEK_SET);
+
+    for (i = 0; i < 2; i++) {
+        uint8_t *p = buf[i];
+        fread(p, 1, 12, f[i]);
+        if (!memcmp(p,   "RIFF", 4) &&
+            !memcmp(p+8, "WAVE", 4)) {
+            fread(p, 1, 8, f[i]);
+            while (memcmp(p, "data", 4)) {
+                int s = p[4] | p[5]<<8 | p[6]<<16 | p[7]<<24;
+                fseek(f[i], s, SEEK_CUR);
+                fread(p, 1, 8, f[i]);
+            }
+        } else {
+            fseek(f[i], -12, SEEK_CUR);
+        }
+    }
+
+    fseek(f[shift<0], shift < 0 ? -shift : shift, SEEK_CUR);
 
     fseek(f[0],skip_bytes,SEEK_CUR);
     fseek(f[1],skip_bytes,SEEK_CUR);
