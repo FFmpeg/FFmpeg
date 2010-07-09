@@ -279,7 +279,7 @@ include $(SRC_PATH_BARE)/tests/fate.mak
 
 ifdef SAMPLES
 fate: $(FATE_TESTS)
-$(FATE_TESTS): ffmpeg$(EXESUF)
+$(FATE_TESTS): ffmpeg$(EXESUF) tests/tiny_psnr$(HOSTEXESUF)
 	@echo "TEST FATE   $(@:fate-%=%)"
 	@$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)'
 else

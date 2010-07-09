@@ -15,10 +15,20 @@ fuzz=$8
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
 
+oneoff(){
+    psnr=$(tests/tiny_psnr "$1" "$2" 2 0 0)
+    max=$(expr "$psnr" : '.*MAXDIFF: *\([0-9]*\)')
+    if [ $max -gt ${3:-1} ]; then
+        echo "$psnr"
+        return 1
+    fi
+}
+
 mkdir -p "$outdir"
 
 eval $target_exec $command > "$outfile" 2>/dev/null
 
 case $cmp in
     diff)   diff -u -w "$ref" "$outfile"            ;;
+    oneoff) oneoff     "$ref" "$outfile" "$fuzz"    ;;
 esac
