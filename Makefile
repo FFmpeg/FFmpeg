@@ -276,14 +276,18 @@ tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 include $(SRC_PATH_BARE)/tests/fate.mak
+include $(SRC_PATH_BARE)/tests/fate2.mak
+
+FATE_TESTS += $(FATE2_TESTS)
 
 ifdef SAMPLES
 fate: $(FATE_TESTS)
+fate2: $(FATE2_TESTS)
 $(FATE_TESTS): ffmpeg$(EXESUF) tests/tiny_psnr$(HOSTEXESUF)
 	@echo "TEST FATE   $(@:fate-%=%)"
 	@$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)'
 else
-fate $(FATE_TESTS):
+fate fate2 $(FATE_TESTS):
 	@echo "SAMPLES not specified, cannot run FATE"
 endif
 
