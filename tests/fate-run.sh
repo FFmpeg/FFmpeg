@@ -26,7 +26,7 @@ oneoff(){
 
 mkdir -p "$outdir"
 
-eval $target_exec $command > "$outfile" 2>/dev/null
+eval $target_exec $command > "$outfile" 2>/dev/null || exit
 
 case $cmp in
     diff)   diff -u -w "$ref" "$outfile"            ;;
