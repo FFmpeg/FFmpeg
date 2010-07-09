@@ -32,3 +32,5 @@ case $cmp in
     diff)   diff -u -w "$ref" "$outfile"            ;;
     oneoff) oneoff     "$ref" "$outfile" "$fuzz"    ;;
 esac
+
+test $? = 0 && rm $outfile
