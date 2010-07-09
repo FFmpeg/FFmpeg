@@ -131,14 +131,17 @@ int main(int argc,char* argv[]){
 
     for (i = 0; i < 2; i++) {
         uint8_t *p = buf[i];
-        fread(p, 1, 12, f[i]);
+        if (fread(p, 1, 12, f[i]) != 12)
+            return 1;
         if (!memcmp(p,   "RIFF", 4) &&
             !memcmp(p+8, "WAVE", 4)) {
-            fread(p, 1, 8, f[i]);
+            if (fread(p, 1, 8, f[i]) != 8)
+                return 1;
             while (memcmp(p, "data", 4)) {
                 int s = p[4] | p[5]<<8 | p[6]<<16 | p[7]<<24;
                 fseek(f[i], s, SEEK_CUR);
-                fread(p, 1, 8, f[i]);
+                if (fread(p, 1, 8, f[i]) != 8)
+                    return 1;
             }
         } else {
             fseek(f[i], -12, SEEK_CUR);
