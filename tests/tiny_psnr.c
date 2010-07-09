@@ -145,7 +145,7 @@ int main(int argc,char* argv[]){
         }
     }
 
-    fseek(f[shift<0], shift < 0 ? -shift : shift, SEEK_CUR);
+    fseek(f[shift<0], abs(shift), SEEK_CUR);
 
     fseek(f[0],skip_bytes,SEEK_CUR);
     fseek(f[1],skip_bytes,SEEK_CUR);
