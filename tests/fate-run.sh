@@ -24,6 +24,11 @@ oneoff(){
     fi
 }
 
+if ! test -e "$ref"; then
+    echo "reference file '$ref' not found"
+    exit 1
+fi
+
 mkdir -p "$outdir"
 
 eval $target_exec $command > "$outfile" 2>/dev/null || exit
