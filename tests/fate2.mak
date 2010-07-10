@@ -57,3 +57,8 @@ FATE2_TESTS += fate-ra-288
 fate-ra-288: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/real/ra_288.rm -f s16le -
 fate-ra-288: CMP = oneoff
 fate-ra-288: REF = $(SAMPLES)/real/ra_288.pcm
+
+FATE2_TESTS += fate-ra-cook
+fate-ra-cook: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/real/ra_cook.rm -f s16le -
+fate-ra-cook: CMP = oneoff
+fate-ra-cook: REF = $(SAMPLES)/real/ra_cook.pcm
