@@ -286,8 +286,6 @@ material, and try '-top 0/1' if the result looks really messed-up.
 If you have built FFmpeg with @code{./configure --enable-avisynth}
 (only possible on MinGW/Cygwin platforms),
 then you may use any file that DirectShow can read as input.
-(Be aware that this feature has been recently added,
-so you will need to help yourself in case of problems.)
 
 Just create an "input.avs" text file with this single line ...
 @example
