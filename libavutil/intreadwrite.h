@@ -21,8 +21,8 @@
 
 #include <stdint.h>
 #include "config.h"
+#include "attributes.h"
 #include "bswap.h"
-#include "common.h"
 
 typedef union {
     uint64_t u64;
