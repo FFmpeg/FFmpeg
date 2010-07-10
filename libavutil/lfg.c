@@ -20,6 +20,8 @@
  */
 
 #include <inttypes.h>
+#include <limits.h>
+#include <math.h>
 #include "lfg.h"
 #include "md5.h"
 #include "intreadwrite.h"
