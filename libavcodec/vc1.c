@@ -388,7 +388,7 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
 //            av_log(avctx, AV_LOG_ERROR,
 //                   "0 for reserved RES_RTM_FLAG is forbidden\n");
         av_log(avctx, AV_LOG_ERROR,
-               "Old WMV3 version detected, only I-frames will be decoded\n");
+               "Old WMV3 version detected, some frames may be decoded incorrectly\n");
         //return -1;
     }
     //TODO: figure out what they mean (always 0x402F)

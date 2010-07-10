@@ -1996,7 +1996,9 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
     if(ttblk == TT_4X4) {
         subblkpat = ~(get_vlc2(gb, ff_vc1_subblkpat_vlc[v->tt_index].table, VC1_SUBBLKPAT_VLC_BITS, 1) + 1);
     }
-    if((ttblk != TT_8X8 && ttblk != TT_4X4) && (v->ttmbf || (ttmb != -1 && (ttmb & 8) && !first_block))) {
+    if((ttblk != TT_8X8 && ttblk != TT_4X4)
+        && ((v->ttmbf || (ttmb != -1 && (ttmb & 8) && !first_block))
+            || (!v->res_rtm_flag && !first_block))) {
         subblkpat = decode012(gb);
         if(subblkpat) subblkpat ^= 3; //swap decoded pattern bits
         if(ttblk == TT_8X4_TOP || ttblk == TT_8X4_BOTTOM) ttblk = TT_8X4;
@@ -3210,11 +3212,6 @@ static int vc1_decode_frame(AVCodecContext *avctx,
             av_free(buf2);
             return -1;
         }
-    }
-
-    if(s->pict_type != FF_I_TYPE && !v->res_rtm_flag){
-        av_free(buf2);
-        return -1;
     }
 
     // for hurry_up==5
