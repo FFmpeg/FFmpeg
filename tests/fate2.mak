@@ -65,3 +65,9 @@ fate-ra-cook: REF = $(SAMPLES)/real/ra_cook.pcm
 
 FATE2_TESTS += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = $(TARGET_PATH)/ffmpeg -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -f framecrc -
+
+FATE2_TESTS += fate-qcelp
+fate-qcelp: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/qcp/0036580847.QCP -f s16le -
+fate-qcelp: CMP = oneoff
+fate-qcelp: REF = $(SAMPLES)/qcp/0036580847.pcm
+
