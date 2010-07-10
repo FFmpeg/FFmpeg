@@ -2274,9 +2274,9 @@ case $target_os in
         if ! check_cpp_condition _mingw.h "defined (__MINGW64_VERSION_MAJOR)"; then
             check_cpp_condition _mingw.h "(__MINGW32_MAJOR_VERSION > 3) || (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
                 die "ERROR: MinGW runtime version must be >= 3.15."
-            enabled_any avisynth vfwcap_indev &&
+            enabled_any vfwcap_indev &&
                 { check_cpp_condition w32api.h "(__W32API_MAJOR_VERSION > 3) || (__W32API_MAJOR_VERSION == 3 && __W32API_MINOR_VERSION >= 13)" ||
-                  die "ERROR: avisynth and vfwcap_indev require w32api version 3.13 or later."; }
+                  die "ERROR: vfwcap_indev requires w32api version 3.13 or later."; }
         fi
         ;;
     cygwin*)
