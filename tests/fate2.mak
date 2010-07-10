@@ -62,3 +62,6 @@ FATE2_TESTS += fate-ra-cook
 fate-ra-cook: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/real/ra_cook.rm -f s16le -
 fate-ra-cook: CMP = oneoff
 fate-ra-cook: REF = $(SAMPLES)/real/ra_cook.pcm
+
+FATE2_TESTS += fate-mpeg2-field-enc
+fate-mpeg2-field-enc: CMD = $(TARGET_PATH)/ffmpeg -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -f framecrc -
