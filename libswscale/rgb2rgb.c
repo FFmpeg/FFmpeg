@@ -231,7 +231,7 @@ void palette8tobgr16(const uint8_t *src, uint8_t *dst, long num_pixels, const ui
 {
     long i;
     for (i=0; i<num_pixels; i++)
-        ((uint16_t *)dst)[i] = bswap_16(((const uint16_t *)palette)[src[i]]);
+        ((uint16_t *)dst)[i] = av_bswap16(((const uint16_t *)palette)[src[i]]);
 }
 #endif
 

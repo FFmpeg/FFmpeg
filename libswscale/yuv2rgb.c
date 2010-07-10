@@ -774,7 +774,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
         }
         if (isNotNe)
             for (i = 0; i < 1024*3; i++)
-                y_table16[i] = bswap_16(y_table16[i]);
+                y_table16[i] = av_bswap16(y_table16[i]);
         fill_table(c->table_rV, 2, crv, y_table16 + yoffs);
         fill_table(c->table_gU, 2, cgu, y_table16 + yoffs + 1024);
         fill_table(c->table_bU, 2, cbu, y_table16 + yoffs + 2048);
@@ -797,7 +797,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
         }
         if(isNotNe)
             for (i = 0; i < 1024*3; i++)
-                y_table16[i] = bswap_16(y_table16[i]);
+                y_table16[i] = av_bswap16(y_table16[i]);
         fill_table(c->table_rV, 2, crv, y_table16 + yoffs);
         fill_table(c->table_gU, 2, cgu, y_table16 + yoffs + 1024);
         fill_table(c->table_bU, 2, cbu, y_table16 + yoffs + 2048);
