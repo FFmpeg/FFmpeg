@@ -77,3 +77,9 @@ fate-qdm2: CMP = oneoff
 fate-qdm2: REF = $(SAMPLES)/qt-surge-suite/surge-2-16-B-QDM2.pcm
 fate-qdm2: FUZZ = 2
 
+FATE2_TESTS += fate-imc
+fate-imc: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/imc/imc.avi -f s16le -
+fate-imc: CMP = oneoff
+fate-imc: REF = $(SAMPLES)/imc/imc.pcm
+
+
