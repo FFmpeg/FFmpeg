@@ -589,10 +589,10 @@ following image formats are supported:
 @item Enhanced AC-3          @tab     @tab  X
 @item FLAC (Free Lossless Audio Codec)  @tab  X  @tab  IX
 @item G.729                  @tab     @tab  X
-@item GSM                    @tab  E  @tab  E
-    @tab supported through external library libgsm
-@item GSM Microsoft variant  @tab  E  @tab  E
-    @tab supported through external library libgsm
+@item GSM                    @tab  E  @tab  X
+    @tab encoding supported through external library libgsm
+@item GSM Microsoft variant  @tab  E  @tab  X
+    @tab encoding supported through external library libgsm
 @item IMC (Intel Music Coder)  @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 3:1  @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 6:1  @tab     @tab  X

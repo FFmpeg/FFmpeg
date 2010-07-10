@@ -19,6 +19,7 @@ version <next>:
 - RTP depacketization of SVQ3
 - -strict inofficial replaced by -strict unofficial
 - ffplay -exitonkeydown and -exitonmousedown options added
+- native GSM / GSM MS decoder
 
 
 
