@@ -52,3 +52,8 @@ fate-aac-al_sbr_ps_06_ur: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/aac/al_sbr_p
 fate-aac-al_sbr_ps_06_ur: CMP = oneoff
 fate-aac-al_sbr_ps_06_ur: REF = $(SAMPLES)/aac/al_sbr_ps_06_ur.s16
 fate-aac-al_sbr_ps_06_ur: FUZZ = 2
+
+FATE2_TESTS += fate-ra-288
+fate-ra-288: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/real/ra_288.rm -f s16le -
+fate-ra-288: CMP = oneoff
+fate-ra-288: REF = $(SAMPLES)/real/ra_288.pcm
