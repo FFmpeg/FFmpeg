@@ -124,7 +124,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             } else if (upgrade == 2) {
                 unsigned int j, v, f = (65535 * 32768 + s->maxval / 2) / s->maxval;
                 for (j = 0; j < n / 2; j++) {
-                    v = be2ne_16(((uint16_t *)s->bytestream)[j]);
+                    v = av_be2ne16(((uint16_t *)s->bytestream)[j]);
                     ((uint16_t *)ptr)[j] = (v * f + 16384) >> 15;
                 }
             }

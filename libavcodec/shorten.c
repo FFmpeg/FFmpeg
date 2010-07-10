@@ -184,12 +184,12 @@ static void init_offset(ShortenContext *s)
 
 static inline int get_le32(GetBitContext *gb)
 {
-    return bswap_32(get_bits_long(gb, 32));
+    return av_bswap32(get_bits_long(gb, 32));
 }
 
 static inline short get_le16(GetBitContext *gb)
 {
-    return bswap_16(get_bits_long(gb, 16));
+    return av_bswap16(get_bits_long(gb, 16));
 }
 
 static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header_size)

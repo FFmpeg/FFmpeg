@@ -339,11 +339,11 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 #if HAVE_BIGENDIAN
 #   define AV_RB(s, p)    AV_RN##s(p)
 #   define AV_WB(s, p, v) AV_WN##s(p, v)
-#   define AV_RL(s, p)    bswap_##s(AV_RN##s(p))
-#   define AV_WL(s, p, v) AV_WN##s(p, bswap_##s(v))
+#   define AV_RL(s, p)    av_bswap##s(AV_RN##s(p))
+#   define AV_WL(s, p, v) AV_WN##s(p, av_bswap##s(v))
 #else
-#   define AV_RB(s, p)    bswap_##s(AV_RN##s(p))
-#   define AV_WB(s, p, v) AV_WN##s(p, bswap_##s(v))
+#   define AV_RB(s, p)    av_bswap##s(AV_RN##s(p))
+#   define AV_WB(s, p, v) AV_WN##s(p, av_bswap##s(v))
 #   define AV_RL(s, p)    AV_RN##s(p)
 #   define AV_WL(s, p, v) AV_WN##s(p, v)
 #endif

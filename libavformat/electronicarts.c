@@ -301,7 +301,7 @@ static int process_ea_header(AVFormatContext *s) {
         if (i == 0)
             ea->big_endian = size > 0x000FFFFF;
         if (ea->big_endian)
-            size = bswap_32(size);
+            size = av_bswap32(size);
 
         switch (blockid) {
             case ISNh_TAG:

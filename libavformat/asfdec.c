@@ -386,7 +386,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec->palctrl = av_mallocz(sizeof(AVPaletteControl));
 #if HAVE_BIGENDIAN
                     for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)
-                        st->codec->palctrl->palette[i] = bswap_32(((uint32_t*)st->codec->extradata)[i]);
+                        st->codec->palctrl->palette[i] = av_bswap32(((uint32_t*)st->codec->extradata)[i]);
 #else
                     memcpy(st->codec->palctrl->palette, st->codec->extradata,
                            FFMIN(st->codec->extradata_size, AVPALETTE_SIZE));

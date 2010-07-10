@@ -30,8 +30,8 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 
-#define bswap_32 bswap_32
-static av_always_inline av_const uint32_t bswap_32(uint32_t x)
+#define av_bswap32 av_bswap32
+static av_always_inline av_const uint32_t av_bswap32(uint32_t x)
 {
     unsigned tmp;
     __asm__("%1 = %0 >> 8 (V);      \n\t"

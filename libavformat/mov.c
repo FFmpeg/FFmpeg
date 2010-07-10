@@ -993,7 +993,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         st->codec->codec_tag = format;
         id = ff_codec_get_id(codec_movaudio_tags, format);
         if (id<=0 && ((format&0xFFFF) == 'm'+('s'<<8) || (format&0xFFFF) == 'T'+('S'<<8)))
-            id = ff_codec_get_id(ff_codec_wav_tags, bswap_32(format)&0xFFFF);
+            id = ff_codec_get_id(ff_codec_wav_tags, av_bswap32(format)&0xFFFF);
 
         if (st->codec->codec_type != AVMEDIA_TYPE_VIDEO && id > 0) {
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;

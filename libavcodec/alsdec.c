@@ -1464,7 +1464,7 @@ static int decode_frame(AVCodecContext *avctx,
                 int32_t v;
 
                 if (swap)
-                    v = bswap_32(src[sample]);
+                    v = av_bswap32(src[sample]);
                 else
                     v = src[sample];
                 if (!HAVE_BIGENDIAN)
@@ -1482,7 +1482,7 @@ static int decode_frame(AVCodecContext *avctx,
                     for (sample = 0;
                          sample < ctx->cur_frame_length * avctx->channels;
                          sample++)
-                        *dest++ = bswap_16(src[sample]);
+                        *dest++ = av_bswap16(src[sample]);
                 } else {
                     ctx->dsp.bswap_buf((uint32_t*)ctx->crc_buffer, data,
                                        ctx->cur_frame_length * avctx->channels);

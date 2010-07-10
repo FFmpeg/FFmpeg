@@ -1153,7 +1153,7 @@ static void output_frame_footer(FlacEncodeContext *s)
 {
     int crc;
     flush_put_bits(&s->pb);
-    crc = bswap_16(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0,
+    crc = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0,
                           s->pb.buf, put_bits_count(&s->pb)>>3));
     put_bits(&s->pb, 16, crc);
     flush_put_bits(&s->pb);
@@ -1164,7 +1164,7 @@ static void update_md5_sum(FlacEncodeContext *s, int16_t *samples)
 #if HAVE_BIGENDIAN
     int i;
     for(i = 0; i < s->frame.blocksize*s->channels; i++) {
-        int16_t smp = le2ne_16(samples[i]);
+        int16_t smp = av_le2ne16(samples[i]);
         av_md5_update(s->md5ctx, (uint8_t *)&smp, 2);
     }
 #else

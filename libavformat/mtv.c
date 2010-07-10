@@ -188,7 +188,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
          */
 
         for(i=0;i<mtv->img_segment_size/2;i++)
-            *((uint16_t *)pkt->data+i) = bswap_16(*((uint16_t *)pkt->data+i));
+            *((uint16_t *)pkt->data+i) = av_bswap16(*((uint16_t *)pkt->data+i));
 #endif
         pkt->stream_index = VIDEO_SID;
     }

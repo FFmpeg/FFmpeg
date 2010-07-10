@@ -221,7 +221,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
     {
         /* signature */
         skip_bits(&s->gb, 32);
-//        if (get_bits_long(&s->gb, 32) != bswap_32(AV_RL32("TTA1"))) {
+//        if (get_bits_long(&s->gb, 32) != av_bswap32(AV_RL32("TTA1"))) {
 //            av_log(s->avctx, AV_LOG_ERROR, "Missing magic\n");
 //            return -1;
 //        }

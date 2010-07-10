@@ -359,14 +359,14 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
                             switch(correction_type_sp[0][k]) {
                             case 0:
-                                *cur_lp = le2ne_32(((le2ne_32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
+                                *cur_lp = av_le2ne32(((av_le2ne32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
                                 lp2++;
                                 break;
                             case 1:
-                                res = ((le2ne_16(((unsigned short *)(ref_lp))[0]) >> 1) + correction_lp[lp2 & 0x01][*buf1]) << 1;
-                                ((unsigned short *)cur_lp)[0] = le2ne_16(res);
-                                res = ((le2ne_16(((unsigned short *)(ref_lp))[1]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1;
-                                ((unsigned short *)cur_lp)[1] = le2ne_16(res);
+                                res = ((av_le2ne16(((unsigned short *)(ref_lp))[0]) >> 1) + correction_lp[lp2 & 0x01][*buf1]) << 1;
+                                ((unsigned short *)cur_lp)[0] = av_le2ne16(res);
+                                res = ((av_le2ne16(((unsigned short *)(ref_lp))[1]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1;
+                                ((unsigned short *)cur_lp)[1] = av_le2ne16(res);
                                 buf1++;
                                 lp2++;
                                 break;
@@ -462,19 +462,19 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
                             switch(correction_type_sp[lp2 & 0x01][k]) {
                             case 0:
-                                cur_lp[width_tbl[1]] = le2ne_32(((le2ne_32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
+                                cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
                                 if(lp2 > 0 || flag1 == 0 || strip->ypos != 0)
                                     cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
                                 else
-                                    cur_lp[0] = le2ne_32(((le2ne_32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
+                                    cur_lp[0] = av_le2ne32(((av_le2ne32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
                                 lp2++;
                                 break;
 
                             case 1:
-                                res = ((le2ne_16(((unsigned short *)ref_lp)[0]) >> 1) + correction_lp[lp2 & 0x01][*buf1]) << 1;
-                                ((unsigned short *)cur_lp)[width_tbl[2]] = le2ne_16(res);
-                                res = ((le2ne_16(((unsigned short *)ref_lp)[1]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1;
-                                ((unsigned short *)cur_lp)[width_tbl[2]+1] = le2ne_16(res);
+                                res = ((av_le2ne16(((unsigned short *)ref_lp)[0]) >> 1) + correction_lp[lp2 & 0x01][*buf1]) << 1;
+                                ((unsigned short *)cur_lp)[width_tbl[2]] = av_le2ne16(res);
+                                res = ((av_le2ne16(((unsigned short *)ref_lp)[1]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1;
+                                ((unsigned short *)cur_lp)[width_tbl[2]+1] = av_le2ne16(res);
 
                                 if(lp2 > 0 || flag1 == 0 || strip->ypos != 0)
                                     cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
@@ -591,8 +591,8 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
                                 switch(correction_type_sp[lp2 & 0x01][k]) {
                                 case 0:
-                                    cur_lp[width_tbl[1]] = le2ne_32(((le2ne_32(lv1) >> 1) + correctionloworder_lp[lp2 & 0x01][k]) << 1);
-                                    cur_lp[width_tbl[1]+1] = le2ne_32(((le2ne_32(lv2) >> 1) + correctionhighorder_lp[lp2 & 0x01][k]) << 1);
+                                    cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(lv1) >> 1) + correctionloworder_lp[lp2 & 0x01][k]) << 1);
+                                    cur_lp[width_tbl[1]+1] = av_le2ne32(((av_le2ne32(lv2) >> 1) + correctionhighorder_lp[lp2 & 0x01][k]) << 1);
                                     if(lp2 > 0 || strip->ypos != 0 || flag1 == 0) {
                                         cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
                                         cur_lp[1] = ((cur_lp[-width_tbl[1]+1] >> 1) + (cur_lp[width_tbl[1]+1] >> 1)) & 0xFEFEFEFE;
@@ -604,8 +604,8 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                                     break;
 
                                 case 1:
-                                    cur_lp[width_tbl[1]] = le2ne_32(((le2ne_32(lv1) >> 1) + correctionloworder_lp[lp2 & 0x01][*buf1]) << 1);
-                                    cur_lp[width_tbl[1]+1] = le2ne_32(((le2ne_32(lv2) >> 1) + correctionloworder_lp[lp2 & 0x01][k]) << 1);
+                                    cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(lv1) >> 1) + correctionloworder_lp[lp2 & 0x01][*buf1]) << 1);
+                                    cur_lp[width_tbl[1]+1] = av_le2ne32(((av_le2ne32(lv2) >> 1) + correctionloworder_lp[lp2 & 0x01][k]) << 1);
                                     if(lp2 > 0 || strip->ypos != 0 || flag1 == 0) {
                                         cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
                                         cur_lp[1] = ((cur_lp[-width_tbl[1]+1] >> 1) + (cur_lp[width_tbl[1]+1] >> 1)) & 0xFEFEFEFE;
@@ -748,20 +748,20 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                                 case 0:
                                     lv1 = correctionloworder_lp[lp2 & 0x01][k];
                                     lv2 = correctionhighorder_lp[lp2 & 0x01][k];
-                                    cur_lp[0] = le2ne_32(((le2ne_32(ref_lp[0]) >> 1) + lv1) << 1);
-                                    cur_lp[1] = le2ne_32(((le2ne_32(ref_lp[1]) >> 1) + lv2) << 1);
-                                    cur_lp[width_tbl[1]] = le2ne_32(((le2ne_32(ref_lp[width_tbl[1]]) >> 1) + lv1) << 1);
-                                    cur_lp[width_tbl[1]+1] = le2ne_32(((le2ne_32(ref_lp[width_tbl[1]+1]) >> 1) + lv2) << 1);
+                                    cur_lp[0] = av_le2ne32(((av_le2ne32(ref_lp[0]) >> 1) + lv1) << 1);
+                                    cur_lp[1] = av_le2ne32(((av_le2ne32(ref_lp[1]) >> 1) + lv2) << 1);
+                                    cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(ref_lp[width_tbl[1]]) >> 1) + lv1) << 1);
+                                    cur_lp[width_tbl[1]+1] = av_le2ne32(((av_le2ne32(ref_lp[width_tbl[1]+1]) >> 1) + lv2) << 1);
                                     lp2++;
                                     break;
 
                                 case 1:
                                     lv1 = correctionloworder_lp[lp2 & 0x01][*buf1++];
                                     lv2 = correctionloworder_lp[lp2 & 0x01][k];
-                                    cur_lp[0] = le2ne_32(((le2ne_32(ref_lp[0]) >> 1) + lv1) << 1);
-                                    cur_lp[1] = le2ne_32(((le2ne_32(ref_lp[1]) >> 1) + lv2) << 1);
-                                    cur_lp[width_tbl[1]] = le2ne_32(((le2ne_32(ref_lp[width_tbl[1]]) >> 1) + lv1) << 1);
-                                    cur_lp[width_tbl[1]+1] = le2ne_32(((le2ne_32(ref_lp[width_tbl[1]+1]) >> 1) + lv2) << 1);
+                                    cur_lp[0] = av_le2ne32(((av_le2ne32(ref_lp[0]) >> 1) + lv1) << 1);
+                                    cur_lp[1] = av_le2ne32(((av_le2ne32(ref_lp[1]) >> 1) + lv2) << 1);
+                                    cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(ref_lp[width_tbl[1]]) >> 1) + lv1) << 1);
+                                    cur_lp[width_tbl[1]+1] = av_le2ne32(((av_le2ne32(ref_lp[width_tbl[1]+1]) >> 1) + lv2) << 1);
                                     lp2++;
                                     break;
 
@@ -849,22 +849,22 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
                             switch(correction_type_sp[lp2 & 0x01][k]) {
                             case 0:
-                                cur_lp[0] = le2ne_32(((le2ne_32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
-                                cur_lp[width_tbl[1]] = le2ne_32(((le2ne_32(ref_lp[width_tbl[1]]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
+                                cur_lp[0] = av_le2ne32(((av_le2ne32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
+                                cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(ref_lp[width_tbl[1]]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
                                 lp2++;
                                 break;
 
                             case 1:
                                 lv1 = (unsigned short)(correction_lp[lp2 & 0x01][*buf1++]);
                                 lv2 = (unsigned short)(correction_lp[lp2 & 0x01][k]);
-                                res = (unsigned short)(((le2ne_16(((unsigned short *)ref_lp)[0]) >> 1) + lv1) << 1);
-                                ((unsigned short *)cur_lp)[0] = le2ne_16(res);
-                                res = (unsigned short)(((le2ne_16(((unsigned short *)ref_lp)[1]) >> 1) + lv2) << 1);
-                                ((unsigned short *)cur_lp)[1] = le2ne_16(res);
-                                res = (unsigned short)(((le2ne_16(((unsigned short *)ref_lp)[width_tbl[2]]) >> 1) + lv1) << 1);
-                                ((unsigned short *)cur_lp)[width_tbl[2]] = le2ne_16(res);
-                                res = (unsigned short)(((le2ne_16(((unsigned short *)ref_lp)[width_tbl[2]+1]) >> 1) + lv2) << 1);
-                                ((unsigned short *)cur_lp)[width_tbl[2]+1] = le2ne_16(res);
+                                res = (unsigned short)(((av_le2ne16(((unsigned short *)ref_lp)[0]) >> 1) + lv1) << 1);
+                                ((unsigned short *)cur_lp)[0] = av_le2ne16(res);
+                                res = (unsigned short)(((av_le2ne16(((unsigned short *)ref_lp)[1]) >> 1) + lv2) << 1);
+                                ((unsigned short *)cur_lp)[1] = av_le2ne16(res);
+                                res = (unsigned short)(((av_le2ne16(((unsigned short *)ref_lp)[width_tbl[2]]) >> 1) + lv1) << 1);
+                                ((unsigned short *)cur_lp)[width_tbl[2]] = av_le2ne16(res);
+                                res = (unsigned short)(((av_le2ne16(((unsigned short *)ref_lp)[width_tbl[2]+1]) >> 1) + lv2) << 1);
+                                ((unsigned short *)cur_lp)[width_tbl[2]+1] = av_le2ne16(res);
                                 lp2++;
                                 break;
 

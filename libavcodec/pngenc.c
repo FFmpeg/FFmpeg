@@ -199,7 +199,7 @@ static void png_write_chunk(uint8_t **f, uint32_t tag,
     crc = crc32(0, Z_NULL, 0);
     AV_WL32(tagbuf, tag);
     crc = crc32(crc, tagbuf, 4);
-    bytestream_put_be32(f, bswap_32(tag));
+    bytestream_put_be32(f, av_bswap32(tag));
     if (length > 0) {
         crc = crc32(crc, buf, length);
         memcpy(*f, buf, length);

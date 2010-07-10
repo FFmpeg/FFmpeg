@@ -660,7 +660,7 @@ static int imc_decode_frame(AVCodecContext * avctx,
         return -1;
     }
     for(i = 0; i < IMC_BLOCK_SIZE / 2; i++)
-        buf16[i] = bswap_16(((const uint16_t*)buf)[i]);
+        buf16[i] = av_bswap16(((const uint16_t*)buf)[i]);
 
     init_get_bits(&q->gb, (const uint8_t*)buf16, IMC_BLOCK_SIZE * 8);
 

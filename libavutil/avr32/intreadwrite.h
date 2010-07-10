@@ -106,8 +106,8 @@ static av_always_inline void AV_WB32(void *p, uint32_t v)
 }
 
 /* These two would be defined by generic code, but we need them sooner. */
-#define AV_RL32(p)    bswap_32(AV_RB32(p))
-#define AV_WL32(p, v) AV_WB32(p, bswap_32(v))
+#define AV_RL32(p)    av_bswap32(AV_RB32(p))
+#define AV_WL32(p, v) AV_WB32(p, av_bswap32(v))
 
 #define AV_WB64 AV_WB64
 static av_always_inline void AV_WB64(void *p, uint64_t v)

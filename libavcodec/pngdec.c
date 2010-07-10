@@ -429,7 +429,7 @@ static int decode_frame(AVCodecContext *avctx,
         if (length > 0x7fffffff)
             goto fail;
         tag32 = bytestream_get_be32(&s->bytestream);
-        tag = bswap_32(tag32);
+        tag = av_bswap32(tag32);
         dprintf(avctx, "png: tag=%c%c%c%c length=%u\n",
                 (tag & 0xff),
                 ((tag >> 8) & 0xff),

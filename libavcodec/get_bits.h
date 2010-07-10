@@ -267,7 +267,7 @@ static inline void skip_bits_long(GetBitContext *s, int n){
 
 #   define UPDATE_CACHE(name, gb)\
     if(name##_bit_count > 0){\
-        const uint32_t next= be2ne_32( *name##_buffer_ptr );\
+        const uint32_t next= av_be2ne32( *name##_buffer_ptr );\
         name##_cache0 |= NEG_USR32(next,name##_bit_count);\
         name##_cache1 |= next<<name##_bit_count;\
         name##_buffer_ptr++;\
@@ -319,7 +319,7 @@ static inline void skip_bits_long(GetBitContext *s, int n){
     re_bit_count += n;
     re_buffer_ptr += re_bit_count>>5;
     re_bit_count &= 31;
-    re_cache0 = be2ne_32( re_buffer_ptr[-1] ) << re_bit_count;
+    re_cache0 = av_be2ne32( re_buffer_ptr[-1] ) << re_bit_count;
     re_cache1 = 0;
     UPDATE_CACHE(re, s)
     CLOSE_READER(re, s)

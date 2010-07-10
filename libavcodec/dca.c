@@ -1230,7 +1230,7 @@ static int dca_convert_bitstream(const uint8_t * src, int src_size, uint8_t * ds
         return src_size;
     case DCA_MARKER_RAW_LE:
         for (i = 0; i < (src_size + 1) >> 1; i++)
-            *sdst++ = bswap_16(*ssrc++);
+            *sdst++ = av_bswap16(*ssrc++);
         return src_size;
     case DCA_MARKER_14B_BE:
     case DCA_MARKER_14B_LE:

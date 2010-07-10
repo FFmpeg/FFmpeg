@@ -80,7 +80,7 @@ static int aac_sync(uint64_t state, AACAC3ParseContext *hdr_info,
         uint8_t  u8[8];
     } tmp;
 
-    tmp.u64 = be2ne_64(state);
+    tmp.u64 = av_be2ne64(state);
     init_get_bits(&bits, tmp.u8+8-AAC_ADTS_HEADER_SIZE, AAC_ADTS_HEADER_SIZE * 8);
 
     if ((size = ff_aac_parse_header(&bits, &hdr)) < 0)

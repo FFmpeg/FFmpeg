@@ -61,7 +61,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     for (h = 0; h < avctx->height; h++) {
         uint16_t *dst = (uint16_t *)dst_line;
         for (w = 0; w < avctx->width; w++) {
-            uint32_t pixel = be2ne_32(*src++);
+            uint32_t pixel = av_be2ne32(*src++);
             uint16_t r, g, b;
             b =  pixel <<  6;
             g = (pixel >>  4) & 0xffc0;

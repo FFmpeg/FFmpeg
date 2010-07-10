@@ -290,7 +290,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
                 uint16_t *dst = (uint16_t *) ptr;
 
                 for(j = 0; j < avctx->width; j++)
-                    *dst++ = le2ne_16(*src++);
+                    *dst++ = av_le2ne16(*src++);
 
                 buf += n;
                 ptr += linesize;

@@ -213,10 +213,10 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_free(smk->frm_flags);
         return AVERROR(EIO);
     }
-    ((int32_t*)st->codec->extradata)[0] = le2ne_32(smk->mmap_size);
-    ((int32_t*)st->codec->extradata)[1] = le2ne_32(smk->mclr_size);
-    ((int32_t*)st->codec->extradata)[2] = le2ne_32(smk->full_size);
-    ((int32_t*)st->codec->extradata)[3] = le2ne_32(smk->type_size);
+    ((int32_t*)st->codec->extradata)[0] = av_le2ne32(smk->mmap_size);
+    ((int32_t*)st->codec->extradata)[1] = av_le2ne32(smk->mclr_size);
+    ((int32_t*)st->codec->extradata)[2] = av_le2ne32(smk->full_size);
+    ((int32_t*)st->codec->extradata)[3] = av_le2ne32(smk->type_size);
 
     smk->curstream = -1;
     smk->nextpos = url_ftell(pb);

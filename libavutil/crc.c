@@ -49,7 +49,7 @@ static AVCRC av_crc_table[AV_CRC_MAX][257];
  *           If 0, you must swap the CRC parameter and the result of av_crc
  *           if you need the standard representation (can be simplified in
  *           most cases to e.g. bswap16):
- *           bswap_32(crc << (32-bits))
+ *           av_bswap32(crc << (32-bits))
  * @param bits number of bits for the CRC
  * @param poly generator polynomial without the x**bits coefficient, in the
  *             representation as specified by le
@@ -73,7 +73,7 @@ int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size){
         } else {
             for (c = i << 24, j = 0; j < 8; j++)
                 c = (c<<1) ^ ((poly<<(32-bits)) & (((int32_t)c)>>31) );
-            ctx[i] = bswap_32(c);
+            ctx[i] = av_bswap32(c);
         }
     }
     ctx[256]=1;
@@ -121,7 +121,7 @@ uint32_t av_crc(const AVCRC *ctx, uint32_t crc, const uint8_t *buffer, size_t le
             crc = ctx[((uint8_t)crc) ^ *buffer++] ^ (crc >> 8);
 
         while(buffer<end-3){
-            crc ^= le2ne_32(*(const uint32_t*)buffer); buffer+=4;
+            crc ^= av_le2ne32(*(const uint32_t*)buffer); buffer+=4;
             crc =  ctx[3*256 + ( crc     &0xFF)]
                   ^ctx[2*256 + ((crc>>8 )&0xFF)]
                   ^ctx[1*256 + ((crc>>16)&0xFF)]
