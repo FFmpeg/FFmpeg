@@ -123,5 +123,6 @@ av_cold void ff_psy_preprocess_end(struct FFPsyPreprocessContext *ctx)
         for (i = 0; i < ctx->avctx->channels; i++)
             ff_iir_filter_free_state(ctx->fstate[i]);
     av_freep(&ctx->fstate);
+    av_free(ctx);
 }
 
