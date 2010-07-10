@@ -43,8 +43,11 @@ NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/dcadsp_neon.o             \
 
 NEON-OBJS-$(CONFIG_VP3_DECODER)        += arm/vp3dsp_neon.o
 
-NEON-OBJS-$(CONFIG_VP5_DECODER)        += arm/vp56dsp_neon.o
-NEON-OBJS-$(CONFIG_VP6_DECODER)        += arm/vp56dsp_neon.o
+NEON-OBJS-$(CONFIG_VP5_DECODER)        += arm/vp56dsp_neon.o            \
+                                          arm/vp3dsp_neon.o             \
+
+NEON-OBJS-$(CONFIG_VP6_DECODER)        += arm/vp56dsp_neon.o            \
+                                          arm/vp3dsp_neon.o             \
 
 OBJS-$(HAVE_NEON)                      += arm/dsputil_init_neon.o       \
                                           arm/dsputil_neon.o            \
