@@ -18,7 +18,9 @@ outfile="${outdir}/${test}"
 oneoff(){
     psnr=$(tests/tiny_psnr "$1" "$2" 2 0 0)
     max=$(expr "$psnr" : '.*MAXDIFF: *\([0-9]*\)')
-    if [ $max -gt ${3:-1} ]; then
+    size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
+    size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
+    if [ $max -gt ${3:-1} ] || [ $size1 != $size2 ]; then
         echo "$psnr"
         return 1
     fi
