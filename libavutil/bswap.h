@@ -27,8 +27,12 @@
 #define AVUTIL_BSWAP_H
 
 #include <stdint.h>
-#include "config.h"
+#include "libavutil/avconfig.h"
 #include "attributes.h"
+
+#ifdef HAVE_AV_CONFIG_H
+
+#include "config.h"
 
 #if   ARCH_ARM
 #   include "arm/bswap.h"
@@ -41,6 +45,8 @@
 #elif ARCH_X86
 #   include "x86/bswap.h"
 #endif
+
+#endif /* HAVE_AV_CONFIG_H */
 
 #define AV_BSWAP16C(x) (((x) << 8 & 0xff00)  | ((x) >> 8 & 0x00ff))
 #define AV_BSWAP32C(x) (AV_BSWAP16C(x) << 16 | AV_BSWAP16C((x) >> 16))
@@ -88,7 +94,7 @@ static inline uint64_t av_const av_bswap64(uint64_t x)
 // be2ne ... big-endian to native-endian
 // le2ne ... little-endian to native-endian
 
-#if HAVE_BIGENDIAN
+#if AV_HAVE_BIGENDIAN
 #define av_be2ne16(x) (x)
 #define av_be2ne32(x) (x)
 #define av_be2ne64(x) (x)
