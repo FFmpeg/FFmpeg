@@ -33,18 +33,22 @@ FATE2_TESTS += fate-aac-al07_96
 fate-aac-al07_96: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/aac/al07_96.mp4 -f s16le -
 fate-aac-al07_96: CMP = oneoff
 fate-aac-al07_96: REF = $(SAMPLES)/aac/al07_96.s16
+fate-aac-al07_96: FUZZ = 2
 
 FATE2_TESTS += fate-aac-am00_88
 fate-aac-am00_88: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/aac/am00_88.mp4 -f s16le -
 fate-aac-am00_88: CMP = oneoff
 fate-aac-am00_88: REF = $(SAMPLES)/aac/am00_88.s16
+fate-aac-am00_88: FUZZ = 2
 
 FATE2_TESTS += fate-aac-al_sbr_hq_cm_48_2
 fate-aac-al_sbr_hq_cm_48_2: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/aac/al_sbr_cm_48_2.mp4 -f s16le -
 fate-aac-al_sbr_hq_cm_48_2: CMP = oneoff
 fate-aac-al_sbr_hq_cm_48_2: REF = $(SAMPLES)/aac/al_sbr_hq_cm_48_2.s16
+fate-aac-al_sbr_hq_cm_48_2: FUZZ = 2
 
 FATE2_TESTS += fate-aac-al_sbr_ps_06_ur
 fate-aac-al_sbr_ps_06_ur: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/aac/al_sbr_ps_06_new.mp4 -f s16le -
 fate-aac-al_sbr_ps_06_ur: CMP = oneoff
 fate-aac-al_sbr_ps_06_ur: REF = $(SAMPLES)/aac/al_sbr_ps_06_ur.s16
+fate-aac-al_sbr_ps_06_ur: FUZZ = 2
