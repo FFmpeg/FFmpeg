@@ -20,7 +20,7 @@
 #define AVUTIL_INTREADWRITE_H
 
 #include <stdint.h>
-#include "config.h"
+#include "libavutil/avconfig.h"
 #include "attributes.h"
 #include "bswap.h"
 
@@ -52,6 +52,10 @@ typedef union {
  * as inline functions.
  */
 
+#ifdef HAVE_AV_CONFIG_H
+
+#include "config.h"
+
 #if   ARCH_ARM
 #   include "arm/intreadwrite.h"
 #elif ARCH_AVR32
@@ -66,11 +70,13 @@ typedef union {
 #   include "x86/intreadwrite.h"
 #endif
 
+#endif /* HAVE_AV_CONFIG_H */
+
 /*
  * Map AV_RNXX <-> AV_R[BL]XX for all variants provided by per-arch headers.
  */
 
-#if HAVE_BIGENDIAN
+#if AV_HAVE_BIGENDIAN
 
 #   if    defined(AV_RN16) && !defined(AV_RB16)
 #       define AV_RB16(p) AV_RN16(p)
@@ -120,7 +126,7 @@ typedef union {
 #       define AV_WN64(p, v) AV_WB64(p, v)
 #   endif
 
-#else /* HAVE_BIGENDIAN */
+#else /* AV_HAVE_BIGENDIAN */
 
 #   if    defined(AV_RN16) && !defined(AV_RL16)
 #       define AV_RL16(p) AV_RN16(p)
@@ -170,14 +176,14 @@ typedef union {
 #       define AV_WN64(p, v) AV_WL64(p, v)
 #   endif
 
-#endif /* !HAVE_BIGENDIAN */
+#endif /* !AV_HAVE_BIGENDIAN */
 
 /*
  * Define AV_[RW]N helper macros to simplify definitions not provided
  * by per-arch headers.
  */
 
-#if   HAVE_ATTRIBUTE_PACKED
+#if defined(__GNUC__) && !defined(__TI_COMPILER_VERSION__)
 
 union unaligned_64 { uint64_t l; } __attribute__((packed)) av_alias;
 union unaligned_32 { uint32_t l; } __attribute__((packed)) av_alias;
@@ -191,7 +197,7 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 #   define AV_RN(s, p) (*((const __unaligned uint##s##_t*)(p)))
 #   define AV_WN(s, p, v) (*((__unaligned uint##s##_t*)(p)) = (v))
 
-#elif HAVE_FAST_UNALIGNED
+#elif AV_HAVE_FAST_UNALIGNED
 
 #   define AV_RN(s, p) (((const av_alias##s*)(p))->u##s)
 #   define AV_WN(s, p, v) (((av_alias##s*)(p))->u##s = (v))
@@ -302,7 +308,7 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
     } while(0)
 #endif
 
-#if HAVE_BIGENDIAN
+#if AV_HAVE_BIGENDIAN
 #   define AV_RN(s, p)    AV_RB##s(p)
 #   define AV_WN(s, p, v) AV_WB##s(p, v)
 #else
@@ -336,7 +342,7 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 #   define AV_WN64(p, v) AV_WN(64, p, v)
 #endif
 
-#if HAVE_BIGENDIAN
+#if AV_HAVE_BIGENDIAN
 #   define AV_RB(s, p)    AV_RN##s(p)
 #   define AV_WB(s, p, v) AV_WN##s(p, v)
 #   define AV_RL(s, p)    av_bswap##s(AV_RN##s(p))
