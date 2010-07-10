@@ -7,12 +7,14 @@ HEADERS = adler32.h                                                     \
           avstring.h                                                    \
           avutil.h                                                      \
           base64.h                                                      \
+          bswap.h                                                       \
           common.h                                                      \
           crc.h                                                         \
           error.h                                                       \
           eval.h                                                        \
           fifo.h                                                        \
           intfloat_readwrite.h                                          \
+          intreadwrite.h                                                \
           lfg.h                                                         \
           log.h                                                         \
           lzo.h                                                         \
