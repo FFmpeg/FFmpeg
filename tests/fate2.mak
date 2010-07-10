@@ -71,3 +71,9 @@ fate-qcelp: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/qcp/0036580847.QCP -f s16l
 fate-qcelp: CMP = oneoff
 fate-qcelp: REF = $(SAMPLES)/qcp/0036580847.pcm
 
+FATE2_TESTS += fate-qdm2
+fate-qdm2: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/qt-surge-suite/surge-2-16-B-QDM2.mov -f s16le -
+fate-qdm2: CMP = oneoff
+fate-qdm2: REF = $(SAMPLES)/qt-surge-suite/surge-2-16-B-QDM2.pcm
+fate-qdm2: FUZZ = 2
+
