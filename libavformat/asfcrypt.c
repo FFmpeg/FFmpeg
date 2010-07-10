@@ -170,7 +170,7 @@ void ff_asfcrypt_dec(const uint8_t key[20], uint8_t *data, int len) {
         ms_state = multiswap_enc(ms_keys, ms_state, AV_RL64(qwords));
     multiswap_invert_keys(ms_keys);
     packetkey = (packetkey << 32) | (packetkey >> 32);
-    packetkey = le2me_64(packetkey);
+    packetkey = le2ne_64(packetkey);
     packetkey = multiswap_dec(ms_keys, ms_state, packetkey);
     AV_WL64(qwords, packetkey);
 }

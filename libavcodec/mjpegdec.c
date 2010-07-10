@@ -1027,7 +1027,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         return -1;
 
     id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
-    id = be2me_32(id);
+    id = be2ne_32(id);
     len -= 6;
 
     if(s->avctx->debug & FF_DEBUG_STARTCODE){
@@ -1134,7 +1134,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     if ((s->start_code == APP1) && (len > (0x28 - 8)))
     {
         id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
-        id = be2me_32(id);
+        id = be2ne_32(id);
         len -= 4;
         if (id == AV_RL32("mjpg")) /* Apple MJPEG-A */
         {

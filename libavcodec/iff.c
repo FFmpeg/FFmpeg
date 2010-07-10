@@ -38,22 +38,22 @@ typedef struct {
 } IffContext;
 
 #define LUT8_PART(plane, v)                             \
-    AV_LE2ME64C(UINT64_C(0x0000000)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x1000000)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x0010000)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x1010000)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x0000100)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x1000100)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x0010100)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x1010100)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x0000001)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x1000001)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x0010001)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x1010001)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x0000101)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x1000101)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x0010101)<<32 | v) << plane,  \
-    AV_LE2ME64C(UINT64_C(0x1010101)<<32 | v) << plane
+    AV_LE2NE64C(UINT64_C(0x0000000)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x1000000)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x0010000)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x1010000)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x0000100)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x1000100)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x0010100)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x1010100)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x0000001)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x1000001)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x0010001)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x1010001)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x0000101)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x1000101)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x0010101)<<32 | v) << plane,  \
+    AV_LE2NE64C(UINT64_C(0x1010101)<<32 | v) << plane
 
 #define LUT8(plane) {                           \
     LUT8_PART(plane, 0x0000000),                \

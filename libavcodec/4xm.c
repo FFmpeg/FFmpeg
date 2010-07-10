@@ -333,16 +333,16 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int lo
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
             return;
         }
-        mcdc(dst, src, log2w, h, stride, 1, le2me_16(*f->wordstream++));
+        mcdc(dst, src, log2w, h, stride, 1, le2ne_16(*f->wordstream++));
     }else if(code == 5){
-        mcdc(dst, src, log2w, h, stride, 0, le2me_16(*f->wordstream++));
+        mcdc(dst, src, log2w, h, stride, 0, le2ne_16(*f->wordstream++));
     }else if(code == 6){
         if(log2w){
-            dst[0] = le2me_16(*f->wordstream++);
-            dst[1] = le2me_16(*f->wordstream++);
+            dst[0] = le2ne_16(*f->wordstream++);
+            dst[1] = le2ne_16(*f->wordstream++);
         }else{
-            dst[0     ] = le2me_16(*f->wordstream++);
-            dst[stride] = le2me_16(*f->wordstream++);
+            dst[0     ] = le2ne_16(*f->wordstream++);
+            dst[stride] = le2ne_16(*f->wordstream++);
         }
     }
 }

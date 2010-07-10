@@ -179,7 +179,7 @@ static int decode_bytes(const uint8_t* inbuffer, uint8_t* out, int bytes){
 
     off = (intptr_t)inbuffer & 3;
     buf = (const uint32_t*) (inbuffer - off);
-    c = be2me_32((0x537F6103 >> (off*8)) | (0x537F6103 << (32-(off*8))));
+    c = be2ne_32((0x537F6103 >> (off*8)) | (0x537F6103 << (32-(off*8))));
     bytes += 3 + off;
     for (i = 0; i < bytes/4; i++)
         obuf[i] = c ^ buf[i];

@@ -68,7 +68,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
 #define READ_PIXELS(a, b, c)         \
     do {                             \
-        val  = le2me_32(*src++);     \
+        val  = le2ne_32(*src++);     \
         *a++ =  val <<  6;           \
         *b++ = (val >>  4) & 0xFFC0; \
         *c++ = (val >> 14) & 0xFFC0; \
@@ -86,14 +86,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         if (w < avctx->width - 1) {
             READ_PIXELS(u, y, v);
 
-            val  = le2me_32(*src++);
+            val  = le2ne_32(*src++);
             *y++ =  val <<  6;
         }
         if (w < avctx->width - 3) {
             *u++ = (val >>  4) & 0xFFC0;
             *y++ = (val >> 14) & 0xFFC0;
 
-            val  = le2me_32(*src++);
+            val  = le2ne_32(*src++);
             *v++ =  val <<  6;
             *y++ = (val >>  4) & 0xFFC0;
         }

@@ -168,7 +168,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
             AV_WL32(s->buf_ptr, bit_buf);
         } else
 #endif
-        *(uint32_t *)s->buf_ptr = le2me_32(bit_buf);
+        *(uint32_t *)s->buf_ptr = le2ne_32(bit_buf);
         s->buf_ptr+=4;
         bit_buf = (bit_left==32)?0:value >> bit_left;
         bit_left+=32;
@@ -186,7 +186,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
             AV_WB32(s->buf_ptr, bit_buf);
         } else
 #endif
-        *(uint32_t *)s->buf_ptr = be2me_32(bit_buf);
+        *(uint32_t *)s->buf_ptr = be2ne_32(bit_buf);
         //printf("bitbuf = %08x\n", bit_buf);
         s->buf_ptr+=4;
         bit_left+=32 - n;
@@ -224,8 +224,8 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 
     value<<= 32-n;
 
-    ptr[0] |= be2me_32(value>>(index&31));
-    ptr[1]  = be2me_32(value<<(32-(index&31)));
+    ptr[0] |= be2ne_32(value>>(index&31));
+    ptr[1]  = be2ne_32(value<<(32-(index&31)));
 //if(n>24) printf("%d %d\n", n, value);
     index+= n;
     s->index= index;
@@ -252,7 +252,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     int index= s->index;
     uint32_t *ptr= (uint32_t*)(((uint8_t *)s->buf)+(index>>3));
 
-    ptr[0] |= be2me_32(value<<(32-n-(index&7) ));
+    ptr[0] |= be2ne_32(value<<(32-n-(index&7) ));
     ptr[1] = 0;
 //if(n>24) printf("%d %d\n", n, value);
     index+= n;

@@ -85,34 +85,34 @@ static inline uint64_t av_const bswap_64(uint64_t x)
 }
 #endif
 
-// be2me ... big-endian to machine-endian
-// le2me ... little-endian to machine-endian
+// be2ne ... big-endian to native-endian
+// le2ne ... little-endian to native-endian
 
 #if HAVE_BIGENDIAN
-#define be2me_16(x) (x)
-#define be2me_32(x) (x)
-#define be2me_64(x) (x)
-#define le2me_16(x) bswap_16(x)
-#define le2me_32(x) bswap_32(x)
-#define le2me_64(x) bswap_64(x)
-#define AV_BE2MEC(s, x) (x)
-#define AV_LE2MEC(s, x) AV_BSWAPC(s, x)
+#define be2ne_16(x) (x)
+#define be2ne_32(x) (x)
+#define be2ne_64(x) (x)
+#define le2ne_16(x) bswap_16(x)
+#define le2ne_32(x) bswap_32(x)
+#define le2ne_64(x) bswap_64(x)
+#define AV_BE2NEC(s, x) (x)
+#define AV_LE2NEC(s, x) AV_BSWAPC(s, x)
 #else
-#define be2me_16(x) bswap_16(x)
-#define be2me_32(x) bswap_32(x)
-#define be2me_64(x) bswap_64(x)
-#define le2me_16(x) (x)
-#define le2me_32(x) (x)
-#define le2me_64(x) (x)
-#define AV_BE2MEC(s, x) AV_BSWAPC(s, x)
-#define AV_LE2MEC(s, x) (x)
+#define be2ne_16(x) bswap_16(x)
+#define be2ne_32(x) bswap_32(x)
+#define be2ne_64(x) bswap_64(x)
+#define le2ne_16(x) (x)
+#define le2ne_32(x) (x)
+#define le2ne_64(x) (x)
+#define AV_BE2NEC(s, x) AV_BSWAPC(s, x)
+#define AV_LE2NEC(s, x) (x)
 #endif
 
-#define AV_BE2ME16C(x) AV_BE2MEC(16, x)
-#define AV_BE2ME32C(x) AV_BE2MEC(32, x)
-#define AV_BE2ME64C(x) AV_BE2MEC(64, x)
-#define AV_LE2ME16C(x) AV_LE2MEC(16, x)
-#define AV_LE2ME32C(x) AV_LE2MEC(32, x)
-#define AV_LE2ME64C(x) AV_LE2MEC(64, x)
+#define AV_BE2NE16C(x) AV_BE2NEC(16, x)
+#define AV_BE2NE32C(x) AV_BE2NEC(32, x)
+#define AV_BE2NE64C(x) AV_BE2NEC(64, x)
+#define AV_LE2NE16C(x) AV_LE2NEC(16, x)
+#define AV_LE2NE32C(x) AV_LE2NEC(32, x)
+#define AV_LE2NE64C(x) AV_LE2NEC(64, x)
 
 #endif /* AVUTIL_BSWAP_H */

@@ -297,10 +297,10 @@ int av_des_init(AVDES *d, const uint8_t *key, int key_bits, int decrypt) {
 }
 
 void av_des_crypt(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t *iv, int decrypt) {
-    uint64_t iv_val = iv ? be2me_64(*(uint64_t *)iv) : 0;
+    uint64_t iv_val = iv ? be2ne_64(*(uint64_t *)iv) : 0;
     while (count-- > 0) {
         uint64_t dst_val;
-        uint64_t src_val = src ? be2me_64(*(const uint64_t *)src) : 0;
+        uint64_t src_val = src ? be2ne_64(*(const uint64_t *)src) : 0;
         if (decrypt) {
             uint64_t tmp = src_val;
             if (d->triple_des) {
@@ -317,12 +317,12 @@ void av_des_crypt(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t
             }
             iv_val = iv ? dst_val : 0;
         }
-        *(uint64_t *)dst = be2me_64(dst_val);
+        *(uint64_t *)dst = be2ne_64(dst_val);
         src += 8;
         dst += 8;
     }
     if (iv)
-        *(uint64_t *)iv = be2me_64(iv_val);
+        *(uint64_t *)iv = be2ne_64(iv_val);
 }
 
 #ifdef TEST
