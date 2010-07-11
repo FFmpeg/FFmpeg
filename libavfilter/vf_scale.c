@@ -152,10 +152,7 @@ static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     scale->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
     outpicref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
-    outpicref->pts = picref->pts;
-    outpicref->pos = picref->pos;
-    outpicref->interlaced           = picref->interlaced;
-    outpicref->top_field_first      = picref->top_field_first;
+    avfilter_copy_picref_props(outpicref, picref);
 
     outlink->outpic = outpicref;
 

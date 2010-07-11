@@ -263,11 +263,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 
         link->cur_pic = avfilter_default_get_video_buffer(link, dst->min_perms, link->w, link->h);
         link->srcpic = picref;
-        link->cur_pic->pts = link->srcpic->pts;
-        link->cur_pic->pos = link->srcpic->pos;
-        link->cur_pic->pixel_aspect = link->srcpic->pixel_aspect;
-        link->cur_pic->interlaced      = link->srcpic->interlaced;
-        link->cur_pic->top_field_first = link->srcpic->top_field_first;
+        avfilter_copy_picref_props(link->cur_pic, link->srcpic);
     }
     else
         link->cur_pic = picref;
