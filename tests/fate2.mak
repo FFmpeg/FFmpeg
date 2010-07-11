@@ -92,3 +92,8 @@ FATE2_TESTS += fate-dts
 fate-dts: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/dts/dts.ts -f s16le -
 fate-dts: CMP = oneoff
 fate-dts: REF = $(SAMPLES)/dts/dts.pcm
+
+FATE2_TESTS += fate-nellymoser
+fate-nellymoser: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/nellymoser/nellymoser.flv -f s16le -
+fate-nellymoser: CMP = oneoff
+fate-nellymoser: REF = $(SAMPLES)/nellymoser/nellymoser.pcm
