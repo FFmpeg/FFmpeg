@@ -84,3 +84,6 @@ fate-imc: REF = $(SAMPLES)/imc/imc.pcm
 
 FATE2_TESTS += fate-yop
 fate-yop: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/yop/test1.yop -pix_fmt rgb24 -an -f framecrc -
+
+FATE2_TESTS += fate-pictor
+fate-pictor: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24 -an -f framecrc -
