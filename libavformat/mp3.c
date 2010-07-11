@@ -214,18 +214,18 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
     buf[0] = 'T';
     buf[1] = 'A';
     buf[2] = 'G';
-    count += id3v1_set_string(s, "title",   buf +  3, 30);
-    count += id3v1_set_string(s, "author",  buf + 33, 30);
-    count += id3v1_set_string(s, "album",   buf + 63, 30);
-    count += id3v1_set_string(s, "date",    buf + 93,  4);
+    count += id3v1_set_string(s, "TIT2",    buf +  3, 30);       //title
+    count += id3v1_set_string(s, "TPE1",    buf + 33, 30);       //author|artist
+    count += id3v1_set_string(s, "TALB",    buf + 63, 30);       //album
+    count += id3v1_set_string(s, "TDRL",    buf + 93,  4);       //date
     count += id3v1_set_string(s, "comment", buf + 97, 30);
-    if ((tag = av_metadata_get(s->metadata, "track", NULL, 0))) {
+    if ((tag = av_metadata_get(s->metadata, "TRCK", NULL, 0))) { //track
         buf[125] = 0;
         buf[126] = atoi(tag->value);
         count++;
     }
     buf[127] = 0xFF; /* default to unknown genre */
-    if ((tag = av_metadata_get(s->metadata, "genre", NULL, 0))) {
+    if ((tag = av_metadata_get(s->metadata, "TCON", NULL, 0))) { //genre
         for(i = 0; i <= ID3v1_GENRE_MAX; i++) {
             if (!strcasecmp(tag->value, ff_id3v1_genre_str[i])) {
                 buf[127] = i;
@@ -290,6 +290,7 @@ AVOutputFormat mp2_muxer = {
     NULL,
     mp3_write_packet,
     mp3_write_trailer,
+    .metadata_conv = ff_id3v2_metadata_conv,
 };
 #endif
 
