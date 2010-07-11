@@ -2680,9 +2680,15 @@ static void vc1_decode_i_blocks(VC1Context *v)
                 return;
             }
         }
-        ff_draw_horiz_band(s, s->mb_y * 16, 16);
+        if (!v->s.loop_filter)
+            ff_draw_horiz_band(s, s->mb_y * 16, 16);
+        else if (s->mb_y)
+            ff_draw_horiz_band(s, (s->mb_y-1) * 16, 16);
+
         s->first_slice_line = 0;
     }
+    if (v->s.loop_filter)
+        ff_draw_horiz_band(s, (s->mb_height-1)*16, 16);
     ff_er_add_slice(s, 0, 0, s->mb_width - 1, s->mb_height - 1, (AC_END|DC_END|MV_END));
 }
 
@@ -2812,9 +2818,14 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
                 return;
             }
         }
-        ff_draw_horiz_band(s, s->mb_y * 16, 16);
+        if (!v->s.loop_filter)
+            ff_draw_horiz_band(s, s->mb_y * 16, 16);
+        else if (s->mb_y)
+            ff_draw_horiz_band(s, (s->mb_y-1) * 16, 16);
         s->first_slice_line = 0;
     }
+    if (v->s.loop_filter)
+        ff_draw_horiz_band(s, (s->mb_height-1)*16, 16);
     ff_er_add_slice(s, 0, 0, s->mb_width - 1, s->mb_height - 1, (AC_END|DC_END|MV_END));
 }
 
@@ -2913,9 +2924,14 @@ static void vc1_decode_b_blocks(VC1Context *v)
             }
             if(v->s.loop_filter) vc1_loop_filter_iblk(s, v->pq);
         }
-        ff_draw_horiz_band(s, s->mb_y * 16, 16);
+        if (!v->s.loop_filter)
+            ff_draw_horiz_band(s, s->mb_y * 16, 16);
+        else if (s->mb_y)
+            ff_draw_horiz_band(s, (s->mb_y-1) * 16, 16);
         s->first_slice_line = 0;
     }
+    if (v->s.loop_filter)
+        ff_draw_horiz_band(s, (s->mb_height-1)*16, 16);
     ff_er_add_slice(s, 0, 0, s->mb_width - 1, s->mb_height - 1, (AC_END|DC_END|MV_END));
 }
 
