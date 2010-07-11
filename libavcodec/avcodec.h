@@ -1397,7 +1397,7 @@ typedef struct AVCodecContext {
      * avcodec_default_get_buffer() instead of providing buffers allocated by
      * some other means.
      * - encoding: unused
-     * - decoding: Set by libavcodec., user can override.
+     * - decoding: Set by libavcodec, user can override.
      */
     int (*get_buffer)(struct AVCodecContext *c, AVFrame *pic);
 
@@ -1406,7 +1406,7 @@ typedef struct AVCodecContext {
      * A released buffer can be reused in get_buffer().
      * pic.data[*] must be set to NULL.
      * - encoding: unused
-     * - decoding: Set by libavcodec., user can override.
+     * - decoding: Set by libavcodec, user can override.
      */
     void (*release_buffer)(struct AVCodecContext *c, AVFrame *pic);
 
@@ -2029,7 +2029,7 @@ typedef struct AVCodecContext {
      * avcodec_default_reget_buffer() instead of providing buffers allocated by
      * some other means.
      * - encoding: unused
-     * - decoding: Set by libavcodec., user can override
+     * - decoding: Set by libavcodec, user can override.
      */
     int (*reget_buffer)(struct AVCodecContext *c, AVFrame *pic);
 
