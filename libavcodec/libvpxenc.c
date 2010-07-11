@@ -277,6 +277,11 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     }
 
     ctx->deadline = VPX_DL_GOOD_QUALITY;
+    /* 0-3: For non-zero values the encoder increasingly optimizes for reduced
+       complexity playback on low powered devices at the expense of encode
+       quality. */
+   if (avctx->profile != FF_PROFILE_UNKNOWN)
+       enccfg.g_profile = avctx->profile;
 
     dump_enc_cfg(avctx, &enccfg);
     /* Construct Encoder Context */
