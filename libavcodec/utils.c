@@ -695,16 +695,16 @@ void avsubtitle_free(AVSubtitle *sub)
 
     for (i = 0; i < sub->num_rects; i++)
     {
-        av_freep(sub->rects[i]->pict.data[0]);
-        av_freep(sub->rects[i]->pict.data[1]);
-        av_freep(sub->rects[i]->pict.data[2]);
-        av_freep(sub->rects[i]->pict.data[3]);
-        av_freep(sub->rects[i]->text);
-        av_freep(sub->rects[i]->ass);
-        av_freep(sub->rects[i]);
+        av_freep(&sub->rects[i]->pict.data[0]);
+        av_freep(&sub->rects[i]->pict.data[1]);
+        av_freep(&sub->rects[i]->pict.data[2]);
+        av_freep(&sub->rects[i]->pict.data[3]);
+        av_freep(&sub->rects[i]->text);
+        av_freep(&sub->rects[i]->ass);
+        av_freep(&sub->rects[i]);
     }
 
-    av_freep(sub->rects);
+    av_freep(&sub->rects);
 
     memset(sub, 0, sizeof(AVSubtitle));
 }
