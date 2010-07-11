@@ -82,4 +82,5 @@ fate-imc: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/imc/imc.avi -f s16le -
 fate-imc: CMP = oneoff
 fate-imc: REF = $(SAMPLES)/imc/imc.pcm
 
-
+FATE2_TESTS += fate-yop
+fate-yop: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/yop/test1.yop -pix_fmt rgb24 -an -f framecrc -
