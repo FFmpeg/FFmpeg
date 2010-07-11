@@ -498,7 +498,8 @@ typedef struct AVStream {
 
     AVMetadata *metadata;
 
-    /* av_read_frame() support */
+    /* Intended mostly for av_read_frame() support. Not supposed to be used by */
+    /* external applications; try to use something else if at all possible.    */
     const uint8_t *cur_ptr;
     int cur_len;
     AVPacket cur_pkt;
