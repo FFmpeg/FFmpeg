@@ -118,7 +118,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
     for(i=0; i<2; i++){
         DECLARE_ALIGNED(8, uint64_t, tmp);
 
-        cavs_idct8_1d(block+4*i, ff_pw_4);
+        cavs_idct8_1d(block+4*i, ff_pw_4.a);
 
         __asm__ volatile(
             "psraw     $3, %%mm7  \n\t"
