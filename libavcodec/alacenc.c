@@ -145,7 +145,8 @@ static void calc_predictor_params(AlacEncodeContext *s, int ch)
                                       s->avctx->frame_size,
                                       s->min_prediction_order,
                                       s->max_prediction_order,
-                                      ALAC_MAX_LPC_PRECISION, coefs, shift, 1,
+                                      ALAC_MAX_LPC_PRECISION, coefs, shift,
+                                      AV_LPC_TYPE_LEVINSON, 0,
                                       ORDER_METHOD_EST, ALAC_MAX_LPC_SHIFT, 1);
 
         s->lpc[ch].lpc_order = opt_order;
