@@ -2271,10 +2271,9 @@ case $target_os in
         objformat="win32"
         enable dos_paths
         check_cflags -fno-common
-        if ! check_cpp_condition _mingw.h "defined (__MINGW64_VERSION_MAJOR)"; then
-            check_cpp_condition _mingw.h "(__MINGW32_MAJOR_VERSION > 3) || (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
+        check_cpp_condition _mingw.h "defined (__MINGW64_VERSION_MAJOR) || (__MINGW32_MAJOR_VERSION > 3) \
+                                      || (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
                 die "ERROR: MinGW runtime version must be >= 3.15."
-        fi
         ;;
     cygwin*)
         target_os=cygwin
