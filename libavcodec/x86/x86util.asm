@@ -119,6 +119,34 @@
 %endif
 %endmacro
 
+; PABSW macros assume %1 != %2, while ABS1/2 macros work in-place
+%macro PABSW_MMX 2
+    pxor       %1, %1
+    pcmpgtw    %1, %2
+    pxor       %2, %1
+    psubw      %2, %1
+    SWAP       %1, %2
+%endmacro
+
+%macro PSIGNW_MMX 2
+    pxor       %1, %2
+    psubw      %1, %2
+%endmacro
+
+%macro PABSW_MMX2 2
+    pxor    %1, %1
+    psubw   %1, %2
+    pmaxsw  %1, %2
+%endmacro
+
+%macro PABSW_SSSE3 2
+    pabsw      %1, %2
+%endmacro
+
+%macro PSIGNW_SSSE3 2
+    psignw     %1, %2
+%endmacro
+
 %macro ABS1_MMX 2    ; a, tmp
     pxor    %2, %2
     psubw   %2, %1

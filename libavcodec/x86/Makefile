@@ -11,6 +11,8 @@ YASM-OBJS-$(CONFIG_GPL)                += x86/h264_deblock_sse2.o       \
 
 YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_intrapred.o          \
 
+YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp_yasm.o
+
 MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
 MMX-OBJS-$(CONFIG_MP1FLOAT_DECODER)    += x86/mpegaudiodec_mmx.o
 MMX-OBJS-$(CONFIG_MP2FLOAT_DECODER)    += x86/mpegaudiodec_mmx.o

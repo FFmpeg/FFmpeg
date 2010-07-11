@@ -689,6 +689,39 @@ static void vc1_inv_trans_8x8_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *bloc
     );
 }
 
+#define LOOP_FILTER(EXT) \
+void ff_vc1_v_loop_filter4_ ## EXT(uint8_t *src, int stride, int pq); \
+void ff_vc1_h_loop_filter4_ ## EXT(uint8_t *src, int stride, int pq); \
+void ff_vc1_v_loop_filter8_ ## EXT(uint8_t *src, int stride, int pq); \
+void ff_vc1_h_loop_filter8_ ## EXT(uint8_t *src, int stride, int pq); \
+\
+static void vc1_v_loop_filter16_ ## EXT(uint8_t *src, int stride, int pq) \
+{ \
+    ff_vc1_v_loop_filter8_ ## EXT(src,   stride, pq); \
+    ff_vc1_v_loop_filter8_ ## EXT(src+8, stride, pq); \
+} \
+\
+static void vc1_h_loop_filter16_ ## EXT(uint8_t *src, int stride, int pq) \
+{ \
+    ff_vc1_h_loop_filter8_ ## EXT(src,          stride, pq); \
+    ff_vc1_h_loop_filter8_ ## EXT(src+8*stride, stride, pq); \
+}
+
+#if HAVE_YASM
+LOOP_FILTER(mmx)
+LOOP_FILTER(mmx2)
+LOOP_FILTER(sse2)
+LOOP_FILTER(ssse3)
+
+void ff_vc1_h_loop_filter8_sse4(uint8_t *src, int stride, int pq);
+
+static void vc1_h_loop_filter16_sse4(uint8_t *src, int stride, int pq)
+{
+    ff_vc1_h_loop_filter8_sse4(src,          stride, pq);
+    ff_vc1_h_loop_filter8_sse4(src+8*stride, stride, pq);
+}
+#endif
+
 void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx) {
     mm_flags = mm_support();
 
@@ -738,4 +771,35 @@ void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx) {
         dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_mmx2;
         dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_mmx2;
     }
+
+#define ASSIGN_LF(EXT) \
+        dsp->vc1_v_loop_filter4  = ff_vc1_v_loop_filter4_ ## EXT; \
+        dsp->vc1_h_loop_filter4  = ff_vc1_h_loop_filter4_ ## EXT; \
+        dsp->vc1_v_loop_filter8  = ff_vc1_v_loop_filter8_ ## EXT; \
+        dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_ ## EXT; \
+        dsp->vc1_v_loop_filter16 = vc1_v_loop_filter16_ ## EXT; \
+        dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_ ## EXT
+
+#if HAVE_YASM
+    if (mm_flags & FF_MM_MMX) {
+        ASSIGN_LF(mmx);
+    }
+    return;
+    if (mm_flags & FF_MM_MMX2) {
+        ASSIGN_LF(mmx2);
+    }
+    if (mm_flags & FF_MM_SSE2) {
+        dsp->vc1_v_loop_filter8  = ff_vc1_v_loop_filter8_sse2;
+        dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse2;
+        dsp->vc1_v_loop_filter16 = vc1_v_loop_filter16_sse2;
+        dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_sse2;
+    }
+    if (mm_flags & FF_MM_SSSE3) {
+        ASSIGN_LF(ssse3);
+    }
+    if (mm_flags & FF_MM_SSE4) {
+        dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse4;
+        dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_sse4;
+    }
+#endif
 }
