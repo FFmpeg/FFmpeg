@@ -120,7 +120,7 @@ static int sdp_parse_fmtp_config_h264(AVStream * stream,
         while (*value) {
             char base64packet[1024];
             uint8_t decoded_packet[1024];
-            uint32_t packet_size;
+            int packet_size;
             char *dst = base64packet;
 
             while (*value && *value != ','
@@ -133,7 +133,7 @@ static int sdp_parse_fmtp_config_h264(AVStream * stream,
                 value++;
 
             packet_size= av_base64_decode(decoded_packet, base64packet, sizeof(decoded_packet));
-            if (packet_size) {
+            if (packet_size > 0) {
                 uint8_t *dest = av_malloc(packet_size + sizeof(start_sequence) +
                                          codec->extradata_size +
                                          FF_INPUT_BUFFER_PADDING_SIZE);
