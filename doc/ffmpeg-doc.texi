@@ -226,13 +226,13 @@ The following abbreviations are recognized:
 
 @item -aspect @var{aspect}
 Set aspect ratio (4:3, 16:9 or 1.3333, 1.7777).
-@item -croptop @var{size} (deprecated - use -vf crop=width:height:x:y instead)
+@item -croptop @var{size} (deprecated - use -vf crop=x:y:width:height instead)
 Set top crop band size (in pixels).
-@item -cropbottom @var{size} (deprecated - use -vf crop=width:height:x:y instead)
+@item -cropbottom @var{size} (deprecated - use -vf crop=x:y:width:height instead)
 Set bottom crop band size (in pixels).
-@item -cropleft @var{size} (deprecated - use -vf crop=width:height:x:y instead)
+@item -cropleft @var{size} (deprecated - use -vf crop=x:y:width:height instead)
 Set left crop band size (in pixels).
-@item -cropright @var{size} (deprecated - use -vf crop=width:height:x:y instead)
+@item -cropright @var{size} (deprecated - use -vf crop=x:y:width:height instead)
 Set right crop band size (in pixels).
 @item -padtop @var{size}
 @item -padbottom @var{size}
