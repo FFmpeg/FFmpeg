@@ -1362,7 +1362,7 @@ oss_indev_deps_any="soundcard_h sys_soundcard_h"
 oss_outdev_deps_any="soundcard_h sys_soundcard_h"
 v4l_indev_deps="linux_videodev_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
-vfwcap_indev_deps="capCreateCaptureWindow"
+vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
 x11_grab_device_indev_deps="x11grab XShmCreateImage"
 x11_grab_device_indev_extralibs="-lX11 -lXext -lXfixes"
@@ -2274,9 +2274,6 @@ case $target_os in
         if ! check_cpp_condition _mingw.h "defined (__MINGW64_VERSION_MAJOR)"; then
             check_cpp_condition _mingw.h "(__MINGW32_MAJOR_VERSION > 3) || (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
                 die "ERROR: MinGW runtime version must be >= 3.15."
-            enabled_any vfwcap_indev &&
-                { check_cpp_condition w32api.h "(__W32API_MAJOR_VERSION > 3) || (__W32API_MAJOR_VERSION == 3 && __W32API_MINOR_VERSION >= 13)" ||
-                  die "ERROR: vfwcap_indev requires w32api version 3.13 or later."; }
         fi
         ;;
     cygwin*)
@@ -2721,6 +2718,9 @@ check_header linux/videodev2.h
 check_header sys/videoio.h
 
 check_func_headers "windows.h vfw.h" capCreateCaptureWindow "$vfwcap_indev_extralibs"
+# check that WM_CAP_DRIVER_CONNECT is defined to the proper value
+# w32api 3.12 had it defined wrong
+check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_defines
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
 { check_header dev/bktr/ioctl_meteor.h &&
