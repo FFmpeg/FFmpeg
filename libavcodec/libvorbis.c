@@ -145,7 +145,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
     int l;
 
     if(data) {
-        int samples = OGGVORBIS_FRAME_SIZE;
+        const int samples = avccontext->frame_size;
         float **buffer ;
         int c, channels = context->vi.channels;
 
