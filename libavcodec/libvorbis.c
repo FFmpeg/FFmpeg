@@ -172,6 +172,10 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
              * not, apparently the end of stream decision is in libogg. */
             if(op.bytes==1 && op.e_o_s)
                 continue;
+            if (context->buffer_index + sizeof(ogg_packet) + op.bytes > BUFFER_SIZE) {
+                av_log(avccontext, AV_LOG_ERROR, "libvorbis: buffer overflow.");
+                return -1;
+            }
             memcpy(context->buffer + context->buffer_index, &op, sizeof(ogg_packet));
             context->buffer_index += sizeof(ogg_packet);
             memcpy(context->buffer + context->buffer_index, op.packet, op.bytes);
@@ -188,6 +192,11 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
         l=  op2->bytes;
         avccontext->coded_frame->pts= av_rescale_q(op2->granulepos, (AVRational){1, avccontext->sample_rate}, avccontext->time_base);
         //FIXME we should reorder the user supplied pts and not assume that they are spaced by 1/sample_rate
+
+        if (l > buf_size) {
+            av_log(avccontext, AV_LOG_ERROR, "libvorbis: buffer overflow.");
+            return -1;
+        }
 
         memcpy(packets, op2->packet, l);
         context->buffer_index -= l + sizeof(ogg_packet);
