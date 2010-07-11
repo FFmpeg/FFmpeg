@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 81
+#define LIBAVCODEC_VERSION_MINOR 82
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -3548,13 +3548,22 @@ attribute_deprecated int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtit
  * due to a potentially very different allocation pattern.
  *
  * @param avctx the codec context
- * @param[out] sub The AVSubtitle in which the decoded subtitle will be stored.
+ * @param[out] sub The AVSubtitle in which the decoded subtitle will be stored, must be
+                   freed with avsubtitle_free if *got_sub_ptr is set.
  * @param[in,out] got_sub_ptr Zero if no subtitle could be decompressed, otherwise, it is nonzero.
  * @param[in] avpkt The input AVPacket containing the input buffer.
  */
 int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                             int *got_sub_ptr,
                             AVPacket *avpkt);
+
+/**
+ * Frees all allocated data in the given subtitle struct.
+ *
+ * @param sub AVSubtitle to free.
+ */
+void avsubtitle_free(AVSubtitle *sub);
+
 int avcodec_parse_frame(AVCodecContext *avctx, uint8_t **pdata,
                         int *data_size_ptr,
                         uint8_t *buf, int buf_size);

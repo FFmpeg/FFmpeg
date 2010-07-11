@@ -677,18 +677,7 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
 
 static void free_subpicture(SubPicture *sp)
 {
-    int i;
-
-    for (i = 0; i < sp->sub.num_rects; i++)
-    {
-        av_freep(&sp->sub.rects[i]->pict.data[0]);
-        av_freep(&sp->sub.rects[i]->pict.data[1]);
-        av_freep(&sp->sub.rects[i]);
-    }
-
-    av_free(sp->sub.rects);
-
-    memset(&sp->sub, 0, sizeof(AVSubtitle));
+    avsubtitle_free(&sp->sub);
 }
 
 static void video_image_display(VideoState *is)

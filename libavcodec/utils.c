@@ -689,6 +689,26 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
     return ret;
 }
 
+void avsubtitle_free(AVSubtitle *sub)
+{
+    int i;
+
+    for (i = 0; i < sub->num_rects; i++)
+    {
+        av_freep(sub->rects[i]->pict.data[0]);
+        av_freep(sub->rects[i]->pict.data[1]);
+        av_freep(sub->rects[i]->pict.data[2]);
+        av_freep(sub->rects[i]->pict.data[3]);
+        av_freep(sub->rects[i]->text);
+        av_freep(sub->rects[i]->ass);
+        av_freep(sub->rects[i]);
+    }
+
+    av_freep(sub->rects);
+
+    memset(sub, 0, sizeof(AVSubtitle));
+}
+
 av_cold int avcodec_close(AVCodecContext *avctx)
 {
     /* If there is a user-supplied mutex locking routine, call it. */
