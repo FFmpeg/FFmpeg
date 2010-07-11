@@ -87,3 +87,8 @@ fate-yop: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/yop/test1.yop -pix_fmt rgb24
 
 FATE2_TESTS += fate-pictor
 fate-pictor: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24 -an -f framecrc -
+
+FATE2_TESTS += fate-dts
+fate-dts: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/dts/dts.ts -f s16le -
+fate-dts: CMP = oneoff
+fate-dts: REF = $(SAMPLES)/dts/dts.pcm
