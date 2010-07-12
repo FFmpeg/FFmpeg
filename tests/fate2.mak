@@ -97,3 +97,8 @@ FATE2_TESTS += fate-nellymoser
 fate-nellymoser: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/nellymoser/nellymoser.flv -f s16le -
 fate-nellymoser: CMP = oneoff
 fate-nellymoser: REF = $(SAMPLES)/nellymoser/nellymoser.pcm
+
+FATE2_TESTS += fate-truespeech
+fate-truespeech: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/truespeech/a6.wav -f s16le -
+fate-truespeech: CMP = oneoff
+fate-truespeech: REF = $(SAMPLES)/truespeech/a6.pcm
