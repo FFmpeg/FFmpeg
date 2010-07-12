@@ -1504,7 +1504,7 @@ static int decode_cce(AACContext *ac, GetBitContext *gb, ChannelElement *che)
         if (c) {
             cge = coup->coupling_point == AFTER_IMDCT ? 1 : get_bits1(gb);
             gain = cge ? get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60: 0;
-            gain_cache = pow(scale, -gain);
+            gain_cache = powf(scale, -gain);
         }
         if (coup->coupling_point == AFTER_IMDCT) {
             coup->gain[c][0] = gain_cache;
@@ -1521,7 +1521,7 @@ static int decode_cce(AACContext *ac, GetBitContext *gb, ChannelElement *che)
                                     s  -= 2 * (t & 0x1);
                                     t >>= 1;
                                 }
-                                gain_cache = pow(scale, -t) * s;
+                                gain_cache = powf(scale, -t) * s;
                             }
                         }
                         coup->gain[c][idx] = gain_cache;
