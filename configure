@@ -1609,7 +1609,7 @@ PROTOCOL_LIST=$(find_things protocol PROTOCOL libavformat/allformats.c)
 FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
 
 find_tests(){
-    map 'echo ${v}_test' $(ls "$source_path"/tests/ref/$1)
+    map 'echo ${v}_test' $(ls "$source_path"/tests/ref/$1 | grep -v '[^-a-z0-9_]')
 }
 
 ACODEC_TESTS=$(find_tests acodec)
