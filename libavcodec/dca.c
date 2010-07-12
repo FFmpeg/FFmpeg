@@ -1394,6 +1394,20 @@ static int dca_decode_frame(AVCodecContext * avctx,
     /* filter to get final output */
     for (i = 0; i < (s->sample_blocks / 8); i++) {
         dca_filter_channels(s, i);
+
+        /* If this was marked as a DTS-ES stream we need to subtract back- */
+        /* channel from SL & SR to remove matrixed back-channel signal */
+        if((s->source_pcm_res & 1) && s->xch_present) {
+            float* back_chan = s->samples + s->channel_order_tab[s->xch_base_channel] * 256;
+            float* lt_chan   = s->samples + s->channel_order_tab[s->xch_base_channel - 2] * 256;
+            float* rt_chan   = s->samples + s->channel_order_tab[s->xch_base_channel - 1] * 256;
+            int j;
+            for(j = 0; j < 256; ++j) {
+                lt_chan[j] -= (back_chan[j] - s->add_bias) * 0.707107f;
+                rt_chan[j] -= (back_chan[j] - s->add_bias) * 0.707107f;
+            }
+        }
+
         s->dsp.float_to_int16_interleave(samples, s->samples_chanptr, 256, channels);
         samples += 256 * channels;
     }
