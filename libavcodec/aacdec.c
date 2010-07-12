@@ -1712,10 +1712,6 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce, float
 
     // imdct
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
-        if (ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE)
-            av_log(ac->avctx, AV_LOG_WARNING,
-                   "Transition from an ONLY_LONG or LONG_STOP to an EIGHT_SHORT sequence detected. "
-                   "If you heard an audible artifact, please submit the sample to the FFmpeg developers.\n");
         for (i = 0; i < 1024; i += 128)
             ff_imdct_half(&ac->mdct_small, buf + i, in + i);
     } else
