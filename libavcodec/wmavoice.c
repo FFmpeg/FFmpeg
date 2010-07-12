@@ -1902,7 +1902,7 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
 
     if (*data_size < 480 * sizeof(float)) {
         av_log(ctx, AV_LOG_ERROR,
-               "Output buffer too small (%d given - %lu needed)\n",
+               "Output buffer too small (%d given - %zu needed)\n",
                *data_size, 480 * sizeof(float));
         return -1;
     }
