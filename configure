@@ -1162,7 +1162,7 @@ mdct_select="fft"
 rdft_select="fft"
 
 # decoders / encoders / hardware accelerators
-aac_decoder_select="mdct rdft aac_parser"
+aac_decoder_select="mdct rdft"
 aac_encoder_select="mdct"
 ac3_decoder_select="mdct ac3_parser"
 alac_encoder_select="lpc"
@@ -1293,9 +1293,6 @@ vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 # parsers
 h264_parser_select="golomb h264dsp"
-
-# bitstream_filters
-aac_adtstoasc_bsf_select="aac_parser"
 
 # external libraries
 libdirac_decoder_deps="libdirac !libschroedinger"

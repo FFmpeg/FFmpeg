@@ -1,5 +1,5 @@
 /*
- * AAC parser prototypes
+ * AAC ADTS header decoding prototypes and structures
  * Copyright (c) 2003 Fabrice Bellard
  * Copyright (c) 2003 Michael Niedermayer
  *
@@ -20,11 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_AAC_PARSER_H
-#define AVCODEC_AAC_PARSER_H
+#ifndef AVCODEC_AACADTSDEC_H
+#define AVCODEC_AACADTSDEC_H
 
 #include <stdint.h>
-#include "aac_ac3_parser.h"
 #include "get_bits.h"
 
 #define AAC_ADTS_HEADER_SIZE 7
@@ -52,4 +51,4 @@ typedef struct {
  */
 int ff_aac_parse_header(GetBitContext *gbc, AACADTSHeaderInfo *hdr);
 
-#endif /* AVCODEC_AAC_PARSER_H */
+#endif /* AVCODEC_AACADTSDEC_H */

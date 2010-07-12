@@ -43,7 +43,7 @@
 #include "avformat.h"
 #include "libavcodec/ac3.h"
 #include "libavcodec/dca.h"
-#include "libavcodec/aac_parser.h"
+#include "libavcodec/aacadtsdec.h"
 
 #define SYNCWORD1 0xF872
 #define SYNCWORD2 0x4E1F

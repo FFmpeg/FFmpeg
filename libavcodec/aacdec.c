@@ -90,7 +90,7 @@
 #include "sbr.h"
 #include "aacsbr.h"
 #include "mpeg4audio.h"
-#include "aac_parser.h"
+#include "aacadtsdec.h"
 
 #include <assert.h>
 #include <errno.h>

@@ -20,7 +20,7 @@
  */
 
 #include "avcodec.h"
-#include "aac_parser.h"
+#include "aacadtsdec.h"
 #include "put_bits.h"
 #include "get_bits.h"
 #include "mpeg4audio.h"
