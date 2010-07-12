@@ -237,9 +237,8 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
                                               AV_ROUND_NEAR_INF);
 
-    //convert [1,51] -> [0,63]
-    enccfg.rc_min_quantizer = ((avctx->qmin * 5 + 1) >> 2) - 1;
-    enccfg.rc_max_quantizer = ((avctx->qmax * 5 + 1) >> 2) - 1;
+    enccfg.rc_min_quantizer = avctx->qmin;
+    enccfg.rc_max_quantizer = avctx->qmax;
     enccfg.rc_dropframe_thresh = avctx->frame_skip_threshold;
 
     //_enc_init() will balk if kf_min_dist differs from max w/VPX_KF_AUTO
