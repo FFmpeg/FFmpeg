@@ -1454,6 +1454,13 @@ static int decode_cpe(AACContext *ac, GetBitContext *gb, ChannelElement *cpe)
     return 0;
 }
 
+static const float cce_scale[] = {
+    1.09050773266525765921, //2^(1/8)
+    1.18920711500272106672, //2^(1/4)
+    M_SQRT2,
+    2,
+};
+
 /**
  * Decode coupling_channel_element; reference: table 4.8.
  *
@@ -1484,7 +1491,7 @@ static int decode_cce(AACContext *ac, GetBitContext *gb, ChannelElement *che)
     coup->coupling_point += get_bits1(gb) || (coup->coupling_point >> 1);
 
     sign  = get_bits(gb, 1);
-    scale = pow(2., pow(2., (int)get_bits(gb, 2) - 3));
+    scale = cce_scale[get_bits(gb, 2)];
 
     if ((ret = decode_ics(ac, sce, gb, 0, 0)))
         return ret;
