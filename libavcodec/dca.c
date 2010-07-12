@@ -1403,8 +1403,8 @@ static int dca_decode_frame(AVCodecContext * avctx,
             float* rt_chan   = s->samples + s->channel_order_tab[s->xch_base_channel - 1] * 256;
             int j;
             for(j = 0; j < 256; ++j) {
-                lt_chan[j] -= (back_chan[j] - s->add_bias) * 0.707107f;
-                rt_chan[j] -= (back_chan[j] - s->add_bias) * 0.707107f;
+                lt_chan[j] -= (back_chan[j] - s->add_bias) * M_SQRT1_2;
+                rt_chan[j] -= (back_chan[j] - s->add_bias) * M_SQRT1_2;
             }
         }
 
