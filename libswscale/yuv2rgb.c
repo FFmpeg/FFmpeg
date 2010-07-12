@@ -595,10 +595,11 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
     return NULL;
 }
 
-static void fill_table(uint8_t* table[256], const int elemsize, const int inc, uint8_t *y_table)
+static void fill_table(uint8_t* table[256], const int elemsize, const int inc, void *y_tab)
 {
     int i;
     int64_t cb = 0;
+    uint8_t *y_table = y_tab;
 
     y_table -= elemsize * (inc >> 9);
 
