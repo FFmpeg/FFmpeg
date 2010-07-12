@@ -28,6 +28,8 @@ FFTContext *av_fft_init(int nbits, int inverse)
 
     if (s)
         ff_fft_init(s, nbits, inverse);
+    else
+        av_freep(&s);
 
     return s;
 }
@@ -58,6 +60,8 @@ FFTContext *av_mdct_init(int nbits, int inverse, double scale)
 
     if (s)
         ff_mdct_init(s, nbits, inverse, scale);
+    else
+        av_freep(&s);
 
     return s;
 }
@@ -95,6 +99,8 @@ RDFTContext *av_rdft_init(int nbits, enum RDFTransformType trans)
 
     if (s)
         ff_rdft_init(s, nbits, trans);
+    else
+        av_freep(&s);
 
     return s;
 }
@@ -122,6 +128,8 @@ DCTContext *av_dct_init(int nbits, enum DCTTransformType inverse)
 
     if (s)
         ff_dct_init(s, nbits, inverse);
+    else
+        av_freep(&s);
 
     return s;
 }
