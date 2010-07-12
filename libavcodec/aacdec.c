@@ -1251,9 +1251,9 @@ static av_always_inline void predict(AACContext *ac, PredictorState *ps, float *
     e1 = e0 - k1 * ps->r0;
 
     ps->cor1 = flt16_trunc(alpha * ps->cor1 + ps->r1 * e1);
-    ps->var1 = flt16_trunc(alpha * ps->var1 + 0.5 * (ps->r1 * ps->r1 + e1 * e1));
+    ps->var1 = flt16_trunc(alpha * ps->var1 + 0.5f * (ps->r1 * ps->r1 + e1 * e1));
     ps->cor0 = flt16_trunc(alpha * ps->cor0 + ps->r0 * e0);
-    ps->var0 = flt16_trunc(alpha * ps->var0 + 0.5 * (ps->r0 * ps->r0 + e0 * e0));
+    ps->var0 = flt16_trunc(alpha * ps->var0 + 0.5f * (ps->r0 * ps->r0 + e0 * e0));
 
     ps->r1 = flt16_trunc(a * (ps->r0 - k1 * e0));
     ps->r0 = flt16_trunc(a * e0);
