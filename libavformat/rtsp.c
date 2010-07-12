@@ -959,6 +959,13 @@ retry:
         rt->auth_state.auth_type != HTTP_AUTH_NONE)
         goto retry;
 
+    if (reply->status_code > 400){
+        av_log(s, AV_LOG_ERROR, "method %s failed, %d\n",
+               method,
+               reply->status_code);
+        av_log(s, AV_LOG_DEBUG, "%s\n", rt->last_reply);
+    }
+
     return 0;
 }
 
