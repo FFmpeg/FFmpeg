@@ -1580,7 +1580,7 @@ static void sbr_gain_calc(AACContext *ac, SpectralBandReplication *sbr,
                 sum[1] += sbr->e_curr[e][m];
             }
             gain_max = limgain[sbr->bs_limiter_gains] * sqrtf((FLT_EPSILON + sum[0]) / (FLT_EPSILON + sum[1]));
-            gain_max = FFMIN(100000, gain_max);
+            gain_max = FFMIN(100000.f, gain_max);
             for (m = sbr->f_tablelim[k] - sbr->kx[1]; m < sbr->f_tablelim[k + 1] - sbr->kx[1]; m++) {
                 float q_m_max   = sbr->q_m[e][m] * gain_max / sbr->gain[e][m];
                 sbr->q_m[e][m]  = FFMIN(sbr->q_m[e][m], q_m_max);
@@ -1594,7 +1594,7 @@ static void sbr_gain_calc(AACContext *ac, SpectralBandReplication *sbr,
                           + (delta && !sbr->s_m[e][m]) * sbr->q_m[e][m] * sbr->q_m[e][m];
             }
             gain_boost = sqrtf((FLT_EPSILON + sum[0]) / (FLT_EPSILON + sum[1]));
-            gain_boost = FFMIN(1.584893192, gain_boost);
+            gain_boost = FFMIN(1.584893192f, gain_boost);
             for (m = sbr->f_tablelim[k] - sbr->kx[1]; m < sbr->f_tablelim[k + 1] - sbr->kx[1]; m++) {
                 sbr->gain[e][m] *= gain_boost;
                 sbr->q_m[e][m]  *= gain_boost;
