@@ -120,7 +120,7 @@ DCTContext *av_dct_init(int nbits, enum DCTTransformType inverse)
 {
     DCTContext *s = av_malloc(sizeof(*s));
 
-    if (s && (ff_dct_init(s, nbits, inverse)))
+    if (s && ff_dct_init(s, nbits, inverse))
         av_freep(&s);
 
     return s;
