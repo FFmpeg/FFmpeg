@@ -101,7 +101,7 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     if (end_packet) {
         av_init_packet(pkt);
         pkt->stream_index = st->index;
-        pkt->pts          = sv->timestamp;
+        *timestamp        = sv->timestamp;
         pkt->flags        = sv->is_keyframe ? AV_PKT_FLAG_KEY : 0;
         pkt->size         = url_close_dyn_buf(sv->pktbuf, &pkt->data);
         pkt->destruct     = av_destruct_packet;
