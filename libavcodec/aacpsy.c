@@ -138,7 +138,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
         }
         start = 0;
         for (g = 0; g < ctx->num_bands[j]; g++) {
-            minscale = ath(ctx->avctx->sample_rate * start / 1024.0, ATH_ADD);
+            minscale = ath(ctx->avctx->sample_rate * start / 1024.0 / 2.0, ATH_ADD);
             for (i = 1; i < ctx->bands[j][g]; i++)
                 minscale = FFMIN(minscale, ath(ctx->avctx->sample_rate * (start + i) / 1024.0 / 2.0, ATH_ADD));
             coeffs->ath[g] = minscale - minath;
