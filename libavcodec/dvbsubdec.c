@@ -358,8 +358,14 @@ static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
     int i, r, g, b, a = 0;
     DVBSubContext *ctx = avctx->priv_data;
 
-    ctx->composition_id = avctx->sub_id & 0xffff;
-    ctx->ancillary_id = avctx->sub_id >> 16;
+    if (!avctx->extradata || avctx->extradata_size != 4) {
+        av_log(avctx, AV_LOG_WARNING, "Invalid extradata, subtitle streams may be combined!\n");
+        ctx->composition_id = -1;
+        ctx->ancillary_id   = -1;
+    } else {
+        ctx->composition_id = AV_RB16(avctx->extradata);
+        ctx->ancillary_id   = AV_RB16(avctx->extradata + 2);
+    }
 
     default_clut.id = -1;
     default_clut.next = NULL;
@@ -1434,7 +1440,8 @@ static int dvbsub_decode(AVCodecContext *avctx,
         segment_length = AV_RB16(p);
         p += 2;
 
-        if (page_id == ctx->composition_id || page_id == ctx->ancillary_id) {
+        if (page_id == ctx->composition_id || page_id == ctx->ancillary_id ||
+            ctx->composition_id == -1 || ctx->ancillary_id == -1) {
             switch (segment_type) {
             case DVBSUB_PAGE_SEGMENT:
                 dvbsub_parse_page_segment(avctx, p, segment_length);
