@@ -124,7 +124,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     minath = ath(3410, ATH_ADD);
     for (j = 0; j < 2; j++) {
         Psy3gppCoeffs *coeffs = &pctx->psy_coef[j];
-        float line_to_frequency = ctx->avctx->sample_rate / 2048.0f;
+        float line_to_frequency = ctx->avctx->sample_rate / (j ? 256.f : 2048.0f);
         i = 0;
         prev = 0.0;
         for (g = 0; g < ctx->num_bands[j]; g++) {
