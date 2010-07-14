@@ -114,15 +114,13 @@ static av_cold float ath(float f, float add)
 
 static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     Psy3gppContext *pctx;
-    float barks[1024];
+    float bark;
     int i, j, g, start;
     float prev, minscale, minath;
 
     ctx->model_priv_data = av_mallocz(sizeof(Psy3gppContext));
     pctx = (Psy3gppContext*) ctx->model_priv_data;
 
-    for (i = 0; i < 1024; i++)
-        barks[i] = calc_bark(i * ctx->avctx->sample_rate / 2048.0);
     minath = ath(3410, ATH_ADD);
     for (j = 0; j < 2; j++) {
         Psy3gppCoeffs *coeffs = &pctx->psy_coef[j];
@@ -130,8 +128,9 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
         prev = 0.0;
         for (g = 0; g < ctx->num_bands[j]; g++) {
             i += ctx->bands[j][g];
-            coeffs->barks[g] = (barks[i - 1] + prev) / 2.0;
-            prev = barks[i - 1];
+            bark = calc_bark((i-1) * ctx->avctx->sample_rate / 2048.0);
+            coeffs->barks[g] = (bark + prev) / 2.0;
+            prev = bark;
         }
         for (g = 0; g < ctx->num_bands[j] - 1; g++) {
             coeffs->spread_low[g] = pow(10.0, -(coeffs->barks[g+1] - coeffs->barks[g]) * PSY_3GPP_SPREAD_LOW);
