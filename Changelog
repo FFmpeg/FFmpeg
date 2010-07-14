@@ -20,6 +20,7 @@ version <next>:
 - -strict inofficial replaced by -strict unofficial
 - ffplay -exitonkeydown and -exitonmousedown options added
 - native GSM / GSM MS decoder
+- RTP depacketization of QDM2
 
 
 
