@@ -63,36 +63,50 @@ typedef struct {
     OGGPageList *page_list;
 } OGGContext;
 
-static void ogg_update_checksum(AVFormatContext *s, int64_t crc_offset)
+static void ogg_update_checksum(AVFormatContext *s, ByteIOContext *pb, int64_t crc_offset)
 {
-    int64_t pos = url_ftell(s->pb);
-    uint32_t checksum = get_checksum(s->pb);
-    url_fseek(s->pb, crc_offset, SEEK_SET);
-    put_be32(s->pb, checksum);
-    url_fseek(s->pb, pos, SEEK_SET);
+    int64_t pos = url_ftell(pb);
+    uint32_t checksum = get_checksum(pb);
+    url_fseek(pb, crc_offset, SEEK_SET);
+    put_be32(pb, checksum);
+    url_fseek(pb, pos, SEEK_SET);
 }
 
-static void ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
+static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
 {
     OGGStreamContext *oggstream = s->streams[page->stream_index]->priv_data;
+    ByteIOContext *pb;
     int64_t crc_offset;
+    int ret, size;
+    uint8_t *buf;
 
-    init_checksum(s->pb, ff_crc04C11DB7_update, 0);
-    put_tag(s->pb, "OggS");
-    put_byte(s->pb, 0);
-    put_byte(s->pb, page->flags | extra_flags);
-    put_le64(s->pb, page->granule);
-    put_le32(s->pb, oggstream->serial_num);
-    put_le32(s->pb, oggstream->page_counter++);
-    crc_offset = url_ftell(s->pb);
-    put_le32(s->pb, 0); // crc
-    put_byte(s->pb, page->segments_count);
-    put_buffer(s->pb, page->segments, page->segments_count);
-    put_buffer(s->pb, page->data, page->size);
+    ret = url_open_dyn_buf(&pb);
+    if (ret < 0)
+        return ret;
+    init_checksum(pb, ff_crc04C11DB7_update, 0);
+    put_tag(pb, "OggS");
+    put_byte(pb, 0);
+    put_byte(pb, page->flags | extra_flags);
+    put_le64(pb, page->granule);
+    put_le32(pb, oggstream->serial_num);
+    put_le32(pb, oggstream->page_counter++);
+    crc_offset = url_ftell(pb);
+    put_le32(pb, 0); // crc
+    put_byte(pb, page->segments_count);
+    put_buffer(pb, page->segments, page->segments_count);
+    put_buffer(pb, page->data, page->size);
 
-    ogg_update_checksum(s, crc_offset);
+    ogg_update_checksum(s, pb, crc_offset);
+    put_flush_packet(pb);
+
+    size = url_close_dyn_buf(pb, &buf);
+    if (size < 0)
+        return size;
+
+    put_buffer(s->pb, buf, size);
     put_flush_packet(s->pb);
     oggstream->page_count--;
+    return 0;
 }
 
 static int64_t ogg_granule_to_timestamp(OGGStreamContext *oggstream, OGGPage *page)
