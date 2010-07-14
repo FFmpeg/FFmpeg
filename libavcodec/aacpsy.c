@@ -124,11 +124,12 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     minath = ath(3410, ATH_ADD);
     for (j = 0; j < 2; j++) {
         Psy3gppCoeffs *coeffs = &pctx->psy_coef[j];
+        float line_to_frequency = ctx->avctx->sample_rate / 2048.0f;
         i = 0;
         prev = 0.0;
         for (g = 0; g < ctx->num_bands[j]; g++) {
             i += ctx->bands[j][g];
-            bark = calc_bark((i-1) * ctx->avctx->sample_rate / 2048.0);
+            bark = calc_bark((i-1) * line_to_frequency);
             coeffs->barks[g] = (bark + prev) / 2.0;
             prev = bark;
         }
@@ -138,9 +139,9 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
         }
         start = 0;
         for (g = 0; g < ctx->num_bands[j]; g++) {
-            minscale = ath(ctx->avctx->sample_rate * start / 1024.0 / 2.0, ATH_ADD);
+            minscale = ath(start * line_to_frequency, ATH_ADD);
             for (i = 1; i < ctx->bands[j][g]; i++)
-                minscale = FFMIN(minscale, ath(ctx->avctx->sample_rate * (start + i) / 1024.0 / 2.0, ATH_ADD));
+                minscale = FFMIN(minscale, ath((start + i) * line_to_frequency, ATH_ADD));
             coeffs->ath[g] = minscale - minath;
             start += ctx->bands[j][g];
         }
