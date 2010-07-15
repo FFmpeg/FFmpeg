@@ -3203,6 +3203,7 @@ static void opt_input_file(const char *filename)
     ret = av_find_stream_info(ic);
     if (ret < 0 && verbose >= 0) {
         fprintf(stderr, "%s: could not find codec parameters\n", filename);
+        av_close_input_file(ic);
         av_exit(1);
     }
 
