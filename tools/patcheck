@@ -123,7 +123,7 @@ if test -e $TMP ; then
     cat $TMP
 fi
 
-grep '^Index:.*Changelog' $* >/dev/null || printf "\nMissing changelog entry (ignore if minor change)\n"
+grep '^+++ .*Changelog' $* >/dev/null || printf "\nMissing changelog entry (ignore if minor change)\n"
 
 cat $* | tr '\n' '@' | egrep --color=always -o '(fprintf|av_log|printf)\([^)]*\)[+ ;@]*\1'  >$TMP && printf "\nMergeable calls\n"
 cat $TMP | tr '@' '\n'
