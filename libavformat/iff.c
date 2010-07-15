@@ -220,7 +220,7 @@ static int iff_read_header(AVFormatContext *s,
 
         if (metadata_tag) {
             if ((res = get_metadata(s, metadata_tag, data_size)) < 0) {
-                av_log(s, AV_LOG_ERROR, "iff: cannot allocate metadata tag %s!", metadata_tag);
+                av_log(s, AV_LOG_ERROR, "cannot allocate metadata tag %s!", metadata_tag);
                 return res;
             }
         }
@@ -244,7 +244,7 @@ static int iff_read_header(AVFormatContext *s,
             st->codec->codec_id = CODEC_ID_8SVX_EXP;
             break;
         default:
-            av_log(s, AV_LOG_ERROR, "iff: unknown compression method\n");
+            av_log(s, AV_LOG_ERROR, "unknown compression method\n");
             return -1;
         }
 
@@ -289,7 +289,7 @@ static int iff_read_packet(AVFormatContext *s,
 
         ret = get_buffer(pb, sample_buffer, PACKET_SIZE);
         if(av_new_packet(pkt, PACKET_SIZE) < 0) {
-            av_log(s, AV_LOG_ERROR, "iff: cannot allocate packet \n");
+            av_log(s, AV_LOG_ERROR, "cannot allocate packet\n");
             return AVERROR(ENOMEM);
         }
         interleave_stereo(sample_buffer, pkt->data, PACKET_SIZE);
