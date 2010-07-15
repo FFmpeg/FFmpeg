@@ -586,18 +586,16 @@ endfunc
         vclt.u8         d26, d26, d22   @ < alpha
         vsubw.u8        q2,  q2,  d2
         vdup.8          d22, r3         @ beta
-        vclt.s8         d25, d24, #0
         vrshrn.i16      d4,  q2,  #3
         vclt.u8         d28, d28, d22   @ < beta
-        vbic            d26, d26, d25
         vclt.u8         d30, d30, d22   @ < beta
         vand            d26, d26, d28
         vneg.s8         d25, d24
         vand            d26, d26, d30
         vmin.s8         d4,  d4,  d24
         vmovl.u8        q14, d16
-        vand            d4,  d4,  d26
         vmax.s8         d4,  d4,  d25
+        vand            d4,  d4,  d26
         vmovl.u8        q11, d0
         vaddw.s8        q14, q14, d4
         vsubw.s8        q11, q11, d4
