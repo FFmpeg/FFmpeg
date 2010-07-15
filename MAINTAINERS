@@ -307,8 +307,8 @@ Muxers/Demuxers:
   rmdec.c, rmenc.c                      Ronald S. Bultje, Kostya Shishkov
   rtmp*                                 Kostya Shishkov
   rtp.c, rtpenc.c                       Luca Abeni
-  rtp_asf.*                             Ronald S. Bultje
-  rtp_mpv.*, rtp_aac.*                  Luca Abeni
+  rtpdec_asf.*                          Ronald S. Bultje
+  rtpenc_mpv.*, rtpenc_aac.*            Luca Abeni
   rtsp.c                                Luca Barbato
   sdp.c                                 Luca Abeni
   segafilm.c                            Mike Melanson
