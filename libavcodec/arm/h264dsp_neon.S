@@ -589,14 +589,14 @@ endfunc
         vrshrn.i16      d4,  q2,  #3
         vclt.u8         d28, d28, d22   @ < beta
         vclt.u8         d30, d30, d22   @ < beta
-        vand            d26, d26, d28
-        vneg.s8         d25, d24
-        vand            d26, d26, d30
         vmin.s8         d4,  d4,  d24
-        vmovl.u8        q14, d16
+        vneg.s8         d25, d24
+        vand            d26, d26, d28
         vmax.s8         d4,  d4,  d25
-        vand            d4,  d4,  d26
+        vand            d26, d26, d30
         vmovl.u8        q11, d0
+        vand            d4,  d4,  d26
+        vmovl.u8        q14, d16
         vaddw.s8        q14, q14, d4
         vsubw.s8        q11, q11, d4
         vqmovun.s16     d16, q14
