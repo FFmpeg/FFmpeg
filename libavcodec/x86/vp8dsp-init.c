@@ -229,6 +229,19 @@ extern void ff_vp8_v_loop_filter_simple_sse2  (uint8_t *dst, int stride, int fli
 extern void ff_vp8_h_loop_filter_simple_mmx   (uint8_t *dst, int stride, int flim);
 extern void ff_vp8_h_loop_filter_simple_mmxext(uint8_t *dst, int stride, int flim);
 extern void ff_vp8_h_loop_filter_simple_sse2  (uint8_t *dst, int stride, int flim);
+
+extern void ff_vp8_v_loop_filter16_inner_mmx   (uint8_t *dst, int stride,
+                                                int e, int i, int hvt);
+extern void ff_vp8_v_loop_filter16_inner_mmxext(uint8_t *dst, int stride,
+                                                int e, int i, int hvt);
+extern void ff_vp8_v_loop_filter16_inner_sse2  (uint8_t *dst, int stride,
+                                                int e, int i, int hvt);
+extern void ff_vp8_h_loop_filter16_inner_mmx   (uint8_t *dst, int stride,
+                                                int e, int i, int hvt);
+extern void ff_vp8_h_loop_filter16_inner_mmxext(uint8_t *dst, int stride,
+                                                int e, int i, int hvt);
+extern void ff_vp8_h_loop_filter16_inner_sse2  (uint8_t *dst, int stride,
+                                                int e, int i, int hvt);
 #endif
 
 #define VP8_LUMA_MC_FUNC(IDX, SIZE, OPT) \
@@ -270,6 +283,9 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 
         c->vp8_v_loop_filter_simple = ff_vp8_v_loop_filter_simple_mmx;
         c->vp8_h_loop_filter_simple = ff_vp8_h_loop_filter_simple_mmx;
+
+        c->vp8_v_loop_filter16_inner = ff_vp8_v_loop_filter16_inner_mmx;
+        c->vp8_h_loop_filter16_inner = ff_vp8_h_loop_filter16_inner_mmx;
     }
 
     /* note that 4-tap width=16 functions are missing because w=16
@@ -285,6 +301,9 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 
         c->vp8_v_loop_filter_simple = ff_vp8_v_loop_filter_simple_mmxext;
         c->vp8_h_loop_filter_simple = ff_vp8_h_loop_filter_simple_mmxext;
+
+        c->vp8_v_loop_filter16_inner = ff_vp8_v_loop_filter16_inner_mmxext;
+        c->vp8_h_loop_filter16_inner = ff_vp8_h_loop_filter16_inner_mmxext;
     }
 
     if (mm_flags & FF_MM_SSE) {
@@ -300,6 +319,9 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 
         c->vp8_v_loop_filter_simple = ff_vp8_v_loop_filter_simple_sse2;
         c->vp8_h_loop_filter_simple = ff_vp8_h_loop_filter_simple_sse2;
+
+        c->vp8_v_loop_filter16_inner = ff_vp8_v_loop_filter16_inner_sse2;
+        c->vp8_h_loop_filter16_inner = ff_vp8_h_loop_filter16_inner_sse2;
     }
 
     if (mm_flags & FF_MM_SSSE3) {
