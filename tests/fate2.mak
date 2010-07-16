@@ -152,3 +152,6 @@ FATE2_TESTS += fate-atrac3-3
 fate-atrac3-3: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/atrac3/mc_sich_at3_132_small.wav -f s16le -
 fate-atrac3-3: CMP = oneoff
 fate-atrac3-3: REF = $(SAMPLES)/atrac3/mc_sich_at3_132_small.pcm
+
+FATE2_TESTS += fate-gsm
+fate-gsm: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/gsm/ciao.wav -f framecrc -
