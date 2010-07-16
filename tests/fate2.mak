@@ -132,3 +132,8 @@ FATE2_TESTS += fate-eac3-4
 fate-eac3-4: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/eac3/serenity_english_5.1_1536_small.eac3 -f s16le -
 fate-eac3-4: CMP = oneoff
 fate-eac3-4: REF = $(SAMPLES)/eac3/serenity_english_5.1_1536_small.pcm
+
+FATE2_TESTS += fate-atrac1
+fate-atrac1: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/atrac1/test_tones_small.aea -f s16le -
+fate-atrac1: CMP = oneoff
+fate-atrac1: REF = $(SAMPLES)/atrac1/test_tones_small.pcm
