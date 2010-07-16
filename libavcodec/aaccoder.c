@@ -99,25 +99,27 @@ static const uint8_t aac_cb_maxval[12] = {0, 1, 1, 2, 2, 4, 4, 7, 7, 12, 12, 16}
  *
  * @return quantization distortion
  */
-static float quantize_and_encode_band_cost(struct AACEncContext *s,
+static av_always_inline float quantize_and_encode_band_cost_template(
+                                struct AACEncContext *s,
                                 PutBitContext *pb, const float *in,
                                 const float *scaled, int size, int scale_idx,
                                 int cb, const float lambda, const float uplim,
-                                int *bits)
+                                int *bits, int BT_ZERO, int BT_UNSIGNED,
+                                int BT_PAIR, int BT_ESC)
 {
     const float IQ = ff_aac_pow2sf_tab[200 + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
     const float  Q = ff_aac_pow2sf_tab[200 - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
     const float CLIPPED_ESCAPE = 165140.0f*IQ;
     int i, j, k;
     float cost = 0;
-    const int dim = cb < FIRST_PAIR_BT ? 4 : 2;
+    const int dim = BT_PAIR ? 2 : 4;
     int resbits = 0;
     const float  Q34 = sqrtf(Q * sqrtf(Q));
     const int range  = aac_cb_range[cb];
     const int maxval = aac_cb_maxval[cb];
     int off;
 
-    if (!cb) {
+    if (BT_ZERO) {
         for (i = 0; i < size; i++)
             cost += in[i]*in[i];
         if (bits)
@@ -128,8 +130,8 @@ static float quantize_and_encode_band_cost(struct AACEncContext *s,
         abs_pow34_v(s->scoefs, in, size);
         scaled = s->scoefs;
     }
-    quantize_bands(s->qcoefs, in, scaled, size, Q34, !IS_CODEBOOK_UNSIGNED(cb), maxval);
-    if (IS_CODEBOOK_UNSIGNED(cb)) {
+    quantize_bands(s->qcoefs, in, scaled, size, Q34, !BT_UNSIGNED, maxval);
+    if (BT_UNSIGNED) {
         off = 0;
     } else {
         off = maxval;
@@ -146,11 +148,11 @@ static float quantize_and_encode_band_cost(struct AACEncContext *s,
         }
             curbits =  ff_aac_spectral_bits[cb-1][curidx];
             vec     = &ff_aac_codebook_vectors[cb-1][curidx*dim];
-            if (IS_CODEBOOK_UNSIGNED(cb)) {
+            if (BT_UNSIGNED) {
                 for (k = 0; k < dim; k++) {
                     float t = fabsf(in[i+k]);
                     float di;
-                    if (vec[k] == 64.0f) { //FIXME: slow
+                    if (BT_ESC && vec[k] == 64.0f) { //FIXME: slow
                         if (t >= CLIPPED_ESCAPE) {
                             di = t - CLIPPED_ESCAPE;
                             curbits += 21;
@@ -178,11 +180,11 @@ static float quantize_and_encode_band_cost(struct AACEncContext *s,
             return uplim;
         if (pb) {
         put_bits(pb, ff_aac_spectral_bits[cb-1][curidx], ff_aac_spectral_codes[cb-1][curidx]);
-        if (IS_CODEBOOK_UNSIGNED(cb))
+        if (BT_UNSIGNED)
             for (j = 0; j < dim; j++)
                 if (ff_aac_codebook_vectors[cb-1][curidx*dim+j] != 0.0f)
                     put_bits(pb, 1, in[i+j] < 0.0f);
-        if (cb == ESC_BT) {
+        if (BT_ESC) {
             for (j = 0; j < 2; j++) {
                 if (ff_aac_codebook_vectors[cb-1][curidx*2+j] == 64.0f) {
                     int coef = av_clip(quant(fabsf(in[i+j]), Q), 0, 8191);
@@ -200,6 +202,54 @@ static float quantize_and_encode_band_cost(struct AACEncContext *s,
         *bits = resbits;
     return cost;
 }
+
+#define QUANTIZE_AND_ENCODE_BAND_COST_FUNC(NAME, BT_ZERO, BT_UNSIGNED, BT_PAIR, BT_ESC) \
+static float quantize_and_encode_band_cost_ ## NAME(                                        \
+                                struct AACEncContext *s,                                \
+                                PutBitContext *pb, const float *in,                     \
+                                const float *scaled, int size, int scale_idx,           \
+                                int cb, const float lambda, const float uplim,          \
+                                int *bits) {                                            \
+    return quantize_and_encode_band_cost_template(                                      \
+                                s, pb, in, scaled, size, scale_idx,                     \
+                                BT_ESC ? ESC_BT : cb, lambda, uplim, bits,              \
+                                BT_ZERO, BT_UNSIGNED, BT_PAIR, BT_ESC);                 \
+}
+
+QUANTIZE_AND_ENCODE_BAND_COST_FUNC(ZERO,  1, 0, 0, 0)
+QUANTIZE_AND_ENCODE_BAND_COST_FUNC(SQUAD, 0, 0, 0, 0)
+QUANTIZE_AND_ENCODE_BAND_COST_FUNC(UQUAD, 0, 1, 0, 0)
+QUANTIZE_AND_ENCODE_BAND_COST_FUNC(SPAIR, 0, 0, 1, 0)
+QUANTIZE_AND_ENCODE_BAND_COST_FUNC(UPAIR, 0, 1, 1, 0)
+QUANTIZE_AND_ENCODE_BAND_COST_FUNC(ESC,   0, 1, 1, 1)
+
+static float (*quantize_and_encode_band_cost_arr[])(
+                                struct AACEncContext *s,
+                                PutBitContext *pb, const float *in,
+                                const float *scaled, int size, int scale_idx,
+                                int cb, const float lambda, const float uplim,
+                                int *bits) = {
+    quantize_and_encode_band_cost_ZERO,
+    quantize_and_encode_band_cost_SQUAD,
+    quantize_and_encode_band_cost_SQUAD,
+    quantize_and_encode_band_cost_UQUAD,
+    quantize_and_encode_band_cost_UQUAD,
+    quantize_and_encode_band_cost_SPAIR,
+    quantize_and_encode_band_cost_SPAIR,
+    quantize_and_encode_band_cost_UPAIR,
+    quantize_and_encode_band_cost_UPAIR,
+    quantize_and_encode_band_cost_UPAIR,
+    quantize_and_encode_band_cost_UPAIR,
+    quantize_and_encode_band_cost_ESC,
+};
+
+#define quantize_and_encode_band_cost(                                  \
+                                s, pb, in, scaled, size, scale_idx, cb, \
+                                lambda, uplim, bits)                    \
+    quantize_and_encode_band_cost_arr[cb](                              \
+                                s, pb, in, scaled, size, scale_idx, cb, \
+                                lambda, uplim, bits)
+
 static float quantize_band_cost(struct AACEncContext *s, const float *in,
                                 const float *scaled, int size, int scale_idx,
                                 int cb, const float lambda, const float uplim,
