@@ -223,7 +223,7 @@ QUANTIZE_AND_ENCODE_BAND_COST_FUNC(SPAIR, 0, 0, 1, 0)
 QUANTIZE_AND_ENCODE_BAND_COST_FUNC(UPAIR, 0, 1, 1, 0)
 QUANTIZE_AND_ENCODE_BAND_COST_FUNC(ESC,   0, 1, 1, 1)
 
-static float (*quantize_and_encode_band_cost_arr[])(
+static float (*const quantize_and_encode_band_cost_arr[])(
                                 struct AACEncContext *s,
                                 PutBitContext *pb, const float *in,
                                 const float *scaled, int size, int scale_idx,
