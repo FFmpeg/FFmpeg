@@ -137,3 +137,18 @@ FATE2_TESTS += fate-atrac1
 fate-atrac1: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/atrac1/test_tones_small.aea -f s16le -
 fate-atrac1: CMP = oneoff
 fate-atrac1: REF = $(SAMPLES)/atrac1/test_tones_small.pcm
+
+FATE2_TESTS += fate-atrac3-1
+fate-atrac3-1: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/atrac3/mc_sich_at3_066_small.wav -f s16le -
+fate-atrac3-1: CMP = oneoff
+fate-atrac3-1: REF = $(SAMPLES)/atrac3/mc_sich_at3_066_small.pcm
+
+FATE2_TESTS += fate-atrac3-2
+fate-atrac3-2: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/atrac3/mc_sich_at3_105_small.wav -f s16le -
+fate-atrac3-2: CMP = oneoff
+fate-atrac3-2: REF = $(SAMPLES)/atrac3/mc_sich_at3_105_small.pcm
+
+FATE2_TESTS += fate-atrac3-3
+fate-atrac3-3: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/atrac3/mc_sich_at3_132_small.wav -f s16le -
+fate-atrac3-3: CMP = oneoff
+fate-atrac3-3: REF = $(SAMPLES)/atrac3/mc_sich_at3_132_small.pcm
