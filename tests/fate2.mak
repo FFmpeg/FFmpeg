@@ -102,3 +102,13 @@ FATE2_TESTS += fate-truespeech
 fate-truespeech: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/truespeech/a6.wav -f s16le -
 fate-truespeech: CMP = oneoff
 fate-truespeech: REF = $(SAMPLES)/truespeech/a6.pcm
+
+FATE2_TESTS += fate-ac3-2.0
+fate-ac3-2.0: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/ac3/monsters_inc_2.0_192_small.ac3 -f s16le -
+fate-ac3-2.0: CMP = oneoff
+fate-ac3-2.0: REF = $(SAMPLES)/ac3/monsters_inc_2.0_192_small.pcm
+
+FATE2_TESTS += fate-ac3-5.1
+fate-ac3-5.1: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3 -f s16le -
+fate-ac3-5.1: CMP = oneoff
+fate-ac3-5.1: REF = $(SAMPLES)/ac3/monsters_inc_5.1_448_small.pcm
