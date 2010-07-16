@@ -1807,7 +1807,7 @@ cglobal vp8_%2_loop_filter16_inner_%1, 5, %3, %4
 %if mmsize == 8 ; mmx/mmxext (h)
     WRITE_4x2D        2, 3, 4, 5, dst_reg, dst2_reg, mstride_reg, stride_reg
 %else ; sse2 (h)
-    lea              r5, [r5+r1+2]
+    lea        dst8_reg, [dst8_reg+mstride_reg+2]
     WRITE_4x4D        2, 3, 4, 5, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg
 %endif
 %endif
