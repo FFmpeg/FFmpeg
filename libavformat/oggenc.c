@@ -105,6 +105,7 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
 
     put_buffer(s->pb, buf, size);
     put_flush_packet(s->pb);
+    av_free(buf);
     oggstream->page_count--;
     return 0;
 }
