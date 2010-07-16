@@ -1806,10 +1806,8 @@ cglobal vp8_%2_loop_filter16_inner_%1, 5, %3, %4
 
 %ifndef m8 ; sse2 on x86-32 or mmx/mmxext
     mov             rsp, r4          ; restore stack pointer
-    RET
-%else ; sse2 on x86-64
-    REP_RET
 %endif
+    RET
 %endmacro
 
 INIT_MMX
