@@ -225,6 +225,9 @@ static int update_dimensions(VP8Context *s, int width, int height)
     s->intra4x4_pred_mode_base = av_mallocz(s->b4_stride*(4*s->mb_height+1));
     s->top_nnz                 = av_mallocz(s->mb_width*sizeof(*s->top_nnz));
 
+    if (!s->macroblocks_base || !s->intra4x4_pred_mode_base || !s->top_nnz)
+        return AVERROR(ENOMEM);
+
     s->macroblocks        = s->macroblocks_base        + 1 + s->mb_stride;
     s->intra4x4_pred_mode = s->intra4x4_pred_mode_base + 4 + s->b4_stride;
 
