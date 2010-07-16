@@ -155,3 +155,98 @@ fate-atrac3-3: REF = $(SAMPLES)/atrac3/mc_sich_at3_132_small.pcm
 
 FATE2_TESTS += fate-gsm
 fate-gsm: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/gsm/ciao.wav -f framecrc -
+
+FATE2_TESTS += fate-vorbis-1
+fate-vorbis-1: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/1.0.1-test_small.ogg -f s16le -
+fate-vorbis-1: CMP = oneoff
+fate-vorbis-1: REF = $(SAMPLES)/vorbis/1.0.1-test_small.pcm
+
+FATE2_TESTS += fate-vorbis-2
+fate-vorbis-2: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/1.0-test_small.ogg -f s16le -
+fate-vorbis-2: CMP = oneoff
+fate-vorbis-2: REF = $(SAMPLES)/vorbis/1.0-test_small.pcm
+
+FATE2_TESTS += fate-vorbis-3
+fate-vorbis-3: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/beta3-test_small.ogg -f s16le -
+fate-vorbis-3: CMP = oneoff
+fate-vorbis-3: REF = $(SAMPLES)/vorbis/beta3-test_small.pcm
+
+FATE2_TESTS += fate-vorbis-4
+fate-vorbis-4: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/beta4-test_small.ogg -f s16le -
+fate-vorbis-4: CMP = oneoff
+fate-vorbis-4: REF = $(SAMPLES)/vorbis/beta4-test_small.pcm
+
+FATE2_TESTS += fate-vorbis-5
+fate-vorbis-5: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/chain-test1_small.ogg -f s16le -
+fate-vorbis-5: CMP = oneoff
+fate-vorbis-5: REF = $(SAMPLES)/vorbis/chain-test1_small.pcm
+
+FATE2_TESTS += fate-vorbis-6
+fate-vorbis-6: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/chain-test2_small.ogg -f s16le -
+fate-vorbis-6: CMP = oneoff
+fate-vorbis-6: REF = $(SAMPLES)/vorbis/chain-test2_small.pcm
+
+FATE2_TESTS += fate-vorbis-7
+fate-vorbis-7: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/highrate-test_small.ogg -f s16le -
+fate-vorbis-7: CMP = oneoff
+fate-vorbis-7: REF = $(SAMPLES)/vorbis/highrate-test_small.pcm
+
+FATE2_TESTS += fate-vorbis-8
+fate-vorbis-8: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/lsp-test2_small.ogg -f s16le -
+fate-vorbis-8: CMP = oneoff
+fate-vorbis-8: REF = $(SAMPLES)/vorbis/lsp-test2_small.pcm
+
+FATE2_TESTS += fate-vorbis-9
+fate-vorbis-9: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/lsp-test3_small.ogg -f s16le -
+fate-vorbis-9: CMP = oneoff
+fate-vorbis-9: REF = $(SAMPLES)/vorbis/lsp-test3_small.pcm
+
+FATE2_TESTS += fate-vorbis-10
+fate-vorbis-10: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/lsp-test4_small.ogg -f s16le -
+fate-vorbis-10: CMP = oneoff
+fate-vorbis-10: REF = $(SAMPLES)/vorbis/lsp-test4_small.pcm
+
+FATE2_TESTS += fate-vorbis-11
+fate-vorbis-11: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/lsp-test_small.ogg -f s16le -
+fate-vorbis-11: CMP = oneoff
+fate-vorbis-11: REF = $(SAMPLES)/vorbis/lsp-test_small.pcm
+
+FATE2_TESTS += fate-vorbis-12
+fate-vorbis-12: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/mono_small.ogg -f s16le -
+fate-vorbis-12: CMP = oneoff
+fate-vorbis-12: REF = $(SAMPLES)/vorbis/mono_small.pcm
+
+FATE2_TESTS += fate-vorbis-13
+fate-vorbis-13: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/moog_small.ogg -f s16le -
+fate-vorbis-13: CMP = oneoff
+fate-vorbis-13: REF = $(SAMPLES)/vorbis/moog_small.pcm
+
+FATE2_TESTS += fate-vorbis-14
+fate-vorbis-14: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/rc1-test_small.ogg -f s16le -
+fate-vorbis-14: CMP = oneoff
+fate-vorbis-14: REF = $(SAMPLES)/vorbis/rc1-test_small.pcm
+
+FATE2_TESTS += fate-vorbis-15
+fate-vorbis-15: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/rc2-test2_small.ogg -f s16le -
+fate-vorbis-15: CMP = oneoff
+fate-vorbis-15: REF = $(SAMPLES)/vorbis/rc2-test2_small.pcm
+
+FATE2_TESTS += fate-vorbis-16
+fate-vorbis-16: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/rc2-test_small.ogg -f s16le -
+fate-vorbis-16: CMP = oneoff
+fate-vorbis-16: REF = $(SAMPLES)/vorbis/rc2-test_small.pcm
+
+FATE2_TESTS += fate-vorbis-17
+fate-vorbis-17: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/rc3-test_small.ogg -f s16le -
+fate-vorbis-17: CMP = oneoff
+fate-vorbis-17: REF = $(SAMPLES)/vorbis/rc3-test_small.pcm
+
+FATE2_TESTS += fate-vorbis-18
+fate-vorbis-18: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/sleepzor_small.ogg -f s16le -
+fate-vorbis-18: CMP = oneoff
+fate-vorbis-18: REF = $(SAMPLES)/vorbis/sleepzor_small.pcm
+
+FATE2_TESTS += fate-vorbis-19
+fate-vorbis-19: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/test-short2_small.ogg -f s16le -
+fate-vorbis-19: CMP = oneoff
+fate-vorbis-19: REF = $(SAMPLES)/vorbis/test-short2_small.pcm
