@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-07-17 - r24278 - lavf 52.74.0 - url_fskip()
+  Make url_fskip() return an int error code instead of void.
+
 2010-07-11 - r24199 - lavc 52.83.0
   Add AVCodecContext.lpc_type and AVCodecContext.lpc_passes fields.
   Add AVLPCType enum.
