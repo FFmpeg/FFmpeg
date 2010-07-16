@@ -1382,7 +1382,6 @@ SIMPLE_LOOPFILTER sse2,   h, 6
 cglobal vp8_%2_loop_filter16_inner_%1, 5, %3, %4
 %define dst_reg     r0
 %define mstride_reg r1
-%define stride_reg  r2
 %define E_reg       r2
 %define I_reg       r3
 %define hev_thr_reg r4
