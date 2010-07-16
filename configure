@@ -1437,7 +1437,7 @@ test_deps _encoder _decoder                                             \
     mpeg1video="mpeg mpeg1b"                                            \
     mpeg2video="mpeg2 mpeg2thread"                                      \
     mpeg4="mpeg4 mpeg4adv mpeg4nr mpeg4thread error rc"                 \
-    msmpeg4v1=msmpeg4                                                   \
+    msmpeg4v3=msmpeg4                                                   \
     msmpeg4v2                                                           \
     pbm=pbmpipe                                                         \
     pcx                                                                 \
