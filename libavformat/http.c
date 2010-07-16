@@ -210,7 +210,7 @@ static int process_line(URLContext *h, char *line, int line_count,
                         int *new_location)
 {
     HTTPContext *s = h->priv_data;
-    char *tag, *p;
+    char *tag, *p, *end;
 
     /* end of header */
     if (line[0] == '\0')
@@ -222,14 +222,18 @@ static int process_line(URLContext *h, char *line, int line_count,
             p++;
         while (isspace(*p))
             p++;
-        s->http_code = strtol(p, NULL, 10);
+        s->http_code = strtol(p, &end, 10);
 
         dprintf(NULL, "http_code=%d\n", s->http_code);
 
         /* error codes are 4xx and 5xx, but regard 401 as a success, so we
          * don't abort until all headers have been parsed. */
-        if (s->http_code >= 400 && s->http_code < 600 && s->http_code != 401)
+        if (s->http_code >= 400 && s->http_code < 600 && s->http_code != 401) {
+            end += strspn(end, SPACE_CHARS);
+            av_log(NULL, AV_LOG_WARNING, "HTTP error %d %s\n",
+                   s->http_code, end);
             return -1;
+        }
     } else {
         while (*p != '\0' && *p != ':')
             p++;
