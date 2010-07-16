@@ -1158,9 +1158,9 @@ inline_asm_deps="!tms470"
 symver_if_any="symver_asm_label symver_gnu_asm"
 
 # subsystems
+dct_select="rdft"
 mdct_select="fft"
 rdft_select="fft"
-dct_select="rdft"
 
 # decoders / encoders / hardware accelerators
 aac_decoder_select="mdct rdft"
