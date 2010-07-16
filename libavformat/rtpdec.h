@@ -26,8 +26,6 @@
 #include "avformat.h"
 #include "rtp.h"
 
-#define SPACE_CHARS " \t\r\n"
-
 typedef struct PayloadContext PayloadContext;
 typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
 
