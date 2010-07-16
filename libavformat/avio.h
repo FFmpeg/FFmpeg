@@ -358,8 +358,9 @@ int64_t url_fseek(ByteIOContext *s, int64_t offset, int whence);
 /**
  * Skip given number of bytes forward.
  * @param offset number of bytes
+ * @return 0 on success, <0 on error
  */
-void url_fskip(ByteIOContext *s, int64_t offset);
+int url_fskip(ByteIOContext *s, int64_t offset);
 
 /**
  * ftell() equivalent for ByteIOContext.

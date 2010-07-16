@@ -182,9 +182,10 @@ int64_t url_fseek(ByteIOContext *s, int64_t offset, int whence)
     return offset;
 }
 
-void url_fskip(ByteIOContext *s, int64_t offset)
+int url_fskip(ByteIOContext *s, int64_t offset)
 {
-    url_fseek(s, offset, SEEK_CUR);
+    int64_t ret = url_fseek(s, offset, SEEK_CUR);
+    return ret < 0 ? ret : 0;
 }
 
 int64_t url_ftell(ByteIOContext *s)
