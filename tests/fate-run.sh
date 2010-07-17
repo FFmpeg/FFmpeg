@@ -15,15 +15,24 @@ fuzz=$8
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
 
-oneoff(){
+do_tiny_psnr(){
     psnr=$(tests/tiny_psnr "$1" "$2" 2 0 0)
-    max=$(expr "$psnr" : '.*MAXDIFF: *\([0-9]*\)')
+    val=$(expr "$psnr" : ".*$3: *\([0-9.]*\)")
     size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
     size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
-    if [ $max -gt ${3:-1} ] || [ $size1 != $size2 ]; then
+    res=$(echo "$val $4 $5" | bc)
+    if [ "$res" != 1 ] || [ $size1 != $size2 ]; then
         echo "$psnr"
         return 1
     fi
+}
+
+oneoff(){
+    do_tiny_psnr "$1" "$2" MAXDIFF '<=' ${fuzz:-1}
+}
+
+stddev(){
+    do_tiny_psnr "$1" "$2" stddev  '<=' ${fuzz:-1}
 }
 
 if ! test -e "$ref"; then
@@ -38,6 +47,7 @@ eval $target_exec $command > "$outfile" 2>/dev/null || exit
 case $cmp in
     diff)   diff -u -w "$ref" "$outfile"            ;;
     oneoff) oneoff     "$ref" "$outfile" "$fuzz"    ;;
+    stddev) stddev     "$ref" "$outfile" "$fuzz"    ;;
 esac
 
 test $? = 0 && rm $outfile
