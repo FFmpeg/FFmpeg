@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-07-17 - r24284 - lavfi 1.24.0 - AVFilterBuffer
+  Rename AVFilterPic to AVFilterBuffer.
+
 2010-07-17 - r24278 - lavf 52.74.0 - url_fskip()
   Make url_fskip() return an int error code instead of void.
 
