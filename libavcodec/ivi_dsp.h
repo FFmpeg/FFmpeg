@@ -35,10 +35,10 @@
 /**
  *  5/3 wavelet recomposition filter for Indeo5
  *
- *  @param plane        [in]  pointer to the descriptor of the plane being processed
- *  @param dst          [out] pointer to the destination buffer
- *  @param dst_pitch    [in]  pitch of the destination buffer
- *  @param num_bands    [in]  number of wavelet bands to be processed
+ *  @param[in]   plane        pointer to the descriptor of the plane being processed
+ *  @param[out]  dst          pointer to the destination buffer
+ *  @param[in]   dst_pitch    pitch of the destination buffer
+ *  @param[in]   num_bands    number of wavelet bands to be processed
  */
 void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
                         const int dst_pitch, const int num_bands);
@@ -46,10 +46,10 @@ void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
 /**
  *  two-dimensional inverse slant 8x8 transform
  *
- *  @param  in      [in]  pointer to the vector of transform coefficients
- *  @param  out     [out] pointer to the output buffer (frame)
- *  @param  pitch   [in]  pitch to move to the next y line
- *  @param  flags   [in]  pointer to the array of column flags:
+ *  @param[in]    in      pointer to the vector of transform coefficients
+ *  @param[out]   out     pointer to the output buffer (frame)
+ *  @param[in]    pitch   pitch to move to the next y line
+ *  @param[in]    flags   pointer to the array of column flags:
  *                        != 0 - non_empty column, 0 - empty one
  *                        (this array must be filled by caller)
  */
@@ -59,10 +59,10 @@ void ff_ivi_inverse_slant_8x8(const int32_t *in, int16_t *out, uint32_t pitch,
 /**
  *  two-dimensional inverse slant 4x4 transform
  *
- *  @param  in      [in]  pointer to the vector of transform coefficients
- *  @param  out     [out] pointer to the output buffer (frame)
- *  @param  pitch   [in]  pitch to move to the next y line
- *  @param  flags   [in]  pointer to the array of column flags:
+ *  @param[in]    in      pointer to the vector of transform coefficients
+ *  @param[out]   out     pointer to the output buffer (frame)
+ *  @param[in]    pitch   pitch to move to the next y line
+ *  @param[in]    flags   pointer to the array of column flags:
  *                        != 0 - non_empty column, 0 - empty one
  *                        (this array must be filled by caller)
  */
@@ -75,20 +75,20 @@ void ff_ivi_inverse_slant_4x4(const int32_t *in, int16_t *out, uint32_t pitch,
  *  spreading (DC_coeff + 1)/2 over the whole block.
  *  It works much faster than performing the slant transform on a vector of zeroes.
  *
- *  @param  in          [in]  pointer to the dc coefficient
- *  @param  out         [out] pointer to the output buffer (frame)
- *  @param  pitch       [in]  pitch to move to the next y line
- *  @param  blk_size    [in]  transform block size
+ *  @param[in]    in          pointer to the dc coefficient
+ *  @param[out]   out         pointer to the output buffer (frame)
+ *  @param[in]    pitch       pitch to move to the next y line
+ *  @param[in]    blk_size    transform block size
  */
 void ff_ivi_dc_slant_2d(const int32_t *in, int16_t *out, uint32_t pitch, int blk_size);
 
 /**
  *  inverse 1D row slant transform
  *
- *  @param  in      [in]  pointer to the vector of transform coefficients
- *  @param  out     [out] pointer to the output buffer (frame)
- *  @param  pitch   [in]  pitch to move to the next y line
- *  @param  flags   [in]  pointer to the array of column flags (unused here)
+ *  @param[in]    in      pointer to the vector of transform coefficients
+ *  @param[out]   out     pointer to the output buffer (frame)
+ *  @param[in]    pitch   pitch to move to the next y line
+ *  @param[in]    flags   pointer to the array of column flags (unused here)
  */
 void ff_ivi_row_slant8(const int32_t *in, int16_t *out, uint32_t pitch,
                        const uint8_t *flags);
@@ -96,10 +96,10 @@ void ff_ivi_row_slant8(const int32_t *in, int16_t *out, uint32_t pitch,
 /**
  *  inverse 1D column slant transform
  *
- *  @param  in      [in]  pointer to the vector of transform coefficients
- *  @param  out     [out] pointer to the output buffer (frame)
- *  @param  pitch   [in]  pitch to move to the next y line
- *  @param  flags   [in]  pointer to the array of column flags:
+ *  @param[in]    in      pointer to the vector of transform coefficients
+ *  @param[out]   out     pointer to the output buffer (frame)
+ *  @param[in]    pitch   pitch to move to the next y line
+ *  @param[in]    flags   pointer to the array of column flags:
  *                        != 0 - non_empty column, 0 - empty one
  *                        (this array must be filled by caller)
  */
@@ -130,40 +130,40 @@ void ff_ivi_put_dc_pixel_8x8(const int32_t *in, int16_t *out, uint32_t pitch, in
 /**
  *  8x8 block motion compensation with adding delta
  *
- *  @param  buf     [in,out] pointer to the block in the current frame buffer containing delta
- *  @param  ref_buf [in]     pointer to the corresponding block in the reference frame
- *  @param  pitch   [in]     pitch for moving to the next y line
- *  @param  mc_type [in]     interpolation type
+ *  @param[in,out]   buf      pointer to the block in the current frame buffer containing delta
+ *  @param[in]       ref_buf  pointer to the corresponding block in the reference frame
+ *  @param[in]       pitch    pitch for moving to the next y line
+ *  @param[in]       mc_type  interpolation type
  */
 void ff_ivi_mc_8x8_delta(int16_t *buf, const int16_t *ref_buf, uint32_t pitch, int mc_type);
 
 /**
  *  4x4 block motion compensation with adding delta
  *
- *  @param  buf     [in,out] pointer to the block in the current frame buffer containing delta
- *  @param  ref_buf [in]     pointer to the corresponding block in the reference frame
- *  @param  pitch   [in]     pitch for moving to the next y line
- *  @param  mc_type [in]     interpolation type
+ *  @param[in,out]   buf      pointer to the block in the current frame buffer containing delta
+ *  @param[in]       ref_buf  pointer to the corresponding block in the reference frame
+ *  @param[in]       pitch    pitch for moving to the next y line
+ *  @param[in]       mc_type  interpolation type
  */
 void ff_ivi_mc_4x4_delta(int16_t *buf, const int16_t *ref_buf, uint32_t pitch, int mc_type);
 
 /**
  *  motion compensation without adding delta
  *
- *  @param  buf     [in,out] pointer to the block in the current frame receiving the result
- *  @param  ref_buf [in]     pointer to the corresponding block in the reference frame
- *  @param  pitch   [in]     pitch for moving to the next y line
- *  @param  mc_type [in]     interpolation type
+ *  @param[in,out]  buf      pointer to the block in the current frame receiving the result
+ *  @param[in]      ref_buf  pointer to the corresponding block in the reference frame
+ *  @param[in]      pitch    pitch for moving to the next y line
+ *  @param[in]      mc_type  interpolation type
  */
 void ff_ivi_mc_8x8_no_delta(int16_t *buf, const int16_t *ref_buf, uint32_t pitch, int mc_type);
 
 /**
  *  4x4 block motion compensation without adding delta
  *
- *  @param  buf     [in,out] pointer to the block in the current frame receiving the result
- *  @param  ref_buf [in]     pointer to the corresponding block in the reference frame
- *  @param  pitch   [in]     pitch for moving to the next y line
- *  @param  mc_type [in]     interpolation type
+ *  @param[in,out]  buf      pointer to the block in the current frame receiving the result
+ *  @param[in]      ref_buf  pointer to the corresponding block in the reference frame
+ *  @param[in]      pitch    pitch for moving to the next y line
+ *  @param[in]      mc_type  interpolation type
  */
 void ff_ivi_mc_4x4_no_delta(int16_t *buf, const int16_t *ref_buf, uint32_t pitch, int mc_type);
 

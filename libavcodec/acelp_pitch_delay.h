@@ -116,7 +116,7 @@ int ff_acelp_decode_6bit_to_2nd_delay6(
 
 /**
  * \brief Update past quantized energies
- * \param quant_energy [in/out] past quantized energies (5.10)
+ * \param[in,out]  quant_energy  past quantized energies (5.10)
  * \param gain_corr_factor gain correction factor
  * \param log2_ma_pred_order log2() of MA prediction order
  * \param erasure frame erasure flag
@@ -143,7 +143,7 @@ void ff_acelp_update_past_gain(
  * \param gain_corr_factor gain correction factor (2.13)
  * \param fc_v fixed-codebook vector (2.13)
  * \param mr_energy mean innovation energy and fixed-point correction (7.13)
- * \param quant_energy [in/out] past quantized energies (5.10)
+ * \param[in,out]  quant_energy  past quantized energies (5.10)
  * \param subframe_size length of subframe
  *
  * \return quantized fixed-codebook gain (14.1)

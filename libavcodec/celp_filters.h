@@ -56,7 +56,7 @@ void ff_celp_circ_addf(float *out, const float *in,
 
 /**
  * LP synthesis filter.
- * @param out [out] pointer to output buffer
+ * @param[out] out pointer to output buffer
  * @param filter_coeffs filter coefficients (-0x8000 <= (3.12) < 0x8000)
  * @param in input signal
  * @param buffer_length amount of data to process
@@ -79,7 +79,7 @@ int ff_celp_lp_synthesis_filter(int16_t *out, const int16_t *filter_coeffs,
 
 /**
  * LP synthesis filter.
- * @param out [out] pointer to output buffer
+ * @param[out] out pointer to output buffer
  *        - the array out[-filter_length, -1] must
  *        contain the previous result of this filter
  * @param filter_coeffs filter coefficients.
@@ -99,7 +99,7 @@ void ff_celp_lp_synthesis_filterf(float *out, const float *filter_coeffs,
 
 /**
  * LP zero synthesis filter.
- * @param out [out] pointer to output buffer
+ * @param[out] out pointer to output buffer
  * @param filter_coeffs filter coefficients.
  * @param in input signal
  *        - the array in[-filter_length, -1] must
