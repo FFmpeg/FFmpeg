@@ -59,31 +59,28 @@ typedef struct AVFilterContext AVFilterContext;
 typedef struct AVFilterLink    AVFilterLink;
 typedef struct AVFilterPad     AVFilterPad;
 
-/* TODO: look for other flags which may be useful in this structure (interlace
- * flags, etc)
- */
 /**
- * A reference-counted picture data type used by the filter system. Filters
+ * A reference-counted buffer data type used by the filter system. Filters
  * should not store pointers to this structure directly, but instead use the
  * AVFilterPicRef structure below.
  */
 typedef struct AVFilterBuffer
 {
-    uint8_t *data[4];           ///< picture data for each plane
+    uint8_t *data[4];           ///< buffer data for each plane
     int linesize[4];            ///< number of bytes per line
     enum PixelFormat format;    ///< colorspace
 
-    unsigned refcount;          ///< number of references to this image
+    unsigned refcount;          ///< number of references to this buffer
 
     /** private data to be used by a custom free function */
     void *priv;
     /**
-     * A pointer to the function to deallocate this image if the default
+     * A pointer to the function to deallocate this buffer if the default
      * function is not sufficient. This could, for example, add the memory
      * back into a memory pool to be reused later without the overhead of
      * reallocating it from scratch.
      */
-    void (*free)(struct AVFilterBuffer *pic);
+    void (*free)(struct AVFilterBuffer *buf);
 } AVFilterBuffer;
 
 /**
