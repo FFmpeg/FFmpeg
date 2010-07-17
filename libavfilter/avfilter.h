@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 24
+#define LIBAVFILTER_VERSION_MINOR 25
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -84,8 +84,6 @@ typedef struct AVFilterBuffer
      * reallocating it from scratch.
      */
     void (*free)(struct AVFilterBuffer *pic);
-
-    int w, h;                  ///< width and height of the allocated buffer
 } AVFilterBuffer;
 
 /**

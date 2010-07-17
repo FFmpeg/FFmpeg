@@ -40,8 +40,8 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms,
     char *buf;
 
     ref->pic   = pic;
-    ref->w     = pic->w = w;
-    ref->h     = pic->h = h;
+    ref->w     = w;
+    ref->h     = h;
 
     /* make sure the buffer gets read permission or it's useless for output */
     ref->perms = perms | AV_PERM_READ;
