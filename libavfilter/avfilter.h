@@ -83,6 +83,12 @@ typedef struct AVFilterBuffer
     void (*free)(struct AVFilterBuffer *buf);
 } AVFilterBuffer;
 
+#define AV_PERM_READ     0x01   ///< can read from the buffer
+#define AV_PERM_WRITE    0x02   ///< can write to the buffer
+#define AV_PERM_PRESERVE 0x04   ///< nobody else can overwrite the buffer
+#define AV_PERM_REUSE    0x08   ///< can output the buffer multiple times, with the same contents each time
+#define AV_PERM_REUSE2   0x10   ///< can output the buffer multiple times, modified each time
+
 /**
  * A reference to an AVFilterBuffer. Since filters can manipulate the origin of
  * a picture to, for example, crop image without any memcpy, the picture origin
@@ -104,12 +110,7 @@ typedef struct AVFilterPicRef
 
     AVRational pixel_aspect;    ///< pixel aspect ratio
 
-    int perms;                  ///< permissions
-#define AV_PERM_READ     0x01   ///< can read from the buffer
-#define AV_PERM_WRITE    0x02   ///< can write to the buffer
-#define AV_PERM_PRESERVE 0x04   ///< nobody else can overwrite the buffer
-#define AV_PERM_REUSE    0x08   ///< can output the buffer multiple times, with the same contents each time
-#define AV_PERM_REUSE2   0x10   ///< can output the buffer multiple times, modified each time
+    int perms;                  ///< permissions, see the AV_PERM_* flags
 
     int interlaced;             ///< is frame interlaced
     int top_field_first;
