@@ -229,6 +229,45 @@ Flip the input video vertically.
 
 Below is a description of the currently available video sources.
 
+@section color
+
+Provide an uniformly colored input.
+
+It accepts the following parameters:
+@var{color}:@var{frame_size}:@var{frame_width}
+
+Follows the description of the accepted parameters.
+
+@table @option
+
+@item color
+Specify the color of the source. It can be the name of a color (case
+insensitive match) or a 0xRRGGBB[AA] sequence, possibly followed by an
+alpha specifier. The default value is "black".
+
+@item frame_size
+Specify the size of the sourced video, it may be a string of the form
+@var{width}x@var{heigth}, or the name of a size abbreviation. The
+default value is "320x240".
+
+@item frame_rate
+Specify the frame rate of the sourced video, as the number of frames
+generated per second. It has to be a string in the format
+@var{frame_rate_num}/@var{frame_rate_den}, an integer number, a float
+number or a valid video frame rate abbreviation. The default value is
+"25".
+
+@end table
+
+For example the following graph description will generate a red source
+with an opacity of 0.2, with size "qcif" and a frame rate of 10
+frames per second, which will be overlayed over the source connected
+to the pad with identifier "in".
+
+@example
+"color=red@@0.2:qcif:10 [color]; [in][color] overlay [out]"
+@end example
+
 @section nullsrc
 
 Null video source, never return images. It is mainly useful as a
