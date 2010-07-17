@@ -250,3 +250,6 @@ FATE2_TESTS += fate-vorbis-19
 fate-vorbis-19: CMD = $(TARGET_PATH)/ffmpeg -i $(SAMPLES)/vorbis/test-short2_small.ogg -f s16le -
 fate-vorbis-19: CMP = oneoff
 fate-vorbis-19: REF = $(SAMPLES)/vorbis/test-short2_small.pcm
+
+FATE2_TESTS += fate-msmpeg4v1
+fate-msmpeg4v1: CMD = $(TARGET_PATH)/ffmpeg -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/msmpeg4v1/mpg4.avi -f framecrc -
