@@ -234,7 +234,7 @@ Below is a description of the currently available video sources.
 Provide an uniformly colored input.
 
 It accepts the following parameters:
-@var{color}:@var{frame_size}:@var{frame_width}
+@var{color}:@var{frame_size}:@var{frame_rate}
 
 Follows the description of the accepted parameters.
 
