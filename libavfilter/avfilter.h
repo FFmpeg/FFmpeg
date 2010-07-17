@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 23
+#define LIBAVFILTER_VERSION_MINOR 24
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -67,7 +67,7 @@ typedef struct AVFilterPad     AVFilterPad;
  * should not store pointers to this structure directly, but instead use the
  * AVFilterPicRef structure below.
  */
-typedef struct AVFilterPic
+typedef struct AVFilterBuffer
 {
     uint8_t *data[4];           ///< picture data for each plane
     int linesize[4];            ///< number of bytes per line
@@ -83,13 +83,13 @@ typedef struct AVFilterPic
      * back into a memory pool to be reused later without the overhead of
      * reallocating it from scratch.
      */
-    void (*free)(struct AVFilterPic *pic);
+    void (*free)(struct AVFilterBuffer *pic);
 
     int w, h;                  ///< width and height of the allocated buffer
-} AVFilterPic;
+} AVFilterBuffer;
 
 /**
- * A reference to an AVFilterPic. Since filters can manipulate the origin of
+ * A reference to an AVFilterBuffer. Since filters can manipulate the origin of
  * a picture to, for example, crop image without any memcpy, the picture origin
  * and dimensions are per-reference properties. Linesize is also useful for
  * image flipping, frame to field filters, etc, and so is also per-reference.
@@ -98,7 +98,7 @@ typedef struct AVFilterPic
  */
 typedef struct AVFilterPicRef
 {
-    AVFilterPic *pic;           ///< the picture that this is a reference to
+    AVFilterBuffer *pic;        ///< the picture that this is a reference to
     uint8_t *data[4];           ///< picture data for each plane
     int linesize[4];            ///< number of bytes per line
     int w;                      ///< image width

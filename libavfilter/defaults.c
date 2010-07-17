@@ -23,10 +23,10 @@
 #include "avfilter.h"
 
 /* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
-static void avfilter_default_free_video_buffer(AVFilterPic *pic)
+static void avfilter_default_free_buffer(AVFilterBuffer *ptr)
 {
-    av_free(pic->data[0]);
-    av_free(pic);
+    av_free(ptr->data[0]);
+    av_free(ptr);
 }
 
 /* TODO: set the buffer's priv member to a context structure for the whole
@@ -34,7 +34,7 @@ static void avfilter_default_free_video_buffer(AVFilterPic *pic)
  * alloc & free cycle currently implemented. */
 AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
-    AVFilterPic *pic = av_mallocz(sizeof(AVFilterPic));
+    AVFilterBuffer *pic = av_mallocz(sizeof(AVFilterBuffer));
     AVFilterPicRef *ref = av_mallocz(sizeof(AVFilterPicRef));
     int i, tempsize;
     char *buf;
@@ -48,7 +48,7 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms,
 
     pic->refcount = 1;
     pic->format   = link->format;
-    pic->free     = avfilter_default_free_video_buffer;
+    pic->free     = avfilter_default_free_buffer;
     ff_fill_linesize((AVPicture *)pic, pic->format, ref->w);
 
     for (i=0; i<4;i++)
