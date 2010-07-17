@@ -808,6 +808,8 @@ resync:
                                     pkt->data, pkt->size);
             pkt->destruct = dstr;
             pkt->flags |= AV_PKT_FLAG_KEY;
+            if (size < 0)
+                av_free_packet(pkt);
         } else {
             /* XXX: How to handle B-frames in AVI? */
             pkt->dts = ast->frame_offset;
