@@ -9,9 +9,9 @@ target_exec=$3
 BUILD_PATH=$4
 command=$5
 cmp=${6:-diff}
-
 ref=${7:-"${base}/ref/fate/${test}"}
 fuzz=$8
+
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
 
