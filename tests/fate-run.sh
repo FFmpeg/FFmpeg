@@ -35,6 +35,30 @@ stddev(){
     do_tiny_psnr "$1" "$2" stddev  '<=' ${fuzz:-1}
 }
 
+ffmpeg(){
+    $target_exec $target_path/ffmpeg "$@"
+}
+
+framecrc(){
+    ffmpeg "$@" -f framecrc -
+}
+
+framemd5(){
+    ffmpeg "$@" -f framemd5 -
+}
+
+crc(){
+    ffmpeg "$@" -f crc -
+}
+
+md5(){
+    ffmpeg "$@" md5:
+}
+
+pcm(){
+    ffmpeg "$@" -vn -f s16le -
+}
+
 if ! test -e "$ref"; then
     echo "reference file '$ref' not found"
     exit 1
