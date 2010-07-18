@@ -42,7 +42,8 @@ fi
 
 mkdir -p "$outdir"
 
-eval $target_exec $command > "$outfile" 2>/dev/null || exit
+case "$command" in /*) command="$target_exec $command" ;; esac
+eval $command > "$outfile" 2>/dev/null || exit
 
 case $cmp in
     diff)   diff -u -w "$ref" "$outfile"            ;;
