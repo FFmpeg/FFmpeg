@@ -21,6 +21,7 @@ version <next>:
 - ffplay -exitonkeydown and -exitonmousedown options added
 - native GSM / GSM MS decoder
 - RTP depacketization of QDM2
+- ANSI/ASCII art playback system
 
 
 

@@ -228,6 +228,7 @@ library:
 @item Sony Wave64 (W64)         @tab   @tab X
 @item SoX native format         @tab X @tab X
 @item SUN AU format             @tab X @tab X
+@item Text files                @tab   @tab X
 @item THP                       @tab   @tab X
     @tab Used on the Nintendo GameCube.
 @item Tiertex Limited SEQ       @tab   @tab X
@@ -316,6 +317,7 @@ following image formats are supported:
     @tab Used in games like Mad Dog McCree.
 @item AMV Video              @tab     @tab  X
     @tab Used in Chinese MP3 players.
+@item ANSI/ASCII art         @tab     @tab  X
 @item Apple MJPEG-B          @tab     @tab  X
 @item Apple QuickDraw        @tab     @tab  X
     @tab fourcc: qdrw
