@@ -80,6 +80,13 @@ static void compute_antialias_float(MPADecodeContext *s,
     }
 }
 
+static av_cold int decode_end(AVCodecContext * avctx)
+{
+    MPADecodeContext *s = avctx->priv_data;
+    ff_dct_end(&s->dct);
+    return 0;
+}
+
 #if CONFIG_MP1FLOAT_DECODER
 AVCodec mp1float_decoder =
 {
@@ -89,7 +96,7 @@ AVCodec mp1float_decoder =
     sizeof(MPADecodeContext),
     decode_init,
     NULL,
-    NULL,
+    decode_end,
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
     .flush= flush,
@@ -105,7 +112,7 @@ AVCodec mp2float_decoder =
     sizeof(MPADecodeContext),
     decode_init,
     NULL,
-    NULL,
+    decode_end,
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
     .flush= flush,
@@ -121,7 +128,7 @@ AVCodec mp3float_decoder =
     sizeof(MPADecodeContext),
     decode_init,
     NULL,
-    NULL,
+    decode_end,
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
     .flush= flush,
@@ -137,7 +144,7 @@ AVCodec mp3adufloat_decoder =
     sizeof(MPADecodeContext),
     decode_init,
     NULL,
-    NULL,
+    decode_end,
     decode_frame_adu,
     CODEC_CAP_PARSE_ONLY,
     .flush= flush,
