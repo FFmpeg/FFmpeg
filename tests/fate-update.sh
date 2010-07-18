@@ -22,11 +22,27 @@ do_sql "$SQL_TESTS" | while read id name command; do
         00-full-regression|ffmpeg-help|binsize-*) continue ;;
     esac
     case "$command" in
-        {MD5}*) command="${command#\{MD5\}} | do_md5sum | cut -c-32" ;;
+        {MD5}*)
+            command="${command#*ffmpeg}"; command="${command% -}"
+            command="md5 $command"
+            ;;
         {*}*)   continue ;;
+        *-f\ framecrc\ -)
+            command="${command#*ffmpeg}"; command="${command% -f *}"
+            command="framecrc $command"
+            ;;
+        *-f\ framemd5\ -)
+            command="${command#*ffmpeg}"; command="${command% -f *}"
+            command="framemd5 $command"
+            ;;
+        *-f\ crc\ -)
+            command="${command#*ffmpeg}"; command="${command% -f *}"
+            command="crc $command"
+            ;;
     esac
     command=$(echo "$command" | sed 's/\$BUILD_PATH/$(TARGET_PATH)/g')
     command=$(echo "$command" | sed 's/\$SAMPLES_PATH/$(SAMPLES)/g')
+    command=$(echo "$command" | sed 's/ *$//')
     do_sql "SELECT expected_stdout FROM test_spec WHERE id=$id" | awk '/./{print}' > "$ref/$name"
     printf "FATE_TESTS += fate-${name}\n" >&3
     printf "fate-${name}: CMD = %s\n" "$command" >&3
