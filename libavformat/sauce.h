@@ -27,8 +27,8 @@
 
 /**
  * @param avctx AVFormatContext
- * @param fsize[out] return length of file, less SAUCE header
- * @param got_width[out] set to non-zero if SAUCE header reported height
+ * @param[out] fsize return length of file, less SAUCE header
+ * @param[out] got_width set to non-zero if SAUCE header reported height
  * @param get_height Tell SAUCE header to parse height
  */
 int ff_sauce_read(AVFormatContext *avctx, uint64_t *fsize, int *got_width, int get_height);
