@@ -2,6 +2,9 @@
  * FFT transform with Altivec optimizations
  * Copyright (c) 2009 Loren Merritt
  *
+ * This algorithm (though not any of the implementation details) is
+ * based on libdjbfft by D. J. Bernstein.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or

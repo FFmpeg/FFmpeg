@@ -4,6 +4,9 @@
  * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
  * Copyright (c) 2009 Naotoshi Nojiri
  *
+ * This algorithm (though not any of the implementation details) is
+ * based on libdjbfft by D. J. Bernstein.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
