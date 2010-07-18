@@ -167,29 +167,21 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     return ret;
 }
 
+#define URL_SCHEME_CHARS                        \
+    "abcdefghijklmnopqrstuvwxyz"                \
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"                \
+    "0123456789+-."
+
 int url_alloc(URLContext **puc, const char *filename, int flags)
 {
     URLProtocol *up;
-    const char *p;
-    char proto_str[128], *q;
+    char proto_str[128];
+    size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
 
-    p = filename;
-    q = proto_str;
-    while (*p != '\0' && *p != ':') {
-        /* protocols can only contain alphabetic chars */
-        if (!isalpha(*p))
-            goto file_proto;
-        if ((q - proto_str) < sizeof(proto_str) - 1)
-            *q++ = *p;
-        p++;
-    }
-    /* if the protocol has length 1, we consider it is a dos drive */
-    if (*p == '\0' || is_dos_path(filename)) {
-    file_proto:
+    if (filename[proto_len] != ':' || is_dos_path(filename))
         strcpy(proto_str, "file");
-    } else {
-        *q = '\0';
-    }
+    else
+        av_strlcpy(proto_str, filename, FFMIN(proto_len+1, sizeof(proto_str)));
 
     up = first_protocol;
     while (up != NULL) {
