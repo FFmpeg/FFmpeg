@@ -24,6 +24,7 @@
 #include "libavcodec/imgconvert.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "internal.h"
 
 unsigned avfilter_version(void) {
     return LIBAVFILTER_VERSION_INT;
@@ -168,7 +169,7 @@ int avfilter_config_links(AVFilterContext *filter)
     return 0;
 }
 
-static void dprintf_picref(void *ctx, AVFilterPicRef *picref, int end)
+void ff_dprintf_picref(void *ctx, AVFilterPicRef *picref, int end)
 {
     dprintf(ctx,
             "picref[%p data[%p, %p, %p, %p] linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64" a:%d/%d s:%dx%d]%s",
@@ -180,7 +181,7 @@ static void dprintf_picref(void *ctx, AVFilterPicRef *picref, int end)
             end ? "\n" : "");
 }
 
-static void dprintf_link(void *ctx, AVFilterLink *link, int end)
+void ff_dprintf_link(void *ctx, AVFilterLink *link, int end)
 {
     dprintf(ctx,
             "link[%p s:%dx%d fmt:%-16s %-16s->%-16s]%s",
@@ -191,13 +192,11 @@ static void dprintf_link(void *ctx, AVFilterLink *link, int end)
             end ? "\n" : "");
 }
 
-#define DPRINTF_START(ctx, func) dprintf(NULL, "%-16s: ", #func)
-
 AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     AVFilterPicRef *ret = NULL;
 
-    DPRINTF_START(NULL, get_video_buffer); dprintf_link(NULL, link, 0); dprintf(NULL, " perms:%d w:%d h:%d\n", perms, w, h);
+    FF_DPRINTF_START(NULL, get_video_buffer); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " perms:%d w:%d h:%d\n", perms, w, h);
 
     if(link_dpad(link).get_video_buffer)
         ret = link_dpad(link).get_video_buffer(link, perms, w, h);
@@ -205,14 +204,14 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, 
     if(!ret)
         ret = avfilter_default_get_video_buffer(link, perms, w, h);
 
-    DPRINTF_START(NULL, get_video_buffer); dprintf_link(NULL, link, 0); dprintf(NULL, " returning "); dprintf_picref(NULL, ret, 1);
+    FF_DPRINTF_START(NULL, get_video_buffer); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " returning "); ff_dprintf_picref(NULL, ret, 1);
 
     return ret;
 }
 
 int avfilter_request_frame(AVFilterLink *link)
 {
-    DPRINTF_START(NULL, request_frame); dprintf_link(NULL, link, 1);
+    FF_DPRINTF_START(NULL, request_frame); ff_dprintf_link(NULL, link, 1);
 
     if(link_spad(link).request_frame)
         return link_spad(link).request_frame(link);
@@ -246,7 +245,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     void (*start_frame)(AVFilterLink *, AVFilterPicRef *);
     AVFilterPad *dst = &link_dpad(link);
 
-    DPRINTF_START(NULL, start_frame); dprintf_link(NULL, link, 0); dprintf(NULL, " "); dprintf_picref(NULL, picref, 1);
+    FF_DPRINTF_START(NULL, start_frame); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " "); ff_dprintf_picref(NULL, picref, 1);
 
     if(!(start_frame = dst->start_frame))
         start_frame = avfilter_default_start_frame;
@@ -295,7 +294,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     int i, j, vsub;
     void (*draw_slice)(AVFilterLink *, int, int, int);
 
-    DPRINTF_START(NULL, draw_slice); dprintf_link(NULL, link, 0); dprintf(NULL, " y:%d h:%d dir:%d\n", y, h, slice_dir);
+    FF_DPRINTF_START(NULL, draw_slice); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " y:%d h:%d dir:%d\n", y, h, slice_dir);
 
     /* copy the slice if needed for permission reasons */
     if(link->srcpic) {
