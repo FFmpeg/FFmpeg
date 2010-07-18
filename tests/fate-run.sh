@@ -4,13 +4,17 @@ base=$(dirname $0)
 . "${base}/md5.sh"
 
 test="${1#fate-}"
-SAMPLES_PATH=$2
+samples=$2
 target_exec=$3
-BUILD_PATH=$4
+target_path=$4
 command=$5
 cmp=${6:-diff}
 ref=${7:-"${base}/ref/fate/${test}"}
 fuzz=$8
+
+# compatibility with Mike's test specs
+SAMPLES_PATH=$samples
+BUILD_PATH=$target_path
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
