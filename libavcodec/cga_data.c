@@ -19,6 +19,7 @@
  */
 
 #include <stdint.h>
+#include "cga_data.h"
 
 const uint8_t ff_cga_font[2048] = {
  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7e, 0x81, 0xa5, 0x81, 0xbd, 0x99, 0x81, 0x7e,
@@ -425,3 +426,14 @@ const uint32_t ff_ega_palette[64] = {
     0x555500, 0x5555AA, 0x55FF00, 0x55FFAA, 0xFF5500, 0xFF55AA, 0xFFFF00, 0xFFFFAA,
     0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
 };
+
+void ff_draw_pc_font(uint8_t *dst, int linesize, const uint8_t *font, int font_height, int ch, int fg, int bg)
+{
+    int char_y, mask;
+    for (char_y = 0; char_y < font_height; char_y++) {
+        for (mask = 0x80; mask; mask >>= 1) {
+            *dst++ = font[ch * font_height + char_y] & mask ? fg : bg;
+        }
+        dst += linesize - 8;
+    }
+}
