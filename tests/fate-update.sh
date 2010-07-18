@@ -39,8 +39,11 @@ do_sql "$SQL_TESTS" | while read id name command; do
             command="${command#*ffmpeg}"; command="${command% -f *}"
             command="crc $command"
             ;;
+        *)
+            echo "Unhandled command '$command'"
+            exit 1
+            ;;
     esac
-    command=$(echo "$command" | sed 's/\$BUILD_PATH/$(TARGET_PATH)/g')
     command=$(echo "$command" | sed 's/\$SAMPLES_PATH/$(SAMPLES)/g')
     command=$(echo "$command" | sed 's/ *$//')
     do_sql "SELECT expected_stdout FROM test_spec WHERE id=$id" | awk '/./{print}' > "$ref/$name"
