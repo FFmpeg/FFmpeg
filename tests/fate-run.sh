@@ -66,8 +66,7 @@ fi
 
 mkdir -p "$outdir"
 
-case "$command" in /*) command="$target_exec $command" ;; esac
-eval $command > "$outfile" 2>/dev/null || exit
+$command > "$outfile" 2>/dev/null || exit
 
 case $cmp in
     diff)   diff -u -w "$ref" "$outfile"            ;;
