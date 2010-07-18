@@ -482,7 +482,7 @@ see @url{http://www.iversenit.dk/dev/ffmpeg-headers/}
 
 @section Where is the documentation about ffv1, msmpeg4, asv1, 4xm?
 
-see @url{http://svn.ffmpeg.org/michael/trunk/docs/}
+see @url{http://www.ffmpeg.org/~michael/}
 
 @section How do I feed H.263-RTP (and other codecs in RTP) to libavcodec?
 
