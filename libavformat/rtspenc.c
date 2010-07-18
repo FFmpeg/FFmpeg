@@ -28,7 +28,7 @@
 #include "network.h"
 #include "rtsp.h"
 #include "internal.h"
-#include <libavutil/intreadwrite.h>
+#include "libavutil/intreadwrite.h"
 
 static int rtsp_write_record(AVFormatContext *s)
 {
