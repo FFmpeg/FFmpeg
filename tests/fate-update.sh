@@ -14,7 +14,6 @@ do_sql(){
 }
 
 wget -q -O - "$FATE_DB_URL" | bunzip2 > "$FATE_DB"
-rm -rf "$ref"
 mkdir -p "$ref"
 exec 3>"$base/fate.mak"
 
