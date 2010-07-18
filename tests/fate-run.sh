@@ -12,10 +12,6 @@ cmp=${6:-diff}
 ref=${7:-"${base}/ref/fate/${test}"}
 fuzz=$8
 
-# compatibility with Mike's test specs
-SAMPLES_PATH=$samples
-BUILD_PATH=$target_path
-
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
 

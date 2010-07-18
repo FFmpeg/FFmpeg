@@ -25,7 +25,8 @@ do_sql "$SQL_TESTS" | while read id name command; do
         {MD5}*) command="${command#\{MD5\}} | do_md5sum | cut -c-32" ;;
         {*}*)   continue ;;
     esac
-    command=$(echo "$command" | sed 's/\$/$$/g')
+    command=$(echo "$command" | sed 's/\$BUILD_PATH/$(TARGET_PATH)/g')
+    command=$(echo "$command" | sed 's/\$SAMPLES_PATH/$(SAMPLES)/g')
     do_sql "SELECT expected_stdout FROM test_spec WHERE id=$id" | awk '/./{print}' > "$ref/$name"
     printf "FATE_TESTS += fate-${name}\n" >&3
     printf "fate-${name}: CMD = %s\n" "$command" >&3
