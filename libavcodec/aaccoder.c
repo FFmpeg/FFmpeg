@@ -179,22 +179,22 @@ static av_always_inline float quantize_and_encode_band_cost_template(
         if (cost >= uplim)
             return uplim;
         if (pb) {
-        put_bits(pb, ff_aac_spectral_bits[cb-1][curidx], ff_aac_spectral_codes[cb-1][curidx]);
-        if (BT_UNSIGNED)
-            for (j = 0; j < dim; j++)
-                if (ff_aac_codebook_vectors[cb-1][curidx*dim+j] != 0.0f)
-                    put_bits(pb, 1, in[i+j] < 0.0f);
-        if (BT_ESC) {
-            for (j = 0; j < 2; j++) {
-                if (ff_aac_codebook_vectors[cb-1][curidx*2+j] == 64.0f) {
-                    int coef = av_clip(quant(fabsf(in[i+j]), Q), 0, 8191);
-                    int len = av_log2(coef);
+            put_bits(pb, ff_aac_spectral_bits[cb-1][curidx], ff_aac_spectral_codes[cb-1][curidx]);
+            if (BT_UNSIGNED)
+                for (j = 0; j < dim; j++)
+                    if (ff_aac_codebook_vectors[cb-1][curidx*dim+j] != 0.0f)
+                        put_bits(pb, 1, in[i+j] < 0.0f);
+            if (BT_ESC) {
+                for (j = 0; j < 2; j++) {
+                    if (ff_aac_codebook_vectors[cb-1][curidx*2+j] == 64.0f) {
+                        int coef = av_clip(quant(fabsf(in[i+j]), Q), 0, 8191);
+                        int len = av_log2(coef);
 
-                    put_bits(pb, len - 4 + 1, (1 << (len - 4 + 1)) - 2);
-                    put_bits(pb, len, coef & ((1 << len) - 1));
+                        put_bits(pb, len - 4 + 1, (1 << (len - 4 + 1)) - 2);
+                        put_bits(pb, len, coef & ((1 << len) - 1));
+                    }
                 }
             }
-        }
         }
     }
 
