@@ -1411,7 +1411,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %4
     sub             rsp, mmsize * 4  ; stack layout: [0]=E, [1]=I, [2]=hev_thr
                                      ;               [3]=hev() result
 %else ; h
-    sub             rsp, mmsize * 6  ; extra storage space for transposes
+    sub             rsp, mmsize * 5  ; extra storage space for transposes
 %endif
 
 %define flim_E   [rsp]
@@ -1470,7 +1470,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %4
     ; 8x8 transpose
     TRANSPOSE4x4B     0, 1, 2, 3, 7
 %ifdef m13
-    SWAP              1, 13
+    SWAP              1, 8
 %else
     mova [rsp+mmsize*4], m1
 %endif
@@ -1480,17 +1480,17 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %4
     SBUTTERFLY       dq, 2, 6, 1     ; q0/q1
     SBUTTERFLY       dq, 3, 7, 1     ; q2/q3
 %ifdef m13
-    SWAP              1, 13
-    SWAP              2, 13
+    SWAP              1, 8
+    SWAP              2, 8
 %else
     mova             m1, [rsp+mmsize*4]
     mova [rsp+mmsize*4], m2          ; store q0
 %endif
     SBUTTERFLY       dq, 1, 5, 2     ; p1/p0
 %ifdef m14
-    SWAP              5, 14
+    SWAP              5, 12
 %else
-    mova [rsp+mmsize*5], m5          ; store p0
+    mova [rsp+mmsize*3], m5          ; store p0
 %endif
     SWAP              1, 4
     SWAP              2, 4
@@ -1527,7 +1527,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %4
     ; 8x16 transpose
     TRANSPOSE4x4B     0, 1, 2, 3, 7
 %ifdef m13
-    SWAP              1, 13
+    SWAP              1, 8
 %else
     mova [rsp+mmsize*4], m1
 %endif
@@ -1539,17 +1539,17 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %4
     SBUTTERFLY       dq, 2, 6, 1     ; q0/q1
     SBUTTERFLY       dq, 3, 7, 1     ; q2/q3
 %ifdef m13
-    SWAP              1, 13
-    SWAP              2, 13
+    SWAP              1, 8
+    SWAP              2, 8
 %else
     mova             m1, [rsp+mmsize*4]
     mova [rsp+mmsize*4], m2          ; store q0
 %endif
     SBUTTERFLY       dq, 1, 5, 2     ; p1/p0
 %ifdef m14
-    SWAP              5, 14
+    SWAP              5, 12
 %else
-    mova [rsp+mmsize*5], m5          ; store p0
+    mova [rsp+mmsize*3], m5          ; store p0
 %endif
     SWAP              1, 4
     SWAP              2, 4
@@ -1611,9 +1611,9 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %4
 %ifidn %2, v
     mova             m3, [dst_reg +mstride_reg] ; p0
 %elifdef m14
-    SWAP              3, 14
+    SWAP              3, 12
 %else
-    mova             m3, [rsp+mmsize*5]
+    mova             m3, [rsp+mmsize*3]
 %endif
 
     mova             m1, m2
@@ -1644,7 +1644,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %4
 %ifidn %2, v
     mova             m4, [dst_reg]   ; q0
 %elifdef m13
-    SWAP              4, 13
+    SWAP              4, 8
 %else
     mova             m4, [rsp+mmsize*4]
 %endif
@@ -1836,7 +1836,7 @@ INNER_LOOPFILTER mmxext, h, 6, 8
 INIT_XMM
 INNER_LOOPFILTER sse2,   v, 5, 13
 %ifdef m8
-INNER_LOOPFILTER sse2,   h, 5, 15
+INNER_LOOPFILTER sse2,   h, 5, 13
 %else
-INNER_LOOPFILTER sse2,   h, 6, 15
+INNER_LOOPFILTER sse2,   h, 6, 13
 %endif
