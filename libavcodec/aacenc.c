@@ -517,20 +517,21 @@ static int aac_encode_frame(AVCodecContext *avctx,
         tag      = chan_map[i+1];
         chans    = tag == TYPE_CPE ? 2 : 1;
         cpe      = &s->cpe[i];
-        samples2 = samples + start_ch;
-        la       = samples2 + (448+64) * avctx->channels + start_ch;
-        if (!data)
-            la = NULL;
         for (j = 0; j < chans; j++) {
             IndividualChannelStream *ics = &cpe->ch[j].ics;
             int k;
+            int cur_channel = start_ch + j;
+            samples2 = samples + cur_channel;
+            la       = samples2 + (448+64) * avctx->channels;
+            if (!data)
+                la = NULL;
             if (tag == TYPE_LFE) {
                 wi[j].window_type[0] = ONLY_LONG_SEQUENCE;
                 wi[j].window_shape   = 0;
                 wi[j].num_windows    = 1;
                 wi[j].grouping[0]    = 1;
             } else {
-                wi[j] = ff_psy_suggest_window(&s->psy, samples2, la, start_ch + j,
+                wi[j] = ff_psy_suggest_window(&s->psy, samples2, la, cur_channel,
                                               ics->window_sequence[0]);
             }
             ics->window_sequence[1] = ics->window_sequence[0];
@@ -543,8 +544,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
             for (k = 0; k < ics->num_windows; k++)
                 ics->group_len[k] = wi[j].grouping[k];
 
-            s->cur_channel = start_ch + j;
-            apply_window_and_mdct(avctx, s, &cpe->ch[j], samples2 + j);
+            s->cur_channel = cur_channel;
+            apply_window_and_mdct(avctx, s, &cpe->ch[j], samples2);
         }
         start_ch += chans;
     }
