@@ -1153,7 +1153,7 @@ int av_add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
 
 /**
  * Perform a binary search using av_index_search_timestamp() and
- * AVCodec.read_timestamp().
+ * AVInputFormat.read_timestamp().
  * This is not supposed to be called directly by a user application,
  * but by demuxers.
  * @param target_ts target timestamp in the time base of the given stream
