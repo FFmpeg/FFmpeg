@@ -1616,6 +1616,7 @@ find_tests(){
 ACODEC_TESTS=$(find_tests acodec)
 VCODEC_TESTS=$(find_tests vsynth1)
 LAVF_TESTS=$(find_tests lavf)
+LAVFI_TESTS=$(find_tests lavfi)
 
 pcm_test_deps=$(map 'echo ${v%_*}_decoder $v' $(filter pcm_* $ENCODER_LIST))
 
@@ -1625,7 +1626,7 @@ for n in $COMPONENT_LIST; do
     eval ${n}_if_any="\$$v"
 done
 
-enable $ARCH_EXT_LIST $ACODEC_TESTS $VCODEC_TESTS $LAVF_TESTS
+enable $ARCH_EXT_LIST $ACODEC_TESTS $VCODEC_TESTS $LAVF_TESTS $LAVFI_TESTS
 
 die_unknown(){
     echo "Unknown option \"$1\"."
@@ -2853,6 +2854,7 @@ check_deps $CONFIG_LIST       \
            $ACODEC_TESTS      \
            $VCODEC_TESTS      \
            $LAVF_TESTS        \
+           $LAVFI_TESTS       \
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
@@ -3127,6 +3129,7 @@ cat >>config.mak <<EOF
 ACODEC_TESTS=$(print_enabled -n _test $ACODEC_TESTS)
 VCODEC_TESTS=$(print_enabled -n _test $VCODEC_TESTS)
 LAVF_TESTS=$(print_enabled   -n _test $LAVF_TESTS)
+LAVFI_TESTS=$(print_enabled  -n _test $LAVFI_TESTS)
 EOF
 
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
