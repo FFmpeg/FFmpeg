@@ -285,7 +285,7 @@ fate: $(FATE_TESTS)
 fate2: $(FATE2_TESTS)
 $(FATE_TESTS): ffmpeg$(EXESUF) tests/tiny_psnr$(HOSTEXESUF)
 	@echo "TEST FATE   $(@:fate-%=%)"
-	@$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)'
+	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)'
 else
 fate fate2 $(FATE_TESTS):
 	@echo "SAMPLES not specified, cannot run FATE"
