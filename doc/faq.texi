@@ -20,10 +20,11 @@ request more timely and/or frequent releases unless you are willing to
 help out creating them.
 
 @section I have a problem with an old version of FFmpeg; where should I report it?
-Nowhere. Upgrade to the latest release or if there is no recent release upgrade
-to Subversion HEAD. You could also try to report it. Maybe you will get lucky and
-become the first person in history to get an answer different from "upgrade
-to Subversion HEAD".
+Nowhere. We do not support old FFmpeg versions in any way, we simply lack
+the time, motivation and manpower to do so. If you have a problem with an
+old version of FFmpeg, upgrade to the latest Subversion snapshot. If you
+still experience the problem, then you can report it according to the
+guidelines in @url{http://ffmpeg.org/bugreports.html}.
 
 @section Why doesn't FFmpeg support feature [xyz]?
 
