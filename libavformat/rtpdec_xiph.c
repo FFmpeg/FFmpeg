@@ -178,24 +178,18 @@ static int xiph_handle_packet(AVFormatContext * ctx,
 
         if (fragmented == 3) {
             // end of xiph data packet
-            uint8_t* xiph_data;
-            int frame_size = url_close_dyn_buf(data->fragment, &xiph_data);
+            av_init_packet(pkt);
+            pkt->size = url_close_dyn_buf(data->fragment, &pkt->data);
 
-            if (frame_size < 0) {
+            if (pkt->size < 0) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Error occurred when getting fragment buffer.");
-                return frame_size;
+                return pkt->size;
             }
 
-            if (av_new_packet(pkt, frame_size)) {
-                av_log(ctx, AV_LOG_ERROR, "Out of memory.\n");
-                return AVERROR(ENOMEM);
-            }
-
-            memcpy(pkt->data, xiph_data, frame_size);
             pkt->stream_index = st->index;
+            pkt->destruct = av_destruct_packet;
 
-            av_free(xiph_data);
             data->fragment = NULL;
 
             return 0;
