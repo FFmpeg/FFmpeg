@@ -42,6 +42,8 @@ int mm_support(void)
     int rval = 0;
     int eax, ebx, ecx, edx;
     int max_std_level, max_ext_level, std_caps=0, ext_caps=0;
+    int family=0, model=0;
+    union { int i[3]; char c[12]; } vendor;
 
 #if ARCH_X86_32
     x86_reg a, c;
@@ -70,10 +72,12 @@ int mm_support(void)
         return 0; /* CPUID not supported */
 #endif
 
-    cpuid(0, max_std_level, ebx, ecx, edx);
+    cpuid(0, max_std_level, vendor.i[0], vendor.i[2], vendor.i[1]);
 
     if(max_std_level >= 1){
         cpuid(1, eax, ebx, ecx, std_caps);
+        family = ((eax>>8)&0xf) + ((eax>>20)&0xff);
+        model  = ((eax>>4)&0xf) + ((eax>>12)&0xf0);
         if (std_caps & (1<<23))
             rval |= FF_MM_MMX;
         if (std_caps & (1<<25))
@@ -108,13 +112,24 @@ int mm_support(void)
             rval |= FF_MM_MMX2;
     }
 
+    if (!strncmp(vendor.c, "GenuineIntel", 12) &&
+        family == 6 && (model == 9 || model == 13 || model == 14)) {
+        /* 6/9 (pentium-m "banias"), 6/13 (pentium-m "dothan"), and 6/14 (core1 "yonah")
+         * theoretically support sse2, but it's usually slower than mmx,
+         * so let's just pretend they don't. */
+        if (rval & FF_MM_SSE2) rval ^= FF_MM_SSE2SLOW|FF_MM_SSE2;
+        if (rval & FF_MM_SSE3) rval ^= FF_MM_SSE3SLOW|FF_MM_SSE3;
+    }
+
 #if 0
-    av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s%s%s%s%s\n",
+    av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s%s%s%s%s%s%s\n",
         (rval&FF_MM_MMX) ? "MMX ":"",
         (rval&FF_MM_MMX2) ? "MMX2 ":"",
         (rval&FF_MM_SSE) ? "SSE ":"",
         (rval&FF_MM_SSE2) ? "SSE2 ":"",
+        (rval&FF_MM_SSE2SLOW) ? "SSE2(slow) ":"",
         (rval&FF_MM_SSE3) ? "SSE3 ":"",
+        (rval&FF_MM_SSE3SLOW) ? "SSE3(slow) ":"",
         (rval&FF_MM_SSSE3) ? "SSSE3 ":"",
         (rval&FF_MM_SSE4) ? "SSE4.1 ":"",
         (rval&FF_MM_SSE42) ? "SSE4.2 ":"",
