@@ -1483,6 +1483,8 @@ test_deps _muxer _demuxer                                               \
     yuv4mpegpipe=yuv4mpeg                                               \
 
 mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
+pixdesc_be_test_deps="bigendian"
+pixdesc_le_test_deps="!bigendian"
 
 # default parameters
 
