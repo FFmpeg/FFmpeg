@@ -1663,10 +1663,10 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                     srcPtr+= srcStride[plane];
                     dstPtr+= dstStride[plane];
                 }
-            } else if (dstStride[plane]==srcStride[plane] && srcStride[plane] > 0) {
-                if (height > 0)
+            } else if (dstStride[plane]==srcStride[plane] && srcStride[plane] > 0 &&
+                       srcStride[plane] == length) {
                     memcpy(dst[plane] + dstStride[plane]*y, src[plane],
-                           (height - 1)*dstStride[plane] + length);
+                           height*dstStride[plane]);
             } else {
                 if(is16BPS(c->srcFormat) && is16BPS(c->dstFormat))
                     length*=2;
