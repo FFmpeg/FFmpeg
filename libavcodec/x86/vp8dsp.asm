@@ -1164,16 +1164,12 @@ cglobal vp8_luma_dc_wht_mmxext, 2,3
 ; arguments same as WRITE_2x4D, but with an extra register, so that the 5 regular
 ; registers contain buf+4*stride, buf+5*stride, buf+12*stride, -stride and +stride
 ; we add 1*stride to the third regular registry in the process
-; the 10th argument is 16 if it's a Y filter (i.e. all regular registers cover the
-; same memory region), or 8 if they cover two separate buffers (third one points to
-; a different memory region than the first two), allowing for more optimal code for
-; the 16-width case
-%macro WRITE_4x4D 10
+%macro WRITE_4x4D 9
     ; write out (4 dwords per register), start with dwords zero
     movd    [%5+%8*4], m%1
     movd         [%5], m%2
-    movd    [%7+%8*4], m%3
-    movd         [%7], m%4
+    movd    [%5+%9*4], m%3
+    movd    [%5+%9*8], m%4
 
     ; store dwords 1
     psrldq        m%1, 4
@@ -1182,23 +1178,15 @@ cglobal vp8_luma_dc_wht_mmxext, 2,3
     psrldq        m%4, 4
     movd    [%6+%8*4], m%1
     movd         [%6], m%2
-%if %10 == 16
     movd    [%6+%9*4], m%3
-%endif
-    movd      [%7+%9], m%4
+    movd    [%6+%9*8], m%4
 
     ; write dwords 2
     psrldq        m%1, 4
     psrldq        m%2, 4
-%if %10 == 8
-    movd    [%5+%8*2], m%1
-    movd           %5, m%3
-%endif
     psrldq        m%3, 4
     psrldq        m%4, 4
-%if %10 == 16
     movd    [%5+%8*2], m%1
-%endif
     movd      [%6+%9], m%2
     movd    [%7+%8*2], m%3
     movd    [%7+%9*2], m%4
@@ -1209,12 +1197,7 @@ cglobal vp8_luma_dc_wht_mmxext, 2,3
     psrldq        m%2, 4
     psrldq        m%3, 4
     psrldq        m%4, 4
-%if %10 == 8
-    mov     [%7+%8*4], %5
-    movd    [%6+%8*2], m%1
-%else
     movd      [%5+%8], m%1
-%endif
     movd    [%6+%9*2], m%2
     movd    [%7+%8*2], m%3
     movd    [%7+%9*2], m%4
@@ -1352,7 +1335,7 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3
     TRANSPOSE4x4B  0, 1, 2, 3, 4
 %if mmsize == 16 ; sse2
     add            r3, r1           ; change from r4*8*stride to r0+8*stride
-    WRITE_4x4D 0, 1, 2, 3, r0, r4, r3, r1, r2, 16
+    WRITE_4x4D 0, 1, 2, 3, r0, r4, r3, r1, r2
 %else ; mmx/mmxext
     WRITE_4x2D 0, 1, 2, 3, r0, r4, r1, r2
 %endif
@@ -1391,20 +1374,13 @@ SIMPLE_LOOPFILTER sse2,   v, 3
 SIMPLE_LOOPFILTER sse2,   h, 6
 
 ;-----------------------------------------------------------------------------
-; void vp8_h/v_loop_filter<size>_inner_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
+; void vp8_h/v_loop_filter<size>_inner_<opt>(uint8_t *dst, int stride,
 ;                                            int flimE, int flimI, int hev_thr);
 ;-----------------------------------------------------------------------------
 
-%macro INNER_LOOPFILTER 5
-%if %4 == 8 ; chroma
-cglobal vp8_%2_loop_filter8uv_inner_%1, 6, %3, %5
-%define dst8_reg    r1
-%define mstride_reg r2
-%define E_reg       r3
-%define I_reg       r4
-%define hev_thr_reg r5
-%else ; luma
-cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
+%macro INNER_LOOPFILTER 4
+cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %4
+%define dst_reg     r0
 %define mstride_reg r1
 %define E_reg       r2
 %define I_reg       r3
@@ -1416,8 +1392,6 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %else ; x86-32, mmx/mmxext
 %define cnt_reg     r5
 %endif
-%endif
-%define dst_reg     r0
 %define stride_reg  E_reg
 %define dst2_reg    I_reg
 %ifndef m8
@@ -1462,16 +1436,13 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     SPLATB_REG  hev_thr, hev_thr_reg, %1 ; hev_thresh
 %endif
 
-%if mmsize == 8 && %4 == 16 ; mmx/mmxext
+%if mmsize == 8 ; mmx/mmxext
     mov         cnt_reg, 2
 %endif
     mov      stride_reg, mstride_reg
     neg     mstride_reg
 %ifidn %2, h
     lea         dst_reg, [dst_reg + stride_reg*4-4]
-%if %4 == 8
-    lea        dst8_reg, [dst8_reg+ stride_reg*4-4]
-%endif
 %endif
 
 %if mmsize == 8
@@ -1480,27 +1451,12 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     ; read
     lea        dst2_reg, [dst_reg + stride_reg]
 %ifidn %2, v
-%if %4 == 8 && mmsize == 16
-%define movrow movh
-%else
-%define movrow mova
-%endif
-    movrow           m0, [dst_reg +mstride_reg*4] ; p3
-    movrow           m1, [dst2_reg+mstride_reg*4] ; p2
-    movrow           m2, [dst_reg +mstride_reg*2] ; p1
-    movrow           m5, [dst2_reg]               ; q1
-    movrow           m6, [dst2_reg+ stride_reg]   ; q2
-    movrow           m7, [dst2_reg+ stride_reg*2] ; q3
-%if mmsize == 16 && %4 == 8
-    movhps           m0, [dst8_reg+mstride_reg*4]
-    movhps           m2, [dst8_reg+mstride_reg*2]
-    add        dst8_reg, stride_reg
-    movhps           m1, [dst8_reg+mstride_reg*4]
-    movhps           m5, [dst8_reg]
-    movhps           m6, [dst8_reg+ stride_reg]
-    movhps           m7, [dst8_reg+ stride_reg*2]
-    add        dst8_reg, mstride_reg
-%endif
+    mova             m0, [dst_reg +mstride_reg*4] ; p3
+    mova             m1, [dst2_reg+mstride_reg*4] ; p2
+    mova             m2, [dst_reg +mstride_reg*2] ; p1
+    mova             m5, [dst2_reg]               ; q1
+    mova             m6, [dst2_reg+ stride_reg]   ; q2
+    mova             m7, [dst2_reg+ stride_reg*2] ; q3
 %elif mmsize == 8 ; mmx/mmxext (h)
     ; read 8 rows of 8px each
     movu             m0, [dst_reg +mstride_reg*4]
@@ -1541,9 +1497,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     SWAP              6, 3
     SWAP              5, 3
 %else ; sse2 (h)
-%if %4 == 16
     lea        dst8_reg, [dst_reg + stride_reg*8]
-%endif
 
     ; read 16 rows of 8px each, interleave
     movh             m0, [dst_reg +mstride_reg*4]
@@ -1655,10 +1609,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     ; normal_limit and high_edge_variance for p1-p0, q1-q0
     SWAP              7, 3           ; now m7 is zero
 %ifidn %2, v
-    movrow           m3, [dst_reg +mstride_reg] ; p0
-%if mmsize == 16 && %4 == 8
-    movhps           m3, [dst8_reg+mstride_reg]
-%endif
+    mova             m3, [dst_reg +mstride_reg] ; p0
 %elifdef m14
     SWAP              3, 12
 %else
@@ -1691,10 +1642,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 
     SWAP              6, 4           ; now m6 is I
 %ifidn %2, v
-    movrow           m4, [dst_reg]   ; q0
-%if mmsize == 16 && %4 == 8
-    movhps           m4, [dst8_reg]
-%endif
+    mova             m4, [dst_reg]   ; q0
 %elifdef m13
     SWAP              4, 8
 %else
@@ -1845,19 +1793,13 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 
     ; store
 %ifidn %2, v
-    movrow [dst_reg +mstride_reg*2], m2
-    movrow [dst_reg +mstride_reg  ], m3
-    movrow    [dst_reg], m4
-    movrow [dst_reg + stride_reg  ], m5
-%if mmsize == 16 && %4 == 8
-    movhps [dst8_reg+mstride_reg*2], m2
-    movhps [dst8_reg+mstride_reg  ], m3
-    movhps   [dst8_reg], m4
-    movhps [dst8_reg+ stride_reg  ], m5
-%endif
+    mova [dst_reg+mstride_reg*2], m2
+    mova [dst_reg+mstride_reg  ], m3
+    mova       [dst_reg], m4
+    mova [dst_reg+ stride_reg  ], m5
 %else ; h
-    add         dst_reg, 2
-    add        dst2_reg, 2
+    add          dst_reg, 2
+    add         dst2_reg, 2
 
     ; 4x8/16 transpose
     TRANSPOSE4x4B     2, 3, 4, 5, 6
@@ -1866,19 +1808,11 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     WRITE_4x2D        2, 3, 4, 5, dst_reg, dst2_reg, mstride_reg, stride_reg
 %else ; sse2 (h)
     lea        dst8_reg, [dst8_reg+mstride_reg+2]
-    WRITE_4x4D        2, 3, 4, 5, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg, %4
+    WRITE_4x4D        2, 3, 4, 5, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg
 %endif
 %endif
 
 %if mmsize == 8
-%if %4 == 8 ; chroma
-%ifidn %2, h
-    sub         dst_reg, 2
-%endif
-    cmp         dst_reg, dst8_reg
-    mov         dst_reg, dst8_reg
-    jnz .next8px
-%else
 %ifidn %2, h
     lea         dst_reg, [dst_reg + stride_reg*8-2]
 %else ; v
@@ -1886,7 +1820,6 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %endif
     dec         cnt_reg
     jg .next8px
-%endif
 %endif
 
 %ifndef m8 ; sse2 on x86-32 or mmx/mmxext
@@ -1896,23 +1829,14 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %endmacro
 
 INIT_MMX
-INNER_LOOPFILTER mmx,    v, 6, 16, 8
-INNER_LOOPFILTER mmx,    h, 6, 16, 8
-INNER_LOOPFILTER mmxext, v, 6, 16, 8
-INNER_LOOPFILTER mmxext, h, 6, 16, 8
-
-INNER_LOOPFILTER mmx,    v, 6,  8, 8
-INNER_LOOPFILTER mmx,    h, 6,  8, 8
-INNER_LOOPFILTER mmxext, v, 6,  8, 8
-INNER_LOOPFILTER mmxext, h, 6,  8, 8
-
+INNER_LOOPFILTER mmx,    v, 6, 8
+INNER_LOOPFILTER mmx,    h, 6, 8
+INNER_LOOPFILTER mmxext, v, 6, 8
+INNER_LOOPFILTER mmxext, h, 6, 8
 INIT_XMM
-INNER_LOOPFILTER sse2,   v, 5, 16, 13
+INNER_LOOPFILTER sse2,   v, 5, 13
 %ifdef m8
-INNER_LOOPFILTER sse2,   h, 5, 16, 13
+INNER_LOOPFILTER sse2,   h, 5, 13
 %else
-INNER_LOOPFILTER sse2,   h, 6, 16, 13
+INNER_LOOPFILTER sse2,   h, 6, 13
 %endif
-
-INNER_LOOPFILTER sse2,   v, 6,  8, 13
-INNER_LOOPFILTER sse2,   h, 6,  8, 13
