@@ -45,7 +45,7 @@ Likely reasons
 @itemize
 @item We are busy and haven't had time yet to read your report or
 investigate the issue.
-@item You didn't follow bugreports.html.
+@item You didn't follow @url{http://ffmpeg.org/bugreports.html}.
 @item You didn't use Subversion HEAD.
 @item You reported a segmentation fault without gdb output.
 @item You describe a problem but not how to reproduce it.
