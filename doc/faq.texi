@@ -460,8 +460,8 @@ See @url{http://www.parashift.com/c++-faq-lite/mixing-c-and-cpp.html#faq-32.3}
 
 @section I have a file in memory / a API different from *open/*read/ libc how do I use it with libavformat?
 
-You have to implement a URLProtocol, see libavformat/file.c in FFmpeg
-and libmpdemux/demux_lavf.c in MPlayer sources.
+You have to implement a URLProtocol, see @file{libavformat/file.c} in
+FFmpeg and @file{libmpdemux/demux_lavf.c} in MPlayer sources.
 
 @section I get "No compatible shell script interpreter found." in MSys.
 
