@@ -196,8 +196,8 @@ static av_always_inline void filter_mbedge(uint8_t *p, int stride)
     p[ 2*stride] = cm[q2 - a2];
 }
 
-#define LOOP_FILTER(dir, size, stridea, strideb) \
-static void vp8_ ## dir ## _loop_filter ## size ## _c(uint8_t *dst, int stride,\
+#define LOOP_FILTER(dir, size, stridea, strideb, maybe_inline) \
+static maybe_inline void vp8_ ## dir ## _loop_filter ## size ## _c(uint8_t *dst, int stride,\
                                      int flim_E, int flim_I, int hev_thresh)\
 {\
     int i;\
@@ -211,7 +211,7 @@ static void vp8_ ## dir ## _loop_filter ## size ## _c(uint8_t *dst, int stride,\
         }\
 }\
 \
-static void vp8_ ## dir ## _loop_filter ## size ## _inner_c(uint8_t *dst, int stride,\
+static maybe_inline void vp8_ ## dir ## _loop_filter ## size ## _inner_c(uint8_t *dst, int stride,\
                                       int flim_E, int flim_I, int hev_thresh)\
 {\
     int i;\
@@ -226,10 +226,26 @@ static void vp8_ ## dir ## _loop_filter ## size ## _inner_c(uint8_t *dst, int st
         }\
 }
 
-LOOP_FILTER(v, 16, 1, stride)
-LOOP_FILTER(h, 16, stride, 1)
-LOOP_FILTER(v,  8, 1, stride)
-LOOP_FILTER(h,  8, stride, 1)
+LOOP_FILTER(v, 16, 1, stride,)
+LOOP_FILTER(h, 16, stride, 1,)
+
+#define UV_LOOP_FILTER(dir, stridea, strideb) \
+LOOP_FILTER(dir, 8, stridea, strideb, av_always_inline) \
+static void vp8_ ## dir ## _loop_filter8uv_c(uint8_t *dstU, uint8_t *dstV, int stride,\
+                                      int fE, int fI, int hev_thresh)\
+{\
+  vp8_ ## dir ## _loop_filter8_c(dstU, stride, fE, fI, hev_thresh);\
+  vp8_ ## dir ## _loop_filter8_c(dstV, stride, fE, fI, hev_thresh);\
+}\
+static void vp8_ ## dir ## _loop_filter8uv_inner_c(uint8_t *dstU, uint8_t *dstV, int stride,\
+                                      int fE, int fI, int hev_thresh)\
+{\
+  vp8_ ## dir ## _loop_filter8_inner_c(dstU, stride, fE, fI, hev_thresh);\
+  vp8_ ## dir ## _loop_filter8_inner_c(dstV, stride, fE, fI, hev_thresh);\
+}
+
+UV_LOOP_FILTER(v, 1, stride)
+UV_LOOP_FILTER(h, stride, 1)
 
 static void vp8_v_loop_filter_simple_c(uint8_t *dst, int stride, int flim)
 {
@@ -443,15 +459,15 @@ av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
     dsp->vp8_idct_add    = vp8_idct_add_c;
     dsp->vp8_idct_dc_add = vp8_idct_dc_add_c;
 
-    dsp->vp8_v_loop_filter16 = vp8_v_loop_filter16_c;
-    dsp->vp8_h_loop_filter16 = vp8_h_loop_filter16_c;
-    dsp->vp8_v_loop_filter8  = vp8_v_loop_filter8_c;
-    dsp->vp8_h_loop_filter8  = vp8_h_loop_filter8_c;
+    dsp->vp8_v_loop_filter16y = vp8_v_loop_filter16_c;
+    dsp->vp8_h_loop_filter16y = vp8_h_loop_filter16_c;
+    dsp->vp8_v_loop_filter8uv = vp8_v_loop_filter8uv_c;
+    dsp->vp8_h_loop_filter8uv = vp8_h_loop_filter8uv_c;
 
-    dsp->vp8_v_loop_filter16_inner = vp8_v_loop_filter16_inner_c;
-    dsp->vp8_h_loop_filter16_inner = vp8_h_loop_filter16_inner_c;
-    dsp->vp8_v_loop_filter8_inner  = vp8_v_loop_filter8_inner_c;
-    dsp->vp8_h_loop_filter8_inner  = vp8_h_loop_filter8_inner_c;
+    dsp->vp8_v_loop_filter16y_inner = vp8_v_loop_filter16_inner_c;
+    dsp->vp8_h_loop_filter16y_inner = vp8_h_loop_filter16_inner_c;
+    dsp->vp8_v_loop_filter8uv_inner = vp8_v_loop_filter8uv_inner_c;
+    dsp->vp8_h_loop_filter8uv_inner = vp8_h_loop_filter8uv_inner_c;
 
     dsp->vp8_v_loop_filter_simple = vp8_v_loop_filter_simple_c;
     dsp->vp8_h_loop_filter_simple = vp8_h_loop_filter_simple_c;
