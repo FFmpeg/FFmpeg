@@ -328,8 +328,6 @@ static void fill_buffer(ByteIOContext *s)
     int len= s->buffer_size - (dst - s->buffer);
     int max_buffer_size = s->max_packet_size ? s->max_packet_size : IO_BUFFER_SIZE;
 
-    assert(s->buf_ptr == s->buf_end);
-
     /* no need to do anything if EOF already reached */
     if (s->eof_reached)
         return;
