@@ -361,7 +361,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec->frame_size = 1;
                     break;
                 }
-            } else if (type == AVMEDIA_TYPE_VIDEO) {
+            } else if (type == AVMEDIA_TYPE_VIDEO &&
+                       gsize - (url_ftell(pb) - pos1 + 24) >= 53) {
                 get_le32(pb);
                 get_le32(pb);
                 get_byte(pb);
