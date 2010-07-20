@@ -444,7 +444,7 @@ static int asf_header_parser(MMSContext *mms)
     while(end - p >= sizeof(ff_asf_guid) + 8) {
         uint64_t chunksize = AV_RL64(p + sizeof(ff_asf_guid));
         if (!chunksize || chunksize > end - p) {
-            dprintf(NULL, "chunksize is exceptional value:%d!\n", chunksize);
+            dprintf(NULL, "chunksize is exceptional value:%"PRId64"!\n", chunksize);
             return -1;
         }
         if (!memcmp(p, ff_asf_file_header, sizeof(ff_asf_guid))) {
