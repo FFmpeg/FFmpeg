@@ -260,6 +260,7 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                 read_result= url_read_complete(mms->mms_hd, mms->in_buffer+8, 4);
                 if(read_result == 4) {
                     int length_remaining= AV_RL32(mms->in_buffer+8) + 4;
+                    int hr;
 
                     dprintf(NULL, "Length remaining is %d\n", length_remaining);
                     // read the rest of the packet.
@@ -275,6 +276,11 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                         packet_type= AV_RL16(mms->in_buffer+36);
                     } else {
                         dprintf(NULL, "read for packet type failed%d!\n", read_result);
+                        return -1;
+                    }
+                    hr = AV_RL32(mms->in_buffer + 40);
+                    if (hr) {
+                        dprintf(NULL, "The server side send back error code:0x%x\n", hr);
                         return -1;
                     }
                 } else {
