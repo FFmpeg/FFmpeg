@@ -56,6 +56,9 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	$(CP) $< $@
 	$(STRIP) $@
 
+config.h: .config
+.config: $(wildcard $(FFLIBS:%=$(SRC_DIR)/lib%/all*.c))
+
 SUBDIR_VARS := OBJS FFLIBS CLEANFILES DIRS TESTPROGS EXAMPLES SKIPHEADERS \
                ALTIVEC-OBJS MMX-OBJS NEON-OBJS X86-OBJS YASM-OBJS-FFT YASM-OBJS \
                HOSTPROGS BUILT_HEADERS TESTOBJS ARCH_HEADERS
@@ -164,8 +167,9 @@ distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
 	$(RM) version.h config.* libavutil/avconfig.h
 
-config:
+config .config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
+	@touch .config
 
 # regression tests
 
