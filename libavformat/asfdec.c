@@ -362,7 +362,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     break;
                 }
             } else if (type == AVMEDIA_TYPE_VIDEO &&
-                       gsize - (url_ftell(pb) - pos1 + 24) >= 53) {
+                       gsize - (url_ftell(pb) - pos1 + 24) >= 51) {
                 get_le32(pb);
                 get_le32(pb);
                 get_byte(pb);
