@@ -81,8 +81,8 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('U', 'L', 'D', 'X') },
     { CODEC_ID_MPEG4,        MKTAG('G', 'E', 'O', 'V') },
     { CODEC_ID_MPEG4,        MKTAG('S', 'I', 'P', 'P') }, /* Samsung SHR-6040 */
-    { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
+    { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', 'G', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '5') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '6') },
