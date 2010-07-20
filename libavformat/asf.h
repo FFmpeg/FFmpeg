@@ -145,6 +145,7 @@ extern const ff_asf_guid ff_asf_audio_stream;
 extern const ff_asf_guid ff_asf_audio_conceal_none;
 extern const ff_asf_guid ff_asf_audio_conceal_spread;
 extern const ff_asf_guid ff_asf_video_stream;
+extern const ff_asf_guid ff_asf_jfif_media;
 extern const ff_asf_guid ff_asf_video_conceal_none;
 extern const ff_asf_guid ff_asf_command_stream;
 extern const ff_asf_guid ff_asf_comment_header;
