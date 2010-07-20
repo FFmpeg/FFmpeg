@@ -22,6 +22,7 @@ version <next>:
 - native GSM / GSM MS decoder
 - RTP depacketization of QDM2
 - ANSI/ASCII art playback system
+- Lego Mindstorms RSO de/muxer
 
 
 

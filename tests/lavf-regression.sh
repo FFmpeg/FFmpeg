@@ -206,6 +206,10 @@ if [ -n "$do_ogg" ] ; then
 do_audio_only ogg
 fi
 
+if [ -n "$do_rso" ] ; then
+do_audio_only rso
+fi
+
 # pix_fmt conversions
 
 if [ -n "$do_pixfmt" ] ; then
