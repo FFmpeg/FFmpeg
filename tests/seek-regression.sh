@@ -21,9 +21,9 @@ imgs=$(for i in $datadir/images/*; do echo "$i/%02d.${i##*/}"; done)
 err=0
 
 for i in $list $imgs; do
-    base=$(basename $i)
+    base=$(basename $i | tr .- __ | sed 's/^%02d/image/')
     logfile="$logdir/$base"
-    reffile="$refdir/$base.ref"
+    reffile="$refdir/$base"
     echo "TEST SEEK   $base"
     $echov $target_exec $target_path/tests/seek_test $target_path/$i
     $target_exec $target_path/tests/seek_test $target_path/$i > $logfile
