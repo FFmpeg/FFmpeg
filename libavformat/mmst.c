@@ -20,6 +20,14 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+/* References
+ * MMS protocol specification:
+ *  [1]http://msdn.microsoft.com/en-us/library/cc234711(PROT.10).aspx
+ * ASF specification. Revision 01.20.03.
+ *  [2]http://msdn.microsoft.com/en-us/library/bb643323.aspx
+ */
+
 #include "avformat.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
@@ -473,6 +481,8 @@ static int asf_header_parser(MMSContext *mms)
                 dprintf(NULL, "Too many streams.\n");
                 return -1;
             }
+        } else if (!memcmp(p, ff_asf_head1_guid, sizeof(ff_asf_guid))) {
+            chunksize = 46; // see references [2] section 3.4. This should be set 46.
         }
         p += chunksize;
     }
