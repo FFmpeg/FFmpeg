@@ -118,13 +118,14 @@ typedef struct {
     int                 scrambled_stream;
     int                 frame_factor;
     //@}
+
+    FFTContext          mdct_ctx;
 } ATRAC3Context;
 
 static DECLARE_ALIGNED(16, float,mdct_window)[512];
 static VLC              spectral_coeff_tab[7];
 static float            gain_tab1[16];
 static float            gain_tab2[31];
-static FFTContext       mdct_ctx;
 static DSPContext       dsp;
 
 
@@ -137,7 +138,7 @@ static DSPContext       dsp;
  * @param odd_band  1 if the band is an odd band
  */
 
-static void IMLT(float *pInput, float *pOutput, int odd_band)
+static void IMLT(ATRAC3Context *q, float *pInput, float *pOutput, int odd_band)
 {
     int     i;
 
@@ -155,7 +156,7 @@ static void IMLT(float *pInput, float *pOutput, int odd_band)
             FFSWAP(float, pInput[i], pInput[255-i]);
     }
 
-    ff_imdct_calc(&mdct_ctx,pOutput,pInput);
+    ff_imdct_calc(&q->mdct_ctx,pOutput,pInput);
 
     /* Perform windowing on the output. */
     dsp.vector_fmul(pOutput,mdct_window,512);
@@ -207,7 +208,7 @@ static av_cold void init_atrac3_transforms(ATRAC3Context *q) {
         }
 
     /* Initialize the MDCT transform. */
-    ff_mdct_init(&mdct_ctx, 9, 1, 1.0);
+    ff_mdct_init(&q->mdct_ctx, 9, 1, 1.0);
 }
 
 /**
@@ -220,6 +221,7 @@ static av_cold int atrac3_decode_close(AVCodecContext *avctx)
 
     av_free(q->pUnits);
     av_free(q->decoded_bytes_buffer);
+    ff_mdct_end(&q->mdct_ctx);
 
     return 0;
 }
@@ -694,7 +696,7 @@ static int decodeChannelSoundUnit (ATRAC3Context *q, GetBitContext *gb, channel_
     for (band=0; band<4; band++) {
         /* Perform the IMDCT step without overlapping. */
         if (band <= numBands) {
-            IMLT(&(pSnd->spectrum[band*256]), pSnd->IMDCT_buf, band&1);
+            IMLT(q, &(pSnd->spectrum[band*256]), pSnd->IMDCT_buf, band&1);
         } else
             memset(pSnd->IMDCT_buf, 0, 512 * sizeof(float));
 
