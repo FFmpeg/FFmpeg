@@ -1630,8 +1630,8 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVMuxContext *mov,
         put_be32(pb, size+8);
         put_tag(pb, "udta");
         put_buffer(pb, buf, size);
-        av_free(buf);
     }
+    av_free(buf);
 
     return 0;
 }
