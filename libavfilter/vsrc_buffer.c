@@ -35,7 +35,6 @@ typedef struct {
     AVRational        pixel_aspect;
 } BufferSourceContext;
 
-
 int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
                              int64_t pts, AVRational pixel_aspect)
 {
@@ -64,7 +63,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSourceContext *c = ctx->priv;
 
-    if(args && sscanf(args, "%d:%d:%d", &c->w, &c->h, &c->pix_fmt) == 3)
+    if (args && sscanf(args, "%d:%d:%d", &c->w, &c->h, &c->pix_fmt) == 3)
         return 0;
 
     av_log(ctx, AV_LOG_ERROR, "init() expected 3 arguments:'%s'\n", args);
@@ -90,7 +89,6 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-
 static int request_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
@@ -111,8 +109,8 @@ static int request_frame(AVFilterLink *link)
     av_picture_copy((AVPicture *)&picref->data, (AVPicture *)&c->frame,
                     picref->pic->format, link->w, link->h);
 
-    picref->pts = c->pts;
-    picref->pixel_aspect = c->pixel_aspect;
+    picref->pts             = c->pts;
+    picref->pixel_aspect    = c->pixel_aspect;
     picref->interlaced      = c->frame.interlaced_frame;
     picref->top_field_first = c->frame.top_field_first;
     avfilter_start_frame(link, avfilter_ref_pic(picref, ~0));
@@ -131,8 +129,7 @@ static int poll_frame(AVFilterLink *link)
     return !!(c->has_frame);
 }
 
-AVFilter avfilter_vsrc_buffer =
-{
+AVFilter avfilter_vsrc_buffer = {
     .name      = "buffer",
     .priv_size = sizeof(BufferSourceContext),
     .query_formats = query_formats,
