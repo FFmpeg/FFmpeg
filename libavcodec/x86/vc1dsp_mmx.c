@@ -73,8 +73,6 @@
     "movq      %%mm"#R1", "#OFF"(%1)   \n\t"    \
     "add       %2, %0                  \n\t"
 
-DECLARE_ALIGNED(16, const uint64_t, ff_pw_9) = 0x0009000900090009ULL;
-
 /** Sacrifying mm6 allows to pipeline loads from src */
 static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
                                        const uint8_t *src, x86_reg stride,

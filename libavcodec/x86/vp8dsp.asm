@@ -150,6 +150,10 @@ cextern pw_3
 cextern pb_3
 cextern pw_4
 cextern pb_4
+cextern pw_9
+cextern pw_18
+cextern pw_27
+cextern pw_63
 cextern pw_64
 cextern pb_80
 cextern pb_F8
@@ -1894,3 +1898,640 @@ INNER_LOOPFILTER sse2,   h, 6, 16, 13
 %endif
 INNER_LOOPFILTER sse2,   v, 6,  8, 13
 INNER_LOOPFILTER sse2,   h, 6,  8, 13
+
+;-----------------------------------------------------------------------------
+; void vp8_h/v_loop_filter<size>_mbedge_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
+;                                            int flimE, int flimI, int hev_thr);
+;-----------------------------------------------------------------------------
+
+; write 4 or 8 words in the mmx/xmm registers as 8 lines
+; 1 and 2 are the registers to write, this can be the same (for SSE2)
+; 3 is a general-purpose register that we will clobber
+; 4 is a pointer to the destination's 4th line
+; 5 is -stride and +stride
+%macro WRITE_8W 6
+    movd             %3, %1
+%if mmsize == 8
+    punpckhdq        %1, %1
+%else
+    psrldq           %1, 4
+%endif
+    mov       [%4+%5*4], %3w
+    shr              %3, 16
+    add              %4, %6
+    mov       [%4+%5*4], %3w
+
+    movd             %3, %1
+%if mmsize == 16
+    psrldq           %1, 4
+%endif
+    add              %4, %5
+    mov       [%4+%5*2], %3w
+    shr              %3, 16
+    mov       [%4+%5  ], %3w
+
+    movd             %3, %2
+%if mmsize == 8
+    punpckhdq        %2, %2
+%else
+    psrldq           %2, 4
+%endif
+    mov       [%4     ], %3w
+    shr              %3, 16
+    mov       [%4+%6  ], %3w
+
+    movd             %3, %2
+    add              %4, %6
+    mov       [%4+%6  ], %3w
+    shr              %3, 16
+    mov       [%4+%6*2], %3w
+%if mmsize == 8
+    add              %4, %5
+%endif
+%endmacro
+
+%macro MBEDGE_LOOPFILTER 5
+%if %4 == 8 ; chroma
+cglobal vp8_%2_loop_filter8uv_mbedge_%1, 6, %3, %5
+%define dst8_reg    r1
+%define mstride_reg r2
+%define E_reg       r3
+%define I_reg       r4
+%define hev_thr_reg r5
+%else ; luma
+cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
+%define mstride_reg r1
+%define E_reg       r2
+%define I_reg       r3
+%define hev_thr_reg r4
+%ifdef m8 ; x86-64, sse2
+%define dst8_reg    r4
+%elif mmsize == 16 ; x86-32, sse2
+%define dst8_reg    r5
+%else ; x86-32, mmx/mmxext
+%define cnt_reg     r5
+%endif
+%endif
+%define dst_reg     r0
+%define stride_reg  E_reg
+%define dst2_reg    I_reg
+%ifndef m8
+%define stack_reg   hev_thr_reg
+%endif
+
+%ifndef m8 ; mmx/mmxext or sse2 on x86-32
+    ; splat function arguments
+    SPLATB_REG       m0, E_reg, %1   ; E
+    SPLATB_REG       m1, I_reg, %1   ; I
+    SPLATB_REG       m2, hev_thr_reg, %1 ; hev_thresh
+
+    ; align stack
+    mov       stack_reg, rsp         ; backup stack pointer
+    and             rsp, ~(mmsize-1) ; align stack
+    sub             rsp, mmsize * 8  ; stack layout: [0]=E, [1]=I, [2]=hev_thr
+                                     ;               [3]=hev() result
+                                     ;               [4]=filter tmp result
+                                     ;               [5]/[6] = p2/q2 backup
+                                     ;               [7]=lim_res sign result
+
+%define flim_E   [rsp]
+%define flim_I   [rsp+mmsize]
+%define hev_thr  [rsp+mmsize*2]
+%define mask_res [rsp+mmsize*3]
+%define lim_res  [rsp+mmsize*4]
+%define p0backup [rsp+mmsize*3]
+%define q0backup [rsp+mmsize*4]
+%define p2backup [rsp+mmsize*5]
+%define q2backup [rsp+mmsize*6]
+%define lim_sign [rsp+mmsize*7]
+
+    mova         flim_E, m0
+    mova         flim_I, m1
+    mova        hev_thr, m2
+
+%else ; sse2 on x86-64
+
+%define flim_E   m9
+%define flim_I   m10
+%define hev_thr  m11
+%define mask_res m12
+%define lim_res  m8
+%define p0backup m12
+%define q0backup m8
+%define p2backup m13
+%define q2backup m14
+%define lim_sign m15
+
+    ; splat function arguments
+    SPLATB_REG   flim_E, E_reg, %1   ; E
+    SPLATB_REG   flim_I, I_reg, %1   ; I
+    SPLATB_REG  hev_thr, hev_thr_reg, %1 ; hev_thresh
+%endif
+
+%if mmsize == 8 && %4 == 16 ; mmx/mmxext
+    mov         cnt_reg, 2
+%endif
+    mov      stride_reg, mstride_reg
+    neg     mstride_reg
+%ifidn %2, h
+    lea         dst_reg, [dst_reg + stride_reg*4-4]
+%if %4 == 8
+    lea        dst8_reg, [dst8_reg+ stride_reg*4-4]
+%endif
+%endif
+
+%if mmsize == 8
+.next8px
+%endif
+    ; read
+    lea        dst2_reg, [dst_reg + stride_reg]
+%ifidn %2, v
+%if %4 == 8 && mmsize == 16
+%define movrow movh
+%else
+%define movrow mova
+%endif
+    movrow           m0, [dst_reg +mstride_reg*4] ; p3
+    movrow           m1, [dst2_reg+mstride_reg*4] ; p2
+    movrow           m2, [dst_reg +mstride_reg*2] ; p1
+    movrow           m5, [dst2_reg]               ; q1
+    movrow           m6, [dst2_reg+ stride_reg]   ; q2
+    movrow           m7, [dst2_reg+ stride_reg*2] ; q3
+%if mmsize == 16 && %4 == 8
+    movhps           m0, [dst8_reg+mstride_reg*4]
+    movhps           m2, [dst8_reg+mstride_reg*2]
+    add        dst8_reg, stride_reg
+    movhps           m1, [dst8_reg+mstride_reg*4]
+    movhps           m5, [dst8_reg]
+    movhps           m6, [dst8_reg+ stride_reg]
+    movhps           m7, [dst8_reg+ stride_reg*2]
+    add        dst8_reg, mstride_reg
+%endif
+%elif mmsize == 8 ; mmx/mmxext (h)
+    ; read 8 rows of 8px each
+    movu             m0, [dst_reg +mstride_reg*4]
+    movu             m1, [dst2_reg+mstride_reg*4]
+    movu             m2, [dst_reg +mstride_reg*2]
+    movu             m3, [dst_reg +mstride_reg]
+    movu             m4, [dst_reg]
+    movu             m5, [dst2_reg]
+    movu             m6, [dst2_reg+ stride_reg]
+
+    ; 8x8 transpose
+    TRANSPOSE4x4B     0, 1, 2, 3, 7
+    mova       q0backup, m1
+    movu             m7, [dst2_reg+ stride_reg*2]
+    TRANSPOSE4x4B     4, 5, 6, 7, 1
+    SBUTTERFLY       dq, 0, 4, 1     ; p3/p2
+    SBUTTERFLY       dq, 2, 6, 1     ; q0/q1
+    SBUTTERFLY       dq, 3, 7, 1     ; q2/q3
+    mova             m1, q0backup
+    mova       q0backup, m2          ; store q0
+    SBUTTERFLY       dq, 1, 5, 2     ; p1/p0
+    mova       p0backup, m5          ; store p0
+    SWAP              1, 4
+    SWAP              2, 4
+    SWAP              6, 3
+    SWAP              5, 3
+%else ; sse2 (h)
+%if %4 == 16
+    lea        dst8_reg, [dst_reg + stride_reg*8]
+%endif
+
+    ; read 16 rows of 8px each, interleave
+    movh             m0, [dst_reg +mstride_reg*4]
+    movh             m1, [dst8_reg+mstride_reg*4]
+    movh             m2, [dst_reg +mstride_reg*2]
+    movh             m5, [dst8_reg+mstride_reg*2]
+    movh             m3, [dst_reg +mstride_reg]
+    movh             m6, [dst8_reg+mstride_reg]
+    movh             m4, [dst_reg]
+    movh             m7, [dst8_reg]
+    punpcklbw        m0, m1          ; A/I
+    punpcklbw        m2, m5          ; C/K
+    punpcklbw        m3, m6          ; D/L
+    punpcklbw        m4, m7          ; E/M
+
+    add        dst8_reg, stride_reg
+    movh             m1, [dst2_reg+mstride_reg*4]
+    movh             m6, [dst8_reg+mstride_reg*4]
+    movh             m5, [dst2_reg]
+    movh             m7, [dst8_reg]
+    punpcklbw        m1, m6          ; B/J
+    punpcklbw        m5, m7          ; F/N
+    movh             m6, [dst2_reg+ stride_reg]
+    movh             m7, [dst8_reg+ stride_reg]
+    punpcklbw        m6, m7          ; G/O
+
+    ; 8x16 transpose
+    TRANSPOSE4x4B     0, 1, 2, 3, 7
+%ifdef m8
+    SWAP              1, 8
+%else
+    mova       q0backup, m1
+%endif
+    movh             m7, [dst2_reg+ stride_reg*2]
+    movh             m1, [dst8_reg+ stride_reg*2]
+    punpcklbw        m7, m1          ; H/P
+    TRANSPOSE4x4B     4, 5, 6, 7, 1
+    SBUTTERFLY       dq, 0, 4, 1     ; p3/p2
+    SBUTTERFLY       dq, 2, 6, 1     ; q0/q1
+    SBUTTERFLY       dq, 3, 7, 1     ; q2/q3
+%ifdef m8
+    SWAP              1, 8
+    SWAP              2, 8
+%else
+    mova             m1, q0backup
+    mova       q0backup, m2          ; store q0
+%endif
+    SBUTTERFLY       dq, 1, 5, 2     ; p1/p0
+%ifdef m12
+    SWAP              5, 12
+%else
+    mova       p0backup, m5          ; store p0
+%endif
+    SWAP              1, 4
+    SWAP              2, 4
+    SWAP              6, 3
+    SWAP              5, 3
+%endif
+
+    ; normal_limit for p3-p2, p2-p1, q3-q2 and q2-q1
+    mova             m4, m1
+    SWAP              4, 1
+    psubusb          m4, m0          ; p2-p3
+    psubusb          m0, m1          ; p3-p2
+    por              m0, m4          ; abs(p3-p2)
+
+    mova             m4, m2
+    SWAP              4, 2
+    psubusb          m4, m1          ; p1-p2
+    mova       p2backup, m1
+    psubusb          m1, m2          ; p2-p1
+    por              m1, m4          ; abs(p2-p1)
+
+    mova             m4, m6
+    SWAP              4, 6
+    psubusb          m4, m7          ; q2-q3
+    psubusb          m7, m6          ; q3-q2
+    por              m7, m4          ; abs(q3-q2)
+
+    mova             m4, m5
+    SWAP              4, 5
+    psubusb          m4, m6          ; q1-q2
+    mova       q2backup, m6
+    psubusb          m6, m5          ; q2-q1
+    por              m6, m4          ; abs(q2-q1)
+
+%ifidn %1, mmx
+    mova             m4, flim_I
+    pxor             m3, m3
+    psubusb          m0, m4
+    psubusb          m1, m4
+    psubusb          m7, m4
+    psubusb          m6, m4
+    pcmpeqb          m0, m3          ; abs(p3-p2) <= I
+    pcmpeqb          m1, m3          ; abs(p2-p1) <= I
+    pcmpeqb          m7, m3          ; abs(q3-q2) <= I
+    pcmpeqb          m6, m3          ; abs(q2-q1) <= I
+    pand             m0, m1
+    pand             m7, m6
+    pand             m0, m7
+%else ; mmxext/sse2
+    pmaxub           m0, m1
+    pmaxub           m6, m7
+    pmaxub           m0, m6
+%endif
+
+    ; normal_limit and high_edge_variance for p1-p0, q1-q0
+    SWAP              7, 3           ; now m7 is zero
+%ifidn %2, v
+    movrow           m3, [dst_reg +mstride_reg] ; p0
+%if mmsize == 16 && %4 == 8
+    movhps           m3, [dst8_reg+mstride_reg]
+%endif
+%elifdef m12
+    SWAP              3, 12
+%else
+    mova             m3, p0backup
+%endif
+
+    mova             m1, m2
+    SWAP              1, 2
+    mova             m6, m3
+    SWAP              3, 6
+    psubusb          m1, m3          ; p1-p0
+    psubusb          m6, m2          ; p0-p1
+    por              m1, m6          ; abs(p1-p0)
+%ifidn %1, mmx
+    mova             m6, m1
+    psubusb          m1, m4
+    psubusb          m6, hev_thr
+    pcmpeqb          m1, m7          ; abs(p1-p0) <= I
+    pcmpeqb          m6, m7          ; abs(p1-p0) <= hev_thresh
+    pand             m0, m1
+    mova       mask_res, m6
+%else ; mmxext/sse2
+    pmaxub           m0, m1          ; max_I
+    SWAP              1, 4           ; max_hev_thresh
+%endif
+
+    SWAP              6, 4           ; now m6 is I
+%ifidn %2, v
+    movrow           m4, [dst_reg]   ; q0
+%if mmsize == 16 && %4 == 8
+    movhps           m4, [dst8_reg]
+%endif
+%elifdef m8
+    SWAP              4, 8
+%else
+    mova             m4, q0backup
+%endif
+    mova             m1, m4
+    SWAP              1, 4
+    mova             m7, m5
+    SWAP              7, 5
+    psubusb          m1, m5          ; q0-q1
+    psubusb          m7, m4          ; q1-q0
+    por              m1, m7          ; abs(q1-q0)
+%ifidn %1, mmx
+    mova             m7, m1
+    psubusb          m1, m6
+    psubusb          m7, hev_thr
+    pxor             m6, m6
+    pcmpeqb          m1, m6          ; abs(q1-q0) <= I
+    pcmpeqb          m7, m6          ; abs(q1-q0) <= hev_thresh
+    mova             m6, mask_res
+    pand             m0, m1          ; abs([pq][321]-[pq][210]) <= I
+    pand             m6, m7
+%else ; mmxext/sse2
+    pxor             m7, m7
+    pmaxub           m0, m1
+    pmaxub           m6, m1
+    psubusb          m0, flim_I
+    psubusb          m6, hev_thr
+    pcmpeqb          m0, m7          ; max(abs(..)) <= I
+    pcmpeqb          m6, m7          ; !(max(abs..) > thresh)
+%endif
+%ifdef m12
+    SWAP              6, 12
+%else
+    mova       mask_res, m6          ; !(abs(p1-p0) > hev_t || abs(q1-q0) > hev_t)
+%endif
+
+    ; simple_limit
+    mova             m1, m3
+    SWAP              1, 3
+    mova             m6, m4          ; keep copies of p0/q0 around for later use
+    SWAP              6, 4
+    psubusb          m1, m4          ; p0-q0
+    psubusb          m6, m3          ; q0-p0
+    por              m1, m6          ; abs(q0-p0)
+    paddusb          m1, m1          ; m1=2*abs(q0-p0)
+
+    mova             m7, m2
+    SWAP              7, 2
+    mova             m6, m5
+    SWAP              6, 5
+    psubusb          m7, m5          ; p1-q1
+    psubusb          m6, m2          ; q1-p1
+    por              m7, m6          ; abs(q1-p1)
+    pxor             m6, m6
+    pand             m7, [pb_FE]
+    psrlq            m7, 1           ; abs(q1-p1)/2
+    paddusb          m7, m1          ; abs(q0-p0)*2+abs(q1-p1)/2
+    psubusb          m7, flim_E
+    pcmpeqb          m7, m6          ; abs(q0-p0)*2+abs(q1-p1)/2 <= E
+    pand             m0, m7          ; normal_limit result
+
+    ; filter_common; at this point, m2-m5=p1-q1 and m0 is filter_mask
+%ifdef m8 ; x86-64 && sse2
+    mova             m8, [pb_80]
+%define pb_80_var m8
+%else ; x86-32 or mmx/mmxext
+%define pb_80_var [pb_80]
+%endif
+    mova             m1, m4
+    mova             m7, m3
+    pxor             m1, pb_80_var
+    pxor             m7, pb_80_var
+    psubsb           m1, m7          ; (signed) q0-p0
+    mova             m6, m2
+    mova             m7, m5
+    pxor             m6, pb_80_var
+    pxor             m7, pb_80_var
+    psubsb           m6, m7          ; (signed) p1-q1
+    mova             m7, mask_res
+    paddsb           m6, m1
+    paddsb           m6, m1
+    paddsb           m6, m1
+    pand             m6, m0
+%ifdef m8
+    mova        lim_res, m6          ; 3*(qp-p0)+(p1-q1) masked for filter_mbedge
+    pand        lim_res, m7
+%else
+    mova             m0, m6
+    pand             m0, m7
+    mova        lim_res, m0
+%endif
+    pandn            m7, m6          ; 3*(q0-p0)+(p1-q1) masked for filter_common
+
+    mova             m1, [pb_F8]
+    mova             m6, m7
+    paddsb           m7, [pb_3]
+    paddsb           m6, [pb_4]
+    pand             m7, m1
+    pand             m6, m1
+
+    pxor             m1, m1
+    pxor             m0, m0
+    pcmpgtb          m1, m7
+    psubb            m0, m7
+    psrlq            m7, 3           ; +f2
+    psrlq            m0, 3           ; -f2
+    pand             m0, m1
+    pandn            m1, m7
+    psubusb          m3, m0
+    paddusb          m3, m1          ; p0+f2
+
+    pxor             m1, m1
+    pxor             m0, m0
+    pcmpgtb          m0, m6
+    psubb            m1, m6
+    psrlq            m6, 3           ; +f1
+    psrlq            m1, 3           ; -f1
+    pand             m1, m0
+    pandn            m0, m6
+    psubusb          m4, m0
+    paddusb          m4, m1          ; q0-f1
+
+    ; filter_mbedge (m2-m5 = p1-q1; lim_res carries w)
+    mova             m7, [pw_63]
+%ifdef m8
+    SWAP              1, 8
+%else
+    mova             m1, lim_res
+%endif
+    pxor             m0, m0
+    mova             m6, m1
+    pcmpgtb          m0, m1         ; which are negative
+    punpcklbw        m6, m0         ; signed byte->word
+    punpckhbw        m1, m0
+    mova       lim_sign, m0
+    mova       mask_res, m6         ; backup for later in filter
+    mova        lim_res, m1
+    pmullw          m6, [pw_27]
+    pmullw          m1, [pw_27]
+    paddw           m6, m7
+    paddw           m1, m7
+    psraw           m6, 7
+    psraw           m1, 7
+    packsswb        m6, m1          ; a0
+    pxor            m1, m1
+    psubb           m1, m6
+    pand            m1, m0          ; -a0
+    pandn           m0, m6          ; +a0
+    psubusb         m3, m1
+    paddusb         m4, m1
+    paddusb         m3, m0          ; p0+a0
+    psubusb         m4, m0          ; q0-a0
+
+    mova            m6, mask_res
+    mova            m1, lim_res
+    mova            m0, lim_sign
+    pmullw          m6, [pw_18]
+    pmullw          m1, [pw_18]
+    paddw           m6, m7
+    paddw           m1, m7
+    psraw           m6, 7
+    psraw           m1, 7
+    packsswb        m6, m1          ; a1
+    pxor            m1, m1
+    psubb           m1, m6
+    pand            m1, m0          ; -a1
+    pandn           m0, m6          ; +a1
+    psubusb         m2, m1
+    paddusb         m5, m1
+    paddusb         m2, m0          ; p1+a1
+    psubusb         m5, m0          ; q1-a1
+
+%ifdef m8
+    SWAP             6, 12
+    SWAP             1, 8
+%else
+    mova            m6, mask_res
+    mova            m1, lim_res
+%endif
+    pmullw          m6, [pw_9]
+    pmullw          m1, [pw_9]
+    paddw           m6, m7
+    paddw           m1, m7
+%ifdef m15
+    SWAP             7, 15
+%else
+    mova            m7, lim_sign
+%endif
+    psraw           m6, 7
+    psraw           m1, 7
+    packsswb        m6, m1          ; a1
+    pxor            m0, m0
+    psubb           m0, m6
+    pand            m0, m7          ; -a1
+    pandn           m7, m6          ; +a1
+%ifdef m8
+    SWAP             1, 13
+    SWAP             6, 14
+%else
+    mova            m1, p2backup
+    mova            m6, q2backup
+%endif
+    psubusb         m1, m0
+    paddusb         m6, m0
+    paddusb         m1, m7          ; p1+a1
+    psubusb         m6, m7          ; q1-a1
+
+    ; store
+%ifidn %2, v
+    movrow [dst2_reg+mstride_reg*4], m1
+    movrow [dst_reg +mstride_reg*2], m2
+    movrow [dst_reg +mstride_reg  ], m3
+    movrow    [dst_reg], m4
+    movrow   [dst2_reg], m5
+    movrow [dst2_reg+ stride_reg  ], m6
+%if mmsize == 16 && %4 == 8
+    add        dst8_reg, mstride_reg
+    movhps [dst8_reg+mstride_reg*2], m1
+    movhps [dst8_reg+mstride_reg  ], m2
+    movhps   [dst8_reg], m3
+    add        dst8_reg, stride_reg
+    movhps   [dst8_reg], m4
+    movhps [dst8_reg+ stride_reg  ], m5
+    movhps [dst8_reg+ stride_reg*2], m6
+%endif
+%else ; h
+    inc         dst_reg
+    inc        dst2_reg
+
+    ; 4x8/16 transpose
+    TRANSPOSE4x4B     1, 2, 3, 4, 0
+    SBUTTERFLY       bw, 5, 6, 0
+
+%if mmsize == 8 ; mmx/mmxext (h)
+    WRITE_4x2D        1, 2, 3, 4, dst_reg, dst2_reg, mstride_reg, stride_reg
+    add         dst_reg, 4
+    WRITE_8W         m5, m6, dst2_reg, dst_reg, mstride_reg, stride_reg
+%else ; sse2 (h)
+    lea        dst8_reg, [dst8_reg+mstride_reg+1]
+    WRITE_4x4D        1, 2, 3, 4, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg, %4
+    add         dst_reg, 4
+    add        dst8_reg, 4
+    WRITE_8W         m5, m5, dst2_reg, dst_reg,  mstride_reg, stride_reg
+    WRITE_8W         m6, m6, dst2_reg, dst8_reg, mstride_reg, stride_reg
+%endif
+%endif
+
+%if mmsize == 8
+%if %4 == 8 ; chroma
+%ifidn %2, h
+    sub         dst_reg, 5
+%endif
+    cmp         dst_reg, dst8_reg
+    mov         dst_reg, dst8_reg
+    jnz .next8px
+%else
+%ifidn %2, h
+    lea         dst_reg, [dst_reg + stride_reg*8-5]
+%else ; v
+    add         dst_reg, 8
+%endif
+    dec         cnt_reg
+    jg .next8px
+%endif
+%endif
+
+%ifndef m8 ; sse2 on x86-32 or mmx/mmxext
+    mov             rsp, stack_reg   ; restore stack pointer
+%endif
+    RET
+%endmacro
+
+INIT_MMX
+MBEDGE_LOOPFILTER mmx,    v, 6, 16, 8
+MBEDGE_LOOPFILTER mmx,    h, 6, 16, 8
+MBEDGE_LOOPFILTER mmxext, v, 6, 16, 8
+MBEDGE_LOOPFILTER mmxext, h, 6, 16, 8
+
+MBEDGE_LOOPFILTER mmx,    v, 6,  8, 8
+MBEDGE_LOOPFILTER mmx,    h, 6,  8, 8
+MBEDGE_LOOPFILTER mmxext, v, 6,  8, 8
+MBEDGE_LOOPFILTER mmxext, h, 6,  8, 8
+
+INIT_XMM
+MBEDGE_LOOPFILTER sse2,   v, 5, 16, 16
+%ifdef m8
+MBEDGE_LOOPFILTER sse2,   h, 5, 16, 16
+%else
+MBEDGE_LOOPFILTER sse2,   h, 6, 16, 16
+%endif
+MBEDGE_LOOPFILTER sse2,   v, 6,  8, 16
+MBEDGE_LOOPFILTER sse2,   h, 6,  8, 16
