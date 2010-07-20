@@ -120,6 +120,7 @@ typedef struct {
     int asf_header_size;                 ///< Size of stored ASF header.
     int header_parsed;                   ///< The header has been received and parsed.
     int asf_packet_len;
+    int asf_header_read_size;
     /*@}*/
 
     int stream_num;                      ///< stream numbers.
@@ -302,8 +303,6 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                 int packet_id_type;
                 int tmp;
 
-                assert(mms->remaining_in_len==0);
-
                 // note we cache the first 8 bytes,
                 // then fill up the buffer with the others
                 tmp                       = AV_RL16(mms->in_buffer + 6);
@@ -344,6 +343,9 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                                                  mms->remaining_in_len);
                             mms->asf_header_size += mms->remaining_in_len;
                         }
+                        // 0x04 means asf header is sent in multiple packets.
+                        if (mms->incoming_flags == 0x04)
+                            continue;
                     } else if(packet_id_type == mms->packet_id) {
                         packet_type = SC_PKT_ASF_MEDIA;
                     } else {
@@ -440,15 +442,14 @@ static int asf_header_parser(MMSContext *mms)
 {
     uint8_t *p = mms->asf_header;
     uint8_t *end;
-    int flags, stream_id, real_header_size;
+    int flags, stream_id;
     mms->stream_num = 0;
 
     if (mms->asf_header_size < sizeof(ff_asf_guid) * 2 + 22 ||
         memcmp(p, ff_asf_header, sizeof(ff_asf_guid)))
         return -1;
 
-    real_header_size = AV_RL64(p + sizeof(ff_asf_guid));
-    end = mms->asf_header + real_header_size;
+    end = mms->asf_header + mms->asf_header_size;
 
     p += sizeof(ff_asf_guid) + 14;
     while(end - p >= sizeof(ff_asf_guid) + 8) {
@@ -519,20 +520,20 @@ static int read_data(MMSContext *mms, uint8_t *buf, const int buf_size)
 /** Read at most one media packet (or a whole header). */
 static int read_mms_packet(MMSContext *mms, uint8_t *buf, int buf_size)
 {
-    int result = 0, read_header_size = 0;
+    int result = 0;
     int size_to_copy;
 
     do {
-        if(read_header_size < mms->asf_header_size && !mms->is_playing) {
+        if(mms->asf_header_read_size < mms->asf_header_size && !mms->is_playing) {
             /* Read from ASF header buffer */
             size_to_copy= FFMIN(buf_size,
-                                mms->asf_header_size - read_header_size);
-            memcpy(buf, mms->asf_header + read_header_size, size_to_copy);
-            read_header_size += size_to_copy;
+                                mms->asf_header_size - mms->asf_header_read_size);
+            memcpy(buf, mms->asf_header + mms->asf_header_read_size, size_to_copy);
+            mms->asf_header_read_size += size_to_copy;
             result += size_to_copy;
             dprintf(NULL, "Copied %d bytes from stored header. left: %d\n",
-                   size_to_copy, mms->asf_header_size - read_header_size);
-            if (mms->asf_header_size == read_header_size) {
+                   size_to_copy, mms->asf_header_size - mms->asf_header_read_size);
+            if (mms->asf_header_size == mms->asf_header_read_size) {
                 av_freep(&mms->asf_header);
                 mms->is_playing = 1;
             }
