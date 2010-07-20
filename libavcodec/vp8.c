@@ -882,10 +882,10 @@ void xchg_mb_border(uint8_t *top_border, uint8_t *src_y, uint8_t *src_cb, uint8_
     src_cb -= uvlinesize;
     src_cr -= uvlinesize;
 
-#define XCHG(a,b,xchg) do {\
-if (xchg) AV_SWAP64(b,a);\
-else      AV_COPY64(b,a);\
-} while (0)
+#define XCHG(a,b,xchg) do {                     \
+        if (xchg) AV_SWAP64(b,a);               \
+        else      AV_COPY64(b,a);               \
+    } while (0)
 
     XCHG(top_border_m1+8, src_y-8, xchg);
     XCHG(top_border,      src_y,   xchg);
