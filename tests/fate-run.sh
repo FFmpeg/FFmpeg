@@ -95,7 +95,8 @@ seektest(){
 
 mkdir -p "$outdir"
 
-$command > "$outfile" 2>/dev/null || exit
+$command > "$outfile" 2>/dev/null
+err=$?
 
 if ! test -e "$ref"; then
     echo "reference file '$ref' not found"
@@ -108,4 +109,6 @@ case $cmp in
     stddev) stddev     "$ref" "$outfile" "$fuzz"    ;;
 esac
 
-test $? = 0 && rm $outfile
+cmperr=$?
+test $err = 0 && err=$cmperr
+test $err = 0 && rm $outfile
