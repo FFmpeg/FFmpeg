@@ -27,12 +27,12 @@
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/mem.h"
 #include "libavutil/avutil.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/lfg.h"
 #include "swscale.h"
 
 /* HACK Duplicated from swscale_internal.h.
  * Should be removed when a cleaner pixel format system exists. */
-const char *sws_format_name(enum PixelFormat format);
 #define isGray(x)       (           \
            (x)==PIX_FMT_GRAY8       \
         || (x)==PIX_FMT_GRAY16BE    \
@@ -120,8 +120,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     srcContext= sws_getContext(w, h, PIX_FMT_YUVA420P, srcW, srcH, srcFormat, flags, NULL, NULL, NULL);
     if (!srcContext) {
         fprintf(stderr, "Failed to get %s ---> %s\n",
-                sws_format_name(PIX_FMT_YUVA420P),
-                sws_format_name(srcFormat));
+                av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name,
+                av_pix_fmt_descriptors[srcFormat].name);
         res = -1;
 
         goto end;
@@ -129,8 +129,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     dstContext= sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, NULL, NULL, NULL);
     if (!dstContext) {
         fprintf(stderr, "Failed to get %s ---> %s\n",
-                sws_format_name(srcFormat),
-                sws_format_name(dstFormat));
+                av_pix_fmt_descriptors[srcFormat].name,
+                av_pix_fmt_descriptors[dstFormat].name);
         res = -1;
 
         goto end;
@@ -138,8 +138,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     outContext= sws_getContext(dstW, dstH, dstFormat, w, h, PIX_FMT_YUVA420P, flags, NULL, NULL, NULL);
     if (!outContext) {
         fprintf(stderr, "Failed to get %s ---> %s\n",
-                sws_format_name(dstFormat),
-                sws_format_name(PIX_FMT_YUVA420P));
+                av_pix_fmt_descriptors[dstFormat].name,
+                av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name);
         res = -1;
 
         goto end;
@@ -166,8 +166,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     ssdA/= w*h;
 
     printf(" %s %dx%d -> %s %4dx%4d flags=%2d SSD=%5"PRId64",%5"PRId64",%5"PRId64",%5"PRId64"\n",
-           sws_format_name(srcFormat), srcW, srcH,
-           sws_format_name(dstFormat), dstW, dstH,
+           av_pix_fmt_descriptors[srcFormat].name, srcW, srcH,
+           av_pix_fmt_descriptors[dstFormat].name, dstW, dstH,
            flags, ssdY, ssdU, ssdV, ssdA);
     fflush(stdout);
 
@@ -209,8 +209,8 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
                 continue;
 
             printf("%s -> %s\n",
-                   sws_format_name(srcFormat),
-                   sws_format_name(dstFormat));
+                   av_pix_fmt_descriptors[srcFormat].name,
+                   av_pix_fmt_descriptors[dstFormat].name);
             fflush(stdout);
 
             for (i = 0; dstW[i] && !res; i++)
