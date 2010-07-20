@@ -179,6 +179,13 @@ static void mms_put_utf16(MMSContext *mms, uint8_t *src)
     mms->write_out_ptr += len;
 }
 
+static int send_time_test_data(MMSContext *mms)
+{
+    start_command_packet(mms, CS_PKT_TIMING_DATA_REQUEST);
+    insert_command_prefixes(mms, 0xf0f0f0f1, 0x0004000b);
+    return send_command_packet(mms);
+}
+
 static int send_protocol_select(MMSContext *mms)
 {
     char data_string[256];
@@ -597,6 +604,9 @@ static int mms_open(URLContext *h, const char *uri, int flags)
     mms->packet_id        = 3;          // default, initial value.
     mms->header_packet_id = 2;          // default, initial value.
     err = mms_safe_send_recv(mms, send_startup_packet, SC_PKT_CLIENT_ACCEPTED);
+    if (err)
+        goto fail;
+    err = mms_safe_send_recv(mms, send_time_test_data, SC_PKT_TIMING_TEST_REPLY);
     if (err)
         goto fail;
     err = mms_safe_send_recv(mms, send_protocol_select, SC_PKT_PROTOCOL_ACCEPTED);
