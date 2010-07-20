@@ -275,6 +275,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 type = AVMEDIA_TYPE_AUDIO;
             } else if (!guidcmp(&g, &ff_asf_video_stream)) {
                 type = AVMEDIA_TYPE_VIDEO;
+            } else if (!guidcmp(&g, &ff_asf_jfif_media)) {
+                type = AVMEDIA_TYPE_VIDEO;
+                st->codec->codec_id = CODEC_ID_MJPEG;
             } else if (!guidcmp(&g, &ff_asf_command_stream)) {
                 type = AVMEDIA_TYPE_DATA;
             } else if (!guidcmp(&g, &ff_asf_ext_stream_embed_stream_header)) {
