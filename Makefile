@@ -266,15 +266,52 @@ include $(SRC_PATH_BARE)/tests/fate2.mak
 
 FATE_TESTS += $(FATE2_TESTS)
 
+FATE_ACODEC  = $(ACODEC_TESTS:regtest-%=fate-acodec-%)
+FATE_VSYNTH1 = $(VCODEC_TESTS:regtest-%=fate-vsynth1-%)
+FATE_VSYNTH2 = $(VCODEC_TESTS:regtest-%=fate-vsynth2-%)
+FATE_VCODEC  = $(FATE_VSYNTH1) $(FATE_VSYNTH2)
+FATE_LAVF    = $(LAVF_TESTS:regtest-%=fate-lavf-%)
+FATE_LAVFI   = $(LAVFI_TESTS:regtest-%=fate-lavfi-%)
+FATE_SEEK    = $(SEEK_TESTS:seek_%=fate-seek-%)
+
+FATE = $(FATE_ACODEC)                                                   \
+       $(FATE_VCODEC)                                                   \
+       $(FATE_LAVF)                                                     \
+       $(FATE_LAVFI)                                                    \
+       $(FATE_SEEK)                                                     \
+
+$(FATE_ACODEC): $(AREF)
+$(FATE_VCODEC): $(VREF)
+$(FATE_LAVF):   $(REFS)
+$(FATE_LAVFI):  $(REFS)
+$(FATE_SEEK):   fate-codec fate-lavf tests/seek_test$(EXESUF)
+
+$(FATE_ACODEC):  CMD = codectest acodec
+$(FATE_VSYNTH1): CMD = codectest vsynth1
+$(FATE_VSYNTH2): CMD = codectest vsynth2
+$(FATE_LAVF):    CMD = lavftest
+$(FATE_LAVFI):   CMD = lavfitest
+$(FATE_SEEK):    CMD = seektest
+
+fate-codec:  fate-acodec fate-vcodec
+fate-acodec: $(FATE_ACODEC)
+fate-vcodec: $(FATE_VCODEC)
+fate-lavf:   $(FATE_LAVF)
+fate-lavfi:  $(FATE_LAVFI)
+fate-seek:   $(FATE_SEEK)
+
 ifdef SAMPLES
-fate: $(FATE_TESTS)
-fate2: $(FATE2_TESTS)
-$(FATE_TESTS): ffmpeg$(EXESUF) tests/tiny_psnr$(HOSTEXESUF)
-	@echo "TEST FATE   $(@:fate-%=%)"
-	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)'
+FATE += $(FATE_TESTS)
 else
-fate fate2 $(FATE_TESTS):
+fate2 $(FATE_TESTS):
 	@echo "SAMPLES not specified, cannot run FATE"
 endif
+
+fate: $(FATE)
+fate2: $(FATE2_TESTS)
+
+$(FATE): ffmpeg$(EXESUF) tests/tiny_psnr$(HOSTEXESUF)
+	@echo "TEST FATE   $(@:fate-%=%)"
+	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)'
 
 .PHONY: documentation *test regtest-* alltools check config
