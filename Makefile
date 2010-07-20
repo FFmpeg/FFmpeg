@@ -268,7 +268,7 @@ fate: $(FATE)
 fate2: $(FATE2_TESTS)
 
 $(FATE): ffmpeg$(EXESUF) tests/tiny_psnr$(HOSTEXESUF)
-	@echo "TEST FATE   $(@:fate-%=%)"
+	@echo "TEST    $(@:fate-%=%)"
 	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)'
 
 .PHONY: documentation *test regtest-* alltools check config
