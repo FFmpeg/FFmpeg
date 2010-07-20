@@ -253,3 +253,21 @@ fate-vorbis-19: REF = $(SAMPLES)/vorbis/test-short2_small.pcm
 
 FATE2_TESTS += fate-msmpeg4v1
 fate-msmpeg4v1: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/msmpeg4v1/mpg4.avi -an
+
+FATE2_TESTS += fate-wmavoice-7k
+fate-wmavoice-7k: CMD = pcm -i $(SAMPLES)/wmavoice/streaming_CBR-7K.wma
+fate-wmavoice-7k: CMP = stddev
+fate-wmavoice-7k: REF = $(SAMPLES)/wmavoice/streaming_CBR-7K.pcm
+fate-wmavoice-7k: FUZZ = 3
+
+FATE2_TESTS += fate-wmavoice-11k
+fate-wmavoice-11k: CMD = pcm -i $(SAMPLES)/wmavoice/streaming_CBR-11K.wma
+fate-wmavoice-11k: CMP = stddev
+fate-wmavoice-11k: REF = $(SAMPLES)/wmavoice/streaming_CBR-11K.pcm
+fate-wmavoice-11k: FUZZ = 3
+
+FATE2_TESTS += fate-wmavoice-19k
+fate-wmavoice-19k: CMD = pcm -i $(SAMPLES)/wmavoice/streaming_CBR-19K.wma
+fate-wmavoice-19k: CMP = stddev
+fate-wmavoice-19k: REF = $(SAMPLES)/wmavoice/streaming_CBR-19K.pcm
+fate-wmavoice-19k: FUZZ = 3
