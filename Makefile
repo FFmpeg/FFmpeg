@@ -176,66 +176,23 @@ fulltest test: codectest lavftest seektest
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
 SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
 
-ACODEC_TESTS := $(addprefix regtest-, $(ACODEC_TESTS) $(ACODEC_TESTS-yes))
-VCODEC_TESTS := $(addprefix regtest-, $(VCODEC_TESTS) $(VCODEC_TESTS-yes))
-LAVF_TESTS  := $(addprefix regtest-, $(LAVF_TESTS)  $(LAVF_TESTS-yes))
-LAVFI_TESTS := $(addprefix regtest-, $(LAVFI_TESTS) $(LAVFI_TESTS-yes))
-
-CODEC_TESTS = $(VCODEC_TESTS) $(ACODEC_TESTS)
-
-codectest: $(CODEC_TESTS)
-lavftest:  $(LAVF_TESTS)
-lavfitest: $(LAVFI_TESTS)
+codectest: fate-codec
+lavftest:  fate-lavf
+lavfitest: fate-lavfi
+seektest:  fate-seek
 
 AREF = tests/data/acodec.ref.wav
 VREF = tests/data/vsynth1.ref.yuv
 REFS = $(AREF) $(VREF)
 
-$(ACODEC_TESTS): $(AREF)
-$(VCODEC_TESTS): $(VREF)
-$(LAVF_TESTS) $(LAVFI_TESTS): $(REFS)
-
-REFFILE = $(SRC_PATH)/tests/ref/$(1)/$(2:regtest-%=%)
-RESFILE = tests/data/regression/$(1)/$(2:regtest-%=%)
-
-define VCODECTEST
-	@echo "TEST VCODEC $(1:regtest-%=%)"
-	$(SRC_PATH)/tests/codec-regression.sh $(1) vsynth1 tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
-	$(SRC_PATH)/tests/codec-regression.sh $(1) vsynth2 tests/vsynth2 "$(TARGET_EXEC)" "$(TARGET_PATH)"
-endef
-
-define ACODECTEST
-	@echo "TEST ACODEC $(1:regtest-%=%)"
-	$(SRC_PATH)/tests/codec-regression.sh $(1) acodec tests/acodec "$(TARGET_EXEC)" "$(TARGET_PATH)"
-endef
+$(REFS): TAG = GEN
 
 $(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
-	@$(call VCODECTEST,vref)
+	$(M)$(SRC_PATH)/tests/codec-regression.sh vref vsynth1 tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	$(Q)$(SRC_PATH)/tests/codec-regression.sh vref vsynth2 tests/vsynth2 "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 $(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw
-	@$(call ACODECTEST,aref)
-
-$(VCODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
-	@$(call VCODECTEST,$@)
-	@diff -u -w $(call REFFILE,vsynth1,$@) $(call RESFILE,vsynth1,$@)
-	@diff -u -w $(call REFFILE,vsynth2,$@) $(call RESFILE,vsynth2,$@)
-
-$(ACODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
-	@$(call ACODECTEST,$@)
-	@diff -u -w $(call REFFILE,acodec,$@) $(call RESFILE,acodec,$@)
-
-$(LAVF_TESTS):
-	@echo "TEST LAVF  $(@:regtest-%=%)"
-	@$(SRC_PATH)/tests/lavf-regression.sh $@ lavf tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
-	@diff -u -w $(call REFFILE,lavf,$@) $(call RESFILE,lavf,$@)
-
-$(LAVFI_TESTS): tools/lavfi-showfiltfmts$(EXESUF)
-	@echo "TEST LAVFI $(@:regtest-%=%)"
-	@$(SRC_PATH)/tests/lavfi-regression.sh $@ lavfi tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
-	@diff -u -w $(call REFFILE,lavfi,$@) $(call RESFILE,lavfi,$@)
-
-seektest: codectest lavftest tests/seek_test$(EXESUF)
-	$(SRC_PATH)/tests/seek-regression.sh $(SRC_PATH) "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	$(M)$(SRC_PATH)/tests/codec-regression.sh aref acodec tests/acodec "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	@echo
@@ -266,12 +223,12 @@ include $(SRC_PATH_BARE)/tests/fate2.mak
 
 FATE_TESTS += $(FATE2_TESTS)
 
-FATE_ACODEC  = $(ACODEC_TESTS:regtest-%=fate-acodec-%)
-FATE_VSYNTH1 = $(VCODEC_TESTS:regtest-%=fate-vsynth1-%)
-FATE_VSYNTH2 = $(VCODEC_TESTS:regtest-%=fate-vsynth2-%)
+FATE_ACODEC  = $(ACODEC_TESTS:%=fate-acodec-%)
+FATE_VSYNTH1 = $(VCODEC_TESTS:%=fate-vsynth1-%)
+FATE_VSYNTH2 = $(VCODEC_TESTS:%=fate-vsynth2-%)
 FATE_VCODEC  = $(FATE_VSYNTH1) $(FATE_VSYNTH2)
-FATE_LAVF    = $(LAVF_TESTS:regtest-%=fate-lavf-%)
-FATE_LAVFI   = $(LAVFI_TESTS:regtest-%=fate-lavfi-%)
+FATE_LAVF    = $(LAVF_TESTS:%=fate-lavf-%)
+FATE_LAVFI   = $(LAVFI_TESTS:%=fate-lavfi-%)
 FATE_SEEK    = $(SEEK_TESTS:seek_%=fate-seek-%)
 
 FATE = $(FATE_ACODEC)                                                   \
