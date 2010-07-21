@@ -271,13 +271,21 @@ DECLARE_REG 6, rax, eax, ax,  al,  [rsp + stack_offset + 56]
     ASSERT %2 >= %1
     %assign regs_used %2
     ASSERT regs_used <= 7
-    %assign xmm_regs_used %3
-    ASSERT xmm_regs_used <= 16
     %if regs_used > 4
         push r4
         push r5
         %assign stack_offset stack_offset+16
     %endif
+    WIN64_SPILL_XMM %3
+    LOAD_IF_USED 4, %1
+    LOAD_IF_USED 5, %1
+    LOAD_IF_USED 6, %1
+    DEFINE_ARGS %4
+%endmacro
+
+%macro WIN64_SPILL_XMM 1
+    %assign xmm_regs_used %1
+    ASSERT xmm_regs_used <= 16
     %if xmm_regs_used > 6
         sub rsp, (xmm_regs_used-6)*16+16
         %assign stack_offset stack_offset+(xmm_regs_used-6)*16+16
@@ -287,13 +295,9 @@ DECLARE_REG 6, rax, eax, ax,  al,  [rsp + stack_offset + 56]
             movdqa [rsp + (%%i-6)*16+8], xmm %+ %%i
         %endrep
     %endif
-    LOAD_IF_USED 4, %1
-    LOAD_IF_USED 5, %1
-    LOAD_IF_USED 6, %1
-    DEFINE_ARGS %4
 %endmacro
 
-%macro RESTORE_XMM_INTERNAL 1
+%macro WIN64_RESTORE_XMM_INTERNAL 1
     %if xmm_regs_used > 6
         %assign %%i xmm_regs_used
         %rep (xmm_regs_used-6)
@@ -304,14 +308,14 @@ DECLARE_REG 6, rax, eax, ax,  al,  [rsp + stack_offset + 56]
     %endif
 %endmacro
 
-%macro RESTORE_XMM 1
-    RESTORE_XMM_INTERNAL %1
+%macro WIN64_RESTORE_XMM 1
+    WIN64_RESTORE_XMM_INTERNAL %1
     %assign stack_offset stack_offset-(xmm_regs_used-6)*16+16
     %assign xmm_regs_used 0
 %endmacro
 
 %macro RET 0
-    RESTORE_XMM_INTERNAL rsp
+    WIN64_RESTORE_XMM_INTERNAL rsp
     %if regs_used > 4
         pop r5
         pop r4
@@ -428,6 +432,13 @@ DECLARE_REG 6, ebp, ebp, bp, null, [esp + stack_offset + 28]
 
 %endif ;======================================================================
 
+%ifndef WIN64
+%macro WIN64_SPILL_XMM 1
+%endmacro
+%macro WIN64_RESTORE_XMM 1
+%endmacro
+%endif
+
 
 
 ;=============================================================================
@@ -494,7 +505,7 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
     %define mova movq
     %define movu movq
     %define movh movd
-    %define movnt movntq
+    %define movnta movntq
     %assign %%i 0
     %rep 8
     CAT_XDEFINE m, %%i, mm %+ %%i
@@ -518,7 +529,7 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
     %define mova movdqa
     %define movu movdqu
     %define movh movq
-    %define movnt movntdq
+    %define movnta movntdq
     %assign %%i 0
     %rep num_mmregs
     CAT_XDEFINE m, %%i, xmm %+ %%i
