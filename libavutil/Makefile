@@ -39,6 +39,7 @@ OBJS = adler32.o                                                        \
        eval.o                                                           \
        fifo.o                                                           \
        intfloat_readwrite.o                                             \
+       inverse.o                                                        \
        lfg.o                                                            \
        lls.o                                                            \
        log.o                                                            \

@@ -609,6 +609,12 @@ OBJS-$(HAVE_W32THREADS)                += w32thread.o
 
 OBJS-$(CONFIG_MLIB)                    += mlib/dsputil_mlib.o           \
 
+# inverse.o contains the ff_inverse table definition, which is used by
+# the FASTDIV macro (from libavutil); since referencing the external
+# table has a negative effect on performance, copy it in libavcodec as
+# well.
+OBJS-$(!CONFIG_SMALL)                  += inverse.o
+
 -include $(SUBDIR)$(ARCH)/Makefile
 
 SKIPHEADERS                             = %_tablegen.h
