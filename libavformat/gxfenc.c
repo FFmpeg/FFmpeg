@@ -550,9 +550,9 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
         put_le32(pb, 0); /* attributes rw, ro */
         put_le32(pb, 0); /* mark in */
         put_le32(pb, gxf->nb_fields); /* mark out */
-        put_buffer(pb, ES_NAME_PATTERN, sizeof(ES_NAME_PATTERN));
+        put_buffer(pb, ES_NAME_PATTERN, strlen(ES_NAME_PATTERN));
         put_be16(pb, sc->media_info);
-        for (j = sizeof(ES_NAME_PATTERN)+2; j < 88; j++)
+        for (j = strlen(ES_NAME_PATTERN)+2; j < 88; j++)
             put_byte(pb, 0);
         put_le32(pb, sc->track_type);
         put_le32(pb, sc->sample_rate);
