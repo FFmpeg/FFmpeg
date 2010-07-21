@@ -168,12 +168,18 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
         return -1;
 
     if (len > 0) {
-        int off, out_len;
+        int off, out_len = 0;
 
         if (len < 4)
             return -1;
 
+        av_freep(&asf->buf);
+
         init_put_byte(pb, buf, len, 0, NULL, NULL, NULL, NULL);
+
+        while (url_ftell(pb) + 4 < len) {
+        int start_off = url_ftell(pb);
+
         mflags = get_byte(pb);
         if (mflags & 0x80)
             flags |= RTP_FLAG_KEY;
@@ -186,7 +192,6 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
             url_fskip(pb, 4);
         off = url_ftell(pb);
 
-        av_freep(&asf->buf);
         if (!(mflags & 0x40)) {
             /**
              * If 0x40 is not set, the len_off field specifies an offset of this
@@ -206,6 +211,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                 return AVERROR(EIO);
 
             put_buffer(asf->pktbuf, buf + off, len - off);
+            url_fskip(pb, len - off);
             if (!(flags & RTP_FLAG_MARKER))
                 return -1;
             out_len     = url_close_dyn_buf(asf->pktbuf, &asf->buf);
@@ -218,14 +224,14 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
              * less in case of packet splitting (i.e. multiple ASF packets in
              * one RTP packet).
              */
-            if (len_off != len) {
-                av_log_missing_feature(s,
-                    "RTSP-MS packet splitting", 1);
-                return -1;
-            }
-            asf->buf = av_malloc(len - off);
-            out_len  = len - off;
-            memcpy(asf->buf, buf + off, len - off);
+
+            int cur_len = start_off + len_off - off;
+            int prev_len = out_len;
+            out_len += cur_len;
+            asf->buf = av_realloc(asf->buf, out_len);
+            memcpy(asf->buf + prev_len, buf + off, cur_len);
+            url_fskip(pb, cur_len);
+        }
         }
 
         init_packetizer(pb, asf->buf, out_len);
