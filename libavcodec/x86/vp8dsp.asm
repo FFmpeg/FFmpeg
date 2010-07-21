@@ -1034,15 +1034,25 @@ cglobal vp8_idct_add_mmx, 3, 3
 ; void vp8_luma_dc_wht_mmxext(DCTELEM block[4][4][16], DCTELEM dc[16])
 ;-----------------------------------------------------------------------------
 
-%macro SCATTER_WHT 1
-    pextrw r1d, m0, %1
-    pextrw r2d, m1, %1
-    mov [r0+2*16*0], r1w
-    mov [r0+2*16*1], r2w
-    pextrw r1d, m2, %1
-    pextrw r2d, m3, %1
-    mov [r0+2*16*2], r1w
-    mov [r0+2*16*3], r2w
+%macro SCATTER_WHT 3
+    movd  r1d, m%1
+    movd  r2d, m%2
+    mov [r0+2*16*(0+%3)], r1w
+    mov [r0+2*16*(1+%3)], r2w
+    shr   r1d, 16
+    shr   r2d, 16
+    psrlq m%1, 32
+    psrlq m%2, 32
+    mov [r0+2*16*(4+%3)], r1w
+    mov [r0+2*16*(5+%3)], r2w
+    movd  r1d, m%1
+    movd  r2d, m%2
+    mov [r0+2*16*(8+%3)], r1w
+    mov [r0+2*16*(9+%3)], r2w
+    shr   r1d, 16
+    shr   r2d, 16
+    mov [r0+2*16*(12+%3)], r1w
+    mov [r0+2*16*(13+%3)], r2w
 %endmacro
 
 %macro HADAMARD4_1D 4
@@ -1052,7 +1062,7 @@ cglobal vp8_idct_add_mmx, 3, 3
 %endmacro
 
 INIT_MMX
-cglobal vp8_luma_dc_wht_mmxext, 2,3
+cglobal vp8_luma_dc_wht_mmx, 2,3
     movq          m0, [r1]
     movq          m1, [r1+8]
     movq          m2, [r1+16]
@@ -1065,13 +1075,8 @@ cglobal vp8_luma_dc_wht_mmxext, 2,3
     psraw         m1, 3
     psraw         m2, 3
     psraw         m3, 3
-    SCATTER_WHT   0
-    add           r0, 2*16*4
-    SCATTER_WHT   1
-    add           r0, 2*16*4
-    SCATTER_WHT   2
-    add           r0, 2*16*4
-    SCATTER_WHT   3
+    SCATTER_WHT   0, 1, 0
+    SCATTER_WHT   2, 3, 2
     RET
 
 ;-----------------------------------------------------------------------------
