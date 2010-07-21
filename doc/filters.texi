@@ -234,7 +234,7 @@ Below is a description of the currently available video sources.
 Buffer video frames, and make them available to the filter chain.
 
 This source is mainly intended for a programmatic use, in particular
-through the interface defined in @file{libavfilter/vsr_buffer.h}.
+through the interface defined in @file{libavfilter/vsrc_buffer.h}.
 
 It accepts the following parameters:
 @var{width}:@var{height}:@var{pix_fmt_string}
