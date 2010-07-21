@@ -1362,7 +1362,7 @@ int ff_rtsp_connect(AVFormatContext *s)
     char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128];
     char *option_list, *option, *filename;
     int port, err, tcp_fd;
-    RTSPMessageHeader reply1 = {}, *reply = &reply1;
+    RTSPMessageHeader reply1 = {0}, *reply = &reply1;
     int lower_transport_mask = 0;
     char real_challenge[64];
     struct sockaddr_storage peer;

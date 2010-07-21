@@ -531,7 +531,7 @@ static int mxf_read_index_table_segment(void *arg, ByteIOContext *pb, int tag, i
 static void mxf_read_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
 {
     int code, value, ofs = 0;
-    char layout[16] = {};
+    char layout[16] = {0};
 
     do {
         code = get_byte(pb);
