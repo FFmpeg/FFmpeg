@@ -63,11 +63,20 @@ int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSourceContext *c = ctx->priv;
+    char pix_fmt_str[128];
     int n = 0;
 
-    if (!args || (n = sscanf(args, "%d:%d:%d", &c->w, &c->h, &c->pix_fmt)) != 3) {
+    if (!args || (n = sscanf(args, "%d:%d:%127s", &c->w, &c->h, pix_fmt_str)) != 3) {
         av_log(ctx, AV_LOG_ERROR, "Expected 3 arguments, but only %d found in '%s'\n", n, args ? args : "");
         return AVERROR(EINVAL);
+    }
+    if ((c->pix_fmt = av_get_pix_fmt(pix_fmt_str)) == PIX_FMT_NONE) {
+        char *tail;
+        c->pix_fmt = strtol(pix_fmt_str, &tail, 10);
+        if (*tail || c->pix_fmt < 0 || c->pix_fmt >= PIX_FMT_NB) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid pixel format string '%s'\n", pix_fmt_str);
+            return AVERROR(EINVAL);
+        }
     }
 
     av_log(ctx, AV_LOG_INFO, "w:%d h:%d pixfmt:%s\n", c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name);
