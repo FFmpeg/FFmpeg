@@ -226,5 +226,3 @@ for pix_fmt in $conversions ; do
                     -f rawvideo -s 352x288 -pix_fmt yuv444p
 done
 fi
-
-rm -f "$bench" "$bench2"

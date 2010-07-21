@@ -34,6 +34,9 @@ pcm_ref="$datadir/$test_ref.ref.wav"
 crcfile="$datadir/$this.crc"
 target_crcfile="$target_datadir/$this.crc"
 
+cleanfiles="$raw_dst $pcm_dst $crcfile $bench $bench2"
+trap 'rm -f -- $cleanfiles' EXIT
+
 mkdir -p "$datadir"
 mkdir -p "$outfile"
 mkdir -p "$logdir"
@@ -89,7 +92,6 @@ do_ffmpeg_crc()
     $echov $ffmpeg $FFMPEG_OPTS $* -f crc "$target_crcfile"
     $ffmpeg $FFMPEG_OPTS $* -f crc "$target_crcfile"
     echo "$f $(cat $crcfile)" >> $logfile
-    rm -f "$crcfile"
 }
 
 do_ffmpeg_nocheck()
@@ -105,7 +107,6 @@ do_ffmpeg_nocheck()
 do_video_decoding()
 {
     do_ffmpeg $raw_dst $1 -i $target_path/$file -f rawvideo $2
-    rm -f $raw_dst
 }
 
 do_video_encoding()

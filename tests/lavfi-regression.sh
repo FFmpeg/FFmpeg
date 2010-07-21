@@ -97,5 +97,3 @@ fi
 # TODO: add tests for
 # direct rendering,
 # chains with feedback loops
-
-rm -f "$bench" "$bench2"
