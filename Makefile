@@ -175,7 +175,7 @@ config .config:
 
 check: test checkheaders
 
-fulltest test: codectest lavftest seektest
+fulltest test: codectest lavftest lavfitest seektest
 
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
 SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
