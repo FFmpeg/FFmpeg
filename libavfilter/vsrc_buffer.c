@@ -131,6 +131,7 @@ static int poll_frame(AVFilterLink *link)
 
 AVFilter avfilter_vsrc_buffer = {
     .name      = "buffer",
+    .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them accessible to the filterchain."),
     .priv_size = sizeof(BufferSourceContext),
     .query_formats = query_formats,
 
