@@ -229,6 +229,46 @@ Flip the input video vertically.
 
 Below is a description of the currently available video sources.
 
+@section buffer
+
+Buffer video frames, and make them available to the filter chain.
+
+This source is mainly intended for a programmatic use, in particular
+through the interface defined in @file{libavfilter/vsr_buffer.h}.
+
+It accepts the following parameters:
+@var{width}:@var{height}:@var{pix_fmt_string}
+
+All the parameters need to be explicitely defined.
+
+Follows the list of the accepted parameters.
+
+@table @option
+
+@item width, height
+Specify the width and height of the buffered video frames.
+
+@item pix_fmt_string
+
+A string representing the pixel format of the buffered video frames.
+It may be a number corresponding to a pixel format, or a pixel format
+name.
+
+@end table
+
+For example:
+@example
+buffer=320:240:yuv410p
+@end example
+
+will instruct the source to accept video frames with size 320x240 and
+with format "yuv410p". Since the pixel format with name "yuv410p"
+corresponds to the number 6 (check the enum PixelFormat definition in
+@file{libavutil/pixfmt.h}), this example corresponds to:
+@example
+buffer=320:240:6
+@end example
+
 @section color
 
 Provide an uniformly colored input.
