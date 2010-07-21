@@ -30,7 +30,7 @@ typedef struct ASSContext{
     unsigned int event_index;
 }ASSContext;
 
-static void get_line(ByteIOContext *s, char *buf, int maxlen)
+static void ff_get_line(ByteIOContext *s, char *buf, int maxlen)
 {
     int i = 0;
     char c;
@@ -108,7 +108,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     while(!url_feof(pb)){
         uint8_t line[MAX_LINESIZE];
 
-        get_line(pb, line, sizeof(line));
+        ff_get_line(pb, line, sizeof(line));
 
         if(!memcmp(line, "[Events]", 8))
             header_remaining= 2;
