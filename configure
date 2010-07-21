@@ -86,6 +86,7 @@ Configuration options:
   --disable-ffserver       disable ffserver build
   --disable-avdevice       disable libavdevice build
   --disable-avcodec        disable libavcodec build
+  --disable-avcore         disable libavcore build
   --disable-avformat       disable libavformat build
   --disable-swscale        disable libswscale build
   --enable-postproc        enable GPLed postprocessing support [no]
@@ -845,6 +846,7 @@ CONFIG_LIST="
     $COMPONENT_LIST
     aandct
     avcodec
+    avcore
     avdevice
     avfilter
     avfilter_lavf
@@ -1524,6 +1526,7 @@ host_os=$target_os_default
 
 # configurable options
 enable avcodec
+enable avcore
 enable avdevice
 enable avfilter
 enable avformat
@@ -2774,7 +2777,7 @@ enabled extra_warnings && check_cflags -Winline
 # add some linker flags
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,--as-needed
-check_ldflags '-Wl,-rpath-link,\$(BUILD_ROOT)/libpostproc -Wl,-rpath-link,\$(BUILD_ROOT)/libswscale -Wl,-rpath-link,\$(BUILD_ROOT)/libavfilter -Wl,-rpath-link,\$(BUILD_ROOT)/libavdevice -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
+check_ldflags '-Wl,-rpath-link,\$(BUILD_ROOT)/libpostproc -Wl,-rpath-link,\$(BUILD_ROOT)/libswscale -Wl,-rpath-link,\$(BUILD_ROOT)/libavfilter -Wl,-rpath-link,\$(BUILD_ROOT)/libavdevice -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavcore -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 check_ldflags -Wl,-Bsymbolic
 
 echo "X{};" > $TMPV
@@ -2969,6 +2972,7 @@ if enabled source_path_used; then
         doc
         libavcodec
         libavcodec/$arch
+        libavcore
         libavdevice
         libavfilter
         libavformat
@@ -2987,6 +2991,7 @@ if enabled source_path_used; then
         doc/texi2pod.pl
         libavcodec/Makefile
         libavcodec/${arch}/Makefile
+        libavcore/Makefile
         libavdevice/Makefile
         libavfilter/Makefile
         libavformat/Makefile
@@ -3085,6 +3090,7 @@ get_version(){
 get_version LIBSWSCALE  libswscale/swscale.h
 get_version LIBPOSTPROC libpostproc/postprocess.h
 get_version LIBAVCODEC  libavcodec/avcodec.h
+get_version LIBAVCORE   libavcore/avcore.h
 get_version LIBAVDEVICE libavdevice/avdevice.h
 get_version LIBAVFORMAT libavformat/avformat.h
 get_version LIBAVUTIL   libavutil/avutil.h
@@ -3200,6 +3206,7 @@ EOF
 }
 
 pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION"
+pkgconfig_generate libavcore "FFmpeg multimedia shared core utilities library" "$LIBAVCORE_VERSION" "$extralibs" "libavcore = $LIBAVCORE_VERSION"
 pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "libavcodec = $LIBAVCODEC_VERSION"
 pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "libavformat = $LIBAVFORMAT_VERSION"

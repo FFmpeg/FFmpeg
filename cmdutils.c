@@ -38,6 +38,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/eval.h"
 #include "libavcodec/opt.h"
+#include "libavcore/avcore.h"
 #include "cmdutils.h"
 #include "version.h"
 #if CONFIG_NETWORK
@@ -314,6 +315,7 @@ void print_error(const char *filename, int err)
 static void print_all_lib_versions(FILE* outstream, int indent)
 {
     PRINT_LIB_VERSION(outstream, avutil,   AVUTIL,   indent);
+    PRINT_LIB_VERSION(outstream, avcore,   AVCORE,   indent);
     PRINT_LIB_VERSION(outstream, avcodec,  AVCODEC,  indent);
     PRINT_LIB_VERSION(outstream, avformat, AVFORMAT, indent);
     PRINT_LIB_VERSION(outstream, avdevice, AVDEVICE, indent);
@@ -348,6 +350,7 @@ void show_banner(void)
             __DATE__, __TIME__, CC_TYPE, CC_VERSION);
     fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
     PRINT_LIB_CONFIG(AVUTIL,   "libavutil",   avutil_configuration());
+    PRINT_LIB_CONFIG(AVCORE,   "libavcore",   avcore_configuration());
     PRINT_LIB_CONFIG(AVCODEC,  "libavcodec",  avcodec_configuration());
     PRINT_LIB_CONFIG(AVFORMAT, "libavformat", avformat_configuration());
     PRINT_LIB_CONFIG(AVDEVICE, "libavdevice", avdevice_configuration());
