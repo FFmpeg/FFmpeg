@@ -14,6 +14,7 @@ fuzz=$8
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
+errfile="${outdir}/${test}.err"
 
 do_tiny_psnr(){
     psnr=$(tests/tiny_psnr "$1" "$2" 2 0 0)
@@ -63,6 +64,7 @@ regtest(){
     t="${test#$2-}"
     ref=${base}/ref/$2/$t
     outfile=tests/data/regression/$2/$t
+    errfile=tests/data/$t.$2.err
     ${base}/${1}-regression.sh $t $2 $3 "$target_exec" "$target_path"
 }
 
@@ -95,7 +97,7 @@ seektest(){
 
 mkdir -p "$outdir"
 
-$command > "$outfile" 2>/dev/null
+$command > "$outfile" 2>$errfile
 err=$?
 
 if ! test -e "$ref"; then
@@ -111,4 +113,4 @@ esac
 
 cmperr=$?
 test $err = 0 && err=$cmperr
-test $err = 0 && rm $outfile
+test $err = 0 && rm -f $outfile $errfile
