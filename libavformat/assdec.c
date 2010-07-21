@@ -74,7 +74,7 @@ static int event_cmp(uint8_t **a, uint8_t **b)
 
 static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    int i, header_remaining;
+    int i, len, header_remaining;
     ASSContext *ass = s->priv_data;
     ByteIOContext *pb = s->pb;
     AVStream *st;
@@ -95,7 +95,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     while(!url_feof(pb)){
         uint8_t line[MAX_LINESIZE];
 
-        ff_get_line(pb, line, sizeof(line));
+        len = ff_get_line(pb, line, sizeof(line));
 
         if(!memcmp(line, "[Events]", 8))
             header_remaining= 2;
@@ -111,8 +111,8 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         if(!p)
             goto fail;
         *(dst[i])= p;
-        memcpy(p + pos[i], line, strlen(line)+1);
-        pos[i] += strlen(line);
+        memcpy(p + pos[i], line, len+1);
+        pos[i] += len;
         if(i) ass->event_count++;
         else  header_remaining--;
     }
