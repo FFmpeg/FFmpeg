@@ -167,6 +167,8 @@ int ff_get_v_length(uint64_t val);
  */
 void ff_put_v(ByteIOContext *bc, uint64_t val);
 
+void ff_get_line(ByteIOContext *s, char *buf, int maxlen);
+
 #define SPACE_CHARS " \t\r\n"
 
 #endif /* AVFORMAT_INTERNAL_H */

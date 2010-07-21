@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 #define MAX_LINESIZE 2000
 
@@ -29,20 +30,6 @@ typedef struct ASSContext{
     unsigned int event_count;
     unsigned int event_index;
 }ASSContext;
-
-static void ff_get_line(ByteIOContext *s, char *buf, int maxlen)
-{
-    int i = 0;
-    char c;
-
-    do{
-        c = get_byte(s);
-        if (i < maxlen-1)
-            buf[i++] = c;
-    }while(c != '\n' && c);
-
-    buf[i] = 0;
-}
 
 static int probe(AVProbeData *p)
 {
