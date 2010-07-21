@@ -25,6 +25,7 @@
 
 #include "avfilter.h"
 #include "vsrc_buffer.h"
+#include "libavutil/pixdesc.h"
 
 typedef struct {
     int64_t           pts;
@@ -69,6 +70,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         return AVERROR(EINVAL);
     }
 
+    av_log(ctx, AV_LOG_INFO, "w:%d h:%d pixfmt:%s\n", c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name);
     return 0;
 }
 
