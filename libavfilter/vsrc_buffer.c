@@ -62,12 +62,14 @@ int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSourceContext *c = ctx->priv;
+    int n = 0;
 
-    if (args && sscanf(args, "%d:%d:%d", &c->w, &c->h, &c->pix_fmt) == 3)
-        return 0;
+    if (!args || (n = sscanf(args, "%d:%d:%d", &c->w, &c->h, &c->pix_fmt)) != 3) {
+        av_log(ctx, AV_LOG_ERROR, "Expected 3 arguments, but only %d found in '%s'\n", n, args ? args : "");
+        return AVERROR(EINVAL);
+    }
 
-    av_log(ctx, AV_LOG_ERROR, "init() expected 3 arguments:'%s'\n", args);
-    return -1;
+    return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
