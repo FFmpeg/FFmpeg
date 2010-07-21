@@ -213,13 +213,6 @@ VC1_SHIFT2(OP_PUT, put_)
 VC1_SHIFT2(OP_AVG, avg_)
 
 /**
- * Filter coefficients made global to allow access by all 1 or 3 quarter shift
- * interpolation functions.
- */
-DECLARE_ASM_CONST(16, uint64_t, ff_pw_53) = 0x0035003500350035ULL;
-DECLARE_ASM_CONST(16, uint64_t, ff_pw_18) = 0x0012001200120012ULL;
-
-/**
  * Core of the 1/4 and 3/4 shift bicubic interpolation.
  *
  * @param UNPACK  Macro unpacking arguments from 8 to 16bits (can be empty).
