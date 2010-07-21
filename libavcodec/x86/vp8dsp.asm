@@ -946,10 +946,9 @@ cglobal vp8_idct_dc_add_sse4, 3, 3, 6
     movd       xmm0, [r1]
     lea          r1, [r0+r2*2]
     pxor       xmm1, xmm1
-    movq       xmm2, [pw_4]
 
     ; calculate DC
-    paddw      xmm0, xmm2
+    paddw      xmm0, [pw_4]
     movd       xmm2, [r0]
     movd       xmm3, [r0+r2]
     movd       xmm4, [r1]
