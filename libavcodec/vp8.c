@@ -752,10 +752,8 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
         // intra MB, 16.1
         mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_inter, s->prob->pred16x16);
 
-        if (mb->mode == MODE_I4x4) {
+        if (mb->mode == MODE_I4x4)
             decode_intra4x4_modes(c, intra4x4, s->b4_stride, 0);
-        } else
-            fill_rectangle(intra4x4, 4, 4, s->b4_stride, vp8_pred4x4_mode[mb->mode], 1);
 
         s->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, s->prob->pred8x8c);
         mb->ref_frame = VP56_FRAME_CURRENT;
