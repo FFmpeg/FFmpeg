@@ -707,6 +707,7 @@ performance on systems without hardware floating point support).
 
 @multitable @columnfractions .4 .1
 @item Name         @tab Support
+@item Apple HTTP Live Streaming @tab X
 @item file         @tab X
 @item Gopher       @tab X
 @item HTTP         @tab X
