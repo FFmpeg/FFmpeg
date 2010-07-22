@@ -229,6 +229,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (LIBNUT, libnut);
 
     /* protocols */
+    REGISTER_PROTOCOL (APPLEHTTP, applehttp);
     REGISTER_PROTOCOL (CONCAT, concat);
     REGISTER_PROTOCOL (FILE, file);
     REGISTER_PROTOCOL (GOPHER, gopher);
