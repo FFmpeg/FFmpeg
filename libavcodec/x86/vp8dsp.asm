@@ -2513,8 +2513,8 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %else ; sse2 (h)
     lea        dst8_reg, [dst8_reg+mstride_reg+1]
     WRITE_4x4D        1, 2, 3, 4, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg, %4
-    add         dst_reg, 4
-    add        dst8_reg, 4
+    lea         dst_reg, [dst2_reg+mstride_reg+4]
+    lea        dst8_reg, [dst8_reg+mstride_reg+4]
     WRITE_8W         m5, m5, dst2_reg, dst_reg,  mstride_reg, stride_reg
     WRITE_8W         m6, m6, dst2_reg, dst8_reg, mstride_reg, stride_reg
 %endif
