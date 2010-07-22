@@ -309,10 +309,11 @@ static int warned_cfg = 0;
 
 #define PRINT_LIB_INFO(outstream,libname,LIBNAME,flags)                 \
     if (CONFIG_##LIBNAME) {                                             \
+        const char *indent = flags & INDENT? "  " : "";                 \
         if (flags & SHOW_VERSION) {                                     \
             unsigned int version = libname##_version();                 \
             fprintf(outstream, "%slib%-10s %2d.%2d.%2d / %2d.%2d.%2d\n", \
-                    flags & INDENT? "  " : "", #libname,                \
+                    indent, #libname,                                   \
                     LIB##LIBNAME##_VERSION_MAJOR,                       \
                     LIB##LIBNAME##_VERSION_MINOR,                       \
                     LIB##LIBNAME##_VERSION_MICRO,                       \
@@ -324,11 +325,11 @@ static int warned_cfg = 0;
                 if (!warned_cfg) {                                      \
                     fprintf(outstream,                                  \
                             "%sWARNING: library configuration mismatch\n", \
-                            flags & INDENT? "  " : "");                 \
+                            indent);                                    \
                     warned_cfg = 1;                                     \
                 }                                                       \
                 fprintf(stderr, "%s%-11s configuration: %s\n",          \
-                        flags & INDENT? "  " : "", #libname, cfg);      \
+                        indent, #libname, cfg);                         \
             }                                                           \
         }                                                               \
     }                                                                   \
