@@ -29,6 +29,11 @@
 #include "rectangle.h"
 
 typedef struct {
+    uint8_t filter_level;
+    uint8_t inner_limit;
+} VP8FilterStrength;
+
+typedef struct {
     uint8_t segment;
     uint8_t skip;
     // todo: make it possible to check for at least (i4x4 or split_mv)
@@ -79,6 +84,7 @@ typedef struct {
 
     VP8Macroblock *macroblocks;
     VP8Macroblock *macroblocks_base;
+    VP8FilterStrength *filter_strength;
     int mb_stride;
 
     uint8_t *intra4x4_pred_mode;
@@ -231,11 +237,12 @@ static int update_dimensions(VP8Context *s, int width, int height)
     s->b4_stride = 4*s->mb_stride;
 
     s->macroblocks_base        = av_mallocz(s->mb_stride*(s->mb_height+1)*sizeof(*s->macroblocks));
+    s->filter_strength         = av_mallocz(s->mb_stride*sizeof(*s->filter_strength));
     s->intra4x4_pred_mode_base = av_mallocz(s->b4_stride*(4*s->mb_height+1));
     s->top_nnz                 = av_mallocz(s->mb_width*sizeof(*s->top_nnz));
     s->top_border              = av_mallocz((s->mb_width+1)*sizeof(*s->top_border));
 
-    if (!s->macroblocks_base || !s->intra4x4_pred_mode_base || !s->top_nnz || !s->top_border)
+    if (!s->macroblocks_base || !s->filter_strength || !s->intra4x4_pred_mode_base || !s->top_nnz || !s->top_border)
         return AVERROR(ENOMEM);
 
     s->macroblocks        = s->macroblocks_base        + 1 + s->mb_stride;
@@ -1212,7 +1219,7 @@ static void idct_mb(VP8Context *s, uint8_t *y_dst, uint8_t *u_dst, uint8_t *v_ds
     }
 }
 
-static void filter_level_for_mb(VP8Context *s, VP8Macroblock *mb, int *level, int *inner, int *hev_thresh)
+static void filter_level_for_mb(VP8Context *s, VP8Macroblock *mb, VP8FilterStrength *f )
 {
     int interior_limit, filter_level;
 
@@ -1247,34 +1254,32 @@ static void filter_level_for_mb(VP8Context *s, VP8Macroblock *mb, int *level, in
     }
     interior_limit = FFMAX(interior_limit, 1);
 
-    *level = filter_level;
-    *inner = interior_limit;
-
-    if (hev_thresh) {
-        *hev_thresh = filter_level >= 15;
-
-        if (s->keyframe) {
-            if (filter_level >= 40)
-                *hev_thresh = 2;
-        } else {
-            if (filter_level >= 40)
-                *hev_thresh = 3;
-            else if (filter_level >= 20)
-                *hev_thresh = 2;
-        }
-    }
+    f->filter_level = filter_level;
+    f->inner_limit = interior_limit;
 }
 
-static void filter_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb, int mb_x, int mb_y)
+static void filter_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb, VP8FilterStrength *f, int mb_x, int mb_y)
 {
-    int filter_level, inner_limit, hev_thresh, mbedge_lim, bedge_lim;
+    int mbedge_lim, bedge_lim, hev_thresh;
+    int filter_level = f->filter_level;
+    int inner_limit = f->inner_limit;
 
-    filter_level_for_mb(s, mb, &filter_level, &inner_limit, &hev_thresh);
     if (!filter_level)
         return;
 
     mbedge_lim = 2*(filter_level+2) + inner_limit;
      bedge_lim = 2* filter_level    + inner_limit;
+    hev_thresh = filter_level >= 15;
+
+    if (s->keyframe) {
+        if (filter_level >= 40)
+            hev_thresh = 2;
+    } else {
+        if (filter_level >= 40)
+            hev_thresh = 3;
+        else if (filter_level >= 20)
+            hev_thresh = 2;
+    }
 
     if (mb_x) {
         s->vp8dsp.vp8_h_loop_filter16y(dst[0],     s->linesize,
@@ -1319,11 +1324,12 @@ static void filter_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb, int mb_
     }
 }
 
-static void filter_mb_simple(VP8Context *s, uint8_t *dst, VP8Macroblock *mb, int mb_x, int mb_y)
+static void filter_mb_simple(VP8Context *s, uint8_t *dst, VP8Macroblock *mb, VP8FilterStrength *f, int mb_x, int mb_y)
 {
-    int filter_level, inner_limit, mbedge_lim, bedge_lim;
+    int mbedge_lim, bedge_lim;
+    int filter_level = f->filter_level;
+    int inner_limit = f->inner_limit;
 
-    filter_level_for_mb(s, mb, &filter_level, &inner_limit, NULL);
     if (!filter_level)
         return;
 
@@ -1349,6 +1355,7 @@ static void filter_mb_simple(VP8Context *s, uint8_t *dst, VP8Macroblock *mb, int
 
 static void filter_mb_row(VP8Context *s, int mb_y)
 {
+    VP8FilterStrength *f = s->filter_strength;
     VP8Macroblock *mb = s->macroblocks + mb_y*s->mb_stride;
     uint8_t *dst[3] = {
         s->framep[VP56_FRAME_CURRENT]->data[0] + 16*mb_y*s->linesize,
@@ -1359,7 +1366,7 @@ static void filter_mb_row(VP8Context *s, int mb_y)
 
     for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
         backup_mb_border(s->top_border[mb_x+1], dst[0], dst[1], dst[2], s->linesize, s->uvlinesize, 0);
-        filter_mb(s, dst, mb++, mb_x, mb_y);
+        filter_mb(s, dst, mb++, f++, mb_x, mb_y);
         dst[0] += 16;
         dst[1] += 8;
         dst[2] += 8;
@@ -1368,13 +1375,14 @@ static void filter_mb_row(VP8Context *s, int mb_y)
 
 static void filter_mb_row_simple(VP8Context *s, int mb_y)
 {
-    uint8_t *dst = s->framep[VP56_FRAME_CURRENT]->data[0] + 16*mb_y*s->linesize;
+    VP8FilterStrength *f = s->filter_strength;
     VP8Macroblock *mb = s->macroblocks + mb_y*s->mb_stride;
+    uint8_t *dst = s->framep[VP56_FRAME_CURRENT]->data[0] + 16*mb_y*s->linesize;
     int mb_x;
 
     for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
         backup_mb_border(s->top_border[mb_x+1], dst, NULL, NULL, s->linesize, 0, 1);
-        filter_mb_simple(s, dst, mb++, mb_x, mb_y);
+        filter_mb_simple(s, dst, mb++, f++, mb_x, mb_y);
         dst += 16;
     }
 }
@@ -1496,6 +1504,9 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                     s->top_nnz[mb_x][8] = 0;
                 }
             }
+
+            if (s->deblock_filter)
+                filter_level_for_mb(s, mb, &s->filter_strength[mb_x]);
 
             dst[0] += 16;
             dst[1] += 8;
