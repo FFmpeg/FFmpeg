@@ -59,6 +59,9 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 
 config.h: .config
 .config: $(wildcard $(FFLIBS:%=$(SRC_DIR)/lib%/all*.c))
+	@-tput bold 2>/dev/null
+	@-printf '\nWARNING: $(?F) newer than config.h, rerun configure\n\n'
+	@-tput sgr0 2>/dev/null
 
 SUBDIR_VARS := OBJS FFLIBS CLEANFILES DIRS TESTPROGS EXAMPLES SKIPHEADERS \
                ALTIVEC-OBJS MMX-OBJS NEON-OBJS X86-OBJS YASM-OBJS-FFT YASM-OBJS \
@@ -168,9 +171,8 @@ distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
 	$(RM) version.h config.* libavutil/avconfig.h
 
-config .config:
+config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
-	@touch .config
 
 # regression tests
 
