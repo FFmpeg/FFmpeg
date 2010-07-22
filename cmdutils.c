@@ -304,7 +304,7 @@ void print_error(const char *filename, int err)
 #define INDENT        1
 #define SHOW_VERSION  2
 
-#define PRINT_LIB_VERSION(outstream,libname,LIBNAME,flags)              \
+#define PRINT_LIB_INFO(outstream,libname,LIBNAME,flags)                 \
     if (CONFIG_##LIBNAME) {                                             \
         if (flags & SHOW_VERSION) {                                     \
             unsigned int version = libname##_version();                 \
@@ -317,16 +317,16 @@ void print_error(const char *filename, int err)
         }                                                               \
     }                                                                   \
 
-static void print_all_lib_versions(FILE* outstream, int flags)
+static void print_all_libs_info(FILE* outstream, int flags)
 {
-    PRINT_LIB_VERSION(outstream, avutil,   AVUTIL,   flags);
-    PRINT_LIB_VERSION(outstream, avcore,   AVCORE,   flags);
-    PRINT_LIB_VERSION(outstream, avcodec,  AVCODEC,  flags);
-    PRINT_LIB_VERSION(outstream, avformat, AVFORMAT, flags);
-    PRINT_LIB_VERSION(outstream, avdevice, AVDEVICE, flags);
-    PRINT_LIB_VERSION(outstream, avfilter, AVFILTER, flags);
-    PRINT_LIB_VERSION(outstream, swscale,  SWSCALE,  flags);
-    PRINT_LIB_VERSION(outstream, postproc, POSTPROC, flags);
+    PRINT_LIB_INFO(outstream, avutil,   AVUTIL,   flags);
+    PRINT_LIB_INFO(outstream, avcore,   AVCORE,   flags);
+    PRINT_LIB_INFO(outstream, avcodec,  AVCODEC,  flags);
+    PRINT_LIB_INFO(outstream, avformat, AVFORMAT, flags);
+    PRINT_LIB_INFO(outstream, avdevice, AVDEVICE, flags);
+    PRINT_LIB_INFO(outstream, avfilter, AVFILTER, flags);
+    PRINT_LIB_INFO(outstream, swscale,  SWSCALE,  flags);
+    PRINT_LIB_INFO(outstream, postproc, POSTPROC, flags);
 }
 
 static void maybe_print_config(const char *lib, const char *cfg)
@@ -362,12 +362,12 @@ void show_banner(void)
     PRINT_LIB_CONFIG(AVFILTER, "libavfilter", avfilter_configuration());
     PRINT_LIB_CONFIG(SWSCALE,  "libswscale",  swscale_configuration());
     PRINT_LIB_CONFIG(POSTPROC, "libpostproc", postproc_configuration());
-    print_all_lib_versions(stderr, INDENT|SHOW_VERSION);
+    print_all_libs_info(stderr, INDENT|SHOW_VERSION);
 }
 
 void show_version(void) {
     printf("%s " FFMPEG_VERSION "\n", program_name);
-    print_all_lib_versions(stdout, SHOW_VERSION);
+    print_all_libs_info(stdout, SHOW_VERSION);
 }
 
 void show_license(void)
