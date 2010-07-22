@@ -27,6 +27,13 @@
 
 #define IO_BUFFER_SIZE 32768
 
+/**
+ * Do seeks within this distance ahead of the current buffer by skipping
+ * data instead of calling the protocol seek function, for seekable
+ * protocols.
+ */
+#define SHORT_SEEK_THRESHOLD 4096
+
 static void fill_buffer(ByteIOContext *s);
 
 int init_put_byte(ByteIOContext *s,
@@ -151,8 +158,10 @@ int64_t url_fseek(ByteIOContext *s, int64_t offset, int whence)
         offset1 >= 0 && offset1 < (s->buf_end - s->buffer)) {
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
-    } else if(s->is_streamed && !s->write_flag &&
-              offset1 >= 0 && offset1 < (s->buf_end - s->buffer) + (1<<16)){
+    } else if ((s->is_streamed ||
+               offset1 <= s->buf_end + SHORT_SEEK_THRESHOLD - s->buffer) &&
+               !s->write_flag && offset1 >= 0 &&
+              (whence != SEEK_END || force)) {
         while(s->pos < offset && !s->eof_reached)
             fill_buffer(s);
         if (s->eof_reached)
