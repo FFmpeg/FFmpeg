@@ -30,6 +30,11 @@
 
 #define WHITESPACES " \n\t"
 
+/**
+ * Link two filters together.
+ *
+ * @see avfilter_link()
+ */
 static int link_filter(AVFilterContext *src, int srcpad,
                        AVFilterContext *dst, int dstpad,
                        AVClass *log_ctx)
