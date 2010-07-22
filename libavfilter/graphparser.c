@@ -46,9 +46,10 @@ static int link_filter(AVFilterContext *src, int srcpad,
 }
 
 /**
- * Parse "[linkname]"
- * @param name a pointer (that need to be free'd after use) to the name between
- *        parenthesis
+ * Parse the name of a link, which has the format "[linkname]".
+ *
+ * @return a pointer (that need to be freed after use) to the name
+ * between parenthesis
  */
 static char *parse_link_name(const char **buf, AVClass *log_ctx)
 {
