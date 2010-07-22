@@ -2999,7 +2999,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
             c->h264_idct8_add4= ff_h264_idct8_add4_sse2;
         }
 
-#if CONFIG_GPL && HAVE_YASM
+#if HAVE_YASM
         if (mm_flags & FF_MM_MMX2){
 #if ARCH_X86_32
             c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_mmxext;
@@ -3012,9 +3012,11 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
                 c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_sse2;
                 c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_sse2;
 #endif
+#if CONFIG_GPL
                 c->h264_idct_add16 = ff_h264_idct_add16_sse2;
                 c->h264_idct_add8  = ff_h264_idct_add8_sse2;
                 c->h264_idct_add16intra = ff_h264_idct_add16intra_sse2;
+#endif
             }
         }
 #endif

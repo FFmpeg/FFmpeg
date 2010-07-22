@@ -6,10 +6,10 @@ YASM-OBJS-FFT-$(HAVE_AMD3DNOWEXT)      += x86/fft_3dn2.o
 YASM-OBJS-FFT-$(HAVE_SSE)              += x86/fft_sse.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft_mmx.o                 \
                                           $(YASM-OBJS-FFT-yes)
-YASM-OBJS-$(CONFIG_GPL)                += x86/h264_deblock_sse2.o       \
-                                          x86/h264_idct_sse2.o          \
+YASM-OBJS-$(CONFIG_GPL)                += x86/h264_idct_sse2.o          \
 
-YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_intrapred.o          \
+YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock_sse2.o       \
+                                          x86/h264_intrapred.o          \
 
 YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp_yasm.o
 
