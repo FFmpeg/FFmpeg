@@ -32,7 +32,11 @@
 #include "vp56dsp.h"
 
 typedef struct vp56_context VP56Context;
-typedef struct vp56_mv VP56mv;
+
+typedef struct {
+    int16_t x;
+    int16_t y;
+} DECLARE_ALIGNED(4, , VP56mv);
 
 typedef void (*VP56ParseVectorAdjustment)(VP56Context *s,
                                           VP56mv *vect);
@@ -60,11 +64,6 @@ typedef struct {
     VP56Frame ref_frame;
     DCTELEM dc_coeff;
 } VP56RefDc;
-
-struct vp56_mv {
-    int16_t x;
-    int16_t y;
-};
 
 typedef struct {
     uint8_t type;
