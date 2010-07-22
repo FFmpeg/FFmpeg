@@ -120,7 +120,8 @@ static int config_input(AVFilterLink *link)
         crop->bpp = 8;
     }
 
-    avcodec_get_chroma_sub_sample(link->format, &crop->hsub, &crop->vsub);
+    crop->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
+    crop->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
     if (crop->w == 0)
         crop->w = link->w - crop->x;
