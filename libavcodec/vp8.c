@@ -746,8 +746,7 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
             mb->mv = mb->bmv[decode_splitmvs(s, c, mb, &best) - 1];
             break;
         case VP8_MVMODE_ZERO:
-            mb->mv.x = 0;
-            mb->mv.y = 0;
+            AV_WN32A(&mb->mv, 0);
             break;
         case VP8_MVMODE_NEAREST:
             clamp_mv(s, &mb->mv, &near[0], mb_x, mb_y);
@@ -773,6 +772,8 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
 
         s->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, s->prob->pred8x8c);
         mb->ref_frame = VP56_FRAME_CURRENT;
+        mb->partitioning = VP8_SPLITMVMODE_NONE;
+        AV_WN32A(&mb->bmv[0], 0);
     }
 }
 
@@ -1496,12 +1497,10 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 AV_ZERO64(s->non_zero_count_cache[4]);  // chroma
             }
 
-            if (mb->mode <= MODE_I4x4) {
+            if (mb->mode <= MODE_I4x4)
                 intra_predict(s, dst, mb, intra4x4_mb, mb_x, mb_y);
-                memset(mb->bmv, 0, sizeof(mb->bmv));
-            } else {
+            else
                 inter_predict(s, dst, mb, mb_x, mb_y);
-            }
 
             if (!mb->skip) {
                 idct_mb(s, dst[0], dst[1], dst[2], mb);
