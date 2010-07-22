@@ -149,7 +149,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
 //    printf("test %X %X %X -> %X %X %X\n", (int)ref[0], (int)ref[1], (int)ref[2],
 //        (int)src[0], (int)src[1], (int)src[2]);
 
-    printf(" %s %dx%d -> %s %4dx%4d flags=%2d",
+    printf(" %s %dx%d -> %s %3dx%3d flags=%2d",
            av_pix_fmt_descriptors[srcFormat].name, srcW, srcH,
            av_pix_fmt_descriptors[dstFormat].name, dstW, dstH,
            flags);
