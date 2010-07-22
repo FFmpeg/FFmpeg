@@ -149,6 +149,12 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
 //    printf("test %X %X %X -> %X %X %X\n", (int)ref[0], (int)ref[1], (int)ref[2],
 //        (int)src[0], (int)src[1], (int)src[2]);
 
+    printf(" %s %dx%d -> %s %4dx%4d flags=%2d",
+           av_pix_fmt_descriptors[srcFormat].name, srcW, srcH,
+           av_pix_fmt_descriptors[dstFormat].name, dstW, dstH,
+           flags);
+    fflush(stdout);
+
     sws_scale(srcContext, ref, refStride, 0, h   , src, srcStride);
     sws_scale(dstContext, src, srcStride, 0, srcH, dst, dstStride);
     sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
@@ -167,11 +173,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     ssdV/= w*h/4;
     ssdA/= w*h;
 
-    printf(" %s %dx%d -> %s %4dx%4d flags=%2d SSD=%5"PRId64",%5"PRId64",%5"PRId64",%5"PRId64"\n",
-           av_pix_fmt_descriptors[srcFormat].name, srcW, srcH,
-           av_pix_fmt_descriptors[dstFormat].name, dstW, dstH,
-           flags, ssdY, ssdU, ssdV, ssdA);
-    fflush(stdout);
+    printf(" SSD=%5"PRId64",%5"PRId64",%5"PRId64",%5"PRId64"\n",
+           ssdY, ssdU, ssdV, ssdA);
 
 end:
 
