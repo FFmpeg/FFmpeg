@@ -1083,15 +1083,13 @@ static inline void vp8_mc_part(VP8Context *s, uint8_t *dst[3],
  * Optimized for 64-byte cache lines.  Inspired by ffh264 prefetch_motion. */
 static inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, int x_off, int y_off, int ref)
 {
-    if (mb->ref_frame != VP56_FRAME_CURRENT) {
-        int mx = mb->mv.x + x_off + 8;
-        int my = mb->mv.y + y_off;
-        uint8_t **src= s->framep[mb->ref_frame]->data;
-        int off= mx + (my + (mb_x&3)*4)*s->linesize + 64;
-        s->dsp.prefetch(src[0]+off, s->linesize, 4);
-        off= (mx>>1) + ((my>>1) + (mb_x&7))*s->uvlinesize + 64;
-        s->dsp.prefetch(src[1]+off, src[2]-src[1], 2);
-    }
+    int mx = mb->mv.x + x_off + 8;
+    int my = mb->mv.y + y_off;
+    uint8_t **src= s->framep[ref]->data;
+    int off= mx + (my + (mb_x&3)*4)*s->linesize + 64;
+    s->dsp.prefetch(src[0]+off, s->linesize, 4);
+    off= (mx>>1) + ((my>>1) + (mb_x&7))*s->uvlinesize + 64;
+    s->dsp.prefetch(src[1]+off, src[2]-src[1], 2);
 }
 
 /**
