@@ -35,7 +35,6 @@ typedef struct {
 } VP8FilterStrength;
 
 typedef struct {
-    uint8_t segment;
     uint8_t skip;
     // todo: make it possible to check for at least (i4x4 or split_mv)
     // in one op. are others needed?
@@ -120,6 +119,7 @@ typedef struct {
     uint8_t intra4x4_pred_mode_mb[16];
 
     int chroma_pred_mode;    ///< 8x8c pred mode of the current macroblock
+    int segment;             ///< segment of the current macroblock
 
     int mbskip_enabled;
     int sign_bias[4]; ///< one state [0, 1] per ref frame type
@@ -708,7 +708,7 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
 
     if (s->segmentation.update_map)
         *segment = vp8_rac_get_tree(c, vp8_segmentid_tree, s->prob->segmentid);
-    mb->segment = *segment;
+    s->segment = *segment;
 
     mb->skip = s->mbskip_enabled ? vp56_rac_get_prob(c, s->prob->mbskip) : 0;
 
@@ -830,7 +830,7 @@ static void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb
     LOCAL_ALIGNED_16(DCTELEM, dc,[16]);
     int i, x, y, luma_start = 0, luma_ctx = 3;
     int nnz_pred, nnz, nnz_total = 0;
-    int segment = s->segmentation.enabled ? mb->segment : 0;
+    int segment = s->segment;
 
     s->dsp.clear_blocks((DCTELEM *)s->block);
 
@@ -1229,7 +1229,7 @@ static void filter_level_for_mb(VP8Context *s, VP8Macroblock *mb, VP8FilterStren
     int interior_limit, filter_level;
 
     if (s->segmentation.enabled) {
-        filter_level = s->segmentation.filter_level[mb->segment];
+        filter_level = s->segmentation.filter_level[s->segment];
         if (!s->segmentation.absolute_vals)
             filter_level += s->filter.level;
     } else
