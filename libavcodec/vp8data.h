@@ -361,8 +361,6 @@ static const uint8_t * const vp8_dct_cat_prob[6] =
     vp8_dct_cat6_prob,
 };
 
-static const uint8_t vp8_dct_cat_offset[6] = { 5, 7, 11, 19, 35, 67 };
-
 static const uint8_t vp8_token_default_probs[4][8][3][NUM_DCT_TOKENS-1] =
 {
     {

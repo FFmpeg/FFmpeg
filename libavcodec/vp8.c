@@ -803,7 +803,7 @@ static int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
         else if (token >= DCT_CAT1) {
             int cat = token-DCT_CAT1;
             token = vp8_rac_get_coeff(c, vp8_dct_cat_prob[cat]);
-            token += vp8_dct_cat_offset[cat];
+            token += 3 + (2<<cat);
         }
 
         // after the first token, the non-zero prediction context becomes
