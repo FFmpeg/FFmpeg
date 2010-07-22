@@ -307,13 +307,13 @@ void print_error(const char *filename, int err)
 #define PRINT_LIB_VERSION(outstream,libname,LIBNAME,flags)              \
     if (CONFIG_##LIBNAME) {                                             \
         if (flags & SHOW_VERSION) {                                     \
-        unsigned int version = libname##_version();                     \
-        fprintf(outstream, "%slib%-10s %2d.%2d.%2d / %2d.%2d.%2d\n",    \
-                flags & INDENT? "  " : "", #libname,                    \
-                LIB##LIBNAME##_VERSION_MAJOR,                           \
-                LIB##LIBNAME##_VERSION_MINOR,                           \
-                LIB##LIBNAME##_VERSION_MICRO,                           \
-                version >> 16, version >> 8 & 0xff, version & 0xff);    \
+            unsigned int version = libname##_version();                 \
+            fprintf(outstream, "%slib%-10s %2d.%2d.%2d / %2d.%2d.%2d\n", \
+                    flags & INDENT? "  " : "", #libname,                \
+                    LIB##LIBNAME##_VERSION_MAJOR,                       \
+                    LIB##LIBNAME##_VERSION_MINOR,                       \
+                    LIB##LIBNAME##_VERSION_MICRO,                       \
+                    version >> 16, version >> 8 & 0xff, version & 0xff); \
         }                                                               \
     }                                                                   \
 
