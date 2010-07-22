@@ -1054,6 +1054,21 @@ static inline void vp8_mc_part(VP8Context *s, uint8_t *dst[3],
            s->put_pixels_tab[1 + (block_w == 4)]);
 }
 
+/* Fetch pixels for estimated mv 4 macroblocks ahead.
+ * Optimized for 64-byte cache lines.  Inspired by ffh264 prefetch_motion. */
+static inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, int x_off, int y_off, int ref)
+{
+    if (mb->ref_frame != VP56_FRAME_CURRENT) {
+        int mx = mb->mv.x + x_off + 8;
+        int my = mb->mv.y + y_off;
+        uint8_t **src= s->framep[mb->ref_frame]->data;
+        int off= mx + (my + (mb_x&3)*4)*s->linesize + 64;
+        s->dsp.prefetch(src[0]+off, s->linesize, 4);
+        off= (mx>>1) + ((my>>1) + (mb_x&7))*s->uvlinesize + 64;
+        s->dsp.prefetch(src[1]+off, src[2]-src[1], 2);
+    }
+}
+
 /**
  * Apply motion vectors to prediction buffer, chapter 18.
  */
@@ -1062,6 +1077,8 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
 {
     int x_off = mb_x << 4, y_off = mb_y << 4;
     int width = 16*s->mb_width, height = 16*s->mb_height;
+
+    prefetch_motion(s, mb, mb_x, mb_y, x_off, y_off, VP56_FRAME_PREVIOUS);
 
     if (mb->mode < VP8_MVMODE_SPLIT) {
         vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
@@ -1137,6 +1154,8 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
                     8, 8, 8, 8, width, height, &mb->bmv[3]);
         break;
     }
+
+    prefetch_motion(s, mb, mb_x, mb_y, x_off, y_off, VP56_FRAME_GOLDEN);
 }
 
 static void idct_mb(VP8Context *s, uint8_t *y_dst, uint8_t *u_dst, uint8_t *v_dst,
@@ -1431,6 +1450,10 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             memset(s->top_border, 129, sizeof(*s->top_border));
 
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
+            /* Prefetch the current frame, 4 MBs ahead */
+            s->dsp.prefetch(dst[0] + (mb_x&3)*4*s->linesize + 64, s->linesize, 4);
+            s->dsp.prefetch(dst[1] + (mb_x&7)*s->uvlinesize + 64, dst[2] - dst[1], 2);
+
             decode_mb_mode(s, mb, mb_x, mb_y, intra4x4 + 4*mb_x);
 
             if (!mb->skip)
