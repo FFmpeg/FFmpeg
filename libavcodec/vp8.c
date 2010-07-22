@@ -123,6 +123,7 @@ typedef struct {
 
     int mbskip_enabled;
     int sign_bias[4]; ///< one state [0, 1] per ref frame type
+    int ref_count[3];
 
     /**
      * Base parameters for segmentation, i.e. per-macroblock parameters.
@@ -733,6 +734,7 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
                 VP56_FRAME_GOLDEN2 /* altref */ : VP56_FRAME_GOLDEN;
         else
             mb->ref_frame = VP56_FRAME_PREVIOUS;
+        s->ref_count[mb->ref_frame-1]++;
 
         // motion vectors, 16.3
         find_near_mvs(s, mb, mb_x, mb_y, near, &best, cnt);
@@ -1081,15 +1083,19 @@ static inline void vp8_mc_part(VP8Context *s, uint8_t *dst[3],
 
 /* Fetch pixels for estimated mv 4 macroblocks ahead.
  * Optimized for 64-byte cache lines.  Inspired by ffh264 prefetch_motion. */
-static inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, int x_off, int y_off, int ref)
+static inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, int ref)
 {
-    int mx = mb->mv.x + x_off + 8;
-    int my = mb->mv.y + y_off;
-    uint8_t **src= s->framep[ref]->data;
-    int off= mx + (my + (mb_x&3)*4)*s->linesize + 64;
-    s->dsp.prefetch(src[0]+off, s->linesize, 4);
-    off= (mx>>1) + ((my>>1) + (mb_x&7))*s->uvlinesize + 64;
-    s->dsp.prefetch(src[1]+off, src[2]-src[1], 2);
+    /* Don't prefetch refs that haven't been used yet this frame. */
+    if (s->ref_count[ref-1]) {
+        int x_off = mb_x << 4, y_off = mb_y << 4;
+        int mx = mb->mv.x + x_off + 8;
+        int my = mb->mv.y + y_off;
+        uint8_t **src= s->framep[ref]->data;
+        int off= mx + (my + (mb_x&3)*4)*s->linesize + 64;
+        s->dsp.prefetch(src[0]+off, s->linesize, 4);
+        off= (mx>>1) + ((my>>1) + (mb_x&7))*s->uvlinesize + 64;
+        s->dsp.prefetch(src[1]+off, src[2]-src[1], 2);
+    }
 }
 
 /**
@@ -1102,8 +1108,6 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
     int width = 16*s->mb_width, height = 16*s->mb_height;
     AVFrame *ref = s->framep[mb->ref_frame];
     VP56mv *bmv = mb->bmv;
-
-    prefetch_motion(s, mb, mb_x, mb_y, x_off, y_off, VP56_FRAME_PREVIOUS);
 
     if (mb->mode < VP8_MVMODE_SPLIT) {
         vp8_mc_part(s, dst, ref, x_off, y_off,
@@ -1179,8 +1183,6 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
                     8, 8, 8, 8, width, height, &bmv[3]);
         break;
     }
-
-    prefetch_motion(s, mb, mb_x, mb_y, x_off, y_off, VP56_FRAME_GOLDEN);
 }
 
 static void idct_mb(VP8Context *s, uint8_t *y_dst, uint8_t *u_dst, uint8_t *v_dst,
@@ -1458,6 +1460,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     // top edge of 127 for intra prediction
     memset(s->top_border, 127, (s->mb_width+1)*sizeof(*s->top_border));
+    memset(s->ref_count, 0, sizeof(s->ref_count));
 
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         VP56RangeCoder *c = &s->coeff_partition[mb_y & (s->num_coeff_partitions-1)];
@@ -1490,6 +1493,8 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
             decode_mb_mode(s, mb, mb_x, mb_y, intra4x4_mb, segment_mb);
 
+            prefetch_motion(s, mb, mb_x, mb_y, VP56_FRAME_PREVIOUS);
+
             if (!mb->skip)
                 decode_mb_coeffs(s, c, mb, s->top_nnz[mb_x], s->left_nnz);
             else {
@@ -1501,6 +1506,8 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 intra_predict(s, dst, mb, intra4x4_mb, mb_x, mb_y);
             else
                 inter_predict(s, dst, mb, mb_x, mb_y);
+
+            prefetch_motion(s, mb, mb_x, mb_y, VP56_FRAME_GOLDEN);
 
             if (!mb->skip) {
                 idct_mb(s, dst[0], dst[1], dst[2], mb);
@@ -1517,6 +1524,8 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
             if (s->deblock_filter)
                 filter_level_for_mb(s, mb, &s->filter_strength[mb_x]);
+
+            prefetch_motion(s, mb, mb_x, mb_y, VP56_FRAME_GOLDEN2);
 
             dst[0] += 16;
             dst[1] += 8;
