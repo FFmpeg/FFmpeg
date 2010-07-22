@@ -98,7 +98,9 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->dst     = dst;
     link->srcpad  = srcpad;
     link->dstpad  = dstpad;
-    link->format  = PIX_FMT_NONE;
+    link->type    = src->output_pads[srcpad].type;
+    assert(PIX_FMT_NONE == -1 && SAMPLE_FMT_NONE == -1);
+    link->format  = -1;
 
     return 0;
 }
@@ -122,7 +124,7 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     link->dstpad = in;
     filt->inputs[in] = link;
 
-    /* if any information on supported colorspaces already exists on the
+    /* if any information on supported media formats already exists on the
      * link, we need to preserve that */
     if(link->out_formats)
         avfilter_formats_changeref(&link->out_formats,

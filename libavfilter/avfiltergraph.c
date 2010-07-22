@@ -111,7 +111,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
     int scaler_count = 0;
     char inst_name[30];
 
-    /* ask all the sub-filters for their supported colorspaces */
+    /* ask all the sub-filters for their supported media formats */
     for(i = 0; i < graph->filter_count; i ++) {
         if(graph->filters[i]->filter->query_formats)
             graph->filters[i]->filter->query_formats(graph->filters[i]);
@@ -197,7 +197,7 @@ int avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
         return -1;
 
     /* Once everything is merged, it's possible that we'll still have
-     * multiple valid colorspace choices. We pick the first one. */
+     * multiple valid media format choices. We pick the first one. */
     pick_formats(graph);
 
     return 0;

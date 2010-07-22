@@ -70,47 +70,49 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     return ret;
 }
 
-AVFilterFormats *avfilter_make_format_list(const enum PixelFormat *pix_fmts)
+AVFilterFormats *avfilter_make_format_list(const int *fmts)
 {
     AVFilterFormats *formats;
     int count;
 
-    for (count = 0; pix_fmts[count] != PIX_FMT_NONE; count++)
+    for (count = 0; fmts[count] != -1; count++)
         ;
 
     formats               = av_mallocz(sizeof(AVFilterFormats));
     formats->formats      = av_malloc(sizeof(*formats->formats) * count);
     formats->format_count = count;
-    memcpy(formats->formats, pix_fmts, sizeof(*formats->formats) * count);
+    memcpy(formats->formats, fmts, sizeof(*formats->formats) * count);
 
     return formats;
 }
 
-int avfilter_add_colorspace(AVFilterFormats **avff, enum PixelFormat pix_fmt)
+int avfilter_add_format(AVFilterFormats **avff, int fmt)
 {
-    enum PixelFormat *pix_fmts;
+    int *fmts;
 
     if (!(*avff) && !(*avff = av_mallocz(sizeof(AVFilterFormats))))
         return AVERROR(ENOMEM);
 
-    pix_fmts = av_realloc((*avff)->formats,
-                          sizeof((*avff)->formats) * ((*avff)->format_count+1));
-    if (!pix_fmts)
+    fmts = av_realloc((*avff)->formats,
+                      sizeof((*avff)->formats) * ((*avff)->format_count+1));
+    if (!fmts)
         return AVERROR(ENOMEM);
 
-    (*avff)->formats = pix_fmts;
-    (*avff)->formats[(*avff)->format_count++] = pix_fmt;
+    (*avff)->formats = fmts;
+    (*avff)->formats[(*avff)->format_count++] = fmt;
     return 0;
 }
 
-AVFilterFormats *avfilter_all_colorspaces(void)
+AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
 {
     AVFilterFormats *ret = NULL;
-    enum PixelFormat pix_fmt;
+    int fmt;
+    int num_formats = type == AVMEDIA_TYPE_VIDEO ? PIX_FMT_NB : 0;
 
-    for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
-        if (!(av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_HWACCEL))
-            avfilter_add_colorspace(&ret, pix_fmt);
+    for (fmt = 0; fmt < num_formats; fmt++)
+        if ((type != AVMEDIA_TYPE_VIDEO) ||
+            (type == AVMEDIA_TYPE_VIDEO && !(av_pix_fmt_descriptors[fmt].flags & PIX_FMT_HWACCEL)))
+            avfilter_add_format(&ret, fmt);
 
     return ret;
 }

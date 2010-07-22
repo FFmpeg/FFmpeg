@@ -83,7 +83,7 @@ static int query_formats(AVFilterContext *ctx)
         formats = NULL;
         for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
             if (   sws_isSupportedInput(pix_fmt)
-                && (ret = avfilter_add_colorspace(&formats, pix_fmt)) < 0) {
+                && (ret = avfilter_add_format(&formats, pix_fmt)) < 0) {
                 avfilter_formats_unref(&formats);
                 return ret;
             }
@@ -93,7 +93,7 @@ static int query_formats(AVFilterContext *ctx)
         formats = NULL;
         for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
             if (    sws_isSupportedOutput(pix_fmt)
-                && (ret = avfilter_add_colorspace(&formats, pix_fmt)) < 0) {
+                && (ret = avfilter_add_format(&formats, pix_fmt)) < 0) {
                 avfilter_formats_unref(&formats);
                 return ret;
             }

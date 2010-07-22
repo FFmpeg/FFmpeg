@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 25
+#define LIBAVFILTER_VERSION_MINOR 26
 #define LIBAVFILTER_VERSION_MICRO  1
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -68,7 +68,7 @@ typedef struct AVFilterBuffer
 {
     uint8_t *data[4];           ///< buffer data for each plane
     int linesize[4];            ///< number of bytes per line
-    enum PixelFormat format;    ///< colorspace
+    int format;                 ///< media format
 
     unsigned refcount;          ///< number of references to this buffer
 
@@ -190,7 +190,7 @@ typedef struct AVFilterFormats AVFilterFormats;
 struct AVFilterFormats
 {
     unsigned format_count;      ///< number of formats
-    enum PixelFormat *formats;  ///< list of pixel formats
+    int *formats;               ///< list of media formats
 
     unsigned refcount;          ///< number of references to this list
     AVFilterFormats ***refs;    ///< references to this list
@@ -199,25 +199,25 @@ struct AVFilterFormats
 /**
  * Create a list of supported formats. This is intended for use in
  * AVFilter->query_formats().
- * @param pix_fmts list of pixel formats, terminated by PIX_FMT_NONE
+ * @param fmts list of media formats, terminated by -1
  * @return the format list, with no existing references
  */
-AVFilterFormats *avfilter_make_format_list(const enum PixelFormat *pix_fmts);
+AVFilterFormats *avfilter_make_format_list(const int *fmts);
 
 /**
- * Add pix_fmt to the list of pixel formats contained in *avff.
+ * Add fmt to the list of media formats contained in *avff.
  * If *avff is NULL the function allocates the filter formats struct
  * and puts its pointer in *avff.
  *
  * @return a non negative value in case of success, or a negative
  * value corresponding to an AVERROR code in case of error
  */
-int avfilter_add_colorspace(AVFilterFormats **avff, enum PixelFormat pix_fmt);
+int avfilter_add_format(AVFilterFormats **avff, int fmt);
 
 /**
- * Return a list of all colorspaces supported by FFmpeg.
+ * Return a list of all formats supported by FFmpeg for the given media type.
  */
-AVFilterFormats *avfilter_all_colorspaces(void);
+AVFilterFormats *avfilter_all_formats(enum AVMediaType type);
 
 /**
  * Return a format list which contains the intersection of the formats of
@@ -507,9 +507,11 @@ struct AVFilterLink
         AVLINK_INIT             ///< complete
     } init_state;
 
+    enum AVMediaType type;      ///< filter media type
+
     int w;                      ///< agreed upon image width
     int h;                      ///< agreed upon image height
-    enum PixelFormat format;    ///< agreed upon image colorspace
+    int format;                 ///< agreed upon media format
 
     /**
      * Lists of formats supported by the input and output filters respectively.
@@ -544,7 +546,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad);
 
 /**
- * Negotiate the colorspace, dimensions, etc of all inputs to a filter.
+ * Negotiate the media format, dimensions, etc of all inputs to a filter.
  * @param filter the filter to negotiate the properties for its inputs
  * @return       zero on successful negotiation
  */
