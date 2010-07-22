@@ -247,6 +247,7 @@ DECLARE_LOOP_FILTER(mmx)
 DECLARE_LOOP_FILTER(mmxext)
 DECLARE_LOOP_FILTER(sse2)
 DECLARE_LOOP_FILTER(ssse3)
+DECLARE_LOOP_FILTER(sse4)
 
 #endif
 
@@ -379,6 +380,9 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 
     if (mm_flags & FF_MM_SSE4) {
         c->vp8_idct_dc_add                  = ff_vp8_idct_dc_add_sse4;
+
+        c->vp8_h_loop_filter16y       = ff_vp8_h_loop_filter16y_mbedge_sse4;
+        c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_sse4;
     }
 #endif
 }

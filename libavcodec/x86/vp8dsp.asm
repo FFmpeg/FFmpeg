@@ -1932,10 +1932,24 @@ INNER_LOOPFILTER ssse3,  h, 6,  8, 13
 
 ; write 4 or 8 words in the mmx/xmm registers as 8 lines
 ; 1 and 2 are the registers to write, this can be the same (for SSE2)
+; for pre-SSE4:
 ; 3 is a general-purpose register that we will clobber
+; for SSE4:
+; 3 is a pointer to the destination's 5th line
 ; 4 is a pointer to the destination's 4th line
-; 5 is -stride and +stride
-%macro WRITE_8W 6
+; 5/6 is -stride and +stride
+; 7 is optimization string
+%macro WRITE_8W 7
+%ifidn %7, sse4
+    pextrw    [%4+%5*4], %1, 0
+    pextrw    [%3+%5*4], %1, 1
+    pextrw    [%4+%5*2], %1, 2
+    pextrw    [%4+%5  ], %1, 3
+    pextrw    [%4     ], %1, 4
+    pextrw    [%3     ], %1, 5
+    pextrw    [%3+%6  ], %1, 6
+    pextrw    [%3+%6*2], %1, 7
+%else
     movd             %3, %1
 %if mmsize == 8
     punpckhdq        %1, %1
@@ -1973,6 +1987,7 @@ INNER_LOOPFILTER ssse3,  h, 6,  8, 13
     mov       [%4+%6*2], %3w
 %if mmsize == 8
     add              %4, %5
+%endif
 %endif
 %endmacro
 
@@ -2509,14 +2524,17 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %if mmsize == 8 ; mmx/mmxext (h)
     WRITE_4x2D        1, 2, 3, 4, dst_reg, dst2_reg, mstride_reg, stride_reg
     add         dst_reg, 4
-    WRITE_8W         m5, m6, dst2_reg, dst_reg, mstride_reg, stride_reg
+    WRITE_8W         m5, m6, dst2_reg, dst_reg, mstride_reg, stride_reg, %4
 %else ; sse2 (h)
     lea        dst8_reg, [dst8_reg+mstride_reg+1]
     WRITE_4x4D        1, 2, 3, 4, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg, %4
     lea         dst_reg, [dst2_reg+mstride_reg+4]
     lea        dst8_reg, [dst8_reg+mstride_reg+4]
-    WRITE_8W         m5, m5, dst2_reg, dst_reg,  mstride_reg, stride_reg
-    WRITE_8W         m6, m6, dst2_reg, dst8_reg, mstride_reg, stride_reg
+    WRITE_8W         m5, m5, dst2_reg, dst_reg,  mstride_reg, stride_reg, %2
+%ifidn %2, sse4
+    lea         dst_reg, [dst8_reg+ stride_reg]
+%endif
+    WRITE_8W         m6, m6, dst2_reg, dst8_reg, mstride_reg, stride_reg, %2
 %endif
 %endif
 
@@ -2574,3 +2592,10 @@ MBEDGE_LOOPFILTER ssse3,  h, 6, 16, 16
 %endif
 MBEDGE_LOOPFILTER ssse3,  v, 6,  8, 16
 MBEDGE_LOOPFILTER ssse3,  h, 6,  8, 16
+
+%ifdef m8
+MBEDGE_LOOPFILTER sse4,   h, 5, 16, 16
+%else
+MBEDGE_LOOPFILTER sse4,   h, 6, 16, 16
+%endif
+MBEDGE_LOOPFILTER sse4,   h, 6,  8, 16
