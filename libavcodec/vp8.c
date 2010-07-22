@@ -602,17 +602,13 @@ static int read_mv_component(VP56RangeCoder *c, const uint8_t *p)
     return (x && vp56_rac_get_prob(c, p[1])) ? -x : x;
 }
 
-static const uint8_t *get_submv_prob(const VP56mv *left, const VP56mv *top)
+static const uint8_t *get_submv_prob(uint32_t left, uint32_t top)
 {
-    int l_is_zero = !(left->x | left->y);
-    int t_is_zero = !(top->x  | top->y);
-    int equal = !((left->x ^ top->x) | (left->y ^ top->y));
-
-    if (equal)
-        return l_is_zero ? vp8_submv_prob[4] : vp8_submv_prob[3];
-    if (t_is_zero)
+    if (left == top)
+        return vp8_submv_prob[4-!!left];
+    if (!top)
         return vp8_submv_prob[2];
-    return l_is_zero ? vp8_submv_prob[1] : vp8_submv_prob[0];
+    return vp8_submv_prob[1-!!left];
 }
 
 /**
@@ -625,24 +621,29 @@ static int decode_splitmvs(VP8Context    *s,  VP56RangeCoder *c,
     int part_idx = mb->partitioning =
         vp8_rac_get_tree(c, vp8_mbsplit_tree, vp8_mbsplit_prob);
     int n, num = vp8_mbsplit_count[part_idx];
-    const uint8_t *mbsplits = vp8_mbsplits[part_idx],
+    VP8Macroblock *top_mb  = &mb[-s->mb_stride];
+    VP8Macroblock *left_mb = &mb[-1];
+    const uint8_t *mbsplits_left = vp8_mbsplits[left_mb->partitioning],
+                  *mbsplits_top = vp8_mbsplits[top_mb->partitioning],
+                  *mbsplits_cur = vp8_mbsplits[part_idx],
                   *firstidx = vp8_mbfirstidx[part_idx];
+    VP56mv *top_mv   = top_mb->bmv;
+    VP56mv *left_mv  = left_mb->bmv;
+    VP56mv *cur_mv   = mb->bmv;
 
     for (n = 0; n < num; n++) {
         int k = firstidx[n];
-        const VP56mv *left, *above;
+        uint32_t left, above;
         const uint8_t *submv_prob;
 
-        if (!(k & 3)) {
-            VP8Macroblock *left_mb = &mb[-1];
-            left = &left_mb->bmv[vp8_mbsplits[left_mb->partitioning][k + 3]];
-        } else
-            left  = &mb->bmv[mbsplits[k - 1]];
-        if (k <= 3) {
-            VP8Macroblock *above_mb = &mb[-s->mb_stride];
-            above = &above_mb->bmv[vp8_mbsplits[above_mb->partitioning][k + 12]];
-        } else
-            above = &mb->bmv[mbsplits[k - 4]];
+        if (!(k & 3))
+            left = AV_RN32A(&left_mv[mbsplits_left[k + 3]]);
+        else
+            left  = AV_RN32A(&cur_mv[mbsplits_cur[k - 1]]);
+        if (k <= 3)
+            above = AV_RN32A(&top_mv[mbsplits_top[k + 12]]);
+        else
+            above = AV_RN32A(&cur_mv[mbsplits_cur[k - 4]]);
 
         submv_prob = get_submv_prob(left, above);
 
@@ -652,14 +653,13 @@ static int decode_splitmvs(VP8Context    *s,  VP56RangeCoder *c,
             mb->bmv[n].x = base_mv->x + read_mv_component(c, s->prob->mvc[1]);
             break;
         case VP8_SUBMVMODE_ZERO4X4:
-            mb->bmv[n].x = 0;
-            mb->bmv[n].y = 0;
+            AV_WN32A(&mb->bmv[n], 0);
             break;
         case VP8_SUBMVMODE_LEFT4X4:
-            mb->bmv[n] = *left;
+            AV_WN32A(&mb->bmv[n], left);
             break;
         case VP8_SUBMVMODE_TOP4X4:
-            mb->bmv[n] = *above;
+            AV_WN32A(&mb->bmv[n], above);
             break;
         }
     }
