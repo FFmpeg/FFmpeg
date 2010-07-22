@@ -13,6 +13,26 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-07-22 - r24424 - lavfi 1.26.0 - media format generalization
+  Add a type field to AVFilterLink.
+
+  Change the field types:
+  enum PixelFormat format   -> int format   in AVFilterBuffer
+  enum PixelFormat *formats -> int *formats in AVFilterFormats
+  enum PixelFormat *format  -> int format   in AVFilterLink
+
+  Change the function signatures:
+  AVFilterFormats *avfilter_make_format_list(const enum PixelFormat *pix_fmts); ->
+  AVFilterFormats *avfilter_make_format_list(const int *fmts);
+
+  int avfilter_add_colorspace(AVFilterFormats **avff, enum PixelFormat pix_fmt); ->
+  int avfilter_add_format    (AVFilterFormats **avff, int fmt);
+
+  AVFilterFormats *avfilter_all_colorspaces(void); ->
+  AVFilterFormats *avfilter_all_formats    (enum AVMediaType type);
+
+  This change breaks libavfilter API/ABI.
+
 2010-07-21 - r24393 - lavcore 0.0.0
   Add libavcore.
 
