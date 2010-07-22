@@ -301,27 +301,32 @@ void print_error(const char *filename, int err)
     fprintf(stderr, "%s: %s\n", filename, errbuf_ptr);
 }
 
-#define PRINT_LIB_VERSION(outstream,libname,LIBNAME,indent)             \
+#define INDENT        1
+#define SHOW_VERSION  2
+
+#define PRINT_LIB_VERSION(outstream,libname,LIBNAME,flags)              \
     if (CONFIG_##LIBNAME) {                                             \
+        if (flags & SHOW_VERSION) {                                     \
         unsigned int version = libname##_version();                     \
         fprintf(outstream, "%slib%-10s %2d.%2d.%2d / %2d.%2d.%2d\n",    \
-                indent? "  " : "", #libname,                            \
+                flags & INDENT? "  " : "", #libname,                    \
                 LIB##LIBNAME##_VERSION_MAJOR,                           \
                 LIB##LIBNAME##_VERSION_MINOR,                           \
                 LIB##LIBNAME##_VERSION_MICRO,                           \
                 version >> 16, version >> 8 & 0xff, version & 0xff);    \
-    }
+        }                                                               \
+    }                                                                   \
 
-static void print_all_lib_versions(FILE* outstream, int indent)
+static void print_all_lib_versions(FILE* outstream, int flags)
 {
-    PRINT_LIB_VERSION(outstream, avutil,   AVUTIL,   indent);
-    PRINT_LIB_VERSION(outstream, avcore,   AVCORE,   indent);
-    PRINT_LIB_VERSION(outstream, avcodec,  AVCODEC,  indent);
-    PRINT_LIB_VERSION(outstream, avformat, AVFORMAT, indent);
-    PRINT_LIB_VERSION(outstream, avdevice, AVDEVICE, indent);
-    PRINT_LIB_VERSION(outstream, avfilter, AVFILTER, indent);
-    PRINT_LIB_VERSION(outstream, swscale,  SWSCALE,  indent);
-    PRINT_LIB_VERSION(outstream, postproc, POSTPROC, indent);
+    PRINT_LIB_VERSION(outstream, avutil,   AVUTIL,   flags);
+    PRINT_LIB_VERSION(outstream, avcore,   AVCORE,   flags);
+    PRINT_LIB_VERSION(outstream, avcodec,  AVCODEC,  flags);
+    PRINT_LIB_VERSION(outstream, avformat, AVFORMAT, flags);
+    PRINT_LIB_VERSION(outstream, avdevice, AVDEVICE, flags);
+    PRINT_LIB_VERSION(outstream, avfilter, AVFILTER, flags);
+    PRINT_LIB_VERSION(outstream, swscale,  SWSCALE,  flags);
+    PRINT_LIB_VERSION(outstream, postproc, POSTPROC, flags);
 }
 
 static void maybe_print_config(const char *lib, const char *cfg)
@@ -357,12 +362,12 @@ void show_banner(void)
     PRINT_LIB_CONFIG(AVFILTER, "libavfilter", avfilter_configuration());
     PRINT_LIB_CONFIG(SWSCALE,  "libswscale",  swscale_configuration());
     PRINT_LIB_CONFIG(POSTPROC, "libpostproc", postproc_configuration());
-    print_all_lib_versions(stderr, 1);
+    print_all_lib_versions(stderr, INDENT|SHOW_VERSION);
 }
 
 void show_version(void) {
     printf("%s " FFMPEG_VERSION "\n", program_name);
-    print_all_lib_versions(stdout, 0);
+    print_all_lib_versions(stdout, SHOW_VERSION);
 }
 
 void show_license(void)
