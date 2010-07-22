@@ -1102,11 +1102,13 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
 {
     int x_off = mb_x << 4, y_off = mb_y << 4;
     int width = 16*s->mb_width, height = 16*s->mb_height;
+    AVFrame *ref = s->framep[mb->ref_frame];
+    VP56mv *bmv = mb->bmv;
 
     prefetch_motion(s, mb, mb_x, mb_y, x_off, y_off, VP56_FRAME_PREVIOUS);
 
     if (mb->mode < VP8_MVMODE_SPLIT) {
-        vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
+        vp8_mc_part(s, dst, ref, x_off, y_off,
                     0, 0, 16, 16, width, height, &mb->mv);
     } else switch (mb->partitioning) {
     case VP8_SPLITMVMODE_4x4: {
@@ -1117,7 +1119,7 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
         for (y = 0; y < 4; y++) {
             for (x = 0; x < 4; x++) {
                 vp8_mc(s, 1, dst[0] + 4*y*s->linesize + x*4,
-                       s->framep[mb->ref_frame]->data[0], &mb->bmv[4*y + x],
+                       ref->data[0], &bmv[4*y + x],
                        4*x + x_off, 4*y + y_off, 4, 4,
                        width, height, s->linesize,
                        s->put_pixels_tab[2]);
@@ -1143,12 +1145,12 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
                     uvmv.y &= ~7;
                 }
                 vp8_mc(s, 0, dst[1] + 4*y*s->uvlinesize + x*4,
-                       s->framep[mb->ref_frame]->data[1], &uvmv,
+                       ref->data[1], &uvmv,
                        4*x + x_off, 4*y + y_off, 4, 4,
                        width, height, s->uvlinesize,
                        s->put_pixels_tab[2]);
                 vp8_mc(s, 0, dst[2] + 4*y*s->uvlinesize + x*4,
-                       s->framep[mb->ref_frame]->data[2], &uvmv,
+                       ref->data[2], &uvmv,
                        4*x + x_off, 4*y + y_off, 4, 4,
                        width, height, s->uvlinesize,
                        s->put_pixels_tab[2]);
@@ -1157,26 +1159,26 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
         break;
     }
     case VP8_SPLITMVMODE_16x8:
-        vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    0, 0, 16, 8, width, height, &mb->bmv[0]);
-        vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    0, 8, 16, 8, width, height, &mb->bmv[1]);
+        vp8_mc_part(s, dst, ref, x_off, y_off,
+                    0, 0, 16, 8, width, height, &bmv[0]);
+        vp8_mc_part(s, dst, ref, x_off, y_off,
+                    0, 8, 16, 8, width, height, &bmv[1]);
         break;
     case VP8_SPLITMVMODE_8x16:
-        vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    0, 0, 8, 16, width, height, &mb->bmv[0]);
-        vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    8, 0, 8, 16, width, height, &mb->bmv[1]);
+        vp8_mc_part(s, dst, ref, x_off, y_off,
+                    0, 0, 8, 16, width, height, &bmv[0]);
+        vp8_mc_part(s, dst, ref, x_off, y_off,
+                    8, 0, 8, 16, width, height, &bmv[1]);
         break;
     case VP8_SPLITMVMODE_8x8:
-        vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    0, 0, 8, 8, width, height, &mb->bmv[0]);
-        vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    8, 0, 8, 8, width, height, &mb->bmv[1]);
-        vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    0, 8, 8, 8, width, height, &mb->bmv[2]);
-        vp8_mc_part(s, dst, s->framep[mb->ref_frame], x_off, y_off,
-                    8, 8, 8, 8, width, height, &mb->bmv[3]);
+        vp8_mc_part(s, dst, ref, x_off, y_off,
+                    0, 0, 8, 8, width, height, &bmv[0]);
+        vp8_mc_part(s, dst, ref, x_off, y_off,
+                    8, 0, 8, 8, width, height, &bmv[1]);
+        vp8_mc_part(s, dst, ref, x_off, y_off,
+                    0, 8, 8, 8, width, height, &bmv[2]);
+        vp8_mc_part(s, dst, ref, x_off, y_off,
+                    8, 8, 8, 8, width, height, &bmv[3]);
         break;
     }
 
