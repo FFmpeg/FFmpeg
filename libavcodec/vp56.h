@@ -62,8 +62,8 @@ typedef struct {
 } VP56RefDc;
 
 struct vp56_mv {
-    int x;
-    int y;
+    int16_t x;
+    int16_t y;
 };
 
 typedef struct {
