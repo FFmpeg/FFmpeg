@@ -1273,6 +1273,8 @@ static void filter_mb(VP8Context *s, uint8_t *dst[3], VP8FilterStrength *f, int 
     int filter_level = f->filter_level;
     int inner_limit = f->inner_limit;
     int inner_filter = f->inner_filter;
+    int linesize = s->linesize;
+    int uvlinesize = s->uvlinesize;
 
     if (!filter_level)
         return;
@@ -1292,45 +1294,45 @@ static void filter_mb(VP8Context *s, uint8_t *dst[3], VP8FilterStrength *f, int 
     }
 
     if (mb_x) {
-        s->vp8dsp.vp8_h_loop_filter16y(dst[0],     s->linesize,
+        s->vp8dsp.vp8_h_loop_filter16y(dst[0],     linesize,
                                        mbedge_lim, inner_limit, hev_thresh);
-        s->vp8dsp.vp8_h_loop_filter8uv(dst[1],     dst[2],      s->uvlinesize,
+        s->vp8dsp.vp8_h_loop_filter8uv(dst[1],     dst[2],      uvlinesize,
                                        mbedge_lim, inner_limit, hev_thresh);
     }
 
     if (inner_filter) {
-        s->vp8dsp.vp8_h_loop_filter16y_inner(dst[0]+ 4, s->linesize, bedge_lim,
-                                             inner_limit,   hev_thresh);
-        s->vp8dsp.vp8_h_loop_filter16y_inner(dst[0]+ 8, s->linesize, bedge_lim,
-                                             inner_limit,   hev_thresh);
-        s->vp8dsp.vp8_h_loop_filter16y_inner(dst[0]+12, s->linesize, bedge_lim,
-                                             inner_limit,   hev_thresh);
-        s->vp8dsp.vp8_h_loop_filter8uv_inner(dst[1] + 4,    dst[2] + 4,
-                                             s->uvlinesize, bedge_lim,
-                                             inner_limit,   hev_thresh);
+        s->vp8dsp.vp8_h_loop_filter16y_inner(dst[0]+ 4, linesize, bedge_lim,
+                                             inner_limit, hev_thresh);
+        s->vp8dsp.vp8_h_loop_filter16y_inner(dst[0]+ 8, linesize, bedge_lim,
+                                             inner_limit, hev_thresh);
+        s->vp8dsp.vp8_h_loop_filter16y_inner(dst[0]+12, linesize, bedge_lim,
+                                             inner_limit, hev_thresh);
+        s->vp8dsp.vp8_h_loop_filter8uv_inner(dst[1] + 4, dst[2] + 4,
+                                             uvlinesize,  bedge_lim,
+                                             inner_limit, hev_thresh);
     }
 
     if (mb_y) {
-        s->vp8dsp.vp8_v_loop_filter16y(dst[0],     s->linesize,
+        s->vp8dsp.vp8_v_loop_filter16y(dst[0],     linesize,
                                        mbedge_lim, inner_limit, hev_thresh);
-        s->vp8dsp.vp8_v_loop_filter8uv(dst[1],     dst[2],      s->uvlinesize,
+        s->vp8dsp.vp8_v_loop_filter8uv(dst[1],     dst[2],      uvlinesize,
                                        mbedge_lim, inner_limit, hev_thresh);
     }
 
     if (inner_filter) {
-        s->vp8dsp.vp8_v_loop_filter16y_inner(dst[0]+ 4*s->linesize,
-                                             s->linesize,   bedge_lim,
-                                             inner_limit,   hev_thresh);
-        s->vp8dsp.vp8_v_loop_filter16y_inner(dst[0]+ 8*s->linesize,
-                                             s->linesize,   bedge_lim,
-                                             inner_limit,   hev_thresh);
-        s->vp8dsp.vp8_v_loop_filter16y_inner(dst[0]+12*s->linesize,
-                                             s->linesize,   bedge_lim,
+        s->vp8dsp.vp8_v_loop_filter16y_inner(dst[0]+ 4*linesize,
+                                             linesize,    bedge_lim,
                                              inner_limit, hev_thresh);
-        s->vp8dsp.vp8_v_loop_filter8uv_inner(dst[1] + 4 * s->uvlinesize,
-                                             dst[2] + 4 * s->uvlinesize,
-                                             s->uvlinesize, bedge_lim,
-                                             inner_limit,   hev_thresh);
+        s->vp8dsp.vp8_v_loop_filter16y_inner(dst[0]+ 8*linesize,
+                                             linesize,    bedge_lim,
+                                             inner_limit, hev_thresh);
+        s->vp8dsp.vp8_v_loop_filter16y_inner(dst[0]+12*linesize,
+                                             linesize,    bedge_lim,
+                                             inner_limit, hev_thresh);
+        s->vp8dsp.vp8_v_loop_filter8uv_inner(dst[1] + 4 * uvlinesize,
+                                             dst[2] + 4 * uvlinesize,
+                                             uvlinesize,  bedge_lim,
+                                             inner_limit, hev_thresh);
     }
 }
 
@@ -1340,6 +1342,7 @@ static void filter_mb_simple(VP8Context *s, uint8_t *dst, VP8FilterStrength *f, 
     int filter_level = f->filter_level;
     int inner_limit = f->inner_limit;
     int inner_filter = f->inner_filter;
+    int linesize = s->linesize;
 
     if (!filter_level)
         return;
@@ -1348,19 +1351,19 @@ static void filter_mb_simple(VP8Context *s, uint8_t *dst, VP8FilterStrength *f, 
      bedge_lim = 2* filter_level    + inner_limit;
 
     if (mb_x)
-        s->vp8dsp.vp8_h_loop_filter_simple(dst, s->linesize, mbedge_lim);
+        s->vp8dsp.vp8_h_loop_filter_simple(dst, linesize, mbedge_lim);
     if (inner_filter) {
-        s->vp8dsp.vp8_h_loop_filter_simple(dst+ 4, s->linesize, bedge_lim);
-        s->vp8dsp.vp8_h_loop_filter_simple(dst+ 8, s->linesize, bedge_lim);
-        s->vp8dsp.vp8_h_loop_filter_simple(dst+12, s->linesize, bedge_lim);
+        s->vp8dsp.vp8_h_loop_filter_simple(dst+ 4, linesize, bedge_lim);
+        s->vp8dsp.vp8_h_loop_filter_simple(dst+ 8, linesize, bedge_lim);
+        s->vp8dsp.vp8_h_loop_filter_simple(dst+12, linesize, bedge_lim);
     }
 
     if (mb_y)
-        s->vp8dsp.vp8_v_loop_filter_simple(dst, s->linesize, mbedge_lim);
+        s->vp8dsp.vp8_v_loop_filter_simple(dst, linesize, mbedge_lim);
     if (inner_filter) {
-        s->vp8dsp.vp8_v_loop_filter_simple(dst+ 4*s->linesize, s->linesize, bedge_lim);
-        s->vp8dsp.vp8_v_loop_filter_simple(dst+ 8*s->linesize, s->linesize, bedge_lim);
-        s->vp8dsp.vp8_v_loop_filter_simple(dst+12*s->linesize, s->linesize, bedge_lim);
+        s->vp8dsp.vp8_v_loop_filter_simple(dst+ 4*linesize, linesize, bedge_lim);
+        s->vp8dsp.vp8_v_loop_filter_simple(dst+ 8*linesize, linesize, bedge_lim);
+        s->vp8dsp.vp8_v_loop_filter_simple(dst+12*linesize, linesize, bedge_lim);
     }
 }
 
