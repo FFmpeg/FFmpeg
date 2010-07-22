@@ -37,7 +37,7 @@ static int link_filter(AVFilterContext *src, int srcpad,
     int ret;
     if ((ret = avfilter_link(src, srcpad, dst, dstpad))) {
         av_log(log_ctx, AV_LOG_ERROR,
-               "cannot create the link %s:%d -> %s:%d\n",
+               "Cannot create the link %s:%d -> %s:%d\n",
                src->filter->name, srcpad, dst->filter->name, dstpad);
         return ret;
     }
@@ -90,14 +90,14 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
 
     if (!filt) {
         av_log(log_ctx, AV_LOG_ERROR,
-               "no such filter: '%s'\n", filt_name);
+               "No such filter: '%s'\n", filt_name);
         return NULL;
     }
 
     filt_ctx = avfilter_open(filt, inst_name);
     if (!filt_ctx) {
         av_log(log_ctx, AV_LOG_ERROR,
-               "error creating filter '%s'\n", filt_name);
+               "Error creating filter '%s'\n", filt_name);
         return NULL;
     }
 
@@ -114,7 +114,7 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
 
     if (avfilter_init_filter(filt_ctx, args, NULL)) {
         av_log(log_ctx, AV_LOG_ERROR,
-               "error initializing filter '%s' with args '%s'\n", filt_name, args);
+               "Error initializing filter '%s' with args '%s'\n", filt_name, args);
         return NULL;
     }
 
