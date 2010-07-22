@@ -80,6 +80,17 @@ static char *parse_link_name(const char **buf, AVClass *log_ctx)
     return name;
 }
 
+/**
+ * Create an instance of a filter, initialize and insert it in the
+ * filtergraph in *ctx.
+ *
+ * @param ctx the filtergraph context
+ * @param index an index which is supposed to be unique for each filter instance added to the filtergraph
+ * @param filt_name the name of the filter to create
+ * @param args the arguments provided to the filter during its initialization
+ * @param log_ctx the log context to use
+ * @return a filter context in case of successful creation and configuration, NULL otherwise.
+ */
 static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
                                       const char *filt_name, const char *args,
                                       AVClass *log_ctx)
