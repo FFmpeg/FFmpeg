@@ -106,8 +106,10 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
          * prefer, as long as they're aligned enough for the architecture, and
          * they're freed appropriately (such as using av_free for buffers
          * allocated with av_malloc). */
-        src[i]= av_mallocz(srcStride[i]*srcH);
-        dst[i]= av_mallocz(dstStride[i]*dstH);
+        /* An extra 16 bytes is being allocated because some scalers may write
+         * out of bounds. */
+        src[i]= av_mallocz(srcStride[i]*srcH+16);
+        dst[i]= av_mallocz(dstStride[i]*dstH+16);
         out[i]= av_mallocz(refStride[i]*h);
         if (!src[i] || !dst[i] || !out[i]) {
             perror("Malloc");
