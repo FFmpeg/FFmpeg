@@ -1008,24 +1008,26 @@ static inline void vp8_mc(VP8Context *s, int luma,
                           int width, int height, int linesize,
                           vp8_mc_func mc_func[3][3])
 {
-    static const uint8_t idx[8] = { 0, 1, 2, 1, 2, 1, 2, 1 };
-    int mx = (mv->x << luma)&7, mx_idx = idx[mx];
-    int my = (mv->y << luma)&7, my_idx = idx[my];
+    if (AV_RN32A(mv)) {
+        static const uint8_t idx[8] = { 0, 1, 2, 1, 2, 1, 2, 1 };
+        int mx = (mv->x << luma)&7, mx_idx = idx[mx];
+        int my = (mv->y << luma)&7, my_idx = idx[my];
 
-    x_off += mv->x >> (3 - luma);
-    y_off += mv->y >> (3 - luma);
+        x_off += mv->x >> (3 - luma);
+        y_off += mv->y >> (3 - luma);
 
-    // edge emulation
-    src += y_off * linesize + x_off;
-    if (x_off < 2 || x_off >= width  - block_w - 3 ||
-        y_off < 2 || y_off >= height - block_h - 3) {
-        ff_emulated_edge_mc(s->edge_emu_buffer, src - 2 * linesize - 2, linesize,
-                            block_w + 5, block_h + 5,
-                            x_off - 2, y_off - 2, width, height);
-        src = s->edge_emu_buffer + 2 + linesize * 2;
-    }
-
-    mc_func[my_idx][mx_idx](dst, linesize, src, linesize, block_h, mx, my);
+        // edge emulation
+        src += y_off * linesize + x_off;
+        if (x_off < 2 || x_off >= width  - block_w - 3 ||
+            y_off < 2 || y_off >= height - block_h - 3) {
+            ff_emulated_edge_mc(s->edge_emu_buffer, src - 2 * linesize - 2, linesize,
+                                block_w + 5, block_h + 5,
+                                x_off - 2, y_off - 2, width, height);
+            src = s->edge_emu_buffer + 2 + linesize * 2;
+        }
+        mc_func[my_idx][mx_idx](dst, linesize, src, linesize, block_h, mx, my);
+    } else
+        mc_func[0][0](dst, linesize, src + y_off * linesize + x_off, linesize, block_h, 0, 0);
 }
 
 static inline void vp8_mc_part(VP8Context *s, uint8_t *dst[3],
