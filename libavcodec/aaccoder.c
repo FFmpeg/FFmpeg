@@ -515,6 +515,16 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
     }
 }
 
+/** Return the minimum scalefactor where the quantized coef does not clip. */
+static av_always_inline uint8_t coef2minsf(float coef) {
+    return av_clip_uint8(log2(coef)*4 - 69 + SCALE_ONE_POS - SCALE_DIV_512);
+}
+
+/** Return the maximum scalefactor where the quantized coef is not zero. */
+static av_always_inline uint8_t coef2maxsf(float coef) {
+    return av_clip_uint8(log2(coef)*4 +  6 + SCALE_ONE_POS - SCALE_DIV_512);
+}
+
 typedef struct TrellisPath {
     float cost;
     int prev;
@@ -554,9 +564,9 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
     }
 
     //minimum scalefactor index is when minimum nonzero coefficient after quantizing is not clipped
-    q0 = av_clip_uint8(log2(q0f)*4 - 69 + SCALE_ONE_POS - SCALE_DIV_512);
+    q0 = coef2minsf(q0f);
     //maximum scalefactor index is when maximum coefficient after quantizing is still not zero
-    q1 = av_clip_uint8(log2(q1f)*4 +  6 + SCALE_ONE_POS - SCALE_DIV_512);
+    q1 = coef2maxsf(q1f);
     //av_log(NULL, AV_LOG_ERROR, "q0 %d, q1 %d\n", q0, q1);
     if (q1 - q0 > 60) {
         int q0low  = q0;
@@ -618,9 +628,9 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                 float minrd = INFINITY;
                 float maxval;
                 //minimum scalefactor index is when minimum nonzero coefficient after quantizing is not clipped
-                minscale = av_clip_uint8(log2(qmin)*4 - 69 + SCALE_ONE_POS - SCALE_DIV_512);
+                minscale = coef2minsf(qmin);
                 //maximum scalefactor index is when maximum coefficient after quantizing is still not zero
-                maxscale = av_clip_uint8(log2(qmax)*4 +  6 + SCALE_ONE_POS - SCALE_DIV_512);
+                maxscale = coef2maxsf(qmax);
                 minscale = av_clip(minscale - q0, 0, TRELLIS_STATES - 1);
                 maxscale = av_clip(maxscale - q0, 0, TRELLIS_STATES);
                 maxval = find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], s->scoefs+start);
