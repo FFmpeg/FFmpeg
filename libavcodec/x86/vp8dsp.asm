@@ -900,75 +900,148 @@ cglobal put_vp8_pixels16_sse, 5,5,2
     REP_RET
 
 ;-----------------------------------------------------------------------------
-; IDCT functions:
-;
 ; void vp8_idct_dc_add_<opt>(uint8_t *dst, DCTELEM block[16], int stride);
 ;-----------------------------------------------------------------------------
 
+%macro ADD_DC 4
+    %4        m2, [r0+%3]
+    %4        m3, [r0+r2+%3]
+    %4        m4, [r1+%3]
+    %4        m5, [r1+r2+%3]
+    paddusb   m2, %1
+    paddusb   m3, %1
+    paddusb   m4, %1
+    paddusb   m5, %1
+    psubusb   m2, %2
+    psubusb   m3, %2
+    psubusb   m4, %2
+    psubusb   m5, %2
+    %4    [r0+%3], m2
+    %4 [r0+r2+%3], m3
+    %4    [r1+%3], m4
+    %4 [r1+r2+%3], m5
+%endmacro
+
+INIT_MMX
 cglobal vp8_idct_dc_add_mmx, 3, 3
     ; load data
-    movd       mm0, [r1]
+    movd       m0, [r1]
 
     ; calculate DC
-    paddw      mm0, [pw_4]
-    pxor       mm1, mm1
-    psraw      mm0, 3
-    movd      [r1], mm1
-    psubw      mm1, mm0
-    packuswb   mm0, mm0
-    packuswb   mm1, mm1
-    punpcklbw  mm0, mm0
-    punpcklbw  mm1, mm1
-    punpcklwd  mm0, mm0
-    punpcklwd  mm1, mm1
+    paddw      m0, [pw_4]
+    pxor       m1, m1
+    psraw      m0, 3
+    movd      [r1], m1
+    psubw      m1, m0
+    packuswb   m0, m0
+    packuswb   m1, m1
+    punpcklbw  m0, m0
+    punpcklbw  m1, m1
+    punpcklwd  m0, m0
+    punpcklwd  m1, m1
 
     ; add DC
-    lea         r1, [r0+r2*2]
-    movd       mm2, [r0]
-    movd       mm3, [r0+r2]
-    movd       mm4, [r1]
-    movd       mm5, [r1+r2]
-    paddusb    mm2, mm0
-    paddusb    mm3, mm0
-    paddusb    mm4, mm0
-    paddusb    mm5, mm0
-    psubusb    mm2, mm1
-    psubusb    mm3, mm1
-    psubusb    mm4, mm1
-    psubusb    mm5, mm1
-    movd      [r0], mm2
-    movd   [r0+r2], mm3
-    movd      [r1], mm4
-    movd   [r1+r2], mm5
+    lea        r1, [r0+r2*2]
+    ADD_DC     m0, m1, 0, movh
     RET
 
+INIT_XMM
 cglobal vp8_idct_dc_add_sse4, 3, 3, 6
     ; load data
-    movd       xmm0, [r1]
-    pxor       xmm1, xmm1
+    movd       m0, [r1]
+    pxor       m1, m1
 
     ; calculate DC
-    paddw      xmm0, [pw_4]
-    movd       [r1], xmm1
-    lea          r1, [r0+r2*2]
-    movd       xmm2, [r0]
-    movd       xmm3, [r0+r2]
-    movd       xmm4, [r1]
-    movd       xmm5, [r1+r2]
-    psraw      xmm0, 3
-    pshuflw    xmm0, xmm0, 0
-    punpcklqdq xmm0, xmm0
-    punpckldq  xmm2, xmm3
-    punpckldq  xmm4, xmm5
-    punpcklbw  xmm2, xmm1
-    punpcklbw  xmm4, xmm1
-    paddw      xmm2, xmm0
-    paddw      xmm4, xmm0
-    packuswb   xmm2, xmm4
-    movd       [r0], xmm2
-    pextrd  [r0+r2], xmm2, 1
-    pextrd     [r1], xmm2, 2
-    pextrd  [r1+r2], xmm2, 3
+    paddw      m0, [pw_4]
+    movd     [r1], m1
+    lea        r1, [r0+r2*2]
+    movd       m2, [r0]
+    movd       m3, [r0+r2]
+    movd       m4, [r1]
+    movd       m5, [r1+r2]
+    psraw      m0, 3
+    pshuflw    m0, m0, 0
+    punpcklqdq m0, m0
+    punpckldq  m2, m3
+    punpckldq  m4, m5
+    punpcklbw  m2, m1
+    punpcklbw  m4, m1
+    paddw      m2, m0
+    paddw      m4, m0
+    packuswb   m2, m4
+    movd      [r0], m2
+    pextrd [r0+r2], m2, 1
+    pextrd    [r1], m2, 2
+    pextrd [r1+r2], m2, 3
+    RET
+
+;-----------------------------------------------------------------------------
+; void vp8_idct_dc_add4_<opt>(uint8_t *dst, DCTELEM block[4][16], int stride);
+;-----------------------------------------------------------------------------
+
+INIT_MMX
+cglobal vp8_idct_dc_add4_mmx, 3, 3
+    ; load data
+    movd      m0, [r1+32*0] ; A
+    movd      m1, [r1+32*2] ; C
+    punpcklwd m0, [r1+32*1] ; A B
+    punpcklwd m1, [r1+32*3] ; C D
+    punpckldq m0, m1       ; A B C D
+    pxor      m6, m6
+
+    ; calculate DC
+    paddw     m0, [pw_4]
+    movd [r1+32*0], m6
+    movd [r1+32*1], m6
+    movd [r1+32*2], m6
+    movd [r1+32*3], m6
+    psraw     m0, 3
+    psubw     m6, m0
+    packuswb  m0, m0
+    packuswb  m6, m6
+    punpcklbw m0, m0 ; AABBCCDD
+    punpcklbw m6, m6 ; AABBCCDD
+    movq      m1, m0
+    movq      m7, m6
+    punpcklbw m0, m0 ; AAAABBBB
+    punpckhbw m1, m1 ; CCCCDDDD
+    punpcklbw m6, m6 ; AAAABBBB
+    punpckhbw m7, m7 ; CCCCDDDD
+
+    ; add DC
+    lea       r1, [r0+r2*2]
+    ADD_DC    m0, m6, 0, mova
+    ADD_DC    m1, m7, 8, mova
+    RET
+
+INIT_XMM
+cglobal vp8_idct_dc_add4_sse2, 3, 3
+    ; load data
+    movd      m0, [r1+32*0] ; A
+    movd      m1, [r1+32*2] ; C
+    punpcklwd m0, [r1+32*1] ; A B
+    punpcklwd m1, [r1+32*3] ; C D
+    punpckldq m0, m1       ; A B C D
+    pxor      m1, m1
+
+    ; calculate DC
+    paddw     m0, [pw_4]
+    movd [r1+32*0], m1
+    movd [r1+32*1], m1
+    movd [r1+32*2], m1
+    movd [r1+32*3], m1
+    psraw     m0, 3
+    psubw     m1, m0
+    packuswb  m0, m0
+    packuswb  m1, m1
+    punpcklbw m0, m0
+    punpcklbw m1, m1
+    punpcklbw m0, m0
+    punpcklbw m1, m1
+
+    ; add DC
+    lea       r1, [r0+r2*2]
+    ADD_DC    m0, m1, 0, mova
     RET
 
 ;-----------------------------------------------------------------------------

@@ -220,6 +220,8 @@ HVBILIN(ssse3,  8, 16, 16)
 
 extern void ff_vp8_idct_dc_add_mmx(uint8_t *dst, DCTELEM block[16], int stride);
 extern void ff_vp8_idct_dc_add_sse4(uint8_t *dst, DCTELEM block[16], int stride);
+extern void ff_vp8_idct_dc_add4_mmx(uint8_t *dst, DCTELEM block[4][16], int stride);
+extern void ff_vp8_idct_dc_add4_sse2(uint8_t *dst, DCTELEM block[4][16], int stride);
 extern void ff_vp8_luma_dc_wht_mmx(DCTELEM block[4][4][16], DCTELEM dc[16]);
 extern void ff_vp8_idct_add_mmx(uint8_t *dst, DCTELEM block[16], int stride);
 extern void ff_vp8_idct_add_sse(uint8_t *dst, DCTELEM block[16], int stride);
@@ -283,6 +285,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 #if HAVE_YASM
     if (mm_flags & FF_MM_MMX) {
         c->vp8_idct_dc_add                  = ff_vp8_idct_dc_add_mmx;
+        c->vp8_idct_dc_add4                 = ff_vp8_idct_dc_add4_mmx;
         c->vp8_idct_add                     = ff_vp8_idct_add_mmx;
         c->vp8_luma_dc_wht                  = ff_vp8_luma_dc_wht_mmx;
         c->put_vp8_epel_pixels_tab[0][0][0]     =
@@ -351,6 +354,8 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
     }
 
     if (mm_flags & FF_MM_SSE2) {
+        c->vp8_idct_dc_add4           = ff_vp8_idct_dc_add4_sse2;
+
         c->vp8_h_loop_filter16y_inner = ff_vp8_h_loop_filter16y_inner_sse2;
         c->vp8_h_loop_filter8uv_inner = ff_vp8_h_loop_filter8uv_inner_sse2;
 

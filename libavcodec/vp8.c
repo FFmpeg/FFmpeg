@@ -1186,45 +1186,49 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
     }
 }
 
-static void idct_mb(VP8Context *s, uint8_t *y_dst, uint8_t *u_dst, uint8_t *v_dst,
-                    VP8Macroblock *mb)
+static void idct_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb)
 {
-    int x, y, nnz;
+    int x, y, ch, nnz;
 
-    if (mb->mode != MODE_I4x4)
+    if (mb->mode != MODE_I4x4) {
+        uint8_t *y_dst = dst[0];
         for (y = 0; y < 4; y++) {
-            for (x = 0; x < 4; x++) {
-                nnz = s->non_zero_count_cache[y][x];
-                if (nnz) {
-                    if (nnz == 1)
-                        s->vp8dsp.vp8_idct_dc_add(y_dst+4*x, s->block[y][x], s->linesize);
-                    else
-                        s->vp8dsp.vp8_idct_add(y_dst+4*x, s->block[y][x], s->linesize);
+            uint32_t nnz = AV_RN32A(s->non_zero_count_cache[y]);
+            if (nnz) {
+                if (nnz&~0x01010101) {
+                    for (x = 0; x < 4; x++) {
+                        nnz = s->non_zero_count_cache[y][x];
+                        if (nnz) {
+                            if (nnz == 1)
+                                s->vp8dsp.vp8_idct_dc_add(y_dst+4*x, s->block[y][x], s->linesize);
+                            else
+                                s->vp8dsp.vp8_idct_add(y_dst+4*x, s->block[y][x], s->linesize);
+                        }
+                    }
+                } else {
+                    s->vp8dsp.vp8_idct_dc_add4(y_dst, s->block[y], s->linesize);
                 }
             }
             y_dst += 4*s->linesize;
         }
+    }
 
-    for (y = 0; y < 2; y++) {
-        for (x = 0; x < 2; x++) {
-            nnz = s->non_zero_count_cache[4][(y<<1)+x];
-            if (nnz) {
-                if (nnz == 1)
-                    s->vp8dsp.vp8_idct_dc_add(u_dst+4*x, s->block[4][(y<<1)+x], s->uvlinesize);
-                else
-                    s->vp8dsp.vp8_idct_add(u_dst+4*x, s->block[4][(y<<1)+x], s->uvlinesize);
-            }
-
-            nnz = s->non_zero_count_cache[5][(y<<1)+x];
-            if (nnz) {
-                if (nnz == 1)
-                    s->vp8dsp.vp8_idct_dc_add(v_dst+4*x, s->block[5][(y<<1)+x], s->uvlinesize);
-                else
-                    s->vp8dsp.vp8_idct_add(v_dst+4*x, s->block[5][(y<<1)+x], s->uvlinesize);
+    for (ch = 0; ch < 2; ch++) {
+        if (AV_RN32A(s->non_zero_count_cache[4+ch])) {
+            uint8_t *ch_dst = dst[1+ch];
+            for (y = 0; y < 2; y++) {
+                for (x = 0; x < 2; x++) {
+                    nnz = s->non_zero_count_cache[4+ch][(y<<1)+x];
+                    if (nnz) {
+                        if (nnz == 1)
+                            s->vp8dsp.vp8_idct_dc_add(ch_dst+4*x, s->block[4+ch][(y<<1)+x], s->uvlinesize);
+                        else
+                            s->vp8dsp.vp8_idct_add(ch_dst+4*x, s->block[4+ch][(y<<1)+x], s->uvlinesize);
+                    }
+                }
+                ch_dst += 4*s->uvlinesize;
             }
         }
-        u_dst += 4*s->uvlinesize;
-        v_dst += 4*s->uvlinesize;
     }
 }
 
@@ -1511,7 +1515,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             prefetch_motion(s, mb, mb_x, mb_y, mb_xy, VP56_FRAME_GOLDEN);
 
             if (!mb->skip) {
-                idct_mb(s, dst[0], dst[1], dst[2], mb);
+                idct_mb(s, dst, mb);
             } else {
                 AV_ZERO64(s->left_nnz);
                 AV_WN64(s->top_nnz[mb_x], 0);   // array of 9, so unaligned
