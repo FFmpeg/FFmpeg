@@ -846,7 +846,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
             memcpy(data+6, pkt->data, pkt->size);
             AV_WB32(data, 0x00000001);
             data[4] = 0x09;
-            data[5] = 0xe0; // any slice type
+            data[5] = 0xf0; // any slice type (0xe) + rbsp stop one bit
             buf  = data;
             size = pkt->size+6;
         }
