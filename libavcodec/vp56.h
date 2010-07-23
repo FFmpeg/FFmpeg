@@ -208,23 +208,25 @@ static av_always_inline unsigned int vp56_rac_renorm(VP56RangeCoder *c)
     return code_word;
 }
 
+#if ARCH_X86
+#include "x86/vp56_arith.h"
+#endif
+
+#ifndef vp56_rac_get_prob
+#define vp56_rac_get_prob vp56_rac_get_prob
 static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
 {
-    /* Don't put c->high in a local variable; if we do that, gcc gets
-     * the stupids and turns the code below into a branch again. */
     unsigned int code_word = vp56_rac_renorm(c);
     unsigned int low = 1 + (((c->high - 1) * prob) >> 8);
     unsigned int low_shift = low << 8;
     int bit = code_word >= low_shift;
 
-    /* Incantation to convince GCC to turn these into conditional moves
-     * instead of branches -- faster, as this branch is basically
-     * unpredictable. */
     c->high = bit ? c->high - low : low;
     c->code_word = bit ? code_word - low_shift : code_word;
 
     return bit;
 }
+#endif
 
 // branchy variant, to be used where there's a branch based on the bit decoded
 static av_always_inline int vp56_rac_get_prob_branchy(VP56RangeCoder *c, int prob)
