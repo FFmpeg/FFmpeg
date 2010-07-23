@@ -226,6 +226,24 @@ static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
     return bit;
 }
 
+// branchy variant, to be used where there's a branch based on the bit decoded
+static av_always_inline int vp56_rac_get_prob_branchy(VP56RangeCoder *c, int prob)
+{
+    unsigned long code_word = vp56_rac_renorm(c);
+    unsigned low = 1 + (((c->high - 1) * prob) >> 8);
+    unsigned low_shift = low << 8;
+
+    if (code_word >= low_shift) {
+        c->high     -= low;
+        c->code_word = code_word - low_shift;
+        return 1;
+    }
+
+    c->high = low;
+    c->code_word = code_word;
+    return 0;
+}
+
 static inline int vp56_rac_get(VP56RangeCoder *c)
 {
     unsigned int code_word = vp56_rac_renorm(c);

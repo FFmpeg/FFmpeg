@@ -329,21 +329,6 @@ static const uint8_t vp8_coeff_band[16] =
     0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7
 };
 
-static const int8_t vp8_coeff_tree[NUM_DCT_TOKENS-1][2] =
-{
-    { -DCT_EOB, 1 },                // '0'
-     { -DCT_0, 2 },                 // '10'
-      { -DCT_1, 3 },                // '110'
-       { 4, 6 },
-        { -DCT_2, 5 },              // '11100'
-         { -DCT_3, -DCT_4 },        // '111010', '111011'
-        { 7, 8 },
-         { -DCT_CAT1, -DCT_CAT2 },  // '111100', '111101'
-         { 9, 10 },
-          { -DCT_CAT3, -DCT_CAT4 }, // '1111100', '1111101'
-          { -DCT_CAT5, -DCT_CAT6 }, // '1111110', '1111111'
-};
-
 static const uint8_t vp8_dct_cat1_prob[] = { 159, 0 };
 static const uint8_t vp8_dct_cat2_prob[] = { 165, 145, 0 };
 static const uint8_t vp8_dct_cat3_prob[] = { 173, 148, 140, 0 };
@@ -351,10 +336,9 @@ static const uint8_t vp8_dct_cat4_prob[] = { 176, 155, 140, 135, 0 };
 static const uint8_t vp8_dct_cat5_prob[] = { 180, 157, 141, 134, 130, 0 };
 static const uint8_t vp8_dct_cat6_prob[] = { 254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0 };
 
-static const uint8_t * const vp8_dct_cat_prob[6] =
+// only used for cat3 and above; cat 1 and 2 are referenced directly
+static const uint8_t * const vp8_dct_cat_prob[] =
 {
-    vp8_dct_cat1_prob,
-    vp8_dct_cat2_prob,
     vp8_dct_cat3_prob,
     vp8_dct_cat4_prob,
     vp8_dct_cat5_prob,
