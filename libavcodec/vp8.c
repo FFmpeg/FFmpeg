@@ -599,7 +599,7 @@ void find_near_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
  */
 static int read_mv_component(VP56RangeCoder *c, const uint8_t *p)
 {
-    int x = 0;
+    int bit, x = 0;
 
     if (vp56_rac_get_prob_branchy(c, p[0])) {
         int i;
@@ -610,8 +610,17 @@ static int read_mv_component(VP56RangeCoder *c, const uint8_t *p)
             x += vp56_rac_get_prob(c, p[9 + i]) << i;
         if (!(x & 0xFFF0) || vp56_rac_get_prob(c, p[12]))
             x += 8;
-    } else
-        x = vp8_rac_get_tree(c, vp8_small_mvtree, &p[2]);
+    } else {
+        // small_mvtree
+        const uint8_t *ps = p+2;
+        bit = vp56_rac_get_prob(c, *ps);
+        ps += 1 + 3*bit;
+        x  += 4*bit;
+        bit = vp56_rac_get_prob(c, *ps);
+        ps += 1 + bit;
+        x  += 2*bit;
+        x  += vp56_rac_get_prob(c, *ps);
+    }
 
     return (x && vp56_rac_get_prob(c, p[1])) ? -x : x;
 }

@@ -110,16 +110,6 @@ static const int8_t vp8_pred16x16_tree_mvinter[4][2] = {
        { -VP8_MVMODE_NEW, -VP8_MVMODE_SPLIT } // '1110', '1111'
 };
 
-static const int8_t vp8_small_mvtree[7][2] = {
-    {  1, 4 },
-     {  2, 3 },
-      { -0, -1 },                           // '000', '001'
-      { -2, -3 },                           // '010', '011'
-     {  5,  6 },
-      { -4, -5 },                           // '100', '101'
-      { -6, -7 }                            // '110', '111'
-};
-
 static const uint8_t vp8_mbsplits[5][16] = {
     {  0,  0,  0,  0,  0,  0,  0,  0,
        1,  1,  1,  1,  1,  1,  1,  1  },
