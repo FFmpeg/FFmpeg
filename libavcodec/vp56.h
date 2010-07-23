@@ -56,7 +56,7 @@ typedef struct {
                  bits left) in order to eliminate a negate in cache refilling */
     const uint8_t *buffer;
     const uint8_t *end;
-    unsigned long code_word;
+    unsigned int code_word;
 } VP56RangeCoder;
 
 typedef struct {
@@ -196,7 +196,7 @@ static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
     /* Don't put c->high in a local variable; if we do that, gcc gets
      * the stupids and turns the code below into a branch again. */
     int bits = c->bits;
-    unsigned long code_word = c->code_word;
+    unsigned int code_word = c->code_word;
     unsigned int low = 1 + (((c->high - 1) * prob) >> 8);
     unsigned int low_shift = low << 8;
     int bit = code_word >= low_shift;
