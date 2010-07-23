@@ -589,7 +589,7 @@ static void find_near_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
     if (cnt[CNT_NEAREST] >= cnt[CNT_ZERO])
         best_idx = CNT_NEAREST;
 
-    clamp_mv(s, best, &near_mv[best_idx], mb_x, mb_y);
+    mb->mv  = near_mv[best_idx];
     near[0] = near_mv[CNT_NEAREST];
     near[1] = near_mv[CNT_NEAR];
 }
@@ -629,8 +629,7 @@ static const uint8_t *get_submv_prob(uint32_t left, uint32_t top)
  * Split motion vector prediction, 16.4.
  * @returns the number of motion vectors parsed (2, 4 or 16)
  */
-static int decode_splitmvs(VP8Context    *s,  VP56RangeCoder *c,
-                            VP8Macroblock *mb, VP56mv         *base_mv)
+static int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb)
 {
     int part_idx = mb->partitioning =
         vp8_rac_get_tree(c, vp8_mbsplit_tree, vp8_mbsplit_prob);
@@ -663,8 +662,8 @@ static int decode_splitmvs(VP8Context    *s,  VP56RangeCoder *c,
 
         switch (vp8_rac_get_tree(c, vp8_submv_ref_tree, submv_prob)) {
         case VP8_SUBMVMODE_NEW4X4:
-            mb->bmv[n].y = base_mv->y + read_mv_component(c, s->prob->mvc[0]);
-            mb->bmv[n].x = base_mv->x + read_mv_component(c, s->prob->mvc[1]);
+            mb->bmv[n].y = mb->mv.y + read_mv_component(c, s->prob->mvc[0]);
+            mb->bmv[n].x = mb->mv.x + read_mv_component(c, s->prob->mvc[1]);
             break;
         case VP8_SUBMVMODE_ZERO4X4:
             AV_ZERO32(&mb->bmv[n]);
@@ -746,7 +745,8 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
         mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_mvinter, p);
         switch (mb->mode) {
         case VP8_MVMODE_SPLIT:
-            mb->mv = mb->bmv[decode_splitmvs(s, c, mb, &best) - 1];
+            clamp_mv(s, &mb->mv, &mb->mv, mb_x, mb_y);
+            mb->mv = mb->bmv[decode_splitmvs(s, c, mb) - 1];
             break;
         case VP8_MVMODE_ZERO:
             AV_ZERO32(&mb->mv);
@@ -758,8 +758,9 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
             clamp_mv(s, &mb->mv, &near[1], mb_x, mb_y);
             break;
         case VP8_MVMODE_NEW:
-            mb->mv.y = best.y + read_mv_component(c, s->prob->mvc[0]);
-            mb->mv.x = best.x + read_mv_component(c, s->prob->mvc[1]);
+            clamp_mv(s, &mb->mv, &mb->mv, mb_x, mb_y);
+            mb->mv.y += + read_mv_component(c, s->prob->mvc[0]);
+            mb->mv.x += + read_mv_component(c, s->prob->mvc[1]);
             break;
         }
         if (mb->mode != VP8_MVMODE_SPLIT) {
