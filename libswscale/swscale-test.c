@@ -72,29 +72,21 @@ static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, i
 // test by ref -> src -> dst -> out & compare out against ref
 // ref & out are YV12
 static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
+                  uint8_t *src[4], int srcStride[4],
                   enum PixelFormat srcFormat, enum PixelFormat dstFormat,
                   int srcW, int srcH, int dstW, int dstH, int flags)
 {
-    uint8_t *src[4] = {0};
     uint8_t *dst[4] = {0};
     uint8_t *out[4] = {0};
-    int srcStride[4], dstStride[4];
+    int dstStride[4];
     int i;
     uint64_t ssdY, ssdU=0, ssdV=0, ssdA=0;
-    struct SwsContext *srcContext = NULL, *dstContext = NULL,
-                      *outContext = NULL;
+    struct SwsContext *dstContext = NULL, *outContext = NULL;
     int res;
 
     res = 0;
     for (i=0; i<4; i++) {
         // avoid stride % bpp != 0
-        if (srcFormat==PIX_FMT_RGB24 || srcFormat==PIX_FMT_BGR24)
-            srcStride[i]= srcW*3;
-        else if (srcFormat==PIX_FMT_RGB48BE || srcFormat==PIX_FMT_RGB48LE)
-            srcStride[i]= srcW*6;
-        else
-            srcStride[i]= srcW*4;
-
         if (dstFormat==PIX_FMT_RGB24 || dstFormat==PIX_FMT_BGR24)
             dstStride[i]= dstW*3;
         else if (dstFormat==PIX_FMT_RGB48BE || dstFormat==PIX_FMT_RGB48LE)
@@ -108,10 +100,9 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
          * allocated with av_malloc). */
         /* An extra 16 bytes is being allocated because some scalers may write
          * out of bounds. */
-        src[i]= av_mallocz(srcStride[i]*srcH+16);
         dst[i]= av_mallocz(dstStride[i]*dstH+16);
         out[i]= av_mallocz(refStride[i]*h);
-        if (!src[i] || !dst[i] || !out[i]) {
+        if (!dst[i] || !out[i]) {
             perror("Malloc");
             res = -1;
 
@@ -119,15 +110,6 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
         }
     }
 
-    srcContext= sws_getContext(w, h, PIX_FMT_YUVA420P, srcW, srcH, srcFormat, flags, NULL, NULL, NULL);
-    if (!srcContext) {
-        fprintf(stderr, "Failed to get %s ---> %s\n",
-                av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name,
-                av_pix_fmt_descriptors[srcFormat].name);
-        res = -1;
-
-        goto end;
-    }
     dstContext= sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, NULL, NULL, NULL);
     if (!dstContext) {
         fprintf(stderr, "Failed to get %s ---> %s\n",
@@ -155,7 +137,6 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
            flags);
     fflush(stdout);
 
-    sws_scale(srcContext, ref, refStride, 0, h   , src, srcStride);
     sws_scale(dstContext, src, srcStride, 0, srcH, dst, dstStride);
     sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
 
@@ -178,12 +159,10 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
 
 end:
 
-    sws_freeContext(srcContext);
     sws_freeContext(dstContext);
     sws_freeContext(outContext);
 
     for (i=0; i<4; i++) {
-        av_free(src[i]);
         av_free(dst[i]);
         av_free(out[i]);
     }
@@ -218,11 +197,46 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
                    av_pix_fmt_descriptors[dstFormat].name);
             fflush(stdout);
 
-            for (k = 0; flags[k] && !res; k++)
+            for (k = 0; flags[k] && !res; k++) {
+                struct SwsContext *srcContext = NULL;
+                uint8_t *src[4] = {0};
+                int srcStride[4];
+                int p;
+                for (p = 0; p < 4; p++) {
+                    if (srcFormat == PIX_FMT_RGB24 ||
+                        srcFormat == PIX_FMT_BGR24)
+                        srcStride[p] = srcW*3;
+                    else if (srcFormat==PIX_FMT_RGB48BE ||
+                             srcFormat==PIX_FMT_RGB48LE)
+                        srcStride[p] = srcW*6;
+                    else
+                        srcStride[p] = srcW*4;
+                    src[p] = av_mallocz(srcStride[p]*srcH+16);
+                    if (!src[p]) {
+                        perror("Malloc");
+                        return;
+                    }
+                }
+                srcContext = sws_getContext(w, h, PIX_FMT_YUVA420P, srcW, srcH,
+                                            srcFormat, flags[k], NULL, NULL, NULL);
+                if (!srcContext) {
+                   fprintf(stderr, "Failed to get %s ---> %s\n",
+                            av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name,
+                            av_pix_fmt_descriptors[srcFormat].name);
+                   return;
+                }
+                sws_scale(srcContext, ref, refStride, 0, h, src, srcStride);
+
                 for (i = 0; dstW[i] && !res; i++)
                     for (j = 0; dstH[j] && !res; j++)
-                        res = doTest(ref, refStride, w, h, srcFormat, dstFormat,
+                        res = doTest(ref, refStride, w, h, src, srcStride,
+                                     srcFormat, dstFormat,
                                      srcW, srcH, dstW[i], dstH[j], flags[k]);
+
+                sws_freeContext(srcContext);
+                for (p = 0; p < 4; p++)
+                    av_free(src[p]);
+            }
         }
     }
 }
