@@ -191,10 +191,11 @@ static inline void vp56_init_range_decoder(VP56RangeCoder *c,
     c->code_word = bytestream_get_be16(&c->buffer);
 }
 
-static av_always_inline void vp56_rac_renorm(VP56RangeCoder *c, unsigned int code_word)
+static av_always_inline unsigned int vp56_rac_renorm(VP56RangeCoder *c)
 {
     int shift = ff_h264_norm_shift[c->high] - 1;
     int bits = c->bits;
+    unsigned int code_word = c->code_word;
 
     c->high   <<= shift;
     code_word <<= shift;
@@ -204,14 +205,14 @@ static av_always_inline void vp56_rac_renorm(VP56RangeCoder *c, unsigned int cod
         bits -= 8;
     }
     c->bits = bits;
-    c->code_word = code_word;
+    return code_word;
 }
 
 static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
 {
     /* Don't put c->high in a local variable; if we do that, gcc gets
      * the stupids and turns the code below into a branch again. */
-    unsigned int code_word = c->code_word;
+    unsigned int code_word = vp56_rac_renorm(c);
     unsigned int low = 1 + (((c->high - 1) * prob) >> 8);
     unsigned int low_shift = low << 8;
     int bit = code_word >= low_shift;
@@ -220,31 +221,26 @@ static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
      * instead of branches -- faster, as this branch is basically
      * unpredictable. */
     c->high = bit ? c->high - low : low;
-    code_word = bit ? code_word - low_shift : code_word;
+    c->code_word = bit ? code_word - low_shift : code_word;
 
-    vp56_rac_renorm(c, code_word);
     return bit;
 }
 
 static inline int vp56_rac_get(VP56RangeCoder *c)
 {
+    unsigned int code_word = vp56_rac_renorm(c);
     /* equiprobable */
     int low = (c->high + 1) >> 1;
     unsigned int low_shift = low << 8;
-    int bit = c->code_word >= low_shift;
+    int bit = code_word >= low_shift;
     if (bit) {
-        c->high = (c->high - low) << 1;
-        c->code_word -= low_shift;
+        c->high   -= low;
+        code_word -= low_shift;
     } else {
-        c->high = low << 1;
+        c->high = low;
     }
 
-    /* normalize */
-    c->code_word <<= 1;
-    if (++c->bits == 0 && c->buffer < c->end) {
-        c->bits = -8;
-        c->code_word |= *c->buffer++;
-    }
+    c->code_word = code_word;
     return bit;
 }
 
