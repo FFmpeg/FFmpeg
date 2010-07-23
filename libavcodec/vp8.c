@@ -929,12 +929,11 @@ void xchg_mb_border(uint8_t *top_border, uint8_t *src_y, uint8_t *src_cb, uint8_
 static int check_intra_pred_mode(int mode, int mb_x, int mb_y)
 {
     if (mode == DC_PRED8x8) {
-        if (!(mb_x|mb_y))
-            mode = DC_128_PRED8x8;
-        else if (!mb_y)
-            mode = LEFT_DC_PRED8x8;
-        else if (!mb_x)
-            mode = TOP_DC_PRED8x8;
+        if (!mb_x) {
+            mode = mb_y ? TOP_DC_PRED8x8 : DC_128_PRED8x8;
+        } else if (!mb_y) {
+            mode = mb_x ? LEFT_DC_PRED8x8 : DC_128_PRED8x8;
+        }
     }
     return mode;
 }
