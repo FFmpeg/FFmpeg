@@ -557,7 +557,8 @@ static void find_near_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
             if (mv) {\
                 if (cur_sign_bias != sign_bias[edge_ref]) {\
                     /* SWAR negate of the values in mv. */\
-                    mv = ((mv&0x80008000) + 0x00010001) ^ (mv&0x7fff7fff);\
+                    mv = ~mv;\
+                    mv = ((mv&0x7fff7fff) + 0x00010001) ^ (mv&0x80008000);\
                 }\
                 if (!n || mv != AV_RN32A(&near_mv[idx]))\
                     AV_WN32A(&near_mv[++idx], mv);\
