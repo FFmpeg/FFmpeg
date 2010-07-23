@@ -211,7 +211,7 @@ Codecs:
   vp3*                                  Mike Melanson
   vp5                                   Aurelien Jacobs
   vp6                                   Aurelien Jacobs
-  vp8                                   David Conrad
+  vp8                                   David Conrad, Jason Garrett-Glaser, Ronald Bultje
   vqavideo.c                            Mike Melanson
   wavpack.c                             Kostya Shishkov
   wmaprodec.c                           Sascha Sommer
