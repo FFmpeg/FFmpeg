@@ -986,7 +986,7 @@ cglobal vp8_idct_dc_add4_mmx, 3, 3
     movd      m1, [r1+32*2] ; C
     punpcklwd m0, [r1+32*1] ; A B
     punpcklwd m1, [r1+32*3] ; C D
-    punpckldq m0, m1       ; A B C D
+    punpckldq m0, m1        ; A B C D
     pxor      m6, m6
 
     ; calculate DC
@@ -1021,7 +1021,7 @@ cglobal vp8_idct_dc_add4_sse2, 3, 3
     movd      m1, [r1+32*2] ; C
     punpcklwd m0, [r1+32*1] ; A B
     punpcklwd m1, [r1+32*3] ; C D
-    punpckldq m0, m1       ; A B C D
+    punpckldq m0, m1        ; A B C D
     pxor      m1, m1
 
     ; calculate DC
