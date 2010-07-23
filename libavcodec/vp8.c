@@ -667,7 +667,7 @@ static int decode_splitmvs(VP8Context    *s,  VP56RangeCoder *c,
             mb->bmv[n].x = base_mv->x + read_mv_component(c, s->prob->mvc[1]);
             break;
         case VP8_SUBMVMODE_ZERO4X4:
-            AV_WN32A(&mb->bmv[n], 0);
+            AV_ZERO32(&mb->bmv[n]);
             break;
         case VP8_SUBMVMODE_LEFT4X4:
             AV_WN32A(&mb->bmv[n], left);
@@ -749,7 +749,7 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
             mb->mv = mb->bmv[decode_splitmvs(s, c, mb, &best) - 1];
             break;
         case VP8_MVMODE_ZERO:
-            AV_WN32A(&mb->mv, 0);
+            AV_ZERO32(&mb->mv);
             break;
         case VP8_MVMODE_NEAREST:
             clamp_mv(s, &mb->mv, &near[0], mb_x, mb_y);
@@ -776,7 +776,7 @@ static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
         s->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, s->prob->pred8x8c);
         mb->ref_frame = VP56_FRAME_CURRENT;
         mb->partitioning = VP8_SPLITMVMODE_NONE;
-        AV_WN32A(&mb->bmv[0], 0);
+        AV_ZERO32(&mb->bmv[0]);
     }
 }
 
