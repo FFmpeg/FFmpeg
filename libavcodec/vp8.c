@@ -521,8 +521,8 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
     return 0;
 }
 
-static inline void clamp_mv(VP8Context *s, VP56mv *dst, const VP56mv *src,
-                            int mb_x, int mb_y)
+static av_always_inline
+void clamp_mv(VP8Context *s, VP56mv *dst, const VP56mv *src, int mb_x, int mb_y)
 {
 #define MARGIN (16 << 2)
     dst->x = av_clip(src->x, -((mb_x << 6) + MARGIN),
@@ -531,8 +531,9 @@ static inline void clamp_mv(VP8Context *s, VP56mv *dst, const VP56mv *src,
                      ((s->mb_height - 1 - mb_y) << 6) + MARGIN);
 }
 
-static void find_near_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
-                          VP56mv near[2], VP56mv *best, uint8_t cnt[4])
+static av_always_inline
+void find_near_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
+                   VP56mv near[2], VP56mv *best, uint8_t cnt[4])
 {
     VP8Macroblock *mb_edge[3] = { mb + 2 /* top */,
                                   mb - 1 /* left */,
@@ -614,7 +615,8 @@ static int read_mv_component(VP56RangeCoder *c, const uint8_t *p)
     return (x && vp56_rac_get_prob(c, p[1])) ? -x : x;
 }
 
-static const uint8_t *get_submv_prob(uint32_t left, uint32_t top)
+static av_always_inline
+const uint8_t *get_submv_prob(uint32_t left, uint32_t top)
 {
     if (left == top)
         return vp8_submv_prob[4-!!left];
@@ -627,7 +629,8 @@ static const uint8_t *get_submv_prob(uint32_t left, uint32_t top)
  * Split motion vector prediction, 16.4.
  * @returns the number of motion vectors parsed (2, 4 or 16)
  */
-static int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb)
+static av_always_inline
+int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb)
 {
     int part_idx = mb->partitioning =
         vp8_rac_get_tree(c, vp8_mbsplit_tree, vp8_mbsplit_prob);
@@ -678,8 +681,9 @@ static int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb)
     return num;
 }
 
-static inline void decode_intra4x4_modes(VP56RangeCoder *c, uint8_t *intra4x4,
-                                         int stride, int keyframe)
+static av_always_inline
+void decode_intra4x4_modes(VP56RangeCoder *c, uint8_t *intra4x4,
+                           int stride, int keyframe)
 {
     int x, y, t, l, i;
 
@@ -700,8 +704,9 @@ static inline void decode_intra4x4_modes(VP56RangeCoder *c, uint8_t *intra4x4,
     }
 }
 
-static void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
-                           uint8_t *intra4x4, uint8_t *segment)
+static av_always_inline
+void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
+                    uint8_t *intra4x4, uint8_t *segment)
 {
     VP56RangeCoder *c = &s->c;
 
@@ -827,8 +832,9 @@ static int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
     return nonzero;
 }
 
-static void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
-                             uint8_t t_nnz[9], uint8_t l_nnz[9])
+static av_always_inline
+void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
+                      uint8_t t_nnz[9], uint8_t l_nnz[9])
 {
     LOCAL_ALIGNED_16(DCTELEM, dc,[16]);
     int i, x, y, luma_start = 0, luma_ctx = 3;
@@ -925,7 +931,8 @@ void xchg_mb_border(uint8_t *top_border, uint8_t *src_y, uint8_t *src_cb, uint8_
     }
 }
 
-static int check_intra_pred_mode(int mode, int mb_x, int mb_y)
+static av_always_inline
+int check_intra_pred_mode(int mode, int mb_x, int mb_y)
 {
     if (mode == DC_PRED8x8) {
         if (!mb_x) {
@@ -937,8 +944,9 @@ static int check_intra_pred_mode(int mode, int mb_x, int mb_y)
     return mode;
 }
 
-static void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
-                          uint8_t *intra4x4, int mb_x, int mb_y)
+static av_always_inline
+void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
+                   uint8_t *intra4x4, int mb_x, int mb_y)
 {
     int x, y, mode, nnz, tr;
 
@@ -1020,11 +1028,12 @@ static void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
  * @param linesize size of a single line of plane data, including padding
  * @param mc_func motion compensation function pointers (bilinear or sixtap MC)
  */
-static inline void vp8_mc(VP8Context *s, int luma,
-                          uint8_t *dst, uint8_t *src, const VP56mv *mv,
-                          int x_off, int y_off, int block_w, int block_h,
-                          int width, int height, int linesize,
-                          vp8_mc_func mc_func[3][3])
+static av_always_inline
+void vp8_mc(VP8Context *s, int luma,
+            uint8_t *dst, uint8_t *src, const VP56mv *mv,
+            int x_off, int y_off, int block_w, int block_h,
+            int width, int height, int linesize,
+            vp8_mc_func mc_func[3][3])
 {
     if (AV_RN32A(mv)) {
         static const uint8_t idx[8] = { 0, 1, 2, 1, 2, 1, 2, 1 };
@@ -1048,11 +1057,12 @@ static inline void vp8_mc(VP8Context *s, int luma,
         mc_func[0][0](dst, linesize, src + y_off * linesize + x_off, linesize, block_h, 0, 0);
 }
 
-static inline void vp8_mc_part(VP8Context *s, uint8_t *dst[3],
-                               AVFrame *ref_frame, int x_off, int y_off,
-                               int bx_off, int by_off,
-                               int block_w, int block_h,
-                               int width, int height, VP56mv *mv)
+static av_always_inline
+void vp8_mc_part(VP8Context *s, uint8_t *dst[3],
+                 AVFrame *ref_frame, int x_off, int y_off,
+                 int bx_off, int by_off,
+                 int block_w, int block_h,
+                 int width, int height, VP56mv *mv)
 {
     VP56mv uvmv = *mv;
 
@@ -1083,7 +1093,7 @@ static inline void vp8_mc_part(VP8Context *s, uint8_t *dst[3],
 
 /* Fetch pixels for estimated mv 4 macroblocks ahead.
  * Optimized for 64-byte cache lines.  Inspired by ffh264 prefetch_motion. */
-static inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, int mb_xy, int ref)
+static av_always_inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, int mb_xy, int ref)
 {
     /* Don't prefetch refs that haven't been used very often this frame. */
     if (s->ref_count[ref-1] > (mb_xy >> 5)) {
@@ -1101,8 +1111,9 @@ static inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, int mb_x, i
 /**
  * Apply motion vectors to prediction buffer, chapter 18.
  */
-static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
-                          int mb_x, int mb_y)
+static av_always_inline
+void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
+                   int mb_x, int mb_y)
 {
     int x_off = mb_x << 4, y_off = mb_y << 4;
     int width = 16*s->mb_width, height = 16*s->mb_height;
@@ -1185,7 +1196,7 @@ static void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
     }
 }
 
-static void idct_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb)
+static av_always_inline void idct_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb)
 {
     int x, y, ch;
 
@@ -1236,7 +1247,7 @@ static void idct_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb)
     }
 }
 
-static void filter_level_for_mb(VP8Context *s, VP8Macroblock *mb, VP8FilterStrength *f )
+static av_always_inline void filter_level_for_mb(VP8Context *s, VP8Macroblock *mb, VP8FilterStrength *f )
 {
     int interior_limit, filter_level;
 
@@ -1276,7 +1287,7 @@ static void filter_level_for_mb(VP8Context *s, VP8Macroblock *mb, VP8FilterStren
     f->inner_filter = !mb->skip || mb->mode == MODE_I4x4 || mb->mode == VP8_MVMODE_SPLIT;
 }
 
-static void filter_mb(VP8Context *s, uint8_t *dst[3], VP8FilterStrength *f, int mb_x, int mb_y)
+static av_always_inline void filter_mb(VP8Context *s, uint8_t *dst[3], VP8FilterStrength *f, int mb_x, int mb_y)
 {
     int mbedge_lim, bedge_lim, hev_thresh;
     int filter_level = f->filter_level;
@@ -1345,7 +1356,7 @@ static void filter_mb(VP8Context *s, uint8_t *dst[3], VP8FilterStrength *f, int 
     }
 }
 
-static void filter_mb_simple(VP8Context *s, uint8_t *dst, VP8FilterStrength *f, int mb_x, int mb_y)
+static av_always_inline void filter_mb_simple(VP8Context *s, uint8_t *dst, VP8FilterStrength *f, int mb_x, int mb_y)
 {
     int mbedge_lim, bedge_lim;
     int filter_level = f->filter_level;
