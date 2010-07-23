@@ -970,6 +970,9 @@ static void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
             tr_right = (uint8_t *)&tr;
         }
 
+        if (mb->skip)
+            AV_ZERO128(s->non_zero_count_cache);
+
         for (y = 0; y < 4; y++) {
             uint8_t *topright = ptr + 4 - s->linesize;
             for (x = 0; x < 4; x++) {
@@ -1500,10 +1503,6 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
             if (!mb->skip)
                 decode_mb_coeffs(s, c, mb, s->top_nnz[mb_x], s->left_nnz);
-            else {
-                AV_ZERO128(s->non_zero_count_cache);    // luma
-                AV_ZERO64(s->non_zero_count_cache[4]);  // chroma
-            }
 
             if (mb->mode <= MODE_I4x4)
                 intra_predict(s, dst, mb, intra4x4_mb, mb_x, mb_y);
