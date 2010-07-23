@@ -494,7 +494,7 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
         for (j = 0; j < 8; j++)
             for (k = 0; k < 3; k++)
                 for (l = 0; l < NUM_DCT_TOKENS-1; l++)
-                    if (vp56_rac_get_prob(c, vp8_token_update_probs[i][j][k][l]))
+                    if (vp56_rac_get_prob_branchy(c, vp8_token_update_probs[i][j][k][l]))
                         s->prob->token[i][j][k][l] = vp8_rac_get_uint(c, 8);
 
     if ((s->mbskip_enabled = vp8_rac_get(c)))
@@ -515,7 +515,7 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
         // 17.2 MV probability update
         for (i = 0; i < 2; i++)
             for (j = 0; j < 19; j++)
-                if (vp56_rac_get_prob(c, vp8_mv_update_prob[i][j]))
+                if (vp56_rac_get_prob_branchy(c, vp8_mv_update_prob[i][j]))
                     s->prob->mvc[i][j] = vp8_rac_get_nn(c);
     }
 
@@ -601,7 +601,7 @@ static int read_mv_component(VP56RangeCoder *c, const uint8_t *p)
 {
     int x = 0;
 
-    if (vp56_rac_get_prob(c, p[0])) {
+    if (vp56_rac_get_prob_branchy(c, p[0])) {
         int i;
 
         for (i = 0; i < 3; i++)
@@ -727,13 +727,13 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
 
         s->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, vp8_pred8x8c_prob_intra);
         mb->ref_frame = VP56_FRAME_CURRENT;
-    } else if (vp56_rac_get_prob(c, s->prob->intra)) {
+    } else if (vp56_rac_get_prob_branchy(c, s->prob->intra)) {
         VP56mv near[2], best;
         uint8_t cnt[4] = { 0 };
         uint8_t p[4];
 
         // inter MB, 16.2
-        if (vp56_rac_get_prob(c, s->prob->last))
+        if (vp56_rac_get_prob_branchy(c, s->prob->last))
             mb->ref_frame = vp56_rac_get_prob(c, s->prob->golden) ?
                 VP56_FRAME_GOLDEN2 /* altref */ : VP56_FRAME_GOLDEN;
         else
