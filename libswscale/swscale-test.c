@@ -218,9 +218,9 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
                    av_pix_fmt_descriptors[dstFormat].name);
             fflush(stdout);
 
+            for (k = 0; flags[k] && !res; k++)
             for (i = 0; dstW[i] && !res; i++)
                 for (j = 0; dstH[j] && !res; j++)
-                    for (k = 0; flags[k] && !res; k++)
                         res = doTest(ref, refStride, w, h, srcFormat, dstFormat,
                                      srcW, srcH, dstW[i], dstH[j], flags[k]);
         }
