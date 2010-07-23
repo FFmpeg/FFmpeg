@@ -219,8 +219,8 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
             fflush(stdout);
 
             for (k = 0; flags[k] && !res; k++)
-            for (i = 0; dstW[i] && !res; i++)
-                for (j = 0; dstH[j] && !res; j++)
+                for (i = 0; dstW[i] && !res; i++)
+                    for (j = 0; dstH[j] && !res; j++)
                         res = doTest(ref, refStride, w, h, srcFormat, dstFormat,
                                      srcW, srcH, dstW[i], dstH[j], flags[k]);
         }
