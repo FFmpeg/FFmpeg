@@ -932,7 +932,7 @@ static int check_intra_pred_mode(int mode, int mb_x, int mb_y)
         if (!mb_x) {
             mode = mb_y ? TOP_DC_PRED8x8 : DC_128_PRED8x8;
         } else if (!mb_y) {
-            mode = mb_x ? LEFT_DC_PRED8x8 : DC_128_PRED8x8;
+            mode = LEFT_DC_PRED8x8;
         }
     }
     return mode;
