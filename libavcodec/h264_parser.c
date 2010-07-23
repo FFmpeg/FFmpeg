@@ -127,6 +127,9 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     h->sei_cpb_removal_delay        = -1;
     h->sei_buffering_period_present =  0;
 
+    if (!buf_size)
+        return 0;
+
     for(;;) {
         int src_length, dst_length, consumed;
         buf = ff_find_start_code(buf, buf_end, &state);
