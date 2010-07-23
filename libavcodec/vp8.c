@@ -198,8 +198,6 @@ typedef struct {
     } prob[2];
 } VP8Context;
 
-#define RL24(p) (AV_RL16(p) + ((p)[2] << 16))
-
 static void vp8_decode_flush(AVCodecContext *avctx)
 {
     VP8Context *s = avctx->priv_data;
@@ -307,7 +305,7 @@ static int setup_partitions(VP8Context *s, const uint8_t *buf, int buf_size)
         return -1;
 
     for (i = 0; i < s->num_coeff_partitions-1; i++) {
-        int size = RL24(sizes + 3*i);
+        int size = AV_RL24(sizes + 3*i);
         if (buf_size - size < 0)
             return -1;
 
@@ -402,7 +400,7 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
     s->keyframe  = !(buf[0] & 1);
     s->profile   =  (buf[0]>>1) & 7;
     s->invisible = !(buf[0] & 0x10);
-    header_size  = RL24(buf) >> 5;
+    header_size  = AV_RL24(buf) >> 5;
     buf      += 3;
     buf_size -= 3;
 
@@ -420,8 +418,8 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
     }
 
     if (s->keyframe) {
-        if (RL24(buf) != 0x2a019d) {
-            av_log(s->avctx, AV_LOG_ERROR, "Invalid start code 0x%x\n", RL24(buf));
+        if (AV_RL24(buf) != 0x2a019d) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid start code 0x%x\n", AV_RL24(buf));
             return AVERROR_INVALIDDATA;
         }
         width  = AV_RL16(buf+3) & 0x3fff;
