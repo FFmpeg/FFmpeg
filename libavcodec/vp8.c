@@ -1084,10 +1084,10 @@ static inline void vp8_mc_part(VP8Context *s, uint8_t *dst[3],
 
 /* Fetch pixels for estimated mv 4 macroblocks ahead.
  * Optimized for 64-byte cache lines.  Inspired by ffh264 prefetch_motion. */
-static inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, int ref)
+static inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, int mb_xy, int ref)
 {
-    /* Don't prefetch refs that haven't been used yet this frame. */
-    if (s->ref_count[ref-1]) {
+    /* Don't prefetch refs that haven't been used very often this frame. */
+    if (s->ref_count[ref-1] > (mb_xy >> 5)) {
         int x_off = mb_x << 4, y_off = mb_y << 4;
         int mx = mb->mv.x + x_off + 8;
         int my = mb->mv.y + y_off;
@@ -1471,6 +1471,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         VP8Macroblock *mb = s->macroblocks + (s->mb_height - mb_y - 1)*2;
         uint8_t *intra4x4 = s->intra4x4_pred_mode + 4*mb_y*s->b4_stride;
         uint8_t *segment_map = s->segmentation_map + mb_y*s->mb_stride;
+        int mb_xy = mb_y * s->mb_stride;
         uint8_t *dst[3] = {
             curframe->data[0] + 16*mb_y*s->linesize,
             curframe->data[1] +  8*mb_y*s->uvlinesize,
@@ -1487,7 +1488,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         if (mb_y)
             memset(s->top_border, 129, sizeof(*s->top_border));
 
-        for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
+        for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
             uint8_t *intra4x4_mb = s->keyframe ? intra4x4 + 4*mb_x : s->intra4x4_pred_mode_mb;
             uint8_t *segment_mb = segment_map+mb_x;
 
@@ -1497,7 +1498,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
             decode_mb_mode(s, mb, mb_x, mb_y, intra4x4_mb, segment_mb);
 
-            prefetch_motion(s, mb, mb_x, mb_y, VP56_FRAME_PREVIOUS);
+            prefetch_motion(s, mb, mb_x, mb_y, mb_xy, VP56_FRAME_PREVIOUS);
 
             if (!mb->skip)
                 decode_mb_coeffs(s, c, mb, s->top_nnz[mb_x], s->left_nnz);
@@ -1507,7 +1508,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             else
                 inter_predict(s, dst, mb, mb_x, mb_y);
 
-            prefetch_motion(s, mb, mb_x, mb_y, VP56_FRAME_GOLDEN);
+            prefetch_motion(s, mb, mb_x, mb_y, mb_xy, VP56_FRAME_GOLDEN);
 
             if (!mb->skip) {
                 idct_mb(s, dst[0], dst[1], dst[2], mb);
@@ -1525,12 +1526,11 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             if (s->deblock_filter)
                 filter_level_for_mb(s, mb, &s->filter_strength[mb_x]);
 
-            prefetch_motion(s, mb, mb_x, mb_y, VP56_FRAME_GOLDEN2);
+            prefetch_motion(s, mb, mb_x, mb_y, mb_xy, VP56_FRAME_GOLDEN2);
 
             dst[0] += 16;
             dst[1] += 8;
             dst[2] += 8;
-            mb++;
         }
         if (s->deblock_filter) {
             if (s->filter.simple)
