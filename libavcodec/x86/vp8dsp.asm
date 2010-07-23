@@ -913,6 +913,7 @@ cglobal vp8_idct_dc_add_mmx, 3, 3
     paddw      mm0, [pw_4]
     pxor       mm1, mm1
     psraw      mm0, 3
+    movd      [r1], mm1
     psubw      mm1, mm0
     packuswb   mm0, mm0
     packuswb   mm1, mm1
@@ -944,11 +945,12 @@ cglobal vp8_idct_dc_add_mmx, 3, 3
 cglobal vp8_idct_dc_add_sse4, 3, 3, 6
     ; load data
     movd       xmm0, [r1]
-    lea          r1, [r0+r2*2]
     pxor       xmm1, xmm1
 
     ; calculate DC
     paddw      xmm0, [pw_4]
+    movd       [r1], xmm1
+    lea          r1, [r0+r2*2]
     movd       xmm2, [r0]
     movd       xmm3, [r0+r2]
     movd       xmm4, [r1]
@@ -1005,14 +1007,26 @@ cglobal vp8_idct_dc_add_sse4, 3, 3, 6
 %endmacro
 
 INIT_MMX
-cglobal vp8_idct_add_mmx, 3, 3
+%macro VP8_IDCT_ADD 1
+cglobal vp8_idct_add_%1, 3, 3
     ; load block data
-    movq         m0, [r1]
-    movq         m1, [r1+8]
+    movq         m0, [r1+ 0]
+    movq         m1, [r1+ 8]
     movq         m2, [r1+16]
     movq         m3, [r1+24]
     movq         m6, [pw_20091]
     movq         m7, [pw_17734]
+%ifidn %1, sse
+    xorps      xmm0, xmm0
+    movaps  [r1+ 0], xmm0
+    movaps  [r1+16], xmm0
+%else
+    pxor         m4, m4
+    movq    [r1+ 0], m4
+    movq    [r1+ 8], m4
+    movq    [r1+16], m4
+    movq    [r1+24], m4
+%endif
 
     ; actual IDCT
     VP8_IDCT_TRANSFORM4x4_1D 0, 1, 2, 3, 4, 5
@@ -1028,6 +1042,10 @@ cglobal vp8_idct_add_mmx, 3, 3
     STORE_DIFFx2 m2, m3, m6, m7, m4, 3, r1, r2
 
     RET
+%endmacro
+
+VP8_IDCT_ADD mmx
+VP8_IDCT_ADD sse
 
 ;-----------------------------------------------------------------------------
 ; void vp8_luma_dc_wht_mmxext(DCTELEM block[4][4][16], DCTELEM dc[16])

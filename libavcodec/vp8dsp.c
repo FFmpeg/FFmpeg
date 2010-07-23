@@ -69,6 +69,10 @@ static void vp8_idct_add_c(uint8_t *dst, DCTELEM block[16], int stride)
         t1 = block[0*4+i] - block[2*4+i];
         t2 = MUL_35468(block[1*4+i]) - MUL_20091(block[3*4+i]);
         t3 = MUL_20091(block[1*4+i]) + MUL_35468(block[3*4+i]);
+        block[0*4+i] = 0;
+        block[1*4+i] = 0;
+        block[2*4+i] = 0;
+        block[3*4+i] = 0;
 
         tmp[i*4+0] = t0 + t3;
         tmp[i*4+1] = t1 + t2;
@@ -94,6 +98,7 @@ static void vp8_idct_dc_add_c(uint8_t *dst, DCTELEM block[16], int stride)
 {
     int i, dc = (block[0] + 4) >> 3;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP + dc;
+    block[0] = 0;
 
     for (i = 0; i < 4; i++) {
         dst[0] = cm[dst[0]];

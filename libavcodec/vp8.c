@@ -835,8 +835,6 @@ static void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb
     int nnz_pred, nnz, nnz_total = 0;
     int segment = s->segment;
 
-    s->dsp.clear_blocks((DCTELEM *)s->block);
-
     if (mb->mode != MODE_I4x4 && mb->mode != VP8_MVMODE_SPLIT) {
         AV_ZERO128(dc);
         AV_ZERO128(dc+8);
