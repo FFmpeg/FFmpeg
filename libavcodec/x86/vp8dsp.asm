@@ -976,11 +976,11 @@ cglobal vp8_idct_dc_add_sse4, 3, 3, 6
     RET
 
 ;-----------------------------------------------------------------------------
-; void vp8_idct_dc_add4_<opt>(uint8_t *dst, DCTELEM block[4][16], int stride);
+; void vp8_idct_dc_add4y_<opt>(uint8_t *dst, DCTELEM block[4][16], int stride);
 ;-----------------------------------------------------------------------------
 
 INIT_MMX
-cglobal vp8_idct_dc_add4_mmx, 3, 3
+cglobal vp8_idct_dc_add4y_mmx, 3, 3
     ; load data
     movd      m0, [r1+32*0] ; A
     movd      m1, [r1+32*2] ; C
@@ -1015,7 +1015,7 @@ cglobal vp8_idct_dc_add4_mmx, 3, 3
     RET
 
 INIT_XMM
-cglobal vp8_idct_dc_add4_sse2, 3, 3
+cglobal vp8_idct_dc_add4y_sse2, 3, 3, 6
     ; load data
     movd      m0, [r1+32*0] ; A
     movd      m1, [r1+32*2] ; C
@@ -1042,6 +1042,47 @@ cglobal vp8_idct_dc_add4_sse2, 3, 3
     ; add DC
     lea       r1, [r0+r2*2]
     ADD_DC    m0, m1, 0, mova
+    RET
+
+;-----------------------------------------------------------------------------
+; void vp8_idct_dc_add4uv_<opt>(uint8_t *dst, DCTELEM block[4][16], int stride);
+;-----------------------------------------------------------------------------
+
+INIT_MMX
+cglobal vp8_idct_dc_add4uv_mmx, 3, 3
+    ; load data
+    movd      m0, [r1+32*0] ; A
+    movd      m1, [r1+32*2] ; C
+    punpcklwd m0, [r1+32*1] ; A B
+    punpcklwd m1, [r1+32*3] ; C D
+    punpckldq m0, m1        ; A B C D
+    pxor      m6, m6
+
+    ; calculate DC
+    paddw     m0, [pw_4]
+    movd [r1+32*0], m6
+    movd [r1+32*1], m6
+    movd [r1+32*2], m6
+    movd [r1+32*3], m6
+    psraw     m0, 3
+    psubw     m6, m0
+    packuswb  m0, m0
+    packuswb  m6, m6
+    punpcklbw m0, m0 ; AABBCCDD
+    punpcklbw m6, m6 ; AABBCCDD
+    movq      m1, m0
+    movq      m7, m6
+    punpcklbw m0, m0 ; AAAABBBB
+    punpckhbw m1, m1 ; CCCCDDDD
+    punpcklbw m6, m6 ; AAAABBBB
+    punpckhbw m7, m7 ; CCCCDDDD
+
+    ; add DC
+    lea       r1, [r0+r2*2]
+    ADD_DC    m0, m6, 0, mova
+    lea       r0, [r0+r2*4]
+    lea       r1, [r1+r2*4]
+    ADD_DC    m1, m7, 0, mova
     RET
 
 ;-----------------------------------------------------------------------------

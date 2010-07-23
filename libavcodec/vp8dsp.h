@@ -33,7 +33,8 @@ typedef struct VP8DSPContext {
     void (*vp8_luma_dc_wht)(DCTELEM block[4][4][16], DCTELEM dc[16]);
     void (*vp8_idct_add)(uint8_t *dst, DCTELEM block[16], int stride);
     void (*vp8_idct_dc_add)(uint8_t *dst, DCTELEM block[16], int stride);
-    void (*vp8_idct_dc_add4)(uint8_t *dst, DCTELEM block[4][16], int stride);
+    void (*vp8_idct_dc_add4y)(uint8_t *dst, DCTELEM block[4][16], int stride);
+    void (*vp8_idct_dc_add4uv)(uint8_t *dst, DCTELEM block[4][16], int stride);
 
     // loop filter applied to edges between macroblocks
     void (*vp8_v_loop_filter16y)(uint8_t *dst, int stride,

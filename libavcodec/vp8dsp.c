@@ -109,24 +109,20 @@ static void vp8_idct_dc_add_c(uint8_t *dst, DCTELEM block[16], int stride)
     }
 }
 
-static void vp8_idct_dc_add4_c(uint8_t *dst, DCTELEM block[4][16], int stride)
+static void vp8_idct_dc_add4uv_c(uint8_t *dst, DCTELEM block[4][16], int stride)
 {
-    int i, j;
-    for (j = 0; j < 4; j++) {
-        uint8_t *pix = dst+j*4;
-        int dc = (block[j][0] + 4) >> 3;
-        uint8_t *cm = ff_cropTbl + MAX_NEG_CROP + dc;
-        block[j][0] = 0;
-        if (!dc)
-            continue;
-        for (i = 0; i < 4; i++) {
-            pix[0] = cm[pix[0]];
-            pix[1] = cm[pix[1]];
-            pix[2] = cm[pix[2]];
-            pix[3] = cm[pix[3]];
-            pix += stride;
-        }
-    }
+    vp8_idct_dc_add_c(dst+stride*0+0, block[0], stride);
+    vp8_idct_dc_add_c(dst+stride*0+4, block[1], stride);
+    vp8_idct_dc_add_c(dst+stride*4+0, block[2], stride);
+    vp8_idct_dc_add_c(dst+stride*4+4, block[3], stride);
+}
+
+static void vp8_idct_dc_add4y_c(uint8_t *dst, DCTELEM block[4][16], int stride)
+{
+    vp8_idct_dc_add_c(dst+ 0, block[0], stride);
+    vp8_idct_dc_add_c(dst+ 4, block[1], stride);
+    vp8_idct_dc_add_c(dst+ 8, block[2], stride);
+    vp8_idct_dc_add_c(dst+12, block[3], stride);
 }
 
 // because I like only having two parameters to pass functions...
@@ -479,10 +475,11 @@ VP8_BILINEAR(4)
 
 av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
 {
-    dsp->vp8_luma_dc_wht  = vp8_luma_dc_wht_c;
-    dsp->vp8_idct_add     = vp8_idct_add_c;
-    dsp->vp8_idct_dc_add  = vp8_idct_dc_add_c;
-    dsp->vp8_idct_dc_add4 = vp8_idct_dc_add4_c;
+    dsp->vp8_luma_dc_wht    = vp8_luma_dc_wht_c;
+    dsp->vp8_idct_add       = vp8_idct_add_c;
+    dsp->vp8_idct_dc_add    = vp8_idct_dc_add_c;
+    dsp->vp8_idct_dc_add4y  = vp8_idct_dc_add4y_c;
+    dsp->vp8_idct_dc_add4uv = vp8_idct_dc_add4uv_c;
 
     dsp->vp8_v_loop_filter16y = vp8_v_loop_filter16_c;
     dsp->vp8_h_loop_filter16y = vp8_h_loop_filter16_c;

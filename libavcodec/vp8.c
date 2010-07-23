@@ -1206,7 +1206,7 @@ static void idct_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb)
                         }
                     }
                 } else {
-                    s->vp8dsp.vp8_idct_dc_add4(y_dst, s->block[y], s->linesize);
+                    s->vp8dsp.vp8_idct_dc_add4y(y_dst, s->block[y], s->linesize);
                 }
             }
             y_dst += 4*s->linesize;
@@ -1214,19 +1214,24 @@ static void idct_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb)
     }
 
     for (ch = 0; ch < 2; ch++) {
-        if (AV_RN32A(s->non_zero_count_cache[4+ch])) {
+        uint32_t nnz4 = AV_RN32A(s->non_zero_count_cache[4+ch]);
+        if (nnz4) {
             uint8_t *ch_dst = dst[1+ch];
-            for (y = 0; y < 2; y++) {
-                for (x = 0; x < 2; x++) {
-                    int nnz = s->non_zero_count_cache[4+ch][(y<<1)+x];
-                    if (nnz) {
-                        if (nnz == 1)
-                            s->vp8dsp.vp8_idct_dc_add(ch_dst+4*x, s->block[4+ch][(y<<1)+x], s->uvlinesize);
-                        else
-                            s->vp8dsp.vp8_idct_add(ch_dst+4*x, s->block[4+ch][(y<<1)+x], s->uvlinesize);
+            if (nnz4&~0x01010101) {
+                for (y = 0; y < 2; y++) {
+                    for (x = 0; x < 2; x++) {
+                        int nnz = s->non_zero_count_cache[4+ch][(y<<1)+x];
+                        if (nnz) {
+                            if (nnz == 1)
+                                s->vp8dsp.vp8_idct_dc_add(ch_dst+4*x, s->block[4+ch][(y<<1)+x], s->uvlinesize);
+                            else
+                                s->vp8dsp.vp8_idct_add(ch_dst+4*x, s->block[4+ch][(y<<1)+x], s->uvlinesize);
+                        }
                     }
+                    ch_dst += 4*s->uvlinesize;
                 }
-                ch_dst += 4*s->uvlinesize;
+            } else {
+                s->vp8dsp.vp8_idct_dc_add4uv(ch_dst, s->block[4+ch], s->uvlinesize);
             }
         }
     }
