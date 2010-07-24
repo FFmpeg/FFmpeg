@@ -817,7 +817,6 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 if (sce->sf_idx[w*16+g] != prevsc)
                     fflag = 1;
                 sce->band_type[w*16+g] = find_min_book(find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled), sce->sf_idx[w*16+g]);
-//av_log(NULL, AV_LOG_ERROR, "w %d swb %2d sf %3d bt %2d dist %f uplim %f ratio %f\n", w, g, sce->sf_idx[w*16+g], sce->band_type[w*16+g], dists[w*16+g], uplims[w*16+g], dists[w*16+g]/uplims[w*16+g]);
                 start += sce->ics.swb_sizes[g];
             }
         }
