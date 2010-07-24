@@ -89,8 +89,10 @@ fi
 if [ -n "$do_pixdesc_be" ] || [ -n "$do_pixdesc_le" ]; then
     pix_fmts="$($ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^IO' | cut -d' ' -f2)"
     for pix_fmt in $pix_fmts; do
-        do_video_encoding "lavfi_pixdesc-${pix_fmt}.nut" "" \
+        output=lavfi_pixdesc-${pix_fmt}.nut
+        do_video_encoding $output "" \
             "-vf slicify=random,format=$pix_fmt,pixdesctest -vcodec rawvideo -pix_fmt $pix_fmt"
+        rm ${outfile}${output}
     done
 fi
 

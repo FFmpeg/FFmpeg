@@ -78,7 +78,7 @@ lavftest(){
 }
 
 lavfitest(){
-    cleanfiles="tests/data/lavfi/*"
+    cleanfiles="tests/data/lavfi/${test#lavfi-}.nut"
     regtest lavfi lavfi tests/vsynth1
 }
 
