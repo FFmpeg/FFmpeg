@@ -77,7 +77,7 @@ typedef struct {
     UID container_ul;
     UID element_ul;
     UID codec_ul;
-    void (*write_desc)();
+    void (*write_desc)(AVFormatContext *, AVStream *);
 } MXFContainerEssenceEntry;
 
 static const struct {
