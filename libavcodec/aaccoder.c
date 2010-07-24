@@ -697,6 +697,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     int start = 0, i, w, w2, g;
     int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels;
     float dists[128], uplims[128];
+    float maxvals[128];
     int fflag, minscaler;
     int its  = 0;
     int allz = 0;
@@ -738,6 +739,16 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     if (!allz)
         return;
     abs_pow34_v(s->scoefs, sce->coeffs, 1024);
+
+    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+        start = w*128;
+        for (g = 0;  g < sce->ics.num_swb; g++) {
+            const float *scaled = s->scoefs + start;
+            maxvals[w*16+g] = find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled);
+            start += sce->ics.swb_sizes[g];
+        }
+    }
+
     //perform two-loop search
     //outer loop - improve quality
     do {
@@ -763,7 +774,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                         continue;
                     }
                     minscaler = FFMIN(minscaler, sce->sf_idx[w*16+g]);
-                    cb = find_min_book(find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled), sce->sf_idx[w*16+g]);
+                    cb = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
                     for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                         int b;
                         dist += quantize_band_cost(s, coefs + w2*128,
@@ -802,12 +813,10 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
         fflag = 0;
         minscaler = av_clip(minscaler, 60, 255 - SCALE_MAX_DIFF);
         for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-            start = w*128;
             for (g = 0; g < sce->ics.num_swb; g++) {
                 int prevsc = sce->sf_idx[w*16+g];
-                const float *scaled = s->scoefs + start;
                 if (dists[w*16+g] > uplims[w*16+g] && sce->sf_idx[w*16+g] > 60) {
-                    if (find_min_book(find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled), sce->sf_idx[w*16+g]-1))
+                    if (find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]-1))
                     sce->sf_idx[w*16+g]--;
                     else //Try to make sure there is some energy in every band
                         sce->sf_idx[w*16+g]-=2;
@@ -816,8 +825,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 sce->sf_idx[w*16+g] = FFMIN(sce->sf_idx[w*16+g], 219);
                 if (sce->sf_idx[w*16+g] != prevsc)
                     fflag = 1;
-                sce->band_type[w*16+g] = find_min_book(find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled), sce->sf_idx[w*16+g]);
-                start += sce->ics.swb_sizes[g];
+                sce->band_type[w*16+g] = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
             }
         }
         its++;
