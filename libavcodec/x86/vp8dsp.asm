@@ -1360,22 +1360,29 @@ cglobal vp8_luma_dc_wht_mmx, 2,3
     movd    [%7+%9*2], m%4
 %endmacro
 
-%macro SPLATB_REG 3-4
+%macro SPLATB_REG_MMX 2-3
     movd           %1, %2
-%ifidn %3, ssse3
-    pshufb         %1, %4
-%else
     punpcklbw      %1, %1
-%if mmsize == 16 ; sse2
-    pshuflw        %1, %1, 0x0
-    punpcklqdq     %1, %1
-%elifidn %3, mmx
     punpcklwd      %1, %1
     punpckldq      %1, %1
-%else ; mmxext
+%endmacro
+
+%macro SPLATB_REG_MMXEXT 2-3
+    movd           %1, %2
+    punpcklbw      %1, %1
     pshufw         %1, %1, 0x0
-%endif
-%endif
+%endmacro
+
+%macro SPLATB_REG_SSE2 2-3
+    movd           %1, %2
+    punpcklbw      %1, %1
+    pshuflw        %1, %1, 0x0
+    punpcklqdq     %1, %1
+%endmacro
+
+%macro SPLATB_REG_SSSE3 3
+    movd           %1, %2
+    pshufb         %1, %3
 %endmacro
 
 %macro SIMPLE_LOOPFILTER 3
@@ -1387,10 +1394,10 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3
 %if mmsize == 8 ; mmx/mmxext
     mov            r3, 2
 %endif
-%ifidn %1, ssse3
+%ifnidn %1, sse2 && mmsize == 16
     pxor           m0, m0
 %endif
-    SPLATB_REG     m7, r2, %1, m0   ; splat "flim" into register
+    SPLATB_REG     m7, r2, m0       ; splat "flim" into register
 
     ; set up indexes to address 4 rows
     mov            r2, r1
@@ -1529,13 +1536,17 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3
 %endmacro
 
 INIT_MMX
+%define SPLATB_REG SPLATB_REG_MMX
 SIMPLE_LOOPFILTER mmx,    v, 4
 SIMPLE_LOOPFILTER mmx,    h, 6
+%define SPLATB_REG SPLATB_REG_MMXEXT
 SIMPLE_LOOPFILTER mmxext, v, 4
 SIMPLE_LOOPFILTER mmxext, h, 6
 INIT_XMM
+%define SPLATB_REG SPLATB_REG_SSE2
 SIMPLE_LOOPFILTER sse2,   v, 3
 SIMPLE_LOOPFILTER sse2,   h, 6
+%define SPLATB_REG SPLATB_REG_SSSE3
 SIMPLE_LOOPFILTER ssse3,  v, 3
 SIMPLE_LOOPFILTER ssse3,  h, 6
 
@@ -1573,15 +1584,15 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %define stack_reg   hev_thr_reg
 %endif
 
-%ifidn %1, ssse3
+%ifnidn %1, sse2 && mmsize == 16
     pxor             m7, m7
 %endif
 
 %ifndef m8 ; mmx/mmxext or sse2 on x86-32
     ; splat function arguments
-    SPLATB_REG       m0, E_reg, %1, m7 ; E
-    SPLATB_REG       m1, I_reg, %1, m7 ; I
-    SPLATB_REG       m2, hev_thr_reg, %1, m7 ; hev_thresh
+    SPLATB_REG       m0, E_reg, m7   ; E
+    SPLATB_REG       m1, I_reg, m7   ; I
+    SPLATB_REG       m2, hev_thr_reg, m7 ; hev_thresh
 
     ; align stack
     mov       stack_reg, rsp         ; backup stack pointer
@@ -1614,9 +1625,9 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %define q0backup m8
 
     ; splat function arguments
-    SPLATB_REG   flim_E, E_reg, %1, m7 ; E
-    SPLATB_REG   flim_I, I_reg, %1, m7 ; I
-    SPLATB_REG  hev_thr, hev_thr_reg, %1, m7 ; hev_thresh
+    SPLATB_REG   flim_E, E_reg, m7   ; E
+    SPLATB_REG   flim_I, I_reg, m7   ; I
+    SPLATB_REG  hev_thr, hev_thr_reg, m7 ; hev_thresh
 %endif
 
 %if mmsize == 8 && %4 == 16 ; mmx/mmxext
@@ -2028,17 +2039,20 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %endmacro
 
 INIT_MMX
+%define SPLATB_REG SPLATB_REG_MMX
 INNER_LOOPFILTER mmx,    v, 6, 16, 0
 INNER_LOOPFILTER mmx,    h, 6, 16, 0
-INNER_LOOPFILTER mmxext, v, 6, 16, 0
-INNER_LOOPFILTER mmxext, h, 6, 16, 0
-
 INNER_LOOPFILTER mmx,    v, 6,  8, 0
 INNER_LOOPFILTER mmx,    h, 6,  8, 0
+
+%define SPLATB_REG SPLATB_REG_MMXEXT
+INNER_LOOPFILTER mmxext, v, 6, 16, 0
+INNER_LOOPFILTER mmxext, h, 6, 16, 0
 INNER_LOOPFILTER mmxext, v, 6,  8, 0
 INNER_LOOPFILTER mmxext, h, 6,  8, 0
 
 INIT_XMM
+%define SPLATB_REG SPLATB_REG_SSE2
 INNER_LOOPFILTER sse2,   v, 5, 16, 13
 %ifdef m8
 INNER_LOOPFILTER sse2,   h, 5, 16, 13
@@ -2048,6 +2062,7 @@ INNER_LOOPFILTER sse2,   h, 6, 16, 13
 INNER_LOOPFILTER sse2,   v, 6,  8, 13
 INNER_LOOPFILTER sse2,   h, 6,  8, 13
 
+%define SPLATB_REG SPLATB_REG_SSSE3
 INNER_LOOPFILTER ssse3,  v, 5, 16, 13
 %ifdef m8
 INNER_LOOPFILTER ssse3,  h, 5, 16, 13
@@ -2152,15 +2167,15 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %define stack_reg   hev_thr_reg
 %endif
 
-%ifidn %1, ssse3
+%ifnidn %1, sse2 && mmsize == 16
     pxor             m7, m7
 %endif
 
 %ifndef m8 ; mmx/mmxext or sse2 on x86-32
     ; splat function arguments
-    SPLATB_REG       m0, E_reg, %1, m7 ; E
-    SPLATB_REG       m1, I_reg, %1, m7 ; I
-    SPLATB_REG       m2, hev_thr_reg, %1, m7 ; hev_thresh
+    SPLATB_REG       m0, E_reg, m7   ; E
+    SPLATB_REG       m1, I_reg, m7   ; I
+    SPLATB_REG       m2, hev_thr_reg, m7 ; hev_thresh
 
     ; align stack
     mov       stack_reg, rsp         ; backup stack pointer
@@ -2200,9 +2215,9 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %define lim_sign m15
 
     ; splat function arguments
-    SPLATB_REG   flim_E, E_reg, %1, m7 ; E
-    SPLATB_REG   flim_I, I_reg, %1, m7 ; I
-    SPLATB_REG  hev_thr, hev_thr_reg, %1, m7 ; hev_thresh
+    SPLATB_REG   flim_E, E_reg, m7   ; E
+    SPLATB_REG   flim_I, I_reg, m7   ; I
+    SPLATB_REG  hev_thr, hev_thr_reg, m7 ; hev_thresh
 %endif
 
 %if mmsize == 8 && %4 == 16 ; mmx/mmxext
@@ -2696,17 +2711,20 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %endmacro
 
 INIT_MMX
+%define SPLATB_REG SPLATB_REG_MMX
 MBEDGE_LOOPFILTER mmx,    v, 6, 16, 0
 MBEDGE_LOOPFILTER mmx,    h, 6, 16, 0
-MBEDGE_LOOPFILTER mmxext, v, 6, 16, 0
-MBEDGE_LOOPFILTER mmxext, h, 6, 16, 0
-
 MBEDGE_LOOPFILTER mmx,    v, 6,  8, 0
 MBEDGE_LOOPFILTER mmx,    h, 6,  8, 0
+
+%define SPLATB_REG SPLATB_REG_MMXEXT
+MBEDGE_LOOPFILTER mmxext, v, 6, 16, 0
+MBEDGE_LOOPFILTER mmxext, h, 6, 16, 0
 MBEDGE_LOOPFILTER mmxext, v, 6,  8, 0
 MBEDGE_LOOPFILTER mmxext, h, 6,  8, 0
 
 INIT_XMM
+%define SPLATB_REG SPLATB_REG_SSE2
 MBEDGE_LOOPFILTER sse2,   v, 5, 16, 16
 %ifdef m8
 MBEDGE_LOOPFILTER sse2,   h, 5, 16, 16
@@ -2716,6 +2734,7 @@ MBEDGE_LOOPFILTER sse2,   h, 6, 16, 16
 MBEDGE_LOOPFILTER sse2,   v, 6,  8, 16
 MBEDGE_LOOPFILTER sse2,   h, 6,  8, 16
 
+%define SPLATB_REG SPLATB_REG_SSSE3
 MBEDGE_LOOPFILTER ssse3,  v, 5, 16, 16
 %ifdef m8
 MBEDGE_LOOPFILTER ssse3,  h, 5, 16, 16
