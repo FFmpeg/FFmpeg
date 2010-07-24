@@ -778,8 +778,8 @@ void ff_yuv2rgb_init_tables_altivec(SwsContext *c, const int inv_table[4], int b
 
 void
 ff_yuv2packedX_altivec(SwsContext *c,
-                       const int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
-                       const int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+                       const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                      uint8_t *dest, int dstW, int dstY)
 {
     int i,j;
