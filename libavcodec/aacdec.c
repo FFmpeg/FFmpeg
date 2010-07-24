@@ -1231,7 +1231,8 @@ static av_always_inline float flt16_trunc(float pf)
     return pun.f;
 }
 
-static av_always_inline void predict(AACContext *ac, PredictorState *ps, float *coef,
+static av_always_inline void predict(PredictorState *ps, float *coef,
+                                     float sf_scale, float inv_sf_scale,
                     int output_enable)
 {
     const float a     = 0.953125; // 61.0 / 64
@@ -1245,9 +1246,9 @@ static av_always_inline void predict(AACContext *ac, PredictorState *ps, float *
 
     pv = flt16_round(k1 * ps->r0 + k2 * ps->r1);
     if (output_enable)
-        *coef += pv * ac->sf_scale;
+        *coef += pv * sf_scale;
 
-    e0 = *coef / ac->sf_scale;
+    e0 = *coef * inv_sf_scale;
     e1 = e0 - k1 * ps->r0;
 
     ps->cor1 = flt16_trunc(alpha * ps->cor1 + ps->r1 * e1);
@@ -1265,6 +1266,7 @@ static av_always_inline void predict(AACContext *ac, PredictorState *ps, float *
 static void apply_prediction(AACContext *ac, SingleChannelElement *sce)
 {
     int sfb, k;
+    float sf_scale = ac->sf_scale, inv_sf_scale = 1 / ac->sf_scale;
 
     if (!sce->ics.predictor_initialized) {
         reset_all_predictors(sce->predictor_state);
@@ -1274,7 +1276,8 @@ static void apply_prediction(AACContext *ac, SingleChannelElement *sce)
     if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
         for (sfb = 0; sfb < ff_aac_pred_sfb_max[ac->m4ac.sampling_index]; sfb++) {
             for (k = sce->ics.swb_offset[sfb]; k < sce->ics.swb_offset[sfb + 1]; k++) {
-                predict(ac, &sce->predictor_state[k], &sce->coeffs[k],
+                predict(&sce->predictor_state[k], &sce->coeffs[k],
+                        sf_scale, inv_sf_scale,
                         sce->ics.predictor_present && sce->ics.prediction_used[sfb]);
             }
         }
