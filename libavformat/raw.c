@@ -1082,6 +1082,18 @@ AVOutputFormat mlp_muxer = {
 };
 #endif
 
+#if CONFIG_SRT_MUXER
+AVOutputFormat srt_muxer = {
+    .name           = "srt",
+    .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle format"),
+    .mime_type      = "application/x-subrip",
+    .extensions     = "srt",
+    .write_packet   = raw_write_packet,
+    .flags          = AVFMT_NOTIMESTAMPS,
+    .subtitle_codec = CODEC_ID_SRT,
+};
+#endif
+
 #if CONFIG_TRUEHD_DEMUXER
 AVInputFormat truehd_demuxer = {
     "truehd",

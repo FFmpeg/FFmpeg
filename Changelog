@@ -24,6 +24,7 @@ version <next>:
 - ANSI/ASCII art playback system
 - Lego Mindstorms RSO de/muxer
 - libavcore added
+- SubRip subtitle file muxer and demuxer
 
 
 
