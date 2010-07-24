@@ -795,10 +795,8 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                         sce->sf_idx[i] -= qstep;
             }
             qstep >>= 1;
-            if (!qstep && tbits > destbits*1.02)
+            if (!qstep && tbits > destbits*1.02 && sce->sf_idx[0] < 217)
                 qstep = 1;
-            if (sce->sf_idx[0] >= 217)
-                break;
         } while (qstep);
 
         fflag = 0;
