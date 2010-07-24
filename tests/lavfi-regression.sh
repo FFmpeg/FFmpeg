@@ -38,12 +38,10 @@ get_exclusive_elements() (
 )
 
 do_lavfi() {
-    test_name=$1
-    eval test=\$do_$test_name
     vfilters="slicify=random,$2"
 
-    if [ -n "$test" ] ; then
-        do_video_encoding ${test_name}.nut "" "-vcodec rawvideo -vf $vfilters"
+    if [ $test = $1 ] ; then
+        do_video_encoding ${test}.nut "" "-vcodec rawvideo -vf $vfilters"
     fi
 }
 
