@@ -517,12 +517,12 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
 
 /** Return the minimum scalefactor where the quantized coef does not clip. */
 static av_always_inline uint8_t coef2minsf(float coef) {
-    return av_clip_uint8(log2(coef)*4 - 69 + SCALE_ONE_POS - SCALE_DIV_512);
+    return av_clip_uint8(log2f(coef)*4 - 69 + SCALE_ONE_POS - SCALE_DIV_512);
 }
 
 /** Return the maximum scalefactor where the quantized coef is not zero. */
 static av_always_inline uint8_t coef2maxsf(float coef) {
-    return av_clip_uint8(log2(coef)*4 +  6 + SCALE_ONE_POS - SCALE_DIV_512);
+    return av_clip_uint8(log2f(coef)*4 +  6 + SCALE_ONE_POS - SCALE_DIV_512);
 }
 
 typedef struct TrellisPath {
@@ -572,7 +572,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
         int q0low  = q0;
         int q1high = q1;
         //minimum scalefactor index is when maximum nonzero coefficient after quantizing is not clipped
-        int qnrg = av_clip_uint8(log2(sqrt(qnrgf/qcnt))*4 - 31 + SCALE_ONE_POS - SCALE_DIV_512);
+        int qnrg = av_clip_uint8(log2f(sqrtf(qnrgf/qcnt))*4 - 31 + SCALE_ONE_POS - SCALE_DIV_512);
         q1 = qnrg + 30;
         q0 = qnrg - 30;
     //av_log(NULL, AV_LOG_ERROR, "q0 %d, q1 %d\n", q0, q1);
@@ -731,7 +731,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 sce->sf_idx[w*16+g] = SCALE_ONE_POS;
                 continue;
             }
-            sce->sf_idx[w*16+g] = SCALE_ONE_POS + FFMIN(log2(uplims[w*16+g]/minthr)*4,59);
+            sce->sf_idx[w*16+g] = SCALE_ONE_POS + FFMIN(log2f(uplims[w*16+g]/minthr)*4,59);
         }
     }
 
@@ -925,7 +925,7 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
                 continue;
             }
             sce->zeroes[w*16+g] = 0;
-            scf  = prev_scf = av_clip(SCALE_ONE_POS - SCALE_DIV_512 - log2(1/maxq[w*16+g])*16/3, 60, 218);
+            scf  = prev_scf = av_clip(SCALE_ONE_POS - SCALE_DIV_512 - log2f(1/maxq[w*16+g])*16/3, 60, 218);
             step = 16;
             for (;;) {
                 float dist = 0.0f;
@@ -954,7 +954,7 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
                 if (curdiff <= 1.0f)
                     step = 0;
                 else
-                    step = log2(curdiff);
+                    step = log2f(curdiff);
                 if (dist > uplim[w*16+g])
                     step = -step;
                 scf += step;
@@ -1007,7 +1007,7 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
                     sce->sf_idx[(w+w2)*16+g] = 218;
                     sce->zeroes[(w+w2)*16+g] = 1;
                 } else {
-                    sce->sf_idx[(w+w2)*16+g] = av_clip(SCALE_ONE_POS - SCALE_DIV_512 + log2(band->threshold), 80, 218);
+                    sce->sf_idx[(w+w2)*16+g] = av_clip(SCALE_ONE_POS - SCALE_DIV_512 + log2f(band->threshold), 80, 218);
                     sce->zeroes[(w+w2)*16+g] = 0;
                 }
                 minq = FFMIN(minq, sce->sf_idx[(w+w2)*16+g]);
