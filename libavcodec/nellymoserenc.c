@@ -351,7 +351,7 @@ static void encode_block(NellyMoserEncodeContext *s, unsigned char *output, int 
 static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size, void *data)
 {
     NellyMoserEncodeContext *s = avctx->priv_data;
-    int16_t *samples = data;
+    const int16_t *samples = data;
     int i;
 
     if (s->last_frame)

@@ -81,14 +81,14 @@ static int pcm_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame, int buf_size, void *data)
 {
     int n, sample_size, v;
-    short *samples;
+    const short *samples;
     unsigned char *dst;
-    uint8_t *srcu8;
-    int16_t *samples_int16_t;
-    int32_t *samples_int32_t;
-    int64_t *samples_int64_t;
-    uint16_t *samples_uint16_t;
-    uint32_t *samples_uint32_t;
+    const uint8_t *srcu8;
+    const int16_t *samples_int16_t;
+    const int32_t *samples_int32_t;
+    const int64_t *samples_int64_t;
+    const uint16_t *samples_uint16_t;
+    const uint32_t *samples_uint32_t;
 
     sample_size = av_get_bits_per_sample(avctx->codec->id)/8;
     n = buf_size / sample_size;

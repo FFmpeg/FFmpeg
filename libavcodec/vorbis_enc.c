@@ -888,7 +888,7 @@ static void residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
     }
 }
 
-static int apply_window_and_mdct(vorbis_enc_context *venc, signed short *audio,
+static int apply_window_and_mdct(vorbis_enc_context *venc, const signed short *audio,
                                  int samples)
 {
     int i, j, channel;
@@ -973,7 +973,7 @@ static int vorbis_encode_frame(AVCodecContext *avccontext,
                                int buf_size, void *data)
 {
     vorbis_enc_context *venc = avccontext->priv_data;
-    signed short *audio = data;
+    const signed short *audio = data;
     int samples = data ? avccontext->frame_size : 0;
     vorbis_enc_mode *mode;
     vorbis_enc_mapping *mapping;

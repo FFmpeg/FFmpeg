@@ -74,7 +74,7 @@ static int encode_init(AVCodecContext * avctx){
 }
 
 
-static void apply_window_and_mdct(AVCodecContext * avctx, signed short * audio, int len) {
+static void apply_window_and_mdct(AVCodecContext * avctx, const signed short * audio, int len) {
     WMACodecContext *s = avctx->priv_data;
     int window_index= s->frame_len_bits - s->block_len_bits;
     int i, j, channel;
@@ -328,7 +328,7 @@ static int encode_frame(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
 static int encode_superframe(AVCodecContext *avctx,
                             unsigned char *buf, int buf_size, void *data){
     WMACodecContext *s = avctx->priv_data;
-    short *samples = data;
+    const short *samples = data;
     int i, total_gain;
 
     s->block_len_bits= s->frame_len_bits; //required by non variable block len

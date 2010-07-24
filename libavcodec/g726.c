@@ -348,7 +348,7 @@ static int g726_encode_frame(AVCodecContext *avctx,
                             uint8_t *dst, int buf_size, void *data)
 {
     G726Context *c = avctx->priv_data;
-    short *samples = data;
+    const short *samples = data;
     PutBitContext pb;
 
     init_put_bits(&pb, dst, 1024*1024);

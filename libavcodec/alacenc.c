@@ -75,12 +75,12 @@ typedef struct AlacEncodeContext {
 } AlacEncodeContext;
 
 
-static void init_sample_buffers(AlacEncodeContext *s, int16_t *input_samples)
+static void init_sample_buffers(AlacEncodeContext *s, const int16_t *input_samples)
 {
     int ch, i;
 
     for(ch=0;ch<s->avctx->channels;ch++) {
-        int16_t *sptr = input_samples + ch;
+        const int16_t *sptr = input_samples + ch;
         for(i=0;i<s->avctx->frame_size;i++) {
             s->sample_buf[ch][i] = *sptr;
             sptr += s->avctx->channels;
@@ -482,7 +482,7 @@ verbatim:
 
     if((s->compression_level == 0) || verbatim_flag) {
         // Verbatim mode
-        int16_t *samples = data;
+        const int16_t *samples = data;
         write_frame_header(s, 1);
         for(i=0; i<avctx->frame_size*avctx->channels; i++) {
             put_sbits(pb, 16, *samples++);

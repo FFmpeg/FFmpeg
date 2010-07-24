@@ -306,7 +306,7 @@ static void idct32(int *out, int *tab)
 
 #define WSHIFT (WFRAC_BITS + 15 - FRAC_BITS)
 
-static void filter(MpegAudioContext *s, int ch, short *samples, int incr)
+static void filter(MpegAudioContext *s, int ch, const short *samples, int incr)
 {
     short *p, *q;
     int sum, offset, i, j;
@@ -752,7 +752,7 @@ static int MPA_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame, int buf_size, void *data)
 {
     MpegAudioContext *s = avctx->priv_data;
-    short *samples = data;
+    const short *samples = data;
     short smr[MPA_MAX_CHANNELS][SBLIMIT];
     unsigned char bit_alloc[MPA_MAX_CHANNELS][SBLIMIT];
     int padding, i;

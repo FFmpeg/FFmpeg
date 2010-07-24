@@ -1181,7 +1181,7 @@ static int AC3_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame, int buf_size, void *data)
 {
     AC3EncodeContext *s = avctx->priv_data;
-    int16_t *samples = data;
+    const int16_t *samples = data;
     int i, j, k, v, ch;
     int16_t input_samples[N];
     int32_t mdct_coef[NB_BLOCKS][AC3_MAX_CHANNELS][N/2];
@@ -1197,7 +1197,7 @@ static int AC3_encode_frame(AVCodecContext *avctx,
         int ich = s->channel_map[ch];
         /* fixed mdct to the six sub blocks & exponent computation */
         for(i=0;i<NB_BLOCKS;i++) {
-            int16_t *sptr;
+            const int16_t *sptr;
             int sinc;
 
             /* compute input samples */

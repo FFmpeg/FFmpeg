@@ -108,7 +108,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx,
                 unsigned char *frame, int buf_size, void *data)
 {
     int i, samples, stereo, ch;
-    short *in;
+    const short *in;
     unsigned char *out;
 
     ROQDPCMContext *context = avctx->priv_data;

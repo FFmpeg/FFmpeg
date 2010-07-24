@@ -446,7 +446,7 @@ static void init_frame(FlacEncodeContext *s)
 /**
  * Copy channel-interleaved input samples into separate subframes
  */
-static void copy_samples(FlacEncodeContext *s, int16_t *samples)
+static void copy_samples(FlacEncodeContext *s, const int16_t *samples)
 {
     int i, j, ch;
     FlacFrame *frame;
@@ -1204,7 +1204,7 @@ static void output_frame_footer(FlacEncodeContext *s)
     flush_put_bits(&s->pb);
 }
 
-static void update_md5_sum(FlacEncodeContext *s, int16_t *samples)
+static void update_md5_sum(FlacEncodeContext *s, const int16_t *samples)
 {
 #if HAVE_BIGENDIAN
     int i;
@@ -1213,7 +1213,7 @@ static void update_md5_sum(FlacEncodeContext *s, int16_t *samples)
         av_md5_update(s->md5ctx, (uint8_t *)&smp, 2);
     }
 #else
-    av_md5_update(s->md5ctx, (uint8_t *)samples, s->frame.blocksize*s->channels*2);
+    av_md5_update(s->md5ctx, (const uint8_t *)samples, s->frame.blocksize*s->channels*2);
 #endif
 }
 
@@ -1222,7 +1222,7 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 {
     int ch;
     FlacEncodeContext *s;
-    int16_t *samples = data;
+    const int16_t *samples = data;
     int out_bytes;
     int reencoded=0;
 
