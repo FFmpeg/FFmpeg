@@ -62,10 +62,11 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
     vector by assuming (stride % 16) == 0, unfortunately
     this is not always true.
     */
+    short data_0 = ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
     DECLARE_ALIGNED(16, short, data)[8] =
                     {
-                        ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1,
-                        data[0] * 2 + 1,
+                        data_0,
+                        data_0 * 2 + 1,
                         c->QP * 2,
                         c->QP * 4
                     };
