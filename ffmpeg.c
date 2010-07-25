@@ -1290,10 +1290,7 @@ static void do_video_out(AVFormatContext *s,
 
             /* handles sameq here. This is not correct because it may
                not be a global option */
-            if (same_quality) {
-                big_picture.quality = ist->st->quality;
-            }else
-                big_picture.quality = ost->st->quality;
+            big_picture.quality = same_quality ? ist->st->quality : ost->st->quality;
             if(!me_threshold)
                 big_picture.pict_type = 0;
 //            big_picture.pts = AV_NOPTS_VALUE;
