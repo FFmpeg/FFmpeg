@@ -3230,45 +3230,45 @@ static void opt_input_file(const char *filename)
     /* update the current parameters so that they match the one of the input stream */
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st = ic->streams[i];
-        AVCodecContext *enc = st->codec;
-        avcodec_thread_init(enc, thread_count);
-        switch(enc->codec_type) {
+        AVCodecContext *dec = st->codec;
+        avcodec_thread_init(dec, thread_count);
+        switch (dec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            set_context_opts(enc, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
-            //fprintf(stderr, "\nInput Audio channels: %d", enc->channels);
-            channel_layout = enc->channel_layout;
-            audio_channels = enc->channels;
-            audio_sample_rate = enc->sample_rate;
-            audio_sample_fmt = enc->sample_fmt;
+            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
+            //fprintf(stderr, "\nInput Audio channels: %d", dec->channels);
+            channel_layout    = dec->channel_layout;
+            audio_channels    = dec->channels;
+            audio_sample_rate = dec->sample_rate;
+            audio_sample_fmt  = dec->sample_fmt;
             input_codecs[nb_icodecs++] = avcodec_find_decoder_by_name(audio_codec_name);
             if(audio_disable)
                 st->discard= AVDISCARD_ALL;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            set_context_opts(enc, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
-            frame_height = enc->height;
-            frame_width = enc->width;
+            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
+            frame_height = dec->height;
+            frame_width  = dec->width;
             if(ic->streams[i]->sample_aspect_ratio.num)
                 frame_aspect_ratio=av_q2d(ic->streams[i]->sample_aspect_ratio);
             else
-                frame_aspect_ratio=av_q2d(enc->sample_aspect_ratio);
-            frame_aspect_ratio *= (float) enc->width / enc->height;
-            frame_pix_fmt = enc->pix_fmt;
+                frame_aspect_ratio=av_q2d(dec->sample_aspect_ratio);
+            frame_aspect_ratio *= (float) dec->width / dec->height;
+            frame_pix_fmt = dec->pix_fmt;
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
-            if(enc->lowres) {
-                enc->flags |= CODEC_FLAG_EMU_EDGE;
-                frame_height >>= enc->lowres;
-                frame_width  >>= enc->lowres;
+            if (dec->lowres) {
+                dec->flags |= CODEC_FLAG_EMU_EDGE;
+                frame_height >>= dec->lowres;
+                frame_width  >>= dec->lowres;
             }
             if(me_threshold)
-                enc->debug |= FF_DEBUG_MV;
+                dec->debug |= FF_DEBUG_MV;
 
-            if (enc->time_base.den != rfps*enc->ticks_per_frame || enc->time_base.num != rfps_base) {
+            if (dec->time_base.den != rfps*dec->ticks_per_frame || dec->time_base.num != rfps_base) {
 
                 if (verbose >= 0)
                     fprintf(stderr,"\nSeems stream %d codec frame rate differs from container frame rate: %2.2f (%d/%d) -> %2.2f (%d/%d)\n",
-                            i, (float)enc->time_base.den / enc->time_base.num, enc->time_base.den, enc->time_base.num,
+                            i, (float)dec->time_base.den / dec->time_base.num, dec->time_base.den, dec->time_base.num,
 
                     (float)rfps / rfps_base, rfps, rfps_base);
             }
