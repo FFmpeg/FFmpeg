@@ -871,6 +871,41 @@ static void mkv_write_block(AVFormatContext *s, ByteIOContext *pb,
         av_free(data);
 }
 
+static int srt_get_duration(uint8_t **buf)
+{
+    int i, duration = 0;
+
+    for (i=0; i<2 && !duration; i++) {
+        int s_hour, s_min, s_sec, s_hsec, e_hour, e_min, e_sec, e_hsec;
+        if (sscanf(*buf, "%d:%2d:%2d%*1[,.]%3d --> %d:%2d:%2d%*1[,.]%3d",
+                   &s_hour, &s_min, &s_sec, &s_hsec,
+                   &e_hour, &e_min, &e_sec, &e_hsec) == 8) {
+            s_min  +=   60*s_hour;      e_min  +=   60*e_hour;
+            s_sec  +=   60*s_min;       e_sec  +=   60*e_min;
+            s_hsec += 1000*s_sec;       e_hsec += 1000*e_sec;
+            duration = e_hsec - s_hsec;
+        }
+        *buf += strcspn(*buf, "\n") + 1;
+    }
+    return duration;
+}
+
+static int mkv_write_srt_blocks(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
+{
+    ebml_master blockgroup;
+    AVPacket pkt2 = *pkt;
+    int64_t duration = srt_get_duration(&pkt2.data);
+    pkt2.size -= pkt2.data - pkt->data;
+
+    blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP,
+                                   mkv_blockgroup_size(pkt2.size));
+    mkv_write_block(s, pb, MATROSKA_ID_BLOCK, &pkt2, 0);
+    put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
+    end_ebml_master(pb, blockgroup);
+
+    return duration;
+}
+
 static void mkv_flush_dynbuf(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -918,6 +953,8 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         mkv_write_block(s, pb, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
     } else if (codec->codec_id == CODEC_ID_SSA) {
         duration = mkv_write_ass_blocks(s, pb, pkt);
+    } else if (codec->codec_id == CODEC_ID_SRT) {
+        duration = mkv_write_srt_blocks(s, pb, pkt);
     } else {
         ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(pkt->size));
         duration = pkt->convergence_duration;

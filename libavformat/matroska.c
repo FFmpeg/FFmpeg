@@ -52,6 +52,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"A_WAVPACK4"       , CODEC_ID_WAVPACK},
 
     {"S_TEXT/UTF8"      , CODEC_ID_TEXT},
+    {"S_TEXT/UTF8"      , CODEC_ID_SRT},
     {"S_TEXT/ASCII"     , CODEC_ID_TEXT},
     {"S_TEXT/ASS"       , CODEC_ID_SSA},
     {"S_TEXT/SSA"       , CODEC_ID_SSA},
