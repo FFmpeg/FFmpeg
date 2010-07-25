@@ -1,5 +1,13 @@
 #!/bin/sh
 
+# if no argument provided, write stdin to a file and re-run the script
+if [ $# = 0 ]; then
+    cat > patcheck.stdout
+    $0 patcheck.stdout
+    rm -f patcheck.stdout
+    exit
+fi
+
 TMP=patcheck.tmp
 OPT="-nH"
 #FILES=`grep '^+++' $* | sed 's/+++ //g'`
