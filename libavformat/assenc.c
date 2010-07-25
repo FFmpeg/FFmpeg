@@ -80,7 +80,7 @@ static int write_trailer(AVFormatContext *s)
 AVOutputFormat ass_muxer = {
     "ass",
     NULL_IF_CONFIG_SMALL("Advanced SubStation Alpha subtitle format"),
-    NULL,
+    "text/x-ssa",
     "ass,ssa",
     sizeof(ASSContext),
     CODEC_ID_NONE,
