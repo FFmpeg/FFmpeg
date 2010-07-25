@@ -2679,7 +2679,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     lea        dst8_reg, [dst8_reg+mstride_reg+4]
     WRITE_8W         m5, m5, dst2_reg, dst_reg,  mstride_reg, stride_reg, %2
 %ifidn %2, sse4
-    lea         dst_reg, [dst8_reg+ stride_reg]
+    lea        dst2_reg, [dst8_reg+ stride_reg]
 %endif
     WRITE_8W         m6, m6, dst2_reg, dst8_reg, mstride_reg, stride_reg, %2
 %endif
