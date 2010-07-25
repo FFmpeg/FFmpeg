@@ -392,20 +392,18 @@ int get_byte(ByteIOContext *s)
 {
     if (s->buf_ptr >= s->buf_end)
         fill_buffer(s);
-        if (s->buf_ptr < s->buf_end)
-            return *s->buf_ptr++;
-        else
-            return 0;
+    if (s->buf_ptr < s->buf_end)
+        return *s->buf_ptr++;
+    return 0;
 }
 
 int url_fgetc(ByteIOContext *s)
 {
     if (s->buf_ptr >= s->buf_end)
         fill_buffer(s);
-        if (s->buf_ptr < s->buf_end)
-            return *s->buf_ptr++;
-        else
-            return URL_EOF;
+    if (s->buf_ptr < s->buf_end)
+        return *s->buf_ptr++;
+    return URL_EOF;
 }
 
 int get_buffer(ByteIOContext *s, unsigned char *buf, int size)
