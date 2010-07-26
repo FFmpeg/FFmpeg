@@ -210,6 +210,7 @@ static void vp8_decode_flush(AVCodecContext *avctx)
     memset(s->framep, 0, sizeof(s->framep));
 
     av_freep(&s->macroblocks_base);
+    av_freep(&s->filter_strength);
     av_freep(&s->intra4x4_pred_mode_base);
     av_freep(&s->top_nnz);
     av_freep(&s->edge_emu_buffer);
