@@ -13,6 +13,12 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-07-27 - r24518 - lavcore 0.1.0 - parseutils.h
+  Deprecate av_parse_video_frame_size() and av_parse_video_frame_rate()
+  defined in libavcodec in favor of the newly added functions
+  av_parse_video_size() and av_parse_video_rate() declared in
+  libavcore/parseutils.h.
+
 2010-07-23 - r24439 - lavu 50.23.0 - mathematics.h
   Add the M_PHI constant definition.
 
