@@ -15,7 +15,7 @@ OBJS        = $(addsuffix .o,          $(PROGS-yes)) cmdutils.o
 MANPAGES    = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
 HTMLPAGES   = $(addprefix doc/, $(addsuffix -doc.html, $(PROGS-yes)))
 TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws pktdumper probetest qt-faststart trasher))
-HOSTPROGS   = $(addprefix tests/, audiogen videogen rotozoom tiny_psnr)
+HOSTPROGS   = $(addprefix tests/, audiogen videogen rotozoom tiny_psnr base64)
 
 BASENAMES   = ffmpeg ffplay ffprobe ffserver
 ALLPROGS    = $(addsuffix   $(EXESUF), $(BASENAMES))
@@ -159,7 +159,7 @@ testclean:
 	$(RM) -r tests/vsynth1 tests/vsynth2 tests/data
 	$(RM) $(addprefix tests/,$(CLEANSUFFIXES))
 	$(RM) tests/seek_test$(EXESUF) tests/seek_test.o
-	$(RM) $(addprefix tests/,$(addsuffix $(HOSTEXESUF),audiogen videogen rotozoom tiny_psnr))
+	$(RM) $(addprefix tests/,$(addsuffix $(HOSTEXESUF),audiogen videogen rotozoom tiny_psnr base64))
 
 clean:: testclean
 	$(RM) $(ALLPROGS) $(ALLPROGS_G)
