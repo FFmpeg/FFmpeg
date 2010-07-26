@@ -30,24 +30,24 @@
  * Parse str and put in width_ptr and height_ptr the detected values.
  *
  * @param[in,out] width_ptr pointer to the variable which will contain the detected
- * frame width value
+ * width value
  * @param[in,out] height_ptr pointer to the variable which will contain the detected
- * frame height value
+ * height value
  * @param[in] str the string to parse: it has to be a string in the format
- * width x height or a valid video frame size abbreviation.
+ * width x height or a valid video size abbreviation.
  * @return >= 0 on success, a negative error code otherwise
  */
 int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str);
 
 /**
- * Parse str and store the detected values in *frame_rate.
+ * Parse str and store the detected values in *rate.
  *
- * @param[in,out] frame_rate pointer to the AVRational which will contain the detected
+ * @param[in,out] rate pointer to the AVRational which will contain the detected
  * frame rate
  * @param[in] str the string to parse: it has to be a string in the format
- * frame_rate_num / frame_rate_den, a float number or a valid video rate abbreviation
+ * rate_num / rate_den, a float number or a valid video rate abbreviation
  * @return >= 0 on success, a negative error code otherwise
  */
-int av_parse_video_rate(AVRational *frame_rate, const char *str);
+int av_parse_video_rate(AVRational *rate, const char *str);
 
 #endif /* AVCORE_PARSEUTILS_H */

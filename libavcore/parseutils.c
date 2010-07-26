@@ -27,14 +27,14 @@
 typedef struct {
     const char *abbr;
     int width, height;
-} VideoFrameSizeAbbr;
+} VideoSizeAbbr;
 
 typedef struct {
     const char *abbr;
     int rate_num, rate_den;
-} VideoFrameRateAbbr;
+} VideoRateAbbr;
 
-static const VideoFrameSizeAbbr video_frame_size_abbrs[] = {
+static const VideoSizeAbbr video_size_abbrs[] = {
     { "ntsc",      720, 480 },
     { "pal",       720, 576 },
     { "qntsc",     352, 240 }, /* VCD compliant NTSC */
@@ -74,7 +74,7 @@ static const VideoFrameSizeAbbr video_frame_size_abbrs[] = {
     { "hd1080",   1920,1080 },
 };
 
-static const VideoFrameRateAbbr video_frame_rate_abbrs[]= {
+static const VideoRateAbbr video_rate_abbrs[]= {
     { "ntsc",      30000, 1001 },
     { "pal",          25,    1 },
     { "qntsc",     30000, 1001 }, /* VCD compliant NTSC */
@@ -88,42 +88,42 @@ static const VideoFrameRateAbbr video_frame_rate_abbrs[]= {
 int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
 {
     int i;
-    int n = FF_ARRAY_ELEMS(video_frame_size_abbrs);
+    int n = FF_ARRAY_ELEMS(video_size_abbrs);
     char *p;
-    int frame_width = 0, frame_height = 0;
+    int width = 0, height = 0;
 
     for (i = 0; i < n; i++) {
-        if (!strcmp(video_frame_size_abbrs[i].abbr, str)) {
-            frame_width = video_frame_size_abbrs[i].width;
-            frame_height = video_frame_size_abbrs[i].height;
+        if (!strcmp(video_size_abbrs[i].abbr, str)) {
+            width  = video_size_abbrs[i].width;
+            height = video_size_abbrs[i].height;
             break;
         }
     }
     if (i == n) {
         p = str;
-        frame_width = strtol(p, &p, 10);
+        width = strtol(p, &p, 10);
         if (*p)
             p++;
-        frame_height = strtol(p, &p, 10);
+        height = strtol(p, &p, 10);
     }
-    if (frame_width <= 0 || frame_height <= 0)
+    if (width <= 0 || height <= 0)
         return AVERROR(EINVAL);
-    *width_ptr  = frame_width;
-    *height_ptr = frame_height;
+    *width_ptr  = width;
+    *height_ptr = height;
     return 0;
 }
 
-int av_parse_video_rate(AVRational *frame_rate, const char *arg)
+int av_parse_video_rate(AVRational *rate, const char *arg)
 {
     int i;
-    int n = FF_ARRAY_ELEMS(video_frame_rate_abbrs);
+    int n = FF_ARRAY_ELEMS(video_rate_abbrs);
     char *cp;
 
     /* First, we check our abbreviation table */
     for (i = 0; i < n; ++i)
-         if (!strcmp(video_frame_rate_abbrs[i].abbr, arg)) {
-             frame_rate->num = video_frame_rate_abbrs[i].rate_num;
-             frame_rate->den = video_frame_rate_abbrs[i].rate_den;
+         if (!strcmp(video_rate_abbrs[i].abbr, arg)) {
+             rate->num = video_rate_abbrs[i].rate_num;
+             rate->den = video_rate_abbrs[i].rate_den;
              return 0;
          }
 
@@ -133,18 +133,18 @@ int av_parse_video_rate(AVRational *frame_rate, const char *arg)
         cp = strchr(arg, ':');
     if (cp) {
         char *cpp;
-        frame_rate->num = strtol(arg, &cpp, 10);
+        rate->num = strtol(arg, &cpp, 10);
         if (cpp != arg || cpp == cp)
-            frame_rate->den = strtol(cp+1, &cpp, 10);
+            rate->den = strtol(cp+1, &cpp, 10);
         else
-            frame_rate->num = 0;
+            rate->num = 0;
     } else {
         /* Finally we give up and parse it as double */
         AVRational time_base = av_d2q(strtod(arg, 0), 1001000);
-        frame_rate->den = time_base.den;
-        frame_rate->num = time_base.num;
+        rate->den = time_base.den;
+        rate->num = time_base.num;
     }
-    if (frame_rate->num <= 0 || frame_rate->den <= 0)
+    if (rate->num <= 0 || rate->den <= 0)
         return AVERROR(EINVAL);
     return 0;
 }
