@@ -2085,44 +2085,22 @@ INNER_LOOPFILTER ssse3,  h, 6,  8, 13
 ; 3 is a pointer to the destination's 5th line
 ; 4 is a pointer to the destination's 4th line
 ; 5/6 is -stride and +stride
-; 7 is optimization string
-%macro WRITE_8W 7
-%ifidn %7, sse4
-    pextrw    [%4+%5*4], %1, 0
-    pextrw    [%3+%5*4], %1, 1
-    pextrw    [%4+%5*2], %1, 2
-    pextrw    [%4+%5  ], %1, 3
-    pextrw    [%4     ], %1, 4
-    pextrw    [%3     ], %1, 5
-    pextrw    [%3+%6  ], %1, 6
-    pextrw    [%3+%6*2], %1, 7
-%else
+%macro WRITE_2x4W 6
     movd             %3, %1
-%if mmsize == 8
     punpckhdq        %1, %1
-%else
-    psrldq           %1, 4
-%endif
     mov       [%4+%5*4], %3w
     shr              %3, 16
     add              %4, %6
     mov       [%4+%5*4], %3w
 
     movd             %3, %1
-%if mmsize == 16
-    psrldq           %1, 4
-%endif
     add              %4, %5
     mov       [%4+%5*2], %3w
     shr              %3, 16
     mov       [%4+%5  ], %3w
 
     movd             %3, %2
-%if mmsize == 8
     punpckhdq        %2, %2
-%else
-    psrldq           %2, 4
-%endif
     mov       [%4     ], %3w
     shr              %3, 16
     mov       [%4+%6  ], %3w
@@ -2132,10 +2110,46 @@ INNER_LOOPFILTER ssse3,  h, 6,  8, 13
     mov       [%4+%6  ], %3w
     shr              %3, 16
     mov       [%4+%6*2], %3w
-%if mmsize == 8
     add              %4, %5
-%endif
-%endif
+%endmacro
+
+%macro WRITE_8W_SSE2 5
+    movd             %2, %1
+    psrldq           %1, 4
+    mov       [%3+%4*4], %2w
+    shr              %2, 16
+    add              %3, %5
+    mov       [%3+%4*4], %2w
+
+    movd             %2, %1
+    psrldq           %1, 4
+    add              %3, %4
+    mov       [%3+%4*2], %2w
+    shr              %2, 16
+    mov       [%3+%4  ], %2w
+
+    movd             %2, %1
+    psrldq           %1, 4
+    mov       [%3     ], %2w
+    shr              %2, 16
+    mov       [%3+%5  ], %2w
+
+    movd             %2, %1
+    add              %3, %5
+    mov       [%3+%5  ], %2w
+    shr              %2, 16
+    mov       [%3+%5*2], %2w
+%endmacro
+
+%macro WRITE_8W_SSE4 5
+    pextrw    [%3+%4*4], %1, 0
+    pextrw    [%2+%4*4], %1, 1
+    pextrw    [%3+%4*2], %1, 2
+    pextrw    [%3+%4  ], %1, 3
+    pextrw    [%3     ], %1, 4
+    pextrw    [%2     ], %1, 5
+    pextrw    [%2+%5  ], %1, 6
+    pextrw    [%2+%5*2], %1, 7
 %endmacro
 
 %macro MBEDGE_LOOPFILTER 5
@@ -2671,17 +2685,20 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %if mmsize == 8 ; mmx/mmxext (h)
     WRITE_4x2D        1, 2, 3, 4, dst_reg, dst2_reg, mstride_reg, stride_reg
     add         dst_reg, 4
-    WRITE_8W         m5, m6, dst2_reg, dst_reg, mstride_reg, stride_reg, %4
+    WRITE_2x4W       m5, m6, dst2_reg, dst_reg, mstride_reg, stride_reg
 %else ; sse2 (h)
     lea        dst8_reg, [dst8_reg+mstride_reg+1]
     WRITE_4x4D        1, 2, 3, 4, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg, %4
     lea         dst_reg, [dst2_reg+mstride_reg+4]
     lea        dst8_reg, [dst8_reg+mstride_reg+4]
-    WRITE_8W         m5, m5, dst2_reg, dst_reg,  mstride_reg, stride_reg, %2
-%ifidn %2, sse4
+%ifidn %1, sse4
+    add        dst2_reg, 4
+%endif
+    WRITE_8W         m5, dst2_reg, dst_reg,  mstride_reg, stride_reg
+%ifidn %1, sse4
     lea        dst2_reg, [dst8_reg+ stride_reg]
 %endif
-    WRITE_8W         m6, m6, dst2_reg, dst8_reg, mstride_reg, stride_reg, %2
+    WRITE_8W         m6, dst2_reg, dst8_reg, mstride_reg, stride_reg
 %endif
 %endif
 
@@ -2725,6 +2742,7 @@ MBEDGE_LOOPFILTER mmxext, h, 6,  8, 0
 
 INIT_XMM
 %define SPLATB_REG SPLATB_REG_SSE2
+%define WRITE_8W   WRITE_8W_SSE2
 MBEDGE_LOOPFILTER sse2,   v, 5, 16, 16
 %ifdef m8
 MBEDGE_LOOPFILTER sse2,   h, 5, 16, 16
@@ -2744,6 +2762,7 @@ MBEDGE_LOOPFILTER ssse3,  h, 6, 16, 16
 MBEDGE_LOOPFILTER ssse3,  v, 6,  8, 16
 MBEDGE_LOOPFILTER ssse3,  h, 6,  8, 16
 
+%define WRITE_8W   WRITE_8W_SSE4
 %ifdef m8
 MBEDGE_LOOPFILTER sse4,   h, 5, 16, 16
 %else
