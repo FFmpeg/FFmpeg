@@ -31,6 +31,11 @@ test $version || version=$revision
 
 test -n "$3" && version=$version-$3
 
+if [ -z "$2" ]; then
+    echo "$version"
+    exit
+fi
+
 NEW_REVISION="#define FFMPEG_VERSION \"$version\""
 OLD_REVISION=$(cat version.h 2> /dev/null)
 
