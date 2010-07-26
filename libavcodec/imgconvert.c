@@ -490,20 +490,20 @@ int ff_set_systematic_pal(uint32_t pal[256], enum PixelFormat pix_fmt){
     return 0;
 }
 
-int ff_fill_linesize(AVPicture *picture, enum PixelFormat pix_fmt, int width)
+static int fill_image_linesize(int linesize[4], enum PixelFormat pix_fmt, int width)
 {
     int i;
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
     int max_plane_step     [4];
     int max_plane_step_comp[4];
 
-    memset(picture->linesize, 0, sizeof(picture->linesize));
+    memset(linesize, 0, 4*sizeof(linesize[0]));
 
     if (desc->flags & PIX_FMT_HWACCEL)
         return -1;
 
     if (desc->flags & PIX_FMT_BITSTREAM) {
-        picture->linesize[0] = (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
+        linesize[0] = (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
         return 0;
     }
 
@@ -519,19 +519,24 @@ int ff_fill_linesize(AVPicture *picture, enum PixelFormat pix_fmt, int width)
 
     for (i = 0; i < 4; i++) {
         int s = (max_plane_step_comp[i] == 1 || max_plane_step_comp[i] == 2) ? desc->log2_chroma_w : 0;
-        picture->linesize[i] = max_plane_step[i] * (((width + (1 << s) - 1)) >> s);
+        linesize[i] = max_plane_step[i] * (((width + (1 << s) - 1)) >> s);
     }
 
     return 0;
 }
 
-int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
-                    int height)
+int ff_fill_linesize(AVPicture *picture, enum PixelFormat pix_fmt, int width)
+{
+    return fill_image_linesize(picture->linesize, pix_fmt, width);
+}
+
+static int fill_image_data_ptr(uint8_t *data[4], uint8_t *ptr, enum PixelFormat pix_fmt,
+                               int height, const int linesize[4])
 {
     int size, h2, size2;
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
 
-    size = picture->linesize[0] * height;
+    size = linesize[0] * height;
     switch(pix_fmt) {
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
@@ -550,28 +555,28 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
     case PIX_FMT_YUV422P16BE:
     case PIX_FMT_YUV444P16BE:
         h2 = (height + (1 << desc->log2_chroma_h) - 1) >> desc->log2_chroma_h;
-        size2 = picture->linesize[1] * h2;
-        picture->data[0] = ptr;
-        picture->data[1] = picture->data[0] + size;
-        picture->data[2] = picture->data[1] + size2;
-        picture->data[3] = NULL;
+        size2 = linesize[1] * h2;
+        data[0] = ptr;
+        data[1] = data[0] + size;
+        data[2] = data[1] + size2;
+        data[3] = NULL;
         return size + 2 * size2;
     case PIX_FMT_YUVA420P:
         h2 = (height + (1 << desc->log2_chroma_h) - 1) >> desc->log2_chroma_h;
-        size2 = picture->linesize[1] * h2;
-        picture->data[0] = ptr;
-        picture->data[1] = picture->data[0] + size;
-        picture->data[2] = picture->data[1] + size2;
-        picture->data[3] = picture->data[1] + size2 + size2;
+        size2 = linesize[1] * h2;
+        data[0] = ptr;
+        data[1] = data[0] + size;
+        data[2] = data[1] + size2;
+        data[3] = data[1] + size2 + size2;
         return 2 * size + 2 * size2;
     case PIX_FMT_NV12:
     case PIX_FMT_NV21:
         h2 = (height + (1 << desc->log2_chroma_h) - 1) >> desc->log2_chroma_h;
-        size2 = picture->linesize[1] * h2;
-        picture->data[0] = ptr;
-        picture->data[1] = picture->data[0] + size;
-        picture->data[2] = NULL;
-        picture->data[3] = NULL;
+        size2 = linesize[1] * h2;
+        data[0] = ptr;
+        data[1] = data[0] + size;
+        data[2] = NULL;
+        data[3] = NULL;
         return size + size2;
     case PIX_FMT_RGB24:
     case PIX_FMT_BGR24:
@@ -603,10 +608,10 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
     case PIX_FMT_MONOWHITE:
     case PIX_FMT_MONOBLACK:
     case PIX_FMT_Y400A:
-        picture->data[0] = ptr;
-        picture->data[1] = NULL;
-        picture->data[2] = NULL;
-        picture->data[3] = NULL;
+        data[0] = ptr;
+        data[1] = NULL;
+        data[2] = NULL;
+        data[3] = NULL;
         return size;
     case PIX_FMT_PAL8:
     case PIX_FMT_RGB8:
@@ -615,18 +620,24 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
     case PIX_FMT_BGR4_BYTE:
     case PIX_FMT_GRAY8:
         size2 = (size + 3) & ~3;
-        picture->data[0] = ptr;
-        picture->data[1] = ptr + size2; /* palette is stored here as 256 32 bit words */
-        picture->data[2] = NULL;
-        picture->data[3] = NULL;
+        data[0] = ptr;
+        data[1] = ptr + size2; /* palette is stored here as 256 32 bit words */
+        data[2] = NULL;
+        data[3] = NULL;
         return size2 + 256 * 4;
     default:
-        picture->data[0] = NULL;
-        picture->data[1] = NULL;
-        picture->data[2] = NULL;
-        picture->data[3] = NULL;
+        data[0] = NULL;
+        data[1] = NULL;
+        data[2] = NULL;
+        data[3] = NULL;
         return -1;
     }
+}
+
+int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
+                    int height)
+{
+    return fill_image_data_ptr(picture->data, ptr, pix_fmt, height, picture->linesize);
 }
 
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
