@@ -139,9 +139,7 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
             rate->num = 0;
     } else {
         /* Finally we give up and parse it as double */
-        AVRational time_base = av_d2q(strtod(arg, 0), 1001000);
-        rate->den = time_base.den;
-        rate->num = time_base.num;
+        *rate = av_d2q(strtod(arg, 0), 1001000);
     }
     if (rate->num <= 0 || rate->den <= 0)
         return AVERROR(EINVAL);
