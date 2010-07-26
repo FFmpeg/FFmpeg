@@ -1938,7 +1938,7 @@ static int copy_chapters(int infile, int outfile)
 /*
  * The following code is the main loop of the file converter
  */
-static int av_transcode(AVFormatContext **output_files,
+static int transcode(AVFormatContext **output_files,
                         int nb_output_files,
                         AVFormatContext **input_files,
                         int nb_input_files,
@@ -4354,7 +4354,7 @@ int main(int argc, char **argv)
     }
 
     ti = getutime();
-    if (av_transcode(output_files, nb_output_files, input_files, nb_input_files,
+    if (transcode(output_files, nb_output_files, input_files, nb_input_files,
                      stream_maps, nb_stream_maps) < 0)
         ffmpeg_exit(1);
     ti = getutime() - ti;
