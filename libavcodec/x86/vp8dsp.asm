@@ -1394,8 +1394,10 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3
 %if mmsize == 8 ; mmx/mmxext
     mov            r3, 2
 %endif
-%ifnidn %1, sse2 && mmsize == 16
+%ifnidn %1, sse2
+%if mmsize == 16
     pxor           m0, m0
+%endif
 %endif
     SPLATB_REG     m7, r2, m0       ; splat "flim" into register
 
@@ -1584,8 +1586,10 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %define stack_reg   hev_thr_reg
 %endif
 
-%ifnidn %1, sse2 && mmsize == 16
+%ifnidn %1, sse2
+%if mmsize == 16
     pxor             m7, m7
+%endif
 %endif
 
 %ifndef m8 ; mmx/mmxext or sse2 on x86-32
@@ -2181,8 +2185,10 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %define stack_reg   hev_thr_reg
 %endif
 
-%ifnidn %1, sse2 && mmsize == 16
+%ifnidn %1, sse2
+%if mmsize == 16
     pxor             m7, m7
+%endif
 %endif
 
 %ifndef m8 ; mmx/mmxext or sse2 on x86-32
