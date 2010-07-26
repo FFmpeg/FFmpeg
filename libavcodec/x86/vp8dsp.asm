@@ -145,6 +145,10 @@ filter_h6_shuf3: db 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8,  9, 9, 10, 10, 11
 pw_20091: times 4 dw 20091
 pw_17734: times 4 dw 17734
 
+pb_27_63: times 8 db 27, 63
+pb_18_63: times 8 db 18, 63
+pb_9_63:  times 8 db  9, 63
+
 cextern pb_1
 cextern pw_3
 cextern pb_3
@@ -2175,10 +2179,15 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %define stack_reg   hev_thr_reg
 %endif
 
+%define ssse3_or_higher 0
 %ifnidn %1, sse2
 %if mmsize == 16
-    pxor             m7, m7
+%define ssse3_or_higher 1
 %endif
+%endif
+
+%if ssse3_or_higher
+    pxor             m7, m7
 %endif
 
 %ifndef m8 ; mmx/mmxext or sse2 on x86-32
@@ -2576,7 +2585,11 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     paddusb          m4, m1          ; q0-f1
 
     ; filter_mbedge (m2-m5 = p1-q1; lim_res carries w)
+%if ssse3_or_higher
+    mova             m7, [pb_1]
+%else
     mova             m7, [pw_63]
+%endif
 %ifdef m8
     SWAP              1, 8
 %else
@@ -2585,15 +2598,40 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     pxor             m0, m0
     mova             m6, m1
     pcmpgtb          m0, m1         ; which are negative
+%if ssse3_or_higher
+    punpcklbw        m6, m7         ; interleave with "1" for rounding
+    punpckhbw        m1, m7
+%else
     punpcklbw        m6, m0         ; signed byte->word
     punpckhbw        m1, m0
+%endif
     mova       lim_sign, m0
+%if ssse3_or_higher
+    mova             m7, [pb_27_63]
+%ifndef m8
+    mova        lim_res, m1
+%endif
+%ifdef m10
+    SWAP              0, 10         ; don't lose lim_sign copy
+%endif
+    mova             m0, m7
+    pmaddubsw        m7, m6
+    SWAP              6, 7
+    pmaddubsw        m0, m1
+    SWAP              1, 0
+%ifdef m10
+    SWAP              0, 10
+%else
+    mova             m0, lim_sign
+%endif
+%else
     mova       mask_res, m6         ; backup for later in filter
     mova        lim_res, m1
     pmullw          m6, [pw_27]
     pmullw          m1, [pw_27]
     paddw           m6, m7
     paddw           m1, m7
+%endif
     psraw           m6, 7
     psraw           m1, 7
     packsswb        m6, m1          ; a0
@@ -2601,18 +2639,39 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     psubb           m1, m6
     pand            m1, m0          ; -a0
     pandn           m0, m6          ; +a0
+%if ssse3_or_higher
+    mova            m6, [pb_18_63]  ; pipelining
+%endif
     psubusb         m3, m1
     paddusb         m4, m1
     paddusb         m3, m0          ; p0+a0
     psubusb         m4, m0          ; q0-a0
 
+%if ssse3_or_higher
+    SWAP             6, 7
+%ifdef m10
+    SWAP             1, 10
+%else
+    mova            m1, lim_res
+%endif
+    mova            m0, m7
+    pmaddubsw       m7, m6
+    SWAP             6, 7
+    pmaddubsw       m0, m1
+    SWAP             1, 0
+%ifdef m10
+    SWAP             0, 10
+%endif
+    mova            m0, lim_sign
+%else
     mova            m6, mask_res
     mova            m1, lim_res
-    mova            m0, lim_sign
     pmullw          m6, [pw_18]
     pmullw          m1, [pw_18]
     paddw           m6, m7
     paddw           m1, m7
+%endif
+    mova            m0, lim_sign
     psraw           m6, 7
     psraw           m1, 7
     packsswb        m6, m1          ; a1
@@ -2620,11 +2679,27 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     psubb           m1, m6
     pand            m1, m0          ; -a1
     pandn           m0, m6          ; +a1
+%if ssse3_or_higher
+    mova            m6, [pb_9_63]
+%endif
     psubusb         m2, m1
     paddusb         m5, m1
     paddusb         m2, m0          ; p1+a1
     psubusb         m5, m0          ; q1-a1
 
+%if ssse3_or_higher
+    SWAP             6, 7
+%ifdef m10
+    SWAP             1, 10
+%else
+    mova            m1, lim_res
+%endif
+    mova            m0, m7
+    pmaddubsw       m7, m6
+    SWAP             6, 7
+    pmaddubsw       m0, m1
+    SWAP             1, 0
+%else
 %ifdef m8
     SWAP             6, 12
     SWAP             1, 8
@@ -2636,6 +2711,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     pmullw          m1, [pw_9]
     paddw           m6, m7
     paddw           m1, m7
+%endif
 %ifdef m9
     SWAP             7, 9
 %else
