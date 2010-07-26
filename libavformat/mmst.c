@@ -267,15 +267,37 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
     MMSSCPacketType packet_type= -1;
 
     for(;;) {
-        if((read_result= url_read_complete(mms->mms_hd, mms->in_buffer, 8))==8) {
+        read_result = url_read_complete(mms->mms_hd, mms->in_buffer, 8);
+        if (read_result != 8) {
+            if(read_result < 0) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Error reading packet header: %d (%s)\n",
+                       read_result, strerror(read_result));
+                packet_type = SC_PKT_CANCEL;
+            } else {
+                av_log(NULL, AV_LOG_ERROR,
+                       "The server closed the connection\n");
+                packet_type = SC_PKT_NO_DATA;
+            }
+            return packet_type;
+        }
+
             // handle command packet.
             if(AV_RL32(mms->in_buffer + 4)==0xb00bface) {
+            int length_remaining, hr;
+
                 mms->incoming_flags= mms->in_buffer[3];
                 read_result= url_read_complete(mms->mms_hd, mms->in_buffer+8, 4);
-                if(read_result == 4) {
-                    int length_remaining= AV_RL32(mms->in_buffer+8) + 4;
-                    int hr;
+                if(read_result != 4) {
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Reading command packet length failed: %d (%s)\n",
+                           read_result,
+                           read_result < 0 ? strerror(read_result) :
+                               "The server closed the connection");
+                    return read_result < 0 ? read_result : AVERROR_IO;
+                }
 
+            length_remaining= AV_RL32(mms->in_buffer+8) + 4;
                     dprintf(NULL, "Length remaining is %d\n", length_remaining);
                     // read the rest of the packet.
                     if (length_remaining < 0
@@ -287,9 +309,7 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                     }
                     read_result = url_read_complete(mms->mms_hd, mms->in_buffer + 12,
                                                   length_remaining) ;
-                    if (read_result == length_remaining) {
-                        packet_type= AV_RL16(mms->in_buffer+36);
-                    } else {
+                    if (read_result != length_remaining) {
                         av_log(NULL, AV_LOG_ERROR,
                                "Reading pkt data (length=%d) failed: %d (%s)\n",
                                length_remaining, read_result,
@@ -297,6 +317,7 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                                    "The server closed the connection");
                         return read_result < 0 ? read_result : AVERROR_IO;
                     }
+                    packet_type= AV_RL16(mms->in_buffer+36);
                     hr = AV_RL32(mms->in_buffer + 40);
                     if (hr) {
                         av_log(NULL, AV_LOG_ERROR,
@@ -304,14 +325,6 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                                hr);
                         return AVERROR_UNKNOWN;
                     }
-                } else {
-                    av_log(NULL, AV_LOG_ERROR,
-                           "Reading command packet length failed: %d (%s)\n",
-                           read_result,
-                           read_result < 0 ? strerror(read_result) :
-                               "The server closed the connection");
-                    return read_result < 0 ? read_result : AVERROR_IO;
-                }
             } else {
                 int length_remaining;
                 int packet_id_type;
@@ -342,7 +355,8 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                            read_result < 0 ? strerror(read_result) :
                                "The server closed the connection");
                     return read_result < 0 ? read_result : AVERROR_IO;
-                } else {
+                }
+
                     // if we successfully read everything.
                     if(packet_id_type == mms->header_packet_id) {
                         packet_type = SC_PKT_ASF_HEADER;
@@ -370,7 +384,6 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                         dprintf(NULL, "packet id type %d is old.", packet_id_type);
                         continue;
                     }
-                }
             }
 
             // preprocess some packet type
@@ -383,19 +396,6 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                 pad_media_packet(mms);
             }
             return packet_type;
-        } else {
-            if(read_result<0) {
-                av_log(NULL, AV_LOG_ERROR,
-                       "Error reading packet header: %d (%s)\n",
-                       read_result, strerror(read_result));
-                packet_type = SC_PKT_CANCEL;
-            } else {
-                av_log(NULL, AV_LOG_ERROR,
-                       "The server closed the connection\n");
-                packet_type = SC_PKT_NO_DATA;
-            }
-            return packet_type;
-        }
     }
 }
 
