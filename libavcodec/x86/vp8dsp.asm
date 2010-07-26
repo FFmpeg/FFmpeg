@@ -2200,7 +2200,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     ; align stack
     mov       stack_reg, rsp         ; backup stack pointer
     and             rsp, ~(mmsize-1) ; align stack
-%ifidn %2, sse2
+%if mmsize == 16
     sub             rsp, mmsize * 7
 %else
     sub             rsp, mmsize * 8  ; stack layout: [0]=E, [1]=I, [2]=hev_thr
@@ -2219,7 +2219,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %define q0backup [rsp+mmsize*4]
 %define p2backup [rsp+mmsize*5]
 %define q2backup [rsp+mmsize*6]
-%ifidn %2, sse2
+%if mmsize == 16
 %define lim_sign [rsp]
 %else
 %define lim_sign [rsp+mmsize*7]
