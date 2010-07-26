@@ -3172,6 +3172,8 @@ echo "#endif /* AVUTIL_AVCONFIG_H */" >> $TMPH
 
 cp_if_changed $TMPH libavutil/avconfig.h
 
+echo "config:$arch:$subarch:$cpu:$target_os:$cc_ident:$FFMPEG_CONFIGURATION" >config.fate
+
 test -n "$WARNINGS" && printf "\n$WARNINGS"
 
 # build pkg-config files

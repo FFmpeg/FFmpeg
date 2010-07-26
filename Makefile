@@ -271,10 +271,12 @@ fate2 $(FATE_TESTS):
 	@echo "SAMPLES not specified, cannot run FATE"
 endif
 
+FATE_UTILS = base64 tiny_psnr
+
 fate: $(FATE)
 fate2: $(FATE2_TESTS)
 
-$(FATE): ffmpeg$(EXESUF) tests/tiny_psnr$(HOSTEXESUF)
+$(FATE): ffmpeg$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 	@echo "TEST    $(@:fate-%=%)"
 	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)'
 
