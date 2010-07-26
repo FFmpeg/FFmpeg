@@ -2200,11 +2200,15 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     ; align stack
     mov       stack_reg, rsp         ; backup stack pointer
     and             rsp, ~(mmsize-1) ; align stack
+%ifidn %2, sse2
+    sub             rsp, mmsize * 7
+%else
     sub             rsp, mmsize * 8  ; stack layout: [0]=E, [1]=I, [2]=hev_thr
                                      ;               [3]=hev() result
                                      ;               [4]=filter tmp result
                                      ;               [5]/[6] = p2/q2 backup
                                      ;               [7]=lim_res sign result
+%endif
 
 %define flim_E   [rsp]
 %define flim_I   [rsp+mmsize]
@@ -2215,7 +2219,11 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %define q0backup [rsp+mmsize*4]
 %define p2backup [rsp+mmsize*5]
 %define q2backup [rsp+mmsize*6]
+%ifidn %2, sse2
+%define lim_sign [rsp]
+%else
 %define lim_sign [rsp+mmsize*7]
+%endif
 
     mova         flim_E, m0
     mova         flim_I, m1
@@ -2232,7 +2240,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %define q0backup m8
 %define p2backup m13
 %define q2backup m14
-%define lim_sign m15
+%define lim_sign m9
 
     ; splat function arguments
     SPLATB_REG   flim_E, E_reg, m7   ; E
@@ -2638,8 +2646,8 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     pmullw          m1, [pw_9]
     paddw           m6, m7
     paddw           m1, m7
-%ifdef m15
-    SWAP             7, 15
+%ifdef m9
+    SWAP             7, 9
 %else
     mova            m7, lim_sign
 %endif
@@ -2749,29 +2757,29 @@ MBEDGE_LOOPFILTER mmxext, h, 6,  8, 0
 INIT_XMM
 %define SPLATB_REG SPLATB_REG_SSE2
 %define WRITE_8W   WRITE_8W_SSE2
-MBEDGE_LOOPFILTER sse2,   v, 5, 16, 16
+MBEDGE_LOOPFILTER sse2,   v, 5, 16, 15
 %ifdef m8
-MBEDGE_LOOPFILTER sse2,   h, 5, 16, 16
+MBEDGE_LOOPFILTER sse2,   h, 5, 16, 15
 %else
-MBEDGE_LOOPFILTER sse2,   h, 6, 16, 16
+MBEDGE_LOOPFILTER sse2,   h, 6, 16, 15
 %endif
-MBEDGE_LOOPFILTER sse2,   v, 6,  8, 16
-MBEDGE_LOOPFILTER sse2,   h, 6,  8, 16
+MBEDGE_LOOPFILTER sse2,   v, 6,  8, 15
+MBEDGE_LOOPFILTER sse2,   h, 6,  8, 15
 
 %define SPLATB_REG SPLATB_REG_SSSE3
-MBEDGE_LOOPFILTER ssse3,  v, 5, 16, 16
+MBEDGE_LOOPFILTER ssse3,  v, 5, 16, 15
 %ifdef m8
-MBEDGE_LOOPFILTER ssse3,  h, 5, 16, 16
+MBEDGE_LOOPFILTER ssse3,  h, 5, 16, 15
 %else
-MBEDGE_LOOPFILTER ssse3,  h, 6, 16, 16
+MBEDGE_LOOPFILTER ssse3,  h, 6, 16, 15
 %endif
-MBEDGE_LOOPFILTER ssse3,  v, 6,  8, 16
-MBEDGE_LOOPFILTER ssse3,  h, 6,  8, 16
+MBEDGE_LOOPFILTER ssse3,  v, 6,  8, 15
+MBEDGE_LOOPFILTER ssse3,  h, 6,  8, 15
 
 %define WRITE_8W   WRITE_8W_SSE4
 %ifdef m8
-MBEDGE_LOOPFILTER sse4,   h, 5, 16, 16
+MBEDGE_LOOPFILTER sse4,   h, 5, 16, 15
 %else
-MBEDGE_LOOPFILTER sse4,   h, 6, 16, 16
+MBEDGE_LOOPFILTER sse4,   h, 6, 16, 15
 %endif
-MBEDGE_LOOPFILTER sse4,   h, 6,  8, 16
+MBEDGE_LOOPFILTER sse4,   h, 6,  8, 15
