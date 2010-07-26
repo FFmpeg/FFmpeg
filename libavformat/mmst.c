@@ -170,8 +170,11 @@ static int send_command_packet(MMSContext *mms)
     // write it out.
     write_result= url_write(mms->mms_hd, mms->out_buffer, exact_length);
     if(write_result != exact_length) {
-        dprintf(NULL, "url_write returned: %d != %d\n",
-                write_result, exact_length);
+        av_log(NULL, AV_LOG_ERROR,
+               "Failed to write data of length %d: %d (%s)\n",
+               exact_length, write_result,
+               write_result < 0 ? strerror(write_result) :
+                   "The server closed the connection");
         return AVERROR_IO;
     }
 
@@ -277,26 +280,37 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                     // read the rest of the packet.
                     if (length_remaining < 0
                         || length_remaining > sizeof(mms->in_buffer) - 12) {
-                        dprintf(NULL, "Incoming message len %d exceeds buffer len %d\n",
-                            length_remaining, sizeof(mms->in_buffer) - 12);
-                        return -1;
+                        av_log(NULL, AV_LOG_ERROR,
+                               "Incoming packet length %d exceeds bufsize %zu\n",
+                               length_remaining, sizeof(mms->in_buffer) - 12);
+                        return AVERROR_INVALIDDATA;
                     }
                     read_result = url_read_complete(mms->mms_hd, mms->in_buffer + 12,
                                                   length_remaining) ;
                     if (read_result == length_remaining) {
                         packet_type= AV_RL16(mms->in_buffer+36);
                     } else {
-                        dprintf(NULL, "read for packet type failed%d!\n", read_result);
-                        return -1;
+                        av_log(NULL, AV_LOG_ERROR,
+                               "Reading pkt data (length=%d) failed: %d (%s)\n",
+                               length_remaining, read_result,
+                               read_result < 0 ? strerror(read_result) :
+                                   "The server closed the connection");
+                        return read_result < 0 ? read_result : AVERROR_IO;
                     }
                     hr = AV_RL32(mms->in_buffer + 40);
                     if (hr) {
-                        dprintf(NULL, "The server side send back error code:0x%x\n", hr);
-                        return -1;
+                        av_log(NULL, AV_LOG_ERROR,
+                               "Server sent an error status code: 0x%08x\n",
+                               hr);
+                        return AVERROR_UNKNOWN;
                     }
                 } else {
-                    dprintf(NULL, "read for length remaining failed%d!\n", read_result);
-                    return -1;
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Reading command packet length failed: %d (%s)\n",
+                           read_result,
+                           read_result < 0 ? strerror(read_result) :
+                               "The server closed the connection");
+                    return read_result < 0 ? read_result : AVERROR_IO;
                 }
             } else {
                 int length_remaining;
@@ -313,17 +327,21 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
 
                 if (length_remaining < 0
                         || length_remaining > sizeof(mms->in_buffer) - 8) {
-                    dprintf(NULL, "Incoming data len %d exceeds buffer len %d\n",
-                            length_remaining, sizeof(mms->in_buffer));
-                    return -1;
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Data length %d is invalid or too large (max=%zu)\n",
+                           length_remaining, sizeof(mms->in_buffer));
+                    return AVERROR_INVALIDDATA;
                 }
                 mms->remaining_in_len    = length_remaining;
                 mms->read_in_ptr         = mms->in_buffer;
                 read_result= url_read_complete(mms->mms_hd, mms->in_buffer, length_remaining);
                 if(read_result != length_remaining) {
-                    dprintf(NULL, "read_bytes result: %d asking for %d\n",
-                            read_result, length_remaining);
-                    return -1;
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Failed to read packet data of size %d: %d (%s)\n",
+                           length_remaining, read_result,
+                           read_result < 0 ? strerror(read_result) :
+                               "The server closed the connection");
+                    return read_result < 0 ? read_result : AVERROR_IO;
                 } else {
                     // if we successfully read everything.
                     if(packet_id_type == mms->header_packet_id) {
@@ -367,10 +385,13 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
             return packet_type;
         } else {
             if(read_result<0) {
-                dprintf(NULL, "Read error (or cancelled) returned %d!\n", read_result);
+                av_log(NULL, AV_LOG_ERROR,
+                       "Error reading packet header: %d (%s)\n",
+                       read_result, strerror(read_result));
                 packet_type = SC_PKT_CANCEL;
             } else {
-                dprintf(NULL, "Read result of zero?!\n");
+                av_log(NULL, AV_LOG_ERROR,
+                       "The server closed the connection\n");
                 packet_type = SC_PKT_NO_DATA;
             }
             return packet_type;
@@ -392,8 +413,10 @@ static int mms_safe_send_recv(MMSContext *mms,
     }
 
     if ((type = get_tcp_server_response(mms)) != expect_type) {
-        dprintf(NULL,"Unexpected packet type %d with type %d\n", type, expect_type);
-        return -1;
+        av_log(NULL, AV_LOG_ERROR,
+               "Corrupt stream (unexpected packet type 0x%x, expected 0x%x)\n",
+               type, expect_type);
+        return AVERROR_INVALIDDATA;
     } else {
         return 0;
     }
@@ -446,8 +469,12 @@ static int asf_header_parser(MMSContext *mms)
     mms->stream_num = 0;
 
     if (mms->asf_header_size < sizeof(ff_asf_guid) * 2 + 22 ||
-        memcmp(p, ff_asf_header, sizeof(ff_asf_guid)))
-        return -1;
+        memcmp(p, ff_asf_header, sizeof(ff_asf_guid))) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Corrupt stream (invalid ASF header, size=%d)\n",
+               mms->asf_header_size);
+        return AVERROR_INVALIDDATA;
+    }
 
     end = mms->asf_header + mms->asf_header_size;
 
@@ -455,17 +482,20 @@ static int asf_header_parser(MMSContext *mms)
     while(end - p >= sizeof(ff_asf_guid) + 8) {
         uint64_t chunksize = AV_RL64(p + sizeof(ff_asf_guid));
         if (!chunksize || chunksize > end - p) {
-            dprintf(NULL, "chunksize is exceptional value:%"PRId64"!\n", chunksize);
-            return -1;
+            av_log(NULL, AV_LOG_ERROR,
+                   "Corrupt stream (header chunksize %"PRId64" is invalid)\n",
+                   chunksize);
+            return AVERROR_INVALIDDATA;
         }
         if (!memcmp(p, ff_asf_file_header, sizeof(ff_asf_guid))) {
             /* read packet size */
             if (end - p > sizeof(ff_asf_guid) * 2 + 68) {
                 mms->asf_packet_len = AV_RL32(p + sizeof(ff_asf_guid) * 2 + 64);
                 if (mms->asf_packet_len <= 0 || mms->asf_packet_len > sizeof(mms->in_buffer)) {
-                    dprintf(NULL,"Too large packet len:%d"
-                        " may overwrite in_buffer when padding", mms->asf_packet_len);
-                    return -1;
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Corrupt stream (too large pkt_len %d)\n",
+                           mms->asf_packet_len);
+                    return AVERROR_INVALIDDATA;
                 }
             }
         } else if (!memcmp(p, ff_asf_stream_header, sizeof(ff_asf_guid))) {
@@ -479,8 +509,9 @@ static int asf_header_parser(MMSContext *mms)
                 mms->streams[mms->stream_num].id = stream_id;
                 mms->stream_num++;
             } else {
-                dprintf(NULL, "Too many streams.\n");
-                return -1;
+                av_log(NULL, AV_LOG_ERROR,
+                       "Corrupt stream (too many A/V streams)\n");
+                return AVERROR_INVALIDDATA;
             }
         } else if (!memcmp(p, ff_asf_head1_guid, sizeof(ff_asf_guid))) {
             chunksize = 46; // see references [2] section 3.4. This should be set 46.
@@ -546,9 +577,9 @@ static int read_mms_packet(MMSContext *mms, uint8_t *buf, int buf_size)
             int err = mms_safe_send_recv(mms, NULL, SC_PKT_ASF_MEDIA);
             if (err == 0) {
                 if(mms->remaining_in_len>mms->asf_packet_len) {
-                    dprintf(NULL, "Incoming packet"
-                            "larger than the asf packet size stated (%d>%d)\n",
-                            mms->remaining_in_len, mms->asf_packet_len);
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Incoming pktlen %d is larger than ASF pktsize %d\n",
+                           mms->remaining_in_len, mms->asf_packet_len);
                     result= AVERROR_IO;
                 } else {
                     // copy the data to the packet buffer.
