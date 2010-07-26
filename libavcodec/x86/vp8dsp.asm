@@ -438,48 +438,43 @@ cglobal put_vp8_epel4_h6_mmxext, 6, 6
     jg .nextrow
     REP_RET
 
-; 4x4 block, H-only 4-tap filter
 INIT_XMM
-cglobal put_vp8_epel8_h4_sse2, 6, 6, 8
-    shl      r5d, 4
+cglobal put_vp8_epel8_h4_sse2, 6, 6, 10
+    shl      r5d, 5
 %ifdef PIC
-    lea      r11, [fourtap_filter_hw_m]
+    lea      r11, [fourtap_filter_v_m]
 %endif
-    mova      m5, [fourtap_filter_hw+r5-16] ; set up 4tap filter in words
-    mova      m6, [fourtap_filter_hw+r5]
+    lea       r5, [fourtap_filter_v+r5-32]
     pxor      m7, m7
-
+    mova      m4, [pw_64]
+    mova      m5, [r5+ 0]
+    mova      m6, [r5+16]
+%ifdef m8
+    mova      m8, [r5+32]
+    mova      m9, [r5+48]
+%endif
 .nextrow
-    movh      m0, [r2-1]
-    punpcklbw m0, m7        ; ABCDEFGH
-    mova      m1, m0
-    mova      m2, m0
-    mova      m3, m0
-    psrldq    m1, 2         ; BCDEFGH
-    psrldq    m2, 4         ; CDEFGH
-    psrldq    m3, 6         ; DEFGH
-    punpcklwd m0, m1        ; ABBCCDDE
-    punpcklwd m2, m3        ; CDDEEFFG
-    pmaddwd   m0, m5
-    pmaddwd   m2, m6
-    paddd     m0, m2
-
-    movh      m1, [r2+3]
-    punpcklbw m1, m7        ; ABCDEFGH
-    mova      m2, m1
-    mova      m3, m1
-    mova      m4, m1
-    psrldq    m2, 2         ; BCDEFGH
-    psrldq    m3, 4         ; CDEFGH
-    psrldq    m4, 6         ; DEFGH
-    punpcklwd m1, m2        ; ABBCCDDE
-    punpcklwd m3, m4        ; CDDEEFFG
-    pmaddwd   m1, m5
-    pmaddwd   m3, m6
-    paddd     m1, m3
-
-    packssdw  m0, m1
-    paddsw    m0, [pw_64]
+    movq      m0, [r2-1]
+    movq      m1, [r2-0]
+    movq      m2, [r2+1]
+    movq      m3, [r2+2]
+    punpcklbw m0, m7
+    punpcklbw m1, m7
+    punpcklbw m2, m7
+    punpcklbw m3, m7
+    pmullw    m0, m5
+    pmullw    m1, m6
+%ifdef m8
+    pmullw    m2, m8
+    pmullw    m3, m9
+%else
+    pmullw    m2, [r5+32]
+    pmullw    m3, [r5+48]
+%endif
+    paddsw    m0, m1
+    paddsw    m2, m3
+    paddsw    m0, m2
+    paddsw    m0, m4
     psraw     m0, 7
     packuswb  m0, m7
     movh    [r0], m0        ; store
@@ -491,62 +486,57 @@ cglobal put_vp8_epel8_h4_sse2, 6, 6, 8
     jg .nextrow
     REP_RET
 
-cglobal put_vp8_epel8_h6_sse2, 6, 6, 8
+cglobal put_vp8_epel8_h6_sse2, 6, 6, 14
     lea      r5d, [r5*3]
+    shl      r5d, 4
 %ifdef PIC
-    lea      r11, [sixtap_filter_hw_m]
+    lea      r11, [sixtap_filter_v_m]
 %endif
-    lea       r5, [sixtap_filter_hw+r5*8]
+    lea       r5, [sixtap_filter_v+r5-96]
     pxor      m7, m7
-
+    mova      m6, [pw_64]
+%ifdef m8
+    mova      m8, [r5+ 0]
+    mova      m9, [r5+16]
+    mova     m10, [r5+32]
+    mova     m11, [r5+48]
+    mova     m12, [r5+64]
+    mova     m13, [r5+80]
+%endif
 .nextrow
-    movu      m0, [r2-2]
-    mova      m6, m0
-    mova      m4, m0
-    punpcklbw m0, m7        ; ABCDEFGHI
-    mova      m1, m0
-    mova      m2, m0
-    mova      m3, m0
-    psrldq    m1, 2         ; BCDEFGH
-    psrldq    m2, 4         ; CDEFGH
-    psrldq    m3, 6         ; DEFGH
-    psrldq    m4, 4
-    punpcklbw m4, m7        ; EFGH
-    mova      m5, m4
-    psrldq    m5, 2         ; FGH
-    punpcklwd m0, m1        ; ABBCCDDE
-    punpcklwd m2, m3        ; CDDEEFFG
-    punpcklwd m4, m5        ; EFFGGHHI
-    pmaddwd   m0, [r5-48]
-    pmaddwd   m2, [r5-32]
-    pmaddwd   m4, [r5-16]
-    paddd     m0, m2
-    paddd     m0, m4
-
-    psrldq    m6, 4
-    mova      m4, m6
-    punpcklbw m6, m7        ; ABCDEFGHI
-    mova      m1, m6
-    mova      m2, m6
-    mova      m3, m6
-    psrldq    m1, 2         ; BCDEFGH
-    psrldq    m2, 4         ; CDEFGH
-    psrldq    m3, 6         ; DEFGH
-    psrldq    m4, 4
-    punpcklbw m4, m7        ; EFGH
-    mova      m5, m4
-    psrldq    m5, 2         ; FGH
-    punpcklwd m6, m1        ; ABBCCDDE
-    punpcklwd m2, m3        ; CDDEEFFG
-    punpcklwd m4, m5        ; EFFGGHHI
-    pmaddwd   m6, [r5-48]
-    pmaddwd   m2, [r5-32]
-    pmaddwd   m4, [r5-16]
-    paddd     m6, m2
-    paddd     m6, m4
-
-    packssdw  m0, m6
-    paddsw    m0, [pw_64]
+    movq      m0, [r2-2]
+    movq      m1, [r2-1]
+    movq      m2, [r2-0]
+    movq      m3, [r2+1]
+    movq      m4, [r2+2]
+    movq      m5, [r2+3]
+    punpcklbw m0, m7
+    punpcklbw m1, m7
+    punpcklbw m2, m7
+    punpcklbw m3, m7
+    punpcklbw m4, m7
+    punpcklbw m5, m7
+%ifdef m8
+    pmullw    m0, m8
+    pmullw    m1, m9
+    pmullw    m2, m10
+    pmullw    m3, m11
+    pmullw    m4, m12
+    pmullw    m5, m13
+%else
+    pmullw    m0, [r5+ 0]
+    pmullw    m1, [r5+16]
+    pmullw    m2, [r5+32]
+    pmullw    m3, [r5+48]
+    pmullw    m4, [r5+64]
+    pmullw    m5, [r5+80]
+%endif
+    paddsw    m1, m4
+    paddsw    m0, m5
+    paddsw    m1, m2
+    paddsw    m0, m3
+    paddsw    m0, m1
+    paddsw    m0, m6
     psraw     m0, 7
     packuswb  m0, m7
     movh    [r0], m0        ; store
