@@ -36,6 +36,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
+#include "libavcore/parseutils.h"
 #include "libavcodec/opt.h"
 #include <stdarg.h>
 #include <unistd.h>
@@ -4410,7 +4411,7 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "VideoSize")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                av_parse_video_frame_size(&video_enc.width, &video_enc.height, arg);
+                av_parse_video_size(&video_enc.width, &video_enc.height, arg);
                 if ((video_enc.width % 16) != 0 ||
                     (video_enc.height % 16) != 0) {
                     ERROR("Image size must be a multiple of 16\n");
@@ -4420,7 +4421,7 @@ static int parse_ffconfig(const char *filename)
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
                 AVRational frame_rate;
-                if (av_parse_video_frame_rate(&frame_rate, arg) < 0) {
+                if (av_parse_video_rate(&frame_rate, arg) < 0) {
                     ERROR("Incorrect frame rate: %s\n", arg);
                 } else {
                     video_enc.time_base.num = frame_rate.den;

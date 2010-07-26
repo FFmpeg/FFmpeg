@@ -1092,132 +1092,19 @@ unsigned int av_xiphlacing(unsigned char *s, unsigned int v)
     return n;
 }
 
-typedef struct {
-    const char *abbr;
-    int width, height;
-} VideoFrameSizeAbbr;
-
-typedef struct {
-    const char *abbr;
-    int rate_num, rate_den;
-} VideoFrameRateAbbr;
-
-static const VideoFrameSizeAbbr video_frame_size_abbrs[] = {
-    { "ntsc",      720, 480 },
-    { "pal",       720, 576 },
-    { "qntsc",     352, 240 }, /* VCD compliant NTSC */
-    { "qpal",      352, 288 }, /* VCD compliant PAL */
-    { "sntsc",     640, 480 }, /* square pixel NTSC */
-    { "spal",      768, 576 }, /* square pixel PAL */
-    { "film",      352, 240 },
-    { "ntsc-film", 352, 240 },
-    { "sqcif",     128,  96 },
-    { "qcif",      176, 144 },
-    { "cif",       352, 288 },
-    { "4cif",      704, 576 },
-    { "16cif",    1408,1152 },
-    { "qqvga",     160, 120 },
-    { "qvga",      320, 240 },
-    { "vga",       640, 480 },
-    { "svga",      800, 600 },
-    { "xga",      1024, 768 },
-    { "uxga",     1600,1200 },
-    { "qxga",     2048,1536 },
-    { "sxga",     1280,1024 },
-    { "qsxga",    2560,2048 },
-    { "hsxga",    5120,4096 },
-    { "wvga",      852, 480 },
-    { "wxga",     1366, 768 },
-    { "wsxga",    1600,1024 },
-    { "wuxga",    1920,1200 },
-    { "woxga",    2560,1600 },
-    { "wqsxga",   3200,2048 },
-    { "wquxga",   3840,2400 },
-    { "whsxga",   6400,4096 },
-    { "whuxga",   7680,4800 },
-    { "cga",       320, 200 },
-    { "ega",       640, 350 },
-    { "hd480",     852, 480 },
-    { "hd720",    1280, 720 },
-    { "hd1080",   1920,1080 },
-};
-
-static const VideoFrameRateAbbr video_frame_rate_abbrs[]= {
-    { "ntsc",      30000, 1001 },
-    { "pal",          25,    1 },
-    { "qntsc",     30000, 1001 }, /* VCD compliant NTSC */
-    { "qpal",         25,    1 }, /* VCD compliant PAL */
-    { "sntsc",     30000, 1001 }, /* square pixel NTSC */
-    { "spal",         25,    1 }, /* square pixel PAL */
-    { "film",         24,    1 },
-    { "ntsc-film", 24000, 1001 },
-};
+#if LIBAVCODEC_VERSION_MAJOR < 53
+#include "libavcore/parseutils.h"
 
 int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str)
 {
-    int i;
-    int n = FF_ARRAY_ELEMS(video_frame_size_abbrs);
-    char *p;
-    int frame_width = 0, frame_height = 0;
-
-    for(i=0;i<n;i++) {
-        if (!strcmp(video_frame_size_abbrs[i].abbr, str)) {
-            frame_width = video_frame_size_abbrs[i].width;
-            frame_height = video_frame_size_abbrs[i].height;
-            break;
-        }
-    }
-    if (i == n) {
-        p = str;
-        frame_width = strtol(p, &p, 10);
-        if (*p)
-            p++;
-        frame_height = strtol(p, &p, 10);
-    }
-    if (frame_width <= 0 || frame_height <= 0)
-        return -1;
-    *width_ptr = frame_width;
-    *height_ptr = frame_height;
-    return 0;
+    return av_parse_video_size(width_ptr, height_ptr, str);
 }
 
 int av_parse_video_frame_rate(AVRational *frame_rate, const char *arg)
 {
-    int i;
-    int n = FF_ARRAY_ELEMS(video_frame_rate_abbrs);
-    char* cp;
-
-    /* First, we check our abbreviation table */
-    for (i = 0; i < n; ++i)
-         if (!strcmp(video_frame_rate_abbrs[i].abbr, arg)) {
-             frame_rate->num = video_frame_rate_abbrs[i].rate_num;
-             frame_rate->den = video_frame_rate_abbrs[i].rate_den;
-             return 0;
-         }
-
-    /* Then, we try to parse it as fraction */
-    cp = strchr(arg, '/');
-    if (!cp)
-        cp = strchr(arg, ':');
-    if (cp) {
-        char* cpp;
-        frame_rate->num = strtol(arg, &cpp, 10);
-        if (cpp != arg || cpp == cp)
-            frame_rate->den = strtol(cp+1, &cpp, 10);
-        else
-           frame_rate->num = 0;
-    }
-    else {
-        /* Finally we give up and parse it as double */
-        AVRational time_base = av_d2q(strtod(arg, 0), 1001000);
-        frame_rate->den = time_base.den;
-        frame_rate->num = time_base.num;
-    }
-    if (!frame_rate->num || !frame_rate->den)
-        return -1;
-    else
-        return 0;
+    return av_parse_video_rate(frame_rate, arg);
 }
+#endif
 
 int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b){
     int i;

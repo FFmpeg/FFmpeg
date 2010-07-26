@@ -26,6 +26,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/pixdesc.h"
+#include "libavcore/parseutils.h"
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
@@ -2949,7 +2950,7 @@ static void event_loop(void)
 
 static void opt_frame_size(const char *arg)
 {
-    if (av_parse_video_frame_size(&frame_width, &frame_height, arg) < 0) {
+    if (av_parse_video_size(&frame_width, &frame_height, arg) < 0) {
         fprintf(stderr, "Incorrect frame size\n");
         exit(1);
     }

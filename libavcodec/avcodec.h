@@ -31,7 +31,7 @@
 
 #define LIBAVCODEC_VERSION_MAJOR 52
 #define LIBAVCODEC_VERSION_MINOR 84
-#define LIBAVCODEC_VERSION_MICRO  0
+#define LIBAVCODEC_VERSION_MICRO  1
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -3964,29 +3964,21 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, 
  */
 unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
  * Parse str and put in width_ptr and height_ptr the detected values.
  *
- * @return 0 in case of a successful parsing, a negative value otherwise
- * @param[in] str the string to parse: it has to be a string in the format
- * width x height or a valid video frame size abbreviation.
- * @param[in,out] width_ptr pointer to the variable which will contain the detected
- * frame width value
- * @param[in,out] height_ptr pointer to the variable which will contain the detected
- * frame height value
+ * @deprecated Deprecated in favor of av_parse_video_size().
  */
-int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str);
+attribute_deprecated int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str);
 
 /**
  * Parse str and store the detected values in *frame_rate.
  *
- * @return 0 in case of a successful parsing, a negative value otherwise
- * @param[in] str the string to parse: it has to be a string in the format
- * frame_rate_num / frame_rate_den, a float number or a valid video rate abbreviation
- * @param[in,out] frame_rate pointer to the AVRational which will contain the detected
- * frame rate
+ * @deprecated Deprecated in favor of av_parse_video_rate().
  */
-int av_parse_video_frame_rate(AVRational *frame_rate, const char *str);
+attribute_deprecated int av_parse_video_frame_rate(AVRational *frame_rate, const char *str);
+#endif
 
 /**
  * Logs a generic warning message about a missing feature. This function is

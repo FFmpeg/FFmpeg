@@ -36,6 +36,7 @@
 #include "libswscale/swscale.h"
 #include "libavcodec/opt.h"
 #include "libavcodec/audioconvert.h"
+#include "libavcore/parseutils.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/fifo.h"
 #include "libavutil/pixdesc.h"
@@ -2738,7 +2739,7 @@ static int opt_verbose(const char *opt, const char *arg)
 
 static int opt_frame_rate(const char *opt, const char *arg)
 {
-    if (av_parse_video_frame_rate(&frame_rate, arg) < 0) {
+    if (av_parse_video_rate(&frame_rate, arg) < 0) {
         fprintf(stderr, "Incorrect value for %s: %s\n", opt, arg);
         ffmpeg_exit(1);
     }
@@ -2819,7 +2820,7 @@ static void opt_frame_crop_right(const char *arg)
 
 static void opt_frame_size(const char *arg)
 {
-    if (av_parse_video_frame_size(&frame_width, &frame_height, arg) < 0) {
+    if (av_parse_video_size(&frame_width, &frame_height, arg) < 0) {
         fprintf(stderr, "Incorrect frame size\n");
         ffmpeg_exit(1);
     }
