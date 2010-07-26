@@ -107,7 +107,7 @@ int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
         frame_height = strtol(p, &p, 10);
     }
     if (frame_width <= 0 || frame_height <= 0)
-        return -1;
+        return AVERROR(EINVAL);
     *width_ptr  = frame_width;
     *height_ptr = frame_height;
     return 0;
@@ -145,6 +145,6 @@ int av_parse_video_rate(AVRational *frame_rate, const char *arg)
         frame_rate->num = time_base.num;
     }
     if (frame_rate->num <= 0 || frame_rate->den <= 0)
-        return -1;
+        return AVERROR(EINVAL);
     return 0;
 }
