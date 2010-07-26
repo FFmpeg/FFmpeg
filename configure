@@ -1791,6 +1791,8 @@ filter_asflags=echo
 if   $cc -v 2>&1 | grep -qi ^gcc; then
     cc_type=gcc
     cc_version=__VERSION__
+    gcc_extra_ver=$(expr "$($cc --version | head -n1)" : '.*\((.*)\)')
+    cc_ident="gcc $($cc -dumpversion) $gcc_extra_ver"
     if ! $cc -dumpversion | grep -q '^2\.'; then
         CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
         AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
@@ -1800,6 +1802,7 @@ if   $cc -v 2>&1 | grep -qi ^gcc; then
 elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
     cc_version="AV_STRINGIFY(__INTEL_COMPILER)"
+    cc_ident=$($cc --version | head -n1)
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
     speed_cflags='-O3'
@@ -1808,11 +1811,13 @@ elif $cc --version 2>/dev/null | grep -q Intel; then
 elif $cc -v 2>&1 | grep -q xlc; then
     cc_type=xlc
     cc_version="AV_STRINGIFY(__IBMC__)"
+    cc_ident=$($cc -qversion 2>/dev/null | head -n1)
     speed_cflags='-O5'
     size_cflags='-O5 -qcompact'
 elif $cc -V 2>/dev/null | grep -q Compaq; then
     cc_type=ccc
     cc_version="AV_STRINGIFY(__DECC_VER)"
+    cc_ident=$($cc -V | head -n1 | cut -d' ' -f1-3)
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -M'
     debuglevel=3
     add_ldflags -Wl,-z,now # calls to libots crash without this
@@ -1822,6 +1827,7 @@ elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
     test -d "$sysroot" || die "No valid sysroot specified."
     cc_type=armcc
     cc_version="AV_STRINGIFY(__ARMCC_VERSION)"
+    cc_ident=$($cc --vsn | head -n1)
     armcc_conf="$PWD/armcc.conf"
     $cc --arm_linux_configure                 \
         --arm_linux_config_file="$armcc_conf" \
@@ -1837,6 +1843,7 @@ elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
 elif $cc -version 2>/dev/null | grep -q TMS470; then
     cc_type=tms470
     cc_version="AV_STRINGIFY(__TI_COMPILER_VERSION__)"
+    cc_ident=$($cc -version | head -n1 | tr -s ' ')
     cc="$cc --gcc --abi=eabi -eo=.o -mc -me"
     CC_O='-fr=$(@D)'
     as_default="${cross_prefix}gcc"
@@ -1877,6 +1884,7 @@ elif $cc -v 2>&1 | grep -q clang; then
     cc_type=clang
     $cc -dM -E $TMPC | grep -q __clang_version__ &&
         cc_version=__clang_version__ || cc_version=__VERSION__
+    cc_ident=$($cc --version | head -n1)
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
     speed_cflags='-O3'
@@ -1884,6 +1892,7 @@ elif $cc -v 2>&1 | grep -q clang; then
 elif $cc -V 2>&1 | grep -q Sun; then
     cc_type=suncc
     cc_version="AV_STRINGIFY(__SUNPRO_C)"
+    cc_ident=$($cc -V | head -n1)
     DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -xM1'
     speed_cflags='-O5'
@@ -3020,6 +3029,7 @@ MANDIR=\$(DESTDIR)$mandir
 SRC_PATH="$source_path"
 SRC_PATH_BARE=$source_path
 BUILD_ROOT="$PWD"
+CC_IDENT=$cc_ident
 ARCH=$arch
 CC=$cc
 AS=$as
