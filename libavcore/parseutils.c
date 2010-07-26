@@ -31,7 +31,7 @@ typedef struct {
 
 typedef struct {
     const char *abbr;
-    int rate_num, rate_den;
+    AVRational rate;
 } VideoRateAbbr;
 
 static const VideoSizeAbbr video_size_abbrs[] = {
@@ -75,14 +75,14 @@ static const VideoSizeAbbr video_size_abbrs[] = {
 };
 
 static const VideoRateAbbr video_rate_abbrs[]= {
-    { "ntsc",      30000, 1001 },
-    { "pal",          25,    1 },
-    { "qntsc",     30000, 1001 }, /* VCD compliant NTSC */
-    { "qpal",         25,    1 }, /* VCD compliant PAL */
-    { "sntsc",     30000, 1001 }, /* square pixel NTSC */
-    { "spal",         25,    1 }, /* square pixel PAL */
-    { "film",         24,    1 },
-    { "ntsc-film", 24000, 1001 },
+    { "ntsc",      { 30000, 1001 } },
+    { "pal",       {    25,    1 } },
+    { "qntsc",     { 30000, 1001 } }, /* VCD compliant NTSC */
+    { "qpal",      {    25,    1 } }, /* VCD compliant PAL */
+    { "sntsc",     { 30000, 1001 } }, /* square pixel NTSC */
+    { "spal",      {    25,    1 } }, /* square pixel PAL */
+    { "film",      {    24,    1 } },
+    { "ntsc-film", { 24000, 1001 } },
 };
 
 int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
@@ -122,8 +122,7 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
     /* First, we check our abbreviation table */
     for (i = 0; i < n; ++i)
          if (!strcmp(video_rate_abbrs[i].abbr, arg)) {
-             rate->num = video_rate_abbrs[i].rate_num;
-             rate->den = video_rate_abbrs[i].rate_den;
+             *rate = video_rate_abbrs[i].rate;
              return 0;
          }
 
