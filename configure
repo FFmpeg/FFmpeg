@@ -306,7 +306,7 @@ c_escape(){
 
 sh_quote(){
     v=$(echo "$1" | sed "s/'/'\\\\''/g")
-    test "x$v" = "x${v#*[^A-Za-z0-9_/.+-]}" || v="'$v'"
+    test "x$v" = "x${v#*[!A-Za-z0-9_/.+-]}" || v="'$v'"
     echo "$v"
 }
 
