@@ -83,7 +83,7 @@ static int mp3_read_probe(AVProbeData *p)
 static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
 {
     uint32_t v, spf;
-    int frames = -1; /* Total number of frames in file */
+    unsigned frames = 0; /* Total number of frames in file */
     unsigned size = 0; /* Total number of bytes in the stream */
     const int64_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
     MPADecodeHeader c;
@@ -122,14 +122,14 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
         }
     }
 
-    if(frames < 0 && !size)
+    if(!frames && !size)
         return -1;
 
     /* Skip the vbr tag frame */
     url_fseek(s->pb, base + vbrtag_size, SEEK_SET);
 
     spf = c.lsf ? 576 : 1152; /* Samples per frame, layer 3 */
-    if(frames >= 0)
+    if(frames)
         st->duration = av_rescale_q(frames, (AVRational){spf, c.sample_rate},
                                     st->time_base);
     if(size)
