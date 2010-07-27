@@ -69,6 +69,10 @@ fate()(
     ${make} ${makeopts} -k fate
 )
 
+clean(){
+    rm -r ${build} ${inst}
+}
+
 report(){
     date=$(date -u +%Y%m%d%H%M%S)
     echo "fate:0:${date}:${slot}:${version}:$1:$2" >report
@@ -105,3 +109,4 @@ configure >configure.log 2>&1 || fail $? "error configuring"
 compile   >compile.log   2>&1 || fail $? "error compiling"
 fate      >test.log      2>&1 || fail $? "error testing"
 report 0 success
+clean
