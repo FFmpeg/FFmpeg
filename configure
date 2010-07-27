@@ -1934,6 +1934,14 @@ elif $cc -V 2>&1 | grep -q Sun; then
             esac
         done
     }
+elif $cc -v 2>&1 | grep -q PathScale; then
+    cc_type=pathscale
+    cc_version=__PATHSCALE__
+    cc_ident=$($cc -v 2>&1 | head -n1 | tr -d :)
+    CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
+    AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
+    speed_cflags='-O2'
+    size_cflags='-Os'
 fi
 
 test -n "$cc_type" && enable $cc_type ||
