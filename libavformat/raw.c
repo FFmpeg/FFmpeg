@@ -993,7 +993,6 @@ AVOutputFormat cavsvideo_muxer = {
     NULL,
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
-    .extensions = "avs",
 };
 #endif
 
