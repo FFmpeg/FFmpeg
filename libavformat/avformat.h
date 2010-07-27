@@ -205,7 +205,9 @@ typedef struct AVFrac {
 
 struct AVCodecTag;
 
-/** This structure contains the data a format has to probe a file. */
+/**
+ * This structure contains the data a format has to probe a file.
+ */
 typedef struct AVProbeData {
     const char *filename;
     unsigned char *buf; /**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
@@ -260,7 +262,9 @@ typedef struct AVOutputFormat {
     const char *long_name;
     const char *mime_type;
     const char *extensions; /**< comma-separated filename extensions */
-    /** size of private data so that it can be allocated in the wrapper */
+    /**
+     * size of private data so that it can be allocated in the wrapper
+     */
     int priv_data_size;
     /* output support */
     enum CodecID audio_codec; /**< default audio codec */
@@ -268,9 +272,13 @@ typedef struct AVOutputFormat {
     int (*write_header)(struct AVFormatContext *);
     int (*write_packet)(struct AVFormatContext *, AVPacket *pkt);
     int (*write_trailer)(struct AVFormatContext *);
-    /** can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_GLOBALHEADER */
+    /**
+     * can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_GLOBALHEADER
+     */
     int flags;
-    /** Currently only used to set pixel format if not YUV420P. */
+    /**
+     * Currently only used to set pixel format if not YUV420P.
+     */
     int (*set_parameters)(struct AVFormatContext *, AVFormatParameters *);
     int (*interleave_packet)(struct AVFormatContext *, AVPacket *out,
                              AVPacket *in, int flush);
@@ -290,39 +298,54 @@ typedef struct AVOutputFormat {
 } AVOutputFormat;
 
 typedef struct AVInputFormat {
-    /** A comma separated list of short names for the format. New names
+    /**
+     * A comma separated list of short names for the format. New names
      * may be appended with a minor bump.
      */
     const char *name;
+
     /**
      * Descriptive name for the format, meant to be more human-readable
      * than name. You should use the NULL_IF_CONFIG_SMALL() macro
      * to define it.
      */
     const char *long_name;
-    /** Size of private data so that it can be allocated in the wrapper. */
+
+    /**
+     * Size of private data so that it can be allocated in the wrapper.
+     */
     int priv_data_size;
+
     /**
      * Tell if a given file has a chance of being parsed as this format.
      * The buffer provided is guaranteed to be AVPROBE_PADDING_SIZE bytes
      * big so you do not have to check for that unless you need more.
      */
     int (*read_probe)(AVProbeData *);
-    /** Read the format header and initialize the AVFormatContext
-       structure. Return 0 if OK. 'ap' if non-NULL contains
-       additional parameters. Only used in raw format right
-       now. 'av_new_stream' should be called to create new streams.  */
+
+    /**
+     * Read the format header and initialize the AVFormatContext
+     * structure. Return 0 if OK. 'ap' if non-NULL contains
+     * additional parameters. Only used in raw format right
+     * now. 'av_new_stream' should be called to create new streams.
+     */
     int (*read_header)(struct AVFormatContext *,
                        AVFormatParameters *ap);
-    /** Read one packet and put it in 'pkt'. pts and flags are also
-       set. 'av_new_stream' can be called only if the flag
-       AVFMTCTX_NOHEADER is used.
-       @return 0 on success, < 0 on error.
-               When returning an error, pkt must not have been allocated
-               or must be freed before returning */
+
+    /**
+     * Read one packet and put it in 'pkt'. pts and flags are also
+     * set. 'av_new_stream' can be called only if the flag
+     * AVFMTCTX_NOHEADER is used.
+     * @return 0 on success, < 0 on error.
+     *         When returning an error, pkt must not have been allocated
+     *         or must be freed before returning
+     */
     int (*read_packet)(struct AVFormatContext *, AVPacket *pkt);
-    /** Close the stream. The AVFormatContext and AVStreams are not
-       freed by this function */
+
+    /**
+     * Close the stream. The AVFormatContext and AVStreams are not
+     * freed by this function
+     */
     int (*read_close)(struct AVFormatContext *);
 
 #if LIBAVFORMAT_VERSION_MAJOR < 53
@@ -343,21 +366,34 @@ typedef struct AVInputFormat {
      */
     int64_t (*read_timestamp)(struct AVFormatContext *s, int stream_index,
                               int64_t *pos, int64_t pos_limit);
-    /** Can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER. */
+
+    /**
+     * Can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER.
+     */
     int flags;
-    /** If extensions are defined, then no probe is done. You should
-       usually not use extension format guessing because it is not
-       reliable enough */
+
+    /**
+     * If extensions are defined, then no probe is done. You should
+     * usually not use extension format guessing because it is not
+     * reliable enough
+     */
     const char *extensions;
-    /** General purpose read-only value that the format can use. */
+
+    /**
+     * General purpose read-only value that the format can use.
+     */
     int value;
 
-    /** Start/resume playing - only meaningful if using a network-based format
-       (RTSP). */
+    /**
+     * Start/resume playing - only meaningful if using a network-based format
+     * (RTSP).
+     */
     int (*read_play)(struct AVFormatContext *);
 
-    /** Pause playing - only meaningful if using a network-based format
-       (RTSP). */
+    /**
+     * Pause playing - only meaningful if using a network-based format
+     * (RTSP).
+     */
     int (*read_pause)(struct AVFormatContext *);
 
     const struct AVCodecTag * const *codec_tag;
@@ -399,9 +435,12 @@ typedef struct AVIndexEntry {
 #define AV_DISPOSITION_COMMENT   0x0008
 #define AV_DISPOSITION_LYRICS    0x0010
 #define AV_DISPOSITION_KARAOKE   0x0020
-/** Track should be used during playback by default.
-    Useful for subtitle track that should be displayed
-    even when user did not explicitly ask for subtitles. */
+
+/**
+ * Track should be used during playback by default.
+ * Useful for subtitle track that should be displayed
+ * even when user did not explicitly ask for subtitles.
+ */
 #define AV_DISPOSITION_FORCED    0x0040
 
 /**
@@ -428,7 +467,10 @@ typedef struct AVStream {
 
     /* internal data used in av_find_stream_info() */
     int64_t first_dts;
-    /** encoding: pts generation when outputting stream */
+
+    /**
+     * encoding: pts generation when outputting stream
+     */
     struct AVFrac pts;
 
     /**
@@ -441,10 +483,14 @@ typedef struct AVStream {
     /* ffmpeg.c private use */
     int stream_copy; /**< If set, just copy stream. */
     enum AVDiscard discard; ///< Selects which packets can be discarded at will and do not need to be demuxed.
+
     //FIXME move stuff to a flags field?
-    /** Quality, as it has been removed from AVCodecContext and put in AVVideoFrame.
-     * MN: dunno if that is the right place for it */
+    /**
+     * Quality, as it has been removed from AVCodecContext and put in AVVideoFrame.
+     * MN: dunno if that is the right place for it
+     */
     float quality;
+
     /**
      * Decoding: pts of the first frame of the stream, in stream time base.
      * Only set this if you are absolutely 100% sure that the value you set
@@ -454,6 +500,7 @@ typedef struct AVStream {
      * demuxer must NOT set this.
      */
     int64_t start_time;
+
     /**
      * Decoding: duration of the stream, in stream time base.
      * If a source file does not specify a duration, but does specify
@@ -611,25 +658,38 @@ typedef struct AVFormatContext {
 
     int ctx_flags; /**< Format-specific flags, see AVFMTCTX_xx */
     /* private data for pts handling (do not modify directly). */
-    /** This buffer is only needed when packets were already buffered but
-       not decoded, for example to get the codec parameters in MPEG
-       streams. */
+    /**
+     * This buffer is only needed when packets were already buffered but
+     * not decoded, for example to get the codec parameters in MPEG
+     * streams.
+     */
     struct AVPacketList *packet_buffer;
 
-    /** Decoding: position of the first frame of the component, in
-       AV_TIME_BASE fractional seconds. NEVER set this value directly:
-       It is deduced from the AVStream values.  */
+    /**
+     * Decoding: position of the first frame of the component, in
+     * AV_TIME_BASE fractional seconds. NEVER set this value directly:
+     * It is deduced from the AVStream values.
+     */
     int64_t start_time;
-    /** Decoding: duration of the stream, in AV_TIME_BASE fractional
-       seconds. Only set this value if you know none of the individual stream
-       durations and also dont set any of them. This is deduced from the
-       AVStream values if not set.  */
+
+    /**
+     * Decoding: duration of the stream, in AV_TIME_BASE fractional
+     * seconds. Only set this value if you know none of the individual stream
+     * durations and also dont set any of them. This is deduced from the
+     * AVStream values if not set.
+     */
     int64_t duration;
-    /** decoding: total file size, 0 if unknown */
+
+    /**
+     * decoding: total file size, 0 if unknown
+     */
     int64_t file_size;
-    /** Decoding: total stream bitrate in bit/s, 0 if not
-       available. Never set it directly if the file_size and the
-       duration are known as FFmpeg can compute it automatically. */
+
+    /**
+     * Decoding: total stream bitrate in bit/s, 0 if not
+     * available. Never set it directly if the file_size and the
+     * duration are known as FFmpeg can compute it automatically.
+     */
     int bit_rate;
 
     /* av_read_frame() support */
@@ -651,7 +711,9 @@ typedef struct AVFormatContext {
 
 #define AVFMT_NOOUTPUTLOOP -1
 #define AVFMT_INFINITEOUTPUTLOOP 0
-    /** number of times to loop output in formats that support it */
+    /**
+     * number of times to loop output in formats that support it
+     */
     int loop_output;
 
     int flags;
@@ -664,7 +726,10 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_RTP_HINT     0x0040 ///< Add RTP hinting to the output file
 
     int loop_input;
-    /** decoding: size of data to probe; encoding: unused. */
+
+    /**
+     * decoding: size of data to probe; encoding: unused.
+     */
     unsigned int probesize;
 
     /**
@@ -684,11 +749,13 @@ typedef struct AVFormatContext {
      * Demuxing: Set by user.
      */
     enum CodecID video_codec_id;
+
     /**
      * Forced audio codec_id.
      * Demuxing: Set by user.
      */
     enum CodecID audio_codec_id;
+
     /**
      * Forced subtitle codec_id.
      * Demuxing: Set by user.
@@ -1189,7 +1256,9 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index,
                       int flags, int64_t *ts_ret,
                       int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
 
-/** media file output */
+/**
+ * media file output
+ */
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
 
 /**
@@ -1337,7 +1406,9 @@ attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
  */
 int64_t parse_date(const char *datestr, int duration);
 
-/** Get the current time in microseconds. */
+/**
+ * Get the current time in microseconds.
+ */
 int64_t av_gettime(void);
 
 /* ffm-specific for ffserver */
