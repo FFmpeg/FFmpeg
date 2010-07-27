@@ -25,6 +25,7 @@ version <next>:
 - Lego Mindstorms RSO de/muxer
 - libavcore added
 - SubRip subtitle file muxer and demuxer
+- Chinese AVS encoding via libxavs
 
 
 

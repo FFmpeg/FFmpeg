@@ -156,7 +156,7 @@ library:
 @item QCP                       @tab   @tab X
 @item raw ADTS (AAC)            @tab X @tab X
 @item raw AC-3                  @tab X @tab X
-@item raw Chinese AVS video     @tab   @tab X
+@item raw Chinese AVS video     @tab X @tab X
 @item raw CRI ADX               @tab X @tab X
 @item raw Dirac                 @tab X @tab X
 @item raw DNxHD                 @tab X @tab X
@@ -350,8 +350,8 @@ following image formats are supported:
     @tab fourcc: CSCD
 @item CD+G                   @tab     @tab  X
     @tab Video codec for CD+G karaoke disks
-@item Chinese AVS video      @tab     @tab  X
-    @tab AVS1-P2, JiZhun profile
+@item Chinese AVS video      @tab  E  @tab  X
+    @tab AVS1-P2, JiZhun profile, encoding through external library libxavs
 @item Delphine Software International CIN video  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
 @item Cinepak                @tab     @tab  X

@@ -155,6 +155,7 @@ Codecs:
   libspeexdec.c                         Justin Ruggles
   libtheoraenc.c                        David Conrad
   libvorbis.c                           David Conrad
+  libxavs.c                             Stefan Gehrer
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
   loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger

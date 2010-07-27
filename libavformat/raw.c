@@ -981,6 +981,22 @@ AVOutputFormat h264_muxer = {
 };
 #endif
 
+#if CONFIG_CAVSVIDEO_MUXER
+AVOutputFormat cavsvideo_muxer = {
+    "cavsvideo",
+    NULL_IF_CONFIG_SMALL("raw Chinese AVS video"),
+    NULL,
+    "cavs",
+    0,
+    CODEC_ID_NONE,
+    CODEC_ID_CAVS,
+    NULL,
+    raw_write_packet,
+    .flags= AVFMT_NOTIMESTAMPS,
+    .extensions = "avs",
+};
+#endif
+
 #if CONFIG_INGENIENT_DEMUXER
 AVInputFormat ingenient_demuxer = {
     "ingenient",

@@ -69,7 +69,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (BINK, bink);
     REGISTER_DEMUXER  (C93, c93);
     REGISTER_DEMUXER  (CAF, caf);
-    REGISTER_DEMUXER  (CAVSVIDEO, cavsvideo);
+    REGISTER_MUXDEMUX (CAVSVIDEO, cavsvideo);
     REGISTER_DEMUXER  (CDG, cdg);
     REGISTER_MUXER    (CRC, crc);
     REGISTER_MUXDEMUX (DAUD, daud);

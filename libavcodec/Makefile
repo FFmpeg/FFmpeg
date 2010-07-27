@@ -548,6 +548,7 @@ OBJS-$(CONFIG_LIBVORBIS_ENCODER)          += libvorbis.o vorbis_data.o
 OBJS-$(CONFIG_LIBVPX_DECODER)             += libvpxdec.o
 OBJS-$(CONFIG_LIBVPX_ENCODER)             += libvpxenc.o
 OBJS-$(CONFIG_LIBX264_ENCODER)            += libx264.o
+OBJS-$(CONFIG_LIBXAVS_ENCODER)            += libxavs.o
 OBJS-$(CONFIG_LIBXVID)                    += libxvidff.o libxvid_rc.o
 
 # parsers

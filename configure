@@ -181,6 +181,7 @@ External library support:
                            native implementation exists [no]
   --enable-libvpx          enable VP8 support via libvpx [no]
   --enable-libx264         enable H.264 encoding via x264 [no]
+  --enable-libxavs         enable AVS encoding via xavs [no]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
   --enable-mlib            enable Sun medialib [no]
@@ -884,6 +885,7 @@ CONFIG_LIST="
     libvorbis
     libvpx
     libx264
+    libxavs
     libxvid
     lpc
     lsp
@@ -1318,6 +1320,7 @@ libvorbis_encoder_deps="libvorbis"
 libvpx_decoder_deps="libvpx"
 libvpx_encoder_deps="libvpx"
 libx264_encoder_deps="libx264"
+libxavs_encoder_deps="libxavs"
 libxvid_encoder_deps="libxvid"
 
 # demuxers / muxers
@@ -2371,6 +2374,7 @@ die_license_disabled() {
 }
 
 die_license_disabled gpl libx264
+die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
 die_license_disabled gpl postproc
 die_license_disabled gpl x11grab
@@ -2676,6 +2680,7 @@ enabled libvpx     && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec
 enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 &&
                       { check_cpp_condition x264.h "X264_BUILD >= 98" ||
                         die "ERROR: libx264 version must be >= 0.98."; }
+enabled libxavs    && require  libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid    && require  libxvid xvid.h xvid_global -lxvidcore
 enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 
@@ -2948,6 +2953,7 @@ echo "libtheora enabled         ${libtheora-no}"
 echo "libvorbis enabled         ${libvorbis-no}"
 echo "libvpx enabled            ${libvpx-no}"
 echo "libx264 enabled           ${libx264-no}"
+echo "libxavs enabled           ${libxavs-no}"
 echo "libxvid enabled           ${libxvid-no}"
 echo "zlib enabled              ${zlib-no}"
 echo "bzlib enabled             ${bzlib-no}"
