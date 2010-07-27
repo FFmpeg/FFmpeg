@@ -1,0 +1,208 @@
+@chapter Devices
+@c man begin INPUT DEVICES
+
+Input devices are configured elements in FFmpeg which allow to access
+the data coming from a multimedia device attached to your system.
+
+When you configure your FFmpeg build, all the supported input devices
+are enabled by default. You can list them using the configure option
+"--list-indevs".
+
+You can disable all the input devices using the configure option
+"--disable-indevs", and selectively enable an input device using the
+option "--enable-indev=@var{INDEV}", or you can disable a particular
+input device using the option "--disable-indev=@var{INDEV}".
+
+The option "-formats" of the ff* tools will display the list of
+supported input devices (amongst the demuxers).
+
+A description of the currently available input devices follows.
+
+@section alsa
+
+ALSA (Advanced Linux Sound Architecture) input device.
+
+To enable this input device during configuration you need libasound
+installed on your system.
+
+This device allows to capture from an ALSA device. The name of the
+device to capture has to be an ALSA card identifier.
+
+An ALSA identifier has the syntax:
+@example
+hw:@var{CARD}[,@var{DEV}[,@var{SUBDEV}]]
+@end example
+
+where the @var{DEV} and @var{SUBDEV} components are optional.
+
+The three arguments (in order: @var{CARD},@var{DEV},@var{SUBDEV})
+specify card number or identifier, device number and subdevice number
+(-1 means any).
+
+To see the list of cards currently recognized by your system check the
+files @file{/proc/asound/cards} and @file{/proc/asound/devices}.
+
+For example to capture with @file{ffmpeg} from an alsa device with
+card id 0, you may run the command:
+@example
+ffmpeg -f alsa -i hw:0 alsaout.wav
+@end example
+
+For more information see:
+@url{http://www.alsa-project.org/alsa-doc/alsa-lib/pcm.html}
+
+@section audio_beos
+
+BeOS audio input device.
+
+@section bktr
+
+BSD video input device.
+
+@section dv1394
+
+Linux DV 1394 input device.
+
+@section jack
+
+Jack input device.
+
+To enable this input device during configuration you need libjack
+installed on your system.
+
+A jack input device creates one or more jack writable clients, one for
+each audio channel, with name @var{client_name}:input_@var{N}, where
+@var{client_name} is the name provided by the application, and @var{N}
+is a number which identifies the channel.
+Each writable client will send the acquired data to the FFmpeg input
+device.
+
+Once you have created one or more jack readable clients, you need to
+connect them to one or more jack writable clients.
+
+To connect or disconnect jack clients you can use the
+@file{jack_connect} and @file{jack_disconnect} programs, or do it
+through a graphical interface, for example with @file{qjackctl}.
+
+To list the jack clients and their properties you can invoke the command
+@file{jack_lsp}.
+
+Follows an example which shows how to capture a jack readable client
+with @file{ffmpeg}.
+@example
+# create a jack writable client with name "ffmpeg"
+$ ffmpeg -f jack -i ffmpeg -y out.wav
+
+# start the sample jack_metro readable client
+$ jack_metro -b 120 -d 0.2 -f 4000
+
+# list the current jack clients
+$ jack_lsp -c
+system:capture_1
+system:capture_2
+system:playback_1
+system:playback_2
+ffmpeg:input_1
+metro:120_bpm
+
+# connect metro to the ffmpeg writable client
+$ jack_connect metro:120_bpm ffmpeg:input_1
+@end example
+
+For more information read:
+@url{http://jackaudio.org/}
+
+@section libdc1394
+
+IIDC1394 input device, based on libdc1394 and libraw1394.
+
+@section oss
+
+Open Sound System input device.
+
+The filename to provide to the input device is the device node
+representing the OSS input device, and is usually set to
+@file{/dev/dsp/}.
+
+For example to grab from @file{/dev/dsp/} using @file{ffmpeg} use the
+command:
+@example
+ffmpeg -f oss -i /dev/dsp /tmp/oss.wav
+@end example
+
+For more information about OSS see:
+@url{http://manuals.opensound.com/usersguide/dsp.html}
+
+@section video4linux and video4linux2
+
+Video4Linux and Video4Linux2 input video devices.
+
+The name of the device to grab is a file device node, usually Linux
+systems tend to automatically create such nodes when the device
+(e.g. an USB webcam) is plugged to the system, and has a name of the
+kind @file{/dev/video@var{N}}, where @var{N} is a number associated to
+the device.
+
+Video4Linux and Video4Linux2 devices only support a limited set of
+@var{width}x@var{height} sizes and framerates. You can check which are
+supported for example using the command @file{dov4l} for Video4Linux
+devices, and the command @file{v4l-info} for Video4Linux2 devices.
+
+If the size for the device is set to 0x0, the input device will
+try to autodetect the size to use.
+
+Video4Linux support is deprecated since Linux 2.6.30, and will be
+dropped in later versions.
+
+Follow some usage examples of the video4linux devices with the ff*
+tools.
+@example
+# grab and show the input of a video4linux device
+ffplay -s 320x240 -f video4linux /dev/video0
+
+# grab and show the input of a video4linux2 device, autoadjust size
+ffplay -f video4linux2 /dev/video0
+
+# grab and record the input of a video4linux2 device, autoadjust size
+ffmpeg -f video4linux2 -i /dev/video0 out.mpeg
+@end example
+
+@section vfwcap
+
+VFW (Video For Window) catpure input device.
+
+@section x11grab
+
+X11 video input device.
+
+This device allows to capture a region of an X11 display.
+
+The filename passed in input has the syntax:
+@example
+[@var{hostname}]:@var{display_number}.@var{screen_number}[+@var{x_offset},@var{y_offset}]
+@end example
+
+@var{hostname}:@var{display_number}.@var{screen_number} specifies the
+X11 display name of the screen to grab from. @var{hostname} can be not
+specified, and defaults to "localhost". The environment variable
+@env{DISPLAY} contains the default display name.
+
+@var{x_offset} and @var{y_offset} specify the offsets of the grabbed
+area with respect to the top/left border of the X11 screen image. They
+default to 0.
+
+Check the X11 documentation (e.g. man X) for more detailed information.
+
+Use the @file{dpyinfo} program for getting basic information about the
+properties of your X11 display screen (e.g. grep for "name" or
+"dimensions").
+
+For example to grab from @file{:0.0} using @file{ffmpeg}:
+@example
+ffmpeg -f x11grab -r 25 -s cif -i :0.0 out.mpg
+
+# grab at position 10,20
+ffmpeg -f x11grab -25 -s cif -i :0.0+10,20 out.mpg
+@end example
+
+@c man end INPUT DEVICES

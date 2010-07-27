@@ -153,6 +153,8 @@ Seek to percentage in file corresponding to fraction of width.
 
 @c man end
 
+@include indevs.texi
+@include outdevs.texi
 @include filters.texi
 
 @ignore

@@ -964,6 +964,8 @@ options have to be specified immediately after the name of the output
 file to which you want to add them.
 @c man end EXAMPLES
 
+@include indevs.texi
+@include outdevs.texi
 @include filters.texi
 
 @ignore

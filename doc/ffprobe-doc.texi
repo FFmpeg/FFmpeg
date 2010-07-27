@@ -105,6 +105,8 @@ with name ``STREAM''.
 @end table
 @c man end
 
+@include indevs.texi
+
 @ignore
 
 @setfilename ffprobe
