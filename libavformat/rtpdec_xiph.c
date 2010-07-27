@@ -172,6 +172,11 @@ static int xiph_handle_packet(AVFormatContext * ctx,
             av_log(ctx, AV_LOG_ERROR, "RTP timestamps don't match!\n");
             return AVERROR_INVALIDDATA;
         }
+        if (!data->fragment) {
+            av_log(ctx, AV_LOG_WARNING,
+                   "Received packet without a start fragment; dropping.\n");
+            return AVERROR(EAGAIN);
+        }
 
         // copy data to fragment buffer
         put_buffer(data->fragment, buf, pkt_len);
