@@ -509,7 +509,7 @@ typedef struct AVStream {
     int64_t duration;
 
 #if LIBAVFORMAT_VERSION_INT < (53<<16)
-    char language[4]; /** ISO 639-2/B 3-letter language code (empty string if undefined) */
+    char language[4]; /**< ISO 639-2/B 3-letter language code (empty string if undefined) */
 #endif
 
     /* av_read_frame() support */
@@ -701,7 +701,7 @@ typedef struct AVFormatContext {
 #endif
 
     /* av_seek_frame() support */
-    int64_t data_offset; /** offset of the first packet */
+    int64_t data_offset; /**< offset of the first packet */
     int index_built;
 
     int mux_rate;
