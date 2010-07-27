@@ -879,17 +879,19 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
 
 /* downmixing routines */
 #define MIX_REAR1(samples, si1, rs, coef) \
-     samples[i]     += samples[si1] * coef[rs][0]; \
-     samples[i+256] += samples[si1] * coef[rs][1];
+     samples[i]     += (samples[si1] - add_bias) * coef[rs][0];  \
+     samples[i+256] += (samples[si1] - add_bias) * coef[rs][1];
 
 #define MIX_REAR2(samples, si1, si2, rs, coef) \
-     samples[i]     += samples[si1] * coef[rs][0] + samples[si2] * coef[rs+1][0]; \
-     samples[i+256] += samples[si1] * coef[rs][1] + samples[si2] * coef[rs+1][1];
+     samples[i]     += (samples[si1] - add_bias) * coef[rs][0] + (samples[si2] - add_bias) * coef[rs+1][0]; \
+     samples[i+256] += (samples[si1] - add_bias) * coef[rs][1] + (samples[si2] - add_bias) * coef[rs+1][1];
 
 #define MIX_FRONT3(samples, coef) \
-    t = samples[i]; \
-    samples[i]     = t * coef[0][0] + samples[i+256] * coef[1][0] + samples[i+512] * coef[2][0]; \
-    samples[i+256] = t * coef[0][1] + samples[i+256] * coef[1][1] + samples[i+512] * coef[2][1];
+    t = samples[i+c] - add_bias; \
+    u = samples[i+l] - add_bias; \
+    v = samples[i+r] - add_bias; \
+    samples[i]     = t * coef[0][0] + u * coef[1][0] + v * coef[2][0] + add_bias; \
+    samples[i+256] = t * coef[0][1] + u * coef[1][1] + v * coef[2][1] + add_bias;
 
 #define DOWNMIX_TO_STEREO(op1, op2) \
     for (i = 0; i < 256; i++){ \
@@ -898,10 +900,12 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
     }
 
 static void dca_downmix(float *samples, int srcfmt,
-                        int downmix_coef[DCA_PRIM_CHANNELS_MAX][2])
+                        int downmix_coef[DCA_PRIM_CHANNELS_MAX][2],
+                        const int8_t *channel_mapping, float add_bias)
 {
+    int c,l,r,sl,sr,s;
     int i;
-    float t;
+    float t, u, v;
     float coef[DCA_PRIM_CHANNELS_MAX][2];
 
     for (i=0; i<DCA_PRIM_CHANNELS_MAX; i++) {
@@ -920,21 +924,36 @@ static void dca_downmix(float *samples, int srcfmt,
     case DCA_STEREO:
         break;
     case DCA_3F:
+        c = channel_mapping[0] * 256;
+        l = channel_mapping[1] * 256;
+        r = channel_mapping[2] * 256;
         DOWNMIX_TO_STEREO(MIX_FRONT3(samples, coef),);
         break;
     case DCA_2F1R:
-        DOWNMIX_TO_STEREO(MIX_REAR1(samples, i + 512, 2, coef),);
+        s = channel_mapping[2] * 256;
+        DOWNMIX_TO_STEREO(MIX_REAR1(samples, i + s, 2, coef),);
         break;
     case DCA_3F1R:
+        c = channel_mapping[0] * 256;
+        l = channel_mapping[1] * 256;
+        r = channel_mapping[2] * 256;
+        s = channel_mapping[3] * 256;
         DOWNMIX_TO_STEREO(MIX_FRONT3(samples, coef),
-                          MIX_REAR1(samples, i + 768, 3, coef));
+                          MIX_REAR1(samples, i + s, 3, coef));
         break;
     case DCA_2F2R:
-        DOWNMIX_TO_STEREO(MIX_REAR2(samples, i + 512, i + 768, 2, coef),);
+        sl = channel_mapping[2] * 256;
+        sr = channel_mapping[3] * 256;
+        DOWNMIX_TO_STEREO(MIX_REAR2(samples, i + sl, i + sr, 2, coef),);
         break;
     case DCA_3F2R:
+        c =  channel_mapping[0] * 256;
+        l =  channel_mapping[1] * 256;
+        r =  channel_mapping[2] * 256;
+        sl = channel_mapping[3] * 256;
+        sr = channel_mapping[4] * 256;
         DOWNMIX_TO_STEREO(MIX_FRONT3(samples, coef),
-                          MIX_REAR2(samples, i + 768, i + 1024, 3, coef));
+                          MIX_REAR2(samples, i + sl, i + sr, 3, coef));
         break;
     }
 }
@@ -1117,7 +1136,7 @@ static int dca_filter_channels(DCAContext * s, int block_index)
 
     /* Down mixing */
     if (s->avctx->request_channels == 2 && s->prim_channels > 2) {
-        dca_downmix(s->samples, s->amode, s->downmix_coef);
+        dca_downmix(s->samples, s->amode, s->downmix_coef, s->channel_order_tab, s->add_bias);
     }
 
     /* Generate LFE samples for this subsubframe FIXME!!! */
