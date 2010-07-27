@@ -34,6 +34,10 @@
 #define GSM_FRAME_SIZE   160
 
 typedef struct {
+    // Contains first 120 elements from the previous frame
+    // (used by long_term_synth according to the "lag"),
+    // then in the following 160 elements the current
+    // frame is constructed.
     int16_t ref_buf[280];
     int v[9];
     int lar[2][8];
