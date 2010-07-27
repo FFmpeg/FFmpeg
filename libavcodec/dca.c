@@ -1348,7 +1348,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
         avctx->channel_layout = dca_core_channel_layout[s->amode];
 
         if (s->xch_present && (!avctx->request_channels ||
-                            avctx->request_channels > num_core_channels)) {
+                               avctx->request_channels > num_core_channels + !!s->lfe)) {
             avctx->channel_layout |= CH_BACK_CENTER;
             if (s->lfe) {
                 avctx->channel_layout |= CH_LOW_FREQUENCY;
@@ -1357,6 +1357,8 @@ static int dca_decode_frame(AVCodecContext * avctx,
                 s->channel_order_tab = dca_channel_reorder_nolfe_xch[s->amode];
             }
         } else {
+            channels = num_core_channels + !!s->lfe;
+            s->xch_present = 0; /* disable further xch processing */
             if (s->lfe) {
                 avctx->channel_layout |= CH_LOW_FREQUENCY;
                 s->channel_order_tab = dca_channel_reorder_lfe[s->amode];
@@ -1364,8 +1366,8 @@ static int dca_decode_frame(AVCodecContext * avctx,
                 s->channel_order_tab = dca_channel_reorder_nolfe[s->amode];
         }
 
-        if (s->prim_channels > 0 &&
-            s->channel_order_tab[s->prim_channels - 1] < 0)
+        if (channels > !!s->lfe &&
+            s->channel_order_tab[channels - 1 - !!s->lfe] < 0)
             return -1;
 
         if (avctx->request_channels == 2 && s->prim_channels > 2) {
@@ -1384,8 +1386,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
        unset. Ideally during the first probe for channels the crc should be checked
        and only set avctx->channels when the crc is ok. Right now the decoder could
        set the channels based on a broken first frame.*/
-    if (!avctx->channels)
-        avctx->channels = channels;
+    avctx->channels = channels;
 
     if (*data_size < (s->sample_blocks / 8) * 256 * sizeof(int16_t) * channels)
         return -1;
