@@ -2054,7 +2054,8 @@ static int decode_frame(AVCodecContext * avctx,
     }
     /* update codec info */
     avctx->channels = s->nb_channels;
-    avctx->bit_rate = s->bit_rate;
+    if (!avctx->bit_rate)
+        avctx->bit_rate = s->bit_rate;
     avctx->sub_id = s->layer;
 
     if(*data_size < 1152*avctx->channels*sizeof(OUT_INT))
@@ -2122,7 +2123,8 @@ static int decode_frame_adu(AVCodecContext * avctx,
     /* update codec info */
     avctx->sample_rate = s->sample_rate;
     avctx->channels = s->nb_channels;
-    avctx->bit_rate = s->bit_rate;
+    if (!avctx->bit_rate)
+        avctx->bit_rate = s->bit_rate;
     avctx->sub_id = s->layer;
 
     s->frame_size = len;
