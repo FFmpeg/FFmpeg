@@ -82,6 +82,7 @@ report(){
 
 fail(){
     report "$@"
+    clean
     exit
 }
 
