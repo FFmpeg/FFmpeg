@@ -57,6 +57,7 @@ FATE2_TESTS += fate-ra-288
 fate-ra-288: CMD = pcm -i $(SAMPLES)/real/ra_288.rm
 fate-ra-288: CMP = oneoff
 fate-ra-288: REF = $(SAMPLES)/real/ra_288.pcm
+fate-ra-288: FUZZ = 2
 
 FATE2_TESTS += fate-ra-cook
 fate-ra-cook: CMD = pcm -i $(SAMPLES)/real/ra_cook.rm
@@ -245,6 +246,7 @@ FATE2_TESTS += fate-vorbis-18
 fate-vorbis-18: CMD = pcm -i $(SAMPLES)/vorbis/sleepzor_small.ogg
 fate-vorbis-18: CMP = oneoff
 fate-vorbis-18: REF = $(SAMPLES)/vorbis/sleepzor_small.pcm
+fate-vorbis-18: FUZZ = 2
 
 FATE2_TESTS += fate-vorbis-19
 fate-vorbis-19: CMD = pcm -i $(SAMPLES)/vorbis/test-short2_small.ogg
