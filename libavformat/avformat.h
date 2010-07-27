@@ -290,6 +290,9 @@ typedef struct AVOutputFormat {
 } AVOutputFormat;
 
 typedef struct AVInputFormat {
+    /** A comma separated list of short names for the format. New names
+     * may be appended with a minor bump.
+     */
     const char *name;
     /**
      * Descriptive name for the format, meant to be more human-readable
