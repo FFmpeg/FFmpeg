@@ -34,7 +34,7 @@
 
 typedef struct {
     int chars_per_frame;
-    uint64_t fsize;  /** file size less metadata buffer */
+    uint64_t fsize;  /**< file size less metadata buffer */
 } TtyDemuxContext;
 
 /**

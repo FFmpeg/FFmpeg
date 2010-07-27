@@ -1168,7 +1168,7 @@ typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
     int repeat_field; /* true if we must repeat the field */
-    AVPanScan pan_scan; /** some temporary storage for the panscan */
+    AVPanScan pan_scan;              /**< some temporary storage for the panscan */
     int slice_count;
     int swap_uv;//indicate VCR2
     int save_aspect_info;

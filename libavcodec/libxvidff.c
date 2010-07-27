@@ -52,27 +52,28 @@ int has_altivec(void);
  * This stores all the private context for the codec.
  */
 struct xvid_context {
-    void *encoder_handle;          /** Handle for Xvid encoder */
-    int xsize, ysize;              /** Frame size */
-    int vop_flags;                 /** VOP flags for Xvid encoder */
-    int vol_flags;                 /** VOL flags for Xvid encoder */
-    int me_flags;                  /** Motion Estimation flags */
-    int qscale;                    /** Do we use constant scale? */
-    int quicktime_format;          /** Are we in a QT-based format? */
-    AVFrame encoded_picture;       /** Encoded frame information */
-    char *twopassbuffer;           /** Character buffer for two-pass */
-    char *old_twopassbuffer;       /** Old character buffer (two-pass) */
-    char *twopassfile;             /** second pass temp file name */
-    unsigned char *intra_matrix;   /** P-Frame Quant Matrix */
-    unsigned char *inter_matrix;   /** I-Frame Quant Matrix */
+    void *encoder_handle;          /**< Handle for Xvid encoder */
+    int xsize;                     /**< Frame x size */
+    int ysize;                     /**< Frame y size */
+    int vop_flags;                 /**< VOP flags for Xvid encoder */
+    int vol_flags;                 /**< VOL flags for Xvid encoder */
+    int me_flags;                  /**< Motion Estimation flags */
+    int qscale;                    /**< Do we use constant scale? */
+    int quicktime_format;          /**< Are we in a QT-based format? */
+    AVFrame encoded_picture;       /**< Encoded frame information */
+    char *twopassbuffer;           /**< Character buffer for two-pass */
+    char *old_twopassbuffer;       /**< Old character buffer (two-pass) */
+    char *twopassfile;             /**< second pass temp file name */
+    unsigned char *intra_matrix;   /**< P-Frame Quant Matrix */
+    unsigned char *inter_matrix;   /**< I-Frame Quant Matrix */
 };
 
 /**
  * Structure for the private first-pass plugin.
  */
 struct xvid_ff_pass1 {
-    int     version;                /** Xvid version */
-    struct xvid_context *context;        /** Pointer to private context */
+    int     version;                /**< Xvid version */
+    struct xvid_context *context;   /**< Pointer to private context */
 };
 
 /* Prototypes - See function implementation for details */

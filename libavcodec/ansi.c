@@ -28,18 +28,18 @@
 #include "cga_data.h"
 #include <libavutil/lfg.h>
 
-#define ATTR_BOLD         0x01  /** Bold/Bright-foreground (mode 1) */
-#define ATTR_FAINT        0x02  /** Faint (mode 2) */
-#define ATTR_UNDERLINE    0x08  /** Underline (mode 4) */
-#define ATTR_BLINK        0x10  /** Blink/Bright-background (mode 5) */
-#define ATTR_REVERSE      0x40  /** Reverse (mode 7) */
-#define ATTR_CONCEALED    0x80  /** Concealed (mode 8) */
+#define ATTR_BOLD         0x01  /**< Bold/Bright-foreground (mode 1) */
+#define ATTR_FAINT        0x02  /**< Faint (mode 2) */
+#define ATTR_UNDERLINE    0x08  /**< Underline (mode 4) */
+#define ATTR_BLINK        0x10  /**< Blink/Bright-background (mode 5) */
+#define ATTR_REVERSE      0x40  /**< Reverse (mode 7) */
+#define ATTR_CONCEALED    0x80  /**< Concealed (mode 8) */
 
-#define DEFAULT_FG_COLOR     7  /** CGA color index */
+#define DEFAULT_FG_COLOR     7  /**< CGA color index */
 #define DEFAULT_BG_COLOR     0
-#define DEFAULT_SCREEN_MODE  3  /** 80x25 */
+#define DEFAULT_SCREEN_MODE  3  /**< 80x25 */
 
-#define FONT_WIDTH           8  /** Font width */
+#define FONT_WIDTH           8  /**< Font width */
 
 /** map ansi color index to cga palette index */
 static const uint8_t ansi_to_cga[16] = {
@@ -48,12 +48,15 @@ static const uint8_t ansi_to_cga[16] = {
 
 typedef struct {
     AVFrame frame;
-    int x, y;             /** cursor position (pixels) */
-    int sx, sy;           /** saved cursor position (pixels) */
-    const uint8_t* font;  /** font */
-    int font_height;      /** font height */
-    int attributes;       /** attribute flags */
-    int fg, bg;           /** foreground and background color */
+    int x;                /**< x cursor position (pixels) */
+    int y;                /**< y cursor position (pixels) */
+    int sx;               /**< saved x cursor position (pixels) */
+    int sy;               /**< saved y cursor position (pixels) */
+    const uint8_t* font;  /**< font */
+    int font_height;      /**< font height */
+    int attributes;       /**< attribute flags */
+    int fg;               /**< foreground color */
+    int bg;               /**< background color */
 
     /* ansi parser state machine */
     enum {
@@ -64,7 +67,7 @@ typedef struct {
     } state;
 #define MAX_NB_ARGS 4
     int args[MAX_NB_ARGS];
-    int nb_args;          /** number of arguments (may exceed MAX_NB_ARGS) */
+    int nb_args;          /**< number of arguments (may exceed MAX_NB_ARGS) */
 } AnsiContext;
 
 static av_cold int decode_init(AVCodecContext *avctx)

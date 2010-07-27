@@ -508,11 +508,11 @@ static int decode_subframe_length(WMAProDecodeCtx *s, int offset)
  */
 static int decode_tilehdr(WMAProDecodeCtx *s)
 {
-    uint16_t num_samples[WMAPRO_MAX_CHANNELS];        /** sum of samples for all currently known subframes of a channel */
-    uint8_t  contains_subframe[WMAPRO_MAX_CHANNELS];  /** flag indicating if a channel contains the current subframe */
-    int channels_for_cur_subframe = s->num_channels;  /** number of channels that contain the current subframe */
-    int fixed_channel_layout = 0;                     /** flag indicating that all channels use the same subframe offsets and sizes */
-    int min_channel_len = 0;                          /** smallest sum of samples (channels with this length will be processed first) */
+    uint16_t num_samples[WMAPRO_MAX_CHANNELS];        /**< sum of samples for all currently known subframes of a channel */
+    uint8_t  contains_subframe[WMAPRO_MAX_CHANNELS];  /**< flag indicating if a channel contains the current subframe */
+    int channels_for_cur_subframe = s->num_channels;  /**< number of channels that contain the current subframe */
+    int fixed_channel_layout = 0;                     /**< flag indicating that all channels use the same subframe offsets and sizes */
+    int min_channel_len = 0;                          /**< smallest sum of samples (channels with this length will be processed first) */
     int c;
 
     /* Should never consume more than 3073 bits (256 iterations for the
