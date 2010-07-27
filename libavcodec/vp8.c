@@ -123,6 +123,10 @@ typedef struct {
     int segment;             ///< segment of the current macroblock
 
     int mbskip_enabled;
+    uint8_t mbskip_proba;
+    uint8_t intra_proba;
+    uint8_t last_proba;
+    uint8_t golden_proba;
     int sign_bias[4]; ///< one state [0, 1] per ref frame type
     int ref_count[3];
 
@@ -188,10 +192,6 @@ typedef struct {
      */
     struct {
         uint8_t segmentid[3];
-        uint8_t mbskip;
-        uint8_t intra;
-        uint8_t last;
-        uint8_t golden;
         uint8_t pred16x16[4];
         uint8_t pred8x8c[3];
         uint8_t token[4][8][3][NUM_DCT_TOKENS-1];
@@ -499,12 +499,12 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
                         s->prob->token[i][j][k][l] = vp8_rac_get_uint(c, 8);
 
     if ((s->mbskip_enabled = vp8_rac_get(c)))
-        s->prob->mbskip = vp8_rac_get_uint(c, 8);
+        s->mbskip_proba = vp8_rac_get_uint(c, 8);
 
     if (!s->keyframe) {
-        s->prob->intra  = vp8_rac_get_uint(c, 8);
-        s->prob->last   = vp8_rac_get_uint(c, 8);
-        s->prob->golden = vp8_rac_get_uint(c, 8);
+        s->intra_proba  = vp8_rac_get_uint(c, 8);
+        s->last_proba   = vp8_rac_get_uint(c, 8);
+        s->golden_proba = vp8_rac_get_uint(c, 8);
 
         if (vp8_rac_get(c))
             for (i = 0; i < 4; i++)
@@ -725,7 +725,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
         *segment = vp8_rac_get_tree(c, vp8_segmentid_tree, s->prob->segmentid);
     s->segment = *segment;
 
-    mb->skip = s->mbskip_enabled ? vp56_rac_get_prob(c, s->prob->mbskip) : 0;
+    mb->skip = s->mbskip_enabled ? vp56_rac_get_prob(c, s->mbskip_proba) : 0;
 
     if (s->keyframe) {
         mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_intra, vp8_pred16x16_prob_intra);
@@ -737,14 +737,14 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
 
         s->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, vp8_pred8x8c_prob_intra);
         mb->ref_frame = VP56_FRAME_CURRENT;
-    } else if (vp56_rac_get_prob_branchy(c, s->prob->intra)) {
+    } else if (vp56_rac_get_prob_branchy(c, s->intra_proba)) {
         VP56mv near[2], best;
         uint8_t cnt[4] = { 0 };
         uint8_t p[4];
 
         // inter MB, 16.2
-        if (vp56_rac_get_prob_branchy(c, s->prob->last))
-            mb->ref_frame = vp56_rac_get_prob(c, s->prob->golden) ?
+        if (vp56_rac_get_prob_branchy(c, s->last_proba))
+            mb->ref_frame = vp56_rac_get_prob(c, s->golden_proba) ?
                 VP56_FRAME_GOLDEN2 /* altref */ : VP56_FRAME_GOLDEN;
         else
             mb->ref_frame = VP56_FRAME_PREVIOUS;
