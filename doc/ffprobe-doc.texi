@@ -95,6 +95,13 @@ stream.
 All the container format information is printed within a section with
 name ``FORMAT''.
 
+@item -show_packets
+Show information about each packet contained in the input multimedia
+stream.
+
+The information for each single packet is printed within a dedicated
+section with name ``PACKET''.
+
 @item -show_streams
 Show information about each media stream contained in the input
 multimedia stream.
