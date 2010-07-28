@@ -355,7 +355,8 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (flags & URL_WRONLY)
             goto fail;
     } else {
-        udp_set_remote_url(h, uri);
+        if (udp_set_remote_url(h, uri) < 0)
+            goto fail;
     }
 
     if (s->is_multicast && !(h->flags & URL_WRONLY))
