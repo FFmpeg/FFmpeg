@@ -91,7 +91,6 @@ Configuration options:
   --disable-swscale        disable libswscale build
   --enable-postproc        enable GPLed postprocessing support [no]
   --disable-avfilter       disable video filter support [no]
-  --enable-avfilter-lavf   video filters dependent on avformat [no]
   --disable-pthreads       disable pthreads [auto]
   --enable-w32threads      use Win32 threads [no]
   --enable-x11grab         enable X11 grabbing [no]
@@ -850,7 +849,6 @@ CONFIG_LIST="
     avcore
     avdevice
     avfilter
-    avfilter_lavf
     avformat
     avisynth
     bzlib
@@ -1379,10 +1377,6 @@ rtmp_protocol_select="tcp_protocol"
 rtp_protocol_select="udp_protocol"
 tcp_protocol_deps="network"
 udp_protocol_deps="network"
-
-# filters
-movie_filter_deps="avfilter_lavf"
-avfilter_lavf_deps="avformat"
 
 # libraries
 avdevice_deps="avcodec avformat"
@@ -2939,7 +2933,6 @@ echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
 echo "postprocessing support    ${postproc-no}"
 echo "new filter support        ${avfilter-no}"
-echo "filters using lavformat   ${avfilter_lavf-no}"
 echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "SDL support               ${sdl-no}"
