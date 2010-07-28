@@ -44,7 +44,7 @@
 static const int NTSC_samples_per_frame[] = { 1602, 1601, 1602, 1601, 1602, 0 };
 static const int PAL_samples_per_frame[]  = { 1920, 0 };
 
-AVOutputFormat mxf_d10_muxer;
+extern AVOutputFormat mxf_d10_muxer;
 
 #define EDIT_UNITS_PER_BODY 250
 #define KAG_SIZE 512
