@@ -95,6 +95,8 @@ static int wav_write_trailer(AVFormatContext *s)
     WAVContext    *wav = s->priv_data;
     int64_t file_size;
 
+    put_flush_packet(pb);
+
     if (!url_is_streamed(s->pb)) {
         ff_end_tag(pb, wav->data);
 
