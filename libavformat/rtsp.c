@@ -52,6 +52,7 @@ int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
 #define SELECT_TIMEOUT_MS 100
 #define READ_PACKET_TIMEOUT_S 10
 #define MAX_TIMEOUTS READ_PACKET_TIMEOUT_S * 1000 / SELECT_TIMEOUT_MS
+#define SDP_MAX_SIZE 8192
 
 static void get_word_until_chars(char *buf, int buf_size,
                                  const char *sep, const char **pp)
@@ -1295,7 +1296,7 @@ static int rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
     rt->start_time = av_gettime();
 
     /* Announce the stream */
-    sdp = av_mallocz(8192);
+    sdp = av_mallocz(SDP_MAX_SIZE);
     if (sdp == NULL)
         return AVERROR(ENOMEM);
     /* We create the SDP based on the RTSP AVFormatContext where we
@@ -1314,7 +1315,7 @@ static int rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
     ff_url_join(sdp_ctx.filename, sizeof(sdp_ctx.filename),
                 "rtsp", NULL, addr, -1, NULL);
     ctx_array[0] = &sdp_ctx;
-    if (avf_sdp_create(ctx_array, 1, sdp, 8192)) {
+    if (avf_sdp_create(ctx_array, 1, sdp, SDP_MAX_SIZE)) {
         av_free(sdp);
         return AVERROR_INVALIDDATA;
     }
@@ -2002,8 +2003,6 @@ static int sdp_probe(AVProbeData *p1)
     }
     return 0;
 }
-
-#define SDP_MAX_SIZE 8192
 
 static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
