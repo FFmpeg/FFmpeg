@@ -482,7 +482,7 @@ static int vp56_size_changed(AVCodecContext *avctx)
 }
 
 int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                      AVPacket *avpkt)
+                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     VP56Context *s = avctx->priv_data;
