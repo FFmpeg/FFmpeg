@@ -54,7 +54,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
     int separated_coeff = buf[0] & 1;
 
     s->framep[VP56_FRAME_CURRENT]->key_frame = !(buf[0] & 0x80);
-    vp56_init_dequant(s, (buf[0] >> 1) & 0x3F);
+    ff_vp56_init_dequant(s, (buf[0] >> 1) & 0x3F);
 
     if (s->framep[VP56_FRAME_CURRENT]->key_frame) {
         sub_version = buf[1] >> 3;
@@ -576,7 +576,7 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
 {
     VP56Context *s = avctx->priv_data;
 
-    vp56_init(avctx, avctx->codec->id == CODEC_ID_VP6,
+    ff_vp56_init(avctx, avctx->codec->id == CODEC_ID_VP6,
                      avctx->codec->id == CODEC_ID_VP6A);
     s->vp56_coord_div = vp6_coord_div;
     s->parse_vector_adjustment = vp6_parse_vector_adjustment;
@@ -594,7 +594,7 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
     VP56Context *s = avctx->priv_data;
     int pt, ct, cg;
 
-    vp56_free(avctx);
+    ff_vp56_free(avctx);
 
     for (pt=0; pt<2; pt++) {
         free_vlc(&s->dccv_vlc[pt]);
@@ -614,7 +614,7 @@ AVCodec vp6_decoder = {
     vp6_decode_init,
     NULL,
     vp6_decode_free,
-    vp56_decode_frame,
+    ff_vp56_decode_frame,
     CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("On2 VP6"),
 };
@@ -628,7 +628,7 @@ AVCodec vp6f_decoder = {
     vp6_decode_init,
     NULL,
     vp6_decode_free,
-    vp56_decode_frame,
+    ff_vp56_decode_frame,
     CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version)"),
 };
@@ -642,7 +642,7 @@ AVCodec vp6a_decoder = {
     vp6_decode_init,
     NULL,
     vp6_decode_free,
-    vp56_decode_frame,
+    ff_vp56_decode_frame,
     CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version, with alpha channel)"),
 };
