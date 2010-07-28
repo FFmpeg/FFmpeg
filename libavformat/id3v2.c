@@ -217,13 +217,17 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
         else if (!tag[0]) {
             if (tag[1])
                 av_log(s, AV_LOG_WARNING, "invalid frame id, assuming padding");
-            url_fskip(s->pb, len);
+            url_fskip(s->pb, tlen);
             break;
         }
         /* Skip to end of tag */
         url_fseek(s->pb, next, SEEK_SET);
     }
 
+    if (len > 0) {
+        /* Skip padding */
+        url_fskip(s->pb, len);
+    }
     if (version == 4 && flags & 0x10) /* Footer preset, always 10 bytes, skip over it */
         url_fskip(s->pb, 10);
     return;
