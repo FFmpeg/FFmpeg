@@ -105,6 +105,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     print_prefix= line[strlen(line)-1] == '\n';
     if(print_prefix && !strcmp(line, prev)){
         count++;
+        fprintf(stderr, "    Last message repeated %d times\r", count);
         return;
     }
     if(count>0){
