@@ -13,6 +13,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-07-29 - r24583 - lavcore 0.2.0 - imgutils.h
+  Add functions av_fill_image_linesizes() and
+  av_fill_image_pointers(), declared in libavcore/imgutils.h.
+
 2010-07-27 - r24518 - lavcore 0.1.0 - parseutils.h
   Deprecate av_parse_video_frame_size() and av_parse_video_frame_rate()
   defined in libavcodec in favor of the newly added functions
