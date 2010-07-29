@@ -580,9 +580,18 @@ void show_protocols(void)
 {
     URLProtocol *up=NULL;
 
-    printf("Supported file protocols:\n");
+    printf("Supported file protocols:\n"
+           "I.. = Input  supported\n"
+           ".O. = Output supported\n"
+           "..S = Seek   supported\n"
+           "FLAGS NAME\n"
+           "----- \n");
     while((up = av_protocol_next(up)))
-        printf("%s\n", up->name);
+        printf("%c%c%c   %s\n",
+               up->url_read  ? 'I' : '.',
+               up->url_write ? 'O' : '.',
+               up->url_seek  ? 'S' : '.',
+               up->name);
 }
 
 void show_filters(void)
