@@ -194,7 +194,7 @@ static inline void mmxext_row_mid (int16_t * const row, const int store,
 
         "movq       8(%3), %%mm4       \n\t" /* mm4 = C6 C4 C6 C4 */
         "pshufw     $0x4e, %%mm2, %%mm2\n\t" /* mm2 = x2 x0 x6 x4 */
-        :: "r" (row), "r" (2*offset), "r" (2*store), "r" (table)
+        :: "r" (row), "r" ((x86_reg) (2*offset)), "r" ((x86_reg) (2*store)), "r" (table)
         );
 }
 
@@ -337,7 +337,7 @@ static inline void mmx_row_mid (int16_t * const row, const int store,
 
         "movq      %%mm7, 8(%0,%2) \n\t" /* save y7 y6 y5 y4 */
         "pmaddwd   %%mm0, %%mm3    \n\t" /* mm3 = C4*x0+C6*x2 C4*x0+C2*x2 */
-        : : "r" (row), "r"(2*offset), "r" (2*store), "r" (table)
+        : : "r" (row), "r" ((x86_reg) (2*offset)), "r" ((x86_reg) (2*store)), "r" (table)
         );
 }
 
