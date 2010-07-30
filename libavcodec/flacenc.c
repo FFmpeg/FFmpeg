@@ -1317,6 +1317,7 @@ write_frame:
     }
 
     s->frame_count++;
+    avctx->coded_frame->pts = s->sample_count;
     s->sample_count += avctx->frame_size;
     update_md5_sum(s, samples);
     if (out_bytes > s->max_encoded_framesize)
