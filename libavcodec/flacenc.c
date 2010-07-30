@@ -1101,26 +1101,14 @@ static void output_frame_header(FlacEncodeContext *s)
 }
 
 
-static void output_subframe_constant(FlacEncodeContext *s, FlacSubframe *sub)
-{
-    int32_t res;
-
-    res = sub->residual[0];
-    put_sbits(&s->pb, sub->obits, res);
-}
-
-
 static void output_subframe_verbatim(FlacEncodeContext *s, FlacSubframe *sub)
 {
-    int i;
-    FlacFrame *frame;
-    int32_t res;
+    put_sbits(&s->pb, sub->obits, sub->residual[0]);
 
-    frame = &s->frame;
-
-    for (i = 0; i < frame->blocksize; i++) {
-        res = sub->residual[i];
-        put_sbits(&s->pb, sub->obits, res);
+    if (sub->type == FLAC_SUBFRAME_VERBATIM) {
+        int i;
+        for (i = 0; i < s->frame.blocksize; i++)
+            put_sbits(&s->pb, sub->obits, sub->residual[i]);
     }
 }
 
@@ -1212,14 +1200,12 @@ static void output_subframes(FlacEncodeContext *s)
         put_bits(&s->pb, 1, 0); /* no wasted bits */
 
         /* subframe */
-        if(sub->type == FLAC_SUBFRAME_CONSTANT)
-            output_subframe_constant(s, sub);
-        else if(sub->type == FLAC_SUBFRAME_VERBATIM)
-            output_subframe_verbatim(s, sub);
-        else if(sub->type == FLAC_SUBFRAME_FIXED)
-            output_subframe_fixed(s, sub);
-        else if(sub->type == FLAC_SUBFRAME_LPC)
-            output_subframe_lpc(s, sub);
+        switch (sub->type) {
+        case FLAC_SUBFRAME_CONSTANT:
+        case FLAC_SUBFRAME_VERBATIM: output_subframe_verbatim(s, sub); break;
+        case FLAC_SUBFRAME_FIXED:    output_subframe_fixed(   s, sub); break;
+        case FLAC_SUBFRAME_LPC:      output_subframe_lpc(     s, sub); break;
+        }
     }
 }
 
