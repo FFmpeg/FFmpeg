@@ -1107,10 +1107,10 @@ static void output_subframes(FlacEncodeContext *s)
 
     for (ch = 0; ch < s->channels; ch++) {
         FlacSubframe *sub = &s->frame.subframes[ch];
-    int i, p, porder, psize;
-    int32_t *part_end;
-    int32_t *res       =  sub->residual;
-    int32_t *frame_end = &sub->residual[s->frame.blocksize];
+        int i, p, porder, psize;
+        int32_t *part_end;
+        int32_t *res       =  sub->residual;
+        int32_t *frame_end = &sub->residual[s->frame.blocksize];
 
         /* subframe header */
         put_bits(&s->pb, 1, 0);
@@ -1118,43 +1118,43 @@ static void output_subframes(FlacEncodeContext *s)
         put_bits(&s->pb, 1, 0); /* no wasted bits */
 
         /* subframe */
-    if (sub->type == FLAC_SUBFRAME_CONSTANT) {
-        put_sbits(&s->pb, sub->obits, res[0]);
-    } else if (sub->type == FLAC_SUBFRAME_VERBATIM) {
-        while (res < frame_end)
-            put_sbits(&s->pb, sub->obits, *res++);
-    } else {
-        /* warm-up samples */
-        for (i = 0; i < sub->order; i++)
-            put_sbits(&s->pb, sub->obits, *res++);
-
-        /* LPC coefficients */
-        if (sub->type == FLAC_SUBFRAME_LPC) {
-            int cbits = s->options.lpc_coeff_precision;
-            put_bits( &s->pb, 4, cbits-1);
-            put_sbits(&s->pb, 5, sub->shift);
+        if (sub->type == FLAC_SUBFRAME_CONSTANT) {
+            put_sbits(&s->pb, sub->obits, res[0]);
+        } else if (sub->type == FLAC_SUBFRAME_VERBATIM) {
+            while (res < frame_end)
+                put_sbits(&s->pb, sub->obits, *res++);
+        } else {
+            /* warm-up samples */
             for (i = 0; i < sub->order; i++)
-                put_sbits(&s->pb, cbits, sub->coefs[i]);
+                put_sbits(&s->pb, sub->obits, *res++);
+
+            /* LPC coefficients */
+            if (sub->type == FLAC_SUBFRAME_LPC) {
+                int cbits = s->options.lpc_coeff_precision;
+                put_bits( &s->pb, 4, cbits-1);
+                put_sbits(&s->pb, 5, sub->shift);
+                for (i = 0; i < sub->order; i++)
+                    put_sbits(&s->pb, cbits, sub->coefs[i]);
+            }
+
+            /* rice-encoded block */
+            put_bits(&s->pb, 2, 0);
+
+            /* partition order */
+            porder  = sub->rc.porder;
+            psize   = s->frame.blocksize >> porder;
+            put_bits(&s->pb, 4, porder);
+
+            /* residual */
+            part_end  = &sub->residual[psize];
+            for (p = 0; p < 1 << porder; p++) {
+                int k = sub->rc.params[p];
+                put_bits(&s->pb, 4, k);
+                while (res < part_end)
+                    set_sr_golomb_flac(&s->pb, *res++, k, INT32_MAX, 0);
+                part_end = FFMIN(frame_end, part_end + psize);
+            }
         }
-
-        /* rice-encoded block */
-        put_bits(&s->pb, 2, 0);
-
-        /* partition order */
-        porder  = sub->rc.porder;
-        psize   = s->frame.blocksize >> porder;
-        put_bits(&s->pb, 4, porder);
-
-        /* residual */
-        part_end  = &sub->residual[psize];
-        for (p = 0; p < 1 << porder; p++) {
-            int k = sub->rc.params[p];
-            put_bits(&s->pb, 4, k);
-            while (res < part_end)
-                set_sr_golomb_flac(&s->pb, *res++, k, INT32_MAX, 0);
-            part_end = FFMIN(frame_end, part_end + psize);
-        }
-    }
     }
 }
 
