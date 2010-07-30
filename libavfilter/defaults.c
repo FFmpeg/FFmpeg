@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/imgconvert.h"
+#include "libavcore/imgutils.h"
 #include "avfilter.h"
 
 /* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
@@ -49,15 +49,15 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms,
     pic->refcount = 1;
     pic->format   = link->format;
     pic->free     = avfilter_default_free_buffer;
-    ff_fill_linesize((AVPicture *)pic, pic->format, ref->w);
+    av_fill_image_linesizes(pic->linesize, pic->format, ref->w);
 
     for (i=0; i<4;i++)
         pic->linesize[i] = FFALIGN(pic->linesize[i], 16);
 
-    tempsize = ff_fill_pointer((AVPicture *)pic, NULL, pic->format, ref->h);
+    tempsize = av_fill_image_pointers(pic->data, pic->format, ref->h, NULL, pic->linesize);
     buf = av_malloc(tempsize + 16); // +2 is needed for swscaler, +16 to be
                                     // SIMD-friendly
-    ff_fill_pointer((AVPicture *)pic, buf, pic->format, ref->h);
+    av_fill_image_pointers(pic->data, pic->format, ref->h, buf, pic->linesize);
 
     memcpy(ref->data,     pic->data,     sizeof(pic->data));
     memcpy(ref->linesize, pic->linesize, sizeof(pic->linesize));
