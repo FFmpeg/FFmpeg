@@ -1157,11 +1157,11 @@ static void output_subframe_lpc(FlacEncodeContext *s, FlacSubframe *sub)
 
     /* LPC coefficients */
     if (sub->type == FLAC_SUBFRAME_LPC) {
-    int cbits = s->options.lpc_coeff_precision;
-    put_bits( &s->pb, 4, cbits-1);
-    put_sbits(&s->pb, 5, sub->shift);
-    for (i = 0; i < sub->order; i++)
-        put_sbits(&s->pb, cbits, sub->coefs[i]);
+        int cbits = s->options.lpc_coeff_precision;
+        put_bits( &s->pb, 4, cbits-1);
+        put_sbits(&s->pb, 5, sub->shift);
+        for (i = 0; i < sub->order; i++)
+            put_sbits(&s->pb, cbits, sub->coefs[i]);
     }
 
     /* residual */
