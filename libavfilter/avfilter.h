@@ -25,8 +25,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 26
-#define LIBAVFILTER_VERSION_MICRO  2
+#define LIBAVFILTER_VERSION_MINOR 27
+#define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -66,8 +66,8 @@ typedef struct AVFilterPad     AVFilterPad;
  */
 typedef struct AVFilterBuffer
 {
-    uint8_t *data[4];           ///< buffer data for each plane
-    int linesize[4];            ///< number of bytes per line
+    uint8_t *data[8];           ///< buffer data for each plane/channel
+    int linesize[8];            ///< number of bytes per line
     int format;                 ///< media format
 
     unsigned refcount;          ///< number of references to this buffer
