@@ -1101,26 +1101,22 @@ static void output_frame_header(FlacEncodeContext *s)
 }
 
 
-static void output_subframe_constant(FlacEncodeContext *s, int ch)
+static void output_subframe_constant(FlacEncodeContext *s, FlacSubframe *sub)
 {
-    FlacSubframe *sub;
     int32_t res;
 
-    sub = &s->frame.subframes[ch];
     res = sub->residual[0];
     put_sbits(&s->pb, sub->obits, res);
 }
 
 
-static void output_subframe_verbatim(FlacEncodeContext *s, int ch)
+static void output_subframe_verbatim(FlacEncodeContext *s, FlacSubframe *sub)
 {
     int i;
     FlacFrame *frame;
-    FlacSubframe *sub;
     int32_t res;
 
     frame = &s->frame;
-    sub   = &frame->subframes[ch];
 
     for (i = 0; i < frame->blocksize; i++) {
         res = sub->residual[i];
@@ -1129,16 +1125,14 @@ static void output_subframe_verbatim(FlacEncodeContext *s, int ch)
 }
 
 
-static void output_residual(FlacEncodeContext *s, int ch)
+static void output_residual(FlacEncodeContext *s, FlacSubframe *sub)
 {
     int i, j, p, n, parts;
     int k, porder, psize, res_cnt;
     FlacFrame *frame;
-    FlacSubframe *sub;
     int32_t *res;
 
     frame = &s->frame;
-    sub   = &frame->subframes[ch];
     res   = sub->residual;
     n     = frame->blocksize;
 
@@ -1165,32 +1159,25 @@ static void output_residual(FlacEncodeContext *s, int ch)
 }
 
 
-static void output_subframe_fixed(FlacEncodeContext *s, int ch)
+static void output_subframe_fixed(FlacEncodeContext *s, FlacSubframe *sub)
 {
     int i;
-    FlacFrame *frame;
-    FlacSubframe *sub;
-
-    frame = &s->frame;
-    sub   = &frame->subframes[ch];
 
     /* warm-up samples */
     for (i = 0; i < sub->order; i++)
         put_sbits(&s->pb, sub->obits, sub->residual[i]);
 
     /* residual */
-    output_residual(s, ch);
+    output_residual(s, sub);
 }
 
 
-static void output_subframe_lpc(FlacEncodeContext *s, int ch)
+static void output_subframe_lpc(FlacEncodeContext *s, FlacSubframe *sub)
 {
     int i, cbits;
     FlacFrame *frame;
-    FlacSubframe *sub;
 
     frame = &s->frame;
-    sub = &frame->subframes[ch];
 
     /* warm-up samples */
     for (i = 0; i < sub->order; i++)
@@ -1204,7 +1191,7 @@ static void output_subframe_lpc(FlacEncodeContext *s, int ch)
         put_sbits(&s->pb, cbits, sub->coefs[i]);
 
     /* residual */
-    output_residual(s, ch);
+    output_residual(s, sub);
 }
 
 
@@ -1226,13 +1213,13 @@ static void output_subframes(FlacEncodeContext *s)
 
         /* subframe */
         if(sub->type == FLAC_SUBFRAME_CONSTANT)
-            output_subframe_constant(s, ch);
+            output_subframe_constant(s, sub);
         else if(sub->type == FLAC_SUBFRAME_VERBATIM)
-            output_subframe_verbatim(s, ch);
+            output_subframe_verbatim(s, sub);
         else if(sub->type == FLAC_SUBFRAME_FIXED)
-            output_subframe_fixed(s, ch);
+            output_subframe_fixed(s, sub);
         else if(sub->type == FLAC_SUBFRAME_LPC)
-            output_subframe_lpc(s, ch);
+            output_subframe_lpc(s, sub);
     }
 }
 
