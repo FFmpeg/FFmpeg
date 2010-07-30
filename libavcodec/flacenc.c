@@ -437,7 +437,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
-    avctx->coded_frame->key_frame = 1;
 
     dprint_compression_options(s);
 
