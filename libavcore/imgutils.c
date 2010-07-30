@@ -28,8 +28,8 @@ int av_fill_image_linesizes(int linesize[4], enum PixelFormat pix_fmt, int width
 {
     int i;
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
-    int max_plane_step     [4];
-    int max_plane_step_comp[4];
+    int max_step     [4];       /* max pixel step for each plane */
+    int max_step_comp[4];       /* the component for each plane which has the max pixel step */
 
     memset(linesize, 0, 4*sizeof(linesize[0]));
 
@@ -41,19 +41,19 @@ int av_fill_image_linesizes(int linesize[4], enum PixelFormat pix_fmt, int width
         return 0;
     }
 
-    memset(max_plane_step     , 0, sizeof(max_plane_step     ));
-    memset(max_plane_step_comp, 0, sizeof(max_plane_step_comp));
+    memset(max_step     , 0, sizeof(max_step     ));
+    memset(max_step_comp, 0, sizeof(max_step_comp));
     for (i = 0; i < 4; i++) {
         const AVComponentDescriptor *comp = &(desc->comp[i]);
-        if ((comp->step_minus1+1) > max_plane_step[comp->plane]) {
-            max_plane_step     [comp->plane] = comp->step_minus1+1;
-            max_plane_step_comp[comp->plane] = i;
+        if ((comp->step_minus1+1) > max_step[comp->plane]) {
+            max_step     [comp->plane] = comp->step_minus1+1;
+            max_step_comp[comp->plane] = i;
         }
     }
 
     for (i = 0; i < 4; i++) {
-        int s = (max_plane_step_comp[i] == 1 || max_plane_step_comp[i] == 2) ? desc->log2_chroma_w : 0;
-        linesize[i] = max_plane_step[i] * (((width + (1 << s) - 1)) >> s);
+        int s = (max_step_comp[i] == 1 || max_step_comp[i] == 2) ? desc->log2_chroma_w : 0;
+        linesize[i] = max_step[i] * (((width + (1 << s) - 1)) >> s);
     }
 
     return 0;
