@@ -38,7 +38,7 @@
 
 #include "rtpdec.h"
 #include "rdt.h"
-#include "rtpdec_asf.h"
+#include "rtpdec_formats.h"
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP

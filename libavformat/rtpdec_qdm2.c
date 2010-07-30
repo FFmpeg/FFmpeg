@@ -30,7 +30,7 @@
 #include "libavcodec/avcodec.h"
 #include "rtp.h"
 #include "rtpdec.h"
-#include "rtpdec_qdm2.h"
+#include "rtpdec_formats.h"
 
 struct PayloadContext {
     /** values read from the config header, used as packet headers */

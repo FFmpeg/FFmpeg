@@ -29,7 +29,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "rtp.h"
-#include "rtpdec_asf.h"
+#include "rtpdec_formats.h"
 #include "rtsp.h"
 #include "asf.h"
 

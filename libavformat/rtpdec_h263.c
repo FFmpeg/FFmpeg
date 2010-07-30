@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "rtpdec_h263.h"
+#include "rtpdec_formats.h"
 #include "libavutil/intreadwrite.h"
 
 static int h263_handle_packet(AVFormatContext *ctx,

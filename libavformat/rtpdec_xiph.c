@@ -34,7 +34,7 @@
 #include <assert.h>
 
 #include "rtpdec.h"
-#include "rtpdec_xiph.h"
+#include "rtpdec_formats.h"
 
 /**
  * RTP/Xiph specific private data.

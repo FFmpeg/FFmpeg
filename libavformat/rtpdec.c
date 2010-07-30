@@ -30,14 +30,7 @@
 #include "network.h"
 
 #include "rtpdec.h"
-#include "rtpdec_amr.h"
-#include "rtpdec_asf.h"
-#include "rtpdec_h263.h"
-#include "rtpdec_h264.h"
-#include "rtpdec_mpeg4.h"
-#include "rtpdec_qdm2.h"
-#include "rtpdec_svq3.h"
-#include "rtpdec_xiph.h"
+#include "rtpdec_formats.h"
 
 //#define DEBUG
 

@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "rtpdec_amr.h"
+#include "rtpdec_formats.h"
 #include "libavutil/avstring.h"
 
 static const uint8_t frame_sizes_nb[16] = {

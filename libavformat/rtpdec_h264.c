@@ -47,7 +47,7 @@
 #include <assert.h>
 
 #include "rtpdec.h"
-#include "rtpdec_h264.h"
+#include "rtpdec_formats.h"
 
 /**
     RTP/H264 specific private data.
