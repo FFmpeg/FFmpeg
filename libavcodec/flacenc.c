@@ -1150,14 +1150,11 @@ static void output_subframe(FlacEncodeContext *s, FlacSubframe *sub)
 
 static void output_subframes(FlacEncodeContext *s)
 {
-    FlacFrame *frame;
     FlacSubframe *sub;
     int ch;
 
-    frame = &s->frame;
-
     for (ch = 0; ch < s->channels; ch++) {
-        sub = &frame->subframes[ch];
+        sub = &s->frame.subframes[ch];
 
         /* subframe header */
         put_bits(&s->pb, 1, 0);
