@@ -1101,25 +1101,20 @@ static void output_frame_header(FlacEncodeContext *s)
 }
 
 
-static void output_subframe_verbatim(FlacEncodeContext *s, FlacSubframe *sub)
-{
-    put_sbits(&s->pb, sub->obits, sub->residual[0]);
-
-    if (sub->type == FLAC_SUBFRAME_VERBATIM) {
-        int i;
-        for (i = 0; i < s->frame.blocksize; i++)
-            put_sbits(&s->pb, sub->obits, sub->residual[i]);
-    }
-}
-
-
-static void output_subframe_lpc(FlacEncodeContext *s, FlacSubframe *sub)
+static void output_subframe(FlacEncodeContext *s, FlacSubframe *sub)
 {
     int i, p, porder, psize;
-    int32_t *res, *part_end, *frame_end;
+    int32_t *part_end;
+    int32_t *res       =  sub->residual;
+    int32_t *frame_end = &sub->residual[s->frame.blocksize];
 
+    if (sub->type == FLAC_SUBFRAME_CONSTANT) {
+        put_sbits(&s->pb, sub->obits, res[0]);
+    } else if (sub->type == FLAC_SUBFRAME_VERBATIM) {
+        while (res < frame_end)
+            put_sbits(&s->pb, sub->obits, *res++);
+    } else {
     /* warm-up samples */
-    res = sub->residual;
     for (i = 0; i < sub->order; i++)
         put_sbits(&s->pb, sub->obits, *res++);
 
@@ -1142,13 +1137,13 @@ static void output_subframe_lpc(FlacEncodeContext *s, FlacSubframe *sub)
 
     /* residual */
     part_end  = &sub->residual[psize             ];
-    frame_end = &sub->residual[s->frame.blocksize];
     for (p = 0; p < 1 << porder; p++) {
         int k = sub->rc.params[p];
         put_bits(&s->pb, 4, k);
         while (res < part_end)
             set_sr_golomb_flac(&s->pb, *res++, k, INT32_MAX, 0);
         part_end = FFMIN(frame_end, part_end + psize);
+    }
     }
 }
 
@@ -1170,12 +1165,7 @@ static void output_subframes(FlacEncodeContext *s)
         put_bits(&s->pb, 1, 0); /* no wasted bits */
 
         /* subframe */
-        switch (sub->type) {
-        case FLAC_SUBFRAME_CONSTANT:
-        case FLAC_SUBFRAME_VERBATIM: output_subframe_verbatim(s, sub); break;
-        case FLAC_SUBFRAME_FIXED:
-        case FLAC_SUBFRAME_LPC:      output_subframe_lpc(     s, sub); break;
-        }
+        output_subframe(s, sub);
     }
 }
 
