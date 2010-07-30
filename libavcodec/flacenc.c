@@ -404,6 +404,8 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     av_md5_init(s->md5ctx);
 
     streaminfo = av_malloc(FLAC_STREAMINFO_SIZE);
+    if (!streaminfo)
+        return AVERROR(ENOMEM);
     write_streaminfo(s, streaminfo);
     avctx->extradata = streaminfo;
     avctx->extradata_size = FLAC_STREAMINFO_SIZE;
@@ -412,6 +414,8 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     s->min_framesize = s->max_framesize;
 
     avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
     avctx->coded_frame->key_frame = 1;
 
     return 0;
