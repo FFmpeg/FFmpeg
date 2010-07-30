@@ -791,7 +791,7 @@ static void encode_residual_lpc(int32_t *res, const int32_t *smp, int n,
 }
 
 
-static int encode_residual(FlacEncodeContext *ctx, int ch)
+static int encode_residual(FlacEncodeContext *s, int ch)
 {
     int i, n;
     int min_order, max_order, opt_order, precision, omethod;
@@ -802,7 +802,7 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
     int shift[MAX_LPC_ORDER];
     int32_t *res, *smp;
 
-    frame = &ctx->frame;
+    frame = &s->frame;
     sub   = &frame->subframes[ch];
     res   = sub->residual;
     smp   = sub->samples;
@@ -825,16 +825,16 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
         return sub->obits * n;
     }
 
-    min_order  = ctx->options.min_prediction_order;
-    max_order  = ctx->options.max_prediction_order;
-    min_porder = ctx->options.min_partition_order;
-    max_porder = ctx->options.max_partition_order;
-    precision  = ctx->options.lpc_coeff_precision;
-    omethod    = ctx->options.prediction_order_method;
+    min_order  = s->options.min_prediction_order;
+    max_order  = s->options.max_prediction_order;
+    min_porder = s->options.min_partition_order;
+    max_porder = s->options.max_partition_order;
+    precision  = s->options.lpc_coeff_precision;
+    omethod    = s->options.prediction_order_method;
 
     /* FIXED */
-    if (ctx->options.lpc_type == AV_LPC_TYPE_NONE  ||
-        ctx->options.lpc_type == AV_LPC_TYPE_FIXED || n <= max_order) {
+    if (s->options.lpc_type == AV_LPC_TYPE_NONE  ||
+        s->options.lpc_type == AV_LPC_TYPE_FIXED || n <= max_order) {
         uint32_t bits[MAX_FIXED_ORDER+1];
         if (max_order > MAX_FIXED_ORDER)
             max_order = MAX_FIXED_ORDER;
@@ -859,9 +859,9 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
     }
 
     /* LPC */
-    opt_order = ff_lpc_calc_coefs(&ctx->dsp, smp, n, min_order, max_order,
-                                  precision, coefs, shift, ctx->options.lpc_type,
-                                  ctx->options.lpc_passes, omethod,
+    opt_order = ff_lpc_calc_coefs(&s->dsp, smp, n, min_order, max_order,
+                                  precision, coefs, shift, s->options.lpc_type,
+                                  s->options.lpc_passes, omethod,
                                   MAX_LPC_SHIFT, 0);
 
     if (omethod == ORDER_METHOD_2LEVEL ||
@@ -936,14 +936,14 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
 }
 
 
-static int encode_residual_v(FlacEncodeContext *ctx, int ch)
+static int encode_residual_v(FlacEncodeContext *s, int ch)
 {
     int i, n;
     FlacFrame *frame;
     FlacSubframe *sub;
     int32_t *res, *smp;
 
-    frame = &ctx->frame;
+    frame = &s->frame;
     sub   = &frame->subframes[ch];
     res   = sub->residual;
     smp   = sub->samples;
@@ -1016,18 +1016,18 @@ static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
 /**
  * Perform stereo channel decorrelation.
  */
-static void channel_decorrelation(FlacEncodeContext *ctx)
+static void channel_decorrelation(FlacEncodeContext *s)
 {
     FlacFrame *frame;
     int32_t *left, *right;
     int i, n;
 
-    frame = &ctx->frame;
+    frame = &s->frame;
     n     = frame->blocksize;
     left  = frame->subframes[0].samples;
     right = frame->subframes[1].samples;
 
-    if (ctx->channels != 2) {
+    if (s->channels != 2) {
         frame->ch_mode = FLAC_CHMODE_INDEPENDENT;
         return;
     }
@@ -1129,7 +1129,7 @@ static void output_subframe_verbatim(FlacEncodeContext *s, int ch)
 }
 
 
-static void output_residual(FlacEncodeContext *ctx, int ch)
+static void output_residual(FlacEncodeContext *s, int ch)
 {
     int i, j, p, n, parts;
     int k, porder, psize, res_cnt;
@@ -1137,74 +1137,74 @@ static void output_residual(FlacEncodeContext *ctx, int ch)
     FlacSubframe *sub;
     int32_t *res;
 
-    frame = &ctx->frame;
+    frame = &s->frame;
     sub   = &frame->subframes[ch];
     res   = sub->residual;
     n     = frame->blocksize;
 
     /* rice-encoded block */
-    put_bits(&ctx->pb, 2, 0);
+    put_bits(&s->pb, 2, 0);
 
     /* partition order */
     porder  = sub->rc.porder;
     psize   = n >> porder;
     parts   = (1 << porder);
-    put_bits(&ctx->pb, 4, porder);
+    put_bits(&s->pb, 4, porder);
     res_cnt = psize - sub->order;
 
     /* residual */
     j = sub->order;
     for (p = 0; p < parts; p++) {
         k = sub->rc.params[p];
-        put_bits(&ctx->pb, 4, k);
+        put_bits(&s->pb, 4, k);
         if (p == 1)
             res_cnt = psize;
         for (i = 0; i < res_cnt && j < n; i++, j++)
-            set_sr_golomb_flac(&ctx->pb, res[j], k, INT32_MAX, 0);
+            set_sr_golomb_flac(&s->pb, res[j], k, INT32_MAX, 0);
     }
 }
 
 
-static void output_subframe_fixed(FlacEncodeContext *ctx, int ch)
+static void output_subframe_fixed(FlacEncodeContext *s, int ch)
 {
     int i;
     FlacFrame *frame;
     FlacSubframe *sub;
 
-    frame = &ctx->frame;
+    frame = &s->frame;
     sub   = &frame->subframes[ch];
 
     /* warm-up samples */
     for (i = 0; i < sub->order; i++)
-        put_sbits(&ctx->pb, sub->obits, sub->residual[i]);
+        put_sbits(&s->pb, sub->obits, sub->residual[i]);
 
     /* residual */
-    output_residual(ctx, ch);
+    output_residual(s, ch);
 }
 
 
-static void output_subframe_lpc(FlacEncodeContext *ctx, int ch)
+static void output_subframe_lpc(FlacEncodeContext *s, int ch)
 {
     int i, cbits;
     FlacFrame *frame;
     FlacSubframe *sub;
 
-    frame = &ctx->frame;
+    frame = &s->frame;
     sub = &frame->subframes[ch];
 
     /* warm-up samples */
     for (i = 0; i < sub->order; i++)
-        put_sbits(&ctx->pb, sub->obits, sub->residual[i]);
+        put_sbits(&s->pb, sub->obits, sub->residual[i]);
 
     /* LPC coefficients */
-    cbits = ctx->options.lpc_coeff_precision;
-    put_bits( &ctx->pb, 4, cbits-1);
-    put_sbits(&ctx->pb, 5, sub->shift);
+    cbits = s->options.lpc_coeff_precision;
+    put_bits( &s->pb, 4, cbits-1);
+    put_sbits(&s->pb, 5, sub->shift);
     for (i = 0; i < sub->order; i++)
-        put_sbits(&ctx->pb, cbits, sub->coefs[i]);
+        put_sbits(&s->pb, cbits, sub->coefs[i]);
 
     /* residual */
-    output_residual(ctx, ch);
+    output_residual(s, ch);
 }
 
 
