@@ -1113,47 +1113,15 @@ static void output_subframe_verbatim(FlacEncodeContext *s, FlacSubframe *sub)
 }
 
 
-static void output_residual(FlacEncodeContext *s, FlacSubframe *sub)
-{
-    int i, j, p, n, parts;
-    int k, porder, psize, res_cnt;
-    FlacFrame *frame;
-    int32_t *res;
-
-    frame = &s->frame;
-    res   = sub->residual;
-    n     = frame->blocksize;
-
-    /* rice-encoded block */
-    put_bits(&s->pb, 2, 0);
-
-    /* partition order */
-    porder  = sub->rc.porder;
-    psize   = n >> porder;
-    parts   = (1 << porder);
-    put_bits(&s->pb, 4, porder);
-    res_cnt = psize - sub->order;
-
-    /* residual */
-    j = sub->order;
-    for (p = 0; p < parts; p++) {
-        k = sub->rc.params[p];
-        put_bits(&s->pb, 4, k);
-        if (p == 1)
-            res_cnt = psize;
-        for (i = 0; i < res_cnt && j < n; i++, j++)
-            set_sr_golomb_flac(&s->pb, res[j], k, INT32_MAX, 0);
-    }
-}
-
-
 static void output_subframe_lpc(FlacEncodeContext *s, FlacSubframe *sub)
 {
-    int i;
+    int i, p, porder, psize;
+    int32_t *res, *part_end, *frame_end;
 
     /* warm-up samples */
+    res = sub->residual;
     for (i = 0; i < sub->order; i++)
-        put_sbits(&s->pb, sub->obits, sub->residual[i]);
+        put_sbits(&s->pb, sub->obits, *res++);
 
     /* LPC coefficients */
     if (sub->type == FLAC_SUBFRAME_LPC) {
@@ -1164,8 +1132,24 @@ static void output_subframe_lpc(FlacEncodeContext *s, FlacSubframe *sub)
             put_sbits(&s->pb, cbits, sub->coefs[i]);
     }
 
+    /* rice-encoded block */
+    put_bits(&s->pb, 2, 0);
+
+    /* partition order */
+    porder  = sub->rc.porder;
+    psize   = s->frame.blocksize >> porder;
+    put_bits(&s->pb, 4, porder);
+
     /* residual */
-    output_residual(s, sub);
+    part_end  = &sub->residual[psize             ];
+    frame_end = &sub->residual[s->frame.blocksize];
+    for (p = 0; p < 1 << porder; p++) {
+        int k = sub->rc.params[p];
+        put_bits(&s->pb, 4, k);
+        while (res < part_end)
+            set_sr_golomb_flac(&s->pb, *res++, k, INT32_MAX, 0);
+        part_end = FFMIN(frame_end, part_end + psize);
+    }
 }
 
 
