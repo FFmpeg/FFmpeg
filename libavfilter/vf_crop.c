@@ -113,7 +113,7 @@ static int config_input(AVFilterLink *link)
         av_log(ctx, AV_LOG_ERROR,
                "Output area %d:%d:%d:%d not within the input area 0:0:%d:%d or zero-sized\n",
                crop->x, crop->y, crop->w, crop->h, link->w, link->h);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     return 0;
