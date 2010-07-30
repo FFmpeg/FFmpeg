@@ -1295,7 +1295,7 @@ static int avi_read_close(AVFormatContext *s)
         AVIStream *ast = st->priv_data;
         av_free(st->codec->palctrl);
         if (ast->sub_ctx) {
-            av_freep(ast->sub_ctx->pb);
+            av_freep(&ast->sub_ctx->pb);
             av_close_input_stream(ast->sub_ctx);
         }
         av_free(ast->sub_buffer);
