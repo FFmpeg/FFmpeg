@@ -34,7 +34,7 @@ int av_fill_image_linesizes(int linesize[4], enum PixelFormat pix_fmt, int width
     memset(linesize, 0, 4*sizeof(linesize[0]));
 
     if (desc->flags & PIX_FMT_HWACCEL)
-        return -1;
+        return AVERROR(EINVAL);
 
     if (desc->flags & PIX_FMT_BITSTREAM) {
         linesize[0] = (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
