@@ -3192,7 +3192,7 @@ comment=$2
 version=$3
 libs=$4
 requires=$5
-enabled $shortname || return
+enabled $shortname || return 0
 cat <<EOF > $name/$name.pc
 prefix=$prefix
 exec_prefix=\${prefix}
