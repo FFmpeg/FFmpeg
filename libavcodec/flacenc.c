@@ -148,6 +148,64 @@ static int select_blocksize(int samplerate, int block_time_ms)
 }
 
 
+static av_cold void dprint_compression_options(FlacEncodeContext *s)
+{
+    AVCodecContext     *avctx = s->avctx;
+    CompressionOptions *opt   = &s->options;
+
+    av_log(avctx, AV_LOG_DEBUG, " compression: %d\n", opt->compression_level);
+
+    switch (opt->lpc_type) {
+    case AV_LPC_TYPE_NONE:
+        av_log(avctx, AV_LOG_DEBUG, " lpc type: None\n");
+        break;
+    case AV_LPC_TYPE_FIXED:
+        av_log(avctx, AV_LOG_DEBUG, " lpc type: Fixed pre-defined coefficients\n");
+        break;
+    case AV_LPC_TYPE_LEVINSON:
+        av_log(avctx, AV_LOG_DEBUG, " lpc type: Levinson-Durbin recursion with Welch window\n");
+        break;
+    case AV_LPC_TYPE_CHOLESKY:
+        av_log(avctx, AV_LOG_DEBUG, " lpc type: Cholesky factorization, %d pass%s\n",
+               opt->lpc_passes, opt->lpc_passes == 1 ? "" : "es");
+        break;
+    }
+
+    av_log(avctx, AV_LOG_DEBUG, " prediction order: %d, %d\n",
+           opt->min_prediction_order, opt->max_prediction_order);
+
+    switch (opt->prediction_order_method) {
+    case ORDER_METHOD_EST:
+        av_log(avctx, AV_LOG_DEBUG, " order method: %s\n", "estimate");
+        break;
+    case ORDER_METHOD_2LEVEL:
+        av_log(avctx, AV_LOG_DEBUG, " order method: %s\n", "2-level");
+        break;
+    case ORDER_METHOD_4LEVEL:
+        av_log(avctx, AV_LOG_DEBUG, " order method: %s\n", "4-level");
+        break;
+    case ORDER_METHOD_8LEVEL:
+        av_log(avctx, AV_LOG_DEBUG, " order method: %s\n", "8-level");
+        break;
+    case ORDER_METHOD_SEARCH:
+        av_log(avctx, AV_LOG_DEBUG, " order method: %s\n", "full search");
+        break;
+    case ORDER_METHOD_LOG:
+        av_log(avctx, AV_LOG_DEBUG, " order method: %s\n", "log search");
+        break;
+    }
+
+
+    av_log(avctx, AV_LOG_DEBUG, " partition order: %d, %d\n",
+           opt->min_partition_order, opt->max_partition_order);
+
+    av_log(avctx, AV_LOG_DEBUG, " block size: %d\n", avctx->frame_size);
+
+    av_log(avctx, AV_LOG_DEBUG, " lpc precision: %d\n",
+           opt->lpc_coeff_precision);
+}
+
+
 static av_cold int flac_encode_init(AVCodecContext *avctx)
 {
     int freq = avctx->sample_rate;
@@ -200,7 +258,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
         s->options.compression_level = 5;
     else
         s->options.compression_level = avctx->compression_level;
-    av_log(avctx, AV_LOG_DEBUG, " compression: %d\n", s->options.compression_level);
 
     level = s->options.compression_level;
     if (level > 12) {
@@ -260,21 +317,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
             }
         }
     }
-    switch (s->options.lpc_type) {
-    case AV_LPC_TYPE_NONE:
-        av_log(avctx, AV_LOG_DEBUG, " lpc type: None\n");
-        break;
-    case AV_LPC_TYPE_FIXED:
-        av_log(avctx, AV_LOG_DEBUG, " lpc type: Fixed pre-defined coefficients\n");
-        break;
-    case AV_LPC_TYPE_LEVINSON:
-        av_log(avctx, AV_LOG_DEBUG, " lpc type: Levinson-Durbin recursion with Welch window\n");
-        break;
-    case AV_LPC_TYPE_CHOLESKY:
-        av_log(avctx, AV_LOG_DEBUG, " lpc type: Cholesky factorization, %d pass%s\n",
-               s->options.lpc_passes, s->options.lpc_passes==1?"":"es");
-        break;
-    }
 
     if (s->options.lpc_type == AV_LPC_TYPE_NONE) {
         s->options.min_prediction_order = 0;
@@ -315,8 +357,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
                s->options.min_prediction_order, s->options.max_prediction_order);
         return -1;
     }
-    av_log(avctx, AV_LOG_DEBUG, " prediction order: %d, %d\n",
-           s->options.min_prediction_order, s->options.max_prediction_order);
 
     if (avctx->prediction_order_method >= 0) {
         if (avctx->prediction_order_method > ORDER_METHOD_LOG) {
@@ -325,20 +365,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
             return -1;
         }
         s->options.prediction_order_method = avctx->prediction_order_method;
-    }
-    switch (s->options.prediction_order_method) {
-        case ORDER_METHOD_EST:    av_log(avctx, AV_LOG_DEBUG, " order method: %s\n",
-                                         "estimate"); break;
-        case ORDER_METHOD_2LEVEL: av_log(avctx, AV_LOG_DEBUG, " order method: %s\n",
-                                         "2-level"); break;
-        case ORDER_METHOD_4LEVEL: av_log(avctx, AV_LOG_DEBUG, " order method: %s\n",
-                                         "4-level"); break;
-        case ORDER_METHOD_8LEVEL: av_log(avctx, AV_LOG_DEBUG, " order method: %s\n",
-                                         "8-level"); break;
-        case ORDER_METHOD_SEARCH: av_log(avctx, AV_LOG_DEBUG, " order method: %s\n",
-                                         "full search"); break;
-        case ORDER_METHOD_LOG:    av_log(avctx, AV_LOG_DEBUG, " order method: %s\n",
-                                         "log search"); break;
     }
 
     if (avctx->min_partition_order >= 0) {
@@ -362,8 +388,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
                s->options.min_partition_order, s->options.max_partition_order);
         return -1;
     }
-    av_log(avctx, AV_LOG_DEBUG, " partition order: %d, %d\n",
-           s->options.min_partition_order, s->options.max_partition_order);
 
     if (avctx->frame_size > 0) {
         if (avctx->frame_size < FLAC_MIN_BLOCKSIZE ||
@@ -376,7 +400,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
         s->avctx->frame_size = select_blocksize(s->samplerate, s->options.block_time_ms);
     }
     s->max_blocksize = s->avctx->frame_size;
-    av_log(avctx, AV_LOG_DEBUG, " block size: %d\n", s->avctx->frame_size);
 
     /* set LPC precision */
     if (avctx->lpc_coeff_precision > 0) {
@@ -390,8 +413,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
         /* default LPC precision */
         s->options.lpc_coeff_precision = 15;
     }
-    av_log(avctx, AV_LOG_DEBUG, " lpc precision: %d\n",
-           s->options.lpc_coeff_precision);
 
     /* set maximum encoded frame size in verbatim mode */
     s->max_framesize = ff_flac_get_max_frame_size(s->avctx->frame_size,
@@ -417,6 +438,8 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
     avctx->coded_frame->key_frame = 1;
+
+    dprint_compression_options(s);
 
     return 0;
 }
