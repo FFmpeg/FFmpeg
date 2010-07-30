@@ -1101,13 +1101,23 @@ static void output_frame_header(FlacEncodeContext *s)
 }
 
 
-static void output_subframe(FlacEncodeContext *s, FlacSubframe *sub)
+static void output_subframes(FlacEncodeContext *s)
 {
+    int ch;
+
+    for (ch = 0; ch < s->channels; ch++) {
+        FlacSubframe *sub = &s->frame.subframes[ch];
     int i, p, porder, psize;
     int32_t *part_end;
     int32_t *res       =  sub->residual;
     int32_t *frame_end = &sub->residual[s->frame.blocksize];
 
+        /* subframe header */
+        put_bits(&s->pb, 1, 0);
+        put_bits(&s->pb, 6, sub->type_code);
+        put_bits(&s->pb, 1, 0); /* no wasted bits */
+
+        /* subframe */
     if (sub->type == FLAC_SUBFRAME_CONSTANT) {
         put_sbits(&s->pb, sub->obits, res[0]);
     } else if (sub->type == FLAC_SUBFRAME_VERBATIM) {
@@ -1145,24 +1155,6 @@ static void output_subframe(FlacEncodeContext *s, FlacSubframe *sub)
             part_end = FFMIN(frame_end, part_end + psize);
         }
     }
-}
-
-
-static void output_subframes(FlacEncodeContext *s)
-{
-    FlacSubframe *sub;
-    int ch;
-
-    for (ch = 0; ch < s->channels; ch++) {
-        sub = &s->frame.subframes[ch];
-
-        /* subframe header */
-        put_bits(&s->pb, 1, 0);
-        put_bits(&s->pb, 6, sub->type_code);
-        put_bits(&s->pb, 1, 0); /* no wasted bits */
-
-        /* subframe */
-        output_subframe(s, sub);
     }
 }
 
