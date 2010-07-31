@@ -1285,23 +1285,19 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     channel_decorrelation(s);
 
     frame_bytes = encode_frame(s);
+
+    /* fallback to verbatim mode if the compressed frame is larger than it
+       would be if encoded uncompressed. */
+    if (frame_bytes > s->max_framesize) {
+        s->frame.verbatim_only = 1;
+        frame_bytes = encode_frame(s);
+    }
+
     if (buf_size < frame_bytes) {
         av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
         return 0;
     }
     out_bytes = write_frame(s, frame, buf_size);
-
-    /* fallback to verbatim mode if the compressed frame is larger than it
-       would be if encoded uncompressed. */
-    if (out_bytes > s->max_framesize) {
-        s->frame.verbatim_only = 1;
-        frame_bytes = encode_frame(s);
-        if (buf_size < frame_bytes) {
-            av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
-            return 0;
-        }
-        out_bytes = write_frame(s, frame, buf_size);
-    }
 
     s->frame_count++;
     avctx->coded_frame->pts = s->sample_count;
