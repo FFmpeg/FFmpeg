@@ -179,4 +179,17 @@ void ff_lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
 void ff_mmx_idct(DCTELEM *block);
 void ff_mmxext_idct(DCTELEM *block);
 
+
+void ff_deinterlace_line_mmx(uint8_t *dst,
+                             const uint8_t *lum_m4, const uint8_t *lum_m3,
+                             const uint8_t *lum_m2, const uint8_t *lum_m1,
+                             const uint8_t *lum,
+                             int size);
+
+void ff_deinterlace_line_inplace_mmx(const uint8_t *lum_m4,
+                                     const uint8_t *lum_m3,
+                                     const uint8_t *lum_m2,
+                                     const uint8_t *lum_m1,
+                                     const uint8_t *lum, int size);
+
 #endif /* AVCODEC_X86_DSPUTIL_MMX_H */

@@ -39,7 +39,6 @@
 #include "libavcore/imgutils.h"
 
 #if HAVE_MMX
-#include "x86/mmx.h"
 #include "x86/dsputil_mmx.h"
 #endif
 
@@ -54,6 +53,14 @@
 #define FF_PIXEL_PLANAR   0 /**< each channel has one component in AVPicture */
 #define FF_PIXEL_PACKED   1 /**< only one components containing all the channels */
 #define FF_PIXEL_PALETTE  2  /**< one components containing indexes for a palette */
+
+#if HAVE_MMX
+#define deinterlace_line_inplace ff_deinterlace_line_inplace_mmx
+#define deinterlace_line         ff_deinterlace_line_mmx
+#else
+#define deinterlace_line_inplace deinterlace_line_inplace_c
+#define deinterlace_line         deinterlace_line_c
+#endif
 
 typedef struct PixFmtInfo {
     uint8_t nb_channels;     /**< number of channels (including alpha) */
@@ -1119,61 +1126,14 @@ int img_get_alpha_info(const AVPicture *src,
     return ret;
 }
 
-#if HAVE_MMX
-#define DEINT_INPLACE_LINE_LUM \
-                    movd_m2r(lum_m4[0],mm0);\
-                    movd_m2r(lum_m3[0],mm1);\
-                    movd_m2r(lum_m2[0],mm2);\
-                    movd_m2r(lum_m1[0],mm3);\
-                    movd_m2r(lum[0],mm4);\
-                    punpcklbw_r2r(mm7,mm0);\
-                    movd_r2m(mm2,lum_m4[0]);\
-                    punpcklbw_r2r(mm7,mm1);\
-                    punpcklbw_r2r(mm7,mm2);\
-                    punpcklbw_r2r(mm7,mm3);\
-                    punpcklbw_r2r(mm7,mm4);\
-                    paddw_r2r(mm3,mm1);\
-                    psllw_i2r(1,mm2);\
-                    paddw_r2r(mm4,mm0);\
-                    psllw_i2r(2,mm1);\
-                    paddw_r2r(mm6,mm2);\
-                    paddw_r2r(mm2,mm1);\
-                    psubusw_r2r(mm0,mm1);\
-                    psrlw_i2r(3,mm1);\
-                    packuswb_r2r(mm7,mm1);\
-                    movd_r2m(mm1,lum_m2[0]);
-
-#define DEINT_LINE_LUM \
-                    movd_m2r(lum_m4[0],mm0);\
-                    movd_m2r(lum_m3[0],mm1);\
-                    movd_m2r(lum_m2[0],mm2);\
-                    movd_m2r(lum_m1[0],mm3);\
-                    movd_m2r(lum[0],mm4);\
-                    punpcklbw_r2r(mm7,mm0);\
-                    punpcklbw_r2r(mm7,mm1);\
-                    punpcklbw_r2r(mm7,mm2);\
-                    punpcklbw_r2r(mm7,mm3);\
-                    punpcklbw_r2r(mm7,mm4);\
-                    paddw_r2r(mm3,mm1);\
-                    psllw_i2r(1,mm2);\
-                    paddw_r2r(mm4,mm0);\
-                    psllw_i2r(2,mm1);\
-                    paddw_r2r(mm6,mm2);\
-                    paddw_r2r(mm2,mm1);\
-                    psubusw_r2r(mm0,mm1);\
-                    psrlw_i2r(3,mm1);\
-                    packuswb_r2r(mm7,mm1);\
-                    movd_r2m(mm1,dst[0]);
-#endif
-
+#if !HAVE_MMX
 /* filter parameters: [-1 4 2 4 -1] // 8 */
-static void deinterlace_line(uint8_t *dst,
+static void deinterlace_line_c(uint8_t *dst,
                              const uint8_t *lum_m4, const uint8_t *lum_m3,
                              const uint8_t *lum_m2, const uint8_t *lum_m1,
                              const uint8_t *lum,
                              int size)
 {
-#if !HAVE_MMX
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int sum;
 
@@ -1191,27 +1151,12 @@ static void deinterlace_line(uint8_t *dst,
         lum++;
         dst++;
     }
-#else
-
-    {
-        pxor_r2r(mm7,mm7);
-        movq_m2r(ff_pw_4,mm6);
-    }
-    for (;size > 3; size-=4) {
-        DEINT_LINE_LUM
-        lum_m4+=4;
-        lum_m3+=4;
-        lum_m2+=4;
-        lum_m1+=4;
-        lum+=4;
-        dst+=4;
-    }
-#endif
 }
-static void deinterlace_line_inplace(uint8_t *lum_m4, uint8_t *lum_m3, uint8_t *lum_m2, uint8_t *lum_m1, uint8_t *lum,
-                             int size)
+
+static void deinterlace_line_inplace_c(uint8_t *lum_m4, uint8_t *lum_m3,
+                                       uint8_t *lum_m2, uint8_t *lum_m1,
+                                       uint8_t *lum, int size)
 {
-#if !HAVE_MMX
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int sum;
 
@@ -1229,22 +1174,8 @@ static void deinterlace_line_inplace(uint8_t *lum_m4, uint8_t *lum_m3, uint8_t *
         lum_m1++;
         lum++;
     }
-#else
-
-    {
-        pxor_r2r(mm7,mm7);
-        movq_m2r(ff_pw_4,mm6);
-    }
-    for (;size > 3; size-=4) {
-        DEINT_INPLACE_LINE_LUM
-        lum_m4+=4;
-        lum_m3+=4;
-        lum_m2+=4;
-        lum_m1+=4;
-        lum+=4;
-    }
-#endif
 }
+#endif
 
 /* deinterlacing : 2 temporal taps, 3 spatial taps linear filter. The
    top field is copied as is, but the bottom field is deinterlaced
