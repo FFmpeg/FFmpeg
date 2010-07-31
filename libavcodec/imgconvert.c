@@ -38,7 +38,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavcore/imgutils.h"
 
-#if HAVE_MMX
+#if HAVE_MMX && HAVE_YASM
 #include "x86/dsputil_mmx.h"
 #endif
 
@@ -54,7 +54,7 @@
 #define FF_PIXEL_PACKED   1 /**< only one components containing all the channels */
 #define FF_PIXEL_PALETTE  2  /**< one components containing indexes for a palette */
 
-#if HAVE_MMX
+#if HAVE_MMX && HAVE_YASM
 #define deinterlace_line_inplace ff_deinterlace_line_inplace_mmx
 #define deinterlace_line         ff_deinterlace_line_mmx
 #else
@@ -1126,7 +1126,7 @@ int img_get_alpha_info(const AVPicture *src,
     return ret;
 }
 
-#if !HAVE_MMX
+#if !(HAVE_MMX && HAVE_YASM)
 /* filter parameters: [-1 4 2 4 -1] // 8 */
 static void deinterlace_line_c(uint8_t *dst,
                              const uint8_t *lum_m4, const uint8_t *lum_m3,
