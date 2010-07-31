@@ -945,7 +945,10 @@ static int count_frame_header(FlacEncodeContext *s)
     PUT_UTF8(s->frame_count, tmp, count += 8;)
 
     /* explicit block size */
-    count += FFMAX(0, s->frame.bs_code[0] - 5) * 8;
+    if (s->frame.bs_code[0] == 6)
+        count += 8;
+    else if (s->frame.bs_code[0] == 7)
+        count += 16;
 
     /* explicit sample rate */
     count += ((s->sr_code[0] == 12) + (s->sr_code[0] > 12)) * 8;
