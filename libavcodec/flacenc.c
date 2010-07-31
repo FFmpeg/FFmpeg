@@ -1177,6 +1177,16 @@ static void output_frame_footer(FlacEncodeContext *s)
 }
 
 
+static int write_frame(FlacEncodeContext *s, uint8_t *frame, int buf_size)
+{
+    init_put_bits(&s->pb, frame, buf_size);
+    output_frame_header(s);
+    output_subframes(s);
+    output_frame_footer(s);
+    return put_bits_count(&s->pb) >> 3;
+}
+
+
 static void update_md5_sum(FlacEncodeContext *s, const int16_t *samples)
 {
 #if HAVE_BIGENDIAN
@@ -1197,7 +1207,6 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     FlacEncodeContext *s;
     const int16_t *samples = data;
     int out_bytes;
-    int reencoded=0;
 
     s = avctx->priv_data;
 
@@ -1222,25 +1231,14 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 
     encode_frame(s);
 
-write_frame:
-    init_put_bits(&s->pb, frame, buf_size);
-    output_frame_header(s);
-    output_subframes(s);
-    output_frame_footer(s);
-    out_bytes = put_bits_count(&s->pb) >> 3;
+    out_bytes = write_frame(s, frame, buf_size);
 
+    /* fallback to verbatim mode if the compressed frame is larger than it
+       would be if encoded uncompressed. */
     if (out_bytes > s->max_framesize) {
-        if (reencoded) {
-            /* still too large. must be an error. */
-            av_log(avctx, AV_LOG_ERROR, "error encoding frame\n");
-            return -1;
-        }
-
-        /* frame too large. use verbatim mode */
         s->frame.verbatim_only = 1;
         encode_frame(s);
-        reencoded = 1;
-        goto write_frame;
+        out_bytes = write_frame(s, frame, buf_size);
     }
 
     s->frame_count++;
