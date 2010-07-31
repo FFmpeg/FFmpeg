@@ -77,6 +77,7 @@ typedef struct FlacFrame {
     int bs_code[2];
     uint8_t crc8;
     int ch_mode;
+    int verbatim_only;
 } FlacFrame;
 
 typedef struct FlacEncodeContext {
@@ -472,6 +473,8 @@ static void init_frame(FlacEncodeContext *s)
 
     for (ch = 0; ch < s->channels; ch++)
         frame->subframes[ch].obits = 16;
+
+    frame->verbatim_only = 0;
 }
 
 
@@ -819,7 +822,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
     }
 
     /* VERBATIM */
-    if (n < 5) {
+    if (frame->verbatim_only || n < 5) {
         sub->type = sub->type_code = FLAC_SUBFRAME_VERBATIM;
         encode_residual_verbatim(res, smp, n);
         return sub->obits * n;
@@ -982,36 +985,6 @@ static int encode_frame(FlacEncodeContext *s)
     count += 16;                    // CRC-16
 
     return count >> 3;
-}
-
-
-static int encode_residual_v(FlacEncodeContext *s, int ch)
-{
-    int i, n;
-    FlacFrame *frame;
-    FlacSubframe *sub;
-    int32_t *res, *smp;
-
-    frame = &s->frame;
-    sub   = &frame->subframes[ch];
-    res   = sub->residual;
-    smp   = sub->samples;
-    n     = frame->blocksize;
-
-    /* CONSTANT */
-    for (i = 1; i < n; i++)
-        if (smp[i] != smp[0])
-            break;
-    if (i == n) {
-        sub->type = sub->type_code = FLAC_SUBFRAME_CONSTANT;
-        res[0]    = smp[0];
-        return sub->obits;
-    }
-
-    /* VERBATIM */
-    sub->type = sub->type_code = FLAC_SUBFRAME_VERBATIM;
-    encode_residual_verbatim(res, smp, n);
-    return sub->obits * n;
 }
 
 
@@ -1236,7 +1209,6 @@ static void update_md5_sum(FlacEncodeContext *s, const int16_t *samples)
 static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
                              int buf_size, void *data)
 {
-    int ch;
     FlacEncodeContext *s;
     const int16_t *samples = data;
     int out_bytes;
@@ -1280,8 +1252,8 @@ write_frame:
         }
 
         /* frame too large. use verbatim mode */
-        for (ch = 0; ch < s->channels; ch++)
-            encode_residual_v(s, ch);
+        s->frame.verbatim_only = 1;
+        encode_frame(s);
         reencoded = 1;
         goto write_frame;
     }
