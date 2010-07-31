@@ -115,9 +115,9 @@ documentation: $(addprefix doc/, developer.html faq.html general.html libavfilte
 
 $(HTMLPAGES) $(MANPAGES): doc/fftools-common-opts.texi
 
-doc/ffmpeg.pod doc/ffmpeg-doc.html: doc/indevs.texi doc/filters.texi doc/outdevs.texi
-doc/ffplay.pod doc/ffplay-doc.html: doc/indevs.texi doc/filters.texi doc/outdevs.texi
-doc/ffprobe.pod doc/ffprobe-doc.html: doc/indevs.texi
+doc/ffmpeg.pod doc/ffmpeg-doc.html: doc/indevs.texi doc/filters.texi doc/outdevs.texi doc/protocols.texi
+doc/ffplay.pod doc/ffplay-doc.html: doc/indevs.texi doc/filters.texi doc/outdevs.texi doc/protocols.texi
+doc/ffprobe.pod doc/ffprobe-doc.html: doc/indevs.texi doc/protocols.texi
 
 doc/%.html: TAG = HTML
 doc/%.html: doc/%.texi

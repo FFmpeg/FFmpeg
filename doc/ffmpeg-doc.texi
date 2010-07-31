@@ -745,19 +745,6 @@ The following constants are available:
 
 @c man end
 
-@section Protocols
-
-The file name can be @file{-} to read from standard input or to write
-to standard output.
-
-FFmpeg also handles many protocols specified with an URL syntax.
-
-Use 'ffmpeg -protocols' to see a list of the supported protocols.
-
-The protocol @code{http:} is currently used only to communicate with
-FFserver (see the FFserver documentation). When FFmpeg will be a
-video player it will also be used for streaming :-)
-
 @chapter Tips
 @c man begin TIPS
 
@@ -966,6 +953,7 @@ file to which you want to add them.
 
 @include indevs.texi
 @include outdevs.texi
+@include protocols.texi
 @include filters.texi
 
 @ignore

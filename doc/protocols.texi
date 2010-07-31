@@ -1,0 +1,220 @@
+@chapter Protocols
+@c man begin PROTOCOLS
+
+Protocols are configured elements in FFmpeg which allow to access
+resources which require the use of a particular protocol.
+
+When you configure your FFmpeg build, all the supported protocols
+are enabled by default. You can list them using the configure option
+"--list-protocols".
+
+You can disable all the protocols using the configure option
+"--disable-protocols", and selectively enable a protocol using the
+option "--enable-protocol=@var{PROTOCOL}", or you can disable a
+particular protocol using the option
+"--disable-protocol=@var{PROTOCOL}".
+
+The option "-protocols" of the ff* tools will display the list of
+the supported protocols.
+
+A description of the currently available protocols follows.
+
+@section concat
+
+Physical concatenation protocol.
+
+Allow to read and seek from many resource in sequence as they were an
+unique resource.
+
+An url accepted by this protocol has the syntax:
+@example
+concat:@var{URL1}|@var{URL2}|...|@var{URLN}
+@end example
+
+where @var{URL1}, @var{URL2}, ..., @var{URLN} are the urls of the
+resource to be concatenated, each one possibly specifying a distinct
+protocol.
+
+For example to read a sequence of files @file{split1.mpeg},
+@file{split2.mpeg}, @file{split3.mpeg} with @file{ffplay} use the
+command:
+@example
+ffplay concat:split1.mpeg\|split2.mpeg\|split3.mpeg
+@end example
+
+Note that you may need to escape the character "|" which is special for
+many shells.
+
+@section file
+
+File access protocol.
+
+Allow to read from or read to a file.
+
+For example to read from a file @file{input.mpeg} with @file{ffmpeg}
+use the command:
+@example
+ffmpeg -i file:input.mpeg output.mpeg
+@end example
+
+Note that if not specified otherwise, the ff* tools will use the file
+protocol by default, that is a resource specified with the name
+"FILE.mpeg" is interpreted as it were the url "file:FILE.mpeg".
+
+@section gopher
+
+Gopher protocol.
+
+@section http
+
+HTTP (Hyper Text Trasfer Protocol).
+
+@section mmst
+
+MMS (Microsoft Media Server) protocol over TCP.
+
+@section md5
+
+MD5 output protocol.
+
+Computes the MD5 hash of data written, and on close writes this to the
+designated output or stdout if none is specified. It can be used to
+test muxers without writing an actual file.
+
+Some examples follow.
+@example
+# write the MD5 hash of the encoded AVI file in the file output.avi.md5
+ffmpeg -i input.flv -f avi -y md5:output.avi.md5
+
+# write the MD5 hash of the encoded AVI file to stdout
+ffmpeg -i input.flv -f avi -y md5:
+@end example
+
+Note that some formats (typically mov) require the output protocol to
+be seekable, so they will fail with the MD5 output protocol.
+
+@section pipe
+
+UNIX pipe access protocol.
+
+Allow to read and write from UNIX pipes.
+
+The accepted syntax is:
+@example
+pipe:[@var{number}]
+@end example
+
+@var{number} is the number corresponding to the file descriptor of the
+pipe (e.g. 0 for stdin, 1 for stdout, 2 for stderr).
+If @var{number} is not specified will use by default stdout if the
+protocol is used for writing, stdin if the protocol is used for
+reading.
+
+For example to read from stdin with @file{ffmpeg}:
+@example
+cat test.wav | ffmpeg -i pipe:0
+# this is the same as
+cat test.wav | ffmpeg -i pipe:
+@end example
+
+For writing to stdout with @file{ffmpeg}:
+@example
+ffmpeg -i test.wav -f avi pipe:1 | cat > test.avi
+# this is the same as
+ffmpeg -i test.wav -f avi pipe: | cat > test.avi
+@end example
+
+Note that some formats (typically mov), require the output protocol to
+be seekable, so they will fail with the pipe output protocol.
+
+@section rtmp
+
+Real-Time Messaging Protocol.
+
+The Real-Time Messaging Protocol (RTMP) is used for streaming multime‐
+dia content across a TCP/IP network.
+
+The required syntax is:
+@example
+rtmp://@var{server}[:@var{port}][/@var{app}][/@var{playpath}]
+@end example
+
+Follows the description of the accepted parameters.
+@table @option
+
+@item server
+It is the address of the RTMP server.
+
+@item port
+It is the number of the TCP port to use (by default is 1935).
+
+@item app
+It is the name of the application to acces. It usually corresponds to
+the the path where the application is installed on the RTMP server
+(e.g. @file{/ondemand/}, @file{/flash/live/}, etc.).
+
+@item playpath
+It is the path or name of the resource to play with reference to the
+application specified in @var{app}, may be prefixed by "mp4:".
+
+@end table
+
+For example to read with @file{ffplay} a multimedia resource named
+"sample" from the application "vod" from an RTMP server "myserver":
+@example
+ffplay rtmp://myserver/vod/sample
+@end example
+
+@section rtmp, rtmpe, rtmps, rtmpt, rtmpte
+
+Real-Time Messaging Protocol and its variants supported through
+librtmp.
+
+Require the presence of the headers and library of librtmp during
+configuration. You need to explicitely configure the build with
+"--enable-librtmp". If enabled this will replace the native RTMP
+protocol.
+
+This protocol provides most client functions and a few server
+functions needed to support RTMP, RTMP tunneled in HTTP (RTMPT),
+encrypted RTMP (RTMPE), RTMP over SSL/TLS (RTMPS) and tunneled
+variants of these encrypted types (RTMPTE, RTMPTS).
+
+The required syntax is:
+@example
+@var{rtmp_proto}://@var{server}[:@var{port}][/@var{app}][/@var{playpath}] @var{options}
+@end example
+
+where @var{rtmp_proto} is one of the strings "rtmp", "rtmpt", "rtmpe",
+"rtmps", "rtmpte", "rtmpts" corresponding to each RTMP variant, and
+@var{server}, @var{port}, @var{app} and @var{playpath} have the same
+meaning has specified for the RTMP native protocol.
+@var{options} contains a list of space-separated options of the form
+@var{key}=@var{val}.
+
+See the manual page of librtmp (man 3 librtmp) for more information.
+
+For example, to stream a file in real-time to an RTMP server using
+@file{ffmpeg}:
+@example
+ffmpeg -re -i myfile -f flv rtmp://myserver/live/mystream
+@end example
+
+To play the same stream using @file{ffplay}:
+@example
+ffplay "rtmp://myserver/live/mystream live=1"
+@end example
+
+@section rtp
+
+Real-Time Protocol.
+
+@section tcp
+
+Trasmission Control Protocol.
+
+@section udp
+
+User Datagram Protocol.
+
+@c man end PROTOCOLS

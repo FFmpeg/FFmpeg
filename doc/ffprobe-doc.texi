@@ -112,6 +112,7 @@ with name ``STREAM''.
 @end table
 @c man end
 
+@include protocols.texi
 @include indevs.texi
 
 @ignore
