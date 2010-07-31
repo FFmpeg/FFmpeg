@@ -106,6 +106,11 @@ mkdir -p "$outdir"
 $command > "$outfile" 2>$errfile
 err=$?
 
+if [ $err -gt 128 ]; then
+    sig=$(kill -l $err 2>/dev/null)
+    test "${sig}" = "${sig%[^A-Z]*}" || unset sig
+fi
+
 if test -e "$ref"; then
     case $cmp in
         diff)   diff -u -w "$ref" "$outfile"            >$cmpfile ;;
@@ -120,7 +125,7 @@ else
     err=1
 fi
 
-echo "${test}:${err}:$($base64 <$cmpfile):$($base64 <$errfile)" >$repfile
+echo "${test}:${sig:-$err}:$($base64 <$cmpfile):$($base64 <$errfile)" >$repfile
 
 test $err = 0 && rm -f $outfile $errfile $cmpfile $cleanfiles
 exit $err
