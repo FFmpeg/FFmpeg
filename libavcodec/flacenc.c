@@ -632,13 +632,6 @@ static uint32_t calc_rice_params_lpc(RiceContext *rc, int pmin, int pmax,
 }
 
 
-static void encode_residual_verbatim(int32_t *res, int32_t *smp, int n)
-{
-    assert(n > 0);
-    memcpy(res, smp, n * sizeof(int32_t));
-}
-
-
 static void encode_residual_fixed(int32_t *res, const int32_t *smp, int n,
                                   int order)
 {
@@ -824,7 +817,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
     /* VERBATIM */
     if (frame->verbatim_only || n < 5) {
         sub->type = sub->type_code = FLAC_SUBFRAME_VERBATIM;
-        encode_residual_verbatim(res, smp, n);
+        memcpy(res, smp, n * sizeof(int32_t));
         return sub->obits * n;
     }
 
