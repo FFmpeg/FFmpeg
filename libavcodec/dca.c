@@ -691,7 +691,7 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
     }
 
     /* Dynamic range coefficient */
-    if (s->dynrange)
+    if (!base_channel && s->dynrange)
         s->dynrange_coef = get_bits(&s->gb, 8);
 
     /* Side information CRC check word */
