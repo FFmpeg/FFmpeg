@@ -1354,6 +1354,81 @@ cglobal vp8_luma_dc_wht_mmx, 2,3
     movd    [%7+%9*2], m%4
 %endmacro
 
+; write 4 or 8 words in the mmx/xmm registers as 8 lines
+; 1 and 2 are the registers to write, this can be the same (for SSE2)
+; for pre-SSE4:
+; 3 is a general-purpose register that we will clobber
+; for SSE4:
+; 3 is a pointer to the destination's 5th line
+; 4 is a pointer to the destination's 4th line
+; 5/6 is -stride and +stride
+%macro WRITE_2x4W 6
+    movd             %3, %1
+    punpckhdq        %1, %1
+    mov       [%4+%5*4], %3w
+    shr              %3, 16
+    add              %4, %6
+    mov       [%4+%5*4], %3w
+
+    movd             %3, %1
+    add              %4, %5
+    mov       [%4+%5*2], %3w
+    shr              %3, 16
+    mov       [%4+%5  ], %3w
+
+    movd             %3, %2
+    punpckhdq        %2, %2
+    mov       [%4     ], %3w
+    shr              %3, 16
+    mov       [%4+%6  ], %3w
+
+    movd             %3, %2
+    add              %4, %6
+    mov       [%4+%6  ], %3w
+    shr              %3, 16
+    mov       [%4+%6*2], %3w
+    add              %4, %5
+%endmacro
+
+%macro WRITE_8W_SSE2 5
+    movd             %2, %1
+    psrldq           %1, 4
+    mov       [%3+%4*4], %2w
+    shr              %2, 16
+    add              %3, %5
+    mov       [%3+%4*4], %2w
+
+    movd             %2, %1
+    psrldq           %1, 4
+    add              %3, %4
+    mov       [%3+%4*2], %2w
+    shr              %2, 16
+    mov       [%3+%4  ], %2w
+
+    movd             %2, %1
+    psrldq           %1, 4
+    mov       [%3     ], %2w
+    shr              %2, 16
+    mov       [%3+%5  ], %2w
+
+    movd             %2, %1
+    add              %3, %5
+    mov       [%3+%5  ], %2w
+    shr              %2, 16
+    mov       [%3+%5*2], %2w
+%endmacro
+
+%macro WRITE_8W_SSE4 5
+    pextrw    [%3+%4*4], %1, 0
+    pextrw    [%2+%4*4], %1, 1
+    pextrw    [%3+%4*2], %1, 2
+    pextrw    [%3+%4  ], %1, 3
+    pextrw    [%3     ], %1, 4
+    pextrw    [%2     ], %1, 5
+    pextrw    [%2+%5  ], %1, 6
+    pextrw    [%2+%5*2], %1, 7
+%endmacro
+
 %macro SPLATB_REG_MMX 2-3
     movd           %1, %2
     punpcklbw      %1, %1
@@ -1381,10 +1456,6 @@ cglobal vp8_luma_dc_wht_mmx, 2,3
 
 %macro SIMPLE_LOOPFILTER 3
 cglobal vp8_%2_loop_filter_simple_%1, 3, %3
-%ifidn %2, h
-    mov            r5, rsp          ; backup stack pointer
-    and           rsp, ~(mmsize-1)  ; align stack
-%endif
 %if mmsize == 8 ; mmx/mmxext
     mov            r3, 2
 %endif
@@ -1400,7 +1471,6 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3
     neg            r1
 %ifidn %2, h
     lea            r0, [r0+4*r2-2]
-    sub           rsp, mmsize*2     ; (aligned) storage space for saving p1/q1
 %endif
 
 %if mmsize == 8 ; mmx / mmxext
@@ -1421,9 +1491,6 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3
     READ_16x4_INTERLEAVED 0, 1, 2, 3, 4, 5, 6, r0, r4, r1, r2, r3
 %endif
     TRANSPOSE4x4W         0, 1, 2, 3, 4
-
-    mova        [rsp], m0           ; store p1
-    mova [rsp+mmsize], m3           ; store q1
 %endif
 
     ; simple_limit
@@ -1494,17 +1561,21 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3
     mova         [r0], m4
     mova      [r0+r1], m6
 %else ; h
-    mova           m0, [rsp]        ; p1
-    SWAP            2, 4            ; p0
-    SWAP            1, 6            ; q0
-    mova           m3, [rsp+mmsize] ; q1
+    inc           r0
+    SBUTTERFLY    bw, 6, 4, 0
 
-    TRANSPOSE4x4B  0, 1, 2, 3, 4
 %if mmsize == 16 ; sse2
-    add            r3, r1           ; change from r4*8*stride to r0+8*stride
-    WRITE_4x4D 0, 1, 2, 3, r0, r4, r3, r1, r2, 16
+%ifidn %1, sse4
+    inc            r4
+%endif
+    WRITE_8W       m6, r4, r0, r1, r2
+    lea            r4, [r3+r1+1]
+%ifidn %1, sse4
+    inc            r3
+%endif
+    WRITE_8W       m4, r3, r4, r1, r2
 %else ; mmx/mmxext
-    WRITE_4x2D 0, 1, 2, 3, r0, r4, r1, r2
+    WRITE_2x4W     m6, m4, r4, r0, r1, r2
 %endif
 %endif
 
@@ -1513,20 +1584,12 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3
 %ifidn %2, v
     add            r0, 8            ; advance 8 cols = pixels
 %else ; h
-    lea            r0, [r0+r2*8]    ; advance 8 rows = lines
+    lea            r0, [r0+r2*8-1]  ; advance 8 rows = lines
 %endif
     dec            r3
     jg .next8px
-%ifidn %2, v
     REP_RET
-%else ; h
-    mov           rsp, r5           ; restore stack pointer
-    RET
-%endif
 %else ; sse2
-%ifidn %2, h
-    mov           rsp, r5           ; restore stack pointer
-%endif
     RET
 %endif
 %endmacro
@@ -1534,17 +1597,20 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3
 INIT_MMX
 %define SPLATB_REG SPLATB_REG_MMX
 SIMPLE_LOOPFILTER mmx,    v, 4
-SIMPLE_LOOPFILTER mmx,    h, 6
+SIMPLE_LOOPFILTER mmx,    h, 5
 %define SPLATB_REG SPLATB_REG_MMXEXT
 SIMPLE_LOOPFILTER mmxext, v, 4
-SIMPLE_LOOPFILTER mmxext, h, 6
+SIMPLE_LOOPFILTER mmxext, h, 5
 INIT_XMM
 %define SPLATB_REG SPLATB_REG_SSE2
+%define WRITE_8W   WRITE_8W_SSE2
 SIMPLE_LOOPFILTER sse2,   v, 3
-SIMPLE_LOOPFILTER sse2,   h, 6
+SIMPLE_LOOPFILTER sse2,   h, 5
 %define SPLATB_REG SPLATB_REG_SSSE3
 SIMPLE_LOOPFILTER ssse3,  v, 3
-SIMPLE_LOOPFILTER ssse3,  h, 6
+SIMPLE_LOOPFILTER ssse3,  h, 5
+%define WRITE_8W   WRITE_8W_SSE4
+SIMPLE_LOOPFILTER sse4,   h, 5
 
 ;-----------------------------------------------------------------------------
 ; void vp8_h/v_loop_filter<size>_inner_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
@@ -2074,81 +2140,6 @@ INNER_LOOPFILTER ssse3,  h, 6,  8, 13
 ; void vp8_h/v_loop_filter<size>_mbedge_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
 ;                                            int flimE, int flimI, int hev_thr);
 ;-----------------------------------------------------------------------------
-
-; write 4 or 8 words in the mmx/xmm registers as 8 lines
-; 1 and 2 are the registers to write, this can be the same (for SSE2)
-; for pre-SSE4:
-; 3 is a general-purpose register that we will clobber
-; for SSE4:
-; 3 is a pointer to the destination's 5th line
-; 4 is a pointer to the destination's 4th line
-; 5/6 is -stride and +stride
-%macro WRITE_2x4W 6
-    movd             %3, %1
-    punpckhdq        %1, %1
-    mov       [%4+%5*4], %3w
-    shr              %3, 16
-    add              %4, %6
-    mov       [%4+%5*4], %3w
-
-    movd             %3, %1
-    add              %4, %5
-    mov       [%4+%5*2], %3w
-    shr              %3, 16
-    mov       [%4+%5  ], %3w
-
-    movd             %3, %2
-    punpckhdq        %2, %2
-    mov       [%4     ], %3w
-    shr              %3, 16
-    mov       [%4+%6  ], %3w
-
-    movd             %3, %2
-    add              %4, %6
-    mov       [%4+%6  ], %3w
-    shr              %3, 16
-    mov       [%4+%6*2], %3w
-    add              %4, %5
-%endmacro
-
-%macro WRITE_8W_SSE2 5
-    movd             %2, %1
-    psrldq           %1, 4
-    mov       [%3+%4*4], %2w
-    shr              %2, 16
-    add              %3, %5
-    mov       [%3+%4*4], %2w
-
-    movd             %2, %1
-    psrldq           %1, 4
-    add              %3, %4
-    mov       [%3+%4*2], %2w
-    shr              %2, 16
-    mov       [%3+%4  ], %2w
-
-    movd             %2, %1
-    psrldq           %1, 4
-    mov       [%3     ], %2w
-    shr              %2, 16
-    mov       [%3+%5  ], %2w
-
-    movd             %2, %1
-    add              %3, %5
-    mov       [%3+%5  ], %2w
-    shr              %2, 16
-    mov       [%3+%5*2], %2w
-%endmacro
-
-%macro WRITE_8W_SSE4 5
-    pextrw    [%3+%4*4], %1, 0
-    pextrw    [%2+%4*4], %1, 1
-    pextrw    [%3+%4*2], %1, 2
-    pextrw    [%3+%4  ], %1, 3
-    pextrw    [%3     ], %1, 4
-    pextrw    [%2     ], %1, 5
-    pextrw    [%2+%5  ], %1, 6
-    pextrw    [%2+%5*2], %1, 7
-%endmacro
 
 %macro MBEDGE_LOOPFILTER 5
 %if %4 == 8 ; chroma
