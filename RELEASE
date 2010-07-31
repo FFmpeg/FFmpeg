@@ -93,3 +93,31 @@ Notable license related changes
 
 - remaining GPL parts in AC-3 decoder converted to LGPL
 - libswscale can now be compiled in LGPL mode
+
+
+
+* 0.6.1
+
+General notes
+-------------
+
+This point release includes some minor updates to make the 0.6 release series
+usable for users that need to retain the existing behavior as closely as
+possible. The changes follow below:
+
+General Bugfixes
+----------------
+
+Included are some general, minor bugfixes:
+
+- fix autodetection of E-AC-3 substream samples
+- performance fix for seekable http
+- Add missing VP80 fourcc code for the VP8 codec
+- smaller documentation fixes
+
+
+HE-AAC v2 backport
+------------------
+
+This release includes a backport of the AAC decoder from trunk. This
+enables proper playback of HE-AAC v2 media.
