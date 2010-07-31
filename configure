@@ -2121,9 +2121,18 @@ elif enabled arm; then
     case $cpu in
         armv*)
             cpuflags="-march=$cpu"
+            subarch=$(echo $cpu | sed 's/[^a-z0-9]//g')
         ;;
         *)
             cpuflags="-mcpu=$cpu"
+            case $cpu in
+                cortex-a*)                               subarch=armv7a  ;;
+                cortex-r*)                               subarch=armv7r  ;;
+                cortex-m*)                               subarch=armv7m  ;;
+                arm11*)                                  subarch=armv6   ;;
+                arm[79]*e*|arm9[24]6*|arm96*|arm102[26]) subarch=armv5te ;;
+                armv4*|arm7*|arm9[24]*)                  subarch=armv4   ;;
+            esac
         ;;
     esac
 
