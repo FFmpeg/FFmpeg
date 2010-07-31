@@ -791,7 +791,7 @@ static void encode_residual_lpc(int32_t *res, const int32_t *smp, int n,
 }
 
 
-static int encode_residual(FlacEncodeContext *s, int ch)
+static int encode_residual_ch(FlacEncodeContext *s, int ch)
 {
     int i, n;
     int min_order, max_order, opt_order, precision, omethod;
@@ -933,6 +933,55 @@ static int encode_residual(FlacEncodeContext *s, int ch)
 
     return calc_rice_params_lpc(&sub->rc, min_porder, max_porder, res, n,
                                 sub->order, sub->obits, precision);
+}
+
+
+static int count_frame_header(FlacEncodeContext *s)
+{
+    uint8_t tmp;
+    int count;
+
+    /*
+    <14> Sync code
+    <1>  Reserved
+    <1>  Blocking strategy
+    <4>  Block size in inter-channel samples
+    <4>  Sample rate
+    <4>  Channel assignment
+    <3>  Sample size in bits
+    <1>  Reserved
+    */
+    count = 32;
+
+    /* coded frame number */
+    PUT_UTF8(s->frame_count, tmp, count += 8;)
+
+    /* explicit block size */
+    count += FFMAX(0, s->frame.bs_code[0] - 5) * 8;
+
+    /* explicit sample rate */
+    count += ((s->sr_code[0] == 12) + (s->sr_code[0] > 12)) * 8;
+
+    /* frame header CRC-8 */
+    count += 8;
+
+    return count;
+}
+
+
+static int encode_frame(FlacEncodeContext *s)
+{
+    int ch, count;
+
+    count = count_frame_header(s);
+
+    for (ch = 0; ch < s->channels; ch++)
+        count += encode_residual_ch(s, ch);
+
+    count += (8 - (count & 7)) & 7; // byte alignment
+    count += 16;                    // CRC-16
+
+    return count >> 3;
 }
 
 
@@ -1214,8 +1263,7 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 
     channel_decorrelation(s);
 
-    for (ch = 0; ch < s->channels; ch++)
-        encode_residual(s, ch);
+    encode_frame(s);
 
 write_frame:
     init_put_bits(&s->pb, frame, buf_size);
