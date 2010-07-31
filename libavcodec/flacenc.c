@@ -606,27 +606,16 @@ static int get_max_p_order(int max_porder, int n, int order)
 }
 
 
-static uint32_t calc_rice_params_fixed(RiceContext *rc, int pmin, int pmax,
-                                       int32_t *data, int n, int pred_order,
-                                       int bps)
+static uint32_t find_subblock_rice_params(RiceContext *rc, int pmin, int pmax,
+                                          int32_t *data, int n, int pred_order,
+                                          int bps, int precision)
 {
     uint32_t bits;
     pmin  = get_max_p_order(pmin, n, pred_order);
     pmax  = get_max_p_order(pmax, n, pred_order);
     bits  = pred_order * bps + 6;
-    bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
-    return bits;
-}
-
-
-static uint32_t calc_rice_params_lpc(RiceContext *rc, int pmin, int pmax,
-                                     int32_t *data, int n, int pred_order,
-                                     int bps, int precision)
-{
-    uint32_t bits;
-    pmin  = get_max_p_order(pmin, n, pred_order);
-    pmax  = get_max_p_order(pmax, n, pred_order);
-    bits  = pred_order*bps + 4 + 5 + pred_order*precision + 6;
+    if (precision > 0)
+        bits += 4 + 5 + pred_order * precision;
     bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
     return bits;
 }
@@ -838,8 +827,9 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         bits[0]   = UINT32_MAX;
         for (i = min_order; i <= max_order; i++) {
             encode_residual_fixed(res, smp, n, i);
-            bits[i] = calc_rice_params_fixed(&sub->rc, min_porder, max_porder, res,
-                                             n, i, sub->obits);
+            bits[i] = find_subblock_rice_params(&sub->rc, min_porder,
+                                                max_porder, res, n, i,
+                                                sub->obits, 0);
             if (bits[i] < bits[opt_order])
                 opt_order = i;
         }
@@ -848,8 +838,8 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         sub->type_code = sub->type | sub->order;
         if (sub->order != max_order) {
             encode_residual_fixed(res, smp, n, sub->order);
-            return calc_rice_params_fixed(&sub->rc, min_porder, max_porder, res, n,
-                                          sub->order, sub->obits);
+            return find_subblock_rice_params(&sub->rc, min_porder, max_porder,
+                                             res, n, sub->order, sub->obits, 0);
         }
         return bits[sub->order];
     }
@@ -874,7 +864,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
             if (order < 0)
                 order = 0;
             encode_residual_lpc(res, smp, n, order+1, coefs[order], shift[order]);
-            bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+            bits[i] = find_subblock_rice_params(&sub->rc, min_porder, max_porder,
                                            res, n, order+1, sub->obits, precision);
             if (bits[i] < bits[opt_index]) {
                 opt_index = i;
@@ -889,7 +879,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         bits[0]   = UINT32_MAX;
         for (i = min_order-1; i < max_order; i++) {
             encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
-            bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+            bits[i] = find_subblock_rice_params(&sub->rc, min_porder, max_porder,
                                            res, n, i+1, sub->obits, precision);
             if (bits[i] < bits[opt_order])
                 opt_order = i;
@@ -908,7 +898,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
                 if (i < min_order-1 || i >= max_order || bits[i] < UINT32_MAX)
                     continue;
                 encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
-                bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+                bits[i] = find_subblock_rice_params(&sub->rc, min_porder, max_porder,
                                                res, n, i+1, sub->obits,
                                                precision);
                 if (bits[i] < bits[opt_order])
@@ -927,7 +917,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
 
     encode_residual_lpc(res, smp, n, sub->order, sub->coefs, sub->shift);
 
-    return calc_rice_params_lpc(&sub->rc, min_porder, max_porder, res, n,
+    return find_subblock_rice_params(&sub->rc, min_porder, max_porder, res, n,
                                 sub->order, sub->obits, precision);
 }
 
