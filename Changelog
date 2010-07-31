@@ -6,7 +6,7 @@ version 0.6.1:
 - fix autodetection of E-AC-3 substream samples
 - performance fix for seekable http
 - Backport AAC-HE v2 from trunk
-- Ad VP80 fourcc
+- Add missing VP80 fourcc code for the VP8 codec
 - smaller documentation fixes
 
 
