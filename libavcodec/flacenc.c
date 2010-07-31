@@ -1125,7 +1125,7 @@ static void write_utf8(PutBitContext *pb, uint32_t val)
 }
 
 
-static void output_frame_header(FlacEncodeContext *s)
+static void write_frame_header(FlacEncodeContext *s)
 {
     FlacFrame *frame;
     int crc;
@@ -1162,7 +1162,7 @@ static void output_frame_header(FlacEncodeContext *s)
 }
 
 
-static void output_subframes(FlacEncodeContext *s)
+static void write_subframes(FlacEncodeContext *s)
 {
     int ch;
 
@@ -1220,7 +1220,7 @@ static void output_subframes(FlacEncodeContext *s)
 }
 
 
-static void output_frame_footer(FlacEncodeContext *s)
+static void write_frame_footer(FlacEncodeContext *s)
 {
     int crc;
     flush_put_bits(&s->pb);
@@ -1234,9 +1234,9 @@ static void output_frame_footer(FlacEncodeContext *s)
 static int write_frame(FlacEncodeContext *s, uint8_t *frame, int buf_size)
 {
     init_put_bits(&s->pb, frame, buf_size);
-    output_frame_header(s);
-    output_subframes(s);
-    output_frame_footer(s);
+    write_frame_header(s);
+    write_subframes(s);
+    write_frame_footer(s);
     return put_bits_count(&s->pb) >> 3;
 }
 
