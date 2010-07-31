@@ -493,6 +493,67 @@ static void copy_samples(FlacEncodeContext *s, const int16_t *samples)
 }
 
 
+static int rice_count_exact(int32_t *res, int n, int k)
+{
+    int i;
+    int count = 0;
+
+    for (i = 0; i < n; i++) {
+        int32_t v = -2 * res[i] - 1;
+        v ^= v >> 31;
+        count += (v >> k) + 1 + k;
+    }
+    return count;
+}
+
+
+static int subframe_count_exact(FlacEncodeContext *s, FlacSubframe *sub,
+                                int pred_order)
+{
+    int p, porder, psize;
+    int i, part_end;
+    int count = 0;
+
+    /* subframe header */
+    count += 8;
+
+    /* subframe */
+    if (sub->type == FLAC_SUBFRAME_CONSTANT) {
+        count += sub->obits;
+    } else if (sub->type == FLAC_SUBFRAME_VERBATIM) {
+        count += s->frame.blocksize * sub->obits;
+    } else {
+        /* warm-up samples */
+        count += pred_order * sub->obits;
+
+        /* LPC coefficients */
+        if (sub->type == FLAC_SUBFRAME_LPC)
+            count += 4 + 5 + pred_order * s->options.lpc_coeff_precision;
+
+        /* rice-encoded block */
+        count += 2;
+
+        /* partition order */
+        porder = sub->rc.porder;
+        psize  = s->frame.blocksize >> porder;
+        count += 4;
+
+        /* residual */
+        i        = pred_order;
+        part_end = psize;
+        for (p = 0; p < 1 << porder; p++) {
+            int k = sub->rc.params[p];
+            count += 4;
+            count += rice_count_exact(&sub->residual[i], part_end - i, k);
+            i = part_end;
+            part_end = FFMIN(s->frame.blocksize, part_end + psize);
+        }
+    }
+
+    return count;
+}
+
+
 #define rice_encode_count(sum, n, k) (((n)*((k)+1))+((sum-(n>>1))>>(k)))
 
 /**
@@ -801,14 +862,14 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
     if (i == n) {
         sub->type = sub->type_code = FLAC_SUBFRAME_CONSTANT;
         res[0] = smp[0];
-        return sub->obits;
+        return subframe_count_exact(s, sub, 0);
     }
 
     /* VERBATIM */
     if (frame->verbatim_only || n < 5) {
         sub->type = sub->type_code = FLAC_SUBFRAME_VERBATIM;
         memcpy(res, smp, n * sizeof(int32_t));
-        return sub->obits * n;
+        return subframe_count_exact(s, sub, 0);
     }
 
     min_order  = s->options.min_prediction_order;
@@ -834,9 +895,9 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         sub->type_code = sub->type | sub->order;
         if (sub->order != max_order) {
             encode_residual_fixed(res, smp, n, sub->order);
-            return find_subframe_rice_params(s, sub, sub->order);
+            find_subframe_rice_params(s, sub, sub->order);
         }
-        return bits[sub->order];
+        return subframe_count_exact(s, sub, sub->order);
     }
 
     /* LPC */
@@ -908,7 +969,9 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
 
     encode_residual_lpc(res, smp, n, sub->order, sub->coefs, sub->shift);
 
-    return find_subframe_rice_params(s, sub, sub->order);
+    find_subframe_rice_params(s, sub, sub->order);
+
+    return subframe_count_exact(s, sub, sub->order);
 }
 
 
@@ -1197,14 +1260,9 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 {
     FlacEncodeContext *s;
     const int16_t *samples = data;
-    int out_bytes;
+    int frame_bytes, out_bytes;
 
     s = avctx->priv_data;
-
-    if (buf_size < s->max_framesize * 2) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
-        return 0;
-    }
 
     /* when the last block is reached, update the header in extradata */
     if (!data) {
@@ -1220,15 +1278,22 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 
     channel_decorrelation(s);
 
-    encode_frame(s);
-
+    frame_bytes = encode_frame(s);
+    if (buf_size < frame_bytes) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
+        return 0;
+    }
     out_bytes = write_frame(s, frame, buf_size);
 
     /* fallback to verbatim mode if the compressed frame is larger than it
        would be if encoded uncompressed. */
     if (out_bytes > s->max_framesize) {
         s->frame.verbatim_only = 1;
-        encode_frame(s);
+        frame_bytes = encode_frame(s);
+        if (buf_size < frame_bytes) {
+            av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
+            return 0;
+        }
         out_bytes = write_frame(s, frame, buf_size);
     }
 
