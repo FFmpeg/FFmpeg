@@ -1272,6 +1272,12 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
         return 0;
     }
 
+    /* change max_framesize for small final frame */
+    if (avctx->frame_size < s->frame.blocksize) {
+        s->max_framesize = ff_flac_get_max_frame_size(avctx->frame_size,
+                                                      s->channels, 16);
+    }
+
     init_frame(s);
 
     copy_samples(s, samples);
