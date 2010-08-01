@@ -39,8 +39,8 @@ do_lavfi_pixfmts(){
     filter_args=$2
 
     showfiltfmts="$target_exec $target_path/tools/lavfi-showfiltfmts"
-    exclude_fmts=${outfile}exclude_fmts
-    out_fmts=${outfile}out_fmts
+    exclude_fmts=${outfile}${1}_exclude_fmts
+    out_fmts=${outfile}${1}_out_fmts
 
     # exclude pixel formats which are not supported as input
     $ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2 | sort >$exclude_fmts
