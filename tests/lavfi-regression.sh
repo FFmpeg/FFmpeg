@@ -33,16 +33,11 @@ do_lavfi "vflip"              "vflip"
 do_lavfi "vflip_crop"         "vflip,crop=100:100"
 do_lavfi "vflip_vflip"        "vflip,vflip"
 
-# all these filters have exactly one input and exactly one output
-filters_args="
-crop=100:100:100:100
-null
-pad=500:400:20:20
-scale=200:100
-vflip
-"
+do_lavfi_pixfmts(){
+    test ${test%_[bl]e} = pixfmts_$1 || return 0
+    filter=$1
+    filter_args=$2
 
-if [ -n "$do_pixfmts_be" ] || [ -n "$do_pixfmts_le" ]; then
     showfiltfmts="$target_exec $target_path/tools/lavfi-showfiltfmts"
     exclude_fmts=${outfile}exclude_fmts
     out_fmts=${outfile}out_fmts
@@ -51,20 +46,23 @@ if [ -n "$do_pixfmts_be" ] || [ -n "$do_pixfmts_le" ]; then
     $ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2 | sort >$exclude_fmts
     $showfiltfmts scale | awk '/^OUTPUT/{ print $3 }' | sort | comm -23 - $exclude_fmts >$out_fmts
 
-    for filter_args in $filters_args; do
-        filter=${filter_args%=*}
         pix_fmts=$($showfiltfmts $filter | awk '/^INPUT/{ print $3 }' | sort | comm -12 - $out_fmts)
-
         for pix_fmt in $pix_fmts; do
-            output=pixfmts-${filter}-${pix_fmt}.nut
+            output=${test}-${pix_fmt}.nut
             do_video_encoding $output "" \
-                "-vf slicify=random,format=$pix_fmt,$filter_args -vcodec rawvideo -pix_fmt $pix_fmt"
+                "-vf slicify=random,format=$pix_fmt,$filter=$filter_args -vcodec rawvideo -pix_fmt $pix_fmt"
             rm ${outfile}${output}
         done
-    done
 
     rm $exclude_fmts $out_fmts
-fi
+}
+
+# all these filters have exactly one input and exactly one output
+do_lavfi_pixfmts "crop"    "100:100:100:100"
+do_lavfi_pixfmts "null"    ""
+do_lavfi_pixfmts "pad"     "500:400:20:20"
+do_lavfi_pixfmts "scale"   "200:100"
+do_lavfi_pixfmts "vflip"   ""
 
 if [ -n "$do_pixdesc_be" ] || [ -n "$do_pixdesc_le" ]; then
     pix_fmts="$($ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^IO' | cut -d' ' -f2)"
