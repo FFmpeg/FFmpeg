@@ -67,7 +67,7 @@ vflip
 
 if [ -n "$do_pixfmts_be" ] || [ -n "$do_pixfmts_le" ]; then
     # exclude pixel formats which are not supported as input
-    excluded_pix_fmts="$(ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2)"
+    excluded_pix_fmts="$($ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2)"
 
     scale_out_pix_fmts=$(tools/lavfi-showfiltfmts scale | grep "^OUTPUT" | cut -d: -f2)
     scale_out_pix_fmts=$(get_exclusive_elements "$scale_out_pix_fmts" "$excluded_pix_fmts")
