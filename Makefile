@@ -226,6 +226,9 @@ tests/data/asynth1.sw tests/vsynth%/00.pgm: TAG = GEN
 tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
+tools/lavfi-showfiltfmts$(EXESUF): tools/lavfi-showfiltfmts.o $(FF_DEP_LIBS)
+	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
+
 include $(SRC_PATH_BARE)/tests/fate.mak
 include $(SRC_PATH_BARE)/tests/fate2.mak
 
@@ -248,7 +251,7 @@ FATE = $(FATE_ACODEC)                                                   \
 $(FATE_ACODEC): $(AREF)
 $(FATE_VCODEC): $(VREF)
 $(FATE_LAVF):   $(REFS)
-$(FATE_LAVFI):  $(REFS)
+$(FATE_LAVFI):  $(REFS) tools/lavfi-showfiltfmts$(EXESUF)
 $(FATE_SEEK):   fate-codec fate-lavf tests/seek_test$(EXESUF)
 
 $(FATE_ACODEC):  CMD = codectest acodec
