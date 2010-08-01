@@ -65,7 +65,7 @@ scale=200:100
 vflip
 "
 
-if [ -n "$do_pixfmts" ]; then
+if [ -n "$do_pixfmts_be" ] || [ -n "$do_pixfmts_le" ]; then
     # exclude pixel formats which are not supported as input
     excluded_pix_fmts="$(ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2)"
 
