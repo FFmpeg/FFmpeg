@@ -14,29 +14,6 @@ eval do_$test=y
 rm -f "$logfile"
 rm -f "$benchfile"
 
-get_common_elements() (
-    for elt1 in $1; do
-        for elt2 in $2; do
-            [ $elt1 = $elt2 ] && res="$res $elt1 "
-        done
-    done
-
-    echo $res
-)
-
-# Returns the elements present in $1 but not in $2.
-get_exclusive_elements() (
-    for elt1 in $1; do
-        common=""
-        for elt2 in $2; do
-            [ $elt1 = $elt2 ] && common="true" && break;
-        done
-        [ -z "$common" ] && res="$res $elt1"
-    done
-
-    echo $res
-)
-
 do_lavfi() {
     vfilters="slicify=random,$2"
 
@@ -67,16 +44,16 @@ vflip
 
 if [ -n "$do_pixfmts_be" ] || [ -n "$do_pixfmts_le" ]; then
     showfiltfmts="$target_exec $target_path/tools/lavfi-showfiltfmts"
-    # exclude pixel formats which are not supported as input
-    excluded_pix_fmts="$($ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2)"
+    exclude_fmts=${outfile}exclude_fmts
+    out_fmts=${outfile}out_fmts
 
-    scale_out_pix_fmts=$($showfiltfmts scale | grep "^OUTPUT" | cut -d: -f2)
-    scale_out_pix_fmts=$(get_exclusive_elements "$scale_out_pix_fmts" "$excluded_pix_fmts")
+    # exclude pixel formats which are not supported as input
+    $ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2 | sort >$exclude_fmts
+    $showfiltfmts scale | awk '/^OUTPUT/{ print $3 }' | sort | comm -23 - $exclude_fmts >$out_fmts
 
     for filter_args in $filters_args; do
-        filter=$(echo $filter_args | sed -e 's/\([^=]\+\)=.*/\1/')
-        in_pix_fmts=$($showfiltfmts $filter | grep "^INPUT" | cut -d: -f2)
-        pix_fmts=$(get_common_elements "$in_pix_fmts" "$scale_out_pix_fmts")
+        filter=${filter_args%=*}
+        pix_fmts=$($showfiltfmts $filter | awk '/^INPUT/{ print $3 }' | sort | comm -12 - $out_fmts)
 
         for pix_fmt in $pix_fmts; do
             output=pixfmts-${filter}-${pix_fmt}.nut
@@ -85,6 +62,8 @@ if [ -n "$do_pixfmts_be" ] || [ -n "$do_pixfmts_le" ]; then
             rm ${outfile}${output}
         done
     done
+
+    rm $exclude_fmts $out_fmts
 fi
 
 if [ -n "$do_pixdesc_be" ] || [ -n "$do_pixdesc_le" ]; then
