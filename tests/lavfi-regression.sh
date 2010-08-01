@@ -78,7 +78,7 @@ if [ -n "$do_pixfmts_be" ] || [ -n "$do_pixfmts_le" ]; then
         pix_fmts=$(get_common_elements "$in_pix_fmts" "$scale_out_pix_fmts")
 
         for pix_fmt in $pix_fmts; do
-            output=${pix_fmt}-${filter}.nut
+            output=pixfmts-${filter}-${pix_fmt}.nut
             do_video_encoding $output "" \
                 "-vf slicify=random,format=$pix_fmt,$filter_args -vcodec rawvideo -pix_fmt $pix_fmt"
         done
