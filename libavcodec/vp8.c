@@ -822,11 +822,11 @@ static int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
 
 skip_eob:
         if (!vp56_rac_get_prob_branchy(c, token_prob[1])) { // DCT_0
+            if (++i == 16)
+                return nonzero; // invalid input; blocks should end with EOB
             zero_nhood = 0;
-            token_prob = probs[vp8_coeff_band[++i]][0];
-            if (i < 16)
-                goto skip_eob;
-            return nonzero; // invalid input; blocks should end with EOB
+            token_prob = probs[vp8_coeff_band[i]][0];
+            goto skip_eob;
         }
 
         if (!vp56_rac_get_prob_branchy(c, token_prob[2])) { // DCT_1
