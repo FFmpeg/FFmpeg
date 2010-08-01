@@ -76,21 +76,19 @@ int main(int argc, char **argv)
     /* print the supported formats in input */
     for (i = 0; i < filter_ctx->input_count; i++) {
         AVFilterFormats *fmts = filter_ctx->inputs[i]->out_formats;
-
-        printf("INPUT[%d] %s: ", i, filter_ctx->filter->inputs[i].name);
         for (j = 0; j < fmts->format_count; j++)
-            printf("%s ", av_pix_fmt_descriptors[fmts->formats[j]].name);
-        printf("\n");
+            printf("INPUT[%d] %s: %s\n",
+                   i, filter_ctx->filter->inputs[i].name,
+                   av_pix_fmt_descriptors[fmts->formats[j]].name);
     }
 
     /* print the supported formats in output */
     for (i = 0; i < filter_ctx->output_count; i++) {
         AVFilterFormats *fmts = filter_ctx->outputs[i]->in_formats;
-
-        printf("OUTPUT[%d] %s: ", i, filter_ctx->filter->outputs[i].name);
         for (j = 0; j < fmts->format_count; j++)
-            printf("%s ", av_pix_fmt_descriptors[fmts->formats[j]].name);
-        printf("\n");
+            printf("OUTPUT[%d] %s: %s\n",
+                   i, filter_ctx->filter->outputs[i].name,
+                   av_pix_fmt_descriptors[fmts->formats[j]].name);
     }
 
     fflush(stdout);
