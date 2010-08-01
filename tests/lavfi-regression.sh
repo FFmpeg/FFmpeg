@@ -82,6 +82,7 @@ if [ -n "$do_pixfmts_be" ] || [ -n "$do_pixfmts_le" ]; then
             output=pixfmts-${filter}-${pix_fmt}.nut
             do_video_encoding $output "" \
                 "-vf slicify=random,format=$pix_fmt,$filter_args -vcodec rawvideo -pix_fmt $pix_fmt"
+            rm ${outfile}${output}
         done
     done
 fi
