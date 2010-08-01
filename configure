@@ -1408,6 +1408,11 @@ test_deps(){
     done
 }
 
+set_ne_test_deps(){
+    eval ${1}_be_test_deps="bigendian"
+    eval ${1}_le_test_deps="!bigendian"
+}
+
 test_deps _encoder _decoder                                             \
     ac3                                                                 \
     adpcm_g726=g726                                                     \
@@ -1482,8 +1487,8 @@ test_deps _muxer _demuxer                                               \
     yuv4mpegpipe=yuv4mpeg                                               \
 
 mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
-pixdesc_be_test_deps="bigendian"
-pixdesc_le_test_deps="!bigendian"
+
+set_ne_test_deps pixdesc
 
 # default parameters
 
