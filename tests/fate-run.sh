@@ -25,7 +25,7 @@ do_tiny_psnr(){
     val=$(expr "$psnr" : ".*$3: *\([0-9.]*\)")
     size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
     size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
-    res=$(echo "$val $4 $5" | bc)
+    res=$(echo "if ($val $4 $5) 1" | bc)
     if [ "$res" != 1 ] || [ $size1 != $size2 ]; then
         echo "$psnr"
         return 1
