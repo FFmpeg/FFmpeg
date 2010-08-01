@@ -108,7 +108,7 @@ err=$?
 
 if [ $err -gt 128 ]; then
     sig=$(kill -l $err 2>/dev/null)
-    test "${sig}" = "${sig%[^A-Z]*}" || unset sig
+    test "${sig}" = "${sig%[!A-Za-z]*}" || unset sig
 fi
 
 if test -e "$ref"; then
