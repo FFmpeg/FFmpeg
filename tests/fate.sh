@@ -11,6 +11,7 @@ test -r "$config"  || die "usage: fate.sh <config>"
 
 workdir=$(dirname $config)
 make=make
+tar='tar c'
 
 . "$config"
 
@@ -77,7 +78,7 @@ report(){
     date=$(date -u +%Y%m%d%H%M%S)
     echo "fate:0:${date}:${slot}:${version}:$1:$2" >report
     cat ${build}/config.fate ${build}/tests/data/fate/*.rep >>report
-    test -n "$fate_recv" && tar cz report *.log | $fate_recv
+    test -n "$fate_recv" && $tar report *.log | gzip | $fate_recv
 }
 
 fail(){
