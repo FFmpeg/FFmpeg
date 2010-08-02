@@ -46,6 +46,10 @@ static void vp8_luma_dc_wht_c(DCTELEM block[4][4][16], DCTELEM dc[16])
         t1 = dc[i*4+1] + dc[i*4+2];
         t2 = dc[i*4+1] - dc[i*4+2];
         t3 = dc[i*4+0] - dc[i*4+3] + 3; // rounding
+        dc[i*4+0] = 0;
+        dc[i*4+1] = 0;
+        dc[i*4+2] = 0;
+        dc[i*4+3] = 0;
 
         *block[i][0] = (t0 + t1) >> 3;
         *block[i][1] = (t3 + t2) >> 3;

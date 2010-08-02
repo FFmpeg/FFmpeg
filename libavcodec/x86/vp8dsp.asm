@@ -1186,12 +1186,23 @@ VP8_IDCT_ADD sse
     SWAP %1, %4, %3
 %endmacro
 
-INIT_MMX
-cglobal vp8_luma_dc_wht_mmx, 2,3
+%macro VP8_DC_WHT 1
+cglobal vp8_luma_dc_wht_%1, 2,3
     movq          m0, [r1]
     movq          m1, [r1+8]
     movq          m2, [r1+16]
     movq          m3, [r1+24]
+%ifidn %1, sse
+    xorps      xmm0, xmm0
+    movaps  [r1+ 0], xmm0
+    movaps  [r1+16], xmm0
+%else
+    pxor         m4, m4
+    movq    [r1+ 0], m4
+    movq    [r1+ 8], m4
+    movq    [r1+16], m4
+    movq    [r1+24], m4
+%endif
     HADAMARD4_1D  0, 1, 2, 3
     TRANSPOSE4x4W 0, 1, 2, 3, 4
     paddw         m0, [pw_3]
@@ -1203,6 +1214,11 @@ cglobal vp8_luma_dc_wht_mmx, 2,3
     SCATTER_WHT   0, 1, 0
     SCATTER_WHT   2, 3, 2
     RET
+%endmacro
+
+INIT_MMX
+VP8_DC_WHT mmx
+VP8_DC_WHT sse
 
 ;-----------------------------------------------------------------------------
 ; void vp8_h/v_loop_filter_simple_<opt>(uint8_t *dst, int stride, int flim);

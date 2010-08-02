@@ -117,6 +117,7 @@ typedef struct {
      */
     DECLARE_ALIGNED(16, uint8_t, non_zero_count_cache)[6][4];
     DECLARE_ALIGNED(16, DCTELEM, block)[6][4][16];
+    DECLARE_ALIGNED(16, DCTELEM, block_dc)[16];
     uint8_t intra4x4_pred_mode_mb[16];
 
     int chroma_pred_mode;    ///< 8x8c pred mode of the current macroblock
@@ -864,22 +865,19 @@ static av_always_inline
 void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
                       uint8_t t_nnz[9], uint8_t l_nnz[9])
 {
-    LOCAL_ALIGNED_16(DCTELEM, dc,[16]);
     int i, x, y, luma_start = 0, luma_ctx = 3;
     int nnz_pred, nnz, nnz_total = 0;
     int segment = s->segment;
 
     if (mb->mode != MODE_I4x4 && mb->mode != VP8_MVMODE_SPLIT) {
-        AV_ZERO128(dc);
-        AV_ZERO128(dc+8);
         nnz_pred = t_nnz[8] + l_nnz[8];
 
         // decode DC values and do hadamard
-        nnz = decode_block_coeffs(c, dc, s->prob->token[1], 0, nnz_pred,
+        nnz = decode_block_coeffs(c, s->block_dc, s->prob->token[1], 0, nnz_pred,
                                   s->qmat[segment].luma_dc_qmul);
         l_nnz[8] = t_nnz[8] = !!nnz;
         nnz_total += nnz;
-        s->vp8dsp.vp8_luma_dc_wht(s->block, dc);
+        s->vp8dsp.vp8_luma_dc_wht(s->block, s->block_dc);
         luma_start = 1;
         luma_ctx = 0;
     }
