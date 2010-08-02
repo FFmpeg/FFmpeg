@@ -65,7 +65,7 @@ do_lavfi_pixfmts "scale"   "200:100"
 do_lavfi_pixfmts "vflip"   ""
 
 if [ -n "$do_pixdesc_be" ] || [ -n "$do_pixdesc_le" ]; then
-    pix_fmts="$($ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^IO' | cut -d' ' -f2)"
+    pix_fmts="$($ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^IO' | cut -d' ' -f2 | sort)"
     for pix_fmt in $pix_fmts; do
         output=lavfi_pixdesc-${pix_fmt}.nut
         do_video_encoding $output "" \
