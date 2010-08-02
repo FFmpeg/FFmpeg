@@ -2797,6 +2797,7 @@ enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 # add some useful compiler flags if supported
 check_cflags -Wdeclaration-after-statement
 check_cflags -Wall
+check_cflags -Wno-parentheses
 check_cflags -Wno-switch
 check_cflags -Wdisabled-optimization
 check_cflags -Wpointer-arith
