@@ -868,6 +868,7 @@ void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
     int i, x, y, luma_start = 0, luma_ctx = 3;
     int nnz_pred, nnz, nnz_total = 0;
     int segment = s->segment;
+    int block_dc = 0;
 
     if (mb->mode != MODE_I4x4 && mb->mode != VP8_MVMODE_SPLIT) {
         nnz_pred = t_nnz[8] + l_nnz[8];
@@ -876,8 +877,14 @@ void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
         nnz = decode_block_coeffs(c, s->block_dc, s->prob->token[1], 0, nnz_pred,
                                   s->qmat[segment].luma_dc_qmul);
         l_nnz[8] = t_nnz[8] = !!nnz;
-        nnz_total += nnz;
-        s->vp8dsp.vp8_luma_dc_wht(s->block, s->block_dc);
+        if (nnz) {
+            nnz_total += nnz;
+            block_dc = 1;
+            if (nnz == 1)
+                s->vp8dsp.vp8_luma_dc_wht_dc(s->block, s->block_dc);
+            else
+                s->vp8dsp.vp8_luma_dc_wht(s->block, s->block_dc);
+        }
         luma_start = 1;
         luma_ctx = 0;
     }
@@ -888,8 +895,8 @@ void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
             nnz_pred = l_nnz[y] + t_nnz[x];
             nnz = decode_block_coeffs(c, s->block[y][x], s->prob->token[luma_ctx], luma_start,
                                       nnz_pred, s->qmat[segment].luma_qmul);
-            // nnz+luma_start may be one more than the actual last index, but we don't care
-            s->non_zero_count_cache[y][x] = nnz + luma_start;
+            // nnz+block_dc may be one more than the actual last index, but we don't care
+            s->non_zero_count_cache[y][x] = nnz + block_dc;
             t_nnz[x] = l_nnz[y] = !!nnz;
             nnz_total += nnz;
         }
