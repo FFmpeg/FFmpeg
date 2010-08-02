@@ -44,9 +44,9 @@ do_lavfi_pixfmts(){
 
     # exclude pixel formats which are not supported as input
     $ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2 | sort >$exclude_fmts
-    $showfiltfmts scale | awk '/^OUTPUT/{ print $3 }' | sort | comm -23 - $exclude_fmts >$out_fmts
+    $showfiltfmts scale | awk -F '[ \r]' '/^OUTPUT/{ print $3 }' | sort | comm -23 - $exclude_fmts >$out_fmts
 
-    pix_fmts=$($showfiltfmts $filter | awk '/^INPUT/{ print $3 }' | sort | comm -12 - $out_fmts)
+    pix_fmts=$($showfiltfmts $filter | awk -F '[ \r]' '/^INPUT/{ print $3 }' | sort | comm -12 - $out_fmts)
     for pix_fmt in $pix_fmts; do
         output=${test}-${pix_fmt}.nut
         do_video_encoding $output "" \
