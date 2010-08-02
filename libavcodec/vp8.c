@@ -810,13 +810,11 @@ static int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
                                uint8_t probs[8][3][NUM_DCT_TOKENS-1],
                                int i, int zero_nhood, int16_t qmul[2])
 {
-    uint8_t *token_prob;
+    uint8_t *token_prob = probs[vp8_coeff_band[i]][zero_nhood];
     int nonzero = 0;
     int coeff;
 
     do {
-        token_prob = probs[vp8_coeff_band[i]][zero_nhood];
-
         if (!vp56_rac_get_prob_branchy(c, token_prob[0]))   // DCT_EOB
             return nonzero;
 
@@ -824,17 +822,14 @@ skip_eob:
         if (!vp56_rac_get_prob_branchy(c, token_prob[1])) { // DCT_0
             if (++i == 16)
                 return nonzero; // invalid input; blocks should end with EOB
-            zero_nhood = 0;
             token_prob = probs[vp8_coeff_band[i]][0];
             goto skip_eob;
         }
 
         if (!vp56_rac_get_prob_branchy(c, token_prob[2])) { // DCT_1
             coeff = 1;
-            zero_nhood = 1;
+            token_prob = probs[vp8_coeff_band[i+1]][1];
         } else {
-            zero_nhood = 2;
-
             if (!vp56_rac_get_prob_branchy(c, token_prob[3])) { // DCT 2,3,4
                 coeff = vp56_rac_get_prob(c, token_prob[4]);
                 if (coeff)
@@ -858,6 +853,7 @@ skip_eob:
                     coeff += vp8_rac_get_coeff(c, vp8_dct_cat_prob[cat]);
                 }
             }
+            token_prob = probs[vp8_coeff_band[i+1]][2];
         }
 
         // todo: full [16] qmat? load into register?
