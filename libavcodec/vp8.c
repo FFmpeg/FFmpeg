@@ -88,8 +88,8 @@ typedef struct {
     VP8FilterStrength *filter_strength;
     int mb_stride;
 
-    uint8_t *intra4x4_pred_mode;
-    uint8_t *intra4x4_pred_mode_base;
+    uint8_t *intra4x4_pred_mode_top;
+    uint8_t intra4x4_pred_mode_left[4];
     uint8_t *segmentation_map;
     int b4_stride;
 
@@ -211,20 +211,17 @@ static void vp8_decode_flush(AVCodecContext *avctx)
 
     av_freep(&s->macroblocks_base);
     av_freep(&s->filter_strength);
-    av_freep(&s->intra4x4_pred_mode_base);
+    av_freep(&s->intra4x4_pred_mode_top);
     av_freep(&s->top_nnz);
     av_freep(&s->edge_emu_buffer);
     av_freep(&s->top_border);
     av_freep(&s->segmentation_map);
 
     s->macroblocks        = NULL;
-    s->intra4x4_pred_mode = NULL;
 }
 
 static int update_dimensions(VP8Context *s, int width, int height)
 {
-    int i;
-
     if (avcodec_check_dimensions(s->avctx, width, height))
         return AVERROR_INVALIDDATA;
 
@@ -242,21 +239,16 @@ static int update_dimensions(VP8Context *s, int width, int height)
 
     s->macroblocks_base        = av_mallocz((s->mb_stride+s->mb_height*2+2)*sizeof(*s->macroblocks));
     s->filter_strength         = av_mallocz(s->mb_stride*sizeof(*s->filter_strength));
-    s->intra4x4_pred_mode_base = av_mallocz(s->b4_stride*(4*s->mb_height+1));
+    s->intra4x4_pred_mode_top  = av_mallocz(s->b4_stride*4);
     s->top_nnz                 = av_mallocz(s->mb_width*sizeof(*s->top_nnz));
     s->top_border              = av_mallocz((s->mb_width+1)*sizeof(*s->top_border));
     s->segmentation_map        = av_mallocz(s->mb_stride*s->mb_height);
 
-    if (!s->macroblocks_base || !s->filter_strength || !s->intra4x4_pred_mode_base ||
+    if (!s->macroblocks_base || !s->filter_strength || !s->intra4x4_pred_mode_top ||
         !s->top_nnz || !s->top_border || !s->segmentation_map)
         return AVERROR(ENOMEM);
 
     s->macroblocks        = s->macroblocks_base + 1;
-    s->intra4x4_pred_mode = s->intra4x4_pred_mode_base + 4 + s->b4_stride;
-
-    memset(s->intra4x4_pred_mode_base, DC_PRED, s->b4_stride);
-    for (i = 0; i < 4*s->mb_height; i++)
-        s->intra4x4_pred_mode[i*s->b4_stride-1] = DC_PRED;
 
     return 0;
 }
@@ -693,31 +685,32 @@ int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb)
 }
 
 static av_always_inline
-void decode_intra4x4_modes(VP56RangeCoder *c, uint8_t *intra4x4,
-                           int stride, int keyframe)
+void decode_intra4x4_modes(VP8Context *s, VP56RangeCoder *c,
+                           int mb_x, int keyframe)
 {
-    int x, y, t, l, i;
-
+    uint8_t *intra4x4 = s->intra4x4_pred_mode_mb;
     if (keyframe) {
-        const uint8_t *ctx;
+        int x, y;
+        uint8_t* const top = s->intra4x4_pred_mode_top + 4 * mb_x;
+        uint8_t* const left = s->intra4x4_pred_mode_left;
         for (y = 0; y < 4; y++) {
             for (x = 0; x < 4; x++) {
-                t = intra4x4[x - stride];
-                l = intra4x4[x - 1];
-                ctx = vp8_pred4x4_prob_intra[t][l];
-                intra4x4[x] = vp8_rac_get_tree(c, vp8_pred4x4_tree, ctx);
+                const uint8_t *ctx;
+                ctx = vp8_pred4x4_prob_intra[top[x]][left[y]];
+                *intra4x4 = vp8_rac_get_tree(c, vp8_pred4x4_tree, ctx);
+                left[y] = top[x] = *intra4x4;
+                intra4x4++;
             }
-            intra4x4 += stride;
         }
     } else {
+        int i;
         for (i = 0; i < 16; i++)
             intra4x4[i] = vp8_rac_get_tree(c, vp8_pred4x4_tree, vp8_pred4x4_prob_inter);
     }
 }
 
 static av_always_inline
-void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
-                    uint8_t *intra4x4, uint8_t *segment)
+void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_t *segment)
 {
     VP56RangeCoder *c = &s->c;
 
@@ -731,9 +724,12 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
         mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_intra, vp8_pred16x16_prob_intra);
 
         if (mb->mode == MODE_I4x4) {
-            decode_intra4x4_modes(c, intra4x4, s->b4_stride, 1);
-        } else
-            fill_rectangle(intra4x4, 4, 4, s->b4_stride, vp8_pred4x4_mode[mb->mode], 1);
+            decode_intra4x4_modes(s, c, mb_x, 1);
+        } else {
+            const uint32_t modes = vp8_pred4x4_mode[mb->mode] * 0x01010101u;
+            AV_WN32A(s->intra4x4_pred_mode_top + 4 * mb_x, modes);
+            AV_WN32A(s->intra4x4_pred_mode_left, modes);
+        }
 
         s->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, vp8_pred8x8c_prob_intra);
         mb->ref_frame = VP56_FRAME_CURRENT;
@@ -786,7 +782,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
         mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_inter, s->prob->pred16x16);
 
         if (mb->mode == MODE_I4x4)
-            decode_intra4x4_modes(c, intra4x4, 4, 0);
+            decode_intra4x4_modes(s, c, mb_x, 0);
 
         s->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, s->prob->pred8x8c);
         mb->ref_frame = VP56_FRAME_CURRENT;
@@ -978,7 +974,7 @@ int check_intra_pred_mode(int mode, int mb_x, int mb_y)
 
 static av_always_inline
 void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
-                   uint8_t *intra4x4, int mb_x, int mb_y)
+                   int mb_x, int mb_y)
 {
     int x, y, mode, nnz, tr;
 
@@ -994,7 +990,7 @@ void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
         s->hpc.pred16x16[mode](dst[0], s->linesize);
     } else {
         uint8_t *ptr = dst[0];
-        int stride = s->keyframe ? s->b4_stride : 4;
+        uint8_t *intra4x4 = s->intra4x4_pred_mode_mb;
 
         // all blocks on the right edge of the macroblock use bottom edge
         // the top macroblock for their topright edge
@@ -1029,7 +1025,7 @@ void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
             }
 
             ptr   += 4*s->linesize;
-            intra4x4 += stride;
+            intra4x4 += 4;
         }
     }
 
@@ -1516,11 +1512,12 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     // top edge of 127 for intra prediction
     memset(s->top_border, 127, (s->mb_width+1)*sizeof(*s->top_border));
     memset(s->ref_count, 0, sizeof(s->ref_count));
+    if (s->keyframe)
+        memset(s->intra4x4_pred_mode_top, DC_PRED, s->b4_stride*4);
 
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         VP56RangeCoder *c = &s->coeff_partition[mb_y & (s->num_coeff_partitions-1)];
         VP8Macroblock *mb = s->macroblocks + (s->mb_height - mb_y - 1)*2;
-        uint8_t *intra4x4 = s->intra4x4_pred_mode + 4*mb_y*s->b4_stride;
         uint8_t *segment_map = s->segmentation_map + mb_y*s->mb_stride;
         int mb_xy = mb_y * s->mb_stride;
         uint8_t *dst[3] = {
@@ -1530,6 +1527,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         };
 
         memset(s->left_nnz, 0, sizeof(s->left_nnz));
+        AV_WN32A(s->intra4x4_pred_mode_left, DC_PRED*0x01010101);
 
         // left edge of 129 for intra prediction
         if (!(avctx->flags & CODEC_FLAG_EMU_EDGE))
@@ -1540,14 +1538,13 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             memset(s->top_border, 129, sizeof(*s->top_border));
 
         for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
-            uint8_t *intra4x4_mb = s->keyframe ? intra4x4 + 4*mb_x : s->intra4x4_pred_mode_mb;
             uint8_t *segment_mb = segment_map+mb_x;
 
             /* Prefetch the current frame, 4 MBs ahead */
             s->dsp.prefetch(dst[0] + (mb_x&3)*4*s->linesize + 64, s->linesize, 4);
             s->dsp.prefetch(dst[1] + (mb_x&7)*s->uvlinesize + 64, dst[2] - dst[1], 2);
 
-            decode_mb_mode(s, mb, mb_x, mb_y, intra4x4_mb, segment_mb);
+            decode_mb_mode(s, mb, mb_x, mb_y, segment_mb);
 
             prefetch_motion(s, mb, mb_x, mb_y, mb_xy, VP56_FRAME_PREVIOUS);
 
@@ -1555,7 +1552,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 decode_mb_coeffs(s, c, mb, s->top_nnz[mb_x], s->left_nnz);
 
             if (mb->mode <= MODE_I4x4)
-                intra_predict(s, dst, mb, intra4x4_mb, mb_x, mb_y);
+                intra_predict(s, dst, mb, mb_x, mb_y);
             else
                 inter_predict(s, dst, mb, mb_x, mb_y);
 
