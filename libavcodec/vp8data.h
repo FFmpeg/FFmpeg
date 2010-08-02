@@ -314,10 +314,9 @@ static const int8_t vp8_segmentid_tree[][2] =
      { -2, -3 },    // '10', '11'
 };
 
-/* Padded by one byte to allow overreads */
-static const uint8_t vp8_coeff_band[17] =
+static const uint8_t vp8_coeff_band[16] =
 {
-    0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 0
+    0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7
 };
 
 static const uint8_t vp8_dct_cat1_prob[] = { 159, 0 };

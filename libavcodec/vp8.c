@@ -195,7 +195,8 @@ typedef struct {
         uint8_t golden;
         uint8_t pred16x16[4];
         uint8_t pred8x8c[3];
-        uint8_t token[4][8][3][NUM_DCT_TOKENS-1];
+        /* Padded to allow overreads */
+        uint8_t token[4][17][3][NUM_DCT_TOKENS-1];
         uint8_t mvc[2][19];
     } prob[2];
 } VP8Context;
@@ -388,7 +389,7 @@ static void update_refs(VP8Context *s)
 static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
 {
     VP56RangeCoder *c = &s->c;
-    int header_size, hscale, vscale, i, j, k, l, ret;
+    int header_size, hscale, vscale, i, j, k, l, m, ret;
     int width  = s->avctx->width;
     int height = s->avctx->height;
 
@@ -428,7 +429,10 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
             av_log_missing_feature(s->avctx, "Upscaling", 1);
 
         s->update_golden = s->update_altref = VP56_FRAME_CURRENT;
-        memcpy(s->prob->token    , vp8_token_default_probs , sizeof(s->prob->token));
+        for (i = 0; i < 4; i++)
+            for (j = 0; j < 16; j++)
+                memcpy(s->prob->token[i][j], vp8_token_default_probs[i][vp8_coeff_band[j]],
+                       sizeof(s->prob->token[i][j]));
         memcpy(s->prob->pred16x16, vp8_pred16x16_prob_inter, sizeof(s->prob->pred16x16));
         memcpy(s->prob->pred8x8c , vp8_pred8x8c_prob_inter , sizeof(s->prob->pred8x8c));
         memcpy(s->prob->mvc      , vp8_mv_default_prob     , sizeof(s->prob->mvc));
@@ -488,8 +492,12 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
         for (j = 0; j < 8; j++)
             for (k = 0; k < 3; k++)
                 for (l = 0; l < NUM_DCT_TOKENS-1; l++)
-                    if (vp56_rac_get_prob_branchy(c, vp8_token_update_probs[i][j][k][l]))
-                        s->prob->token[i][j][k][l] = vp8_rac_get_uint(c, 8);
+                    if (vp56_rac_get_prob_branchy(c, vp8_token_update_probs[i][j][k][l])) {
+                        int prob = vp8_rac_get_uint(c, 8);
+                        for (m = 0; m < 16; m++)
+                            if (vp8_coeff_band[m] == j)
+                                s->prob->token[i][m][k][l] = prob;
+                    }
 
     if ((s->mbskip_enabled = vp8_rac_get(c)))
         s->prob->mbskip = vp8_rac_get_uint(c, 8);
@@ -807,7 +815,7 @@ static int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
                                uint8_t probs[8][3][NUM_DCT_TOKENS-1],
                                int i, int zero_nhood, int16_t qmul[2])
 {
-    uint8_t *token_prob = probs[vp8_coeff_band[i]][zero_nhood];
+    uint8_t *token_prob = probs[i][zero_nhood];
     int nonzero = 0;
     int coeff;
 
@@ -819,13 +827,13 @@ skip_eob:
         if (!vp56_rac_get_prob_branchy(c, token_prob[1])) { // DCT_0
             if (++i == 16)
                 return nonzero; // invalid input; blocks should end with EOB
-            token_prob = probs[vp8_coeff_band[i]][0];
+            token_prob = probs[i][0];
             goto skip_eob;
         }
 
         if (!vp56_rac_get_prob_branchy(c, token_prob[2])) { // DCT_1
             coeff = 1;
-            token_prob = probs[vp8_coeff_band[i+1]][1];
+            token_prob = probs[i+1][1];
         } else {
             if (!vp56_rac_get_prob_branchy(c, token_prob[3])) { // DCT 2,3,4
                 coeff = vp56_rac_get_prob(c, token_prob[4]);
@@ -850,7 +858,7 @@ skip_eob:
                     coeff += vp8_rac_get_coeff(c, vp8_dct_cat_prob[cat]);
                 }
             }
-            token_prob = probs[vp8_coeff_band[i+1]][2];
+            token_prob = probs[i+1][2];
         }
 
         // todo: full [16] qmat? load into register?
