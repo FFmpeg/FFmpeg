@@ -36,13 +36,13 @@
  * One encoded frame returned from the library.
  */
 struct FrameListData {
-    void *buf;                       /**≤ compressed data buffer */
-    size_t sz;                       /**≤ length of compressed data */
-    int64_t pts;                     /**≤ time stamp to show frame
+    void *buf;                       /**< compressed data buffer */
+    size_t sz;                       /**< length of compressed data */
+    int64_t pts;                     /**< time stamp to show frame
                                           (in timebase units) */
-    unsigned long duration;          /**≤ duration to show frame
+    unsigned long duration;          /**< duration to show frame
                                           (in timebase units) */
-    uint32_t flags;                  /**≤ flags for this frame */
+    uint32_t flags;                  /**< flags for this frame */
     struct FrameListData *next;
 };
 
