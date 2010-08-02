@@ -296,7 +296,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->log2_frame_size = av_log2(avctx->block_align) + 4;
 
     /** frame info */
-    s->skip_frame  = 1; /** skip first frame */
+    s->skip_frame  = 1; /* skip first frame */
     s->packet_loss = 1;
     s->len_prefix  = (s->decode_flags & 0x40);
 
