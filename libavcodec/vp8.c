@@ -673,20 +673,19 @@ int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb)
 
         submv_prob = get_submv_prob(left, above);
 
-        switch (vp8_rac_get_tree(c, vp8_submv_ref_tree, submv_prob)) {
-        case VP8_SUBMVMODE_NEW4X4:
-            mb->bmv[n].y = mb->mv.y + read_mv_component(c, s->prob->mvc[0]);
-            mb->bmv[n].x = mb->mv.x + read_mv_component(c, s->prob->mvc[1]);
-            break;
-        case VP8_SUBMVMODE_ZERO4X4:
-            AV_ZERO32(&mb->bmv[n]);
-            break;
-        case VP8_SUBMVMODE_LEFT4X4:
+        if (vp56_rac_get_prob_branchy(c, submv_prob[0])) {
+            if (vp56_rac_get_prob_branchy(c, submv_prob[1])) {
+                if (vp56_rac_get_prob_branchy(c, submv_prob[2])) {
+                    mb->bmv[n].y = mb->mv.y + read_mv_component(c, s->prob->mvc[0]);
+                    mb->bmv[n].x = mb->mv.x + read_mv_component(c, s->prob->mvc[1]);
+                } else {
+                    AV_ZERO32(&mb->bmv[n]);
+                }
+            } else {
+                AV_WN32A(&mb->bmv[n], above);
+            }
+        } else {
             AV_WN32A(&mb->bmv[n], left);
-            break;
-        case VP8_SUBMVMODE_TOP4X4:
-            AV_WN32A(&mb->bmv[n], above);
-            break;
         }
     }
 

@@ -55,13 +55,6 @@ enum inter_mvmode {
     VP8_MVMODE_SPLIT
 };
 
-enum inter_submvmode {
-    VP8_SUBMVMODE_LEFT4X4,
-    VP8_SUBMVMODE_TOP4X4,
-    VP8_SUBMVMODE_ZERO4X4,
-    VP8_SUBMVMODE_NEW4X4
-};
-
 enum inter_splitmvmode {
     VP8_SPLITMVMODE_16x8 = 0,    ///< 2 16x8 blocks (vertical)
     VP8_SPLITMVMODE_8x16,        ///< 2 8x16 blocks (horizontal)
@@ -137,12 +130,6 @@ static const uint8_t vp8_submv_prob[5][3] = {
     { 179, 121,   1 },
     { 223,   1,  34 },
     { 208,   1,   1 }
-};
-
-static const int8_t vp8_submv_ref_tree[3][2] = {
-    { -VP8_SUBMVMODE_LEFT4X4, 1 },          // '0'
-     { -VP8_SUBMVMODE_TOP4X4, 2 },          // '10'
-      { -VP8_SUBMVMODE_ZERO4X4, -VP8_SUBMVMODE_NEW4X4 } // '110', '111'
 };
 
 static const uint8_t vp8_pred16x16_prob_intra[4] = { 145, 156, 163, 128 };
