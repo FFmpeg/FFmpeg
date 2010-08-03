@@ -494,9 +494,8 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
                 for (l = 0; l < NUM_DCT_TOKENS-1; l++)
                     if (vp56_rac_get_prob_branchy(c, vp8_token_update_probs[i][j][k][l])) {
                         int prob = vp8_rac_get_uint(c, 8);
-                        for (m = 0; m < 16; m++)
-                            if (vp8_coeff_band[m] == j)
-                                s->prob->token[i][m][k][l] = prob;
+                        for (m = 0; vp8_coeff_band_indexes[j][m] >= 0; m++)
+                            s->prob->token[i][vp8_coeff_band_indexes[j][m]][k][l] = prob;
                     }
 
     if ((s->mbskip_enabled = vp8_rac_get(c)))

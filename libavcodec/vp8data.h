@@ -293,6 +293,20 @@ static const uint8_t vp8_coeff_band[16] =
     0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7
 };
 
+/* Inverse of vp8_coeff_band: mappings of bands to coefficient indexes.
+ * Each list is -1-terminated. */
+static const int8_t vp8_coeff_band_indexes[8][10] =
+{
+    {0, -1},
+    {1, -1},
+    {2, -1},
+    {3, -1},
+    {5, -1},
+    {6, -1},
+    {4, 7, 8, 9, 10, 11, 12, 13, 14, -1},
+    {15, -1}
+};
+
 static const uint8_t vp8_dct_cat1_prob[] = { 159, 0 };
 static const uint8_t vp8_dct_cat2_prob[] = { 165, 145, 0 };
 static const uint8_t vp8_dct_cat3_prob[] = { 173, 148, 140, 0 };
