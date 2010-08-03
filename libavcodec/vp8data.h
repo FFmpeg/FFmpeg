@@ -115,12 +115,6 @@ static const uint8_t vp8_mbfirstidx[4][16] = {
        8,  9, 10, 11, 12, 13, 14, 15 }
 };
 
-static const int8_t vp8_mbsplit_tree[3][2] = {
-    { -VP8_SPLITMVMODE_4x4,  1 },           // '0' - 16 individual MVs
-     { -VP8_SPLITMVMODE_8x8,  2 },          // '10' - quarter-based MVs
-      { -VP8_SPLITMVMODE_16x8,              // '110' - top/bottom MVs
-        -VP8_SPLITMVMODE_8x16 }             // '111' - left/right MVs
-};
 static const uint8_t vp8_mbsplit_count[4] = {   2,   2,   4,  16 };
 static const uint8_t vp8_mbsplit_prob[3]  = { 110, 111, 150 };
 

@@ -644,18 +644,31 @@ const uint8_t *get_submv_prob(uint32_t left, uint32_t top)
 static av_always_inline
 int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb)
 {
-    int part_idx = mb->partitioning =
-        vp8_rac_get_tree(c, vp8_mbsplit_tree, vp8_mbsplit_prob);
-    int n, num = vp8_mbsplit_count[part_idx];
+    int part_idx;
+    int n, num;
     VP8Macroblock *top_mb  = &mb[2];
     VP8Macroblock *left_mb = &mb[-1];
     const uint8_t *mbsplits_left = vp8_mbsplits[left_mb->partitioning],
                   *mbsplits_top = vp8_mbsplits[top_mb->partitioning],
-                  *mbsplits_cur = vp8_mbsplits[part_idx],
-                  *firstidx = vp8_mbfirstidx[part_idx];
+                  *mbsplits_cur, *firstidx;
     VP56mv *top_mv  = top_mb->bmv;
     VP56mv *left_mv = left_mb->bmv;
     VP56mv *cur_mv  = mb->bmv;
+
+    if (vp56_rac_get_prob_branchy(c, vp8_mbsplit_prob[0])) {
+        if (vp56_rac_get_prob_branchy(c, vp8_mbsplit_prob[1])) {
+            part_idx = VP8_SPLITMVMODE_16x8 + vp56_rac_get_prob(c, vp8_mbsplit_prob[2]);
+        } else {
+            part_idx = VP8_SPLITMVMODE_8x8;
+        }
+    } else {
+        part_idx = VP8_SPLITMVMODE_4x4;
+    }
+
+    num = vp8_mbsplit_count[part_idx];
+    mbsplits_cur = vp8_mbsplits[part_idx],
+    firstidx = vp8_mbfirstidx[part_idx];
+    mb->partitioning = part_idx;
 
     for (n = 0; n < num; n++) {
         int k = firstidx[n];
