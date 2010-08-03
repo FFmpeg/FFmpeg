@@ -26,7 +26,7 @@
 
 #if HAVE_FAST_CMOV
 #define vp56_rac_get_prob vp56_rac_get_prob
-static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
+static av_always_inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
 {
     unsigned int code_word = vp56_rac_renorm(c);
     unsigned int high = c->high;
