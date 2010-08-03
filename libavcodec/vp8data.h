@@ -103,13 +103,6 @@ static const int vp8_mode_contexts[6][4] = {
     { 234, 188, 128,  28 },
 };
 
-static const int8_t vp8_pred16x16_tree_mvinter[4][2] = {
-    { -VP8_MVMODE_ZERO,      1 },           // '0'
-     { -VP8_MVMODE_NEAREST,  2 },           // '10'
-      { -VP8_MVMODE_NEAR,    3 },           // '110'
-       { -VP8_MVMODE_NEW, -VP8_MVMODE_SPLIT } // '1110', '1111'
-};
-
 static const uint8_t vp8_mbsplits[5][16] = {
     {  0,  0,  0,  0,  0,  0,  0,  0,
        1,  1,  1,  1,  1,  1,  1,  1  },
