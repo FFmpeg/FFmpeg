@@ -214,7 +214,7 @@ static av_always_inline unsigned int vp56_rac_renorm(VP56RangeCoder *c)
 
 #ifndef vp56_rac_get_prob
 #define vp56_rac_get_prob vp56_rac_get_prob
-static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
+static av_always_inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
 {
     unsigned int code_word = vp56_rac_renorm(c);
     unsigned int low = 1 + (((c->high - 1) * prob) >> 8);
@@ -246,7 +246,7 @@ static av_always_inline int vp56_rac_get_prob_branchy(VP56RangeCoder *c, int pro
     return 0;
 }
 
-static inline int vp56_rac_get(VP56RangeCoder *c)
+static av_always_inline int vp56_rac_get(VP56RangeCoder *c)
 {
     unsigned int code_word = vp56_rac_renorm(c);
     /* equiprobable */
@@ -265,12 +265,12 @@ static inline int vp56_rac_get(VP56RangeCoder *c)
 }
 
 // rounding is different than vp56_rac_get, is vp56_rac_get wrong?
-static inline int vp8_rac_get(VP56RangeCoder *c)
+static av_always_inline int vp8_rac_get(VP56RangeCoder *c)
 {
     return vp56_rac_get_prob(c, 128);
 }
 
-static inline int vp56_rac_gets(VP56RangeCoder *c, int bits)
+static int vp56_rac_gets(VP56RangeCoder *c, int bits)
 {
     int value = 0;
 
@@ -281,7 +281,7 @@ static inline int vp56_rac_gets(VP56RangeCoder *c, int bits)
     return value;
 }
 
-static inline int vp8_rac_get_uint(VP56RangeCoder *c, int bits)
+static int vp8_rac_get_uint(VP56RangeCoder *c, int bits)
 {
     int value = 0;
 
@@ -293,7 +293,7 @@ static inline int vp8_rac_get_uint(VP56RangeCoder *c, int bits)
 }
 
 // fixme: add 1 bit to all the calls to this?
-static inline int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
+static int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
 {
     int v;
 
@@ -309,21 +309,22 @@ static inline int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
 }
 
 // P(7)
-static inline int vp56_rac_gets_nn(VP56RangeCoder *c, int bits)
+static int vp56_rac_gets_nn(VP56RangeCoder *c, int bits)
 {
     int v = vp56_rac_gets(c, 7) << 1;
     return v + !v;
 }
 
-static inline int vp8_rac_get_nn(VP56RangeCoder *c)
+static int vp8_rac_get_nn(VP56RangeCoder *c)
 {
     int v = vp8_rac_get_uint(c, 7) << 1;
     return v + !v;
 }
 
-static inline int vp56_rac_get_tree(VP56RangeCoder *c,
-                                    const VP56Tree *tree,
-                                    const uint8_t *probs)
+static av_always_inline
+int vp56_rac_get_tree(VP56RangeCoder *c,
+                      const VP56Tree *tree,
+                      const uint8_t *probs)
 {
     while (tree->val > 0) {
         if (vp56_rac_get_prob(c, probs[tree->prob_idx]))
@@ -339,8 +340,9 @@ static inline int vp56_rac_get_tree(VP56RangeCoder *c,
  * on a node other than the root node, needed for coeff decode where this is
  * used to save a bit after a 0 token (by disallowing EOB to immediately follow.)
  */
-static inline int vp8_rac_get_tree_with_offset(VP56RangeCoder *c, const int8_t (*tree)[2],
-                                               const uint8_t *probs, int i)
+static av_always_inline
+int vp8_rac_get_tree_with_offset(VP56RangeCoder *c, const int8_t (*tree)[2],
+                                 const uint8_t *probs, int i)
 {
     do {
         i = tree[i][vp56_rac_get_prob(c, probs[i])];
@@ -351,14 +353,15 @@ static inline int vp8_rac_get_tree_with_offset(VP56RangeCoder *c, const int8_t (
 
 // how probabilities are associated with decisions is different I think
 // well, the new scheme fits in the old but this way has one fewer branches per decision
-static inline int vp8_rac_get_tree(VP56RangeCoder *c, const int8_t (*tree)[2],
-                                   const uint8_t *probs)
+static av_always_inline
+int vp8_rac_get_tree(VP56RangeCoder *c, const int8_t (*tree)[2],
+                     const uint8_t *probs)
 {
     return vp8_rac_get_tree_with_offset(c, tree, probs, 0);
 }
 
 // DCTextra
-static inline int vp8_rac_get_coeff(VP56RangeCoder *c, const uint8_t *prob)
+static av_always_inline int vp8_rac_get_coeff(VP56RangeCoder *c, const uint8_t *prob)
 {
     int v = 0;
 
