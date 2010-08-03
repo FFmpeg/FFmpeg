@@ -339,15 +339,6 @@ typedef struct DSPContext {
     qpel_mc_func put_2tap_qpel_pixels_tab[4][16];
     qpel_mc_func avg_2tap_qpel_pixels_tab[4][16];
 
-    /* AVS specific */
-    qpel_mc_func put_cavs_qpel_pixels_tab[2][16];
-    qpel_mc_func avg_cavs_qpel_pixels_tab[2][16];
-    void (*cavs_filter_lv)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
-    void (*cavs_filter_lh)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
-    void (*cavs_filter_cv)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
-    void (*cavs_filter_ch)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
-    void (*cavs_idct8_add)(uint8_t *dst, DCTELEM *block, int stride);
-
     me_cmp_func pix_abs[2][4];
 
     /* huffyuv specific */
@@ -640,7 +631,6 @@ void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 void ff_dsputil_init_dwt(DSPContext *c);
-void ff_cavsdsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_rv30dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_rv40dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_vc1dsp_init(DSPContext* c, AVCodecContext *avctx);

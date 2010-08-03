@@ -2727,9 +2727,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
 #endif
 
-            if (CONFIG_CAVS_DECODER)
-                ff_cavsdsp_init_mmx2(c, avctx);
-
             if (CONFIG_VC1_DECODER)
                 ff_vc1dsp_init_mmx(c, avctx);
 
@@ -2790,9 +2787,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
             c->avg_rv40_chroma_pixels_tab[0]= avg_rv40_chroma_mc8_3dnow;
             c->avg_rv40_chroma_pixels_tab[1]= avg_rv40_chroma_mc4_3dnow;
-
-            if (CONFIG_CAVS_DECODER)
-                ff_cavsdsp_init_3dnow(c, avctx);
         }
 
 

@@ -4343,10 +4343,6 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     c->draw_edges = draw_edges_c;
 
-#if CONFIG_CAVS_DECODER
-    ff_cavsdsp_init(c,avctx);
-#endif
-
 #if CONFIG_MLP_DECODER || CONFIG_TRUEHD_DECODER
     ff_mlp_init(c, avctx);
 #endif

@@ -25,6 +25,7 @@
 #include "libavutil/common.h"
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
+#include "libavcodec/cavsdsp.h"
 #include "dsputil_mmx.h"
 
 /*****************************************************************************
@@ -437,7 +438,7 @@ CAVS_MC(put_, 16,mmx2)
 CAVS_MC(avg_, 8, mmx2)
 CAVS_MC(avg_, 16,mmx2)
 
-void ff_cavsdsp_init_mmx2(DSPContext* c, AVCodecContext *avctx) {
+static void ff_cavsdsp_init_mmx2(CAVSDSPContext* c, AVCodecContext *avctx) {
 #define dspfunc(PFX, IDX, NUM) \
     c->PFX ## _pixels_tab[IDX][ 0] = ff_ ## PFX ## NUM ## _mc00_mmx2; \
     c->PFX ## _pixels_tab[IDX][ 2] = ff_ ## PFX ## NUM ## _mc20_mmx2; \
@@ -453,7 +454,7 @@ void ff_cavsdsp_init_mmx2(DSPContext* c, AVCodecContext *avctx) {
     c->cavs_idct8_add = cavs_idct8_add_mmx;
 }
 
-void ff_cavsdsp_init_3dnow(DSPContext* c, AVCodecContext *avctx) {
+static void ff_cavsdsp_init_3dnow(CAVSDSPContext* c, AVCodecContext *avctx) {
 #define dspfunc(PFX, IDX, NUM) \
     c->PFX ## _pixels_tab[IDX][ 0] = ff_ ## PFX ## NUM ## _mc00_mmx2; \
     c->PFX ## _pixels_tab[IDX][ 2] = ff_ ## PFX ## NUM ## _mc20_3dnow; \
@@ -467,4 +468,12 @@ void ff_cavsdsp_init_3dnow(DSPContext* c, AVCodecContext *avctx) {
     dspfunc(avg_cavs_qpel, 1, 8);
 #undef dspfunc
     c->cavs_idct8_add = cavs_idct8_add_mmx;
+}
+
+void ff_cavsdsp_init_mmx(CAVSDSPContext *c, AVCodecContext *avctx)
+{
+    int mm_flags = mm_support();
+
+    if (mm_flags & FF_MM_MMX2)  ff_cavsdsp_init_mmx2 (c, avctx);
+    if (mm_flags & FF_MM_3DNOW) ff_cavsdsp_init_3dnow(c, avctx);
 }

@@ -24,6 +24,7 @@
 
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "cavsdsp.h"
 
 #define SLICE_MAX_START_CODE    0x000001af
 #define EXT_START_CODE          0x000001b5
@@ -153,6 +154,7 @@ struct dec_2dvlc {
 
 typedef struct {
     MpegEncContext s;
+    CAVSDSPContext cdsp;
     Picture picture; ///< currently decoded frame
     Picture DPB[2];  ///< reference frames
     int dist[2];     ///< temporal distances from current frame to ref frames
