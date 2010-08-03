@@ -270,7 +270,7 @@ static av_always_inline int vp8_rac_get(VP56RangeCoder *c)
     return vp56_rac_get_prob(c, 128);
 }
 
-static int vp56_rac_gets(VP56RangeCoder *c, int bits)
+static av_unused int vp56_rac_gets(VP56RangeCoder *c, int bits)
 {
     int value = 0;
 
@@ -281,7 +281,7 @@ static int vp56_rac_gets(VP56RangeCoder *c, int bits)
     return value;
 }
 
-static int vp8_rac_get_uint(VP56RangeCoder *c, int bits)
+static av_unused int vp8_rac_get_uint(VP56RangeCoder *c, int bits)
 {
     int value = 0;
 
@@ -293,7 +293,7 @@ static int vp8_rac_get_uint(VP56RangeCoder *c, int bits)
 }
 
 // fixme: add 1 bit to all the calls to this?
-static int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
+static av_unused int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
 {
     int v;
 
@@ -309,13 +309,13 @@ static int vp8_rac_get_sint(VP56RangeCoder *c, int bits)
 }
 
 // P(7)
-static int vp56_rac_gets_nn(VP56RangeCoder *c, int bits)
+static av_unused int vp56_rac_gets_nn(VP56RangeCoder *c, int bits)
 {
     int v = vp56_rac_gets(c, 7) << 1;
     return v + !v;
 }
 
-static int vp8_rac_get_nn(VP56RangeCoder *c)
+static av_unused int vp8_rac_get_nn(VP56RangeCoder *c)
 {
     int v = vp8_rac_get_uint(c, 7) << 1;
     return v + !v;
