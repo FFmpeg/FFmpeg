@@ -667,6 +667,8 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc)
         res_setup->classifs = av_malloc(res_setup->ptns_to_read *
                                         vc->audio_channels *
                                         sizeof(*res_setup->classifs));
+        if (!res_setup->classifs)
+            return AVERROR(ENOMEM);
 
         AV_DEBUG("    begin %d end %d part.size %d classif.s %d classbook %d \n", res_setup->begin, res_setup->end, res_setup->partition_size,
           res_setup->classifications, res_setup->classbook);
