@@ -127,6 +127,8 @@ static inline void avfilter_copy_picref_props(AVFilterPicRef *dst, AVFilterPicRe
     dst->pixel_aspect    = src->pixel_aspect;
     dst->interlaced      = src->interlaced;
     dst->top_field_first = src->top_field_first;
+    dst->w               = src->w;
+    dst->h               = src->h;
 }
 
 /**
