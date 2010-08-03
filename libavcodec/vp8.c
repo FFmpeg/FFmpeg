@@ -847,7 +847,7 @@ skip_eob:
             token_prob = probs[i+1][1];
         } else {
             if (!vp56_rac_get_prob_branchy(c, token_prob[3])) { // DCT 2,3,4
-                coeff = vp56_rac_get_prob(c, token_prob[4]);
+                coeff = vp56_rac_get_prob_branchy(c, token_prob[4]);
                 if (coeff)
                     coeff += vp56_rac_get_prob(c, token_prob[5]);
                 coeff += 2;
