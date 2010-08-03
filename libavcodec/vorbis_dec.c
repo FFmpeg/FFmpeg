@@ -103,7 +103,7 @@ typedef struct {
     int_fast16_t  books[64][8];
     uint_fast8_t  maxpass;
     uint_fast16_t ptns_to_read;
-    uint_fast8_t *classifs;
+    uint8_t *classifs;
 } vorbis_residue;
 
 typedef struct {
@@ -1267,7 +1267,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
     GetBitContext *gb = &vc->gb;
     uint_fast8_t c_p_c = vc->codebooks[vr->classbook].dimensions;
     uint_fast16_t ptns_to_read = vr->ptns_to_read;
-    uint_fast8_t *classifs = vr->classifs;
+    uint8_t *classifs = vr->classifs;
     uint_fast8_t pass;
     uint_fast8_t ch_used;
     uint_fast8_t i,j,l;
