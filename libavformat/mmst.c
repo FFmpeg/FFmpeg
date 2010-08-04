@@ -544,55 +544,6 @@ static int read_data(MMSContext *mms, uint8_t *buf, const int buf_size)
     return read_size;
 }
 
-/** Read at most one media packet (or a whole header). */
-static int read_mms_packet(MMSContext *mms, uint8_t *buf, int buf_size)
-{
-    int result = 0;
-    int size_to_copy;
-
-    do {
-        if(mms->asf_header_read_size < mms->asf_header_size) {
-            /* Read from ASF header buffer */
-            size_to_copy= FFMIN(buf_size,
-                                mms->asf_header_size - mms->asf_header_read_size);
-            memcpy(buf, mms->asf_header + mms->asf_header_read_size, size_to_copy);
-            mms->asf_header_read_size += size_to_copy;
-            result += size_to_copy;
-            dprintf(NULL, "Copied %d bytes from stored header. left: %d\n",
-                   size_to_copy, mms->asf_header_size - mms->asf_header_read_size);
-            if (mms->asf_header_size == mms->asf_header_read_size) {
-                av_freep(&mms->asf_header);
-            }
-        } else if(mms->remaining_in_len) {
-            /* Read remaining packet data to buffer.
-             * the result can not be zero because remaining_in_len is positive.*/
-            result = read_data(mms, buf, buf_size);
-        } else {
-            /* Read from network */
-            int err = mms_safe_send_recv(mms, NULL, SC_PKT_ASF_MEDIA);
-            if (err == 0) {
-                if(mms->remaining_in_len>mms->asf_packet_len) {
-                    av_log(NULL, AV_LOG_ERROR,
-                           "Incoming pktlen %d is larger than ASF pktsize %d\n",
-                           mms->remaining_in_len, mms->asf_packet_len);
-                    result= AVERROR_IO;
-                } else {
-                    // copy the data to the packet buffer.
-                    result = read_data(mms, buf, buf_size);
-                    if (result == 0) {
-                        dprintf(NULL, "read asf media paket size is zero!\n");
-                        break;
-                    }
-                }
-            } else {
-                dprintf(NULL, "read packet error!\n");
-                break;
-            }
-        }
-    } while(!result); // only return one packet.
-    return result;
-}
-
 static int send_close_packet(MMSContext *mms)
 {
     start_command_packet(mms, CS_PKT_STREAM_CLOSE);
@@ -721,8 +672,50 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
 {
     /* TODO: see tcp.c:tcp_read() about a possible timeout scheme */
     MMSContext *mms = h->priv_data;
+    int result = 0;
+    int size_to_copy;
 
-    return read_mms_packet(mms, buf, size);
+    do {
+        if(mms->asf_header_read_size < mms->asf_header_size) {
+            /* Read from ASF header buffer */
+            size_to_copy= FFMIN(size,
+                                mms->asf_header_size - mms->asf_header_read_size);
+            memcpy(buf, mms->asf_header + mms->asf_header_read_size, size_to_copy);
+            mms->asf_header_read_size += size_to_copy;
+            result += size_to_copy;
+            dprintf(NULL, "Copied %d bytes from stored header. left: %d\n",
+                   size_to_copy, mms->asf_header_size - mms->asf_header_read_size);
+            if (mms->asf_header_size == mms->asf_header_read_size) {
+                av_freep(&mms->asf_header);
+            }
+        } else if(mms->remaining_in_len) {
+            /* Read remaining packet data to buffer.
+             * the result can not be zero because remaining_in_len is positive.*/
+            result = read_data(mms, buf, size);
+        } else {
+            /* Read from network */
+            int err = mms_safe_send_recv(mms, NULL, SC_PKT_ASF_MEDIA);
+            if (err == 0) {
+                if(mms->remaining_in_len>mms->asf_packet_len) {
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Incoming pktlen %d is larger than ASF pktsize %d\n",
+                           mms->remaining_in_len, mms->asf_packet_len);
+                    result= AVERROR_IO;
+                } else {
+                    // copy the data to the packet buffer.
+                    result = read_data(mms, buf, size);
+                    if (result == 0) {
+                        dprintf(NULL, "read asf media paket size is zero!\n");
+                        break;
+                    }
+                }
+            } else {
+                dprintf(NULL, "read packet error!\n");
+                break;
+            }
+        }
+    } while(!result); // only return one packet.
+    return result;
 }
 
 URLProtocol mmst_protocol = {
