@@ -176,22 +176,25 @@ static int64_t gettime(void)
     return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-static void check_diff(float *tab1, float *tab2, int n, double scale)
+static int check_diff(float *tab1, float *tab2, int n, double scale)
 {
     int i;
     double max= 0;
     double error= 0;
+    int err = 0;
 
     for (i = 0; i < n; i++) {
         double e= fabsf(tab1[i] - (tab2[i] / scale));
         if (e >= 1e-3) {
             av_log(NULL, AV_LOG_ERROR, "ERROR %d: %f %f\n",
                    i, tab1[i], tab2[i]);
+            err = 1;
         }
         error+= e*e;
         if(e>max) max= e;
     }
     av_log(NULL, AV_LOG_INFO, "max:%f e:%g\n", max, sqrt(error)/n);
+    return err;
 }
 
 
@@ -223,6 +226,7 @@ int main(int argc, char **argv)
     FFTSample *tab2;
     int it, i, c;
     int do_speed = 0;
+    int err = 1;
     enum tf_transform transform = TRANSFORM_FFT;
     int do_inverse = 0;
     FFTContext s1, *s = &s1;
@@ -324,13 +328,13 @@ int main(int argc, char **argv)
         if (do_inverse) {
             imdct_ref((float *)tab_ref, (float *)tab1, fft_nbits);
             ff_imdct_calc(m, tab2, (float *)tab1);
-            check_diff((float *)tab_ref, tab2, fft_size, scale);
+            err = check_diff((float *)tab_ref, tab2, fft_size, scale);
         } else {
             mdct_ref((float *)tab_ref, (float *)tab1, fft_nbits);
 
             ff_mdct_calc(m, tab2, (float *)tab1);
 
-            check_diff((float *)tab_ref, tab2, fft_size / 2, scale);
+            err = check_diff((float *)tab_ref, tab2, fft_size / 2, scale);
         }
         break;
     case TRANSFORM_FFT:
@@ -339,7 +343,7 @@ int main(int argc, char **argv)
         ff_fft_calc(s, tab);
 
         fft_ref(tab_ref, tab1, fft_nbits);
-        check_diff((float *)tab_ref, (float *)tab, fft_size * 2, 1.0);
+        err = check_diff((float *)tab_ref, (float *)tab, fft_size * 2, 1.0);
         break;
     case TRANSFORM_RDFT:
         if (do_inverse) {
@@ -359,7 +363,7 @@ int main(int argc, char **argv)
                 tab[i].re = tab2[i];
                 tab[i].im = 0;
             }
-            check_diff((float *)tab_ref, (float *)tab, fft_size * 2, 0.5);
+            err = check_diff((float *)tab_ref, (float *)tab, fft_size * 2, 0.5);
         } else {
             for (i = 0; i < fft_size; i++) {
                 tab2[i]    = tab1[i].re;
@@ -368,7 +372,7 @@ int main(int argc, char **argv)
             ff_rdft_calc(r, tab2);
             fft_ref(tab_ref, tab1, fft_nbits);
             tab_ref[0].im = tab_ref[fft_size_2].re;
-            check_diff((float *)tab_ref, (float *)tab2, fft_size, 1.0);
+            err = check_diff((float *)tab_ref, (float *)tab2, fft_size, 1.0);
         }
         break;
     case TRANSFORM_DCT:
@@ -379,7 +383,7 @@ int main(int argc, char **argv)
         } else {
             dct_ref(tab_ref, tab1, fft_nbits);
         }
-        check_diff((float *)tab_ref, (float *)tab, fft_size, 1.0);
+        err = check_diff((float *)tab_ref, (float *)tab, fft_size, 1.0);
         break;
     }
 
@@ -442,5 +446,5 @@ int main(int argc, char **argv)
         ff_dct_end(d);
         break;
     }
-    return 0;
+    return err;
 }
