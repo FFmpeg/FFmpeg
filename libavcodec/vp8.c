@@ -821,18 +821,13 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
  * @return 0 if no coeffs were decoded
  *         otherwise, the index of the last coeff decoded plus one
  */
-static int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
-                               uint8_t probs[8][3][NUM_DCT_TOKENS-1],
-                               int i, int zero_nhood, int16_t qmul[2])
+static int decode_block_coeffs_internal(VP56RangeCoder *c, DCTELEM block[16],
+                                        uint8_t probs[8][3][NUM_DCT_TOKENS-1],
+                                        int i, uint8_t *token_prob, int16_t qmul[2])
 {
-    uint8_t *token_prob = probs[i][zero_nhood];
-    int coeff;
-
-    if (!vp56_rac_get_prob_branchy(c, token_prob[0]))
-        return 0;
     goto skip_eob;
-
     do {
+        int coeff;
         if (!vp56_rac_get_prob_branchy(c, token_prob[0]))   // DCT_EOB
             return i;
 
@@ -877,6 +872,17 @@ skip_eob:
     } while (++i < 16);
 
     return i;
+}
+
+static av_always_inline
+int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
+                        uint8_t probs[8][3][NUM_DCT_TOKENS-1],
+                        int i, int zero_nhood, int16_t qmul[2])
+{
+    uint8_t *token_prob = probs[i][zero_nhood];
+    if (!vp56_rac_get_prob_branchy(c, token_prob[0]))   // DCT_EOB
+        return 0;
+    return decode_block_coeffs_internal(c, block, probs, i, token_prob, qmul);
 }
 
 static av_always_inline
