@@ -85,7 +85,7 @@ static int xiph_handle_packet(AVFormatContext * ctx,
     ident       = AV_RB24(buf);
     fragmented  = buf[3] >> 6;
     tdt         = (buf[3] >> 4) & 3;
-    num_pkts    = buf[3] & 7;
+    num_pkts    = buf[3] & 0xf;
     pkt_len     = AV_RB16(buf + 4);
 
     if (pkt_len > len - 6) {
