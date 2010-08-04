@@ -826,17 +826,20 @@ static int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
                                int i, int zero_nhood, int16_t qmul[2])
 {
     uint8_t *token_prob = probs[i][zero_nhood];
-    int nonzero = 0;
     int coeff;
+
+    if (!vp56_rac_get_prob_branchy(c, token_prob[0]))
+        return 0;
+    goto skip_eob;
 
     do {
         if (!vp56_rac_get_prob_branchy(c, token_prob[0]))   // DCT_EOB
-            return nonzero;
+            return i;
 
 skip_eob:
         if (!vp56_rac_get_prob_branchy(c, token_prob[1])) { // DCT_0
             if (++i == 16)
-                return nonzero; // invalid input; blocks should end with EOB
+                return i; // invalid input; blocks should end with EOB
             token_prob = probs[i][0];
             goto skip_eob;
         }
@@ -870,13 +873,10 @@ skip_eob:
             }
             token_prob = probs[i+1][2];
         }
-
-        // todo: full [16] qmat? load into register?
         block[zigzag_scan[i]] = (vp8_rac_get(c) ? -coeff : coeff) * qmul[!!i];
-        nonzero = ++i;
-    } while (i < 16);
+    } while (++i < 16);
 
-    return nonzero;
+    return i;
 }
 
 static av_always_inline
@@ -910,9 +910,9 @@ void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
     // luma blocks
     for (y = 0; y < 4; y++)
         for (x = 0; x < 4; x++) {
-            nnz_pred = l_nnz[y] + t_nnz[x];
+            nnz_pred = l_nnz[y] + t_nnz[x];START_TIMER;
             nnz = decode_block_coeffs(c, s->block[y][x], s->prob->token[luma_ctx], luma_start,
-                                      nnz_pred, s->qmat[segment].luma_qmul);
+                                      nnz_pred, s->qmat[segment].luma_qmul);STOP_TIMER("test");
             // nnz+block_dc may be one more than the actual last index, but we don't care
             s->non_zero_count_cache[y][x] = nnz + block_dc;
             t_nnz[x] = l_nnz[y] = !!nnz;
