@@ -40,6 +40,10 @@ stddev(){
     do_tiny_psnr "$1" "$2" stddev  '<=' ${fuzz:-1}
 }
 
+run(){
+    $target_exec $target_path/"$@"
+}
+
 ffmpeg(){
     $target_exec $target_path/ffmpeg "$@"
 }
