@@ -620,6 +620,30 @@ static int mms_close(URLContext *h)
     return 0;
 }
 
+static int send_media_packet_request(MMSContext *mms)
+{
+    start_command_packet(mms, CS_PKT_START_FROM_PKT_ID);
+    insert_command_prefixes(mms, 1, 0x0001FFFF);
+    bytestream_put_le64(&mms->write_out_ptr, 0);          // seek timestamp
+    bytestream_put_le32(&mms->write_out_ptr, 0xffffffff); // unknown
+    bytestream_put_le32(&mms->write_out_ptr, 0xffffffff); // packet offset
+    bytestream_put_byte(&mms->write_out_ptr, 0xff);       // max stream time limit
+    bytestream_put_byte(&mms->write_out_ptr, 0xff);       // max stream time limit
+    bytestream_put_byte(&mms->write_out_ptr, 0xff);       // max stream time limit
+    bytestream_put_byte(&mms->write_out_ptr, 0x00);       // stream time limit flag
+
+    mms->packet_id++;                                     // new packet_id
+    bytestream_put_le32(&mms->write_out_ptr, mms->packet_id);
+    return send_command_packet(mms);
+}
+
+
+static void clear_stream_buffers(MMSContext *mms)
+{
+    mms->remaining_in_len = 0;
+    mms->read_in_ptr      = mms->in_buffer;
+}
+
 static int mms_open(URLContext *h, const char *uri, int flags)
 {
     MMSContext *mms;
@@ -683,30 +707,6 @@ fail:
     mms_close(h);
     dprintf(NULL, "Leaving open (failure: %d)\n", err);
     return err;
-}
-
-static int send_media_packet_request(MMSContext *mms)
-{
-    start_command_packet(mms, CS_PKT_START_FROM_PKT_ID);
-    insert_command_prefixes(mms, 1, 0x0001FFFF);
-    bytestream_put_le64(&mms->write_out_ptr, 0);          // seek timestamp
-    bytestream_put_le32(&mms->write_out_ptr, 0xffffffff); // unknown
-    bytestream_put_le32(&mms->write_out_ptr, 0xffffffff); // packet offset
-    bytestream_put_byte(&mms->write_out_ptr, 0xff);       // max stream time limit
-    bytestream_put_byte(&mms->write_out_ptr, 0xff);       // max stream time limit
-    bytestream_put_byte(&mms->write_out_ptr, 0xff);       // max stream time limit
-    bytestream_put_byte(&mms->write_out_ptr, 0x00);       // stream time limit flag
-
-    mms->packet_id++;                                     // new packet_id
-    bytestream_put_le32(&mms->write_out_ptr, mms->packet_id);
-    return send_command_packet(mms);
-}
-
-
-static void clear_stream_buffers(MMSContext *mms)
-{
-    mms->remaining_in_len = 0;
-    mms->read_in_ptr      = mms->in_buffer;
 }
 
 /** Read ASF data through the protocol. */
