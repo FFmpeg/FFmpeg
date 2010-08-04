@@ -910,9 +910,9 @@ void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
     // luma blocks
     for (y = 0; y < 4; y++)
         for (x = 0; x < 4; x++) {
-            nnz_pred = l_nnz[y] + t_nnz[x];START_TIMER;
+            nnz_pred = l_nnz[y] + t_nnz[x];
             nnz = decode_block_coeffs(c, s->block[y][x], s->prob->token[luma_ctx], luma_start,
-                                      nnz_pred, s->qmat[segment].luma_qmul);STOP_TIMER("test");
+                                      nnz_pred, s->qmat[segment].luma_qmul);
             // nnz+block_dc may be one more than the actual last index, but we don't care
             s->non_zero_count_cache[y][x] = nnz + block_dc;
             t_nnz[x] = l_nnz[y] = !!nnz;
