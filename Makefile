@@ -232,6 +232,13 @@ tools/lavfi-showfiltfmts$(EXESUF): tools/lavfi-showfiltfmts.o $(FF_DEP_LIBS)
 include $(SRC_PATH_BARE)/tests/fate.mak
 include $(SRC_PATH_BARE)/tests/fate2.mak
 
+include $(SRC_PATH_BARE)/tests/fate/aac.mak
+include $(SRC_PATH_BARE)/tests/fate/als.mak
+include $(SRC_PATH_BARE)/tests/fate/fft.mak
+include $(SRC_PATH_BARE)/tests/fate/h264.mak
+include $(SRC_PATH_BARE)/tests/fate/vorbis.mak
+include $(SRC_PATH_BARE)/tests/fate/vp8.mak
+
 FATE_TESTS += $(FATE2_TESTS)
 
 FATE_ACODEC  = $(ACODEC_TESTS:%=fate-acodec-%)
