@@ -124,7 +124,6 @@ typedef struct {
     /*@}*/
 
     int stream_num;                      ///< stream numbers.
-    int is_playing;
 } MMSContext;
 
 /** Create MMST command packet header */
@@ -552,7 +551,7 @@ static int read_mms_packet(MMSContext *mms, uint8_t *buf, int buf_size)
     int size_to_copy;
 
     do {
-        if(mms->asf_header_read_size < mms->asf_header_size && !mms->is_playing) {
+        if(mms->asf_header_read_size < mms->asf_header_size) {
             /* Read from ASF header buffer */
             size_to_copy= FFMIN(buf_size,
                                 mms->asf_header_size - mms->asf_header_read_size);
@@ -563,7 +562,6 @@ static int read_mms_packet(MMSContext *mms, uint8_t *buf, int buf_size)
                    size_to_copy, mms->asf_header_size - mms->asf_header_read_size);
             if (mms->asf_header_size == mms->asf_header_read_size) {
                 av_freep(&mms->asf_header);
-                mms->is_playing = 1;
             }
         } else if(mms->remaining_in_len) {
             /* Read remaining packet data to buffer.
@@ -701,6 +699,15 @@ static int mms_open(URLContext *h, const char *uri, int flags)
     if (!mms->asf_packet_len || !mms->stream_num)
         goto fail;
 
+    clear_stream_buffers(mms);
+    err = mms_safe_send_recv(mms, send_stream_selection_request, SC_PKT_STREAM_ID_ACCEPTED);
+    if (err)
+        goto fail;
+    // send media packet request
+    err = mms_safe_send_recv(mms, send_media_packet_request, SC_PKT_MEDIA_PKT_FOLLOWS);
+    if (err) {
+        goto fail;
+    }
     dprintf(NULL, "Leaving open (success)\n");
     return 0;
 fail:
@@ -714,23 +721,7 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
 {
     /* TODO: see tcp.c:tcp_read() about a possible timeout scheme */
     MMSContext *mms = h->priv_data;
-    int result = 0;
 
-    /* Since we read the header at open(), this shouldn't be possible */
-    assert(mms->header_parsed);
-
-    if (!mms->is_playing) {
-        dprintf(NULL, "mms_read() before play().\n");
-        clear_stream_buffers(mms);
-        result = mms_safe_send_recv(mms, send_stream_selection_request, SC_PKT_STREAM_ID_ACCEPTED);
-        if (result)
-            return result;
-        // send media packet request
-        result = mms_safe_send_recv(mms, send_media_packet_request, SC_PKT_MEDIA_PKT_FOLLOWS);
-        if (result) {
-            return result;
-        }
-    }
     return read_mms_packet(mms, buf, size);
 }
 
