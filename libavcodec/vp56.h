@@ -181,19 +181,12 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
  * vp56 specific range coder implementation
  */
 
-static inline void vp56_init_range_decoder(VP56RangeCoder *c,
-                                           const uint8_t *buf, int buf_size)
-{
-    c->high = 255;
-    c->bits = -8;
-    c->buffer = buf;
-    c->end = buf + buf_size;
-    c->code_word = bytestream_get_be16(&c->buffer);
-}
+extern const uint8_t ff_vp56_norm_shift[256];
+void ff_vp56_init_range_decoder(VP56RangeCoder *c, const uint8_t *buf, int buf_size);
 
 static av_always_inline unsigned int vp56_rac_renorm(VP56RangeCoder *c)
 {
-    int shift = ff_h264_norm_shift[c->high] - 1;
+    int shift = ff_vp56_norm_shift[c->high];
     int bits = c->bits;
     unsigned int code_word = c->code_word;
 

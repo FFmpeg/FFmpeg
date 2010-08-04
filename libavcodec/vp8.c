@@ -305,11 +305,11 @@ static int setup_partitions(VP8Context *s, const uint8_t *buf, int buf_size)
         if (buf_size - size < 0)
             return -1;
 
-        vp56_init_range_decoder(&s->coeff_partition[i], buf, size);
+        ff_vp56_init_range_decoder(&s->coeff_partition[i], buf, size);
         buf      += size;
         buf_size -= size;
     }
-    vp56_init_range_decoder(&s->coeff_partition[i], buf, buf_size);
+    ff_vp56_init_range_decoder(&s->coeff_partition[i], buf, buf_size);
 
     return 0;
 }
@@ -445,7 +445,7 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
             return ret;
     }
 
-    vp56_init_range_decoder(c, buf, header_size);
+    ff_vp56_init_range_decoder(c, buf, header_size);
     buf      += header_size;
     buf_size -= header_size;
 

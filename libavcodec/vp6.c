@@ -87,7 +87,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
             res = 2;
         }
 
-        vp56_init_range_decoder(c, buf+6, buf_size-6);
+        ff_vp56_init_range_decoder(c, buf+6, buf_size-6);
         vp56_rac_gets(c, 2);
 
         parse_filter_info = s->filter_header;
@@ -103,7 +103,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
             buf += 2;
             buf_size -= 2;
         }
-        vp56_init_range_decoder(c, buf+1, buf_size-1);
+        ff_vp56_init_range_decoder(c, buf+1, buf_size-1);
 
         *golden_frame = vp56_rac_get(c);
         if (s->filter_header) {
@@ -143,7 +143,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
             s->parse_coeff = vp6_parse_coeff_huffman;
             init_get_bits(&s->gb, buf, buf_size<<3);
         } else {
-            vp56_init_range_decoder(&s->cc, buf, buf_size);
+            ff_vp56_init_range_decoder(&s->cc, buf, buf_size);
             s->ccp = &s->cc;
         }
     } else {
