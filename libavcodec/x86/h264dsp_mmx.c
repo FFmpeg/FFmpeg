@@ -2323,6 +2323,22 @@ H264_WEIGHT( 4, 8)
 H264_WEIGHT( 4, 4)
 H264_WEIGHT( 4, 2)
 
+void ff_h264_biweight_8x8_sse2(uint8_t *dst, uint8_t *src, int stride,
+                               int log2_denom, int weightd, int weights,
+                               int offset);
+
+void ff_h264_biweight_16x16_sse2(uint8_t *dst, uint8_t *src, int stride,
+                                 int log2_denom, int weightd, int weights,
+                                 int offset);
+
+void ff_h264_biweight_8x8_ssse3(uint8_t *dst, uint8_t *src, int stride,
+                                int log2_denom, int weightd, int weights,
+                                int offset);
+
+void ff_h264_biweight_16x16_ssse3(uint8_t *dst, uint8_t *src, int stride,
+                                  int log2_denom, int weightd, int weights,
+                                  int offset);
+
 void ff_pred16x16_vertical_mmx     (uint8_t *src, int stride);
 void ff_pred16x16_vertical_sse     (uint8_t *src, int stride);
 void ff_pred16x16_horizontal_mmx   (uint8_t *src, int stride);

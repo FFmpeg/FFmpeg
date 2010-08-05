@@ -3000,6 +3000,8 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
             c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_mmxext;
 #endif
             if( mm_flags&FF_MM_SSE2 ){
+                c->biweight_h264_pixels_tab[0]= ff_h264_biweight_16x16_sse2;
+                c->biweight_h264_pixels_tab[3]= ff_h264_biweight_8x8_sse2;
 #if ARCH_X86_64 || !defined(__ICC) || __ICC > 1110
                 c->h264_v_loop_filter_luma = ff_x264_deblock_v_luma_sse2;
                 c->h264_h_loop_filter_luma = ff_x264_deblock_h_luma_sse2;
@@ -3011,6 +3013,10 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
                 c->h264_idct_add8  = ff_h264_idct_add8_sse2;
                 c->h264_idct_add16intra = ff_h264_idct_add16intra_sse2;
 #endif
+            }
+            if ( mm_flags&FF_MM_SSSE3 ){
+                c->biweight_h264_pixels_tab[0]= ff_h264_biweight_16x16_ssse3;
+                c->biweight_h264_pixels_tab[3]= ff_h264_biweight_8x8_ssse3;
             }
         }
 #endif
