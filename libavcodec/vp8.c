@@ -1155,8 +1155,8 @@ static av_always_inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, i
     /* Don't prefetch refs that haven't been used very often this frame. */
     if (s->ref_count[ref-1] > (mb_xy >> 5)) {
         int x_off = mb_x << 4, y_off = mb_y << 4;
-        int mx = mb->mv.x + x_off + 8;
-        int my = mb->mv.y + y_off;
+        int mx = (mb->mv.x>>2) + x_off + 8;
+        int my = (mb->mv.y>>2) + y_off;
         uint8_t **src= s->framep[ref]->data;
         int off= mx + (my + (mb_x&3)*4)*s->linesize + 64;
         s->dsp.prefetch(src[0]+off, s->linesize, 4);
