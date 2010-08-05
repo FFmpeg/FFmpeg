@@ -86,6 +86,12 @@ void ff_h264_idct_add8_neon(uint8_t **dest, const int *block_offset,
                             DCTELEM *block, int stride,
                             const uint8_t nnzc[6*8]);
 
+void ff_h264_idct8_add_neon(uint8_t *dst, DCTELEM *block, int stride);
+void ff_h264_idct8_dc_add_neon(uint8_t *dst, DCTELEM *block, int stride);
+void ff_h264_idct8_add4_neon(uint8_t *dst, const int *block_offset,
+                             DCTELEM *block, int stride,
+                             const uint8_t nnzc[6*8]);
+
 static void ff_h264dsp_init_neon(H264DSPContext *c)
 {
     c->h264_v_loop_filter_luma   = ff_h264_v_loop_filter_luma_neon;
@@ -116,6 +122,9 @@ static void ff_h264dsp_init_neon(H264DSPContext *c)
     c->h264_idct_add16      = ff_h264_idct_add16_neon;
     c->h264_idct_add16intra = ff_h264_idct_add16intra_neon;
     c->h264_idct_add8       = ff_h264_idct_add8_neon;
+    c->h264_idct8_add       = ff_h264_idct8_add_neon;
+    c->h264_idct8_dc_add    = ff_h264_idct8_dc_add_neon;
+    c->h264_idct8_add4      = ff_h264_idct8_add4_neon;
 }
 
 void ff_h264dsp_init_arm(H264DSPContext *c)
