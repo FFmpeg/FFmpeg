@@ -43,6 +43,9 @@ struct PayloadContext {
     unsigned ident;             ///< 24-bit stream configuration identifier
     uint32_t timestamp;
     ByteIOContext* fragment;    ///< buffer for split payloads
+    uint8_t *split_buf;
+    int split_pos, split_buf_len, split_buf_size;
+    int split_pkts;
 };
 
 static PayloadContext *xiph_new_context(void)
@@ -63,6 +66,7 @@ static inline void free_fragment_if_needed(PayloadContext * data)
 static void xiph_free_context(PayloadContext * data)
 {
     free_fragment_if_needed(data);
+    av_free(data->split_buf);
     av_free(data);
 }
 
@@ -75,6 +79,29 @@ static int xiph_handle_packet(AVFormatContext * ctx,
 {
 
     int ident, fragmented, tdt, num_pkts, pkt_len;
+
+    if (!buf) {
+        if (!data->split_buf || data->split_pos + 2 > data->split_buf_len ||
+            data->split_pkts <= 0) {
+            av_log(ctx, AV_LOG_ERROR, "No more data to return\n");
+            return AVERROR_INVALIDDATA;
+        }
+        pkt_len = AV_RB16(data->split_buf + data->split_pos);
+        data->split_pos += 2;
+        if (data->split_pos + pkt_len > data->split_buf_len) {
+            av_log(ctx, AV_LOG_ERROR, "Not enough data to return\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (av_new_packet(pkt, pkt_len)) {
+            av_log(ctx, AV_LOG_ERROR, "Out of memory.\n");
+            return AVERROR(ENOMEM);
+        }
+        pkt->stream_index = st->index;
+        memcpy(pkt->data, data->split_buf + data->split_pos, pkt_len);
+        data->split_pos += pkt_len;
+        data->split_pkts--;
+        return data->split_pkts > 0;
+    }
 
     if (len < 6) {
         av_log(ctx, AV_LOG_ERROR, "Invalid %d byte packet\n", len);
@@ -112,41 +139,33 @@ static int xiph_handle_packet(AVFormatContext * ctx,
     len -= 6;
 
     if (fragmented == 0) {
-        // whole frame(s)
-        int i, data_len, write_len;
-        buf -= 2;
-        len += 2;
-
-        // fast first pass to calculate total length
-        for (i = 0, data_len = 0;  (i < num_pkts) && (len >= 2);  i++) {
-            int off   = data_len + (i << 1);
-            pkt_len   = AV_RB16(buf + off);
-            data_len += pkt_len;
-            len      -= pkt_len + 2;
-        }
-
-        if (len < 0 || i < num_pkts) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Bad packet: %d bytes left at frame %d of %d\n",
-                   len, i, num_pkts);
-            return AVERROR_INVALIDDATA;
-        }
-
-        if (av_new_packet(pkt, data_len)) {
+        if (av_new_packet(pkt, pkt_len)) {
             av_log(ctx, AV_LOG_ERROR, "Out of memory.\n");
             return AVERROR(ENOMEM);
         }
         pkt->stream_index = st->index;
+        memcpy(pkt->data, buf, pkt_len);
+        buf += pkt_len;
+        len -= pkt_len;
+        num_pkts--;
 
-        // concatenate frames
-        for (i = 0, write_len = 0; write_len < data_len; i++) {
-            pkt_len = AV_RB16(buf);
-            buf += 2;
-            memcpy(pkt->data + write_len, buf, pkt_len);
-            write_len += pkt_len;
-            buf += pkt_len;
+        if (num_pkts > 0) {
+            if (len > data->split_buf_size || !data->split_buf) {
+                av_freep(&data->split_buf);
+                data->split_buf_size = 2 * len;
+                data->split_buf = av_malloc(data->split_buf_size);
+                if (!data->split_buf) {
+                    av_log(ctx, AV_LOG_ERROR, "Out of memory.\n");
+                    av_free_packet(pkt);
+                    return AVERROR(ENOMEM);
+                }
+            }
+            memcpy(data->split_buf, buf, len);
+            data->split_buf_len = len;
+            data->split_pos = 0;
+            data->split_pkts = num_pkts;
+            return 1;
         }
-        assert(write_len == data_len);
 
         return 0;
 
