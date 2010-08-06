@@ -4,9 +4,9 @@
 Protocols are configured elements in FFmpeg which allow to access
 resources which require the use of a particular protocol.
 
-When you configure your FFmpeg build, all the supported protocols
-are enabled by default. You can list them using the configure option
-"--list-protocols".
+When you configure your FFmpeg build, all the supported protocols are
+enabled by default. You can list all available ones using the
+configure option "--list-protocols".
 
 You can disable all the protocols using the configure option
 "--disable-protocols", and selectively enable a protocol using the
@@ -15,7 +15,7 @@ particular protocol using the option
 "--disable-protocol=@var{PROTOCOL}".
 
 The option "-protocols" of the ff* tools will display the list of
-the supported protocols.
+supported protocols.
 
 A description of the currently available protocols follows.
 
@@ -23,10 +23,10 @@ A description of the currently available protocols follows.
 
 Physical concatenation protocol.
 
-Allow to read and seek from many resource in sequence as they were an
-unique resource.
+Allow to read and seek from many resource in sequence as if they were
+a unique resource.
 
-An url accepted by this protocol has the syntax:
+An URL accepted by this protocol has the syntax:
 @example
 concat:@var{URL1}|@var{URL2}|...|@var{URLN}
 @end example
@@ -57,9 +57,9 @@ use the command:
 ffmpeg -i file:input.mpeg output.mpeg
 @end example
 
-Note that if not specified otherwise, the ff* tools will use the file
-protocol by default, that is a resource specified with the name
-"FILE.mpeg" is interpreted as it were the url "file:FILE.mpeg".
+The ff* tools default to the file protocol, that is a resource
+specified with the name "FILE.mpeg" is interpreted as the URL
+"file:FILE.mpeg".
 
 @section gopher
 
@@ -67,7 +67,7 @@ Gopher protocol.
 
 @section http
 
-HTTP (Hyper Text Trasfer Protocol).
+HTTP (Hyper Text Transfer Protocol).
 
 @section mmst
 
@@ -77,20 +77,20 @@ MMS (Microsoft Media Server) protocol over TCP.
 
 MD5 output protocol.
 
-Computes the MD5 hash of data written, and on close writes this to the
-designated output or stdout if none is specified. It can be used to
-test muxers without writing an actual file.
+Computes the MD5 hash of the data to be written, and on close writes
+this to the designated output or stdout if none is specified. It can
+be used to test muxers without writing an actual file.
 
 Some examples follow.
 @example
-# write the MD5 hash of the encoded AVI file in the file output.avi.md5
+# Write the MD5 hash of the encoded AVI file in the file output.avi.md5.
 ffmpeg -i input.flv -f avi -y md5:output.avi.md5
 
-# write the MD5 hash of the encoded AVI file to stdout
+# Write the MD5 hash of the encoded AVI file to stdout.
 ffmpeg -i input.flv -f avi -y md5:
 @end example
 
-Note that some formats (typically mov) require the output protocol to
+Note that some formats (typically MOV) require the output protocol to
 be seekable, so they will fail with the MD5 output protocol.
 
 @section pipe
@@ -105,26 +105,25 @@ pipe:[@var{number}]
 @end example
 
 @var{number} is the number corresponding to the file descriptor of the
-pipe (e.g. 0 for stdin, 1 for stdout, 2 for stderr).
-If @var{number} is not specified will use by default stdout if the
-protocol is used for writing, stdin if the protocol is used for
-reading.
+pipe (e.g. 0 for stdin, 1 for stdout, 2 for stderr).  If @var{number}
+is not specified, by default the stdout file descriptor will be used
+for writing, stdin for reading.
 
 For example to read from stdin with @file{ffmpeg}:
 @example
 cat test.wav | ffmpeg -i pipe:0
-# this is the same as
+# ...this is the same as...
 cat test.wav | ffmpeg -i pipe:
 @end example
 
 For writing to stdout with @file{ffmpeg}:
 @example
 ffmpeg -i test.wav -f avi pipe:1 | cat > test.avi
-# this is the same as
+# ...this is the same as...
 ffmpeg -i test.wav -f avi pipe: | cat > test.avi
 @end example
 
-Note that some formats (typically mov), require the output protocol to
+Note that some formats (typically MOV), require the output protocol to
 be seekable, so they will fail with the pipe output protocol.
 
 @section rtmp
@@ -139,18 +138,18 @@ The required syntax is:
 rtmp://@var{server}[:@var{port}][/@var{app}][/@var{playpath}]
 @end example
 
-Follows the description of the accepted parameters.
+The accepted parameters are:
 @table @option
 
 @item server
-It is the address of the RTMP server.
+The address of the RTMP server.
 
 @item port
-It is the number of the TCP port to use (by default is 1935).
+The number of the TCP port to use (by default is 1935).
 
 @item app
-It is the name of the application to acces. It usually corresponds to
-the the path where the application is installed on the RTMP server
+It is the name of the application to access. It usually corresponds to
+the path where the application is installed on the RTMP server
 (e.g. @file{/ondemand/}, @file{/flash/live/}, etc.).
 
 @item playpath
@@ -170,7 +169,7 @@ ffplay rtmp://myserver/vod/sample
 Real-Time Messaging Protocol and its variants supported through
 librtmp.
 
-Require the presence of the headers and library of librtmp during
+Requires the presence of the librtmp headers and library during
 configuration. You need to explicitely configure the build with
 "--enable-librtmp". If enabled this will replace the native RTMP
 protocol.
@@ -188,11 +187,11 @@ The required syntax is:
 where @var{rtmp_proto} is one of the strings "rtmp", "rtmpt", "rtmpe",
 "rtmps", "rtmpte", "rtmpts" corresponding to each RTMP variant, and
 @var{server}, @var{port}, @var{app} and @var{playpath} have the same
-meaning has specified for the RTMP native protocol.
+meaning as specified for the RTMP native protocol.
 @var{options} contains a list of space-separated options of the form
 @var{key}=@var{val}.
 
-See the manual page of librtmp (man 3 librtmp) for more information.
+See the librtmp manual page (man 3 librtmp) for more information.
 
 For example, to stream a file in real-time to an RTMP server using
 @file{ffmpeg}:
