@@ -446,5 +446,12 @@ int main(int argc, char **argv)
         ff_dct_end(d);
         break;
     }
+
+    av_free(tab);
+    av_free(tab1);
+    av_free(tab2);
+    av_free(tab_ref);
+    av_free(exptab);
+
     return err;
 }
