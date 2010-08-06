@@ -1,4 +1,4 @@
-@chapter Devices
+@chapter Input Devices
 @c man begin INPUT DEVICES
 
 Input devices are configured elements in FFmpeg which allow to access
