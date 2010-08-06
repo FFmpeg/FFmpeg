@@ -159,6 +159,11 @@ typedef struct RTSPMessageHeader {
      * http://tools.ietf.org/html/draft-stiemerling-rtsp-announce-00
      * for a complete list of supported values. */
     int notice;
+
+    /** The "reason" is meant to specify better the meaning of the error code
+     * returned
+     */
+    char reason[256];
 } RTSPMessageHeader;
 
 /**

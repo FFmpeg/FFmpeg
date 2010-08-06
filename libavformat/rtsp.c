@@ -824,6 +824,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
             get_word(buf1, sizeof(buf1), &p);
             get_word(buf1, sizeof(buf1), &p);
             reply->status_code = atoi(buf1);
+            av_strlcpy(reply->reason, p, sizeof(reply->reason));
         } else {
             ff_rtsp_parse_line(reply, p, &rt->auth_state);
             av_strlcat(rt->last_reply, p,    sizeof(rt->last_reply));
@@ -961,9 +962,10 @@ retry:
         goto retry;
 
     if (reply->status_code > 400){
-        av_log(s, AV_LOG_ERROR, "method %s failed, %d\n",
+        av_log(s, AV_LOG_ERROR, "method %s failed: %d%s\n",
                method,
-               reply->status_code);
+               reply->status_code,
+               reply->reason);
         av_log(s, AV_LOG_DEBUG, "%s\n", rt->last_reply);
     }
 
