@@ -22,10 +22,6 @@ A description of the currently available output devices follows.
 
 ALSA (Advanced Linux Sound Architecture) output device.
 
-@section audio_beos
-
-BeOS audio output device.
-
 @section oss
 
 OSS (Open Sound System) output device.

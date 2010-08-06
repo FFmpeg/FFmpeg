@@ -51,10 +51,6 @@ ffmpeg -f alsa -i hw:0 alsaout.wav
 For more information see:
 @url{http://www.alsa-project.org/alsa-doc/alsa-lib/pcm.html}
 
-@section audio_beos
-
-BeOS audio input device.
-
 @section bktr
 
 BSD video input device.
