@@ -50,4 +50,16 @@ int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
 int av_fill_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int height,
                            uint8_t *ptr, const int linesizes[4]);
 
+/**
+ * Check if the given dimension of an image is valid, meaning that all
+ * bytes of the image can be addressed with a signed int.
+ *
+ * @param w the width of the picture
+ * @param h the height of the picture
+ * @param log_offset the offset to sum to the log level for logging with log_ctx
+ * @param log_ctx the parent logging context, it may be NULL
+ * @return >= 0 if valid, a negative error code otherwise
+ */
+int av_check_image_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx);
+
 #endif /* AVCORE_IMGUTILS_H */
