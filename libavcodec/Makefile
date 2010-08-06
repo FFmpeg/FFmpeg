@@ -33,6 +33,7 @@ FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o
 OBJS-$(CONFIG_FFT)                     += avfft.o fft.o $(FFT-OBJS-yes)
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_H264DSP)                 += h264dsp.o h264idct.o h264pred.o
+OBJS-$(CONFIG_HUFFMAN)                 += huffman.o
 OBJS-$(CONFIG_LPC)                     += lpc.o
 OBJS-$(CONFIG_LSP)                     += lsp.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
@@ -128,7 +129,7 @@ OBJS-$(CONFIG_FLASHSV_DECODER)         += flashsv.o
 OBJS-$(CONFIG_FLASHSV_ENCODER)         += flashsvenc.o
 OBJS-$(CONFIG_FLIC_DECODER)            += flicvideo.o
 OBJS-$(CONFIG_FOURXM_DECODER)          += 4xm.o
-OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o huffman.o
+OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o
 OBJS-$(CONFIG_FRWU_DECODER)            += frwu.o
 OBJS-$(CONFIG_GIF_DECODER)             += gifdec.o lzw.o
 OBJS-$(CONFIG_GIF_ENCODER)             += gif.o lzwenc.o
@@ -378,7 +379,7 @@ OBJS-$(CONFIG_VP3_DECODER)             += vp3.o vp3dsp.o
 OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o vp56dsp.o \
                                           vp3dsp.o vp56rac.o
 OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o vp56dsp.o \
-                                          vp3dsp.o vp6dsp.o huffman.o vp56rac.o
+                                          vp3dsp.o vp6dsp.o vp56rac.o
 OBJS-$(CONFIG_VP8_DECODER)             += vp8.o vp8dsp.o vp56rac.o
 OBJS-$(CONFIG_VQA_DECODER)             += vqavideo.o
 OBJS-$(CONFIG_WAVPACK_DECODER)         += wavpack.o

@@ -104,6 +104,7 @@ Configuration options:
   --disable-dct            disable DCT code
   --disable-fft            disable FFT code
   --disable-golomb         disable Golomb code
+  --disable-huffman        disable Huffman code
   --disable-lpc            disable LPC code
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
@@ -867,6 +868,7 @@ CONFIG_LIST="
     gray
     h264dsp
     hardcoded_tables
+    huffman
     libdc1394
     libdirac
     libfaac
@@ -1191,6 +1193,7 @@ flashsv_decoder_select="zlib"
 flashsv_encoder_select="zlib"
 flv_decoder_select="h263_decoder"
 flv_encoder_select="h263_encoder"
+fraps_decoder_select="huffman"
 h261_encoder_select="aandct"
 h263_decoder_select="h263_parser"
 h263_encoder_select="aandct"
@@ -1269,6 +1272,7 @@ vc1_vaapi_hwaccel_select="vaapi vc1_decoder"
 vc1_vdpau_decoder_select="vdpau vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
+vp6_decoder_select="huffman"
 vp6a_decoder_select="vp6_decoder"
 vp6f_decoder_select="vp6_decoder"
 vp8_decoder_select="h264dsp"
