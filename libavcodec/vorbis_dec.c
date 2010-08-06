@@ -81,7 +81,7 @@ typedef struct {
         } t0;
         struct vorbis_floor1_s {
             uint_fast8_t partitions;
-            uint_fast8_t partition_class[32];
+            uint8_t      partition_class[32];
             uint_fast8_t class_dimensions[16];
             uint_fast8_t class_subclasses[16];
             uint_fast8_t class_masterbook[16];
