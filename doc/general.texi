@@ -790,7 +790,8 @@ bash ./configure
 
 MacOS X on PowerPC or ARM (iPhone) requires a preprocessor from
 @url{http://github.com/yuvi/gas-preprocessor} to build the optimized
-assembler functions.
+assembler functions. Just download the Perl script and put it somewhere
+in your PATH, FFmpeg's configure will pick it up automatically.
 
 @section Windows
 
