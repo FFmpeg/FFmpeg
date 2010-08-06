@@ -13,6 +13,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-08-06 - r24709 - lavcore 0.3.0 - av_check_image_size()
+  Deprecate avcodec_check_dimensions() in favor of the function
+  av_check_image_size() defined in libavcore/imgutils.h.
+
 2010-07-30 - r24592 - lavfi 1.27.0 - AVFilterBuffer
   Increase size of the arrays AVFilterBuffer.data and
   AVFilterBuffer.linesize from 4 to 8.
