@@ -111,6 +111,6 @@ int av_check_image_size(unsigned int w, unsigned int h, int log_offset, void *lo
     if((int)w>0 && (int)h>0 && (w+128)*(uint64_t)(h+128) < INT_MAX/8)
         return 0;
 
-    av_log(&imgutils, AV_LOG_ERROR, "picture size invalid (%ux%u)\n", w, h);
+    av_log(&imgutils, AV_LOG_ERROR, "Picture size %ux%u is invalid\n", w, h);
     return AVERROR(EINVAL);
 }
