@@ -430,7 +430,7 @@ void avfilter_destroy(AVFilterContext *filter)
     for(i = 0; i < filter->input_count; i ++) {
         if(filter->inputs[i]) {
             if (filter->inputs[i]->src)
-            filter->inputs[i]->src->outputs[filter->inputs[i]->srcpad] = NULL;
+                filter->inputs[i]->src->outputs[filter->inputs[i]->srcpad] = NULL;
             avfilter_formats_unref(&filter->inputs[i]->in_formats);
             avfilter_formats_unref(&filter->inputs[i]->out_formats);
         }
@@ -439,7 +439,7 @@ void avfilter_destroy(AVFilterContext *filter)
     for(i = 0; i < filter->output_count; i ++) {
         if(filter->outputs[i]) {
             if (filter->outputs[i]->dst)
-            filter->outputs[i]->dst->inputs[filter->outputs[i]->dstpad] = NULL;
+                filter->outputs[i]->dst->inputs[filter->outputs[i]->dstpad] = NULL;
             avfilter_formats_unref(&filter->outputs[i]->in_formats);
             avfilter_formats_unref(&filter->outputs[i]->out_formats);
         }
