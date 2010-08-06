@@ -22,6 +22,7 @@
 #undef __STRICT_ANSI__ //workaround due to broken kernel headers
 #include "config.h"
 #include "libavutil/rational.h"
+#include "libavcore/imgutils.h"
 #include "libavformat/avformat.h"
 #include "libavcodec/dsputil.h"
 #include <unistd.h>
@@ -116,7 +117,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         }
     }
 
-    if(avcodec_check_dimensions(s1, s->video_win.width, s->video_win.height) < 0)
+    if(av_check_image_size(s->video_win.width, s->video_win.height, 0, s1) < 0)
         return -1;
 
     desired_palette = -1;

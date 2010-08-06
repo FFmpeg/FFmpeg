@@ -34,6 +34,7 @@
 #include "aandcttab.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
+#include "libavcore/imgutils.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD i-frame */
@@ -260,7 +261,7 @@ static int decode_frame(AVCodecContext *avctx,
     buf += 16;
 
     if (avctx->width != s->width || avctx->height != s->height) {
-        if (avcodec_check_dimensions(avctx, s->width, s->height) < 0)
+        if (av_check_image_size(s->width, s->height, 0, avctx) < 0)
             return -1;
         avcodec_set_dimensions(avctx, s->width, s->height);
         if (t->frame.data[0])

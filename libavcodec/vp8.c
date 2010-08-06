@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "vp56.h"
 #include "vp8data.h"
@@ -224,7 +225,7 @@ static void vp8_decode_flush(AVCodecContext *avctx)
 
 static int update_dimensions(VP8Context *s, int width, int height)
 {
-    if (avcodec_check_dimensions(s->avctx, width, height))
+    if (av_check_image_size(width, height, 0, s->avctx))
         return AVERROR_INVALIDDATA;
 
     vp8_decode_flush(s->avctx);

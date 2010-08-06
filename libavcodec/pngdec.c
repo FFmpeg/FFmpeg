@@ -18,6 +18,7 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "png.h"
@@ -441,7 +442,7 @@ static int decode_frame(AVCodecContext *avctx,
                 goto fail;
             s->width = bytestream_get_be32(&s->bytestream);
             s->height = bytestream_get_be32(&s->bytestream);
-            if(avcodec_check_dimensions(avctx, s->width, s->height)){
+            if(av_check_image_size(s->width, s->height, 0, avctx)){
                 s->width= s->height= 0;
                 goto fail;
             }

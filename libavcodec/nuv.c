@@ -23,6 +23,7 @@
 
 #include "libavutil/bswap.h"
 #include "libavutil/lzo.h"
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "rtjpeg.h"
@@ -111,7 +112,7 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height, int qualit
     if (quality >= 0)
         get_quant_quality(c, quality);
     if (width != c->width || height != c->height) {
-        if (avcodec_check_dimensions(avctx, height, width) < 0)
+        if (av_check_image_size(height, width, 0, avctx) < 0)
             return 0;
         avctx->width = c->width = width;
         avctx->height = c->height = height;

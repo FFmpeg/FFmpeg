@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcore/imgutils.h"
 
 #include "avcodec.h"
 #include "get_bits.h"
@@ -84,7 +85,7 @@ static av_cold int yop_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     if (avctx->width & 1 || avctx->height & 1 ||
-        avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
+        av_check_image_size(avctx->width, avctx->height, 0, avctx) < 0) {
         av_log(avctx, AV_LOG_ERROR, "YOP has invalid dimensions\n");
         return -1;
     }

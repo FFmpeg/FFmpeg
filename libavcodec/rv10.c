@@ -25,6 +25,7 @@
  * RV10/RV20 decoder
  */
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -369,7 +370,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         }
         if(new_w != s->width || new_h != s->height){
             av_log(s->avctx, AV_LOG_DEBUG, "attempting to change resolution to %dx%d\n", new_w, new_h);
-            if (avcodec_check_dimensions(s->avctx, new_w, new_h) < 0)
+            if (av_check_image_size(new_w, new_h, 0, s->avctx) < 0)
                 return -1;
             MPV_common_end(s);
             avcodec_set_dimensions(s->avctx, new_w, new_h);

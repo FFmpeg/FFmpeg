@@ -43,6 +43,7 @@
 #endif
 #include <time.h>
 #include <strings.h>
+#include "libavcore/imgutils.h"
 
 static const int desired_video_buffers = 256;
 
@@ -623,7 +624,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
         return AVERROR(EIO);
     }
-    if (avcodec_check_dimensions(s1, s->width, s->height) < 0)
+    if (av_check_image_size(s->width, s->height, 0, s1) < 0)
         return AVERROR(EINVAL);
     s->frame_format = desired_format;
 

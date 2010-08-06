@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
 
@@ -62,7 +63,7 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
 {
     QtrleEncContext *s = avctx->priv_data;
 
-    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
+    if (av_check_image_size(avctx->width, avctx->height, 0, avctx) < 0) {
         return -1;
     }
     s->avctx=avctx;

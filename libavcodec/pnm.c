@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "pnm.h"
 
@@ -101,7 +102,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
             }
         }
         /* check that all tags are present */
-        if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0' || avcodec_check_dimensions(avctx, w, h))
+        if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0' || av_check_image_size(w, h, 0, avctx))
             return -1;
 
         avctx->width  = w;
@@ -134,7 +135,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
         return -1;
     pnm_get(s, buf1, sizeof(buf1));
     avctx->height = atoi(buf1);
-    if(avcodec_check_dimensions(avctx, avctx->width, avctx->height))
+    if(av_check_image_size(avctx->width, avctx->height, 0, avctx))
         return -1;
     if (avctx->pix_fmt != PIX_FMT_MONOWHITE) {
         pnm_get(s, buf1, sizeof(buf1));

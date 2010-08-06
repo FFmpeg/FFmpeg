@@ -29,6 +29,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 
 typedef struct CmvContext {
@@ -156,7 +157,7 @@ static int cmv_decode_frame(AVCodecContext *avctx,
         return buf_size;
     }
 
-    if (avcodec_check_dimensions(s->avctx, s->width, s->height))
+    if (av_check_image_size(s->width, s->height, 0, s->avctx))
         return -1;
 
     /* shuffle */

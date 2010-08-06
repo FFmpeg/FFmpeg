@@ -22,6 +22,7 @@
 
 //#define DEBUG
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "lzw.h"
@@ -296,7 +297,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, A
         return -1;
 
     avctx->pix_fmt = PIX_FMT_PAL8;
-    if (avcodec_check_dimensions(avctx, s->screen_width, s->screen_height))
+    if (av_check_image_size(s->screen_width, s->screen_height, 0, avctx))
         return -1;
     avcodec_set_dimensions(avctx, s->screen_width, s->screen_height);
 

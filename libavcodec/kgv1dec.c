@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 
 typedef struct {
@@ -50,7 +51,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     h = (buf[1] + 1) * 8;
     buf += 2;
 
-    if (avcodec_check_dimensions(avctx, w, h))
+    if (av_check_image_size(w, h, 0, avctx))
         return -1;
 
     if (w != avctx->width || h != avctx->height)

@@ -235,7 +235,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         return -1;
     }
 
-    if(avcodec_check_dimensions(s,w,h))
+    if(av_check_image_size(w, h, 0, s))
         return -1;
 
     if(s->internal_buffer==NULL){
@@ -487,7 +487,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 
 #define SANE_NB_CHANNELS 128U
     if (((avctx->coded_width || avctx->coded_height)
-        && avcodec_check_dimensions(avctx, avctx->coded_width, avctx->coded_height))
+        && av_check_image_size(avctx->coded_width, avctx->coded_height, 0, avctx))
         || avctx->channels > SANE_NB_CHANNELS) {
         ret = AVERROR(EINVAL);
         goto free_and_end;
@@ -554,7 +554,7 @@ int attribute_align_arg avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf
         av_log(avctx, AV_LOG_ERROR, "buffer smaller than minimum size\n");
         return -1;
     }
-    if(avcodec_check_dimensions(avctx,avctx->width,avctx->height))
+    if(av_check_image_size(avctx->width, avctx->height, 0, avctx))
         return -1;
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || pict){
         int ret = avctx->codec->encode(avctx, buf, buf_size, pict);
@@ -604,7 +604,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     int ret;
 
     *got_picture_ptr= 0;
-    if((avctx->coded_width||avctx->coded_height) && avcodec_check_dimensions(avctx,avctx->coded_width,avctx->coded_height))
+    if((avctx->coded_width||avctx->coded_height) && av_check_image_size(avctx->coded_width, avctx->coded_height, 0, avctx))
         return -1;
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size){
         ret = avctx->codec->decode(avctx, picture, got_picture_ptr,

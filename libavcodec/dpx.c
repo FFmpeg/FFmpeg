@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcore/imgutils.h"
 #include "bytestream.h"
 #include "avcodec.h"
 
@@ -139,7 +140,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
-    if (avcodec_check_dimensions(avctx, w, h))
+    if (av_check_image_size(w, h, 0, avctx))
         return -1;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);

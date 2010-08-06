@@ -22,6 +22,7 @@
 //#define TRACE
 //#define DEBUG
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dnxhddata.h"
@@ -305,7 +306,7 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     avctx->pix_fmt = PIX_FMT_YUV422P;
-    if (avcodec_check_dimensions(avctx, ctx->width, ctx->height))
+    if (av_check_image_size(ctx->width, ctx->height, 0, avctx))
         return -1;
     avcodec_set_dimensions(avctx, ctx->width, ctx->height);
 

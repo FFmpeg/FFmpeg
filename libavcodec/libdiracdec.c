@@ -105,8 +105,8 @@ static int libdirac_decode_frame(AVCodecContext *avccontext,
             /* tell FFmpeg about sequence details */
             dirac_sourceparams_t *src_params = &p_dirac_params->p_decoder->src_params;
 
-            if (avcodec_check_dimensions(avccontext, src_params->width,
-                                         src_params->height) < 0) {
+            if (av_check_image_size(src_params->width, src_params->height,
+                                    0, avccontext) < 0) {
                 av_log(avccontext, AV_LOG_ERROR, "Invalid dimensions (%dx%d)\n",
                        src_params->width, src_params->height);
                 avccontext->height = avccontext->width = 0;

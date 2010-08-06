@@ -28,6 +28,7 @@
  */
 
 #include "libavutil/intmath.h"
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "internal.h"
@@ -510,7 +511,7 @@ av_cold int MPV_common_init(MpegEncContext *s)
         return -1;
     }
 
-    if((s->width || s->height) && avcodec_check_dimensions(s->avctx, s->width, s->height))
+    if((s->width || s->height) && av_check_image_size(s->width, s->height, 0, s->avctx))
         return -1;
 
     dsputil_init(&s->dsp, s->avctx);

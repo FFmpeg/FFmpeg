@@ -86,7 +86,7 @@ static int vp8_decode(AVCodecContext *avctx,
         if ((int) img->d_w != avctx->width || (int) img->d_h != avctx->height) {
             av_log(avctx, AV_LOG_INFO, "dimension change! %dx%d -> %dx%d\n",
                    avctx->width, avctx->height, img->d_w, img->d_h);
-            if (avcodec_check_dimensions(avctx, img->d_w, img->d_h))
+            if (av_check_image_size(img->d_w, img->d_h, 0, avctx))
                 return AVERROR_INVALIDDATA;
             avcodec_set_dimensions(avctx, img->d_w, img->d_h);
         }

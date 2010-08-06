@@ -25,6 +25,7 @@
  * @author Marco Gerards <marco@gnu.org>
  */
 
+#include "libavcore/imgutils.h"
 #include "dirac.h"
 #include "avcodec.h"
 #include "golomb.h"
@@ -268,7 +269,7 @@ int ff_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
     if (parse_source_parameters(avctx, gb, source))
         return -1;
 
-    if (avcodec_check_dimensions(avctx, source->width, source->height))
+    if (av_check_image_size(source->width, source->height, 0, avctx))
         return -1;
 
     avcodec_set_dimensions(avctx, source->width, source->height);

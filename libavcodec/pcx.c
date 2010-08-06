@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "get_bits.h"
@@ -142,7 +143,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (p->data[0])
         avctx->release_buffer(avctx, p);
 
-    if (avcodec_check_dimensions(avctx, w, h))
+    if (av_check_image_size(w, h, 0, avctx))
         return -1;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);

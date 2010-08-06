@@ -515,7 +515,7 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    enum PixelFormat pix_fmt, int width, int height)
 {
 
-    if(avcodec_check_dimensions(NULL, width, height))
+    if(av_check_image_size(width, height, 0, NULL))
         return -1;
 
     if (av_fill_image_linesizes(picture->linesize, pix_fmt, width))
@@ -597,7 +597,7 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
 int avpicture_get_size(enum PixelFormat pix_fmt, int width, int height)
 {
     AVPicture dummy_pict;
-    if(avcodec_check_dimensions(NULL, width, height))
+    if(av_check_image_size(width, height, 0, NULL))
         return -1;
     switch (pix_fmt) {
     case PIX_FMT_RGB8:

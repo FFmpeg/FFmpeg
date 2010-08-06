@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
@@ -1980,7 +1981,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     visible_width  = s->width  = get_bits(gb, 16) << 4;
     visible_height = s->height = get_bits(gb, 16) << 4;
 
-    if(avcodec_check_dimensions(avctx, s->width, s->height)){
+    if(av_check_image_size(s->width, s->height, 0, avctx)){
         av_log(avctx, AV_LOG_ERROR, "Invalid dimensions (%dx%d)\n", s->width, s->height);
         s->width= s->height= 0;
         return -1;

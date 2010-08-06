@@ -28,6 +28,7 @@
 #include "parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/colorspace.h"
+#include "libavcore/imgutils.h"
 #include "libavcore/parseutils.h"
 
 enum { RED = 0, GREEN, BLUE, ALPHA };
@@ -406,7 +407,7 @@ static int color_config_props(AVFilterLink *inlink)
 
     color->w &= ~((1 << color->hsub) - 1);
     color->h &= ~((1 << color->vsub) - 1);
-    if (avcodec_check_dimensions(ctx, color->w, color->h) < 0)
+    if (av_check_image_size(color->w, color->h, 0, ctx) < 0)
         return AVERROR(EINVAL);
 
     memcpy(rgba_color, color->color, sizeof(rgba_color));
