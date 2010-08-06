@@ -27,6 +27,7 @@
 #include <vpx/vpx_decoder.h>
 #include <vpx/vp8dx.h>
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 
 typedef struct VP8DecoderContext {
