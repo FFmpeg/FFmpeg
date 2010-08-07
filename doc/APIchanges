@@ -13,6 +13,21 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-08-07 - r24732 - lavfi 1.31.0 - AVFilterLink
+  Rename AVFilterLink fields:
+  AVFilterLink.srcpic    ->  AVFilterLink.src_buf
+  AVFilterLink.cur_pic   ->  AVFilterLink.cur_buf
+  AVFilterLink.outpic    ->  AVFilterLink.out_buf
+
+2010-08-07 - r24731 - lavfi 1.30.0
+  Rename functions and fields:
+  avfilter_(un)ref_pic       -> avfilter_(un)ref_buffer
+  avfilter_copy_picref_props -> avfilter_copy_buffer_ref_props
+  AVFilterBufferRef.pic      -> AVFilterBufferRef.buffer
+
+2010-08-07 - r24730 - lavfi 1.29.0 - AVFilterBufferRef
+  Rename AVFilterPicRef to AVFilterBufferRef.
+
 2010-08-07 - r24728 - lavfi 1.28.0 - AVFilterBuffer
   Move format field from AVFilterBuffer to AVFilterPicRef.
 
