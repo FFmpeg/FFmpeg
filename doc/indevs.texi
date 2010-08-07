@@ -165,7 +165,7 @@ ffmpeg -f video4linux2 -i /dev/video0 out.mpeg
 
 @section vfwcap
 
-VFW (Video For Windows) capture input device.
+VfW (Video for Windows) capture input device.
 
 @section x11grab
 
