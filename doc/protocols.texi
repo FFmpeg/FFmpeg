@@ -26,7 +26,7 @@ Physical concatenation protocol.
 Allow to read and seek from many resource in sequence as if they were
 a unique resource.
 
-An URL accepted by this protocol has the syntax:
+A URL accepted by this protocol has the syntax:
 @example
 concat:@var{URL1}|@var{URL2}|...|@var{URLN}
 @end example
@@ -83,7 +83,7 @@ be used to test muxers without writing an actual file.
 
 Some examples follow.
 @example
-# Write the MD5 hash of the encoded AVI file in the file output.avi.md5.
+# Write the MD5 hash of the encoded AVI file to the file output.avi.md5.
 ffmpeg -i input.flv -f avi -y md5:output.avi.md5
 
 # Write the MD5 hash of the encoded AVI file to stdout.
