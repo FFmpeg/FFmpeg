@@ -2365,7 +2365,7 @@ void ff_pred4x4_tm_vp8_mmxext      (uint8_t *src, const uint8_t *topright, int s
 void ff_pred4x4_tm_vp8_ssse3       (uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_vertical_vp8_mmxext(uint8_t *src, const uint8_t *topright, int stride);
 
-#if CONFIG_H264DSP
+#if CONFIG_H264PRED
 void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
 {
     mm_flags = mm_support();

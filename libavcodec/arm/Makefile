@@ -3,8 +3,8 @@ OBJS-$(CONFIG_DCA_DECODER)             += arm/dcadsp_init_arm.o         \
 OBJS-$(CONFIG_VP5_DECODER)             += arm/vp56dsp_init_arm.o
 OBJS-$(CONFIG_VP6_DECODER)             += arm/vp56dsp_init_arm.o
 
-OBJS-$(CONFIG_H264DSP)                 += arm/h264dsp_init_arm.o        \
-                                          arm/h264pred_init_arm.o       \
+OBJS-$(CONFIG_H264DSP)                 += arm/h264dsp_init_arm.o
+OBJS-$(CONFIG_H264PRED)                += arm/h264pred_init_arm.o
 
 OBJS                                   += arm/dsputil_init_arm.o        \
                                           arm/dsputil_arm.o             \
@@ -36,7 +36,8 @@ NEON-OBJS-$(CONFIG_RDFT)               += arm/rdft_neon.o               \
 
 NEON-OBJS-$(CONFIG_H264DSP)            += arm/h264dsp_neon.o            \
                                           arm/h264idct_neon.o           \
-                                          arm/h264pred_neon.o           \
+
+NEON-OBJS-$(CONFIG_H264PRED)           += arm/h264pred_neon.o           \
 
 NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/dcadsp_neon.o             \
                                           arm/synth_filter_neon.o       \
