@@ -57,7 +57,7 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
+static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     SliceContext *slice = link->dst->priv;
 

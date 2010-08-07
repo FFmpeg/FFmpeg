@@ -32,10 +32,10 @@ static void avfilter_default_free_buffer(AVFilterBuffer *ptr)
 /* TODO: set the buffer's priv member to a context structure for the whole
  * filter chain.  This will allow for a buffer pool instead of the constant
  * alloc & free cycle currently implemented. */
-AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     AVFilterBuffer *pic = av_mallocz(sizeof(AVFilterBuffer));
-    AVFilterPicRef *ref = av_mallocz(sizeof(AVFilterPicRef));
+    AVFilterBufferRef *ref = av_mallocz(sizeof(AVFilterBufferRef));
     int i, tempsize;
     char *buf;
 
@@ -65,7 +65,7 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms,
     return ref;
 }
 
-void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
+void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     AVFilterLink *out = NULL;
 
@@ -168,7 +168,7 @@ int avfilter_default_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-void avfilter_null_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
+void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     avfilter_start_frame(link->dst->outputs[0], picref);
 }
@@ -183,7 +183,7 @@ void avfilter_null_end_frame(AVFilterLink *link)
     avfilter_end_frame(link->dst->outputs[0]);
 }
 
-AVFilterPicRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
 }

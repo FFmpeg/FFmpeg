@@ -39,13 +39,13 @@ static int config_input(AVFilterLink *link)
     return 0;
 }
 
-static AVFilterPicRef *get_video_buffer(AVFilterLink *link, int perms,
+static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
                                         int w, int h)
 {
     FlipContext *flip = link->dst->priv;
     int i;
 
-    AVFilterPicRef *picref = avfilter_get_video_buffer(link->dst->outputs[0],
+    AVFilterBufferRef *picref = avfilter_get_video_buffer(link->dst->outputs[0],
                                                        perms, w, h);
 
     for (i = 0; i < 4; i ++) {
@@ -60,7 +60,7 @@ static AVFilterPicRef *get_video_buffer(AVFilterLink *link, int perms,
     return picref;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
+static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     FlipContext *flip = link->dst->priv;
     int i;

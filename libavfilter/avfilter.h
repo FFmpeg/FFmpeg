@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 28
+#define LIBAVFILTER_VERSION_MINOR 29
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -62,7 +62,7 @@ typedef struct AVFilterPad     AVFilterPad;
 /**
  * A reference-counted buffer data type used by the filter system. Filters
  * should not store pointers to this structure directly, but instead use the
- * AVFilterPicRef structure below.
+ * AVFilterBufferRef structure below.
  */
 typedef struct AVFilterBuffer
 {
@@ -96,7 +96,7 @@ typedef struct AVFilterBuffer
  *
  * TODO: add anything necessary for frame reordering
  */
-typedef struct AVFilterPicRef
+typedef struct AVFilterBufferRef
 {
     AVFilterBuffer *pic;        ///< the picture that this is a reference to
     uint8_t *data[4];           ///< picture data for each plane
@@ -114,13 +114,13 @@ typedef struct AVFilterPicRef
 
     int interlaced;             ///< is frame interlaced
     int top_field_first;
-} AVFilterPicRef;
+} AVFilterBufferRef;
 
 /**
  * Copy properties of src to dst, without copying the actual video
  * data.
  */
-static inline void avfilter_copy_picref_props(AVFilterPicRef *dst, AVFilterPicRef *src)
+static inline void avfilter_copy_picref_props(AVFilterBufferRef *dst, AVFilterBufferRef *src)
 {
     dst->pts             = src->pts;
     dst->pos             = src->pos;
@@ -139,14 +139,14 @@ static inline void avfilter_copy_picref_props(AVFilterPicRef *dst, AVFilterPicRe
  * @return      a new reference to the picture with the same properties as the
  *              old, excluding any permissions denied by pmask
  */
-AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask);
+AVFilterBufferRef *avfilter_ref_pic(AVFilterBufferRef *ref, int pmask);
 
 /**
  * Remove a reference to a picture. If this is the last reference to the
  * picture, the picture itself is also automatically freed.
  * @param ref reference to the picture
  */
-void avfilter_unref_pic(AVFilterPicRef *ref);
+void avfilter_unref_pic(AVFilterBufferRef *ref);
 
 /**
  * A list of supported formats for one end of a filter link. This is used
@@ -323,7 +323,7 @@ struct AVFilterPad
      *
      * Input video pads only.
      */
-    void (*start_frame)(AVFilterLink *link, AVFilterPicRef *picref);
+    void (*start_frame)(AVFilterLink *link, AVFilterBufferRef *picref);
 
     /**
      * Callback function to get a buffer. If NULL, the filter system will
@@ -331,7 +331,7 @@ struct AVFilterPad
      *
      * Input video pads only.
      */
-    AVFilterPicRef *(*get_video_buffer)(AVFilterLink *link, int perms, int w, int h);
+    AVFilterBufferRef *(*get_video_buffer)(AVFilterLink *link, int perms, int w, int h);
 
     /**
      * Callback called after the slices of a frame are completely sent. If
@@ -388,7 +388,7 @@ struct AVFilterPad
 };
 
 /** default handler for start_frame() for video inputs */
-void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref);
+void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 /** default handler for draw_slice() for video inputs */
 void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 /** default handler for end_frame() for video inputs */
@@ -398,7 +398,7 @@ int avfilter_default_config_output_link(AVFilterLink *link);
 /** default handler for config_props() for video inputs */
 int avfilter_default_config_input_link (AVFilterLink *link);
 /** default handler for get_video_buffer() for video inputs */
-AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link,
+AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
                                                   int perms, int w, int h);
 /**
  * A helper for query_formats() which sets all links to the same list of
@@ -410,7 +410,7 @@ void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 int avfilter_default_query_formats(AVFilterContext *ctx);
 
 /** start_frame() handler for filters which simply pass video along */
-void avfilter_null_start_frame(AVFilterLink *link, AVFilterPicRef *picref);
+void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /** draw_slice() handler for filters which simply pass video along */
 void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
@@ -419,7 +419,7 @@ void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 void avfilter_null_end_frame(AVFilterLink *link);
 
 /** get_video_buffer() handler for filters which simply pass video along */
-AVFilterPicRef *avfilter_null_get_video_buffer(AVFilterLink *link,
+AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link,
                                                   int perms, int w, int h);
 
 /**
@@ -530,10 +530,10 @@ struct AVFilterLink
      * for the destination. This should not be accessed directly by the
      * filters.
      */
-    AVFilterPicRef *srcpic;
+    AVFilterBufferRef *srcpic;
 
-    AVFilterPicRef *cur_pic;
-    AVFilterPicRef *outpic;
+    AVFilterBufferRef *cur_pic;
+    AVFilterBufferRef *outpic;
 };
 
 /**
@@ -564,7 +564,7 @@ int avfilter_config_links(AVFilterContext *filter);
  * @return      A reference to the picture. This must be unreferenced with
  *              avfilter_unref_pic when you are finished with it.
  */
-AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
+AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
                                           int w, int h);
 
 /**
@@ -590,7 +590,7 @@ int avfilter_poll_frame(AVFilterLink *link);
  *               portion. The receiving filter will free this reference when
  *               it no longer needs it.
  */
-void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref);
+void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /**
  * Notifie the next filter that the current frame has finished.

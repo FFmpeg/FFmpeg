@@ -83,7 +83,7 @@ static int fill_line_with_color(uint8_t *line[4], int line_step[4], int w, uint8
     return 0;
 }
 
-static void draw_rectangle(AVFilterPicRef *outpic, uint8_t *line[4], int line_step[4],
+static void draw_rectangle(AVFilterBufferRef *outpic, uint8_t *line[4], int line_step[4],
                            int hsub, int vsub, int x, int y, int w, int h)
 {
     int i, plane;
@@ -221,11 +221,11 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static AVFilterPicRef *get_video_buffer(AVFilterLink *inlink, int perms, int w, int h)
+static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int w, int h)
 {
     PadContext *pad = inlink->dst->priv;
 
-    AVFilterPicRef *picref = avfilter_get_video_buffer(inlink->dst->outputs[0], perms,
+    AVFilterBufferRef *picref = avfilter_get_video_buffer(inlink->dst->outputs[0], perms,
                                                        w + (pad->w - pad->in_w),
                                                        h + (pad->h - pad->in_h));
     int plane;
@@ -241,10 +241,10 @@ static AVFilterPicRef *get_video_buffer(AVFilterLink *inlink, int perms, int w, 
     return picref;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterPicRef *inpicref)
+static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     PadContext *pad = inlink->dst->priv;
-    AVFilterPicRef *outpicref = avfilter_ref_pic(inpicref, ~0);
+    AVFilterBufferRef *outpicref = avfilter_ref_pic(inpicref, ~0);
     int plane;
 
     inlink->dst->outputs[0]->outpic = outpicref;
@@ -292,7 +292,7 @@ static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir,
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     PadContext *pad = link->dst->priv;
-    AVFilterPicRef *outpic = link->dst->outputs[0]->outpic;
+    AVFilterBufferRef *outpic = link->dst->outputs[0]->outpic;
 
     y += pad->y;
 
@@ -427,7 +427,7 @@ static int color_config_props(AVFilterLink *inlink)
 static int color_request_frame(AVFilterLink *link)
 {
     ColorContext *color = link->src->priv;
-    AVFilterPicRef *picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, color->w, color->h);
+    AVFilterBufferRef *picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, color->w, color->h);
     picref->pixel_aspect = (AVRational) {1, 1};
     picref->pts          = av_rescale_q(color->pts++, color->time_base, AV_TIME_BASE_Q);
     picref->pos          = 0;

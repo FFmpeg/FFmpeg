@@ -195,8 +195,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 static void end_frame(AVFilterLink *link)
 {
     UnsharpContext *unsharp = link->dst->priv;
-    AVFilterPicRef *in  = link->cur_pic;
-    AVFilterPicRef *out = link->dst->outputs[0]->outpic;
+    AVFilterBufferRef *in  = link->cur_pic;
+    AVFilterBufferRef *out = link->dst->outputs[0]->outpic;
 
     unsharpen(out->data[0], in->data[0], out->linesize[0], in->linesize[0], link->w,            link->h,             &unsharp->luma);
     unsharpen(out->data[1], in->data[1], out->linesize[1], in->linesize[1], CHROMA_WIDTH(link), CHROMA_HEIGHT(link), &unsharp->chroma);

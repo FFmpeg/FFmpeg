@@ -45,16 +45,16 @@ const char *avfilter_license(void)
 #define link_dpad(link)     link->dst-> input_pads[link->dstpad]
 #define link_spad(link)     link->src->output_pads[link->srcpad]
 
-AVFilterPicRef *avfilter_ref_pic(AVFilterPicRef *ref, int pmask)
+AVFilterBufferRef *avfilter_ref_pic(AVFilterBufferRef *ref, int pmask)
 {
-    AVFilterPicRef *ret = av_malloc(sizeof(AVFilterPicRef));
+    AVFilterBufferRef *ret = av_malloc(sizeof(AVFilterBufferRef));
     *ret = *ref;
     ret->perms &= pmask;
     ret->pic->refcount ++;
     return ret;
 }
 
-void avfilter_unref_pic(AVFilterPicRef *ref)
+void avfilter_unref_pic(AVFilterBufferRef *ref)
 {
     if(!(--ref->pic->refcount))
         ref->pic->free(ref->pic);
@@ -171,7 +171,7 @@ int avfilter_config_links(AVFilterContext *filter)
     return 0;
 }
 
-void ff_dprintf_picref(void *ctx, AVFilterPicRef *picref, int end)
+void ff_dprintf_picref(void *ctx, AVFilterBufferRef *picref, int end)
 {
     dprintf(ctx,
             "picref[%p data[%p, %p, %p, %p] linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64" a:%d/%d s:%dx%d]%s",
@@ -194,9 +194,9 @@ void ff_dprintf_link(void *ctx, AVFilterLink *link, int end)
             end ? "\n" : "");
 }
 
-AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
-    AVFilterPicRef *ret = NULL;
+    AVFilterBufferRef *ret = NULL;
 
     FF_DPRINTF_START(NULL, get_video_buffer); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " perms:%d w:%d h:%d\n", perms, w, h);
 
@@ -242,9 +242,9 @@ int avfilter_poll_frame(AVFilterLink *link)
 
 /* XXX: should we do the duplicating of the picture ref here, instead of
  * forcing the source filter to do it? */
-void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
+void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
-    void (*start_frame)(AVFilterLink *, AVFilterPicRef *);
+    void (*start_frame)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = &link_dpad(link);
 
     FF_DPRINTF_START(NULL, start_frame); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " "); ff_dprintf_picref(NULL, picref, 1);

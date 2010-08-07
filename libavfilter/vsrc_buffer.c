@@ -105,7 +105,7 @@ static int config_props(AVFilterLink *link)
 static int request_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
-    AVFilterPicRef *picref;
+    AVFilterBufferRef *picref;
 
     if (!c->has_frame) {
         av_log(link->src, AV_LOG_ERROR,

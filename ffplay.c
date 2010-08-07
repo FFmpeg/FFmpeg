@@ -105,7 +105,7 @@ typedef struct VideoPicture {
     enum PixelFormat pix_fmt;
 
 #if CONFIG_AVFILTER
-    AVFilterPicRef *picref;
+    AVFilterBufferRef *picref;
 #endif
 } VideoPicture;
 
@@ -1560,7 +1560,7 @@ typedef struct {
 static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
 {
     AVFilterContext *ctx = codec->opaque;
-    AVFilterPicRef  *ref;
+    AVFilterBufferRef  *ref;
     int perms = AV_PERM_WRITE;
     int i, w, h, stride[4];
     unsigned edge;
@@ -1609,7 +1609,7 @@ static void input_release_buffer(AVCodecContext *codec, AVFrame *pic)
 
 static int input_reget_buffer(AVCodecContext *codec, AVFrame *pic)
 {
-    AVFilterPicRef *ref = pic->opaque;
+    AVFilterBufferRef *ref = pic->opaque;
 
     if (pic->data[0] == NULL) {
         pic->buffer_hints |= FF_BUFFER_HINTS_READABLE;
@@ -1656,7 +1656,7 @@ static void input_uninit(AVFilterContext *ctx)
 static int input_request_frame(AVFilterLink *link)
 {
     FilterPriv *priv = link->src->priv;
-    AVFilterPicRef *picref;
+    AVFilterBufferRef *picref;
     int64_t pts = 0;
     AVPacket pkt;
     int ret;
@@ -1741,7 +1741,7 @@ static int output_query_formats(AVFilterContext *ctx)
 static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
                                     int64_t *pts, int64_t *pos)
 {
-    AVFilterPicRef *pic;
+    AVFilterBufferRef *pic;
 
     if(avfilter_request_frame(ctx->inputs[0]))
         return -1;

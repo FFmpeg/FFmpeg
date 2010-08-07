@@ -142,11 +142,11 @@ static int config_props(AVFilterLink *outlink)
     return !scale->sws;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
+static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     ScaleContext *scale = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[0];
-    AVFilterPicRef *outpicref;
+    AVFilterBufferRef *outpicref;
 
     scale->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
     scale->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
@@ -169,7 +169,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     ScaleContext *scale = link->dst->priv;
     int out_h;
-    AVFilterPicRef *cur_pic = link->cur_pic;
+    AVFilterBufferRef *cur_pic = link->cur_pic;
     const uint8_t *data[4];
 
     if (scale->slice_y == 0 && slice_dir == -1)

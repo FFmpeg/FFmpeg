@@ -48,11 +48,11 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterPicRef *picref)
+static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     PixdescTestContext *priv = inlink->dst->priv;
     AVFilterLink *outlink    = inlink->dst->outputs[0];
-    AVFilterPicRef *outpicref;
+    AVFilterBufferRef *outpicref;
     int i;
 
     outlink->outpic = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
@@ -80,8 +80,8 @@ static void start_frame(AVFilterLink *inlink, AVFilterPicRef *picref)
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     PixdescTestContext *priv = inlink->dst->priv;
-    AVFilterPicRef *inpic    = inlink->cur_pic;
-    AVFilterPicRef *outpic   = inlink->dst->outputs[0]->outpic;
+    AVFilterBufferRef *inpic    = inlink->cur_pic;
+    AVFilterBufferRef *outpic   = inlink->dst->outputs[0]->outpic;
     int i, c, w = inlink->w;
 
     for (c = 0; c < priv->pix_desc->nb_components; c++) {

@@ -313,7 +313,7 @@ typedef struct AVInputStream {
     AVFilterContext *input_video_filter;
     AVFrame *filter_frame;
     int has_filter_frame;
-    AVFilterPicRef *picref;
+    AVFilterBufferRef *picref;
 #endif
 } AVInputStream;
 
@@ -361,10 +361,10 @@ static int output_query_formats(AVFilterContext *ctx)
 }
 
 static int get_filtered_video_pic(AVFilterContext *ctx,
-                                  AVFilterPicRef **picref, AVFrame *pic2,
+                                  AVFilterBufferRef **picref, AVFrame *pic2,
                                   uint64_t *pts)
 {
-    AVFilterPicRef *pic;
+    AVFilterBufferRef *pic;
 
     if(avfilter_request_frame(ctx->inputs[0]))
         return -1;

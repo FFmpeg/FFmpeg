@@ -129,10 +129,10 @@ static int config_output(AVFilterLink *link)
     return 0;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
+static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     CropContext *crop = link->dst->priv;
-    AVFilterPicRef *ref2 = avfilter_ref_pic(picref, ~0);
+    AVFilterBufferRef *ref2 = avfilter_ref_pic(picref, ~0);
     int i;
 
     ref2->w        = crop->w;
