@@ -367,7 +367,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
     MpegEncContext * const s = &h->s;
     static const int coeff_token_table_index[17]= {0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3};
     int level[16];
-    int zeros_left, coeff_num, coeff_token, total_coeff, i, j, trailing_ones, run_before;
+    int zeros_left, coeff_token, total_coeff, i, trailing_ones, run_before;
 
     //FIXME put trailing_onex into the context
 
@@ -488,39 +488,36 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
             zeros_left= get_vlc2(gb, (total_zeros_vlc-1)[ total_coeff ].table, TOTAL_ZEROS_VLC_BITS, 1);
     }
 
-    coeff_num = zeros_left + total_coeff - 1;
-    j = scantable[coeff_num];
+    scantable += zeros_left + total_coeff - 1;
     if(n > 24){
-        block[j] = level[0];
-        for(i=1;i<total_coeff;i++) {
-            if(zeros_left <= 0)
-                run_before = 0;
-            else if(zeros_left < 7){
+        block[*scantable] = level[0];
+        for(i=1;i<total_coeff && zeros_left > 0;i++) {
+            if(zeros_left < 7)
                 run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1);
-            }else{
+            else
                 run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2);
-            }
             zeros_left -= run_before;
-            coeff_num -= 1 + run_before;
-            j= scantable[ coeff_num ];
-
-            block[j]= level[i];
+            scantable -= 1 + run_before;
+            block[*scantable]= level[i];
+        }
+        for(;i<total_coeff;i++) {
+            scantable--;
+            block[*scantable]= level[i];
         }
     }else{
-        block[j] = (level[0] * qmul[j] + 32)>>6;
-        for(i=1;i<total_coeff;i++) {
-            if(zeros_left <= 0)
-                run_before = 0;
-            else if(zeros_left < 7){
+        block[*scantable] = (level[0] * qmul[*scantable] + 32)>>6;
+        for(i=1;i<total_coeff && zeros_left > 0;i++) {
+            if(zeros_left < 7)
                 run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1);
-            }else{
+            else
                 run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2);
-            }
             zeros_left -= run_before;
-            coeff_num -= 1 + run_before;
-            j= scantable[ coeff_num ];
-
-            block[j]= (level[i] * qmul[j] + 32)>>6;
+            scantable -= 1 + run_before;
+            block[*scantable]= (level[i] * qmul[*scantable] + 32)>>6;
+        }
+        for(;i<total_coeff;i++) {
+            scantable--;
+            block[*scantable]= (level[i] * qmul[*scantable] + 32)>>6;
         }
     }
 
