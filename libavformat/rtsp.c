@@ -1129,7 +1129,7 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
             rt->transport = reply->transports[0].transport;
         }
 
-        /* close RTP connection if not choosen */
+        /* close RTP connection if not chosen */
         if (reply->transports[0].lower_transport != RTSP_LOWER_TRANSPORT_UDP &&
             (lower_transport == RTSP_LOWER_TRANSPORT_UDP)) {
             url_close(rtsp_st->rtp_handle);

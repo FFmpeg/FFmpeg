@@ -41,7 +41,7 @@
 #include <stdint.h>
 
 /** Rice parameters and corresponding index offsets for decoding the
- *  indices of scaled PARCOR values. The table choosen is set globally
+ *  indices of scaled PARCOR values. The table chosen is set globally
  *  by the encoder and stored in ALSSpecificConfig.
  */
 static const int8_t parcor_rice_table[3][20][2] = {
