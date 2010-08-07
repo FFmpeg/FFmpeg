@@ -1585,8 +1585,8 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     ref->w = codec->width;
     ref->h = codec->height;
     for(i = 0; i < 4; i ++) {
-        unsigned hshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->pic->format].log2_chroma_w : 0;
-        unsigned vshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->pic->format].log2_chroma_h : 0;
+        unsigned hshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->format].log2_chroma_w : 0;
+        unsigned vshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->format].log2_chroma_h : 0;
 
         if (ref->data[i]) {
             ref->data[i]    += (edge >> hshift) + ((edge * ref->linesize[i]) >> vshift);
@@ -1617,7 +1617,7 @@ static int input_reget_buffer(AVCodecContext *codec, AVFrame *pic)
     }
 
     if ((codec->width != ref->w) || (codec->height != ref->h) ||
-        (codec->pix_fmt != ref->pic->format)) {
+        (codec->pix_fmt != ref->format)) {
         av_log(codec, AV_LOG_ERROR, "Picture properties changed.\n");
         return -1;
     }
@@ -1671,7 +1671,7 @@ static int input_request_frame(AVFilterLink *link)
     } else {
         picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
         av_picture_copy((AVPicture *)&picref->data, (AVPicture *)priv->frame,
-                        picref->pic->format, link->w, link->h);
+                        picref->format, link->w, link->h);
     }
     av_free_packet(&pkt);
 

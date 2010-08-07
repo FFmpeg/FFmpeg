@@ -47,17 +47,17 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms,
     ref->perms = perms | AV_PERM_READ;
 
     pic->refcount = 1;
-    pic->format   = link->format;
+    ref->format   = link->format;
     pic->free     = avfilter_default_free_buffer;
-    av_fill_image_linesizes(pic->linesize, pic->format, ref->w);
+    av_fill_image_linesizes(pic->linesize, ref->format, ref->w);
 
     for (i=0; i<4;i++)
         pic->linesize[i] = FFALIGN(pic->linesize[i], 16);
 
-    tempsize = av_fill_image_pointers(pic->data, pic->format, ref->h, NULL, pic->linesize);
+    tempsize = av_fill_image_pointers(pic->data, ref->format, ref->h, NULL, pic->linesize);
     buf = av_malloc(tempsize + 16); // +2 is needed for swscaler, +16 to be
                                     // SIMD-friendly
-    av_fill_image_pointers(pic->data, pic->format, ref->h, buf, pic->linesize);
+    av_fill_image_pointers(pic->data, ref->format, ref->h, buf, pic->linesize);
 
     memcpy(ref->data,     pic->data,     4*sizeof(pic->data[0]));
     memcpy(ref->linesize, pic->linesize, 4*sizeof(pic->linesize[0]));
