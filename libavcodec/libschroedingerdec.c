@@ -27,6 +27,7 @@
 * (http://dirac.sourceforge.net/specification.html).
 */
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "libdirac_libschro.h"
 #include "libschroedinger.h"

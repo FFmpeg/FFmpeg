@@ -24,6 +24,7 @@
 * JPEG 2000 decoder using libopenjpeg
 */
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
 #define  OPJ_STATIC
