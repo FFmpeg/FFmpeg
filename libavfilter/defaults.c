@@ -59,8 +59,8 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms,
                                     // SIMD-friendly
     av_fill_image_pointers(pic->data, pic->format, ref->h, buf, pic->linesize);
 
-    memcpy(ref->data,     pic->data,     sizeof(pic->data));
-    memcpy(ref->linesize, pic->linesize, sizeof(pic->linesize));
+    memcpy(ref->data,     pic->data,     4*sizeof(pic->data[0]));
+    memcpy(ref->linesize, pic->linesize, 4*sizeof(pic->linesize[0]));
 
     return ref;
 }
