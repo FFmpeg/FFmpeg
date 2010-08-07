@@ -52,7 +52,7 @@ int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
 #define SELECT_TIMEOUT_MS 100
 #define READ_PACKET_TIMEOUT_S 10
 #define MAX_TIMEOUTS READ_PACKET_TIMEOUT_S * 1000 / SELECT_TIMEOUT_MS
-#define SDP_MAX_SIZE 8192
+#define SDP_MAX_SIZE 16384
 
 static void get_word_until_chars(char *buf, int buf_size,
                                  const char *sep, const char **pp)

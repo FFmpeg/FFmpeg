@@ -67,5 +67,6 @@ void ff_rtp_send_h263(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_amr(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size);
+void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size);
 
 #endif /* AVFORMAT_RTPENC_H */

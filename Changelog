@@ -27,6 +27,7 @@ version <next>:
 - SubRip subtitle file muxer and demuxer
 - Chinese AVS encoding via libxavs
 - ffprobe -show_packets option added
+- RTP packetization of Theora and Vorbis
 
 
 

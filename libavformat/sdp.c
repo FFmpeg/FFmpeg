@@ -21,6 +21,7 @@
 #include <string.h>
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
+#include "libavcodec/xiph.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avc.h"
@@ -220,6 +221,75 @@ static char *extradata2config(AVCodecContext *c)
     return config;
 }
 
+static char *xiph_extradata2config(AVCodecContext *c)
+{
+    char *config, *encoded_config;
+    uint8_t *header_start[3];
+    int headers_len, header_len[3], config_len;
+    int first_header_size;
+
+    switch (c->codec_id) {
+    case CODEC_ID_THEORA:
+        first_header_size = 42;
+        break;
+    case CODEC_ID_VORBIS:
+        first_header_size = 30;
+        break;
+    default:
+        av_log(c, AV_LOG_ERROR, "Unsupported Xiph codec ID\n");
+        return NULL;
+    }
+
+    if (ff_split_xiph_headers(c->extradata, c->extradata_size,
+                              first_header_size, header_start,
+                              header_len) < 0) {
+        av_log(c, AV_LOG_ERROR, "Extradata corrupt.\n");
+        return NULL;
+    }
+
+    headers_len = header_len[0] + header_len[2];
+    config_len = 4 +          // count
+                 3 +          // ident
+                 2 +          // packet size
+                 1 +          // header count
+                 2 +          // header size
+                 headers_len; // and the rest
+
+    config = av_malloc(config_len);
+    if (!config)
+        goto xiph_fail;
+
+    encoded_config = av_malloc(AV_BASE64_SIZE(config_len));
+    if (!encoded_config) {
+        av_free(config);
+        goto xiph_fail;
+    }
+
+    config[0] = config[1] = config[2] = 0;
+    config[3] = 1;
+    config[4] = 0xfe; // ident must match the one in rtpenc_xiph.c
+    config[5] = 0xcd;
+    config[6] = 0xba;
+    config[7] = (headers_len >> 8) & 0xff;
+    config[8] = headers_len & 0xff;
+    config[9] = 2;
+    config[10] = header_len[0];
+    config[11] = 0; // size of comment header; nonexistent
+    memcpy(config + 12, header_start[0], header_len[0]);
+    memcpy(config + 12 + header_len[0], header_start[2], header_len[2]);
+
+    av_base64_encode(encoded_config, AV_BASE64_SIZE(config_len),
+                     config, config_len);
+    av_free(config);
+
+    return encoded_config;
+
+xiph_fail:
+    av_log(c, AV_LOG_ERROR,
+           "Not enough memory for configuration string\n");
+    return NULL;
+}
+
 static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c, int payload_type)
 {
     char *config = NULL;
@@ -297,6 +367,51 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                      payload_type, c->sample_rate, c->channels,
                                      payload_type);
             break;
+        case CODEC_ID_VORBIS:
+            if (c->extradata_size)
+                config = xiph_extradata2config(c);
+            else
+                av_log(c, AV_LOG_ERROR, "Vorbis configuration info missing\n");
+            if (!config)
+                return NULL;
+
+            av_strlcatf(buff, size, "a=rtpmap:%d vorbis/%d/%d\r\n"
+                                    "a=fmtp:%d configuration=%s\r\n",
+                                    payload_type, c->sample_rate, c->channels,
+                                    payload_type, config);
+            break;
+        case CODEC_ID_THEORA: {
+            const char *pix_fmt;
+            if (c->extradata_size)
+                config = xiph_extradata2config(c);
+            else
+                av_log(c, AV_LOG_ERROR, "Theora configuation info missing\n");
+            if (!config)
+                return NULL;
+
+            switch (c->pix_fmt) {
+            case PIX_FMT_YUV420P:
+                pix_fmt = "YCbCr-4:2:0";
+                break;
+            case PIX_FMT_YUV422P:
+                pix_fmt = "YCbCr-4:2:2";
+                break;
+            case PIX_FMT_YUV444P:
+                pix_fmt = "YCbCr-4:4:4";
+                break;
+            default:
+                av_log(c, AV_LOG_ERROR, "Unsupported pixel format.\n");
+                return NULL;
+            }
+
+            av_strlcatf(buff, size, "a=rtpmap:%d theora/90000\r\n"
+                                    "a=fmtp:%d delivery-method=inline; "
+                                    "width=%d; height=%d; sampling=%s; "
+                                    "configuration=%s\r\n",
+                                    payload_type, payload_type,
+                                    c->width, c->height, pix_fmt, config);
+            break;
+        }
         default:
             /* Nothing special to do here... */
             break;
