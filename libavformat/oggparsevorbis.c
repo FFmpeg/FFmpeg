@@ -206,6 +206,12 @@ vorbis_header (AVFormatContext * s, int idx)
         return -1;
 
     priv = os->private;
+
+    if (priv->packet[pkt_type>>1])
+        return -1;
+    if (pkt_type > 1 && !priv->packet[0] || pkt_type > 3 && !priv->packet[1])
+        return -1;
+
     priv->len[pkt_type >> 1] = os->psize;
     priv->packet[pkt_type >> 1] = av_mallocz(os->psize);
     memcpy(priv->packet[pkt_type >> 1], os->buf + os->pstart, os->psize);
