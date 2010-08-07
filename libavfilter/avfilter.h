@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 29
+#define LIBAVFILTER_VERSION_MINOR 30
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -90,7 +90,7 @@ typedef struct AVFilterBuffer
 
 /**
  * A reference to an AVFilterBuffer. Since filters can manipulate the origin of
- * a picture to, for example, crop image without any memcpy, the picture origin
+ * a buffer to, for example, crop image without any memcpy, the buffer origin
  * and dimensions are per-reference properties. Linesize is also useful for
  * image flipping, frame to field filters, etc, and so is also per-reference.
  *
@@ -98,7 +98,7 @@ typedef struct AVFilterBuffer
  */
 typedef struct AVFilterBufferRef
 {
-    AVFilterBuffer *pic;        ///< the picture that this is a reference to
+    AVFilterBuffer *buf;        ///< the buffer that this is a reference to
     uint8_t *data[4];           ///< picture data for each plane
     int linesize[4];            ///< number of bytes per line
     int w;                      ///< image width
@@ -120,7 +120,7 @@ typedef struct AVFilterBufferRef
  * Copy properties of src to dst, without copying the actual video
  * data.
  */
-static inline void avfilter_copy_picref_props(AVFilterBufferRef *dst, AVFilterBufferRef *src)
+static inline void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *src)
 {
     dst->pts             = src->pts;
     dst->pos             = src->pos;
@@ -132,21 +132,21 @@ static inline void avfilter_copy_picref_props(AVFilterBufferRef *dst, AVFilterBu
 }
 
 /**
- * Add a new reference to a picture.
- * @param ref   an existing reference to the picture
+ * Add a new reference to a buffer.
+ * @param ref   an existing reference to the buffer
  * @param pmask a bitmask containing the allowable permissions in the new
  *              reference
- * @return      a new reference to the picture with the same properties as the
+ * @return      a new reference to the buffer with the same properties as the
  *              old, excluding any permissions denied by pmask
  */
-AVFilterBufferRef *avfilter_ref_pic(AVFilterBufferRef *ref, int pmask);
+AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask);
 
 /**
- * Remove a reference to a picture. If this is the last reference to the
- * picture, the picture itself is also automatically freed.
- * @param ref reference to the picture
+ * Remove a reference to a buffer. If this is the last reference to the
+ * buffer, the buffer itself is also automatically freed.
+ * @param ref reference to the buffer
  */
-void avfilter_unref_pic(AVFilterBufferRef *ref);
+void avfilter_unref_buffer(AVFilterBufferRef *ref);
 
 /**
  * A list of supported formats for one end of a filter link. This is used
@@ -442,7 +442,7 @@ typedef struct AVFilter
 
     /**
      * Filter uninitialization function. Should deallocate any memory held
-     * by the filter, release any picture references, etc. This does not need
+     * by the filter, release any buffer references, etc. This does not need
      * to deallocate the AVFilterContext->priv memory itself.
      */
     void (*uninit)(AVFilterContext *ctx);
@@ -524,9 +524,9 @@ struct AVFilterLink
     AVFilterFormats *out_formats;
 
     /**
-     * The picture reference currently being sent across the link by the source
+     * The buffer reference currently being sent across the link by the source
      * filter. This is used internally by the filter system to allow
-     * automatic copying of pictures which do not have sufficient permissions
+     * automatic copying of buffers which do not have sufficient permissions
      * for the destination. This should not be accessed directly by the
      * filters.
      */
@@ -556,13 +556,13 @@ int avfilter_config_links(AVFilterContext *filter);
 
 /**
  * Request a picture buffer with a specific set of permissions.
- * @param link  the output link to the filter from which the picture will
+ * @param link  the output link to the filter from which the buffer will
  *              be requested
  * @param perms the required access permissions
  * @param w     the minimum width of the buffer to allocate
  * @param h     the minimum height of the buffer to allocate
- * @return      A reference to the picture. This must be unreferenced with
- *              avfilter_unref_pic when you are finished with it.
+ * @return      A reference to the buffer. This must be unreferenced with
+ *              avfilter_unref_buffer when you are finished with it.
  */
 AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
                                           int w, int h);

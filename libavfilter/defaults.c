@@ -39,7 +39,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
     int i, tempsize;
     char *buf;
 
-    ref->pic   = pic;
+    ref->buf   = pic;
     ref->w     = w;
     ref->h     = h;
 
@@ -74,8 +74,8 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     if(out) {
         out->outpic      = avfilter_get_video_buffer(out, AV_PERM_WRITE, out->w, out->h);
-        avfilter_copy_picref_props(out->outpic, picref);
-        avfilter_start_frame(out, avfilter_ref_pic(out->outpic, ~0));
+        avfilter_copy_buffer_ref_props(out->outpic, picref);
+        avfilter_start_frame(out, avfilter_ref_buffer(out->outpic, ~0));
     }
 }
 
@@ -97,12 +97,12 @@ void avfilter_default_end_frame(AVFilterLink *link)
     if(link->dst->output_count)
         out = link->dst->outputs[0];
 
-    avfilter_unref_pic(link->cur_pic);
+    avfilter_unref_buffer(link->cur_pic);
     link->cur_pic = NULL;
 
     if(out) {
         if(out->outpic) {
-            avfilter_unref_pic(out->outpic);
+            avfilter_unref_buffer(out->outpic);
             out->outpic = NULL;
         }
         avfilter_end_frame(out);

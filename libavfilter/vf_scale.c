@@ -152,7 +152,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     scale->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
     outpicref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
-    avfilter_copy_picref_props(outpicref, picref);
+    avfilter_copy_buffer_ref_props(outpicref, picref);
 
     outlink->outpic = outpicref;
 
@@ -162,7 +162,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
               INT_MAX);
 
     scale->slice_y = 0;
-    avfilter_start_frame(outlink, avfilter_ref_pic(outpicref, ~0));
+    avfilter_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
 }
 
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

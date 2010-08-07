@@ -58,7 +58,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     outlink->outpic = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
                                                 outlink->w, outlink->h);
     outpicref = outlink->outpic;
-    avfilter_copy_picref_props(outpicref, picref);
+    avfilter_copy_buffer_ref_props(outpicref, picref);
 
     for (i = 0; i < 4; i++) {
         int h = outlink->h;
@@ -74,7 +74,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     if (priv->pix_desc->flags & PIX_FMT_PAL)
         memcpy(outpicref->data[1], outpicref->data[1], 256*4);
 
-    avfilter_start_frame(outlink, avfilter_ref_pic(outpicref, ~0));
+    avfilter_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)

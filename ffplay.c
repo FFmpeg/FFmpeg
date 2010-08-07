@@ -1304,7 +1304,7 @@ static void alloc_picture(void *opaque)
 
 #if CONFIG_AVFILTER
     if (vp->picref)
-        avfilter_unref_pic(vp->picref);
+        avfilter_unref_buffer(vp->picref);
     vp->picref = NULL;
 
     vp->width   = is->out_video_filter->inputs[0]->w;
@@ -1389,7 +1389,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         AVPicture pict;
 #if CONFIG_AVFILTER
         if(vp->picref)
-            avfilter_unref_pic(vp->picref);
+            avfilter_unref_buffer(vp->picref);
         vp->picref = src_frame->opaque;
 #endif
 
@@ -1604,7 +1604,7 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
 static void input_release_buffer(AVCodecContext *codec, AVFrame *pic)
 {
     memset(pic->data, 0, sizeof(pic->data));
-    avfilter_unref_pic(pic->opaque);
+    avfilter_unref_buffer(pic->opaque);
 }
 
 static int input_reget_buffer(AVCodecContext *codec, AVFrame *pic)
@@ -1667,7 +1667,7 @@ static int input_request_frame(AVFilterLink *link)
         return -1;
 
     if(priv->use_dr1) {
-        picref = avfilter_ref_pic(priv->frame->opaque, ~0);
+        picref = avfilter_ref_buffer(priv->frame->opaque, ~0);
     } else {
         picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
         av_picture_copy((AVPicture *)&picref->data, (AVPicture *)priv->frame,
@@ -2672,7 +2672,7 @@ static void stream_close(VideoState *is)
         vp = &is->pictq[i];
 #if CONFIG_AVFILTER
         if (vp->picref) {
-            avfilter_unref_pic(vp->picref);
+            avfilter_unref_buffer(vp->picref);
             vp->picref = NULL;
         }
 #endif

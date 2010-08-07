@@ -45,19 +45,19 @@ const char *avfilter_license(void)
 #define link_dpad(link)     link->dst-> input_pads[link->dstpad]
 #define link_spad(link)     link->src->output_pads[link->srcpad]
 
-AVFilterBufferRef *avfilter_ref_pic(AVFilterBufferRef *ref, int pmask)
+AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
 {
     AVFilterBufferRef *ret = av_malloc(sizeof(AVFilterBufferRef));
     *ret = *ref;
     ret->perms &= pmask;
-    ret->pic->refcount ++;
+    ret->buf->refcount ++;
     return ret;
 }
 
-void avfilter_unref_pic(AVFilterBufferRef *ref)
+void avfilter_unref_buffer(AVFilterBufferRef *ref)
 {
-    if(!(--ref->pic->refcount))
-        ref->pic->free(ref->pic);
+    if(!(--ref->buf->refcount))
+        ref->buf->free(ref->buf);
     av_free(ref);
 }
 
@@ -264,7 +264,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
         link->cur_pic = avfilter_default_get_video_buffer(link, dst->min_perms, link->w, link->h);
         link->srcpic = picref;
-        avfilter_copy_picref_props(link->cur_pic, link->srcpic);
+        avfilter_copy_buffer_ref_props(link->cur_pic, link->srcpic);
     }
     else
         link->cur_pic = picref;
@@ -284,7 +284,7 @@ void avfilter_end_frame(AVFilterLink *link)
     /* unreference the source picture if we're feeding the destination filter
      * a copied version dues to permission issues */
     if(link->srcpic) {
-        avfilter_unref_pic(link->srcpic);
+        avfilter_unref_buffer(link->srcpic);
         link->srcpic = NULL;
     }
 

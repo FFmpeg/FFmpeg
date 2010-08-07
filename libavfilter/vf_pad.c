@@ -244,7 +244,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int 
 static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     PadContext *pad = inlink->dst->priv;
-    AVFilterBufferRef *outpicref = avfilter_ref_pic(inpicref, ~0);
+    AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
     int plane;
 
     inlink->dst->outputs[0]->outpic = outpicref;
@@ -263,7 +263,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 static void end_frame(AVFilterLink *link)
 {
     avfilter_end_frame(link->dst->outputs[0]);
-    avfilter_unref_pic(link->cur_pic);
+    avfilter_unref_buffer(link->cur_pic);
 }
 
 static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir, int before_slice)
@@ -432,13 +432,13 @@ static int color_request_frame(AVFilterLink *link)
     picref->pts          = av_rescale_q(color->pts++, color->time_base, AV_TIME_BASE_Q);
     picref->pos          = 0;
 
-    avfilter_start_frame(link, avfilter_ref_pic(picref, ~0));
+    avfilter_start_frame(link, avfilter_ref_buffer(picref, ~0));
     draw_rectangle(picref,
                    color->line, color->line_step, color->hsub, color->vsub,
                    0, 0, color->w, color->h);
     avfilter_draw_slice(link, 0, color->h, 1);
     avfilter_end_frame(link);
-    avfilter_unref_pic(picref);
+    avfilter_unref_buffer(picref);
 
     return 0;
 }

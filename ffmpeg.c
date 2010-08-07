@@ -1777,7 +1777,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
             frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
                               ist->out_video_filter && avfilter_poll_frame(ist->out_video_filter->inputs[0]);
             if(ist->picref)
-                avfilter_unref_pic(ist->picref);
+                avfilter_unref_buffer(ist->picref);
         }
 #endif
         av_free(buffer_to_free);

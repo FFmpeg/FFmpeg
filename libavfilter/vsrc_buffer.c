@@ -126,10 +126,10 @@ static int request_frame(AVFilterLink *link)
     picref->pixel_aspect    = c->pixel_aspect;
     picref->interlaced      = c->frame.interlaced_frame;
     picref->top_field_first = c->frame.top_field_first;
-    avfilter_start_frame(link, avfilter_ref_pic(picref, ~0));
+    avfilter_start_frame(link, avfilter_ref_buffer(picref, ~0));
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);
-    avfilter_unref_pic(picref);
+    avfilter_unref_buffer(picref);
 
     c->has_frame = 0;
 
