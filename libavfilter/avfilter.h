@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 30
+#define LIBAVFILTER_VERSION_MINOR 31
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -530,10 +530,10 @@ struct AVFilterLink
      * for the destination. This should not be accessed directly by the
      * filters.
      */
-    AVFilterBufferRef *srcpic;
+    AVFilterBufferRef *src_buf;
 
-    AVFilterBufferRef *cur_pic;
-    AVFilterBufferRef *outpic;
+    AVFilterBufferRef *cur_buf;
+    AVFilterBufferRef *out_buf;
 };
 
 /**

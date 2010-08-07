@@ -55,9 +55,9 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     AVFilterBufferRef *outpicref;
     int i;
 
-    outlink->outpic = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
+    outlink->out_buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
                                                 outlink->w, outlink->h);
-    outpicref = outlink->outpic;
+    outpicref = outlink->out_buf;
     avfilter_copy_buffer_ref_props(outpicref, picref);
 
     for (i = 0; i < 4; i++) {
@@ -80,8 +80,8 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     PixdescTestContext *priv = inlink->dst->priv;
-    AVFilterBufferRef *inpic    = inlink->cur_pic;
-    AVFilterBufferRef *outpic   = inlink->dst->outputs[0]->outpic;
+    AVFilterBufferRef *inpic    = inlink->cur_buf;
+    AVFilterBufferRef *outpic   = inlink->dst->outputs[0]->out_buf;
     int i, c, w = inlink->w;
 
     for (c = 0; c < priv->pix_desc->nb_components; c++) {

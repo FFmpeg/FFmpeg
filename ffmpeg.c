@@ -368,10 +368,10 @@ static int get_filtered_video_pic(AVFilterContext *ctx,
 
     if(avfilter_request_frame(ctx->inputs[0]))
         return -1;
-    if(!(pic = ctx->inputs[0]->cur_pic))
+    if(!(pic = ctx->inputs[0]->cur_buf))
         return -1;
     *picref = pic;
-    ctx->inputs[0]->cur_pic = NULL;
+    ctx->inputs[0]->cur_buf = NULL;
 
     *pts          = pic->pts;
 

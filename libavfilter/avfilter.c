@@ -262,14 +262,14 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
                 link_dpad(link).min_perms, link_dpad(link).rej_perms);
         */
 
-        link->cur_pic = avfilter_default_get_video_buffer(link, dst->min_perms, link->w, link->h);
-        link->srcpic = picref;
-        avfilter_copy_buffer_ref_props(link->cur_pic, link->srcpic);
+        link->cur_buf = avfilter_default_get_video_buffer(link, dst->min_perms, link->w, link->h);
+        link->src_buf = picref;
+        avfilter_copy_buffer_ref_props(link->cur_buf, link->src_buf);
     }
     else
-        link->cur_pic = picref;
+        link->cur_buf = picref;
 
-    start_frame(link, link->cur_pic);
+    start_frame(link, link->cur_buf);
 }
 
 void avfilter_end_frame(AVFilterLink *link)
@@ -283,9 +283,9 @@ void avfilter_end_frame(AVFilterLink *link)
 
     /* unreference the source picture if we're feeding the destination filter
      * a copied version dues to permission issues */
-    if(link->srcpic) {
-        avfilter_unref_buffer(link->srcpic);
-        link->srcpic = NULL;
+    if(link->src_buf) {
+        avfilter_unref_buffer(link->src_buf);
+        link->src_buf = NULL;
     }
 
 }
@@ -299,29 +299,29 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     FF_DPRINTF_START(NULL, draw_slice); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " y:%d h:%d dir:%d\n", y, h, slice_dir);
 
     /* copy the slice if needed for permission reasons */
-    if(link->srcpic) {
+    if(link->src_buf) {
         vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
         for(i = 0; i < 4; i ++) {
-            if(link->srcpic->data[i]) {
-                src[i] = link->srcpic-> data[i] +
-                    (y >> (i==0 ? 0 : vsub)) * link->srcpic-> linesize[i];
-                dst[i] = link->cur_pic->data[i] +
-                    (y >> (i==0 ? 0 : vsub)) * link->cur_pic->linesize[i];
+            if(link->src_buf->data[i]) {
+                src[i] = link->src_buf-> data[i] +
+                    (y >> (i==0 ? 0 : vsub)) * link->src_buf-> linesize[i];
+                dst[i] = link->cur_buf->data[i] +
+                    (y >> (i==0 ? 0 : vsub)) * link->cur_buf->linesize[i];
             } else
                 src[i] = dst[i] = NULL;
         }
 
         for(i = 0; i < 4; i ++) {
             int planew =
-                ff_get_plane_bytewidth(link->format, link->cur_pic->w, i);
+                ff_get_plane_bytewidth(link->format, link->cur_buf->w, i);
 
             if(!src[i]) continue;
 
             for(j = 0; j < h >> (i==0 ? 0 : vsub); j ++) {
                 memcpy(dst[i], src[i], planew);
-                src[i] += link->srcpic ->linesize[i];
-                dst[i] += link->cur_pic->linesize[i];
+                src[i] += link->src_buf ->linesize[i];
+                dst[i] += link->cur_buf->linesize[i];
             }
         }
     }

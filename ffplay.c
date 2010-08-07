@@ -1745,9 +1745,9 @@ static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
 
     if(avfilter_request_frame(ctx->inputs[0]))
         return -1;
-    if(!(pic = ctx->inputs[0]->cur_pic))
+    if(!(pic = ctx->inputs[0]->cur_buf))
         return -1;
-    ctx->inputs[0]->cur_pic = NULL;
+    ctx->inputs[0]->cur_buf = NULL;
 
     frame->opaque = pic;
     *pts          = pic->pts;
