@@ -94,9 +94,9 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
         /* An extra 16 bytes is being allocated because some scalers may write
          * out of bounds. */
         if (dstStride[i])
-        dst[i]= av_mallocz(dstStride[i]*dstH+16);
+            dst[i]= av_mallocz(dstStride[i]*dstH+16);
         if (refStride[i])
-        out[i]= av_mallocz(refStride[i]*h);
+            out[i]= av_mallocz(refStride[i]*h);
         if ((dstStride[i] && !dst[i]) || (refStride[i] && !out[i])) {
             perror("Malloc");
             res = -1;
@@ -159,9 +159,9 @@ end:
 
     for (i=0; i<4; i++) {
         if (dstStride[i])
-        av_free(dst[i]);
+            av_free(dst[i]);
         if (refStride[i])
-        av_free(out[i]);
+            av_free(out[i]);
     }
 
     return res;
@@ -202,7 +202,7 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
                 av_fill_image_linesizes(srcStride, srcFormat, srcW);
                 for (p = 0; p < 4; p++) {
                     if (srcStride[p])
-                    src[p] = av_mallocz(srcStride[p]*srcH+16);
+                        src[p] = av_mallocz(srcStride[p]*srcH+16);
                     if (srcStride[p] && !src[p]) {
                         perror("Malloc");
                         return;
@@ -227,7 +227,7 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
                 sws_freeContext(srcContext);
                 for (p = 0; p < 4; p++)
                     if (srcStride[p])
-                    av_free(src[p]);
+                        av_free(src[p]);
             }
         }
     }
