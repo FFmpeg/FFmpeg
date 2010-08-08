@@ -20,3 +20,4 @@ TESTPROGS = colorspace swscale
 DIRS = bfin mlib ppc sparc x86
 
 include $(SUBDIR)../subdir.mak
+$(SUBDIR)swscale-test$(EXESUF): ELIBS = -lavcore

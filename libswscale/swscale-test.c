@@ -25,6 +25,7 @@
 #include <stdarg.h>
 
 #undef HAVE_AV_CONFIG_H
+#include "libavcore/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/avutil.h"
 #include "libavutil/pixdesc.h"
@@ -84,24 +85,19 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     struct SwsContext *dstContext = NULL, *outContext = NULL;
     int res = 0;
 
+    av_fill_image_linesizes(dstStride, dstFormat, dstW);
     for (i=0; i<4; i++) {
-        // avoid stride % bpp != 0
-        if (dstFormat==PIX_FMT_RGB24 || dstFormat==PIX_FMT_BGR24)
-            dstStride[i]= dstW*3;
-        else if (dstFormat==PIX_FMT_RGB48BE || dstFormat==PIX_FMT_RGB48LE)
-            dstStride[i]= dstW*6;
-        else
-            dstStride[i]= dstW*4;
-
         /* Image buffers passed into libswscale can be allocated any way you
          * prefer, as long as they're aligned enough for the architecture, and
          * they're freed appropriately (such as using av_free for buffers
          * allocated with av_malloc). */
         /* An extra 16 bytes is being allocated because some scalers may write
          * out of bounds. */
+        if (dstStride[i])
         dst[i]= av_mallocz(dstStride[i]*dstH+16);
+        if (refStride[i])
         out[i]= av_mallocz(refStride[i]*h);
-        if (!dst[i] || !out[i]) {
+        if ((dstStride[i] && !dst[i]) || (refStride[i] && !out[i])) {
             perror("Malloc");
             res = -1;
 
@@ -162,7 +158,9 @@ end:
     sws_freeContext(outContext);
 
     for (i=0; i<4; i++) {
+        if (dstStride[i])
         av_free(dst[i]);
+        if (refStride[i])
         av_free(out[i]);
     }
 
@@ -201,17 +199,11 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
                 uint8_t *src[4] = {0};
                 int srcStride[4];
                 int p;
+                av_fill_image_linesizes(srcStride, srcFormat, srcW);
                 for (p = 0; p < 4; p++) {
-                    if (srcFormat == PIX_FMT_RGB24 ||
-                        srcFormat == PIX_FMT_BGR24)
-                        srcStride[p] = srcW*3;
-                    else if (srcFormat==PIX_FMT_RGB48BE ||
-                             srcFormat==PIX_FMT_RGB48LE)
-                        srcStride[p] = srcW*6;
-                    else
-                        srcStride[p] = srcW*4;
+                    if (srcStride[p])
                     src[p] = av_mallocz(srcStride[p]*srcH+16);
-                    if (!src[p]) {
+                    if (srcStride[p] && !src[p]) {
                         perror("Malloc");
                         return;
                     }
@@ -234,6 +226,7 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
 
                 sws_freeContext(srcContext);
                 for (p = 0; p < 4; p++)
+                    if (srcStride[p])
                     av_free(src[p]);
             }
         }
