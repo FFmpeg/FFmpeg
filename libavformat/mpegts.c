@@ -682,10 +682,14 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     code = pes->header[3] | 0x100;
                     dprintf(pes->stream, "pid=%x pes_code=%#x\n", pes->pid, code);
 
-                    if ((!pes->st && pes->stream->nb_streams == MAX_STREAMS) ||
-                        (pes->st && pes->st->discard == AVDISCARD_ALL) ||
+                    if ((pes->st && pes->st->discard == AVDISCARD_ALL) ||
                         code == 0x1be) /* padding_stream */
                         goto skip;
+
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+                    if (!pes->st && pes->stream->nb_streams == MAX_STREAMS)
+                        goto skip;
+#endif
 
                     /* stream not present in PMT */
                     if (!pes->st) {
