@@ -827,8 +827,12 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
     const uint8_t* databuf;
     int16_t* samples = data;
 
-    if (buf_size < avctx->block_align)
+    if (buf_size < avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Frame too small (%d bytes). Truncated file?\n", buf_size);
+        *data_size = 0;
         return buf_size;
+    }
 
     /* Check if we need to descramble and what buffer to pass on. */
     if (q->scrambled_stream) {
