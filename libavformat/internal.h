@@ -53,6 +53,16 @@ const char *small_strptime(const char *p, const char *fmt,
 
 char *ff_data_to_hex(char *buf, const uint8_t *src, int size, int lowercase);
 
+/**
+ * Parse a string of hexadecimal strings. Any space between the hexadecimal
+ * digits is ignored.
+ *
+ * @param data if non-null, the parsed data is written to this pointer
+ * @param p the string to parse
+ * @return the number of bytes written (or to be written, if data is null)
+ */
+int ff_hex_to_data(uint8_t *data, const char *p);
+
 void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx);
 
 /**
