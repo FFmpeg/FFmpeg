@@ -1611,11 +1611,17 @@ redirect:
 static int rtsp_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
+    RTSPState *rt = s->priv_data;
     int ret;
 
     ret = ff_rtsp_connect(s);
     if (ret)
         return ret;
+
+    rt->real_setup_cache = av_mallocz(2 * s->nb_streams * sizeof(*rt->real_setup_cache));
+    if (!rt->real_setup_cache)
+        return AVERROR(ENOMEM);
+    rt->real_setup = rt->real_setup_cache + s->nb_streams * sizeof(*rt->real_setup);
 
     if (ap->initial_pause) {
          /* do not start immediately */
@@ -1835,13 +1841,12 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (rt->server_type == RTSP_SERVER_REAL) {
         int i;
-        enum AVDiscard cache[MAX_STREAMS];
 
         for (i = 0; i < s->nb_streams; i++)
-            cache[i] = s->streams[i]->discard;
+            rt->real_setup[i] = s->streams[i]->discard;
 
         if (!rt->need_subscription) {
-            if (memcmp (cache, rt->real_setup_cache,
+            if (memcmp (rt->real_setup, rt->real_setup_cache,
                         sizeof(enum AVDiscard) * s->nb_streams)) {
                 snprintf(cmd, sizeof(cmd),
                          "Unsubscribe: %s\r\n",
@@ -1857,7 +1862,7 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (rt->need_subscription) {
             int r, rule_nr, first = 1;
 
-            memcpy(rt->real_setup_cache, cache,
+            memcpy(rt->real_setup_cache, rt->real_setup,
                    sizeof(enum AVDiscard) * s->nb_streams);
             rt->last_subscription[0] = 0;
 
@@ -1969,6 +1974,8 @@ static int rtsp_read_close(AVFormatContext *s)
     ff_rtsp_close_streams(s);
     ff_rtsp_close_connections(s);
     ff_network_close();
+    rt->real_setup = NULL;
+    av_freep(&rt->real_setup_cache);
     return 0;
 }
 
