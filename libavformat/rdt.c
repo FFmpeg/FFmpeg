@@ -86,7 +86,8 @@ ff_rdt_parse_close(RDTDemuxContext *s)
 
 struct PayloadContext {
     AVFormatContext *rmctx;
-    RMStream *rmst[MAX_STREAMS];
+    int nb_rmst;
+    RMStream **rmst;
     uint8_t *mlti_data;
     unsigned int mlti_data_size;
     char buffer[RTP_MAX_PACKET_LENGTH + FF_INPUT_BUFFER_PADDING_SIZE];
@@ -421,7 +422,17 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
 
         for (n = 0; n < s->nb_streams; n++)
             if (s->streams[n]->priv_data == stream->priv_data) {
+                int count = s->streams[n]->index + 1;
                 if (first == -1) first = n;
+                if (rdt->nb_rmst < count) {
+                    RMStream **rmst= av_realloc(rdt->rmst, count*sizeof(*rmst));
+                    if (!rmst)
+                        return AVERROR(ENOMEM);
+                    memset(rmst + rdt->nb_rmst, 0,
+                           (count - rdt->nb_rmst) * sizeof(*rmst));
+                    rdt->rmst    = rmst;
+                    rdt->nb_rmst = count;
+                }
                 rdt->rmst[s->streams[n]->index] = ff_rm_alloc_rmstream();
                 rdt_load_mdpr(rdt, s->streams[n], (n - first) * 2);
 
@@ -465,7 +476,7 @@ real_parse_asm_rulebook(AVFormatContext *s, AVStream *orig_st,
                         const char *p)
 {
     const char *end;
-    int n_rules, odd = 0;
+    int n_rules = 0, odd = 0;
     AVStream *st;
 
     /**
@@ -483,7 +494,7 @@ real_parse_asm_rulebook(AVFormatContext *s, AVStream *orig_st,
      * for multi-bitrate streams.
      */
     if (*p == '\"') p++;
-    for (n_rules = 0; s->nb_streams < MAX_STREAMS;) {
+    while (1) {
         if (!(end = strchr(p, ';')))
             break;
         if (!odd && end != p) {
@@ -491,6 +502,8 @@ real_parse_asm_rulebook(AVFormatContext *s, AVStream *orig_st,
                 st = add_dstream(s, orig_st);
             else
                 st = orig_st;
+            if (!st)
+                break;
             real_parse_asm_rule(st, p, end);
             n_rules++;
         }
@@ -524,7 +537,7 @@ rdt_free_context (PayloadContext *rdt)
 {
     int i;
 
-    for (i = 0; i < MAX_STREAMS; i++)
+    for (i = 0; i < rdt->nb_rmst; i++)
         if (rdt->rmst[i]) {
             ff_rm_free_rmstream(rdt->rmst[i]);
             av_freep(&rdt->rmst[i]);
@@ -532,6 +545,7 @@ rdt_free_context (PayloadContext *rdt)
     if (rdt->rmctx)
         av_close_input_stream(rdt->rmctx);
     av_freep(&rdt->mlti_data);
+    av_freep(&rdt->rmst);
     av_free(rdt);
 }
 
