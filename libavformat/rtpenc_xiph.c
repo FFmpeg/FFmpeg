@@ -68,8 +68,8 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
     frag = size <= max_pkt_size ? 0 : 1;
 
     if (!frag && !xdt) { // do we have a whole frame of raw data?
-        unsigned end_ptr = (unsigned)s->buf + 6 + max_pkt_size; // what we're allowed to write
-        unsigned ptr     = (unsigned)s->buf_ptr + 2 + size; // what we're going to write
+        uint8_t *end_ptr = s->buf + 6 + max_pkt_size; // what we're allowed to write
+        uint8_t *ptr     = s->buf_ptr + 2 + size; // what we're going to write
         int remaining    = end_ptr - ptr;
 
         if ((s->num_frames > 0 && remaining < 0) ||
