@@ -267,9 +267,9 @@ static char *xiph_extradata2config(AVCodecContext *c)
 
     config[0] = config[1] = config[2] = 0;
     config[3] = 1;
-    config[4] = 0xfe; // ident must match the one in rtpenc_xiph.c
-    config[5] = 0xcd;
-    config[6] = 0xba;
+    config[4] = (RTP_XIPH_IDENT >> 16) & 0xff;
+    config[5] = (RTP_XIPH_IDENT >>  8) & 0xff;
+    config[6] = (RTP_XIPH_IDENT      ) & 0xff;
     config[7] = (headers_len >> 8) & 0xff;
     config[8] = headers_len & 0xff;
     config[9] = 2;

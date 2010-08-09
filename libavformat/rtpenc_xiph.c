@@ -52,13 +52,13 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
         break;
     }
 
-    // Set ident. Must match the one in sdp.c
+    // Set ident.
     // Probably need a non-fixed way of generating
     // this, but it has to be done in SDP and passed in from there.
     q = s->buf;
-    *q++ = 0xfe;
-    *q++ = 0xcd;
-    *q++ = 0xba;
+    *q++ = (RTP_XIPH_IDENT >> 16) & 0xff;
+    *q++ = (RTP_XIPH_IDENT >>  8) & 0xff;
+    *q++ = (RTP_XIPH_IDENT      ) & 0xff;
 
     // set fragment
     // 0 - whole frame (possibly multiple frames)
