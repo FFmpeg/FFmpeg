@@ -30,7 +30,6 @@ version <next>:
 - RTP packetization of Theora and Vorbis
 
 
-
 version 0.6:
 
 - PB-frame decoding for H.263
@@ -107,7 +106,6 @@ version 0.6:
 - faster AAC decoding
 - faster H.264 decoding
 - RealAudio 1.0 (14.4K) encoder
-
 
 
 version 0.5:
@@ -272,7 +270,6 @@ version 0.5:
 - generic metadata API
 
 
-
 version 0.4.9-pre1:
 
 - DV encoder, DV muxer
@@ -357,7 +354,6 @@ version 0.4.9-pre1:
 - FunCom ISS audio file demuxer and according ADPCM decoding
 
 
-
 version 0.4.8:
 
 - MPEG-2 video encoding (Michael)
@@ -367,7 +363,6 @@ version 0.4.8:
 - Xan DPCM audio decoder (Mario Brito)
 - Interplay MVE playback subsystem (Mike Melanson)
 - Duck DK3 and DK4 ADPCM audio decoders (Mike Melanson)
-
 
 
 version 0.4.7:
@@ -411,7 +406,6 @@ version 0.4.7:
 .. And lots more new enhancements and fixes.
 
 
-
 version 0.4.6:
 
 - completely new integer only MPEG audio layer 1/2/3 decoder rewritten
@@ -449,7 +443,6 @@ version 0.4.6:
 - 16-bit and 15-bit RGB/BGR/GBR support (Bisqwit)
 
 
-
 version 0.4.5:
 
 - some header fixes (Zdenek Kabelac <kabi at informatics.muni.cz>)
@@ -481,7 +474,6 @@ version 0.4.5:
 - added JPEG image format support (input/output)
 
 
-
 version 0.4.4:
 
 - fixed some std header definitions (Bjorn Lindgren
@@ -507,7 +499,6 @@ version 0.4.4:
   segfault)
 
 
-
 version 0.4.3:
 
 - BGR24 patch (initial patch by Jeroen Vreeken <pe1rxq at amsat.org>)
@@ -527,7 +518,6 @@ version 0.4.3:
 - added pgmpipe I/O format (original patch from Martin Aumueller
   <lists at reserv.at>, but changed completely since we use a format
   instead of a protocol)
-
 
 
 version 0.4.2:
@@ -560,7 +550,6 @@ version 0.4.1:
 - factorized some motion estimation code
 
 
-
 version 0.4.0:
 
 - removing grab code from ffserver and moved it to ffmpeg. Added
@@ -589,11 +578,9 @@ version 0.4.0:
   codecs
 
 
-
 version 0.3.4:
 
 - added stereo in MPEG audio encoder
-
 
 
 version 0.3.3:
@@ -604,12 +591,10 @@ version 0.3.3:
   bitrates and large GOP size
 
 
-
 version 0.3.2: small fixes
 
 - ASF fixes
 - put_seek bug fix
-
 
 
 version 0.3.1: added avi/divx support
@@ -617,7 +602,6 @@ version 0.3.1: added avi/divx support
 - added AVI support
 - added MPEG-4 codec compatible with OpenDivX. It is based on the H.263 codec
 - added sound for flash format (not tested)
-
 
 
 version 0.3: initial public release
