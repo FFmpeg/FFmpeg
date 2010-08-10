@@ -29,6 +29,12 @@
 #undef NDEBUG
 #include <assert.h>
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+#define NUT_MAX_STREAMS MAX_STREAMS
+#else
+#define NUT_MAX_STREAMS 256    /* arbitrary sanity check value */
+#endif
+
 static int get_str(ByteIOContext *bc, char *string, unsigned int maxlen){
     unsigned int len= ff_get_v(bc);
 
@@ -193,7 +199,7 @@ static int decode_main_header(NUTContext *nut){
     end += url_ftell(bc);
 
     GET_V(tmp              , tmp >=2 && tmp <= 3)
-    GET_V(stream_count     , tmp > 0 && tmp <=MAX_STREAMS)
+    GET_V(stream_count     , tmp > 0 && tmp <= NUT_MAX_STREAMS)
 
     nut->max_distance = ff_get_v(bc);
     if(nut->max_distance > 65536){
