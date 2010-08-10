@@ -474,6 +474,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
             if (st) {
                 av_free(st->priv_data);
                 av_free(st->codec->extradata);
+                av_free(st->codec);
             }
             av_free(st);
         }
