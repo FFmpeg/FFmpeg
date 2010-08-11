@@ -24,7 +24,7 @@ API changes, most recent first:
   Add a type field to AVFilterBufferRef, and move video specific
   properties to AVFilterBufferRefVideoProps.
 
-  This changs breaks libavfilter API/ABI.
+  This change breaks libavfilter API/ABI.
 
 2010-08-07 - r24732 - lavfi 1.31.0 - AVFilterLink
   Rename AVFilterLink fields:
