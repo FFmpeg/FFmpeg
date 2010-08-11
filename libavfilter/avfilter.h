@@ -399,23 +399,29 @@ struct AVFilterPad
 
 /** default handler for start_frame() for video inputs */
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
+
 /** default handler for draw_slice() for video inputs */
 void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
+
 /** default handler for end_frame() for video inputs */
 void avfilter_default_end_frame(AVFilterLink *link);
+
 /** default handler for config_props() for video outputs */
 int avfilter_default_config_output_link(AVFilterLink *link);
+
 /** default handler for config_props() for video inputs */
 int avfilter_default_config_input_link (AVFilterLink *link);
+
 /** default handler for get_video_buffer() for video inputs */
 AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
-                                                  int perms, int w, int h);
+                                                     int perms, int w, int h);
 /**
  * A helper for query_formats() which sets all links to the same list of
  * formats. If there are no links hooked to this filter, the list of formats is
  * freed.
  */
 void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
+
 /** Default handler for query_formats() */
 int avfilter_default_query_formats(AVFilterContext *ctx);
 
