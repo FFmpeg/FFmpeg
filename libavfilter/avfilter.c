@@ -211,6 +211,9 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
     if(!ret)
         ret = avfilter_default_get_video_buffer(link, perms, w, h);
 
+    if (ret)
+        ret->type = AVMEDIA_TYPE_VIDEO;
+
     FF_DPRINTF_START(NULL, get_video_buffer); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " returning "); ff_dprintf_picref(NULL, ret, 1);
 
     return ret;
