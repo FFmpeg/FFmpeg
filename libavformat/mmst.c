@@ -155,7 +155,7 @@ static void insert_command_prefixes(MMSContext *mms,
 static int send_command_packet(MMSContext *mms)
 {
     int len= mms->write_out_ptr - mms->out_buffer;
-    int exact_length = (len + 7) & ~7;
+    int exact_length = FFALIGN(len, 8);
     int first_length= exact_length - 16;
     int len8= first_length/8;
     int write_result;
