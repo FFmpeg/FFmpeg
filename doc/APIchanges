@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-08-11 - r24768 - lavc 52.85.0 - av_picture_data_copy()
+  Add av_picture_data_copy in avcodec.h.
+
 2010-08-11 - r24765 - lavfi 1.33.0 - avfilter_open()
   Change avfilter_open() signature:
   AVFilterContext *avfilter_open(AVFilter *filter, const char *inst_name) ->
