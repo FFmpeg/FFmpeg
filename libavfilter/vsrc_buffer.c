@@ -119,8 +119,9 @@ static int request_frame(AVFilterLink *link)
                                        AV_PERM_REUSE2,
                                        link->w, link->h);
 
-    av_picture_copy((AVPicture *)&picref->data, (AVPicture *)&c->frame,
-                    picref->format, link->w, link->h);
+    av_picture_data_copy(picref->data, picref->linesize,
+                         c->frame.data, c->frame.linesize,
+                         picref->format, link->w, link->h);
 
     picref->pts                    = c->pts;
     picref->video->pixel_aspect    = c->pixel_aspect;
