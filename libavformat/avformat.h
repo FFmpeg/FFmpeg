@@ -131,6 +131,7 @@ typedef struct AVMetadataConv AVMetadataConv;
 
 /**
  * Get a metadata element with matching key.
+ *
  * @param prev Set to the previous matching element to find the next.
  *             If set to NULL the first matching element is returned.
  * @param flags Allows case as well as suffix-insensitive comparisons.
@@ -142,6 +143,7 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
 #if LIBAVFORMAT_VERSION_MAJOR == 52
 /**
  * Set the given tag in m, overwriting an existing tag.
+ *
  * @param key tag key to add to m (will be av_strduped)
  * @param value tag value to add to m (will be av_strduped)
  * @return >= 0 on success otherwise an error code <0
@@ -152,6 +154,7 @@ attribute_deprecated int av_metadata_set(AVMetadata **pm, const char *key, const
 
 /**
  * Set the given tag in m, overwriting an existing tag.
+ *
  * @param key tag key to add to m (will be av_strduped depending on flags)
  * @param value tag value to add to m (will be av_strduped depending on flags).
  *        Passing a NULL value will cause an existing tag to be deleted.
@@ -163,6 +166,7 @@ int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int fl
  * Convert all the metadata sets from ctx according to the source and
  * destination conversion tables. If one of the tables is NULL, then
  * tags are converted to/from ffmpeg generic tag names.
+ *
  * @param d_conv destination tags format conversion table
  * @param s_conv source tags format conversion table
  */
