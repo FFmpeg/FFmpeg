@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 31
+#define LIBAVFILTER_VERSION_MINOR 32
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -89,6 +89,20 @@ typedef struct AVFilterBuffer
 #define AV_PERM_REUSE2   0x10   ///< can output the buffer multiple times, modified each time
 
 /**
+ * Video specific properties in a reference to an AVFilterBuffer. Since
+ * AVFilterBufferRef is common to different media formats, video specific
+ * per reference properties must be separated out.
+ */
+typedef struct AVFilterBufferRefVideoProps
+{
+    int w;                      ///< image width
+    int h;                      ///< image height
+    AVRational pixel_aspect;    ///< pixel aspect ratio
+    int interlaced;             ///< is frame interlaced
+    int top_field_first;        ///< field order
+} AVFilterBufferRefVideoProps;
+
+/**
  * A reference to an AVFilterBuffer. Since filters can manipulate the origin of
  * a buffer to, for example, crop image without any memcpy, the buffer origin
  * and dimensions are per-reference properties. Linesize is also useful for
@@ -101,19 +115,15 @@ typedef struct AVFilterBufferRef
     AVFilterBuffer *buf;        ///< the buffer that this is a reference to
     uint8_t *data[4];           ///< picture data for each plane
     int linesize[4];            ///< number of bytes per line
-    int w;                      ///< image width
-    int h;                      ///< image height
     int format;                 ///< media format
 
     int64_t pts;                ///< presentation timestamp in units of 1/AV_TIME_BASE
     int64_t pos;                ///< byte position in stream, -1 if unknown
 
-    AVRational pixel_aspect;    ///< pixel aspect ratio
-
     int perms;                  ///< permissions, see the AV_PERM_* flags
 
-    int interlaced;             ///< is frame interlaced
-    int top_field_first;
+    enum AVMediaType type;      ///< media type of buffer data
+    AVFilterBufferRefVideoProps *video; ///< video buffer specific properties
 } AVFilterBufferRef;
 
 /**
@@ -122,13 +132,13 @@ typedef struct AVFilterBufferRef
  */
 static inline void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *src)
 {
+    // copy common properties
     dst->pts             = src->pts;
     dst->pos             = src->pos;
-    dst->pixel_aspect    = src->pixel_aspect;
-    dst->interlaced      = src->interlaced;
-    dst->top_field_first = src->top_field_first;
-    dst->w               = src->w;
-    dst->h               = src->h;
+
+    switch (src->type) {
+    case AVMEDIA_TYPE_VIDEO: *dst->video = *src->video; break;
+    }
 }
 
 /**

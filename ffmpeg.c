@@ -377,8 +377,8 @@ static int get_filtered_video_pic(AVFilterContext *ctx,
 
     memcpy(pic2->data,     pic->data,     sizeof(pic->data));
     memcpy(pic2->linesize, pic->linesize, sizeof(pic->linesize));
-    pic2->interlaced_frame = pic->interlaced;
-    pic2->top_field_first  = pic->top_field_first;
+    pic2->interlaced_frame = pic->video->interlaced;
+    pic2->top_field_first  = pic->video->top_field_first;
 
     return 1;
 }
@@ -1701,7 +1701,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             break;
                         case AVMEDIA_TYPE_VIDEO:
 #if CONFIG_AVFILTER
-                            ost->st->codec->sample_aspect_ratio = ist->picref->pixel_aspect;
+                            if (ist->picref->video)
+                                ost->st->codec->sample_aspect_ratio = ist->picref->video->pixel_aspect;
 #endif
                             do_video_out(os, ost, ist, &picture, &frame_size);
                             if (vstats_filename && frame_size)

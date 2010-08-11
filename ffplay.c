@@ -694,10 +694,10 @@ static void video_image_display(VideoState *is)
     vp = &is->pictq[is->pictq_rindex];
     if (vp->bmp) {
 #if CONFIG_AVFILTER
-         if (vp->picref->pixel_aspect.num == 0)
+         if (vp->picref->video->pixel_aspect.num == 0)
              aspect_ratio = 0;
          else
-             aspect_ratio = av_q2d(vp->picref->pixel_aspect);
+             aspect_ratio = av_q2d(vp->picref->video->pixel_aspect);
 #else
 
         /* XXX: use variable in the frame */
@@ -1582,8 +1582,8 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     if(!(ref = avfilter_get_video_buffer(ctx->outputs[0], perms, w, h)))
         return -1;
 
-    ref->w = codec->width;
-    ref->h = codec->height;
+    ref->video->w = codec->width;
+    ref->video->h = codec->height;
     for(i = 0; i < 4; i ++) {
         unsigned hshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->format].log2_chroma_w : 0;
         unsigned vshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->format].log2_chroma_h : 0;
@@ -1616,7 +1616,7 @@ static int input_reget_buffer(AVCodecContext *codec, AVFrame *pic)
         return codec->get_buffer(codec, pic);
     }
 
-    if ((codec->width != ref->w) || (codec->height != ref->h) ||
+    if ((codec->width != ref->video->w) || (codec->height != ref->video->h) ||
         (codec->pix_fmt != ref->format)) {
         av_log(codec, AV_LOG_ERROR, "Picture properties changed.\n");
         return -1;
@@ -1677,7 +1677,7 @@ static int input_request_frame(AVFilterLink *link)
 
     picref->pts = pts;
     picref->pos = pkt.pos;
-    picref->pixel_aspect = priv->is->video_st->codec->sample_aspect_ratio;
+    picref->video->pixel_aspect = priv->is->video_st->codec->sample_aspect_ratio;
     avfilter_start_frame(link, picref);
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);

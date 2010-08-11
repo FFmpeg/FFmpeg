@@ -135,8 +135,8 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     AVFilterBufferRef *ref2 = avfilter_ref_buffer(picref, ~0);
     int i;
 
-    ref2->w        = crop->w;
-    ref2->h        = crop->h;
+    picref->video->w = crop->w;
+    picref->video->h = crop->h;
 
     ref2->data[0] += crop->y * ref2->linesize[0];
     ref2->data[0] += (crop->x * crop->max_step[0]);

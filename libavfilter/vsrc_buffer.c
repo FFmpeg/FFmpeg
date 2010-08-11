@@ -122,10 +122,10 @@ static int request_frame(AVFilterLink *link)
     av_picture_copy((AVPicture *)&picref->data, (AVPicture *)&c->frame,
                     picref->format, link->w, link->h);
 
-    picref->pts             = c->pts;
-    picref->pixel_aspect    = c->pixel_aspect;
-    picref->interlaced      = c->frame.interlaced_frame;
-    picref->top_field_first = c->frame.top_field_first;
+    picref->pts                    = c->pts;
+    picref->video->pixel_aspect    = c->pixel_aspect;
+    picref->video->interlaced      = c->frame.interlaced_frame;
+    picref->video->top_field_first = c->frame.top_field_first;
     avfilter_start_frame(link, avfilter_ref_buffer(picref, ~0));
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);
