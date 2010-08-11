@@ -29,6 +29,7 @@
  */
 
 #include "avformat.h"
+#include "mms.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/bytestream.h"
@@ -82,40 +83,6 @@ typedef enum {
     SC_PKT_ASF_MEDIA                = 0x010001,// receiving false data packets.
     /*@}*/
 } MMSSCPacketType;
-
-typedef struct {
-    int id;
-}MMSStream;
-
-typedef struct {
-    URLContext *mms_hd;                  ///< TCP connection handle
-    MMSStream streams[MAX_STREAMS];
-
-    /** Buffer for outgoing packets. */
-    /*@{*/
-    uint8_t *write_out_ptr;              ///< Pointer for writting the buffer.
-    uint8_t out_buffer[512];             ///< Buffer for outgoing packet.
-    /*@}*/
-
-    /** Buffer for incoming packets. */
-    /*@{*/
-    uint8_t in_buffer[8192];             ///< Buffer for incoming packets.
-    uint8_t *read_in_ptr;                ///< Pointer for reading from incoming buffer.
-    int remaining_in_len;                ///< Reading length from incoming buffer.
-    /*@}*/
-
-
-    /** Internal handling of the ASF header */
-    /*@{*/
-    uint8_t *asf_header;                 ///< Stored ASF header.
-    int asf_header_size;                 ///< Size of stored ASF header.
-    int header_parsed;                   ///< The header has been received and parsed.
-    int asf_packet_len;
-    int asf_header_read_size;
-    /*@}*/
-
-    int stream_num;                      ///< stream numbers.
-} MMSContext;
 
 typedef struct {
     MMSContext  mms;
@@ -466,67 +433,6 @@ static int send_startup_packet(MMSTContext *mmst)
     return send_command_packet(mmst);
 }
 
-static int asf_header_parser(MMSContext *mms)
-{
-    uint8_t *p = mms->asf_header;
-    uint8_t *end;
-    int flags, stream_id;
-    mms->stream_num = 0;
-
-    if (mms->asf_header_size < sizeof(ff_asf_guid) * 2 + 22 ||
-        memcmp(p, ff_asf_header, sizeof(ff_asf_guid))) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Corrupt stream (invalid ASF header, size=%d)\n",
-               mms->asf_header_size);
-        return AVERROR_INVALIDDATA;
-    }
-
-    end = mms->asf_header + mms->asf_header_size;
-
-    p += sizeof(ff_asf_guid) + 14;
-    while(end - p >= sizeof(ff_asf_guid) + 8) {
-        uint64_t chunksize = AV_RL64(p + sizeof(ff_asf_guid));
-        if (!chunksize || chunksize > end - p) {
-            av_log(NULL, AV_LOG_ERROR,
-                   "Corrupt stream (header chunksize %"PRId64" is invalid)\n",
-                   chunksize);
-            return AVERROR_INVALIDDATA;
-        }
-        if (!memcmp(p, ff_asf_file_header, sizeof(ff_asf_guid))) {
-            /* read packet size */
-            if (end - p > sizeof(ff_asf_guid) * 2 + 68) {
-                mms->asf_packet_len = AV_RL32(p + sizeof(ff_asf_guid) * 2 + 64);
-                if (mms->asf_packet_len <= 0 || mms->asf_packet_len > sizeof(mms->in_buffer)) {
-                    av_log(NULL, AV_LOG_ERROR,
-                           "Corrupt stream (too large pkt_len %d)\n",
-                           mms->asf_packet_len);
-                    return AVERROR_INVALIDDATA;
-                }
-            }
-        } else if (!memcmp(p, ff_asf_stream_header, sizeof(ff_asf_guid))) {
-            flags     = AV_RL16(p + sizeof(ff_asf_guid)*3 + 24);
-            stream_id = flags & 0x7F;
-            //The second condition is for checking CS_PKT_STREAM_ID_REQUEST packet size,
-            //we can calcuate the packet size by stream_num.
-            //Please see function send_stream_selection_request().
-            if (mms->stream_num < MAX_STREAMS &&
-                    46 + mms->stream_num * 6 < sizeof(mms->out_buffer)) {
-                mms->streams[mms->stream_num].id = stream_id;
-                mms->stream_num++;
-            } else {
-                av_log(NULL, AV_LOG_ERROR,
-                       "Corrupt stream (too many A/V streams)\n");
-                return AVERROR_INVALIDDATA;
-            }
-        } else if (!memcmp(p, ff_asf_head1_guid, sizeof(ff_asf_guid))) {
-            chunksize = 46; // see references [2] section 3.4. This should be set 46.
-        }
-        p += chunksize;
-    }
-
-    return 0;
-}
-
 /** Send MMST stream selection command based on the AVStream->discard values. */
 static int send_stream_selection_request(MMSTContext *mmst)
 {
@@ -541,16 +447,6 @@ static int send_stream_selection_request(MMSTContext *mmst)
         bytestream_put_le16(&mms->write_out_ptr, 0);                   // selection
     }
     return send_command_packet(mmst);
-}
-
-static int read_data(MMSContext *mms, uint8_t *buf, const int buf_size)
-{
-    int read_size;
-    read_size = FFMIN(buf_size, mms->remaining_in_len);
-    memcpy(buf, mms->read_in_ptr, read_size);
-    mms->remaining_in_len -= read_size;
-    mms->read_in_ptr      += read_size;
-    return read_size;
 }
 
 static int send_close_packet(MMSTContext *mmst)
@@ -652,7 +548,7 @@ static int mms_open(URLContext *h, const char *uri, int flags)
         goto fail;
     if((mmst->incoming_flags != 0X08) && (mmst->incoming_flags != 0X0C))
         goto fail;
-    err = asf_header_parser(mms);
+    err = ff_mms_asf_header_parser(mms);
     if (err) {
         dprintf(NULL, "asf header parsed failed!\n");
         goto fail;
@@ -686,25 +582,15 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
     MMSTContext *mmst = h->priv_data;
     MMSContext *mms   = &mmst->mms;
     int result = 0;
-    int size_to_copy;
 
     do {
         if(mms->asf_header_read_size < mms->asf_header_size) {
             /* Read from ASF header buffer */
-            size_to_copy= FFMIN(size,
-                                mms->asf_header_size - mms->asf_header_read_size);
-            memcpy(buf, mms->asf_header + mms->asf_header_read_size, size_to_copy);
-            mms->asf_header_read_size += size_to_copy;
-            result += size_to_copy;
-            dprintf(NULL, "Copied %d bytes from stored header. left: %d\n",
-                   size_to_copy, mms->asf_header_size - mms->asf_header_read_size);
-            if (mms->asf_header_size == mms->asf_header_read_size) {
-                av_freep(&mms->asf_header);
-            }
+            result = ff_mms_read_header(mms, buf, size);
         } else if(mms->remaining_in_len) {
             /* Read remaining packet data to buffer.
              * the result can not be zero because remaining_in_len is positive.*/
-            result = read_data(mms, buf, size);
+            result = ff_mms_read_data(mms, buf, size);
         } else {
             /* Read from network */
             int err = mms_safe_send_recv(mmst, NULL, SC_PKT_ASF_MEDIA);
@@ -716,7 +602,7 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
                     result= AVERROR_IO;
                 } else {
                     // copy the data to the packet buffer.
-                    result = read_data(mms, buf, size);
+                    result = ff_mms_read_data(mms, buf, size);
                     if (result == 0) {
                         dprintf(NULL, "read asf media paket size is zero!\n");
                         break;
