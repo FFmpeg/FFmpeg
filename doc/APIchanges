@@ -13,6 +13,12 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-08-11 - r24763 - lavfi 1.32.0 - AVFilterBufferRef
+  Add a type field to AVFilterBufferRef, and move video specific
+  properties to AVFilterBufferRefVideoProps.
+
+  This changs breaks libavfilter API/ABI.
+
 2010-08-07 - r24732 - lavfi 1.31.0 - AVFilterLink
   Rename AVFilterLink fields:
   AVFilterLink.srcpic    ->  AVFilterLink.src_buf
