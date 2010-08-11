@@ -510,7 +510,10 @@ Set the audio bitrate in bit/s (default = 64k).
 @item -aq @var{q}
 Set the audio quality (codec-specific, VBR).
 @item -ac @var{channels}
-Set the number of audio channels (default = 1).
+Set the number of audio channels. For input streams it is set by
+default to 1, for output streams it is set by default to the same
+number of audio channels in input. If the input file has audio streams
+with different channel count, the behaviour is undefined.
 @item -an
 Disable audio recording.
 @item -acodec @var{codec}
