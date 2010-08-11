@@ -144,6 +144,8 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
 /**
  * Set the given tag in *pm, overwriting an existing tag.
  *
+ * @param pm pointer to a pointer to a metadata struct. If *pm is NULL
+ * a metadata struct is allocated and put in *pm.
  * @param key tag key to add to *pm (will be av_strduped)
  * @param value tag value to add to *pm (will be av_strduped)
  * @return >= 0 on success otherwise an error code <0
@@ -155,6 +157,8 @@ attribute_deprecated int av_metadata_set(AVMetadata **pm, const char *key, const
 /**
  * Set the given tag in *pm, overwriting an existing tag.
  *
+ * @param pm pointer to a pointer to a metadata struct. If *pm is NULL
+ * a metadata struct is allocated and put in *pm.
  * @param key tag key to add to *pm (will be av_strduped depending on flags)
  * @param value tag value to add to *pm (will be av_strduped depending on flags).
  *        Passing a NULL value will cause an existing tag to be deleted.
