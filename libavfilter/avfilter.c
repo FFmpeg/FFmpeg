@@ -394,12 +394,13 @@ static const AVClass avfilter_class = {
     LIBAVUTIL_VERSION_INT,
 };
 
-AVFilterContext *avfilter_open(AVFilter *filter, const char *inst_name)
+int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name)
 {
     AVFilterContext *ret;
+    *filter_ctx = NULL;
 
     if (!filter)
-        return 0;
+        return AVERROR(EINVAL);
 
     ret = av_mallocz(sizeof(AVFilterContext));
 
@@ -422,7 +423,8 @@ AVFilterContext *avfilter_open(AVFilter *filter, const char *inst_name)
         ret->outputs      = av_mallocz(sizeof(AVFilterLink*) * ret->output_count);
     }
 
-    return ret;
+    *filter_ctx = ret;
+    return 0;
 }
 
 void avfilter_destroy(AVFilterContext *filter)

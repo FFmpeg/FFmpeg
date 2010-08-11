@@ -410,9 +410,9 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
 
     graph = av_mallocz(sizeof(AVFilterGraph));
 
-    if (!(ist->input_video_filter = avfilter_open(avfilter_get_by_name("buffer"), "src")))
+    if (avfilter_open(&ist->input_video_filter, avfilter_get_by_name("buffer"), "src") < 0)
         return -1;
-    if (!(ist->out_video_filter = avfilter_open(&output_filter, "out")))
+    if (avfilter_open(&ist->out_video_filter, &output_filter, "out") < 0)
         return -1;
 
     snprintf(args, 255, "%d:%d:%d", ist->st->codec->width,
@@ -432,7 +432,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         snprintf(args, 255, "%d:%d:%d:%d", ost->leftBand, ost->topBand,
                  codec->width,
                  codec->height);
-        filter = avfilter_open(avfilter_get_by_name("crop"), NULL);
+        avfilter_open(&filter, avfilter_get_by_name("crop"), NULL);
         if (!filter)
             return -1;
         if (avfilter_init_filter(filter, args, NULL))
@@ -450,7 +450,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
                  codec->width,
                  codec->height,
                  (int)av_get_int(sws_opts, "sws_flags", NULL));
-        filter = avfilter_open(avfilter_get_by_name("scale"), NULL);
+        avfilter_open(&filter, avfilter_get_by_name("scale"), NULL);
         if (!filter)
             return -1;
         if (avfilter_init_filter(filter, args, NULL))

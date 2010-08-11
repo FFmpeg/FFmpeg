@@ -49,7 +49,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if (!(filter_ctx = avfilter_open(filter, NULL))) {
+    if (avfilter_open(&filter_ctx, filter, NULL) < 0) {
         fprintf(stderr, "Inpossible to open filter with name '%s'\n", filter_name);
         return 1;
     }

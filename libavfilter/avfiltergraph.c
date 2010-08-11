@@ -133,8 +133,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                     /* couldn't merge format lists. auto-insert scale filter */
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
                              scaler_count++);
-                    scale =
-                        avfilter_open(avfilter_get_by_name("scale"),inst_name);
+                    avfilter_open(&scale, avfilter_get_by_name("scale"), inst_name);
 
                     snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
                     if(!scale || scale->filter->init(scale, scale_args, NULL) ||

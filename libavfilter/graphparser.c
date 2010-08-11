@@ -111,7 +111,7 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
         return NULL;
     }
 
-    filt_ctx = avfilter_open(filt, inst_name);
+    avfilter_open(&filt_ctx, filt, inst_name);
     if (!filt_ctx) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Error creating filter '%s'\n", filt_name);

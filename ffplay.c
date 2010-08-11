@@ -1790,8 +1790,8 @@ static int video_thread(void *arg)
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
-    if(!(filt_src = avfilter_open(&input_filter,  "src")))   goto the_end;
-    if(!(filt_out = avfilter_open(&output_filter, "out")))   goto the_end;
+    if (avfilter_open(&filt_src, &input_filter,  "src") < 0) goto the_end;
+    if (avfilter_open(&filt_out, &output_filter, "out") < 0) goto the_end;
 
     if(avfilter_init_filter(filt_src, NULL, is))             goto the_end;
     if(avfilter_init_filter(filt_out, NULL, frame))          goto the_end;

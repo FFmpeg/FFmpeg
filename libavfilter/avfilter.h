@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 32
+#define LIBAVFILTER_VERSION_MINOR 33
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -660,11 +660,14 @@ AVFilter **av_filter_next(AVFilter **filter);
 
 /**
  * Create a filter instance.
+ *
+ * @param filter_ctx put here a pointer to the created filter context
+ * on success, NULL on failure
  * @param filter    the filter to create an instance of
  * @param inst_name Name to give to the new instance. Can be NULL for none.
- * @return          Pointer to the new instance on success. NULL on failure.
+ * @return >= 0 in case of success, a negative error code otherwise
  */
-AVFilterContext *avfilter_open(AVFilter *filter, const char *inst_name);
+int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name);
 
 /**
  * Initialize a filter.
