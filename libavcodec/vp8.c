@@ -87,12 +87,10 @@ typedef struct {
     VP8Macroblock *macroblocks;
     VP8Macroblock *macroblocks_base;
     VP8FilterStrength *filter_strength;
-    int mb_stride;
 
     uint8_t *intra4x4_pred_mode_top;
     uint8_t intra4x4_pred_mode_left[4];
     uint8_t *segmentation_map;
-    int b4_stride;
 
     /**
      * Cache of the top row needed for intra prediction
@@ -235,17 +233,12 @@ static int update_dimensions(VP8Context *s, int width, int height)
     s->mb_width  = (s->avctx->coded_width +15) / 16;
     s->mb_height = (s->avctx->coded_height+15) / 16;
 
-    // we allocate a border around the top/left of intra4x4 modes
-    // this is 4 blocks for intra4x4 to keep 4-byte alignment for fill_rectangle
-    s->mb_stride = s->mb_width+1;
-    s->b4_stride = 4*s->mb_stride;
-
-    s->macroblocks_base        = av_mallocz((s->mb_stride+s->mb_height*2+2)*sizeof(*s->macroblocks));
-    s->filter_strength         = av_mallocz(s->mb_stride*sizeof(*s->filter_strength));
+    s->macroblocks_base        = av_mallocz((s->mb_width+s->mb_height*2+1)*sizeof(*s->macroblocks));
+    s->filter_strength         = av_mallocz(s->mb_width*sizeof(*s->filter_strength));
     s->intra4x4_pred_mode_top  = av_mallocz(s->mb_width*4);
     s->top_nnz                 = av_mallocz(s->mb_width*sizeof(*s->top_nnz));
     s->top_border              = av_mallocz((s->mb_width+1)*sizeof(*s->top_border));
-    s->segmentation_map        = av_mallocz(s->mb_stride*s->mb_height);
+    s->segmentation_map        = av_mallocz(s->mb_width*s->mb_height);
 
     if (!s->macroblocks_base || !s->filter_strength || !s->intra4x4_pred_mode_top ||
         !s->top_nnz || !s->top_border || !s->segmentation_map)
@@ -535,7 +528,7 @@ void clamp_mv(VP8Context *s, VP56mv *dst, const VP56mv *src, int mb_x, int mb_y)
 }
 
 static av_always_inline
-void find_near_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
+void find_near_mvs(VP8Context *s, VP8Macroblock *mb,
                    VP56mv near[2], VP56mv *best, uint8_t cnt[4])
 {
     VP8Macroblock *mb_edge[3] = { mb + 2 /* top */,
@@ -767,7 +760,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
         s->ref_count[mb->ref_frame-1]++;
 
         // motion vectors, 16.3
-        find_near_mvs(s, mb, mb_x, mb_y, near, &best, cnt);
+        find_near_mvs(s, mb, near, &best, cnt);
         if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[0]][0])) {
             if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[1]][1])) {
                 if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[2]][2])) {
@@ -1536,8 +1529,8 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     memset(s->top_nnz, 0, s->mb_width*sizeof(*s->top_nnz));
 
-    /* Zero macroblock structures for top/left prediction from outside the frame. */
-    memset(s->macroblocks, 0, (s->mb_width + s->mb_height*2)*sizeof(*s->macroblocks));
+    /* Zero macroblock structures for top/top-left prediction from outside the frame. */
+    memset(s->macroblocks + s->mb_height*2 - 1, 0, (s->mb_width+1)*sizeof(*s->macroblocks));
 
     // top edge of 127 for intra prediction
     memset(s->top_border, 127, (s->mb_width+1)*sizeof(*s->top_border));
@@ -1548,14 +1541,14 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         VP56RangeCoder *c = &s->coeff_partition[mb_y & (s->num_coeff_partitions-1)];
         VP8Macroblock *mb = s->macroblocks + (s->mb_height - mb_y - 1)*2;
-        uint8_t *segment_map = s->segmentation_map + mb_y*s->mb_stride;
-        int mb_xy = mb_y * s->mb_stride;
+        int mb_xy = mb_y*s->mb_width;
         uint8_t *dst[3] = {
             curframe->data[0] + 16*mb_y*s->linesize,
             curframe->data[1] +  8*mb_y*s->uvlinesize,
             curframe->data[2] +  8*mb_y*s->uvlinesize
         };
 
+        memset(mb - 1, 0, sizeof(*mb));   // zero left macroblock
         memset(s->left_nnz, 0, sizeof(s->left_nnz));
         AV_WN32A(s->intra4x4_pred_mode_left, DC_PRED*0x01010101);
 
@@ -1568,13 +1561,11 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             memset(s->top_border, 129, sizeof(*s->top_border));
 
         for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
-            uint8_t *segment_mb = segment_map+mb_x;
-
             /* Prefetch the current frame, 4 MBs ahead */
             s->dsp.prefetch(dst[0] + (mb_x&3)*4*s->linesize + 64, s->linesize, 4);
             s->dsp.prefetch(dst[1] + (mb_x&7)*s->uvlinesize + 64, dst[2] - dst[1], 2);
 
-            decode_mb_mode(s, mb, mb_x, mb_y, segment_mb);
+            decode_mb_mode(s, mb, mb_x, mb_y, s->segmentation_map + mb_xy);
 
             prefetch_motion(s, mb, mb_x, mb_y, mb_xy, VP56_FRAME_PREVIOUS);
 
