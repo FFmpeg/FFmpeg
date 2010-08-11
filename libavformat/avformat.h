@@ -170,8 +170,8 @@ int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int fl
  * @param d_conv destination tags format conversion table
  * @param s_conv source tags format conversion table
  */
-void av_metadata_conv(struct AVFormatContext *ctx,const AVMetadataConv *d_conv,
-                                                  const AVMetadataConv *s_conv);
+void av_metadata_conv(struct AVFormatContext *ctx, const AVMetadataConv *d_conv,
+                                                   const AVMetadataConv *s_conv);
 
 /**
  * Free all the memory allocated for an AVMetadata struct.
