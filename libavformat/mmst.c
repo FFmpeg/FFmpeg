@@ -88,10 +88,6 @@ typedef struct {
 }MMSStream;
 
 typedef struct {
-    int outgoing_packet_seq;             ///< Outgoing packet sequence number.
-    char path[256];                      ///< Path of the resource being asked for.
-    char host[128];                      ///< Host of the resources.
-
     URLContext *mms_hd;                  ///< TCP connection handle
     MMSStream streams[MAX_STREAMS];
 
@@ -108,11 +104,6 @@ typedef struct {
     int remaining_in_len;                ///< Reading length from incoming buffer.
     /*@}*/
 
-    int incoming_packet_seq;             ///< Incoming packet sequence number.
-    int incoming_flags;                  ///< Incoming packet flags.
-
-    int packet_id;                       ///< Identifier for packets in the current stream.
-    unsigned int header_packet_id;       ///< default is 2.
 
     /** Internal handling of the ASF header */
     /*@{*/
@@ -126,9 +117,21 @@ typedef struct {
     int stream_num;                      ///< stream numbers.
 } MMSContext;
 
+typedef struct {
+    MMSContext  mms;
+    int outgoing_packet_seq;             ///< Outgoing packet sequence number.
+    char path[256];                      ///< Path of the resource being asked for.
+    char host[128];                      ///< Host of the resources.
+    int incoming_packet_seq;             ///< Incoming packet sequence number.
+    int incoming_flags;                  ///< Incoming packet flags.
+    int packet_id;                       ///< Identifier for packets in the current stream.
+    unsigned int header_packet_id;       ///< default is 2.
+} MMSTContext;
+
 /** Create MMST command packet header */
-static void start_command_packet(MMSContext *mms, MMSCSPacketType packet_type)
+static void start_command_packet(MMSTContext *mmst, MMSCSPacketType packet_type)
 {
+    MMSContext *mms    = &mmst->mms;
     mms->write_out_ptr = mms->out_buffer;
 
     bytestream_put_le32(&mms->write_out_ptr, 1); // start sequence
@@ -136,7 +139,7 @@ static void start_command_packet(MMSContext *mms, MMSCSPacketType packet_type)
     bytestream_put_le32(&mms->write_out_ptr, 0); // Length starts from after the protocol type bytes
     bytestream_put_le32(&mms->write_out_ptr, MKTAG('M','M','S',' '));
     bytestream_put_le32(&mms->write_out_ptr, 0);
-    bytestream_put_le32(&mms->write_out_ptr, mms->outgoing_packet_seq++);
+    bytestream_put_le32(&mms->write_out_ptr, mmst->outgoing_packet_seq++);
     bytestream_put_le64(&mms->write_out_ptr, 0); // timestamp
     bytestream_put_le32(&mms->write_out_ptr, 0);
     bytestream_put_le16(&mms->write_out_ptr, packet_type);
@@ -152,8 +155,9 @@ static void insert_command_prefixes(MMSContext *mms,
 }
 
 /** Send a prepared MMST command packet. */
-static int send_command_packet(MMSContext *mms)
+static int send_command_packet(MMSTContext *mmst)
 {
+    MMSContext *mms  = &mmst->mms;
     int len= mms->write_out_ptr - mms->out_buffer;
     int exact_length = FFALIGN(len, 8);
     int first_length= exact_length - 16;
@@ -192,18 +196,19 @@ static void mms_put_utf16(MMSContext *mms, uint8_t *src)
     mms->write_out_ptr += len;
 }
 
-static int send_time_test_data(MMSContext *mms)
+static int send_time_test_data(MMSTContext *mmst)
 {
-    start_command_packet(mms, CS_PKT_TIMING_DATA_REQUEST);
-    insert_command_prefixes(mms, 0xf0f0f0f1, 0x0004000b);
-    return send_command_packet(mms);
+    start_command_packet(mmst, CS_PKT_TIMING_DATA_REQUEST);
+    insert_command_prefixes(&mmst->mms, 0xf0f0f0f1, 0x0004000b);
+    return send_command_packet(mmst);
 }
 
-static int send_protocol_select(MMSContext *mms)
+static int send_protocol_select(MMSTContext *mmst)
 {
     char data_string[256];
+    MMSContext *mms = &mmst->mms;
 
-    start_command_packet(mms, CS_PKT_PROTOCOL_SELECT);
+    start_command_packet(mmst, CS_PKT_PROTOCOL_SELECT);
     insert_command_prefixes(mms, 0, 0xffffffff);
     bytestream_put_le32(&mms->write_out_ptr, 0);          // maxFunnelBytes
     bytestream_put_le32(&mms->write_out_ptr, 0x00989680); // maxbitRate
@@ -217,35 +222,37 @@ static int send_protocol_select(MMSContext *mms)
             LOCAL_PORT);
 
     mms_put_utf16(mms, data_string);
-    return send_command_packet(mms);
+    return send_command_packet(mmst);
 }
 
-static int send_media_file_request(MMSContext *mms)
+static int send_media_file_request(MMSTContext *mmst)
 {
-    start_command_packet(mms, CS_PKT_MEDIA_FILE_REQUEST);
+    MMSContext *mms = &mmst->mms;
+    start_command_packet(mmst, CS_PKT_MEDIA_FILE_REQUEST);
     insert_command_prefixes(mms, 1, 0xffffffff);
     bytestream_put_le32(&mms->write_out_ptr, 0);
     bytestream_put_le32(&mms->write_out_ptr, 0);
-    mms_put_utf16(mms, mms->path + 1); // +1 for skip "/"
+    mms_put_utf16(mms, mmst->path + 1); // +1 for skip "/"
 
-    return send_command_packet(mms);
+    return send_command_packet(mmst);
 }
 
-static void handle_packet_stream_changing_type(MMSContext *mms)
+static void handle_packet_stream_changing_type(MMSTContext *mmst)
 {
+    MMSContext *mms = &mmst->mms;
     dprintf(NULL, "Stream changing!\n");
 
     // 40 is the packet header size, 7 is the prefix size.
-    mms->header_packet_id= AV_RL32(mms->in_buffer + 40 + 7);
-    dprintf(NULL, "Changed header prefix to 0x%x", mms->header_packet_id);
+    mmst->header_packet_id= AV_RL32(mms->in_buffer + 40 + 7);
+    dprintf(NULL, "Changed header prefix to 0x%x", mmst->header_packet_id);
 }
 
-static int send_keepalive_packet(MMSContext *mms)
+static int send_keepalive_packet(MMSTContext *mmst)
 {
     // respond to a keepalive with a keepalive...
-    start_command_packet(mms, CS_PKT_KEEPALIVE);
-    insert_command_prefixes(mms, 1, 0x100FFFF);
-    return send_command_packet(mms);
+    start_command_packet(mmst, CS_PKT_KEEPALIVE);
+    insert_command_prefixes(&mmst->mms, 1, 0x100FFFF);
+    return send_command_packet(mmst);
 }
 
 /** Pad media packets smaller than max_packet_size and/or adjust read position
@@ -260,11 +267,11 @@ static void pad_media_packet(MMSContext *mms)
 }
 
 /** Read incoming MMST media, header or command packet. */
-static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
+static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
 {
     int read_result;
     MMSSCPacketType packet_type= -1;
-
+    MMSContext *mms = &mmst->mms;
     for(;;) {
         read_result = url_read_complete(mms->mms_hd, mms->in_buffer, 8);
         if (read_result != 8) {
@@ -285,7 +292,7 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
         if(AV_RL32(mms->in_buffer + 4)==0xb00bface) {
             int length_remaining, hr;
 
-            mms->incoming_flags= mms->in_buffer[3];
+            mmst->incoming_flags= mms->in_buffer[3];
             read_result= url_read_complete(mms->mms_hd, mms->in_buffer+8, 4);
             if(read_result != 4) {
                 av_log(NULL, AV_LOG_ERROR,
@@ -332,9 +339,9 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
             // then fill up the buffer with the others
             tmp                       = AV_RL16(mms->in_buffer + 6);
             length_remaining          = (tmp - 8) & 0xffff;
-            mms->incoming_packet_seq  = AV_RL32(mms->in_buffer);
+            mmst->incoming_packet_seq = AV_RL32(mms->in_buffer);
             packet_id_type            = mms->in_buffer[4];
-            mms->incoming_flags       = mms->in_buffer[5];
+            mmst->incoming_flags      = mms->in_buffer[5];
 
             if (length_remaining < 0
                 || length_remaining > sizeof(mms->in_buffer) - 8) {
@@ -356,7 +363,7 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
             }
 
             // if we successfully read everything.
-            if(packet_id_type == mms->header_packet_id) {
+            if(packet_id_type == mmst->header_packet_id) {
                 packet_type = SC_PKT_ASF_HEADER;
                 // Store the asf header
                 if(!mms->header_parsed) {
@@ -372,9 +379,9 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
                     mms->asf_header_size += mms->remaining_in_len;
                 }
                 // 0x04 means asf header is sent in multiple packets.
-                if (mms->incoming_flags == 0x04)
+                if (mmst->incoming_flags == 0x04)
                     continue;
-            } else if(packet_id_type == mms->packet_id) {
+            } else if(packet_id_type == mmst->packet_id) {
                 packet_type = SC_PKT_ASF_MEDIA;
             } else {
                 dprintf(NULL, "packet id type %d is old.", packet_id_type);
@@ -384,10 +391,10 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
 
         // preprocess some packet type
         if(packet_type == SC_PKT_KEEPALIVE) {
-            send_keepalive_packet(mms);
+            send_keepalive_packet(mmst);
             continue;
         } else if(packet_type == SC_PKT_STREAM_CHANGING) {
-            handle_packet_stream_changing_type(mms);
+            handle_packet_stream_changing_type(mmst);
         } else if(packet_type == SC_PKT_ASF_MEDIA) {
             pad_media_packet(mms);
         }
@@ -395,20 +402,20 @@ static MMSSCPacketType get_tcp_server_response(MMSContext *mms)
     }
 }
 
-static int mms_safe_send_recv(MMSContext *mms,
-                              int (*send_fun)(MMSContext *mms),
+static int mms_safe_send_recv(MMSTContext *mmst,
+                              int (*send_fun)(MMSTContext *mmst),
                               const MMSSCPacketType expect_type)
 {
     MMSSCPacketType type;
     if(send_fun) {
-        int ret = send_fun(mms);
+        int ret = send_fun(mmst);
         if (ret < 0) {
             dprintf(NULL, "Send Packet error before expecting recv packet %d\n", expect_type);
             return ret;
         }
     }
 
-    if ((type = get_tcp_server_response(mms)) != expect_type) {
+    if ((type = get_tcp_server_response(mmst)) != expect_type) {
         av_log(NULL, AV_LOG_ERROR,
                "Corrupt stream (unexpected packet type 0x%x, expected 0x%x)\n",
                type, expect_type);
@@ -418,9 +425,10 @@ static int mms_safe_send_recv(MMSContext *mms,
     }
 }
 
-static int send_media_header_request(MMSContext *mms)
+static int send_media_header_request(MMSTContext *mmst)
 {
-    start_command_packet(mms, CS_PKT_MEDIA_HEADER_REQUEST);
+    MMSContext *mms = &mmst->mms;
+    start_command_packet(mmst, CS_PKT_MEDIA_HEADER_REQUEST);
     insert_command_prefixes(mms, 1, 0);
     bytestream_put_le32(&mms->write_out_ptr, 0);
     bytestream_put_le32(&mms->write_out_ptr, 0x00800000);
@@ -435,26 +443,27 @@ static int send_media_header_request(MMSContext *mms)
     bytestream_put_le32(&mms->write_out_ptr, 2);
     bytestream_put_le32(&mms->write_out_ptr, 0);
 
-    return send_command_packet(mms);
+    return send_command_packet(mmst);
 }
 
 /** Send the initial handshake. */
-static int send_startup_packet(MMSContext *mms)
+static int send_startup_packet(MMSTContext *mmst)
 {
     char data_string[256];
+    MMSContext *mms = &mmst->mms;
     // SubscriberName is defined in MS specification linked below.
     // The guid value can be any valid value.
     // http://download.microsoft.com/
     // download/9/5/E/95EF66AF-9026-4BB0-A41D-A4F81802D92C/%5BMS-WMSP%5D.pdf
     snprintf(data_string, sizeof(data_string),
             "NSPlayer/7.0.0.1956; {%s}; Host: %s",
-            "7E667F5D-A661-495E-A512-F55686DDA178", mms->host);
+            "7E667F5D-A661-495E-A512-F55686DDA178", mmst->host);
 
-    start_command_packet(mms, CS_PKT_INITIAL);
+    start_command_packet(mmst, CS_PKT_INITIAL);
     insert_command_prefixes(mms, 0, 0x0004000b);
     bytestream_put_le32(&mms->write_out_ptr, 0x0003001c);
     mms_put_utf16(mms, data_string);
-    return send_command_packet(mms);
+    return send_command_packet(mmst);
 }
 
 static int asf_header_parser(MMSContext *mms)
@@ -519,19 +528,19 @@ static int asf_header_parser(MMSContext *mms)
 }
 
 /** Send MMST stream selection command based on the AVStream->discard values. */
-static int send_stream_selection_request(MMSContext *mms)
+static int send_stream_selection_request(MMSTContext *mmst)
 {
     int i;
-
+    MMSContext *mms = &mmst->mms;
     //  send the streams we want back...
-    start_command_packet(mms, CS_PKT_STREAM_ID_REQUEST);
+    start_command_packet(mmst, CS_PKT_STREAM_ID_REQUEST);
     bytestream_put_le32(&mms->write_out_ptr, mms->stream_num);         // stream nums
     for(i= 0; i<mms->stream_num; i++) {
         bytestream_put_le16(&mms->write_out_ptr, 0xffff);              // flags
         bytestream_put_le16(&mms->write_out_ptr, mms->streams[i].id);  // stream id
         bytestream_put_le16(&mms->write_out_ptr, 0);                   // selection
     }
-    return send_command_packet(mms);
+    return send_command_packet(mmst);
 }
 
 static int read_data(MMSContext *mms, uint8_t *buf, const int buf_size)
@@ -544,21 +553,21 @@ static int read_data(MMSContext *mms, uint8_t *buf, const int buf_size)
     return read_size;
 }
 
-static int send_close_packet(MMSContext *mms)
+static int send_close_packet(MMSTContext *mmst)
 {
-    start_command_packet(mms, CS_PKT_STREAM_CLOSE);
-    insert_command_prefixes(mms, 1, 1);
+    start_command_packet(mmst, CS_PKT_STREAM_CLOSE);
+    insert_command_prefixes(&mmst->mms, 1, 1);
 
-    return send_command_packet(mms);
+    return send_command_packet(mmst);
 }
 
 /** Close the MMSH/MMST connection */
 static int mms_close(URLContext *h)
 {
-    MMSContext *mms = (MMSContext *)h->priv_data;
-
+    MMSTContext *mmst = (MMSTContext *)h->priv_data;
+    MMSContext *mms   = &mmst->mms;
     if(mms->mms_hd) {
-        send_close_packet(mms);
+        send_close_packet(mmst);
         url_close(mms->mms_hd);
     }
 
@@ -569,9 +578,10 @@ static int mms_close(URLContext *h)
     return 0;
 }
 
-static int send_media_packet_request(MMSContext *mms)
+static int send_media_packet_request(MMSTContext *mmst)
 {
-    start_command_packet(mms, CS_PKT_START_FROM_PKT_ID);
+    MMSContext *mms = &mmst->mms;
+    start_command_packet(mmst, CS_PKT_START_FROM_PKT_ID);
     insert_command_prefixes(mms, 1, 0x0001FFFF);
     bytestream_put_le64(&mms->write_out_ptr, 0);          // seek timestamp
     bytestream_put_le32(&mms->write_out_ptr, 0xffffffff); // unknown
@@ -581,9 +591,9 @@ static int send_media_packet_request(MMSContext *mms)
     bytestream_put_byte(&mms->write_out_ptr, 0xff);       // max stream time limit
     bytestream_put_byte(&mms->write_out_ptr, 0x00);       // stream time limit flag
 
-    mms->packet_id++;                                     // new packet_id
-    bytestream_put_le32(&mms->write_out_ptr, mms->packet_id);
-    return send_command_packet(mms);
+    mmst->packet_id++;                                     // new packet_id
+    bytestream_put_le32(&mms->write_out_ptr, mmst->packet_id);
+    return send_command_packet(mmst);
 }
 
 
@@ -595,50 +605,52 @@ static void clear_stream_buffers(MMSContext *mms)
 
 static int mms_open(URLContext *h, const char *uri, int flags)
 {
+    MMSTContext *mmst;
     MMSContext *mms;
     int port, err;
     char tcpname[256];
 
     h->is_streamed = 1;
-    mms = h->priv_data = av_mallocz(sizeof(MMSContext));
+    mmst = h->priv_data = av_mallocz(sizeof(MMSTContext));
     if (!h->priv_data)
         return AVERROR(ENOMEM);
+    mms = &mmst->mms;
 
     // only for MMS over TCP, so set proto = NULL
     av_url_split(NULL, 0, NULL, 0,
-            mms->host, sizeof(mms->host), &port, mms->path,
-            sizeof(mms->path), uri);
+            mmst->host, sizeof(mmst->host), &port, mmst->path,
+            sizeof(mmst->path), uri);
 
     if(port<0)
         port = 1755; // defaut mms protocol port
 
     // establish tcp connection.
-    ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mms->host, port, NULL);
+    ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mmst->host, port, NULL);
     err = url_open(&mms->mms_hd, tcpname, URL_RDWR);
     if (err)
         goto fail;
 
-    mms->packet_id        = 3;          // default, initial value.
-    mms->header_packet_id = 2;          // default, initial value.
-    err = mms_safe_send_recv(mms, send_startup_packet, SC_PKT_CLIENT_ACCEPTED);
+    mmst->packet_id        = 3;          // default, initial value.
+    mmst->header_packet_id = 2;          // default, initial value.
+    err = mms_safe_send_recv(mmst, send_startup_packet, SC_PKT_CLIENT_ACCEPTED);
     if (err)
         goto fail;
-    err = mms_safe_send_recv(mms, send_time_test_data, SC_PKT_TIMING_TEST_REPLY);
+    err = mms_safe_send_recv(mmst, send_time_test_data, SC_PKT_TIMING_TEST_REPLY);
     if (err)
         goto fail;
-    err = mms_safe_send_recv(mms, send_protocol_select, SC_PKT_PROTOCOL_ACCEPTED);
+    err = mms_safe_send_recv(mmst, send_protocol_select, SC_PKT_PROTOCOL_ACCEPTED);
     if (err)
         goto fail;
-    err = mms_safe_send_recv(mms, send_media_file_request, SC_PKT_MEDIA_FILE_DETAILS);
+    err = mms_safe_send_recv(mmst, send_media_file_request, SC_PKT_MEDIA_FILE_DETAILS);
     if (err)
         goto fail;
-    err = mms_safe_send_recv(mms, send_media_header_request, SC_PKT_HEADER_REQUEST_ACCEPTED);
+    err = mms_safe_send_recv(mmst, send_media_header_request, SC_PKT_HEADER_REQUEST_ACCEPTED);
     if (err)
         goto fail;
-    err = mms_safe_send_recv(mms, NULL, SC_PKT_ASF_HEADER);
+    err = mms_safe_send_recv(mmst, NULL, SC_PKT_ASF_HEADER);
     if (err)
         goto fail;
-    if((mms->incoming_flags != 0X08) && (mms->incoming_flags != 0X0C))
+    if((mmst->incoming_flags != 0X08) && (mmst->incoming_flags != 0X0C))
         goto fail;
     err = asf_header_parser(mms);
     if (err) {
@@ -651,11 +663,11 @@ static int mms_open(URLContext *h, const char *uri, int flags)
         goto fail;
 
     clear_stream_buffers(mms);
-    err = mms_safe_send_recv(mms, send_stream_selection_request, SC_PKT_STREAM_ID_ACCEPTED);
+    err = mms_safe_send_recv(mmst, send_stream_selection_request, SC_PKT_STREAM_ID_ACCEPTED);
     if (err)
         goto fail;
     // send media packet request
-    err = mms_safe_send_recv(mms, send_media_packet_request, SC_PKT_MEDIA_PKT_FOLLOWS);
+    err = mms_safe_send_recv(mmst, send_media_packet_request, SC_PKT_MEDIA_PKT_FOLLOWS);
     if (err) {
         goto fail;
     }
@@ -671,7 +683,8 @@ fail:
 static int mms_read(URLContext *h, uint8_t *buf, int size)
 {
     /* TODO: see tcp.c:tcp_read() about a possible timeout scheme */
-    MMSContext *mms = h->priv_data;
+    MMSTContext *mmst = h->priv_data;
+    MMSContext *mms   = &mmst->mms;
     int result = 0;
     int size_to_copy;
 
@@ -694,7 +707,7 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
             result = read_data(mms, buf, size);
         } else {
             /* Read from network */
-            int err = mms_safe_send_recv(mms, NULL, SC_PKT_ASF_MEDIA);
+            int err = mms_safe_send_recv(mmst, NULL, SC_PKT_ASF_MEDIA);
             if (err == 0) {
                 if(mms->remaining_in_len>mms->asf_packet_len) {
                     av_log(NULL, AV_LOG_ERROR,
