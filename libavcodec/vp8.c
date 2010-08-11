@@ -242,7 +242,7 @@ static int update_dimensions(VP8Context *s, int width, int height)
 
     s->macroblocks_base        = av_mallocz((s->mb_stride+s->mb_height*2+2)*sizeof(*s->macroblocks));
     s->filter_strength         = av_mallocz(s->mb_stride*sizeof(*s->filter_strength));
-    s->intra4x4_pred_mode_top  = av_mallocz(s->b4_stride*4);
+    s->intra4x4_pred_mode_top  = av_mallocz(s->mb_width*4);
     s->top_nnz                 = av_mallocz(s->mb_width*sizeof(*s->top_nnz));
     s->top_border              = av_mallocz((s->mb_width+1)*sizeof(*s->top_border));
     s->segmentation_map        = av_mallocz(s->mb_stride*s->mb_height);
@@ -1543,7 +1543,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     memset(s->top_border, 127, (s->mb_width+1)*sizeof(*s->top_border));
     memset(s->ref_count, 0, sizeof(s->ref_count));
     if (s->keyframe)
-        memset(s->intra4x4_pred_mode_top, DC_PRED, s->b4_stride*4);
+        memset(s->intra4x4_pred_mode_top, DC_PRED, s->mb_width*4);
 
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         VP56RangeCoder *c = &s->coeff_partition[mb_y & (s->num_coeff_partitions-1)];
