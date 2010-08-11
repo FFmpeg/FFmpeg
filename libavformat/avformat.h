@@ -142,10 +142,10 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
 
 #if LIBAVFORMAT_VERSION_MAJOR == 52
 /**
- * Set the given tag in m, overwriting an existing tag.
+ * Set the given tag in *pm, overwriting an existing tag.
  *
- * @param key tag key to add to m (will be av_strduped)
- * @param value tag value to add to m (will be av_strduped)
+ * @param key tag key to add to *pm (will be av_strduped)
+ * @param value tag value to add to *pm (will be av_strduped)
  * @return >= 0 on success otherwise an error code <0
  * @deprecated Use av_metadata_set2() instead.
  */
@@ -153,10 +153,10 @@ attribute_deprecated int av_metadata_set(AVMetadata **pm, const char *key, const
 #endif
 
 /**
- * Set the given tag in m, overwriting an existing tag.
+ * Set the given tag in *pm, overwriting an existing tag.
  *
- * @param key tag key to add to m (will be av_strduped depending on flags)
- * @param value tag value to add to m (will be av_strduped depending on flags).
+ * @param key tag key to add to *pm (will be av_strduped depending on flags)
+ * @param value tag value to add to *pm (will be av_strduped depending on flags).
  *        Passing a NULL value will cause an existing tag to be deleted.
  * @return >= 0 on success otherwise an error code <0
  */
