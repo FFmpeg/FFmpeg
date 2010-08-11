@@ -139,6 +139,11 @@ static struct fmt_map fmt_conversion_table[] = {
         .v4l2_fmt = V4L2_PIX_FMT_GREY,
     },
     {
+        .ff_fmt = PIX_FMT_NV12,
+        .codec_id = CODEC_ID_RAWVIDEO,
+        .v4l2_fmt = V4L2_PIX_FMT_NV12,
+    },
+    {
         .ff_fmt = PIX_FMT_NONE,
         .codec_id = CODEC_ID_MJPEG,
         .v4l2_fmt = V4L2_PIX_FMT_MJPEG,
