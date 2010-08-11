@@ -845,8 +845,9 @@ int ff_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane)
     return -1;
 }
 
-void av_picture_copy(AVPicture *dst, const AVPicture *src,
-                     enum PixelFormat pix_fmt, int width, int height)
+void av_picture_data_copy(uint8_t *dst_data[4], int dst_linesize[4],
+                          uint8_t *src_data[4], int src_linesize[4],
+                          enum PixelFormat pix_fmt, int width, int height)
 {
     int i;
     const PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
@@ -862,19 +863,26 @@ void av_picture_copy(AVPicture *dst, const AVPicture *src,
             if (i == 1 || i == 2) {
                 h= -((-height)>>desc->log2_chroma_h);
             }
-            ff_img_copy_plane(dst->data[i], dst->linesize[i],
-                           src->data[i], src->linesize[i],
-                           bwidth, h);
+            ff_img_copy_plane(dst_data[i], dst_linesize[i],
+                              src_data[i], src_linesize[i],
+                              bwidth, h);
         }
         break;
     case FF_PIXEL_PALETTE:
-        ff_img_copy_plane(dst->data[0], dst->linesize[0],
-                       src->data[0], src->linesize[0],
-                       width, height);
+        ff_img_copy_plane(dst_data[0], dst_linesize[0],
+                          src_data[0], src_linesize[0],
+                          width, height);
         /* copy the palette */
-        memcpy(dst->data[1], src->data[1], 4*256);
+        memcpy(dst_data[1], src_data[1], 4*256);
         break;
     }
+}
+
+void av_picture_copy(AVPicture *dst, const AVPicture *src,
+                     enum PixelFormat pix_fmt, int width, int height)
+{
+    av_picture_data_copy(dst->data, dst->linesize, src->data,
+                         src->linesize, pix_fmt, width, height);
 }
 
 /* 2x2 -> 1x1 */

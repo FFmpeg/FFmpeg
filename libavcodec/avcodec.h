@@ -30,8 +30,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 84
-#define LIBAVCODEC_VERSION_MICRO  3
+#define LIBAVCODEC_VERSION_MINOR 85
+#define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -3937,7 +3937,17 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 void av_fast_malloc(void *ptr, unsigned int *size, unsigned int min_size);
 
 /**
- * Copy image 'src' to 'dst'.
+ * Copy image data in src_data to dst_data.
+ *
+ * @param dst_linesize linesizes for the image in dst_data
+ * @param src_linesize linesizes for the image in src_data
+ */
+void av_picture_data_copy(uint8_t *dst_data[4], int dst_linesize[4],
+                          uint8_t *src_data[4], int src_linesize[4],
+                          enum PixelFormat pix_fmt, int width, int height);
+
+/**
+ * Copy image src to dst. Wraps av_picture_data_copy() above.
  */
 void av_picture_copy(AVPicture *dst, const AVPicture *src,
                      enum PixelFormat pix_fmt, int width, int height);
