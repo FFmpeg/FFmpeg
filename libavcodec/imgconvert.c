@@ -794,10 +794,12 @@ void ff_img_copy_plane(uint8_t *dst, int dst_wrap,
     }
 }
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 int ff_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane)
 {
     return av_get_image_linesize(pix_fmt, width, plane);
 }
+#endif
 
 void av_picture_data_copy(uint8_t *dst_data[4], int dst_linesize[4],
                           uint8_t *src_data[4], int src_linesize[4],
@@ -812,7 +814,7 @@ void av_picture_data_copy(uint8_t *dst_data[4], int dst_linesize[4],
     case FF_PIXEL_PLANAR:
         for(i = 0; i < pf->nb_channels; i++) {
             int h;
-            int bwidth = ff_get_plane_bytewidth(pix_fmt, width, i);
+            int bwidth = av_get_image_linesize(pix_fmt, width, i);
             h = height;
             if (i == 1 || i == 2) {
                 h= -((-height)>>desc->log2_chroma_h);

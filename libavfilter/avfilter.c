@@ -21,8 +21,8 @@
 
 /* #define DEBUG */
 
-#include "libavcodec/imgconvert.h"
 #include "libavutil/pixdesc.h"
+#include "libavcore/imgutils.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -322,7 +322,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
         for(i = 0; i < 4; i ++) {
             int planew =
-                ff_get_plane_bytewidth(link->format, link->cur_buf->video->w, i);
+                av_get_image_linesize(link->format, link->cur_buf->video->w, i);
 
             if(!src[i]) continue;
 
