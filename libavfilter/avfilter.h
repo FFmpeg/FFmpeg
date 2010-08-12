@@ -64,8 +64,7 @@ typedef struct AVFilterPad     AVFilterPad;
  * should not store pointers to this structure directly, but instead use the
  * AVFilterBufferRef structure below.
  */
-typedef struct AVFilterBuffer
-{
+typedef struct AVFilterBuffer {
     uint8_t *data[8];           ///< buffer data for each plane/channel
     int linesize[8];            ///< number of bytes per line
 
@@ -93,8 +92,7 @@ typedef struct AVFilterBuffer
  * AVFilterBufferRef is common to different media formats, video specific
  * per reference properties must be separated out.
  */
-typedef struct AVFilterBufferRefVideoProps
-{
+typedef struct AVFilterBufferRefVideoProps {
     int w;                      ///< image width
     int h;                      ///< image height
     AVRational pixel_aspect;    ///< pixel aspect ratio
@@ -110,8 +108,7 @@ typedef struct AVFilterBufferRefVideoProps
  *
  * TODO: add anything necessary for frame reordering
  */
-typedef struct AVFilterBufferRef
-{
+typedef struct AVFilterBufferRef {
     AVFilterBuffer *buf;        ///< the buffer that this is a reference to
     uint8_t *data[8];           ///< picture data for each plane
     int linesize[8];            ///< number of bytes per line
@@ -198,15 +195,13 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref);
  * get updated as well. Therefore, we have the format list structure store a
  * pointer to each of the pointers to itself.
  */
-typedef struct AVFilterFormats AVFilterFormats;
-struct AVFilterFormats
-{
+typedef struct AVFilterFormats {
     unsigned format_count;      ///< number of formats
     int *formats;               ///< list of media formats
 
     unsigned refcount;          ///< number of references to this list
-    AVFilterFormats ***refs;    ///< references to this list
-};
+    struct AVFilterFormats ***refs; ///< references to this list
+}  AVFilterFormats;;
 
 /**
  * Create a list of supported formats. This is intended for use in
@@ -291,8 +286,7 @@ void avfilter_formats_changeref(AVFilterFormats **oldref,
 /**
  * A filter pad used for either input or output.
  */
-struct AVFilterPad
-{
+struct AVFilterPad {
     /**
      * Pad name. The name is unique among inputs and among outputs, but an
      * input may have the same name as an output. This may be NULL if this
@@ -442,8 +436,7 @@ AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link,
  * Filter definition. This defines the pads a filter contains, and all the
  * callback functions used to interact with the filter.
  */
-typedef struct AVFilter
-{
+typedef struct AVFilter {
     const char *name;         ///< filter name
 
     int priv_size;      ///< size of private data to allocate for the filter
@@ -484,8 +477,7 @@ typedef struct AVFilter
 } AVFilter;
 
 /** An instance of a filter */
-struct AVFilterContext
-{
+struct AVFilterContext {
     const AVClass *av_class;              ///< needed for av_log()
 
     AVFilter *filter;               ///< the AVFilter of which this is an instance
@@ -510,8 +502,7 @@ struct AVFilterContext
  * which have been negotiated and agreed upon between the filter, such as
  * image dimensions, format, etc.
  */
-struct AVFilterLink
-{
+struct AVFilterLink {
     AVFilterContext *src;       ///< source filter
     unsigned int srcpad;        ///< index of the output pad on the source filter
 
