@@ -31,7 +31,7 @@ static av_always_inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
     unsigned int code_word = vp56_rac_renorm(c);
     unsigned int high = c->high;
     unsigned int low = 1 + (((high - 1) * prob) >> 8);
-    unsigned int low_shift = low << 8;
+    unsigned int low_shift = low << 16;
     int bit = 0;
 
     __asm__(

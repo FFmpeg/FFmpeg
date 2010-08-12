@@ -194,8 +194,8 @@ static av_always_inline unsigned int vp56_rac_renorm(VP56RangeCoder *c)
     code_word <<= shift;
     bits       += shift;
     if(bits >= 0 && c->buffer < c->end) {
-        code_word |= *c->buffer++ << bits;
-        bits -= 8;
+        code_word |= bytestream_get_be16(&c->buffer) << bits;
+        bits -= 16;
     }
     c->bits = bits;
     return code_word;
@@ -211,7 +211,7 @@ static av_always_inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
 {
     unsigned int code_word = vp56_rac_renorm(c);
     unsigned int low = 1 + (((c->high - 1) * prob) >> 8);
-    unsigned int low_shift = low << 8;
+    unsigned int low_shift = low << 16;
     int bit = code_word >= low_shift;
 
     c->high = bit ? c->high - low : low;
@@ -226,7 +226,7 @@ static av_always_inline int vp56_rac_get_prob_branchy(VP56RangeCoder *c, int pro
 {
     unsigned long code_word = vp56_rac_renorm(c);
     unsigned low = 1 + (((c->high - 1) * prob) >> 8);
-    unsigned low_shift = low << 8;
+    unsigned low_shift = low << 16;
 
     if (code_word >= low_shift) {
         c->high     -= low;
@@ -244,7 +244,7 @@ static av_always_inline int vp56_rac_get(VP56RangeCoder *c)
     unsigned int code_word = vp56_rac_renorm(c);
     /* equiprobable */
     int low = (c->high + 1) >> 1;
-    unsigned int low_shift = low << 8;
+    unsigned int low_shift = low << 16;
     int bit = code_word >= low_shift;
     if (bit) {
         c->high   -= low;
