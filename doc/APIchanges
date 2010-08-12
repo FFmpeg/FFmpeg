@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-08-12 - r24787 - lavcore 0.4.0 - av_get_image_linesize()
+  Add av_get_image_linesize() in imgutils.h.
+
 2010-08-11 - r24773 - lavfi 1.34.0 - AVFilterBufferRef
   Resize data and linesize arrays in AVFilterBufferRef to 8.
 
