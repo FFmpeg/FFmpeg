@@ -28,6 +28,14 @@
 #include "avcore.h"
 
 /**
+ * Compute the size of an image line with format pix_fmt and width
+ * width for the plane plane.
+ *
+ * @return the computed size in bytes
+ */
+int av_get_image_linesize(enum PixelFormat pix_fmt, int width, int plane);
+
+/**
  * Fill plane linesizes for an image with pixel format pix_fmt and
  * width width.
  *
