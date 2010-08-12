@@ -28,6 +28,7 @@ version <next>:
 - Chinese AVS encoding via libxavs
 - ffprobe -show_packets option added
 - RTP packetization of Theora and Vorbis
+- RTP depacketization of MP4A-LATM
 
 
 version 0.6:

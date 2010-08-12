@@ -231,6 +231,7 @@ OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o        \
                                             rtpdec_asf.o  \
                                             rtpdec_h263.o \
                                             rtpdec_h264.o \
+                                            rtpdec_latm.o \
                                             rtpdec_mpeg4.o \
                                             rtpdec_qdm2.o \
                                             rtpdec_svq3.o \
