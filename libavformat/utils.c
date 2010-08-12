@@ -2699,8 +2699,8 @@ int av_write_header(AVFormatContext *s)
                     char tagbuf[32];
                     av_get_codec_tag_string(tagbuf, sizeof(tagbuf), st->codec->codec_tag);
                     av_log(s, AV_LOG_ERROR,
-                           "Tag %s/0x%08x incompatible with output codec '%s'\n",
-                           tagbuf, st->codec->codec_tag, st->codec->codec->name);
+                           "Tag %s/0x%08x incompatible with output codec id '%d'\n",
+                           tagbuf, st->codec->codec_tag, st->codec->codec_id);
                     return AVERROR_INVALIDDATA;
                 }
             }else
