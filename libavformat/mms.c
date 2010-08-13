@@ -99,6 +99,9 @@ int ff_mms_asf_header_parser(MMSContext *mms)
             //Please see function send_stream_selection_request().
             if (mms->stream_num < MAX_STREAMS &&
                     46 + mms->stream_num * 6 < sizeof(mms->out_buffer)) {
+                mms->streams = av_fast_realloc(mms->streams,
+                                   &mms->nb_streams_allocated,
+                                   (mms->stream_num + 1) * sizeof(MMSStream));
                 mms->streams[mms->stream_num].id = stream_id;
                 mms->stream_num++;
             } else {

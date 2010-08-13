@@ -29,7 +29,7 @@ typedef struct {
 
 typedef struct {
     URLContext *mms_hd;                  ///< TCP connection handle
-    MMSStream streams[MAX_STREAMS];
+    MMSStream *streams;
 
     /** Buffer for outgoing packets. */
     /*@{*/
@@ -54,6 +54,7 @@ typedef struct {
     /*@}*/
 
     int stream_num;                      ///< stream numbers.
+    unsigned int nb_streams_allocated;   ///< allocated size of streams
 } MMSContext;
 
 int ff_mms_asf_header_parser(MMSContext * mms);

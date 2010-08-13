@@ -468,6 +468,7 @@ static int mms_close(URLContext *h)
     }
 
     /* free all separately allocated pointers in mms */
+    av_free(mms->streams);
     av_free(mms->asf_header);
     av_freep(&h->priv_data);
 
