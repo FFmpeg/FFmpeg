@@ -771,8 +771,8 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
                     } else {
                         mb->mode = VP8_MVMODE_NEW;
                         clamp_mv(s, &mb->mv, &mb->mv, mb_x, mb_y);
-                        mb->mv.y += + read_mv_component(c, s->prob->mvc[0]);
-                        mb->mv.x += + read_mv_component(c, s->prob->mvc[1]);
+                        mb->mv.y += read_mv_component(c, s->prob->mvc[0]);
+                        mb->mv.x += read_mv_component(c, s->prob->mvc[1]);
                     }
                 } else {
                     mb->mode = VP8_MVMODE_NEAR;
