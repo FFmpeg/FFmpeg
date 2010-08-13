@@ -166,7 +166,7 @@ static void mms_put_utf16(MMSContext *mms, uint8_t *src)
 static int send_time_test_data(MMSTContext *mmst)
 {
     start_command_packet(mmst, CS_PKT_TIMING_DATA_REQUEST);
-    insert_command_prefixes(&mmst->mms, 0xf0f0f0f1, 0x0004000b);
+    insert_command_prefixes(&mmst->mms, 0x00f0f0f0, 0x0004000b);
     return send_command_packet(mmst);
 }
 
