@@ -230,7 +230,8 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                 int prev_len = out_len;
                 out_len += cur_len;
                 asf->buf = av_realloc(asf->buf, out_len);
-                memcpy(asf->buf + prev_len, buf + off, cur_len);
+                memcpy(asf->buf + prev_len, buf + off,
+                       FFMIN(cur_len, len - off));
                 url_fskip(pb, cur_len);
             }
         }
