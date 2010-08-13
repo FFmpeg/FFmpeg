@@ -68,7 +68,12 @@ int ff_mms_asf_header_parser(MMSContext *mms)
 
     p += sizeof(ff_asf_guid) + 14;
     while(end - p >= sizeof(ff_asf_guid) + 8) {
-        uint64_t chunksize = AV_RL64(p + sizeof(ff_asf_guid));
+        uint64_t chunksize;
+        if (!memcmp(p, ff_asf_data_header, sizeof(ff_asf_guid))) {
+            chunksize = 50; // see Reference [2] section 5.1
+        } else {
+            chunksize = AV_RL64(p + sizeof(ff_asf_guid));
+        }
         if (!chunksize || chunksize > end - p) {
             av_log(NULL, AV_LOG_ERROR,
                    "Corrupt stream (header chunksize %"PRId64" is invalid)\n",
