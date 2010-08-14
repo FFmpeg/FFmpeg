@@ -54,8 +54,13 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     snprintf(portstr, sizeof(portstr), "%d", port);
-    if (getaddrinfo(hostname, portstr, &hints, &ai))
+    ret = getaddrinfo(hostname, portstr, &hints, &ai);
+    if (ret) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Failed to resolve hostname %s: %s\n",
+               hostname, gai_strerror(ret));
         return AVERROR(EIO);
+    }
 
     cur_ai = ai;
 
@@ -93,8 +98,12 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         /* test error */
         optlen = sizeof(ret);
         getsockopt (fd, SOL_SOCKET, SO_ERROR, &ret, &optlen);
-        if (ret != 0)
+        if (ret != 0) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "TCP connection to %s:%d failed: %s\n",
+                   hostname, port, strerror(ret));
             goto fail;
+        }
     }
     s = av_malloc(sizeof(TCPContext));
     if (!s) {
