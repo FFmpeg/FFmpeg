@@ -29,6 +29,7 @@ version <next>:
 - ffprobe -show_packets option added
 - RTP packetization of Theora and Vorbis
 - RTP depacketization of MP4A-LATM
+- RTP packetization and depacketization of VP8
 
 
 version 0.6:

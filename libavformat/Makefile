@@ -236,6 +236,7 @@ OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o        \
                                             rtpdec_mpeg4.o \
                                             rtpdec_qdm2.o \
                                             rtpdec_svq3.o \
+                                            rtpdec_vp8.o  \
                                             rtpdec_xiph.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += raw.o
