@@ -412,6 +412,10 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                     c->width, c->height, pix_fmt, config);
             break;
         }
+        case CODEC_ID_VP8:
+            av_strlcatf(buff, size, "a=rtpmap:%d VP8/90000\r\n",
+                                     payload_type);
+            break;
         default:
             /* Nothing special to do here... */
             break;

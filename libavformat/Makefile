@@ -219,6 +219,7 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc_mpv.o     \
                                             rtpenc.o      \
                                             rtpenc_h264.o \
+                                            rtpenc_vp8.o  \
                                             rtpenc_xiph.o \
                                             avc.o
 OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o httpauth.o
