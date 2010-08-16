@@ -186,7 +186,7 @@ static int check_diff(float *tab1, float *tab2, int n, double scale)
     for (i = 0; i < n; i++) {
         double e= fabsf(tab1[i] - (tab2[i] / scale));
         if (e >= 1e-3) {
-            av_log(NULL, AV_LOG_ERROR, "ERROR %d: %f %f\n",
+            av_log(NULL, AV_LOG_ERROR, "ERROR %5d: %10.6f %10.6f\n",
                    i, tab1[i], tab2[i]);
             err = 1;
         }
