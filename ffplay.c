@@ -1373,6 +1373,14 @@ static void alloc_picture(void *opaque)
     vp->bmp = SDL_CreateYUVOverlay(vp->width, vp->height,
                                    SDL_YV12_OVERLAY,
                                    screen);
+    if (!vp->bmp || vp->bmp->pitches[0] < vp->width) {
+        /* SDL allocates a buffer smaller than requested if the video
+         * overlay hardware is unable to support the requested size. */
+        fprintf(stderr, "Error: the video system does not support an image\n"
+                        "size of %dx%d pixels. Try using -vf \"scale=w:h\"\n"
+                        "to reduce the image size.\n", vp->width, vp->height );
+        do_exit();
+    }
 
     SDL_LockMutex(is->pictq_mutex);
     vp->allocated = 1;
