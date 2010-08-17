@@ -48,9 +48,15 @@ const char *avfilter_license(void)
 AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
 {
     AVFilterBufferRef *ret = av_malloc(sizeof(AVFilterBufferRef));
+    if (!ret)
+        return NULL;
     *ret = *ref;
     if (ref->type == AVMEDIA_TYPE_VIDEO) {
         ret->video = av_malloc(sizeof(AVFilterBufferRefVideoProps));
+        if (!ret->video) {
+            av_free(ret);
+            return NULL;
+        }
         *ret->video = *ref->video;
     }
     ret->perms &= pmask;
