@@ -35,9 +35,12 @@ static void avfilter_default_free_buffer(AVFilterBuffer *ptr)
 AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     AVFilterBuffer *pic = av_mallocz(sizeof(AVFilterBuffer));
-    AVFilterBufferRef *ref = av_mallocz(sizeof(AVFilterBufferRef));
+    AVFilterBufferRef *ref = NULL;
     int i, tempsize;
-    char *buf;
+    char *buf = NULL;
+
+    if (!pic || !(ref = av_mallocz(sizeof(AVFilterBufferRef))))
+        goto fail;
 
     ref->buf         = pic;
     ref->video       = av_mallocz(sizeof(AVFilterBufferRefVideoProps));
@@ -58,12 +61,22 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
     tempsize = av_fill_image_pointers(pic->data, ref->format, ref->video->h, NULL, pic->linesize);
     buf = av_malloc(tempsize + 16); // +2 is needed for swscaler, +16 to be
                                     // SIMD-friendly
+    if (!buf)
+        goto fail;
     av_fill_image_pointers(pic->data, ref->format, ref->video->h, buf, pic->linesize);
 
     memcpy(ref->data,     pic->data,     sizeof(ref->data));
     memcpy(ref->linesize, pic->linesize, sizeof(ref->linesize));
 
     return ref;
+
+fail:
+    av_free(buf);
+    if (ref && ref->video)
+        av_free(ref->video);
+    av_free(ref);
+    av_free(pic);
+    return NULL;
 }
 
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
