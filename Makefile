@@ -92,7 +92,7 @@ tools/%$(EXESUF): tools/%.o
 tools/%.o: tools/%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(CC_O) $<
 
-ffplay.o ffplay.d: CFLAGS += $(SDL_CFLAGS)
+ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
 VERSION_SH  = $(SRC_PATH_BARE)/version.sh
 GIT_LOG     = $(SRC_PATH_BARE)/.git/logs/HEAD
