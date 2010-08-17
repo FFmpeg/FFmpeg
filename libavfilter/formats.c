@@ -107,7 +107,8 @@ AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
 {
     AVFilterFormats *ret = NULL;
     int fmt;
-    int num_formats = type == AVMEDIA_TYPE_VIDEO ? PIX_FMT_NB : 0;
+    int num_formats = type == AVMEDIA_TYPE_VIDEO ? PIX_FMT_NB    :
+                      type == AVMEDIA_TYPE_AUDIO ? SAMPLE_FMT_NB : 0;
 
     for (fmt = 0; fmt < num_formats; fmt++)
         if ((type != AVMEDIA_TYPE_VIDEO) ||

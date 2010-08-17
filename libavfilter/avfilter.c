@@ -21,6 +21,7 @@
 
 /* #define DEBUG */
 
+#include "libavcodec/audioconvert.c"
 #include "libavutil/pixdesc.h"
 #include "libavcore/imgutils.h"
 #include "avfilter.h"
@@ -58,6 +59,13 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
             return NULL;
         }
         *ret->video = *ref->video;
+    } else if (ref->type == AVMEDIA_TYPE_AUDIO) {
+        ret->audio = av_malloc(sizeof(AVFilterBufferRefAudioProps));
+        if (!ret->audio) {
+            av_free(ret);
+            return NULL;
+        }
+        *ret->audio = *ref->audio;
     }
     ret->perms &= pmask;
     ret->buf->refcount ++;
@@ -69,6 +77,7 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref)
     if(!(--ref->buf->refcount))
         ref->buf->free(ref->buf);
     av_free(ref->video);
+    av_free(ref->audio);
     av_free(ref);
 }
 
@@ -225,6 +234,24 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
     return ret;
 }
 
+AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
+                                             enum SampleFormat sample_fmt, int size,
+                                             int64_t channel_layout, int planar)
+{
+    AVFilterBufferRef *ret = NULL;
+
+    if (link_dpad(link).get_audio_buffer)
+        ret = link_dpad(link).get_audio_buffer(link, perms, sample_fmt, size, channel_layout, planar);
+
+    if (!ret)
+        ret = avfilter_default_get_audio_buffer(link, perms, sample_fmt, size, channel_layout, planar);
+
+    if (ret)
+        ret->type = AVMEDIA_TYPE_AUDIO;
+
+    return ret;
+}
+
 int avfilter_request_frame(AVFilterLink *link)
 {
     FF_DPRINTF_START(NULL, request_frame); ff_dprintf_link(NULL, link, 1);
@@ -343,6 +370,40 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     if(!(draw_slice = link_dpad(link).draw_slice))
         draw_slice = avfilter_default_draw_slice;
     draw_slice(link, y, h, slice_dir);
+}
+
+void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+{
+    void (*filter_samples)(AVFilterLink *, AVFilterBufferRef *);
+    AVFilterPad *dst = &link_dpad(link);
+
+    if (!(filter_samples = dst->filter_samples))
+        filter_samples = avfilter_default_filter_samples;
+
+    /* prepare to copy the samples if the buffer has insufficient permissions */
+    if ((dst->min_perms & samplesref->perms) != dst->min_perms ||
+        dst->rej_perms & samplesref->perms) {
+
+        av_log(link->dst, AV_LOG_DEBUG,
+               "Copying audio data in avfilter (have perms %x, need %x, reject %x)\n",
+               samplesref->perms, link_dpad(link).min_perms, link_dpad(link).rej_perms);
+
+        link->cur_buf = avfilter_default_get_audio_buffer(link, dst->min_perms,
+                                                          samplesref->format,
+                                                          samplesref->audio->size,
+                                                          samplesref->audio->channel_layout,
+                                                          samplesref->audio->planar);
+        link->cur_buf->pts                = samplesref->pts;
+        link->cur_buf->audio->sample_rate = samplesref->audio->sample_rate;
+
+        /* Copy actual data into new samples buffer */
+        memcpy(link->cur_buf->data[0], samplesref->data[0], samplesref->audio->size);
+
+        avfilter_unref_buffer(samplesref);
+    } else
+        link->cur_buf = samplesref;
+
+    filter_samples(link, link->cur_buf);
 }
 
 #define MAX_REGISTERED_AVFILTERS_NB 64
