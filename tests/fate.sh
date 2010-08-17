@@ -101,8 +101,8 @@ test -d "$src" && update || checkout || die "Error fetching source"
 cd ${workdir}
 
 version=$(${src}/version.sh ${src})
-test "$version" = "$(cat version 2>/dev/null)" && exit 0
-echo ${version} >version
+test "$version" = "$(cat version-$slot 2>/dev/null)" && exit 0
+echo ${version} >version-$slot
 
 rm -rf "${build}"
 mkdir -p ${build}
