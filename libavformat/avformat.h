@@ -38,6 +38,9 @@
 #ifndef LAVF_API_MAX_STREAMS
 #define LAVF_API_MAX_STREAMS  (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef LAVF_API_OLD_METADATA
+#define LAVF_API_OLD_METADATA (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got
@@ -144,7 +147,7 @@ typedef struct AVMetadataConv AVMetadataConv;
 AVMetadataTag *
 av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int flags);
 
-#if LIBAVFORMAT_VERSION_MAJOR == 52
+#if LAVF_API_OLD_METADATA
 /**
  * Set the given tag in *pm, overwriting an existing tag.
  *
@@ -520,7 +523,7 @@ typedef struct AVStream {
      */
     int64_t duration;
 
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if LAVF_API_OLD_METADATA
     char language[4]; /**< ISO 639-2/B 3-letter language code (empty string if undefined) */
 #endif
 
@@ -541,7 +544,9 @@ typedef struct AVStream {
 
 #if LIBAVFORMAT_VERSION_INT < (53<<16)
     int64_t unused[4+1];
+#endif
 
+#if LAVF_API_OLD_METADATA
     char *filename; /**< source filename of the stream */
 #endif
 
@@ -610,7 +615,7 @@ typedef struct AVStream {
  */
 typedef struct AVProgram {
     int            id;
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if LAVF_API_OLD_METADATA
     char           *provider_name; ///< network name for DVB streams
     char           *name;          ///< service name for DVB streams
 #endif
@@ -628,7 +633,7 @@ typedef struct AVChapter {
     int id;                 ///< unique ID to identify the chapter
     AVRational time_base;   ///< time base in which the start/end timestamps are specified
     int64_t start, end;     ///< chapter start/end time in time_base units
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if LAVF_API_OLD_METADATA
     char *title;            ///< chapter title
 #endif
     AVMetadata *metadata;
@@ -657,7 +662,7 @@ typedef struct AVFormatContext {
     char filename[1024]; /**< input or output filename */
     /* stream info */
     int64_t timestamp;
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if LAVF_API_OLD_METADATA
     char title[512];
     char author[512];
     char copyright[512];

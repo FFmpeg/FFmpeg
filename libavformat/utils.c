@@ -457,7 +457,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     if (pb && !ic->data_offset)
         ic->data_offset = url_ftell(ic->pb);
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if LAVF_API_OLD_METADATA
     ff_metadata_demux_compat(ic);
 #endif
 
@@ -2460,14 +2460,14 @@ void av_close_input_stream(AVFormatContext *s)
         av_free(st->index_entries);
         av_free(st->codec->extradata);
         av_free(st->codec);
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if LAVF_API_OLD_METADATA
         av_free(st->filename);
 #endif
         av_free(st->priv_data);
         av_free(st);
     }
     for(i=s->nb_programs-1; i>=0; i--) {
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if LAVF_API_OLD_METADATA
         av_freep(&s->programs[i]->provider_name);
         av_freep(&s->programs[i]->name);
 #endif
@@ -2479,7 +2479,7 @@ void av_close_input_stream(AVFormatContext *s)
     flush_packet_queue(s);
     av_freep(&s->priv_data);
     while(s->nb_chapters--) {
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if LAVF_API_OLD_METADATA
         av_free(s->chapters[s->nb_chapters]->title);
 #endif
         av_metadata_free(&s->chapters[s->nb_chapters]->metadata);
@@ -2582,7 +2582,7 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int6
             return NULL;
         dynarray_add(&s->chapters, &s->nb_chapters, chapter);
     }
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if LAVF_API_OLD_METADATA
     av_free(chapter->title);
 #endif
     av_metadata_set2(&chapter->metadata, "title", title, 0);
@@ -2718,7 +2718,7 @@ int av_write_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
     }
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if LAVF_API_OLD_METADATA
     ff_metadata_mux_compat(s);
 #endif
 

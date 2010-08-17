@@ -40,7 +40,7 @@ struct AVMetadataConv{
     const char *generic;
 };
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if LAVF_API_OLD_METADATA
 void ff_metadata_demux_compat(AVFormatContext *s);
 void ff_metadata_mux_compat(AVFormatContext *s);
 #endif
