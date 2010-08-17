@@ -315,11 +315,7 @@ AVOutputFormat oss_muxer = {
     /* XXX: we make the assumption that the soundcard accepts this format */
     /* XXX: find better solution with "preinit" method, needed also in
        other formats */
-#if HAVE_BIGENDIAN
-    CODEC_ID_PCM_S16BE,
-#else
-    CODEC_ID_PCM_S16LE,
-#endif
+    AV_NE(CODEC_ID_PCM_S16BE, CODEC_ID_PCM_S16LE),
     CODEC_ID_NONE,
     audio_write_header,
     audio_write_packet,

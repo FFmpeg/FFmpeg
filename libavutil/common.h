@@ -35,6 +35,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "attributes.h"
+#include "avconfig.h"
+
+#if AV_HAVE_BIGENDIAN
+#   define AV_NE(be, le) be
+#else
+#   define AV_NE(be, le) le
+#endif
 
 //rounded division & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
