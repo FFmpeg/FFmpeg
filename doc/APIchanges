@@ -13,6 +13,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-08-17 - r24811 - lavfi 1.36.0 - audio framework
+  Implement AVFilterBufferRefAudioProps struct for audio properties,
+  get_audio_buffer(), filter_samples() functions and related changes.
+
 2010-08-12 - r24787 - lavcore 0.4.0 - av_get_image_linesize()
   Add av_get_image_linesize() in imgutils.h.
 
