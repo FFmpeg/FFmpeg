@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     }
     for (i = 0; i < filter_ctx->output_count; i++) {
         AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
-        link->type = filter_ctx->filter->inputs[i].type;
+        link->type = filter_ctx->filter->outputs[i].type;
         filter_ctx->outputs[i] = link;
     }
 
