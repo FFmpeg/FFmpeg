@@ -56,6 +56,16 @@ The following command:
 
 will convert the input video to the format ``yuv420p''.
 
+@section hflip
+
+Flip the input video horizontally.
+
+For example to horizontally flip the video in input with
+@file{ffmpeg}:
+@example
+ffmpeg -i in.avi -vf "hflip" out.avi
+@end example
+
 @section noformat
 
 Force libavfilter not to use any of the specified pixel formats for the

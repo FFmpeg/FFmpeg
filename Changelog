@@ -30,6 +30,7 @@ version <next>:
 - RTP packetization of Theora and Vorbis
 - RTP depacketization of MP4A-LATM
 - RTP packetization and depacketization of VP8
+- hflip filter
 
 
 version 0.6:

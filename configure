@@ -1492,6 +1492,7 @@ mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
 
 set_ne_test_deps pixdesc
 set_ne_test_deps pixfmts_crop
+set_ne_test_deps pixfmts_hflip
 set_ne_test_deps pixfmts_null
 set_ne_test_deps pixfmts_pad
 set_ne_test_deps pixfmts_scale

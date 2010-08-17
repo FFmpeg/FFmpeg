@@ -37,6 +37,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (ASPECT,      aspect,      vf);
     REGISTER_FILTER (CROP,        crop,        vf);
     REGISTER_FILTER (FORMAT,      format,      vf);
+    REGISTER_FILTER (HFLIP,       hflip,       vf);
     REGISTER_FILTER (NOFORMAT,    noformat,    vf);
     REGISTER_FILTER (NULL,        null,        vf);
     REGISTER_FILTER (PAD,         pad,         vf);
