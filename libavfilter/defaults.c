@@ -56,7 +56,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
     pic->free     = avfilter_default_free_buffer;
     av_fill_image_linesizes(pic->linesize, ref->format, ref->video->w);
 
-    for (i=0; i<4;i++)
+    for (i = 0; i < 4; i++)
         pic->linesize[i] = FFALIGN(pic->linesize[i], 16);
 
     tempsize = av_fill_image_pointers(pic->data, ref->format, ref->video->h, NULL, pic->linesize);
@@ -163,10 +163,10 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     AVFilterLink *out = NULL;
 
-    if(link->dst->output_count)
+    if (link->dst->output_count)
         out = link->dst->outputs[0];
 
-    if(out) {
+    if (out) {
         out->out_buf      = avfilter_get_video_buffer(out, AV_PERM_WRITE, out->w, out->h);
         avfilter_copy_buffer_ref_props(out->out_buf, picref);
         avfilter_start_frame(out, avfilter_ref_buffer(out->out_buf, ~0));
@@ -177,10 +177,10 @@ void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir
 {
     AVFilterLink *out = NULL;
 
-    if(link->dst->output_count)
+    if (link->dst->output_count)
         out = link->dst->outputs[0];
 
-    if(out)
+    if (out)
         avfilter_draw_slice(out, y, h, slice_dir);
 }
 
@@ -188,14 +188,14 @@ void avfilter_default_end_frame(AVFilterLink *link)
 {
     AVFilterLink *out = NULL;
 
-    if(link->dst->output_count)
+    if (link->dst->output_count)
         out = link->dst->outputs[0];
 
     avfilter_unref_buffer(link->cur_buf);
     link->cur_buf = NULL;
 
-    if(out) {
-        if(out->out_buf) {
+    if (out) {
+        if (out->out_buf) {
             avfilter_unref_buffer(out->out_buf);
             out->out_buf = NULL;
         }
@@ -231,7 +231,7 @@ void avfilter_default_filter_samples(AVFilterLink *link, AVFilterBufferRef *samp
  * the implementation of one input one output video filters */
 int avfilter_default_config_output_link(AVFilterLink *link)
 {
-    if(link->src->input_count && link->src->inputs[0]) {
+    if (link->src->input_count && link->src->inputs[0]) {
         if (link->type == AVMEDIA_TYPE_VIDEO) {
             link->w = link->src->inputs[0]->w;
             link->h = link->src->inputs[0]->h;
@@ -260,20 +260,20 @@ void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 {
     int count = 0, i;
 
-    for(i = 0; i < ctx->input_count; i ++) {
-        if(ctx->inputs[i]) {
+    for (i = 0; i < ctx->input_count; i++) {
+        if (ctx->inputs[i]) {
             avfilter_formats_ref(formats, &ctx->inputs[i]->out_formats);
-            count ++;
+            count++;
         }
     }
-    for(i = 0; i < ctx->output_count; i ++) {
-        if(ctx->outputs[i]) {
+    for (i = 0; i < ctx->output_count; i++) {
+        if (ctx->outputs[i]) {
             avfilter_formats_ref(formats, &ctx->outputs[i]->in_formats);
-            count ++;
+            count++;
         }
     }
 
-    if(!count) {
+    if (!count) {
         av_free(formats->formats);
         av_free(formats->refs);
         av_free(formats);
