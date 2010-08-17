@@ -1377,7 +1377,7 @@ static void alloc_picture(void *opaque)
         /* SDL allocates a buffer smaller than requested if the video
          * overlay hardware is unable to support the requested size. */
         fprintf(stderr, "Error: the video system does not support an image\n"
-                        "size of %dx%d pixels. Try using -vf \"scale=w:h\"\n"
+                        "size of %dx%d pixels. Try using -lowres or -vf \"scale=w:h\"\n"
                         "to reduce the image size.\n", vp->width, vp->height );
         do_exit();
     }
