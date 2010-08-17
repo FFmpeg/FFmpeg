@@ -106,11 +106,8 @@ $(HOSTOBJS): %.o: %.c
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
 	$(HOSTCC) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
 
-DEPS := $(OBJS:.o=.d)
-depend dep: $(DEPS)
-
 CLEANSUFFIXES     = *.d *.o *~ *.ho *.map *.ver
 DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp
 
--include $(wildcard $(DEPS))
+-include $(wildcard $(OBJS:.o=.d))
