@@ -901,6 +901,9 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
     int result = 0;
     int olen;
 
+    if (pkt_size >= 10000000)
+        return -1;
+
     switch (encodings[0].compression.algo) {
     case MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP:
         return encodings[0].compression.settings.size;
