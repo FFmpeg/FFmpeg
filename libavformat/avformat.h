@@ -35,6 +35,10 @@
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
 
+#ifndef LAVF_API_MAX_STREAMS
+#define LAVF_API_MAX_STREAMS  (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
+
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got
  * a fucking problem with that, douchebag?
@@ -630,7 +634,7 @@ typedef struct AVChapter {
     AVMetadata *metadata;
 } AVChapter;
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if LAVF_API_MAX_STREAMS
 #define MAX_STREAMS 20
 #endif
 

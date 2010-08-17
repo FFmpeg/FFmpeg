@@ -686,7 +686,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                         code == 0x1be) /* padding_stream */
                         goto skip;
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if LAVF_API_MAX_STREAMS
                     if (!pes->st && pes->stream->nb_streams == MAX_STREAMS)
                         goto skip;
 #endif
