@@ -1290,6 +1290,60 @@ retry:
     }
 }
 
+static void stream_close(VideoState *is)
+{
+    VideoPicture *vp;
+    int i;
+    /* XXX: use a special url_shutdown call to abort parse cleanly */
+    is->abort_request = 1;
+    SDL_WaitThread(is->parse_tid, NULL);
+    SDL_WaitThread(is->refresh_tid, NULL);
+
+    /* free all pictures */
+    for(i=0;i<VIDEO_PICTURE_QUEUE_SIZE; i++) {
+        vp = &is->pictq[i];
+#if CONFIG_AVFILTER
+        if (vp->picref) {
+            avfilter_unref_buffer(vp->picref);
+            vp->picref = NULL;
+        }
+#endif
+        if (vp->bmp) {
+            SDL_FreeYUVOverlay(vp->bmp);
+            vp->bmp = NULL;
+        }
+    }
+    SDL_DestroyMutex(is->pictq_mutex);
+    SDL_DestroyCond(is->pictq_cond);
+    SDL_DestroyMutex(is->subpq_mutex);
+    SDL_DestroyCond(is->subpq_cond);
+#if !CONFIG_AVFILTER
+    if (is->img_convert_ctx)
+        sws_freeContext(is->img_convert_ctx);
+#endif
+    av_free(is);
+}
+
+static void do_exit(void)
+{
+    int i;
+    if (cur_stream) {
+        stream_close(cur_stream);
+        cur_stream = NULL;
+    }
+    for (i = 0; i < AVMEDIA_TYPE_NB; i++)
+        av_free(avcodec_opts[i]);
+    av_free(avformat_opts);
+    av_free(sws_opts);
+#if CONFIG_AVFILTER
+    avfilter_uninit();
+#endif
+    if (show_status)
+        printf("\n");
+    SDL_Quit();
+    exit(0);
+}
+
 /* allocate a picture (needs to do that in main thread to avoid
    potential locking problems */
 static void alloc_picture(void *opaque)
@@ -2659,40 +2713,6 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     return is;
 }
 
-static void stream_close(VideoState *is)
-{
-    VideoPicture *vp;
-    int i;
-    /* XXX: use a special url_shutdown call to abort parse cleanly */
-    is->abort_request = 1;
-    SDL_WaitThread(is->parse_tid, NULL);
-    SDL_WaitThread(is->refresh_tid, NULL);
-
-    /* free all pictures */
-    for(i=0;i<VIDEO_PICTURE_QUEUE_SIZE; i++) {
-        vp = &is->pictq[i];
-#if CONFIG_AVFILTER
-        if (vp->picref) {
-            avfilter_unref_buffer(vp->picref);
-            vp->picref = NULL;
-        }
-#endif
-        if (vp->bmp) {
-            SDL_FreeYUVOverlay(vp->bmp);
-            vp->bmp = NULL;
-        }
-    }
-    SDL_DestroyMutex(is->pictq_mutex);
-    SDL_DestroyCond(is->pictq_cond);
-    SDL_DestroyMutex(is->subpq_mutex);
-    SDL_DestroyCond(is->subpq_cond);
-#if !CONFIG_AVFILTER
-    if (is->img_convert_ctx)
-        sws_freeContext(is->img_convert_ctx);
-#endif
-    av_free(is);
-}
-
 static void stream_cycle_channel(VideoState *is, int codec_type)
 {
     AVFormatContext *ic = is->ic;
@@ -2768,26 +2788,6 @@ static void step_to_next_frame(void)
             stream_pause(cur_stream);
     }
     step = 1;
-}
-
-static void do_exit(void)
-{
-    int i;
-    if (cur_stream) {
-        stream_close(cur_stream);
-        cur_stream = NULL;
-    }
-    for (i = 0; i < AVMEDIA_TYPE_NB; i++)
-        av_free(avcodec_opts[i]);
-    av_free(avformat_opts);
-    av_free(sws_opts);
-#if CONFIG_AVFILTER
-    avfilter_uninit();
-#endif
-    if (show_status)
-        printf("\n");
-    SDL_Quit();
-    exit(0);
 }
 
 static void toggle_audio_display(void)
