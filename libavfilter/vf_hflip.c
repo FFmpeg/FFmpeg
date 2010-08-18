@@ -27,6 +27,7 @@
 #include "avfilter.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
+#include "libavcore/imgutils.h"
 
 typedef struct {
     int max_step[4];    ///< max pixel step for each plane, expressed as a number of bytes
@@ -68,15 +69,8 @@ static int config_props(AVFilterLink *inlink)
 {
     FlipContext *flip = inlink->dst->priv;
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
-    int i;
 
-    memset(flip->max_step, 0, sizeof(flip->max_step));
-    for (i = 0; i < 4; i++) {
-        const AVComponentDescriptor *comp = &(pix_desc->comp[i]);
-        if ((comp->step_minus1+1) > flip->max_step[comp->plane])
-            flip->max_step[comp->plane] = comp->step_minus1+1;
-    }
-
+    av_fill_image_max_pixstep(flip->max_step, NULL, pix_desc);
     flip->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
     flip->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
 

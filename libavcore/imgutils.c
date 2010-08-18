@@ -29,21 +29,12 @@ int av_get_image_linesize(enum PixelFormat pix_fmt, int width, int plane)
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
     int max_step     [4];       /* max pixel step for each plane */
     int max_step_comp[4];       /* the component for each plane which has the max pixel step */
-    int s, i;
+    int s;
 
     if (desc->flags & PIX_FMT_BITSTREAM)
         return (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
 
-    memset(max_step     , 0, sizeof(max_step     ));
-    memset(max_step_comp, 0, sizeof(max_step_comp));
-    for (i = 0; i < 4; i++) {
-        const AVComponentDescriptor *comp = &(desc->comp[i]);
-        if ((comp->step_minus1+1) > max_step[comp->plane]) {
-            max_step     [comp->plane] = comp->step_minus1+1;
-            max_step_comp[comp->plane] = i;
-        }
-    }
-
+    av_fill_image_max_pixstep(max_step, max_step_comp, desc);
     s = (max_step_comp[plane] == 1 || max_step_comp[plane] == 2) ? desc->log2_chroma_w : 0;
     return max_step[plane] * (((width + (1 << s) - 1)) >> s);
 }
@@ -65,16 +56,7 @@ int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
         return 0;
     }
 
-    memset(max_step     , 0, sizeof(max_step     ));
-    memset(max_step_comp, 0, sizeof(max_step_comp));
-    for (i = 0; i < 4; i++) {
-        const AVComponentDescriptor *comp = &(desc->comp[i]);
-        if ((comp->step_minus1+1) > max_step[comp->plane]) {
-            max_step     [comp->plane] = comp->step_minus1+1;
-            max_step_comp[comp->plane] = i;
-        }
-    }
-
+    av_fill_image_max_pixstep(max_step, max_step_comp, desc);
     for (i = 0; i < 4; i++) {
         int s = (max_step_comp[i] == 1 || max_step_comp[i] == 2) ? desc->log2_chroma_w : 0;
         linesizes[i] = max_step[i] * (((width + (1 << s) - 1)) >> s);

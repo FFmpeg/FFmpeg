@@ -24,7 +24,7 @@
  */
 
 #include "avfilter.h"
-#include "libavutil/pixdesc.h"
+#include "libavcore/imgutils.h"
 
 typedef struct {
     int  x;             ///< x offset of the non-cropped area with respect to the input area
@@ -83,15 +83,8 @@ static int config_input(AVFilterLink *link)
     AVFilterContext *ctx = link->dst;
     CropContext *crop = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[link->format];
-    int i;
 
-    memset(crop->max_step, 0, sizeof(crop->max_step));
-    for (i = 0; i < 4; i++) {
-        const AVComponentDescriptor *comp = &(pix_desc->comp[i]);
-        if ((comp->step_minus1+1) > crop->max_step[comp->plane])
-            crop->max_step[comp->plane] = comp->step_minus1+1;
-    }
-
+    av_fill_image_max_pixstep(crop->max_step, NULL, pix_desc);
     crop->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
     crop->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 

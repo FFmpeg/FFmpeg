@@ -24,8 +24,42 @@
  * misc image utilities
  */
 
-#include "libavutil/pixfmt.h"
+#include "libavutil/pixdesc.h"
 #include "avcore.h"
+
+/**
+ * Compute the max pixel step for each plane of an image with a
+ * format described by pixdesc
+ *
+ * The pixel step is the distance in bytes between the first byte of
+ * the group of bytes which describe a pixel component and the first
+ * byte of the successive group in the same plane for the same
+ * component.
+ *
+ * @param max_pixstep an array which is filled with the max pixel step
+ * for each plane. Since a plane may contain different pixel
+ * components, the computed max_pixstep[plane] is relative to the
+ * component in the plane with the max pixel step.
+ * @param max_pixstep_comp an array which is filled with the component
+ * for each plane which has the max pixel step. May be NULL.
+ */
+static inline void av_fill_image_max_pixstep(int max_pixstep[4], int max_pixstep_comp[4],
+                                             const AVPixFmtDescriptor *pixdesc)
+{
+    int i;
+    memset(max_pixstep, 0, 4*sizeof(max_pixstep[0]));
+    if (max_pixstep_comp)
+        memset(max_pixstep_comp, 0, 4*sizeof(max_pixstep_comp[0]));
+
+    for (i = 0; i < 4; i++) {
+        const AVComponentDescriptor *comp = &(pixdesc->comp[i]);
+        if ((comp->step_minus1+1) > max_pixstep[comp->plane]) {
+            max_pixstep[comp->plane] = comp->step_minus1+1;
+            if (max_pixstep_comp)
+                max_pixstep_comp[comp->plane] = i;
+        }
+    }
+}
 
 /**
  * Compute the size of an image line with format pix_fmt and width
