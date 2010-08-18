@@ -20,7 +20,7 @@
  */
 
 /**
- * @flip
+ * @file
  * horizontal flip filter
  */
 
