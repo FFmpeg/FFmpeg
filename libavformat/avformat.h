@@ -35,6 +35,10 @@
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
 
+/**
+ * Those FF_API_* defines are not part of public API.
+ * They may change, break or disappear at any time.
+ */
 #ifndef FF_API_MAX_STREAMS
 #define FF_API_MAX_STREAMS   (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
