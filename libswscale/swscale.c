@@ -1827,6 +1827,21 @@ static void reset_ptr(const uint8_t* src[], int format)
     }
 }
 
+static int check_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt,
+                                const int linesizes[4])
+{
+    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        int plane = desc->comp[i].plane;
+        if (!data[plane] || !linesizes[plane])
+            return 0;
+    }
+
+    return 1;
+}
+
 /**
  * swscale wrapper, so we don't need to export the SwsContext.
  * Assumes planar YUV to be in YUV order instead of YVU.
@@ -1841,6 +1856,15 @@ int sws_scale(SwsContext *c, const uint8_t* const src[], const int srcStride[], 
     // do not mess up sliceDir if we have a "trailing" 0-size slice
     if (srcSliceH == 0)
         return 0;
+
+    if (!check_image_pointers(src, c->srcFormat, srcStride)) {
+        av_log(c, AV_LOG_ERROR, "bad src image pointers\n");
+        return 0;
+    }
+    if (!check_image_pointers(dst, c->dstFormat, dstStride)) {
+        av_log(c, AV_LOG_ERROR, "bad dst image pointers\n");
+        return 0;
+    }
 
     if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
         av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
