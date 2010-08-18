@@ -23,7 +23,7 @@
 #include "metadata.h"
 #include "libavutil/avstring.h"
 
-#if LAVF_API_OLD_METADATA
+#if FF_API_OLD_METADATA
 
 #define SIZE_OFFSET(x) sizeof(((AVFormatContext*)0)->x),offsetof(AVFormatContext,x)
 
@@ -145,4 +145,4 @@ void ff_metadata_mux_compat(AVFormatContext *ctx)
     }
 }
 
-#endif /* LAVF_API_OLD_METADATA */
+#endif /* FF_API_OLD_METADATA */

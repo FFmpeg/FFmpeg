@@ -40,7 +40,7 @@ struct AVMetadataConv{
     const char *generic;
 };
 
-#if LAVF_API_OLD_METADATA
+#if FF_API_OLD_METADATA
 void ff_metadata_demux_compat(AVFormatContext *s);
 void ff_metadata_mux_compat(AVFormatContext *s);
 #endif

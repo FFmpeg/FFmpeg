@@ -29,7 +29,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-#if LAVF_API_MAX_STREAMS
+#if FF_API_MAX_STREAMS
 #define NUT_MAX_STREAMS MAX_STREAMS
 #else
 #define NUT_MAX_STREAMS 256    /* arbitrary sanity check value */

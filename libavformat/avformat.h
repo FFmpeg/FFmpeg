@@ -35,11 +35,11 @@
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
 
-#ifndef LAVF_API_MAX_STREAMS
-#define LAVF_API_MAX_STREAMS  (LIBAVFORMAT_VERSION_MAJOR < 53)
+#ifndef FF_API_MAX_STREAMS
+#define FF_API_MAX_STREAMS   (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
-#ifndef LAVF_API_OLD_METADATA
-#define LAVF_API_OLD_METADATA (LIBAVFORMAT_VERSION_MAJOR < 53)
+#ifndef FF_API_OLD_METADATA
+#define FF_API_OLD_METADATA  (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
 
 /**
@@ -147,7 +147,7 @@ typedef struct AVMetadataConv AVMetadataConv;
 AVMetadataTag *
 av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int flags);
 
-#if LAVF_API_OLD_METADATA
+#if FF_API_OLD_METADATA
 /**
  * Set the given tag in *pm, overwriting an existing tag.
  *
@@ -523,7 +523,7 @@ typedef struct AVStream {
      */
     int64_t duration;
 
-#if LAVF_API_OLD_METADATA
+#if FF_API_OLD_METADATA
     char language[4]; /**< ISO 639-2/B 3-letter language code (empty string if undefined) */
 #endif
 
@@ -546,7 +546,7 @@ typedef struct AVStream {
     int64_t unused[4+1];
 #endif
 
-#if LAVF_API_OLD_METADATA
+#if FF_API_OLD_METADATA
     char *filename; /**< source filename of the stream */
 #endif
 
@@ -615,7 +615,7 @@ typedef struct AVStream {
  */
 typedef struct AVProgram {
     int            id;
-#if LAVF_API_OLD_METADATA
+#if FF_API_OLD_METADATA
     char           *provider_name; ///< network name for DVB streams
     char           *name;          ///< service name for DVB streams
 #endif
@@ -633,13 +633,13 @@ typedef struct AVChapter {
     int id;                 ///< unique ID to identify the chapter
     AVRational time_base;   ///< time base in which the start/end timestamps are specified
     int64_t start, end;     ///< chapter start/end time in time_base units
-#if LAVF_API_OLD_METADATA
+#if FF_API_OLD_METADATA
     char *title;            ///< chapter title
 #endif
     AVMetadata *metadata;
 } AVChapter;
 
-#if LAVF_API_MAX_STREAMS
+#if FF_API_MAX_STREAMS
 #define MAX_STREAMS 20
 #endif
 
@@ -662,7 +662,7 @@ typedef struct AVFormatContext {
     char filename[1024]; /**< input or output filename */
     /* stream info */
     int64_t timestamp;
-#if LAVF_API_OLD_METADATA
+#if FF_API_OLD_METADATA
     char title[512];
     char author[512];
     char copyright[512];
