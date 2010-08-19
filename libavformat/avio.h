@@ -256,7 +256,7 @@ typedef struct URLProtocol {
     const AVClass *priv_data_class;
 } URLProtocol;
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_REGISTER_PROTOCOL
 extern URLProtocol *first_protocol;
 #endif
 
@@ -269,7 +269,7 @@ extern URLInterruptCB *url_interrupt_cb;
  */
 URLProtocol *av_protocol_next(URLProtocol *p);
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_REGISTER_PROTOCOL
 /**
  * @deprecated Use av_register_protocol() instead.
  */

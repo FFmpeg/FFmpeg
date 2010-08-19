@@ -71,7 +71,7 @@ int av_register_protocol2(URLProtocol *protocol, int size)
     return 0;
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_REGISTER_PROTOCOL
 /* The layout of URLProtocol as of when major was bumped to 52 */
 struct URLProtocol_compat {
     const char *name;
