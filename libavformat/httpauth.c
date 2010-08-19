@@ -28,62 +28,6 @@
 #include "avformat.h"
 #include <ctype.h>
 
-static void parse_key_value(const char *params,
-                            void (*callback_get_buf)(HTTPAuthState *state,
-                            const char *key, int key_len,
-                            char **dest, int *dest_len), HTTPAuthState *state)
-{
-    const char *ptr = params;
-
-    /* Parse key=value pairs. */
-    for (;;) {
-        const char *key;
-        char *dest = NULL, *dest_end;
-        int key_len, dest_len = 0;
-
-        /* Skip whitespace and potential commas. */
-        while (*ptr && (isspace(*ptr) || *ptr == ','))
-            ptr++;
-        if (!*ptr)
-            break;
-
-        key = ptr;
-
-        if (!(ptr = strchr(key, '=')))
-            break;
-        ptr++;
-        key_len = ptr - key;
-
-        callback_get_buf(state, key, key_len, &dest, &dest_len);
-        dest_end = dest + dest_len - 1;
-
-        if (*ptr == '\"') {
-            ptr++;
-            while (*ptr && *ptr != '\"') {
-                if (*ptr == '\\') {
-                    if (!ptr[1])
-                        break;
-                    if (dest && dest < dest_end)
-                        *dest++ = ptr[1];
-                    ptr += 2;
-                } else {
-                    if (dest && dest < dest_end)
-                        *dest++ = *ptr;
-                    ptr++;
-                }
-            }
-            if (*ptr == '\"')
-                ptr++;
-        } else {
-            for (; *ptr && !(isspace(*ptr) || *ptr == ','); ptr++)
-                if (dest && dest < dest_end)
-                    *dest++ = *ptr;
-        }
-        if (dest)
-            *dest = 0;
-    }
-}
-
 static void handle_basic_params(HTTPAuthState *state, const char *key,
                                 int key_len, char **dest, int *dest_len)
 {
@@ -149,18 +93,21 @@ void ff_http_auth_handle_header(HTTPAuthState *state, const char *key,
             state->auth_type <= HTTP_AUTH_BASIC) {
             state->auth_type = HTTP_AUTH_BASIC;
             state->realm[0] = 0;
-            parse_key_value(p, handle_basic_params, state);
+            ff_parse_key_value(p, (ff_parse_key_val_cb) handle_basic_params,
+                               state);
         } else if (av_stristart(value, "Digest ", &p) &&
                    state->auth_type <= HTTP_AUTH_DIGEST) {
             state->auth_type = HTTP_AUTH_DIGEST;
             memset(&state->digest_params, 0, sizeof(DigestParams));
             state->realm[0] = 0;
-            parse_key_value(p, handle_digest_params, state);
+            ff_parse_key_value(p, (ff_parse_key_val_cb) handle_digest_params,
+                               state);
             choose_qop(state->digest_params.qop,
                        sizeof(state->digest_params.qop));
         }
     } else if (!strcmp(key, "Authentication-Info")) {
-        parse_key_value(value, handle_digest_update, state);
+        ff_parse_key_value(value, (ff_parse_key_val_cb) handle_digest_update,
+                           state);
     }
 }
 

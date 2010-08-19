@@ -192,4 +192,28 @@ int ff_get_line(ByteIOContext *s, char *buf, int maxlen);
 
 #define SPACE_CHARS " \t\r\n"
 
+/**
+ * Callback function type for ff_parse_key_value.
+ *
+ * @param key a pointer to the key
+ * @param key_len the number of bytes that belong to the key, including the '='
+ *                char
+ * @param dest return the destination pointer for the value in *dest, may
+ *             be null to ignore the value
+ * @param dest_len the length of the *dest buffer
+ */
+typedef void (*ff_parse_key_val_cb)(void *context, const char *key,
+                                    int key_len, char **dest, int *dest_len);
+/**
+ * Parse a string with comma-separated key=value pairs. The value strings
+ * may be quoted and may contain escaped characters within quoted strings.
+ *
+ * @param str the string to parse
+ * @param callback_get_buf function that returns where to store the
+ *                         unescaped value string.
+ * @param context the opaque context pointer to pass to callback_get_buf
+ */
+void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
+                        void *context);
+
 #endif /* AVFORMAT_INTERNAL_H */
