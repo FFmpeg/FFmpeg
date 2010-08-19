@@ -296,12 +296,10 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     /* prepare to copy the picture if it has insufficient permissions */
     if ((dst->min_perms & picref->perms) != dst->min_perms ||
          dst->rej_perms & picref->perms) {
-        /*
-        av_log(link->dst, AV_LOG_INFO,
+        av_log(link->dst, AV_LOG_DEBUG,
                 "frame copy needed (have perms %x, need %x, reject %x)\n",
                 picref->perms,
                 link_dpad(link).min_perms, link_dpad(link).rej_perms);
-        */
 
         link->cur_buf = avfilter_default_get_video_buffer(link, dst->min_perms, link->w, link->h);
         link->src_buf = picref;
