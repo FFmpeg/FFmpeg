@@ -35,7 +35,6 @@
 
 /* used for protocol handling */
 #define BUFFER_SIZE 1024
-#define URL_SIZE    4096
 #define MAX_REDIRECTS 8
 
 typedef struct {
@@ -46,7 +45,7 @@ typedef struct {
     int http_code;
     int64_t chunksize;      /**< Used if "Transfer-Encoding: chunked" otherwise -1. */
     int64_t off, filesize;
-    char location[URL_SIZE];
+    char location[MAX_URL_SIZE];
     HTTPAuthState auth_state;
     unsigned char headers[BUFFER_SIZE];
     int willclose;          /**< Set if the server correctly handles Connection: close and will close the connection after feeding us the content. */
@@ -162,7 +161,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     h->is_streamed = 1;
 
     s->filesize = -1;
-    av_strlcpy(s->location, uri, URL_SIZE);
+    av_strlcpy(s->location, uri, sizeof(s->location));
 
     return http_open_cnx(h);
 }

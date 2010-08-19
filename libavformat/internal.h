@@ -24,6 +24,8 @@
 #include <stdint.h>
 #include "avformat.h"
 
+#define MAX_URL_SIZE 4096
+
 typedef struct AVCodecTag {
     enum CodecID id;
     unsigned int tag;
