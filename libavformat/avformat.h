@@ -45,6 +45,9 @@
 #ifndef FF_API_OLD_METADATA
 #define FF_API_OLD_METADATA  (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_URL_CLASS
+#define FF_API_URL_CLASS     (LIBAVFORMAT_VERSION_MAJOR >= 53)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got

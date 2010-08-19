@@ -43,7 +43,7 @@
  * sizeof(URLContext) must not be used outside libav*.
  */
 typedef struct URLContext {
-#if LIBAVFORMAT_VERSION_MAJOR >= 53
+#if FF_API_URL_CLASS
     const AVClass *av_class; ///< information for av_log(). Set by url_open().
 #endif
     struct URLProtocol *prot;
