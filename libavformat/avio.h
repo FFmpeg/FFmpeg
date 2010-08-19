@@ -454,7 +454,7 @@ int url_fdopen(ByteIOContext **s, URLContext *h);
 
 /** @warning must be called before any I/O */
 int url_setbufsize(ByteIOContext *s, int buf_size);
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_URL_RESETBUF
 /** Reset the buffer for reading or writing.
  * @note Will drop any data currently in the buffer without transmitting it.
  * @param flags URL_RDONLY to set up the buffer for reading, or URL_WRONLY

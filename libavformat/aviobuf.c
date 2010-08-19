@@ -36,7 +36,7 @@
 #define SHORT_SEEK_THRESHOLD 4096
 
 static void fill_buffer(ByteIOContext *s);
-#if LIBAVFORMAT_VERSION_MAJOR >= 53
+#if !FF_API_URL_RESETBUF
 static int url_resetbuf(ByteIOContext *s, int flags);
 #endif
 
@@ -632,13 +632,13 @@ int url_setbufsize(ByteIOContext *s, int buf_size)
     return 0;
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_URL_RESETBUF
 int url_resetbuf(ByteIOContext *s, int flags)
 #else
 static int url_resetbuf(ByteIOContext *s, int flags)
 #endif
 {
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_URL_RESETBUF
     if (flags & URL_RDWR)
         return AVERROR(EINVAL);
 #else
