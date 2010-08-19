@@ -28,6 +28,7 @@
 #include "libavcore/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/avutil.h"
+#include "libavutil/crc.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/lfg.h"
 #include "swscale.h"
@@ -83,6 +84,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     int i;
     uint64_t ssdY, ssdU=0, ssdV=0, ssdA=0;
     struct SwsContext *dstContext = NULL, *outContext = NULL;
+    uint32_t crc = 0;
     int res = 0;
 
     av_fill_image_linesizes(dstStride, dstFormat, dstW);
@@ -135,6 +137,10 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     sws_scale(dstContext, src, srcStride, 0, srcH, dst, dstStride);
     sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
 
+    for (i = 0; i < 4 && dstStride[i]; i++) {
+        crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), crc, dst[i], dstStride[i] * dstH);
+    }
+
     ssdY= getSSD(ref[0], out[0], refStride[0], refStride[0], w, h);
     if (hasChroma(srcFormat) && hasChroma(dstFormat)) {
         //FIXME check that output is really gray
@@ -149,8 +155,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     ssdV/= w*h/4;
     ssdA/= w*h;
 
-    printf(" SSD=%5"PRId64",%5"PRId64",%5"PRId64",%5"PRId64"\n",
-           ssdY, ssdU, ssdV, ssdA);
+    printf(" CRC=%08x SSD=%5"PRId64",%5"PRId64",%5"PRId64",%5"PRId64"\n",
+           crc, ssdY, ssdU, ssdV, ssdA);
 
 end:
 
