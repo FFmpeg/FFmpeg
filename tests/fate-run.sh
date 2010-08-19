@@ -45,7 +45,7 @@ run(){
 }
 
 ffmpeg(){
-    $target_exec $target_path/ffmpeg -v 0 "$@"
+    run ffmpeg -v 0 "$@"
 }
 
 framecrc(){
