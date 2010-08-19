@@ -30,6 +30,7 @@ version <next>:
 - RTP depacketization of MP4A-LATM
 - RTP packetization and depacketization of VP8
 - hflip filter
+- Apple HTTP Live Streaming demuxer
 
 
 version 0.6:
