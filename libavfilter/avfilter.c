@@ -194,13 +194,18 @@ int avfilter_config_links(AVFilterContext *filter)
 void ff_dprintf_picref(void *ctx, AVFilterBufferRef *picref, int end)
 {
     dprintf(ctx,
-            "picref[%p data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64" a:%d/%d s:%dx%d]%s",
+            "picref[%p data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
             picref,
             picref->data[0],
             picref->linesize[0], picref->linesize[1], picref->linesize[2], picref->linesize[3],
-            picref->pts, picref->pos,
-            picref->video->pixel_aspect.num, picref->video->pixel_aspect.den, picref->video->w, picref->video->h,
-            end ? "\n" : "");
+            picref->pts, picref->pos);
+
+    if (picref->video) {
+        dprintf(ctx, " a:%d/%d s:%dx%d",
+                picref->video->pixel_aspect.num, picref->video->pixel_aspect.den,
+                picref->video->w, picref->video->h);
+    }
+    dprintf(ctx, "]%s", end ? "\n" : "");
 }
 
 void ff_dprintf_link(void *ctx, AVFilterLink *link, int end)
