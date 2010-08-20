@@ -29,7 +29,7 @@
 
 /**
  * Compute the max pixel step for each plane of an image with a
- * format described by pixdesc
+ * format described by pixdesc.
  *
  * The pixel step is the distance in bytes between the first byte of
  * the group of bytes which describe a pixel component and the first
