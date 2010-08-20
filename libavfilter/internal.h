@@ -26,7 +26,7 @@
 
 #include "avfilter.h"
 
-void ff_dprintf_picref(void *ctx, AVFilterBufferRef *picref, int end);
+void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end);
 
 void ff_dprintf_link(void *ctx, AVFilterLink *link, int end);
 

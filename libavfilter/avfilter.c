@@ -191,21 +191,21 @@ int avfilter_config_links(AVFilterContext *filter)
     return 0;
 }
 
-void ff_dprintf_picref(void *ctx, AVFilterBufferRef *picref, int end)
+void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end)
 {
     dprintf(ctx,
-            "picref[%p data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
-            picref,
-            picref->data[0],
-            picref->linesize[0], picref->linesize[1], picref->linesize[2], picref->linesize[3],
-            picref->pts, picref->pos);
+            "ref[%p data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
+            ref,
+            ref->data[0],
+            ref->linesize[0], ref->linesize[1], ref->linesize[2], ref->linesize[3],
+            ref->pts, ref->pos);
 
-    if (picref->video) {
+    if (ref->video) {
         dprintf(ctx, " a:%d/%d s:%dx%d i:%c",
-                picref->video->pixel_aspect.num, picref->video->pixel_aspect.den,
-                picref->video->w, picref->video->h,
-                !picref->video->interlaced     ? 'P' :         /* Progressive  */
-                picref->video->top_field_first ? 'T' : 'B');   /* Top / Bottom */
+                ref->video->pixel_aspect.num, ref->video->pixel_aspect.den,
+                ref->video->w, ref->video->h,
+                !ref->video->interlaced     ? 'P' :         /* Progressive  */
+                ref->video->top_field_first ? 'T' : 'B');   /* Top / Bottom */
     }
     dprintf(ctx, "]%s", end ? "\n" : "");
 }
@@ -236,7 +236,7 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
     if (ret)
         ret->type = AVMEDIA_TYPE_VIDEO;
 
-    FF_DPRINTF_START(NULL, get_video_buffer); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " returning "); ff_dprintf_picref(NULL, ret, 1);
+    FF_DPRINTF_START(NULL, get_video_buffer); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " returning "); ff_dprintf_ref(NULL, ret, 1);
 
     return ret;
 }
@@ -295,7 +295,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     void (*start_frame)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = &link_dpad(link);
 
-    FF_DPRINTF_START(NULL, start_frame); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " "); ff_dprintf_picref(NULL, picref, 1);
+    FF_DPRINTF_START(NULL, start_frame); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " "); ff_dprintf_ref(NULL, picref, 1);
 
     if (!(start_frame = dst->start_frame))
         start_frame = avfilter_default_start_frame;
