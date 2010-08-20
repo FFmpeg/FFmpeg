@@ -34,7 +34,7 @@ int av_get_image_linesize(enum PixelFormat pix_fmt, int width, int plane)
     if (desc->flags & PIX_FMT_BITSTREAM)
         return (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
 
-    av_fill_image_max_pixstep(max_step, max_step_comp, desc);
+    av_fill_image_max_pixsteps(max_step, max_step_comp, desc);
     s = (max_step_comp[plane] == 1 || max_step_comp[plane] == 2) ? desc->log2_chroma_w : 0;
     return max_step[plane] * (((width + (1 << s) - 1)) >> s);
 }
@@ -56,7 +56,7 @@ int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
         return 0;
     }
 
-    av_fill_image_max_pixstep(max_step, max_step_comp, desc);
+    av_fill_image_max_pixsteps(max_step, max_step_comp, desc);
     for (i = 0; i < 4; i++) {
         int s = (max_step_comp[i] == 1 || max_step_comp[i] == 2) ? desc->log2_chroma_w : 0;
         linesizes[i] = max_step[i] * (((width + (1 << s) - 1)) >> s);

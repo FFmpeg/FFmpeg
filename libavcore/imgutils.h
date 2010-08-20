@@ -36,27 +36,27 @@
  * byte of the successive group in the same plane for the same
  * component.
  *
- * @param max_pixstep an array which is filled with the max pixel step
+ * @param max_pixsteps an array which is filled with the max pixel step
  * for each plane. Since a plane may contain different pixel
- * components, the computed max_pixstep[plane] is relative to the
+ * components, the computed max_pixsteps[plane] is relative to the
  * component in the plane with the max pixel step.
- * @param max_pixstep_comp an array which is filled with the component
+ * @param max_pixstep_comps an array which is filled with the component
  * for each plane which has the max pixel step. May be NULL.
  */
-static inline void av_fill_image_max_pixstep(int max_pixstep[4], int max_pixstep_comp[4],
-                                             const AVPixFmtDescriptor *pixdesc)
+static inline void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
+                                              const AVPixFmtDescriptor *pixdesc)
 {
     int i;
-    memset(max_pixstep, 0, 4*sizeof(max_pixstep[0]));
-    if (max_pixstep_comp)
-        memset(max_pixstep_comp, 0, 4*sizeof(max_pixstep_comp[0]));
+    memset(max_pixsteps, 0, 4*sizeof(max_pixsteps[0]));
+    if (max_pixstep_comps)
+        memset(max_pixstep_comps, 0, 4*sizeof(max_pixstep_comps[0]));
 
     for (i = 0; i < 4; i++) {
         const AVComponentDescriptor *comp = &(pixdesc->comp[i]);
-        if ((comp->step_minus1+1) > max_pixstep[comp->plane]) {
-            max_pixstep[comp->plane] = comp->step_minus1+1;
-            if (max_pixstep_comp)
-                max_pixstep_comp[comp->plane] = i;
+        if ((comp->step_minus1+1) > max_pixsteps[comp->plane]) {
+            max_pixsteps[comp->plane] = comp->step_minus1+1;
+            if (max_pixstep_comps)
+                max_pixstep_comps[comp->plane] = i;
         }
     }
 }

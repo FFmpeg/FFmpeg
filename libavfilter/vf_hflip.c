@@ -70,7 +70,7 @@ static int config_props(AVFilterLink *inlink)
     FlipContext *flip = inlink->dst->priv;
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
 
-    av_fill_image_max_pixstep(flip->max_step, NULL, pix_desc);
+    av_fill_image_max_pixsteps(flip->max_step, NULL, pix_desc);
     flip->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
     flip->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
 
