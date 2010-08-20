@@ -206,6 +206,15 @@ void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end)
                 !ref->video->interlaced     ? 'P' :         /* Progressive  */
                 ref->video->top_field_first ? 'T' : 'B');   /* Top / Bottom */
     }
+    if (ref->audio) {
+        dprintf(ctx, " cl:%"PRId64"d sn:%d s:%d sr:%d p:%d",
+                ref->audio->channel_layout,
+                ref->audio->samples_nb,
+                ref->audio->size,
+                ref->audio->sample_rate,
+                ref->audio->planar);
+    }
+
     dprintf(ctx, "]%s", end ? "\n" : "");
 }
 
