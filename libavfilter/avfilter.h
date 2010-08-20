@@ -154,6 +154,7 @@ static inline void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilt
 
 /**
  * Add a new reference to a buffer.
+ *
  * @param ref   an existing reference to the buffer
  * @param pmask a bitmask containing the allowable permissions in the new
  *              reference
@@ -165,6 +166,7 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask);
 /**
  * Remove a reference to a buffer. If this is the last reference to the
  * buffer, the buffer itself is also automatically freed.
+ *
  * @param ref reference to the buffer
  */
 void avfilter_unref_buffer(AVFilterBufferRef *ref);
@@ -220,6 +222,7 @@ typedef struct AVFilterFormats {
 /**
  * Create a list of supported formats. This is intended for use in
  * AVFilter->query_formats().
+ *
  * @param fmts list of media formats, terminated by -1
  * @return the format list, with no existing references
  */
@@ -599,6 +602,7 @@ struct AVFilterLink {
 
 /**
  * Link two filters together.
+ *
  * @param src    the source filter
  * @param srcpad index of the output pad on the source filter
  * @param dst    the destination filter
@@ -610,6 +614,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 
 /**
  * Negotiate the media format, dimensions, etc of all inputs to a filter.
+ *
  * @param filter the filter to negotiate the properties for its inputs
  * @return       zero on successful negotiation
  */
@@ -617,6 +622,7 @@ int avfilter_config_links(AVFilterContext *filter);
 
 /**
  * Request a picture buffer with a specific set of permissions.
+ *
  * @param link  the output link to the filter from which the buffer will
  *              be requested
  * @param perms the required access permissions
@@ -647,6 +653,7 @@ AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
 
 /**
  * Request an input frame from the filter at the other end of the link.
+ *
  * @param link the input link
  * @return     zero on success
  */
@@ -654,6 +661,7 @@ int avfilter_request_frame(AVFilterLink *link);
 
 /**
  * Poll a frame from the filter chain.
+ *
  * @param  link the input link
  * @return the number of immediately available frames, a negative
  * number in case of error
@@ -662,6 +670,7 @@ int avfilter_poll_frame(AVFilterLink *link);
 
 /**
  * Notifie the next filter of the start of a frame.
+ *
  * @param link   the output link the frame will be sent over
  * @param picref A reference to the frame about to be sent. The data for this
  *               frame need only be valid once draw_slice() is called for that
@@ -672,6 +681,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /**
  * Notifie the next filter that the current frame has finished.
+ *
  * @param link the output link the frame was sent over
  */
 void avfilter_end_frame(AVFilterLink *link);
@@ -714,6 +724,7 @@ void avfilter_uninit(void);
  * avfilter_get_by_name later to lookup the AVFilter structure by name. A
  * filter can still by instantiated with avfilter_open even if it is not
  * registered.
+ *
  * @param filter the filter to register
  * @return 0 if the registration was succesfull, a negative value
  * otherwise
@@ -722,6 +733,7 @@ int avfilter_register(AVFilter *filter);
 
 /**
  * Get a filter definition matching the given name.
+ *
  * @param name the filter name to find
  * @return     the filter definition, if any matching one is registered.
  *             NULL if none found.
@@ -749,6 +761,7 @@ int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *in
 
 /**
  * Initialize a filter.
+ *
  * @param filter the filter to initialize
  * @param args   A string of parameters to use when initializing the filter.
  *               The format and meaning of this string varies by filter.
@@ -760,12 +773,14 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
 
 /**
  * Destroy a filter.
+ *
  * @param filter the filter to destroy
  */
 void avfilter_destroy(AVFilterContext *filter);
 
 /**
  * Insert a filter in the middle of an existing link.
+ *
  * @param link the link into which the filter should be inserted
  * @param filt the filter to be inserted
  * @param in   the input pad on the filter to connect
@@ -777,6 +792,7 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
 
 /**
  * Insert a new pad.
+ *
  * @param idx Insertion point. Pad is inserted at the end if this point
  *            is beyond the end of the list of pads.
  * @param count Pointer to the number of pads in the list
