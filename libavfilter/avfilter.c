@@ -195,8 +195,7 @@ void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end)
 {
     dprintf(ctx,
             "ref[%p buf:%p refcount:%d perms:0x%x data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
-            ref, ref->buf, ref->buf->refcount, ref->perms,
-            ref->data[0],
+            ref, ref->buf, ref->buf->refcount, ref->perms, ref->data[0],
             ref->linesize[0], ref->linesize[1], ref->linesize[2], ref->linesize[3],
             ref->pts, ref->pos);
 
