@@ -201,9 +201,11 @@ void ff_dprintf_picref(void *ctx, AVFilterBufferRef *picref, int end)
             picref->pts, picref->pos);
 
     if (picref->video) {
-        dprintf(ctx, " a:%d/%d s:%dx%d",
+        dprintf(ctx, " a:%d/%d s:%dx%d i:%c",
                 picref->video->pixel_aspect.num, picref->video->pixel_aspect.den,
-                picref->video->w, picref->video->h);
+                picref->video->w, picref->video->h,
+                !picref->video->interlaced     ? 'P' :         /* Progressive  */
+                picref->video->top_field_first ? 'T' : 'B');   /* Top / Bottom */
     }
     dprintf(ctx, "]%s", end ? "\n" : "");
 }
