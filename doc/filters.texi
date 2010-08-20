@@ -8,6 +8,10 @@ build.
 
 Below is a description of the currently available audio filters.
 
+@section anull
+
+Pass the audio source unchanged to the output.
+
 @c man end AUDIO FILTERS
 
 @chapter Video Filters
@@ -97,7 +101,7 @@ input to the vflip filter.
 
 @section null
 
-Pass the source unchanged to the output.
+Pass the video source unchanged to the output.
 
 @section pad
 
