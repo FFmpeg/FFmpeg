@@ -286,7 +286,6 @@ Muxers/Demuxers:
   matroskaenc.c                         David Conrad
   metadata*                             Aurelien Jacobs
   mm.c                                  Peter Ross
-  mmst.c                                Ronald S. Bultje
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
   movenc.c                              Michael Niedermayer, Baptiste Coudurier
   mpc.c                                 Kostya Shishkov
@@ -330,6 +329,7 @@ Muxers/Demuxers:
 
 Protocols:
   http.c                                Ronald S. Bultje
+  mms*.c                                Ronald S. Bultje
   udp.c                                 Luca Abeni
 
 

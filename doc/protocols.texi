@@ -73,6 +73,15 @@ HTTP (Hyper Text Transfer Protocol).
 
 MMS (Microsoft Media Server) protocol over TCP.
 
+@section mmsh
+
+MMS (Microsoft Media Server) protocol over HTTP.
+
+The required syntax is:
+@example
+mmsh://@var{server}[:@var{port}][/@var{app}][/@var{playpath}]
+@end example
+
 @section md5
 
 MD5 output protocol.
