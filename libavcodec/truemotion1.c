@@ -226,11 +226,7 @@ static int make_ydt24_entry(int p1, int p2, int16_t *ydt)
     return (lo + (hi << 8) + (hi << 16)) << 1;
 }
 
-#if HAVE_BIGENDIAN
-static int make_cdt24_entry(int p2, int p1, int16_t *cdt)
-#else
 static int make_cdt24_entry(int p1, int p2, int16_t *cdt)
-#endif
 {
     int r, b;
 
