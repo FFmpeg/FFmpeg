@@ -176,6 +176,7 @@ Codecs:
   nellymoserdec.c                       Benjamin Larsson
   nuv.c                                 Reimar Doeffinger
   pcx.c                                 Ivo van Poorten
+  pgssubdec.c                           Reimar Doeffinger
   ptx.c                                 Ivo van Poorten
   qcelp*                                Reynaldo H. Verdejo Pinochet
   qdm2.c, qdm2data.h                    Roberto Togni, Benjamin Larsson
