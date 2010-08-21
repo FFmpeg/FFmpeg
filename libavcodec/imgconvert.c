@@ -785,7 +785,7 @@ void ff_img_copy_plane(uint8_t *dst, int dst_wrap,
                            const uint8_t *src, int src_wrap,
                            int width, int height)
 {
-    if((!dst) || (!src))
+    if (!dst || !src)
         return;
     for(;height > 0; height--) {
         memcpy(dst, src, width);
