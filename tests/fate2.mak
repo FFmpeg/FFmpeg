@@ -157,3 +157,6 @@ FATE2_TESTS += fate-wmapro-2ch
 fate-wmapro-2ch: CMD = pcm -i $(SAMPLES)/wmapro/Beethovens_9th-1_small.wma
 fate-wmapro-2ch: CMP = oneoff
 fate-wmapro-2ch: REF = $(SAMPLES)/wmapro/Beethovens_9th-1_small.pcm
+
+FATE2_TESTS += fate-ansi
+fate-ansi: CMD = framecrc -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
