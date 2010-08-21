@@ -28,6 +28,7 @@
 #include "dsputil.h"
 #include "bytestream.h"
 #include "libavutil/colorspace.h"
+#include "libavcore/imgutils.h"
 
 //#define DEBUG_PACKET_CONTENTS
 
@@ -44,8 +45,6 @@ enum SegmentType {
 typedef struct PGSSubPresentation {
     int x;
     int y;
-    int video_w;
-    int video_h;
     int id_number;
 } PGSSubPresentation;
 
@@ -186,7 +185,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
     height = bytestream_get_be16(&buf);
 
     /* Make sure the bitmap is not too large */
-    if (ctx->presentation.video_w < width || ctx->presentation.video_h < height) {
+    if (avctx->width < width || avctx->height < height) {
         av_log(avctx, AV_LOG_ERROR, "Bitmap dimensions larger then video.\n");
         return -1;
     }
@@ -266,11 +265,13 @@ static void parse_presentation_segment(AVCodecContext *avctx,
     int x, y;
     uint8_t block;
 
-    ctx->presentation.video_w = bytestream_get_be16(&buf);
-    ctx->presentation.video_h = bytestream_get_be16(&buf);
+    int w = bytestream_get_be16(&buf);
+    int h = bytestream_get_be16(&buf);
 
     dprintf(avctx, "Video Dimensions %dx%d\n",
-            ctx->presentation.video_w, ctx->presentation.video_h);
+            w, h);
+    if (av_check_image_size(w, h, 0, avctx) >= 0)
+        avcodec_set_dimensions(avctx, w, h);
 
     /* Skip 1 bytes of unknown, frame rate? */
     buf++;
@@ -298,9 +299,9 @@ static void parse_presentation_segment(AVCodecContext *avctx,
 
         dprintf(avctx, "Subtitle Placement x=%d, y=%d\n", x, y);
 
-        if (x > ctx->presentation.video_w || y > ctx->presentation.video_h) {
+        if (x > avctx->width || y > avctx->height) {
             av_log(avctx, AV_LOG_ERROR, "Subtitle out of video bounds. x = %d, y = %d, video width = %d, video height = %d.\n",
-                   x, y, ctx->presentation.video_w, ctx->presentation.video_h);
+                   x, y, avctx->width, avctx->height);
             x = 0; y = 0;
         }
 
