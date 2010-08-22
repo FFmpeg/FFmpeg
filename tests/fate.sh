@@ -94,7 +94,6 @@ cd ${workdir}       || die "cd ${workdir} failed"
 src=${workdir}/src
 build=${workdir}/build
 inst=${workdir}/install
-report=tests/data/fate/report
 
 test -d "$src" && update || checkout || die "Error fetching source"
 
