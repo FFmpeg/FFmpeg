@@ -9,7 +9,7 @@ die(){
 
 test -r "$config"  || die "usage: fate.sh <config>"
 
-workdir=$(dirname $config)
+workdir=$(cd $(dirname $config) && pwd)
 make=make
 tar='tar c'
 
