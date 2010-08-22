@@ -239,8 +239,6 @@ include $(SRC_PATH_BARE)/tests/fate/h264.mak
 include $(SRC_PATH_BARE)/tests/fate/vorbis.mak
 include $(SRC_PATH_BARE)/tests/fate/vp8.mak
 
-FATE_TESTS += $(FATE2_TESTS)
-
 FATE_ACODEC  = $(ACODEC_TESTS:%=fate-acodec-%)
 FATE_VSYNTH1 = $(VCODEC_TESTS:%=fate-vsynth1-%)
 FATE_VSYNTH2 = $(VCODEC_TESTS:%=fate-vsynth2-%)
@@ -278,14 +276,13 @@ fate-seek:   $(FATE_SEEK)
 ifdef SAMPLES
 FATE += $(FATE_TESTS)
 else
-fate2 $(FATE_TESTS):
+$(FATE_TESTS):
 	@echo "SAMPLES not specified, cannot run FATE"
 endif
 
 FATE_UTILS = base64 tiny_psnr
 
 fate: $(FATE)
-fate2: $(FATE2_TESTS)
 
 $(FATE): ffmpeg$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 	@echo "TEST    $(@:fate-%=%)"
