@@ -56,7 +56,7 @@ void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z)
 void ff_imdct_half_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     x86_reg j, k;
-    long n = 1 << s->mdct_bits;
+    long n = s->mdct_size;
     long n2 = n >> 1;
     long n4 = n >> 2;
     long n8 = n >> 3;
@@ -147,7 +147,7 @@ void ff_imdct_half_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input
 void ff_imdct_calc_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     x86_reg j, k;
-    long n = 1 << s->mdct_bits;
+    long n = s->mdct_size;
     long n4 = n >> 2;
 
     ff_imdct_half_3dn2(s, output+n4, input);
