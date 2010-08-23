@@ -216,7 +216,6 @@ enum CodecID {
     CODEC_ID_A64_MULTI,
     CODEC_ID_A64_MULTI5,
 
-
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
     CODEC_ID_PCM_S16BE,
