@@ -163,3 +163,15 @@ fate-ansi: CMD = framecrc -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
 
 FATE_TESTS += fate-wmv8-drm
 fate-wmv8-drm: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(SAMPLES)/wmv8/wmv_drm.wmv -an
+
+FATE_TESTS += fate-binkaudio-dct
+fate-binkaudio-dct: CMD = pcm -i $(SAMPLES)/bink/binkaudio_dct.bik
+fate-binkaudio-dct: CMP = oneoff
+fate-binkaudio-dct: REF = $(SAMPLES)/bink/binkaudio_dct.pcm
+fate-binkaudio-dct: FUZZ = 2
+
+FATE_TESTS += fate-binkaudio-rdft
+fate-binkaudio-rdft: CMD = pcm -i $(SAMPLES)/bink/binkaudio_rdft.bik
+fate-binkaudio-rdft: CMP = oneoff
+fate-binkaudio-rdft: REF = $(SAMPLES)/bink/binkaudio_rdft.pcm
+fate-binkaudio-rdft: FUZZ = 2
