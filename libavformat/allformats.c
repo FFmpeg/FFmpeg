@@ -47,6 +47,7 @@ void av_register_all(void)
     avcodec_register_all();
 
     /* (de)muxers */
+    REGISTER_MUXER    (A64, a64);
     REGISTER_DEMUXER  (AAC, aac);
     REGISTER_MUXDEMUX (AC3, ac3);
     REGISTER_MUXER    (ADTS, adts);
