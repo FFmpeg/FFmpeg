@@ -211,8 +211,9 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
     put_byte(pb, (RTP_VERSION << 6) + 1); /* 1 report block */
     put_byte(pb, 201);
     put_be16(pb, 7); /* length in words - 1 */
-    put_be32(pb, s->ssrc); // our own SSRC
-    put_be32(pb, s->ssrc); // XXX: should be the server's here!
+    // our own SSRC: we use the server's SSRC + 1 to avoid conflicts
+    put_be32(pb, s->ssrc + 1);
+    put_be32(pb, s->ssrc); // server SSRC
     // some placeholders we should really fill...
     // RFC 1889/p64
     extended_max= stats->cycles + stats->max_seq;
