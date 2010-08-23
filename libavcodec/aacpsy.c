@@ -51,44 +51,44 @@
 /**
  * information for single band used by 3GPP TS26.403-inspired psychoacoustic model
  */
-typedef struct Psy3gppBand{
+typedef struct AacPsyBand{
     float energy;    ///< band energy
     float ffac;      ///< form factor
     float thr;       ///< energy threshold
     float min_snr;   ///< minimal SNR
     float thr_quiet; ///< threshold in quiet
-}Psy3gppBand;
+}AacPsyBand;
 
 /**
  * single/pair channel context for psychoacoustic model
  */
-typedef struct Psy3gppChannel{
-    Psy3gppBand band[128];               ///< bands information
-    Psy3gppBand prev_band[128];          ///< bands information from the previous frame
+typedef struct AacPsyChannel{
+    AacPsyBand band[128];               ///< bands information
+    AacPsyBand prev_band[128];          ///< bands information from the previous frame
 
     float       win_energy;              ///< sliding average of channel energy
     float       iir_state[2];            ///< hi-pass IIR filter state
     uint8_t     next_grouping;           ///< stored grouping scheme for the next frame (in case of 8 short window sequence)
     enum WindowSequence next_window_seq; ///< window sequence to be used in the next frame
-}Psy3gppChannel;
+}AacPsyChannel;
 
 /**
  * psychoacoustic model frame type-dependent coefficients
  */
-typedef struct Psy3gppCoeffs{
+typedef struct AacPsyCoeffs{
     float ath       [64]; ///< absolute threshold of hearing per bands
     float barks     [64]; ///< Bark value for each spectral band in long frame
     float spread_low[64]; ///< spreading factor for low-to-high threshold spreading in long frame
     float spread_hi [64]; ///< spreading factor for high-to-low threshold spreading in long frame
-}Psy3gppCoeffs;
+}AacPsyCoeffs;
 
 /**
  * 3GPP TS26.403-inspired psychoacoustic model specific data
  */
-typedef struct Psy3gppContext{
-    Psy3gppCoeffs psy_coef[2];
-    Psy3gppChannel *ch;
-}Psy3gppContext;
+typedef struct AacPsyContext{
+    AacPsyCoeffs psy_coef[2];
+    AacPsyChannel *ch;
+}AacPsyContext;
 
 /**
  * Calculate Bark value for given line.
@@ -113,17 +113,17 @@ static av_cold float ath(float f, float add)
 }
 
 static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
-    Psy3gppContext *pctx;
+    AacPsyContext *pctx;
     float bark;
     int i, j, g, start;
     float prev, minscale, minath;
 
-    ctx->model_priv_data = av_mallocz(sizeof(Psy3gppContext));
-    pctx = (Psy3gppContext*) ctx->model_priv_data;
+    ctx->model_priv_data = av_mallocz(sizeof(AacPsyContext));
+    pctx = (AacPsyContext*) ctx->model_priv_data;
 
     minath = ath(3410, ATH_ADD);
     for (j = 0; j < 2; j++) {
-        Psy3gppCoeffs *coeffs = &pctx->psy_coef[j];
+        AacPsyCoeffs *coeffs = &pctx->psy_coef[j];
         float line_to_frequency = ctx->avctx->sample_rate / (j ? 256.f : 2048.0f);
         i = 0;
         prev = 0.0;
@@ -147,7 +147,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
         }
     }
 
-    pctx->ch = av_mallocz(sizeof(Psy3gppChannel) * ctx->avctx->channels);
+    pctx->ch = av_mallocz(sizeof(AacPsyChannel) * ctx->avctx->channels);
     return 0;
 }
 
@@ -182,8 +182,8 @@ static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
     int i, j;
     int br               = ctx->avctx->bit_rate / ctx->avctx->channels;
     int attack_ratio     = br <= 16000 ? 18 : 10;
-    Psy3gppContext *pctx = (Psy3gppContext*) ctx->model_priv_data;
-    Psy3gppChannel *pch  = &pctx->ch[channel];
+    AacPsyContext *pctx = (AacPsyContext*) ctx->model_priv_data;
+    AacPsyChannel *pch  = &pctx->ch[channel];
     uint8_t grouping     = 0;
     int next_type        = pch->next_window_seq;
     FFPsyWindowInfo wi;
@@ -266,18 +266,18 @@ static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
 static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
                              const float *coefs, FFPsyWindowInfo *wi)
 {
-    Psy3gppContext *pctx = (Psy3gppContext*) ctx->model_priv_data;
-    Psy3gppChannel *pch  = &pctx->ch[channel];
+    AacPsyContext *pctx = (AacPsyContext*) ctx->model_priv_data;
+    AacPsyChannel *pch  = &pctx->ch[channel];
     int start = 0;
     int i, w, g;
     const int num_bands       = ctx->num_bands[wi->num_windows == 8];
     const uint8_t* band_sizes = ctx->bands[wi->num_windows == 8];
-    Psy3gppCoeffs *coeffs     = &pctx->psy_coef[wi->num_windows == 8];
+    AacPsyCoeffs *coeffs     = &pctx->psy_coef[wi->num_windows == 8];
 
     //calculate energies, initial thresholds and related values - 5.4.2 "Threshold Calculation"
     for (w = 0; w < wi->num_windows*16; w += 16) {
         for (g = 0; g < num_bands; g++) {
-            Psy3gppBand *band = &pch->band[w+g];
+            AacPsyBand *band = &pch->band[w+g];
             band->energy = 0.0f;
             for (i = 0; i < band_sizes[g]; i++)
                 band->energy += coefs[start+i] * coefs[start+i];
@@ -290,7 +290,7 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
     }
     //modify thresholds - spread, threshold in quiet - 5.4.3 "Spreaded Energy Calculation"
     for (w = 0; w < wi->num_windows*16; w += 16) {
-        Psy3gppBand *band = &pch->band[w];
+        AacPsyBand *band = &pch->band[w];
         for (g = 1; g < num_bands; g++)
             band[g].thr = FFMAX(band[g].thr, band[g-1].thr * coeffs->spread_low[g-1]);
         for (g = num_bands - 2; g >= 0; g--)
@@ -311,7 +311,7 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
 
 static av_cold void psy_3gpp_end(FFPsyContext *apc)
 {
-    Psy3gppContext *pctx = (Psy3gppContext*) apc->model_priv_data;
+    AacPsyContext *pctx = (AacPsyContext*) apc->model_priv_data;
     av_freep(&pctx->ch);
     av_freep(&apc->model_priv_data);
 }

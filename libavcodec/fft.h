@@ -35,7 +35,7 @@ struct FFTContext {
     uint16_t *revtab;
     FFTComplex *tmp_buf;
     int mdct_size; /* size of MDCT (i.e. number of input data * 2) */
-    int mdct_bits; /* n = 2^nbits */
+    int mdct_bits; /* n = 2^mdct_bits */
     /* pre/post rotation tables */
     FFTSample *tcos;
     FFTSample *tsin;
