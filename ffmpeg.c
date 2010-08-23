@@ -2538,7 +2538,7 @@ static int transcode(AVFormatContext **output_files,
         }
 
         /* finish if limit size exhausted */
-        if (limit_filesize != 0 && limit_filesize < url_ftell(output_files[0]->pb))
+        if (limit_filesize != 0 && limit_filesize <= url_ftell(output_files[0]->pb))
             break;
 
         /* read a frame from it and output it in the fifo */
