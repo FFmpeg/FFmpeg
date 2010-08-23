@@ -236,6 +236,7 @@ include $(SRC_PATH_BARE)/tests/fate/aac.mak
 include $(SRC_PATH_BARE)/tests/fate/als.mak
 include $(SRC_PATH_BARE)/tests/fate/fft.mak
 include $(SRC_PATH_BARE)/tests/fate/h264.mak
+include $(SRC_PATH_BARE)/tests/fate/mp3.mak
 include $(SRC_PATH_BARE)/tests/fate/vorbis.mak
 include $(SRC_PATH_BARE)/tests/fate/vp8.mak
 
