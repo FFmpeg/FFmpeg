@@ -211,7 +211,7 @@ cglobal put_vp8_epel%1_h6_ssse3, 6, 6, %2
     ; go to next line
     add       r0, r1
     add       r2, r3
-    dec       r4            ; next row
+    dec      r4d            ; next row
     jg .nextrow
     REP_RET
 
@@ -242,7 +242,7 @@ cglobal put_vp8_epel%1_h4_ssse3, 6, 6, %3
     ; go to next line
     add       r0, r1
     add       r2, r3
-    dec       r4            ; next row
+    dec      r4d            ; next row
     jg .nextrow
     REP_RET
 
@@ -281,7 +281,7 @@ cglobal put_vp8_epel%1_v4_ssse3, 7, 7, %2
     ; go to next line
     add        r0, r1
     add        r2, r3
-    dec        r4                          ; next row
+    dec       r4d                          ; next row
     jg .nextrow
     REP_RET
 
@@ -328,7 +328,7 @@ cglobal put_vp8_epel%1_v6_ssse3, 7, 7, %2
     ; go to next line
     add        r0, r1
     add        r2, r3
-    dec        r4                          ; next row
+    dec       r4d                          ; next row
     jg .nextrow
     REP_RET
 %endmacro
@@ -381,7 +381,7 @@ cglobal put_vp8_epel4_h4_mmxext, 6, 6
     ; go to next line
     add        r0, r1
     add        r2, r3
-    dec        r4                          ; next row
+    dec       r4d                          ; next row
     jg .nextrow
     REP_RET
 
@@ -438,7 +438,7 @@ cglobal put_vp8_epel4_h6_mmxext, 6, 6
     ; go to next line
     add        r0, r1
     add        r2, r3
-    dec        r4                          ; next row
+    dec       r4d                          ; next row
     jg .nextrow
     REP_RET
 
@@ -486,7 +486,7 @@ cglobal put_vp8_epel8_h4_sse2, 6, 6, 10
     ; go to next line
     add       r0, r1
     add       r2, r3
-    dec       r4            ; next row
+    dec      r4d            ; next row
     jg .nextrow
     REP_RET
 
@@ -548,7 +548,7 @@ cglobal put_vp8_epel8_h6_sse2, 6, 6, 14
     ; go to next line
     add       r0, r1
     add       r2, r3
-    dec       r4            ; next row
+    dec      r4d            ; next row
     jg .nextrow
     REP_RET
 
@@ -601,7 +601,7 @@ cglobal put_vp8_epel%2_v4_%1, 7, 7, %3
     ; go to next line
     add       r0, r1
     add       r2, r3
-    dec       r4                           ; next row
+    dec      r4d                           ; next row
     jg .nextrow
     REP_RET
 
@@ -666,7 +666,7 @@ cglobal put_vp8_epel%2_v6_%1, 7, 7, %3
     ; go to next line
     add       r0, r1
     add       r2, r3
-    dec       r4                           ; next row
+    dec      r4d                           ; next row
     jg .nextrow
     REP_RET
 %endmacro
@@ -718,7 +718,7 @@ cglobal put_vp8_bilinear%2_v_%1, 7,7,%3
 
     lea       r0, [r0+r1*2]
     lea       r2, [r2+r3*2]
-    sub       r4, 2
+    sub      r4d, 2
     jg .nextrow
     REP_RET
 
@@ -764,7 +764,7 @@ cglobal put_vp8_bilinear%2_h_%1, 7,7,%3
 
     lea       r0, [r0+r1*2]
     lea       r2, [r2+r3*2]
-    sub       r4, 2
+    sub      r4d, 2
     jg .nextrow
     REP_RET
 %endmacro
@@ -807,7 +807,7 @@ cglobal put_vp8_bilinear%1_v_ssse3, 7,7
 
     lea       r0, [r0+r1*2]
     lea       r2, [r2+r3*2]
-    sub       r4, 2
+    sub      r4d, 2
     jg .nextrow
     REP_RET
 
@@ -843,7 +843,7 @@ cglobal put_vp8_bilinear%1_h_ssse3, 7,7
 
     lea       r0, [r0+r1*2]
     lea       r2, [r2+r3*2]
-    sub       r4, 2
+    sub      r4d, 2
     jg .nextrow
     REP_RET
 %endmacro
