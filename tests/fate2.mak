@@ -160,3 +160,6 @@ fate-wmapro-2ch: REF = $(SAMPLES)/wmapro/Beethovens_9th-1_small.pcm
 
 FATE_TESTS += fate-ansi
 fate-ansi: CMD = framecrc -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
+
+FATE_TESTS += fate-wmv8-drm
+fate-wmv8-drm: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(SAMPLES)/wmv8/wmv_drm.wmv -an
