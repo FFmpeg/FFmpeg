@@ -1048,7 +1048,9 @@ static inline void name(uint8_t *dst, const uint8_t *src, long width, uint32_t *
 }
 
 BGR2Y(uint32_t, bgr32ToY,16, 0, 0, 0x00FF, 0xFF00, 0x00FF, RY<< 8, GY   , BY<< 8, RGB2YUV_SHIFT+8)
+BGR2Y(uint32_t,bgr321ToY,16,16, 0, 0xFF00, 0x00FF, 0xFF00, RY    , GY<<8, BY    , RGB2YUV_SHIFT+8)
 BGR2Y(uint32_t, rgb32ToY, 0, 0,16, 0x00FF, 0xFF00, 0x00FF, RY<< 8, GY   , BY<< 8, RGB2YUV_SHIFT+8)
+BGR2Y(uint32_t,rgb321ToY, 0,16,16, 0xFF00, 0x00FF, 0xFF00, RY    , GY<<8, BY    , RGB2YUV_SHIFT+8)
 BGR2Y(uint16_t, bgr16ToY, 0, 0, 0, 0x001F, 0x07E0, 0xF800, RY<<11, GY<<5, BY    , RGB2YUV_SHIFT+8)
 BGR2Y(uint16_t, bgr15ToY, 0, 0, 0, 0x001F, 0x03E0, 0x7C00, RY<<10, GY<<5, BY    , RGB2YUV_SHIFT+7)
 BGR2Y(uint16_t, rgb16ToY, 0, 0, 0, 0xF800, 0x07E0, 0x001F, RY    , GY<<5, BY<<11, RGB2YUV_SHIFT+8)
@@ -1062,14 +1064,14 @@ static inline void abgrToA(uint8_t *dst, const uint8_t *src, long width, uint32_
     }
 }
 
-#define BGR2UV(type, name, shr, shg, shb, maskr, maskg, maskb, RU, GU, BU, RV, GV, BV, S)\
+#define BGR2UV(type, name, shr, shg, shb, shp, maskr, maskg, maskb, RU, GU, BU, RV, GV, BV, S) \
 static inline void name(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, const uint8_t *dummy, long width, uint32_t *unused)\
 {\
     int i;\
     for (i=0; i<width; i++) {\
-        int b= (((const type*)src)[i]&maskb)>>shb;\
-        int g= (((const type*)src)[i]&maskg)>>shg;\
-        int r= (((const type*)src)[i]&maskr)>>shr;\
+        int b= (((const type*)src)[i]&maskb)>>(shb+shp);\
+        int g= (((const type*)src)[i]&maskg)>>(shg+shp);\
+        int r= (((const type*)src)[i]&maskr)>>(shr+shp);\
 \
         dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (257<<((S)-1)))>>(S);\
         dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (257<<((S)-1)))>>(S);\
@@ -1079,8 +1081,8 @@ static inline void name ## _half(uint8_t *dstU, uint8_t *dstV, const uint8_t *sr
 {\
     int i;\
     for (i=0; i<width; i++) {\
-        int pix0= ((const type*)src)[2*i+0];\
-        int pix1= ((const type*)src)[2*i+1];\
+        int pix0= ((const type*)src)[2*i+0]>>shp;\
+        int pix1= ((const type*)src)[2*i+1]>>shp;\
         int g= (pix0&~(maskr|maskb))+(pix1&~(maskr|maskb));\
         int b= ((pix0+pix1-g)&(maskb|(2*maskb)))>>shb;\
         int r= ((pix0+pix1-g)&(maskr|(2*maskr)))>>shr;\
@@ -1093,12 +1095,14 @@ static inline void name ## _half(uint8_t *dstU, uint8_t *dstV, const uint8_t *sr
     }\
 }
 
-BGR2UV(uint32_t, bgr32ToUV,16, 0, 0, 0xFF0000, 0xFF00,   0x00FF, RU<< 8, GU   , BU<< 8, RV<< 8, GV   , BV<< 8, RGB2YUV_SHIFT+8)
-BGR2UV(uint32_t, rgb32ToUV, 0, 0,16,   0x00FF, 0xFF00, 0xFF0000, RU<< 8, GU   , BU<< 8, RV<< 8, GV   , BV<< 8, RGB2YUV_SHIFT+8)
-BGR2UV(uint16_t, bgr16ToUV, 0, 0, 0,   0x001F, 0x07E0,   0xF800, RU<<11, GU<<5, BU    , RV<<11, GV<<5, BV    , RGB2YUV_SHIFT+8)
-BGR2UV(uint16_t, bgr15ToUV, 0, 0, 0,   0x001F, 0x03E0,   0x7C00, RU<<10, GU<<5, BU    , RV<<10, GV<<5, BV    , RGB2YUV_SHIFT+7)
-BGR2UV(uint16_t, rgb16ToUV, 0, 0, 0,   0xF800, 0x07E0,   0x001F, RU    , GU<<5, BU<<11, RV    , GV<<5, BV<<11, RGB2YUV_SHIFT+8)
-BGR2UV(uint16_t, rgb15ToUV, 0, 0, 0,   0x7C00, 0x03E0,   0x001F, RU    , GU<<5, BU<<10, RV    , GV<<5, BV<<10, RGB2YUV_SHIFT+7)
+BGR2UV(uint32_t, bgr32ToUV,16, 0, 0, 0, 0xFF0000, 0xFF00,   0x00FF, RU<< 8, GU   , BU<< 8, RV<< 8, GV   , BV<< 8, RGB2YUV_SHIFT+8)
+BGR2UV(uint32_t,bgr321ToUV,16, 0, 0, 8, 0xFF0000, 0xFF00,   0x00FF, RU<< 8, GU   , BU<< 8, RV<< 8, GV   , BV<< 8, RGB2YUV_SHIFT+8)
+BGR2UV(uint32_t, rgb32ToUV, 0, 0,16, 0,   0x00FF, 0xFF00, 0xFF0000, RU<< 8, GU   , BU<< 8, RV<< 8, GV   , BV<< 8, RGB2YUV_SHIFT+8)
+BGR2UV(uint32_t,rgb321ToUV, 0, 0,16, 8,   0x00FF, 0xFF00, 0xFF0000, RU<< 8, GU   , BU<< 8, RV<< 8, GV   , BV<< 8, RGB2YUV_SHIFT+8)
+BGR2UV(uint16_t, bgr16ToUV, 0, 0, 0, 0,   0x001F, 0x07E0,   0xF800, RU<<11, GU<<5, BU    , RV<<11, GV<<5, BV    , RGB2YUV_SHIFT+8)
+BGR2UV(uint16_t, bgr15ToUV, 0, 0, 0, 0,   0x001F, 0x03E0,   0x7C00, RU<<10, GU<<5, BU    , RV<<10, GV<<5, BV    , RGB2YUV_SHIFT+7)
+BGR2UV(uint16_t, rgb16ToUV, 0, 0, 0, 0,   0xF800, 0x07E0,   0x001F, RU    , GU<<5, BU<<11, RV    , GV<<5, BV<<11, RGB2YUV_SHIFT+8)
+BGR2UV(uint16_t, rgb15ToUV, 0, 0, 0, 0,   0x7C00, 0x03E0,   0x001F, RU    , GU<<5, BU<<10, RV    , GV<<5, BV<<10, RGB2YUV_SHIFT+7)
 
 static inline void palToY(uint8_t *dst, const uint8_t *src, long width, uint32_t *pal)
 {
