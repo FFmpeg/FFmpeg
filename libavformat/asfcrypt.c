@@ -156,7 +156,7 @@ void ff_asfcrypt_dec(const uint8_t key[20], uint8_t *data, int len) {
     av_rc4_crypt(&rc4, (uint8_t *)rc4buff, NULL, sizeof(rc4buff), NULL, 1);
     multiswap_init((uint8_t *)rc4buff, ms_keys);
 
-    packetkey = qwords[num_qwords - 1];
+    packetkey = AV_RN64(&qwords[num_qwords - 1]);
     packetkey ^= rc4buff[7];
     av_des_init(&des, key + 12, 64, 1);
     av_des_crypt(&des, (uint8_t *)&packetkey, (uint8_t *)&packetkey, 1, NULL, 1);
