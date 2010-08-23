@@ -36,4 +36,4 @@ fate-mp3-float-conf-si_block: REF = $(SAMPLES)/mp3-conformance/si_block.pcm
 FATE_TESTS += $(FATE_MP3)
 fate-mp3: $(FATE_MP3)
 $(FATE_MP3): CMP = stddev
-$(FATE_AAC): FUZZ = 0.07
+$(FATE_MP3): FUZZ = 0.07
