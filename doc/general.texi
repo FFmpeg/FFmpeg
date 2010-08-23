@@ -315,6 +315,8 @@ following image formats are supported:
 @item 8088flex TMV           @tab     @tab  X
 @item 8SVX exponential       @tab     @tab  X
 @item 8SVX fibonacci         @tab     @tab  X
+@item A64 multicolor         @tab  X  @tab
+    @tab Creates video suitable to be played on a commodore 64 (multicolor mode).
 @item American Laser Games MM  @tab    @tab X
     @tab Used in games like Mad Dog McCree.
 @item AMV Video              @tab     @tab  X
