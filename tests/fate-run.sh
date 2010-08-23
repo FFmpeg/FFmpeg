@@ -1,5 +1,7 @@
 #! /bin/sh
 
+export LC_ALL=C
+
 base=$(dirname $0)
 . "${base}/md5.sh"
 
