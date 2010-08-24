@@ -309,7 +309,7 @@ typedef struct AVInputStream {
     int showed_multi_packet_warning;
     int is_past_recording_time;
 #if CONFIG_AVFILTER
-    AVFilterContext *out_video_filter;
+    AVFilterContext *output_video_filter;
     AVFilterContext *input_video_filter;
     AVFrame *filter_frame;
     int has_filter_frame;
@@ -413,19 +413,19 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
 
     if ((ret = avfilter_open(&ist->input_video_filter, avfilter_get_by_name("buffer"), "src")) < 0)
         return ret;
-    if ((ret = avfilter_open(&ist->out_video_filter, &output_filter, "out")) < 0)
+    if ((ret = avfilter_open(&ist->output_video_filter, &output_filter, "out")) < 0)
         return ret;
 
     snprintf(args, 255, "%d:%d:%d", ist->st->codec->width,
              ist->st->codec->height, ist->st->codec->pix_fmt);
     if ((ret = avfilter_init_filter(ist->input_video_filter, args, NULL)) < 0)
         return ret;
-    if ((ret = avfilter_init_filter(ist->out_video_filter, NULL, &codec->pix_fmt)) < 0)
+    if ((ret = avfilter_init_filter(ist->output_video_filter, NULL, &codec->pix_fmt)) < 0)
         return ret;
 
     /* add input and output filters to the overall graph */
     avfilter_graph_add_filter(graph, ist->input_video_filter);
-    avfilter_graph_add_filter(graph, ist->out_video_filter);
+    avfilter_graph_add_filter(graph, ist->output_video_filter);
 
     last_filter = ist->input_video_filter;
 
@@ -473,7 +473,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         outputs->next    = NULL;
 
         inputs->name    = av_strdup("out");
-        inputs->filter  = ist->out_video_filter;
+        inputs->filter  = ist->output_video_filter;
         inputs->pad_idx = 0;
         inputs->next    = NULL;
 
@@ -481,7 +481,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
             return ret;
         av_freep(&vfilters);
     } else {
-        if ((ret = avfilter_link(last_filter, 0, ist->out_video_filter, 0)) < 0)
+        if ((ret = avfilter_link(last_filter, 0, ist->output_video_filter, 0)) < 0)
             return ret;
     }
 
@@ -493,8 +493,8 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     if ((ret = avfilter_graph_config_links(graph, NULL)) < 0)
         return ret;
 
-    codec->width = ist->out_video_filter->inputs[0]->w;
-    codec->height = ist->out_video_filter->inputs[0]->h;
+    codec->width  = ist->output_video_filter->inputs[0]->w;
+    codec->height = ist->output_video_filter->inputs[0]->h;
 
     return 0;
 }
@@ -1672,15 +1672,15 @@ static int output_packet(AVInputStream *ist, int ist_index,
         }
 #if CONFIG_AVFILTER
         frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
-            !ist->out_video_filter || avfilter_poll_frame(ist->out_video_filter->inputs[0]);
+            !ist->output_video_filter || avfilter_poll_frame(ist->output_video_filter->inputs[0]);
 #endif
         /* if output time reached then transcode raw format,
            encode packets and output them */
         if (start_time == 0 || ist->pts >= start_time)
 #if CONFIG_AVFILTER
         while (frame_available) {
-            if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ist->out_video_filter)
-                get_filtered_video_pic(ist->out_video_filter, &ist->picref, &picture, &ist->pts);
+            if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ist->output_video_filter)
+                get_filtered_video_pic(ist->output_video_filter, &ist->picref, &picture, &ist->pts);
 #endif
             for(i=0;i<nb_ostreams;i++) {
                 int frame_size;
@@ -1775,7 +1775,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
 #if CONFIG_AVFILTER
             frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
-                              ist->out_video_filter && avfilter_poll_frame(ist->out_video_filter->inputs[0]);
+                              ist->output_video_filter && avfilter_poll_frame(ist->output_video_filter->inputs[0]);
             if(ist->picref)
                 avfilter_unref_buffer(ist->picref);
         }
