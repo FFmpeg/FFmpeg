@@ -407,20 +407,21 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     AVCodecContext *codec = ost->st->codec;
     AVCodecContext *icodec = ist->st->codec;
     char args[255];
+    int ret;
 
     graph = av_mallocz(sizeof(AVFilterGraph));
 
-    if (avfilter_open(&ist->input_video_filter, avfilter_get_by_name("buffer"), "src") < 0)
-        return -1;
-    if (avfilter_open(&ist->out_video_filter, &output_filter, "out") < 0)
-        return -1;
+    if ((ret = avfilter_open(&ist->input_video_filter, avfilter_get_by_name("buffer"), "src")) < 0)
+        return ret;
+    if ((ret = avfilter_open(&ist->out_video_filter, &output_filter, "out")) < 0)
+        return ret;
 
     snprintf(args, 255, "%d:%d:%d", ist->st->codec->width,
              ist->st->codec->height, ist->st->codec->pix_fmt);
-    if (avfilter_init_filter(ist->input_video_filter, args, NULL))
-        return -1;
-    if (avfilter_init_filter(ist->out_video_filter, NULL, &codec->pix_fmt))
-        return -1;
+    if ((ret = avfilter_init_filter(ist->input_video_filter, args, NULL)) < 0)
+        return ret;
+    if ((ret = avfilter_init_filter(ist->out_video_filter, NULL, &codec->pix_fmt)) < 0)
+        return ret;
 
     /* add input and output filters to the overall graph */
     avfilter_graph_add_filter(graph, ist->input_video_filter);
@@ -432,13 +433,12 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         snprintf(args, 255, "%d:%d:%d:%d", ost->leftBand, ost->topBand,
                  codec->width,
                  codec->height);
-        avfilter_open(&filter, avfilter_get_by_name("crop"), NULL);
-        if (!filter)
-            return -1;
-        if (avfilter_init_filter(filter, args, NULL))
-            return -1;
-        if (avfilter_link(last_filter, 0, filter, 0))
-            return -1;
+        if ((ret = avfilter_open(&filter, avfilter_get_by_name("crop"), NULL)) < 0)
+            return ret;
+        if ((ret = avfilter_init_filter(filter, args, NULL)) < 0)
+            return ret;
+        if ((ret = avfilter_link(last_filter, 0, filter, 0)) < 0)
+            return ret;
         last_filter = filter;
         avfilter_graph_add_filter(graph, last_filter);
     }
@@ -450,13 +450,12 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
                  codec->width,
                  codec->height,
                  (int)av_get_int(sws_opts, "sws_flags", NULL));
-        avfilter_open(&filter, avfilter_get_by_name("scale"), NULL);
-        if (!filter)
-            return -1;
-        if (avfilter_init_filter(filter, args, NULL))
-            return -1;
-        if (avfilter_link(last_filter, 0, filter, 0))
-            return -1;
+        if ((ret = avfilter_open(&filter, avfilter_get_by_name("scale"), NULL)) < 0)
+            return ret;
+        if ((ret = avfilter_init_filter(filter, args, NULL)) < 0)
+            return ret;
+        if ((ret = avfilter_link(last_filter, 0, filter, 0)) < 0)
+            return ret;
         last_filter = filter;
         avfilter_graph_add_filter(graph, last_filter);
     }
@@ -478,21 +477,21 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         inputs->pad_idx = 0;
         inputs->next    = NULL;
 
-        if (avfilter_graph_parse(graph, vfilters, inputs, outputs, NULL) < 0)
-            return -1;
+        if ((ret = avfilter_graph_parse(graph, vfilters, inputs, outputs, NULL)) < 0)
+            return ret;
         av_freep(&vfilters);
     } else {
-        if (avfilter_link(last_filter, 0, ist->out_video_filter, 0) < 0)
-            return -1;
+        if ((ret = avfilter_link(last_filter, 0, ist->out_video_filter, 0)) < 0)
+            return ret;
     }
 
     /* configure all the filter links */
-    if (avfilter_graph_check_validity(graph, NULL))
-        return -1;
-    if (avfilter_graph_config_formats(graph, NULL))
-        return -1;
-    if (avfilter_graph_config_links(graph, NULL))
-        return -1;
+    if ((ret = avfilter_graph_check_validity(graph, NULL)) < 0)
+        return ret;
+    if ((ret = avfilter_graph_config_formats(graph, NULL)) < 0)
+        return ret;
+    if ((ret = avfilter_graph_config_links(graph, NULL)) < 0)
+        return ret;
 
     codec->width = ist->out_video_filter->inputs[0]->w;
     codec->height = ist->out_video_filter->inputs[0]->h;
