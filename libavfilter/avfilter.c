@@ -191,11 +191,23 @@ int avfilter_config_links(AVFilterContext *filter)
     return 0;
 }
 
+char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
+{
+    snprintf(buf, buf_size, "%s%s%s%s%s",
+             perms & AV_PERM_READ      ? "r" : "",
+             perms & AV_PERM_WRITE     ? "w" : "",
+             perms & AV_PERM_PRESERVE  ? "p" : "",
+             perms & AV_PERM_REUSE     ? "r" : "",
+             perms & AV_PERM_REUSE2    ? "R" : "");
+    return buf;
+}
+
 void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end)
 {
+    av_unused char buf[16];
     dprintf(ctx,
-            "ref[%p buf:%p refcount:%d perms:0x%x data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
-            ref, ref->buf, ref->buf->refcount, ref->perms, ref->data[0],
+            "ref[%p buf:%p refcount:%d perms:%s data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
+            ref, ref->buf, ref->buf->refcount, ff_get_ref_perms_string(buf, sizeof(buf), ref->perms), ref->data[0],
             ref->linesize[0], ref->linesize[1], ref->linesize[2], ref->linesize[3],
             ref->pts, ref->pos);
 
@@ -233,7 +245,9 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
 {
     AVFilterBufferRef *ret = NULL;
 
-    FF_DPRINTF_START(NULL, get_video_buffer); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " perms:%d w:%d h:%d\n", perms, w, h);
+    av_unused char buf[16];
+    FF_DPRINTF_START(NULL, get_video_buffer); ff_dprintf_link(NULL, link, 0);
+    dprintf(NULL, " perms:%s w:%d h:%d\n", ff_get_ref_perms_string(buf, sizeof(buf), perms), w, h);
 
     if (link_dpad(link).get_video_buffer)
         ret = link_dpad(link).get_video_buffer(link, perms, w, h);

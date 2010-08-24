@@ -28,6 +28,8 @@
 
 void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end);
 
+char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms);
+
 void ff_dprintf_link(void *ctx, AVFilterLink *link, int end);
 
 #define FF_DPRINTF_START(ctx, func) dprintf(NULL, "%-16s: ", #func)
