@@ -2073,33 +2073,33 @@ static int transcode(AVFormatContext **output_files,
 
             } else {
                 int best_nb_frames=-1;
-                    /* get corresponding input stream index : we select the first one with the right type */
-                    found = 0;
-                    for(j=0;j<nb_istreams;j++) {
-                        int skip=0;
-                        ist = ist_table[j];
-                        if(opt_programid){
-                            int pi,si;
-                            AVFormatContext *f= input_files[ ist->file_index ];
-                            skip=1;
-                            for(pi=0; pi<f->nb_programs; pi++){
-                                AVProgram *p= f->programs[pi];
-                                if(p->id == opt_programid)
-                                    for(si=0; si<p->nb_stream_indexes; si++){
-                                        if(f->streams[ p->stream_index[si] ] == ist->st)
-                                            skip=0;
-                                    }
-                            }
-                        }
-                        if (ist->discard && ist->st->discard != AVDISCARD_ALL && !skip &&
-                            ist->st->codec->codec_type == ost->st->codec->codec_type) {
-                            if(best_nb_frames < ist->st->codec_info_nb_frames){
-                                best_nb_frames= ist->st->codec_info_nb_frames;
-                                ost->source_index = j;
-                                found = 1;
-                            }
+                /* get corresponding input stream index : we select the first one with the right type */
+                found = 0;
+                for(j=0;j<nb_istreams;j++) {
+                    int skip=0;
+                    ist = ist_table[j];
+                    if(opt_programid){
+                        int pi,si;
+                        AVFormatContext *f= input_files[ ist->file_index ];
+                        skip=1;
+                        for(pi=0; pi<f->nb_programs; pi++){
+                            AVProgram *p= f->programs[pi];
+                            if(p->id == opt_programid)
+                                for(si=0; si<p->nb_stream_indexes; si++){
+                                    if(f->streams[ p->stream_index[si] ] == ist->st)
+                                        skip=0;
+                                }
                         }
                     }
+                    if (ist->discard && ist->st->discard != AVDISCARD_ALL && !skip &&
+                        ist->st->codec->codec_type == ost->st->codec->codec_type) {
+                        if(best_nb_frames < ist->st->codec_info_nb_frames){
+                            best_nb_frames= ist->st->codec_info_nb_frames;
+                            ost->source_index = j;
+                            found = 1;
+                        }
+                    }
+                }
 
                 if (!found) {
                     if(! opt_programid) {
