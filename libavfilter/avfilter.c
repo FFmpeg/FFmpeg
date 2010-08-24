@@ -316,7 +316,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
                 picref->perms,
                 link_dpad(link).min_perms, link_dpad(link).rej_perms);
 
-        link->cur_buf = avfilter_default_get_video_buffer(link, dst->min_perms, link->w, link->h);
+        link->cur_buf = avfilter_get_video_buffer(link, dst->min_perms, link->w, link->h);
         link->src_buf = picref;
         avfilter_copy_buffer_ref_props(link->cur_buf, link->src_buf);
     }
