@@ -1,5 +1,5 @@
 /*
- * a64 video encoder - basic headers
+ * a64 video encoder - tables used by 64enc
  * Copyright (c) 2009 Tobias Bindhammer
  *
  * This file is part of FFmpeg.
@@ -21,32 +21,30 @@
 
 /**
  * @file
- * a64 video encoder - basic headers
+ * a64 video encoder - c64 colors in rgb
  */
 
-#ifndef AVCODEC_A64ENC_H
-#define AVCODEC_A64ENC_H
+#ifndef AVCODEC_A64COLORS_H
+#define AVCODEC_A64COLORS_H
 
-#include "libavutil/lfg.h"
-#include "avcodec.h"
+/* c64 palette in RGB */
+static const uint8_t a64_palette[16][3] = {
+    {0x00, 0x00, 0x00},
+    {0xff, 0xff, 0xff},
+    {0x68, 0x37, 0x2b},
+    {0x70, 0xa4, 0xb2},
+    {0x6f, 0x3d, 0x86},
+    {0x58, 0x8d, 0x43},
+    {0x35, 0x28, 0x79},
+    {0xb8, 0xc7, 0x6f},
+    {0x6f, 0x4f, 0x25},
+    {0x43, 0x39, 0x00},
+    {0x9a, 0x67, 0x59},
+    {0x44, 0x44, 0x44},
+    {0x6c, 0x6c, 0x6c},
+    {0x9a, 0xd2, 0x84},
+    {0x6c, 0x5e, 0xb5},
+    {0x95, 0x95, 0x95},
+};
 
-#define C64XRES 320
-#define C64YRES 200
-
-typedef struct A64Context {
-    /* general variables */
-    AVFrame picture;
-
-    /* variables for multicolor modes */
-    AVLFG randctx;
-    int mc_lifetime;
-    int mc_use_5col;
-    int mc_frame_counter;
-    int *mc_meta_charset;
-    int *mc_charmap;
-    int *mc_best_cb;
-    int *mc_charset;
-    int mc_luma_vals[5];
-} A64Context;
-
-#endif /* AVCODEC_A64ENC_H */
+#endif /* AVCODEC_A64COLORS_H */

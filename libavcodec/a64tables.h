@@ -32,7 +32,8 @@
 /**
  * dither patterns used vor rendering the multicolor charset
  */
-static const uint8_t prep_dither_patterns[9][4][4] = {
+
+static const uint8_t multi_dither_patterns[9][4][4] = {
     {
      {0, 0, 0, 0},
      {0, 0, 0, 0},

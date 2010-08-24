@@ -46,7 +46,7 @@ static int a64_write_header(struct AVFormatContext *s)
         header[4] = 3;
         break;
     default:
-        return -1;
+        return AVERROR(EINVAL);
         break;
     }
     put_buffer(s->pb, header, 2);
