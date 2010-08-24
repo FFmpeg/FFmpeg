@@ -3601,7 +3601,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
     subtitle_stream_copy = 0;
 }
 
-static void opt_new_audio_stream(void)
+static void opt_new_stream(const char *opt, const char *arg)
 {
     AVFormatContext *oc;
     if (nb_output_files <= 0) {
@@ -3609,29 +3609,11 @@ static void opt_new_audio_stream(void)
         ffmpeg_exit(1);
     }
     oc = output_files[nb_output_files - 1];
-    new_audio_stream(oc);
-}
 
-static void opt_new_video_stream(void)
-{
-    AVFormatContext *oc;
-    if (nb_output_files <= 0) {
-        fprintf(stderr, "At least one output file must be specified\n");
-        ffmpeg_exit(1);
-    }
-    oc = output_files[nb_output_files - 1];
-    new_video_stream(oc);
-}
-
-static void opt_new_subtitle_stream(void)
-{
-    AVFormatContext *oc;
-    if (nb_output_files <= 0) {
-        fprintf(stderr, "At least one output file must be specified\n");
-        ffmpeg_exit(1);
-    }
-    oc = output_files[nb_output_files - 1];
-    new_subtitle_stream(oc);
+    if      (!strcmp(opt, "newvideo"   )) new_video_stream   (oc);
+    else if (!strcmp(opt, "newaudio"   )) new_audio_stream   (oc);
+    else if (!strcmp(opt, "newsubtitle")) new_subtitle_stream(oc);
+    else assert(0);
 }
 
 /* arg format is "output-stream-index:streamid-value". */
@@ -4258,7 +4240,7 @@ static const OptionDef options[] = {
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
-    { "newvideo", OPT_VIDEO, {(void*)opt_new_video_stream}, "add a new video stream to the current output stream" },
+    { "newvideo", OPT_VIDEO | OPT_FUNC2, {(void*)opt_new_stream}, "add a new video stream to the current output stream" },
     { "vlang", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void *)&video_language}, "set the ISO 639 language code (3 letters) of the current video stream" , "code" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
     { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&force_fps}, "force the selected framerate, disable the best supported framerate selection" },
@@ -4274,14 +4256,14 @@ static const OptionDef options[] = {
     { "acodec", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
     { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_audio_tag}, "force audio tag/fourcc", "fourcc/tag" },
     { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
-    { "newaudio", OPT_AUDIO, {(void*)opt_new_audio_stream}, "add a new audio stream to the current output stream" },
+    { "newaudio", OPT_AUDIO | OPT_FUNC2, {(void*)opt_new_stream}, "add a new audio stream to the current output stream" },
     { "alang", HAS_ARG | OPT_STRING | OPT_AUDIO, {(void *)&audio_language}, "set the ISO 639 language code (3 letters) of the current audio stream" , "code" },
     { "sample_fmt", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_audio_sample_fmt}, "set sample format, 'list' as argument shows all the sample formats supported", "format" },
 
     /* subtitle options */
     { "sn", OPT_BOOL | OPT_SUBTITLE, {(void*)&subtitle_disable}, "disable subtitle" },
     { "scodec", HAS_ARG | OPT_SUBTITLE, {(void*)opt_subtitle_codec}, "force subtitle codec ('copy' to copy stream)", "codec" },
-    { "newsubtitle", OPT_SUBTITLE, {(void*)opt_new_subtitle_stream}, "add a new subtitle stream to the current output stream" },
+    { "newsubtitle", OPT_SUBTITLE | OPT_FUNC2, {(void*)opt_new_stream}, "add a new subtitle stream to the current output stream" },
     { "slang", HAS_ARG | OPT_STRING | OPT_SUBTITLE, {(void *)&subtitle_language}, "set the ISO 639 language code (3 letters) of the current subtitle stream" , "code" },
     { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE, {(void*)opt_subtitle_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
 
