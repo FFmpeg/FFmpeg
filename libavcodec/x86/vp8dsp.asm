@@ -1470,8 +1470,8 @@ VP8_DC_WHT sse
     pshufb         %1, %3
 %endmacro
 
-%macro SIMPLE_LOOPFILTER 3
-cglobal vp8_%2_loop_filter_simple_%1, 3, %3
+%macro SIMPLE_LOOPFILTER 4
+cglobal vp8_%2_loop_filter_simple_%1, 3, %3, %4
 %if mmsize == 8 ; mmx/mmxext
     mov            r3, 2
 %endif
@@ -1612,21 +1612,21 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3
 
 INIT_MMX
 %define SPLATB_REG SPLATB_REG_MMX
-SIMPLE_LOOPFILTER mmx,    v, 4
-SIMPLE_LOOPFILTER mmx,    h, 5
+SIMPLE_LOOPFILTER mmx,    v, 4, 0
+SIMPLE_LOOPFILTER mmx,    h, 5, 0
 %define SPLATB_REG SPLATB_REG_MMXEXT
-SIMPLE_LOOPFILTER mmxext, v, 4
-SIMPLE_LOOPFILTER mmxext, h, 5
+SIMPLE_LOOPFILTER mmxext, v, 4, 0
+SIMPLE_LOOPFILTER mmxext, h, 5, 0
 INIT_XMM
 %define SPLATB_REG SPLATB_REG_SSE2
 %define WRITE_8W   WRITE_8W_SSE2
-SIMPLE_LOOPFILTER sse2,   v, 3
-SIMPLE_LOOPFILTER sse2,   h, 5
+SIMPLE_LOOPFILTER sse2,   v, 3, 8
+SIMPLE_LOOPFILTER sse2,   h, 5, 8
 %define SPLATB_REG SPLATB_REG_SSSE3
-SIMPLE_LOOPFILTER ssse3,  v, 3
-SIMPLE_LOOPFILTER ssse3,  h, 5
+SIMPLE_LOOPFILTER ssse3,  v, 3, 8
+SIMPLE_LOOPFILTER ssse3,  h, 5, 8
 %define WRITE_8W   WRITE_8W_SSE4
-SIMPLE_LOOPFILTER sse4,   h, 5
+SIMPLE_LOOPFILTER sse4,   h, 5, 8
 
 ;-----------------------------------------------------------------------------
 ; void vp8_h/v_loop_filter<size>_inner_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
