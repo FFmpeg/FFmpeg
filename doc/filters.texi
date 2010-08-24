@@ -55,6 +55,15 @@ corner of the input image.
 
 The default value of @var{width} and @var{height} is 0.
 
+@section fifo
+
+Buffer input images and send them when they are requested.
+
+This filter is mainly useful when auto-inserted by the libavfilter
+framework.
+
+The filter does not take parameters.
+
 @section format
 
 Convert the input video to one of the specified pixel formats.
