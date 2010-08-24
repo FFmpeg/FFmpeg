@@ -175,3 +175,9 @@ fate-binkaudio-rdft: CMD = pcm -i $(SAMPLES)/bink/binkaudio_rdft.bik
 fate-binkaudio-rdft: CMP = oneoff
 fate-binkaudio-rdft: REF = $(SAMPLES)/bink/binkaudio_rdft.pcm
 fate-binkaudio-rdft: FUZZ = 2
+
+FATE_TESTS += fate-txd-pal8
+fate-txd-pal8: CMD = framecrc -i $(SAMPLES)/txd/outro.txd -pix_fmt rgb24 -an
+
+FATE_TESTS += fate-txd-16bpp
+fate-txd-16bpp: CMD = framecrc -i $(SAMPLES)/txd/misc.txd -pix_fmt bgra -an
