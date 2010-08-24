@@ -139,7 +139,7 @@ void ff_asfcrypt_dec(const uint8_t key[20], uint8_t *data, int len) {
     struct AVDES des;
     struct AVRC4 rc4;
     int num_qwords = len >> 3;
-    uint64_t *qwords = (uint64_t *)data;
+    uint8_t *qwords = data;
     uint64_t rc4buff[8];
     uint64_t packetkey;
     uint32_t ms_keys[12];
@@ -156,7 +156,7 @@ void ff_asfcrypt_dec(const uint8_t key[20], uint8_t *data, int len) {
     av_rc4_crypt(&rc4, (uint8_t *)rc4buff, NULL, sizeof(rc4buff), NULL, 1);
     multiswap_init((uint8_t *)rc4buff, ms_keys);
 
-    packetkey = AV_RN64(&qwords[num_qwords - 1]);
+    packetkey = AV_RN64(&qwords[num_qwords*8 - 8]);
     packetkey ^= rc4buff[7];
     av_des_init(&des, key + 12, 64, 1);
     av_des_crypt(&des, (uint8_t *)&packetkey, (uint8_t *)&packetkey, 1, NULL, 1);
@@ -166,7 +166,7 @@ void ff_asfcrypt_dec(const uint8_t key[20], uint8_t *data, int len) {
     av_rc4_crypt(&rc4, data, data, len, NULL, 1);
 
     ms_state = 0;
-    for (i = 0; i < num_qwords - 1; i++, qwords++)
+    for (i = 0; i < num_qwords - 1; i++, qwords += 8)
         ms_state = multiswap_enc(ms_keys, ms_state, AV_RL64(qwords));
     multiswap_invert_keys(ms_keys);
     packetkey = (packetkey << 32) | (packetkey >> 32);
