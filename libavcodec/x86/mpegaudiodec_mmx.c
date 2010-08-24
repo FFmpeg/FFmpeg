@@ -149,7 +149,7 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
 
 void ff_mpegaudiodec_init_mmx(MPADecodeContext *s)
 {
-    mm_flags = mm_support();
+    int mm_flags = mm_support();
 
     if (mm_flags & FF_MM_SSE2) {
         s->apply_window_mp3 = apply_window_mp3;

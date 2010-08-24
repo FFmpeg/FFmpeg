@@ -37,8 +37,6 @@
 //#undef NDEBUG
 //#include <assert.h>
 
-int mm_flags; /* multimedia extension flags */
-
 /* pixel operations */
 DECLARE_ALIGNED(8,  const uint64_t, ff_bone) = 0x0101010101010101ULL;
 DECLARE_ALIGNED(8,  const uint64_t, ff_wtwo) = 0x0002000200020002ULL;
@@ -2504,7 +2502,7 @@ float ff_scalarproduct_float_sse(const float *v1, const float *v2, int order);
 
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
-    mm_flags = mm_support();
+    int mm_flags = mm_support();
 
     if (avctx->dsp_mask) {
         if (avctx->dsp_mask & FF_MM_FORCE)
@@ -2941,7 +2939,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #if CONFIG_H264DSP
 void ff_h264dsp_init_x86(H264DSPContext *c)
 {
-    mm_flags = mm_support();
+    int mm_flags = mm_support();
 
     if (mm_flags & FF_MM_MMX) {
         c->h264_idct_dc_add=

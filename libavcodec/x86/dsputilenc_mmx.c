@@ -1350,6 +1350,8 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int si
 
 void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
+    int mm_flags = mm_support();
+
     if (mm_flags & FF_MM_MMX) {
         const int dct_algo = avctx->dct_algo;
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){

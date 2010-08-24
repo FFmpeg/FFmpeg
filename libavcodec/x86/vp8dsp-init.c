@@ -282,7 +282,7 @@ DECLARE_LOOP_FILTER(sse4)
 
 av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 {
-    mm_flags = mm_support();
+    int mm_flags = mm_support();
 
 #if HAVE_YASM
     if (mm_flags & FF_MM_MMX) {

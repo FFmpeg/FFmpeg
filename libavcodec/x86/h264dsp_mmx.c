@@ -2368,7 +2368,7 @@ void ff_pred4x4_vertical_vp8_mmxext(uint8_t *src, const uint8_t *topright, int s
 #if CONFIG_H264PRED
 void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
 {
-    mm_flags = mm_support();
+    int mm_flags = mm_support();
 
 #if HAVE_YASM
     if (mm_flags & FF_MM_MMX) {

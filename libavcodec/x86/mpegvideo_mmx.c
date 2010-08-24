@@ -625,6 +625,8 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
 
 void MPV_common_init_mmx(MpegEncContext *s)
 {
+    int mm_flags = mm_support();
+
     if (mm_flags & FF_MM_MMX) {
         const int dct_algo = s->avctx->dct_algo;
 

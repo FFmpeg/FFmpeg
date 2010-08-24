@@ -714,7 +714,7 @@ static void vc1_h_loop_filter16_sse4(uint8_t *src, int stride, int pq)
 #endif
 
 void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx) {
-    mm_flags = mm_support();
+    int mm_flags = mm_support();
 
     dsp->put_vc1_mspel_pixels_tab[ 0] = ff_put_vc1_mspel_mc00_mmx;
     dsp->put_vc1_mspel_pixels_tab[ 4] = put_vc1_mspel_mc01_mmx;

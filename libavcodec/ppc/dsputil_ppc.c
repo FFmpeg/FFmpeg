@@ -23,8 +23,6 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
 
-int mm_flags = 0;
-
 int mm_support(void)
 {
     int result = 0;
@@ -182,8 +180,6 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
     if(CONFIG_H264_DECODER) dsputil_h264_init_ppc(c, avctx);
 
     if (has_altivec()) {
-        mm_flags |= FF_MM_ALTIVEC;
-
         dsputil_init_altivec(c, avctx);
         if(CONFIG_VC1_DECODER)
             vc1dsp_init_altivec(c, avctx);

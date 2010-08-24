@@ -52,7 +52,7 @@ static void get_pixels_8x4_sym_sse2(DCTELEM *block, const uint8_t *pixels, int l
 
 void ff_dnxhd_init_mmx(DNXHDEncContext *ctx)
 {
-    if (mm_flags & FF_MM_SSE2) {
+    if (mm_support() & FF_MM_SSE2) {
         ctx->get_pixels_8x4_sym = get_pixels_8x4_sym_sse2;
     }
 }
