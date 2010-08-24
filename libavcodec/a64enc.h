@@ -45,8 +45,9 @@ typedef struct A64Context {
     int *mc_meta_charset;
     int *mc_charmap;
     int *mc_best_cb;
-    int *mc_charset;
     int mc_luma_vals[5];
+    uint8_t *mc_charset;
+    uint8_t *mc_colram;
 } A64Context;
 
 #endif /* AVCODEC_A64ENC_H */

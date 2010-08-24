@@ -32,9 +32,15 @@
 
 #define DITHERSTEPS   8
 #define CHARSET_CHARS 256
+#define INTERLACED    1
+#define LIFETIME      4
 
 /* gray gradient */
 static const int mc_colors[5]={0x0,0xb,0xc,0xf,0x1};
+
+/* other possible gradients - to be tested */
+//static const int mc_colors[5]={0x0,0x8,0xa,0xf,0x7};
+//static const int mc_colors[5]={0x0,0x9,0x8,0xa,0x3};
 
 static void to_meta_with_crop(AVCodecContext *avctx, AVFrame *p, int *dest)
 {
@@ -66,7 +72,7 @@ static void render_charset(AVCodecContext *avctx, uint8_t *charset,
                            uint8_t *colrammap)
 {
     A64Context *c = avctx->priv_data;
-    uint8_t row1;
+    uint8_t row1, row2;
     int charpos, x, y;
     int a, b;
     uint8_t pix;
@@ -97,7 +103,7 @@ static void render_charset(AVCodecContext *avctx, uint8_t *charset,
         lowdiff  = 0;
         highdiff = 0;
         for (y = 0; y < 8; y++) {
-            row1 = 0;
+            row1 = 0; row2 = 0;
             for (x = 0; x < 4; x++) {
                 pix = best_cb[y * 4 + x];
 
@@ -109,12 +115,27 @@ static void render_charset(AVCodecContext *avctx, uint8_t *charset,
 
                 row1 <<= 2;
 
-                if (multi_dither_patterns[dither[pix]][(y & 3)][x & 3])
-                    row1 |= 3-(index2[pix] & 3);
-                else
-                    row1 |= 3-(index1[pix] & 3);
+                if(INTERLACED) {
+                    row2 <<= 2;
+                    if (interlaced_dither_patterns[dither[pix]][(y & 3) * 2 + 0][x & 3])
+                        row1 |= 3-(index2[pix] & 3);
+                    else
+                        row1 |= 3-(index1[pix] & 3);
+
+                    if (interlaced_dither_patterns[dither[pix]][(y & 3) * 2 + 1][x & 3])
+                        row2 |= 3-(index2[pix] & 3);
+                    else
+                        row2 |= 3-(index1[pix] & 3);
+                }
+                else {
+                    if (multi_dither_patterns[dither[pix]][(y & 3)][x & 3])
+                        row1 |= 3-(index2[pix] & 3);
+                    else
+                        row1 |= 3-(index1[pix] & 3);
+                }
             }
             charset[y+0x000] = row1;
+            if(INTERLACED) charset[y+0x800] = row2;
         }
         /* do we need to adjust pixels? */
         if (highdiff > 0 && lowdiff > 0) {
@@ -133,7 +154,7 @@ static void render_charset(AVCodecContext *avctx, uint8_t *charset,
             charset += 8;
 
             /* remember colorram value */
-            colrammap[charpos] = (highdiff > 0) + 8;
+            colrammap[charpos] = (highdiff > 0);
         }
     }
 }
@@ -143,8 +164,9 @@ static av_cold int a64multi_close_encoder(AVCodecContext *avctx)
     A64Context *c = avctx->priv_data;
     av_free(c->mc_meta_charset);
     av_free(c->mc_best_cb);
-    av_free(c->mc_charmap);
     av_free(c->mc_charset);
+    av_free(c->mc_charmap);
+    av_free(c->mc_colram);
     return 0;
 }
 
@@ -171,10 +193,11 @@ static av_cold int a64multi_init_encoder(AVCodecContext *avctx)
 
     c->mc_frame_counter = 0;
     c->mc_use_5col      = avctx->codec->id == CODEC_ID_A64_MULTI5;
-    c->mc_meta_charset  = av_malloc(32000 * c->mc_lifetime * sizeof(int));
-    c->mc_best_cb       = av_malloc(CHARSET_CHARS * 32 * sizeof(int));
-    c->mc_charmap       = av_malloc(1000 * c->mc_lifetime * sizeof(int));
-    c->mc_charset       = av_malloc(0x800 * sizeof(uint8_t));
+    c->mc_meta_charset  = av_malloc (32000 * c->mc_lifetime * sizeof(int));
+    c->mc_best_cb       = av_malloc (CHARSET_CHARS * 32 * sizeof(int));
+    c->mc_charmap       = av_mallocz(1000 * c->mc_lifetime * sizeof(int));
+    c->mc_colram        = av_mallocz(CHARSET_CHARS * sizeof(uint8_t));
+    c->mc_charset       = av_malloc (0x800 * (INTERLACED+1) * sizeof(uint8_t));
 
     avcodec_get_frame_defaults(&c->picture);
     avctx->coded_frame            = &c->picture;
@@ -184,6 +207,21 @@ static av_cold int a64multi_init_encoder(AVCodecContext *avctx)
          avctx->codec_tag = AV_RL32("a64m");
 
     return 0;
+}
+
+static void a64_compress_colram(unsigned char *buf, int *charmap, uint8_t *colram)
+{
+    int a;
+    uint8_t temp;
+    /* only needs to be done in 5col mode */
+    /* XXX could be squeezed to 0x80 bytes */
+    for (a = 0; a < 256; a++) {
+        temp  = colram[charmap[a + 0x000]] << 0;
+        temp |= colram[charmap[a + 0x100]] << 1;
+        temp |= colram[charmap[a + 0x200]] << 2;
+        if(a < 0xe8) temp |= colram[charmap[a + 0x300]] << 3;
+        buf[a] = temp << 2;
+    }
 }
 
 static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
@@ -196,48 +234,91 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     int frame;
     int a;
 
-    uint8_t colrammap[256];
-    int *charmap = c->mc_charmap;
-    int *meta    = c->mc_meta_charset;
-    int *best_cb = c->mc_best_cb;
-    int frm_size = 0x400 + 0x400 * c->mc_use_5col;
     int req_size;
+    int num_frames = LIFETIME;
 
-    /* it is the last frame so prepare to flush */
-    if (!data)
-        c->mc_lifetime = c->mc_frame_counter;
+    int *charmap         = c->mc_charmap;
+    uint8_t *colram      = c->mc_colram;
+    uint8_t *charset     = c->mc_charset;
+    int *meta            = c->mc_meta_charset;
+    int *best_cb         = c->mc_best_cb;
 
-    req_size = 0x800 + frm_size * c->mc_lifetime;
-
-    if (req_size > buf_size) {
-        av_log(avctx, AV_LOG_ERROR, "buf size too small (need %d, got %d)\n", req_size, buf_size);
-        return AVERROR(EINVAL);
+    /* no data, means end encoding asap */
+    if (!data) {
+        /* all done, end encoding */
+        if(!c->mc_lifetime) return 0;
+        /* no more frames in queue, prepare to flush remaining frames */
+        if(!c->mc_frame_counter) {
+            num_frames=c->mc_lifetime;
+            c->mc_lifetime=0;
+        }
+        /* still frames in queue so limit lifetime to remaining frames */
+        else c->mc_lifetime=c->mc_frame_counter;
     }
-    /* fill up mc_meta_charset with framedata until lifetime exceeds */
-    if (c->mc_frame_counter < c->mc_lifetime) {
-        *p = *pict;
-        p->pict_type = FF_I_TYPE;
-        p->key_frame = 1;
-        to_meta_with_crop(avctx, p, meta + 32000 * c->mc_frame_counter);
-        c->mc_frame_counter++;
-        /* lifetime is not reached */
-        return 0;
+    /* still new data available */
+    else {
+        /* fill up mc_meta_charset with data until lifetime exceeds */
+        if (c->mc_frame_counter < c->mc_lifetime) {
+            *p = *pict;
+            p->pict_type = FF_I_TYPE;
+            p->key_frame = 1;
+            to_meta_with_crop(avctx, p, meta + 32000 * c->mc_frame_counter);
+            c->mc_frame_counter++;
+            /* lifetime is not reached so wait for next frame first */
+            return 0;
+        }
     }
-    /* lifetime exceeded so now convert X frames at once */
-    if (c->mc_frame_counter == c->mc_lifetime && c->mc_lifetime > 0) {
-        c->mc_frame_counter = 0;
-        ff_init_elbg(meta, 32, 1000 * c-> mc_lifetime, best_cb, CHARSET_CHARS, 5, charmap, &c->randctx);
-        ff_do_elbg  (meta, 32, 1000 * c-> mc_lifetime, best_cb, CHARSET_CHARS, 5, charmap, &c->randctx);
 
-        render_charset(avctx, buf, colrammap);
+    /* lifetime reached so now convert X frames at once */
+    if (c->mc_frame_counter == c->mc_lifetime) {
+        /* any frames to encode? */
+        if(c->mc_lifetime) {
+            /* calc optimal new charset + charmaps */
+            ff_init_elbg(meta, 32, 1000 * c->mc_lifetime, best_cb, CHARSET_CHARS, 50, charmap, &c->randctx);
+            ff_do_elbg  (meta, 32, 1000 * c->mc_lifetime, best_cb, CHARSET_CHARS, 50, charmap, &c->randctx);
 
+            /* create colorram map and a c64 readable charset */
+            render_charset(avctx, charset, colram);
+        }
+
+        req_size = 0;
+
+        //XXX this all should maybe move to the muxer? as well as teh chunked/not chunked thing?
+        /* either write charset as a whole (more comfy when playing from mem) */
+        /* copy charset chunk if exists */
+        if(c->mc_lifetime) {
+            memcpy(buf,charset,0x800*(INTERLACED+1));
+            buf      += 0x800*(INTERLACED+1);
+            charset  += 0x800*(INTERLACED+1);
+            req_size += 0x800*(INTERLACED+1);
+        }
+        else memset(buf,0,0x800*(INTERLACED+1));
+
+        /* write x frames to buf */
         for (frame = 0; frame < c->mc_lifetime; frame++) {
+            /* buf is uchar*, charmap is int*, so no memcpy here, sorry */
             for (a = 0; a < 1000; a++) {
-                buf[0x800 + a] = charmap[a];
-                if (c->mc_use_5col) buf[0xc00 + a] = colrammap[charmap[a]];
+                buf[a] = charmap[a];
             }
-            buf += frm_size;
+            buf += 0x400;
+            req_size += 0x400;
+
+            if(c->mc_use_5col) {
+                a64_compress_colram(buf,charmap,colram);
+                buf += 0x100;
+                req_size += 0x100;
+            }
+
+            /* advance to next charmap */
             charmap += 1000;
+        }
+
+        /* reset counter */
+        c->mc_frame_counter = 0;
+
+        if (req_size > buf_size) {
+            av_log(avctx, AV_LOG_ERROR, "buf size too small (need %d, got %d)\n", req_size, buf_size);
+            return -1;
         }
         return req_size;
     }
