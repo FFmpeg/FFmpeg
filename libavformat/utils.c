@@ -2487,6 +2487,7 @@ void av_close_input_stream(AVFormatContext *s)
     }
     av_freep(&s->chapters);
     av_metadata_free(&s->metadata);
+    av_freep(&s->key);
     av_free(s);
 }
 
