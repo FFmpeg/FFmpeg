@@ -1209,7 +1209,8 @@ static void qdm2_decode_super_block (QDM2Context *q)
     init_get_bits(&gb, header.data, header.size*8);
 
     if (header.type == 2 || header.type == 4 || header.type == 5) {
-        int csum = 257 * get_bits(&gb, 8) + 2 * get_bits(&gb, 8);
+        int csum  = 257 * get_bits(&gb, 8);
+            csum +=   2 * get_bits(&gb, 8);
 
         csum = qdm2_packet_checksum(q->compressed_data, q->checksum_size, csum);
 
