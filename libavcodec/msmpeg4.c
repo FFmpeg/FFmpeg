@@ -1395,8 +1395,7 @@ return -1;
 #endif
 
     if(s->msmpeg4_version==1){
-        int start_code;
-        start_code = (get_bits(&s->gb, 16)<<16) | get_bits(&s->gb, 16);
+        int start_code = get_bits_long(&s->gb, 32);
         if(start_code!=0x00000100){
             av_log(s->avctx, AV_LOG_ERROR, "invalid startcode\n");
             return -1;
