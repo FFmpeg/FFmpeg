@@ -181,3 +181,6 @@ fate-txd-pal8: CMD = framecrc -i $(SAMPLES)/txd/outro.txd -pix_fmt rgb24 -an
 
 FATE_TESTS += fate-txd-16bpp
 fate-txd-16bpp: CMD = framecrc -i $(SAMPLES)/txd/misc.txd -pix_fmt bgra -an
+
+FATE_TESTS += fate-vp3
+fate-vp3: CMD = framecrc -i $(SAMPLES)/vp3/vp31.avi
