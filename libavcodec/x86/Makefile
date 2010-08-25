@@ -31,10 +31,9 @@ MMX-OBJS-$(CONFIG_VP3_DECODER)         += x86/vp3dsp_mmx.o              \
 MMX-OBJS-$(CONFIG_VP5_DECODER)         += x86/vp3dsp_mmx.o              \
                                           x86/vp3dsp_sse2.o             \
                                           x86/vp56dsp_init.o
+YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp56dsp.o
 MMX-OBJS-$(CONFIG_VP6_DECODER)         += x86/vp3dsp_mmx.o              \
                                           x86/vp3dsp_sse2.o             \
-                                          x86/vp6dsp_mmx.o              \
-                                          x86/vp6dsp_sse2.o             \
                                           x86/vp56dsp_init.o
 YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o
 MMX-OBJS-$(CONFIG_VP8_DECODER)         += x86/vp8dsp-init.o

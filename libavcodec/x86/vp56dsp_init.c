@@ -23,11 +23,15 @@
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/vp56dsp.h"
-#include "vp6dsp_mmx.h"
-#include "vp6dsp_sse2.h"
+
+void ff_vp6_filter_diag4_mmx(uint8_t *dst, uint8_t *src, int stride,
+                             const int16_t *h_weights,const int16_t *v_weights);
+void ff_vp6_filter_diag4_sse2(uint8_t *dst, uint8_t *src, int stride,
+                              const int16_t *h_weights,const int16_t *v_weights);
 
 av_cold void ff_vp56dsp_init_x86(VP56DSPContext* c, enum CodecID codec)
 {
+#if HAVE_YASM
     int mm_flags = mm_support();
 
     if (CONFIG_VP6_DECODER && codec == CODEC_ID_VP6) {
@@ -39,4 +43,5 @@ av_cold void ff_vp56dsp_init_x86(VP56DSPContext* c, enum CodecID codec)
             c->vp6_filter_diag4 = ff_vp6_filter_diag4_sse2;
         }
     }
+#endif
 }
