@@ -1151,41 +1151,57 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 //Note: we have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
 //Plain C versions
 #if (!HAVE_MMX && !HAVE_ALTIVEC) || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_C
+#define COMPILE_C 1
 #endif
 
 #if ARCH_PPC
 #if HAVE_ALTIVEC
-#define COMPILE_ALTIVEC
+#define COMPILE_ALTIVEC 1
 #endif
 #endif //ARCH_PPC
 
 #if ARCH_X86
 
 #if (HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_MMX
+#define COMPILE_MMX 1
 #endif
 
 #if HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_MMX2
+#define COMPILE_MMX2 1
 #endif
 
 #if (HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_3DNOW
+#define COMPILE_3DNOW 1
 #endif
 #endif //ARCH_X86
+
+#ifndef COMPILE_C
+#  define COMPILE_C 0
+#endif
+#ifndef COMPILE_MMX
+#  define COMPILE_MMX 0
+#endif
+#ifndef COMPILE_MMX2
+#  define COMPILE_MMX2 0
+#endif
+#ifndef COMPILE_3DNOW
+#  define COMPILE_3DNOW 0
+#endif
+#ifndef COMPILE_ALTIVEC
+#  define COMPILE_ALTIVEC 0
+#endif
 
 #define COMPILE_TEMPLATE_MMX 0
 #define COMPILE_TEMPLATE_MMX2 0
 #define COMPILE_TEMPLATE_AMD3DNOW 0
 #define COMPILE_TEMPLATE_ALTIVEC 0
 
-#ifdef COMPILE_C
+#if COMPILE_C
 #define RENAME(a) a ## _C
 #include "swscale_template.c"
 #endif
 
-#ifdef COMPILE_ALTIVEC
+#if COMPILE_ALTIVEC
 #undef RENAME
 #undef COMPILE_TEMPLATE_ALTIVEC
 #define COMPILE_TEMPLATE_ALTIVEC 1
@@ -1196,7 +1212,7 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #if ARCH_X86
 
 //MMX versions
-#ifdef COMPILE_MMX
+#if COMPILE_MMX
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMX
 #undef COMPILE_TEMPLATE_MMX2
@@ -1209,7 +1225,7 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #endif
 
 //MMX2 versions
-#ifdef COMPILE_MMX2
+#if COMPILE_MMX2
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMX
 #undef COMPILE_TEMPLATE_MMX2
@@ -1222,7 +1238,7 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #endif
 
 //3DNOW versions
-#ifdef COMPILE_3DNOW
+#if COMPILE_3DNOW
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMX
 #undef COMPILE_TEMPLATE_MMX2
@@ -1258,7 +1274,7 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     }
 
 #else
-#ifdef COMPILE_ALTIVEC
+#if COMPILE_ALTIVEC
     if (flags & SWS_CPU_CAPS_ALTIVEC) {
         sws_init_swScale_altivec(c);
         return swScale_altivec;
@@ -1783,7 +1799,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
     if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV422P)
         c->swScale= uyvyToYuv422Wrapper;
 
-#ifdef COMPILE_ALTIVEC
+#if COMPILE_ALTIVEC
     if ((c->flags & SWS_CPU_CAPS_ALTIVEC) &&
         !(c->flags & SWS_BITEXACT) &&
         srcFormat == PIX_FMT_YUV420P) {
