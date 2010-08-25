@@ -22,7 +22,7 @@
  */
 
 #include "libavutil/common.h"
-#include "dsputil.h"
+#include "vp56dsp.h"
 
 
 void ff_vp6_filter_diag4_c(uint8_t *dst, uint8_t *src, int stride,

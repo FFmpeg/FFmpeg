@@ -91,10 +91,6 @@ void ff_vp3_idct_dc_add_c(uint8_t *dest/*align 8*/, int line_size, const DCTELEM
 void ff_vp3_v_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 void ff_vp3_h_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 
-/* VP6 DSP functions */
-void ff_vp6_filter_diag4_c(uint8_t *dst, uint8_t *src, int stride,
-                           const int16_t *h_weights, const int16_t *v_weights);
-
 /* Bink functions */
 void ff_bink_idct_c    (DCTELEM *block);
 void ff_bink_idct_add_c(uint8_t *dest, int linesize, DCTELEM *block);
@@ -368,9 +364,6 @@ typedef struct DSPContext {
     void (*vp3_idct_dc_add)(uint8_t *dest/*align 8*/, int line_size, const DCTELEM *block/*align 16*/);
     void (*vp3_v_loop_filter)(uint8_t *src, int stride, int *bounding_values);
     void (*vp3_h_loop_filter)(uint8_t *src, int stride, int *bounding_values);
-
-    void (*vp6_filter_diag4)(uint8_t *dst, uint8_t *src, int stride,
-                             const int16_t *h_weights,const int16_t *v_weights);
 
     /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vorbis_inverse_coupling)(float *mag, float *ang, int blocksize);

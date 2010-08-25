@@ -1,0 +1,42 @@
+/*
+ * VP6 MMX/SSE2 optimizations
+ * Copyright (C) 2009  Sebastien Lucas <sebastien.lucas@gmail.com>
+ * Copyright (C) 2009  Zuxy Meng <zuxy.meng@gmail.com>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include "libavutil/x86_cpu.h"
+#include "libavcodec/dsputil.h"
+#include "libavcodec/vp56dsp.h"
+#include "vp6dsp_mmx.h"
+#include "vp6dsp_sse2.h"
+
+av_cold void ff_vp56dsp_init_x86(VP56DSPContext* c, enum CodecID codec)
+{
+    int mm_flags = mm_support();
+
+    if (CONFIG_VP6_DECODER && codec == CODEC_ID_VP6) {
+        if (mm_flags & FF_MM_MMX) {
+            c->vp6_filter_diag4 = ff_vp6_filter_diag4_mmx;
+        }
+
+        if (mm_flags & FF_MM_SSE2) {
+            c->vp6_filter_diag4 = ff_vp6_filter_diag4_sse2;
+        }
+    }
+}
