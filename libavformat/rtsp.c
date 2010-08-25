@@ -696,13 +696,10 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
                     th->ttl = strtol(p, (char **)&p, 10);
                 }
             } else if (!strcmp(parameter, "destination")) {
-                struct in_addr ipaddr;
-
                 if (*p == '=') {
                     p++;
                     get_word_sep(buf, sizeof(buf), ";,", &p);
-                    if (ff_inet_aton(buf, &ipaddr))
-                        th->destination = ntohl(ipaddr.s_addr);
+                    get_sockaddr(buf, &th->destination);
                 }
             }
             while (*p != ';' && *p != '\0' && *p != ',')
@@ -1174,20 +1171,22 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
             break;
         }
         case RTSP_LOWER_TRANSPORT_UDP_MULTICAST: {
-            char url[1024];
-            struct in_addr in;
+            char url[1024], namebuf[50];
+            struct sockaddr_storage addr;
             int port, ttl;
 
-            if (reply->transports[0].destination) {
-                in.s_addr = htonl(reply->transports[0].destination);
+            if (reply->transports[0].destination.ss_family) {
+                addr      = reply->transports[0].destination;
                 port      = reply->transports[0].port_min;
                 ttl       = reply->transports[0].ttl;
             } else {
-                in        = ((struct sockaddr_in*)&rtsp_st->sdp_ip)->sin_addr;
+                addr      = rtsp_st->sdp_ip;
                 port      = rtsp_st->sdp_port;
                 ttl       = rtsp_st->sdp_ttl;
             }
-            ff_url_join(url, sizeof(url), "rtp", NULL, inet_ntoa(in),
+            getnameinfo((struct sockaddr*) &addr, sizeof(addr),
+                        namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
+            ff_url_join(url, sizeof(url), "rtp", NULL, namebuf,
                         port, "?ttl=%d", ttl);
             if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
                 err = AVERROR_INVALIDDATA;

@@ -96,7 +96,7 @@ typedef struct RTSPTransportField {
      * packets will be allowed to make before being discarded. */
     int ttl;
 
-    uint32_t destination; /**< destination IP address */
+    struct sockaddr_storage destination; /**< destination IP address */
 
     /** data/packet transport protocol; e.g. RTP or RDT */
     enum RTSPTransport transport;
