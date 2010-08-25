@@ -127,6 +127,9 @@ cglobal vp6_filter_diag4_%1, 5, 7, %2
     sub         rsp, 8*15
     movq         m6, [pw_64]
 %endif
+%ifdef ARCH_X86_64
+    movsxd       r2, r2d
+%endif
 
     sub          r1, r2
 
