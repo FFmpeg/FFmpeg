@@ -82,7 +82,7 @@ static void sdp_write_header(char *buff, int size, struct sdp_session_level *s)
 static void resolve_destination(char *dest_addr, int size, char *type,
                                 int type_size)
 {
-    struct addrinfo hints, *ai, *cur;
+    struct addrinfo hints, *ai;
 
     av_strlcpy(type, "IP4", type_size);
     if (!dest_addr[0])
@@ -94,13 +94,10 @@ static void resolve_destination(char *dest_addr, int size, char *type,
     memset(&hints, 0, sizeof(hints));
     if (getaddrinfo(dest_addr, NULL, &hints, &ai))
         return;
-    for (cur = ai; cur; cur = cur->ai_next) {
-        getnameinfo(cur->ai_addr, cur->ai_addrlen, dest_addr, size,
+        getnameinfo(ai->ai_addr, ai->ai_addrlen, dest_addr, size,
                     NULL, 0, NI_NUMERICHOST);
-        if (cur->ai_family == AF_INET6)
+        if (ai->ai_family == AF_INET6)
             av_strlcpy(type, "IP6", type_size);
-        break;
-    }
     freeaddrinfo(ai);
 }
 #else
