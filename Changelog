@@ -32,6 +32,7 @@ version <next>:
 - hflip filter
 - Apple HTTP Live Streaming demuxer
 - a64 codec
+- MMS-HTTP support
 
 
 version 0.6:
