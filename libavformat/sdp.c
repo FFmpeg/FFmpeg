@@ -95,11 +95,11 @@ static void resolve_destination(char *dest_addr, int size, char *type,
     if (getaddrinfo(dest_addr, NULL, &hints, &ai))
         return;
     for (cur = ai; cur; cur = cur->ai_next) {
-            getnameinfo(cur->ai_addr, cur->ai_addrlen, dest_addr, size,
-                        NULL, 0, NI_NUMERICHOST);
-            if (cur->ai_family == AF_INET6)
-                av_strlcpy(type, "IP6", type_size);
-            break;
+        getnameinfo(cur->ai_addr, cur->ai_addrlen, dest_addr, size,
+                    NULL, 0, NI_NUMERICHOST);
+        if (cur->ai_family == AF_INET6)
+            av_strlcpy(type, "IP6", type_size);
+        break;
     }
     freeaddrinfo(ai);
 }
@@ -497,8 +497,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
         for (j = 0; j < ac[i]->nb_streams; j++) {
             ff_sdp_write_media(buff, size,
                                   ac[i]->streams[j]->codec, dst[0] ? dst : NULL,
-                                  dst_type,
-                                  (port > 0) ? port + j * 2 : 0, ttl);
+                                  dst_type, (port > 0) ? port + j * 2 : 0, ttl);
             if (port <= 0) {
                 av_strlcatf(buff, size,
                                    "a=control:streamid=%d\r\n", i + j);
