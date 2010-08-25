@@ -149,11 +149,13 @@ int ff_url_join(char *str, int size, const char *proto,
  * @param size the size of the buff buffer
  * @param c the AVCodecContext of the media to describe
  * @param dest_addr the destination address of the media stream, may be NULL
+ * @param dest_type the destination address type, may be NULL
  * @param port the destination port of the media stream, 0 if unknown
  * @param ttl the time to live of the stream, 0 if not multicast
  */
 void ff_sdp_write_media(char *buff, int size, AVCodecContext *c,
-                        const char *dest_addr, int port, int ttl);
+                        const char *dest_addr, const char *dest_type,
+                        int port, int ttl);
 
 /**
  * Write a packet to another muxer than the one the user originally

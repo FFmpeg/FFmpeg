@@ -44,17 +44,22 @@ struct sdp_session_level {
     int ttl;              /**< TTL, in case of multicast stream */
     const char *user;     /**< username of the session's creator */
     const char *src_addr; /**< IP address of the machine from which the session was created */
+    const char *src_type; /**< address type of src_addr */
     const char *dst_addr; /**< destination IP address (can be multicast) */
+    const char *dst_type; /**< destination IP address type */
     const char *name;     /**< session name (can be an empty string) */
 };
 
-static void sdp_write_address(char *buff, int size, const char *dest_addr, int ttl)
+static void sdp_write_address(char *buff, int size, const char *dest_addr,
+                              const char *dest_type, int ttl)
 {
     if (dest_addr) {
+        if (!dest_type)
+            dest_type = "IP4";
         if (ttl > 0) {
-            av_strlcatf(buff, size, "c=IN IP4 %s/%d\r\n", dest_addr, ttl);
+            av_strlcatf(buff, size, "c=IN %s %s/%d\r\n", dest_type, dest_addr, ttl);
         } else {
-            av_strlcatf(buff, size, "c=IN IP4 %s\r\n", dest_addr);
+            av_strlcatf(buff, size, "c=IN %s %s\r\n", dest_type, dest_addr);
         }
     }
 }
@@ -62,22 +67,24 @@ static void sdp_write_address(char *buff, int size, const char *dest_addr, int t
 static void sdp_write_header(char *buff, int size, struct sdp_session_level *s)
 {
     av_strlcatf(buff, size, "v=%d\r\n"
-                            "o=- %d %d IN IP4 %s\r\n"
+                            "o=- %d %d IN %s %s\r\n"
                             "s=%s\r\n",
                             s->sdp_version,
-                            s->id, s->version, s->src_addr,
+                            s->id, s->version, s->src_type, s->src_addr,
                             s->name);
-    sdp_write_address(buff, size, s->dst_addr, s->ttl);
+    sdp_write_address(buff, size, s->dst_addr, s->dst_type, s->ttl);
     av_strlcatf(buff, size, "t=%d %d\r\n"
                             "a=tool:libavformat " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\r\n",
                             s->start_time, s->end_time);
 }
 
 #if CONFIG_NETWORK
-static void resolve_destination(char *dest_addr, int size)
+static void resolve_destination(char *dest_addr, int size, char *type,
+                                int type_size)
 {
     struct addrinfo hints, *ai, *cur;
 
+    av_strlcpy(type, "IP4", type_size);
     if (!dest_addr[0])
         return;
 
@@ -85,16 +92,14 @@ static void resolve_destination(char *dest_addr, int size)
      * as a numeric IP address in the SDP. */
 
     memset(&hints, 0, sizeof(hints));
-    /* We only support IPv4 addresses in the SDP at the moment. */
-    hints.ai_family = AF_INET;
     if (getaddrinfo(dest_addr, NULL, &hints, &ai))
         return;
     for (cur = ai; cur; cur = cur->ai_next) {
-        if (cur->ai_family == AF_INET) {
             getnameinfo(cur->ai_addr, cur->ai_addrlen, dest_addr, size,
                         NULL, 0, NI_NUMERICHOST);
+            if (cur->ai_family == AF_INET6)
+                av_strlcpy(type, "IP6", type_size);
             break;
-        }
     }
     freeaddrinfo(ai);
 }
@@ -426,7 +431,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
     return buff;
 }
 
-void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, int port, int ttl)
+void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, const char *dest_type, int port, int ttl)
 {
     const char *type;
     int payload_type;
@@ -444,7 +449,7 @@ void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *des
     }
 
     av_strlcatf(buff, size, "m=%s %d RTP/AVP %d\r\n", type, port, payload_type);
-    sdp_write_address(buff, size, dest_addr, ttl);
+    sdp_write_address(buff, size, dest_addr, dest_type, ttl);
     if (c->bit_rate) {
         av_strlcatf(buff, size, "b=AS:%d\r\n", c->bit_rate / 1000);
     }
@@ -457,22 +462,28 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     AVMetadataTag *title = av_metadata_get(ac[0]->metadata, "title", NULL, 0);
     struct sdp_session_level s;
     int i, j, port, ttl;
-    char dst[32];
+    char dst[32], dst_type[5];
 
     memset(buff, 0, size);
     memset(&s, 0, sizeof(struct sdp_session_level));
     s.user = "-";
     s.src_addr = "127.0.0.1";    /* FIXME: Properly set this */
+    s.src_type = "IP4";
     s.name = title ? title->value : "No Name";
 
     port = 0;
     ttl = 0;
     if (n_files == 1) {
         port = sdp_get_address(dst, sizeof(dst), &ttl, ac[0]->filename);
-        resolve_destination(dst, sizeof(dst));
+        resolve_destination(dst, sizeof(dst), dst_type, sizeof(dst_type));
         if (dst[0]) {
             s.dst_addr = dst;
+            s.dst_type = dst_type;
             s.ttl = ttl;
+            if (!strcmp(dst_type, "IP6")) {
+                s.src_addr = "::1";
+                s.src_type = "IP6";
+            }
         }
     }
     sdp_write_header(buff, size, &s);
@@ -481,11 +492,12 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     for (i = 0; i < n_files; i++) {
         if (n_files != 1) {
             port = sdp_get_address(dst, sizeof(dst), &ttl, ac[i]->filename);
-            resolve_destination(dst, sizeof(dst));
+            resolve_destination(dst, sizeof(dst), dst_type, sizeof(dst_type));
         }
         for (j = 0; j < ac[i]->nb_streams; j++) {
             ff_sdp_write_media(buff, size,
                                   ac[i]->streams[j]->codec, dst[0] ? dst : NULL,
+                                  dst_type,
                                   (port > 0) ? port + j * 2 : 0, ttl);
             if (port <= 0) {
                 av_strlcatf(buff, size,
