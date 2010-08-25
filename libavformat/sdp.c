@@ -511,8 +511,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     return AVERROR(ENOSYS);
 }
 
-void ff_sdp_write_media(char *buff, int size, AVCodecContext *c,
-                        const char *dest_addr, int port, int ttl)
+void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, const char *dest_type, int port, int ttl)
 {
 }
 #endif
