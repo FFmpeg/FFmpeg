@@ -46,6 +46,7 @@ configure()(
     ${src}/configure                                                    \
         --prefix="${inst}"                                              \
         --samples="${samples}"                                          \
+        --enable-gpl                                                    \
         ${arch:+--arch=$arch}                                           \
         ${cpu:+--cpu="$cpu"}                                            \
         ${cross_prefix:+--cross-prefix="$cross_prefix"}                 \
