@@ -283,28 +283,35 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
         req_size = 0;
 
+            /* copy charset to buf */
         //XXX this all should maybe move to the muxer? as well as teh chunked/not chunked thing?
         /* either write charset as a whole (more comfy when playing from mem) */
         /* copy charset chunk if exists */
         if(c->mc_lifetime) {
             memcpy(buf,charset,0x800*(INTERLACED+1));
+
+            /* advance pointers */
             buf      += 0x800*(INTERLACED+1);
             charset  += 0x800*(INTERLACED+1);
             req_size += 0x800*(INTERLACED+1);
         }
+        /* no charset so clean buf */
         else memset(buf,0,0x800*(INTERLACED+1));
 
         /* write x frames to buf */
         for (frame = 0; frame < c->mc_lifetime; frame++) {
-            /* buf is uchar*, charmap is int*, so no memcpy here, sorry */
+            /* copy charmap to buf. buf is uchar*, charmap is int*, so no memcpy here, sorry */
             for (a = 0; a < 1000; a++) {
                 buf[a] = charmap[a];
             }
+            /* advance pointers */
             buf += 0x400;
             req_size += 0x400;
 
+            /* compress and copy colram to buf */
             if(c->mc_use_5col) {
                 a64_compress_colram(buf,charmap,colram);
+                /* advance pointers */
                 buf += 0x100;
                 req_size += 0x100;
             }
