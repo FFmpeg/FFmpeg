@@ -797,7 +797,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
             dprintf(s, "ret=%d c=%02x [%c]\n", ret, ch, ch);
 #endif
             if (ret != 1)
-                return -1;
+                return AVERROR_EOF;
             if (ch == '\n')
                 break;
             if (ch == '$') {
@@ -1719,8 +1719,8 @@ redo:
         RTSPMessageHeader reply;
 
         ret = ff_rtsp_read_reply(s, &reply, NULL, 1);
-        if (ret == -1)
-            return -1;
+        if (ret < 0)
+            return ret;
         if (ret == 1) /* received '$' */
             break;
         /* XXX: parse message */
