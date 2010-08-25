@@ -33,15 +33,15 @@
 #define Y_DC_SCALE               0xa54
 #define C_DC_SCALE               0xa58
 #define AC_PRED                  0xa80
-#define BLOCK_LAST_INDEX         0x2164
-#define INTER_SCANTAB_RASTER_END 0x2364
+#define BLOCK_LAST_INDEX         0x2160
+#define INTER_SCANTAB_RASTER_END 0x2360
 #define H263_AIC                 0x2610
 #elif defined(__APPLE__)
 #define Y_DC_SCALE               0xa30
 #define C_DC_SCALE               0xa34
 #define AC_PRED                  0xa5c
-#define BLOCK_LAST_INDEX         0x2140
-#define INTER_SCANTAB_RASTER_END 0x2340
+#define BLOCK_LAST_INDEX         0x213c
+#define INTER_SCANTAB_RASTER_END 0x233c
 #define H263_AIC                 0x25e4
 #endif
 
