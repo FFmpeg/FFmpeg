@@ -1150,30 +1150,32 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 
 //Note: we have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
 //Plain C versions
-#if (!HAVE_MMX && !HAVE_ALTIVEC) || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_C 1
+#if CONFIG_RUNTIME_CPUDETECT
+#  define COMPILE_C 1
+#  if   ARCH_X86
+#    define COMPILE_MMX     HAVE_MMX
+#    define COMPILE_MMX2    HAVE_MMX2
+#    define COMPILE_3DNOW   HAVE_AMD3DNOW
+#  elif ARCH_PPC
+#    define COMPILE_ALTIVEC HAVE_ALTIVEC
+#  endif
+#else /* CONFIG_RUNTIME_CPUDETECT */
+#  if   ARCH_X86
+#    if   HAVE_MMX2
+#      define COMPILE_MMX2  1
+#    elif HAVE_AMD3DNOW
+#      define COMPILE_3DNOW 1
+#    elif HAVE_MMX
+#      define COMPILE_MMX   1
+#    else
+#      define COMPILE_C     1
+#    endif
+#  elif ARCH_PPC && HAVE_ALTIVEC
+#    define COMPILE_ALTIVEC 1
+#  else
+#    define COMPILE_C       1
+#  endif
 #endif
-
-#if ARCH_PPC
-#if HAVE_ALTIVEC
-#define COMPILE_ALTIVEC 1
-#endif
-#endif //ARCH_PPC
-
-#if ARCH_X86
-
-#if (HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_MMX 1
-#endif
-
-#if HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_MMX2 1
-#endif
-
-#if (HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_3DNOW 1
-#endif
-#endif //ARCH_X86
 
 #ifndef COMPILE_C
 #  define COMPILE_C 0
