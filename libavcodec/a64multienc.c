@@ -271,6 +271,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
     /* lifetime reached so now convert X frames at once */
     if (c->mc_frame_counter == c->mc_lifetime) {
+        req_size = 0;
         /* any frames to encode? */
         if(c->mc_lifetime) {
             /* calc optimal new charset + charmaps */
@@ -279,15 +280,8 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
             /* create colorram map and a c64 readable charset */
             render_charset(avctx, charset, colram);
-        }
-
-        req_size = 0;
 
             /* copy charset to buf */
-        //XXX this all should maybe move to the muxer? as well as teh chunked/not chunked thing?
-        /* either write charset as a whole (more comfy when playing from mem) */
-        /* copy charset chunk if exists */
-        if(c->mc_lifetime) {
             memcpy(buf,charset,0x800*(INTERLACED+1));
 
             /* advance pointers */
