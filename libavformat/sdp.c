@@ -94,10 +94,10 @@ static void resolve_destination(char *dest_addr, int size, char *type,
     memset(&hints, 0, sizeof(hints));
     if (getaddrinfo(dest_addr, NULL, &hints, &ai))
         return;
-        getnameinfo(ai->ai_addr, ai->ai_addrlen, dest_addr, size,
-                    NULL, 0, NI_NUMERICHOST);
-        if (ai->ai_family == AF_INET6)
-            av_strlcpy(type, "IP6", type_size);
+    getnameinfo(ai->ai_addr, ai->ai_addrlen, dest_addr, size,
+                NULL, 0, NI_NUMERICHOST);
+    if (ai->ai_family == AF_INET6)
+        av_strlcpy(type, "IP6", type_size);
     freeaddrinfo(ai);
 }
 #else
