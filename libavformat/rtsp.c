@@ -204,9 +204,21 @@ static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
 //    av_log(NULL, AV_LOG_DEBUG, "Range End: %lld\n", *end);
 }
 
+static int get_sockaddr(const char *buf, struct sockaddr_storage *sock)
+{
+    struct addrinfo hints, *ai = NULL;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_flags = AI_NUMERICHOST;
+    if (getaddrinfo(buf, NULL, &hints, &ai))
+        return -1;
+    memcpy(sock, ai->ai_addr, FFMIN(sizeof(*sock), ai->ai_addrlen));
+    freeaddrinfo(ai);
+    return 0;
+}
+
 typedef struct SDPParseState {
     /* SDP only */
-    struct in_addr default_ip;
+    struct sockaddr_storage default_ip;
     int            default_ttl;
     int            skip_media;  ///< set if an unknown m= line occurs
 } SDPParseState;
@@ -221,7 +233,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
     int payload_type, i;
     AVStream *st;
     RTSPStream *rtsp_st;
-    struct in_addr sdp_ip;
+    struct sockaddr_storage sdp_ip;
     int ttl;
 
     dprintf(s, "sdp: %c='%s'\n", letter, buf);
@@ -235,10 +247,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         if (strcmp(buf1, "IN") != 0)
             return;
         get_word(buf1, sizeof(buf1), &p);
-        if (strcmp(buf1, "IP4") != 0)
+        if (strcmp(buf1, "IP4") && strcmp(buf1, "IP6"))
             return;
         get_word_sep(buf1, sizeof(buf1), "/", &p);
-        if (ff_inet_aton(buf1, &sdp_ip) == 0)
+        if (get_sockaddr(buf1, &sdp_ip))
             return;
         ttl = 16;
         if (*p == '/') {
@@ -1171,7 +1183,7 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
                 port      = reply->transports[0].port_min;
                 ttl       = reply->transports[0].ttl;
             } else {
-                in        = rtsp_st->sdp_ip;
+                in        = ((struct sockaddr_in*)&rtsp_st->sdp_ip)->sin_addr;
                 port      = rtsp_st->sdp_port;
                 ttl       = rtsp_st->sdp_ttl;
             }
@@ -1996,10 +2008,10 @@ static int sdp_probe(AVProbeData *p1)
 {
     const char *p = p1->buf, *p_end = p1->buf + p1->buf_size;
 
-    /* we look for a line beginning "c=IN IP4" */
+    /* we look for a line beginning "c=IN IP" */
     while (p < p_end && *p != '\0') {
-        if (p + sizeof("c=IN IP4") - 1 < p_end &&
-            av_strstart(p, "c=IN IP4", NULL))
+        if (p + sizeof("c=IN IP") - 1 < p_end &&
+            av_strstart(p, "c=IN IP", NULL))
             return AVPROBE_SCORE_MAX / 2;
 
         while (p < p_end - 1 && *p != '\n') p++;
@@ -2037,10 +2049,13 @@ static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     /* open each RTP stream */
     for (i = 0; i < rt->nb_rtsp_streams; i++) {
+        char namebuf[50];
         rtsp_st = rt->rtsp_streams[i];
 
+        getnameinfo((struct sockaddr*) &rtsp_st->sdp_ip, sizeof(rtsp_st->sdp_ip),
+                    namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
         ff_url_join(url, sizeof(url), "rtp", NULL,
-                    inet_ntoa(rtsp_st->sdp_ip), rtsp_st->sdp_port,
+                    namebuf, rtsp_st->sdp_port,
                     "?localport=%d&ttl=%d", rtsp_st->sdp_port,
                     rtsp_st->sdp_ttl);
         if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
