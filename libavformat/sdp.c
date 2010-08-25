@@ -104,7 +104,8 @@ static void resolve_destination(char *dest_addr, int size, char *type,
     freeaddrinfo(ai);
 }
 #else
-static void resolve_destination(char *dest_addr, int size)
+static void resolve_destination(char *dest_addr, int size, char *type,
+                                int type_size)
 {
 }
 #endif
