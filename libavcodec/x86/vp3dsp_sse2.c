@@ -171,7 +171,6 @@ void ff_vp3_idct_sse2(int16_t *input_data)
         VP3_1D_IDCT_SSE2(ADD8, SHIFT4)
         PUT_BLOCK(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7)
         :: "r"(input_data), "r"(ff_vp3_idct_data), "m"(ff_pw_8)
-        : "%xmm6", "%xmm7"
     );
 }
 
