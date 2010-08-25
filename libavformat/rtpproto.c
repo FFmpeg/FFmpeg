@@ -373,6 +373,11 @@ static int rtp_get_file_handle(URLContext *h)
     return s->rtp_fd;
 }
 
+int rtp_get_rtcp_file_handle(URLContext *h) {
+    RTPContext *s = h->priv_data;
+    return s->rtcp_fd;
+}
+
 URLProtocol rtp_protocol = {
     "rtp",
     rtp_open,
