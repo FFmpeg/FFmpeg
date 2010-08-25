@@ -511,6 +511,11 @@ CAVS_MC(put_, 16)
 CAVS_MC(avg_, 8)
 CAVS_MC(avg_, 16)
 
+#define ff_put_cavs_qpel8_mc00_c  ff_put_pixels8x8_c
+#define ff_avg_cavs_qpel8_mc00_c  ff_avg_pixels8x8_c
+#define ff_put_cavs_qpel16_mc00_c ff_put_pixels16x16_c
+#define ff_avg_cavs_qpel16_mc00_c ff_avg_pixels16x16_c
+
 av_cold void ff_cavsdsp_init(CAVSDSPContext* c, AVCodecContext *avctx) {
 #define dspfunc(PFX, IDX, NUM) \
     c->PFX ## _pixels_tab[IDX][ 0] = ff_ ## PFX ## NUM ## _mc00_c; \

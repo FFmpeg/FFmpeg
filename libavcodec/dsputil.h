@@ -82,6 +82,11 @@ extern const uint8_t ff_zigzag248_direct[64];
 extern uint32_t ff_squareTbl[512];
 extern uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
 
+void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride);
+
 /* VP3 DSP functions */
 void ff_vp3_idct_c(DCTELEM *block/* align 16*/);
 void ff_vp3_idct_put_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
@@ -95,16 +100,6 @@ void ff_vp3_h_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 void ff_bink_idct_c    (DCTELEM *block);
 void ff_bink_idct_add_c(uint8_t *dest, int linesize, DCTELEM *block);
 void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
-
-/* CAVS functions */
-void ff_put_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_put_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride);
-
-/* VC1 functions */
-void ff_put_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd);
-void ff_avg_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd);
 
 /* EA functions */
 void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);

@@ -1161,7 +1161,7 @@ CALL_2X_PIXELS(OPNAME ## _pixels16_c  , OPNAME ## _pixels8_c  , 8)\
 CALL_2X_PIXELS(OPNAME ## _pixels16_x2_c , OPNAME ## _pixels8_x2_c , 8)\
 CALL_2X_PIXELS(OPNAME ## _pixels16_y2_c , OPNAME ## _pixels8_y2_c , 8)\
 CALL_2X_PIXELS(OPNAME ## _pixels16_xy2_c, OPNAME ## _pixels8_xy2_c, 8)\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_c  , OPNAME ## _pixels8_c         , 8)\
+av_unused CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_c  , OPNAME ## _pixels8_c         , 8)\
 CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_x2_c , OPNAME ## _no_rnd_pixels8_x2_c , 8)\
 CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_y2_c , OPNAME ## _no_rnd_pixels8_y2_c , 8)\
 CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_xy2_c, OPNAME ## _no_rnd_pixels8_xy2_c, 8)\
@@ -1174,6 +1174,9 @@ PIXOP2(avg, op_avg)
 PIXOP2(put, op_put)
 #undef op_avg
 #undef op_put
+
+#define put_no_rnd_pixels8_c  put_pixels8_c
+#define put_no_rnd_pixels16_c put_pixels16_c
 
 #define avg2(a,b) ((a+b+1)>>1)
 #define avg4(a,b,c,d) ((a+b+c+d+2)>>2)
@@ -1757,10 +1760,6 @@ static void OPNAME ## mpeg4_qpel16_v_lowpass(uint8_t *dst, uint8_t *src, int dst
     }\
 }\
 \
-static void OPNAME ## qpel8_mc00_c (uint8_t *dst, uint8_t *src, int stride){\
-    OPNAME ## pixels8_c(dst, src, stride, 8);\
-}\
-\
 static void OPNAME ## qpel8_mc10_c(uint8_t *dst, uint8_t *src, int stride){\
     uint8_t half[64];\
     put ## RND ## mpeg4_qpel8_h_lowpass(half, src, 8, stride, 8);\
@@ -1938,9 +1937,6 @@ static void OPNAME ## qpel8_mc22_c(uint8_t *dst, uint8_t *src, int stride){\
     uint8_t halfH[72];\
     put ## RND ## mpeg4_qpel8_h_lowpass(halfH, src, 8, stride, 9);\
     OPNAME ## mpeg4_qpel8_v_lowpass(dst, halfH, stride, 8);\
-}\
-static void OPNAME ## qpel16_mc00_c (uint8_t *dst, uint8_t *src, int stride){\
-    OPNAME ## pixels16_c(dst, src, stride, 16);\
 }\
 \
 static void OPNAME ## qpel16_mc10_c(uint8_t *dst, uint8_t *src, int stride){\
@@ -2135,6 +2131,13 @@ QPEL_MC(0, avg_       , _       , op_avg)
 #undef op_avg_no_rnd
 #undef op_put
 #undef op_put_no_rnd
+
+#define put_qpel8_mc00_c  ff_put_pixels8x8_c
+#define avg_qpel8_mc00_c  ff_avg_pixels8x8_c
+#define put_qpel16_mc00_c ff_put_pixels16x16_c
+#define avg_qpel16_mc00_c ff_avg_pixels16x16_c
+#define put_no_rnd_qpel8_mc00_c  ff_put_pixels8x8_c
+#define put_no_rnd_qpel16_mc00_c ff_put_pixels16x16_c
 
 #if 1
 #define H264_LOWPASS(OPNAME, OP, OP2) \
@@ -2402,7 +2405,7 @@ static void OPNAME ## h264_qpel16_hv_lowpass(uint8_t *dst, int16_t *tmp, uint8_t
 }\
 
 #define H264_MC(OPNAME, SIZE) \
-static void OPNAME ## h264_qpel ## SIZE ## _mc00_c (uint8_t *dst, uint8_t *src, int stride){\
+static av_unused void OPNAME ## h264_qpel ## SIZE ## _mc00_c (uint8_t *dst, uint8_t *src, int stride){\
     OPNAME ## pixels ## SIZE ## _c(dst, src, stride, SIZE);\
 }\
 \
@@ -2560,6 +2563,11 @@ H264_MC(avg_, 16)
 #undef op2_put
 #endif
 
+#define put_h264_qpel8_mc00_c  ff_put_pixels8x8_c
+#define avg_h264_qpel8_mc00_c  ff_avg_pixels8x8_c
+#define put_h264_qpel16_mc00_c ff_put_pixels16x16_c
+#define avg_h264_qpel16_mc00_c ff_avg_pixels16x16_c
+
 static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int i;
@@ -2578,31 +2586,18 @@ static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int
     }
 }
 
-#if CONFIG_CAVS_DECODER
-/* AVS specific */
-void ff_put_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
+void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride) {
     put_pixels8_c(dst, src, stride, 8);
 }
-void ff_avg_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
+void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride) {
     avg_pixels8_c(dst, src, stride, 8);
 }
-void ff_put_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
+void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride) {
     put_pixels16_c(dst, src, stride, 16);
 }
-void ff_avg_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
+void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride) {
     avg_pixels16_c(dst, src, stride, 16);
 }
-#endif /* CONFIG_CAVS_DECODER */
-
-#if CONFIG_VC1_DECODER
-/* VC-1 specific */
-void ff_put_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    put_pixels8_c(dst, src, stride, 8);
-}
-void ff_avg_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
-    avg_pixels8_c(dst, src, stride, 8);
-}
-#endif /* CONFIG_VC1_DECODER */
 
 #if CONFIG_RV40_DECODER
 static void put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride){
@@ -2646,10 +2641,6 @@ static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int
         src++;
         dst++;
     }
-}
-
-static void put_mspel8_mc00_c (uint8_t *dst, uint8_t *src, int stride){
-    put_pixels8_c(dst, src, stride, 8);
 }
 
 static void put_mspel8_mc10_c(uint8_t *dst, uint8_t *src, int stride){
@@ -4363,7 +4354,7 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->avg_rv40_qpel_pixels_tab[1][15] = avg_rv40_qpel8_mc33_c;
 #endif
 
-    c->put_mspel_pixels_tab[0]= put_mspel8_mc00_c;
+    c->put_mspel_pixels_tab[0]= ff_put_pixels8x8_c;
     c->put_mspel_pixels_tab[1]= put_mspel8_mc10_c;
     c->put_mspel_pixels_tab[2]= put_mspel8_mc20_c;
     c->put_mspel_pixels_tab[3]= put_mspel8_mc30_c;
