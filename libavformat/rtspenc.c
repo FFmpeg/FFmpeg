@@ -85,7 +85,7 @@ static int tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
         size -= 4;
         if (packet_len > size || packet_len < 2)
             break;
-        if (ptr[1] >= 200 && ptr[1] <= 204)
+        if (ptr[1] >= RTCP_SR && ptr[1] <= RTCP_APP)
             id = rtsp_st->interleaved_max; /* RTCP */
         else
             id = rtsp_st->interleaved_min; /* RTP */
