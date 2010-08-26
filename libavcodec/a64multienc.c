@@ -33,7 +33,6 @@
 #define DITHERSTEPS   8
 #define CHARSET_CHARS 256
 #define INTERLACED    1
-#define LIFETIME      4
 
 /* gray gradient */
 static const int mc_colors[5]={0x0,0xb,0xc,0xf,0x1};
@@ -241,7 +240,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     int a;
 
     int req_size;
-    int num_frames = LIFETIME;
+    int num_frames = c->mc_lifetime;
 
     int *charmap         = c->mc_charmap;
     uint8_t *colram      = c->mc_colram;
