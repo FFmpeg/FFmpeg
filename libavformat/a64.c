@@ -45,12 +45,12 @@ static int a64_write_header(struct AVFormatContext *s)
     switch (avctx->codec->id) {
     case CODEC_ID_A64_MULTI:
         header[2] = 0x00;
-        header[3] = 4;
+        header[3] = AV_RB32(avctx->extradata+0);
         header[4] = 2;
         break;
     case CODEC_ID_A64_MULTI5:
         header[2] = 0x01;
-        header[3] = 4;
+        header[3] = AV_RB32(avctx->extradata+0);
         header[4] = 3;
         break;
     default:
