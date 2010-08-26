@@ -578,6 +578,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             }
         }
 
+        flush_put_bits(&pb);
         dst += put_bits_count(&pb)>>3;
         break;
     }
