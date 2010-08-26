@@ -1845,6 +1845,7 @@ elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
         --configure_sysroot="$sysroot"        \
         --configure_cpp_headers="$sysinclude" >>$logfile 2>&1 ||
         die "Error creating armcc configuration file."
+    $cc --vsn | grep -q RVCT && armcc_opt=rvct || armcc_opt=armcc
     cc="$cc --arm_linux_config_file=$armcc_conf --translate_gcc"
     as_default="${cross_prefix}gcc"
     CC_DEPFLAGS='-MMD'
@@ -2877,8 +2878,8 @@ elif enabled clang; then
     check_cflags -Qunused-arguments
 elif enabled armcc; then
     # 2523: use of inline assembler is deprecated
-    add_cflags -Wrvct,--diag_suppress=2523
-    add_cflags -Wrvct,--diag_suppress=1207
+    add_cflags -W${armcc_opt},--diag_suppress=2523
+    add_cflags -W${armcc_opt},--diag_suppress=1207
 elif enabled tms470; then
     add_cflags -pds=824 -pds=837
 fi
