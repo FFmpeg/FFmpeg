@@ -2569,9 +2569,10 @@ EOF
     case "$objformat" in
         elf) enabled debug && append YASMFLAGS "-g dwarf2" ;;
     esac
-    if ! disabled yasm; then
+    if ! disabled_any asm mmx yasm; then
         check_yasm "pabsw xmm0, xmm0" && enable yasm ||
-            warn "yasm not found, performance will suffer"
+            die "yasm not found, performance will suffer. " \
+            "If you really want to compile without yasm, configure with --disable-yasm."
     fi
 
     case "$cpu" in
