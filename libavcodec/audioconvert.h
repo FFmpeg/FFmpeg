@@ -60,6 +60,11 @@ enum SampleFormat avcodec_get_sample_fmt(const char* name);
 const char *avcodec_get_channel_name(int channel_id);
 
 /**
+ * @return channel layout that matches name, 0 if no match
+ */
+int64_t avcodec_get_channel_layout(const char *name);
+
+/**
  * Return description of channel layout
  */
 void avcodec_get_channel_layout_string(char *buf, int buf_size, int nb_channels, int64_t channel_layout);

@@ -121,6 +121,18 @@ static const struct {
     { 0 }
 };
 
+int64_t avcodec_get_channel_layout(const char *name)
+{
+    int i = 0;
+    do {
+        if (!strcmp(channel_layout_map[i].name, name))
+            return channel_layout_map[i].layout;
+        i++;
+    } while (channel_layout_map[i].name);
+
+    return 0;
+}
+
 void avcodec_get_channel_layout_string(char *buf, int buf_size, int nb_channels, int64_t channel_layout)
 {
     int i;
