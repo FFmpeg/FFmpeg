@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-08-26 - r24936 - lavc 52.87.0 - avcodec_get_channel_layout()
+  Add avcodec_get_channel_layout() in audioconvert.h.
+
 2010-08-20 - r24851 - lavcore 0.6.0 - av_fill_image_max_pixsteps()
   Rename av_fill_image_max_pixstep() to av_fill_image_max_pixsteps().
 
