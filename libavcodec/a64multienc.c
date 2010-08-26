@@ -291,15 +291,15 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
             render_charset(avctx, charset, colram);
 
             /* copy charset to buf */
-            memcpy(buf,charset,0x800*(INTERLACED+1));
+            memcpy(buf,charset, charset_size);
 
             /* advance pointers */
-            buf      += 0x800*(INTERLACED+1);
-            charset  += 0x800*(INTERLACED+1);
-            req_size += 0x800*(INTERLACED+1);
+            buf      += charset_size;
+            charset  += charset_size;
+            req_size += charset_size;
         }
         /* no charset so clean buf */
-        else memset(buf,0,0x800*(INTERLACED+1));
+        else memset(buf, 0, charset_size);
 
         /* write x frames to buf */
         for (frame = 0; frame < c->mc_lifetime; frame++) {
@@ -308,15 +308,15 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
                 buf[a] = charmap[a];
             }
             /* advance pointers */
-            buf += 0x400;
-            req_size += 0x400;
+            buf += screen_size;
+            req_size += screen_size;
 
             /* compress and copy colram to buf */
             if(c->mc_use_5col) {
                 a64_compress_colram(buf,charmap,colram);
                 /* advance pointers */
-                buf += 0x100;
-                req_size += 0x100;
+                buf += colram_size;
+                req_size += colram_size;
             }
 
             /* advance to next charmap */
