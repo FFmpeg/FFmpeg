@@ -199,6 +199,12 @@ static av_cold int a64multi_init_encoder(AVCodecContext *avctx)
     c->mc_colram        = av_mallocz(CHARSET_CHARS * sizeof(uint8_t));
     c->mc_charset       = av_malloc (0x800 * (INTERLACED+1) * sizeof(uint8_t));
 
+    /* set up extradata */
+    avctx->extradata      = av_mallocz(8 * 4 + FF_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata_size = 8 * 4;
+    AV_WB32(avctx->extradata, c->mc_lifetime);
+    AV_WB32(avctx->extradata+16, INTERLACED);
+
     avcodec_get_frame_defaults(&c->picture);
     avctx->coded_frame            = &c->picture;
     avctx->coded_frame->pict_type = FF_I_TYPE;
@@ -242,6 +248,10 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     uint8_t *charset     = c->mc_charset;
     int *meta            = c->mc_meta_charset;
     int *best_cb         = c->mc_best_cb;
+
+    int charset_size = 0x800 * (INTERLACED + 1);
+    int screen_size  = 0x400;
+    int colram_size  = 0x100 * c->mc_use_5col;
 
     /* no data, means end encoding asap */
     if (!data) {
@@ -313,6 +323,10 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
             /* advance to next charmap */
             charmap += 1000;
         }
+
+        AV_WB32(avctx->extradata+4,  c->mc_frame_counter);
+        AV_WB32(avctx->extradata+8,  charset_size);
+        AV_WB32(avctx->extradata+12, screen_size + colram_size);
 
         /* reset counter */
         c->mc_frame_counter = 0;
