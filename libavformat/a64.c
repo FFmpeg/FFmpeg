@@ -32,7 +32,7 @@ typedef struct A64MuxerContext {
 
 static int a64_write_header(struct AVFormatContext *s)
 {
-    AVCodecContext *avctx=s->streams[0]->codec;
+    AVCodecContext *avctx = s->streams[0]->codec;
     A64MuxerContext *c = s->priv_data;
     uint8_t header[5] = {
         0x00, //load
@@ -111,16 +111,16 @@ static int a64_write_packet(struct AVFormatContext *s, AVPacket *pkt)
                     put_buffer(s->pb, pkt->data + ch_chunksize * i, ch_chunksize);
                 }
                 else {
-                       /* a bit ugly, but is there an alternative to put many zeros? */
-                        for(j = 0; j < ch_chunksize; j++) put_byte(s->pb, 0);
+                    /* a bit ugly, but is there an alternative to put many zeros? */
+                    for(j = 0; j < ch_chunksize; j++) put_byte(s->pb, 0);
                 }
                 if(c->prev_pkt.data) {
                     /* put frame (screen + colram) from last packet into buffer */
                     put_buffer(s->pb, c->prev_pkt.data + charset_size + frame_size * i, frame_size);
                 }
                 else {
-                       /* a bit ugly, but is there an alternative to put many zeros? */
-                        for(j = 0; j < frame_size; j++) put_byte(s->pb, 0);
+                    /* a bit ugly, but is there an alternative to put many zeros? */
+                    for(j = 0; j < frame_size; j++) put_byte(s->pb, 0);
                 }
             }
             /* backup current packet for next turn */
