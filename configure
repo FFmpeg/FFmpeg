@@ -2231,6 +2231,8 @@ esac
 enable $subarch
 enabled spic && enable pic
 
+echo "config:$arch:$subarch:$cpu:$target_os:$cc_ident:$FFMPEG_CONFIGURATION" >config.fate
+
 # OS specific
 case $target_os in
     haiku)
@@ -3205,8 +3207,6 @@ print_config AV_HAVE_ $TMPH /dev/null $HAVE_LIST_PUB
 echo "#endif /* AVUTIL_AVCONFIG_H */" >> $TMPH
 
 cp_if_changed $TMPH libavutil/avconfig.h
-
-echo "config:$arch:$subarch:$cpu:$target_os:$cc_ident:$FFMPEG_CONFIGURATION" >config.fate
 
 test -n "$WARNINGS" && printf "\n$WARNINGS"
 
