@@ -48,8 +48,8 @@ SECTION .text
     movq          m5, m2
     punpcklbw     m1, m7
     punpcklbw     m2, m7
-    punpcklbw     m4, m7
-    punpcklbw     m5, m7
+    punpckhbw     m4, m7
+    punpckhbw     m5, m7
     pmullw        m1, [rsp+8*13] ; src[x+8 ] * biweight [2]
     pmullw        m2, [rsp+8*14] ; src[x+16] * biweight [3]
     pmullw        m4, [rsp+8*13] ; src[x+8 ] * biweight [2]
@@ -95,13 +95,13 @@ SECTION .text
     punpckldq    m3, m3
     punpckhdq    m4, m4
     punpckhwd    m5, m5
-    movq         m6, m5
-    punpckhdq    m6, m6
+    movq         m2, m5
+    punpckhdq    m2, m2
     punpckldq    m5, m5
     movq [rsp+8*11], m3
     movq [rsp+8*12], m4
     movq [rsp+8*13], m5
-    movq [rsp+8*14], m6
+    movq [rsp+8*14], m2
 %endmacro
 
 %macro SPLAT4REGS_SSE2 0
