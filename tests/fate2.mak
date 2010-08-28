@@ -191,3 +191,5 @@ fate-fax-g3: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31D.TIF
 FATE_TESTS += fate-fax-g3s
 fate-fax-g3s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31DS.TIF
 
+FATE_TESTS += fate-ws_snd
+fate-ws_snd: CMD = md5  -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
