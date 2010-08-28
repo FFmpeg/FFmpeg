@@ -214,7 +214,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
 {
     int i, port, err;
     char httpname[256], path[256], host[128], location[1024];
-    char *stream_selection;
+    char *stream_selection = NULL;
     char headers[1024];
     MMSHContext *mmsh;
     MMSContext *mms;
