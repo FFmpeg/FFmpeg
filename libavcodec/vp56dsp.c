@@ -84,7 +84,7 @@ void ff_vp56dsp_init(VP56DSPContext *s, enum CodecID codec)
         s->edge_filter_ver = vp6_edge_filter_ver;
 
         if (CONFIG_VP6_DECODER) {
-            s->vp6_filter_diag4= ff_vp6_filter_diag4_c;
+            s->vp6_filter_diag4 = ff_vp6_filter_diag4_c;
         }
     }
 
