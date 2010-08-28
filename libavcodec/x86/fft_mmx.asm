@@ -532,20 +532,15 @@ INIT_XMM
     unpckhps xmm0, xmm2
 %endmacro
 
-%macro PREROTATEW 3 ;addr1, addr2, xmm
-    movlps   %1,   %3
-    movhps   %2,   %3
-%endmacro
-
 %macro CMUL 6 ;j, xmm0, xmm1, 3, 4, 5
     movaps   xmm6, [%4+%1*2]
     movaps   %2,   [%4+%1*2+0x10]
     movaps   %3,   xmm6
     movaps   xmm7, %2
-    mulps    xmm6, [%5+%1*1]
-    mulps    %2,   [%6+%1*1]
-    mulps    %3,   [%6+%1*1]
-    mulps    xmm7, [%5+%1*1]
+    mulps    xmm6, [%5+%1]
+    mulps    %2,   [%6+%1]
+    mulps    %3,   [%6+%1]
+    mulps    xmm7, [%5+%1]
     subps    %2,   xmm6
     addps    %3,   xmm7
 %endmacro
@@ -576,8 +571,6 @@ cglobal imdct_half_sse, 3,7,8; FFTContext *s, FFTSample *output, const FFTSample
 %define rrevtab r10
 %define rtcos   r11
 %define rtsin   r12
-    push  r10
-    push  r11
     push  r12
     push  r13
     push  r14
@@ -620,21 +613,25 @@ cglobal imdct_half_sse, 3,7,8; FFTContext *s, FFTSample *output, const FFTSample
 
     PREROTATER r4, r3, r2, rtcos, rtsin
 %ifdef ARCH_X86_64
-    movzx  r5,  word [rrevtab+r4*1-4]
-    movzx  r6,  word [rrevtab+r4*1-2]
-    movzx  r13, word [rrevtab+r3*1]
-    movzx  r14, word [rrevtab+r3*1+2]
-    PREROTATEW [r1+r5 *8], [r1+r6 *8], xmm0
-    PREROTATEW [r1+r13*8], [r1+r14*8], xmm1
+    movzx  r5,  word [rrevtab+r4-4]
+    movzx  r6,  word [rrevtab+r4-2]
+    movzx  r13, word [rrevtab+r3]
+    movzx  r14, word [rrevtab+r3+2]
+    movlps [r1+r5 *8], xmm0
+    movhps [r1+r6 *8], xmm0
+    movlps [r1+r13*8], xmm1
+    movhps [r1+r14*8], xmm1
     add    r4, 4
 %else
     mov    r6, [esp]
-    movzx  r5, word [r6+r4*1-4]
-    movzx  r4, word [r6+r4*1-2]
-    PREROTATEW [r1+r5*8], [r1+r4*8], xmm0
-    movzx  r5, word [r6+r3*1]
-    movzx  r4, word [r6+r3*1+2]
-    PREROTATEW [r1+r5*8], [r1+r4*8], xmm1
+    movzx  r5, word [r6+r4-4]
+    movzx  r4, word [r6+r4-2]
+    movlps [r1+r5*8], xmm0
+    movhps [r1+r4*8], xmm0
+    movzx  r5, word [r6+r3]
+    movzx  r4, word [r6+r3+2]
+    movlps [r1+r5*8], xmm1
+    movhps [r1+r4*8], xmm1
 %endif
     sub    r3, 4
     jns    .pre
@@ -663,8 +660,6 @@ cglobal imdct_half_sse, 3,7,8; FFTContext *s, FFTSample *output, const FFTSample
     pop  r14
     pop  r13
     pop  r12
-    pop  r11
-    pop  r10
 %else
     add esp, 12
 %endif
