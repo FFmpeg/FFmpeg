@@ -184,3 +184,15 @@ fate-txd-16bpp: CMD = framecrc -i $(SAMPLES)/txd/misc.txd -pix_fmt bgra -an
 
 FATE_TESTS += fate-vp3
 fate-vp3: CMD = framecrc -i $(SAMPLES)/vp3/vp31.avi
+
+FATE_TESTS += fate-fax-g3
+fate-fax-g3: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31D.TIF
+
+FATE_TESTS += fate-fax-g3s
+fate-fax-g3s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31DS.TIF
+
+FATE_TESTS += fate-fax-g4
+fate-fax-g4: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G4.TIF
+
+FATE_TESTS += fate-fax-g4s
+fate-fax-g4s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G4S.TIF
