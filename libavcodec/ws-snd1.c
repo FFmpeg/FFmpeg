@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
@@ -31,8 +32,8 @@
  * http://www.multimedia.cx
  */
 
-static const char ws_adpcm_2bit[] = { -2, -1, 0, 1};
-static const char ws_adpcm_4bit[] = {
+static const int8_t ws_adpcm_2bit[] = { -2, -1, 0, 1};
+static const int8_t ws_adpcm_4bit[] = {
     -9, -8, -6, -5, -4, -3, -2, -1,
      0,  1,  2,  3,  4,  5,  6,  8 };
 
@@ -120,7 +121,7 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
             break;
         case 2: /* no compression */
             if (count & 0x20) { /* big delta */
-                char t;
+                int8_t t;
                 t = count;
                 t <<= 3;
                 sample += t >> 3;
