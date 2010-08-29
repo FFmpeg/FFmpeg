@@ -241,50 +241,6 @@ int ff_raw_video_read_header(AVFormatContext *s,
 }
 #endif
 
-#if CONFIG_H263_DEMUXER
-static int h263_probe(AVProbeData *p)
-{
-    uint64_t code= -1;
-    int i;
-    int valid_psc=0;
-    int invalid_psc=0;
-    int res_change=0;
-    int src_fmt, last_src_fmt=-1;
-    int last_gn=0;
-
-    for(i=0; i<p->buf_size; i++){
-        code = (code<<8) + p->buf[i];
-        if ((code & 0xfffffc0000) == 0x800000) {
-            src_fmt= (code>>2)&3;
-            if(   src_fmt != last_src_fmt
-               && last_src_fmt>0 && last_src_fmt<6
-               && src_fmt<6)
-                res_change++;
-
-            if((code&0x300)==0x200 && src_fmt){
-                valid_psc++;
-                last_gn=0;
-            }else
-                invalid_psc++;
-            last_src_fmt= src_fmt;
-        } else if((code & 0xffff800000) == 0x800000) {
-            int gn= (code>>(23-5)) & 0x1F;
-            if(gn<last_gn){
-                invalid_psc++;
-            }else
-                last_gn= gn;
-        }
-    }
-//av_log(NULL, AV_LOG_ERROR, "h263_probe: psc:%d invalid:%d res_change:%d\n", valid_psc, invalid_psc, res_change);
-//h263_probe: psc:3 invalid:0 res_change:0 (1588/recent_ffmpeg_parses_mpg_incorrectly.mpg)
-    if(valid_psc > 2*invalid_psc + 2*res_change + 3){
-        return 50;
-    }else if(valid_psc > 2*invalid_psc)
-        return 25;
-    return 0;
-}
-#endif
-
 #if CONFIG_H261_DEMUXER
 static int h261_probe(AVProbeData *p)
 {
@@ -583,20 +539,6 @@ AVOutputFormat h261_muxer = {
     NULL,
     ff_raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
-};
-#endif
-
-#if CONFIG_H263_DEMUXER
-AVInputFormat h263_demuxer = {
-    "h263",
-    NULL_IF_CONFIG_SMALL("raw H.263"),
-    0,
-    h263_probe,
-    ff_raw_video_read_header,
-    ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-//    .extensions = "h263", //FIXME remove after writing mpeg4_probe
-    .value = CODEC_ID_H263,
 };
 #endif
 
