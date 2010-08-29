@@ -31,4 +31,6 @@ int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt);
 
 int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt);
 
+int ff_raw_audio_read_header(AVFormatContext *s, AVFormatParameters *ap);
+
 #endif /* AVFORMAT_RAW_H */
