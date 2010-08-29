@@ -1653,7 +1653,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
     fd_set rfds;
-    int fd, fd_max, n, i, ret, tcp_fd, timeout_cnt = 0;
+    int fd, fd_rtcp, fd_max, n, i, ret, tcp_fd, timeout_cnt = 0;
     struct timeval tv;
 
     for (;;) {
@@ -1670,12 +1670,12 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         for (i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
             if (rtsp_st->rtp_handle) {
-                /* currently, we cannot probe RTCP handle because of
-                 * blocking restrictions */
                 fd = url_get_file_handle(rtsp_st->rtp_handle);
-                if (fd > fd_max)
-                    fd_max = fd;
+                fd_rtcp = rtp_get_rtcp_file_handle(rtsp_st->rtp_handle);
+                if (FFMAX(fd, fd_rtcp) > fd_max)
+                    fd_max = FFMAX(fd, fd_rtcp);
                 FD_SET(fd, &rfds);
+                FD_SET(fd_rtcp, &rfds);
             }
         }
         tv.tv_sec = 0;
@@ -1687,7 +1687,8 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                 rtsp_st = rt->rtsp_streams[i];
                 if (rtsp_st->rtp_handle) {
                     fd = url_get_file_handle(rtsp_st->rtp_handle);
-                    if (FD_ISSET(fd, &rfds)) {
+                    fd_rtcp = rtp_get_rtcp_file_handle(rtsp_st->rtp_handle);
+                    if (FD_ISSET(fd_rtcp, &rfds) || FD_ISSET(fd, &rfds)) {
                         ret = url_read(rtsp_st->rtp_handle, buf, buf_size);
                         if (ret > 0) {
                             *prtsp_st = rtsp_st;
