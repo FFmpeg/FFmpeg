@@ -162,44 +162,6 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 #endif
 
-#if CONFIG_INGENIENT_DEMUXER
-// http://www.artificis.hu/files/texts/ingenient.txt
-static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    int ret, size, w, h, unk1, unk2;
-
-    if (get_le32(s->pb) != MKTAG('M', 'J', 'P', 'G'))
-        return AVERROR(EIO); // FIXME
-
-    size = get_le32(s->pb);
-
-    w = get_le16(s->pb);
-    h = get_le16(s->pb);
-
-    url_fskip(s->pb, 8); // zero + size (padded?)
-    url_fskip(s->pb, 2);
-    unk1 = get_le16(s->pb);
-    unk2 = get_le16(s->pb);
-    url_fskip(s->pb, 22); // ASCII timestamp
-
-    av_log(s, AV_LOG_DEBUG, "Ingenient packet: size=%d, width=%d, height=%d, unk1=%d unk2=%d\n",
-        size, w, h, unk1, unk2);
-
-    if (av_new_packet(pkt, size) < 0)
-        return AVERROR(ENOMEM);
-
-    pkt->pos = url_ftell(s->pb);
-    pkt->stream_index = 0;
-    ret = get_buffer(s->pb, pkt->data, size);
-    if (ret < 0) {
-        av_free_packet(pkt);
-        return ret;
-    }
-    pkt->size = ret;
-    return ret;
-}
-#endif
-
 #if CONFIG_DEMUXERS
 int pcm_read_seek(AVFormatContext *s,
                   int stream_index, int64_t timestamp, int flags)
@@ -248,7 +210,7 @@ int ff_raw_audio_read_header(AVFormatContext *s,
 }
 
 /* MPEG-1/H.263 input */
-static int video_read_header(AVFormatContext *s,
+int ff_raw_video_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
     AVStream *st;
@@ -642,7 +604,7 @@ AVInputFormat dirac_demuxer = {
     NULL_IF_CONFIG_SMALL("raw Dirac"),
     0,
     dirac_probe,
-    video_read_header,
+    ff_raw_video_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .value = CODEC_ID_DIRAC,
@@ -670,7 +632,7 @@ AVInputFormat dnxhd_demuxer = {
     NULL_IF_CONFIG_SMALL("raw DNxHD (SMPTE VC-3)"),
     0,
     dnxhd_probe,
-    video_read_header,
+    ff_raw_video_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .value = CODEC_ID_DNXHD,
@@ -756,7 +718,7 @@ AVInputFormat h261_demuxer = {
     NULL_IF_CONFIG_SMALL("raw H.261"),
     0,
     h261_probe,
-    video_read_header,
+    ff_raw_video_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "h261",
@@ -785,7 +747,7 @@ AVInputFormat h263_demuxer = {
     NULL_IF_CONFIG_SMALL("raw H.263"),
     0,
     h263_probe,
-    video_read_header,
+    ff_raw_video_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
 //    .extensions = "h263", //FIXME remove after writing mpeg4_probe
@@ -814,7 +776,7 @@ AVInputFormat h264_demuxer = {
     NULL_IF_CONFIG_SMALL("raw H.264 video format"),
     0,
     h264_probe,
-    video_read_header,
+    ff_raw_video_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "h26l,h264,264", //FIXME remove after writing mpeg4_probe
@@ -852,27 +814,13 @@ AVOutputFormat cavsvideo_muxer = {
 };
 #endif
 
-#if CONFIG_INGENIENT_DEMUXER
-AVInputFormat ingenient_demuxer = {
-    "ingenient",
-    NULL_IF_CONFIG_SMALL("raw Ingenient MJPEG"),
-    0,
-    NULL,
-    video_read_header,
-    ingenient_read_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "cgi", // FIXME
-    .value = CODEC_ID_MJPEG,
-};
-#endif
-
 #if CONFIG_M4V_DEMUXER
 AVInputFormat m4v_demuxer = {
     "m4v",
     NULL_IF_CONFIG_SMALL("raw MPEG-4 video format"),
     0,
     mpeg4video_probe, /** probing for MPEG-4 data */
-    video_read_header,
+    ff_raw_video_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "m4v",
@@ -901,7 +849,7 @@ AVInputFormat mjpeg_demuxer = {
     NULL_IF_CONFIG_SMALL("raw MJPEG video"),
     0,
     NULL,
-    video_read_header,
+    ff_raw_video_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "mjpg,mjpeg",
@@ -1030,7 +978,7 @@ AVInputFormat mpegvideo_demuxer = {
     NULL_IF_CONFIG_SMALL("raw MPEG video"),
     0,
     mpegvideo_probe,
-    video_read_header,
+    ff_raw_video_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .value = CODEC_ID_MPEG1VIDEO,
@@ -1043,7 +991,7 @@ AVInputFormat cavsvideo_demuxer = {
     NULL_IF_CONFIG_SMALL("raw Chinese AVS video"),
     0,
     cavsvideo_probe,
-    video_read_header,
+    ff_raw_video_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .value = CODEC_ID_CAVS,
@@ -1114,7 +1062,7 @@ AVInputFormat vc1_demuxer = {
     NULL_IF_CONFIG_SMALL("raw VC-1"),
     0,
     NULL /* vc1_probe */,
-    video_read_header,
+    ff_raw_video_read_header,
     ff_raw_read_partial_packet,
     .extensions = "vc1",
     .value = CODEC_ID_VC1,
