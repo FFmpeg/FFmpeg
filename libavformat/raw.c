@@ -1114,11 +1114,7 @@ AVOutputFormat null_muxer = {
     NULL,
     NULL,
     0,
-#if HAVE_BIGENDIAN
-    CODEC_ID_PCM_S16BE,
-#else
-    CODEC_ID_PCM_S16LE,
-#endif
+    AV_NE(CODEC_ID_PCM_S16BE, CODEC_ID_PCM_S16LE),
     CODEC_ID_RAWVIDEO,
     NULL,
     null_write_packet,
