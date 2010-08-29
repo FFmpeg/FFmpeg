@@ -20,12 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/get_bits.h"
-#include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "raw.h"
-#include "id3v2.h"
-#include "id3v1.h"
 
 /* simple formats */
 
