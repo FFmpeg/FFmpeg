@@ -25,13 +25,6 @@
 
 /* simple formats */
 
-#if CONFIG_NULL_MUXER
-static int null_write_packet(struct AVFormatContext *s, AVPacket *pkt)
-{
-    return 0;
-}
-#endif
-
 #if CONFIG_MUXERS
 int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -527,21 +520,6 @@ AVOutputFormat mpeg2video_muxer = {
     NULL,
     ff_raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
-};
-#endif
-
-#if CONFIG_NULL_MUXER
-AVOutputFormat null_muxer = {
-    "null",
-    NULL_IF_CONFIG_SMALL("raw null video format"),
-    NULL,
-    NULL,
-    0,
-    AV_NE(CODEC_ID_PCM_S16BE, CODEC_ID_PCM_S16LE),
-    CODEC_ID_RAWVIDEO,
-    NULL,
-    null_write_packet,
-    .flags = AVFMT_NOFILE | AVFMT_RAWPICTURE | AVFMT_NOTIMESTAMPS,
 };
 #endif
 
