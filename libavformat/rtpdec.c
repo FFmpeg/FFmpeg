@@ -92,11 +92,13 @@ static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int l
             buf += payload_len;
             len -= payload_len;
             break;
+        case RTCP_BYE:
+            return -RTCP_BYE;
         default:
             return -1;
         }
     }
-    return 0;
+    return -1;
 }
 
 #define RTP_SEQ_MOD (1<<16)
@@ -451,8 +453,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     if ((buf[0] & 0xc0) != (RTP_VERSION << 6))
         return -1;
     if (buf[1] >= RTCP_SR && buf[1] <= RTCP_APP) {
-        rtcp_parse_packet(s, buf, len);
-        return -1;
+        return rtcp_parse_packet(s, buf, len);
     }
     payload_type = buf[1] & 0x7f;
     if (buf[1] & 0x80)

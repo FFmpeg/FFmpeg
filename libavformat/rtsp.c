@@ -1226,6 +1226,7 @@ static int rtsp_read_play(AVFormatContext *s)
     char cmd[1024];
 
     av_log(s, AV_LOG_DEBUG, "hello state=%d\n", rt->state);
+    rt->nb_byes = 0;
 
     if (!(rt->server_type == RTSP_SERVER_REAL && rt->need_subscription)) {
         if (rt->state == RTSP_STATE_PAUSED) {
@@ -1777,6 +1778,9 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t buf[10 * RTP_MAX_PACKET_LENGTH];
     RTSPStream *rtsp_st;
 
+    if (rt->nb_byes == rt->nb_rtsp_streams)
+        return AVERROR_EOF;
+
     /* get next frames from the same RTP packet */
     if (rt->cur_transport_priv) {
         if (rt->transport == RTSP_TRANSPORT_RDT) {
@@ -1832,6 +1836,15 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
                         rtpctx2->first_rtcp_ntp_time == AV_NOPTS_VALUE)
                         rtpctx2->first_rtcp_ntp_time = rtpctx->first_rtcp_ntp_time;
                 }
+            }
+            if (ret == -RTCP_BYE) {
+                rt->nb_byes++;
+
+                av_log(s, AV_LOG_DEBUG, "Received BYE for stream %d (%d/%d)\n",
+                       rtsp_st->stream_index, rt->nb_byes, rt->nb_rtsp_streams);
+
+                if (rt->nb_byes == rt->nb_rtsp_streams)
+                    return AVERROR_EOF;
             }
         }
     }
