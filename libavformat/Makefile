@@ -18,7 +18,7 @@ OBJS = allformats.o         \
 # muxers/demuxers
 OBJS-$(CONFIG_A64_MUXER)                 += a64.o
 OBJS-$(CONFIG_AAC_DEMUXER)               += aacdec.o id3v1.o id3v2.o raw.o
-OBJS-$(CONFIG_AC3_DEMUXER)               += raw.o
+OBJS-$(CONFIG_AC3_DEMUXER)               += ac3dec.o raw.o
 OBJS-$(CONFIG_AC3_MUXER)                 += raw.o
 OBJS-$(CONFIG_ADTS_MUXER)                += adtsenc.o
 OBJS-$(CONFIG_AEA_DEMUXER)               += aea.o raw.o
@@ -64,7 +64,7 @@ OBJS-$(CONFIG_DV_MUXER)                  += dvenc.o
 OBJS-$(CONFIG_DXA_DEMUXER)               += dxa.o riff.o
 OBJS-$(CONFIG_EA_CDATA_DEMUXER)          += eacdata.o
 OBJS-$(CONFIG_EA_DEMUXER)                += electronicarts.o
-OBJS-$(CONFIG_EAC3_DEMUXER)              += raw.o
+OBJS-$(CONFIG_EAC3_DEMUXER)              += ac3dec.o raw.o
 OBJS-$(CONFIG_EAC3_MUXER)                += raw.o
 OBJS-$(CONFIG_FFM_DEMUXER)               += ffmdec.o
 OBJS-$(CONFIG_FFM_MUXER)                 += ffmenc.o
