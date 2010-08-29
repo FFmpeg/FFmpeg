@@ -274,7 +274,7 @@ Muxers/Demuxers:
   gxf.c                                 Reimar Doeffinger
   gxfenc.c                              Baptiste Coudurier
   idcin.c                               Mike Melanson
-  idroq.c                               Mike Melanson
+  idroqdec.c                            Mike Melanson
   iff.c                                 Jaikrishnan Menon
   ipmovie.c                             Mike Melanson
   img2.c                                Michael Niedermayer
