@@ -241,51 +241,6 @@ int ff_raw_video_read_header(AVFormatContext *s,
 }
 #endif
 
-#if CONFIG_CAVSVIDEO_DEMUXER
-#define CAVS_SEQ_START_CODE       0x000001b0
-#define CAVS_PIC_I_START_CODE     0x000001b3
-#define CAVS_UNDEF_START_CODE     0x000001b4
-#define CAVS_PIC_PB_START_CODE    0x000001b6
-#define CAVS_VIDEO_EDIT_CODE      0x000001b7
-#define CAVS_PROFILE_JIZHUN       0x20
-
-static int cavsvideo_probe(AVProbeData *p)
-{
-    uint32_t code= -1;
-    int pic=0, seq=0, slice_pos = 0;
-    int i;
-
-    for(i=0; i<p->buf_size; i++){
-        code = (code<<8) + p->buf[i];
-        if ((code & 0xffffff00) == 0x100) {
-            if(code < CAVS_SEQ_START_CODE) {
-                /* slices have to be consecutive */
-                if(code < slice_pos)
-                    return 0;
-                slice_pos = code;
-            } else {
-                slice_pos = 0;
-            }
-            if (code == CAVS_SEQ_START_CODE) {
-                seq++;
-                /* check for the only currently supported profile */
-                if(p->buf[i+1] != CAVS_PROFILE_JIZHUN)
-                    return 0;
-            } else if ((code == CAVS_PIC_I_START_CODE) ||
-                       (code == CAVS_PIC_PB_START_CODE)) {
-                pic++;
-            } else if ((code == CAVS_UNDEF_START_CODE) ||
-                       (code >  CAVS_VIDEO_EDIT_CODE)) {
-                return 0;
-            }
-        }
-    }
-    if(seq && seq*9<=pic*10)
-        return AVPROBE_SCORE_MAX/2;
-    return 0;
-}
-#endif
-
 #if CONFIG_M4V_DEMUXER
 #define VISUAL_OBJECT_START_CODE       0x000001b5
 #define VOP_START_CODE                 0x000001b6
@@ -935,19 +890,6 @@ AVOutputFormat mpeg2video_muxer = {
     NULL,
     ff_raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
-};
-#endif
-
-#if CONFIG_CAVSVIDEO_DEMUXER
-AVInputFormat cavsvideo_demuxer = {
-    "cavsvideo",
-    NULL_IF_CONFIG_SMALL("raw Chinese AVS video"),
-    0,
-    cavsvideo_probe,
-    ff_raw_video_read_header,
-    ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .value = CODEC_ID_CAVS,
 };
 #endif
 
