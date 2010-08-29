@@ -625,14 +625,6 @@ AVOutputFormat pcm_ ## name ## _muxer = {\
 #define PCMDEF(name, long_name, ext, codec)
 #endif
 
-#if HAVE_BIGENDIAN
-#define BE_DEF(s) s
-#define LE_DEF(s) NULL
-#else
-#define BE_DEF(s) NULL
-#define LE_DEF(s) s
-#endif
-
 PCMDEF(f64be, "PCM 64 bit floating-point big-endian format",
        NULL, CODEC_ID_PCM_F64BE)
 
@@ -658,10 +650,10 @@ PCMDEF(s24le, "PCM signed 24 bit little-endian format",
        NULL, CODEC_ID_PCM_S24LE)
 
 PCMDEF(s16be, "PCM signed 16 bit big-endian format",
-       BE_DEF("sw"), CODEC_ID_PCM_S16BE)
+       AV_NE("sw", NULL), CODEC_ID_PCM_S16BE)
 
 PCMDEF(s16le, "PCM signed 16 bit little-endian format",
-       LE_DEF("sw"), CODEC_ID_PCM_S16LE)
+       AV_NE(NULL, "sw"), CODEC_ID_PCM_S16LE)
 
 PCMDEF(s8, "PCM signed 8 bit format",
        "sb", CODEC_ID_PCM_S8)
@@ -679,10 +671,10 @@ PCMDEF(u24le, "PCM unsigned 24 bit little-endian format",
        NULL, CODEC_ID_PCM_U24LE)
 
 PCMDEF(u16be, "PCM unsigned 16 bit big-endian format",
-       BE_DEF("uw"), CODEC_ID_PCM_U16BE)
+       AV_NE("uw", NULL), CODEC_ID_PCM_U16BE)
 
 PCMDEF(u16le, "PCM unsigned 16 bit little-endian format",
-       LE_DEF("uw"), CODEC_ID_PCM_U16LE)
+       AV_NE(NULL, "uw"), CODEC_ID_PCM_U16LE)
 
 PCMDEF(u8, "PCM unsigned 8 bit format",
        "ub", CODEC_ID_PCM_U8)
