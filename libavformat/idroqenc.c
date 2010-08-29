@@ -1,6 +1,6 @@
 /*
- * RAW muxer and demuxer
- * Copyright (C) 2007  Aurelien Jacobs <aurel@gnuage.org>
+ * id RoQ (.roq) File muxer
+ * Copyright (c) 2007 Vitor Sessak
  *
  * This file is part of FFmpeg.
  *
@@ -19,16 +19,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_RAW_H
-#define AVFORMAT_RAW_H
-
 #include "avformat.h"
+#include "raw.h"
 
-int pcm_read_seek(AVFormatContext *s,
-                  int stream_index, int64_t timestamp, int flags);
 
-int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt);
+static int roq_write_header(struct AVFormatContext *s)
+{
+    static const uint8_t header[] = {
+        0x84, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0x1E, 0x00
+    };
 
-int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt);
+    put_buffer(s->pb, header, 8);
+    put_flush_packet(s->pb);
 
-#endif /* AVFORMAT_RAW_H */
+    return 0;
+}
+
+AVOutputFormat roq_muxer =
+{
+    "RoQ",
+    NULL_IF_CONFIG_SMALL("raw id RoQ format"),
+    NULL,
+    "roq",
+    0,
+    CODEC_ID_ROQ_DPCM,
+    CODEC_ID_ROQ,
+    roq_write_header,
+    ff_raw_write_packet,
+};
