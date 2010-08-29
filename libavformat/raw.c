@@ -241,16 +241,6 @@ int ff_raw_video_read_header(AVFormatContext *s,
 }
 #endif
 
-#if CONFIG_DIRAC_DEMUXER
-static int dirac_probe(AVProbeData *p)
-{
-    if (AV_RL32(p->buf) == MKTAG('B', 'B', 'C', 'D'))
-        return AVPROBE_SCORE_MAX;
-    else
-        return 0;
-}
-#endif
-
 #if CONFIG_DNXHD_DEMUXER
 static int dnxhd_probe(AVProbeData *p)
 {
@@ -355,19 +345,6 @@ AVOutputFormat ac3_muxer = {
     NULL,
     ff_raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
-};
-#endif
-
-#if CONFIG_DIRAC_DEMUXER
-AVInputFormat dirac_demuxer = {
-    "dirac",
-    NULL_IF_CONFIG_SMALL("raw Dirac"),
-    0,
-    dirac_probe,
-    ff_raw_video_read_header,
-    ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .value = CODEC_ID_DIRAC,
 };
 #endif
 
