@@ -2609,7 +2609,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
 #endif
             }else if((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER) &&
-                     idct_algo==FF_IDCT_VP3){
+                     idct_algo==FF_IDCT_VP3 && HAVE_YASM){
                 if(mm_flags & FF_MM_SSE2){
                     c->idct_put= ff_vp3_idct_put_sse2;
                     c->idct_add= ff_vp3_idct_add_sse2;
@@ -2714,12 +2714,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmx2;
                 c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
 
-                if (CONFIG_VP3_DECODER) {
+                if (CONFIG_VP3_DECODER && HAVE_YASM) {
                     c->vp3_v_loop_filter= ff_vp3_v_loop_filter_mmx2;
                     c->vp3_h_loop_filter= ff_vp3_h_loop_filter_mmx2;
                 }
             }
-            if (CONFIG_VP3_DECODER) {
+            if (CONFIG_VP3_DECODER && HAVE_YASM) {
                 c->vp3_idct_dc_add = ff_vp3_idct_dc_add_mmx2;
             }
 
