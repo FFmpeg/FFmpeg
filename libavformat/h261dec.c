@@ -21,7 +21,7 @@
 
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 
 static int h261_probe(AVProbeData *p)
 {

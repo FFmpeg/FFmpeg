@@ -1,5 +1,5 @@
 /*
- * RAW muxer and demuxer
+ * RAW demuxers
  * Copyright (C) 2007  Aurelien Jacobs <aurel@gnuage.org>
  *
  * This file is part of FFmpeg.
@@ -19,12 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_RAW_H
-#define AVFORMAT_RAW_H
+#ifndef AVFORMAT_RAWDEC_H
+#define AVFORMAT_RAWDEC_H
 
 #include "avformat.h"
-
-int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt);
 
 int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap);
 
@@ -34,4 +32,4 @@ int ff_raw_audio_read_header(AVFormatContext *s, AVFormatParameters *ap);
 
 int ff_raw_video_read_header(AVFormatContext *s, AVFormatParameters *ap);
 
-#endif /* AVFORMAT_RAW_H */
+#endif /* AVFORMAT_RAWDEC_H */

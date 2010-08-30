@@ -22,7 +22,7 @@
 #include "libavutil/crc.h"
 #include "libavcodec/ac3_parser.h"
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 
 static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
 {

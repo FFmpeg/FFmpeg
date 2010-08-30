@@ -22,7 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 
 static int dnxhd_probe(AVProbeData *p)
 {

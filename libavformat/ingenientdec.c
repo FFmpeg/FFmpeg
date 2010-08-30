@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 
 // http://www.artificis.hu/files/texts/ingenient.txt
 static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)

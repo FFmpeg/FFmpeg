@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "raw.h"
+#include "rawenc.h"
 
 
 static int roq_write_header(struct AVFormatContext *s)

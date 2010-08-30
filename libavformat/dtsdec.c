@@ -21,7 +21,7 @@
 
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 
 #define DCA_MARKER_14B_BE 0x1FFFE800
 #define DCA_MARKER_14B_LE 0xFF1F00E8

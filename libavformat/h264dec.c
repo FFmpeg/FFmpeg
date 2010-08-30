@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 
 static int h264_probe(AVProbeData *p)
 {

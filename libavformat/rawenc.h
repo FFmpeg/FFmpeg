@@ -1,6 +1,6 @@
 /*
- * RAW Dirac demuxer
- * Copyright (c) 2007 Marco Gerards <marco@gnu.org>
+ * RAW muxers
+ * Copyright (C) 2007  Aurelien Jacobs <aurel@gnuage.org>
  *
  * This file is part of FFmpeg.
  *
@@ -19,25 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intreadwrite.h"
+#ifndef AVFORMAT_RAWENC_H
+#define AVFORMAT_RAWENC_H
+
 #include "avformat.h"
-#include "rawdec.h"
 
-static int dirac_probe(AVProbeData *p)
-{
-    if (AV_RL32(p->buf) == MKTAG('B', 'B', 'C', 'D'))
-        return AVPROBE_SCORE_MAX;
-    else
-        return 0;
-}
+int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt);
 
-AVInputFormat dirac_demuxer = {
-    "dirac",
-    NULL_IF_CONFIG_SMALL("raw Dirac"),
-    0,
-    dirac_probe,
-    ff_raw_video_read_header,
-    ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .value = CODEC_ID_DIRAC,
-};
+#endif /* AVFORMAT_RAWENC_H */

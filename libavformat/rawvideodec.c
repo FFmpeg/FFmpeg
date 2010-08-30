@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 
 static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 {

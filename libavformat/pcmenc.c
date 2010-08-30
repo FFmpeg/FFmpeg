@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "raw.h"
+#include "rawenc.h"
 
 #define PCMDEF(name, long_name, ext, codec) \
 AVOutputFormat pcm_ ## name ## _muxer = {\

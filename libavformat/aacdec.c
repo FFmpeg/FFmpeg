@@ -22,7 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 #include "id3v2.h"
 #include "id3v1.h"
 

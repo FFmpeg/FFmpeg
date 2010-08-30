@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 #include "pcm.h"
 
 #define RAW_SAMPLES     1024

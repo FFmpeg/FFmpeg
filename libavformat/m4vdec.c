@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 
 #define VISUAL_OBJECT_START_CODE       0x000001b5
 #define VOP_START_CODE                 0x000001b6

@@ -21,7 +21,7 @@
  */
 
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 
 #define SEQ_START_CODE          0x000001b3
 #define GOP_START_CODE          0x000001b8

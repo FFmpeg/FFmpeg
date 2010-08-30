@@ -21,7 +21,7 @@
 
 #include "libavcodec/flac.h"
 #include "avformat.h"
-#include "raw.h"
+#include "rawdec.h"
 #include "id3v2.h"
 #include "oggdec.h"
 #include "vorbiscomment.h"
