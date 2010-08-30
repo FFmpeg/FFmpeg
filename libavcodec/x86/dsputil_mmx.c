@@ -28,8 +28,6 @@
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/simple_idct.h"
 #include "dsputil_mmx.h"
-#include "vp3dsp_mmx.h"
-#include "vp3dsp_sse2.h"
 #include "idct_xvid.h"
 
 //#undef NDEBUG
@@ -2375,6 +2373,19 @@ static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
         :"+r"(reglen), "+r"(dst), "+r"(src)
     );
 }
+
+void ff_vp3_idct_mmx(int16_t *input_data);
+void ff_vp3_idct_put_mmx(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block);
+
+void ff_vp3_idct_dc_add_mmx2(uint8_t *dest, int line_size, const DCTELEM *block);
+
+void ff_vp3_v_loop_filter_mmx2(uint8_t *src, int stride, int *bounding_values);
+void ff_vp3_h_loop_filter_mmx2(uint8_t *src, int stride, int *bounding_values);
+
+void ff_vp3_idct_sse2(int16_t *input_data);
+void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, DCTELEM *block);
 
 void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dnow(int16_t *dst, const float **src, int len);
