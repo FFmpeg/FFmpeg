@@ -228,7 +228,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 /***********************************/
 /* standard MMX */
 
-void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
+void ff_put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
 {
     const DCTELEM *p;
     uint8_t *pix;
@@ -304,7 +304,7 @@ DECLARE_ASM_CONST(8, uint8_t, ff_vector128)[8] =
             "movq %%mm3, (%0, %3, 2)            \n\t"\
             "movq %%mm4, (%0, %1)               \n\t"
 
-void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
+void ff_put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
 {
     x86_reg line_skip = line_size;
     x86_reg line_skip3;
@@ -320,7 +320,7 @@ void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int li
             :"memory");
 }
 
-void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
+void ff_add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
 {
     const DCTELEM *p;
     uint8_t *pix;
@@ -1851,43 +1851,43 @@ void ff_avg_vc1_mspel_mc00_mmx2(uint8_t *dst, const uint8_t *src, int stride, in
 static void ff_libmpeg2mmx_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_mmx_idct (block);
-    put_pixels_clamped_mmx(block, dest, line_size);
+    ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 static void ff_libmpeg2mmx_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_mmx_idct (block);
-    add_pixels_clamped_mmx(block, dest, line_size);
+    ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
 static void ff_libmpeg2mmx2_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_mmxext_idct (block);
-    put_pixels_clamped_mmx(block, dest, line_size);
+    ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 static void ff_libmpeg2mmx2_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_mmxext_idct (block);
-    add_pixels_clamped_mmx(block, dest, line_size);
+    ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
 #endif
 static void ff_idct_xvid_mmx_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_idct_xvid_mmx (block);
-    put_pixels_clamped_mmx(block, dest, line_size);
+    ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 static void ff_idct_xvid_mmx_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_idct_xvid_mmx (block);
-    add_pixels_clamped_mmx(block, dest, line_size);
+    ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
 static void ff_idct_xvid_mmx2_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_idct_xvid_mmx2 (block);
-    put_pixels_clamped_mmx(block, dest, line_size);
+    ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 static void ff_idct_xvid_mmx2_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_idct_xvid_mmx2 (block);
-    add_pixels_clamped_mmx(block, dest, line_size);
+    ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
 
 static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
@@ -2579,9 +2579,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             }
         }
 
-        c->put_pixels_clamped = put_pixels_clamped_mmx;
-        c->put_signed_pixels_clamped = put_signed_pixels_clamped_mmx;
-        c->add_pixels_clamped = add_pixels_clamped_mmx;
+        c->put_pixels_clamped = ff_put_pixels_clamped_mmx;
+        c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_mmx;
+        c->add_pixels_clamped = ff_add_pixels_clamped_mmx;
         c->clear_block  = clear_block_mmx;
         c->clear_blocks = clear_blocks_mmx;
         if ((mm_flags & FF_MM_SSE) &&

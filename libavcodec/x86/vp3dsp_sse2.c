@@ -177,11 +177,11 @@ void ff_vp3_idct_sse2(int16_t *input_data)
 void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_vp3_idct_sse2(block);
-    put_signed_pixels_clamped_mmx(block, dest, line_size);
+    ff_put_signed_pixels_clamped_mmx(block, dest, line_size);
 }
 
 void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_vp3_idct_sse2(block);
-    add_pixels_clamped_mmx(block, dest, line_size);
+    ff_add_pixels_clamped_mmx(block, dest, line_size);
 }

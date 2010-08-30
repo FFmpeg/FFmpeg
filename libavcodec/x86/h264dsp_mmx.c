@@ -212,7 +212,7 @@ static void ff_h264_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         );
     }
 
-    add_pixels_clamped_mmx(b2, dst, stride);
+    ff_add_pixels_clamped_mmx(b2, dst, stride);
 }
 
 #define STORE_DIFF_8P( p, d, t, z )\

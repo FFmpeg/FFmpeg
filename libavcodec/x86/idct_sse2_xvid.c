@@ -385,11 +385,11 @@ inline void ff_idct_xvid_sse2(short *block)
 void ff_idct_xvid_sse2_put(uint8_t *dest, int line_size, short *block)
 {
     ff_idct_xvid_sse2(block);
-    put_pixels_clamped_mmx(block, dest, line_size);
+    ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 
 void ff_idct_xvid_sse2_add(uint8_t *dest, int line_size, short *block)
 {
     ff_idct_xvid_sse2(block);
-    add_pixels_clamped_mmx(block, dest, line_size);
+    ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
