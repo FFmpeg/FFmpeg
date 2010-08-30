@@ -45,7 +45,7 @@
 
 #include "avformat.h"
 #include "libavutil/intreadwrite.h"
-#include "raw.h"
+#include "pcm.h"
 #include "riff.h"
 #include "id3v2.h"
 

@@ -36,7 +36,7 @@ int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 #if CONFIG_DEMUXERS
 /* raw input */
-static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
+int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVStream *st;
     enum CodecID id;
@@ -81,28 +81,6 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 }
 
 #define RAW_PACKET_SIZE 1024
-#define RAW_SAMPLES     1024
-
-static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    int ret, size, bps;
-    //    AVStream *st = s->streams[0];
-
-    size= RAW_SAMPLES*s->streams[0]->codec->block_align;
-
-    ret= av_get_packet(s->pb, pkt, size);
-
-    pkt->stream_index = 0;
-    if (ret < 0)
-        return ret;
-
-    bps= av_get_bits_per_sample(s->streams[0]->codec->codec_id);
-    assert(bps); // if false there IS a bug elsewhere (NOT in this function)
-    pkt->dts=
-    pkt->pts= pkt->pos*8 / (bps * s->streams[0]->codec->channels);
-
-    return ret;
-}
 
 int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -150,38 +128,6 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 #endif
 
 #if CONFIG_DEMUXERS
-int pcm_read_seek(AVFormatContext *s,
-                  int stream_index, int64_t timestamp, int flags)
-{
-    AVStream *st;
-    int block_align, byte_rate;
-    int64_t pos, ret;
-
-    st = s->streams[0];
-
-    block_align = st->codec->block_align ? st->codec->block_align :
-        (av_get_bits_per_sample(st->codec->codec_id) * st->codec->channels) >> 3;
-    byte_rate = st->codec->bit_rate ? st->codec->bit_rate >> 3 :
-        block_align * st->codec->sample_rate;
-
-    if (block_align <= 0 || byte_rate <= 0)
-        return -1;
-    if (timestamp < 0) timestamp = 0;
-
-    /* compute the position by aligning it to block_align */
-    pos = av_rescale_rnd(timestamp * byte_rate,
-                         st->time_base.num,
-                         st->time_base.den * (int64_t)block_align,
-                         (flags & AVSEEK_FLAG_BACKWARD) ? AV_ROUND_DOWN : AV_ROUND_UP);
-    pos *= block_align;
-
-    /* recompute exact position */
-    st->cur_dts = av_rescale(pos, st->time_base.den, byte_rate * (int64_t)st->time_base.num);
-    if ((ret = url_fseek(s->pb, pos + s->data_offset, SEEK_SET)) < 0)
-        return ret;
-    return 0;
-}
-
 int ff_raw_audio_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
@@ -529,7 +475,7 @@ AVInputFormat rawvideo_demuxer = {
     NULL_IF_CONFIG_SMALL("raw video format"),
     0,
     NULL,
-    raw_read_header,
+    ff_raw_read_header,
     rawvideo_read_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "yuv,cif,qcif,rgb",
@@ -581,21 +527,6 @@ AVInputFormat vc1_demuxer = {
 
 /* PCM formats */
 
-#define PCMINPUTDEF(name, long_name, ext, codec) \
-AVInputFormat pcm_ ## name ## _demuxer = {\
-    #name,\
-    NULL_IF_CONFIG_SMALL(long_name),\
-    0,\
-    NULL,\
-    raw_read_header,\
-    raw_read_packet,\
-    NULL,\
-    pcm_read_seek,\
-    .flags= AVFMT_GENERIC_INDEX,\
-    .extensions = ext,\
-    .value = codec,\
-};
-
 #define PCMOUTPUTDEF(name, long_name, ext, codec) \
 AVOutputFormat pcm_ ## name ## _muxer = {\
     #name,\
@@ -611,15 +542,8 @@ AVOutputFormat pcm_ ## name ## _muxer = {\
 };
 
 
-#if  !CONFIG_MUXERS && CONFIG_DEMUXERS
+#if CONFIG_MUXERS
 #define PCMDEF(name, long_name, ext, codec) \
-        PCMINPUTDEF(name, long_name, ext, codec)
-#elif CONFIG_MUXERS && !CONFIG_DEMUXERS
-#define PCMDEF(name, long_name, ext, codec) \
-        PCMOUTPUTDEF(name, long_name, ext, codec)
-#elif CONFIG_MUXERS && CONFIG_DEMUXERS
-#define PCMDEF(name, long_name, ext, codec) \
-        PCMINPUTDEF(name, long_name, ext, codec)\
         PCMOUTPUTDEF(name, long_name, ext, codec)
 #else
 #define PCMDEF(name, long_name, ext, codec)

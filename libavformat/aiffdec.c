@@ -21,7 +21,7 @@
 
 #include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
-#include "raw.h"
+#include "pcm.h"
 #include "aiff.h"
 
 #define AIFF                    0

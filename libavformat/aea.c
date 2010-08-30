@@ -21,7 +21,7 @@
  */
 
 #include "avformat.h"
-#include "raw.h"
+#include "pcm.h"
 #include "libavutil/intreadwrite.h"
 
 #define AT1_SU_SIZE     212

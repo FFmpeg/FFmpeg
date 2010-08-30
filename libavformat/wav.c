@@ -23,7 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
-#include "raw.h"
+#include "pcm.h"
 #include "riff.h"
 
 typedef struct {

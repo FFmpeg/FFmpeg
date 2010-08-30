@@ -25,7 +25,7 @@
 
 #include "libavutil/bswap.h"
 #include "avformat.h"
-#include "raw.h"
+#include "pcm.h"
 
 /* if we don't know the size in advance */
 #define AU_UNKNOWN_SIZE ((uint32_t)(~0))

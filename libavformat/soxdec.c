@@ -31,7 +31,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
-#include "raw.h"
+#include "pcm.h"
 #include "sox.h"
 
 static int sox_probe(AVProbeData *p)

@@ -23,7 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
-#include "raw.h"
+#include "pcm.h"
 #include "riff.h"
 #include "rso.h"
 
