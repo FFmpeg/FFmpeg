@@ -59,6 +59,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('S', 'E', 'D', 'G') },
     { CODEC_ID_MPEG4,        MKTAG('R', 'M', 'P', '4') },
     { CODEC_ID_MPEG4,        MKTAG('3', 'I', 'V', '2') },
+    { CODEC_ID_MPEG4,        MKTAG('W', 'A', 'W', 'V') }, /* WaWv MPEG-4 Video Codec */
     { CODEC_ID_MPEG4,        MKTAG('F', 'F', 'D', 'S') },
     { CODEC_ID_MPEG4,        MKTAG('F', 'V', 'F', 'W') },
     { CODEC_ID_MPEG4,        MKTAG('D', 'C', 'O', 'D') },
