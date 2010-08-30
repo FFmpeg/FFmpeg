@@ -1819,7 +1819,58 @@ PREFETCH(prefetch_3dnow, prefetch)
 #undef PREFETCH
 
 #include "h264dsp_mmx.c"
-#include "rv40dsp_mmx.c"
+
+void ff_put_h264_chroma_mc8_mmx_rnd   (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_put_vc1_chroma_mc8_mmx_nornd  (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_put_rv40_chroma_mc8_mmx       (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_h264_chroma_mc8_mmx2_rnd  (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_vc1_chroma_mc8_mmx2_nornd (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_rv40_chroma_mc8_mmx2      (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_h264_chroma_mc8_3dnow_rnd (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_vc1_chroma_mc8_3dnow_nornd(uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_rv40_chroma_mc8_3dnow     (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+
+void ff_put_h264_chroma_mc4_mmx       (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_put_rv40_chroma_mc4_mmx       (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_h264_chroma_mc4_mmx2      (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_rv40_chroma_mc4_mmx2      (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_h264_chroma_mc4_3dnow     (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_rv40_chroma_mc4_3dnow     (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+
+void ff_put_h264_chroma_mc2_mmx2      (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_h264_chroma_mc2_mmx2      (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+
+void ff_put_h264_chroma_mc8_ssse3_rnd (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_put_vc1_chroma_mc8_ssse3_nornd(uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_put_h264_chroma_mc4_ssse3     (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+
+void ff_avg_h264_chroma_mc8_ssse3_rnd (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_vc1_chroma_mc8_ssse3_nornd(uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_h264_chroma_mc4_ssse3     (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+
 
 /* CAVS specific */
 void ff_put_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride) {
@@ -2628,12 +2679,15 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->h263_v_loop_filter= h263_v_loop_filter_mmx;
             c->h263_h_loop_filter= h263_h_loop_filter_mmx;
         }
-        c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx_rnd;
-        c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_mmx;
-        c->put_no_rnd_vc1_chroma_pixels_tab[0]= put_vc1_chroma_mc8_mmx_nornd;
 
-        c->put_rv40_chroma_pixels_tab[0]= put_rv40_chroma_mc8_mmx;
-        c->put_rv40_chroma_pixels_tab[1]= put_rv40_chroma_mc4_mmx;
+#if HAVE_YASM
+        c->put_h264_chroma_pixels_tab[0]= ff_put_h264_chroma_mc8_mmx_rnd;
+        c->put_h264_chroma_pixels_tab[1]= ff_put_h264_chroma_mc4_mmx;
+        c->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_mmx_nornd;
+
+        c->put_rv40_chroma_pixels_tab[0]= ff_put_rv40_chroma_mc8_mmx;
+        c->put_rv40_chroma_pixels_tab[1]= ff_put_rv40_chroma_mc4_mmx;
+#endif
 
         if (mm_flags & FF_MM_MMX2) {
             c->prefetch = prefetch_mmx2;
@@ -2712,17 +2766,17 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             SET_QPEL_FUNCS(avg_2tap_qpel, 0, 16, mmx2);
             SET_QPEL_FUNCS(avg_2tap_qpel, 1, 8, mmx2);
 
-            c->avg_rv40_chroma_pixels_tab[0]= avg_rv40_chroma_mc8_mmx2;
-            c->avg_rv40_chroma_pixels_tab[1]= avg_rv40_chroma_mc4_mmx2;
-
-            c->avg_no_rnd_vc1_chroma_pixels_tab[0]= avg_vc1_chroma_mc8_mmx2_nornd;
-
-            c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_mmx2_rnd;
-            c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_mmx2;
-            c->avg_h264_chroma_pixels_tab[2]= avg_h264_chroma_mc2_mmx2;
-            c->put_h264_chroma_pixels_tab[2]= put_h264_chroma_mc2_mmx2;
-
 #if HAVE_YASM
+            c->avg_rv40_chroma_pixels_tab[0]= ff_avg_rv40_chroma_mc8_mmx2;
+            c->avg_rv40_chroma_pixels_tab[1]= ff_avg_rv40_chroma_mc4_mmx2;
+
+            c->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_mmx2_nornd;
+
+            c->avg_h264_chroma_pixels_tab[0]= ff_avg_h264_chroma_mc8_mmx2_rnd;
+            c->avg_h264_chroma_pixels_tab[1]= ff_avg_h264_chroma_mc4_mmx2;
+            c->avg_h264_chroma_pixels_tab[2]= ff_avg_h264_chroma_mc2_mmx2;
+            c->put_h264_chroma_pixels_tab[2]= ff_put_h264_chroma_mc2_mmx2;
+
             c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmx2;
 #endif
 #if HAVE_7REGS && HAVE_TEN_OPERANDS
@@ -2785,11 +2839,15 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             SET_QPEL_FUNCS(avg_2tap_qpel, 0, 16, 3dnow);
             SET_QPEL_FUNCS(avg_2tap_qpel, 1, 8, 3dnow);
 
-            c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_3dnow_rnd;
-            c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_3dnow;
+#if HAVE_YASM
+            c->avg_h264_chroma_pixels_tab[0]= ff_avg_h264_chroma_mc8_3dnow_rnd;
+            c->avg_h264_chroma_pixels_tab[1]= ff_avg_h264_chroma_mc4_3dnow;
 
-            c->avg_rv40_chroma_pixels_tab[0]= avg_rv40_chroma_mc8_3dnow;
-            c->avg_rv40_chroma_pixels_tab[1]= avg_rv40_chroma_mc4_3dnow;
+            c->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_3dnow_nornd;
+
+            c->avg_rv40_chroma_pixels_tab[0]= ff_avg_rv40_chroma_mc8_3dnow;
+            c->avg_rv40_chroma_pixels_tab[1]= ff_avg_rv40_chroma_mc4_3dnow;
+#endif
         }
 
 
@@ -2832,14 +2890,14 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 1, ssse3);
             H264_QPEL_FUNCS(3, 2, ssse3);
             H264_QPEL_FUNCS(3, 3, ssse3);
-            c->put_no_rnd_vc1_chroma_pixels_tab[0]= put_vc1_chroma_mc8_ssse3_nornd;
-            c->avg_no_rnd_vc1_chroma_pixels_tab[0]= avg_vc1_chroma_mc8_ssse3_nornd;
-            c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_ssse3_rnd;
-            c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_ssse3_rnd;
-            c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_ssse3;
-            c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_ssse3;
             c->add_png_paeth_prediction= add_png_paeth_prediction_ssse3;
 #if HAVE_YASM
+            c->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_ssse3_nornd;
+            c->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_ssse3_nornd;
+            c->put_h264_chroma_pixels_tab[0]= ff_put_h264_chroma_mc8_ssse3_rnd;
+            c->avg_h264_chroma_pixels_tab[0]= ff_avg_h264_chroma_mc8_ssse3_rnd;
+            c->put_h264_chroma_pixels_tab[1]= ff_put_h264_chroma_mc4_ssse3;
+            c->avg_h264_chroma_pixels_tab[1]= ff_avg_h264_chroma_mc4_ssse3;
             c->add_hfyu_left_prediction = ff_add_hfyu_left_prediction_ssse3;
             if (mm_flags & FF_MM_SSE4) // not really sse4, just slow on Conroe
                 c->add_hfyu_left_prediction = ff_add_hfyu_left_prediction_sse4;
