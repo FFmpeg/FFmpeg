@@ -561,6 +561,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
             tag      = chan_map[i+1];
             chans    = tag == TYPE_CPE ? 2 : 1;
             cpe      = &s->cpe[i];
+            put_bits(&s->pb, 3, tag);
+            put_bits(&s->pb, 4, chan_el_counter[tag]++);
             for (j = 0; j < chans; j++) {
                 s->cur_channel = start_ch + j;
                 ff_psy_set_band_info(&s->psy, s->cur_channel, cpe->ch[j].coeffs, &wi[j]);
@@ -583,8 +585,6 @@ static int aac_encode_frame(AVCodecContext *avctx,
             if (cpe->common_window && s->coder->search_for_ms)
                 s->coder->search_for_ms(s, cpe, s->lambda);
             adjust_frame_information(s, cpe, chans);
-            put_bits(&s->pb, 3, tag);
-            put_bits(&s->pb, 4, chan_el_counter[tag]++);
             if (chans == 2) {
                 put_bits(&s->pb, 1, cpe->common_window);
                 if (cpe->common_window) {
