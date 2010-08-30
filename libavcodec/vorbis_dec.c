@@ -467,7 +467,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc,
 static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
 {
     GetBitContext *gb = &vc->gb;
-    uint_fast16_t i,j,k;
+    int i,j,k;
 
     vc->floor_count = get_bits(gb, 6) + 1;
 
