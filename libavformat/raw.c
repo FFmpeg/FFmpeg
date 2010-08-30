@@ -101,33 +101,7 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->size = ret;
     return ret;
 }
-#endif
 
-#if CONFIG_RAWVIDEO_DEMUXER
-static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    int packet_size, ret, width, height;
-    AVStream *st = s->streams[0];
-
-    width = st->codec->width;
-    height = st->codec->height;
-
-    packet_size = avpicture_get_size(st->codec->pix_fmt, width, height);
-    if (packet_size < 0)
-        return -1;
-
-    ret= av_get_packet(s->pb, pkt, packet_size);
-    pkt->pts=
-    pkt->dts= pkt->pos / packet_size;
-
-    pkt->stream_index = 0;
-    if (ret < 0)
-        return ret;
-    return 0;
-}
-#endif
-
-#if CONFIG_DEMUXERS
 int ff_raw_audio_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
@@ -466,20 +440,6 @@ AVOutputFormat mpeg2video_muxer = {
     NULL,
     ff_raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
-};
-#endif
-
-#if CONFIG_RAWVIDEO_DEMUXER
-AVInputFormat rawvideo_demuxer = {
-    "rawvideo",
-    NULL_IF_CONFIG_SMALL("raw video format"),
-    0,
-    NULL,
-    ff_raw_read_header,
-    rawvideo_read_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "yuv,cif,qcif,rgb",
-    .value = CODEC_ID_RAWVIDEO,
 };
 #endif
 
