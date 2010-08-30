@@ -72,7 +72,7 @@ typedef struct FFPsyModel {
     const char *name;
     int  (*init)   (FFPsyContext *apc);
     FFPsyWindowInfo (*window)(FFPsyContext *ctx, const int16_t *audio, const int16_t *la, int channel, int prev_type);
-    void (*analyze)(FFPsyContext *ctx, int channel, const float *coeffs, FFPsyWindowInfo *wi);
+    void (*analyze)(FFPsyContext *ctx, int channel, const float *coeffs, const FFPsyWindowInfo *wi);
     void (*end)    (FFPsyContext *apc);
 } FFPsyModel;
 
@@ -116,7 +116,7 @@ FFPsyWindowInfo ff_psy_suggest_window(FFPsyContext *ctx,
  * @param wi      window information
  */
 void ff_psy_set_band_info(FFPsyContext *ctx, int channel, const float *coeffs,
-                          FFPsyWindowInfo *wi);
+                          const FFPsyWindowInfo *wi);
 
 /**
  * Cleanup model context at the end.

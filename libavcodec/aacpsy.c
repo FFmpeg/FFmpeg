@@ -387,7 +387,7 @@ static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
  * Calculate band thresholds as suggested in 3GPP TS26.403
  */
 static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
-                             const float *coefs, FFPsyWindowInfo *wi)
+                             const float *coefs, const FFPsyWindowInfo *wi)
 {
     AacPsyContext *pctx = (AacPsyContext*) ctx->model_priv_data;
     AacPsyChannel *pch  = &pctx->ch[channel];

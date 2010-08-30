@@ -53,7 +53,7 @@ FFPsyWindowInfo ff_psy_suggest_window(FFPsyContext *ctx,
 }
 
 void ff_psy_set_band_info(FFPsyContext *ctx, int channel,
-                          const float *coeffs, FFPsyWindowInfo *wi)
+                          const float *coeffs, const FFPsyWindowInfo *wi)
 {
     ctx->model->analyze(ctx, channel, coeffs, wi);
 }
