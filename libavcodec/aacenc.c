@@ -313,7 +313,7 @@ static void adjust_frame_information(AACEncContext *apc, ChannelElement *cpe, in
             for (g = 0; g < ics->num_swb; g++) {
                 sum = 0;
                 //apply M/S
-                if (!ch && cpe->ms_mask[w + g]) {
+                if (cpe->common_window && !ch && cpe->ms_mask[w + g]) {
                     for (i = 0; i < ics->swb_sizes[g]; i++) {
                         cpe->ch[0].coeffs[start+i] = (cpe->ch[0].coeffs[start+i] + cpe->ch[1].coeffs[start+i]) / 2.0;
                         cpe->ch[1].coeffs[start+i] =  cpe->ch[0].coeffs[start+i] - cpe->ch[1].coeffs[start+i];
