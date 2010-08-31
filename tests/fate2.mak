@@ -202,3 +202,7 @@ fate-mjpegb: CMD = framecrc -idct simple -flags +bitexact -i $(SAMPLES)/mjpegb/m
 
 FATE_TESTS += fate-rv30
 fate-rv30: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/real/rv30.rm -an
+
+FATE_TESTS += fate-sha
+fate-sha: libavutil/sha-test$(EXESUF)
+fate-sha: CMD = run libavutil/sha-test
