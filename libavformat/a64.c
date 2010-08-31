@@ -125,8 +125,16 @@ static int a64_write_packet(struct AVFormatContext *s, AVPacket *pkt)
             }
             /* backup current packet for next turn */
             if(pkt->data) {
-                av_new_packet(&c->prev_pkt, pkt->size);
-                memcpy(c->prev_pkt.data, pkt->data, pkt->size);
+                /* no backup packet yet? create one! */
+                if(!c->prev_pkt.data) av_new_packet(&c->prev_pkt, pkt->size);
+                /* we have a packet and data is big enough, reuse it */
+                if(c->prev_pkt.data && c->prev_pkt.size >= pkt->size) {
+                    memcpy(c->prev_pkt.data, pkt->data, pkt->size);
+                    c->prev_pkt.size = pkt->size;
+                } else {
+                    av_log(avctx, AV_LOG_ERROR, "Too less memory for prev_pkt.\n");
+                    return AVERROR(ENOMEM);
+                }
             }
             c->prev_frame_count = frame_count;
             break;
@@ -145,9 +153,11 @@ static int a64_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 static int a64_write_trailer(struct AVFormatContext *s)
 {
     A64MuxerContext *c = s->priv_data;
-    AVPacket pkt;
+    AVPacket pkt = {0};
     /* need to flush last packet? */
     if(c->interleaved) a64_write_packet(s, &pkt);
+    /* discard backed up packet */
+    if(c->prev_pkt.data) av_destruct_packet(&c->prev_pkt);
     return 0;
 }
 
