@@ -289,8 +289,8 @@ send a reminder by email. Your patch should eventually be dealt with.
     Did you add a long_name under NULL_IF_CONFIG_SMALL to the AVCodec or
     AVInputFormat/AVOutputFormat struct?
 @item
-    Did you bump the minor version number in @file{avcodec.h} or
-    @file{avformat.h}?
+    Did you bump the minor version number (and reset the micro version
+    number) in @file{avcodec.h} or @file{avformat.h}?
 @item
     Did you register it in @file{allcodecs.c} or @file{allformats.c}?
 @item
