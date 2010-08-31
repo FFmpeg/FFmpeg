@@ -302,7 +302,7 @@ static void encode_ms_info(PutBitContext *pb, ChannelElement *cpe)
 static void adjust_frame_information(AACEncContext *apc, ChannelElement *cpe, int chans)
 {
     int i, w, w2, g, ch;
-    int start, sum, maxsfb, cmaxsfb;
+    int start, maxsfb, cmaxsfb;
 
     for (ch = 0; ch < chans; ch++) {
         IndividualChannelStream *ics = &cpe->ch[ch].ics;
@@ -311,7 +311,6 @@ static void adjust_frame_information(AACEncContext *apc, ChannelElement *cpe, in
         cpe->ch[ch].pulse.num_pulse = 0;
         for (w = 0; w < ics->num_windows*16; w += 16) {
             for (g = 0; g < ics->num_swb; g++) {
-                sum = 0;
                 //apply M/S
                 if (cpe->common_window && !ch && cpe->ms_mask[w + g]) {
                     for (i = 0; i < ics->swb_sizes[g]; i++) {
