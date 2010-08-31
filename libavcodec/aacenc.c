@@ -544,7 +544,6 @@ static int aac_encode_frame(AVCodecContext *avctx,
             for (k = 0; k < ics->num_windows; k++)
                 ics->group_len[k] = wi[j].grouping[k];
 
-            s->cur_channel = cur_channel;
             apply_window_and_mdct(avctx, s, &cpe->ch[j], samples2);
         }
         start_ch += chans;
