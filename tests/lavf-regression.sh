@@ -148,6 +148,10 @@ if [ -n "$do_ppm" ] ; then
 do_image_formats ppm
 fi
 
+if [ -n "$do_png" ] ; then
+do_image_formats png
+fi
+
 if [ -n "$do_bmp" ] ; then
 do_image_formats bmp
 fi
