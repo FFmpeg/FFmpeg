@@ -196,3 +196,6 @@ fate-ws_snd: CMD = md5  -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
 
 FATE_TESTS += fate-dxa-scummvm
 fate-dxa-scummvm: CMD = framecrc -i $(SAMPLES)/dxa/scummvm.dxa -pix_fmt rgb24
+
+FATE_TESTS += fate-mjpegb
+fate-mjpegb: CMD = framecrc -i $(SAMPLES)/mjpegb/mjpegb_part.mov -an
