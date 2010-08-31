@@ -192,14 +192,21 @@ static av_cold int a64multi_init_encoder(AVCodecContext *avctx)
 
     c->mc_frame_counter = 0;
     c->mc_use_5col      = avctx->codec->id == CODEC_ID_A64_MULTI5;
-    c->mc_meta_charset  = av_malloc (32000 * c->mc_lifetime * sizeof(int));
-    c->mc_best_cb       = av_malloc (CHARSET_CHARS * 32 * sizeof(int));
-    c->mc_charmap       = av_mallocz(1000 * c->mc_lifetime * sizeof(int));
-    c->mc_colram        = av_mallocz(CHARSET_CHARS * sizeof(uint8_t));
-    c->mc_charset       = av_malloc (0x800 * (INTERLACED+1) * sizeof(uint8_t));
+
+    if(!(c->mc_meta_charset  = av_malloc (32000 * c->mc_lifetime * sizeof(int))) ||
+       !(c->mc_best_cb       = av_malloc (CHARSET_CHARS * 32 * sizeof(int)))     ||
+       !(c->mc_charmap       = av_mallocz(1000 * c->mc_lifetime * sizeof(int)))  ||
+       !(c->mc_colram        = av_mallocz(CHARSET_CHARS * sizeof(uint8_t)))      ||
+       !(c->mc_charset       = av_malloc (0x800 * (INTERLACED+1) * sizeof(uint8_t)))) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to allocate buffer memory.\n");
+        return AVERROR(ENOMEM);
+    }
 
     /* set up extradata */
-    avctx->extradata      = av_mallocz(8 * 4 + FF_INPUT_BUFFER_PADDING_SIZE);
+    if(!(avctx->extradata = av_mallocz(8 * 4 + FF_INPUT_BUFFER_PADDING_SIZE))) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to allocate memory for extradata.\n");
+        return AVERROR(ENOMEM);
+    }
     avctx->extradata_size = 8 * 4;
     AV_WB32(avctx->extradata, c->mc_lifetime);
     AV_WB32(avctx->extradata+16, INTERLACED);
