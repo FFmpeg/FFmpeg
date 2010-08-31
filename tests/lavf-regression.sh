@@ -129,7 +129,7 @@ fi
 if [ -n "$do_gif" ] ; then
 file=${outfile}lavf.gif
 do_ffmpeg $file -t 1 -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -pix_fmt rgb24
-#do_ffmpeg_crc $file -i $target_path/$file
+do_ffmpeg_crc $file -i $target_path/$file -pix_fmt rgb24
 fi
 
 if [ -n "$do_yuv4mpeg" ] ; then
