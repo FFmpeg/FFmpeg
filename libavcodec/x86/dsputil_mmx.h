@@ -94,6 +94,35 @@ extern const double ff_pd_2[2];
     SBUTTERFLY(a,c,d,dq,q) /* a=aeim d=bfjn */\
     SBUTTERFLY(t,b,c,dq,q) /* t=cgko c=dhlp */
 
+static inline void transpose4x4(uint8_t *dst, uint8_t *src, int dst_stride, int src_stride){
+    __asm__ volatile( //FIXME could save 1 instruction if done as 8x4 ...
+        "movd  %4, %%mm0                \n\t"
+        "movd  %5, %%mm1                \n\t"
+        "movd  %6, %%mm2                \n\t"
+        "movd  %7, %%mm3                \n\t"
+        "punpcklbw %%mm1, %%mm0         \n\t"
+        "punpcklbw %%mm3, %%mm2         \n\t"
+        "movq %%mm0, %%mm1              \n\t"
+        "punpcklwd %%mm2, %%mm0         \n\t"
+        "punpckhwd %%mm2, %%mm1         \n\t"
+        "movd  %%mm0, %0                \n\t"
+        "punpckhdq %%mm0, %%mm0         \n\t"
+        "movd  %%mm0, %1                \n\t"
+        "movd  %%mm1, %2                \n\t"
+        "punpckhdq %%mm1, %%mm1         \n\t"
+        "movd  %%mm1, %3                \n\t"
+
+        : "=m" (*(uint32_t*)(dst + 0*dst_stride)),
+          "=m" (*(uint32_t*)(dst + 1*dst_stride)),
+          "=m" (*(uint32_t*)(dst + 2*dst_stride)),
+          "=m" (*(uint32_t*)(dst + 3*dst_stride))
+        :  "m" (*(uint32_t*)(src + 0*src_stride)),
+           "m" (*(uint32_t*)(src + 1*src_stride)),
+           "m" (*(uint32_t*)(src + 2*src_stride)),
+           "m" (*(uint32_t*)(src + 3*src_stride))
+    );
+}
+
 // e,f,g,h can be memory
 // out: a,d,t,c
 #define TRANSPOSE8x4(a,b,c,d,e,f,g,h,t)\
