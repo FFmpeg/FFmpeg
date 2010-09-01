@@ -95,7 +95,7 @@ WEIGHT_FUNC_DBL_MM 16
 WEIGHT_FUNC_DBL_MM  8
 
 %macro WEIGHT_FUNC_MM 4
-cglobal h264_weight_%1x%2_%4, 7, 7, %
+cglobal h264_weight_%1x%2_%4, 7, 7, %3
     WEIGHT_SETUP
     mov        r2, %2
 %if %2 == 16
