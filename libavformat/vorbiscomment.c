@@ -43,7 +43,7 @@ int ff_vorbiscomment_length(AVMetadata *m, const char *vendor_string,
     *count = 0;
     if (m) {
         AVMetadataTag *tag = NULL;
-        while ( (tag = av_metadata_get(m, "", tag, AV_METADATA_IGNORE_SUFFIX) ) ) {
+        while ((tag = av_metadata_get(m, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
             len += 4 +strlen(tag->key) + 1 + strlen(tag->value);
             (*count)++;
         }
@@ -59,7 +59,7 @@ int ff_vorbiscomment_write(uint8_t **p, AVMetadata *m,
     if (m) {
         AVMetadataTag *tag = NULL;
         bytestream_put_le32(p, count);
-        while ( (tag = av_metadata_get(m, "", tag, AV_METADATA_IGNORE_SUFFIX) ) ) {
+        while ((tag = av_metadata_get(m, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
             unsigned int len1 = strlen(tag->key);
             unsigned int len2 = strlen(tag->value);
             bytestream_put_le32(p, len1+1+len2);
