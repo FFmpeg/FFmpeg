@@ -86,7 +86,7 @@ cglobal h264_weight_16x%1_mmx2, 5, 5, 0
     jnz .nextrow
     REP_RET
 %else
-    jmp _ff_h264_weight_16x16_mmx2.nextrow
+    jmp mangle(ff_h264_weight_16x16_mmx2.nextrow)
 %endif
 %endmacro
 
@@ -107,7 +107,7 @@ cglobal h264_weight_%1x%2_%4, 7, 7, %
     jnz .nextrow
     REP_RET
 %else
-    jmp _ff_h264_weight_%1x16_%4.nextrow
+    jmp mangle(ff_h264_weight_%1x16_%4.nextrow)
 %endif
 %endmacro
 
@@ -139,7 +139,7 @@ cglobal h264_weight_%1x%2_%5, 5, 5, %4
     jnz .nextrow
     REP_RET
 %else
-    jmp _ff_h264_weight_%1x%3_%5.nextrow
+    jmp mangle(ff_h264_weight_%1x%3_%5.nextrow)
 %endif
 %endmacro
 
@@ -215,7 +215,7 @@ cglobal h264_biweight_16x%1_mmx2, 7, 7, 0
     jnz .nextrow
     REP_RET
 %else
-    jmp _ff_h264_biweight_16x16_mmx2.nextrow
+    jmp mangle(ff_h264_biweight_16x16_mmx2.nextrow)
 %endif
 %endmacro
 
@@ -239,7 +239,7 @@ cglobal h264_biweight_%1x%2_%4, 7, 7, %3
     jnz .nextrow
     REP_RET
 %else
-    jmp _ff_h264_biweight_%1x16_%4.nextrow
+    jmp mangle(ff_h264_biweight_%1x16_%4.nextrow)
 %endif
 %endmacro
 
@@ -274,7 +274,7 @@ cglobal h264_biweight_%1x%2_%5, 7, 7, %4
     jnz .nextrow
     REP_RET
 %else
-    jmp _ff_h264_biweight_%1x%3_%5.nextrow
+    jmp mangle(ff_h264_biweight_%1x%3_%5.nextrow)
 %endif
 %endmacro
 
@@ -334,7 +334,7 @@ cglobal h264_biweight_16x%1_ssse3, 7, 7, 8
     jnz .nextrow
     REP_RET
 %else
-    jmp _ff_h264_biweight_16x16_ssse3.nextrow
+    jmp mangle(ff_h264_biweight_16x16_ssse3.nextrow)
 %endif
 %endmacro
 
@@ -365,7 +365,7 @@ cglobal h264_biweight_8x%1_ssse3, 7, 7, 8
     jnz .nextrow
     REP_RET
 %else
-    jmp _ff_h264_biweight_8x16_ssse3.nextrow
+    jmp mangle(ff_h264_biweight_8x16_ssse3.nextrow)
 %endif
 %endmacro
 
