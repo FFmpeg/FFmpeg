@@ -43,6 +43,14 @@
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
 
+/**
+ * Those FF_API_* defines are not part of public API.
+ * They may change, break or disappear at any time.
+ */
+#ifndef FF_API_PALETTE_CONTROL
+#define FF_API_PALETTE_CONTROL  (LIBAVCODEC_VERSION_MAJOR < 54)
+#endif
+
 #define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
 #define AV_TIME_BASE            1000000
 #define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
@@ -2025,12 +2033,14 @@ typedef struct AVCodecContext {
      */
     int lmax;
 
+#if FF_API_PALETTE_CONTROL
     /**
      * palette control structure
      * - encoding: ??? (no palette-enabled encoder yet)
      * - decoding: Set by user.
      */
     struct AVPaletteControl *palctrl;
+#endif
 
     /**
      * noise reduction strength
@@ -2852,7 +2862,7 @@ typedef struct AVPicture {
     int linesize[4];       ///< number of bytes per line
 } AVPicture;
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_PALETTE_CONTROL
 /**
  * AVPaletteControl
  * This structure defines a method for communicating palette changes
