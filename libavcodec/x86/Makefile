@@ -10,7 +10,7 @@ YASM-OBJS-$(CONFIG_GPL)                += x86/h264_idct_sse2.o          \
 
 MMX-OBJS-$(CONFIG_H264DSP)             += x86/h264dsp_mmx.o
 YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock_sse2.o       \
-                                          x86/h264_weight_sse2.o        \
+                                          x86/h264_weight.o             \
 
 YASM-OBJS-$(CONFIG_H264PRED)           += x86/h264_intrapred.o
 MMX-OBJS-$(CONFIG_H264PRED)            += x86/h264_intrapred_init.o

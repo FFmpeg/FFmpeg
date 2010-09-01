@@ -921,115 +921,33 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
 /***********************************/
 /* weighted prediction */
 
-static inline void ff_h264_weight_WxH_mmx2(uint8_t *dst, int stride, int log2_denom, int weight, int offset, int w, int h)
-{
-    int x, y;
-    offset <<= log2_denom;
-    offset += (1 << log2_denom) >> 1;
-    __asm__ volatile(
-        "movd    %0, %%mm4        \n\t"
-        "movd    %1, %%mm5        \n\t"
-        "movd    %2, %%mm6        \n\t"
-        "pshufw  $0, %%mm4, %%mm4 \n\t"
-        "pshufw  $0, %%mm5, %%mm5 \n\t"
-        "pxor    %%mm7, %%mm7     \n\t"
-        :: "g"(weight), "g"(offset), "g"(log2_denom)
-    );
-    for(y=0; y<h; y+=2){
-        for(x=0; x<w; x+=4){
-            __asm__ volatile(
-                "movd      %0,    %%mm0 \n\t"
-                "movd      %1,    %%mm1 \n\t"
-                "punpcklbw %%mm7, %%mm0 \n\t"
-                "punpcklbw %%mm7, %%mm1 \n\t"
-                "pmullw    %%mm4, %%mm0 \n\t"
-                "pmullw    %%mm4, %%mm1 \n\t"
-                "paddsw    %%mm5, %%mm0 \n\t"
-                "paddsw    %%mm5, %%mm1 \n\t"
-                "psraw     %%mm6, %%mm0 \n\t"
-                "psraw     %%mm6, %%mm1 \n\t"
-                "packuswb  %%mm7, %%mm0 \n\t"
-                "packuswb  %%mm7, %%mm1 \n\t"
-                "movd      %%mm0, %0    \n\t"
-                "movd      %%mm1, %1    \n\t"
-                : "+m"(*(uint32_t*)(dst+x)),
-                  "+m"(*(uint32_t*)(dst+x+stride))
-            );
-        }
-        dst += 2*stride;
-    }
-}
+#define H264_WEIGHT(W, H, OPT) \
+void ff_h264_weight_ ## W ## x ## H ## _ ## OPT(uint8_t *dst, \
+    int stride, int log2_denom, int weight, int offset);
 
-static inline void ff_h264_biweight_WxH_mmx2(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offset, int w, int h)
-{
-    int x, y;
-    offset = ((offset + 1) | 1) << log2_denom;
-    __asm__ volatile(
-        "movd    %0, %%mm3        \n\t"
-        "movd    %1, %%mm4        \n\t"
-        "movd    %2, %%mm5        \n\t"
-        "movd    %3, %%mm6        \n\t"
-        "pshufw  $0, %%mm3, %%mm3 \n\t"
-        "pshufw  $0, %%mm4, %%mm4 \n\t"
-        "pshufw  $0, %%mm5, %%mm5 \n\t"
-        "pxor    %%mm7, %%mm7     \n\t"
-        :: "g"(weightd), "g"(weights), "g"(offset), "g"(log2_denom+1)
-    );
-    for(y=0; y<h; y++){
-        for(x=0; x<w; x+=4){
-            __asm__ volatile(
-                "movd      %0,    %%mm0 \n\t"
-                "movd      %1,    %%mm1 \n\t"
-                "punpcklbw %%mm7, %%mm0 \n\t"
-                "punpcklbw %%mm7, %%mm1 \n\t"
-                "pmullw    %%mm3, %%mm0 \n\t"
-                "pmullw    %%mm4, %%mm1 \n\t"
-                "paddsw    %%mm1, %%mm0 \n\t"
-                "paddsw    %%mm5, %%mm0 \n\t"
-                "psraw     %%mm6, %%mm0 \n\t"
-                "packuswb  %%mm0, %%mm0 \n\t"
-                "movd      %%mm0, %0    \n\t"
-                : "+m"(*(uint32_t*)(dst+x))
-                :  "m"(*(uint32_t*)(src+x))
-            );
-        }
-        src += stride;
-        dst += stride;
-    }
-}
+#define H264_BIWEIGHT(W, H, OPT) \
+void ff_h264_biweight_ ## W ## x ## H ## _ ## OPT(uint8_t *dst, \
+    uint8_t *src, int stride, int log2_denom, int weightd, \
+    int weights, int offset);
 
-#define H264_WEIGHT(W,H) \
-static void ff_h264_biweight_ ## W ## x ## H ## _mmx2(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offset){ \
-    ff_h264_biweight_WxH_mmx2(dst, src, stride, log2_denom, weightd, weights, offset, W, H); \
-} \
-static void ff_h264_weight_ ## W ## x ## H ## _mmx2(uint8_t *dst, int stride, int log2_denom, int weight, int offset){ \
-    ff_h264_weight_WxH_mmx2(dst, stride, log2_denom, weight, offset, W, H); \
-}
+#define H264_BIWEIGHT_MMX(W,H) \
+H264_WEIGHT  (W, H, mmx2) \
+H264_BIWEIGHT(W, H, mmx2)
 
-H264_WEIGHT(16,16)
-H264_WEIGHT(16, 8)
-H264_WEIGHT( 8,16)
-H264_WEIGHT( 8, 8)
-H264_WEIGHT( 8, 4)
-H264_WEIGHT( 4, 8)
-H264_WEIGHT( 4, 4)
-H264_WEIGHT( 4, 2)
+#define H264_BIWEIGHT_MMX_SSE(W,H) \
+H264_BIWEIGHT_MMX(W, H) \
+H264_WEIGHT      (W, H, sse2) \
+H264_BIWEIGHT    (W, H, sse2) \
+H264_BIWEIGHT    (W, H, ssse3)
 
-void ff_h264_biweight_8x8_sse2(uint8_t *dst, uint8_t *src, int stride,
-                               int log2_denom, int weightd, int weights,
-                               int offset);
-
-void ff_h264_biweight_16x16_sse2(uint8_t *dst, uint8_t *src, int stride,
-                                 int log2_denom, int weightd, int weights,
-                                 int offset);
-
-void ff_h264_biweight_8x8_ssse3(uint8_t *dst, uint8_t *src, int stride,
-                                int log2_denom, int weightd, int weights,
-                                int offset);
-
-void ff_h264_biweight_16x16_ssse3(uint8_t *dst, uint8_t *src, int stride,
-                                  int log2_denom, int weightd, int weights,
-                                  int offset);
+H264_BIWEIGHT_MMX_SSE(16, 16)
+H264_BIWEIGHT_MMX_SSE(16,  8)
+H264_BIWEIGHT_MMX_SSE( 8, 16)
+H264_BIWEIGHT_MMX_SSE( 8,  8)
+H264_BIWEIGHT_MMX_SSE( 8,  4)
+H264_BIWEIGHT_MMX    ( 4,  8)
+H264_BIWEIGHT_MMX    ( 4,  4)
+H264_BIWEIGHT_MMX    ( 4,  2)
 
 void ff_x264_deblock_v_luma_sse2(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0);
 void ff_x264_deblock_h_luma_sse2(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0);
@@ -1076,7 +994,18 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
             c->h264_v_loop_filter_chroma_intra= h264_v_loop_filter_chroma_intra_mmx2;
             c->h264_h_loop_filter_chroma_intra= h264_h_loop_filter_chroma_intra_mmx2;
             c->h264_loop_filter_strength= h264_loop_filter_strength_mmx2;
+        }
+        if(mm_flags & FF_MM_SSE2){
+            c->h264_idct8_add = ff_h264_idct8_add_sse2;
+            c->h264_idct8_add4= ff_h264_idct8_add4_sse2;
+        }
 
+#if HAVE_YASM
+        if (mm_flags & FF_MM_MMX2){
+#if ARCH_X86_32
+            c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_mmxext;
+            c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_mmxext;
+#endif
             c->weight_h264_pixels_tab[0]= ff_h264_weight_16x16_mmx2;
             c->weight_h264_pixels_tab[1]= ff_h264_weight_16x8_mmx2;
             c->weight_h264_pixels_tab[2]= ff_h264_weight_8x16_mmx2;
@@ -1094,21 +1023,20 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
             c->biweight_h264_pixels_tab[5]= ff_h264_biweight_4x8_mmx2;
             c->biweight_h264_pixels_tab[6]= ff_h264_biweight_4x4_mmx2;
             c->biweight_h264_pixels_tab[7]= ff_h264_biweight_4x2_mmx2;
-        }
-        if(mm_flags & FF_MM_SSE2){
-            c->h264_idct8_add = ff_h264_idct8_add_sse2;
-            c->h264_idct8_add4= ff_h264_idct8_add4_sse2;
-        }
 
-#if HAVE_YASM
-        if (mm_flags & FF_MM_MMX2){
-#if ARCH_X86_32
-            c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_mmxext;
-            c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_mmxext;
-#endif
             if( mm_flags&FF_MM_SSE2 ){
+                c->weight_h264_pixels_tab[0]= ff_h264_weight_16x16_sse2;
+                c->weight_h264_pixels_tab[1]= ff_h264_weight_16x8_sse2;
+                c->weight_h264_pixels_tab[2]= ff_h264_weight_8x16_sse2;
+                c->weight_h264_pixels_tab[3]= ff_h264_weight_8x8_sse2;
+                c->weight_h264_pixels_tab[4]= ff_h264_weight_8x4_sse2;
+
                 c->biweight_h264_pixels_tab[0]= ff_h264_biweight_16x16_sse2;
+                c->biweight_h264_pixels_tab[1]= ff_h264_biweight_16x8_sse2;
+                c->biweight_h264_pixels_tab[2]= ff_h264_biweight_8x16_sse2;
                 c->biweight_h264_pixels_tab[3]= ff_h264_biweight_8x8_sse2;
+                c->biweight_h264_pixels_tab[4]= ff_h264_biweight_8x4_sse2;
+
 #if ARCH_X86_64 || !defined(__ICC) || __ICC > 1110
                 c->h264_v_loop_filter_luma = ff_x264_deblock_v_luma_sse2;
                 c->h264_h_loop_filter_luma = ff_x264_deblock_h_luma_sse2;
@@ -1123,7 +1051,10 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
             }
             if ( mm_flags&FF_MM_SSSE3 ){
                 c->biweight_h264_pixels_tab[0]= ff_h264_biweight_16x16_ssse3;
+                c->biweight_h264_pixels_tab[1]= ff_h264_biweight_16x8_ssse3;
+                c->biweight_h264_pixels_tab[2]= ff_h264_biweight_8x16_ssse3;
                 c->biweight_h264_pixels_tab[3]= ff_h264_biweight_8x8_ssse3;
+                c->biweight_h264_pixels_tab[4]= ff_h264_biweight_8x4_ssse3;
             }
         }
 #endif
