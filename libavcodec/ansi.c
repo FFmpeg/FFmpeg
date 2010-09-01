@@ -24,9 +24,9 @@
  * ASCII/ANSI art decoder
  */
 
+#include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "cga_data.h"
-#include <libavutil/lfg.h>
 
 #define ATTR_BOLD         0x01  /**< Bold/Bright-foreground (mode 1) */
 #define ATTR_FAINT        0x02  /**< Faint (mode 2) */

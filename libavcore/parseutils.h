@@ -19,7 +19,7 @@
 #ifndef AVCORE_PARSEUTILS_H
 #define AVCORE_PARSEUTILS_H
 
-#include <libavutil/rational.h>
+#include "libavutil/rational.h"
 
 /**
  * @file

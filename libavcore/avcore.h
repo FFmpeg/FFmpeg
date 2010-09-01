@@ -24,7 +24,7 @@
  * shared media utilities for the libav* libraries
  */
 
-#include <libavutil/avutil.h>
+#include "libavutil/avutil.h"
 
 #define LIBAVCORE_VERSION_MAJOR  0
 #define LIBAVCORE_VERSION_MINOR  6
