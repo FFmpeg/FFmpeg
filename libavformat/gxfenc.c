@@ -678,12 +678,16 @@ static int gxf_write_header(AVFormatContext *s)
                 sc->sample_rate = 60;
                 gxf->flags |= 0x00000080;
                 gxf->time_base = (AVRational){ 1001, 60000 };
-            } else { /* assume PAL */
+            } else if (st->codec->height == 576 || st->codec->height == 608) { /* PAL or PAL+VBI */
                 sc->frame_rate_index = 6;
                 sc->media_type++;
                 sc->sample_rate = 50;
                 gxf->flags |= 0x00000040;
                 gxf->time_base = (AVRational){ 1, 50 };
+            } else {
+                av_log(s, AV_LOG_ERROR, "unsupported video resolution, "
+                       "gxf muxer only accepts PAL or NTSC resolutions currently\n");
+                return -1;
             }
             av_set_pts_info(st, 64, gxf->time_base.num, gxf->time_base.den);
             if (gxf_find_lines_index(st) < 0)
