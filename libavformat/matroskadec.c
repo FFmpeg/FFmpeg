@@ -538,8 +538,8 @@ static int ebml_level_end(MatroskaDemuxContext *matroska)
 static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
                          int max_size, uint64_t *number)
 {
-    int len_mask = 0x80, read = 1, n = 1;
-    int64_t total = 0;
+    int read = 1, n = 1;
+    uint64_t total = 0;
 
     /* The first byte tells us the length in bytes - get_byte() can normally
      * return 0, but since that's not a valid first ebmlID byte, we can
@@ -556,10 +556,7 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
     }
 
     /* get the length of the EBML number */
-    while (read <= max_size && !(total & len_mask)) {
-        read++;
-        len_mask >>= 1;
-    }
+    read = 8 - ff_log2_tab[total];
     if (read > max_size) {
         int64_t pos = url_ftell(pb) - 1;
         av_log(matroska->ctx, AV_LOG_ERROR,
@@ -569,7 +566,7 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
     }
 
     /* read out length */
-    total &= ~len_mask;
+    total ^= 1 << ff_log2_tab[total];
     while (n++ < read)
         total = (total << 8) | get_byte(pb);
 
