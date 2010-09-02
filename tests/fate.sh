@@ -104,7 +104,7 @@ version=$(${src}/version.sh ${src})
 test "$version" = "$(cat version-$slot 2>/dev/null)" && exit 0
 echo ${version} >version-$slot
 
-rm -rf "${build}"
+rm -rf "${build}" *.log
 mkdir -p ${build}
 
 configure >configure.log 2>&1 || fail $? "error configuring"
