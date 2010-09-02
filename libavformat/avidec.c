@@ -759,7 +759,7 @@ static AVStream *get_subtitle_pkt(AVFormatContext *s, AVStream *next_st,
     for (i=0; i<s->nb_streams; i++) {
         st  = s->streams[i];
         ast = st->priv_data;
-        if (st->discard < AVDISCARD_ALL && ast->sub_pkt.data) {
+        if (st->discard < AVDISCARD_ALL && ast && ast->sub_pkt.data) {
             ts = av_rescale_q(ast->sub_pkt.dts, st->time_base, AV_TIME_BASE_Q);
             if (ts <= next_ts && ts < ts_min) {
                 ts_min = ts;
@@ -1294,12 +1294,14 @@ static int avi_read_close(AVFormatContext *s)
         AVStream *st = s->streams[i];
         AVIStream *ast = st->priv_data;
         av_free(st->codec->palctrl);
+        if (ast) {
         if (ast->sub_ctx) {
             av_freep(&ast->sub_ctx->pb);
             av_close_input_stream(ast->sub_ctx);
         }
         av_free(ast->sub_buffer);
         av_free_packet(&ast->sub_pkt);
+        }
     }
 
     if (avi->dv_demux)
