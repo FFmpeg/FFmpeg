@@ -1799,7 +1799,16 @@ filter_cflags=echo
 filter_cppflags=echo
 filter_asflags=echo
 
-if   $cc -v 2>&1 | grep -qi ^gcc; then
+if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
+    cc_type=llvm_gcc
+    cc_version=__VERSION__
+    gcc_extra_ver=$(expr "$($cc --version | head -n1)" : '.*\((.*)\)')
+    cc_ident="llvm-gcc $($cc -dumpversion) $gcc_extra_ver"
+    CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
+    AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
+    speed_cflags='-O3'
+    size_cflags='-Os'
+elif $cc -v 2>&1 | grep -qi ^gcc; then
     cc_type=gcc
     cc_version=__VERSION__
     gcc_extra_ver=$(expr "$($cc --version | head -n1)" : '.*\((.*)\)')
@@ -1969,7 +1978,7 @@ add_asflags $extra_cflags
 
 if test -n "$sysroot"; then
     case "$cc_type" in
-        gcc)
+        gcc|llvm_gcc)
             add_cppflags --sysroot="$sysroot"
             add_ldflags --sysroot="$sysroot"
         ;;
@@ -1988,7 +1997,7 @@ if test "$cpu" = host; then
     enabled cross_compile && die "--cpu=host makes no sense when cross-compiling."
 
     case "$cc_type" in
-        gcc)
+        gcc|llvm_gcc)
             check_native(){
                 $cc $1=native -v -c -o $TMPO $TMPC >$TMPE 2>&1 || return
                 sed -n "/$1=/{
@@ -2876,6 +2885,8 @@ elif enabled gcc; then
     check_cflags -fno-tree-vectorize
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
+elif enabled llvm_gcc; then
+    check_cflags -mllvm -stack-alignment=16
 elif enabled clang; then
     check_cflags -mllvm -stack-alignment=16
     check_cflags -Qunused-arguments
