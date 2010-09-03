@@ -1167,8 +1167,8 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
                             reply->transports[0].source,
                             reply->transports[0].server_port_min, NULL);
             } else {
-            ff_url_join(url, sizeof(url), "rtp", NULL, host,
-                        reply->transports[0].server_port_min, NULL);
+                ff_url_join(url, sizeof(url), "rtp", NULL, host,
+                            reply->transports[0].server_port_min, NULL);
             }
             if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) &&
                 rtp_set_remote_url(rtsp_st->rtp_handle, url) < 0) {
