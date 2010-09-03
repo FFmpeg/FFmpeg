@@ -36,6 +36,7 @@ ALLFFLIBS = avcodec avcore avdevice avfilter avformat avutil postproc swscale
 IFLAGS   := -I$(BUILD_ROOT_REL) -I$(SRC_PATH)
 CPPFLAGS := $(IFLAGS) $(CPPFLAGS)
 CFLAGS   += $(ECFLAGS)
+YASMFLAGS += $(IFLAGS) -Pconfig.asm
 
 HOSTCFLAGS += $(IFLAGS)
 
