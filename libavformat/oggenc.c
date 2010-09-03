@@ -206,14 +206,14 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
 }
 
 static uint8_t *ogg_write_vorbiscomment(int offset, int bitexact,
-                                        int *header_len, AVMetadata *m)
+                                        int *header_len, AVMetadata *m, int framing_bit)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
     int size;
     uint8_t *p, *p0;
     unsigned int count;
 
-    size = offset + ff_vorbiscomment_length(m, vendor, &count);
+    size = offset + ff_vorbiscomment_length(m, vendor, &count) + framing_bit;
     p = av_mallocz(size);
     if (!p)
         return NULL;
@@ -221,6 +221,8 @@ static uint8_t *ogg_write_vorbiscomment(int offset, int bitexact,
 
     p += offset;
     ff_vorbiscomment_write(&p, m, vendor, count);
+    if (framing_bit)
+        bytestream_put_byte(&p, 1);
 
     *header_len = size;
     return p0;
@@ -254,7 +256,7 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
     bytestream_put_buffer(&p, streaminfo, FLAC_STREAMINFO_SIZE);
 
     // second packet: VorbisComment
-    p = ogg_write_vorbiscomment(4, bitexact, &oggstream->header_len[1], m);
+    p = ogg_write_vorbiscomment(4, bitexact, &oggstream->header_len[1], m, 0);
     if (!p)
         return AVERROR(ENOMEM);
     oggstream->header[1] = p;
@@ -285,7 +287,7 @@ static int ogg_build_speex_headers(AVCodecContext *avctx,
     AV_WL32(&oggstream->header[0][68], 0);  // set extra_headers to 0
 
     // second packet: VorbisComment
-    p = ogg_write_vorbiscomment(0, bitexact, &oggstream->header_len[1], m);
+    p = ogg_write_vorbiscomment(0, bitexact, &oggstream->header_len[1], m, 0);
     if (!p)
         return AVERROR(ENOMEM);
     oggstream->header[1] = p;
@@ -352,6 +354,11 @@ static int ogg_write_header(AVFormatContext *s)
                 return err;
             }
         } else {
+            uint8_t *p;
+            char *cstr = st->codec->codec_id == CODEC_ID_VORBIS ? "vorbis" : "theora";
+            int header_type = st->codec->codec_id == CODEC_ID_VORBIS ? 3 : 0x81;
+            int framing_bit = st->codec->codec_id == CODEC_ID_VORBIS ? 1 : 0;
+
             if (ff_split_xiph_headers(st->codec->extradata, st->codec->extradata_size,
                                       st->codec->codec_id == CODEC_ID_VORBIS ? 30 : 42,
                                       oggstream->header, oggstream->header_len) < 0) {
@@ -359,6 +366,17 @@ static int ogg_write_header(AVFormatContext *s)
                 av_freep(&st->priv_data);
                 return -1;
             }
+
+            p = ogg_write_vorbiscomment(7, st->codec->flags & CODEC_FLAG_BITEXACT,
+                                        &oggstream->header_len[1], s->metadata,
+                                        framing_bit);
+            if (!p)
+                return AVERROR(ENOMEM);
+
+            oggstream->header[1] = p;
+            bytestream_put_byte(&p, header_type);
+            bytestream_put_buffer(&p, cstr, 6);
+
             if (st->codec->codec_id == CODEC_ID_THEORA) {
                 /** KFGSHIFT is the width of the less significant section of the granule position
                     The less significant section is the frame count since the last keyframe */
