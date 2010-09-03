@@ -151,4 +151,8 @@ const char *ff_gai_strerror(int ecode);
 #define gai_strerror ff_gai_strerror
 #endif
 
+#ifndef INET6_ADDRSTRLEN
+#define INET6_ADDRSTRLEN INET_ADDRSTRLEN
+#endif
+
 #endif /* AVFORMAT_NETWORK_H */
