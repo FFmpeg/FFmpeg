@@ -1831,7 +1831,7 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
                  * as this one. */
                 int i;
                 for (i = 0; i < rt->nb_rtsp_streams; i++) {
-                    RTPDemuxContext *rtpctx2 = rtsp_st->transport_priv;
+                    RTPDemuxContext *rtpctx2 = rt->rtsp_streams[i]->transport_priv;
                     if (rtpctx2 &&
                         rtpctx2->first_rtcp_ntp_time == AV_NOPTS_VALUE)
                         rtpctx2->first_rtcp_ntp_time = rtpctx->first_rtcp_ntp_time;
