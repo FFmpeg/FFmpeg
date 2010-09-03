@@ -3187,18 +3187,18 @@ fi
 print_config ARCH_   "$config_files" $ARCH_LIST
 print_config HAVE_   "$config_files" $HAVE_LIST
 print_config CONFIG_ "$config_files" $CONFIG_LIST       \
-                                      $CONFIG_EXTRA      \
-                                      $DECODER_LIST      \
-                                      $ENCODER_LIST      \
-                                      $HWACCEL_LIST      \
-                                      $PARSER_LIST       \
-                                      $BSF_LIST          \
-                                      $DEMUXER_LIST      \
-                                      $MUXER_LIST        \
-                                      $FILTER_LIST       \
-                                      $PROTOCOL_LIST     \
-                                      $INDEV_LIST        \
-                                      $OUTDEV_LIST       \
+                                     $CONFIG_EXTRA      \
+                                     $DECODER_LIST      \
+                                     $ENCODER_LIST      \
+                                     $HWACCEL_LIST      \
+                                     $PARSER_LIST       \
+                                     $BSF_LIST          \
+                                     $DEMUXER_LIST      \
+                                     $MUXER_LIST        \
+                                     $FILTER_LIST       \
+                                     $PROTOCOL_LIST     \
+                                     $INDEV_LIST        \
+                                     $OUTDEV_LIST       \
 
 cat >>config.mak <<EOF
 ACODEC_TESTS=$(print_enabled -n _test $ACODEC_TESTS)
