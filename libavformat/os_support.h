@@ -55,6 +55,10 @@ typedef int socklen_t;
 #define closesocket close
 #endif
 
+#ifndef INET6_ADDRSTRLEN
+#define INET6_ADDRSTRLEN INET_ADDRSTRLEN
+#endif
+
 #if CONFIG_FFSERVER
 #if !HAVE_POLL_H
 typedef unsigned long nfds_t;

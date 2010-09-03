@@ -97,6 +97,7 @@ typedef struct RTSPTransportField {
     int ttl;
 
     struct sockaddr_storage destination; /**< destination IP address */
+    char source[INET6_ADDRSTRLEN + 1]; /**< source IP address */
 
     /** data/packet transport protocol; e.g. RTP or RDT */
     enum RTSPTransport transport;

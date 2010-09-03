@@ -701,7 +701,14 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
                     get_word_sep(buf, sizeof(buf), ";,", &p);
                     get_sockaddr(buf, &th->destination);
                 }
+            } else if (!strcmp(parameter, "source")) {
+                if (*p == '=') {
+                    p++;
+                    get_word_sep(buf, sizeof(buf), ";,", &p);
+                    av_strlcpy(th->source, buf, sizeof(th->source));
+                }
             }
+
             while (*p != ';' && *p != '\0' && *p != ',')
                 p++;
             if (*p == ';')
@@ -1154,9 +1161,15 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
         case RTSP_LOWER_TRANSPORT_UDP: {
             char url[1024];
 
-            /* XXX: also use address if specified */
+            /* Use source address if specified */
+            if (reply->transports[0].source[0]) {
+                ff_url_join(url, sizeof(url), "rtp", NULL,
+                            reply->transports[0].source,
+                            reply->transports[0].server_port_min, NULL);
+            } else {
             ff_url_join(url, sizeof(url), "rtp", NULL, host,
                         reply->transports[0].server_port_min, NULL);
+            }
             if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) &&
                 rtp_set_remote_url(rtsp_st->rtp_handle, url) < 0) {
                 err = AVERROR_INVALIDDATA;
