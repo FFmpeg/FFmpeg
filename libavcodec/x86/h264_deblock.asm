@@ -4,6 +4,7 @@
 ;* Copyright (C) 2005-2008 x264 project
 ;*
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
+;*          Jason Garrett-Glaser <darkshikari@gmail.com>
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -23,12 +24,14 @@
 ;******************************************************************************
 
 %include "x86inc.asm"
+%include "x86util.asm"
 
 SECTION_RODATA
-pb_00: times 16 db 0x00
-pb_01: times 16 db 0x01
-pb_03: times 16 db 0x03
-pb_a1: times 16 db 0xa1
+
+cextern pb_0
+cextern pb_1
+cextern pb_3
+cextern pb_A1
 
 SECTION .text
 
@@ -104,7 +107,7 @@ SECTION .text
     movd       %8, m5
 %endmacro
 
-%macro SBUTTERFLY 4
+%macro SBUTTERFLY3 4
     movq       %4, %2
     punpckl%1  %2, %3
     punpckh%1  %4, %3
@@ -120,19 +123,19 @@ SECTION .text
     movq  m4, %5
     movq  m5, %6
     movq  m6, %7
-    SBUTTERFLY bw, m0, m1, m7
-    SBUTTERFLY bw, m2, m3, m1
-    SBUTTERFLY bw, m4, m5, m3
+    SBUTTERFLY3 bw, m0, m1, m7
+    SBUTTERFLY3 bw, m2, m3, m1
+    SBUTTERFLY3 bw, m4, m5, m3
     movq  [%9+0x10], m1
-    SBUTTERFLY bw, m6, %8, m5
-    SBUTTERFLY wd, m0, m2, m1
-    SBUTTERFLY wd, m4, m6, m2
+    SBUTTERFLY3 bw, m6, %8, m5
+    SBUTTERFLY3 wd, m0, m2, m1
+    SBUTTERFLY3 wd, m4, m6, m2
     punpckhdq m0, m4
     movq  [%9+0x00], m0
-    SBUTTERFLY wd, m7, [%9+0x10], m6
-    SBUTTERFLY wd, m3, m5, m4
-    SBUTTERFLY dq, m7, m3, m0
-    SBUTTERFLY dq, m1, m2, m5
+    SBUTTERFLY3 wd, m7, [%9+0x10], m6
+    SBUTTERFLY3 wd, m3, m5, m4
+    SBUTTERFLY3 dq, m7, m3, m0
+    SBUTTERFLY3 dq, m1, m2, m5
     punpckldq m6, m4
     movq  [%9+0x10], m1
     movq  [%9+0x20], m5
@@ -151,25 +154,25 @@ SECTION .text
     movq  m4, %5
     movq  m5, %6
     movq  m6, %7
-    SBUTTERFLY bw, m0, m1, m7
-    SBUTTERFLY bw, m2, m3, m1
-    SBUTTERFLY bw, m4, m5, m3
-    SBUTTERFLY bw, m6, %8, m5
+    SBUTTERFLY3 bw, m0, m1, m7
+    SBUTTERFLY3 bw, m2, m3, m1
+    SBUTTERFLY3 bw, m4, m5, m3
+    SBUTTERFLY3 bw, m6, %8, m5
     movq  %9,  m3
-    SBUTTERFLY wd, m0, m2, m3
-    SBUTTERFLY wd, m4, m6, m2
-    SBUTTERFLY wd, m7, m1, m6
+    SBUTTERFLY3 wd, m0, m2, m3
+    SBUTTERFLY3 wd, m4, m6, m2
+    SBUTTERFLY3 wd, m7, m1, m6
     movq  %11, m2
     movq  m2,  %9
-    SBUTTERFLY wd, m2, m5, m1
-    SBUTTERFLY dq, m0, m4, m5
-    SBUTTERFLY dq, m7, m2, m4
+    SBUTTERFLY3 wd, m2, m5, m1
+    SBUTTERFLY3 dq, m0, m4, m5
+    SBUTTERFLY3 dq, m7, m2, m4
     movq  %9,  m0
     movq  %10, m5
     movq  %13, m7
     movq  %14, m4
-    SBUTTERFLY dq, m3, %11, m0
-    SBUTTERFLY dq, m6, m1, m5
+    SBUTTERFLY3 dq, m3, %11, m0
+    SBUTTERFLY3 dq, m6, m1, m5
     movq  %11, m3
     movq  %12, m0
     movq  %15, m6
@@ -235,19 +238,19 @@ SECTION .text
 ; clobbers: m0,3-6
 %macro DEBLOCK_P0_Q0 0
     mova    m5, m1
-    pxor    m5, m2           ; p0^q0
-    pand    m5, [pb_01] ; (p0^q0)&1
+    pxor    m5, m2       ; p0^q0
+    pand    m5, [pb_1]   ; (p0^q0)&1
     pcmpeqb m4, m4
     pxor    m3, m4
-    pavgb   m3, m0           ; (p1 - q1 + 256)>>1
-    pavgb   m3, [pb_03] ; (((p1 - q1 + 256)>>1)+4)>>1 = 64+2+(p1-q1)>>2
+    pavgb   m3, m0       ; (p1 - q1 + 256)>>1
+    pavgb   m3, [pb_3]   ; (((p1 - q1 + 256)>>1)+4)>>1 = 64+2+(p1-q1)>>2
     pxor    m4, m1
-    pavgb   m4, m2           ; (q0 - p0 + 256)>>1
+    pavgb   m4, m2       ; (q0 - p0 + 256)>>1
     pavgb   m3, m5
-    paddusb m3, m4           ; d+128+33
-    mova    m6, [pb_a1]
+    paddusb m3, m4       ; d+128+33
+    mova    m6, [pb_A1]
     psubusb m6, m3
-    psubusb m3, [pb_a1]
+    psubusb m3, [pb_A1]
     pminub  m6, m7
     pminub  m3, m7
     psubusb m1, m6
@@ -263,10 +266,10 @@ SECTION .text
 %macro LUMA_Q1 6
     mova    %6, m1
     pavgb   %6, m2
-    pavgb   %2, %6             ; avg(p2,avg(p0,q0))
+    pavgb   %2, %6       ; avg(p2,avg(p0,q0))
     pxor    %6, %3
-    pand    %6, [pb_01] ; (p2^avg(p0,q0))&1
-    psubusb %2, %6             ; (p2+((p0+q0+1)>>1))>>1
+    pand    %6, [pb_1]   ; (p2^avg(p0,q0))&1
+    psubusb %2, %6       ; (p2+((p0+q0+1)>>1))>>1
     mova    %6, %1
     psubusb %6, %5
     paddusb %5, %1
@@ -495,6 +498,8 @@ cglobal x264_deblock_h_luma_%1, 0,5
     RET
 %endmacro ; DEBLOCK_LUMA
 
+INIT_MMX
+DEBLOCK_LUMA mmxext, v8, 8
 INIT_XMM
 DEBLOCK_LUMA sse2, v, 16
 
@@ -517,9 +522,9 @@ DEBLOCK_LUMA sse2, v, 16
     mova  t3, t2
     mova  t4, t2
     psrlw t2, 1
-    pavgb t2, mpb_00
+    pavgb t2, mpb_0
     pxor  t2, t0
-    pand  t2, mpb_01
+    pand  t2, mpb_1
     psubb t0, t2 ; p1' = (p2+p1+p0+q0+2)/4;
 
     mova  t1, p2
@@ -528,21 +533,21 @@ DEBLOCK_LUMA sse2, v, 16
     psubb t2, q1
     paddb t3, t3
     psubb t3, t2 ; p2+2*p1+2*p0+2*q0+q1
-    pand  t2, mpb_01
+    pand  t2, mpb_1
     psubb t1, t2
     pavgb t1, p1
     pavgb t1, t5 ; (((p2+q1)/2 + p1+1)/2 + (p0+q0+1)/2 + 1)/2
     psrlw t3, 2
-    pavgb t3, mpb_00
+    pavgb t3, mpb_0
     pxor  t3, t1
-    pand  t3, mpb_01
+    pand  t3, mpb_1
     psubb t1, t3 ; p0'a = (p2+2*p1+2*p0+2*q0+q1+4)/8
 
     mova  t3, p0
     mova  t2, p0
     pxor  t3, q1
     pavgb t2, q1
-    pand  t3, mpb_01
+    pand  t3, mpb_1
     psubb t2, t3
     pavgb t2, p1 ; p0'b = (2*p1+p0+q0+2)/4
 
@@ -562,9 +567,9 @@ DEBLOCK_LUMA sse2, v, 16
     paddb t2, t2
     paddb t2, t4 ; 2*p3+3*p2+p1+p0+q0
     psrlw t2, 2
-    pavgb t2, mpb_00
+    pavgb t2, mpb_0
     pxor  t2, t1
-    pand  t2, mpb_01
+    pand  t2, mpb_1
     psubb t1, t2 ; p2' = (2*p3+3*p2+p1+p0+q0+4)/8
 
     pxor  t0, p1
@@ -603,8 +608,8 @@ DEBLOCK_LUMA sse2, v, 16
     %define mask0 m12
     %define mask1p m13
     %define mask1q [rsp-24]
-    %define mpb_00 m14
-    %define mpb_01 m15
+    %define mpb_0 m14
+    %define mpb_1 m15
 %else
     %define spill(x) [esp+16*x+((stack_offset+4)&15)]
     %define p2 [r4+r1]
@@ -614,8 +619,8 @@ DEBLOCK_LUMA sse2, v, 16
     %define mask0 spill(2)
     %define mask1p spill(3)
     %define mask1q spill(4)
-    %define mpb_00 [pb_00]
-    %define mpb_01 [pb_01]
+    %define mpb_0 [pb_0]
+    %define mpb_1 [pb_1]
 %endif
 
 ;-----------------------------------------------------------------------------
@@ -638,12 +643,12 @@ cglobal x264_deblock_%2_luma_intra_%1, 4,6,16
     mova    q0, [r0]
     mova    q1, [r0+r1]
 %ifdef ARCH_X86_64
-    pxor    mpb_00, mpb_00
-    mova    mpb_01, [pb_01]
+    pxor    mpb_0, mpb_0
+    mova    mpb_1, [pb_1]
     LOAD_MASK r2d, r3d, t5 ; m5=beta-1, t5=alpha-1, m7=mask0
     SWAP    7, 12 ; m12=mask0
-    pavgb   t5, mpb_00
-    pavgb   t5, mpb_01 ; alpha/4+1
+    pavgb   t5, mpb_0
+    pavgb   t5, mpb_1 ; alpha/4+1
     movdqa  p2, [r4+r1]
     movdqa  q2, [r0+2*r1]
     DIFF_GT2 p0, q0, t5, t0, t3 ; t0 = |p0-q0| > alpha/4+1
@@ -658,8 +663,8 @@ cglobal x264_deblock_%2_luma_intra_%1, 4,6,16
     LOAD_MASK r2d, r3d, t5 ; m5=beta-1, t5=alpha-1, m7=mask0
     mova    m4, t5
     mova    mask0, m7
-    pavgb   m4, [pb_00]
-    pavgb   m4, [pb_01] ; alpha/4+1
+    pavgb   m4, [pb_0]
+    pavgb   m4, [pb_1] ; alpha/4+1
     DIFF_GT2 p0, q0, m4, m6, m7 ; m6 = |p0-q0| > alpha/4+1
     pand    m6, mask0
     DIFF_GT2 p0, p2, m5, m4, m7 ; m4 = |p2-p0| > beta-1
@@ -759,3 +764,126 @@ DEBLOCK_LUMA_INTRA sse2, v
 INIT_MMX
 DEBLOCK_LUMA_INTRA mmxext, v8
 %endif
+
+
+
+INIT_MMX
+
+%macro CHROMA_V_START 0
+    dec    r2d      ; alpha-1
+    dec    r3d      ; beta-1
+    mov    t5, r0
+    sub    t5, r1
+    sub    t5, r1
+%endmacro
+
+%macro CHROMA_H_START 0
+    dec    r2d
+    dec    r3d
+    sub    r0, 2
+    lea    t6, [r1*3]
+    mov    t5, r0
+    add    r0, t6
+%endmacro
+
+%define t5 r5
+%define t6 r6
+
+;-----------------------------------------------------------------------------
+; void x264_deblock_v_chroma( uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0 )
+;-----------------------------------------------------------------------------
+cglobal x264_deblock_v_chroma_mmxext, 5,6
+    CHROMA_V_START
+    movq  m0, [t5]
+    movq  m1, [t5+r1]
+    movq  m2, [r0]
+    movq  m3, [r0+r1]
+    call x264_chroma_inter_body_mmxext
+    movq  [t5+r1], m1
+    movq  [r0], m2
+    RET
+
+;-----------------------------------------------------------------------------
+; void x264_deblock_h_chroma( uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0 )
+;-----------------------------------------------------------------------------
+cglobal x264_deblock_h_chroma_mmxext, 5,7
+%ifdef ARCH_X86_64
+    %define buf0 [rsp-24]
+    %define buf1 [rsp-16]
+%else
+    %define buf0 r0m
+    %define buf1 r2m
+%endif
+    CHROMA_H_START
+    TRANSPOSE4x8_LOAD  PASS8ROWS(t5, r0, r1, t6)
+    movq  buf0, m0
+    movq  buf1, m3
+    call x264_chroma_inter_body_mmxext
+    movq  m0, buf0
+    movq  m3, buf1
+    TRANSPOSE8x4_STORE PASS8ROWS(t5, r0, r1, t6)
+    RET
+
+ALIGN 16
+x264_chroma_inter_body_mmxext:
+    LOAD_MASK  r2d, r3d
+    movd       m6, [r4] ; tc0
+    punpcklbw  m6, m6
+    pand       m7, m6
+    DEBLOCK_P0_Q0
+    ret
+
+
+
+; in: %1=p0 %2=p1 %3=q1
+; out: p0 = (p0 + q1 + 2*p1 + 2) >> 2
+%macro CHROMA_INTRA_P0 3
+    movq    m4, %1
+    pxor    m4, %3
+    pand    m4, [pb_1] ; m4 = (p0^q1)&1
+    pavgb   %1, %3
+    psubusb %1, m4
+    pavgb   %1, %2             ; dst = avg(p1, avg(p0,q1) - ((p0^q1)&1))
+%endmacro
+
+%define t5 r4
+%define t6 r5
+
+;-----------------------------------------------------------------------------
+; void x264_deblock_v_chroma_intra( uint8_t *pix, int stride, int alpha, int beta )
+;-----------------------------------------------------------------------------
+cglobal x264_deblock_v_chroma_intra_mmxext, 4,5
+    CHROMA_V_START
+    movq  m0, [t5]
+    movq  m1, [t5+r1]
+    movq  m2, [r0]
+    movq  m3, [r0+r1]
+    call x264_chroma_intra_body_mmxext
+    movq  [t5+r1], m1
+    movq  [r0], m2
+    RET
+
+;-----------------------------------------------------------------------------
+; void x264_deblock_h_chroma_intra( uint8_t *pix, int stride, int alpha, int beta )
+;-----------------------------------------------------------------------------
+cglobal x264_deblock_h_chroma_intra_mmxext, 4,6
+    CHROMA_H_START
+    TRANSPOSE4x8_LOAD  PASS8ROWS(t5, r0, r1, t6)
+    call x264_chroma_intra_body_mmxext
+    TRANSPOSE8x4_STORE PASS8ROWS(t5, r0, r1, t6)
+    RET
+
+ALIGN 16
+x264_chroma_intra_body_mmxext:
+    LOAD_MASK r2d, r3d
+    movq   m5, m1
+    movq   m6, m2
+    CHROMA_INTRA_P0  m1, m0, m3
+    CHROMA_INTRA_P0  m2, m3, m0
+    psubb  m1, m5
+    psubb  m2, m6
+    pand   m1, m7
+    pand   m2, m7
+    paddb  m1, m5
+    paddb  m2, m6
+    ret
