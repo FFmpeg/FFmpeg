@@ -474,6 +474,6 @@ void ff_cavsdsp_init_mmx(CAVSDSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = mm_support();
 
-    if (mm_flags & FF_MM_MMX2)  ff_cavsdsp_init_mmx2 (c, avctx);
-    if (mm_flags & FF_MM_3DNOW) ff_cavsdsp_init_3dnow(c, avctx);
+    if (mm_flags & AV_CPU_FLAG_MMX2)  ff_cavsdsp_init_mmx2 (c, avctx);
+    if (mm_flags & AV_CPU_FLAG_3DNOW) ff_cavsdsp_init_3dnow(c, avctx);
 }

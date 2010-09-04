@@ -29,6 +29,7 @@
  */
 
 
+#include "libavutil/cpu.h"
 #include "avcodec.h"
 
 
@@ -93,7 +94,7 @@ typedef struct AVAudioConvert AVAudioConvert;
  * @param in_fmt Input sample format
  * @param in_channels Number of input channels
  * @param[in] matrix Channel mixing matrix (of dimension in_channel*out_channels). Set to NULL to ignore.
- * @param flags See FF_MM_xx
+ * @param flags See AV_CPU_FLAG_xx
  * @return NULL on error
  */
 AVAudioConvert *av_audio_convert_alloc(enum SampleFormat out_fmt, int out_channels,

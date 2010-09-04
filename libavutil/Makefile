@@ -9,6 +9,7 @@ HEADERS = adler32.h                                                     \
           base64.h                                                      \
           bswap.h                                                       \
           common.h                                                      \
+          cpu.h                                                         \
           crc.h                                                         \
           error.h                                                       \
           eval.h                                                        \

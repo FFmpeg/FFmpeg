@@ -23,18 +23,18 @@ av_cold void ff_fft_init_mmx(FFTContext *s)
 {
 #if HAVE_YASM
     int has_vectors = mm_support();
-    if (has_vectors & FF_MM_SSE && HAVE_SSE) {
+    if (has_vectors & AV_CPU_FLAG_SSE && HAVE_SSE) {
         /* SSE for P3/P4/K8 */
         s->imdct_calc  = ff_imdct_calc_sse;
         s->imdct_half  = ff_imdct_half_sse;
         s->fft_permute = ff_fft_permute_sse;
         s->fft_calc    = ff_fft_calc_sse;
-    } else if (has_vectors & FF_MM_3DNOWEXT && HAVE_AMD3DNOWEXT) {
+    } else if (has_vectors & AV_CPU_FLAG_3DNOWEXT && HAVE_AMD3DNOWEXT) {
         /* 3DNowEx for K7 */
         s->imdct_calc = ff_imdct_calc_3dn2;
         s->imdct_half = ff_imdct_half_3dn2;
         s->fft_calc   = ff_fft_calc_3dn2;
-    } else if (has_vectors & FF_MM_3DNOW && HAVE_AMD3DNOW) {
+    } else if (has_vectors & AV_CPU_FLAG_3DNOW && HAVE_AMD3DNOW) {
         /* 3DNow! for K6-2/3 */
         s->imdct_calc = ff_imdct_calc_3dn;
         s->imdct_half = ff_imdct_half_3dn;
@@ -47,7 +47,7 @@ av_cold void ff_fft_init_mmx(FFTContext *s)
 av_cold void ff_dct_init_mmx(DCTContext *s)
 {
     int has_vectors = mm_support();
-    if (has_vectors & FF_MM_SSE && HAVE_SSE)
+    if (has_vectors & AV_CPU_FLAG_SSE && HAVE_SSE)
         s->dct32 = ff_dct32_float_sse;
 }
 #endif

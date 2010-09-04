@@ -553,7 +553,7 @@ retry:
 #endif
 
 #if HAVE_MMX
-    if(s->codec_id == CODEC_ID_MPEG4 && s->xvid_build>=0 && avctx->idct_algo == FF_IDCT_AUTO && (mm_support() & FF_MM_MMX)){
+    if(s->codec_id == CODEC_ID_MPEG4 && s->xvid_build>=0 && avctx->idct_algo == FF_IDCT_AUTO && (mm_support() & AV_CPU_FLAG_MMX)){
         avctx->idct_algo= FF_IDCT_XVIDMMX;
         avctx->coded_width= 0; // force reinit
 //        dsputil_init(&s->dsp, avctx);

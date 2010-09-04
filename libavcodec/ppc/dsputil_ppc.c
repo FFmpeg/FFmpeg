@@ -28,7 +28,7 @@ int mm_support(void)
     int result = 0;
 #if HAVE_ALTIVEC
     if (has_altivec()) {
-        result |= FF_MM_ALTIVEC;
+        result |= AV_CPU_FLAG_ALTIVEC;
     }
 #endif /* result */
     return result;

@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
@@ -111,7 +112,7 @@ static void dct_unquantize_h263_inter_iwmmxt(MpegEncContext *s,
 
 void MPV_common_init_iwmmxt(MpegEncContext *s)
 {
-    if (!(mm_flags & FF_MM_IWMMXT)) return;
+    if (!(mm_flags & AV_CPU_FLAG_IWMMXT)) return;
 
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_iwmmxt;
 #if 0

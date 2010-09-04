@@ -79,21 +79,21 @@ int mm_support(void)
         family = ((eax>>8)&0xf) + ((eax>>20)&0xff);
         model  = ((eax>>4)&0xf) + ((eax>>12)&0xf0);
         if (std_caps & (1<<23))
-            rval |= FF_MM_MMX;
+            rval |= AV_CPU_FLAG_MMX;
         if (std_caps & (1<<25))
-            rval |= FF_MM_MMX2
+            rval |= AV_CPU_FLAG_MMX2
 #if HAVE_SSE
-                  | FF_MM_SSE;
+                  | AV_CPU_FLAG_SSE;
         if (std_caps & (1<<26))
-            rval |= FF_MM_SSE2;
+            rval |= AV_CPU_FLAG_SSE2;
         if (ecx & 1)
-            rval |= FF_MM_SSE3;
+            rval |= AV_CPU_FLAG_SSE3;
         if (ecx & 0x00000200 )
-            rval |= FF_MM_SSSE3;
+            rval |= AV_CPU_FLAG_SSSE3;
         if (ecx & 0x00080000 )
-            rval |= FF_MM_SSE4;
+            rval |= AV_CPU_FLAG_SSE4;
         if (ecx & 0x00100000 )
-            rval |= FF_MM_SSE42;
+            rval |= AV_CPU_FLAG_SSE42;
 #endif
                   ;
     }
@@ -103,13 +103,13 @@ int mm_support(void)
     if(max_ext_level >= 0x80000001){
         cpuid(0x80000001, eax, ebx, ecx, ext_caps);
         if (ext_caps & (1<<31))
-            rval |= FF_MM_3DNOW;
+            rval |= AV_CPU_FLAG_3DNOW;
         if (ext_caps & (1<<30))
-            rval |= FF_MM_3DNOWEXT;
+            rval |= AV_CPU_FLAG_3DNOWEXT;
         if (ext_caps & (1<<23))
-            rval |= FF_MM_MMX;
+            rval |= AV_CPU_FLAG_MMX;
         if (ext_caps & (1<<22))
-            rval |= FF_MM_MMX2;
+            rval |= AV_CPU_FLAG_MMX2;
     }
 
     if (!strncmp(vendor.c, "GenuineIntel", 12) &&
@@ -117,24 +117,24 @@ int mm_support(void)
         /* 6/9 (pentium-m "banias"), 6/13 (pentium-m "dothan"), and 6/14 (core1 "yonah")
          * theoretically support sse2, but it's usually slower than mmx,
          * so let's just pretend they don't. */
-        if (rval & FF_MM_SSE2) rval ^= FF_MM_SSE2SLOW|FF_MM_SSE2;
-        if (rval & FF_MM_SSE3) rval ^= FF_MM_SSE3SLOW|FF_MM_SSE3;
+        if (rval & AV_CPU_FLAG_SSE2) rval ^= AV_CPU_FLAG_SSE2SLOW|AV_CPU_FLAG_SSE2;
+        if (rval & AV_CPU_FLAG_SSE3) rval ^= AV_CPU_FLAG_SSE3SLOW|AV_CPU_FLAG_SSE3;
     }
 
 #if 0
     av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s%s%s%s%s%s%s\n",
-        (rval&FF_MM_MMX) ? "MMX ":"",
-        (rval&FF_MM_MMX2) ? "MMX2 ":"",
-        (rval&FF_MM_SSE) ? "SSE ":"",
-        (rval&FF_MM_SSE2) ? "SSE2 ":"",
-        (rval&FF_MM_SSE2SLOW) ? "SSE2(slow) ":"",
-        (rval&FF_MM_SSE3) ? "SSE3 ":"",
-        (rval&FF_MM_SSE3SLOW) ? "SSE3(slow) ":"",
-        (rval&FF_MM_SSSE3) ? "SSSE3 ":"",
-        (rval&FF_MM_SSE4) ? "SSE4.1 ":"",
-        (rval&FF_MM_SSE42) ? "SSE4.2 ":"",
-        (rval&FF_MM_3DNOW) ? "3DNow ":"",
-        (rval&FF_MM_3DNOWEXT) ? "3DNowExt ":"");
+        (rval&AV_CPU_FLAG_MMX) ? "MMX ":"",
+        (rval&AV_CPU_FLAG_MMX2) ? "MMX2 ":"",
+        (rval&AV_CPU_FLAG_SSE) ? "SSE ":"",
+        (rval&AV_CPU_FLAG_SSE2) ? "SSE2 ":"",
+        (rval&AV_CPU_FLAG_SSE2SLOW) ? "SSE2(slow) ":"",
+        (rval&AV_CPU_FLAG_SSE3) ? "SSE3 ":"",
+        (rval&AV_CPU_FLAG_SSE3SLOW) ? "SSE3(slow) ":"",
+        (rval&AV_CPU_FLAG_SSSE3) ? "SSSE3 ":"",
+        (rval&AV_CPU_FLAG_SSE4) ? "SSE4.1 ":"",
+        (rval&AV_CPU_FLAG_SSE42) ? "SSE4.2 ":"",
+        (rval&AV_CPU_FLAG_3DNOW) ? "3DNow ":"",
+        (rval&AV_CPU_FLAG_3DNOWEXT) ? "3DNowExt ":"");
 #endif
     return rval;
 }
