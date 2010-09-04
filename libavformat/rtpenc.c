@@ -85,8 +85,10 @@ static int rtp_write_header(AVFormatContext *s1)
     int max_packet_size, n;
     AVStream *st;
 
-    if (s1->nb_streams != 1)
-        return -1;
+    if (s1->nb_streams != 1) {
+        av_log(s1, AV_LOG_ERROR, "Only one stream supported in the RTP muxer\n");
+        return AVERROR(EINVAL);
+    }
     st = s1->streams[0];
     if (!is_supported(st->codec->codec_id)) {
         av_log(s1, AV_LOG_ERROR, "Unsupported codec %x\n", st->codec->codec_id);
