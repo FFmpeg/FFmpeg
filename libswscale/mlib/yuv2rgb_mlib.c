@@ -29,6 +29,7 @@
 #include <assert.h>
 
 #include "libswscale/swscale.h"
+#include "libswscale/swscale_internal.h"
 
 static int mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dst[], int dstStride[])
