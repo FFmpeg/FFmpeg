@@ -36,7 +36,7 @@ section .text
 %endmacro
 
 %macro STORE_4_WORDS_MMX 6
-    movd   %6, %5
+    movd  %6d, %5
 %if mmsize==16
     psrldq %5, 4
 %else
@@ -45,7 +45,7 @@ section .text
     mov    %1, %6w
     shr    %6, 16
     mov    %2, %6w
-    movd   %6, %5
+    movd  %6d, %5
     mov    %3, %6w
     shr    %6, 16
     mov    %4, %6w
@@ -88,7 +88,7 @@ section .text
     pxor    m7, m3  ; d_sign ^= a0_sign
 
     pxor    m5, m5
-    movd    m3, r2
+    movd    m3, r2d
 %if %1 > 4
     punpcklbw m3, m3
 %endif

@@ -40,9 +40,9 @@ SECTION .text
 %macro WEIGHT_SETUP 0
     add        r4, r4
     inc        r4
-    movd       m3, r3
-    movd       m5, r4
-    movd       m6, r2
+    movd       m3, r3d
+    movd       m5, r4d
+    movd       m6, r2d
     pslld      m5, m6
     psrld      m5, 1
 %if mmsize == 16
@@ -156,10 +156,10 @@ WEIGHT_FUNC_HALF_MM 8,  4, 16, 8, sse2
     add        r6, 1
     or         r6, 1
     add        r3, 1
-    movd       m3, r4
-    movd       m4, r5
-    movd       m5, r6
-    movd       m6, r3
+    movd       m3, r4d
+    movd       m4, r5d
+    movd       m5, r6d
+    movd       m6, r3d
     pslld      m5, m6
     psrld      m5, 1
 %if mmsize == 16
@@ -291,10 +291,10 @@ BIWEIGHT_FUNC_HALF_MM 8,  4, 16, 8, sse2
     add        r6, 1
     or         r6, 1
     add        r3, 1
-    movd       m4, r4
-    movd       m0, r5
-    movd       m5, r6
-    movd       m6, r3
+    movd       m4, r4d
+    movd       m0, r5d
+    movd       m5, r6d
+    movd       m6, r3d
     pslld      m5, m6
     psrld      m5, 1
     punpcklbw  m4, m0

@@ -93,12 +93,12 @@ SECTION .text
 %endmacro
 
 %macro STORE_4_WORDS 1
-    movd          r2, %1
+    movd         r2d, %1
     mov  [r0     -1], r2w
     psrlq         %1, 32
     shr           r2, 16
     mov  [r0+r1  -1], r2w
-    movd          r2, %1
+    movd         r2d, %1
     mov  [r0+r1*2-1], r2w
     shr           r2, 16
     mov  [r0+r3  -1], r2w
@@ -606,7 +606,7 @@ cglobal vp3_idct_dc_add_mmx2, 3, 4
     movsx         r2, word [r2]
     add           r2, 15
     sar           r2, 5
-    movd          m0, r2
+    movd          m0, r2d
     pshufw        m0, m0, 0x0
     pxor          m1, m1
     psubw         m1, m0
