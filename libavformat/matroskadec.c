@@ -583,7 +583,7 @@ static int ebml_read_uint(ByteIOContext *pb, int size, uint64_t *num)
 {
     int n = 0;
 
-    if (size < 1 || size > 8)
+    if (size > 8)
         return AVERROR_INVALIDDATA;
 
     /* big-endian ordering; build up number */
@@ -600,7 +600,9 @@ static int ebml_read_uint(ByteIOContext *pb, int size, uint64_t *num)
  */
 static int ebml_read_float(ByteIOContext *pb, int size, double *num)
 {
-    if (size == 4) {
+    if (size == 0) {
+        *num = 0;
+    } else if (size == 4) {
         *num= av_int2flt(get_be32(pb));
     } else if(size==8){
         *num= av_int2dbl(get_be64(pb));
