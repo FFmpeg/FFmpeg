@@ -720,6 +720,15 @@ static int handle_jpeg(enum PixelFormat *format)
     }
 }
 
+static int update_flags_cpu(int flags)
+{
+#if !CONFIG_RUNTIME_CPUDETECT //ensure that the flags match the compiled variant if cpudetect is off
+    flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC|SWS_CPU_CAPS_BFIN);
+    flags |= ff_hardcodedcpuflags();
+#endif /* CONFIG_RUNTIME_CPUDETECT */
+    return flags;
+}
+
 SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
                            int dstW, int dstH, enum PixelFormat dstFormat, int flags,
                            SwsFilter *srcFilter, SwsFilter *dstFilter, const double *param)
@@ -735,10 +744,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
         __asm__ volatile("emms\n\t"::: "memory");
 #endif
 
-#if !CONFIG_RUNTIME_CPUDETECT //ensure that the flags match the compiled variant if cpudetect is off
-    flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC|SWS_CPU_CAPS_BFIN);
-    flags |= ff_hardcodedcpuflags();
-#endif /* CONFIG_RUNTIME_CPUDETECT */
+    flags = update_flags_cpu(flags);
     if (!rgb15to16) sws_rgb2rgb_init(flags);
 
     unscaled = (srcW == dstW && srcH == dstH);
@@ -1508,6 +1514,8 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
 
     if (!param)
         param = default_param;
+
+    flags = update_flags_cpu(flags);
 
     if (context &&
         (context->srcW      != srcW      ||
