@@ -1509,7 +1509,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
       *     dispatch (slice - 1);
       */
 
-    vp3_draw_horiz_band(s, FFMIN(64*slice + 64-16, s->height-16));
+    vp3_draw_horiz_band(s, FFMIN((32 << s->chroma_y_shift) * (slice + 1) -16, s->height-16));
 }
 
 /*
