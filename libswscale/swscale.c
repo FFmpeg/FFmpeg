@@ -1069,9 +1069,9 @@ static inline void name(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, const 
 {\
     int i;\
     for (i=0; i<width; i++) {\
-        int b= (((const type*)src)[i]&maskb)>>(shb+shp);\
-        int g= (((const type*)src)[i]&maskg)>>(shg+shp);\
-        int r= (((const type*)src)[i]&maskr)>>(shr+shp);\
+        int b= ((((const type*)src)[i]>>shp)&maskb)>>shb;\
+        int g= ((((const type*)src)[i]>>shp)&maskg)>>shg;\
+        int r= ((((const type*)src)[i]>>shp)&maskr)>>shr;\
 \
         dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (257<<((S)-1)))>>(S);\
         dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (257<<((S)-1)))>>(S);\
