@@ -1322,6 +1322,7 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
         return;
 
     h= y - s->last_slice_end;
+    s->last_slice_end= y;
     y -= h;
 
     if (!s->flipped_image) {
@@ -1338,7 +1339,6 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
 
     emms_c();
     s->avctx->draw_horiz_band(s->avctx, &s->current_frame, offset, y, 3, h);
-    s->last_slice_end= y + h;
 }
 
 /*
