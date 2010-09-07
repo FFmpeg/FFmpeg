@@ -84,7 +84,7 @@ static int config_input(AVFilterLink *link)
     CropContext *crop = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[link->format];
 
-    av_fill_image_max_pixsteps(crop->max_step, NULL, pix_desc);
+    av_image_fill_max_pixsteps(crop->max_step, NULL, pix_desc);
     crop->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
     crop->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 

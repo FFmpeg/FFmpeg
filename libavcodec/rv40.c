@@ -144,7 +144,7 @@ static int rv40_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
     si->pts = get_bits(gb, 13);
     if(!si->type || !get_bits1(gb))
         rv40_parse_picture_size(gb, &w, &h);
-    if(av_check_image_size(w, h, 0, r->s.avctx) < 0)
+    if(av_image_check_size(w, h, 0, r->s.avctx) < 0)
         return -1;
     si->width  = w;
     si->height = h;

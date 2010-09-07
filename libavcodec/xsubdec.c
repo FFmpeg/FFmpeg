@@ -77,7 +77,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     // read header
     w = bytestream_get_le16(&buf);
     h = bytestream_get_le16(&buf);
-    if (av_check_image_size(w, h, 0, avctx) < 0)
+    if (av_image_check_size(w, h, 0, avctx) < 0)
         return -1;
     x = bytestream_get_le16(&buf);
     y = bytestream_get_le16(&buf);

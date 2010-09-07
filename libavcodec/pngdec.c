@@ -442,7 +442,7 @@ static int decode_frame(AVCodecContext *avctx,
                 goto fail;
             s->width = bytestream_get_be32(&s->bytestream);
             s->height = bytestream_get_be32(&s->bytestream);
-            if(av_check_image_size(s->width, s->height, 0, avctx)){
+            if(av_image_check_size(s->width, s->height, 0, avctx)){
                 s->width= s->height= 0;
                 goto fail;
             }

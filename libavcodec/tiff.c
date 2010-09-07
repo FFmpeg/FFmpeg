@@ -306,7 +306,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             return -1;
         }
         if(s->width != s->avctx->width || s->height != s->avctx->height){
-            if(av_check_image_size(s->width, s->height, 0, s->avctx))
+            if(av_image_check_size(s->width, s->height, 0, s->avctx))
                 return -1;
             avcodec_set_dimensions(s->avctx, s->width, s->height);
         }
@@ -508,7 +508,7 @@ static int decode_frame(AVCodecContext *avctx,
         s->bpp = 1;
         avctx->pix_fmt = PIX_FMT_MONOBLACK;
         if(s->width != s->avctx->width || s->height != s->avctx->height){
-            if(av_check_image_size(s->width, s->height, 0, s->avctx))
+            if(av_image_check_size(s->width, s->height, 0, s->avctx))
                 return -1;
             avcodec_set_dimensions(s->avctx, s->width, s->height);
         }

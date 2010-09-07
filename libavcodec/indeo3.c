@@ -996,7 +996,7 @@ static int iv_decode_frame(AVCodecContext *avctx,
     image_height = bytestream_get_le16(&buf_pos);
     image_width  = bytestream_get_le16(&buf_pos);
 
-    if(av_check_image_size(image_width, image_height, 0, avctx))
+    if(av_image_check_size(image_width, image_height, 0, avctx))
         return -1;
     if (image_width != avctx->width || image_height != avctx->height) {
         int ret;

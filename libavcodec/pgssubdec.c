@@ -270,7 +270,7 @@ static void parse_presentation_segment(AVCodecContext *avctx,
 
     dprintf(avctx, "Video Dimensions %dx%d\n",
             w, h);
-    if (av_check_image_size(w, h, 0, avctx) >= 0)
+    if (av_image_check_size(w, h, 0, avctx) >= 0)
         avcodec_set_dimensions(avctx, w, h);
 
     /* Skip 1 bytes of unknown, frame rate? */

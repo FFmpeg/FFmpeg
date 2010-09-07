@@ -114,7 +114,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     }
     width  = image->comps[0].w << avctx->lowres;
     height = image->comps[0].h << avctx->lowres;
-    if(av_check_image_size(width, height, 0, avctx) < 0) {
+    if(av_image_check_size(width, height, 0, avctx) < 0) {
         av_log(avctx, AV_LOG_ERROR, "%dx%d dimension invalid.\n", width, height);
         goto done;
     }

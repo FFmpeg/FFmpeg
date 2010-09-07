@@ -269,7 +269,7 @@ int ff_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
     if (parse_source_parameters(avctx, gb, source))
         return -1;
 
-    if (av_check_image_size(source->width, source->height, 0, avctx))
+    if (av_image_check_size(source->width, source->height, 0, avctx))
         return -1;
 
     avcodec_set_dimensions(avctx, source->width, source->height);

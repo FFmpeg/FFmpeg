@@ -223,7 +223,7 @@ static void vp8_decode_flush(AVCodecContext *avctx)
 
 static int update_dimensions(VP8Context *s, int width, int height)
 {
-    if (av_check_image_size(width, height, 0, s->avctx))
+    if (av_image_check_size(width, height, 0, s->avctx))
         return AVERROR_INVALIDDATA;
 
     vp8_decode_flush(s->avctx);

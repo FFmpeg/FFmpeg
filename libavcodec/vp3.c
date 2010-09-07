@@ -1981,7 +1981,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     visible_width  = s->width  = get_bits(gb, 16) << 4;
     visible_height = s->height = get_bits(gb, 16) << 4;
 
-    if(av_check_image_size(s->width, s->height, 0, avctx)){
+    if(av_image_check_size(s->width, s->height, 0, avctx)){
         av_log(avctx, AV_LOG_ERROR, "Invalid dimensions (%dx%d)\n", s->width, s->height);
         s->width= s->height= 0;
         return -1;

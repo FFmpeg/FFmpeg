@@ -306,7 +306,7 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     avctx->pix_fmt = PIX_FMT_YUV422P;
-    if (av_check_image_size(ctx->width, ctx->height, 0, avctx))
+    if (av_image_check_size(ctx->width, ctx->height, 0, avctx))
         return -1;
     avcodec_set_dimensions(avctx, ctx->width, ctx->height);
 

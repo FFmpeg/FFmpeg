@@ -629,7 +629,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
         return AVERROR(EIO);
     }
-    if (av_check_image_size(s->width, s->height, 0, s1) < 0)
+    if (av_image_check_size(s->width, s->height, 0, s1) < 0)
         return AVERROR(EINVAL);
     s->frame_format = desired_format;
 

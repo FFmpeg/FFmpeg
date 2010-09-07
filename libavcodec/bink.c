@@ -972,7 +972,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->pic.data[0] = NULL;
 
-    if (av_check_image_size(avctx->width, avctx->height, 0, avctx) < 0) {
+    if (av_image_check_size(avctx->width, avctx->height, 0, avctx) < 0) {
         return 1;
     }
 

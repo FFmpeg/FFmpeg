@@ -148,7 +148,7 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     s->vqa_version = vqa_header[0];
     s->width = AV_RL16(&vqa_header[6]);
     s->height = AV_RL16(&vqa_header[8]);
-    if(av_check_image_size(s->width, s->height, 0, avctx)){
+    if(av_image_check_size(s->width, s->height, 0, avctx)){
         s->width= s->height= 0;
         return -1;
     }

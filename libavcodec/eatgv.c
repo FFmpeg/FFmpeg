@@ -276,7 +276,7 @@ static int tgv_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if (av_check_image_size(s->width, s->height, 0, avctx))
+    if (av_image_check_size(s->width, s->height, 0, avctx))
         return -1;
 
     /* shuffle */

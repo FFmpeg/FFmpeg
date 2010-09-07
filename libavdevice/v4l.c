@@ -117,7 +117,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         }
     }
 
-    if(av_check_image_size(s->video_win.width, s->video_win.height, 0, s1) < 0)
+    if(av_image_check_size(s->video_win.width, s->video_win.height, 0, s1) < 0)
         return -1;
 
     desired_palette = -1;

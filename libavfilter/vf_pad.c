@@ -407,7 +407,7 @@ static int color_config_props(AVFilterLink *inlink)
 
     color->w &= ~((1 << color->hsub) - 1);
     color->h &= ~((1 << color->vsub) - 1);
-    if (av_check_image_size(color->w, color->h, 0, ctx) < 0)
+    if (av_image_check_size(color->w, color->h, 0, ctx) < 0)
         return AVERROR(EINVAL);
 
     memcpy(rgba_color, color->color, sizeof(rgba_color));

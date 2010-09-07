@@ -381,7 +381,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
         for (i = 0; i < 4; i++) {
             int planew =
-                av_get_image_linesize(link->format, link->cur_buf->video->w, i);
+                av_image_get_linesize(link->format, link->cur_buf->video->w, i);
 
             if (!src[i]) continue;
 

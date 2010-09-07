@@ -136,7 +136,7 @@ static int decode_frame(AVCodecContext *avctx,
     avctx->pix_fmt = PIX_FMT_PAL8;
 
     if (s->width != avctx->width && s->height != avctx->height) {
-        if (av_check_image_size(s->width, s->height, 0, avctx) < 0)
+        if (av_image_check_size(s->width, s->height, 0, avctx) < 0)
             return -1;
         avcodec_set_dimensions(avctx, s->width, s->height);
         if (s->frame.data[0])

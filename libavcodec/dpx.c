@@ -140,7 +140,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
-    if (av_check_image_size(w, h, 0, avctx))
+    if (av_image_check_size(w, h, 0, avctx))
         return -1;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);

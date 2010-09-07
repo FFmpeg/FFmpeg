@@ -112,7 +112,7 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height, int qualit
     if (quality >= 0)
         get_quant_quality(c, quality);
     if (width != c->width || height != c->height) {
-        if (av_check_image_size(height, width, 0, avctx) < 0)
+        if (av_image_check_size(height, width, 0, avctx) < 0)
             return 0;
         avctx->width = c->width = width;
         avctx->height = c->height = height;

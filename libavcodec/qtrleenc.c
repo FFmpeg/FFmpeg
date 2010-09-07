@@ -63,7 +63,7 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
 {
     QtrleEncContext *s = avctx->priv_data;
 
-    if (av_check_image_size(avctx->width, avctx->height, 0, avctx) < 0) {
+    if (av_image_check_size(avctx->width, avctx->height, 0, avctx) < 0) {
         return -1;
     }
     s->avctx=avctx;

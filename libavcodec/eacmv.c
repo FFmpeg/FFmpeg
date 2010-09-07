@@ -157,7 +157,7 @@ static int cmv_decode_frame(AVCodecContext *avctx,
         return buf_size;
     }
 
-    if (av_check_image_size(s->width, s->height, 0, s->avctx))
+    if (av_image_check_size(s->width, s->height, 0, s->avctx))
         return -1;
 
     /* shuffle */

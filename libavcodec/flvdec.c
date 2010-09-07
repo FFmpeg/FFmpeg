@@ -83,7 +83,7 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
         width = height = 0;
         break;
     }
-    if(av_check_image_size(width, height, 0, s->avctx))
+    if(av_image_check_size(width, height, 0, s->avctx))
         return -1;
     s->width = width;
     s->height = height;

@@ -501,13 +501,13 @@ int ff_set_systematic_pal(uint32_t pal[256], enum PixelFormat pix_fmt){
 #if LIBAVCODEC_VERSION_MAJOR < 53
 int ff_fill_linesize(AVPicture *picture, enum PixelFormat pix_fmt, int width)
 {
-    return av_fill_image_linesizes(picture->linesize, pix_fmt, width);
+    return av_image_fill_linesizes(picture->linesize, pix_fmt, width);
 }
 
 int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
                     int height)
 {
-    return av_fill_image_pointers(picture->data, pix_fmt, height, ptr, picture->linesize);
+    return av_image_fill_pointers(picture->data, pix_fmt, height, ptr, picture->linesize);
 }
 #endif
 
@@ -515,13 +515,13 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    enum PixelFormat pix_fmt, int width, int height)
 {
 
-    if(av_check_image_size(width, height, 0, NULL))
+    if(av_image_check_size(width, height, 0, NULL))
         return -1;
 
-    if (av_fill_image_linesizes(picture->linesize, pix_fmt, width))
+    if (av_image_fill_linesizes(picture->linesize, pix_fmt, width))
         return -1;
 
-    return av_fill_image_pointers(picture->data, pix_fmt, height, ptr, picture->linesize);
+    return av_image_fill_pointers(picture->data, pix_fmt, height, ptr, picture->linesize);
 }
 
 int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, int height,
@@ -597,7 +597,7 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
 int avpicture_get_size(enum PixelFormat pix_fmt, int width, int height)
 {
     AVPicture dummy_pict;
-    if(av_check_image_size(width, height, 0, NULL))
+    if(av_image_check_size(width, height, 0, NULL))
         return -1;
     switch (pix_fmt) {
     case PIX_FMT_RGB8:
@@ -797,7 +797,7 @@ void ff_img_copy_plane(uint8_t *dst, int dst_wrap,
 #if LIBAVCODEC_VERSION_MAJOR < 53
 int ff_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane)
 {
-    return av_get_image_linesize(pix_fmt, width, plane);
+    return av_image_get_linesize(pix_fmt, width, plane);
 }
 #endif
 
@@ -814,7 +814,7 @@ void av_picture_data_copy(uint8_t *dst_data[4], int dst_linesize[4],
     case FF_PIXEL_PLANAR:
         for(i = 0; i < pf->nb_channels; i++) {
             int h;
-            int bwidth = av_get_image_linesize(pix_fmt, width, i);
+            int bwidth = av_image_get_linesize(pix_fmt, width, i);
             h = height;
             if (i == 1 || i == 2) {
                 h= -((-height)>>desc->log2_chroma_h);
