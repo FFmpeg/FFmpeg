@@ -65,6 +65,14 @@ void ff_acelp_lsf2lsp(int16_t *lsp, const int16_t *lsf, int lp_order)
         lsp[i] = ff_cos(lsf[i] * 20861 >> 15); // divide by PI and (0,13) -> (0,14)
 }
 
+void ff_acelp_lsf2lspd(double *lsp, const float *lsf, int lp_order)
+{
+    int i;
+
+    for(i = 0; i < lp_order; i++)
+        lsp[i] = cos(2.0 * M_PI * lsf[i]);
+}
+
 /**
  * \brief decodes polynomial coefficients from LSP
  * \param f [out] decoded polynomial coefficients (-0x20000000 <= (3.22) <= 0x1fffffff)

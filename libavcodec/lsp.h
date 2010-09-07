@@ -63,6 +63,11 @@ void ff_set_min_dist_lsf(float *lsf, double min_spacing, int size);
 void ff_acelp_lsf2lsp(int16_t *lsp, const int16_t *lsf, int lp_order);
 
 /**
+ * Floating point version of ff_acelp_lsf2lsp()
+ */
+void ff_acelp_lsf2lspd(double *lsp, const float *lsf, int lp_order);
+
+/**
  * \brief LSP to LP conversion (3.2.6 of G.729)
  * \param[out] lp decoded LP coefficients (-0x8000 <= (3.12) < 0x8000)
  * \param lsp LSP coefficients (-0x8000 <= (0.15) < 0x8000)
