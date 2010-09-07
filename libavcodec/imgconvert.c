@@ -814,14 +814,14 @@ void av_picture_data_copy(uint8_t *dst_data[4], int dst_linesize[4],
                 h= -((-height)>>desc->log2_chroma_h);
             }
             av_image_copy_plane(dst_data[i], dst_linesize[i],
-                              src_data[i], src_linesize[i],
-                              bwidth, h);
+                                src_data[i], src_linesize[i],
+                                bwidth, h);
         }
         break;
     case FF_PIXEL_PALETTE:
         av_image_copy_plane(dst_data[0], dst_linesize[0],
-                          src_data[0], src_linesize[0],
-                          width, height);
+                            src_data[0], src_linesize[0],
+                            width, height);
         /* copy the palette */
         memcpy(dst_data[1], src_data[1], 4*256);
         break;
