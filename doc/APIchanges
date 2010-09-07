@@ -13,6 +13,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-09-07 - r25057 - lavcore 0.7.0 - imgutils.h
+  Adopt hierarchical scheme for the imgutils.h function names,
+  deprecate the old names.
+
 2010-09-04 - r25040 - lavu 50.25.0 - AV_CPU_FLAG_*
   Deprecate the FF_MM_* flags defined in libavcodec/avcodec.h in favor
   of the AV_CPU_FLAG_* flags defined in libavutil/cpu.h.
