@@ -27,6 +27,7 @@
  * DSP utils
  */
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "simple_idct.h"
@@ -4454,7 +4455,7 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->sv_fmul_scalar[0] = sv_fmul_scalar_2_c;
     c->sv_fmul_scalar[1] = sv_fmul_scalar_4_c;
 
-    c->shrink[0]= ff_img_copy_plane;
+    c->shrink[0]= av_image_copy_plane;
     c->shrink[1]= ff_shrink22;
     c->shrink[2]= ff_shrink44;
     c->shrink[3]= ff_shrink88;

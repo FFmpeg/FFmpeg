@@ -78,6 +78,19 @@ int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int heigh
                            uint8_t *ptr, const int linesizes[4]);
 
 /**
+ * Copy image plane from src to dst.
+ * That is, copy "height" number of lines of "bytewidth" bytes each.
+ * The first byte of each successive line is separated by *_linesize
+ * bytes.
+ *
+ * @param dst_linesize linesize for the image plane in dst
+ * @param src_linesize linesize for the image plane in src
+ */
+void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
+                         const uint8_t *src, int src_linesize,
+                         int bytewidth, int height);
+
+/**
  * Check if the given dimension of an image is valid, meaning that all
  * bytes of the image can be addressed with a signed int.
  *

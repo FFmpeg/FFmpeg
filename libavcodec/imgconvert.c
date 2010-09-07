@@ -781,20 +781,14 @@ enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelForma
     return dst_pix_fmt;
 }
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 void ff_img_copy_plane(uint8_t *dst, int dst_wrap,
                            const uint8_t *src, int src_wrap,
                            int width, int height)
 {
-    if (!dst || !src)
-        return;
-    for(;height > 0; height--) {
-        memcpy(dst, src, width);
-        dst += dst_wrap;
-        src += src_wrap;
-    }
+    av_image_copy_plane(dst, dst_wrap, src, src_wrap, width, height);
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
 int ff_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane)
 {
     return av_image_get_linesize(pix_fmt, width, plane);
@@ -819,13 +813,13 @@ void av_picture_data_copy(uint8_t *dst_data[4], int dst_linesize[4],
             if (i == 1 || i == 2) {
                 h= -((-height)>>desc->log2_chroma_h);
             }
-            ff_img_copy_plane(dst_data[i], dst_linesize[i],
+            av_image_copy_plane(dst_data[i], dst_linesize[i],
                               src_data[i], src_linesize[i],
                               bwidth, h);
         }
         break;
     case FF_PIXEL_PALETTE:
-        ff_img_copy_plane(dst_data[0], dst_linesize[0],
+        av_image_copy_plane(dst_data[0], dst_linesize[0],
                           src_data[0], src_linesize[0],
                           width, height);
         /* copy the palette */

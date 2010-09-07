@@ -139,6 +139,19 @@ int av_image_check_size(unsigned int w, unsigned int h, int log_offset, void *lo
     return AVERROR(EINVAL);
 }
 
+void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
+                         const uint8_t *src, int src_linesize,
+                         int bytewidth, int height)
+{
+    if (!dst || !src)
+        return;
+    for (;height > 0; height--) {
+        memcpy(dst, src, bytewidth);
+        dst += dst_linesize;
+        src += src_linesize;
+    }
+}
+
 #if FF_API_OLD_IMAGE_NAMES
 void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
                                 const AVPixFmtDescriptor *pixdesc)

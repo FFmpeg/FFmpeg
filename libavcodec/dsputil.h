@@ -105,7 +105,14 @@ void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
 void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
 
 /* 1/2^n downscaling functions from imgconvert.c */
+#if LIBAVCODEC_VERSION_MAJOR < 53
+/**
+ * @deprecated Use av_image_copy_plane() instead.
+ */
+attribute_deprecated
 void ff_img_copy_plane(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
+#endif
+
 void ff_shrink22(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 void ff_shrink44(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 void ff_shrink88(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
