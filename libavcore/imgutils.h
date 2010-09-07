@@ -96,8 +96,8 @@ void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
  * @param dst_linesize linesizes for the image in dst_data
  * @param src_linesize linesizes for the image in src_data
  */
-void av_image_copy(uint8_t *dst_data[4], int dst_linesize[4],
-                   const uint8_t *src_data[4], const int src_linesize[4],
+void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
+                   const uint8_t *src_data[4], const int src_linesizes[4],
                    enum PixelFormat pix_fmt, int width, int height);
 
 /**
