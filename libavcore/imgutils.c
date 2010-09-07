@@ -66,7 +66,7 @@ int av_image_fill_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
 
     memset(linesizes, 0, 4*sizeof(linesizes[0]));
 
-    if (desc->flags & PIX_FMT_HWACCEL)
+    if ((unsigned)pix_fmt >= PIX_FMT_NB || desc->flags & PIX_FMT_HWACCEL)
         return AVERROR(EINVAL);
 
     if (desc->flags & PIX_FMT_BITSTREAM) {
@@ -93,7 +93,7 @@ int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int heigh
     memset(size     , 0, sizeof(size));
     memset(has_plane, 0, sizeof(has_plane));
 
-    if (desc->flags & PIX_FMT_HWACCEL)
+    if ((unsigned)pix_fmt >= PIX_FMT_NB || desc->flags & PIX_FMT_HWACCEL)
         return AVERROR(EINVAL);
 
     data[0] = ptr;
