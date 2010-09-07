@@ -807,7 +807,7 @@ void av_picture_copy(AVPicture *dst, const AVPicture *src,
                      enum PixelFormat pix_fmt, int width, int height)
 {
     av_image_copy(dst->data, dst->linesize, src->data,
-                         src->linesize, pix_fmt, width, height);
+                  src->linesize, pix_fmt, width, height);
 }
 
 /* 2x2 -> 1x1 */

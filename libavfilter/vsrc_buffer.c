@@ -120,8 +120,8 @@ static int request_frame(AVFilterLink *link)
                                        link->w, link->h);
 
     av_image_copy(picref->data, picref->linesize,
-                         c->frame.data, c->frame.linesize,
-                         picref->format, link->w, link->h);
+                  c->frame.data, c->frame.linesize,
+                  picref->format, link->w, link->h);
 
     picref->pts                    = c->pts;
     picref->video->pixel_aspect    = c->pixel_aspect;

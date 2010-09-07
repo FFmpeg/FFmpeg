@@ -1736,8 +1736,8 @@ static int input_request_frame(AVFilterLink *link)
     } else {
         picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
         av_image_copy(picref->data, picref->linesize,
-                             priv->frame->data, priv->frame->linesize,
-                             picref->format, link->w, link->h);
+                      priv->frame->data, priv->frame->linesize,
+                      picref->format, link->w, link->h);
     }
     av_free_packet(&pkt);
 
