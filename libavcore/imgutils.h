@@ -91,6 +91,16 @@ void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
                          int bytewidth, int height);
 
 /**
+ * Copy image in src_data to dst_data.
+ *
+ * @param dst_linesize linesizes for the image in dst_data
+ * @param src_linesize linesizes for the image in src_data
+ */
+void av_image_copy(uint8_t *dst_data[4], int dst_linesize[4],
+                   const uint8_t *src_data[4], const int src_linesize[4],
+                   enum PixelFormat pix_fmt, int width, int height);
+
+/**
  * Check if the given dimension of an image is valid, meaning that all
  * bytes of the image can be addressed with a signed int.
  *

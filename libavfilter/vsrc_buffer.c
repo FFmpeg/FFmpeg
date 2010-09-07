@@ -25,7 +25,7 @@
 
 #include "avfilter.h"
 #include "vsrc_buffer.h"
-#include "libavutil/pixdesc.h"
+#include "libavcore/imgutils.h"
 
 typedef struct {
     int64_t           pts;
@@ -119,7 +119,7 @@ static int request_frame(AVFilterLink *link)
                                        AV_PERM_REUSE2,
                                        link->w, link->h);
 
-    av_picture_data_copy(picref->data, picref->linesize,
+    av_image_copy(picref->data, picref->linesize,
                          c->frame.data, c->frame.linesize,
                          picref->format, link->w, link->h);
 

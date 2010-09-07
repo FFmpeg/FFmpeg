@@ -32,7 +32,7 @@
 
 #define LIBAVCODEC_VERSION_MAJOR 52
 #define LIBAVCODEC_VERSION_MINOR 87
-#define LIBAVCODEC_VERSION_MICRO  3
+#define LIBAVCODEC_VERSION_MICRO  4
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -3950,15 +3950,15 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
  */
 void av_fast_malloc(void *ptr, unsigned int *size, unsigned int min_size);
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
- * Copy image data in src_data to dst_data.
- *
- * @param dst_linesize linesizes for the image in dst_data
- * @param src_linesize linesizes for the image in src_data
+ * @deprecated Deprecated in favor of av_image_copy().
  */
+attribute_deprecated
 void av_picture_data_copy(uint8_t *dst_data[4], int dst_linesize[4],
                           uint8_t *src_data[4], int src_linesize[4],
                           enum PixelFormat pix_fmt, int width, int height);
+#endif
 
 /**
  * Copy image src to dst. Wraps av_picture_data_copy() above.

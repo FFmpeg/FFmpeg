@@ -152,6 +152,40 @@ void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
     }
 }
 
+void av_image_copy(uint8_t *dst_data[4], int dst_linesize[4],
+                   const uint8_t *src_data[4], const int src_linesize[4],
+                   enum PixelFormat pix_fmt, int width, int height)
+{
+    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+
+    if (desc->flags & PIX_FMT_HWACCEL)
+        return;
+
+    if (desc->flags & PIX_FMT_PAL) {
+        av_image_copy_plane(dst_data[0], dst_linesize[0],
+                            src_data[0], src_linesize[0],
+                            width, height);
+        /* copy the palette */
+        memcpy(dst_data[1], src_data[1], 4*256);
+    } else {
+        int i, planes_nb = 0;
+
+        for (i = 0; i < desc->nb_components; i++)
+            planes_nb = FFMAX(planes_nb, desc->comp[i].plane + 1);
+
+        for (i = 0; i < planes_nb; i++) {
+            int h = height;
+            int bwidth = av_image_get_linesize(pix_fmt, width, i);
+            if (i == 1 || i == 2) {
+                h= -((-height)>>desc->log2_chroma_h);
+            }
+            av_image_copy_plane(dst_data[i], dst_linesize[i],
+                                src_data[i], src_linesize[i],
+                                bwidth, h);
+        }
+    }
+}
+
 #if FF_API_OLD_IMAGE_NAMES
 void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
                                 const AVPixFmtDescriptor *pixdesc)

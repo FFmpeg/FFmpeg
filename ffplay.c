@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/pixdesc.h"
+#include "libavcore/imgutils.h"
 #include "libavcore/parseutils.h"
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
@@ -1734,7 +1735,7 @@ static int input_request_frame(AVFilterLink *link)
         picref = avfilter_ref_buffer(priv->frame->opaque, ~0);
     } else {
         picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
-        av_picture_data_copy(picref->data, picref->linesize,
+        av_image_copy(picref->data, picref->linesize,
                              priv->frame->data, priv->frame->linesize,
                              picref->format, link->w, link->h);
     }
