@@ -76,6 +76,11 @@ void ff_acelp_lsf2lspd(double *lsp, const float *lsf, int lp_order);
 void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order);
 
 /**
+ * LSP to LP conversion (5.2.4 of AMR-WB)
+ */
+void ff_amrwb_lsp2lpc(const double *lsp, float *lp, int lp_order);
+
+/**
  * \brief Interpolate LSP for the first subframe and convert LSP -> LP for both subframes (3.2.5 and 3.2.6 of G.729)
  * \param[out] lp_1st decoded LP coefficients for first subframe  (-0x8000 <= (3.12) < 0x8000)
  * \param[out] lp_2nd decoded LP coefficients for second subframe (-0x8000 <= (3.12) < 0x8000)

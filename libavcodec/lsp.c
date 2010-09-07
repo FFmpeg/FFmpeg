@@ -117,6 +117,32 @@ void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order)
     }
 }
 
+void ff_amrwb_lsp2lpc(const double *lsp, float *lp, int lp_order)
+{
+    int lp_half_order = lp_order >> 1;
+    double buf[lp_half_order + 1];
+    double pa[lp_half_order + 1];
+    double *qa = buf + 1;
+    int i,j;
+
+    qa[-1] = 0.0;
+
+    ff_lsp2polyf(lsp    , pa, lp_half_order    );
+    ff_lsp2polyf(lsp + 1, qa, lp_half_order - 1);
+
+    for (i = 1, j = lp_order - 1; i < lp_half_order; i++, j--) {
+        double paf =  pa[i]            * (1 + lsp[lp_order - 1]);
+        double qaf = (qa[i] - qa[i-2]) * (1 - lsp[lp_order - 1]);
+        lp[i-1]  = (paf + qaf) * 0.5;
+        lp[j-1]  = (paf - qaf) * 0.5;
+    }
+
+    lp[lp_half_order - 1] = (1.0 + lsp[lp_order - 1]) *
+        pa[lp_half_order] * 0.5;
+
+    lp[lp_order - 1] = lsp[lp_order - 1];
+}
+
 void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd, const int16_t* lsp_prev, int lp_order)
 {
     int16_t lsp_1st[MAX_LP_ORDER]; // (0.15)

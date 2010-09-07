@@ -209,32 +209,6 @@ static void decode_parameters(SiprParameters* parms, GetBitContext *pgb,
     }
 }
 
-static void lsp2lpc_sipr(const double *lsp, float *Az)
-{
-    int lp_half_order = LP_FILTER_ORDER >> 1;
-    double buf[(LP_FILTER_ORDER >> 1) + 1];
-    double pa[(LP_FILTER_ORDER >> 1) + 1];
-    double *qa = buf + 1;
-    int i,j;
-
-    qa[-1] = 0.0;
-
-    ff_lsp2polyf(lsp    , pa, lp_half_order    );
-    ff_lsp2polyf(lsp + 1, qa, lp_half_order - 1);
-
-    for (i = 1, j = LP_FILTER_ORDER - 1; i < lp_half_order; i++, j--) {
-        double paf =  pa[i]            * (1 + lsp[LP_FILTER_ORDER - 1]);
-        double qaf = (qa[i] - qa[i-2]) * (1 - lsp[LP_FILTER_ORDER - 1]);
-        Az[i-1]  = (paf + qaf) * 0.5;
-        Az[j-1]  = (paf - qaf) * 0.5;
-    }
-
-    Az[lp_half_order - 1] = (1.0 + lsp[LP_FILTER_ORDER - 1]) *
-        pa[lp_half_order] * 0.5;
-
-    Az[LP_FILTER_ORDER - 1] = lsp[LP_FILTER_ORDER - 1];
-}
-
 static void sipr_decode_lp(float *lsfnew, const float *lsfold, float *Az,
                            int num_subfr)
 {
@@ -247,7 +221,7 @@ static void sipr_decode_lp(float *lsfnew, const float *lsfold, float *Az,
         for (j = 0; j < LP_FILTER_ORDER; j++)
             lsfint[j] = lsfold[j] * (1 - t) + t * lsfnew[j];
 
-        lsp2lpc_sipr(lsfint, Az);
+        ff_amrwb_lsp2lpc(lsfint, Az, LP_FILTER_ORDER);
         Az += LP_FILTER_ORDER;
         t += t0;
     }
