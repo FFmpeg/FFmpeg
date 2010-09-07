@@ -74,8 +74,8 @@ Force format to use.
 Show the unit of the displayed values.
 
 @item -prefix
-Show a SI prefixes of the displayed values.
-Unless "-byte_binary_prefix" option is used all the prefix
+Use SI prefixes for the displayed values.
+Unless the "-byte_binary_prefix" option is used all the prefixes
 are decimal.
 
 @item -byte_binary_prefix
