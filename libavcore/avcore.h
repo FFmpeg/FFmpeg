@@ -27,7 +27,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCORE_VERSION_MAJOR  0
-#define LIBAVCORE_VERSION_MINOR  6
+#define LIBAVCORE_VERSION_MINOR  7
 #define LIBAVCORE_VERSION_MICRO  0
 
 #define LIBAVCORE_VERSION_INT   AV_VERSION_INT(LIBAVCORE_VERSION_MAJOR, \
@@ -54,5 +54,13 @@ const char *avcore_configuration(void);
  * Return the libavcore license.
  */
 const char *avcore_license(void);
+
+/**
+ * Those FF_API_* defines are not part of public API.
+ * They may change, break or disappear at any time.
+ */
+#ifndef FF_API_OLD_IMAGE_NAMES
+#define FF_API_OLD_IMAGE_NAMES (LIBAVCORE_VERSION_MAJOR < 1)
+#endif
 
 #endif /* AVCORE_AVCORE_H */

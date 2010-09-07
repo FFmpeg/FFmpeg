@@ -43,7 +43,7 @@
  * @param max_pixstep_comps an array which is filled with the component
  * for each plane which has the max pixel step. May be NULL.
  */
-void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
+void av_image_fill_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
                                 const AVPixFmtDescriptor *pixdesc);
 
 /**
@@ -52,7 +52,7 @@ void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
  *
  * @return the computed size in bytes
  */
-int av_get_image_linesize(enum PixelFormat pix_fmt, int width, int plane);
+int av_image_get_linesize(enum PixelFormat pix_fmt, int width, int plane);
 
 /**
  * Fill plane linesizes for an image with pixel format pix_fmt and
@@ -61,7 +61,7 @@ int av_get_image_linesize(enum PixelFormat pix_fmt, int width, int plane);
  * @param linesizes array to be filled with the linesize for each plane
  * @return >= 0 in case of success, a negative error code otherwise
  */
-int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int width);
+int av_image_fill_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int width);
 
 /**
  * Fill plane data pointers for an image with pixel format pix_fmt and
@@ -74,7 +74,7 @@ int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
  * @return the size in bytes required for the image buffer, a negative
  * error code in case of failure
  */
-int av_fill_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int height,
+int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int height,
                            uint8_t *ptr, const int linesizes[4]);
 
 /**
@@ -87,6 +87,25 @@ int av_fill_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int heigh
  * @param log_ctx the parent logging context, it may be NULL
  * @return >= 0 if valid, a negative error code otherwise
  */
+int av_image_check_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx);
+
+#if FF_API_OLD_IMAGE_NAMES
+attribute_deprecated
+void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
+                                const AVPixFmtDescriptor *pixdesc);
+
+attribute_deprecated
+int av_get_image_linesize(enum PixelFormat pix_fmt, int width, int plane);
+
+attribute_deprecated
+int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int width);
+
+attribute_deprecated
+int av_fill_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int height,
+                           uint8_t *ptr, const int linesizes[4]);
+
+attribute_deprecated
 int av_check_image_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx);
+#endif
 
 #endif /* AVCORE_IMGUTILS_H */

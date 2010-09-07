@@ -24,7 +24,7 @@
 #include "imgutils.h"
 #include "libavutil/pixdesc.h"
 
-void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
+void av_image_fill_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
                                 const AVPixFmtDescriptor *pixdesc)
 {
     int i;
@@ -42,7 +42,7 @@ void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
     }
 }
 
-int av_get_image_linesize(enum PixelFormat pix_fmt, int width, int plane)
+int av_image_get_linesize(enum PixelFormat pix_fmt, int width, int plane)
 {
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
     int max_step     [4];       /* max pixel step for each plane */
@@ -52,12 +52,12 @@ int av_get_image_linesize(enum PixelFormat pix_fmt, int width, int plane)
     if (desc->flags & PIX_FMT_BITSTREAM)
         return (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
 
-    av_fill_image_max_pixsteps(max_step, max_step_comp, desc);
+    av_image_fill_max_pixsteps(max_step, max_step_comp, desc);
     s = (max_step_comp[plane] == 1 || max_step_comp[plane] == 2) ? desc->log2_chroma_w : 0;
     return max_step[plane] * (((width + (1 << s) - 1)) >> s);
 }
 
-int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int width)
+int av_image_fill_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int width)
 {
     int i;
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
@@ -74,7 +74,7 @@ int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
         return 0;
     }
 
-    av_fill_image_max_pixsteps(max_step, max_step_comp, desc);
+    av_image_fill_max_pixsteps(max_step, max_step_comp, desc);
     for (i = 0; i < 4; i++) {
         int s = (max_step_comp[i] == 1 || max_step_comp[i] == 2) ? desc->log2_chroma_w : 0;
         linesizes[i] = max_step[i] * (((width + (1 << s) - 1)) >> s);
@@ -83,7 +83,7 @@ int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
     return 0;
 }
 
-int av_fill_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int height,
+int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int height,
                            uint8_t *ptr, const int linesizes[4])
 {
     int i, total_size, size[4], has_plane[4];
@@ -128,7 +128,7 @@ typedef struct ImgUtils {
 
 static const AVClass imgutils_class = { "IMGUTILS", av_default_item_name, NULL, LIBAVUTIL_VERSION_INT, offsetof(ImgUtils, log_offset), offsetof(ImgUtils, log_ctx) };
 
-int av_check_image_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx)
+int av_image_check_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx)
 {
     ImgUtils imgutils = { &imgutils_class, log_offset, log_ctx };
 
@@ -138,3 +138,32 @@ int av_check_image_size(unsigned int w, unsigned int h, int log_offset, void *lo
     av_log(&imgutils, AV_LOG_ERROR, "Picture size %ux%u is invalid\n", w, h);
     return AVERROR(EINVAL);
 }
+
+#if FF_API_OLD_IMAGE_NAMES
+void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
+                                const AVPixFmtDescriptor *pixdesc)
+{
+    av_image_fill_max_pixsteps(max_pixsteps, max_pixstep_comps, pixdesc);
+}
+
+int av_get_image_linesize(enum PixelFormat pix_fmt, int width, int plane)
+{
+    return av_image_get_linesize(pix_fmt, width, plane);
+}
+
+int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int width)
+{
+    return av_image_fill_linesizes(linesizes, pix_fmt, width);
+}
+
+int av_fill_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int height,
+                           uint8_t *ptr, const int linesizes[4])
+{
+    return av_image_fill_pointers(data, pix_fmt, height, ptr, linesizes);
+}
+
+int av_check_image_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx)
+{
+    return av_image_check_size(w, h, log_offset, log_ctx);
+}
+#endif
