@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-09-08 - r25076 - lavu 50.26.0 - av_get_cpu_flags()
+  Add av_get_cpu_flags().
+
 2010-09-07 - r25067 - lavcore 0.9.0 - av_image_copy()
   Add av_image_copy().
 
