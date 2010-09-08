@@ -345,6 +345,9 @@ static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         uint32_t size = get_be32(pb);
         int64_t next = url_ftell(pb) + size - 4;
 
+        if (size < 12)
+            return -1;
+
         dref->type = get_le32(pb);
         get_be32(pb); // version + flags
         dprintf(c->fc, "type %.4s size %d\n", (char*)&dref->type, size);
