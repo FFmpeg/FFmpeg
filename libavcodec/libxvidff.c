@@ -31,6 +31,7 @@
 #include <xvid.h>
 #include <unistd.h>
 #include "avcodec.h"
+#include "dsputil.h"
 #include "libavutil/intreadwrite.h"
 #include "libxvid_internal.h"
 #if !HAVE_MKSTEMP
@@ -43,9 +44,6 @@
 #define BUFFER_SIZE                 1024
 #define BUFFER_REMAINING(x)         (BUFFER_SIZE - strlen(x))
 #define BUFFER_CAT(x)               (&((x)[strlen(x)]))
-
-/* For PPC Use */
-int has_altivec(void);
 
 /**
  * Structure for the private Xvid context.
@@ -215,7 +213,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
 #if ARCH_PPC
     /* Xvid's PPC support is borked, use libavcodec to detect */
 #if HAVE_ALTIVEC
-    if( has_altivec() ) {
+    if (mm_support() & AV_CPU_FLAG_ALTIVEC) {
         xvid_gbl_init.cpu_flags = XVID_CPU_FORCE | XVID_CPU_ALTIVEC;
     } else
 #endif
