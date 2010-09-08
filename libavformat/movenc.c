@@ -755,8 +755,8 @@ static int mov_write_pasp_tag(ByteIOContext *pb, MOVTrack *track)
 
     put_be32(pb, 16);
     put_tag(pb, "pasp");
-    put_be32(pb, track->enc->sample_aspect_ratio.num);
-    put_be32(pb, track->enc->sample_aspect_ratio.den);
+    put_be32(pb, sar.num);
+    put_be32(pb, sar.den);
     return 16;
 }
 
