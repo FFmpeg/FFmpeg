@@ -1326,9 +1326,7 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
     y -= h;
 
     if (!s->flipped_image) {
-        if (y == 0)
-            h -= s->height - s->avctx->height;  // account for non-mod16
-        y = s->height - y - h;
+        y = s->avctx->height - y - h;
     }
 
     cy = y >> s->chroma_y_shift;
@@ -1850,7 +1848,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         int row = (s->height >> (3+(i && s->chroma_y_shift))) - 1;
         apply_loop_filter(s, i, row, row+1);
     }
-    vp3_draw_horiz_band(s, s->height);
+    vp3_draw_horiz_band(s, s->avctx->height);
 
     *data_size=sizeof(AVFrame);
     *(AVFrame*)data= s->current_frame;
