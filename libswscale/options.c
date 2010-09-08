@@ -49,6 +49,7 @@ static const AVOption options[] = {
     { "accurate_rnd", "accurate rounding", 0, FF_OPT_TYPE_CONST, SWS_ACCURATE_RND, INT_MIN, INT_MAX, VE, "sws_flags" },
     { "mmx", "MMX SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_MMX, INT_MIN, INT_MAX, VE, "sws_flags" },
     { "mmx2", "MMX2 SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_MMX2, INT_MIN, INT_MAX, VE, "sws_flags" },
+    { "sse2", "SSE2 SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_SSE2, INT_MIN, INT_MAX, VE, "sws_flags" },
     { "3dnow", "3DNOW SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_3DNOW, INT_MIN, INT_MAX, VE, "sws_flags" },
     { "altivec", "AltiVec SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_ALTIVEC, INT_MIN, INT_MAX, VE, "sws_flags" },
     { "bfin", "Blackfin SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_BFIN, INT_MIN, INT_MAX, VE, "sws_flags" },
