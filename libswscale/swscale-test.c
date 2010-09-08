@@ -87,7 +87,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     uint32_t crc = 0;
     int res = 0;
 
-    av_fill_image_linesizes(dstStride, dstFormat, dstW);
+    av_image_fill_linesizes(dstStride, dstFormat, dstW);
     for (i=0; i<4; i++) {
         /* Image buffers passed into libswscale can be allocated any way you
          * prefer, as long as they're aligned enough for the architecture, and
@@ -205,7 +205,7 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
                 uint8_t *src[4] = {0};
                 int srcStride[4];
                 int p;
-                av_fill_image_linesizes(srcStride, srcFormat, srcW);
+                av_image_fill_linesizes(srcStride, srcFormat, srcW);
                 for (p = 0; p < 4; p++) {
                     if (srcStride[p])
                         src[p] = av_mallocz(srcStride[p]*srcH+16);
