@@ -16,13 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "fft.h"
 
 av_cold void ff_fft_init_mmx(FFTContext *s)
 {
 #if HAVE_YASM
-    int has_vectors = mm_support();
+    int has_vectors = av_get_cpu_flags();
     if (has_vectors & AV_CPU_FLAG_SSE && HAVE_SSE) {
         /* SSE for P3/P4/K8 */
         s->imdct_calc  = ff_imdct_calc_sse;
@@ -46,7 +47,7 @@ av_cold void ff_fft_init_mmx(FFTContext *s)
 #if CONFIG_DCT
 av_cold void ff_dct_init_mmx(DCTContext *s)
 {
-    int has_vectors = mm_support();
+    int has_vectors = av_get_cpu_flags();
     if (has_vectors & AV_CPU_FLAG_SSE && HAVE_SSE)
         s->dct32 = ff_dct32_float_sse;
 }

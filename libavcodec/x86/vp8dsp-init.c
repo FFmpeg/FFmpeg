@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/vp8dsp.h"
 
@@ -282,7 +283,7 @@ DECLARE_LOOP_FILTER(sse4)
 
 av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 {
-    int mm_flags = mm_support();
+    int mm_flags = av_get_cpu_flags();
 
 #if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {

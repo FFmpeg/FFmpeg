@@ -427,7 +427,7 @@ PIX_SAD(mmx2)
 
 void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
 {
-    int mm_flags = mm_support();
+    int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->pix_abs[0][0] = sad16_mmx;

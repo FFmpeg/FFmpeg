@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/h264dsp.h"
 #include "dsputil_mmx.h"
@@ -742,7 +743,7 @@ H264_BIWEIGHT_MMX    ( 4,  2)
 
 void ff_h264dsp_init_x86(H264DSPContext *c)
 {
-    int mm_flags = mm_support();
+    int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->h264_idct_dc_add=

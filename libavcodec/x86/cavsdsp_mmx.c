@@ -23,6 +23,7 @@
  */
 
 #include "libavutil/common.h"
+#include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/cavsdsp.h"
@@ -472,7 +473,7 @@ static void ff_cavsdsp_init_3dnow(CAVSDSPContext* c, AVCodecContext *avctx) {
 
 void ff_cavsdsp_init_mmx(CAVSDSPContext *c, AVCodecContext *avctx)
 {
-    int mm_flags = mm_support();
+    int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_MMX2)  ff_cavsdsp_init_mmx2 (c, avctx);
     if (mm_flags & AV_CPU_FLAG_3DNOW) ff_cavsdsp_init_3dnow(c, avctx);

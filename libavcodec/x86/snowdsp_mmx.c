@@ -875,7 +875,7 @@ static void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_str
 
 void ff_dwt_init_x86(DWTContext *c)
 {
-    int mm_flags = mm_support();
+    int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
         if(mm_flags & AV_CPU_FLAG_SSE2 & 0){

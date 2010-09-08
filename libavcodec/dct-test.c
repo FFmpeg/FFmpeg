@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <math.h>
 
+#include "libavutil/cpu.h"
 #include "libavutil/common.h"
 #include "libavutil/lfg.h"
 
@@ -554,7 +555,7 @@ int main(int argc, char **argv)
     int test_idct = 0, test_248_dct = 0;
     int c,i;
     int test=1;
-    cpu_flags = mm_support();
+    cpu_flags = av_get_cpu_flags();
 
     ff_ref_dct_init();
     idct_mmx_init();

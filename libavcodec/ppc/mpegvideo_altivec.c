@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "libavutil/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 
@@ -570,7 +571,7 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
 
 void MPV_common_init_altivec(MpegEncContext *s)
 {
-    if (!(mm_support() & AV_CPU_FLAG_ALTIVEC)) return;
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC)) return;
 
     if (s->avctx->lowres==0) {
         if ((s->avctx->idct_algo == FF_IDCT_AUTO) ||

@@ -31,7 +31,7 @@
 #include <xvid.h>
 #include <unistd.h>
 #include "avcodec.h"
-#include "dsputil.h"
+#include "libavutil/cpu.h"
 #include "libavutil/intreadwrite.h"
 #include "libxvid_internal.h"
 #if !HAVE_MKSTEMP
@@ -213,7 +213,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
 #if ARCH_PPC
     /* Xvid's PPC support is borked, use libavcodec to detect */
 #if HAVE_ALTIVEC
-    if (mm_support() & AV_CPU_FLAG_ALTIVEC) {
+    if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
         xvid_gbl_init.cpu_flags = XVID_CPU_FORCE | XVID_CPU_ALTIVEC;
     } else
 #endif

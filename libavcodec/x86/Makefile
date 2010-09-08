@@ -43,8 +43,7 @@ MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
 
 MMX-OBJS-$(CONFIG_FFT)                 += x86/fft.o
 
-OBJS-$(HAVE_MMX)                       += x86/cpuid.o                   \
-                                          x86/dnxhd_mmx.o               \
+OBJS-$(HAVE_MMX)                       += x86/dnxhd_mmx.o               \
                                           x86/dsputil_mmx.o             \
                                           x86/fdct_mmx.o                \
                                           x86/idct_mmx_xvid.o           \

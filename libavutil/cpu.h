@@ -41,4 +41,9 @@
 #define AV_CPU_FLAG_IWMMXT       0x0100 ///< XScale IWMMXT
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
 
+/**
+ * Return the flags which specify extensions supported by the CPU.
+ */
+int av_get_cpu_flags(void);
+
 #endif  /* AVUTIL_CPU_H */

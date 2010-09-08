@@ -24,6 +24,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
@@ -714,7 +715,7 @@ static void vc1_h_loop_filter16_sse4(uint8_t *src, int stride, int pq)
 #endif
 
 void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx) {
-    int mm_flags = mm_support();
+    int mm_flags = av_get_cpu_flags();
 
     dsp->put_vc1_mspel_pixels_tab[ 0] = ff_put_vc1_mspel_mc00_mmx;
     dsp->put_vc1_mspel_pixels_tab[ 4] = put_vc1_mspel_mc01_mmx;

@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/cpu.h"
 #include "libavcodec/vp8dsp.h"
 #include "dsputil_altivec.h"
 #include "types_altivec.h"
@@ -265,7 +266,7 @@ static void put_vp8_pixels16_altivec(uint8_t *dst, int stride, uint8_t *src, int
 
 av_cold void ff_vp8dsp_init_altivec(VP8DSPContext *c)
 {
-    if (!(mm_support() & AV_CPU_FLAG_ALTIVEC))
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
     c->put_vp8_epel_pixels_tab[0][0][0] = put_vp8_pixels16_altivec;

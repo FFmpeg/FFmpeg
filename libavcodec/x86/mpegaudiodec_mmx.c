@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
 
 #define CONFIG_FLOAT 1
@@ -149,7 +150,7 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
 
 void ff_mpegaudiodec_init_mmx(MPADecodeContext *s)
 {
-    int mm_flags = mm_support();
+    int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_SSE2) {
         s->apply_window_mp3 = apply_window_mp3;

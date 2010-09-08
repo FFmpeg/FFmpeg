@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/cpu.h"
 #include "libavcodec/h264pred.h"
 
 void ff_pred16x16_vertical_mmx     (uint8_t *src, int stride);
@@ -48,7 +49,7 @@ void ff_pred4x4_vertical_vp8_mmxext(uint8_t *src, const uint8_t *topright, int s
 
 void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
 {
-    int mm_flags = mm_support();
+    int mm_flags = av_get_cpu_flags();
 
 #if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {

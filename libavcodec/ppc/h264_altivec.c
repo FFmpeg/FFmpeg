@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/h264data.h"
 #include "libavcodec/h264dsp.h"
@@ -969,7 +970,7 @@ H264_WEIGHT( 8, 4)
 
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
 
-    if (mm_support() & AV_CPU_FLAG_ALTIVEC) {
+    if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
         c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
         c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
         c->put_no_rnd_vc1_chroma_pixels_tab[0] = put_no_rnd_vc1_chroma_mc8_altivec;
@@ -1001,7 +1002,7 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
 
 void ff_h264dsp_init_ppc(H264DSPContext *c)
 {
-    if (mm_support() & AV_CPU_FLAG_ALTIVEC) {
+    if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
         c->h264_idct_add = ff_h264_idct_add_altivec;
         c->h264_idct_add8 = ff_h264_idct_add8_altivec;
         c->h264_idct_add16 = ff_h264_idct_add16_altivec;

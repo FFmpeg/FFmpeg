@@ -20,11 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVUTIL_X86_CPU_H2
+#define AVUTIL_X86_CPU_H2
+
 #include <stdlib.h>
 #include "libavutil/x86_cpu.h"
-#include "libavcodec/dsputil.h"
-
-#undef printf
+#include "libavutil/cpu.h"
 
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index,eax,ebx,ecx,edx)\
@@ -37,7 +38,7 @@
          : "0" (index));
 
 /* Function to test if multimedia instructions are supported...  */
-int mm_support(void)
+int av_get_cpu_flags(void)
 {
     int rval = 0;
     int eax, ebx, ecx, edx;
@@ -121,30 +122,7 @@ int mm_support(void)
         if (rval & AV_CPU_FLAG_SSE3) rval ^= AV_CPU_FLAG_SSE3SLOW|AV_CPU_FLAG_SSE3;
     }
 
-#if 0
-    av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s%s%s%s%s%s%s\n",
-        (rval&AV_CPU_FLAG_MMX) ? "MMX ":"",
-        (rval&AV_CPU_FLAG_MMX2) ? "MMX2 ":"",
-        (rval&AV_CPU_FLAG_SSE) ? "SSE ":"",
-        (rval&AV_CPU_FLAG_SSE2) ? "SSE2 ":"",
-        (rval&AV_CPU_FLAG_SSE2SLOW) ? "SSE2(slow) ":"",
-        (rval&AV_CPU_FLAG_SSE3) ? "SSE3 ":"",
-        (rval&AV_CPU_FLAG_SSE3SLOW) ? "SSE3(slow) ":"",
-        (rval&AV_CPU_FLAG_SSSE3) ? "SSSE3 ":"",
-        (rval&AV_CPU_FLAG_SSE4) ? "SSE4.1 ":"",
-        (rval&AV_CPU_FLAG_SSE42) ? "SSE4.2 ":"",
-        (rval&AV_CPU_FLAG_3DNOW) ? "3DNow ":"",
-        (rval&AV_CPU_FLAG_3DNOWEXT) ? "3DNowExt ":"");
-#endif
     return rval;
 }
 
-#ifdef TEST
-int main ( void )
-{
-    int mm_flags;
-    mm_flags = mm_support();
-    printf("mm_support = 0x%08X\n",mm_flags);
-    return 0;
-}
-#endif
+#endif /* AVUTIL_X86_CPU_H2 */

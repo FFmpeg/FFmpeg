@@ -73,11 +73,6 @@ static void simple_idct_arm_add(uint8_t *dest, int line_size, DCTELEM *block)
     ff_add_pixels_clamped(block, dest, line_size);
 }
 
-int mm_support(void)
-{
-    return HAVE_IWMMXT * AV_CPU_FLAG_IWMMXT;
-}
-
 void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 {
     ff_put_pixels_clamped = c->put_pixels_clamped;

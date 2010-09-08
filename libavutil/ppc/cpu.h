@@ -16,11 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
-/**
- * @file
- * Check for AltiVec presence.
- */
+#ifndef AVUTIL_PPC_CPU_H
+#define AVUTIL_PPC_CPU_H
 
 #ifdef __APPLE__
 #undef _POSIX_C_SOURCE
@@ -36,14 +33,12 @@
 #endif /* __APPLE__ */
 
 #include "config.h"
-#include "dsputil_altivec.h"
 
 /**
  * This function MAY rely on signal() or fork() in order to make sure AltiVec
  * is present.
  */
-
-int mm_support(void)
+int av_get_cpu_flags(void)
 {
 #if HAVE_ALTIVEC
 #ifdef __AMIGAOS4__
@@ -90,3 +85,4 @@ int mm_support(void)
     return 0;
 }
 
+#endif /* AVUTIL_PPC_CPU_H */

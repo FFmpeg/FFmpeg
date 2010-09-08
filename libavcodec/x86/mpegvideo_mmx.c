@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
@@ -625,7 +626,7 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
 
 void MPV_common_init_mmx(MpegEncContext *s)
 {
-    int mm_flags = mm_support();
+    int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
         const int dct_algo = s->avctx->dct_algo;
