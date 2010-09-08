@@ -27,6 +27,8 @@
 #ifndef AVCODEC_A64COLORS_H
 #define AVCODEC_A64COLORS_H
 
+#include <stdint.h>
+
 /* c64 palette in RGB */
 static const uint8_t a64_palette[16][3] = {
     {0x00, 0x00, 0x00},
