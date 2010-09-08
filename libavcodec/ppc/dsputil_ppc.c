@@ -23,17 +23,6 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
 
-int mm_support(void)
-{
-    int result = 0;
-#if HAVE_ALTIVEC
-    if (has_altivec()) {
-        result |= AV_CPU_FLAG_ALTIVEC;
-    }
-#endif /* result */
-    return result;
-}
-
 /* ***** WARNING ***** WARNING ***** WARNING ***** */
 /*
 clear_blocks_dcbz32_ppc will not work properly on PowerPC processors with a
@@ -179,7 +168,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 #if HAVE_ALTIVEC
     if(CONFIG_H264_DECODER) dsputil_h264_init_ppc(c, avctx);
 
-    if (has_altivec()) {
+    if (mm_support() & AV_CPU_FLAG_ALTIVEC) {
         dsputil_init_altivec(c, avctx);
         if(CONFIG_VC1_DECODER)
             vc1dsp_init_altivec(c, avctx);

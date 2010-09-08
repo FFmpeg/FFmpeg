@@ -30,8 +30,6 @@ void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, 
 
 void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 
-int has_altivec(void);
-
 void fdct_altivec(int16_t *block);
 void gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
                   int x16, int y16, int rounder);

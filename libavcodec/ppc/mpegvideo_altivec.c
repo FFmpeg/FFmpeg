@@ -570,7 +570,7 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
 
 void MPV_common_init_altivec(MpegEncContext *s)
 {
-    if (!has_altivec()) return;
+    if (!(mm_support() & AV_CPU_FLAG_ALTIVEC)) return;
 
     if (s->avctx->lowres==0) {
         if ((s->avctx->idct_algo == FF_IDCT_AUTO) ||

@@ -43,14 +43,16 @@
  * is present.
  */
 
-int has_altivec(void)
+int mm_support(void)
 {
+#if HAVE_ALTIVEC
 #ifdef __AMIGAOS4__
     ULONG result = 0;
     extern struct ExecIFace *IExec;
 
     IExec->GetCPUInfoTags(GCIT_VectorUnit, &result, TAG_DONE);
-    if (result == VECTORTYPE_ALTIVEC) return 1;
+    if (result == VECTORTYPE_ALTIVEC)
+        return AV_CPU_FLAG_ALTIVEC;
     return 0;
 #elif defined(__APPLE__) || defined(__OpenBSD__)
 #ifdef __OpenBSD__
@@ -64,7 +66,8 @@ int has_altivec(void)
 
     err = sysctl(sels, 2, &has_vu, &len, NULL, 0);
 
-    if (err == 0) return has_vu != 0;
+    if (err == 0)
+        return has_vu ? AV_CPU_FLAG_ALTIVEC : 0;
     return 0;
 #elif CONFIG_RUNTIME_CPUDETECT
     int proc_ver;
@@ -76,12 +79,14 @@ int has_altivec(void)
         proc_ver == 0x0039 || proc_ver == 0x003c ||
         proc_ver == 0x0044 || proc_ver == 0x0045 ||
         proc_ver == 0x0070)
-        return 1;
+        return AV_CPU_FLAG_ALTIVEC;
     return 0;
 #else
     // Since we were compiled for AltiVec, just assume we have it
     // until someone comes up with a proper way (not involving signal hacks).
-    return 1;
+    return AV_CPU_FLAG_ALTIVEC;
 #endif /* __AMIGAOS4__ */
+#endif /* HAVE_ALTIVEC */
+    return 0;
 }
 

@@ -265,7 +265,7 @@ static void put_vp8_pixels16_altivec(uint8_t *dst, int stride, uint8_t *src, int
 
 av_cold void ff_vp8dsp_init_altivec(VP8DSPContext *c)
 {
-    if (!has_altivec())
+    if (!(mm_support() & AV_CPU_FLAG_ALTIVEC))
         return;
 
     c->put_vp8_epel_pixels_tab[0][0][0] = put_vp8_pixels16_altivec;
