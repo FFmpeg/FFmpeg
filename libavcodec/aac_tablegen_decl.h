@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AAC_TABLEGEN_INIT_H
-#define AAC_TABLEGEN_INIT_H
+#ifndef AAC_TABLEGEN_DECL_H
+#define AAC_TABLEGEN_DECL_H
 
 #if CONFIG_HARDCODED_TABLES
 #define ff_aac_tableinit()
@@ -31,4 +31,4 @@ void ff_aac_tableinit(void);
 extern       float ff_aac_pow2sf_tab[428];
 #endif /* CONFIG_HARDCODED_TABLES */
 
-#endif /* AAC_TABLEGEN_INIT_H */
+#endif /* AAC_TABLEGEN_DECL_H */
