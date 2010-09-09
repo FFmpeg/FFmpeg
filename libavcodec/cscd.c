@@ -224,7 +224,7 @@ static av_cold int decode_init(AVCodecContext *avctx) {
             av_log(avctx, AV_LOG_ERROR,
                    "CamStudio codec error: invalid depth %i bpp\n",
                    avctx->bits_per_coded_sample);
-             return 1;
+            return 1;
     }
     c->bpp = avctx->bits_per_coded_sample;
     c->pic.data[0] = NULL;
