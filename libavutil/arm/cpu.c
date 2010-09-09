@@ -16,14 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_ARM_CPU_H
-#define AVUTIL_ARM_CPU_H
-
+#include "libavutil/cpu.h"
 #include "config.h"
 
-int av_get_cpu_flags(void)
+int ff_get_cpu_flags_arm(void)
 {
     return HAVE_IWMMXT * AV_CPU_FLAG_IWMMXT;
 }
-
-#endif /* AVUTIL_ARM_CPU_H */

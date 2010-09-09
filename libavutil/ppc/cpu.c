@@ -16,9 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_PPC_CPU_H
-#define AVUTIL_PPC_CPU_H
-
 #ifdef __APPLE__
 #undef _POSIX_C_SOURCE
 #include <sys/sysctl.h>
@@ -32,13 +29,14 @@
 #include <proto/exec.h>
 #endif /* __APPLE__ */
 
+#include "libavutil/cpu.h"
 #include "config.h"
 
 /**
  * This function MAY rely on signal() or fork() in order to make sure AltiVec
  * is present.
  */
-int av_get_cpu_flags(void)
+int ff_get_cpu_flags_ppc(void)
 {
 #if HAVE_ALTIVEC
 #ifdef __AMIGAOS4__
@@ -84,5 +82,3 @@ int av_get_cpu_flags(void)
 #endif /* HAVE_ALTIVEC */
     return 0;
 }
-
-#endif /* AVUTIL_PPC_CPU_H */

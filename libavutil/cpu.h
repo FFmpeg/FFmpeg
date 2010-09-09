@@ -21,8 +21,6 @@
 #ifndef AVUTIL_CPU_H
 #define AVUTIL_CPU_H
 
-#include "avutil.h"
-
 #define AV_CPU_FLAG_FORCE    0x80000000 /* force usage of selected flags (OR) */
 
     /* lower 16 bits - CPU features */
@@ -45,5 +43,10 @@
  * Return the flags which specify extensions supported by the CPU.
  */
 int av_get_cpu_flags(void);
+
+/* The following CPU-specific functions shall not be called directly. */
+int ff_get_cpu_flags_arm(void);
+int ff_get_cpu_flags_ppc(void);
+int ff_get_cpu_flags_x86(void);
 
 #endif  /* AVUTIL_CPU_H */

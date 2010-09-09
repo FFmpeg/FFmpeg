@@ -57,6 +57,10 @@ OBJS = adler32.o                                                        \
        tree.o                                                           \
        utils.o                                                          \
 
+OBJS-$(ARCH_ARM) += arm/cpu.o
+OBJS-$(ARCH_PPC) += ppc/cpu.o
+OBJS-$(ARCH_X86) += x86/cpu.o
+
 TESTPROGS = adler32 aes base64 cpu crc des lls md5 pca sha softfloat tree
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
 

@@ -20,9 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_X86_CPU_H2
-#define AVUTIL_X86_CPU_H2
-
 #include <stdlib.h>
 #include "libavutil/x86_cpu.h"
 #include "libavutil/cpu.h"
@@ -38,7 +35,7 @@
          : "0" (index));
 
 /* Function to test if multimedia instructions are supported...  */
-int av_get_cpu_flags(void)
+int ff_get_cpu_flags_x86(void)
 {
     int rval = 0;
     int eax, ebx, ecx, edx;
@@ -124,5 +121,3 @@ int av_get_cpu_flags(void)
 
     return rval;
 }
-
-#endif /* AVUTIL_X86_CPU_H2 */
