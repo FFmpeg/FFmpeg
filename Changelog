@@ -33,6 +33,7 @@ version <next>:
 - Apple HTTP Live Streaming demuxer
 - a64 codec
 - MMS-HTTP support
+- G.722 ADPCM audio decoder
 
 
 version 0.6:
