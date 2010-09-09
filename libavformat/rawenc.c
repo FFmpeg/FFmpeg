@@ -107,6 +107,21 @@ AVOutputFormat eac3_muxer = {
 };
 #endif
 
+#if CONFIG_G722_MUXER
+AVOutputFormat g722_muxer = {
+    "g722",
+    NULL_IF_CONFIG_SMALL("raw G.722"),
+    "audio/G722",
+    "g722",
+    0,
+    CODEC_ID_ADPCM_G722,
+    CODEC_ID_NONE,
+    NULL,
+    ff_raw_write_packet,
+    .flags= AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_H261_MUXER
 AVOutputFormat h261_muxer = {
     "h261",

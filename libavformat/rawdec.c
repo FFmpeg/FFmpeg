@@ -137,6 +137,20 @@ int ff_raw_video_read_header(AVFormatContext *s,
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 
+#if CONFIG_G722_DEMUXER
+AVInputFormat g722_demuxer = {
+    "g722",
+    NULL_IF_CONFIG_SMALL("raw G.722"),
+    0,
+    NULL,
+    ff_raw_read_header,
+    ff_raw_read_partial_packet,
+    .flags= AVFMT_GENERIC_INDEX,
+    .extensions = "g722,722",
+    .value = CODEC_ID_ADPCM_G722,
+};
+#endif
+
 #if CONFIG_GSM_DEMUXER
 AVInputFormat gsm_demuxer = {
     "gsm",
