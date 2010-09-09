@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include "libavutil/x86_cpu.h"
 #include "libavutil/cpu.h"
 
