@@ -3241,6 +3241,11 @@ static void opt_input_file(const char *filename)
             input_codecs[nb_icodecs++] = avcodec_find_decoder_by_name(audio_codec_name);
             if(audio_disable)
                 st->discard= AVDISCARD_ALL;
+            /* Note that av_find_stream_info can add more streams, and we
+             * currently have no chance of setting up lowres decoding
+             * early enough for them. */
+            if (dec->lowres)
+                audio_sample_rate >>= dec->lowres;
             break;
         case AVMEDIA_TYPE_VIDEO:
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
