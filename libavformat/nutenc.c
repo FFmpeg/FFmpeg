@@ -561,11 +561,11 @@ static int write_header(AVFormatContext *s){
         if(j==nut->time_base_count)
             nut->time_base_count++;
 
-        if(av_q2d(time_base) >= 0.001)
+        if(INT64_C(1000) * time_base.num >= time_base.den)
             nut->stream[i].msb_pts_shift = 7;
         else
             nut->stream[i].msb_pts_shift = 14;
-        nut->stream[i].max_pts_distance= FFMAX(1/av_q2d(time_base), 1);
+        nut->stream[i].max_pts_distance= FFMAX(time_base.den, time_base.num) / time_base.num;
     }
 
     nut->max_distance = MAX_DISTANCE;
