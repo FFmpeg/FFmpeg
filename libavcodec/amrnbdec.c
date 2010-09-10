@@ -52,6 +52,7 @@
 #include "acelp_vectors.h"
 #include "acelp_pitch_delay.h"
 #include "lsp.h"
+#include "amr.h"
 
 #include "amrnbdata.h"
 
@@ -195,24 +196,9 @@ static enum Mode unpack_bitstream(AMRContext *p, const uint8_t *buf,
     p->bad_frame_indicator = !get_bits1(&gb); // quality bit
     skip_bits(&gb, 2);                        // two padding bits
 
-    if (mode < MODE_DTX) {
-        uint16_t *data = (uint16_t *)&p->frame;
-        const uint8_t *order = amr_unpacking_bitmaps_per_mode[mode];
-        int field_size;
-
-        memset(&p->frame, 0, sizeof(AMRNBFrame));
-        buf++;
-        while ((field_size = *order++)) {
-            int field = 0;
-            int field_offset = *order++;
-            while (field_size--) {
-               int bit = *order++;
-               field <<= 1;
-               field |= buf[bit >> 3] >> (bit & 7) & 1;
-            }
-            data[field_offset] = field;
-        }
-    }
+    if (mode < MODE_DTX)
+        ff_amr_bit_reorder((uint16_t *) &p->frame, sizeof(AMRNBFrame), buf + 1,
+                           amr_unpacking_bitmaps_per_mode[mode]);
 
     return mode;
 }
