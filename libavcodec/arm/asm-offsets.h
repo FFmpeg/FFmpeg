@@ -42,7 +42,7 @@
 #define AC_PRED                  0xa5c
 #define BLOCK_LAST_INDEX         0x213c
 #define INTER_SCANTAB_RASTER_END 0x233c
-#define H263_AIC                 0x25e4
+#define H263_AIC                 0x25e0
 #endif
 
 #endif
