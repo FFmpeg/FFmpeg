@@ -22,6 +22,7 @@
 #include "flv.h"
 #include "internal.h"
 #include "avc.h"
+#include "metadata.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -176,6 +177,7 @@ static int flv_write_header(AVFormatContext *s)
     int i;
     double framerate = 0.0;
     int metadata_size_pos, data_size;
+    AVMetadataTag *tag = NULL;
 
     for(i=0; i<s->nb_streams; i++){
         AVCodecContext *enc = s->streams[i]->codec;
@@ -270,6 +272,12 @@ static int flv_write_header(AVFormatContext *s)
 
         put_amf_string(pb, "audiocodecid");
         put_amf_double(pb, audio_enc->codec_tag);
+    }
+
+    while ((tag = av_metadata_get(s->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
+        put_amf_string(pb, tag->key);
+        put_byte(pb, AMF_DATA_TYPE_STRING);
+        put_amf_string(pb, tag->value);
     }
 
     put_amf_string(pb, "filesize");
