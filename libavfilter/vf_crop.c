@@ -132,7 +132,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     picref->video->h = crop->h;
 
     ref2->data[0] += crop->y * ref2->linesize[0];
-    ref2->data[0] += (crop->x * crop->max_step[0]);
+    ref2->data[0] += crop->x * crop->max_step[0];
 
     if (!(av_pix_fmt_descriptors[link->format].flags & PIX_FMT_PAL)) {
         for (i = 1; i < 3; i ++) {
@@ -146,7 +146,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     /* alpha plane */
     if (ref2->data[3]) {
         ref2->data[3] += crop->y * ref2->linesize[3];
-        ref2->data[3] += (crop->x * crop->max_step[3]);
+        ref2->data[3] += crop->x * crop->max_step[3];
     }
 
     avfilter_start_frame(link->dst->outputs[0], ref2);
