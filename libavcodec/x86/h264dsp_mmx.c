@@ -475,7 +475,7 @@ static void ff_h264_idct_add8_mmx2(uint8_t **dest, const int *block_offset, DCTE
     }
 }
 
-#if CONFIG_GPL && HAVE_YASM
+#if HAVE_YASM
 static void ff_h264_idct_dc_add8_mmx2(uint8_t *dst, int16_t *block, int stride)
 {
     __asm__ volatile(
@@ -820,11 +820,9 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
                 c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_sse2;
                 c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_sse2;
 #endif
-#if CONFIG_GPL
                 c->h264_idct_add16 = ff_h264_idct_add16_sse2;
                 c->h264_idct_add8  = ff_h264_idct_add8_sse2;
                 c->h264_idct_add16intra = ff_h264_idct_add16intra_sse2;
-#endif
             }
             if (mm_flags&AV_CPU_FLAG_SSSE3) {
                 c->biweight_h264_pixels_tab[0]= ff_h264_biweight_16x16_ssse3;
