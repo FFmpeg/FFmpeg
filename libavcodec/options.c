@@ -333,7 +333,7 @@ static const AVOption options[]={
 {"aac_ltp", NULL, 0, FF_OPT_TYPE_CONST, FF_PROFILE_AAC_LTP, INT_MIN, INT_MAX, A|E, "profile"},
 {"level", NULL, OFFSET(level), FF_OPT_TYPE_INT, FF_LEVEL_UNKNOWN, INT_MIN, INT_MAX, V|A|E, "level"},
 {"unknown", NULL, 0, FF_OPT_TYPE_CONST, FF_LEVEL_UNKNOWN, INT_MIN, INT_MAX, V|A|E, "level"},
-{"lowres", "decode at 1= 1/2, 2=1/4, 3=1/8 resolutions", OFFSET(lowres), FF_OPT_TYPE_INT, 0, 0, INT_MAX, V|D},
+{"lowres", "decode at 1= 1/2, 2=1/4, 3=1/8 resolutions", OFFSET(lowres), FF_OPT_TYPE_INT, 0, 0, INT_MAX, V|A|D},
 {"skip_threshold", "frame skip threshold", OFFSET(frame_skip_threshold), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"skip_factor", "frame skip factor", OFFSET(frame_skip_factor), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"skip_exp", "frame skip exponent", OFFSET(frame_skip_exp), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
