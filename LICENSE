@@ -15,8 +15,6 @@ Specifically, the GPL parts of FFmpeg are
 
 - libpostproc
 - optional x86 optimizations in the files
-  libavcodec/x86/h264_deblock_sse2.asm
-  libavcodec/x86/h264_idct_sse2.asm
   libavcodec/x86/idct_mmx.c
 - the X11 grabber in libavdevice/x11grab.c
 
