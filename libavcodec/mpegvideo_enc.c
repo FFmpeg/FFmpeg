@@ -356,7 +356,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if(avctx->bit_rate*av_q2d(avctx->time_base) > avctx->bit_rate_tolerance){
+    if(!s->fixed_qscale && avctx->bit_rate*av_q2d(avctx->time_base) > avctx->bit_rate_tolerance){
         av_log(avctx, AV_LOG_ERROR, "bitrate tolerance too small for bitrate\n");
         return -1;
     }
