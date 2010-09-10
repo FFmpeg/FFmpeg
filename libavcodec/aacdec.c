@@ -113,28 +113,11 @@ static const char overread_err[] = "Input buffer exhausted before END element fo
 
 static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
 {
-    /* Some buggy encoders appear to set all elem_ids to zero and rely on
-    channels always occurring in the same order. This is expressly forbidden
-    by the spec but we will try to work around it.
-    */
-    int err_printed = 0;
-    while (ac->tags_seen_this_frame[type][elem_id] && elem_id < MAX_ELEM_ID) {
-        if (ac->output_configured < OC_LOCKED && !err_printed) {
-            av_log(ac->avctx, AV_LOG_WARNING, "Duplicate channel tag found, attempting to remap.\n");
-            err_printed = 1;
-        }
-        elem_id++;
-    }
-    if (elem_id == MAX_ELEM_ID)
-        return NULL;
-    ac->tags_seen_this_frame[type][elem_id] = 1;
-
-    if (ac->tag_che_map[type][elem_id]) {
+    // For PCE based channel configurations map the channels solely based on tags.
+    if (!ac->m4ac.chan_config) {
         return ac->tag_che_map[type][elem_id];
     }
-    if (ac->tags_mapped >= tags_per_config[ac->m4ac.chan_config]) {
-        return NULL;
-    }
+    // For indexed channel configurations map the channels solely based on position.
     switch (ac->m4ac.chan_config) {
     case 7:
         if (ac->tags_mapped == 3 && type == TYPE_CPE) {
@@ -242,7 +225,6 @@ static av_cold int output_configure(AACContext *ac,
         }
 
         memset(ac->tag_che_map, 0,       4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
-        ac->tags_mapped = 0;
 
         avctx->channel_layout = aac_channel_layout[channel_config - 1];
     } else {
@@ -263,7 +245,6 @@ static av_cold int output_configure(AACContext *ac,
         }
 
         memcpy(ac->tag_che_map, ac->che, 4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
-        ac->tags_mapped = 4 * MAX_ELEM_ID;
 
         avctx->channel_layout = 0;
     }
@@ -1964,7 +1945,7 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    memset(ac->tags_seen_this_frame, 0, sizeof(ac->tags_seen_this_frame));
+    ac->tags_mapped = 0;
     // parse
     while ((elem_type = get_bits(&gb, 3)) != TYPE_END) {
         elem_id = get_bits(&gb, 4);
