@@ -88,6 +88,7 @@ version <next>:
 - Linux framebuffer input device added
 - Chronomaster DFA decoder
 - DPX image encoder
+- MicroDVD subtitle file muxer and demuxer
 
 
 version 0.6:
