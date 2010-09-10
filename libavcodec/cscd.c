@@ -35,19 +35,19 @@ typedef struct {
     unsigned char* decomp_buf;
 } CamStudioContext;
 
-static void copy_frame_default(AVFrame *f, const uint8_t *src,
+static void copy_frame_default(AVFrame *f, const uint8_t *src, int src_stride,
                                int linelen, int height) {
     int i;
     uint8_t *dst = f->data[0];
     dst += (height - 1) * f->linesize[0];
     for (i = height; i; i--) {
         memcpy(dst, src, linelen);
-        src += linelen;
+        src += src_stride;
         dst -= f->linesize[0];
     }
 }
 
-static void add_frame_default(AVFrame *f, const uint8_t *src,
+static void add_frame_default(AVFrame *f, const uint8_t *src, int src_stride,
                               int linelen, int height) {
     int i, j;
     uint8_t *dst = f->data[0];
@@ -55,15 +55,16 @@ static void add_frame_default(AVFrame *f, const uint8_t *src,
     for (i = height; i; i--) {
         for (j = linelen; j; j--)
             *dst++ += *src++;
+        src += src_stride - linelen;
         dst -= f->linesize[0] + linelen;
     }
 }
 
 #if !HAVE_BIGENDIAN
-#define copy_frame_16 copy_frame_default
-#define copy_frame_32 copy_frame_default
-#define add_frame_16 add_frame_default
-#define add_frame_32 add_frame_default
+#define copy_frame_16(f, s, l, h) copy_frame_default(f, s, l, l, h)
+#define copy_frame_32(f, s, l, h) copy_frame_default(f, s, l, l, h)
+#define add_frame_16(f, s, l, h) add_frame_default(f, s, l, l, h)
+#define add_frame_32(f, s, l, h) add_frame_default(f, s, l, l, h)
 #else
 static void copy_frame_16(AVFrame *f, const uint8_t *src,
                           int linelen, int height) {
@@ -192,7 +193,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
               copy_frame_32(&c->pic, c->decomp_buf, c->linelen, c->height);
               break;
           default:
-              copy_frame_default(&c->pic, c->decomp_buf, c->linelen, c->height);
+              copy_frame_default(&c->pic, c->decomp_buf, FFALIGN(c->linelen, 4),
+                                 c->linelen, c->height);
         }
     } else {
         c->pic.pict_type = FF_P_TYPE;
@@ -205,7 +207,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
               add_frame_32(&c->pic, c->decomp_buf, c->linelen, c->height);
               break;
           default:
-              add_frame_default(&c->pic, c->decomp_buf, c->linelen, c->height);
+              add_frame_default(&c->pic, c->decomp_buf, FFALIGN(c->linelen, 4),
+                                c->linelen, c->height);
         }
     }
 
@@ -216,6 +219,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
 static av_cold int decode_init(AVCodecContext *avctx) {
     CamStudioContext *c = avctx->priv_data;
+    int stride;
     switch (avctx->bits_per_coded_sample) {
         case 16: avctx->pix_fmt = PIX_FMT_RGB555; break;
         case 24: avctx->pix_fmt = PIX_FMT_BGR24; break;
@@ -230,7 +234,10 @@ static av_cold int decode_init(AVCodecContext *avctx) {
     c->pic.data[0] = NULL;
     c->linelen = avctx->width * avctx->bits_per_coded_sample / 8;
     c->height = avctx->height;
-    c->decomp_size = c->height * c->linelen;
+    stride = c->linelen;
+    if (avctx->bits_per_coded_sample == 24)
+        stride = FFALIGN(stride, 4);
+    c->decomp_size = c->height * stride;
     c->decomp_buf = av_malloc(c->decomp_size + AV_LZO_OUTPUT_PADDING);
     if (!c->decomp_buf) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
