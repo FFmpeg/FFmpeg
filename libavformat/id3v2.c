@@ -53,11 +53,17 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic)
 {
     int len, ret;
     uint8_t buf[ID3v2_HEADER_SIZE];
+    int     found_header;
+    int64_t off;
 
+    do {
+        /* save the current offset in case there's nothing to read/skip */
+        off = url_ftell(s->pb);
     ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
     if (ret != ID3v2_HEADER_SIZE)
         return;
-    if (ff_id3v2_match(buf, magic)) {
+        found_header = ff_id3v2_match(buf, magic);
+        if (found_header) {
         /* parse ID3v2 header */
         len = ((buf[6] & 0x7f) << 21) |
             ((buf[7] & 0x7f) << 14) |
@@ -65,8 +71,9 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic)
             (buf[9] & 0x7f);
         ff_id3v2_parse(s, len, buf[3], buf[5]);
     } else {
-        url_fseek(s->pb, 0, SEEK_SET);
+        url_fseek(s->pb, off, SEEK_SET);
     }
+    } while (found_header);
 }
 
 static unsigned int get_size(ByteIOContext *s, int len)
