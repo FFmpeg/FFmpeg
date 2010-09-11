@@ -1599,10 +1599,10 @@ static int yvu9ToYv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[
         }
     }
 
-        planar2x(src[1], dst[1] + dstStride[1]*(srcSliceY >> 1), c->chrSrcW,
-                 srcSliceH >> 2, srcStride[1], dstStride[1]);
-        planar2x(src[2], dst[2] + dstStride[2]*(srcSliceY >> 1), c->chrSrcW,
-                 srcSliceH >> 2, srcStride[2], dstStride[2]);
+    planar2x(src[1], dst[1] + dstStride[1]*(srcSliceY >> 1), c->chrSrcW,
+             srcSliceH >> 2, srcStride[1], dstStride[1]);
+    planar2x(src[2], dst[2] + dstStride[2]*(srcSliceY >> 1), c->chrSrcW,
+             srcSliceH >> 2, srcStride[2], dstStride[2]);
     if (dst[3])
         fillPlane(dst[3], dstStride[3], c->srcW, srcSliceH, srcSliceY, 255);
     return srcSliceH;
