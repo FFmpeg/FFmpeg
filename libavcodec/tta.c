@@ -63,7 +63,7 @@ typedef struct TTAContext {
 
     int32_t *decode_buffer;
 
-    TTAChannel *ch_ctx;;
+    TTAChannel *ch_ctx;
 } TTAContext;
 
 #if 0
