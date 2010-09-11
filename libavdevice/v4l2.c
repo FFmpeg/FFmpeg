@@ -296,7 +296,7 @@ static int mmap_init(AVFormatContext *ctx)
     req.count = desired_video_buffers;
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     req.memory = V4L2_MEMORY_MMAP;
-    res = ioctl (s->fd, VIDIOC_REQBUFS, &req);
+    res = ioctl(s->fd, VIDIOC_REQBUFS, &req);
     if (res < 0) {
         if (errno == EINVAL) {
             av_log(ctx, AV_LOG_ERROR, "Device does not support mmap\n");
@@ -334,7 +334,7 @@ static int mmap_init(AVFormatContext *ctx)
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         buf.memory = V4L2_MEMORY_MMAP;
         buf.index = i;
-        res = ioctl (s->fd, VIDIOC_QUERYBUF, &buf);
+        res = ioctl(s->fd, VIDIOC_QUERYBUF, &buf);
         if (res < 0) {
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYBUF)\n");
 
@@ -381,7 +381,7 @@ static void mmap_release_buffer(AVPacket *pkt)
     fd = buf_descriptor->fd;
     av_free(buf_descriptor);
 
-    res = ioctl (fd, VIDIOC_QBUF, &buf);
+    res = ioctl(fd, VIDIOC_QBUF, &buf);
     if (res < 0) {
         av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF)\n");
     }
@@ -430,7 +430,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
          * allocate a buffer for memcopying into it
          */
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate a buffer descriptor\n");
-        res = ioctl (s->fd, VIDIOC_QBUF, &buf);
+        res = ioctl(s->fd, VIDIOC_QBUF, &buf);
 
         return AVERROR(ENOMEM);
     }
@@ -460,7 +460,7 @@ static int mmap_start(AVFormatContext *ctx)
         buf.memory = V4L2_MEMORY_MMAP;
         buf.index  = i;
 
-        res = ioctl (s->fd, VIDIOC_QBUF, &buf);
+        res = ioctl(s->fd, VIDIOC_QBUF, &buf);
         if (res < 0) {
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", strerror(errno));
 
@@ -469,7 +469,7 @@ static int mmap_start(AVFormatContext *ctx)
     }
 
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    res = ioctl (s->fd, VIDIOC_STREAMON, &type);
+    res = ioctl(s->fd, VIDIOC_STREAMON, &type);
     if (res < 0) {
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_STREAMON): %s\n", strerror(errno));
 
@@ -496,34 +496,34 @@ static void mmap_close(struct video_data *s)
     av_free(s->buf_len);
 }
 
-static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
+static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
 {
     struct video_data *s = s1->priv_data;
     struct v4l2_input input;
     struct v4l2_standard standard;
     int i;
 
-    if(ap->channel>=0) {
+    if (ap->channel>=0) {
         /* set tv video input */
         memset (&input, 0, sizeof (input));
         input.index = ap->channel;
-        if(ioctl (s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
+        if (ioctl(s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
             av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl enum input failed:\n");
             return AVERROR(EIO);
         }
 
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set input_id: %d, input: %s\n",
                ap->channel, input.name);
-        if(ioctl (s->fd, VIDIOC_S_INPUT, &input.index) < 0 ) {
+        if (ioctl(s->fd, VIDIOC_S_INPUT, &input.index) < 0) {
             av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set input(%d) failed\n",
                    ap->channel);
             return AVERROR(EIO);
         }
     }
 
-    if(ap->standard) {
+    if (ap->standard) {
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s\n",
-               ap->standard );
+               ap->standard);
         /* set tv standard */
         memset (&standard, 0, sizeof (standard));
         for(i=0;;i++) {
@@ -534,7 +534,7 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
                 return AVERROR(EIO);
             }
 
-            if(!strcasecmp(standard.name, ap->standard)) {
+            if (!strcasecmp(standard.name, ap->standard)) {
                 break;
             }
         }
@@ -633,7 +633,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return AVERROR(EINVAL);
     s->frame_format = desired_format;
 
-    if( v4l2_set_parameters( s1, ap ) < 0 )
+    if (v4l2_set_parameters(s1, ap) < 0)
         return AVERROR(EIO);
 
     st->codec->pix_fmt = fmt_v4l2ff(desired_format, codec_id);
