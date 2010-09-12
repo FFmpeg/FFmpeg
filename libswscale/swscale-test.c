@@ -78,7 +78,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
                   int srcW, int srcH, int dstW, int dstH, int flags)
 {
     static enum PixelFormat cur_srcFormat;
-    static int cur_srcW, cur_srcH, cur_flags;
+    static int cur_srcW, cur_srcH;
     static uint8_t *src[4];
     static int srcStride[4];
     uint8_t *dst[4] = {0};
@@ -90,7 +90,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     uint32_t crc = 0;
     int res = 0;
 
-    if (cur_srcFormat != srcFormat || cur_srcW != srcW || cur_srcH != srcH || cur_flags != flags) {
+    if (cur_srcFormat != srcFormat || cur_srcW != srcW || cur_srcH != srcH) {
         struct SwsContext *srcContext = NULL;
         int p;
 
@@ -110,7 +110,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
             }
         }
         srcContext = sws_getContext(w, h, PIX_FMT_YUVA420P, srcW, srcH,
-                                    srcFormat, flags, NULL, NULL, NULL);
+                                    srcFormat, SWS_BILINEAR, NULL, NULL, NULL);
         if (!srcContext) {
             fprintf(stderr, "Failed to get %s ---> %s\n",
                     av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name,
@@ -125,7 +125,6 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
         cur_srcFormat = srcFormat;
         cur_srcW = srcW;
         cur_srcH = srcH;
-        cur_flags = flags;
     }
 
     av_image_fill_linesizes(dstStride, dstFormat, dstW);
