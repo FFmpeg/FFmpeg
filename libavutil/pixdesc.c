@@ -53,9 +53,15 @@ void av_read_image_line(uint16_t *dst, const uint8_t *data[4], const int linesiz
         }
     } else {
         const uint8_t *p = data[plane]+ y*linesize[plane] + x*step + comp.offset_plus1-1;
+        int is_8bit = 0;
 
+        if (shift + depth <= 8) {
+            p += !!(flags & PIX_FMT_BE);
+            is_8bit = 1;
+        }
         while(w--){
-            int val = flags & PIX_FMT_BE ? AV_RB16(p) : AV_RL16(p);
+            int val = is_8bit ? *p :
+                flags & PIX_FMT_BE ? AV_RB16(p) : AV_RL16(p);
             val = (val>>shift) & mask;
             if(read_pal_component)
                 val= data[1][4*val + c];
@@ -89,6 +95,13 @@ void av_write_image_line(const uint16_t *src, uint8_t *data[4], const int linesi
         int shift = comp.shift;
         uint8_t *p = data[plane]+ y*linesize[plane] + x*step + comp.offset_plus1-1;
 
+        if (shift + depth <= 8) {
+            p += !!(flags & PIX_FMT_BE);
+            while (w--) {
+                *p |= (*src++<<shift);
+                p += step;
+            }
+        } else {
         while (w--) {
             if (flags & PIX_FMT_BE) {
                 uint16_t val = AV_RB16(p) | (*src++<<shift);
@@ -98,6 +111,7 @@ void av_write_image_line(const uint16_t *src, uint8_t *data[4], const int linesi
                 AV_WL16(p, val);
             }
             p+= step;
+        }
         }
     }
 }
