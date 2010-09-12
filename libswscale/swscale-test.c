@@ -242,7 +242,9 @@ end:
     return res;
 }
 
-static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
+static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h,
+                     enum PixelFormat srcFormat_in,
+                     enum PixelFormat dstFormat_in)
 {
     const int flags[] = { SWS_FAST_BILINEAR,
                           SWS_BILINEAR, SWS_BICUBIC,
@@ -253,11 +255,13 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
     const int dstH[] = { srcH - srcH/3, srcH, srcH + srcH/3, 0 };
     enum PixelFormat srcFormat, dstFormat;
 
-    for (srcFormat = 0; srcFormat < PIX_FMT_NB; srcFormat++) {
+    for (srcFormat = srcFormat_in != PIX_FMT_NONE ? srcFormat_in : 0;
+         srcFormat < PIX_FMT_NB; srcFormat++) {
         if (!sws_isSupportedInput(srcFormat) || !sws_isSupportedOutput(srcFormat))
             continue;
 
-        for (dstFormat = 0; dstFormat < PIX_FMT_NB; dstFormat++) {
+        for (dstFormat = dstFormat_in != PIX_FMT_NONE ? dstFormat_in : 0;
+             dstFormat < PIX_FMT_NB; dstFormat++) {
             int i, j, k;
             int res = 0;
 
@@ -277,11 +281,17 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
                                      srcW, srcH, dstW[i], dstH[j], flags[k],
                                      NULL);
             }
+            if (dstFormat_in != PIX_FMT_NONE)
+                break;
         }
+        if (srcFormat_in != PIX_FMT_NONE)
+            break;
     }
 }
 
-static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp)
+static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp,
+                     enum PixelFormat srcFormat_in,
+                     enum PixelFormat dstFormat_in)
 {
     char buf[256];
 
@@ -312,6 +322,9 @@ static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp)
             fprintf(stderr, "malformed input file\n");
             return -1;
         }
+        if ((srcFormat_in != PIX_FMT_NONE && srcFormat_in != srcFormat) ||
+            (dstFormat_in != PIX_FMT_NONE && dstFormat_in != dstFormat))
+            continue;
         if (ret != 12) {
             printf("%s", buf);
             continue;
@@ -331,6 +344,8 @@ static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp)
 
 int main(int argc, char **argv)
 {
+    enum PixelFormat srcFormat = PIX_FMT_NONE;
+    enum PixelFormat dstFormat = PIX_FMT_NONE;
     uint8_t *rgb_data = av_malloc (W*H*4);
     uint8_t *rgb_src[3]= {rgb_data, NULL, NULL};
     int rgb_stride[3]={4*W, 0, 0};
@@ -368,9 +383,21 @@ int main(int argc, char **argv)
                 fprintf(stderr, "could not open '%s'\n", argv[i+1]);
                 goto error;
             }
-            res = fileTest(src, stride, W, H, fp);
+            res = fileTest(src, stride, W, H, fp, srcFormat, dstFormat);
             fclose(fp);
             goto end;
+        } else if (!strcmp(argv[i], "-src")) {
+            srcFormat = av_get_pix_fmt(argv[i+1]);
+            if (srcFormat == PIX_FMT_NONE) {
+                fprintf(stderr, "invalid pixel format %s\n", argv[i+1]);
+                return -1;
+            }
+        } else if (!strcmp(argv[i], "-dst")) {
+            dstFormat = av_get_pix_fmt(argv[i+1]);
+            if (dstFormat == PIX_FMT_NONE) {
+                fprintf(stderr, "invalid pixel format %s\n", argv[i+1]);
+                return -1;
+            }
         } else {
 bad_option:
             fprintf(stderr, "bad option or argument missing (%s)\n", argv[i]);
@@ -378,7 +405,7 @@ bad_option:
         }
     }
 
-    selfTest(src, stride, W, H);
+    selfTest(src, stride, W, H, srcFormat, dstFormat);
 end:
     res = 0;
 error:
