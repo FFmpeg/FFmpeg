@@ -102,16 +102,16 @@ void av_write_image_line(const uint16_t *src, uint8_t *data[4], const int linesi
                 p += step;
             }
         } else {
-        while (w--) {
-            if (flags & PIX_FMT_BE) {
-                uint16_t val = AV_RB16(p) | (*src++<<shift);
-                AV_WB16(p, val);
-            } else {
-                uint16_t val = AV_RL16(p) | (*src++<<shift);
-                AV_WL16(p, val);
+            while (w--) {
+                if (flags & PIX_FMT_BE) {
+                    uint16_t val = AV_RB16(p) | (*src++<<shift);
+                    AV_WB16(p, val);
+                } else {
+                    uint16_t val = AV_RL16(p) | (*src++<<shift);
+                    AV_WL16(p, val);
+                }
+                p+= step;
             }
-            p+= step;
-        }
         }
     }
 }
