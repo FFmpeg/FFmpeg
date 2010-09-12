@@ -71,11 +71,20 @@ static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, i
     return ssd;
 }
 
+struct Results {
+    uint64_t ssdY;
+    uint64_t ssdU;
+    uint64_t ssdV;
+    uint64_t ssdA;
+    uint32_t crc;
+};
+
 // test by ref -> src -> dst -> out & compare out against ref
 // ref & out are YV12
 static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
                   enum PixelFormat srcFormat, enum PixelFormat dstFormat,
-                  int srcW, int srcH, int dstW, int dstH, int flags)
+                  int srcW, int srcH, int dstW, int dstH, int flags,
+                  struct Results *r)
 {
     static enum PixelFormat cur_srcFormat;
     static int cur_srcW, cur_srcH;
@@ -137,9 +146,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
          * out of bounds. */
         if (dstStride[i])
             dst[i]= av_mallocz(dstStride[i]*dstH+16);
-        if (refStride[i])
-            out[i]= av_mallocz(refStride[i]*h);
-        if ((dstStride[i] && !dst[i]) || (refStride[i] && !out[i])) {
+        if (dstStride[i] && !dst[i]) {
             perror("Malloc");
             res = -1;
 
@@ -156,15 +163,6 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
 
         goto end;
     }
-    outContext= sws_getContext(dstW, dstH, dstFormat, w, h, PIX_FMT_YUVA420P, flags, NULL, NULL, NULL);
-    if (!outContext) {
-        fprintf(stderr, "Failed to get %s ---> %s\n",
-                av_pix_fmt_descriptors[dstFormat].name,
-                av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name);
-        res = -1;
-
-        goto end;
-    }
 //    printf("test %X %X %X -> %X %X %X\n", (int)ref[0], (int)ref[1], (int)ref[2],
 //        (int)src[0], (int)src[1], (int)src[2]);
 
@@ -175,11 +173,37 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     fflush(stdout);
 
     sws_scale(dstContext, src, srcStride, 0, srcH, dst, dstStride);
-    sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
 
     for (i = 0; i < 4 && dstStride[i]; i++) {
         crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), crc, dst[i], dstStride[i] * dstH);
     }
+
+    if (r && crc == r->crc) {
+        ssdY = r->ssdY;
+        ssdU = r->ssdU;
+        ssdV = r->ssdV;
+        ssdA = r->ssdA;
+    } else {
+        for (i=0; i<4; i++) {
+            if (refStride[i])
+                out[i]= av_mallocz(refStride[i]*h);
+            if (refStride[i] && !out[i]) {
+                perror("Malloc");
+                res = -1;
+
+                goto end;
+            }
+        }
+        outContext= sws_getContext(dstW, dstH, dstFormat, w, h, PIX_FMT_YUVA420P, flags, NULL, NULL, NULL);
+        if (!outContext) {
+            fprintf(stderr, "Failed to get %s ---> %s\n",
+                    av_pix_fmt_descriptors[dstFormat].name,
+                    av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name);
+            res = -1;
+
+            goto end;
+        }
+        sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
 
     ssdY= getSSD(ref[0], out[0], refStride[0], refStride[0], w, h);
     if (hasChroma(srcFormat) && hasChroma(dstFormat)) {
@@ -195,19 +219,24 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     ssdV/= w*h/4;
     ssdA/= w*h;
 
+        sws_freeContext(outContext);
+
+        for (i=0; i<4; i++) {
+            if (refStride[i])
+                av_free(out[i]);
+        }
+    }
+
     printf(" CRC=%08x SSD=%5"PRId64",%5"PRId64",%5"PRId64",%5"PRId64"\n",
            crc, ssdY, ssdU, ssdV, ssdA);
 
 end:
 
     sws_freeContext(dstContext);
-    sws_freeContext(outContext);
 
     for (i=0; i<4; i++) {
         if (dstStride[i])
             av_free(dst[i]);
-        if (refStride[i])
-            av_free(out[i]);
     }
 
     return res;
@@ -245,10 +274,56 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
                     for (j = 0; dstH[j] && !res; j++)
                         res = doTest(ref, refStride, w, h,
                                      srcFormat, dstFormat,
-                                     srcW, srcH, dstW[i], dstH[j], flags[k]);
+                                     srcW, srcH, dstW[i], dstH[j], flags[k],
+                                     NULL);
             }
         }
     }
+}
+
+static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp)
+{
+    char buf[256];
+
+    while (fgets(buf, sizeof(buf), fp)) {
+        struct Results r;
+        enum PixelFormat srcFormat;
+        char srcStr[12];
+        int srcW, srcH;
+        enum PixelFormat dstFormat;
+        char dstStr[12];
+        int dstW, dstH;
+        int flags;
+        int ret;
+
+        ret = sscanf(buf, " %12s %dx%d -> %12s %dx%d flags=%d CRC=%x"
+                          " SSD=%"PRId64", %"PRId64", %"PRId64", %"PRId64"\n",
+                          srcStr, &srcW, &srcH, dstStr, &dstW, &dstH,
+                          &flags, &r.crc, &r.ssdY, &r.ssdU, &r.ssdV, &r.ssdA);
+        if (ret != 12) {
+            srcStr[0] = dstStr[0] = 0;
+            ret = sscanf(buf, "%12s -> %12s\n", srcStr, dstStr);
+        }
+
+        srcFormat = av_get_pix_fmt(srcStr);
+        dstFormat = av_get_pix_fmt(dstStr);
+
+        if (srcFormat == PIX_FMT_NONE || dstFormat == PIX_FMT_NONE) {
+            fprintf(stderr, "malformed input file\n");
+            return -1;
+        }
+        if (ret != 12) {
+            printf("%s", buf);
+            continue;
+        }
+
+        doTest(ref, refStride, w, h,
+               srcFormat, dstFormat,
+               srcW, srcH, dstW, dstH, flags,
+               &r);
+    }
+
+    return 0;
 }
 
 #define W 96
@@ -265,6 +340,8 @@ int main(int argc, char **argv)
     int x, y;
     struct SwsContext *sws;
     AVLFG rand;
+    int res = -1;
+    int i;
 
     if (!rgb_data || !data)
         return -1;
@@ -282,8 +359,30 @@ int main(int argc, char **argv)
     sws_freeContext(sws);
     av_free(rgb_data);
 
+    for (i = 1; i < argc; i += 2) {
+        if (argv[i][0] != '-' || i+1 == argc)
+            goto bad_option;
+        if (!strcmp(argv[i], "-ref")) {
+            FILE *fp = fopen(argv[i+1], "r");
+            if (!fp) {
+                fprintf(stderr, "could not open '%s'\n", argv[i+1]);
+                goto error;
+            }
+            res = fileTest(src, stride, W, H, fp);
+            fclose(fp);
+            goto end;
+        } else {
+bad_option:
+            fprintf(stderr, "bad option or argument missing (%s)\n", argv[i]);
+            goto error;
+        }
+    }
+
     selfTest(src, stride, W, H);
+end:
+    res = 0;
+error:
     av_free(data);
 
-    return 0;
+    return res;
 }
