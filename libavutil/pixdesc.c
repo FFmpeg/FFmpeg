@@ -53,12 +53,11 @@ void av_read_image_line(uint16_t *dst, const uint8_t *data[4], const int linesiz
         }
     } else {
         const uint8_t *p = data[plane]+ y*linesize[plane] + x*step + comp.offset_plus1-1;
-        int is_8bit = 0;
+        int is_8bit = shift + depth <= 8;
 
-        if (shift + depth <= 8) {
+        if (is_8bit)
             p += !!(flags & PIX_FMT_BE);
-            is_8bit = 1;
-        }
+
         while(w--){
             int val = is_8bit ? *p :
                 flags & PIX_FMT_BE ? AV_RB16(p) : AV_RL16(p);
