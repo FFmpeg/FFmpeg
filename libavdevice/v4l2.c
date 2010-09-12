@@ -78,81 +78,22 @@ struct fmt_map {
 };
 
 static struct fmt_map fmt_conversion_table[] = {
-    {
-        .ff_fmt = PIX_FMT_YUV420P,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_YUV420,
-    },
-    {
-        .ff_fmt = PIX_FMT_YUV422P,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_YUV422P,
-    },
-    {
-        .ff_fmt = PIX_FMT_YUYV422,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_YUYV,
-    },
-    {
-        .ff_fmt = PIX_FMT_UYVY422,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_UYVY,
-    },
-    {
-        .ff_fmt = PIX_FMT_YUV411P,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_YUV411P,
-    },
-    {
-        .ff_fmt = PIX_FMT_YUV410P,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_YUV410,
-    },
-    {
-        .ff_fmt = PIX_FMT_RGB555,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_RGB555,
-    },
-    {
-        .ff_fmt = PIX_FMT_RGB565,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_RGB565,
-    },
-    {
-        .ff_fmt = PIX_FMT_BGR24,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_BGR24,
-    },
-    {
-        .ff_fmt = PIX_FMT_RGB24,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_RGB24,
-    },
-    {
-        .ff_fmt = PIX_FMT_BGRA,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_BGR32,
-    },
-    {
-        .ff_fmt = PIX_FMT_GRAY8,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_GREY,
-    },
-    {
-        .ff_fmt = PIX_FMT_NV12,
-        .codec_id = CODEC_ID_RAWVIDEO,
-        .v4l2_fmt = V4L2_PIX_FMT_NV12,
-    },
-    {
-        .ff_fmt = PIX_FMT_NONE,
-        .codec_id = CODEC_ID_MJPEG,
-        .v4l2_fmt = V4L2_PIX_FMT_MJPEG,
-    },
-    {
-        .ff_fmt = PIX_FMT_NONE,
-        .codec_id = CODEC_ID_MJPEG,
-        .v4l2_fmt = V4L2_PIX_FMT_JPEG,
-    },
+    //ff_fmt           codec_id           v4l2_fmt
+    { PIX_FMT_YUV420P, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV420  },
+    { PIX_FMT_YUV422P, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV422P },
+    { PIX_FMT_YUYV422, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUYV    },
+    { PIX_FMT_UYVY422, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_UYVY    },
+    { PIX_FMT_YUV411P, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV411P },
+    { PIX_FMT_YUV410P, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV410  },
+    { PIX_FMT_RGB555,  CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB555  },
+    { PIX_FMT_RGB565,  CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB565  },
+    { PIX_FMT_BGR24,   CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_BGR24   },
+    { PIX_FMT_RGB24,   CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB24   },
+    { PIX_FMT_BGRA,    CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_BGR32   },
+    { PIX_FMT_GRAY8,   CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_GREY    },
+    { PIX_FMT_NV12,    CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_NV12    },
+    { PIX_FMT_NONE,    CODEC_ID_MJPEG,    V4L2_PIX_FMT_MJPEG   },
+    { PIX_FMT_NONE,    CODEC_ID_MJPEG,    V4L2_PIX_FMT_JPEG    },
 };
 
 static int device_open(AVFormatContext *ctx, uint32_t *capabilities)
