@@ -74,10 +74,13 @@ static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, i
 // test by ref -> src -> dst -> out & compare out against ref
 // ref & out are YV12
 static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
-                  uint8_t *src[4], int srcStride[4],
                   enum PixelFormat srcFormat, enum PixelFormat dstFormat,
                   int srcW, int srcH, int dstW, int dstH, int flags)
 {
+    static enum PixelFormat cur_srcFormat;
+    static int cur_srcW, cur_srcH, cur_flags;
+    static uint8_t *src[4];
+    static int srcStride[4];
     uint8_t *dst[4] = {0};
     uint8_t *out[4] = {0};
     int dstStride[4];
@@ -86,6 +89,44 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     struct SwsContext *dstContext = NULL, *outContext = NULL;
     uint32_t crc = 0;
     int res = 0;
+
+    if (cur_srcFormat != srcFormat || cur_srcW != srcW || cur_srcH != srcH || cur_flags != flags) {
+        struct SwsContext *srcContext = NULL;
+        int p;
+
+        for (p = 0; p < 4; p++)
+            if (src[p])
+                av_freep(&src[p]);
+
+        av_image_fill_linesizes(srcStride, srcFormat, srcW);
+        for (p = 0; p < 4; p++) {
+            if (srcStride[p])
+                src[p] = av_mallocz(srcStride[p]*srcH+16);
+            if (srcStride[p] && !src[p]) {
+                perror("Malloc");
+                res = -1;
+
+                goto end;
+            }
+        }
+        srcContext = sws_getContext(w, h, PIX_FMT_YUVA420P, srcW, srcH,
+                                    srcFormat, flags, NULL, NULL, NULL);
+        if (!srcContext) {
+            fprintf(stderr, "Failed to get %s ---> %s\n",
+                    av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name,
+                    av_pix_fmt_descriptors[srcFormat].name);
+            res = -1;
+
+            goto end;
+        }
+        sws_scale(srcContext, ref, refStride, 0, h, src, srcStride);
+        sws_freeContext(srcContext);
+
+        cur_srcFormat = srcFormat;
+        cur_srcW = srcW;
+        cur_srcH = srcH;
+        cur_flags = flags;
+    }
 
     av_image_fill_linesizes(dstStride, dstFormat, dstW);
     for (i=0; i<4; i++) {
@@ -201,39 +242,11 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
             fflush(stdout);
 
             for (k = 0; flags[k] && !res; k++) {
-                struct SwsContext *srcContext = NULL;
-                uint8_t *src[4] = {0};
-                int srcStride[4];
-                int p;
-                av_image_fill_linesizes(srcStride, srcFormat, srcW);
-                for (p = 0; p < 4; p++) {
-                    if (srcStride[p])
-                        src[p] = av_mallocz(srcStride[p]*srcH+16);
-                    if (srcStride[p] && !src[p]) {
-                        perror("Malloc");
-                        return;
-                    }
-                }
-                srcContext = sws_getContext(w, h, PIX_FMT_YUVA420P, srcW, srcH,
-                                            srcFormat, flags[k], NULL, NULL, NULL);
-                if (!srcContext) {
-                   fprintf(stderr, "Failed to get %s ---> %s\n",
-                            av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name,
-                            av_pix_fmt_descriptors[srcFormat].name);
-                   return;
-                }
-                sws_scale(srcContext, ref, refStride, 0, h, src, srcStride);
-
                 for (i = 0; dstW[i] && !res; i++)
                     for (j = 0; dstH[j] && !res; j++)
-                        res = doTest(ref, refStride, w, h, src, srcStride,
+                        res = doTest(ref, refStride, w, h,
                                      srcFormat, dstFormat,
                                      srcW, srcH, dstW[i], dstH[j], flags[k]);
-
-                sws_freeContext(srcContext);
-                for (p = 0; p < 4; p++)
-                    if (srcStride[p])
-                        av_free(src[p]);
             }
         }
     }
