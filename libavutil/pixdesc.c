@@ -55,9 +55,7 @@ void av_read_image_line(uint16_t *dst, const uint8_t *data[4], const int linesiz
         const uint8_t *p = data[plane]+ y*linesize[plane] + x*step + comp.offset_plus1-1;
 
         while(w--){
-            int val;
-            if(flags & PIX_FMT_BE) val= AV_RB16(p);
-            else                   val= AV_RL16(p);
+            int val = flags & PIX_FMT_BE ? AV_RB16(p) : AV_RL16(p);
             val = (val>>shift) & mask;
             if(read_pal_component)
                 val= data[1][4*val + c];
