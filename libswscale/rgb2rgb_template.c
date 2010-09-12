@@ -1225,7 +1225,7 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
     }
 }
 
-static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long src_size)
+static inline void RENAME(shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     x86_reg idx = 15 - src_size;
     const uint8_t *s = src-idx;
@@ -2912,7 +2912,7 @@ static inline void RENAME(rgb2rgb_init)(void)
     rgb24to15       = RENAME(rgb24to15);
     rgb24to16       = RENAME(rgb24to16);
     rgb24tobgr24    = RENAME(rgb24tobgr24);
-    rgb32tobgr32    = RENAME(rgb32tobgr32);
+    shuffle_bytes_2103 = RENAME(shuffle_bytes_2103);
     rgb32tobgr16    = RENAME(rgb32tobgr16);
     rgb32tobgr15    = RENAME(rgb32tobgr15);
     yv12toyuy2      = RENAME(yv12toyuy2);

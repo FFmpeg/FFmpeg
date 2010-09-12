@@ -47,7 +47,7 @@ extern void (*rgb16to32)   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb24to16)   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb24to15)   (const uint8_t *src, uint8_t *dst, long src_size);
-extern void (*rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long src_size);
+extern void (*shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long src_size);
 
@@ -65,7 +65,6 @@ void bgr8torgb8  (const uint8_t *src, uint8_t *dst, long src_size);
 
 void shuffle_bytes_0321(const uint8_t *src, uint8_t *dst, long src_size);
 void shuffle_bytes_1230(const uint8_t *src, uint8_t *dst, long src_size);
-void shuffle_bytes_2103(const uint8_t *src, uint8_t *dst, long src_size);
 void shuffle_bytes_3012(const uint8_t *src, uint8_t *dst, long src_size);
 void shuffle_bytes_3210(const uint8_t *src, uint8_t *dst, long src_size);
 

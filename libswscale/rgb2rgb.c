@@ -47,7 +47,7 @@ void (*rgb16to32)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb24to16)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb24to15)(const uint8_t *src, uint8_t *dst, long src_size);
-void (*rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long src_size);
+void (*shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long src_size);
 
@@ -435,7 +435,6 @@ void shuffle_bytes_##a##b##c##d(const uint8_t *src, uint8_t *dst, long src_size)
 
 DEFINE_SHUFFLE_BYTES(0, 3, 2, 1);
 DEFINE_SHUFFLE_BYTES(1, 2, 3, 0);
-DEFINE_SHUFFLE_BYTES(2, 1, 0, 3);
 DEFINE_SHUFFLE_BYTES(3, 0, 1, 2);
 DEFINE_SHUFFLE_BYTES(3, 2, 1, 0);
 
