@@ -34,6 +34,7 @@ version <next>:
 - a64 codec
 - MMS-HTTP support
 - G.722 ADPCM audio decoder
+- R10k video decoder
 
 
 version 0.6:

@@ -63,9 +63,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         for (w = 0; w < avctx->width; w++) {
             uint32_t pixel = av_be2ne32(*src++);
             uint16_t r, g, b;
+            if (avctx->codec_id==CODEC_ID_R210) {
             b =  pixel <<  6;
             g = (pixel >>  4) & 0xffc0;
             r = (pixel >> 14) & 0xffc0;
+            } else {
+                b =  pixel <<  4;
+                g = (pixel >>  6) & 0xffc0;
+                r = (pixel >> 16) & 0xffc0;
+            }
             *dst++ = r | (r >> 10);
             *dst++ = g | (g >> 10);
             *dst++ = b | (b >> 10);
@@ -90,6 +96,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_R210_DECODER
 AVCodec r210_decoder = {
     "r210",
     AVMEDIA_TYPE_VIDEO,
@@ -102,3 +109,18 @@ AVCodec r210_decoder = {
     CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
 };
+#endif
+#if CONFIG_R10K_DECODER
+AVCodec r10k_decoder = {
+    "r10k",
+    AVMEDIA_TYPE_VIDEO,
+    CODEC_ID_R10K,
+    0,
+    decode_init,
+    NULL,
+    decode_close,
+    decode_frame,
+    CODEC_CAP_DR1,
+    .long_name = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
+};
+#endif
