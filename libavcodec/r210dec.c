@@ -64,9 +64,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             uint32_t pixel = av_be2ne32(*src++);
             uint16_t r, g, b;
             if (avctx->codec_id==CODEC_ID_R210) {
-            b =  pixel <<  6;
-            g = (pixel >>  4) & 0xffc0;
-            r = (pixel >> 14) & 0xffc0;
+                b =  pixel <<  6;
+                g = (pixel >>  4) & 0xffc0;
+                r = (pixel >> 14) & 0xffc0;
             } else {
                 b =  pixel <<  4;
                 g = (pixel >>  6) & 0xffc0;
