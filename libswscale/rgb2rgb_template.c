@@ -1819,13 +1819,13 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
             "movq       -1(%1, %%"REG_a"), %%mm5    \n\t"
             " js                       1b                       \n\t"
             :: "r" (src + mmxSize  ), "r" (src + srcStride + mmxSize  ),
-            "r" (dst + mmxSize*2), "r" (dst + dstStride + mmxSize*2),
-            "g" (-mmxSize)
+               "r" (dst + mmxSize*2), "r" (dst + dstStride + mmxSize*2),
+               "g" (-mmxSize)
             : "%"REG_a
-
         );
 #else
         const x86_reg mmxSize=1;
+
         dst[0        ]= (3*src[0] +   src[srcStride])>>2;
         dst[dstStride]= (  src[0] + 3*src[srcStride])>>2;
 #endif
@@ -2354,8 +2354,8 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
         }
 #endif
         dest += dstStride;
-                src1 += src1Stride;
-                src2 += src2Stride;
+        src1 += src1Stride;
+        src2 += src2Stride;
     }
 #if HAVE_MMX
     __asm__(
