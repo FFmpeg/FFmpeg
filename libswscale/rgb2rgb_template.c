@@ -1773,13 +1773,22 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
         const x86_reg mmxSize= srcWidth&~15;
         __asm__ volatile(
             "mov           %4, %%"REG_a"            \n\t"
+            "movq        "MANGLE(mmx_ff)", %%mm0    \n\t"
+            "movq         (%0, %%"REG_a"), %%mm4    \n\t"
+            "movq                   %%mm4, %%mm2    \n\t"
+            "psllq                     $8, %%mm4    \n\t"
+            "pand                   %%mm0, %%mm2    \n\t"
+            "por                    %%mm2, %%mm4    \n\t"
+            "movq         (%1, %%"REG_a"), %%mm5    \n\t"
+            "movq                   %%mm5, %%mm3    \n\t"
+            "psllq                     $8, %%mm5    \n\t"
+            "pand                   %%mm0, %%mm3    \n\t"
+            "por                    %%mm3, %%mm5    \n\t"
             "1:                                     \n\t"
             "movq         (%0, %%"REG_a"), %%mm0    \n\t"
             "movq         (%1, %%"REG_a"), %%mm1    \n\t"
             "movq        1(%0, %%"REG_a"), %%mm2    \n\t"
             "movq        1(%1, %%"REG_a"), %%mm3    \n\t"
-            "movq       -1(%0, %%"REG_a"), %%mm4    \n\t"
-            "movq       -1(%1, %%"REG_a"), %%mm5    \n\t"
             PAVGB"                  %%mm0, %%mm5    \n\t"
             PAVGB"                  %%mm0, %%mm3    \n\t"
             PAVGB"                  %%mm0, %%mm5    \n\t"
@@ -1806,6 +1815,8 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
             "movq                   %%mm6, 8(%3, %%"REG_a", 2)  \n\t"
 #endif
             "add                       $8, %%"REG_a"            \n\t"
+            "movq       -1(%0, %%"REG_a"), %%mm4    \n\t"
+            "movq       -1(%1, %%"REG_a"), %%mm5    \n\t"
             " js                       1b                       \n\t"
             :: "r" (src + mmxSize  ), "r" (src + srcStride + mmxSize  ),
             "r" (dst + mmxSize*2), "r" (dst + dstStride + mmxSize*2),
@@ -1815,9 +1826,9 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
         );
 #else
         const x86_reg mmxSize=1;
-#endif
         dst[0        ]= (3*src[0] +   src[srcStride])>>2;
         dst[dstStride]= (  src[0] + 3*src[srcStride])>>2;
+#endif
 
         for (x=mmxSize-1; x<srcWidth-1; x++) {
             dst[2*x          +1]= (3*src[x+0] +   src[x+srcStride+1])>>2;
