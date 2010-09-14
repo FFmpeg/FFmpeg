@@ -69,7 +69,7 @@ version <next>:
 - replace the ocv_smooth filter with a more generic ocv filter
 - Windows Televison (WTV) demuxer
 - FFmpeg metadata format muxer and demuxer
-- SubRip (srt) subtitle decoder
+- SubRip (srt) subtitle encoder and decoder
 - floating-point AC-3 encoder added
 - Lagarith decoder
 - ffmpeg -copytb option added
