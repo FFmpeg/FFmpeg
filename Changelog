@@ -35,6 +35,7 @@ version <next>:
 - MMS-HTTP support
 - G.722 ADPCM audio decoder
 - R10k video decoder
+- ocv_smooth filter
 
 
 version 0.6:

@@ -112,6 +112,33 @@ input to the vflip filter.
 
 Pass the video source unchanged to the output.
 
+@section ocv_smooth
+
+Apply smooth transform using libopencv.
+
+To enable this filter install libopencv library and headers and
+configure FFmpeg with --enable-libopencv.
+
+It accepts the following parameters:
+@var{type}:@var{param1}:@var{param2}:@var{param3}:@var{param4}.
+
+@var{type} is the type of smooth filter to apply, and can be one of
+the following value: "blur", "blur_no_scale", "median", "gaussian",
+"bilateral". The default value is "gaussian".
+
+@var{param1}, @var{param2}, @var{param3}, and @var{param4} are
+parameters whose meanings depend on smooth type. @var{param1} and
+@var{param2} accept integer positive values or 0, @var{param3} and
+@var{param4} accept float values.
+
+The default value for @var{param1} is 3, the default value for the
+other parameters is 0.
+
+These parameters corresponds to the parameters assigned to the
+libopencv function @code{cvSmooth}. Refer the official libopencv
+documentation for the exact meaning of the parameters:
+@url{http://opencv.willowgarage.com/documentation/c/image_filtering.html}
+
 @section pad
 
 Add paddings to the input image, and places the original input at the
