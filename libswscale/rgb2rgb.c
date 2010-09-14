@@ -149,14 +149,10 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 
 //Note: We have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW + MMX2 one.
 //plain C versions
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#undef HAVE_SSE2
-#define HAVE_MMX 0
-#define HAVE_MMX2 0
-#define HAVE_AMD3DNOW 0
-#define HAVE_SSE2 0
+#define COMPILE_TEMPLATE_MMX 0
+#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_AMD3DNOW 0
+#define COMPILE_TEMPLATE_SSE2 0
 #define RENAME(a) a ## _C
 #include "rgb2rgb_template.c"
 
@@ -164,33 +160,33 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 
 //MMX versions
 #undef RENAME
-#undef HAVE_MMX
-#define HAVE_MMX 1
+#undef COMPILE_TEMPLATE_MMX
+#define COMPILE_TEMPLATE_MMX 1
 #define RENAME(a) a ## _MMX
 #include "rgb2rgb_template.c"
 
 //MMX2 versions
 #undef RENAME
-#undef HAVE_MMX2
-#define HAVE_MMX2 1
+#undef COMPILE_TEMPLATE_MMX2
+#define COMPILE_TEMPLATE_MMX2 1
 #define RENAME(a) a ## _MMX2
 #include "rgb2rgb_template.c"
 
 //SSE2 versions
 #undef RENAME
-#undef HAVE_SSE2
-#define HAVE_SSE2 1
+#undef COMPILE_TEMPLATE_SSE2
+#define COMPILE_TEMPLATE_SSE2 1
 #define RENAME(a) a ## _SSE2
 #include "rgb2rgb_template.c"
 
 //3DNOW versions
 #undef RENAME
-#undef HAVE_MMX2
-#undef HAVE_SSE2
-#undef HAVE_AMD3DNOW
-#define HAVE_MMX2 0
-#define HAVE_SSE2 0
-#define HAVE_AMD3DNOW 1
+#undef COMPILE_TEMPLATE_MMX2
+#undef COMPILE_TEMPLATE_SSE2
+#undef COMPILE_TEMPLATE_AMD3DNOW
+#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_SSE2 1
+#define COMPILE_TEMPLATE_AMD3DNOW 1
 #define RENAME(a) a ## _3DNOW
 #include "rgb2rgb_template.c"
 
