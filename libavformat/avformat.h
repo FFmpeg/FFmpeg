@@ -1088,6 +1088,11 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt);
 
 /**
  * Return the next frame of a stream.
+ * This function returns what is stored in the file, and does not validate
+ * that what is there are valid frames for the decoder. It will split what is
+ * stored in the file into frames and return one for each call. It will not
+ * omit invalid data between valid frames so as to give the decoder the maximum
+ * information possible for decoding.
  *
  * The returned packet is valid
  * until the next av_read_frame() or until av_close_input_file() and
