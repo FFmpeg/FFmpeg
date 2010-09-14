@@ -85,6 +85,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     static int print_prefix=1;
     static int count;
     static char line[1024], prev[1024];
+    static int detect_repeats;
     AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
     if(level>av_log_level)
         return;
@@ -103,7 +104,12 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     vsnprintf(line + strlen(line), sizeof(line) - strlen(line), fmt, vl);
 
     print_prefix= line[strlen(line)-1] == '\n';
-    if(print_prefix && !strcmp(line, prev)){
+
+#if HAVE_ISATTY
+    if(!detect_repeats) detect_repeats= isatty(2) ? 1 : -1;
+#endif
+
+    if(print_prefix && detect_repeats==1 && !strcmp(line, prev)){
         count++;
         fprintf(stderr, "    Last message repeated %d times\r", count);
         return;
