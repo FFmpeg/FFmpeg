@@ -192,6 +192,20 @@ static inline av_const int av_ceil_log2_c(int x)
     return av_log2((x - 1) << 1);
 }
 
+/**
+ * Count number of bits set to one in x
+ * @param x value to count bits of
+ * @return the number of bits set to one in x
+ */
+static inline av_const int av_popcount_c(uint32_t x)
+{
+    x -= (x >> 1) & 0x55555555;
+    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+    x = (x + (x >> 4)) & 0x0F0F0F0F;
+    x += x >> 8;
+    return (x + (x >> 16)) & 0x3F;
+}
+
 #define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 #define MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((a) << 24))
 
@@ -350,4 +364,7 @@ static inline av_const int av_ceil_log2_c(int x)
 #endif
 #ifndef av_clipf
 #   define av_clipf         av_clipf_c
+#endif
+#ifndef av_popcount
+#   define av_popcount      av_popcount_c
 #endif
