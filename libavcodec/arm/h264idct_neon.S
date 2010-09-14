@@ -150,13 +150,13 @@ function ff_h264_idct_add8_neon, export=1
         mov             r2,  r3
         ldr             r6,  [sp, #32]
         movrel          r7,  scan8+16
-        mov             ip,  #8
+        mov             ip,  #7
 1:      ldrb            r8,  [r7], #1
         ldr             r0,  [r5], #4
         ldrb            r8,  [r6, r8]
         tst             ip,  #4
-        addeq           r0,  r0,  r4
-        addne           r0,  r0,  r9
+        addne           r0,  r0,  r4
+        addeq           r0,  r0,  r9
         cmp             r8,  #0
         ldrsh           r8,  [r1]
         adrne           lr,  ff_h264_idct_add_neon
@@ -165,7 +165,7 @@ function ff_h264_idct_add8_neon, export=1
         blxne           lr
         subs            ip,  ip,  #1
         add             r1,  r1,  #32
-        bne             1b
+        bge             1b
         pop             {r4-r10,pc}
 endfunc
 
