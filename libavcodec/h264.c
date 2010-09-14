@@ -1318,14 +1318,9 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                 chroma_dc_dequant_idct_c(h->mb + 16*16, h->chroma_qp[0], h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp[0]][0]);
                 chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp[1], h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp[1]][0]);
                 if(is_h264){
-                    idct_add = h->h264dsp.h264_idct_add;
-                    idct_dc_add = h->h264dsp.h264_idct_dc_add;
-                    for(i=16; i<16+8; i++){
-                        if(h->non_zero_count_cache[ scan8[i] ])
-                            idct_add   (dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
-                        else if(h->mb[i*16])
-                            idct_dc_add(dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
-                    }
+                    h->h264dsp.h264_idct_add8(dest, block_offset,
+                                              h->mb, uvlinesize,
+                                              h->non_zero_count_cache);
                 }else{
                     for(i=16; i<16+8; i++){
                         if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){

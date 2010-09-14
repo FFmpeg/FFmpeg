@@ -29,523 +29,37 @@ DECLARE_ALIGNED(8, static const uint64_t, ff_pb_7_3  ) = 0x0307030703070307ULL;
 /***********************************/
 /* IDCT */
 
-#define SUMSUB_BADC( a, b, c, d ) \
-    "paddw "#b", "#a" \n\t"\
-    "paddw "#d", "#c" \n\t"\
-    "paddw "#b", "#b" \n\t"\
-    "paddw "#d", "#d" \n\t"\
-    "psubw "#a", "#b" \n\t"\
-    "psubw "#c", "#d" \n\t"
+void ff_h264_idct_add_mmx     (uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_add_mmx    (uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_add_sse2   (uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct_dc_add_mmx2 (uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride);
 
-#define SUMSUBD2_AB( a, b, t ) \
-    "movq  "#b", "#t" \n\t"\
-    "psraw  $1 , "#b" \n\t"\
-    "paddw "#a", "#b" \n\t"\
-    "psraw  $1 , "#a" \n\t"\
-    "psubw "#t", "#a" \n\t"
+void ff_h264_idct_add16_mmx      (uint8_t *dst, const int *block_offset,
+                                  DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+void ff_h264_idct8_add4_mmx      (uint8_t *dst, const int *block_offset,
+                                  DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+void ff_h264_idct_add16_mmx2     (uint8_t *dst, const int *block_offset,
+                                  DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+void ff_h264_idct_add16intra_mmx (uint8_t *dst, const int *block_offset,
+                                  DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+void ff_h264_idct_add16intra_mmx2(uint8_t *dst, const int *block_offset,
+                                  DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+void ff_h264_idct8_add4_mmx2     (uint8_t *dst, const int *block_offset,
+                                  DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+void ff_h264_idct8_add4_sse2     (uint8_t *dst, const int *block_offset,
+                                  DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+void ff_h264_idct_add8_mmx       (uint8_t **dest, const int *block_offset,
+                                  DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+void ff_h264_idct_add8_mmx2      (uint8_t **dest, const int *block_offset,
+                                  DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
 
-#define IDCT4_1D( s02, s13, d02, d13, t ) \
-    SUMSUB_BA  ( s02, d02 )\
-    SUMSUBD2_AB( s13, d13, t )\
-    SUMSUB_BADC( d13, s02, s13, d02 )
-
-#define STORE_DIFF_4P( p, t, z ) \
-    "psraw      $6,     "#p" \n\t"\
-    "movd       (%0),   "#t" \n\t"\
-    "punpcklbw "#z",    "#t" \n\t"\
-    "paddsw    "#t",    "#p" \n\t"\
-    "packuswb  "#z",    "#p" \n\t"\
-    "movd      "#p",    (%0) \n\t"
-
-static void ff_h264_idct_add_mmx(uint8_t *dst, int16_t *block, int stride)
-{
-    /* Load dct coeffs */
-    __asm__ volatile(
-        "movq   (%0), %%mm0 \n\t"
-        "movq  8(%0), %%mm1 \n\t"
-        "movq 16(%0), %%mm2 \n\t"
-        "movq 24(%0), %%mm3 \n\t"
-    :: "r"(block) );
-
-    __asm__ volatile(
-        /* mm1=s02+s13  mm2=s02-s13  mm4=d02+d13  mm0=d02-d13 */
-        IDCT4_1D( %%mm2, %%mm1, %%mm0, %%mm3, %%mm4 )
-
-        "movq      %0,    %%mm6 \n\t"
-        /* in: 1,4,0,2  out: 1,2,3,0 */
-        TRANSPOSE4( %%mm3, %%mm1, %%mm0, %%mm2, %%mm4 )
-
-        "paddw     %%mm6, %%mm3 \n\t"
-
-        /* mm2=s02+s13  mm3=s02-s13  mm4=d02+d13  mm1=d02-d13 */
-        IDCT4_1D( %%mm4, %%mm2, %%mm3, %%mm0, %%mm1 )
-
-        "pxor %%mm7, %%mm7    \n\t"
-    :: "m"(ff_pw_32));
-
-    __asm__ volatile(
-    STORE_DIFF_4P( %%mm0, %%mm1, %%mm7)
-        "add %1, %0             \n\t"
-    STORE_DIFF_4P( %%mm2, %%mm1, %%mm7)
-        "add %1, %0             \n\t"
-    STORE_DIFF_4P( %%mm3, %%mm1, %%mm7)
-        "add %1, %0             \n\t"
-    STORE_DIFF_4P( %%mm4, %%mm1, %%mm7)
-        : "+r"(dst)
-        : "r" ((x86_reg)stride)
-    );
-}
-
-static inline void h264_idct8_1d(int16_t *block)
-{
-    __asm__ volatile(
-        "movq 112(%0), %%mm7  \n\t"
-        "movq  80(%0), %%mm0  \n\t"
-        "movq  48(%0), %%mm3  \n\t"
-        "movq  16(%0), %%mm5  \n\t"
-
-        "movq   %%mm0, %%mm4  \n\t"
-        "movq   %%mm5, %%mm1  \n\t"
-        "psraw  $1,    %%mm4  \n\t"
-        "psraw  $1,    %%mm1  \n\t"
-        "paddw  %%mm0, %%mm4  \n\t"
-        "paddw  %%mm5, %%mm1  \n\t"
-        "paddw  %%mm7, %%mm4  \n\t"
-        "paddw  %%mm0, %%mm1  \n\t"
-        "psubw  %%mm5, %%mm4  \n\t"
-        "paddw  %%mm3, %%mm1  \n\t"
-
-        "psubw  %%mm3, %%mm5  \n\t"
-        "psubw  %%mm3, %%mm0  \n\t"
-        "paddw  %%mm7, %%mm5  \n\t"
-        "psubw  %%mm7, %%mm0  \n\t"
-        "psraw  $1,    %%mm3  \n\t"
-        "psraw  $1,    %%mm7  \n\t"
-        "psubw  %%mm3, %%mm5  \n\t"
-        "psubw  %%mm7, %%mm0  \n\t"
-
-        "movq   %%mm4, %%mm3  \n\t"
-        "movq   %%mm1, %%mm7  \n\t"
-        "psraw  $2,    %%mm1  \n\t"
-        "psraw  $2,    %%mm3  \n\t"
-        "paddw  %%mm5, %%mm3  \n\t"
-        "psraw  $2,    %%mm5  \n\t"
-        "paddw  %%mm0, %%mm1  \n\t"
-        "psraw  $2,    %%mm0  \n\t"
-        "psubw  %%mm4, %%mm5  \n\t"
-        "psubw  %%mm0, %%mm7  \n\t"
-
-        "movq  32(%0), %%mm2  \n\t"
-        "movq  96(%0), %%mm6  \n\t"
-        "movq   %%mm2, %%mm4  \n\t"
-        "movq   %%mm6, %%mm0  \n\t"
-        "psraw  $1,    %%mm4  \n\t"
-        "psraw  $1,    %%mm6  \n\t"
-        "psubw  %%mm0, %%mm4  \n\t"
-        "paddw  %%mm2, %%mm6  \n\t"
-
-        "movq    (%0), %%mm2  \n\t"
-        "movq  64(%0), %%mm0  \n\t"
-        SUMSUB_BA( %%mm0, %%mm2 )
-        SUMSUB_BA( %%mm6, %%mm0 )
-        SUMSUB_BA( %%mm4, %%mm2 )
-        SUMSUB_BA( %%mm7, %%mm6 )
-        SUMSUB_BA( %%mm5, %%mm4 )
-        SUMSUB_BA( %%mm3, %%mm2 )
-        SUMSUB_BA( %%mm1, %%mm0 )
-        :: "r"(block)
-    );
-}
-
-static void ff_h264_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
-{
-    int i;
-    DECLARE_ALIGNED(8, int16_t, b2)[64];
-
-    block[0] += 32;
-
-    for(i=0; i<2; i++){
-        DECLARE_ALIGNED(8, uint64_t, tmp);
-
-        h264_idct8_1d(block+4*i);
-
-        __asm__ volatile(
-            "movq   %%mm7,    %0   \n\t"
-            TRANSPOSE4( %%mm0, %%mm2, %%mm4, %%mm6, %%mm7 )
-            "movq   %%mm0,  8(%1)  \n\t"
-            "movq   %%mm6, 24(%1)  \n\t"
-            "movq   %%mm7, 40(%1)  \n\t"
-            "movq   %%mm4, 56(%1)  \n\t"
-            "movq    %0,    %%mm7  \n\t"
-            TRANSPOSE4( %%mm7, %%mm5, %%mm3, %%mm1, %%mm0 )
-            "movq   %%mm7,   (%1)  \n\t"
-            "movq   %%mm1, 16(%1)  \n\t"
-            "movq   %%mm0, 32(%1)  \n\t"
-            "movq   %%mm3, 48(%1)  \n\t"
-            : "=m"(tmp)
-            : "r"(b2+32*i)
-            : "memory"
-        );
-    }
-
-    for(i=0; i<2; i++){
-        h264_idct8_1d(b2+4*i);
-
-        __asm__ volatile(
-            "psraw     $6, %%mm7  \n\t"
-            "psraw     $6, %%mm6  \n\t"
-            "psraw     $6, %%mm5  \n\t"
-            "psraw     $6, %%mm4  \n\t"
-            "psraw     $6, %%mm3  \n\t"
-            "psraw     $6, %%mm2  \n\t"
-            "psraw     $6, %%mm1  \n\t"
-            "psraw     $6, %%mm0  \n\t"
-
-            "movq   %%mm7,    (%0)  \n\t"
-            "movq   %%mm5,  16(%0)  \n\t"
-            "movq   %%mm3,  32(%0)  \n\t"
-            "movq   %%mm1,  48(%0)  \n\t"
-            "movq   %%mm0,  64(%0)  \n\t"
-            "movq   %%mm2,  80(%0)  \n\t"
-            "movq   %%mm4,  96(%0)  \n\t"
-            "movq   %%mm6, 112(%0)  \n\t"
-            :: "r"(b2+4*i)
-            : "memory"
-        );
-    }
-
-    ff_add_pixels_clamped_mmx(b2, dst, stride);
-}
-
-#define STORE_DIFF_8P( p, d, t, z )\
-        "movq       "#d", "#t" \n"\
-        "psraw       $6,  "#p" \n"\
-        "punpcklbw  "#z", "#t" \n"\
-        "paddsw     "#t", "#p" \n"\
-        "packuswb   "#p", "#p" \n"\
-        "movq       "#p", "#d" \n"
-
-#define H264_IDCT8_1D_SSE2(a,b,c,d,e,f,g,h)\
-        "movdqa     "#c", "#a" \n"\
-        "movdqa     "#g", "#e" \n"\
-        "psraw       $1,  "#c" \n"\
-        "psraw       $1,  "#g" \n"\
-        "psubw      "#e", "#c" \n"\
-        "paddw      "#a", "#g" \n"\
-        "movdqa     "#b", "#e" \n"\
-        "psraw       $1,  "#e" \n"\
-        "paddw      "#b", "#e" \n"\
-        "paddw      "#d", "#e" \n"\
-        "paddw      "#f", "#e" \n"\
-        "movdqa     "#f", "#a" \n"\
-        "psraw       $1,  "#a" \n"\
-        "paddw      "#f", "#a" \n"\
-        "paddw      "#h", "#a" \n"\
-        "psubw      "#b", "#a" \n"\
-        "psubw      "#d", "#b" \n"\
-        "psubw      "#d", "#f" \n"\
-        "paddw      "#h", "#b" \n"\
-        "psubw      "#h", "#f" \n"\
-        "psraw       $1,  "#d" \n"\
-        "psraw       $1,  "#h" \n"\
-        "psubw      "#d", "#b" \n"\
-        "psubw      "#h", "#f" \n"\
-        "movdqa     "#e", "#d" \n"\
-        "movdqa     "#a", "#h" \n"\
-        "psraw       $2,  "#d" \n"\
-        "psraw       $2,  "#h" \n"\
-        "paddw      "#f", "#d" \n"\
-        "paddw      "#b", "#h" \n"\
-        "psraw       $2,  "#f" \n"\
-        "psraw       $2,  "#b" \n"\
-        "psubw      "#f", "#e" \n"\
-        "psubw      "#a", "#b" \n"\
-        "movdqa 0x00(%1), "#a" \n"\
-        "movdqa 0x40(%1), "#f" \n"\
-        SUMSUB_BA(f, a)\
-        SUMSUB_BA(g, f)\
-        SUMSUB_BA(c, a)\
-        SUMSUB_BA(e, g)\
-        SUMSUB_BA(b, c)\
-        SUMSUB_BA(h, a)\
-        SUMSUB_BA(d, f)
-
-static void ff_h264_idct8_add_sse2(uint8_t *dst, int16_t *block, int stride)
-{
-    __asm__ volatile(
-        "movdqa   0x10(%1), %%xmm1 \n"
-        "movdqa   0x20(%1), %%xmm2 \n"
-        "movdqa   0x30(%1), %%xmm3 \n"
-        "movdqa   0x50(%1), %%xmm5 \n"
-        "movdqa   0x60(%1), %%xmm6 \n"
-        "movdqa   0x70(%1), %%xmm7 \n"
-        H264_IDCT8_1D_SSE2(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7)
-        TRANSPOSE8(%%xmm4, %%xmm1, %%xmm7, %%xmm3, %%xmm5, %%xmm0, %%xmm2, %%xmm6, (%1))
-        "paddw          %4, %%xmm4 \n"
-        "movdqa     %%xmm4, 0x00(%1) \n"
-        "movdqa     %%xmm2, 0x40(%1) \n"
-        H264_IDCT8_1D_SSE2(%%xmm4, %%xmm0, %%xmm6, %%xmm3, %%xmm2, %%xmm5, %%xmm7, %%xmm1)
-        "movdqa     %%xmm6, 0x60(%1) \n"
-        "movdqa     %%xmm7, 0x70(%1) \n"
-        "pxor       %%xmm7, %%xmm7 \n"
-        STORE_DIFF_8P(%%xmm2, (%0),      %%xmm6, %%xmm7)
-        STORE_DIFF_8P(%%xmm0, (%0,%2),   %%xmm6, %%xmm7)
-        STORE_DIFF_8P(%%xmm1, (%0,%2,2), %%xmm6, %%xmm7)
-        STORE_DIFF_8P(%%xmm3, (%0,%3),   %%xmm6, %%xmm7)
-        "lea     (%0,%2,4), %0 \n"
-        STORE_DIFF_8P(%%xmm5, (%0),      %%xmm6, %%xmm7)
-        STORE_DIFF_8P(%%xmm4, (%0,%2),   %%xmm6, %%xmm7)
-        "movdqa   0x60(%1), %%xmm0 \n"
-        "movdqa   0x70(%1), %%xmm1 \n"
-        STORE_DIFF_8P(%%xmm0, (%0,%2,2), %%xmm6, %%xmm7)
-        STORE_DIFF_8P(%%xmm1, (%0,%3),   %%xmm6, %%xmm7)
-        :"+r"(dst)
-        :"r"(block), "r"((x86_reg)stride), "r"((x86_reg)3L*stride), "m"(ff_pw_32)
-    );
-}
-
-static void ff_h264_idct_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
-{
-    int dc = (block[0] + 32) >> 6;
-    __asm__ volatile(
-        "movd          %0, %%mm0 \n\t"
-        "pshufw $0, %%mm0, %%mm0 \n\t"
-        "pxor       %%mm1, %%mm1 \n\t"
-        "psubw      %%mm0, %%mm1 \n\t"
-        "packuswb   %%mm0, %%mm0 \n\t"
-        "packuswb   %%mm1, %%mm1 \n\t"
-        ::"r"(dc)
-    );
-    __asm__ volatile(
-        "movd          %0, %%mm2 \n\t"
-        "movd          %1, %%mm3 \n\t"
-        "movd          %2, %%mm4 \n\t"
-        "movd          %3, %%mm5 \n\t"
-        "paddusb    %%mm0, %%mm2 \n\t"
-        "paddusb    %%mm0, %%mm3 \n\t"
-        "paddusb    %%mm0, %%mm4 \n\t"
-        "paddusb    %%mm0, %%mm5 \n\t"
-        "psubusb    %%mm1, %%mm2 \n\t"
-        "psubusb    %%mm1, %%mm3 \n\t"
-        "psubusb    %%mm1, %%mm4 \n\t"
-        "psubusb    %%mm1, %%mm5 \n\t"
-        "movd       %%mm2, %0    \n\t"
-        "movd       %%mm3, %1    \n\t"
-        "movd       %%mm4, %2    \n\t"
-        "movd       %%mm5, %3    \n\t"
-        :"+m"(*(uint32_t*)(dst+0*stride)),
-         "+m"(*(uint32_t*)(dst+1*stride)),
-         "+m"(*(uint32_t*)(dst+2*stride)),
-         "+m"(*(uint32_t*)(dst+3*stride))
-    );
-}
-
-static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
-{
-    int dc = (block[0] + 32) >> 6;
-    int y;
-    __asm__ volatile(
-        "movd          %0, %%mm0 \n\t"
-        "pshufw $0, %%mm0, %%mm0 \n\t"
-        "pxor       %%mm1, %%mm1 \n\t"
-        "psubw      %%mm0, %%mm1 \n\t"
-        "packuswb   %%mm0, %%mm0 \n\t"
-        "packuswb   %%mm1, %%mm1 \n\t"
-        ::"r"(dc)
-    );
-    for(y=2; y--; dst += 4*stride){
-    __asm__ volatile(
-        "movq          %0, %%mm2 \n\t"
-        "movq          %1, %%mm3 \n\t"
-        "movq          %2, %%mm4 \n\t"
-        "movq          %3, %%mm5 \n\t"
-        "paddusb    %%mm0, %%mm2 \n\t"
-        "paddusb    %%mm0, %%mm3 \n\t"
-        "paddusb    %%mm0, %%mm4 \n\t"
-        "paddusb    %%mm0, %%mm5 \n\t"
-        "psubusb    %%mm1, %%mm2 \n\t"
-        "psubusb    %%mm1, %%mm3 \n\t"
-        "psubusb    %%mm1, %%mm4 \n\t"
-        "psubusb    %%mm1, %%mm5 \n\t"
-        "movq       %%mm2, %0    \n\t"
-        "movq       %%mm3, %1    \n\t"
-        "movq       %%mm4, %2    \n\t"
-        "movq       %%mm5, %3    \n\t"
-        :"+m"(*(uint64_t*)(dst+0*stride)),
-         "+m"(*(uint64_t*)(dst+1*stride)),
-         "+m"(*(uint64_t*)(dst+2*stride)),
-         "+m"(*(uint64_t*)(dst+3*stride))
-    );
-    }
-}
-
-//FIXME this table is a duplicate from h264data.h, and will be removed once the tables from, h264 have been split
-static const uint8_t scan8[16 + 2*4]={
- 4+1*8, 5+1*8, 4+2*8, 5+2*8,
- 6+1*8, 7+1*8, 6+2*8, 7+2*8,
- 4+3*8, 5+3*8, 4+4*8, 5+4*8,
- 6+3*8, 7+3*8, 6+4*8, 7+4*8,
- 1+1*8, 2+1*8,
- 1+2*8, 2+2*8,
- 1+4*8, 2+4*8,
- 1+5*8, 2+5*8,
-};
-
-static void ff_h264_idct_add16_mmx(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=0; i<16; i++){
-        if(nnzc[ scan8[i] ])
-            ff_h264_idct_add_mmx(dst + block_offset[i], block + i*16, stride);
-    }
-}
-
-static void ff_h264_idct8_add4_mmx(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=0; i<16; i+=4){
-        if(nnzc[ scan8[i] ])
-            ff_h264_idct8_add_mmx(dst + block_offset[i], block + i*16, stride);
-    }
-}
-
-
-static void ff_h264_idct_add16_mmx2(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=0; i<16; i++){
-        int nnz = nnzc[ scan8[i] ];
-        if(nnz){
-            if(nnz==1 && block[i*16]) ff_h264_idct_dc_add_mmx2(dst + block_offset[i], block + i*16, stride);
-            else                      ff_h264_idct_add_mmx    (dst + block_offset[i], block + i*16, stride);
-        }
-    }
-}
-
-static void ff_h264_idct_add16intra_mmx(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=0; i<16; i++){
-        if(nnzc[ scan8[i] ] || block[i*16])
-            ff_h264_idct_add_mmx(dst + block_offset[i], block + i*16, stride);
-    }
-}
-
-static void ff_h264_idct_add16intra_mmx2(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=0; i<16; i++){
-        if(nnzc[ scan8[i] ]) ff_h264_idct_add_mmx    (dst + block_offset[i], block + i*16, stride);
-        else if(block[i*16]) ff_h264_idct_dc_add_mmx2(dst + block_offset[i], block + i*16, stride);
-    }
-}
-
-static void ff_h264_idct8_add4_mmx2(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=0; i<16; i+=4){
-        int nnz = nnzc[ scan8[i] ];
-        if(nnz){
-            if(nnz==1 && block[i*16]) ff_h264_idct8_dc_add_mmx2(dst + block_offset[i], block + i*16, stride);
-            else                      ff_h264_idct8_add_mmx    (dst + block_offset[i], block + i*16, stride);
-        }
-    }
-}
-
-static void ff_h264_idct8_add4_sse2(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=0; i<16; i+=4){
-        int nnz = nnzc[ scan8[i] ];
-        if(nnz){
-            if(nnz==1 && block[i*16]) ff_h264_idct8_dc_add_mmx2(dst + block_offset[i], block + i*16, stride);
-            else                      ff_h264_idct8_add_sse2   (dst + block_offset[i], block + i*16, stride);
-        }
-    }
-}
-
-static void ff_h264_idct_add8_mmx(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=16; i<16+8; i++){
-        if(nnzc[ scan8[i] ] || block[i*16])
-            ff_h264_idct_add_mmx    (dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
-    }
-}
-
-static void ff_h264_idct_add8_mmx2(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=16; i<16+8; i++){
-        if(nnzc[ scan8[i] ])
-            ff_h264_idct_add_mmx    (dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
-        else if(block[i*16])
-            ff_h264_idct_dc_add_mmx2(dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
-    }
-}
-
-#if HAVE_YASM
-static void ff_h264_idct_dc_add8_mmx2(uint8_t *dst, int16_t *block, int stride)
-{
-    __asm__ volatile(
-        "movd             %0, %%mm0 \n\t"   //  0 0 X D
-        "punpcklwd        %1, %%mm0 \n\t"   //  x X d D
-        "paddsw           %2, %%mm0 \n\t"
-        "psraw            $6, %%mm0 \n\t"
-        "punpcklwd     %%mm0, %%mm0 \n\t"   //  d d D D
-        "pxor          %%mm1, %%mm1 \n\t"   //  0 0 0 0
-        "psubw         %%mm0, %%mm1 \n\t"   // -d-d-D-D
-        "packuswb      %%mm1, %%mm0 \n\t"   // -d-d-D-D d d D D
-        "pshufw $0xFA, %%mm0, %%mm1 \n\t"   // -d-d-d-d-D-D-D-D
-        "punpcklwd     %%mm0, %%mm0 \n\t"   //  d d d d D D D D
-        ::"m"(block[ 0]),
-          "m"(block[16]),
-          "m"(ff_pw_32)
-    );
-    __asm__ volatile(
-        "movq          %0, %%mm2 \n\t"
-        "movq          %1, %%mm3 \n\t"
-        "movq          %2, %%mm4 \n\t"
-        "movq          %3, %%mm5 \n\t"
-        "paddusb    %%mm0, %%mm2 \n\t"
-        "paddusb    %%mm0, %%mm3 \n\t"
-        "paddusb    %%mm0, %%mm4 \n\t"
-        "paddusb    %%mm0, %%mm5 \n\t"
-        "psubusb    %%mm1, %%mm2 \n\t"
-        "psubusb    %%mm1, %%mm3 \n\t"
-        "psubusb    %%mm1, %%mm4 \n\t"
-        "psubusb    %%mm1, %%mm5 \n\t"
-        "movq       %%mm2, %0    \n\t"
-        "movq       %%mm3, %1    \n\t"
-        "movq       %%mm4, %2    \n\t"
-        "movq       %%mm5, %3    \n\t"
-        :"+m"(*(uint64_t*)(dst+0*stride)),
-         "+m"(*(uint64_t*)(dst+1*stride)),
-         "+m"(*(uint64_t*)(dst+2*stride)),
-         "+m"(*(uint64_t*)(dst+3*stride))
-    );
-}
-
-extern void ff_x264_add8x4_idct_sse2(uint8_t *dst, int16_t *block, int stride);
-
-static void ff_h264_idct_add16_sse2(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=0; i<16; i+=2)
-        if(nnzc[ scan8[i+0] ]|nnzc[ scan8[i+1] ])
-            ff_x264_add8x4_idct_sse2 (dst + block_offset[i], block + i*16, stride);
-}
-
-static void ff_h264_idct_add16intra_sse2(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=0; i<16; i+=2){
-        if(nnzc[ scan8[i+0] ]|nnzc[ scan8[i+1] ])
-            ff_x264_add8x4_idct_sse2 (dst + block_offset[i], block + i*16, stride);
-        else if(block[i*16]|block[i*16+16])
-            ff_h264_idct_dc_add8_mmx2(dst + block_offset[i], block + i*16, stride);
-    }
-}
-
-static void ff_h264_idct_add8_sse2(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=16; i<16+8; i+=2){
-        if(nnzc[ scan8[i+0] ]|nnzc[ scan8[i+1] ])
-            ff_x264_add8x4_idct_sse2 (dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
-        else if(block[i*16]|block[i*16+16])
-            ff_h264_idct_dc_add8_mmx2(dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
-    }
-}
-#endif
+void ff_h264_idct_add16_sse2     (uint8_t *dst, const int *block_offset, DCTELEM *block,
+                                  int stride, const uint8_t nnzc[6*8]);
+void ff_h264_idct_add16intra_sse2(uint8_t *dst, const int *block_offset, DCTELEM *block,
+                                  int stride, const uint8_t nnzc[6*8]);
+void ff_h264_idct_add8_sse2      (uint8_t **dest, const int *block_offset, DCTELEM *block,
+                                  int stride, const uint8_t nnzc[6*8]);
 
 /***********************************/
 /* deblocking */
@@ -745,6 +259,10 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
 {
     int mm_flags = av_get_cpu_flags();
 
+    if (mm_flags & AV_CPU_FLAG_MMX2) {
+        c->h264_loop_filter_strength= h264_loop_filter_strength_mmx2;
+    }
+#if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->h264_idct_dc_add=
         c->h264_idct_add= ff_h264_idct_add_mmx;
@@ -764,15 +282,6 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
             c->h264_idct_add8      = ff_h264_idct_add8_mmx2;
             c->h264_idct_add16intra= ff_h264_idct_add16intra_mmx2;
 
-            c->h264_loop_filter_strength= h264_loop_filter_strength_mmx2;
-        }
-        if(mm_flags & AV_CPU_FLAG_SSE2){
-            c->h264_idct8_add = ff_h264_idct8_add_sse2;
-            c->h264_idct8_add4= ff_h264_idct8_add4_sse2;
-        }
-
-#if HAVE_YASM
-        if (mm_flags & AV_CPU_FLAG_MMX2){
             c->h264_v_loop_filter_chroma= ff_x264_deblock_v_chroma_mmxext;
             c->h264_h_loop_filter_chroma= ff_x264_deblock_h_chroma_mmxext;
             c->h264_v_loop_filter_chroma_intra= ff_x264_deblock_v_chroma_intra_mmxext;
@@ -802,6 +311,9 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
             c->biweight_h264_pixels_tab[7]= ff_h264_biweight_4x2_mmx2;
 
             if (mm_flags&AV_CPU_FLAG_SSE2) {
+                c->h264_idct8_add = ff_h264_idct8_add_sse2;
+                c->h264_idct8_add4= ff_h264_idct8_add4_sse2;
+
                 c->weight_h264_pixels_tab[0]= ff_h264_weight_16x16_sse2;
                 c->weight_h264_pixels_tab[1]= ff_h264_weight_16x8_sse2;
                 c->weight_h264_pixels_tab[2]= ff_h264_weight_8x16_sse2;
@@ -832,6 +344,6 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
                 c->biweight_h264_pixels_tab[4]= ff_h264_biweight_8x4_ssse3;
             }
         }
-#endif
     }
+#endif
 }
