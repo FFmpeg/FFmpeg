@@ -24,8 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define NB_CHANNELS 2
-#define FE 44100
+#define MAX_CHANNELS 8
 
 static unsigned int myrnd(unsigned int *seed_ptr, int n)
 {
@@ -104,13 +103,32 @@ int main(int argc, char **argv)
 {
     int i, a, v, j, f, amp, ampa;
     unsigned int seed = 1;
-    int tabf1[NB_CHANNELS], tabf2[NB_CHANNELS];
-    int taba[NB_CHANNELS];
+    int tabf1[MAX_CHANNELS], tabf2[MAX_CHANNELS];
+    int taba[MAX_CHANNELS];
+    int sample_rate = 44100;
+    int nb_channels = 2;
 
-    if (argc != 2) {
-        printf("usage: %s file\n"
-               "generate a test raw 16 bit stereo audio stream\n", argv[0]);
+    if (argc < 2 || argc > 4) {
+        printf("usage: %s file [<sample rate> [<channels>]]\n"
+               "generate a test raw 16 bit audio stream\n"
+               "default: 44100 Hz stereo\n", argv[0]);
         exit(1);
+    }
+
+    if (argc > 2) {
+        sample_rate = atoi(argv[2]);
+        if (sample_rate <= 0) {
+            fprintf(stderr, "invalid sample rate: %d\n", sample_rate);
+            return 1;
+        }
+    }
+
+    if (argc > 3) {
+        nb_channels = atoi(argv[3]);
+        if (nb_channels < 1 || nb_channels > MAX_CHANNELS) {
+            fprintf(stderr, "invalid number of channels: %d\n", nb_channels);
+            return 1;
+        }
     }
 
     outfile = fopen(argv[1], "wb");
@@ -121,64 +139,64 @@ int main(int argc, char **argv)
 
     /* 1 second of single freq sinus at 1000 Hz */
     a = 0;
-    for(i=0;i<1 * FE;i++) {
+    for(i=0;i<1 * sample_rate;i++) {
         v = (int_cos(a) * 10000) >> FRAC_BITS;
-        for(j=0;j<NB_CHANNELS;j++)
+        for(j=0;j<nb_channels;j++)
             put_sample(v);
-        a += (1000 * FRAC_ONE) / FE;
+        a += (1000 * FRAC_ONE) / sample_rate;
     }
 
     /* 1 second of varing frequency between 100 and 10000 Hz */
     a = 0;
-    for(i=0;i<1 * FE;i++) {
+    for(i=0;i<1 * sample_rate;i++) {
         v = (int_cos(a) * 10000) >> FRAC_BITS;
-        for(j=0;j<NB_CHANNELS;j++)
+        for(j=0;j<nb_channels;j++)
             put_sample(v);
-        f = 100 + (((10000 - 100) * i) / FE);
-        a += (f * FRAC_ONE) / FE;
+        f = 100 + (((10000 - 100) * i) / sample_rate);
+        a += (f * FRAC_ONE) / sample_rate;
     }
 
     /* 0.5 second of low amplitude white noise */
-    for(i=0;i<FE / 2;i++) {
+    for(i=0;i<sample_rate / 2;i++) {
         v = myrnd(&seed, 20000) - 10000;
-        for(j=0;j<NB_CHANNELS;j++)
+        for(j=0;j<nb_channels;j++)
             put_sample(v);
     }
 
     /* 0.5 second of high amplitude white noise */
-    for(i=0;i<FE / 2;i++) {
+    for(i=0;i<sample_rate / 2;i++) {
         v = myrnd(&seed, 65535) - 32768;
-        for(j=0;j<NB_CHANNELS;j++)
+        for(j=0;j<nb_channels;j++)
             put_sample(v);
     }
 
-    /* stereo : 2 unrelated ramps */
-    for(j=0;j<NB_CHANNELS;j++) {
+    /* 1 second of unrelated ramps for each channel */
+    for(j=0;j<nb_channels;j++) {
         taba[j] = 0;
         tabf1[j] = 100 + myrnd(&seed, 5000);
         tabf2[j] = 100 + myrnd(&seed, 5000);
     }
-    for(i=0;i<1 * FE;i++) {
-        for(j=0;j<NB_CHANNELS;j++) {
+    for(i=0;i<1 * sample_rate;i++) {
+        for(j=0;j<nb_channels;j++) {
             v = (int_cos(taba[j]) * 10000) >> FRAC_BITS;
             put_sample(v);
-            f = tabf1[j] + (((tabf2[j] - tabf1[j]) * i) / FE);
-            taba[j] += (f * FRAC_ONE) / FE;
+            f = tabf1[j] + (((tabf2[j] - tabf1[j]) * i) / sample_rate);
+            taba[j] += (f * FRAC_ONE) / sample_rate;
         }
     }
 
-    /* stereo 500 Hz with varying volume */
+    /* 2 seconds of 500 Hz with varying volume */
     a = 0;
     ampa = 0;
-    for(i=0;i<2 * FE;i++) {
-        for(j=0;j<NB_CHANNELS;j++) {
+    for(i=0;i<2 * sample_rate;i++) {
+        for(j=0;j<nb_channels;j++) {
             amp = ((FRAC_ONE + int_cos(ampa)) * 5000) >> FRAC_BITS;
             if (j & 1)
                 amp = 10000 - amp;
             v = (int_cos(a) * amp) >> FRAC_BITS;
             put_sample(v);
-            a += (500 * FRAC_ONE) / FE;
-            ampa += (2 * FRAC_ONE) / FE;
+            a += (500 * FRAC_ONE) / sample_rate;
+            ampa += (2 * FRAC_ONE) / sample_rate;
         }
     }
 
