@@ -56,6 +56,7 @@ static int is_supported(enum CodecID id)
     case CODEC_ID_VORBIS:
     case CODEC_ID_THEORA:
     case CODEC_ID_VP8:
+    case CODEC_ID_ADPCM_G722:
         return 1;
     default:
         return 0;
@@ -147,6 +148,11 @@ static int rtp_write_header(AVFormatContext *s1)
         goto defaultcase;
     case CODEC_ID_VP8:
         av_log(s1, AV_LOG_WARNING, "RTP VP8 payload is still experimental\n");
+        break;
+    case CODEC_ID_ADPCM_G722:
+        /* Due to a historical error, the clock rate for G722 in RTP is
+         * 8000, even if the sample rate is 16000. See RFC 3551. */
+        av_set_pts_info(st, 32, 1, 8000);
         break;
     case CODEC_ID_AMR_NB:
     case CODEC_ID_AMR_WB:
@@ -381,6 +387,12 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     case CODEC_ID_PCM_S16BE:
     case CODEC_ID_PCM_S16LE:
         rtp_send_samples(s1, pkt->data, size, 2 * st->codec->channels);
+        break;
+    case CODEC_ID_ADPCM_G722:
+        /* The actual sample size is half a byte per sample, but since the
+         * stream clock rate is 8000 Hz while the sample rate is 16000 Hz,
+         * the correct parameter for send_samples is 1 byte per stream clock. */
+        rtp_send_samples(s1, pkt->data, size, 1 * st->codec->channels);
         break;
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:

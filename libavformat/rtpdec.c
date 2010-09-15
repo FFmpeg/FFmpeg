@@ -365,6 +365,13 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
         case CODEC_ID_H264:
             st->need_parsing = AVSTREAM_PARSE_FULL;
             break;
+        case CODEC_ID_ADPCM_G722:
+            av_set_pts_info(st, 32, 1, st->codec->sample_rate);
+            /* According to RFC 3551, the stream clock rate is 8000
+             * even if the sample rate is 16000. */
+            if (st->codec->sample_rate == 8000)
+                st->codec->sample_rate = 16000;
+            break;
         default:
             if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
                 av_set_pts_info(st, 32, 1, st->codec->sample_rate);
