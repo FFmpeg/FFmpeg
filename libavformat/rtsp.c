@@ -114,6 +114,12 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
                 break;
             }
         }
+        /* If no dynamic handler was found, check with the list of standard
+         * allocated types, if such a stream for some reason happens to
+         * use a private payload type. This isn't handled in rtpdec.c, since
+         * the format name from the rtpmap line never is passed into rtpdec. */
+        if (!rtsp_st->dynamic_handler)
+            codec->codec_id = ff_rtp_codec_id(buf, codec->codec_type);
     } else {
         /* We are in a standard case
          * (from http://www.iana.org/assignments/rtp-parameters). */
