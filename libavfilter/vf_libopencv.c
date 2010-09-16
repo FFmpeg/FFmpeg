@@ -23,8 +23,8 @@
  * libopencv wrapper functions
  */
 
-#include "opencv/cv.h"
-#include "opencv/cxtypes.h"
+#include <opencv/cv.h>
+#include <opencv/cxtypes.h>
 #include "avfilter.h"
 
 static void fill_iplimage_from_picref(IplImage *img, const AVFilterBufferRef *picref, enum PixelFormat pixfmt)
