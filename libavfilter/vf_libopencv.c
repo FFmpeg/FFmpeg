@@ -116,7 +116,7 @@ static av_cold int smooth_init(AVFilterContext *ctx, const char *args, void *opa
 static void smooth_end_frame(AVFilterLink *inlink)
 {
     SmoothContext *smooth = inlink->dst->priv;
-    AVFilterLink *outlink= inlink->dst->outputs[0];
+    AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *inpicref  = inlink ->cur_buf;
     AVFilterBufferRef *outpicref = outlink->out_buf;
     IplImage inimg, outimg;
