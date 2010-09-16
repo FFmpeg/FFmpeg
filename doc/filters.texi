@@ -70,8 +70,8 @@ Convert the input video to one of the specified pixel formats.
 Libavfilter will try to pick one that is supported for the input to
 the next filter.
 
-The filter accepts a list of pixel format names, separated by ``:'',
-for example ``yuv420p:monow:rgb24''.
+The filter accepts a list of pixel format names, separated by ":",
+for example "yuv420p:monow:rgb24".
 
 The following command:
 
@@ -79,7 +79,7 @@ The following command:
 ./ffmpeg -i in.avi -vf "format=yuv420p" out.avi
 @end example
 
-will convert the input video to the format ``yuv420p''.
+will convert the input video to the format "yuv420p".
 
 @section hflip
 
@@ -96,8 +96,8 @@ ffmpeg -i in.avi -vf "hflip" out.avi
 Force libavfilter not to use any of the specified pixel formats for the
 input to the next filter.
 
-The filter accepts a list of pixel format names, separated by ``:'',
-for example ``yuv420p:monow:rgb24''.
+The filter accepts a list of pixel format names, separated by ":",
+for example "yuv420p:monow:rgb24".
 
 The following command:
 
@@ -105,7 +105,7 @@ The following command:
 ./ffmpeg -i in.avi -vf "noformat=yuv420p, vflip" out.avi
 @end example
 
-will make libavfilter use a format different from ``yuv420p'' for the
+will make libavfilter use a format different from "yuv420p" for the
 input to the vflip filter.
 
 @section null
@@ -170,7 +170,7 @@ The default value of @var{x} and @var{y} is 0.
 Specify the color of the padded area, it can be the name of a color
 (case insensitive match) or a 0xRRGGBB[AA] sequence.
 
-The default value of @var{color} is ``black''.
+The default value of @var{color} is "black".
 
 @end table
 
