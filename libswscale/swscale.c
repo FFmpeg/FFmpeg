@@ -1317,12 +1317,10 @@ static void copyPlane(const uint8_t *src, int srcStride,
         memcpy(dst, src, srcSliceH * dstStride);
     } else {
         int i;
-        const uint8_t *srcPtr = src;
-        uint8_t *dstPtr= dst;
         for (i=0; i<srcSliceH; i++) {
-            memcpy(dstPtr, srcPtr, width);
-            srcPtr += srcStride;
-            dstPtr += dstStride;
+            memcpy(dst, src, width);
+            src += srcStride;
+            dst += dstStride;
         }
     }
 }
