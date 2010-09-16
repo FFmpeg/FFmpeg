@@ -1,5 +1,5 @@
 /*
- * copyright Stefano Sabatini 2010
+ * copyright (c) 2010 Stefano Sabatini
  *
  * This file is part of FFmpeg.
  *
