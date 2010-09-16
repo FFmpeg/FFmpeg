@@ -290,8 +290,8 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h,
 }
 
 static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp,
-                     enum PixelFormat srcFormat_in,
-                     enum PixelFormat dstFormat_in)
+                    enum PixelFormat srcFormat_in,
+                    enum PixelFormat dstFormat_in)
 {
     char buf[256];
 
