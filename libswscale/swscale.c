@@ -1308,24 +1308,33 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
 #endif //!CONFIG_RUNTIME_CPUDETECT
 }
 
+static void copyPlane(const uint8_t *src, int srcStride,
+                      int srcSliceY, int srcSliceH, int width,
+                      uint8_t *dst, int dstStride)
+{
+    dst += dstStride * srcSliceY;
+    if (dstStride == srcStride && srcStride > 0) {
+        memcpy(dst, src, srcSliceH * dstStride);
+    } else {
+        int i;
+        const uint8_t *srcPtr = src;
+        uint8_t *dstPtr= dst;
+        for (i=0; i<srcSliceH; i++) {
+            memcpy(dstPtr, srcPtr, width);
+            srcPtr += srcStride;
+            dstPtr += dstStride;
+        }
+    }
+}
+
 static int planarToNv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dstParam[], int dstStride[])
 {
-    uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
-    /* Copy Y plane */
-    if (dstStride[0]==srcStride[0] && srcStride[0] > 0)
-        memcpy(dst, src[0], srcSliceH*dstStride[0]);
-    else {
-        int i;
-        const uint8_t *srcPtr= src[0];
-        uint8_t *dstPtr= dst;
-        for (i=0; i<srcSliceH; i++) {
-            memcpy(dstPtr, srcPtr, c->srcW);
-            srcPtr+= srcStride[0];
-            dstPtr+= dstStride[0];
-        }
-    }
-    dst = dstParam[1] + dstStride[1]*srcSliceY/2;
+    uint8_t *dst = dstParam[1] + dstStride[1]*srcSliceY/2;
+
+    copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+              dstParam[0], dstStride[0]);
+
     if (c->dstFormat == PIX_FMT_NV12)
         interleaveBytes(src[1], src[2], dst, c->srcW/2, srcSliceH/2, srcStride[1], srcStride[2], dstStride[0]);
     else
@@ -1583,21 +1592,8 @@ static int bgr24ToYv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride
 static int yvu9ToYv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                              int srcSliceH, uint8_t* dst[], int dstStride[])
 {
-    int i;
-
-    /* copy Y */
-    if (srcStride[0]==dstStride[0] && srcStride[0] > 0)
-        memcpy(dst[0]+ srcSliceY*dstStride[0], src[0], srcStride[0]*srcSliceH);
-    else {
-        const uint8_t *srcPtr= src[0];
-        uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
-
-        for (i=0; i<srcSliceH; i++) {
-            memcpy(dstPtr, srcPtr, c->srcW);
-            srcPtr+= srcStride[0];
-            dstPtr+= dstStride[0];
-        }
-    }
+    copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+              dst[0], dstStride[0]);
 
     planar2x(src[1], dst[1] + dstStride[1]*(srcSliceY >> 1), c->chrSrcW,
              srcSliceH >> 2, srcStride[1], dstStride[1]);
