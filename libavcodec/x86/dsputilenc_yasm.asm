@@ -284,7 +284,7 @@ HADAMARD8_DIFF_SSE2 ssse3, 9
 INIT_XMM
 ; sse16_sse2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h)
 cglobal sse16_sse2, 5, 5, 8
-    shr       r4, 1
+    shr      r4d, 1
     pxor      m0, m0         ; mm0 = 0
     pxor      m7, m7         ; mm7 holds the sum
 
