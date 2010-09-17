@@ -323,67 +323,7 @@ static int sse16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int
     return tmp;
 }
 
-static int sse16_sse2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
-    int tmp;
-  __asm__ volatile (
-      "shr $1,%2\n"
-      "pxor %%xmm0,%%xmm0\n"    /* mm0 = 0 */
-      "pxor %%xmm7,%%xmm7\n"    /* mm7 holds the sum */
-      "1:\n"
-      "movdqu (%0),%%xmm1\n"    /* mm1 = pix1[0][0-15] */
-      "movdqu (%1),%%xmm2\n"    /* mm2 = pix2[0][0-15] */
-      "movdqu (%0,%4),%%xmm3\n" /* mm3 = pix1[1][0-15] */
-      "movdqu (%1,%4),%%xmm4\n" /* mm4 = pix2[1][0-15] */
-
-      /* todo: mm1-mm2, mm3-mm4 */
-      /* algo: subtract mm1 from mm2 with saturation and vice versa */
-      /*       OR the results to get absolute difference */
-      "movdqa %%xmm1,%%xmm5\n"
-      "movdqa %%xmm3,%%xmm6\n"
-      "psubusb %%xmm2,%%xmm1\n"
-      "psubusb %%xmm4,%%xmm3\n"
-      "psubusb %%xmm5,%%xmm2\n"
-      "psubusb %%xmm6,%%xmm4\n"
-
-      "por %%xmm1,%%xmm2\n"
-      "por %%xmm3,%%xmm4\n"
-
-      /* now convert to 16-bit vectors so we can square them */
-      "movdqa %%xmm2,%%xmm1\n"
-      "movdqa %%xmm4,%%xmm3\n"
-
-      "punpckhbw %%xmm0,%%xmm2\n"
-      "punpckhbw %%xmm0,%%xmm4\n"
-      "punpcklbw %%xmm0,%%xmm1\n"  /* mm1 now spread over (mm1,mm2) */
-      "punpcklbw %%xmm0,%%xmm3\n"  /* mm4 now spread over (mm3,mm4) */
-
-      "pmaddwd %%xmm2,%%xmm2\n"
-      "pmaddwd %%xmm4,%%xmm4\n"
-      "pmaddwd %%xmm1,%%xmm1\n"
-      "pmaddwd %%xmm3,%%xmm3\n"
-
-      "lea (%0,%4,2), %0\n"        /* pix1 += 2*line_size */
-      "lea (%1,%4,2), %1\n"        /* pix2 += 2*line_size */
-
-      "paddd %%xmm2,%%xmm1\n"
-      "paddd %%xmm4,%%xmm3\n"
-      "paddd %%xmm1,%%xmm7\n"
-      "paddd %%xmm3,%%xmm7\n"
-
-      "decl %2\n"
-      "jnz 1b\n"
-
-      "movdqa %%xmm7,%%xmm1\n"
-      "psrldq $8, %%xmm7\n"        /* shift hi qword to lo */
-      "paddd %%xmm1,%%xmm7\n"
-      "movdqa %%xmm7,%%xmm1\n"
-      "psrldq $4, %%xmm7\n"        /* shift hi dword to lo */
-      "paddd %%xmm1,%%xmm7\n"
-      "movd %%xmm7,%3\n"
-      : "+r" (pix1), "+r" (pix2), "+r"(h), "=r"(tmp)
-      : "r" ((x86_reg)line_size));
-    return tmp;
-}
+int ff_sse16_sse2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h);
 
 static int hf_noise8_mmx(uint8_t * pix1, int line_size, int h) {
     int tmp;
@@ -1376,7 +1316,7 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->hadamard8_diff[1]= hadamard8_diff_mmx;
 
         c->pix_norm1 = pix_norm1_mmx;
-        c->sse[0] = (mm_flags & AV_CPU_FLAG_SSE2) ? sse16_sse2 : sse16_mmx;
+        c->sse[0] = (mm_flags & AV_CPU_FLAG_SSE2) ? ff_sse16_sse2 : sse16_mmx;
           c->sse[1] = sse8_mmx;
         c->vsad[4]= vsad_intra16_mmx;
 

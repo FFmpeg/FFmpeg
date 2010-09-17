@@ -24,6 +24,7 @@ MMX-OBJS-$(CONFIG_MP3FLOAT_DECODER)    += x86/mpegaudiodec_mmx.o
 MMX-OBJS-$(CONFIG_MP3ON4FLOAT_DECODER) += x86/mpegaudiodec_mmx.o
 MMX-OBJS-$(CONFIG_MP3ADUFLOAT_DECODER) += x86/mpegaudiodec_mmx.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
+YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc_yasm.o
 MMX-OBJS-$(CONFIG_GPL)                 += x86/idct_mmx.o
 MMX-OBJS-$(CONFIG_LPC)                 += x86/lpc_mmx.o
 MMX-OBJS-$(CONFIG_DWT)                 += x86/snowdsp_mmx.o
