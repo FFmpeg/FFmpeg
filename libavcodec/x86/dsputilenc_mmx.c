@@ -1118,11 +1118,13 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->diff_bytes= diff_bytes_mmx;
         c->sum_abs_dctelem= sum_abs_dctelem_mmx;
 
+#if HAVE_YASM
         c->hadamard8_diff[0]= ff_hadamard8_diff16_mmx;
         c->hadamard8_diff[1]= ff_hadamard8_diff_mmx;
+#endif
 
         c->pix_norm1 = pix_norm1_mmx;
-        c->sse[0] = (mm_flags & AV_CPU_FLAG_SSE2) ? ff_sse16_sse2 : sse16_mmx;
+        c->sse[0] = (HAVE_YASM && mm_flags & AV_CPU_FLAG_SSE2) ? ff_sse16_sse2 : sse16_mmx;
           c->sse[1] = sse8_mmx;
         c->vsad[4]= vsad_intra16_mmx;
 
@@ -1142,8 +1144,10 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
         if (mm_flags & AV_CPU_FLAG_MMX2) {
             c->sum_abs_dctelem= sum_abs_dctelem_mmx2;
+#if HAVE_YASM
             c->hadamard8_diff[0]= ff_hadamard8_diff16_mmx2;
             c->hadamard8_diff[1]= ff_hadamard8_diff_mmx2;
+#endif
             c->vsad[4]= vsad_intra16_mmx2;
 
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
@@ -1156,8 +1160,10 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
         if(mm_flags & AV_CPU_FLAG_SSE2){
             c->get_pixels = get_pixels_sse2;
             c->sum_abs_dctelem= sum_abs_dctelem_sse2;
+#if HAVE_YASM
             c->hadamard8_diff[0]= ff_hadamard8_diff16_sse2;
             c->hadamard8_diff[1]= ff_hadamard8_diff_sse2;
+#endif
         }
 
         if (CONFIG_LPC && mm_flags & (AV_CPU_FLAG_SSE2|AV_CPU_FLAG_SSE2SLOW)) {
@@ -1171,8 +1177,10 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
             }
             c->add_8x8basis= add_8x8basis_ssse3;
             c->sum_abs_dctelem= sum_abs_dctelem_ssse3;
+#if HAVE_YASM
             c->hadamard8_diff[0]= ff_hadamard8_diff16_ssse3;
             c->hadamard8_diff[1]= ff_hadamard8_diff_ssse3;
+#endif
         }
 #endif
 
