@@ -547,7 +547,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
         mode_par->subframe_count * sizeof(float);
 
     return mode_par->bits_per_frame >> 3;
-};
+}
 
 AVCodec sipr_decoder = {
     "sipr",
