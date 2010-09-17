@@ -2722,7 +2722,7 @@ enabled libdirac   && add_cflags $(pkg-config --cflags dirac) &&
                       require  libdirac libdirac_encoder/dirac_encoder.h dirac_encoder_init $(pkg-config --libs dirac)
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
-enabled libmp3lame && require  libmp3lame lame/lame.h hip_decode_init -lmp3lame
+enabled libmp3lame && require  "libmp3lame >= 3.98.3" lame/lame.h hip_decode_init -lmp3lame
 enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut
 enabled libopencore_amrnb  && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb  && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
