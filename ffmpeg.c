@@ -869,7 +869,7 @@ need_realloc:
         double delta = get_sync_ipts(ost) * enc->sample_rate - ost->sync_opts
                 - av_fifo_size(ost->fifo)/(enc->channels * 2);
         double idelta= delta*dec->sample_rate / enc->sample_rate;
-        int byte_delta= ((int)idelta)*2*enc->channels;
+        int byte_delta= ((int)idelta)*2*dec->channels;
 
         //FIXME resample delay
         if(fabs(delta) > 50){
