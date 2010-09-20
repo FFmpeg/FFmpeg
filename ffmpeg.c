@@ -3870,15 +3870,6 @@ static void opt_intra_matrix(const char *arg)
     parse_matrix_coeffs(intra_matrix, arg);
 }
 
-/**
- * Trivial log callback.
- * Only suitable for show_help and similar since it lacks prefix handling.
- */
-static void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
-{
-    vfprintf(stdout, fmt, vl);
-}
-
 static void show_usage(void)
 {
     printf("Hyper fast Audio and Video encoder\n");

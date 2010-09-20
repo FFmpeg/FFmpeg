@@ -45,6 +45,12 @@ extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
 
 /**
+ * Trivial log callback.
+ * Only suitable for show_help and similar since it lacks prefix handling.
+ */
+void log_callback_help(void* ptr, int level, const char* fmt, va_list vl);
+
+/**
  * Fallback for options that are not explicitly handled, these will be
  * parsed through AVOptions.
  */

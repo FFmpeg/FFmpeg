@@ -56,6 +56,11 @@ struct SwsContext *sws_opts;
 
 const int this_year = 2010;
 
+void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
+{
+    vfprintf(stdout, fmt, vl);
+}
+
 double parse_number_or_die(const char *context, const char *numstr, int type, double min, double max)
 {
     char *tail;
