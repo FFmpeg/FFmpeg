@@ -62,7 +62,7 @@ ELF     .type   \name, %function
 .endm
 
 .macro  movrel rd, val
-#if HAVE_ARMV6T2 && !CONFIG_PIC
+#if HAVE_ARMV6T2 && !CONFIG_PIC && !defined(__APPLE__)
         movw            \rd, #:lower16:\val
         movt            \rd, #:upper16:\val
 #else
