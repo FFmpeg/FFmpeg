@@ -1175,6 +1175,7 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
     int i;
 
     if (pix_fmt != PIX_FMT_YUV420P &&
+        pix_fmt != PIX_FMT_YUVJ420P &&
         pix_fmt != PIX_FMT_YUV422P &&
         pix_fmt != PIX_FMT_YUV444P &&
         pix_fmt != PIX_FMT_YUV411P &&
@@ -1186,6 +1187,7 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
     for(i=0;i<3;i++) {
         if (i == 1) {
             switch(pix_fmt) {
+            case PIX_FMT_YUVJ420P:
             case PIX_FMT_YUV420P:
                 width >>= 1;
                 height >>= 1;
