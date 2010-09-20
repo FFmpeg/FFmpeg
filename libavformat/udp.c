@@ -96,7 +96,7 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr)
         }
     }
 #endif
-#if HAVE_STRUCT_IPV6_MREQ
+#if HAVE_STRUCT_IPV6_MREQ && defined(IPPROTO_IPV6)
     if (addr->sa_family == AF_INET6) {
         struct ipv6_mreq mreq6;
 
@@ -125,7 +125,7 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr)
         }
     }
 #endif
-#if HAVE_STRUCT_IPV6_MREQ
+#if HAVE_STRUCT_IPV6_MREQ && defined(IPPROTO_IPV6)
     if (addr->sa_family == AF_INET6) {
         struct ipv6_mreq mreq6;
 
