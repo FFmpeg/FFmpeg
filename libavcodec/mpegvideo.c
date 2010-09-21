@@ -1262,7 +1262,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                         av_log(s->avctx, AV_LOG_DEBUG, "?");
 
 
-                    if(IS_INTERLACED(mb_type) && s->codec_id == CODEC_ID_H264)
+                    if(IS_INTERLACED(mb_type))
                         av_log(s->avctx, AV_LOG_DEBUG, "=");
                     else
                         av_log(s->avctx, AV_LOG_DEBUG, " ");
