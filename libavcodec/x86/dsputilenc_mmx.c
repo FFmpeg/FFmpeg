@@ -1160,7 +1160,7 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
         if(mm_flags & AV_CPU_FLAG_SSE2){
             c->get_pixels = get_pixels_sse2;
             c->sum_abs_dctelem= sum_abs_dctelem_sse2;
-#if HAVE_YASM
+#if HAVE_YASM && HAVE_ALIGNED_STACK
             c->hadamard8_diff[0]= ff_hadamard8_diff16_sse2;
             c->hadamard8_diff[1]= ff_hadamard8_diff_sse2;
 #endif
@@ -1177,7 +1177,7 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
             }
             c->add_8x8basis= add_8x8basis_ssse3;
             c->sum_abs_dctelem= sum_abs_dctelem_ssse3;
-#if HAVE_YASM
+#if HAVE_YASM && HAVE_ALIGNED_STACK
             c->hadamard8_diff[0]= ff_hadamard8_diff16_ssse3;
             c->hadamard8_diff[1]= ff_hadamard8_diff_ssse3;
 #endif
