@@ -38,7 +38,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     struct addrinfo hints, *ai, *cur_ai;
     int port, fd = -1;
     TCPContext *s = NULL;
-    fd_set wfds;
+    fd_set wfds, efds;
     int fd_max, ret;
     struct timeval tv;
     socklen_t optlen;
@@ -87,11 +87,13 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             }
             fd_max = fd;
             FD_ZERO(&wfds);
+            FD_ZERO(&efds);
             FD_SET(fd, &wfds);
+            FD_SET(fd, &efds);
             tv.tv_sec = 0;
             tv.tv_usec = 100 * 1000;
-            ret = select(fd_max + 1, NULL, &wfds, NULL, &tv);
-            if (ret > 0 && FD_ISSET(fd, &wfds))
+            ret = select(fd_max + 1, NULL, &wfds, &efds, &tv);
+            if (ret > 0 && (FD_ISSET(fd, &wfds) || FD_ISSET(fd, &efds)))
                 break;
         }
 
