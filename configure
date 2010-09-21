@@ -981,6 +981,7 @@ HAVE_LIST="
     $ARCH_EXT_LIST
     $HAVE_LIST_PUB
     $THREADS_LIST
+    aligned_stack
     alsa_asoundlib_h
     altivec_h
     arpa_inet_h
@@ -1164,6 +1165,7 @@ mmx2_deps="mmx"
 sse_deps="mmx"
 ssse3_deps="sse"
 
+aligned_stack_if_any="ppc x86"
 fast_64bit_if_any="alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="alpha armv5te avr32 mips ppc x86"
 fast_unaligned_if_any="armv6 ppc x86"
