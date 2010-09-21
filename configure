@@ -1840,6 +1840,7 @@ elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
     cc_version="AV_STRINGIFY(__INTEL_COMPILER)"
     cc_ident=$($cc --version | head -n1)
+    icc_version=$($cc -dumpversion)
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
     speed_cflags='-O3'
@@ -2900,7 +2901,11 @@ if enabled icc; then
     check_ldflags -march=$cpu
     # icc 11.0 and 11.1 work with ebp_available, but don't pass the test
     enable ebp_available
-    enabled x86_32 && check_cflags -falign-stack=maintain-16-byte
+    if enabled x86_32; then
+        test ${icc_version%%.*} -ge 11 && \
+            check_cflags -falign-stack=maintain-16-byte || \
+            disable aligned_stack
+    fi
 elif enabled ccc; then
     # disable some annoying warnings
     add_cflags -msg_disable cvtu32to64
