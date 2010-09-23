@@ -1,5 +1,5 @@
 /*
- * G.722 ADPCM audio decoder
+ * G.722 ADPCM audio encoder/decoder
  *
  * Copyright (c) CMU 1993 Computer Science, Speech Group
  *                        Chengxiang Lu and Alex Hauptmann
@@ -219,6 +219,7 @@ static av_cold int g722_init(AVCodecContext * avctx)
     return 0;
 }
 
+#if CONFIG_ADPCM_G722_DECODER
 static const int16_t low_inv_quant5[32] = {
      -35,   -35, -2919, -2195, -1765, -1458, -1219, -1023,
     -858,  -714,  -587,  -473,  -370,  -276,  -190,  -110,
@@ -301,4 +302,84 @@ AVCodec adpcm_g722_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
     .max_lowres     = 1,
 };
+#endif
+
+#if CONFIG_ADPCM_G722_ENCODER
+static const int16_t low_quant[33] = {
+      35,   72,  110,  150,  190,  233,  276,  323,
+     370,  422,  473,  530,  587,  650,  714,  786,
+     858,  940, 1023, 1121, 1219, 1339, 1458, 1612,
+    1765, 1980, 2195, 2557, 2919
+};
+
+static inline void filter_samples(G722Context *c, const int16_t *samples,
+                                  int *xlow, int *xhigh)
+{
+    int xout1, xout2;
+    c->prev_samples[c->prev_samples_pos++] = samples[0];
+    c->prev_samples[c->prev_samples_pos++] = samples[1];
+    apply_qmf(c->prev_samples + c->prev_samples_pos - 24, &xout1, &xout2);
+    *xlow  = xout1 + xout2 >> 13;
+    *xhigh = xout1 - xout2 >> 13;
+    if (c->prev_samples_pos >= PREV_SAMPLES_BUF_SIZE) {
+        memmove(c->prev_samples,
+                c->prev_samples + c->prev_samples_pos - 22,
+                22 * sizeof(c->prev_samples[0]));
+        c->prev_samples_pos = 22;
+    }
+}
+
+static inline int encode_high(const struct G722Band *state, int xhigh)
+{
+    int diff = av_clip_int16(xhigh - state->s_predictor);
+    int pred = 141 * state->scale_factor >> 8;
+           /* = diff >= 0 ? (diff < pred) + 2 : diff >= -pred */
+    return ((diff ^ (diff >> (sizeof(diff)*8-1))) < pred) + 2*(diff >= 0);
+}
+
+static inline int encode_low(const struct G722Band* state, int xlow)
+{
+    int diff  = av_clip_int16(xlow - state->s_predictor);
+           /* = diff >= 0 ? diff : -(diff + 1) */
+    int limit = diff ^ (diff >> (sizeof(diff)*8-1));
+    int i = 0;
+    limit = limit + 1 << 10;
+    if (limit > low_quant[8] * state->scale_factor)
+        i = 9;
+    while (i < 29 && limit > low_quant[i] * state->scale_factor)
+        i++;
+    return (diff < 0 ? (i < 2 ? 63 : 33) : 61) - i;
+}
+
+static int g722_encode_frame(AVCodecContext *avctx,
+                             uint8_t *dst, int buf_size, void *data)
+{
+    G722Context *c = avctx->priv_data;
+    const int16_t *samples = data;
+    int i;
+
+    for (i = 0; i < buf_size >> 1; i++) {
+        int xlow, xhigh, ihigh, ilow;
+        filter_samples(c, &samples[2*i], &xlow, &xhigh);
+        ihigh = encode_high(&c->band[1], xhigh);
+        ilow  = encode_low(&c->band[0], xlow);
+        update_high_predictor(&c->band[1], c->band[1].scale_factor *
+                              high_inv_quant[ihigh] >> 10, ihigh);
+        update_low_predictor(&c->band[0], ilow >> 2);
+        *dst++ = ihigh << 6 | ilow;
+    }
+    return i;
+}
+
+AVCodec adpcm_g722_encoder = {
+    .name           = "g722",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_ADPCM_G722,
+    .priv_data_size = sizeof(G722Context),
+    .init           = g722_init,
+    .encode         = g722_encode_frame,
+    .long_name      = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
+    .sample_fmts    = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+};
+#endif
 
