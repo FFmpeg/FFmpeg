@@ -489,6 +489,33 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
         }
     }
 
+    if (ap->time_base.num && ap->time_base.den) {
+        struct v4l2_streamparm streamparm = { 0 };
+        struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
+
+        av_log(s1, AV_LOG_DEBUG, "Setting time per frame to %d/%d\n",
+               ap->time_base.num, ap->time_base.den);
+        streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        tpf->numerator = ap->time_base.num;
+        tpf->denominator = ap->time_base.den;
+        if (ioctl(s->fd, VIDIOC_S_PARM, &streamparm) != 0) {
+            av_log(s1, AV_LOG_ERROR,
+                   "ioctl set time per frame(%d/%d) failed\n",
+                   ap->time_base.num, ap->time_base.den);
+            return AVERROR(EIO);
+        }
+
+        if (ap->time_base.den != tpf->denominator ||
+            ap->time_base.num != tpf->numerator) {
+            av_log(s1, AV_LOG_INFO,
+                   "The driver changed the time per frame from %d/%d to %d/%d\n",
+                   ap->time_base.num, ap->time_base.den,
+                   tpf->numerator, tpf->denominator);
+            ap->time_base.num = tpf->numerator;
+            ap->time_base.den = tpf->denominator;
+        }
+    }
+
     return 0;
 }
 
