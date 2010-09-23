@@ -391,7 +391,7 @@ struct AVFilterPad {
 
     /**
      * Frame poll callback. This returns the number of immediately available
-     * frames. It should return a positive value if the next request_frame()
+     * samples. It should return a positive value if the next request_frame()
      * is guaranteed to return one frame (with no delay).
      *
      * Defaults to just calling the source poll_frame() method.
