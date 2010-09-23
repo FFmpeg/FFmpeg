@@ -475,7 +475,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         dar[0].num= get_value(s->pb, value_type);
                     } else if(!strcmp(name, "AspectRatioY")){
                         dar[0].den= get_value(s->pb, value_type);
-                    } else get_tag(s, name, value_type, value_len);
+                    } else
+                        get_tag(s, name, value_type, value_len);
             }
         } else if (!guidcmp(&g, &ff_asf_metadata_header)) {
             int n, stream_num, name_len, value_len, value_type, value_num;
