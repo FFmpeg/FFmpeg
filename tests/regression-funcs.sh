@@ -41,8 +41,14 @@ mkdir -p "$datadir"
 mkdir -p "$outfile"
 mkdir -p "$logdir"
 
-[ "${V-0}" -gt 0 ] && echov=echo || echov=:
+(exec >&3) 2>/dev/null || exec 3>&2
+
+[ "${V-0}" -gt 0 ] && echov=echov || echov=:
 [ "${V-0}" -gt 1 ] || exec 2>$errfile
+
+echov(){
+    echo "$@" >&3
+}
 
 . $(dirname $0)/md5.sh
 
