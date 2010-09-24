@@ -3103,11 +3103,23 @@ static void show_usage(void)
 
 static void show_help(void)
 {
+    av_log_set_callback(log_callback_help);
     show_usage();
     show_help_options(options, "Main options:\n",
                       OPT_EXPERT, 0);
     show_help_options(options, "\nAdvanced options:\n",
                       OPT_EXPERT, OPT_EXPERT);
+    printf("\n");
+    av_opt_show2(avcodec_opts[0], NULL,
+                 AV_OPT_FLAG_DECODING_PARAM, 0);
+    printf("\n");
+    av_opt_show2(avformat_opts, NULL,
+                 AV_OPT_FLAG_DECODING_PARAM, 0);
+#if !CONFIG_AVFILTER
+    printf("\n");
+    av_opt_show2(sws_opts, NULL,
+                 AV_OPT_FLAG_ENCODING_PARAM, 0);
+#endif
     printf("\nWhile playing:\n"
            "q, ESC              quit\n"
            "f                   toggle full screen\n"
