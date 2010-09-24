@@ -1344,6 +1344,7 @@ static void do_exit(void)
     if (show_status)
         printf("\n");
     SDL_Quit();
+    av_log(NULL, AV_LOG_QUIET, "");
     exit(0);
 }
 
@@ -3151,6 +3152,8 @@ static void opt_input_file(const char *filename)
 int main(int argc, char **argv)
 {
     int flags, i;
+
+    av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
     /* register all codecs, demux and protocols */
     avcodec_register_all();

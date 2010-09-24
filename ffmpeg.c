@@ -502,6 +502,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
 
 static void term_exit(void)
 {
+    av_log(NULL, AV_LOG_QUIET, "");
 #if HAVE_TERMIOS_H
     tcsetattr (0, TCSANOW, &oldtty);
 #endif
@@ -4289,6 +4290,8 @@ int main(int argc, char **argv)
 {
     int i;
     int64_t ti;
+
+    av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
     avcodec_register_all();
 #if CONFIG_AVDEVICE
