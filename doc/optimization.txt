@@ -164,8 +164,55 @@ do{
         ...
 }while()
 
-Use __asm__() instead of intrinsics. The latter requires a good optimizing compiler
-which gcc is not.
+For x86, mark registers that are clobbered in your asm. This means both
+general x86 registers (e.g. eax) as well as XMM registers. This last one is
+particularly important on Win64, where xmm6-15 are callee-save, and not
+restoring their contents leads to undefined results. In external asm (e.g.
+yasm), you do this by using:
+cglobal functon_name, num_args, num_regs, num_xmm_regs
+In inline asm, you specify clobbered registers at the end of your asm:
+__asm__(".." ::: "%eax").
+
+Do not expect a compiler to maintain values in your registers between separate
+(inline) asm code blocks. It is not required to. For example, this is bad:
+__asm__("movdqa %0, %%xmm7" : src);
+/* do something */
+__asm__("movdqa %%xmm7, %1" : dst);
+- first of all, you're assuming that the compiler will not use xmm7 in
+   between the two asm blocks.  It probably won't when you test it, but it's
+   a poor assumption that will break at some point for some --cpu compiler flag
+- secondly, you didn't mark xmm7 as clobbered. If you did, the compiler would
+   have restored the original value of xmm7 after the first asm block, thus
+   rendering the combination of the two blocks of code invalid
+Code that depends on data in registries being untouched, should be written as
+a single __asm__() statement. Ideally, a single function contains only one
+__asm__() block.
+
+Use external asm (nasm/yasm) or inline asm (__asm__()), do not use intrinsics.
+The latter requires a good optimizing compiler which gcc is not.
+
+Inline asm vs. external asm
+---------------------------
+Both inline asm (__asm__("..") in a .c file, handled by a compiler such as gcc)
+and external asm (.s or .asm files, handled by an assembler such as yasm/nasm)
+are accepted in FFmpeg. Which one to use differs per specific case.
+
+- if your code is intended to be inlined in a C function, inline asm is always
+   better, because external asm cannot be inlined
+- if your code calls external functions, yasm is always better
+- if your code takes huge and complex structs as function arguments (e.g.
+   MpegEncContext; note that this is not ideal and is discouraged if there
+   are alternatives), then inline asm is always better, because predicting
+   member offsets in complex structs is almost impossible. It's safest to let
+   the compiler take care of that
+- in many cases, both can be used and it just depends on the preference of the
+   person writing the asm. For new asm, the choice is up to you. For existing
+   asm, you'll likely want to maintain whatever form it is currently in unless
+   there is a good reason to change it.
+- if, for some reason, you believe that a particular chunk of existing external
+   asm could be improved upon further if written in inline asm (or the other
+   way around), then please make the move from external asm <-> inline asm a
+   separate patch before your patches that actually improve the asm.
 
 
 Links:
