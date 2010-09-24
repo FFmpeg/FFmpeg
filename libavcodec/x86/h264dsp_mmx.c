@@ -24,7 +24,6 @@
 #include "dsputil_mmx.h"
 
 DECLARE_ALIGNED(8, static const uint64_t, ff_pb_3_1  ) = 0x0103010301030103ULL;
-DECLARE_ALIGNED(8, static const uint64_t, ff_pb_7_3  ) = 0x0307030703070307ULL;
 
 /***********************************/
 /* IDCT */
