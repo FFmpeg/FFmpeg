@@ -804,62 +804,53 @@ cglobal h264_idct_add16intra_sse2, 5, 7, 8
     jl .next2blocks
     REP_RET
 
-h264_idct_add8_sse2_plane:
-.next2blocks
-    movzx       r0, byte [scan8+r5]
-    movzx       r0, word [r4+r0]
+%macro add8_sse2_cycle 2
+    movzx       r0, word [r4+%2]
     test        r0, r0
-    jz .try_dc
+    jz .try%1dc
 %ifdef ARCH_X86_64
-    mov        r0d, dword [r1+r5*4]
+    mov        r0d, dword [r1+%1*8+64]
     add         r0, [r10]
 %else
-    mov         r0, r1m ; XXX r1m here is actually r0m of the calling func
+    mov         r0, r0m
     mov         r0, [r0]
-    add         r0, dword [r1+r5*4]
+    add         r0, dword [r1+%1*8+64]
 %endif
     call        x264_add8x4_idct_sse2
-    add         r5, 2
-    add         r2, 64
-    test        r5, 3
-    jnz .next2blocks
-    rep ret
-.try_dc
+    jmp .cycle%1end
+.try%1dc
     movsx       r0, word [r2   ]
     or         r0w, word [r2+32]
-    jz .skip2blocks
+    jz .cycle%1end
 %ifdef ARCH_X86_64
-    mov        r0d, dword [r1+r5*4]
+    mov        r0d, dword [r1+%1*8+64]
     add         r0, [r10]
 %else
-    mov         r0, r1m ; XXX r1m here is actually r0m of the calling func
+    mov         r0, r0m
     mov         r0, [r0]
-    add         r0, dword [r1+r5*4]
+    add         r0, dword [r1+%1*8+64]
 %endif
     call        h264_idct_dc_add8_mmx2
-.skip2blocks
-    add         r5, 2
+.cycle%1end
+%if %1 < 3
     add         r2, 64
-    test        r5, 3
-    jnz .next2blocks
-    rep ret
+%endif
+%endmacro
 
 ; ff_h264_idct_add8_sse2(uint8_t **dest, const int *block_offset,
 ;                        DCTELEM *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct_add8_sse2, 5, 7, 8
-    mov          r5, 16
     add          r2, 512
-%ifdef PIC
-    lea        r11, [scan8_mem]
-%endif
 %ifdef ARCH_X86_64
     mov         r10, r0
 %endif
-    call h264_idct_add8_sse2_plane
+    add8_sse2_cycle 0, 0x09
+    add8_sse2_cycle 1, 0x11
 %ifdef ARCH_X86_64
     add         r10, gprsize
 %else
     add        r0mp, gprsize
 %endif
-    call h264_idct_add8_sse2_plane
+    add8_sse2_cycle 2, 0x21
+    add8_sse2_cycle 3, 0x29
     RET
