@@ -113,7 +113,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     if(print_prefix && (flags & AV_LOG_SKIP_REPEATED) && !strcmp(line, prev)){
         count++;
         if(is_atty==1)
-        fprintf(stderr, "    Last message repeated %d times\r", count);
+            fprintf(stderr, "    Last message repeated %d times\r", count);
         return;
     }
     if(count>0){
