@@ -126,6 +126,17 @@ typedef struct {
     int64_t sample_count;
 } vorbis_enc_context;
 
+#define MAX_CHANNELS     2
+#define MAX_CODEBOOK_DIM 8
+
+#define MAX_FLOOR_CLASS_DIM  4
+#define NUM_FLOOR_PARTITIONS 8
+#define MAX_FLOOR_VALUES     (MAX_FLOOR_CLASS_DIM*NUM_FLOOR_PARTITIONS+2)
+
+#define RESIDUE_SIZE           1600
+#define RESIDUE_PART_SIZE      32
+#define NUM_RESIDUE_PARTITIONS (RESIDUE_SIZE/RESIDUE_PART_SIZE)
+
 static inline void put_codeword(PutBitContext *pb, vorbis_enc_codebook *cb,
                                 int entry)
 {
@@ -263,7 +274,7 @@ static void create_vorbis_context(vorbis_enc_context *venc,
 
     // just 1 floor
     fc = &venc->floors[0];
-    fc->partitions         = 8;
+    fc->partitions         = NUM_FLOOR_PARTITIONS;
     fc->partition_to_class = av_malloc(sizeof(int) * fc->partitions);
     fc->nclasses           = 0;
     for (i = 0; i < fc->partitions; i++) {
@@ -668,7 +679,7 @@ static void floor_fit(vorbis_enc_context *venc, vorbis_enc_floor *fc,
     int range = 255 / fc->multiplier + 1;
     int i;
     float tot_average = 0.;
-    float averages[fc->values];
+    float averages[MAX_FLOOR_VALUES];
     for (i = 0; i < fc->values; i++) {
         averages[i] = get_floor_average(fc, coeffs, i);
         tot_average += averages[i];
@@ -699,7 +710,7 @@ static void floor_encode(vorbis_enc_context *venc, vorbis_enc_floor *fc,
                          float *floor, int samples)
 {
     int range = 255 / fc->multiplier + 1;
-    int coded[fc->values]; // first 2 values are unused
+    int coded[MAX_FLOOR_VALUES]; // first 2 values are unused
     int i, counter;
 
     put_bits(pb, 1, 1); // non zero
@@ -807,7 +818,7 @@ static void residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
     int psize      = rc->partition_size;
     int partitions = (rc->end - rc->begin) / psize;
     int channels   = (rc->type == 2) ? 1 : real_ch;
-    int classes[channels][partitions];
+    int classes[MAX_CHANNELS][NUM_RESIDUE_PARTITIONS];
     int classwords = venc->codebooks[rc->classbook].ndimentions;
 
     assert(rc->type == 2);
@@ -864,7 +875,7 @@ static void residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
                         s  = real_ch * samples;
                         for (k = 0; k < psize; k += book->ndimentions) {
                             int dim, a2 = a1, b2 = b1;
-                            float vec[book->ndimentions], *pv = vec;
+                            float vec[MAX_CODEBOOK_DIM], *pv = vec;
                             for (dim = book->ndimentions; dim--; ) {
                                 *pv++ = coeffs[a2 + b2];
                                 if ((a2 += samples) == s) {
@@ -999,7 +1010,7 @@ static int vorbis_encode_frame(AVCodecContext *avccontext,
 
     for (i = 0; i < venc->channels; i++) {
         vorbis_enc_floor *fc = &venc->floors[mapping->floor[mapping->mux[i]]];
-        uint_fast16_t posts[fc->values];
+        uint_fast16_t posts[MAX_FLOOR_VALUES];
         floor_fit(venc, fc, &venc->coeffs[i * samples], posts, samples);
         floor_encode(venc, fc, &pb, posts, &venc->floor[i * samples], samples);
     }
