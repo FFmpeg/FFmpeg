@@ -197,7 +197,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
 AVFilter avfilter_vf_scale = {
     .name      = "scale",
-    .description = "Scale the input video to width:height size and/or convert the image format.",
+    .description = NULL_IF_CONFIG_SMALL("Scale the input video to width:height size and/or convert the image format."),
 
     .init      = init,
     .uninit    = uninit,

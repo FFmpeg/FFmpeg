@@ -94,7 +94,7 @@ static int query_formats_format(AVFilterContext *ctx)
 
 AVFilter avfilter_vf_format = {
     .name      = "format",
-    .description = "Convert the input video to one of the specified pixel formats.",
+    .description = NULL_IF_CONFIG_SMALL("Convert the input video to one of the specified pixel formats."),
 
     .init      = init,
 
@@ -124,7 +124,7 @@ static int query_formats_noformat(AVFilterContext *ctx)
 
 AVFilter avfilter_vf_noformat = {
     .name      = "noformat",
-    .description = "Force libavfilter not to use any of the specified pixel formats for the input to the next filter.",
+    .description = NULL_IF_CONFIG_SMALL("Force libavfilter not to use any of the specified pixel formats for the input to the next filter."),
 
     .init      = init,
 

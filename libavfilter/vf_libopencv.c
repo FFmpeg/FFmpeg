@@ -134,7 +134,7 @@ static void smooth_end_frame(AVFilterLink *inlink)
 
 AVFilter avfilter_vf_ocv_smooth = {
     .name        = "ocv_smooth",
-    .description = "Apply smooth transform using libopencv.",
+    .description = NULL_IF_CONFIG_SMALL("Apply smooth transform using libopencv."),
 
     .priv_size = sizeof(SmoothContext),
 

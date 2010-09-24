@@ -64,7 +64,7 @@ static int request_frame(AVFilterLink *link)
 
 AVFilter avfilter_vsrc_nullsrc = {
     .name        = "nullsrc",
-    .description = "Null video source, never return images.",
+    .description = NULL_IF_CONFIG_SMALL("Null video source, never return images."),
 
     .init       = init,
     .priv_size = sizeof(NullContext),

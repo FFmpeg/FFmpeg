@@ -109,7 +109,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 
 AVFilter avfilter_vf_pixdesctest = {
     .name        = "pixdesctest",
-    .description = "Test pixel format definitions.",
+    .description = NULL_IF_CONFIG_SMALL("Test pixel format definitions."),
 
     .priv_size = sizeof(PixdescTestContext),
     .uninit    = uninit,

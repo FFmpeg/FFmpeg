@@ -28,7 +28,7 @@ static void end_frame(AVFilterLink *link)
 
 AVFilter avfilter_vsink_nullsink = {
     .name        = "nullsink",
-    .description = "Do absolutely nothing with the input video.",
+    .description = NULL_IF_CONFIG_SMALL("Do absolutely nothing with the input video."),
 
     .priv_size = 0,
 
