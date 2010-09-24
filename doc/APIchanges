@@ -13,6 +13,11 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-09-24 - r25174 - lavu 50.28.0 - av_log_set_flags()
+  Default of av_log() changed due to many problems to the old no repeat
+  detection. Read the docs of AV_LOG_SKIP_REPEATED in log.h before
+  enabling it for your app!.
+
 2010-09-24 - r25167 - lavc 52.90.0 - av_opt_show2()
   Deprecate av_opt_show() in favor or av_opt_show2().
 

@@ -135,4 +135,15 @@ void av_log_set_callback(void (*)(void*, int, const char*, va_list));
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl);
 const char* av_default_item_name(void* ctx);
 
+/**
+ * Skip repeated messages, this requires the user app to use av_log() instead of
+ * (f)printf as the 2 would otherwise interfere and lead to
+ * "Last message repeated x times" messages below (f)printf messages with some
+ * bad luck.
+ * Also to receive the last, "last repeated" line if any, the user app must
+ * call av_log(NULL, AV_LOG_QUIET, ""); at the end
+ */
+#define AV_LOG_SKIP_REPEATED 1
+void av_log_set_flags(int arg);
+
 #endif /* AVUTIL_LOG_H */
