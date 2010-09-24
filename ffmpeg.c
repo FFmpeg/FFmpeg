@@ -93,7 +93,9 @@ typedef struct AVStreamMap {
     int sync_stream_index;
 } AVStreamMap;
 
-/** select an input file for an output file */
+/**
+ * select an input file for an output file
+ */
 typedef struct AVMetaDataMap {
     int out_file;
     int in_file;
