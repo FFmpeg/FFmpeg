@@ -13,6 +13,12 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-09-24 - r25167 - lavc 52.90.0 - av_opt_show2()
+  Deprecate av_opt_show() in favor or av_opt_show2().
+
+2010-09-14 - r25120 - lavu 50.27.0 - av_popcount()
+  Add av_popcount() to libavutil/common.h.
+
 2010-09-08 - r25076 - lavu 50.26.0 - av_get_cpu_flags()
   Add av_get_cpu_flags().
 
