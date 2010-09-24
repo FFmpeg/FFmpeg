@@ -198,12 +198,12 @@ int opt_default(const char *opt, const char *arg){
     const AVOption *o= NULL;
     int opt_types[]={AV_OPT_FLAG_VIDEO_PARAM, AV_OPT_FLAG_AUDIO_PARAM, 0, AV_OPT_FLAG_SUBTITLE_PARAM, 0};
 
-    for(type=0; type<AVMEDIA_TYPE_NB && ret>= 0; type++){
+    for(type=0; *avcodec_opts && type<AVMEDIA_TYPE_NB && ret>= 0; type++){
         const AVOption *o2 = av_find_opt(avcodec_opts[0], opt, NULL, opt_types[type], opt_types[type]);
         if(o2)
             ret = av_set_string3(avcodec_opts[type], opt, arg, 1, &o);
     }
-    if(!o)
+    if(!o && avformat_opts)
         ret = av_set_string3(avformat_opts, opt, arg, 1, &o);
     if(!o && sws_opts)
         ret = av_set_string3(sws_opts, opt, arg, 1, &o);
