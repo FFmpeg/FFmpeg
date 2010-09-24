@@ -3905,11 +3905,11 @@ static void show_help(void)
                       OPT_GRAB,
                       OPT_GRAB);
     printf("\n");
-    av_opt_show(avcodec_opts[0], NULL);
+    av_opt_show2(avcodec_opts[0], NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
     printf("\n");
-    av_opt_show(avformat_opts, NULL);
+    av_opt_show2(avformat_opts, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
     printf("\n");
-    av_opt_show(sws_opts, NULL);
+    av_opt_show2(sws_opts, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
 }
 
 static void opt_target(const char *arg)

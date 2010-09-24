@@ -204,7 +204,25 @@ AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
 int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
 const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len);
 const AVOption *av_next_option(void *obj, const AVOption *last);
-int av_opt_show(void *obj, void *av_log_obj);
+
+#if FF_API_OPT_SHOW
+/**
+ * @deprecated Use av_opt_show2() instead.
+ */
+attribute_deprecated int av_opt_show(void *obj, void *av_log_obj);
+#endif
+
+/**
+ * Show the obj options.
+ *
+ * @param req_flags requested flags for the options to show. Show only the
+ * options for which it is opt->flags & req_flags.
+ * @param rej_flags rejected flags for the options to show. Show only the
+ * options for which it is !(opt->flags & req_flags).
+ * @param av_log_obj log context to use for showing the options
+ */
+int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags);
+
 void av_opt_set_defaults(void *s);
 void av_opt_set_defaults2(void *s, int mask, int flags);
 

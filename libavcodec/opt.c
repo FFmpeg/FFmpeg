@@ -319,12 +319,13 @@ int64_t av_get_int(void *obj, const char *name, const AVOption **o_out){
     return num*intnum/den;
 }
 
-static void opt_list(void *obj, void *av_log_obj, const char *unit)
+static void opt_list(void *obj, void *av_log_obj, const char *unit,
+                     int req_flags, int rej_flags)
 {
     const AVOption *opt=NULL;
 
     while((opt= av_next_option(obj, opt))){
-        if(!(opt->flags & (AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM)))
+        if (!(opt->flags & req_flags) || (opt->flags & rej_flags))
             continue;
 
         /* Don't print CONST's on level one.
@@ -383,21 +384,29 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit)
             av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);
         av_log(av_log_obj, AV_LOG_INFO, "\n");
         if (opt->unit && opt->type != FF_OPT_TYPE_CONST) {
-            opt_list(obj, av_log_obj, opt->unit);
+            opt_list(obj, av_log_obj, opt->unit, req_flags, rej_flags);
         }
     }
 }
 
-int av_opt_show(void *obj, void *av_log_obj){
+int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags)
+{
     if(!obj)
         return -1;
 
     av_log(av_log_obj, AV_LOG_INFO, "%s AVOptions:\n", (*(AVClass**)obj)->class_name);
 
-    opt_list(obj, av_log_obj, NULL);
+    opt_list(obj, av_log_obj, NULL, req_flags, rej_flags);
 
     return 0;
 }
+
+#if FF_API_OPT_SHOW
+int av_opt_show(void *obj, void *av_log_obj){
+    return av_opt_show2(obj, av_log_obj,
+                        AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
+}
+#endif
 
 /** Set the values of the AVCodecContext or AVFormatContext structure.
  * They are set to the defaults specified in the according AVOption options
