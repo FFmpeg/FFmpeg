@@ -81,6 +81,56 @@ The following command:
 
 will convert the input video to the format "yuv420p".
 
+@section frei0r
+
+Apply a frei0r effect to the input video.
+
+To enable compilation of this filter you need to install the frei0r
+header and configure FFmpeg with --enable-frei0r.
+
+The filter supports the syntax:
+@example
+@var{filter_name}:@var{param1}:@var{param2}:...:@var{paramN}
+@end example
+
+@var{filter_name} is the name to the frei0r effect to load. If the
+environment variable @env{FREI0R_PATH} is defined, the frei0r effect
+is searched in each one of the directories specified by the colon
+separated list in @env{FREIOR_PATH}, otherwise in the standard frei0r
+paths, which are in this order: @file{HOME/.frei0r-1/lib/},
+@file{/usr/local/lib/frei0r-1/}, @file{/usr/lib/frei0r-1/}.
+
+@var{param1}, @var{param2}, ... , @var{paramN} specify the parameters
+for the frei0r effect.
+
+A frei0r effect parameter can be a boolean (whose values are specified
+with "y" and "n"), a double, a color (specified by the syntax
+@var{R}/@var{G}/@var{B}, @var{R}, @var{G}, and @var{B} being float
+numbers from 0.0 to 1.0) or by an @code{av_parse_color()} color
+description), a position (specified by the syntax @var{X}/@var{Y},
+@var{X} and @var{Y} being float numbers) and a string.
+
+The number and kind of parameters depend on the loaded effect. If an
+effect parameter is not specified the default value is set.
+
+Some examples follow:
+@example
+# apply the distort0r effect, set the first two double parameters
+frei0r=distort0r:0.5:0.01
+
+# apply the colordistance effect, takes a color as first parameter
+frei0r=colordistance:0.2/0.3/0.4
+frei0r=colordistance:violet
+frei0r=colordistance:0x112233
+
+# apply the perspective effect, specify the top left and top right
+# image positions
+frei0r=perspective:0.2/0.2:0.8/0.2
+@end example
+
+For more information see:
+@url{http://piksel.org/frei0r}
+
 @section hflip
 
 Flip the input video horizontally.

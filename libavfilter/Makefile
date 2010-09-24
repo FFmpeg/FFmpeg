@@ -20,6 +20,7 @@ OBJS-$(CONFIG_ASPECT_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_CROP_FILTER)                   += vf_crop.o
 OBJS-$(CONFIG_FIFO_FILTER)                   += vf_fifo.o
 OBJS-$(CONFIG_FORMAT_FILTER)                 += vf_format.o
+OBJS-$(CONFIG_FREI0R_FILTER)                 += vf_frei0r.o
 OBJS-$(CONFIG_HFLIP_FILTER)                  += vf_hflip.o
 OBJS-$(CONFIG_NOFORMAT_FILTER)               += vf_format.o
 OBJS-$(CONFIG_NULL_FILTER)                   += vf_null.o

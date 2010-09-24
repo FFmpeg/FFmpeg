@@ -36,6 +36,7 @@ version <next>:
 - G.722 ADPCM audio encoder/decoder
 - R10k video decoder
 - ocv_smooth filter
+- frei0r wrapper filter
 
 
 version 0.6:

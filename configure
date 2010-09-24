@@ -162,6 +162,7 @@ Configuration options:
 External library support:
   --enable-avisynth        enable reading of AVISynth script files [no]
   --enable-bzlib           enable bzlib [autodetect]
+  --enable-frei0r          enable frei0r video filtering
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
@@ -873,6 +874,7 @@ CONFIG_LIST="
     ffprobe
     ffserver
     fft
+    frei0r
     golomb
     gpl
     gray
@@ -1050,6 +1052,7 @@ HAVE_LIST="
     poll_h
     setrlimit
     strerror_r
+    strtok_r
     struct_addrinfo
     struct_ipv6_mreq
     struct_sockaddr_in6
@@ -1382,6 +1385,9 @@ vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
 x11_grab_device_indev_deps="x11grab XShmCreateImage"
 x11_grab_device_indev_extralibs="-lX11 -lXext -lXfixes"
+
+# filters
+frei0r_filter_deps="frei0r dlopen strtok_r"
 
 # protocols
 gopher_protocol_deps="network"
@@ -2647,6 +2653,7 @@ check_func  mkstemp
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func  setrlimit
 check_func  strerror_r
+check_func  strtok_r
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
@@ -2720,6 +2727,7 @@ check_mathfunc truncf
 
 # these are off by default, so fail if requested and not available
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
+enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled libdirac   && add_cflags $(pkg-config --cflags dirac) &&
                       require  libdirac libdirac_decoder/dirac_parser.h dirac_decoder_init $(pkg-config --libs dirac) &&
                       require  libdirac libdirac_encoder/dirac_encoder.h dirac_encoder_init $(pkg-config --libs dirac)
@@ -3012,6 +3020,7 @@ echo "threading support         ${thread_type-no}"
 echo "SDL support               ${sdl-no}"
 echo "Sun medialib support      ${mlib-no}"
 echo "AVISynth enabled          ${avisynth-no}"
+echo "frei0r enabled            ${frei0r-no}"
 echo "libdc1394 support         ${libdc1394-no}"
 echo "libdirac enabled          ${libdirac-no}"
 echo "libfaac enabled           ${libfaac-no}"
