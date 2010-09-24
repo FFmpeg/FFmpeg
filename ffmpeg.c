@@ -432,9 +432,9 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     last_filter = ist->input_video_filter;
 
     if (ost->video_crop) {
-        snprintf(args, 255, "%d:%d:%d:%d", ost->leftBand, ost->topBand,
-                 codec->width,
-                 codec->height);
+        snprintf(args, 255, "%d:%d:%d:%d",
+                 codec->width, codec->height,
+                 ost->leftBand, ost->topBand);
         if ((ret = avfilter_open(&filter, avfilter_get_by_name("crop"), NULL)) < 0)
             return ret;
         if ((ret = avfilter_init_filter(filter, args, NULL)) < 0)

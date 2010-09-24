@@ -73,7 +73,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     CropContext *crop = ctx->priv;
 
     if (args)
-        sscanf(args, "%d:%d:%d:%d", &crop->x, &crop->y, &crop->w, &crop->h);
+        sscanf(args, "%d:%d:%d:%d", &crop->w, &crop->h, &crop->x, &crop->y);
 
     return 0;
 }
@@ -96,8 +96,8 @@ static int config_input(AVFilterLink *link)
     crop->x &= ~((1 << crop->hsub) - 1);
     crop->y &= ~((1 << crop->vsub) - 1);
 
-    av_log(link->dst, AV_LOG_INFO, "x:%d y:%d w:%d h:%d\n",
-           crop->x, crop->y, crop->w, crop->h);
+    av_log(link->dst, AV_LOG_INFO, "w:%d h:%d x:%d y:%d\n",
+           crop->w, crop->h, crop->x, crop->y);
 
     if (crop->x <  0 || crop->y <  0                    ||
         crop->w <= 0 || crop->h <= 0                    ||
@@ -172,7 +172,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
 AVFilter avfilter_vf_crop = {
     .name      = "crop",
-    .description = NULL_IF_CONFIG_SMALL("Crop the input video to x:y:width:height."),
+    .description = NULL_IF_CONFIG_SMALL("Crop the input video to width:height:x:y."),
 
     .priv_size = sizeof(CropContext),
 

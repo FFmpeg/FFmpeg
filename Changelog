@@ -37,6 +37,7 @@ version <next>:
 - R10k video decoder
 - ocv_smooth filter
 - frei0r wrapper filter
+- change crop filter syntax to width:height:x:y
 
 
 version 0.6:

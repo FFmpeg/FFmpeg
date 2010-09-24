@@ -26,16 +26,11 @@ Below is a description of the currently available video filters.
 
 @section crop
 
-Crop the input video to @var{x}:@var{y}:@var{width}:@var{height}.
+Crop the input video to @var{width}:@var{height}:@var{x}:@var{y}.
 
 @example
-./ffmpeg -i in.avi -vf "crop=0:0:0:240" out.avi
+./ffmpeg -i in.avi -vf "crop=0:240:0:0" out.avi
 @end example
-
-@var{x} and @var{y} specify the position of the top-left corner of the
-output (non-cropped) area.
-
-The default value of @var{x} and @var{y} is 0.
 
 The @var{width} and @var{height} parameters specify the width and height
 of the output (non-cropped) area.
@@ -43,10 +38,15 @@ of the output (non-cropped) area.
 A value of 0 is interpreted as the maximum possible size contained in
 the area delimited by the top-left corner at position x:y.
 
+@var{x} and @var{y} specify the position of the top-left corner of the
+output (non-cropped) area.
+
+The default value of @var{x} and @var{y} is 0.
+
 For example the parameters:
 
 @example
-"crop=100:100:0:0"
+"crop=0:0:100:100"
 @end example
 
 will delimit the rectangle with the top-left corner placed at position
