@@ -759,50 +759,50 @@ cglobal h264_idct_add16_sse2, 5, 5, 8
     add16_sse2_cycle 7, 0x26
     RET
 
-; ff_h264_idct_add16intra_sse2(uint8_t *dst, const int *block_offset,
-;                              DCTELEM *block, int stride, const uint8_t nnzc[6*8])
-cglobal h264_idct_add16intra_sse2, 5, 7, 8
-    xor         r5, r5
-%ifdef ARCH_X86_64
-    mov        r10, r0
-%endif
-%ifdef PIC
-    lea        r11, [scan8_mem]
-%endif
-.next2blocks
-    movzx       r0, byte [scan8+r5]
-    movzx       r0, word [r4+r0]
+%macro add16intra_sse2_cycle 2
+    movzx       r0, word [r4+%2]
     test        r0, r0
-    jz .try_dc
-    mov        r0d, dword [r1+r5*4]
+    jz .try%1dc
+    mov        r0d, dword [r1+%1*8]
 %ifdef ARCH_X86_64
     add         r0, r10
 %else
     add         r0, r0m
 %endif
     call        x264_add8x4_idct_sse2
-    add         r5, 2
-    add         r2, 64
-    cmp         r5, 16
-    jl .next2blocks
-    REP_RET
-.try_dc
+    jmp .cycle%1end
+.try%1dc
     movsx       r0, word [r2   ]
     or         r0w, word [r2+32]
-    jz .skip2blocks
-    mov        r0d, dword [r1+r5*4]
+    jz .cycle%1end
+    mov        r0d, dword [r1+%1*8]
 %ifdef ARCH_X86_64
     add         r0, r10
 %else
     add         r0, r0m
 %endif
     call        h264_idct_dc_add8_mmx2
-.skip2blocks
-    add         r5, 2
+.cycle%1end
+%if %1 < 7
     add         r2, 64
-    cmp         r5, 16
-    jl .next2blocks
-    REP_RET
+%endif
+%endmacro
+
+; ff_h264_idct_add16intra_sse2(uint8_t *dst, const int *block_offset,
+;                              DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+cglobal h264_idct_add16intra_sse2, 5, 7, 8
+%ifdef ARCH_X86_64
+    mov        r10, r0
+%endif
+    add16intra_sse2_cycle 0, 0xc
+    add16intra_sse2_cycle 1, 0x14
+    add16intra_sse2_cycle 2, 0xe
+    add16intra_sse2_cycle 3, 0x16
+    add16intra_sse2_cycle 4, 0x1c
+    add16intra_sse2_cycle 5, 0x24
+    add16intra_sse2_cycle 6, 0x1e
+    add16intra_sse2_cycle 7, 0x26
+    RET
 
 %macro add8_sse2_cycle 2
     movzx       r0, word [r4+%2]
