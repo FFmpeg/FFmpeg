@@ -3076,6 +3076,7 @@ if enabled source_path_used; then
         libavcore
         libavdevice
         libavfilter
+        libavfilter/$arch
         libavformat
         libavutil
         libavutil/$arch
