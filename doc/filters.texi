@@ -26,34 +26,101 @@ Below is a description of the currently available video filters.
 
 @section crop
 
-Crop the input video to @var{width}:@var{height}:@var{x}:@var{y}.
+Crop the input video to @var{out_w}:@var{out_h}:@var{x}:@var{y}.
 
+The parameters are expressions containing the following constants:
+
+@table @option
+@item E, PI, PHI
+the corresponding mathematical approximated values for e
+(euler number), pi (greek PI), PHI (golden ratio)
+
+@item x, y
+the computed values for @var{x} and @var{y}. They are evaluated for
+each new frame.
+
+@item in_w, in_h
+the input width and heigth
+
+@item iw, ih
+same as @var{in_w} and @var{in_h}
+
+@item out_w, out_h
+the output (cropped) width and heigth
+
+@item ow, oh
+same as @var{out_w} and @var{out_h}
+
+@item n
+the number of input frame, starting from 0
+
+@item pos
+the position in the file of the input frame, NAN if unknown
+
+@item t
+timestamp expressed in seconds, NAN if the input timestamp is unknown
+
+@end table
+
+The @var{out_w} and @var{out_h} parameters specify the expressions for
+the width and height of the output (cropped) video. They are
+evaluated just at the configuration of the filter.
+
+The default value of @var{out_w} is "in_w", and the default value of
+@var{out_h} is "in_h".
+
+The expression for @var{out_w} may depend on the value of @var{out_h},
+and the expression for @var{out_h} may depend on @var{out_w}, but they
+cannot depend on @var{x} and @var{y}, as @var{x} and @var{y} are
+evaluated after @var{out_w} and @var{out_h}.
+
+The @var{x} and @var{y} parameters specify the expressions for the
+position of the top-left corner of the output (non-cropped) area. They
+are evaluated for each frame. If the evaluated value is not valid, it
+is approximated to the nearest valid value.
+
+The default value of @var{x} is "(in_w-out_w)/2", and the default
+value for @var{y} is "(in_h-out_h)/2", which set the cropped area at
+the center of the input image.
+
+The expression for @var{x} may depend on @var{y}, and the expression
+for @var{y} may depend on @var{x}.
+
+Follow some examples:
 @example
-./ffmpeg -i in.avi -vf "crop=0:240:0:0" out.avi
+# crop the central input area with size 100x100
+crop=100:100
+
+# crop the central input area with size 2/3 of the input video
+"crop=2/3*in_w:2/3*in_h"
+
+# crop the input video central square
+crop=in_h
+
+# delimit the rectangle with the top-left corner placed at position
+# 100:100 and the right-bottom corner corresponding to the right-bottom
+# corner of the input image.
+crop=in_w-100:in_h-100:100:100
+
+# crop 10 pixels from the lefth and right borders, and 20 pixels from
+# the top and bottom borders
+"crop=in_w-2*10:in_h-2*20"
+
+# keep only the bottom right quarter of the input image
+"crop=in_w/2:in_h/2:in_w/2:in_h/2"
+
+# crop height for getting Greek harmony
+"crop=in_w:1/PHI*in_w"
+
+# trembling effect
+"crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(n/10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(n/7)"
+
+# erratic camera effect depending on timestamp and position
+"crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(t*10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(t*13)"
+
+# set x depending on the value of y
+"crop=in_w/2:in_h/2:y:10+10*sin(n/10)"
 @end example
-
-The @var{width} and @var{height} parameters specify the width and height
-of the output (non-cropped) area.
-
-A value of 0 is interpreted as the maximum possible size contained in
-the area delimited by the top-left corner at position x:y.
-
-@var{x} and @var{y} specify the position of the top-left corner of the
-output (non-cropped) area.
-
-The default value of @var{x} and @var{y} is 0.
-
-For example the parameters:
-
-@example
-"crop=0:0:100:100"
-@end example
-
-will delimit the rectangle with the top-left corner placed at position
-100:100 and the right-bottom corner corresponding to the right-bottom
-corner of the input image.
-
-The default value of @var{width} and @var{height} is 0.
 
 @section fifo
 
