@@ -16,6 +16,8 @@ OBJS = allfilters.o                                                     \
 
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 
+OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
+
 OBJS-$(CONFIG_ASPECT_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_CROP_FILTER)                   += vf_crop.o
 OBJS-$(CONFIG_FIFO_FILTER)                   += vf_fifo.o

@@ -14,6 +14,40 @@ Pass the audio source unchanged to the output.
 
 @c man end AUDIO FILTERS
 
+@chapter Audio Sources
+@c man begin AUDIO SOURCES
+
+Below is a description of the currently available audio sources.
+
+@section anullsrc
+
+Null audio source, never return audio frames. It is mainly useful as a
+template and to be employed in analysis / debugging tools.
+
+It accepts as optional parameter a string of the form
+@var{sample_rate}:@var{channel_layout}.
+
+@var{sample_rate} specify the sample rate, and defaults to 44100.
+
+@var{channel_layout} specify the channel layout, and can be either an
+integer or a string representing a channel layout. The default value
+of @var{channel_layout} is 3, which corresponds to CH_LAYOUT_STEREO.
+
+Check the channel_layout_map definition in
+@file{libavcodec/audioconvert.c} for the correspondance between string
+and channel layout values.
+
+Follow some examples:
+@example
+#  set the sample rate to 48000 Hz and the channel layout to CH_LAYOUT_MONO.
+anullsrc=48000:4
+
+# same as
+anullsrc=48000:mono
+@end example
+
+@c man end AUDIO SOURCES
+
 @chapter Video Filters
 @c man begin VIDEO FILTERS
 
