@@ -46,4 +46,6 @@ OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
+DIRS = x86
+
 include $(SUBDIR)../subdir.mak
