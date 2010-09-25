@@ -225,4 +225,47 @@ Trasmission Control Protocol.
 
 User Datagram Protocol.
 
+The required syntax for a UDP url is:
+@example
+udp://@var{hostname}:@var{port}[?@var{options}]
+@end example
+
+@var{options} contains a list of &-seperated options of the form @var{key}=@var{val}.
+Follow the list of supported options.
+
+@table @option
+
+@item buffer_size=@var{size}
+set the UDP buffer size in bytes
+
+@item localport=@var{port}
+override the local UDP port to bind with
+
+@item pkt_size=@var{size}
+set the size in bytes of UDP packets
+
+@item reuse=@var{1|0}
+explicitly allow or disallow reusing UDP sockets
+
+@item ttl=@var{ttl}
+set the time to live value (for multicast only)
+@end table
+
+Some usage examples of the udp protocol with @file{ffmpeg} follow.
+
+To stream over UDP to a remote endpoint:
+@example
+ffmpeg -i @var{input} -f @var{format} udp://@var{hostname}:@var{port}
+@end example
+
+To stream in mpegts format over UDP using 188 sized UDP packets, using a large input buffer:
+@example
+ffmpeg -i @var{input} -f mpegts udp://@var{hostname}:@var{port}?pkt_size=188&buffer_size=65535
+@end example
+
+To receive over UDP from a remote endpoint:
+@example
+ffmpeg -i udp://[@var{multicast-address}]:@var{port}
+@end example
+
 @c man end PROTOCOLS
