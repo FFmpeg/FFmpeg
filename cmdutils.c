@@ -230,7 +230,7 @@ int opt_default(const char *opt, const char *arg){
     opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
     opt_names[opt_name_count++]= o->name;
 
-    if(avcodec_opts[0]->debug || avformat_opts->debug)
+    if ((*avcodec_opts && avcodec_opts[0]->debug) || (avformat_opts && avformat_opts->debug))
         av_log_set_level(AV_LOG_DEBUG);
     return 0;
 }
