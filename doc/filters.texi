@@ -48,6 +48,19 @@ anullsrc=48000:mono
 
 @c man end AUDIO SOURCES
 
+@chapter Audio Sinks
+@c man begin AUDIO SINKS
+
+Below is a description of the currently available audio sinks.
+
+@section anullsink
+
+Null audio sink, do absolutely nothing with the input audio. It is
+mainly useful as a template and to be employed in analysis / debugging
+tools.
+
+@c man end AUDIO SINKS
+
 @chapter Video Filters
 @c man begin VIDEO FILTERS
 
