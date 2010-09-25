@@ -1402,6 +1402,7 @@ udp_protocol_deps="network"
 
 # filters
 ocv_smooth_filter_deps="libopencv"
+yadif_filter_deps="gpl"
 
 # libraries
 avdevice_deps="avcodec avformat"

@@ -448,6 +448,36 @@ Flip the input video vertically.
 ./ffmpeg -i in.avi -vf "vflip" out.avi
 @end example
 
+@section yadif
+
+yadif is "yet another deinterlacing filter".
+
+It accepts the syntax:
+@example
+yadif=[@var{mode}[:@var{parity}]]
+@end example
+
+@table @option
+
+@item mode
+Specify the interlacing mode to adopt, accepts one of the following values.
+
+0: Output 1 frame for each frame.
+
+1: Output 1 frame for each field.
+
+2: Like 0 but skips spatial interlacing check.
+
+3: Like 1 but skips spatial interlacing check.
+
+Default value is 0.
+
+@item parity
+0 if is bottom field first, 1 if the interlaced video is top field
+first, -1 to enable automatic detection.
+
+@end table
+
 @c man end VIDEO FILTERS
 
 @chapter Video Sources
