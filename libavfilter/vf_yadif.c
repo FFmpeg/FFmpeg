@@ -167,7 +167,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w,
 static void return_frame(AVFilterContext *ctx, int is_second){
     YADIFContext *yadif = ctx->priv;
     AVFilterLink *link= ctx->outputs[0];
-    int tff = yadif->parity == -1 ? yadif->cur->video->top_field_first : yadif->parity;
+    int tff = yadif->parity == -1 ? yadif->cur->video->top_field_first : (yadif->parity^1);
 
     if(is_second)
         yadif->out = avfilter_get_video_buffer(link, AV_PERM_WRITE | AV_PERM_PRESERVE |
