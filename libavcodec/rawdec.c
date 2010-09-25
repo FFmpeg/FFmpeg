@@ -25,8 +25,10 @@
  */
 
 #include "avcodec.h"
+#include "imgconvert.h"
 #include "raw.h"
 #include "libavutil/intreadwrite.h"
+#include "libavcore/imgutils.h"
 
 typedef struct RawVideoContext {
     uint32_t palette[AVPALETTE_COUNT];
@@ -81,6 +83,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     else if (avctx->pix_fmt == PIX_FMT_NONE && avctx->bits_per_coded_sample)
         avctx->pix_fmt = find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
 
+    ff_set_systematic_pal(context->palette, avctx->pix_fmt);
     context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     if((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
        avctx->pix_fmt==PIX_FMT_PAL8 &&
@@ -148,7 +151,9 @@ static int raw_decode(AVCodecContext *avctx,
         return -1;
 
     avpicture_fill(picture, buf, avctx->pix_fmt, avctx->width, avctx->height);
-    if(avctx->pix_fmt==PIX_FMT_PAL8 && buf_size < context->length){
+    if((avctx->pix_fmt==PIX_FMT_PAL8 && buf_size < context->length) ||
+       (avctx->pix_fmt!=PIX_FMT_PAL8 &&
+        (av_pix_fmt_descriptors[avctx->pix_fmt].flags & PIX_FMT_PAL))){
         frame->data[1]= context->palette;
     }
     if (avctx->palctrl && avctx->palctrl->palette_changed) {
