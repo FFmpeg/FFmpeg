@@ -40,6 +40,7 @@ version <next>:
 - change crop filter syntax to width:height:x:y
 - make the crop filter accept parametric expressions
 - make ffprobe accept AVFormatContext options
+- yadif filter
 
 
 version 0.6:
