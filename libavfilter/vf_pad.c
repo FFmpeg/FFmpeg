@@ -456,7 +456,7 @@ AVFilter avfilter_vsrc_color = {
     .inputs    = (AVFilterPad[]) {{ .name = NULL}},
 
     .outputs   = (AVFilterPad[]) {{ .name            = "default",
-                                    .type            = CODEC_TYPE_VIDEO,
+                                    .type            = AVMEDIA_TYPE_VIDEO,
                                     .request_frame   = color_request_frame,
                                     .config_props    = color_config_props },
                                   { .name = NULL}},

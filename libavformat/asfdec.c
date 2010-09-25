@@ -639,7 +639,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_reduce(&st->sample_aspect_ratio.num,
                           &st->sample_aspect_ratio.den,
                           dar[i].num, dar[i].den, INT_MAX);
-            } else if ((dar[0].num > 0) && (dar[0].den > 0) && (st->codec->codec_type==CODEC_TYPE_VIDEO)) // Use ASF container value if the stream doesn't AR set.
+            } else if ((dar[0].num > 0) && (dar[0].den > 0) && (st->codec->codec_type==AVMEDIA_TYPE_VIDEO)) // Use ASF container value if the stream doesn't AR set.
                 av_reduce(&st->sample_aspect_ratio.num,
                           &st->sample_aspect_ratio.den,
                           dar[0].num, dar[0].den, INT_MAX);

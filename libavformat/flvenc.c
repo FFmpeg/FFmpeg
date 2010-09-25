@@ -337,7 +337,7 @@ static int flv_write_trailer(AVFormatContext *s)
     /* Add EOS tag */
     for (i = 0; i < s->nb_streams; i++) {
         AVCodecContext *enc = s->streams[i]->codec;
-        if (enc->codec_type == CODEC_TYPE_VIDEO &&
+        if (enc->codec_type == AVMEDIA_TYPE_VIDEO &&
                 enc->codec_id == CODEC_ID_H264) {
             put_avc_eos_tag(pb, flv->last_video_ts);
         }
@@ -405,7 +405,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     ts = pkt->dts + flv->delay; // add delay to force positive dts
-    if (enc->codec_type == CODEC_TYPE_VIDEO) {
+    if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (flv->last_video_ts < ts)
             flv->last_video_ts = ts;
     }

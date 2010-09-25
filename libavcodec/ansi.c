@@ -424,7 +424,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 AVCodec ansi_decoder = {
     .name           = "ansi",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_ANSI,
     .priv_data_size = sizeof(AnsiContext),
     .init           = decode_init,

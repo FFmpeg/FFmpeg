@@ -502,7 +502,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 AVCodec ra_144_encoder =
 {
     "real_144",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_RA_144,
     sizeof(RA144Context),
     ra144_encode_init,

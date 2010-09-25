@@ -129,7 +129,7 @@ static void svq3_extradata_free(PayloadContext *sv)
 
 RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {
     "X-SV3V-ES",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_NONE,          // see if (config_packet) above
     NULL,                   // parse sdp line
     svq3_extradata_new,
