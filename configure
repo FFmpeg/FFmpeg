@@ -2606,14 +2606,23 @@ EOF
 
     check_asm bswap '"bswap %%eax" ::: "%eax"'
 
-    YASMFLAGS="-f $objformat"
-    enabled     x86_64        && append YASMFLAGS "-m amd64"
-    enabled     pic           && append YASMFLAGS "-DPIC"
-    test -n "$extern_prefix"  && append YASMFLAGS "-DPREFIX"
-    case "$objformat" in
-        elf) enabled debug && append YASMFLAGS "-g dwarf2" ;;
-    esac
     if ! disabled_any asm mmx yasm; then
+        if check_cmd $yasmexe --version; then
+            enabled x86_64 && yasm_extra="-m amd64"
+            yasm_debug="-g dwarf2"
+        elif check_cmd nasm -v; then
+            yasmexe=nasm
+            yasm_debug="-g -F dwarf"
+            enabled x86_64 && test "$objformat" = elf && objformat=elf64
+        fi
+
+        YASMFLAGS="-f $objformat $yasm_extra"
+        enabled pic               && append YASMFLAGS "-DPIC"
+        test -n "$extern_prefix"  && append YASMFLAGS "-DPREFIX"
+        case "$objformat" in
+            elf*) enabled debug && append YASMFLAGS $yasm_debug ;;
+        esac
+
         check_yasm "pabsw xmm0, xmm0" && enable yasm ||
             die "yasm not found, use --disable-yasm for a crippled build"
     fi
