@@ -56,6 +56,18 @@ static const AVOption options[] = {
     { "full_chroma_int", "full chroma interpolation", 0 , FF_OPT_TYPE_CONST, SWS_FULL_CHR_H_INT, INT_MIN, INT_MAX, VE, "sws_flags" },
     { "full_chroma_inp", "full chroma input", 0 , FF_OPT_TYPE_CONST, SWS_FULL_CHR_H_INP, INT_MIN, INT_MAX, VE, "sws_flags" },
     { "bitexact", "", 0 , FF_OPT_TYPE_CONST, SWS_BITEXACT, INT_MIN, INT_MAX, VE, "sws_flags" },
+
+    { "srcw", "source width"      , OFFSET(srcW), FF_OPT_TYPE_INT, DEFAULT, 1, INT_MAX, VE },
+    { "srch", "source height"     , OFFSET(srcH), FF_OPT_TYPE_INT, DEFAULT, 1, INT_MAX, VE },
+    { "dstw", "destination width" , OFFSET(dstW), FF_OPT_TYPE_INT, DEFAULT, 1, INT_MAX, VE },
+    { "dsth", "destination height", OFFSET(dstH), FF_OPT_TYPE_INT, DEFAULT, 1, INT_MAX, VE },
+    { "src_format", "source format"     , OFFSET(srcFormat), FF_OPT_TYPE_INT, DEFAULT, 1, UINT_MAX, VE },
+    { "dst_format", "destination format", OFFSET(dstFormat), FF_OPT_TYPE_INT, DEFAULT, 1, UINT_MAX, VE },
+    { "src_range" , "source range"      , OFFSET(srcRange) , FF_OPT_TYPE_INT, DEFAULT, 0, 1, VE },
+    { "dst_range" , "destination range" , OFFSET(dstRange) , FF_OPT_TYPE_INT, DEFAULT, 0, 1, VE },
+    { "param0" , "scaler param 0" , OFFSET(param[0]) , FF_OPT_TYPE_DOUBLE, DEFAULT, INT_MIN, INT_MAX, VE },
+    { "param1" , "scaler param 1" , OFFSET(param[1]) , FF_OPT_TYPE_DOUBLE, DEFAULT, INT_MIN, INT_MAX, VE },
+
     { NULL }
 };
 
