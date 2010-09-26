@@ -3240,6 +3240,11 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         }
     }
 
+    if(v->res_sprite && (s->pict_type!=FF_I_TYPE)){
+        av_free(buf2);
+        return -1;
+    }
+
     // for hurry_up==5
     s->current_picture.pict_type= s->pict_type;
     s->current_picture.key_frame= s->pict_type == FF_I_TYPE;

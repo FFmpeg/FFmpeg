@@ -315,8 +315,7 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
             return -1;
         }
         if (v->res_sprite) {
-            av_log(avctx, AV_LOG_ERROR, "WMVP is not supported\n");
-            return -1;
+            av_log(avctx, AV_LOG_ERROR, "WMVP is not fully supported\n");
         }
     }
 
@@ -387,7 +386,21 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
     v->quantizer_mode = get_bits(gb, 2); //common
 
     v->finterpflag = get_bits1(gb); //common
-    v->res_rtm_flag = get_bits1(gb); //reserved
+
+    if (v->res_sprite) {
+        v->s.avctx->width  = v->s.avctx->coded_width  = get_bits(gb, 11);
+        v->s.avctx->height = v->s.avctx->coded_height = get_bits(gb, 11);
+        skip_bits(gb, 5); //frame rate
+        v->res_x8 = get_bits1(gb);
+        if (get_bits1(gb)) { // something to do with DC VLC selection
+            av_log(avctx, AV_LOG_ERROR, "Unsupported sprite feature\n");
+            return -1;
+        }
+        skip_bits(gb, 3); //slice code
+        v->res_rtm_flag = 0;
+    } else {
+        v->res_rtm_flag = get_bits1(gb); //reserved
+    }
     if (!v->res_rtm_flag)
     {
 //            av_log(avctx, AV_LOG_ERROR,
@@ -566,6 +579,9 @@ int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 {
     int pqindex, lowquant, status;
 
+    if(v->res_sprite) {
+        skip_bits(gb, 2); //not yet deciphered
+    }
     if(v->finterpflag) v->interpfrm = get_bits1(gb);
     skip_bits(gb, 2); //framecnt unused
     v->rangeredfrm = 0;
