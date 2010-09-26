@@ -306,11 +306,16 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
     {
         v->zz_8x4 = wmv2_scantableA;
         v->zz_4x8 = wmv2_scantableB;
-        v->res_sm = get_bits(gb, 2); //reserved
-        if (v->res_sm)
+        v->res_y411   = get_bits1(gb);
+        v->res_sprite = get_bits1(gb);
+        if (v->res_y411)
         {
             av_log(avctx, AV_LOG_ERROR,
-                   "Reserved RES_SM=%i is forbidden\n", v->res_sm);
+                   "Old interlaced mode is not supported\n");
+            return -1;
+        }
+        if (v->res_sprite) {
+            av_log(avctx, AV_LOG_ERROR, "WMVP is not supported\n");
             return -1;
         }
     }

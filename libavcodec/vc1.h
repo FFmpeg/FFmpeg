@@ -160,7 +160,8 @@ typedef struct VC1Context{
 
     /** Simple/Main Profile sequence header */
     //@{
-    int res_sm;           ///< reserved, 2b
+    int res_sprite;       ///< reserved, sprite mode
+    int res_y411;         ///< reserved, old interlaced mode
     int res_x8;           ///< reserved
     int multires;         ///< frame-level RESPIC syntax element present
     int res_fasttx;       ///< reserved, always 1
