@@ -831,7 +831,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
       && srcFormat!=PIX_FMT_RGB8      && srcFormat!=PIX_FMT_BGR8
       && srcFormat!=PIX_FMT_RGB4      && srcFormat!=PIX_FMT_BGR4
       && srcFormat!=PIX_FMT_RGB4_BYTE && srcFormat!=PIX_FMT_BGR4_BYTE
-      && ((dstW>>c->chrDstHSubSample) <= (srcW>>1) || (flags&(SWS_FAST_BILINEAR|SWS_POINT))))
+      && ((dstW>>c->chrDstHSubSample) <= (srcW>>1) || (flags&SWS_FAST_BILINEAR)))
         c->chrSrcHSubSample=1;
 
     if (param) {
