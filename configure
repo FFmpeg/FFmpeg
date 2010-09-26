@@ -1401,6 +1401,7 @@ tcp_protocol_deps="network"
 udp_protocol_deps="network"
 
 # filters
+blackframe_filter_deps="gpl"
 ocv_smooth_filter_deps="libopencv"
 yadif_filter_deps="gpl"
 

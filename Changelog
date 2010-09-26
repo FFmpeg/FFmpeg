@@ -41,6 +41,7 @@ version <next>:
 - make the crop filter accept parametric expressions
 - make ffprobe accept AVFormatContext options
 - yadif filter
+- blackframe filter
 
 
 version 0.6:

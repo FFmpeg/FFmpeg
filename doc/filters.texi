@@ -71,6 +71,27 @@ build.
 
 Below is a description of the currently available video filters.
 
+@section blackframe
+
+Detect frames that are (almost) completely black. Can be useful to
+detect chapter transitions or commercials. Output lines consist of
+the frame number of the detected frame, the percentage of blackness,
+the position in the file if known or -1 and the timestamp in seconds.
+
+In order to display the output lines, you need to set the loglevel at
+least to the AV_LOG_INFO value.
+
+The filter accepts the syntax:
+@example
+blackframe[=@var{amount}:[@var{threshold}]]
+@end example
+
+@var{amount} is the percentage of the pixels that have to be below the
+threshold, and defaults to 98.
+
+@var{threshold} is the threshold below which a pixel value is
+considered black, and defaults to 32.
+
 @section crop
 
 Crop the input video to @var{out_w}:@var{out_h}:@var{x}:@var{y}.
