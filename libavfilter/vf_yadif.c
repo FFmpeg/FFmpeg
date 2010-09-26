@@ -197,12 +197,11 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     yadif->cur  = yadif->next;
     yadif->next = picref;
 
-    if (!yadif->prev)
-        yadif->prev = avfilter_get_video_buffer(link, AV_PERM_WRITE | AV_PERM_PRESERVE |
-                                                AV_PERM_REUSE, link->w, link->h);
-
     if(!yadif->cur)
         return;
+
+    if (!yadif->prev)
+        yadif->prev = avfilter_ref_buffer(yadif->cur, AV_PERM_READ);
 
     yadif->out = avfilter_get_video_buffer(ctx->outputs[0], AV_PERM_WRITE | AV_PERM_PRESERVE |
                                        AV_PERM_REUSE, link->w, link->h);
