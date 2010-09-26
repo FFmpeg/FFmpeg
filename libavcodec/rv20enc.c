@@ -41,7 +41,7 @@ void rv20_encode_picture_header(MpegEncContext *s, int picture_number){
     put_bits(&s->pb, 1, s->no_rounding);
 
     assert(s->f_code == 1);
-    assert(s->unrestricted_mv == 1);
+    assert(s->unrestricted_mv == 0);
     assert(s->alt_inter_vlc == 0);
     assert(s->umvplus == 0);
     assert(s->modified_quant==1);

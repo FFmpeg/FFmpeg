@@ -618,7 +618,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         s->h263_aic=1;
         s->h263_plus=1;
         s->loop_filter=1;
-        s->unrestricted_mv= s->obmc || s->loop_filter || s->umvplus;
+        s->unrestricted_mv= 0;
         break;
     case CODEC_ID_MPEG4:
         s->out_format = FMT_H263;
