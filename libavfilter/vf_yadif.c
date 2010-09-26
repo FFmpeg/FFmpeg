@@ -19,7 +19,6 @@
  */
 
 #include "libavutil/cpu.h"
-#include "libavutil/x86_cpu.h"
 #include "libavutil/common.h"
 #include "avfilter.h"
 #include "yadif.h"
