@@ -154,9 +154,9 @@ IF%1 mova    m5, Z(5)
     mova     m1, %3 ; wim
     mova     m3, m5
     mulps    m2, m0 ; r2*wre
-IF%1 mova    m6, Z(6)
+IF%1 mova    m6, Z2(6)
     mulps    m3, m1 ; i2*wim
-IF%1 mova    m7, Z(7)
+IF%1 mova    m7, Z2(7)
     mulps    m4, m1 ; r2*wim
     mulps    m5, m0 ; i2*wre
     addps    m2, m3 ; r2*wre + i2*wim
@@ -183,14 +183,14 @@ IF%1 mova    m7, Z(7)
     mova     m4, m6
     subps    m6, m5 ; r3
     addps    m5, m4 ; r1
-    mova   Z(6), m6
+    mova  Z2(6), m6
     mova   Z(2), m5
     mova     m2, Z(3)
     addps    m3, m0 ; t6
     subps    m2, m1 ; i3
     mova     m7, Z(1)
     addps    m1, Z(3) ; i1
-    mova   Z(7), m2
+    mova  Z2(7), m2
     mova   Z(3), m1
     mova     m4, m7
     subps    m7, m3 ; i2
@@ -208,9 +208,9 @@ IF%1 mova    m7, Z(7)
     mova     m3, m5
     mova     m1, [wq+o1q] ; wim
     mulps    m2, m0 ; r2*wre
-    mova     m6, Z(6) ; r3
+    mova     m6, Z2(6) ; r3
     mulps    m3, m1 ; i2*wim
-    mova     m7, Z(7) ; i3
+    mova     m7, Z2(7) ; i3
     mulps    m4, m1 ; r2*wim
     mulps    m5, m0 ; i2*wre
     addps    m2, m3 ; r2*wre + i2*wim
@@ -237,14 +237,14 @@ IF%1 mova    m7, Z(7)
     mova     m4, m6
     subps    m6, m5 ; r3
     addps    m5, m4 ; r1
-IF%1 mova  Z(6), m6
+IF%1 mova Z2(6), m6
 IF%1 mova  Z(2), m5
     mova     m2, Z(3)
     addps    m3, m0 ; t6
     subps    m2, m1 ; i3
     mova     m7, Z(1)
     addps    m1, Z(3) ; i1
-IF%1 mova  Z(7), m2
+IF%1 mova Z2(7), m2
 IF%1 mova  Z(3), m1
     mova     m4, m7
     subps    m7, m3 ; i2
@@ -262,8 +262,8 @@ IF%1 mova  Z(1), m3
     mova     m2, Z(4)
     mova   Z(2), m5
     mova   Z(3), m4
-    mova   Z(6), m6
-    mova   Z(7), m0
+    mova  Z2(6), m6
+    mova  Z2(7), m0
     mova     m5, m1 ; r0
     mova     m4, m2 ; r2
     unpcklps m1, m3
@@ -287,6 +287,7 @@ INIT_XMM
 %define mova movaps
 
 %define Z(x) [r0+mmsize*x]
+%define Z2(x) [r0+mmsize*x]
 
 align 16
 fft4_sse:
@@ -326,8 +327,8 @@ fft16_sse:
     mova   Z(2), m2
     mova   Z(3), m3
     T4_SSE   m4, m5, m6
-    mova     m6, Z(6)
-    mova     m7, Z(7)
+    mova     m6, Z2(6)
+    mova     m7, Z2(7)
     T4_SSE   m6, m7, m0
     PASS_SMALL 0, [cos_16], [cos_16+16]
     ret
@@ -358,8 +359,8 @@ fft8%1:
     T4_3DN   m0, m1, m2, m3, m4, m5
     mova   Z(0), m0
     mova   Z(2), m2
-    T2_3DN   m4, m5, Z(4), Z(5)
-    T2_3DN   m6, m7, Z(6), Z(7)
+    T2_3DN   m4, m5,  Z(4),  Z(5)
+    T2_3DN   m6, m7, Z2(6), Z2(7)
     pswapd   m0, m5
     pswapd   m2, m7
     pxor     m0, [ps_m1p1]
@@ -370,7 +371,7 @@ fft8%1:
     pfmul    m7, [ps_root2]
     T4_3DN   m1, m3, m5, m7, m0, m2
     mova   Z(5), m5
-    mova   Z(7), m7
+    mova  Z2(7), m7
     mova     m0, Z(0)
     mova     m2, Z(2)
     T4_3DN   m0, m2, m4, m6, m5, m7
@@ -380,12 +381,12 @@ fft8%1:
     mova   Z(1), m5
     mova   Z(2), m2
     mova   Z(3), m7
-    PUNPCK   m4, Z(5), m5
-    PUNPCK   m6, Z(7), m7
+    PUNPCK   m4,  Z(5), m5
+    PUNPCK   m6, Z2(7), m7
     mova   Z(4), m4
     mova   Z(5), m5
-    mova   Z(6), m6
-    mova   Z(7), m7
+    mova  Z2(6), m6
+    mova  Z2(7), m7
     ret
 %endmacro
 
@@ -405,7 +406,8 @@ FFT48_3DN _3dn2
 FFT48_3DN _3dn
 
 
-%define Z(x) [zq + o1q*(x&6)*((x/6)^1) + o3q*(x/6) + mmsize*(x&1)]
+%define Z(x) [zq + o1q*(x&6) + mmsize*(x&1)]
+%define Z2(x) [zq + o3q + mmsize*(x&1)]
 
 %macro DECL_PASS 2+ ; name, payload
 align 16
