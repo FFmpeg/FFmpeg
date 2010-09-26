@@ -144,6 +144,17 @@ int sws_isSupportedInput(enum PixelFormat pix_fmt);
 int sws_isSupportedOutput(enum PixelFormat pix_fmt);
 
 /**
+ * Alloctaes an empty SwsContext, this must be filled and passed to sws_init_context().
+ * For filling see AVOptions, options.c and sws_setColorspaceDetails().
+ */
+struct SwsContext *sws_alloc_context(void);
+
+/**
+ * Initializs the swscaler context sws_context.
+ */
+int sws_init_context(struct SwsContext *sws_context, SwsFilter *srcFilter, SwsFilter *dstFilter);
+
+/**
  * Frees the swscaler context swsContext.
  * If swsContext is NULL, then does nothing.
  */
@@ -161,6 +172,7 @@ void sws_freeContext(struct SwsContext *swsContext);
  * @param dstFormat the destination image format
  * @param flags specify which algorithm and options to use for rescaling
  * @return a pointer to an allocated context, or NULL in case of error
+ * @deprecated use sws_alloc_context() and sws_init_context()
  */
 struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
                                   int dstW, int dstH, enum PixelFormat dstFormat,

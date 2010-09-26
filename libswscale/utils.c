@@ -672,6 +672,8 @@ static void getSubSampleFactors(int *h, int *v, enum PixelFormat format)
     *v = av_pix_fmt_descriptors[format].log2_chroma_h;
 }
 
+static int update_flags_cpu(int flags);
+
 int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation)
 {
     memcpy(c->srcColorspaceTable, inv_table, sizeof(int)*4);
@@ -683,6 +685,10 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     c->srcRange  = srcRange;
     c->dstRange  = dstRange;
     if (isYUV(c->dstFormat) || isGray(c->dstFormat)) return -1;
+
+    c->dstFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[c->dstFormat]);
+    c->srcFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[c->srcFormat]);
+    c->flags = update_flags_cpu(c->flags);
 
     ff_yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness, contrast, saturation);
     //FIXME factorize
@@ -729,36 +735,43 @@ static int update_flags_cpu(int flags)
     return flags;
 }
 
-SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
-                           int dstW, int dstH, enum PixelFormat dstFormat, int flags,
-                           SwsFilter *srcFilter, SwsFilter *dstFilter, const double *param)
-{
-    SwsContext *c;
+SwsContext *sws_alloc_context(void){
+    SwsContext *c= av_mallocz(sizeof(SwsContext));
+
+    c->av_class = &sws_context_class;
+
+    return c;
+}
+
+int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter){
     int i;
     int usesVFilter, usesHFilter;
     int unscaled;
-    int srcRange, dstRange;
     SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
+    int srcW= c->srcW;
+    int srcH= c->srcH;
+    int dstW= c->dstW;
+    int dstH= c->dstH;
+    int flags;
+    enum PixelFormat srcFormat= c->srcFormat;
+    enum PixelFormat dstFormat= c->dstFormat;
+
+    flags= c->flags = update_flags_cpu(c->flags);
 #if ARCH_X86
     if (flags & SWS_CPU_CAPS_MMX)
         __asm__ volatile("emms\n\t"::: "memory");
 #endif
-
-    flags = update_flags_cpu(flags);
     if (!rgb15to16) sws_rgb2rgb_init(flags);
 
     unscaled = (srcW == dstW && srcH == dstH);
 
-    srcRange = handle_jpeg(&srcFormat);
-    dstRange = handle_jpeg(&dstFormat);
-
     if (!isSupportedIn(srcFormat)) {
         av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as input pixel format\n", sws_format_name(srcFormat));
-        return NULL;
+        return AVERROR(EINVAL);
     }
     if (!isSupportedOut(dstFormat)) {
         av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as output pixel format\n", sws_format_name(dstFormat));
-        return NULL;
+        return AVERROR(EINVAL);
     }
 
     i= flags & ( SWS_POINT
@@ -774,35 +787,24 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
                 |SWS_BICUBLIN);
     if(!i || (i & (i-1))) {
         av_log(NULL, AV_LOG_ERROR, "swScaler: Exactly one scaler algorithm must be chosen\n");
-        return NULL;
+        return AVERROR(EINVAL);
     }
-
     /* sanity check */
     if (srcW<4 || srcH<1 || dstW<8 || dstH<1) { //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
         av_log(NULL, AV_LOG_ERROR, "swScaler: %dx%d -> %dx%d is invalid scaling dimension\n",
                srcW, srcH, dstW, dstH);
-        return NULL;
+        return AVERROR(EINVAL);
     }
     if(srcW > VOFW || dstW > VOFW) {
         av_log(NULL, AV_LOG_ERROR, "swScaler: Compile-time maximum width is "AV_STRINGIFY(VOFW)" change VOF/VOFW and recompile\n");
-        return NULL;
+        return AVERROR(EINVAL);
     }
 
     if (!dstFilter) dstFilter= &dummyFilter;
     if (!srcFilter) srcFilter= &dummyFilter;
 
-    FF_ALLOCZ_OR_GOTO(NULL, c, sizeof(SwsContext), fail);
-
-    c->av_class = &sws_context_class;
-    c->srcW= srcW;
-    c->srcH= srcH;
-    c->dstW= dstW;
-    c->dstH= dstH;
     c->lumXInc= ((srcW<<16) + (dstW>>1))/dstW;
     c->lumYInc= ((srcH<<16) + (dstH>>1))/dstH;
-    c->flags= flags;
-    c->dstFormat= dstFormat;
-    c->srcFormat= srcFormat;
     c->dstFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[dstFormat]);
     c->srcFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[srcFormat]);
     c->vRounder= 4* 0x0001000100010001ULL;
@@ -834,31 +836,21 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
       && ((dstW>>c->chrDstHSubSample) <= (srcW>>1) || (flags&SWS_FAST_BILINEAR)))
         c->chrSrcHSubSample=1;
 
-    if (param) {
-        c->param[0] = param[0];
-        c->param[1] = param[1];
-    } else {
-        c->param[0] =
-        c->param[1] = SWS_PARAM_DEFAULT;
-    }
-
     // Note the -((-x)>>y) is so that we always round toward +inf.
     c->chrSrcW= -((-srcW) >> c->chrSrcHSubSample);
     c->chrSrcH= -((-srcH) >> c->chrSrcVSubSample);
     c->chrDstW= -((-dstW) >> c->chrDstHSubSample);
     c->chrDstH= -((-dstH) >> c->chrDstVSubSample);
 
-    sws_setColorspaceDetails(c, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT], srcRange, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT] /* FIXME*/, dstRange, 0, 1<<16, 1<<16);
-
     /* unscaled special cases */
-    if (unscaled && !usesHFilter && !usesVFilter && (srcRange == dstRange || isAnyRGB(dstFormat))) {
+    if (unscaled && !usesHFilter && !usesVFilter && (c->srcRange == c->dstRange || isAnyRGB(dstFormat))) {
         ff_get_unscaled_swscale(c);
 
         if (c->swScale) {
             if (flags&SWS_PRINT_INFO)
                 av_log(c, AV_LOG_INFO, "using unscaled %s -> %s special converter\n",
                        sws_format_name(srcFormat), sws_format_name(dstFormat));
-            return c;
+            return 0;
         }
     }
 
@@ -914,7 +906,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
 #endif
 
             if (!c->lumMmx2FilterCode || !c->chrMmx2FilterCode)
-                goto fail;
+                return AVERROR(ENOMEM);
             FF_ALLOCZ_OR_GOTO(c, c->hLumFilter   , (dstW        /8+8)*sizeof(int16_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hChrFilter   , (c->chrDstW  /4+8)*sizeof(int16_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hLumFilterPos, (dstW      /2/8+8)*sizeof(int32_t), fail);
@@ -1143,11 +1135,45 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
     }
 
     c->swScale= ff_getSwsFunc(c);
-    return c;
+    return 0;
+fail: //FIXME replace things by appropriate error codes
+    return -1;
+}
 
-fail:
-    sws_freeContext(c);
-    return NULL;
+SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
+                           int dstW, int dstH, enum PixelFormat dstFormat, int flags,
+                           SwsFilter *srcFilter, SwsFilter *dstFilter, const double *param)
+{
+    SwsContext *c;
+
+    if(!(c=sws_alloc_context()))
+        return NULL;
+
+    c->flags= flags;
+    c->srcW= srcW;
+    c->srcH= srcH;
+    c->dstW= dstW;
+    c->dstH= dstH;
+    c->srcRange = handle_jpeg(&srcFormat);
+    c->dstRange = handle_jpeg(&dstFormat);
+    c->srcFormat= srcFormat;
+    c->dstFormat= dstFormat;
+
+    if (param) {
+        c->param[0] = param[0];
+        c->param[1] = param[1];
+    } else {
+        c->param[0] =
+        c->param[1] = SWS_PARAM_DEFAULT;
+    }
+    sws_setColorspaceDetails(c, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT], c->srcRange, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT] /* FIXME*/, c->dstRange, 0, 1<<16, 1<<16);
+
+    if(sws_init_context(c, srcFilter, dstFilter) < 0){
+        sws_freeContext(c);
+        return NULL;
+    }
+
+    return c;
 }
 
 SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
