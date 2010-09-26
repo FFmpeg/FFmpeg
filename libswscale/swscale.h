@@ -144,13 +144,14 @@ int sws_isSupportedInput(enum PixelFormat pix_fmt);
 int sws_isSupportedOutput(enum PixelFormat pix_fmt);
 
 /**
- * Alloctaes an empty SwsContext, this must be filled and passed to sws_init_context().
- * For filling see AVOptions, options.c and sws_setColorspaceDetails().
+ * Allocates an empty SwsContext. This must be filled and passed to
+ * sws_init_context(). For filling see AVOptions, options.c and
+ * sws_setColorspaceDetails().
  */
 struct SwsContext *sws_alloc_context(void);
 
 /**
- * Initializs the swscaler context sws_context.
+ * Initializes the swscaler context sws_context.
  */
 int sws_init_context(struct SwsContext *sws_context, SwsFilter *srcFilter, SwsFilter *dstFilter);
 
