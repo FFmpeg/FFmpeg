@@ -32,7 +32,7 @@
 #include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
-#include "opt.h"
+#include "libavutil/opt.h"
 #include "imgconvert.h"
 #include "audioconvert.h"
 #include "internal.h"

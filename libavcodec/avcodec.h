@@ -1928,12 +1928,6 @@ typedef struct AVCodecContext {
      */
     void *internal_buffer;
 
-#define FF_LAMBDA_SHIFT 7
-#define FF_LAMBDA_SCALE (1<<FF_LAMBDA_SHIFT)
-#define FF_QP2LAMBDA 118 ///< factor to convert from H.263 QP to lambda
-#define FF_LAMBDA_MAX (256*128-1)
-
-#define FF_QUALITY_SCALE FF_LAMBDA_SCALE //FIXME maybe remove
     /**
      * Global quality for codecs which cannot change it per frame.
      * This should be proportional to MPEG-1/2/4 qscale.

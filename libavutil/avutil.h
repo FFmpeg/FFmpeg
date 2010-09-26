@@ -78,6 +78,13 @@ enum AVMediaType {
     AVMEDIA_TYPE_NB
 };
 
+#define FF_LAMBDA_SHIFT 7
+#define FF_LAMBDA_SCALE (1<<FF_LAMBDA_SHIFT)
+#define FF_QP2LAMBDA 118 ///< factor to convert from H.263 QP to lambda
+#define FF_LAMBDA_MAX (256*128-1)
+
+#define FF_QUALITY_SCALE FF_LAMBDA_SCALE //FIXME maybe remove
+
 #include "common.h"
 #include "error.h"
 #include "mathematics.h"

@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "audioconvert.h"
-#include "opt.h"
+#include "libavutil/opt.h"
 
 struct AVResampleContext;
 

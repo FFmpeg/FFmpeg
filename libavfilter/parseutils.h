@@ -25,7 +25,7 @@
 #ifndef AVFILTER_PARSEUTILS_H
 #define AVFILTER_PARSEUTILS_H
 
-#include "libavcodec/opt.h"
+#include "libavutil/opt.h"
 
 /**
  * Unescape the given string until a non escaped terminating char,

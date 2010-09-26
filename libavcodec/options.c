@@ -25,7 +25,7 @@
  */
 
 #include "avcodec.h"
-#include "opt.h"
+#include "libavutil/opt.h"
 #include <float.h>              /* FLT_MIN, FLT_MAX */
 
 static const char* context_to_name(void* ptr) {

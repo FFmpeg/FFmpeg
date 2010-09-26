@@ -49,6 +49,7 @@ OBJS = adler32.o                                                        \
        mathematics.o                                                    \
        md5.o                                                            \
        mem.o                                                            \
+       opt.o                                                            \
        pixdesc.o                                                        \
        random_seed.o                                                    \
        rational.o                                                       \

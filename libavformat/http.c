@@ -28,7 +28,7 @@
 #include "http.h"
 #include "os_support.h"
 #include "httpauth.h"
-#include "libavcodec/opt.h"
+#include "libavutil/opt.h"
 
 /* XXX: POST protocol is not completely implemented because ffmpeg uses
    only a subset of it. */

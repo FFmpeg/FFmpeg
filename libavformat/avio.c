@@ -23,7 +23,7 @@
 #define _XOPEN_SOURCE 600
 #include <unistd.h>
 #include "libavutil/avstring.h"
-#include "libavcodec/opt.h"
+#include "libavutil/opt.h"
 #include "os_support.h"
 #include "avformat.h"
 #if CONFIG_NETWORK
