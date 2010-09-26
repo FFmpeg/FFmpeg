@@ -25,9 +25,9 @@
 #if HAVE_FAST_UNALIGNED && HAVE_INLINE_ASM
 
 #define AV_RN16 AV_RN16
-static av_always_inline uint16_t AV_RN16(const void *p)
+static av_always_inline unsigned AV_RN16(const void *p)
 {
-    uint16_t v;
+    unsigned v;
     __asm__ ("ldrh %0, %1" : "=r"(v) : "m"(*(const uint16_t *)p));
     return v;
 }
