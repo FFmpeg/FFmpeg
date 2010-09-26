@@ -245,12 +245,12 @@ cglobal h264_idct8_add_sse2, 3, 4, 10
     movsx        %1, word [%1]
     add          %1, 32
     sar          %1, 6
-    movd         m0, %1
+    movd         m0, %1d
     lea          %1, [%2*3]
 %else
     add          %3, 32
     sar          %3, 6
-    movd         m0, %3
+    movd         m0, %3d
     lea          %3, [%2*3]
 %endif
     pshufw       m0, m0, 0
