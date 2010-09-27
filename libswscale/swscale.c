@@ -1941,7 +1941,7 @@ int sws_scale(SwsContext *c, const uint8_t* const src[], const int srcStride[], 
                 r= (i>>3    )*255;
                 g= ((i>>1)&3)*85;
                 b= (i&1     )*255;
-            } else if(c->srcFormat == PIX_FMT_GRAY8 || PIX_FMT_Y400A) {
+            } else if(c->srcFormat == PIX_FMT_GRAY8 || c->srcFormat == PIX_FMT_Y400A) {
                 r = g = b = i;
             } else {
                 assert(c->srcFormat == PIX_FMT_BGR4_BYTE);
