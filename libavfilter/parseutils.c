@@ -28,42 +28,6 @@
 #include "libavutil/random_seed.h"
 #include "parseutils.h"
 
-#define WHITESPACES " \n\t"
-
-char *av_get_token(const char **buf, const char *term)
-{
-    char *out = av_malloc(strlen(*buf) + 1);
-    char *ret= out, *end= out;
-    const char *p = *buf;
-    if (!out) return NULL;
-    p += strspn(p, WHITESPACES);
-
-    while(*p && !strspn(p, term)) {
-        char c = *p++;
-        if(c == '\\' && *p){
-            *out++ = *p++;
-            end= out;
-        }else if(c == '\''){
-            while(*p && *p != '\'')
-                *out++ = *p++;
-            if(*p){
-                p++;
-                end= out;
-            }
-        }else{
-            *out++ = c;
-        }
-    }
-
-    do{
-        *out-- = 0;
-    }while(out >= end && strspn(out, WHITESPACES));
-
-    *buf = p;
-
-    return ret;
-}
-
 typedef struct {
     const char *name;            ///< a string representing the name of the color
     uint8_t     rgb_color[3];    ///< RGB values for the color
@@ -394,41 +358,6 @@ static const AVClass test_class = {
 int main(void)
 {
     int i;
-
-    const char *strings[] = {
-        "''",
-        "",
-        ":",
-        "\\",
-        "'",
-        "    ''    :",
-        "    ''  ''  :",
-        "foo   '' :",
-        "'foo'",
-        "foo     ",
-        "foo\\",
-        "foo':  blah:blah",
-        "foo\\:  blah:blah",
-        "foo\'",
-        "'foo :  '  :blahblah",
-        "\\ :blah",
-        "     foo",
-        "      foo       ",
-        "      foo     \\ ",
-        "foo ':blah",
-        " foo   bar    :   blahblah",
-        "\\f\\o\\o",
-        "'foo : \\ \\  '   : blahblah",
-        "'\\fo\\o:': blahblah",
-        "\\'fo\\o\\:':  foo  '  :blahblah"
-    };
-
-    for (i=0; i < FF_ARRAY_ELEMS(strings); i++) {
-        const char *p= strings[i];
-        printf("|%s|", p);
-        printf(" -> |%s|", av_get_token(&p, ":"));
-        printf(" + |%s|\n", p);
-    }
 
     printf("\nTesting av_parse_color()\n");
     {

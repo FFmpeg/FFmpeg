@@ -26,6 +26,7 @@
 
 #include <dlfcn.h>
 #include <frei0r.h>
+#include "libavutil/avstring.h"
 #include "avfilter.h"
 #include "parseutils.h"
 
