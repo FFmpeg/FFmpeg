@@ -3401,7 +3401,7 @@ static void new_video_stream(AVFormatContext *oc)
 
         if (video_codec_name) {
             codec_id = find_codec_or_die(video_codec_name, AVMEDIA_TYPE_VIDEO, 1,
-                                         video_enc->strict_std_compliance);
+                                         avcodec_opts[AVMEDIA_TYPE_VIDEO]->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(video_codec_name);
             output_codecs[nb_ocodecs] = codec;
         } else {
@@ -3533,7 +3533,7 @@ static void new_audio_stream(AVFormatContext *oc)
 
         if (audio_codec_name) {
             codec_id = find_codec_or_die(audio_codec_name, AVMEDIA_TYPE_AUDIO, 1,
-                                         audio_enc->strict_std_compliance);
+                                         avcodec_opts[AVMEDIA_TYPE_AUDIO]->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(audio_codec_name);
             output_codecs[nb_ocodecs] = codec;
         } else {
@@ -3594,7 +3594,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
     } else {
         set_context_opts(avcodec_opts[AVMEDIA_TYPE_SUBTITLE], subtitle_enc, AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
         subtitle_enc->codec_id = find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 1,
-                                                   subtitle_enc->strict_std_compliance);
+                                                   avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->strict_std_compliance);
         output_codecs[nb_ocodecs] = avcodec_find_encoder_by_name(subtitle_codec_name);
     }
     nb_ocodecs++;
