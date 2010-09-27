@@ -27,7 +27,7 @@
 
 #include "avutil.h"
 #include "opt.h"
-#include "libavutil/eval.h"
+#include "eval.h"
 
 //FIXME order them and do a bin search
 const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mask, int flags)
