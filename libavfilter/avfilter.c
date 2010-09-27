@@ -526,27 +526,28 @@ int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *in
 void avfilter_destroy(AVFilterContext *filter)
 {
     int i;
+    AVFilterLink *link;
 
     if (filter->filter->uninit)
         filter->filter->uninit(filter);
 
     for (i = 0; i < filter->input_count; i++) {
-        if (filter->inputs[i]) {
-            if (filter->inputs[i]->src)
-                filter->inputs[i]->src->outputs[filter->inputs[i]->srcpad] = NULL;
-            avfilter_formats_unref(&filter->inputs[i]->in_formats);
-            avfilter_formats_unref(&filter->inputs[i]->out_formats);
+        if ((link = filter->inputs[i])) {
+            if (link->src)
+                link->src->outputs[link->srcpad] = NULL;
+            avfilter_formats_unref(&link->in_formats);
+            avfilter_formats_unref(&link->out_formats);
         }
-        av_freep(&filter->inputs[i]);
+        av_freep(&link);
     }
     for (i = 0; i < filter->output_count; i++) {
-        if (filter->outputs[i]) {
-            if (filter->outputs[i]->dst)
-                filter->outputs[i]->dst->inputs[filter->outputs[i]->dstpad] = NULL;
-            avfilter_formats_unref(&filter->outputs[i]->in_formats);
-            avfilter_formats_unref(&filter->outputs[i]->out_formats);
+        if ((link = filter->outputs[i])) {
+            if (link->dst)
+                link->dst->inputs[link->dstpad] = NULL;
+            avfilter_formats_unref(&link->in_formats);
+            avfilter_formats_unref(&link->out_formats);
         }
-        av_freep(&filter->outputs[i]);
+        av_freep(&link);
     }
 
     av_freep(&filter->name);
