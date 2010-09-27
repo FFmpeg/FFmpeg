@@ -3106,6 +3106,7 @@ if enabled source_path_used; then
         libavcore/Makefile
         libavdevice/Makefile
         libavfilter/Makefile
+        libavfilter/${arch}/Makefile
         libavformat/Makefile
         libavutil/Makefile
         libpostproc/Makefile
