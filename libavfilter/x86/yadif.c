@@ -22,8 +22,6 @@
 #include "libavutil/x86_cpu.h"
 #include "libavfilter/yadif.h"
 
-#if HAVE_MMX
-
 #define LOAD4(mem,dst) \
             "movd      "mem", "#dst" \n\t"\
             "punpcklbw %%mm7, "#dst" \n\t"
@@ -236,5 +234,3 @@ void ff_yadif_filter_line_mmx(uint8_t *dst,
 #undef CHECK1
 #undef CHECK2
 #undef FILTER
-
-#endif /* HAVE_MMX */
