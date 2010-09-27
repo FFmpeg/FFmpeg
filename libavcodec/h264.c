@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "libavcore/imgutils.h"
 #include "internal.h"
 #include "dsputil.h"
 #include "avcodec.h"
@@ -1905,6 +1906,17 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             s->current_picture_ptr->frame_num= h->prev_frame_num;
             ff_generate_sliding_window_mmcos(h);
             ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
+            /* Error concealment: if a ref is missing, copy the previous ref in its place.
+             * FIXME: avoiding a memcpy would be nice, but ref handling makes many assumptions
+             * about there being no actual duplicates.
+             * FIXME: this doesn't copy padding for out-of-frame motion vectors.  Given we're
+             * concealing a lost frame, this probably isn't noticable by comparison, but it should
+             * be fixed. */
+            av_image_copy(h->short_ref[0]->data, h->short_ref[0]->linesize,
+                          (const uint8_t**)h->short_ref[1]->data, h->short_ref[1]->linesize,
+                          PIX_FMT_YUV420P, s->mb_width*16, s->mb_height*16);
+            h->short_ref[0]->frame_num = h->prev_frame_num;
+            h->short_ref[0]->poc = h->short_ref[1]->poc+2;
         }
 
         /* See if we have a decoded first field looking for a pair... */
