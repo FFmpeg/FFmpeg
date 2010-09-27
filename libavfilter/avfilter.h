@@ -25,8 +25,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 46
-#define LIBAVFILTER_VERSION_MICRO  1
+#define LIBAVFILTER_VERSION_MINOR 47
+#define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -556,10 +556,10 @@ struct AVFilterContext {
  */
 struct AVFilterLink {
     AVFilterContext *src;       ///< source filter
-    unsigned int srcpad;        ///< index of the output pad on the source filter
+    AVFilterPad *srcpad;        ///< output pad on the source filter
 
     AVFilterContext *dst;       ///< dest filter
-    unsigned int dstpad;        ///< index of the input pad on the dest filter
+    AVFilterPad *dstpad;        ///< input pad on the dest filter
 
     /** stage of the initialization of the link properties (dimensions, etc) */
     enum {
