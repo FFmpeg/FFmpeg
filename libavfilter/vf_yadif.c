@@ -294,10 +294,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if (args) sscanf(args, "%d:%d", &yadif->mode, &yadif->parity);
 
     yadif->filter_line = filter_line_c;
-#if HAVE_MMX
-    if (cpu_flags & AV_CPU_FLAG_MMX)
+    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
         yadif->filter_line = ff_yadif_filter_line_mmx;
-#endif
 
     av_log(ctx, AV_LOG_INFO, "mode:%d parity:%d\n", yadif->mode, yadif->parity);
 
