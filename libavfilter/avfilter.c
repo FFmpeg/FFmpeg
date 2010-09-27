@@ -124,6 +124,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
                            unsigned in, unsigned out)
 {
+    int ret;
     unsigned dstpad_idx = link->dstpad - link->dst->input_pads;
 
     av_log(link->dst, AV_LOG_INFO, "auto-inserting filter '%s' "
@@ -131,10 +132,10 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
            filt->name, link->src->name, link->dst->name);
 
     link->dst->inputs[dstpad_idx] = NULL;
-    if (avfilter_link(filt, out, link->dst, dstpad_idx)) {
+    if ((ret = avfilter_link(filt, out, link->dst, dstpad_idx)) < 0) {
         /* failed to link output filter to new filter */
         link->dst->inputs[dstpad_idx] = link;
-        return -1;
+        return ret;
     }
 
     /* re-hookup the link to the new destination filter we inserted */
