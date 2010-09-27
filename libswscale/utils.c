@@ -732,6 +732,7 @@ static int update_flags_cpu(int flags)
     flags &= ~( SWS_CPU_CAPS_MMX
                |SWS_CPU_CAPS_MMX2
                |SWS_CPU_CAPS_3DNOW
+               |SWS_CPU_CAPS_SSE2
                |SWS_CPU_CAPS_ALTIVEC
                |SWS_CPU_CAPS_BFIN);
     flags |= ff_hardcodedcpuflags();
