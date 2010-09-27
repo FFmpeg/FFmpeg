@@ -1159,10 +1159,6 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 }else if(st->need_parsing == AVSTREAM_PARSE_FULL_ONCE){
                     st->parser->flags |= PARSER_FLAG_ONCE;
                 }
-                if(st->parser && (s->iformat->flags & AVFMT_GENERIC_INDEX)){
-                    st->parser->next_frame_offset=
-                    st->parser->cur_offset= st->cur_pkt.pos;
-                }
             }
         }
     }
