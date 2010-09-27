@@ -210,7 +210,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 static int rtp_read(URLContext *h, uint8_t *buf, int size)
 {
     RTPContext *s = h->priv_data;
-    struct sockaddr_in from;
+    struct sockaddr_storage from;
     socklen_t from_len;
     int len, fd_max, n;
     fd_set rfds;
