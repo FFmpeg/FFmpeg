@@ -280,8 +280,8 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                     memcpy(q, st->codec->extradata, 4);
                     q += 4;
                 } else {
-                put16(&q, 1); /* page id */
-                put16(&q, 1); /* ancillary page id */
+                    put16(&q, 1); /* page id */
+                    put16(&q, 1); /* ancillary page id */
                 }
             }
             break;
