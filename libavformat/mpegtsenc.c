@@ -276,8 +276,13 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = language[1];
                 *q++ = language[2];
                 *q++ = 0x10; /* normal subtitles (0x20 = if hearing pb) */
+                if(st->codec->extradata_size == 4) {
+                    memcpy(q, st->codec->extradata, 4);
+                    q += 4;
+                } else {
                 put16(&q, 1); /* page id */
                 put16(&q, 1); /* ancillary page id */
+                }
             }
             break;
         case AVMEDIA_TYPE_VIDEO:
