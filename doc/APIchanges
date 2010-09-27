@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-09-26 - r25210 - lavu 50.29.0 - opt.h
+  Move libavcodec/opt.h to libavutil/opt.h.
+
 2010-09-24 - r25174 - lavu 50.28.0 - av_log_set_flags()
   Default of av_log() changed due to many problems to the old no repeat
   detection. Read the docs of AV_LOG_SKIP_REPEATED in log.h before
