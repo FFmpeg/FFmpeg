@@ -729,7 +729,11 @@ static int handle_jpeg(enum PixelFormat *format)
 static int update_flags_cpu(int flags)
 {
 #if !CONFIG_RUNTIME_CPUDETECT //ensure that the flags match the compiled variant if cpudetect is off
-    flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC|SWS_CPU_CAPS_BFIN);
+    flags &= ~( SWS_CPU_CAPS_MMX
+               |SWS_CPU_CAPS_MMX2
+               |SWS_CPU_CAPS_3DNOW
+               |SWS_CPU_CAPS_ALTIVEC
+               |SWS_CPU_CAPS_BFIN);
     flags |= ff_hardcodedcpuflags();
 #endif /* CONFIG_RUNTIME_CPUDETECT */
     return flags;
