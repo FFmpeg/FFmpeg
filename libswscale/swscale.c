@@ -82,6 +82,7 @@ untested special converters
            (x)==PIX_FMT_PAL8        \
         || (x)==PIX_FMT_YUYV422     \
         || (x)==PIX_FMT_UYVY422     \
+        || (x)==PIX_FMT_Y400A       \
         || isAnyRGB(x)              \
     )
 
@@ -1435,6 +1436,34 @@ static int uyvyToYuv422Wrapper(SwsContext *c, const uint8_t* src[], int srcStrid
     return srcSliceH;
 }
 
+static void gray8aToPacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+{
+    long i;
+    for (i=0; i<num_pixels; i++)
+        ((uint32_t *) dst)[i] = ((const uint32_t *)palette)[src[i<<1]] | (src[(i<<1)+1] << 24);
+}
+
+static void gray8aToPacked32_1(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+{
+    long i;
+
+    for (i=0; i<num_pixels; i++)
+        ((uint32_t *) dst)[i] = ((const uint32_t *)palette)[src[i<<1]] | src[(i<<1)+1];
+}
+
+static void gray8aToPacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+{
+    long i;
+
+    for (i=0; i<num_pixels; i++) {
+        //FIXME slow?
+        dst[0]= palette[src[i<<1]*4+0];
+        dst[1]= palette[src[i<<1]*4+1];
+        dst[2]= palette[src[i<<1]*4+2];
+        dst+= 3;
+    }
+}
+
 static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[])
 {
@@ -1446,7 +1475,16 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
     uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
     const uint8_t *srcPtr= src[0];
 
-    if (usePal(srcFormat)) {
+    if (srcFormat == PIX_FMT_Y400A) {
+        switch (dstFormat) {
+        case PIX_FMT_RGB32  : conv = gray8aToPacked32; break;
+        case PIX_FMT_BGR32  : conv = gray8aToPacked32; break;
+        case PIX_FMT_BGR32_1: conv = gray8aToPacked32_1; break;
+        case PIX_FMT_RGB32_1: conv = gray8aToPacked32_1; break;
+        case PIX_FMT_RGB24  : conv = gray8aToPacked24; break;
+        case PIX_FMT_BGR24  : conv = gray8aToPacked24; break;
+        }
+    } else if (usePal(srcFormat)) {
         switch (dstFormat) {
         case PIX_FMT_RGB32  : conv = sws_convertPalette8ToPacked32; break;
         case PIX_FMT_BGR32  : conv = sws_convertPalette8ToPacked32; break;
@@ -1903,7 +1941,7 @@ int sws_scale(SwsContext *c, const uint8_t* const src[], const int srcStride[], 
                 r= (i>>3    )*255;
                 g= ((i>>1)&3)*85;
                 b= (i&1     )*255;
-            } else if(c->srcFormat == PIX_FMT_GRAY8) {
+            } else if(c->srcFormat == PIX_FMT_GRAY8 || PIX_FMT_Y400A) {
                 r = g = b = i;
             } else {
                 assert(c->srcFormat == PIX_FMT_BGR4_BYTE);
