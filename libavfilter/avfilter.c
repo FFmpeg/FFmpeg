@@ -122,7 +122,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 }
 
 int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
-                           unsigned in, unsigned out)
+                           unsigned filt_srcpad_idx, unsigned filt_dstpad_idx)
 {
     int ret;
     unsigned dstpad_idx = link->dstpad - link->dst->input_pads;
@@ -132,7 +132,7 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
            filt->name, link->src->name, link->dst->name);
 
     link->dst->inputs[dstpad_idx] = NULL;
-    if ((ret = avfilter_link(filt, out, link->dst, dstpad_idx)) < 0) {
+    if ((ret = avfilter_link(filt, filt_dstpad_idx, link->dst, dstpad_idx)) < 0) {
         /* failed to link output filter to new filter */
         link->dst->inputs[dstpad_idx] = link;
         return ret;
@@ -140,14 +140,14 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
 
     /* re-hookup the link to the new destination filter we inserted */
     link->dst = filt;
-    link->dstpad = &filt->input_pads[in];
-    filt->inputs[in] = link;
+    link->dstpad = &filt->input_pads[filt_srcpad_idx];
+    filt->inputs[filt_srcpad_idx] = link;
 
     /* if any information on supported media formats already exists on the
      * link, we need to preserve that */
     if (link->out_formats)
         avfilter_formats_changeref(&link->out_formats,
-                                   &filt->outputs[out]->out_formats);
+                                   &filt->outputs[filt_dstpad_idx]->out_formats);
 
     return 0;
 }

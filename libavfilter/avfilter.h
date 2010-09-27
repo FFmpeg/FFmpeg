@@ -783,12 +783,12 @@ void avfilter_destroy(AVFilterContext *filter);
  *
  * @param link the link into which the filter should be inserted
  * @param filt the filter to be inserted
- * @param in   the input pad on the filter to connect
- * @param out  the output pad on the filter to connect
+ * @param filt_srcpad_idx the input pad on the filter to connect
+ * @param filt_dstpad_idx the output pad on the filter to connect
  * @return     zero on success
  */
 int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
-                           unsigned in, unsigned out);
+                           unsigned filt_srcpad_idx, unsigned filt_dstpad_idx);
 
 /**
  * Insert a new pad.
