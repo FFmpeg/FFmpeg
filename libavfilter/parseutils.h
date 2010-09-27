@@ -46,23 +46,4 @@
  */
 int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx);
 
-/**
- * Parse the key/value pairs list in opts. For each key/value pair
- * found, stores the value in the field in ctx that is named like the
- * key. ctx must be an AVClass context, storing is done using
- * AVOptions.
- *
- * @param key_val_sep a 0-terminated list of characters used to
- * separate key from value
- * @param pairs_sep a 0-terminated list of characters used to separate
- * two pairs from each other
- * @return the number of successfully set key/value pairs, or a negative
- * value corresponding to an AVERROR code in case of error:
- * AVERROR(EINVAL) if opts cannot be parsed,
- * the error code issued by av_set_string3() if a key/value pair
- * cannot be set
- */
-int av_set_options_string(void *ctx, const char *opts,
-                          const char *key_val_sep, const char *pairs_sep);
-
 #endif  /* AVFILTER_PARSEUTILS_H */

@@ -251,109 +251,9 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
     return 0;
 }
 
-/**
- * Store the value in the field in ctx that is named like key.
- * ctx must be an AVClass context, storing is done using AVOptions.
- *
- * @param buf the string to parse, buf will be updated to point at the
- * separator just after the parsed key/value pair
- * @param key_val_sep a 0-terminated list of characters used to
- * separate key from value
- * @param pairs_sep a 0-terminated list of characters used to separate
- * two pairs from each other
- * @return 0 if the key/value pair has been successfully parsed and
- * set, or a negative value corresponding to an AVERROR code in case
- * of error:
- * AVERROR(EINVAL) if the key/value pair cannot be parsed,
- * the error code issued by av_set_string3() if the key/value pair
- * cannot be set
- */
-static int parse_key_value_pair(void *ctx, const char **buf,
-                                const char *key_val_sep, const char *pairs_sep)
-{
-    char *key = av_get_token(buf, key_val_sep);
-    char *val;
-    int ret;
-
-    if (*key && strspn(*buf, key_val_sep)) {
-        (*buf)++;
-        val = av_get_token(buf, pairs_sep);
-    } else {
-        av_log(ctx, AV_LOG_ERROR, "Missing key or no key/value separator found after key '%s'\n", key);
-        av_free(key);
-        return AVERROR(EINVAL);
-    }
-
-    av_log(ctx, AV_LOG_DEBUG, "Setting value '%s' for key '%s'\n", val, key);
-
-    ret = av_set_string3(ctx, key, val, 1, NULL);
-    if (ret == AVERROR(ENOENT))
-        av_log(ctx, AV_LOG_ERROR, "Key '%s' not found.\n", key);
-
-    av_free(key);
-    av_free(val);
-    return ret;
-}
-
-int av_set_options_string(void *ctx, const char *opts,
-                          const char *key_val_sep, const char *pairs_sep)
-{
-    int ret, count = 0;
-
-    while (*opts) {
-        if ((ret = parse_key_value_pair(ctx, &opts, key_val_sep, pairs_sep)) < 0)
-            return ret;
-        count++;
-
-        if (*opts)
-            opts++;
-    }
-
-    return count;
-}
-
 #ifdef TEST
 
 #undef printf
-
-typedef struct TestContext
-{
-    const AVClass *class;
-    int num;
-    int toggle;
-    char *string;
-    int flags;
-    AVRational rational;
-} TestContext;
-
-#define OFFSET(x) offsetof(TestContext, x)
-
-#define TEST_FLAG_COOL 01
-#define TEST_FLAG_LAME 02
-#define TEST_FLAG_MU   04
-
-static const AVOption test_options[]= {
-{"num",      "set num",        OFFSET(num),      FF_OPT_TYPE_INT,      0,              0,        100                 },
-{"toggle",   "set toggle",     OFFSET(toggle),   FF_OPT_TYPE_INT,      0,              0,        1                   },
-{"rational", "set rational",   OFFSET(rational), FF_OPT_TYPE_RATIONAL, 0,              0,        10                  },
-{"string",   "set string",     OFFSET(string),   FF_OPT_TYPE_STRING,   0,              CHAR_MIN, CHAR_MAX            },
-{"flags",    "set flags",      OFFSET(flags),    FF_OPT_TYPE_FLAGS,    0,              0,        INT_MAX, 0, "flags" },
-{"cool",     "set cool flag ", 0,                FF_OPT_TYPE_CONST,    TEST_FLAG_COOL, INT_MIN,  INT_MAX, 0, "flags" },
-{"lame",     "set lame flag ", 0,                FF_OPT_TYPE_CONST,    TEST_FLAG_LAME, INT_MIN,  INT_MAX, 0, "flags" },
-{"mu",       "set mu flag ",   0,                FF_OPT_TYPE_CONST,    TEST_FLAG_MU,   INT_MIN,  INT_MAX, 0, "flags" },
-{NULL},
-};
-
-static const char *test_get_name(void *ctx)
-{
-    return "test";
-}
-
-static const AVClass test_class = {
-    "TestContext",
-    test_get_name,
-    test_options
-};
 
 int main(void)
 {
@@ -402,45 +302,6 @@ int main(void)
         for (int i = 0;  i < FF_ARRAY_ELEMS(color_names); i++) {
             if (av_parse_color(rgba, color_names[i], NULL) >= 0)
                 printf("%s -> R(%d) G(%d) B(%d) A(%d)\n", color_names[i], rgba[0], rgba[1], rgba[2], rgba[3]);
-        }
-    }
-
-    printf("\nTesting av_set_options_string()\n");
-    {
-        TestContext test_ctx;
-        const char *options[] = {
-            "",
-            ":",
-            "=",
-            "foo=:",
-            ":=foo",
-            "=foo",
-            "foo=",
-            "foo",
-            "foo=val",
-            "foo==val",
-            "toggle=:",
-            "string=:",
-            "toggle=1 : foo",
-            "toggle=100",
-            "toggle==1",
-            "flags=+mu-lame : num=42: toggle=0",
-            "num=42 : string=blahblah",
-            "rational=0 : rational=1/2 : rational=1/-1",
-            "rational=-1/0",
-        };
-
-        test_ctx.class = &test_class;
-        av_opt_set_defaults2(&test_ctx, 0, 0);
-        test_ctx.string = av_strdup("default");
-
-        av_log_set_level(AV_LOG_DEBUG);
-
-        for (i=0; i < FF_ARRAY_ELEMS(options); i++) {
-            av_log(&test_ctx, AV_LOG_DEBUG, "Setting options string '%s'\n", options[i]);
-            if (av_set_options_string(&test_ctx, options[i], "=", ":") < 0)
-                av_log(&test_ctx, AV_LOG_ERROR, "Error setting options string: '%s'\n", options[i]);
-            printf("\n");
         }
     }
 

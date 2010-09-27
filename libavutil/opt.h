@@ -204,4 +204,23 @@ int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags);
 void av_opt_set_defaults(void *s);
 void av_opt_set_defaults2(void *s, int mask, int flags);
 
+/**
+ * Parse the key/value pairs list in opts. For each key/value pair
+ * found, stores the value in the field in ctx that is named like the
+ * key. ctx must be an AVClass context, storing is done using
+ * AVOptions.
+ *
+ * @param key_val_sep a 0-terminated list of characters used to
+ * separate key from value
+ * @param pairs_sep a 0-terminated list of characters used to separate
+ * two pairs from each other
+ * @return the number of successfully set key/value pairs, or a negative
+ * value corresponding to an AVERROR code in case of error:
+ * AVERROR(EINVAL) if opts cannot be parsed,
+ * the error code issued by av_set_string3() if a key/value pair
+ * cannot be set
+ */
+int av_set_options_string(void *ctx, const char *opts,
+                          const char *key_val_sep, const char *pairs_sep);
+
 #endif /* AVUTIL_OPT_H */
