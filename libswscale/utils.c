@@ -1146,6 +1146,7 @@ fail: //FIXME replace things by appropriate error codes
     return -1;
 }
 
+#if FF_API_SWS_GETCONTEXT
 SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
                            int dstW, int dstH, enum PixelFormat dstFormat, int flags,
                            SwsFilter *srcFilter, SwsFilter *dstFilter, const double *param)
@@ -1181,6 +1182,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
 
     return c;
 }
+#endif
 
 SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
                                 float lumaSharpen, float chromaSharpen,
@@ -1564,9 +1566,19 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
     }
 
     if (!context) {
-        return sws_getContext(srcW, srcH, srcFormat,
-                              dstW, dstH, dstFormat, flags,
-                              srcFilter, dstFilter, param);
+        if (!(context = sws_alloc_context()))
+            return NULL;
+        context->srcW      = srcW;
+        context->srcH      = srcH;
+        context->srcFormat = srcFormat;
+        context->dstFormat = dstFormat;
+        context->flags     = flags;
+        context->param[0]  = param[0];
+        context->param[1]  = param[1];
+        if (sws_init_context(context, srcFilter, dstFilter) < 0) {
+            sws_freeContext(context);
+            return NULL;
+        }
     }
     return context;
 }

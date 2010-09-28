@@ -44,6 +44,14 @@
 #define LIBSWSCALE_IDENT        "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
 
 /**
+ * Those FF_API_* defines are not part of public API.
+ * They may change, break or disappear at any time.
+ */
+#ifndef FF_API_SWS_GETCONTEXT
+#define FF_API_SWS_GETCONTEXT  (LIBSWSCALE_VERSION_MAJOR < 1)
+#endif
+
+/**
  * Returns the LIBSWSCALE_VERSION_INT constant.
  */
 unsigned swscale_version(void);
@@ -164,6 +172,7 @@ int sws_init_context(struct SwsContext *sws_context, SwsFilter *srcFilter, SwsFi
  */
 void sws_freeContext(struct SwsContext *swsContext);
 
+#if FF_API_SWS_GETCONTEXT
 /**
  * Allocates and returns a SwsContext. You need it to perform
  * scaling/conversion operations using sws_scale().
@@ -178,10 +187,12 @@ void sws_freeContext(struct SwsContext *swsContext);
  * @return a pointer to an allocated context, or NULL in case of error
  * @deprecated use sws_alloc_context() and sws_init_context()
  */
+attribute_deprecated
 struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
                                   int dstW, int dstH, enum PixelFormat dstFormat,
                                   int flags, SwsFilter *srcFilter,
                                   SwsFilter *dstFilter, const double *param);
+#endif
 
 /**
  * Scales the image slice in srcSlice and puts the resulting scaled
