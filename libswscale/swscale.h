@@ -152,6 +152,9 @@ struct SwsContext *sws_alloc_context(void);
 
 /**
  * Initializes the swscaler context sws_context.
+ *
+ * @return zero or positive value on success, a negative value on
+ * error
  */
 int sws_init_context(struct SwsContext *sws_context, SwsFilter *srcFilter, SwsFilter *dstFilter);
 
