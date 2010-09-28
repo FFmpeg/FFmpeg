@@ -567,6 +567,8 @@ static int mov_read_dac3(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     AVStream *st;
     int ac3info, acmod, lfeon;
 
+    if (c->fc->nb_streams < 1)
+        return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
 
     ac3info = get_be24(pb);
