@@ -207,10 +207,7 @@ typedef struct VideoState {
     char filename[1024];
     int width, height, xleft, ytop;
 
-    int64_t faulty_pts;
-    int64_t faulty_dts;
-    int64_t last_dts_for_fault_detection;
-    int64_t last_pts_for_fault_detection;
+    PtsCorrectionContext pts_ctx;
 
 #if CONFIG_AVFILTER
     AVFilterContext *out_video_filter;          ///<the last filter in the video chain
@@ -1286,7 +1283,7 @@ retry:
             if (is->audio_st && is->video_st)
                 av_diff = get_audio_clock(is) - get_video_clock(is);
             printf("%7.2f A-V:%7.3f s:%3.1f aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
-                   get_master_clock(is), av_diff, FFMAX(is->skip_frames-1, 0), aqsize / 1024, vqsize / 1024, sqsize, is->faulty_dts, is->faulty_pts);
+                   get_master_clock(is), av_diff, FFMAX(is->skip_frames-1, 0), aqsize / 1024, vqsize / 1024, sqsize, is->pts_ctx.num_faulty_dts, is->pts_ctx.num_faulty_pts);
             fflush(stdout);
             last_time = cur_time;
         }
@@ -1565,8 +1562,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             is->video_current_pos= -1;
             SDL_UnlockMutex(is->pictq_mutex);
 
-            is->last_dts_for_fault_detection=
-            is->last_pts_for_fault_detection= INT64_MIN;
+            init_pts_correction(&is->pts_ctx);
             is->frame_last_pts= AV_NOPTS_VALUE;
             is->frame_last_delay = 0;
             is->frame_timer = (double)av_gettime() / 1000000.0;
@@ -1583,25 +1579,18 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
                                     pkt);
 
         if (got_picture) {
-            if(pkt->dts != AV_NOPTS_VALUE){
-                is->faulty_dts += pkt->dts <= is->last_dts_for_fault_detection;
-                is->last_dts_for_fault_detection= pkt->dts;
+            if (decoder_reorder_pts == -1) {
+                *pts = guess_correct_pts(&is->pts_ctx, frame->reordered_opaque, pkt->dts);
+            } else if (decoder_reorder_pts) {
+                *pts = frame->reordered_opaque;
+            } else {
+                *pts = pkt->dts;
             }
-            if(frame->reordered_opaque != AV_NOPTS_VALUE){
-                is->faulty_pts += frame->reordered_opaque <= is->last_pts_for_fault_detection;
-                is->last_pts_for_fault_detection= frame->reordered_opaque;
+
+            if (*pts == AV_NOPTS_VALUE) {
+                *pts = 0;
             }
         }
-
-        if(   (   decoder_reorder_pts==1
-               || (decoder_reorder_pts && is->faulty_pts<is->faulty_dts)
-               || pkt->dts == AV_NOPTS_VALUE)
-           && frame->reordered_opaque != AV_NOPTS_VALUE)
-            *pts= frame->reordered_opaque;
-        else if(pkt->dts != AV_NOPTS_VALUE)
-            *pts= pkt->dts;
-        else
-            *pts= 0;
 
 //            if (len1 < 0)
 //                break;
