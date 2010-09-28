@@ -1386,9 +1386,6 @@ vfwcap_indev_extralibs="-lavicap32"
 x11_grab_device_indev_deps="x11grab XShmCreateImage"
 x11_grab_device_indev_extralibs="-lX11 -lXext -lXfixes"
 
-# filters
-frei0r_filter_deps="frei0r dlopen strtok_r"
-
 # protocols
 gopher_protocol_deps="network"
 http_protocol_deps="network"
@@ -1402,6 +1399,7 @@ udp_protocol_deps="network"
 
 # filters
 blackframe_filter_deps="gpl"
+frei0r_filter_deps="frei0r dlopen strtok_r"
 ocv_smooth_filter_deps="libopencv"
 yadif_filter_deps="gpl"
 
