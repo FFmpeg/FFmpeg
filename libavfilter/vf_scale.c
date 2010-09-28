@@ -49,10 +49,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     const char *p;
 
     scale->flags = SWS_BILINEAR;
-    if (args){
+    if (args) {
         sscanf(args, "%d:%d", &scale->w, &scale->h);
-        p= strstr(args,"flags=");
-        if(p) scale->flags= strtoul(p+6, NULL, 0);
+        p = strstr(args,"flags=");
+        if (p) scale->flags = strtoul(p+6, NULL, 0);
     }
 
     /* sanity check params */
