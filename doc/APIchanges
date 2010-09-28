@@ -25,6 +25,9 @@ API changes, most recent first:
   Move av_get_token() from libavfilter/parseutils.h to
   libavutil/avstring.h.
 
+2010-09-26 - r32368 - lsws 0.12.0 - swscale.h
+  Add the functions sws_alloc_context() and sws_init_context().
+
 2010-09-26 - r25210 - lavu 50.29.0 - opt.h
   Move libavcodec/opt.h to libavutil/opt.h.
 
