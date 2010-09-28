@@ -190,6 +190,38 @@ crop=in_w-100:in_h-100:100:100
 "crop=in_w/2:in_h/2:y:10+10*sin(n/10)"
 @end example
 
+@section drawbox
+
+Draw a colored box on the input image.
+
+It accepts the syntax:
+@example
+drawbox=@var{x}:@var{y}:@var{width}:@var{height}:@var{color}
+@end example
+
+@table @option
+
+@item x, y
+Specify the top left corner coordinates of the box. Default to 0.
+
+@item width, height
+Specify the width and height of the box, if 0 they are interpreted as
+the input width and height. Default to 0.
+
+@item color
+Specify the color of the box to write, it can be the name of a color
+(case insensitive match) or a 0xRRGGBB[AA] sequence.
+@end table
+
+Follow some examples:
+@example
+# draw a black box around the edge of the input image
+drawbox
+
+# draw a box with color red and an opacity of 50%
+drawbox=10:20:200:60:red@@0.5"
+@end example
+
 @section fifo
 
 Buffer input images and send them when they are requested.
