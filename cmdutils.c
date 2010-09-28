@@ -696,7 +696,7 @@ int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t reordered_pts, int6
         ctx->num_faulty_pts += reordered_pts <= ctx->last_pts;
         ctx->last_pts = reordered_pts;
     }
-    if ((ctx->num_faulty_pts<ctx->num_faulty_dts || dts == AV_NOPTS_VALUE)
+    if ((ctx->num_faulty_pts<=ctx->num_faulty_dts || dts == AV_NOPTS_VALUE)
        && reordered_pts != AV_NOPTS_VALUE)
         pts = reordered_pts;
     else
