@@ -1032,30 +1032,18 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     assert(c->chrDstH <= dstH);
 
     if (flags&SWS_PRINT_INFO) {
-        if (flags&SWS_FAST_BILINEAR)
-            av_log(c, AV_LOG_INFO, "FAST_BILINEAR scaler, ");
-        else if (flags&SWS_BILINEAR)
-            av_log(c, AV_LOG_INFO, "BILINEAR scaler, ");
-        else if (flags&SWS_BICUBIC)
-            av_log(c, AV_LOG_INFO, "BICUBIC scaler, ");
-        else if (flags&SWS_X)
-            av_log(c, AV_LOG_INFO, "Experimental scaler, ");
-        else if (flags&SWS_POINT)
-            av_log(c, AV_LOG_INFO, "Nearest Neighbor / POINT scaler, ");
-        else if (flags&SWS_AREA)
-            av_log(c, AV_LOG_INFO, "Area Averaging scaler, ");
-        else if (flags&SWS_BICUBLIN)
-            av_log(c, AV_LOG_INFO, "luma BICUBIC / chroma BILINEAR scaler, ");
-        else if (flags&SWS_GAUSS)
-            av_log(c, AV_LOG_INFO, "Gaussian scaler, ");
-        else if (flags&SWS_SINC)
-            av_log(c, AV_LOG_INFO, "Sinc scaler, ");
-        else if (flags&SWS_LANCZOS)
-            av_log(c, AV_LOG_INFO, "Lanczos scaler, ");
-        else if (flags&SWS_SPLINE)
-            av_log(c, AV_LOG_INFO, "Bicubic spline scaler, ");
-        else
-            av_log(c, AV_LOG_INFO, "ehh flags invalid?! ");
+        if      (flags&SWS_FAST_BILINEAR) av_log(c, AV_LOG_INFO, "FAST_BILINEAR scaler, ");
+        else if (flags&SWS_BILINEAR)      av_log(c, AV_LOG_INFO, "BILINEAR scaler, ");
+        else if (flags&SWS_BICUBIC)       av_log(c, AV_LOG_INFO, "BICUBIC scaler, ");
+        else if (flags&SWS_X)             av_log(c, AV_LOG_INFO, "Experimental scaler, ");
+        else if (flags&SWS_POINT)         av_log(c, AV_LOG_INFO, "Nearest Neighbor / POINT scaler, ");
+        else if (flags&SWS_AREA)          av_log(c, AV_LOG_INFO, "Area Averaging scaler, ");
+        else if (flags&SWS_BICUBLIN)      av_log(c, AV_LOG_INFO, "luma BICUBIC / chroma BILINEAR scaler, ");
+        else if (flags&SWS_GAUSS)         av_log(c, AV_LOG_INFO, "Gaussian scaler, ");
+        else if (flags&SWS_SINC)          av_log(c, AV_LOG_INFO, "Sinc scaler, ");
+        else if (flags&SWS_LANCZOS)       av_log(c, AV_LOG_INFO, "Lanczos scaler, ");
+        else if (flags&SWS_SPLINE)        av_log(c, AV_LOG_INFO, "Bicubic spline scaler, ");
+        else                              av_log(c, AV_LOG_INFO, "ehh flags invalid?! ");
 
         av_log(c, AV_LOG_INFO, "from %s to %s%s ",
                sws_format_name(srcFormat),
