@@ -138,7 +138,7 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
 void parse_options(int argc, char **argv, const OptionDef *options,
                    void (* parse_arg_function)(const char*));
 
-void set_context_opts(void *ctx, void *opts_ctx, int flags);
+void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec);
 
 /**
  * Print an error message to stderr, indicating filename and a human

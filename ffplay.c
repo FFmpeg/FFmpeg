@@ -2280,7 +2280,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     avctx->error_concealment= error_concealment;
     avcodec_thread_init(avctx, thread_count);
 
-    set_context_opts(avctx, avcodec_opts[avctx->codec_type], 0);
+    set_context_opts(avctx, avcodec_opts[avctx->codec_type], 0, codec);
 
     if (!codec ||
         avcodec_open(avctx, codec) < 0)
@@ -2458,7 +2458,7 @@ static int decode_thread(void *arg)
     ap->time_base= (AVRational){1, 25};
     ap->pix_fmt = frame_pix_fmt;
 
-    set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM);
+    set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM, NULL);
 
     err = av_open_input_file(&ic, is->filename, is->iformat, 0, ap);
     if (err < 0) {

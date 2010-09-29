@@ -49,6 +49,7 @@
 #endif
 
 const char **opt_names;
+const char **opt_values;
 static int opt_name_count;
 AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 AVFormatContext *avformat_opts;
@@ -220,15 +221,25 @@ int opt_default(const char *opt, const char *arg){
         exit(1);
     }
     if (!o) {
+        AVCodec *p = NULL;
+        while ((p=av_codec_next(p))){
+            AVClass *c= p->priv_class;
+            if(c && av_find_opt(&c, opt, NULL, 0, 0))
+                break;
+        }
+        if(!p){
         fprintf(stderr, "Unrecognized option '%s'\n", opt);
         exit(1);
+        }
     }
 
 //    av_log(NULL, AV_LOG_ERROR, "%s:%s: %f 0x%0X\n", opt, arg, av_get_double(avcodec_opts, opt, NULL), (int)av_get_int(avcodec_opts, opt, NULL));
 
     //FIXME we should always use avcodec_opts, ... for storing options so there will not be any need to keep track of what i set over this
+    opt_values= av_realloc(opt_values, sizeof(void*)*(opt_name_count+1));
+    opt_values[opt_name_count]= o ? NULL : arg;
     opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
-    opt_names[opt_name_count++]= o->name;
+    opt_names[opt_name_count++]= o ? o->name : opt;
 
     if ((*avcodec_opts && avcodec_opts[0]->debug) || (avformat_opts && avformat_opts->debug))
         av_log_set_level(AV_LOG_DEBUG);
@@ -283,9 +294,16 @@ int opt_timelimit(const char *opt, const char *arg)
     return 0;
 }
 
-void set_context_opts(void *ctx, void *opts_ctx, int flags)
+void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec)
 {
     int i;
+    void *priv_ctx=NULL;
+    if(!strcmp("AVCodecContext", (*(AVClass**)ctx)->class_name)){
+        AVCodecContext *avctx= ctx;
+        if(codec && codec->priv_class && avctx->priv_data){
+            priv_ctx= avctx->priv_data;
+        }
+    }
     for(i=0; i<opt_name_count; i++){
         char buf[256];
         const AVOption *opt;
@@ -293,6 +311,12 @@ void set_context_opts(void *ctx, void *opts_ctx, int flags)
         /* if an option with name opt_names[i] is present in opts_ctx then str is non-NULL */
         if(str && ((opt->flags & flags) == flags))
             av_set_string3(ctx, opt_names[i], str, 1, NULL);
+        /* We need to use a differnt system to pass options to the private context because
+           it is not known which codec and thus context kind that will be when parsing options
+           we thus use opt_values directly instead of opts_ctx */
+        if(!str && priv_ctx && av_get_string(priv_ctx, opt_names[i], &opt, buf, sizeof(buf))){
+            av_set_string3(priv_ctx, opt_names[i], opt_values[i], 1, NULL);
+        }
     }
 }
 

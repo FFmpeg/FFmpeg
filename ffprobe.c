@@ -269,7 +269,7 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
     AVFormatContext *fmt_ctx;
 
     fmt_ctx = avformat_alloc_context();
-    set_context_opts(fmt_ctx, avformat_opts, AV_OPT_FLAG_DECODING_PARAM);
+    set_context_opts(fmt_ctx, avformat_opts, AV_OPT_FLAG_DECODING_PARAM, NULL);
 
     if ((err = av_open_input_file(&fmt_ctx, filename, iformat, 0, NULL)) < 0) {
         print_error(filename, err);
