@@ -63,29 +63,12 @@ void ff_h264_idct_add8_sse2      (uint8_t **dest, const int *block_offset, DCTEL
 /***********************************/
 /* deblocking */
 
-static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40], int8_t ref[2][40], int16_t mv[2][40][2],
-                                            int bidir, int edges, int step, int mask_mv0, int mask_mv1, int field ) {
-    int dir;
-    __asm__ volatile(
-        "movq %0, %%mm7 \n"
-        "movq %1, %%mm6 \n"
-        ::"m"(ff_pb_1), "m"(ff_pb_3)
-    );
-    if(field)
-        __asm__ volatile(
-            "movq %0, %%mm6 \n"
-            ::"m"(ff_pb_3_1)
-        );
-    __asm__ volatile(
-        "movq  %%mm6, %%mm5 \n"
-        "paddb %%mm5, %%mm5 \n"
-    :);
-
-    // could do a special case for dir==0 && edges==1, but it only reduces the
-    // average filter time by 1.2%
-    for( dir=1; dir>=0; dir-- ) {
+static av_always_inline void h264_loop_filter_strength_iteration_mmx2(int16_t bS[2][4][4], uint8_t nnz[40],
+                                                                      int8_t ref[2][40],   int16_t mv[2][40][2],
+                                                                      int bidir,   int edges, int step,
+                                                                      int mask_mv, int dir)
+{
         const x86_reg d_idx = dir ? -8 : -1;
-        const int mask_mv = dir ? mask_mv1 : mask_mv0;
         DECLARE_ALIGNED(8, const uint64_t, mask_dir) = dir ? 0 : 0xffffffffffffffffULL;
         int b_idx, edge;
         for( b_idx=12, edge=0; edge<edges; edge+=step, b_idx+=8*step ) {
@@ -169,9 +152,30 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                 ::"memory"
             );
         }
-        edges = 4;
-        step = 1;
-    }
+}
+
+static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40], int8_t ref[2][40], int16_t mv[2][40][2],
+                                            int bidir, int edges, int step, int mask_mv0, int mask_mv1, int field ) {
+    __asm__ volatile(
+        "movq %0, %%mm7 \n"
+        "movq %1, %%mm6 \n"
+        ::"m"(ff_pb_1), "m"(ff_pb_3)
+    );
+    if(field)
+        __asm__ volatile(
+            "movq %0, %%mm6 \n"
+            ::"m"(ff_pb_3_1)
+        );
+    __asm__ volatile(
+        "movq  %%mm6, %%mm5 \n"
+        "paddb %%mm5, %%mm5 \n"
+    :);
+
+    // could do a special case for dir==0 && edges==1, but it only reduces the
+    // average filter time by 1.2%
+    h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir, edges, step, mask_mv1, 1);
+    h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir,     4,    1, mask_mv0, 0);
+
     __asm__ volatile(
         "movq   (%0), %%mm0 \n\t"
         "movq  8(%0), %%mm1 \n\t"
