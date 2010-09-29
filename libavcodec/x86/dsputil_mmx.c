@@ -2820,6 +2820,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         if((mm_flags & AV_CPU_FLAG_SSE2) && !(mm_flags & AV_CPU_FLAG_3DNOW)){
             // these functions are slower than mmx on AMD, but faster on Intel
             c->put_pixels_tab[0][0] = put_pixels16_sse2;
+            c->put_no_rnd_pixels_tab[0][0] = put_pixels16_sse2;
             c->avg_pixels_tab[0][0] = avg_pixels16_sse2;
             H264_QPEL_FUNCS(0, 0, sse2);
         }
