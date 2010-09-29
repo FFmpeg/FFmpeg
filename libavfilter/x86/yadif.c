@@ -38,7 +38,7 @@
             "movq      %%mm2, %%mm5 \n\t"\
             "pxor      %%mm3, %%mm4 \n\t"\
             "pavgb     %%mm3, %%mm5 \n\t"\
-            "pand     %[pb1], %%mm4 \n\t"\
+            "pand     "MANGLE(pb_1)", %%mm4 \n\t"\
             "psubusb   %%mm4, %%mm5 \n\t"\
             "psrlq     $8,    %%mm5 \n\t"\
             "punpcklbw %%mm7, %%mm5 \n\t" /* (cur[x-refs+j] + cur[x+refs-j])>>1 */\
@@ -68,7 +68,7 @@
 
 #define CHECK2 /* pretend not to have checked dir=2 if dir=1 was bad.\
                   hurts both quality and speed, but matches the C version. */\
-            "paddw    %[pw1], %%mm6 \n\t"\
+            "paddw    "MANGLE(pw_1)", %%mm6 \n\t"\
             "psllw     $14,   %%mm6 \n\t"\
             "paddsw    %%mm6, %%mm2 \n\t"\
             "movq      %%mm0, %%mm3 \n\t"\
@@ -79,12 +79,13 @@
             "por       %%mm5, %%mm3 \n\t"\
             "movq      %%mm3, %%mm1 \n\t"
 
+DECLARE_ASM_CONST(16, uint64_t, pw_1) = 0x0001000100010001ULL;
+DECLARE_ASM_CONST(16, uint64_t, pb_1) = 0x0101010101010101ULL;
+
 void ff_yadif_filter_line_mmx(uint8_t *dst,
                               uint8_t *prev, uint8_t *cur, uint8_t *next,
                               int w, int refs, int parity, int mode)
 {
-    static const uint64_t pw_1 = 0x0001000100010001ULL;
-    static const uint64_t pb_1 = 0x0101010101010101ULL;
     uint64_t tmp0, tmp1, tmp2, tmp3;
     int x;
 
@@ -142,7 +143,7 @@ void ff_yadif_filter_line_mmx(uint8_t *dst,
             "punpcklbw %%mm7, %%mm3 \n\t" /* ABS(cur[x-refs+1] - cur[x+refs+1]) */\
             "paddw     %%mm2, %%mm0 \n\t"\
             "paddw     %%mm3, %%mm0 \n\t"\
-            "psubw    %[pw1], %%mm0 \n\t" /* spatial_score */\
+            "psubw    "MANGLE(pw_1)", %%mm0 \n\t" /* spatial_score */\
 \
             CHECK(-2,0)\
             CHECK1\
@@ -203,8 +204,6 @@ void ff_yadif_filter_line_mmx(uint8_t *dst,
              [next] "r"(next),\
              [prefs]"r"((x86_reg)refs),\
              [mrefs]"r"((x86_reg)-refs),\
-             [pw1]  "m"(pw_1),\
-             [pb1]  "m"(pb_1),\
              [mode] "g"(mode)\
         );\
         __asm__ volatile("movd %%mm1, %0" :"=m"(*dst));\
