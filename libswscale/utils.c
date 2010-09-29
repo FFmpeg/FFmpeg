@@ -43,6 +43,7 @@
 #include "libavutil/x86_cpu.h"
 #include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
 unsigned swscale_version(void)
@@ -746,6 +747,7 @@ SwsContext *sws_alloc_context(void)
     SwsContext *c= av_mallocz(sizeof(SwsContext));
 
     c->av_class = &sws_context_class;
+    av_opt_set_defaults(c);
 
     return c;
 }
@@ -1154,9 +1156,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
     if (param) {
         c->param[0] = param[0];
         c->param[1] = param[1];
-    } else {
-        c->param[0] =
-        c->param[1] = SWS_PARAM_DEFAULT;
     }
     sws_setColorspaceDetails(c, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT], c->srcRange, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT] /* FIXME*/, c->dstRange, 0, 1<<16, 1<<16);
 
