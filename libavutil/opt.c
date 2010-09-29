@@ -426,6 +426,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                     av_log(s, AV_LOG_DEBUG, "loss of precision in default of %s\n", opt->name);
                 av_set_int(s, opt->name, opt->default_val);
             break;
+            case FF_OPT_TYPE_DOUBLE:
             case FF_OPT_TYPE_FLOAT: {
                 double val;
                 val = opt->default_val;
