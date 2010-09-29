@@ -69,33 +69,34 @@ static av_always_inline void h264_loop_filter_strength_iteration_mmx2(int16_t bS
                                                                       int mask_mv, int dir, const int d_idx,
                                                                       const uint64_t mask_dir)
 {
-        int b_idx, edge;
-        for( b_idx=12, edge=0; edge<edges; edge+=step, b_idx+=8*step ) {
+        x86_reg b_idx;
+        mask_mv <<= 3;
+        for( b_idx=0; b_idx<edges; b_idx+=step ) {
             if (!mask_dir)
             __asm__ volatile(
                     "pxor %%mm0, %%mm0 \n\t"
                     ::
             );
-            if(!(mask_mv & edge)) {
+            if(!(mask_mv & b_idx)) {
                 if(bidir) {
                     __asm__ volatile(
-                        "movd         %a2(%0), %%mm2 \n"
-                        "punpckldq    %a3(%0), %%mm2 \n" // { ref0[bn], ref1[bn] }
-                        "pshufw $0x44,   (%0), %%mm0 \n" // { ref0[b], ref0[b] }
-                        "pshufw $0x44, 40(%0), %%mm1 \n" // { ref1[b], ref1[b] }
+                        "movd         %a3(%0,%2), %%mm2 \n"
+                        "punpckldq    %a4(%0,%2), %%mm2 \n" // { ref0[bn], ref1[bn] }
+                        "pshufw $0x44, 12(%0,%2), %%mm0 \n" // { ref0[b], ref0[b] }
+                        "pshufw $0x44, 52(%0,%2), %%mm1 \n" // { ref1[b], ref1[b] }
                         "pshufw $0x4E, %%mm2, %%mm3 \n"
                         "psubb         %%mm2, %%mm0 \n" // { ref0[b]!=ref0[bn], ref0[b]!=ref1[bn] }
                         "psubb         %%mm3, %%mm1 \n" // { ref1[b]!=ref1[bn], ref1[b]!=ref0[bn] }
 
                         "por           %%mm1, %%mm0 \n"
-                        "movq        %a4(%1), %%mm1 \n"
-                        "movq        %a5(%1), %%mm2 \n"
+                        "movq   %a5(%1,%2,4), %%mm1 \n"
+                        "movq   %a6(%1,%2,4), %%mm2 \n"
                         "movq          %%mm1, %%mm3 \n"
                         "movq          %%mm2, %%mm4 \n"
-                        "psubw          (%1), %%mm1 \n"
-                        "psubw         8(%1), %%mm2 \n"
-                        "psubw       160(%1), %%mm3 \n"
-                        "psubw       168(%1), %%mm4 \n"
+                        "psubw   48(%1,%2,4), %%mm1 \n"
+                        "psubw   56(%1,%2,4), %%mm2 \n"
+                        "psubw  208(%1,%2,4), %%mm3 \n"
+                        "psubw  216(%1,%2,4), %%mm4 \n"
                         "packsswb      %%mm2, %%mm1 \n"
                         "packsswb      %%mm4, %%mm3 \n"
                         "paddb         %%mm6, %%mm1 \n"
@@ -105,14 +106,14 @@ static av_always_inline void h264_loop_filter_strength_iteration_mmx2(int16_t bS
                         "packsswb      %%mm3, %%mm1 \n"
 
                         "por           %%mm1, %%mm0 \n"
-                        "movq        %a6(%1), %%mm1 \n"
-                        "movq        %a7(%1), %%mm2 \n"
+                        "movq   %a7(%1,%2,4), %%mm1 \n"
+                        "movq   %a8(%1,%2,4), %%mm2 \n"
                         "movq          %%mm1, %%mm3 \n"
                         "movq          %%mm2, %%mm4 \n"
-                        "psubw          (%1), %%mm1 \n"
-                        "psubw         8(%1), %%mm2 \n"
-                        "psubw       160(%1), %%mm3 \n"
-                        "psubw       168(%1), %%mm4 \n"
+                        "psubw   48(%1,%2,4), %%mm1 \n"
+                        "psubw   56(%1,%2,4), %%mm2 \n"
+                        "psubw  208(%1,%2,4), %%mm3 \n"
+                        "psubw  216(%1,%2,4), %%mm4 \n"
                         "packsswb      %%mm2, %%mm1 \n"
                         "packsswb      %%mm4, %%mm3 \n"
                         "paddb         %%mm6, %%mm1 \n"
@@ -125,41 +126,44 @@ static av_always_inline void h264_loop_filter_strength_iteration_mmx2(int16_t bS
                         "por           %%mm1, %%mm0 \n"
                         "pshufw $0x4E, %%mm0, %%mm1 \n"
                         "pminub        %%mm1, %%mm0 \n"
-                        ::"r"(ref[0]+b_idx),
-                          "r"(mv[0]+b_idx),
-                          "i"(d_idx),
-                          "i"(d_idx+40),
-                          "i"(d_idx*4),
-                          "i"(d_idx*4+8),
-                          "i"(d_idx*4+160),
-                          "i"(d_idx*4+168)
+                        ::"r"(ref),
+                          "r"(mv),
+                          "r"(b_idx),
+                          "i"(d_idx+12),
+                          "i"(d_idx+52),
+                          "i"(d_idx*4+48),
+                          "i"(d_idx*4+56),
+                          "i"(d_idx*4+208),
+                          "i"(d_idx*4+216)
                     );
                 } else {
                     __asm__ volatile(
-                        "movd        (%1), %%mm0 \n"
-                        "psubb    %a0(%1), %%mm0 \n" // ref[b] != ref[bn]
-                        "movq        (%2), %%mm1 \n"
-                        "movq       8(%2), %%mm2 \n"
-                        "psubw    %a3(%2), %%mm1 \n"
-                        "psubw    %a4(%2), %%mm2 \n"
+                        "movd   12(%0,%2), %%mm0 \n"
+                        "psubb %a3(%0,%2), %%mm0 \n" // ref[b] != ref[bn]
+                        "movq   48(%1,%2,4), %%mm1 \n"
+                        "movq   56(%1,%2,4), %%mm2 \n"
+                        "psubw %a4(%1,%2,4), %%mm1 \n"
+                        "psubw %a5(%1,%2,4), %%mm2 \n"
                         "packsswb   %%mm2, %%mm1 \n"
                         "paddb      %%mm6, %%mm1 \n"
                         "psubusb    %%mm5, %%mm1 \n" // abs(mv[b] - mv[bn]) >= limit
                         "packsswb   %%mm1, %%mm1 \n"
                         "por        %%mm1, %%mm0 \n"
-                        ::"i"(d_idx),
-                          "r"(ref[0]+b_idx),
-                          "r"(mv[0]+b_idx),
-                          "i"(d_idx*4),
-                          "i"(d_idx*4+8)
+                        ::"r"(ref),
+                          "r"(mv),
+                          "r"(b_idx),
+                          "i"(d_idx+12),
+                          "i"(d_idx*4+48),
+                          "i"(d_idx*4+56)
                     );
                 }
             }
             __asm__ volatile(
-                "movd   (%0), %%mm1 \n"
-                "por %a1(%0), %%mm1 \n" // nnz[b] || nnz[bn]
-                ::"r"(nnz+b_idx),
-                  "i"(d_idx)
+                "movd 12(%0,%1), %%mm1 \n"
+                "por %a2(%0,%1), %%mm1 \n" // nnz[b] || nnz[bn]
+                ::"r"(nnz),
+                  "r"(b_idx),
+                  "i"(d_idx+12)
             );
             __asm__ volatile(
                 "pminub    %%mm7, %%mm1 \n"
@@ -168,9 +172,11 @@ static av_always_inline void h264_loop_filter_strength_iteration_mmx2(int16_t bS
                 "pxor      %%mm2, %%mm2 \n"
                 "pmaxub    %%mm0, %%mm1 \n"
                 "punpcklbw %%mm2, %%mm1 \n"
-                "movq      %%mm1, %0    \n"
-                :"=m"(*bS[dir][edge])
-                ::"memory"
+                "movq      %%mm1, %a1(%0,%2) \n"
+                ::"r"(bS),
+                  "i"(32*dir),
+                  "r"(b_idx)
+                :"memory"
             );
         }
 }
@@ -194,8 +200,10 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
 
     // could do a special case for dir==0 && edges==1, but it only reduces the
     // average filter time by 1.2%
+    step  <<= 3;
+    edges <<= 3;
     h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir, edges, step, mask_mv1, 1, -8,  0);
-    h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir,     4,    1, mask_mv0, 0, -1, -1);
+    h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir,    32,    8, mask_mv0, 0, -1, -1);
 
     __asm__ volatile(
         "movq   (%0), %%mm0 \n\t"
