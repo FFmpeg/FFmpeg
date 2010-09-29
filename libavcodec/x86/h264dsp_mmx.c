@@ -86,7 +86,7 @@ static av_always_inline void h264_loop_filter_strength_iteration_mmx2(int16_t bS
                         "pshufw $0x4E, %%mm2, %%mm3 \n"
                         "psubb         %%mm2, %%mm0 \n" // { ref0[b]!=ref0[bn], ref0[b]!=ref1[bn] }
                         "psubb         %%mm3, %%mm1 \n" // { ref1[b]!=ref1[bn], ref1[b]!=ref0[bn] }
-                        "1: \n"
+
                         "por           %%mm1, %%mm0 \n"
                         "movq      (%2,%0,4), %%mm1 \n"
                         "movq     8(%2,%0,4), %%mm2 \n"
@@ -103,10 +103,24 @@ static av_always_inline void h264_loop_filter_strength_iteration_mmx2(int16_t bS
                         "psubusb       %%mm5, %%mm1 \n" // abs(mv[b] - mv[bn]) >= limit
                         "psubusb       %%mm5, %%mm3 \n"
                         "packsswb      %%mm3, %%mm1 \n"
-                        "add $40, %0 \n"
-                        "cmp $40, %0 \n"
-                        "jl 1b \n"
-                        "sub $80, %0 \n"
+
+                        "por           %%mm1, %%mm0 \n"
+                        "movq   160(%2,%0,4), %%mm1 \n"
+                        "movq   168(%2,%0,4), %%mm2 \n"
+                        "movq          %%mm1, %%mm3 \n"
+                        "movq          %%mm2, %%mm4 \n"
+                        "psubw          (%2), %%mm1 \n"
+                        "psubw         8(%2), %%mm2 \n"
+                        "psubw       160(%2), %%mm3 \n"
+                        "psubw       168(%2), %%mm4 \n"
+                        "packsswb      %%mm2, %%mm1 \n"
+                        "packsswb      %%mm4, %%mm3 \n"
+                        "paddb         %%mm6, %%mm1 \n"
+                        "paddb         %%mm6, %%mm3 \n"
+                        "psubusb       %%mm5, %%mm1 \n" // abs(mv[b] - mv[bn]) >= limit
+                        "psubusb       %%mm5, %%mm3 \n"
+                        "packsswb      %%mm3, %%mm1 \n"
+
                         "pshufw $0x4E, %%mm1, %%mm1 \n"
                         "por           %%mm1, %%mm0 \n"
                         "pshufw $0x4E, %%mm0, %%mm1 \n"
