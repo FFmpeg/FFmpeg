@@ -66,14 +66,15 @@ void ff_h264_idct_add8_sse2      (uint8_t **dest, const int *block_offset, DCTEL
 static av_always_inline void h264_loop_filter_strength_iteration_mmx2(int16_t bS[2][4][4], uint8_t nnz[40],
                                                                       int8_t ref[2][40],   int16_t mv[2][40][2],
                                                                       int bidir,   int edges, int step,
-                                                                      int mask_mv, int dir, const int d_idx)
+                                                                      int mask_mv, int dir, const int d_idx,
+                                                                      const uint64_t mask_dir)
 {
-        DECLARE_ALIGNED(8, const uint64_t, mask_dir) = dir ? 0 : 0xffffffffffffffffULL;
         int b_idx, edge;
         for( b_idx=12, edge=0; edge<edges; edge+=step, b_idx+=8*step ) {
+            if (!mask_dir)
             __asm__ volatile(
-                "pand %0, %%mm0 \n\t"
-                ::"m"(mask_dir)
+                    "pxor %%mm0, %%mm0 \n\t"
+                    ::
             );
             if(!(mask_mv & edge)) {
                 if(bidir) {
@@ -193,8 +194,8 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
 
     // could do a special case for dir==0 && edges==1, but it only reduces the
     // average filter time by 1.2%
-    h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir, edges, step, mask_mv1, 1, -8);
-    h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir,     4,    1, mask_mv0, 0, -1);
+    h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir, edges, step, mask_mv1, 1, -8,  0);
+    h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir,     4,    1, mask_mv0, 0, -1, -1);
 
     __asm__ volatile(
         "movq   (%0), %%mm0 \n\t"
