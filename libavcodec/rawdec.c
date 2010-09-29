@@ -122,6 +122,7 @@ static int raw_decode(AVCodecContext *avctx,
 
     frame->interlaced_frame = avctx->coded_frame->interlaced_frame;
     frame->top_field_first = avctx->coded_frame->top_field_first;
+    frame->reordered_opaque = avctx->reordered_opaque;
 
     //2bpp and 4bpp raw in avi and mov (yes this is ugly ...)
     if (context->buffer) {
