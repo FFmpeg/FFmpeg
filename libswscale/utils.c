@@ -741,7 +741,8 @@ static int update_flags_cpu(int flags)
     return flags;
 }
 
-SwsContext *sws_alloc_context(void){
+SwsContext *sws_alloc_context(void)
+{
     SwsContext *c= av_mallocz(sizeof(SwsContext));
 
     c->av_class = &sws_context_class;
@@ -749,7 +750,8 @@ SwsContext *sws_alloc_context(void){
     return c;
 }
 
-int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter){
+int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
+{
     int i;
     int usesVFilter, usesHFilter;
     int unscaled;
