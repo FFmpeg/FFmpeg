@@ -467,6 +467,36 @@ void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType codec_typ
     s->reordered_opaque= AV_NOPTS_VALUE;
 }
 
+int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec){
+    avcodec_get_context_defaults2(s, codec ? codec->type : AVMEDIA_TYPE_UNKNOWN);
+    if(codec && codec->priv_data_size){
+        if(!s->priv_data){
+            s->priv_data= av_mallocz(codec->priv_data_size);
+            if (!s->priv_data) {
+                return AVERROR(ENOMEM);
+            }
+        }
+        if(codec->priv_class){
+            *(AVClass**)s->priv_data= codec->priv_class;
+            av_opt_set_defaults(s->priv_data);
+        }
+    }
+    return 0;
+}
+
+AVCodecContext *avcodec_alloc_context3(AVCodec *codec){
+    AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
+
+    if(avctx==NULL) return NULL;
+
+    if(avcodec_get_context_defaults3(avctx, codec) < 0){
+        av_free(avctx);
+        return NULL;
+    }
+
+    return avctx;
+}
+
 AVCodecContext *avcodec_alloc_context2(enum AVMediaType codec_type){
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
 

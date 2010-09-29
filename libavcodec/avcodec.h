@@ -3330,6 +3330,10 @@ void avcodec_get_context_defaults(AVCodecContext *s);
  *  we WILL change its arguments and name a few times! */
 void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType);
 
+/** THIS FUNCTION IS NOT YET PART OF THE PUBLIC API!
+ *  we WILL change its arguments and name a few times! */
+int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec);
+
 /**
  * Allocate an AVCodecContext and set its fields to default values.  The
  * resulting struct can be deallocated by simply calling av_free().
@@ -3342,6 +3346,10 @@ AVCodecContext *avcodec_alloc_context(void);
 /** THIS FUNCTION IS NOT YET PART OF THE PUBLIC API!
  *  we WILL change its arguments and name a few times! */
 AVCodecContext *avcodec_alloc_context2(enum AVMediaType);
+
+/** THIS FUNCTION IS NOT YET PART OF THE PUBLIC API!
+ *  we WILL change its arguments and name a few times! */
+AVCodecContext *avcodec_alloc_context3(AVCodec *codec);
 
 /**
  * Copy the settings of the source AVCodecContext into the destination
