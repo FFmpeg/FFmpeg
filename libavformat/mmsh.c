@@ -147,9 +147,9 @@ static int get_http_header_data(MMSHContext *mmsh)
 
     for (;;) {
         len = 0;
-        chunk_type = get_chunk_header(mmsh, &len);
-        if (chunk_type < 0) {
-            return chunk_type;
+        res = chunk_type = get_chunk_header(mmsh, &len);
+        if (res < 0) {
+            return res;
         } else if (chunk_type == CHUNK_TYPE_ASF_HEADER){
             // get asf header and stored it
             if (!mms->header_parsed) {
