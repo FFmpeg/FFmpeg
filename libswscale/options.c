@@ -66,8 +66,8 @@ static const AVOption options[] = {
     { "dst_format", "destination format", OFFSET(dstFormat), FF_OPT_TYPE_INT, DEFAULT, 0, PIX_FMT_NB-1, VE },
     { "src_range" , "source range"      , OFFSET(srcRange) , FF_OPT_TYPE_INT, DEFAULT, 0, 1, VE },
     { "dst_range" , "destination range" , OFFSET(dstRange) , FF_OPT_TYPE_INT, DEFAULT, 0, 1, VE },
-    { "param0" , "scaler param 0" , OFFSET(param[0]) , FF_OPT_TYPE_DOUBLE, DEFAULT, INT_MIN, INT_MAX, VE },
-    { "param1" , "scaler param 1" , OFFSET(param[1]) , FF_OPT_TYPE_DOUBLE, DEFAULT, INT_MIN, INT_MAX, VE },
+    { "param0" , "scaler param 0" , OFFSET(param[0]) , FF_OPT_TYPE_DOUBLE, SWS_PARAM_DEFAULT, INT_MIN, INT_MAX, VE },
+    { "param1" , "scaler param 1" , OFFSET(param[1]) , FF_OPT_TYPE_DOUBLE, SWS_PARAM_DEFAULT, INT_MIN, INT_MAX, VE },
 
     { NULL }
 };
