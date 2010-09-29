@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/avutil.h"
+#include "libavutil/pixfmt.h"
 #include "libavcodec/opt.h"
 #include "swscale.h"
 #include "swscale_internal.h"
@@ -61,8 +62,8 @@ static const AVOption options[] = {
     { "srch", "source height"     , OFFSET(srcH), FF_OPT_TYPE_INT, DEFAULT, 1, INT_MAX, VE },
     { "dstw", "destination width" , OFFSET(dstW), FF_OPT_TYPE_INT, DEFAULT, 1, INT_MAX, VE },
     { "dsth", "destination height", OFFSET(dstH), FF_OPT_TYPE_INT, DEFAULT, 1, INT_MAX, VE },
-    { "src_format", "source format"     , OFFSET(srcFormat), FF_OPT_TYPE_INT, DEFAULT, 1, UINT_MAX, VE },
-    { "dst_format", "destination format", OFFSET(dstFormat), FF_OPT_TYPE_INT, DEFAULT, 1, UINT_MAX, VE },
+    { "src_format", "source format"     , OFFSET(srcFormat), FF_OPT_TYPE_INT, DEFAULT, 0, PIX_FMT_NB-1, VE },
+    { "dst_format", "destination format", OFFSET(dstFormat), FF_OPT_TYPE_INT, DEFAULT, 0, PIX_FMT_NB-1, VE },
     { "src_range" , "source range"      , OFFSET(srcRange) , FF_OPT_TYPE_INT, DEFAULT, 0, 1, VE },
     { "dst_range" , "destination range" , OFFSET(dstRange) , FF_OPT_TYPE_INT, DEFAULT, 0, 1, VE },
     { "param0" , "scaler param 0" , OFFSET(param[0]) , FF_OPT_TYPE_DOUBLE, DEFAULT, INT_MIN, INT_MAX, VE },
