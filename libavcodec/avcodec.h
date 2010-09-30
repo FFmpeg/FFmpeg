@@ -66,6 +66,9 @@
 #ifndef FF_API_SUBTITLE_OLD
 #define FF_API_SUBTITLE_OLD     (LIBAVCODEC_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_USE_LPC
+#define FF_API_USE_LPC          (LIBAVCODEC_VERSION_MAJOR < 53)
+#endif
 
 #define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
 #define AV_TIME_BASE            1000000
@@ -2453,7 +2456,7 @@ typedef struct AVCodecContext {
     int compression_level;
 #define FF_COMPRESSION_DEFAULT -1
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_USE_LPC
     /**
      * Sets whether to use LPC mode - used by FLAC encoder.
      * - encoding: Set by user.
