@@ -39,7 +39,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     if (priv->w <= 0 || priv->h <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Non-positive size values are not acceptable.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     return 0;
