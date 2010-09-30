@@ -65,7 +65,7 @@ FF_SYMVER(void, av_opt_set_defaults2, (void *s, int mask, int flags), "LIBAVCODE
 }
 #endif
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_SET_STRING_OLD
 const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc){
     const AVOption *o;
     if (av_set_string3(obj, name, val, alloc, &o) < 0)

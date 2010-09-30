@@ -31,7 +31,7 @@
 #include "avcodec.h"
 #include "libavutil/opt.h"
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_SET_STRING_OLD
 /**
  * @see av_set_string2()
  */
