@@ -3,6 +3,7 @@ include $(SUBDIR)../config.mak
 NAME = avutil
 
 HEADERS = adler32.h                                                     \
+          assert.h                                                      \
           attributes.h                                                  \
           avstring.h                                                    \
           avutil.h                                                      \

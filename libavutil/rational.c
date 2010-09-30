@@ -25,7 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include <assert.h>
+#include "assert.h"
 //#include <math.h>
 #include <limits.h>
 
@@ -67,7 +67,7 @@ int av_reduce(int *dst_num, int *dst_den, int64_t num, int64_t den, int64_t max)
         num= den;
         den= next_den;
     }
-    assert(av_gcd(a1.num, a1.den) <= 1U);
+    av_assert2(av_gcd(a1.num, a1.den) <= 1U);
 
     *dst_num = sign ? -a1.num : a1.num;
     *dst_den = a1.den;

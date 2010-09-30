@@ -79,8 +79,7 @@
 
 #include "cmdutils.h"
 
-#undef NDEBUG
-#include <assert.h>
+#include "libavutil/assert.h"
 
 const char program_name[] = "FFmpeg";
 const int program_birth_year = 2000;
@@ -905,7 +904,7 @@ need_realloc:
                 }
             }else if(audio_sync_method>1){
                 int comp= av_clip(delta, -audio_sync_method, audio_sync_method);
-                assert(ost->audio_resample);
+                av_assert0(ost->audio_resample);
                 if(verbose > 2)
                     fprintf(stderr, "compensating audio timestamp drift:%f compensation:%d in:%d\n", delta, comp, enc->sample_rate);
 //                fprintf(stderr, "drift:%f len:%d opts:%"PRId64" ipts:%"PRId64" fifo:%d\n", delta, -1, ost->sync_opts, (int64_t)(get_sync_ipts(ost) * enc->sample_rate), av_fifo_size(ost->fifo)/(ost->st->codec->channels * 2));
@@ -1223,10 +1222,10 @@ static void do_video_out(AVFormatContext *s,
             rightBand  = ((int64_t)ist->st->codec->width  * ost->original_rightBand  / ost->original_width)  & ~1;
 
             /* sanity check to ensure no bad band sizes sneak in */
-            assert(topBand    <= INT_MAX && topBand    >= 0);
-            assert(bottomBand <= INT_MAX && bottomBand >= 0);
-            assert(leftBand   <= INT_MAX && leftBand   >= 0);
-            assert(rightBand  <= INT_MAX && rightBand  >= 0);
+            av_assert0(topBand    <= INT_MAX && topBand    >= 0);
+            av_assert0(bottomBand <= INT_MAX && bottomBand >= 0);
+            av_assert0(leftBand   <= INT_MAX && leftBand   >= 0);
+            av_assert0(rightBand  <= INT_MAX && rightBand  >= 0);
 
             ost->topBand    = topBand;
             ost->bottomBand = bottomBand;
@@ -1696,7 +1695,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     //ost->sync_ipts = (double)(ist->pts + input_files_ts_offset[ist->file_index] - start_time)/ AV_TIME_BASE;
 
                     if (ost->encoding_needed) {
-                        assert(ist->decoding_needed);
+                        av_assert0(ist->decoding_needed);
                         switch(ost->st->codec->codec_type) {
                         case AVMEDIA_TYPE_AUDIO:
                             do_audio_out(os, ost, ist, decoded_data_buf, decoded_data_size);
@@ -3628,7 +3627,7 @@ static void opt_new_stream(const char *opt, const char *arg)
     if      (!strcmp(opt, "newvideo"   )) new_video_stream   (oc);
     else if (!strcmp(opt, "newaudio"   )) new_audio_stream   (oc);
     else if (!strcmp(opt, "newsubtitle")) new_subtitle_stream(oc);
-    else assert(0);
+    else av_assert0(0);
 }
 
 /* arg format is "output-stream-index:streamid-value". */
