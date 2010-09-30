@@ -60,6 +60,9 @@
 #ifndef FF_API_AUDIO_OLD
 #define FF_API_AUDIO_OLD        (LIBAVCODEC_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_VIDEO_OLD
+#define FF_API_VIDEO_OLD        (LIBAVCODEC_VERSION_MAJOR < 53)
+#endif
 
 #define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
 #define AV_TIME_BASE            1000000
@@ -3524,7 +3527,7 @@ int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          AVPacket *avpkt);
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_VIDEO_OLD
 /**
  * Decode a video frame from buf into picture.
  * Wrapper function which calls avcodec_decode_video2.
