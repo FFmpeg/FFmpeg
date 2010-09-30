@@ -90,7 +90,7 @@ int av_register_protocol(URLProtocol *protocol)
 
 int register_protocol(URLProtocol *protocol)
 {
-    return av_register_protocol(protocol);
+    return av_register_protocol2(protocol, sizeof(struct URLProtocol_compat));
 }
 #endif
 
