@@ -217,7 +217,7 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
     return s;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_AUDIO_OLD
 ReSampleContext *audio_resample_init(int output_channels, int input_channels,
                                      int output_rate, int input_rate)
 {

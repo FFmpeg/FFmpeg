@@ -57,6 +57,9 @@
 #ifndef FF_API_OPT_SHOW
 #define FF_API_OPT_SHOW         (LIBAVCODEC_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_AUDIO_OLD
+#define FF_API_AUDIO_OLD        (LIBAVCODEC_VERSION_MAJOR < 53)
+#endif
 
 #define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
 #define AV_TIME_BASE            1000000
@@ -2998,7 +3001,7 @@ struct AVResampleContext;
 
 typedef struct ReSampleContext ReSampleContext;
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_AUDIO_OLD
 /**
  * @deprecated Use av_audio_resample_init() instead.
  */
@@ -3459,7 +3462,7 @@ int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, 
  */
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_AUDIO_OLD
 /**
  * Decode an audio frame from buf into samples.
  * Wrapper function which calls avcodec_decode_audio3.
