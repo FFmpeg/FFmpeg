@@ -255,7 +255,7 @@ const DVprofile* ff_dv_frame_profile(const DVprofile *sys,
    int stype = frame[80*5 + 48 + 3] & 0x1f;
 
    /* 576i50 25Mbps 4:1:1 is a special case */
-   if (dsf == 1 && stype == 0 && frame[5] & 0x07) {
+   if (dsf == 1 && stype == 0 && frame[4] & 0x07 /* the APT field */) {
        return &dv_profiles[2];
    }
 
