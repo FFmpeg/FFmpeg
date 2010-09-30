@@ -72,6 +72,9 @@
 #ifndef FF_API_SET_STRING_OLD
 #define FF_API_SET_STRING_OLD   (LIBAVCODEC_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_INOFFICIAL
+#define FF_API_INOFFICIAL       (LIBAVCODEC_VERSION_MAJOR < 53)
+#endif
 
 #define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
 #define AV_TIME_BASE            1000000
@@ -1411,7 +1414,7 @@ typedef struct AVCodecContext {
 #define FF_COMPLIANCE_VERY_STRICT   2 ///< Strictly conform to an older more strict version of the spec or reference software.
 #define FF_COMPLIANCE_STRICT        1 ///< Strictly conform to all the things in the spec no matter what consequences.
 #define FF_COMPLIANCE_NORMAL        0
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_INOFFICIAL
 #define FF_COMPLIANCE_INOFFICIAL   -1 ///< Allow inofficial extensions (deprecated - use FF_COMPLIANCE_UNOFFICIAL instead).
 #endif
 #define FF_COMPLIANCE_UNOFFICIAL   -1 ///< Allow unofficial extensions

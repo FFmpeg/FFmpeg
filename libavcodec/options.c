@@ -160,7 +160,7 @@ static const AVOption options[]={
 {"very", "strictly conform to a older more strict version of the spec or reference software", 0, FF_OPT_TYPE_CONST, FF_COMPLIANCE_VERY_STRICT, INT_MIN, INT_MAX, V|D|E, "strict"},
 {"strict", "strictly conform to all the things in the spec no matter what consequences", 0, FF_OPT_TYPE_CONST, FF_COMPLIANCE_STRICT, INT_MIN, INT_MAX, V|D|E, "strict"},
 {"normal", NULL, 0, FF_OPT_TYPE_CONST, FF_COMPLIANCE_NORMAL, INT_MIN, INT_MAX, V|D|E, "strict"},
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_INOFFICIAL
 {"inofficial", "allow unofficial extensions (deprecated - use unofficial)", 0, FF_OPT_TYPE_CONST, FF_COMPLIANCE_UNOFFICIAL, INT_MIN, INT_MAX, V|D|E, "strict"},
 #endif
 {"unofficial", "allow unofficial extensions", 0, FF_OPT_TYPE_CONST, FF_COMPLIANCE_UNOFFICIAL, INT_MIN, INT_MAX, V|D|E, "strict"},
