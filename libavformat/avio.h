@@ -165,6 +165,11 @@ int url_close(URLContext *h);
  */
 int url_exist(const char *url);
 
+/**
+ * Return the filesize of the resource accessed by h, AVERROR(ENOSYS)
+ * if the operation is not supported by h, or another negative value
+ * corresponding to an AVERROR error code in case of failure.
+ */
 int64_t url_filesize(URLContext *h);
 
 /**
