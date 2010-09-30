@@ -63,6 +63,9 @@
 #ifndef FF_API_VIDEO_OLD
 #define FF_API_VIDEO_OLD        (LIBAVCODEC_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_SUBTITLE_OLD
+#define FF_API_SUBTITLE_OLD     (LIBAVCODEC_VERSION_MAJOR < 53)
+#endif
 
 #define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
 #define AV_TIME_BASE            1000000
@@ -3590,7 +3593,7 @@ int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
                          AVPacket *avpkt);
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_SUBTITLE_OLD
 /* Decode a subtitle message. Return -1 if error, otherwise return the
  * number of bytes used. If no subtitle could be decompressed,
  * got_sub_ptr is zero. Otherwise, the subtitle is stored in *sub. */

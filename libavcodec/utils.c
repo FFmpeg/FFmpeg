@@ -671,7 +671,7 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
     return ret;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_SUBTITLE_OLD
 int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
                             int *got_sub_ptr,
                             const uint8_t *buf, int buf_size)
