@@ -95,6 +95,20 @@ static int file_close(URLContext *h)
     return close(fd);
 }
 
+static int file_check(URLContext *h, int mask)
+{
+    struct stat st;
+    int ret = stat(h->filename, &st);
+    if (ret < 0)
+        return AVERROR(errno);
+
+    ret |= st.st_mode&S_IRUSR ? mask&AVIO_RDONLY : 0;
+    ret |= st.st_mode&S_IWUSR ? mask&AVIO_WRONLY : 0;
+    ret |= st.st_mode&S_IWUSR && st.st_mode&S_IRUSR ? mask&AVIO_RDWR : 0;
+
+    return ret;
+}
+
 URLProtocol ff_file_protocol = {
     .name                = "file",
     .url_open            = file_open,
@@ -103,6 +117,7 @@ URLProtocol ff_file_protocol = {
     .url_seek            = file_seek,
     .url_close           = file_close,
     .url_get_file_handle = file_get_handle,
+    .url_check           = file_check,
 };
 
 #endif /* CONFIG_FILE_PROTOCOL */
@@ -137,6 +152,7 @@ URLProtocol ff_pipe_protocol = {
     .url_read            = file_read,
     .url_write           = file_write,
     .url_get_file_handle = file_get_handle,
+    .url_check           = file_check,
 };
 
 #endif /* CONFIG_PIPE_PROTOCOL */
