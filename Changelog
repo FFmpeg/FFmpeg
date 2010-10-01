@@ -42,6 +42,7 @@ version <next>:
 - make ffprobe accept AVFormatContext options
 - yadif filter
 - blackframe filter
+- Demuxer for Leitch/Harris' VR native stream format (LXF)
 
 
 version 0.6:
