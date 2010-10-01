@@ -283,6 +283,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (PCM_F32LE, pcm_f32le);
     REGISTER_ENCDEC  (PCM_F64BE, pcm_f64be);
     REGISTER_ENCDEC  (PCM_F64LE, pcm_f64le);
+    REGISTER_DECODER (PCM_LXF, pcm_lxf);
     REGISTER_ENCDEC  (PCM_MULAW, pcm_mulaw);
     REGISTER_ENCDEC  (PCM_S8, pcm_s8);
     REGISTER_ENCDEC  (PCM_S16BE, pcm_s16be);
