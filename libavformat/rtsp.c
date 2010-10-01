@@ -1261,8 +1261,7 @@ static int rtsp_read_play(AVFormatContext *s)
         if (reply->status_code != RTSP_STATUS_OK) {
             return -1;
         }
-        if (
-            rt->transport == RTSP_TRANSPORT_RTP) {
+        if (rt->transport == RTSP_TRANSPORT_RTP) {
             for (i = 0; i < rt->nb_rtsp_streams; i++) {
                 RTSPStream *rtsp_st = rt->rtsp_streams[i];
                 RTPDemuxContext *rtpctx = rtsp_st->transport_priv;
@@ -1272,12 +1271,12 @@ static int rtsp_read_play(AVFormatContext *s)
                 if (rtsp_st->stream_index >= 0)
                     st = s->streams[rtsp_st->stream_index];
                 if (reply->range_start != AV_NOPTS_VALUE) {
-                rtpctx->last_rtcp_ntp_time  = AV_NOPTS_VALUE;
-                rtpctx->first_rtcp_ntp_time = AV_NOPTS_VALUE;
-                if (st)
-                    rtpctx->range_start_offset = av_rescale_q(reply->range_start,
-                                                              AV_TIME_BASE_Q,
-                                                              st->time_base);
+                    rtpctx->last_rtcp_ntp_time  = AV_NOPTS_VALUE;
+                    rtpctx->first_rtcp_ntp_time = AV_NOPTS_VALUE;
+                    if (st)
+                        rtpctx->range_start_offset =
+                            av_rescale_q(reply->range_start, AV_TIME_BASE_Q,
+                                         st->time_base);
                 }
             }
         }
