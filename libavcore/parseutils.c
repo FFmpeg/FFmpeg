@@ -121,10 +121,10 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
 
     /* First, we check our abbreviation table */
     for (i = 0; i < n; ++i)
-         if (!strcmp(video_rate_abbrs[i].abbr, arg)) {
-             *rate = video_rate_abbrs[i].rate;
-             return 0;
-         }
+        if (!strcmp(video_rate_abbrs[i].abbr, arg)) {
+            *rate = video_rate_abbrs[i].rate;
+            return 0;
+        }
 
     /* Then, we try to parse it as fraction */
     cp = strchr(arg, '/');
