@@ -645,7 +645,7 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
  * @param channel_layout the number and type of channels per sample in the buffer to allocate
  * @param planar         audio data layout - planar or packed
  * @return               A reference to the samples. This must be unreferenced with
- *                       avfilter_unref_samples when you are finished with it.
+ *                       avfilter_unref_buffer when you are finished with it.
  */
 AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
                                              enum SampleFormat sample_fmt, int size,
