@@ -96,7 +96,7 @@ int ff_rdt_parse_header(const uint8_t *buf, int len,
  * Usage similar to rtp_parse_packet().
  */
 int ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
-                        const uint8_t *buf, int len);
+                        uint8_t **buf, int len);
 
 /**
  * Parse a server-related SDP line.

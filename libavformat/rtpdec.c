@@ -414,14 +414,15 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
  * Parse an RTP or RTCP packet directly sent as a buffer.
  * @param s RTP parse context.
  * @param pkt returned packet
- * @param buf input buffer or NULL to read the next packets
+ * @param bufptr pointer to the input buffer or NULL to read the next packets
  * @param len buffer len
  * @return 0 if a packet is returned, 1 if a packet is returned and more can follow
  * (use buf as NULL to read the next). -1 if no packet (error or no more packet).
  */
 int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
-                     const uint8_t *buf, int len)
+                     uint8_t **bufptr, int len)
 {
+    uint8_t* buf = bufptr ? *bufptr : NULL;
     unsigned int ssrc, h;
     int payload_type, seq, ret, flags = 0;
     AVStream *st;

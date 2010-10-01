@@ -337,8 +337,9 @@ get_cache:
 
 int
 ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
-                    const uint8_t *buf, int len)
+                    uint8_t **bufptr, int len)
 {
+    uint8_t *buf = bufptr ? *bufptr : NULL;
     int seq_no, flags = 0, stream_id, set_id, is_keyframe;
     uint32_t timestamp;
     int rv= 0;
