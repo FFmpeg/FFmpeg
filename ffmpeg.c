@@ -114,9 +114,9 @@ static int nb_input_codecs = 0;
 static int nb_input_files_ts_scale[MAX_FILES] = {0};
 
 static AVFormatContext *output_files[MAX_FILES];
-static AVCodec *output_codecs[MAX_FILES*MAX_STREAMS];
+static AVCodec **output_codecs = NULL;
 static int nb_output_files = 0;
-static int nb_ocodecs;
+static int nb_output_codecs = 0;
 
 static AVStreamMap stream_maps[MAX_FILES*MAX_STREAMS];
 static int nb_stream_maps;
@@ -622,6 +622,7 @@ static int ffmpeg_exit(int ret)
     av_free(opt_names);
     av_free(streamid_map);
     av_free(input_codecs);
+    av_free(output_codecs);
 
     av_free(video_codec_name);
     av_free(audio_codec_name);
@@ -2357,7 +2358,7 @@ static int transcode(AVFormatContext **output_files,
     for(i=0;i<nb_ostreams;i++) {
         ost = ost_table[i];
         if (ost->encoding_needed) {
-            AVCodec *codec = output_codecs[i];
+            AVCodec *codec = i < nb_output_codecs ? output_codecs[i] : NULL;
             if (!codec)
                 codec = avcodec_find_encoder(ost->st->codec->codec_id);
             if (!codec) {
@@ -3396,12 +3397,13 @@ static void new_video_stream(AVFormatContext *oc)
         ffmpeg_exit(1);
     }
 
+    output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if(!video_stream_copy){
         if (video_codec_name) {
             codec_id = find_codec_or_die(video_codec_name, AVMEDIA_TYPE_VIDEO, 1,
                                          avcodec_opts[AVMEDIA_TYPE_VIDEO]->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(video_codec_name);
-            output_codecs[nb_ocodecs] = codec;
+            output_codecs[nb_output_codecs-1] = codec;
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_VIDEO);
             codec = avcodec_find_encoder(codec_id);
@@ -3510,7 +3512,6 @@ static void new_video_stream(AVFormatContext *oc)
             }
         }
     }
-    nb_ocodecs++;
     if (video_language) {
         av_metadata_set2(&st->metadata, "language", video_language, 0);
         av_freep(&video_language);
@@ -3536,12 +3537,13 @@ static void new_audio_stream(AVFormatContext *oc)
         ffmpeg_exit(1);
     }
 
+    output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if(!audio_stream_copy){
         if (audio_codec_name) {
             codec_id = find_codec_or_die(audio_codec_name, AVMEDIA_TYPE_AUDIO, 1,
                                          avcodec_opts[AVMEDIA_TYPE_AUDIO]->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(audio_codec_name);
-            output_codecs[nb_ocodecs] = codec;
+            output_codecs[nb_output_codecs-1] = codec;
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_AUDIO);
             codec = avcodec_find_encoder(codec_id);
@@ -3586,7 +3588,6 @@ static void new_audio_stream(AVFormatContext *oc)
         choose_sample_fmt(st, codec);
         choose_sample_rate(st, codec);
     }
-    nb_ocodecs++;
     audio_enc->time_base= (AVRational){1, audio_sample_rate};
     if (audio_language) {
         av_metadata_set2(&st->metadata, "language", audio_language, 0);
@@ -3611,10 +3612,11 @@ static void new_subtitle_stream(AVFormatContext *oc)
         ffmpeg_exit(1);
     }
     subtitle_enc = st->codec;
+    output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if(!subtitle_stream_copy){
         subtitle_enc->codec_id = find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 1,
                                                    avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->strict_std_compliance);
-        codec= output_codecs[nb_ocodecs] = avcodec_find_encoder_by_name(subtitle_codec_name);
+        codec= output_codecs[nb_output_codecs-1] = avcodec_find_encoder_by_name(subtitle_codec_name);
     }
     avcodec_get_context_defaults3(st->codec, codec);
 
@@ -3631,7 +3633,6 @@ static void new_subtitle_stream(AVFormatContext *oc)
     } else {
         set_context_opts(avcodec_opts[AVMEDIA_TYPE_SUBTITLE], subtitle_enc, AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM, codec);
     }
-    nb_ocodecs++;
 
     if (subtitle_language) {
         av_metadata_set2(&st->metadata, "language", subtitle_language, 0);
