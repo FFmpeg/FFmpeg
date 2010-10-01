@@ -1674,7 +1674,7 @@ static int rtsp_read_header(AVFormatContext *s,
 }
 
 static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
-                           uint8_t *buf, int buf_size)
+                           uint8_t *buf, int buf_size, int64_t wait_end)
 {
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
@@ -1685,6 +1685,8 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     for (;;) {
         if (url_interrupt_cb())
             return AVERROR(EINTR);
+        if (wait_end && wait_end - av_gettime() < 0)
+            return AVERROR(EAGAIN);
         FD_ZERO(&rfds);
         if (rt->rtsp_hd) {
             tcp_fd = fd_max = url_get_file_handle(rt->rtsp_hd);
@@ -1800,7 +1802,8 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RTSPState *rt = s->priv_data;
     int ret, len;
-    RTSPStream *rtsp_st;
+    RTSPStream *rtsp_st, *first_queue_st = NULL;
+    int64_t wait_end = 0;
 
     if (rt->nb_byes == rt->nb_rtsp_streams)
         return AVERROR_EOF;
@@ -1820,6 +1823,22 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
             rt->cur_transport_priv = NULL;
     }
 
+    if (rt->transport == RTSP_TRANSPORT_RTP) {
+        int i;
+        int64_t first_queue_time = 0;
+        for (i = 0; i < rt->nb_rtsp_streams; i++) {
+            RTPDemuxContext *rtpctx = rt->rtsp_streams[i]->transport_priv;
+            int64_t queue_time = ff_rtp_queued_packet_time(rtpctx);
+            if (queue_time && (queue_time - first_queue_time < 0 ||
+                               !first_queue_time)) {
+                first_queue_time = queue_time;
+                first_queue_st   = rt->rtsp_streams[i];
+            }
+        }
+        if (first_queue_time)
+            wait_end = first_queue_time + s->max_delay;
+    }
+
     /* read next RTP packet */
  redo:
     if (!rt->recvbuf) {
@@ -1837,10 +1856,16 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
 #endif
     case RTSP_LOWER_TRANSPORT_UDP:
     case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
-        len = udp_read_packet(s, &rtsp_st, rt->recvbuf, RECVBUF_SIZE);
+        len = udp_read_packet(s, &rtsp_st, rt->recvbuf, RECVBUF_SIZE, wait_end);
         if (len >=0 && rtsp_st->transport_priv && rt->transport == RTSP_TRANSPORT_RTP)
             rtp_check_and_send_back_rr(rtsp_st->transport_priv, len);
         break;
+    }
+    if (len == AVERROR(EAGAIN) && first_queue_st &&
+        rt->transport == RTSP_TRANSPORT_RTP) {
+        rtsp_st = first_queue_st;
+        ret = rtp_parse_packet(rtsp_st->transport_priv, pkt, NULL, 0);
+        goto end;
     }
     if (len < 0)
         return len;
@@ -1878,6 +1903,7 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
     }
+end:
     if (ret < 0)
         goto redo;
     if (ret == 1)
