@@ -53,6 +53,7 @@ int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
 #define READ_PACKET_TIMEOUT_S 10
 #define MAX_TIMEOUTS READ_PACKET_TIMEOUT_S * 1000 / SELECT_TIMEOUT_MS
 #define SDP_MAX_SIZE 16384
+#define RECVBUF_SIZE 10 * RTP_MAX_PACKET_LENGTH
 
 static void get_word_until_chars(char *buf, int buf_size,
                                  const char *sep, const char **pp)
@@ -498,6 +499,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
         av_close_input_stream (rt->asf_ctx);
         rt->asf_ctx = NULL;
     }
+    av_free(rt->recvbuf);
 }
 
 static void *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st,
@@ -1794,7 +1796,6 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RTSPState *rt = s->priv_data;
     int ret, len;
-    uint8_t buf[10 * RTP_MAX_PACKET_LENGTH];
     RTSPStream *rtsp_st;
 
     if (rt->nb_byes == rt->nb_rtsp_streams)
@@ -1817,16 +1818,22 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* read next RTP packet */
  redo:
+    if (!rt->recvbuf) {
+        rt->recvbuf = av_malloc(RECVBUF_SIZE);
+        if (!rt->recvbuf)
+            return AVERROR(ENOMEM);
+    }
+
     switch(rt->lower_transport) {
     default:
 #if CONFIG_RTSP_DEMUXER
     case RTSP_LOWER_TRANSPORT_TCP:
-        len = tcp_read_packet(s, &rtsp_st, buf, sizeof(buf));
+        len = tcp_read_packet(s, &rtsp_st, rt->recvbuf, RECVBUF_SIZE);
         break;
 #endif
     case RTSP_LOWER_TRANSPORT_UDP:
     case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
-        len = udp_read_packet(s, &rtsp_st, buf, sizeof(buf));
+        len = udp_read_packet(s, &rtsp_st, rt->recvbuf, RECVBUF_SIZE);
         if (len >=0 && rtsp_st->transport_priv && rt->transport == RTSP_TRANSPORT_RTP)
             rtp_check_and_send_back_rr(rtsp_st->transport_priv, len);
         break;
@@ -1836,9 +1843,9 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
     if (len == 0)
         return AVERROR_EOF;
     if (rt->transport == RTSP_TRANSPORT_RDT) {
-        ret = ff_rdt_parse_packet(rtsp_st->transport_priv, pkt, buf, len);
+        ret = ff_rdt_parse_packet(rtsp_st->transport_priv, pkt, rt->recvbuf, len);
     } else {
-        ret = rtp_parse_packet(rtsp_st->transport_priv, pkt, buf, len);
+        ret = rtp_parse_packet(rtsp_st->transport_priv, pkt, rt->recvbuf, len);
         if (ret < 0) {
             /* Either bad packet, or a RTCP packet. Check if the
              * first_rtcp_ntp_time field was initialized. */

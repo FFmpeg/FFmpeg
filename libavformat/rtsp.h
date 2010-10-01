@@ -309,6 +309,9 @@ typedef struct RTSPState {
      * An EOF is propagated back if nb_byes == nb_streams.
      * This is reset after a seek. */
     int nb_byes;
+
+    /** Reusable buffer for receiving packets */
+    uint8_t* recvbuf;
 } RTSPState;
 
 /**
