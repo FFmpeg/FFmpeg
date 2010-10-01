@@ -108,9 +108,9 @@ static const char *last_asked_format = NULL;
 static AVFormatContext *input_files[MAX_FILES];
 static int64_t input_files_ts_offset[MAX_FILES];
 static double *input_files_ts_scale[MAX_FILES] = {NULL};
-static AVCodec *input_codecs[MAX_FILES*MAX_STREAMS];
+static AVCodec **input_codecs = NULL;
 static int nb_input_files = 0;
-static int nb_icodecs;
+static int nb_input_codecs = 0;
 static int nb_input_files_ts_scale[MAX_FILES] = {0};
 
 static AVFormatContext *output_files[MAX_FILES];
@@ -621,6 +621,7 @@ static int ffmpeg_exit(int ret)
 
     av_free(opt_names);
     av_free(streamid_map);
+    av_free(input_codecs);
 
     av_free(video_codec_name);
     av_free(audio_codec_name);
@@ -2379,7 +2380,7 @@ static int transcode(AVFormatContext **output_files,
     for(i=0;i<nb_istreams;i++) {
         ist = ist_table[i];
         if (ist->decoding_needed) {
-            AVCodec *codec = input_codecs[i];
+            AVCodec *codec = i < nb_input_codecs ? input_codecs[i] : NULL;
             if (!codec)
                 codec = avcodec_find_decoder(ist->st->codec->codec_id);
             if (!codec) {
@@ -3259,10 +3260,11 @@ static void opt_input_file(const char *filename)
         AVStream *st = ic->streams[i];
         AVCodecContext *dec = st->codec;
         avcodec_thread_init(dec, thread_count);
+        input_codecs = grow_array(input_codecs, sizeof(*input_codecs), &nb_input_codecs, nb_input_codecs + 1);
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            input_codecs[nb_icodecs++] = avcodec_find_decoder_by_name(audio_codec_name);
-            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_icodecs-1]);
+            input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(audio_codec_name);
+            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
             //fprintf(stderr, "\nInput Audio channels: %d", dec->channels);
             channel_layout    = dec->channel_layout;
             audio_channels    = dec->channels;
@@ -3277,8 +3279,8 @@ static void opt_input_file(const char *filename)
                 audio_sample_rate >>= dec->lowres;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            input_codecs[nb_icodecs++] = avcodec_find_decoder_by_name(video_codec_name);
-            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_icodecs-1]);
+            input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(video_codec_name);
+            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
             frame_height = dec->height;
             frame_width  = dec->width;
             if(ic->streams[i]->sample_aspect_ratio.num)
@@ -3317,13 +3319,12 @@ static void opt_input_file(const char *filename)
         case AVMEDIA_TYPE_DATA:
             break;
         case AVMEDIA_TYPE_SUBTITLE:
-            input_codecs[nb_icodecs++] = avcodec_find_decoder_by_name(subtitle_codec_name);
+            input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(subtitle_codec_name);
             if(subtitle_disable)
                 st->discard = AVDISCARD_ALL;
             break;
         case AVMEDIA_TYPE_ATTACHMENT:
         case AVMEDIA_TYPE_UNKNOWN:
-            nb_icodecs++;
             break;
         default:
             abort();
