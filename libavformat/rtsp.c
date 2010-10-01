@@ -582,7 +582,9 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
                                             rtsp_st->dynamic_handler);
     else
         rtsp_st->transport_priv = rtp_parse_open(s, st, rtsp_st->rtp_handle,
-                                         rtsp_st->sdp_payload_type);
+                                         rtsp_st->sdp_payload_type,
+            (rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP || !s->max_delay)
+            ? 0 : RTP_REORDER_QUEUE_DEFAULT_SIZE);
 
     if (!rtsp_st->transport_priv) {
          return AVERROR(ENOMEM);
@@ -1270,6 +1272,7 @@ static int rtsp_read_play(AVFormatContext *s)
                     continue;
                 if (rtsp_st->stream_index >= 0)
                     st = s->streams[rtsp_st->stream_index];
+                ff_rtp_reset_packet_queue(rtpctx);
                 if (reply->range_start != AV_NOPTS_VALUE) {
                     rtpctx->last_rtcp_ntp_time  = AV_NOPTS_VALUE;
                     rtpctx->first_rtcp_ntp_time = AV_NOPTS_VALUE;

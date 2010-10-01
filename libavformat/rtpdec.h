@@ -32,15 +32,19 @@ typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
 #define RTP_MIN_PACKET_LENGTH 12
 #define RTP_MAX_PACKET_LENGTH 1500 /* XXX: suppress this define */
 
+#define RTP_REORDER_QUEUE_DEFAULT_SIZE 10
+
 #define RTP_NOTS_VALUE ((uint32_t)-1)
 
 typedef struct RTPDemuxContext RTPDemuxContext;
-RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type);
+RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, int queue_size);
 void rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
                                     RTPDynamicProtocolHandler *handler);
 int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
                      uint8_t **buf, int len);
 void rtp_parse_close(RTPDemuxContext *s);
+int64_t ff_rtp_queued_packet_time(RTPDemuxContext *s);
+void ff_rtp_reset_packet_queue(RTPDemuxContext *s);
 #if (LIBAVFORMAT_VERSION_MAJOR <= 53)
 int rtp_get_local_port(URLContext *h);
 #endif
@@ -131,6 +135,14 @@ struct RTPDynamicProtocolHandler_s {
     struct RTPDynamicProtocolHandler_s *next;
 };
 
+typedef struct RTPPacket {
+    uint16_t seq;
+    uint8_t *buf;
+    int len;
+    int64_t recvtime;
+    struct RTPPacket *next;
+} RTPPacket;
+
 // moved out of rtp.c, because the h264 decoder needs to know about this structure..
 struct RTPDemuxContext {
     AVFormatContext *ic;
@@ -151,6 +163,13 @@ struct RTPDemuxContext {
     char hostname[256];
 
     RTPStatistics statistics; ///< Statistics for this stream (used by RTCP receiver reports)
+
+    /** Fields for packet reordering @{ */
+    int prev_ret;     ///< The return value of the actual parsing of the previous packet
+    RTPPacket* queue; ///< A sorted queue of buffered packets not yet returned
+    int queue_len;    ///< The number of packets in queue
+    int queue_size;   ///< The size of queue, or 0 if reordering is disabled
+    /*@}*/
 
     /* rtcp sender statistics receive */
     int64_t last_rtcp_ntp_time;    // TODO: move into statistics
