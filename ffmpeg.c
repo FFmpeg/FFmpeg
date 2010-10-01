@@ -244,7 +244,8 @@ static short *samples;
 static AVBitStreamFilterContext *video_bitstream_filters=NULL;
 static AVBitStreamFilterContext *audio_bitstream_filters=NULL;
 static AVBitStreamFilterContext *subtitle_bitstream_filters=NULL;
-static AVBitStreamFilterContext *bitstream_filters[MAX_FILES][MAX_STREAMS];
+static AVBitStreamFilterContext **bitstream_filters[MAX_FILES] = {NULL};
+static int nb_bitstream_filters[MAX_FILES] = {0};
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
 
@@ -606,6 +607,7 @@ static int ffmpeg_exit(int ret)
         }
         av_metadata_free(&s->metadata);
         av_free(s);
+        av_free(bitstream_filters[i]);
     }
     for(i=0;i<nb_input_files;i++) {
         av_close_input_file(input_files[i]);
@@ -3413,6 +3415,7 @@ static void new_video_stream(AVFormatContext *oc)
     }
 
     avcodec_get_context_defaults3(st->codec, codec);
+    bitstream_filters[nb_output_files] = grow_array(bitstream_filters[nb_output_files], sizeof(*bitstream_filters[nb_output_files]), &nb_bitstream_filters[nb_output_files], oc->nb_streams);
     bitstream_filters[nb_output_files][oc->nb_streams - 1]= video_bitstream_filters;
     video_bitstream_filters= NULL;
 
@@ -3554,6 +3557,7 @@ static void new_audio_stream(AVFormatContext *oc)
 
     avcodec_get_context_defaults3(st->codec, codec);
 
+    bitstream_filters[nb_output_files] = grow_array(bitstream_filters[nb_output_files], sizeof(*bitstream_filters[nb_output_files]), &nb_bitstream_filters[nb_output_files], oc->nb_streams);
     bitstream_filters[nb_output_files][oc->nb_streams - 1]= audio_bitstream_filters;
     audio_bitstream_filters= NULL;
 
@@ -3622,6 +3626,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
     }
     avcodec_get_context_defaults3(st->codec, codec);
 
+    bitstream_filters[nb_output_files] = grow_array(bitstream_filters[nb_output_files], sizeof(*bitstream_filters[nb_output_files]), &nb_bitstream_filters[nb_output_files], oc->nb_streams);
     bitstream_filters[nb_output_files][oc->nb_streams - 1]= subtitle_bitstream_filters;
     subtitle_bitstream_filters= NULL;
 
