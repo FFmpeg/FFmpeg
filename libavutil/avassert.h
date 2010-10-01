@@ -24,8 +24,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef AVUTIL_ASSERT_H
-#define AVUTIL_ASSERT_H
+#ifndef AVUTIL_AVASSERT_H
+#define AVUTIL_AVASSERT_H
 
 #include "avutil.h"
 #include "log.h"
