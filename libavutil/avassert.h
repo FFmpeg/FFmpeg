@@ -27,6 +27,7 @@
 #ifndef AVUTIL_AVASSERT_H
 #define AVUTIL_AVASSERT_H
 
+#include <stdlib.h>
 #include "avutil.h"
 #include "log.h"
 
