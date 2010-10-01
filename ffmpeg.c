@@ -107,10 +107,11 @@ static const OptionDef options[];
 static const char *last_asked_format = NULL;
 static AVFormatContext *input_files[MAX_FILES];
 static int64_t input_files_ts_offset[MAX_FILES];
-static double input_files_ts_scale[MAX_FILES][MAX_STREAMS];
+static double *input_files_ts_scale[MAX_FILES] = {NULL};
 static AVCodec *input_codecs[MAX_FILES*MAX_STREAMS];
 static int nb_input_files = 0;
 static int nb_icodecs;
+static int nb_input_files_ts_scale[MAX_FILES] = {0};
 
 static AVFormatContext *output_files[MAX_FILES];
 static AVCodec *output_codecs[MAX_FILES*MAX_STREAMS];
@@ -606,8 +607,10 @@ static int ffmpeg_exit(int ret)
         av_metadata_free(&s->metadata);
         av_free(s);
     }
-    for(i=0;i<nb_input_files;i++)
+    for(i=0;i<nb_input_files;i++) {
         av_close_input_file(input_files[i]);
+        av_free(input_files_ts_scale[i]);
+    }
 
     av_free(intra_matrix);
     av_free(inter_matrix);
@@ -2600,7 +2603,8 @@ static int transcode(AVFormatContext **output_files,
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts += av_rescale_q(input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q, ist->st->time_base);
 
-        if(input_files_ts_scale[file_index][pkt.stream_index]){
+        if (pkt.stream_index < nb_input_files_ts_scale[file_index]
+            && input_files_ts_scale[file_index][pkt.stream_index]){
             if(pkt.pts != AV_NOPTS_VALUE)
                 pkt.pts *= input_files_ts_scale[file_index][pkt.stream_index];
             if(pkt.dts != AV_NOPTS_VALUE)
@@ -3073,6 +3077,7 @@ static void opt_input_ts_scale(const char *arg)
     if(stream >= MAX_STREAMS)
         ffmpeg_exit(1);
 
+    input_files_ts_scale[nb_input_files] = grow_array(input_files_ts_scale[nb_input_files], sizeof(*input_files_ts_scale[nb_input_files]), &nb_input_files_ts_scale[nb_input_files], stream + 1);
     input_files_ts_scale[nb_input_files][stream]= scale;
 }
 
