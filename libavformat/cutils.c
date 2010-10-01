@@ -24,6 +24,7 @@
 /* add one element to a dynamic array */
 void ff_dynarray_add(intptr_t **tab_ptr, int *nb_ptr, intptr_t elem)
 {
+    /* see similar ffmpeg.c:grow_array() */
     int nb, nb_alloc;
     intptr_t *tab;
 
