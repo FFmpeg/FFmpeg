@@ -281,6 +281,7 @@ Muxers/Demuxers:
   iss.c                                 Stefan Gehrer
   libnut.c                              Oded Shimon
   lmlm4.c                               Ivo van Poorten
+  lxfdec.c                              Tomas Härdin
   matroska.c                            Aurelien Jacobs
   matroskadec.c                         Aurelien Jacobs
   matroskaenc.c                         David Conrad
@@ -370,3 +371,4 @@ Reinhard Tartler              9300 5DC2 7E87 6C37 ED7B CA9A 9808 3544 9453 48A4
 Reynaldo H. Verdejo Pinochet  6E27 CD34 170C C78E 4D4F 5F40 C18E 077F 3114 452A
 Sascha Sommer                 38A0 F88B 868E 9D3A 97D4 D6A0 E823 706F 1E07 0D3C
 Stefano Sabatini              9A43 10F8 D32C D33C 48E7 C52C 5DF2 8E4D B2EE 066B
+Tomas Härdin                  D133 29CA 4EEC 9DB4 7076 F697 B04B 7403 3313 41FD
