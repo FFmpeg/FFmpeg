@@ -410,59 +410,15 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
     }
 }
 
-/**
- * Parse an RTP or RTCP packet directly sent as a buffer.
- * @param s RTP parse context.
- * @param pkt returned packet
- * @param bufptr pointer to the input buffer or NULL to read the next packets
- * @param len buffer len
- * @return 0 if a packet is returned, 1 if a packet is returned and more can follow
- * (use buf as NULL to read the next). -1 if no packet (error or no more packet).
- */
-int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
-                     uint8_t **bufptr, int len)
+static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
+                                     const uint8_t *buf, int len)
 {
-    uint8_t* buf = bufptr ? *bufptr : NULL;
     unsigned int ssrc, h;
     int payload_type, seq, ret, flags = 0;
     AVStream *st;
     uint32_t timestamp;
     int rv= 0;
 
-    if (!buf) {
-        /* return the next packets, if any */
-        if(s->st && s->parse_packet) {
-            /* timestamp should be overwritten by parse_packet, if not,
-             * the packet is left with pts == AV_NOPTS_VALUE */
-            timestamp = RTP_NOTS_VALUE;
-            rv= s->parse_packet(s->ic, s->dynamic_protocol_context,
-                                s->st, pkt, &timestamp, NULL, 0, flags);
-            finalize_packet(s, pkt, timestamp);
-            return rv;
-        } else {
-            // TODO: Move to a dynamic packet handler (like above)
-            if (s->read_buf_index >= s->read_buf_size)
-                return -1;
-            ret = ff_mpegts_parse_packet(s->ts, pkt, s->buf + s->read_buf_index,
-                                      s->read_buf_size - s->read_buf_index);
-            if (ret < 0)
-                return -1;
-            s->read_buf_index += ret;
-            if (s->read_buf_index < s->read_buf_size)
-                return 1;
-            else
-                return 0;
-        }
-    }
-
-    if (len < 12)
-        return -1;
-
-    if ((buf[0] & 0xc0) != (RTP_VERSION << 6))
-        return -1;
-    if (buf[1] >= RTCP_SR && buf[1] <= RTCP_APP) {
-        return rtcp_parse_packet(s, buf, len);
-    }
     payload_type = buf[1] & 0x7f;
     if (buf[1] & 0x80)
         flags |= RTP_FLAG_MARKER;
@@ -549,6 +505,61 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     finalize_packet(s, pkt, timestamp);
 
     return rv;
+}
+
+/**
+ * Parse an RTP or RTCP packet directly sent as a buffer.
+ * @param s RTP parse context.
+ * @param pkt returned packet
+ * @param bufptr pointer to the input buffer or NULL to read the next packets
+ * @param len buffer len
+ * @return 0 if a packet is returned, 1 if a packet is returned and more can follow
+ * (use buf as NULL to read the next). -1 if no packet (error or no more packet).
+ */
+int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
+                     uint8_t **bufptr, int len)
+{
+    uint8_t* buf = bufptr ? *bufptr : NULL;
+    int ret, flags = 0;
+    uint32_t timestamp;
+    int rv= 0;
+
+    if (!buf) {
+        /* return the next packets, if any */
+        if(s->st && s->parse_packet) {
+            /* timestamp should be overwritten by parse_packet, if not,
+             * the packet is left with pts == AV_NOPTS_VALUE */
+            timestamp = RTP_NOTS_VALUE;
+            rv= s->parse_packet(s->ic, s->dynamic_protocol_context,
+                                s->st, pkt, &timestamp, NULL, 0, flags);
+            finalize_packet(s, pkt, timestamp);
+            return rv;
+        } else {
+            // TODO: Move to a dynamic packet handler (like above)
+            if (s->read_buf_index >= s->read_buf_size)
+                return -1;
+            ret = ff_mpegts_parse_packet(s->ts, pkt, s->buf + s->read_buf_index,
+                                      s->read_buf_size - s->read_buf_index);
+            if (ret < 0)
+                return -1;
+            s->read_buf_index += ret;
+            if (s->read_buf_index < s->read_buf_size)
+                return 1;
+            else
+                return 0;
+        }
+    }
+
+    if (len < 12)
+        return -1;
+
+    if ((buf[0] & 0xc0) != (RTP_VERSION << 6))
+        return -1;
+    if (buf[1] >= RTCP_SR && buf[1] <= RTCP_APP) {
+        return rtcp_parse_packet(s, buf, len);
+    }
+
+    return rtp_parse_packet_internal(s, pkt, buf, len);
 }
 
 void rtp_parse_close(RTPDemuxContext *s)
