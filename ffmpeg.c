@@ -124,7 +124,8 @@ static AVMetaDataMap meta_data_maps[MAX_FILES];
 static int nb_meta_data_maps;
 
 /* indexed by output file stream index */
-static int streamid_map[MAX_STREAMS];
+static int *streamid_map = NULL;
+static int nb_streamid_map = 0;
 
 static int frame_width  = 0;
 static int frame_height = 0;
@@ -616,6 +617,7 @@ static int ffmpeg_exit(int ret)
     av_free(vstats_filename);
 
     av_free(opt_names);
+    av_free(streamid_map);
 
     av_free(video_codec_name);
     av_free(audio_codec_name);
@@ -3382,7 +3384,7 @@ static void new_video_stream(AVFormatContext *oc)
     enum CodecID codec_id;
     AVCodec *codec= NULL;
 
-    st = av_new_stream(oc, streamid_map[oc->nb_streams]);
+    st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         ffmpeg_exit(1);
@@ -3522,7 +3524,7 @@ static void new_audio_stream(AVFormatContext *oc)
     AVCodecContext *audio_enc;
     enum CodecID codec_id;
 
-    st = av_new_stream(oc, streamid_map[oc->nb_streams]);
+    st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         ffmpeg_exit(1);
@@ -3597,7 +3599,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
     AVCodec *codec=NULL;
     AVCodecContext *subtitle_enc;
 
-    st = av_new_stream(oc, streamid_map[oc->nb_streams]);
+    st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         ffmpeg_exit(1);
@@ -3668,6 +3670,7 @@ static void opt_streamid(const char *opt, const char *arg)
     }
     *p++ = '\0';
     idx = parse_number_or_die(opt, idx_str, OPT_INT, 0, MAX_STREAMS-1);
+    streamid_map = grow_array(streamid_map, sizeof(*streamid_map), &nb_streamid_map, idx+1);
     streamid_map[idx] = parse_number_or_die(opt, p, OPT_INT, 0, INT_MAX);
 }
 
@@ -3819,7 +3822,7 @@ static void opt_output_file(const char *filename)
 
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM, NULL);
 
-    memset(streamid_map, 0, sizeof(streamid_map));
+    nb_streamid_map = 0;
 }
 
 /* same option as mencoder */
