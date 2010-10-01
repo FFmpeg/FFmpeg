@@ -33,7 +33,13 @@
 /**
  * assert() equivalent, that is always enabled.
  */
-#define av_assert0(cond) do {if(!(cond)) { av_log(NULL, AV_LOG_FATAL, "Assertion %s failed at %s:%d\n", AV_STRINGIFY(cond), __FILE__, __LINE__); abort(); }}while(0)
+#define av_assert0(cond) do {                                           \
+    if (!(cond)) {                                                      \
+        av_log(NULL, AV_LOG_FATAL, "Assertion %s failed at %s:%d\n",    \
+               AV_STRINGIFY(cond), __FILE__, __LINE__);                 \
+        abort();                                                        \
+    }                                                                   \
+} while (0)
 
 
 /**
