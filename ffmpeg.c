@@ -636,10 +636,7 @@ static int ffmpeg_exit(int ret)
 
     av_free(video_standard);
 
-    for (i=0;i<AVMEDIA_TYPE_NB;i++)
-        av_free(avcodec_opts[i]);
-    av_free(avformat_opts);
-    av_free(sws_opts);
+    uninit_opts();
     av_free(audio_buf);
     av_free(audio_out);
     allocated_audio_buf_size= allocated_audio_out_size= 0;
@@ -4336,7 +4333,6 @@ static const OptionDef options[] = {
 
 int main(int argc, char **argv)
 {
-    int i;
     int64_t ti;
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
@@ -4355,11 +4351,7 @@ int main(int argc, char **argv)
         url_set_interrupt_cb(decode_interrupt_cb);
 #endif
 
-    for(i=0; i<AVMEDIA_TYPE_NB; i++){
-        avcodec_opts[i]= avcodec_alloc_context2(i);
-    }
-    avformat_opts = avformat_alloc_context();
-    sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
+    init_opts();
 
     show_banner();
 

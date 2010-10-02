@@ -57,6 +57,25 @@ struct SwsContext *sws_opts;
 
 const int this_year = 2010;
 
+void init_opts(void)
+{
+    int i;
+    for (i = 0; i < AVMEDIA_TYPE_NB; i++)
+        avcodec_opts[i] = avcodec_alloc_context2(i);
+    avformat_opts = avformat_alloc_context();
+    sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC, NULL, NULL, NULL);
+}
+
+void uninit_opts(void)
+{
+    int i;
+    for (i = 0; i < AVMEDIA_TYPE_NB; i++)
+        av_freep(&avcodec_opts[i]);
+    av_freep(&avformat_opts->key);
+    av_freep(&avformat_opts);
+    av_freep(&sws_opts);
+}
+
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
 {
     vfprintf(stdout, fmt, vl);

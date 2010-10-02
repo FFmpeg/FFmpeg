@@ -1326,15 +1326,11 @@ static void stream_close(VideoState *is)
 
 static void do_exit(void)
 {
-    int i;
     if (cur_stream) {
         stream_close(cur_stream);
         cur_stream = NULL;
     }
-    for (i = 0; i < AVMEDIA_TYPE_NB; i++)
-        av_free(avcodec_opts[i]);
-    av_free(avformat_opts);
-    av_free(sws_opts);
+    uninit_opts();
 #if CONFIG_AVFILTER
     avfilter_uninit();
 #endif
@@ -3140,7 +3136,7 @@ static void opt_input_file(const char *filename)
 /* Called from the main */
 int main(int argc, char **argv)
 {
-    int flags, i;
+    int flags;
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
@@ -3154,13 +3150,7 @@ int main(int argc, char **argv)
 #endif
     av_register_all();
 
-    for(i=0; i<AVMEDIA_TYPE_NB; i++){
-        avcodec_opts[i]= avcodec_alloc_context2(i);
-    }
-    avformat_opts = avformat_alloc_context();
-#if !CONFIG_AVFILTER
-    sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
-#endif
+    init_opts();
 
     show_banner();
 

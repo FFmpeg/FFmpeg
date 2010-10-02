@@ -45,6 +45,17 @@ extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
 
 /**
+ * Initialize the cmdutils option system, in particular
+ * allocate the *_opts contexts.
+ */
+void init_opts(void);
+/**
+ * Uninitialize the cmdutils option system, in particular
+ * free the *_opts contexts and their contents.
+ */
+void uninit_opts(void);
+
+/**
  * Trivial log callback.
  * Only suitable for show_help and similar since it lacks prefix handling.
  */
