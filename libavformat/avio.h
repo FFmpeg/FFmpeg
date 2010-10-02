@@ -190,6 +190,12 @@ int url_get_file_handle(URLContext *h);
  * @return maximum packet size in bytes
  */
 int url_get_max_packet_size(URLContext *h);
+
+/**
+ * Copy the filename of the resource accessed by h to buf.
+ *
+ * @param buf_size size in bytes of buf
+ */
 void url_get_filename(URLContext *h, char *buf, int buf_size);
 
 /**
