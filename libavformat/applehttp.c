@@ -90,7 +90,7 @@ static void make_absolute_url(char *buf, int size, const char *base,
                               const char *rel)
 {
     char *sep;
-    if (!base || strstr(rel, "://")) {
+    if (!base || strstr(rel, "://") || rel[0] == '/') {
         av_strlcpy(buf, rel, size);
         return;
     }
@@ -99,13 +99,15 @@ static void make_absolute_url(char *buf, int size, const char *base,
     sep = strrchr(buf, '/');
     if (sep)
         sep[1] = '\0';
-    while (av_strstart(rel, "../", NULL)) {
-        if (sep) {
+    else
+        buf[0] = '\0';
+    while (av_strstart(rel, "../", NULL) && sep) {
             sep[0] = '\0';
             sep = strrchr(buf, '/');
             if (sep)
                 sep[1] = '\0';
-        }
+            else
+                buf[0] = '\0';
         rel += 3;
     }
     av_strlcat(buf, rel, size);
