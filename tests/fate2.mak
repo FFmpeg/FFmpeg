@@ -125,7 +125,10 @@ fate-atrac3-3: CMP = oneoff
 fate-atrac3-3: REF = $(SAMPLES)/atrac3/mc_sich_at3_132_small.pcm
 
 FATE_TESTS += fate-gsm
-fate-gsm: CMD = framecrc -i $(SAMPLES)/gsm/ciao.wav
+fate-gsm: CMD = framecrc -t 10 -i $(SAMPLES)/gsm/sample-gsm-8000.mov -vn
+
+FATE_TESTS += fate-gsm-ms
+fate-gsm-ms: CMD = framecrc -i $(SAMPLES)/gsm/ciao.wav
 
 FATE_TESTS += fate-g722dec-1
 fate-g722dec-1: CMD = framecrc -ar 16000 -i $(SAMPLES)/g722/conf-adminmenu-162.g722
