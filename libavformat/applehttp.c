@@ -104,6 +104,12 @@ static void make_absolute_url(char *buf, int size, const char *base,
     while (av_strstart(rel, "../", NULL) && sep) {
         sep[0] = '\0';
         sep = strrchr(buf, '/');
+        /* If the next directory name to pop off is "..", break here */
+        if (!strcmp(sep ? &sep[1] : buf, "..")) {
+            /* Readd the slash we just removed */
+            av_strlcat(buf, "/", size);
+            break;
+        }
         if (sep)
             sep[1] = '\0';
         else
