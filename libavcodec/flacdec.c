@@ -581,18 +581,27 @@ static int decode_frame(FLACContext *s)
         return -1;
     }
 
-    if (fi.channels != s->channels) {
+    if (s->channels && fi.channels != s->channels) {
         av_log(s->avctx, AV_LOG_ERROR, "switching channel layout mid-stream "
                                        "is not supported\n");
         return -1;
     }
+    s->channels = s->avctx->channels = fi.channels;
     s->ch_mode = fi.ch_mode;
 
-    if (fi.bps && fi.bps != s->bps) {
+    if (!s->bps && !fi.bps) {
+        av_log(s->avctx, AV_LOG_ERROR, "bps not found in STREAMINFO or frame header\n");
+        return -1;
+    }
+    if (!fi.bps) {
+        fi.bps = s->bps;
+    } else if (s->bps && fi.bps != s->bps) {
         av_log(s->avctx, AV_LOG_ERROR, "switching bps mid-stream is not "
                                        "supported\n");
         return -1;
     }
+    s->bps = s->avctx->bits_per_raw_sample = fi.bps;
+
     if (s->bps > 16) {
         s->avctx->sample_fmt = SAMPLE_FMT_S32;
         s->sample_shift = 32 - s->bps;
@@ -603,6 +612,8 @@ static int decode_frame(FLACContext *s)
         s->is32 = 0;
     }
 
+    if (!s->max_blocksize)
+        s->max_blocksize = FLAC_MAX_BLOCKSIZE;
     if (fi.blocksize > s->max_blocksize) {
         av_log(s->avctx, AV_LOG_ERROR, "blocksize %d > %d\n", fi.blocksize,
                s->max_blocksize);
@@ -610,13 +621,24 @@ static int decode_frame(FLACContext *s)
     }
     s->blocksize = fi.blocksize;
 
+    if (!s->samplerate && !fi.samplerate) {
+        av_log(s->avctx, AV_LOG_ERROR, "sample rate not found in STREAMINFO"
+                                        " or frame header\n");
+        return -1;
+    }
     if (fi.samplerate == 0) {
         fi.samplerate = s->samplerate;
-    } else if (fi.samplerate != s->samplerate) {
+    } else if (s->samplerate && fi.samplerate != s->samplerate) {
         av_log(s->avctx, AV_LOG_WARNING, "sample rate changed from %d to %d\n",
                s->samplerate, fi.samplerate);
     }
     s->samplerate = s->avctx->sample_rate = fi.samplerate;
+
+    if (!s->got_streaminfo) {
+        allocate_buffers(s);
+        s->got_streaminfo = 1;
+        dump_headers(s->avctx, (FLACStreaminfo *)s);
+    }
 
 //    dump_headers(s->avctx, (FLACStreaminfo *)s);
 
@@ -650,7 +672,9 @@ static int flac_decode_frame(AVCodecContext *avctx,
     *data_size=0;
 
     if (s->max_framesize == 0) {
-        s->max_framesize= FFMAX(4, buf_size); // should hopefully be enough for the first header
+        s->max_framesize =
+            ff_flac_get_max_frame_size(s->max_blocksize ? s->max_blocksize : FLAC_MAX_BLOCKSIZE,
+                                       FLAC_MAX_CHANNELS, 32);
         s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
     }
 
