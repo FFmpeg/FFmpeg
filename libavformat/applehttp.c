@@ -102,12 +102,12 @@ static void make_absolute_url(char *buf, int size, const char *base,
     else
         buf[0] = '\0';
     while (av_strstart(rel, "../", NULL) && sep) {
-            sep[0] = '\0';
-            sep = strrchr(buf, '/');
-            if (sep)
-                sep[1] = '\0';
-            else
-                buf[0] = '\0';
+        sep[0] = '\0';
+        sep = strrchr(buf, '/');
+        if (sep)
+            sep[1] = '\0';
+        else
+            buf[0] = '\0';
         rel += 3;
     }
     av_strlcat(buf, rel, size);
