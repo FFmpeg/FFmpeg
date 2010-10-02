@@ -1500,4 +1500,5 @@ AVCodec dca_decoder = {
     .decode = dca_decode_frame,
     .close = dca_decode_end,
     .long_name = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
+    .capabilities = CODEC_CAP_CHANNEL_CONF,
 };

@@ -703,6 +703,11 @@ typedef struct RcOverride{
  * encoders
  */
 #define CODEC_CAP_EXPERIMENTAL     0x0200
+/**
+ * Codec should fill in channel configuration and samplerate instead of container
+ */
+#define CODEC_CAP_CHANNEL_CONF     0x0400
+
 
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
