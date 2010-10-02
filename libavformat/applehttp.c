@@ -90,18 +90,21 @@ static void make_absolute_url(char *buf, int size, const char *base,
                               const char *rel)
 {
     char *sep;
+    /* If rel actually is an absolute url, just copy it */
     if (!base || strstr(rel, "://") || rel[0] == '/') {
         av_strlcpy(buf, rel, size);
         return;
     }
     if (base != buf)
         av_strlcpy(buf, base, size);
+    /* Remove the file name from the base url */
     sep = strrchr(buf, '/');
     if (sep)
         sep[1] = '\0';
     else
         buf[0] = '\0';
     while (av_strstart(rel, "../", NULL) && sep) {
+        /* Remove the path delimiter at the end */
         sep[0] = '\0';
         sep = strrchr(buf, '/');
         /* If the next directory name to pop off is "..", break here */
@@ -110,6 +113,7 @@ static void make_absolute_url(char *buf, int size, const char *base,
             av_strlcat(buf, "/", size);
             break;
         }
+        /* Cut off the directory name */
         if (sep)
             sep[1] = '\0';
         else
