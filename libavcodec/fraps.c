@@ -155,7 +155,7 @@ static int decode_frame(AVCodecContext *avctx,
     case 0:
     default:
         /* Fraps v0 is a reordered YUV420 */
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = PIX_FMT_YUVJ420P;
 
         if ( (buf_size != avctx->width*avctx->height*3/2+header_size) &&
              (buf_size != header_size) ) {
@@ -240,7 +240,7 @@ static int decode_frame(AVCodecContext *avctx,
          * Fraps v2 is Huffman-coded YUV420 planes
          * Fraps v4 is virtually the same
          */
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = PIX_FMT_YUVJ420P;
         planes = 3;
         f->reference = 1;
         f->buffer_hints = FF_BUFFER_HINTS_VALID |
