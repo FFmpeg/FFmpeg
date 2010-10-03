@@ -1359,7 +1359,7 @@ static int rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
         av_free(sdp);
         return AVERROR_INVALIDDATA;
     }
-    av_log(s, AV_LOG_INFO, "SDP:\n%s\n", sdp);
+    av_log(s, AV_LOG_VERBOSE, "SDP:\n%s\n", sdp);
     ff_rtsp_send_cmd_with_content(s, "ANNOUNCE", rt->control_uri,
                                   "Content-Type: application/sdp\r\n",
                                   reply, NULL, sdp, strlen(sdp));
