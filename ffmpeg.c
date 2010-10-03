@@ -3626,7 +3626,10 @@ static void new_subtitle_stream(AVFormatContext *oc)
     }
     avcodec_get_context_defaults3(st->codec, codec);
 
-    bitstream_filters[nb_output_files] = grow_array(bitstream_filters[nb_output_files], sizeof(*bitstream_filters[nb_output_files]), &nb_bitstream_filters[nb_output_files], oc->nb_streams);
+    bitstream_filters[nb_output_files] =
+        grow_array(bitstream_filters[nb_output_files],
+                   sizeof(*bitstream_filters[nb_output_files]),
+                   &nb_bitstream_filters[nb_output_files], oc->nb_streams);
     bitstream_filters[nb_output_files][oc->nb_streams - 1]= subtitle_bitstream_filters;
     subtitle_bitstream_filters= NULL;
 
