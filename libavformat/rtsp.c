@@ -1315,6 +1315,7 @@ static int rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply
         return AVERROR_INVALIDDATA;
     }
 
+    av_log(s, AV_LOG_VERBOSE, "SDP:\n%s\n", content);
     /* now we got the SDP description, we parse it */
     ret = sdp_parse(s, (const char *)content);
     av_freep(&content);
