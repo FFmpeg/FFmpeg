@@ -35,7 +35,6 @@
 struct PayloadContext {
     ByteIOContext *pktbuf;
     int64_t        timestamp;
-    int            is_keyframe;
 };
 
 /** return 0 on packet, <0 on partial packet or error... */
@@ -90,7 +89,6 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
         if ((res = url_open_dyn_buf(&sv->pktbuf)) < 0)
             return res;
         sv->timestamp   = *timestamp;
-        sv->is_keyframe = flags & RTP_FLAG_KEY;
     }
 
     if (!sv->pktbuf)
@@ -102,7 +100,6 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
         av_init_packet(pkt);
         pkt->stream_index = st->index;
         *timestamp        = sv->timestamp;
-        pkt->flags        = sv->is_keyframe ? AV_PKT_FLAG_KEY : 0;
         pkt->size         = url_close_dyn_buf(sv->pktbuf, &pkt->data);
         pkt->destruct     = av_destruct_packet;
         sv->pktbuf        = NULL;
