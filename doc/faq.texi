@@ -221,11 +221,11 @@ default.
 @item needed stuff
 -acodec libfaac -vcodec mpeg4 width<=320 height<=240
 @item working stuff
-4mv, title
+mv4, title
 @item non-working stuff
 B-frames
 @item example command line
-ffmpeg -i input -acodec libfaac -ab 128kb -vcodec mpeg4 -b 1200kb -mbd 2 -flags +4mv -trellis 2 -aic 2 -cmp 2 -subcmp 2 -s 320x180 -metadata title=X output.mp4
+ffmpeg -i input -acodec libfaac -ab 128kb -vcodec mpeg4 -b 1200kb -mbd 2 -flags +mv4 -trellis 2 -aic 2 -cmp 2 -subcmp 2 -s 320x180 -metadata title=X output.mp4
 @end table
 
 @section How do I encode videos which play on the PSP?
@@ -234,11 +234,11 @@ ffmpeg -i input -acodec libfaac -ab 128kb -vcodec mpeg4 -b 1200kb -mbd 2 -flags 
 @item needed stuff
 -acodec libfaac -vcodec mpeg4 width*height<=76800 width%16=0 height%16=0 -ar 24000 -r 30000/1001 or 15000/1001 -f psp
 @item working stuff
-4mv, title
+mv4, title
 @item non-working stuff
 B-frames
 @item example command line
-ffmpeg -i input -acodec libfaac -ab 128kb -vcodec mpeg4 -b 1200kb -ar 24000 -mbd 2 -flags +4mv -trellis 2 -aic 2 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -metadata title=X -f psp output.mp4
+ffmpeg -i input -acodec libfaac -ab 128kb -vcodec mpeg4 -b 1200kb -ar 24000 -mbd 2 -flags +mv4 -trellis 2 -aic 2 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -metadata title=X -f psp output.mp4
 @item needed stuff for H.264
 -acodec libfaac -vcodec libx264 width*height<=76800 width%16=0? height%16=0? -ar 48000 -coder 1 -r 30000/1001 or 15000/1001 -f psp
 @item working stuff for H.264
@@ -255,7 +255,7 @@ ffmpeg -i input -acodec libfaac -ab 128kb -ac 2 -ar 48000 -vcodec libx264 -level
 
 @section Which are good parameters for encoding high quality MPEG-4?
 
-'-mbd rd -flags +4mv+aic -trellis 2 -cmp 2 -subcmp 2 -g 300 -pass 1/2',
+'-mbd rd -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -g 300 -pass 1/2',
 things to try: '-bf 2', '-flags qprd', '-flags mv0', '-flags skiprd'.
 
 @section Which are good parameters for encoding high quality MPEG-1/MPEG-2?
