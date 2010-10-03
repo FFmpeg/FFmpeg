@@ -3223,6 +3223,7 @@ cat > $TMPH <<EOF
 #define ASMALIGN(ZEROBITS) ".p2align " #ZEROBITS "\\n\\t"
 #define EXTERN_PREFIX "${extern_prefix}"
 #define EXTERN_ASM ${extern_prefix}
+#define SLIBSUF "$SLIBSUF"
 EOF
 
 test -n "$malloc_prefix" &&

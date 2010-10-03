@@ -192,7 +192,7 @@ static void *load_path(AVFilterContext *ctx, const char *prefix, const char *nam
 {
     char path[1024];
 
-    snprintf(path, sizeof(path), "%s%s.so", prefix, name);
+    snprintf(path, sizeof(path), "%s%s%s", prefix, name, SLIBSUF);
     av_log(ctx, AV_LOG_DEBUG, "Looking for frei0r effect in '%s'\n", path);
     return dlopen(path, RTLD_NOW|RTLD_LOCAL);
 }
