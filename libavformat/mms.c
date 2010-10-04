@@ -24,6 +24,12 @@
 #include "asf.h"
 #include "libavutil/intreadwrite.h"
 
+#if FF_API_MAX_STREAMS
+#define MMS_MAX_STREAMS MAX_STREAMS
+#else
+#define MMS_MAX_STREAMS 256    /**< arbitrary sanity check value */
+#endif
+
 int ff_mms_read_header(MMSContext *mms, uint8_t *buf, const int size)
 {
     char *pos;
@@ -97,7 +103,7 @@ int ff_mms_asf_header_parser(MMSContext *mms)
             //The second condition is for checking CS_PKT_STREAM_ID_REQUEST packet size,
             //we can calcuate the packet size by stream_num.
             //Please see function send_stream_selection_request().
-            if (mms->stream_num < MAX_STREAMS &&
+            if (mms->stream_num < MMS_MAX_STREAMS &&
                     46 + mms->stream_num * 6 < sizeof(mms->out_buffer)) {
                 mms->streams = av_fast_realloc(mms->streams,
                                    &mms->nb_streams_allocated,
