@@ -25,6 +25,7 @@
 #include "config.h"
 
 #if ARCH_X86_64
+#    define OPSIZE "q"
 #    define REG_a "rax"
 #    define REG_b "rbx"
 #    define REG_c "rcx"
@@ -45,6 +46,7 @@ typedef int64_t x86_reg;
 
 #elif ARCH_X86_32
 
+#    define OPSIZE "l"
 #    define REG_a "eax"
 #    define REG_b "ebx"
 #    define REG_c "ecx"
