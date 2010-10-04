@@ -136,3 +136,54 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
         return AVERROR(EINVAL);
     return 0;
 }
+
+#ifdef TEST
+
+#undef printf
+
+int main(void)
+{
+    printf("Testing av_parse_video_rate()\n");
+    {
+        int i;
+        const char *rates[] = {
+            "-inf",
+            "inf",
+            "nan",
+            "123/0",
+            "-123 / 0",
+            "",
+            "/",
+            " 123  /  321",
+            "foo/foo",
+            "foo/1",
+            "1/foo",
+            "0/0",
+            "/0",
+            "1/",
+            "1",
+            "0",
+            "-123/123",
+            "-foo",
+            "123.23",
+            ".23",
+            "-.23",
+            "-0.234",
+            "-0.0000001",
+            "  21332.2324   ",
+            " -21332.2324   ",
+        };
+
+        for (i = 0; i < FF_ARRAY_ELEMS(rates); i++) {
+            int ret;
+            AVRational q = (AVRational){0, 0};
+            ret = av_parse_video_rate(&q, rates[i]),
+            printf("'%s' -> %d/%d ret:%d\n",
+                   rates[i], q.num, q.den, ret);
+        }
+    }
+
+    return 0;
+}
+
+#endif /* TEST */
