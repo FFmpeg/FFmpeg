@@ -3361,8 +3361,8 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
                 }
                 p++;
             }
-            *q = '\0';
         }
+        *q = '\0';
         if (!strcmp(tag, tag1))
             return 1;
         if (*p != '&')
