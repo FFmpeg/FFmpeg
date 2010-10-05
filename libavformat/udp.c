@@ -25,6 +25,7 @@
  */
 
 #define _BSD_SOURCE     /* Needed for using struct ip_mreq with recent glibc */
+#define _DARWIN_C_SOURCE /* Needed for using IP_MULTICAST_TTL on OS X */
 #include "avformat.h"
 #include <unistd.h>
 #include "internal.h"
