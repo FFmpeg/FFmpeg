@@ -145,4 +145,6 @@ int ff_mp4_read_descr_len(ByteIOContext *pb);
 int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom);
 enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
+int ff_mov_read_stsd_entries(MOVContext *c, ByteIOContext *pb, int entries);
+
 #endif /* AVFORMAT_ISOM_H */

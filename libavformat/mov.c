@@ -965,21 +965,16 @@ enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags)
     return CODEC_ID_NONE;
 }
 
-static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+int ff_mov_read_stsd_entries(MOVContext *c, ByteIOContext *pb, int entries)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    int j, entries, pseudo_stream_id;
+    int j, pseudo_stream_id;
 
     if (c->fc->nb_streams < 1)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
-
-    get_byte(pb); /* version */
-    get_be24(pb); /* flags */
-
-    entries = get_be32(pb);
 
     for(pseudo_stream_id=0; pseudo_stream_id<entries; pseudo_stream_id++) {
         //Parsing Sample description table
@@ -1298,6 +1293,17 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     }
 
     return 0;
+}
+
+static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+{
+    int entries;
+
+    get_byte(pb); /* version */
+    get_be24(pb); /* flags */
+    entries = get_be32(pb);
+
+    return ff_mov_read_stsd_entries(c, pb, entries);
 }
 
 static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
