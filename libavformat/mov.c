@@ -528,6 +528,7 @@ int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
             dprintf(fc, "Specific MPEG4 header len=%d\n", len);
             if((uint64_t)len > (1<<30))
                 return -1;
+            av_free(st->codec->extradata);
             st->codec->extradata = av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
