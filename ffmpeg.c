@@ -3654,7 +3654,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
     subtitle_stream_copy = 0;
 }
 
-static void opt_new_stream(const char *opt, const char *arg)
+static int opt_new_stream(const char *opt, const char *arg)
 {
     AVFormatContext *oc;
     if (nb_output_files <= 0) {
@@ -3667,10 +3667,11 @@ static void opt_new_stream(const char *opt, const char *arg)
     else if (!strcmp(opt, "newaudio"   )) new_audio_stream   (oc);
     else if (!strcmp(opt, "newsubtitle")) new_subtitle_stream(oc);
     else av_assert0(0);
+    return 0;
 }
 
 /* arg format is "output-stream-index:streamid-value". */
-static void opt_streamid(const char *opt, const char *arg)
+static int opt_streamid(const char *opt, const char *arg)
 {
     int idx;
     char *p;
@@ -3689,6 +3690,7 @@ static void opt_streamid(const char *opt, const char *arg)
     idx = parse_number_or_die(opt, idx_str, OPT_INT, 0, MAX_STREAMS-1);
     streamid_map = grow_array(streamid_map, sizeof(*streamid_map), &nb_streamid_map, idx+1);
     streamid_map[idx] = parse_number_or_die(opt, p, OPT_INT, 0, INT_MAX);
+    return 0;
 }
 
 static void opt_output_file(const char *filename)
