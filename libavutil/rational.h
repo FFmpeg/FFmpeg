@@ -44,7 +44,8 @@ typedef struct AVRational{
  * Compare two rationals.
  * @param a first rational
  * @param b second rational
- * @return 0 if a==b, 1 if a>b and -1 if a<b
+ * @return 0 if a==b, 1 if a>b, -1 if a<b, and INT_MIN if one of the
+ * values is of the form 0/0
  */
 static inline int av_cmp_q(AVRational a, AVRational b){
     const int64_t tmp= a.num * (int64_t)b.den - b.num * (int64_t)a.den;
