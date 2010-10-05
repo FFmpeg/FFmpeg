@@ -138,7 +138,7 @@ static void render_charset(AVCodecContext *avctx, uint8_t *charset,
             if(INTERLACED) charset[y+0x800] = row2;
         }
         /* do we need to adjust pixels? */
-        if (highdiff > 0 && lowdiff > 0) {
+        if (highdiff > 0 && lowdiff > 0 && c->mc_use_5col) {
             if (lowdiff > highdiff) {
                 for (x = 0; x < 32; x++)
                     best_cb[x] = FFMIN(c->mc_luma_vals[3], best_cb[x]);
