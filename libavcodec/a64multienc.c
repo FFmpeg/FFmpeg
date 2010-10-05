@@ -33,6 +33,7 @@
 #define DITHERSTEPS   8
 #define CHARSET_CHARS 256
 #define INTERLACED    1
+#define CROP_SCREENS  1
 
 /* gray gradient */
 static const int mc_colors[5]={0x0,0xb,0xc,0xf,0x1};
@@ -245,7 +246,9 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     AVFrame *const p = (AVFrame *) & c->picture;
 
     int frame;
-    int a;
+    int x, y;
+    int b_height;
+    int b_width;
 
     int req_size;
     int num_frames = c->mc_lifetime;
@@ -257,8 +260,18 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     int *best_cb         = c->mc_best_cb;
 
     int charset_size = 0x800 * (INTERLACED + 1);
-    int screen_size  = 0x400;
+    int screen_size;
     int colram_size  = 0x100 * c->mc_use_5col;
+
+    if(CROP_SCREENS) {
+        b_height = FFMIN(avctx->height,C64YRES) >> 3;
+        b_width  = FFMIN(avctx->width ,C64XRES) >> 3;
+        screen_size = b_width * b_height;
+    } else {
+        b_height = C64YRES >> 3;
+        b_width  = C64XRES >> 3;
+        screen_size = 0x400;
+    }
 
     /* no data, means end encoding asap */
     if (!data) {
@@ -312,8 +325,10 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
         /* write x frames to buf */
         for (frame = 0; frame < c->mc_lifetime; frame++) {
             /* copy charmap to buf. buf is uchar*, charmap is int*, so no memcpy here, sorry */
-            for (a = 0; a < 1000; a++) {
-                buf[a] = charmap[a];
+            for (y = 0; y < b_height; y++) {
+                for (x = 0; x < b_width; x++) {
+                    buf[y * b_width + x] = charmap[y * b_width + x];
+                }
             }
             /* advance pointers */
             buf += screen_size;
