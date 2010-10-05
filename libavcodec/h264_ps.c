@@ -387,6 +387,9 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         if (decode_vui_parameters(h, sps) < 0)
             goto fail;
 
+    if(!sps->sar.den)
+        sps->sar.den= 1;
+
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
         av_log(h->s.avctx, AV_LOG_DEBUG, "sps:%u profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%d/%d/%d/%d %s %s %d/%d\n",
                sps_id, sps->profile_idc, sps->level_idc,

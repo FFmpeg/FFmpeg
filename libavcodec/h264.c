@@ -38,6 +38,7 @@
 #include "mathops.h"
 #include "rectangle.h"
 #include "vdpau_internal.h"
+#include "libavutil/avassert.h"
 
 #include "cabac.h"
 
@@ -1826,8 +1827,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
         avcodec_set_dimensions(s->avctx, s->width, s->height);
         s->avctx->sample_aspect_ratio= h->sps.sar;
-        if(!s->avctx->sample_aspect_ratio.den)
-            s->avctx->sample_aspect_ratio.den = 1;
+        av_assert0(s->avctx->sample_aspect_ratio.den);
 
         if(h->sps.video_signal_type_present_flag){
             s->avctx->color_range = h->sps.full_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
