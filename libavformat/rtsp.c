@@ -1726,7 +1726,6 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                     }
                 }
             }
-#if CONFIG_RTSP_DEMUXER
             if (tcp_fd != -1 && FD_ISSET(tcp_fd, &rfds)) {
                 RTSPMessageHeader reply;
 
@@ -1737,7 +1736,6 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                 if (rt->state != RTSP_STATE_STREAMING)
                     return 0;
             }
-#endif
         } else if (n == 0 && ++timeout_cnt >= MAX_TIMEOUTS) {
             return FF_NETERROR(ETIMEDOUT);
         } else if (n < 0 && errno != EINTR)
@@ -1850,11 +1848,9 @@ static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
 
     switch(rt->lower_transport) {
     default:
-#if CONFIG_RTSP_DEMUXER
     case RTSP_LOWER_TRANSPORT_TCP:
         len = tcp_read_packet(s, &rtsp_st, rt->recvbuf, RECVBUF_SIZE);
         break;
-#endif
     case RTSP_LOWER_TRANSPORT_UDP:
     case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
         len = udp_read_packet(s, &rtsp_st, rt->recvbuf, RECVBUF_SIZE, wait_end);
