@@ -1643,7 +1643,7 @@ redirect:
     ff_network_close();
     return err;
 }
-#endif
+#endif /* CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER */
 
 #if CONFIG_RTSP_DEMUXER
 static int rtsp_read_header(AVFormatContext *s,
@@ -2072,7 +2072,7 @@ AVInputFormat rtsp_demuxer = {
     .read_play = rtsp_read_play,
     .read_pause = rtsp_read_pause,
 };
-#endif
+#endif /* CONFIG_RTSP_DEMUXER */
 
 static int sdp_probe(AVProbeData *p1)
 {
