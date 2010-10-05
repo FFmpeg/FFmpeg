@@ -29,6 +29,18 @@ void ff_pred16x16_horizontal_ssse3 (uint8_t *src, int stride);
 void ff_pred16x16_dc_mmxext        (uint8_t *src, int stride);
 void ff_pred16x16_dc_sse2          (uint8_t *src, int stride);
 void ff_pred16x16_dc_ssse3         (uint8_t *src, int stride);
+void ff_pred16x16_plane_h264_mmx   (uint8_t *src, int stride);
+void ff_pred16x16_plane_h264_mmx2  (uint8_t *src, int stride);
+void ff_pred16x16_plane_h264_sse2  (uint8_t *src, int stride);
+void ff_pred16x16_plane_h264_ssse3 (uint8_t *src, int stride);
+void ff_pred16x16_plane_rv40_mmx   (uint8_t *src, int stride);
+void ff_pred16x16_plane_rv40_mmx2  (uint8_t *src, int stride);
+void ff_pred16x16_plane_rv40_sse2  (uint8_t *src, int stride);
+void ff_pred16x16_plane_rv40_ssse3 (uint8_t *src, int stride);
+void ff_pred16x16_plane_svq3_mmx   (uint8_t *src, int stride);
+void ff_pred16x16_plane_svq3_mmx2  (uint8_t *src, int stride);
+void ff_pred16x16_plane_svq3_sse2  (uint8_t *src, int stride);
+void ff_pred16x16_plane_svq3_ssse3 (uint8_t *src, int stride);
 void ff_pred16x16_tm_vp8_mmx       (uint8_t *src, int stride);
 void ff_pred16x16_tm_vp8_mmxext    (uint8_t *src, int stride);
 void ff_pred16x16_tm_vp8_sse2      (uint8_t *src, int stride);
@@ -37,6 +49,10 @@ void ff_pred8x8_vertical_mmx       (uint8_t *src, int stride);
 void ff_pred8x8_horizontal_mmx     (uint8_t *src, int stride);
 void ff_pred8x8_horizontal_mmxext  (uint8_t *src, int stride);
 void ff_pred8x8_horizontal_ssse3   (uint8_t *src, int stride);
+void ff_pred8x8_plane_mmx          (uint8_t *src, int stride);
+void ff_pred8x8_plane_mmx2         (uint8_t *src, int stride);
+void ff_pred8x8_plane_sse2         (uint8_t *src, int stride);
+void ff_pred8x8_plane_ssse3        (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_mmx         (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_mmxext      (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_sse2        (uint8_t *src, int stride);
@@ -61,6 +77,15 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
             h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_tm_vp8_mmx;
             h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_mmx;
             h->pred4x4  [TM_VP8_PRED  ] = ff_pred4x4_tm_vp8_mmx;
+        } else {
+            h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_plane_mmx;
+            if (codec_id == CODEC_ID_SVQ3) {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_svq3_mmx;
+            } else if (codec_id == CODEC_ID_RV40) {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_rv40_mmx;
+            } else {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_h264_mmx;
+            }
         }
     }
 
@@ -75,6 +100,15 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
             h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_mmxext;
             h->pred4x4  [TM_VP8_PRED  ] = ff_pred4x4_tm_vp8_mmxext;
             h->pred4x4  [VERT_PRED    ] = ff_pred4x4_vertical_vp8_mmxext;
+        } else {
+            h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_plane_mmx2;
+            if (codec_id == CODEC_ID_SVQ3) {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_svq3_mmx2;
+            } else if (codec_id == CODEC_ID_RV40) {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_rv40_mmx2;
+            } else {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_h264_mmx2;
+            }
         }
     }
 
@@ -87,6 +121,15 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
         if (codec_id == CODEC_ID_VP8) {
             h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_tm_vp8_sse2;
             h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_sse2;
+        } else {
+            h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_plane_sse2;
+            if (codec_id == CODEC_ID_SVQ3) {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_svq3_sse2;
+            } else if (codec_id == CODEC_ID_RV40) {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_rv40_sse2;
+            } else {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_h264_sse2;
+            }
         }
     }
 
@@ -97,6 +140,15 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
         if (codec_id == CODEC_ID_VP8) {
             h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_tm_vp8_ssse3;
             h->pred4x4  [TM_VP8_PRED  ] = ff_pred4x4_tm_vp8_ssse3;
+        } else {
+            h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_plane_ssse3;
+            if (codec_id == CODEC_ID_SVQ3) {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_svq3_ssse3;
+            } else if (codec_id == CODEC_ID_RV40) {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_rv40_ssse3;
+            } else {
+                h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_h264_ssse3;
+            }
         }
     }
 #endif

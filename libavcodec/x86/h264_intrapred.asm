@@ -24,11 +24,23 @@
 SECTION_RODATA
 
 tm_shuf: times 8 db 0x03, 0x80
+plane_shuf:  db -8, -7, -6, -5, -4, -3, -2, -1
+             db  1,  2,  3,  4,  5,  6,  7,  8
+plane8_shuf: db -4, -3, -2, -1,  0,  0,  0,  0
+             db  1,  2,  3,  4,  0,  0,  0,  0
+pw_0to7:     dw  0,  1,  2,  3,  4,  5,  6,  7
+pw_1to8:     dw  1,  2,  3,  4,  5,  6,  7,  8
+pw_m8tom1:   dw -8, -7, -6, -5, -4, -3, -2, -1
+pw_m4to4:    dw -4, -3, -2, -1,  1,  2,  3,  4
 
 SECTION .text
 
 cextern pb_1
 cextern pb_3
+cextern pw_5
+cextern pw_16
+cextern pw_17
+cextern pw_32
 
 ;-----------------------------------------------------------------------------
 ; void pred16x16_vertical(uint8_t *src, int stride)
@@ -264,6 +276,498 @@ cglobal pred16x16_tm_vp8_sse2, 2,6,6
     dec         r5d
     jg .loop
     REP_RET
+
+;-----------------------------------------------------------------------------
+; void pred16x16_plane(uint8_t *src, int stride)
+;-----------------------------------------------------------------------------
+
+%macro H264_PRED16x16_PLANE 3
+cglobal pred16x16_plane_%3_%1, 2, 7, %2
+    mov          r2, r1           ; +stride
+    neg          r1               ; -stride
+
+    movh         m0, [r0+r1  -1]
+%if mmsize == 8
+    pxor         m4, m4
+    movh         m1, [r0+r1  +3 ]
+    movh         m2, [r0+r1  +8 ]
+    movh         m3, [r0+r1  +12]
+    punpcklbw    m0, m4
+    punpcklbw    m1, m4
+    punpcklbw    m2, m4
+    punpcklbw    m3, m4
+    pmullw       m0, [pw_m8tom1  ]
+    pmullw       m1, [pw_m8tom1+8]
+    pmullw       m2, [pw_1to8    ]
+    pmullw       m3, [pw_1to8  +8]
+    paddw        m0, m2
+    paddw        m1, m3
+%else ; mmsize == 16
+%ifidn %1, sse2
+    pxor         m2, m2
+    movh         m1, [r0+r1  +8]
+    punpcklbw    m0, m2
+    punpcklbw    m1, m2
+    pmullw       m0, [pw_m8tom1]
+    pmullw       m1, [pw_1to8]
+    paddw        m0, m1
+%else ; ssse3
+    movhps       m0, [r0+r1  +8]
+    pmaddubsw    m0, [plane_shuf] ; H coefficients
+%endif
+    movhlps      m1, m0
+%endif
+    paddw        m0, m1
+%ifidn %1, mmx
+    mova         m1, m0
+    psrlq        m1, 32
+%elifidn %1, mmx2
+    pshufw       m1, m0, 0xE
+%else ; mmsize == 16
+    pshuflw      m1, m0, 0xE
+%endif
+    paddw        m0, m1
+%ifidn %1, mmx
+    mova         m1, m0
+    psrlq        m1, 16
+%elifidn %1, mmx2
+    pshufw       m1, m0, 0x1
+%else
+    pshuflw      m1, m0, 0x1
+%endif
+    paddw        m0, m1           ; sum of H coefficients
+
+%ifidn %3, h264
+    pmullw       m0, [pw_5]
+    paddw        m0, [pw_32]
+    psraw        m0, 6
+%elifidn %3, rv40
+    pmullw       m0, [pw_5]
+    psraw        m0, 6
+%elifidn %3, svq3
+    movd         r3, m0
+    movsx        r3, r3w
+    test         r3, r3
+    lea          r4, [r3+3]
+    cmovs        r3, r4
+    sar          r3, 2           ; H/4
+    lea          r3, [r3*5]      ; 5*(H/4)
+    test         r3, r3
+    lea          r4, [r3+15]
+    cmovs        r3, r4
+    sar          r3, 4           ; (5*(H/4))/16
+    movd         m0, r3d
+%endif
+
+    lea          r4, [r0+r2*8-1]
+    lea          r3, [r0+r2*4-1]
+    add          r4, r2
+
+%ifdef ARCH_X86_64
+%define e_reg r11
+%else
+%define e_reg r0
+%endif
+
+    movzx     e_reg, byte [r3+r2*2   ]
+    movzx        r5, byte [r4+r1     ]
+    sub          r5, e_reg
+
+    movzx     e_reg, byte [r3+r2     ]
+    movzx        r6, byte [r4        ]
+    sub          r6, e_reg
+    lea          r5, [r5+r6*2]
+
+    movzx     e_reg, byte [r3+r1     ]
+    movzx        r6, byte [r4+r2*2   ]
+    sub          r6, e_reg
+    lea          r5, [r5+r6*4]
+
+    movzx     e_reg, byte [r3        ]
+%ifdef ARCH_X86_64
+    movzx       r10, byte [r4+r2     ]
+    sub         r10, e_reg
+%else
+    movzx        r6, byte [r4+r2     ]
+    sub          r6, e_reg
+    lea          r5, [r5+r6*4]
+    sub          r5, r6
+%endif
+
+    lea       e_reg, [r3+r1*4]
+    lea          r3, [r4+r2*4]
+
+    movzx        r4, byte [e_reg+r2  ]
+    movzx        r6, byte [r3        ]
+    sub          r6, r4
+%ifdef ARCH_X86_64
+    lea          r6, [r10+r6*2]
+    lea          r5, [r5+r6*2]
+    add          r5, r6
+%else
+    lea          r5, [r5+r6*4]
+    lea          r5, [r5+r6*2]
+%endif
+
+    movzx        r4, byte [e_reg     ]
+%ifdef ARCH_X86_64
+    movzx       r10, byte [r3   +r2  ]
+    sub         r10, r4
+    sub          r5, r10
+%else
+    movzx        r6, byte [r3   +r2  ]
+    sub          r6, r4
+    lea          r5, [r5+r6*8]
+    sub          r5, r6
+%endif
+
+    movzx        r4, byte [e_reg+r1  ]
+    movzx        r6, byte [r3   +r2*2]
+    sub          r6, r4
+%ifdef ARCH_X86_64
+    add          r6, r10
+%endif
+    lea          r5, [r5+r6*8]
+
+    movzx        r4, byte [e_reg+r2*2]
+    movzx        r6, byte [r3   +r1  ]
+    sub          r6, r4
+    lea          r5, [r5+r6*4]
+    add          r5, r6           ; sum of V coefficients
+
+%ifndef ARCH_X86_64
+    mov          r0, r0m
+%endif
+
+%ifidn %3, h264
+    lea          r5, [r5*5+32]
+    sar          r5, 6
+%elifidn %3, rv40
+    lea          r5, [r5*5]
+    sar          r5, 6
+%elifidn %3, svq3
+    test         r5, r5
+    lea          r6, [r5+3]
+    cmovs        r5, r6
+    sar          r5, 2            ; V/4
+    lea          r5, [r5*5]       ; 5*(V/4)
+    test         r5, r5
+    lea          r6, [r5+15]
+    cmovs        r5, r6
+    sar          r5, 4            ; (5*(V/4))/16
+%endif
+
+    movzx        r4, byte [r0+r1  +15]
+    movzx        r3, byte [r3+r2*2   ]
+    lea          r3, [r3+r4+1]
+    shl          r3, 4
+    movd        r1d, m0
+    movsx       r1d, r1w
+    add         r1d, r5d
+    add         r3d, r1d
+    shl         r1d, 3
+    sub         r3d, r1d          ; a
+
+    movd         m1, r5d
+    movd         m3, r3d
+%ifidn %1, mmx
+    punpcklwd    m0, m0
+    punpcklwd    m1, m1
+    punpcklwd    m3, m3
+    punpckldq    m0, m0
+    punpckldq    m1, m1
+    punpckldq    m3, m3
+%elifidn %1, mmx2
+    pshufw       m0, m0, 0x0
+    pshufw       m1, m1, 0x0
+    pshufw       m3, m3, 0x0
+%else
+    pshuflw      m0, m0, 0x0
+    pshuflw      m1, m1, 0x0
+    pshuflw      m3, m3, 0x0
+    punpcklqdq   m0, m0           ; splat H (words)
+    punpcklqdq   m1, m1           ; splat V (words)
+    punpcklqdq   m3, m3           ; splat a (words)
+%endif
+%ifidn %3, svq3
+    SWAP          0, 1
+%endif
+    mova         m2, m0
+%if mmsize == 8
+    mova         m5, m0
+%endif
+    pmullw       m0, [pw_0to7]    ; 0*H, 1*H, ..., 7*H  (words)
+%if mmsize == 16
+    psllw        m2, 3
+%else
+    psllw        m5, 3
+    psllw        m2, 2
+    mova         m6, m5
+    paddw        m6, m2
+%endif
+    paddw        m0, m3           ; a + {0,1,2,3,4,5,6,7}*H
+    paddw        m2, m0           ; a + {8,9,10,11,12,13,14,15}*H
+%if mmsize == 8
+    paddw        m5, m0           ; a + {8,9,10,11}*H
+    paddw        m6, m0           ; a + {12,13,14,15}*H
+%endif
+
+    mov          r4, 8
+.loop
+    mova         m3, m0           ; b[0..7]
+    mova         m4, m2           ; b[8..15]
+    psraw        m3, 5
+    psraw        m4, 5
+    packuswb     m3, m4
+    mova       [r0], m3
+%if mmsize == 8
+    mova         m3, m5           ; b[8..11]
+    mova         m4, m6           ; b[12..15]
+    psraw        m3, 5
+    psraw        m4, 5
+    packuswb     m3, m4
+    mova     [r0+8], m3
+%endif
+    paddw        m0, m1
+    paddw        m2, m1
+%if mmsize == 8
+    paddw        m5, m1
+    paddw        m6, m1
+%endif
+
+    mova         m3, m0           ; b[0..7]
+    mova         m4, m2           ; b[8..15]
+    psraw        m3, 5
+    psraw        m4, 5
+    packuswb     m3, m4
+    mova    [r0+r2], m3
+%if mmsize == 8
+    mova         m3, m5           ; b[8..11]
+    mova         m4, m6           ; b[12..15]
+    psraw        m3, 5
+    psraw        m4, 5
+    packuswb     m3, m4
+    mova  [r0+r2+8], m3
+%endif
+    paddw        m0, m1
+    paddw        m2, m1
+%if mmsize == 8
+    paddw        m5, m1
+    paddw        m6, m1
+%endif
+
+    lea          r0, [r0+r2*2]
+    dec          r4
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_MMX
+H264_PRED16x16_PLANE mmx,   0, h264
+H264_PRED16x16_PLANE mmx,   0, rv40
+H264_PRED16x16_PLANE mmx,   0, svq3
+H264_PRED16x16_PLANE mmx2,  0, h264
+H264_PRED16x16_PLANE mmx2,  0, rv40
+H264_PRED16x16_PLANE mmx2,  0, svq3
+INIT_XMM
+H264_PRED16x16_PLANE sse2,  8, h264
+H264_PRED16x16_PLANE sse2,  8, rv40
+H264_PRED16x16_PLANE sse2,  8, svq3
+H264_PRED16x16_PLANE ssse3, 8, h264
+H264_PRED16x16_PLANE ssse3, 8, rv40
+H264_PRED16x16_PLANE ssse3, 8, svq3
+
+;-----------------------------------------------------------------------------
+; void pred8x8_plane(uint8_t *src, int stride)
+;-----------------------------------------------------------------------------
+
+%macro H264_PRED8x8_PLANE 2
+cglobal pred8x8_plane_%1, 2, 7, %2
+    mov          r2, r1           ; +stride
+    neg          r1               ; -stride
+
+    movd         m0, [r0+r1  -1]
+%if mmsize == 8
+    pxor         m2, m2
+    movh         m1, [r0+r1  +4 ]
+    punpcklbw    m0, m2
+    punpcklbw    m1, m2
+    pmullw       m0, [pw_m4to4]
+    pmullw       m1, [pw_m4to4+8]
+%else ; mmsize == 16
+%ifidn %1, sse2
+    pxor         m2, m2
+    movd         m1, [r0+r1  +4]
+    punpckldq    m0, m1
+    punpcklbw    m0, m2
+    pmullw       m0, [pw_m4to4]
+%else ; ssse3
+    movhps       m0, [r0+r1  +4]   ; this reads 4 bytes more than necessary
+    pmaddubsw    m0, [plane8_shuf] ; H coefficients
+%endif
+    movhlps      m1, m0
+%endif
+    paddw        m0, m1
+
+%ifnidn %1, ssse3
+%ifidn %1, mmx
+    mova         m1, m0
+    psrlq        m1, 32
+%elifidn %1, mmx2
+    pshufw       m1, m0, 0xE
+%else ; mmsize == 16
+    pshuflw      m1, m0, 0xE
+%endif
+    paddw        m0, m1
+%endif ; !ssse3
+
+%ifidn %1, mmx
+    mova         m1, m0
+    psrlq        m1, 16
+%elifidn %1, mmx2
+    pshufw       m1, m0, 0x1
+%else
+    pshuflw      m1, m0, 0x1
+%endif
+    paddw        m0, m1           ; sum of H coefficients
+
+    pmullw       m0, [pw_17]
+    paddw        m0, [pw_16]
+    psraw        m0, 5
+
+    lea          r4, [r0+r2*4-1]
+    lea          r3, [r0     -1]
+    add          r4, r2
+
+%ifdef ARCH_X86_64
+%define e_reg r11
+%else
+%define e_reg r0
+%endif
+
+    movzx     e_reg, byte [r3+r2*2   ]
+    movzx        r5, byte [r4+r1     ]
+    sub          r5, e_reg
+
+    movzx     e_reg, byte [r3        ]
+%ifdef ARCH_X86_64
+    movzx       r10, byte [r4+r2     ]
+    sub         r10, e_reg
+    sub          r5, r10
+%else
+    movzx        r6, byte [r4+r2     ]
+    sub          r6, e_reg
+    lea          r5, [r5+r6*4]
+    sub          r5, r6
+%endif
+
+    movzx     e_reg, byte [r3+r1     ]
+    movzx        r6, byte [r4+r2*2   ]
+    sub          r6, e_reg
+%ifdef ARCH_X86_64
+    add          r6, r10
+%endif
+    lea          r5, [r5+r6*4]
+
+    movzx     e_reg, byte [r3+r2     ]
+    movzx        r6, byte [r4        ]
+    sub          r6, e_reg
+    lea          r6, [r5+r6*2]
+
+    lea          r5, [r6*9+16]
+    lea          r5, [r5+r6*8]
+    sar          r5, 5
+
+%ifndef ARCH_X86_64
+    mov          r0, r0m
+%endif
+
+    movzx        r3, byte [r4+r2*2  ]
+    movzx        r4, byte [r0+r1  +7]
+    lea          r3, [r3+r4+1]
+    shl          r3, 4
+    movd        r1d, m0
+    movsx       r1d, r1w
+    add         r1d, r5d
+    sub         r3d, r1d
+    add         r1d, r1d
+    sub         r3d, r1d          ; a
+
+    movd         m1, r5d
+    movd         m3, r3d
+%ifidn %1, mmx
+    punpcklwd    m0, m0
+    punpcklwd    m1, m1
+    punpcklwd    m3, m3
+    punpckldq    m0, m0
+    punpckldq    m1, m1
+    punpckldq    m3, m3
+%elifidn %1, mmx2
+    pshufw       m0, m0, 0x0
+    pshufw       m1, m1, 0x0
+    pshufw       m3, m3, 0x0
+%else
+    pshuflw      m0, m0, 0x0
+    pshuflw      m1, m1, 0x0
+    pshuflw      m3, m3, 0x0
+    punpcklqdq   m0, m0           ; splat H (words)
+    punpcklqdq   m1, m1           ; splat V (words)
+    punpcklqdq   m3, m3           ; splat a (words)
+%endif
+%if mmsize == 8
+    mova         m2, m0
+%endif
+    pmullw       m0, [pw_0to7]    ; 0*H, 1*H, ..., 7*H  (words)
+    paddw        m0, m3           ; a + {0,1,2,3,4,5,6,7}*H
+%if mmsize == 8
+    psllw        m2, 2
+    paddw        m2, m0           ; a + {4,5,6,7}*H
+%endif
+
+    mov          r4, 4
+ALIGN 16
+.loop
+%if mmsize == 16
+    mova         m3, m0           ; b[0..7]
+    paddw        m0, m1
+    psraw        m3, 5
+    mova         m4, m0           ; V+b[0..7]
+    paddw        m0, m1
+    psraw        m4, 5
+    packuswb     m3, m4
+    movh       [r0], m3
+    movhps  [r0+r2], m3
+%else ; mmsize == 8
+    mova         m3, m0           ; b[0..3]
+    mova         m4, m2           ; b[4..7]
+    paddw        m0, m1
+    paddw        m2, m1
+    psraw        m3, 5
+    psraw        m4, 5
+    mova         m5, m0           ; V+b[0..3]
+    mova         m6, m2           ; V+b[4..7]
+    paddw        m0, m1
+    paddw        m2, m1
+    psraw        m5, 5
+    psraw        m6, 5
+    packuswb     m3, m4
+    packuswb     m5, m6
+    mova       [r0], m3
+    mova    [r0+r2], m5
+%endif
+
+    lea          r0, [r0+r2*2]
+    dec          r4
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_MMX
+H264_PRED8x8_PLANE mmx,   0
+H264_PRED8x8_PLANE mmx2,  0
+INIT_XMM
+H264_PRED8x8_PLANE sse2,  8
+H264_PRED8x8_PLANE ssse3, 8
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8_vertical(uint8_t *src, int stride)
