@@ -25,6 +25,7 @@
 #include "matroska.h"
 #include "avc.h"
 #include "flacenc.h"
+#include "avlanguage.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/lfg.h"
@@ -688,6 +689,99 @@ static int mkv_write_chapters(AVFormatContext *s)
     return 0;
 }
 
+static void mkv_write_simpletag(ByteIOContext *pb, AVMetadataTag *t)
+{
+    uint8_t *key = av_strdup(t->key);
+    uint8_t *p   = key;
+    const uint8_t *lang = NULL;
+    ebml_master tag;
+
+    if ((p = strrchr(p, '-')) &&
+        (lang = av_convert_lang_to(p + 1, AV_LANG_ISO639_2_BIBL)))
+        *p = 0;
+
+    p = key;
+    while (*p) {
+        if (*p == ' ')
+            *p = '_';
+        else if (*p >= 'a' && *p <= 'z')
+            *p -= 'a' - 'A';
+        p++;
+    }
+
+    tag = start_ebml_master(pb, MATROSKA_ID_SIMPLETAG, 0);
+    put_ebml_string(pb, MATROSKA_ID_TAGNAME, key);
+    if (lang)
+        put_ebml_string(pb, MATROSKA_ID_TAGLANG, lang);
+    put_ebml_string(pb, MATROSKA_ID_TAGSTRING, t->value);
+    end_ebml_master(pb, tag);
+
+    av_freep(&key);
+}
+
+static int mkv_write_tag(AVFormatContext *s, AVMetadata *m, unsigned int elementid,
+                         unsigned int uid, ebml_master *tags)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    ebml_master tag, targets;
+    AVMetadataTag *t = NULL;
+    int ret;
+
+    if (!tags->pos) {
+        ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_TAGS, url_ftell(s->pb));
+        if (ret < 0) return ret;
+
+        *tags = start_ebml_master(s->pb, MATROSKA_ID_TAGS, 0);
+    }
+
+    tag     = start_ebml_master(s->pb, MATROSKA_ID_TAG,        0);
+    targets = start_ebml_master(s->pb, MATROSKA_ID_TAGTARGETS, 0);
+    if (elementid)
+        put_ebml_uint(s->pb, elementid, uid);
+    end_ebml_master(s->pb, targets);
+
+    while ((t = av_metadata_get(m, "", t, AV_METADATA_IGNORE_SUFFIX)))
+        mkv_write_simpletag(s->pb, t);
+
+    end_ebml_master(s->pb, tag);
+    return 0;
+}
+
+static int mkv_write_tags(AVFormatContext *s)
+{
+    ebml_master tags = {0};
+    int i, ret;
+
+    if (av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX)) {
+        ret = mkv_write_tag(s, s->metadata, 0, 0, &tags);
+        if (ret < 0) return ret;
+    }
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+
+        if (!av_metadata_get(st->metadata, "", 0, AV_METADATA_IGNORE_SUFFIX))
+            continue;
+
+        ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1, &tags);
+        if (ret < 0) return ret;
+    }
+
+    for (i = 0; i < s->nb_chapters; i++) {
+        AVChapter *ch = s->chapters[i];
+
+        if (!av_metadata_get(ch->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
+            continue;
+
+        ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID, ch->id, &tags);
+        if (ret < 0) return ret;
+    }
+
+    if (tags.pos)
+        end_ebml_master(s->pb, tags);
+    return 0;
+}
+
 static int mkv_write_header(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -757,6 +851,9 @@ static int mkv_write_header(AVFormatContext *s)
 
     if (mkv->mode != MODE_WEBM) {
         ret = mkv_write_chapters(s);
+        if (ret < 0) return ret;
+
+        ret = mkv_write_tags(s);
         if (ret < 0) return ret;
     }
 
@@ -1089,6 +1186,7 @@ AVOutputFormat matroska_muxer = {
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .subtitle_codec = CODEC_ID_TEXT,
+    .metadata_conv = ff_mkv_metadata_conv,
 };
 #endif
 
@@ -1122,5 +1220,6 @@ AVOutputFormat matroska_audio_muxer = {
     mkv_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
+    .metadata_conv = ff_mkv_metadata_conv,
 };
 #endif
