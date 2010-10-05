@@ -86,16 +86,16 @@ static void render_charset(AVCodecContext *avctx, uint8_t *charset,
     /* generate lookup-tables for dither and index before looping */
     i = 0;
     for (a=0; a < 256; a++) {
-        if(i < 4 && a == c->mc_luma_vals[i+1]) {
+        if(i < c->mc_pal_size -1 && a == c->mc_luma_vals[i+1]) {
             distance = c->mc_luma_vals[i+1] - c->mc_luma_vals[i];
             for(b = 0; b <= distance; b++) {
                   dither[c->mc_luma_vals[i]+b] = b * (DITHERSTEPS - 1) / distance;
             }
             i++;
         }
-        if(i >=4 ) dither[a] = 0;
+        if(i >= c->mc_pal_size - 1) dither[a] = 0;
         index1[a] = i;
-        index2[a] = FFMIN(i+1, 4);
+        index2[a] = FFMIN(i+1, c->mc_pal_size - 1);
     }
     /* and render charset */
     for (charpos = 0; charpos < CHARSET_CHARS; charpos++) {
@@ -183,15 +183,16 @@ static av_cold int a64multi_init_encoder(AVCodecContext *avctx)
 
     av_log(avctx, AV_LOG_INFO, "charset lifetime set to %d frame(s)\n", c->mc_lifetime);
 
+    c->mc_frame_counter = 0;
+    c->mc_use_5col      = avctx->codec->id == CODEC_ID_A64_MULTI5;
+    c->mc_pal_size      = 4 + c->mc_use_5col;
+
     /* precalc luma values for later use */
-    for (a = 0; a < 5; a++) {
+    for (a = 0; a < c->mc_pal_size; a++) {
         c->mc_luma_vals[a]=a64_palette[mc_colors[a]][0] * 0.30 +
                            a64_palette[mc_colors[a]][1] * 0.59 +
                            a64_palette[mc_colors[a]][2] * 0.11;
     }
-
-    c->mc_frame_counter = 0;
-    c->mc_use_5col      = avctx->codec->id == CODEC_ID_A64_MULTI5;
 
     if(!(c->mc_meta_charset  = av_malloc (32000 * c->mc_lifetime * sizeof(int))) ||
        !(c->mc_best_cb       = av_malloc (CHARSET_CHARS * 32 * sizeof(int)))     ||

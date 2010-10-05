@@ -48,6 +48,8 @@ typedef struct A64Context {
     int mc_luma_vals[5];
     uint8_t *mc_charset;
     uint8_t *mc_colram;
+    uint8_t *mc_palette;
+    int mc_pal_size;
 } A64Context;
 
 #endif /* AVCODEC_A64ENC_H */
