@@ -547,8 +547,12 @@ static int mms_open(URLContext *h, const char *uri, int flags)
     err = mms_safe_send_recv(mmst, NULL, SC_PKT_ASF_HEADER);
     if (err)
         goto fail;
-    if((mmst->incoming_flags != 0X08) && (mmst->incoming_flags != 0X0C))
+    if((mmst->incoming_flags != 0X08) && (mmst->incoming_flags != 0X0C)) {
+        av_log(NULL, AV_LOG_ERROR,
+               "The server does not support MMST (try MMSH or RTSP)\n");
+        err = AVERROR_NOFMT;
         goto fail;
+    }
     err = ff_mms_asf_header_parser(mms);
     if (err) {
         dprintf(NULL, "asf header parsed failed!\n");
