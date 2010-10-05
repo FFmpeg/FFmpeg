@@ -469,7 +469,7 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
         if (ret < 0) {
             if (ff_neterrno() != FF_NETERROR(EINTR) &&
                 ff_neterrno() != FF_NETERROR(EAGAIN))
-                return AVERROR(EIO);
+                return ff_neterrno();
         } else {
             break;
         }
