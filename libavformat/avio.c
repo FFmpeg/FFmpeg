@@ -252,8 +252,8 @@ int url_write(URLContext *h, const unsigned char *buf, int size)
     /* avoid sending too big packets */
     if (h->max_packet_size && size > h->max_packet_size)
         return AVERROR(EIO);
-    ret = h->prot->url_write(h, buf, size);
-    return ret;
+
+    return retry_transfer_wrapper(h, buf, size, h->prot->url_write);
 }
 
 int64_t url_seek(URLContext *h, int64_t pos, int whence)
