@@ -1793,11 +1793,11 @@ HOSTEXESUF=$(exesuf $host_os)
 : ${TMPDIR:=$TMP}
 : ${TMPDIR:=/tmp}
 
-if ! check_cmd type mktemp; then
+if ! check_cmd mktemp -u; then
     # simple replacement for missing mktemp
     # NOT SAFE FOR GENERAL USE
     mktemp(){
-        echo "${2%XXX*}.${HOSTNAME}.${UID}.$$"
+        echo "${2%%XXX*}.${HOSTNAME}.${UID}.$$"
     }
 fi
 
