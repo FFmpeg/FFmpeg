@@ -1,0 +1,34 @@
+FFmpeg currently uses a custom build system, this text attempts to document
+some of its obscure features and options.
+
+Options to make:
+make V=1 <target>
+    Build target with verbosity 1, instead of 1, 2 can be used too
+
+
+Useful standard make commands:
+make -t <target>
+    Touch all files that otherwise would be build, this is useful to reduce
+    unneeded rebuilding when changing headers, but note you must force rebuilds
+    of files that actually need it by hand then.
+
+make -j<num>
+    rebuild with multiple jobs at the same time. Faster on multi processor systems
+
+make -k
+    continue build in case of errors, this is useful for the regression tests
+    sometimes but note it will still not run all reg tests.
+
+
+Targets to make:
+fate-list
+    Will list all fate/regression test targets
+
+fate
+    Run the fate test suite, note you must have installed it
+
+
+Setting up local fate:
+use the following command to get the fate test samples
+rsync -aL rsync://rsync.mplayerhq.hu:/samples/fate-suite/ fate/fate-suite
+pass --samples=<path to the samples> to configure
