@@ -1822,6 +1822,8 @@ tmpfile TMPASM .asm
 
 unset -f mktemp
 
+chmod +x $TMPE
+
 # make sure we can execute files in $TMPDIR
 cat > $TMPSH 2>> $logfile <<EOF
 #! /bin/sh
