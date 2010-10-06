@@ -172,6 +172,12 @@ yasm), you do this by using:
 cglobal functon_name, num_args, num_regs, num_xmm_regs
 In inline asm, you specify clobbered registers at the end of your asm:
 __asm__(".." ::: "%eax").
+If gcc is not set to support sse (-msse) it will not accept xmm registers
+in the clobber list. For that we use two macros to declare the clobbers.
+XMM_CLOBBERS should be used when there are other clobbers, for example:
+__asm__(".." ::: XMM_CLOBBERS("xmm0",) "eax");
+and XMM_CLOBBERS_ONLY should be used when the only clobbers are xmm registers:
+__asm__(".." :: XMM_CLOBBERS_ONLY("xmm0"));
 
 Do not expect a compiler to maintain values in your registers between separate
 (inline) asm code blocks. It is not required to. For example, this is bad:
