@@ -43,6 +43,7 @@ version <next>:
 - yadif filter
 - blackframe filter
 - Demuxer for Leitch/Harris' VR native stream format (LXF)
+- RTP depacketization of the X-QT QuickTime format
 
 
 version 0.6:
