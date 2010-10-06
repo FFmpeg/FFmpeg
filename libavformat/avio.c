@@ -215,14 +215,15 @@ int url_read(URLContext *h, unsigned char *buf, int size)
     return ret;
 }
 
-int url_read_complete(URLContext *h, unsigned char *buf, int size)
+static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int size,
+                                         int (*transfer_func)(URLContext *h, unsigned char *buf, int size))
 {
     int ret, len;
     int fast_retries = 5;
 
     len = 0;
     while (len < size) {
-        ret = url_read(h, buf+len, size-len);
+        ret = transfer_func(h, buf+len, size-len);
         if (ret == AVERROR(EAGAIN)) {
             ret = 0;
             if (fast_retries)
@@ -236,6 +237,11 @@ int url_read_complete(URLContext *h, unsigned char *buf, int size)
         len += ret;
     }
     return len;
+}
+
+int url_read_complete(URLContext *h, unsigned char *buf, int size)
+{
+    return retry_transfer_wrapper(h, buf, size, url_read);
 }
 
 int url_write(URLContext *h, const unsigned char *buf, int size)
