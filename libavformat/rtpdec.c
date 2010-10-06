@@ -421,10 +421,12 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
 {
     unsigned int ssrc, h;
     int payload_type, seq, ret, flags = 0;
+    int ext;
     AVStream *st;
     uint32_t timestamp;
     int rv= 0;
 
+    ext = buf[0] & 0x10;
     payload_type = buf[1] & 0x7f;
     if (buf[1] & 0x80)
         flags |= RTP_FLAG_MARKER;
@@ -450,6 +452,21 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
     s->seq = seq;
     len -= 12;
     buf += 12;
+
+    /* RFC 3550 Section 5.3.1 RTP Header Extension handling */
+    if (ext) {
+        if (len < 4)
+            return -1;
+        /* calculate the header extension length (stored as number
+         * of 32-bit words) */
+        ext = (AV_RB16(buf + 2) + 1) << 2;
+
+        if (len < ext)
+            return -1;
+        // skip past RTP header extension
+        len -= ext;
+        buf += ext;
+    }
 
     if (!st) {
         /* specific MPEG2TS demux support */
