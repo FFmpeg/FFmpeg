@@ -23,7 +23,6 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "rawdec.h"
-#include "id3v2.h"
 #include "id3v1.h"
 
 
@@ -36,9 +35,6 @@ static int adts_aac_probe(AVProbeData *p)
     uint8_t *buf;
     uint8_t *end = buf0 + p->buf_size - 7;
 
-    if (ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC)) {
-        buf0 += ff_id3v2_tag_len(buf0);
-    }
     buf = buf0;
 
     for(; buf < end; buf= buf2+1) {
@@ -78,7 +74,6 @@ static int adts_aac_read_header(AVFormatContext *s,
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
     ff_id3v1_read(s);
-    ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
 
     //LCM of all possible ADTS sample rates
     av_set_pts_info(st, 64, 1, 28224000);

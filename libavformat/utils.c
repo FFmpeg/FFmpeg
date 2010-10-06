@@ -23,6 +23,7 @@
 #include "libavcodec/internal.h"
 #include "libavutil/opt.h"
 #include "metadata.h"
+#include "id3v2.h"
 #include "libavutil/avstring.h"
 #include "riff.h"
 #include "audiointerleave.h"
@@ -343,8 +344,17 @@ int av_filename_number_test(const char *filename)
 
 AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max)
 {
+    AVProbeData lpd = *pd;
     AVInputFormat *fmt1, *fmt;
     int score;
+
+    if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
+        int id3len = ff_id3v2_tag_len(lpd.buf);
+        if (lpd.buf_size > id3len + 16) {
+            lpd.buf += id3len;
+            lpd.buf_size -= id3len;
+        }
+    }
 
     fmt = NULL;
     for(fmt1 = first_iformat; fmt1 != NULL; fmt1 = fmt1->next) {
@@ -352,9 +362,9 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
             continue;
         score = 0;
         if (fmt1->read_probe) {
-            score = fmt1->read_probe(pd);
+            score = fmt1->read_probe(&lpd);
         } else if (fmt1->extensions) {
-            if (av_match_ext(pd->filename, fmt1->extensions)) {
+            if (av_match_ext(lpd.filename, fmt1->extensions)) {
                 score = 50;
             }
         }
@@ -447,6 +457,10 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     } else {
         ic->priv_data = NULL;
     }
+
+    // e.g. AVFMT_NOFILE formats will not have a ByteIOContext
+    if (ic->pb)
+        ff_id3v2_read(ic, ID3v2_DEFAULT_MAGIC);
 
     if (ic->iformat->read_header) {
         err = ic->iformat->read_header(ic, ap);

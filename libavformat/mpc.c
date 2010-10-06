@@ -21,7 +21,6 @@
 
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
-#include "id3v2.h"
 #include "apetag.h"
 
 #define MPC_FRAMESIZE  1152
@@ -45,10 +44,6 @@ typedef struct {
 static int mpc_probe(AVProbeData *p)
 {
     const uint8_t *d = p->buf;
-    if (ff_id3v2_match(d, ID3v2_DEFAULT_MAGIC)) {
-        d += ff_id3v2_tag_len(d);
-    }
-    if (d+3 < p->buf+p->buf_size)
     if (d[0] == 'M' && d[1] == 'P' && d[2] == '+' && (d[3] == 0x17 || d[3] == 0x7))
         return AVPROBE_SCORE_MAX;
     return 0;
@@ -58,32 +53,10 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MPCContext *c = s->priv_data;
     AVStream *st;
-    int t, ret;
-    int64_t pos = url_ftell(s->pb);
 
-    t = get_le24(s->pb);
-    if(t != MKTAG('M', 'P', '+', 0)){
-        uint8_t buf[ID3v2_HEADER_SIZE];
-        if (url_fseek(s->pb, pos, SEEK_SET) < 0)
-            return -1;
-        ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
-        if (ret != ID3v2_HEADER_SIZE || !ff_id3v2_match(buf, ID3v2_DEFAULT_MAGIC)) {
-            av_log(s, AV_LOG_ERROR, "Not a Musepack file\n");
-            return -1;
-        }
-        /* skip ID3 tags and try again */
-        t = ff_id3v2_tag_len(buf) - ID3v2_HEADER_SIZE;
-        av_log(s, AV_LOG_DEBUG, "Skipping %d(%X) bytes of ID3 data\n", t, t);
-        url_fskip(s->pb, t);
-        if(get_le24(s->pb) != MKTAG('M', 'P', '+', 0)){
-            av_log(s, AV_LOG_ERROR, "Not a Musepack file\n");
-            return -1;
-        }
-        /* read ID3 tags */
-        if (url_fseek(s->pb, pos, SEEK_SET) < 0)
-            return -1;
-        ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
-        get_le24(s->pb);
+    if(get_le24(s->pb) != MKTAG('M', 'P', '+', 0)){
+        av_log(s, AV_LOG_ERROR, "Not a Musepack file\n");
+        return -1;
     }
     c->ver = get_byte(s->pb);
     if(c->ver != 0x07 && c->ver != 0x17){

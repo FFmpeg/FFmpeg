@@ -22,14 +22,12 @@
 #include "libavcodec/flac.h"
 #include "avformat.h"
 #include "rawdec.h"
-#include "id3v2.h"
 #include "oggdec.h"
 #include "vorbiscomment.h"
 
 static int flac_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
-    uint8_t buf[ID3v2_HEADER_SIZE];
     int ret, metadata_last=0, metadata_type, metadata_size, found_streaminfo=0;
     uint8_t header[4];
     uint8_t *buffer=NULL;
@@ -40,15 +38,6 @@ static int flac_read_header(AVFormatContext *s,
     st->codec->codec_id = CODEC_ID_FLAC;
     st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
-
-    /* skip ID3v2 header if found */
-    ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
-    if (ret == ID3v2_HEADER_SIZE && ff_id3v2_match(buf, ID3v2_DEFAULT_MAGIC)) {
-        int len = ff_id3v2_tag_len(buf);
-        url_fseek(s->pb, len - ID3v2_HEADER_SIZE, SEEK_CUR);
-    } else {
-        url_fseek(s->pb, 0, SEEK_SET);
-    }
 
     /* if fLaC marker is not found, assume there is no header */
     if (get_le32(s->pb) != MKTAG('f','L','a','C')) {
@@ -129,9 +118,6 @@ static int flac_probe(AVProbeData *p)
 {
     uint8_t *bufptr = p->buf;
     uint8_t *end    = p->buf + p->buf_size;
-
-    if(ff_id3v2_match(bufptr, ID3v2_DEFAULT_MAGIC))
-        bufptr += ff_id3v2_tag_len(bufptr);
 
     if(bufptr > end-4 || memcmp(bufptr, "fLaC", 4)) return 0;
     else                                            return AVPROBE_SCORE_MAX/2;

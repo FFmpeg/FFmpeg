@@ -21,7 +21,6 @@
 
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
-#include "id3v2.h"
 #include "id3v1.h"
 
 typedef struct {
@@ -31,12 +30,6 @@ typedef struct {
 static int tta_probe(AVProbeData *p)
 {
     const uint8_t *d = p->buf;
-
-    if (ff_id3v2_match(d, ID3v2_DEFAULT_MAGIC))
-        d += ff_id3v2_tag_len(d);
-
-    if (d - p->buf >= p->buf_size)
-        return 0;
 
     if (d[0] == 'T' && d[1] == 'T' && d[2] == 'A' && d[3] == '1')
         return 80;
@@ -50,7 +43,6 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int i, channels, bps, samplerate, datalen, framelen;
     uint64_t framepos, start_offset;
 
-    ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
     if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
