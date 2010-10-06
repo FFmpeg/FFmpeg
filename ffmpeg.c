@@ -3415,7 +3415,10 @@ static void new_video_stream(AVFormatContext *oc)
     }
 
     avcodec_get_context_defaults3(st->codec, codec);
-    bitstream_filters[nb_output_files] = grow_array(bitstream_filters[nb_output_files], sizeof(*bitstream_filters[nb_output_files]), &nb_bitstream_filters[nb_output_files], oc->nb_streams);
+    bitstream_filters[nb_output_files] =
+        grow_array(bitstream_filters[nb_output_files],
+                   sizeof(*bitstream_filters[nb_output_files]),
+                   &nb_bitstream_filters[nb_output_files], oc->nb_streams);
     bitstream_filters[nb_output_files][oc->nb_streams - 1]= video_bitstream_filters;
     video_bitstream_filters= NULL;
 
@@ -3557,7 +3560,10 @@ static void new_audio_stream(AVFormatContext *oc)
 
     avcodec_get_context_defaults3(st->codec, codec);
 
-    bitstream_filters[nb_output_files] = grow_array(bitstream_filters[nb_output_files], sizeof(*bitstream_filters[nb_output_files]), &nb_bitstream_filters[nb_output_files], oc->nb_streams);
+    bitstream_filters[nb_output_files] =
+        grow_array(bitstream_filters[nb_output_files],
+                   sizeof(*bitstream_filters[nb_output_files]),
+                   &nb_bitstream_filters[nb_output_files], oc->nb_streams);
     bitstream_filters[nb_output_files][oc->nb_streams - 1]= audio_bitstream_filters;
     audio_bitstream_filters= NULL;
 
