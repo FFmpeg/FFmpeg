@@ -2543,7 +2543,13 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
 {
     AVStream *st;
     int i;
-#if LIBAVFORMAT_VERSION_MAJOR >= 53
+
+#if FF_API_MAX_STREAMS
+    if (s->nb_streams >= MAX_STREAMS){
+        av_log(s, AV_LOG_ERROR, "Too many streams\n");
+        return NULL;
+    }
+#else
     AVStream **streams;
 
     if (s->nb_streams >= INT_MAX/sizeof(*streams))
@@ -2552,11 +2558,6 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     if (!streams)
         return NULL;
     s->streams = streams;
-#else
-    if (s->nb_streams >= MAX_STREAMS){
-        av_log(s, AV_LOG_ERROR, "Too many streams\n");
-        return NULL;
-    }
 #endif
 
     st = av_mallocz(sizeof(AVStream));

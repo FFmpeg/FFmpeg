@@ -672,7 +672,7 @@ typedef struct AVFormatContext {
     void *priv_data;
     ByteIOContext *pb;
     unsigned int nb_streams;
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_MAX_STREAMS
     AVStream *streams[MAX_STREAMS];
 #else
     AVStream **streams;
