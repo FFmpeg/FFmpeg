@@ -363,7 +363,8 @@ typedef struct AVInputFormat {
     /**
      * Read one packet and put it in 'pkt'. pts and flags are also
      * set. 'av_new_stream' can be called only if the flag
-     * AVFMTCTX_NOHEADER is used.
+     * AVFMTCTX_NOHEADER is used and only in the calling thread (not in a
+     * background thread).
      * @return 0 on success, < 0 on error.
      *         When returning an error, pkt must not have been allocated
      *         or must be freed before returning
