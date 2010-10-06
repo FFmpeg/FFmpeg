@@ -1879,19 +1879,24 @@ static void av_estimate_timings_from_bit_rate(AVFormatContext *ic)
 /* only usable for MPEG-PS streams */
 static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
 {
+    unsigned int nb_streams = ic->nb_streams;
     AVPacket pkt1, *pkt = &pkt1;
     AVStream *st;
     int read_size, i, ret;
-    int64_t end_time, start_time[MAX_STREAMS];
+    int64_t end_time, *start_time;
     int64_t filesize, offset, duration;
     int retry=0;
+
+    if (nb_streams >= INT_MAX/sizeof(*start_time) ||
+        !(start_time = av_malloc(nb_streams * sizeof(*start_time))))
+        return;
 
     ic->cur_st = NULL;
 
     /* flush packet queue */
     flush_packet_queue(ic);
 
-    for(i=0;i<ic->nb_streams;i++) {
+    for (i=0; i<nb_streams; i++) {
         st = ic->streams[i];
         if(st->start_time != AV_NOPTS_VALUE){
             start_time[i]= st->start_time;
@@ -1946,11 +1951,12 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
     }while(   end_time==AV_NOPTS_VALUE
            && filesize > (DURATION_MAX_READ_SIZE<<retry)
            && ++retry <= DURATION_MAX_RETRY);
+    av_free(start_time);
 
     fill_all_stream_timings(ic);
 
     url_fseek(ic->pb, old_offset, SEEK_SET);
-    for(i=0; i<ic->nb_streams; i++){
+    for (i=0; i<nb_streams; i++) {
         st= ic->streams[i];
         st->cur_dts= st->first_dts;
         st->last_IP_pts = AV_NOPTS_VALUE;
@@ -2172,13 +2178,18 @@ int av_find_stream_info(AVFormatContext *ic)
     AVStream *st;
     AVPacket pkt1, *pkt;
     int64_t old_offset = url_ftell(ic->pb);
+    unsigned int nb_streams = ic->nb_streams;
     struct {
         int64_t last_dts;
         int64_t duration_gcd;
         int duration_count;
         double duration_error[MAX_STD_TIMEBASES];
         int64_t codec_info_duration;
-    } info[MAX_STREAMS] = {{0}};
+    } *info, *tmp_info;
+
+    if (ic->nb_streams >= INT_MAX/sizeof(*info) ||
+        !(info = av_mallocz(ic->nb_streams * sizeof(*info))))
+        return AVERROR(ENOMEM);
 
     for(i=0;i<ic->nb_streams;i++) {
         AVCodec *codec;
@@ -2218,7 +2229,7 @@ int av_find_stream_info(AVFormatContext *ic)
         }
     }
 
-    for(i=0;i<MAX_STREAMS;i++){
+    for (i=0; i<ic->nb_streams; i++) {
         info[i].last_dts= AV_NOPTS_VALUE;
     }
 
@@ -2266,9 +2277,7 @@ int av_find_stream_info(AVFormatContext *ic)
         /* NOTE: a new stream can be added there if no header in file
            (AVFMTCTX_NOHEADER) */
         ret = av_read_frame_internal(ic, &pkt1);
-        if(ret == AVERROR(EAGAIN))
-            continue;
-        if (ret < 0) {
+        if (ret < 0 && ret != AVERROR(EAGAIN)) {
             /* EOF or error */
             ret = -1; /* we could not have all the codec parameters before EOF */
             for(i=0;i<ic->nb_streams;i++) {
@@ -2284,8 +2293,23 @@ int av_find_stream_info(AVFormatContext *ic)
             break;
         }
 
+        if (ic->nb_streams > nb_streams) {
+            if (ic->nb_streams >= INT_MAX/sizeof(*info) ||
+                !(tmp_info = av_realloc(info, ic->nb_streams*sizeof(*info)))) {
+                av_free(info);
+                return AVERROR(ENOMEM);
+            }
+            info = tmp_info;
+            memset(info + nb_streams, 0, (ic->nb_streams - nb_streams) * sizeof(*info));
+            nb_streams = ic->nb_streams;
+        }
+
+        if (ret == AVERROR(EAGAIN))
+            continue;
+
         pkt= add_to_pktbuf(&ic->packet_buffer, &pkt1, &ic->packet_buffer_end);
         if(av_dup_packet(pkt) < 0) {
+            av_free(info);
             return AVERROR(ENOMEM);
         }
 
@@ -2434,6 +2458,7 @@ int av_find_stream_info(AVFormatContext *ic)
     }
 #endif
 
+    av_free(info);
     return ret;
 }
 
