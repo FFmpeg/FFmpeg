@@ -990,6 +990,15 @@ of DLL files, but the ones that are actually used to run your application
 are the ones with a major version number in their filenames
 (i.e. @file{avcodec-51.dll}).
 
+FFmpeg headers do not declare global data for Windows DLLs through the usual
+dllexport/dllimport interface. Such data will be exported properly while
+building, but to use them in your MSVC++ code you will have to edit the
+appropriate headers and mark the data as dllimport. For example, in
+libavutil/pixdesc.h you should have:
+@example
+extern __declspec(dllimport) const AVPixFmtDescriptor av_pix_fmt_descriptors[];
+@end example
+
 @subsection Cross compilation for Windows with Linux
 
 You must use the MinGW cross compilation tools available at
