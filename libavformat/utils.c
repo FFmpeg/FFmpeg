@@ -2543,11 +2543,21 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
 {
     AVStream *st;
     int i;
+#if LIBAVFORMAT_VERSION_MAJOR >= 53
+    AVStream **streams;
 
+    if (s->nb_streams >= INT_MAX/sizeof(*streams))
+        return NULL;
+    streams = av_realloc(s->streams, (s->nb_streams + 1) * sizeof(*streams));
+    if (!streams)
+        return NULL;
+    s->streams = streams;
+#else
     if (s->nb_streams >= MAX_STREAMS){
         av_log(s, AV_LOG_ERROR, "Too many streams\n");
         return NULL;
     }
+#endif
 
     st = av_mallocz(sizeof(AVStream));
     if (!st)

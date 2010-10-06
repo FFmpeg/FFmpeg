@@ -672,7 +672,11 @@ typedef struct AVFormatContext {
     void *priv_data;
     ByteIOContext *pb;
     unsigned int nb_streams;
+#if LIBAVFORMAT_VERSION_MAJOR < 53
     AVStream *streams[MAX_STREAMS];
+#else
+    AVStream **streams;
+#endif
     char filename[1024]; /**< input or output filename */
     /* stream info */
     int64_t timestamp;
