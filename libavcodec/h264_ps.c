@@ -289,6 +289,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
     if(sps == NULL)
         return -1;
 
+    sps->time_offset_length = 24;
     sps->profile_idc= profile_idc;
     sps->level_idc= level_idc;
 
