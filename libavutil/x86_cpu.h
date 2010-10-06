@@ -75,4 +75,24 @@ typedef int x86_reg;
 #    define BROKEN_RELOCATIONS 1
 #endif
 
+/*
+ * If gcc is not set to support sse (-msse) it will not accept xmm registers
+ * in the clobber list for inline asm. XMM_CLOBBERS takes a list of xmm
+ * registers to be marked as clobbered and evaluates to nothing if they are
+ * not supported, or to the list itself if they are supported. Since a clobber
+ * list may not be empty, XMM_CLOBBERS_ONLY should be used if the xmm
+ * registers are the only in the clobber list.
+ * For example a list with "eax" and "xmm0" as clobbers should become:
+ * : XMM_CLOBBERS("xmm0",) "eax"
+ * and a list with only "xmm0" should become:
+ * XMM_CLOBBERS_ONLY("xmm0")
+ */
+#if HAVE_XMM_CLOBBERS
+#    define XMM_CLOBBERS(...)        __VA_ARGS__
+#    define XMM_CLOBBERS_ONLY(...) : __VA_ARGS__
+#else
+#    define XMM_CLOBBERS(...)
+#    define XMM_CLOBBERS_ONLY(...)
+#endif
+
 #endif /* AVUTIL_X86_CPU_H */

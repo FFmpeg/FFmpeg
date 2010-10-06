@@ -1074,6 +1074,7 @@ HAVE_LIST="
     VirtualAlloc
     winsock2_h
     xform_asm
+    xmm_clobbers
     yasm
 "
 
@@ -2584,6 +2585,9 @@ EOF
     # check whether EBX is available on x86
     check_asm ebx_available '""::"b"(0)' &&
         check_asm ebx_available '"":::"%ebx"'
+
+    # check whether xmm clobbers are supported
+    check_asm xmm_clobbers '"":::"%xmm0"'
 
     # check whether more than 10 operands are supported
     check_cc <<EOF && enable ten_operands
