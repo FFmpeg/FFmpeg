@@ -1883,13 +1883,9 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
     AVPacket pkt1, *pkt = &pkt1;
     AVStream *st;
     int read_size, i, ret;
-    int64_t end_time, *start_time;
+    int64_t end_time;
     int64_t filesize, offset, duration;
     int retry=0;
-
-    if (nb_streams >= INT_MAX/sizeof(*start_time) ||
-        !(start_time = av_malloc(nb_streams * sizeof(*start_time))))
-        return;
 
     ic->cur_st = NULL;
 
@@ -1898,11 +1894,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
 
     for (i=0; i<nb_streams; i++) {
         st = ic->streams[i];
-        if(st->start_time != AV_NOPTS_VALUE){
-            start_time[i]= st->start_time;
-        }else if(st->first_dts != AV_NOPTS_VALUE){
-            start_time[i]= st->first_dts;
-        }else
+        if (st->start_time == AV_NOPTS_VALUE && st->first_dts == AV_NOPTS_VALUE)
             av_log(st->codec, AV_LOG_WARNING, "start time is not set in av_estimate_timings_from_pts\n");
 
         if (st->parser) {
@@ -1935,9 +1927,11 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
         read_size += pkt->size;
         st = ic->streams[pkt->stream_index];
         if (pkt->pts != AV_NOPTS_VALUE &&
-            start_time[pkt->stream_index] != AV_NOPTS_VALUE) {
-            end_time = pkt->pts;
-            duration = end_time - start_time[pkt->stream_index];
+            (st->start_time != AV_NOPTS_VALUE ||
+             st->first_dts  != AV_NOPTS_VALUE)) {
+            duration = end_time = pkt->pts;
+            if (st->start_time != AV_NOPTS_VALUE)  duration -= st->start_time;
+            else                                   duration -= st->first_dts;
             if (duration < 0)
                 duration += 1LL<<st->pts_wrap_bits;
             if (duration > 0) {
@@ -1951,7 +1945,6 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
     }while(   end_time==AV_NOPTS_VALUE
            && filesize > (DURATION_MAX_READ_SIZE<<retry)
            && ++retry <= DURATION_MAX_RETRY);
-    av_free(start_time);
 
     fill_all_stream_timings(ic);
 
