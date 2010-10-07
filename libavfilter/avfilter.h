@@ -227,7 +227,7 @@ typedef struct AVFilterFormats {
 
     unsigned refcount;          ///< number of references to this list
     struct AVFilterFormats ***refs; ///< references to this list
-}  AVFilterFormats;;
+}  AVFilterFormats;
 
 /**
  * Create a list of supported formats. This is intended for use in
