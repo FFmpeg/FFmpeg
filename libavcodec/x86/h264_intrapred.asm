@@ -345,7 +345,7 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
     pmullw       m0, [pw_5]
     psraw        m0, 6
 %elifidn %3, svq3
-    movd         r3, m0
+    movd        r3d, m0
     movsx        r3, r3w
     test         r3, r3
     lea          r4, [r3+3]
