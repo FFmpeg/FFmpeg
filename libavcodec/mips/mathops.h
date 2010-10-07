@@ -25,6 +25,8 @@
 #include "config.h"
 #include "libavutil/common.h"
 
+#if HAVE_INLINE_ASM
+
 #if HAVE_LOONGSON
 
 static inline av_const int64_t MAC64(int64_t d, int a, int b)
@@ -72,5 +74,7 @@ static inline av_const int64_t MLS64(int64_t d, int a, int b)
 #define MLS64(d, a, b) ((d) = MLS64(d, a, b))
 
 #endif
+
+#endif /* HAVE_INLINE_ASM */
 
 #endif /* AVCODEC_MIPS_MATHOPS_H */
