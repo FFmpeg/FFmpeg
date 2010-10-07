@@ -79,31 +79,35 @@ static void sdp_write_header(char *buff, int size, struct sdp_session_level *s)
 }
 
 #if CONFIG_NETWORK
-static void resolve_destination(char *dest_addr, int size, char *type,
+static int resolve_destination(char *dest_addr, int size, char *type,
                                 int type_size)
 {
     struct addrinfo hints, *ai;
+    int is_multicast;
 
     av_strlcpy(type, "IP4", type_size);
     if (!dest_addr[0])
-        return;
+        return 0;
 
     /* Resolve the destination, since it must be written
      * as a numeric IP address in the SDP. */
 
     memset(&hints, 0, sizeof(hints));
     if (getaddrinfo(dest_addr, NULL, &hints, &ai))
-        return;
+        return 0;
     getnameinfo(ai->ai_addr, ai->ai_addrlen, dest_addr, size,
                 NULL, 0, NI_NUMERICHOST);
     if (ai->ai_family == AF_INET6)
         av_strlcpy(type, "IP6", type_size);
+    is_multicast = ff_is_multicast_address(ai->ai_addr);
     freeaddrinfo(ai);
+    return is_multicast;
 }
 #else
-static void resolve_destination(char *dest_addr, int size, char *type,
+static int resolve_destination(char *dest_addr, int size, char *type,
                                 int type_size)
 {
+    return 0;
 }
 #endif
 
@@ -127,15 +131,12 @@ static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
     p = strchr(url, '?');
     if (p) {
         char buff[64];
-        int is_multicast = find_info_tag(buff, sizeof(buff), "multicast", p);
 
-        if (is_multicast) {
             if (find_info_tag(buff, sizeof(buff), "ttl", p)) {
                 *ttl = strtol(buff, NULL, 10);
             } else {
                 *ttl = 5;
             }
-        }
     }
 
     return port;
@@ -465,7 +466,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
 {
     AVMetadataTag *title = av_metadata_get(ac[0]->metadata, "title", NULL, 0);
     struct sdp_session_level s;
-    int i, j, port, ttl;
+    int i, j, port, ttl, is_multicast;
     char dst[32], dst_type[5];
 
     memset(buff, 0, size);
@@ -479,7 +480,10 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     ttl = 0;
     if (n_files == 1) {
         port = sdp_get_address(dst, sizeof(dst), &ttl, ac[0]->filename);
-        resolve_destination(dst, sizeof(dst), dst_type, sizeof(dst_type));
+        is_multicast = resolve_destination(dst, sizeof(dst), dst_type,
+                                           sizeof(dst_type));
+        if (!is_multicast)
+            ttl = 0;
         if (dst[0]) {
             s.dst_addr = dst;
             s.dst_type = dst_type;
@@ -496,7 +500,10 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     for (i = 0; i < n_files; i++) {
         if (n_files != 1) {
             port = sdp_get_address(dst, sizeof(dst), &ttl, ac[i]->filename);
-            resolve_destination(dst, sizeof(dst), dst_type, sizeof(dst_type));
+            is_multicast = resolve_destination(dst, sizeof(dst), dst_type,
+                                               sizeof(dst_type));
+            if (!is_multicast)
+                ttl = 0;
         }
         for (j = 0; j < ac[i]->nb_streams; j++) {
             ff_sdp_write_media(buff, size,
