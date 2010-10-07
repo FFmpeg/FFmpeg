@@ -3390,7 +3390,7 @@ static void check_audio_video_sub_inputs(int *has_video_ptr, int *has_audio_ptr,
     *has_subtitle_ptr = has_subtitle;
 }
 
-static void new_video_stream(AVFormatContext *oc)
+static void new_video_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
     AVCodecContext *video_enc;
@@ -3417,11 +3417,11 @@ static void new_video_stream(AVFormatContext *oc)
     }
 
     avcodec_get_context_defaults3(st->codec, codec);
-    bitstream_filters[nb_output_files] =
-        grow_array(bitstream_filters[nb_output_files],
-                   sizeof(*bitstream_filters[nb_output_files]),
-                   &nb_bitstream_filters[nb_output_files], oc->nb_streams);
-    bitstream_filters[nb_output_files][oc->nb_streams - 1]= video_bitstream_filters;
+    bitstream_filters[file_idx] =
+        grow_array(bitstream_filters[file_idx],
+                   sizeof(*bitstream_filters[file_idx]),
+                   &nb_bitstream_filters[file_idx], oc->nb_streams);
+    bitstream_filters[file_idx][oc->nb_streams - 1]= video_bitstream_filters;
     video_bitstream_filters= NULL;
 
     avcodec_thread_init(st->codec, thread_count);
@@ -3534,7 +3534,7 @@ static void new_video_stream(AVFormatContext *oc)
     frame_pix_fmt = PIX_FMT_NONE;
 }
 
-static void new_audio_stream(AVFormatContext *oc)
+static void new_audio_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
     AVCodec *codec= NULL;
@@ -3562,11 +3562,11 @@ static void new_audio_stream(AVFormatContext *oc)
 
     avcodec_get_context_defaults3(st->codec, codec);
 
-    bitstream_filters[nb_output_files] =
-        grow_array(bitstream_filters[nb_output_files],
-                   sizeof(*bitstream_filters[nb_output_files]),
-                   &nb_bitstream_filters[nb_output_files], oc->nb_streams);
-    bitstream_filters[nb_output_files][oc->nb_streams - 1]= audio_bitstream_filters;
+    bitstream_filters[file_idx] =
+        grow_array(bitstream_filters[file_idx],
+                   sizeof(*bitstream_filters[file_idx]),
+                   &nb_bitstream_filters[file_idx], oc->nb_streams);
+    bitstream_filters[file_idx][oc->nb_streams - 1]= audio_bitstream_filters;
     audio_bitstream_filters= NULL;
 
     avcodec_thread_init(st->codec, thread_count);
@@ -3614,7 +3614,7 @@ static void new_audio_stream(AVFormatContext *oc)
     audio_stream_copy = 0;
 }
 
-static void new_subtitle_stream(AVFormatContext *oc)
+static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
     AVCodec *codec=NULL;
@@ -3634,11 +3634,11 @@ static void new_subtitle_stream(AVFormatContext *oc)
     }
     avcodec_get_context_defaults3(st->codec, codec);
 
-    bitstream_filters[nb_output_files] =
-        grow_array(bitstream_filters[nb_output_files],
-                   sizeof(*bitstream_filters[nb_output_files]),
-                   &nb_bitstream_filters[nb_output_files], oc->nb_streams);
-    bitstream_filters[nb_output_files][oc->nb_streams - 1]= subtitle_bitstream_filters;
+    bitstream_filters[file_idx] =
+        grow_array(bitstream_filters[file_idx],
+                   sizeof(*bitstream_filters[file_idx]),
+                   &nb_bitstream_filters[file_idx], oc->nb_streams);
+    bitstream_filters[file_idx][oc->nb_streams - 1]= subtitle_bitstream_filters;
     subtitle_bitstream_filters= NULL;
 
     subtitle_enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
@@ -3665,15 +3665,16 @@ static void new_subtitle_stream(AVFormatContext *oc)
 static int opt_new_stream(const char *opt, const char *arg)
 {
     AVFormatContext *oc;
+    int file_idx = nb_output_files - 1;
     if (nb_output_files <= 0) {
         fprintf(stderr, "At least one output file must be specified\n");
         ffmpeg_exit(1);
     }
-    oc = output_files[nb_output_files - 1];
+    oc = output_files[file_idx];
 
-    if      (!strcmp(opt, "newvideo"   )) new_video_stream   (oc);
-    else if (!strcmp(opt, "newaudio"   )) new_audio_stream   (oc);
-    else if (!strcmp(opt, "newsubtitle")) new_subtitle_stream(oc);
+    if      (!strcmp(opt, "newvideo"   )) new_video_stream   (oc, file_idx);
+    else if (!strcmp(opt, "newaudio"   )) new_audio_stream   (oc, file_idx);
+    else if (!strcmp(opt, "newsubtitle")) new_subtitle_stream(oc, file_idx);
     else av_assert0(0);
     return 0;
 }
@@ -3776,15 +3777,15 @@ static void opt_output_file(const char *filename)
         }
 
         if (use_video) {
-            new_video_stream(oc);
+            new_video_stream(oc, nb_output_files);
         }
 
         if (use_audio) {
-            new_audio_stream(oc);
+            new_audio_stream(oc, nb_output_files);
         }
 
         if (use_subtitle) {
-            new_subtitle_stream(oc);
+            new_subtitle_stream(oc, nb_output_files);
         }
 
         oc->timestamp = recording_timestamp;
