@@ -1879,7 +1879,6 @@ static void av_estimate_timings_from_bit_rate(AVFormatContext *ic)
 /* only usable for MPEG-PS streams */
 static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
 {
-    unsigned int nb_streams = ic->nb_streams;
     AVPacket pkt1, *pkt = &pkt1;
     AVStream *st;
     int read_size, i, ret;
@@ -1892,7 +1891,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
     /* flush packet queue */
     flush_packet_queue(ic);
 
-    for (i=0; i<nb_streams; i++) {
+    for (i=0; i<ic->nb_streams; i++) {
         st = ic->streams[i];
         if (st->start_time == AV_NOPTS_VALUE && st->first_dts == AV_NOPTS_VALUE)
             av_log(st->codec, AV_LOG_WARNING, "start time is not set in av_estimate_timings_from_pts\n");
@@ -1949,7 +1948,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
     fill_all_stream_timings(ic);
 
     url_fseek(ic->pb, old_offset, SEEK_SET);
-    for (i=0; i<nb_streams; i++) {
+    for (i=0; i<ic->nb_streams; i++) {
         st= ic->streams[i];
         st->cur_dts= st->first_dts;
         st->last_IP_pts = AV_NOPTS_VALUE;
