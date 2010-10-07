@@ -564,6 +564,7 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
         else {
             AVStream *st = s->streams[i];
             switch (st->codec->codec_id) {
+            case CODEC_ID_MPEG1VIDEO:
             case CODEC_ID_MPEG2VIDEO:
                 gxf_write_umf_media_mpeg(pb, st);
                 break;
