@@ -6,6 +6,8 @@ elif [ X"$(echo | md5 2> /dev/null)" != X ]; then
     do_md5sum() { md5 $1 | sed 's#MD5 (\(.*\)) = \(.*\)#\2 *\1#'; }
 elif [ -x /sbin/md5 ]; then
     do_md5sum() { /sbin/md5 -r $1 | sed 's# \**\./# *./#'; }
+elif openssl version >/dev/null 2>&1; then
+    do_md5sum() { openssl md5 $1 | sed 's/MD5(\(.*\))= \(.*\)/\2 *\1/'; }
 else
     do_md5sum() { echo No md5sum program found; }
 fi
