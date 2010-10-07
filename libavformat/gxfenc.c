@@ -859,6 +859,7 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     int64_t pos = url_ftell(pb);
     int padding = 0;
+    int packet_start_offset = url_ftell(pb) / 1024;
 
     gxf_write_packet_header(pb, PKT_MEDIA);
     if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO && pkt->size % 4) /* MPEG-2 frames must be padded */
@@ -878,7 +879,7 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
                 return -1;
             }
         }
-        gxf->flt_entries[gxf->flt_entries_nb++] = url_ftell(pb) / 1024;
+        gxf->flt_entries[gxf->flt_entries_nb++] = packet_start_offset;
         gxf->nb_fields += 2; // count fields
     }
 
