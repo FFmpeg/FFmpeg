@@ -80,7 +80,7 @@ static void sdp_write_header(char *buff, int size, struct sdp_session_level *s)
 
 #if CONFIG_NETWORK
 static int resolve_destination(char *dest_addr, int size, char *type,
-                                int type_size)
+                               int type_size)
 {
     struct addrinfo hints, *ai;
     int is_multicast;
@@ -105,7 +105,7 @@ static int resolve_destination(char *dest_addr, int size, char *type,
 }
 #else
 static int resolve_destination(char *dest_addr, int size, char *type,
-                                int type_size)
+                               int type_size)
 {
     return 0;
 }
@@ -132,11 +132,11 @@ static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
     if (p) {
         char buff[64];
 
-            if (find_info_tag(buff, sizeof(buff), "ttl", p)) {
-                *ttl = strtol(buff, NULL, 10);
-            } else {
-                *ttl = 5;
-            }
+        if (find_info_tag(buff, sizeof(buff), "ttl", p)) {
+            *ttl = strtol(buff, NULL, 10);
+        } else {
+            *ttl = 5;
+        }
     }
 
     return port;
