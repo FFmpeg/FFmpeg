@@ -254,7 +254,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
     if (s->dest_addr_len < 0) {
         return AVERROR(EIO);
     }
-    s->is_multicast = ff_is_multicast_address(&s->dest_addr);
+    s->is_multicast = ff_is_multicast_address((struct sockaddr*) &s->dest_addr);
 
     return 0;
 }
