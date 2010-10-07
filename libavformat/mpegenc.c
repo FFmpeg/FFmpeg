@@ -1160,6 +1160,8 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
 
     pts= pkt->pts;
     dts= pkt->dts;
+    if(!s->last_scr)
+        s->last_scr= dts;
 
     if(pts != AV_NOPTS_VALUE) pts += preload;
     if(dts != AV_NOPTS_VALUE) dts += preload;
