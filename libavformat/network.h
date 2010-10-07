@@ -162,4 +162,18 @@ const char *ff_gai_strerror(int ecode);
 #define IN6_IS_ADDR_MULTICAST(a) (((uint8_t *) (a))[0] == 0xff)
 #endif
 
+static inline int ff_is_multicast_address(struct sockaddr_storage *addr)
+{
+    if (addr->ss_family == AF_INET) {
+        return IN_MULTICAST(ntohl(((struct sockaddr_in *)addr)->sin_addr.s_addr));
+    }
+#if HAVE_STRUCT_SOCKADDR_IN6
+    if (addr->ss_family == AF_INET6) {
+        return IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6 *)addr)->sin6_addr);
+    }
+#endif
+
+    return 0;
+}
+
 #endif /* AVFORMAT_NETWORK_H */

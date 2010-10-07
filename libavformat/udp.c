@@ -177,20 +177,6 @@ static int udp_set_url(struct sockaddr_storage *addr,
     return addr_len;
 }
 
-static int is_multicast_address(struct sockaddr_storage *addr)
-{
-    if (addr->ss_family == AF_INET) {
-        return IN_MULTICAST(ntohl(((struct sockaddr_in *)addr)->sin_addr.s_addr));
-    }
-#if HAVE_STRUCT_SOCKADDR_IN6
-    if (addr->ss_family == AF_INET6) {
-        return IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6 *)addr)->sin6_addr);
-    }
-#endif
-
-    return 0;
-}
-
 static int udp_socket_create(UDPContext *s,
                              struct sockaddr_storage *addr, int *addr_len)
 {
@@ -268,7 +254,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
     if (s->dest_addr_len < 0) {
         return AVERROR(EIO);
     }
-    s->is_multicast = is_multicast_address(&s->dest_addr);
+    s->is_multicast = ff_is_multicast_address(&s->dest_addr);
 
     return 0;
 }
