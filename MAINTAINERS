@@ -311,11 +311,11 @@ Muxers/Demuxers:
   rl2.c                                 Sascha Sommer
   rmdec.c, rmenc.c                      Ronald S. Bultje, Kostya Shishkov
   rtmp*                                 Kostya Shishkov
-  rtp.c, rtpenc.c                       Luca Abeni
+  rtp.c, rtpenc.c                       Martin Storsjo
   rtpdec_asf.*                          Ronald S. Bultje
-  rtpenc_mpv.*, rtpenc_aac.*            Luca Abeni
+  rtpenc_mpv.*, rtpenc_aac.*            Martin Storsjo
   rtsp.c                                Luca Barbato
-  sdp.c                                 Luca Abeni
+  sdp.c                                 Martin Storsjo
   segafilm.c                            Mike Melanson
   siff.c                                Kostya Shishkov
   smacker.c                             Kostya Shishkov
