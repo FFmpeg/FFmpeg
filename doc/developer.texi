@@ -149,7 +149,7 @@ should also be avoided if they don't make the code easier to understand.
    Also if you have doubts about splitting or not splitting, do not hesitate to
    ask/discuss it on the developer mailing list.
 @item
-   Do not change behavior of the program (renaming options etc) or public
+   Do not change behavior of the programs (renaming options etc) or public
    API or ABI without first discussing it on the ffmpeg-devel mailing list.
    Do not remove functionality from the code. Just improve!
 
