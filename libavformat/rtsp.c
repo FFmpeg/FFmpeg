@@ -505,7 +505,6 @@ void ff_rtsp_close_streams(AVFormatContext *s)
 static void *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st,
                                URLContext *handle)
 {
-    RTSPState *rt = s->priv_data;
     AVFormatContext *rtpctx;
     int ret;
     AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
@@ -529,7 +528,7 @@ static void *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st,
     rtpctx->streams[0]->sample_aspect_ratio = st->sample_aspect_ratio;
 
     /* Set the synchronized start time. */
-    rtpctx->start_time_realtime = rt->start_time;
+    rtpctx->start_time_realtime = s->start_time_realtime;
 
     /* Remove the local codec, link to the original codec
      * context instead, to give the rtp muxer access to
@@ -1333,7 +1332,7 @@ static int rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
     char *sdp;
     AVFormatContext sdp_ctx, *ctx_array[1];
 
-    rt->start_time = av_gettime();
+    s->start_time_realtime = av_gettime();
 
     /* Announce the stream */
     sdp = av_mallocz(SDP_MAX_SIZE);

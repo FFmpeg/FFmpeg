@@ -295,9 +295,6 @@ typedef struct RTSPState {
      * other cases, this is a copy of AVFormatContext->filename. */
     char control_uri[1024];
 
-    /** The synchronized start time of the output streams. */
-    int64_t start_time;
-
     /** Additional output handle, used when input and output are done
      * separately, eg for HTTP tunneling. */
     URLContext *rtsp_hd_out;
