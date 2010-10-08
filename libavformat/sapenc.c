@@ -115,11 +115,13 @@ static int sap_write_header(AVFormatContext *s)
         if (ai->ai_family == AF_INET) {
             /* Also known as sap.mcast.net */
             av_strlcpy(announce_addr, "224.2.127.254", sizeof(announce_addr));
+#if HAVE_STRUCT_SOCKADDR_IN6
         } else if (ai->ai_family == AF_INET6) {
             /* With IPv6, you can use the same destination in many different
              * multicast subnets, to choose how far you want it routed.
              * This one is intended to be routed globally. */
             av_strlcpy(announce_addr, "ff0e::2:7ffe", sizeof(announce_addr));
+#endif
         } else {
             freeaddrinfo(ai);
             av_log(s, AV_LOG_ERROR, "Host %s resolved to unsupported "
@@ -167,7 +169,11 @@ static int sap_write_header(AVFormatContext *s)
         ret = AVERROR(EIO);
         goto fail;
     }
-    if (localaddr.ss_family != AF_INET && localaddr.ss_family != AF_INET6) {
+    if (localaddr.ss_family != AF_INET
+#if HAVE_STRUCT_SOCKADDR_IN6
+        && localaddr.ss_family != AF_INET6
+#endif
+        ) {
         av_log(s, AV_LOG_ERROR, "Unsupported protocol family\n");
         ret = AVERROR(EIO);
         goto fail;
@@ -178,7 +184,12 @@ static int sap_write_header(AVFormatContext *s)
         ret = AVERROR(EIO);
         goto fail;
     }
-    sap->ann[pos++] = (1 << 5) | ((localaddr.ss_family == AF_INET6) << 4);
+    sap->ann[pos] = (1 << 5);
+#if HAVE_STRUCT_SOCKADDR_IN6
+    if (localaddr.ss_family == AF_INET6)
+        sap->ann[pos] |= 0x10;
+#endif
+    pos++;
     sap->ann[pos++] = 0; /* Authentication length */
     AV_WB16(&sap->ann[pos], av_get_random_seed());
     pos += 2;
@@ -186,10 +197,12 @@ static int sap_write_header(AVFormatContext *s)
         memcpy(&sap->ann[pos], &((struct sockaddr_in*)&localaddr)->sin_addr,
                sizeof(struct in_addr));
         pos += sizeof(struct in_addr);
+#if HAVE_STRUCT_SOCKADDR_IN6
     } else {
         memcpy(&sap->ann[pos], &((struct sockaddr_in6*)&localaddr)->sin6_addr,
                sizeof(struct in6_addr));
         pos += sizeof(struct in6_addr);
+#endif
     }
 
     av_strlcpy(&sap->ann[pos], "application/sdp", sap->ann_size - pos);
