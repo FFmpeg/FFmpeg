@@ -23,6 +23,8 @@
 #ifndef AVCODEC_AMR_H
 #define AVCODEC_AMR_H
 
+#include "avcodec.h"
+
 #ifdef AMR_USE_16BIT_TABLES
 #define R_TABLE_TYPE uint16_t
 #else
