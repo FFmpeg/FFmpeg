@@ -644,12 +644,16 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             return rv ? rv : has_next_packet(s);
         } else {
             // TODO: Move to a dynamic packet handler (like above)
-            if (s->read_buf_index >= s->read_buf_size)
+            if (s->read_buf_index >= s->read_buf_size) {
+                s->prev_ret = -1;
                 return -1;
+            }
             ret = ff_mpegts_parse_packet(s->ts, pkt, s->buf + s->read_buf_index,
                                       s->read_buf_size - s->read_buf_index);
-            if (ret < 0)
+            if (ret < 0) {
+                s->prev_ret = -1;
                 return -1;
+            }
             s->read_buf_index += ret;
             if (s->read_buf_index < s->read_buf_size)
                 return 1;
