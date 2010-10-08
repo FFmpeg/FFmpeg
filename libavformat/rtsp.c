@@ -39,6 +39,7 @@
 #include "rtpdec.h"
 #include "rdt.h"
 #include "rtpdec_formats.h"
+#include "rtpenc_chain.h"
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP
@@ -502,64 +503,6 @@ void ff_rtsp_close_streams(AVFormatContext *s)
     av_free(rt->recvbuf);
 }
 
-static AVFormatContext *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st,
-                                          URLContext *handle, int packet_size)
-{
-    AVFormatContext *rtpctx;
-    int ret;
-    AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
-
-    if (!rtp_format)
-        return NULL;
-
-    /* Allocate an AVFormatContext for each output stream */
-    rtpctx = avformat_alloc_context();
-    if (!rtpctx)
-        return NULL;
-
-    rtpctx->oformat = rtp_format;
-    if (!av_new_stream(rtpctx, 0)) {
-        av_free(rtpctx);
-        return NULL;
-    }
-    /* Copy the max delay setting; the rtp muxer reads this. */
-    rtpctx->max_delay = s->max_delay;
-    /* Copy other stream parameters. */
-    rtpctx->streams[0]->sample_aspect_ratio = st->sample_aspect_ratio;
-
-    /* Set the synchronized start time. */
-    rtpctx->start_time_realtime = s->start_time_realtime;
-
-    /* Remove the local codec, link to the original codec
-     * context instead, to give the rtp muxer access to
-     * codec parameters. */
-    av_free(rtpctx->streams[0]->codec);
-    rtpctx->streams[0]->codec = st->codec;
-
-    if (handle) {
-        url_fdopen(&rtpctx->pb, handle);
-    } else
-        url_open_dyn_packet_buf(&rtpctx->pb, packet_size);
-    ret = av_write_header(rtpctx);
-
-    if (ret) {
-        if (handle) {
-            url_fclose(rtpctx->pb);
-        } else {
-            uint8_t *ptr;
-            url_close_dyn_buf(rtpctx->pb, &ptr);
-            av_free(ptr);
-        }
-        av_free(rtpctx->streams[0]);
-        av_free(rtpctx);
-        return NULL;
-    }
-
-    /* Copy the RTP AVStream timebase back to the original AVStream */
-    st->time_base = rtpctx->streams[0]->time_base;
-    return rtpctx;
-}
-
 static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 {
     RTSPState *rt = s->priv_data;
@@ -572,8 +515,9 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     if (s->oformat) {
-        rtsp_st->transport_priv = rtsp_rtp_mux_open(s, st, rtsp_st->rtp_handle,
-                                                    RTSP_TCP_MAX_PACKET_SIZE);
+        rtsp_st->transport_priv = ff_rtp_chain_mux_open(s, st,
+                                      rtsp_st->rtp_handle,
+                                      RTSP_TCP_MAX_PACKET_SIZE);
         /* Ownership of rtp_handle is passed to the rtp mux context */
         rtsp_st->rtp_handle = NULL;
     } else if (rt->transport == RTSP_TRANSPORT_RDT)
