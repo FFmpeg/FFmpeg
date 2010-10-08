@@ -477,8 +477,10 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
             s->read_buf_size = len - ret;
             memcpy(s->buf, buf + ret, s->read_buf_size);
             s->read_buf_index = 0;
+            s->prev_ret = 1;
             return 1;
         }
+        s->prev_ret = 0;
         return 0;
     } else if (s->parse_packet) {
         rv = s->parse_packet(s->ic, s->dynamic_protocol_context,
