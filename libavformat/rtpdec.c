@@ -471,8 +471,10 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
     if (!st) {
         /* specific MPEG2TS demux support */
         ret = ff_mpegts_parse_packet(s->ts, pkt, buf, len);
-        if (ret < 0)
+        if (ret < 0) {
+            s->prev_ret = -1;
             return -1;
+        }
         if (ret < len) {
             s->read_buf_size = len - ret;
             memcpy(s->buf, buf + ret, s->read_buf_size);
