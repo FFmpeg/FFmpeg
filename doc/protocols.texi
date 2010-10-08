@@ -319,6 +319,13 @@ explicitly allow or disallow reusing UDP sockets
 
 @item ttl=@var{ttl}
 set the time to live value (for multicast only)
+
+@item connect=@var{1|0}
+Initialize the UDP socket with @code{connect()}. In this case, the
+destination address can't be changed with udp_set_remote_url later.
+This allows finding out the source address for the packets with getsockname,
+and makes writes return with AVERROR(ECONNREFUSED) if "destination
+unreachable" is received.
 @end table
 
 Some usage examples of the udp protocol with @file{ffmpeg} follow.
