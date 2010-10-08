@@ -23,6 +23,7 @@ HEADERS = adler32.h                                                     \
           mathematics.h                                                 \
           md5.h                                                         \
           mem.h                                                         \
+          opt.h                                                         \
           pixdesc.h                                                     \
           pixfmt.h                                                      \
           random_seed.h                                                 \
