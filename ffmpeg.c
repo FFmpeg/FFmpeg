@@ -600,6 +600,7 @@ static int ffmpeg_exit(int ret)
         for(j=0;j<s->nb_streams;j++) {
             av_metadata_free(&s->streams[j]->metadata);
             av_free(s->streams[j]->codec);
+            av_free(s->streams[j]->info);
             av_free(s->streams[j]);
         }
         for(j=0;j<s->nb_programs;j++) {

@@ -617,6 +617,18 @@ typedef struct AVStream {
      * Number of frames that have been demuxed during av_find_stream_info()
      */
     int codec_info_nb_frames;
+
+    /**
+     * Stream informations used internally by av_find_stream_info()
+     */
+#define MAX_STD_TIMEBASES (60*12+5)
+    struct {
+        int64_t last_dts;
+        int64_t duration_gcd;
+        int duration_count;
+        double duration_error[MAX_STD_TIMEBASES];
+        int64_t codec_info_duration;
+    } *info;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
