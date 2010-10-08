@@ -50,6 +50,7 @@ typedef struct {
     int reuse_socket;
     struct sockaddr_storage dest_addr;
     int dest_addr_len;
+    int is_connected;
 } UDPContext;
 
 #define UDP_TX_BUF_SIZE 32768
@@ -325,6 +326,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (find_info_tag(buf, sizeof(buf), "buffer_size", p)) {
             s->buffer_size = strtol(buf, NULL, 10);
         }
+        if (find_info_tag(buf, sizeof(buf), "connect", p)) {
+            s->is_connected = strtol(buf, NULL, 10);
+        }
     }
 
     /* fill the dest addr */
@@ -393,6 +397,12 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         /* make the socket non-blocking */
         ff_socket_nonblock(udp_fd, 1);
     }
+    if (s->is_connected) {
+        if (connect(udp_fd, (struct sockaddr *) &s->dest_addr, s->dest_addr_len)) {
+            av_log(NULL, AV_LOG_ERROR, "connect: %s\n", strerror(errno));
+            goto fail;
+        }
+    }
 
     s->udp_fd = udp_fd;
     return 0;
@@ -444,9 +454,12 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
     int ret;
 
     for(;;) {
+        if (!s->is_connected) {
         ret = sendto (s->udp_fd, buf, size, 0,
                       (struct sockaddr *) &s->dest_addr,
                       s->dest_addr_len);
+        } else
+            ret = send(s->udp_fd, buf, size, 0);
         if (ret < 0) {
             if (ff_neterrno() != FF_NETERROR(EINTR) &&
                 ff_neterrno() != FF_NETERROR(EAGAIN))
