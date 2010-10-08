@@ -502,8 +502,8 @@ void ff_rtsp_close_streams(AVFormatContext *s)
     av_free(rt->recvbuf);
 }
 
-static void *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st,
-                               URLContext *handle)
+static AVFormatContext *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st,
+                                          URLContext *handle, int packet_size)
 {
     AVFormatContext *rtpctx;
     int ret;
@@ -539,7 +539,7 @@ static void *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st,
     if (handle) {
         url_fdopen(&rtpctx->pb, handle);
     } else
-        url_open_dyn_packet_buf(&rtpctx->pb, RTSP_TCP_MAX_PACKET_SIZE);
+        url_open_dyn_packet_buf(&rtpctx->pb, packet_size);
     ret = av_write_header(rtpctx);
 
     if (ret) {
@@ -572,7 +572,8 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     if (s->oformat) {
-        rtsp_st->transport_priv = rtsp_rtp_mux_open(s, st, rtsp_st->rtp_handle);
+        rtsp_st->transport_priv = rtsp_rtp_mux_open(s, st, rtsp_st->rtp_handle,
+                                                    RTSP_TCP_MAX_PACKET_SIZE);
         /* Ownership of rtp_handle is passed to the rtp mux context */
         rtsp_st->rtp_handle = NULL;
     } else if (rt->transport == RTSP_TRANSPORT_RDT)
