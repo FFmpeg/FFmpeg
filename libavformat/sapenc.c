@@ -106,7 +106,7 @@ static int sap_write_header(AVFormatContext *s)
     if (!announce_addr[0]) {
         struct addrinfo hints, *ai = NULL;
         memset(&hints, 0, sizeof(hints));
-        hints.ai_family = PF_UNSPEC;
+        hints.ai_family = AF_UNSPEC;
         if (getaddrinfo(host, NULL, &hints, &ai)) {
             av_log(s, AV_LOG_ERROR, "Unable to resolve %s\n", host);
             ret = AVERROR(EIO);
