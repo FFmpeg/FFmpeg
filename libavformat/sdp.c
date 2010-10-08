@@ -56,7 +56,9 @@ static void sdp_write_address(char *buff, int size, const char *dest_addr,
     if (dest_addr) {
         if (!dest_type)
             dest_type = "IP4";
-        if (ttl > 0) {
+        if (ttl > 0 && !strcmp(dest_type, "IP4")) {
+            /* The TTL should only be specified for IPv4 multicast addresses,
+             * not for IPv6. */
             av_strlcatf(buff, size, "c=IN %s %s/%d\r\n", dest_type, dest_addr, ttl);
         } else {
             av_strlcatf(buff, size, "c=IN %s %s\r\n", dest_type, dest_addr);
