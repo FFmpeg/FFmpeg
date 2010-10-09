@@ -2605,7 +2605,7 @@ static int decode_thread(void *arg)
             SDL_Delay(10);
             continue;
         }
-        if(url_feof(ic->pb) || eof) {
+        if(eof) {
             if(is->video_stream >= 0){
                 av_init_packet(pkt);
                 pkt->data=NULL;
@@ -2626,7 +2626,7 @@ static int decode_thread(void *arg)
         }
         ret = av_read_frame(ic, pkt);
         if (ret < 0) {
-            if (ret == AVERROR_EOF)
+            if (ret == AVERROR_EOF || url_feof(ic->pb))
                 eof=1;
             if (url_ferror(ic->pb))
                 break;
