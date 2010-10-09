@@ -70,7 +70,7 @@ static int sap_write_header(AVFormatContext *s)
     struct SAPState *sap = s->priv_data;
     char host[1024], path[1024], url[1024], announce_addr[50] = "";
     char *option_list;
-    int port, base_port = 5004, i, pos = 0, same_port = 0, ttl = 255;
+    int port = 9875, base_port = 5004, i, pos = 0, same_port = 0, ttl = 255;
     AVFormatContext **contexts = NULL;
     int ret = 0;
     struct sockaddr_storage localaddr;
@@ -81,17 +81,17 @@ static int sap_write_header(AVFormatContext *s)
         return AVERROR(EIO);
 
     /* extract hostname and port */
-    av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port,
+    av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &base_port,
                  path, sizeof(path), s->filename);
-    if (port < 0)
-        port = 9875;
+    if (base_port < 0)
+        base_port = 5004;
 
     /* search for options */
     option_list = strrchr(path, '?');
     if (option_list) {
         char buf[50];
-        if (find_info_tag(buf, sizeof(buf), "base_port", option_list)) {
-            base_port = strtol(buf, NULL, 10);
+        if (find_info_tag(buf, sizeof(buf), "announce_port", option_list)) {
+            port = strtol(buf, NULL, 10);
         }
         if (find_info_tag(buf, sizeof(buf), "same_port", option_list)) {
             same_port = strtol(buf, NULL, 10);
