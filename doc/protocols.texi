@@ -287,6 +287,54 @@ To send a stream in realtime to a RTSP server, for others to watch:
 ffmpeg -re -i @var{input} -f rtsp -muxdelay 0.1 rtsp://server/live.sdp
 @end example
 
+@section sap
+
+Session Announcement Protocol (RFC 2974). This is not technically a
+protocol handler in libavformat, it is a muxer.
+It is used for signalling of RTP streams, by announcing the SDP for the
+streams regularly on a separate port.
+
+The syntax for a SAP url given to the muxer is:
+@example
+sap://@var{destination}[:@var{port}][?@var{options}]
+@end example
+
+The RTP packets are sent to @var{destination} on port @var{port},
+or to port 5004 if no port is specified.
+@var{options} is a @code{&}-separated list. The following options
+are supported:
+
+@table @option
+
+@item announce_addr=@var{address}
+Specify the destination IP address for sending the announcements to.
+If omitted, the announcements are sent to the commonly used SAP
+announcement multicast address 224.2.127.254 (sap.mcast.net), or
+ff0e::2:7ffe if @var{destination} is an IPv6 address.
+
+@item announce_port=@var{port}
+Specify the port to send the announcements on, defaults to
+9875 if not specified.
+
+@item ttl=@var{ttl}
+Specify the time to live value for the announcements and RTP packets,
+defaults to 255.
+
+@item same_port=@var{0|1}
+If set to 1, send all RTP streams on the same port pair. If zero (the
+default), all streams are sent on unique ports, with each stream on a
+port 2 numbers higher than the previous.
+VLC/Live555 requires this to be set to 1, to be able to receive the stream.
+@end table
+
+Example command lines follow.
+
+To broadcast a stream on the local subnet, for watching in VLC:
+
+@example
+ffmpeg -re -i @var{input} -f sap sap://224.0.0.255?same_port=1
+@end example
+
 @section tcp
 
 Trasmission Control Protocol.
