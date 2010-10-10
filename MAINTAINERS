@@ -262,6 +262,7 @@ Muxers/Demuxers:
   ape.c                                 Kostya Shishkov
   avi*                                  Michael Niedermayer
   bink.c                                Peter Ross
+  caf*                                  Peter Ross
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
   dv.c                                  Roman Shaposhnik
