@@ -159,60 +159,60 @@ fail:
     return NULL;
 }
 
-void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+void avfilter_default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
-    AVFilterLink *out = NULL;
+    AVFilterLink *outlink = NULL;
 
-    if (link->dst->output_count)
-        out = link->dst->outputs[0];
+    if (inlink->dst->output_count)
+        outlink = inlink->dst->outputs[0];
 
-    if (out) {
-        out->out_buf      = avfilter_get_video_buffer(out, AV_PERM_WRITE, out->w, out->h);
-        avfilter_copy_buffer_ref_props(out->out_buf, picref);
-        avfilter_start_frame(out, avfilter_ref_buffer(out->out_buf, ~0));
+    if (outlink) {
+        outlink->out_buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
+        avfilter_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
     }
 }
 
-void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+void avfilter_default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
-    AVFilterLink *out = NULL;
+    AVFilterLink *outlink = NULL;
 
-    if (link->dst->output_count)
-        out = link->dst->outputs[0];
+    if (inlink->dst->output_count)
+        outlink = inlink->dst->outputs[0];
 
-    if (out)
-        avfilter_draw_slice(out, y, h, slice_dir);
+    if (outlink)
+        avfilter_draw_slice(outlink, y, h, slice_dir);
 }
 
-void avfilter_default_end_frame(AVFilterLink *link)
+void avfilter_default_end_frame(AVFilterLink *inlink)
 {
-    AVFilterLink *out = NULL;
+    AVFilterLink *outlink = NULL;
 
-    if (link->dst->output_count)
-        out = link->dst->outputs[0];
+    if (inlink->dst->output_count)
+        outlink = inlink->dst->outputs[0];
 
-    avfilter_unref_buffer(link->cur_buf);
-    link->cur_buf = NULL;
+    avfilter_unref_buffer(inlink->cur_buf);
+    inlink->cur_buf = NULL;
 
-    if (out) {
-        if (out->out_buf) {
-            avfilter_unref_buffer(out->out_buf);
-            out->out_buf = NULL;
+    if (outlink) {
+        if (outlink->out_buf) {
+            avfilter_unref_buffer(outlink->out_buf);
+            outlink->out_buf = NULL;
         }
-        avfilter_end_frame(out);
+        avfilter_end_frame(outlink);
     }
 }
 
 /* FIXME: samplesref is same as link->cur_buf. Need to consider removing the redundant parameter. */
-void avfilter_default_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+void avfilter_default_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
 {
     AVFilterLink *outlink = NULL;
 
-    if (link->dst->output_count)
-        outlink = link->dst->outputs[0];
+    if (inlink->dst->output_count)
+        outlink = inlink->dst->outputs[0];
 
     if (outlink) {
-        outlink->out_buf = avfilter_default_get_audio_buffer(link, AV_PERM_WRITE, samplesref->format,
+        outlink->out_buf = avfilter_default_get_audio_buffer(inlink, AV_PERM_WRITE, samplesref->format,
                                                              samplesref->audio->size,
                                                              samplesref->audio->channel_layout,
                                                              samplesref->audio->planar);
@@ -223,7 +223,7 @@ void avfilter_default_filter_samples(AVFilterLink *link, AVFilterBufferRef *samp
         outlink->out_buf = NULL;
     }
     avfilter_unref_buffer(samplesref);
-    link->cur_buf = NULL;
+    inlink->cur_buf = NULL;
 }
 
 /**
