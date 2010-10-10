@@ -713,7 +713,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample of more than 8 needs -coder 1 currently\n");
             return -1;
         }
-        s->version= 1;
+        s->version= FFMAX(s->version, 1);
     case PIX_FMT_YUV444P:
     case PIX_FMT_YUV422P:
     case PIX_FMT_YUV420P:
