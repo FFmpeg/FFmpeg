@@ -95,9 +95,9 @@ hiegrep2 '\.channel_layouts *= *\(' 'const' 'missing const for channel_layouts a
 hiegrep2 "$ERE_TYPES" '(static|av_|ff_|typedef|:\+[^a-zA-Z_])' 'Non static with no ff_/av_ prefix' $*
 
 hiegrep ':\+[^}#]*else' 'missing } prior to else' $*
-hiegrep '(if|while|for)\(' 'missing whitespace between keyword and (' $*
-hiegrep '(else|do){'       'missing whitespace between keyword and {' $*
-hiegrep '}(else|while)'    'missing whitespace between } and keyword' $*
+hiegrep '(if|while|for)\(' 'missing whitespace between keyword and ( (feel free to ignore)' $*
+hiegrep '(else|do){'       'missing whitespace between keyword and { (feel free to ignore)' $*
+hiegrep '}(else|while)'    'missing whitespace between } and keyword (feel free to ignore)' $*
 
 #FIXME this should print the previous statement maybe
 hiegrep ':\+  *{ *$' '{ should be on the same line as the related previous statement' $*
