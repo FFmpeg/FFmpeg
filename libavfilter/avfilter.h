@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 48
+#define LIBAVFILTER_VERSION_MINOR 49
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -127,7 +127,12 @@ typedef struct AVFilterBufferRef {
     int linesize[8];            ///< number of bytes per line
     int format;                 ///< media format
 
-    int64_t pts;                ///< presentation timestamp in units of 1/AV_TIME_BASE
+    /**
+     * presentation timestamp. The time unit may change during
+     * filtering, as it is specified in the link and the filter code
+     * may need to rescale the PTS accordingly.
+     */
+    int64_t pts;
     int64_t pos;                ///< byte position in stream, -1 if unknown
 
     int perms;                  ///< permissions, see the AV_PERM_* flags
@@ -598,6 +603,15 @@ struct AVFilterLink {
 
     AVFilterBufferRef *cur_buf;
     AVFilterBufferRef *out_buf;
+
+    /**
+     * Define the time base used by the PTS of the frames/samples
+     * which will pass through this link.
+     * During the configuration stage, each filter is supposed to
+     * change only the output timebase, while the timebase of the
+     * input link is assumed to be an unchangeable property.
+     */
+    AVRational time_base;
 };
 
 /**
