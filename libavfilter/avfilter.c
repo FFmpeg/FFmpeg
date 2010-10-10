@@ -156,6 +156,7 @@ int avfilter_config_links(AVFilterContext *filter)
 {
     int (*config_link)(AVFilterLink *);
     unsigned i;
+    int ret;
 
     for (i = 0; i < filter->input_count; i ++) {
         AVFilterLink *link = filter->inputs[i];
@@ -171,17 +172,17 @@ int avfilter_config_links(AVFilterContext *filter)
         case AVLINK_UNINIT:
             link->init_state = AVLINK_STARTINIT;
 
-            if (avfilter_config_links(link->src))
-                return -1;
+            if ((ret = avfilter_config_links(link->src)) < 0)
+                return ret;
 
             if (!(config_link = link->srcpad->config_props))
                 config_link  = avfilter_default_config_output_link;
-            if (config_link(link))
-                return -1;
+            if ((ret = config_link(link)) < 0)
+                return ret;
 
             if ((config_link = link->dstpad->config_props))
-                if (config_link(link))
-                    return -1;
+                if ((ret = config_link(link)) < 0)
+                    return ret;
 
             link->init_state = AVLINK_INIT;
         }
