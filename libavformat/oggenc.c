@@ -355,7 +355,7 @@ static int ogg_write_header(AVFormatContext *s)
             }
         } else {
             uint8_t *p;
-            char *cstr = st->codec->codec_id == CODEC_ID_VORBIS ? "vorbis" : "theora";
+            const char *cstr = st->codec->codec_id == CODEC_ID_VORBIS ? "vorbis" : "theora";
             int header_type = st->codec->codec_id == CODEC_ID_VORBIS ? 3 : 0x81;
             int framing_bit = st->codec->codec_id == CODEC_ID_VORBIS ? 1 : 0;
 
