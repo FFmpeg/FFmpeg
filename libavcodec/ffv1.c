@@ -36,6 +36,8 @@
 #define MAX_PLANES 4
 #define CONTEXT_SIZE 32
 
+#define MAX_QUANT_TABLES 8
+
 extern const uint8_t ff_log2_run[32];
 
 static const int8_t quant3[256]={
@@ -234,10 +236,14 @@ typedef struct FFV1Context{
     int ac;                              ///< 1=range coder <-> 0=golomb rice
     PlaneContext plane[MAX_PLANES];
     int16_t quant_table[5][256];
+    int16_t quant_tables[MAX_QUANT_TABLES][5][256];
+    int context_count[MAX_QUANT_TABLES];
     uint8_t state_transition[256];
     int run_index;
     int colorspace;
     int_fast16_t *sample_buffer;
+
+    int quant_table_count;
 
     DSPContext dsp;
 }FFV1Context;
@@ -622,6 +628,8 @@ static void write_header(FFV1Context *f){
     put_rac(c, state, 0); //no transparency plane
 
     write_quant_tables(c, f->quant_table);
+    }else{
+        put_symbol(c, state, f->avctx->context_model, 0);
     }
 }
 #endif /* CONFIG_FFV1_ENCODER */
@@ -671,7 +679,10 @@ static int write_extra_header(FFV1Context *f){
         put_symbol(c, state, f->chroma_h_shift, 0);
         put_symbol(c, state, f->chroma_v_shift, 0);
     put_rac(c, state, 0); //no transparency plane
-    write_quant_tables(c, f->quant_table);
+
+    put_symbol(c, state, f->quant_table_count, 0);
+    for(i=0; i<f->quant_table_count; i++)
+        write_quant_tables(c, f->quant_tables[i]);
 
     f->avctx->extradata_size= ff_rac_terminate(c);
 
@@ -690,32 +701,28 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->plane_count=2;
     for(i=0; i<256; i++){
+        s->quant_table_count=2;
         if(avctx->bits_per_raw_sample <=8){
-            s->quant_table[0][i]=           quant11[i];
-            s->quant_table[1][i]=        11*quant11[i];
-            if(avctx->context_model==0){
-                s->quant_table[2][i]=     11*11*quant11[i];
-                s->quant_table[3][i]=
-                s->quant_table[4][i]=0;
-            }else{
-                s->quant_table[2][i]=     11*11*quant5 [i];
-                s->quant_table[3][i]=   5*11*11*quant5 [i];
-                s->quant_table[4][i]= 5*5*11*11*quant5 [i];
-            }
+            s->quant_tables[0][0][i]=           quant11[i];
+            s->quant_tables[0][1][i]=        11*quant11[i];
+            s->quant_tables[0][2][i]=     11*11*quant11[i];
+            s->quant_tables[1][0][i]=           quant11[i];
+            s->quant_tables[1][1][i]=        11*quant11[i];
+            s->quant_tables[1][2][i]=     11*11*quant5 [i];
+            s->quant_tables[1][3][i]=   5*11*11*quant5 [i];
+            s->quant_tables[1][4][i]= 5*5*11*11*quant5 [i];
         }else{
-            s->quant_table[0][i]=           quant9_10bit[i];
-            s->quant_table[1][i]=        11*quant9_10bit[i];
-            if(avctx->context_model==0){
-                s->quant_table[2][i]=     11*11*quant9_10bit[i];
-                s->quant_table[3][i]=
-                s->quant_table[4][i]=0;
-            }else{
-                s->quant_table[2][i]=     11*11*quant5_10bit[i];
-                s->quant_table[3][i]=   5*11*11*quant5_10bit[i];
-                s->quant_table[4][i]= 5*5*11*11*quant5_10bit[i];
-            }
+            s->quant_tables[0][0][i]=           quant9_10bit[i];
+            s->quant_tables[0][1][i]=        11*quant9_10bit[i];
+            s->quant_tables[0][2][i]=     11*11*quant9_10bit[i];
+            s->quant_tables[1][0][i]=           quant9_10bit[i];
+            s->quant_tables[1][1][i]=        11*quant9_10bit[i];
+            s->quant_tables[1][2][i]=     11*11*quant5_10bit[i];
+            s->quant_tables[1][3][i]=   5*11*11*quant5_10bit[i];
+            s->quant_tables[1][4][i]= 5*5*11*11*quant5_10bit[i];
         }
     }
+    memcpy(s->quant_table, s->quant_tables[avctx->context_model], sizeof(s->quant_table));
 
     for(i=0; i<s->plane_count; i++){
         PlaneContext * const p= &s->plane[i];
@@ -1052,7 +1059,7 @@ static int read_quant_tables(RangeCoder *c, int16_t quant_table[5][256]){
 static int read_extra_header(FFV1Context *f){
     RangeCoder * const c= &f->c;
     uint8_t state[CONTEXT_SIZE];
-    int i,context_count;
+    int i;
 
     memset(state, 128, sizeof(state));
 
@@ -1073,20 +1080,14 @@ static int read_extra_header(FFV1Context *f){
     f->chroma_v_shift= get_symbol(c, state, 0);
     get_rac(c, state); //transparency plane
     f->plane_count= 2;
-    context_count= read_quant_tables(c, f->quant_table);
-    if(context_count < 0){
-        av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
+
+    f->quant_table_count= get_symbol(c, state, 0);
+    if(f->quant_table_count > (unsigned)MAX_QUANT_TABLES)
         return -1;
-    }
-    for(i=0; i<f->plane_count; i++){
-        PlaneContext * const p= &f->plane[i];
-
-        p->context_count= context_count;
-
-        if(f->ac){
-            if(!p->state) p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
-        }else{
-            if(!p->vlc_state) p->vlc_state= av_malloc(p->context_count*sizeof(VlcState));
+    for(i=0; i<f->quant_table_count; i++){
+        if((f->context_count[i]= read_quant_tables(c, f->quant_tables[i])) < 0){
+            av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
+            return -1;
         }
     }
 
@@ -1159,6 +1160,15 @@ static int read_header(FFV1Context *f){
             return -1;
         }
 
+    }else{
+        i=get_symbol(c, state, 0);
+        if(i > (unsigned)f->quant_table_count){
+            av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
+            return -1;
+        }
+        memcpy(f->quant_table, f->quant_tables[i], sizeof(f->quant_table));
+        context_count= f->context_count[i];
+    }
     for(i=0; i<f->plane_count; i++){
         PlaneContext * const p= &f->plane[i];
 
@@ -1169,7 +1179,6 @@ static int read_header(FFV1Context *f){
         }else{
             if(!p->vlc_state) p->vlc_state= av_malloc(p->context_count*sizeof(VlcState));
         }
-    }
     }
 
     return 0;
