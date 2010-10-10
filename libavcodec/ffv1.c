@@ -591,6 +591,12 @@ static void write_quant_table(RangeCoder *c, int16_t *quant_table){
     put_symbol(c, state, i-last-1, 0);
 }
 
+static void write_quant_tables(RangeCoder *c, int16_t quant_table[5][256]){
+    int i;
+    for(i=0; i<5; i++)
+        write_quant_table(c, quant_table[i]);
+}
+
 static void write_header(FFV1Context *f){
     uint8_t state[CONTEXT_SIZE];
     int i;
@@ -614,8 +620,7 @@ static void write_header(FFV1Context *f){
         put_symbol(c, state, f->chroma_v_shift, 0);
     put_rac(c, state, 0); //no transparency plane
 
-    for(i=0; i<5; i++)
-        write_quant_table(c, f->quant_table[i]);
+    write_quant_tables(c, f->quant_table);
 }
 #endif /* CONFIG_FFV1_ENCODER */
 
@@ -995,6 +1000,19 @@ static int read_quant_table(RangeCoder *c, int16_t *quant_table, int scale){
     return 2*v - 1;
 }
 
+static int read_quant_tables(RangeCoder *c, int16_t quant_table[5][256]){
+    int i;
+    int context_count=1;
+
+    for(i=0; i<5; i++){
+        context_count*= read_quant_table(c, quant_table[i], context_count);
+        if(context_count > 32768U){
+            return -1;
+        }
+    }
+    return (context_count+1)/2;
+}
+
 static int read_header(FFV1Context *f){
     uint8_t state[CONTEXT_SIZE];
     int i, context_count;
@@ -1052,16 +1070,11 @@ static int read_header(FFV1Context *f){
     }
 
 //printf("%d %d %d\n", f->chroma_h_shift, f->chroma_v_shift,f->avctx->pix_fmt);
-
-    context_count=1;
-    for(i=0; i<5; i++){
-        context_count*= read_quant_table(c, f->quant_table[i], context_count);
-        if(context_count < 0 || context_count > 32768){
+    context_count= read_quant_tables(c, f->quant_table);
+    if(context_count < 0){
             av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
             return -1;
         }
-    }
-    context_count= (context_count+1)/2;
 
     for(i=0; i<f->plane_count; i++){
         PlaneContext * const p= &f->plane[i];
