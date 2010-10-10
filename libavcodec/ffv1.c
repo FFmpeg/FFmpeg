@@ -604,6 +604,7 @@ static void write_header(FFV1Context *f){
 
     memset(state, 128, sizeof(state));
 
+    if(f->version < 2){
     put_symbol(c, state, f->version, 0);
     put_symbol(c, state, f->ac, 0);
     if(f->ac>1){
@@ -621,6 +622,7 @@ static void write_header(FFV1Context *f){
     put_rac(c, state, 0); //no transparency plane
 
     write_quant_tables(c, f->quant_table);
+    }
 }
 #endif /* CONFIG_FFV1_ENCODER */
 
@@ -645,6 +647,37 @@ static av_cold int common_init(AVCodecContext *avctx){
 }
 
 #if CONFIG_FFV1_ENCODER
+static int write_extra_header(FFV1Context *f){
+    RangeCoder * const c= &f->c;
+    uint8_t state[CONTEXT_SIZE];
+    int i;
+    memset(state, 128, sizeof(state));
+
+    f->avctx->extradata= av_malloc(f->avctx->extradata_size= 10000);
+    ff_init_range_encoder(c, f->avctx->extradata, f->avctx->extradata_size);
+    ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
+
+    put_symbol(c, state, f->version, 0);
+    put_symbol(c, state, f->ac, 0);
+    if(f->ac>1){
+        for(i=1; i<256; i++){
+            f->state_transition[i]=ver2_state[i];
+            put_symbol(c, state, ver2_state[i] - c->one_state[i], 1);
+        }
+    }
+    put_symbol(c, state, f->colorspace, 0); //YUV cs type
+    put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
+    put_rac(c, state, 1); //chroma planes
+        put_symbol(c, state, f->chroma_h_shift, 0);
+        put_symbol(c, state, f->chroma_v_shift, 0);
+    put_rac(c, state, 0); //no transparency plane
+    write_quant_tables(c, f->quant_table);
+
+    f->avctx->extradata_size= ff_rac_terminate(c);
+
+    return 0;
+}
+
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
@@ -731,6 +764,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
 
     s->picture_number=0;
+
+    if(s->version>1)
+        write_extra_header(s);
 
     return 0;
 }
@@ -1013,6 +1049,50 @@ static int read_quant_tables(RangeCoder *c, int16_t quant_table[5][256]){
     return (context_count+1)/2;
 }
 
+static int read_extra_header(FFV1Context *f){
+    RangeCoder * const c= &f->c;
+    uint8_t state[CONTEXT_SIZE];
+    int i,context_count;
+
+    memset(state, 128, sizeof(state));
+
+    ff_init_range_decoder(c, f->avctx->extradata, f->avctx->extradata_size);
+    ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
+
+    f->version= get_symbol(c, state, 0);
+    f->ac= f->avctx->coder_type= get_symbol(c, state, 0);
+    if(f->ac>1){
+        for(i=1; i<256; i++){
+            f->state_transition[i]= get_symbol(c, state, 1) + c->one_state[i];
+        }
+    }
+    f->colorspace= get_symbol(c, state, 0); //YUV cs type
+    f->avctx->bits_per_raw_sample= get_symbol(c, state, 0);
+    get_rac(c, state); //no chroma = false
+    f->chroma_h_shift= get_symbol(c, state, 0);
+    f->chroma_v_shift= get_symbol(c, state, 0);
+    get_rac(c, state); //transparency plane
+    f->plane_count= 2;
+    context_count= read_quant_tables(c, f->quant_table);
+    if(context_count < 0){
+        av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
+        return -1;
+    }
+    for(i=0; i<f->plane_count; i++){
+        PlaneContext * const p= &f->plane[i];
+
+        p->context_count= context_count;
+
+        if(f->ac){
+            if(!p->state) p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
+        }else{
+            if(!p->vlc_state) p->vlc_state= av_malloc(p->context_count*sizeof(VlcState));
+        }
+    }
+
+    return 0;
+}
+
 static int read_header(FFV1Context *f){
     uint8_t state[CONTEXT_SIZE];
     int i, context_count;
@@ -1020,6 +1100,7 @@ static int read_header(FFV1Context *f){
 
     memset(state, 128, sizeof(state));
 
+    if(f->version < 2){
     f->version= get_symbol(c, state, 0);
     f->ac= f->avctx->coder_type= get_symbol(c, state, 0);
     if(f->ac>1){
@@ -1035,6 +1116,7 @@ static int read_header(FFV1Context *f){
     f->chroma_v_shift= get_symbol(c, state, 0);
     get_rac(c, state); //transparency plane
     f->plane_count= 2;
+    }
 
     if(f->colorspace==0){
         if(f->avctx->bits_per_raw_sample<=8){
@@ -1070,6 +1152,7 @@ static int read_header(FFV1Context *f){
     }
 
 //printf("%d %d %d\n", f->chroma_h_shift, f->chroma_v_shift,f->avctx->pix_fmt);
+    if(f->version < 2){
     context_count= read_quant_tables(c, f->quant_table);
     if(context_count < 0){
             av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
@@ -1087,15 +1170,19 @@ static int read_header(FFV1Context *f){
             if(!p->vlc_state) p->vlc_state= av_malloc(p->context_count*sizeof(VlcState));
         }
     }
+    }
 
     return 0;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-//    FFV1Context *s = avctx->priv_data;
+    FFV1Context *f = avctx->priv_data;
 
     common_init(avctx);
+
+    if(avctx->extradata)
+        return read_extra_header(f);
 
     return 0;
 }
