@@ -653,11 +653,15 @@ Null video source, never return images. It is mainly useful as a
 template and to be employed in analysis / debugging tools.
 
 It accepts as optional parameter a string of the form
-@var{width}:@var{height}, where @var{width} and @var{height} specify the size of
-the configured source.
+@var{width}:@var{height}:@var{timebase}.
 
-The default values of @var{width} and @var{height} are respectively 352
-and 288 (corresponding to the CIF size format).
+@var{width} and @var{height} specify the size of the configured
+source. The default values of @var{width} and @var{height} are
+respectively 352 and 288 (corresponding to the CIF size format).
+
+@var{timebase} specifies an arithmetic expression representing a
+timebase. The expression can contain the constants "PI", "E", "PHI",
+"AVTB" (the default timebase), and defaults to the value "AVTB".
 
 @c man end VIDEO SOURCES
 
