@@ -81,12 +81,12 @@ static int targa_encode_frame(AVCodecContext *avctx,
 
     if(avctx->width > 0xffff || avctx->height > 0xffff) {
         av_log(avctx, AV_LOG_ERROR, "image dimensions too large\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     picsize = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     if(buf_size < picsize + 45) {
         av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     p->pict_type= FF_I_TYPE;
@@ -115,7 +115,7 @@ static int targa_encode_frame(AVCodecContext *avctx,
     default:
         av_log(avctx, AV_LOG_ERROR, "Pixel format '%s' not supported.\n",
                avcodec_get_pix_fmt_name(avctx->pix_fmt));
-        return -1;
+        return AVERROR(EINVAL);
     }
     bpp = outbuf[16] >> 3;
 
