@@ -623,7 +623,6 @@ Follows the list of the accepted parameters.
 Specify the width and height of the buffered video frames.
 
 @item pix_fmt_string
-
 A string representing the pixel format of the buffered video frames.
 It may be a number corresponding to a pixel format, or a pixel format
 name.
