@@ -1779,18 +1779,6 @@ static AVFilter input_filter =
                                   { .name = NULL }},
 };
 
-static void output_end_frame(AVFilterLink *link)
-{
-}
-
-static int output_query_formats(AVFilterContext *ctx)
-{
-    enum PixelFormat pix_fmts[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
-
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
-    return 0;
-}
-
 static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
                                     int64_t *pts, AVRational *tb, int64_t *pos)
 {
@@ -1812,20 +1800,6 @@ static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
 
     return 1;
 }
-
-static AVFilter output_filter =
-{
-    .name      = "ffplay_output",
-
-    .query_formats = output_query_formats,
-
-    .inputs    = (AVFilterPad[]) {{ .name          = "default",
-                                    .type          = AVMEDIA_TYPE_VIDEO,
-                                    .end_frame     = output_end_frame,
-                                    .min_perms     = AV_PERM_READ, },
-                                  { .name = NULL }},
-    .outputs   = (AVFilterPad[]) {{ .name = NULL }},
-};
 #endif  /* CONFIG_AVFILTER */
 
 static int video_thread(void *arg)
@@ -1839,16 +1813,17 @@ static int video_thread(void *arg)
 #if CONFIG_AVFILTER
     int64_t pos;
     char sws_flags_str[128];
+    FFSinkContext ffsink_ctx = { .pix_fmt = PIX_FMT_YUV420P };
     AVFilterContext *filt_src = NULL, *filt_out = NULL;
     AVFilterGraph *graph = av_mallocz(sizeof(AVFilterGraph));
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
     if (avfilter_open(&filt_src, &input_filter,  "src") < 0) goto the_end;
-    if (avfilter_open(&filt_out, &output_filter, "out") < 0) goto the_end;
+    if (avfilter_open(&filt_out, &ffsink      ,  "out") < 0) goto the_end;
 
     if(avfilter_init_filter(filt_src, NULL, is))             goto the_end;
-    if(avfilter_init_filter(filt_out, NULL, NULL))           goto the_end;
+    if(avfilter_init_filter(filt_out, NULL, &ffsink_ctx))    goto the_end;
 
 
     if(vfilters) {

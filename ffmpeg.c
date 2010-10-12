@@ -339,34 +339,6 @@ static struct termios oldtty;
 #endif
 
 #if CONFIG_AVFILTER
-typedef struct {
-    int pix_fmt;
-} FilterOutPriv;
-
-
-static int output_init(AVFilterContext *ctx, const char *args, void *opaque)
-{
-    FilterOutPriv *priv = ctx->priv;
-
-    if(!opaque) return -1;
-
-    priv->pix_fmt = *((int *)opaque);
-
-    return 0;
-}
-
-static void output_end_frame(AVFilterLink *link)
-{
-}
-
-static int output_query_formats(AVFilterContext *ctx)
-{
-    FilterOutPriv *priv = ctx->priv;
-    enum PixelFormat pix_fmts[] = { priv->pix_fmt, PIX_FMT_NONE };
-
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
-    return 0;
-}
 
 static int get_filtered_video_pic(AVFilterContext *ctx,
                                   AVFilterBufferRef **picref, AVFrame *pic2,
@@ -391,29 +363,13 @@ static int get_filtered_video_pic(AVFilterContext *ctx,
     return 1;
 }
 
-static AVFilter output_filter =
-{
-    .name      = "ffmpeg_output",
-
-    .priv_size = sizeof(FilterOutPriv),
-    .init      = output_init,
-
-    .query_formats = output_query_formats,
-
-    .inputs    = (AVFilterPad[]) {{ .name          = "default",
-                                    .type          = AVMEDIA_TYPE_VIDEO,
-                                    .end_frame     = output_end_frame,
-                                    .min_perms     = AV_PERM_READ, },
-                                  { .name = NULL }},
-    .outputs   = (AVFilterPad[]) {{ .name = NULL }},
-};
-
 static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
 {
     AVFilterContext *last_filter, *filter;
     /** filter graph containing all filters including input & output */
     AVCodecContext *codec = ost->st->codec;
     AVCodecContext *icodec = ist->st->codec;
+    FFSinkContext ffsink_ctx = { .pix_fmt = codec->pix_fmt };
     char args[255];
     int ret;
 
@@ -421,7 +377,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
 
     if ((ret = avfilter_open(&ist->input_video_filter, avfilter_get_by_name("buffer"), "src")) < 0)
         return ret;
-    if ((ret = avfilter_open(&ist->output_video_filter, &output_filter, "out")) < 0)
+    if ((ret = avfilter_open(&ist->output_video_filter, &ffsink, "out")) < 0)
         return ret;
 
     snprintf(args, 255, "%d:%d:%d:%d:%d", ist->st->codec->width,
@@ -429,7 +385,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
              ist->st->time_base.num, ist->st->time_base.den);
     if ((ret = avfilter_init_filter(ist->input_video_filter, args, NULL)) < 0)
         return ret;
-    if ((ret = avfilter_init_filter(ist->output_video_filter, NULL, &codec->pix_fmt)) < 0)
+    if ((ret = avfilter_init_filter(ist->output_video_filter, NULL, &ffsink_ctx)) < 0)
         return ret;
 
     /* add input and output filters to the overall graph */

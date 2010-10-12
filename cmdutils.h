@@ -261,4 +261,15 @@ void init_pts_correction(PtsCorrectionContext *ctx);
  */
 int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t pts, int64_t dts);
 
+#if CONFIG_AVFILTER
+#include "libavfilter/avfilter.h"
+
+typedef struct {
+    enum PixelFormat pix_fmt;
+} FFSinkContext;
+
+extern AVFilter ffsink;
+
+#endif /* CONFIG_AVFILTER */
+
 #endif /* FFMPEG_CMDUTILS_H */
