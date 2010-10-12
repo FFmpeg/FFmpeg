@@ -113,6 +113,8 @@ static int targa_encode_frame(AVCodecContext *avctx,
         outbuf[16] = 24;         /* bpp */
         break;
     default:
+        av_log(avctx, AV_LOG_ERROR, "Pixel format '%s' not supported.\n",
+               avcodec_get_pix_fmt_name(avctx->pix_fmt));
         return -1;
     }
     bpp = outbuf[16] >> 3;
