@@ -39,7 +39,6 @@ enum var_name {
     VAR_PHI,
     VAR_PI,
     VAR_AVTB,
-    VAR_INTB,
     VAR_VARS_NB
 };
 
