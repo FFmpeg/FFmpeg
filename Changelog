@@ -45,6 +45,7 @@ version <next>:
 - Demuxer for Leitch/Harris' VR native stream format (LXF)
 - RTP depacketization of the X-QT QuickTime format
 - SAP (Session Announcement Protocol, RFC 2974) muxer
+- cropdetect filter
 
 
 version 0.6:

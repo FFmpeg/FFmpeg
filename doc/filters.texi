@@ -190,6 +190,41 @@ crop=in_w-100:in_h-100:100:100
 "crop=in_w/2:in_h/2:y:10+10*sin(n/10)"
 @end example
 
+@section cropdetect
+
+Auto-detect crop size.
+
+Calculate necessary cropping parameters and prints the recommended
+parameters through the logging system. The detected dimensions
+correspond to the non-black area of the input video.
+
+It accepts the syntax:
+@example
+cropdetect[=@var{limit}:@var{round}[:@var{reset}]]
+@end example
+
+@table @option
+
+@item limit
+Threshold, which can be optionally specified from nothing (0) to
+everything (255), defaults to 24.
+
+@item round
+Value which the width/height should be divisible by, defaults to
+16. The offset is automatically adjusted to center the video. Use 2 to
+get only even dimensions (needed for 4:2:2 video). 16 is best when
+encoding to most video codecs.
+
+@item reset
+Counter that determines after how many frames cropdetect will reset
+the previously detected largest video area and start over to detect
+the current optimal crop area. Defaults to 0.
+
+This can be useful when channel logos distort the video area. 0
+indicates never reset and return the largest area encountered during
+playback.
+@end table
+
 @section drawbox
 
 Draw a colored box on the input image.

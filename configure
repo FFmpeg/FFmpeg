@@ -1399,6 +1399,7 @@ udp_protocol_deps="network"
 
 # filters
 blackframe_filter_deps="gpl"
+cropdetect_filter_deps="gpl"
 frei0r_filter_deps="frei0r dlopen strtok_r"
 ocv_smooth_filter_deps="libopencv"
 yadif_filter_deps="gpl"
