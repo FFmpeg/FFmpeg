@@ -424,8 +424,9 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     if ((ret = avfilter_open(&ist->output_video_filter, &output_filter, "out")) < 0)
         return ret;
 
-    snprintf(args, 255, "%d:%d:%d", ist->st->codec->width,
-             ist->st->codec->height, ist->st->codec->pix_fmt);
+    snprintf(args, 255, "%d:%d:%d:%d:%d", ist->st->codec->width,
+             ist->st->codec->height, ist->st->codec->pix_fmt,
+             ist->st->time_base.num, ist->st->time_base.den);
     if ((ret = avfilter_init_filter(ist->input_video_filter, args, NULL)) < 0)
         return ret;
     if ((ret = avfilter_init_filter(ist->output_video_filter, NULL, &codec->pix_fmt)) < 0)

@@ -611,7 +611,7 @@ This source is mainly intended for a programmatic use, in particular
 through the interface defined in @file{libavfilter/vsrc_buffer.h}.
 
 It accepts the following parameters:
-@var{width}:@var{height}:@var{pix_fmt_string}
+@var{width}:@var{height}:@var{pix_fmt_string}:@var{timebase_num}:@var{timebase_den}
 
 All the parameters need to be explicitely defined.
 
@@ -628,19 +628,23 @@ A string representing the pixel format of the buffered video frames.
 It may be a number corresponding to a pixel format, or a pixel format
 name.
 
+@item timebase_num, timebase_den
+Specify numerator and denomitor of the timebase assumed by the
+timestamps of the buffered frames.
 @end table
 
 For example:
 @example
-buffer=320:240:yuv410p
+buffer=320:240:yuv410p:1:24
 @end example
 
 will instruct the source to accept video frames with size 320x240 and
-with format "yuv410p". Since the pixel format with name "yuv410p"
-corresponds to the number 6 (check the enum PixelFormat definition in
-@file{libavutil/pixfmt.h}), this example corresponds to:
+with format "yuv410p" and assuming 1/24 as the timestamps timebase.
+Since the pixel format with name "yuv410p" corresponds to the number 6
+(check the enum PixelFormat definition in @file{libavutil/pixfmt.h}),
+this example corresponds to:
 @example
-buffer=320:240:6
+buffer=320:240:6:1:24
 @end example
 
 @section color

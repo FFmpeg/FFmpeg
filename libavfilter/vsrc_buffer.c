@@ -33,6 +33,7 @@ typedef struct {
     int               has_frame;
     int               h, w;
     enum PixelFormat  pix_fmt;
+    AVRational        time_base;     ///< time_base to set in the output link
     AVRational        pixel_aspect;
 } BufferSourceContext;
 
@@ -66,8 +67,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     char pix_fmt_str[128];
     int n = 0;
 
-    if (!args || (n = sscanf(args, "%d:%d:%127s", &c->w, &c->h, pix_fmt_str)) != 3) {
-        av_log(ctx, AV_LOG_ERROR, "Expected 3 arguments, but only %d found in '%s'\n", n, args ? args : "");
+    if (!args ||
+        (n = sscanf(args, "%d:%d:%127[^:]:%d:%d", &c->w, &c->h, pix_fmt_str, &c->time_base.num, &c->time_base.den)) != 5) {
+        av_log(ctx, AV_LOG_ERROR, "Expected 5 arguments, but only %d found in '%s'\n", n, args);
         return AVERROR(EINVAL);
     }
     if ((c->pix_fmt = av_get_pix_fmt(pix_fmt_str)) == PIX_FMT_NONE) {
@@ -98,6 +100,7 @@ static int config_props(AVFilterLink *link)
 
     link->w = c->w;
     link->h = c->h;
+    link->time_base = c->time_base;
 
     return 0;
 }
