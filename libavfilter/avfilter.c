@@ -182,7 +182,8 @@ int avfilter_config_links(AVFilterContext *filter)
                 return ret;
 
             if (link->time_base.num == 0 && link->time_base.den == 0)
-                link->time_base = AV_TIME_BASE_Q;
+                link->time_base = link->src && link->src->input_count ?
+                    link->src->inputs[0]->time_base : AV_TIME_BASE_Q;
 
             if ((config_link = link->dstpad->config_props))
                 if ((ret = config_link(link)) < 0)
