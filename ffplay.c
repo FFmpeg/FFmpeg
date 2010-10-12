@@ -1846,7 +1846,7 @@ static int video_thread(void *arg)
     if (avfilter_open(&filt_out, &output_filter, "out") < 0) goto the_end;
 
     if(avfilter_init_filter(filt_src, NULL, is))             goto the_end;
-    if(avfilter_init_filter(filt_out, NULL, frame))          goto the_end;
+    if(avfilter_init_filter(filt_out, NULL, NULL))           goto the_end;
 
 
     if(vfilters) {
