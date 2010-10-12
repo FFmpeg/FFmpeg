@@ -1755,6 +1755,7 @@ static int input_config_props(AVFilterLink *link)
 
     link->w = c->width;
     link->h = c->height;
+    link->time_base = priv->is->video_st->time_base;
 
     return 0;
 }
@@ -1791,7 +1792,7 @@ static int output_query_formats(AVFilterContext *ctx)
 }
 
 static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
-                                    int64_t *pts, int64_t *pos)
+                                    int64_t *pts, AVRational *tb, int64_t *pos)
 {
     AVFilterBufferRef *pic;
 
@@ -1804,6 +1805,7 @@ static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
     frame->opaque = pic;
     *pts          = pic->pts;
     *pos          = pic->pos;
+    *tb           = ctx->inputs[0]->time_base;
 
     memcpy(frame->data,     pic->data,     sizeof(frame->data));
     memcpy(frame->linesize, pic->linesize, sizeof(frame->linesize));
@@ -1882,11 +1884,22 @@ static int video_thread(void *arg)
     for(;;) {
 #if !CONFIG_AVFILTER
         AVPacket pkt;
+#else
+        AVRational tb;
 #endif
         while (is->paused && !is->videoq.abort_request)
             SDL_Delay(10);
 #if CONFIG_AVFILTER
-        ret = get_filtered_video_frame(filt_out, frame, &pts_int, &pos);
+        ret = get_filtered_video_frame(filt_out, frame, &pts_int, &tb, &pos);
+
+        if (av_cmp_q(tb, is->video_st->time_base)) {
+            int64_t pts1 = pts_int;
+            pts_int = av_rescale_q(pts_int, tb, is->video_st->time_base);
+            av_log(NULL, AV_LOG_DEBUG, "video_thread(): "
+                   "tb:%d/%d pts:%"PRId64" -> tb:%d/%d pts:%"PRId64"\n",
+                   tb.num, tb.den, pts1,
+                   is->video_st->time_base.num, is->video_st->time_base.den, pts_int);
+        }
 #else
         ret = get_video_frame(is, frame, &pts_int, &pkt);
 #endif
