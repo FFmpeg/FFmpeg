@@ -613,10 +613,10 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
     int rv= 0;
 
     if (!buf) {
-        /* If parsing of the previous packet actually returned 0, there's
-         * nothing more to be parsed from that packet, but we may have
+        /* If parsing of the previous packet actually returned 0 or an error,
+         * there's nothing more to be parsed from that packet, but we may have
          * indicated that we can return the next enqueued packet. */
-        if (!s->prev_ret)
+        if (s->prev_ret <= 0)
             return rtp_parse_queued_packet(s, pkt);
         /* return the next packets, if any */
         if(s->st && s->parse_packet) {
