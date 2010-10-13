@@ -8,6 +8,8 @@ version 0.6.1:
 - Backport AAC-HE v2 from trunk
 - Add missing VP80 fourcc code for the VP8 codec
 - smaller documentation fixes
+- fix several potentially exploitable issues in the FLIC decoder
+  (addresses CVE-2010-3429)
 
 
 version 0.6:
