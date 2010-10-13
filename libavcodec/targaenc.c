@@ -102,15 +102,15 @@ static int targa_encode_frame(AVCodecContext *avctx,
     /* TODO: support alpha channel */
     switch(avctx->pix_fmt) {
     case PIX_FMT_GRAY8:
-        outbuf[2] = 3;           /* uncompressed grayscale image */
+        outbuf[2] = TGA_BW;      /* uncompressed grayscale image */
         outbuf[16] = 8;          /* bpp */
         break;
     case PIX_FMT_RGB555LE:
-        outbuf[2] = 2;           /* uncompresses true-color image */
+        outbuf[2] = TGA_RGB;     /* uncompresses true-color image */
         outbuf[16] = 16;         /* bpp */
         break;
     case PIX_FMT_BGR24:
-        outbuf[2] = 2;           /* uncompressed true-color image */
+        outbuf[2] = TGA_RGB;     /* uncompressed true-color image */
         outbuf[16] = 24;         /* bpp */
         break;
     default:
