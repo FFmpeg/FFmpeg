@@ -472,7 +472,7 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
         /* specific MPEG2TS demux support */
         ret = ff_mpegts_parse_packet(s->ts, pkt, buf, len);
         if (ret < 0)
-            return -1;
+            return ret;
         if (ret < len) {
             s->read_buf_size = len - ret;
             memcpy(s->buf, buf + ret, s->read_buf_size);
@@ -630,11 +630,11 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
         } else {
             // TODO: Move to a dynamic packet handler (like above)
             if (s->read_buf_index >= s->read_buf_size)
-                return -1;
+                return AVERROR(EAGAIN);
             ret = ff_mpegts_parse_packet(s->ts, pkt, s->buf + s->read_buf_index,
                                       s->read_buf_size - s->read_buf_index);
             if (ret < 0)
-                return -1;
+                return ret;
             s->read_buf_index += ret;
             if (s->read_buf_index < s->read_buf_size)
                 return 1;
