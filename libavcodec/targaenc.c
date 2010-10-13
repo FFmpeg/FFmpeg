@@ -97,9 +97,9 @@ static int targa_encode_frame(AVCodecContext *avctx,
     memset(outbuf, 0, 12);
     AV_WL16(outbuf+12, avctx->width);
     AV_WL16(outbuf+14, avctx->height);
-    outbuf[17] = 0x20;           /* origin is top-left. no alpha */
+    /* image descriptor byte: origin is always top-left, bits 0-3 specify alpha */
+    outbuf[17] = 0x20 | (avctx->pix_fmt == PIX_FMT_BGRA ? 8 : 0);
 
-    /* TODO: support alpha channel */
     switch(avctx->pix_fmt) {
     case PIX_FMT_GRAY8:
         outbuf[2] = TGA_BW;      /* uncompressed grayscale image */
@@ -112,6 +112,10 @@ static int targa_encode_frame(AVCodecContext *avctx,
     case PIX_FMT_BGR24:
         outbuf[2] = TGA_RGB;     /* uncompressed true-color image */
         outbuf[16] = 24;         /* bpp */
+        break;
+    case PIX_FMT_BGRA:
+        outbuf[2] = TGA_RGB;     /* uncompressed true-color image */
+        outbuf[16] = 32;         /* bpp */
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Pixel format '%s' not supported.\n",
@@ -161,6 +165,6 @@ AVCodec targa_encoder = {
     .priv_data_size = sizeof(TargaContext),
     .init = targa_encode_init,
     .encode = targa_encode_frame,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_BGR24, PIX_FMT_RGB555LE, PIX_FMT_GRAY8, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_BGR24, PIX_FMT_BGRA, PIX_FMT_RGB555LE, PIX_FMT_GRAY8, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("Truevision Targa image"),
 };
