@@ -290,9 +290,11 @@ ffmpeg -re -i @var{input} -f rtsp -muxdelay 0.1 rtsp://server/live.sdp
 @section sap
 
 Session Announcement Protocol (RFC 2974). This is not technically a
-protocol handler in libavformat, it is a muxer.
+protocol handler in libavformat, it is a muxer and demuxer.
 It is used for signalling of RTP streams, by announcing the SDP for the
 streams regularly on a separate port.
+
+@subsection Muxer
 
 The syntax for a SAP url given to the muxer is:
 @example
@@ -325,6 +327,8 @@ If set to 1, send all RTP streams on the same port pair. If zero (the
 default), all streams are sent on unique ports, with each stream on a
 port 2 numbers higher than the previous.
 VLC/Live555 requires this to be set to 1, to be able to receive the stream.
+The RTP stack in libavformat for receiving requires all streams to be sent
+on unique ports.
 @end table
 
 Example command lines follow.
@@ -333,6 +337,46 @@ To broadcast a stream on the local subnet, for watching in VLC:
 
 @example
 ffmpeg -re -i @var{input} -f sap sap://224.0.0.255?same_port=1
+@end example
+
+Similarly, for watching in ffplay:
+
+@example
+ffmpeg -re -i @var{input} -f sap sap://224.0.0.255
+@end example
+
+And for watching in ffplay, over IPv6:
+
+@example
+ffmpeg -re -i @var{input} -f sap sap://[ff0e::1:2:3:4]
+@end example
+
+@subsection Demuxer
+
+The syntax for a SAP url given to the demuxer is:
+@example
+sap://[@var{address}][:@var{port}]
+@end example
+
+@var{address} is the multicast address to listen for announcements on,
+if omitted, the default 224.2.127.254 (sap.mcast.net) is used. @var{port}
+is the port that is listened on, 9875 if omitted.
+
+The demuxers listens for announcements on the given address and port.
+Once an announcement is received, it tries to receive that particular stream.
+
+Example command lines follow.
+
+To play back the first stream announced on the normal SAP multicast address:
+
+@example
+ffplay sap://
+@end example
+
+To play back the first stream announced on one the default IPv6 SAP multicast address:
+
+@example
+ffplay sap://[ff0e::2:7ffe]
 @end example
 
 @section tcp

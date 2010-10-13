@@ -231,6 +231,7 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             avc.o
 OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o httpauth.o
 OBJS-$(CONFIG_RTSP_MUXER)                += rtsp.o rtspenc.o httpauth.o
+OBJS-$(CONFIG_SAP_DEMUXER)               += sapdec.o
 OBJS-$(CONFIG_SAP_MUXER)                 += sapenc.o rtpenc_chain.o
 OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o        \
                                             rdt.o         \
