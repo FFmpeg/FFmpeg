@@ -652,7 +652,7 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
         return rtcp_parse_packet(s, buf, len);
     }
 
-    if (s->seq == 0 || s->queue_size <= 1) {
+    if ((s->seq == 0 && !s->queue) || s->queue_size <= 1) {
         /* First packet, or no reordering */
         return rtp_parse_packet_internal(s, pkt, buf, len);
     } else {
