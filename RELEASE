@@ -114,6 +114,8 @@ Included are some general, minor bugfixes:
 - performance fix for seekable http
 - Add missing VP80 fourcc code for the VP8 codec
 - smaller documentation fixes
+- fix several potentially exploitable issues in the FLIC decoder
+  (addresses CVE-2010-3429)
 
 
 HE-AAC v2 backport
