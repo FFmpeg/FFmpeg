@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "rle.h"
+#include "targa.h"
 
 typedef struct TargaContext {
     AVFrame picture;

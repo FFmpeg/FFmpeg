@@ -22,14 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcore/imgutils.h"
 #include "avcodec.h"
-
-enum TargaCompr{
-    TGA_NODATA = 0, // no image data
-    TGA_PAL    = 1, // palettized
-    TGA_RGB    = 2, // true-color
-    TGA_BW     = 3, // black & white or grayscale
-    TGA_RLE    = 8, // flag pointing that data is RLE-coded
-};
+#include "targa.h"
 
 typedef struct TargaContext {
     AVFrame picture;
