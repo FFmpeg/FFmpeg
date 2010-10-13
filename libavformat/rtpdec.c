@@ -574,7 +574,7 @@ static void enqueue_packet(RTPDemuxContext *s, uint8_t *buf, int len)
 
 static int has_next_packet(RTPDemuxContext *s)
 {
-    return s->queue && s->queue->seq == s->seq + 1;
+    return s->queue && s->queue->seq == (uint16_t) (s->seq + 1);
 }
 
 int64_t ff_rtp_queued_packet_time(RTPDemuxContext *s)
