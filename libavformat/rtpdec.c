@@ -471,18 +471,14 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
     if (!st) {
         /* specific MPEG2TS demux support */
         ret = ff_mpegts_parse_packet(s->ts, pkt, buf, len);
-        if (ret < 0) {
-            s->prev_ret = -1;
+        if (ret < 0)
             return -1;
-        }
         if (ret < len) {
             s->read_buf_size = len - ret;
             memcpy(s->buf, buf + ret, s->read_buf_size);
             s->read_buf_index = 0;
-            s->prev_ret = 1;
             return 1;
         }
-        s->prev_ret = 0;
         return 0;
     } else if (s->parse_packet) {
         rv = s->parse_packet(s->ic, s->dynamic_protocol_context,
@@ -531,7 +527,6 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
     // now perform timestamp things....
     finalize_packet(s, pkt, timestamp);
 
-    s->prev_ret = rv;
     return rv;
 }
 
@@ -606,19 +601,10 @@ static int rtp_parse_queued_packet(RTPDemuxContext *s, AVPacket *pkt)
     av_free(s->queue);
     s->queue = next;
     s->queue_len--;
-    return rv ? rv : has_next_packet(s);
+    return rv;
 }
 
-/**
- * Parse an RTP or RTCP packet directly sent as a buffer.
- * @param s RTP parse context.
- * @param pkt returned packet
- * @param bufptr pointer to the input buffer or NULL to read the next packets
- * @param len buffer len
- * @return 0 if a packet is returned, 1 if a packet is returned and more can follow
- * (use buf as NULL to read the next). -1 if no packet (error or no more packet).
- */
-int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
+static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
                      uint8_t **bufptr, int len)
 {
     uint8_t* buf = bufptr ? *bufptr : NULL;
@@ -640,27 +626,20 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             rv= s->parse_packet(s->ic, s->dynamic_protocol_context,
                                 s->st, pkt, &timestamp, NULL, 0, flags);
             finalize_packet(s, pkt, timestamp);
-            s->prev_ret = rv;
-            return rv ? rv : has_next_packet(s);
+            return rv;
         } else {
             // TODO: Move to a dynamic packet handler (like above)
-            if (s->read_buf_index >= s->read_buf_size) {
-                s->prev_ret = -1;
+            if (s->read_buf_index >= s->read_buf_size)
                 return -1;
-            }
             ret = ff_mpegts_parse_packet(s->ts, pkt, s->buf + s->read_buf_index,
                                       s->read_buf_size - s->read_buf_index);
-            if (ret < 0) {
-                s->prev_ret = -1;
+            if (ret < 0)
                 return -1;
-            }
             s->read_buf_index += ret;
             if (s->read_buf_index < s->read_buf_size)
                 return 1;
-            else {
-                s->prev_ret = 0;
-                return has_next_packet(s);
-            }
+            else
+                return 0;
         }
     }
 
@@ -687,7 +666,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         } else if (diff <= 1) {
             /* Correct packet */
             rv = rtp_parse_packet_internal(s, pkt, buf, len);
-            return rv ? rv : has_next_packet(s);
+            return rv;
         } else {
             /* Still missing some packet, enqueue this one. */
             enqueue_packet(s, buf, len);
@@ -699,6 +678,23 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             return -1;
         }
     }
+}
+
+/**
+ * Parse an RTP or RTCP packet directly sent as a buffer.
+ * @param s RTP parse context.
+ * @param pkt returned packet
+ * @param bufptr pointer to the input buffer or NULL to read the next packets
+ * @param len buffer len
+ * @return 0 if a packet is returned, 1 if a packet is returned and more can follow
+ * (use buf as NULL to read the next). -1 if no packet (error or no more packet).
+ */
+int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
+                     uint8_t **bufptr, int len)
+{
+    int rv = rtp_parse_one_packet(s, pkt, bufptr, len);
+    s->prev_ret = rv;
+    return rv ? rv : has_next_packet(s);
 }
 
 void rtp_parse_close(RTPDemuxContext *s)
