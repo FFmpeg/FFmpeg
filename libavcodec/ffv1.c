@@ -624,23 +624,23 @@ static void write_header(FFV1Context *f){
     memset(state, 128, sizeof(state));
 
     if(f->version < 2){
-    put_symbol(c, state, f->version, 0);
-    put_symbol(c, state, f->ac, 0);
-    if(f->ac>1){
-        for(i=1; i<256; i++){
-            f->state_transition[i]=ver2_state[i];
-            put_symbol(c, state, ver2_state[i] - c->one_state[i], 1);
+        put_symbol(c, state, f->version, 0);
+        put_symbol(c, state, f->ac, 0);
+        if(f->ac>1){
+            for(i=1; i<256; i++){
+                f->state_transition[i]=ver2_state[i];
+                put_symbol(c, state, ver2_state[i] - c->one_state[i], 1);
+            }
         }
-    }
-    put_symbol(c, state, f->colorspace, 0); //YUV cs type
-    if(f->version>0)
-        put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
-    put_rac(c, state, 1); //chroma planes
-        put_symbol(c, state, f->chroma_h_shift, 0);
-        put_symbol(c, state, f->chroma_v_shift, 0);
-    put_rac(c, state, 0); //no transparency plane
+        put_symbol(c, state, f->colorspace, 0); //YUV cs type
+        if(f->version>0)
+            put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
+        put_rac(c, state, 1); //chroma planes
+            put_symbol(c, state, f->chroma_h_shift, 0);
+            put_symbol(c, state, f->chroma_v_shift, 0);
+        put_rac(c, state, 0); //no transparency plane
 
-    write_quant_tables(c, f->quant_table);
+        write_quant_tables(c, f->quant_table);
     }else{
         for(i=0; i<f->slice_count * f->plane_count; i++)
             put_symbol(c, state, f->avctx->context_model, 0);
@@ -863,23 +863,23 @@ static void clear_state(FFV1Context *f){
 
     for(si=0; si<f->slice_count; si++){
         FFV1Context *fs= f->slice_context[si];
-    for(i=0; i<f->plane_count; i++){
-        PlaneContext *p= &fs->plane[i];
+        for(i=0; i<f->plane_count; i++){
+            PlaneContext *p= &fs->plane[i];
 
-        p->interlace_bit_state[0]= 128;
-        p->interlace_bit_state[1]= 128;
+            p->interlace_bit_state[0]= 128;
+            p->interlace_bit_state[1]= 128;
 
-        for(j=0; j<p->context_count; j++){
-            if(fs->ac){
-                memset(p->state[j], 128, sizeof(uint8_t)*CONTEXT_SIZE);
-            }else{
-                p->vlc_state[j].drift= 0;
-                p->vlc_state[j].error_sum= 4; //FFMAX((RANGE + 32)/64, 2);
-                p->vlc_state[j].bias= 0;
-                p->vlc_state[j].count= 1;
+            for(j=0; j<p->context_count; j++){
+                if(fs->ac){
+                    memset(p->state[j], 128, sizeof(uint8_t)*CONTEXT_SIZE);
+                }else{
+                    p->vlc_state[j].drift= 0;
+                    p->vlc_state[j].error_sum= 4; //FFMAX((RANGE + 32)/64, 2);
+                    p->vlc_state[j].bias= 0;
+                    p->vlc_state[j].count= 1;
+                }
             }
         }
-    }
     }
 }
 
@@ -997,12 +997,12 @@ static av_cold int common_end(AVCodecContext *avctx){
 
     for(j=0; j<s->slice_count; j++){
         FFV1Context *fs= s->slice_context[j];
-    for(i=0; i<s->plane_count; i++){
-        PlaneContext *p= &fs->plane[i];
+        for(i=0; i<s->plane_count; i++){
+            PlaneContext *p= &fs->plane[i];
 
-        av_freep(&p->state);
-        av_freep(&p->vlc_state);
-    }
+            av_freep(&p->state);
+            av_freep(&p->vlc_state);
+        }
         av_freep(&fs->sample_buffer);
     }
 
@@ -1265,21 +1265,21 @@ static int read_header(FFV1Context *f){
     memset(state, 128, sizeof(state));
 
     if(f->version < 2){
-    f->version= get_symbol(c, state, 0);
-    f->ac= f->avctx->coder_type= get_symbol(c, state, 0);
-    if(f->ac>1){
-        for(i=1; i<256; i++){
-            f->state_transition[i]= get_symbol(c, state, 1) + c->one_state[i];
+        f->version= get_symbol(c, state, 0);
+        f->ac= f->avctx->coder_type= get_symbol(c, state, 0);
+        if(f->ac>1){
+            for(i=1; i<256; i++){
+                f->state_transition[i]= get_symbol(c, state, 1) + c->one_state[i];
+            }
         }
-    }
-    f->colorspace= get_symbol(c, state, 0); //YUV cs type
-    if(f->version>0)
-        f->avctx->bits_per_raw_sample= get_symbol(c, state, 0);
-    get_rac(c, state); //no chroma = false
-    f->chroma_h_shift= get_symbol(c, state, 0);
-    f->chroma_v_shift= get_symbol(c, state, 0);
-    get_rac(c, state); //transparency plane
-    f->plane_count= 2;
+        f->colorspace= get_symbol(c, state, 0); //YUV cs type
+        if(f->version>0)
+            f->avctx->bits_per_raw_sample= get_symbol(c, state, 0);
+        get_rac(c, state); //no chroma = false
+        f->chroma_h_shift= get_symbol(c, state, 0);
+        f->chroma_v_shift= get_symbol(c, state, 0);
+        get_rac(c, state); //transparency plane
+        f->plane_count= 2;
     }
 
     if(f->colorspace==0){
@@ -1317,37 +1317,36 @@ static int read_header(FFV1Context *f){
 
 //printf("%d %d %d\n", f->chroma_h_shift, f->chroma_v_shift,f->avctx->pix_fmt);
     if(f->version < 2){
-    context_count= read_quant_tables(c, f->quant_table);
-    if(context_count < 0){
-            av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
-            return -1;
+        context_count= read_quant_tables(c, f->quant_table);
+        if(context_count < 0){
+                av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
+                return -1;
         }
-
     }
     for(j=0; j<f->slice_count; j++){
         FFV1Context *fs= f->slice_context[j];
         fs->ac= f->ac;
-    for(i=0; i<f->plane_count; i++){
-        PlaneContext * const p= &fs->plane[i];
+        for(i=0; i<f->plane_count; i++){
+            PlaneContext * const p= &fs->plane[i];
 
-        if(f->version >= 2){
-            int idx=get_symbol(c, state, 0);
-            if(idx > (unsigned)f->quant_table_count){
-                av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
-                return -1;
+            if(f->version >= 2){
+                int idx=get_symbol(c, state, 0);
+                if(idx > (unsigned)f->quant_table_count){
+                    av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
+                    return -1;
+                }
+                memcpy(p->quant_table, f->quant_tables[idx], sizeof(p->quant_table));
+                context_count= f->context_count[idx];
+            }else{
+                memcpy(p->quant_table, f->quant_table, sizeof(p->quant_table));
             }
-            memcpy(p->quant_table, f->quant_tables[idx], sizeof(p->quant_table));
-            context_count= f->context_count[idx];
-        }else{
-            memcpy(p->quant_table, f->quant_table, sizeof(p->quant_table));
-        }
 
-        if(p->context_count < context_count){
-            av_freep(&p->state);
-            av_freep(&p->vlc_state);
+            if(p->context_count < context_count){
+                av_freep(&p->state);
+                av_freep(&p->vlc_state);
+            }
+            p->context_count= context_count;
         }
-        p->context_count= context_count;
-    }
     }
 
     return 0;
