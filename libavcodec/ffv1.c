@@ -32,6 +32,7 @@
 #include "rangecoder.h"
 #include "golomb.h"
 #include "mathops.h"
+#include "libavutil/avassert.h"
 
 #define MAX_PLANES 4
 #define CONTEXT_SIZE 32
@@ -221,6 +222,8 @@ typedef struct PlaneContext{
     uint8_t interlace_bit_state[2];
 } PlaneContext;
 
+#define MAX_SLICES 256
+
 typedef struct FFV1Context{
     AVCodecContext *avctx;
     RangeCoder c;
@@ -246,6 +249,15 @@ typedef struct FFV1Context{
     int quant_table_count;
 
     DSPContext dsp;
+
+    struct FFV1Context *slice_context[MAX_SLICES];
+    int slice_count;
+    int num_v_slices;
+    int num_h_slices;
+    int slice_width;
+    int slice_height;
+    int slice_x;
+    int slice_y;
 }FFV1Context;
 
 static av_always_inline int fold(int diff, int bits){
@@ -606,7 +618,7 @@ static void write_quant_tables(RangeCoder *c, int16_t quant_table[5][256]){
 static void write_header(FFV1Context *f){
     uint8_t state[CONTEXT_SIZE];
     int i;
-    RangeCoder * const c= &f->c;
+    RangeCoder * const c= &f->slice_context[0]->c;
 
     memset(state, 128, sizeof(state));
 
@@ -646,10 +658,10 @@ static av_cold int common_init(AVCodecContext *avctx){
     s->height= avctx->height;
 
     assert(s->width && s->height);
+    //defaults
+    s->num_h_slices=1;
+    s->num_v_slices=1;
 
-    s->sample_buffer = av_malloc(6 * (s->width+6) * sizeof(*s->sample_buffer));
-    if (!s->sample_buffer)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -679,6 +691,8 @@ static int write_extra_header(FFV1Context *f){
         put_symbol(c, state, f->chroma_h_shift, 0);
         put_symbol(c, state, f->chroma_v_shift, 0);
     put_rac(c, state, 0); //no transparency plane
+    put_symbol(c, state, f->num_h_slices-1, 0);
+    put_symbol(c, state, f->num_v_slices-1, 0);
 
     put_symbol(c, state, f->quant_table_count, 0);
     for(i=0; i<f->quant_table_count; i++)
@@ -686,6 +700,65 @@ static int write_extra_header(FFV1Context *f){
 
     f->avctx->extradata_size= ff_rac_terminate(c);
 
+    return 0;
+}
+
+static int init_slice_state(FFV1Context *f){
+    int i, j;
+
+    for(i=0; i<f->slice_count; i++){
+        FFV1Context *fs= f->slice_context[i];
+        for(j=0; j<f->plane_count; j++){
+            PlaneContext * const p= &fs->plane[j];
+
+            if(fs->ac){
+                if(!p->    state) p->    state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
+                if(!p->    state)
+                    return AVERROR(ENOMEM);
+            }else{
+                if(!p->vlc_state) p->vlc_state= av_malloc(p->context_count*sizeof(VlcState));
+                if(!p->vlc_state)
+                    return AVERROR(ENOMEM);
+            }
+        }
+
+        if (fs->ac>1){
+            //FIXME only redo if state_transition changed
+            for(j=1; j<256; j++){
+                fs->c.one_state [    j]= fs->state_transition[j];
+                fs->c.zero_state[256-j]= 256-fs->c.one_state [j];
+            }
+        }
+    }
+
+    return 0;
+}
+
+static av_cold int init_slice_contexts(FFV1Context *f){
+    int i;
+
+    f->slice_count= f->num_h_slices * f->num_v_slices;
+
+    for(i=0; i<f->slice_count; i++){
+        FFV1Context *fs= av_mallocz(sizeof(*fs));
+        int sx= i % f->num_h_slices;
+        int sy= i / f->num_h_slices;
+        int sxs= f->avctx->width * sx    / f->num_h_slices;
+        int sxe= f->avctx->width *(sx+1) / f->num_h_slices;
+        int sys= f->avctx->height* sy    / f->num_v_slices;
+        int sye= f->avctx->height*(sy+1) / f->num_v_slices;
+        f->slice_context[i]= fs;
+        memcpy(fs, f, sizeof(*fs));
+
+        fs->slice_width = sxe - sxs;
+        fs->slice_height= sye - sys;
+        fs->slice_x     = sxs;
+        fs->slice_y     = sys;
+
+        fs->sample_buffer = av_malloc(6 * (fs->slice_width+6) * sizeof(*fs->sample_buffer));
+        if (!fs->sample_buffer)
+            return AVERROR(ENOMEM);
+    }
     return 0;
 }
 
@@ -732,12 +805,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }else{
             p->context_count= (11*11*5*5*5+1)/2;
         }
-
-        if(s->ac){
-            if(!p->state) p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
-        }else{
-            if(!p->vlc_state) p->vlc_state= av_malloc(p->context_count*sizeof(VlcState));
-        }
     }
 
     avctx->coded_frame= &s->picture;
@@ -772,8 +839,16 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->picture_number=0;
 
-    if(s->version>1)
+    if(s->version>1){
+        s->num_h_slices=2;
+        s->num_v_slices=2;
         write_extra_header(s);
+    }
+
+    if(init_slice_contexts(s) < 0)
+        return -1;
+    if(init_slice_state(s) < 0)
+        return -1;
 
     return 0;
 }
@@ -781,16 +856,18 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
 
 static void clear_state(FFV1Context *f){
-    int i, j;
+    int i, si, j;
 
+    for(si=0; si<f->slice_count; si++){
+        FFV1Context *fs= f->slice_context[si];
     for(i=0; i<f->plane_count; i++){
-        PlaneContext *p= &f->plane[i];
+        PlaneContext *p= &fs->plane[i];
 
         p->interlace_bit_state[0]= 128;
         p->interlace_bit_state[1]= 128;
 
         for(j=0; j<p->context_count; j++){
-            if(f->ac){
+            if(fs->ac){
                 memset(p->state[j], 128, sizeof(uint8_t)*CONTEXT_SIZE);
             }else{
                 p->vlc_state[j].drift= 0;
@@ -800,18 +877,46 @@ static void clear_state(FFV1Context *f){
             }
         }
     }
+    }
 }
 
 #if CONFIG_FFV1_ENCODER
+static int encode_slice(AVCodecContext *c, void *arg){
+    FFV1Context *fs= *(void**)arg;
+    FFV1Context *f= fs->avctx->priv_data;
+    int width = fs->slice_width;
+    int height= fs->slice_height;
+    int x= fs->slice_x;
+    int y= fs->slice_y;
+    AVFrame * const p= &f->picture;
+
+    if(f->colorspace==0){
+        const int chroma_width = -((-width )>>f->chroma_h_shift);
+        const int chroma_height= -((-height)>>f->chroma_v_shift);
+        const int cx= x>>f->chroma_h_shift;
+        const int cy= y>>f->chroma_v_shift;
+
+        encode_plane(fs, p->data[0] + x + y*p->linesize[0], width, height, p->linesize[0], 0);
+
+        encode_plane(fs, p->data[1] + cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1);
+        encode_plane(fs, p->data[2] + cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1);
+    }else{
+        encode_rgb_frame(fs, (uint32_t*)(p->data[0]) + x + y*(p->linesize[0]/4), width, height, p->linesize[0]/4);
+    }
+    emms_c();
+
+    return 0;
+}
+
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     FFV1Context *f = avctx->priv_data;
-    RangeCoder * const c= &f->c;
+    RangeCoder * const c= &f->slice_context[0]->c;
     AVFrame *pict = data;
-    const int width= f->width;
-    const int height= f->height;
     AVFrame * const p= &f->picture;
     int used_count= 0;
     uint8_t keystate=128;
+    uint8_t *buf_p;
+    int i;
 
     ff_init_range_encoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
@@ -832,7 +937,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     if(!f->ac){
         used_count += ff_rac_terminate(c);
 //printf("pos=%d\n", used_count);
-        init_put_bits(&f->pb, buf + used_count, buf_size - used_count);
+        init_put_bits(&f->slice_context[0]->pb, buf + used_count, buf_size - used_count);
     }else if (f->ac>1){
         int i;
         for(i=1; i<256; i++){
@@ -841,42 +946,62 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         }
     }
 
-    if(f->colorspace==0){
-        const int chroma_width = -((-width )>>f->chroma_h_shift);
-        const int chroma_height= -((-height)>>f->chroma_v_shift);
+    for(i=1; i<f->slice_count; i++){
+        FFV1Context *fs= f->slice_context[i];
+        uint8_t *start= buf + (buf_size-used_count)*i/f->slice_count;
+        int len= buf_size/f->slice_count;
 
-        encode_plane(f, p->data[0], width, height, p->linesize[0], 0);
-
-        encode_plane(f, p->data[1], chroma_width, chroma_height, p->linesize[1], 1);
-        encode_plane(f, p->data[2], chroma_width, chroma_height, p->linesize[2], 1);
-    }else{
-        encode_rgb_frame(f, (uint32_t*)(p->data[0]), width, height, p->linesize[0]/4);
+        if(fs->ac){
+            ff_init_range_encoder(&fs->c, start, len);
+        }else{
+            init_put_bits(&fs->pb, start, len);
+        }
     }
-    emms_c();
+    avctx->execute(avctx, encode_slice, &f->slice_context[0], NULL, f->slice_count, sizeof(void*));
+
+    buf_p=buf;
+    for(i=0; i<f->slice_count; i++){
+        FFV1Context *fs= f->slice_context[i];
+        int bytes;
+
+        if(fs->ac){
+            uint8_t state=128;
+            put_rac(&fs->c, &state, 0);
+            bytes= ff_rac_terminate(&fs->c);
+        }else{
+            flush_put_bits(&fs->pb); //nicer padding FIXME
+            bytes= used_count + (put_bits_count(&fs->pb)+7)/8;
+            used_count= 0;
+        }
+        if(i>0){
+            av_assert0(bytes < buf_size/f->slice_count);
+            memmove(buf_p, fs->ac ? fs->c.bytestream_start : fs->pb.buf, bytes);
+            av_assert0(bytes < (1<<24));
+            AV_WB24(buf_p+bytes, bytes);
+            bytes+=3;
+        }
+        buf_p += bytes;
+    }
 
     f->picture_number++;
-
-    if(f->ac){
-        return ff_rac_terminate(c);
-    }else{
-        flush_put_bits(&f->pb); //nicer padding FIXME
-        return used_count + (put_bits_count(&f->pb)+7)/8;
-    }
+    return buf_p-buf;
 }
 #endif /* CONFIG_FFV1_ENCODER */
 
 static av_cold int common_end(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
-    int i;
+    int i, j;
 
+    for(j=0; j<s->slice_count; j++){
+        FFV1Context *fs= s->slice_context[j];
     for(i=0; i<s->plane_count; i++){
-        PlaneContext *p= &s->plane[i];
+        PlaneContext *p= &fs->plane[i];
 
         av_freep(&p->state);
         av_freep(&p->vlc_state);
     }
-
-    av_freep(&s->sample_buffer);
+        av_freep(&fs->sample_buffer);
+    }
 
     return 0;
 }
@@ -1015,6 +1140,34 @@ static void decode_rgb_frame(FFV1Context *s, uint32_t *src, int w, int h, int st
     }
 }
 
+static int decode_slice(AVCodecContext *c, void *arg){
+    FFV1Context *fs= *(void**)arg;
+    FFV1Context *f= fs->avctx->priv_data;
+    int width = fs->slice_width;
+    int height= fs->slice_height;
+    int x= fs->slice_x;
+    int y= fs->slice_y;
+    AVFrame * const p= &f->picture;
+
+    av_assert1(width && height);
+    if(f->colorspace==0){
+        const int chroma_width = -((-width )>>f->chroma_h_shift);
+        const int chroma_height= -((-height)>>f->chroma_v_shift);
+        const int cx= x>>f->chroma_h_shift;
+        const int cy= y>>f->chroma_v_shift;
+        decode_plane(fs, p->data[0] + x + y*p->linesize[0], width, height, p->linesize[0], 0);
+
+        decode_plane(fs, p->data[1] + cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1);
+        decode_plane(fs, p->data[2] + cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[2], 1);
+    }else{
+        decode_rgb_frame(fs, (uint32_t*)p->data[0] + x + y*(p->linesize[0]/4), width, height, p->linesize[0]/4);
+    }
+
+    emms_c();
+
+    return 0;
+}
+
 static int read_quant_table(RangeCoder *c, int16_t *quant_table, int scale){
     int v;
     int i=0;
@@ -1080,6 +1233,12 @@ static int read_extra_header(FFV1Context *f){
     f->chroma_v_shift= get_symbol(c, state, 0);
     get_rac(c, state); //transparency plane
     f->plane_count= 2;
+    f->num_h_slices= 1 + get_symbol(c, state, 0);
+    f->num_v_slices= 1 + get_symbol(c, state, 0);
+    if(f->num_h_slices > 256U || f->num_v_slices > 256U || f->num_h_slices*f->num_v_slices > MAX_SLICES){
+        av_log(f->avctx, AV_LOG_ERROR, "too many slices\n");
+        return -1;
+    }
 
     f->quant_table_count= get_symbol(c, state, 0);
     if(f->quant_table_count > (unsigned)MAX_QUANT_TABLES)
@@ -1096,8 +1255,8 @@ static int read_extra_header(FFV1Context *f){
 
 static int read_header(FFV1Context *f){
     uint8_t state[CONTEXT_SIZE];
-    int i, context_count;
-    RangeCoder * const c= &f->c;
+    int i, j, context_count;
+    RangeCoder * const c= &f->slice_context[0]->c;
 
     memset(state, 128, sizeof(state));
 
@@ -1169,16 +1328,19 @@ static int read_header(FFV1Context *f){
         memcpy(f->quant_table, f->quant_tables[i], sizeof(f->quant_table));
         context_count= f->context_count[i];
     }
+    for(j=0; j<f->slice_count; j++){
+        FFV1Context *fs= f->slice_context[j];
+        memcpy(fs->quant_table, f->quant_table, sizeof(fs->quant_table));
+        fs->ac= f->ac;
     for(i=0; i<f->plane_count; i++){
-        PlaneContext * const p= &f->plane[i];
+        PlaneContext * const p= &fs->plane[i];
 
-        p->context_count= context_count;
-
-        if(f->ac){
-            if(!p->state) p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
-        }else{
-            if(!p->vlc_state) p->vlc_state= av_malloc(p->context_count*sizeof(VlcState));
+        if(p->context_count < context_count){
+            av_freep(&p->state);
+            av_freep(&p->vlc_state);
         }
+        p->context_count= context_count;
+    }
     }
 
     return 0;
@@ -1190,8 +1352,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     common_init(avctx);
 
-    if(avctx->extradata)
-        return read_extra_header(f);
+    if(avctx->extradata && read_extra_header(f) < 0)
+        return -1;
+
+    if(init_slice_contexts(f) < 0)
+        return -1;
 
     return 0;
 }
@@ -1200,12 +1365,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     FFV1Context *f = avctx->priv_data;
-    RangeCoder * const c= &f->c;
-    const int width= f->width;
-    const int height= f->height;
+    RangeCoder * const c= &f->slice_context[0]->c;
     AVFrame * const p= &f->picture;
-    int bytes_read;
+    int bytes_read, i;
     uint8_t keystate= 128;
+    const uint8_t *buf_p;
 
     AVFrame *picture = data;
 
@@ -1218,6 +1382,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         p->key_frame= 1;
         if(read_header(f) < 0)
             return -1;
+        if(init_slice_state(f) < 0)
+            return -1;
+
         clear_state(f);
     }else{
         p->key_frame= 0;
@@ -1229,9 +1396,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             c->zero_state[256-i]= 256-c->one_state[i];
         }
     }
-
-    if(!f->plane[0].state && !f->plane[0].vlc_state)
-        return -1;
 
     p->reference= 0;
     if(avctx->get_buffer(avctx, p) < 0){
@@ -1246,24 +1410,28 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         bytes_read = c->bytestream - c->bytestream_start - 1;
         if(bytes_read ==0) av_log(avctx, AV_LOG_ERROR, "error at end of AC stream\n"); //FIXME
 //printf("pos=%d\n", bytes_read);
-        init_get_bits(&f->gb, buf + bytes_read, buf_size - bytes_read);
+        init_get_bits(&f->slice_context[0]->gb, buf + bytes_read, buf_size - bytes_read);
     } else {
         bytes_read = 0; /* avoid warning */
     }
 
-    if(f->colorspace==0){
-        const int chroma_width = -((-width )>>f->chroma_h_shift);
-        const int chroma_height= -((-height)>>f->chroma_v_shift);
-        decode_plane(f, p->data[0], width, height, p->linesize[0], 0);
-
-        decode_plane(f, p->data[1], chroma_width, chroma_height, p->linesize[1], 1);
-        decode_plane(f, p->data[2], chroma_width, chroma_height, p->linesize[2], 1);
-    }else{
-        decode_rgb_frame(f, (uint32_t*)p->data[0], width, height, p->linesize[0]/4);
+    buf_p= buf + buf_size;
+    for(i=f->slice_count-1; i>0; i--){
+        FFV1Context *fs= f->slice_context[i];
+        int v= AV_RB24(buf_p-3)+3;
+        if(buf_p - buf <= v){
+            av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
+            return -1;
+        }
+        buf_p -= v;
+        if(fs->ac){
+            ff_init_range_decoder(&fs->c, buf_p, v);
+        }else{
+            init_get_bits(&fs->gb, buf_p, v);
+        }
     }
 
-    emms_c();
-
+    avctx->execute(avctx, decode_slice, &f->slice_context[0], NULL, f->slice_count, sizeof(void*));
     f->picture_number++;
 
     *picture= *p;
@@ -1272,14 +1440,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     *data_size = sizeof(AVFrame);
 
-    if(f->ac){
-        bytes_read= c->bytestream - c->bytestream_start - 1;
-        if(bytes_read ==0) av_log(f->avctx, AV_LOG_ERROR, "error at end of frame\n");
-    }else{
-        bytes_read+= (get_bits_count(&f->gb)+7)/8;
-    }
-
-    return bytes_read;
+    return buf_size;
 }
 
 AVCodec ffv1_decoder = {
