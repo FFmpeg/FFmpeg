@@ -216,6 +216,7 @@ typedef struct VlcState{
 } VlcState;
 
 typedef struct PlaneContext{
+    int16_t quant_table[5][256];
     int context_count;
     uint8_t (*state)[CONTEXT_SIZE];
     VlcState *vlc_state;
@@ -280,19 +281,19 @@ static inline int predict(int_fast16_t *src, int_fast16_t *last){
     return mid_pred(L, L + T - LT, T);
 }
 
-static inline int get_context(FFV1Context *f, int_fast16_t *src, int_fast16_t *last, int_fast16_t *last2){
+static inline int get_context(PlaneContext *p, int_fast16_t *src, int_fast16_t *last, int_fast16_t *last2){
     const int LT= last[-1];
     const int  T= last[ 0];
     const int RT= last[ 1];
     const int L =  src[-1];
 
-    if(f->quant_table[3][127]){
+    if(p->quant_table[3][127]){
         const int TT= last2[0];
         const int LL=  src[-2];
-        return f->quant_table[0][(L-LT) & 0xFF] + f->quant_table[1][(LT-T) & 0xFF] + f->quant_table[2][(T-RT) & 0xFF]
-              +f->quant_table[3][(LL-L) & 0xFF] + f->quant_table[4][(TT-T) & 0xFF];
+        return p->quant_table[0][(L-LT) & 0xFF] + p->quant_table[1][(LT-T) & 0xFF] + p->quant_table[2][(T-RT) & 0xFF]
+              +p->quant_table[3][(LL-L) & 0xFF] + p->quant_table[4][(TT-T) & 0xFF];
     }else
-        return f->quant_table[0][(L-LT) & 0xFF] + f->quant_table[1][(LT-T) & 0xFF] + f->quant_table[2][(T-RT) & 0xFF];
+        return p->quant_table[0][(L-LT) & 0xFF] + p->quant_table[1][(LT-T) & 0xFF] + p->quant_table[2][(T-RT) & 0xFF];
 }
 
 static inline void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int is_signed){
@@ -470,7 +471,7 @@ static inline int encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], in
     for(x=0; x<w; x++){
         int diff, context;
 
-        context= get_context(s, sample[0]+x, sample[1]+x, sample[2]+x);
+        context= get_context(p, sample[0]+x, sample[1]+x, sample[2]+x);
         diff= sample[0][x] - predict(sample[0]+x, sample[1]+x);
 
         if(context < 0){
@@ -641,7 +642,8 @@ static void write_header(FFV1Context *f){
 
     write_quant_tables(c, f->quant_table);
     }else{
-        put_symbol(c, state, f->avctx->context_model, 0);
+        for(i=0; i<f->slice_count * f->plane_count; i++)
+            put_symbol(c, state, f->avctx->context_model, 0);
     }
 }
 #endif /* CONFIG_FFV1_ENCODER */
@@ -800,6 +802,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     for(i=0; i<s->plane_count; i++){
         PlaneContext * const p= &s->plane[i];
 
+        memcpy(p->quant_table, s->quant_table, sizeof(p->quant_table));
         if(avctx->context_model==0){
             p->context_count= (11*11*11+1)/2;
         }else{
@@ -1017,7 +1020,7 @@ static av_always_inline void decode_line(FFV1Context *s, int w, int_fast16_t *sa
     for(x=0; x<w; x++){
         int diff, context, sign;
 
-        context= get_context(s, sample[1] + x, sample[0] + x, sample[1] + x);
+        context= get_context(p, sample[1] + x, sample[0] + x, sample[1] + x);
         if(context < 0){
             context= -context;
             sign=1;
@@ -1320,21 +1323,24 @@ static int read_header(FFV1Context *f){
             return -1;
         }
 
-    }else{
-        i=get_symbol(c, state, 0);
-        if(i > (unsigned)f->quant_table_count){
-            av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
-            return -1;
-        }
-        memcpy(f->quant_table, f->quant_tables[i], sizeof(f->quant_table));
-        context_count= f->context_count[i];
     }
     for(j=0; j<f->slice_count; j++){
         FFV1Context *fs= f->slice_context[j];
-        memcpy(fs->quant_table, f->quant_table, sizeof(fs->quant_table));
         fs->ac= f->ac;
     for(i=0; i<f->plane_count; i++){
         PlaneContext * const p= &fs->plane[i];
+
+        if(f->version >= 2){
+            int idx=get_symbol(c, state, 0);
+            if(idx > (unsigned)f->quant_table_count){
+                av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
+                return -1;
+            }
+            memcpy(p->quant_table, f->quant_tables[idx], sizeof(p->quant_table));
+            context_count= f->context_count[idx];
+        }else{
+            memcpy(p->quant_table, f->quant_table, sizeof(p->quant_table));
+        }
 
         if(p->context_count < context_count){
             av_freep(&p->state);
