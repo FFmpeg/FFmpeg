@@ -1024,6 +1024,7 @@ static av_always_inline void decode_line(FFV1Context *s, int w, int_fast16_t *sa
         }else
             sign=0;
 
+        av_assert2(context < p->context_count);
 
         if(s->ac){
             diff= get_symbol_inline(c, p->state[context], 1);
