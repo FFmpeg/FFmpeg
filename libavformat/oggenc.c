@@ -206,14 +206,14 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
 }
 
 static uint8_t *ogg_write_vorbiscomment(int offset, int bitexact,
-                                        int *header_len, AVMetadata *m, int framing_bit)
+                                        int *header_len, AVMetadata **m, int framing_bit)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
     int size;
     uint8_t *p, *p0;
     unsigned int count;
 
-    size = offset + ff_vorbiscomment_length(m, vendor, &count) + framing_bit;
+    size = offset + ff_vorbiscomment_length(*m, vendor, &count) + framing_bit;
     p = av_mallocz(size);
     if (!p)
         return NULL;
@@ -230,7 +230,7 @@ static uint8_t *ogg_write_vorbiscomment(int offset, int bitexact,
 
 static int ogg_build_flac_headers(AVCodecContext *avctx,
                                   OGGStreamContext *oggstream, int bitexact,
-                                  AVMetadata *m)
+                                  AVMetadata **m)
 {
     enum FLACExtradataFormat format;
     uint8_t *streaminfo;
@@ -270,7 +270,7 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
 
 static int ogg_build_speex_headers(AVCodecContext *avctx,
                                    OGGStreamContext *oggstream, int bitexact,
-                                   AVMetadata *m)
+                                   AVMetadata **m)
 {
     uint8_t *p;
 
@@ -338,7 +338,7 @@ static int ogg_write_header(AVFormatContext *s)
         if (st->codec->codec_id == CODEC_ID_FLAC) {
             int err = ogg_build_flac_headers(st->codec, oggstream,
                                              st->codec->flags & CODEC_FLAG_BITEXACT,
-                                             s->metadata);
+                                             &s->metadata);
             if (err) {
                 av_log(s, AV_LOG_ERROR, "Error writing FLAC headers\n");
                 av_freep(&st->priv_data);
@@ -347,7 +347,7 @@ static int ogg_write_header(AVFormatContext *s)
         } else if (st->codec->codec_id == CODEC_ID_SPEEX) {
             int err = ogg_build_speex_headers(st->codec, oggstream,
                                               st->codec->flags & CODEC_FLAG_BITEXACT,
-                                              s->metadata);
+                                              &s->metadata);
             if (err) {
                 av_log(s, AV_LOG_ERROR, "Error writing Speex headers\n");
                 av_freep(&st->priv_data);
@@ -368,7 +368,7 @@ static int ogg_write_header(AVFormatContext *s)
             }
 
             p = ogg_write_vorbiscomment(7, st->codec->flags & CODEC_FLAG_BITEXACT,
-                                        &oggstream->header_len[1], s->metadata,
+                                        &oggstream->header_len[1], &s->metadata,
                                         framing_bit);
             if (!p)
                 return AVERROR(ENOMEM);

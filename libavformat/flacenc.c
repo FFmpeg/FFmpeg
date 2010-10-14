@@ -39,14 +39,14 @@ static int flac_write_block_padding(ByteIOContext *pb, unsigned int n_padding_by
     return 0;
 }
 
-static int flac_write_block_comment(ByteIOContext *pb, AVMetadata *m,
+static int flac_write_block_comment(ByteIOContext *pb, AVMetadata **m,
                                     int last_block, int bitexact)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
     unsigned int len, count;
     uint8_t *p, *p0;
 
-    len = ff_vorbiscomment_length(m, vendor, &count);
+    len = ff_vorbiscomment_length(*m, vendor, &count);
     p0 = av_malloc(len+4);
     if (!p0)
         return AVERROR(ENOMEM);
@@ -72,7 +72,7 @@ static int flac_write_header(struct AVFormatContext *s)
     if (ret)
         return ret;
 
-    ret = flac_write_block_comment(s->pb, s->metadata, 0,
+    ret = flac_write_block_comment(s->pb, &s->metadata, 0,
                                    codec->flags & CODEC_FLAG_BITEXACT);
     if (ret)
         return ret;
