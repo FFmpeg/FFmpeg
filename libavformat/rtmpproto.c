@@ -38,10 +38,10 @@
 #include "rtmppkt.h"
 
 /* we can't use av_log() with URLContext yet... */
-#if LIBAVFORMAT_VERSION_MAJOR < 53
-#define LOG_CONTEXT NULL
-#else
+#if FF_API_URL_CLASS
 #define LOG_CONTEXT s
+#else
+#define LOG_CONTEXT NULL
 #endif
 
 //#define DEBUG
