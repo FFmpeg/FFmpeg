@@ -69,6 +69,9 @@
 #ifndef FF_API_PARSE_FRAME_PARAM
 #define FF_API_PARSE_FRAME_PARAM       (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_READ_SEEK
+#define FF_API_READ_SEEK               (LIBAVFORMAT_VERSION_MAJOR < 54)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got
@@ -392,7 +395,7 @@ typedef struct AVInputFormat {
      */
     int (*read_close)(struct AVFormatContext *);
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_READ_SEEK
     /**
      * Seek to a given timestamp relative to the frames in
      * stream component stream_index.
