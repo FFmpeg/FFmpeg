@@ -60,6 +60,9 @@
 #ifndef FF_API_UDP_GET_FILE
 #define FF_API_UDP_GET_FILE       (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_URL_SPLIT
+#define FF_API_URL_SPLIT          (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got

@@ -3526,7 +3526,7 @@ void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload)
     pkt_dump_internal(avcl, NULL, level, pkt, dump_payload);
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_URL_SPLIT
 attribute_deprecated
 void ff_url_split(char *proto, int proto_size,
                   char *authorization, int authorization_size,

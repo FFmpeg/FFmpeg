@@ -101,7 +101,7 @@ int ff_probe_input_buffer(ByteIOContext **pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size);
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_URL_SPLIT
 /**
  * @deprecated use av_url_split() instead
  */
