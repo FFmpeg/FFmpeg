@@ -189,7 +189,7 @@ static int match_format(const char *name, const char *names)
     return !strcasecmp(name, names);
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_GUESS_FORMAT
 AVOutputFormat *guess_format(const char *short_name, const char *filename,
                              const char *mime_type)
 {
@@ -234,7 +234,7 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
     return fmt_found;
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_GUESS_FORMAT
 AVOutputFormat *guess_stream_format(const char *short_name, const char *filename,
                              const char *mime_type)
 {

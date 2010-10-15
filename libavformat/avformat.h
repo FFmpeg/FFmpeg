@@ -54,6 +54,9 @@
 #ifndef FF_API_REGISTER_PROTOCOL
 #define FF_API_REGISTER_PROTOCOL  (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_GUESS_FORMAT
+#define FF_API_GUESS_FORMAT       (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got
@@ -898,7 +901,7 @@ enum CodecID av_guess_image2_codec(const char *filename);
 /* utils.c */
 void av_register_input_format(AVInputFormat *format);
 void av_register_output_format(AVOutputFormat *format);
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_GUESS_FORMAT
 attribute_deprecated AVOutputFormat *guess_stream_format(const char *short_name,
                                     const char *filename,
                                     const char *mime_type);
