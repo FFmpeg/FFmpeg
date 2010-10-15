@@ -30,9 +30,9 @@ static int failures = 0;
 static void probe(AVProbeData *pd, int type, int p, int size)
 {
     int i = 0;
-    AVInputFormat *fmt;
+    AVInputFormat *fmt = NULL;
 
-    for (fmt = first_iformat; fmt != NULL; fmt = fmt->next) {
+    while ((fmt = av_iformat_next(fmt))) {
         if (fmt->flags & AVFMT_NOFILE)
             continue;
         if (fmt->read_probe) {
