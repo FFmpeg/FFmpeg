@@ -92,6 +92,10 @@ static const char *http_state[] = {
     "RTSP_SEND_PACKET",
 };
 
+#if !FF_API_MAX_STREAMS
+#define MAX_STREAMS 20
+#endif
+
 #define IOBUFFER_INIT_SIZE 8192
 
 /* timeouts are in ms */
