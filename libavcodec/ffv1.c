@@ -618,7 +618,7 @@ static void write_quant_tables(RangeCoder *c, int16_t quant_table[5][256]){
 
 static void write_header(FFV1Context *f){
     uint8_t state[CONTEXT_SIZE];
-    int i;
+    int i, j;
     RangeCoder * const c= &f->slice_context[0]->c;
 
     memset(state, 128, sizeof(state));
@@ -642,8 +642,16 @@ static void write_header(FFV1Context *f){
 
         write_quant_tables(c, f->quant_table);
     }else{
-        for(i=0; i<f->slice_count * f->plane_count; i++)
+        put_symbol(c, state, f->slice_count, 0);
+        for(i=0; i<f->slice_count; i++){
+            FFV1Context *fs= f->slice_context[i];
+            put_symbol(c, state, (fs->slice_x     +1)*f->num_h_slices / f->width   , 0);
+            put_symbol(c, state, (fs->slice_y     +1)*f->num_v_slices / f->height  , 0);
+            put_symbol(c, state, (fs->slice_width +1)*f->num_h_slices / f->width -1, 0);
+            put_symbol(c, state, (fs->slice_height+1)*f->num_v_slices / f->height-1, 0);
+            for(j=0; j<f->plane_count; j++)
             put_symbol(c, state, f->avctx->context_model, 0);
+        }
     }
 }
 #endif /* CONFIG_FFV1_ENCODER */
@@ -757,7 +765,7 @@ static av_cold int init_slice_contexts(FFV1Context *f){
         fs->slice_x     = sxs;
         fs->slice_y     = sys;
 
-        fs->sample_buffer = av_malloc(6 * (fs->slice_width+6) * sizeof(*fs->sample_buffer));
+        fs->sample_buffer = av_malloc(6 * (fs->width+6) * sizeof(*fs->sample_buffer));
         if (!fs->sample_buffer)
             return AVERROR(ENOMEM);
     }
@@ -1239,7 +1247,7 @@ static int read_extra_header(FFV1Context *f){
     f->plane_count= 2;
     f->num_h_slices= 1 + get_symbol(c, state, 0);
     f->num_v_slices= 1 + get_symbol(c, state, 0);
-    if(f->num_h_slices > 256U || f->num_v_slices > 256U || f->num_h_slices*f->num_v_slices > MAX_SLICES){
+    if(f->num_h_slices > (unsigned)f->width || f->num_v_slices > (unsigned)f->height){
         av_log(f->avctx, AV_LOG_ERROR, "too many slices\n");
         return -1;
     }
@@ -1322,10 +1330,33 @@ static int read_header(FFV1Context *f){
                 av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
                 return -1;
         }
+    }else{
+        f->slice_count= get_symbol(c, state, 0);
+        if(f->slice_count > (unsigned)MAX_SLICES)
+            return -1;
     }
+
     for(j=0; j<f->slice_count; j++){
         FFV1Context *fs= f->slice_context[j];
         fs->ac= f->ac;
+
+        if(f->version >= 2){
+            fs->slice_x     = get_symbol(c, state, 0)   *f->width ;
+            fs->slice_y     = get_symbol(c, state, 0)   *f->height;
+            fs->slice_width =(get_symbol(c, state, 0)+1)*f->width  + fs->slice_x;
+            fs->slice_height=(get_symbol(c, state, 0)+1)*f->height + fs->slice_y;
+
+            fs->slice_x /= f->num_h_slices;
+            fs->slice_y /= f->num_v_slices;
+            fs->slice_width  = fs->slice_width /f->num_h_slices - fs->slice_x;
+            fs->slice_height = fs->slice_height/f->num_v_slices - fs->slice_y;
+            if((unsigned)fs->slice_width > f->width || (unsigned)fs->slice_height > f->height)
+                return -1;
+            if(    (unsigned)fs->slice_x + (uint64_t)fs->slice_width  > f->width
+                || (unsigned)fs->slice_y + (uint64_t)fs->slice_height > f->height)
+                return -1;
+        }
+
         for(i=0; i<f->plane_count; i++){
             PlaneContext * const p= &fs->plane[i];
 
