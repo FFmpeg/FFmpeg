@@ -195,7 +195,6 @@ AVInputFormat mp3_demuxer = {
     mp3_read_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "mp2,mp3,m2a", /* XXX: use probe */
-    .metadata_conv = ff_id3v2_metadata_conv,
 };
 #endif
 
@@ -294,7 +293,6 @@ AVOutputFormat mp2_muxer = {
     NULL,
     mp3_write_packet,
     mp3_write_trailer,
-    .metadata_conv = ff_id3v2_metadata_conv,
 };
 #endif
 
@@ -317,6 +315,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     size_pos = url_ftell(s->pb);
     put_be32(s->pb, 0);
 
+    metadata_conv(&s->metadata, ff_id3v2_metadata_conv, NULL);
     while ((t = av_metadata_get(s->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
         uint32_t tag = 0;
 
@@ -366,6 +365,5 @@ AVOutputFormat mp3_muxer = {
     mp3_write_packet,
     mp3_write_trailer,
     AVFMT_NOTIMESTAMPS,
-    .metadata_conv = ff_id3v2_metadata_conv,
 };
 #endif

@@ -13,6 +13,11 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-10-15 - r25493 - lavf 52.83.0 - metadata API
+  Change demuxers to export metadata in generic format and
+  muxers to accept generic format. Deprecate the public
+  conversion API.
+
 2010-10-10 - r25441 - lavfi 1.49.0 - AVFilterLink.time_base
   Add time_base field to AVFilterLink.
 

@@ -133,5 +133,4 @@ AVInputFormat flac_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "flac",
     .value = CODEC_ID_FLAC,
-    .metadata_conv = ff_vorbiscomment_metadata_conv,
 };

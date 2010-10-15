@@ -201,6 +201,5 @@ AVInputFormat oma_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "oma,aa3",
     .codec_tag= (const AVCodecTag* const []){codec_oma_tags, 0},
-    .metadata_conv = ff_id3v2_metadata_conv,
 };
 

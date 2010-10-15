@@ -1048,6 +1048,7 @@ static void matroska_convert_tag(AVFormatContext *s, EbmlList *list,
                 matroska_convert_tag(s, &tags[i].sub, metadata, key);
         }
     }
+    metadata_conv(metadata, NULL, ff_mkv_metadata_conv);
 }
 
 static void matroska_convert_tags(AVFormatContext *s)
@@ -1923,5 +1924,4 @@ AVInputFormat matroska_demuxer = {
     matroska_read_packet,
     matroska_read_close,
     matroska_read_seek,
-    .metadata_conv = ff_mkv_metadata_conv,
 };

@@ -128,5 +128,4 @@ AVOutputFormat flac_muxer = {
     flac_write_packet,
     flac_write_trailer,
     .flags= AVFMT_NOTIMESTAMPS,
-    .metadata_conv = ff_vorbiscomment_metadata_conv,
 };

@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 82
+#define LIBAVFORMAT_VERSION_MINOR 83
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -137,10 +137,9 @@ struct AVFormatContext;
  *       sorting will have '-sort' appended. E.g. artist="The Beatles",
  *       artist-sort="Beatles, The".
  *
- * 4. Tag names are normally exported exactly as stored in the container to
- *    allow lossless remuxing to the same format. For container-independent
- *    handling of metadata, av_metadata_conv() can convert it to ffmpeg generic
- *    format. Follows a list of generic tag names:
+ * 4. Demuxers attempt to export metadata in a generic format, however tags
+ *    with no generic equivalents are left as they are stored in the container.
+ *    Follows a list of generic tag names:
  *
  * album        -- name of the set this work belongs to
  * album_artist -- main creator of the set/album, if different from artist.
@@ -177,7 +176,9 @@ typedef struct {
 }AVMetadataTag;
 
 typedef struct AVMetadata AVMetadata;
+#if FF_API_OLD_METADATA
 typedef struct AVMetadataConv AVMetadataConv;
+#endif
 
 /**
  * Get a metadata element with matching key.
@@ -216,16 +217,13 @@ attribute_deprecated int av_metadata_set(AVMetadata **pm, const char *key, const
  */
 int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int flags);
 
+#if FF_API_OLD_METADATA
 /**
- * Convert all the metadata sets from ctx according to the source and
- * destination conversion tables. If one of the tables is NULL, then
- * tags are converted to/from ffmpeg generic tag names.
- *
- * @param d_conv destination tags format conversion table
- * @param s_conv source tags format conversion table
+ * This function is provided for compatibility reason and currently does nothing.
  */
-void av_metadata_conv(struct AVFormatContext *ctx, const AVMetadataConv *d_conv,
-                                                   const AVMetadataConv *s_conv);
+attribute_deprecated void av_metadata_conv(struct AVFormatContext *ctx, const AVMetadataConv *d_conv,
+                                                                        const AVMetadataConv *s_conv);
+#endif
 
 /**
  * Free all the memory allocated for an AVMetadata struct.
@@ -349,7 +347,9 @@ typedef struct AVOutputFormat {
 
     enum CodecID subtitle_codec; /**< default subtitle codec */
 
+#if FF_API_OLD_METADATA
     const AVMetadataConv *metadata_conv;
+#endif
 
     /* private fields */
     struct AVOutputFormat *next;
@@ -465,7 +465,9 @@ typedef struct AVInputFormat {
      */
     int (*read_seek2)(struct AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
 
+#if FF_API_OLD_METADATA
     const AVMetadataConv *metadata_conv;
+#endif
 
     /* private fields */
     struct AVInputFormat *next;

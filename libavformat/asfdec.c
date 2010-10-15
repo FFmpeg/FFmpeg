@@ -659,6 +659,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
     }
 
+    metadata_conv(&s->metadata, NULL, ff_asf_metadata_conv);
+
     return 0;
 }
 
@@ -1235,5 +1237,4 @@ AVInputFormat asf_demuxer = {
     asf_read_close,
     asf_read_seek,
     asf_read_pts,
-    .metadata_conv = ff_asf_metadata_conv,
 };

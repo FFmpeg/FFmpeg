@@ -491,6 +491,8 @@ static int write_headers(AVFormatContext *avctx, ByteIOContext *bc){
     ByteIOContext *dyn_bc;
     int i, ret;
 
+    ff_metadata_conv_ctx(avctx, ff_nut_metadata_conv, NULL);
+
     ret = url_open_dyn_buf(&dyn_bc);
     if(ret < 0)
         return ret;
@@ -810,5 +812,4 @@ AVOutputFormat nut_muxer = {
     write_trailer,
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag * const []){ ff_codec_bmp_tags, ff_nut_video_tags, ff_codec_wav_tags, ff_nut_subtitle_tags, 0 },
-    .metadata_conv = ff_nut_metadata_conv,
 };

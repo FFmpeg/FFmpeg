@@ -752,6 +752,8 @@ static int mkv_write_tags(AVFormatContext *s)
     ebml_master tags = {0};
     int i, ret;
 
+    ff_metadata_conv_ctx(s, ff_mkv_metadata_conv, NULL);
+
     if (av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX)) {
         ret = mkv_write_tag(s, s->metadata, 0, 0, &tags);
         if (ret < 0) return ret;
@@ -1186,7 +1188,6 @@ AVOutputFormat matroska_muxer = {
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .subtitle_codec = CODEC_ID_TEXT,
-    .metadata_conv = ff_mkv_metadata_conv,
 };
 #endif
 
@@ -1220,6 +1221,5 @@ AVOutputFormat matroska_audio_muxer = {
     mkv_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
-    .metadata_conv = ff_mkv_metadata_conv,
 };
 #endif

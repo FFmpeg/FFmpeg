@@ -290,12 +290,7 @@ static int avi_write_header(AVFormatContext *s)
             return -1;
         }
         ff_end_tag(pb, strf);
-        if ((t = av_metadata_get(s->streams[i]->metadata, "strn", NULL, 0))) {
-            avi_write_info_tag(s->pb, t->key, t->value);
-            t = NULL;
-        }
-        //FIXME a limitation of metadata conversion system
-        else if ((t = av_metadata_get(s->streams[i]->metadata, "INAM", NULL, 0))) {
+        if ((t = av_metadata_get(s->streams[i]->metadata, "title", NULL, 0))) {
             avi_write_info_tag(s->pb, "strn", t->value);
             t = NULL;
         }
@@ -375,6 +370,7 @@ static int avi_write_header(AVFormatContext *s)
 
     list2 = ff_start_tag(pb, "LIST");
     put_tag(pb, "INFO");
+    metadata_conv(&s->metadata, ff_avi_metadata_conv, NULL);
     for (i = 0; *ff_avi_tags[i]; i++) {
         if ((t = av_metadata_get(s->metadata, ff_avi_tags[i], NULL, AV_METADATA_MATCH_CASE)))
             avi_write_info_tag(s->pb, t->key, t->value);
@@ -647,5 +643,4 @@ AVOutputFormat avi_muxer = {
     avi_write_trailer,
     .codec_tag= (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .flags= AVFMT_VARIABLE_FPS,
-    .metadata_conv = ff_avi_metadata_conv,
 };

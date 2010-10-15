@@ -495,5 +495,4 @@ AVOutputFormat ogg_muxer = {
     ogg_write_header,
     ogg_write_packet,
     ogg_write_trailer,
-    .metadata_conv = ff_vorbiscomment_metadata_conv,
 };

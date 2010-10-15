@@ -23,6 +23,7 @@
 #include "id3v1.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
+#include "metadata.h"
 
 int ff_id3v2_match(const uint8_t *buf, const char * magic)
 {
@@ -249,6 +250,7 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
         /* Skip to end of tag */
         url_fseek(s->pb, next, SEEK_SET);
     }
+    metadata_conv(&s->metadata, NULL, ff_id3v2_metadata_conv);
 
     if (len > 0) {
         /* Skip padding */

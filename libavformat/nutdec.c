@@ -656,6 +656,8 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     assert(nut->next_startcode == SYNCPOINT_STARTCODE);
 
+    ff_metadata_conv_ctx(s, NULL, ff_nut_metadata_conv);
+
     return 0;
 }
 
@@ -931,7 +933,6 @@ AVInputFormat nut_demuxer = {
     nut_read_close,
     read_seek,
     .extensions = "nut",
-    .metadata_conv = ff_nut_metadata_conv,
     .codec_tag = (const AVCodecTag * const []) { ff_codec_bmp_tags, ff_nut_video_tags, ff_codec_wav_tags, ff_nut_subtitle_tags, 0 },
 };
 #endif

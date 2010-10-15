@@ -29,6 +29,7 @@
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "oggdec.h"
+#include "vorbiscomment.c"
 
 static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
 {
@@ -136,6 +137,8 @@ ff_vorbis_comment(AVFormatContext * as, AVMetadata **m, const uint8_t *buf, int 
     if (n > 0)
         av_log(as, AV_LOG_INFO,
                "truncated comment header, %i comments not found\n", n);
+
+    metadata_conv(m, NULL, ff_vorbiscomment_metadata_conv);
 
     return 0;
 }

@@ -693,6 +693,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         clean_index(s);
     }
 
+    ff_metadata_conv_ctx(s, NULL, ff_avi_metadata_conv);
+
     return 0;
 }
 
@@ -1332,5 +1334,4 @@ AVInputFormat avi_demuxer = {
     avi_read_packet,
     avi_read_close,
     avi_read_seek,
-    .metadata_conv = ff_avi_metadata_conv,
 };

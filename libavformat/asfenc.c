@@ -279,6 +279,8 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     int bit_rate;
     int64_t duration;
 
+    metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
+
     tags[0] = av_metadata_get(s->metadata, "title"    , NULL, 0);
     tags[1] = av_metadata_get(s->metadata, "author"   , NULL, 0);
     tags[2] = av_metadata_get(s->metadata, "copyright", NULL, 0);
@@ -870,7 +872,6 @@ AVOutputFormat asf_muxer = {
     asf_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag= (const AVCodecTag* const []){codec_asf_bmp_tags, ff_codec_bmp_tags, ff_codec_wav_tags, 0},
-    .metadata_conv = ff_asf_metadata_conv,
 };
 #endif
 
@@ -892,6 +893,5 @@ AVOutputFormat asf_stream_muxer = {
     asf_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag= (const AVCodecTag* const []){codec_asf_bmp_tags, ff_codec_bmp_tags, ff_codec_wav_tags, 0},
-    .metadata_conv = ff_asf_metadata_conv,
 };
 #endif //CONFIG_ASF_STREAM_MUXER

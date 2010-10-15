@@ -91,6 +91,12 @@ int av_metadata_set(AVMetadata **pm, const char *key, const char *value)
 {
     return av_metadata_set2(pm, key, value, 0);
 }
+
+void av_metadata_conv(AVFormatContext *ctx, const AVMetadataConv *d_conv,
+                                            const AVMetadataConv *s_conv)
+{
+    return;
+}
 #endif
 
 void av_metadata_free(AVMetadata **pm)
@@ -140,8 +146,8 @@ void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
     *pm = dst;
 }
 
-void av_metadata_conv(AVFormatContext *ctx, const AVMetadataConv *d_conv,
-                                            const AVMetadataConv *s_conv)
+void ff_metadata_conv_ctx(AVFormatContext *ctx, const AVMetadataConv *d_conv,
+                                                const AVMetadataConv *s_conv)
 {
     int i;
     metadata_conv(&ctx->metadata, d_conv, s_conv);
