@@ -78,6 +78,9 @@
 #ifndef FF_API_PARAMETERS_CODEC_ID
 #define FF_API_PARAMETERS_CODEC_ID     (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_FIRST_FORMAT
+#define FF_API_FIRST_FORMAT            (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got
@@ -895,7 +898,7 @@ typedef struct AVPacketList {
     struct AVPacketList *next;
 } AVPacketList;
 
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if FF_API_FIRST_FORMAT
 attribute_deprecated extern AVInputFormat *first_iformat;
 attribute_deprecated extern AVOutputFormat *first_oformat;
 #endif

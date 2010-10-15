@@ -110,8 +110,14 @@ static void av_frac_add(AVFrac *f, int64_t incr)
 }
 
 /** head of registered input format linked list */
+#if !FF_API_FIRST_FORMAT
+static
+#endif
 AVInputFormat *first_iformat = NULL;
 /** head of registered output format linked list */
+#if !FF_API_FIRST_FORMAT
+static
+#endif
 AVOutputFormat *first_oformat = NULL;
 
 AVInputFormat  *av_iformat_next(AVInputFormat  *f)
