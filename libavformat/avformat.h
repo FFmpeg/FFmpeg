@@ -262,8 +262,8 @@ typedef struct AVFormatParameters {
                                             immediately (RTSP only). */
     unsigned int prealloced_context:1;
 #if LIBAVFORMAT_VERSION_INT < (53<<16)
-    enum CodecID video_codec_id;
-    enum CodecID audio_codec_id;
+    attribute_deprecated enum CodecID video_codec_id;
+    attribute_deprecated enum CodecID audio_codec_id;
 #endif
 } AVFormatParameters;
 
@@ -386,8 +386,8 @@ typedef struct AVInputFormat {
      *              match is available.
      * @return >= 0 on success (but not necessarily the new offset)
      */
-    int (*read_seek)(struct AVFormatContext *,
-                     int stream_index, int64_t timestamp, int flags);
+    attribute_deprecated int (*read_seek)(struct AVFormatContext *,
+                                          int stream_index, int64_t timestamp, int flags);
 #endif
     /**
      * Gets the next timestamp in stream[stream_index].time_base units.
@@ -538,7 +538,7 @@ typedef struct AVStream {
     int64_t duration;
 
 #if FF_API_OLD_METADATA
-    char language[4]; /**< ISO 639-2/B 3-letter language code (empty string if undefined) */
+    attribute_deprecated char language[4]; /**< ISO 639-2/B 3-letter language code (empty string if undefined) */
 #endif
 
     /* av_read_frame() support */
@@ -557,11 +557,11 @@ typedef struct AVStream {
     int64_t nb_frames;                 ///< number of frames in this stream if known or 0
 
 #if LIBAVFORMAT_VERSION_INT < (53<<16)
-    int64_t unused[4+1];
+    attribute_deprecated int64_t unused[4+1];
 #endif
 
 #if FF_API_OLD_METADATA
-    char *filename; /**< source filename of the stream */
+    attribute_deprecated char *filename; /**< source filename of the stream */
 #endif
 
     int disposition; /**< AV_DISPOSITION_* bit field */
@@ -642,8 +642,8 @@ typedef struct AVStream {
 typedef struct AVProgram {
     int            id;
 #if FF_API_OLD_METADATA
-    char           *provider_name; ///< network name for DVB streams
-    char           *name;          ///< service name for DVB streams
+    attribute_deprecated char           *provider_name; ///< network name for DVB streams
+    attribute_deprecated char           *name;          ///< service name for DVB streams
 #endif
     int            flags;
     enum AVDiscard discard;        ///< selects which program to discard and which to feed to the caller
@@ -660,7 +660,7 @@ typedef struct AVChapter {
     AVRational time_base;   ///< time base in which the start/end timestamps are specified
     int64_t start, end;     ///< chapter start/end time in time_base units
 #if FF_API_OLD_METADATA
-    char *title;            ///< chapter title
+    attribute_deprecated char *title;            ///< chapter title
 #endif
     AVMetadata *metadata;
 } AVChapter;
@@ -693,14 +693,14 @@ typedef struct AVFormatContext {
     /* stream info */
     int64_t timestamp;
 #if FF_API_OLD_METADATA
-    char title[512];
-    char author[512];
-    char copyright[512];
-    char comment[512];
-    char album[512];
-    int year;  /**< ID3 year, 0 if none */
-    int track; /**< track number, 0 if none */
-    char genre[32]; /**< ID3 genre */
+    attribute_deprecated char title[512];
+    attribute_deprecated char author[512];
+    attribute_deprecated char copyright[512];
+    attribute_deprecated char comment[512];
+    attribute_deprecated char album[512];
+    attribute_deprecated int year;  /**< ID3 year, 0 if none */
+    attribute_deprecated int track; /**< track number, 0 if none */
+    attribute_deprecated char genre[32]; /**< ID3 genre */
 #endif
 
     int ctx_flags; /**< Format-specific flags, see AVFMTCTX_xx */
@@ -872,8 +872,8 @@ typedef struct AVPacketList {
 } AVPacketList;
 
 #if LIBAVFORMAT_VERSION_INT < (53<<16)
-extern AVInputFormat *first_iformat;
-extern AVOutputFormat *first_oformat;
+attribute_deprecated extern AVInputFormat *first_iformat;
+attribute_deprecated extern AVOutputFormat *first_oformat;
 #endif
 
 /**
