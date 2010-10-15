@@ -75,6 +75,9 @@
 #ifndef FF_API_LAVF_UNUSED
 #define FF_API_LAVF_UNUSED             (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_PARAMETERS_CODEC_ID
+#define FF_API_PARAMETERS_CODEC_ID     (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got
@@ -282,7 +285,7 @@ typedef struct AVFormatParameters {
     unsigned int initial_pause:1;       /**< Do not begin to play the stream
                                             immediately (RTSP only). */
     unsigned int prealloced_context:1;
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if FF_API_PARAMETERS_CODEC_ID
     attribute_deprecated enum CodecID video_codec_id;
     attribute_deprecated enum CodecID audio_codec_id;
 #endif
