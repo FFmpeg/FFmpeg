@@ -1614,7 +1614,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVMuxContext *mov,
             mov_write_string_metadata(s, pb_buf, "\251aut", "author"     , 0);
             mov_write_string_metadata(s, pb_buf, "\251alb", "album"      , 0);
             mov_write_string_metadata(s, pb_buf, "\251day", "date"       , 0);
-            mov_write_string_tag(pb_buf, "\251enc", LIBAVFORMAT_IDENT, 0, 0);
+            mov_write_string_metadata(s, pb_buf, "\251swr", "encoder"    , 0);
             mov_write_string_metadata(s, pb_buf, "\251des", "comment"    , 0);
             mov_write_string_metadata(s, pb_buf, "\251gen", "genre"      , 0);
             mov_write_string_metadata(s, pb_buf, "\251cpy", "copyright"  , 0);
