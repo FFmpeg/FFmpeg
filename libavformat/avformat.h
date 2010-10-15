@@ -72,6 +72,9 @@
 #ifndef FF_API_READ_SEEK
 #define FF_API_READ_SEEK               (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
+#ifndef FF_API_LAVF_UNUSED
+#define FF_API_LAVF_UNUSED             (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got
@@ -574,7 +577,7 @@ typedef struct AVStream {
 
     int64_t nb_frames;                 ///< number of frames in this stream if known or 0
 
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if FF_API_LAVF_UNUSED
     attribute_deprecated int64_t unused[4+1];
 #endif
 
@@ -759,7 +762,7 @@ typedef struct AVFormatContext {
 
     /* av_read_frame() support */
     AVStream *cur_st;
-#if LIBAVFORMAT_VERSION_INT < (53<<16)
+#if FF_API_LAVF_UNUSED
     const uint8_t *cur_ptr_deprecated;
     int cur_len_deprecated;
     AVPacket cur_pkt_deprecated;
