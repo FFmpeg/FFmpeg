@@ -290,7 +290,7 @@ AVInputFormat *av_find_input_format(const char *short_name)
     return NULL;
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53 && CONFIG_SHARED && HAVE_SYMVER
+#if FF_API_SYMVER && CONFIG_SHARED && HAVE_SYMVER
 FF_SYMVER(void, av_destruct_packet_nofree, (AVPacket *pkt), "LIBAVFORMAT_52")
 {
     av_destruct_packet_nofree(pkt);

@@ -81,6 +81,9 @@
 #ifndef FF_API_FIRST_FORMAT
 #define FF_API_FIRST_FORMAT            (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_SYMVER
+#define FF_API_SYMVER                  (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got
