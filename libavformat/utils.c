@@ -3207,7 +3207,7 @@ void dump_format(AVFormatContext *ic,
     av_free(printed);
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_PARSE_FRAME_PARAM
 #include "libavcore/parseutils.h"
 
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str)

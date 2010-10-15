@@ -66,6 +66,9 @@
 #ifndef FF_API_ALLOC_FORMAT_CONTEXT
 #define FF_API_ALLOC_FORMAT_CONTEXT    (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_PARSE_FRAME_PARAM
+#define FF_API_PARSE_FRAME_PARAM       (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got
@@ -1425,7 +1428,7 @@ void dump_format(AVFormatContext *ic,
                  const char *url,
                  int is_output);
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_PARSE_FRAME_PARAM
 /**
  * Parse width and height out of string str.
  * @deprecated Use av_parse_video_frame_size instead.
