@@ -63,6 +63,9 @@
 #ifndef FF_API_URL_SPLIT
 #define FF_API_URL_SPLIT          (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_ALLOC_FORMAT_CONTEXT
+#define FF_API_ALLOC_FORMAT_CONTEXT    (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 /**
  * I return the LIBAVFORMAT_VERSION_INT constant.  You got
@@ -1071,7 +1074,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        int buf_size,
                        AVFormatParameters *ap);
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_ALLOC_FORMAT_CONTEXT
 /**
  * @deprecated Use avformat_alloc_context() instead.
  */

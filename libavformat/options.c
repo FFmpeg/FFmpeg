@@ -89,7 +89,7 @@ AVFormatContext *avformat_alloc_context(void)
     return ic;
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
+#if FF_API_ALLOC_FORMAT_CONTEXT
 AVFormatContext *av_alloc_format_context(void)
 {
     return avformat_alloc_context();
