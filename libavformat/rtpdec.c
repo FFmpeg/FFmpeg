@@ -471,8 +471,11 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
     if (!st) {
         /* specific MPEG2TS demux support */
         ret = ff_mpegts_parse_packet(s->ts, pkt, buf, len);
+        /* The only error that can be returned from ff_mpegts_parse_packet
+         * is "no more data to return from the provided buffer", so return
+         * AVERROR(EAGAIN) for all errors */
         if (ret < 0)
-            return ret;
+            return AVERROR(EAGAIN);
         if (ret < len) {
             s->read_buf_size = len - ret;
             memcpy(s->buf, buf + ret, s->read_buf_size);
@@ -634,7 +637,7 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
             ret = ff_mpegts_parse_packet(s->ts, pkt, s->buf + s->read_buf_index,
                                       s->read_buf_size - s->read_buf_index);
             if (ret < 0)
-                return ret;
+                return AVERROR(EAGAIN);
             s->read_buf_index += ret;
             if (s->read_buf_index < s->read_buf_size)
                 return 1;
