@@ -276,7 +276,7 @@ int udp_get_local_port(URLContext *h)
  * streams at the same time.
  * @param h media file context
  */
-#if (LIBAVFORMAT_VERSION_MAJOR >= 53)
+#if !FF_API_UDP_GET_FILE
 static
 #endif
 int udp_get_file_handle(URLContext *h)

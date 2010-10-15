@@ -562,7 +562,7 @@ void init_checksum(ByteIOContext *s,
 /* udp.c */
 int udp_set_remote_url(URLContext *h, const char *uri);
 int udp_get_local_port(URLContext *h);
-#if (LIBAVFORMAT_VERSION_MAJOR <= 52)
+#if FF_API_UDP_GET_FILE
 int udp_get_file_handle(URLContext *h);
 #endif
 
