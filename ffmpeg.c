@@ -3756,6 +3756,7 @@ static void opt_output_file(const char *filename)
 
         while ((tag = av_metadata_get(metadata, "", tag, AV_METADATA_IGNORE_SUFFIX)))
             av_metadata_set2(&oc->metadata, tag->key, tag->value, 0);
+        av_metadata_free(&metadata);
     }
 
     output_files[nb_output_files++] = oc;
