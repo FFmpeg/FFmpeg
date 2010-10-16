@@ -3730,27 +3730,13 @@ static void opt_output_file(const char *filename)
         }
 
         /* manual disable */
-        if (audio_disable) {
-            use_audio = 0;
-        }
-        if (video_disable) {
-            use_video = 0;
-        }
-        if (subtitle_disable) {
-            use_subtitle = 0;
-        }
+        if (audio_disable)    use_audio    = 0;
+        if (video_disable)    use_video    = 0;
+        if (subtitle_disable) use_subtitle = 0;
 
-        if (use_video) {
-            new_video_stream(oc, nb_output_files);
-        }
-
-        if (use_audio) {
-            new_audio_stream(oc, nb_output_files);
-        }
-
-        if (use_subtitle) {
-            new_subtitle_stream(oc, nb_output_files);
-        }
+        if (use_video)    new_video_stream(oc, nb_output_files);
+        if (use_audio)    new_audio_stream(oc, nb_output_files);
+        if (use_subtitle) new_subtitle_stream(oc, nb_output_files);
 
         oc->timestamp = recording_timestamp;
 
