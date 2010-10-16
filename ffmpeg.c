@@ -300,6 +300,9 @@ typedef struct AVOutputStream {
     FILE *logfile;
 } AVOutputStream;
 
+static AVOutputStream **output_streams_for_file[MAX_FILES] = { NULL };
+static int nb_output_streams_for_file[MAX_FILES] = { 0 };
+
 typedef struct AVInputStream {
     int file_index;
     int index;
@@ -570,6 +573,7 @@ static int ffmpeg_exit(int ret)
         av_metadata_free(&s->metadata);
         av_free(s);
         av_free(bitstream_filters[i]);
+        av_free(output_streams_for_file[i]);
     }
     for(i=0;i<nb_input_files;i++) {
         av_close_input_file(input_files[i]);
@@ -2037,21 +2041,12 @@ static int transcode(AVFormatContext **output_files,
     ost_table = av_mallocz(sizeof(AVOutputStream *) * nb_ostreams);
     if (!ost_table)
         goto fail;
-    for(i=0;i<nb_ostreams;i++) {
-        ost = av_mallocz(sizeof(AVOutputStream));
-        if (!ost)
-            goto fail;
-        ost_table[i] = ost;
-    }
-
     n = 0;
     for(k=0;k<nb_output_files;k++) {
         os = output_files[k];
         for(i=0;i<os->nb_streams;i++,n++) {
             int found;
-            ost = ost_table[n];
-            ost->file_index = k;
-            ost->index = i;
+            ost = ost_table[n] = output_streams_for_file[k][i];
             ost->st = os->streams[i];
             if (nb_stream_maps > 0) {
                 ost->source_index = file_table[stream_maps[n].file_index].ist_index +
@@ -3356,9 +3351,31 @@ static void check_audio_video_sub_inputs(int *has_video_ptr, int *has_audio_ptr,
     *has_subtitle_ptr = has_subtitle;
 }
 
+static AVOutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
+{
+    int idx = oc->nb_streams - 1;
+    AVOutputStream *ost;
+
+    output_streams_for_file[file_idx] =
+        grow_array(output_streams_for_file[file_idx],
+                   sizeof(*output_streams_for_file[file_idx]),
+                   &nb_output_streams_for_file[file_idx],
+                   oc->nb_streams);
+    ost = output_streams_for_file[file_idx][idx] =
+        av_mallocz(sizeof(AVOutputStream));
+    if (!ost) {
+        fprintf(stderr, "Could not alloc output stream\n");
+        ffmpeg_exit(1);
+    }
+    ost->file_index = file_idx;
+    ost->index = idx;
+    return ost;
+}
+
 static void new_video_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
+    AVOutputStream *ost;
     AVCodecContext *video_enc;
     enum CodecID codec_id;
     AVCodec *codec= NULL;
@@ -3368,6 +3385,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
         fprintf(stderr, "Could not alloc stream\n");
         ffmpeg_exit(1);
     }
+    ost = new_output_stream(oc, file_idx);
 
     output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if(!video_stream_copy){
@@ -3503,6 +3521,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
 static void new_audio_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
+    AVOutputStream *ost;
     AVCodec *codec= NULL;
     AVCodecContext *audio_enc;
     enum CodecID codec_id;
@@ -3512,6 +3531,7 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
         fprintf(stderr, "Could not alloc stream\n");
         ffmpeg_exit(1);
     }
+    ost = new_output_stream(oc, file_idx);
 
     output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if(!audio_stream_copy){
@@ -3583,6 +3603,7 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
 static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
+    AVOutputStream *ost;
     AVCodec *codec=NULL;
     AVCodecContext *subtitle_enc;
 
@@ -3591,6 +3612,7 @@ static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
         fprintf(stderr, "Could not alloc stream\n");
         ffmpeg_exit(1);
     }
+    ost = new_output_stream(oc, file_idx);
     subtitle_enc = st->codec;
     output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if(!subtitle_stream_copy){
