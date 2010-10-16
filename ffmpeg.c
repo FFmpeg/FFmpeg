@@ -2398,8 +2398,6 @@ static int transcode(AVFormatContext **output_files,
         mtag=NULL;
         while((mtag=av_metadata_get(in_file->metadata, "", mtag, AV_METADATA_IGNORE_SUFFIX)))
             av_metadata_set2(&out_file->metadata, mtag->key, mtag->value, AV_METADATA_DONT_OVERWRITE);
-        av_metadata_conv(out_file, out_file->oformat->metadata_conv,
-                                    in_file->iformat->metadata_conv);
     }
 
     /* copy chapters from the first input file that has them*/
@@ -3763,7 +3761,6 @@ static void opt_output_file(const char *filename)
             av_metadata_set2(&oc->metadata, metadata[metadata_count-1].key,
                                             metadata[metadata_count-1].value, 0);
         }
-        av_metadata_conv(oc, oc->oformat->metadata_conv, NULL);
     }
 
     output_files[nb_output_files++] = oc;
