@@ -64,9 +64,6 @@ are prefixed by the string "TAG:".
 
 @table @option
 
-@item -convert_tags
-Convert the tag names in the format container to the generic FFmpeg tag names.
-
 @item -f @var{format}
 Force format to use.
 
