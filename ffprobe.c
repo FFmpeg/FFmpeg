@@ -219,8 +219,6 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     printf("r_frame_rate=%d/%d\n",         stream->r_frame_rate.num,   stream->r_frame_rate.den);
     printf("avg_frame_rate=%d/%d\n",       stream->avg_frame_rate.num, stream->avg_frame_rate.den);
     printf("time_base=%d/%d\n",            stream->time_base.num,      stream->time_base.den);
-    if (stream->language[0])
-        printf("language=%s\n",            stream->language);
     printf("start_time=%s\n",   time_value_string(val_str, sizeof(val_str), stream->start_time,
                                                   &stream->time_base));
     printf("duration=%s\n",     time_value_string(val_str, sizeof(val_str), stream->duration,
