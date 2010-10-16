@@ -384,7 +384,10 @@ static void http_vlog(const char *fmt, va_list vargs)
     }
 }
 
-static void __attribute__ ((format (printf, 1, 2))) http_log(const char *fmt, ...)
+#ifdef __GNUC__
+__attribute__ ((format (printf, 1, 2)))
+#endif
+static void http_log(const char *fmt, ...)
 {
     va_list vargs;
     va_start(vargs, fmt);
