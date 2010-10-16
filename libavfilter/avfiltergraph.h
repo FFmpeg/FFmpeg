@@ -70,6 +70,14 @@ int avfilter_graph_config_links(AVFilterGraph *graphctx, AVClass *log_ctx);
 int avfilter_graph_config_formats(AVFilterGraph *graphctx, AVClass *log_ctx);
 
 /**
+ * Check validity and configure all the links and formats in the graph.
+ *
+ * @see avfilter_graph_check_validity(), avfilter_graph_config_links(),
+ * avfilter_graph_config_formats()
+ */
+int avfilter_graph_config(AVFilterGraph *graphctx, AVClass *log_ctx);
+
+/**
  * Free a graph and destroy its links.
  */
 void avfilter_graph_destroy(AVFilterGraph *graph);

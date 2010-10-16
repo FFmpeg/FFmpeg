@@ -1849,9 +1849,8 @@ static int video_thread(void *arg)
     avfilter_graph_add_filter(graph, filt_src);
     avfilter_graph_add_filter(graph, filt_out);
 
-    if(avfilter_graph_check_validity(graph, NULL))           goto the_end;
-    if(avfilter_graph_config_formats(graph, NULL))           goto the_end;
-    if(avfilter_graph_config_links(graph, NULL))             goto the_end;
+    if (avfilter_graph_config(graph, NULL) < 0)
+        goto the_end;
 
     is->out_video_filter = filt_out;
 #endif

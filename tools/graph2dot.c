@@ -152,9 +152,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if (avfilter_graph_check_validity(graph, NULL) ||
-        avfilter_graph_config_formats(graph, NULL) ||
-        avfilter_graph_config_links  (graph, NULL))
+    if (avfilter_graph_config(graph, NULL) < 0)
         return 1;
 
     print_digraph(outfile, graph);

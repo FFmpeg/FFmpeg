@@ -452,12 +452,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
             return ret;
     }
 
-    /* configure all the filter links */
-    if ((ret = avfilter_graph_check_validity(graph, NULL)) < 0)
-        return ret;
-    if ((ret = avfilter_graph_config_formats(graph, NULL)) < 0)
-        return ret;
-    if ((ret = avfilter_graph_config_links(graph, NULL)) < 0)
+    if ((ret = avfilter_graph_config(graph, NULL)) < 0)
         return ret;
 
     codec->width  = ist->output_video_filter->inputs[0]->w;

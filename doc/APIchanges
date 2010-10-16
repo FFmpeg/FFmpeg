@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-10-16 - r25502 - lavfi 1.52.0 - avfilter_graph_config()
+  Add the function avfilter_graph_config() in avfiltergraph.h.
+
 2010-10-15 - r25493 - lavf 52.83.0 - metadata API
   Change demuxers to export metadata in generic format and
   muxers to accept generic format. Deprecate the public

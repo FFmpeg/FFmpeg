@@ -202,3 +202,16 @@ int avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
+int avfilter_graph_config(AVFilterGraph *graphctx, AVClass *log_ctx)
+{
+    int ret;
+
+    if ((ret = avfilter_graph_check_validity(graphctx, log_ctx)))
+        return ret;
+    if ((ret = avfilter_graph_config_formats(graphctx, log_ctx)))
+        return ret;
+    if ((ret = avfilter_graph_config_links(graphctx, log_ctx)))
+        return ret;
+
+    return 0;
+}
