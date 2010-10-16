@@ -29,7 +29,7 @@
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "oggdec.h"
-#include "vorbiscomment.c"
+#include "vorbiscomment.h"
 
 static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
 {
