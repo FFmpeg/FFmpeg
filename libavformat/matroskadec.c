@@ -1048,7 +1048,7 @@ static void matroska_convert_tag(AVFormatContext *s, EbmlList *list,
                 matroska_convert_tag(s, &tags[i].sub, metadata, key);
         }
     }
-    metadata_conv(metadata, NULL, ff_mkv_metadata_conv);
+    ff_metadata_conv(metadata, NULL, ff_mkv_metadata_conv);
 }
 
 static void matroska_convert_tags(AVFormatContext *s)

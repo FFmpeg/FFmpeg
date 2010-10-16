@@ -659,7 +659,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
     }
 
-    metadata_conv(&s->metadata, NULL, ff_asf_metadata_conv);
+    ff_metadata_conv(&s->metadata, NULL, ff_asf_metadata_conv);
 
     return 0;
 }

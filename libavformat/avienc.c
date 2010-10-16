@@ -370,7 +370,7 @@ static int avi_write_header(AVFormatContext *s)
 
     list2 = ff_start_tag(pb, "LIST");
     put_tag(pb, "INFO");
-    metadata_conv(&s->metadata, ff_avi_metadata_conv, NULL);
+    ff_metadata_conv(&s->metadata, ff_avi_metadata_conv, NULL);
     for (i = 0; *ff_avi_tags[i]; i++) {
         if ((t = av_metadata_get(s->metadata, ff_avi_tags[i], NULL, AV_METADATA_MATCH_CASE)))
             avi_write_info_tag(s->pb, t->key, t->value);

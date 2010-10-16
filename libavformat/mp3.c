@@ -315,7 +315,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     size_pos = url_ftell(s->pb);
     put_be32(s->pb, 0);
 
-    metadata_conv(&s->metadata, ff_id3v2_metadata_conv, NULL);
+    ff_metadata_conv(&s->metadata, ff_id3v2_metadata_conv, NULL);
     while ((t = av_metadata_get(s->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
         uint32_t tag = 0;
 

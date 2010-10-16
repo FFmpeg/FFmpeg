@@ -250,7 +250,7 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
         /* Skip to end of tag */
         url_fseek(s->pb, next, SEEK_SET);
     }
-    metadata_conv(&s->metadata, NULL, ff_id3v2_metadata_conv);
+    ff_metadata_conv(&s->metadata, NULL, ff_id3v2_metadata_conv);
 
     if (len > 0) {
         /* Skip padding */

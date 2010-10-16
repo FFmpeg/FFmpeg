@@ -279,7 +279,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     int bit_rate;
     int64_t duration;
 
-    metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
+    ff_metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
 
     tags[0] = av_metadata_get(s->metadata, "title"    , NULL, 0);
     tags[1] = av_metadata_get(s->metadata, "author"   , NULL, 0);

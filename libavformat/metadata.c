@@ -113,8 +113,8 @@ void av_metadata_free(AVMetadata **pm)
     av_freep(pm);
 }
 
-void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
-                                           const AVMetadataConv *s_conv)
+void ff_metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
+                                       const AVMetadataConv *s_conv)
 {
     /* TODO: use binary search to look up the two conversion tables
        if the tables are getting big enough that it would matter speed wise */
@@ -150,11 +150,11 @@ void ff_metadata_conv_ctx(AVFormatContext *ctx, const AVMetadataConv *d_conv,
                                                 const AVMetadataConv *s_conv)
 {
     int i;
-    metadata_conv(&ctx->metadata, d_conv, s_conv);
+    ff_metadata_conv(&ctx->metadata, d_conv, s_conv);
     for (i=0; i<ctx->nb_streams ; i++)
-        metadata_conv(&ctx->streams [i]->metadata, d_conv, s_conv);
+        ff_metadata_conv(&ctx->streams [i]->metadata, d_conv, s_conv);
     for (i=0; i<ctx->nb_chapters; i++)
-        metadata_conv(&ctx->chapters[i]->metadata, d_conv, s_conv);
+        ff_metadata_conv(&ctx->chapters[i]->metadata, d_conv, s_conv);
     for (i=0; i<ctx->nb_programs; i++)
-        metadata_conv(&ctx->programs[i]->metadata, d_conv, s_conv);
+        ff_metadata_conv(&ctx->programs[i]->metadata, d_conv, s_conv);
 }
