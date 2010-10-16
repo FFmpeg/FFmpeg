@@ -247,8 +247,6 @@ static short *samples;
 static AVBitStreamFilterContext *video_bitstream_filters=NULL;
 static AVBitStreamFilterContext *audio_bitstream_filters=NULL;
 static AVBitStreamFilterContext *subtitle_bitstream_filters=NULL;
-static AVBitStreamFilterContext **bitstream_filters[MAX_FILES] = {NULL};
-static int nb_bitstream_filters[MAX_FILES] = {0};
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
 
@@ -266,6 +264,7 @@ typedef struct AVOutputStream {
     //double sync_ipts;        /* dts from the AVPacket of the demuxer in second units */
     struct AVInputStream *sync_ist; /* input stream to sync against */
     int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ //FIXME look at frame_number
+    AVBitStreamFilterContext *bitstream_filters;
     /* video only */
     int video_resample;
     AVFrame pict_tmp;      /* temporary image for resampling */
@@ -572,7 +571,6 @@ static int ffmpeg_exit(int ret)
         }
         av_metadata_free(&s->metadata);
         av_free(s);
-        av_free(bitstream_filters[i]);
         av_free(output_streams_for_file[i]);
     }
     for(i=0;i<nb_input_files;i++) {
@@ -967,7 +965,7 @@ need_realloc:
             if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                 pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
             pkt.flags |= AV_PKT_FLAG_KEY;
-            write_frame(s, &pkt, enc, bitstream_filters[ost->file_index][pkt.stream_index]);
+            write_frame(s, &pkt, enc, ost->bitstream_filters);
 
             ost->sync_opts += enc->frame_size;
         }
@@ -1002,7 +1000,7 @@ need_realloc:
         if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
             pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
         pkt.flags |= AV_PKT_FLAG_KEY;
-        write_frame(s, &pkt, enc, bitstream_filters[ost->file_index][pkt.stream_index]);
+        write_frame(s, &pkt, enc, ost->bitstream_filters);
     }
 }
 
@@ -1107,7 +1105,7 @@ static void do_subtitle_out(AVFormatContext *s,
             else
                 pkt.pts += 90 * sub->end_display_time;
         }
-        write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
+        write_frame(s, &pkt, ost->st->codec, ost->bitstream_filters);
     }
 }
 
@@ -1267,7 +1265,7 @@ static void do_video_out(AVFormatContext *s,
             pkt.pts= av_rescale_q(ost->sync_opts, enc->time_base, ost->st->time_base);
             pkt.flags |= AV_PKT_FLAG_KEY;
 
-            write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
+            write_frame(s, &pkt, ost->st->codec, ost->bitstream_filters);
             enc->coded_frame = old_frame;
         } else {
             AVFrame big_picture;
@@ -1311,7 +1309,7 @@ static void do_video_out(AVFormatContext *s,
 
                 if(enc->coded_frame->key_frame)
                     pkt.flags |= AV_PKT_FLAG_KEY;
-                write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
+                write_frame(s, &pkt, ost->st->codec, ost->bitstream_filters);
                 *frame_size = ret;
                 video_size += ret;
                 //fprintf(stderr,"\nFrame: %3d size: %5d type: %d",
@@ -1766,7 +1764,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             opkt.size = data_size;
                         }
 
-                        write_frame(os, &opkt, ost->st->codec, bitstream_filters[ost->file_index][opkt.stream_index]);
+                        write_frame(os, &opkt, ost->st->codec, ost->bitstream_filters);
                         ost->st->codec->frame_number++;
                         ost->frame_number++;
                         av_free_packet(&opkt);
@@ -1875,7 +1873,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         pkt.size= ret;
                         if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                             pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
-                        write_frame(os, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
+                        write_frame(os, &pkt, ost->st->codec, ost->bitstream_filters);
                     }
                 }
             }
@@ -3401,11 +3399,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     }
 
     avcodec_get_context_defaults3(st->codec, codec);
-    bitstream_filters[file_idx] =
-        grow_array(bitstream_filters[file_idx],
-                   sizeof(*bitstream_filters[file_idx]),
-                   &nb_bitstream_filters[file_idx], oc->nb_streams);
-    bitstream_filters[file_idx][oc->nb_streams - 1]= video_bitstream_filters;
+    ost->bitstream_filters = video_bitstream_filters;
     video_bitstream_filters= NULL;
 
     avcodec_thread_init(st->codec, thread_count);
@@ -3548,11 +3542,7 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
 
     avcodec_get_context_defaults3(st->codec, codec);
 
-    bitstream_filters[file_idx] =
-        grow_array(bitstream_filters[file_idx],
-                   sizeof(*bitstream_filters[file_idx]),
-                   &nb_bitstream_filters[file_idx], oc->nb_streams);
-    bitstream_filters[file_idx][oc->nb_streams - 1]= audio_bitstream_filters;
+    ost->bitstream_filters = audio_bitstream_filters;
     audio_bitstream_filters= NULL;
 
     avcodec_thread_init(st->codec, thread_count);
@@ -3622,11 +3612,7 @@ static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
     }
     avcodec_get_context_defaults3(st->codec, codec);
 
-    bitstream_filters[file_idx] =
-        grow_array(bitstream_filters[file_idx],
-                   sizeof(*bitstream_filters[file_idx]),
-                   &nb_bitstream_filters[file_idx], oc->nb_streams);
-    bitstream_filters[file_idx][oc->nb_streams - 1]= subtitle_bitstream_filters;
+    ost->bitstream_filters = subtitle_bitstream_filters;
     subtitle_bitstream_filters= NULL;
 
     subtitle_enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
