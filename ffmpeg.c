@@ -188,8 +188,7 @@ static int64_t start_time = 0;
 static int64_t recording_timestamp = 0;
 static int64_t input_ts_offset = 0;
 static int file_overwrite = 0;
-static int metadata_count;
-static AVMetadataTag *metadata;
+static AVMetadata *metadata;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
 static int do_pkt_dump = 0;
@@ -2866,10 +2865,7 @@ static int opt_metadata(const char *opt, const char *arg)
     }
     *mid++= 0;
 
-    metadata_count++;
-    metadata= av_realloc(metadata, sizeof(*metadata)*metadata_count);
-    metadata[metadata_count-1].key  = av_strdup(arg);
-    metadata[metadata_count-1].value= av_strdup(mid);
+    av_metadata_set2(&metadata, arg, mid, 0);
 
     return 0;
 }
@@ -3676,6 +3672,7 @@ static void opt_output_file(const char *filename)
     int input_has_video, input_has_audio, input_has_subtitle;
     AVFormatParameters params, *ap = &params;
     AVOutputFormat *file_oformat;
+    AVMetadataTag *tag = NULL;
 
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -3757,10 +3754,8 @@ static void opt_output_file(const char *filename)
 
         oc->timestamp = recording_timestamp;
 
-        for(; metadata_count>0; metadata_count--){
-            av_metadata_set2(&oc->metadata, metadata[metadata_count-1].key,
-                                            metadata[metadata_count-1].value, 0);
-        }
+        while ((tag = av_metadata_get(metadata, "", tag, AV_METADATA_IGNORE_SUFFIX)))
+            av_metadata_set2(&oc->metadata, tag->key, tag->value, 0);
     }
 
     output_files[nb_output_files++] = oc;
