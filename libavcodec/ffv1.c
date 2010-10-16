@@ -676,43 +676,6 @@ static av_cold int common_init(AVCodecContext *avctx){
     return 0;
 }
 
-#if CONFIG_FFV1_ENCODER
-static int write_extra_header(FFV1Context *f){
-    RangeCoder * const c= &f->c;
-    uint8_t state[CONTEXT_SIZE];
-    int i;
-    memset(state, 128, sizeof(state));
-
-    f->avctx->extradata= av_malloc(f->avctx->extradata_size= 10000);
-    ff_init_range_encoder(c, f->avctx->extradata, f->avctx->extradata_size);
-    ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
-
-    put_symbol(c, state, f->version, 0);
-    put_symbol(c, state, f->ac, 0);
-    if(f->ac>1){
-        for(i=1; i<256; i++){
-            f->state_transition[i]=ver2_state[i];
-            put_symbol(c, state, ver2_state[i] - c->one_state[i], 1);
-        }
-    }
-    put_symbol(c, state, f->colorspace, 0); //YUV cs type
-    put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
-    put_rac(c, state, 1); //chroma planes
-        put_symbol(c, state, f->chroma_h_shift, 0);
-        put_symbol(c, state, f->chroma_v_shift, 0);
-    put_rac(c, state, 0); //no transparency plane
-    put_symbol(c, state, f->num_h_slices-1, 0);
-    put_symbol(c, state, f->num_v_slices-1, 0);
-
-    put_symbol(c, state, f->quant_table_count, 0);
-    for(i=0; i<f->quant_table_count; i++)
-        write_quant_tables(c, f->quant_tables[i]);
-
-    f->avctx->extradata_size= ff_rac_terminate(c);
-
-    return 0;
-}
-
 static int init_slice_state(FFV1Context *f){
     int i, j;
 
@@ -769,6 +732,43 @@ static av_cold int init_slice_contexts(FFV1Context *f){
         if (!fs->sample_buffer)
             return AVERROR(ENOMEM);
     }
+    return 0;
+}
+
+#if CONFIG_FFV1_ENCODER
+static int write_extra_header(FFV1Context *f){
+    RangeCoder * const c= &f->c;
+    uint8_t state[CONTEXT_SIZE];
+    int i;
+    memset(state, 128, sizeof(state));
+
+    f->avctx->extradata= av_malloc(f->avctx->extradata_size= 10000);
+    ff_init_range_encoder(c, f->avctx->extradata, f->avctx->extradata_size);
+    ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
+
+    put_symbol(c, state, f->version, 0);
+    put_symbol(c, state, f->ac, 0);
+    if(f->ac>1){
+        for(i=1; i<256; i++){
+            f->state_transition[i]=ver2_state[i];
+            put_symbol(c, state, ver2_state[i] - c->one_state[i], 1);
+        }
+    }
+    put_symbol(c, state, f->colorspace, 0); //YUV cs type
+    put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
+    put_rac(c, state, 1); //chroma planes
+        put_symbol(c, state, f->chroma_h_shift, 0);
+        put_symbol(c, state, f->chroma_v_shift, 0);
+    put_rac(c, state, 0); //no transparency plane
+    put_symbol(c, state, f->num_h_slices-1, 0);
+    put_symbol(c, state, f->num_v_slices-1, 0);
+
+    put_symbol(c, state, f->quant_table_count, 0);
+    for(i=0; i<f->quant_table_count; i++)
+        write_quant_tables(c, f->quant_tables[i]);
+
+    f->avctx->extradata_size= ff_rac_terminate(c);
+
     return 0;
 }
 
