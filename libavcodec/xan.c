@@ -69,7 +69,7 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
     if ((avctx->codec->id == CODEC_ID_XAN_WC3) &&
         (s->avctx->palctrl == NULL)) {
         av_log(avctx, AV_LOG_ERROR, " WC3 Xan video: palette expected.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     avctx->pix_fmt = PIX_FMT_PAL8;
@@ -77,12 +77,12 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
     s->buffer1_size = avctx->width * avctx->height;
     s->buffer1 = av_malloc(s->buffer1_size);
     if (!s->buffer1)
-        return -1;
+        return AVERROR(ENOMEM);
     s->buffer2_size = avctx->width * avctx->height;
     s->buffer2 = av_malloc(s->buffer2_size + 130);
     if (!s->buffer2) {
         av_freep(&s->buffer1);
-        return -1;
+        return AVERROR(ENOMEM);
     }
 
     return 0;
@@ -359,13 +359,13 @@ static int xan_decode_frame(AVCodecContext *avctx,
                             AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+    int ret, buf_size = avpkt->size;
     XanContext *s = avctx->priv_data;
     AVPaletteControl *palette_control = avctx->palctrl;
 
-    if (avctx->get_buffer(avctx, &s->current_frame)) {
+    if ((ret = avctx->get_buffer(avctx, &s->current_frame))) {
         av_log(s->avctx, AV_LOG_ERROR, "  Xan Video: get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     s->current_frame.reference = 3;
 
