@@ -324,29 +324,6 @@ static struct termios oldtty;
 
 #if CONFIG_AVFILTER
 
-static int get_filtered_video_pic(AVFilterContext *ctx,
-                                  AVFilterBufferRef **picref, AVFrame *pic2,
-                                  uint64_t *pts)
-{
-    AVFilterBufferRef *pic;
-
-    if(avfilter_request_frame(ctx->inputs[0]))
-        return -1;
-    if(!(pic = ctx->inputs[0]->cur_buf))
-        return -1;
-    *picref = pic;
-    ctx->inputs[0]->cur_buf = NULL;
-
-    *pts          = pic->pts;
-
-    memcpy(pic2->data,     pic->data,     sizeof(pic->data));
-    memcpy(pic2->linesize, pic->linesize, sizeof(pic->linesize));
-    pic2->interlaced_frame = pic->video->interlaced;
-    pic2->top_field_first  = pic->video->top_field_first;
-
-    return 1;
-}
-
 static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
 {
     AVFilterContext *last_filter, *filter;
@@ -1600,8 +1577,11 @@ static int output_packet(AVInputStream *ist, int ist_index,
         if (start_time == 0 || ist->pts >= start_time)
 #if CONFIG_AVFILTER
         while (frame_available) {
+            AVRational ist_pts_tb;
             if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ist->output_video_filter)
-                get_filtered_video_pic(ist->output_video_filter, &ist->picref, &picture, &ist->pts);
+                get_filtered_video_frame(ist->output_video_filter, &picture, &ist->picref, &ist_pts_tb);
+            if (ist->picref)
+                ist->pts = ist->picref->pts;
 #endif
             for(i=0;i<nb_ostreams;i++) {
                 int frame_size;

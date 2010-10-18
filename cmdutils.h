@@ -270,6 +270,15 @@ typedef struct {
 
 extern AVFilter ffsink;
 
+/**
+ * Extract a frame from sink.
+ *
+ * @return a negative error in case of failure, 1 if one frame has
+ * been extracted successfully.
+ */
+int get_filtered_video_frame(AVFilterContext *sink, AVFrame *frame,
+                             AVFilterBufferRef **picref, AVRational *pts_tb);
+
 #endif /* CONFIG_AVFILTER */
 
 #endif /* FFMPEG_CMDUTILS_H */

@@ -1779,27 +1779,6 @@ static AVFilter input_filter =
                                   { .name = NULL }},
 };
 
-static int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
-                                    int64_t *pts, AVRational *tb, int64_t *pos)
-{
-    AVFilterBufferRef *pic;
-
-    if(avfilter_request_frame(ctx->inputs[0]))
-        return -1;
-    if(!(pic = ctx->inputs[0]->cur_buf))
-        return -1;
-    ctx->inputs[0]->cur_buf = NULL;
-
-    frame->opaque = pic;
-    *pts          = pic->pts;
-    *pos          = pic->pos;
-    *tb           = ctx->inputs[0]->time_base;
-
-    memcpy(frame->data,     pic->data,     sizeof(frame->data));
-    memcpy(frame->linesize, pic->linesize, sizeof(frame->linesize));
-
-    return 1;
-}
 #endif  /* CONFIG_AVFILTER */
 
 static int video_thread(void *arg)
@@ -1859,12 +1838,18 @@ static int video_thread(void *arg)
 #if !CONFIG_AVFILTER
         AVPacket pkt;
 #else
+        AVFilterBufferRef *picref;
         AVRational tb;
 #endif
         while (is->paused && !is->videoq.abort_request)
             SDL_Delay(10);
 #if CONFIG_AVFILTER
-        ret = get_filtered_video_frame(filt_out, frame, &pts_int, &tb, &pos);
+        ret = get_filtered_video_frame(filt_out, frame, &picref, &tb);
+        if (picref) {
+            pts_int = picref->pts;
+            pos     = picref->pos;
+            frame->opaque = picref;
+        }
 
         if (av_cmp_q(tb, is->video_st->time_base)) {
             int64_t pts1 = pts_int;
