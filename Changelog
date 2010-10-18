@@ -46,6 +46,7 @@ version <next>:
 - RTP depacketization of the X-QT QuickTime format
 - SAP (Session Announcement Protocol, RFC 2974) muxer and demuxer
 - cropdetect filter
+- ffmpeg -crop* options removed
 
 
 version 0.6:
