@@ -49,7 +49,7 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
 int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int flags)
 {
     AVMetadata *m= *pm;
-    AVMetadataTag *tag= av_metadata_get(m, key, NULL, AV_METADATA_MATCH_CASE);
+    AVMetadataTag *tag= av_metadata_get(m, key, NULL, flags);
 
     if(!m)
         m=*pm= av_mallocz(sizeof(*m));
