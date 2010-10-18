@@ -508,6 +508,47 @@ not specified it will use the default value of 16.
 Adding this in the beginning of filter chains should make filtering
 faster due to better use of the memory cache.
 
+@section transpose
+
+Transpose rows with columns in the input video and optionally flip it.
+
+It accepts a parameter representing an integer, which can assume the
+values:
+
+@table @samp
+@item 0
+Rotate by 90 degrees counterclockwise and vertically flip (default), that is:
+@example
+L.R     L.l
+. . ->  . .
+l.r     R.r
+@end example
+
+@item 1
+Rotate by 90 degrees clockwise, that is:
+@example
+L.R     l.L
+. . ->  . .
+l.r     r.R
+@end example
+
+@item 2
+Rotate by 90 degrees counterclockwise, that is:
+@example
+L.R     R.r
+. . ->  . .
+l.r     L.l
+@end example
+
+@item 3
+Rotate by 90 degrees clockwise and vertically flip, that is:
+@example
+L.R     r.R
+. . ->  . .
+l.r     l.L
+@end example
+@end table
+
 @section unsharp
 
 Sharpen or blur the input video.
