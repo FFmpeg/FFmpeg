@@ -68,7 +68,7 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
 
     if ((avctx->codec->id == CODEC_ID_XAN_WC3) &&
         (s->avctx->palctrl == NULL)) {
-        av_log(avctx, AV_LOG_ERROR, " WC3 Xan video: palette expected.\n");
+        av_log(avctx, AV_LOG_ERROR, "palette expected\n");
         return AVERROR(EINVAL);
     }
 
@@ -364,7 +364,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     AVPaletteControl *palette_control = avctx->palctrl;
 
     if ((ret = avctx->get_buffer(avctx, &s->current_frame))) {
-        av_log(s->avctx, AV_LOG_ERROR, "  Xan Video: get_buffer() failed\n");
+        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
     s->current_frame.reference = 3;
