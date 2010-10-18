@@ -101,19 +101,17 @@ Notable license related changes
 General notes
 -------------
 
-This point release includes some minor updates to make the 0.6 release series
-usable for users that need to retain the existing behavior as closely as
-possible. The changes follow below:
+This point release includes some updates to make the 0.6 release series usable
+for users that need to retain the existing behavior as closely as possible.
+The changes follow below:
 
-General Bugfixes
-----------------
-
-Included are some general, minor bugfixes:
+Bugfixes
+--------
 
 - fix autodetection of E-AC-3 substream samples
-- performance fix for seekable http
-- Add missing VP80 fourcc code for the VP8 codec
-- smaller documentation fixes
+- performance fix for seekable HTTP
+- add missing VP80 fourcc code for the VP8 codec
+- small documentation fixes
 - fix several potentially exploitable issues in the FLIC decoder
   (addresses CVE-2010-3429)
 
@@ -121,5 +119,5 @@ Included are some general, minor bugfixes:
 HE-AAC v2 backport
 ------------------
 
-This release includes a backport of the AAC decoder from trunk. This
+This release includes a backport of the AAC decoder from trunk, which
 enables proper playback of HE-AAC v2 media.
