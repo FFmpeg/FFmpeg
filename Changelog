@@ -4,10 +4,10 @@ releases are sorted from youngest to oldest.
 version 0.6.1:
 
 - fix autodetection of E-AC-3 substream samples
-- performance fix for seekable http
-- Backport AAC-HE v2 from trunk
-- Add missing VP80 fourcc code for the VP8 codec
-- smaller documentation fixes
+- performance fix for seekable HTTP
+- backport AAC-HE v2 from trunk
+- add missing VP80 fourcc code for the VP8 codec
+- small documentation fixes
 - fix several potentially exploitable issues in the FLIC decoder
   (addresses CVE-2010-3429)
 
@@ -18,7 +18,7 @@ version 0.6:
 - deprecated vhook subsystem removed
 - deprecated old scaler removed
 - VQF demuxer
-- Alpha channel scaler
+- alpha channel scaler
 - PCX encoder
 - RTP packetization of H.263
 - RTP packetization of AMR
