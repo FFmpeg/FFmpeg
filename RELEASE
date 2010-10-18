@@ -112,3 +112,15 @@ General notes
 This is a maintenance only release that addresses a small number of security
 and portability issues. Distributors and system integrators are encouraged
 to update and share their patches against this branch.
+
+
+
+* 0.5.3 Oct 18, 2010
+
+General notes
+-------------
+
+This is (again) another maintenance only release that addresses a fix
+for seekable HTTP and an exploitable bug in the FLIC decoder
+(cf. CVE-2010-3429 for details). Distributors and system integrators are
+encouraged to update and share their patches against this branch.
