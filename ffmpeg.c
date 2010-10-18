@@ -225,6 +225,7 @@ static int nb_frames_drop = 0;
 static int input_sync;
 static uint64_t limit_filesize = 0;
 static int force_fps = 0;
+static char *forced_key_frames = NULL;
 
 static int pgmyuv_compatibility_hack=0;
 static float dts_delta_threshold = 10;
@@ -271,6 +272,11 @@ typedef struct AVOutputStream {
     /* full frame size of first frame */
     int original_height;
     int original_width;
+
+    /* forced key frames */
+    int64_t *forced_kf_pts;
+    int forced_kf_count;
+    int forced_kf_index;
 
     /* audio only */
     int audio_resample;
@@ -1189,6 +1195,11 @@ static void do_video_out(AVFormatContext *s,
             big_picture.pts= ost->sync_opts;
 //            big_picture.pts= av_rescale(ost->sync_opts, AV_TIME_BASE*(int64_t)enc->time_base.num, enc->time_base.den);
 //av_log(NULL, AV_LOG_DEBUG, "%"PRId64" -> encoder\n", ost->sync_opts);
+            if (ost->forced_kf_index < ost->forced_kf_count &&
+                big_picture.pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
+                big_picture.pict_type = FF_I_TYPE;
+                ost->forced_kf_index++;
+            }
             ret = avcodec_encode_video(enc,
                                        bit_buffer, bit_buffer_size,
                                        &big_picture);
@@ -1835,6 +1846,29 @@ static int copy_chapters(int infile, int outfile)
         os->chapters[os->nb_chapters - 1] = out_ch;
     }
     return 0;
+}
+
+static void parse_forced_key_frames(char *kf, AVOutputStream *ost,
+                                    AVCodecContext *avctx)
+{
+    char *p;
+    int n = 1, i;
+    int64_t t;
+
+    for (p = kf; *p; p++)
+        if (*p == ',')
+            n++;
+    ost->forced_kf_count = n;
+    ost->forced_kf_pts = av_malloc(sizeof(*ost->forced_kf_pts) * n);
+    if (!ost->forced_kf_pts) {
+        av_log(NULL, AV_LOG_FATAL, "Could not allocate forced key frames array.\n");
+        ffmpeg_exit(1);
+    }
+    for (i = 0; i < n; i++) {
+        p = i ? strchr(p, ',') + 1 : kf;
+        t = parse_time_or_die("force_key_frames", p, 1);
+        ost->forced_kf_pts[i] = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
+    }
 }
 
 /*
@@ -2578,6 +2612,7 @@ static int transcode(AVFormatContext **output_files,
                 av_fifo_free(ost->fifo); /* works even if fifo is not
                                              initialized but set to zero */
                 av_free(ost->pict_tmp.data[0]);
+                av_free(ost->forced_kf_pts);
                 if (ost->video_resample)
                     sws_freeContext(ost->img_resample_ctx);
                 if (ost->resample)
@@ -3333,6 +3368,9 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
                 video_enc->flags |= CODEC_FLAG_PASS2;
             }
         }
+
+        if (forced_key_frames)
+            parse_forced_key_frames(forced_key_frames, ost, video_enc);
     }
     if (video_language) {
         av_metadata_set2(&st->metadata, "language", video_language, 0);
@@ -3342,6 +3380,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     /* reset some key parameters */
     video_disable = 0;
     av_freep(&video_codec_name);
+    av_freep(&forced_key_frames);
     video_stream_copy = 0;
     frame_pix_fmt = PIX_FMT_NONE;
 }
@@ -3644,6 +3683,7 @@ static void opt_output_file(const char *filename)
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM, NULL);
 
     nb_streamid_map = 0;
+    av_freep(&forced_key_frames);
 }
 
 /* same option as mencoder */
@@ -4094,6 +4134,7 @@ static const OptionDef options[] = {
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
     { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&force_fps}, "force the selected framerate, disable the best supported framerate selection" },
     { "streamid", OPT_FUNC2 | HAS_ARG | OPT_EXPERT, {(void*)opt_streamid}, "set the value of an outfile streamid", "streamIndex:value" },
+    { "force_key_frames", OPT_STRING | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void *)&forced_key_frames}, "force key frames at specified timestamps", "timestamps" },
 
     /* audio options */
     { "ab", OPT_FUNC2 | HAS_ARG | OPT_AUDIO, {(void*)opt_bitrate}, "set bitrate (in bits/s)", "bitrate" },

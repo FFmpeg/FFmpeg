@@ -48,6 +48,7 @@ version <next>:
 - cropdetect filter
 - ffmpeg -crop* options removed
 - transpose filter added
+- ffmpeg -force_key_frames option added
 
 
 version 0.6:

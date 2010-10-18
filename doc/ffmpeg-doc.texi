@@ -495,6 +495,12 @@ Bitstream filters available are "dump_extra", "remove_extra", "noise", "h264_mp4
 @example
 ffmpeg -i h264.mp4 -vcodec copy -vbsf h264_mp4toannexb -an out.h264
 @end example
+@item -force_key_frames @var{time}[,@var{time}...]
+Force key frames at the specified timestamps, more precisely at the first
+frames after each specified time.
+This option can be useful to ensure that a seek point is present at a
+chapter mark or any other designated place in the output file.
+The timestamps must be specified in ascending order.
 @end table
 
 @section Audio Options
