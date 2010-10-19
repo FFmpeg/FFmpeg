@@ -179,7 +179,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (ROQ, roq);
     REGISTER_DEMUXER  (RPL, rpl);
     REGISTER_MUXDEMUX (RSO, rso);
-    REGISTER_MUXER    (RTP, rtp);
+    REGISTER_MUXDEMUX (RTP, rtp);
     REGISTER_MUXDEMUX (RTSP, rtsp);
     REGISTER_MUXDEMUX (SAP, sap);
     REGISTER_DEMUXER  (SDP, sdp);

@@ -49,6 +49,7 @@ version <next>:
 - ffmpeg -crop* options removed
 - transpose filter added
 - ffmpeg -force_key_frames option added
+- demuxer for receiving raw rtp:// URLs without an SDP description
 
 
 version 0.6:
