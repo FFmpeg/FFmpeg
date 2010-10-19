@@ -38,6 +38,7 @@
 #define CONTEXT_SIZE 32
 
 #define MAX_QUANT_TABLES 8
+#define MAX_CONTEXT_INPUTS 5
 
 extern const uint8_t ff_log2_run[32];
 
@@ -216,7 +217,7 @@ typedef struct VlcState{
 } VlcState;
 
 typedef struct PlaneContext{
-    int16_t quant_table[5][256];
+    int16_t quant_table[MAX_CONTEXT_INPUTS][256];
     int context_count;
     uint8_t (*state)[CONTEXT_SIZE];
     VlcState *vlc_state;
@@ -239,8 +240,8 @@ typedef struct FFV1Context{
     int plane_count;
     int ac;                              ///< 1=range coder <-> 0=golomb rice
     PlaneContext plane[MAX_PLANES];
-    int16_t quant_table[5][256];
-    int16_t quant_tables[MAX_QUANT_TABLES][5][256];
+    int16_t quant_table[MAX_CONTEXT_INPUTS][256];
+    int16_t quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][256];
     int context_count[MAX_QUANT_TABLES];
     uint8_t state_transition[256];
     int run_index;
@@ -610,7 +611,7 @@ static void write_quant_table(RangeCoder *c, int16_t *quant_table){
     put_symbol(c, state, i-last-1, 0);
 }
 
-static void write_quant_tables(RangeCoder *c, int16_t quant_table[5][256]){
+static void write_quant_tables(RangeCoder *c, int16_t quant_table[MAX_CONTEXT_INPUTS][256]){
     int i;
     for(i=0; i<5; i++)
         write_quant_table(c, quant_table[i]);
@@ -1208,7 +1209,7 @@ static int read_quant_table(RangeCoder *c, int16_t *quant_table, int scale){
     return 2*v - 1;
 }
 
-static int read_quant_tables(RangeCoder *c, int16_t quant_table[5][256]){
+static int read_quant_tables(RangeCoder *c, int16_t quant_table[MAX_CONTEXT_INPUTS][256]){
     int i;
     int context_count=1;
 
