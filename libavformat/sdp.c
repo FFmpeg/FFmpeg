@@ -99,8 +99,10 @@ static int resolve_destination(char *dest_addr, int size, char *type,
         return 0;
     getnameinfo(ai->ai_addr, ai->ai_addrlen, dest_addr, size,
                 NULL, 0, NI_NUMERICHOST);
+#ifdef AF_INET6
     if (ai->ai_family == AF_INET6)
         av_strlcpy(type, "IP6", type_size);
+#endif
     is_multicast = ff_is_multicast_address(ai->ai_addr);
     freeaddrinfo(ai);
     return is_multicast;
