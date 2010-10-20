@@ -1064,12 +1064,8 @@ static void do_video_out(AVFormatContext *s,
 {
     int nb_frames, i, ret;
     AVFrame *final_picture, *formatted_picture, *resampling_dst, *padding_src;
-    AVFrame picture_crop_temp, picture_pad_temp;
     AVCodecContext *enc, *dec;
     double sync_ipts;
-
-    avcodec_get_frame_defaults(&picture_crop_temp);
-    avcodec_get_frame_defaults(&picture_pad_temp);
 
     enc = ost->st->codec;
     dec = ist->st->codec;
