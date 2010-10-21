@@ -229,11 +229,6 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc_vp8.o  \
                                             rtpenc_xiph.o \
                                             avc.o
-OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o httpauth.o
-OBJS-$(CONFIG_RTSP_MUXER)                += rtsp.o rtspenc.o httpauth.o \
-                                            rtpenc_chain.o
-OBJS-$(CONFIG_SAP_DEMUXER)               += sapdec.o
-OBJS-$(CONFIG_SAP_MUXER)                 += sapenc.o rtpenc_chain.o
 OBJS-$(CONFIG_RTPDEC)                    += rdt.o         \
                                             rtp.o         \
                                             rtpdec.o      \
@@ -248,6 +243,11 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o         \
                                             rtpdec_svq3.o \
                                             rtpdec_vp8.o  \
                                             rtpdec_xiph.o
+OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o httpauth.o
+OBJS-$(CONFIG_RTSP_MUXER)                += rtsp.o rtspenc.o httpauth.o \
+                                            rtpenc_chain.o
+OBJS-$(CONFIG_SAP_DEMUXER)               += sapdec.o
+OBJS-$(CONFIG_SAP_MUXER)                 += sapenc.o rtpenc_chain.o
 OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += rawdec.o
