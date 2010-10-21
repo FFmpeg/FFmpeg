@@ -57,6 +57,8 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_tab
     for(i=0; i<256; i++)
         huff_sym[i]= i + 16*is_ac;
 
+    if(is_ac) huff_sym[0]= 16*256;
+
     return init_vlc_sparse(vlc, 9, nb_codes, huff_size, 1, 1, huff_code, 2, 2, huff_sym, 2, 2, use_static);
 }
 
@@ -415,9 +417,6 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
         UPDATE_CACHE(re, &s->gb);
         GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2)
 
-        /* EOB */
-        if (code == 0x10)
-            break;
         i += ((unsigned)code) >> 4;
             code &= 0xf;
         if(code){
