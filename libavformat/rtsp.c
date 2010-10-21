@@ -125,6 +125,7 @@ static int get_sockaddr(const char *buf, struct sockaddr_storage *sock)
     return 0;
 }
 
+#if CONFIG_RTPDEC
 /* parse the rtpmap description: <codec_name>/<clock_rate>[/<other params>] */
 static int sdp_parse_rtpmap(AVFormatContext *s,
                             AVCodecContext *codec, RTSPStream *rtsp_st,
@@ -457,6 +458,7 @@ static int sdp_parse(AVFormatContext *s, const char *content)
     }
     return 0;
 }
+#endif /* CONFIG_RTPDEC */
 
 /* close and free RTSP streams */
 void ff_rtsp_close_streams(AVFormatContext *s)
@@ -483,9 +485,9 @@ void ff_rtsp_close_streams(AVFormatContext *s)
                     av_metadata_free(&rtpctx->metadata);
                     av_free(rtpctx->streams[0]);
                     av_free(rtpctx);
-                } else if (rt->transport == RTSP_TRANSPORT_RDT)
+                } else if (rt->transport == RTSP_TRANSPORT_RDT && CONFIG_RTPDEC)
                     ff_rdt_parse_close(rtsp_st->transport_priv);
-                else
+                else if (CONFIG_RTPDEC)
                     rtp_parse_close(rtsp_st->transport_priv);
             }
             if (rtsp_st->rtp_handle)
@@ -514,17 +516,17 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
     if (!st)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
-    if (s->oformat) {
+    if (s->oformat && CONFIG_RTSP_MUXER) {
         rtsp_st->transport_priv = ff_rtp_chain_mux_open(s, st,
                                       rtsp_st->rtp_handle,
                                       RTSP_TCP_MAX_PACKET_SIZE);
         /* Ownership of rtp_handle is passed to the rtp mux context */
         rtsp_st->rtp_handle = NULL;
-    } else if (rt->transport == RTSP_TRANSPORT_RDT)
+    } else if (rt->transport == RTSP_TRANSPORT_RDT && CONFIG_RTPDEC)
         rtsp_st->transport_priv = ff_rdt_parse_open(s, st->index,
                                             rtsp_st->dynamic_protocol_context,
                                             rtsp_st->dynamic_handler);
-    else
+    else if (CONFIG_RTPDEC)
         rtsp_st->transport_priv = rtp_parse_open(s, st, rtsp_st->rtp_handle,
                                          rtsp_st->sdp_payload_type,
             (rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP || !s->max_delay)
@@ -532,7 +534,7 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 
     if (!rtsp_st->transport_priv) {
          return AVERROR(ENOMEM);
-    } else if (rt->transport != RTSP_TRANSPORT_RDT) {
+    } else if (rt->transport != RTSP_TRANSPORT_RDT && CONFIG_RTPDEC) {
         if (rtsp_st->dynamic_handler) {
             rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
                                            rtsp_st->dynamic_protocol_context,
@@ -1068,7 +1070,7 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
         snprintf(cmd, sizeof(cmd),
                  "Transport: %s\r\n",
                  transport);
-        if (i == 0 && rt->server_type == RTSP_SERVER_REAL) {
+        if (i == 0 && rt->server_type == RTSP_SERVER_REAL && CONFIG_RTPDEC) {
             char real_res[41], real_csum[9];
             ff_rdt_calc_response_and_checksum(real_res, real_csum,
                                               real_challenge);
@@ -1133,7 +1135,8 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
              * potential NAT router by sending dummy packets.
              * RTP/RTCP dummy packets are used for RDT, too.
              */
-            if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) && s->iformat)
+            if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) && s->iformat &&
+                CONFIG_RTPDEC)
                 rtp_send_punch_packets(rtsp_st->rtp_handle);
             break;
         }
@@ -1232,6 +1235,7 @@ static int rtsp_read_play(AVFormatContext *s)
     return 0;
 }
 
+#if CONFIG_RTSP_DEMUXER
 static int rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply)
 {
     RTSPState *rt = s->priv_data;
@@ -1268,7 +1272,9 @@ static int rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply
 
     return 0;
 }
+#endif /* CONFIG_RTSP_DEMUXER */
 
+#if CONFIG_RTSP_MUXER
 static int rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
 {
     RTSPState *rt = s->priv_data;
@@ -1332,6 +1338,7 @@ static int rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
 
     return 0;
 }
+#endif /* CONFIG_RTSP_MUXER */
 
 void ff_rtsp_close_connections(AVFormatContext *s)
 {
@@ -1548,9 +1555,9 @@ redirect:
         break;
     }
 
-    if (s->iformat)
+    if (s->iformat && CONFIG_RTSP_DEMUXER)
         err = rtsp_setup_input_streams(s, reply);
-    else
+    else if (CONFIG_RTSP_MUXER)
         err = rtsp_setup_output_streams(s, host);
     if (err)
         goto fail;
@@ -1589,6 +1596,7 @@ redirect:
 }
 #endif /* CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER */
 
+#if CONFIG_RTPDEC
 static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                            uint8_t *buf, int buf_size, int64_t wait_end)
 {
@@ -1777,6 +1785,7 @@ end:
 
     return ret;
 }
+#endif /* CONFIG_RTPDEC */
 
 #if CONFIG_RTSP_DEMUXER
 static int rtsp_read_header(AVFormatContext *s,
@@ -2020,6 +2029,7 @@ AVInputFormat rtsp_demuxer = {
 };
 #endif /* CONFIG_RTSP_DEMUXER */
 
+#if CONFIG_SDP_DEMUXER
 static int sdp_probe(AVProbeData *p1)
 {
     const char *p = p1->buf, *p_end = p1->buf + p1->buf_size;
@@ -2104,7 +2114,9 @@ AVInputFormat sdp_demuxer = {
     rtsp_fetch_packet,
     sdp_read_close,
 };
+#endif /* CONFIG_SDP_DEMUXER */
 
+#if CONFIG_RTP_DEMUXER
 static int rtp_probe(AVProbeData *p)
 {
     if (av_strstart(p->filename, "rtp:", NULL))
@@ -2207,4 +2219,5 @@ AVInputFormat rtp_demuxer = {
     sdp_read_close,
     .flags = AVFMT_NOFILE,
 };
+#endif /* CONFIG_RTP_DEMUXER */
 
