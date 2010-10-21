@@ -69,6 +69,10 @@ static void build_basic_mjpeg_vlc(MJpegDecodeContext * s) {
               ff_mjpeg_val_ac_luminance, 251, 0, 1);
     build_vlc(&s->vlcs[1][1], ff_mjpeg_bits_ac_chrominance,
               ff_mjpeg_val_ac_chrominance, 251, 0, 1);
+    build_vlc(&s->vlcs[2][0], ff_mjpeg_bits_ac_luminance,
+              ff_mjpeg_val_ac_luminance, 251, 0, 0);
+    build_vlc(&s->vlcs[2][1], ff_mjpeg_bits_ac_chrominance,
+              ff_mjpeg_val_ac_chrominance, 251, 0, 0);
 }
 
 av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
@@ -186,6 +190,9 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_DEBUG, "class=%d index=%d nb_codes=%d\n",
                class, index, code_max + 1);
         if(build_vlc(&s->vlcs[class][index], bits_table, val_table, code_max + 1, 0, class > 0) < 0){
+            return -1;
+        }
+        if(class>0 && build_vlc(&s->vlcs[2][index], bits_table, val_table, code_max + 1, 0, 0) < 0){
             return -1;
         }
     }
@@ -473,9 +480,8 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block, uint8
     {OPEN_READER(re, &s->gb)
     for(i=ss;;i++) {
         UPDATE_CACHE(re, &s->gb);
-        GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2)
-        /* Progressive JPEG use AC coeffs from zero and this decoder sets offset 16 by default */
-        code -= 16;
+        GET_VLC(code, re, &s->gb, s->vlcs[2][ac_index].table, 9, 2)
+
         run = ((unsigned) code) >> 4;
         code &= 0xF;
         if(code) {
@@ -561,9 +567,8 @@ static int decode_block_refinement(MJpegDecodeContext *s, DCTELEM *block, uint8_
     else {
         for(;;i++) {
             UPDATE_CACHE(re, &s->gb);
-            GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2)
-            /* Progressive JPEG use AC coeffs from zero and this decoder sets offset 16 by default */
-            code -= 16;
+            GET_VLC(code, re, &s->gb, s->vlcs[2][ac_index].table, 9, 2)
+
             if(code & 0xF) {
                 run = ((unsigned) code) >> 4;
                 UPDATE_CACHE(re, &s->gb);

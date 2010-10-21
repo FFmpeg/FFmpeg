@@ -44,7 +44,7 @@ typedef struct MJpegDecodeContext {
     uint8_t *buffer;
 
     int16_t quant_matrixes[4][64];
-    VLC vlcs[2][4];
+    VLC vlcs[3][4];
     int qscale[4];      ///< quantizer scale calculated from quant_matrixes
 
     int org_height;  /* size given at codec init */
