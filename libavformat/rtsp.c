@@ -546,13 +546,6 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 }
 
 #if CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER
-static int rtsp_probe(AVProbeData *p)
-{
-    if (av_strstart(p->filename, "rtsp:", NULL))
-        return AVPROBE_SCORE_MAX;
-    return 0;
-}
-
 static void rtsp_parse_range(int *min_ptr, int *max_ptr, const char **pp)
 {
     const char *p;
@@ -1788,6 +1781,13 @@ end:
 #endif /* CONFIG_RTPDEC */
 
 #if CONFIG_RTSP_DEMUXER
+static int rtsp_probe(AVProbeData *p)
+{
+    if (av_strstart(p->filename, "rtsp:", NULL))
+        return AVPROBE_SCORE_MAX;
+    return 0;
+}
+
 static int rtsp_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
