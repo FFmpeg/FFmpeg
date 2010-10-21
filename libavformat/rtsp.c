@@ -87,6 +87,44 @@ static void get_word(char *buf, int buf_size, const char **pp)
     get_word_until_chars(buf, buf_size, SPACE_CHARS, pp);
 }
 
+/** Parse a string p in the form of Range:npt=xx-xx, and determine the start
+ *  and end time.
+ *  Used for seeking in the rtp stream.
+ */
+static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
+{
+    char buf[256];
+
+    p += strspn(p, SPACE_CHARS);
+    if (!av_stristart(p, "npt=", &p))
+        return;
+
+    *start = AV_NOPTS_VALUE;
+    *end = AV_NOPTS_VALUE;
+
+    get_word_sep(buf, sizeof(buf), "-", &p);
+    *start = parse_date(buf, 1);
+    if (*p == '-') {
+        p++;
+        get_word_sep(buf, sizeof(buf), "-", &p);
+        *end = parse_date(buf, 1);
+    }
+//    av_log(NULL, AV_LOG_DEBUG, "Range Start: %lld\n", *start);
+//    av_log(NULL, AV_LOG_DEBUG, "Range End: %lld\n", *end);
+}
+
+static int get_sockaddr(const char *buf, struct sockaddr_storage *sock)
+{
+    struct addrinfo hints, *ai = NULL;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_flags = AI_NUMERICHOST;
+    if (getaddrinfo(buf, NULL, &hints, &ai))
+        return -1;
+    memcpy(sock, ai->ai_addr, FFMIN(sizeof(*sock), ai->ai_addrlen));
+    freeaddrinfo(ai);
+    return 0;
+}
+
 /* parse the rtpmap description: <codec_name>/<clock_rate>[/<other params>] */
 static int sdp_parse_rtpmap(AVFormatContext *s,
                             AVCodecContext *codec, RTSPStream *rtsp_st,
@@ -183,44 +221,6 @@ int ff_rtsp_next_attr_and_value(const char **p, char *attr, int attr_size,
             (*p)++;
         return 1;
     }
-    return 0;
-}
-
-/** Parse a string p in the form of Range:npt=xx-xx, and determine the start
- *  and end time.
- *  Used for seeking in the rtp stream.
- */
-static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
-{
-    char buf[256];
-
-    p += strspn(p, SPACE_CHARS);
-    if (!av_stristart(p, "npt=", &p))
-        return;
-
-    *start = AV_NOPTS_VALUE;
-    *end = AV_NOPTS_VALUE;
-
-    get_word_sep(buf, sizeof(buf), "-", &p);
-    *start = parse_date(buf, 1);
-    if (*p == '-') {
-        p++;
-        get_word_sep(buf, sizeof(buf), "-", &p);
-        *end = parse_date(buf, 1);
-    }
-//    av_log(NULL, AV_LOG_DEBUG, "Range Start: %lld\n", *start);
-//    av_log(NULL, AV_LOG_DEBUG, "Range End: %lld\n", *end);
-}
-
-static int get_sockaddr(const char *buf, struct sockaddr_storage *sock)
-{
-    struct addrinfo hints, *ai = NULL;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_flags = AI_NUMERICHOST;
-    if (getaddrinfo(buf, NULL, &hints, &ai))
-        return -1;
-    memcpy(sock, ai->ai_addr, FFMIN(sizeof(*sock), ai->ai_addrlen));
-    freeaddrinfo(ai);
     return 0;
 }
 
