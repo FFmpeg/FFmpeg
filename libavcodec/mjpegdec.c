@@ -476,8 +476,9 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block, uint8
         GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2)
         /* Progressive JPEG use AC coeffs from zero and this decoder sets offset 16 by default */
         code -= 16;
+        run = ((unsigned) code) >> 4;
         if(code & 0xF) {
-            i += ((unsigned) code) >> 4;
+            i += run;
             code &= 0xf;
             if(code > MIN_CACHE_BITS - 16){
                 UPDATE_CACHE(re, &s->gb)
@@ -502,7 +503,6 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block, uint8
             j = s->scantable.permutated[i];
             block[j] = level * quant_matrix[j] << Al;
         }else{
-            run = ((unsigned) code) >> 4;
             if(run == 0xF){// ZRL - skip 15 coefficients
                 i += 15;
             }else{
