@@ -411,7 +411,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     /* AC coefs */
     i = 0;
     {OPEN_READER(re, &s->gb)
-    for(;;) {
+    do {
         UPDATE_CACHE(re, &s->gb);
         GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2)
 
@@ -444,7 +444,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
             j = s->scantable.permutated[i];
             block[j] = level * quant_matrix[j];
         }
-    }
+    }while(i<63);
     CLOSE_READER(re, &s->gb)}
 
     return 0;
@@ -511,6 +511,10 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block, uint8
         }else{
             if(run == 0xF){// ZRL - skip 15 coefficients
                 i += 15;
+                if (i >= se) {
+                    av_log(s->avctx, AV_LOG_ERROR, "ZRL overflow: %d\n", i);
+                    return -1;
+                }
             }else{
                 val = (1 << run);
                 if(run){
