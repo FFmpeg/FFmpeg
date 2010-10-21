@@ -412,8 +412,8 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
         if (code == 0x10)
             break;
         i += ((unsigned)code) >> 4;
-        if(code != 0x100){
             code &= 0xf;
+        if(code){
             if(code > MIN_CACHE_BITS - 16){
                 UPDATE_CACHE(re, &s->gb)
             }
