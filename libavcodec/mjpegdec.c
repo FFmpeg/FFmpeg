@@ -432,12 +432,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
 
             LAST_SKIP_BITS(re, &s->gb, code)
 
-            if (i >= 63) {
-                if(i == 63){
-                    j = s->scantable.permutated[63];
-                    block[j] = level * quant_matrix[j];
-                    break;
-                }
+            if (i > 63) {
                 av_log(s->avctx, AV_LOG_ERROR, "error count: %d\n", i);
                 return -1;
             }
