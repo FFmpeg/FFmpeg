@@ -413,51 +413,47 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 /* input */
 #if CONFIG_IMAGE2_DEMUXER
 AVInputFormat image2_demuxer = {
-    .name = "image2",
-    .long_name = NULL_IF_CONFIG_SMALL("image2 sequence"),
+    .name           = "image2",
+    .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
     .priv_data_size = sizeof(VideoData),
-    .read_probe = read_probe,
-    .read_header = read_header,
-    .read_packet = read_packet,
-    .flags = AVFMT_NOFILE,
+    .read_probe     = read_probe,
+    .read_header    = read_header,
+    .read_packet    = read_packet,
+    .flags          = AVFMT_NOFILE,
 };
 #endif
 #if CONFIG_IMAGE2PIPE_DEMUXER
 AVInputFormat image2pipe_demuxer = {
-    .name = "image2pipe",
-    .long_name = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
+    .name           = "image2pipe",
+    .long_name      = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     .priv_data_size = sizeof(VideoData),
-    .read_header = read_header,
-    .read_packet = read_packet,
+    .read_header    = read_header,
+    .read_packet    = read_packet,
 };
 #endif
 
 /* output */
 #if CONFIG_IMAGE2_MUXER
 AVOutputFormat image2_muxer = {
-    .name = "image2",
-    .long_name = NULL_IF_CONFIG_SMALL("image2 sequence"),
-    .mime_type = "",
-    .extensions = "bmp,jpeg,jpg,ljpg,pam,pbm,pcx,pgm,pgmyuv,png,ppm,sgi,tga,tif,tiff,jp2",
+    .name           = "image2",
+    .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
+    .extensions     = "bmp,jpeg,jpg,ljpg,pam,pbm,pcx,pgm,pgmyuv,png,"
+                      "ppm,sgi,tga,tif,tiff,jp2",
     .priv_data_size = sizeof(VideoData),
-    .audio_codec = CODEC_ID_NONE,
-    .video_codec = CODEC_ID_MJPEG,
-    .write_header = write_header,
-    .write_packet = write_packet,
-    .flags = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS | AVFMT_NOFILE
+    .video_codec    = CODEC_ID_MJPEG,
+    .write_header   = write_header,
+    .write_packet   = write_packet,
+    .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS | AVFMT_NOFILE
 };
 #endif
 #if CONFIG_IMAGE2PIPE_MUXER
 AVOutputFormat image2pipe_muxer = {
-    .name = "image2pipe",
-    .long_name = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
-    .mime_type = "",
-    .extensions = "",
+    .name           = "image2pipe",
+    .long_name      = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     .priv_data_size = sizeof(VideoData),
-    .audio_codec = CODEC_ID_NONE,
-    .video_codec = CODEC_ID_MJPEG,
-    .write_header = write_header,
-    .write_packet = write_packet,
-    .flags = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS
+    .video_codec    = CODEC_ID_MJPEG,
+    .write_header   = write_header,
+    .write_packet   = write_packet,
+    .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS
 };
 #endif
