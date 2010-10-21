@@ -162,7 +162,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 
         put_bits(&s->pb, 3, 7);
         put_bits(&s->pb,3,ufep); /* Update Full Extended PTYPE */
-        if (format == 7)
+        if (format == 8)
             put_bits(&s->pb,3,6); /* Custom Source Format */
         else
             put_bits(&s->pb, 3, format);
@@ -192,7 +192,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         /* This should be here if PLUSPTYPE */
         put_bits(&s->pb, 1, 0); /* Continuous Presence Multipoint mode: off */
 
-                if (format == 7) {
+                if (format == 8) {
             /* Custom Picture Format (CPFMT) */
             s->aspect_ratio_info= ff_h263_aspect_to_info(s->avctx->sample_aspect_ratio);
 
