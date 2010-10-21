@@ -44,23 +44,20 @@
 static int build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_table,
                       int nb_codes, int use_static, int is_ac)
 {
-    uint8_t huff_size[256+16];
-    uint16_t huff_code[256+16];
+    uint8_t huff_size[256];
+    uint16_t huff_code[256];
+    uint16_t huff_sym[256];
+    int i;
 
     assert(nb_codes <= 256);
 
     memset(huff_size, 0, sizeof(huff_size));
     ff_mjpeg_build_huffman_codes(huff_size, huff_code, bits_table, val_table);
 
-    if(is_ac){
-        memmove(huff_size+16, huff_size, sizeof(uint8_t)*nb_codes);
-        memmove(huff_code+16, huff_code, sizeof(uint16_t)*nb_codes);
-        memset(huff_size, 0, sizeof(uint8_t)*16);
-        memset(huff_code, 0, sizeof(uint16_t)*16);
-        nb_codes += 16;
-    }
+    for(i=0; i<256; i++)
+        huff_sym[i]= i + 16*is_ac;
 
-    return init_vlc(vlc, 9, nb_codes, huff_size, 1, 1, huff_code, 2, 2, use_static);
+    return init_vlc_sparse(vlc, 9, nb_codes, huff_size, 1, 1, huff_code, 2, 2, huff_sym, 2, 2, use_static);
 }
 
 static void build_basic_mjpeg_vlc(MJpegDecodeContext * s) {
