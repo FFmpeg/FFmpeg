@@ -477,9 +477,9 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block, uint8
         /* Progressive JPEG use AC coeffs from zero and this decoder sets offset 16 by default */
         code -= 16;
         run = ((unsigned) code) >> 4;
-        if(code & 0xF) {
+        code &= 0xF;
+        if(code) {
             i += run;
-            code &= 0xf;
             if(code > MIN_CACHE_BITS - 16){
                 UPDATE_CACHE(re, &s->gb)
             }
