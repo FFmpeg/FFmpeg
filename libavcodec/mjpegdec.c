@@ -506,13 +506,13 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block, uint8
             if(run == 0xF){// ZRL - skip 15 coefficients
                 i += 15;
             }else{
-                val = run;
-                run = (1 << run);
-                UPDATE_CACHE(re, &s->gb);
-                run += (GET_CACHE(re, &s->gb) >> (32 - val)) & (run - 1);
-                if(val)
-                    LAST_SKIP_BITS(re, &s->gb, val);
-                *EOBRUN = run - 1;
+                val = (1 << run);
+                if(run){
+                    UPDATE_CACHE(re, &s->gb);
+                    val += NEG_USR32(GET_CACHE(re, &s->gb), run);
+                    LAST_SKIP_BITS(re, &s->gb, run);
+                }
+                *EOBRUN = val - 1;
                 break;
             }
         }
