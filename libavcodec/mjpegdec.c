@@ -194,8 +194,12 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
         if(build_vlc(&s->vlcs[class][index], bits_table, val_table, code_max + 1, 0, class > 0) < 0){
             return -1;
         }
-        if(class>0 && build_vlc(&s->vlcs[2][index], bits_table, val_table, code_max + 1, 0, 0) < 0){
+
+        if(class>0){
+            free_vlc(&s->vlcs[2][index]);
+            if(build_vlc(&s->vlcs[2][index], bits_table, val_table, code_max + 1, 0, 0) < 0){
             return -1;
+            }
         }
     }
     return 0;
@@ -1521,7 +1525,7 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
     av_freep(&s->ljpeg_buffer);
     s->ljpeg_buffer_size=0;
 
-    for(i=0;i<2;i++) {
+    for(i=0;i<3;i++) {
         for(j=0;j<4;j++)
             free_vlc(&s->vlcs[i][j]);
     }
