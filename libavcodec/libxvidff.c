@@ -449,7 +449,11 @@ static int xvid_encode_frame(AVCodecContext *avctx,
     xvid_enc_frame.vop_flags = x->vop_flags;
     xvid_enc_frame.vol_flags = x->vol_flags;
     xvid_enc_frame.motion = x->me_flags;
-    xvid_enc_frame.type = XVID_TYPE_AUTO;
+    xvid_enc_frame.type =
+        picture->pict_type == FF_I_TYPE ? XVID_TYPE_IVOP :
+        picture->pict_type == FF_P_TYPE ? XVID_TYPE_PVOP :
+        picture->pict_type == FF_B_TYPE ? XVID_TYPE_BVOP :
+                                          XVID_TYPE_AUTO;
 
     /* Pixel aspect ratio setting */
     if (avctx->sample_aspect_ratio.num < 1 || avctx->sample_aspect_ratio.num > 255 ||
