@@ -31,7 +31,7 @@
 #include "libavutil/cpu.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 92
+#define LIBAVCODEC_VERSION_MINOR 93
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -2744,6 +2744,15 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int lpc_passes;
+
+    /**
+     * Number of slices.
+     * Indicates number of picture subdivisions. Used for parallelized
+     * decoding.
+     * - encoding: Set by user
+     * - decoding: unused
+     */
+    int slices;
 } AVCodecContext;
 
 /**

@@ -425,6 +425,7 @@ static const AVOption options[]={
 {"levinson", NULL, 0, FF_OPT_TYPE_CONST, AV_LPC_TYPE_LEVINSON, INT_MIN, INT_MAX, A|E, "lpc_type"},
 {"cholesky", NULL, 0, FF_OPT_TYPE_CONST, AV_LPC_TYPE_CHOLESKY, INT_MIN, INT_MAX, A|E, "lpc_type"},
 {"lpc_passes", "number of passes to use for Cholesky factorization during LPC analysis", OFFSET(lpc_passes), FF_OPT_TYPE_INT, -1, INT_MIN, INT_MAX, A|E},
+{"slices", "number of slices, used in parallelized decoding", OFFSET(slices), FF_OPT_TYPE_INT, 0, 0, INT_MAX, V|E},
 {NULL},
 };
 

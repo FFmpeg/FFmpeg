@@ -294,6 +294,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.b_interlaced   = avctx->flags & CODEC_FLAG_INTERLACED_DCT;
 
+    x4->params.i_slice_count  = avctx->slices;
+
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER)
         x4->params.b_repeat_headers = 0;
 
