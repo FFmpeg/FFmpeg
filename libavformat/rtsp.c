@@ -1019,7 +1019,7 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
 #endif
 
         rtp_opened:
-            port = rtp_get_local_port(rtsp_st->rtp_handle);
+            port = rtp_get_local_rtp_port(rtsp_st->rtp_handle);
         have_port:
             snprintf(transport, sizeof(transport) - 1,
                      "%s/UDP;", trans_pref);
