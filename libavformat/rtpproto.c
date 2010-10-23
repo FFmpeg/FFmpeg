@@ -328,18 +328,6 @@ int rtp_get_local_rtp_port(URLContext *h)
 }
 
 /**
- * Return the local rtp port used by the RTP connection
- * @param h media file context
- * @return the local port number
- */
-
-int rtp_get_local_port(URLContext *h)
-{
-    RTPContext *s = h->priv_data;
-    return udp_get_local_port(s->rtp_hd);
-}
-
-/**
  * Return the local rtcp port used by the RTP connection
  * @param h media file context
  * @return the local port number
