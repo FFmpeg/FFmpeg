@@ -351,9 +351,6 @@ typedef struct RTSPStream {
 void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
                         HTTPAuthState *auth_state);
 
-#if LIBAVFORMAT_VERSION_INT < (53 << 16)
-extern int rtsp_default_protocols;
-#endif
 extern int rtsp_rtp_port_min;
 extern int rtsp_rtp_port_max;
 

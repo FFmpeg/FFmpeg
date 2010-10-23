@@ -44,10 +44,6 @@
 //#define DEBUG
 //#define DEBUG_RTP_TCP
 
-#if LIBAVFORMAT_VERSION_INT < (53 << 16)
-int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
-#endif
-
 /* Timeout values for socket select, in ms,
  * and read_packet(), in seconds  */
 #define SELECT_TIMEOUT_MS 100
