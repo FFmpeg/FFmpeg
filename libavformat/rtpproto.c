@@ -339,22 +339,6 @@ int rtp_get_local_rtcp_port(URLContext *h)
     return udp_get_local_port(s->rtcp_hd);
 }
 
-#if (LIBAVFORMAT_VERSION_MAJOR <= 52)
-/**
- * Return the rtp and rtcp file handles for select() usage to wait for
- * several RTP streams at the same time.
- * @param h media file context
- */
-
-void rtp_get_file_handles(URLContext *h, int *prtp_fd, int *prtcp_fd)
-{
-    RTPContext *s = h->priv_data;
-
-    *prtp_fd = s->rtp_fd;
-    *prtcp_fd = s->rtcp_fd;
-}
-#endif
-
 static int rtp_get_file_handle(URLContext *h)
 {
     RTPContext *s = h->priv_data;

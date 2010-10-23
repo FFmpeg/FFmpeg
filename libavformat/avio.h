@@ -182,7 +182,6 @@ int64_t url_filesize(URLContext *h);
 /**
  * Return the file descriptor associated with this URL. For RTP, this
  * will return only the RTP file descriptor, not the RTCP file descriptor.
- * To get both, use rtp_get_file_handles().
  *
  * @return the file descriptor associated with this URL, or <0 on error.
  */
