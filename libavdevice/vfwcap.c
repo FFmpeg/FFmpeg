@@ -248,6 +248,22 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int height;
     int ret;
 
+    if (!strcmp(s->filename, "list")) {
+        for (devnum = 0; devnum <= 9; devnum++) {
+            char driver_name[256];
+            char driver_ver[256];
+            ret = capGetDriverDescription(devnum,
+                                          driver_name, sizeof(driver_name),
+                                          driver_ver, sizeof(driver_ver));
+            if (ret) {
+                av_log(s, AV_LOG_INFO, "Driver %d\n", devnum);
+                av_log(s, AV_LOG_INFO, " %s\n", driver_name);
+                av_log(s, AV_LOG_INFO, " %s\n", driver_ver);
+            }
+        }
+        return AVERROR(EIO);
+    }
+
     if(!ap->time_base.den) {
         av_log(s, AV_LOG_ERROR, "A time base must be specified.\n");
         return AVERROR(EIO);
