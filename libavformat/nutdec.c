@@ -406,6 +406,7 @@ static int decode_info_header(NUTContext *nut){
     const char *type;
     AVChapter *chapter= NULL;
     AVStream *st= NULL;
+    AVMetadata **metadata = NULL;
 
     end= get_packetheader(nut, bc, 1, INFO_STARTCODE);
     end += url_ftell(bc);
@@ -421,8 +422,12 @@ static int decode_info_header(NUTContext *nut){
         chapter= ff_new_chapter(s, chapter_id,
                                 nut->time_base[chapter_start % nut->time_base_count],
                                 start, start + chapter_len, NULL);
-    } else if(stream_id_plus1)
+        metadata = &chapter->metadata;
+    } else if(stream_id_plus1) {
         st= s->streams[stream_id_plus1 - 1];
+        metadata = &st->metadata;
+    } else
+        metadata = &s->metadata;
 
     for(i=0; i<count; i++){
         get_str(bc, name, sizeof(name));
@@ -453,12 +458,10 @@ static int decode_info_header(NUTContext *nut){
         }
 
         if(!strcmp(type, "UTF-8")){
-            AVMetadata **metadata = NULL;
-            if(chapter_id==0 && !strcmp(name, "Disposition"))
+            if(chapter_id==0 && !strcmp(name, "Disposition")) {
                 set_disposition_bits(s, str_value, stream_id_plus1 - 1);
-            else if(chapter)          metadata= &chapter->metadata;
-            else if(stream_id_plus1)  metadata= &st->metadata;
-            else                      metadata= &s->metadata;
+                continue;
+            }
             if(metadata && strcasecmp(name,"Uses")
                && strcasecmp(name,"Depends") && strcasecmp(name,"Replaces"))
                 av_metadata_set2(metadata, name, str_value, 0);
