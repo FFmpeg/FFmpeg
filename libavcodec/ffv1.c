@@ -896,19 +896,23 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
                     double size0= COST2(i, i ) + COST2(i2, i2);
                     double sizeX= COST2(i, i2) + COST2(i2, i );
-                    if(sizeX < size0 && i!=128 && i2!=128){ //128 is special we cant swap it around FIXME 127<->129 swap
+                    if(sizeX < size0 && i!=128 && i2!=128){
                         int j;
                         FFSWAP(int, s->state_transition[    i], s->state_transition[    i2]);
-                        FFSWAP(int, s->state_transition[256-i], s->state_transition[256-i2]);
                         FFSWAP(int, s->rc_stat[i    ][0],s->rc_stat[    i2][0]);
                         FFSWAP(int, s->rc_stat[i    ][1],s->rc_stat[    i2][1]);
+                        if(i != 256-i2){
+                            FFSWAP(int, s->state_transition[256-i], s->state_transition[256-i2]);
                         FFSWAP(int, s->rc_stat[256-i][0],s->rc_stat[256-i2][0]);
                         FFSWAP(int, s->rc_stat[256-i][1],s->rc_stat[256-i2][1]);
+                        }
                         for(j=1; j<256; j++){
                             if     (s->state_transition[j] == i ) s->state_transition[j] = i2;
                             else if(s->state_transition[j] == i2) s->state_transition[j] = i ;
+                            if(i != 256-i2){
                             if     (s->state_transition[256-j] == 256-i ) s->state_transition[256-j] = 256-i2;
                             else if(s->state_transition[256-j] == 256-i2) s->state_transition[256-j] = 256-i ;
+                            }
                         }
                         changed=1;
                     }
