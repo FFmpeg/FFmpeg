@@ -629,8 +629,7 @@ static void write_header(FFV1Context *f){
         put_symbol(c, state, f->ac, 0);
         if(f->ac>1){
             for(i=1; i<256; i++){
-                f->state_transition[i]=ver2_state[i];
-                put_symbol(c, state, ver2_state[i] - c->one_state[i], 1);
+                put_symbol(c, state, f->state_transition[i] - c->one_state[i], 1);
             }
         }
         put_symbol(c, state, f->colorspace, 0); //YUV cs type
@@ -751,8 +750,7 @@ static int write_extra_header(FFV1Context *f){
     put_symbol(c, state, f->ac, 0);
     if(f->ac>1){
         for(i=1; i<256; i++){
-            f->state_transition[i]=ver2_state[i];
-            put_symbol(c, state, ver2_state[i] - c->one_state[i], 1);
+            put_symbol(c, state, f->state_transition[i] - c->one_state[i], 1);
         }
     }
     put_symbol(c, state, f->colorspace, 0); //YUV cs type
@@ -782,6 +780,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->version=0;
     s->ac= avctx->coder_type ? 2:0;
+
+    if(s->ac>1)
+        for(i=1; i<256; i++)
+            s->state_transition[i]=ver2_state[i];
 
     s->plane_count=2;
     for(i=0; i<256; i++){
