@@ -885,7 +885,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         do{
             changed=0;
             for(i=12; i<244; i++){
-                for(i2=i+1; i2<245; i2++){
+                for(i2=i+1; i2<245 && i2<i+4; i2++){
 #define COST(old, new) \
     s->rc_stat[old][0]*-log2((256-(new))/256.0)\
    +s->rc_stat[old][1]*-log2(     (new) /256.0)
