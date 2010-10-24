@@ -231,6 +231,7 @@ typedef struct FFV1Context{
     RangeCoder c;
     GetBitContext gb;
     PutBitContext pb;
+    uint64_t rc_stat[256][2];
     int version;
     int width, height;
     int chroma_h_shift, chroma_v_shift;
@@ -297,8 +298,14 @@ static inline int get_context(PlaneContext *p, int_fast16_t *src, int_fast16_t *
         return p->quant_table[0][(L-LT) & 0xFF] + p->quant_table[1][(LT-T) & 0xFF] + p->quant_table[2][(T-RT) & 0xFF];
 }
 
-static inline void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int is_signed){
+static inline void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int is_signed, uint64_t rc_stat[256][2]){
     int i;
+
+#define put_rac(C,S,B) \
+do{\
+    rc_stat[*(S)][B]++;\
+    put_rac(C,S,B);\
+}while(0)
 
     if(v){
         const int a= FFABS(v);
@@ -332,10 +339,12 @@ static inline void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int i
     }else{
         put_rac(c, state+0, 1);
     }
+#undef put_rac
 }
 
 static void av_noinline put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed){
-    put_symbol_inline(c, state, v, is_signed);
+    uint64_t rc_stat[256][2]; //we dont bother counting header bits.
+    put_symbol_inline(c, state, v, is_signed, rc_stat);
 }
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state, int is_signed){
@@ -483,7 +492,7 @@ static inline int encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], in
         diff= fold(diff, bits);
 
         if(s->ac){
-            put_symbol_inline(c, p->state[context], diff, 1);
+            put_symbol_inline(c, p->state[context], diff, 1, s->rc_stat);
         }else{
             if(context == 0) run_mode=1;
 
@@ -774,7 +783,7 @@ static int write_extra_header(FFV1Context *f){
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
-    int i;
+    int i, j, i2;
 
     common_init(avctx);
 
@@ -853,6 +862,61 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->picture_number=0;
 
+    if(avctx->stats_in){
+        char *p= avctx->stats_in;
+        int changed;
+
+        for(;;){
+            for(j=0; j<256; j++){
+                for(i=0; i<2; i++){
+                    char *next;
+                    s->rc_stat[j][i]= strtol(p, &next, 0);
+                    if(next==p){
+                        av_log(avctx, AV_LOG_ERROR, "2Pass file invalid at %d %d [%s]\n", j,i,p);
+                        return -1;
+                    }
+                    p=next;
+                }
+            }
+            while(*p=='\n' || *p==' ') p++;
+            if(p[0]==0) break;
+        }
+
+        do{
+            changed=0;
+            for(i=12; i<244; i++){
+                for(i2=i+1; i2<245; i2++){
+#define COST(old, new) \
+    s->rc_stat[old][0]*-log2((256-(new))/256.0)\
+   +s->rc_stat[old][1]*-log2(     (new) /256.0)
+
+#define COST2(old, new) \
+    COST(old, new)\
+   +COST(256-(old), 256-(new))
+
+                    double size0= COST2(i, i ) + COST2(i2, i2);
+                    double sizeX= COST2(i, i2) + COST2(i2, i );
+                    if(sizeX < size0 && i!=128 && i2!=128){ //128 is special we cant swap it around FIXME 127<->129 swap
+                        int j;
+                        FFSWAP(int, s->state_transition[    i], s->state_transition[    i2]);
+                        FFSWAP(int, s->state_transition[256-i], s->state_transition[256-i2]);
+                        FFSWAP(int, s->rc_stat[i    ][0],s->rc_stat[    i2][0]);
+                        FFSWAP(int, s->rc_stat[i    ][1],s->rc_stat[    i2][1]);
+                        FFSWAP(int, s->rc_stat[256-i][0],s->rc_stat[256-i2][0]);
+                        FFSWAP(int, s->rc_stat[256-i][1],s->rc_stat[256-i2][1]);
+                        for(j=1; j<256; j++){
+                            if     (s->state_transition[j] == i ) s->state_transition[j] = i2;
+                            else if(s->state_transition[j] == i2) s->state_transition[j] = i ;
+                            if     (s->state_transition[256-j] == 256-i ) s->state_transition[256-j] = 256-i2;
+                            else if(s->state_transition[256-j] == 256-i2) s->state_transition[256-j] = 256-i ;
+                        }
+                        changed=1;
+                    }
+                }
+            }
+        }while(changed);
+    }
+
     if(s->version>1){
         s->num_h_slices=2;
         s->num_v_slices=2;
@@ -863,6 +927,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
     if(init_slice_state(s) < 0)
         return -1;
+
+    avctx->stats_out= av_mallocz(1024*30);
 
     return 0;
 }
@@ -997,6 +1063,28 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         buf_p += bytes;
     }
 
+    if((avctx->flags&CODEC_FLAG_PASS1) && (f->picture_number&31)==0){
+        int j;
+        char *p= avctx->stats_out;
+        char *end= p + 1024*30;
+
+        memset(f->rc_stat, 0, sizeof(f->rc_stat));
+        for(j=0; j<f->slice_count; j++){
+            FFV1Context *fs= f->slice_context[j];
+            for(i=0; i<256; i++){
+                f->rc_stat[i][0] += fs->rc_stat[i][0];
+                f->rc_stat[i][1] += fs->rc_stat[i][1];
+            }
+        }
+
+        for(j=0; j<256; j++){
+            snprintf(p, end-p, "%"PRIu64" %"PRIu64" ", f->rc_stat[j][0], f->rc_stat[j][1]);
+            p+= strlen(p);
+        }
+        snprintf(p, end-p, "\n");
+    } else
+        avctx->stats_out[0] = '\0';
+
     f->picture_number++;
     return buf_p-buf;
 }
@@ -1016,6 +1104,8 @@ static av_cold int common_end(AVCodecContext *avctx){
         }
         av_freep(&fs->sample_buffer);
     }
+
+    av_freep(&avctx->stats_out);
 
     return 0;
 }
