@@ -426,6 +426,15 @@ The default value of @var{color} is "black".
 
 @end table
 
+For example:
+
+@example
+# Add paddings with color "violet" to the input video. Output video
+# size is 640x480, the top-left corner of the input video is placed at
+# row 0, column 40.
+pad=640:480:0:40:violet
+@end example
+
 @section pixdesctest
 
 Pixel format descriptor test filter, mainly useful for internal
