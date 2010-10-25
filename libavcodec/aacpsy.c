@@ -195,7 +195,7 @@ static float lame_calc_attack_threshold(int bitrate)
  * LAME psy model specific initialization
  */
 static void lame_window_init(AacPsyContext *ctx, AVCodecContext *avctx) {
-    int i;
+    int i, j;
 
     for (i = 0; i < avctx->channels; i++) {
         AacPsyChannel *pch = &ctx->ch[i];
@@ -205,8 +205,8 @@ static void lame_window_init(AacPsyContext *ctx, AVCodecContext *avctx) {
         else
             pch->attack_threshold = lame_calc_attack_threshold(avctx->bit_rate / avctx->channels / 1000);
 
-        for (i = 0; i < AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS; i++)
-            pch->prev_energy_subshort[i] = 10.0f;
+        for (j = 0; j < AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS; j++)
+            pch->prev_energy_subshort[j] = 10.0f;
     }
 }
 
