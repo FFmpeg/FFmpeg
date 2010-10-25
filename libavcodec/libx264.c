@@ -100,7 +100,11 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
         }
 
         x4->pic.i_pts  = frame->pts;
-        x4->pic.i_type = X264_TYPE_AUTO;
+        x4->pic.i_type =
+            frame->pict_type == FF_I_TYPE ? X264_TYPE_KEYFRAME :
+            frame->pict_type == FF_P_TYPE ? X264_TYPE_P :
+            frame->pict_type == FF_B_TYPE ? X264_TYPE_B :
+                                            X264_TYPE_AUTO;
     }
 
     do {
