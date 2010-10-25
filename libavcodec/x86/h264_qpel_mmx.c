@@ -299,11 +299,8 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_l2_ ## MMX(uint8_t *dst, 
     int h=8;\
     __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
-        "movq %0, %%mm6             \n\t"\
-        :: "m"(ff_pw_5)\
-    );\
-    do{\
-    __asm__ volatile(\
+        "movq "MANGLE(ff_pw_5)", %%mm6\n\t"\
+        "1:                         \n\t"\
         "movq    (%0), %%mm0        \n\t"\
         "movq   1(%0), %%mm2        \n\t"\
         "movq %%mm0, %%mm1          \n\t"\
@@ -336,7 +333,7 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_l2_ ## MMX(uint8_t *dst, 
         "punpcklbw %%mm7, %%mm5     \n\t"\
         "paddw %%mm3, %%mm2         \n\t"\
         "paddw %%mm5, %%mm4         \n\t"\
-        "movq %5, %%mm5             \n\t"\
+        "movq "MANGLE(ff_pw_16)", %%mm5\n\t"\
         "paddw %%mm5, %%mm2         \n\t"\
         "paddw %%mm5, %%mm4         \n\t"\
         "paddw %%mm2, %%mm0         \n\t"\
@@ -347,15 +344,15 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_l2_ ## MMX(uint8_t *dst, 
         "packuswb %%mm1, %%mm0      \n\t"\
         PAVGB" %%mm4, %%mm0         \n\t"\
         OP(%%mm0, (%1),%%mm5, q)\
-        "add %4, %0                 \n\t"\
-        "add %4, %1                 \n\t"\
-        "add %3, %2                 \n\t"\
-        : "+a"(src), "+c"(dst), "+d"(src2)\
-        : "D"((x86_reg)src2Stride), "S"((x86_reg)dstStride),\
-          "m"(ff_pw_16)\
+        "add %5, %0                 \n\t"\
+        "add %5, %1                 \n\t"\
+        "add %4, %2                 \n\t"\
+        "decl %3                    \n\t"\
+        "jg 1b                      \n\t"\
+        : "+a"(src), "+c"(dst), "+d"(src2), "+g"(h)\
+        : "D"((x86_reg)src2Stride), "S"((x86_reg)dstStride)\
         : "memory"\
     );\
-    }while(--h);\
 }\
 \
 static av_noinline void OPNAME ## h264_qpel8or16_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
@@ -697,11 +694,8 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_l2_ ## MMX(uint8_t *dst, 
     int h=8;\
     __asm__ volatile(\
         "pxor %%xmm7, %%xmm7        \n\t"\
-        "movdqa %0, %%xmm6          \n\t"\
-        :: "m"(ff_pw_5)\
-    );\
-    do{\
-    __asm__ volatile(\
+        "movdqa "MANGLE(ff_pw_5)", %%xmm6\n\t"\
+        "1:                         \n\t"\
         "lddqu   -2(%0), %%xmm1     \n\t"\
         "movdqa  %%xmm1, %%xmm0     \n\t"\
         "punpckhbw %%xmm7, %%xmm1   \n\t"\
@@ -721,22 +715,22 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_l2_ ## MMX(uint8_t *dst, 
         "psllw   $2,     %%xmm2     \n\t"\
         "movq    (%2),   %%xmm3     \n\t"\
         "psubw   %%xmm1, %%xmm2     \n\t"\
-        "paddw   %5,     %%xmm0     \n\t"\
+        "paddw "MANGLE(ff_pw_16)", %%xmm0\n\t"\
         "pmullw  %%xmm6, %%xmm2     \n\t"\
         "paddw   %%xmm0, %%xmm2     \n\t"\
         "psraw   $5,     %%xmm2     \n\t"\
         "packuswb %%xmm2, %%xmm2    \n\t"\
         "pavgb   %%xmm3, %%xmm2     \n\t"\
         OP(%%xmm2, (%1), %%xmm4, q)\
-        "add %4, %0                 \n\t"\
-        "add %4, %1                 \n\t"\
-        "add %3, %2                 \n\t"\
-        : "+a"(src), "+c"(dst), "+d"(src2)\
-        : "D"((x86_reg)src2Stride), "S"((x86_reg)dstStride),\
-          "m"(ff_pw_16)\
+        "add %5, %0                 \n\t"\
+        "add %5, %1                 \n\t"\
+        "add %4, %2                 \n\t"\
+        "decl %3                    \n\t"\
+        "jg 1b                      \n\t"\
+        : "+a"(src), "+c"(dst), "+d"(src2), "+g"(h)\
+        : "D"((x86_reg)src2Stride), "S"((x86_reg)dstStride)\
         : "memory"\
     );\
-    }while(--h);\
 }\
 QPEL_H264_H16_XMM(OPNAME, OP, MMX)\
 \
