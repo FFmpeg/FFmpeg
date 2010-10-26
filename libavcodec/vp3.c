@@ -2053,13 +2053,13 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
         n = get_bits(gb, 3);
         /* loop filter limit values table */
         if (n) {
-        for (i = 0; i < 64; i++) {
-            s->filter_limit_values[i] = get_bits(gb, n);
-            if (s->filter_limit_values[i] > 127) {
-                av_log(avctx, AV_LOG_ERROR, "filter limit value too large (%i > 127), clamping\n", s->filter_limit_values[i]);
-                s->filter_limit_values[i] = 127;
+            for (i = 0; i < 64; i++) {
+                s->filter_limit_values[i] = get_bits(gb, n);
+                if (s->filter_limit_values[i] > 127) {
+                    av_log(avctx, AV_LOG_ERROR, "filter limit value too large (%i > 127), clamping\n", s->filter_limit_values[i]);
+                    s->filter_limit_values[i] = 127;
+                }
             }
-        }
         }
     }
 
