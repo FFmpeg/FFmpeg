@@ -299,7 +299,7 @@ static inline int get_context(PlaneContext *p, int_fast16_t *src, int_fast16_t *
         return p->quant_table[0][(L-LT) & 0xFF] + p->quant_table[1][(LT-T) & 0xFF] + p->quant_table[2][(T-RT) & 0xFF];
 }
 
-static inline void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int is_signed, uint64_t rc_stat[256][2]){
+static av_always_inline av_flatten void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int is_signed, uint64_t rc_stat[256][2]){
     int i;
 
 #define put_rac(C,S,B) \
@@ -459,7 +459,7 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState * const state, int 
 }
 
 #if CONFIG_FFV1_ENCODER
-static inline int encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
+static av_always_inline int encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
     PlaneContext * const p= &s->plane[plane_index];
     RangeCoder * const c= &s->c;
     int x;
