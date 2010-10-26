@@ -304,7 +304,9 @@ static av_always_inline av_flatten void put_symbol_inline(RangeCoder *c, uint8_t
 
 #define put_rac(C,S,B) \
 do{\
+    if(rc_stat){\
     rc_stat[*(S)][B]++;\
+    }\
     put_rac(C,S,B);\
 }while(0)
 
@@ -344,8 +346,7 @@ do{\
 }
 
 static void av_noinline put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed){
-    uint64_t rc_stat[256][2]; //we dont bother counting header bits.
-    put_symbol_inline(c, state, v, is_signed, rc_stat);
+    put_symbol_inline(c, state, v, is_signed, NULL);
 }
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state, int is_signed){
@@ -493,7 +494,11 @@ static av_always_inline int encode_line(FFV1Context *s, int w, int_fast16_t *sam
         diff= fold(diff, bits);
 
         if(s->ac){
+            if(s->flags & CODEC_FLAG_PASS1){
             put_symbol_inline(c, p->state[context], diff, 1, s->rc_stat);
+            }else{
+                put_symbol_inline(c, p->state[context], diff, 1, NULL);
+            }
         }else{
             if(context == 0) run_mode=1;
 
