@@ -964,15 +964,15 @@ static void clear_state(FFV1Context *f){
             p->interlace_bit_state[0]= 128;
             p->interlace_bit_state[1]= 128;
 
+            if(fs->ac){
+                memset(p->state, 128, CONTEXT_SIZE*p->context_count);
+            }else{
             for(j=0; j<p->context_count; j++){
-                if(fs->ac){
-                    memset(p->state[j], 128, sizeof(uint8_t)*CONTEXT_SIZE);
-                }else{
                     p->vlc_state[j].drift= 0;
                     p->vlc_state[j].error_sum= 4; //FFMAX((RANGE + 32)/64, 2);
                     p->vlc_state[j].bias= 0;
                     p->vlc_state[j].count= 1;
-                }
+            }
             }
         }
     }
