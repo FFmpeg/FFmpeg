@@ -247,6 +247,7 @@ typedef struct FFV1Context{
     int16_t quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][256];
     int context_count[MAX_QUANT_TABLES];
     uint8_t state_transition[256];
+    uint8_t (*initial_states[MAX_QUANT_TABLES])[32];
     int run_index;
     int colorspace;
     int_fast16_t *sample_buffer;
@@ -754,6 +755,18 @@ static av_cold int init_slice_contexts(FFV1Context *f){
     return 0;
 }
 
+static int allocate_initial_states(FFV1Context *f){
+    int i;
+
+    for(i=0; i<f->quant_table_count; i++){
+        f->initial_states[i]= av_malloc(f->context_count[i]*sizeof(*f->initial_states[i]));
+        if(!f->initial_states[i])
+            return AVERROR(ENOMEM);
+        memset(f->initial_states[i], 128, f->context_count[i]*sizeof(*f->initial_states[i]));
+    }
+    return 0;
+}
+
 #if CONFIG_FFV1_ENCODER
 static int write_extra_header(FFV1Context *f){
     RangeCoder * const c= &f->c;
@@ -882,6 +895,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
         p->context_count= s->context_count[p->quant_table_index];
     }
 
+    if(allocate_initial_states(s) < 0)
+        return AVERROR(ENOMEM);
+
     avctx->coded_frame= &s->picture;
     switch(avctx->pix_fmt){
     case PIX_FMT_YUV444P16:
@@ -977,6 +993,9 @@ static void clear_state(FFV1Context *f){
             p->interlace_bit_state[1]= 128;
 
             if(fs->ac){
+                if(f->initial_states[p->quant_table_index]){
+                    memcpy(p->state, f->initial_states[p->quant_table_index], CONTEXT_SIZE*p->context_count);
+                }else
                 memset(p->state, 128, CONTEXT_SIZE*p->context_count);
             }else{
             for(j=0; j<p->context_count; j++){
@@ -1137,6 +1156,7 @@ static av_cold int common_end(AVCodecContext *avctx){
 
     av_freep(&avctx->stats_out);
     for(j=0; j<s->quant_table_count; j++){
+        av_freep(&s->initial_states[j]);
         for(i=0; i<s->slice_count; i++){
             FFV1Context *sf= s->slice_context[i];
             av_freep(&sf->rc_stat2[j]);
