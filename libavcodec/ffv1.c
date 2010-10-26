@@ -771,10 +771,13 @@ static int allocate_initial_states(FFV1Context *f){
 static int write_extra_header(FFV1Context *f){
     RangeCoder * const c= &f->c;
     uint8_t state[CONTEXT_SIZE];
-    int i;
+    int i, j, k;
+    uint8_t state2[32][CONTEXT_SIZE];
+
+    memset(state2, 128, sizeof(state2));
     memset(state, 128, sizeof(state));
 
-    f->avctx->extradata= av_malloc(f->avctx->extradata_size= 10000);
+    f->avctx->extradata= av_malloc(f->avctx->extradata_size= 10000 + (11*11*5*5*5+11*11*11)*32);
     ff_init_range_encoder(c, f->avctx->extradata, f->avctx->extradata_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
@@ -797,6 +800,23 @@ static int write_extra_header(FFV1Context *f){
     put_symbol(c, state, f->quant_table_count, 0);
     for(i=0; i<f->quant_table_count; i++)
         write_quant_tables(c, f->quant_tables[i]);
+
+    for(i=0; i<f->quant_table_count; i++){
+        for(j=0; j<f->context_count[i]*CONTEXT_SIZE; j++)
+            if(f->initial_states[i] && f->initial_states[i][0][j] != 128)
+                break;
+        if(j<f->context_count[i]*CONTEXT_SIZE){
+            put_rac(c, state, 1);
+            for(j=0; j<f->context_count[i]; j++){
+                for(k=0; k<CONTEXT_SIZE; k++){
+                    int pred= j ? f->initial_states[i][j-1][k] : 128;
+                    put_symbol(c, state2[k], (int8_t)(f->initial_states[i][j][k]-pred), 1);
+                }
+            }
+        }else{
+            put_rac(c, state, 0);
+        }
+    }
 
     f->avctx->extradata_size= ff_rac_terminate(c);
 
@@ -1373,8 +1393,10 @@ static int read_quant_tables(RangeCoder *c, int16_t quant_table[MAX_CONTEXT_INPU
 static int read_extra_header(FFV1Context *f){
     RangeCoder * const c= &f->c;
     uint8_t state[CONTEXT_SIZE];
-    int i;
+    int i, j, k;
+    uint8_t state2[32][CONTEXT_SIZE];
 
+    memset(state2, 128, sizeof(state2));
     memset(state, 128, sizeof(state));
 
     ff_init_range_decoder(c, f->avctx->extradata, f->avctx->extradata_size);
@@ -1408,6 +1430,20 @@ static int read_extra_header(FFV1Context *f){
         if((f->context_count[i]= read_quant_tables(c, f->quant_tables[i])) < 0){
             av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
             return -1;
+        }
+    }
+
+    if(allocate_initial_states(f) < 0)
+        return AVERROR(ENOMEM);
+
+    for(i=0; i<f->quant_table_count; i++){
+        if(get_rac(c, state)){
+            for(j=0; j<f->context_count[i]; j++){
+                for(k=0; k<CONTEXT_SIZE; k++){
+                    int pred= j ? f->initial_states[i][j-1][k] : 128;
+                    f->initial_states[i][j][k]= (pred+get_symbol(c, state2[k], 1))&0xFF;
+                }
+            }
         }
     }
 
