@@ -233,6 +233,7 @@ typedef struct FFV1Context{
     GetBitContext gb;
     PutBitContext pb;
     uint64_t rc_stat[256][2];
+    uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
     int version;
     int width, height;
     int chroma_h_shift, chroma_v_shift;
@@ -299,13 +300,14 @@ static inline int get_context(PlaneContext *p, int_fast16_t *src, int_fast16_t *
         return p->quant_table[0][(L-LT) & 0xFF] + p->quant_table[1][(LT-T) & 0xFF] + p->quant_table[2][(T-RT) & 0xFF];
 }
 
-static av_always_inline av_flatten void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int is_signed, uint64_t rc_stat[256][2]){
+static av_always_inline av_flatten void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int is_signed, uint64_t rc_stat[256][2], uint64_t rc_stat2[32][2]){
     int i;
 
 #define put_rac(C,S,B) \
 do{\
     if(rc_stat){\
     rc_stat[*(S)][B]++;\
+        rc_stat2[(S)-state][B]++;\
     }\
     put_rac(C,S,B);\
 }while(0)
@@ -346,7 +348,7 @@ do{\
 }
 
 static void av_noinline put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed){
-    put_symbol_inline(c, state, v, is_signed, NULL);
+    put_symbol_inline(c, state, v, is_signed, NULL, NULL);
 }
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state, int is_signed){
@@ -495,9 +497,9 @@ static av_always_inline int encode_line(FFV1Context *s, int w, int_fast16_t *sam
 
         if(s->ac){
             if(s->flags & CODEC_FLAG_PASS1){
-            put_symbol_inline(c, p->state[context], diff, 1, s->rc_stat);
+                put_symbol_inline(c, p->state[context], diff, 1, s->rc_stat, s->rc_stat2[p->quant_table_index][context]);
             }else{
-                put_symbol_inline(c, p->state[context], diff, 1, NULL);
+                put_symbol_inline(c, p->state[context], diff, 1, NULL, NULL);
             }
         }else{
             if(context == 0) run_mode=1;
@@ -945,8 +947,18 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
 
 #define STATS_OUT_SIZE 1024*30
-    if(avctx->flags & CODEC_FLAG_PASS1)
+    if(avctx->flags & CODEC_FLAG_PASS1){
     avctx->stats_out= av_mallocz(STATS_OUT_SIZE);
+        for(i=0; i<s->quant_table_count; i++){
+            for(j=0; j<s->slice_count; j++){
+                FFV1Context *sf= s->slice_context[j];
+                av_assert0(!sf->rc_stat2[i]);
+                sf->rc_stat2[i]= av_mallocz(s->context_count[i]*sizeof(*sf->rc_stat2[i]));
+                if(!sf->rc_stat2[i])
+                    return AVERROR(ENOMEM);
+            }
+        }
+    }
 
     return 0;
 }
@@ -1124,6 +1136,12 @@ static av_cold int common_end(AVCodecContext *avctx){
     }
 
     av_freep(&avctx->stats_out);
+    for(j=0; j<s->quant_table_count; j++){
+        for(i=0; i<s->slice_count; i++){
+            FFV1Context *sf= s->slice_context[i];
+            av_freep(&sf->rc_stat2[j]);
+        }
+    }
 
     return 0;
 }
