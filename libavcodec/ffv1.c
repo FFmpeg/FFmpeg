@@ -944,7 +944,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if(init_slice_state(s) < 0)
         return -1;
 
-    avctx->stats_out= av_mallocz(1024*30);
+#define STATS_OUT_SIZE 1024*30
+    avctx->stats_out= av_mallocz(STATS_OUT_SIZE);
 
     return 0;
 }
@@ -1082,7 +1083,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     if((avctx->flags&CODEC_FLAG_PASS1) && (f->picture_number&31)==0){
         int j;
         char *p= avctx->stats_out;
-        char *end= p + 1024*30;
+        char *end= p + STATS_OUT_SIZE;
 
         memset(f->rc_stat, 0, sizeof(f->rc_stat));
         for(j=0; j<f->slice_count; j++){
