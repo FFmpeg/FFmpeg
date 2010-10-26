@@ -945,6 +945,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
 
 #define STATS_OUT_SIZE 1024*30
+    if(avctx->flags & CODEC_FLAG_PASS1)
     avctx->stats_out= av_mallocz(STATS_OUT_SIZE);
 
     return 0;
@@ -1099,7 +1100,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             p+= strlen(p);
         }
         snprintf(p, end-p, "\n");
-    } else
+    } else if(avctx->flags&CODEC_FLAG_PASS1)
         avctx->stats_out[0] = '\0';
 
     f->picture_number++;
