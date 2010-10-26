@@ -218,6 +218,7 @@ typedef struct VlcState{
 
 typedef struct PlaneContext{
     int16_t quant_table[MAX_CONTEXT_INPUTS][256];
+    int quant_table_index;
     int context_count;
     uint8_t (*state)[CONTEXT_SIZE];
     VlcState *vlc_state;
@@ -658,8 +659,10 @@ static void write_header(FFV1Context *f){
             put_symbol(c, state, (fs->slice_y     +1)*f->num_v_slices / f->height  , 0);
             put_symbol(c, state, (fs->slice_width +1)*f->num_h_slices / f->width -1, 0);
             put_symbol(c, state, (fs->slice_height+1)*f->num_v_slices / f->height-1, 0);
-            for(j=0; j<f->plane_count; j++)
-            put_symbol(c, state, f->avctx->context_model, 0);
+            for(j=0; j<f->plane_count; j++){
+                put_symbol(c, state, f->plane[j].quant_table_index, 0);
+                av_assert0(f->plane[j].quant_table_index == f->avctx->context_model);
+            }
         }
     }
 }
@@ -860,17 +863,16 @@ static av_cold int encode_init(AVCodecContext *avctx)
             s->quant_tables[1][4][i]= 5*5*11*11*quant5_10bit[i];
         }
     }
+    s->context_count[0]= (11*11*11+1)/2;
+    s->context_count[1]= (11*11*5*5*5+1)/2;
     memcpy(s->quant_table, s->quant_tables[avctx->context_model], sizeof(s->quant_table));
 
     for(i=0; i<s->plane_count; i++){
         PlaneContext * const p= &s->plane[i];
 
         memcpy(p->quant_table, s->quant_table, sizeof(p->quant_table));
-        if(avctx->context_model==0){
-            p->context_count= (11*11*11+1)/2;
-        }else{
-            p->context_count= (11*11*5*5*5+1)/2;
-        }
+        p->quant_table_index= avctx->context_model;
+        p->context_count= s->context_count[p->quant_table_index];
     }
 
     avctx->coded_frame= &s->picture;
@@ -1468,6 +1470,7 @@ static int read_header(FFV1Context *f){
                     av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
                     return -1;
                 }
+                p->quant_table_index= idx;
                 memcpy(p->quant_table, f->quant_tables[idx], sizeof(p->quant_table));
                 context_count= f->context_count[idx];
             }else{
