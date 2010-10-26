@@ -742,6 +742,7 @@ static av_cold int init_slice_contexts(FFV1Context *f){
         int sye= f->avctx->height*(sy+1) / f->num_v_slices;
         f->slice_context[i]= fs;
         memcpy(fs, f, sizeof(*fs));
+        memset(fs->rc_stat2, 0, sizeof(fs->rc_stat2));
 
         fs->slice_width = sxe - sxs;
         fs->slice_height= sye - sys;
@@ -869,7 +870,7 @@ static int sort_stt(FFV1Context *s, uint8_t stt[256]){
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
-    int i, j;
+    int i, j, k, m;
 
     common_init(avctx);
 
@@ -950,8 +951,17 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->picture_number=0;
 
+    if(avctx->flags & (CODEC_FLAG_PASS1|CODEC_FLAG_PASS2)){
+        for(i=0; i<s->quant_table_count; i++){
+            s->rc_stat2[i]= av_mallocz(s->context_count[i]*sizeof(*s->rc_stat2[i]));
+            if(!s->rc_stat2[i])
+                return AVERROR(ENOMEM);
+        }
+    }
     if(avctx->stats_in){
         char *p= avctx->stats_in;
+
+        av_assert0(s->version>=2);
 
         for(;;){
             for(j=0; j<256; j++){
@@ -965,10 +975,38 @@ static av_cold int encode_init(AVCodecContext *avctx)
                     p=next;
                 }
             }
+            for(i=0; i<s->quant_table_count; i++){
+                for(j=0; j<s->context_count[i]; j++){
+                    for(k=0; k<32; k++){
+                        for(m=0; m<2; m++){
+                            char *next;
+                            s->rc_stat2[i][j][k][m]= strtol(p, &next, 0);
+                            if(next==p){
+                                av_log(avctx, AV_LOG_ERROR, "2Pass file invalid at %d %d %d %d [%s]\n", i,j,k,m,p);
+                                return -1;
+                            }
+                            p=next;
+                        }
+                    }
+                }
+            }
             while(*p=='\n' || *p==' ') p++;
             if(p[0]==0) break;
         }
         sort_stt(s, s->state_transition);
+
+        for(i=0; i<s->quant_table_count; i++){
+            for(j=0; j<s->context_count[i]; j++){
+                for(k=0; k<32; k++){
+                    int p= 128;
+                    if(s->rc_stat2[i][j][k][0]+s->rc_stat2[i][j][k][1]){
+                        p=256*s->rc_stat2[i][j][k][1] / (s->rc_stat2[i][j][k][0]+s->rc_stat2[i][j][k][1]);
+                    }
+                    p= av_clip(p, 1, 254);
+                    s->initial_states[i][j][k]= p;
+                }
+            }
+        }
     }
 
     if(s->version>1){
@@ -982,7 +1020,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if(init_slice_state(s) < 0)
         return -1;
 
-#define STATS_OUT_SIZE 1024*30
+#define STATS_OUT_SIZE 1024*1024*6
     if(avctx->flags & CODEC_FLAG_PASS1){
     avctx->stats_out= av_mallocz(STATS_OUT_SIZE);
         for(i=0; i<s->quant_table_count; i++){
@@ -1133,22 +1171,43 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     }
 
     if((avctx->flags&CODEC_FLAG_PASS1) && (f->picture_number&31)==0){
-        int j;
+        int j, k, m;
         char *p= avctx->stats_out;
         char *end= p + STATS_OUT_SIZE;
 
         memset(f->rc_stat, 0, sizeof(f->rc_stat));
+        for(i=0; i<f->quant_table_count; i++)
+            memset(f->rc_stat2[i], 0, f->context_count[i]*sizeof(*f->rc_stat2[i]));
+
         for(j=0; j<f->slice_count; j++){
             FFV1Context *fs= f->slice_context[j];
             for(i=0; i<256; i++){
                 f->rc_stat[i][0] += fs->rc_stat[i][0];
                 f->rc_stat[i][1] += fs->rc_stat[i][1];
             }
+            for(i=0; i<f->quant_table_count; i++){
+                for(k=0; k<f->context_count[i]; k++){
+                    for(m=0; m<32; m++){
+                        f->rc_stat2[i][k][m][0] += fs->rc_stat2[i][k][m][0];
+                        f->rc_stat2[i][k][m][1] += fs->rc_stat2[i][k][m][1];
+                    }
+                }
+            }
         }
 
         for(j=0; j<256; j++){
             snprintf(p, end-p, "%"PRIu64" %"PRIu64" ", f->rc_stat[j][0], f->rc_stat[j][1]);
             p+= strlen(p);
+        }
+        snprintf(p, end-p, "\n");
+
+        for(i=0; i<f->quant_table_count; i++){
+            for(j=0; j<f->context_count[i]; j++){
+                for(m=0; m<32; m++){
+                    snprintf(p, end-p, "%"PRIu64" %"PRIu64" ", f->rc_stat2[i][j][m][0], f->rc_stat2[i][j][m][1]);
+                    p+= strlen(p);
+                }
+            }
         }
         snprintf(p, end-p, "\n");
     } else if(avctx->flags&CODEC_FLAG_PASS1)
@@ -1181,6 +1240,7 @@ static av_cold int common_end(AVCodecContext *avctx){
             FFV1Context *sf= s->slice_context[i];
             av_freep(&sf->rc_stat2[j]);
         }
+        av_freep(&s->rc_stat2[j]);
     }
 
     return 0;
