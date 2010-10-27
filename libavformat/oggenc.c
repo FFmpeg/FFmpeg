@@ -213,6 +213,8 @@ static uint8_t *ogg_write_vorbiscomment(int offset, int bitexact,
     uint8_t *p, *p0;
     unsigned int count;
 
+    ff_metadata_conv(m, ff_vorbiscomment_metadata_conv, NULL);
+
     size = offset + ff_vorbiscomment_length(*m, vendor, &count) + framing_bit;
     p = av_mallocz(size);
     if (!p)

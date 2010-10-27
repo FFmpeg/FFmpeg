@@ -55,7 +55,6 @@ int ff_vorbiscomment_length(AVMetadata *m, const char *vendor_string,
 int ff_vorbiscomment_write(uint8_t **p, AVMetadata **m,
                            const char *vendor_string, const unsigned count)
 {
-    ff_metadata_conv(m, ff_vorbiscomment_metadata_conv, NULL);
     bytestream_put_le32(p, strlen(vendor_string));
     bytestream_put_buffer(p, vendor_string, strlen(vendor_string));
     if (*m) {
