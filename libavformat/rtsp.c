@@ -1261,7 +1261,13 @@ static int rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply
 
     return 0;
 }
-#endif /* CONFIG_RTSP_DEMUXER */
+#else /* !CONFIG_RTSP_DEMUXER */
+/* A declaration of this function is needed so that the function is
+ * defined when parsing the call to it, even if dead code elimination
+ * will remove the call later.
+ */
+static int rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply);
+#endif /* !CONFIG_RTSP_DEMUXER */
 
 #if CONFIG_RTSP_MUXER
 static int rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
@@ -1327,7 +1333,13 @@ static int rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
 
     return 0;
 }
-#endif /* CONFIG_RTSP_MUXER */
+#else /* !CONFIG_RTSP_MUXER */
+/* A declaration of this function is needed so that the function is
+ * defined when parsing the call to it, even if dead code elimination
+ * will remove the call later.
+ */
+static int rtsp_setup_output_streams(AVFormatContext *s, const char *addr);
+#endif /* !CONFIG_RTSP_MUXER */
 
 void ff_rtsp_close_connections(AVFormatContext *s)
 {
