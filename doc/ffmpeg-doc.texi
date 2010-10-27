@@ -587,7 +587,8 @@ Just enumerate the input streams in the order you want them in the output.
 @var{sync_stream_id} if specified sets the input stream to sync
 against.
 @item -map_meta_data @var{outfile}:@var{infile}
-Set meta data information of @var{outfile} from @var{infile}.
+Set meta data information of @var{outfile} from @var{infile}. Note that those
+are file indices (zero-based), not filenames.
 @item -debug
 Print specific debug info.
 @item -benchmark
