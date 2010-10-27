@@ -419,12 +419,10 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
         for (g = num_bands - 2; g >= 0; g--)
             band[g].thr = FFMAX(band[g].thr, band[g+1].thr * coeffs->spread_hi [g]);
         for (g = 0; g < num_bands; g++) {
-            band[g].thr_quiet = FFMAX(band[g].thr, coeffs->ath[g]);
+            band[g].thr_quiet = band[g].thr = FFMAX(band[g].thr, coeffs->ath[g]);
             if (!(wi->window_type[0] == LONG_STOP_SEQUENCE || (wi->window_type[1] == LONG_START_SEQUENCE && !w)))
-                band[g].thr_quiet = FFMAX(PSY_3GPP_RPEMIN*band[g].thr_quiet,
-                                          FFMIN(band[g].thr_quiet,
-                                          PSY_3GPP_RPELEV*pch->prev_band[w+g].thr_quiet));
-            band[g].thr = FFMAX(band[g].thr, band[g].thr_quiet * 0.25);
+                band[g].thr = FFMAX(PSY_3GPP_RPEMIN*band[g].thr, FFMIN(band[g].thr,
+                                    PSY_3GPP_RPELEV*pch->prev_band[w+g].thr_quiet));
 
             ctx->psy_bands[channel*PSY_MAX_BANDS+w+g].threshold = band[g].thr;
         }
