@@ -404,7 +404,6 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
             band->energy = 0.0f;
             for (i = 0; i < band_sizes[g]; i++)
                 band->energy += coefs[start+i] * coefs[start+i];
-            band->energy *= 1.0f / (512*512);
             band->thr     = band->energy * 0.001258925f;
             start        += band_sizes[g];
 
