@@ -124,7 +124,7 @@ static int nb_output_codecs = 0;
 static AVStreamMap *stream_maps = NULL;
 static int nb_stream_maps;
 
-static AVMetaDataMap meta_data_maps[MAX_FILES];
+static AVMetaDataMap *meta_data_maps = NULL;
 static int nb_meta_data_maps;
 
 /* indexed by output file stream index */
@@ -534,6 +534,7 @@ static int ffmpeg_exit(int ret)
     av_free(input_codecs);
     av_free(output_codecs);
     av_free(stream_maps);
+    av_free(meta_data_maps);
 
     av_free(video_codec_name);
     av_free(audio_codec_name);
@@ -2873,8 +2874,10 @@ static void opt_map_meta_data(const char *arg)
     AVMetaDataMap *m;
     char *p;
 
-    m = &meta_data_maps[nb_meta_data_maps++];
+    meta_data_maps = grow_array(meta_data_maps, sizeof(*meta_data_maps),
+                                &nb_meta_data_maps, nb_meta_data_maps + 1);
 
+    m = &meta_data_maps[nb_meta_data_maps - 1];
     m->out_file = strtol(arg, &p, 0);
     if (*p)
         p++;
