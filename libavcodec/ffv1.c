@@ -1295,6 +1295,10 @@ static av_cold int common_end(AVCodecContext *avctx){
         av_freep(&s->rc_stat2[j]);
     }
 
+    for(i=0; i<s->slice_count; i++){
+        av_freep(&s->slice_context[i]);
+    }
+
     return 0;
 }
 
