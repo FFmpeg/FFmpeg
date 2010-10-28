@@ -251,6 +251,7 @@ typedef struct FFV1Context{
     int run_index;
     int colorspace;
     int_fast16_t *sample_buffer;
+    int gob_count;
 
     int quant_table_count;
 
@@ -960,6 +961,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     if(avctx->stats_in){
         char *p= avctx->stats_in;
+        int gob_count=0;
         char *next;
 
         av_assert0(s->version>=2);
@@ -989,6 +991,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
                     }
                 }
             }
+            gob_count= strtol(p, &next, 0);
+            if(next==p || gob_count <0){
+                av_log(avctx, AV_LOG_ERROR, "2Pass file invalid\n");
+                return -1;
+            }
+            p=next;
             while(*p=='\n' || *p==' ') p++;
             if(p[0]==0) break;
         }
@@ -1113,6 +1121,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     if(avctx->gop_size==0 || f->picture_number % avctx->gop_size == 0){
         put_rac(c, &keystate, 1);
         p->key_frame= 1;
+        f->gob_count++;
         write_header(f);
         clear_state(f);
     }else{
@@ -1208,7 +1217,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                 }
             }
         }
-        snprintf(p, end-p, "\n");
+        snprintf(p, end-p, "%d\n", f->gob_count);
     } else if(avctx->flags&CODEC_FLAG_PASS1)
         avctx->stats_out[0] = '\0';
 
