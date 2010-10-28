@@ -960,13 +960,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     if(avctx->stats_in){
         char *p= avctx->stats_in;
+        char *next;
 
         av_assert0(s->version>=2);
 
         for(;;){
             for(j=0; j<256; j++){
                 for(i=0; i<2; i++){
-                    char *next;
                     s->rc_stat[j][i]= strtol(p, &next, 0);
                     if(next==p){
                         av_log(avctx, AV_LOG_ERROR, "2Pass file invalid at %d %d [%s]\n", j,i,p);
@@ -979,7 +979,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
                 for(j=0; j<s->context_count[i]; j++){
                     for(k=0; k<32; k++){
                         for(m=0; m<2; m++){
-                            char *next;
                             s->rc_stat2[i][j][k][m]= strtol(p, &next, 0);
                             if(next==p){
                                 av_log(avctx, AV_LOG_ERROR, "2Pass file invalid at %d %d %d %d [%s]\n", i,j,k,m,p);
