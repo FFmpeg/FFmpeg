@@ -302,6 +302,48 @@ static inline int get_context(PlaneContext *p, int_fast16_t *src, int_fast16_t *
         return p->quant_table[0][(L-LT) & 0xFF] + p->quant_table[1][(LT-T) & 0xFF] + p->quant_table[2][(T-RT) & 0xFF];
 }
 
+static void find_best_state(uint8_t best_state[256][256], const uint8_t one_state[256]){
+    int i,j,k,m;
+    double l2tab[256];
+
+    for(i=1; i<256; i++)
+        l2tab[i]= log2(i/256.0);
+
+    for(i=0; i<256; i++){
+        double best_len[256];
+        double p= i/256.0;
+
+        for(j=0; j<256; j++)
+            best_len[j]= 1<<30;
+
+        for(j=FFMAX(i-10,1); j<FFMIN(i+11,256); j++){
+            double occ[256]={0};
+            double len=0;
+            occ[j]=1.0;
+            for(k=0; k<256; k++){
+                double newocc[256]={0};
+                for(m=0; m<256; m++){
+                    if(occ[m]){
+                        len -=occ[m]*(     p *l2tab[    m]
+                                      + (1-p)*l2tab[256-m]);
+                    }
+                }
+                if(len < best_len[k]){
+                    best_len[k]= len;
+                    best_state[i][k]= j;
+                }
+                for(m=0; m<256; m++){
+                    if(occ[m]){
+                        newocc[    one_state[    m]] += occ[m]*   p ;
+                        newocc[256-one_state[256-m]] += occ[m]*(1-p);
+                    }
+                }
+                memcpy(occ, newocc, sizeof(occ));
+            }
+        }
+    }
+}
+
 static av_always_inline av_flatten void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int is_signed, uint64_t rc_stat[256][2], uint64_t rc_stat2[32][2]){
     int i;
 
@@ -961,6 +1003,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     if(avctx->stats_in){
         char *p= avctx->stats_in;
+        uint8_t best_state[256][256];
         int gob_count=0;
         char *next;
 
@@ -1002,15 +1045,16 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
         sort_stt(s, s->state_transition);
 
+        find_best_state(best_state, s->state_transition);
+
         for(i=0; i<s->quant_table_count; i++){
             for(j=0; j<s->context_count[i]; j++){
                 for(k=0; k<32; k++){
-                    int p= 128;
+                    double p= 128;
                     if(s->rc_stat2[i][j][k][0]+s->rc_stat2[i][j][k][1]){
-                        p=256*s->rc_stat2[i][j][k][1] / (s->rc_stat2[i][j][k][0]+s->rc_stat2[i][j][k][1]);
+                        p=256.0*s->rc_stat2[i][j][k][1] / (s->rc_stat2[i][j][k][0]+s->rc_stat2[i][j][k][1]);
                     }
-                    p= av_clip(p, 1, 254);
-                    s->initial_states[i][j][k]= p;
+                    s->initial_states[i][j][k]= best_state[av_clip(round(p), 1, 255)][av_clip((s->rc_stat2[i][j][k][0]+s->rc_stat2[i][j][k][1])/gob_count, 0, 255)];
                 }
             }
         }
