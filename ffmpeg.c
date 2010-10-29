@@ -664,10 +664,12 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
     if (err < 0)
         return err;
     /* copy stream format */
-    s->nb_streams = ic->nb_streams;
+    s->nb_streams = 0;
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st;
         AVCodec *codec;
+
+        s->nb_streams++;
 
         // FIXME: a more elegant solution is needed
         st = av_mallocz(sizeof(AVStream));
@@ -700,6 +702,8 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 
         if(st->codec->flags & CODEC_FLAG_BITEXACT)
             nopts = 1;
+
+        new_output_stream(s, nb_output_files);
     }
 
     if (!nopts)
