@@ -468,4 +468,10 @@ void ff_rtsp_close_streams(AVFormatContext *s);
  */
 void ff_rtsp_close_connections(AVFormatContext *rt);
 
+/**
+ * Announce the stream to the server and set up the RTSPStream child
+ * objects for each media stream.
+ */
+int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr);
+
 #endif /* AVFORMAT_RTSP_H */
