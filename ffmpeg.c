@@ -633,6 +633,27 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
     }
 }
 
+static AVOutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
+{
+    int idx = oc->nb_streams - 1;
+    AVOutputStream *ost;
+
+    output_streams_for_file[file_idx] =
+        grow_array(output_streams_for_file[file_idx],
+                   sizeof(*output_streams_for_file[file_idx]),
+                   &nb_output_streams_for_file[file_idx],
+                   oc->nb_streams);
+    ost = output_streams_for_file[file_idx][idx] =
+        av_mallocz(sizeof(AVOutputStream));
+    if (!ost) {
+        fprintf(stderr, "Could not alloc output stream\n");
+        ffmpeg_exit(1);
+    }
+    ost->file_index = file_idx;
+    ost->index = idx;
+    return ost;
+}
+
 static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 {
     int i, err;
@@ -3202,27 +3223,6 @@ static void check_audio_video_sub_inputs(int *has_video_ptr, int *has_audio_ptr,
     *has_video_ptr = has_video;
     *has_audio_ptr = has_audio;
     *has_subtitle_ptr = has_subtitle;
-}
-
-static AVOutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
-{
-    int idx = oc->nb_streams - 1;
-    AVOutputStream *ost;
-
-    output_streams_for_file[file_idx] =
-        grow_array(output_streams_for_file[file_idx],
-                   sizeof(*output_streams_for_file[file_idx]),
-                   &nb_output_streams_for_file[file_idx],
-                   oc->nb_streams);
-    ost = output_streams_for_file[file_idx][idx] =
-        av_mallocz(sizeof(AVOutputStream));
-    if (!ost) {
-        fprintf(stderr, "Could not alloc output stream\n");
-        ffmpeg_exit(1);
-    }
-    ost->file_index = file_idx;
-    ost->index = idx;
-    return ost;
 }
 
 static void new_video_stream(AVFormatContext *oc, int file_idx)
