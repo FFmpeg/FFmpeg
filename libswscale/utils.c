@@ -1554,15 +1554,15 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
             return NULL;
         context->srcW      = srcW;
         context->srcH      = srcH;
+        context->srcRange  = handle_jpeg(&srcFormat);
         context->srcFormat = srcFormat;
         context->dstW      = dstW;
         context->dstH      = dstH;
+        context->dstRange  = handle_jpeg(&dstFormat);
         context->dstFormat = dstFormat;
         context->flags     = flags;
         context->param[0]  = param[0];
         context->param[1]  = param[1];
-        context->srcRange = handle_jpeg(&srcFormat);
-        context->dstRange = handle_jpeg(&dstFormat);
         sws_setColorspaceDetails(context, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT], context->srcRange, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT] /* FIXME*/, context->dstRange, 0, 1<<16, 1<<16);
         if (sws_init_context(context, srcFilter, dstFilter) < 0) {
             sws_freeContext(context);
