@@ -325,7 +325,7 @@ static int read_motion_values(AVCodecContext *avctx, GetBitContext *gb, Bundle *
     return 0;
 }
 
-const uint8_t bink_rlelens[4] = { 4, 8, 12, 32 };
+static const uint8_t bink_rlelens[4] = { 4, 8, 12, 32 };
 
 static int read_block_types(AVCodecContext *avctx, GetBitContext *gb, Bundle *b)
 {
