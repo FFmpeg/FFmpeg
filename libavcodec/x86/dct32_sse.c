@@ -288,9 +288,9 @@ void ff_dct32_float_sse(FFTSample *out, const FFTSample *in)
         "movss    %%xmm2, 116(%1)           \n\t"
         :"+&r"(tmp1)
         :"r"(out), "r"(b1), "r"(smask), "r"(in)
-        :"memory"
-         XMM_CLOBBERS(, "%xmm0", "%xmm1", "%xmm2", "%xmm3",
-                        "%xmm4", "%xmm5", "%xmm6", "%xmm7")
+        :XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3",
+                      "%xmm4", "%xmm5", "%xmm6", "%xmm7",)
+         "memory"
         );
 }
 

@@ -380,13 +380,13 @@ inline void ff_idct_xvid_sse2(short *block)
     "6:                                                          \n\t"
     : "+r"(block)
     :
-    : "%eax", "%ecx", "%edx", "%esi", "memory"
-      XMM_CLOBBERS(, "%xmm0" , "%xmm1" , "%xmm2" , "%xmm3" ,
-                     "%xmm4" , "%xmm5" , "%xmm6" , "%xmm7")
+    : XMM_CLOBBERS("%xmm0" , "%xmm1" , "%xmm2" , "%xmm3" ,
+                   "%xmm4" , "%xmm5" , "%xmm6" , "%xmm7" ,)
 #if ARCH_X86_64
-      XMM_CLOBBERS(, "%xmm8" , "%xmm9" , "%xmm10", "%xmm11",
-                     "%xmm12", "%xmm13", "%xmm14")
+      XMM_CLOBBERS("%xmm8" , "%xmm9" , "%xmm10", "%xmm11",
+                   "%xmm12", "%xmm13", "%xmm14",)
 #endif
+      "%eax", "%ecx", "%edx", "%esi", "memory"
     );
 }
 
