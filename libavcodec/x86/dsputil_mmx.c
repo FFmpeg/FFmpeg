@@ -2012,8 +2012,8 @@ static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
         "1: \n"\
         "movaps  (%3,%0), %%xmm0 \n"\
  stereo("movaps   %%xmm0, %%xmm1 \n")\
-        "mulps    %%xmm6, %%xmm0 \n"\
- stereo("mulps    %%xmm7, %%xmm1 \n")\
+        "mulps    %%xmm4, %%xmm0 \n"\
+ stereo("mulps    %%xmm5, %%xmm1 \n")\
         "lea 1024(%3,%0), %1 \n"\
         "mov %5, %2 \n"\
         "2: \n"\
@@ -2051,12 +2051,12 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2], int out_c
         __asm__ volatile(
             "1: \n"
             "sub $8, %0 \n"
-            "movss     (%2,%0), %%xmm6 \n"
-            "movss    4(%2,%0), %%xmm7 \n"
-            "shufps $0, %%xmm6, %%xmm6 \n"
-            "shufps $0, %%xmm7, %%xmm7 \n"
-            "movaps %%xmm6,   (%1,%0,4) \n"
-            "movaps %%xmm7, 16(%1,%0,4) \n"
+            "movss     (%2,%0), %%xmm4 \n"
+            "movss    4(%2,%0), %%xmm5 \n"
+            "shufps $0, %%xmm4, %%xmm4 \n"
+            "shufps $0, %%xmm5, %%xmm5 \n"
+            "movaps %%xmm4,   (%1,%0,4) \n"
+            "movaps %%xmm5, 16(%1,%0,4) \n"
             "jg 1b \n"
             :"+&r"(j)
             :"r"(matrix_simd), "r"(matrix)
