@@ -2005,6 +2005,8 @@ static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
         :"+&r"(i)\
         :"r"(samples[0]+len), "r"(matrix)\
         :"memory"\
+         XMM_CLOBBERS(, "%xmm0", "%xmm1", "%xmm2", "%xmm3",\
+                        "%xmm4", "%xmm5", "%xmm6", "%xmm7")\
     );
 
 #define MIX_MISC(stereo)\
