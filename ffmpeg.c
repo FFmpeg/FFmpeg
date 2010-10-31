@@ -2855,7 +2855,7 @@ static void opt_subtitle_codec(const char *arg)
     opt_codec(&subtitle_stream_copy, &subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, arg);
 }
 
-static void opt_codec_tag(const char *opt, const char *arg)
+static int opt_codec_tag(const char *opt, const char *arg)
 {
     char *tail;
     uint32_t *codec_tag;
@@ -2863,10 +2863,14 @@ static void opt_codec_tag(const char *opt, const char *arg)
     codec_tag = !strcmp(opt, "atag") ? &audio_codec_tag :
                 !strcmp(opt, "vtag") ? &video_codec_tag :
                 !strcmp(opt, "stag") ? &subtitle_codec_tag : NULL;
+    if (!codec_tag)
+        return -1;
 
     *codec_tag = strtol(arg, &tail, 0);
     if (!tail || *tail)
         *codec_tag = arg[0] + (arg[1]<<8) + (arg[2]<<16) + (arg[3]<<24);
+
+    return 0;
 }
 
 static void opt_map(const char *arg)
