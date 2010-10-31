@@ -94,15 +94,15 @@ static int sad16_sse2(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)
 {
     int ret;
     __asm__ volatile(
-        "pxor %%xmm6, %%xmm6            \n\t"
+        "pxor %%xmm2, %%xmm2            \n\t"
         ASMALIGN(4)
         "1:                             \n\t"
         "movdqu (%1), %%xmm0            \n\t"
         "movdqu (%1, %3), %%xmm1        \n\t"
         "psadbw (%2), %%xmm0            \n\t"
         "psadbw (%2, %3), %%xmm1        \n\t"
-        "paddw %%xmm0, %%xmm6           \n\t"
-        "paddw %%xmm1, %%xmm6           \n\t"
+        "paddw %%xmm0, %%xmm2           \n\t"
+        "paddw %%xmm1, %%xmm2           \n\t"
         "lea (%1,%3,2), %1              \n\t"
         "lea (%2,%3,2), %2              \n\t"
         "sub $2, %0                     \n\t"
@@ -111,9 +111,9 @@ static int sad16_sse2(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)
         : "r" ((x86_reg)stride)
     );
     __asm__ volatile(
-        "movhlps %%xmm6, %%xmm0         \n\t"
-        "paddw   %%xmm0, %%xmm6         \n\t"
-        "movd    %%xmm6, %0             \n\t"
+        "movhlps %%xmm2, %%xmm0         \n\t"
+        "paddw   %%xmm0, %%xmm2         \n\t"
+        "movd    %%xmm2, %0             \n\t"
         : "=r"(ret)
     );
     return ret;
