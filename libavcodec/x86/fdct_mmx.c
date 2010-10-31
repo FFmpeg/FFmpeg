@@ -431,7 +431,8 @@ static av_always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
         FDCT_ROW_SSE2_H2(80,192)
         FDCT_ROW_SSE2(80)
         :
-        : "r" (in), "r" (tab_frw_01234567_sse2.tab_frw_01234567_sse2), "r" (fdct_r_row_sse2.fdct_r_row_sse2), "i" (SHIFT_FRW_ROW), "r" (out)
+        : "r" (in), "r" (tab_frw_01234567_sse2.tab_frw_01234567_sse2),
+          "r" (fdct_r_row_sse2.fdct_r_row_sse2), "i" (SHIFT_FRW_ROW), "r" (out)
           XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3",
                             "%xmm4", "%xmm5", "%xmm6", "%xmm7")
     );
