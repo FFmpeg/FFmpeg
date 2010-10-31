@@ -29,16 +29,15 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
     x86_reg i = -n2*sizeof(int32_t);
     x86_reg j =  n2*sizeof(int32_t);
     __asm__ volatile(
-        "movsd   %0,     %%xmm7                \n\t"
+        "movsd   %4,     %%xmm7                \n\t"
         "movapd  "MANGLE(ff_pd_1)", %%xmm6     \n\t"
         "movapd  "MANGLE(ff_pd_2)", %%xmm5     \n\t"
         "movlhps %%xmm7, %%xmm7                \n\t"
         "subpd   %%xmm5, %%xmm7                \n\t"
         "addsd   %%xmm6, %%xmm7                \n\t"
-        ::"m"(c)
-    );
+        "test    $1,     %5                    \n\t"
+        "jz      2f                            \n\t"
 #define WELCH(MOVPD, offset)\
-    __asm__ volatile(\
         "1:                                    \n\t"\
         "movapd   %%xmm7,  %%xmm1              \n\t"\
         "mulpd    %%xmm1,  %%xmm1              \n\t"\
@@ -55,13 +54,15 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
         "sub      $8,      %1                  \n\t"\
         "add      $8,      %0                  \n\t"\
         "jl 1b                                 \n\t"\
-        :"+&r"(i), "+&r"(j)\
-        :"r"(w_data+n2), "r"(data+n2)\
-    );
-    if(len&1)
+
         WELCH("movupd", -1)
-    else
+        "jmp 3f                                \n\t"
+        "2:                                    \n\t"
         WELCH("movapd", -2)
+        "3:                                    \n\t"
+        :"+&r"(i), "+&r"(j)
+        :"r"(w_data+n2), "r"(data+n2), "m"(c), "r"(len)
+    );
 #undef WELCH
 }
 
