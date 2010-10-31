@@ -132,6 +132,13 @@ int url_read(URLContext *h, unsigned char *buf, int size);
  * certain there was either an error or the end of file was reached.
  */
 int url_read_complete(URLContext *h, unsigned char *buf, int size);
+
+/**
+ * Write size bytes from buf to the resource accessed by h.
+ *
+ * @return the number of bytes actually written, or a negative value
+ * corresponding to an AVERROR code in case of failure
+ */
 int url_write(URLContext *h, const unsigned char *buf, int size);
 
 /**
