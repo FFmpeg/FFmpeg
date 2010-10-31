@@ -581,6 +581,8 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
             " jb 1b                             \n\t"
         : "+r" (block), "+r" (sum), "+r" (offset)
         : "r"(block+64)
+          XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3",
+                            "%xmm4", "%xmm5", "%xmm6", "%xmm7")
     );
 }
 
