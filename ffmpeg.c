@@ -39,6 +39,7 @@
 #include "libavcore/parseutils.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/fifo.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avstring.h"
 #include "libavutil/libm.h"
@@ -2868,7 +2869,7 @@ static int opt_codec_tag(const char *opt, const char *arg)
 
     *codec_tag = strtol(arg, &tail, 0);
     if (!tail || *tail)
-        *codec_tag = arg[0] + (arg[1]<<8) + (arg[2]<<16) + (arg[3]<<24);
+        *codec_tag = AV_RL32(arg);
 
     return 0;
 }
