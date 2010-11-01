@@ -39,8 +39,8 @@
  * constants for 3GPP AAC psychoacoustic model
  * @{
  */
-#define PSY_3GPP_SPREAD_LOW  1.5f // spreading factor for ascending threshold spreading  (15 dB/Bark)
-#define PSY_3GPP_SPREAD_HI   3.0f // spreading factor for descending threshold spreading (30 dB/Bark)
+#define PSY_3GPP_SPREAD_HI   1.5f // spreading factor for ascending threshold spreading  (15 dB/Bark)
+#define PSY_3GPP_SPREAD_LOW  3.0f // spreading factor for descending threshold spreading (30 dB/Bark)
 
 #define PSY_3GPP_RPEMIN      0.01f
 #define PSY_3GPP_RPELEV      2.0f
@@ -414,9 +414,9 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
     for (w = 0; w < wi->num_windows*16; w += 16) {
         AacPsyBand *band = &pch->band[w];
         for (g = 1; g < num_bands; g++)
-            band[g].thr = FFMAX(band[g].thr, band[g-1].thr * coeffs->spread_low[g-1]);
+            band[g].thr = FFMAX(band[g].thr, band[g-1].thr * coeffs->spread_hi [g-1]);
         for (g = num_bands - 2; g >= 0; g--)
-            band[g].thr = FFMAX(band[g].thr, band[g+1].thr * coeffs->spread_hi [g]);
+            band[g].thr = FFMAX(band[g].thr, band[g+1].thr * coeffs->spread_low[g]);
         for (g = 0; g < num_bands; g++) {
             band[g].thr_quiet = band[g].thr = FFMAX(band[g].thr, coeffs->ath[g]);
             if (!(wi->window_type[0] == LONG_STOP_SEQUENCE || (wi->window_type[1] == LONG_START_SEQUENCE && !w)))
