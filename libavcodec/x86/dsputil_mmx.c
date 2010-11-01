@@ -612,7 +612,7 @@ static void add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top, co
     __asm__ volatile(
         "mov    %7, %3 \n"
         "1: \n"
-        "movzx (%3,%4), %2 \n"
+        "movzbl (%3,%4), %2 \n"
         "mov    %2, %k3 \n"
         "sub   %b1, %b3 \n"
         "add   %b0, %b3 \n"
