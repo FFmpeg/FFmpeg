@@ -535,6 +535,9 @@ int main(void)
     const char **expr, *exprs[] = {
         "",
         "1;2",
+        "-20",
+        "-PI",
+        "+PI",
         "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
         "80G/80Gi"
         "1k",
