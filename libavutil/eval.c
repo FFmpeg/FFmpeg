@@ -404,12 +404,12 @@ static int parse_expr(AVExpr **e, Parser *p)
     if ((ret = parse_subexpr(&e0, p)) < 0)
         return ret;
     while (*p->s == ';') {
+        p->s++;
         e1 = e0;
         if ((ret = parse_subexpr(&e2, p)) < 0) {
             av_free_expr(e1);
             return ret;
         }
-        p->s++;
         e0 = new_eval_expr(e_last, 1, e1, e2);
         if (!e0) {
             av_free_expr(e1);
@@ -534,6 +534,7 @@ int main(void)
     double d;
     const char **expr, *exprs[] = {
         "",
+        "1;2",
         "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
         "80G/80Gi"
         "1k",
