@@ -563,6 +563,14 @@ int main(void)
         "13k + 12f - foo(1, 2)",
         "1gi",
         "1Gi",
+        "st(0, 123)",
+        "st(1, 123); ld(1)",
+        /* compute 1+2+...+N */
+        "st(0, 1); while(lte(ld(0), 100), st(1, ld(1)+ld(0));st(0, ld(0)+1)); ld(1)",
+        /* compute Fib(N) */
+        "st(1, 1); st(2, 2); st(0, 1); while(lte(ld(0),10), st(3, ld(1)+ld(2)); st(1, ld(2)); st(2, ld(3)); st(0, ld(0)+1)); ld(3)",
+        "while(0, 10)",
+        "st(0, 1); while(lte(ld(0),100), st(1, ld(1)+ld(0)); st(0, ld(0)+1))",
         NULL
     };
 
