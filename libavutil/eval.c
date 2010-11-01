@@ -103,13 +103,16 @@ double av_strtod(const char *numstr, char **tail)
     return d;
 }
 
+#define IS_IDENTIFIER_CHAR(c) ((c) - '0' <= 9U || (c) - 'a' <= 25U || (c) - 'A' <= 25U || (c) == '_')
+
 static int strmatch(const char *s, const char *prefix)
 {
     int i;
     for (i=0; prefix[i]; i++) {
         if (prefix[i] != s[i]) return 0;
     }
-    return 1;
+    /* return 1 only if the s identifier is terminated */
+    return !IS_IDENTIFIER_CHAR(s[i]);
 }
 
 struct AVExpr {
