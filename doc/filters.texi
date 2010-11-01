@@ -200,7 +200,7 @@ correspond to the non-black area of the input video.
 
 It accepts the syntax:
 @example
-cropdetect[=@var{limit}:@var{round}[:@var{reset}]]
+cropdetect[=@var{limit}[:@var{round}[:@var{reset}]]]
 @end example
 
 @table @option
