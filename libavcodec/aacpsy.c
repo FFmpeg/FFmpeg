@@ -414,7 +414,7 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
     for (w = 0; w < wi->num_windows*16; w += 16) {
         AacPsyBand *band = &pch->band[w];
         for (g = 1; g < num_bands; g++)
-            band[g].thr = FFMAX(band[g].thr, band[g-1].thr * coeffs->spread_hi [g-1]);
+            band[g].thr = FFMAX(band[g].thr, band[g-1].thr * coeffs->spread_hi [g]);
         for (g = num_bands - 2; g >= 0; g--)
             band[g].thr = FFMAX(band[g].thr, band[g+1].thr * coeffs->spread_low[g]);
         for (g = 0; g < num_bands; g++) {
