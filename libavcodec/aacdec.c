@@ -1921,24 +1921,17 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
     return size;
 }
 
-static int aac_decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
+                                int *data_size, GetBitContext *gb)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     AACContext *ac = avctx->priv_data;
     ChannelElement *che = NULL, *che_prev = NULL;
-    GetBitContext gb;
     enum RawDataBlockType elem_type, elem_type_prev = TYPE_END;
     int err, elem_id, data_size_tmp;
-    int buf_consumed;
     int samples = 0, multiplier;
-    int buf_offset;
 
-    init_get_bits(&gb, buf, buf_size * 8);
-
-    if (show_bits(&gb, 12) == 0xfff) {
-        if (parse_adts_frame_header(ac, &gb) < 0) {
+    if (show_bits(gb, 12) == 0xfff) {
+        if (parse_adts_frame_header(ac, gb) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error decoding AAC frame header.\n");
             return -1;
         }
@@ -1950,8 +1943,8 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
 
     ac->tags_mapped = 0;
     // parse
-    while ((elem_type = get_bits(&gb, 3)) != TYPE_END) {
-        elem_id = get_bits(&gb, 4);
+    while ((elem_type = get_bits(gb, 3)) != TYPE_END) {
+        elem_id = get_bits(gb, 4);
 
         if (elem_type < TYPE_DSE) {
             if (!(che=get_che(ac, elem_type, elem_id))) {
@@ -1965,29 +1958,29 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
         switch (elem_type) {
 
         case TYPE_SCE:
-            err = decode_ics(ac, &che->ch[0], &gb, 0, 0);
+            err = decode_ics(ac, &che->ch[0], gb, 0, 0);
             break;
 
         case TYPE_CPE:
-            err = decode_cpe(ac, &gb, che);
+            err = decode_cpe(ac, gb, che);
             break;
 
         case TYPE_CCE:
-            err = decode_cce(ac, &gb, che);
+            err = decode_cce(ac, gb, che);
             break;
 
         case TYPE_LFE:
-            err = decode_ics(ac, &che->ch[0], &gb, 0, 0);
+            err = decode_ics(ac, &che->ch[0], gb, 0, 0);
             break;
 
         case TYPE_DSE:
-            err = skip_data_stream_element(ac, &gb);
+            err = skip_data_stream_element(ac, gb);
             break;
 
         case TYPE_PCE: {
             enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
             memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
-            if ((err = decode_pce(ac, new_che_pos, &gb)))
+            if ((err = decode_pce(ac, new_che_pos, gb)))
                 break;
             if (ac->output_configured > OC_TRIAL_PCE)
                 av_log(avctx, AV_LOG_ERROR,
@@ -1999,13 +1992,13 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
 
         case TYPE_FIL:
             if (elem_id == 15)
-                elem_id += get_bits(&gb, 8) - 1;
-            if (get_bits_left(&gb) < 8 * elem_id) {
+                elem_id += get_bits(gb, 8) - 1;
+            if (get_bits_left(gb) < 8 * elem_id) {
                     av_log(avctx, AV_LOG_ERROR, overread_err);
                     return -1;
             }
             while (elem_id > 0)
-                elem_id -= decode_extension_payload(ac, &gb, elem_id, che_prev, elem_type_prev);
+                elem_id -= decode_extension_payload(ac, gb, elem_id, che_prev, elem_type_prev);
             err = 0; /* FIXME */
             break;
 
@@ -2020,7 +2013,7 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
         if (err)
             return err;
 
-        if (get_bits_left(&gb) < 3) {
+        if (get_bits_left(gb) < 3) {
             av_log(avctx, AV_LOG_ERROR, overread_err);
             return -1;
         }
@@ -2049,6 +2042,24 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
 
     if (ac->output_configured)
         ac->output_configured = OC_LOCKED;
+
+    return 0;
+}
+
+static int aac_decode_frame(AVCodecContext *avctx, void *data,
+                            int *data_size, AVPacket *avpkt)
+{
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
+    GetBitContext gb;
+    int buf_consumed;
+    int buf_offset;
+    int err;
+
+    init_get_bits(&gb, buf, buf_size * 8);
+
+    if ((err = aac_decode_frame_int(avctx, data, data_size, &gb)) < 0)
+        return err;
 
     buf_consumed = (get_bits_count(&gb) + 7) >> 3;
     for (buf_offset = buf_consumed; buf_offset < buf_size; buf_offset++)
