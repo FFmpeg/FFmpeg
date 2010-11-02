@@ -228,7 +228,6 @@ static uint64_t limit_filesize = 0;
 static int force_fps = 0;
 static char *forced_key_frames = NULL;
 
-static int pgmyuv_compatibility_hack=0;
 static float dts_delta_threshold = 10;
 
 static unsigned int sws_flags = SWS_BICUBIC;
@@ -2652,14 +2651,6 @@ static int transcode(AVFormatContext **output_files,
 
 static void opt_format(const char *arg)
 {
-    /* compatibility stuff for pgmyuv */
-    if (!strcmp(arg, "pgmyuv")) {
-        pgmyuv_compatibility_hack=1;
-//        opt_image_format(arg);
-        arg = "image2";
-        fprintf(stderr, "pgmyuv format is deprecated, use image2\n");
-    }
-
     last_asked_format = arg;
 }
 
@@ -3045,9 +3036,6 @@ static void opt_input_file(const char *filename)
         find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0,
                           avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->strict_std_compliance);
     ic->flags |= AVFMT_FLAG_NONBLOCK;
-
-    if(pgmyuv_compatibility_hack)
-        ic->video_codec_id= CODEC_ID_PGMYUV;
 
     /* open the input file with generic libav function */
     err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
