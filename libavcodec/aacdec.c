@@ -456,7 +456,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
 static int decode_audio_specific_config(AACContext *ac,
                                         AVCodecContext *avctx,
                                         MPEG4AudioConfig *m4ac,
-                                        void *data, int data_size)
+                                        const uint8_t *data, int data_size)
 {
     GetBitContext gb;
     int i;
