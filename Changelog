@@ -52,6 +52,7 @@ version <next>:
 - demuxer for receiving raw rtp:// URLs without an SDP description
 - single stream LATM/LOAS decoder
 - setpts filter added
+- Win64 support for optimized asm functions
 
 
 version 0.6:
