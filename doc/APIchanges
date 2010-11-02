@@ -13,6 +13,16 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-11-02 - r25653 - lavcore 0.11.0 - samplefmt.h
+  Add sample format functions in libavcore/samplefmt.h:
+  av_get_sample_fmt_name(),
+  av_get_sample_fmt(),
+  av_get_sample_fmt_string(),
+  and deprecate the corresponding libavcodec/audioconvert.h functions:
+  avcodec_get_sample_fmt_name(),
+  avcodec_get_sample_fmt(),
+  avcodec_sample_fmt_string().
+
 2010-11-02 - r25652 - lavcore 0.10.0 - samplefmt.h
   Define enum AVSampleFormat in libavcore/samplefmt.h, deprecate enum
   SampleFormat.

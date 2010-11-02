@@ -32,4 +32,30 @@ enum AVSampleFormat {
     AV_SAMPLE_FMT_NB           ///< Number of sample formats. DO NOT USE if dynamically linking to libavcore
 };
 
+/**
+ * Return the name of sample_fmt, or NULL if sample_fmt is not
+ * recognized.
+ */
+const char *av_get_sample_fmt_name(enum AVSampleFormat sample_fmt);
+
+/**
+ * Return a sample format corresponding to name, or AV_SAMPLE_FMT_NONE
+ * on error.
+ */
+enum AVSampleFormat av_get_sample_fmt(const char *name);
+
+/**
+ * Generate a string corresponding to the sample format with
+ * sample_fmt, or a header if sample_fmt is negative.
+ *
+ * @param buf the buffer where to write the string
+ * @param buf_size the size of buf
+ * @param sample_fmt the number of the sample format to print the
+ * corresponding info string, or a negative value to print the
+ * corresponding header.
+ * @return the pointer to the filled buffer or NULL if sample_fmt is
+ * unknown or in case of other errors
+ */
+char *av_get_sample_fmt_string(char *buf, int buf_size, enum AVSampleFormat sample_fmt);
+
 #endif /* AVCORE_SAMPLEFMT_H */
