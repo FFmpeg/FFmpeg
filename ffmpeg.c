@@ -1863,8 +1863,8 @@ static int copy_chapters(int infile, int outfile)
         out_ch->end       = FFMIN(rt, in_ch->end   - ts_off);
 
         if (metadata_chapters_autocopy)
-        while ((t = av_metadata_get(in_ch->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
-            av_metadata_set2(&out_ch->metadata, t->key, t->value, 0);
+            while ((t = av_metadata_get(in_ch->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
+                av_metadata_set2(&out_ch->metadata, t->key, t->value, 0);
 
         os->nb_chapters++;
         os->chapters = av_realloc(os->chapters, sizeof(AVChapter)*os->nb_chapters);
@@ -2093,9 +2093,9 @@ static int transcode(AVFormatContext **output_files,
         icodec = ist->st->codec;
 
         if (metadata_streams_autocopy)
-        while ((t = av_metadata_get(ist->st->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
-            av_metadata_set2(&ost->st->metadata, t->key, t->value, AV_METADATA_DONT_OVERWRITE);
-        }
+            while ((t = av_metadata_get(ist->st->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
+                av_metadata_set2(&ost->st->metadata, t->key, t->value, AV_METADATA_DONT_OVERWRITE);
+            }
 
         ost->st->disposition = ist->st->disposition;
         codec->bits_per_raw_sample= icodec->bits_per_raw_sample;
