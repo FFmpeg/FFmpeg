@@ -75,8 +75,7 @@ static int msrle_decode_pal4(AVCodecContext *avctx, AVPicture *pic,
                 odd_pixel =  stream_byte & 1;
                 rle_code = (stream_byte + 1) / 2;
                 extra_byte = rle_code & 0x01;
-                if ((row_ptr + pixel_ptr + stream_byte > frame_size) ||
-                    (row_ptr < 0)) {
+                if (row_ptr + pixel_ptr + stream_byte > frame_size) {
                     av_log(avctx, AV_LOG_ERROR, " MS RLE: frame ptr just went out of bounds (1)\n");
                     return -1;
                 }
@@ -101,8 +100,7 @@ static int msrle_decode_pal4(AVCodecContext *avctx, AVPicture *pic,
             }
         } else {
             // decode a run of data
-            if ((row_ptr + pixel_ptr + stream_byte > frame_size) ||
-                (row_ptr < 0)) {
+            if (row_ptr + pixel_ptr + stream_byte > frame_size) {
                 av_log(avctx, AV_LOG_ERROR, " MS RLE: frame ptr just went out of bounds (1)\n");
                 return -1;
             }
