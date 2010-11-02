@@ -352,8 +352,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         return ret;
 
     snprintf(args, 255, "%d:%d:%d:%d:%d", ist->st->codec->width,
-             ist->st->codec->height, ist->st->codec->pix_fmt,
-             ist->st->time_base.num, ist->st->time_base.den);
+             ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE);
     if ((ret = avfilter_init_filter(ist->input_video_filter, args, NULL)) < 0)
         return ret;
     if ((ret = avfilter_init_filter(ist->output_video_filter, NULL, &ffsink_ctx)) < 0)
@@ -1618,7 +1617,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
             if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ist->output_video_filter)
                 get_filtered_video_frame(ist->output_video_filter, &picture, &ist->picref, &ist_pts_tb);
             if (ist->picref)
-                ist->pts = ist->picref->pts;
+                ist->pts = av_rescale_q(ist->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
 #endif
             for(i=0;i<nb_ostreams;i++) {
                 int frame_size;
