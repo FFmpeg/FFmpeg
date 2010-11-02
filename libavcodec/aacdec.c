@@ -281,7 +281,8 @@ static void decode_channel_map(enum ChannelPosition *cpe_map,
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_pce(AACContext *ac, enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
+static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
+                      enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
                       GetBitContext *gb)
 {
     int num_front, num_side, num_back, num_lfe, num_assoc_data, num_cc, sampling_index;
@@ -290,8 +291,8 @@ static int decode_pce(AACContext *ac, enum ChannelPosition new_che_pos[4][MAX_EL
     skip_bits(gb, 2);  // object_type
 
     sampling_index = get_bits(gb, 4);
-    if (ac->m4ac.sampling_index != sampling_index)
-        av_log(ac->avctx, AV_LOG_WARNING, "Sample rate index in program config element does not match the sample rate index configured by the container.\n");
+    if (m4ac->sampling_index != sampling_index)
+        av_log(avctx, AV_LOG_WARNING, "Sample rate index in program config element does not match the sample rate index configured by the container.\n");
 
     num_front       = get_bits(gb, 4);
     num_side        = get_bits(gb, 4);
@@ -322,7 +323,7 @@ static int decode_pce(AACContext *ac, enum ChannelPosition new_che_pos[4][MAX_EL
     /* comment field, first byte is length */
     comment_len = get_bits(gb, 8) * 8;
     if (get_bits_left(gb) < comment_len) {
-        av_log(ac->avctx, AV_LOG_ERROR, overread_err);
+        av_log(avctx, AV_LOG_ERROR, overread_err);
         return -1;
     }
     skip_bits_long(gb, comment_len);
@@ -337,12 +338,12 @@ static int decode_pce(AACContext *ac, enum ChannelPosition new_che_pos[4][MAX_EL
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static av_cold int set_default_channel_config(AACContext *ac,
+static av_cold int set_default_channel_config(AVCodecContext *avctx,
                                       enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
                                       int channel_config)
 {
     if (channel_config < 1 || channel_config > 7) {
-        av_log(ac->avctx, AV_LOG_ERROR, "invalid default channel configuration (%d)\n",
+        av_log(avctx, AV_LOG_ERROR, "invalid default channel configuration (%d)\n",
                channel_config);
         return -1;
     }
@@ -378,9 +379,13 @@ static av_cold int set_default_channel_config(AACContext *ac,
 /**
  * Decode GA "General Audio" specific configuration; reference: table 4.1.
  *
+ * @param   ac          pointer to AACContext, may be null
+ * @param   avctx       pointer to AVCCodecContext, used for logging
+ *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
+static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
+                                     GetBitContext *gb,
                                      MPEG4AudioConfig *m4ac,
                                      int channel_config)
 {
@@ -388,7 +393,7 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
     int extension_flag, ret;
 
     if (get_bits1(gb)) { // frameLengthFlag
-        av_log_missing_feature(ac->avctx, "960/120 MDCT window is", 1);
+        av_log_missing_feature(avctx, "960/120 MDCT window is", 1);
         return -1;
     }
 
@@ -403,13 +408,13 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
     memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
     if (channel_config == 0) {
         skip_bits(gb, 4);  // element_instance_tag
-        if ((ret = decode_pce(ac, new_che_pos, gb)))
+        if ((ret = decode_pce(avctx, m4ac, new_che_pos, gb)))
             return ret;
     } else {
-        if ((ret = set_default_channel_config(ac, new_che_pos, channel_config)))
+        if ((ret = set_default_channel_config(avctx, new_che_pos, channel_config)))
             return ret;
     }
-    if ((ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config, OC_GLOBAL_HDR)))
+    if (ac && (ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config, OC_GLOBAL_HDR)))
         return ret;
 
     if (extension_flag) {
@@ -436,14 +441,18 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
 /**
  * Decode audio specific configuration; reference: table 1.13.
  *
+ * @param   ac          pointer to AACContext, may be null
+ * @param   avctx       pointer to AVCCodecContext, used for logging
+ * @param   m4ac        pointer to MPEG4AudioConfig, used for parsing
  * @param   data        pointer to AVCodecContext extradata
  * @param   data_size   size of AVCCodecContext extradata
  *
  * @return  Returns error status or number of consumed bits. <0 - error
  */
 static int decode_audio_specific_config(AACContext *ac,
-                                        MPEG4AudioConfig *m4ac, void *data,
-                                        int data_size)
+                                        AVCodecContext *avctx,
+                                        MPEG4AudioConfig *m4ac,
+                                        void *data, int data_size)
 {
     GetBitContext gb;
     int i;
@@ -453,7 +462,7 @@ static int decode_audio_specific_config(AACContext *ac,
     if ((i = ff_mpeg4audio_get_config(m4ac, data, data_size)) < 0)
         return -1;
     if (m4ac->sampling_index > 12) {
-        av_log(ac->avctx, AV_LOG_ERROR, "invalid sampling rate index %d\n", m4ac->sampling_index);
+        av_log(avctx, AV_LOG_ERROR, "invalid sampling rate index %d\n", m4ac->sampling_index);
         return -1;
     }
     if (m4ac->sbr == 1 && m4ac->ps == -1)
@@ -464,11 +473,11 @@ static int decode_audio_specific_config(AACContext *ac,
     switch (m4ac->object_type) {
     case AOT_AAC_MAIN:
     case AOT_AAC_LC:
-        if (decode_ga_specific_config(ac, &gb, m4ac, m4ac->chan_config))
+        if (decode_ga_specific_config(ac, avctx, &gb, m4ac, m4ac->chan_config))
             return -1;
         break;
     default:
-        av_log(ac->avctx, AV_LOG_ERROR, "Audio object type %s%d is not supported.\n",
+        av_log(avctx, AV_LOG_ERROR, "Audio object type %s%d is not supported.\n",
                m4ac->sbr == 1? "SBR+" : "", m4ac->object_type);
         return -1;
     }
@@ -526,7 +535,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     ac->m4ac.sample_rate = avctx->sample_rate;
 
     if (avctx->extradata_size > 0) {
-        if (decode_audio_specific_config(ac, &ac->m4ac, avctx->extradata, avctx->extradata_size) < 0)
+        if (decode_audio_specific_config(ac, ac->avctx, &ac->m4ac,
+                                         avctx->extradata,
+                                         avctx->extradata_size) < 0)
             return -1;
     }
 
@@ -1894,7 +1905,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
             enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
             memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
             ac->m4ac.chan_config = hdr_info.chan_config;
-            if (set_default_channel_config(ac, new_che_pos, hdr_info.chan_config))
+            if (set_default_channel_config(ac->avctx, new_che_pos, hdr_info.chan_config))
                 return -7;
             if (output_configure(ac, ac->che_pos, new_che_pos, hdr_info.chan_config, OC_TRIAL_FRAME))
                 return -7;
@@ -1980,7 +1991,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         case TYPE_PCE: {
             enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
             memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
-            if ((err = decode_pce(ac, new_che_pos, gb)))
+            if ((err = decode_pce(avctx, &ac->m4ac, new_che_pos, gb)))
                 break;
             if (ac->output_configured > OC_TRIAL_PCE)
                 av_log(avctx, AV_LOG_ERROR,
