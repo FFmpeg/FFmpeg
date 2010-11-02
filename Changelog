@@ -50,6 +50,7 @@ version <next>:
 - transpose filter added
 - ffmpeg -force_key_frames option added
 - demuxer for receiving raw rtp:// URLs without an SDP description
+- single stream LATM/LOAS decoder
 
 
 version 0.6:

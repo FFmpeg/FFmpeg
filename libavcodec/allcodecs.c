@@ -220,6 +220,7 @@ void avcodec_register_all(void)
 
     /* audio codecs */
     REGISTER_ENCDEC  (AAC, aac);
+    REGISTER_DECODER (AAC_LATM, aac_latm);
     REGISTER_ENCDEC  (AC3, ac3);
     REGISTER_ENCDEC  (ALAC, alac);
     REGISTER_DECODER (ALS, als);
@@ -366,6 +367,7 @@ void avcodec_register_all(void)
 
     /* parsers */
     REGISTER_PARSER  (AAC, aac);
+    REGISTER_PARSER  (AAC_LATM, aac_latm);
     REGISTER_PARSER  (AC3, ac3);
     REGISTER_PARSER  (CAVSVIDEO, cavsvideo);
     REGISTER_PARSER  (DCA, dca);
