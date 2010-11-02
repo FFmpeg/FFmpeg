@@ -502,6 +502,66 @@ settb=2*intb
 settb=AVTB
 @end example
 
+@section setpts
+
+Change the PTS (presentation timestamp) of the input video frames.
+
+Accept in input an expression evaluated through the eval API, which
+can contain the following constants:
+
+@table @option
+@item PTS
+the presentation timestamp in input
+
+@item PI
+Greek PI
+
+@item PHI
+golden ratio
+
+@item E
+Euler number
+
+@item N
+the count of the input frame, starting from 0.
+
+@item STARTPTS
+the PTS of the first video frame
+
+@item INTERLACED
+tell if the current frame is interlaced
+
+@item POS
+original position in the file of the frame, or undefined if undefined
+for the current frame
+
+@item PREV_INPTS
+previous input PTS
+
+@item PREV_OUTPTS
+previous output PTS
+
+@end table
+
+Some examples follow:
+
+@example
+# start counting PTS from zero
+setpts=PTS-STARTPTS
+
+# fast motion
+setpts=0.5*PTS
+
+# slow motion
+setpts=2.0*PTS
+
+# fixed rate 25 fps
+setpts=N/(25*TB)
+
+# fixed rate 25 fps with some jitter
+setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
+@end example
+
 @section slicify
 
 Pass the images of input video on to next video filter as multiple
