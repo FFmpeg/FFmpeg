@@ -381,6 +381,7 @@ static av_cold int set_default_channel_config(AACContext *ac,
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
+                                     MPEG4AudioConfig *m4ac,
                                      int channel_config)
 {
     enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
@@ -395,8 +396,8 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
         skip_bits(gb, 14);   // coreCoderDelay
     extension_flag = get_bits1(gb);
 
-    if (ac->m4ac.object_type == AOT_AAC_SCALABLE ||
-        ac->m4ac.object_type == AOT_ER_AAC_SCALABLE)
+    if (m4ac->object_type == AOT_AAC_SCALABLE ||
+        m4ac->object_type == AOT_ER_AAC_SCALABLE)
         skip_bits(gb, 3);     // layerNr
 
     memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
@@ -412,7 +413,7 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
         return ret;
 
     if (extension_flag) {
-        switch (ac->m4ac.object_type) {
+        switch (m4ac->object_type) {
         case AOT_ER_BSAC:
             skip_bits(gb, 5);    // numOfSubFrame
             skip_bits(gb, 11);   // layer_length
@@ -440,7 +441,8 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_audio_specific_config(AACContext *ac, void *data,
+static int decode_audio_specific_config(AACContext *ac,
+                                        MPEG4AudioConfig *m4ac, void *data,
                                         int data_size)
 {
     GetBitContext gb;
@@ -448,28 +450,29 @@ static int decode_audio_specific_config(AACContext *ac, void *data,
 
     init_get_bits(&gb, data, data_size * 8);
 
-    if ((i = ff_mpeg4audio_get_config(&ac->m4ac, data, data_size)) < 0)
+    if ((i = ff_mpeg4audio_get_config(m4ac, data, data_size)) < 0)
         return -1;
-    if (ac->m4ac.sampling_index > 12) {
-        av_log(ac->avctx, AV_LOG_ERROR, "invalid sampling rate index %d\n", ac->m4ac.sampling_index);
+    if (m4ac->sampling_index > 12) {
+        av_log(ac->avctx, AV_LOG_ERROR, "invalid sampling rate index %d\n", m4ac->sampling_index);
         return -1;
     }
-    if (ac->m4ac.sbr == 1 && ac->m4ac.ps == -1)
-        ac->m4ac.ps = 1;
+    if (m4ac->sbr == 1 && m4ac->ps == -1)
+        m4ac->ps = 1;
 
     skip_bits_long(&gb, i);
 
-    switch (ac->m4ac.object_type) {
+    switch (m4ac->object_type) {
     case AOT_AAC_MAIN:
     case AOT_AAC_LC:
-        if (decode_ga_specific_config(ac, &gb, ac->m4ac.chan_config))
+        if (decode_ga_specific_config(ac, &gb, m4ac, m4ac->chan_config))
             return -1;
         break;
     default:
         av_log(ac->avctx, AV_LOG_ERROR, "Audio object type %s%d is not supported.\n",
-               ac->m4ac.sbr == 1? "SBR+" : "", ac->m4ac.object_type);
+               m4ac->sbr == 1? "SBR+" : "", m4ac->object_type);
         return -1;
     }
+
     return 0;
 }
 
@@ -523,7 +526,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     ac->m4ac.sample_rate = avctx->sample_rate;
 
     if (avctx->extradata_size > 0) {
-        if (decode_audio_specific_config(ac, avctx->extradata, avctx->extradata_size))
+        if (decode_audio_specific_config(ac, &ac->m4ac, avctx->extradata, avctx->extradata_size) < 0)
             return -1;
     }
 
