@@ -439,7 +439,7 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
  * @param   data        pointer to AVCodecContext extradata
  * @param   data_size   size of AVCCodecContext extradata
  *
- * @return  Returns error status. 0 - OK, !0 - error
+ * @return  Returns error status or number of consumed bits. <0 - error
  */
 static int decode_audio_specific_config(AACContext *ac,
                                         MPEG4AudioConfig *m4ac, void *data,
@@ -473,7 +473,7 @@ static int decode_audio_specific_config(AACContext *ac,
         return -1;
     }
 
-    return 0;
+    return get_bits_count(&gb);
 }
 
 /**
