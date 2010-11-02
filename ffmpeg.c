@@ -97,8 +97,9 @@ typedef struct AVStreamMap {
  * select an input file for an output file
  */
 typedef struct AVMetaDataMap {
-    int out_file;
-    int in_file;
+    int  file;      //< file index
+    char type;      //< type of metadata to copy -- (g)lobal, (s)tream, (c)hapter or (p)rogram
+    int  index;     //< stream/chapter/program number
 } AVMetaDataMap;
 
 static const OptionDef options[];
@@ -125,7 +126,8 @@ static int nb_output_codecs = 0;
 static AVStreamMap *stream_maps = NULL;
 static int nb_stream_maps;
 
-static AVMetaDataMap *meta_data_maps = NULL;
+/* first item specifies output metadata, second is input */
+static AVMetaDataMap (*meta_data_maps)[2] = NULL;
 static int nb_meta_data_maps;
 
 /* indexed by output file stream index */
@@ -2326,32 +2328,52 @@ static int transcode(AVFormatContext **output_files,
 
     /* set meta data information from input file if required */
     for (i=0;i<nb_meta_data_maps;i++) {
-        AVFormatContext *out_file;
-        AVFormatContext *in_file;
+        AVFormatContext *files[2];
+        AVMetadata      **meta[2];
         AVMetadataTag *mtag;
+        int j;
 
-        int out_file_index = meta_data_maps[i].out_file;
-        int in_file_index = meta_data_maps[i].in_file;
-        if (out_file_index < 0 || out_file_index >= nb_output_files) {
-            snprintf(error, sizeof(error), "Invalid output file index %d map_meta_data(%d,%d)",
-                     out_file_index, out_file_index, in_file_index);
-            ret = AVERROR(EINVAL);
-            goto dump_format;
-        }
-        if (in_file_index < 0 || in_file_index >= nb_input_files) {
-            snprintf(error, sizeof(error), "Invalid input file index %d map_meta_data(%d,%d)",
-                     in_file_index, out_file_index, in_file_index);
-            ret = AVERROR(EINVAL);
-            goto dump_format;
+#define METADATA_CHECK_INDEX(index, nb_elems, desc)\
+        if ((index) < 0 || (index) >= (nb_elems)) {\
+            snprintf(error, sizeof(error), "Invalid %s index %d while processing metadata maps\n",\
+                     (desc), (index));\
+            ret = AVERROR(EINVAL);\
+            goto dump_format;\
         }
 
-        out_file = output_files[out_file_index];
-        in_file = input_files[in_file_index];
+        int out_file_index = meta_data_maps[i][0].file;
+        int in_file_index = meta_data_maps[i][1].file;
+        METADATA_CHECK_INDEX(out_file_index, nb_output_files, "output file")
+        METADATA_CHECK_INDEX(in_file_index, nb_input_files, "input file")
 
+        files[0] = output_files[out_file_index];
+        files[1] = input_files[in_file_index];
+
+        for (j = 0; j < 2; j++) {
+            AVMetaDataMap *map = &meta_data_maps[i][j];
+
+            switch (map->type) {
+            case 'g':
+                meta[j] = &files[j]->metadata;
+                break;
+            case 's':
+                METADATA_CHECK_INDEX(map->index, files[j]->nb_streams, "stream")
+                meta[j] = &files[j]->streams[map->index]->metadata;
+                break;
+            case 'c':
+                METADATA_CHECK_INDEX(map->index, files[j]->nb_chapters, "chapter")
+                meta[j] = &files[j]->chapters[map->index]->metadata;
+                break;
+            case 'p':
+                METADATA_CHECK_INDEX(map->index, files[j]->nb_programs, "program")
+                meta[j] = &files[j]->programs[map->index]->metadata;
+                break;
+            }
+        }
 
         mtag=NULL;
-        while((mtag=av_metadata_get(in_file->metadata, "", mtag, AV_METADATA_IGNORE_SUFFIX)))
-            av_metadata_set2(&out_file->metadata, mtag->key, mtag->value, AV_METADATA_DONT_OVERWRITE);
+        while((mtag=av_metadata_get(*meta[1], "", mtag, AV_METADATA_IGNORE_SUFFIX)))
+            av_metadata_set2(meta[0], mtag->key, mtag->value, AV_METADATA_DONT_OVERWRITE);
     }
 
     /* copy chapters from the first input file that has them*/
@@ -2890,20 +2912,44 @@ static void opt_map(const char *arg)
     }
 }
 
+static void parse_meta_type(const char *arg, char *type, int *index, char **endptr)
+{
+    *endptr = arg;
+    if (*arg == ',') {
+        *type = *(++arg);
+        switch (*arg) {
+        case 'g':
+            break;
+        case 's':
+        case 'c':
+        case 'p':
+            *index = strtol(++arg, endptr, 0);
+            break;
+        default:
+            fprintf(stderr, "Invalid metadata type %c.\n", *arg);
+            ffmpeg_exit(1);
+        }
+    } else
+        *type = 'g';
+}
+
 static void opt_map_meta_data(const char *arg)
 {
-    AVMetaDataMap *m;
+    AVMetaDataMap *m, *m1;
     char *p;
 
     meta_data_maps = grow_array(meta_data_maps, sizeof(*meta_data_maps),
                                 &nb_meta_data_maps, nb_meta_data_maps + 1);
 
-    m = &meta_data_maps[nb_meta_data_maps - 1];
-    m->out_file = strtol(arg, &p, 0);
+    m = &meta_data_maps[nb_meta_data_maps - 1][0];
+    m->file = strtol(arg, &p, 0);
+    parse_meta_type(p, &m->type, &m->index, &p);
     if (*p)
         p++;
 
-    m->in_file = strtol(p, &p, 0);
+    m1 = &meta_data_maps[nb_meta_data_maps - 1][1];
+    m1->file = strtol(p, &p, 0);
+    parse_meta_type(p, &m1->type, &m1->index, &p);
 }
 
 static void opt_input_ts_scale(const char *arg)
@@ -4038,7 +4084,7 @@ static const OptionDef options[] = {
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream[:syncfile:syncstream]" },
-    { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "set meta data information of outfile from infile", "outfile:infile" },
+    { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "set meta data information of outfile from infile", "outfile[,metadata]:infile[,metadata]" },
     { "t", OPT_FUNC2 | HAS_ARG, {(void*)opt_recording_time}, "record or transcode \"duration\" seconds of audio/video", "duration" },
     { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //
     { "ss", OPT_FUNC2 | HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },

@@ -586,9 +586,19 @@ Set stream mapping from input streams to output streams.
 Just enumerate the input streams in the order you want them in the output.
 @var{sync_stream_id} if specified sets the input stream to sync
 against.
-@item -map_meta_data @var{outfile}:@var{infile}
+@item -map_meta_data @var{outfile}[,@var{metadata}]:@var{infile}[,@var{metadata}]
 Set meta data information of @var{outfile} from @var{infile}. Note that those
 are file indices (zero-based), not filenames.
+Optional @var{metadata} parameters specify, which metadata to copy - (g)lobal
+(i.e. metadata that applies to the whole file), per-(s)tream, per-(c)hapter or
+per-(p)rogram. All metadata specifiers other than global must be followed by the
+stream/chapter/program number. If metadata specifier is omitted, it defaults to
+global.
+For example to copy metadata from the first stream of the input file to global metadata
+of the output file:
+@example
+ffmpeg -i in.ogg -map_meta_data 0:0,s0 out.mp3
+@end example
 @item -debug
 Print specific debug info.
 @item -benchmark
