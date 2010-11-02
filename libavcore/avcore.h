@@ -27,8 +27,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCORE_VERSION_MAJOR  0
-#define LIBAVCORE_VERSION_MINOR  9
-#define LIBAVCORE_VERSION_MICRO  1
+#define LIBAVCORE_VERSION_MINOR 10
+#define LIBAVCORE_VERSION_MICRO  0
 
 #define LIBAVCORE_VERSION_INT   AV_VERSION_INT(LIBAVCORE_VERSION_MAJOR, \
                                                LIBAVCORE_VERSION_MINOR, \
