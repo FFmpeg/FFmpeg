@@ -472,36 +472,6 @@ ratio of the input image.
 
 The default value of @var{width} and @var{height} is 0.
 
-@section settb
-
-Set the timebase to use for the output frames timestamps.
-It is mainly useful for testing timebase configuration.
-
-It accepts in input an arithmetic expression representing a rational.
-The expression can contain the constants "PI", "E", "PHI", "AVTB" (the
-default timebase), and "intb" (the input timebase).
-
-The default value for the input is "intb".
-
-Follow some examples.
-
-@example
-# set the timebase to 1/25
-settb=1/25
-
-# set the timebase to 1/10
-settb=0.1
-
-#set the timebase to 1001/1000
-settb=1+0.001
-
-#set the timebase to 2*intb
-settb=2*intb
-
-#set the default timebase value
-settb=AVTB
-@end example
-
 @section setpts
 
 Change the PTS (presentation timestamp) of the input video frames.
@@ -560,6 +530,36 @@ setpts=N/(25*TB)
 
 # fixed rate 25 fps with some jitter
 setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
+@end example
+
+@section settb
+
+Set the timebase to use for the output frames timestamps.
+It is mainly useful for testing timebase configuration.
+
+It accepts in input an arithmetic expression representing a rational.
+The expression can contain the constants "PI", "E", "PHI", "AVTB" (the
+default timebase), and "intb" (the input timebase).
+
+The default value for the input is "intb".
+
+Follow some examples.
+
+@example
+# set the timebase to 1/25
+settb=1/25
+
+# set the timebase to 1/10
+settb=0.1
+
+#set the timebase to 1001/1000
+settb=1+0.001
+
+#set the timebase to 2*intb
+settb=2*intb
+
+#set the default timebase value
+settb=AVTB
 @end example
 
 @section slicify
