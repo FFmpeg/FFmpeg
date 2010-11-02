@@ -136,6 +136,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
     int p1, p2, line=avctx->height - 1, pos=0, i;
     uint16_t av_uninit(pix16);
     uint32_t av_uninit(pix32);
+    unsigned int width= FFABS(pic->linesize[0]) / (depth >> 3);
 
     output = pic->data[0] + (avctx->height - 1) * pic->linesize[0];
     output_end = pic->data[0] + (avctx->height) * pic->linesize[0];
@@ -157,11 +158,11 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
                 p1 = *src++;
                 p2 = *src++;
                 line -= p2;
-                if (line < 0){
+                pos += p1;
+                if (line < 0 || pos >= width){
                     av_log(avctx, AV_LOG_ERROR, "Skip beyond picture bounds\n");
                     return -1;
                 }
-                pos += p1;
                 output = pic->data[0] + line * pic->linesize[0] + pos * (depth >> 3);
                 continue;
             }
