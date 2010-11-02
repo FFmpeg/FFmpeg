@@ -184,7 +184,7 @@ static void end_frame(AVFilterLink *inlink)
         av_log(ctx, AV_LOG_INFO,
                "x1:%d x2:%d y1:%d y2:%d w:%d h:%d x:%d y:%d pos:%"PRId64" pts:%"PRId64" t:%f crop=%d:%d:%d:%d\n",
                cd->x1, cd->x2, cd->y1, cd->y2, w, h, x, y, picref->pos, picref->pts,
-               picref->pts == AV_NOPTS_VALUE ? -1 : (double)picref->pts / AV_TIME_BASE,
+               picref->pts == AV_NOPTS_VALUE ? -1 : picref->pts * av_q2d(inlink->time_base),
                w, h, x, y);
     }
 

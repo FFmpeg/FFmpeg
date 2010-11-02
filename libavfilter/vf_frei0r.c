@@ -330,7 +330,7 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterBufferRef  *inpicref =  inlink->cur_buf;
     AVFilterBufferRef *outpicref = outlink->out_buf;
 
-    frei0r->update(frei0r->instance, (double)inpicref->pts / AV_TIME_BASE,
+    frei0r->update(frei0r->instance, inpicref->pts * av_q2d(inlink->time_base) * 1000,
                    (const uint32_t *)inpicref->data[0],
                    (uint32_t *)outpicref->data[0]);
     avfilter_unref_buffer(inpicref);
