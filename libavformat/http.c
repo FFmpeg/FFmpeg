@@ -138,7 +138,8 @@ static int http_open_cnx(URLContext *h)
         } else
             goto fail;
     }
-    if ((s->http_code == 302 || s->http_code == 303) && location_changed == 1) {
+    if ((s->http_code == 301 || s->http_code == 302 || s->http_code == 303 || s->http_code == 307)
+        && location_changed == 1) {
         /* url moved, get next */
         url_close(hd);
         if (redirects++ >= MAX_REDIRECTS)
