@@ -58,4 +58,13 @@ enum AVSampleFormat av_get_sample_fmt(const char *name);
  */
 char *av_get_sample_fmt_string(char *buf, int buf_size, enum AVSampleFormat sample_fmt);
 
+/**
+ * Return sample format bits per sample.
+ *
+ * @param sample_fmt the sample format
+ * @return number of bits per sample or zero if unknown for the given
+ * sample format
+ */
+int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt);
+
 #endif /* AVCORE_SAMPLEFMT_H */
