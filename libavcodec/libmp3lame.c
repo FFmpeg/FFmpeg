@@ -55,8 +55,7 @@ static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
     } else {
         lame_set_quality(s->gfp, avctx->compression_level);
     }
-    /* lame 3.91 doesn't work in mono */
-    lame_set_mode(s->gfp, JOINT_STEREO);
+    lame_set_mode(s->gfp, s->stereo ? JOINT_STEREO : MONO);
     lame_set_brate(s->gfp, avctx->bit_rate/1000);
     if(avctx->flags & CODEC_FLAG_QSCALE) {
         lame_set_brate(s->gfp, 0);
