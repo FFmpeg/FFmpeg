@@ -27,16 +27,16 @@
 static void get_pixels_8x4_sym_sse2(DCTELEM *block, const uint8_t *pixels, int line_size)
 {
     __asm__ volatile(
-        "pxor %%xmm7,      %%xmm7       \n\t"
+        "pxor %%xmm5,      %%xmm5       \n\t"
         "movq (%0),        %%xmm0       \n\t"
         "add  %2,          %0           \n\t"
         "movq (%0),        %%xmm1       \n\t"
         "movq (%0, %2),    %%xmm2       \n\t"
         "movq (%0, %2,2),  %%xmm3       \n\t"
-        "punpcklbw %%xmm7, %%xmm0       \n\t"
-        "punpcklbw %%xmm7, %%xmm1       \n\t"
-        "punpcklbw %%xmm7, %%xmm2       \n\t"
-        "punpcklbw %%xmm7, %%xmm3       \n\t"
+        "punpcklbw %%xmm5, %%xmm0       \n\t"
+        "punpcklbw %%xmm5, %%xmm1       \n\t"
+        "punpcklbw %%xmm5, %%xmm2       \n\t"
+        "punpcklbw %%xmm5, %%xmm3       \n\t"
         "movdqa %%xmm0,      (%1)       \n\t"
         "movdqa %%xmm1,    16(%1)       \n\t"
         "movdqa %%xmm2,    32(%1)       \n\t"
