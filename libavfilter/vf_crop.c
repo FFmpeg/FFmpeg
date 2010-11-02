@@ -240,8 +240,8 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     picref->video->w = crop->w;
     picref->video->h = crop->h;
 
-    /* FIXME: when the TB will be settable */
-    crop->var_values[VAR_T]   = picref->pts == AV_NOPTS_VALUE ? NAN : (double)picref->pts / AV_TIME_BASE;
+    crop->var_values[VAR_T] = picref->pts == AV_NOPTS_VALUE ?
+        NAN : picref->pts * av_q2d(link->time_base);
     crop->var_values[VAR_POS] = picref->pos == -1 ? NAN : picref->pos;
     crop->var_values[VAR_X] = av_eval_expr(crop->x_pexpr, crop->var_values, NULL);
     crop->var_values[VAR_Y] = av_eval_expr(crop->y_pexpr, crop->var_values, NULL);
