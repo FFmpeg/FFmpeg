@@ -307,6 +307,7 @@ static void gen_vector_table24(TrueMotion1Context *s, const uint8_t *sel_vector_
 static int truemotion1_decode_header(TrueMotion1Context *s)
 {
     int i;
+    int width_shift = 0;
     int new_pix_fmt;
     struct frame_header header;
     uint8_t header_buffer[128];  /* logical maximum size of the header */
@@ -373,8 +374,6 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
             }
         }
     }
-    if (av_image_check_size(s->w, s->h, 0, s->avctx) < 0)
-        return -1;
 
     if (header.compression >= 17) {
         av_log(s->avctx, AV_LOG_ERROR, "invalid compression type (%d)\n", header.compression);
@@ -396,10 +395,15 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         }
     }
 
-    if (compression_types[header.compression].algorithm == ALGO_RGB24H)
+    if (compression_types[header.compression].algorithm == ALGO_RGB24H) {
         new_pix_fmt = PIX_FMT_RGB32;
-    else
+        width_shift = 1;
+    } else
         new_pix_fmt = PIX_FMT_RGB555; // RGB565 is supported as well
+
+    s->w >>= width_shift;
+    if (av_image_check_size(s->w, s->h, 0, s->avctx) < 0)
+        return -1;
 
     if (s->w != s->avctx->width || s->h != s->avctx->height ||
         new_pix_fmt != s->avctx->pix_fmt) {
@@ -413,7 +417,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     /* There is 1 change bit per 4 pixels, so each change byte represents
      * 32 pixels; divide width by 4 to obtain the number of change bits and
      * then round up to the nearest byte. */
-    s->mb_change_bits_row_size = ((s->avctx->width >> 2) + 7) >> 3;
+    s->mb_change_bits_row_size = ((s->avctx->width >> (2 - width_shift)) + 7) >> 3;
 
     if ((header.deltaset != s->last_deltaset) || (header.vectable != s->last_vectable))
     {
@@ -827,7 +831,7 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
                 }
             }
 
-            pixels_left -= 4;
+            pixels_left -= 2;
         }
 
         /* next change row */
