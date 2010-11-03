@@ -35,6 +35,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "libavcore/imgutils.h"
 
 #include "truemotion1data.h"
 
@@ -71,6 +72,7 @@ typedef struct TrueMotion1Context {
     int last_deltaset, last_vectable;
 
     unsigned int *vert_pred;
+    int vert_pred_size;
 
 } TrueMotion1Context;
 
@@ -305,6 +307,7 @@ static void gen_vector_table24(TrueMotion1Context *s, const uint8_t *sel_vector_
 static int truemotion1_decode_header(TrueMotion1Context *s)
 {
     int i;
+    int new_pix_fmt;
     struct frame_header header;
     uint8_t header_buffer[128];  /* logical maximum size of the header */
     const uint8_t *sel_vector_table;
@@ -375,6 +378,8 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
             }
         }
     }
+    if (av_image_check_size(s->w, s->h, 0, s->avctx) < 0)
+        return -1;
 
     if (header.compression >= 17) {
         av_log(s->avctx, AV_LOG_ERROR, "invalid compression type (%d)\n", header.compression);
@@ -396,11 +401,19 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         }
     }
 
-    // FIXME: where to place this ?!?!
     if (compression_types[header.compression].algorithm == ALGO_RGB24H)
-        s->avctx->pix_fmt = PIX_FMT_RGB32;
+        new_pix_fmt = PIX_FMT_RGB32;
     else
-        s->avctx->pix_fmt = PIX_FMT_RGB555; // RGB565 is supported as well
+        new_pix_fmt = PIX_FMT_RGB555; // RGB565 is supported as well
+
+    if (s->w != s->avctx->width || s->h != s->avctx->height ||
+        new_pix_fmt != s->avctx->pix_fmt) {
+        if (s->frame.data[0])
+            s->avctx->release_buffer(s->avctx, &s->frame);
+        s->avctx->pix_fmt = new_pix_fmt;
+        avcodec_set_dimensions(s->avctx, s->w, s->h);
+        av_fast_malloc(&s->vert_pred, &s->vert_pred_size, s->avctx->width * sizeof(unsigned int));
+    }
 
     if ((header.deltaset != s->last_deltaset) || (header.vectable != s->last_vectable))
     {
@@ -460,8 +473,7 @@ static av_cold int truemotion1_decode_init(AVCodecContext *avctx)
 
     /* there is a vertical predictor for each pixel in a line; each vertical
      * predictor is 0 to start with */
-    s->vert_pred =
-        (unsigned int *)av_malloc(s->avctx->width * sizeof(unsigned int));
+    av_fast_malloc(&s->vert_pred, &s->vert_pred_size, s->avctx->width * sizeof(unsigned int));
 
     return 0;
 }
