@@ -36,6 +36,7 @@
 #include "bytestream.h"
 #include "bgmc.h"
 #include "dsputil.h"
+#include "libavcore/samplefmt.h"
 #include "libavutil/crc.h"
 
 #include <stdint.h>
@@ -1426,7 +1427,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     // check for size of decoded data
     size = ctx->cur_frame_length * avctx->channels *
-           (av_get_bits_per_sample_format(avctx->sample_fmt) >> 3);
+           (av_get_bits_per_sample_fmt(avctx->sample_fmt) >> 3);
 
     if (size > *data_size) {
         av_log(avctx, AV_LOG_ERROR, "Decoded data exceeds buffer size.\n");
@@ -1679,7 +1680,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         ctx->crc_buffer = av_malloc(sizeof(*ctx->crc_buffer) *
                                     ctx->cur_frame_length *
                                     avctx->channels *
-                                    (av_get_bits_per_sample_format(avctx->sample_fmt) >> 3));
+                                    (av_get_bits_per_sample_fmt(avctx->sample_fmt) >> 3));
         if (!ctx->crc_buffer) {
             av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
             decode_end(avctx);

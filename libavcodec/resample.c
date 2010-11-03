@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "audioconvert.h"
 #include "libavutil/opt.h"
+#include "libavcore/samplefmt.h"
 
 struct AVResampleContext;
 
@@ -174,15 +175,15 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
 
     s->sample_fmt [0] = sample_fmt_in;
     s->sample_fmt [1] = sample_fmt_out;
-    s->sample_size[0] = av_get_bits_per_sample_format(s->sample_fmt[0])>>3;
-    s->sample_size[1] = av_get_bits_per_sample_format(s->sample_fmt[1])>>3;
+    s->sample_size[0] = av_get_bits_per_sample_fmt(s->sample_fmt[0])>>3;
+    s->sample_size[1] = av_get_bits_per_sample_fmt(s->sample_fmt[1])>>3;
 
     if (s->sample_fmt[0] != SAMPLE_FMT_S16) {
         if (!(s->convert_ctx[0] = av_audio_convert_alloc(SAMPLE_FMT_S16, 1,
                                                          s->sample_fmt[0], 1, NULL, 0))) {
             av_log(s, AV_LOG_ERROR,
                    "Cannot convert %s sample format to s16 sample format\n",
-                   avcodec_get_sample_fmt_name(s->sample_fmt[0]));
+                   av_get_sample_fmt_name(s->sample_fmt[0]));
             av_free(s);
             return NULL;
         }
@@ -193,7 +194,7 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                                                          SAMPLE_FMT_S16, 1, NULL, 0))) {
             av_log(s, AV_LOG_ERROR,
                    "Cannot convert s16 sample format to %s sample format\n",
-                   avcodec_get_sample_fmt_name(s->sample_fmt[1]));
+                   av_get_sample_fmt_name(s->sample_fmt[1]));
             av_audio_convert_free(s->convert_ctx[0]);
             av_free(s);
             return NULL;

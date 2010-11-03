@@ -37,6 +37,7 @@
 #include "libavcodec/opt.h"
 #include "libavcodec/audioconvert.h"
 #include "libavcore/parseutils.h"
+#include "libavcore/samplefmt.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/fifo.h"
 #include "libavutil/intreadwrite.h"
@@ -769,8 +770,8 @@ static void do_audio_out(AVFormatContext *s,
     int size_out, frame_bytes, ret;
     AVCodecContext *enc= ost->st->codec;
     AVCodecContext *dec= ist->st->codec;
-    int osize= av_get_bits_per_sample_format(enc->sample_fmt)/8;
-    int isize= av_get_bits_per_sample_format(dec->sample_fmt)/8;
+    int osize= av_get_bits_per_sample_fmt(enc->sample_fmt)/8;
+    int isize= av_get_bits_per_sample_fmt(dec->sample_fmt)/8;
     const int coded_bps = av_get_bits_per_sample(enc->codec->id);
 
 need_realloc:
@@ -824,8 +825,8 @@ need_realloc:
                                                    dec->sample_fmt, 1, NULL, 0);
         if (!ost->reformat_ctx) {
             fprintf(stderr, "Cannot convert %s sample format to %s sample format\n",
-                avcodec_get_sample_fmt_name(dec->sample_fmt),
-                avcodec_get_sample_fmt_name(enc->sample_fmt));
+                av_get_sample_fmt_name(dec->sample_fmt),
+                av_get_sample_fmt_name(enc->sample_fmt));
             ffmpeg_exit(1);
         }
         ost->reformat_pair=MAKE_SFMT_PAIR(enc->sample_fmt,dec->sample_fmt);
@@ -1443,7 +1444,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 #endif
 
     AVPacket avpkt;
-    int bps = av_get_bits_per_sample_format(ist->st->codec->sample_fmt)>>3;
+    int bps = av_get_bits_per_sample_fmt(ist->st->codec->sample_fmt)>>3;
 
     if(ist->next_pts == AV_NOPTS_VALUE)
         ist->next_pts= ist->pts;
@@ -1760,7 +1761,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             ret = 0;
                             /* encode any samples remaining in fifo */
                             if (fifo_bytes > 0) {
-                                int osize = av_get_bits_per_sample_format(enc->sample_fmt) >> 3;
+                                int osize = av_get_bits_per_sample_fmt(enc->sample_fmt) >> 3;
                                 int fs_tmp = enc->frame_size;
 
                                 av_fifo_generic_read(ost->fifo, audio_buf, fifo_bytes, NULL);
@@ -2817,9 +2818,9 @@ static int opt_thread_count(const char *opt, const char *arg)
 static void opt_audio_sample_fmt(const char *arg)
 {
     if (strcmp(arg, "list"))
-        audio_sample_fmt = avcodec_get_sample_fmt(arg);
+        audio_sample_fmt = av_get_sample_fmt(arg);
     else {
-        list_fmts(avcodec_sample_fmt_string, SAMPLE_FMT_NB);
+        list_fmts(av_get_sample_fmt_string, SAMPLE_FMT_NB);
         ffmpeg_exit(0);
     }
 }

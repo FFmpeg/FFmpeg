@@ -20,6 +20,7 @@
  */
 
 #include "libavcore/imgutils.h"
+#include "libavcore/samplefmt.h"
 #include "libavcodec/audioconvert.h"
 #include "avfilter.h"
 
@@ -109,7 +110,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
     samples->refcount   = 1;
     samples->free       = avfilter_default_free_buffer;
 
-    sample_size = av_get_bits_per_sample_format(sample_fmt) >>3;
+    sample_size = av_get_bits_per_sample_fmt(sample_fmt) >>3;
     chans_nb = avcodec_channel_layout_num_channels(channel_layout);
 
     per_channel_size = size/chans_nb;

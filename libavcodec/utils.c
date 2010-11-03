@@ -30,6 +30,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/pixdesc.h"
 #include "libavcore/imgutils.h"
+#include "libavcore/samplefmt.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"
@@ -923,7 +924,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         avcodec_get_channel_layout_string(buf + strlen(buf), buf_size - strlen(buf), enc->channels, enc->channel_layout);
         if (enc->sample_fmt != SAMPLE_FMT_NONE) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %s", avcodec_get_sample_fmt_name(enc->sample_fmt));
+                     ", %s", av_get_sample_fmt_name(enc->sample_fmt));
         }
         break;
     case AVMEDIA_TYPE_DATA:

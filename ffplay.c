@@ -30,6 +30,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavcore/imgutils.h"
 #include "libavcore/parseutils.h"
+#include "libavcore/samplefmt.h"
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
@@ -2099,8 +2100,8 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                                                          dec->sample_fmt, 1, NULL, 0);
                 if (!is->reformat_ctx) {
                     fprintf(stderr, "Cannot convert %s sample format to %s sample format\n",
-                        avcodec_get_sample_fmt_name(dec->sample_fmt),
-                        avcodec_get_sample_fmt_name(SAMPLE_FMT_S16));
+                        av_get_sample_fmt_name(dec->sample_fmt),
+                        av_get_sample_fmt_name(SAMPLE_FMT_S16));
                         break;
                 }
                 is->audio_src_fmt= dec->sample_fmt;
@@ -2109,7 +2110,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             if (is->reformat_ctx) {
                 const void *ibuf[6]= {is->audio_buf1};
                 void *obuf[6]= {is->audio_buf2};
-                int istride[6]= {av_get_bits_per_sample_format(dec->sample_fmt)/8};
+                int istride[6]= {av_get_bits_per_sample_fmt(dec->sample_fmt)/8};
                 int ostride[6]= {2};
                 int len= data_size/istride[0];
                 if (av_audio_convert(is->reformat_ctx, obuf, ostride, ibuf, istride, len)<0) {

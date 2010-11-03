@@ -26,6 +26,7 @@
 #include "avc.h"
 #include "flacenc.h"
 #include "avlanguage.h"
+#include "libavcore/samplefmt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/lfg.h"
@@ -540,7 +541,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         AVMetadataTag *tag;
 
         if (!bit_depth)
-            bit_depth = av_get_bits_per_sample_format(codec->sample_fmt);
+            bit_depth = av_get_bits_per_sample_fmt(codec->sample_fmt);
 
         if (codec->codec_id == CODEC_ID_AAC)
             get_aac_sample_rates(s, codec, &sample_rate, &output_sample_rate);
