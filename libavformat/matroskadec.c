@@ -1033,6 +1033,11 @@ static void matroska_convert_tag(AVFormatContext *s, EbmlList *list,
 
     for (i=0; i < list->nb_elem; i++) {
         const char *lang = strcmp(tags[i].lang, "und") ? tags[i].lang : NULL;
+
+        if (!tags[i].name) {
+            av_log(s, AV_LOG_WARNING, "Skipping invalid tag with no TagName.\n");
+            continue;
+        }
         if (prefix)  snprintf(key, sizeof(key), "%s/%s", prefix, tags[i].name);
         else         av_strlcpy(key, tags[i].name, sizeof(key));
         if (tags[i].def || !lang) {
