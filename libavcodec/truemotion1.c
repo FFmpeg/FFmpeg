@@ -409,6 +409,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         new_pix_fmt != s->avctx->pix_fmt) {
         if (s->frame.data[0])
             s->avctx->release_buffer(s->avctx, &s->frame);
+        s->avctx->sample_aspect_ratio = (AVRational){ 1 << width_shift, 1 };
         s->avctx->pix_fmt = new_pix_fmt;
         avcodec_set_dimensions(s->avctx, s->w, s->h);
         av_fast_malloc(&s->vert_pred, &s->vert_pred_size, s->avctx->width * sizeof(unsigned int));
