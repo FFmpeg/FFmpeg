@@ -312,11 +312,6 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     uint8_t header_buffer[128];  /* logical maximum size of the header */
     const uint8_t *sel_vector_table;
 
-    /* There is 1 change bit per 4 pixels, so each change byte represents
-     * 32 pixels; divide width by 4 to obtain the number of change bits and
-     * then round up to the nearest byte. */
-    s->mb_change_bits_row_size = ((s->avctx->width >> 2) + 7) >> 3;
-
     header.header_size = ((s->buf[0] >> 5) | (s->buf[0] << 3)) & 0x7f;
     if (s->buf[0] < 0x10)
     {
@@ -414,6 +409,11 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         avcodec_set_dimensions(s->avctx, s->w, s->h);
         av_fast_malloc(&s->vert_pred, &s->vert_pred_size, s->avctx->width * sizeof(unsigned int));
     }
+
+    /* There is 1 change bit per 4 pixels, so each change byte represents
+     * 32 pixels; divide width by 4 to obtain the number of change bits and
+     * then round up to the nearest byte. */
+    s->mb_change_bits_row_size = ((s->avctx->width >> 2) + 7) >> 3;
 
     if ((header.deltaset != s->last_deltaset) || (header.vectable != s->last_vectable))
     {
