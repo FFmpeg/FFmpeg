@@ -1810,7 +1810,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(h->sps.frame_mbs_only_flag)
         s->height= 16*s->mb_height - 2*FFMIN(h->sps.crop_bottom, 7);
     else
-        s->height= 16*s->mb_height - 4*FFMIN(h->sps.crop_bottom, 3);
+        s->height= 16*s->mb_height - 4*FFMIN(h->sps.crop_bottom, 7);
 
     if (s->context_initialized
         && (   s->width != s->avctx->width || s->height != s->avctx->height
