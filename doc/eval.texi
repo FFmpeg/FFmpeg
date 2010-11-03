@@ -1,0 +1,137 @@
+@chapter Expression Evaluation
+@c man begin EXPRESSION EVALUATION
+
+When evaluating an arithemetic expression, FFmpeg uses an internal
+formula evaluator, implemented through the @file{libavutil/eval.h}
+interface.
+
+An expression may contain unary, binary operators, constants, and
+functions.
+
+Two expressions @var{expr1} and @var{expr2} can be combined to form
+another expression "@var{expr1};@var{expr2}".
+@var{expr1} and @var{expr2} are evaluated in turn, and the new
+expression evaluates to the value of @var{expr2}.
+
+The following binary operators are available: @code{+}, @code{-},
+@code{*}, @code{/}, @code{^}.
+
+The following unary operators are available: @code{+}, @code{-}.
+
+The following functions are available:
+@table @option
+@item sinh(x)
+@item cosh(x)
+@item tanh(x)
+@item sin(x)
+@item cos(x)
+@item tan(x)
+@item atan(x)
+@item asin(x)
+@item acos(x)
+@item exp(x)
+@item log(x)
+@item abs(x)
+@item squish(x)
+@item gauss(x)
+@item mod(x, y)
+@item max(x, y)
+@item min(x, y)
+@item eq(x, y)
+@item gte(x, y)
+@item gt(x, y)
+@item lte(x, y)
+@item lt(x, y)
+@item st(var, expr)
+Allow to store the value of the expression @var{expr} in an internal
+variable. @var{var} specifies the number of the variable where to
+store the value, and it is a value ranging from 0 to 9. The function
+returns the value stored in the internal variable.
+
+@item ld(var)
+Allow to load the value of the internal variable with number
+@var{var}, which was previosly stored with st(@var{var}, @var{expr}).
+The function returns the loaded value.
+
+@item while(cond, expr)
+Evaluate expression @var{expr} while the expression @var{cond} is
+non-zero, and returns the value of the last @var{expr} evaluation, or
+NAN if @var{cond} was always false.
+@end table
+
+Note that:
+
+@code{*} works like AND
+
+@code{+} works like OR
+
+thus
+@example
+if A then B else C
+@end example
+is equivalent to
+@example
+A*B + not(A)*C
+@end example
+
+When A evaluates to either 1 or 0, that is the same as
+@example
+A*B + eq(A,0)*C
+@end example
+
+In your C code, you can extend the list of unary and binary functions,
+and define recognized constants, so that they are available for your
+expressions.
+
+The evaluator also recognizes the International System number
+postfixes. If 'i' is appended after the postfix, powers of 2 are used
+instead of powers of 10. The 'B' postfix multiplies the value for 8,
+and can be appended after another postfix or used alone. This allows
+using for example 'KB', 'MiB', 'G' and 'B' as postfix.
+
+Follows the list of available International System postfixes, with
+indication of the corresponding powers of 10 and of 2.
+@table @option
+@item y
+-24 / -80
+@item z
+-21 / -70
+@item a
+-18 / -60
+@item f
+-15 / -50
+@item p
+-12 / -40
+@item n
+-9 / -30
+@item u
+-6 / -20
+@item m
+-3 / -10
+@item c
+-2
+@item d
+-1
+@item h
+2
+@item k
+3 / 10
+@item K
+3 / 10
+@item M
+6 / 20
+@item G
+9 / 30
+@item T
+12 / 40
+@item P
+15 / 40
+@item E
+18 / 50
+@item Z
+21 / 60
+@item Y
+24 / 70
+@end table
+
+@c man end

@@ -354,8 +354,39 @@ qp offset between P- and B-frames
 @item -i_qoffset @var{offset}
 qp offset between P- and I-frames
 @item -rc_eq @var{equation}
-Set rate control equation (@pxref{FFmpeg formula
-evaluator}) (default = @code{tex^qComp}).
+Set rate control equation (see section "Expression Evaluation")
+(default = @code{tex^qComp}).
+
+When computing the rate control equation expression, besides the
+standard functions defined in the section "Expression Evaluation", the
+following functions are available:
+@table @var
+@item bits2qp(bits)
+@item qp2bits(qp)
+@end table
+
+and the following constants are available:
+@table @var
+@item iTex
+@item pTex
+@item tex
+@item mv
+@item fCode
+@item iCount
+@item mcVar
+@item var
+@item isI
+@item isP
+@item isB
+@item avgQP
+@item qComp
+@item avgIITex
+@item avgPITex
+@item avgPPTex
+@item avgBPTex
+@item avgTex
+@end table
+
 @item -rc_override @var{override}
 rate control override for specific intervals
 @item -me_method @var{method}
@@ -694,74 +725,6 @@ directories, where @var{codec_name} is the name of the codec to which
 the preset file options will be applied. For example, if you select
 the video codec with @code{-vcodec libx264} and use @code{-vpre max},
 then it will search for the file @file{libx264-max.ffpreset}.
-
-@anchor{FFmpeg formula evaluator}
-@section FFmpeg formula evaluator
-
-When evaluating a rate control string, FFmpeg uses an internal formula
-evaluator.
-
-The following binary operators are available: @code{+}, @code{-},
-@code{*}, @code{/}, @code{^}.
-
-The following unary operators are available: @code{+}, @code{-},
-@code{(...)}.
-
-The following statements are available: @code{ld}, @code{st},
-@code{while}.
-
-The following functions are available:
-@table @var
-@item sinh(x)
-@item cosh(x)
-@item tanh(x)
-@item sin(x)
-@item cos(x)
-@item tan(x)
-@item atan(x)
-@item asin(x)
-@item acos(x)
-@item exp(x)
-@item log(x)
-@item abs(x)
-@item squish(x)
-@item gauss(x)
-@item mod(x, y)
-@item max(x, y)
-@item min(x, y)
-@item eq(x, y)
-@item gte(x, y)
-@item gt(x, y)
-@item lte(x, y)
-@item lt(x, y)
-@item bits2qp(bits)
-@item qp2bits(qp)
-@end table
-
-The following constants are available:
-@table @var
-@item PI
-@item E
-@item iTex
-@item pTex
-@item tex
-@item mv
-@item fCode
-@item iCount
-@item mcVar
-@item var
-@item isI
-@item isP
-@item isB
-@item avgQP
-@item qComp
-@item avgIITex
-@item avgPITex
-@item avgPPTex
-@item avgBPTex
-@item avgTex
-@end table
-
 @c man end
 
 @chapter Tips
@@ -970,6 +933,7 @@ options have to be specified immediately after the name of the output
 file to which you want to add them.
 @c man end EXAMPLES
 
+@include eval.texi
 @include indevs.texi
 @include outdevs.texi
 @include protocols.texi
