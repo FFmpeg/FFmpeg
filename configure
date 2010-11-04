@@ -2918,8 +2918,9 @@ if enabled icc; then
     # -wd: Disable following warnings
     # 144, 167, 556: -Wno-pointer-sign
     # 10006: ignoring unknown option -fno-signed-zeros
+    # 10148: ignoring unknown option -Wno-parentheses
     # 10156: ignoring option '-W'; no argument required
-    check_cflags -wd144,167,556,10006,10156
+    check_cflags -wd144,167,556,10006,10148,10156
     # 11030: Warning unknown option --as-needed
     # 10156: ignoring option '-export'; no argument required
     check_ldflags -wd10156,11030
