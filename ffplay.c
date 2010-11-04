@@ -1795,7 +1795,7 @@ static int video_thread(void *arg)
     char sws_flags_str[128];
     FFSinkContext ffsink_ctx = { .pix_fmt = PIX_FMT_YUV420P };
     AVFilterContext *filt_src = NULL, *filt_out = NULL;
-    AVFilterGraph *graph = av_mallocz(sizeof(AVFilterGraph));
+    AVFilterGraph *graph = avfilter_graph_alloc();
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 

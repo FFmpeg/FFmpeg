@@ -32,6 +32,11 @@ typedef struct AVFilterGraph {
 } AVFilterGraph;
 
 /**
+ * Allocate a filter graph.
+ */
+AVFilterGraph *avfilter_graph_alloc(void);
+
+/**
  * Get a filter instance with name name from graph.
  *
  * @return the pointer to the found filter instance or NULL if it

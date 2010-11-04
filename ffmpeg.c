@@ -345,7 +345,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     char args[255];
     int ret;
 
-    graph = av_mallocz(sizeof(AVFilterGraph));
+    graph = avfilter_graph_alloc();
 
     if ((ret = avfilter_open(&ist->input_video_filter, avfilter_get_by_name("buffer"), "src")) < 0)
         return ret;
