@@ -13,6 +13,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-11-04 - r25673 - lavfi 1.56.0 - avfilter_graph_free()
+  Rename avfilter_graph_destroy() to avfilter_graph_free().
+  This change breaks libavfilter API/ABI.
+
 2010-11-04 - r25672 - lavfi 1.55.0 - avfilter_graph_alloc()
   Add avfilter_graph_alloc() to libavfilter/avfiltergraph.h.
 

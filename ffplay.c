@@ -1886,7 +1886,7 @@ static int video_thread(void *arg)
     }
  the_end:
 #if CONFIG_AVFILTER
-    avfilter_graph_destroy(graph);
+    avfilter_graph_free(graph);
     av_freep(&graph);
 #endif
     av_free(frame);

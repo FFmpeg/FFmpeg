@@ -85,6 +85,6 @@ int avfilter_graph_config(AVFilterGraph *graphctx, AVClass *log_ctx);
 /**
  * Free a graph and destroy its links.
  */
-void avfilter_graph_destroy(AVFilterGraph *graph);
+void avfilter_graph_free(AVFilterGraph *graph);
 
 #endif  /* AVFILTER_AVFILTERGRAPH_H */

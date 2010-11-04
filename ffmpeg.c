@@ -2628,7 +2628,7 @@ static int transcode(AVFormatContext **output_files,
     }
 #if CONFIG_AVFILTER
     if (graph) {
-        avfilter_graph_destroy(graph);
+        avfilter_graph_free(graph);
         av_freep(&graph);
     }
 #endif

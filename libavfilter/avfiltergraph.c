@@ -31,7 +31,7 @@ AVFilterGraph *avfilter_graph_alloc(void)
     return av_mallocz(sizeof(AVFilterGraph));
 }
 
-void avfilter_graph_destroy(AVFilterGraph *graph)
+void avfilter_graph_free(AVFilterGraph *graph)
 {
     for(; graph->filter_count > 0; graph->filter_count --)
         avfilter_destroy(graph->filters[graph->filter_count - 1]);
