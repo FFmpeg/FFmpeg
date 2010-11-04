@@ -261,6 +261,26 @@ void init_pts_correction(PtsCorrectionContext *ctx);
  */
 int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t pts, int64_t dts);
 
+/**
+ * Get a file corresponding to a preset file.
+ *
+ * If is_path is non-zero, look for the file in the path preset_name.
+ * Otherwise search for a file named arg.ffpreset in the directories
+ * $FFMPEG_DATADIR (if set), $HOME/.ffmpeg, and in the datadir defined
+ * at configuration time, in that order. If no such file is found and
+ * codec_name is defined, then search for a file named
+ * codec_name-preset_name.ffpreset in the above-mentioned directories.
+ *
+ * @param filename buffer where the name of the found filename is written
+ * @param filename_size size in bytes of the filename buffer
+ * @param preset_name name of the preset to search
+ * @param is_path tell if preset_name is a filename path
+ * @param codec_name name of the codec for which to look for the
+ * preset, may be NULL
+ */
+FILE *get_preset_file(char *filename, size_t filename_size,
+                      const char *preset_name, int is_path, const char *codec_name);
+
 #if CONFIG_AVFILTER
 #include "libavfilter/avfilter.h"
 

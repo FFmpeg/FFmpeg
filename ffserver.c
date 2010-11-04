@@ -3972,27 +3972,11 @@ static int ffserver_opt_preset(const char *arg,
 {
     FILE *f=NULL;
     char filename[1000], tmp[1000], tmp2[1000], line[1000];
-    int i, ret = 0;
-    const char *base[3]= { getenv("FFMPEG_DATADIR"),
-                           getenv("HOME"),
-                           FFMPEG_DATADIR,
-                         };
+    int ret = 0;
+    AVCodec *codec = avcodec_find_encoder(avctx->codec_id);
 
-    for(i=0; i<3 && !f; i++){
-        if(!base[i])
-            continue;
-        snprintf(filename, sizeof(filename), "%s%s/%s.ffpreset", base[i], i != 1 ? "" : "/.ffmpeg", arg);
-        f= fopen(filename, "r");
-        if(!f){
-            AVCodec *codec = avcodec_find_encoder(avctx->codec_id);
-            if (codec) {
-                snprintf(filename, sizeof(filename), "%s%s/%s-%s.ffpreset", base[i],  i != 1 ? "" : "/.ffmpeg", codec->name, arg);
-                f= fopen(filename, "r");
-            }
-        }
-    }
-
-    if(!f){
+    if (!(f = get_preset_file(filename, sizeof(filename), arg, 0,
+                              codec ? codec->name : NULL))) {
         fprintf(stderr, "File for preset '%s' not found\n", arg);
         return 1;
     }

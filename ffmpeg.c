@@ -4030,32 +4030,11 @@ static int opt_preset(const char *opt, const char *arg)
 {
     FILE *f=NULL;
     char filename[1000], tmp[1000], tmp2[1000], line[1000];
-    int i;
-    const char *base[3]= { getenv("FFMPEG_DATADIR"),
-                           getenv("HOME"),
-                           FFMPEG_DATADIR,
-                         };
+    char *codec_name = *opt == 'v' ? video_codec_name :
+                       *opt == 'a' ? audio_codec_name :
+                                     subtitle_codec_name;
 
-    if (*opt != 'f') {
-        for(i=0; i<3 && !f; i++){
-            if(!base[i])
-                continue;
-            snprintf(filename, sizeof(filename), "%s%s/%s.ffpreset", base[i], i != 1 ? "" : "/.ffmpeg", arg);
-            f= fopen(filename, "r");
-            if(!f){
-                char *codec_name= *opt == 'v' ? video_codec_name :
-                                  *opt == 'a' ? audio_codec_name :
-                                                subtitle_codec_name;
-                snprintf(filename, sizeof(filename), "%s%s/%s-%s.ffpreset", base[i],  i != 1 ? "" : "/.ffmpeg", codec_name, arg);
-                f= fopen(filename, "r");
-            }
-        }
-    } else {
-        av_strlcpy(filename, arg, sizeof(filename));
-        f= fopen(filename, "r");
-    }
-
-    if(!f){
+    if (!(f = get_preset_file(filename, sizeof(filename), arg, *opt == 'f', codec_name))) {
         fprintf(stderr, "File for preset '%s' not found\n", arg);
         ffmpeg_exit(1);
     }

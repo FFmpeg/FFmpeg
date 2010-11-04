@@ -748,6 +748,36 @@ int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t reordered_pts, int6
     return pts;
 }
 
+FILE *get_preset_file(char *filename, size_t filename_size,
+                      const char *preset_name, int is_path, const char *codec_name)
+{
+    FILE *f = NULL;
+    int i;
+    const char *base[3]= { getenv("FFMPEG_DATADIR"),
+                           getenv("HOME"),
+                           FFMPEG_DATADIR,
+                         };
+
+    if (is_path) {
+        av_strlcpy(filename, preset_name, filename_size);
+        f = fopen(filename, "r");
+    } else {
+        for (i = 0; i < 3 && !f; i++) {
+            if (!base[i])
+                continue;
+            snprintf(filename, filename_size, "%s%s/%s.ffpreset", base[i], i != 1 ? "" : "/.ffmpeg", preset_name);
+            f = fopen(filename, "r");
+            if (!f && codec_name) {
+                snprintf(filename, filename_size,
+                         "%s%s/%s-%s.ffpreset", base[i],  i != 1 ? "" : "/.ffmpeg", codec_name, preset_name);
+                f = fopen(filename, "r");
+            }
+        }
+    }
+
+    return f;
+}
+
 #if CONFIG_AVFILTER
 
 static int ffsink_init(AVFilterContext *ctx, const char *args, void *opaque)
