@@ -1274,6 +1274,9 @@ static av_cold int common_end(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
     int i, j;
 
+    if (avctx->codec->decode && s->picture.data[0])
+        avctx->release_buffer(avctx, &s->picture);
+
     for(j=0; j<s->slice_count; j++){
         FFV1Context *fs= s->slice_context[j];
         for(i=0; i<s->plane_count; i++){
@@ -1712,6 +1715,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     AVFrame *picture = data;
 
+    /* release previously stored data */
+    if (p->data[0])
+        avctx->release_buffer(avctx, p);
+
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
@@ -1774,9 +1781,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     f->picture_number++;
 
     *picture= *p;
-
-    avctx->release_buffer(avctx, p); //FIXME
-
     *data_size = sizeof(AVFrame);
 
     return buf_size;
