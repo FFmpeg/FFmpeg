@@ -43,7 +43,7 @@ typedef struct AVFilterInOut {
  * @param filters string to be parsed
  * @param inputs  linked list to the inputs of the graph
  * @param outputs linked list to the outputs of the graph
- * @return        zero on success, -1 on error
+ * @return zero on success, a negative AVERROR code on error
  */
 int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut *inputs, AVFilterInOut *outputs,
