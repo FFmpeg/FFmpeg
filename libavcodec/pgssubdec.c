@@ -46,6 +46,7 @@ typedef struct PGSSubPresentation {
     int x;
     int y;
     int id_number;
+    int object_number;
 } PGSSubPresentation;
 
 typedef struct PGSSubPicture {
@@ -255,7 +256,6 @@ static void parse_palette_segment(AVCodecContext *avctx,
  * @param buf_size size of packet to process
  * @todo TODO: Implement cropping
  * @todo TODO: Implement forcing of subtitles
- * @todo TODO: Blanking of subtitle
  */
 static void parse_presentation_segment(AVCodecContext *avctx,
                                        const uint8_t *buf, int buf_size)
@@ -263,7 +263,6 @@ static void parse_presentation_segment(AVCodecContext *avctx,
     PGSSubContext *ctx = avctx->priv_data;
 
     int x, y;
-    uint8_t block;
 
     int w = bytestream_get_be16(&buf);
     int h = bytestream_get_be16(&buf);
@@ -278,19 +277,25 @@ static void parse_presentation_segment(AVCodecContext *avctx,
 
     ctx->presentation.id_number = bytestream_get_be16(&buf);
 
-    /* Next byte is the state. */
-    block = bytestream_get_byte(&buf);;
-    if (block == 0x80) {
         /*
-         * Skip 7 bytes of unknown:
+         * Skip 3 bytes of unknown:
+         *     state
          *     palette_update_flag (0x80),
          *     palette_id_to_use,
-         *     Object Number (if > 0 determines if more data to process),
+         */
+        buf += 3;
+
+        ctx->presentation.object_number = bytestream_get_byte(&buf);
+        if (!ctx->presentation.object_number)
+            return;
+
+        /*
+         * Skip 4 bytes of unknown:
          *     object_id_ref (2 bytes),
          *     window_id_ref,
          *     composition_flag (0x80 - object cropped, 0x40 - object forced)
          */
-        buf += 7;
+        buf += 4;
 
         x = bytestream_get_be16(&buf);
         y = bytestream_get_be16(&buf);
@@ -308,13 +313,6 @@ static void parse_presentation_segment(AVCodecContext *avctx,
         /* Fill in dimensions */
         ctx->presentation.x = x;
         ctx->presentation.y = y;
-    } else if (block == 0x00) {
-        /* TODO: Blank context as subtitle should not be displayed.
-         *       If the subtitle is blanked now the subtitle is not
-         *       on screen long enough to read, due to a delay in
-         *       initial display timing.
-         */
-    }
 }
 
 /**
@@ -345,6 +343,10 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
      */
 
     memset(sub, 0, sizeof(*sub));
+    // Blank if last object_number was 0.
+    // Note that this may be wrong for more complex subtitles.
+    if (!ctx->presentation.object_number)
+        return 1;
     sub->start_display_time = 0;
     sub->end_display_time   = 20000;
     sub->format             = 0;
