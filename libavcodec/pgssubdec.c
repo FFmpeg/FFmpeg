@@ -277,42 +277,42 @@ static void parse_presentation_segment(AVCodecContext *avctx,
 
     ctx->presentation.id_number = bytestream_get_be16(&buf);
 
-        /*
-         * Skip 3 bytes of unknown:
-         *     state
-         *     palette_update_flag (0x80),
-         *     palette_id_to_use,
-         */
-        buf += 3;
+    /*
+     * Skip 3 bytes of unknown:
+     *     state
+     *     palette_update_flag (0x80),
+     *     palette_id_to_use,
+     */
+    buf += 3;
 
-        ctx->presentation.object_number = bytestream_get_byte(&buf);
-        if (!ctx->presentation.object_number)
-            return;
+    ctx->presentation.object_number = bytestream_get_byte(&buf);
+    if (!ctx->presentation.object_number)
+        return;
 
-        /*
-         * Skip 4 bytes of unknown:
-         *     object_id_ref (2 bytes),
-         *     window_id_ref,
-         *     composition_flag (0x80 - object cropped, 0x40 - object forced)
-         */
-        buf += 4;
+    /*
+     * Skip 4 bytes of unknown:
+     *     object_id_ref (2 bytes),
+     *     window_id_ref,
+     *     composition_flag (0x80 - object cropped, 0x40 - object forced)
+     */
+    buf += 4;
 
-        x = bytestream_get_be16(&buf);
-        y = bytestream_get_be16(&buf);
+    x = bytestream_get_be16(&buf);
+    y = bytestream_get_be16(&buf);
 
-        /* TODO If cropping, cropping_x, cropping_y, cropping_width, cropping_height (all 2 bytes).*/
+    /* TODO If cropping, cropping_x, cropping_y, cropping_width, cropping_height (all 2 bytes).*/
 
-        dprintf(avctx, "Subtitle Placement x=%d, y=%d\n", x, y);
+    dprintf(avctx, "Subtitle Placement x=%d, y=%d\n", x, y);
 
-        if (x > avctx->width || y > avctx->height) {
-            av_log(avctx, AV_LOG_ERROR, "Subtitle out of video bounds. x = %d, y = %d, video width = %d, video height = %d.\n",
-                   x, y, avctx->width, avctx->height);
-            x = 0; y = 0;
-        }
+    if (x > avctx->width || y > avctx->height) {
+        av_log(avctx, AV_LOG_ERROR, "Subtitle out of video bounds. x = %d, y = %d, video width = %d, video height = %d.\n",
+               x, y, avctx->width, avctx->height);
+        x = 0; y = 0;
+    }
 
-        /* Fill in dimensions */
-        ctx->presentation.x = x;
-        ctx->presentation.y = y;
+    /* Fill in dimensions */
+    ctx->presentation.x = x;
+    ctx->presentation.y = y;
 }
 
 /**
