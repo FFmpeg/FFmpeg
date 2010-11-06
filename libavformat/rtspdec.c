@@ -136,7 +136,7 @@ static int rtsp_read_header(AVFormatContext *s,
     rt->real_setup_cache = av_mallocz(2 * s->nb_streams * sizeof(*rt->real_setup_cache));
     if (!rt->real_setup_cache)
         return AVERROR(ENOMEM);
-    rt->real_setup = rt->real_setup_cache + s->nb_streams * sizeof(*rt->real_setup);
+    rt->real_setup = rt->real_setup_cache + s->nb_streams;
 
     if (ap->initial_pause) {
          /* do not start immediately */
