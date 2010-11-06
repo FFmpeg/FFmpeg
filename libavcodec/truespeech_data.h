@@ -71,7 +71,7 @@ static const int16_t * const ts_codebook[8] = {
 };
 
 /* table used for decoding pulse positions */
-static const int16_t ts_140[120] = {
+static const int16_t ts_pulse_values[120] = {
     0x0E46, 0x0CCC, 0x0B6D, 0x0A28, 0x08FC, 0x07E8, 0x06EB, 0x0604,
     0x0532, 0x0474, 0x03C9, 0x0330, 0x02A8, 0x0230, 0x01C7, 0x016C,
     0x011E, 0x00DC, 0x00A5, 0x0078, 0x0054, 0x0038, 0x0023, 0x0014,
@@ -94,11 +94,11 @@ static const int16_t ts_140[120] = {
 };
 
 /* filter for correlated input filter */
-static const int16_t ts_230[8] =
+static const int16_t ts_decay_994_1000[8] =
     { 0x7F3B, 0x7E78, 0x7DB6, 0x7CF5, 0x7C35, 0x7B76, 0x7AB8, 0x79FC };
 
 /* two-point filters table */
-static const int16_t ts_240[25 * 2] = {
+static const int16_t ts_order2_coeffs[25 * 2] = {
     0xED2F, 0x5239,
     0x54F1, 0xE4A9,
     0x2620, 0xEE3E,
@@ -131,7 +131,7 @@ static const int16_t ts_240[25 * 2] = {
 };
 
 /* possible pulse values */
-static const int16_t ts_562[64] = {
+static const int16_t ts_pulse_scales[64] = {
     0x0002, 0x0006, 0xFFFE, 0xFFFA,
     0x0004, 0x000C, 0xFFFC, 0xFFF4,
     0x0006, 0x0012, 0xFFFA, 0xFFEE,
@@ -151,9 +151,9 @@ static const int16_t ts_562[64] = {
 };
 
 /* filters used in final output calculations */
-static const int16_t ts_5E2[8] =
+static const int16_t ts_decay_35_64[8] =
     { 0x4666, 0x26B8, 0x154C, 0x0BB6, 0x0671, 0x038B, 0x01F3, 0x0112 };
-static const int16_t ts_5F2[8] =
+static const int16_t ts_decay_3_4[8] =
     { 0x6000, 0x4800, 0x3600, 0x2880, 0x1E60, 0x16C8, 0x1116, 0x0CD1 };
 
 #endif /* AVCODEC_TRUESPEECH_DATA_H */
