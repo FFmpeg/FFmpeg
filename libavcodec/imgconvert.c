@@ -437,19 +437,16 @@ void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
     /* print header */
     if (pix_fmt < 0)
         snprintf (buf, buf_size,
-                  "name      " " nb_channels" " depth" " is_alpha"
+                  "name      " " nb_channels" " depth"
             );
     else{
         PixFmtInfo info= pix_fmt_info[pix_fmt];
 
-        char is_alpha_char= info.is_alpha ? 'y' : 'n';
-
         snprintf (buf, buf_size,
-                  "%-11s %5d %9d %6c",
+                  "%-11s %5d %9d",
                   av_pix_fmt_descriptors[pix_fmt].name,
                   info.nb_channels,
-                  info.depth,
-                  is_alpha_char
+                  info.depth
             );
     }
 }
