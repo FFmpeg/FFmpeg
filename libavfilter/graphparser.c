@@ -24,7 +24,6 @@
 #include <string.h>
 
 #include "libavutil/avstring.h"
-#include "graphparser.h"
 #include "avfilter.h"
 #include "avfiltergraph.h"
 #include "parseutils.h"

@@ -22,7 +22,7 @@
 
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/pixdesc.h"
-#include "libavfilter/graphparser.h"
+#include "libavfilter/avfiltergraph.h"
 
 static void usage(void)
 {

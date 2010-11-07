@@ -49,7 +49,6 @@
 #if CONFIG_AVFILTER
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
-# include "libavfilter/graphparser.h"
 # include "libavfilter/vsrc_buffer.h"
 #endif
 
