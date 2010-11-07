@@ -249,7 +249,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
         AVFilterInOut *match;
 
         if (!name)
-            return -1;
+            return AVERROR(EINVAL);
 
         /* First check if the label is not in the open_outputs list */
         match = extract_inout(name, open_outputs);
