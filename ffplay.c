@@ -1811,12 +1811,12 @@ static int video_thread(void *arg)
         AVFilterInOut *inputs  = av_malloc(sizeof(AVFilterInOut));
 
         outputs->name    = av_strdup("in");
-        outputs->filter  = filt_src;
+        outputs->filter_ctx = filt_src;
         outputs->pad_idx = 0;
         outputs->next    = NULL;
 
         inputs->name    = av_strdup("out");
-        inputs->filter  = filt_out;
+        inputs->filter_ctx = filt_out;
         inputs->pad_idx = 0;
         inputs->next    = NULL;
 

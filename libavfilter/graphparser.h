@@ -30,7 +30,7 @@
  */
 typedef struct AVFilterInOut {
     char *name;
-    AVFilterContext *filter;
+    AVFilterContext *filter_ctx;
     int pad_idx;
 
     struct AVFilterInOut *next;

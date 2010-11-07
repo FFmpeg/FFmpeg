@@ -207,13 +207,13 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
 
         *curr_inputs = (*curr_inputs)->next;
 
-        if (p->filter) {
-            if ((ret = link_filter(p->filter, p->pad_idx, filt_ctx, pad, log_ctx)) < 0)
+        if (p->filter_ctx) {
+            if ((ret = link_filter(p->filter_ctx, p->pad_idx, filt_ctx, pad, log_ctx)) < 0)
                 return ret;
             av_free(p->name);
             av_free(p);
         } else {
-            p->filter = filt_ctx;
+            p->filter_ctx = filt_ctx;
             p->pad_idx = pad;
             insert_inout(open_inputs, p);
         }
@@ -231,7 +231,7 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
         AVFilterInOut *currlinkn = av_mallocz(sizeof(AVFilterInOut));
         if (!currlinkn)
             return AVERROR(ENOMEM);
-        currlinkn->filter  = filt_ctx;
+        currlinkn->filter_ctx  = filt_ctx;
         currlinkn->pad_idx = pad;
         insert_inout(curr_inputs, currlinkn);
     }
@@ -293,8 +293,8 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
         match = extract_inout(name, open_inputs);
 
         if (match) {
-            if ((ret = link_filter(input->filter, input->pad_idx,
-                                   match->filter, match->pad_idx, log_ctx)) < 0)
+            if ((ret = link_filter(input->filter_ctx, input->pad_idx,
+                                   match->filter_ctx, match->pad_idx, log_ctx)) < 0)
                 return ret;
             av_free(match->name);
             av_free(name);
