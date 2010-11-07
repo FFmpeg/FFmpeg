@@ -27,12 +27,24 @@
 
 /**
  * A linked-list of the inputs/outputs of the filter chain.
+ *
+ * This is mainly useful for avfilter_graph_parse(), since this
+ * function may accept a description of a graph with not connected
+ * input/output pads. This struct specifies, per each not connected
+ * pad contained in the graph, the filter context and the pad index
+ * required for establishing a link.
  */
 typedef struct AVFilterInOut {
+    /** unique name for this input/output in the list */
     char *name;
+
+    /** filter context associated to this input/output */
     AVFilterContext *filter_ctx;
+
+    /** index of the filt_ctx pad to use for linking */
     int pad_idx;
 
+    /** next input/input in the list, NULL if this is the last */
     struct AVFilterInOut *next;
 } AVFilterInOut;
 
