@@ -13,6 +13,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-11-04 - r25700 - lavfi 1.57.0 - AVFilterInOut
+  Rename field AVFilterInOut.filter to AVFilterInOut.filter_ctx.
+  This change breaks libavfilter API.
+
 2010-11-04 - r25674 - lavfi 1.56.0 - avfilter_graph_free()
   Rename avfilter_graph_destroy() to avfilter_graph_free().
   This change breaks libavfilter API/ABI.
