@@ -258,7 +258,8 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
             av_free(name);
         } else {
             /* Not in the list, so add it as an input */
-            match = av_mallocz(sizeof(AVFilterInOut));
+            if (!(match = av_mallocz(sizeof(AVFilterInOut))))
+                return AVERROR(ENOMEM);
             match->name    = name;
             match->pad_idx = pad;
         }
