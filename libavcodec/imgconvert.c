@@ -446,7 +446,7 @@ void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
                   "%-11s %5d %9d",
                   av_pix_fmt_descriptors[pix_fmt].name,
                   info.nb_channels,
-                  info.depth
+                  av_get_bits_per_pixel(&av_pix_fmt_descriptors[pix_fmt])
             );
     }
 }
