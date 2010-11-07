@@ -229,6 +229,8 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
     pad = filt_ctx->output_count;
     while (pad--) {
         AVFilterInOut *currlinkn = av_mallocz(sizeof(AVFilterInOut));
+        if (!currlinkn)
+            return AVERROR(ENOMEM);
         currlinkn->filter  = filt_ctx;
         currlinkn->pad_idx = pad;
         insert_inout(curr_inputs, currlinkn);
