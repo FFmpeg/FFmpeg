@@ -139,7 +139,18 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
 }
 
 /**
- * Parse "filter=params"
+ * Parse a string of the form FILTER_NAME[=PARAMS], and create a
+ * corresponding filter instance which is added to graph with
+ * create_filter().
+ *
+ * @param filt_ctx put here a pointer to the created filter context on
+ * success, NULL otherwise
+ * @param buf pointer to the buffer to parse, *buf will be updated to
+ * point to the char next after the parsed string
+ * @param index an index which is assigned to the created filter
+ * instance, and which is supposed to be unique for each filter
+ * instance added to the filtergraph
+ * @return 0 in case of success, a negative AVERROR code otherwise
  */
 static int parse_filter(AVFilterContext **filt_ctx, const char **buf, AVFilterGraph *graph,
                         int index, AVClass *log_ctx)
