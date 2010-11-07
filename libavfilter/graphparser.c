@@ -194,7 +194,7 @@ static int link_filter_inouts(AVFilterContext *filter,
                               AVFilterInOut **curr_inputs,
                               AVFilterInOut **open_inputs, AVClass *log_ctx)
 {
-    int pad = filter->input_count;
+    int pad = filter->input_count, ret;
 
     while (pad--) {
         AVFilterInOut *p = *curr_inputs;
@@ -202,14 +202,14 @@ static int link_filter_inouts(AVFilterContext *filter,
             av_log(log_ctx, AV_LOG_ERROR,
                    "Not enough inputs specified for the \"%s\" filter.\n",
                    filter->filter->name);
-            return -1;
+            return AVERROR(EINVAL);
         }
 
         *curr_inputs = (*curr_inputs)->next;
 
         if (p->filter) {
-            if (link_filter(p->filter, p->pad_idx, filter, pad, log_ctx))
-                return -1;
+            if ((ret = link_filter(p->filter, p->pad_idx, filter, pad, log_ctx)) < 0)
+                return ret;
             av_free(p->name);
             av_free(p);
         } else {
@@ -223,7 +223,7 @@ static int link_filter_inouts(AVFilterContext *filter,
         av_log(log_ctx, AV_LOG_ERROR,
                "Too many inputs specified for the \"%s\" filter.\n",
                filter->filter->name);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     pad = filter->output_count;
