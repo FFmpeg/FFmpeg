@@ -2310,9 +2310,9 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out, int *out_size,
     if (get_bits(&gb, 11) != LOAS_SYNC_WORD)
         return AVERROR_INVALIDDATA;
 
-    muxlength = get_bits(&gb, 13);
+    muxlength = get_bits(&gb, 13) + 3;
     // not enough data, the parser should have sorted this
-    if (muxlength+3 > avpkt->size)
+    if (muxlength > avpkt->size)
         return AVERROR_INVALIDDATA;
 
     if ((err = read_audio_mux_element(latmctx, &gb)) < 0)
