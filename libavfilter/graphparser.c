@@ -86,21 +86,20 @@ static char *parse_link_name(const char **buf, AVClass *log_ctx)
  * filtergraph in *ctx.
  *
  * @param ctx the filtergraph context
+ * @param put here a filter context in case of successful creation and configuration, NULL otherwise.
  * @param index an index which is supposed to be unique for each filter instance added to the filtergraph
  * @param filt_name the name of the filter to create
  * @param args the arguments provided to the filter during its initialization
  * @param log_ctx the log context to use
- * @return a filter context in case of successful creation and configuration, NULL otherwise.
+ * @return 0 in case of success, a negative AVERROR code otherwise
  */
-static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
-                                      const char *filt_name, const char *args,
-                                      AVClass *log_ctx)
+static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int index,
+                         const char *filt_name, const char *args, AVClass *log_ctx)
 {
-    AVFilterContext *filt_ctx;
-
     AVFilter *filt;
     char inst_name[30];
     char tmp_args[256];
+    int ret;
 
     snprintf(inst_name, sizeof(inst_name), "Filter %d %s", index, filt_name);
 
@@ -109,19 +108,19 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
     if (!filt) {
         av_log(log_ctx, AV_LOG_ERROR,
                "No such filter: '%s'\n", filt_name);
-        return NULL;
+        return AVERROR(EINVAL);
     }
 
-    avfilter_open(&filt_ctx, filt, inst_name);
-    if (!filt_ctx) {
+    ret = avfilter_open(filt_ctx, filt, inst_name);
+    if (!*filt_ctx) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Error creating filter '%s'\n", filt_name);
-        return NULL;
+        return ret;
     }
 
-    if (avfilter_graph_add_filter(ctx, filt_ctx) < 0) {
-        avfilter_destroy(filt_ctx);
-        return NULL;
+    if ((ret = avfilter_graph_add_filter(ctx, *filt_ctx)) < 0) {
+        avfilter_destroy(*filt_ctx);
+        return ret;
     }
 
     if (!strcmp(filt_name, "scale") && !strstr(args, "flags")) {
@@ -130,13 +129,13 @@ static AVFilterContext *create_filter(AVFilterGraph *ctx, int index,
         args = tmp_args;
     }
 
-    if (avfilter_init_filter(filt_ctx, args, NULL)) {
+    if ((ret = avfilter_init_filter(*filt_ctx, args, NULL)) < 0) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Error initializing filter '%s' with args '%s'\n", filt_name, args);
-        return NULL;
+        return ret;
     }
 
-    return filt_ctx;
+    return 0;
 }
 
 /**
@@ -147,17 +146,18 @@ static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph,
 {
     char *opts = NULL;
     char *name = av_get_token(buf, "=,;[\n");
-    AVFilterContext *ret;
+    AVFilterContext *filt_ctx;
+    int ret;
 
     if (**buf == '=') {
         (*buf)++;
         opts = av_get_token(buf, "[],;\n");
     }
 
-    ret = create_filter(graph, index, name, opts, log_ctx);
+    ret = create_filter(&filt_ctx, graph, index, name, opts, log_ctx);
     av_free(name);
     av_free(opts);
-    return ret;
+    return filt_ctx;
 }
 
 static void free_inout(AVFilterInOut *head)
