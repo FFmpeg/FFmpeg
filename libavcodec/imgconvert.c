@@ -511,12 +511,13 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    enum PixelFormat pix_fmt, int width, int height)
 {
+    int ret;
 
-    if(av_image_check_size(width, height, 0, NULL))
-        return -1;
+    if ((ret = av_image_check_size(width, height, 0, NULL)) < 0)
+        return ret;
 
-    if (av_image_fill_linesizes(picture->linesize, pix_fmt, width))
-        return -1;
+    if ((ret = av_image_fill_linesizes(picture->linesize, pix_fmt, width)) < 0)
+        return ret;
 
     return av_image_fill_pointers(picture->data, pix_fmt, height, ptr, picture->linesize);
 }
