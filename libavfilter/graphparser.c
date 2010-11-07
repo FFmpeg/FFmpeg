@@ -141,12 +141,11 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
 /**
  * Parse "filter=params"
  */
-static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph,
-                                     int index, AVClass *log_ctx)
+static int parse_filter(AVFilterContext **filt_ctx, const char **buf, AVFilterGraph *graph,
+                        int index, AVClass *log_ctx)
 {
     char *opts = NULL;
     char *name = av_get_token(buf, "=,;[\n");
-    AVFilterContext *filt_ctx;
     int ret;
 
     if (**buf == '=') {
@@ -154,10 +153,10 @@ static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph,
         opts = av_get_token(buf, "[],;\n");
     }
 
-    ret = create_filter(&filt_ctx, graph, index, name, opts, log_ctx);
+    ret = create_filter(filt_ctx, graph, index, name, opts, log_ctx);
     av_free(name);
     av_free(opts);
-    return filt_ctx;
+    return ret;
 }
 
 static void free_inout(AVFilterInOut *head)
@@ -326,9 +325,7 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
         if (parse_inputs(&filters, &curr_inputs, &open_outputs, log_ctx) < 0)
             goto fail;
 
-        filter = parse_filter(&filters, graph, index, log_ctx);
-
-        if (!filter)
+        if (parse_filter(&filter, &filters, graph, index, log_ctx) < 0)
             goto fail;
 
         if (filter->input_count == 1 && !curr_inputs && !index) {
