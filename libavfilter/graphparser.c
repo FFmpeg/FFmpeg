@@ -118,7 +118,7 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
     }
 
     if ((ret = avfilter_graph_add_filter(ctx, *filt_ctx)) < 0) {
-        avfilter_destroy(*filt_ctx);
+        avfilter_free(*filt_ctx);
         return ret;
     }
 

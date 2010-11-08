@@ -93,7 +93,7 @@ int main(int argc, char **argv)
                    av_pix_fmt_descriptors[fmts->formats[j]].name);
     }
 
-    avfilter_destroy(filter_ctx);
+    avfilter_free(filter_ctx);
     fflush(stdout);
     return 0;
 }

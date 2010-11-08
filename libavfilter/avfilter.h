@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 58
+#define LIBAVFILTER_VERSION_MINOR 59
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -786,11 +786,11 @@ int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *in
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque);
 
 /**
- * Destroy a filter.
+ * Free a filter context.
  *
- * @param filter the filter to destroy
+ * @param filter the filter to free
  */
-void avfilter_destroy(AVFilterContext *filter);
+void avfilter_free(AVFilterContext *filter);
 
 /**
  * Insert a filter in the middle of an existing link.

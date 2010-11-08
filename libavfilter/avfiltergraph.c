@@ -34,7 +34,7 @@ AVFilterGraph *avfilter_graph_alloc(void)
 void avfilter_graph_free(AVFilterGraph *graph)
 {
     for(; graph->filter_count > 0; graph->filter_count --)
-        avfilter_destroy(graph->filters[graph->filter_count - 1]);
+        avfilter_free(graph->filters[graph->filter_count - 1]);
     av_freep(&graph->scale_sws_opts);
     av_freep(&graph->filters);
 }
@@ -143,7 +143,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                     snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
                     if(!scale || scale->filter->init(scale, scale_args, NULL) ||
                                  avfilter_insert_filter(link, scale, 0, 0)) {
-                        avfilter_destroy(scale);
+                        avfilter_free(scale);
                         return -1;
                     }
 

@@ -527,7 +527,7 @@ int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *in
     return 0;
 }
 
-void avfilter_destroy(AVFilterContext *filter)
+void avfilter_free(AVFilterContext *filter)
 {
     int i;
     AVFilterLink *link;

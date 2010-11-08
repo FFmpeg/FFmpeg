@@ -13,6 +13,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-11-08 - r25707 - lavfi 1.59.0 - avfilter_free()
+  Rename avfilter_destroy() to avfilter_free().
+  This change breaks libavfilter API/ABI.
+
 2010-11-07 - r25705 - lavfi 1.58.0 - avfiltergraph.h
   Remove graphparser.h header, move AVFilterInOut and
   avfilter_graph_parse() declarations to libavfilter/avfiltergraph.h.
