@@ -2346,6 +2346,8 @@ static int transcode(AVFormatContext **output_files,
 
         int out_file_index = meta_data_maps[i][0].file;
         int in_file_index = meta_data_maps[i][1].file;
+        if (in_file_index < 0 || out_file_index < 0)
+            continue;
         METADATA_CHECK_INDEX(out_file_index, nb_output_files, "output file")
         METADATA_CHECK_INDEX(in_file_index, nb_input_files, "input file")
 
