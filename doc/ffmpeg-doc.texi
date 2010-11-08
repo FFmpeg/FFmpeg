@@ -937,6 +937,7 @@ file to which you want to add them.
 @include indevs.texi
 @include outdevs.texi
 @include protocols.texi
+@include bitstream_filters.texi
 @include filters.texi
 
 @ignore

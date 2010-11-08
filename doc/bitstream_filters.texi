@@ -1,0 +1,40 @@
+@chapter Bitstream Filters
+@c man begin BITSTREAM FILTERS
+
+When you configure your FFmpeg build, all the supported bitstream
+filters are enabled by default. You can list all available ones using
+the configure option @code{--list-bsfs}.
+
+You can disable all the bitstream filters using the configure option
+@code{--disable-bsfs}, and selectively enable any bitstream filter using
+the option @code{--enable-bsf=BSF}, or you can disable a particular
+bitstream filter using the option @code{--disable-bsf=BSF}.
+
+The option @code{-bsfs} of the ff* tools will display the list of
+all the supported bitstream filters included in your build.
+
+Below is a description of the currently available bitstream filters.
+
+@section aac_adtstoasc
+
+@section chomp
+
+@section dump_extradata
+
+@section h264_mp4toannexb
+
+@section imx_dump_header
+
+@section mjpega_dump_header
+
+@section movsub
+
+@section mp3_header_compress
+
+@section mp3_header_decompress
+
+@section noise
+
+@section remove_extradata
+
+@c man end BITSTREAM FILTERS
