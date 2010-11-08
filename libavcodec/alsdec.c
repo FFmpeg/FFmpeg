@@ -203,7 +203,7 @@ typedef struct {
     unsigned int num_blocks;        ///< number of blocks used in the current frame
     unsigned int s_max;             ///< maximum Rice parameter allowed in entropy coding
     uint8_t *bgmc_lut;              ///< pointer at lookup tables used for BGMC
-    unsigned int *bgmc_lut_status;  ///< pointer at lookup table status flags used for BGMC
+    int *bgmc_lut_status;  ///< pointer at lookup table status flags used for BGMC
     int ltp_lag_length;             ///< number of bits used for ltp lag value
     int *use_ltp;                   ///< contains use_ltp flags for all channels
     int *ltp_lag;                   ///< contains ltp lag values for all channels
@@ -749,7 +749,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
     // read all residuals
     if (sconf->bgmc) {
-        unsigned int delta[8];
+        int delta[8];
         unsigned int k    [8];
         unsigned int b = av_clip((av_ceil_log2(bd->block_length) - 3) >> 1, 0, 5);
         unsigned int i = start;
