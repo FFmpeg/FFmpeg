@@ -81,7 +81,7 @@ static int config_output_props(AVFilterLink *outlink)
     outlink->w = inlink->w;
     outlink->h = inlink->h;
 
-    if ((ret = av_parse_and_eval_expr(&res, settb->tb_expr, var_names, settb->var_values,
+    if ((ret = av_expr_parse_and_eval(&res, settb->tb_expr, var_names, settb->var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, NULL)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid expression '%s' for timebase.\n", settb->tb_expr);
         return ret;

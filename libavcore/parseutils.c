@@ -128,7 +128,7 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
         }
 
     /* Then, we try to parse it as fraction */
-    if ((ret = av_parse_and_eval_expr(&res, arg, NULL, NULL, NULL, NULL, NULL, NULL,
+    if ((ret = av_expr_parse_and_eval(&res, arg, NULL, NULL, NULL, NULL, NULL, NULL,
                                       NULL, 0, NULL)) < 0)
         return ret;
     *rate = av_d2q(res, 1001000);

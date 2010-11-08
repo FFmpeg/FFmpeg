@@ -125,8 +125,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     CropContext *crop = ctx->priv;
 
-    av_free_expr(crop->x_pexpr); crop->x_pexpr = NULL;
-    av_free_expr(crop->y_pexpr); crop->y_pexpr = NULL;
+    av_expr_free(crop->x_pexpr); crop->x_pexpr = NULL;
+    av_expr_free(crop->y_pexpr); crop->y_pexpr = NULL;
 }
 
 static inline int normalize_double(int *n, double d)
@@ -170,16 +170,16 @@ static int config_input(AVFilterLink *link)
     crop->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
     crop->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
-    if ((ret = av_parse_and_eval_expr(&res, (expr = crop->ow_expr),
+    if ((ret = av_expr_parse_and_eval(&res, (expr = crop->ow_expr),
                                       var_names, crop->var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0) goto fail_expr;
     crop->var_values[VAR_OUT_W] = crop->var_values[VAR_OW] = res;
-    if ((ret = av_parse_and_eval_expr(&res, (expr = crop->oh_expr),
+    if ((ret = av_expr_parse_and_eval(&res, (expr = crop->oh_expr),
                                       var_names, crop->var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0) goto fail_expr;
     crop->var_values[VAR_OUT_H] = crop->var_values[VAR_OH] = res;
     /* evaluate again ow as it may depend on oh */
-    if ((ret = av_parse_and_eval_expr(&res, (expr = crop->ow_expr),
+    if ((ret = av_expr_parse_and_eval(&res, (expr = crop->ow_expr),
                                       var_names, crop->var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0) goto fail_expr;
     crop->var_values[VAR_OUT_W] = crop->var_values[VAR_OW] = res;
@@ -194,9 +194,9 @@ static int config_input(AVFilterLink *link)
     crop->w &= ~((1 << crop->hsub) - 1);
     crop->h &= ~((1 << crop->vsub) - 1);
 
-    if ((ret = av_parse_expr(&crop->x_pexpr, crop->x_expr, var_names,
+    if ((ret = av_expr_parse(&crop->x_pexpr, crop->x_expr, var_names,
                              NULL, NULL, NULL, NULL, 0, ctx)) < 0 ||
-        (ret = av_parse_expr(&crop->y_pexpr, crop->y_expr, var_names,
+        (ret = av_expr_parse(&crop->y_pexpr, crop->y_expr, var_names,
                              NULL, NULL, NULL, NULL, 0, ctx)) < 0)
         return AVERROR(EINVAL);
 
@@ -243,9 +243,9 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     crop->var_values[VAR_T] = picref->pts == AV_NOPTS_VALUE ?
         NAN : picref->pts * av_q2d(link->time_base);
     crop->var_values[VAR_POS] = picref->pos == -1 ? NAN : picref->pos;
-    crop->var_values[VAR_X] = av_eval_expr(crop->x_pexpr, crop->var_values, NULL);
-    crop->var_values[VAR_Y] = av_eval_expr(crop->y_pexpr, crop->var_values, NULL);
-    crop->var_values[VAR_X] = av_eval_expr(crop->x_pexpr, crop->var_values, NULL);
+    crop->var_values[VAR_X] = av_expr_eval(crop->x_pexpr, crop->var_values, NULL);
+    crop->var_values[VAR_Y] = av_expr_eval(crop->y_pexpr, crop->var_values, NULL);
+    crop->var_values[VAR_X] = av_expr_eval(crop->x_pexpr, crop->var_values, NULL);
 
     normalize_double(&crop->x, crop->var_values[VAR_X]);
     normalize_double(&crop->y, crop->var_values[VAR_Y]);

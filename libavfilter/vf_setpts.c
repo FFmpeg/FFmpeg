@@ -69,7 +69,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     SetPTSContext *setpts = ctx->priv;
     int ret;
 
-    if ((ret = av_parse_expr(&setpts->expr, args ? args : "PTS",
+    if ((ret = av_expr_parse(&setpts->expr, args ? args : "PTS",
                              var_names, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error while parsing expression '%s'\n", args);
         return ret;
@@ -111,7 +111,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     setpts->var_values[VAR_PTS       ] = TS2D(inpicref->pts);
     setpts->var_values[VAR_POS       ] = inpicref->pos == -1 ? NAN : inpicref->pos;
 
-    d = av_eval_expr(setpts->expr, setpts->var_values, NULL);
+    d = av_expr_eval(setpts->expr, setpts->var_values, NULL);
     outpicref->pts = D2TS(d);
 
 #ifdef DEBUG
@@ -133,7 +133,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     SetPTSContext *setpts = ctx->priv;
-    av_free_expr(setpts->expr);
+    av_expr_free(setpts->expr);
     setpts->expr = NULL;
 }
 

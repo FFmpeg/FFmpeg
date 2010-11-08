@@ -106,7 +106,7 @@ int ff_rate_control_init(MpegEncContext *s)
     };
     emms_c();
 
-    res = av_parse_expr(&rcc->rc_eq_eval, s->avctx->rc_eq ? s->avctx->rc_eq : "tex^qComp", const_names, func1_names, func1, NULL, NULL, 0, s->avctx);
+    res = av_expr_parse(&rcc->rc_eq_eval, s->avctx->rc_eq ? s->avctx->rc_eq : "tex^qComp", const_names, func1_names, func1, NULL, NULL, 0, s->avctx);
     if (res < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error parsing rc_eq \"%s\"\n", s->avctx->rc_eq);
         return res;
@@ -254,7 +254,7 @@ void ff_rate_control_uninit(MpegEncContext *s)
     RateControlContext *rcc= &s->rc_context;
     emms_c();
 
-    av_free_expr(rcc->rc_eq_eval);
+    av_expr_free(rcc->rc_eq_eval);
     av_freep(&rcc->entry);
 
 #if CONFIG_LIBXVID
@@ -338,7 +338,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         0
     };
 
-    bits = av_eval_expr(rcc->rc_eq_eval, const_values, rce);
+    bits = av_expr_eval(rcc->rc_eq_eval, const_values, rce);
     if (isnan(bits)) {
         av_log(s->avctx, AV_LOG_ERROR, "Error evaluating rc_eq \"%s\"\n", s->avctx->rc_eq);
         return -1;

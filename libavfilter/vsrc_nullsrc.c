@@ -80,7 +80,7 @@ static int config_props(AVFilterLink *outlink)
     priv->var_values[VAR_PI]   = M_PI;
     priv->var_values[VAR_AVTB] = av_q2d(AV_TIME_BASE_Q);
 
-    if ((ret = av_parse_and_eval_expr(&res, priv->tb_expr, var_names, priv->var_values,
+    if ((ret = av_expr_parse_and_eval(&res, priv->tb_expr, var_names, priv->var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, NULL)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid expression '%s' for timebase.\n", priv->tb_expr);
         return ret;

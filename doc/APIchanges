@@ -13,6 +13,18 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-11-08 - r25708 - lavu 50.33.0 - eval.h
+  Deprecate functions:
+  av_parse_and_eval_expr(),
+  av_parse_expr(),
+  av_eval_expr(),
+  av_free_expr(),
+  in favor of the functions:
+  av_expr_parse_and_eval(),
+  av_expr_parse(),
+  av_expr_eval(),
+  av_expr_free().
+
 2010-11-08 - r25707 - lavfi 1.59.0 - avfilter_free()
   Rename avfilter_destroy() to avfilter_free().
   This change breaks libavfilter API/ABI.

@@ -171,7 +171,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
                 else if (!strcmp(buf, "none"   )) d= 0;
                 else if (!strcmp(buf, "all"    )) d= ~0;
                 else {
-                    int res = av_parse_and_eval_expr(&d, buf, const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, obj);
+                    int res = av_expr_parse_and_eval(&d, buf, const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, obj);
                     if (res < 0) {
                         av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\"\n", val);
                         return res;
