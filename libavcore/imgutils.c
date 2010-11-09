@@ -22,6 +22,7 @@
  */
 
 #include "imgutils.h"
+#include "internal.h"
 #include "libavutil/pixdesc.h"
 
 void av_image_fill_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
@@ -118,6 +119,46 @@ int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int heigh
     }
 
     return total_size;
+}
+
+int ff_set_systematic_pal2(uint32_t pal[256], enum PixelFormat pix_fmt)
+{
+    int i;
+
+    for (i = 0; i < 256; i++) {
+        int r, g, b;
+
+        switch (pix_fmt) {
+        case PIX_FMT_RGB8:
+            r = (i>>5    )*36;
+            g = ((i>>2)&7)*36;
+            b = (i&3     )*85;
+            break;
+        case PIX_FMT_BGR8:
+            b = (i>>6    )*85;
+            g = ((i>>3)&7)*36;
+            r = (i&7     )*36;
+            break;
+        case PIX_FMT_RGB4_BYTE:
+            r = (i>>3    )*255;
+            g = ((i>>1)&3)*85;
+            b = (i&1     )*255;
+            break;
+        case PIX_FMT_BGR4_BYTE:
+            b = (i>>3    )*255;
+            g = ((i>>1)&3)*85;
+            r = (i&1     )*255;
+            break;
+        case PIX_FMT_GRAY8:
+            r = b = g = i;
+            break;
+        default:
+            return AVERROR(EINVAL);
+        }
+        pal[i] = b + (g<<8) + (r<<16);
+    }
+
+    return 0;
 }
 
 typedef struct ImgUtils {

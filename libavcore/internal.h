@@ -1,9 +1,4 @@
 /*
- * Misc image conversion routines
- * most functionality is exported to the public API, see avcodec.h
- *
- * Copyright (c) 2008 Vitor Sessak
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -21,24 +16,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_IMGCONVERT_H
-#define AVCODEC_IMGCONVERT_H
+#ifndef AVCORE_INTERNAL_H
+#define AVCORE_INTERNAL_H
 
-#include <stdint.h>
-#include "avcodec.h"
+/**
+ * @file
+ * internal functions
+ */
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
-attribute_deprecated
-int ff_fill_linesize(AVPicture *picture, enum PixelFormat pix_fmt, int width);
+#include "avcore.h"
 
-attribute_deprecated
-int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt, int height);
+int ff_set_systematic_pal2(uint32_t pal[256], enum PixelFormat pix_fmt);
 
-attribute_deprecated
-int ff_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane);
-
-attribute_deprecated
-int ff_set_systematic_pal(uint32_t pal[256], enum PixelFormat pix_fmt);
-#endif
-
-#endif /* AVCODEC_IMGCONVERT_H */
+#endif /* AVCORE_INTERNAL_H */
