@@ -438,15 +438,14 @@ void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
     /* print header */
     if (pix_fmt < 0)
         snprintf (buf, buf_size,
-                  "name      " " nb_channels" " depth"
+                  "name      " " nb_components" " depth"
             );
     else{
-        PixFmtInfo info= pix_fmt_info[pix_fmt];
-
+        const AVPixFmtDescriptor *pixdesc = &av_pix_fmt_descriptors[pix_fmt];
         snprintf (buf, buf_size,
-                  "%-11s %5d %9d",
+                  "%-11s %7d %9d",
                   av_pix_fmt_descriptors[pix_fmt].name,
-                  info.nb_channels,
+                  pixdesc->nb_components,
                   av_get_bits_per_pixel(&av_pix_fmt_descriptors[pix_fmt])
             );
     }
