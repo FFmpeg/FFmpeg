@@ -443,10 +443,10 @@ void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
     else{
         const AVPixFmtDescriptor *pixdesc = &av_pix_fmt_descriptors[pix_fmt];
         snprintf (buf, buf_size,
-                  "%-11s %7d %9d",
-                  av_pix_fmt_descriptors[pix_fmt].name,
+                  "%-11s %5d %7d",
+                  pixdesc->name,
                   pixdesc->nb_components,
-                  av_get_bits_per_pixel(&av_pix_fmt_descriptors[pix_fmt])
+                  av_get_bits_per_pixel(pixdesc)
             );
     }
 }
