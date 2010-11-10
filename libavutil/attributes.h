@@ -97,7 +97,7 @@
 #endif
 
 #ifndef av_alias
-#if (!defined(__ICC) || __ICC > 1110) && AV_GCC_VERSION_AT_LEAST(3,3)
+#if (!defined(__ICC) || __ICC > 1200) && AV_GCC_VERSION_AT_LEAST(3,3)
 #   define av_alias __attribute__((may_alias))
 #else
 #   define av_alias
