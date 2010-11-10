@@ -35,11 +35,10 @@
  * possibly followed by "@" and a string representing the alpha
  * component.
  * The alpha component may be a string composed by "0x" followed by an
- * hexadecimal number or a base-10 number between 0 and 255, or a
- * decimal number between 0.0 and 1.0, which represents the opacity
- * value (0/0x00/0.0 means completely transparent, 255/0xff/1.0
- * completely opaque).
- * If the alpha component is not specified then 255 is assumed.
+ * hexadecimal number or a decimal number between 0.0 and 1.0, which
+ * represents the opacity value (0x00/0.0 means completely transparent,
+ * 0xff/1.0 completely opaque).
+ * If the alpha component is not specified then 0xff is assumed.
  * The string "random" will result in a random color.
  * @return >= 0 in case of success, a negative value in case of
  * failure (for example if color_string cannot be parsed).
