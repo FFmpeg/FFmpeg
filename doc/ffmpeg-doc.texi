@@ -522,7 +522,7 @@ Force video tag/fourcc.
 @item -qphist
 Show QP histogram.
 @item -vbsf @var{bitstream_filter}
-Bitstream filters available are "dump_extra", "remove_extra", "noise", "h264_mp4toannexb", "imxdump", "mjpegadump".
+Bitstream filters available are "dump_extra", "remove_extra", "noise", "h264_mp4toannexb", "imxdump", "mjpegadump", "mjpeg2jpeg".
 @example
 ffmpeg -i h264.mp4 -vcodec copy -vbsf h264_mp4toannexb -an out.h264
 @end example

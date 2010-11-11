@@ -25,6 +25,43 @@ Below is a description of the currently available bitstream filters.
 
 @section imx_dump_header
 
+@section mjpeg2jpeg
+
+Convert MJPEG/AVI1 packets to full JPEG/JFIF packets.
+
+MJPEG is a video codec wherein each video frame is essentially a
+JPEG image. The individual frames can be extracted without loss,
+e.g. by
+
+@example
+ffmpeg -i ../some_mjpeg.avi -vcodec copy frames_%d.jpg
+@end example
+
+Unfortunately, these chunks are incomplete JPEG images, because
+they lack the DHT segment required for decoding. Quoting from
+@url{http://www.digitalpreservation.gov/formats/fdd/fdd000063.shtml}:
+
+Avery Lee, writing in the rec.video.desktop newsgroup in 2001,
+commented that "MJPEG, or at least the MJPEG in AVIs having the
+MJPG fourcc, is restricted JPEG with a fixed -- and *omitted* --
+Huffman table. The JPEG must be YCbCr colorspace, it must be 4:2:2,
+and it must use basic Huffman encoding, not arithmetic or
+progressive. . . . You can indeed extract the MJPEG frames and
+decode them with a regular JPEG decoder, but you have to prepend
+the DHT segment to them, or else the decoder won't have any idea
+how to decompress the data. The exact table necessary is given in
+the OpenDML spec."
+
+This bitstream filter patches the header of frames extracted from an MJPEG
+stream (carrying the AVI1 header ID and lacking a DHT segment) to
+produce fully qualified JPEG images.
+
+@example
+ffmpeg -i mjpeg-movie.avi -vcodec copy -vbsf mjpeg2jpeg frame_%d.jpg
+exiftran -i -9 frame*.jpg
+ffmpeg -i frame_%d.jpg -vcodec copy rotated.avi
+@end example
+
 @section mjpega_dump_header
 
 @section movsub

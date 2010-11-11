@@ -394,6 +394,7 @@ void avcodec_register_all(void)
     REGISTER_BSF     (DUMP_EXTRADATA, dump_extradata);
     REGISTER_BSF     (H264_MP4TOANNEXB, h264_mp4toannexb);
     REGISTER_BSF     (IMX_DUMP_HEADER, imx_dump_header);
+    REGISTER_BSF     (MJPEG2JPEG, mjpeg2jpeg);
     REGISTER_BSF     (MJPEGA_DUMP_HEADER, mjpega_dump_header);
     REGISTER_BSF     (MP3_HEADER_COMPRESS, mp3_header_compress);
     REGISTER_BSF     (MP3_HEADER_DECOMPRESS, mp3_header_decompress);

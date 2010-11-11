@@ -53,6 +53,7 @@ version <next>:
 - single stream LATM/LOAS decoder
 - setpts filter added
 - Win64 support for optimized asm functions
+- MJPEG/AVI1 to JPEG/JFIF bitstream filter
 
 
 version 0.6:
