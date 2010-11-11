@@ -294,6 +294,12 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
         AVFilterInOut *match;
 
         AVFilterInOut *input = *curr_inputs;
+        if (!input) {
+            av_log(log_ctx, AV_LOG_ERROR,
+                   "No output pad can be associated to link label '%s'.\n",
+                   name);
+            return AVERROR(EINVAL);
+        }
         *curr_inputs = (*curr_inputs)->next;
 
         if (!name)
