@@ -295,7 +295,7 @@ int main(void)
 
         av_log_set_level(AV_LOG_DEBUG);
 
-        for (int i = 0;  i < FF_ARRAY_ELEMS(color_names); i++) {
+        for (i = 0;  i < FF_ARRAY_ELEMS(color_names); i++) {
             if (av_parse_color(rgba, color_names[i], NULL) >= 0)
                 printf("%s -> R(%d) G(%d) B(%d) A(%d)\n", color_names[i], rgba[0], rgba[1], rgba[2], rgba[3]);
         }
