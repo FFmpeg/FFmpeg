@@ -102,6 +102,11 @@ typedef struct AVMetaDataMap {
     int  index;     //< stream/chapter/program number
 } AVMetaDataMap;
 
+typedef struct AVChapterMap {
+    int in_file;
+    int out_file;
+} AVChapterMap;
+
 static const OptionDef options[];
 
 #define MAX_FILES 100
@@ -131,6 +136,9 @@ static AVMetaDataMap (*meta_data_maps)[2] = NULL;
 static int nb_meta_data_maps;
 static int metadata_streams_autocopy  = 1;
 static int metadata_chapters_autocopy = 1;
+
+static AVChapterMap *chapter_maps = NULL;
+static int nb_chapter_maps;
 
 /* indexed by output file stream index */
 static int *streamid_map = NULL;
@@ -2381,7 +2389,28 @@ static int transcode(AVFormatContext **output_files,
             av_metadata_set2(meta[0], mtag->key, mtag->value, AV_METADATA_DONT_OVERWRITE);
     }
 
+    /* copy chapters according to chapter maps */
+    for (i = 0; i < nb_chapter_maps; i++) {
+        int infile  = chapter_maps[i].in_file;
+        int outfile = chapter_maps[i].out_file;
+
+        if (infile < 0 || outfile < 0)
+            continue;
+        if (infile >= nb_input_files) {
+            snprintf(error, sizeof(error), "Invalid input file index %d in chapter mapping.\n", infile);
+            ret = AVERROR(EINVAL);
+            goto dump_format;
+        }
+        if (outfile >= nb_output_files) {
+            snprintf(error, sizeof(error), "Invalid output file index %d in chapter mapping.\n",outfile);
+            ret = AVERROR(EINVAL);
+            goto dump_format;
+        }
+        copy_chapters(infile, outfile);
+    }
+
     /* copy chapters from the first input file that has them*/
+    if (!nb_chapter_maps)
     for (i = 0; i < nb_input_files; i++) {
         if (!input_files[i]->nb_chapters)
             continue;
@@ -2960,6 +2989,21 @@ static void opt_map_meta_data(const char *arg)
         metadata_streams_autocopy = 0;
     if (m->type == 'c' || m1->type == 'c')
         metadata_chapters_autocopy = 0;
+}
+
+static void opt_map_chapters(const char *arg)
+{
+    AVChapterMap *c;
+    char *p;
+
+    chapter_maps = grow_array(chapter_maps, sizeof(*chapter_maps), &nb_chapter_maps,
+                              nb_chapter_maps + 1);
+    c = &chapter_maps[nb_chapter_maps - 1];
+    c->out_file = strtol(arg, &p, 0);
+    if (*p)
+        p++;
+
+    c->in_file = strtol(p, &p, 0);
 }
 
 static void opt_input_ts_scale(const char *arg)
@@ -4074,6 +4118,7 @@ static const OptionDef options[] = {
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream[:syncfile:syncstream]" },
     { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "set meta data information of outfile from infile", "outfile[,metadata]:infile[,metadata]" },
+    { "map_chapters",  HAS_ARG | OPT_EXPERT, {(void*)opt_map_chapters},  "set chapters mapping", "outfile:infile" },
     { "t", OPT_FUNC2 | HAS_ARG, {(void*)opt_recording_time}, "record or transcode \"duration\" seconds of audio/video", "duration" },
     { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //
     { "ss", OPT_FUNC2 | HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },

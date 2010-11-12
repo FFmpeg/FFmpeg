@@ -630,6 +630,10 @@ of the output file:
 @example
 ffmpeg -i in.ogg -map_meta_data 0:0,s0 out.mp3
 @end example
+@item -map_chapters @var{outfile}:@var{infile}
+Copy chapters from @var{infile} to @var{outfile}. If no chapter mapping is specified,
+then chapters are copied from the first input file with at least one chapter to all
+output files. Use a negative file index to disable any chapter copying.
 @item -debug
 Print specific debug info.
 @item -benchmark
