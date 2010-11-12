@@ -352,6 +352,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
         TrellisNode *t = node_buf + frontier*(i&1);
         TrellisNode **u;
         int sample = samples[i*stride];
+        int heap_pos = 0;
         memset(nodes_next, 0, frontier*sizeof(TrellisNode*));
         for(j=0; j<frontier && nodes[j]; j++) {
             // higher j have higher ssd already, so they're unlikely to use a suboptimal next sample too
@@ -369,11 +370,11 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
 #define STORE_NODE(NAME, STEP_INDEX)\
                     int d;\
                     uint32_t ssd;\
+                    int pos;\
+                    TrellisNode *u;\
                     dec_sample = av_clip_int16(dec_sample);\
                     d = sample - dec_sample;\
                     ssd = nodes[j]->ssd + d*d;\
-                    if(nodes_next[frontier-1] && ssd >= nodes_next[frontier-1]->ssd)\
-                        continue;\
                     /* Collapse any two states with the same previous sample value. \
                      * One could also distinguish states by step and by 2nd to last
                      * sample, but the effects of that are negligible. */\
@@ -383,12 +384,28 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                             goto next_##NAME;\
                         }\
                     }\
-                    for(k=0; k<frontier; k++) {\
-                        if(!nodes_next[k] || ssd < nodes_next[k]->ssd) {\
-                            TrellisNode *u = nodes_next[frontier-1];\
+                    if (heap_pos < frontier) {\
+                        pos = heap_pos++;\
+                    } else {\
+                        /* Find the largest node in the heap, which is one \
+                         * of the leaf nodes. */\
+                        int maxpos = 0;\
+                        uint32_t max_ssd = 0;\
+                        for (k = frontier >> 1; k < frontier; k++) {\
+                            if (nodes_next[k]->ssd > max_ssd) {\
+                                maxpos = k;\
+                                max_ssd = nodes_next[k]->ssd;\
+                            }\
+                        }\
+                        pos = maxpos;\
+                        if (ssd > max_ssd)\
+                            goto next_##NAME;\
+                    }\
+                    u = nodes_next[pos];\
                             if(!u) {\
                                 assert(pathn < FREEZE_INTERVAL<<avctx->trellis);\
                                 u = t++;\
+                                nodes_next[pos] = u;\
                                 u->path = pathn++;\
                             }\
                             u->ssd = ssd;\
@@ -397,10 +414,14 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                             u->sample1 = dec_sample;\
                             paths[u->path].nibble = nibble;\
                             paths[u->path].prev = nodes[j]->path;\
-                            memmove(&nodes_next[k+1], &nodes_next[k], (frontier-k-1)*sizeof(TrellisNode*));\
-                            nodes_next[k] = u;\
+                    /* Sift the newly inserted node down in the heap to \
+                     * restore the heap property. */\
+                    while (pos > 0) {\
+                        int parent = (pos - 1) >> 1;\
+                        if (nodes_next[parent]->ssd <= ssd)\
                             break;\
-                        }\
+                        FFSWAP(TrellisNode*, nodes_next[parent], nodes_next[pos]);\
+                        pos = parent;\
                     }\
                     next_##NAME:;
                     STORE_NODE(ms, FFMAX(16, (AdaptationTable[nibble] * step) >> 8));
