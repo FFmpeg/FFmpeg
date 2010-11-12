@@ -260,6 +260,23 @@ static void init_mv(FourXContext *f){
     }
 }
 
+#if HAVE_BIGENDIAN
+#define LE_CENTRIC_MUL(dst, src, scale, dc) \
+    { \
+        unsigned tmpval = AV_RN32(src);                 \
+        tmpval = (tmpval <<  16) | (tmpval >>  16);     \
+        tmpval = tmpval * (scale) + (dc);               \
+        tmpval = (tmpval <<  16) | (tmpval >>  16);     \
+        AV_WN32A(dst, tmpval);                          \
+    }
+#else
+#define LE_CENTRIC_MUL(dst, src, scale, dc) \
+    { \
+        unsigned tmpval = AV_RN32(src) * (scale) + (dc); \
+        AV_WN32A(dst, tmpval);                           \
+    }
+#endif
+
 static inline void mcdc(uint16_t *dst, uint16_t *src, int log2w, int h, int stride, int scale, int dc){
    int i;
    dc*= 0x10001;
@@ -274,25 +291,25 @@ static inline void mcdc(uint16_t *dst, uint16_t *src, int log2w, int h, int stri
         break;
     case 1:
         for(i=0; i<h; i++){
-            ((uint32_t*)dst)[0] = scale*((uint32_t*)src)[0] + dc;
+            LE_CENTRIC_MUL(dst, src, scale, dc);
             if(scale) src += stride;
             dst += stride;
         }
         break;
     case 2:
         for(i=0; i<h; i++){
-            ((uint32_t*)dst)[0] = scale*((uint32_t*)src)[0] + dc;
-            ((uint32_t*)dst)[1] = scale*((uint32_t*)src)[1] + dc;
+            LE_CENTRIC_MUL(dst,     src,     scale, dc);
+            LE_CENTRIC_MUL(dst + 2, src + 2, scale, dc);
             if(scale) src += stride;
             dst += stride;
         }
         break;
     case 3:
         for(i=0; i<h; i++){
-            ((uint32_t*)dst)[0] = scale*((uint32_t*)src)[0] + dc;
-            ((uint32_t*)dst)[1] = scale*((uint32_t*)src)[1] + dc;
-            ((uint32_t*)dst)[2] = scale*((uint32_t*)src)[2] + dc;
-            ((uint32_t*)dst)[3] = scale*((uint32_t*)src)[3] + dc;
+            LE_CENTRIC_MUL(dst,     src,     scale, dc);
+            LE_CENTRIC_MUL(dst + 2, src + 2, scale, dc);
+            LE_CENTRIC_MUL(dst + 4, src + 4, scale, dc);
+            LE_CENTRIC_MUL(dst + 6, src + 6, scale, dc);
             if(scale) src += stride;
             dst += stride;
         }
