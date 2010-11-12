@@ -88,7 +88,7 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
         default:
           return -1;
     }
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     return 0;
 }
 

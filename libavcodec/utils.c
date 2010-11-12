@@ -923,7 +923,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         }
         av_strlcat(buf, ", ", buf_size);
         avcodec_get_channel_layout_string(buf + strlen(buf), buf_size - strlen(buf), enc->channels, enc->channel_layout);
-        if (enc->sample_fmt != SAMPLE_FMT_NONE) {
+        if (enc->sample_fmt != AV_SAMPLE_FMT_NONE) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s", av_get_sample_fmt_name(enc->sample_fmt));
         }
@@ -1067,7 +1067,7 @@ int av_get_bits_per_sample(enum CodecID codec_id){
 }
 
 #if FF_API_OLD_SAMPLE_FMT
-int av_get_bits_per_sample_format(enum SampleFormat sample_fmt) {
+int av_get_bits_per_sample_format(enum AVSampleFormat sample_fmt) {
     return av_get_bits_per_sample_fmt(sample_fmt);
 }
 #endif

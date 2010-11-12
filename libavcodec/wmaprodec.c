@@ -276,7 +276,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     dsputil_init(&s->dsp, avctx);
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 
-    avctx->sample_fmt = SAMPLE_FMT_FLT;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
     if (avctx->extradata_size >= 18) {
         s->decode_flags    = AV_RL16(edata_ptr+14);

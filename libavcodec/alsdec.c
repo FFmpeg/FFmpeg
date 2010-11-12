@@ -1573,11 +1573,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
         ff_bgmc_init(avctx, &ctx->bgmc_lut, &ctx->bgmc_lut_status);
 
     if (sconf->floating) {
-        avctx->sample_fmt          = SAMPLE_FMT_FLT;
+        avctx->sample_fmt          = AV_SAMPLE_FMT_FLT;
         avctx->bits_per_raw_sample = 32;
     } else {
         avctx->sample_fmt          = sconf->resolution > 1
-                                     ? SAMPLE_FMT_S32 : SAMPLE_FMT_S16;
+                                     ? AV_SAMPLE_FMT_S32 : AV_SAMPLE_FMT_S16;
         avctx->bits_per_raw_sample = (sconf->resolution + 1) * 8;
     }
 

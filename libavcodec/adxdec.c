@@ -34,7 +34,7 @@
 
 static av_cold int adx_decode_init(AVCodecContext *avctx)
 {
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     return 0;
 }
 

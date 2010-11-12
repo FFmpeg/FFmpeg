@@ -49,7 +49,7 @@ const char *avcodec_get_sample_fmt_name(int sample_fmt);
  * @deprecated Use av_get_sample_fmt() instead.
  */
 attribute_deprecated
-enum SampleFormat avcodec_get_sample_fmt(const char* name);
+enum AVSampleFormat avcodec_get_sample_fmt(const char* name);
 #endif
 
 /**
@@ -94,8 +94,8 @@ typedef struct AVAudioConvert AVAudioConvert;
  * @param flags See AV_CPU_FLAG_xx
  * @return NULL on error
  */
-AVAudioConvert *av_audio_convert_alloc(enum SampleFormat out_fmt, int out_channels,
-                                       enum SampleFormat in_fmt, int in_channels,
+AVAudioConvert *av_audio_convert_alloc(enum AVSampleFormat out_fmt, int out_channels,
+                                       enum AVSampleFormat in_fmt, int in_channels,
                                        const float *matrix, int flags);
 
 /**

@@ -425,7 +425,7 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
                                   2 * (s->block_conv_table[1] - 2 * s->min_pitch_val);
     s->block_pitch_nbits        = av_ceil_log2(s->block_pitch_range);
 
-    ctx->sample_fmt             = SAMPLE_FMT_FLT;
+    ctx->sample_fmt             = AV_SAMPLE_FMT_FLT;
 
     return 0;
 }

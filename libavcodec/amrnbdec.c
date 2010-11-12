@@ -154,7 +154,7 @@ static av_cold int amrnb_decode_init(AVCodecContext *avctx)
     AMRContext *p = avctx->priv_data;
     int i;
 
-    avctx->sample_fmt = SAMPLE_FMT_FLT;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
     // p->excitation always points to the same position in p->excitation_buf
     p->excitation = &p->excitation_buf[PITCH_DELAY_MAX + LP_FILTER_ORDER + 1];
@@ -1044,5 +1044,5 @@ AVCodec amrnb_decoder = {
     .init           = amrnb_decode_init,
     .decode         = amrnb_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Adaptive Multi-Rate NarrowBand"),
-    .sample_fmts    = (enum SampleFormat[]){SAMPLE_FMT_FLT,SAMPLE_FMT_NONE},
+    .sample_fmts    = (enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
 };

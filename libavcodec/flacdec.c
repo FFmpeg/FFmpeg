@@ -113,7 +113,7 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     FLACContext *s = avctx->priv_data;
     s->avctx = avctx;
 
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     /* for now, the raw FLAC header is allowed to be passed to the decoder as
        frame data instead of extradata. */
@@ -126,9 +126,9 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     /* initialize based on the demuxer-supplied streamdata header */
     ff_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
     if (s->bps > 16)
-        avctx->sample_fmt = SAMPLE_FMT_S32;
+        avctx->sample_fmt = AV_SAMPLE_FMT_S32;
     else
-        avctx->sample_fmt = SAMPLE_FMT_S16;
+        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     allocate_buffers(s);
     s->got_streaminfo = 1;
 
@@ -603,11 +603,11 @@ static int decode_frame(FLACContext *s)
     s->bps = s->avctx->bits_per_raw_sample = fi.bps;
 
     if (s->bps > 16) {
-        s->avctx->sample_fmt = SAMPLE_FMT_S32;
+        s->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
         s->sample_shift = 32 - s->bps;
         s->is32 = 1;
     } else {
-        s->avctx->sample_fmt = SAMPLE_FMT_S16;
+        s->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
         s->sample_shift = 16 - s->bps;
         s->is32 = 0;
     }

@@ -35,7 +35,7 @@ static av_cold int gsm_init(AVCodecContext *avctx)
     avctx->channels = 1;
     if (!avctx->sample_rate)
         avctx->sample_rate = 8000;
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     switch (avctx->codec_id) {
     case CODEC_ID_GSM:

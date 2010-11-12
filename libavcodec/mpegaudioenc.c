@@ -792,7 +792,7 @@ AVCodec mp2_encoder = {
     MPA_encode_frame,
     MPA_encode_close,
     NULL,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .supported_samplerates= (const int[]){44100, 48000,  32000, 22050, 24000, 16000, 0},
     .long_name = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
 };

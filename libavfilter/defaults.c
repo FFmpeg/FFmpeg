@@ -82,7 +82,7 @@ fail:
 }
 
 AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int perms,
-                                                     enum SampleFormat sample_fmt, int size,
+                                                     enum AVSampleFormat sample_fmt, int size,
                                                      int64_t channel_layout, int planar)
 {
     AVFilterBuffer *samples = av_mallocz(sizeof(AVFilterBuffer));
@@ -318,7 +318,7 @@ AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms,
 }
 
 AVFilterBufferRef *avfilter_null_get_audio_buffer(AVFilterLink *link, int perms,
-                                                  enum SampleFormat sample_fmt, int size,
+                                                  enum AVSampleFormat sample_fmt, int size,
                                                   int64_t channel_layout, int packed)
 {
     return avfilter_get_audio_buffer(link->dst->outputs[0], perms, sample_fmt,

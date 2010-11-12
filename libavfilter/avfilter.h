@@ -366,7 +366,7 @@ struct AVFilterPad {
      * Input audio pads only.
      */
     AVFilterBufferRef *(*get_audio_buffer)(AVFilterLink *link, int perms,
-                                           enum SampleFormat sample_fmt, int size,
+                                           enum AVSampleFormat sample_fmt, int size,
                                            int64_t channel_layout, int planar);
 
     /**
@@ -455,7 +455,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
 
 /** default handler for get_audio_buffer() for audio inputs */
 AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int perms,
-                                                     enum SampleFormat sample_fmt, int size,
+                                                     enum AVSampleFormat sample_fmt, int size,
                                                      int64_t channel_layout, int planar);
 
 /**
@@ -486,7 +486,7 @@ AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link,
 
 /** get_audio_buffer() handler for filters which simply pass audio along */
 AVFilterBufferRef *avfilter_null_get_audio_buffer(AVFilterLink *link, int perms,
-                                                  enum SampleFormat sample_fmt, int size,
+                                                  enum AVSampleFormat sample_fmt, int size,
                                                   int64_t channel_layout, int planar);
 
 /**
@@ -662,7 +662,7 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
  *                       avfilter_unref_buffer when you are finished with it.
  */
 AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
-                                             enum SampleFormat sample_fmt, int size,
+                                             enum AVSampleFormat sample_fmt, int size,
                                              int64_t channel_layout, int planar);
 
 /**

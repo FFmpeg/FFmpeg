@@ -645,6 +645,6 @@ AVCodec aac_encoder = {
     aac_encode_frame,
     aac_encode_end,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
 };

@@ -54,7 +54,7 @@ typedef struct {
 
 static av_cold int ra288_decode_init(AVCodecContext *avctx)
 {
-    avctx->sample_fmt = SAMPLE_FMT_FLT;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
     return 0;
 }
 

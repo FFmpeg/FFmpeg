@@ -148,7 +148,7 @@ static int frame_width  = 0;
 static int frame_height = 0;
 static float frame_aspect_ratio = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
-static enum SampleFormat audio_sample_fmt = SAMPLE_FMT_NONE;
+static enum AVSampleFormat audio_sample_fmt = AV_SAMPLE_FMT_NONE;
 static int max_frames[4] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
 static AVRational frame_rate;
 static float video_qscale = 0;
@@ -597,7 +597,7 @@ static void *grow_array(void *array, int elem_size, int *size, int new_size)
 static void choose_sample_fmt(AVStream *st, AVCodec *codec)
 {
     if(codec && codec->sample_fmts){
-        const enum SampleFormat *p= codec->sample_fmts;
+        const enum AVSampleFormat *p= codec->sample_fmts;
         for(; *p!=-1; p++){
             if(*p == st->codec->sample_fmt)
                 break;
@@ -809,7 +809,7 @@ need_realloc:
         ost->audio_resample = 1;
 
     if (ost->audio_resample && !ost->resample) {
-        if (dec->sample_fmt != SAMPLE_FMT_S16)
+        if (dec->sample_fmt != AV_SAMPLE_FMT_S16)
             fprintf(stderr, "Warning, using s16 intermediate sample format for resampling\n");
         ost->resample = av_audio_resample_init(enc->channels,    dec->channels,
                                                enc->sample_rate, dec->sample_rate,
@@ -823,7 +823,7 @@ need_realloc:
         }
     }
 
-#define MAKE_SFMT_PAIR(a,b) ((a)+SAMPLE_FMT_NB*(b))
+#define MAKE_SFMT_PAIR(a,b) ((a)+AV_SAMPLE_FMT_NB*(b))
     if (!ost->audio_resample && dec->sample_fmt!=enc->sample_fmt &&
         MAKE_SFMT_PAIR(enc->sample_fmt,dec->sample_fmt)!=ost->reformat_pair) {
         if (ost->reformat_ctx)
@@ -2175,7 +2175,7 @@ static int transcode(AVFormatContext **output_files,
                 ost->fifo= av_fifo_alloc(1024);
                 if(!ost->fifo)
                     goto fail;
-                ost->reformat_pair = MAKE_SFMT_PAIR(SAMPLE_FMT_NONE,SAMPLE_FMT_NONE);
+                ost->reformat_pair = MAKE_SFMT_PAIR(AV_SAMPLE_FMT_NONE,AV_SAMPLE_FMT_NONE);
                 ost->audio_resample = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
                 icodec->request_channels = codec->channels;
                 ist->decoding_needed = 1;
@@ -2851,7 +2851,7 @@ static void opt_audio_sample_fmt(const char *arg)
     if (strcmp(arg, "list"))
         audio_sample_fmt = av_get_sample_fmt(arg);
     else {
-        list_fmts(av_get_sample_fmt_string, SAMPLE_FMT_NB);
+        list_fmts(av_get_sample_fmt_string, AV_SAMPLE_FMT_NB);
         ffmpeg_exit(0);
     }
 }

@@ -392,5 +392,5 @@ AVCodec nellymoser_encoder = {
     .close = encode_end,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
     .long_name = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
 };

@@ -1270,7 +1270,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     if (channel_mask)
         avctx->channel_layout = channel_mask;
     else

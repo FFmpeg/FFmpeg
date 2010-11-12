@@ -1464,7 +1464,7 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
 
     for (i = 0; i < DCA_PRIM_CHANNELS_MAX+1; i++)
         s->samples_chanptr[i] = s->samples + i * 256;
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     if (s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
         s->add_bias = 385.0f;

@@ -228,7 +228,7 @@ static av_cold int pcm_decode_init(AVCodecContext * avctx)
 
     avctx->sample_fmt = avctx->codec->sample_fmts[0];
 
-    if (avctx->sample_fmt == SAMPLE_FMT_S32)
+    if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
         avctx->bits_per_raw_sample = av_get_bits_per_sample(avctx->codec->id);
 
     return 0;
@@ -475,7 +475,7 @@ AVCodec name_ ## _encoder = {                   \
     .init        = pcm_encode_init,             \
     .encode      = pcm_encode_frame,            \
     .close       = pcm_encode_close,            \
-    .sample_fmts = (const enum SampleFormat[]){sample_fmt_,SAMPLE_FMT_NONE}, \
+    .sample_fmts = (const enum AVSampleFormat[]){sample_fmt_,AV_SAMPLE_FMT_NONE}, \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else
@@ -491,7 +491,7 @@ AVCodec name_ ## _decoder = {                   \
     .priv_data_size = sizeof(PCMDecode),        \
     .init           = pcm_decode_init,          \
     .decode         = pcm_decode_frame,         \
-    .sample_fmts = (const enum SampleFormat[]){sample_fmt_,SAMPLE_FMT_NONE}, \
+    .sample_fmts = (const enum AVSampleFormat[]){sample_fmt_,AV_SAMPLE_FMT_NONE}, \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else
@@ -502,28 +502,28 @@ AVCodec name_ ## _decoder = {                   \
     PCM_ENCODER(id,sample_fmt_,name,long_name_) PCM_DECODER(id,sample_fmt_,name,long_name_)
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
-PCM_CODEC  (CODEC_ID_PCM_ALAW,  SAMPLE_FMT_S16, pcm_alaw, "PCM A-law");
-PCM_CODEC  (CODEC_ID_PCM_DVD,   SAMPLE_FMT_S32, pcm_dvd, "PCM signed 20|24-bit big-endian");
-PCM_CODEC  (CODEC_ID_PCM_F32BE, SAMPLE_FMT_FLT, pcm_f32be, "PCM 32-bit floating point big-endian");
-PCM_CODEC  (CODEC_ID_PCM_F32LE, SAMPLE_FMT_FLT, pcm_f32le, "PCM 32-bit floating point little-endian");
-PCM_CODEC  (CODEC_ID_PCM_F64BE, SAMPLE_FMT_DBL, pcm_f64be, "PCM 64-bit floating point big-endian");
-PCM_CODEC  (CODEC_ID_PCM_F64LE, SAMPLE_FMT_DBL, pcm_f64le, "PCM 64-bit floating point little-endian");
-PCM_DECODER(CODEC_ID_PCM_LXF,   SAMPLE_FMT_S32, pcm_lxf, "PCM signed 20-bit little-endian planar");
-PCM_CODEC  (CODEC_ID_PCM_MULAW, SAMPLE_FMT_S16, pcm_mulaw, "PCM mu-law");
-PCM_CODEC  (CODEC_ID_PCM_S8,    SAMPLE_FMT_U8,  pcm_s8, "PCM signed 8-bit");
-PCM_CODEC  (CODEC_ID_PCM_S16BE, SAMPLE_FMT_S16, pcm_s16be, "PCM signed 16-bit big-endian");
-PCM_CODEC  (CODEC_ID_PCM_S16LE, SAMPLE_FMT_S16, pcm_s16le, "PCM signed 16-bit little-endian");
-PCM_DECODER(CODEC_ID_PCM_S16LE_PLANAR, SAMPLE_FMT_S16, pcm_s16le_planar, "PCM 16-bit little-endian planar");
-PCM_CODEC  (CODEC_ID_PCM_S24BE, SAMPLE_FMT_S32, pcm_s24be, "PCM signed 24-bit big-endian");
-PCM_CODEC  (CODEC_ID_PCM_S24DAUD, SAMPLE_FMT_S16,  pcm_s24daud, "PCM D-Cinema audio signed 24-bit");
-PCM_CODEC  (CODEC_ID_PCM_S24LE, SAMPLE_FMT_S32, pcm_s24le, "PCM signed 24-bit little-endian");
-PCM_CODEC  (CODEC_ID_PCM_S32BE, SAMPLE_FMT_S32, pcm_s32be, "PCM signed 32-bit big-endian");
-PCM_CODEC  (CODEC_ID_PCM_S32LE, SAMPLE_FMT_S32, pcm_s32le, "PCM signed 32-bit little-endian");
-PCM_CODEC  (CODEC_ID_PCM_U8,    SAMPLE_FMT_U8,  pcm_u8, "PCM unsigned 8-bit");
-PCM_CODEC  (CODEC_ID_PCM_U16BE, SAMPLE_FMT_S16, pcm_u16be, "PCM unsigned 16-bit big-endian");
-PCM_CODEC  (CODEC_ID_PCM_U16LE, SAMPLE_FMT_S16, pcm_u16le, "PCM unsigned 16-bit little-endian");
-PCM_CODEC  (CODEC_ID_PCM_U24BE, SAMPLE_FMT_S32, pcm_u24be, "PCM unsigned 24-bit big-endian");
-PCM_CODEC  (CODEC_ID_PCM_U24LE, SAMPLE_FMT_S32, pcm_u24le, "PCM unsigned 24-bit little-endian");
-PCM_CODEC  (CODEC_ID_PCM_U32BE, SAMPLE_FMT_S32, pcm_u32be, "PCM unsigned 32-bit big-endian");
-PCM_CODEC  (CODEC_ID_PCM_U32LE, SAMPLE_FMT_S32, pcm_u32le, "PCM unsigned 32-bit little-endian");
-PCM_CODEC  (CODEC_ID_PCM_ZORK,  SAMPLE_FMT_S16, pcm_zork, "PCM Zork");
+PCM_CODEC  (CODEC_ID_PCM_ALAW,  AV_SAMPLE_FMT_S16, pcm_alaw, "PCM A-law");
+PCM_CODEC  (CODEC_ID_PCM_DVD,   AV_SAMPLE_FMT_S32, pcm_dvd, "PCM signed 20|24-bit big-endian");
+PCM_CODEC  (CODEC_ID_PCM_F32BE, AV_SAMPLE_FMT_FLT, pcm_f32be, "PCM 32-bit floating point big-endian");
+PCM_CODEC  (CODEC_ID_PCM_F32LE, AV_SAMPLE_FMT_FLT, pcm_f32le, "PCM 32-bit floating point little-endian");
+PCM_CODEC  (CODEC_ID_PCM_F64BE, AV_SAMPLE_FMT_DBL, pcm_f64be, "PCM 64-bit floating point big-endian");
+PCM_CODEC  (CODEC_ID_PCM_F64LE, AV_SAMPLE_FMT_DBL, pcm_f64le, "PCM 64-bit floating point little-endian");
+PCM_DECODER(CODEC_ID_PCM_LXF,   AV_SAMPLE_FMT_S32, pcm_lxf, "PCM signed 20-bit little-endian planar");
+PCM_CODEC  (CODEC_ID_PCM_MULAW, AV_SAMPLE_FMT_S16, pcm_mulaw, "PCM mu-law");
+PCM_CODEC  (CODEC_ID_PCM_S8,    AV_SAMPLE_FMT_U8,  pcm_s8, "PCM signed 8-bit");
+PCM_CODEC  (CODEC_ID_PCM_S16BE, AV_SAMPLE_FMT_S16, pcm_s16be, "PCM signed 16-bit big-endian");
+PCM_CODEC  (CODEC_ID_PCM_S16LE, AV_SAMPLE_FMT_S16, pcm_s16le, "PCM signed 16-bit little-endian");
+PCM_DECODER(CODEC_ID_PCM_S16LE_PLANAR, AV_SAMPLE_FMT_S16, pcm_s16le_planar, "PCM 16-bit little-endian planar");
+PCM_CODEC  (CODEC_ID_PCM_S24BE, AV_SAMPLE_FMT_S32, pcm_s24be, "PCM signed 24-bit big-endian");
+PCM_CODEC  (CODEC_ID_PCM_S24DAUD, AV_SAMPLE_FMT_S16,  pcm_s24daud, "PCM D-Cinema audio signed 24-bit");
+PCM_CODEC  (CODEC_ID_PCM_S24LE, AV_SAMPLE_FMT_S32, pcm_s24le, "PCM signed 24-bit little-endian");
+PCM_CODEC  (CODEC_ID_PCM_S32BE, AV_SAMPLE_FMT_S32, pcm_s32be, "PCM signed 32-bit big-endian");
+PCM_CODEC  (CODEC_ID_PCM_S32LE, AV_SAMPLE_FMT_S32, pcm_s32le, "PCM signed 32-bit little-endian");
+PCM_CODEC  (CODEC_ID_PCM_U8,    AV_SAMPLE_FMT_U8,  pcm_u8, "PCM unsigned 8-bit");
+PCM_CODEC  (CODEC_ID_PCM_U16BE, AV_SAMPLE_FMT_S16, pcm_u16be, "PCM unsigned 16-bit big-endian");
+PCM_CODEC  (CODEC_ID_PCM_U16LE, AV_SAMPLE_FMT_S16, pcm_u16le, "PCM unsigned 16-bit little-endian");
+PCM_CODEC  (CODEC_ID_PCM_U24BE, AV_SAMPLE_FMT_S32, pcm_u24be, "PCM unsigned 24-bit big-endian");
+PCM_CODEC  (CODEC_ID_PCM_U24LE, AV_SAMPLE_FMT_S32, pcm_u24le, "PCM unsigned 24-bit little-endian");
+PCM_CODEC  (CODEC_ID_PCM_U32BE, AV_SAMPLE_FMT_S32, pcm_u32be, "PCM unsigned 32-bit big-endian");
+PCM_CODEC  (CODEC_ID_PCM_U32LE, AV_SAMPLE_FMT_S32, pcm_u32le, "PCM unsigned 32-bit little-endian");
+PCM_CODEC  (CODEC_ID_PCM_ZORK,  AV_SAMPLE_FMT_S16, pcm_zork, "PCM Zork");

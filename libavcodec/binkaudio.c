@@ -119,7 +119,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->bands[s->num_bands] = s->frame_len / 2;
 
     s->first = 1;
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     for (i = 0; i < s->channels; i++)
         s->coeffs_ptr[i] = s->coeffs + i * s->frame_len;

@@ -326,7 +326,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 {
     AT1Ctx *q = avctx->priv_data;
 
-    avctx->sample_fmt = SAMPLE_FMT_FLT;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
     q->channels = avctx->channels;
 

@@ -318,9 +318,9 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
 
     m->avctx->bits_per_raw_sample = mh.group1_bits;
     if (mh.group1_bits > 16)
-        m->avctx->sample_fmt = SAMPLE_FMT_S32;
+        m->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
     else
-        m->avctx->sample_fmt = SAMPLE_FMT_S16;
+        m->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     m->params_valid = 1;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
@@ -931,7 +931,7 @@ static int output_data_internal(MLPDecodeContext *m, unsigned int substr,
 static int output_data(MLPDecodeContext *m, unsigned int substr,
                        uint8_t *data, unsigned int *data_size)
 {
-    if (m->avctx->sample_fmt == SAMPLE_FMT_S32)
+    if (m->avctx->sample_fmt == AV_SAMPLE_FMT_S32)
         return output_data_internal(m, substr, data, data_size, 1);
     else
         return output_data_internal(m, substr, data, data_size, 0);

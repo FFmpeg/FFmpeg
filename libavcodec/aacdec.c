@@ -545,7 +545,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
             return -1;
     }
 
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     AAC_INIT_VLC_STATIC( 0, 304);
     AAC_INIT_VLC_STATIC( 1, 270);
@@ -2369,8 +2369,8 @@ AVCodec aac_decoder = {
     aac_decode_close,
     aac_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
-    .sample_fmts = (const enum SampleFormat[]) {
-        SAMPLE_FMT_S16,SAMPLE_FMT_NONE
+    .sample_fmts = (const enum AVSampleFormat[]) {
+        AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE
     },
     .channel_layouts = aac_channel_layout,
 };
@@ -2389,8 +2389,8 @@ AVCodec aac_latm_decoder = {
     .close  = aac_decode_close,
     .decode = latm_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("AAC LATM (Advanced Audio Codec LATM syntax)"),
-    .sample_fmts = (const enum SampleFormat[]) {
-        SAMPLE_FMT_S16,SAMPLE_FMT_NONE
+    .sample_fmts = (const enum AVSampleFormat[]) {
+        AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE
     },
     .channel_layouts = aac_channel_layout,
 };

@@ -49,7 +49,7 @@ static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Audio must be 22050 Hz\n");
         return -1;
     }
-    if (avctx->sample_fmt != SAMPLE_FMT_S16) {
+    if (avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
         av_log(avctx, AV_LOG_ERROR, "Audio must be signed 16-bit\n");
         return -1;
     }
@@ -162,6 +162,6 @@ AVCodec roq_dpcm_encoder = {
     roq_dpcm_encode_frame,
     roq_dpcm_encode_close,
     NULL,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("id RoQ DPCM"),
 };

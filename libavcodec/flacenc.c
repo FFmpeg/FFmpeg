@@ -219,7 +219,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
 
     dsputil_init(&s->dsp, avctx);
 
-    if (avctx->sample_fmt != SAMPLE_FMT_S16)
+    if (avctx->sample_fmt != AV_SAMPLE_FMT_S16)
         return -1;
 
     if (channels < 1 || channels > FLAC_MAX_CHANNELS)
@@ -1335,6 +1335,6 @@ AVCodec flac_encoder = {
     flac_encode_close,
     NULL,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
 };

@@ -92,7 +92,7 @@ static av_cold int qcelp_decode_init(AVCodecContext *avctx)
     QCELPContext *q = avctx->priv_data;
     int i;
 
-    avctx->sample_fmt = SAMPLE_FMT_FLT;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
     for(i=0; i<10; i++)
         q->prev_lspf[i] = (i+1)/11.;

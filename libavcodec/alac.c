@@ -505,10 +505,10 @@ static int alac_decode_frame(AVCodecContext *avctx,
         outputsamples = alac->setinfo_max_samples_per_frame;
 
     switch (alac->setinfo_sample_size) {
-    case 16: avctx->sample_fmt    = SAMPLE_FMT_S16;
+    case 16: avctx->sample_fmt    = AV_SAMPLE_FMT_S16;
              alac->bytespersample = channels << 1;
              break;
-    case 24: avctx->sample_fmt    = SAMPLE_FMT_S32;
+    case 24: avctx->sample_fmt    = AV_SAMPLE_FMT_S32;
              alac->bytespersample = channels << 2;
              break;
     default: av_log(avctx, AV_LOG_ERROR, "Sample depth %d is not supported.\n",

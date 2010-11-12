@@ -1006,7 +1006,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
     avccontext->channels    = vc->audio_channels;
     avccontext->sample_rate = vc->audio_samplerate;
     avccontext->frame_size  = FFMIN(vc->blocksize[0], vc->blocksize[1]) >> 2;
-    avccontext->sample_fmt  = SAMPLE_FMT_S16;
+    avccontext->sample_fmt  = AV_SAMPLE_FMT_S16;
 
     return 0 ;
 }

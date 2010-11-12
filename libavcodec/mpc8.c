@@ -129,7 +129,7 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     c->MSS = get_bits1(&gb);
     c->frames = 1 << (get_bits(&gb, 3) * 2);
 
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
 
     if(vlc_initialized) return 0;

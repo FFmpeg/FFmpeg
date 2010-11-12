@@ -32,7 +32,7 @@ static void amr_decode_fix_avctx(AVCodecContext *avctx)
         avctx->channels = 1;
 
     avctx->frame_size = 160 * is_amr_wb;
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 }
 
 #if CONFIG_LIBOPENCORE_AMRNB
@@ -222,7 +222,7 @@ AVCodec libopencore_amrnb_encoder = {
     amr_nb_encode_frame,
     amr_nb_encode_close,
     NULL,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("OpenCORE Adaptive Multi-Rate (AMR) Narrow-Band"),
 };
 

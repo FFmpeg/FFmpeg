@@ -383,7 +383,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     avctx->frame_size      = DEFAULT_FRAME_SIZE;
     avctx->bits_per_coded_sample = DEFAULT_SAMPLE_SIZE;
 
-    if(avctx->sample_fmt != SAMPLE_FMT_S16) {
+    if(avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
         av_log(avctx, AV_LOG_ERROR, "only pcm_s16 input samples are supported\n");
         return -1;
     }
@@ -528,6 +528,6 @@ AVCodec alac_encoder = {
     alac_encode_frame,
     alac_encode_close,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME,
-    .sample_fmts = (const enum SampleFormat[]){ SAMPLE_FMT_S16, SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };

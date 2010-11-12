@@ -38,7 +38,7 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
 {
     RA144Context *ractx;
 
-    if (avctx->sample_fmt != SAMPLE_FMT_S16) {
+    if (avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
         av_log(avctx, AV_LOG_ERROR, "invalid sample format\n");
         return -1;
     }

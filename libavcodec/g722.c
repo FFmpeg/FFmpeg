@@ -193,7 +193,7 @@ static av_cold int g722_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_ERROR, "Only mono tracks are allowed.\n");
         return AVERROR_INVALIDDATA;
     }
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     switch (avctx->bits_per_coded_sample) {
     case 8:
@@ -379,7 +379,7 @@ AVCodec adpcm_g722_encoder = {
     .init           = g722_init,
     .encode         = g722_encode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
-    .sample_fmts    = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts    = (enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
 };
 #endif
 

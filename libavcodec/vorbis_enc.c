@@ -1111,6 +1111,6 @@ AVCodec vorbis_encoder = {
     vorbis_encode_frame,
     vorbis_encode_close,
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Vorbis"),
 };
