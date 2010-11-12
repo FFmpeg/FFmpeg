@@ -1146,7 +1146,7 @@ static int vorbis_floor1_decode(vorbis_context *vc,
     int_fast16_t book;
     uint_fast16_t offset;
     uint_fast16_t i,j;
-    int_fast16_t adx, ady, dx, dy, off, predicted;
+    int_fast16_t adx, ady, dy, off, predicted;
     int_fast32_t err;
 
 
