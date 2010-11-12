@@ -2418,6 +2418,7 @@ static int transcode(AVFormatContext **output_files,
             for (j = 0; j < nb_output_files; j++)
                 if ((ret = copy_chapters(i, j)) < 0)
                     goto dump_format;
+            break;
         }
 
     /* open files and write file headers */
