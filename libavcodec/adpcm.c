@@ -387,18 +387,10 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                     if (heap_pos < frontier) {\
                         pos = heap_pos++;\
                     } else {\
-                        /* Find the largest node in the heap, which is one \
-                         * of the leaf nodes. */\
-                        int maxpos = 0;\
-                        uint32_t max_ssd = 0;\
-                        for (k = frontier >> 1; k < frontier; k++) {\
-                            if (nodes_next[k]->ssd > max_ssd) {\
-                                maxpos = k;\
-                                max_ssd = nodes_next[k]->ssd;\
-                            }\
-                        }\
-                        pos = maxpos;\
-                        if (ssd > max_ssd)\
+                        /* Try to replace one of the leaf nodes with the new \
+                         * one, but try a different slot each time. */\
+                        pos = (frontier >> 1) + (heap_pos++ & ((frontier >> 1) - 1));\
+                        if (ssd > nodes_next[pos]->ssd)\
                             goto next_##NAME;\
                     }\
                     u = nodes_next[pos];\
