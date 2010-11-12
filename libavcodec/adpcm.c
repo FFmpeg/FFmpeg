@@ -402,18 +402,18 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                             goto next_##NAME;\
                     }\
                     u = nodes_next[pos];\
-                            if(!u) {\
-                                assert(pathn < FREEZE_INTERVAL<<avctx->trellis);\
-                                u = t++;\
-                                nodes_next[pos] = u;\
-                                u->path = pathn++;\
-                            }\
-                            u->ssd = ssd;\
-                            u->step = STEP_INDEX;\
-                            u->sample2 = nodes[j]->sample1;\
-                            u->sample1 = dec_sample;\
-                            paths[u->path].nibble = nibble;\
-                            paths[u->path].prev = nodes[j]->path;\
+                    if(!u) {\
+                        assert(pathn < FREEZE_INTERVAL<<avctx->trellis);\
+                        u = t++;\
+                        nodes_next[pos] = u;\
+                        u->path = pathn++;\
+                    }\
+                    u->ssd = ssd;\
+                    u->step = STEP_INDEX;\
+                    u->sample2 = nodes[j]->sample1;\
+                    u->sample1 = dec_sample;\
+                    paths[u->path].nibble = nibble;\
+                    paths[u->path].prev = nodes[j]->path;\
                     /* Sift the newly inserted node down in the heap to \
                      * restore the heap property. */\
                     while (pos > 0) {\
