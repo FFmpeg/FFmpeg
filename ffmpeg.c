@@ -2411,14 +2411,14 @@ static int transcode(AVFormatContext **output_files,
 
     /* copy chapters from the first input file that has them*/
     if (!nb_chapter_maps)
-    for (i = 0; i < nb_input_files; i++) {
-        if (!input_files[i]->nb_chapters)
-            continue;
+        for (i = 0; i < nb_input_files; i++) {
+            if (!input_files[i]->nb_chapters)
+                continue;
 
-        for (j = 0; j < nb_output_files; j++)
-            if ((ret = copy_chapters(i, j)) < 0)
-                goto dump_format;
-    }
+            for (j = 0; j < nb_output_files; j++)
+                if ((ret = copy_chapters(i, j)) < 0)
+                    goto dump_format;
+        }
 
     /* open files and write file headers */
     for(i=0;i<nb_output_files;i++) {
