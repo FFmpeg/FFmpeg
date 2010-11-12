@@ -1,5 +1,7 @@
-FATE_TESTS += fate-4xm
-fate-4xm: CMD = md5  -i $(SAMPLES)/4xm/TimeGatep01s01n01a02_2.4xm -f s16le
+FATE_TESTS += fate-4xm-1
+fate-4xm-1: CMD = framecrc -i $(SAMPLES)/4xm/version1.4xm -pix_fmt rgb24 -an
+FATE_TESTS += fate-4xm-2
+fate-4xm-2: CMD = framecrc -i $(SAMPLES)/4xm/version2.4xm -pix_fmt rgb24 -an
 FATE_TESTS += fate-8bps
 fate-8bps: CMD = framecrc  -i $(SAMPLES)/8bps/full9iron-partial.mov -pix_fmt rgb24
 FATE_TESTS += fate-aac-demux
