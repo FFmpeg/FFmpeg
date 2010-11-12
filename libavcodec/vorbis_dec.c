@@ -1146,8 +1146,8 @@ static int vorbis_floor1_decode(vorbis_context *vc,
     int_fast16_t book;
     uint_fast16_t offset;
     uint_fast16_t i,j;
-    /*u*/int_fast16_t adx, ady, off, predicted; // WTF ? dy/adx =  (unsigned)dy/adx ?
-    int_fast16_t dy, err;
+    int_fast16_t adx, ady, dx, off, predicted;
+    int_fast32_t err;
 
 
     if (!get_bits1(gb)) // silence
@@ -1210,7 +1210,7 @@ static int vorbis_floor1_decode(vorbis_context *vc,
         adx = vf->list[high_neigh_offs].x - vf->list[low_neigh_offs].x;
         ady = FFABS(dy);
         err = ady * (vf->list[i].x - vf->list[low_neigh_offs].x);
-        off = (int16_t)err / (int16_t)adx;
+        off = err / adx;
         if (dy < 0) {
             predicted = floor1_Y_final[low_neigh_offs] - off;
         } else {
