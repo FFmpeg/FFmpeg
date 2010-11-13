@@ -143,7 +143,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if (args)
         sscanf(args, "%d:%d:%d:%d:%s", &pad->w, &pad->h, &pad->x, &pad->y, color_string);
 
-    if (av_parse_color(pad->color, color_string, ctx) < 0)
+    if (av_parse_color(pad->color, color_string, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
     /* sanity check params */
@@ -377,7 +377,7 @@ static av_cold int color_init(AVFilterContext *ctx, const char *args, void *opaq
     color->time_base.num = frame_rate_q.den;
     color->time_base.den = frame_rate_q.num;
 
-    if ((ret = av_parse_color(color->color, color_string, ctx)) < 0)
+    if ((ret = av_parse_color(color->color, color_string, -1, ctx)) < 0)
         return ret;
 
     return 0;

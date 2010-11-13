@@ -183,7 +183,8 @@ static int color_table_compare(const void *lhs, const void *rhs)
 
 #define ALPHA_SEP '@'
 
-int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
+int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
+                   void *log_ctx)
 {
     char *tail, color_string2[128];
     const ColorEntry *entry;
@@ -194,7 +195,10 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
     } else if (!strncmp(color_string, "0x", 2))
         hex_offset = 2;
 
-    av_strlcpy(color_string2, color_string + hex_offset, sizeof(color_string2));
+    if (slen < 0)
+        slen = strlen(color_string);
+    av_strlcpy(color_string2, color_string + hex_offset,
+               FFMIN(slen-hex_offset+1, sizeof(color_string2)));
     if ((tail = strchr(color_string2, ALPHA_SEP)))
         *tail++ = 0;
     len = strlen(color_string2);
@@ -308,7 +312,7 @@ int main(void)
         av_log_set_level(AV_LOG_DEBUG);
 
         for (i = 0;  i < FF_ARRAY_ELEMS(color_names); i++) {
-            if (av_parse_color(rgba, color_names[i], NULL) >= 0)
+            if (av_parse_color(rgba, color_names[i], -1, NULL) >= 0)
                 printf("%s -> R(%d) G(%d) B(%d) A(%d)\n", color_names[i], rgba[0], rgba[1], rgba[2], rgba[3]);
         }
     }

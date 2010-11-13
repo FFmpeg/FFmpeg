@@ -49,7 +49,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         sscanf(args, "%d:%d:%d:%d:%s",
                &drawbox->x, &drawbox->y, &drawbox->w, &drawbox->h, color_str);
 
-    if (av_parse_color(rgba_color, color_str, ctx) < 0)
+    if (av_parse_color(rgba_color, color_str, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
     drawbox->yuv_color[Y] = RGB_TO_Y_CCIR(rgba_color[0], rgba_color[1], rgba_color[2]);
