@@ -91,7 +91,7 @@ static int set_param(AVFilterContext *ctx, f0r_param_info_t info, int index, cha
 
     case F0R_PARAM_COLOR:
         if (sscanf(param, "%f/%f/%f", &val.col.r, &val.col.g, &val.col.b) != 3) {
-            if (av_parse_color(rgba, param, ctx) < 0)
+            if (av_parse_color(rgba, param, -1, ctx) < 0)
                 goto fail;
             val.col.r = rgba[0] / 255.0;
             val.col.g = rgba[1] / 255.0;
