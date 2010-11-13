@@ -4,7 +4,7 @@ NAME = avfilter
 FFLIBS = avcodec avcore avutil
 FFLIBS-$(CONFIG_SCALE_FILTER) += swscale
 
-HEADERS = avfilter.h
+HEADERS = avfilter.h avfiltergraph.h
 
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \

@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-11-13 - r25739 - lavfi 1.62.0 - avfiltergraph.h
+  Make avfiltergraph.h public.
+
 2010-11-13 - r25737 - lavfi 1.61.0 - avfiltergraph.h
   Remove declarations from avfiltergraph.h for the functions:
   avfilter_graph_check_validity()
