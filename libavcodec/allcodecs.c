@@ -342,6 +342,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (ADPCM_YAMAHA, adpcm_yamaha);
 
     /* subtitles */
+    REGISTER_ENCDEC  (ASS, ass);
     REGISTER_ENCDEC  (DVBSUB, dvbsub);
     REGISTER_ENCDEC  (DVDSUB, dvdsub);
     REGISTER_DECODER (PGSSUB, pgssub);
