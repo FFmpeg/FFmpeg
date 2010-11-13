@@ -2284,6 +2284,7 @@ static int transcode(AVFormatContext **output_files,
         ost = ost_table[i];
         if (ost->encoding_needed) {
             AVCodec *codec = i < nb_output_codecs ? output_codecs[i] : NULL;
+            AVCodecContext *dec = ist_table[ost->source_index]->st->codec;
             if (!codec)
                 codec = avcodec_find_encoder(ost->st->codec->codec_id);
             if (!codec) {
@@ -2291,6 +2292,15 @@ static int transcode(AVFormatContext **output_files,
                          ost->st->codec->codec_id, ost->file_index, ost->index);
                 ret = AVERROR(EINVAL);
                 goto dump_format;
+            }
+            if (dec->subtitle_header) {
+                ost->st->codec->subtitle_header = av_malloc(dec->subtitle_header_size);
+                if (!ost->st->codec->subtitle_header) {
+                    ret = AVERROR(ENOMEM);
+                    goto dump_format;
+                }
+                memcpy(ost->st->codec->subtitle_header, dec->subtitle_header, dec->subtitle_header_size);
+                ost->st->codec->subtitle_header_size = dec->subtitle_header_size;
             }
             if (avcodec_open(ost->st->codec, codec) < 0) {
                 snprintf(error, sizeof(error), "Error while opening encoder for output stream #%d.%d - maybe incorrect parameters such as bit_rate, rate, width or height",
@@ -2690,6 +2700,7 @@ static int transcode(AVFormatContext **output_files,
                 }
                 av_fifo_free(ost->fifo); /* works even if fifo is not
                                              initialized but set to zero */
+                av_freep(&ost->st->codec->subtitle_header);
                 av_free(ost->pict_tmp.data[0]);
                 av_free(ost->forced_kf_pts);
                 if (ost->video_resample)

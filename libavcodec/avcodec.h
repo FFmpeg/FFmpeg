@@ -2757,6 +2757,17 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int slices;
+
+    /**
+     * Header containing style information for text subtitles.
+     * For SUBTITLE_ASS subtitle type, it should contain the whole ASS
+     * [Script Info] and [V4+ Styles] section, plus the [Events] line and
+     * the Format line following. It shouldn't include any Dialogue line.
+     * - encoding: Set/allocated/freed by user (before avcodec_open())
+     * - decoding: Set/allocated/freed by libavcodec (by avcodec_open())
+     */
+    uint8_t *subtitle_header;
+    int subtitle_header_size;
 } AVCodecContext;
 
 /**

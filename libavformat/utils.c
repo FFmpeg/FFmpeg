@@ -2206,9 +2206,14 @@ int av_find_stream_info(AVFormatContext *ic)
         if (codec && codec->capabilities & CODEC_CAP_CHANNEL_CONF)
             st->codec->channels = 0;
 
+        /* Ensure that subtitle_header is properly set. */
+        if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
+            && codec && !st->codec->codec)
+            avcodec_open(st->codec, codec);
+
         //try to just open decoders, in case this is enough to get parameters
         if(!has_codec_parameters(st->codec)){
-            if (codec)
+            if (codec && !st->codec->codec)
                 avcodec_open(st->codec, codec);
         }
     }
@@ -2471,6 +2476,7 @@ void av_close_input_stream(AVFormatContext *s)
         av_metadata_free(&st->metadata);
         av_free(st->index_entries);
         av_free(st->codec->extradata);
+        av_free(st->codec->subtitle_header);
         av_free(st->codec);
 #if FF_API_OLD_METADATA
         av_free(st->filename);
