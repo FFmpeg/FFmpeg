@@ -187,9 +187,17 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
 {
     char *tail, color_string2[128];
     const ColorEntry *entry;
-    av_strlcpy(color_string2, color_string, sizeof(color_string2));
+    int len, hex_offset = 0;
+
+    if (color_string[0] == '#') {
+        hex_offset = 1;
+    } else if (!strncmp(color_string, "0x", 2))
+        hex_offset = 2;
+
+    av_strlcpy(color_string2, color_string + hex_offset, sizeof(color_string2));
     if ((tail = strchr(color_string2, ALPHA_SEP)))
         *tail++ = 0;
+    len = strlen(color_string2);
     rgba_color[3] = 255;
 
     if (!strcasecmp(color_string2, "random") || !strcasecmp(color_string2, "bikeshed")) {
@@ -198,16 +206,16 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
         rgba_color[1] = rgba >> 16;
         rgba_color[2] = rgba >> 8;
         rgba_color[3] = rgba;
-    } else if (!strncmp(color_string2, "0x", 2)) {
+    } else if (hex_offset ||
+               strspn(color_string2, "0123456789ABCDEFabcdef") == len) {
         char *tail;
-        int len = strlen(color_string2);
         unsigned int rgba = strtoul(color_string2, &tail, 16);
 
-        if (*tail || (len != 8 && len != 10)) {
+        if (*tail || (len != 6 && len != 8)) {
             av_log(log_ctx, AV_LOG_ERROR, "Invalid 0xRRGGBB[AA] color string: '%s'\n", color_string2);
             return AVERROR(EINVAL);
         }
-        if (len == 10) {
+        if (len == 8) {
             rgba_color[3] = rgba;
             rgba >>= 8;
         }
@@ -276,6 +284,10 @@ int main(void)
             "0xffXXee",
             "0xfoobar",
             "0xffffeeeeeeee",
+            "#ff0000",
+            "#ffXX00",
+            "ff0000",
+            "ffXX00",
             "red@foo",
             "random@10",
             "0xff0000@1.0",

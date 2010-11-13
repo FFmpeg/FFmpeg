@@ -31,7 +31,7 @@
  * Put the RGBA values that correspond to color_string in rgba_color.
  *
  * @param color_string a string specifying a color. It can be the name of
- * a color (case insensitive match) or a 0xRRGGBB[AA] sequence,
+ * a color (case insensitive match) or a [0x|#]RRGGBB[AA] sequence,
  * possibly followed by "@" and a string representing the alpha
  * component.
  * The alpha component may be a string composed by "0x" followed by an
