@@ -53,32 +53,11 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name);
 int avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
 
 /**
- * Check for the validity of graph.
- *
- * A graph is considered valid if all its input and output pads are
- * connected.
- *
- * @return 0 in case of success, a negative value otherwise
- */
-int avfilter_graph_check_validity(AVFilterGraph *graphctx, AVClass *log_ctx);
-
-/**
- * Configure all the links of graphctx.
- *
- * @return 0 in case of success, a negative value otherwise
- */
-int avfilter_graph_config_links(AVFilterGraph *graphctx, AVClass *log_ctx);
-
-/**
- * Configure the formats of all the links in the graph.
- */
-int avfilter_graph_config_formats(AVFilterGraph *graphctx, AVClass *log_ctx);
-
-/**
  * Check validity and configure all the links and formats in the graph.
  *
- * @see avfilter_graph_check_validity(), avfilter_graph_config_links(),
- * avfilter_graph_config_formats()
+ * @param graphctx the filter graph
+ * @param log_ctx context used for logging
+ * @return 0 in case of success, a negative AVERROR code otherwise
  */
 int avfilter_graph_config(AVFilterGraph *graphctx, AVClass *log_ctx);
 

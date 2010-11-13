@@ -25,6 +25,7 @@
 
 #include "avfilter.h"
 #include "avfiltergraph.h"
+#include "internal.h"
 
 AVFilterGraph *avfilter_graph_alloc(void)
 {
@@ -52,7 +53,7 @@ int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
     return 0;
 }
 
-int avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
+int ff_avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
 {
     AVFilterContext *filt;
     int i, j;
@@ -82,7 +83,7 @@ int avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
-int avfilter_graph_config_links(AVFilterGraph *graph, AVClass *log_ctx)
+int ff_avfilter_graph_config_links(AVFilterGraph *graph, AVClass *log_ctx)
 {
     AVFilterContext *filt;
     int i, ret;
@@ -194,7 +195,7 @@ static void pick_formats(AVFilterGraph *graph)
     }
 }
 
-int avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
+int ff_avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     /* find supported formats from sub-filters, and merge along links */
     if(query_formats(graph, log_ctx))
@@ -211,11 +212,11 @@ int avfilter_graph_config(AVFilterGraph *graphctx, AVClass *log_ctx)
 {
     int ret;
 
-    if ((ret = avfilter_graph_check_validity(graphctx, log_ctx)))
+    if ((ret = ff_avfilter_graph_check_validity(graphctx, log_ctx)))
         return ret;
-    if ((ret = avfilter_graph_config_formats(graphctx, log_ctx)))
+    if ((ret = ff_avfilter_graph_config_formats(graphctx, log_ctx)))
         return ret;
-    if ((ret = avfilter_graph_config_links(graphctx, log_ctx)))
+    if ((ret = ff_avfilter_graph_config_links(graphctx, log_ctx)))
         return ret;
 
     return 0;

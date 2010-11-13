@@ -13,6 +13,14 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-11-13 - r25737 - lavfi 1.61.0 - avfiltergraph.h
+  Remove declarations from avfiltergraph.h for the functions:
+  avfilter_graph_check_validity()
+  avfilter_graph_config_links()
+  avfilter_graph_config_formats()
+  which are now internal.
+  Use avfilter_graph_config() instead.
+
 2010-11-08 - r25708 - lavu 50.33.0 - eval.h
   Deprecate functions:
   av_parse_and_eval_expr(),
