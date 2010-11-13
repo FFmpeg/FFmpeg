@@ -201,8 +201,8 @@ char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
              perms & AV_PERM_READ      ? "r" : "",
              perms & AV_PERM_WRITE     ? "w" : "",
              perms & AV_PERM_PRESERVE  ? "p" : "",
-             perms & AV_PERM_REUSE     ? "r" : "",
-             perms & AV_PERM_REUSE2    ? "R" : "");
+             perms & AV_PERM_REUSE     ? "u" : "",
+             perms & AV_PERM_REUSE2    ? "U" : "");
     return buf;
 }
 
