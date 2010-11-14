@@ -355,7 +355,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
         int heap_pos = 0;
         memset(nodes_next, 0, frontier*sizeof(TrellisNode*));
         for(j=0; j<frontier && nodes[j]; j++) {
-            // higher j have higher ssd already, so they're unlikely to use a suboptimal next sample too
+            // higher j have higher ssd already, so they're likely to yield a suboptimal next sample too
             const int range = (j < frontier/2) ? 1 : 0;
             const int step = nodes[j]->step;
             int nidx;
