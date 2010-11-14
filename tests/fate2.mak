@@ -212,3 +212,9 @@ fate-rv30: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLE
 FATE_TESTS += fate-sha
 fate-sha: libavutil/sha-test$(EXESUF)
 fate-sha: CMD = run libavutil/sha-test
+
+FATE_TESTS += fate-musepack7
+fate-musepack7: CMD = pcm -i $(SAMPLES)/musepack/inside-mp7.mpc
+fate-musepack7: CMP = oneoff
+fate-musepack7: REF = $(SAMPLES)/musepack/inside-mp7.pcm
+fate-musepack7: FUZZ = 1
