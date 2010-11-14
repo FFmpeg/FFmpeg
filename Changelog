@@ -54,6 +54,7 @@ version <next>:
 - setpts filter added
 - Win64 support for optimized asm functions
 - MJPEG/AVI1 to JPEG/JFIF bitstream filter
+- ASS subtitle encoder and decoder
 
 
 version 0.6:
