@@ -13,6 +13,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-11-13 - r25745 - lavc 52.95.0 - AVCodecContext
+  Add AVCodecContext.subtitle_header and AVCodecContext.subtitle_header_size
+  fields.
+
 2010-11-13 - r25740 - lavfi 1.62.0 - avfiltergraph.h
   Make avfiltergraph.h public.
 
