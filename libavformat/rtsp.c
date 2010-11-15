@@ -706,6 +706,9 @@ void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
     } else if (av_stristart(p, "Authentication-Info:", &p) && auth_state) {
         p += strspn(p, SPACE_CHARS);
         ff_http_auth_handle_header(auth_state, "Authentication-Info", p);
+    } else if (av_stristart(p, "Content-Base:", &p)) {
+        p += strspn(p, SPACE_CHARS);
+        av_strlcpy(reply->content_base, p , sizeof(reply->content_base));
     }
 }
 

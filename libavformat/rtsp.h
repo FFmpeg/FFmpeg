@@ -165,6 +165,10 @@ typedef struct RTSPMessageHeader {
      * returned
      */
     char reason[256];
+
+    /** The "Content-Base:" field.
+     */
+    char content_base[4096];
 } RTSPMessageHeader;
 
 /**

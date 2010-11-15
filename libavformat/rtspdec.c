@@ -105,6 +105,9 @@ int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply)
         av_freep(&content);
         return AVERROR_INVALIDDATA;
     }
+    if (reply->content_base[0])
+        av_strlcpy(rt->control_uri, reply->content_base,
+                   sizeof(rt->control_uri));
 
     av_log(s, AV_LOG_VERBOSE, "SDP:\n%s\n", content);
     /* now we got the SDP description, we parse it */
