@@ -239,12 +239,12 @@ static int dnxhd_write_header(AVCodecContext *avctx, uint8_t *buf)
     buf[5] = ctx->interlaced ? ctx->cur_field+2 : 0x01;
     buf[6] = 0x80; // crc flag off
     buf[7] = 0xa0; // reserved
-    AV_WB16(buf + 0x18, avctx->height); // ALPF
+    AV_WB16(buf + 0x18, avctx->height>>ctx->interlaced); // ALPF
     AV_WB16(buf + 0x1a, avctx->width);  // SPL
-    AV_WB16(buf + 0x1d, avctx->height); // NAL
+    AV_WB16(buf + 0x1d, avctx->height>>ctx->interlaced); // NAL
 
     buf[0x21] = 0x38; // FIXME 8 bit per comp
-    buf[0x22] = 0x88 + (ctx->frame.interlaced_frame<<2);
+    buf[0x22] = 0x88 + (ctx->interlaced<<2);
     AV_WB32(buf + 0x28, ctx->cid); // CID
     buf[0x2c] = ctx->interlaced ? 0 : 0x80;
 
