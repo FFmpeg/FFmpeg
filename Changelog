@@ -55,6 +55,7 @@ version <next>:
 - Win64 support for optimized asm functions
 - MJPEG/AVI1 to JPEG/JFIF bitstream filter
 - ASS subtitle encoder and decoder
+- IEC 61937 encapsulation for E-AC3 (for HDMI passthrough)
 
 
 version 0.6:

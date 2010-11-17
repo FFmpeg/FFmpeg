@@ -48,13 +48,21 @@
 
 typedef struct IEC958Context {
     enum IEC958DataType data_type;  ///< burst info - reference to type of payload of the data-burst
-    int pkt_size;                   ///< length code in bits
+    int length_code;                ///< length code in bits or bytes, depending on data type
     int pkt_offset;                 ///< data burst repetition period in bytes
     uint8_t *buffer;                ///< allocated buffer, used for swap bytes
     int buffer_size;                ///< size of allocated buffer
 
+    uint8_t *out_buf;               ///< pointer to the outgoing data before byte-swapping
+    int out_bytes;                  ///< amount of outgoing bytes
+
+    uint8_t *hd_buf;                ///< allocated buffer to concatenate hd audio frames
+    int hd_buf_size;                ///< size of the hd audio buffer
+    int hd_buf_count;               ///< number of frames in the hd audio buffer
+    int hd_buf_filled;              ///< amount of bytes in the hd audio buffer
+
     /// function, which generates codec dependent header information.
-    /// Sets data_type and data_offset
+    /// Sets data_type and pkt_offset, and length_code, out_bytes, out_buf if necessary
     int (*header_info) (AVFormatContext *s, AVPacket *pkt);
 } IEC958Context;
 
@@ -66,6 +74,37 @@ static int spdif_header_ac3(AVFormatContext *s, AVPacket *pkt)
 
     ctx->data_type  = IEC958_AC3 | (bitstream_mode << 8);
     ctx->pkt_offset = AC3_FRAME_SIZE << 2;
+    return 0;
+}
+
+static int spdif_header_eac3(AVFormatContext *s, AVPacket *pkt)
+{
+    IEC958Context *ctx = s->priv_data;
+    static const uint8_t eac3_repeat[4] = {6, 3, 2, 1};
+    int repeat = 1;
+
+    if ((pkt->data[4] & 0xc0) != 0xc0) /* fscod */
+        repeat = eac3_repeat[(pkt->data[4] & 0x30) >> 4]; /* numblkscod */
+
+    ctx->hd_buf = av_fast_realloc(ctx->hd_buf, &ctx->hd_buf_size, ctx->hd_buf_filled + pkt->size);
+    if (!ctx->hd_buf)
+        return AVERROR(ENOMEM);
+
+    memcpy(&ctx->hd_buf[ctx->hd_buf_filled], pkt->data, pkt->size);
+
+    ctx->hd_buf_filled += pkt->size;
+    if (++ctx->hd_buf_count < repeat){
+        ctx->pkt_offset = 0;
+        return 0;
+    }
+    ctx->data_type   = IEC958_EAC3;
+    ctx->pkt_offset  = 24576;
+    ctx->out_buf     = ctx->hd_buf;
+    ctx->out_bytes   = ctx->hd_buf_filled;
+    ctx->length_code = ctx->hd_buf_filled;
+
+    ctx->hd_buf_count  = 0;
+    ctx->hd_buf_filled = 0;
     return 0;
 }
 
@@ -180,6 +219,9 @@ static int spdif_write_header(AVFormatContext *s)
     case CODEC_ID_AC3:
         ctx->header_info = spdif_header_ac3;
         break;
+    case CODEC_ID_EAC3:
+        ctx->header_info = spdif_header_eac3;
+        break;
     case CODEC_ID_MP1:
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
@@ -202,6 +244,7 @@ static int spdif_write_trailer(AVFormatContext *s)
 {
     IEC958Context *ctx = s->priv_data;
     av_freep(&ctx->buffer);
+    av_freep(&ctx->hd_buf);
     return 0;
 }
 
@@ -210,12 +253,16 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     IEC958Context *ctx = s->priv_data;
     int ret, padding;
 
-    ctx->pkt_size = FFALIGN(pkt->size, 2) << 3;
+    ctx->out_bytes = pkt->size;
+    ctx->length_code = FFALIGN(pkt->size, 2) << 3;
+
     ret = ctx->header_info(s, pkt);
     if (ret < 0)
         return -1;
+    if (!ctx->pkt_offset)
+        return 0;
 
-    padding = (ctx->pkt_offset - BURST_HEADER_SIZE - pkt->size) >> 1;
+    padding = (ctx->pkt_offset - BURST_HEADER_SIZE - ctx->out_bytes) >> 1;
     if (padding < 0) {
         av_log(s, AV_LOG_ERROR, "bitrate is too high\n");
         return -1;
@@ -224,26 +271,26 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     put_le16(s->pb, SYNCWORD1);      //Pa
     put_le16(s->pb, SYNCWORD2);      //Pb
     put_le16(s->pb, ctx->data_type); //Pc
-    put_le16(s->pb, ctx->pkt_size);  //Pd
+    put_le16(s->pb, ctx->length_code);//Pd
 
 #if HAVE_BIGENDIAN
-    put_buffer(s->pb, pkt->data, pkt->size & ~1);
+    put_buffer(s->pb, ctx->out_buf, ctx->out_bytes & ~1);
 #else
-    av_fast_malloc(&ctx->buffer, &ctx->buffer_size, pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_malloc(&ctx->buffer, &ctx->buffer_size, ctx->out_bytes + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!ctx->buffer)
         return AVERROR(ENOMEM);
-    ff_spdif_bswap_buf16((uint16_t *)ctx->buffer, (uint16_t *)pkt->data, pkt->size >> 1);
-    put_buffer(s->pb, ctx->buffer, pkt->size & ~1);
+    ff_spdif_bswap_buf16((uint16_t *)ctx->buffer, (uint16_t *)ctx->out_buf, ctx->out_bytes >> 1);
+    put_buffer(s->pb, ctx->buffer, ctx->out_bytes & ~1);
 #endif
 
-    if (pkt->size & 1)
-        put_be16(s->pb, pkt->data[pkt->size - 1]);
+    if (ctx->out_bytes & 1)
+        put_be16(s->pb, ctx->out_buf[ctx->out_bytes - 1]);
 
     for (; padding > 0; padding--)
         put_be16(s->pb, 0);
 
     av_log(s, AV_LOG_DEBUG, "type=%x len=%i pkt_offset=%i\n",
-           ctx->data_type, pkt->size, ctx->pkt_offset);
+           ctx->data_type, ctx->out_bytes, ctx->pkt_offset);
 
     put_flush_packet(s->pb);
     return 0;
