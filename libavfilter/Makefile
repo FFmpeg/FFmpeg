@@ -12,7 +12,6 @@ OBJS = allfilters.o                                                     \
        defaults.o                                                       \
        formats.o                                                        \
        graphparser.o                                                    \
-       parseutils.o                                                     \
 
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 

@@ -27,8 +27,8 @@
 #include <dlfcn.h>
 #include <frei0r.h>
 #include "libavutil/avstring.h"
+#include "libavcore/parseutils.h"
 #include "avfilter.h"
-#include "parseutils.h"
 
 typedef f0r_instance_t (*f0r_construct_f)(unsigned int width, unsigned int height);
 typedef void (*f0r_destruct_f)(f0r_instance_t instance);

@@ -25,7 +25,6 @@
  */
 
 #include "avfilter.h"
-#include "parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/colorspace.h"
 #include "libavcore/imgutils.h"
