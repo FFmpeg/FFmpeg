@@ -230,6 +230,9 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int 
                                                        h + (pad->h - pad->in_h));
     int plane;
 
+    picref->video->w = w;
+    picref->video->h = h;
+
     for (plane = 0; plane < 4 && picref->data[plane]; plane++) {
         int hsub = (plane == 1 || plane == 2) ? pad->hsub : 0;
         int vsub = (plane == 1 || plane == 2) ? pad->vsub : 0;
