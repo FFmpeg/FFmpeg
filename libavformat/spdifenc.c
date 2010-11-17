@@ -253,6 +253,7 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     IEC958Context *ctx = s->priv_data;
     int ret, padding;
 
+    ctx->out_buf = pkt->data;
     ctx->out_bytes = pkt->size;
     ctx->length_code = FFALIGN(pkt->size, 2) << 3;
 
