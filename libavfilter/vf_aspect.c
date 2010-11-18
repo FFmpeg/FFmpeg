@@ -1,5 +1,4 @@
 /*
- * Aspect ratio modification video filter
  * Copyright (c) 2010 Bobby Bingham
 
  * This file is part of FFmpeg.
@@ -21,7 +20,7 @@
 
 /**
  * @file
- * aspect ratio modification video filter
+ * aspect ratio modification video filters
  */
 
 #include "avfilter.h"
