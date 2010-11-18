@@ -35,21 +35,21 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     double  ratio;
     int64_t gcd;
 
-    if(args) {
-        if(sscanf(args, "%d:%d", &aspect->aspect.num, &aspect->aspect.den) < 2) {
-            if(sscanf(args, "%lf", &ratio) < 1)
+    if (args) {
+        if (sscanf(args, "%d:%d", &aspect->aspect.num, &aspect->aspect.den) < 2) {
+            if (sscanf(args, "%lf", &ratio) < 1)
                 return -1;
             aspect->aspect = av_d2q(ratio, 100);
         } else {
             gcd = av_gcd(FFABS(aspect->aspect.num), FFABS(aspect->aspect.den));
-            if(gcd) {
+            if (gcd) {
                 aspect->aspect.num /= gcd;
                 aspect->aspect.den /= gcd;
             }
         }
     }
 
-    if(aspect->aspect.den == 0)
+    if (aspect->aspect.den == 0)
         aspect->aspect = (AVRational) {0, 1};
 
     return 0;
