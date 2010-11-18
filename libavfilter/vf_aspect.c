@@ -37,8 +37,11 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     if (args) {
         if (sscanf(args, "%d:%d", &aspect->aspect.num, &aspect->aspect.den) < 2) {
-            if (sscanf(args, "%lf", &ratio) < 1)
-                return -1;
+            if (sscanf(args, "%lf", &ratio) < 1) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Invalid string '%s' for aspect ratio.\n", args);
+                return AVERROR(EINVAL);
+            }
             aspect->aspect = av_d2q(ratio, 100);
         } else {
             gcd = av_gcd(FFABS(aspect->aspect.num), FFABS(aspect->aspect.den));
