@@ -1,7 +1,7 @@
 include $(SUBDIR)../config.mak
 
 NAME = avcodec
-FFLIBS = avutil avcore
+FFLIBS = avcore avutil
 
 HEADERS = avcodec.h avfft.h dxva2.h opt.h vaapi.h vdpau.h xvmc.h
 
