@@ -401,9 +401,10 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                     } else {\
                         /* Try to replace one of the leaf nodes with the new \
                          * one, but try a different slot each time. */\
-                        pos = (frontier >> 1) + (heap_pos++ & ((frontier >> 1) - 1));\
+                        pos = (frontier >> 1) + (heap_pos & ((frontier >> 1) - 1));\
                         if (ssd > nodes_next[pos]->ssd)\
                             goto next_##NAME;\
+                        heap_pos++;\
                     }\
                     *h = generation;\
                     u = nodes_next[pos];\
