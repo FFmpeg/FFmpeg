@@ -163,6 +163,7 @@ typedef struct ADPCMContext {
     TrellisPath *paths;
     TrellisNode *node_buf;
     TrellisNode **nodep_buf;
+    uint8_t *trellis_hash;
 } ADPCMContext;
 
 #define FREEZE_INTERVAL 128
@@ -189,6 +190,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         FF_ALLOC_OR_GOTO(avctx, s->paths,     max_paths * sizeof(*s->paths), error);
         FF_ALLOC_OR_GOTO(avctx, s->node_buf,  2 * frontier * sizeof(*s->node_buf), error);
         FF_ALLOC_OR_GOTO(avctx, s->nodep_buf, 2 * frontier * sizeof(*s->nodep_buf), error);
+        FF_ALLOC_OR_GOTO(avctx, s->trellis_hash, 65536 * sizeof(*s->trellis_hash), error);
     }
 
     switch(avctx->codec->id) {
@@ -242,6 +244,7 @@ error:
     av_freep(&s->paths);
     av_freep(&s->node_buf);
     av_freep(&s->nodep_buf);
+    av_freep(&s->trellis_hash);
     return -1;
 }
 
@@ -252,6 +255,7 @@ static av_cold int adpcm_encode_close(AVCodecContext *avctx)
     av_freep(&s->paths);
     av_freep(&s->node_buf);
     av_freep(&s->nodep_buf);
+    av_freep(&s->trellis_hash);
 
     return 0;
 }
@@ -325,7 +329,9 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
     TrellisNode **nodep_buf = s->nodep_buf;
     TrellisNode **nodes = nodep_buf; // nodes[] is always sorted by .ssd
     TrellisNode **nodes_next = nodep_buf + frontier;
-    int pathn = 0, froze = -1, i, j, k;
+    int pathn = 0, froze = -1, i, j, k, generation = 0;
+    uint8_t *hash = s->trellis_hash;
+    memset(hash, 0xff, 65536 * sizeof(*hash));
 
     memset(nodep_buf, 0, 2 * frontier * sizeof(*nodep_buf));
     nodes[0] = node_buf + frontier;
@@ -372,18 +378,24 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                     uint32_t ssd;\
                     int pos;\
                     TrellisNode *u;\
+                    uint8_t *h;\
                     dec_sample = av_clip_int16(dec_sample);\
                     d = sample - dec_sample;\
                     ssd = nodes[j]->ssd + d*d;\
                     /* Collapse any two states with the same previous sample value. \
                      * One could also distinguish states by step and by 2nd to last
-                     * sample, but the effects of that are negligible. */\
-                    for(k=0; k<frontier && nodes_next[k]; k++) {\
-                        if(dec_sample == nodes_next[k]->sample1) {\
-                            assert(ssd >= nodes_next[k]->ssd);\
-                            goto next_##NAME;\
-                        }\
-                    }\
+                     * sample, but the effects of that are negligible.
+                     * Since nodes in the previous generation are iterated
+                     * through a heap, they're roughly ordered from better to
+                     * worse, but not strictly ordered. Therefore, an earlier
+                     * node with the same sample value is better in most cases
+                     * (and thus the current is skipped), but not strictly
+                     * in all cases. Only skipping samples where ssd >=
+                     * ssd of the earlier node with the same sample gives
+                     * slightly worse quality, though, for some reason. */ \
+                    h = &hash[(uint16_t) dec_sample];\
+                    if (*h == generation)\
+                        goto next_##NAME;\
                     if (heap_pos < frontier) {\
                         pos = heap_pos++;\
                     } else {\
@@ -393,6 +405,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                         if (ssd > nodes_next[pos]->ssd)\
                             goto next_##NAME;\
                     }\
+                    *h = generation;\
                     u = nodes_next[pos];\
                     if(!u) {\
                         assert(pathn < FREEZE_INTERVAL<<avctx->trellis);\
@@ -442,6 +455,12 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
         u = nodes;
         nodes = nodes_next;
         nodes_next = u;
+
+        generation++;
+        if (generation == 255) {
+            memset(hash, 0xff, 65536 * sizeof(*hash));
+            generation = 0;
+        }
 
         // prevent overflow
         if(nodes[0]->ssd > (1<<28)) {
