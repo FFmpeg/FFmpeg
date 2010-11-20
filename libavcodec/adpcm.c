@@ -420,7 +420,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                     u->sample1 = dec_sample;\
                     paths[u->path].nibble = nibble;\
                     paths[u->path].prev = nodes[j]->path;\
-                    /* Sift the newly inserted node down in the heap to \
+                    /* Sift the newly inserted node up in the heap to \
                      * restore the heap property. */\
                     while (pos > 0) {\
                         int parent = (pos - 1) >> 1;\
