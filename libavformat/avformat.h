@@ -246,8 +246,8 @@ int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size);
 
 
 /**
- * Reads data and appends it to the current content of the AVPacket.
- * If pkt->size is 0 it behaves like av_get_packet.
+ * Read data and append it to the current content of the AVPacket.
+ * If pkt->size is 0 this is identical to av_get_packet.
  * Note that this uses av_grow_packet and thus involves a realloc
  * which is inefficient. Thus this function should only be used
  * when there is no reasonable way to know (an upper bound of)
