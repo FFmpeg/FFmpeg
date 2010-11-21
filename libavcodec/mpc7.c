@@ -260,7 +260,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx,
         for(ch = 0; ch < 2; ch++)
             idx_to_quant(c, &gb, bands[i].res[ch], c->Q[ch] + off);
 
-    ff_mpc_dequantize_and_synth(c, mb, data);
+    ff_mpc_dequantize_and_synth(c, mb, data, 2);
 
     av_free(bits);
 

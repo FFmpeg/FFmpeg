@@ -99,6 +99,7 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
     static int vlc_initialized = 0;
+    int channels;
 
     static VLC_TYPE band_table[542][2];
     static VLC_TYPE q1_table[520][2];
@@ -125,7 +126,11 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
 
     skip_bits(&gb, 3);//sample rate
     c->maxbands = get_bits(&gb, 5) + 1;
-    skip_bits(&gb, 4);//channels
+    channels = get_bits(&gb, 4) + 1;
+    if (channels > 2) {
+        av_log_missing_feature(avctx, "Multichannel MPC SV8", 1);
+        return -1;
+    }
     c->MSS = get_bits1(&gb);
     c->frames = 1 << (get_bits(&gb, 3) * 2);
 
@@ -387,14 +392,14 @@ static int mpc8_decode_frame(AVCodecContext * avctx,
         }
     }
 
-    ff_mpc_dequantize_and_synth(c, maxband, data);
+    ff_mpc_dequantize_and_synth(c, maxband, data, avctx->channels);
 
     c->cur_frame++;
 
     c->last_bits_used = get_bits_count(gb);
     if(c->cur_frame >= c->frames)
         c->cur_frame = 0;
-    *data_size =  MPC_FRAME_SIZE * 4;
+    *data_size =  MPC_FRAME_SIZE * 2 * avctx->channels;
 
     return c->cur_frame ? c->last_bits_used >> 3 : buf_size;
 }

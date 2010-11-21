@@ -42,27 +42,27 @@ void ff_mpc_init(void)
 /**
  * Process decoded Musepack data and produce PCM
  */
-static void mpc_synth(MPCContext *c, int16_t *out)
+static void mpc_synth(MPCContext *c, int16_t *out, int channels)
 {
     int dither_state = 0;
     int i, ch;
     OUT_INT samples[MPA_MAX_CHANNELS * MPA_FRAME_SIZE], *samples_ptr;
 
-    for(ch = 0;  ch < 2; ch++){
+    for(ch = 0;  ch < channels; ch++){
         samples_ptr = samples + ch;
         for(i = 0; i < SAMPLES_PER_BAND; i++) {
             ff_mpa_synth_filter(c->synth_buf[ch], &(c->synth_buf_offset[ch]),
                                 ff_mpa_synth_window, &dither_state,
-                                samples_ptr, 2,
+                                samples_ptr, channels,
                                 c->sb_samples[ch][i]);
-            samples_ptr += 64;
+            samples_ptr += 32 * channels;
         }
     }
-    for(i = 0; i < MPC_FRAME_SIZE*2; i++)
+    for(i = 0; i < MPC_FRAME_SIZE*channels; i++)
         *out++=samples[i];
 }
 
-void ff_mpc_dequantize_and_synth(MPCContext * c, int maxband, void *data)
+void ff_mpc_dequantize_and_synth(MPCContext * c, int maxband, void *data, int channels)
 {
     int i, j, ch;
     Band *bands = c->bands;
@@ -98,5 +98,5 @@ void ff_mpc_dequantize_and_synth(MPCContext * c, int maxband, void *data)
         }
     }
 
-    mpc_synth(c, data);
+    mpc_synth(c, data, channels);
 }

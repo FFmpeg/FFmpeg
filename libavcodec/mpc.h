@@ -72,6 +72,6 @@ typedef struct {
 } MPCContext;
 
 void ff_mpc_init(void);
-void ff_mpc_dequantize_and_synth(MPCContext *c, int maxband, void *dst);
+void ff_mpc_dequantize_and_synth(MPCContext *c, int maxband, void *dst, int channels);
 
 #endif /* AVCODEC_MPC_H */
