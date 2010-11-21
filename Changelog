@@ -56,6 +56,7 @@ version <next>:
 - MJPEG/AVI1 to JPEG/JFIF bitstream filter
 - ASS subtitle encoder and decoder
 - IEC 61937 encapsulation for E-AC3 (for HDMI passthrough)
+- overlay filter added
 
 
 version 0.6:

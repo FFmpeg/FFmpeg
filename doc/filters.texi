@@ -391,6 +391,64 @@ libopencv function @code{cvSmooth}. Refer to the official libopencv
 documentation for the exact meaning of the parameters:
 @url{http://opencv.willowgarage.com/documentation/c/image_filtering.html}
 
+@section overlay
+
+Overlay one video on top of another.
+
+It takes two inputs and one output, the first input is the "main"
+video on which the second input is overlayed.
+
+It accepts the parameters: @var{x}:@var{y}.
+
+@var{x} is the x coordinate of the overlayed video on the main video,
+@var{y} is the y coordinate. The parameters are expressions containing
+the following parameters:
+
+@table @option
+@item main_w, main_h
+main input width and height
+
+@item W, H
+same as @var{main_w} and @var{main_h}
+
+@item overlay_w, overlay_h
+overlay input width and height
+
+@item w, h
+same as @var{overlay_w} and @var{overlay_h}
+@end table
+
+Be aware that frames are taken from each input video in timestamp
+order, hence, if their initial timestamps differ, it is a a good idea
+to pass the two inputs through a @var{setpts=PTS-STARTPTS} filter to
+have them begin in the same zero timestamp, as it does the example for
+the @var{movie} filter.
+
+Follow some examples:
+@example
+# draw the overlay at 10 pixels from the bottom right
+# corner of the main video.
+overlay=main_w-overlay_w-10:main_h-overlay_h-10
+
+# insert a transparent PNG logo in the bottom left corner of the input
+movie=0:png:logo.png [logo];
+[in][logo] overlay=10:main_h-overlay_h-10 [out]
+
+# insert 2 different transparent PNG logos (second logo on bottom
+# right corner):
+movie=0:png:logo1.png [logo1];
+movie=0:png:logo2.png [logo2];
+[in][logo1]       overlay=10:H-h-10 [in+logo1];
+[in+logo1][logo2] overlay=W-w-10:H-h-10 [out]
+
+# add a transparent color layer on top of the main video,
+# WxH specifies the size of the main input to the overlay filter
+color=red@.3:WxH [over]; [in][over] overlay [out]
+@end example
+
+You can chain togheter more overlays but the efficiency of such
+approach is yet to be tested.
+
 @section pad
 
 Add paddings to the input image, and places the original input at the
