@@ -24,6 +24,7 @@
  * PCM codecs for encodings found in MPEG streams (DVD/Blu-ray)
  */
 
+#include "libavcore/audioconvert.h"
 #include "avcodec.h"
 #include "bytestream.h"
 
@@ -53,9 +54,9 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
 {
     static const uint8_t bits_per_samples[4] = { 0, 16, 20, 24 };
     static const uint32_t channel_layouts[16] = {
-        0, CH_LAYOUT_MONO, 0, CH_LAYOUT_STEREO, CH_LAYOUT_SURROUND,
-        CH_LAYOUT_2_1, CH_LAYOUT_4POINT0, CH_LAYOUT_2_2, CH_LAYOUT_5POINT0,
-        CH_LAYOUT_5POINT1, CH_LAYOUT_7POINT0, CH_LAYOUT_7POINT1, 0, 0, 0, 0
+        0, AV_CH_LAYOUT_MONO, 0, AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_SURROUND,
+        AV_CH_LAYOUT_2_1, AV_CH_LAYOUT_4POINT0, AV_CH_LAYOUT_2_2, AV_CH_LAYOUT_5POINT0,
+        AV_CH_LAYOUT_5POINT1, AV_CH_LAYOUT_7POINT0, AV_CH_LAYOUT_7POINT1, 0, 0, 0, 0
     };
     static const uint8_t channels[16] = {
         0, 1, 0, 2, 3, 3, 4, 4, 5, 6, 7, 8, 0, 0, 0, 0
@@ -158,9 +159,9 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx,
     if (samples) {
         switch (avctx->channel_layout) {
             /* cases with same number of source and coded channels */
-        case CH_LAYOUT_STEREO:
-        case CH_LAYOUT_4POINT0:
-        case CH_LAYOUT_2_2:
+        case AV_CH_LAYOUT_STEREO:
+        case AV_CH_LAYOUT_4POINT0:
+        case AV_CH_LAYOUT_2_2:
             samples *= num_source_channels;
             if (AV_SAMPLE_FMT_S16 == avctx->sample_fmt) {
 #if HAVE_BIGENDIAN
@@ -177,10 +178,10 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx,
             }
             break;
         /* cases where number of source channels = coded channels + 1 */
-        case CH_LAYOUT_MONO:
-        case CH_LAYOUT_SURROUND:
-        case CH_LAYOUT_2_1:
-        case CH_LAYOUT_5POINT0:
+        case AV_CH_LAYOUT_MONO:
+        case AV_CH_LAYOUT_SURROUND:
+        case AV_CH_LAYOUT_2_1:
+        case AV_CH_LAYOUT_5POINT0:
             if (AV_SAMPLE_FMT_S16 == avctx->sample_fmt) {
                 do {
 #if HAVE_BIGENDIAN
@@ -206,7 +207,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx,
             }
             break;
             /* remapping: L, R, C, LBack, RBack, LF */
-        case CH_LAYOUT_5POINT1:
+        case AV_CH_LAYOUT_5POINT1:
             if (AV_SAMPLE_FMT_S16 == avctx->sample_fmt) {
                 do {
                     dst16[0] = bytestream_get_be16(&src);
@@ -230,7 +231,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx,
             }
             break;
             /* remapping: L, R, C, LSide, LBack, RBack, RSide, <unused> */
-        case CH_LAYOUT_7POINT0:
+        case AV_CH_LAYOUT_7POINT0:
             if (AV_SAMPLE_FMT_S16 == avctx->sample_fmt) {
                 do {
                     dst16[0] = bytestream_get_be16(&src);
@@ -258,7 +259,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx,
             }
             break;
             /* remapping: L, R, C, LSide, LBack, RBack, RSide, LF */
-        case CH_LAYOUT_7POINT1:
+        case AV_CH_LAYOUT_7POINT1:
             if (AV_SAMPLE_FMT_S16 == avctx->sample_fmt) {
                 do {
                     dst16[0] = bytestream_get_be16(&src);

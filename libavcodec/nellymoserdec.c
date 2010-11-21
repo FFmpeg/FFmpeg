@@ -34,6 +34,7 @@
 #include "nellymoser.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
+#include "libavcore/audioconvert.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"
@@ -148,7 +149,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
         ff_init_ff_sine_windows(7);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-    avctx->channel_layout = CH_LAYOUT_MONO;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
     return 0;
 }
 

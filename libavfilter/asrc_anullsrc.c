@@ -22,7 +22,7 @@
  */
 
 #include "avfilter.h"
-#include "libavcodec/audioconvert.h"
+#include "libavcore/audioconvert.h"
 
 typedef struct {
     int64_t channel_layout;
@@ -35,7 +35,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     char channel_layout_str[128] = "";
 
     priv->sample_rate = 44100;
-    priv->channel_layout = CH_LAYOUT_STEREO;
+    priv->channel_layout = AV_CH_LAYOUT_STEREO;
 
     if (args)
         sscanf(args, "%"PRId64":%s", &priv->sample_rate, channel_layout_str);
@@ -46,7 +46,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     }
 
     if (*channel_layout_str)
-        if (!(priv->channel_layout = avcodec_get_channel_layout(channel_layout_str))
+        if (!(priv->channel_layout = av_get_channel_layout(channel_layout_str))
             && sscanf(channel_layout_str, "%"PRId64, &priv->channel_layout) != 1) {
             av_log(ctx, AV_LOG_ERROR, "Invalid value '%s' for channel layout\n",
                    channel_layout_str);
@@ -65,8 +65,8 @@ static int config_props(AVFilterLink *outlink)
     outlink->sample_rate = priv->sample_rate;
     outlink->channel_layout = priv->channel_layout;
 
-    chans_nb = avcodec_channel_layout_num_channels(priv->channel_layout);
-    avcodec_get_channel_layout_string(buf, sizeof(buf), chans_nb, priv->channel_layout);
+    chans_nb = av_get_channel_layout_nb_channels(priv->channel_layout);
+    av_get_channel_layout_string(buf, sizeof(buf), chans_nb, priv->channel_layout);
     av_log(outlink->src, AV_LOG_INFO,
            "sample_rate:%"PRId64 " channel_layout:%"PRId64 " channel_layout_description:'%s'\n",
            priv->sample_rate, priv->channel_layout, buf);

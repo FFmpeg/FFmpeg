@@ -26,7 +26,7 @@
 
 #define LIBAVFILTER_VERSION_MAJOR  1
 #define LIBAVFILTER_VERSION_MINOR 63
-#define LIBAVFILTER_VERSION_MICRO  0
+#define LIBAVFILTER_VERSION_MICRO  1
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -579,7 +579,7 @@ struct AVFilterLink {
     int w;                      ///< agreed upon image width
     int h;                      ///< agreed upon image height
     /* These two parameters apply only to audio */
-    int64_t channel_layout;     ///< channel layout of current buffer (see avcodec.h)
+    int64_t channel_layout;     ///< channel layout of current buffer (see libavcore/audioconvert.h)
     int64_t sample_rate;        ///< samples per second
 
     int format;                 ///< agreed upon media format

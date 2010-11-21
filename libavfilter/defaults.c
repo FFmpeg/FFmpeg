@@ -19,9 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcore/audioconvert.h"
 #include "libavcore/imgutils.h"
 #include "libavcore/samplefmt.h"
-#include "libavcodec/audioconvert.h"
 #include "avfilter.h"
 
 /* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
@@ -111,7 +111,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
     samples->free       = avfilter_default_free_buffer;
 
     sample_size = av_get_bits_per_sample_fmt(sample_fmt) >>3;
-    chans_nb = avcodec_channel_layout_num_channels(channel_layout);
+    chans_nb = av_get_channel_layout_nb_channels(channel_layout);
 
     per_channel_size = size/chans_nb;
     ref->audio->samples_nb = per_channel_size/sample_size;

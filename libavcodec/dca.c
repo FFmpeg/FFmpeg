@@ -28,6 +28,7 @@
 
 #include "libavutil/intmath.h"
 #include "libavutil/intreadwrite.h"
+#include "libavcore/audioconvert.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"
@@ -74,22 +75,22 @@ enum DCAMode {
  */
 
 static const int64_t dca_core_channel_layout[] = {
-    CH_FRONT_CENTER,                                               ///< 1, A
-    CH_LAYOUT_STEREO,                                              ///< 2, A + B (dual mono)
-    CH_LAYOUT_STEREO,                                              ///< 2, L + R (stereo)
-    CH_LAYOUT_STEREO,                                              ///< 2, (L+R) + (L-R) (sum-difference)
-    CH_LAYOUT_STEREO,                                              ///< 2, LT +RT (left and right total)
-    CH_LAYOUT_STEREO|CH_FRONT_CENTER,                              ///< 3, C+L+R
-    CH_LAYOUT_STEREO|CH_BACK_CENTER,                               ///< 3, L+R+S
-    CH_LAYOUT_STEREO|CH_FRONT_CENTER|CH_BACK_CENTER,               ///< 4, C + L + R+ S
-    CH_LAYOUT_STEREO|CH_SIDE_LEFT|CH_SIDE_RIGHT,                   ///< 4, L + R +SL+ SR
-    CH_LAYOUT_STEREO|CH_FRONT_CENTER|CH_SIDE_LEFT|CH_SIDE_RIGHT,   ///< 5, C + L + R+ SL+SR
-    CH_LAYOUT_STEREO|CH_SIDE_LEFT|CH_SIDE_RIGHT|CH_FRONT_LEFT_OF_CENTER|CH_FRONT_RIGHT_OF_CENTER,                 ///< 6, CL + CR + L + R + SL + SR
-    CH_LAYOUT_STEREO|CH_BACK_LEFT|CH_BACK_RIGHT|CH_FRONT_CENTER|CH_BACK_CENTER,                                   ///< 6, C + L + R+ LR + RR + OV
-    CH_FRONT_CENTER|CH_FRONT_RIGHT_OF_CENTER|CH_FRONT_LEFT_OF_CENTER|CH_BACK_CENTER|CH_BACK_LEFT|CH_BACK_RIGHT,   ///< 6, CF+ CR+LF+ RF+LR + RR
-    CH_FRONT_LEFT_OF_CENTER|CH_FRONT_CENTER|CH_FRONT_RIGHT_OF_CENTER|CH_LAYOUT_STEREO|CH_SIDE_LEFT|CH_SIDE_RIGHT, ///< 7, CL + C + CR + L + R + SL + SR
-    CH_FRONT_LEFT_OF_CENTER|CH_FRONT_RIGHT_OF_CENTER|CH_LAYOUT_STEREO|CH_SIDE_LEFT|CH_SIDE_RIGHT|CH_BACK_LEFT|CH_BACK_RIGHT, ///< 8, CL + CR + L + R + SL1 + SL2+ SR1 + SR2
-    CH_FRONT_LEFT_OF_CENTER|CH_FRONT_CENTER|CH_FRONT_RIGHT_OF_CENTER|CH_LAYOUT_STEREO|CH_SIDE_LEFT|CH_BACK_CENTER|CH_SIDE_RIGHT, ///< 8, CL + C+ CR + L + R + SL + S+ SR
+    AV_CH_FRONT_CENTER,                                                      ///< 1, A
+    AV_CH_LAYOUT_STEREO,                                                     ///< 2, A + B (dual mono)
+    AV_CH_LAYOUT_STEREO,                                                     ///< 2, L + R (stereo)
+    AV_CH_LAYOUT_STEREO,                                                     ///< 2, (L+R) + (L-R) (sum-difference)
+    AV_CH_LAYOUT_STEREO,                                                     ///< 2, LT +RT (left and right total)
+    AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER,                                  ///< 3, C+L+R
+    AV_CH_LAYOUT_STEREO|AV_CH_BACK_CENTER,                                   ///< 3, L+R+S
+    AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER|CH_BACK_CENTER,                   ///< 4, C + L + R+ S
+    AV_CH_LAYOUT_STEREO|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT,                    ///< 4, L + R +SL+ SR
+    AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT, ///< 5, C + L + R+ SL+SR
+    AV_CH_LAYOUT_STEREO|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER,                    ///< 6, CL + CR + L + R + SL + SR
+    AV_CH_LAYOUT_STEREO|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT|AV_CH_FRONT_CENTER|AV_CH_BACK_CENTER,                                      ///< 6, C + L + R+ LR + RR + OV
+    AV_CH_FRONT_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_BACK_CENTER|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT,   ///< 6, CF+ CR+LF+ RF+LR + RR
+    AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER|AV_CH_LAYOUT_STEREO|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT, ///< 7, CL + C + CR + L + R + SL + SR
+    AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER|AV_CH_LAYOUT_STEREO|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT, ///< 8, CL + CR + L + R + SL1 + SL2+ SR1 + SR2
+    AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER|AV_CH_LAYOUT_STEREO|AV_CH_SIDE_LEFT|AV_CH_BACK_CENTER|AV_CH_SIDE_RIGHT, ///< 8, CL + C+ CR + L + R + SL + S+ SR
 };
 
 static const int8_t dca_lfe_index[] = {
@@ -1368,9 +1369,9 @@ static int dca_decode_frame(AVCodecContext * avctx,
 
         if (s->xch_present && (!avctx->request_channels ||
                                avctx->request_channels > num_core_channels + !!s->lfe)) {
-            avctx->channel_layout |= CH_BACK_CENTER;
+            avctx->channel_layout |= AV_CH_BACK_CENTER;
             if (s->lfe) {
-                avctx->channel_layout |= CH_LOW_FREQUENCY;
+                avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
                 s->channel_order_tab = dca_channel_reorder_lfe_xch[s->amode];
             } else {
                 s->channel_order_tab = dca_channel_reorder_nolfe_xch[s->amode];
@@ -1379,7 +1380,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
             channels = num_core_channels + !!s->lfe;
             s->xch_present = 0; /* disable further xch processing */
             if (s->lfe) {
-                avctx->channel_layout |= CH_LOW_FREQUENCY;
+                avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
                 s->channel_order_tab = dca_channel_reorder_lfe[s->amode];
             } else
                 s->channel_order_tab = dca_channel_reorder_nolfe[s->amode];
@@ -1392,7 +1393,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
         if (avctx->request_channels == 2 && s->prim_channels > 2) {
             channels = 2;
             s->output = DCA_STEREO;
-            avctx->channel_layout = CH_LAYOUT_STEREO;
+            avctx->channel_layout = AV_CH_LAYOUT_STEREO;
         }
     } else {
         av_log(avctx, AV_LOG_ERROR, "Non standard configuration %d !\n",s->amode);

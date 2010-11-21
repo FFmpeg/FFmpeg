@@ -24,6 +24,7 @@
  * tables taken directly from the AC-3 spec.
  */
 
+#include "libavcore/audioconvert.h"
 #include "avcodec.h"
 #include "ac3tab.h"
 
@@ -84,14 +85,14 @@ const uint8_t ff_ac3_channels_tab[8] = {
  * Map audio coding mode (acmod) to channel layout mask.
  */
 const uint16_t ff_ac3_channel_layout_tab[8] = {
-    CH_LAYOUT_STEREO,
-    CH_LAYOUT_MONO,
-    CH_LAYOUT_STEREO,
-    CH_LAYOUT_SURROUND,
-    CH_LAYOUT_2_1,
-    CH_LAYOUT_4POINT0,
-    CH_LAYOUT_2_2,
-    CH_LAYOUT_5POINT0
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_2_1,
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_2_2,
+    AV_CH_LAYOUT_5POINT0
 };
 
 #define COMMON_CHANNEL_MAP \

@@ -30,6 +30,7 @@
 #ifndef AVCODEC_AACDECTAB_H
 #define AVCODEC_AACDECTAB_H
 
+#include "libavcore/audioconvert.h"
 #include "aac.h"
 
 #include <stdint.h>
@@ -82,13 +83,13 @@ static const uint8_t aac_channel_layout_map[7][5][2] = {
 };
 
 static const int64_t aac_channel_layout[8] = {
-    CH_LAYOUT_MONO,
-    CH_LAYOUT_STEREO,
-    CH_LAYOUT_SURROUND,
-    CH_LAYOUT_4POINT0,
-    CH_LAYOUT_5POINT0_BACK,
-    CH_LAYOUT_5POINT1_BACK,
-    CH_LAYOUT_7POINT1_WIDE,
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT0_BACK,
+    AV_CH_LAYOUT_5POINT1_BACK,
+    AV_CH_LAYOUT_7POINT1_WIDE,
     0,
 };
 
