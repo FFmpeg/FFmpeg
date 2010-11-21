@@ -40,6 +40,13 @@
 // for av_memcpy_backptr
 #include "libavutil/lzo.h"
 
+#define VGA__TAG MKTAG('V', 'G', 'A', ' ')
+#define PALT_TAG MKTAG('P', 'A', 'L', 'T')
+#define SHOT_TAG MKTAG('S', 'H', 'O', 'T')
+#define PALETTE_COUNT 256
+#define PALETTE_SIZE (PALETTE_COUNT * 3)
+#define PALETTES_MAX 256
+
 typedef struct XanContext {
 
     AVCodecContext *avctx;
@@ -55,6 +62,10 @@ typedef struct XanContext {
     unsigned char *buffer2;
     int buffer2_size;
 
+    unsigned *palettes;
+    int palettes_count;
+    int cur_palette;
+
     int frame_size;
 
 } XanContext;
@@ -65,12 +76,6 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     s->frame_size = 0;
-
-    if ((avctx->codec->id == CODEC_ID_XAN_WC3) &&
-        (s->avctx->palctrl == NULL)) {
-        av_log(avctx, AV_LOG_ERROR, "palette expected\n");
-        return AVERROR(EINVAL);
-    }
 
     avctx->pix_fmt = PIX_FMT_PAL8;
 
@@ -354,6 +359,41 @@ static void xan_wc3_decode_frame(XanContext *s) {
 static void xan_wc4_decode_frame(XanContext *s) {
 }
 
+static const uint8_t gamma_lookup[256] = {
+    0x00, 0x09, 0x10, 0x16, 0x1C, 0x21, 0x27, 0x2C,
+    0x31, 0x35, 0x3A, 0x3F, 0x43, 0x48, 0x4C, 0x50,
+    0x54, 0x59, 0x5D, 0x61, 0x65, 0x69, 0x6D, 0x71,
+    0x75, 0x79, 0x7D, 0x80, 0x84, 0x88, 0x8C, 0x8F,
+    0x93, 0x97, 0x9A, 0x9E, 0xA2, 0xA5, 0xA9, 0xAC,
+    0xB0, 0xB3, 0xB7, 0xBA, 0xBE, 0xC1, 0xC5, 0xC8,
+    0xCB, 0xCF, 0xD2, 0xD5, 0xD9, 0xDC, 0xDF, 0xE3,
+    0xE6, 0xE9, 0xED, 0xF0, 0xF3, 0xF6, 0xFA, 0xFD,
+    0x03, 0x0B, 0x12, 0x18, 0x1D, 0x23, 0x28, 0x2D,
+    0x32, 0x36, 0x3B, 0x40, 0x44, 0x49, 0x4D, 0x51,
+    0x56, 0x5A, 0x5E, 0x62, 0x66, 0x6A, 0x6E, 0x72,
+    0x76, 0x7A, 0x7D, 0x81, 0x85, 0x89, 0x8D, 0x90,
+    0x94, 0x98, 0x9B, 0x9F, 0xA2, 0xA6, 0xAA, 0xAD,
+    0xB1, 0xB4, 0xB8, 0xBB, 0xBF, 0xC2, 0xC5, 0xC9,
+    0xCC, 0xD0, 0xD3, 0xD6, 0xDA, 0xDD, 0xE0, 0xE4,
+    0xE7, 0xEA, 0xED, 0xF1, 0xF4, 0xF7, 0xFA, 0xFD,
+    0x05, 0x0D, 0x13, 0x19, 0x1F, 0x24, 0x29, 0x2E,
+    0x33, 0x38, 0x3C, 0x41, 0x45, 0x4A, 0x4E, 0x52,
+    0x57, 0x5B, 0x5F, 0x63, 0x67, 0x6B, 0x6F, 0x73,
+    0x77, 0x7B, 0x7E, 0x82, 0x86, 0x8A, 0x8D, 0x91,
+    0x95, 0x99, 0x9C, 0xA0, 0xA3, 0xA7, 0xAA, 0xAE,
+    0xB2, 0xB5, 0xB9, 0xBC, 0xBF, 0xC3, 0xC6, 0xCA,
+    0xCD, 0xD0, 0xD4, 0xD7, 0xDA, 0xDE, 0xE1, 0xE4,
+    0xE8, 0xEB, 0xEE, 0xF1, 0xF5, 0xF8, 0xFB, 0xFD,
+    0x07, 0x0E, 0x15, 0x1A, 0x20, 0x25, 0x2A, 0x2F,
+    0x34, 0x39, 0x3D, 0x42, 0x46, 0x4B, 0x4F, 0x53,
+    0x58, 0x5C, 0x60, 0x64, 0x68, 0x6C, 0x70, 0x74,
+    0x78, 0x7C, 0x7F, 0x83, 0x87, 0x8B, 0x8E, 0x92,
+    0x96, 0x99, 0x9D, 0xA1, 0xA4, 0xA8, 0xAB, 0xAF,
+    0xB2, 0xB6, 0xB9, 0xBD, 0xC0, 0xC4, 0xC7, 0xCB,
+    0xCE, 0xD1, 0xD5, 0xD8, 0xDB, 0xDF, 0xE2, 0xE5,
+    0xE9, 0xEC, 0xEF, 0xF2, 0xF6, 0xF9, 0xFC, 0xFD
+};
+
 static int xan_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             AVPacket *avpkt)
@@ -361,8 +401,55 @@ static int xan_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int ret, buf_size = avpkt->size;
     XanContext *s = avctx->priv_data;
-    AVPaletteControl *palette_control = avctx->palctrl;
 
+    if (avctx->codec->id == CODEC_ID_XAN_WC3) {
+        const uint8_t *buf_end = buf + buf_size;
+        int tag = 0;
+        while (buf_end - buf > 8 && tag != VGA__TAG) {
+            unsigned *tmpptr;
+            uint32_t new_pal;
+            int size;
+            int i;
+            tag  = bytestream_get_le32(&buf);
+            size = bytestream_get_be32(&buf);
+            size = FFMIN(size, buf_end - buf);
+            switch (tag) {
+            case PALT_TAG:
+                if (size < PALETTE_SIZE)
+                    return AVERROR_INVALIDDATA;
+                if (s->palettes_count >= PALETTES_MAX)
+                    return AVERROR_INVALIDDATA;
+                tmpptr = av_realloc(s->palettes, (s->palettes_count + 1) * AVPALETTE_SIZE);
+                if (!tmpptr)
+                    return AVERROR(ENOMEM);
+                s->palettes = tmpptr;
+                tmpptr += s->palettes_count * AVPALETTE_COUNT;
+                for (i = 0; i < PALETTE_COUNT; i++) {
+                    int r = gamma_lookup[*buf++];
+                    int g = gamma_lookup[*buf++];
+                    int b = gamma_lookup[*buf++];
+                    *tmpptr++ = (r << 16) | (g << 8) | b;
+                }
+                s->palettes_count++;
+                break;
+            case SHOT_TAG:
+                if (size < 4)
+                    return AVERROR_INVALIDDATA;
+                new_pal = bytestream_get_le32(&buf);
+                if (new_pal < s->palettes_count) {
+                    s->cur_palette = new_pal;
+                } else
+                    av_log(avctx, AV_LOG_ERROR, "Invalid palette selected\n");
+                break;
+            case VGA__TAG:
+                break;
+            default:
+                buf += size;
+                break;
+            }
+        }
+        buf_size = buf_end - buf;
+    }
     if ((ret = avctx->get_buffer(avctx, &s->current_frame))) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
@@ -372,10 +459,15 @@ static int xan_decode_frame(AVCodecContext *avctx,
     if (!s->frame_size)
         s->frame_size = s->current_frame.linesize[0] * s->avctx->height;
 
+    if (avctx->codec->id == CODEC_ID_XAN_WC3) {
+        memcpy(s->current_frame.data[1], s->palettes + s->cur_palette * AVPALETTE_COUNT, AVPALETTE_SIZE);
+    } else {
+        AVPaletteControl *palette_control = avctx->palctrl;
     palette_control->palette_changed = 0;
     memcpy(s->current_frame.data[1], palette_control->palette,
            AVPALETTE_SIZE);
     s->current_frame.palette_has_changed = 1;
+    }
 
     s->buf = buf;
     s->size = buf_size;

@@ -57,69 +57,17 @@
 #define WC3_FRAME_FPS 15
 
 #define PALETTE_SIZE (256 * 3)
-#define PALETTE_COUNT 256
 
 typedef struct Wc3DemuxContext {
     int width;
     int height;
-    unsigned char *palettes;
-    int palette_count;
     int64_t pts;
     int video_stream_index;
     int audio_stream_index;
 
-    AVPaletteControl palette_control;
+    AVPacket vpkt;
 
 } Wc3DemuxContext;
-
-/**
- * palette lookup table that does gamma correction
- *
- * can be calculated by this formula:
- * for i between 0 and 251 inclusive:
- * wc3_pal_lookup[i] = round(pow(i / 256.0, 0.8) * 256);
- * values 252, 253, 254 and 255 are all 0xFD
- * calculating this at runtime should not cause any
- * rounding issues, the maximum difference between
- * the table values and the calculated doubles is
- * about 0.497527
- * The left-rotation of the input by 2 is also included in this table.
- */
-static const unsigned char wc3_pal_lookup[] = {
-    0x00, 0x09, 0x10, 0x16, 0x1C, 0x21, 0x27, 0x2C,
-    0x31, 0x35, 0x3A, 0x3F, 0x43, 0x48, 0x4C, 0x50,
-    0x54, 0x59, 0x5D, 0x61, 0x65, 0x69, 0x6D, 0x71,
-    0x75, 0x79, 0x7D, 0x80, 0x84, 0x88, 0x8C, 0x8F,
-    0x93, 0x97, 0x9A, 0x9E, 0xA2, 0xA5, 0xA9, 0xAC,
-    0xB0, 0xB3, 0xB7, 0xBA, 0xBE, 0xC1, 0xC5, 0xC8,
-    0xCB, 0xCF, 0xD2, 0xD5, 0xD9, 0xDC, 0xDF, 0xE3,
-    0xE6, 0xE9, 0xED, 0xF0, 0xF3, 0xF6, 0xFA, 0xFD,
-    0x03, 0x0B, 0x12, 0x18, 0x1D, 0x23, 0x28, 0x2D,
-    0x32, 0x36, 0x3B, 0x40, 0x44, 0x49, 0x4D, 0x51,
-    0x56, 0x5A, 0x5E, 0x62, 0x66, 0x6A, 0x6E, 0x72,
-    0x76, 0x7A, 0x7D, 0x81, 0x85, 0x89, 0x8D, 0x90,
-    0x94, 0x98, 0x9B, 0x9F, 0xA2, 0xA6, 0xAA, 0xAD,
-    0xB1, 0xB4, 0xB8, 0xBB, 0xBF, 0xC2, 0xC5, 0xC9,
-    0xCC, 0xD0, 0xD3, 0xD6, 0xDA, 0xDD, 0xE0, 0xE4,
-    0xE7, 0xEA, 0xED, 0xF1, 0xF4, 0xF7, 0xFA, 0xFD,
-    0x05, 0x0D, 0x13, 0x19, 0x1F, 0x24, 0x29, 0x2E,
-    0x33, 0x38, 0x3C, 0x41, 0x45, 0x4A, 0x4E, 0x52,
-    0x57, 0x5B, 0x5F, 0x63, 0x67, 0x6B, 0x6F, 0x73,
-    0x77, 0x7B, 0x7E, 0x82, 0x86, 0x8A, 0x8D, 0x91,
-    0x95, 0x99, 0x9C, 0xA0, 0xA3, 0xA7, 0xAA, 0xAE,
-    0xB2, 0xB5, 0xB9, 0xBC, 0xBF, 0xC3, 0xC6, 0xCA,
-    0xCD, 0xD0, 0xD4, 0xD7, 0xDA, 0xDE, 0xE1, 0xE4,
-    0xE8, 0xEB, 0xEE, 0xF1, 0xF5, 0xF8, 0xFB, 0xFD,
-    0x07, 0x0E, 0x15, 0x1A, 0x20, 0x25, 0x2A, 0x2F,
-    0x34, 0x39, 0x3D, 0x42, 0x46, 0x4B, 0x4F, 0x53,
-    0x58, 0x5C, 0x60, 0x64, 0x68, 0x6C, 0x70, 0x74,
-    0x78, 0x7C, 0x7F, 0x83, 0x87, 0x8B, 0x8E, 0x92,
-    0x96, 0x99, 0x9D, 0xA1, 0xA4, 0xA8, 0xAB, 0xAF,
-    0xB2, 0xB6, 0xB9, 0xBD, 0xC0, 0xC4, 0xC7, 0xCB,
-    0xCE, 0xD1, 0xD5, 0xD8, 0xDB, 0xDF, 0xE2, 0xE5,
-    0xE9, 0xEC, 0xEF, 0xF2, 0xF6, 0xF9, 0xFC, 0xFD
-};
-
 
 static int wc3_probe(AVProbeData *p)
 {
@@ -142,17 +90,15 @@ static int wc3_read_header(AVFormatContext *s,
     unsigned int size;
     AVStream *st;
     int ret = 0;
-    int current_palette = 0;
     char *buffer;
-    int i;
 
     /* default context members */
     wc3->width = WC3_DEFAULT_WIDTH;
     wc3->height = WC3_DEFAULT_HEIGHT;
-    wc3->palettes = NULL;
-    wc3->palette_count = 0;
     wc3->pts = 0;
     wc3->video_stream_index = wc3->audio_stream_index = 0;
+    av_init_packet(&wc3->vpkt);
+    wc3->vpkt.data = NULL; wc3->vpkt.size = 0;
 
     /* skip the first 3 32-bit numbers */
     url_fseek(pb, 12, SEEK_CUR);
@@ -172,14 +118,8 @@ static int wc3_read_header(AVFormatContext *s,
             break;
 
         case PC__TAG:
-            /* need the number of palettes */
-            url_fseek(pb, 8, SEEK_CUR);
-            wc3->palette_count = get_le32(pb);
-            if((unsigned)wc3->palette_count >= UINT_MAX / PALETTE_SIZE){
-                wc3->palette_count= 0;
-                return -1;
-            }
-            wc3->palettes = av_malloc(wc3->palette_count * PALETTE_SIZE);
+            /* number of palettes, unneeded */
+            url_fseek(pb, 12, SEEK_CUR);
             break;
 
         case BNAM_TAG:
@@ -202,19 +142,8 @@ static int wc3_read_header(AVFormatContext *s,
 
         case PALT_TAG:
             /* one of several palettes */
-            if ((unsigned)current_palette >= wc3->palette_count)
-                return AVERROR_INVALIDDATA;
-            if ((ret = get_buffer(pb,
-                &wc3->palettes[current_palette * PALETTE_SIZE],
-                PALETTE_SIZE)) != PALETTE_SIZE)
-                return AVERROR(EIO);
-
-            /* transform the current palette in place */
-            for (i = current_palette * PALETTE_SIZE;
-                 i < (current_palette + 1) * PALETTE_SIZE; i++) {
-                wc3->palettes[i] = wc3_pal_lookup[wc3->palettes[i]];
-            }
-            current_palette++;
+            url_fseek(pb, -8, SEEK_CUR);
+            av_append_packet(pb, &wc3->vpkt, 8 + PALETTE_SIZE);
             break;
 
         default:
@@ -245,9 +174,6 @@ static int wc3_read_header(AVFormatContext *s,
     st->codec->width = wc3->width;
     st->codec->height = wc3->height;
 
-    /* palette considerations */
-    st->codec->palctrl = &wc3->palette_control;
-
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
@@ -276,10 +202,6 @@ static int wc3_read_packet(AVFormatContext *s,
     int packet_read = 0;
     int ret = 0;
     unsigned char text[1024];
-    unsigned int palette_number;
-    int i;
-    unsigned char r, g, b;
-    int base_palette_index;
 
     while (!packet_read) {
 
@@ -297,22 +219,19 @@ static int wc3_read_packet(AVFormatContext *s,
 
         case SHOT_TAG:
             /* load up new palette */
-            palette_number = get_le32(pb);
-            if (palette_number >= wc3->palette_count)
-                return AVERROR_INVALIDDATA;
-            base_palette_index = palette_number * PALETTE_COUNT * 3;
-            for (i = 0; i < PALETTE_COUNT; i++) {
-                r = wc3->palettes[base_palette_index + i * 3 + 0];
-                g = wc3->palettes[base_palette_index + i * 3 + 1];
-                b = wc3->palettes[base_palette_index + i * 3 + 2];
-                wc3->palette_control.palette[i] = (r << 16) | (g << 8) | (b);
-            }
-            wc3->palette_control.palette_changed = 1;
+            url_fseek(pb, -8, SEEK_CUR);
+            av_append_packet(pb, &wc3->vpkt, 8 + 4);
             break;
 
         case VGA__TAG:
             /* send out video chunk */
-            ret= av_get_packet(pb, pkt, size);
+            url_fseek(pb, -8, SEEK_CUR);
+            ret= av_append_packet(pb, &wc3->vpkt, 8 + size);
+            // ignore error if we have some data
+            if (wc3->vpkt.size > 0)
+                ret = 0;
+            *pkt = wc3->vpkt;
+            wc3->vpkt.data = NULL; wc3->vpkt.size = 0;
             pkt->stream_index = wc3->video_stream_index;
             pkt->pts = wc3->pts;
             packet_read = 1;
@@ -366,7 +285,8 @@ static int wc3_read_close(AVFormatContext *s)
 {
     Wc3DemuxContext *wc3 = s->priv_data;
 
-    av_free(wc3->palettes);
+    if (wc3->vpkt.size > 0)
+        av_free_packet(&wc3->vpkt);
 
     return 0;
 }
