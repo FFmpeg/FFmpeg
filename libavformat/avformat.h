@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 84
+#define LIBAVFORMAT_VERSION_MINOR 85
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -244,6 +244,21 @@ void av_metadata_free(AVMetadata **m);
  */
 int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size);
 
+
+/**
+ * Reads data and appends it to the current content of the AVPacket.
+ * If pkt->size is 0 it behaves like av_get_packet.
+ * Note that this uses av_grow_packet and thus involves a realloc
+ * which is inefficient. Thus this function should only be used
+ * when there is no reasonable way to know (an upper bound of)
+ * the final size.
+ *
+ * @param pkt packet
+ * @param size amount of data to read
+ * @return >0 (read size) if OK, AVERROR_xxx otherwise, previous data
+ *         will not be lost even if an error occurs.
+ */
+int av_append_packet(ByteIOContext *s, AVPacket *pkt, int size);
 
 /*************************************************/
 /* fractional numbers for exact pts handling */
