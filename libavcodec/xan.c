@@ -519,10 +519,10 @@ static int xan_decode_frame(AVCodecContext *avctx,
         memcpy(s->current_frame.data[1], s->palettes + s->cur_palette * AVPALETTE_COUNT, AVPALETTE_SIZE);
     } else {
         AVPaletteControl *palette_control = avctx->palctrl;
-    palette_control->palette_changed = 0;
-    memcpy(s->current_frame.data[1], palette_control->palette,
-           AVPALETTE_SIZE);
-    s->current_frame.palette_has_changed = 1;
+        palette_control->palette_changed = 0;
+        memcpy(s->current_frame.data[1], palette_control->palette,
+               AVPALETTE_SIZE);
+        s->current_frame.palette_has_changed = 1;
     }
 
     s->buf = buf;
