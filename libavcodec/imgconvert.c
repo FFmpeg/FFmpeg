@@ -490,68 +490,31 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
 int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, int height,
                      unsigned char *dest, int dest_size)
 {
-    const PixFmtInfo* pf = &pix_fmt_info[pix_fmt];
+    int i, j, nb_planes = 0, linesizes[4];
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
-    int i, j, w, ow, h, oh, data_planes;
-    const unsigned char* s;
     int size = avpicture_get_size(pix_fmt, width, height);
 
     if (size > dest_size || size < 0)
-        return -1;
+        return AVERROR(EINVAL);
 
-    if (pf->pixel_type == FF_PIXEL_PACKED || pf->pixel_type == FF_PIXEL_PALETTE) {
-        if (pix_fmt == PIX_FMT_YUYV422 ||
-            pix_fmt == PIX_FMT_UYVY422 ||
-            pix_fmt == PIX_FMT_BGR565BE ||
-            pix_fmt == PIX_FMT_BGR565LE ||
-            pix_fmt == PIX_FMT_BGR555BE ||
-            pix_fmt == PIX_FMT_BGR555LE ||
-            pix_fmt == PIX_FMT_BGR444BE ||
-            pix_fmt == PIX_FMT_BGR444LE ||
-            pix_fmt == PIX_FMT_RGB565BE ||
-            pix_fmt == PIX_FMT_RGB565LE ||
-            pix_fmt == PIX_FMT_RGB555BE ||
-            pix_fmt == PIX_FMT_RGB555LE ||
-            pix_fmt == PIX_FMT_RGB444BE ||
-            pix_fmt == PIX_FMT_RGB444LE)
-            w = width * 2;
-        else if (pix_fmt == PIX_FMT_UYYVYY411)
-            w = width + width/2;
-        else if (pix_fmt == PIX_FMT_PAL8)
-            w = width;
-        else
-            w = width * (pf->depth * pf->nb_channels / 8);
+    for (i = 0; i < desc->nb_components; i++)
+        nb_planes = FFMAX(desc->comp[i].plane, nb_planes);
+    nb_planes++;
 
-        data_planes = 1;
-        h = height;
-    } else {
-        data_planes = pf->nb_channels;
-        w = (width*pf->depth + 7)/8;
-        h = height;
-    }
+    av_image_fill_linesizes(linesizes, pix_fmt, width);
+    for (i = 0; i < nb_planes; i++) {
+        int h, s = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
+        h = (height + (1 << s) - 1) >> s;
 
-    ow = w;
-    oh = h;
-
-    for (i=0; i<data_planes; i++) {
-        if (i == 1) {
-            w = (- ((-width) >> desc->log2_chroma_w) * pf->depth + 7) / 8;
-            h = -((-height) >> desc->log2_chroma_h);
-            if (pix_fmt == PIX_FMT_NV12 || pix_fmt == PIX_FMT_NV21)
-                w <<= 1;
-        } else if (i == 3) {
-            w = ow;
-            h = oh;
-        }
         s = src->data[i];
-        for(j=0; j<h; j++) {
-            memcpy(dest, s, w);
-            dest += w;
+        for (j = 0; j < h; j++) {
+            memcpy(dest, s, linesizes[i]);
+            dest += linesizes[i];
             s += src->linesize[i];
         }
     }
 
-    if (pf->pixel_type == FF_PIXEL_PALETTE)
+    if (desc->flags & PIX_FMT_PAL)
         memcpy((unsigned char *)(((size_t)dest + 3) & ~3), src->data[1], 256 * 4);
 
     return size;
