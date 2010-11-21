@@ -22,6 +22,7 @@
 //#define DEBUG
 //#define DEBUG_SEEK
 
+#include <strings.h>
 #include "libavutil/intreadwrite.h"
 #include "libavutil/bswap.h"
 #include "libavcodec/bytestream.h"
@@ -282,6 +283,24 @@ static void avi_read_info(AVFormatContext *s, uint64_t end)
     }
 }
 
+static const char months[12][4] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+
+static void avi_metadata_creation_time(AVMetadata **metadata, char *date)
+{
+    char month[4], time[9], buffer[64];
+    int i, day, year;
+    /* parse standard AVI date format (ie. "Mon Mar 10 15:04:43 2003") */
+    if (sscanf(date, "%*3s%*[ ]%3s%*[ ]%2d%*[ ]%8s%*[ ]%4d",
+               month, &day, time, &year) == 4)
+        for (i=0; i<12; i++)
+            if (!strcasecmp(month, months[i])) {
+                snprintf(buffer, sizeof(buffer), "%.4d-%.2d-%.2d %s",
+                         year, i+1, day, time);
+                av_metadata_set2(metadata, "creation_time", buffer, 0);
+            }
+}
+
 static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVIContext *avi = s->priv_data;
@@ -337,6 +356,14 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 avi_read_info(s, list_end);
 
             break;
+        case MKTAG('I', 'D', 'I', 'T'): {
+            unsigned char date[64] = {0};
+            size += (size & 1);
+            size -= get_buffer(pb, date, FFMIN(size, sizeof(date)-1));
+            url_fskip(pb, size);
+            avi_metadata_creation_time(&s->metadata, date);
+            break;
+        }
         case MKTAG('d', 'm', 'l', 'h'):
             avi->is_odml = 1;
             url_fskip(pb, size + (size & 1));
