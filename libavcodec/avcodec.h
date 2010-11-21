@@ -32,7 +32,7 @@
 #include "libavutil/cpu.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 96
+#define LIBAVCODEC_VERSION_MINOR 97
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -3025,6 +3025,14 @@ int av_new_packet(AVPacket *pkt, int size);
  * @param size new size
  */
 void av_shrink_packet(AVPacket *pkt, int size);
+
+/**
+ * Increase packet size, correctly zeroing padding
+ *
+ * @param pkt packet
+ * @param grow_by number of bytes by which to increase the size of the packet
+ */
+int av_grow_packet(AVPacket *pkt, int grow_by);
 
 /**
  * @warning This is a hack - the packet memory allocation stuff is broken. The

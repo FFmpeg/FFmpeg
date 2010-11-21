@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "libavutil/avassert.h"
 
 
 void av_destruct_packet_nofree(AVPacket *pkt)
@@ -69,6 +70,23 @@ void av_shrink_packet(AVPacket *pkt, int size)
     if (pkt->size <= size) return;
     pkt->size = size;
     memset(pkt->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+}
+
+int av_grow_packet(AVPacket *pkt, int grow_by)
+{
+    void *new_ptr;
+    av_assert0((unsigned)pkt->size <= INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!pkt->size)
+        return av_new_packet(pkt, grow_by);
+    if ((unsigned)grow_by > INT_MAX - (pkt->size + FF_INPUT_BUFFER_PADDING_SIZE))
+        return -1;
+    new_ptr = av_realloc(pkt->data, pkt->size + grow_by + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!new_ptr)
+        return AVERROR(ENOMEM);
+    pkt->data = new_ptr;
+    pkt->size += grow_by;
+    memset(pkt->data + pkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    return 0;
 }
 
 int av_dup_packet(AVPacket *pkt)
