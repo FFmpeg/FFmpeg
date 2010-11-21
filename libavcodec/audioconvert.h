@@ -53,9 +53,6 @@ enum AVSampleFormat avcodec_get_sample_fmt(const char* name);
 #endif
 
 #if FF_API_OLD_AUDIOCONVERT
-attribute_deprecated
-const char *avcodec_get_channel_name(int channel_id);
-
 /**
  * @deprecated Use av_get_channel_layout() instead.
  */
