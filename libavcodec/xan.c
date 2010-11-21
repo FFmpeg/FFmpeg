@@ -40,6 +40,8 @@
 // for av_memcpy_backptr
 #include "libavutil/lzo.h"
 
+#define RUNTIME_GAMMA 0
+
 #define VGA__TAG MKTAG('V', 'G', 'A', ' ')
 #define PALT_TAG MKTAG('P', 'A', 'L', 'T')
 #define SHOT_TAG MKTAG('S', 'H', 'O', 'T')
@@ -359,6 +361,53 @@ static void xan_wc3_decode_frame(XanContext *s) {
 static void xan_wc4_decode_frame(XanContext *s) {
 }
 
+#if RUNTIME_GAMMA
+static inline unsigned mul(unsigned a, unsigned b)
+{
+    return (a * b) >> 16;
+}
+
+static inline unsigned pow4(unsigned a)
+{
+    unsigned square = mul(a, a);
+    return mul(square, square);
+}
+
+static inline unsigned pow5(unsigned a)
+{
+    return mul(pow4(a), a);
+}
+
+static uint8_t gamma_corr(uint8_t in) {
+    unsigned lo, hi = 0xff40, target;
+    int i = 15;
+    in = (in << 2) | (in >> 6);
+    /*  equivalent float code:
+    if (in >= 252)
+        return 253;
+    return round(pow(in / 256.0, 0.8) * 256);
+    */
+    lo = target = in << 8;
+    do {
+        unsigned mid = (lo + hi) >> 1;
+        unsigned pow = pow5(mid);
+        if (pow > target) hi = mid;
+        else lo = mid;
+    } while (--i);
+    return (pow4((lo + hi) >> 1) + 0x80) >> 8;
+}
+#else
+/**
+ * This is a gamma correction that xan3 applies to all palette entries.
+ *
+ * There is a peculiarity, namely that the values are clamped to 253 -
+ * it seems likely that this table was calculated by a buggy fixed-point
+ * implementation, the one above under RUNTIME_GAMMA behaves like this for
+ * example.
+ * The exponent value of 0.8 can be explained by this as well, since 0.8 = 4/5
+ * and thus pow(x, 0.8) is still easy to calculate.
+ * Also, the input values are first rotated to the left by 2.
+ */
 static const uint8_t gamma_lookup[256] = {
     0x00, 0x09, 0x10, 0x16, 0x1C, 0x21, 0x27, 0x2C,
     0x31, 0x35, 0x3A, 0x3F, 0x43, 0x48, 0x4C, 0x50,
@@ -393,6 +442,7 @@ static const uint8_t gamma_lookup[256] = {
     0xCE, 0xD1, 0xD5, 0xD8, 0xDB, 0xDF, 0xE2, 0xE5,
     0xE9, 0xEC, 0xEF, 0xF2, 0xF6, 0xF9, 0xFC, 0xFD
 };
+#endif
 
 static int xan_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
@@ -425,9 +475,15 @@ static int xan_decode_frame(AVCodecContext *avctx,
                 s->palettes = tmpptr;
                 tmpptr += s->palettes_count * AVPALETTE_COUNT;
                 for (i = 0; i < PALETTE_COUNT; i++) {
+#if RUNTIME_GAMMA
+                    int r = gamma_corr(*buf++);
+                    int g = gamma_corr(*buf++);
+                    int b = gamma_corr(*buf++);
+#else
                     int r = gamma_lookup[*buf++];
                     int g = gamma_lookup[*buf++];
                     int b = gamma_lookup[*buf++];
+#endif
                     *tmpptr++ = (r << 16) | (g << 8) | b;
                 }
                 s->palettes_count++;
