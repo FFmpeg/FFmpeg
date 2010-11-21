@@ -271,7 +271,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
     while ((chunk_size > 0) && (chunk_type != CHUNK_BAD)) {
 
         /* read the next chunk, wherever the file happens to be pointing */
-       if (url_feof(pb)) {
+        if (url_feof(pb)) {
             chunk_type = CHUNK_EOF;
             break;
         }
