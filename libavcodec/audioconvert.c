@@ -48,21 +48,6 @@ void avcodec_sample_fmt_string (char *buf, int buf_size, int sample_fmt)
 }
 #endif
 
-static const char* const channel_names[]={
-    "FL", "FR", "FC", "LFE", "BL",  "BR",  "FLC", "FRC",
-    "BC", "SL", "SR", "TC",  "TFL", "TFC", "TFR", "TBL",
-    "TBC", "TBR",
-    [29] = "DL",
-    [30] = "DR",
-};
-
-static const char *get_channel_name(int channel_id)
-{
-    if (channel_id<0 || channel_id>=FF_ARRAY_ELEMS(channel_names))
-        return NULL;
-    return channel_names[channel_id];
-}
-
 int64_t avcodec_guess_channel_layout(int nb_channels, enum CodecID codec_id, const char *fmt_name)
 {
     switch(nb_channels) {
@@ -77,75 +62,22 @@ int64_t avcodec_guess_channel_layout(int nb_channels, enum CodecID codec_id, con
     }
 }
 
-static const struct {
-    const char *name;
-    int         nb_channels;
-    int64_t     layout;
-} channel_layout_map[] = {
-    { "mono",        1,  CH_LAYOUT_MONO },
-    { "stereo",      2,  CH_LAYOUT_STEREO },
-    { "4.0",         4,  CH_LAYOUT_4POINT0 },
-    { "quad",        4,  CH_LAYOUT_QUAD },
-    { "5.0",         5,  CH_LAYOUT_5POINT0 },
-    { "5.0",         5,  CH_LAYOUT_5POINT0_BACK },
-    { "5.1",         6,  CH_LAYOUT_5POINT1 },
-    { "5.1",         6,  CH_LAYOUT_5POINT1_BACK },
-    { "5.1+downmix", 8,  CH_LAYOUT_5POINT1|CH_LAYOUT_STEREO_DOWNMIX, },
-    { "7.1",         8,  CH_LAYOUT_7POINT1 },
-    { "7.1(wide)",   8,  CH_LAYOUT_7POINT1_WIDE },
-    { "7.1+downmix", 10, CH_LAYOUT_7POINT1|CH_LAYOUT_STEREO_DOWNMIX, },
-    { 0 }
-};
-
+#if FF_API_OLD_AUDIOCONVERT
 int64_t avcodec_get_channel_layout(const char *name)
 {
-    int i = 0;
-    do {
-        if (!strcmp(channel_layout_map[i].name, name))
-            return channel_layout_map[i].layout;
-        i++;
-    } while (channel_layout_map[i].name);
-
-    return 0;
+    return av_get_channel_layout(name);
 }
 
 void avcodec_get_channel_layout_string(char *buf, int buf_size, int nb_channels, int64_t channel_layout)
 {
-    int i;
-
-    for (i=0; channel_layout_map[i].name; i++)
-        if (nb_channels    == channel_layout_map[i].nb_channels &&
-            channel_layout == channel_layout_map[i].layout) {
-            av_strlcpy(buf, channel_layout_map[i].name, buf_size);
-            return;
-        }
-
-    snprintf(buf, buf_size, "%d channels", nb_channels);
-    if (channel_layout) {
-        int i,ch;
-        av_strlcat(buf, " (", buf_size);
-        for(i=0,ch=0; i<64; i++) {
-            if ((channel_layout & (1L<<i))) {
-                const char *name = get_channel_name(i);
-                if (name) {
-                    if (ch>0) av_strlcat(buf, "|", buf_size);
-                    av_strlcat(buf, name, buf_size);
-                }
-                ch++;
-            }
-        }
-        av_strlcat(buf, ")", buf_size);
-    }
+    av_get_channel_layout_string(buf, buf_size, nb_channels, channel_layout);
 }
 
 int avcodec_channel_layout_num_channels(int64_t channel_layout)
 {
-    int count;
-    uint64_t x = channel_layout;
-    for (count = 0; x; count++)
-        x &= x-1; // unset lowest set bit
-    return count;
+    return av_get_channel_layout_nb_channels(channel_layout);
 }
+#endif
 
 struct AVAudioConvert {
     int in_channels, out_channels;

@@ -13,6 +13,15 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-11-21 - r25787 - lavcore 0.14.0 - audioconvert.h
+  Add a public audio channel API in audioconvert.h, and deprecate the
+  corresponding functions in libavcodec:
+  avcodec_get_channel_name()
+  avcodec_get_channel_layout()
+  avcodec_get_channel_layout_string()
+  avcodec_channel_layout_num_channels()
+  and the CH_* macros defined in libavcodec/avcodec.h.
+
 2010-11-21 - r25777 - lavf 52.85.0 - avformat.h
   Add av_append_packet().
 
