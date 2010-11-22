@@ -135,6 +135,7 @@ static int nb_stream_maps;
 /* first item specifies output metadata, second is input */
 static AVMetaDataMap (*meta_data_maps)[2] = NULL;
 static int nb_meta_data_maps;
+static int metadata_global_autocopy   = 1;
 static int metadata_streams_autocopy  = 1;
 static int metadata_chapters_autocopy = 1;
 
@@ -2400,6 +2401,15 @@ static int transcode(AVFormatContext **output_files,
             av_metadata_set2(meta[0], mtag->key, mtag->value, AV_METADATA_DONT_OVERWRITE);
     }
 
+    /* copy global metadata by default */
+    if (metadata_global_autocopy) {
+        AVMetadataTag *t = NULL;
+
+        while ((t = av_metadata_get(input_files[0]->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
+            for (i = 0; i < nb_output_files; i++)
+                av_metadata_set2(&output_files[i]->metadata, t->key, t->value, AV_METADATA_DONT_OVERWRITE);
+    }
+
     /* copy chapters according to chapter maps */
     for (i = 0; i < nb_chapter_maps; i++) {
         int infile  = chapter_maps[i].in_file;
@@ -2998,6 +3008,8 @@ static void opt_map_meta_data(const char *arg)
     m1->file = strtol(p, &p, 0);
     parse_meta_type(p, &m1->type, &m1->index, &p);
 
+    if (m->type == 'g' || m1->type == 'g')
+        metadata_global_autocopy = 0;
     if (m->type == 's' || m1->type == 's')
         metadata_streams_autocopy = 0;
     if (m->type == 'c' || m1->type == 'c')
