@@ -175,8 +175,17 @@ static void return_frame(AVFilterContext *ctx, int is_second)
 
     filter(ctx, yadif->out, tff ^ !is_second, tff);
 
-    if (is_second)
+    if (is_second) {
+        if (yadif->next->pts != AV_NOPTS_VALUE &&
+            yadif->cur->pts != AV_NOPTS_VALUE) {
+            yadif->out->pts =
+                (yadif->next->pts&yadif->cur->pts) +
+                ((yadif->next->pts^yadif->cur->pts)>>1);
+        } else {
+            yadif->out->pts = AV_NOPTS_VALUE;
+        }
         avfilter_start_frame(ctx->outputs[0], yadif->out);
+    }
     avfilter_draw_slice(ctx->outputs[0], 0, link->h, 1);
     avfilter_end_frame(ctx->outputs[0]);
 
@@ -206,7 +215,8 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     yadif->out = avfilter_get_video_buffer(ctx->outputs[0], AV_PERM_WRITE | AV_PERM_PRESERVE |
                                        AV_PERM_REUSE, link->w, link->h);
 
-    yadif->out->pts = yadif->cur->pts;
+    avfilter_copy_buffer_ref_props(yadif->out, yadif->cur);
+    yadif->out->video->interlaced = 0;
     avfilter_start_frame(ctx->outputs[0], yadif->out);
 }
 
