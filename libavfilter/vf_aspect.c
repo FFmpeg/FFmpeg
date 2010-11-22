@@ -34,22 +34,24 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     AspectContext *aspect = ctx->priv;
     double  ratio;
     int64_t gcd;
+    char c = 0;
 
     if (args) {
-        if (sscanf(args, "%d:%d", &aspect->aspect.num, &aspect->aspect.den) < 2) {
-            if (sscanf(args, "%lf", &ratio) < 1) {
-                av_log(ctx, AV_LOG_ERROR,
-                       "Invalid string '%s' for aspect ratio.\n", args);
-                return AVERROR(EINVAL);
-            }
-            aspect->aspect = av_d2q(ratio, 100);
-        } else {
+        if (sscanf(args, "%d:%d%c", &aspect->aspect.num, &aspect->aspect.den, &c) != 2)
+            if (sscanf(args, "%lf%c", &ratio, &c) == 1)
+                aspect->aspect = av_d2q(ratio, 100);
+
+        if (c || aspect->aspect.num <= 0 || aspect->aspect.den <= 0) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Invalid string '%s' for aspect ratio.\n", args);
+            return AVERROR(EINVAL);
+        }
+
             gcd = av_gcd(FFABS(aspect->aspect.num), FFABS(aspect->aspect.den));
             if (gcd) {
                 aspect->aspect.num /= gcd;
                 aspect->aspect.den /= gcd;
             }
-        }
     }
 
     if (aspect->aspect.den == 0)
