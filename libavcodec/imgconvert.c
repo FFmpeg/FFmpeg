@@ -503,10 +503,10 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
 
     av_image_fill_linesizes(linesizes, pix_fmt, width);
     for (i = 0; i < nb_planes; i++) {
-        int h, s = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
-        h = (height + (1 << s) - 1) >> s;
+        int h, shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
+        const unsigned char *s = src->data[i];
+        h = (height + (1 << shift) - 1) >> shift;
 
-        s = src->data[i];
         for (j = 0; j < h; j++) {
             memcpy(dest, s, linesizes[i]);
             dest += linesizes[i];
