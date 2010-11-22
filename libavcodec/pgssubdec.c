@@ -136,6 +136,11 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitle *sub,
         }
     }
 
+    if (pixel_count < sub->rects[0]->w * sub->rects[0]->h) {
+        av_log(avctx, AV_LOG_ERROR, "Insufficient RLE data for subtitle\n");
+        return -1;
+    }
+
     dprintf(avctx, "Pixel Count = %d, Area = %d\n", pixel_count, sub->rects[0]->w * sub->rects[0]->h);
 
     return 0;
