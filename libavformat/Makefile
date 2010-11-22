@@ -256,6 +256,7 @@ OBJS-$(CONFIG_SMACKER_DEMUXER)           += smacker.o
 OBJS-$(CONFIG_SOL_DEMUXER)               += sol.o pcm.o
 OBJS-$(CONFIG_SOX_DEMUXER)               += soxdec.o pcm.o
 OBJS-$(CONFIG_SOX_MUXER)                 += soxenc.o
+OBJS-$(CONFIG_SPDIF_DEMUXER)             += spdif.o spdifdec.o
 OBJS-$(CONFIG_SPDIF_MUXER)               += spdif.o spdifenc.o
 OBJS-$(CONFIG_SRT_DEMUXER)               += srtdec.o
 OBJS-$(CONFIG_SRT_MUXER)                 += rawenc.o
