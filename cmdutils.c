@@ -228,11 +228,11 @@ int opt_default(const char *opt, const char *arg){
     if(!o && sws_opts)
         ret = av_set_string3(sws_opts, opt, arg, 1, &o);
     if(!o){
-        if(opt[0] == 'a')
+        if (opt[0] == 'a' && avcodec_opts[AVMEDIA_TYPE_AUDIO])
             ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_AUDIO], opt+1, arg, 1, &o);
-        else if(opt[0] == 'v')
+        else if(opt[0] == 'v' && avcodec_opts[AVMEDIA_TYPE_VIDEO])
             ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_VIDEO], opt+1, arg, 1, &o);
-        else if(opt[0] == 's')
+        else if(opt[0] == 's' && avcodec_opts[AVMEDIA_TYPE_SUBTITLE])
             ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_SUBTITLE], opt+1, arg, 1, &o);
     }
     if (o && ret < 0) {
