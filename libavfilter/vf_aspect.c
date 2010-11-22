@@ -66,9 +66,9 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     avfilter_start_frame(link->dst->outputs[0], picref);
 }
 
-#if CONFIG_ASPECT_FILTER
-/* for aspect filter, convert from frame aspect ratio to pixel aspect ratio */
-static int frameaspect_config_props(AVFilterLink *inlink)
+#if CONFIG_SETDAR_FILTER
+/* for setdar filter, convert from frame aspect ratio to pixel aspect ratio */
+static int setdar_config_props(AVFilterLink *inlink)
 {
     AspectContext *aspect = inlink->dst->priv;
 
@@ -79,9 +79,9 @@ static int frameaspect_config_props(AVFilterLink *inlink)
     return 0;
 }
 
-AVFilter avfilter_vf_aspect = {
-    .name      = "aspect",
-    .description = NULL_IF_CONFIG_SMALL("Set the frame aspect ratio."),
+AVFilter avfilter_vf_setdar = {
+    .name      = "setdar",
+    .description = NULL_IF_CONFIG_SMALL("Set the frame display aspect ratio."),
 
     .init      = init,
 
@@ -89,7 +89,7 @@ AVFilter avfilter_vf_aspect = {
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
-                                    .config_props     = frameaspect_config_props,
+                                    .config_props     = setdar_config_props,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .start_frame      = start_frame,
                                     .end_frame        = avfilter_null_end_frame },
@@ -99,12 +99,12 @@ AVFilter avfilter_vf_aspect = {
                                     .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };
-#endif /* CONFIG_ASPECT_FILTER */
+#endif /* CONFIG_SETDAR_FILTER */
 
-#if CONFIG_PIXELASPECT_FILTER
-AVFilter avfilter_vf_pixelaspect = {
-    .name      = "pixelaspect",
-    .description = NULL_IF_CONFIG_SMALL("Set the pixel aspect ratio."),
+#if CONFIG_SETSAR_FILTER
+AVFilter avfilter_vf_setsar = {
+    .name      = "setsar",
+    .description = NULL_IF_CONFIG_SMALL("Set the pixel sample aspect ratio."),
 
     .init      = init,
 
@@ -121,5 +121,5 @@ AVFilter avfilter_vf_pixelaspect = {
                                     .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };
-#endif /* CONFIG_PIXELASPECT_FILTER */
+#endif /* CONFIG_SETSAR_FILTER */
 

@@ -40,7 +40,6 @@ void avfilter_register_all(void)
 
     REGISTER_FILTER (ANULLSINK,   anullsink,   asink);
 
-    REGISTER_FILTER (ASPECT,      aspect,      vf);
     REGISTER_FILTER (BLACKFRAME,  blackframe,  vf);
     REGISTER_FILTER (CROP,        crop,        vf);
     REGISTER_FILTER (CROPDETECT,  cropdetect,  vf);
@@ -55,9 +54,10 @@ void avfilter_register_all(void)
     REGISTER_FILTER (OVERLAY,     overlay,     vf);
     REGISTER_FILTER (PAD,         pad,         vf);
     REGISTER_FILTER (PIXDESCTEST, pixdesctest, vf);
-    REGISTER_FILTER (PIXELASPECT, pixelaspect, vf);
     REGISTER_FILTER (SCALE,       scale,       vf);
+    REGISTER_FILTER (SETDAR,      setdar,      vf);
     REGISTER_FILTER (SETPTS,      setpts,      vf);
+    REGISTER_FILTER (SETSAR,      setsar,      vf);
     REGISTER_FILTER (SETTB,       settb,       vf);
     REGISTER_FILTER (SLICIFY,     slicify,     vf);
     REGISTER_FILTER (TRANSPOSE,   transpose,   vf);
