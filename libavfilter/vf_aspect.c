@@ -47,11 +47,11 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
             return AVERROR(EINVAL);
         }
 
-            gcd = av_gcd(FFABS(aspect->aspect.num), FFABS(aspect->aspect.den));
-            if (gcd) {
-                aspect->aspect.num /= gcd;
-                aspect->aspect.den /= gcd;
-            }
+        gcd = av_gcd(FFABS(aspect->aspect.num), FFABS(aspect->aspect.den));
+        if (gcd) {
+            aspect->aspect.num /= gcd;
+            aspect->aspect.den /= gcd;
+        }
     }
 
     if (aspect->aspect.den == 0)
