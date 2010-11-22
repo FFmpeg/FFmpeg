@@ -625,6 +625,12 @@ Optional @var{metadata} parameters specify, which metadata to copy - (g)lobal
 per-(p)rogram. All metadata specifiers other than global must be followed by the
 stream/chapter/program number. If metadata specifier is omitted, it defaults to
 global.
+
+By default, global metadata is copied from the first input file to all output files,
+per-stream and per-chapter metadata is copied along with streams/chapters. These
+default mappings are disabled by creating any mapping of the relevant type. A negative
+file index can be used to create a dummy mapping that just disables automatic copying.
+
 For example to copy metadata from the first stream of the input file to global metadata
 of the output file:
 @example
