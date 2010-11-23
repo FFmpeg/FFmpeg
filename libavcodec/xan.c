@@ -559,6 +559,7 @@ static av_cold int xan_decode_end(AVCodecContext *avctx)
 
     av_freep(&s->buffer1);
     av_freep(&s->buffer2);
+    av_freep(&s->palettes);
 
     return 0;
 }
