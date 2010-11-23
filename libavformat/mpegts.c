@@ -853,8 +853,8 @@ static PESContext *add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid)
     return pes;
 }
 
-static int mp4_read_iods(AVFormatContext *s, uint8_t *buf, unsigned size,
-                         uint16_t *es_id, uint8_t **dec_config_descr,
+static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
+                         int *es_id, uint8_t **dec_config_descr,
                          int *dec_config_descr_size)
 {
     ByteIOContext pb;
