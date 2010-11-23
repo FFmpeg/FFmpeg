@@ -23,7 +23,7 @@
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
 #define LIBAVFORMAT_VERSION_MINOR 86
-#define LIBAVFORMAT_VERSION_MICRO  0
+#define LIBAVFORMAT_VERSION_MICRO  1
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -148,6 +148,7 @@ struct AVFormatContext;
  * comment      -- any additional description of the file.
  * composer     -- who composed the work, if different from artist.
  * copyright    -- name of copyright holder.
+ * creation_time-- date when the file was created, preferably in ISO 8601.
  * date         -- date when the work was created, preferably in ISO 8601.
  * disc         -- number of a subset, e.g. disc in a multi-disc collection.
  * encoder      -- name/settings of the software/hardware that produced the file.
