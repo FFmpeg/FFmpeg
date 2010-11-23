@@ -21,9 +21,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+//#define DEBUG
+
 #include "avformat.h"
 #include "internal.h"
 #include "isom.h"
+#include "riff.h"
+#include "libavcodec/mpeg4audio.h"
+#include "libavcodec/mpegaudiodata.h"
 
 /* http://www.mp4ra.org */
 /* ordered by muxing preference */
@@ -325,4 +330,80 @@ int ff_mov_lang_to_iso639(unsigned code, char to[4])
         return 0;
     memcpy(to, mov_mdhd_language_map[code], 4);
     return 1;
+}
+
+int ff_mp4_read_descr_len(ByteIOContext *pb)
+{
+    int len = 0;
+    int count = 4;
+    while (count--) {
+        int c = get_byte(pb);
+        len = (len << 7) | (c & 0x7f);
+        if (!(c & 0x80))
+            break;
+    }
+    return len;
+}
+
+int ff_mp4_read_descr(AVFormatContext *fc, ByteIOContext *pb, int *tag)
+{
+    int len;
+    *tag = get_byte(pb);
+    len = ff_mp4_read_descr_len(pb);
+    dprintf(fc, "MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
+    return len;
+}
+
+static const AVCodecTag mp4_audio_types[] = {
+    { CODEC_ID_MP3ON4, AOT_PS   }, /* old mp3on4 draft */
+    { CODEC_ID_MP3ON4, AOT_L1   }, /* layer 1 */
+    { CODEC_ID_MP3ON4, AOT_L2   }, /* layer 2 */
+    { CODEC_ID_MP3ON4, AOT_L3   }, /* layer 3 */
+    { CODEC_ID_MP4ALS, AOT_ALS  }, /* MPEG-4 ALS */
+    { CODEC_ID_NONE,   AOT_NULL },
+};
+
+int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, ByteIOContext *pb)
+{
+    int len, tag;
+    int object_type_id = get_byte(pb);
+    get_byte(pb); /* stream type */
+    get_be24(pb); /* buffer size db */
+    get_be32(pb); /* max bitrate */
+    get_be32(pb); /* avg bitrate */
+
+    st->codec->codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
+    dprintf(fc, "esds object type id 0x%02x\n", object_type_id);
+    len = ff_mp4_read_descr(fc, pb, &tag);
+    if (tag == MP4DecSpecificDescrTag) {
+        dprintf(fc, "Specific MPEG4 header len=%d\n", len);
+        if((uint64_t)len > (1<<30))
+            return -1;
+        av_free(st->codec->extradata);
+        st->codec->extradata = av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!st->codec->extradata)
+            return AVERROR(ENOMEM);
+        get_buffer(pb, st->codec->extradata, len);
+        st->codec->extradata_size = len;
+        if (st->codec->codec_id == CODEC_ID_AAC) {
+            MPEG4AudioConfig cfg;
+            ff_mpeg4audio_get_config(&cfg, st->codec->extradata,
+                                     st->codec->extradata_size);
+            st->codec->channels = cfg.channels;
+            if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
+                st->codec->sample_rate = ff_mpa_freq_tab[cfg.sampling_index];
+            else if (cfg.ext_sample_rate)
+                st->codec->sample_rate = cfg.ext_sample_rate;
+            else
+                st->codec->sample_rate = cfg.sample_rate;
+            dprintf(fc, "mp4a config channels %d obj %d ext obj %d "
+                    "sample rate %d ext sample rate %d\n", st->codec->channels,
+                    cfg.object_type, cfg.ext_object_type,
+                    cfg.sample_rate, cfg.ext_sample_rate);
+            if (!(st->codec->codec_id = ff_codec_get_id(mp4_audio_types,
+                                                        cfg.object_type)))
+                st->codec->codec_id = CODEC_ID_AAC;
+        }
+    }
+    return 0;
 }
