@@ -200,6 +200,9 @@ static int config_input(AVFilterLink *link)
                              NULL, NULL, NULL, NULL, 0, ctx)) < 0)
         return AVERROR(EINVAL);
 
+    av_log(ctx, AV_LOG_INFO, "w:%d h:%d -> w:%d h:%d\n",
+           link->w, link->h, crop->w, crop->h, crop->x, crop->y);
+
     if (crop->w <= 0 || crop->h <= 0 ||
         crop->w > link->w || crop->h > link->h) {
         av_log(ctx, AV_LOG_ERROR,
