@@ -266,12 +266,8 @@ static int avi_read_tag(AVFormatContext *s, AVStream *st, uint32_t tag, uint32_t
 
     AV_WL32(key, tag);
 
-    if(st)
-        return av_metadata_set2(&st->metadata, key, value,
-                                    AV_METADATA_DONT_STRDUP_VAL);
-    else
-    return av_metadata_set2(&s->metadata, key, value,
-                                  AV_METADATA_DONT_STRDUP_VAL);
+    return av_metadata_set2(st ? &st->metadata : &s->metadata, key, value,
+                            AV_METADATA_DONT_STRDUP_VAL);
 }
 
 static void avi_read_info(AVFormatContext *s, uint64_t end)
