@@ -277,6 +277,7 @@ const AVMetadataConv ff_id3v2_metadata_conv[] = {
     { "TCOP", "copyright"},
     { "TDRL", "date"},
     { "TDRC", "date"},
+    { "TDEN", "creation_time"},
     { "TENC", "encoded_by"},
     { "TEN",  "encoded_by"},
     { "TIT2", "title"},
