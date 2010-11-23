@@ -956,7 +956,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     }
     p += program_info_length;
     if (p >= p_end)
-        return;
+        goto out;
 
     // stop parsing after pmt, we found header
     if (!ts->stream->nb_streams)
@@ -983,7 +983,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         }
 
         if (!st)
-            return;
+            goto out;
 
         if (!pes->stream_type)
             mpegts_set_stream_info(st, pes, stream_type, prog_reg_desc);
@@ -1082,8 +1082,11 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         }
         p = desc_list_end;
     }
+
     /* all parameters are there */
     mpegts_close_filter(ts, filter);
+ out:
+    av_free(mp4_dec_config_descr);
 }
 
 static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
