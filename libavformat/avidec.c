@@ -288,13 +288,17 @@ static void avi_metadata_creation_time(AVMetadata **metadata, char *date)
     int i, day, year;
     /* parse standard AVI date format (ie. "Mon Mar 10 15:04:43 2003") */
     if (sscanf(date, "%*3s%*[ ]%3s%*[ ]%2d%*[ ]%8s%*[ ]%4d",
-               month, &day, time, &year) == 4)
+               month, &day, time, &year) == 4) {
         for (i=0; i<12; i++)
             if (!strcasecmp(month, months[i])) {
                 snprintf(buffer, sizeof(buffer), "%.4d-%.2d-%.2d %s",
                          year, i+1, day, time);
                 av_metadata_set2(metadata, "creation_time", buffer, 0);
             }
+    } else if (date[4] == '/' && date[7] == '/') {
+        date[4] = date[7] = '-';
+        av_metadata_set2(metadata, "creation_time", date, 0);
+    }
 }
 
 static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
