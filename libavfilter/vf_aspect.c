@@ -81,7 +81,7 @@ static int setdar_config_props(AVFilterLink *inlink)
                aspect->aspect.den * inlink->w, 100);
 
     av_log(inlink->dst, AV_LOG_INFO, "w:%d h:%d -> dar:%d/%d par:%d/%d\n",
-           inlink->h, inlink->w, dar.num, dar.den, aspect->aspect.num, aspect->aspect.den);
+           inlink->w, inlink->h, dar.num, dar.den, aspect->aspect.num, aspect->aspect.den);
     return 0;
 }
 
