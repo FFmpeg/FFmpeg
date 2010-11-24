@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2006-2010 Michael Niedermayer <michaelni@gmx.at>
+ *               2010      James Darnley <james.darnley@gmail.com>
  *
  * This file is part of Libav.
  *
@@ -56,25 +57,6 @@ typedef struct {
     const AVPixFmtDescriptor *csp;
 } YADIFContext;
 
-static void filter_line_c(uint8_t *dst,
-                          uint8_t *prev, uint8_t *cur, uint8_t *next,
-                          int w, int prefs, int mrefs, int parity, int mode)
-{
-    int x;
-    uint8_t *prev2 = parity ? prev : cur ;
-    uint8_t *next2 = parity ? cur  : next;
-    for (x = 0;  x < w; x++) {
-        int c = cur[mrefs];
-        int d = (prev2[0] + next2[0])>>1;
-        int e = cur[prefs];
-        int temporal_diff0 = FFABS(prev2[0] - next2[0]);
-        int temporal_diff1 =(FFABS(prev[mrefs] - c) + FFABS(prev[prefs] - e) )>>1;
-        int temporal_diff2 =(FFABS(next[mrefs] - c) + FFABS(next[prefs] - e) )>>1;
-        int diff = FFMAX3(temporal_diff0>>1, temporal_diff1, temporal_diff2);
-        int spatial_pred = (c+e)>>1;
-        int spatial_score = FFABS(cur[mrefs-1] - cur[prefs-1]) + FFABS(c-e)
-                          + FFABS(cur[mrefs+1] - cur[prefs+1]) - 1;
-
 #define CHECK(j)\
     {   int score = FFABS(cur[mrefs-1+(j)] - cur[prefs-1-(j)])\
                   + FFABS(cur[mrefs  +(j)] - cur[prefs  -(j)])\
@@ -83,39 +65,68 @@ static void filter_line_c(uint8_t *dst,
             spatial_score= score;\
             spatial_pred= (cur[mrefs  +(j)] + cur[prefs  -(j)])>>1;\
 
-        CHECK(-1) CHECK(-2) }} }}
-        CHECK( 1) CHECK( 2) }} }}
-
-        if (mode < 2) {
-            int b = (prev2[2*mrefs] + next2[2*mrefs])>>1;
-            int f = (prev2[2*prefs] + next2[2*prefs])>>1;
-#if 0
-            int a = cur[-3*refs];
-            int g = cur[+3*refs];
-            int max = FFMAX3(d-e, d-c, FFMIN3(FFMAX(b-c,f-e),FFMAX(b-c,b-a),FFMAX(f-g,f-e)) );
-            int min = FFMIN3(d-e, d-c, FFMAX3(FFMIN(b-c,f-e),FFMIN(b-c,b-a),FFMIN(f-g,f-e)) );
-#else
-            int max = FFMAX3(d-e, d-c, FFMIN(b-c, f-e));
-            int min = FFMIN3(d-e, d-c, FFMAX(b-c, f-e));
-#endif
-
-            diff = FFMAX3(diff, min, -max);
-        }
-
-        if (spatial_pred > d + diff)
-           spatial_pred = d + diff;
-        else if (spatial_pred < d - diff)
-           spatial_pred = d - diff;
-
-        dst[0] = spatial_pred;
-
-        dst++;
-        cur++;
-        prev++;
-        next++;
-        prev2++;
-        next2++;
+#define FILTER \
+    for (x = 0;  x < w; x++) { \
+        int c = cur[mrefs]; \
+        int d = (prev2[0] + next2[0])>>1; \
+        int e = cur[prefs]; \
+        int temporal_diff0 = FFABS(prev2[0] - next2[0]); \
+        int temporal_diff1 =(FFABS(prev[mrefs] - c) + FFABS(prev[prefs] - e) )>>1; \
+        int temporal_diff2 =(FFABS(next[mrefs] - c) + FFABS(next[prefs] - e) )>>1; \
+        int diff = FFMAX3(temporal_diff0>>1, temporal_diff1, temporal_diff2); \
+        int spatial_pred = (c+e)>>1; \
+        int spatial_score = FFABS(cur[mrefs-1] - cur[prefs-1]) + FFABS(c-e) \
+                          + FFABS(cur[mrefs+1] - cur[prefs+1]) - 1; \
+ \
+        CHECK(-1) CHECK(-2) }} }} \
+        CHECK( 1) CHECK( 2) }} }} \
+ \
+        if (mode < 2) { \
+            int b = (prev2[2*mrefs] + next2[2*mrefs])>>1; \
+            int f = (prev2[2*prefs] + next2[2*prefs])>>1; \
+            int max = FFMAX3(d-e, d-c, FFMIN(b-c, f-e)); \
+            int min = FFMIN3(d-e, d-c, FFMAX(b-c, f-e)); \
+ \
+            diff = FFMAX3(diff, min, -max); \
+        } \
+ \
+        if (spatial_pred > d + diff) \
+           spatial_pred = d + diff; \
+        else if (spatial_pred < d - diff) \
+           spatial_pred = d - diff; \
+ \
+        dst[0] = spatial_pred; \
+ \
+        dst++; \
+        cur++; \
+        prev++; \
+        next++; \
+        prev2++; \
+        next2++; \
     }
+
+static void filter_line_c(uint8_t *dst,
+                          uint8_t *prev, uint8_t *cur, uint8_t *next,
+                          int w, int prefs, int mrefs, int parity, int mode)
+{
+    int x;
+    uint8_t *prev2 = parity ? prev : cur ;
+    uint8_t *next2 = parity ? cur  : next;
+
+    FILTER
+}
+
+static void filter_line_c_16bit(uint16_t *dst,
+                                uint16_t *prev, uint16_t *cur, uint16_t *next,
+                                int w, int prefs, int mrefs, int parity, int mode)
+{
+    int x;
+    uint16_t *prev2 = parity ? prev : cur ;
+    uint16_t *next2 = parity ? cur  : next;
+    mrefs /= 2;
+    prefs /= 2;
+
+    FILTER
 }
 
 static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
@@ -128,6 +139,7 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
         int w = dstpic->video->w;
         int h = dstpic->video->h;
         int refs = yadif->cur->linesize[i];
+        int df = (yadif->csp->comp[i].depth_minus1+1) / 8;
 
         if (i) {
         /* Why is this not part of the per-plane description thing? */
@@ -145,7 +157,7 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
                 yadif->filter_line(dst, prev, cur, next, w, y+1<h ? refs : -refs, y ? -refs : refs, parity ^ tff, mode);
             } else {
                 memcpy(&dstpic->data[i][y*dstpic->linesize[i]],
-                       &yadif->cur->data[i][y*refs], w);
+                       &yadif->cur->data[i][y*refs], w*df);
             }
         }
     }
@@ -191,6 +203,8 @@ static void return_frame(AVFilterContext *ctx, int is_second)
 
     if (!yadif->csp)
         yadif->csp = &av_pix_fmt_descriptors[link->format];
+    if (yadif->csp->comp[0].depth_minus1 == 15)
+        yadif->filter_line = filter_line_c_16bit;
 
     filter(ctx, yadif->out, tff ^ !is_second, tff);
 
@@ -311,8 +325,12 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_YUVJ420P,
         PIX_FMT_YUVJ422P,
         PIX_FMT_YUVJ444P,
+        AV_NE( PIX_FMT_GRAY16BE, PIX_FMT_GRAY16LE ),
         PIX_FMT_YUV440P,
         PIX_FMT_YUVJ440P,
+        AV_NE( PIX_FMT_YUV420P16BE, PIX_FMT_YUV420P16LE ),
+        AV_NE( PIX_FMT_YUV422P16BE, PIX_FMT_YUV422P16LE ),
+        AV_NE( PIX_FMT_YUV444P16BE, PIX_FMT_YUV444P16LE ),
         PIX_FMT_NONE
     };
 
