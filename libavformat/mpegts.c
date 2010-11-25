@@ -974,6 +974,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         /* now create ffmpeg stream */
         if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
             pes = ts->pids[pid]->u.pes_filter.opaque;
+            if (!pes->st)
+                pes->st = av_new_stream(pes->stream, pes->pid);
             st = pes->st;
         } else {
             if (ts->pids[pid]) mpegts_close_filter(ts, ts->pids[pid]); //wrongly added sdt filter probably
