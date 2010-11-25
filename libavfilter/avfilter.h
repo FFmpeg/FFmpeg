@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 64
+#define LIBAVFILTER_VERSION_MINOR 65
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -647,6 +647,21 @@ int avfilter_config_links(AVFilterContext *filter);
  */
 AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
                                           int w, int h);
+
+/**
+ * Create a buffer reference wrapped around an already allocated image
+ * buffer.
+ *
+ * @param data pointers to the planes of the image to reference
+ * @param linesize linesizes for the planes of the image to reference
+ * @param perms the required access permissions
+ * @param w the width of the image specified by the data and linesize arrays
+ * @param h the height of the image specified by the data and linesize arrays
+ * @param format the pixel format of the image specified by the data and linesize arrays
+ */
+AVFilterBufferRef *
+avfilter_get_video_buffer_ref_from_arrays(uint8_t *data[4], int linesize[4], int perms,
+                                          int w, int h, enum PixelFormat format);
 
 /**
  * Request an audio samples buffer with a specific set of permissions.

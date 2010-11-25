@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 
 API changes, most recent first:
+2010-11-22 - r25826 - lavfi 1.65.0 - avfilter_get_video_buffer_ref_from_arrays()
+  Add function avfilter_get_video_buffer_ref_from_arrays() in
+  avfilter.h.
 
 2010-11-21 - r25787 - lavcore 0.14.0 - audioconvert.h
   Add a public audio channel API in audioconvert.h, and deprecate the

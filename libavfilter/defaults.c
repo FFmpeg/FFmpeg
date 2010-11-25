@@ -37,49 +37,30 @@ void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
  * alloc & free cycle currently implemented. */
 AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
-    AVFilterBuffer *pic = av_mallocz(sizeof(AVFilterBuffer));
-    AVFilterBufferRef *ref = NULL;
-    int i, tempsize;
     char *buf = NULL;
+    int linesize[4], i, tempsize;
+    uint8_t *data[4];
+    AVFilterBufferRef *picref = NULL;
 
-    if (!pic || !(ref = av_mallocz(sizeof(AVFilterBufferRef))))
-        goto fail;
-
-    ref->buf         = pic;
-    ref->video       = av_mallocz(sizeof(AVFilterBufferRefVideoProps));
-    ref->video->w    = w;
-    ref->video->h    = h;
-
-    /* make sure the buffer gets read permission or it's useless for output */
-    ref->perms = perms | AV_PERM_READ;
-
-    pic->refcount = 1;
-    ref->format   = link->format;
-    pic->free     = ff_avfilter_default_free_buffer;
-    av_image_fill_linesizes(pic->linesize, ref->format, ref->video->w);
-
+    av_image_fill_linesizes(linesize, link->format, w);
     for (i = 0; i < 4; i++)
-        pic->linesize[i] = FFALIGN(pic->linesize[i], 16);
-
-    tempsize = av_image_fill_pointers(pic->data, ref->format, ref->video->h, NULL, pic->linesize);
+        linesize[i] = FFALIGN(linesize[i], 16);
+    tempsize = av_image_fill_pointers(data, link->format, h, NULL, linesize);
     buf = av_malloc(tempsize + 16); // +2 is needed for swscaler, +16 to be
                                     // SIMD-friendly
     if (!buf)
-        goto fail;
-    av_image_fill_pointers(pic->data, ref->format, ref->video->h, buf, pic->linesize);
+        return NULL;
 
-    memcpy(ref->data,     pic->data,     sizeof(ref->data));
-    memcpy(ref->linesize, pic->linesize, sizeof(ref->linesize));
+    av_image_fill_pointers(data, link->format, h, buf, linesize);
 
-    return ref;
+    picref = avfilter_get_video_buffer_ref_from_arrays(data, linesize,
+                                                       perms, w, h, link->format);
+    if (!picref) {
+        av_free(buf);
+        return NULL;
+    }
 
-fail:
-    av_free(buf);
-    if (ref && ref->video)
-        av_free(ref->video);
-    av_free(ref);
-    av_free(pic);
-    return NULL;
+    return picref;
 }
 
 AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int perms,
