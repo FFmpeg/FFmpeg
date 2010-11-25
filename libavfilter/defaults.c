@@ -23,9 +23,10 @@
 #include "libavcore/imgutils.h"
 #include "libavcore/samplefmt.h"
 #include "avfilter.h"
+#include "internal.h"
 
 /* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
-static void avfilter_default_free_buffer(AVFilterBuffer *ptr)
+void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
 {
     av_free(ptr->data[0]);
     av_free(ptr);
@@ -54,7 +55,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
 
     pic->refcount = 1;
     ref->format   = link->format;
-    pic->free     = avfilter_default_free_buffer;
+    pic->free     = ff_avfilter_default_free_buffer;
     av_image_fill_linesizes(pic->linesize, ref->format, ref->video->w);
 
     for (i = 0; i < 4; i++)
@@ -108,7 +109,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
     ref->perms = perms | AV_PERM_READ;
 
     samples->refcount   = 1;
-    samples->free       = avfilter_default_free_buffer;
+    samples->free       = ff_avfilter_default_free_buffer;
 
     sample_size = av_get_bits_per_sample_fmt(sample_fmt) >>3;
     chans_nb = av_get_channel_layout_nb_channels(channel_layout);
