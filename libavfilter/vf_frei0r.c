@@ -275,7 +275,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     Frei0rContext *frei0r = ctx->priv;
 
-    if (frei0r->destruct)
+    if (frei0r->destruct && frei0r->instance)
         frei0r->destruct(frei0r->instance);
     if (frei0r->deinit)
         frei0r->deinit();
