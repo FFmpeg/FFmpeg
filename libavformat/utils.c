@@ -2051,7 +2051,7 @@ static int has_codec_parameters(AVCodecContext *enc)
 static int has_decode_delay_been_guessed(AVStream *st)
 {
     return st->codec->codec_id != CODEC_ID_H264 ||
-        st->codec_info_nb_frames >= 4 + st->codec->has_b_frames;
+        st->codec_info_nb_frames >= 6 + st->codec->has_b_frames;
 }
 
 static int try_decode_frame(AVStream *st, AVPacket *avpkt)
