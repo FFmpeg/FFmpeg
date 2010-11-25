@@ -1083,8 +1083,6 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         p = desc_list_end;
     }
 
-    /* all parameters are there */
-    mpegts_close_filter(ts, filter);
  out:
     av_free(mp4_dec_config_descr);
 }
@@ -1122,6 +1120,8 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             /* NIT info */
         } else {
             av_new_program(ts->stream, sid);
+            if (ts->pids[pmt_pid])
+                mpegts_close_filter(ts, ts->pids[pmt_pid]);
             mpegts_open_section_filter(ts, pmt_pid, pmt_cb, ts, 1);
             add_pat_entry(ts, sid);
             add_pid_to_pmt(ts, sid, 0); //add pat pid to program
