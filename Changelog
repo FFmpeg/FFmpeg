@@ -59,6 +59,7 @@ version <next>:
 - overlay filter added
 - rename aspect filter to setdar, and pixelaspect to setsar
 - IEC 61937 demuxer
+- Mobotix .mxg demuxer
 
 
 version 0.6:

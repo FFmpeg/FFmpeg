@@ -256,6 +256,7 @@ enum CodecID {
     CODEC_ID_A64_MULTI,
     CODEC_ID_A64_MULTI5,
     CODEC_ID_R10K,
+    CODEC_ID_MXPEG,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
