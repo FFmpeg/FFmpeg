@@ -12,7 +12,7 @@ libavutil:   2009-03-08
 
 
 API changes, most recent first:
-2010-11-22 - r25826 - lavfi 1.65.0 - avfilter_get_video_buffer_ref_from_arrays()
+2010-11-25 - r25826 - lavfi 1.65.0 - avfilter_get_video_buffer_ref_from_arrays()
   Add function avfilter_get_video_buffer_ref_from_arrays() in
   avfilter.h.
 
