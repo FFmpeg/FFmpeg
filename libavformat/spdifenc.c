@@ -1,6 +1,8 @@
 /*
  * IEC958 muxer
  * Copyright (c) 2009 Bartlomiej Wolowiec
+ * Copyright (c) 2010 Anssi Hannula
+ * Copyright (c) 2010 Carl Eugen Hoyos
  *
  * This file is part of FFmpeg.
  *
