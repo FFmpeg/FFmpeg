@@ -63,6 +63,7 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
     rects[sub->num_rects]->ass  = av_malloc(len + dlen + 1);
     strcpy (rects[sub->num_rects]->ass      , header);
     strncpy(rects[sub->num_rects]->ass + len, dialog, dlen);
+    rects[sub->num_rects]->ass[len+dlen] = 0;
     sub->num_rects++;
     return dlen;
 }
