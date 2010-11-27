@@ -211,6 +211,66 @@ static int spdif_header_aac(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+
+/*
+ * It seems Dolby TrueHD frames have to be encapsulated in MAT frames before
+ * they can be encapsulated in IEC 61937.
+ * Here we encapsulate 24 TrueHD frames in a single MAT frame, padding them
+ * to achieve constant rate.
+ * The actual format of a MAT frame is unknown, but the below seems to work.
+ * However, it seems it is not actually necessary for the 24 TrueHD frames to
+ * be in an exact alignment with the MAT frame.
+ */
+#define MAT_FRAME_SIZE          61424
+#define TRUEHD_FRAME_OFFSET     2560
+#define MAT_MIDDLE_CODE_OFFSET  -4
+
+static int spdif_header_truehd(AVFormatContext *s, AVPacket *pkt)
+{
+    IEC958Context *ctx = s->priv_data;
+    int mat_code_length = 0;
+    const char mat_end_code[16] = { 0xC3, 0xC2, 0xC0, 0xC4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x97, 0x11 };
+
+    if (!ctx->hd_buf_count) {
+        const char mat_start_code[20] = { 0x07, 0x9E, 0x00, 0x03, 0x84, 0x01, 0x01, 0x01, 0x80, 0x00, 0x56, 0xA5, 0x3B, 0xF4, 0x81, 0x83, 0x49, 0x80, 0x77, 0xE0 };
+        mat_code_length = sizeof(mat_start_code) + BURST_HEADER_SIZE;
+        memcpy(ctx->hd_buf, mat_start_code, sizeof(mat_start_code));
+
+    } else if (ctx->hd_buf_count == 12) {
+        const char mat_middle_code[12] = { 0xC3, 0xC1, 0x42, 0x49, 0x3B, 0xFA, 0x82, 0x83, 0x49, 0x80, 0x77, 0xE0 };
+        mat_code_length = sizeof(mat_middle_code) + MAT_MIDDLE_CODE_OFFSET;
+        memcpy(&ctx->hd_buf[12 * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + MAT_MIDDLE_CODE_OFFSET],
+               mat_middle_code, sizeof(mat_middle_code));
+    }
+
+    if (pkt->size > TRUEHD_FRAME_OFFSET - mat_code_length) {
+        /* if such frames exist, we'd need some more complex logic to
+         * distribute the TrueHD frames in the MAT frame */
+        av_log(s, AV_LOG_ERROR, "TrueHD frame too big, %d bytes\n", pkt->size);
+        av_log_ask_for_sample(s, NULL);
+        return -1;
+    }
+
+    memcpy(&ctx->hd_buf[ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length],
+           pkt->data, pkt->size);
+    memset(&ctx->hd_buf[ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length + pkt->size],
+           0, TRUEHD_FRAME_OFFSET - pkt->size - mat_code_length);
+
+    if (++ctx->hd_buf_count < 24){
+        ctx->pkt_offset = 0;
+        return 0;
+    }
+    memcpy(&ctx->hd_buf[MAT_FRAME_SIZE - sizeof(mat_end_code)], mat_end_code, sizeof(mat_end_code));
+    ctx->hd_buf_count = 0;
+
+    ctx->data_type   = IEC958_TRUEHD;
+    ctx->pkt_offset  = 61440;
+    ctx->out_buf     = ctx->hd_buf;
+    ctx->out_bytes   = MAT_FRAME_SIZE;
+    ctx->length_code = MAT_FRAME_SIZE;
+    return 0;
+}
+
 static int spdif_write_header(AVFormatContext *s)
 {
     IEC958Context *ctx = s->priv_data;
@@ -232,6 +292,12 @@ static int spdif_write_header(AVFormatContext *s)
         break;
     case CODEC_ID_AAC:
         ctx->header_info = spdif_header_aac;
+        break;
+    case CODEC_ID_TRUEHD:
+        ctx->header_info = spdif_header_truehd;
+        ctx->hd_buf = av_malloc(MAT_FRAME_SIZE);
+        if (!ctx->hd_buf)
+            return AVERROR(ENOMEM);
         break;
     default:
         av_log(s, AV_LOG_ERROR, "codec not supported\n");

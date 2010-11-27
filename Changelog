@@ -55,7 +55,7 @@ version <next>:
 - Win64 support for optimized asm functions
 - MJPEG/AVI1 to JPEG/JFIF bitstream filter
 - ASS subtitle encoder and decoder
-- IEC 61937 encapsulation for E-AC3 (for HDMI passthrough)
+- IEC 61937 encapsulation for E-AC3 and TrueHD (for HDMI passthrough)
 - overlay filter added
 - rename aspect filter to setdar, and pixelaspect to setsar
 - IEC 61937 demuxer
