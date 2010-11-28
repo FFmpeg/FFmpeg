@@ -339,24 +339,24 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                     av_strlcpy(rt->control_uri, p,
                                sizeof(rt->control_uri));
             } else {
-            char proto[32];
-            /* get the control url */
-            st = s->streams[s->nb_streams - 1];
-            rtsp_st = st->priv_data;
+                char proto[32];
+                /* get the control url */
+                st = s->streams[s->nb_streams - 1];
+                rtsp_st = st->priv_data;
 
-            /* XXX: may need to add full url resolution */
-            av_url_split(proto, sizeof(proto), NULL, 0, NULL, 0,
-                         NULL, NULL, 0, p);
-            if (proto[0] == '\0') {
-                /* relative control URL */
-                if (rtsp_st->control_url[strlen(rtsp_st->control_url)-1]!='/')
-                av_strlcat(rtsp_st->control_url, "/",
-                           sizeof(rtsp_st->control_url));
-                av_strlcat(rtsp_st->control_url, p,
-                           sizeof(rtsp_st->control_url));
-            } else
-                av_strlcpy(rtsp_st->control_url, p,
-                           sizeof(rtsp_st->control_url));
+                /* XXX: may need to add full url resolution */
+                av_url_split(proto, sizeof(proto), NULL, 0, NULL, 0,
+                             NULL, NULL, 0, p);
+                if (proto[0] == '\0') {
+                    /* relative control URL */
+                    if (rtsp_st->control_url[strlen(rtsp_st->control_url)-1]!='/')
+                    av_strlcat(rtsp_st->control_url, "/",
+                               sizeof(rtsp_st->control_url));
+                    av_strlcat(rtsp_st->control_url, p,
+                               sizeof(rtsp_st->control_url));
+                } else
+                    av_strlcpy(rtsp_st->control_url, p,
+                               sizeof(rtsp_st->control_url));
             }
         } else if (av_strstart(p, "rtpmap:", &p) && s->nb_streams > 0) {
             /* NOTE: rtpmap is only supported AFTER the 'm=' tag */
