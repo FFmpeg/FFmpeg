@@ -1,8 +1,8 @@
 /*
- * Copyright (C) 2010 Stefano Sabatini
- * Copyright (C) 2006 Ivo van Poorten
- * Copyright (C) 2006 Julian Hall
- * Copyright (C) 2002-2003 Brian J. Murrell
+ * Copyright (c) 2010 Stefano Sabatini
+ * Copyright (c) 2006 Ivo van Poorten
+ * Copyright (c) 2006 Julian Hall
+ * Copyright (c) 2002-2003 Brian J. Murrell
  *
  * This file is part of FFmpeg.
  *

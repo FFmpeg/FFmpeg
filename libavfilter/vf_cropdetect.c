@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002 A'rpi
+ * Copyright (c) 2002 A'rpi
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or modify

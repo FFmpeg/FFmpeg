@@ -1,6 +1,6 @@
 /*
  * filter registration
- * copyright (c) 2008 Vitor Sessak
+ * Copyright (c) 2008 Vitor Sessak
  *
  * This file is part of FFmpeg.
  *

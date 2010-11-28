@@ -1,5 +1,5 @@
 /*
- * copyright (c) 2010 Stefano Sabatini
+ * Copyright (c) 2010 Stefano Sabatini
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or

@@ -1,7 +1,6 @@
 /*
- * Ported to FFmpeg from MPlayer libmpcodecs/unsharp.c
- * Original copyright (C) 2002 Remi Guyomarch <rguyom@pobox.com>
- * Port copyright (C) 2010 Daniel G. Taylor <dan@programmer-art.org>
+ * Original copyright (c) 2002 Remi Guyomarch <rguyom@pobox.com>
+ * Port copyright (c) 2010 Daniel G. Taylor <dan@programmer-art.org>
  * Relicensed to the LGPL with permission from Remi Guyomarch.
  *
  * This file is part of FFmpeg.
@@ -23,7 +22,8 @@
 
 /**
  * @file
- * blur / sharpen filter
+ * blur / sharpen filter, ported to FFmpeg from MPlayer
+ * libmpcodecs/unsharp.c.
  *
  * This code is based on:
  *

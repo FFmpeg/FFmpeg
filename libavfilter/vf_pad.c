@@ -1,6 +1,6 @@
 /*
- * copyright (c) 2008 vmrsss
- * copyright (c) 2009 Stefano Sabatini
+ * Copyright (c) 2008 vmrsss
+ * Copyright (c) 2009 Stefano Sabatini
  *
  * This file is part of FFmpeg.
  *

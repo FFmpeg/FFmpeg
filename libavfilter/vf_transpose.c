@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2010 Stefano Sabatini
- * Copyright (C) 2008 Vitor Sessak
+ * Copyright (c) 2010 Stefano Sabatini
+ * Copyright (c) 2008 Vitor Sessak
  *
  * This file is part of FFmpeg.
  *
