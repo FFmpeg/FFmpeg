@@ -797,13 +797,17 @@ static int mpegts_push_data(MpegTSFilter *filter,
             break;
         case MPEGTS_PAYLOAD:
             if (buf_size > 0 && pes->buffer) {
-                if (pes->data_index+buf_size > pes->total_size) {
+                if (pes->data_index > 0 && pes->data_index+buf_size > pes->total_size) {
                     new_pes_packet(pes, ts->pkt);
                     pes->total_size = MAX_PES_PAYLOAD;
                     pes->buffer = av_malloc(pes->total_size+FF_INPUT_BUFFER_PADDING_SIZE);
                     if (!pes->buffer)
                         return AVERROR(ENOMEM);
                     ts->stop_parse = 1;
+                } else if (pes->data_index == 0 && buf_size > pes->total_size) {
+                    // pes packet size is < ts size packet and pes data is padded with 0xff
+                    // not sure if this is legal in ts but see issue #2392
+                    buf_size = pes->total_size;
                 }
                 memcpy(pes->buffer+pes->data_index, p, buf_size);
                 pes->data_index += buf_size;
