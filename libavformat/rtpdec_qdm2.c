@@ -309,7 +309,6 @@ RTPDynamicProtocolHandler ff_qdm2_dynamic_handler = {
     .enc_name         = "X-QDM",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = CODEC_ID_NONE,
-    .parse_sdp_a_line = NULL,
     .open             = qdm2_extradata_new,
     .close            = qdm2_extradata_free,
     .parse_packet     = qdm2_parse_packet,

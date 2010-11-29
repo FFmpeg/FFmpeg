@@ -128,7 +128,6 @@ RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {
     .enc_name         = "X-SV3V-ES",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = CODEC_ID_NONE,      // see if (config_packet) above
-    .parse_sdp_a_line = NULL,               // parse sdp line
     .open             = svq3_extradata_new,
     .close            = svq3_extradata_free,
     .parse_packet     = svq3_parse_packet,
