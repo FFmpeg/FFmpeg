@@ -60,6 +60,7 @@ version <next>:
 - rename aspect filter to setdar, and pixelaspect to setsar
 - IEC 61937 demuxer
 - Mobotix .mxg demuxer
+- frei0r source added
 
 
 version 0.6:

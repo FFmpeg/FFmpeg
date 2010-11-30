@@ -46,6 +46,7 @@ OBJS-$(CONFIG_YADIF_FILTER)                  += vf_yadif.o
 
 OBJS-$(CONFIG_BUFFER_FILTER)                 += vsrc_buffer.o
 OBJS-$(CONFIG_COLOR_FILTER)                  += vf_pad.o
+OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
 OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o

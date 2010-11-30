@@ -27,6 +27,7 @@
 #include <dlfcn.h>
 #include <frei0r.h>
 #include "libavutil/avstring.h"
+#include "libavcore/imgutils.h"
 #include "libavcore/parseutils.h"
 #include "avfilter.h"
 
@@ -54,6 +55,11 @@ typedef struct Frei0rContext {
     f0r_destruct_f        destruct;
     f0r_deinit_f          deinit;
     char params[256];
+
+    /* only used by the source */
+    int w, h;
+    AVRational time_base;
+    uint64_t pts;
 } Frei0rContext;
 
 static void *load_sym(AVFilterContext *ctx, const char *sym_name)
@@ -197,18 +203,14 @@ static void *load_path(AVFilterContext *ctx, const char *prefix, const char *nam
     return dlopen(path, RTLD_NOW|RTLD_LOCAL);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int frei0r_init(AVFilterContext *ctx,
+                               const char *dl_name, int type)
 {
     Frei0rContext *frei0r = ctx->priv;
     f0r_init_f            f0r_init;
     f0r_get_plugin_info_f f0r_get_plugin_info;
     f0r_plugin_info_t *pi;
-    char dl_name[1024], *path;
-
-    *frei0r->params = 0;
-
-    if (args)
-        sscanf(args, "%1023[^:]:%255c", dl_name, frei0r->params);
+    char *path;
 
     /* see: http://piksel.org/frei0r/1.2/spec/1.2/spec/group__pluglocations.html */
     if ((path = av_strdup(getenv("FREI0R_PATH")))) {
@@ -250,9 +252,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     f0r_get_plugin_info(&frei0r->plugin_info);
     pi = &frei0r->plugin_info;
-    if (pi->plugin_type != F0R_PLUGIN_TYPE_FILTER) {
+    if (pi->plugin_type != type) {
         av_log(ctx, AV_LOG_ERROR,
-               "Invalid type '%s' for the plugin, a filter plugin was expected\n",
+               "Invalid type '%s' for the plugin\n",
+               pi->plugin_type == F0R_PLUGIN_TYPE_FILTER ? "filter" :
                pi->plugin_type == F0R_PLUGIN_TYPE_SOURCE ? "source" :
                pi->plugin_type == F0R_PLUGIN_TYPE_MIXER2 ? "mixer2" :
                pi->plugin_type == F0R_PLUGIN_TYPE_MIXER3 ? "mixer3" : "unknown");
@@ -269,6 +272,18 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
            pi->frei0r_version, pi->major_version, pi->minor_version, pi->num_params);
 
     return 0;
+}
+
+static av_cold int filter_init(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    Frei0rContext *frei0r = ctx->priv;
+    char dl_name[1024];
+    *frei0r->params = 0;
+
+    if (args)
+        sscanf(args, "%1023[^:]:%255c", dl_name, frei0r->params);
+
+    return frei0r_init(ctx, dl_name, F0R_PLUGIN_TYPE_FILTER);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -344,7 +359,7 @@ AVFilter avfilter_vf_frei0r = {
     .description = NULL_IF_CONFIG_SMALL("Apply a frei0r effect."),
 
     .query_formats = query_formats,
-    .init = init,
+    .init = filter_init,
     .uninit = uninit,
 
     .priv_size = sizeof(Frei0rContext),
@@ -359,5 +374,91 @@ AVFilter avfilter_vf_frei0r = {
 
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO, },
+                                  { .name = NULL}},
+};
+
+static av_cold int source_init(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    Frei0rContext *frei0r = ctx->priv;
+    char dl_name[1024], c;
+    char frame_size[128] = "";
+    char frame_rate[128] = "";
+    AVRational frame_rate_q;
+
+    memset(frei0r->params, 0, sizeof(frei0r->params));
+
+    if (args)
+        sscanf(args, "%127[^:]:%127[^:]:%1023[^:=]%c%255c",
+               frame_size, frame_rate, dl_name, &c, frei0r->params);
+
+    if (av_parse_video_size(&frei0r->w, &frei0r->h, frame_size) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: '%s'\n", frame_size);
+        return AVERROR(EINVAL);
+    }
+
+    if (av_parse_video_rate(&frame_rate_q, frame_rate) < 0 ||
+        frame_rate_q.den <= 0 || frame_rate_q.num <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: '%s'\n", frame_rate);
+        return AVERROR(EINVAL);
+    }
+    frei0r->time_base.num = frame_rate_q.den;
+    frei0r->time_base.den = frame_rate_q.num;
+
+    return frei0r_init(ctx, dl_name, F0R_PLUGIN_TYPE_SOURCE);
+}
+
+static int source_config_props(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    Frei0rContext *frei0r = ctx->priv;
+
+    if (av_image_check_size(frei0r->w, frei0r->h, 0, ctx) < 0)
+        return AVERROR(EINVAL);
+    outlink->w = frei0r->w;
+    outlink->h = frei0r->h;
+    outlink->time_base = frei0r->time_base;
+
+    if (!(frei0r->instance = frei0r->construct(outlink->w, outlink->h))) {
+        av_log(ctx, AV_LOG_ERROR, "Impossible to load frei0r instance");
+        return AVERROR(EINVAL);
+    }
+
+    return set_params(ctx, frei0r->params);
+}
+
+static int source_request_frame(AVFilterLink *outlink)
+{
+    Frei0rContext *frei0r = outlink->src->priv;
+    AVFilterBufferRef *picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    picref->video->pixel_aspect = (AVRational) {1, 1};
+    picref->pts = frei0r->pts++;
+    picref->pos = -1;
+
+    avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+    frei0r->update(frei0r->instance, av_rescale_q(picref->pts, frei0r->time_base, (AVRational){1,1000}),
+                   NULL, (uint32_t *)picref->data[0]);
+    avfilter_draw_slice(outlink, 0, outlink->h, 1);
+    avfilter_end_frame(outlink);
+    avfilter_unref_buffer(picref);
+
+    return 0;
+}
+
+AVFilter avfilter_vsrc_frei0r_src = {
+    .name        = "frei0r_src",
+    .description = NULL_IF_CONFIG_SMALL("Generate a frei0r source."),
+
+    .priv_size = sizeof(Frei0rContext),
+    .init      = source_init,
+    .uninit    = uninit,
+
+    .query_formats = query_formats,
+
+    .inputs    = (AVFilterPad[]) {{ .name = NULL}},
+
+    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+                                    .type            = AVMEDIA_TYPE_VIDEO,
+                                    .request_frame   = source_request_frame,
+                                    .config_props    = source_config_props },
                                   { .name = NULL}},
 };

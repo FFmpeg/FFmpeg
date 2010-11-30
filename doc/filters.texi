@@ -283,6 +283,7 @@ The following command:
 
 will convert the input video to the format "yuv420p".
 
+@anchor{frei0r}
 @section frei0r
 
 Apply a frei0r effect to the input video.
@@ -868,6 +869,34 @@ respectively 352 and 288 (corresponding to the CIF size format).
 @var{timebase} specifies an arithmetic expression representing a
 timebase. The expression can contain the constants "PI", "E", "PHI",
 "AVTB" (the default timebase), and defaults to the value "AVTB".
+
+@section frei0r_src
+
+Provide a frei0r source.
+
+To enable compilation of this filter you need to install the frei0r
+header and configure FFmpeg with --enable-frei0r.
+
+The source supports the syntax:
+@example
+@var{size}:@var{rate}:@var{src_name}[@{=|:@}@var{param1}:@var{param2}:...:@var{paramN}]
+@end example
+
+@var{size} is the size of the video to generate, may be a string of the
+form @var{width}x@var{height} or a frame size abbreviation.
+@var{rate} is the rate of the video to generate, may be a string of
+the form @var{num}/@var{den} or a frame rate abbreviation.
+@var{src_name} is the name to the frei0r source to load. For more
+information regarding frei0r and how to set the parameters read the
+section "frei0r" (@pxref{frei0r}) in the description of the video
+filters.
+
+Some examples follow:
+@example
+# generate a frei0r partik0l source with size 200x200 and framerate 10
+# which is overlayed on the overlay filter main input
+frei0r_src=200x200:10:partik0l=1234 [overlay]; [in][overlay] overlay
+@end example
 
 @c man end VIDEO SOURCES
 
