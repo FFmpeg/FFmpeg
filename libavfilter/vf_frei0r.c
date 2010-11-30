@@ -277,11 +277,11 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
 static av_cold int filter_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     Frei0rContext *frei0r = ctx->priv;
-    char dl_name[1024];
+    char dl_name[1024], c;
     *frei0r->params = 0;
 
     if (args)
-        sscanf(args, "%1023[^:]:%255c", dl_name, frei0r->params);
+        sscanf(args, "%1023[^:=]%c%255c", dl_name, &c, frei0r->params);
 
     return frei0r_init(ctx, dl_name, F0R_PLUGIN_TYPE_FILTER);
 }

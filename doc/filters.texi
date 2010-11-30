@@ -293,7 +293,7 @@ header and configure FFmpeg with --enable-frei0r.
 
 The filter supports the syntax:
 @example
-@var{filter_name}:@var{param1}:@var{param2}:...:@var{paramN}
+@var{filter_name}[@{:|=@}@var{param1}:@var{param2}:...:@var{paramN}]
 @end example
 
 @var{filter_name} is the name to the frei0r effect to load. If the
