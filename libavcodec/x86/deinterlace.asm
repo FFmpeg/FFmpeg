@@ -27,6 +27,8 @@ SECTION_RODATA
 
 cextern pw_4
 
+SECTION .text
+
 %macro DEINTERLACE 1
 %ifidn %1, inplace
 ;void ff_deinterlace_line_inplace_mmx(const uint8_t *lum_m4, const uint8_t *lum_m3, const uint8_t *lum_m2, const uint8_t *lum_m1, const uint8_t *lum,  int size)
