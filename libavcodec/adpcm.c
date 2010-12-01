@@ -382,6 +382,12 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
                     dec_sample = av_clip_int16(dec_sample);\
                     d = sample - dec_sample;\
                     ssd = nodes[j]->ssd + d*d;\
+                    /* Check for wraparound, skip such samples completely. \
+                     * Note, changing ssd to a 64 bit variable would be \
+                     * simpler, avoiding this check, but it's slower on \
+                     * x86 32 bit at the moment. */\
+                    if (ssd < nodes[j]->ssd)\
+                        goto next_##NAME;\
                     /* Collapse any two states with the same previous sample value. \
                      * One could also distinguish states by step and by 2nd to last
                      * sample, but the effects of that are negligible.
