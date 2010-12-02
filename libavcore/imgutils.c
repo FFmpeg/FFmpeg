@@ -71,6 +71,8 @@ int av_image_fill_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
         return AVERROR(EINVAL);
 
     if (desc->flags & PIX_FMT_BITSTREAM) {
+        if (width > (INT_MAX -7) / (desc->comp[0].step_minus1+1))
+            return AVERROR(EINVAL);
         linesizes[0] = (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
         return 0;
     }
@@ -78,7 +80,10 @@ int av_image_fill_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
     av_image_fill_max_pixsteps(max_step, max_step_comp, desc);
     for (i = 0; i < 4; i++) {
         int s = (max_step_comp[i] == 1 || max_step_comp[i] == 2) ? desc->log2_chroma_w : 0;
-        linesizes[i] = max_step[i] * (((width + (1 << s) - 1)) >> s);
+        int shifted_w = ((width + (1 << s) - 1)) >> s;
+        if (max_step[i] > INT_MAX / shifted_w)
+            return AVERROR(EINVAL);
+        linesizes[i] = max_step[i] * shifted_w;
     }
 
     return 0;
@@ -98,6 +103,8 @@ int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int heigh
         return AVERROR(EINVAL);
 
     data[0] = ptr;
+    if (linesizes[0] > (INT_MAX - 1024) / height)
+        return AVERROR(EINVAL);
     size[0] = linesizes[0] * height;
 
     if (desc->flags & PIX_FMT_PAL) {
@@ -114,7 +121,11 @@ int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int heigh
         int h, s = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
         data[i] = data[i-1] + size[i-1];
         h = (height + (1 << s) - 1) >> s;
+        if (linesizes[i] > INT_MAX / h)
+            return AVERROR(EINVAL);
         size[i] = h * linesizes[i];
+        if (total_size > INT_MAX - size[i])
+            return AVERROR(EINVAL);
         total_size += size[i];
     }
 
