@@ -356,22 +356,16 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
 
     graph = avfilter_graph_alloc();
 
-    if ((ret = avfilter_open(&ist->input_video_filter, avfilter_get_by_name("buffer"), "src")) < 0)
-        return ret;
-    if ((ret = avfilter_open(&ist->output_video_filter, &ffsink, "out")) < 0)
-        return ret;
-
     snprintf(args, 255, "%d:%d:%d:%d:%d", ist->st->codec->width,
              ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE);
-    if ((ret = avfilter_init_filter(ist->input_video_filter, args, NULL)) < 0)
+    ret = avfilter_graph_create_filter(&ist->input_video_filter, avfilter_get_by_name("buffer"),
+                                       "src", args, NULL, graph);
+    if (ret < 0)
         return ret;
-    if ((ret = avfilter_init_filter(ist->output_video_filter, NULL, &ffsink_ctx)) < 0)
+    ret = avfilter_graph_create_filter(&ist->output_video_filter, &ffsink,
+                                       "out", NULL, &ffsink_ctx, graph);
+    if (ret < 0)
         return ret;
-
-    /* add input and output filters to the overall graph */
-    avfilter_graph_add_filter(graph, ist->input_video_filter);
-    avfilter_graph_add_filter(graph, ist->output_video_filter);
-
     last_filter = ist->input_video_filter;
 
     if (codec->width  != icodec->width || codec->height != icodec->height) {
@@ -379,14 +373,12 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
                  codec->width,
                  codec->height,
                  (int)av_get_int(sws_opts, "sws_flags", NULL));
-        if ((ret = avfilter_open(&filter, avfilter_get_by_name("scale"), NULL)) < 0)
-            return ret;
-        if ((ret = avfilter_init_filter(filter, args, NULL)) < 0)
+        if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
+                                                NULL, args, NULL, graph)) < 0)
             return ret;
         if ((ret = avfilter_link(last_filter, 0, filter, 0)) < 0)
             return ret;
         last_filter = filter;
-        avfilter_graph_add_filter(graph, last_filter);
     }
 
     snprintf(args, sizeof(args), "flags=0x%X", (int)av_get_int(sws_opts, "sws_flags", NULL));

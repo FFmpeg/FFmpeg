@@ -1798,12 +1798,12 @@ static int video_thread(void *arg)
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
-    if (avfilter_open(&filt_src, &input_filter,  "src") < 0) goto the_end;
-    if (avfilter_open(&filt_out, &ffsink      ,  "out") < 0) goto the_end;
-
-    if(avfilter_init_filter(filt_src, NULL, is))             goto the_end;
-    if(avfilter_init_filter(filt_out, NULL, &ffsink_ctx))    goto the_end;
-
+    if (avfilter_graph_create_filter(&filt_src, &input_filter, "src",
+                                     NULL, is, graph) < 0)
+        goto the_end;
+    if (avfilter_graph_create_filter(&filt_out, &ffsink, "out",
+                                     NULL, &ffsink_ctx, graph) < 0)
+        goto the_end;
 
     if(vfilters) {
         AVFilterInOut *outputs = av_malloc(sizeof(AVFilterInOut));
@@ -1825,8 +1825,6 @@ static int video_thread(void *arg)
     } else {
         if(avfilter_link(filt_src, 0, filt_out, 0) < 0)          goto the_end;
     }
-    avfilter_graph_add_filter(graph, filt_src);
-    avfilter_graph_add_filter(graph, filt_out);
 
     if (avfilter_graph_config(graph, NULL) < 0)
         goto the_end;

@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 
 API changes, most recent first:
+2010-12-02 - r25862 - lavfi 1.67.0 - avfilter_graph_create_filter()
+  Add function avfilter_graph_create_filter() in avfiltergraph.h.
+
 2010-11-25 - r25826 - lavfi 1.65.0 - avfilter_get_video_buffer_ref_from_arrays()
   Add function avfilter_get_video_buffer_ref_from_arrays() in
   avfilter.h.
