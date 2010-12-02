@@ -22,6 +22,7 @@
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
 #include "apetag.h"
+#include "id3v1.h"
 
 #define MPC_FRAMESIZE  1152
 #define DELAY_FRAMES   32
@@ -95,6 +96,8 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!url_is_streamed(s->pb)) {
         int64_t pos = url_ftell(s->pb);
         ff_ape_parse_tag(s);
+        if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
+            ff_id3v1_read(s);
         url_fseek(s->pb, pos, SEEK_SET);
     }
 
