@@ -27,6 +27,8 @@
 #include "mpegts.h"
 #include "adts.h"
 
+#define PCR_TIME_BASE 27000000
+
 /* write DVB SI sections */
 
 /*********************************************/
@@ -60,7 +62,7 @@ typedef struct MpegTSWrite {
     int nb_services;
     int onid;
     int tsid;
-    uint64_t cur_pcr;
+    int64_t first_pcr;
     int mux_rate; ///< set to 1 when VBR
 } MpegTSWrite;
 
@@ -109,8 +111,6 @@ static void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
 
         buf_ptr += len1;
         len -= len1;
-
-        ts->cur_pcr += TS_PACKET_SIZE*8*90000LL/ts->mux_rate;
     }
 }
 
@@ -489,7 +489,7 @@ static int mpegts_write_header(AVFormatContext *s)
         ts->pat_packet_period      = (ts->mux_rate * PAT_RETRANS_TIME) /
             (TS_PACKET_SIZE * 8 * 1000);
 
-        ts->cur_pcr = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
+        ts->first_pcr = av_rescale(s->max_delay, PCR_TIME_BASE, AV_TIME_BASE);
     } else {
         /* Arbitrary values, PAT/PMT could be written on key frames */
         ts->sdt_packet_period = 200;
@@ -556,6 +556,26 @@ static void retransmit_si_info(AVFormatContext *s)
     }
 }
 
+static int64_t get_pcr(const MpegTSWrite *ts, ByteIOContext *pb)
+{
+    return av_rescale(url_ftell(pb) + 11, 8 * PCR_TIME_BASE, ts->mux_rate) +
+           ts->first_pcr;
+}
+
+static uint8_t* write_pcr_bits(uint8_t *buf, int64_t pcr)
+{
+    int64_t pcr_low = pcr % 300, pcr_high = pcr / 300;
+
+    *buf++ = pcr_high >> 25;
+    *buf++ = pcr_high >> 17;
+    *buf++ = pcr_high >> 9;
+    *buf++ = pcr_high >> 1;
+    *buf++ = ((pcr_high & 1) << 7) | (pcr_low >> 8);
+    *buf++ = pcr_low;
+
+    return buf;
+}
+
 /* Write a single null transport stream packet */
 static void mpegts_insert_null_packet(AVFormatContext *s)
 {
@@ -570,7 +590,6 @@ static void mpegts_insert_null_packet(AVFormatContext *s)
     *q++ = 0x10;
     memset(q, 0x0FF, TS_PACKET_SIZE - (q - buf));
     put_buffer(s->pb, buf, TS_PACKET_SIZE);
-    ts->cur_pcr += TS_PACKET_SIZE*8*90000LL/ts->mux_rate;
 }
 
 /* Write a single transport stream packet with a PCR and no payload */
@@ -579,7 +598,6 @@ static void mpegts_insert_pcr_only(AVFormatContext *s, AVStream *st)
     MpegTSWrite *ts = s->priv_data;
     MpegTSWriteStream *ts_st = st->priv_data;
     uint8_t *q;
-    uint64_t pcr = ts->cur_pcr;
     uint8_t buf[TS_PACKET_SIZE];
 
     q = buf;
@@ -592,17 +610,11 @@ static void mpegts_insert_pcr_only(AVFormatContext *s, AVStream *st)
     *q++ = 0x10;               /* Adaptation flags: PCR present */
 
     /* PCR coded into 6 bytes */
-    *q++ = pcr >> 25;
-    *q++ = pcr >> 17;
-    *q++ = pcr >> 9;
-    *q++ = pcr >> 1;
-    *q++ = (pcr & 1) << 7;
-    *q++ = 0;
+    q = write_pcr_bits(q, get_pcr(ts, s->pb));
 
     /* stuffing bytes */
     memset(q, 0xFF, TS_PACKET_SIZE - (q - buf));
     put_buffer(s->pb, buf, TS_PACKET_SIZE);
-    ts->cur_pcr += TS_PACKET_SIZE*8*90000LL/ts->mux_rate;
 }
 
 static void write_pts(uint8_t *q, int fourbits, int64_t pts)
@@ -653,7 +665,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         }
 
         if (ts->mux_rate > 1 && dts != AV_NOPTS_VALUE &&
-            (dts - (int64_t)ts->cur_pcr) > delay) {
+            (dts - get_pcr(ts, s->pb)/300) > delay) {
             /* pcr insert gets priority over null packet insert */
             if (write_pcr)
                 mpegts_insert_pcr_only(s, st);
@@ -675,19 +687,14 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         if (write_pcr) {
             // add 11, pcr references the last byte of program clock reference base
             if (ts->mux_rate > 1)
-                pcr = ts->cur_pcr + (4+7)*8*90000LL / ts->mux_rate;
+                pcr = get_pcr(ts, s->pb);
             else
-                pcr = dts - delay;
-            if (dts != AV_NOPTS_VALUE && dts < pcr)
+                pcr = (dts - delay)*300;
+            if (dts != AV_NOPTS_VALUE && dts < pcr / 300)
                 av_log(s, AV_LOG_WARNING, "dts < pcr, TS is invalid\n");
             *q++ = 7; /* AFC length */
             *q++ = 0x10; /* flags: PCR present */
-            *q++ = pcr >> 25;
-            *q++ = pcr >> 17;
-            *q++ = pcr >> 9;
-            *q++ = pcr >> 1;
-            *q++ = (pcr & 1) << 7;
-            *q++ = 0;
+            q = write_pcr_bits(q, pcr);
         }
         if (is_start) {
             int pes_extension = 0;
@@ -802,7 +809,6 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         payload += len;
         payload_size -= len;
         put_buffer(s->pb, buf, TS_PACKET_SIZE);
-        ts->cur_pcr += TS_PACKET_SIZE*8*90000LL/ts->mux_rate;
     }
     put_flush_packet(s->pb);
 }
