@@ -1138,7 +1138,20 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
 
     url_fseek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET);
     get_guid(s->pb, &g);
-    if (!guidcmp(&g, &index_guid)) {
+
+    /* the data object can be followed by other top-level objects,
+       skip them until the simple index object is reached */
+    while (guidcmp(&g, &index_guid)) {
+        int64_t gsize= get_le64(s->pb);
+        if (gsize < 24 || url_feof(s->pb)) {
+            url_fseek(s->pb, current_pos, SEEK_SET);
+            return;
+        }
+        url_fseek(s->pb, gsize-24, SEEK_CUR);
+        get_guid(s->pb, &g);
+    }
+
+    {
         int64_t itime, last_pos=-1;
         int pct, ict;
         int64_t av_unused gsize= get_le64(s->pb);
