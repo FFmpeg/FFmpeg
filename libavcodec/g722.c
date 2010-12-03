@@ -43,6 +43,8 @@
 
 #define PREV_SAMPLES_BUF_SIZE 1024
 
+#define FREEZE_INTERVAL 128
+
 typedef struct {
     int16_t prev_samples[PREV_SAMPLES_BUF_SIZE]; ///< memory of past decoded samples
     int     prev_samples_pos;        ///< the number of values in prev_samples
@@ -61,6 +63,17 @@ typedef struct {
         int16_t log_factor;          ///< delayed 2-logarithmic quantizer factor
         int16_t scale_factor;        ///< delayed quantizer scale factor
     } band[2];
+
+    struct TrellisNode {
+        struct G722Band state;
+        uint32_t ssd;
+        int path;
+    } *node_buf[2], **nodep_buf[2];
+
+    struct TrellisPath {
+        int value;
+        int prev;
+    } *paths[2];
 } G722Context;
 
 
@@ -216,6 +229,29 @@ static av_cold int g722_init(AVCodecContext * avctx)
     if (avctx->lowres)
         avctx->sample_rate /= 2;
 
+    if (avctx->trellis) {
+        int frontier = 1 << avctx->trellis;
+        int max_paths = frontier * FREEZE_INTERVAL;
+        int i;
+        for (i = 0; i < 2; i++) {
+            c->paths[i] = av_mallocz(max_paths * sizeof(**c->paths));
+            c->node_buf[i] = av_mallocz(2 * frontier * sizeof(**c->node_buf));
+            c->nodep_buf[i] = av_mallocz(2 * frontier * sizeof(**c->nodep_buf));
+        }
+    }
+
+    return 0;
+}
+
+static av_cold int g722_close(AVCodecContext *avctx)
+{
+    G722Context *c = avctx->priv_data;
+    int i;
+    for (i = 0; i < 2; i++) {
+        av_freep(&c->paths[i]);
+        av_freep(&c->node_buf[i]);
+        av_freep(&c->nodep_buf[i]);
+    }
     return 0;
 }
 
@@ -351,12 +387,173 @@ static inline int encode_low(const struct G722Band* state, int xlow)
     return (diff < 0 ? (i < 2 ? 63 : 33) : 61) - i;
 }
 
+static int g722_encode_trellis(AVCodecContext *avctx,
+                               uint8_t *dst, int buf_size, void *data)
+{
+    G722Context *c = avctx->priv_data;
+    const int16_t *samples = data;
+    int i, j, k;
+    int frontier = 1 << avctx->trellis;
+    struct TrellisNode **nodes[2];
+    struct TrellisNode **nodes_next[2];
+    int pathn[2] = {0, 0}, froze = -1;
+    struct TrellisPath *p[2];
+
+    for (i = 0; i < 2; i++) {
+        nodes[i] = c->nodep_buf[i];
+        nodes_next[i] = c->nodep_buf[i] + frontier;
+        memset(c->nodep_buf[i], 0, 2 * frontier * sizeof(*c->nodep_buf));
+        nodes[i][0] = c->node_buf[i] + frontier;
+        nodes[i][0]->ssd = 0;
+        nodes[i][0]->path = 0;
+        nodes[i][0]->state = c->band[i];
+    }
+
+    for (i = 0; i < buf_size >> 1; i++) {
+        int xlow, xhigh;
+        struct TrellisNode *next[2];
+        int heap_pos[2] = {0, 0};
+
+        for (j = 0; j < 2; j++) {
+            next[j] = c->node_buf[j] + frontier*(i & 1);
+            memset(nodes_next[j], 0, frontier * sizeof(**nodes_next));
+        }
+
+        filter_samples(c, &samples[2*i], &xlow, &xhigh);
+
+        for (j = 0; j < frontier && nodes[0][j]; j++) {
+            /* Only k >> 2 affects the future adaptive state, therefore testing
+             * small steps that don't change k >> 2 is useless, the orignal
+             * value from encode_low is better than them. Since we step k
+             * in steps of 4, make sure range is a multiple of 4, so that
+             * we don't miss the original value from encode_low. */
+            int range = j < frontier/2 ? 4 : 0;
+            struct TrellisNode *cur_node = nodes[0][j];
+
+            int ilow = encode_low(&cur_node->state, xlow);
+
+            for (k = ilow - range; k <= ilow + range && k <= 63; k += 4) {
+                int decoded, dec_diff, pos;
+                uint32_t ssd;
+                struct TrellisNode* node;
+
+                if (k < 0)
+                    continue;
+
+                decoded = av_clip((cur_node->state.scale_factor *
+                                  low_inv_quant6[k] >> 10)
+                                + cur_node->state.s_predictor, -16384, 16383);
+                dec_diff = xlow - decoded;
+
+#define STORE_NODE(index, UPDATE, VALUE)\
+                ssd = cur_node->ssd + dec_diff*dec_diff;\
+                /* Check for wraparound. Using 64 bit ssd counters would \
+                 * be simpler, but is slower on x86 32 bit. */\
+                if (ssd < cur_node->ssd)\
+                    continue;\
+                if (heap_pos[index] < frontier) {\
+                    pos = heap_pos[index]++;\
+                    assert(pathn[index] < FREEZE_INTERVAL * frontier);\
+                    node = nodes_next[index][pos] = next[index]++;\
+                    node->path = pathn[index]++;\
+                } else {\
+                    /* Try to replace one of the leaf nodes with the new \
+                     * one, but not always testing the same leaf position */\
+                    pos = (frontier>>1) + (heap_pos[index] & ((frontier>>1) - 1));\
+                    if (ssd >= nodes_next[index][pos]->ssd)\
+                        continue;\
+                    heap_pos[index]++;\
+                    node = nodes_next[index][pos];\
+                }\
+                node->ssd = ssd;\
+                node->state = cur_node->state;\
+                UPDATE;\
+                c->paths[index][node->path].value = VALUE;\
+                c->paths[index][node->path].prev = cur_node->path;\
+                /* Sift the newly inserted node up in the heap to restore \
+                 * the heap property */\
+                while (pos > 0) {\
+                    int parent = (pos - 1) >> 1;\
+                    if (nodes_next[index][parent]->ssd <= ssd)\
+                        break;\
+                    FFSWAP(struct TrellisNode*, nodes_next[index][parent],\
+                                                nodes_next[index][pos]);\
+                    pos = parent;\
+                }
+                STORE_NODE(0, update_low_predictor(&node->state, k >> 2), k);
+            }
+        }
+
+        for (j = 0; j < frontier && nodes[1][j]; j++) {
+            int ihigh;
+            struct TrellisNode *cur_node = nodes[1][j];
+
+            /* We don't try to get any initial guess for ihigh via
+             * encode_high - since there's only 4 possible values, test
+             * them all. Testing all of these gives a much, much larger
+             * gain than testing a larger range around ilow. */
+            for (ihigh = 0; ihigh < 4; ihigh++) {
+                int dhigh, decoded, dec_diff, pos;
+                uint32_t ssd;
+                struct TrellisNode* node;
+
+                dhigh = cur_node->state.scale_factor *
+                        high_inv_quant[ihigh] >> 10;
+                decoded = av_clip(dhigh + cur_node->state.s_predictor,
+                                  -16384, 16383);
+                dec_diff = xhigh - decoded;
+
+                STORE_NODE(1, update_high_predictor(&node->state, dhigh, ihigh), ihigh);
+            }
+        }
+
+        for (j = 0; j < 2; j++) {
+            FFSWAP(struct TrellisNode**, nodes[j], nodes_next[j]);
+
+            if (nodes[j][0]->ssd > (1 << 16)) {
+                for (k = 1; k < frontier && nodes[j][k]; k++)
+                    nodes[j][k]->ssd -= nodes[j][0]->ssd;
+                nodes[j][0]->ssd = 0;
+            }
+        }
+
+        if (i == froze + FREEZE_INTERVAL) {
+            p[0] = &c->paths[0][nodes[0][0]->path];
+            p[1] = &c->paths[1][nodes[1][0]->path];
+            for (j = i; j > froze; j--) {
+                dst[j] = p[1]->value << 6 | p[0]->value;
+                p[0] = &c->paths[0][p[0]->prev];
+                p[1] = &c->paths[1][p[1]->prev];
+            }
+            froze = i;
+            pathn[0] = pathn[1] = 0;
+            memset(nodes[0] + 1, 0, (frontier - 1)*sizeof(**nodes));
+            memset(nodes[1] + 1, 0, (frontier - 1)*sizeof(**nodes));
+        }
+    }
+
+    p[0] = &c->paths[0][nodes[0][0]->path];
+    p[1] = &c->paths[1][nodes[1][0]->path];
+    for (j = i; j > froze; j--) {
+        dst[j] = p[1]->value << 6 | p[0]->value;
+        p[0] = &c->paths[0][p[0]->prev];
+        p[1] = &c->paths[1][p[1]->prev];
+    }
+    c->band[0] = nodes[0][0]->state;
+    c->band[1] = nodes[1][0]->state;
+
+    return i;
+}
+
 static int g722_encode_frame(AVCodecContext *avctx,
                              uint8_t *dst, int buf_size, void *data)
 {
     G722Context *c = avctx->priv_data;
     const int16_t *samples = data;
     int i;
+
+    if (avctx->trellis)
+        return g722_encode_trellis(avctx, dst, buf_size, data);
 
     for (i = 0; i < buf_size >> 1; i++) {
         int xlow, xhigh, ihigh, ilow;
@@ -377,6 +574,7 @@ AVCodec adpcm_g722_encoder = {
     .id             = CODEC_ID_ADPCM_G722,
     .priv_data_size = sizeof(G722Context),
     .init           = g722_init,
+    .close          = g722_close,
     .encode         = g722_encode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
     .sample_fmts    = (enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
