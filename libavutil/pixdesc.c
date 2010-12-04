@@ -851,3 +851,17 @@ int av_get_bits_per_pixel(const AVPixFmtDescriptor *pixdesc)
 
     return bits >> log2_pixels;
 }
+
+char *av_get_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
+{
+    /* print header */
+    if (pix_fmt < 0) {
+        snprintf (buf, buf_size, "name      " " nb_components" " nb_bits");
+    } else {
+        const AVPixFmtDescriptor *pixdesc = &av_pix_fmt_descriptors[pix_fmt];
+        snprintf(buf, buf_size, "%-11s %7d %10d",
+                 pixdesc->name, pixdesc->nb_components, av_get_bits_per_pixel(pixdesc));
+    }
+
+    return buf;
+}

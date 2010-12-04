@@ -142,6 +142,18 @@ void av_write_image_line(const uint16_t *src, uint8_t *data[4], const int linesi
 enum PixelFormat av_get_pix_fmt(const char *name);
 
 /**
+ * Print in buf the string corresponding to the pixel format with
+ * number pix_fmt, or an header if pix_fmt is negative.
+ *
+ * @param buf the buffer where to write the string
+ * @param buf_size the size of buf
+ * @param pix_fmt the number of the pixel format to print the
+ * corresponding info string, or a negative value to print the
+ * corresponding header.
+ */
+char *av_get_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt);
+
+/**
  * Return the number of bits per pixel used by the pixel format
  * described by pixdesc.
  *

@@ -33,7 +33,7 @@
 
 #define LIBAVCODEC_VERSION_MAJOR 52
 #define LIBAVCODEC_VERSION_MINOR 97
-#define LIBAVCODEC_VERSION_MICRO  2
+#define LIBAVCODEC_VERSION_MICRO  3
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -3285,18 +3285,12 @@ int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_
 enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelFormat src_pix_fmt,
                               int has_alpha, int *loss_ptr);
 
-
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
- * Print in buf the string corresponding to the pixel format with
- * number pix_fmt, or an header if pix_fmt is negative.
- *
- * @param[in] buf the buffer where to write the string
- * @param[in] buf_size the size of buf
- * @param[in] pix_fmt the number of the pixel format to print the corresponding info string, or
- * a negative value to print the corresponding header.
- * Meaningful values for obtaining a pixel format info vary from 0 to PIX_FMT_NB -1.
+ * @deprecated Use av_get_pix_fmt_string() instead.
  */
 void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt);
+#endif
 
 #define FF_ALPHA_TRANSP       0x0001 /* image has some totally transparent pixels */
 #define FF_ALPHA_SEMI_TRANSP  0x0002 /* image has some transparent pixels */
