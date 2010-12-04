@@ -25,4 +25,12 @@ void ff_yadif_filter_line_mmx(uint8_t *dst,
                               uint8_t *prev, uint8_t *cur, uint8_t *next,
                               int w, int refs, int parity, int mode);
 
+void ff_yadif_filter_line_sse2(uint8_t *dst,
+                               uint8_t *prev, uint8_t *cur, uint8_t *next,
+                               int w, int refs, int parity, int mode);
+
+void ff_yadif_filter_line_ssse3(uint8_t *dst,
+                                uint8_t *prev, uint8_t *cur, uint8_t *next,
+                                int w, int refs, int parity, int mode);
+
 #endif /* AVFILTER_YADIF_H */
