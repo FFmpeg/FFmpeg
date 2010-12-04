@@ -3289,6 +3289,7 @@ enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelForma
 /**
  * @deprecated Use av_get_pix_fmt_string() instead.
  */
+attribute_deprecated
 void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt);
 #endif
 
