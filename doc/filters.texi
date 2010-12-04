@@ -344,6 +344,33 @@ For example to horizontally flip the video in input with
 ffmpeg -i in.avi -vf "hflip" out.avi
 @end example
 
+@section hqdn3d
+
+High precision/quality 3d denoise filter. This filter aims to reduce
+image noise producing smooth images and making still images really
+still. It should enhance compressibility.
+
+It accepts the following optional parameters:
+@var{luma_spatial}:@var{chroma_spatial}:@var{luma_tmp}:@var{chroma_tmp}
+
+@table @option
+@item luma_spatial
+a non-negative float number which specifies spatial luma strength,
+defaults to 4.0
+
+@item chroma_spatial
+a non-negative float number which specifies spatial chroma strength,
+defaults to 3.0*@var{luma_spatial}/4.0
+
+@item luma_tmp
+a float number which specifies luma temporal strength, defaults to
+6.0*@var{luma_spatial}/4.0
+
+@item chroma_tmp
+a float number which specifies chroma temporal strength, defaults to
+@var{luma_tmp}*@var{chroma_spatial}/@var{luma_spatial}
+@end table
+
 @section noformat
 
 Force libavfilter not to use any of the specified pixel formats for the

@@ -61,6 +61,7 @@ version <next>:
 - IEC 61937 demuxer
 - Mobotix .mxg demuxer
 - frei0r source added
+- hqdn3d filter added
 
 
 version 0.6:
