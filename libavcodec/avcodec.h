@@ -83,6 +83,12 @@
 #define FF_API_OLD_AUDIOCONVERT (LIBAVCODEC_VERSION_MAJOR < 53)
 #endif
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
+#   define FF_INTERNALC_MEM_TYPE unsigned int
+#else
+#   define FF_INTERNALC_MEM_TYPE size_t
+#endif
+
 #define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
 #define AV_TIME_BASE            1000000
 #define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
@@ -4007,7 +4013,7 @@ AVBitStreamFilter *av_bitstream_filter_next(AVBitStreamFilter *f);
  *
  * @see av_realloc
  */
-void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
+void *av_fast_realloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_size);
 
 /**
  * Allocate a buffer, reusing the given one if large enough.
@@ -4021,7 +4027,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
  * @param min_size minimum size of *ptr buffer after returning, *ptr will be NULL and
  *                 *size 0 if an error occurred.
  */
-void av_fast_malloc(void *ptr, unsigned int *size, unsigned int min_size);
+void av_fast_malloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_size);
 
 #if LIBAVCODEC_VERSION_MAJOR < 53
 /**
