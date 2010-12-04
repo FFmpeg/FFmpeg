@@ -261,6 +261,13 @@ static int decode_slice(MpegEncContext *s){
 
     assert(s->mb_x==0 && s->mb_y==s->mb_height);
 
+    if(s->codec_id==CODEC_ID_MPEG4
+       && (s->workaround_bugs&FF_BUG_AUTODETECT)
+       && get_bits_left(&s->gb) >= 48
+       && show_bits(&s->gb, 24)==0x4010
+       && !s->data_partitioning)
+        s->padding_bug_score+=32;
+
     /* try to detect the padding bug */
     if(      s->codec_id==CODEC_ID_MPEG4
        &&   (s->workaround_bugs&FF_BUG_AUTODETECT)
