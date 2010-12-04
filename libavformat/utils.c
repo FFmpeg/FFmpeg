@@ -274,6 +274,8 @@ enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
         return codec_id;
     }else if(type == AVMEDIA_TYPE_AUDIO)
         return fmt->audio_codec;
+    else if (type == AVMEDIA_TYPE_SUBTITLE)
+        return fmt->subtitle_codec;
     else
         return CODEC_ID_NONE;
 }
