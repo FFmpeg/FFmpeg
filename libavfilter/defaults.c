@@ -37,26 +37,18 @@ void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
  * alloc & free cycle currently implemented. */
 AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
-    char *buf = NULL;
-    int linesize[4], i, tempsize;
+    int linesize[4];
     uint8_t *data[4];
     AVFilterBufferRef *picref = NULL;
 
-    av_image_fill_linesizes(linesize, link->format, w);
-    for (i = 0; i < 4; i++)
-        linesize[i] = FFALIGN(linesize[i], 16);
-    tempsize = av_image_fill_pointers(data, link->format, h, NULL, linesize);
-    buf = av_malloc(tempsize + 16); // +2 is needed for swscaler, +16 to be
-                                    // SIMD-friendly
-    if (!buf)
+    // +2 is needed for swscaler, +16 to be SIMD-friendly
+    if (av_image_alloc(data, linesize, w, h, link->format, 16) < 0)
         return NULL;
-
-    av_image_fill_pointers(data, link->format, h, buf, linesize);
 
     picref = avfilter_get_video_buffer_ref_from_arrays(data, linesize,
                                                        perms, w, h, link->format);
     if (!picref) {
-        av_free(buf);
+        av_free(data[0]);
         return NULL;
     }
 

@@ -78,6 +78,19 @@ int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int heigh
                            uint8_t *ptr, const int linesizes[4]);
 
 /**
+ * Allocate an image with size w and h and pixel format pix_fmt, and
+ * fill pointers and linesizes accordingly.
+ * The allocated image buffer has to be freed by using
+ * av_freep(&pointers[0]).
+ *
+ * @param align the value to use for buffer size alignment
+ * @return the size in bytes required for the image buffer, a negative
+ * error code in case of failure
+ */
+int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
+                   int w, int h, enum PixelFormat pix_fmt, int align);
+
+/**
  * Copy image plane from src to dst.
  * That is, copy "height" number of lines of "bytewidth" bytes each.
  * The first byte of each successive line is separated by *_linesize

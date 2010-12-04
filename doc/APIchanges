@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 
 API changes, most recent first:
+2010-12-04 - r25878 - lavcore 1.15.0 - av_image_alloc()
+  Add av_image_alloc() to libavcore/imgutils.h.
+
 2010-12-02 - r25862 - lavfi 1.67.0 - avfilter_graph_create_filter()
   Add function avfilter_graph_create_filter() in avfiltergraph.h.
 
