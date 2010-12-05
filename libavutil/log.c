@@ -62,9 +62,9 @@ static void colored_fputs(int level, const char *str){
             background = attr_orig & 0xF0;
         }
 #elif HAVE_ISATTY
-        use_color= getenv("TERM") && !getenv("NO_COLOR") && isatty(2);
+        use_color= !getenv("NO_COLOR") && (getenv("TERM") && isatty(2) || getenv("FFMPEG_FORCE_COLOR"));
 #else
-        use_color= 0;
+        use_color= getenv("FFMPEG_FORCE_COLOR") && !getenv("NO_COLOR");
 #endif
     }
 

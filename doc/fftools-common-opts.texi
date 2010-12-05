@@ -84,6 +84,7 @@ Set the logging level used by the library.
 
 By default the program logs to stderr, if coloring is supported by the
 terminal, colors are used to mark errors and warnings. Log coloring
-can be disabled setting the environment variable @env{NO_COLOR}.
+can be disabled setting the environment variable @env{NO_COLOR}, or can
+be forced setting the environment variable @env{FFMPEG_FORCE_COLOR}.
 
 @end table
