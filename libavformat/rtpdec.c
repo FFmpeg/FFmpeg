@@ -27,6 +27,7 @@
 #include "mpegts.h"
 
 #include <unistd.h>
+#include <strings.h>
 #include "network.h"
 
 #include "rtpdec.h"
@@ -76,6 +77,30 @@ void av_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_qt_rtp_vid_handler);
     ff_register_dynamic_payload_handler(&ff_quicktime_rtp_aud_handler);
     ff_register_dynamic_payload_handler(&ff_quicktime_rtp_vid_handler);
+}
+
+RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
+                                                  enum AVMediaType codec_type)
+{
+    RTPDynamicProtocolHandler *handler;
+    for (handler = RTPFirstDynamicPayloadHandler;
+         handler; handler = handler->next)
+        if (!strcasecmp(name, handler->enc_name) &&
+            codec_type == handler->codec_type)
+            return handler;
+    return NULL;
+}
+
+RTPDynamicProtocolHandler *ff_rtp_handler_find_by_id(int id,
+                                                enum AVMediaType codec_type)
+{
+    RTPDynamicProtocolHandler *handler;
+    for (handler = RTPFirstDynamicPayloadHandler;
+         handler; handler = handler->next)
+        if (handler->static_payload_id && handler->static_payload_id == id &&
+            codec_type == handler->codec_type)
+            return handler;
+    return NULL;
 }
 
 static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int len)
