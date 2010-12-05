@@ -129,7 +129,8 @@ static int vp8_handle_packet(AVFormatContext *ctx,
 
 static PayloadContext *vp8_new_context(void)
 {
-    av_log(NULL, AV_LOG_WARNING, "RTP VP8 payload is still experimental\n");
+    av_log(NULL, AV_LOG_ERROR, "RTP VP8 payload implementation is incompatible "
+                               "with the latest spec drafts.\n");
     return av_mallocz(sizeof(PayloadContext));
 }
 

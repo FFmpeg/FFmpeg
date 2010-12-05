@@ -147,7 +147,8 @@ static int rtp_write_header(AVFormatContext *s1)
         s->num_frames = 0;
         goto defaultcase;
     case CODEC_ID_VP8:
-        av_log(s1, AV_LOG_WARNING, "RTP VP8 payload is still experimental\n");
+        av_log(s1, AV_LOG_ERROR, "RTP VP8 payload implementation is "
+                                 "incompatible with the latest spec drafts.\n");
         break;
     case CODEC_ID_ADPCM_G722:
         /* Due to a historical error, the clock rate for G722 in RTP is
