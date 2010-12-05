@@ -326,8 +326,13 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             rtsp_st->stream_index = st->index;
             st->codec->codec_type = codec_type;
             if (rtsp_st->sdp_payload_type < RTP_PT_PRIVATE) {
+                RTPDynamicProtocolHandler *handler;
                 /* if standard payload type, we can find the codec right now */
                 ff_rtp_get_codec_info(st->codec, rtsp_st->sdp_payload_type);
+                /* Even static payload types may need a custom depacketizer */
+                handler = ff_rtp_handler_find_by_id(
+                              rtsp_st->sdp_payload_type, st->codec->codec_type);
+                init_rtp_handler(handler, rtsp_st, st->codec);
             }
         }
         /* put a default control url */
