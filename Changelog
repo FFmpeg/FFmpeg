@@ -62,6 +62,7 @@ version <next>:
 - Mobotix .mxg demuxer
 - frei0r source added
 - hqdn3d filter added
+- RTP depacketization of QCELP
 
 
 version 0.6:

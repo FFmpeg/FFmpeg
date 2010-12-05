@@ -41,6 +41,7 @@ extern RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_ms_rtp_asf_pfa_handler;
 extern RTPDynamicProtocolHandler ff_ms_rtp_asf_pfv_handler;
+extern RTPDynamicProtocolHandler ff_qcelp_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_qdm2_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_qt_rtp_aud_handler;
 extern RTPDynamicProtocolHandler ff_qt_rtp_vid_handler;
