@@ -62,7 +62,7 @@
             MOVQ"      "MM"2, "MM"5 \n\t"\
             "pxor      "MM"3, "MM"4 \n\t"\
             "pavgb     "MM"3, "MM"5 \n\t"\
-            "pand     "MANGLE(ff_pb_1)", "MM"4 \n\t"\
+            "pand     "MANGLE(pb_1)", "MM"4 \n\t"\
             "psubusb   "MM"4, "MM"5 \n\t"\
             PSRL1(MM"5")                 \
             "punpcklbw "MM"7, "MM"5 \n\t" /* (cur[x-refs+j] + cur[x+refs-j])>>1 */\
@@ -92,7 +92,7 @@
 
 #define CHECK2 /* pretend not to have checked dir=2 if dir=1 was bad.\
                   hurts both quality and speed, but matches the C version. */\
-            "paddw    "MANGLE(ff_pw_1)", "MM"6 \n\t"\
+            "paddw    "MANGLE(pw_1)", "MM"6 \n\t"\
             "psllw     $14,   "MM"6 \n\t"\
             "paddsw    "MM"6, "MM"2 \n\t"\
             MOVQ"      "MM"0, "MM"3 \n\t"\
@@ -167,7 +167,7 @@ void RENAME(ff_yadif_filter_line)(uint8_t *dst,
             "punpcklbw "MM"7, "MM"3 \n\t" /* ABS(cur[x-refs+1] - cur[x+refs+1]) */\
             "paddw     "MM"2, "MM"0 \n\t"\
             "paddw     "MM"3, "MM"0 \n\t"\
-            "psubw    "MANGLE(ff_pw_1)", "MM"0 \n\t" /* spatial_score */\
+            "psubw    "MANGLE(pw_1)", "MM"0 \n\t" /* spatial_score */\
 \
             CHECK(-2,0)\
             CHECK1\

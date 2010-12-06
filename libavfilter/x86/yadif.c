@@ -20,7 +20,11 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
+#include "libavcodec/x86/dsputil_mmx.h"
 #include "libavfilter/yadif.h"
+
+DECLARE_ASM_CONST(16, const xmm_reg, pb_1) = {0x0101010101010101ULL, 0x0101010101010101ULL};
+DECLARE_ASM_CONST(16, const xmm_reg, pw_1) = {0x0001000100010001ULL, 0x0001000100010001ULL};
 
 #if HAVE_SSSE3
 #define COMPILE_TEMPLATE_SSE 1
