@@ -475,6 +475,12 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
         return -1;
     }
 
+    if (buf[0] & 0x20) {
+        int padding = buf[len - 1];
+        if (len >= 12 + padding)
+            len -= padding;
+    }
+
     s->seq = seq;
     len -= 12;
     buf += 12;
