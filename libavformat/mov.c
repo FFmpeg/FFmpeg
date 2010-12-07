@@ -1230,6 +1230,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, ByteIOContext *pb, int entries)
         if (st->codec->extradata_size == 36) {
             st->codec->frame_size = AV_RB32(st->codec->extradata+12);
             st->codec->channels   = AV_RB8 (st->codec->extradata+21);
+            st->codec->sample_rate = AV_RB32(st->codec->extradata+32);
         }
         break;
     default:
