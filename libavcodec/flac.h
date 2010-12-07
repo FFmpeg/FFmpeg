@@ -28,6 +28,7 @@
 #define AVCODEC_FLAC_H
 
 #include "avcodec.h"
+#include "get_bits.h"
 
 #define FLAC_STREAMINFO_SIZE   34
 #define FLAC_MAX_CHANNELS       8
@@ -120,4 +121,13 @@ void ff_flac_parse_block_header(const uint8_t *block_header,
  */
 int ff_flac_get_max_frame_size(int blocksize, int ch, int bps);
 
+/**
+ * Validate and decode a frame header.
+ * @param      avctx AVCodecContext to use as av_log() context
+ * @param      gb    GetBitContext from which to read frame header
+ * @param[out] fi    frame information
+ * @return non-zero on error, 0 if ok
+ */
+int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
+                                FLACFrameInfo *fi);
 #endif /* AVCODEC_FLAC_H */
