@@ -61,10 +61,6 @@ typedef struct FLACContext {
     int got_streaminfo;                     ///< indicates if the STREAMINFO has been read
 
     int32_t *decoded[FLAC_MAX_CHANNELS];    ///< decoded samples
-    uint8_t *bitstream;
-    unsigned int bitstream_size;
-    unsigned int bitstream_index;
-    unsigned int allocated_bitstream_size;
 } FLACContext;
 
 static void allocate_buffers(FLACContext *s);
@@ -140,20 +136,10 @@ static void allocate_buffers(FLACContext *s)
 
     assert(s->max_blocksize);
 
-    if (s->max_framesize == 0 && s->max_blocksize) {
-        s->max_framesize = ff_flac_get_max_frame_size(s->max_blocksize,
-                                                      s->channels, s->bps);
-    }
-
     for (i = 0; i < s->channels; i++) {
         s->decoded[i] = av_realloc(s->decoded[i],
                                    sizeof(int32_t)*s->max_blocksize);
     }
-
-    if (s->allocated_bitstream_size < s->max_framesize)
-        s->bitstream= av_fast_realloc(s->bitstream,
-                                      &s->allocated_bitstream_size,
-                                      s->max_framesize);
 }
 
 void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
@@ -563,7 +549,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     FLACContext *s = avctx->priv_data;
-    int i, j = 0, input_buf_size = 0, bytes_read = 0;
+    int i, j = 0, bytes_read = 0;
     int16_t *samples_16 = data;
     int32_t *samples_32 = data;
     int alloc_data_size= *data_size;
@@ -575,41 +561,13 @@ static int flac_decode_frame(AVCodecContext *avctx,
         s->max_framesize =
             ff_flac_get_max_frame_size(s->max_blocksize ? s->max_blocksize : FLAC_MAX_BLOCKSIZE,
                                        FLAC_MAX_CHANNELS, 32);
-        s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
-    }
-
-    if (1 && s->max_framesize) { //FIXME truncated
-        if (s->bitstream_size < 4 || AV_RL32(s->bitstream) != MKTAG('f','L','a','C'))
-            buf_size= FFMIN(buf_size, s->max_framesize - FFMIN(s->bitstream_size, s->max_framesize));
-        input_buf_size= buf_size;
-
-        if (s->bitstream_size + buf_size < buf_size || s->bitstream_index + s->bitstream_size + buf_size < s->bitstream_index)
-            return -1;
-
-        if (s->allocated_bitstream_size < s->bitstream_size + buf_size)
-            s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->bitstream_size + buf_size);
-
-        if (s->bitstream_index + s->bitstream_size + buf_size > s->allocated_bitstream_size) {
-            memmove(s->bitstream, &s->bitstream[s->bitstream_index],
-                    s->bitstream_size);
-            s->bitstream_index=0;
-        }
-        memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size],
-               buf, buf_size);
-        buf= &s->bitstream[s->bitstream_index];
-        buf_size += s->bitstream_size;
-        s->bitstream_size= buf_size;
-
-        if (buf_size < s->max_framesize && input_buf_size) {
-            return input_buf_size;
-        }
     }
 
     /* check that there is at least the smallest decodable amount of data.
        this amount corresponds to the smallest valid FLAC frame possible.
        FF F8 69 02 00 00 9A 00 00 34 46 */
     if (buf_size < 11)
-        goto end;
+        return buf_size;
 
     /* check for inline header */
     if (AV_RB32(buf) == MKBETAG('f','L','a','C')) {
@@ -617,26 +575,13 @@ static int flac_decode_frame(AVCodecContext *avctx,
             av_log(s->avctx, AV_LOG_ERROR, "invalid header\n");
             return -1;
         }
-        bytes_read = get_metadata_size(buf, buf_size);
-        goto end;
-    }
-
-    /* check for frame sync code and resync stream if necessary */
-    if ((AV_RB16(buf) & 0xFFFE) != 0xFFF8) {
-        const uint8_t *buf_end = buf + buf_size;
-        av_log(s->avctx, AV_LOG_ERROR, "FRAME HEADER not here\n");
-        while (buf+2 < buf_end && (AV_RB16(buf) & 0xFFFE) != 0xFFF8)
-            buf++;
-        bytes_read = buf_size - (buf_end - buf);
-        goto end; // we may not have enough bits left to decode a frame, so try next time
+        return get_metadata_size(buf, buf_size);
     }
 
     /* decode frame */
     init_get_bits(&s->gb, buf, buf_size*8);
     if (decode_frame(s) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
-        s->bitstream_size=0;
-        s->bitstream_index=0;
         return -1;
     }
     bytes_read = (get_bits_count(&s->gb)+7)/8;
@@ -646,7 +591,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
     if (output_size > alloc_data_size) {
         av_log(s->avctx, AV_LOG_ERROR, "output data size is larger than "
                                        "allocated data size\n");
-        goto end;
+        return -1;
     }
     *data_size = output_size;
 
@@ -684,20 +629,16 @@ static int flac_decode_frame(AVCodecContext *avctx,
         DECORRELATE( (a-=b>>1) + b, a)
     }
 
-end:
     if (bytes_read > buf_size) {
         av_log(s->avctx, AV_LOG_ERROR, "overread: %d\n", bytes_read - buf_size);
-        s->bitstream_size=0;
-        s->bitstream_index=0;
         return -1;
     }
+    if (bytes_read < buf_size) {
+        av_log(s->avctx, AV_LOG_DEBUG, "underread: %d orig size: %d\n",
+               buf_size - bytes_read, buf_size);
+    }
 
-    if (s->bitstream_size) {
-        s->bitstream_index += bytes_read;
-        s->bitstream_size  -= bytes_read;
-        return input_buf_size;
-    } else
-        return bytes_read;
+    return bytes_read;
 }
 
 static av_cold int flac_decode_close(AVCodecContext *avctx)
@@ -708,17 +649,8 @@ static av_cold int flac_decode_close(AVCodecContext *avctx)
     for (i = 0; i < s->channels; i++) {
         av_freep(&s->decoded[i]);
     }
-    av_freep(&s->bitstream);
 
     return 0;
-}
-
-static void flac_flush(AVCodecContext *avctx)
-{
-    FLACContext *s = avctx->priv_data;
-
-    s->bitstream_size=
-    s->bitstream_index= 0;
 }
 
 AVCodec flac_decoder = {
@@ -730,9 +662,5 @@ AVCodec flac_decoder = {
     NULL,
     flac_decode_close,
     flac_decode_frame,
-    CODEC_CAP_DELAY | CODEC_CAP_SUBFRAMES, /* FIXME: add a FLAC parser so that
-                                              we will not need to use either
-                                              of these capabilities */
-    .flush= flac_flush,
     .long_name= NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
 };
