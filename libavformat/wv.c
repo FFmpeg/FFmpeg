@@ -101,6 +101,10 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb)
     bpp = ((wc->flags & 3) + 1) << 3;
     chan = 1 + !(wc->flags & WV_MONO);
     rate = wv_rates[(wc->flags >> 23) & 0xF];
+    if((wc->flags & 0x1800) != 0x1800){
+        av_log(ctx, AV_LOG_ERROR, "Multichannel WavPack is not supported yet.\n");
+        return -1;
+    }
     if(rate == -1 && !wc->block_parsed){
         int64_t block_end = url_ftell(pb) + wc->blksize - 24;
         if(url_is_streamed(pb)){
