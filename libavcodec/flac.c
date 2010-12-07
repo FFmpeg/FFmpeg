@@ -38,7 +38,13 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     int bs_code, sr_code, bps_code;
 
     /* frame sync code */
-    skip_bits(gb, 16);
+    if ((get_bits(gb, 15) & 0x7FFF) != 0x7FFC) {
+        av_log(avctx, AV_LOG_ERROR, "invalid sync code\n");
+        return -1;
+    }
+
+    /* variable block size stream code */
+    skip_bits1(gb);
 
     /* block size and sample rate codes */
     bs_code = get_bits(gb, 4);
