@@ -44,6 +44,12 @@
          'url_open_dyn_packet_buf')
 */
 
+RTPDynamicProtocolHandler ff_realmedia_mp3_dynamic_handler = {
+    .enc_name           = "X-MP3-draft-00",
+    .codec_type         = AVMEDIA_TYPE_AUDIO,
+    .codec_id           = CODEC_ID_MP3ADU,
+};
+
 /* statistics functions */
 RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler= NULL;
 
@@ -69,6 +75,7 @@ void av_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_mp4a_latm_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vp8_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_qcelp_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_realmedia_mp3_dynamic_handler);
 
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfv_handler);
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfa_handler);
