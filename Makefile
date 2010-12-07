@@ -90,7 +90,7 @@ tools/%$(EXESUF): tools/%.o
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 tools/%.o: tools/%.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(CC_O) $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(CC_O) $<
 
 ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
