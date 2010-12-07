@@ -399,6 +399,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         } else if (av_strstart(p, "IsRealDataType:integer;",&p)) {
             if (atoi(p) == 1)
                 rt->transport = RTSP_TRANSPORT_RDT;
+        } else if (av_strstart(p, "SampleRate:integer;", &p) &&
+                   s->nb_streams > 0) {
+            st = s->streams[s->nb_streams - 1];
+            st->codec->sample_rate = atoi(p);
         } else {
             if (rt->server_type == RTSP_SERVER_WMS)
                 ff_wms_parse_sdp_a_line(s, p);
