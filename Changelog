@@ -63,6 +63,7 @@ version <next>:
 - frei0r source added
 - hqdn3d filter added
 - RTP depacketization of QCELP
+- FLAC parser added
 
 
 version 0.6:
