@@ -476,7 +476,7 @@ static int decode_frame(FLACContext *s)
     GetBitContext *gb = &s->gb;
     FLACFrameInfo fi;
 
-    if (ff_flac_decode_frame_header(s->avctx, gb, &fi)) {
+    if (ff_flac_decode_frame_header(s->avctx, gb, &fi, 0)) {
         av_log(s->avctx, AV_LOG_ERROR, "invalid frame header\n");
         return -1;
     }

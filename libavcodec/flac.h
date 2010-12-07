@@ -131,8 +131,9 @@ int ff_flac_get_max_frame_size(int blocksize, int ch, int bps);
  * @param      avctx AVCodecContext to use as av_log() context
  * @param      gb    GetBitContext from which to read frame header
  * @param[out] fi    frame information
+ * @param      log_level_offset  log level offset. can be used to silence error messages.
  * @return non-zero on error, 0 if ok
  */
 int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
-                                FLACFrameInfo *fi);
+                                FLACFrameInfo *fi, int log_level_offset);
 #endif /* AVCODEC_FLAC_H */
