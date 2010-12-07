@@ -34,6 +34,7 @@
 #define FLAC_MAX_CHANNELS       8
 #define FLAC_MIN_BLOCKSIZE     16
 #define FLAC_MAX_BLOCKSIZE  65535
+#define FLAC_MIN_FRAME_SIZE    11
 
 enum {
     FLAC_CHMODE_INDEPENDENT =  0,
