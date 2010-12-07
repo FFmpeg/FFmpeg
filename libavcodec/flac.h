@@ -81,6 +81,11 @@ typedef struct FLACFrameInfo {
     FLACCOMMONINFO
     int blocksize;          /**< block size of the frame                 */
     int ch_mode;            /**< channel decorrelation mode              */
+    int64_t frame_or_sample_num;    /**< frame number or sample number   */
+    int is_var_size;                /**< specifies if the stream uses variable
+                                         block sizes or a fixed block size;
+                                         also determines the meaning of
+                                         frame_or_sample_num             */
 } FLACFrameInfo;
 
 /**

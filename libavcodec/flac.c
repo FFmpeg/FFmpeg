@@ -44,7 +44,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     }
 
     /* variable block size stream code */
-    skip_bits1(gb);
+    fi->is_var_size = get_bits1(gb);
 
     /* block size and sample rate codes */
     bs_code = get_bits(gb, 4);
@@ -78,8 +78,9 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     }
 
     /* sample or frame count */
-    if (get_utf8(gb) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "utf8 fscked\n");
+    fi->frame_or_sample_num = get_utf8(gb);
+    if (fi->frame_or_sample_num < 0) {
+        av_log(avctx, AV_LOG_ERROR, "sample/frame number invalid; utf8 fscked\n");
         return -1;
     }
 
