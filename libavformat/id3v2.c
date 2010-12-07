@@ -224,7 +224,10 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
 
         next = url_ftell(s->pb) + tlen;
 
-        if (tag[0] == 'T') {
+        if (tflags & (ID3v2_FLAG_ENCRYPTION | ID3v2_FLAG_COMPRESSION)) {
+            av_log(s, AV_LOG_WARNING, "Skipping encrypted/compressed ID3v2 frame %s.\n", tag);
+            url_fskip(s->pb, tlen);
+        } else if (tag[0] == 'T') {
             if (unsync || tunsync) {
                 int i, j;
                 av_fast_malloc(&buffer, &buffer_size, tlen);
