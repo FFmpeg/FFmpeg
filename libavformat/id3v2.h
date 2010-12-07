@@ -33,6 +33,11 @@
  */
 #define ID3v2_DEFAULT_MAGIC "ID3"
 
+#define ID3v2_FLAG_DATALEN     0x0001
+#define ID3v2_FLAG_UNSYNCH     0x0002
+#define ID3v2_FLAG_ENCRYPTION  0x0004
+#define ID3v2_FLAG_COMPRESSION 0x0008
+
 /**
  * Detect ID3v2 Header.
  * @param buf   must be ID3v2_HEADER_SIZE byte long

@@ -211,7 +211,7 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
             }else
                 tlen = get_size(s->pb, 4);
             tflags = get_be16(s->pb);
-            tunsync = tflags & 0x02;
+            tunsync = tflags & ID3v2_FLAG_UNSYNCH;
         } else {
             get_buffer(s->pb, tag, 3);
             tag[3] = 0;
