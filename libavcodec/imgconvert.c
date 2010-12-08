@@ -813,9 +813,11 @@ void ff_shrink88(uint8_t *dst, int dst_wrap,
 int avpicture_alloc(AVPicture *picture,
                     enum PixelFormat pix_fmt, int width, int height)
 {
-    if (av_image_alloc(picture->data, picture->linesize, width, height, pix_fmt, 0) < 0) {
+    int ret;
+
+    if ((ret = av_image_alloc(picture->data, picture->linesize, width, height, pix_fmt, 0)) < 0) {
         memset(picture, 0, sizeof(AVPicture));
-        return -1;
+        return ret;
     }
 
     return 0;
