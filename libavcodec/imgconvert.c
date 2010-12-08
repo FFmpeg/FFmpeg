@@ -813,23 +813,12 @@ void ff_shrink88(uint8_t *dst, int dst_wrap,
 int avpicture_alloc(AVPicture *picture,
                     enum PixelFormat pix_fmt, int width, int height)
 {
-    int size;
-    void *ptr;
-
-    size = avpicture_fill(picture, NULL, pix_fmt, width, height);
-    if(size<0)
-        goto fail;
-    ptr = av_malloc(size);
-    if (!ptr)
-        goto fail;
-    avpicture_fill(picture, ptr, pix_fmt, width, height);
-    if(picture->data[1] && !picture->data[2])
-        ff_set_systematic_pal2((uint32_t*)picture->data[1], pix_fmt);
-
-    return 0;
- fail:
+    if (av_image_alloc(picture->data, picture->linesize, width, height, pix_fmt, 0) < 0) {
     memset(picture, 0, sizeof(AVPicture));
     return -1;
+    }
+
+    return 0;
 }
 
 void avpicture_free(AVPicture *picture)
