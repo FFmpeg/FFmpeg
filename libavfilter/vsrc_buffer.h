@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/avcodec.h" /* AVFrame */
 #include "avfilter.h"
 
 int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,

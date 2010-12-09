@@ -33,7 +33,7 @@
 
 #define LIBAVCODEC_VERSION_MAJOR 52
 #define LIBAVCODEC_VERSION_MINOR 99
-#define LIBAVCODEC_VERSION_MICRO  0
+#define LIBAVCODEC_VERSION_MICRO  1
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -88,10 +88,6 @@
 #else
 #   define FF_INTERNALC_MEM_TYPE size_t
 #endif
-
-#define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
-#define AV_TIME_BASE            1000000
-#define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
 
 /**
  * Identify the syntax and semantics of the bitstream.

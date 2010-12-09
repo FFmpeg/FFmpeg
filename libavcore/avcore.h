@@ -27,7 +27,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCORE_VERSION_MAJOR  0
-#define LIBAVCORE_VERSION_MINOR 15
+#define LIBAVCORE_VERSION_MINOR 16
 #define LIBAVCORE_VERSION_MICRO  0
 
 #define LIBAVCORE_VERSION_INT   AV_VERSION_INT(LIBAVCORE_VERSION_MAJOR, \
@@ -54,6 +54,10 @@ const char *avcore_configuration(void);
  * Return the libavcore license.
  */
 const char *avcore_license(void);
+
+#define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
+#define AV_TIME_BASE            1000000
+#define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
 
 /**
  * Those FF_API_* defines are not part of public API.

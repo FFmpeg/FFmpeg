@@ -13,6 +13,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-12-09 - r25923 - lavcore 0.16.0 - avcore.h
+  Move AV_NOPTS_VALUE, AV_TIME_BASE, AV_TIME_BASE_Q symbols from
+  avcodec.h to avcore.h.
+
 2010-12-04 - r25886 - lavc 52.98.0 - CODEC_CAP_NEG_LINESIZES
   Add CODEC_CAP_NEG_LINESIZES codec capability flag in avcodec.h.
 

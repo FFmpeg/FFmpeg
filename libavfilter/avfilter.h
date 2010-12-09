@@ -23,10 +23,12 @@
 #define AVFILTER_AVFILTER_H
 
 #include "libavutil/avutil.h"
+#include "libavcore/avcore.h"
+#include "libavcore/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
 #define LIBAVFILTER_VERSION_MINOR 68
-#define LIBAVFILTER_VERSION_MICRO  0
+#define LIBAVFILTER_VERSION_MICRO  1
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -37,7 +39,6 @@
 #define LIBAVFILTER_BUILD       LIBAVFILTER_VERSION_INT
 
 #include <stddef.h>
-#include "libavcodec/avcodec.h"
 
 /**
  * Return the LIBAVFILTER_VERSION_INT constant.
