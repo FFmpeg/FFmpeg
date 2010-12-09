@@ -24,7 +24,7 @@ API changes, most recent first:
   Deprecate avcodec_pix_fmt_string() in favor of
   pixdesc.h/av_get_pix_fmt_string().
 
-2010-12-04 - r25878 - lavcore 1.15.0 - av_image_alloc()
+2010-12-04 - r25878 - lavcore 0.15.0 - av_image_alloc()
   Add av_image_alloc() to libavcore/imgutils.h.
 
 2010-12-02 - r25862 - lavfi 1.67.0 - avfilter_graph_create_filter()
