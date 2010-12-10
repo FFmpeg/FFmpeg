@@ -224,6 +224,11 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
 
         next = url_ftell(s->pb) + tlen;
 
+        if (tflags & ID3v2_FLAG_DATALEN) {
+            get_be32(s->pb);
+            tlen -= 4;
+        }
+
         if (tflags & (ID3v2_FLAG_ENCRYPTION | ID3v2_FLAG_COMPRESSION)) {
             av_log(s, AV_LOG_WARNING, "Skipping encrypted/compressed ID3v2 frame %s.\n", tag);
             url_fskip(s->pb, tlen);
