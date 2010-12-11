@@ -13,6 +13,7 @@ PROGS      := $(addsuffix   $(EXESUF), $(PROGS-yes))
 PROGS_G     = $(addsuffix _g$(EXESUF), $(PROGS-yes))
 OBJS        = $(addsuffix .o,          $(PROGS-yes)) cmdutils.o
 MANPAGES    = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
+PODPAGES    = $(addprefix doc/, $(addsuffix .pod, $(PROGS-yes)))
 HTMLPAGES   = $(addprefix doc/, $(addsuffix -doc.html, $(PROGS-yes)))
 TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws pktdumper probetest qt-faststart trasher))
 HOSTPROGS   = $(addprefix tests/, audiogen videogen rotozoom tiny_psnr base64)
@@ -113,7 +114,7 @@ alltools: $(TOOLS)
 documentation: $(addprefix doc/, developer.html faq.html general.html libavfilter.html \
                                  $(ALLHTMLPAGES) $(ALLMANPAGES))
 
-$(HTMLPAGES) $(MANPAGES): doc/fftools-common-opts.texi
+$(HTMLPAGES) $(PODPAGES): doc/fftools-common-opts.texi
 
 doc/ffmpeg.pod doc/ffmpeg-doc.html: doc/bitstream_filters.texi doc/eval.texi doc/indevs.texi doc/filters.texi doc/outdevs.texi doc/protocols.texi
 doc/ffplay.pod doc/ffplay-doc.html: doc/eval.texi doc/indevs.texi doc/filters.texi doc/outdevs.texi doc/protocols.texi
