@@ -977,9 +977,10 @@ static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *
                     av_log(s, AV_LOG_ERROR, "pkt.size != ds_packet_size * ds_span (%d %d %d)\n", asf_st->pkt.size, asf_st->ds_packet_size, asf_st->ds_span);
               }else{
                 /* packet descrambling */
-                uint8_t *newdata = av_malloc(asf_st->pkt.size);
+                uint8_t *newdata = av_malloc(asf_st->pkt.size + FF_INPUT_BUFFER_PADDING_SIZE);
                 if (newdata) {
                     int offset = 0;
+                    memset(newdata + asf_st->pkt.size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
                     while (offset < asf_st->pkt.size) {
                         int off = offset / asf_st->ds_chunk_size;
                         int row = off / asf_st->ds_span;
