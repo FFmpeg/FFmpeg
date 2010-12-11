@@ -848,6 +848,7 @@ static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *
     ASFContext *asf = s->priv_data;
     ASFStream *asf_st = 0;
     for (;;) {
+        int ret;
         if(url_feof(pb))
             return AVERROR_EOF;
         if (asf->packet_size_left < FRAME_HEADER_SIZE
@@ -950,8 +951,10 @@ static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *
             continue;
         }
 
-        get_buffer(pb, asf_st->pkt.data + asf->packet_frag_offset,
-                   asf->packet_frag_size);
+        ret = get_buffer(pb, asf_st->pkt.data + asf->packet_frag_offset,
+                         asf->packet_frag_size);
+        if (ret != asf->packet_frag_size)
+            return ret >= 0 ? AVERROR_EOF : ret;
         if (s->key && s->keylen == 20)
             ff_asfcrypt_dec(s->key, asf_st->pkt.data + asf->packet_frag_offset,
                             asf->packet_frag_size);
