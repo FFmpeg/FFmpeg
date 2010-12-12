@@ -42,6 +42,8 @@
 #define FLAC_MAX_SEQUENTIAL_HEADERS 3
 /** minimum number of headers buffered and checked before returning frames    */
 #define FLAC_MIN_HEADERS 10
+/** estimate for average size of a FLAC frame                                 */
+#define FLAC_AVG_FRAME_SIZE 8192
 
 /** scoring settings for score_header */
 #define FLAC_HEADER_BASE_SCORE        10
@@ -476,6 +478,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     FLACParseContext *fpc = s->priv_data;
     FLACHeaderMarker *curr;
     int nb_headers;
+    int read_size = 0;
 
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         FLACFrameInfo fi;
@@ -543,20 +546,25 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         /* Pad the end once if EOF, to check the final region for headers. */
         if (!buf_size) {
             fpc->end_padded = 1;
-            buf_size        = MAX_FRAME_HEADER_SIZE;
+            buf_size = read_size = MAX_FRAME_HEADER_SIZE;
+        } else {
+            /* The maximum read size is the upper-bound of what the parser
+               needs to have the required number of frames buffered */
+            int nb_desired = FLAC_MIN_HEADERS - fpc->nb_headers_buffered + 1;
+            read_size = FFMIN(buf_size, nb_desired * FLAC_AVG_FRAME_SIZE);
         }
 
         /* Fill the buffer. */
         if (av_fifo_realloc2(fpc->fifo_buf,
-                             buf_size + av_fifo_size(fpc->fifo_buf)) < 0) {
+                             read_size + av_fifo_size(fpc->fifo_buf)) < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "couldn't reallocate buffer of size %d\n",
-                   buf_size + av_fifo_size(fpc->fifo_buf));
+                   read_size + av_fifo_size(fpc->fifo_buf));
             goto handle_error;
         }
 
         if (buf) {
-            av_fifo_generic_write(fpc->fifo_buf, (void*) buf, buf_size, NULL);
+            av_fifo_generic_write(fpc->fifo_buf, (void*) buf, read_size, NULL);
         } else {
             int8_t pad[MAX_FRAME_HEADER_SIZE];
             memset(pad, 0, sizeof(pad));
@@ -565,7 +573,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
         /* Tag headers and update sequences. */
         start_offset = av_fifo_size(fpc->fifo_buf) -
-                       (buf_size + (MAX_FRAME_HEADER_SIZE - 1));
+                       (read_size + (MAX_FRAME_HEADER_SIZE - 1));
         start_offset = FFMAX(0, start_offset);
         nb_headers   = find_new_headers(fpc, start_offset);
 
@@ -593,7 +601,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                 fpc->fifo_buf->wptr += fpc->fifo_buf->end -
                     fpc->fifo_buf->buffer;
             }
-            buf_size = 0;
+            buf_size = read_size = 0;
         }
     }
 
@@ -615,7 +623,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             *poutbuf          = flac_fifo_read_wrap(fpc, 0, *poutbuf_size,
                                                     &fpc->wrap_buf,
                                                     &fpc->wrap_buf_allocated_size);
-            return buf_size ? buf_size : (fpc->best_header->offset -
+            return buf_size ? read_size : (fpc->best_header->offset -
                                           av_fifo_size(fpc->fifo_buf));
         }
         if (!buf_size)
@@ -625,16 +633,15 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 handle_error:
     *poutbuf      = NULL;
     *poutbuf_size = 0;
-    return buf_size;
+    return read_size;
 }
 
 static int flac_parse_init(AVCodecParserContext *c)
 {
     FLACParseContext *fpc = c->priv_data;
     /* There will generally be FLAC_MIN_HEADERS buffered in the fifo before
-       it drains.  8192 is an approximate average size of a flac frame     */
-    fpc->fifo_buf = av_fifo_alloc(8192 * FLAC_MIN_HEADERS);
-
+       it drains.  This is allocated early to avoid slow reallocation. */
+    fpc->fifo_buf = av_fifo_alloc(FLAC_AVG_FRAME_SIZE * (FLAC_MIN_HEADERS + 3));
     return 0;
 }
 
