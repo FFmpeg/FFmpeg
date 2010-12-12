@@ -75,6 +75,7 @@ typedef struct FLACParseContext {
     FLACHeaderMarker *best_header; /**< highest scoring header within buffer  */
     int nb_headers_found;          /**< number of headers found in the last
                                         flac_parse() call                     */
+    int nb_headers_buffered;       /**< number of headers that are buffered   */
     int best_header_valid;         /**< flag set when the parser returns junk;
                                         if set return best_header next time   */
     AVFifoBuffer *fifo_buf;        /**< buffer to store all data until headers
@@ -504,6 +505,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             temp = curr->next;
             av_freep(&curr->link_penalty);
             av_free(curr);
+            fpc->nb_headers_buffered--;
         }
         /* Release returned data from ring buffer. */
         av_fifo_drain(fpc->fifo_buf, best_child->offset);
@@ -512,8 +514,13 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         for (curr = best_child->next; curr; curr = curr->next)
             curr->offset -= best_child->offset;
 
+        fpc->nb_headers_buffered--;
         best_child->offset = 0;
         fpc->headers       = best_child;
+        if (fpc->nb_headers_buffered >= FLAC_MIN_HEADERS) {
+            fpc->best_header = best_child;
+            return get_best_header(fpc, poutbuf, poutbuf_size);
+        }
         fpc->best_header   = NULL;
     } else if (fpc->best_header) {
         /* No end frame no need to delete the buffer; probably eof */
@@ -562,8 +569,15 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         start_offset = FFMAX(0, start_offset);
         nb_headers   = find_new_headers(fpc, start_offset);
 
+        if (nb_headers < 0) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "find_new_headers couldn't allocate FLAC header\n");
+            goto handle_error;
+        }
+
+        fpc->nb_headers_buffered = nb_headers;
         /* Wait till FLAC_MIN_HEADERS to output a valid frame. */
-        if (!fpc->end_padded && nb_headers < FLAC_MIN_HEADERS)
+        if (!fpc->end_padded && fpc->nb_headers_buffered < FLAC_MIN_HEADERS)
             goto handle_error;
 
         /* If headers found, update the scores since we have longer chains. */
