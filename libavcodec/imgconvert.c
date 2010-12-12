@@ -815,7 +815,7 @@ int avpicture_alloc(AVPicture *picture,
 {
     int ret;
 
-    if ((ret = av_image_alloc(picture->data, picture->linesize, width, height, pix_fmt, 0)) < 0) {
+    if ((ret = av_image_alloc(picture->data, picture->linesize, width, height, pix_fmt, 1)) < 0) {
         memset(picture, 0, sizeof(AVPicture));
         return ret;
     }
