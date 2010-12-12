@@ -827,18 +827,18 @@ need_realloc:
             ost->resample = NULL;
             ost->audio_resample = 0;
         } else {
-        if (dec->sample_fmt != AV_SAMPLE_FMT_S16)
-            fprintf(stderr, "Warning, using s16 intermediate sample format for resampling\n");
-        ost->resample = av_audio_resample_init(enc->channels,    dec->channels,
-                                               enc->sample_rate, dec->sample_rate,
-                                               enc->sample_fmt,  dec->sample_fmt,
-                                               16, 10, 0, 0.8);
-        if (!ost->resample) {
-            fprintf(stderr, "Can not resample %d channels @ %d Hz to %d channels @ %d Hz\n",
-                    dec->channels, dec->sample_rate,
-                    enc->channels, enc->sample_rate);
-            ffmpeg_exit(1);
-        }
+            if (dec->sample_fmt != AV_SAMPLE_FMT_S16)
+                fprintf(stderr, "Warning, using s16 intermediate sample format for resampling\n");
+            ost->resample = av_audio_resample_init(enc->channels,    dec->channels,
+                                                   enc->sample_rate, dec->sample_rate,
+                                                   enc->sample_fmt,  dec->sample_fmt,
+                                                   16, 10, 0, 0.8);
+            if (!ost->resample) {
+                fprintf(stderr, "Can not resample %d channels @ %d Hz to %d channels @ %d Hz\n",
+                        dec->channels, dec->sample_rate,
+                        enc->channels, enc->sample_rate);
+                ffmpeg_exit(1);
+            }
         }
     }
 
