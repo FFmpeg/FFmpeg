@@ -1,3 +1,94 @@
+@chapter Filtergraph description
+@c man begin FILTERGRAPH DESCRIPTION
+
+A filtergraph is a directed graph of connected filters. It can contain
+cycles, and there can be multiple links between a pair of
+filters. Each link has one input pad on one side connecting it to one
+filter from which it takes its input, and one output pad on the other
+side connecting it to the one filter accepting its output.
+
+Each filter in a filtergraph is an instance of a filter class
+registered in the application, which defines the features and the
+number of input and output pads of the filter.
+
+A filter with no input pads is called a "source", a filter with no
+output pads is called a "sink".
+
+@section Filtergraph syntax
+
+A filtergraph can be represented using a textual representation, which
+is recognized by the @code{-vf} and @code{-af} options of the ff*
+tools, and by the @code{av_parse_graph()} function defined in
+@file{libavfilter/avfiltergraph}.
+
+A filterchain consists of a sequence of connected filters, each one
+connected to the previous one in the sequence. A filterchain is
+represented by a list of ","-separated filter descriptions.
+
+A filtergraph consists of a sequence of filterchains. A sequence of
+filterchains is represented by a list of ";"-separated filterchain
+descriptions.
+
+A filter is represented by a string of the form:
+[@var{in_link_1}]...[@var{in_link_N}]@var{filter_name}=@var{arguments}[@var{out_link_1}]...[@var{out_link_M}]
+
+@var{filter_name} is the name of the filter class of which the
+described filter is an instance of, and has to be the name of one of
+the filter classes registered in the program.
+The name of the filter class is optionally followed by a string
+"=@var{arguments}".
+
+@var{arguments} is a string which contains the parameters used to
+initialize the filter instance, and are described in the filter
+descriptions below.
+
+The list of arguments can be quoted using the character "'" as initial
+and ending mark, and the character '\' for escaping the characters
+within the quoted text; otherwise the argument string is considered
+terminated when the next special character (belonging to the set
+"[]=;,") is encountered.
+
+The name and arguments of the filter are optionally preceded and
+followed by a list of link labels.
+A link label allows to name a link and associate it to a filter output
+or input pad. The preceding labels @var{in_link_1}
+... @var{in_link_N}, are associated to the filter input pads,
+the following labels @var{out_link_1} ... @var{out_link_M}, are
+associated to the output pads.
+
+When two link labels with the same name are found in the
+filtergraph, a link between the corresponding input and output pad is
+created.
+
+If an output pad is not labelled, it is linked by default to the first
+unlabelled input pad of the next filter in the filterchain.
+For example in the filterchain:
+@example
+nullsrc, split[L1], [L2]overlay, nullsink
+@end example
+the split filter instance has two output pads, and the overlay filter
+instance two input pads. The first output pad of split is labelled
+"L1", the first input pad of overlay is labelled "L2", and the second
+output pad of split is linked to the second input pad of overlay,
+which are both unlabelled.
+
+In a complete filterchain all the unlabelled filter input and output
+pads must be connected. A filtergraph is considered valid if all the
+filter input and output pads of all the filterchains are connected.
+
+Follows a BNF description for the filtergraph syntax:
+@example
+@var{NAME}             ::= sequence of alphanumeric characters and '_'
+@var{LINKLABEL}        ::= "[" @var{NAME} "]"
+@var{LINKLABELS}       ::= @var{LINKLABEL} [@var{LINKLABELS}]
+@var{FILTER_ARGUMENTS} ::= sequence of chars (eventually quoted)
+@var{FILTER}           ::= [@var{LINKNAMES}] @var{NAME} ["=" @var{ARGUMENTS}] [@var{LINKNAMES}]
+@var{FILTERCHAIN}      ::= @var{FILTER} [,@var{FILTERCHAIN}]
+@var{FILTERGRAPH}      ::= @var{FILTERCHAIN} [;@var{FILTERGRAPH}]
+@end example
+
+@c man end FILTERGRAPH DESCRIPTION
+
 @chapter Audio Filters
 @c man begin AUDIO FILTERS
 
