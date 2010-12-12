@@ -1073,7 +1073,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
 #define STATS_OUT_SIZE 1024*1024*6
     if(avctx->flags & CODEC_FLAG_PASS1){
-    avctx->stats_out= av_mallocz(STATS_OUT_SIZE);
+        avctx->stats_out= av_mallocz(STATS_OUT_SIZE);
         for(i=0; i<s->quant_table_count; i++){
             for(j=0; j<s->slice_count; j++){
                 FFV1Context *sf= s->slice_context[j];
