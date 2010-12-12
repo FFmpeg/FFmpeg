@@ -64,6 +64,7 @@ version <next>:
 - hqdn3d filter added
 - RTP depacketization of QCELP
 - FLAC parser added
+- gradfun filter added
 
 
 version 0.6:
