@@ -1971,7 +1971,7 @@ static int qdm2_decode_frame(AVCodecContext *avctx,
 
     *data_size = (uint8_t*)out - (uint8_t*)data;
 
-    return buf_size;
+    return s->checksum_size;
 }
 
 AVCodec qdm2_decoder =
