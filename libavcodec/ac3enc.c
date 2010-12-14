@@ -1270,7 +1270,7 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
             break;
     }
     if (i == 9) {
-    return -1;
+        return -1;
     }
     s->sample_rate        = avctx->sample_rate;
     s->bit_alloc.sr_shift = i % 3;
