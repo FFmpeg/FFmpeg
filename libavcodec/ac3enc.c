@@ -33,6 +33,8 @@
 #include "ac3.h"
 #include "audioconvert.h"
 
+#define SCALE_FLOAT(a, bits) lrintf((a) * (float)(1 << (bits)))
+
 typedef struct AC3EncodeContext {
     PutBitContext pb;                       ///< bitstream writer context
 
@@ -86,16 +88,7 @@ static int16_t xsin1[128];
 /* new exponents are sent if their Norm 1 exceed this number */
 #define EXP_DIFF_THRESHOLD 1000
 
-static inline int16_t fix15(float a)
-{
-    int v;
-    v = (int)(a * (float)(1 << 15));
-    if (v < -32767)
-        v = -32767;
-    else if (v > 32767)
-        v = 32767;
-    return v;
-}
+#define FIX15(a) av_clip_int16(SCALE_FLOAT(a, 15))
 
 typedef struct IComplex {
     int16_t re,im;
@@ -110,8 +103,8 @@ static av_cold void fft_init(int ln)
 
     for(i=0;i<(n/2);i++) {
         alpha = 2 * M_PI * (float)i / (float)n;
-        costab[i] = fix15(cos(alpha));
-        sintab[i] = fix15(sin(alpha));
+        costab[i] = FIX15(cos(alpha));
+        sintab[i] = FIX15(sin(alpha));
     }
 }
 
@@ -126,8 +119,8 @@ static av_cold void mdct_init(int nbits)
 
     for(i=0;i<n4;i++) {
         alpha = 2 * M_PI * (i + 1.0 / 8.0) / n;
-        xcos1[i] = fix15(-cos(alpha));
-        xsin1[i] = fix15(-sin(alpha));
+        xcos1[i] = FIX15(-cos(alpha));
+        xsin1[i] = FIX15(-sin(alpha));
     }
 }
 
