@@ -93,13 +93,14 @@ typedef struct IComplex {
 
 static av_cold void fft_init(int ln)
 {
-    int i, n;
+    int i, n, n2;
     float alpha;
 
-    n = 1 << ln;
+    n  = 1 << ln;
+    n2 = n >> 1;
 
-    for (i = 0; i < n/2; i++) {
-        alpha     = 2 * M_PI * (float)i / (float)n;
+    for (i = 0; i < n2; i++) {
+        alpha     = 2.0 * M_PI * i / n;
         costab[i] = FIX15(cos(alpha));
         sintab[i] = FIX15(sin(alpha));
     }
@@ -107,15 +108,15 @@ static av_cold void fft_init(int ln)
 
 static av_cold void mdct_init(int nbits)
 {
-    int i;
-    float alpha;
-    int n  = 1 << nbits;
-    int n4 = n >> 2;
+    int i, n, n4;
+
+    n  = 1 << nbits;
+    n4 = n >> 2;
 
     fft_init(nbits - 2);
 
     for (i = 0; i < n4; i++) {
-        alpha    = 2 * M_PI * (i + 1.0 / 8.0) / n;
+        float alpha = 2.0 * M_PI * (i + 1.0 / 8.0) / n;
         xcos1[i] = FIX15(-cos(alpha));
         xsin1[i] = FIX15(-sin(alpha));
     }
