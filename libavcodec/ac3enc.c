@@ -772,7 +772,7 @@ static void output_audio_block(AC3EncodeContext *s,
                                uint8_t exp_strategy[AC3_MAX_CHANNELS],
                                uint8_t encoded_exp[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                                uint8_t bap[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                               int32_t mdct_coefs[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                               int32_t mdct_coef[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                                int8_t exp_shift[AC3_MAX_CHANNELS],
                                int block_num)
 {
@@ -896,7 +896,7 @@ static void output_audio_block(AC3EncodeContext *s,
         int b, c, e, v;
 
         for (i = 0; i < s->nb_coefs[ch]; i++) {
-            c = mdct_coefs[ch][i];
+            c = mdct_coef[ch][i];
             e = encoded_exp[ch][i] - exp_shift[ch];
             b = bap[ch][i];
             switch (b) {
