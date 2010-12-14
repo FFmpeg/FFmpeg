@@ -923,12 +923,12 @@ static int bit_alloc(AC3EncodeContext *s,
                      int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS],
                      int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                      uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                     int coarse_snr_offset, int fine_snr_offset)
+                     int snr_offset)
 {
     int blk, ch;
-    int snr_offset, mantissa_bits;
+    int mantissa_bits;
 
-    snr_offset = (((coarse_snr_offset - 15) << 4) + fine_snr_offset) << 2;
+    snr_offset = (snr_offset - 240) << 2;
 
     mantissa_bits = 0;
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
@@ -947,8 +947,6 @@ static int bit_alloc(AC3EncodeContext *s,
 }
 
 
-#define SNR_INC1 4
-
 /**
  * Perform bit allocation search.
  * Finds the SNR offset value that maximizes quality and fits in the specified
@@ -962,7 +960,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
 {
     int ch;
     int bits_left;
-    int coarse_snr_offset, fine_snr_offset;
+    int snr_offset;
     uint8_t bap1[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS];
@@ -977,42 +975,40 @@ static int compute_bit_allocation(AC3EncodeContext *s,
        offset until we can pack everything in the requested frame size */
 
     bits_left = 8 * s->frame_size - (s->frame_bits + s->exponent_bits);
-    coarse_snr_offset = s->coarse_snr_offset;
-    while (coarse_snr_offset >= 0 &&
-           bit_alloc(s, mask, psd, bap, coarse_snr_offset, 0) > bits_left)
-        coarse_snr_offset -= SNR_INC1;
-    if (coarse_snr_offset < 0) {
+    snr_offset = s->coarse_snr_offset << 4;
+    while (snr_offset >= 0 &&
+           bit_alloc(s, mask, psd, bap, snr_offset) > bits_left)
+        snr_offset -= 64;
+    if (snr_offset < 0) {
         return AVERROR(EINVAL);
     }
-    while (coarse_snr_offset + SNR_INC1 <= 63 &&
+    while (snr_offset + 64 <= 1023 &&
            bit_alloc(s, mask, psd, bap1,
-                     coarse_snr_offset + SNR_INC1, 0) <= bits_left) {
-        coarse_snr_offset += SNR_INC1;
+                     snr_offset + 64) <= bits_left) {
+        snr_offset += 64;
         memcpy(bap, bap1, sizeof(bap1));
     }
-    while (coarse_snr_offset + 1 <= 63 &&
-           bit_alloc(s, mask, psd, bap1, coarse_snr_offset + 1, 0) <= bits_left) {
-        coarse_snr_offset++;
+    while (snr_offset + 16 <= 1023 &&
+           bit_alloc(s, mask, psd, bap1, snr_offset + 16) <= bits_left) {
+        snr_offset += 16;
+        memcpy(bap, bap1, sizeof(bap1));
+    }
+    while (snr_offset + 4 <= 1023 &&
+           bit_alloc(s, mask, psd, bap1,
+                     snr_offset + 4) <= bits_left) {
+        snr_offset += 4;
+        memcpy(bap, bap1, sizeof(bap1));
+    }
+    while (snr_offset + 1 <= 1023 &&
+           bit_alloc(s, mask, psd, bap1,
+                     snr_offset + 1) <= bits_left) {
+        snr_offset++;
         memcpy(bap, bap1, sizeof(bap1));
     }
 
-    fine_snr_offset = 0;
-    while (fine_snr_offset + SNR_INC1 <= 15 &&
-           bit_alloc(s, mask, psd, bap1,
-                     coarse_snr_offset, fine_snr_offset + SNR_INC1) <= bits_left) {
-        fine_snr_offset += SNR_INC1;
-        memcpy(bap, bap1, sizeof(bap1));
-    }
-    while (fine_snr_offset + 1 <= 15 &&
-           bit_alloc(s, mask, psd, bap1,
-                     coarse_snr_offset, fine_snr_offset + 1) <= bits_left) {
-        fine_snr_offset++;
-        memcpy(bap, bap1, sizeof(bap1));
-    }
-
-    s->coarse_snr_offset = coarse_snr_offset;
+    s->coarse_snr_offset = snr_offset >> 4;
     for (ch = 0; ch < s->channels; ch++)
-        s->fine_snr_offset[ch] = fine_snr_offset;
+        s->fine_snr_offset[ch] = snr_offset & 0xF;
 
     return 0;
 }
