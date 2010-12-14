@@ -745,6 +745,57 @@ static int process_exponents(AC3EncodeContext *s,
 
 
 /**
+ * Count the bits used to encode the frame, minus exponents and mantissas.
+ * @return bit count
+ */
+static int count_frame_bits(AC3EncodeContext *s,
+                            uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS])
+{
+    static const int frame_bits_inc[8] = { 0, 0, 2, 2, 2, 4, 2, 4 };
+    int blk, ch;
+    int frame_bits;
+
+    /* header size */
+    frame_bits = 65;
+    frame_bits += frame_bits_inc[s->channel_mode];
+
+    /* audio blocks */
+    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+        frame_bits += s->fbw_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
+        if (s->channel_mode == AC3_CHMODE_STEREO) {
+            frame_bits++; /* rematstr */
+            if (!blk)
+                frame_bits += 4;
+        }
+        frame_bits += 2 * s->fbw_channels; /* chexpstr[2] * c */
+        if (s->lfe_on)
+            frame_bits++; /* lfeexpstr */
+        for (ch = 0; ch < s->fbw_channels; ch++) {
+            if (exp_strategy[blk][ch] != EXP_REUSE)
+                frame_bits += 6 + 2; /* chbwcod[6], gainrng[2] */
+        }
+        frame_bits++; /* baie */
+        frame_bits++; /* snr */
+        frame_bits += 2; /* delta / skip */
+    }
+    frame_bits++; /* cplinu for block 0 */
+    /* bit alloc info */
+    /* sdcycod[2], fdcycod[2], sgaincod[2], dbpbcod[2], floorcod[3] */
+    /* csnroffset[6] */
+    /* (fsnoffset[4] + fgaincod[4]) * c */
+    frame_bits += 2*4 + 3 + 6 + s->channels * (4 + 3);
+
+    /* auxdatae, crcrsv */
+    frame_bits += 2;
+
+    /* CRC */
+    frame_bits += 16;
+
+    return frame_bits;
+}
+
+
+/**
  * Calculate the number of bits needed to encode a set of mantissas.
  */
 static int compute_mantissa_size(AC3EncodeContext *s, uint8_t *m, int nb_coefs)
@@ -879,12 +930,11 @@ static int compute_bit_allocation(AC3EncodeContext *s,
                                   uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
                                   int frame_bits)
 {
-    int blk, ch;
+    int ch;
     int coarse_snr_offset, fine_snr_offset;
     uint8_t bap1[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS];
-    static const int frame_bits_inc[8] = { 0, 0, 2, 2, 2, 4, 2, 4 };
 
     /* init default parameters */
     s->slow_decay_code = 2;
@@ -902,43 +952,8 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     s->bit_alloc.db_per_bit = ff_ac3_db_per_bit_tab[s->db_per_bit_code];
     s->bit_alloc.floor      = ff_ac3_floor_tab[s->floor_code];
 
-    /* header size */
-    frame_bits += 65;
-    // if (s->channel_mode == 2)
-    //    frame_bits += 2;
-    frame_bits += frame_bits_inc[s->channel_mode];
-
-    /* audio blocks */
-    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-        frame_bits += s->fbw_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
-        if (s->channel_mode == AC3_CHMODE_STEREO) {
-            frame_bits++; /* rematstr */
-            if (!blk)
-                frame_bits += 4;
-        }
-        frame_bits += 2 * s->fbw_channels; /* chexpstr[2] * c */
-        if (s->lfe_on)
-            frame_bits++; /* lfeexpstr */
-        for (ch = 0; ch < s->fbw_channels; ch++) {
-            if (exp_strategy[blk][ch] != EXP_REUSE)
-                frame_bits += 6 + 2; /* chbwcod[6], gainrng[2] */
-        }
-        frame_bits++; /* baie */
-        frame_bits++; /* snr */
-        frame_bits += 2; /* delta / skip */
-    }
-    frame_bits++; /* cplinu for block 0 */
-    /* bit alloc info */
-    /* sdcycod[2], fdcycod[2], sgaincod[2], dbpbcod[2], floorcod[3] */
-    /* csnroffset[6] */
-    /* (fsnoffset[4] + fgaincod[4]) * c */
-    frame_bits += 2*4 + 3 + 6 + s->channels * (4 + 3);
-
-    /* auxdatae, crcrsv */
-    frame_bits += 2;
-
-    /* CRC */
-    frame_bits += 16;
+    /* count frame bits other than exponents and mantissas */
+    frame_bits += count_frame_bits(s, exp_strategy);
 
     /* calculate psd and masking curve before doing bit allocation */
     bit_alloc_masking(s, encoded_exp, exp_strategy, psd, mask);
