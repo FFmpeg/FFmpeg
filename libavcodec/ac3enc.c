@@ -309,18 +309,7 @@ static int encode_exp(uint8_t encoded_exp[AC3_MAX_COEFS],
     int group_size, nb_groups, i, j, k, exp_min;
     uint8_t exp1[AC3_MAX_COEFS];
 
-    switch (exp_strategy) {
-    case EXP_D15:
-        group_size = 1;
-        break;
-    case EXP_D25:
-        group_size = 2;
-        break;
-    default:
-    case EXP_D45:
-        group_size = 4;
-        break;
-    }
+    group_size = exp_strategy + (exp_strategy == EXP_D45);
     nb_groups = ((nb_exps + (group_size * 3) - 4) / (3 * group_size)) * 3;
 
     /* for each group, compute the minimum exponent */
@@ -833,20 +822,9 @@ static void output_audio_block(AC3EncodeContext *s,
 
     /* exponents */
     for (ch = 0; ch < s->channels; ch++) {
-        switch (exp_strategy[ch]) {
-        case EXP_REUSE:
+        if (exp_strategy[ch] == EXP_REUSE)
             continue;
-        case EXP_D15:
-            group_size = 1;
-            break;
-        case EXP_D25:
-            group_size = 2;
-            break;
-        default:
-        case EXP_D45:
-            group_size = 4;
-            break;
-        }
+        group_size = exp_strategy[ch] + (exp_strategy[ch] == EXP_D45);
         nb_groups = (s->nb_coefs[ch] + (group_size * 3) - 4) / (3 * group_size);
         p = encoded_exp[ch];
 
