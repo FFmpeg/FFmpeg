@@ -948,8 +948,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
            bit_alloc(s, mask, psd, bap, frame_bits, coarse_snr_offset, 0) < 0)
         coarse_snr_offset -= SNR_INC1;
     if (coarse_snr_offset < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Bit allocation failed. Try increasing the bitrate.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     while (coarse_snr_offset + SNR_INC1 <= 63 &&
            bit_alloc(s, mask, psd, bap1, frame_bits,
@@ -1411,6 +1410,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
     uint16_t qmant[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int frame_bits;
+    int ret;
 
     if (s->bit_alloc.sr_code == 1)
         adjust_frame_size(s);
@@ -1422,7 +1422,11 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     frame_bits = process_exponents(s, mdct_coef, exp_shift, exp, exp_strategy,
                                    encoded_exp, num_exp_groups, grouped_exp);
 
-    compute_bit_allocation(s, bap, encoded_exp, exp_strategy, frame_bits);
+    ret = compute_bit_allocation(s, bap, encoded_exp, exp_strategy, frame_bits);
+    if (ret) {
+        av_log(avctx, AV_LOG_ERROR, "Bit allocation failed. Try increasing the bitrate.\n");
+        return ret;
+    }
 
     quantize_mantissas(s, mdct_coef, exp_shift, encoded_exp, bap, qmant);
 
