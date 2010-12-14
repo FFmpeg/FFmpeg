@@ -1252,7 +1252,7 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
 
 static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
 {
-    int i, j;
+    int i;
 
     if (!avctx->channel_layout) {
         av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
@@ -1265,16 +1265,16 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
     }
 
     /* frequency */
-    for (i = 0; i < 3; i++) {
-        for (j = 0; j < 3; j++)
-            if ((ff_ac3_sample_rate_tab[j] >> i) == avctx->sample_rate)
-                goto found;
+    for (i = 0; i < 9; i++) {
+        if ((ff_ac3_sample_rate_tab[i / 3] >> (i % 3)) == avctx->sample_rate)
+            break;
     }
+    if (i == 9) {
     return -1;
- found:
+    }
     s->sample_rate        = avctx->sample_rate;
-    s->bit_alloc.sr_shift = i;
-    s->bit_alloc.sr_code  = j;
+    s->bit_alloc.sr_shift = i % 3;
+    s->bit_alloc.sr_code  = i / 3;
     s->bitstream_id       = 8 + s->bit_alloc.sr_shift;
     s->bitstream_mode     = 0; /* complete main audio service */
 
