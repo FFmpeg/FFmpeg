@@ -32,8 +32,10 @@
 #define AC3_MAX_CODED_FRAME_SIZE 3840 /* in bytes */
 #define AC3_MAX_CHANNELS 6 /* including LFE channel */
 
-#define NB_BLOCKS 6 /* number of PCM blocks inside an AC-3 frame */
-#define AC3_FRAME_SIZE (NB_BLOCKS * 256)
+#define AC3_MAX_COEFS   256
+#define AC3_BLOCK_SIZE  256
+#define AC3_MAX_BLOCKS    6
+#define AC3_FRAME_SIZE (AC3_MAX_BLOCKS * 256)
 
 /* exponent encoding strategy */
 #define EXP_REUSE 0

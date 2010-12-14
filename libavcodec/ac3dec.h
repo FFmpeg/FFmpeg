@@ -63,9 +63,6 @@
 
 #define AC3_OUTPUT_LFEON  8
 
-#define AC3_MAX_COEFS   256
-#define AC3_BLOCK_SIZE  256
-#define MAX_BLOCKS        6
 #define SPX_MAX_BANDS    17
 
 typedef struct {
@@ -101,8 +98,8 @@ typedef struct {
  ///@}
 
 ///@defgroup cpl standard coupling
-    int cpl_in_use[MAX_BLOCKS];             ///< coupling in use                        (cplinu)
-    int cpl_strategy_exists[MAX_BLOCKS];    ///< coupling strategy exists               (cplstre)
+    int cpl_in_use[AC3_MAX_BLOCKS];         ///< coupling in use                        (cplinu)
+    int cpl_strategy_exists[AC3_MAX_BLOCKS];///< coupling strategy exists               (cplstre)
     int channel_in_cpl[AC3_MAX_CHANNELS];   ///< channel in coupling                    (chincpl)
     int phase_flags_in_use;                 ///< phase flags in use                     (phsflginu)
     int phase_flags[18];                    ///< phase flags                            (phsflg)
@@ -131,7 +128,7 @@ typedef struct {
 
 ///@defgroup aht adaptive hybrid transform
     int channel_uses_aht[AC3_MAX_CHANNELS];                         ///< channel AHT in use (chahtinu)
-    int pre_mantissa[AC3_MAX_CHANNELS][AC3_MAX_COEFS][MAX_BLOCKS];  ///< pre-IDCT mantissas
+    int pre_mantissa[AC3_MAX_CHANNELS][AC3_MAX_COEFS][AC3_MAX_BLOCKS];  ///< pre-IDCT mantissas
 ///@}
 
 ///@defgroup channel channel
@@ -161,7 +158,7 @@ typedef struct {
 ///@defgroup exponents exponents
     int num_exp_groups[AC3_MAX_CHANNELS];           ///< Number of exponent groups      (nexpgrp)
     int8_t dexps[AC3_MAX_CHANNELS][AC3_MAX_COEFS];  ///< decoded exponents
-    int exp_strategy[MAX_BLOCKS][AC3_MAX_CHANNELS]; ///< exponent strategies            (expstr)
+    int exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS]; ///< exponent strategies        (expstr)
 ///@}
 
 ///@defgroup bitalloc bit allocation
