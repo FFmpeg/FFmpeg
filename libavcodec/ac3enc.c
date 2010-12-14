@@ -281,16 +281,10 @@ static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CH
         while (j < AC3_MAX_BLOCKS && exp_strategy[j][ch] == EXP_REUSE)
             j++;
         switch (j - i) {
-        case 1:
-            exp_strategy[i][ch] = EXP_D45;
-            break;
+        case 1:  exp_strategy[i][ch] = EXP_D45; break;
         case 2:
-        case 3:
-            exp_strategy[i][ch] = EXP_D25;
-            break;
-        default:
-            exp_strategy[i][ch] = EXP_D15;
-            break;
+        case 3:  exp_strategy[i][ch] = EXP_D25; break;
+        default: exp_strategy[i][ch] = EXP_D15; break;
         }
         i = j;
     }
