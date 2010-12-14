@@ -313,6 +313,22 @@ static void mdct512(int32_t *out, int16_t *in)
 
 
 /**
+ * Apply KBD window to input samples prior to MDCT.
+ */
+static void apply_window(int16_t *output, const int16_t *input,
+                         const int16_t *window, int n)
+{
+    int i;
+    int n2 = n >> 1;
+
+    for (i = 0; i < n2; i++) {
+        output[i]     = MUL16(input[i],     window[i]) >> 15;
+        output[n-i-1] = MUL16(input[n-i-1], window[i]) >> 15;
+    }
+}
+
+
+/**
  * Calculate the log2() of the maximum absolute value in an array.
  * @param tab input array
  * @param n   number of values in the array
@@ -347,6 +363,50 @@ static void lshift_tab(int16_t *tab, int n, int lshift)
         lshift = -lshift;
         for (i = 0; i < n; i++)
             tab[i] >>= lshift;
+    }
+}
+
+
+/**
+ * Normalize the input samples to use the maximum available precision.
+ * This assumes signed 16-bit input samples. Exponents are reduced by 9 to
+ * match the 24-bit internal precision for MDCT coefficients.
+ *
+ * @return exponent shift
+ */
+static int normalize_samples(AC3EncodeContext *s,
+                             int16_t windowed_samples[AC3_WINDOW_SIZE])
+{
+    int v = 14 - log2_tab(windowed_samples, AC3_WINDOW_SIZE);
+    v = FFMAX(0, v);
+    lshift_tab(windowed_samples, AC3_WINDOW_SIZE, v);
+    return v - 9;
+}
+
+
+/**
+ * Apply the MDCT to input samples to generate frequency coefficients.
+ * This applies the KBD window and normalizes the input to reduce precision
+ * loss due to fixed-point calculations.
+ */
+static void apply_mdct(AC3EncodeContext *s,
+                       int16_t planar_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE+AC3_FRAME_SIZE],
+                       int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
+                       int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS])
+{
+    int blk, ch;
+    int16_t windowed_samples[AC3_WINDOW_SIZE];
+
+    for (ch = 0; ch < s->channels; ch++) {
+        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+            const int16_t *input_samples = &planar_samples[ch][blk * AC3_BLOCK_SIZE];
+
+            apply_window(windowed_samples, input_samples, ff_ac3_window, AC3_WINDOW_SIZE);
+
+            exp_shift[blk][ch] = normalize_samples(s, windowed_samples);
+
+            mdct512(mdct_coef[blk][ch], windowed_samples);
+        }
     }
 }
 
@@ -1117,7 +1177,6 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     int v;
     int blk, blk1, blk2, ch, i;
     int16_t planar_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE+AC3_FRAME_SIZE];
-    int16_t windowed_samples[AC3_WINDOW_SIZE];
     int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
@@ -1128,30 +1187,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
 
     deinterleave_input_samples(s, samples, planar_samples);
 
-    /* apply MDCT */
-    for (ch = 0; ch < s->channels; ch++) {
-        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-            int16_t *input_samples = &planar_samples[ch][blk * AC3_BLOCK_SIZE];
-
-            /* apply the MDCT window */
-            for (i = 0; i < AC3_BLOCK_SIZE; i++) {
-                windowed_samples[i]                   = MUL16(input_samples[i],
-                                                           ff_ac3_window[i]) >> 15;
-                windowed_samples[AC3_WINDOW_SIZE-i-1] = MUL16(input_samples[AC3_WINDOW_SIZE-i-1],
-                                                           ff_ac3_window[i]) >> 15;
-            }
-
-            /* Normalize the samples to use the maximum available precision */
-            v = 14 - log2_tab(windowed_samples, AC3_WINDOW_SIZE);
-            if (v < 0)
-                v = 0;
-            exp_shift[blk][ch] = v - 9;
-            lshift_tab(windowed_samples, AC3_WINDOW_SIZE, v);
-
-            /* do the MDCT */
-            mdct512(mdct_coef[blk][ch], windowed_samples);
-        }
-    }
+    apply_mdct(s, planar_samples, exp_shift, mdct_coef);
 
     /* extract exponents */
     for (ch = 0; ch < s->channels; ch++) {
