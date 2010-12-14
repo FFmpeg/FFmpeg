@@ -975,16 +975,19 @@ static int compute_bit_allocation(AC3EncodeContext *s,
        offset until we can pack everything in the requested frame size */
 
     bits_left = 8 * s->frame_size - (s->frame_bits + s->exponent_bits);
+
     snr_offset = s->coarse_snr_offset << 4;
+
     while (snr_offset >= 0 &&
-           bit_alloc(s, mask, psd, bap, snr_offset) > bits_left)
+           bit_alloc(s, mask, psd, bap, snr_offset) > bits_left) {
         snr_offset -= 64;
+    }
     if (snr_offset < 0) {
         return AVERROR(EINVAL);
     }
+
     while (snr_offset + 64 <= 1023 &&
-           bit_alloc(s, mask, psd, bap1,
-                     snr_offset + 64) <= bits_left) {
+           bit_alloc(s, mask, psd, bap1, snr_offset + 64) <= bits_left) {
         snr_offset += 64;
         memcpy(bap, bap1, sizeof(bap1));
     }
@@ -994,14 +997,12 @@ static int compute_bit_allocation(AC3EncodeContext *s,
         memcpy(bap, bap1, sizeof(bap1));
     }
     while (snr_offset + 4 <= 1023 &&
-           bit_alloc(s, mask, psd, bap1,
-                     snr_offset + 4) <= bits_left) {
+           bit_alloc(s, mask, psd, bap1, snr_offset + 4) <= bits_left) {
         snr_offset += 4;
         memcpy(bap, bap1, sizeof(bap1));
     }
     while (snr_offset + 1 <= 1023 &&
-           bit_alloc(s, mask, psd, bap1,
-                     snr_offset + 1) <= bits_left) {
+           bit_alloc(s, mask, psd, bap1, snr_offset + 1) <= bits_left) {
         snr_offset++;
         memcpy(bap, bap1, sizeof(bap1));
     }
