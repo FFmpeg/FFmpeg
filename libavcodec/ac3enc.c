@@ -34,41 +34,45 @@
 #include "audioconvert.h"
 
 typedef struct AC3EncodeContext {
-    PutBitContext pb;
+    PutBitContext pb;                       ///< bitstream writer context
 
-    int bitstream_id;
-    int bitstream_mode;
+    int bitstream_id;                       ///< bitstream id                           (bsid)
+    int bitstream_mode;                     ///< bitstream mode                         (bsmod)
 
-    int bit_rate;
-    int sample_rate;
+    int bit_rate;                           ///< target bit rate, in bits-per-second
+    int sample_rate;                        ///< sampling frequency, in Hz
 
-    int frame_size_min; /* minimum frame size in case rounding is necessary */
-    int frame_size; /* current frame size in words */
-    int frame_size_code;
-    int bits_written;
-    int samples_written;
+    int frame_size_min;                     ///< minimum frame size in case rounding is necessary
+    int frame_size;                         ///< current frame size in words
+    int frame_size_code;                    ///< frame size code                        (frmsizecod)
+    int bits_written;                       ///< bit count    (used to avg. bitrate)
+    int samples_written;                    ///< sample count (used to avg. bitrate)
 
-    int fbw_channels;
-    int channels;
-    int lfe_on;
-    int lfe_channel;
-    int channel_mode;
-    const uint8_t *channel_map;
+    int fbw_channels;                       ///< number of full-bandwidth channels      (nfchans)
+    int channels;                           ///< total number of channels               (nchans)
+    int lfe_on;                             ///< indicates if there is an LFE channel   (lfeon)
+    int lfe_channel;                        ///< channel index of the LFE channel
+    int channel_mode;                       ///< channel mode                           (acmod)
+    const uint8_t *channel_map;             ///< channel map used to reorder channels
 
-    int bandwidth_code[AC3_MAX_CHANNELS];
+    int bandwidth_code[AC3_MAX_CHANNELS];   ///< bandwidth code (0 to 60)               (chbwcod)
     int nb_coefs[AC3_MAX_CHANNELS];
 
     /* bitrate allocation control */
-    int slow_gain_code, slow_decay_code, fast_decay_code, db_per_bit_code, floor_code;
-    AC3BitAllocParameters bit_alloc;
-    int coarse_snr_offset;
-    int fast_gain_code[AC3_MAX_CHANNELS];
-    int fine_snr_offset[AC3_MAX_CHANNELS];
+    int slow_gain_code;                     ///< slow gain code                         (sgaincod)
+    int slow_decay_code;                    ///< slow decay code                        (sdcycod)
+    int fast_decay_code;                    ///< fast decay code                        (fdcycod)
+    int db_per_bit_code;                    ///< dB/bit code                            (dbpbcod)
+    int floor_code;                         ///< floor code                             (floorcod)
+    AC3BitAllocParameters bit_alloc;        ///< bit allocation parameters
+    int coarse_snr_offset;                  ///< coarse SNR offsets                     (csnroffst)
+    int fast_gain_code[AC3_MAX_CHANNELS];   ///< fast gain codes (signal-to-mask ratio) (fgaincod)
+    int fine_snr_offset[AC3_MAX_CHANNELS];  ///< fine SNR offsets                       (fsnroffst)
 
     /* mantissa encoding */
-    int mant1_cnt, mant2_cnt, mant4_cnt;
+    int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
 
-    int16_t last_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];
+    int16_t last_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE]; ///< last 256 samples from previous frame
 } AC3EncodeContext;
 
 static int16_t costab[64];
