@@ -773,7 +773,7 @@ static void output_audio_block(AC3EncodeContext *s,
                                uint8_t encoded_exp[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                                uint8_t bap[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                                int32_t mdct_coefs[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                               int8_t global_exp[AC3_MAX_CHANNELS],
+                               int8_t exp_shift[AC3_MAX_CHANNELS],
                                int block_num)
 {
     int ch, nb_groups, group_size, i, baie, rbnd;
@@ -897,7 +897,7 @@ static void output_audio_block(AC3EncodeContext *s,
 
         for (i = 0; i < s->nb_coefs[ch]; i++) {
             c = mdct_coefs[ch][i];
-            e = encoded_exp[ch][i] - global_exp[ch];
+            e = encoded_exp[ch][i] - exp_shift[ch];
             b = bap[ch][i];
             switch (b) {
             case 0:
@@ -1089,7 +1089,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
     uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
-    int8_t exp_samples[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
+    int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
     int frame_bits;
 
     frame_bits = 0;
@@ -1123,7 +1123,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
             v = 14 - log2_tab(input_samples, AC3_WINDOW_SIZE);
             if (v < 0)
                 v = 0;
-            exp_samples[i][ch] = v - 9;
+            exp_shift[i][ch] = v - 9;
             lshift_tab(input_samples, AC3_WINDOW_SIZE, v);
 
             /* do the MDCT */
@@ -1136,7 +1136,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
                 if (v == 0)
                     e = 24;
                 else {
-                    e = 23 - av_log2(v) + exp_samples[i][ch];
+                    e = 23 - av_log2(v) + exp_shift[i][ch];
                     if (e >= 24) {
                         e = 24;
                         mdct_coef[i][ch][j] = 0;
@@ -1185,7 +1185,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
 
     for (i = 0; i < AC3_MAX_BLOCKS; i++) {
         output_audio_block(s, exp_strategy[i], encoded_exp[i],
-                           bap[i], mdct_coef[i], exp_samples[i], i);
+                           bap[i], mdct_coef[i], exp_shift[i], i);
     }
     return output_frame_end(s);
 }
