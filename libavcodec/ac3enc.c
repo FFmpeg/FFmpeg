@@ -1254,6 +1254,7 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
 {
     int i, ret;
 
+    /* validate channel layout */
     if (!avctx->channel_layout) {
         av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
                                       "encoder will guess the layout, but it "
@@ -1265,7 +1266,7 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
         return ret;
     }
 
-    /* frequency */
+    /* validate sample rate */
     for (i = 0; i < 9; i++) {
         if ((ff_ac3_sample_rate_tab[i / 3] >> (i % 3)) == avctx->sample_rate)
             break;
@@ -1278,7 +1279,7 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
     s->bit_alloc.sr_shift = i % 3;
     s->bit_alloc.sr_code  = i / 3;
 
-    /* bitrate & frame size */
+    /* validate bit rate */
     for (i = 0; i < 19; i++) {
         if ((ff_ac3_bitrate_tab[i] >> s->bit_alloc.sr_shift)*1000 == avctx->bit_rate)
             break;
