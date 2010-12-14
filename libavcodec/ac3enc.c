@@ -1077,7 +1077,7 @@ static int output_frame_end(AC3EncodeContext *s)
 /**
  * Encode a single AC-3 frame.
  */
-static int AC3_encode_frame(AVCodecContext *avctx,
+static int ac3_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame, int buf_size, void *data)
 {
     AC3EncodeContext *s = avctx->priv_data;
@@ -1194,7 +1194,7 @@ static int AC3_encode_frame(AVCodecContext *avctx,
 /**
  * Finalize encoding and free any memory allocated by the encoder.
  */
-static av_cold int AC3_encode_close(AVCodecContext *avctx)
+static av_cold int ac3_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
     return 0;
@@ -1252,7 +1252,7 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
 /**
  * Initialize the encoder.
  */
-static av_cold int AC3_encode_init(AVCodecContext *avctx)
+static av_cold int ac3_encode_init(AVCodecContext *avctx)
 {
     int freq = avctx->sample_rate;
     int bitrate = avctx->bit_rate;
@@ -1430,9 +1430,9 @@ AVCodec ac3_encoder = {
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AC3,
     sizeof(AC3EncodeContext),
-    AC3_encode_init,
-    AC3_encode_frame,
-    AC3_encode_close,
+    ac3_encode_init,
+    ac3_encode_frame,
+    ac3_encode_close,
     NULL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
