@@ -50,14 +50,14 @@ typedef struct AC3EncodeContext {
     int bits_written;
     int samples_written;
 
-    int nb_all_channels;
-    int nb_channels;
-    int lfe;
+    int fbw_channels;
+    int channels;
+    int lfe_on;
     int lfe_channel;
     int channel_mode;
     const uint8_t *channel_map;
 
-    int chbwcod[AC3_MAX_CHANNELS];
+    int bandwidth_code[AC3_MAX_CHANNELS];
     int nb_coefs[AC3_MAX_CHANNELS];
 
     /* bitrate allocation control */
@@ -432,7 +432,7 @@ static void bit_alloc_masking(AC3EncodeContext *s,
     int16_t band_psd[NB_BLOCKS][AC3_MAX_CHANNELS][50];
 
     for(blk=0; blk<NB_BLOCKS; blk++) {
-        for(ch=0;ch<s->nb_all_channels;ch++) {
+        for(ch=0;ch<s->channels;ch++) {
             if(exp_strategy[blk][ch] == EXP_REUSE) {
                 memcpy(psd[blk][ch], psd[blk-1][ch], (N/2)*sizeof(int16_t));
                 memcpy(mask[blk][ch], mask[blk-1][ch], 50*sizeof(int16_t));
@@ -467,7 +467,7 @@ static int bit_alloc(AC3EncodeContext *s,
         s->mant1_cnt = 0;
         s->mant2_cnt = 0;
         s->mant4_cnt = 0;
-        for(ch=0;ch<s->nb_all_channels;ch++) {
+        for(ch=0;ch<s->channels;ch++) {
             ff_ac3_bit_alloc_calc_bap(mask[i][ch], psd[i][ch], 0,
                                       s->nb_coefs[ch], snr_offset,
                                       s->bit_alloc.floor, ff_ac3_bap_tab,
@@ -505,7 +505,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     s->slow_gain_code = 1;
     s->db_per_bit_code = 2;
     s->floor_code = 4;
-    for(ch=0;ch<s->nb_all_channels;ch++)
+    for(ch=0;ch<s->channels;ch++)
         s->fast_gain_code[ch] = 4;
 
     /* compute real values */
@@ -525,15 +525,15 @@ static int compute_bit_allocation(AC3EncodeContext *s,
 
     /* audio blocks */
     for(i=0;i<NB_BLOCKS;i++) {
-        frame_bits += s->nb_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
+        frame_bits += s->fbw_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
         if (s->channel_mode == AC3_CHMODE_STEREO) {
             frame_bits++; /* rematstr */
             if(i==0) frame_bits += 4;
         }
-        frame_bits += 2 * s->nb_channels; /* chexpstr[2] * c */
-        if (s->lfe)
+        frame_bits += 2 * s->fbw_channels; /* chexpstr[2] * c */
+        if (s->lfe_on)
             frame_bits++; /* lfeexpstr */
-        for(ch=0;ch<s->nb_channels;ch++) {
+        for(ch=0;ch<s->fbw_channels;ch++) {
             if (exp_strategy[i][ch] != EXP_REUSE)
                 frame_bits += 6 + 2; /* chbwcod[6], gainrng[2] */
         }
@@ -546,7 +546,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* sdcycod[2], fdcycod[2], sgaincod[2], dbpbcod[2], floorcod[3] */
     /* csnroffset[6] */
     /* (fsnoffset[4] + fgaincod[4]) * c */
-    frame_bits += 2*4 + 3 + 6 + s->nb_all_channels * (4 + 3);
+    frame_bits += 2*4 + 3 + 6 + s->channels * (4 + 3);
 
     /* auxdatae, crcrsv */
     frame_bits += 2;
@@ -595,14 +595,14 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     }
 
     s->coarse_snr_offset = coarse_snr_offset;
-    for(ch=0;ch<s->nb_all_channels;ch++)
+    for(ch=0;ch<s->channels;ch++)
         s->fine_snr_offset[ch] = fine_snr_offset;
 #if defined(DEBUG_BITALLOC)
     {
         int j;
 
         for(i=0;i<6;i++) {
-            for(ch=0;ch<s->nb_all_channels;ch++) {
+            for(ch=0;ch<s->channels;ch++) {
                 printf("Block #%d Ch%d:\n", i, ch);
                 printf("bap=");
                 for(j=0;j<s->nb_coefs[ch];j++) {
@@ -631,11 +631,11 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
     if (av_get_channel_layout_nb_channels(ch_layout) != channels)
         return -1;
 
-    s->lfe = !!(ch_layout & AV_CH_LOW_FREQUENCY);
-    s->nb_all_channels = channels;
-    s->nb_channels = channels - s->lfe;
-    s->lfe_channel = s->lfe ? s->nb_channels : -1;
-    if (s->lfe)
+    s->lfe_on       = !!(ch_layout & AV_CH_LOW_FREQUENCY);
+    s->channels     = channels;
+    s->fbw_channels = channels - s->lfe_on;
+    s->lfe_channel  = s->lfe_on ? s->fbw_channels : -1;
+    if (s->lfe_on)
         ch_layout -= AV_CH_LOW_FREQUENCY;
 
     switch (ch_layout) {
@@ -652,9 +652,9 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
         return -1;
     }
 
-    s->channel_map = ff_ac3_enc_channel_map[s->channel_mode][s->lfe];
+    s->channel_map = ff_ac3_enc_channel_map[s->channel_mode][s->lfe_on];
     *channel_layout = ch_layout;
-    if (s->lfe)
+    if (s->lfe_on)
         *channel_layout |= AV_CH_LOW_FREQUENCY;
 
     return 0;
@@ -723,12 +723,12 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
            size, so that we avoid annoying high frequency artifacts */
         bw_code = 50;
     }
-    for(ch=0;ch<s->nb_channels;ch++) {
+    for(ch=0;ch<s->fbw_channels;ch++) {
         /* bandwidth for each channel */
-        s->chbwcod[ch] = bw_code;
+        s->bandwidth_code[ch] = bw_code;
         s->nb_coefs[ch] = bw_code * 3 + 73;
     }
-    if (s->lfe) {
+    if (s->lfe_on) {
         s->nb_coefs[s->lfe_channel] = 7; /* fixed */
     }
     /* initial snr offset */
@@ -766,7 +766,7 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
         put_bits(&s->pb, 2, 1); /* XXX -6 dB */
     if (s->channel_mode == AC3_CHMODE_STEREO)
         put_bits(&s->pb, 2, 0); /* surround not indicated */
-    put_bits(&s->pb, 1, s->lfe); /* LFE */
+    put_bits(&s->pb, 1, s->lfe_on); /* LFE */
     put_bits(&s->pb, 5, 31); /* dialog norm: -31 db */
     put_bits(&s->pb, 1, 0); /* no compression control word */
     put_bits(&s->pb, 1, 0); /* no lang code */
@@ -833,9 +833,9 @@ static void output_audio_block(AC3EncodeContext *s,
     uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr;
     int delta0, delta1, delta2;
 
-    for(ch=0;ch<s->nb_channels;ch++)
+    for(ch=0;ch<s->fbw_channels;ch++)
         put_bits(&s->pb, 1, 0); /* 512 point MDCT */
-    for(ch=0;ch<s->nb_channels;ch++)
+    for(ch=0;ch<s->fbw_channels;ch++)
         put_bits(&s->pb, 1, 1); /* no dither */
     put_bits(&s->pb, 1, 0); /* no dynamic range */
     if (block_num == 0) {
@@ -872,21 +872,21 @@ static void output_audio_block(AC3EncodeContext *s,
     }
 #endif
     /* exponent strategy */
-    for(ch=0;ch<s->nb_channels;ch++) {
+    for(ch=0;ch<s->fbw_channels;ch++) {
         put_bits(&s->pb, 2, exp_strategy[ch]);
     }
 
-    if (s->lfe) {
+    if (s->lfe_on) {
         put_bits(&s->pb, 1, exp_strategy[s->lfe_channel]);
     }
 
-    for(ch=0;ch<s->nb_channels;ch++) {
+    for(ch=0;ch<s->fbw_channels;ch++) {
         if (exp_strategy[ch] != EXP_REUSE)
-            put_bits(&s->pb, 6, s->chbwcod[ch]);
+            put_bits(&s->pb, 6, s->bandwidth_code[ch]);
     }
 
     /* exponents */
-    for (ch = 0; ch < s->nb_all_channels; ch++) {
+    for (ch = 0; ch < s->channels; ch++) {
         switch(exp_strategy[ch]) {
         case EXP_REUSE:
             continue;
@@ -948,7 +948,7 @@ static void output_audio_block(AC3EncodeContext *s,
     put_bits(&s->pb, 1, baie); /* always present with bai */
     if (baie) {
         put_bits(&s->pb, 6, s->coarse_snr_offset);
-        for(ch=0;ch<s->nb_all_channels;ch++) {
+        for(ch=0;ch<s->channels;ch++) {
             put_bits(&s->pb, 4, s->fine_snr_offset[ch]);
             put_bits(&s->pb, 3, s->fast_gain_code[ch]);
         }
@@ -965,7 +965,7 @@ static void output_audio_block(AC3EncodeContext *s,
     mant1_cnt = mant2_cnt = mant4_cnt = 0;
     qmant1_ptr = qmant2_ptr = qmant4_ptr = NULL;
 
-    for (ch = 0; ch < s->nb_all_channels; ch++) {
+    for (ch = 0; ch < s->channels; ch++) {
         int b, c, e, v;
 
         for(i=0;i<s->nb_coefs[ch];i++) {
@@ -1052,7 +1052,7 @@ static void output_audio_block(AC3EncodeContext *s,
     }
 
     /* second pass : output the values */
-    for (ch = 0; ch < s->nb_all_channels; ch++) {
+    for (ch = 0; ch < s->channels; ch++) {
         int b, q;
 
         for(i=0;i<s->nb_coefs[ch];i++) {
@@ -1201,7 +1201,7 @@ static int AC3_encode_frame(AVCodecContext *avctx,
     int frame_bits;
 
     frame_bits = 0;
-    for(ch=0;ch<s->nb_all_channels;ch++) {
+    for(ch=0;ch<s->channels;ch++) {
         int ich = s->channel_map[ch];
         /* fixed mdct to the six sub blocks & exponent computation */
         for(i=0;i<NB_BLOCKS;i++) {
@@ -1210,7 +1210,7 @@ static int AC3_encode_frame(AVCodecContext *avctx,
 
             /* compute input samples */
             memcpy(input_samples, s->last_samples[ich], N/2 * sizeof(int16_t));
-            sinc = s->nb_all_channels;
+            sinc = s->channels;
             sptr = samples + (sinc * (N/2) * i) + ich;
             for(j=0;j<N/2;j++) {
                 v = *sptr;
