@@ -1280,14 +1280,15 @@ static av_cold int AC3_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-#if 0
+#ifdef TEST
 /*************************************************************************/
 /* TEST */
 
-#undef random
-#define FN (N/4)
+#include "libavutil/lfg.h"
 
-void fft_test(void)
+#define FN (MDCT_SAMPLES/4)
+
+static void fft_test(AVLFG *lfg)
 {
     IComplex in[FN], in1[FN];
     int k, n, i;
@@ -1296,8 +1297,8 @@ void fft_test(void)
     /* FFT test */
 
     for(i=0;i<FN;i++) {
-        in[i].re = random() % 65535 - 32767;
-        in[i].im = random() % 65535 - 32767;
+        in[i].re = av_lfg_get(lfg) % 65535 - 32767;
+        in[i].im = av_lfg_get(lfg) % 65535 - 32767;
         in1[i] = in[i];
     }
     fft(in, 7);
@@ -1311,67 +1312,62 @@ void fft_test(void)
             sum_re += in1[n].re * cos(a) - in1[n].im * sin(a);
             sum_im += in1[n].re * sin(a) + in1[n].im * cos(a);
         }
-        printf("%3d: %6d,%6d %6.0f,%6.0f\n",
+        av_log(NULL, AV_LOG_DEBUG, "%3d: %6d,%6d %6.0f,%6.0f\n",
                k, in[k].re, in[k].im, sum_re / FN, sum_im / FN);
     }
 }
 
-void mdct_test(void)
+static void mdct_test(AVLFG *lfg)
 {
-    int16_t input[N];
-    int32_t output[N/2];
-    float input1[N];
-    float output1[N/2];
+    int16_t input[MDCT_SAMPLES];
+    int32_t output[AC3_MAX_COEFS];
+    float input1[MDCT_SAMPLES];
+    float output1[AC3_MAX_COEFS];
     float s, a, err, e, emax;
     int i, k, n;
 
-    for(i=0;i<N;i++) {
-        input[i] = (random() % 65535 - 32767) * 9 / 10;
+    for(i=0;i<MDCT_SAMPLES;i++) {
+        input[i] = (av_lfg_get(lfg) % 65535 - 32767) * 9 / 10;
         input1[i] = input[i];
     }
 
     mdct512(output, input);
 
     /* do it by hand */
-    for(k=0;k<N/2;k++) {
+    for(k=0;k<AC3_MAX_COEFS;k++) {
         s = 0;
-        for(n=0;n<N;n++) {
-            a = (2*M_PI*(2*n+1+N/2)*(2*k+1) / (4 * N));
+        for(n=0;n<MDCT_SAMPLES;n++) {
+            a = (2*M_PI*(2*n+1+MDCT_SAMPLES/2)*(2*k+1) / (4 * MDCT_SAMPLES));
             s += input1[n] * cos(a);
         }
-        output1[k] = -2 * s / N;
+        output1[k] = -2 * s / MDCT_SAMPLES;
     }
 
     err = 0;
     emax = 0;
-    for(i=0;i<N/2;i++) {
-        printf("%3d: %7d %7.0f\n", i, output[i], output1[i]);
+    for(i=0;i<AC3_MAX_COEFS;i++) {
+        av_log(NULL, AV_LOG_DEBUG, "%3d: %7d %7.0f\n", i, output[i], output1[i]);
         e = output[i] - output1[i];
         if (e > emax)
             emax = e;
         err += e * e;
     }
-    printf("err2=%f emax=%f\n", err / (N/2), emax);
+    av_log(NULL, AV_LOG_DEBUG, "err2=%f emax=%f\n", err / AC3_MAX_COEFS, emax);
 }
 
-void test_ac3(void)
+int main(void)
 {
-    AC3EncodeContext ctx;
-    unsigned char frame[AC3_MAX_CODED_FRAME_SIZE];
-    int16_t samples[AC3_FRAME_SIZE];
-    int ret, i;
+    AVLFG lfg;
 
-    AC3_encode_init(&ctx, 44100, 64000, 1);
+    av_log_set_level(AV_LOG_DEBUG);
+    mdct_init(9);
 
-    fft_test();
-    mdct_test();
+    fft_test(&lfg);
+    mdct_test(&lfg);
 
-    for(i=0;i<AC3_FRAME_SIZE;i++)
-        samples[i] = (int)(sin(2*M_PI*i*1000.0/44100) * 10000);
-    ret = AC3_encode_frame(&ctx, frame, samples);
-    printf("ret=%d\n", ret);
+    return 0;
 }
-#endif
+#endif /* TEST */
 
 AVCodec ac3_encoder = {
     "ac3",
