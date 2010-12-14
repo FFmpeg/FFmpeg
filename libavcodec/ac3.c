@@ -221,7 +221,7 @@ void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
 
     /* special case, if snr offset is -960, set all bap's to zero */
     if (snr_offset == -960) {
-        memset(bap, 0, 256);
+        memset(bap, 0, AC3_MAX_COEFS);
         return;
     }
 
@@ -246,7 +246,7 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
                                    uint8_t *dba_offsets, uint8_t *dba_lengths,
                                    uint8_t *dba_values)
 {
-    int16_t psd[256];   /* scaled exponents */
+    int16_t psd[AC3_MAX_COEFS];           /* scaled exponents */
     int16_t band_psd[AC3_CRITICAL_BANDS]; /* interpolated exponents */
     int16_t mask[AC3_CRITICAL_BANDS];   /* masking value */
 
