@@ -37,15 +37,24 @@
 #define MDCT_NBITS 9
 #define MDCT_SAMPLES (1 << MDCT_NBITS)
 
+/** Scale a float value by 2^bits and convert to an integer. */
 #define SCALE_FLOAT(a, bits) lrintf((a) * (float)(1 << (bits)))
 
+/** Scale a float value by 2^15, convert to an integer, and clip to int16_t range. */
 #define FIX15(a) av_clip_int16(SCALE_FLOAT(a, 15))
 
 
+/**
+ * Compex number.
+ * Used in fixed-point MDCT calculation.
+ */
 typedef struct IComplex {
     int16_t re,im;
 } IComplex;
 
+/**
+ * AC-3 encoder private context.
+ */
 typedef struct AC3EncodeContext {
     PutBitContext pb;                       ///< bitstream writer context
 
@@ -89,12 +98,17 @@ typedef struct AC3EncodeContext {
 } AC3EncodeContext;
 
 
+/** MDCT and FFT tables */
 static int16_t costab[64];
 static int16_t sintab[64];
 static int16_t xcos1[128];
 static int16_t xsin1[128];
 
 
+/**
+ * Initialize FFT tables.
+ * @param ln log2(FFT size)
+ */
 static av_cold void fft_init(int ln)
 {
     int i, n, n2;
@@ -111,6 +125,10 @@ static av_cold void fft_init(int ln)
 }
 
 
+/**
+ * Initialize MDCT tables.
+ * @param nbits log2(MDCT size)
+ */
 static av_cold void mdct_init(int nbits)
 {
     int i, n, n4;
@@ -128,7 +146,7 @@ static av_cold void mdct_init(int nbits)
 }
 
 
-/* butter fly op */
+/** Butterfly op */
 #define BF(pre, pim, qre, qim, pre1, pim1, qre1, qim1)  \
 {                                                       \
   int ax, ay, bx, by;                                   \
@@ -143,6 +161,7 @@ static av_cold void mdct_init(int nbits)
 }
 
 
+/** Complex multiply */
 #define CMUL(pre, pim, are, aim, bre, bim)              \
 {                                                       \
    pre = (MUL16(are, bre) - MUL16(aim, bim)) >> 15;     \
@@ -150,7 +169,11 @@ static av_cold void mdct_init(int nbits)
 }
 
 
-/* do a 2^n point complex fft on 2^ln points. */
+/**
+ * Calculate a 2^n point complex FFT on 2^ln points.
+ * @param z  complex input/output samples
+ * @param ln log2(FFT size)
+ */
 static void fft(IComplex *z, int ln)
 {
     int j, l, np, np2;
@@ -218,6 +241,11 @@ static void fft(IComplex *z, int ln)
 }
 
 
+/**
+ * Calculate a 512-point MDCT
+ * @param out 256 output frequency coefficients
+ * @param in  512 windowed input audio samples
+ */
 static void mdct512(int32_t *out, int16_t *in)
 {
     int i, re, im, re1, im1;
@@ -250,7 +278,12 @@ static void mdct512(int32_t *out, int16_t *in)
 }
 
 
-/* compute log2(max(abs(tab[]))) */
+/**
+ * Calculate the log2() of the maximum absolute value in an array.
+ * @param tab input array
+ * @param n   number of values in the array
+ * @return    log2(max(abs(tab[])))
+ */
 static int log2_tab(int16_t *tab, int n)
 {
     int i, v;
@@ -263,6 +296,12 @@ static int log2_tab(int16_t *tab, int n)
 }
 
 
+/**
+ * Left-shift each value in an array by a specified amount.
+ * @param tab    input array
+ * @param n      number of values in the array
+ * @param lshift left shift amount. a negative value means right shift.
+ */
 static void lshift_tab(int16_t *tab, int n, int lshift)
 {
     int i;
@@ -278,6 +317,9 @@ static void lshift_tab(int16_t *tab, int n, int lshift)
 }
 
 
+/**
+ * Calculate the sum of absolute differences (SAD) between 2 sets of exponents.
+ */
 static int calc_exp_diff(uint8_t *exp1, uint8_t *exp2, int n)
 {
     int sum, i;
@@ -288,10 +330,16 @@ static int calc_exp_diff(uint8_t *exp1, uint8_t *exp2, int n)
 }
 
 
-/* new exponents are sent if their Norm 1 exceed this number */
+/**
+ * Exponent Difference Threshold.
+ * New exponents are sent if their SAD exceed this number.
+ */
 #define EXP_DIFF_THRESHOLD 1000
 
 
+/**
+ * Calculate exponent strategies for all blocks in a single channel.
+ */
 static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
                                  uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                                  int ch, int is_lfe)
@@ -330,7 +378,11 @@ static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CH
 }
 
 
-/* set exp[i] to min(exp[i], exp1[i]) */
+/**
+ * Set each encoded exponent in a block to the minimum of itself and the
+ * exponent in the same frequency bin of a following block.
+ * exp[i] = min(exp[i], exp1[i]
+ */
 static void exponent_min(uint8_t exp[AC3_MAX_COEFS], uint8_t exp1[AC3_MAX_COEFS], int n)
 {
     int i;
@@ -341,8 +393,10 @@ static void exponent_min(uint8_t exp[AC3_MAX_COEFS], uint8_t exp1[AC3_MAX_COEFS]
 }
 
 
-/* update the exponents so that they are the ones the decoder will
-   decode. Return the number of bits used to code the exponents */
+/**
+ * Update the exponents so that they are the ones the decoder will decode.
+ * @return the number of bits used to encode the exponents.
+ */
 static int encode_exp(uint8_t encoded_exp[AC3_MAX_COEFS],
                       uint8_t exp[AC3_MAX_COEFS],
                       int nb_exps, int exp_strategy)
@@ -391,7 +445,9 @@ static int encode_exp(uint8_t encoded_exp[AC3_MAX_COEFS],
 }
 
 
-/* return the size in bits taken by the mantissa */
+/**
+ * Calculate the number of bits needed to encode a set of mantissas.
+ */
 static int compute_mantissa_size(AC3EncodeContext *s, uint8_t *m, int nb_coefs)
 {
     int bits, mant, i;
@@ -442,6 +498,10 @@ static int compute_mantissa_size(AC3EncodeContext *s, uint8_t *m, int nb_coefs)
 }
 
 
+/**
+ * Calculate masking curve based on the final exponents.
+ * Also calculate the power spectral densities to use in future calculations.
+ */
 static void bit_alloc_masking(AC3EncodeContext *s,
                               uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                               uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
@@ -472,6 +532,13 @@ static void bit_alloc_masking(AC3EncodeContext *s,
 }
 
 
+/**
+ * Run the bit allocation with a given SNR offset.
+ * This calculates the bit allocation pointers that will be used to determine
+ * the quantization of each mantissa.
+ * @return the number of remaining bits (positive or negative) if the given
+ *         SNR offset is used to quantize the mantissas.
+ */
 static int bit_alloc(AC3EncodeContext *s,
                      int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][50],
                      int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
@@ -501,6 +568,12 @@ static int bit_alloc(AC3EncodeContext *s,
 
 #define SNR_INC1 4
 
+/**
+ * Perform bit allocation search.
+ * Finds the SNR offset value that maximizes quality and fits in the specified
+ * frame size.  Output is the SNR offset and a set of bit allocation pointers
+ * used to quantize the mantissas.
+ */
 static int compute_bit_allocation(AC3EncodeContext *s,
                                   uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                                   uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
@@ -616,7 +689,9 @@ static int compute_bit_allocation(AC3EncodeContext *s,
 }
 
 
-/* output the AC-3 frame header */
+/**
+ * Write the AC-3 frame header to the output bitstream.
+ */
 static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
 {
     init_put_bits(&s->pb, frame, AC3_MAX_CODED_FRAME_SIZE);
@@ -647,7 +722,9 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
 }
 
 
-/* symetric quantization on 'levels' levels */
+/**
+ * Symmetric quantization on 'levels' levels.
+ */
 static inline int sym_quant(int c, int e, int levels)
 {
     int v;
@@ -666,7 +743,9 @@ static inline int sym_quant(int c, int e, int levels)
 }
 
 
-/* asymetric quantization on 2^qbits levels */
+/**
+ * Asymmetric quantization on 2^qbits levels.
+ */
 static inline int asym_quant(int c, int e, int qbits)
 {
     int lshift, m, v;
@@ -686,8 +765,9 @@ static inline int asym_quant(int c, int e, int qbits)
 }
 
 
-/* Output one audio block. There are AC3_MAX_BLOCKS audio blocks in one AC-3
-   frame */
+/**
+ * Write one audio block to the output bitstream.
+ */
 static void output_audio_block(AC3EncodeContext *s,
                                uint8_t exp_strategy[AC3_MAX_CHANNELS],
                                uint8_t encoded_exp[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
@@ -920,6 +1000,7 @@ static void output_audio_block(AC3EncodeContext *s,
 }
 
 
+/** CRC-16 Polynomial */
 #define CRC16_POLY ((1 << 0) | (1 << 2) | (1 << 15) | (1 << 16))
 
 
@@ -954,7 +1035,9 @@ static unsigned int pow_poly(unsigned int a, unsigned int n, unsigned int poly)
 }
 
 
-/* fill the end of the frame and compute the two crcs */
+/**
+ * Fill the end of the frame with 0's and compute the two CRCs.
+ */
 static int output_frame_end(AC3EncodeContext *s)
 {
     int frame_size, frame_size_58, n, crc1, crc2, crc_inv;
@@ -991,6 +1074,9 @@ static int output_frame_end(AC3EncodeContext *s)
 }
 
 
+/**
+ * Encode a single AC-3 frame.
+ */
 static int AC3_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame, int buf_size, void *data)
 {
@@ -1105,6 +1191,9 @@ static int AC3_encode_frame(AVCodecContext *avctx,
 }
 
 
+/**
+ * Finalize encoding and free any memory allocated by the encoder.
+ */
 static av_cold int AC3_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
@@ -1112,6 +1201,9 @@ static av_cold int AC3_encode_close(AVCodecContext *avctx)
 }
 
 
+/**
+ * Set channel information during initialization.
+ */
 static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
                                     int64_t *channel_layout)
 {
@@ -1157,6 +1249,9 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
 }
 
 
+/**
+ * Initialize the encoder.
+ */
 static av_cold int AC3_encode_init(AVCodecContext *avctx)
 {
     int freq = avctx->sample_rate;
