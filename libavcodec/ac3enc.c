@@ -70,7 +70,7 @@ typedef struct AC3EncodeContext {
     /* mantissa encoding */
     int mant1_cnt, mant2_cnt, mant4_cnt;
 
-    short last_samples[AC3_MAX_CHANNELS][256];
+    int16_t last_samples[AC3_MAX_CHANNELS][256];
 } AC3EncodeContext;
 
 static int16_t costab[64];
@@ -96,7 +96,7 @@ static inline int16_t fix15(float a)
 }
 
 typedef struct IComplex {
-    short re,im;
+    int16_t re,im;
 } IComplex;
 
 static av_cold void fft_init(int ln)
@@ -1384,7 +1384,7 @@ void test_ac3(void)
 {
     AC3EncodeContext ctx;
     unsigned char frame[AC3_MAX_CODED_FRAME_SIZE];
-    short samples[AC3_FRAME_SIZE];
+    int16_t samples[AC3_FRAME_SIZE];
     int ret, i;
 
     AC3_encode_init(&ctx, 44100, 64000, 1);
