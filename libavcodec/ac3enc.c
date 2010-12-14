@@ -485,38 +485,34 @@ static int calc_exp_diff(uint8_t *exp1, uint8_t *exp2, int n)
 /**
  * Calculate exponent strategies for all blocks in a single channel.
  */
-static void compute_exp_strategy_ch(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
-                                    uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                                    int ch, int is_lfe)
+static void compute_exp_strategy_ch(uint8_t *exp_strategy, uint8_t **exp)
 {
     int blk, blk1;
     int exp_diff;
 
     /* estimate if the exponent variation & decide if they should be
        reused in the next frame */
-    exp_strategy[0][ch] = EXP_NEW;
+    exp_strategy[0] = EXP_NEW;
     for (blk = 1; blk < AC3_MAX_BLOCKS; blk++) {
-        exp_diff = calc_exp_diff(exp[blk][ch], exp[blk-1][ch], AC3_MAX_COEFS);
+        exp_diff = calc_exp_diff(exp[blk], exp[blk-1], AC3_MAX_COEFS);
         if (exp_diff > EXP_DIFF_THRESHOLD)
-            exp_strategy[blk][ch] = EXP_NEW;
+            exp_strategy[blk] = EXP_NEW;
         else
-            exp_strategy[blk][ch] = EXP_REUSE;
+            exp_strategy[blk] = EXP_REUSE;
     }
-    if (is_lfe)
-        return;
 
     /* now select the encoding strategy type : if exponents are often
        recoded, we use a coarse encoding */
     blk = 0;
     while (blk < AC3_MAX_BLOCKS) {
         blk1 = blk + 1;
-        while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1][ch] == EXP_REUSE)
+        while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1] == EXP_REUSE)
             blk1++;
         switch (blk1 - blk) {
-        case 1:  exp_strategy[blk][ch] = EXP_D45; break;
+        case 1:  exp_strategy[blk] = EXP_D45; break;
         case 2:
-        case 3:  exp_strategy[blk][ch] = EXP_D25; break;
-        default: exp_strategy[blk][ch] = EXP_D15; break;
+        case 3:  exp_strategy[blk] = EXP_D25; break;
+        default: exp_strategy[blk] = EXP_D15; break;
         }
         blk = blk1;
     }
@@ -525,15 +521,32 @@ static void compute_exp_strategy_ch(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX
 
 /**
  * Calculate exponent strategies for all channels.
+ * Array arrangement is reversed to simplify the per-channel calculation.
  */
 static void compute_exp_strategy(AC3EncodeContext *s,
                                  uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
                                  uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS])
 {
-    int ch;
+    uint8_t *exp1[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS];
+    uint8_t exp_str1[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS];
+    int ch, blk;
 
-    for (ch = 0; ch < s->channels; ch++) {
-        compute_exp_strategy_ch(exp_strategy, exp, ch, ch == s->lfe_channel);
+    for (ch = 0; ch < s->fbw_channels; ch++) {
+        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+            exp1[ch][blk]     = exp[blk][ch];
+            exp_str1[ch][blk] = exp_strategy[blk][ch];
+        }
+
+        compute_exp_strategy_ch(exp_str1[ch], exp1[ch]);
+
+        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
+            exp_strategy[blk][ch] = exp_str1[ch][blk];
+    }
+    if (s->lfe_on) {
+        ch = s->lfe_channel;
+        exp_strategy[0][ch] = EXP_D15;
+        for (blk = 1; blk < 5; blk++)
+            exp_strategy[blk][ch] = EXP_REUSE;
     }
 }
 
