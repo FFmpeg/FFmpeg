@@ -115,6 +115,22 @@ static av_cold void fft_init(int ln)
     }
 }
 
+static av_cold void mdct_init(int nbits)
+{
+    int i;
+    float alpha;
+    int n  = 1 << nbits;
+    int n4 = n >> 2;
+
+    fft_init(nbits - 2);
+
+    for(i=0;i<n4;i++) {
+        alpha = 2 * M_PI * (i + 1.0 / 8.0) / n;
+        xcos1[i] = fix15(-cos(alpha));
+        xsin1[i] = fix15(-sin(alpha));
+    }
+}
+
 /* butter fly op */
 #define BF(pre, pim, qre, qim, pre1, pim1, qre1, qim1) \
 {\
@@ -637,7 +653,6 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
     int bitrate = avctx->bit_rate;
     AC3EncodeContext *s = avctx->priv_data;
     int i, j, ch;
-    float alpha;
     int bw_code;
 
     avctx->frame_size = AC3_FRAME_SIZE;
@@ -705,13 +720,7 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
     /* initial snr offset */
     s->coarse_snr_offset = 40;
 
-    /* mdct init */
-    fft_init(MDCT_NBITS - 2);
-    for(i=0;i<MDCT_SAMPLES/4;i++) {
-        alpha = 2 * M_PI * (i + 1.0 / 8.0) / (float)MDCT_SAMPLES;
-        xcos1[i] = fix15(-cos(alpha));
-        xsin1[i] = fix15(-sin(alpha));
-    }
+    mdct_init(9);
 
     avctx->coded_frame= avcodec_alloc_frame();
     avctx->coded_frame->key_frame= 1;
