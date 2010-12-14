@@ -645,9 +645,9 @@ static void encode_exponents(AC3EncodeContext *s,
                 blk1++;
             }
             encode_exponents_blk_ch(encoded_exp[blk][ch],
-                                                  exp[blk][ch], s->nb_coefs[ch],
-                                                  exp_strategy[blk][ch],
-                                                  &num_exp_groups[blk][ch]);
+                                    exp[blk][ch], s->nb_coefs[ch],
+                                    exp_strategy[blk][ch],
+                                    &num_exp_groups[blk][ch]);
             /* copy encoded exponents for reuse case */
             for (blk2 = blk+1; blk2 < blk1; blk2++) {
                 memcpy(encoded_exp[blk2][ch], encoded_exp[blk][ch],
