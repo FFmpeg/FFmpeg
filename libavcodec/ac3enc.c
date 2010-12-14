@@ -1083,7 +1083,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     int v;
     int blk, blk1, blk2, ch, i;
     int16_t planar_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE+AC3_FRAME_SIZE];
-    int16_t input_samples[AC3_WINDOW_SIZE];
+    int16_t windowed_samples[AC3_WINDOW_SIZE];
     int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
@@ -1118,25 +1118,25 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     for (ch = 0; ch < s->channels; ch++) {
         /* fixed mdct to the six sub blocks & exponent computation */
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-            int16_t *src_samples = &planar_samples[ch][blk * AC3_BLOCK_SIZE];
+            int16_t *input_samples = &planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
             /* apply the MDCT window */
             for (i = 0; i < AC3_BLOCK_SIZE; i++) {
-                input_samples[i]                   = MUL16(src_samples[i],
+                windowed_samples[i]                   = MUL16(input_samples[i],
                                                            ff_ac3_window[i]) >> 15;
-                input_samples[AC3_WINDOW_SIZE-i-1] = MUL16(src_samples[AC3_WINDOW_SIZE-i-1],
+                windowed_samples[AC3_WINDOW_SIZE-i-1] = MUL16(input_samples[AC3_WINDOW_SIZE-i-1],
                                                            ff_ac3_window[i]) >> 15;
             }
 
             /* Normalize the samples to use the maximum available precision */
-            v = 14 - log2_tab(input_samples, AC3_WINDOW_SIZE);
+            v = 14 - log2_tab(windowed_samples, AC3_WINDOW_SIZE);
             if (v < 0)
                 v = 0;
             exp_shift[blk][ch] = v - 9;
-            lshift_tab(input_samples, AC3_WINDOW_SIZE, v);
+            lshift_tab(windowed_samples, AC3_WINDOW_SIZE, v);
 
             /* do the MDCT */
-            mdct512(mdct_coef[blk][ch], input_samples);
+            mdct512(mdct_coef[blk][ch], windowed_samples);
 
             /* compute "exponents". We take into account the normalization there */
             for (i = 0; i < AC3_MAX_COEFS; i++) {
