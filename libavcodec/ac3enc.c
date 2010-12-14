@@ -514,8 +514,8 @@ static void bit_alloc_masking(AC3EncodeContext *s,
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         for (ch = 0; ch < s->channels; ch++) {
             if(exp_strategy[blk][ch] == EXP_REUSE) {
-                memcpy(psd[blk][ch], psd[blk-1][ch], AC3_MAX_COEFS*sizeof(int16_t));
-                memcpy(mask[blk][ch], mask[blk-1][ch], 50*sizeof(int16_t));
+                memcpy(psd[blk][ch],  psd[blk-1][ch],  AC3_MAX_COEFS*sizeof(psd[0][0][0]));
+                memcpy(mask[blk][ch], mask[blk-1][ch], 50*sizeof(mask[0][0][0]));
             } else {
                 ff_ac3_bit_alloc_calc_psd(encoded_exp[blk][ch], 0,
                                           s->nb_coefs[ch],
