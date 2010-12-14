@@ -1211,14 +1211,14 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
     int ch_layout;
 
     if (channels < 1 || channels > AC3_MAX_CHANNELS)
-        return -1;
+        return AVERROR(EINVAL);
     if ((uint64_t)*channel_layout > 0x7FF)
-        return -1;
+        return AVERROR(EINVAL);
     ch_layout = *channel_layout;
     if (!ch_layout)
         ch_layout = avcodec_guess_channel_layout(channels, CODEC_ID_AC3, NULL);
     if (av_get_channel_layout_nb_channels(ch_layout) != channels)
-        return -1;
+        return AVERROR(EINVAL);
 
     s->lfe_on       = !!(ch_layout & AV_CH_LOW_FREQUENCY);
     s->channels     = channels;
@@ -1238,7 +1238,7 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
     case AV_CH_LAYOUT_5POINT0:
     case AV_CH_LAYOUT_5POINT0_BACK:   s->channel_mode = AC3_CHMODE_3F2R;   break;
     default:
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     s->channel_map  = ff_ac3_enc_channel_map[s->channel_mode][s->lfe_on];
@@ -1252,16 +1252,17 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
 
 static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
 {
-    int i;
+    int i, ret;
 
     if (!avctx->channel_layout) {
         av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
                                       "encoder will guess the layout, but it "
                                       "might be incorrect.\n");
     }
-    if (set_channel_info(s, avctx->channels, &avctx->channel_layout)) {
+    ret = set_channel_info(s, avctx->channels, &avctx->channel_layout);
+    if (ret) {
         av_log(avctx, AV_LOG_ERROR, "invalid channel layout\n");
-        return -1;
+        return ret;
     }
 
     /* frequency */
@@ -1270,7 +1271,8 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
             break;
     }
     if (i == 9) {
-        return -1;
+        av_log(avctx, AV_LOG_ERROR, "invalid sample rate\n");
+        return AVERROR(EINVAL);
     }
     s->sample_rate        = avctx->sample_rate;
     s->bit_alloc.sr_shift = i % 3;
@@ -1283,8 +1285,10 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
         if ((ff_ac3_bitrate_tab[i] >> s->bit_alloc.sr_shift)*1000 == avctx->bit_rate)
             break;
     }
-    if (i == 19)
-        return -1;
+    if (i == 19) {
+        av_log(avctx, AV_LOG_ERROR, "invalid bit rate\n");
+        return AVERROR(EINVAL);
+    }
     s->bit_rate        = avctx->bit_rate;
     s->frame_size_code = i << 1;
 
