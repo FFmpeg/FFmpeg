@@ -93,6 +93,7 @@ typedef struct AC3EncodeContext {
 
     /* mantissa encoding */
     int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
+    uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
 
     int16_t last_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE]; ///< last 256 samples from previous frame
 } AC3EncodeContext;
@@ -968,6 +969,127 @@ static inline int asym_quant(int c, int e, int qbits)
 
 
 /**
+ * Quantize a set of mantissas for a single channel in a single block.
+ */
+static void quantize_mantissas_blk_ch(AC3EncodeContext *s,
+                                      int32_t *mdct_coef, int8_t exp_shift,
+                                      uint8_t *encoded_exp, uint8_t *bap,
+                                      uint16_t *qmant, int n)
+{
+    int i;
+
+    for (i = 0; i < n; i++) {
+        int v;
+        int c = mdct_coef[i];
+        int e = encoded_exp[i] - exp_shift;
+        int b = bap[i];
+        switch (b) {
+        case 0:
+            v = 0;
+            break;
+        case 1:
+            v = sym_quant(c, e, 3);
+            switch (s->mant1_cnt) {
+            case 0:
+                s->qmant1_ptr = &qmant[i];
+                v = 9 * v;
+                s->mant1_cnt = 1;
+                break;
+            case 1:
+                *s->qmant1_ptr += 3 * v;
+                s->mant1_cnt = 2;
+                v = 128;
+                break;
+            default:
+                *s->qmant1_ptr += v;
+                s->mant1_cnt = 0;
+                v = 128;
+                break;
+            }
+            break;
+        case 2:
+            v = sym_quant(c, e, 5);
+            switch (s->mant2_cnt) {
+            case 0:
+                s->qmant2_ptr = &qmant[i];
+                v = 25 * v;
+                s->mant2_cnt = 1;
+                break;
+            case 1:
+                *s->qmant2_ptr += 5 * v;
+                s->mant2_cnt = 2;
+                v = 128;
+                break;
+            default:
+                *s->qmant2_ptr += v;
+                s->mant2_cnt = 0;
+                v = 128;
+                break;
+            }
+            break;
+        case 3:
+            v = sym_quant(c, e, 7);
+            break;
+        case 4:
+            v = sym_quant(c, e, 11);
+            switch (s->mant4_cnt) {
+            case 0:
+                s->qmant4_ptr = &qmant[i];
+                v = 11 * v;
+                s->mant4_cnt = 1;
+                break;
+            default:
+                *s->qmant4_ptr += v;
+                s->mant4_cnt = 0;
+                v = 128;
+                break;
+            }
+            break;
+        case 5:
+            v = sym_quant(c, e, 15);
+            break;
+        case 14:
+            v = asym_quant(c, e, 14);
+            break;
+        case 15:
+            v = asym_quant(c, e, 16);
+            break;
+        default:
+            v = asym_quant(c, e, b - 1);
+            break;
+        }
+        qmant[i] = v;
+    }
+}
+
+
+/**
+ * Quantize mantissas using coefficients, exponents, and bit allocation pointers.
+ */
+static void quantize_mantissas(AC3EncodeContext *s,
+                               int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                               int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
+                               uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                               uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                               uint16_t qmant[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS])
+{
+    int blk, ch;
+
+
+    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+        s->mant1_cnt  = s->mant2_cnt  = s->mant4_cnt  = 0;
+        s->qmant1_ptr = s->qmant2_ptr = s->qmant4_ptr = NULL;
+
+        for (ch = 0; ch < s->channels; ch++) {
+            quantize_mantissas_blk_ch(s, mdct_coef[blk][ch], exp_shift[blk][ch],
+                                      encoded_exp[blk][ch], bap[blk][ch],
+                                      qmant[blk][ch], s->nb_coefs[ch]);
+        }
+    }
+}
+
+
+/**
  * Write the AC-3 frame header to the output bitstream.
  */
 static void output_frame_header(AC3EncodeContext *s)
@@ -1005,16 +1127,12 @@ static void output_audio_block(AC3EncodeContext *s,
                                uint8_t exp_strategy[AC3_MAX_CHANNELS],
                                uint8_t encoded_exp[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                                uint8_t bap[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                               int32_t mdct_coef[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                               int8_t exp_shift[AC3_MAX_CHANNELS],
+                               uint16_t qmant[AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                                int block_num)
 {
     int ch, nb_groups, group_size, i, baie, rbnd;
     uint8_t *p;
-    uint16_t qmant[AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int exp0, exp1;
-    int mant1_cnt, mant2_cnt, mant4_cnt;
-    uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr;
     int delta0, delta1, delta2;
 
     for (ch = 0; ch < s->fbw_channels; ch++)
@@ -1117,101 +1235,7 @@ static void output_audio_block(AC3EncodeContext *s,
     put_bits(&s->pb, 1, 0); /* no delta bit allocation */
     put_bits(&s->pb, 1, 0); /* no data to skip */
 
-    /* mantissa encoding : we use two passes to handle the grouping. A
-       one pass method may be faster, but it would necessitate to
-       modify the output stream. */
-
-    /* first pass: quantize */
-    mant1_cnt = mant2_cnt = mant4_cnt = 0;
-    qmant1_ptr = qmant2_ptr = qmant4_ptr = NULL;
-
-    for (ch = 0; ch < s->channels; ch++) {
-        int b, c, e, v;
-
-        for (i = 0; i < s->nb_coefs[ch]; i++) {
-            c = mdct_coef[ch][i];
-            e = encoded_exp[ch][i] - exp_shift[ch];
-            b = bap[ch][i];
-            switch (b) {
-            case 0:
-                v = 0;
-                break;
-            case 1:
-                v = sym_quant(c, e, 3);
-                switch (mant1_cnt) {
-                case 0:
-                    qmant1_ptr = &qmant[ch][i];
-                    v = 9 * v;
-                    mant1_cnt = 1;
-                    break;
-                case 1:
-                    *qmant1_ptr += 3 * v;
-                    mant1_cnt = 2;
-                    v = 128;
-                    break;
-                default:
-                    *qmant1_ptr += v;
-                    mant1_cnt = 0;
-                    v = 128;
-                    break;
-                }
-                break;
-            case 2:
-                v = sym_quant(c, e, 5);
-                switch (mant2_cnt) {
-                case 0:
-                    qmant2_ptr = &qmant[ch][i];
-                    v = 25 * v;
-                    mant2_cnt = 1;
-                    break;
-                case 1:
-                    *qmant2_ptr += 5 * v;
-                    mant2_cnt = 2;
-                    v = 128;
-                    break;
-                default:
-                    *qmant2_ptr += v;
-                    mant2_cnt = 0;
-                    v = 128;
-                    break;
-                }
-                break;
-            case 3:
-                v = sym_quant(c, e, 7);
-                break;
-            case 4:
-                v = sym_quant(c, e, 11);
-                switch (mant4_cnt) {
-                case 0:
-                    qmant4_ptr = &qmant[ch][i];
-                    v = 11 * v;
-                    mant4_cnt = 1;
-                    break;
-                default:
-                    *qmant4_ptr += v;
-                    mant4_cnt = 0;
-                    v = 128;
-                    break;
-                }
-                break;
-            case 5:
-                v = sym_quant(c, e, 15);
-                break;
-            case 14:
-                v = asym_quant(c, e, 14);
-                break;
-            case 15:
-                v = asym_quant(c, e, 16);
-                break;
-            default:
-                v = asym_quant(c, e, b - 1);
-                break;
-            }
-            qmant[ch][i] = v;
-        }
-    }
-
-    /* second pass : output the values */
+    /* mantissa encoding */
     for (ch = 0; ch < s->channels; ch++) {
         int b, q;
 
@@ -1313,8 +1337,7 @@ static void output_frame(AC3EncodeContext *s,
                          uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
                          uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                          uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                         int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                         int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS])
+                         uint16_t qmant[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS])
 {
     int blk;
 
@@ -1324,7 +1347,7 @@ static void output_frame(AC3EncodeContext *s,
 
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         output_audio_block(s, exp_strategy[blk], encoded_exp[blk],
-                           bap[blk], mdct_coef[blk], exp_shift[blk], blk);
+                           bap[blk], qmant[blk], blk);
     }
 
     output_frame_end(s);
@@ -1346,6 +1369,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
+    uint16_t qmant[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int frame_bits;
 
     if (s->bit_alloc.sr_code == 1)
@@ -1359,7 +1383,9 @@ static int ac3_encode_frame(AVCodecContext *avctx,
 
     compute_bit_allocation(s, bap, encoded_exp, exp_strategy, frame_bits);
 
-    output_frame(s, frame, exp_strategy, encoded_exp, bap, mdct_coef, exp_shift);
+    quantize_mantissas(s, mdct_coef, exp_shift, encoded_exp, bap, qmant);
+
+    output_frame(s, frame, exp_strategy, encoded_exp, bap, qmant);
 
     return s->frame_size;
 }
