@@ -1322,13 +1322,14 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     frame_bits = process_exponents(s, mdct_coef, exp_shift, exp, exp_strategy, encoded_exp);
 
     compute_bit_allocation(s, bap, encoded_exp, exp_strategy, frame_bits);
-    /* everything is known... let's output the frame */
+
     output_frame_header(s, frame);
 
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         output_audio_block(s, exp_strategy[blk], encoded_exp[blk],
                            bap[blk], mdct_coef[blk], exp_shift[blk], blk);
     }
+
     output_frame_end(s);
 
     return s->frame_size;
