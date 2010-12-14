@@ -41,8 +41,6 @@ typedef struct AC3EncodeContext {
 
     int bit_rate;
     int sample_rate;
-    int sr_shift;
-    int sr_code; /* frequency */
 
     int frame_size_min; /* minimum frame size in case rounding is necessary */
     int frame_size; /* current frame size in words */
@@ -509,10 +507,8 @@ static int compute_bit_allocation(AC3EncodeContext *s,
         s->fast_gain_code[ch] = 4;
 
     /* compute real values */
-    s->bit_alloc.sr_code = s->sr_code;
-    s->bit_alloc.sr_shift = s->sr_shift;
-    s->bit_alloc.slow_decay = ff_ac3_slow_decay_tab[s->slow_decay_code] >> s->sr_shift;
-    s->bit_alloc.fast_decay = ff_ac3_fast_decay_tab[s->fast_decay_code] >> s->sr_shift;
+    s->bit_alloc.slow_decay = ff_ac3_slow_decay_tab[s->slow_decay_code] >> s->bit_alloc.sr_shift;
+    s->bit_alloc.fast_decay = ff_ac3_fast_decay_tab[s->fast_decay_code] >> s->bit_alloc.sr_shift;
     s->bit_alloc.slow_gain = ff_ac3_slow_gain_tab[s->slow_gain_code];
     s->bit_alloc.db_per_bit = ff_ac3_db_per_bit_tab[s->db_per_bit_code];
     s->bit_alloc.floor = ff_ac3_floor_tab[s->floor_code];
@@ -692,21 +688,21 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
     return -1;
  found:
     s->sample_rate = freq;
-    s->sr_shift = i;
-    s->sr_code = j;
-    s->bitstream_id = 8 + s->sr_shift;
+    s->bit_alloc.sr_shift = i;
+    s->bit_alloc.sr_code = j;
+    s->bitstream_id = 8 + s->bit_alloc.sr_shift;
     s->bitstream_mode = 0; /* complete main audio service */
 
     /* bitrate & frame size */
     for(i=0;i<19;i++) {
-        if ((ff_ac3_bitrate_tab[i] >> s->sr_shift)*1000 == bitrate)
+        if ((ff_ac3_bitrate_tab[i] >> s->bit_alloc.sr_shift)*1000 == bitrate)
             break;
     }
     if (i == 19)
         return -1;
     s->bit_rate = bitrate;
     s->frame_size_code = i << 1;
-    s->frame_size_min = ff_ac3_frame_size_tab[s->frame_size_code][s->sr_code];
+    s->frame_size_min = ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
     s->bits_written = 0;
     s->samples_written = 0;
     s->frame_size = s->frame_size_min;
@@ -755,7 +751,7 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
 
     put_bits(&s->pb, 16, 0x0b77); /* frame header */
     put_bits(&s->pb, 16, 0); /* crc1: will be filled later */
-    put_bits(&s->pb, 2, s->sr_code);
+    put_bits(&s->pb, 2, s->bit_alloc.sr_code);
     put_bits(&s->pb, 6, s->frame_size_code + (s->frame_size - s->frame_size_min));
     put_bits(&s->pb, 5, s->bitstream_id);
     put_bits(&s->pb, 3, s->bitstream_mode);
