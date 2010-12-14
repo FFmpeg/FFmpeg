@@ -1114,9 +1114,8 @@ static int ac3_encode_frame(AVCodecContext *avctx,
                 AC3_BLOCK_SIZE * sizeof(planar_samples[0][0]));
     }
 
-    frame_bits = 0;
+    /* apply MDCT */
     for (ch = 0; ch < s->channels; ch++) {
-        /* fixed mdct to the six sub blocks & exponent computation */
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
             int16_t *input_samples = &planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
@@ -1137,7 +1136,12 @@ static int ac3_encode_frame(AVCodecContext *avctx,
 
             /* do the MDCT */
             mdct512(mdct_coef[blk][ch], windowed_samples);
+        }
+    }
 
+    /* extract exponents */
+    for (ch = 0; ch < s->channels; ch++) {
+        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
             /* compute "exponents". We take into account the normalization there */
             for (i = 0; i < AC3_MAX_COEFS; i++) {
                 int e;
@@ -1154,9 +1158,16 @@ static int ac3_encode_frame(AVCodecContext *avctx,
                 exp[blk][ch][i] = e;
             }
         }
+    }
 
+    /* compute exponent strategies */
+    for (ch = 0; ch < s->channels; ch++) {
         compute_exp_strategy_ch(exp_strategy, exp, ch, ch == s->lfe_channel);
+    }
 
+    /* encode exponents */
+    frame_bits = 0;
+    for (ch = 0; ch < s->channels; ch++) {
         /* compute the exponents as the decoder will see them. The
            EXP_REUSE case must be handled carefully : we select the
            min of the exponents */
