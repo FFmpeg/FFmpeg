@@ -35,24 +35,28 @@
 
 typedef struct AC3EncodeContext {
     PutBitContext pb;
-    int nb_channels;
-    int nb_all_channels;
-    int lfe_channel;
-    const uint8_t *channel_map;
+
+    unsigned int bitstream_id;
+    unsigned int bitstream_mode;
+
     int bit_rate;
     unsigned int sample_rate;
-    unsigned int bitstream_id;
+    int sr_shift;
+    unsigned int sr_code; /* frequency */
+
     unsigned int frame_size_min; /* minimum frame size in case rounding is necessary */
     unsigned int frame_size; /* current frame size in words */
+    unsigned int frame_size_code;
     unsigned int bits_written;
     unsigned int samples_written;
-    int sr_shift;
-    unsigned int frame_size_code;
-    unsigned int sr_code; /* frequency */
-    unsigned int channel_mode;
+
+    int nb_all_channels;
+    int nb_channels;
     int lfe;
-    unsigned int bitstream_mode;
-    short last_samples[AC3_MAX_CHANNELS][256];
+    int lfe_channel;
+    unsigned int channel_mode;
+    const uint8_t *channel_map;
+
     unsigned int chbwcod[AC3_MAX_CHANNELS];
     int nb_coefs[AC3_MAX_CHANNELS];
 
@@ -62,8 +66,11 @@ typedef struct AC3EncodeContext {
     int coarse_snr_offset;
     int fast_gain_code[AC3_MAX_CHANNELS];
     int fine_snr_offset[AC3_MAX_CHANNELS];
+
     /* mantissa encoding */
     int mant1_cnt, mant2_cnt, mant4_cnt;
+
+    short last_samples[AC3_MAX_CHANNELS][256];
 } AC3EncodeContext;
 
 static int16_t costab[64];
