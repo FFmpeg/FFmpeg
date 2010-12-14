@@ -914,10 +914,8 @@ static int compute_bit_allocation(AC3EncodeContext *s,
 /**
  * Write the AC-3 frame header to the output bitstream.
  */
-static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
+static void output_frame_header(AC3EncodeContext *s)
 {
-    init_put_bits(&s->pb, frame, AC3_MAX_CODED_FRAME_SIZE);
-
     put_bits(&s->pb, 16, 0x0b77);   /* frame header */
     put_bits(&s->pb, 16, 0);        /* crc1: will be filled later */
     put_bits(&s->pb, 2,  s->bit_alloc.sr_code);
@@ -1295,6 +1293,32 @@ static void output_frame_end(AC3EncodeContext *s)
 
 
 /**
+ * Write the frame to the output bitstream.
+ */
+static void output_frame(AC3EncodeContext *s,
+                         unsigned char *frame,
+                         uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
+                         uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                         uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                         int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                         int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS])
+{
+    int blk;
+
+    init_put_bits(&s->pb, frame, AC3_MAX_CODED_FRAME_SIZE);
+
+    output_frame_header(s);
+
+    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+        output_audio_block(s, exp_strategy[blk], encoded_exp[blk],
+                           bap[blk], mdct_coef[blk], exp_shift[blk], blk);
+    }
+
+    output_frame_end(s);
+}
+
+
+/**
  * Encode a single AC-3 frame.
  */
 static int ac3_encode_frame(AVCodecContext *avctx,
@@ -1302,7 +1326,6 @@ static int ac3_encode_frame(AVCodecContext *avctx,
 {
     AC3EncodeContext *s = avctx->priv_data;
     const int16_t *samples = data;
-    int blk;
     int16_t planar_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE+AC3_FRAME_SIZE];
     int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
@@ -1323,14 +1346,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
 
     compute_bit_allocation(s, bap, encoded_exp, exp_strategy, frame_bits);
 
-    output_frame_header(s, frame);
-
-    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-        output_audio_block(s, exp_strategy[blk], encoded_exp[blk],
-                           bap[blk], mdct_coef[blk], exp_shift[blk], blk);
-    }
-
-    output_frame_end(s);
+    output_frame(s, frame, exp_strategy, encoded_exp, bap, mdct_coef, exp_shift);
 
     return s->frame_size;
 }
