@@ -27,8 +27,6 @@
 #ifndef AVCODEC_AC3_H
 #define AVCODEC_AC3_H
 
-#include "ac3tab.h"
-
 #define AC3_MAX_CODED_FRAME_SIZE 3840 /* in bytes */
 #define AC3_MAX_CHANNELS 6 /* including LFE channel */
 
@@ -38,6 +36,8 @@
 #define AC3_FRAME_SIZE (AC3_MAX_BLOCKS * 256)
 #define AC3_WINDOW_SIZE (AC3_BLOCK_SIZE * 2)
 #define AC3_CRITICAL_BANDS 50
+
+#include "ac3tab.h"
 
 /* exponent encoding strategy */
 #define EXP_REUSE 0

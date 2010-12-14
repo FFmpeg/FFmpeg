@@ -135,7 +135,7 @@ const uint16_t ff_ac3_bitrate_tab[19] = {
 /* AC-3 MDCT window */
 
 /* MDCT window */
-const int16_t ff_ac3_window[256] = {
+const int16_t ff_ac3_window[AC3_WINDOW_SIZE/2] = {
     4,    7,   12,   16,   21,   28,   34,   42,
    51,   61,   72,   84,   97,  111,  127,  145,
   164,  184,  207,  231,  257,  285,  315,  347,
@@ -199,7 +199,7 @@ const uint8_t ff_ac3_log_add_tab[260]= {
 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 
-const uint16_t ff_ac3_hearing_threshold_tab[50][3]= {
+const uint16_t ff_ac3_hearing_threshold_tab[AC3_CRITICAL_BANDS][3]= {
 { 0x04d0,0x04f0,0x0580 },
 { 0x04d0,0x04f0,0x0580 },
 { 0x0440,0x0460,0x04b0 },
@@ -286,7 +286,7 @@ const uint16_t ff_ac3_fast_gain_tab[8]= {
     0x080, 0x100, 0x180, 0x200, 0x280, 0x300, 0x380, 0x400,
 };
 
-const uint8_t ff_ac3_critical_band_size_tab[50]={
+const uint8_t ff_ac3_critical_band_size_tab[AC3_CRITICAL_BANDS]={
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3,
     3, 6, 6, 6, 6, 6, 6, 12, 12, 12, 12, 24, 24, 24, 24, 24
