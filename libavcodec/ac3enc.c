@@ -65,7 +65,7 @@ typedef struct AC3EncodeContext {
     int sample_rate;                        ///< sampling frequency, in Hz
 
     int frame_size_min;                     ///< minimum frame size in case rounding is necessary
-    int frame_size;                         ///< current frame size in words
+    int frame_size;                         ///< current frame size in bytes
     int frame_size_code;                    ///< frame size code                        (frmsizecod)
     int bits_written;                       ///< bit count    (used to avg. bitrate)
     int samples_written;                    ///< sample count (used to avg. bitrate)
@@ -562,7 +562,7 @@ static int bit_alloc(AC3EncodeContext *s,
             frame_bits += compute_mantissa_size(s, bap[blk][ch], s->nb_coefs[ch]);
         }
     }
-    return 16 * s->frame_size - frame_bits;
+    return 8 * s->frame_size - frame_bits;
 }
 
 
@@ -699,7 +699,7 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
     put_bits(&s->pb, 16, 0x0b77);   /* frame header */
     put_bits(&s->pb, 16, 0);        /* crc1: will be filled later */
     put_bits(&s->pb, 2,  s->bit_alloc.sr_code);
-    put_bits(&s->pb, 6,  s->frame_size_code + (s->frame_size - s->frame_size_min));
+    put_bits(&s->pb, 6,  s->frame_size_code + (s->frame_size - s->frame_size_min) / 2);
     put_bits(&s->pb, 5,  s->bitstream_id);
     put_bits(&s->pb, 3,  s->bitstream_mode);
     put_bits(&s->pb, 3,  s->channel_mode);
@@ -1048,27 +1048,27 @@ static void output_frame_end(AC3EncodeContext *s)
     flush_put_bits(&s->pb);
     /* add zero bytes to reach the frame size */
     frame = s->pb.buf;
-    pad_bytes = 2 * s->frame_size - (put_bits_ptr(&s->pb) - frame) - 2;
+    pad_bytes = s->frame_size - (put_bits_ptr(&s->pb) - frame) - 2;
     assert(pad_bytes >= 0);
     if (pad_bytes > 0)
         memset(put_bits_ptr(&s->pb), 0, pad_bytes);
 
     /* Now we must compute both crcs : this is not so easy for crc1
        because it is at the beginning of the data... */
-    frame_size_58 = (frame_size >> 1) + (frame_size >> 3);
+    frame_size_58 = ((frame_size >> 2) + (frame_size >> 4)) << 1;
 
     crc1 = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0,
-                             frame + 4, 2 * frame_size_58 - 4));
+                             frame + 4, frame_size_58 - 4));
 
     /* XXX: could precompute crc_inv */
-    crc_inv = pow_poly((CRC16_POLY >> 1), (16 * frame_size_58) - 16, CRC16_POLY);
+    crc_inv = pow_poly((CRC16_POLY >> 1), (8 * frame_size_58) - 16, CRC16_POLY);
     crc1    = mul_poly(crc_inv, crc1, CRC16_POLY);
     AV_WB16(frame + 2, crc1);
 
     crc2 = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0,
-                             frame + 2 * frame_size_58,
-                             (frame_size - frame_size_58) * 2 - 2));
-    AV_WB16(frame + 2*frame_size - 2, crc2);
+                             frame + frame_size_58,
+                             frame_size - frame_size_58 - 2));
+    AV_WB16(frame + frame_size - 2, crc2);
 }
 
 
@@ -1174,8 +1174,8 @@ static int ac3_encode_frame(AVCodecContext *avctx,
         s->bits_written    -= s->bit_rate;
         s->samples_written -= s->sample_rate;
     }
-    s->frame_size = s->frame_size_min + (s->bits_written * s->sample_rate < s->samples_written * s->bit_rate);
-    s->bits_written    += s->frame_size * 16;
+    s->frame_size = s->frame_size_min + 2 * (s->bits_written * s->sample_rate < s->samples_written * s->bit_rate);
+    s->bits_written    += s->frame_size * 8;
     s->samples_written += AC3_FRAME_SIZE;
 
     compute_bit_allocation(s, bap, encoded_exp, exp_strategy, frame_bits);
@@ -1188,7 +1188,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     }
     output_frame_end(s);
 
-    return s->frame_size * 2;
+    return s->frame_size;
 }
 
 
@@ -1298,7 +1298,7 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
         return -1;
     s->bit_rate        = bitrate;
     s->frame_size_code = i << 1;
-    s->frame_size_min  = ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
+    s->frame_size_min  = 2 * ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
     s->bits_written    = 0;
     s->samples_written = 0;
     s->frame_size      = s->frame_size_min;
