@@ -37,6 +37,7 @@
 #define AC3_MAX_BLOCKS    6
 #define AC3_FRAME_SIZE (AC3_MAX_BLOCKS * 256)
 #define AC3_WINDOW_SIZE (AC3_BLOCK_SIZE * 2)
+#define AC3_CRITICAL_BANDS 50
 
 /* exponent encoding strategy */
 #define EXP_REUSE 0

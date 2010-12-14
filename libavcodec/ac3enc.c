@@ -506,16 +506,16 @@ static void bit_alloc_masking(AC3EncodeContext *s,
                               uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                               uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
                               int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                              int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][50])
+                              int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS])
 {
     int blk, ch;
-    int16_t band_psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][50];
+    int16_t band_psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS];
 
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         for (ch = 0; ch < s->channels; ch++) {
             if(exp_strategy[blk][ch] == EXP_REUSE) {
                 memcpy(psd[blk][ch],  psd[blk-1][ch],  AC3_MAX_COEFS*sizeof(psd[0][0][0]));
-                memcpy(mask[blk][ch], mask[blk-1][ch], 50*sizeof(mask[0][0][0]));
+                memcpy(mask[blk][ch], mask[blk-1][ch], AC3_CRITICAL_BANDS*sizeof(mask[0][0][0]));
             } else {
                 ff_ac3_bit_alloc_calc_psd(encoded_exp[blk][ch], 0,
                                           s->nb_coefs[ch],
@@ -540,7 +540,7 @@ static void bit_alloc_masking(AC3EncodeContext *s,
  *         SNR offset is used to quantize the mantissas.
  */
 static int bit_alloc(AC3EncodeContext *s,
-                     int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][50],
+                     int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS],
                      int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                      uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                      int frame_bits, int coarse_snr_offset, int fine_snr_offset)
@@ -584,7 +584,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     int coarse_snr_offset, fine_snr_offset;
     uint8_t bap1[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
-    int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][50];
+    int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS];
     static const int frame_bits_inc[8] = { 0, 0, 2, 2, 2, 4, 2, 4 };
 
     /* init default parameters */

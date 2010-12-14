@@ -33,7 +33,7 @@
 /**
  * Starting frequency coefficient bin for each critical band.
  */
-static const uint8_t band_start_tab[51] = {
+static const uint8_t band_start_tab[AC3_CRITICAL_BANDS+1] = {
       0,  1,   2,   3,   4,   5,   6,   7,   8,   9,
      10,  11, 12,  13,  14,  15,  16,  17,  18,  19,
      20,  21, 22,  23,  24,  25,  26,  27,  28,  31,
@@ -127,7 +127,7 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
                                uint8_t *dba_lengths, uint8_t *dba_values,
                                int16_t *mask)
 {
-    int16_t excite[50]; /* excitation */
+    int16_t excite[AC3_CRITICAL_BANDS]; /* excitation */
     int band;
     int band_start, band_end, begin, end1;
     int lowcomp, fastleak, slowleak;
@@ -198,7 +198,7 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
         band = 0;
         for (seg = 0; seg < dba_nsegs; seg++) {
             band += dba_offsets[seg];
-            if (band >= 50 || dba_lengths[seg] > 50-band)
+            if (band >= AC3_CRITICAL_BANDS || dba_lengths[seg] > AC3_CRITICAL_BANDS-band)
                 return -1;
             if (dba_values[seg] >= 4) {
                 delta = (dba_values[seg] - 3) << 7;
@@ -247,8 +247,8 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
                                    uint8_t *dba_values)
 {
     int16_t psd[256];   /* scaled exponents */
-    int16_t band_psd[50]; /* interpolated exponents */
-    int16_t mask[50];   /* masking value */
+    int16_t band_psd[AC3_CRITICAL_BANDS]; /* interpolated exponents */
+    int16_t mask[AC3_CRITICAL_BANDS];   /* masking value */
 
     ff_ac3_bit_alloc_calc_psd(exp, start, end, psd, band_psd);
 
@@ -270,12 +270,12 @@ av_cold void ac3_common_init(void)
 #if !CONFIG_HARDCODED_TABLES
     /* compute bndtab and masktab from bandsz */
     int bin = 0, band;
-    for (band = 0; band < 50; band++) {
+    for (band = 0; band < AC3_CRITICAL_BANDS; band++) {
         int band_end = bin + ff_ac3_critical_band_size_tab[band];
         band_start_tab[band] = bin;
         while (bin < band_end)
             bin_to_band_tab[bin++] = band;
     }
-    band_start_tab[50] = bin;
+    band_start_tab[AC3_CRITICAL_BANDS] = bin;
 #endif /* !CONFIG_HARDCODED_TABLES */
 }

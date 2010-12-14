@@ -168,8 +168,8 @@ typedef struct {
     int fast_gain[AC3_MAX_CHANNELS];                ///< fast gain values/SMR's         (fgain)
     uint8_t bap[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< bit allocation pointers
     int16_t psd[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< scaled exponents
-    int16_t band_psd[AC3_MAX_CHANNELS][50];         ///< interpolated exponents
-    int16_t mask[AC3_MAX_CHANNELS][50];             ///< masking curve values
+    int16_t band_psd[AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS]; ///< interpolated exponents
+    int16_t mask[AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS];     ///< masking curve values
     int dba_mode[AC3_MAX_CHANNELS];                 ///< delta bit allocation mode
     int dba_nsegs[AC3_MAX_CHANNELS];                ///< number of delta segments
     uint8_t dba_offsets[AC3_MAX_CHANNELS][8];       ///< delta segment offsets
