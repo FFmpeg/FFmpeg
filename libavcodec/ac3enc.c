@@ -24,7 +24,7 @@
  * The simplest AC-3 encoder.
  */
 //#define DEBUG
-//#define DEBUG_BITALLOC
+
 #include "libavcore/audioconvert.h"
 #include "libavutil/crc.h"
 #include "avcodec.h"
@@ -256,7 +256,6 @@ static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CH
     exp_strategy[0][ch] = EXP_NEW;
     for(i=1;i<AC3_MAX_BLOCKS;i++) {
         exp_diff = calc_exp_diff(exp[i][ch], exp[i-1][ch], AC3_MAX_COEFS);
-        dprintf(NULL, "exp_diff=%d\n", exp_diff);
         if (exp_diff > EXP_DIFF_THRESHOLD)
             exp_strategy[i][ch] = EXP_NEW;
         else
@@ -357,14 +356,6 @@ static int encode_exp(uint8_t encoded_exp[AC3_MAX_COEFS],
         }
         k += group_size;
     }
-
-#if defined(DEBUG)
-    av_log(NULL, AV_LOG_DEBUG, "exponents: strategy=%d\n", exp_strategy);
-    for(i=0;i<=nb_groups * group_size;i++) {
-        av_log(NULL, AV_LOG_DEBUG, "%d ", encoded_exp[i]);
-    }
-    av_log(NULL, AV_LOG_DEBUG, "\n");
-#endif
 
     return 4 + (nb_groups / 3) * 7;
 }
@@ -474,11 +465,6 @@ static int bit_alloc(AC3EncodeContext *s,
                                                  s->nb_coefs[ch]);
         }
     }
-#if 0
-    printf("csnr=%d fsnr=%d frame_bits=%d diff=%d\n",
-           coarse_snr_offset, fine_snr_offset, frame_bits,
-           16 * s->frame_size - ((frame_bits + 7) & ~7));
-#endif
     return 16 * s->frame_size - frame_bits;
 }
 
@@ -593,22 +579,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     s->coarse_snr_offset = coarse_snr_offset;
     for(ch=0;ch<s->channels;ch++)
         s->fine_snr_offset[ch] = fine_snr_offset;
-#if defined(DEBUG_BITALLOC)
-    {
-        int j;
 
-        for(i=0;i<6;i++) {
-            for(ch=0;ch<s->channels;ch++) {
-                printf("Block #%d Ch%d:\n", i, ch);
-                printf("bap=");
-                for(j=0;j<s->nb_coefs[ch];j++) {
-                    printf("%d ",bap[i][ch][j]);
-                }
-                printf("\n");
-            }
-        }
-    }
-#endif
     return 0;
 }
 
@@ -861,12 +832,6 @@ static void output_audio_block(AC3EncodeContext *s,
           }
       }
 
-#if defined(DEBUG)
-    {
-      static int count = 0;
-      av_log(NULL, AV_LOG_DEBUG, "Block #%d (%d)\n", block_num, count++);
-    }
-#endif
     /* exponent strategy */
     for(ch=0;ch<s->fbw_channels;ch++) {
         put_bits(&s->pb, 2, exp_strategy[ch]);
