@@ -106,6 +106,40 @@ static int16_t xsin1[128];
 
 
 /**
+ * Deinterleave input samples.
+ * Channels are reordered from FFmpeg's default order to AC-3 order.
+ */
+static void deinterleave_input_samples(AC3EncodeContext *s,
+                                       const int16_t *samples,
+                                       int16_t planar_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE+AC3_FRAME_SIZE])
+{
+    int ch, i;
+
+    /* deinterleave and remap input samples */
+    for (ch = 0; ch < s->channels; ch++) {
+        const int16_t *sptr;
+        int sinc;
+
+        /* copy last 256 samples of previous frame to the start of the current frame */
+        memcpy(&planar_samples[ch][0], s->last_samples[ch],
+               AC3_BLOCK_SIZE * sizeof(planar_samples[0][0]));
+
+        /* deinterleave */
+        sinc = s->channels;
+        sptr = samples + s->channel_map[ch];
+        for (i = AC3_BLOCK_SIZE; i < AC3_FRAME_SIZE+AC3_BLOCK_SIZE; i++) {
+            planar_samples[ch][i] = *sptr;
+            sptr += sinc;
+        }
+
+        /* save last 256 samples for next frame */
+        memcpy(s->last_samples[ch], &planar_samples[ch][6* AC3_BLOCK_SIZE],
+               AC3_BLOCK_SIZE * sizeof(planar_samples[0][0]));
+    }
+}
+
+
+/**
  * Initialize FFT tables.
  * @param ln log2(FFT size)
  */
@@ -1092,27 +1126,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
     int frame_bits;
 
-    /* deinterleave and remap input samples */
-    for (ch = 0; ch < s->channels; ch++) {
-        const int16_t *sptr;
-        int sinc;
-
-        /* copy last 256 samples of previous frame to the start of the current frame */
-        memcpy(&planar_samples[ch][0], s->last_samples[ch],
-                AC3_BLOCK_SIZE * sizeof(planar_samples[0][0]));
-
-        /* deinterleave */
-        sinc = s->channels;
-        sptr = samples + s->channel_map[ch];
-        for (i = AC3_BLOCK_SIZE; i < AC3_FRAME_SIZE+AC3_BLOCK_SIZE; i++) {
-            planar_samples[ch][i] = *sptr;
-            sptr += sinc;
-        }
-
-        /* save last 256 samples for next frame */
-        memcpy(s->last_samples[ch], &planar_samples[ch][6* AC3_BLOCK_SIZE],
-                AC3_BLOCK_SIZE * sizeof(planar_samples[0][0]));
-    }
+    deinterleave_input_samples(s, samples, planar_samples);
 
     /* apply MDCT */
     for (ch = 0; ch < s->channels; ch++) {
