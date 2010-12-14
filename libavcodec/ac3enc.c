@@ -340,9 +340,9 @@ static int calc_exp_diff(uint8_t *exp1, uint8_t *exp2, int n)
 /**
  * Calculate exponent strategies for all blocks in a single channel.
  */
-static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
-                                 uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                                 int ch, int is_lfe)
+static void compute_exp_strategy_ch(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
+                                    uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                                    int ch, int is_lfe)
 {
     int i, j;
     int exp_diff;
@@ -397,9 +397,9 @@ static void exponent_min(uint8_t exp[AC3_MAX_COEFS], uint8_t exp1[AC3_MAX_COEFS]
  * Update the exponents so that they are the ones the decoder will decode.
  * @return the number of bits used to encode the exponents.
  */
-static int encode_exp(uint8_t encoded_exp[AC3_MAX_COEFS],
-                      uint8_t exp[AC3_MAX_COEFS],
-                      int nb_exps, int exp_strategy)
+static int encode_exponents_blk_ch(uint8_t encoded_exp[AC3_MAX_COEFS],
+                                   uint8_t exp[AC3_MAX_COEFS],
+                                   int nb_exps, int exp_strategy)
 {
     int group_size, nb_groups, i, j, k, exp_min;
     uint8_t exp1[AC3_MAX_COEFS];
@@ -1146,7 +1146,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
             }
         }
 
-        compute_exp_strategy(exp_strategy, exp, ch, ch == s->lfe_channel);
+        compute_exp_strategy_ch(exp_strategy, exp, ch, ch == s->lfe_channel);
 
         /* compute the exponents as the decoder will see them. The
            EXP_REUSE case must be handled carefully : we select the
@@ -1158,9 +1158,9 @@ static int ac3_encode_frame(AVCodecContext *avctx,
                 exponent_min(exp[i][ch], exp[j][ch], s->nb_coefs[ch]);
                 j++;
             }
-            frame_bits += encode_exp(encoded_exp[i][ch],
-                                     exp[i][ch], s->nb_coefs[ch],
-                                     exp_strategy[i][ch]);
+            frame_bits += encode_exponents_blk_ch(encoded_exp[i][ch],
+                                                  exp[i][ch], s->nb_coefs[ch],
+                                                  exp_strategy[i][ch]);
             /* copy encoded exponents for reuse case */
             for (k = i+1; k < j; k++) {
                 memcpy(encoded_exp[k][ch], encoded_exp[i][ch],
