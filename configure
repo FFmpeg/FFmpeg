@@ -235,6 +235,7 @@ Advanced options (experts only):
   --enable-pic             build position-independent code
   --malloc-prefix=PFX      prefix malloc and related names with PFX
   --enable-sram            allow use of on-chip SRAM
+  --disable-symver         disable symbol versioning
 
 Developer options (useful when working on FFmpeg itself):
   --disable-debug          disable debugging symbols
@@ -1097,6 +1098,7 @@ CMDLINE_SELECT="
     logging
     optimizations
     stripping
+    symver
     yasm
 "
 
