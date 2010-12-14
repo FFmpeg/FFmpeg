@@ -73,8 +73,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
  redo:
     ret = connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
     if (ret < 0) {
-        if (ff_neterrno() == FF_NETERROR(EINTR))
+        if (ff_neterrno() == FF_NETERROR(EINTR)) {
+            if (url_interrupt_cb())
+                goto fail1;
             goto redo;
+        }
         if (ff_neterrno() != FF_NETERROR(EINPROGRESS) &&
             ff_neterrno() != FF_NETERROR(EAGAIN))
             goto fail;
