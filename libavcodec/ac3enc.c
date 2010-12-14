@@ -575,13 +575,15 @@ static void exponent_min(uint8_t exp[AC3_MAX_COEFS], uint8_t exp1[AC3_MAX_COEFS]
  */
 static void encode_exponents_blk_ch(uint8_t encoded_exp[AC3_MAX_COEFS],
                                     uint8_t exp[AC3_MAX_COEFS],
-                                    int nb_exps, int exp_strategy)
+                                    int nb_exps, int exp_strategy,
+                                    uint8_t *num_exp_groups)
 {
     int group_size, nb_groups, i, j, k, exp_min;
     uint8_t exp1[AC3_MAX_COEFS];
 
     group_size = exp_strategy + (exp_strategy == EXP_D45);
-    nb_groups = ((nb_exps + (group_size * 3) - 4) / (3 * group_size)) * 3;
+    *num_exp_groups = (nb_exps + (group_size * 3) - 4) / (3 * group_size);
+    nb_groups = *num_exp_groups * 3;
 
     /* for each group, compute the minimum exponent */
     exp1[0] = exp[0]; /* DC exponent is handled separately */
@@ -628,6 +630,7 @@ static void encode_exponents_blk_ch(uint8_t encoded_exp[AC3_MAX_COEFS],
 static void encode_exponents(AC3EncodeContext *s,
                              uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                              uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
+                             uint8_t num_exp_groups[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
                              uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS])
 {
     int blk, blk1, blk2, ch;
@@ -643,7 +646,8 @@ static void encode_exponents(AC3EncodeContext *s,
             }
             encode_exponents_blk_ch(encoded_exp[blk][ch],
                                                   exp[blk][ch], s->nb_coefs[ch],
-                                                  exp_strategy[blk][ch]);
+                                                  exp_strategy[blk][ch],
+                                                  &num_exp_groups[blk][ch]);
             /* copy encoded exponents for reuse case */
             for (blk2 = blk+1; blk2 < blk1; blk2++) {
                 memcpy(encoded_exp[blk2][ch], encoded_exp[blk][ch],
@@ -681,7 +685,6 @@ static int group_exponents(AC3EncodeContext *s,
                 continue;
             }
             group_size = exp_strategy[blk][ch] + (exp_strategy[blk][ch] == EXP_D45);
-            num_exp_groups[blk][ch] = (s->nb_coefs[ch] + (group_size * 3) - 4) / (3 * group_size);
             bit_count += 4 + (num_exp_groups[blk][ch] * 7);
             p = encoded_exp[blk][ch];
 
@@ -735,7 +738,7 @@ static int process_exponents(AC3EncodeContext *s,
 
     compute_exp_strategy(s, exp_strategy, exp);
 
-    encode_exponents(s, exp, exp_strategy, encoded_exp);
+    encode_exponents(s, exp, exp_strategy, num_exp_groups, encoded_exp);
 
     return group_exponents(s, encoded_exp, exp_strategy, num_exp_groups, grouped_exp);
 }
