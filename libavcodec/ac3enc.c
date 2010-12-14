@@ -1040,7 +1040,7 @@ static unsigned int pow_poly(unsigned int a, unsigned int n, unsigned int poly)
  */
 static void output_frame_end(AC3EncodeContext *s)
 {
-    int frame_size, frame_size_58, n, crc1, crc2, crc_inv;
+    int frame_size, frame_size_58, pad_bytes, crc1, crc2, crc_inv;
     uint8_t *frame;
 
     frame_size = s->frame_size; /* frame size in words */
@@ -1048,10 +1048,10 @@ static void output_frame_end(AC3EncodeContext *s)
     flush_put_bits(&s->pb);
     /* add zero bytes to reach the frame size */
     frame = s->pb.buf;
-    n = 2 * s->frame_size - (put_bits_ptr(&s->pb) - frame) - 2;
-    assert(n >= 0);
-    if (n > 0)
-        memset(put_bits_ptr(&s->pb), 0, n);
+    pad_bytes = 2 * s->frame_size - (put_bits_ptr(&s->pb) - frame) - 2;
+    assert(pad_bytes >= 0);
+    if (pad_bytes > 0)
+        memset(put_bits_ptr(&s->pb), 0, pad_bytes);
 
     /* Now we must compute both crcs : this is not so easy for crc1
        because it is at the beginning of the data... */
