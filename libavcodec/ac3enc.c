@@ -28,7 +28,6 @@
 #include "libavcore/audioconvert.h"
 #include "libavutil/crc.h"
 #include "avcodec.h"
-#include "libavutil/common.h" /* for av_reverse */
 #include "put_bits.h"
 #include "ac3.h"
 #include "audioconvert.h"
