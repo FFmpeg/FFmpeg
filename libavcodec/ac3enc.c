@@ -916,20 +916,21 @@ static void bit_alloc_masking(AC3EncodeContext *s,
  * Run the bit allocation with a given SNR offset.
  * This calculates the bit allocation pointers that will be used to determine
  * the quantization of each mantissa.
- * @return the number of remaining bits (positive or negative) if the given
- *         SNR offset is used to quantize the mantissas.
+ * @return the number of bits needed for mantissas if the given SNR offset is
+ *         is used.
  */
 static int bit_alloc(AC3EncodeContext *s,
                      int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS],
                      int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                      uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                     int frame_bits, int coarse_snr_offset, int fine_snr_offset)
+                     int coarse_snr_offset, int fine_snr_offset)
 {
     int blk, ch;
-    int snr_offset;
+    int snr_offset, mantissa_bits;
 
     snr_offset = (((coarse_snr_offset - 15) << 4) + fine_snr_offset) << 2;
 
+    mantissa_bits = 0;
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         s->mant1_cnt = 0;
         s->mant2_cnt = 0;
@@ -939,10 +940,10 @@ static int bit_alloc(AC3EncodeContext *s,
                                       s->nb_coefs[ch], snr_offset,
                                       s->bit_alloc.floor, ff_ac3_bap_tab,
                                       bap[blk][ch]);
-            frame_bits += compute_mantissa_size(s, bap[blk][ch], s->nb_coefs[ch]);
+            mantissa_bits += compute_mantissa_size(s, bap[blk][ch], s->nb_coefs[ch]);
         }
     }
-    return 8 * s->frame_size - frame_bits;
+    return mantissa_bits;
 }
 
 
@@ -960,7 +961,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
                                   uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS])
 {
     int ch;
-    int frame_bits;
+    int bits_left;
     int coarse_snr_offset, fine_snr_offset;
     uint8_t bap1[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
@@ -975,36 +976,36 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* now the big work begins : do the bit allocation. Modify the snr
        offset until we can pack everything in the requested frame size */
 
-    frame_bits = s->frame_bits + s->exponent_bits;
+    bits_left = 8 * s->frame_size - (s->frame_bits + s->exponent_bits);
     coarse_snr_offset = s->coarse_snr_offset;
     while (coarse_snr_offset >= 0 &&
-           bit_alloc(s, mask, psd, bap, frame_bits, coarse_snr_offset, 0) < 0)
+           bit_alloc(s, mask, psd, bap, coarse_snr_offset, 0) > bits_left)
         coarse_snr_offset -= SNR_INC1;
     if (coarse_snr_offset < 0) {
         return AVERROR(EINVAL);
     }
     while (coarse_snr_offset + SNR_INC1 <= 63 &&
-           bit_alloc(s, mask, psd, bap1, frame_bits,
-                     coarse_snr_offset + SNR_INC1, 0) >= 0) {
+           bit_alloc(s, mask, psd, bap1,
+                     coarse_snr_offset + SNR_INC1, 0) <= bits_left) {
         coarse_snr_offset += SNR_INC1;
         memcpy(bap, bap1, sizeof(bap1));
     }
     while (coarse_snr_offset + 1 <= 63 &&
-           bit_alloc(s, mask, psd, bap1, frame_bits, coarse_snr_offset + 1, 0) >= 0) {
+           bit_alloc(s, mask, psd, bap1, coarse_snr_offset + 1, 0) <= bits_left) {
         coarse_snr_offset++;
         memcpy(bap, bap1, sizeof(bap1));
     }
 
     fine_snr_offset = 0;
     while (fine_snr_offset + SNR_INC1 <= 15 &&
-           bit_alloc(s, mask, psd, bap1, frame_bits,
-                     coarse_snr_offset, fine_snr_offset + SNR_INC1) >= 0) {
+           bit_alloc(s, mask, psd, bap1,
+                     coarse_snr_offset, fine_snr_offset + SNR_INC1) <= bits_left) {
         fine_snr_offset += SNR_INC1;
         memcpy(bap, bap1, sizeof(bap1));
     }
     while (fine_snr_offset + 1 <= 15 &&
-           bit_alloc(s, mask, psd, bap1, frame_bits,
-                     coarse_snr_offset, fine_snr_offset + 1) >= 0) {
+           bit_alloc(s, mask, psd, bap1,
+                     coarse_snr_offset, fine_snr_offset + 1) <= bits_left) {
         fine_snr_offset++;
         memcpy(bap, bap1, sizeof(bap1));
     }
