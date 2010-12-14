@@ -93,6 +93,8 @@ typedef struct AC3EncodeContext {
     int coarse_snr_offset;                  ///< coarse SNR offsets                     (csnroffst)
     int fast_gain_code[AC3_MAX_CHANNELS];   ///< fast gain codes (signal-to-mask ratio) (fgaincod)
     int fine_snr_offset[AC3_MAX_CHANNELS];  ///< fine SNR offsets                       (fsnroffst)
+    int frame_bits;                         ///< all frame bits except exponents and mantissas
+    int exponent_bits;                      ///< number of bits used for exponents
 
     /* mantissa encoding */
     int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
@@ -663,9 +665,8 @@ static void encode_exponents(AC3EncodeContext *s,
  * Group exponents.
  * 3 delta-encoded exponents are in each 7-bit group. The number of groups
  * varies depending on exponent strategy and bandwidth.
- * @return bits needed to encode the exponents
  */
-static int group_exponents(AC3EncodeContext *s,
+static void group_exponents(AC3EncodeContext *s,
                            uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                            uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
                            uint8_t num_exp_groups[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
@@ -715,7 +716,7 @@ static int group_exponents(AC3EncodeContext *s,
         }
     }
 
-    return bit_count;
+    s->exponent_bits = bit_count;
 }
 
 
@@ -723,9 +724,8 @@ static int group_exponents(AC3EncodeContext *s,
  * Calculate final exponents from the supplied MDCT coefficients and exponent shift.
  * Extract exponents from MDCT coefficients, calculate exponent strategies,
  * and encode final exponents.
- * @return bits needed to encode the exponents
  */
-static int process_exponents(AC3EncodeContext *s,
+static void process_exponents(AC3EncodeContext *s,
                              int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                              int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
                              uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
@@ -740,7 +740,7 @@ static int process_exponents(AC3EncodeContext *s,
 
     encode_exponents(s, exp, exp_strategy, num_exp_groups, encoded_exp);
 
-    return group_exponents(s, encoded_exp, exp_strategy, num_exp_groups, grouped_exp);
+    group_exponents(s, encoded_exp, exp_strategy, num_exp_groups, grouped_exp);
 }
 
 
@@ -777,9 +777,8 @@ static void bit_alloc_init(AC3EncodeContext *s)
 
 /**
  * Count the bits used to encode the frame, minus exponents and mantissas.
- * @return bit count
  */
-static int count_frame_bits(AC3EncodeContext *s,
+static void count_frame_bits(AC3EncodeContext *s,
                             uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS])
 {
     static const int frame_bits_inc[8] = { 0, 0, 2, 2, 2, 4, 2, 4 };
@@ -822,7 +821,7 @@ static int count_frame_bits(AC3EncodeContext *s,
     /* CRC */
     frame_bits += 16;
 
-    return frame_bits;
+    s->frame_bits = frame_bits;
 }
 
 
@@ -958,17 +957,17 @@ static int bit_alloc(AC3EncodeContext *s,
 static int compute_bit_allocation(AC3EncodeContext *s,
                                   uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
                                   uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
-                                  uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
-                                  int frame_bits)
+                                  uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS])
 {
     int ch;
+    int frame_bits;
     int coarse_snr_offset, fine_snr_offset;
     uint8_t bap1[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS];
 
     /* count frame bits other than exponents and mantissas */
-    frame_bits += count_frame_bits(s, exp_strategy);
+    count_frame_bits(s, exp_strategy);
 
     /* calculate psd and masking curve before doing bit allocation */
     bit_alloc_masking(s, encoded_exp, exp_strategy, psd, mask);
@@ -976,6 +975,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* now the big work begins : do the bit allocation. Modify the snr
        offset until we can pack everything in the requested frame size */
 
+    frame_bits = s->frame_bits + s->exponent_bits;
     coarse_snr_offset = s->coarse_snr_offset;
     while (coarse_snr_offset >= 0 &&
            bit_alloc(s, mask, psd, bap, frame_bits, coarse_snr_offset, 0) < 0)
@@ -1442,7 +1442,6 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
     uint16_t qmant[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
-    int frame_bits;
     int ret;
 
     if (s->bit_alloc.sr_code == 1)
@@ -1452,10 +1451,10 @@ static int ac3_encode_frame(AVCodecContext *avctx,
 
     apply_mdct(s, planar_samples, exp_shift, mdct_coef);
 
-    frame_bits = process_exponents(s, mdct_coef, exp_shift, exp, exp_strategy,
+    process_exponents(s, mdct_coef, exp_shift, exp, exp_strategy,
                                    encoded_exp, num_exp_groups, grouped_exp);
 
-    ret = compute_bit_allocation(s, bap, encoded_exp, exp_strategy, frame_bits);
+    ret = compute_bit_allocation(s, bap, encoded_exp, exp_strategy);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "Bit allocation failed. Try increasing the bitrate.\n");
         return ret;
