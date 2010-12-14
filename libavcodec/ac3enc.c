@@ -1082,6 +1082,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     const int16_t *samples = data;
     int v;
     int blk, blk1, blk2, ch, i;
+    int16_t planar_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE+AC3_FRAME_SIZE];
     int16_t input_samples[AC3_WINDOW_SIZE];
     int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
@@ -1091,30 +1092,39 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
     int frame_bits;
 
+    /* deinterleave and remap input samples */
+    for (ch = 0; ch < s->channels; ch++) {
+        const int16_t *sptr;
+        int sinc;
+
+        /* copy last 256 samples of previous frame to the start of the current frame */
+        memcpy(&planar_samples[ch][0], s->last_samples[ch],
+                AC3_BLOCK_SIZE * sizeof(planar_samples[0][0]));
+
+        /* deinterleave */
+        sinc = s->channels;
+        sptr = samples + s->channel_map[ch];
+        for (i = AC3_BLOCK_SIZE; i < AC3_FRAME_SIZE+AC3_BLOCK_SIZE; i++) {
+            planar_samples[ch][i] = *sptr;
+            sptr += sinc;
+        }
+
+        /* save last 256 samples for next frame */
+        memcpy(s->last_samples[ch], &planar_samples[ch][6* AC3_BLOCK_SIZE],
+                AC3_BLOCK_SIZE * sizeof(planar_samples[0][0]));
+    }
+
     frame_bits = 0;
     for (ch = 0; ch < s->channels; ch++) {
-        int ich = s->channel_map[ch];
         /* fixed mdct to the six sub blocks & exponent computation */
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-            const int16_t *sptr;
-            int sinc;
-
-            /* compute input samples */
-            memcpy(input_samples, s->last_samples[ich], AC3_BLOCK_SIZE * sizeof(int16_t));
-            sinc = s->channels;
-            sptr = samples + (sinc * AC3_BLOCK_SIZE * blk) + ich;
-            for (i = 0; i < AC3_BLOCK_SIZE; i++) {
-                v = *sptr;
-                input_samples[i + AC3_BLOCK_SIZE] = v;
-                s->last_samples[ich][i] = v;
-                sptr += sinc;
-            }
+            int16_t *src_samples = &planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
             /* apply the MDCT window */
             for (i = 0; i < AC3_BLOCK_SIZE; i++) {
-                input_samples[i]                   = MUL16(input_samples[i],
+                input_samples[i]                   = MUL16(src_samples[i],
                                                            ff_ac3_window[i]) >> 15;
-                input_samples[AC3_WINDOW_SIZE-i-1] = MUL16(input_samples[AC3_WINDOW_SIZE-i-1],
+                input_samples[AC3_WINDOW_SIZE-i-1] = MUL16(src_samples[AC3_WINDOW_SIZE-i-1],
                                                            ff_ac3_window[i]) >> 15;
             }
 
