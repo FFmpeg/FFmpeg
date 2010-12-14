@@ -1250,20 +1250,11 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
 }
 
 
-/**
- * Initialize the encoder.
- */
-static av_cold int ac3_encode_init(AVCodecContext *avctx)
+static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
 {
     int freq = avctx->sample_rate;
     int bitrate = avctx->bit_rate;
-    AC3EncodeContext *s = avctx->priv_data;
-    int i, j, ch;
-    int bw_code;
-
-    avctx->frame_size = AC3_FRAME_SIZE;
-
-    ac3_common_init();
+    int i, j;
 
     if (!avctx->channel_layout) {
         av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
@@ -1298,6 +1289,27 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
         return -1;
     s->bit_rate        = bitrate;
     s->frame_size_code = i << 1;
+
+    return 0;
+}
+
+
+/**
+ * Initialize the encoder.
+ */
+static av_cold int ac3_encode_init(AVCodecContext *avctx)
+{
+    AC3EncodeContext *s = avctx->priv_data;
+    int ch, bw_code, ret;
+
+    avctx->frame_size = AC3_FRAME_SIZE;
+
+    ac3_common_init();
+
+    ret = validate_options(avctx, s);
+    if (ret)
+        return ret;
+
     s->frame_size_min  = 2 * ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
     s->bits_written    = 0;
     s->samples_written = 0;
