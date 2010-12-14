@@ -1187,7 +1187,7 @@ static int AC3_encode_frame(AVCodecContext *avctx,
     AC3EncodeContext *s = avctx->priv_data;
     const int16_t *samples = data;
     int i, j, k, v, ch;
-    int16_t input_samples[AC3_BLOCK_SIZE*2];
+    int16_t input_samples[AC3_WINDOW_SIZE];
     int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
@@ -1219,17 +1219,17 @@ static int AC3_encode_frame(AVCodecContext *avctx,
             for(j=0;j<AC3_BLOCK_SIZE;j++) {
                 input_samples[j] = MUL16(input_samples[j],
                                          ff_ac3_window[j]) >> 15;
-                input_samples[AC3_BLOCK_SIZE*2-j-1] = MUL16(input_samples[AC3_BLOCK_SIZE*2-j-1],
+                input_samples[AC3_WINDOW_SIZE-j-1] = MUL16(input_samples[AC3_WINDOW_SIZE-j-1],
                                              ff_ac3_window[j]) >> 15;
             }
 
             /* Normalize the samples to use the maximum available
                precision */
-            v = 14 - log2_tab(input_samples, AC3_BLOCK_SIZE*2);
+            v = 14 - log2_tab(input_samples, AC3_WINDOW_SIZE);
             if (v < 0)
                 v = 0;
             exp_samples[i][ch] = v - 9;
-            lshift_tab(input_samples, AC3_BLOCK_SIZE*2, v);
+            lshift_tab(input_samples, AC3_WINDOW_SIZE, v);
 
             /* do the MDCT */
             mdct512(mdct_coef[i][ch], input_samples);
