@@ -745,6 +745,37 @@ static int process_exponents(AC3EncodeContext *s,
 
 
 /**
+ * Initialize bit allocation.
+ * Set default parameter codes and calculate parameter values.
+ */
+static void bit_alloc_init(AC3EncodeContext *s)
+{
+    int ch;
+
+    /* init default parameters */
+    s->slow_decay_code = 2;
+    s->fast_decay_code = 1;
+    s->slow_gain_code  = 1;
+    s->db_per_bit_code = 2;
+    s->floor_code      = 4;
+    for (ch = 0; ch < s->channels; ch++)
+        s->fast_gain_code[ch] = 4;
+
+    /* initial snr offset */
+    s->coarse_snr_offset = 40;
+
+    /* compute real values */
+    /* currently none of these values change during encoding, so we can just
+       set them once at initialization */
+    s->bit_alloc.slow_decay = ff_ac3_slow_decay_tab[s->slow_decay_code] >> s->bit_alloc.sr_shift;
+    s->bit_alloc.fast_decay = ff_ac3_fast_decay_tab[s->fast_decay_code] >> s->bit_alloc.sr_shift;
+    s->bit_alloc.slow_gain  = ff_ac3_slow_gain_tab[s->slow_gain_code];
+    s->bit_alloc.db_per_bit = ff_ac3_db_per_bit_tab[s->db_per_bit_code];
+    s->bit_alloc.floor      = ff_ac3_floor_tab[s->floor_code];
+}
+
+
+/**
  * Count the bits used to encode the frame, minus exponents and mantissas.
  * @return bit count
  */
@@ -935,22 +966,6 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     uint8_t bap1[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS];
-
-    /* init default parameters */
-    s->slow_decay_code = 2;
-    s->fast_decay_code = 1;
-    s->slow_gain_code  = 1;
-    s->db_per_bit_code = 2;
-    s->floor_code      = 4;
-    for (ch = 0; ch < s->channels; ch++)
-        s->fast_gain_code[ch] = 4;
-
-    /* compute real values */
-    s->bit_alloc.slow_decay = ff_ac3_slow_decay_tab[s->slow_decay_code] >> s->bit_alloc.sr_shift;
-    s->bit_alloc.fast_decay = ff_ac3_fast_decay_tab[s->fast_decay_code] >> s->bit_alloc.sr_shift;
-    s->bit_alloc.slow_gain  = ff_ac3_slow_gain_tab[s->slow_gain_code];
-    s->bit_alloc.db_per_bit = ff_ac3_db_per_bit_tab[s->db_per_bit_code];
-    s->bit_alloc.floor      = ff_ac3_floor_tab[s->floor_code];
 
     /* count frame bits other than exponents and mantissas */
     frame_bits += count_frame_bits(s, exp_strategy);
@@ -1615,8 +1630,7 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
 
     set_bandwidth(s, avctx->cutoff);
 
-    /* initial snr offset */
-    s->coarse_snr_offset = 40;
+    bit_alloc_init(s);
 
     mdct_init(9);
 
