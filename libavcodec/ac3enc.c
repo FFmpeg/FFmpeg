@@ -1304,7 +1304,7 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
     s->frame_size      = s->frame_size_min;
 
     /* set bandwidth */
-    if(avctx->cutoff) {
+    if (avctx->cutoff) {
         /* calculate bandwidth based on user-specified cutoff frequency */
         int cutoff     = av_clip(avctx->cutoff, 1, s->sample_rate >> 1);
         int fbw_coeffs = cutoff * 2 * AC3_MAX_COEFS / s->sample_rate;
@@ -1315,7 +1315,7 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
            size, so that we avoid annoying high frequency artifacts */
         bw_code = 50;
     }
-    for(ch=0;ch<s->fbw_channels;ch++) {
+    for (ch = 0; ch < s->fbw_channels; ch++) {
         /* bandwidth for each channel */
         s->bandwidth_code[ch] = bw_code;
         s->nb_coefs[ch]       = bw_code * 3 + 73;
