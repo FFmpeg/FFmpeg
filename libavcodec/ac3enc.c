@@ -33,7 +33,16 @@
 #include "ac3.h"
 #include "audioconvert.h"
 
+#define MDCT_NBITS 9
+#define MDCT_SAMPLES (1 << MDCT_NBITS)
+
 #define SCALE_FLOAT(a, bits) lrintf((a) * (float)(1 << (bits)))
+
+#define FIX15(a) av_clip_int16(SCALE_FLOAT(a, 15))
+
+typedef struct IComplex {
+    int16_t re,im;
+} IComplex;
 
 typedef struct AC3EncodeContext {
     PutBitContext pb;                       ///< bitstream writer context
@@ -81,15 +90,6 @@ static int16_t costab[64];
 static int16_t sintab[64];
 static int16_t xcos1[128];
 static int16_t xsin1[128];
-
-#define MDCT_NBITS 9
-#define MDCT_SAMPLES (1 << MDCT_NBITS)
-
-#define FIX15(a) av_clip_int16(SCALE_FLOAT(a, 15))
-
-typedef struct IComplex {
-    int16_t re,im;
-} IComplex;
 
 static av_cold void fft_init(int ln)
 {
@@ -238,6 +238,32 @@ static void mdct512(int32_t *out, int16_t *in)
         CMUL(re1, im1, re, im, xsin1[i], xcos1[i]);
         out[                 2*i] = im1;
         out[MDCT_SAMPLES/2-1-2*i] = re1;
+    }
+}
+
+/* compute log2(max(abs(tab[]))) */
+static int log2_tab(int16_t *tab, int n)
+{
+    int i, v;
+
+    v = 0;
+    for (i = 0; i < n; i++)
+        v |= abs(tab[i]);
+
+    return av_log2(v);
+}
+
+static void lshift_tab(int16_t *tab, int n, int lshift)
+{
+    int i;
+
+    if (lshift > 0) {
+        for(i = 0; i < n; i++)
+            tab[i] <<= lshift;
+    } else if (lshift < 0) {
+        lshift = -lshift;
+        for (i = 0; i < n; i++)
+            tab[i] >>= lshift;
     }
 }
 
@@ -567,131 +593,6 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     s->coarse_snr_offset = coarse_snr_offset;
     for (ch = 0; ch < s->channels; ch++)
         s->fine_snr_offset[ch] = fine_snr_offset;
-
-    return 0;
-}
-
-static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
-                                    int64_t *channel_layout)
-{
-    int ch_layout;
-
-    if (channels < 1 || channels > AC3_MAX_CHANNELS)
-        return -1;
-    if ((uint64_t)*channel_layout > 0x7FF)
-        return -1;
-    ch_layout = *channel_layout;
-    if (!ch_layout)
-        ch_layout = avcodec_guess_channel_layout(channels, CODEC_ID_AC3, NULL);
-    if (av_get_channel_layout_nb_channels(ch_layout) != channels)
-        return -1;
-
-    s->lfe_on       = !!(ch_layout & AV_CH_LOW_FREQUENCY);
-    s->channels     = channels;
-    s->fbw_channels = channels - s->lfe_on;
-    s->lfe_channel  = s->lfe_on ? s->fbw_channels : -1;
-    if (s->lfe_on)
-        ch_layout -= AV_CH_LOW_FREQUENCY;
-
-    switch (ch_layout) {
-    case AV_CH_LAYOUT_MONO:           s->channel_mode = AC3_CHMODE_MONO;   break;
-    case AV_CH_LAYOUT_STEREO:         s->channel_mode = AC3_CHMODE_STEREO; break;
-    case AV_CH_LAYOUT_SURROUND:       s->channel_mode = AC3_CHMODE_3F;     break;
-    case AV_CH_LAYOUT_2_1:            s->channel_mode = AC3_CHMODE_2F1R;   break;
-    case AV_CH_LAYOUT_4POINT0:        s->channel_mode = AC3_CHMODE_3F1R;   break;
-    case AV_CH_LAYOUT_QUAD:
-    case AV_CH_LAYOUT_2_2:            s->channel_mode = AC3_CHMODE_2F2R;   break;
-    case AV_CH_LAYOUT_5POINT0:
-    case AV_CH_LAYOUT_5POINT0_BACK:   s->channel_mode = AC3_CHMODE_3F2R;   break;
-    default:
-        return -1;
-    }
-
-    s->channel_map  = ff_ac3_enc_channel_map[s->channel_mode][s->lfe_on];
-    *channel_layout = ch_layout;
-    if (s->lfe_on)
-        *channel_layout |= AV_CH_LOW_FREQUENCY;
-
-    return 0;
-}
-
-static av_cold int AC3_encode_init(AVCodecContext *avctx)
-{
-    int freq = avctx->sample_rate;
-    int bitrate = avctx->bit_rate;
-    AC3EncodeContext *s = avctx->priv_data;
-    int i, j, ch;
-    int bw_code;
-
-    avctx->frame_size = AC3_FRAME_SIZE;
-
-    ac3_common_init();
-
-    if (!avctx->channel_layout) {
-        av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
-                                      "encoder will guess the layout, but it "
-                                      "might be incorrect.\n");
-    }
-    if (set_channel_info(s, avctx->channels, &avctx->channel_layout)) {
-        av_log(avctx, AV_LOG_ERROR, "invalid channel layout\n");
-        return -1;
-    }
-
-    /* frequency */
-    for (i = 0; i < 3; i++) {
-        for (j = 0; j < 3; j++)
-            if ((ff_ac3_sample_rate_tab[j] >> i) == freq)
-                goto found;
-    }
-    return -1;
- found:
-    s->sample_rate        = freq;
-    s->bit_alloc.sr_shift = i;
-    s->bit_alloc.sr_code  = j;
-    s->bitstream_id       = 8 + s->bit_alloc.sr_shift;
-    s->bitstream_mode     = 0; /* complete main audio service */
-
-    /* bitrate & frame size */
-    for (i = 0; i < 19; i++) {
-        if ((ff_ac3_bitrate_tab[i] >> s->bit_alloc.sr_shift)*1000 == bitrate)
-            break;
-    }
-    if (i == 19)
-        return -1;
-    s->bit_rate        = bitrate;
-    s->frame_size_code = i << 1;
-    s->frame_size_min  = ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
-    s->bits_written    = 0;
-    s->samples_written = 0;
-    s->frame_size      = s->frame_size_min;
-
-    /* set bandwidth */
-    if(avctx->cutoff) {
-        /* calculate bandwidth based on user-specified cutoff frequency */
-        int cutoff     = av_clip(avctx->cutoff, 1, s->sample_rate >> 1);
-        int fbw_coeffs = cutoff * 2 * AC3_MAX_COEFS / s->sample_rate;
-        bw_code        = av_clip((fbw_coeffs - 73) / 3, 0, 60);
-    } else {
-        /* use default bandwidth setting */
-        /* XXX: should compute the bandwidth according to the frame
-           size, so that we avoid annoying high frequency artifacts */
-        bw_code = 50;
-    }
-    for(ch=0;ch<s->fbw_channels;ch++) {
-        /* bandwidth for each channel */
-        s->bandwidth_code[ch] = bw_code;
-        s->nb_coefs[ch]       = bw_code * 3 + 73;
-    }
-    if (s->lfe_on)
-        s->nb_coefs[s->lfe_channel] = 7; /* LFE channel always has 7 coefs */
-
-    /* initial snr offset */
-    s->coarse_snr_offset = 40;
-
-    mdct_init(9);
-
-    avctx->coded_frame= avcodec_alloc_frame();
-    avctx->coded_frame->key_frame= 1;
 
     return 0;
 }
@@ -1027,33 +928,6 @@ static unsigned int pow_poly(unsigned int a, unsigned int n, unsigned int poly)
     return r;
 }
 
-
-/* compute log2(max(abs(tab[]))) */
-static int log2_tab(int16_t *tab, int n)
-{
-    int i, v;
-
-    v = 0;
-    for (i = 0; i < n; i++)
-        v |= abs(tab[i]);
-
-    return av_log2(v);
-}
-
-static void lshift_tab(int16_t *tab, int n, int lshift)
-{
-    int i;
-
-    if (lshift > 0) {
-        for(i = 0; i < n; i++)
-            tab[i] <<= lshift;
-    } else if (lshift < 0) {
-        lshift = -lshift;
-        for (i = 0; i < n; i++)
-            tab[i] >>= lshift;
-    }
-}
-
 /* fill the end of the frame and compute the two crcs */
 static int output_frame_end(AC3EncodeContext *s)
 {
@@ -1206,6 +1080,131 @@ static int AC3_encode_frame(AVCodecContext *avctx,
 static av_cold int AC3_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
+    return 0;
+}
+
+static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
+                                    int64_t *channel_layout)
+{
+    int ch_layout;
+
+    if (channels < 1 || channels > AC3_MAX_CHANNELS)
+        return -1;
+    if ((uint64_t)*channel_layout > 0x7FF)
+        return -1;
+    ch_layout = *channel_layout;
+    if (!ch_layout)
+        ch_layout = avcodec_guess_channel_layout(channels, CODEC_ID_AC3, NULL);
+    if (av_get_channel_layout_nb_channels(ch_layout) != channels)
+        return -1;
+
+    s->lfe_on       = !!(ch_layout & AV_CH_LOW_FREQUENCY);
+    s->channels     = channels;
+    s->fbw_channels = channels - s->lfe_on;
+    s->lfe_channel  = s->lfe_on ? s->fbw_channels : -1;
+    if (s->lfe_on)
+        ch_layout -= AV_CH_LOW_FREQUENCY;
+
+    switch (ch_layout) {
+    case AV_CH_LAYOUT_MONO:           s->channel_mode = AC3_CHMODE_MONO;   break;
+    case AV_CH_LAYOUT_STEREO:         s->channel_mode = AC3_CHMODE_STEREO; break;
+    case AV_CH_LAYOUT_SURROUND:       s->channel_mode = AC3_CHMODE_3F;     break;
+    case AV_CH_LAYOUT_2_1:            s->channel_mode = AC3_CHMODE_2F1R;   break;
+    case AV_CH_LAYOUT_4POINT0:        s->channel_mode = AC3_CHMODE_3F1R;   break;
+    case AV_CH_LAYOUT_QUAD:
+    case AV_CH_LAYOUT_2_2:            s->channel_mode = AC3_CHMODE_2F2R;   break;
+    case AV_CH_LAYOUT_5POINT0:
+    case AV_CH_LAYOUT_5POINT0_BACK:   s->channel_mode = AC3_CHMODE_3F2R;   break;
+    default:
+        return -1;
+    }
+
+    s->channel_map  = ff_ac3_enc_channel_map[s->channel_mode][s->lfe_on];
+    *channel_layout = ch_layout;
+    if (s->lfe_on)
+        *channel_layout |= AV_CH_LOW_FREQUENCY;
+
+    return 0;
+}
+
+static av_cold int AC3_encode_init(AVCodecContext *avctx)
+{
+    int freq = avctx->sample_rate;
+    int bitrate = avctx->bit_rate;
+    AC3EncodeContext *s = avctx->priv_data;
+    int i, j, ch;
+    int bw_code;
+
+    avctx->frame_size = AC3_FRAME_SIZE;
+
+    ac3_common_init();
+
+    if (!avctx->channel_layout) {
+        av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
+                                      "encoder will guess the layout, but it "
+                                      "might be incorrect.\n");
+    }
+    if (set_channel_info(s, avctx->channels, &avctx->channel_layout)) {
+        av_log(avctx, AV_LOG_ERROR, "invalid channel layout\n");
+        return -1;
+    }
+
+    /* frequency */
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 3; j++)
+            if ((ff_ac3_sample_rate_tab[j] >> i) == freq)
+                goto found;
+    }
+    return -1;
+ found:
+    s->sample_rate        = freq;
+    s->bit_alloc.sr_shift = i;
+    s->bit_alloc.sr_code  = j;
+    s->bitstream_id       = 8 + s->bit_alloc.sr_shift;
+    s->bitstream_mode     = 0; /* complete main audio service */
+
+    /* bitrate & frame size */
+    for (i = 0; i < 19; i++) {
+        if ((ff_ac3_bitrate_tab[i] >> s->bit_alloc.sr_shift)*1000 == bitrate)
+            break;
+    }
+    if (i == 19)
+        return -1;
+    s->bit_rate        = bitrate;
+    s->frame_size_code = i << 1;
+    s->frame_size_min  = ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
+    s->bits_written    = 0;
+    s->samples_written = 0;
+    s->frame_size      = s->frame_size_min;
+
+    /* set bandwidth */
+    if(avctx->cutoff) {
+        /* calculate bandwidth based on user-specified cutoff frequency */
+        int cutoff     = av_clip(avctx->cutoff, 1, s->sample_rate >> 1);
+        int fbw_coeffs = cutoff * 2 * AC3_MAX_COEFS / s->sample_rate;
+        bw_code        = av_clip((fbw_coeffs - 73) / 3, 0, 60);
+    } else {
+        /* use default bandwidth setting */
+        /* XXX: should compute the bandwidth according to the frame
+           size, so that we avoid annoying high frequency artifacts */
+        bw_code = 50;
+    }
+    for(ch=0;ch<s->fbw_channels;ch++) {
+        /* bandwidth for each channel */
+        s->bandwidth_code[ch] = bw_code;
+        s->nb_coefs[ch]       = bw_code * 3 + 73;
+    }
+    if (s->lfe_on)
+        s->nb_coefs[s->lfe_channel] = 7; /* LFE channel always has 7 coefs */
+
+    /* initial snr offset */
+    s->coarse_snr_offset = 40;
+
+    mdct_init(9);
+
+    avctx->coded_frame= avcodec_alloc_frame();
+    avctx->coded_frame->key_frame= 1;
+
     return 0;
 }
 
