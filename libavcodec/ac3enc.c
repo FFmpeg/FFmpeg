@@ -33,12 +33,14 @@
 #include "ac3.h"
 #include "audioconvert.h"
 
+
 #define MDCT_NBITS 9
 #define MDCT_SAMPLES (1 << MDCT_NBITS)
 
 #define SCALE_FLOAT(a, bits) lrintf((a) * (float)(1 << (bits)))
 
 #define FIX15(a) av_clip_int16(SCALE_FLOAT(a, 15))
+
 
 typedef struct IComplex {
     int16_t re,im;
@@ -86,10 +88,12 @@ typedef struct AC3EncodeContext {
     int16_t last_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE]; ///< last 256 samples from previous frame
 } AC3EncodeContext;
 
+
 static int16_t costab[64];
 static int16_t sintab[64];
 static int16_t xcos1[128];
 static int16_t xsin1[128];
+
 
 static av_cold void fft_init(int ln)
 {
@@ -105,6 +109,7 @@ static av_cold void fft_init(int ln)
         sintab[i] = FIX15(sin(alpha));
     }
 }
+
 
 static av_cold void mdct_init(int nbits)
 {
@@ -122,6 +127,7 @@ static av_cold void mdct_init(int nbits)
     }
 }
 
+
 /* butter fly op */
 #define BF(pre, pim, qre, qim, pre1, pim1, qre1, qim1)  \
 {                                                       \
@@ -135,6 +141,7 @@ static av_cold void mdct_init(int nbits)
   qre = (bx - ax) >> 1;                                 \
   qim = (by - ay) >> 1;                                 \
 }
+
 
 #define CMUL(pre, pim, are, aim, bre, bim)              \
 {                                                       \
@@ -210,6 +217,7 @@ static void fft(IComplex *z, int ln)
     } while (nblocks);
 }
 
+
 static void mdct512(int32_t *out, int16_t *in)
 {
     int i, re, im, re1, im1;
@@ -241,6 +249,7 @@ static void mdct512(int32_t *out, int16_t *in)
     }
 }
 
+
 /* compute log2(max(abs(tab[]))) */
 static int log2_tab(int16_t *tab, int n)
 {
@@ -252,6 +261,7 @@ static int log2_tab(int16_t *tab, int n)
 
     return av_log2(v);
 }
+
 
 static void lshift_tab(int16_t *tab, int n, int lshift)
 {
@@ -267,6 +277,7 @@ static void lshift_tab(int16_t *tab, int n, int lshift)
     }
 }
 
+
 static int calc_exp_diff(uint8_t *exp1, uint8_t *exp2, int n)
 {
     int sum, i;
@@ -276,8 +287,10 @@ static int calc_exp_diff(uint8_t *exp1, uint8_t *exp2, int n)
     return sum;
 }
 
+
 /* new exponents are sent if their Norm 1 exceed this number */
 #define EXP_DIFF_THRESHOLD 1000
+
 
 static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
                                  uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
@@ -316,6 +329,7 @@ static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CH
     }
 }
 
+
 /* set exp[i] to min(exp[i], exp1[i]) */
 static void exponent_min(uint8_t exp[AC3_MAX_COEFS], uint8_t exp1[AC3_MAX_COEFS], int n)
 {
@@ -325,6 +339,7 @@ static void exponent_min(uint8_t exp[AC3_MAX_COEFS], uint8_t exp1[AC3_MAX_COEFS]
             exp[i] = exp1[i];
     }
 }
+
 
 /* update the exponents so that they are the ones the decoder will
    decode. Return the number of bits used to code the exponents */
@@ -374,6 +389,7 @@ static int encode_exp(uint8_t encoded_exp[AC3_MAX_COEFS],
 
     return 4 + (nb_groups / 3) * 7;
 }
+
 
 /* return the size in bits taken by the mantissa */
 static int compute_mantissa_size(AC3EncodeContext *s, uint8_t *m, int nb_coefs)
@@ -455,6 +471,7 @@ static void bit_alloc_masking(AC3EncodeContext *s,
     }
 }
 
+
 static int bit_alloc(AC3EncodeContext *s,
                      int16_t mask[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][50],
                      int16_t psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
@@ -480,6 +497,7 @@ static int bit_alloc(AC3EncodeContext *s,
     }
     return 16 * s->frame_size - frame_bits;
 }
+
 
 #define SNR_INC1 4
 
@@ -597,6 +615,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     return 0;
 }
 
+
 /* output the AC-3 frame header */
 static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
 {
@@ -627,6 +646,7 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
     put_bits(&s->pb, 1, 0);         /* no additional bit stream info */
 }
 
+
 /* symetric quantization on 'levels' levels */
 static inline int sym_quant(int c, int e, int levels)
 {
@@ -644,6 +664,7 @@ static inline int sym_quant(int c, int e, int levels)
     assert (v >= 0 && v < levels);
     return v;
 }
+
 
 /* asymetric quantization on 2^qbits levels */
 static inline int asym_quant(int c, int e, int qbits)
@@ -663,6 +684,7 @@ static inline int asym_quant(int c, int e, int qbits)
     assert(v >= -m);
     return v & ((1 << qbits)-1);
 }
+
 
 /* Output one audio block. There are AC3_MAX_BLOCKS audio blocks in one AC-3
    frame */
@@ -897,7 +919,9 @@ static void output_audio_block(AC3EncodeContext *s,
     }
 }
 
+
 #define CRC16_POLY ((1 << 0) | (1 << 2) | (1 << 15) | (1 << 16))
+
 
 static unsigned int mul_poly(unsigned int a, unsigned int b, unsigned int poly)
 {
@@ -915,6 +939,7 @@ static unsigned int mul_poly(unsigned int a, unsigned int b, unsigned int poly)
     return c;
 }
 
+
 static unsigned int pow_poly(unsigned int a, unsigned int n, unsigned int poly)
 {
     unsigned int r;
@@ -927,6 +952,7 @@ static unsigned int pow_poly(unsigned int a, unsigned int n, unsigned int poly)
     }
     return r;
 }
+
 
 /* fill the end of the frame and compute the two crcs */
 static int output_frame_end(AC3EncodeContext *s)
@@ -963,6 +989,7 @@ static int output_frame_end(AC3EncodeContext *s)
 
     return frame_size * 2;
 }
+
 
 static int AC3_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame, int buf_size, void *data)
@@ -1077,11 +1104,13 @@ static int AC3_encode_frame(AVCodecContext *avctx,
     return output_frame_end(s);
 }
 
+
 static av_cold int AC3_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
     return 0;
 }
+
 
 static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
                                     int64_t *channel_layout)
@@ -1126,6 +1155,7 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
 
     return 0;
 }
+
 
 static av_cold int AC3_encode_init(AVCodecContext *avctx)
 {
@@ -1208,6 +1238,7 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
+
 #ifdef TEST
 /*************************************************************************/
 /* TEST */
@@ -1215,6 +1246,7 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
 #include "libavutil/lfg.h"
 
 #define FN (MDCT_SAMPLES/4)
+
 
 static void fft_test(AVLFG *lfg)
 {
@@ -1242,6 +1274,7 @@ static void fft_test(AVLFG *lfg)
                k, in[k].re, in[k].im, sum_re / FN, sum_im / FN);
     }
 }
+
 
 static void mdct_test(AVLFG *lfg)
 {
@@ -1281,6 +1314,7 @@ static void mdct_test(AVLFG *lfg)
     av_log(NULL, AV_LOG_DEBUG, "err2=%f emax=%f\n", err / AC3_MAX_COEFS, emax);
 }
 
+
 int main(void)
 {
     AVLFG lfg;
@@ -1294,6 +1328,7 @@ int main(void)
     return 0;
 }
 #endif /* TEST */
+
 
 AVCodec ac3_encoder = {
     "ac3",
