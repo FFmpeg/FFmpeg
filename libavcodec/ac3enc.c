@@ -36,28 +36,28 @@
 typedef struct AC3EncodeContext {
     PutBitContext pb;
 
-    unsigned int bitstream_id;
-    unsigned int bitstream_mode;
+    int bitstream_id;
+    int bitstream_mode;
 
     int bit_rate;
-    unsigned int sample_rate;
+    int sample_rate;
     int sr_shift;
-    unsigned int sr_code; /* frequency */
+    int sr_code; /* frequency */
 
-    unsigned int frame_size_min; /* minimum frame size in case rounding is necessary */
-    unsigned int frame_size; /* current frame size in words */
-    unsigned int frame_size_code;
-    unsigned int bits_written;
-    unsigned int samples_written;
+    int frame_size_min; /* minimum frame size in case rounding is necessary */
+    int frame_size; /* current frame size in words */
+    int frame_size_code;
+    int bits_written;
+    int samples_written;
 
     int nb_all_channels;
     int nb_channels;
     int lfe;
     int lfe_channel;
-    unsigned int channel_mode;
+    int channel_mode;
     const uint8_t *channel_map;
 
-    unsigned int chbwcod[AC3_MAX_CHANNELS];
+    int chbwcod[AC3_MAX_CHANNELS];
     int nb_coefs[AC3_MAX_CHANNELS];
 
     /* bitrate allocation control */
