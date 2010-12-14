@@ -412,6 +412,41 @@ static void apply_mdct(AC3EncodeContext *s,
 
 
 /**
+ * Extract exponents from the MDCT coefficients.
+ * This takes into account the normalization that was done to the input samples
+ * by adjusting the exponents by the exponent shift values.
+ */
+static void extract_exponents(AC3EncodeContext *s,
+                              int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                              int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
+                              uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS])
+{
+    int blk, ch, i;
+
+    /* extract exponents */
+    for (ch = 0; ch < s->channels; ch++) {
+        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+            /* compute "exponents". We take into account the normalization there */
+            for (i = 0; i < AC3_MAX_COEFS; i++) {
+                int e;
+                int v = abs(mdct_coef[blk][ch][i]);
+                if (v == 0)
+                    e = 24;
+                else {
+                    e = 23 - av_log2(v) + exp_shift[blk][ch];
+                    if (e >= 24) {
+                        e = 24;
+                        mdct_coef[blk][ch][i] = 0;
+                    }
+                }
+                exp[blk][ch][i] = e;
+            }
+        }
+    }
+}
+
+
+/**
  * Calculate the sum of absolute differences (SAD) between 2 sets of exponents.
  */
 static int calc_exp_diff(uint8_t *exp1, uint8_t *exp2, int n)
@@ -468,6 +503,21 @@ static void compute_exp_strategy_ch(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX
         default: exp_strategy[blk][ch] = EXP_D15; break;
         }
         blk = blk1;
+    }
+}
+
+
+/**
+ * Calculate exponent strategies for all channels.
+ */
+static void compute_exp_strategy(AC3EncodeContext *s,
+                                 uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
+                                 uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS])
+{
+    int ch;
+
+    for (ch = 0; ch < s->channels; ch++) {
+        compute_exp_strategy_ch(exp_strategy, exp, ch, ch == s->lfe_channel);
     }
 }
 
@@ -536,6 +586,68 @@ static int encode_exponents_blk_ch(uint8_t encoded_exp[AC3_MAX_COEFS],
     }
 
     return 4 + (nb_groups / 3) * 7;
+}
+
+
+/**
+ * Encode exponents from original extracted form to what the decoder will see.
+ * This copies and groups exponents based on exponent strategy and reduces
+ * deltas between adjacent exponent groups so that they can be differentially
+ * encoded.
+ * @return bits needed to encode the exponents
+ */
+static int encode_exponents(AC3EncodeContext *s,
+                            uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                            uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
+                            uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS])
+{
+    int blk, blk1, blk2, ch;
+    int frame_bits;
+
+    frame_bits = 0;
+    for (ch = 0; ch < s->channels; ch++) {
+        /* for the EXP_REUSE case we select the min of the exponents */
+        blk = 0;
+        while (blk < AC3_MAX_BLOCKS) {
+            blk1 = blk + 1;
+            while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1][ch] == EXP_REUSE) {
+                exponent_min(exp[blk][ch], exp[blk1][ch], s->nb_coefs[ch]);
+                blk1++;
+            }
+            frame_bits += encode_exponents_blk_ch(encoded_exp[blk][ch],
+                                                  exp[blk][ch], s->nb_coefs[ch],
+                                                  exp_strategy[blk][ch]);
+            /* copy encoded exponents for reuse case */
+            for (blk2 = blk+1; blk2 < blk1; blk2++) {
+                memcpy(encoded_exp[blk2][ch], encoded_exp[blk][ch],
+                       s->nb_coefs[ch] * sizeof(uint8_t));
+            }
+            blk = blk1;
+        }
+    }
+
+    return frame_bits;
+}
+
+
+/**
+ * Calculate final exponents from the supplied MDCT coefficients and exponent shift.
+ * Extract exponents from MDCT coefficients, calculate exponent strategies,
+ * and encode final exponents.
+ * @return bits needed to encode the exponents
+ */
+static int process_exponents(AC3EncodeContext *s,
+                             int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                             int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
+                             uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
+                             uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
+                             uint8_t encoded_exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS])
+{
+    extract_exponents(s, mdct_coef, exp_shift, exp);
+
+    compute_exp_strategy(s, exp_strategy, exp);
+
+    return encode_exponents(s, exp, exp_strategy, encoded_exp);
 }
 
 
@@ -1174,8 +1286,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
 {
     AC3EncodeContext *s = avctx->priv_data;
     const int16_t *samples = data;
-    int v;
-    int blk, blk1, blk2, ch, i;
+    int blk;
     int16_t planar_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE+AC3_FRAME_SIZE];
     int32_t mdct_coef[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
     uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
@@ -1189,56 +1300,7 @@ static int ac3_encode_frame(AVCodecContext *avctx,
 
     apply_mdct(s, planar_samples, exp_shift, mdct_coef);
 
-    /* extract exponents */
-    for (ch = 0; ch < s->channels; ch++) {
-        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-            /* compute "exponents". We take into account the normalization there */
-            for (i = 0; i < AC3_MAX_COEFS; i++) {
-                int e;
-                v = abs(mdct_coef[blk][ch][i]);
-                if (v == 0)
-                    e = 24;
-                else {
-                    e = 23 - av_log2(v) + exp_shift[blk][ch];
-                    if (e >= 24) {
-                        e = 24;
-                        mdct_coef[blk][ch][i] = 0;
-                    }
-                }
-                exp[blk][ch][i] = e;
-            }
-        }
-    }
-
-    /* compute exponent strategies */
-    for (ch = 0; ch < s->channels; ch++) {
-        compute_exp_strategy_ch(exp_strategy, exp, ch, ch == s->lfe_channel);
-    }
-
-    /* encode exponents */
-    frame_bits = 0;
-    for (ch = 0; ch < s->channels; ch++) {
-        /* compute the exponents as the decoder will see them. The
-           EXP_REUSE case must be handled carefully : we select the
-           min of the exponents */
-        blk = 0;
-        while (blk < AC3_MAX_BLOCKS) {
-            blk1 = blk + 1;
-            while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1][ch] == EXP_REUSE) {
-                exponent_min(exp[blk][ch], exp[blk1][ch], s->nb_coefs[ch]);
-                blk1++;
-            }
-            frame_bits += encode_exponents_blk_ch(encoded_exp[blk][ch],
-                                                  exp[blk][ch], s->nb_coefs[ch],
-                                                  exp_strategy[blk][ch]);
-            /* copy encoded exponents for reuse case */
-            for (blk2 = blk+1; blk2 < blk1; blk2++) {
-                memcpy(encoded_exp[blk2][ch], encoded_exp[blk][ch],
-                       s->nb_coefs[ch] * sizeof(uint8_t));
-            }
-            blk = blk1;
-        }
-    }
+    frame_bits = process_exponents(s, mdct_coef, exp_shift, exp, exp_strategy, encoded_exp);
 
     /* adjust for fractional frame sizes */
     while (s->bits_written >= s->bit_rate && s->samples_written >= s->sample_rate) {
