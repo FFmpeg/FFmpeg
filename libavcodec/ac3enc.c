@@ -23,6 +23,7 @@
  * @file
  * The simplest AC-3 encoder.
  */
+
 //#define DEBUG
 
 #include "libavcore/audioconvert.h"
@@ -84,9 +85,6 @@ static int16_t xsin1[128];
 #define MDCT_NBITS 9
 #define MDCT_SAMPLES (1 << MDCT_NBITS)
 
-/* new exponents are sent if their Norm 1 exceed this number */
-#define EXP_DIFF_THRESHOLD 1000
-
 #define FIX15(a) av_clip_int16(SCALE_FLOAT(a, 15))
 
 typedef struct IComplex {
@@ -100,8 +98,8 @@ static av_cold void fft_init(int ln)
 
     n = 1 << ln;
 
-    for(i=0;i<(n/2);i++) {
-        alpha = 2 * M_PI * (float)i / (float)n;
+    for (i = 0; i < n/2; i++) {
+        alpha     = 2 * M_PI * (float)i / (float)n;
         costab[i] = FIX15(cos(alpha));
         sintab[i] = FIX15(sin(alpha));
     }
@@ -116,46 +114,46 @@ static av_cold void mdct_init(int nbits)
 
     fft_init(nbits - 2);
 
-    for(i=0;i<n4;i++) {
-        alpha = 2 * M_PI * (i + 1.0 / 8.0) / n;
+    for (i = 0; i < n4; i++) {
+        alpha    = 2 * M_PI * (i + 1.0 / 8.0) / n;
         xcos1[i] = FIX15(-cos(alpha));
         xsin1[i] = FIX15(-sin(alpha));
     }
 }
 
 /* butter fly op */
-#define BF(pre, pim, qre, qim, pre1, pim1, qre1, qim1) \
-{\
-  int ax, ay, bx, by;\
-  bx=pre1;\
-  by=pim1;\
-  ax=qre1;\
-  ay=qim1;\
-  pre = (bx + ax) >> 1;\
-  pim = (by + ay) >> 1;\
-  qre = (bx - ax) >> 1;\
-  qim = (by - ay) >> 1;\
+#define BF(pre, pim, qre, qim, pre1, pim1, qre1, qim1)  \
+{                                                       \
+  int ax, ay, bx, by;                                   \
+  bx  = pre1;                                           \
+  by  = pim1;                                           \
+  ax  = qre1;                                           \
+  ay  = qim1;                                           \
+  pre = (bx + ax) >> 1;                                 \
+  pim = (by + ay) >> 1;                                 \
+  qre = (bx - ax) >> 1;                                 \
+  qim = (by - ay) >> 1;                                 \
 }
 
-#define CMUL(pre, pim, are, aim, bre, bim) \
-{\
-   pre = (MUL16(are, bre) - MUL16(aim, bim)) >> 15;\
-   pim = (MUL16(are, bim) + MUL16(bre, aim)) >> 15;\
+#define CMUL(pre, pim, are, aim, bre, bim)              \
+{                                                       \
+   pre = (MUL16(are, bre) - MUL16(aim, bim)) >> 15;     \
+   pim = (MUL16(are, bim) + MUL16(bre, aim)) >> 15;     \
 }
 
 
 /* do a 2^n point complex fft on 2^ln points. */
 static void fft(IComplex *z, int ln)
 {
-    int        j, l, np, np2;
-    int        nblocks, nloops;
+    int j, l, np, np2;
+    int nblocks, nloops;
     register IComplex *p,*q;
     int tmp_re, tmp_im;
 
     np = 1 << ln;
 
     /* reverse */
-    for(j=0;j<np;j++) {
+    for (j = 0; j < np; j++) {
         int k = av_reverse[j] >> (8 - ln);
         if (k < j)
             FFSWAP(IComplex, z[k], z[j]);
@@ -163,44 +161,42 @@ static void fft(IComplex *z, int ln)
 
     /* pass 0 */
 
-    p=&z[0];
-    j=(np >> 1);
+    p = &z[0];
+    j = np >> 1;
     do {
         BF(p[0].re, p[0].im, p[1].re, p[1].im,
            p[0].re, p[0].im, p[1].re, p[1].im);
-        p+=2;
-    } while (--j != 0);
+        p += 2;
+    } while (--j);
 
     /* pass 1 */
 
-    p=&z[0];
-    j=np >> 2;
+    p = &z[0];
+    j = np >> 2;
     do {
-        BF(p[0].re, p[0].im, p[2].re, p[2].im,
-           p[0].re, p[0].im, p[2].re, p[2].im);
-        BF(p[1].re, p[1].im, p[3].re, p[3].im,
+        BF(p[0].re, p[0].im, p[2].re,  p[2].im,
+           p[0].re, p[0].im, p[2].re,  p[2].im);
+        BF(p[1].re, p[1].im, p[3].re,  p[3].im,
            p[1].re, p[1].im, p[3].im, -p[3].re);
         p+=4;
-    } while (--j != 0);
+    } while (--j);
 
     /* pass 2 .. ln-1 */
 
     nblocks = np >> 3;
-    nloops = 1 << 2;
-    np2 = np >> 1;
+    nloops  =  1 << 2;
+    np2     = np >> 1;
     do {
         p = z;
         q = z + nloops;
-        for (j = 0; j < nblocks; ++j) {
-
+        for (j = 0; j < nblocks; j++) {
             BF(p->re, p->im, q->re, q->im,
                p->re, p->im, q->re, q->im);
-
             p++;
             q++;
             for(l = nblocks; l < np2; l += nblocks) {
                 CMUL(tmp_re, tmp_im, costab[l], -sintab[l], q->re, q->im);
-                BF(p->re, p->im, q->re, q->im,
+                BF(p->re, p->im, q->re,  q->im,
                    p->re, p->im, tmp_re, tmp_im);
                 p++;
                 q++;
@@ -209,11 +205,10 @@ static void fft(IComplex *z, int ln)
             q += nloops;
         }
         nblocks = nblocks >> 1;
-        nloops = nloops << 1;
-    } while (nblocks != 0);
+        nloops  = nloops  << 1;
+    } while (nblocks);
 }
 
-/* do a 512 point mdct */
 static void mdct512(int32_t *out, int16_t *in)
 {
     int i, re, im, re1, im1;
@@ -221,14 +216,14 @@ static void mdct512(int32_t *out, int16_t *in)
     IComplex x[MDCT_SAMPLES/4];
 
     /* shift to simplify computations */
-    for(i=0;i<MDCT_SAMPLES/4;i++)
+    for (i = 0; i < MDCT_SAMPLES/4; i++)
         rot[i] = -in[i + 3*MDCT_SAMPLES/4];
-    for(i=MDCT_SAMPLES/4;i<MDCT_SAMPLES;i++)
-        rot[i] = in[i - MDCT_SAMPLES/4];
+    for (;i < MDCT_SAMPLES; i++)
+        rot[i] =  in[i -   MDCT_SAMPLES/4];
 
     /* pre rotation */
-    for(i=0;i<MDCT_SAMPLES/4;i++) {
-        re = ((int)rot[2*i] - (int)rot[MDCT_SAMPLES-1-2*i]) >> 1;
+    for (i = 0; i < MDCT_SAMPLES/4; i++) {
+        re =  ((int)rot[               2*i] - (int)rot[MDCT_SAMPLES  -1-2*i]) >> 1;
         im = -((int)rot[MDCT_SAMPLES/2+2*i] - (int)rot[MDCT_SAMPLES/2-1-2*i]) >> 1;
         CMUL(x[i].re, x[i].im, re, im, -xcos1[i], xsin1[i]);
     }
@@ -236,25 +231,26 @@ static void mdct512(int32_t *out, int16_t *in)
     fft(x, MDCT_NBITS - 2);
 
     /* post rotation */
-    for(i=0;i<MDCT_SAMPLES/4;i++) {
+    for (i = 0; i < MDCT_SAMPLES/4; i++) {
         re = x[i].re;
         im = x[i].im;
         CMUL(re1, im1, re, im, xsin1[i], xcos1[i]);
-        out[2*i] = im1;
+        out[                 2*i] = im1;
         out[MDCT_SAMPLES/2-1-2*i] = re1;
     }
 }
 
-/* XXX: use another norm ? */
 static int calc_exp_diff(uint8_t *exp1, uint8_t *exp2, int n)
 {
     int sum, i;
     sum = 0;
-    for(i=0;i<n;i++) {
+    for (i = 0; i < n; i++)
         sum += abs(exp1[i] - exp2[i]);
-    }
     return sum;
 }
+
+/* new exponents are sent if their Norm 1 exceed this number */
+#define EXP_DIFF_THRESHOLD 1000
 
 static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS],
                                  uint8_t exp[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS],
@@ -266,7 +262,7 @@ static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CH
     /* estimate if the exponent variation & decide if they should be
        reused in the next frame */
     exp_strategy[0][ch] = EXP_NEW;
-    for(i=1;i<AC3_MAX_BLOCKS;i++) {
+    for (i = 1; i < AC3_MAX_BLOCKS; i++) {
         exp_diff = calc_exp_diff(exp[i][ch], exp[i-1][ch], AC3_MAX_COEFS);
         if (exp_diff > EXP_DIFF_THRESHOLD)
             exp_strategy[i][ch] = EXP_NEW;
@@ -283,7 +279,7 @@ static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CH
         j = i + 1;
         while (j < AC3_MAX_BLOCKS && exp_strategy[j][ch] == EXP_REUSE)
             j++;
-        switch(j - i) {
+        switch (j - i) {
         case 1:
             exp_strategy[i][ch] = EXP_D45;
             break;
@@ -303,8 +299,7 @@ static void compute_exp_strategy(uint8_t exp_strategy[AC3_MAX_BLOCKS][AC3_MAX_CH
 static void exponent_min(uint8_t exp[AC3_MAX_COEFS], uint8_t exp1[AC3_MAX_COEFS], int n)
 {
     int i;
-
-    for(i=0;i<n;i++) {
+    for (i = 0; i < n; i++) {
         if (exp1[i] < exp[i])
             exp[i] = exp1[i];
     }
@@ -314,13 +309,12 @@ static void exponent_min(uint8_t exp[AC3_MAX_COEFS], uint8_t exp1[AC3_MAX_COEFS]
    decode. Return the number of bits used to code the exponents */
 static int encode_exp(uint8_t encoded_exp[AC3_MAX_COEFS],
                       uint8_t exp[AC3_MAX_COEFS],
-                      int nb_exps,
-                      int exp_strategy)
+                      int nb_exps, int exp_strategy)
 {
     int group_size, nb_groups, i, j, k, exp_min;
     uint8_t exp1[AC3_MAX_COEFS];
 
-    switch(exp_strategy) {
+    switch (exp_strategy) {
     case EXP_D15:
         group_size = 1;
         break;
@@ -337,10 +331,10 @@ static int encode_exp(uint8_t encoded_exp[AC3_MAX_COEFS],
     /* for each group, compute the minimum exponent */
     exp1[0] = exp[0]; /* DC exponent is handled separately */
     k = 1;
-    for(i=1;i<=nb_groups;i++) {
+    for (i = 1; i <= nb_groups; i++) {
         exp_min = exp[k];
         assert(exp_min >= 0 && exp_min <= 24);
-        for(j=1;j<group_size;j++) {
+        for (j = 1; j < group_size; j++) {
             if (exp[k+j] < exp_min)
                 exp_min = exp[k+j];
         }
@@ -352,20 +346,19 @@ static int encode_exp(uint8_t encoded_exp[AC3_MAX_COEFS],
     if (exp1[0] > 15)
         exp1[0] = 15;
 
-    /* Decrease the delta between each groups to within 2
-     * so that they can be differentially encoded */
-    for (i=1;i<=nb_groups;i++)
+    /* decrease the delta between each groups to within 2 so that they can be
+       differentially encoded */
+    for (i = 1; i <= nb_groups; i++)
         exp1[i] = FFMIN(exp1[i], exp1[i-1] + 2);
-    for (i=nb_groups-1;i>=0;i--)
+    for (i = nb_groups-1; i >= 0; i--)
         exp1[i] = FFMIN(exp1[i], exp1[i+1] + 2);
 
     /* now we have the exponent values the decoder will see */
     encoded_exp[0] = exp1[0];
     k = 1;
-    for(i=1;i<=nb_groups;i++) {
-        for(j=0;j<group_size;j++) {
+    for (i = 1; i <= nb_groups; i++) {
+        for (j = 0; j < group_size; j++)
             encoded_exp[k+j] = exp1[i];
-        }
         k += group_size;
     }
 
@@ -378,9 +371,9 @@ static int compute_mantissa_size(AC3EncodeContext *s, uint8_t *m, int nb_coefs)
     int bits, mant, i;
 
     bits = 0;
-    for(i=0;i<nb_coefs;i++) {
+    for (i = 0; i < nb_coefs; i++) {
         mant = m[i];
-        switch(mant) {
+        switch (mant) {
         case 0:
             /* nothing */
             break;
@@ -432,8 +425,8 @@ static void bit_alloc_masking(AC3EncodeContext *s,
     int blk, ch;
     int16_t band_psd[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][50];
 
-    for(blk=0; blk<AC3_MAX_BLOCKS; blk++) {
-        for(ch=0;ch<s->channels;ch++) {
+    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+        for (ch = 0; ch < s->channels; ch++) {
             if(exp_strategy[blk][ch] == EXP_REUSE) {
                 memcpy(psd[blk][ch], psd[blk-1][ch], AC3_MAX_COEFS*sizeof(int16_t));
                 memcpy(mask[blk][ch], mask[blk-1][ch], 50*sizeof(int16_t));
@@ -463,18 +456,16 @@ static int bit_alloc(AC3EncodeContext *s,
 
     snr_offset = (((coarse_snr_offset - 15) << 4) + fine_snr_offset) << 2;
 
-    /* compute size */
-    for(i=0;i<AC3_MAX_BLOCKS;i++) {
+    for (i = 0; i < AC3_MAX_BLOCKS; i++) {
         s->mant1_cnt = 0;
         s->mant2_cnt = 0;
         s->mant4_cnt = 0;
-        for(ch=0;ch<s->channels;ch++) {
+        for (ch = 0; ch < s->channels; ch++) {
             ff_ac3_bit_alloc_calc_bap(mask[i][ch], psd[i][ch], 0,
                                       s->nb_coefs[ch], snr_offset,
                                       s->bit_alloc.floor, ff_ac3_bap_tab,
                                       bap[i][ch]);
-            frame_bits += compute_mantissa_size(s, bap[i][ch],
-                                                 s->nb_coefs[ch]);
+            frame_bits += compute_mantissa_size(s, bap[i][ch], s->nb_coefs[ch]);
         }
     }
     return 16 * s->frame_size - frame_bits;
@@ -498,18 +489,18 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* init default parameters */
     s->slow_decay_code = 2;
     s->fast_decay_code = 1;
-    s->slow_gain_code = 1;
+    s->slow_gain_code  = 1;
     s->db_per_bit_code = 2;
-    s->floor_code = 4;
-    for(ch=0;ch<s->channels;ch++)
+    s->floor_code      = 4;
+    for (ch = 0; ch < s->channels; ch++)
         s->fast_gain_code[ch] = 4;
 
     /* compute real values */
     s->bit_alloc.slow_decay = ff_ac3_slow_decay_tab[s->slow_decay_code] >> s->bit_alloc.sr_shift;
     s->bit_alloc.fast_decay = ff_ac3_fast_decay_tab[s->fast_decay_code] >> s->bit_alloc.sr_shift;
-    s->bit_alloc.slow_gain = ff_ac3_slow_gain_tab[s->slow_gain_code];
+    s->bit_alloc.slow_gain  = ff_ac3_slow_gain_tab[s->slow_gain_code];
     s->bit_alloc.db_per_bit = ff_ac3_db_per_bit_tab[s->db_per_bit_code];
-    s->bit_alloc.floor = ff_ac3_floor_tab[s->floor_code];
+    s->bit_alloc.floor      = ff_ac3_floor_tab[s->floor_code];
 
     /* header size */
     frame_bits += 65;
@@ -518,16 +509,17 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     frame_bits += frame_bits_inc[s->channel_mode];
 
     /* audio blocks */
-    for(i=0;i<AC3_MAX_BLOCKS;i++) {
+    for (i = 0; i < AC3_MAX_BLOCKS; i++) {
         frame_bits += s->fbw_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
         if (s->channel_mode == AC3_CHMODE_STEREO) {
             frame_bits++; /* rematstr */
-            if(i==0) frame_bits += 4;
+            if (!i)
+                frame_bits += 4;
         }
         frame_bits += 2 * s->fbw_channels; /* chexpstr[2] * c */
         if (s->lfe_on)
             frame_bits++; /* lfeexpstr */
-        for(ch=0;ch<s->fbw_channels;ch++) {
+        for (ch = 0; ch < s->fbw_channels; ch++) {
             if (exp_strategy[i][ch] != EXP_REUSE)
                 frame_bits += 6 + 2; /* chbwcod[6], gainrng[2] */
         }
@@ -562,26 +554,26 @@ static int compute_bit_allocation(AC3EncodeContext *s,
         av_log(NULL, AV_LOG_ERROR, "Bit allocation failed. Try increasing the bitrate.\n");
         return -1;
     }
-    while ((coarse_snr_offset + SNR_INC1) <= 63 &&
+    while (coarse_snr_offset + SNR_INC1 <= 63 &&
            bit_alloc(s, mask, psd, bap1, frame_bits,
                      coarse_snr_offset + SNR_INC1, 0) >= 0) {
         coarse_snr_offset += SNR_INC1;
         memcpy(bap, bap1, sizeof(bap1));
     }
-    while ((coarse_snr_offset + 1) <= 63 &&
+    while (coarse_snr_offset + 1 <= 63 &&
            bit_alloc(s, mask, psd, bap1, frame_bits, coarse_snr_offset + 1, 0) >= 0) {
         coarse_snr_offset++;
         memcpy(bap, bap1, sizeof(bap1));
     }
 
     fine_snr_offset = 0;
-    while ((fine_snr_offset + SNR_INC1) <= 15 &&
+    while (fine_snr_offset + SNR_INC1 <= 15 &&
            bit_alloc(s, mask, psd, bap1, frame_bits,
                      coarse_snr_offset, fine_snr_offset + SNR_INC1) >= 0) {
         fine_snr_offset += SNR_INC1;
         memcpy(bap, bap1, sizeof(bap1));
     }
-    while ((fine_snr_offset + 1) <= 15 &&
+    while (fine_snr_offset + 1 <= 15 &&
            bit_alloc(s, mask, psd, bap1, frame_bits,
                      coarse_snr_offset, fine_snr_offset + 1) >= 0) {
         fine_snr_offset++;
@@ -589,7 +581,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     }
 
     s->coarse_snr_offset = coarse_snr_offset;
-    for(ch=0;ch<s->channels;ch++)
+    for (ch = 0; ch < s->channels; ch++)
         s->fine_snr_offset[ch] = fine_snr_offset;
 
     return 0;
@@ -631,7 +623,7 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
         return -1;
     }
 
-    s->channel_map = ff_ac3_enc_channel_map[s->channel_mode][s->lfe_on];
+    s->channel_map  = ff_ac3_enc_channel_map[s->channel_mode][s->lfe_on];
     *channel_layout = ch_layout;
     if (s->lfe_on)
         *channel_layout |= AV_CH_LOW_FREQUENCY;
@@ -662,39 +654,39 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
     }
 
     /* frequency */
-    for(i=0;i<3;i++) {
-        for(j=0;j<3;j++)
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 3; j++)
             if ((ff_ac3_sample_rate_tab[j] >> i) == freq)
                 goto found;
     }
     return -1;
  found:
-    s->sample_rate = freq;
+    s->sample_rate        = freq;
     s->bit_alloc.sr_shift = i;
-    s->bit_alloc.sr_code = j;
-    s->bitstream_id = 8 + s->bit_alloc.sr_shift;
-    s->bitstream_mode = 0; /* complete main audio service */
+    s->bit_alloc.sr_code  = j;
+    s->bitstream_id       = 8 + s->bit_alloc.sr_shift;
+    s->bitstream_mode     = 0; /* complete main audio service */
 
     /* bitrate & frame size */
-    for(i=0;i<19;i++) {
+    for (i = 0; i < 19; i++) {
         if ((ff_ac3_bitrate_tab[i] >> s->bit_alloc.sr_shift)*1000 == bitrate)
             break;
     }
     if (i == 19)
         return -1;
-    s->bit_rate = bitrate;
+    s->bit_rate        = bitrate;
     s->frame_size_code = i << 1;
-    s->frame_size_min = ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
-    s->bits_written = 0;
+    s->frame_size_min  = ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
+    s->bits_written    = 0;
     s->samples_written = 0;
-    s->frame_size = s->frame_size_min;
+    s->frame_size      = s->frame_size_min;
 
-    /* bit allocation init */
+    /* set bandwidth */
     if(avctx->cutoff) {
         /* calculate bandwidth based on user-specified cutoff frequency */
-        int cutoff = av_clip(avctx->cutoff, 1, s->sample_rate >> 1);
+        int cutoff     = av_clip(avctx->cutoff, 1, s->sample_rate >> 1);
         int fbw_coeffs = cutoff * 2 * AC3_MAX_COEFS / s->sample_rate;
-        bw_code = av_clip((fbw_coeffs - 73) / 3, 0, 60);
+        bw_code        = av_clip((fbw_coeffs - 73) / 3, 0, 60);
     } else {
         /* use default bandwidth setting */
         /* XXX: should compute the bandwidth according to the frame
@@ -704,11 +696,11 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
     for(ch=0;ch<s->fbw_channels;ch++) {
         /* bandwidth for each channel */
         s->bandwidth_code[ch] = bw_code;
-        s->nb_coefs[ch] = bw_code * 3 + 73;
+        s->nb_coefs[ch]       = bw_code * 3 + 73;
     }
-    if (s->lfe_on) {
-        s->nb_coefs[s->lfe_channel] = 7; /* fixed */
-    }
+    if (s->lfe_on)
+        s->nb_coefs[s->lfe_channel] = 7; /* LFE channel always has 7 coefs */
+
     /* initial snr offset */
     s->coarse_snr_offset = 40;
 
@@ -725,29 +717,29 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
 {
     init_put_bits(&s->pb, frame, AC3_MAX_CODED_FRAME_SIZE);
 
-    put_bits(&s->pb, 16, 0x0b77); /* frame header */
-    put_bits(&s->pb, 16, 0); /* crc1: will be filled later */
-    put_bits(&s->pb, 2, s->bit_alloc.sr_code);
-    put_bits(&s->pb, 6, s->frame_size_code + (s->frame_size - s->frame_size_min));
-    put_bits(&s->pb, 5, s->bitstream_id);
-    put_bits(&s->pb, 3, s->bitstream_mode);
-    put_bits(&s->pb, 3, s->channel_mode);
+    put_bits(&s->pb, 16, 0x0b77);   /* frame header */
+    put_bits(&s->pb, 16, 0);        /* crc1: will be filled later */
+    put_bits(&s->pb, 2,  s->bit_alloc.sr_code);
+    put_bits(&s->pb, 6,  s->frame_size_code + (s->frame_size - s->frame_size_min));
+    put_bits(&s->pb, 5,  s->bitstream_id);
+    put_bits(&s->pb, 3,  s->bitstream_mode);
+    put_bits(&s->pb, 3,  s->channel_mode);
     if ((s->channel_mode & 0x01) && s->channel_mode != AC3_CHMODE_MONO)
-        put_bits(&s->pb, 2, 1); /* XXX -4.5 dB */
+        put_bits(&s->pb, 2, 1);     /* XXX -4.5 dB */
     if (s->channel_mode & 0x04)
-        put_bits(&s->pb, 2, 1); /* XXX -6 dB */
+        put_bits(&s->pb, 2, 1);     /* XXX -6 dB */
     if (s->channel_mode == AC3_CHMODE_STEREO)
-        put_bits(&s->pb, 2, 0); /* surround not indicated */
+        put_bits(&s->pb, 2, 0);     /* surround not indicated */
     put_bits(&s->pb, 1, s->lfe_on); /* LFE */
-    put_bits(&s->pb, 5, 31); /* dialog norm: -31 db */
-    put_bits(&s->pb, 1, 0); /* no compression control word */
-    put_bits(&s->pb, 1, 0); /* no lang code */
-    put_bits(&s->pb, 1, 0); /* no audio production info */
-    put_bits(&s->pb, 1, 0); /* no copyright */
-    put_bits(&s->pb, 1, 1); /* original bitstream */
-    put_bits(&s->pb, 1, 0); /* no time code 1 */
-    put_bits(&s->pb, 1, 0); /* no time code 2 */
-    put_bits(&s->pb, 1, 0); /* no additional bit stream info */
+    put_bits(&s->pb, 5, 31);        /* dialog norm: -31 db */
+    put_bits(&s->pb, 1, 0);         /* no compression control word */
+    put_bits(&s->pb, 1, 0);         /* no lang code */
+    put_bits(&s->pb, 1, 0);         /* no audio production info */
+    put_bits(&s->pb, 1, 0);         /* no copyright */
+    put_bits(&s->pb, 1, 1);         /* original bitstream */
+    put_bits(&s->pb, 1, 0);         /* no time code 1 */
+    put_bits(&s->pb, 1, 0);         /* no time code 2 */
+    put_bits(&s->pb, 1, 0);         /* no additional bit stream info */
 }
 
 /* symetric quantization on 'levels' levels */
@@ -805,55 +797,48 @@ static void output_audio_block(AC3EncodeContext *s,
     uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr;
     int delta0, delta1, delta2;
 
-    for(ch=0;ch<s->fbw_channels;ch++)
-        put_bits(&s->pb, 1, 0); /* 512 point MDCT */
-    for(ch=0;ch<s->fbw_channels;ch++)
+    for (ch = 0; ch < s->fbw_channels; ch++)
+        put_bits(&s->pb, 1, 0); /* no block switching */
+    for (ch = 0; ch < s->fbw_channels; ch++)
         put_bits(&s->pb, 1, 1); /* no dither */
-    put_bits(&s->pb, 1, 0); /* no dynamic range */
-    if (block_num == 0) {
-        /* for block 0, even if no coupling, we must say it. This is a
-           waste of bit :-) */
+    put_bits(&s->pb, 1, 0);     /* no dynamic range */
+    if (!block_num) {
         put_bits(&s->pb, 1, 1); /* coupling strategy present */
         put_bits(&s->pb, 1, 0); /* no coupling strategy */
     } else {
         put_bits(&s->pb, 1, 0); /* no new coupling strategy */
     }
 
-    if (s->channel_mode == AC3_CHMODE_STEREO)
-      {
-        if(block_num==0)
-          {
-            /* first block must define rematrixing (rematstr)  */
+    if (s->channel_mode == AC3_CHMODE_STEREO) {
+        if (!block_num) {
+            /* first block must define rematrixing (rematstr) */
             put_bits(&s->pb, 1, 1);
 
             /* dummy rematrixing rematflg(1:4)=0 */
-            for (rbnd=0;rbnd<4;rbnd++)
-              put_bits(&s->pb, 1, 0);
-          }
-        else
-          {
+            for (rbnd = 0; rbnd < 4; rbnd++)
+                put_bits(&s->pb, 1, 0);
+        } else {
             /* no matrixing (but should be used in the future) */
             put_bits(&s->pb, 1, 0);
-          }
-      }
+        }
+    }
 
     /* exponent strategy */
-    for(ch=0;ch<s->fbw_channels;ch++) {
+    for (ch = 0; ch < s->fbw_channels; ch++)
         put_bits(&s->pb, 2, exp_strategy[ch]);
-    }
 
-    if (s->lfe_on) {
+    if (s->lfe_on)
         put_bits(&s->pb, 1, exp_strategy[s->lfe_channel]);
-    }
 
-    for(ch=0;ch<s->fbw_channels;ch++) {
+    /* bandwidth */
+    for (ch = 0; ch < s->fbw_channels; ch++) {
         if (exp_strategy[ch] != EXP_REUSE)
             put_bits(&s->pb, 6, s->bandwidth_code[ch]);
     }
 
     /* exponents */
     for (ch = 0; ch < s->channels; ch++) {
-        switch(exp_strategy[ch]) {
+        switch (exp_strategy[ch]) {
         case EXP_REUSE:
             continue;
         case EXP_D15:
@@ -875,21 +860,21 @@ static void output_audio_block(AC3EncodeContext *s,
         put_bits(&s->pb, 4, exp1);
 
         /* next ones are delta encoded */
-        for(i=0;i<nb_groups;i++) {
+        for (i = 0; i < nb_groups; i++) {
             /* merge three delta in one code */
-            exp0 = exp1;
-            exp1 = p[0];
-            p += group_size;
+            exp0   = exp1;
+            exp1   = p[0];
+            p     += group_size;
             delta0 = exp1 - exp0 + 2;
 
-            exp0 = exp1;
-            exp1 = p[0];
-            p += group_size;
+            exp0   = exp1;
+            exp1   = p[0];
+            p     += group_size;
             delta1 = exp1 - exp0 + 2;
 
-            exp0 = exp1;
-            exp1 = p[0];
-            p += group_size;
+            exp0   = exp1;
+            exp1   = p[0];
+            p     += group_size;
             delta2 = exp1 - exp0 + 2;
 
             put_bits(&s->pb, 7, ((delta0 * 5 + delta1) * 5) + delta2);
@@ -911,10 +896,10 @@ static void output_audio_block(AC3EncodeContext *s,
     }
 
     /* snr offset */
-    put_bits(&s->pb, 1, baie); /* always present with bai */
+    put_bits(&s->pb, 1, baie);
     if (baie) {
         put_bits(&s->pb, 6, s->coarse_snr_offset);
-        for(ch=0;ch<s->channels;ch++) {
+        for (ch = 0; ch < s->channels; ch++) {
             put_bits(&s->pb, 4, s->fine_snr_offset[ch]);
             put_bits(&s->pb, 3, s->fast_gain_code[ch]);
         }
@@ -934,17 +919,17 @@ static void output_audio_block(AC3EncodeContext *s,
     for (ch = 0; ch < s->channels; ch++) {
         int b, c, e, v;
 
-        for(i=0;i<s->nb_coefs[ch];i++) {
+        for (i = 0; i < s->nb_coefs[ch]; i++) {
             c = mdct_coefs[ch][i];
             e = encoded_exp[ch][i] - global_exp[ch];
             b = bap[ch][i];
-            switch(b) {
+            switch (b) {
             case 0:
                 v = 0;
                 break;
             case 1:
                 v = sym_quant(c, e, 3);
-                switch(mant1_cnt) {
+                switch (mant1_cnt) {
                 case 0:
                     qmant1_ptr = &qmant[ch][i];
                     v = 9 * v;
@@ -964,7 +949,7 @@ static void output_audio_block(AC3EncodeContext *s,
                 break;
             case 2:
                 v = sym_quant(c, e, 5);
-                switch(mant2_cnt) {
+                switch (mant2_cnt) {
                 case 0:
                     qmant2_ptr = &qmant[ch][i];
                     v = 25 * v;
@@ -987,7 +972,7 @@ static void output_audio_block(AC3EncodeContext *s,
                 break;
             case 4:
                 v = sym_quant(c, e, 11);
-                switch(mant4_cnt) {
+                switch (mant4_cnt) {
                 case 0:
                     qmant4_ptr = &qmant[ch][i];
                     v = 11 * v;
@@ -1021,36 +1006,18 @@ static void output_audio_block(AC3EncodeContext *s,
     for (ch = 0; ch < s->channels; ch++) {
         int b, q;
 
-        for(i=0;i<s->nb_coefs[ch];i++) {
+        for (i = 0; i < s->nb_coefs[ch]; i++) {
             q = qmant[ch][i];
             b = bap[ch][i];
-            switch(b) {
-            case 0:
-                break;
-            case 1:
-                if (q != 128)
-                    put_bits(&s->pb, 5, q);
-                break;
-            case 2:
-                if (q != 128)
-                    put_bits(&s->pb, 7, q);
-                break;
-            case 3:
-                put_bits(&s->pb, 3, q);
-                break;
-            case 4:
-                if (q != 128)
-                    put_bits(&s->pb, 7, q);
-                break;
-            case 14:
-                put_bits(&s->pb, 14, q);
-                break;
-            case 15:
-                put_bits(&s->pb, 16, q);
-                break;
-            default:
-                put_bits(&s->pb, b - 1, q);
-                break;
+            switch (b) {
+            case 0:                                         break;
+            case 1: if (q != 128) put_bits(&s->pb,   5, q); break;
+            case 2: if (q != 128) put_bits(&s->pb,   7, q); break;
+            case 3:               put_bits(&s->pb,   3, q); break;
+            case 4: if (q != 128) put_bits(&s->pb,   7, q); break;
+            case 14:              put_bits(&s->pb,  14, q); break;
+            case 15:              put_bits(&s->pb,  16, q); break;
+            default:              put_bits(&s->pb, b-1, q); break;
             }
         }
     }
@@ -1094,9 +1061,9 @@ static int log2_tab(int16_t *tab, int n)
     int i, v;
 
     v = 0;
-    for(i=0;i<n;i++) {
+    for (i = 0; i < n; i++)
         v |= abs(tab[i]);
-    }
+
     return av_log2(v);
 }
 
@@ -1105,14 +1072,12 @@ static void lshift_tab(int16_t *tab, int n, int lshift)
     int i;
 
     if (lshift > 0) {
-        for(i=0;i<n;i++) {
+        for(i = 0; i < n; i++)
             tab[i] <<= lshift;
-        }
     } else if (lshift < 0) {
         lshift = -lshift;
-        for(i=0;i<n;i++) {
+        for (i = 0; i < n; i++)
             tab[i] >>= lshift;
-        }
     }
 }
 
@@ -1129,25 +1094,26 @@ static int output_frame_end(AC3EncodeContext *s)
     frame = s->pb.buf;
     n = 2 * s->frame_size - (put_bits_ptr(&s->pb) - frame) - 2;
     assert(n >= 0);
-    if(n>0)
-      memset(put_bits_ptr(&s->pb), 0, n);
+    if (n > 0)
+        memset(put_bits_ptr(&s->pb), 0, n);
 
     /* Now we must compute both crcs : this is not so easy for crc1
        because it is at the beginning of the data... */
     frame_size_58 = (frame_size >> 1) + (frame_size >> 3);
+
     crc1 = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0,
-                           frame + 4, 2 * frame_size_58 - 4));
+                             frame + 4, 2 * frame_size_58 - 4));
+
     /* XXX: could precompute crc_inv */
     crc_inv = pow_poly((CRC16_POLY >> 1), (16 * frame_size_58) - 16, CRC16_POLY);
-    crc1 = mul_poly(crc_inv, crc1, CRC16_POLY);
-    AV_WB16(frame+2,crc1);
+    crc1    = mul_poly(crc_inv, crc1, CRC16_POLY);
+    AV_WB16(frame + 2, crc1);
 
     crc2 = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0,
-                           frame + 2 * frame_size_58,
-                           (frame_size - frame_size_58) * 2 - 2));
-    AV_WB16(frame+2*frame_size-2,crc2);
+                             frame + 2 * frame_size_58,
+                             (frame_size - frame_size_58) * 2 - 2));
+    AV_WB16(frame + 2*frame_size - 2, crc2);
 
-    //    printf("n=%d frame_size=%d\n", n, frame_size);
     return frame_size * 2;
 }
 
@@ -1167,10 +1133,10 @@ static int AC3_encode_frame(AVCodecContext *avctx,
     int frame_bits;
 
     frame_bits = 0;
-    for(ch=0;ch<s->channels;ch++) {
+    for (ch = 0; ch < s->channels; ch++) {
         int ich = s->channel_map[ch];
         /* fixed mdct to the six sub blocks & exponent computation */
-        for(i=0;i<AC3_MAX_BLOCKS;i++) {
+        for (i = 0; i < AC3_MAX_BLOCKS; i++) {
             const int16_t *sptr;
             int sinc;
 
@@ -1178,7 +1144,7 @@ static int AC3_encode_frame(AVCodecContext *avctx,
             memcpy(input_samples, s->last_samples[ich], AC3_BLOCK_SIZE * sizeof(int16_t));
             sinc = s->channels;
             sptr = samples + (sinc * AC3_BLOCK_SIZE * i) + ich;
-            for(j=0;j<AC3_BLOCK_SIZE;j++) {
+            for (j = 0; j < AC3_BLOCK_SIZE; j++) {
                 v = *sptr;
                 input_samples[j + AC3_BLOCK_SIZE] = v;
                 s->last_samples[ich][j] = v;
@@ -1186,15 +1152,14 @@ static int AC3_encode_frame(AVCodecContext *avctx,
             }
 
             /* apply the MDCT window */
-            for(j=0;j<AC3_BLOCK_SIZE;j++) {
-                input_samples[j] = MUL16(input_samples[j],
-                                         ff_ac3_window[j]) >> 15;
+            for (j = 0; j < AC3_BLOCK_SIZE; j++) {
+                input_samples[j]                   = MUL16(input_samples[j],
+                                                           ff_ac3_window[j]) >> 15;
                 input_samples[AC3_WINDOW_SIZE-j-1] = MUL16(input_samples[AC3_WINDOW_SIZE-j-1],
-                                             ff_ac3_window[j]) >> 15;
+                                                           ff_ac3_window[j]) >> 15;
             }
 
-            /* Normalize the samples to use the maximum available
-               precision */
+            /* Normalize the samples to use the maximum available precision */
             v = 14 - log2_tab(input_samples, AC3_WINDOW_SIZE);
             if (v < 0)
                 v = 0;
@@ -1204,9 +1169,8 @@ static int AC3_encode_frame(AVCodecContext *avctx,
             /* do the MDCT */
             mdct512(mdct_coef[i][ch], input_samples);
 
-            /* compute "exponents". We take into account the
-               normalization there */
-            for(j=0;j<AC3_MAX_COEFS;j++) {
+            /* compute "exponents". We take into account the normalization there */
+            for (j = 0; j < AC3_MAX_COEFS; j++) {
                 int e;
                 v = abs(mdct_coef[i][ch][j]);
                 if (v == 0)
@@ -1238,7 +1202,7 @@ static int AC3_encode_frame(AVCodecContext *avctx,
                                      exp[i][ch], s->nb_coefs[ch],
                                      exp_strategy[i][ch]);
             /* copy encoded exponents for reuse case */
-            for(k=i+1;k<j;k++) {
+            for (k = i+1; k < j; k++) {
                 memcpy(encoded_exp[k][ch], encoded_exp[i][ch],
                        s->nb_coefs[ch] * sizeof(uint8_t));
             }
@@ -1247,19 +1211,19 @@ static int AC3_encode_frame(AVCodecContext *avctx,
     }
 
     /* adjust for fractional frame sizes */
-    while(s->bits_written >= s->bit_rate && s->samples_written >= s->sample_rate) {
-        s->bits_written -= s->bit_rate;
+    while (s->bits_written >= s->bit_rate && s->samples_written >= s->sample_rate) {
+        s->bits_written    -= s->bit_rate;
         s->samples_written -= s->sample_rate;
     }
     s->frame_size = s->frame_size_min + (s->bits_written * s->sample_rate < s->samples_written * s->bit_rate);
-    s->bits_written += s->frame_size * 16;
+    s->bits_written    += s->frame_size * 16;
     s->samples_written += AC3_FRAME_SIZE;
 
     compute_bit_allocation(s, bap, encoded_exp, exp_strategy, frame_bits);
     /* everything is known... let's output the frame */
     output_frame_header(s, frame);
 
-    for(i=0;i<AC3_MAX_BLOCKS;i++) {
+    for (i = 0; i < AC3_MAX_BLOCKS; i++) {
         output_audio_block(s, exp_strategy[i], encoded_exp[i],
                            bap[i], mdct_coef[i], exp_samples[i], i);
     }
@@ -1286,20 +1250,18 @@ static void fft_test(AVLFG *lfg)
     int k, n, i;
     float sum_re, sum_im, a;
 
-    /* FFT test */
-
-    for(i=0;i<FN;i++) {
+    for (i = 0; i < FN; i++) {
         in[i].re = av_lfg_get(lfg) % 65535 - 32767;
         in[i].im = av_lfg_get(lfg) % 65535 - 32767;
-        in1[i] = in[i];
+        in1[i]   = in[i];
     }
     fft(in, 7);
 
     /* do it by hand */
-    for(k=0;k<FN;k++) {
+    for (k = 0; k < FN; k++) {
         sum_re = 0;
         sum_im = 0;
-        for(n=0;n<FN;n++) {
+        for (n = 0; n < FN; n++) {
             a = -2 * M_PI * (n * k) / FN;
             sum_re += in1[n].re * cos(a) - in1[n].im * sin(a);
             sum_im += in1[n].re * sin(a) + in1[n].im * cos(a);
@@ -1318,26 +1280,26 @@ static void mdct_test(AVLFG *lfg)
     float s, a, err, e, emax;
     int i, k, n;
 
-    for(i=0;i<MDCT_SAMPLES;i++) {
-        input[i] = (av_lfg_get(lfg) % 65535 - 32767) * 9 / 10;
+    for (i = 0; i < MDCT_SAMPLES; i++) {
+        input[i]  = (av_lfg_get(lfg) % 65535 - 32767) * 9 / 10;
         input1[i] = input[i];
     }
 
     mdct512(output, input);
 
     /* do it by hand */
-    for(k=0;k<AC3_MAX_COEFS;k++) {
+    for (k = 0; k < AC3_MAX_COEFS; k++) {
         s = 0;
-        for(n=0;n<MDCT_SAMPLES;n++) {
+        for (n = 0; n < MDCT_SAMPLES; n++) {
             a = (2*M_PI*(2*n+1+MDCT_SAMPLES/2)*(2*k+1) / (4 * MDCT_SAMPLES));
             s += input1[n] * cos(a);
         }
         output1[k] = -2 * s / MDCT_SAMPLES;
     }
 
-    err = 0;
+    err  = 0;
     emax = 0;
-    for(i=0;i<AC3_MAX_COEFS;i++) {
+    for (i = 0; i < AC3_MAX_COEFS; i++) {
         av_log(NULL, AV_LOG_DEBUG, "%3d: %7d %7.0f\n", i, output[i], output1[i]);
         e = output[i] - output1[i];
         if (e > emax)
