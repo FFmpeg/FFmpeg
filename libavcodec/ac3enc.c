@@ -1038,7 +1038,7 @@ static unsigned int pow_poly(unsigned int a, unsigned int n, unsigned int poly)
 /**
  * Fill the end of the frame with 0's and compute the two CRCs.
  */
-static int output_frame_end(AC3EncodeContext *s)
+static void output_frame_end(AC3EncodeContext *s)
 {
     int frame_size, frame_size_58, n, crc1, crc2, crc_inv;
     uint8_t *frame;
@@ -1069,8 +1069,6 @@ static int output_frame_end(AC3EncodeContext *s)
                              frame + 2 * frame_size_58,
                              (frame_size - frame_size_58) * 2 - 2));
     AV_WB16(frame + 2*frame_size - 2, crc2);
-
-    return frame_size * 2;
 }
 
 
@@ -1188,7 +1186,9 @@ static int ac3_encode_frame(AVCodecContext *avctx,
         output_audio_block(s, exp_strategy[blk], encoded_exp[blk],
                            bap[blk], mdct_coef[blk], exp_shift[blk], blk);
     }
-    return output_frame_end(s);
+    output_frame_end(s);
+
+    return s->frame_size * 2;
 }
 
 
