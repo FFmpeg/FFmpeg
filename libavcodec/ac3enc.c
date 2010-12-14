@@ -555,7 +555,7 @@ static void compute_exp_strategy(AC3EncodeContext *s)
     if (s->lfe_on) {
         ch = s->lfe_channel;
         s->exp_strategy[0][ch] = EXP_D15;
-        for (blk = 1; blk < 5; blk++)
+        for (blk = 1; blk < AC3_MAX_BLOCKS; blk++)
             s->exp_strategy[blk][ch] = EXP_REUSE;
     }
 }
