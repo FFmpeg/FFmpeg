@@ -925,37 +925,6 @@ static int compute_bit_allocation(AC3EncodeContext *s,
 
 
 /**
- * Write the AC-3 frame header to the output bitstream.
- */
-static void output_frame_header(AC3EncodeContext *s)
-{
-    put_bits(&s->pb, 16, 0x0b77);   /* frame header */
-    put_bits(&s->pb, 16, 0);        /* crc1: will be filled later */
-    put_bits(&s->pb, 2,  s->bit_alloc.sr_code);
-    put_bits(&s->pb, 6,  s->frame_size_code + (s->frame_size - s->frame_size_min) / 2);
-    put_bits(&s->pb, 5,  s->bitstream_id);
-    put_bits(&s->pb, 3,  s->bitstream_mode);
-    put_bits(&s->pb, 3,  s->channel_mode);
-    if ((s->channel_mode & 0x01) && s->channel_mode != AC3_CHMODE_MONO)
-        put_bits(&s->pb, 2, 1);     /* XXX -4.5 dB */
-    if (s->channel_mode & 0x04)
-        put_bits(&s->pb, 2, 1);     /* XXX -6 dB */
-    if (s->channel_mode == AC3_CHMODE_STEREO)
-        put_bits(&s->pb, 2, 0);     /* surround not indicated */
-    put_bits(&s->pb, 1, s->lfe_on); /* LFE */
-    put_bits(&s->pb, 5, 31);        /* dialog norm: -31 db */
-    put_bits(&s->pb, 1, 0);         /* no compression control word */
-    put_bits(&s->pb, 1, 0);         /* no lang code */
-    put_bits(&s->pb, 1, 0);         /* no audio production info */
-    put_bits(&s->pb, 1, 0);         /* no copyright */
-    put_bits(&s->pb, 1, 1);         /* original bitstream */
-    put_bits(&s->pb, 1, 0);         /* no time code 1 */
-    put_bits(&s->pb, 1, 0);         /* no time code 2 */
-    put_bits(&s->pb, 1, 0);         /* no additional bit stream info */
-}
-
-
-/**
  * Symmetric quantization on 'levels' levels.
  */
 static inline int sym_quant(int c, int e, int levels)
@@ -995,6 +964,37 @@ static inline int asym_quant(int c, int e, int qbits)
         v = m - 1;
     assert(v >= -m);
     return v & ((1 << qbits)-1);
+}
+
+
+/**
+ * Write the AC-3 frame header to the output bitstream.
+ */
+static void output_frame_header(AC3EncodeContext *s)
+{
+    put_bits(&s->pb, 16, 0x0b77);   /* frame header */
+    put_bits(&s->pb, 16, 0);        /* crc1: will be filled later */
+    put_bits(&s->pb, 2,  s->bit_alloc.sr_code);
+    put_bits(&s->pb, 6,  s->frame_size_code + (s->frame_size - s->frame_size_min) / 2);
+    put_bits(&s->pb, 5,  s->bitstream_id);
+    put_bits(&s->pb, 3,  s->bitstream_mode);
+    put_bits(&s->pb, 3,  s->channel_mode);
+    if ((s->channel_mode & 0x01) && s->channel_mode != AC3_CHMODE_MONO)
+        put_bits(&s->pb, 2, 1);     /* XXX -4.5 dB */
+    if (s->channel_mode & 0x04)
+        put_bits(&s->pb, 2, 1);     /* XXX -6 dB */
+    if (s->channel_mode == AC3_CHMODE_STEREO)
+        put_bits(&s->pb, 2, 0);     /* surround not indicated */
+    put_bits(&s->pb, 1, s->lfe_on); /* LFE */
+    put_bits(&s->pb, 5, 31);        /* dialog norm: -31 db */
+    put_bits(&s->pb, 1, 0);         /* no compression control word */
+    put_bits(&s->pb, 1, 0);         /* no lang code */
+    put_bits(&s->pb, 1, 0);         /* no audio production info */
+    put_bits(&s->pb, 1, 0);         /* no copyright */
+    put_bits(&s->pb, 1, 1);         /* original bitstream */
+    put_bits(&s->pb, 1, 0);         /* no time code 1 */
+    put_bits(&s->pb, 1, 0);         /* no time code 2 */
+    put_bits(&s->pb, 1, 0);         /* no additional bit stream info */
 }
 
 
