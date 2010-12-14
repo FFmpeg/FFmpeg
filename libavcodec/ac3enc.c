@@ -106,6 +106,22 @@ static int16_t xsin1[128];
 
 
 /**
+ * Adjust the frame size to make the average bit rate match the target bit rate.
+ * This is only needed for 11025, 22050, and 44100 sample rates.
+ */
+static void adjust_frame_size(AC3EncodeContext *s)
+{
+    while (s->bits_written >= s->bit_rate && s->samples_written >= s->sample_rate) {
+        s->bits_written    -= s->bit_rate;
+        s->samples_written -= s->sample_rate;
+    }
+    s->frame_size = s->frame_size_min + 2 * (s->bits_written * s->sample_rate < s->samples_written * s->bit_rate);
+    s->bits_written    += s->frame_size * 8;
+    s->samples_written += AC3_FRAME_SIZE;
+}
+
+
+/**
  * Deinterleave input samples.
  * Channels are reordered from FFmpeg's default order to AC-3 order.
  */
@@ -1296,20 +1312,14 @@ static int ac3_encode_frame(AVCodecContext *avctx,
     int8_t exp_shift[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS];
     int frame_bits;
 
+    if (s->bit_alloc.sr_code == 1)
+        adjust_frame_size(s);
+
     deinterleave_input_samples(s, samples, planar_samples);
 
     apply_mdct(s, planar_samples, exp_shift, mdct_coef);
 
     frame_bits = process_exponents(s, mdct_coef, exp_shift, exp, exp_strategy, encoded_exp);
-
-    /* adjust for fractional frame sizes */
-    while (s->bits_written >= s->bit_rate && s->samples_written >= s->sample_rate) {
-        s->bits_written    -= s->bit_rate;
-        s->samples_written -= s->sample_rate;
-    }
-    s->frame_size = s->frame_size_min + 2 * (s->bits_written * s->sample_rate < s->samples_written * s->bit_rate);
-    s->bits_written    += s->frame_size * 8;
-    s->samples_written += AC3_FRAME_SIZE;
 
     compute_bit_allocation(s, bap, encoded_exp, exp_strategy, frame_bits);
     /* everything is known... let's output the frame */
