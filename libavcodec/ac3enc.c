@@ -1277,8 +1277,6 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
     s->sample_rate        = avctx->sample_rate;
     s->bit_alloc.sr_shift = i % 3;
     s->bit_alloc.sr_code  = i / 3;
-    s->bitstream_id       = 8 + s->bit_alloc.sr_shift;
-    s->bitstream_mode     = 0; /* complete main audio service */
 
     /* bitrate & frame size */
     for (i = 0; i < 19; i++) {
@@ -1311,6 +1309,9 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
     ret = validate_options(avctx, s);
     if (ret)
         return ret;
+
+    s->bitstream_id   = 8 + s->bit_alloc.sr_shift;
+    s->bitstream_mode = 0; /* complete main audio service */
 
     s->frame_size_min  = 2 * ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
     s->bits_written    = 0;
