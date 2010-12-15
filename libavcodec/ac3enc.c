@@ -1609,7 +1609,6 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
     mdct_init(9);
 
     avctx->coded_frame= avcodec_alloc_frame();
-    avctx->coded_frame->key_frame= 1;
 
     return 0;
 }
