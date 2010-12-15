@@ -393,6 +393,7 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
             return NULL;
         }
     } else {
+        av_set_pts_info(st, 32, 1, 90000);
         switch(st->codec->codec_id) {
         case CODEC_ID_MPEG1VIDEO:
         case CODEC_ID_MPEG2VIDEO:
