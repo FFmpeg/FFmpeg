@@ -333,7 +333,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 RTPDynamicProtocolHandler *handler;
                 /* if standard payload type, we can find the codec right now */
                 ff_rtp_get_codec_info(st->codec, rtsp_st->sdp_payload_type);
-                if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+                if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+                    st->codec->sample_rate > 0)
                     av_set_pts_info(st, 32, 1, st->codec->sample_rate);
                 /* Even static payload types may need a custom depacketizer */
                 handler = ff_rtp_handler_find_by_id(
