@@ -119,7 +119,6 @@ typedef struct AC3EncodeContext {
     int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
     uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
 
-    int16_t last_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE]; ///< last 256 samples from previous frame
     int16_t planar_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE+AC3_FRAME_SIZE];
     int16_t windowed_samples[AC3_WINDOW_SIZE];
     uint8_t bap[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][AC3_MAX_COEFS];
@@ -166,7 +165,7 @@ static void deinterleave_input_samples(AC3EncodeContext *s,
         int sinc;
 
         /* copy last 256 samples of previous frame to the start of the current frame */
-        memcpy(&s->planar_samples[ch][0], s->last_samples[ch],
+        memcpy(&s->planar_samples[ch][0], &s->planar_samples[ch][AC3_FRAME_SIZE],
                AC3_BLOCK_SIZE * sizeof(s->planar_samples[0][0]));
 
         /* deinterleave */
@@ -176,10 +175,6 @@ static void deinterleave_input_samples(AC3EncodeContext *s,
             s->planar_samples[ch][i] = *sptr;
             sptr += sinc;
         }
-
-        /* save last 256 samples for next frame */
-        memcpy(s->last_samples[ch], &s->planar_samples[ch][6* AC3_BLOCK_SIZE],
-               AC3_BLOCK_SIZE * sizeof(s->planar_samples[0][0]));
     }
 }
 
