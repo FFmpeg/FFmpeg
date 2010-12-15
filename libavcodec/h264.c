@@ -979,7 +979,7 @@ int ff_h264_frame_start(H264Context *h){
     /* can't be in alloc_tables because linesize isn't known there.
      * FIXME: redo bipred weight to not require extra buffer? */
     for(i = 0; i < s->avctx->thread_count; i++)
-        if(!h->thread_context[i]->s.obmc_scratchpad)
+        if(h->thread_context[i] && !h->thread_context[i]->s.obmc_scratchpad)
             h->thread_context[i]->s.obmc_scratchpad = av_malloc(16*2*s->linesize + 8*2*s->uvlinesize);
 
     /* some macroblocks can be accessed before they're available in case of lost slices, mbaff or threading*/
