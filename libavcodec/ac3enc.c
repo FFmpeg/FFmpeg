@@ -929,25 +929,14 @@ static int bit_alloc(AC3EncodeContext *s,
 
 
 /**
- * Perform bit allocation search.
- * Finds the SNR offset value that maximizes quality and fits in the specified
- * frame size.  Output is the SNR offset and a set of bit allocation pointers
- * used to quantize the mantissas.
+ * Constant bitrate bit allocation search.
+ * Find the largest SNR offset that will allow data to fit in the frame.
  */
-static int compute_bit_allocation(AC3EncodeContext *s)
+static int cbr_bit_allocation(AC3EncodeContext *s)
 {
     int ch;
     int bits_left;
     int snr_offset;
-
-    /* count frame bits other than exponents and mantissas */
-    count_frame_bits(s);
-
-    /* calculate psd and masking curve before doing bit allocation */
-    bit_alloc_masking(s);
-
-    /* now the big work begins : do the bit allocation. Modify the snr
-       offset until we can pack everything in the requested frame size */
 
     bits_left = 8 * s->frame_size - (s->frame_bits + s->exponent_bits);
 
@@ -987,6 +976,24 @@ static int compute_bit_allocation(AC3EncodeContext *s)
         s->fine_snr_offset[ch] = snr_offset & 0xF;
 
     return 0;
+}
+
+
+/**
+ * Perform bit allocation search.
+ * Finds the SNR offset value that maximizes quality and fits in the specified
+ * frame size.  Output is the SNR offset and a set of bit allocation pointers
+ * used to quantize the mantissas.
+ */
+static int compute_bit_allocation(AC3EncodeContext *s)
+{
+    /* count frame bits other than exponents and mantissas */
+    count_frame_bits(s);
+
+    /* calculate psd and masking curve before doing bit allocation */
+    bit_alloc_masking(s);
+
+    return cbr_bit_allocation(s);
 }
 
 
