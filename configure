@@ -3246,7 +3246,11 @@ test -n "$malloc_prefix" &&
 
 if enabled small || disabled optimizations; then
     echo "#undef  av_always_inline"  >> $TMPH
-    echo "#define av_always_inline"  >> $TMPH
+    if enabled small; then
+        echo "#define av_always_inline inline"  >> $TMPH
+    else
+        echo "#define av_always_inline av_unused"  >> $TMPH
+    fi
 fi
 
 if enabled yasm; then
