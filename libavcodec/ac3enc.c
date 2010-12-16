@@ -1760,14 +1760,12 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
 
     s->mdct.avctx = avctx;
     ret = mdct_init(&s->mdct, 9);
-    if (ret) {
+    if (ret)
         goto init_fail;
-    }
 
     ret = allocate_buffers(avctx);
-    if (ret) {
+    if (ret)
         goto init_fail;
-    }
 
     avctx->coded_frame= avcodec_alloc_frame();
 
