@@ -639,7 +639,8 @@ static void encode_exponents_blk_ch(uint8_t *exp,
        differentially encoded */
     for (i = 1; i <= nb_groups; i++)
         exp[i] = FFMIN(exp[i], exp[i-1] + 2);
-    for (i = nb_groups-1; i >= 0; i--)
+    i--;
+    while (--i >= 0)
         exp[i] = FFMIN(exp[i], exp[i+1] + 2);
 
     /* now we have the exponent values the decoder will see */
