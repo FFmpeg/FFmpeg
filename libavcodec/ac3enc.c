@@ -59,18 +59,18 @@ typedef struct IComplex {
  * Data for a single audio block.
  */
 typedef struct AC3Block {
-    uint8_t  **bap;                             ///< bap for each channel in this block
-    int32_t  mdct_coef[AC3_MAX_CHANNELS][AC3_MAX_COEFS];
-    uint8_t  exp[AC3_MAX_CHANNELS][AC3_MAX_COEFS];
-    uint8_t  exp_strategy[AC3_MAX_CHANNELS];
-    uint8_t  encoded_exp[AC3_MAX_CHANNELS][AC3_MAX_COEFS];
-    uint8_t  num_exp_groups[AC3_MAX_CHANNELS];
-    uint8_t  grouped_exp[AC3_MAX_CHANNELS][AC3_MAX_EXP_GROUPS];
-    int16_t  psd[AC3_MAX_CHANNELS][AC3_MAX_COEFS];
-    int16_t  band_psd[AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS];
-    int16_t  mask[AC3_MAX_CHANNELS][AC3_CRITICAL_BANDS];
-    int8_t   exp_shift[AC3_MAX_CHANNELS];
-    uint16_t qmant[AC3_MAX_CHANNELS][AC3_MAX_COEFS];
+    uint8_t  **bap;                             ///< bit allocation pointers (bap)
+    int32_t  **mdct_coef;                       ///< MDCT coefficients
+    uint8_t  **exp;                             ///< original exponents
+    uint8_t  **encoded_exp;                     ///< encoded exponents
+    uint8_t  **grouped_exp;                     ///< grouped exponents
+    int16_t  **psd;                             ///< psd per frequency bin
+    int16_t  **band_psd;                        ///< psd per critical band
+    int16_t  **mask;                            ///< masking curve
+    uint16_t **qmant;                           ///< quantized mantissas
+    uint8_t  num_exp_groups[AC3_MAX_CHANNELS];  ///< number of exponent groups
+    uint8_t  exp_strategy[AC3_MAX_CHANNELS];    ///< exponent strategies
+    int8_t   exp_shift[AC3_MAX_CHANNELS];       ///< exponent shift values
 } AC3Block;
 
 /**
@@ -123,6 +123,14 @@ typedef struct AC3EncodeContext {
     int16_t **planar_samples;
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
+    int32_t *mdct_coef_buffer;
+    uint8_t *exp_buffer;
+    uint8_t *encoded_exp_buffer;
+    uint8_t *grouped_exp_buffer;
+    int16_t *psd_buffer;
+    int16_t *band_psd_buffer;
+    int16_t *mask_buffer;
+    uint16_t *qmant_buffer;
 
     DECLARE_ALIGNED(16, int16_t, windowed_samples)[AC3_WINDOW_SIZE];
 } AC3EncodeContext;
@@ -1473,9 +1481,25 @@ static av_cold int ac3_encode_close(AVCodecContext *avctx)
     av_freep(&s->planar_samples);
     av_freep(&s->bap_buffer);
     av_freep(&s->bap1_buffer);
+    av_freep(&s->mdct_coef_buffer);
+    av_freep(&s->exp_buffer);
+    av_freep(&s->encoded_exp_buffer);
+    av_freep(&s->grouped_exp_buffer);
+    av_freep(&s->psd_buffer);
+    av_freep(&s->band_psd_buffer);
+    av_freep(&s->mask_buffer);
+    av_freep(&s->qmant_buffer);
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         av_freep(&block->bap);
+        av_freep(&block->mdct_coef);
+        av_freep(&block->exp);
+        av_freep(&block->encoded_exp);
+        av_freep(&block->grouped_exp);
+        av_freep(&block->psd);
+        av_freep(&block->band_psd);
+        av_freep(&block->mask);
+        av_freep(&block->qmant);
     }
 
     av_freep(&avctx->coded_frame);
@@ -1624,13 +1648,55 @@ static av_cold int allocate_buffers(AVCodecContext *avctx)
                      AC3_MAX_COEFS * sizeof(*s->bap_buffer),  alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, s->bap1_buffer, AC3_MAX_BLOCKS * s->channels *
                      AC3_MAX_COEFS * sizeof(*s->bap1_buffer), alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, s->mdct_coef_buffer, AC3_MAX_BLOCKS * s->channels *
+                     AC3_MAX_COEFS * sizeof(*s->mdct_coef_buffer), alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, s->exp_buffer, AC3_MAX_BLOCKS * s->channels *
+                     AC3_MAX_COEFS * sizeof(*s->exp_buffer), alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, s->encoded_exp_buffer, AC3_MAX_BLOCKS * s->channels *
+                     AC3_MAX_COEFS * sizeof(*s->encoded_exp_buffer), alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, s->grouped_exp_buffer, AC3_MAX_BLOCKS * s->channels *
+                     128 * sizeof(*s->grouped_exp_buffer), alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, s->psd_buffer, AC3_MAX_BLOCKS * s->channels *
+                     AC3_MAX_COEFS * sizeof(*s->psd_buffer), alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, s->band_psd_buffer, AC3_MAX_BLOCKS * s->channels *
+                     64 * sizeof(*s->band_psd_buffer), alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, s->mask_buffer, AC3_MAX_BLOCKS * s->channels *
+                     64 * sizeof(*s->mask_buffer), alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, s->qmant_buffer, AC3_MAX_BLOCKS * s->channels *
+                     AC3_MAX_COEFS * sizeof(*s->qmant_buffer), alloc_fail);
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         FF_ALLOC_OR_GOTO(avctx, block->bap, s->channels * sizeof(*block->bap),
                          alloc_fail);
+        FF_ALLOCZ_OR_GOTO(avctx, block->mdct_coef, s->channels * sizeof(*block->mdct_coef),
+                          alloc_fail);
+        FF_ALLOCZ_OR_GOTO(avctx, block->exp, s->channels * sizeof(*block->exp),
+                          alloc_fail);
+        FF_ALLOCZ_OR_GOTO(avctx, block->encoded_exp, s->channels * sizeof(*block->encoded_exp),
+                          alloc_fail);
+        FF_ALLOCZ_OR_GOTO(avctx, block->grouped_exp, s->channels * sizeof(*block->grouped_exp),
+                          alloc_fail);
+        FF_ALLOCZ_OR_GOTO(avctx, block->psd, s->channels * sizeof(*block->psd),
+                          alloc_fail);
+        FF_ALLOCZ_OR_GOTO(avctx, block->band_psd, s->channels * sizeof(*block->band_psd),
+                          alloc_fail);
+        FF_ALLOCZ_OR_GOTO(avctx, block->mask, s->channels * sizeof(*block->mask),
+                          alloc_fail);
+        FF_ALLOCZ_OR_GOTO(avctx, block->qmant, s->channels * sizeof(*block->qmant),
+                          alloc_fail);
+
+        for (ch = 0; ch < s->channels; ch++) {
+            block->bap[ch]         = &s->bap_buffer        [AC3_MAX_COEFS * (blk * s->channels + ch)];
+            block->mdct_coef[ch]   = &s->mdct_coef_buffer  [AC3_MAX_COEFS * (blk * s->channels + ch)];
+            block->exp[ch]         = &s->exp_buffer        [AC3_MAX_COEFS * (blk * s->channels + ch)];
+            block->encoded_exp[ch] = &s->encoded_exp_buffer[AC3_MAX_COEFS * (blk * s->channels + ch)];
+            block->grouped_exp[ch] = &s->grouped_exp_buffer[128           * (blk * s->channels + ch)];
+            block->psd[ch]         = &s->psd_buffer        [AC3_MAX_COEFS * (blk * s->channels + ch)];
+            block->band_psd[ch]    = &s->band_psd_buffer   [64            * (blk * s->channels + ch)];
+            block->mask[ch]        = &s->mask_buffer       [64            * (blk * s->channels + ch)];
+            block->qmant[ch]       = &s->qmant_buffer      [AC3_MAX_COEFS * (blk * s->channels + ch)];
+        }
     }
-    s->blocks[0].bap[0] = NULL;
-    reset_block_bap(s);
 
     return 0;
 alloc_fail:
