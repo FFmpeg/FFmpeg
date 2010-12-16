@@ -610,25 +610,36 @@ static void encode_exponents_blk_ch(uint8_t *exp,
                                     int nb_exps, int exp_strategy,
                                     uint8_t *num_exp_groups)
 {
-    int group_size, nb_groups, i, j, k, exp_min;
+    int group_size, nb_groups, i, k;
 
     group_size = exp_strategy + (exp_strategy == EXP_D45);
     *num_exp_groups = (nb_exps + (group_size * 3) - 4) / (3 * group_size);
     nb_groups = *num_exp_groups * 3;
 
     /* for each group, compute the minimum exponent */
-    if (exp_strategy > EXP_D15) {
-    k = 1;
-    for (i = 1; i <= nb_groups; i++) {
-        exp_min = exp[k];
-        assert(exp_min >= 0 && exp_min <= 24);
-        for (j = 1; j < group_size; j++) {
-            if (exp[k+j] < exp_min)
-                exp_min = exp[k+j];
+    switch(exp_strategy) {
+    case EXP_D25:
+        for (i = 1, k = 1; i <= nb_groups; i++) {
+            uint8_t exp_min = exp[k];
+            if (exp[k+1] < exp_min)
+                exp_min = exp[k+1];
+            exp[i] = exp_min;
+            k += 2;
         }
-        exp[i] = exp_min;
-        k += group_size;
-    }
+        break;
+    case EXP_D45:
+        for (i = 1, k = 1; i <= nb_groups; i++) {
+            uint8_t exp_min = exp[k];
+            if (exp[k+1] < exp_min)
+                exp_min = exp[k+1];
+            if (exp[k+2] < exp_min)
+                exp_min = exp[k+2];
+            if (exp[k+3] < exp_min)
+                exp_min = exp[k+3];
+            exp[i] = exp_min;
+            k += 4;
+        }
+        break;
     }
 
     /* constraint for DC exponent */
@@ -644,13 +655,20 @@ static void encode_exponents_blk_ch(uint8_t *exp,
         exp[i] = FFMIN(exp[i], exp[i+1] + 2);
 
     /* now we have the exponent values the decoder will see */
-    if (exp_strategy > EXP_D15) {
-    k = nb_groups * group_size;
-    for (i = nb_groups; i > 0; i--) {
-        for (j = 0; j < group_size; j++)
-            exp[k-j] = exp[i];
-        k -= group_size;
-    }
+    switch (exp_strategy) {
+    case EXP_D25:
+        for (i = nb_groups, k = nb_groups * 2; i > 0; i--) {
+            uint8_t exp1 = exp[i];
+            exp[k--] = exp1;
+            exp[k--] = exp1;
+        }
+        break;
+    case EXP_D45:
+        for (i = nb_groups, k = nb_groups * 4; i > 0; i--) {
+            exp[k] = exp[k-1] = exp[k-2] = exp[k-3] = exp[i];
+            k -= 4;
+        }
+        break;
     }
 }
 
