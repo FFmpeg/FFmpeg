@@ -339,8 +339,7 @@ static void mdct512(int32_t *out, int16_t *in)
     /* shift to simplify computations */
     for (i = 0; i < MDCT_SAMPLES/4; i++)
         rot[i] = -in[i + 3*MDCT_SAMPLES/4];
-    for (;i < MDCT_SAMPLES; i++)
-        rot[i] =  in[i -   MDCT_SAMPLES/4];
+    memcpy(&rot[MDCT_SAMPLES/4], &in[0], 3*MDCT_SAMPLES/4*sizeof(*in));
 
     /* pre rotation */
     for (i = 0; i < MDCT_SAMPLES/4; i++) {
