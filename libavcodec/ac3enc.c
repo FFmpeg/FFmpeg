@@ -76,7 +76,6 @@ typedef struct AC3Block {
     int16_t  **band_psd;                        ///< psd per critical band
     int16_t  **mask;                            ///< masking curve
     uint16_t **qmant;                           ///< quantized mantissas
-    uint8_t  num_exp_groups[AC3_MAX_CHANNELS];  ///< number of exponent groups
     uint8_t  exp_strategy[AC3_MAX_CHANNELS];    ///< exponent strategies
     int8_t   exp_shift[AC3_MAX_CHANNELS];       ///< exponent shift values
 } AC3Block;
@@ -150,6 +149,12 @@ static int16_t costab[64];
 static int16_t sintab[64];
 static int16_t xcos1[128];
 static int16_t xsin1[128];
+
+/**
+ * LUT for number of exponent groups.
+ * exponent_group_tab[exponent strategy-1][number of coefficients]
+ */
+uint8_t exponent_group_tab[3][256];
 
 
 /**
@@ -484,6 +489,20 @@ static void apply_mdct(AC3EncodeContext *s)
 
 
 /**
+ * Initialize exponent tables.
+ */
+static av_cold void exponent_init(AC3EncodeContext *s)
+{
+    int i;
+    for (i = 73; i < 256; i++) {
+        exponent_group_tab[0][i] = (i - 1) /  3;
+        exponent_group_tab[1][i] = (i + 2) /  6;
+        exponent_group_tab[2][i] = (i + 8) / 12;
+    }
+}
+
+
+/**
  * Extract exponents from the MDCT coefficients.
  * This takes into account the normalization that was done to the input samples
  * by adjusting the exponents by the exponent shift values.
@@ -607,14 +626,11 @@ static void exponent_min(uint8_t *exp, uint8_t *exp1, int n)
  * Update the exponents so that they are the ones the decoder will decode.
  */
 static void encode_exponents_blk_ch(uint8_t *exp,
-                                    int nb_exps, int exp_strategy,
-                                    uint8_t *num_exp_groups)
+                                    int nb_exps, int exp_strategy)
 {
-    int group_size, nb_groups, i, k;
+    int nb_groups, i, k;
 
-    group_size = exp_strategy + (exp_strategy == EXP_D45);
-    *num_exp_groups = (nb_exps + (group_size * 3) - 4) / (3 * group_size);
-    nb_groups = *num_exp_groups * 3;
+    nb_groups = exponent_group_tab[exp_strategy-1][nb_exps] * 3;
 
     /* for each group, compute the minimum exponent */
     switch(exp_strategy) {
@@ -697,8 +713,7 @@ static void encode_exponents(AC3EncodeContext *s)
                 block1++;
             }
             encode_exponents_blk_ch(block->exp[ch], s->nb_coefs[ch],
-                                    block->exp_strategy[ch],
-                                    &block->num_exp_groups[ch]);
+                                    block->exp_strategy[ch]);
             /* copy encoded exponents for reuse case */
             block2 = block + 1;
             for (blk2 = blk+1; blk2 < blk1; blk2++, block2++) {
@@ -720,7 +735,7 @@ static void encode_exponents(AC3EncodeContext *s)
 static void group_exponents(AC3EncodeContext *s)
 {
     int blk, ch, i;
-    int group_size, bit_count;
+    int group_size, nb_groups, bit_count;
     uint8_t *p;
     int delta0, delta1, delta2;
     int exp0, exp1;
@@ -730,11 +745,11 @@ static void group_exponents(AC3EncodeContext *s)
         AC3Block *block = &s->blocks[blk];
         for (ch = 0; ch < s->channels; ch++) {
             if (block->exp_strategy[ch] == EXP_REUSE) {
-                block->num_exp_groups[ch] = 0;
                 continue;
             }
             group_size = block->exp_strategy[ch] + (block->exp_strategy[ch] == EXP_D45);
-            bit_count += 4 + (block->num_exp_groups[ch] * 7);
+            nb_groups = exponent_group_tab[block->exp_strategy[ch]-1][s->nb_coefs[ch]];
+            bit_count += 4 + (nb_groups * 7);
             p = block->exp[ch];
 
             /* DC exponent */
@@ -742,7 +757,7 @@ static void group_exponents(AC3EncodeContext *s)
             block->grouped_exp[ch][0] = exp1;
 
             /* remaining exponents are delta encoded */
-            for (i = 1; i <= block->num_exp_groups[ch]; i++) {
+            for (i = 1; i <= nb_groups; i++) {
                 /* merge three delta in one code */
                 exp0   = exp1;
                 exp1   = p[0];
@@ -1317,6 +1332,8 @@ static void output_audio_block(AC3EncodeContext *s,
 
     /* exponents */
     for (ch = 0; ch < s->channels; ch++) {
+        int nb_groups;
+
         if (block->exp_strategy[ch] == EXP_REUSE)
             continue;
 
@@ -1324,7 +1341,8 @@ static void output_audio_block(AC3EncodeContext *s,
         put_bits(&s->pb, 4, block->grouped_exp[ch][0]);
 
         /* exponent groups */
-        for (i = 1; i <= block->num_exp_groups[ch]; i++)
+        nb_groups = exponent_group_tab[block->exp_strategy[ch]-1][s->nb_coefs[ch]];
+        for (i = 1; i <= nb_groups; i++)
             put_bits(&s->pb, 7, block->grouped_exp[ch][i]);
 
         /* gain range info */
@@ -1756,6 +1774,8 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
     s->frame_size      = s->frame_size_min;
 
     set_bandwidth(s, avctx->cutoff);
+
+    exponent_init(s);
 
     bit_alloc_init(s);
 
