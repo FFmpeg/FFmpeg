@@ -1,6 +1,8 @@
 /*
  * The simplest AC-3 encoder
  * Copyright (c) 2000 Fabrice Bellard
+ * Copyright (c) 2006-2010 Justin Ruggles <justin.ruggles@gmail.com>
+ * Copyright (c) 2006-2010 Prakash Punnoor <prakash@punnoor.de>
  *
  * This file is part of FFmpeg.
  *
@@ -69,7 +71,6 @@ typedef struct AC3Block {
     uint8_t  **bap;                             ///< bit allocation pointers (bap)
     int32_t  **mdct_coef;                       ///< MDCT coefficients
     uint8_t  **exp;                             ///< original exponents
-    uint8_t  **encoded_exp;                     ///< encoded exponents
     uint8_t  **grouped_exp;                     ///< grouped exponents
     int16_t  **psd;                             ///< psd per frequency bin
     int16_t  **band_psd;                        ///< psd per critical band
@@ -134,7 +135,6 @@ typedef struct AC3EncodeContext {
     uint8_t *bap1_buffer;
     int32_t *mdct_coef_buffer;
     uint8_t *exp_buffer;
-    uint8_t *encoded_exp_buffer;
     uint8_t *grouped_exp_buffer;
     int16_t *psd_buffer;
     int16_t *band_psd_buffer;
@@ -606,19 +606,18 @@ static void exponent_min(uint8_t *exp, uint8_t *exp1, int n)
 /**
  * Update the exponents so that they are the ones the decoder will decode.
  */
-static void encode_exponents_blk_ch(uint8_t *encoded_exp, uint8_t *exp,
+static void encode_exponents_blk_ch(uint8_t *exp,
                                     int nb_exps, int exp_strategy,
                                     uint8_t *num_exp_groups)
 {
     int group_size, nb_groups, i, j, k, exp_min;
-    uint8_t exp1[AC3_MAX_COEFS];
 
     group_size = exp_strategy + (exp_strategy == EXP_D45);
     *num_exp_groups = (nb_exps + (group_size * 3) - 4) / (3 * group_size);
     nb_groups = *num_exp_groups * 3;
 
     /* for each group, compute the minimum exponent */
-    exp1[0] = exp[0]; /* DC exponent is handled separately */
+    if (exp_strategy > EXP_D15) {
     k = 1;
     for (i = 1; i <= nb_groups; i++) {
         exp_min = exp[k];
@@ -627,28 +626,30 @@ static void encode_exponents_blk_ch(uint8_t *encoded_exp, uint8_t *exp,
             if (exp[k+j] < exp_min)
                 exp_min = exp[k+j];
         }
-        exp1[i] = exp_min;
+        exp[i] = exp_min;
         k += group_size;
+    }
     }
 
     /* constraint for DC exponent */
-    if (exp1[0] > 15)
-        exp1[0] = 15;
+    if (exp[0] > 15)
+        exp[0] = 15;
 
     /* decrease the delta between each groups to within 2 so that they can be
        differentially encoded */
     for (i = 1; i <= nb_groups; i++)
-        exp1[i] = FFMIN(exp1[i], exp1[i-1] + 2);
+        exp[i] = FFMIN(exp[i], exp[i-1] + 2);
     for (i = nb_groups-1; i >= 0; i--)
-        exp1[i] = FFMIN(exp1[i], exp1[i+1] + 2);
+        exp[i] = FFMIN(exp[i], exp[i+1] + 2);
 
     /* now we have the exponent values the decoder will see */
-    encoded_exp[0] = exp1[0];
-    k = 1;
-    for (i = 1; i <= nb_groups; i++) {
+    if (exp_strategy > EXP_D15) {
+    k = nb_groups * group_size;
+    for (i = nb_groups; i > 0; i--) {
         for (j = 0; j < group_size; j++)
-            encoded_exp[k+j] = exp1[i];
-        k += group_size;
+            exp[k-j] = exp[i];
+        k -= group_size;
+    }
     }
 }
 
@@ -676,14 +677,13 @@ static void encode_exponents(AC3EncodeContext *s)
                 blk1++;
                 block1++;
             }
-            encode_exponents_blk_ch(block->encoded_exp[ch],
-                                    block->exp[ch], s->nb_coefs[ch],
+            encode_exponents_blk_ch(block->exp[ch], s->nb_coefs[ch],
                                     block->exp_strategy[ch],
                                     &block->num_exp_groups[ch]);
             /* copy encoded exponents for reuse case */
             block2 = block + 1;
             for (blk2 = blk+1; blk2 < blk1; blk2++, block2++) {
-                memcpy(block2->encoded_exp[ch], block->encoded_exp[ch],
+                memcpy(block2->exp[ch], block->exp[ch],
                        s->nb_coefs[ch] * sizeof(uint8_t));
             }
             blk = blk1;
@@ -716,7 +716,7 @@ static void group_exponents(AC3EncodeContext *s)
             }
             group_size = block->exp_strategy[ch] + (block->exp_strategy[ch] == EXP_D45);
             bit_count += 4 + (block->num_exp_groups[ch] * 7);
-            p = block->encoded_exp[ch];
+            p = block->exp[ch];
 
             /* DC exponent */
             exp1 = *p++;
@@ -915,7 +915,7 @@ static void bit_alloc_masking(AC3EncodeContext *s)
                 memcpy(block->psd[ch],  block1->psd[ch],  AC3_MAX_COEFS*sizeof(block->psd[0][0]));
                 memcpy(block->mask[ch], block1->mask[ch], AC3_CRITICAL_BANDS*sizeof(block->mask[0][0]));
             } else {
-                ff_ac3_bit_alloc_calc_psd(block->encoded_exp[ch], 0,
+                ff_ac3_bit_alloc_calc_psd(block->exp[ch], 0,
                                           s->nb_coefs[ch],
                                           block->psd[ch], block->band_psd[ch]);
                 ff_ac3_bit_alloc_calc_mask(&s->bit_alloc, block->band_psd[ch],
@@ -1098,7 +1098,7 @@ static inline int asym_quant(int c, int e, int qbits)
  */
 static void quantize_mantissas_blk_ch(AC3EncodeContext *s,
                                       int32_t *mdct_coef, int8_t exp_shift,
-                                      uint8_t *encoded_exp, uint8_t *bap,
+                                      uint8_t *exp, uint8_t *bap,
                                       uint16_t *qmant, int n)
 {
     int i;
@@ -1106,7 +1106,7 @@ static void quantize_mantissas_blk_ch(AC3EncodeContext *s,
     for (i = 0; i < n; i++) {
         int v;
         int c = mdct_coef[i];
-        int e = encoded_exp[i] - exp_shift;
+        int e = exp[i] - exp_shift;
         int b = bap[i];
         switch (b) {
         case 0:
@@ -1203,7 +1203,7 @@ static void quantize_mantissas(AC3EncodeContext *s)
 
         for (ch = 0; ch < s->channels; ch++) {
             quantize_mantissas_blk_ch(s, block->mdct_coef[ch], block->exp_shift[ch],
-                                      block->encoded_exp[ch], block->bap[ch],
+                                      block->exp[ch], block->bap[ch],
                                       block->qmant[ch], s->nb_coefs[ch]);
         }
     }
@@ -1496,7 +1496,6 @@ static av_cold int ac3_encode_close(AVCodecContext *avctx)
     av_freep(&s->bap1_buffer);
     av_freep(&s->mdct_coef_buffer);
     av_freep(&s->exp_buffer);
-    av_freep(&s->encoded_exp_buffer);
     av_freep(&s->grouped_exp_buffer);
     av_freep(&s->psd_buffer);
     av_freep(&s->band_psd_buffer);
@@ -1507,7 +1506,6 @@ static av_cold int ac3_encode_close(AVCodecContext *avctx)
         av_freep(&block->bap);
         av_freep(&block->mdct_coef);
         av_freep(&block->exp);
-        av_freep(&block->encoded_exp);
         av_freep(&block->grouped_exp);
         av_freep(&block->psd);
         av_freep(&block->band_psd);
@@ -1667,8 +1665,6 @@ static av_cold int allocate_buffers(AVCodecContext *avctx)
                      AC3_MAX_COEFS * sizeof(*s->mdct_coef_buffer), alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, s->exp_buffer, AC3_MAX_BLOCKS * s->channels *
                      AC3_MAX_COEFS * sizeof(*s->exp_buffer), alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, s->encoded_exp_buffer, AC3_MAX_BLOCKS * s->channels *
-                     AC3_MAX_COEFS * sizeof(*s->encoded_exp_buffer), alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, s->grouped_exp_buffer, AC3_MAX_BLOCKS * s->channels *
                      128 * sizeof(*s->grouped_exp_buffer), alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, s->psd_buffer, AC3_MAX_BLOCKS * s->channels *
@@ -1687,8 +1683,6 @@ static av_cold int allocate_buffers(AVCodecContext *avctx)
                           alloc_fail);
         FF_ALLOCZ_OR_GOTO(avctx, block->exp, s->channels * sizeof(*block->exp),
                           alloc_fail);
-        FF_ALLOCZ_OR_GOTO(avctx, block->encoded_exp, s->channels * sizeof(*block->encoded_exp),
-                          alloc_fail);
         FF_ALLOCZ_OR_GOTO(avctx, block->grouped_exp, s->channels * sizeof(*block->grouped_exp),
                           alloc_fail);
         FF_ALLOCZ_OR_GOTO(avctx, block->psd, s->channels * sizeof(*block->psd),
@@ -1704,7 +1698,6 @@ static av_cold int allocate_buffers(AVCodecContext *avctx)
             block->bap[ch]         = &s->bap_buffer        [AC3_MAX_COEFS * (blk * s->channels + ch)];
             block->mdct_coef[ch]   = &s->mdct_coef_buffer  [AC3_MAX_COEFS * (blk * s->channels + ch)];
             block->exp[ch]         = &s->exp_buffer        [AC3_MAX_COEFS * (blk * s->channels + ch)];
-            block->encoded_exp[ch] = &s->encoded_exp_buffer[AC3_MAX_COEFS * (blk * s->channels + ch)];
             block->grouped_exp[ch] = &s->grouped_exp_buffer[128           * (blk * s->channels + ch)];
             block->psd[ch]         = &s->psd_buffer        [AC3_MAX_COEFS * (blk * s->channels + ch)];
             block->band_psd[ch]    = &s->band_psd_buffer   [64            * (blk * s->channels + ch)];
