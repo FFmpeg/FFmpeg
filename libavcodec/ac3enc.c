@@ -55,6 +55,12 @@ typedef struct IComplex {
     int16_t re,im;
 } IComplex;
 
+typedef struct AC3MDCTContext {
+    AVCodecContext *avctx;                  ///< parent context for av_log()
+    int16_t *rot_tmp;                       ///< temp buffer for pre-rotated samples
+    IComplex *cplx_tmp;                     ///< temp buffer for complex pre-rotated samples
+} AC3MDCTContext;
+
 /**
  * Data for a single audio block.
  */
@@ -78,6 +84,7 @@ typedef struct AC3Block {
  */
 typedef struct AC3EncodeContext {
     PutBitContext pb;                       ///< bitstream writer context
+    AC3MDCTContext mdct;                    ///< MDCT context
 
     AC3Block blocks[AC3_MAX_BLOCKS];        ///< per-block info
 
@@ -190,6 +197,17 @@ static void deinterleave_input_samples(AC3EncodeContext *s,
 
 
 /**
+ * Finalize MDCT and free allocated memory.
+ */
+static av_cold void mdct_end(AC3MDCTContext *mdct)
+{
+    av_freep(&mdct->rot_tmp);
+    av_freep(&mdct->cplx_tmp);
+}
+
+
+
+/**
  * Initialize FFT tables.
  * @param ln log2(FFT size)
  */
@@ -213,7 +231,7 @@ static av_cold void fft_init(int ln)
  * Initialize MDCT tables.
  * @param nbits log2(MDCT size)
  */
-static av_cold void mdct_init(int nbits)
+static av_cold int mdct_init(AC3MDCTContext *mdct, int nbits)
 {
     int i, n, n4;
 
@@ -222,11 +240,20 @@ static av_cold void mdct_init(int nbits)
 
     fft_init(nbits - 2);
 
+    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->rot_tmp,  n  * sizeof(*mdct->rot_tmp),
+                     mdct_alloc_fail);
+    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->cplx_tmp, n4 * sizeof(*mdct->cplx_tmp),
+                     mdct_alloc_fail);
+
     for (i = 0; i < n4; i++) {
         float alpha = 2.0 * M_PI * (i + 1.0 / 8.0) / n;
         xcos1[i] = FIX15(-cos(alpha));
         xsin1[i] = FIX15(-sin(alpha));
     }
+
+    return 0;
+mdct_alloc_fail:
+    return AVERROR(ENOMEM);
 }
 
 
@@ -330,11 +357,11 @@ static void fft(IComplex *z, int ln)
  * @param out 256 output frequency coefficients
  * @param in  512 windowed input audio samples
  */
-static void mdct512(int32_t *out, int16_t *in)
+static void mdct512(AC3MDCTContext *mdct, int32_t *out, int16_t *in)
 {
     int i, re, im;
-    int16_t rot[MDCT_SAMPLES];
-    IComplex x[MDCT_SAMPLES/4];
+    int16_t *rot = mdct->rot_tmp;
+    IComplex *x  = mdct->cplx_tmp;
 
     /* shift to simplify computations */
     for (i = 0; i < MDCT_SAMPLES/4; i++)
@@ -448,7 +475,7 @@ static void apply_mdct(AC3EncodeContext *s)
 
             block->exp_shift[ch] = normalize_samples(s);
 
-            mdct512(block->mdct_coef[ch], s->windowed_samples);
+            mdct512(&s->mdct, block->mdct_coef[ch], s->windowed_samples);
         }
     }
 }
@@ -1499,6 +1526,8 @@ static av_cold int ac3_encode_close(AVCodecContext *avctx)
         av_freep(&block->qmant);
     }
 
+    mdct_end(&s->mdct);
+
     av_freep(&avctx->coded_frame);
     return 0;
 }
@@ -1729,7 +1758,12 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
 
     bit_alloc_init(s);
 
-    mdct_init(9);
+    s->mdct.avctx = avctx;
+    ret = mdct_init(&s->mdct, 9);
+    if (ret) {
+        ac3_encode_close(avctx);
+        return ret;
+    }
 
     ret = allocate_buffers(avctx);
     if (ret) {
