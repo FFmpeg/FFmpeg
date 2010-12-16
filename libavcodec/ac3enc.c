@@ -120,7 +120,7 @@ typedef struct AC3EncodeContext {
     int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
     uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
 
-    int16_t planar_samples[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE+AC3_FRAME_SIZE];
+    int16_t **planar_samples;
     int16_t windowed_samples[AC3_WINDOW_SIZE];
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
@@ -1464,9 +1464,12 @@ static int ac3_encode_frame(AVCodecContext *avctx,
  */
 static av_cold int ac3_encode_close(AVCodecContext *avctx)
 {
-    int blk;
+    int blk, ch;
     AC3EncodeContext *s = avctx->priv_data;
 
+    for (ch = 0; ch < s->channels; ch++)
+        av_freep(&s->planar_samples[ch]);
+    av_freep(&s->planar_samples);
     av_freep(&s->bap_buffer);
     av_freep(&s->bap1_buffer);
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
@@ -1606,9 +1609,16 @@ static av_cold void set_bandwidth(AC3EncodeContext *s, int cutoff)
 
 static av_cold int allocate_buffers(AVCodecContext *avctx)
 {
-    int blk;
+    int blk, ch;
     AC3EncodeContext *s = avctx->priv_data;
 
+    FF_ALLOC_OR_GOTO(avctx, s->planar_samples, s->channels * sizeof(*s->planar_samples),
+                     alloc_fail);
+    for (ch = 0; ch < s->channels; ch++) {
+        FF_ALLOCZ_OR_GOTO(avctx, s->planar_samples[ch],
+                          (AC3_FRAME_SIZE+AC3_BLOCK_SIZE) * sizeof(**s->planar_samples),
+                          alloc_fail);
+    }
     FF_ALLOC_OR_GOTO(avctx, s->bap_buffer,  AC3_MAX_BLOCKS * s->channels *
                      AC3_MAX_COEFS * sizeof(*s->bap_buffer),  alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, s->bap1_buffer, AC3_MAX_BLOCKS * s->channels *
