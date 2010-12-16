@@ -30,6 +30,7 @@
 #include "libavutil/crc.h"
 #include "avcodec.h"
 #include "put_bits.h"
+#include "dsputil.h"
 #include "ac3.h"
 #include "audioconvert.h"
 
@@ -84,6 +85,7 @@ typedef struct AC3Block {
  */
 typedef struct AC3EncodeContext {
     PutBitContext pb;                       ///< bitstream writer context
+    DSPContext dsp;
     AC3MDCTContext mdct;                    ///< MDCT context
 
     AC3Block blocks[AC3_MAX_BLOCKS];        ///< per-block info
@@ -513,19 +515,6 @@ static void extract_exponents(AC3EncodeContext *s)
 
 
 /**
- * Calculate the sum of absolute differences (SAD) between 2 sets of exponents.
- */
-static int calc_exp_diff(uint8_t *exp1, uint8_t *exp2, int n)
-{
-    int sum, i;
-    sum = 0;
-    for (i = 0; i < n; i++)
-        sum += abs(exp1[i] - exp2[i]);
-    return sum;
-}
-
-
-/**
  * Exponent Difference Threshold.
  * New exponents are sent if their SAD exceed this number.
  */
@@ -535,7 +524,7 @@ static int calc_exp_diff(uint8_t *exp1, uint8_t *exp2, int n)
 /**
  * Calculate exponent strategies for all blocks in a single channel.
  */
-static void compute_exp_strategy_ch(uint8_t *exp_strategy, uint8_t **exp)
+static void compute_exp_strategy_ch(AC3EncodeContext *s, uint8_t *exp_strategy, uint8_t **exp)
 {
     int blk, blk1;
     int exp_diff;
@@ -544,7 +533,7 @@ static void compute_exp_strategy_ch(uint8_t *exp_strategy, uint8_t **exp)
        reused in the next frame */
     exp_strategy[0] = EXP_NEW;
     for (blk = 1; blk < AC3_MAX_BLOCKS; blk++) {
-        exp_diff = calc_exp_diff(exp[blk], exp[blk-1], AC3_MAX_COEFS);
+        exp_diff = s->dsp.sad[0](NULL, exp[blk], exp[blk-1], 16, 16);
         if (exp_diff > EXP_DIFF_THRESHOLD)
             exp_strategy[blk] = EXP_NEW;
         else
@@ -585,7 +574,7 @@ static void compute_exp_strategy(AC3EncodeContext *s)
             exp_str1[ch][blk] = s->blocks[blk].exp_strategy[ch];
         }
 
-        compute_exp_strategy_ch(exp_str1[ch], exp1[ch]);
+        compute_exp_strategy_ch(s, exp_str1[ch], exp1[ch]);
 
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
             s->blocks[blk].exp_strategy[ch] = exp_str1[ch][blk];
@@ -1768,6 +1757,8 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
         goto init_fail;
 
     avctx->coded_frame= avcodec_alloc_frame();
+
+    dsputil_init(&s->dsp, avctx);
 
     return 0;
 init_fail:
