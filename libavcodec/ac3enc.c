@@ -1035,10 +1035,10 @@ static int bit_alloc(AC3EncodeContext *s,
             if (block->exp_strategy[ch] == EXP_REUSE) {
                 memcpy(block->bap[ch], s->blocks[blk-1].bap[ch], AC3_MAX_COEFS);
             } else {
-            ff_ac3_bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
-                                      s->nb_coefs[ch], snr_offset,
-                                      s->bit_alloc.floor, ff_ac3_bap_tab,
-                                      block->bap[ch]);
+                ff_ac3_bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
+                                          s->nb_coefs[ch], snr_offset,
+                                          s->bit_alloc.floor, ff_ac3_bap_tab,
+                                          block->bap[ch]);
             }
             mantissa_bits += compute_mantissa_size(mant_cnt, block->bap[ch], s->nb_coefs[ch]);
         }
