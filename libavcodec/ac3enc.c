@@ -1028,10 +1028,18 @@ static int bit_alloc(AC3EncodeContext *s,
         mant_cnt[1] = mant_cnt[2] = 2;
         mant_cnt[4] = 1;
         for (ch = 0; ch < s->channels; ch++) {
+            /* Currently the only bit allocation parameters which vary across
+               blocks within a frame are the exponent values.  We can take
+               advantage of that by reusing the bit allocation pointers
+               whenever we reuse exponents. */
+            if (block->exp_strategy[ch] == EXP_REUSE) {
+                memcpy(block->bap[ch], s->blocks[blk-1].bap[ch], AC3_MAX_COEFS);
+            } else {
             ff_ac3_bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
                                       s->nb_coefs[ch], snr_offset,
                                       s->bit_alloc.floor, ff_ac3_bap_tab,
                                       block->bap[ch]);
+            }
             mantissa_bits += compute_mantissa_size(mant_cnt, block->bap[ch], s->nb_coefs[ch]);
         }
         mantissa_bits += compute_mantissa_size_final(mant_cnt);
