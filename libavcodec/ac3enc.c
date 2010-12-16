@@ -122,6 +122,7 @@ typedef struct AC3EncodeContext {
     int coarse_snr_offset;                  ///< coarse SNR offsets                     (csnroffst)
     int fast_gain_code[AC3_MAX_CHANNELS];   ///< fast gain codes (signal-to-mask ratio) (fgaincod)
     int fine_snr_offset[AC3_MAX_CHANNELS];  ///< fine SNR offsets                       (fsnroffst)
+    int frame_bits_fixed;                   ///< number of non-coefficient bits for fixed parameters
     int frame_bits;                         ///< all frame bits except exponents and mantissas
     int exponent_bits;                      ///< number of bits used for exponents
 
@@ -801,6 +802,63 @@ static void process_exponents(AC3EncodeContext *s)
 
 
 /**
+ * Count frame bits that are based solely on fixed parameters.
+ * This only has to be run once when the encoder is initialized.
+ */
+static void count_frame_bits_fixed(AC3EncodeContext *s)
+{
+    static const int frame_bits_inc[8] = { 0, 0, 2, 2, 2, 4, 2, 4 };
+    int blk;
+    int frame_bits;
+
+    /* assumptions:
+     *   no dynamic range codes
+     *   no channel coupling
+     *   no rematrixing
+     *   bit allocation parameters do not change between blocks
+     *   SNR offsets do not change between blocks
+     *   no delta bit allocation
+     *   no skipped data
+     *   no auxilliary data
+     */
+
+    /* header size */
+    frame_bits = 65;
+    frame_bits += frame_bits_inc[s->channel_mode];
+
+    /* audio blocks */
+    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+        frame_bits += s->fbw_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
+        if (s->channel_mode == AC3_CHMODE_STEREO) {
+            frame_bits++; /* rematstr */
+            if (!blk)
+                frame_bits += 4;
+        }
+        frame_bits += 2 * s->fbw_channels; /* chexpstr[2] * c */
+        if (s->lfe_on)
+            frame_bits++; /* lfeexpstr */
+        frame_bits++; /* baie */
+        frame_bits++; /* snr */
+        frame_bits += 2; /* delta / skip */
+    }
+    frame_bits++; /* cplinu for block 0 */
+    /* bit alloc info */
+    /* sdcycod[2], fdcycod[2], sgaincod[2], dbpbcod[2], floorcod[3] */
+    /* csnroffset[6] */
+    /* (fsnoffset[4] + fgaincod[4]) * c */
+    frame_bits += 2*4 + 3 + 6 + s->channels * (4 + 3);
+
+    /* auxdatae, crcrsv */
+    frame_bits += 2;
+
+    /* CRC */
+    frame_bits += 16;
+
+    s->frame_bits_fixed = frame_bits;
+}
+
+
+/**
  * Initialize bit allocation.
  * Set default parameter codes and calculate parameter values.
  */
@@ -828,55 +886,29 @@ static void bit_alloc_init(AC3EncodeContext *s)
     s->bit_alloc.slow_gain  = ff_ac3_slow_gain_tab[s->slow_gain_code];
     s->bit_alloc.db_per_bit = ff_ac3_db_per_bit_tab[s->db_per_bit_code];
     s->bit_alloc.floor      = ff_ac3_floor_tab[s->floor_code];
+
+    count_frame_bits_fixed(s);
 }
 
 
 /**
  * Count the bits used to encode the frame, minus exponents and mantissas.
+ * Bits based on fixed parameters have already been counted, so now we just
+ * have to add the bits based on parameters that change during encoding.
  */
 static void count_frame_bits(AC3EncodeContext *s)
 {
-    static const int frame_bits_inc[8] = { 0, 0, 2, 2, 2, 4, 2, 4 };
     int blk, ch;
-    int frame_bits;
+    int frame_bits = 0;
 
-    /* header size */
-    frame_bits = 65;
-    frame_bits += frame_bits_inc[s->channel_mode];
-
-    /* audio blocks */
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-        frame_bits += s->fbw_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
-        if (s->channel_mode == AC3_CHMODE_STEREO) {
-            frame_bits++; /* rematstr */
-            if (!blk)
-                frame_bits += 4;
-        }
-        frame_bits += 2 * s->fbw_channels; /* chexpstr[2] * c */
-        if (s->lfe_on)
-            frame_bits++; /* lfeexpstr */
+        uint8_t *exp_strategy = s->blocks[blk].exp_strategy;
         for (ch = 0; ch < s->fbw_channels; ch++) {
-            if (s->blocks[blk].exp_strategy[ch] != EXP_REUSE)
+            if (exp_strategy[ch] != EXP_REUSE)
                 frame_bits += 6 + 2; /* chbwcod[6], gainrng[2] */
         }
-        frame_bits++; /* baie */
-        frame_bits++; /* snr */
-        frame_bits += 2; /* delta / skip */
     }
-    frame_bits++; /* cplinu for block 0 */
-    /* bit alloc info */
-    /* sdcycod[2], fdcycod[2], sgaincod[2], dbpbcod[2], floorcod[3] */
-    /* csnroffset[6] */
-    /* (fsnoffset[4] + fgaincod[4]) * c */
-    frame_bits += 2*4 + 3 + 6 + s->channels * (4 + 3);
-
-    /* auxdatae, crcrsv */
-    frame_bits += 2;
-
-    /* CRC */
-    frame_bits += 16;
-
-    s->frame_bits = frame_bits;
+    s->frame_bits = s->frame_bits_fixed + frame_bits;
 }
 
 
