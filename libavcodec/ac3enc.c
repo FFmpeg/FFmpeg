@@ -121,9 +121,10 @@ typedef struct AC3EncodeContext {
     uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
 
     int16_t **planar_samples;
-    int16_t windowed_samples[AC3_WINDOW_SIZE];
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
+
+    DECLARE_ALIGNED(16, int16_t, windowed_samples)[AC3_WINDOW_SIZE];
 } AC3EncodeContext;
 
 
