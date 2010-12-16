@@ -915,52 +915,40 @@ static void count_frame_bits(AC3EncodeContext *s)
 /**
  * Calculate the number of bits needed to encode a set of mantissas.
  */
-static int compute_mantissa_size(AC3EncodeContext *s, uint8_t *bap, int nb_coefs)
+static int compute_mantissa_size(int mant_cnt[5], uint8_t *bap, int nb_coefs)
 {
     int bits, b, i;
 
     bits = 0;
     for (i = 0; i < nb_coefs; i++) {
         b = bap[i];
-        switch (b) {
-        case 0:
-            /* bap=0 mantissas are not encoded */
-            break;
-        case 1:
-            /* 3 mantissas in 5 bits */
-            if (s->mant1_cnt == 0)
-                bits += 5;
-            if (++s->mant1_cnt == 3)
-                s->mant1_cnt = 0;
-            break;
-        case 2:
-            /* 3 mantissas in 7 bits */
-            if (s->mant2_cnt == 0)
-                bits += 7;
-            if (++s->mant2_cnt == 3)
-                s->mant2_cnt = 0;
-            break;
-        case 3:
-            bits += 3;
-            break;
-        case 4:
-            /* 2 mantissas in 7 bits */
-            if (s->mant4_cnt == 0)
-                bits += 7;
-            if (++s->mant4_cnt == 2)
-                s->mant4_cnt = 0;
-            break;
-        case 14:
-            bits += 14;
-            break;
-        case 15:
-            bits += 16;
-            break;
-        default:
+        if (b <= 4) {
+            // bap=1 to bap=4 will be counted in compute_mantissa_size_final
+            mant_cnt[b]++;
+        } else if (b <= 13) {
+            // bap=5 to bap=13 use (bap-1) bits
             bits += b - 1;
-            break;
+        } else {
+            // bap=14 uses 14 bits and bap=15 uses 16 bits
+            bits += (b == 14) ? 14 : 16;
         }
     }
+    return bits;
+}
+
+
+/**
+ * Finalize the mantissa bit count by adding in the grouped mantissas.
+ */
+static int compute_mantissa_size_final(int mant_cnt[5])
+{
+    // bap=1 : 3 mantissas in 5 bits
+    int bits = (mant_cnt[1] / 3) * 5;
+    // bap=2 : 3 mantissas in 7 bits
+    // bap=4 : 2 mantissas in 7 bits
+    bits += ((mant_cnt[2] / 3) + (mant_cnt[4] >> 1)) * 7;
+    // bap=3 : each mantissa is 3 bits
+    bits += mant_cnt[3] * 3;
     return bits;
 }
 
@@ -1025,6 +1013,7 @@ static int bit_alloc(AC3EncodeContext *s,
 {
     int blk, ch;
     int mantissa_bits;
+    int mant_cnt[5];
 
     snr_offset = (snr_offset - 240) << 2;
 
@@ -1032,16 +1021,20 @@ static int bit_alloc(AC3EncodeContext *s,
     mantissa_bits = 0;
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
-        s->mant1_cnt = 0;
-        s->mant2_cnt = 0;
-        s->mant4_cnt = 0;
+        // initialize grouped mantissa counts. these are set so that they are
+        // padded to the next whole group size when bits are counted in
+        // compute_mantissa_size_final
+        mant_cnt[0] = mant_cnt[3] = 0;
+        mant_cnt[1] = mant_cnt[2] = 2;
+        mant_cnt[4] = 1;
         for (ch = 0; ch < s->channels; ch++) {
             ff_ac3_bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
                                       s->nb_coefs[ch], snr_offset,
                                       s->bit_alloc.floor, ff_ac3_bap_tab,
                                       block->bap[ch]);
-            mantissa_bits += compute_mantissa_size(s, block->bap[ch], s->nb_coefs[ch]);
+            mantissa_bits += compute_mantissa_size(mant_cnt, block->bap[ch], s->nb_coefs[ch]);
         }
+        mantissa_bits += compute_mantissa_size_final(mant_cnt);
     }
     return mantissa_bits;
 }
