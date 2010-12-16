@@ -332,7 +332,7 @@ static void fft(IComplex *z, int ln)
  */
 static void mdct512(int32_t *out, int16_t *in)
 {
-    int i, re, im, re1, im1;
+    int i, re, im;
     int16_t rot[MDCT_SAMPLES];
     IComplex x[MDCT_SAMPLES/4];
 
@@ -354,9 +354,7 @@ static void mdct512(int32_t *out, int16_t *in)
     for (i = 0; i < MDCT_SAMPLES/4; i++) {
         re = x[i].re;
         im = x[i].im;
-        CMUL(re1, im1, re, im, xsin1[i], xcos1[i]);
-        out[                 2*i] = im1;
-        out[MDCT_SAMPLES/2-1-2*i] = re1;
+        CMUL(out[MDCT_SAMPLES/2-1-2*i], out[2*i], re, im, xsin1[i], xcos1[i]);
     }
 }
 
