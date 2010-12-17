@@ -1055,7 +1055,7 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
 {
     int ch;
     int bits_left;
-    int snr_offset;
+    int snr_offset, snr_incr;
 
     bits_left = 8 * s->frame_size - (s->frame_bits + s->exponent_bits);
 
@@ -1069,25 +1069,12 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
         return AVERROR(EINVAL);
 
     FFSWAP(uint8_t *, s->bap_buffer, s->bap1_buffer);
+    for (snr_incr = 64; snr_incr > 0; snr_incr >>= 2) {
     while (snr_offset + 64 <= 1023 &&
-           bit_alloc(s, snr_offset + 64) <= bits_left) {
-        snr_offset += 64;
+           bit_alloc(s, snr_offset + snr_incr) <= bits_left) {
+        snr_offset += snr_incr;
         FFSWAP(uint8_t *, s->bap_buffer, s->bap1_buffer);
     }
-    while (snr_offset + 16 <= 1023 &&
-           bit_alloc(s, snr_offset + 16) <= bits_left) {
-        snr_offset += 16;
-        FFSWAP(uint8_t *, s->bap_buffer, s->bap1_buffer);
-    }
-    while (snr_offset + 4 <= 1023 &&
-           bit_alloc(s, snr_offset + 4) <= bits_left) {
-        snr_offset += 4;
-        FFSWAP(uint8_t *, s->bap_buffer, s->bap1_buffer);
-    }
-    while (snr_offset + 1 <= 1023 &&
-           bit_alloc(s, snr_offset + 1) <= bits_left) {
-        snr_offset++;
-        FFSWAP(uint8_t *, s->bap_buffer, s->bap1_buffer);
     }
     FFSWAP(uint8_t *, s->bap_buffer, s->bap1_buffer);
     reset_block_bap(s);
