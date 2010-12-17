@@ -39,7 +39,7 @@ typedef struct {
 
     /** Buffer for incoming packets. */
     /*@{*/
-    uint8_t in_buffer[8192];             ///< Buffer for incoming packets.
+    uint8_t in_buffer[65536];            ///< Buffer for incoming packets.
     uint8_t *read_in_ptr;                ///< Pointer for reading from incoming buffer.
     int remaining_in_len;                ///< Reading length from incoming buffer.
     /*@}*/
