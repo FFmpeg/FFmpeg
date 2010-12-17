@@ -1070,11 +1070,11 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
 
     FFSWAP(uint8_t *, s->bap_buffer, s->bap1_buffer);
     for (snr_incr = 64; snr_incr > 0; snr_incr >>= 2) {
-    while (snr_offset + 64 <= 1023 &&
-           bit_alloc(s, snr_offset + snr_incr) <= bits_left) {
-        snr_offset += snr_incr;
-        FFSWAP(uint8_t *, s->bap_buffer, s->bap1_buffer);
-    }
+        while (snr_offset + 64 <= 1023 &&
+               bit_alloc(s, snr_offset + snr_incr) <= bits_left) {
+            snr_offset += snr_incr;
+            FFSWAP(uint8_t *, s->bap_buffer, s->bap1_buffer);
+        }
     }
     FFSWAP(uint8_t *, s->bap_buffer, s->bap1_buffer);
     reset_block_bap(s);
