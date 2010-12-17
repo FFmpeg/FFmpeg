@@ -524,6 +524,8 @@ static av_cold void exponent_init(AC3EncodeContext *s)
         exponent_group_tab[1][i] = (i + 2) /  6;
         exponent_group_tab[2][i] = (i + 8) / 12;
     }
+    /* LFE */
+    exponent_group_tab[0][7] = 2;
 }
 
 
