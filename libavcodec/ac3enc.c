@@ -111,6 +111,7 @@ typedef struct AC3EncodeContext {
     int channel_mode;                       ///< channel mode                           (acmod)
     const uint8_t *channel_map;             ///< channel map used to reorder channels
 
+    int cutoff;                             ///< user-specified cutoff frequency, in Hz
     int bandwidth_code[AC3_MAX_CHANNELS];   ///< bandwidth code (0 to 60)               (chbwcod)
     int nb_coefs[AC3_MAX_CHANNELS];
 
@@ -1691,6 +1692,15 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
     s->bit_rate        = avctx->bit_rate;
     s->frame_size_code = i << 1;
 
+    /* validate cutoff */
+    if (avctx->cutoff < 0) {
+        av_log(avctx, AV_LOG_ERROR, "invalid cutoff frequency\n");
+        return AVERROR(EINVAL);
+    }
+    s->cutoff = avctx->cutoff;
+    if (s->cutoff > (s->sample_rate >> 1))
+        s->cutoff = s->sample_rate >> 1;
+
     return 0;
 }
 
@@ -1700,15 +1710,14 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
  * The user can optionally supply a cutoff frequency. Otherwise an appropriate
  * default value will be used.
  */
-static av_cold void set_bandwidth(AC3EncodeContext *s, int cutoff)
+static av_cold void set_bandwidth(AC3EncodeContext *s)
 {
     int ch, bw_code;
 
-    if (cutoff) {
+    if (s->cutoff) {
         /* calculate bandwidth based on user-specified cutoff frequency */
         int fbw_coeffs;
-        cutoff         = av_clip(cutoff, 1, s->sample_rate >> 1);
-        fbw_coeffs     = cutoff * 2 * AC3_MAX_COEFS / s->sample_rate;
+        fbw_coeffs     = s->cutoff * 2 * AC3_MAX_COEFS / s->sample_rate;
         bw_code        = av_clip((fbw_coeffs - 73) / 3, 0, 60);
     } else {
         /* use default bandwidth setting */
@@ -1818,7 +1827,7 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
     s->samples_written = 0;
     s->frame_size      = s->frame_size_min;
 
-    set_bandwidth(s, avctx->cutoff);
+    set_bandwidth(s);
 
     exponent_init(s);
 
