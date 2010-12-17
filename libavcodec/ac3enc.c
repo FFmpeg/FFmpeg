@@ -964,11 +964,10 @@ static void bit_alloc_masking(AC3EncodeContext *s)
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         for (ch = 0; ch < s->channels; ch++) {
-            if (block->exp_strategy[ch] == EXP_REUSE) {
-                AC3Block *block1 = &s->blocks[blk-1];
-                memcpy(block->psd[ch],  block1->psd[ch],  AC3_MAX_COEFS*sizeof(block->psd[0][0]));
-                memcpy(block->mask[ch], block1->mask[ch], AC3_CRITICAL_BANDS*sizeof(block->mask[0][0]));
-            } else {
+            /* We only need psd and mask for calculating bap.
+               Since we currently do not calculate bap when exponent
+               strategy is EXP_REUSE we do not need to calculate psd or mask. */
+            if (block->exp_strategy[ch] != EXP_REUSE) {
                 ff_ac3_bit_alloc_calc_psd(block->exp[ch], 0,
                                           s->nb_coefs[ch],
                                           block->psd[ch], block->band_psd[ch]);
