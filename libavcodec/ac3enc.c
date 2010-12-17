@@ -37,9 +37,6 @@
 #include "audioconvert.h"
 
 
-#define MDCT_NBITS 9
-#define MDCT_SAMPLES (1 << MDCT_NBITS)
-
 /** Maximum number of exponent groups. +1 for separate DC exponent. */
 #define AC3_MAX_EXP_GROUPS 85
 
@@ -60,6 +57,11 @@ typedef struct IComplex {
 
 typedef struct AC3MDCTContext {
     AVCodecContext *avctx;                  ///< parent context for av_log()
+    int nbits;                              ///< log2(transform size)
+    int16_t *costab;                        ///< FFT cos table
+    int16_t *sintab;                        ///< FFT sin table
+    int16_t *xcos1;                         ///< MDCT cos table
+    int16_t *xsin1;                         ///< MDCT sin table
     int16_t *rot_tmp;                       ///< temp buffer for pre-rotated samples
     IComplex *cplx_tmp;                     ///< temp buffer for complex pre-rotated samples
 } AC3MDCTContext;
@@ -145,12 +147,6 @@ typedef struct AC3EncodeContext {
 } AC3EncodeContext;
 
 
-/** MDCT and FFT tables */
-static int16_t costab[64];
-static int16_t sintab[64];
-static int16_t xcos1[128];
-static int16_t xsin1[128];
-
 /**
  * LUT for number of exponent groups.
  * exponent_group_tab[exponent strategy-1][number of coefficients]
@@ -209,6 +205,11 @@ static void deinterleave_input_samples(AC3EncodeContext *s,
  */
 static av_cold void mdct_end(AC3MDCTContext *mdct)
 {
+    mdct->nbits = 0;
+    av_freep(&mdct->costab);
+    av_freep(&mdct->sintab);
+    av_freep(&mdct->xcos1);
+    av_freep(&mdct->xsin1);
     av_freep(&mdct->rot_tmp);
     av_freep(&mdct->cplx_tmp);
 }
@@ -219,7 +220,7 @@ static av_cold void mdct_end(AC3MDCTContext *mdct)
  * Initialize FFT tables.
  * @param ln log2(FFT size)
  */
-static av_cold void fft_init(int ln)
+static av_cold int fft_init(AC3MDCTContext *mdct, int ln)
 {
     int i, n, n2;
     float alpha;
@@ -227,11 +228,21 @@ static av_cold void fft_init(int ln)
     n  = 1 << ln;
     n2 = n >> 1;
 
+    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->costab, n2 * sizeof(*mdct->costab),
+                     fft_alloc_fail);
+    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->sintab, n2 * sizeof(*mdct->sintab),
+                     fft_alloc_fail);
+
     for (i = 0; i < n2; i++) {
         alpha     = 2.0 * M_PI * i / n;
-        costab[i] = FIX15(cos(alpha));
-        sintab[i] = FIX15(sin(alpha));
+        mdct->costab[i] = FIX15(cos(alpha));
+        mdct->sintab[i] = FIX15(sin(alpha));
     }
+
+    return 0;
+fft_alloc_fail:
+    mdct_end(mdct);
+    return AVERROR(ENOMEM);
 }
 
 
@@ -241,13 +252,21 @@ static av_cold void fft_init(int ln)
  */
 static av_cold int mdct_init(AC3MDCTContext *mdct, int nbits)
 {
-    int i, n, n4;
+    int i, n, n4, ret;
 
     n  = 1 << nbits;
     n4 = n >> 2;
 
-    fft_init(nbits - 2);
+    mdct->nbits = nbits;
 
+    ret = fft_init(mdct, nbits - 2);
+    if (ret)
+        return ret;
+
+    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->xcos1,    n4 * sizeof(*mdct->xcos1),
+                     mdct_alloc_fail);
+    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->xsin1 ,   n4 * sizeof(*mdct->xsin1),
+                     mdct_alloc_fail);
     FF_ALLOC_OR_GOTO(mdct->avctx, mdct->rot_tmp,  n  * sizeof(*mdct->rot_tmp),
                      mdct_alloc_fail);
     FF_ALLOC_OR_GOTO(mdct->avctx, mdct->cplx_tmp, n4 * sizeof(*mdct->cplx_tmp),
@@ -255,12 +274,13 @@ static av_cold int mdct_init(AC3MDCTContext *mdct, int nbits)
 
     for (i = 0; i < n4; i++) {
         float alpha = 2.0 * M_PI * (i + 1.0 / 8.0) / n;
-        xcos1[i] = FIX15(-cos(alpha));
-        xsin1[i] = FIX15(-sin(alpha));
+        mdct->xcos1[i] = FIX15(-cos(alpha));
+        mdct->xsin1[i] = FIX15(-sin(alpha));
     }
 
     return 0;
 mdct_alloc_fail:
+    mdct_end(mdct);
     return AVERROR(ENOMEM);
 }
 
@@ -293,7 +313,7 @@ mdct_alloc_fail:
  * @param z  complex input/output samples
  * @param ln log2(FFT size)
  */
-static void fft(IComplex *z, int ln)
+static void fft(AC3MDCTContext *mdct, IComplex *z, int ln)
 {
     int j, l, np, np2;
     int nblocks, nloops;
@@ -345,7 +365,7 @@ static void fft(IComplex *z, int ln)
             p++;
             q++;
             for(l = nblocks; l < np2; l += nblocks) {
-                CMUL(tmp_re, tmp_im, costab[l], -sintab[l], q->re, q->im);
+                CMUL(tmp_re, tmp_im, mdct->costab[l], -mdct->sintab[l], q->re, q->im);
                 BF(p->re, p->im, q->re,  q->im,
                    p->re, p->im, tmp_re, tmp_im);
                 p++;
@@ -367,29 +387,33 @@ static void fft(IComplex *z, int ln)
  */
 static void mdct512(AC3MDCTContext *mdct, int32_t *out, int16_t *in)
 {
-    int i, re, im;
+    int i, re, im, n, n2, n4;
     int16_t *rot = mdct->rot_tmp;
     IComplex *x  = mdct->cplx_tmp;
 
+    n  = 1 << mdct->nbits;
+    n2 = n >> 1;
+    n4 = n >> 2;
+
     /* shift to simplify computations */
-    for (i = 0; i < MDCT_SAMPLES/4; i++)
-        rot[i] = -in[i + 3*MDCT_SAMPLES/4];
-    memcpy(&rot[MDCT_SAMPLES/4], &in[0], 3*MDCT_SAMPLES/4*sizeof(*in));
+    for (i = 0; i <n4; i++)
+        rot[i] = -in[i + 3*n4];
+    memcpy(&rot[n4], &in[0], 3*n4*sizeof(*in));
 
     /* pre rotation */
-    for (i = 0; i < MDCT_SAMPLES/4; i++) {
-        re =  ((int)rot[               2*i] - (int)rot[MDCT_SAMPLES  -1-2*i]) >> 1;
-        im = -((int)rot[MDCT_SAMPLES/2+2*i] - (int)rot[MDCT_SAMPLES/2-1-2*i]) >> 1;
-        CMUL(x[i].re, x[i].im, re, im, -xcos1[i], xsin1[i]);
+    for (i = 0; i < n4; i++) {
+        re =  ((int)rot[   2*i] - (int)rot[ n-1-2*i]) >> 1;
+        im = -((int)rot[n2+2*i] - (int)rot[n2-1-2*i]) >> 1;
+        CMUL(x[i].re, x[i].im, re, im, -mdct->xcos1[i], mdct->xsin1[i]);
     }
 
-    fft(x, MDCT_NBITS - 2);
+    fft(mdct, x, mdct->nbits - 2);
 
     /* post rotation */
-    for (i = 0; i < MDCT_SAMPLES/4; i++) {
+    for (i = 0; i < n4; i++) {
         re = x[i].re;
         im = x[i].im;
-        CMUL(out[MDCT_SAMPLES/2-1-2*i], out[2*i], re, im, xsin1[i], xcos1[i]);
+        CMUL(out[n2-1-2*i], out[2*i], re, im, mdct->xsin1[i], mdct->xcos1[i]);
     }
 }
 
@@ -1824,10 +1848,12 @@ init_fail:
 
 #include "libavutil/lfg.h"
 
+#define MDCT_NBITS 9
+#define MDCT_SAMPLES (1 << MDCT_NBITS)
 #define FN (MDCT_SAMPLES/4)
 
 
-static void fft_test(AVLFG *lfg)
+static void fft_test(AC3MDCTContext *mdct, AVLFG *lfg)
 {
     IComplex in[FN], in1[FN];
     int k, n, i;
@@ -1838,7 +1864,7 @@ static void fft_test(AVLFG *lfg)
         in[i].im = av_lfg_get(lfg) % 65535 - 32767;
         in1[i]   = in[i];
     }
-    fft(in, 7);
+    fft(mdct, in, 7);
 
     /* do it by hand */
     for (k = 0; k < FN; k++) {
@@ -1855,7 +1881,7 @@ static void fft_test(AVLFG *lfg)
 }
 
 
-static void mdct_test(AVLFG *lfg)
+static void mdct_test(AC3MDCTContext *mdct, AVLFG *lfg)
 {
     int16_t input[MDCT_SAMPLES];
     int32_t output[AC3_MAX_COEFS];
@@ -1869,7 +1895,7 @@ static void mdct_test(AVLFG *lfg)
         input1[i] = input[i];
     }
 
-    mdct512(output, input);
+    mdct512(mdct, output, input);
 
     /* do it by hand */
     for (k = 0; k < AC3_MAX_COEFS; k++) {
@@ -1897,12 +1923,14 @@ static void mdct_test(AVLFG *lfg)
 int main(void)
 {
     AVLFG lfg;
+    AC3MDCTContext mdct;
 
+    mdct.avctx = NULL;
     av_log_set_level(AV_LOG_DEBUG);
-    mdct_init(9);
+    mdct_init(&mdct, 9);
 
-    fft_test(&lfg);
-    mdct_test(&lfg);
+    fft_test(&mdct, &lfg);
+    mdct_test(&mdct, &lfg);
 
     return 0;
 }
