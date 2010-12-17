@@ -1115,6 +1115,68 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
 
 
 /**
+ * Downgrade exponent strategies to reduce the bits used by the exponents.
+ * This is a fallback for when bit allocation fails with the normal exponent
+ * strategies.  Each time this function is run it only downgrades the
+ * strategy in 1 channel of 1 block.
+ * @return non-zero if downgrade was unsuccessful
+ */
+static int downgrade_exponents(AC3EncodeContext *s)
+{
+    int ch, blk;
+
+    for (ch = 0; ch < s->fbw_channels; ch++) {
+        for (blk = AC3_MAX_BLOCKS-1; blk >= 0; blk--) {
+            if (s->blocks[blk].exp_strategy[ch] == EXP_D15) {
+                s->blocks[blk].exp_strategy[ch] = EXP_D25;
+                return 0;
+            }
+        }
+    }
+    for (ch = 0; ch < s->fbw_channels; ch++) {
+        for (blk = AC3_MAX_BLOCKS-1; blk >= 0; blk--) {
+            if (s->blocks[blk].exp_strategy[ch] == EXP_D25) {
+                s->blocks[blk].exp_strategy[ch] = EXP_D45;
+                return 0;
+            }
+        }
+    }
+    for (ch = 0; ch < s->fbw_channels; ch++) {
+        /* block 0 cannot reuse exponents, so only downgrade D45 to REUSE if
+           the block number > 0 */
+        for (blk = AC3_MAX_BLOCKS-1; blk > 0; blk--) {
+            if (s->blocks[blk].exp_strategy[ch] > EXP_REUSE) {
+                s->blocks[blk].exp_strategy[ch] = EXP_REUSE;
+                return 0;
+            }
+        }
+    }
+    return -1;
+}
+
+
+/**
+ * Reduce the bandwidth to reduce the number of bits used for a given SNR offset.
+ * This is a second fallback for when bit allocation still fails after exponents
+ * have been downgraded.
+ * @return non-zero if bandwidth reduction was unsuccessful
+ */
+static int reduce_bandwidth(AC3EncodeContext *s, int min_bw_code)
+{
+    int ch;
+
+    if (s->bandwidth_code[0] > min_bw_code) {
+        for (ch = 0; ch < s->fbw_channels; ch++) {
+            s->bandwidth_code[ch]--;
+            s->nb_coefs[ch] = s->bandwidth_code[ch] * 3 + 73;
+        }
+        return 0;
+    }
+    return -1;
+}
+
+
+/**
  * Perform bit allocation search.
  * Finds the SNR offset value that maximizes quality and fits in the specified
  * frame size.  Output is the SNR offset and a set of bit allocation pointers
@@ -1122,11 +1184,37 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
  */
 static int compute_bit_allocation(AC3EncodeContext *s)
 {
+    int ret;
+
     count_frame_bits(s);
 
     bit_alloc_masking(s);
 
-    return cbr_bit_allocation(s);
+    ret = cbr_bit_allocation(s);
+    while (ret) {
+        /* fallback 1: downgrade exponents */
+        if (!downgrade_exponents(s)) {
+            extract_exponents(s);
+            encode_exponents(s);
+            group_exponents(s);
+            ret = compute_bit_allocation(s);
+            continue;
+        }
+
+        /* fallback 2: reduce bandwidth */
+        /* only do this if the user has not specified a specific cutoff
+           frequency */
+        if (!s->cutoff && !reduce_bandwidth(s, 0)) {
+            process_exponents(s);
+            ret = compute_bit_allocation(s);
+            continue;
+        }
+
+        /* fallbacks were not enough... */
+        break;
+    }
+
+    return ret;
 }
 
 
