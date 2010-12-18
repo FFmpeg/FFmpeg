@@ -953,12 +953,24 @@ static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *
 
         ret = get_buffer(pb, asf_st->pkt.data + asf->packet_frag_offset,
                          asf->packet_frag_size);
-        if (ret != asf->packet_frag_size)
-            return ret >= 0 ? AVERROR_EOF : ret;
+        if (ret != asf->packet_frag_size) {
+            if (ret < 0 || asf->packet_frag_offset + ret == 0)
+                return ret < 0 ? ret : AVERROR_EOF;
+            if (asf_st->ds_span > 1) {
+                // scrambling, we can either drop it completely or fill the remainder
+                // TODO: should we fill the whole packet instead of just the current
+                // fragment?
+                memset(asf_st->pkt.data + asf->packet_frag_offset + ret, 0,
+                       asf->packet_frag_size - ret);
+                ret = asf->packet_frag_size;
+            } else
+                // no scrambling, so we can return partial packets
+                av_shrink_packet(&asf_st->pkt, asf->packet_frag_offset + ret);
+        }
         if (s->key && s->keylen == 20)
             ff_asfcrypt_dec(s->key, asf_st->pkt.data + asf->packet_frag_offset,
-                            asf->packet_frag_size);
-        asf_st->frag_offset += asf->packet_frag_size;
+                            ret);
+        asf_st->frag_offset += ret;
         /* test if whole packet is read */
         if (asf_st->frag_offset == asf_st->pkt.size) {
             //workaround for macroshit radio DVR-MS files
