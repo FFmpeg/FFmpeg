@@ -65,6 +65,7 @@ version <next>:
 - RTP depacketization of QCELP
 - FLAC parser added
 - gradfun filter added
+- AMR-WB decoder
 
 
 version 0.6:

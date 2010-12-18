@@ -574,8 +574,7 @@ following image formats are supported:
 @item ADPCM Yamaha           @tab  X  @tab  X
 @item AMR-NB                 @tab  E  @tab  X
     @tab encoding supported through external library libopencore-amrnb
-@item AMR-WB                 @tab     @tab  E
-    @tab decoding supported through external library libopencore-amrwb
+@item AMR-WB                 @tab     @tab  X
 @item Apple lossless audio   @tab  X  @tab  X
     @tab QuickTime fourcc 'alac'
 @item Atrac 1                @tab     @tab  X
