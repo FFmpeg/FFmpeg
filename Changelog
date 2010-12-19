@@ -83,6 +83,7 @@ version <next>:
 - Linux framebuffer input device added
 - Chronomaster DFA decoder
 - Mobotix MxPEG decoder
+- AAC encoding via libvo-aacenc
 
 
 version 0.6:
