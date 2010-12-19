@@ -416,9 +416,9 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
         for (i = 0; i < 4; i++) {
             if (link->src_buf->data[i]) {
                 src[i] = link->src_buf-> data[i] +
-                    (y >> (i==0 ? 0 : vsub)) * link->src_buf-> linesize[i];
+                    (y >> (i==1 || i==2 ? vsub : 0)) * link->src_buf-> linesize[i];
                 dst[i] = link->cur_buf->data[i] +
-                    (y >> (i==0 ? 0 : vsub)) * link->cur_buf->linesize[i];
+                    (y >> (i==1 || i==2 ? vsub : 0)) * link->cur_buf->linesize[i];
             } else
                 src[i] = dst[i] = NULL;
         }
@@ -429,7 +429,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
             if (!src[i]) continue;
 
-            for (j = 0; j < h >> (i==0 ? 0 : vsub); j++) {
+            for (j = 0; j < h >> (i==1 || i==2 ? vsub : 0); j++) {
                 memcpy(dst[i], src[i], planew);
                 src[i] += link->src_buf->linesize[i];
                 dst[i] += link->cur_buf->linesize[i];
