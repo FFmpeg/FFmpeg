@@ -13,6 +13,17 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-12-19 - r26056 - lavutil 50.35.0 - error.h
+  Add "not found" error codes:
+  AVERROR_DEMUXER_NOT_FOUND
+  AVERROR_MUXER_NOT_FOUND
+  AVERROR_DECODER_NOT_FOUND
+  AVERROR_ENCODER_NOT_FOUND
+  AVERROR_PROTOCOL_NOT_FOUND
+  AVERROR_FILTER_NOT_FOUND
+  AVERROR_BSF_NOT_FOUND
+  AVERROR_STREAM_NOT_FOUND
+
 2010-12-09 - r25923 - lavcore 0.16.0 - avcore.h
   Move AV_NOPTS_VALUE, AV_TIME_BASE, AV_TIME_BASE_Q symbols from
   avcodec.h to avcore.h.
