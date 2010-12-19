@@ -228,7 +228,8 @@ static void end_frame(AVFilterLink *inlink)
     avfilter_draw_slice(outlink, 0, inlink->h, 1);
     avfilter_end_frame(outlink);
     avfilter_unref_buffer(inpic);
-    avfilter_unref_buffer(outpic);
+    if (outpic != inpic)
+        avfilter_unref_buffer(outpic);
 }
 
 AVFilter avfilter_vf_gradfun = {
