@@ -293,7 +293,7 @@ FATE_TESTS += fate-amrwb-14k25
 fate-amrwb-14k25: CMD = pcm -i $(SAMPLES)/amrwb/seed-14k25.awb
 fate-amrwb-14k25: CMP = stddev
 fate-amrwb-14k25: REF = $(SAMPLES)/amrwb/seed-14k25.pcm
-fate-amrwb-14k25: FUZZ = 2
+fate-amrwb-14k25: FUZZ = 2.6
 
 FATE_TESTS += fate-amrwb-15k85
 fate-amrwb-15k85: CMD = pcm -i $(SAMPLES)/amrwb/seed-15k85.awb
