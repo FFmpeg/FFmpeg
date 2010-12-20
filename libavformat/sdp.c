@@ -314,7 +314,14 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
             break;
         case CODEC_ID_H263:
         case CODEC_ID_H263P:
-            av_strlcatf(buff, size, "a=rtpmap:%d H263-2000/90000\r\n", payload_type);
+            /* a=framesize is required by 3GPP TS 26.234 (PSS). It
+             * actually specifies the maximum video size, but we only know
+             * the current size. This is required for playback on Android
+             * stagefright and on Samsung bada. */
+            av_strlcatf(buff, size, "a=rtpmap:%d H263-2000/90000\r\n"
+                                    "a=framesize:%d %d-%d\r\n",
+                                    payload_type,
+                                    payload_type, c->width, c->height);
             break;
         case CODEC_ID_MPEG4:
             if (c->extradata_size) {
