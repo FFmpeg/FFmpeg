@@ -28,6 +28,7 @@
 #define AVCODEC_AMRWBDATA_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 #define LP_ORDER            16                ///< linear predictive coding filter order
 #define LP_ORDER_16k        20                ///< lpc filter order at 16kHz
