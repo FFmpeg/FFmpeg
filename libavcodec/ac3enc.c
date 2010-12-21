@@ -101,6 +101,7 @@ typedef struct AC3EncodeContext {
     int frame_size_min;                     ///< minimum frame size in case rounding is necessary
     int frame_size;                         ///< current frame size in bytes
     int frame_size_code;                    ///< frame size code                        (frmsizecod)
+    uint16_t crc_inv[2];
     int bits_written;                       ///< bit count    (used to avg. bitrate)
     int samples_written;                    ///< sample count (used to avg. bitrate)
 
@@ -1587,8 +1588,7 @@ static void output_frame_end(AC3EncodeContext *s)
     /* this is not so easy because it is at the beginning of the data... */
     crc1 = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0,
                              frame + 4, frame_size_58 - 4));
-    /* XXX: could precompute crc_inv */
-    crc_inv = pow_poly((CRC16_POLY >> 1), (8 * frame_size_58) - 16, CRC16_POLY);
+    crc_inv = s->crc_inv[s->frame_size > s->frame_size_min];
     crc1    = mul_poly(crc_inv, crc1, CRC16_POLY);
     AV_WB16(frame + 2, crc1);
 
@@ -1897,7 +1897,7 @@ alloc_fail:
 static av_cold int ac3_encode_init(AVCodecContext *avctx)
 {
     AC3EncodeContext *s = avctx->priv_data;
-    int ret;
+    int ret, frame_size_58;
 
     avctx->frame_size = AC3_FRAME_SIZE;
 
@@ -1914,6 +1914,14 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
     s->bits_written    = 0;
     s->samples_written = 0;
     s->frame_size      = s->frame_size_min;
+
+    /* calculate crc_inv for both possible frame sizes */
+    frame_size_58 = (( s->frame_size    >> 2) + ( s->frame_size    >> 4)) << 1;
+    s->crc_inv[0] = pow_poly((CRC16_POLY >> 1), (8 * frame_size_58) - 16, CRC16_POLY);
+    if (s->bit_alloc.sr_code == 1) {
+        frame_size_58 = (((s->frame_size+2) >> 2) + ((s->frame_size+2) >> 4)) << 1;
+        s->crc_inv[1] = pow_poly((CRC16_POLY >> 1), (8 * frame_size_58) - 16, CRC16_POLY);
+    }
 
     set_bandwidth(s);
 
