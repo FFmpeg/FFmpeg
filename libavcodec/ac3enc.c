@@ -44,7 +44,7 @@
 #define SCALE_FLOAT(a, bits) lrintf((a) * (float)(1 << (bits)))
 
 /** Scale a float value by 2^15, convert to an integer, and clip to int16_t range. */
-#define FIX15(a) av_clip_int16(SCALE_FLOAT(a, 15))
+#define FIX15(a) av_clip(SCALE_FLOAT(a, 15), -32767, 32767)
 
 
 /**
