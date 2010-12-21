@@ -524,7 +524,8 @@ OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o \
                                           flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o \
-                                          flacdec.o flacdata.o flac.o
+                                          flacdec.o flacdata.o flac.o \
+                                          mpegaudiodata.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGTS_MUXER)            += mpegvideo.o mpeg4audio.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
@@ -533,7 +534,8 @@ OBJS-$(CONFIG_OGG_DEMUXER)             += flacdec.o flacdata.o flac.o \
 OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o xiph.o
 OBJS-$(CONFIG_WEBM_MUXER)              += xiph.o mpeg4audio.o \
-                                          flacdec.o flacdata.o flac.o
+                                          flacdec.o flacdata.o flac.o \
+                                          mpegaudiodata.o
 
 # external codec libraries
 OBJS-$(CONFIG_LIBDIRAC_DECODER)           += libdiracdec.o
