@@ -587,6 +587,7 @@ static void compute_exp_strategy_ch(AC3EncodeContext *s, uint8_t *exp_strategy, 
         else
             exp_strategy[blk] = EXP_REUSE;
     }
+    emms_c();
 
     /* now select the encoding strategy type : if exponents are often
        recoded, we use a coarse encoding */
