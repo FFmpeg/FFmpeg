@@ -54,7 +54,7 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
         return err;
     }
 
-    if (lstat(filename, &st) < 0) {
+    if (stat(filename, &st) < 0) {
         err = AVERROR(errno);
         av_strerror(err, errbuf, sizeof(errbuf));
         av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in lstat(): %s\n", errbuf);
