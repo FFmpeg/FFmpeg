@@ -201,7 +201,9 @@ static av_always_inline unsigned int vp56_rac_renorm(VP56RangeCoder *c)
     return code_word;
 }
 
-#if ARCH_X86
+#if   ARCH_ARM
+#include "arm/vp56_arith.h"
+#elif ARCH_X86
 #include "x86/vp56_arith.h"
 #endif
 
@@ -221,6 +223,7 @@ static av_always_inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
 }
 #endif
 
+#ifndef vp56_rac_get_prob_branchy
 // branchy variant, to be used where there's a branch based on the bit decoded
 static av_always_inline int vp56_rac_get_prob_branchy(VP56RangeCoder *c, int prob)
 {
@@ -238,6 +241,7 @@ static av_always_inline int vp56_rac_get_prob_branchy(VP56RangeCoder *c, int pro
     c->code_word = code_word;
     return 0;
 }
+#endif
 
 static av_always_inline int vp56_rac_get(VP56RangeCoder *c)
 {
