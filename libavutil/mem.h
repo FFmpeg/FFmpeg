@@ -64,8 +64,10 @@
 
 #if LIBAVUTIL_VERSION_MAJOR < 51
 #   define FF_INTERNAL_MEM_TYPE unsigned int
+#   define FF_INTERNAL_MEM_TYPE_MAX_VALUE UINT_MAX
 #else
 #   define FF_INTERNAL_MEM_TYPE size_t
+#   define FF_INTERNAL_MEM_TYPE_MAX_VALUE SIZE_MAX
 #endif
 
 /**

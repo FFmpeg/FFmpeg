@@ -15,6 +15,7 @@ HEADERS = adler32.h                                                     \
           error.h                                                       \
           eval.h                                                        \
           fifo.h                                                        \
+          file.h                                                        \
           intfloat_readwrite.h                                          \
           intreadwrite.h                                                \
           lfg.h                                                         \
@@ -42,6 +43,7 @@ OBJS = adler32.o                                                        \
        error.o                                                          \
        eval.o                                                           \
        fifo.o                                                           \
+       file.o                                                           \
        intfloat_readwrite.o                                             \
        inverse.o                                                        \
        lfg.o                                                            \

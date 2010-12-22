@@ -1042,6 +1042,7 @@ HAVE_LIST="
     malloc_h
     memalign
     mkstemp
+    mmap
     pld
     posix_memalign
     round
@@ -2674,6 +2675,7 @@ check_func  inet_aton $network_extralibs
 check_func  isatty
 check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  mkstemp
+check_func  mmap
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func  setrlimit
 check_func  strerror_r
