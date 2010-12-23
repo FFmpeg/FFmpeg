@@ -1111,11 +1111,12 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
             rt->transport = reply->transports[0].transport;
         }
 
-        /* close RTP connection if not chosen */
-        if (reply->transports[0].lower_transport != RTSP_LOWER_TRANSPORT_UDP &&
-            (lower_transport == RTSP_LOWER_TRANSPORT_UDP)) {
-            url_close(rtsp_st->rtp_handle);
-            rtsp_st->rtp_handle = NULL;
+        /* Fail if the server responded with another lower transport mode
+         * than what we requested. */
+        if (reply->transports[0].lower_transport != lower_transport) {
+            av_log(s, AV_LOG_ERROR, "Nonmatching transport in server reply\n");
+            err = AVERROR_INVALIDDATA;
+            goto fail;
         }
 
         switch(reply->transports[0].lower_transport) {
