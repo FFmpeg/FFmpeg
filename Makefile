@@ -119,6 +119,7 @@ $(HTMLPAGES) $(PODPAGES): doc/fftools-common-opts.texi
 doc/ffmpeg.pod doc/ffmpeg.html: doc/bitstream_filters.texi doc/eval.texi doc/indevs.texi doc/filters.texi doc/outdevs.texi doc/protocols.texi
 doc/ffplay.pod doc/ffplay.html: doc/eval.texi doc/indevs.texi doc/filters.texi doc/outdevs.texi doc/protocols.texi
 doc/ffprobe.pod doc/ffprobe.html: doc/indevs.texi doc/protocols.texi
+doc/libavfilter.html: doc/filters.texi
 
 doc/%.html: TAG = HTML
 doc/%.html: doc/%.texi
