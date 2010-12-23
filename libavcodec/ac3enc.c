@@ -1587,8 +1587,7 @@ static void output_frame_end(AC3EncodeContext *s)
 
     /* compute crc1 */
     /* this is not so easy because it is at the beginning of the data... */
-    crc1 = av_bswap16(av_crc(crc_ctx, 0,
-                             frame + 4, frame_size_58 - 4));
+    crc1    = av_bswap16(av_crc(crc_ctx, 0, frame + 4, frame_size_58 - 4));
     crc_inv = s->crc_inv[s->frame_size > s->frame_size_min];
     crc1    = mul_poly(crc_inv, crc1, CRC16_POLY);
     AV_WB16(frame + 2, crc1);
