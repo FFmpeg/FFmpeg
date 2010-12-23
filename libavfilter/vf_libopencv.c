@@ -63,7 +63,13 @@ static int query_formats(AVFilterContext *ctx)
 
 static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
 
-#if CONFIG_OCV_SMOOTH_FILTER
+typedef struct {
+    const char *name;
+    int (*init)(AVFilterContext *ctx, const char *args, void *opaque);
+    void (*uninit)(AVFilterContext *ctx);
+    void (*end_frame_filter)(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg);
+    void *priv;
+} OCVContext;
 
 typedef struct {
     int type;
@@ -73,7 +79,8 @@ typedef struct {
 
 static av_cold int smooth_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
-    SmoothContext *smooth = ctx->priv;
+    OCVContext *ocv = ctx->priv;
+    SmoothContext *smooth = ocv->priv;
     char type_str[128] = "gaussian";
 
     smooth->param1 = 3;
@@ -113,17 +120,74 @@ static av_cold int smooth_init(AVFilterContext *ctx, const char *args, void *opa
     return 0;
 }
 
-static void smooth_end_frame(AVFilterLink *inlink)
+static void smooth_end_frame_filter(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg)
 {
-    SmoothContext *smooth = inlink->dst->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    OCVContext *ocv = ctx->priv;
+    SmoothContext *smooth = ocv->priv;
+    cvSmooth(inimg, outimg, smooth->type, smooth->param1, smooth->param2, smooth->param3, smooth->param4);
+}
+
+typedef struct {
+    const char *name;
+    size_t priv_size;
+    int  (*init)(AVFilterContext *ctx, const char *args, void *opaque);
+    void (*uninit)(AVFilterContext *ctx);
+    void (*end_frame_filter)(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg);
+} OCVFilterEntry;
+
+static OCVFilterEntry ocv_filter_entries[] = {
+    { "smooth", sizeof(SmoothContext), smooth_init, NULL, smooth_end_frame_filter },
+};
+
+static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    OCVContext *ocv = ctx->priv;
+    char name[128], priv_args[1024];
+    int i;
+    char c;
+
+    sscanf(args, "%127[^=:]%c%1023s", name, &c, priv_args);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(ocv_filter_entries); i++) {
+        OCVFilterEntry *entry = &ocv_filter_entries[i];
+        if (!strcmp(name, entry->name)) {
+            ocv->name             = entry->name;
+            ocv->init             = entry->init;
+            ocv->uninit           = entry->uninit;
+            ocv->end_frame_filter = entry->end_frame_filter;
+
+            if (!(ocv->priv = av_mallocz(entry->priv_size)))
+                return AVERROR(ENOMEM);
+            return ocv->init(ctx, priv_args, opaque);
+        }
+    }
+
+    av_log(ctx, AV_LOG_ERROR, "No libopencv filter named '%s'\n", name);
+    return AVERROR(EINVAL);
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    OCVContext *ocv = ctx->priv;
+
+    if (ocv->uninit)
+        ocv->uninit(ctx);
+    av_free(ocv->priv);
+    memset(ocv, 0, sizeof(*ocv));
+}
+
+static void end_frame(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    OCVContext *ocv = ctx->priv;
+    AVFilterLink *outlink= inlink->dst->outputs[0];
     AVFilterBufferRef *inpicref  = inlink ->cur_buf;
     AVFilterBufferRef *outpicref = outlink->out_buf;
     IplImage inimg, outimg;
 
     fill_iplimage_from_picref(&inimg , inpicref , inlink->format);
     fill_iplimage_from_picref(&outimg, outpicref, inlink->format);
-    cvSmooth(&inimg, &outimg, smooth->type, smooth->param1, smooth->param2, smooth->param3, smooth->param4);
+    ocv->end_frame_filter(ctx, &inimg, &outimg);
     fill_picref_from_iplimage(outpicref, &outimg, inlink->format);
 
     avfilter_unref_buffer(inpicref);
@@ -132,19 +196,20 @@ static void smooth_end_frame(AVFilterLink *inlink)
     avfilter_unref_buffer(outpicref);
 }
 
-AVFilter avfilter_vf_ocv_smooth = {
-    .name        = "ocv_smooth",
-    .description = NULL_IF_CONFIG_SMALL("Apply smooth transform using libopencv."),
+AVFilter avfilter_vf_ocv = {
+    .name        = "ocv",
+    .description = NULL_IF_CONFIG_SMALL("Apply transform using libopencv."),
 
-    .priv_size = sizeof(SmoothContext),
+    .priv_size = sizeof(OCVContext),
 
     .query_formats = query_formats,
-    .init = smooth_init,
+    .init = init,
+    .uninit = uninit,
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .draw_slice       = null_draw_slice,
-                                    .end_frame        = smooth_end_frame,
+                                    .end_frame        = end_frame,
                                     .min_perms        = AV_PERM_READ },
                                   { .name = NULL}},
 
@@ -152,5 +217,3 @@ AVFilter avfilter_vf_ocv_smooth = {
                                     .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };
-
-#endif /* CONFIG_OCV_SMOOTH_FILTER */
