@@ -32,7 +32,7 @@ extern const uint64_t ff_wtwo;
 
 extern const uint64_t ff_pdw_80000000[2];
 
-extern const uint64_t ff_pw_3;
+extern const xmm_reg  ff_pw_3;
 extern const xmm_reg  ff_pw_4;
 extern const xmm_reg  ff_pw_5;
 extern const xmm_reg  ff_pw_8;
