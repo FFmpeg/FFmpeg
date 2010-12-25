@@ -964,13 +964,11 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
         s->current_picture_ptr= pic;
         //FIXME use only the vars from current_pic
+        s->current_picture_ptr->top_field_first= s->top_field_first;
         if(s->codec_id == CODEC_ID_MPEG1VIDEO || s->codec_id == CODEC_ID_MPEG2VIDEO) {
-            if(s->picture_structure == PICT_FRAME)
-                s->current_picture_ptr->top_field_first= s->top_field_first;
-            else
+            if(s->picture_structure != PICT_FRAME)
                 s->current_picture_ptr->top_field_first= (s->picture_structure == PICT_TOP_FIELD) == s->first_field;
-        } else
-            s->current_picture_ptr->top_field_first= s->top_field_first;
+        }
         s->current_picture_ptr->interlaced_frame= !s->progressive_frame && !s->progressive_sequence;
     }
 
