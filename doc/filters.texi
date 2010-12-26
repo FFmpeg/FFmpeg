@@ -532,6 +532,52 @@ informations:
 
 Follows the list of supported libopencv filters.
 
+@subsection dilate
+
+Dilate an image by using a specific structuring element.
+This filter corresponds to the libopencv function @code{cvDilate}.
+
+It accepts the parameters: @var{struct_el}:@var{nb_iterations}.
+
+@var{struct_el} represents a structuring element, and has the syntax:
+@var{cols}x@var{rows}+@var{anchor_x}x@var{anchor_y}/@var{shape}
+
+@var{cols} and @var{rows} represent the number of colums and rows of
+the structuring element, @var{anchor_x} and @var{anchor_y} the anchor
+point, and @var{shape} the shape for the structuring element, and
+can be one of the values "rect", "cross", "ellipse", "custom".
+
+If the value for @var{shape} is "custom", it must be followed by a
+string of the form "=@var{filename}". The file with name
+@var{filename} is assumed to represent a binary image, with each
+printable character corresponding to a bright pixel. When a custom
+@var{shape} is used, @var{cols} and @var{rows} are ignored, the number
+or columns and rows of the read file are assumed instead.
+
+The default value for @var{struct_el} is "3x3+0x0/rect".
+
+@var{nb_iterations} specifies the number of times the transform is
+applied to the image, and defaults to 1.
+
+Follow some example:
+@example
+# use the default values
+ocv=dilate
+
+# dilate using a structuring element with a 5x5 cross, iterate two times
+ocv=dilate=5x5+2x2/cross:2
+
+# read the shape from the file diamond.shape, iterate two times
+# the file diamond.shape may contain a pattern of characters like this:
+#   *
+#  ***
+# *****
+#  ***
+#   *
+# the specified cols and rows are ignored (but not the anchor point coordinates)
+ocv=0x0+2x2/custom=diamond.shape:2
+@end example
+
 @subsection smooth
 
 Smooth the input video.

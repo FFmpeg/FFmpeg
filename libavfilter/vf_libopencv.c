@@ -23,8 +23,12 @@
  * libopencv wrapper functions
  */
 
+/* #define DEBUG */
+
 #include <opencv/cv.h>
 #include <opencv/cxtypes.h>
+#include "libavutil/avstring.h"
+#include "libavutil/file.h"
 #include "avfilter.h"
 
 static void fill_iplimage_from_picref(IplImage *img, const AVFilterBufferRef *picref, enum PixelFormat pixfmt)
@@ -127,6 +131,166 @@ static void smooth_end_frame_filter(AVFilterContext *ctx, IplImage *inimg, IplIm
     cvSmooth(inimg, outimg, smooth->type, smooth->param1, smooth->param2, smooth->param3, smooth->param4);
 }
 
+static int read_shape_from_file(int *cols, int *rows, int **values, const char *filename,
+                                void *log_ctx)
+{
+    uint8_t *buf, *p, *pend;
+    size_t size;
+    int ret, i, j, w;
+
+    if ((ret = av_file_map(filename, &buf, &size, 0, log_ctx)) < 0)
+        return ret;
+
+    /* prescan file to get the number of lines and the maximum width */
+    w = 0;
+    for (i = 0; i < size; i++) {
+        if (buf[i] == '\n') {
+            if (*rows == INT_MAX) {
+                av_log(log_ctx, AV_LOG_ERROR, "Overflow on the number of rows in the file\n");
+                return AVERROR_INVALIDDATA;
+            }
+            ++(*rows);
+            *cols = FFMAX(*cols, w);
+            w = 0;
+        } else if (w == INT_MAX) {
+            av_log(log_ctx, AV_LOG_ERROR, "Overflow on the number of columns in the file\n");
+            return AVERROR_INVALIDDATA;
+        }
+        w++;
+    }
+    if (*rows > (FF_INTERNAL_MEM_TYPE_MAX_VALUE / (sizeof(int)) / *cols)) {
+        av_log(log_ctx, AV_LOG_ERROR, "File with size %dx%d is too big\n",
+               *rows, *cols);
+        return AVERROR_INVALIDDATA;
+    }
+    if (!(*values = av_mallocz(sizeof(int) * *rows * *cols)))
+        return AVERROR(ENOMEM);
+
+    /* fill *values */
+    p    = buf;
+    pend = buf + size-1;
+    for (i = 0; i < *rows; i++) {
+        for (j = 0;; j++) {
+            if (p > pend || *p == '\n') {
+                p++;
+                break;
+            } else
+                (*values)[*cols*i + j] = !!isgraph(*(p++));
+        }
+    }
+    av_file_unmap(buf, size);
+
+#ifdef DEBUG
+    {
+        char *line;
+        if (!(line = av_malloc(*cols + 1)))
+            return AVERROR(ENOMEM);
+        for (i = 0; i < *rows; i++) {
+            for (j = 0; j < *cols; j++)
+                line[j] = (*values)[i * *cols + j] ? '@' : ' ';
+            line[j] = 0;
+            av_log(log_ctx, AV_LOG_DEBUG, "%3d: %s\n", i, line);
+        }
+        av_free(line);
+    }
+#endif
+
+    return 0;
+}
+
+static int parse_iplconvkernel(IplConvKernel **kernel, char *buf, void *log_ctx)
+{
+    char shape_filename[128] = "", shape_str[32] = "rect";
+    int cols = 0, rows = 0, anchor_x = 0, anchor_y = 0, shape = CV_SHAPE_RECT;
+    int *values = NULL, ret;
+
+    sscanf(buf, "%dx%d+%dx%d/%32[^=]=%127s", &cols, &rows, &anchor_x, &anchor_y, shape_str, shape_filename);
+
+    if      (!strcmp(shape_str, "rect"   )) shape = CV_SHAPE_RECT;
+    else if (!strcmp(shape_str, "cross"  )) shape = CV_SHAPE_CROSS;
+    else if (!strcmp(shape_str, "ellipse")) shape = CV_SHAPE_ELLIPSE;
+    else if (!strcmp(shape_str, "custom" )) {
+        shape = CV_SHAPE_CUSTOM;
+        if ((ret = read_shape_from_file(&cols, &rows, &values, shape_filename, log_ctx)) < 0)
+            return ret;
+    } else {
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Shape unspecified or type '%s' unknown\n.", shape_str);
+        return AVERROR(EINVAL);
+    }
+
+    if (rows <= 0 || cols <= 0) {
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Invalid non-positive values for shape size %dx%d\n", cols, rows);
+        return AVERROR(EINVAL);
+    }
+
+    if (anchor_x < 0 || anchor_y < 0 || anchor_x >= cols || anchor_y >= rows) {
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Shape anchor %dx%d is not inside the rectangle with size %dx%d.\n",
+               anchor_x, anchor_y, cols, rows);
+        return AVERROR(EINVAL);
+    }
+
+    *kernel = cvCreateStructuringElementEx(cols, rows, anchor_x, anchor_y, shape, values);
+    av_freep(&values);
+    if (!*kernel)
+        return AVERROR(ENOMEM);
+
+    av_log(log_ctx, AV_LOG_INFO, "Structuring element: w:%d h:%d x:%d y:%d shape:%s\n",
+           rows, cols, anchor_x, anchor_y, shape_str);
+    return 0;
+}
+
+typedef struct {
+    int nb_iterations;
+    IplConvKernel *kernel;
+} DilateContext;
+
+static av_cold int dilate_init(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    OCVContext *ocv = ctx->priv;
+    DilateContext *dilate = ocv->priv;
+    char default_kernel_str[] = "3x3+0x0/rect";
+    char *kernel_str;
+    const char *buf = args;
+    int ret;
+
+    dilate->nb_iterations = 1;
+
+    if (args)
+        kernel_str = av_get_token(&buf, ":");
+    if ((ret = parse_iplconvkernel(&dilate->kernel,
+                                   *kernel_str ? kernel_str : default_kernel_str,
+                                   ctx)) < 0)
+        return ret;
+    av_free(kernel_str);
+
+    sscanf(buf, ":%d", &dilate->nb_iterations);
+    av_log(ctx, AV_LOG_INFO, "iterations_nb:%d\n", dilate->nb_iterations);
+    if (dilate->nb_iterations <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid non-positive value '%d' for nb_iterations\n",
+               dilate->nb_iterations);
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
+static av_cold void dilate_uninit(AVFilterContext *ctx)
+{
+    OCVContext *ocv = ctx->priv;
+    DilateContext *dilate = ocv->priv;
+
+    cvReleaseStructuringElement(&dilate->kernel);
+}
+
+static void dilate_end_frame_filter(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg)
+{
+    OCVContext *ocv = ctx->priv;
+    DilateContext *dilate = ocv->priv;
+    cvDilate(inimg, outimg, dilate->kernel, dilate->nb_iterations);
+}
+
 typedef struct {
     const char *name;
     size_t priv_size;
@@ -136,6 +300,7 @@ typedef struct {
 } OCVFilterEntry;
 
 static OCVFilterEntry ocv_filter_entries[] = {
+    { "dilate", sizeof(DilateContext), dilate_init, dilate_uninit, dilate_end_frame_filter },
     { "smooth", sizeof(SmoothContext), smooth_init, NULL, smooth_end_frame_filter },
 };
 
