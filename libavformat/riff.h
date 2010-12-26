@@ -35,6 +35,13 @@
 int64_t ff_start_tag(ByteIOContext *pb, const char *tag);
 void ff_end_tag(ByteIOContext *pb, int64_t start);
 
+/**
+ * Read BITMAPINFOHEADER structure and set AVStream codec width, height and
+ * bits_per_encoded_sample fields. Does not read extradata.
+ * @return codec tag
+ */
+int ff_get_bmp_header(ByteIOContext *pb, AVStream *st);
+
 void ff_put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf);
 int ff_put_wav_header(ByteIOContext *pb, AVCodecContext *enc);
 enum CodecID ff_wav_codec_get_id(unsigned int tag, int bps);

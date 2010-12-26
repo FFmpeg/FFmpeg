@@ -570,17 +570,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         url_fskip(pb, size);
                         break;
                     }
-                    get_le32(pb); /* size */
-                    st->codec->width = get_le32(pb);
-                    st->codec->height = (int32_t)get_le32(pb);
-                    get_le16(pb); /* panes */
-                    st->codec->bits_per_coded_sample= get_le16(pb); /* depth */
-                    tag1 = get_le32(pb);
-                    get_le32(pb); /* ImageSize */
-                    get_le32(pb); /* XPelsPerMeter */
-                    get_le32(pb); /* YPelsPerMeter */
-                    get_le32(pb); /* ClrUsed */
-                    get_le32(pb); /* ClrImportant */
+                    tag1 = ff_get_bmp_header(pb, st);
 
                     if (tag1 == MKTAG('D', 'X', 'S', 'B') || tag1 == MKTAG('D','X','S','A')) {
                         st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
