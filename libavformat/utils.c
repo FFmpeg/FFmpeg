@@ -3806,3 +3806,12 @@ void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
     }
 }
 
+int ff_find_stream_index(AVFormatContext *s, int id)
+{
+    int i;
+    for (i = 0; i < s->nb_streams; i++) {
+        if (s->streams[i]->id == id)
+            return i;
+    }
+    return -1;
+}

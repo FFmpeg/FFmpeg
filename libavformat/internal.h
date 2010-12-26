@@ -220,4 +220,10 @@ typedef void (*ff_parse_key_val_cb)(void *context, const char *key,
 void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
                         void *context);
 
+/**
+ * Find stream index based on format-specific stream ID
+ * @return stream index, or < 0 on error
+ */
+int ff_find_stream_index(AVFormatContext *s, int id);
+
 #endif /* AVFORMAT_INTERNAL_H */

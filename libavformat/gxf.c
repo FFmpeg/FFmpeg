@@ -21,6 +21,7 @@
 
 #include "libavutil/common.h"
 #include "avformat.h"
+#include "internal.h"
 #include "gxf.h"
 
 struct gxf_stream_info {
@@ -77,10 +78,9 @@ static int gxf_probe(AVProbeData *p) {
 static int get_sindex(AVFormatContext *s, int id, int format) {
     int i;
     AVStream *st = NULL;
-    for (i = 0; i < s->nb_streams; i++) {
-        if (s->streams[i]->id == id)
-            return i;
-    }
+    i = ff_find_stream_index(s, id);
+    if (i >= 0)
+        return i;
     st = av_new_stream(s, id);
     if (!st)
         return AVERROR(ENOMEM);
