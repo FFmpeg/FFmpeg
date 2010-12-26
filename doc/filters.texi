@@ -366,13 +366,14 @@ the next filter.
 The filter accepts a list of pixel format names, separated by ":",
 for example "yuv420p:monow:rgb24".
 
-The following command:
-
+Some examples follow:
 @example
-./ffmpeg -i in.avi -vf "format=yuv420p" out.avi
-@end example
+# convert the input video to the format "yuv420p"
+format=yuv420p
 
-will convert the input video to the format "yuv420p".
+# convert the input video to any of the formats in the list
+format=yuv420p:yuv444p:yuv410p
+@end example
 
 @anchor{frei0r}
 @section frei0r
@@ -499,14 +500,15 @@ input to the next filter.
 The filter accepts a list of pixel format names, separated by ":",
 for example "yuv420p:monow:rgb24".
 
-The following command:
-
+Some examples follow:
 @example
-./ffmpeg -i in.avi -vf "noformat=yuv420p, vflip" out.avi
-@end example
+# force libavfilter to use a format different from "yuv420p" for the
+# input to the vflip filter
+noformat=yuv420p,vflip
 
-will make libavfilter use a format different from "yuv420p" for the
-input to the vflip filter.
+# convert the input video to any of the formats not contained in the list
+noformat=yuv420p:yuv444p:yuv410p
+@end example
 
 @section null
 
