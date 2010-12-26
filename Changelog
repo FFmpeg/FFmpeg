@@ -67,6 +67,7 @@ version <next>:
 - gradfun filter added
 - AMR-WB decoder
 - replace the ocv_smooth filter with a more generic ocv filter
+- Windows Televison (WTV) demuxer
 
 
 version 0.6:
