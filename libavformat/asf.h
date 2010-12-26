@@ -231,5 +231,7 @@ extern const AVMetadataConv ff_asf_metadata_conv[];
 
 extern AVInputFormat asf_demuxer;
 int ff_put_str16_nolen(ByteIOContext *s, const char *tag);
+int ff_guidcmp(const void *g1, const void *g2);
+void ff_get_guid(ByteIOContext *s, ff_asf_guid *g);
 
 #endif /* AVFORMAT_ASF_H */
