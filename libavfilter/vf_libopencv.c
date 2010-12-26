@@ -291,6 +291,13 @@ static void dilate_end_frame_filter(AVFilterContext *ctx, IplImage *inimg, IplIm
     cvDilate(inimg, outimg, dilate->kernel, dilate->nb_iterations);
 }
 
+static void erode_end_frame_filter(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg)
+{
+    OCVContext *ocv = ctx->priv;
+    DilateContext *dilate = ocv->priv;
+    cvErode(inimg, outimg, dilate->kernel, dilate->nb_iterations);
+}
+
 typedef struct {
     const char *name;
     size_t priv_size;
@@ -301,6 +308,7 @@ typedef struct {
 
 static OCVFilterEntry ocv_filter_entries[] = {
     { "dilate", sizeof(DilateContext), dilate_init, dilate_uninit, dilate_end_frame_filter },
+    { "erode",  sizeof(DilateContext), dilate_init, dilate_uninit, erode_end_frame_filter  },
     { "smooth", sizeof(SmoothContext), smooth_init, NULL, smooth_end_frame_filter },
 };
 

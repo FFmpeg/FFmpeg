@@ -532,6 +532,7 @@ informations:
 
 Follows the list of supported libopencv filters.
 
+@anchor{dilate}
 @subsection dilate
 
 Dilate an image by using a specific structuring element.
@@ -577,6 +578,15 @@ ocv=dilate=5x5+2x2/cross:2
 # the specified cols and rows are ignored (but not the anchor point coordinates)
 ocv=0x0+2x2/custom=diamond.shape:2
 @end example
+
+@subsection erode
+
+Erode an image by using a specific structuring element.
+This filter corresponds to the libopencv function @code{cvErode}.
+
+The filter accepts the parameters: @var{struct_el}:@var{nb_iterations},
+with the same meaning and use of those of the dilate filter
+(@pxref{dilate}).
 
 @subsection smooth
 
