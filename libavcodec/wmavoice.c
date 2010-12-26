@@ -256,7 +256,7 @@ typedef struct {
     /**
      * @}
      * @defgroup post_filter Postfilter values
-     * Varibales used for postfilter implementation, mostly history for
+     * Variables used for postfilter implementation, mostly history for
      * smoothing and so on, and context variables for FFT/iFFT.
      * @{
      */
