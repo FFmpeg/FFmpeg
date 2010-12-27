@@ -13,17 +13,17 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
-2010-12-XX - r26104 - lavformat 52.91.0 - av_find_best_stream()
+2010-12-XX - r26104 - lavf 52.91.0 - av_find_best_stream()
   Add av_find_best_stream to libavformat/avformat.h.
 
 2010-12-27 - r26103 - lavf 52.90.0
   Add AVFMT_NOSTREAMS flag for formats with no streams,
   like e.g. text metadata.
 
-2010-12-22 - r26073 - lavutil 50.36.0 - file.h
+2010-12-22 - r26073 - lavu 50.36.0 - file.h
   Add functions av_file_map() and av_file_unmap() in file.h.
 
-2010-12-19 - r26056 - lavutil 50.35.0 - error.h
+2010-12-19 - r26056 - lavu 50.35.0 - error.h
   Add "not found" error codes:
   AVERROR_DEMUXER_NOT_FOUND
   AVERROR_MUXER_NOT_FOUND
