@@ -323,6 +323,7 @@ typedef struct AVFormatParameters {
 #define AVFMT_TS_DISCONT    0x0200 /**< Format allows timestamp discontinuities. Note, muxers always require valid (monotone) timestamps */
 #define AVFMT_VARIABLE_FPS  0x0400 /**< Format allows variable fps. */
 #define AVFMT_NODIMENSIONS  0x0800 /**< Format does not need width/height */
+#define AVFMT_NOSTREAMS     0x1000 /**< Format does not require any streams */
 
 typedef struct AVOutputFormat {
     const char *name;

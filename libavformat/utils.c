@@ -2709,7 +2709,7 @@ int av_write_header(AVFormatContext *s)
     AVStream *st;
 
     // some sanity checks
-    if (s->nb_streams == 0) {
+    if (s->nb_streams == 0 && !(s->oformat->flags & AVFMT_NOSTREAMS)) {
         av_log(s, AV_LOG_ERROR, "no streams\n");
         return AVERROR(EINVAL);
     }
@@ -2777,7 +2777,7 @@ int av_write_header(AVFormatContext *s)
 #endif
 
     /* set muxer identification string */
-    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
+    if (s->nb_streams && !(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
         av_metadata_set2(&s->metadata, "encoder", LIBAVFORMAT_IDENT, 0);
     }
 

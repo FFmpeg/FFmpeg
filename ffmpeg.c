@@ -1990,7 +1990,7 @@ static int transcode(AVFormatContext **output_files,
     nb_ostreams = 0;
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
-        if (!os->nb_streams) {
+        if (!os->nb_streams && !(os->oformat->flags & AVFMT_NOSTREAMS)) {
             dump_format(output_files[i], i, output_files[i]->filename, 1);
             fprintf(stderr, "Output file #%d does not contain any stream\n", i);
             ret = AVERROR(EINVAL);
