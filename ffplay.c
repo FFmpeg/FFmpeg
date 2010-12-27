@@ -1616,6 +1616,9 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     int i, w, h, stride[4];
     unsigned edge;
 
+    if (codec->codec->capabilities & CODEC_CAP_NEG_LINESIZES)
+        perms |= AV_PERM_NEG_LINESIZES;
+
     if(pic->buffer_hints & FF_BUFFER_HINTS_VALID) {
         if(pic->buffer_hints & FF_BUFFER_HINTS_READABLE) perms |= AV_PERM_READ;
         if(pic->buffer_hints & FF_BUFFER_HINTS_PRESERVE) perms |= AV_PERM_PRESERVE;

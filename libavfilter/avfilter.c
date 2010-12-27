@@ -197,12 +197,13 @@ int avfilter_config_links(AVFilterContext *filter)
 
 char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
 {
-    snprintf(buf, buf_size, "%s%s%s%s%s",
+    snprintf(buf, buf_size, "%s%s%s%s%s%s",
              perms & AV_PERM_READ      ? "r" : "",
              perms & AV_PERM_WRITE     ? "w" : "",
              perms & AV_PERM_PRESERVE  ? "p" : "",
              perms & AV_PERM_REUSE     ? "u" : "",
-             perms & AV_PERM_REUSE2    ? "U" : "");
+             perms & AV_PERM_REUSE2    ? "U" : "",
+             perms & AV_PERM_NEG_LINESIZES ? "n" : "");
     return buf;
 }
 
@@ -360,15 +361,17 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     void (*start_frame)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = link->dstpad;
+    int perms = picref->perms;
 
     FF_DPRINTF_START(NULL, start_frame); ff_dprintf_link(NULL, link, 0); dprintf(NULL, " "); ff_dprintf_ref(NULL, picref, 1);
 
     if (!(start_frame = dst->start_frame))
         start_frame = avfilter_default_start_frame;
 
+    if (picref->linesize[0] < 0)
+        perms |= AV_PERM_NEG_LINESIZES;
     /* prepare to copy the picture if it has insufficient permissions */
-    if ((dst->min_perms & picref->perms) != dst->min_perms ||
-         dst->rej_perms & picref->perms) {
+    if ((dst->min_perms & perms) != dst->min_perms || dst->rej_perms & perms) {
         av_log(link->dst, AV_LOG_DEBUG,
                 "frame copy needed (have perms %x, need %x, reject %x)\n",
                 picref->perms,

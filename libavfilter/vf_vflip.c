@@ -43,11 +43,13 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
                                         int w, int h)
 {
     FlipContext *flip = link->dst->priv;
+    AVFilterBufferRef *picref;
     int i;
 
-    AVFilterBufferRef *picref = avfilter_get_video_buffer(link->dst->outputs[0],
-                                                       perms, w, h);
+    if (!(perms & AV_PERM_NEG_LINESIZES))
+        return avfilter_default_get_video_buffer(link, perms, w, h);
 
+    picref = avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
     for (i = 0; i < 4; i ++) {
         int vsub = i == 1 || i == 2 ? flip->vsub : 0;
 
