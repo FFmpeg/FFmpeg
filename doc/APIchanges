@@ -13,7 +13,7 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
-2010-12-XX - r26104 - lavf 52.91.0 - av_find_best_stream()
+2010-12-27 - r26104 - lavf 52.91.0 - av_find_best_stream()
   Add av_find_best_stream to libavformat/avformat.h.
 
 2010-12-27 - r26103 - lavf 52.90.0
