@@ -1,0 +1,68 @@
+@chapter Metadata
+@c man begin METADATA
+
+FFmpeg is able to dump metadata from media files into a simple UTF-8-encoded
+INI-like text file and then load it back using the metadata muxer/demuxer.
+
+The file format is as follows:
+@enumerate
+
+@item
+A file consists of a header and a number of metadata tags divided into sections,
+each on its own line.
+
+@item
+The header is a ';FFMETADATA' string, followed by a version number (now 1).
+
+@item
+Metadata tags are of the form 'key=value'
+
+@item
+Immediately after header follows global metadata
+
+@item
+After global metadata there may be sections with per-stream/per-chapter
+metadata.
+
+@item
+A section starts with the section name in uppercase (i.e. STREAM or CHAPTER) in
+brackets ('[', ']') and ends with next section or end of file.
+
+@item
+At the beginning of a chapter section there may be an optional timebase to be
+used for start/end values. It must be in form 'TIMEBASE=num/den', where num and
+den are integers. If the timebase is missing then start/end times are assumed to
+be in milliseconds.
+Next a chapter section must contain chapter start and end times in form
+'START=num', 'END=num', where num is a positive integer.
+
+@item
+Empty lines and lines starting with ';' or '#' are ignored.
+
+@item
+Metadata keys or values containing special characters ('=', ';', '#', '\' and a
+newline) must be escaped with a backslash '\'.
+
+@item
+Note that whitespace in metadata (e.g. foo = bar) is considered to be a part of
+the tag (in the example above key is 'foo ', value is ' bar').
+@end enumerate
+
+A ffmetadata file might look like this:
+@example
+;FFMETADATA1
+title=bike\\shed
+;this is a comment
+artist=FFmpeg troll team
+
+[CHAPTER]
+TIMEBASE=1/1000
+START=0
+#chapter ends at 0:01:00
+END=60000
+title=chapter \#1
+[STREAM]
+title=multi\
+line
+@end example
+@c man end METADATA
