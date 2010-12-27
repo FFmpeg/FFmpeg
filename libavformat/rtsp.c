@@ -1168,6 +1168,8 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
         snprintf(cmd, sizeof(cmd),
                  "Transport: %s\r\n",
                  transport);
+        if (rt->accept_dynamic_rate)
+            av_strlcat(cmd, "x-Dynamic-Rate: 0\r\n", sizeof(cmd));
         if (i == 0 && rt->server_type == RTSP_SERVER_REAL && CONFIG_RTPDEC) {
             char real_res[41], real_csum[9];
             ff_rdt_calc_response_and_checksum(real_res, real_csum,
