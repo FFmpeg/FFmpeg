@@ -2398,8 +2398,6 @@ static int decode_thread(void *arg)
     AVFormatContext *ic;
     int err, i, ret;
     int st_index[AVMEDIA_TYPE_NB];
-    int st_count[AVMEDIA_TYPE_NB]={0};
-    int st_best_packet_count[AVMEDIA_TYPE_NB];
     AVPacket pkt1, *pkt = &pkt1;
     AVFormatParameters params, *ap = &params;
     int eof=0;
@@ -2408,7 +2406,6 @@ static int decode_thread(void *arg)
     ic = avformat_alloc_context();
 
     memset(st_index, -1, sizeof(st_index));
-    memset(st_best_packet_count, -1, sizeof(st_best_packet_count));
     is->video_stream = -1;
     is->audio_stream = -1;
     is->subtitle_stream = -1;
@@ -2464,32 +2461,25 @@ static int decode_thread(void *arg)
         }
     }
 
-    for(i = 0; i < ic->nb_streams; i++) {
-        AVStream *st= ic->streams[i];
-        AVCodecContext *avctx = st->codec;
+    for (i = 0; i < ic->nb_streams; i++)
         ic->streams[i]->discard = AVDISCARD_ALL;
-        if(avctx->codec_type >= (unsigned)AVMEDIA_TYPE_NB)
-            continue;
-        if(st_count[avctx->codec_type]++ != wanted_stream[avctx->codec_type] && wanted_stream[avctx->codec_type] >= 0)
-            continue;
-
-        if(st_best_packet_count[avctx->codec_type] >= st->codec_info_nb_frames)
-            continue;
-        st_best_packet_count[avctx->codec_type]= st->codec_info_nb_frames;
-
-        switch(avctx->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
-            if (!audio_disable)
-                st_index[AVMEDIA_TYPE_AUDIO] = i;
-            break;
-        case AVMEDIA_TYPE_VIDEO:
-        case AVMEDIA_TYPE_SUBTITLE:
-            if (!video_disable)
-                st_index[avctx->codec_type] = i;
-            break;
-        default:
-            break;
-        }
+    if (!audio_disable)
+        st_index[AVMEDIA_TYPE_VIDEO] =
+            av_find_best_stream(ic, AVMEDIA_TYPE_VIDEO,
+                                wanted_stream[AVMEDIA_TYPE_VIDEO], -1, NULL, 0);
+    if (!video_disable) {
+        st_index[AVMEDIA_TYPE_AUDIO] =
+            av_find_best_stream(ic, AVMEDIA_TYPE_AUDIO,
+                                wanted_stream[AVMEDIA_TYPE_AUDIO],
+                                st_index[AVMEDIA_TYPE_VIDEO],
+                                NULL, 0);
+        st_index[AVMEDIA_TYPE_SUBTITLE] =
+            av_find_best_stream(ic, AVMEDIA_TYPE_SUBTITLE,
+                                wanted_stream[AVMEDIA_TYPE_SUBTITLE],
+                                (st_index[AVMEDIA_TYPE_AUDIO] >= 0 ?
+                                 st_index[AVMEDIA_TYPE_AUDIO] :
+                                 st_index[AVMEDIA_TYPE_VIDEO]),
+                                NULL, 0);
     }
     if (show_status) {
         dump_format(ic, 0, is->filename, 0);
