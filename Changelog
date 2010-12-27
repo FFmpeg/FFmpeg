@@ -68,6 +68,7 @@ version <next>:
 - AMR-WB decoder
 - replace the ocv_smooth filter with a more generic ocv filter
 - Windows Televison (WTV) demuxer
+- FFmpeg metadata format muxer and demuxer
 
 
 version 0.6:

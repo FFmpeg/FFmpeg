@@ -118,7 +118,7 @@ library:
     @tab VR native stream format, used by Leitch/Harris' video servers.
 @item Matroska                  @tab X @tab X
 @item Matroska audio            @tab X @tab
-@item FFmpeg metadata           @tab X @tab
+@item FFmpeg metadata           @tab X @tab X
     @tab Metadata in text format.
 @item MAXIS XA                  @tab   @tab X
     @tab Used in Sim City 3000; file extension .xa.

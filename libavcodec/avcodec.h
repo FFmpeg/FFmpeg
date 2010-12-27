@@ -406,6 +406,7 @@ enum CodecID {
 
     CODEC_ID_MPEG2TS= 0x20000, /**< _FAKE_ codec to indicate a raw MPEG-2 TS
                                 * stream (only used by libavformat) */
+    CODEC_ID_FFMETADATA=0x21000,   ///< Dummy codec for streams containing only metadata information.
 };
 
 #if LIBAVCODEC_VERSION_MAJOR < 53
