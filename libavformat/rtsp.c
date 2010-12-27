@@ -1557,7 +1557,10 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
         int64_t first_queue_time = 0;
         for (i = 0; i < rt->nb_rtsp_streams; i++) {
             RTPDemuxContext *rtpctx = rt->rtsp_streams[i]->transport_priv;
-            int64_t queue_time = ff_rtp_queued_packet_time(rtpctx);
+            int64_t queue_time;
+            if (!rtpctx)
+                continue;
+            queue_time = ff_rtp_queued_packet_time(rtpctx);
             if (queue_time && (queue_time - first_queue_time < 0 ||
                                !first_queue_time)) {
                 first_queue_time = queue_time;
