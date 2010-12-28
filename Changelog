@@ -69,6 +69,7 @@ version <next>:
 - replace the ocv_smooth filter with a more generic ocv filter
 - Windows Televison (WTV) demuxer
 - FFmpeg metadata format muxer and demuxer
+- SubRip (srt) subtitle decoder
 
 
 version 0.6:

@@ -337,6 +337,7 @@ OBJS-$(CONFIG_SONIC_DECODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_ENCODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_LS_ENCODER)        += sonic.o
 OBJS-$(CONFIG_SP5X_DECODER)            += sp5xdec.o mjpegdec.o mjpeg.o
+OBJS-$(CONFIG_SRT_DECODER)             += srtdec.o ass.o
 OBJS-$(CONFIG_SUNRAST_DECODER)         += sunrast.o
 OBJS-$(CONFIG_SVQ1_DECODER)            += svq1dec.o svq1.o h263.o \
                                           mpegvideo.o error_resilience.o

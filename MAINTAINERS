@@ -198,6 +198,7 @@ Codecs:
   smc.c                                 Mike Melanson
   snow.c                                Michael Niedermayer, Loren Merritt
   sonic.c                               Alex Beregszaszi
+  srtdec.c                              Aurelien Jacobs
   sunrast.c                             Ivo van Poorten
   svq3.c                                Michael Niedermayer
   targa.c                               Kostya Shishkov
