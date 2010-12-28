@@ -34,7 +34,7 @@ AVFilterGraph *avfilter_graph_alloc(void)
 
 void avfilter_graph_free(AVFilterGraph *graph)
 {
-    for(; graph->filter_count > 0; graph->filter_count --)
+    for (; graph->filter_count > 0; graph->filter_count --)
         avfilter_free(graph->filters[graph->filter_count - 1]);
     av_freep(&graph->scale_sws_opts);
     av_freep(&graph->filters);
@@ -79,7 +79,7 @@ int ff_avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
     AVFilterContext *filt;
     int i, j;
 
-    for (i=0; i < graph->filter_count; i++) {
+    for (i = 0; i < graph->filter_count; i++) {
         filt = graph->filters[i];
 
         for (j = 0; j < filt->input_count; j++) {
@@ -125,8 +125,8 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
 {
     int i;
 
-    for(i = 0; i < graph->filter_count; i ++)
-        if(graph->filters[i]->name && !strcmp(name, graph->filters[i]->name))
+    for (i = 0; i < graph->filter_count; i++)
+        if (graph->filters[i]->name && !strcmp(name, graph->filters[i]->name))
             return graph->filters[i];
 
     return NULL;
@@ -139,22 +139,22 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
     char inst_name[30];
 
     /* ask all the sub-filters for their supported media formats */
-    for(i = 0; i < graph->filter_count; i ++) {
-        if(graph->filters[i]->filter->query_formats)
+    for (i = 0; i < graph->filter_count; i++) {
+        if (graph->filters[i]->filter->query_formats)
             graph->filters[i]->filter->query_formats(graph->filters[i]);
         else
             avfilter_default_query_formats(graph->filters[i]);
     }
 
     /* go through and merge as many format lists as possible */
-    for(i = 0; i < graph->filter_count; i ++) {
+    for (i = 0; i < graph->filter_count; i++) {
         AVFilterContext *filter = graph->filters[i];
 
-        for(j = 0; j < filter->input_count; j ++) {
+        for (j = 0; j < filter->input_count; j++) {
             AVFilterLink *link = filter->inputs[j];
-            if(link && link->in_formats != link->out_formats) {
-                if(!avfilter_merge_formats(link->in_formats,
-                                           link->out_formats)) {
+            if (link && link->in_formats != link->out_formats) {
+                if (!avfilter_merge_formats(link->in_formats,
+                                            link->out_formats)) {
                     AVFilterContext *scale;
                     char scale_args[256];
                     /* couldn't merge format lists. auto-insert scale filter */
@@ -187,7 +187,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
 static void pick_format(AVFilterLink *link)
 {
-    if(!link || !link->in_formats)
+    if (!link || !link->in_formats)
         return;
 
     link->in_formats->format_count = 1;
@@ -201,12 +201,12 @@ static void pick_formats(AVFilterGraph *graph)
 {
     int i, j;
 
-    for(i = 0; i < graph->filter_count; i ++) {
+    for (i = 0; i < graph->filter_count; i++) {
         AVFilterContext *filter = graph->filters[i];
 
-        for(j = 0; j < filter->input_count; j ++)
+        for (j = 0; j < filter->input_count; j++)
             pick_format(filter->inputs[j]);
-        for(j = 0; j < filter->output_count; j ++)
+        for (j = 0; j < filter->output_count; j++)
             pick_format(filter->outputs[j]);
     }
 }
@@ -214,7 +214,7 @@ static void pick_formats(AVFilterGraph *graph)
 int ff_avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     /* find supported formats from sub-filters, and merge along links */
-    if(query_formats(graph, log_ctx))
+    if (query_formats(graph, log_ctx))
         return -1;
 
     /* Once everything is merged, it's possible that we'll still have
