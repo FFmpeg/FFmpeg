@@ -80,6 +80,20 @@ static void pred4x4_128_dc_c(uint8_t *src, const uint8_t *topright, int stride){
     ((uint32_t*)(src+3*stride))[0]= 128U*0x01010101U;
 }
 
+static void pred4x4_127_dc_c(uint8_t *src, const uint8_t *topright, int stride){
+    ((uint32_t*)(src+0*stride))[0]=
+    ((uint32_t*)(src+1*stride))[0]=
+    ((uint32_t*)(src+2*stride))[0]=
+    ((uint32_t*)(src+3*stride))[0]= 127U*0x01010101U;
+}
+
+static void pred4x4_129_dc_c(uint8_t *src, const uint8_t *topright, int stride){
+    ((uint32_t*)(src+0*stride))[0]=
+    ((uint32_t*)(src+1*stride))[0]=
+    ((uint32_t*)(src+2*stride))[0]=
+    ((uint32_t*)(src+3*stride))[0]= 129U*0x01010101U;
+}
+
 
 #define LOAD_TOP_RIGHT_EDGE\
     const int av_unused t4= topright[0];\
@@ -547,6 +561,28 @@ static void pred16x16_128_dc_c(uint8_t *src, int stride){
     }
 }
 
+static void pred16x16_127_dc_c(uint8_t *src, int stride){
+    int i;
+
+    for(i=0; i<16; i++){
+        ((uint32_t*)(src+i*stride))[0]=
+        ((uint32_t*)(src+i*stride))[1]=
+        ((uint32_t*)(src+i*stride))[2]=
+        ((uint32_t*)(src+i*stride))[3]= 0x01010101U*127U;
+    }
+}
+
+static void pred16x16_129_dc_c(uint8_t *src, int stride){
+    int i;
+
+    for(i=0; i<16; i++){
+        ((uint32_t*)(src+i*stride))[0]=
+        ((uint32_t*)(src+i*stride))[1]=
+        ((uint32_t*)(src+i*stride))[2]=
+        ((uint32_t*)(src+i*stride))[3]= 0x01010101U*129U;
+    }
+}
+
 static inline void pred16x16_plane_compat_c(uint8_t *src, int stride, const int svq3, const int rv40){
   int i, j, k;
   int a;
@@ -655,6 +691,23 @@ static void pred8x8_128_dc_c(uint8_t *src, int stride){
     for(i=0; i<8; i++){
         ((uint32_t*)(src+i*stride))[0]=
         ((uint32_t*)(src+i*stride))[1]= 0x01010101U*128U;
+    }
+}
+
+static void pred8x8_127_dc_c(uint8_t *src, int stride){
+    int i;
+
+    for(i=0; i<8; i++){
+        ((uint32_t*)(src+i*stride))[0]=
+        ((uint32_t*)(src+i*stride))[1]= 0x01010101U*127U;
+    }
+}
+static void pred8x8_129_dc_c(uint8_t *src, int stride){
+    int i;
+
+    for(i=0; i<8; i++){
+        ((uint32_t*)(src+i*stride))[0]=
+        ((uint32_t*)(src+i*stride))[1]= 0x01010101U*129U;
     }
 }
 
@@ -1210,11 +1263,17 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id){
         } else
             h->pred4x4[VERT_LEFT_PRED  ]= pred4x4_vertical_left_c;
         h->pred4x4[HOR_UP_PRED         ]= pred4x4_horizontal_up_c;
+        if(codec_id != CODEC_ID_VP8) {
         h->pred4x4[LEFT_DC_PRED        ]= pred4x4_left_dc_c;
         h->pred4x4[TOP_DC_PRED         ]= pred4x4_top_dc_c;
         h->pred4x4[DC_128_PRED         ]= pred4x4_128_dc_c;
-        if(codec_id == CODEC_ID_VP8)
+        } else {
             h->pred4x4[TM_VP8_PRED     ]= pred4x4_tm_vp8_c;
+            h->pred4x4[DC_127_PRED     ]= pred4x4_127_dc_c;
+            h->pred4x4[DC_129_PRED     ]= pred4x4_129_dc_c;
+            h->pred4x4[VERT_VP8_PRED   ]= pred4x4_vertical_c;
+            h->pred4x4[HOR_VP8_PRED    ]= pred4x4_horizontal_c;
+        }
     }else{
         h->pred4x4[VERT_PRED           ]= pred4x4_vertical_c;
         h->pred4x4[HOR_PRED            ]= pred4x4_horizontal_c;
@@ -1264,13 +1323,16 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id){
         h->pred8x8[DC_PRED8x8     ]= pred8x8_dc_rv40_c;
         h->pred8x8[LEFT_DC_PRED8x8]= pred8x8_left_dc_rv40_c;
         h->pred8x8[TOP_DC_PRED8x8 ]= pred8x8_top_dc_rv40_c;
+        if (codec_id == CODEC_ID_VP8) {
+            h->pred8x8[DC_127_PRED8x8]= pred8x8_127_dc_c;
+            h->pred8x8[DC_129_PRED8x8]= pred8x8_129_dc_c;
+        }
     }
     h->pred8x8[DC_128_PRED8x8 ]= pred8x8_128_dc_c;
 
     h->pred16x16[DC_PRED8x8     ]= pred16x16_dc_c;
     h->pred16x16[VERT_PRED8x8   ]= pred16x16_vertical_c;
     h->pred16x16[HOR_PRED8x8    ]= pred16x16_horizontal_c;
-    h->pred16x16[PLANE_PRED8x8  ]= pred16x16_plane_c;
     switch(codec_id){
     case CODEC_ID_SVQ3:
        h->pred16x16[PLANE_PRED8x8  ]= pred16x16_plane_svq3_c;
@@ -1280,9 +1342,12 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id){
        break;
     case CODEC_ID_VP8:
        h->pred16x16[PLANE_PRED8x8  ]= pred16x16_tm_vp8_c;
+       h->pred16x16[DC_127_PRED8x8]= pred16x16_127_dc_c;
+       h->pred16x16[DC_129_PRED8x8]= pred16x16_129_dc_c;
        break;
     default:
        h->pred16x16[PLANE_PRED8x8  ]= pred16x16_plane_c;
+       break;
     }
     h->pred16x16[LEFT_DC_PRED8x8]= pred16x16_left_dc_c;
     h->pred16x16[TOP_DC_PRED8x8 ]= pred16x16_top_dc_c;
