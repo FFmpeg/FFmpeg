@@ -58,6 +58,7 @@ do_lavfi_pixfmts(){
 }
 
 # all these filters have exactly one input and exactly one output
+do_lavfi_pixfmts "copy"    ""
 do_lavfi_pixfmts "crop"    "100:100:100:100"
 do_lavfi_pixfmts "hflip"   ""
 do_lavfi_pixfmts "null"    ""

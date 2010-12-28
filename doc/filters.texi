@@ -183,6 +183,11 @@ threshold, and defaults to 98.
 @var{threshold} is the threshold below which a pixel value is
 considered black, and defaults to 32.
 
+@section copy
+
+Copy the input source unchanged to the output. Mainly useful for
+testing purposes.
+
 @section crop
 
 Crop the input video to @var{out_w}:@var{out_h}:@var{x}:@var{y}.
