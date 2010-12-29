@@ -292,7 +292,7 @@ OBJS-$(CONFIG_WEBM_MUXER)                += matroskaenc.o matroska.o \
                                             flacenc_header.o avlanguage.o
 OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood.o
 OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood.o
-OBJS-$(CONFIG_WTV_DEMUXER)               += wtv.o asf.o asfdec.o riff.o
+OBJS-$(CONFIG_WTV_DEMUXER)               += wtv.o asf.o asfdec.o mpegts.o riff.o
 OBJS-$(CONFIG_WV_DEMUXER)                += wv.o apetag.o
 OBJS-$(CONFIG_XA_DEMUXER)                += xa.o
 OBJS-$(CONFIG_YOP_DEMUXER)               += yop.o
