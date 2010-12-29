@@ -60,6 +60,7 @@ typedef struct IEC61937Context {
     uint8_t *out_buf;               ///< pointer to the outgoing data before byte-swapping
     int out_bytes;                  ///< amount of outgoing bytes
 
+    int use_preamble;               ///< preamble enabled (disabled for exactly pre-padded DTS)
     int extra_bswap;                ///< extra bswap for payload (for LE DTS => standard BE DTS)
 
     uint8_t *hd_buf;                ///< allocated buffer to concatenate hd audio frames
@@ -152,6 +153,13 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(ENOSYS);
     }
     ctx->pkt_offset = blocks << 7;
+
+    if (ctx->out_bytes == ctx->pkt_offset) {
+        /* The DTS stream fits exactly into the output stream, so skip the
+         * preamble as it would not fit in there. This is the case for dts
+         * discs and dts-in-wav. */
+        ctx->use_preamble = 0;
+    }
 
     return 0;
 }
@@ -330,6 +338,7 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     ctx->out_buf = pkt->data;
     ctx->out_bytes = pkt->size;
     ctx->length_code = FFALIGN(pkt->size, 2) << 3;
+    ctx->use_preamble = 1;
     ctx->extra_bswap = 0;
 
     ret = ctx->header_info(s, pkt);
@@ -338,16 +347,18 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     if (!ctx->pkt_offset)
         return 0;
 
-    padding = (ctx->pkt_offset - BURST_HEADER_SIZE - ctx->out_bytes) >> 1;
+    padding = (ctx->pkt_offset - ctx->use_preamble * BURST_HEADER_SIZE - ctx->out_bytes) >> 1;
     if (padding < 0) {
         av_log(s, AV_LOG_ERROR, "bitrate is too high\n");
         return AVERROR(EINVAL);
     }
 
+    if (ctx->use_preamble) {
     put_le16(s->pb, SYNCWORD1);      //Pa
     put_le16(s->pb, SYNCWORD2);      //Pb
     put_le16(s->pb, ctx->data_type); //Pc
     put_le16(s->pb, ctx->length_code);//Pd
+    }
 
     if (HAVE_BIGENDIAN ^ ctx->extra_bswap) {
     put_buffer(s->pb, ctx->out_buf, ctx->out_bytes & ~1);
