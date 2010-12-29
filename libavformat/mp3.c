@@ -128,7 +128,7 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
     if(frames)
         st->duration = av_rescale_q(frames, (AVRational){spf, c.sample_rate},
                                     st->time_base);
-    if(size)
+    if(size && frames)
         st->codec->bit_rate = av_rescale(size, 8 * c.sample_rate, frames * (int64_t)spf);
 
     return 0;
