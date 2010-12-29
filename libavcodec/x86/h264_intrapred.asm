@@ -1954,6 +1954,98 @@ PRED8x8L_VERTICAL_RIGHT ssse3
 %endif
 
 ;-----------------------------------------------------------------------------
+;void pred8x8l_vertical_left(uint8_t *src, int has_topleft, int has_topright, int stride)
+;-----------------------------------------------------------------------------
+%ifdef CONFIG_GPL
+%macro PRED8x8L_VERTICAL_LEFT 1
+cglobal pred8x8l_vertical_left_%1, 4,4
+    sub          r0, r3
+    movq        mm0, [r0-8]
+    movq        mm3, [r0]
+    movq        mm1, [r0+8]
+    movq        mm2, mm3
+    movq        mm4, mm3
+    PALIGNR     mm2, mm0, 7, mm0
+    PALIGNR     mm1, mm4, 1, mm4
+    test         r1, r1
+    jz .fix_lt_2
+    test         r2, r2
+    jz .fix_tr_1
+    jmp .do_top
+.fix_lt_2:
+    movq        mm5, mm3
+    pxor        mm5, mm2
+    psllq       mm5, 56
+    psrlq       mm5, 56
+    pxor        mm2, mm5
+    test         r2, r2
+    jnz .do_top
+.fix_tr_1:
+    movq        mm5, mm3
+    pxor        mm5, mm1
+    psrlq       mm5, 56
+    psllq       mm5, 56
+    pxor        mm1, mm5
+    jmp .do_top
+.fix_tr_2:
+    punpckhbw   mm3, mm3
+    pshufw      mm1, mm3, 0xFF
+    jmp .do_topright
+.do_top:
+    PRED4x4_LOWPASS mm4, mm2, mm1, mm3, mm5
+    movq2dq    xmm4, mm4
+    test         r2, r2
+    jz .fix_tr_2
+    movq        mm0, [r0+8]
+    movq        mm5, mm0
+    movq        mm2, mm0
+    movq        mm4, mm0
+    psrlq       mm5, 56
+    PALIGNR     mm2, mm3, 7, mm3
+    PALIGNR     mm5, mm4, 1, mm4
+    PRED4x4_LOWPASS mm1, mm2, mm5, mm0, mm4
+.do_topright:
+    movq2dq   xmm3, mm1
+    lea         r1, [r0+r3*2]
+    pslldq    xmm3, 8
+    por       xmm4, xmm3
+    movdqa    xmm2, xmm4
+    movdqa    xmm1, xmm4
+    movdqa    xmm3, xmm4
+    psrldq    xmm2, 1
+    pslldq    xmm1, 1
+    pavgb     xmm3, xmm2
+    lea         r2, [r1+r3*2]
+INIT_XMM
+    PRED4x4_LOWPASS xmm0, xmm1, xmm2, xmm4, xmm5
+    psrldq    xmm0, 1
+    movq [r0+r3*1], xmm3
+    movq [r0+r3*2], xmm0
+    lea         r0, [r2+r3*2]
+    psrldq    xmm3, 1
+    psrldq    xmm0, 1
+    movq [r1+r3*1], xmm3
+    movq [r1+r3*2], xmm0
+    psrldq    xmm3, 1
+    psrldq    xmm0, 1
+    movq [r2+r3*1], xmm3
+    movq [r2+r3*2], xmm0
+    psrldq    xmm3, 1
+    psrldq    xmm0, 1
+    movq [r0+r3*1], xmm3
+    movq [r0+r3*2], xmm0
+    RET
+%endmacro
+
+INIT_MMX
+%define PALIGNR PALIGNR_MMX
+PRED8x8L_VERTICAL_LEFT sse2
+%define PALIGNR PALIGNR_SSSE3
+INIT_MMX
+PRED8x8L_VERTICAL_LEFT ssse3
+%endif
+
+;-----------------------------------------------------------------------------
 ; void pred4x4_dc_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
