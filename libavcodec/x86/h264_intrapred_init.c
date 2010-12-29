@@ -163,7 +163,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
     if (mm_flags & AV_CPU_FLAG_SSE2) {
         h->pred16x16[DC_PRED8x8  ] = ff_pred16x16_dc_sse2;
 #if CONFIG_GPL
-        h->pred8x8l [DIAG_DOWN_LEFT_PRED] = ff_pred8x8l_down_left_sse2;
+        h->pred8x8l [DIAG_DOWN_LEFT_PRED ] = ff_pred8x8l_down_left_sse2;
         h->pred8x8l [DIAG_DOWN_RIGHT_PRED] = ff_pred8x8l_down_right_sse2;
         h->pred8x8l [VERT_RIGHT_PRED     ] = ff_pred8x8l_vertical_right_sse2;
         h->pred8x8l [VERT_LEFT_PRED      ] = ff_pred8x8l_vertical_left_sse2;
@@ -193,7 +193,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
         h->pred8x8l [DC_PRED     ] = ff_pred8x8l_dc_ssse3;
         h->pred8x8l [HOR_PRED    ] = ff_pred8x8l_horizontal_ssse3;
         h->pred8x8l [VERT_PRED   ] = ff_pred8x8l_vertical_ssse3;
-        h->pred8x8l [DIAG_DOWN_LEFT_PRED] = ff_pred8x8l_down_left_ssse3;
+        h->pred8x8l [DIAG_DOWN_LEFT_PRED ] = ff_pred8x8l_down_left_ssse3;
         h->pred8x8l [DIAG_DOWN_RIGHT_PRED] = ff_pred8x8l_down_right_ssse3;
         h->pred8x8l [VERT_RIGHT_PRED     ] = ff_pred8x8l_vertical_right_ssse3;
         h->pred8x8l [VERT_LEFT_PRED      ] = ff_pred8x8l_vertical_left_ssse3;
