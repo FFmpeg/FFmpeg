@@ -1470,6 +1470,144 @@ PRED8x8L_DOWN_LEFT ssse3
 %endif
 
 ;-----------------------------------------------------------------------------
+;void pred8x8l_down_right_mmxext(uint8_t *src, int has_topleft, int has_topright, int stride)
+;-----------------------------------------------------------------------------
+%ifdef CONFIG_GPL
+INIT_MMX
+%define PALIGNR PALIGNR_MMX
+cglobal pred8x8l_down_right_mmxext, 4,5
+    sub          r0, r3
+    lea          r4, [r0+r3*2]
+    movq        mm0, [r0+r3*1-8]
+    punpckhbw   mm0, [r0+r3*0-8]
+    movq        mm1, [r4+r3*1-8]
+    punpckhbw   mm1, [r0+r3*2-8]
+    mov          r4, r0
+    punpckhwd   mm1, mm0
+    lea          r0, [r0+r3*4]
+    movq        mm2, [r0+r3*1-8]
+    punpckhbw   mm2, [r0+r3*0-8]
+    lea          r0, [r0+r3*2]
+    movq        mm3, [r0+r3*1-8]
+    punpckhbw   mm3, [r0+r3*0-8]
+    punpckhwd   mm3, mm2
+    punpckhdq   mm3, mm1
+    lea          r0, [r0+r3*2]
+    movq        mm0, [r0+r3*0-8]
+    movq        mm1, [r4]
+    mov          r0, r4
+    movq        mm4, mm3
+    movq        mm2, mm3
+    PALIGNR     mm4, mm0, 7, mm0
+    PALIGNR     mm1, mm2, 1, mm2
+    test        r1, r1 ; top_left
+    jz .fix_lt_1
+.do_left:
+    movq        mm0, mm4
+    PRED4x4_LOWPASS mm2, mm1, mm4, mm3, mm5
+    movq        mm4, mm0
+    movq        mm7, mm2
+    movq        mm6, mm2
+    PRED4x4_LOWPASS mm1, mm3, mm0, mm4, mm5
+    psllq       mm1, 56
+    PALIGNR     mm7, mm1, 7, mm3
+    movq        mm0, [r0-8]
+    movq        mm3, [r0]
+    movq        mm1, [r0+8]
+    movq        mm2, mm3
+    movq        mm4, mm3
+    PALIGNR     mm2, mm0, 7, mm0
+    PALIGNR     mm1, mm4, 1, mm4
+    test         r1, r1 ; top_left
+    jz .fix_lt_2
+    test         r2, r2 ; top_right
+    jz .fix_tr_1
+.do_top:
+    PRED4x4_LOWPASS mm4, mm2, mm1, mm3, mm5
+    movq        mm5, mm4
+    jmp .body
+.fix_lt_1:
+    movq        mm5, mm3
+    pxor        mm5, mm4
+    psrlq       mm5, 56
+    psllq       mm5, 48
+    pxor        mm1, mm5
+    jmp .do_left
+.fix_lt_2:
+    movq        mm5, mm3
+    pxor        mm5, mm2
+    psllq       mm5, 56
+    psrlq       mm5, 56
+    pxor        mm2, mm5
+    test         r2, r2 ; top_right
+    jnz .do_top
+.fix_tr_1:
+    movq        mm5, mm3
+    pxor        mm5, mm1
+    psrlq       mm5, 56
+    psllq       mm5, 56
+    pxor        mm1, mm5
+    jmp .do_top
+.body
+    lea         r1, [r0+r3*2]
+    movq       mm1, mm7
+    movq       mm7, mm5
+    movq       mm5, mm6
+    movq       mm2, mm7
+    lea         r2, [r1+r3*2]
+    PALIGNR    mm2, mm6, 1, mm0
+    movq       mm3, mm7
+    PALIGNR    mm3, mm6, 7, mm0
+    movq       mm4, mm7
+    lea         r4, [r2+r3*2]
+    psrlq      mm4, 8
+    PRED4x4_LOWPASS mm0, mm1, mm2, mm5, mm6
+    PRED4x4_LOWPASS mm1, mm3, mm4, mm7, mm6
+    movq [r4+r3*2], mm0
+    movq       mm2, mm1
+    psrlq      mm0, 8
+    psllq      mm2, 56
+    psrlq      mm1, 8
+    por        mm0, mm2
+    movq [r4+r3*1], mm0
+    movq       mm2, mm1
+    psrlq      mm0, 8
+    psllq      mm2, 56
+    psrlq      mm1, 8
+    por        mm0, mm2
+    movq [r2+r3*2], mm0
+    movq       mm2, mm1
+    psrlq      mm0, 8
+    psllq      mm2, 56
+    psrlq      mm1, 8
+    por        mm0, mm2
+    movq [r2+r3*1], mm0
+    movq       mm2, mm1
+    psrlq      mm0, 8
+    psllq      mm2, 56
+    psrlq      mm1, 8
+    por        mm0, mm2
+    movq [r1+r3*2], mm0
+    movq       mm2, mm1
+    psrlq      mm0, 8
+    psllq      mm2, 56
+    psrlq      mm1, 8
+    por        mm0, mm2
+    movq [r1+r3*1], mm0
+    movq       mm2, mm1
+    psrlq      mm0, 8
+    psllq      mm2, 56
+    psrlq      mm1, 8
+    por        mm0, mm2
+    movq [r0+r3*2], mm0
+    psrlq      mm0, 8
+    psllq      mm1, 56
+    por        mm0, mm1
+    movq [r0+r3*1], mm0
+    RET
+%endif
+
+;-----------------------------------------------------------------------------
 ; void pred4x4_dc_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
