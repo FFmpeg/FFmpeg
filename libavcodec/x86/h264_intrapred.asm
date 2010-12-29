@@ -867,12 +867,11 @@ cglobal pred8x8_top_dc_mmxext, 2,5
     movq [r0+r1*1], mm0
     movq [r0+r1*2], mm0
     RET
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8_dc_mmxext(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%ifdef CONFIG_GPL
+
 INIT_MMX
 cglobal pred8x8_dc_mmxext, 2,5
     sub       r0, r1
@@ -1138,12 +1137,11 @@ INIT_MMX
 PRED8x8L_TOP_DC mmxext
 %define PALIGNR PALIGNR_SSSE3
 PRED8x8L_TOP_DC ssse3
-%endif
 
 ;-----------------------------------------------------------------------------
 ;void pred8x8l_dc(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
-%ifdef CONFIG_GPL
+
 %macro PRED8x8L_DC 1
 cglobal pred8x8l_dc_%1, 4,5
     sub          r0, r3
@@ -1242,12 +1240,11 @@ INIT_MMX
 PRED8x8L_DC mmxext
 %define PALIGNR PALIGNR_SSSE3
 PRED8x8L_DC ssse3
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8l_horizontal(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
-%ifdef CONFIG_GPL
+
 %macro PRED8x8L_HORIZONTAL 1
 cglobal pred8x8l_horizontal_%1, 4,4
     sub          r0, r3
@@ -1321,12 +1318,11 @@ INIT_MMX
 PRED8x8L_HORIZONTAL mmxext
 %define PALIGNR PALIGNR_SSSE3
 PRED8x8L_HORIZONTAL ssse3
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8l_vertical(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
-%ifdef CONFIG_GPL
+
 %macro PRED8x8L_VERTICAL 1
 cglobal pred8x8l_vertical_%1, 4,4
     sub          r0, r3
@@ -1373,12 +1369,11 @@ INIT_MMX
 PRED8x8L_VERTICAL mmxext
 %define PALIGNR PALIGNR_SSSE3
 PRED8x8L_VERTICAL ssse3
-%endif
 
 ;-----------------------------------------------------------------------------
 ;void pred8x8l_down_left(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
-%ifdef CONFIG_GPL
+
 %macro PRED8x8L_DOWN_LEFT 1
 cglobal pred8x8l_down_left_%1, 4,4
     sub          r0, r3
@@ -1468,12 +1463,11 @@ PRED8x8L_DOWN_LEFT sse2
 INIT_MMX
 %define PALIGNR PALIGNR_SSSE3
 PRED8x8L_DOWN_LEFT ssse3
-%endif
 
 ;-----------------------------------------------------------------------------
 ;void pred8x8l_down_right_mmxext(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
-%ifdef CONFIG_GPL
+
 INIT_MMX
 %define PALIGNR PALIGNR_MMX
 cglobal pred8x8l_down_right_mmxext, 4,5
@@ -1723,12 +1717,11 @@ PRED8x8L_DOWN_RIGHT sse2
 INIT_MMX
 %define PALIGNR PALIGNR_SSSE3
 PRED8x8L_DOWN_RIGHT ssse3
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8l_vertical_right(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
-%ifdef CONFIG_GPL
+
 INIT_MMX
 %define PALIGNR PALIGNR_MMX
 cglobal pred8x8l_vertical_right_mmxext, 4,5
@@ -1951,12 +1944,11 @@ PRED8x8L_VERTICAL_RIGHT sse2
 INIT_MMX
 %define PALIGNR PALIGNR_SSSE3
 PRED8x8L_VERTICAL_RIGHT ssse3
-%endif
 
 ;-----------------------------------------------------------------------------
 ;void pred8x8l_vertical_left(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
-%ifdef CONFIG_GPL
+
 %macro PRED8x8L_VERTICAL_LEFT 1
 cglobal pred8x8l_vertical_left_%1, 4,4
     sub          r0, r3
@@ -2043,12 +2035,11 @@ PRED8x8L_VERTICAL_LEFT sse2
 %define PALIGNR PALIGNR_SSSE3
 INIT_MMX
 PRED8x8L_VERTICAL_LEFT ssse3
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8l_horizontal_up(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
-%ifdef CONFIG_GPL
+
 %macro PRED8x8L_HORIZONTAL_UP 1
 cglobal pred8x8l_horizontal_up_%1, 4,4
     sub          r0, r3
@@ -2138,12 +2129,11 @@ INIT_MMX
 PRED8x8L_HORIZONTAL_UP mmxext
 %define PALIGNR PALIGNR_SSSE3
 PRED8x8L_HORIZONTAL_UP ssse3
-%endif
 
 ;-----------------------------------------------------------------------------
 ;void pred8x8l_horizontal_down(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
-%ifdef CONFIG_GPL
+
 INIT_MMX
 %define PALIGNR PALIGNR_MMX
 cglobal pred8x8l_horizontal_down_mmxext, 4,5
