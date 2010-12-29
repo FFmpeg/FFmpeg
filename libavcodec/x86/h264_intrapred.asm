@@ -1066,6 +1066,18 @@ cglobal pred8x8_tm_vp8_ssse3, 2,3,6
     jg .loop
     REP_RET
 
+; dest, left, right, src, tmp
+; output: %1 = (t[n-1] + t[n]*2 + t[n+1] + 2) >> 2
+%macro PRED4x4_LOWPASS 5
+    mova    %5, %2
+    pavgb   %2, %3
+    pxor    %3, %5
+    mova    %1, %4
+    pand    %3, [pb_1]
+    psubusb %2, %3
+    pavgb   %1, %2
+%endmacro
+
 ;-----------------------------------------------------------------------------
 ; void pred4x4_dc_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
@@ -1172,18 +1184,6 @@ cglobal pred4x4_tm_vp8_ssse3, 3,3
     movd [r1+r2*1], mm4
     movd [r1+r2*2], mm5
     RET
-
-; dest, left, right, src, tmp
-; output: %1 = (t[n-1] + t[n]*2 + t[n+1] + 2) >> 2
-%macro PRED4x4_LOWPASS 5
-    mova    %5, %2
-    pavgb   %2, %3
-    pxor    %3, %5
-    mova    %1, %4
-    pand    %3, [pb_1]
-    psubusb %2, %3
-    pavgb   %1, %2
-%endmacro
 
 ;-----------------------------------------------------------------------------
 ; void pred4x4_vertical_vp8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
