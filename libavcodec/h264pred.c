@@ -1264,9 +1264,9 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id){
             h->pred4x4[VERT_LEFT_PRED  ]= pred4x4_vertical_left_c;
         h->pred4x4[HOR_UP_PRED         ]= pred4x4_horizontal_up_c;
         if(codec_id != CODEC_ID_VP8) {
-        h->pred4x4[LEFT_DC_PRED        ]= pred4x4_left_dc_c;
-        h->pred4x4[TOP_DC_PRED         ]= pred4x4_top_dc_c;
-        h->pred4x4[DC_128_PRED         ]= pred4x4_128_dc_c;
+            h->pred4x4[LEFT_DC_PRED    ]= pred4x4_left_dc_c;
+            h->pred4x4[TOP_DC_PRED     ]= pred4x4_top_dc_c;
+            h->pred4x4[DC_128_PRED     ]= pred4x4_128_dc_c;
         } else {
             h->pred4x4[TM_VP8_PRED     ]= pred4x4_tm_vp8_c;
             h->pred4x4[DC_127_PRED     ]= pred4x4_127_dc_c;
