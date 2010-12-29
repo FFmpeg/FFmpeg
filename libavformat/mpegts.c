@@ -893,16 +893,101 @@ static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
     return 0;
 }
 
+int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type,
+                              const uint8_t **pp, const uint8_t *desc_list_end,
+                              int mp4_dec_config_descr_len, int mp4_es_id, int pid,
+                              uint8_t *mp4_dec_config_descr)
+{
+    const uint8_t *desc_end;
+    int desc_len, desc_tag;
+    char language[4];
+
+    desc_tag = get8(pp, desc_list_end);
+    if (desc_tag < 0)
+        return -1;
+    desc_len = get8(pp, desc_list_end);
+    if (desc_len < 0)
+        return -1;
+    desc_end = *pp + desc_len;
+    if (desc_end > desc_list_end)
+        return -1;
+
+    dprintf(fc, "tag: 0x%02x len=%d\n", desc_tag, desc_len);
+
+    if (st->codec->codec_id == CODEC_ID_NONE &&
+        stream_type == STREAM_TYPE_PRIVATE_DATA)
+        mpegts_find_stream_type(st, desc_tag, DESC_types);
+
+    switch(desc_tag) {
+    case 0x1F: /* FMC descriptor */
+        get16(pp, desc_end);
+        if (st->codec->codec_id == CODEC_ID_AAC_LATM &&
+            mp4_dec_config_descr_len && mp4_es_id == pid) {
+            ByteIOContext pb;
+            init_put_byte(&pb, mp4_dec_config_descr,
+                          mp4_dec_config_descr_len, 0, NULL, NULL, NULL, NULL);
+            ff_mp4_read_dec_config_descr(fc, st, &pb);
+            if (st->codec->codec_id == CODEC_ID_AAC &&
+                st->codec->extradata_size > 0)
+                st->need_parsing = 0;
+        }
+        break;
+    case 0x56: /* DVB teletext descriptor */
+        language[0] = get8(pp, desc_end);
+        language[1] = get8(pp, desc_end);
+        language[2] = get8(pp, desc_end);
+        language[3] = 0;
+        av_metadata_set2(&st->metadata, "language", language, 0);
+        break;
+    case 0x59: /* subtitling descriptor */
+        language[0] = get8(pp, desc_end);
+        language[1] = get8(pp, desc_end);
+        language[2] = get8(pp, desc_end);
+        language[3] = 0;
+        get8(pp, desc_end);
+        if (st->codec->extradata) {
+            if (st->codec->extradata_size == 4 && memcmp(st->codec->extradata, *pp, 4))
+                av_log_ask_for_sample(fc, "DVB sub with multiple IDs\n");
+        } else {
+            st->codec->extradata = av_malloc(4 + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (st->codec->extradata) {
+                st->codec->extradata_size = 4;
+                memcpy(st->codec->extradata, *pp, 4);
+            }
+        }
+        *pp += 4;
+        av_metadata_set2(&st->metadata, "language", language, 0);
+        break;
+    case 0x0a: /* ISO 639 language descriptor */
+        language[0] = get8(pp, desc_end);
+        language[1] = get8(pp, desc_end);
+        language[2] = get8(pp, desc_end);
+        language[3] = 0;
+        av_metadata_set2(&st->metadata, "language", language, 0);
+        break;
+    case 0x05: /* registration descriptor */
+        st->codec->codec_tag = bytestream_get_le32(pp);
+        dprintf(fc, "reg_desc=%.4s\n", (char*)&st->codec->codec_tag);
+        if (st->codec->codec_id == CODEC_ID_NONE &&
+            stream_type == STREAM_TYPE_PRIVATE_DATA)
+            mpegts_find_stream_type(st, st->codec->codec_tag, REGD_types);
+        break;
+    default:
+        break;
+    }
+    *pp = desc_end;
+    return 0;
+}
+
 static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
     SectionHeader h1, *h = &h1;
     PESContext *pes;
     AVStream *st;
-    const uint8_t *p, *p_end, *desc_list_end, *desc_end;
+    const uint8_t *p, *p_end, *desc_list_end;
     int program_info_length, pcr_pid, pid, stream_type;
-    int desc_list_len, desc_len, desc_tag;
-    char language[4];
+    int desc_list_len;
     uint32_t prog_reg_desc = 0; /* registration descriptor */
     uint8_t *mp4_dec_config_descr = NULL;
     int mp4_dec_config_descr_len = 0;
@@ -1005,81 +1090,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (desc_list_end > p_end)
             break;
         for(;;) {
-            desc_tag = get8(&p, desc_list_end);
-            if (desc_tag < 0)
+            if (ff_parse_mpeg2_descriptor(ts->stream, st, stream_type, &p, desc_list_end,
+                mp4_dec_config_descr_len, mp4_es_id, pid, mp4_dec_config_descr) < 0)
                 break;
-            desc_len = get8(&p, desc_list_end);
-            if (desc_len < 0)
-                break;
-            desc_end = p + desc_len;
-            if (desc_end > desc_list_end)
-                break;
-
-            dprintf(ts->stream, "tag: 0x%02x len=%d\n",
-                   desc_tag, desc_len);
-
-            if (st->codec->codec_id == CODEC_ID_NONE &&
-                stream_type == STREAM_TYPE_PRIVATE_DATA)
-                mpegts_find_stream_type(st, desc_tag, DESC_types);
-
-            switch(desc_tag) {
-            case 0x1F: /* FMC descriptor */
-                get16(&p, desc_end);
-                if (st->codec->codec_id == CODEC_ID_AAC_LATM &&
-                    mp4_dec_config_descr_len && mp4_es_id == pid) {
-                    ByteIOContext pb;
-                    init_put_byte(&pb, mp4_dec_config_descr,
-                                  mp4_dec_config_descr_len, 0, NULL, NULL, NULL, NULL);
-                    ff_mp4_read_dec_config_descr(ts->stream, st, &pb);
-                    if (st->codec->codec_id == CODEC_ID_AAC &&
-                        st->codec->extradata_size > 0)
-                        st->need_parsing = 0;
-                }
-                break;
-            case 0x56: /* DVB teletext descriptor */
-                language[0] = get8(&p, desc_end);
-                language[1] = get8(&p, desc_end);
-                language[2] = get8(&p, desc_end);
-                language[3] = 0;
-                av_metadata_set2(&st->metadata, "language", language, 0);
-                break;
-            case 0x59: /* subtitling descriptor */
-                language[0] = get8(&p, desc_end);
-                language[1] = get8(&p, desc_end);
-                language[2] = get8(&p, desc_end);
-                language[3] = 0;
-                get8(&p, desc_end);
-                if (st->codec->extradata) {
-                    if (st->codec->extradata_size == 4 && memcmp(st->codec->extradata, p, 4))
-                        av_log_ask_for_sample(ts->stream, "DVB sub with multiple IDs\n");
-                } else {
-                    st->codec->extradata = av_malloc(4 + FF_INPUT_BUFFER_PADDING_SIZE);
-                    if (st->codec->extradata) {
-                        st->codec->extradata_size = 4;
-                        memcpy(st->codec->extradata, p, 4);
-                    }
-                }
-                p += 4;
-                av_metadata_set2(&st->metadata, "language", language, 0);
-                break;
-            case 0x0a: /* ISO 639 language descriptor */
-                language[0] = get8(&p, desc_end);
-                language[1] = get8(&p, desc_end);
-                language[2] = get8(&p, desc_end);
-                language[3] = 0;
-                av_metadata_set2(&st->metadata, "language", language, 0);
-                break;
-            case 0x05: /* registration descriptor */
-                st->codec->codec_tag = bytestream_get_le32(&p);
-                dprintf(ts->stream, "reg_desc=%.4s\n", (char*)&st->codec->codec_tag);
-                if (st->codec->codec_id == CODEC_ID_NONE &&
-                    stream_type == STREAM_TYPE_PRIVATE_DATA)
-                    mpegts_find_stream_type(st, st->codec->codec_tag, REGD_types);
-                break;
-            default:
-                break;
-            }
-            p = desc_end;
 
             if (prog_reg_desc == AV_RL32("HDMV") && stream_type == 0x83 && pes->sub_st) {
                 ff_program_add_stream_index(ts->stream, h->id, pes->sub_st->index);
