@@ -1108,7 +1108,7 @@ cglobal pred4x4_vertical_vp8_mmxext, 3,3
 ;-----------------------------------------------------------------------------
 ; void pred4x4_down_left_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
-
+%ifdef CONFIG_GPL
 INIT_MMX
 cglobal pred4x4_down_left_mmxext, 3,3
     sub       r0, r2
@@ -1132,3 +1132,4 @@ cglobal pred4x4_down_left_mmxext, 3,3
     psrlq     m0, 8
     movd      [r1+r2*2], m0
     RET
+%endif
