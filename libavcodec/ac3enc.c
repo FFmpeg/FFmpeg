@@ -899,7 +899,7 @@ static void bit_alloc_init(AC3EncodeContext *s)
     s->slow_decay_code = 2;
     s->fast_decay_code = 1;
     s->slow_gain_code  = 1;
-    s->db_per_bit_code = 2;
+    s->db_per_bit_code = 3;
     s->floor_code      = 4;
     for (ch = 0; ch < s->channels; ch++)
         s->fast_gain_code[ch] = 4;
