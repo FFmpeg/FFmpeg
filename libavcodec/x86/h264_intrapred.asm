@@ -28,6 +28,7 @@
 SECTION_RODATA
 
 tm_shuf: times 8 db 0x03, 0x80
+pw_ff00: times 8 dw 0xff00
 plane_shuf:  db -8, -7, -6, -5, -4, -3, -2, -1
              db  1,  2,  3,  4,  5,  6,  7,  8
 plane8_shuf: db -4, -3, -2, -1,  0,  0,  0,  0
@@ -1835,6 +1836,121 @@ cglobal pred8x8l_vertical_right_mmxext, 4,5
     PALIGNR    mm5, mm0, 7, mm1
     movq [r4+r3*2], mm5
     RET
+
+%macro PRED8x8L_VERTICAL_RIGHT 1
+cglobal pred8x8l_vertical_right_%1, 4,5,7
+    sub          r0, r3
+    lea          r4, [r0+r3*2]
+    movq        mm0, [r0+r3*1-8]
+    punpckhbw   mm0, [r0+r3*0-8]
+    movq        mm1, [r4+r3*1-8]
+    punpckhbw   mm1, [r0+r3*2-8]
+    mov          r4, r0
+    punpckhwd   mm1, mm0
+    lea          r0, [r0+r3*4]
+    movq        mm2, [r0+r3*1-8]
+    punpckhbw   mm2, [r0+r3*0-8]
+    lea          r0, [r0+r3*2]
+    movq        mm3, [r0+r3*1-8]
+    punpckhbw   mm3, [r0+r3*0-8]
+    punpckhwd   mm3, mm2
+    punpckhdq   mm3, mm1
+    lea          r0, [r0+r3*2]
+    movq        mm0, [r0+r3*0-8]
+    movq        mm1, [r4]
+    mov          r0, r4
+    movq        mm4, mm3
+    movq        mm2, mm3
+    PALIGNR     mm4, mm0, 7, mm0
+    PALIGNR     mm1, mm2, 1, mm2
+    test        r1, r1
+    jnz .do_left
+.fix_lt_1:
+    movq        mm5, mm3
+    pxor        mm5, mm4
+    psrlq       mm5, 56
+    psllq       mm5, 48
+    pxor        mm1, mm5
+    jmp .do_left
+.fix_lt_2:
+    movq        mm5, mm3
+    pxor        mm5, mm2
+    psllq       mm5, 56
+    psrlq       mm5, 56
+    pxor        mm2, mm5
+    test         r2, r2
+    jnz .do_top
+.fix_tr_1:
+    movq        mm5, mm3
+    pxor        mm5, mm1
+    psrlq       mm5, 56
+    psllq       mm5, 56
+    pxor        mm1, mm5
+    jmp .do_top
+.do_left:
+    movq        mm0, mm4
+    PRED4x4_LOWPASS mm2, mm1, mm4, mm3, mm5
+    movq2dq    xmm0, mm2
+    movq        mm0, [r0-8]
+    movq        mm3, [r0]
+    movq        mm1, [r0+8]
+    movq        mm2, mm3
+    movq        mm4, mm3
+    PALIGNR     mm2, mm0, 7, mm0
+    PALIGNR     mm1, mm4, 1, mm4
+    test         r1, r1
+    jz .fix_lt_2
+    test         r2, r2
+    jz .fix_tr_1
+.do_top
+    PRED4x4_LOWPASS mm6, mm2, mm1, mm3, mm5
+    lea           r1, [r0+r3*2]
+    movq2dq     xmm4, mm6
+    pslldq      xmm4, 8
+    por         xmm0, xmm4
+    movdqa      xmm6, [pw_ff00]
+    movdqa      xmm1, xmm0
+    lea           r2, [r1+r3*2]
+    movdqa      xmm2, xmm0
+    movdqa      xmm3, xmm0
+    pslldq      xmm0, 1
+    pslldq      xmm1, 2
+    pavgb       xmm2, xmm0
+INIT_XMM
+    PRED4x4_LOWPASS xmm4, xmm3, xmm1, xmm0, xmm5
+    pandn       xmm6, xmm4
+    movdqa      xmm5, xmm4
+    psrlw       xmm4, 8
+    packuswb    xmm6, xmm4
+    movhlps     xmm4, xmm6
+    movhps [r0+r3*2], xmm5
+    movhps [r0+r3*1], xmm2
+    psrldq      xmm5, 4
+    movss       xmm5, xmm6
+    psrldq      xmm2, 4
+    movss       xmm2, xmm4
+    lea           r0, [r2+r3*2]
+    psrldq      xmm5, 1
+    psrldq      xmm2, 1
+    movq        [r0+r3*2], xmm5
+    movq        [r0+r3*1], xmm2
+    psrldq      xmm5, 1
+    psrldq      xmm2, 1
+    movq        [r2+r3*2], xmm5
+    movq        [r2+r3*1], xmm2
+    psrldq      xmm5, 1
+    psrldq      xmm2, 1
+    movq        [r1+r3*2], xmm5
+    movq        [r1+r3*1], xmm2
+    RET
+%endmacro
+
+INIT_MMX
+%define PALIGNR PALIGNR_MMX
+PRED8x8L_VERTICAL_RIGHT sse2
+INIT_MMX
+%define PALIGNR PALIGNR_SSSE3
+PRED8x8L_VERTICAL_RIGHT ssse3
 %endif
 
 ;-----------------------------------------------------------------------------
