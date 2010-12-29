@@ -2536,4 +2536,29 @@ cglobal pred4x4_down_left_mmxext, 3,3
     psrlq     m0, 8
     movd      [r1+r2*2], m0
     RET
+
+;-----------------------------------------------------------------------------
+; void pred4x4_vertical_left_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+;-----------------------------------------------------------------------------
+
+INIT_MMX
+cglobal pred4x4_vertical_left_mmxext, 3,3
+    sub       r0, r2
+    movq      m1, [r0]
+    punpckldq m1, [r1]
+    movq      m3, m1
+    movq      m2, m1
+    psrlq     m3, 8
+    psrlq     m2, 16
+    movq      m4, m3
+    pavgb     m4, m1
+    PRED4x4_LOWPASS m0, m1, m2, m3, m5
+    lea       r1, [r0+r2*2]
+    movh      [r0+r2*1], m4
+    movh      [r0+r2*2], m0
+    psrlq     m4, 8
+    psrlq     m0, 8
+    movh      [r1+r2*1], m4
+    movh      [r1+r2*2], m0
+    RET
 %endif
