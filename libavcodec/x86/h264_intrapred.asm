@@ -2594,4 +2594,40 @@ cglobal pred4x4_horizontal_up_mmxext, 3,3
     movd    [r1+r2*1], m7
     movd    [r1+r2*2], m1
     RET
+
+;-----------------------------------------------------------------------------
+; void pred4x4_horizontal_down_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+;-----------------------------------------------------------------------------
+
+INIT_MMX
+%define PALIGNR PALIGNR_MMX
+cglobal pred4x4_horizontal_down_mmxext, 3,3
+    sub       r0, r2
+    lea       r1, [r0+r2*2]
+    movh      m0, [r0-4]      ; lt ..
+    punpckldq m0, [r0]        ; t3 t2 t1 t0 lt .. .. ..
+    psllq     m0, 8           ; t2 t1 t0 lt .. .. .. ..
+    movq      m1, [r1+r2*2-8] ; l3
+    punpckhbw m1, [r1+r2*1-8] ; l2 l3
+    movq      m2, [r0+r2*2-8] ; l1
+    punpckhbw m2, [r0+r2*1-8] ; l0 l1
+    punpckhwd m1, m2          ; l0 l1 l2 l3
+    punpckhdq m1, m0          ; t2 t1 t0 lt l0 l1 l2 l3
+    movq      m0, m1
+    movq      m2, m1
+    movq      m5, m1
+    psrlq     m0, 16          ; .. .. t2 t1 t0 lt l0 l1
+    psrlq     m2, 8           ; .. t2 t1 t0 lt l0 l1 l2
+    pavgb     m5, m2
+    PRED4x4_LOWPASS m3, m1, m0, m2, m4
+    punpcklbw m5, m3
+    psrlq     m3, 32
+    PALIGNR   m3, m5, 6, m4
+    movh      [r1+r2*2], m5
+    psrlq     m5, 16
+    movh      [r1+r2*1], m5
+    psrlq     m5, 16
+    movh      [r0+r2*2], m5
+    movh      [r0+r2*1], m3
+    RET
 %endif
