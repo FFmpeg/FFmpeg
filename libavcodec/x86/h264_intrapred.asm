@@ -23,6 +23,7 @@
 ;******************************************************************************
 
 %include "x86inc.asm"
+%include "x86util.asm"
 
 SECTION_RODATA
 
@@ -40,6 +41,7 @@ SECTION .text
 
 cextern pb_1
 cextern pb_3
+cextern pw_4
 cextern pw_5
 cextern pw_16
 cextern pw_17
@@ -1077,6 +1079,64 @@ cglobal pred8x8_tm_vp8_ssse3, 2,3,6
     psubusb %2, %3
     pavgb   %1, %2
 %endmacro
+
+;-----------------------------------------------------------------------------
+; void pred8x8l_top_dc(uint8_t *src, int has_topleft, int has_topright, int stride)
+;-----------------------------------------------------------------------------
+%ifdef CONFIG_GPL
+%macro PRED8x8L_TOP_DC 1
+cglobal pred8x8l_top_dc_%1, 4,4
+    sub          r0, r3
+    pxor        mm7, mm7
+    movq        mm0, [r0-8]
+    movq        mm3, [r0]
+    movq        mm1, [r0+8]
+    movq        mm2, mm3
+    movq        mm4, mm3
+    PALIGNR     mm2, mm0, 7, mm0
+    PALIGNR     mm1, mm4, 1, mm4
+    test         r1, r1 ; top_left
+    jz .fix_lt_2
+    test         r2, r2 ; top_right
+    jz .fix_tr_1
+    jmp .body
+.fix_lt_2:
+    movq        mm5, mm3
+    pxor        mm5, mm2
+    psllq       mm5, 56
+    psrlq       mm5, 56
+    pxor        mm2, mm5
+    test         r2, r2 ; top_right
+    jnz .body
+.fix_tr_1:
+    movq        mm5, mm3
+    pxor        mm5, mm1
+    psrlq       mm5, 56
+    psllq       mm5, 56
+    pxor        mm1, mm5
+.body
+    PRED4x4_LOWPASS mm0, mm2, mm1, mm3, mm5
+    psadbw   mm7, mm0
+    paddw    mm7, [pw_4]
+    psrlw    mm7, 3
+    pshufw   mm7, mm7, 0
+    packuswb mm7, mm7
+%rep 3
+    movq [r0+r3*1], mm7
+    movq [r0+r3*2], mm7
+    lea    r0, [r0+r3*2]
+%endrep
+    movq [r0+r3*1], mm7
+    movq [r0+r3*2], mm7
+    RET
+%endmacro
+
+INIT_MMX
+%define PALIGNR PALIGNR_MMX
+PRED8x8L_TOP_DC mmxext
+%define PALIGNR PALIGNR_SSSE3
+PRED8x8L_TOP_DC ssse3
+%endif
 
 ;-----------------------------------------------------------------------------
 ; void pred4x4_dc_mmxext(uint8_t *src, const uint8_t *topright, int stride)
