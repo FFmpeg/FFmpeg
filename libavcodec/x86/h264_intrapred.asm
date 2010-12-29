@@ -2630,4 +2630,35 @@ cglobal pred4x4_horizontal_down_mmxext, 3,3
     movh      [r0+r2*2], m5
     movh      [r0+r2*1], m3
     RET
+
+;-----------------------------------------------------------------------------
+; void pred4x4_vertical_right_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+;-----------------------------------------------------------------------------
+
+INIT_MMX
+%define PALIGNR PALIGNR_MMX
+cglobal pred4x4_vertical_right_mmxext, 3,3
+    sub     r0, r2
+    lea     r1, [r0+r2*2]
+    movh    m0, [r0]                    ; ........t3t2t1t0
+    movq    m5, m0
+    PALIGNR m0, [r0-8], 7, m1           ; ......t3t2t1t0lt
+    pavgb   m5, m0
+    PALIGNR m0, [r0+r2*1-8], 7, m1      ; ....t3t2t1t0ltl0
+    movq    m1, m0
+    PALIGNR m0, [r0+r2*2-8], 7, m2      ; ..t3t2t1t0ltl0l1
+    movq    m2, m0
+    PALIGNR m0, [r1+r2*1-8], 7, m3      ; t3t2t1t0ltl0l1l2
+    PRED4x4_LOWPASS m3, m1, m0, m2, m4
+    movq    m1, m3
+    psrlq   m3, 16
+    psllq   m1, 48
+    movh    [r0+r2*1], m5
+    movh    [r0+r2*2], m3
+    PALIGNR m5, m1, 7, m2
+    psllq   m1, 8
+    movh    [r1+r2*1], m5
+    PALIGNR m3, m1, 7, m1
+    movh    [r1+r2*2], m3
+    RET
 %endif
