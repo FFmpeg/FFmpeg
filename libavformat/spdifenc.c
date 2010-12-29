@@ -76,7 +76,7 @@ typedef struct IEC958Context {
 static int spdif_header_ac3(AVFormatContext *s, AVPacket *pkt)
 {
     IEC958Context *ctx = s->priv_data;
-    int bitstream_mode = pkt->data[6] & 0x7;
+    int bitstream_mode = pkt->data[5] & 0x7;
 
     ctx->data_type  = IEC958_AC3 | (bitstream_mode << 8);
     ctx->pkt_offset = AC3_FRAME_SIZE << 2;
