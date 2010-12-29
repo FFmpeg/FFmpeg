@@ -74,9 +74,9 @@ static const ff_asf_guid data_guid =
     {0x95,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D};
 static const ff_asf_guid stream_guid =
     {0xED,0xA4,0x13,0x23,0x2D,0xBF,0x4F,0x45,0xAD,0x8A,0xD9,0x5B,0xA7,0xF9,0x1F,0xEE};
-static const ff_asf_guid subtitle_guid =
+static const ff_asf_guid EVENTID_SubtitleSpanningEvent =
     {0x48,0xC0,0xCE,0x5D,0xB9,0xD0,0x63,0x41,0x87,0x2C,0x4F,0x32,0x22,0x3B,0xE8,0x8A};
-static const ff_asf_guid language_guid =
+static const ff_asf_guid EVENTID_LanguageSpanningEvent =
     {0x6D,0x66,0x92,0xE2,0x02,0x9C,0x8D,0x44,0xAA,0x8D,0x78,0x1A,0x93,0xFD,0xC3,0x95};
 
 /* Windows media GUIDs */
@@ -370,7 +370,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                     consumed += 72 + size;
                 }
             }
-        } else if (!ff_guidcmp(g, subtitle_guid)) {
+        } else if (!ff_guidcmp(g, EVENTID_SubtitleSpanningEvent)) {
             int stream_index = ff_find_stream_index(s, sid);
             if (stream_index >= 0) {
                 AVStream *st = s->streams[stream_index];
@@ -385,7 +385,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 st->codec->extradata_size = get_buffer(pb, st->codec->extradata, 4);
                 consumed += 18;
             }
-        } else if (!ff_guidcmp(g, language_guid)) {
+        } else if (!ff_guidcmp(g, EVENTID_LanguageSpanningEvent)) {
             int stream_index = ff_find_stream_index(s, sid);
             if (stream_index >= 0) {
                 AVStream *st = s->streams[stream_index];
