@@ -85,6 +85,7 @@ void ff_pred8x8l_horizontal_down_ssse3(uint8_t *src, int has_topleft, int has_to
 void ff_pred4x4_dc_mmxext          (uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_down_left_mmxext   (uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_vertical_left_mmxext(uint8_t *src, const uint8_t *topright, int stride);
+void ff_pred4x4_horizontal_up_mmxext(uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_tm_vp8_mmx         (uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_tm_vp8_mmxext      (uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_tm_vp8_ssse3       (uint8_t *src, const uint8_t *topright, int stride);
@@ -136,6 +137,9 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
             h->pred4x4  [DIAG_DOWN_LEFT_PRED ] = ff_pred4x4_down_left_mmxext;
         if (codec_id == CODEC_ID_SVQ3 || codec_id == CODEC_ID_H264)
             h->pred4x4  [VERT_LEFT_PRED      ] = ff_pred4x4_vertical_left_mmxext;
+        if (codec_id != CODEC_ID_RV40) {
+            h->pred4x4  [HOR_UP_PRED         ] = ff_pred4x4_horizontal_up_mmxext;
+        }
         if (codec_id == CODEC_ID_SVQ3 || codec_id == CODEC_ID_H264) {
             h->pred8x8  [TOP_DC_PRED8x8      ] = ff_pred8x8_top_dc_mmxext;
             h->pred8x8  [DC_PRED8x8          ] = ff_pred8x8_dc_mmxext;
