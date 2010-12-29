@@ -354,10 +354,10 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     }
 
     if (ctx->use_preamble) {
-    put_le16(s->pb, SYNCWORD1);      //Pa
-    put_le16(s->pb, SYNCWORD2);      //Pb
-    put_le16(s->pb, ctx->data_type); //Pc
-    put_le16(s->pb, ctx->length_code);//Pd
+        put_le16(s->pb, SYNCWORD1);       //Pa
+        put_le16(s->pb, SYNCWORD2);       //Pb
+        put_le16(s->pb, ctx->data_type);  //Pc
+        put_le16(s->pb, ctx->length_code);//Pd
     }
 
     if (HAVE_BIGENDIAN ^ ctx->extra_bswap) {
