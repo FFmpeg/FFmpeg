@@ -244,9 +244,9 @@ static AVStream * parse_media_type(AVFormatContext *s, int sid,
                 av_log(s, AV_LOG_WARNING, "MPEG1WAVEFORMATEX underflow\n");
         } else {
             st->codec->codec_id = ff_codec_guid_get_id(audio_guids, subtype);
+            if (st->codec->codec_id == CODEC_ID_NONE)
+                av_log(s, AV_LOG_WARNING, "unknown subtype:"PRI_GUID"\n", ARG_GUID(subtype));
         }
-        if (st->codec->codec_id == CODEC_ID_NONE)
-            av_log(s, AV_LOG_WARNING, "unknown subtype:"PRI_GUID"\n", ARG_GUID(subtype));
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_video)) {
         st = new_stream(s, sid, AVMEDIA_TYPE_VIDEO);
