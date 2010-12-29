@@ -1244,6 +1244,85 @@ PRED8x8L_DC ssse3
 %endif
 
 ;-----------------------------------------------------------------------------
+; void pred8x8l_horizontal(uint8_t *src, int has_topleft, int has_topright, int stride)
+;-----------------------------------------------------------------------------
+%ifdef CONFIG_GPL
+%macro PRED8x8L_HORIZONTAL 1
+cglobal pred8x8l_horizontal_%1, 4,4
+    sub          r0, r3
+    lea          r2, [r0+r3*2]
+    movq        mm0, [r0+r3*1-8]
+    punpckhbw   mm0, [r0+r3*0-8]
+    movq        mm1, [r2+r3*1-8]
+    punpckhbw   mm1, [r0+r3*2-8]
+    mov          r2, r0
+    punpckhwd   mm1, mm0
+    lea          r0, [r0+r3*4]
+    movq        mm2, [r0+r3*1-8]
+    punpckhbw   mm2, [r0+r3*0-8]
+    lea          r0, [r0+r3*2]
+    movq        mm3, [r0+r3*1-8]
+    punpckhbw   mm3, [r0+r3*0-8]
+    punpckhwd   mm3, mm2
+    punpckhdq   mm3, mm1
+    lea          r0, [r0+r3*2]
+    movq        mm0, [r0+r3*0-8]
+    movq        mm1, [r2]
+    mov          r0, r2
+    movq        mm4, mm3
+    movq        mm2, mm3
+    PALIGNR     mm4, mm0, 7, mm0
+    PALIGNR     mm1, mm2, 1, mm2
+    test        r1, r1 ; top_left
+    jnz .do_left
+.fix_lt_1:
+    movq        mm5, mm3
+    pxor        mm5, mm4
+    psrlq       mm5, 56
+    psllq       mm5, 48
+    pxor        mm1, mm5
+.do_left:
+    movq        mm0, mm4
+    PRED4x4_LOWPASS mm2, mm1, mm4, mm3, mm5
+    movq        mm4, mm0
+    movq        mm7, mm2
+    PRED4x4_LOWPASS mm1, mm3, mm0, mm4, mm5
+    psllq       mm1, 56
+    PALIGNR     mm7, mm1, 7, mm3
+    movq        mm3, mm7
+    lea         r1, [r0+r3*2]
+    movq       mm7, mm3
+    punpckhbw  mm3, mm3
+    punpcklbw  mm7, mm7
+    pshufw     mm0, mm3, 0xff
+    pshufw     mm1, mm3, 0xaa
+    lea         r2, [r1+r3*2]
+    pshufw     mm2, mm3, 0x55
+    pshufw     mm3, mm3, 0x00
+    pshufw     mm4, mm7, 0xff
+    pshufw     mm5, mm7, 0xaa
+    pshufw     mm6, mm7, 0x55
+    pshufw     mm7, mm7, 0x00
+    movq [r0+r3*1], mm0
+    movq [r0+r3*2], mm1
+    movq [r1+r3*1], mm2
+    movq [r1+r3*2], mm3
+    movq [r2+r3*1], mm4
+    movq [r2+r3*2], mm5
+    lea         r0, [r2+r3*2]
+    movq [r0+r3*1], mm6
+    movq [r0+r3*2], mm7
+    RET
+%endmacro
+
+INIT_MMX
+%define PALIGNR PALIGNR_MMX
+PRED8x8L_HORIZONTAL mmxext
+%define PALIGNR PALIGNR_SSSE3
+PRED8x8L_HORIZONTAL ssse3
+%endif
+
+;-----------------------------------------------------------------------------
 ; void pred4x4_dc_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
