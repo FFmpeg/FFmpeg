@@ -25,6 +25,8 @@
  * @file
  * IEC-61937 encapsulation of various formats, used by S/PDIF
  * @author Bartlomiej Wolowiec
+ * @author Anssi Hannula
+ * @author Carl Eugen Hoyos
  */
 
 /*
