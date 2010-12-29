@@ -1374,6 +1374,115 @@ PRED8x8L_VERTICAL ssse3
 ;void pred8x8l_down_left(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
 
+INIT_MMX
+%define PALIGNR PALIGNR_MMX
+cglobal pred8x8l_down_left_mmxext, 4,5
+    sub          r0, r3
+    movq        mm0, [r0-8]
+    movq        mm3, [r0]
+    movq        mm1, [r0+8]
+    movq        mm2, mm3
+    movq        mm4, mm3
+    PALIGNR     mm2, mm0, 7, mm0
+    PALIGNR     mm1, mm4, 1, mm4
+    test         r1, r1
+    jz .fix_lt_2
+    test         r2, r2
+    jz .fix_tr_1
+    jmp .do_top
+.fix_lt_2:
+    movq        mm5, mm3
+    pxor        mm5, mm2
+    psllq       mm5, 56
+    psrlq       mm5, 56
+    pxor        mm2, mm5
+    test         r2, r2
+    jnz .do_top
+.fix_tr_1:
+    movq        mm5, mm3
+    pxor        mm5, mm1
+    psrlq       mm5, 56
+    psllq       mm5, 56
+    pxor        mm1, mm5
+    jmp .do_top
+.fix_tr_2:
+    punpckhbw   mm3, mm3
+    pshufw      mm1, mm3, 0xFF
+    jmp .do_topright
+.do_top:
+    PRED4x4_LOWPASS mm4, mm2, mm1, mm3, mm5
+    movq        mm7, mm4
+    test         r2, r2
+    jz .fix_tr_2
+    movq        mm0, [r0+8]
+    movq        mm5, mm0
+    movq        mm2, mm0
+    movq        mm4, mm0
+    psrlq       mm5, 56
+    PALIGNR     mm2, mm3, 7, mm3
+    PALIGNR     mm5, mm4, 1, mm4
+    PRED4x4_LOWPASS mm1, mm2, mm5, mm0, mm4
+.do_topright:
+    lea          r1, [r0+r3*2]
+    movq        mm6, mm1
+    psrlq       mm1, 56
+    movq        mm4, mm1
+    lea          r2, [r1+r3*2]
+    movq        mm2, mm6
+    PALIGNR     mm2, mm7, 1, mm0
+    movq        mm3, mm6
+    PALIGNR     mm3, mm7, 7, mm0
+    PALIGNR     mm4, mm6, 1, mm0
+    movq        mm5, mm7
+    movq        mm1, mm7
+    movq        mm7, mm6
+    lea          r4, [r2+r3*2]
+    psllq       mm1, 8
+    PRED4x4_LOWPASS mm0, mm1, mm2, mm5, mm6
+    PRED4x4_LOWPASS mm1, mm3, mm4, mm7, mm6
+    movq  [r4+r3*2], mm1
+    movq        mm2, mm0
+    psllq       mm1, 8
+    psrlq       mm2, 56
+    psllq       mm0, 8
+    por         mm1, mm2
+    movq  [r4+r3*1], mm1
+    movq        mm2, mm0
+    psllq       mm1, 8
+    psrlq       mm2, 56
+    psllq       mm0, 8
+    por         mm1, mm2
+    movq  [r2+r3*2], mm1
+    movq        mm2, mm0
+    psllq       mm1, 8
+    psrlq       mm2, 56
+    psllq       mm0, 8
+    por         mm1, mm2
+    movq  [r2+r3*1], mm1
+    movq        mm2, mm0
+    psllq       mm1, 8
+    psrlq       mm2, 56
+    psllq       mm0, 8
+    por         mm1, mm2
+    movq  [r1+r3*2], mm1
+    movq        mm2, mm0
+    psllq       mm1, 8
+    psrlq       mm2, 56
+    psllq       mm0, 8
+    por         mm1, mm2
+    movq  [r1+r3*1], mm1
+    movq        mm2, mm0
+    psllq       mm1, 8
+    psrlq       mm2, 56
+    psllq       mm0, 8
+    por         mm1, mm2
+    movq  [r0+r3*2], mm1
+    psllq       mm1, 8
+    psrlq       mm0, 56
+    por         mm1, mm0
+    movq  [r0+r3*1], mm1
+    RET
+
 %macro PRED8x8L_DOWN_LEFT 1
 cglobal pred8x8l_down_left_%1, 4,4
     sub          r0, r3
