@@ -139,7 +139,7 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
         break;
     default:
         av_log(s, AV_LOG_ERROR, "bad DTS syncword 0x%x\n", syncword_dts);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     blocks++;
     switch (blocks) {
@@ -149,7 +149,7 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
     default:
         av_log(s, AV_LOG_ERROR, "%i samples in DTS frame not supported\n",
                blocks << 5);
-        return -1;
+        return AVERROR(ENOSYS);
     }
     ctx->pkt_offset = blocks << 7;
 
@@ -171,7 +171,7 @@ static int spdif_header_mpeg(AVFormatContext *s, AVPacket *pkt)
 
     if (layer == 3 || version == 1) {
         av_log(s, AV_LOG_ERROR, "Wrong MPEG file format\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     av_log(s, AV_LOG_DEBUG, "version: %i layer: %i extension: %i\n", version, layer, extension);
     if (version == 2 && extension) {
@@ -196,7 +196,7 @@ static int spdif_header_aac(AVFormatContext *s, AVPacket *pkt)
     ret = ff_aac_parse_header(&gbc, &hdr);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Wrong AAC file format\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->pkt_offset = hdr.samples << 2;
@@ -213,7 +213,7 @@ static int spdif_header_aac(AVFormatContext *s, AVPacket *pkt)
     default:
         av_log(s, AV_LOG_ERROR, "%i samples in AAC frame not supported\n",
                hdr.samples);
-        return -1;
+        return AVERROR(EINVAL);
     }
     //TODO Data type dependent info (LC profile/SBR)
     return 0;
@@ -256,7 +256,7 @@ static int spdif_header_truehd(AVFormatContext *s, AVPacket *pkt)
          * distribute the TrueHD frames in the MAT frame */
         av_log(s, AV_LOG_ERROR, "TrueHD frame too big, %d bytes\n", pkt->size);
         av_log_ask_for_sample(s, NULL);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     memcpy(&ctx->hd_buf[ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length],
@@ -309,7 +309,7 @@ static int spdif_write_header(AVFormatContext *s)
         break;
     default:
         av_log(s, AV_LOG_ERROR, "codec not supported\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
     return 0;
 }
@@ -334,14 +334,14 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 
     ret = ctx->header_info(s, pkt);
     if (ret < 0)
-        return -1;
+        return ret;
     if (!ctx->pkt_offset)
         return 0;
 
     padding = (ctx->pkt_offset - BURST_HEADER_SIZE - ctx->out_bytes) >> 1;
     if (padding < 0) {
         av_log(s, AV_LOG_ERROR, "bitrate is too high\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     put_le16(s->pb, SYNCWORD1);      //Pa
