@@ -828,6 +828,41 @@ PRED8x8_H mmxext
 PRED8x8_H ssse3
 
 ;-----------------------------------------------------------------------------
+; void pred8x8_top_dc_mmxext(uint8_t *src, int stride)
+;-----------------------------------------------------------------------------
+%ifdef CONFIG_GPL
+cglobal pred8x8_top_dc_mmxext, 2,5
+    sub         r0, r1
+    movq       mm0, [r0]
+    pxor       mm1, mm1
+    pxor       mm2, mm2
+    lea         r2, [r0+r1*2]
+    punpckhbw  mm1, mm0
+    punpcklbw  mm0, mm2
+    psadbw     mm1, mm2        ; s1
+    lea         r3, [r2+r1*2]
+    psadbw     mm0, mm2        ; s0
+    psrlw      mm1, 1
+    psrlw      mm0, 1
+    pavgw      mm1, mm2
+    lea         r4, [r3+r1*2]
+    pavgw      mm0, mm2
+    pshufw     mm1, mm1, 0
+    pshufw     mm0, mm0, 0     ; dc0 (w)
+    packuswb   mm0, mm1        ; dc0,dc1 (b)
+    movq [r0+r1*1], mm0
+    movq [r0+r1*2], mm0
+    lea         r0, [r3+r1*2]
+    movq [r2+r1*1], mm0
+    movq [r2+r1*2], mm0
+    movq [r3+r1*1], mm0
+    movq [r3+r1*2], mm0
+    movq [r0+r1*1], mm0
+    movq [r0+r1*2], mm0
+    RET
+%endif
+
+;-----------------------------------------------------------------------------
 ; void pred8x8_dc_rv40(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
