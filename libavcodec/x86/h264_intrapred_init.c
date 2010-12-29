@@ -79,6 +79,7 @@ void ff_pred8x8l_vertical_left_sse2(uint8_t *src, int has_topleft, int has_topri
 void ff_pred8x8l_vertical_left_ssse3(uint8_t *src, int has_topleft, int has_topright, int stride);
 void ff_pred8x8l_horizontal_up_mmxext(uint8_t *src, int has_topleft, int has_topright, int stride);
 void ff_pred8x8l_horizontal_up_ssse3(uint8_t *src, int has_topleft, int has_topright, int stride);
+void ff_pred8x8l_horizontal_down_mmxext(uint8_t *src, int has_topleft, int has_topright, int stride);
 void ff_pred4x4_dc_mmxext          (uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_down_left_mmxext   (uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_tm_vp8_mmx         (uint8_t *src, const uint8_t *topright, int stride);
@@ -124,6 +125,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
         h->pred8x8l [DIAG_DOWN_RIGHT_PRED] = ff_pred8x8l_down_right_mmxext;
         h->pred8x8l [VERT_RIGHT_PRED     ] = ff_pred8x8l_vertical_right_mmxext;
         h->pred8x8l [HOR_UP_PRED         ] = ff_pred8x8l_horizontal_up_mmxext;
+        h->pred8x8l [HOR_DOWN_PRED       ] = ff_pred8x8l_horizontal_down_mmxext;
 #endif
         h->pred4x4  [DC_PRED     ] = ff_pred4x4_dc_mmxext;
 #if CONFIG_GPL
