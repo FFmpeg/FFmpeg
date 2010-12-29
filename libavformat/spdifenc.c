@@ -60,6 +60,8 @@ typedef struct IEC958Context {
     uint8_t *out_buf;               ///< pointer to the outgoing data before byte-swapping
     int out_bytes;                  ///< amount of outgoing bytes
 
+    int extra_bswap;                ///< extra bswap for payload (for LE DTS => standard BE DTS)
+
     uint8_t *hd_buf;                ///< allocated buffer to concatenate hd audio frames
     int hd_buf_size;                ///< size of the hd audio buffer
     int hd_buf_count;               ///< number of frames in the hd audio buffer
@@ -124,6 +126,7 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
         break;
     case DCA_MARKER_RAW_LE:
         blocks = (AV_RL16(pkt->data + 4) >> 2) & 0x7f;
+        ctx->extra_bswap = 1;
         break;
     case DCA_MARKER_14B_BE:
         blocks =
@@ -132,6 +135,7 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
     case DCA_MARKER_14B_LE:
         blocks =
             (((pkt->data[4] & 0x07) << 4) | ((pkt->data[7] & 0x3f) >> 2));
+        ctx->extra_bswap = 1;
         break;
     default:
         av_log(s, AV_LOG_ERROR, "bad DTS syncword 0x%x\n", syncword_dts);
@@ -326,6 +330,7 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     ctx->out_buf = pkt->data;
     ctx->out_bytes = pkt->size;
     ctx->length_code = FFALIGN(pkt->size, 2) << 3;
+    ctx->extra_bswap = 0;
 
     ret = ctx->header_info(s, pkt);
     if (ret < 0)
@@ -344,15 +349,15 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     put_le16(s->pb, ctx->data_type); //Pc
     put_le16(s->pb, ctx->length_code);//Pd
 
-#if HAVE_BIGENDIAN
+    if (HAVE_BIGENDIAN ^ ctx->extra_bswap) {
     put_buffer(s->pb, ctx->out_buf, ctx->out_bytes & ~1);
-#else
+    } else {
     av_fast_malloc(&ctx->buffer, &ctx->buffer_size, ctx->out_bytes + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!ctx->buffer)
         return AVERROR(ENOMEM);
     ff_spdif_bswap_buf16((uint16_t *)ctx->buffer, (uint16_t *)ctx->out_buf, ctx->out_bytes >> 1);
     put_buffer(s->pb, ctx->buffer, ctx->out_bytes & ~1);
-#endif
+    }
 
     if (ctx->out_bytes & 1)
         put_be16(s->pb, ctx->out_buf[ctx->out_bytes - 1]);
