@@ -216,7 +216,6 @@ static av_cold void mdct_end(AC3MDCTContext *mdct)
 }
 
 
-
 /**
  * Initialize FFT tables.
  * @param ln log2(FFT size)
@@ -229,10 +228,8 @@ static av_cold int fft_init(AVCodecContext *avctx, AC3MDCTContext *mdct, int ln)
     n  = 1 << ln;
     n2 = n >> 1;
 
-    FF_ALLOC_OR_GOTO(avctx, mdct->costab, n2 * sizeof(*mdct->costab),
-                     fft_alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, mdct->sintab, n2 * sizeof(*mdct->sintab),
-                     fft_alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, mdct->costab, n2 * sizeof(*mdct->costab), fft_alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, mdct->sintab, n2 * sizeof(*mdct->sintab), fft_alloc_fail);
 
     for (i = 0; i < n2; i++) {
         alpha     = 2.0 * M_PI * i / n;
@@ -251,7 +248,8 @@ fft_alloc_fail:
  * Initialize MDCT tables.
  * @param nbits log2(MDCT size)
  */
-static av_cold int mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct, int nbits)
+static av_cold int mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
+                             int nbits)
 {
     int i, n, n4, ret;
 
@@ -264,14 +262,10 @@ static av_cold int mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct, int nb
     if (ret)
         return ret;
 
-    FF_ALLOC_OR_GOTO(avctx, mdct->xcos1,    n4 * sizeof(*mdct->xcos1),
-                     mdct_alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, mdct->xsin1,    n4 * sizeof(*mdct->xsin1),
-                     mdct_alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, mdct->rot_tmp,  n  * sizeof(*mdct->rot_tmp),
-                     mdct_alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, mdct->cplx_tmp, n4 * sizeof(*mdct->cplx_tmp),
-                     mdct_alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, mdct->xcos1,    n4 * sizeof(*mdct->xcos1),    mdct_alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, mdct->xsin1,    n4 * sizeof(*mdct->xsin1),    mdct_alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, mdct->rot_tmp,  n  * sizeof(*mdct->rot_tmp),  mdct_alloc_fail);
+    FF_ALLOC_OR_GOTO(avctx, mdct->cplx_tmp, n4 * sizeof(*mdct->cplx_tmp), mdct_alloc_fail);
 
     for (i = 0; i < n4; i++) {
         float alpha = 2.0 * M_PI * (i + 1.0 / 8.0) / n;
@@ -571,7 +565,8 @@ static void extract_exponents(AC3EncodeContext *s)
 /**
  * Calculate exponent strategies for all blocks in a single channel.
  */
-static void compute_exp_strategy_ch(AC3EncodeContext *s, uint8_t *exp_strategy, uint8_t **exp)
+static void compute_exp_strategy_ch(AC3EncodeContext *s, uint8_t *exp_strategy,
+                                    uint8_t **exp)
 {
     int blk, blk1;
     int exp_diff;
@@ -654,8 +649,7 @@ static void exponent_min(uint8_t *exp, uint8_t *exp1, int n)
 /**
  * Update the exponents so that they are the ones the decoder will decode.
  */
-static void encode_exponents_blk_ch(uint8_t *exp,
-                                    int nb_exps, int exp_strategy)
+static void encode_exponents_blk_ch(uint8_t *exp, int nb_exps, int exp_strategy)
 {
     int nb_groups, i, k;
 
@@ -1035,8 +1029,7 @@ static void reset_block_bap(AC3EncodeContext *s)
  * @return the number of bits needed for mantissas if the given SNR offset is
  *         is used.
  */
-static int bit_alloc(AC3EncodeContext *s,
-                     int snr_offset)
+static int bit_alloc(AC3EncodeContext *s, int snr_offset)
 {
     int blk, ch;
     int mantissa_bits;
@@ -1265,10 +1258,9 @@ static inline int asym_quant(int c, int e, int qbits)
 /**
  * Quantize a set of mantissas for a single channel in a single block.
  */
-static void quantize_mantissas_blk_ch(AC3EncodeContext *s,
-                                      int32_t *mdct_coef, int8_t exp_shift,
-                                      uint8_t *exp, uint8_t *bap,
-                                      uint16_t *qmant, int n)
+static void quantize_mantissas_blk_ch(AC3EncodeContext *s, int32_t *mdct_coef,
+                                      int8_t exp_shift, uint8_t *exp,
+                                      uint8_t *bap, uint16_t *qmant, int n)
 {
     int i;
 
@@ -1413,8 +1405,7 @@ static void output_frame_header(AC3EncodeContext *s)
 /**
  * Write one audio block to the output bitstream.
  */
-static void output_audio_block(AC3EncodeContext *s,
-                               int block_num)
+static void output_audio_block(AC3EncodeContext *s, int block_num)
 {
     int ch, i, baie, rbnd;
     AC3Block *block = &s->blocks[block_num];
@@ -1608,8 +1599,7 @@ static void output_frame_end(AC3EncodeContext *s)
 /**
  * Write the frame to the output bitstream.
  */
-static void output_frame(AC3EncodeContext *s,
-                         unsigned char *frame)
+static void output_frame(AC3EncodeContext *s, unsigned char *frame)
 {
     int blk;
 
@@ -1627,8 +1617,8 @@ static void output_frame(AC3EncodeContext *s,
 /**
  * Encode a single AC-3 frame.
  */
-static int ac3_encode_frame(AVCodecContext *avctx,
-                            unsigned char *frame, int buf_size, void *data)
+static int ac3_encode_frame(AVCodecContext *avctx, unsigned char *frame,
+                            int buf_size, void *data)
 {
     AC3EncodeContext *s = avctx->priv_data;
     const int16_t *samples = data;
