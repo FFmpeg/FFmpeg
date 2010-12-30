@@ -56,6 +56,7 @@ typedef struct IComplex {
 } IComplex;
 
 typedef struct AC3MDCTContext {
+    const int16_t *window;                  ///< MDCT window function
     int nbits;                              ///< log2(transform size)
     int16_t *costab;                        ///< FFT cos table
     int16_t *sintab;                        ///< FFT sin table
@@ -261,6 +262,8 @@ static av_cold int mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
     ret = fft_init(avctx, mdct, nbits - 2);
     if (ret)
         return ret;
+
+    mdct->window = ff_ac3_window;
 
     FF_ALLOC_OR_GOTO(avctx, mdct->xcos1,    n4 * sizeof(*mdct->xcos1),    mdct_alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, mdct->xsin1,    n4 * sizeof(*mdct->xsin1),    mdct_alloc_fail);
@@ -498,7 +501,7 @@ static void apply_mdct(AC3EncodeContext *s)
             AC3Block *block = &s->blocks[blk];
             const int16_t *input_samples = &s->planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
-            apply_window(s->windowed_samples, input_samples, ff_ac3_window, AC3_WINDOW_SIZE);
+            apply_window(s->windowed_samples, input_samples, s->mdct.window, AC3_WINDOW_SIZE);
 
             block->exp_shift[ch] = normalize_samples(s);
 
