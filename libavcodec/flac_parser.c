@@ -563,7 +563,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         if (av_fifo_realloc2(fpc->fifo_buf,
                              (read_end - read_start) + av_fifo_size(fpc->fifo_buf)) < 0) {
             av_log(avctx, AV_LOG_ERROR,
-                   "couldn't reallocate buffer of size %d\n",
+                   "couldn't reallocate buffer of size %"PRIdPTR"\n",
                    (read_end - read_start) + av_fifo_size(fpc->fifo_buf));
             goto handle_error;
         }
