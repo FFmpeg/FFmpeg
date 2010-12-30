@@ -157,6 +157,32 @@ static uint8_t exponent_group_tab[3][256];
 
 
 /**
+ * List of supported channel layouts.
+ */
+static const int64_t ac3_channel_layouts[] = {
+     AV_CH_LAYOUT_MONO,
+     AV_CH_LAYOUT_STEREO,
+     AV_CH_LAYOUT_2_1,
+     AV_CH_LAYOUT_SURROUND,
+     AV_CH_LAYOUT_2_2,
+     AV_CH_LAYOUT_QUAD,
+     AV_CH_LAYOUT_4POINT0,
+     AV_CH_LAYOUT_5POINT0,
+     AV_CH_LAYOUT_5POINT0_BACK,
+    (AV_CH_LAYOUT_MONO     | AV_CH_LOW_FREQUENCY),
+    (AV_CH_LAYOUT_STEREO   | AV_CH_LOW_FREQUENCY),
+    (AV_CH_LAYOUT_2_1      | AV_CH_LOW_FREQUENCY),
+    (AV_CH_LAYOUT_SURROUND | AV_CH_LOW_FREQUENCY),
+    (AV_CH_LAYOUT_2_2      | AV_CH_LOW_FREQUENCY),
+    (AV_CH_LAYOUT_QUAD     | AV_CH_LOW_FREQUENCY),
+    (AV_CH_LAYOUT_4POINT0  | AV_CH_LOW_FREQUENCY),
+     AV_CH_LAYOUT_5POINT1,
+     AV_CH_LAYOUT_5POINT1_BACK,
+     0
+};
+
+
+/**
  * Adjust the frame size to make the average bit rate match the target bit rate.
  * This is only needed for 11025, 22050, and 44100 sample rates.
  */
@@ -2052,24 +2078,5 @@ AVCodec ac3_encoder = {
     NULL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
-    .channel_layouts = (const int64_t[]){
-        AV_CH_LAYOUT_MONO,
-        AV_CH_LAYOUT_STEREO,
-        AV_CH_LAYOUT_2_1,
-        AV_CH_LAYOUT_SURROUND,
-        AV_CH_LAYOUT_2_2,
-        AV_CH_LAYOUT_QUAD,
-        AV_CH_LAYOUT_4POINT0,
-        AV_CH_LAYOUT_5POINT0,
-        AV_CH_LAYOUT_5POINT0_BACK,
-       (AV_CH_LAYOUT_MONO     | AV_CH_LOW_FREQUENCY),
-       (AV_CH_LAYOUT_STEREO   | AV_CH_LOW_FREQUENCY),
-       (AV_CH_LAYOUT_2_1      | AV_CH_LOW_FREQUENCY),
-       (AV_CH_LAYOUT_SURROUND | AV_CH_LOW_FREQUENCY),
-       (AV_CH_LAYOUT_2_2      | AV_CH_LOW_FREQUENCY),
-       (AV_CH_LAYOUT_QUAD     | AV_CH_LOW_FREQUENCY),
-       (AV_CH_LAYOUT_4POINT0  | AV_CH_LOW_FREQUENCY),
-        AV_CH_LAYOUT_5POINT1,
-        AV_CH_LAYOUT_5POINT1_BACK,
-        0 },
+    .channel_layouts = ac3_channel_layouts,
 };
