@@ -56,7 +56,6 @@ typedef struct IComplex {
 } IComplex;
 
 typedef struct AC3MDCTContext {
-    AVCodecContext *avctx;                  ///< parent context for av_log()
     int nbits;                              ///< log2(transform size)
     int16_t *costab;                        ///< FFT cos table
     int16_t *sintab;                        ///< FFT sin table
@@ -222,7 +221,7 @@ static av_cold void mdct_end(AC3MDCTContext *mdct)
  * Initialize FFT tables.
  * @param ln log2(FFT size)
  */
-static av_cold int fft_init(AC3MDCTContext *mdct, int ln)
+static av_cold int fft_init(AVCodecContext *avctx, AC3MDCTContext *mdct, int ln)
 {
     int i, n, n2;
     float alpha;
@@ -230,9 +229,9 @@ static av_cold int fft_init(AC3MDCTContext *mdct, int ln)
     n  = 1 << ln;
     n2 = n >> 1;
 
-    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->costab, n2 * sizeof(*mdct->costab),
+    FF_ALLOC_OR_GOTO(avctx, mdct->costab, n2 * sizeof(*mdct->costab),
                      fft_alloc_fail);
-    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->sintab, n2 * sizeof(*mdct->sintab),
+    FF_ALLOC_OR_GOTO(avctx, mdct->sintab, n2 * sizeof(*mdct->sintab),
                      fft_alloc_fail);
 
     for (i = 0; i < n2; i++) {
@@ -252,7 +251,7 @@ fft_alloc_fail:
  * Initialize MDCT tables.
  * @param nbits log2(MDCT size)
  */
-static av_cold int mdct_init(AC3MDCTContext *mdct, int nbits)
+static av_cold int mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct, int nbits)
 {
     int i, n, n4, ret;
 
@@ -261,17 +260,17 @@ static av_cold int mdct_init(AC3MDCTContext *mdct, int nbits)
 
     mdct->nbits = nbits;
 
-    ret = fft_init(mdct, nbits - 2);
+    ret = fft_init(avctx, mdct, nbits - 2);
     if (ret)
         return ret;
 
-    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->xcos1,    n4 * sizeof(*mdct->xcos1),
+    FF_ALLOC_OR_GOTO(avctx, mdct->xcos1,    n4 * sizeof(*mdct->xcos1),
                      mdct_alloc_fail);
-    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->xsin1 ,   n4 * sizeof(*mdct->xsin1),
+    FF_ALLOC_OR_GOTO(avctx, mdct->xsin1,    n4 * sizeof(*mdct->xsin1),
                      mdct_alloc_fail);
-    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->rot_tmp,  n  * sizeof(*mdct->rot_tmp),
+    FF_ALLOC_OR_GOTO(avctx, mdct->rot_tmp,  n  * sizeof(*mdct->rot_tmp),
                      mdct_alloc_fail);
-    FF_ALLOC_OR_GOTO(mdct->avctx, mdct->cplx_tmp, n4 * sizeof(*mdct->cplx_tmp),
+    FF_ALLOC_OR_GOTO(avctx, mdct->cplx_tmp, n4 * sizeof(*mdct->cplx_tmp),
                      mdct_alloc_fail);
 
     for (i = 0; i < n4; i++) {
@@ -1935,8 +1934,7 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
 
     bit_alloc_init(s);
 
-    s->mdct.avctx = avctx;
-    ret = mdct_init(&s->mdct, 9);
+    ret = mdct_init(avctx, &s->mdct, 9);
     if (ret)
         goto init_fail;
 
