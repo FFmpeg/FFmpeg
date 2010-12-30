@@ -153,7 +153,7 @@ typedef struct AC3EncodeContext {
  * LUT for number of exponent groups.
  * exponent_group_tab[exponent strategy-1][number of coefficients]
  */
-uint8_t exponent_group_tab[3][256];
+static uint8_t exponent_group_tab[3][256];
 
 
 /**
