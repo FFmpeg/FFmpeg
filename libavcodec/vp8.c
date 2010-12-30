@@ -1104,7 +1104,8 @@ void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
 
         // if we're on the right edge of the frame, said edge is extended
         // from the top macroblock
-        if (mb_x == s->mb_width-1) {
+        if (!(!mb_y && avctx->flags & CODEC_FLAG_EMU_EDGE) &&
+            mb_x == s->mb_width-1) {
             tr = tr_right[-1]*0x01010101;
             tr_right = (uint8_t *)&tr;
         }
