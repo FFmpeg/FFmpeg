@@ -43,6 +43,11 @@
 /** Scale a float value by 2^bits and convert to an integer. */
 #define SCALE_FLOAT(a, bits) lrintf((a) * (float)(1 << (bits)))
 
+typedef int16_t SampleType;
+typedef int32_t CoefType;
+
+#define SCALE_COEF(a) (a)
+
 /** Scale a float value by 2^15, convert to an integer, and clip to range -32767..32767. */
 #define FIX15(a) av_clip(SCALE_FLOAT(a, 15), -32767, 32767)
 
@@ -71,7 +76,7 @@ typedef struct AC3MDCTContext {
  */
 typedef struct AC3Block {
     uint8_t  **bap;                             ///< bit allocation pointers (bap)
-    int32_t  **mdct_coef;                       ///< MDCT coefficients
+    CoefType **mdct_coef;                       ///< MDCT coefficients
     uint8_t  **exp;                             ///< original exponents
     uint8_t  **grouped_exp;                     ///< grouped exponents
     int16_t  **psd;                             ///< psd per frequency bin
@@ -137,7 +142,7 @@ typedef struct AC3EncodeContext {
     int16_t **planar_samples;
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
-    int32_t *mdct_coef_buffer;
+    CoefType *mdct_coef_buffer;
     uint8_t *exp_buffer;
     uint8_t *grouped_exp_buffer;
     int16_t *psd_buffer;
@@ -145,7 +150,7 @@ typedef struct AC3EncodeContext {
     int16_t *mask_buffer;
     uint16_t *qmant_buffer;
 
-    DECLARE_ALIGNED(16, int16_t, windowed_samples)[AC3_WINDOW_SIZE];
+    DECLARE_ALIGNED(16, SampleType, windowed_samples)[AC3_WINDOW_SIZE];
 } AC3EncodeContext;
 
 
@@ -204,13 +209,13 @@ static void adjust_frame_size(AC3EncodeContext *s)
  * Channels are reordered from FFmpeg's default order to AC-3 order.
  */
 static void deinterleave_input_samples(AC3EncodeContext *s,
-                                       const int16_t *samples)
+                                       const SampleType *samples)
 {
     int ch, i;
 
     /* deinterleave and remap input samples */
     for (ch = 0; ch < s->channels; ch++) {
-        const int16_t *sptr;
+        const SampleType *sptr;
         int sinc;
 
         /* copy last 256 samples of previous frame to the start of the current frame */
@@ -525,7 +530,7 @@ static void apply_mdct(AC3EncodeContext *s)
     for (ch = 0; ch < s->channels; ch++) {
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
             AC3Block *block = &s->blocks[blk];
-            const int16_t *input_samples = &s->planar_samples[ch][blk * AC3_BLOCK_SIZE];
+            const SampleType *input_samples = &s->planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
             apply_window(s->windowed_samples, input_samples, s->mdct.window, AC3_WINDOW_SIZE);
 
@@ -567,7 +572,7 @@ static void extract_exponents(AC3EncodeContext *s)
             AC3Block *block = &s->blocks[blk];
             for (i = 0; i < AC3_MAX_COEFS; i++) {
                 int e;
-                int v = abs(block->mdct_coef[ch][i]);
+                int v = abs(SCALE_COEF(block->mdct_coef[ch][i]));
                 if (v == 0)
                     e = 24;
                 else {
@@ -1287,7 +1292,7 @@ static inline int asym_quant(int c, int e, int qbits)
 /**
  * Quantize a set of mantissas for a single channel in a single block.
  */
-static void quantize_mantissas_blk_ch(AC3EncodeContext *s, int32_t *mdct_coef,
+static void quantize_mantissas_blk_ch(AC3EncodeContext *s, CoefType *mdct_coef,
                                       int8_t exp_shift, uint8_t *exp,
                                       uint8_t *bap, uint16_t *qmant, int n)
 {
@@ -1295,7 +1300,7 @@ static void quantize_mantissas_blk_ch(AC3EncodeContext *s, int32_t *mdct_coef,
 
     for (i = 0; i < n; i++) {
         int v;
-        int c = mdct_coef[i];
+        int c = SCALE_COEF(mdct_coef[i]);
         int e = exp[i] - exp_shift;
         int b = bap[i];
         switch (b) {
@@ -1650,7 +1655,7 @@ static int ac3_encode_frame(AVCodecContext *avctx, unsigned char *frame,
                             int buf_size, void *data)
 {
     AC3EncodeContext *s = avctx->priv_data;
-    const int16_t *samples = data;
+    const SampleType *samples = data;
     int ret;
 
     if (s->bit_alloc.sr_code == 1)
