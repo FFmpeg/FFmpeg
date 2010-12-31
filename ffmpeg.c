@@ -1747,15 +1747,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
         av_free(buffer_to_free);
         /* XXX: allocate the subtitles in the codec ? */
         if (subtitle_to_free) {
-            if (subtitle_to_free->rects != NULL) {
-                for (i = 0; i < subtitle_to_free->num_rects; i++) {
-                    av_freep(&subtitle_to_free->rects[i]->pict.data[0]);
-                    av_freep(&subtitle_to_free->rects[i]->pict.data[1]);
-                    av_freep(&subtitle_to_free->rects[i]);
-                }
-                av_freep(&subtitle_to_free->rects);
-            }
-            subtitle_to_free->num_rects = 0;
+            avsubtitle_free(subtitle_to_free);
             subtitle_to_free = NULL;
         }
     }
