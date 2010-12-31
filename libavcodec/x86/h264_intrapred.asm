@@ -2679,10 +2679,10 @@ INIT_MMX
 cglobal pred4x4_horizontal_up_mmxext, 3,3
     sub       r0, r2
     lea       r1, [r0+r2*2]
-    movq      m0, [r0+r2*1-8]
-    punpckhbw m0, [r0+r2*2-8]
-    movq      m1, [r1+r2*1-8]
-    punpckhbw m1, [r1+r2*2-8]
+    movd      m0, [r0+r2*1-4]
+    punpcklbw m0, [r0+r2*2-4]
+    movd      m1, [r1+r2*1-4]
+    punpcklbw m1, [r1+r2*2-4]
     punpckhwd m0, m1
     movq      m1, m0
     punpckhbw m1, m1
@@ -2716,10 +2716,10 @@ cglobal pred4x4_horizontal_down_mmxext, 3,3
     movh      m0, [r0-4]      ; lt ..
     punpckldq m0, [r0]        ; t3 t2 t1 t0 lt .. .. ..
     psllq     m0, 8           ; t2 t1 t0 lt .. .. .. ..
-    movq      m1, [r1+r2*2-8] ; l3
-    punpckhbw m1, [r1+r2*1-8] ; l2 l3
-    movq      m2, [r0+r2*2-8] ; l1
-    punpckhbw m2, [r0+r2*1-8] ; l0 l1
+    movd      m1, [r1+r2*2-4] ; l3
+    punpcklbw m1, [r1+r2*1-4] ; l2 l3
+    movd      m2, [r0+r2*2-4] ; l1
+    punpcklbw m2, [r0+r2*1-4] ; l0 l1
     punpckhwd m1, m2          ; l0 l1 l2 l3
     punpckhdq m1, m0          ; t2 t1 t0 lt l0 l1 l2 l3
     movq      m0, m1
