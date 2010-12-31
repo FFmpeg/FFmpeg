@@ -1116,6 +1116,13 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
 
     snr_offset = s->coarse_snr_offset << 4;
 
+    /* if previous frame SNR offset was 1023, check if current frame can also
+       use SNR offset of 1023. if so, skip the search. */
+    if ((snr_offset | s->fine_snr_offset[0]) == 1023) {
+        if (bit_alloc(s, 1023) <= bits_left)
+            return 0;
+    }
+
     while (snr_offset >= 0 &&
            bit_alloc(s, snr_offset) > bits_left) {
         snr_offset -= 64;
