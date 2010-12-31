@@ -505,6 +505,11 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         avcodec_set_dimensions(avctx, 0, 0);
     }
 
+    /* if the decoder init function was already called previously,
+       free the already allocated subtitle_header before overwriting it */
+    if (codec->decode)
+        av_freep(&avctx->subtitle_header);
+
 #define SANE_NB_CHANNELS 128U
     if (avctx->channels > SANE_NB_CHANNELS) {
         ret = AVERROR(EINVAL);
