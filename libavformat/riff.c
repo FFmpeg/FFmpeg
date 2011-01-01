@@ -444,23 +444,6 @@ int ff_put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     return hdrsize;
 }
 
-int ff_get_bmp_header(ByteIOContext *pb, AVStream *st)
-{
-    int tag1;
-    get_le32(pb); /* size */
-    st->codec->width = get_le32(pb);
-    st->codec->height = (int32_t)get_le32(pb);
-    get_le16(pb); /* planes */
-    st->codec->bits_per_coded_sample= get_le16(pb); /* depth */
-    tag1 = get_le32(pb);
-    get_le32(pb); /* ImageSize */
-    get_le32(pb); /* XPelsPerMeter */
-    get_le32(pb); /* YPelsPerMeter */
-    get_le32(pb); /* ClrUsed */
-    get_le32(pb); /* ClrImportant */
-    return tag1;
-}
-
 /* BITMAPINFOHEADER header */
 void ff_put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf)
 {
@@ -554,6 +537,23 @@ enum CodecID ff_wav_codec_get_id(unsigned int tag, int bps)
     if (id == CODEC_ID_ADPCM_IMA_WAV && bps == 8)
         id = CODEC_ID_PCM_ZORK;
     return id;
+}
+
+int ff_get_bmp_header(ByteIOContext *pb, AVStream *st)
+{
+    int tag1;
+    get_le32(pb); /* size */
+    st->codec->width = get_le32(pb);
+    st->codec->height = (int32_t)get_le32(pb);
+    get_le16(pb); /* planes */
+    st->codec->bits_per_coded_sample= get_le16(pb); /* depth */
+    tag1 = get_le32(pb);
+    get_le32(pb); /* ImageSize */
+    get_le32(pb); /* XPelsPerMeter */
+    get_le32(pb); /* YPelsPerMeter */
+    get_le32(pb); /* ClrUsed */
+    get_le32(pb); /* ClrImportant */
+    return tag1;
 }
 #endif // CONFIG_DEMUXERS
 
