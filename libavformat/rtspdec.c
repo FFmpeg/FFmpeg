@@ -67,6 +67,8 @@ static int rtsp_read_play(AVFormatContext *s)
                 if (reply->range_start != AV_NOPTS_VALUE) {
                     rtpctx->last_rtcp_ntp_time  = AV_NOPTS_VALUE;
                     rtpctx->first_rtcp_ntp_time = AV_NOPTS_VALUE;
+                    rtpctx->base_timestamp      = 0;
+                    rtpctx->rtcp_ts_offset      = 0;
                     if (st)
                         rtpctx->range_start_offset =
                             av_rescale_q(reply->range_start, AV_TIME_BASE_Q,

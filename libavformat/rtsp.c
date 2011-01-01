@@ -1617,11 +1617,21 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
                  * in order to map their timestamp origin to the same ntp time
                  * as this one. */
                 int i;
+                AVStream *st = NULL;
+                if (rtsp_st->stream_index >= 0)
+                    st = s->streams[rtsp_st->stream_index];
                 for (i = 0; i < rt->nb_rtsp_streams; i++) {
                     RTPDemuxContext *rtpctx2 = rt->rtsp_streams[i]->transport_priv;
-                    if (rtpctx2 &&
-                        rtpctx2->first_rtcp_ntp_time == AV_NOPTS_VALUE)
+                    AVStream *st2 = NULL;
+                    if (rt->rtsp_streams[i]->stream_index >= 0)
+                        st2 = s->streams[rt->rtsp_streams[i]->stream_index];
+                    if (rtpctx2 && st && st2 &&
+                        rtpctx2->first_rtcp_ntp_time == AV_NOPTS_VALUE) {
                         rtpctx2->first_rtcp_ntp_time = rtpctx->first_rtcp_ntp_time;
+                        rtpctx2->rtcp_ts_offset = av_rescale_q(
+                            rtpctx->rtcp_ts_offset, st->time_base,
+                            st2->time_base);
+                    }
                 }
             }
             if (ret == -RTCP_BYE) {

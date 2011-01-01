@@ -172,6 +172,7 @@ struct RTPDemuxContext {
     int64_t last_rtcp_ntp_time;    // TODO: move into statistics
     int64_t first_rtcp_ntp_time;   // TODO: move into statistics
     uint32_t last_rtcp_timestamp;  // TODO: move into statistics
+    int64_t rtcp_ts_offset;
 
     /* rtcp sender statistics */
     unsigned int packet_count;     // TODO: move into statistics (outgoing)

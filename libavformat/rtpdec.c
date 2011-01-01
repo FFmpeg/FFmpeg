@@ -123,9 +123,13 @@ static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int l
             payload_len = (AV_RB16(buf + 2) + 1) * 4;
 
             s->last_rtcp_ntp_time = AV_RB64(buf + 8);
-            if (s->first_rtcp_ntp_time == AV_NOPTS_VALUE)
-                s->first_rtcp_ntp_time = s->last_rtcp_ntp_time;
             s->last_rtcp_timestamp = AV_RB32(buf + 16);
+            if (s->first_rtcp_ntp_time == AV_NOPTS_VALUE) {
+                s->first_rtcp_ntp_time = s->last_rtcp_ntp_time;
+                if (!s->base_timestamp)
+                    s->base_timestamp = s->last_rtcp_timestamp;
+                s->rtcp_ts_offset = s->last_rtcp_timestamp - s->base_timestamp;
+            }
 
             buf += payload_len;
             len -= payload_len;
@@ -440,8 +444,15 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
         delta_timestamp = timestamp - s->last_rtcp_timestamp;
         /* convert to the PTS timebase */
         addend = av_rescale(s->last_rtcp_ntp_time - s->first_rtcp_ntp_time, s->st->time_base.den, (uint64_t)s->st->time_base.num << 32);
-        pkt->pts = s->range_start_offset + addend + delta_timestamp;
+        pkt->pts = s->range_start_offset + s->rtcp_ts_offset + addend +
+                   delta_timestamp;
+        return;
     }
+    if (timestamp == RTP_NOTS_VALUE)
+        return;
+    if (!s->base_timestamp)
+        s->base_timestamp = timestamp;
+    pkt->pts = s->range_start_offset + timestamp - s->base_timestamp;
 }
 
 static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
