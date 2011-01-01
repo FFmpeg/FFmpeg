@@ -55,7 +55,7 @@ AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 AVFormatContext *avformat_opts;
 struct SwsContext *sws_opts;
 
-const int this_year = 2010;
+const int this_year = 2011;
 
 void init_opts(void)
 {
