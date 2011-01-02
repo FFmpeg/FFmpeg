@@ -113,6 +113,20 @@ void put_byte(ByteIOContext *s, int b)
         flush_buffer(s);
 }
 
+void put_nbyte(ByteIOContext *s, int b, int count)
+{
+    while (count > 0) {
+        int len = FFMIN(s->buf_end - s->buf_ptr, count);
+        memset(s->buf_ptr, b, len);
+        s->buf_ptr += len;
+
+        if (s->buf_ptr >= s->buf_end)
+            flush_buffer(s);
+
+        count -= len;
+    }
+}
+
 void put_buffer(ByteIOContext *s, const unsigned char *buf, int size)
 {
     while (size > 0) {

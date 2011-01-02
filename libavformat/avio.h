@@ -353,6 +353,7 @@ ByteIOContext *av_alloc_put_byte(
                   int64_t (*seek)(void *opaque, int64_t offset, int whence));
 
 void put_byte(ByteIOContext *s, int b);
+void put_nbyte(ByteIOContext *s, int b, int count);
 void put_buffer(ByteIOContext *s, const unsigned char *buf, int size);
 void put_le64(ByteIOContext *s, uint64_t val);
 void put_be64(ByteIOContext *s, uint64_t val);
