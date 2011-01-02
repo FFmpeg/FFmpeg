@@ -87,7 +87,7 @@ static int decode_ext_header(Wmv2Context *w){
 
     if(s->avctx->extradata_size<4) return -1;
 
-    init_get_bits(&gb, s->avctx->extradata, s->avctx->extradata_size*8);
+    init_get_bits(&gb, s->avctx->extradata, 32);
 
     fps                = get_bits(&gb, 5);
     s->bit_rate        = get_bits(&gb, 11)*1024;
