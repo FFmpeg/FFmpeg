@@ -65,7 +65,7 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
             out += snprintf(out, out_end-out, "{\\an1}{\\pos(%d,%d)}", x1, y1);
     }
 
-    for (; *in && out < out_end && !end; in++) {
+    for (; out < out_end && !end && *in; in++) {
         switch (*in) {
         case '\r':
             break;
@@ -211,13 +211,14 @@ static int srt_decode_frame(AVCodecContext *avctx,
     int ts_start, ts_end, x1 = -1, y1 = -1, x2 = -1, y2 = -1;
     char buffer[2048];
     const char *ptr = avpkt->data;
+    const char *end = avpkt->data + avpkt->size;
 
     if (avpkt->size <= 0)
         return avpkt->size;
 
     ff_ass_init(sub);
 
-    while (*ptr) {
+    while (ptr < end && *ptr) {
         ptr = read_ts(ptr, &ts_start, &ts_end, &x1, &y1, &x2, &y2);
         if (!ptr)
             break;
