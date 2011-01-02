@@ -685,7 +685,7 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
 }
 
 void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
-                        RTSPState *rt)
+                        RTSPState *rt, const char *method)
 {
     const char *p;
 
@@ -808,7 +808,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
             reply->status_code = atoi(buf1);
             av_strlcpy(reply->reason, p, sizeof(reply->reason));
         } else {
-            ff_rtsp_parse_line(reply, p, rt);
+            ff_rtsp_parse_line(reply, p, rt, method);
             av_strlcat(rt->last_reply, p,    sizeof(rt->last_reply));
             av_strlcat(rt->last_reply, "\n", sizeof(rt->last_reply));
         }

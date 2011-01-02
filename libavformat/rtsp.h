@@ -353,7 +353,7 @@ typedef struct RTSPStream {
 } RTSPStream;
 
 void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
-                        RTSPState *rt);
+                        RTSPState *rt, const char *method);
 
 extern int rtsp_rtp_port_min;
 extern int rtsp_rtp_port_max;
