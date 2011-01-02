@@ -195,7 +195,7 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
              * since it would block and wait for an RTSP reply on the socket
              * (which may not be coming any time soon) if it handles
              * interleaved packets internally. */
-            ret = ff_rtsp_read_reply(s, &reply, NULL, 1);
+            ret = ff_rtsp_read_reply(s, &reply, NULL, 1, NULL);
             if (ret < 0)
                 return AVERROR(EPIPE);
             if (ret == 1)

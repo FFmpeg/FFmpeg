@@ -170,7 +170,7 @@ redo:
     for (;;) {
         RTSPMessageHeader reply;
 
-        ret = ff_rtsp_read_reply(s, &reply, NULL, 1);
+        ret = ff_rtsp_read_reply(s, &reply, NULL, 1, NULL);
         if (ret < 0)
             return ret;
         if (ret == 1) /* received '$' */

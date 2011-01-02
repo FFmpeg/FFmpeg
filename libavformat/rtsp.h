@@ -434,13 +434,15 @@ int ff_rtsp_send_cmd(AVFormatContext *s, const char *method,
  *                   data packets (if they are encountered), until a reply
  *                   has been fully parsed. If no more data is available
  *                   without parsing a reply, it will return an error.
+ * @param method the RTSP method this is a reply to. This affects how
+ *               some response headers are acted upon. May be NULL.
  *
  * @return 1 if a data packets is ready to be received, -1 on error,
  *          and 0 on success.
  */
 int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
                        unsigned char **content_ptr,
-                       int return_on_interleaved_data);
+                       int return_on_interleaved_data, const char *method);
 
 /**
  * Skip a RTP/TCP interleaved packet.

@@ -758,7 +758,7 @@ void ff_rtsp_skip_packet(AVFormatContext *s)
 
 int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
                        unsigned char **content_ptr,
-                       int return_on_interleaved_data)
+                       int return_on_interleaved_data, const char *method)
 {
     RTSPState *rt = s->priv_data;
     char buf[4096], buf1[1024], *q;
@@ -936,7 +936,7 @@ retry:
                                                    send_content_length)))
         return ret;
 
-    if ((ret = ff_rtsp_read_reply(s, reply, content_ptr, 0) ) < 0)
+    if ((ret = ff_rtsp_read_reply(s, reply, content_ptr, 0, method) ) < 0)
         return ret;
 
     if (reply->status_code == 401 && cur_auth_type == HTTP_AUTH_NONE &&
@@ -1512,7 +1512,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             if (tcp_fd != -1 && FD_ISSET(tcp_fd, &rfds)) {
                 RTSPMessageHeader reply;
 
-                ret = ff_rtsp_read_reply(s, &reply, NULL, 0);
+                ret = ff_rtsp_read_reply(s, &reply, NULL, 0, NULL);
                 if (ret < 0)
                     return ret;
                 /* XXX: parse message */
