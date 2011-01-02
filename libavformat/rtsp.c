@@ -685,7 +685,7 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
 }
 
 void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
-                        HTTPAuthState *auth_state)
+                        RTSPState *rt)
 {
     const char *p;
 
@@ -718,12 +718,12 @@ void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
     } else if (av_stristart(p, "Location:", &p)) {
         p += strspn(p, SPACE_CHARS);
         av_strlcpy(reply->location, p , sizeof(reply->location));
-    } else if (av_stristart(p, "WWW-Authenticate:", &p) && auth_state) {
+    } else if (av_stristart(p, "WWW-Authenticate:", &p) && rt) {
         p += strspn(p, SPACE_CHARS);
-        ff_http_auth_handle_header(auth_state, "WWW-Authenticate", p);
-    } else if (av_stristart(p, "Authentication-Info:", &p) && auth_state) {
+        ff_http_auth_handle_header(&rt->auth_state, "WWW-Authenticate", p);
+    } else if (av_stristart(p, "Authentication-Info:", &p) && rt) {
         p += strspn(p, SPACE_CHARS);
-        ff_http_auth_handle_header(auth_state, "Authentication-Info", p);
+        ff_http_auth_handle_header(&rt->auth_state, "Authentication-Info", p);
     } else if (av_stristart(p, "Content-Base:", &p)) {
         p += strspn(p, SPACE_CHARS);
         av_strlcpy(reply->content_base, p , sizeof(reply->content_base));
@@ -808,7 +808,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
             reply->status_code = atoi(buf1);
             av_strlcpy(reply->reason, p, sizeof(reply->reason));
         } else {
-            ff_rtsp_parse_line(reply, p, &rt->auth_state);
+            ff_rtsp_parse_line(reply, p, rt);
             av_strlcat(rt->last_reply, p,    sizeof(rt->last_reply));
             av_strlcat(rt->last_reply, "\n", sizeof(rt->last_reply));
         }
