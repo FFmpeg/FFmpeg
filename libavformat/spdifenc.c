@@ -347,7 +347,7 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     if (!ctx->pkt_offset)
         return 0;
 
-    padding = (ctx->pkt_offset - ctx->use_preamble * BURST_HEADER_SIZE - ctx->out_bytes) >> 1;
+    padding = (ctx->pkt_offset - ctx->use_preamble * BURST_HEADER_SIZE - ctx->out_bytes) & ~1;
     if (padding < 0) {
         av_log(s, AV_LOG_ERROR, "bitrate is too high\n");
         return AVERROR(EINVAL);
@@ -373,8 +373,7 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     if (ctx->out_bytes & 1)
         put_be16(s->pb, ctx->out_buf[ctx->out_bytes - 1]);
 
-    for (; padding > 0; padding--)
-        put_be16(s->pb, 0);
+    put_nbyte(s->pb, 0, padding);
 
     av_log(s, AV_LOG_DEBUG, "type=%x len=%i pkt_offset=%i\n",
            ctx->data_type, ctx->out_bytes, ctx->pkt_offset);
