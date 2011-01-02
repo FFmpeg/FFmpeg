@@ -724,9 +724,10 @@ void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
     } else if (av_stristart(p, "Authentication-Info:", &p) && rt) {
         p += strspn(p, SPACE_CHARS);
         ff_http_auth_handle_header(&rt->auth_state, "Authentication-Info", p);
-    } else if (av_stristart(p, "Content-Base:", &p)) {
+    } else if (av_stristart(p, "Content-Base:", &p) && rt) {
         p += strspn(p, SPACE_CHARS);
-        av_strlcpy(reply->content_base, p , sizeof(reply->content_base));
+        if (method && !strcmp(method, "DESCRIBE"))
+            av_strlcpy(rt->control_uri, p , sizeof(rt->control_uri));
     }
 }
 
