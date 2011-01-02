@@ -229,9 +229,11 @@ static av_cold int decode_init(AVCodecContext *avctx){
     ff_mpeg12_init_vlcs();
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, ff_zigzag_direct);
 
+    if( avctx->idct_algo == FF_IDCT_AUTO )
+        avctx->idct_algo = FF_IDCT_SIMPLE;
     p->qstride= 0;
     p->qscale_table= av_mallocz(a->mb_width);
-    avctx->pix_fmt= PIX_FMT_YUV420P;
+    avctx->pix_fmt= PIX_FMT_YUVJ420P;
 
     return 0;
 }
