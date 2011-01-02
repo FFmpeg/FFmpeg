@@ -2720,6 +2720,10 @@ int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
         s->priv_data = av_mallocz(s->oformat->priv_data_size);
         if (!s->priv_data)
             return AVERROR(ENOMEM);
+        if (s->oformat->priv_class) {
+            *(const AVClass**)s->priv_data= s->oformat->priv_class;
+            av_opt_set_defaults(s->priv_data);
+        }
     } else
         s->priv_data = NULL;
 

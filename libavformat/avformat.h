@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 91
+#define LIBAVFORMAT_VERSION_MINOR 92
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -367,6 +367,8 @@ typedef struct AVOutputFormat {
 #if FF_API_OLD_METADATA
     const AVMetadataConv *metadata_conv;
 #endif
+
+    const AVClass *priv_class; ///< AVClass for the private context
 
     /* private fields */
     struct AVOutputFormat *next;
