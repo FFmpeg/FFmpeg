@@ -316,7 +316,7 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
             pix_fmt = alt_pix_fmt;
     }
 
-    if (raten == 0 && rated == 0) {
+    if (raten <= 0 || rated <= 0) {
         // Frame rate unknown
         raten = 25;
         rated = 1;
