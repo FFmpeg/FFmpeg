@@ -808,6 +808,9 @@ void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
         if (strstr(p, "GET_PARAMETER") &&
             method && !strcmp(method, "OPTIONS"))
             rt->get_parameter_supported = 1;
+    } else if (av_stristart(p, "x-Accept-Dynamic-Rate:", &p) && rt) {
+        p += strspn(p, SPACE_CHARS);
+        rt->accept_dynamic_rate = atoi(p);
     }
 }
 

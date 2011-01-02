@@ -346,6 +346,9 @@ typedef struct RTSPState {
      * Option flags for the chained RTP muxer.
      */
     int rtp_muxer_flags;
+
+    /** Whether the server accepts the x-Dynamic-Rate header */
+    int accept_dynamic_rate;
 } RTSPState;
 
 /**
