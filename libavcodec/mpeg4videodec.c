@@ -1575,6 +1575,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
     s->avctx->time_base.den = get_bits(gb, 16);
     if(!s->avctx->time_base.den){
         av_log(s->avctx, AV_LOG_ERROR, "time_base.den==0\n");
+        s->avctx->time_base.num = 0;
         return -1;
     }
 
