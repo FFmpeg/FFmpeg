@@ -1413,13 +1413,13 @@ cropdetect_filter_deps="gpl"
 frei0r_filter_deps="frei0r dlopen strtok_r"
 frei0r_src_filter_deps="frei0r dlopen strtok_r"
 hqdn3d_filter_deps="gpl"
+scale_filter_deps="swscale"
 ocv_filter_deps="libopencv"
 yadif_filter_deps="gpl"
 
 # libraries
 avdevice_deps="avcodec avformat"
 avformat_deps="avcodec"
-avfilter_deps="swscale"
 
 # programs
 ffmpeg_deps="avcodec avformat swscale"
