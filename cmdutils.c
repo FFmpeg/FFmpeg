@@ -255,8 +255,8 @@ int opt_default(const char *opt, const char *arg){
             }
         }
         if(!p && !oformat){
-        fprintf(stderr, "Unrecognized option '%s'\n", opt);
-        exit(1);
+            fprintf(stderr, "Unrecognized option '%s'\n", opt);
+            exit(1);
         }
     }
 
