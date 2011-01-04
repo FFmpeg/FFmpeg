@@ -139,7 +139,7 @@ typedef struct AC3EncodeContext {
 } AC3EncodeContext;
 
 
-/* prototypes for functions in ac3enc_fixed.c and ac3_float.c */
+/* prototypes for functions in ac3enc_fixed.c and ac3enc_float.c */
 
 static av_cold void mdct_end(AC3MDCTContext *mdct);
 
