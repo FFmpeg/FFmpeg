@@ -75,6 +75,8 @@ static const ff_asf_guid data_guid =
     {0x95,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D};
 static const ff_asf_guid stream_guid =
     {0xED,0xA4,0x13,0x23,0x2D,0xBF,0x4F,0x45,0xAD,0x8A,0xD9,0x5B,0xA7,0xF9,0x1F,0xEE};
+static const ff_asf_guid stream2_guid =
+    {0xA2,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D};
 static const ff_asf_guid EVENTID_SubtitleSpanningEvent =
     {0x48,0xC0,0xCE,0x5D,0xB9,0xD0,0x63,0x41,0x87,0x2C,0x4F,0x32,0x22,0x3B,0xE8,0x8A};
 static const ff_asf_guid EVENTID_LanguageSpanningEvent =
@@ -192,11 +194,23 @@ static void parse_mpeg1waveformatex(AVStream *st)
     }
 }
 
-static AVStream * new_stream(AVFormatContext *s, int sid, int codec_type)
+/**
+ * Initialise stream
+ * @param st Stream to initialise, or NULL to create and initialise new stream
+ * @return NULL on error
+ */
+static AVStream * new_stream(AVFormatContext *s, AVStream *st, int sid, int codec_type)
 {
-    AVStream * st = av_new_stream(s, sid);
-    if (!st)
-        return NULL;
+    if (st) {
+        if (st->codec->extradata) {
+            av_freep(&st->codec->extradata);
+            st->codec->extradata_size = 0;
+        }
+    } else {
+        st = av_new_stream(s, sid);
+        if (!st)
+            return NULL;
+    }
     st->codec->codec_type = codec_type;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
     av_set_pts_info(st, 64, 1, 10000000);
@@ -204,19 +218,19 @@ static AVStream * new_stream(AVFormatContext *s, int sid, int codec_type)
 }
 
 /**
- * parse Media Type structure and create new streams as required
+ * parse Media Type structure and populate stream
+ * @param st         Stream, or NULL to create new stream
  * @param mediatype  Mediatype GUID
  * @param subtype    Subtype GUID
  * @param formattype Format GUID
  * @param size       Size of format buffer
  * @return NULL on error
  */
-static AVStream * parse_media_type(AVFormatContext *s, int sid,
+static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
                                    ff_asf_guid mediatype, ff_asf_guid subtype,
                                    ff_asf_guid formattype, int size)
 {
     ByteIOContext *pb = s->pb;
-    AVStream *st;
     if (!ff_guidcmp(subtype, mediasubtype_cpfilters_processed) &&
         !ff_guidcmp(formattype, format_cpfilters_processed)) {
         ff_asf_guid actual_subtype;
@@ -233,11 +247,11 @@ static AVStream * parse_media_type(AVFormatContext *s, int sid,
         ff_get_guid(pb, &actual_formattype);
         url_fseek(pb, -size, SEEK_CUR);
 
-        st = parse_media_type(s, sid, mediatype, actual_subtype, actual_formattype, size - 32);
+        st = parse_media_type(s, st, sid, mediatype, actual_subtype, actual_formattype, size - 32);
         url_fskip(pb, 32);
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_audio)) {
-        st = new_stream(s, sid, AVMEDIA_TYPE_AUDIO);
+        st = new_stream(s, st, sid, AVMEDIA_TYPE_AUDIO);
         if (!st)
             return NULL;
         if (!ff_guidcmp(formattype, format_waveformatex)) {
@@ -262,7 +276,7 @@ static AVStream * parse_media_type(AVFormatContext *s, int sid,
         }
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_video)) {
-        st = new_stream(s, sid, AVMEDIA_TYPE_VIDEO);
+        st = new_stream(s, st, sid, AVMEDIA_TYPE_VIDEO);
         if (!st)
             return NULL;
         if (!ff_guidcmp(formattype, format_videoinfo2)) {
@@ -287,7 +301,7 @@ static AVStream * parse_media_type(AVFormatContext *s, int sid,
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_mpeg2_pes) &&
                !ff_guidcmp(subtype, mediasubtype_dvb_subtitle)) {
-        st = new_stream(s, sid, AVMEDIA_TYPE_SUBTITLE);
+        st = new_stream(s, st, sid, AVMEDIA_TYPE_SUBTITLE);
         if (!st)
             return NULL;
         if (ff_guidcmp(formattype, format_none))
@@ -297,7 +311,7 @@ static AVStream * parse_media_type(AVFormatContext *s, int sid,
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_mstvcaption) &&
                (!ff_guidcmp(subtype, mediasubtype_teletext) || !ff_guidcmp(subtype, mediasubtype_dtvccdata))) {
-        st = new_stream(s, sid, AVMEDIA_TYPE_SUBTITLE);
+        st = new_stream(s, st, sid, AVMEDIA_TYPE_SUBTITLE);
         if (!st)
             return NULL;
         if (ff_guidcmp(formattype, format_none))
@@ -366,9 +380,23 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                     url_fskip(pb, 12);
                     ff_get_guid(pb, &formattype);
                     size = get_le32(pb);
-                    parse_media_type(s, sid, mediatype, subtype, formattype, size);
+                    parse_media_type(s, 0, sid, mediatype, subtype, formattype, size);
                     consumed += 72 + size;
                 }
+            }
+        } else if (!ff_guidcmp(g, stream2_guid)) {
+            int stream_index = ff_find_stream_index(s, sid);
+            if (stream_index >= 0) {
+                ff_asf_guid mediatype, subtype, formattype;
+                int size;
+                url_fskip(pb, 12);
+                ff_get_guid(pb, &mediatype);
+                ff_get_guid(pb, &subtype);
+                url_fskip(pb, 12);
+                ff_get_guid(pb, &formattype);
+                size = get_le32(pb);
+                parse_media_type(s, s->streams[stream_index], sid, mediatype, subtype, formattype, size);
+                consumed += 76 + size;
             }
         } else if (!ff_guidcmp(g, EVENTID_AudioDescriptorSpanningEvent) ||
                    !ff_guidcmp(g, EVENTID_CtxADescriptorSpanningEvent) ||
@@ -457,8 +485,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             !ff_guidcmp(g, (const ff_asf_guid){0x70,0xE9,0xF1,0xF8,0x89,0xA4,0x4C,0x4D,0x83,0x73,0xB8,0x12,0xE0,0xD5,0xF8,0x1E}) ||
             !ff_guidcmp(g, (const ff_asf_guid){0x96,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D}) ||
             !ff_guidcmp(g, (const ff_asf_guid){0x97,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D}) ||
-            !ff_guidcmp(g, (const ff_asf_guid){0xA1,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D}) ||
-            !ff_guidcmp(g, (const ff_asf_guid){0xA2,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D})) {
+            !ff_guidcmp(g, (const ff_asf_guid){0xA1,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D})) {
             //ignore known guids
         } else
             av_log(s, AV_LOG_WARNING, "unsuported chunk:"PRI_GUID"\n", ARG_GUID(g));
