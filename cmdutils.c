@@ -63,7 +63,9 @@ void init_opts(void)
     for (i = 0; i < AVMEDIA_TYPE_NB; i++)
         avcodec_opts[i] = avcodec_alloc_context2(i);
     avformat_opts = avformat_alloc_context();
+#if CONFIG_SWSCALE
     sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC, NULL, NULL, NULL);
+#endif
 }
 
 void uninit_opts(void)
@@ -73,7 +75,9 @@ void uninit_opts(void)
         av_freep(&avcodec_opts[i]);
     av_freep(&avformat_opts->key);
     av_freep(&avformat_opts);
+#if CONFIG_SWSCALE
     av_freep(&sws_opts);
+#endif
 }
 
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
