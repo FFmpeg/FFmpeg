@@ -1427,8 +1427,8 @@ ffmpeg_deps="avcodec avformat swscale"
 ffmpeg_select="buffer_filter"
 ffplay_deps="avcodec avformat swscale sdl"
 ffplay_select="rdft"
-ffprobe_deps="avcodec avformat swscale"
-ffserver_deps="avformat ffm_muxer rtp_protocol rtsp_demuxer swscale"
+ffprobe_deps="avcodec avformat"
+ffserver_deps="avformat ffm_muxer rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 
 doc_deps="texi2html"
