@@ -324,7 +324,7 @@ static void mmap_release_buffer(AVPacket *pkt)
 
     res = ioctl(fd, VIDIOC_QBUF, &buf);
     if (res < 0) {
-        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF)\n");
+        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", strerror(errno));
     }
     pkt->data = NULL;
     pkt->size = 0;
