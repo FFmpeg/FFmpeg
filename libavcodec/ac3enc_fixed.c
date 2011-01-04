@@ -26,6 +26,7 @@
  * fixed-point AC-3 encoder.
  */
 
+#undef CONFIG_AC3ENC_FLOAT
 #include "ac3enc.c"
 
 
@@ -413,8 +414,8 @@ int main(void)
 #endif /* TEST */
 
 
-AVCodec ac3_encoder = {
-    "ac3",
+AVCodec ac3_fixed_encoder = {
+    "ac3_fixed",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AC3,
     sizeof(AC3EncodeContext),

@@ -57,7 +57,7 @@ fi
 
 if [ -n "$do_rm" ] ; then
 file=${outfile}lavf.rm
-do_ffmpeg $file -t 1 -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -f s16le -i $pcm_src
+do_ffmpeg $file -t 1 -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec ac3_fixed
 # broken
 #do_ffmpeg_crc $file -i $target_path/$file
 fi

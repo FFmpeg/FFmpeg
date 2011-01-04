@@ -37,6 +37,11 @@
 #include "audioconvert.h"
 
 
+#ifndef CONFIG_AC3ENC_FLOAT
+#define CONFIG_AC3ENC_FLOAT 0
+#endif
+
+
 /** Maximum number of exponent groups. +1 for separate DC exponent. */
 #define AC3_MAX_EXP_GROUPS 85
 
@@ -44,7 +49,11 @@
 #define SCALE_FLOAT(a, bits) lrintf((a) * (float)(1 << (bits)))
 
 
+#if CONFIG_AC3ENC_FLOAT
+#include "ac3enc_float.h"
+#else
 #include "ac3enc_fixed.h"
+#endif
 
 
 /**
@@ -130,7 +139,7 @@ typedef struct AC3EncodeContext {
 } AC3EncodeContext;
 
 
-/* prototypes for functions in ac3enc_fixed.c */
+/* prototypes for functions in ac3enc_fixed.c and ac3_float.c */
 
 static av_cold void mdct_end(AC3MDCTContext *mdct);
 

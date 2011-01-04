@@ -269,8 +269,8 @@ do_audio_decoding
 $tiny_psnr $pcm_dst $pcm_ref 2 1924 >> $logfile
 fi
 
-if [ -n "$do_ac3" ] ; then
-do_audio_encoding ac3.rm "" -vn
+if [ -n "$do_ac3_fixed" ] ; then
+do_audio_encoding ac3.rm "" "-vn -acodec ac3_fixed"
 # binaries configured with --disable-sse decode ac3 differently
 #do_audio_decoding
 #$tiny_psnr $pcm_dst $pcm_ref 2 1024 >> $logfile
