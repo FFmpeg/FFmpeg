@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "meta.h"
+#include "ffmeta.h"
 
 static int probe(AVProbeData *p)
 {

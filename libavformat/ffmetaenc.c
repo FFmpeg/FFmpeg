@@ -20,7 +20,7 @@
  */
 
 #include "avformat.h"
-#include "meta.h"
+#include "ffmeta.h"
 
 
 static void write_escape_str(ByteIOContext *s, const uint8_t *str)
