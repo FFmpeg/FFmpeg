@@ -76,9 +76,9 @@ static int rtsp_read_play(AVFormatContext *s)
                 if (!rtpctx || rtsp_st->stream_index < 0)
                     continue;
                 st = s->streams[rtsp_st->stream_index];
-                        rtpctx->range_start_offset =
-                            av_rescale_q(reply->range_start, AV_TIME_BASE_Q,
-                                         st->time_base);
+                rtpctx->range_start_offset =
+                    av_rescale_q(reply->range_start, AV_TIME_BASE_Q,
+                                 st->time_base);
             }
         }
     }
