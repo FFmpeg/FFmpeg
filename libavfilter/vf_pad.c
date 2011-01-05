@@ -259,6 +259,9 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
             (pad->y >> vsub) * outpicref->linesize[plane];
     }
 
+    outpicref->video->w = pad->w;
+    outpicref->video->h = pad->h;
+
     avfilter_start_frame(inlink->dst->outputs[0], outpicref);
 }
 
