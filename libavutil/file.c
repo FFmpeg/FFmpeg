@@ -22,6 +22,9 @@
 #include <unistd.h>
 #if HAVE_MMAP
 #include <sys/mman.h>
+#elif HAVE_MAPVIEWOFFILE
+#include <io.h>
+#include <windows.h>
 #endif
 
 typedef struct {
@@ -81,6 +84,27 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
         return err;
     }
     *bufptr = ptr;
+#elif HAVE_MAPVIEWOFFILE
+    {
+        HANDLE mh, fh = (HANDLE)_get_osfhandle(fd);
+
+        mh = CreateFileMapping(fh, NULL, PAGE_READONLY, 0, 0, NULL);
+        if (!mh) {
+            av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in CreateFileMapping()\n");
+            close(fd);
+            return -1;
+        }
+
+        ptr = MapViewOfFile(mh, FILE_MAP_READ, 0, 0, *size);
+        CloseHandle(mh);
+        if (!ptr) {
+            av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in MapViewOfFile()\n");
+            close(fd);
+            return -1;
+        }
+
+        *bufptr = ptr;
+    }
 #else
     *bufptr = av_malloc(*size);
     if (!*bufptr) {
@@ -99,6 +123,8 @@ void av_file_unmap(uint8_t *bufptr, size_t size)
 {
 #if HAVE_MMAP
     munmap(bufptr, size);
+#elif HAVE_MAPVIEWOFFILE
+    UnmapViewOfFile(bufptr);
 #else
     av_free(bufptr);
 #endif

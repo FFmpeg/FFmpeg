@@ -1040,6 +1040,7 @@ HAVE_LIST="
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
     malloc_h
+    MapViewOfFile
     memalign
     mkstemp
     mmap
@@ -2687,6 +2688,7 @@ check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
 check_func_headers windows.h GetProcessTimes
+check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h VirtualAlloc
 
 check_header conio.h
