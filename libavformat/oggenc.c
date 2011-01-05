@@ -52,6 +52,7 @@ typedef struct {
     unsigned page_count; ///< number of page buffered
     OGGPage page; ///< current page
     unsigned serial_num; ///< serial number
+    int64_t last_granule; ///< last packet granule
 } OGGStreamContext;
 
 typedef struct OGGPageList {
@@ -110,13 +111,13 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     return 0;
 }
 
-static int64_t ogg_granule_to_timestamp(OGGStreamContext *oggstream, OGGPage *page)
+static int64_t ogg_granule_to_timestamp(OGGStreamContext *oggstream, int64_t granule)
 {
     if (oggstream->kfgshift)
-        return (page->granule>>oggstream->kfgshift) +
-            (page->granule & ((1<<oggstream->kfgshift)-1));
+        return (granule>>oggstream->kfgshift) +
+            (granule & ((1<<oggstream->kfgshift)-1));
     else
-        return page->granule;
+        return granule;
 }
 
 static int ogg_compare_granule(AVFormatContext *s, OGGPage *next, OGGPage *page)
@@ -128,9 +129,9 @@ static int ogg_compare_granule(AVFormatContext *s, OGGPage *next, OGGPage *page)
     if (next->granule == -1 || page->granule == -1)
         return 0;
 
-    next_granule = av_rescale_q(ogg_granule_to_timestamp(st2->priv_data, next),
+    next_granule = av_rescale_q(ogg_granule_to_timestamp(st2->priv_data, next->granule),
                                 st2->time_base, AV_TIME_BASE_Q);
-    cur_granule  = av_rescale_q(ogg_granule_to_timestamp(st->priv_data, page),
+    cur_granule  = av_rescale_q(ogg_granule_to_timestamp(st->priv_data, page->granule),
                                 st ->time_base, AV_TIME_BASE_Q);
     return next_granule > cur_granule;
 }
@@ -174,7 +175,16 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
     OGGStreamContext *oggstream = st->priv_data;
     int total_segments = size / 255 + 1;
     uint8_t *p = data;
-    int i, segments, len;
+    int i, segments, len, flush = 0;
+
+    // Handles VFR by flushing page because this frame needs to have a timestamp
+    if (st->codec->codec_id == CODEC_ID_THEORA &&
+        ogg_granule_to_timestamp(oggstream, granule) >
+        ogg_granule_to_timestamp(oggstream, oggstream->last_granule) + 1) {
+        if (oggstream->page.granule != -1)
+            ogg_buffer_page(s, oggstream);
+        flush = 1;
+    }
 
     for (i = 0; i < total_segments; ) {
         OGGPage *page = &oggstream->page;
@@ -202,6 +212,10 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
             ogg_buffer_page(s, oggstream);
         }
     }
+
+    if (flush && oggstream->page.granule != -1)
+        ogg_buffer_page(s, oggstream);
+
     return 0;
 }
 
@@ -459,6 +473,8 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
         return ret;
 
     ogg_write_pages(s, 0);
+
+    oggstream->last_granule = granule;
 
     return 0;
 }
