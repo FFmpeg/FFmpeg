@@ -137,6 +137,9 @@ void ff_mpeg1_clean_buffers(MpegEncContext *s){
 /******************************************/
 /* decoding */
 
+VLC ff_dc_lum_vlc;
+VLC ff_dc_chroma_vlc;
+
 static VLC mv_vlc;
 static VLC mbincr_vlc;
 static VLC mb_ptype_vlc;
@@ -150,10 +153,10 @@ av_cold void ff_mpeg12_init_vlcs(void)
     if (!done) {
         done = 1;
 
-        INIT_VLC_STATIC(&dc_lum_vlc, DC_VLC_BITS, 12,
+        INIT_VLC_STATIC(&ff_dc_lum_vlc, DC_VLC_BITS, 12,
                  ff_mpeg12_vlc_dc_lum_bits, 1, 1,
                  ff_mpeg12_vlc_dc_lum_code, 2, 2, 512);
-        INIT_VLC_STATIC(&dc_chroma_vlc,  DC_VLC_BITS, 12,
+        INIT_VLC_STATIC(&ff_dc_chroma_vlc,  DC_VLC_BITS, 12,
                  ff_mpeg12_vlc_dc_chroma_bits, 1, 1,
                  ff_mpeg12_vlc_dc_chroma_code, 2, 2, 514);
         INIT_VLC_STATIC(&mv_vlc, MV_VLC_BITS, 17,
