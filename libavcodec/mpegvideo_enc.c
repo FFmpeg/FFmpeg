@@ -525,7 +525,9 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift, &chroma_v_shift);
 
     if(avctx->codec_id == CODEC_ID_MPEG4 && s->avctx->time_base.den > (1<<16)-1){
-        av_log(avctx, AV_LOG_ERROR, "timebase not supported by mpeg 4 standard\n");
+        av_log(avctx, AV_LOG_ERROR, "timebase %d/%d not supported by MPEG 4 standard, "
+               "the maximum admitted value for the timebase denominator is %d\n",
+               s->avctx->time_base.num, s->avctx->time_base.den, (1<<16)-1);
         return -1;
     }
     s->time_increment_bits = av_log2(s->avctx->time_base.den - 1) + 1;
