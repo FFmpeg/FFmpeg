@@ -514,6 +514,19 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
             ap->time_base.num = tpf->numerator;
             ap->time_base.den = tpf->denominator;
         }
+    } else {
+        /* if timebase value is not set in ap, read the timebase value
+         * from the driver and set it in ap */
+        struct v4l2_streamparm streamparm = { 0 };
+        struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
+
+        streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        if (ioctl(s->fd, VIDIOC_G_PARM, &streamparm) != 0) {
+            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n", strerror(errno));
+            return AVERROR(errno);
+        }
+        ap->time_base.num = tpf->numerator;
+        ap->time_base.den = tpf->denominator;
     }
 
     return 0;
