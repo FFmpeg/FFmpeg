@@ -35,8 +35,6 @@
 typedef int16_t SampleType;
 typedef int32_t CoefType;
 
-#define SCALE_COEF(a) (a)
-
 
 /**
  * Compex number.

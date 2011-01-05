@@ -35,8 +35,6 @@
 typedef float SampleType;
 typedef float CoefType;
 
-#define SCALE_COEF(a) SCALE_FLOAT((a), 24)
-
 
 typedef struct AC3MDCTContext {
     const float *window;    ///< MDCT window function

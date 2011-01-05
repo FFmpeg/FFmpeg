@@ -319,6 +319,17 @@ static int normalize_samples(AC3EncodeContext *s)
 }
 
 
+/**
+ * Scale MDCT coefficients from float to fixed-point.
+ */
+static void scale_coefficients(AC3EncodeContext *s)
+{
+    /* scaling/conversion is obviously not needed for the fixed-point encoder
+       since the coefficients are already fixed-point. */
+    return;
+}
+
+
 #ifdef TEST
 /*************************************************************************/
 /* TEST */

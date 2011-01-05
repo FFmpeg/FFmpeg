@@ -62,6 +62,7 @@
 typedef struct AC3Block {
     uint8_t  **bap;                             ///< bit allocation pointers (bap)
     CoefType **mdct_coef;                       ///< MDCT coefficients
+    int32_t  **fixed_coef;                      ///< fixed-point MDCT coefficients
     uint8_t  **exp;                             ///< original exponents
     uint8_t  **grouped_exp;                     ///< grouped exponents
     int16_t  **psd;                             ///< psd per frequency bin
@@ -128,6 +129,7 @@ typedef struct AC3EncodeContext {
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
     CoefType *mdct_coef_buffer;
+    int32_t *fixed_coef_buffer;
     uint8_t *exp_buffer;
     uint8_t *grouped_exp_buffer;
     int16_t *psd_buffer;
@@ -152,6 +154,8 @@ static void apply_window(SampleType *output, const SampleType *input,
                          const SampleType *window, int n);
 
 static int normalize_samples(AC3EncodeContext *s);
+
+static void scale_coefficients(AC3EncodeContext *s);
 
 
 /**
@@ -286,11 +290,11 @@ static void extract_exponents(AC3EncodeContext *s)
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
             AC3Block *block = &s->blocks[blk];
             uint8_t *exp   = block->exp[ch];
-            CoefType *coef = block->mdct_coef[ch];
+            int32_t *coef = block->fixed_coef[ch];
             int exp_shift  = block->exp_shift[ch];
             for (i = 0; i < AC3_MAX_COEFS; i++) {
                 int e;
-                int v = abs(SCALE_COEF(coef[i]));
+                int v = abs(coef[i]);
                 if (v == 0)
                     e = 24;
                 else {
@@ -1017,7 +1021,7 @@ static inline int asym_quant(int c, int e, int qbits)
 /**
  * Quantize a set of mantissas for a single channel in a single block.
  */
-static void quantize_mantissas_blk_ch(AC3EncodeContext *s, CoefType *mdct_coef,
+static void quantize_mantissas_blk_ch(AC3EncodeContext *s, int32_t *fixed_coef,
                                       int8_t exp_shift, uint8_t *exp,
                                       uint8_t *bap, uint16_t *qmant, int n)
 {
@@ -1025,7 +1029,7 @@ static void quantize_mantissas_blk_ch(AC3EncodeContext *s, CoefType *mdct_coef,
 
     for (i = 0; i < n; i++) {
         int v;
-        int c = SCALE_COEF(mdct_coef[i]);
+        int c = fixed_coef[i];
         int e = exp[i] - exp_shift;
         int b = bap[i];
         switch (b) {
@@ -1122,7 +1126,7 @@ static void quantize_mantissas(AC3EncodeContext *s)
         s->qmant1_ptr = s->qmant2_ptr = s->qmant4_ptr = NULL;
 
         for (ch = 0; ch < s->channels; ch++) {
-            quantize_mantissas_blk_ch(s, block->mdct_coef[ch], block->exp_shift[ch],
+            quantize_mantissas_blk_ch(s, block->fixed_coef[ch], block->exp_shift[ch],
                                       block->exp[ch], block->bap[ch],
                                       block->qmant[ch], s->nb_coefs[ch]);
         }
@@ -1390,6 +1394,8 @@ static int ac3_encode_frame(AVCodecContext *avctx, unsigned char *frame,
 
     apply_mdct(s);
 
+    scale_coefficients(s);
+
     process_exponents(s);
 
     ret = compute_bit_allocation(s);
@@ -1420,6 +1426,7 @@ static av_cold int ac3_encode_close(AVCodecContext *avctx)
     av_freep(&s->bap_buffer);
     av_freep(&s->bap1_buffer);
     av_freep(&s->mdct_coef_buffer);
+    av_freep(&s->fixed_coef_buffer);
     av_freep(&s->exp_buffer);
     av_freep(&s->grouped_exp_buffer);
     av_freep(&s->psd_buffer);
@@ -1430,6 +1437,7 @@ static av_cold int ac3_encode_close(AVCodecContext *avctx)
         AC3Block *block = &s->blocks[blk];
         av_freep(&block->bap);
         av_freep(&block->mdct_coef);
+        av_freep(&block->fixed_coef);
         av_freep(&block->exp);
         av_freep(&block->grouped_exp);
         av_freep(&block->psd);
@@ -1636,6 +1644,26 @@ static av_cold int allocate_buffers(AVCodecContext *avctx)
             block->band_psd[ch]    = &s->band_psd_buffer   [64            * (blk * s->channels + ch)];
             block->mask[ch]        = &s->mask_buffer       [64            * (blk * s->channels + ch)];
             block->qmant[ch]       = &s->qmant_buffer      [AC3_MAX_COEFS * (blk * s->channels + ch)];
+        }
+    }
+
+    if (CONFIG_AC3ENC_FLOAT) {
+        FF_ALLOC_OR_GOTO(avctx, s->fixed_coef_buffer, AC3_MAX_BLOCKS * s->channels *
+                         AC3_MAX_COEFS * sizeof(*s->fixed_coef_buffer), alloc_fail);
+        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+            AC3Block *block = &s->blocks[blk];
+            FF_ALLOCZ_OR_GOTO(avctx, block->fixed_coef, s->channels *
+                              sizeof(*block->fixed_coef), alloc_fail);
+            for (ch = 0; ch < s->channels; ch++)
+                block->fixed_coef[ch] = &s->fixed_coef_buffer[AC3_MAX_COEFS * (blk * s->channels + ch)];
+        }
+    } else {
+        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+            AC3Block *block = &s->blocks[blk];
+            FF_ALLOCZ_OR_GOTO(avctx, block->fixed_coef, s->channels *
+                              sizeof(*block->fixed_coef), alloc_fail);
+            for (ch = 0; ch < s->channels; ch++)
+                block->fixed_coef[ch] = (int32_t *)block->mdct_coef[ch];
         }
     }
 

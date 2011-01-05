@@ -102,6 +102,17 @@ static int normalize_samples(AC3EncodeContext *s)
 }
 
 
+/**
+ * Scale MDCT coefficients from float to 24-bit fixed-point.
+ */
+static void scale_coefficients(AC3EncodeContext *s)
+{
+    int i;
+    for (i = 0; i < AC3_MAX_COEFS * AC3_MAX_BLOCKS * s->channels; i++)
+        s->fixed_coef_buffer[i] = SCALE_FLOAT(s->mdct_coef_buffer[i], 24);
+}
+
+
 AVCodec ac3_encoder = {
     "ac3",
     AVMEDIA_TYPE_AUDIO,
