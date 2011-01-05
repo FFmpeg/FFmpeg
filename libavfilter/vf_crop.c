@@ -242,10 +242,9 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     AVFilterBufferRef *ref2;
     int i;
 
-    picref->video->w = crop->w;
-    picref->video->h = crop->h;
-
     ref2 = avfilter_ref_buffer(picref, ~0);
+    ref2->video->w = crop->w;
+    ref2->video->h = crop->h;
 
     crop->var_values[VAR_T] = picref->pts == AV_NOPTS_VALUE ?
         NAN : picref->pts * av_q2d(link->time_base);
