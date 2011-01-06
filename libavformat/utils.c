@@ -812,7 +812,7 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
         break;
     case AVMEDIA_TYPE_AUDIO:
         frame_size = get_audio_frame_size(st->codec, pkt->size);
-        if (frame_size < 0)
+        if (frame_size <= 0 || st->codec->sample_rate <= 0)
             break;
         *pnum = frame_size;
         *pden = st->codec->sample_rate;
