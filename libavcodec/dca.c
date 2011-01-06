@@ -1352,11 +1352,17 @@ static int dca_decode_frame(AVCodecContext * avctx,
             s->xch_present = 1;
             break;
         }
-        case 0x1d95f262:
-            av_log(avctx, AV_LOG_DEBUG, "Possible X96 extension found at %d bits\n", get_bits_count(&s->gb));
-            av_log(avctx, AV_LOG_DEBUG, "FSIZE96 = %d bytes\n", get_bits(&s->gb, 12)+1);
+        case 0x1d95f262: {
+            int fsize96 = show_bits(&s->gb, 12) + 1;
+            if (s->frame_size != (get_bits_count(&s->gb) >> 3) - 4 + fsize96)
+                continue;
+
+            av_log(avctx, AV_LOG_DEBUG, "X96 extension found at %d bits\n", get_bits_count(&s->gb));
+            skip_bits(&s->gb, 12);
+            av_log(avctx, AV_LOG_DEBUG, "FSIZE96 = %d bytes\n", fsize96);
             av_log(avctx, AV_LOG_DEBUG, "REVNO = %d\n", get_bits(&s->gb, 4));
             break;
+        }
         }
 
         skip_bits_long(&s->gb, (-get_bits_count(&s->gb)) & 31);
