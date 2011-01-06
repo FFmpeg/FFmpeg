@@ -101,7 +101,7 @@ static void url_add_option(char *buf, int buf_size, const char *fmt, ...)
 static void build_udp_url(char *buf, int buf_size,
                           const char *hostname, int port,
                           int local_port, int ttl,
-                          int max_packet_size)
+                          int max_packet_size, int connect)
 {
     ff_url_join(buf, buf_size, "udp", NULL, hostname, port, NULL);
     if (local_port >= 0)
@@ -110,6 +110,8 @@ static void build_udp_url(char *buf, int buf_size,
         url_add_option(buf, buf_size, "ttl=%d", ttl);
     if (max_packet_size >=0)
         url_add_option(buf, buf_size, "pkt_size=%d", max_packet_size);
+    if (connect)
+        url_add_option(buf, buf_size, "connect=1");
 }
 
 /**
@@ -119,6 +121,7 @@ static void build_udp_url(char *buf, int buf_size,
  *         'localrtpport=n'   : set the local rtp port to n
  *         'localrtcpport=n'  : set the local rtcp port to n
  *         'pkt_size=n'       : set max packet size
+ *         'connect=0/1'      : do a connect() on the UDP socket
  * deprecated option:
  *         'localport=n'      : set the local port to n
  *
@@ -132,7 +135,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 {
     RTPContext *s;
     int rtp_port, rtcp_port,
-        is_output, ttl,
+        is_output, ttl, connect,
         local_rtp_port, local_rtcp_port, max_packet_size;
     char hostname[256];
     char buf[1024];
@@ -154,6 +157,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     local_rtp_port = -1;
     local_rtcp_port = -1;
     max_packet_size = -1;
+    connect = 0;
 
     p = strchr(uri, '?');
     if (p) {
@@ -175,17 +179,22 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         if (find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
             max_packet_size = strtol(buf, NULL, 10);
         }
+        if (find_info_tag(buf, sizeof(buf), "connect", p)) {
+            connect = strtol(buf, NULL, 10);
+        }
     }
 
     build_udp_url(buf, sizeof(buf),
-                  hostname, rtp_port, local_rtp_port, ttl, max_packet_size);
+                  hostname, rtp_port, local_rtp_port, ttl, max_packet_size,
+                  connect);
     if (url_open(&s->rtp_hd, buf, flags) < 0)
         goto fail;
     if (local_rtp_port>=0 && local_rtcp_port<0)
         local_rtcp_port = udp_get_local_port(s->rtp_hd) + 1;
 
     build_udp_url(buf, sizeof(buf),
-                  hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size);
+                  hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
+                  connect);
     if (url_open(&s->rtcp_hd, buf, flags) < 0)
         goto fail;
 
