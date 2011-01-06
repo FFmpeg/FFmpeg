@@ -2544,6 +2544,7 @@ void av_close_input_stream(AVFormatContext *s)
     int i;
     AVStream *st;
 
+    flush_packet_queue(s);
     if (s->iformat->read_close)
         s->iformat->read_close(s);
     for(i=0;i<s->nb_streams;i++) {
@@ -2575,7 +2576,6 @@ void av_close_input_stream(AVFormatContext *s)
         av_freep(&s->programs[i]);
     }
     av_freep(&s->programs);
-    flush_packet_queue(s);
     av_freep(&s->priv_data);
     while(s->nb_chapters--) {
 #if FF_API_OLD_METADATA
