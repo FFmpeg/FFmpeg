@@ -47,7 +47,7 @@ static av_cold int bfi_decode_init(AVCodecContext * avctx)
 static int bfi_decode_frame(AVCodecContext * avctx, void *data,
                             int *data_size, AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
+    const uint8_t *buf = avpkt->data, *buf_end = avpkt->data + avpkt->size;
     int buf_size = avpkt->size;
     BFIContext *bfi = avctx->priv_data;
     uint8_t *dst = bfi->dst;
@@ -99,6 +99,11 @@ static int bfi_decode_frame(AVCodecContext * avctx, void *data,
         unsigned int code = byte >> 6;
         unsigned int length = byte & ~0xC0;
 
+        if (buf >= buf_end) {
+            av_log(avctx, AV_LOG_ERROR, "Input resolution larger than actual frame.\n");
+            return -1;
+        }
+
         /* Get length and offset(if required) */
         if (length == 0) {
             if (code == 1) {
@@ -121,6 +126,10 @@ static int bfi_decode_frame(AVCodecContext * avctx, void *data,
         switch (code) {
 
         case 0:                //Normal Chain
+            if (length >= buf_end - buf) {
+                av_log(avctx, AV_LOG_ERROR, "Frame larger than buffer.\n");
+                return -1;
+            }
             bytestream_get_buffer(&buf, dst, length);
             dst += length;
             break;
