@@ -436,6 +436,8 @@ rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
  */
 static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestamp)
 {
+    if (pkt->pts != AV_NOPTS_VALUE || pkt->dts != AV_NOPTS_VALUE)
+        return; /* Timestamp already set by depacketizer */
     if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE && timestamp != RTP_NOTS_VALUE) {
         int64_t addend;
         int delta_timestamp;
