@@ -531,6 +531,11 @@ static int decode_frame(AVCodecContext *avctx,
         else
             ssize = s->stripsize;
 
+        if (ssize > buf_size) {
+            av_log(avctx, AV_LOG_ERROR, "Buffer size is smaller than strip size\n");
+            return -1;
+        }
+
         if(s->stripdata){
             soff = tget(&s->stripdata, s->sot, s->le);
         }else
