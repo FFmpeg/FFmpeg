@@ -309,6 +309,10 @@ typedef struct RTSPState {
 
     /** Reusable buffer for receiving packets */
     uint8_t* recvbuf;
+
+    /** Filter incoming UDP packets - receive packets only from the right
+     * source address and port. */
+    int filter_source;
 } RTSPState;
 
 /**

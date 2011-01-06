@@ -1186,16 +1186,18 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
             break;
 
         case RTSP_LOWER_TRANSPORT_UDP: {
-            char url[1024];
+            char url[1024], options[30] = "";
 
+            if (rt->filter_source)
+                av_strlcpy(options, "?connect=1", sizeof(options));
             /* Use source address if specified */
             if (reply->transports[0].source[0]) {
                 ff_url_join(url, sizeof(url), "rtp", NULL,
                             reply->transports[0].source,
-                            reply->transports[0].server_port_min, NULL);
+                            reply->transports[0].server_port_min, options);
             } else {
                 ff_url_join(url, sizeof(url), "rtp", NULL, host,
-                            reply->transports[0].server_port_min, NULL);
+                            reply->transports[0].server_port_min, options);
             }
             if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) &&
                 rtp_set_remote_url(rtsp_st->rtp_handle, url) < 0) {
@@ -1315,6 +1317,8 @@ redirect:
             } else if(!strcmp(option, "http")) {
                 lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_TCP);
                 rt->control_transport = RTSP_MODE_TUNNEL;
+            } else if (!strcmp(option, "filter_src")) {
+                rt->filter_source = 1;
             } else {
                 /* Write options back into the buffer, using memmove instead
                  * of strcpy since the strings may overlap. */

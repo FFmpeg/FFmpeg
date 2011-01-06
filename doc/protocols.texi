@@ -251,6 +251,9 @@ Use UDP multicast as lower transport protocol.
 @item http
 Use HTTP tunneling as lower transport protocol, which is useful for
 passing proxies.
+
+@item filter_src
+Accept packets only from negotiated peer address and port.
 @end table
 
 Multiple lower transport protocols may be specified, in that case they are
