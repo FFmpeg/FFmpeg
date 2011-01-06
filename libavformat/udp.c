@@ -245,8 +245,9 @@ static int udp_port(struct sockaddr_storage *addr, int addr_len)
 int udp_set_remote_url(URLContext *h, const char *uri)
 {
     UDPContext *s = h->priv_data;
-    char hostname[256];
+    char hostname[256], buf[10];
     int port;
+    const char *p;
 
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
 
@@ -256,6 +257,21 @@ int udp_set_remote_url(URLContext *h, const char *uri)
         return AVERROR(EIO);
     }
     s->is_multicast = ff_is_multicast_address((struct sockaddr*) &s->dest_addr);
+    p = strchr(uri, '?');
+    if (p) {
+        if (find_info_tag(buf, sizeof(buf), "connect", p)) {
+            int was_connected = s->is_connected;
+            s->is_connected = strtol(buf, NULL, 10);
+            if (s->is_connected && !was_connected) {
+                if (connect(s->udp_fd, (struct sockaddr *) &s->dest_addr,
+                            s->dest_addr_len)) {
+                    s->is_connected = 0;
+                    av_log(NULL, AV_LOG_ERROR, "connect: %s\n", strerror(errno));
+                    return AVERROR(EIO);
+                }
+            }
+        }
+    }
 
     return 0;
 }
