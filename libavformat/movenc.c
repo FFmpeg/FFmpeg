@@ -657,7 +657,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     int tag = track->enc->codec_tag;
 
     if (!tag || (track->enc->strict_std_compliance >= FF_COMPLIANCE_NORMAL &&
-                 (tag == MKTAG('d','v','c','p') ||
+                 (track->enc->codec_id == CODEC_ID_DVVIDEO ||
                   track->enc->codec_id == CODEC_ID_RAWVIDEO ||
                   track->enc->codec_id == CODEC_ID_H263 ||
                   av_get_bits_per_sample(track->enc->codec_id)))) { // pcm audio
