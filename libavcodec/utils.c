@@ -639,6 +639,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 
         emms_c(); //needed to avoid an emms_c() call before every return;
 
+        picture->pkt_dts= avpkt->dts;
+
         if (*got_picture_ptr)
             avctx->frame_number++;
     }else
