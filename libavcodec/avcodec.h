@@ -32,7 +32,7 @@
 #include "libavutil/cpu.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 106
+#define LIBAVCODEC_VERSION_MINOR 107
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -998,6 +998,7 @@ typedef struct AVPanScan{
      * that time,\
      * the decoder reorders values as needed and sets AVFrame.reordered_opaque\
      * to exactly one of the values provided by the user through AVCodecContext.reordered_opaque \
+     * @deprecated in favor of pkt_pts\
      * - encoding: unused\
      * - decoding: Read by user.\
      */\
@@ -2585,6 +2586,7 @@ typedef struct AVCodecContext {
     /**
      * opaque 64bit number (generally a PTS) that will be reordered and
      * output in AVFrame.reordered_opaque
+     * @deprecated in favor of pkt_pts
      * - encoding: unused
      * - decoding: Set by user.
      */

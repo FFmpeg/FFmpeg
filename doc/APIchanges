@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-01-07 - r26262 - lavc 52.107.0 - deprecate reordered_opaque
+  Deprecate reordered_opaque in favor of pkt_pts/dts.
+
 2011-01-07 - r26261 - lavc 52.106.0 - pkt_dts
   Add pkt_dts to AVFrame, this will in the future allow multithreading decoders
   to not mess up dts.
