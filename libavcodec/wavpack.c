@@ -660,6 +660,10 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
     WavpackContext *s = avctx->priv_data;
 
     s->avctx = avctx;
+    if (avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "Multichannel WavPack is not supported yet.\n");
+        return -1;
+    }
     s->stereo = (avctx->channels == 2);
     if(avctx->bits_per_coded_sample <= 16)
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
