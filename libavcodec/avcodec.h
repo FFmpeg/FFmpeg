@@ -32,7 +32,7 @@
 #include "libavutil/cpu.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 104
+#define LIBAVCODEC_VERSION_MINOR 105
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -1009,6 +1009,13 @@ typedef struct AVPanScan{
      * - decoding: Set by libavcodec\
      */\
     void *hwaccel_picture_private;\
+\
+    /**\
+     * reordered pts from the last AVPacket that has been input into the decoder\
+     * - encoding: unused\
+     * - decoding: Read by user.\
+     */\
+    int64_t pkt_pts;\
 
 
 #define FF_QSCALE_TYPE_MPEG1 0
@@ -2791,6 +2798,15 @@ typedef struct AVCodecContext {
      */
     uint8_t *subtitle_header;
     int subtitle_header_size;
+
+    /**
+     * Current packet as passed into the decoder, to avoid having
+     * to pass the packet into every function. Currently only valid
+     * inside lavc and get/release_buffer callbacks.
+     * - decoding: set by avcodec_decode_*, read by get_buffer() for setting pkt_pts
+     * - encoding: unused
+     */
+    AVPacket *pkt;
 } AVCodecContext;
 
 /**
