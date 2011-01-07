@@ -54,6 +54,11 @@ static int decode_frame(AVCodecContext *avctx,
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 
+    if(buf_size/avctx->height < avctx->width) {
+        av_log(avctx, AV_LOG_ERROR, "Resolution larger than buffer size. Invalid header?\n");
+        return -1;
+    }
+
     p->reference= 0;
     if(avctx->get_buffer(avctx, p) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
