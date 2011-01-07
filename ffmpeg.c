@@ -3274,6 +3274,8 @@ static void opt_input_file(const char *filename)
                 dec->flags |= CODEC_FLAG_EMU_EDGE;
                 frame_height >>= dec->lowres;
                 frame_width  >>= dec->lowres;
+                dec->height = frame_height;
+                dec->width  = frame_width;
             }
             if(me_threshold)
                 dec->debug |= FF_DEBUG_MV;
