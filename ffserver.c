@@ -3497,6 +3497,7 @@ static AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec, int cop
     fst->priv_data = av_mallocz(sizeof(FeedData));
     fst->index = stream->nb_streams;
     av_set_pts_info(fst, 33, 1, 90000);
+    fst->sample_aspect_ratio = (AVRational){0,1};
     stream->streams[stream->nb_streams++] = fst;
     return fst;
 }
