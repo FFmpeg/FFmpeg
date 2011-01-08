@@ -1364,16 +1364,17 @@ static int decode_frame(WMAProDecodeCtx *s)
         s->samples += s->num_channels * s->samples_per_frame;
 
     if (s->len_prefix) {
-    if (len != (get_bits_count(gb) - s->frame_offset) + 2) {
-        /** FIXME: not sure if this is always an error */
-        av_log(s->avctx, AV_LOG_ERROR, "frame[%i] would have to skip %i bits\n",
-               s->frame_num, len - (get_bits_count(gb) - s->frame_offset) - 1);
-        s->packet_loss = 1;
-        return 0;
-    }
+        if (len != (get_bits_count(gb) - s->frame_offset) + 2) {
+            /** FIXME: not sure if this is always an error */
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "frame[%i] would have to skip %i bits\n", s->frame_num,
+                   len - (get_bits_count(gb) - s->frame_offset) - 1);
+            s->packet_loss = 1;
+            return 0;
+        }
 
-    /** skip the rest of the frame data */
-    skip_bits_long(gb, len - (get_bits_count(gb) - s->frame_offset) - 1);
+        /** skip the rest of the frame data */
+        skip_bits_long(gb, len - (get_bits_count(gb) - s->frame_offset) - 1);
     } else {
         while (get_bits_count(gb) < s->num_saved_bits && get_bits1(gb) == 0) {
         }
