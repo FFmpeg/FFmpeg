@@ -1290,9 +1290,10 @@ static int decode_frame(WMAProDecodeCtx *s)
 
     /** read postproc transform */
     if (s->num_channels > 1 && get_bits1(gb)) {
-        av_log_ask_for_sample(s->avctx, "Unsupported postproc transform found\n");
-        s->packet_loss = 1;
-        return 0;
+        if (get_bits1(gb)) {
+            for (i = 0; i < s->num_channels * s->num_channels; i++)
+                skip_bits(gb, 4);
+        }
     }
 
     /** read drc info */
