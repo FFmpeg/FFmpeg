@@ -71,6 +71,7 @@ version <next>:
 - FFmpeg metadata format muxer and demuxer
 - SubRip (srt) subtitle decoder
 - floating-point AC-3 encoder added
+- Lagarith decoder
 
 
 version 0.6:

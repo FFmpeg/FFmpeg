@@ -424,6 +424,7 @@ following image formats are supported:
     @tab Codec used in Worms games.
 @item Kega Game Video (KGV1) @tab      @tab  X
     @tab Kega emulator screen capture codec.
+@item Lagarith               @tab     @tab  X
 @item LCL (LossLess Codec Library) MSZH  @tab     @tab  X
 @item LCL (LossLess Codec Library) ZLIB  @tab  E  @tab  E
 @item LOCO                   @tab     @tab  X

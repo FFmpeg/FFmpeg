@@ -128,6 +128,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (JPEGLS, jpegls);
     REGISTER_DECODER (KGV1, kgv1);
     REGISTER_DECODER (KMVC, kmvc);
+    REGISTER_DECODER (LAGARITH, lagarith);
     REGISTER_ENCODER (LJPEG, ljpeg);
     REGISTER_DECODER (LOCO, loco);
     REGISTER_DECODER (MDEC, mdec);
