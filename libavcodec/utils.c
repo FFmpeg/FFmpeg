@@ -871,6 +871,7 @@ size_t av_get_codec_tag_string(char *buf, size_t buf_size, unsigned int codec_ta
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 {
     const char *codec_name;
+    const char *profile = NULL;
     AVCodec *p;
     char buf1[32];
     int bitrate;
@@ -883,6 +884,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 
     if (p) {
         codec_name = p->name;
+        profile = av_get_profile_name(p, enc->profile);
     } else if (enc->codec_id == CODEC_ID_MPEG2TS) {
         /* fake mpeg2 transport stream codec (currently not
            registered) */
@@ -902,6 +904,9 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         snprintf(buf, buf_size,
                  "Video: %s%s",
                  codec_name, enc->mb_decision ? " (hq)" : "");
+        if (profile)
+            snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                     " (%s)", profile);
         if (enc->pix_fmt != PIX_FMT_NONE) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s",
@@ -937,6 +942,9 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         snprintf(buf, buf_size,
                  "Audio: %s",
                  codec_name);
+        if (profile)
+            snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                     " (%s)", profile);
         if (enc->sample_rate) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %d Hz", enc->sample_rate);
