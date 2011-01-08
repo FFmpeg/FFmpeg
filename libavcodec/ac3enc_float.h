@@ -34,6 +34,7 @@
 
 typedef float SampleType;
 typedef float CoefType;
+typedef float CoefSumType;
 
 
 typedef struct AC3MDCTContext {

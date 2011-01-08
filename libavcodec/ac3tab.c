@@ -132,6 +132,12 @@ const uint16_t ff_ac3_bitrate_tab[19] = {
     160, 192, 224, 256, 320, 384, 448, 512, 576, 640
 };
 
+/**
+ * Table of bin locations for rematrixing bands
+ * reference: Section 7.5.2 Rematrixing : Frequency Band Definitions
+ */
+const uint8_t ff_ac3_rematrix_band_tab[5] = { 13, 25, 37, 61, 253 };
+
 /* AC-3 MDCT window */
 
 /* MDCT window */
