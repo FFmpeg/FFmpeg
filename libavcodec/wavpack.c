@@ -630,7 +630,7 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
         else
             *dst16++ = wv_get_value_integer(s, &crc_extra_bits, S);
         count++;
-    }while(!last && count < s->samples);
+    }while(!last && count < s->max_samples);
 
     s->samples_left -= count;
     if(!s->samples_left){
