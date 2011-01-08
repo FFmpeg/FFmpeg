@@ -311,7 +311,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     /** subframe info */
     log2_max_num_subframes       = ((s->decode_flags & 0x38) >> 3);
     s->max_num_subframes         = 1 << log2_max_num_subframes;
-    if (s->max_num_subframes == 16)
+    if (s->max_num_subframes == 16 || s->max_num_subframes == 4)
         s->max_subframe_len_bit = 1;
     s->subframe_len_bits = av_log2(log2_max_num_subframes) + 1;
 
