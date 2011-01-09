@@ -944,6 +944,7 @@ file to which you want to add them.
 @c man end EXAMPLES
 
 @include eval.texi
+@include demuxers.texi
 @include indevs.texi
 @include outdevs.texi
 @include protocols.texi

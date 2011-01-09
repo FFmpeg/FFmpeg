@@ -1,0 +1,21 @@
+@chapter Demuxers
+@c man begin DEMUXERS
+
+Demuxers are configured elements in FFmpeg which allow to read the
+multimedia streams from a particular type of file.
+
+When you configure your FFmpeg build, all the supported demuxers
+are enabled by default. You can list all available ones using the
+configure option "--list-demuxers".
+
+You can disable all the demuxers using the configure option
+"--disable-demuxers", and selectively enable a single demuxer with
+the option "--enable-demuxer=@var{DEMUXER}", or disable it
+with the option "--disable-demuxer=@var{DEMUXER}".
+
+The option "-formats" of the ff* tools will display the list of
+enabled demuxers.
+
+The description of some of the currently available demuxers follows.
+
+@c man end INPUT DEVICES
