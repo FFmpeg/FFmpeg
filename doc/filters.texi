@@ -266,7 +266,7 @@ crop=in_h
 # corner of the input image.
 crop=in_w-100:in_h-100:100:100
 
-# crop 10 pixels from the lefth and right borders, and 20 pixels from
+# crop 10 pixels from the left and right borders, and 20 pixels from
 # the top and bottom borders
 "crop=in_w-2*10:in_h-2*20"
 
@@ -279,7 +279,7 @@ crop=in_w-100:in_h-100:100:100
 # trembling effect
 "crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(n/10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(n/7)"
 
-# erratic camera effect depending on timestamp and position
+# erratic camera effect depending on timestamp
 "crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(t*10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(t*13)"
 
 # set x depending on the value of y
