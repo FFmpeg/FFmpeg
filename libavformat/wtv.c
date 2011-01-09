@@ -456,6 +456,8 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 consumed += 15;
             }
         } else if (!ff_guidcmp(g, timestamp_guid)) {
+            int stream_index = ff_find_stream_index(s, sid);
+            if (stream_index >= 0) {
             url_fskip(pb, 8);
             wtv->pts = get_le64(pb);
             consumed += 16;
@@ -465,6 +467,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
 #define WTV_PAD8(x) (((x) + 7) & ~7)
                 url_fskip(pb, WTV_PAD8(len) - consumed);
                 return 0;
+            }
             }
         } else if (!ff_guidcmp(g, data_guid)) {
             int stream_index = ff_find_stream_index(s, sid);
