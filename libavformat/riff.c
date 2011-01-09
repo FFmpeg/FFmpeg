@@ -298,6 +298,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { CODEC_ID_IMC,             0x0401 },
     { CODEC_ID_GSM_MS,          0x1500 },
     { CODEC_ID_TRUESPEECH,      0x1501 },
+    { CODEC_ID_AAC_LATM,        0x1602 },
     { CODEC_ID_AC3,             0x2000 },
     { CODEC_ID_DTS,             0x2001 },
     { CODEC_ID_SONIC,           0x2048 },
@@ -515,6 +516,11 @@ void ff_get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
             url_fskip(pb, size);
     }
     codec->codec_id = ff_wav_codec_get_id(id, codec->bits_per_coded_sample);
+    if (codec->codec_id == CODEC_ID_AAC_LATM) {
+        /* channels and sample_rate values are those prior to applying SBR and/or PS */
+        codec->channels    = 0;
+        codec->sample_rate = 0;
+    }
 }
 
 
