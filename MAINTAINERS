@@ -332,6 +332,7 @@ Muxers/Demuxers:
   wav.c                                 Michael Niedermayer
   wc3movie.c                            Mike Melanson
   westwood.c                            Mike Melanson
+  wtv.c                                 Peter Ross
   wv.c                                  Kostya Shishkov
 
 Protocols:
