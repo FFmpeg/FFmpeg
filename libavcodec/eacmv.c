@@ -98,9 +98,9 @@ static void cmv_decode_inter(CmvContext * s, const uint8_t *buf, const uint8_t *
                 int xoffset = (*raw & 0xF) - 7;
                 int yoffset = ((*raw >> 4)) - 7;
                 if (s->last2_frame.data[0])
-                cmv_motcomp(s->frame.data[0], s->frame.linesize[0],
-                            s->last2_frame.data[0], s->last2_frame.linesize[0],
-                            x*4, y*4, xoffset, yoffset, s->avctx->width, s->avctx->height);
+                    cmv_motcomp(s->frame.data[0], s->frame.linesize[0],
+                                s->last2_frame.data[0], s->last2_frame.linesize[0],
+                                x*4, y*4, xoffset, yoffset, s->avctx->width, s->avctx->height);
                 raw++;
             }
         }else{  /* inter using last frame as reference */
