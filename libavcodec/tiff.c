@@ -540,6 +540,10 @@ static int decode_frame(AVCodecContext *avctx,
             soff = tget(&s->stripdata, s->sot, s->le);
         }else
             soff = s->stripoff;
+        if (soff < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid stripoff: %d\n", soff);
+            return AVERROR(EINVAL);
+        }
         if(tiff_unpack_strip(s, dst, stride, orig_buf + soff, ssize, FFMIN(s->rps, s->height - i)) < 0)
             break;
         dst += s->rps * stride;
