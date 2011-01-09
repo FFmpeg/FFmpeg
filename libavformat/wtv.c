@@ -363,6 +363,8 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             return AVERROR_EOF;
 
         len = get_le32(pb);
+        if (len < 32)
+            break;
         sid = get_le32(pb) & 0x7FFF;
         url_fskip(pb, 8);
         consumed = 32;
