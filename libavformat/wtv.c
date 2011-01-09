@@ -37,6 +37,10 @@
 #define ARG_GUID(g) \
     g[0],g[1],g[2],g[3],g[4],g[5],g[6],g[7],g[8],g[9],g[10],g[11],g[12],g[13],g[14],g[15]
 
+typedef struct {
+    int seen_data;
+} WtvStream;
+
 typedef struct WtvContext {
     uint64_t pts;
 } WtvContext;
@@ -207,9 +211,13 @@ static AVStream * new_stream(AVFormatContext *s, AVStream *st, int sid, int code
             st->codec->extradata_size = 0;
         }
     } else {
+        WtvStream *wst = av_mallocz(sizeof(WtvStream));
+        if (!wst)
+            return NULL;
         st = av_new_stream(s, sid);
         if (!st)
             return NULL;
+        st->priv_data = wst;
     }
     st->codec->codec_type = codec_type;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
@@ -388,7 +396,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             }
         } else if (!ff_guidcmp(g, stream2_guid)) {
             int stream_index = ff_find_stream_index(s, sid);
-            if (stream_index >= 0) {
+            if (stream_index >= 0 && !((WtvStream*)s->streams[stream_index]->priv_data)->seen_data) {
                 ff_asf_guid mediatype, subtype, formattype;
                 int size;
                 url_fskip(pb, 12);
@@ -461,6 +469,8 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
         } else if (!ff_guidcmp(g, data_guid)) {
             int stream_index = ff_find_stream_index(s, sid);
             if (mode == SEEK_TO_DATA && stream_index >= 0) {
+                WtvStream *wst = s->streams[stream_index]->priv_data;
+                wst->seen_data = 1;
                 if (len_ptr) {
                     *len_ptr = len;
                 }
