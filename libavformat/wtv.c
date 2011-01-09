@@ -458,16 +458,16 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
         } else if (!ff_guidcmp(g, timestamp_guid)) {
             int stream_index = ff_find_stream_index(s, sid);
             if (stream_index >= 0) {
-            url_fskip(pb, 8);
-            wtv->pts = get_le64(pb);
-            consumed += 16;
-            if (wtv->pts == -1)
-                wtv->pts = AV_NOPTS_VALUE;
-            if (mode == SEEK_TO_PTS && wtv->pts >= seekts) {
+                url_fskip(pb, 8);
+                wtv->pts = get_le64(pb);
+                consumed += 16;
+                if (wtv->pts == -1)
+                    wtv->pts = AV_NOPTS_VALUE;
+                if (mode == SEEK_TO_PTS && wtv->pts >= seekts) {
 #define WTV_PAD8(x) (((x) + 7) & ~7)
-                url_fskip(pb, WTV_PAD8(len) - consumed);
-                return 0;
-            }
+                    url_fskip(pb, WTV_PAD8(len) - consumed);
+                    return 0;
+                }
             }
         } else if (!ff_guidcmp(g, data_guid)) {
             int stream_index = ff_find_stream_index(s, sid);
