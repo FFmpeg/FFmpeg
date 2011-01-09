@@ -1093,6 +1093,10 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
+#else
+            av_log(s, AV_LOG_ERROR, "Unable to open an input RTP port\n");
+            err = AVERROR(EIO);
+            goto fail;
 #endif
 
         rtp_opened:
