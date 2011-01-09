@@ -219,6 +219,8 @@ static const int8_t dca_channel_reorder_nolfe_xch[][9] = {
 #define DCA_MAX_FRAME_SIZE 16384
 #define DCA_MAX_EXSS_HEADER_SIZE 4096
 
+#define DCA_BUFFER_PADDING_SIZE 1024
+
 /** Bit allocation */
 typedef struct {
     int offset;                 ///< code values offset
@@ -315,7 +317,7 @@ typedef struct {
     DECLARE_ALIGNED(16, float, samples)[(DCA_PRIM_CHANNELS_MAX+1)*256];
     const float *samples_chanptr[DCA_PRIM_CHANNELS_MAX+1];
 
-    uint8_t dca_buffer[DCA_MAX_FRAME_SIZE + DCA_MAX_EXSS_HEADER_SIZE];
+    uint8_t dca_buffer[DCA_MAX_FRAME_SIZE + DCA_MAX_EXSS_HEADER_SIZE + DCA_BUFFER_PADDING_SIZE];
     int dca_buffer_size;        ///< how much data is in the dca_buffer
 
     const int8_t* channel_order_tab;                             ///< channel reordering table, lfe and non lfe
@@ -605,6 +607,9 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
     /* Primary audio coding side information */
     int j, k;
 
+    if (get_bits_left(&s->gb) < 0)
+        return -1;
+
     if (!base_channel) {
         s->subsubframes[s->current_subframe] = get_bits(&s->gb, 2) + 1;
         s->partial_samples[s->current_subframe] = get_bits(&s->gb, 3);
@@ -661,6 +666,9 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
         }
     }
 
+    if (get_bits_left(&s->gb) < 0)
+        return -1;
+
     for (j = base_channel; j < s->prim_channels; j++) {
         const uint32_t *scale_table;
         int scale_sum;
@@ -695,6 +703,9 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
         if (s->joint_intensity[j] > 0)
             s->joint_huff[j] = get_bits(&s->gb, 3);
     }
+
+    if (get_bits_left(&s->gb) < 0)
+        return -1;
 
     /* Scale factors for joint subband coding */
     for (j = base_channel; j < s->prim_channels; j++) {
@@ -1053,6 +1064,9 @@ static int dca_subsubframe(DCAContext * s, int base_channel, int block_index)
         quant_step_table = lossy_quant_d;
 
     for (k = base_channel; k < s->prim_channels; k++) {
+        if (get_bits_left(&s->gb) < 0)
+            return -1;
+
         for (l = 0; l < s->vq_start_subband[k]; l++) {
             int m;
 
