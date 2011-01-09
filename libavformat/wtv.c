@@ -488,7 +488,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             !ff_guidcmp(g, (const ff_asf_guid){0xA1,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D})) {
             //ignore known guids
         } else
-            av_log(s, AV_LOG_WARNING, "unsuported chunk:"PRI_GUID"\n", ARG_GUID(g));
+            av_log(s, AV_LOG_WARNING, "unsupported chunk:"PRI_GUID"\n", ARG_GUID(g));
 
         url_fskip(pb, WTV_PAD8(len) - consumed);
     }
