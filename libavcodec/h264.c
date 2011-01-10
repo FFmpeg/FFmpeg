@@ -1371,7 +1371,8 @@ static int pred_weight_table(H264Context *h){
     h->use_weight= 0;
     h->use_weight_chroma= 0;
     h->luma_log2_weight_denom= get_ue_golomb(&s->gb);
-    h->chroma_log2_weight_denom= get_ue_golomb(&s->gb);
+    if(CHROMA)
+        h->chroma_log2_weight_denom= get_ue_golomb(&s->gb);
     luma_def = 1<<h->luma_log2_weight_denom;
     chroma_def = 1<<h->chroma_log2_weight_denom;
 
