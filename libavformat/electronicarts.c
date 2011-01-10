@@ -422,6 +422,11 @@ static int ea_read_header(AVFormatContext *s,
         st->codec->height = ea->height;
     }
 
+    if (ea->num_channels <= 0) {
+        av_log(s, AV_LOG_WARNING, "Unsupported number of channels: %d\n", ea->num_channels);
+        ea->audio_codec = 0;
+    }
+
     if (ea->audio_codec) {
         /* initialize the audio decoder stream */
         st = av_new_stream(s, 0);
