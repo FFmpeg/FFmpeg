@@ -248,6 +248,9 @@ typedef struct RTSPState {
      * of RTSPMessageHeader->real_challenge */
     enum RTSPServerType server_type;
 
+    /** the "RealChallenge1:" field from the server */
+    char real_challenge[64];
+
     /** plaintext authorization line (username:password) */
     char auth[128];
 
@@ -313,6 +316,16 @@ typedef struct RTSPState {
     /** Filter incoming UDP packets - receive packets only from the right
      * source address and port. */
     int filter_source;
+
+    /**
+     * A mask with all requested transport methods
+     */
+    int lower_transport_mask;
+
+    /**
+     * The number of returned packets
+     */
+    uint64_t packets;
 } RTSPState;
 
 /**
