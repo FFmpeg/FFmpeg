@@ -1291,7 +1291,7 @@ int ff_rtsp_connect(AVFormatContext *s)
     int port, err, tcp_fd;
     RTSPMessageHeader reply1 = {0}, *reply = &reply1;
     int lower_transport_mask = 0;
-    char real_challenge[64];
+    char real_challenge[64] = "";
     struct sockaddr_storage peer;
     socklen_t peer_len = sizeof(peer);
 
@@ -1515,6 +1515,8 @@ redirect:
         }
     } while (err);
 
+    rt->lower_transport_mask = lower_transport_mask;
+    av_strlcpy(rt->real_challenge, real_challenge, sizeof(rt->real_challenge));
     rt->state = RTSP_STATE_IDLE;
     rt->seek_timestamp = 0; /* default is to start stream at position zero */
     return 0;

@@ -229,6 +229,20 @@ found:
     *prtsp_st = rtsp_st;
     return len;
 }
+
+static int resetup_tcp(AVFormatContext *s)
+{
+    RTSPState *rt = s->priv_data;
+    char host[1024];
+    int port;
+
+    av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, NULL, 0,
+                 s->filename);
+    ff_rtsp_undo_setup(s);
+    return ff_rtsp_make_setup_request(s, host, port, RTSP_LOWER_TRANSPORT_TCP,
+                                      rt->real_challenge);
+}
+
 static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RTSPState *rt = s->priv_data;
@@ -236,6 +250,7 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
     RTSPMessageHeader reply1, *reply = &reply1;
     char cmd[1024];
 
+retry:
     if (rt->server_type == RTSP_SERVER_REAL) {
         int i;
 
@@ -295,8 +310,32 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     ret = ff_rtsp_fetch_packet(s, pkt);
-    if (ret < 0)
+    if (ret < 0) {
+        if (ret == FF_NETERROR(ETIMEDOUT) && !rt->packets) {
+            if (rt->lower_transport == RTSP_LOWER_TRANSPORT_UDP &&
+                rt->lower_transport_mask & (1 << RTSP_LOWER_TRANSPORT_TCP)) {
+                RTSPMessageHeader reply1, *reply = &reply1;
+                av_log(s, AV_LOG_WARNING, "UDP timeout, retrying with TCP\n");
+                if (rtsp_read_pause(s) != 0)
+                    return -1;
+                // TEARDOWN is required on Real-RTSP, but might make
+                // other servers close the connection.
+                if (rt->server_type == RTSP_SERVER_REAL)
+                    ff_rtsp_send_cmd(s, "TEARDOWN", rt->control_uri, NULL,
+                                     reply, NULL);
+                rt->session_id[0] = '\0';
+                if (resetup_tcp(s) == 0) {
+                    rt->state = RTSP_STATE_IDLE;
+                    rt->need_subscription = 1;
+                    if (rtsp_read_play(s) != 0)
+                        return -1;
+                    goto retry;
+                }
+            }
+        }
         return ret;
+    }
+    rt->packets++;
 
     /* send dummy request to keep TCP connection alive */
     if ((av_gettime() - rt->last_cmd_time) / 1000000 >= rt->timeout / 2) {
