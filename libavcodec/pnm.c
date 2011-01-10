@@ -142,7 +142,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
         s->maxval = atoi(buf1);
         if (s->maxval <= 0) {
             av_log(avctx, AV_LOG_ERROR, "Invalid maxval: %d\n", s->maxval);
-            return -1;
+            s->maxval = 255;
         }
         if (s->maxval >= 256) {
             if (avctx->pix_fmt == PIX_FMT_GRAY8) {
