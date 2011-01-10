@@ -87,7 +87,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
                                  const uint8_t *buf, int linesize)
 {
     GIFContext *s = avctx->priv_data;
-    int len, height;
+    int len = 0, height;
     const uint8_t *ptr;
     /* image block */
 
