@@ -90,6 +90,9 @@ static void mm_decode_intra(MmContext * s, int half_horiz, int half_vert, const 
     while(i<buf_size) {
         int run_length, color;
 
+        if (y >= s->avctx->height)
+            return;
+
         if (buf[i] & 0x80) {
             run_length = 1;
             color = buf[i];
@@ -137,6 +140,9 @@ static void mm_decode_inter(MmContext * s, int half_horiz, int half_vert, const 
             y += x;
             continue;
         }
+
+        if (y + half_vert >= s->avctx->height)
+            return;
 
         for(i=0; i<length; i++) {
             for(j=0; j<8; j++) {
