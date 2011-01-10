@@ -427,6 +427,11 @@ static int ea_read_header(AVFormatContext *s,
         ea->audio_codec = 0;
     }
 
+    if (ea->sample_rate <= 0) {
+        av_log(s, AV_LOG_ERROR, "Unsupported sample rate: %d\n", ea->sample_rate);
+        ea->audio_codec = 0;
+    }
+
     if (ea->audio_codec) {
         /* initialize the audio decoder stream */
         st = av_new_stream(s, 0);
