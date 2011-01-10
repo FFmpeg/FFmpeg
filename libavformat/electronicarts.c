@@ -113,8 +113,6 @@ static int process_audio_header_elements(AVFormatContext *s)
         int inSubheader;
         uint8_t byte;
         byte = get_byte(pb);
-        if (!byte)
-            break;
 
         switch (byte) {
         case 0xFD:
