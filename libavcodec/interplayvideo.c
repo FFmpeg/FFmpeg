@@ -99,6 +99,10 @@ static int copy_from(IpvideoContext *s, AVFrame *src, int delta_x, int delta_y)
             motion_offset, s->upper_motion_limit_offset);
         return -1;
     }
+    if (src->data[0] == NULL) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid decode type, corrupted header?\n");
+        return AVERROR(EINVAL);
+    }
     s->dsp.put_pixels_tab[!s->is_16bpp][0](s->pixel_ptr, src->data[0] + motion_offset,
                                            s->current_frame.linesize[0], 8);
     return 0;
