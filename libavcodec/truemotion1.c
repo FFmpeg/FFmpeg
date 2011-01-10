@@ -387,7 +387,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     if ((header.compression & 1) && header.header_type)
         sel_vector_table = pc_tbl2;
     else {
-        if (header.vectable < 4)
+        if (header.vectable > 0 && header.vectable < 4)
             sel_vector_table = tables[header.vectable - 1];
         else {
             av_log(s->avctx, AV_LOG_ERROR, "invalid vector table id (%d)\n", header.vectable);
