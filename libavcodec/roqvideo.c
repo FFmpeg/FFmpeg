@@ -115,6 +115,11 @@ static inline void apply_motion_generic(RoqContext *ri, int x, int y, int deltax
         return;
     }
 
+    if (ri->last_frame->data[0] == NULL) {
+        av_log(ri->avctx, AV_LOG_ERROR, "Invalid decode type. Invalid header?\n");
+        return;
+    }
+
     for(cp = 0; cp < 3; cp++) {
         int outstride = ri->current_frame->linesize[cp];
         int instride  = ri->last_frame   ->linesize[cp];
