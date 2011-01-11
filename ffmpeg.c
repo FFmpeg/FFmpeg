@@ -3369,7 +3369,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     AVStream *st;
     AVOutputStream *ost;
     AVCodecContext *video_enc;
-    enum CodecID codec_id;
+    enum CodecID codec_id = CODEC_ID_NONE;
     AVCodec *codec= NULL;
 
     st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
@@ -3516,7 +3516,7 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
     AVOutputStream *ost;
     AVCodec *codec= NULL;
     AVCodecContext *audio_enc;
-    enum CodecID codec_id;
+    enum CodecID codec_id = CODEC_ID_NONE;
 
     st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
     if (!st) {
@@ -3594,7 +3594,7 @@ static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
     AVOutputStream *ost;
     AVCodec *codec=NULL;
     AVCodecContext *subtitle_enc;
-    enum CodecID codec_id;
+    enum CodecID codec_id = CODEC_ID_NONE;
 
     st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
     if (!st) {
