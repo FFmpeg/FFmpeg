@@ -27,7 +27,7 @@
 #include "libavcore/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 72
+#define LIBAVFILTER_VERSION_MINOR 73
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -80,6 +80,9 @@ typedef struct AVFilterBuffer {
      * reallocating it from scratch.
      */
     void (*free)(struct AVFilterBuffer *buf);
+
+    int format;                 ///< media format
+    int w, h;                   ///< width and height of the allocated buffer
 } AVFilterBuffer;
 
 #define AV_PERM_READ     0x01   ///< can read from the buffer

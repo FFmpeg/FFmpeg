@@ -283,15 +283,15 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t *data[4], int linesize[4], int
     if (!(picref->video = av_mallocz(sizeof(AVFilterBufferRefVideoProps))))
         goto fail;
 
-    picref->video->w = w;
-    picref->video->h = h;
+    pic->w = picref->video->w = w;
+    pic->h = picref->video->h = h;
 
     /* make sure the buffer gets read permission or it's useless for output */
     picref->perms = perms | AV_PERM_READ;
 
     pic->refcount = 1;
     picref->type = AVMEDIA_TYPE_VIDEO;
-    picref->format = format;
+    pic->format = picref->format = format;
 
     memcpy(pic->data,        data,          sizeof(pic->data));
     memcpy(pic->linesize,    linesize,      sizeof(pic->linesize));
