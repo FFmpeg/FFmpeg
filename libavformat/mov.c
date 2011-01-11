@@ -1515,7 +1515,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     uint64_t stream_size = 0;
 
     /* adjust first dts according to edit list */
-    if (sc->time_offset) {
+    if (sc->time_offset && mov->time_scale > 0) {
         int rescaled = sc->time_offset < 0 ? av_rescale(sc->time_offset, sc->time_scale, mov->time_scale) : sc->time_offset;
         current_dts = -rescaled;
         if (sc->ctts_data && sc->stts_data &&
@@ -1750,10 +1750,10 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         return 0;
     }
 
-    if (!sc->time_scale) {
+    if (sc->time_scale <= 0) {
         av_log(c->fc, AV_LOG_WARNING, "stream %d, timescale not set\n", st->index);
         sc->time_scale = c->time_scale;
-        if (!sc->time_scale)
+        if (sc->time_scale <= 0)
             sc->time_scale = 1;
     }
 
