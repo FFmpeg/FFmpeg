@@ -292,6 +292,11 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         /* we process 40-bit blocks per channel for LXF */
         sample_size = 5;
 
+    if (sample_size == 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid sample_size\n");
+        return AVERROR(EINVAL);
+    }
+
     n = avctx->channels * sample_size;
 
     if(n && buf_size % n){
