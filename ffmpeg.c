@@ -2984,7 +2984,7 @@ static void opt_map(const char *arg)
     }
 }
 
-static void parse_meta_type(const char *arg, char *type, int *index, char **endptr)
+static void parse_meta_type(char *arg, char *type, int *index, char **endptr)
 {
     *endptr = arg;
     if (*arg == ',') {
