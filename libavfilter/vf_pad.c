@@ -213,8 +213,8 @@ static int config_input(AVFilterLink *inlink)
     fill_line_with_color(pad->line, pad->line_step, pad->w, pad->color,
                          inlink->format, rgba_color, &is_packed_rgba);
 
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d x:%d y:%d color:0x%02X%02X%02X%02X[%s]\n",
-           pad->w, pad->h, pad->x, pad->y,
+    av_log(ctx, AV_LOG_INFO, "w:%d h:%d -> w:%d h:%d x:%d y:%d color:0x%02X%02X%02X%02X[%s]\n",
+           inlink->w, inlink->h, pad->w, pad->h, pad->x, pad->y,
            pad->color[0], pad->color[1], pad->color[2], pad->color[3],
            is_packed_rgba ? "rgba" : "yuva");
 
