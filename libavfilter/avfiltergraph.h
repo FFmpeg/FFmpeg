@@ -79,7 +79,7 @@ int avfilter_graph_create_filter(AVFilterContext **filt_ctx, AVFilter *filt,
 int avfilter_graph_config(AVFilterGraph *graphctx, AVClass *log_ctx);
 
 /**
- * Free a graph and destroy its links.
+ * Free a graph and destroy its links, graph may be NULL.
  */
 void avfilter_graph_free(AVFilterGraph *graph);
 

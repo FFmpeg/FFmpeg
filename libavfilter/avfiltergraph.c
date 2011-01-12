@@ -34,6 +34,8 @@ AVFilterGraph *avfilter_graph_alloc(void)
 
 void avfilter_graph_free(AVFilterGraph *graph)
 {
+    if (!graph)
+        return;
     for (; graph->filter_count > 0; graph->filter_count --)
         avfilter_free(graph->filters[graph->filter_count - 1]);
     av_freep(&graph->scale_sws_opts);
