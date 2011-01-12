@@ -109,7 +109,6 @@ Codecs:
   8bps.c                                Roberto Togni
   8svx.c                                Jaikrishnan Menon
   aasc.c                                Kostya Shishkov
-  aac*, sbr.h                           Alex Converse
   ac3*                                  Justin Ruggles
   alacenc.c                             Jaikrishnan Menon
   alsdec.c                              Thilo Borgmann
