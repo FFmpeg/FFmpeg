@@ -524,7 +524,8 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         avctx->codec_type = codec->type;
         avctx->codec_id   = codec->id;
     }
-    if(avctx->codec_id != codec->id || avctx->codec_type != codec->type){
+    if (avctx->codec_id != codec->id || (avctx->codec_type != codec->type
+                           && avctx->codec_type != AVMEDIA_TYPE_ATTACHMENT)) {
         av_log(avctx, AV_LOG_ERROR, "codec type or id mismatches\n");
         goto free_and_end;
     }
