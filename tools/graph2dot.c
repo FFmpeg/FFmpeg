@@ -68,8 +68,9 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
 
                 fprintf(outfile, "\"%s\" -> \"%s\"", filter_ctx_label, dst_filter_ctx_label);
                 fprintf(outfile, " [ label= \"fmt:%s w:%d h:%d tb:%d/%d\" ];\n",
-                        av_pix_fmt_descriptors[link->format].name, link->w, link->h,
-                        link->time_base.num, link->time_base.den);
+                        link->type == AVMEDIA_TYPE_VIDEO ? av_pix_fmt_descriptors[link->format].name :
+                        link->type == AVMEDIA_TYPE_AUDIO ? av_get_sample_fmt_name(link->format) : "unknown",
+                        link->w, link->h, link->time_base.num, link->time_base.den);
             }
         }
     }
