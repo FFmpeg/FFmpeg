@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* needed for usleep() */
+#define _XOPEN_SOURCE 600
+#include <unistd.h>
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
@@ -88,11 +91,29 @@ ByteIOContext *av_alloc_put_byte(
     return s;
 }
 
+static inline int retry_transfer_wrapper(void *opaque, unsigned char *buf,
+                                         int size,
+                                         int (*transfer_func)(void *, unsigned char *, int)) {
+    int fast_retries = 5;
+    while (1) {
+        int ret = transfer_func(opaque, buf, size);
+        if (ret == AVERROR(EAGAIN)) {
+            if (fast_retries)
+                fast_retries--;
+            else
+                usleep(1000);
+        } else
+            return ret;
+    }
+}
+
 static void flush_buffer(ByteIOContext *s)
 {
     if (s->buf_ptr > s->buffer) {
         if (s->write_packet && !s->error){
-            int ret= s->write_packet(s->opaque, s->buffer, s->buf_ptr - s->buffer);
+            int ret= retry_transfer_wrapper(s->opaque, s->buffer,
+                                            s->buf_ptr - s->buffer,
+                                            s->write_packet);
             if(ret < 0){
                 s->error = ret;
             }
@@ -361,7 +382,7 @@ static void fill_buffer(ByteIOContext *s)
     }
 
     if(s->read_packet)
-        len = s->read_packet(s->opaque, dst, len);
+        len = retry_transfer_wrapper(s->opaque, dst, len, s->read_packet);
     else
         len = 0;
     if (len <= 0) {
@@ -432,7 +453,8 @@ int get_buffer(ByteIOContext *s, unsigned char *buf, int size)
         if (len == 0) {
             if(size > s->buffer_size && !s->update_checksum){
                 if(s->read_packet)
-                    len = s->read_packet(s->opaque, buf, size);
+                    len = retry_transfer_wrapper(s->opaque, buf, size,
+                                                 s->read_packet);
                 if (len <= 0) {
                     /* do not modify buffer if EOF reached so that a seek back can
                     be done without rereading data */
