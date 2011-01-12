@@ -2207,6 +2207,7 @@ static int transcode(AVFormatContext **output_files,
                                        codec->height != icodec->height ||
                         (codec->pix_fmt != icodec->pix_fmt));
                 if (ost->video_resample) {
+#if !CONFIG_AVFILTER
                     avcodec_get_frame_defaults(&ost->pict_tmp);
                     if(avpicture_alloc((AVPicture*)&ost->pict_tmp, codec->pix_fmt,
                                          codec->width, codec->height)) {
@@ -2227,7 +2228,6 @@ static int transcode(AVFormatContext **output_files,
                         ffmpeg_exit(1);
                     }
 
-#if !CONFIG_AVFILTER
                     ost->original_height = icodec->height;
                     ost->original_width  = icodec->width;
 #endif
