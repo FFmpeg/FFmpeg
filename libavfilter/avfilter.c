@@ -107,6 +107,13 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
         src->outputs[srcpad]        || dst->inputs[dstpad])
         return -1;
 
+    if (src->output_pads[srcpad].type != dst->input_pads[dstpad].type) {
+        av_log(src, AV_LOG_ERROR,
+               "Media type mismatch between the '%s' filter output pad %d and the '%s' filter input pad %d\n",
+               src->name, srcpad, dst->name, dstpad);
+        return AVERROR(EINVAL);
+    }
+
     src->outputs[srcpad] =
     dst-> inputs[dstpad] = link = av_mallocz(sizeof(AVFilterLink));
 
