@@ -3750,10 +3750,10 @@ WRAPPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
 WRAPPER8_16_SQ(rd8x8_c, rd16_c)
 WRAPPER8_16_SQ(bit8x8_c, bit16_c)
 
-static void vector_fmul_c(float *dst, const float *src, int len){
+static void vector_fmul_c(float *dst, const float *src0, const float *src1, int len){
     int i;
     for(i=0; i<len; i++)
-        dst[i] *= src[i];
+        dst[i] = src0[i] * src1[i];
 }
 
 static void vector_fmul_reverse_c(float *dst, const float *src0, const float *src1, int len){

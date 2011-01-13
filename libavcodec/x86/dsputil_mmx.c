@@ -2074,38 +2074,38 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2], int out_c
     }
 }
 
-static void vector_fmul_3dnow(float *dst, const float *src, int len){
+static void vector_fmul_3dnow(float *dst, const float *src0, const float *src1, int len){
     x86_reg i = (len-4)*4;
     __asm__ volatile(
         "1: \n\t"
-        "movq    (%1,%0), %%mm0 \n\t"
-        "movq   8(%1,%0), %%mm1 \n\t"
-        "pfmul   (%2,%0), %%mm0 \n\t"
-        "pfmul  8(%2,%0), %%mm1 \n\t"
+        "movq    (%2,%0), %%mm0 \n\t"
+        "movq   8(%2,%0), %%mm1 \n\t"
+        "pfmul   (%3,%0), %%mm0 \n\t"
+        "pfmul  8(%3,%0), %%mm1 \n\t"
         "movq   %%mm0,  (%1,%0) \n\t"
         "movq   %%mm1, 8(%1,%0) \n\t"
         "sub  $16, %0 \n\t"
         "jge 1b \n\t"
         "femms  \n\t"
         :"+r"(i)
-        :"r"(dst), "r"(src)
+        :"r"(dst), "r"(src0), "r"(src1)
         :"memory"
     );
 }
-static void vector_fmul_sse(float *dst, const float *src, int len){
+static void vector_fmul_sse(float *dst, const float *src0, const float *src1, int len){
     x86_reg i = (len-8)*4;
     __asm__ volatile(
         "1: \n\t"
-        "movaps    (%1,%0), %%xmm0 \n\t"
-        "movaps  16(%1,%0), %%xmm1 \n\t"
-        "mulps     (%2,%0), %%xmm0 \n\t"
-        "mulps   16(%2,%0), %%xmm1 \n\t"
+        "movaps    (%2,%0), %%xmm0 \n\t"
+        "movaps  16(%2,%0), %%xmm1 \n\t"
+        "mulps     (%3,%0), %%xmm0 \n\t"
+        "mulps   16(%3,%0), %%xmm1 \n\t"
         "movaps  %%xmm0,   (%1,%0) \n\t"
         "movaps  %%xmm1, 16(%1,%0) \n\t"
         "sub  $32, %0 \n\t"
         "jge 1b \n\t"
         :"+r"(i)
-        :"r"(dst), "r"(src)
+        :"r"(dst), "r"(src0), "r"(src1)
         :"memory"
     );
 }

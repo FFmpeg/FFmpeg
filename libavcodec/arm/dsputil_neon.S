@@ -738,42 +738,41 @@ function ff_float_to_int16_interleave_neon, export=1
 endfunc
 
 function ff_vector_fmul_neon, export=1
-        mov             r3,  r0
-        subs            r2,  r2,  #8
-        vld1.64         {d0-d3},  [r0,:128]!
-        vld1.64         {d4-d7},  [r1,:128]!
+        subs            r3,  r3,  #8
+        vld1.64         {d0-d3},  [r1,:128]!
+        vld1.64         {d4-d7},  [r2,:128]!
         vmul.f32        q8,  q0,  q2
         vmul.f32        q9,  q1,  q3
         beq             3f
-        bics            ip,  r2,  #15
+        bics            ip,  r3,  #15
         beq             2f
 1:      subs            ip,  ip,  #16
-        vld1.64         {d0-d1},  [r0,:128]!
-        vld1.64         {d4-d5},  [r1,:128]!
+        vld1.64         {d0-d1},  [r1,:128]!
+        vld1.64         {d4-d5},  [r2,:128]!
         vmul.f32        q10, q0,  q2
-        vld1.64         {d2-d3},  [r0,:128]!
-        vld1.64         {d6-d7},  [r1,:128]!
+        vld1.64         {d2-d3},  [r1,:128]!
+        vld1.64         {d6-d7},  [r2,:128]!
         vmul.f32        q11, q1,  q3
-        vst1.64         {d16-d19},[r3,:128]!
-        vld1.64         {d0-d1},  [r0,:128]!
-        vld1.64         {d4-d5},  [r1,:128]!
+        vst1.64         {d16-d19},[r0,:128]!
+        vld1.64         {d0-d1},  [r1,:128]!
+        vld1.64         {d4-d5},  [r2,:128]!
         vmul.f32        q8,  q0,  q2
-        vld1.64         {d2-d3},  [r0,:128]!
-        vld1.64         {d6-d7},  [r1,:128]!
+        vld1.64         {d2-d3},  [r1,:128]!
+        vld1.64         {d6-d7},  [r2,:128]!
         vmul.f32        q9,  q1,  q3
-        vst1.64         {d20-d23},[r3,:128]!
+        vst1.64         {d20-d23},[r0,:128]!
         bne             1b
-        ands            r2,  r2,  #15
+        ands            r3,  r3,  #15
         beq             3f
-2:      vld1.64         {d0-d1},  [r0,:128]!
-        vld1.64         {d4-d5},  [r1,:128]!
-        vst1.64         {d16-d17},[r3,:128]!
+2:      vld1.64         {d0-d1},  [r1,:128]!
+        vld1.64         {d4-d5},  [r2,:128]!
+        vst1.64         {d16-d17},[r0,:128]!
         vmul.f32        q8,  q0,  q2
-        vld1.64         {d2-d3},  [r0,:128]!
-        vld1.64         {d6-d7},  [r1,:128]!
-        vst1.64         {d18-d19},[r3,:128]!
+        vld1.64         {d2-d3},  [r1,:128]!
+        vld1.64         {d6-d7},  [r2,:128]!
+        vst1.64         {d18-d19},[r0,:128]!
         vmul.f32        q9,  q1,  q3
-3:      vst1.64         {d16-d19},[r3,:128]!
+3:      vst1.64         {d16-d19},[r0,:128]!
         bx              lr
 endfunc
 

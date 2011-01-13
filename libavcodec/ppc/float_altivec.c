@@ -23,16 +23,16 @@
 #include "dsputil_altivec.h"
 #include "util_altivec.h"
 
-static void vector_fmul_altivec(float *dst, const float *src, int len)
+static void vector_fmul_altivec(float *dst, const float *src0, const float *src1, int len)
 {
     int i;
     vector float d0, d1, s, zero = (vector float)vec_splat_u32(0);
     for(i=0; i<len-7; i+=8) {
-        d0 = vec_ld(0, dst+i);
-        s = vec_ld(0, src+i);
-        d1 = vec_ld(16, dst+i);
+        d0 = vec_ld(0, src0+i);
+        s = vec_ld(0, src1+i);
+        d1 = vec_ld(16, src0+i);
         d0 = vec_madd(d0, s, zero);
-        d1 = vec_madd(d1, vec_ld(16,src+i), zero);
+        d1 = vec_madd(d1, vec_ld(16,src1+i), zero);
         vec_st(d0, 0, dst+i);
         vec_st(d1, 16, dst+i);
     }
