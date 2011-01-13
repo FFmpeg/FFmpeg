@@ -78,6 +78,9 @@ void av_get_channel_layout_string(char *buf, int buf_size,
 {
     int i;
 
+    if (nb_channels <= 0)
+        nb_channels = av_get_channel_layout_nb_channels(channel_layout);
+
     for (i = 0; channel_layout_map[i].name; i++)
         if (nb_channels    == channel_layout_map[i].nb_channels &&
             channel_layout == channel_layout_map[i].layout) {

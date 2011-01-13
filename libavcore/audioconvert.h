@@ -80,6 +80,7 @@ int64_t av_get_channel_layout(const char *name);
 
 /**
  * Return a description of a channel layout.
+ * If nb_channels is <= 0, it is guessed from the channel_layout.
  *
  * @param buf put here the string containing the channel layout
  * @param buf_size size in bytes of the buffer
