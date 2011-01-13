@@ -251,7 +251,7 @@ static void mdct512(AC3MDCTContext *mdct, int32_t *out, int16_t *in)
 /**
  * Apply KBD window to input samples prior to MDCT.
  */
-static void apply_window(int16_t *output, const int16_t *input,
+static void apply_window(DSPContext *dsp, int16_t *output, const int16_t *input,
                          const int16_t *window, int n)
 {
     int i;
