@@ -159,7 +159,7 @@ static void IMLT(ATRAC3Context *q, float *pInput, float *pOutput, int odd_band)
     ff_imdct_calc(&q->mdct_ctx,pOutput,pInput);
 
     /* Perform windowing on the output. */
-    dsp.vector_fmul(pOutput,mdct_window,512);
+    dsp.vector_fmul(pOutput, pOutput, mdct_window, 512);
 
 }
 

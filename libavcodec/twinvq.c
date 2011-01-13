@@ -783,7 +783,7 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
             dec_bark_env(tctx, bark1[i][j], bark_use_hist[i][j], i,
                          tctx->tmp_buf, gain[sub*i+j], ftype);
 
-            tctx->dsp.vector_fmul(chunk + block_size*j, tctx->tmp_buf,
+            tctx->dsp.vector_fmul(chunk + block_size*j, chunk + block_size*j, tctx->tmp_buf,
                                   block_size);
 
         }
@@ -805,7 +805,7 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
         dec_lpc_spectrum_inv(tctx, lsp, ftype, tctx->tmp_buf);
 
         for (j = 0; j < mtab->fmode[ftype].sub; j++) {
-            tctx->dsp.vector_fmul(chunk, tctx->tmp_buf, block_size);
+            tctx->dsp.vector_fmul(chunk, chunk, tctx->tmp_buf, block_size);
             chunk += block_size;
         }
     }

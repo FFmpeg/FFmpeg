@@ -256,7 +256,7 @@ static void apply_window_and_mdct(AVCodecContext *avctx, AACEncContext *s,
                 s->output[i - 448 - k] = (i < 1024)
                                          ? sce->saved[i]
                                          : audio[(i-1024)*chans];
-            s->dsp.vector_fmul        (s->output,     k ?  swindow : pwindow, 128);
+            s->dsp.vector_fmul        (s->output,     s->output, k ?  swindow : pwindow, 128);
             s->dsp.vector_fmul_reverse(s->output+128, s->output+128, swindow, 128);
             ff_mdct_calc(&s->mdct128, sce->coeffs + k, s->output);
         }

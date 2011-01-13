@@ -21,7 +21,8 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
-void ff_vector_fmul_vfp(float *dst, const float *src, int len);
+void ff_vector_fmul_vfp(float *dst, const float *src0,
+                        const float *src1, int len);
 void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
                                 const float *src1, int len);
 void ff_float_to_int16_vfp(int16_t *dst, const float *src, long len);

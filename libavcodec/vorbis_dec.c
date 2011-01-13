@@ -1578,7 +1578,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc)
     for (j = vc->audio_channels-1;j >= 0; j--) {
         ch_floor_ptr = vc->channel_floors   + j           * blocksize / 2;
         ch_res_ptr   = vc->channel_residues + res_chan[j] * blocksize / 2;
-        vc->dsp.vector_fmul(ch_floor_ptr, ch_res_ptr, blocksize / 2);
+        vc->dsp.vector_fmul(ch_floor_ptr, ch_floor_ptr, ch_res_ptr, blocksize / 2);
         ff_imdct_half(&vc->mdct[blockflag], ch_res_ptr, ch_floor_ptr);
     }
 

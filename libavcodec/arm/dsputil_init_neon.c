@@ -138,7 +138,7 @@ void ff_avg_h264_chroma_mc2_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_vp3_v_loop_filter_neon(uint8_t *, int, int *);
 void ff_vp3_h_loop_filter_neon(uint8_t *, int, int *);
 
-void ff_vector_fmul_neon(float *dst, const float *src, int len);
+void ff_vector_fmul_neon(float *dst, const float *src0, const float *src1, int len);
 void ff_vector_fmul_window_neon(float *dst, const float *src0,
                                 const float *src1, const float *win,
                                 float add_bias, int len);
