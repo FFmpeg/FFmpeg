@@ -19,11 +19,11 @@
 #ifndef MPLAYER_VF_H
 #define MPLAYER_VF_H
 
-#include "m_option.h"
+//#include "m_option.h"
 #include "mp_image.h"
 
-extern m_obj_settings_t* vf_settings;
-extern const m_obj_list_t vf_obj_list;
+//extern m_obj_settings_t* vf_settings;
+//extern const m_obj_list_t vf_obj_list;
 
 struct vf_instance;
 struct vf_priv_s;

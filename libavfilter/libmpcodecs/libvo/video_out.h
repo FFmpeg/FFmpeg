@@ -27,7 +27,7 @@
 #include <stdarg.h>
 
 //#include "sub/font_load.h"
-#include "libmpcodecs/img_format.h"
+#include "../img_format.h"
 //#include "vidix/vidix.h"
 
 #define VO_EVENT_EXPOSE 1

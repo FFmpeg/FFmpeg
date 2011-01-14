@@ -22,7 +22,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#undef printf //FIXME
+#undef fprintf //FIXME
 #include "mp_msg.h"
+#include "libavutil/avutil.h"
+#include "libavutil/avassert.h"
+#undef realloc
+#undef malloc
+#undef free
+#undef rand
+#undef srand
+#undef printf
 
 //--------- codec's requirements (filled by the codec/vf) ---------
 
