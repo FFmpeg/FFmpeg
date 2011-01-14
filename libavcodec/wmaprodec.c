@@ -100,9 +100,10 @@
 #define MAX_BANDS      29                                    ///< max number of scale factor bands
 #define MAX_FRAMESIZE  32768                                 ///< maximum compressed frame size
 
+#define WMAPRO_BLOCK_MIN_BITS  6                                           ///< log2 of min block size
 #define WMAPRO_BLOCK_MAX_BITS 12                                           ///< log2 of max block size
 #define WMAPRO_BLOCK_MAX_SIZE (1 << WMAPRO_BLOCK_MAX_BITS)                 ///< maximum block size
-#define WMAPRO_BLOCK_SIZES    (WMAPRO_BLOCK_MAX_BITS - BLOCK_MIN_BITS + 1) ///< possible block sizes
+#define WMAPRO_BLOCK_SIZES    (WMAPRO_BLOCK_MAX_BITS - WMAPRO_BLOCK_MIN_BITS + 1) ///< possible block sizes
 
 
 #define VLCBITS            9
@@ -417,8 +418,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     /** init MDCT, FIXME: only init needed sizes */
     for (i = 0; i < WMAPRO_BLOCK_SIZES; i++)
-        ff_mdct_init(&s->mdct_ctx[i], BLOCK_MIN_BITS+1+i, 1,
-                     1.0 / (1 << (BLOCK_MIN_BITS + i - 1))
+        ff_mdct_init(&s->mdct_ctx[i], WMAPRO_BLOCK_MIN_BITS+1+i, 1,
+                     1.0 / (1 << (WMAPRO_BLOCK_MIN_BITS + i - 1))
                      / (1 << (s->bits_per_sample - 1)));
 
     /** init MDCT windows: simple sinus window */
@@ -1021,7 +1022,7 @@ static void wmapro_window(WMAProDecodeCtx *s)
             winlen = s->subframe_len;
         }
 
-        window = s->windows[av_log2(winlen) - BLOCK_MIN_BITS];
+        window = s->windows[av_log2(winlen) - WMAPRO_BLOCK_MIN_BITS];
 
         winlen >>= 1;
 
@@ -1233,7 +1234,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
             }
 
             /** apply imdct (ff_imdct_half == DCTIV with reverse) */
-            ff_imdct_half(&s->mdct_ctx[av_log2(subframe_len) - BLOCK_MIN_BITS],
+            ff_imdct_half(&s->mdct_ctx[av_log2(subframe_len) - WMAPRO_BLOCK_MIN_BITS],
                           s->channel[c].coeffs, s->tmp);
         }
     }
