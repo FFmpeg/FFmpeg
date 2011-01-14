@@ -99,7 +99,7 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
     char tmp_args[256];
     int ret;
 
-    snprintf(inst_name, sizeof(inst_name), "Filter %d %s", index, filt_name);
+    snprintf(inst_name, sizeof(inst_name), "Parsed filter %d %s", index, filt_name);
 
     filt = avfilter_get_by_name(filt_name);
 
