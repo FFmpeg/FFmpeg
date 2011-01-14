@@ -1,7 +1,7 @@
 /*
  * Wmapro compatible decoder
  * Copyright (c) 2007 Baptiste Coudurier, Benjamin Larsson, Ulion
- * Copyright (c) 2008 - 2009 Sascha Sommer, Benjamin Larsson
+ * Copyright (c) 2008 - 2011 Sascha Sommer, Benjamin Larsson
  *
  * This file is part of FFmpeg.
  *
@@ -191,6 +191,7 @@ typedef struct WMAProDecodeCtx {
 
     /* packet decode state */
     GetBitContext    pgb;                           ///< bitstream reader context for the packet
+    int              next_packet_start;             ///< start offset of the next wma packet in the demuxer packet
     uint8_t          packet_offset;                 ///< frame offset in the packet
     uint8_t          packet_sequence_number;        ///< current packet number
     int              num_saved_bits;                ///< saved number of bits
@@ -1476,13 +1477,14 @@ static int decode_packet(AVCodecContext *avctx,
 
     if (s->packet_done || s->packet_loss) {
         s->packet_done = 0;
-        s->buf_bit_size = buf_size << 3;
 
         /** sanity check for the buffer length */
         if (buf_size < avctx->block_align)
             return 0;
 
+        s->next_packet_start = buf_size - avctx->block_align;
         buf_size = avctx->block_align;
+        s->buf_bit_size = buf_size << 3;
 
         /** parse packet header */
         init_get_bits(gb, buf, s->buf_bit_size);
@@ -1528,7 +1530,7 @@ static int decode_packet(AVCodecContext *avctx,
 
     } else {
         int frame_size;
-        s->buf_bit_size = avpkt->size << 3;
+        s->buf_bit_size = (avpkt->size - s->next_packet_start) << 3;
         init_get_bits(gb, avpkt->data, s->buf_bit_size);
         skip_bits(gb, s->packet_offset);
         if (s->len_prefix && remaining_bits(s, gb) > s->log2_frame_size &&
