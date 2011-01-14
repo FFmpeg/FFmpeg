@@ -2412,7 +2412,7 @@ static int transcode(AVFormatContext **output_files,
     /* copy global metadata by default */
     if (metadata_global_autocopy) {
 
-            for (i = 0; i < nb_output_files; i++)
+        for (i = 0; i < nb_output_files; i++)
             av_metadata_copy(&output_files[i]->metadata, input_files[0]->metadata,
                              AV_METADATA_DONT_OVERWRITE);
     }
