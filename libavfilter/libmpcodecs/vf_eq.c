@@ -31,17 +31,10 @@
 
 #include "libvo/video_out.h"
 
-#include "m_option.h"
-#include "m_struct.h"
-
 static struct vf_priv_s {
         unsigned char *buf;
         int brightness;
         int contrast;
-} const vf_priv_dflt = {
-  NULL,
-  0,
-  0
 };
 
 #if HAVE_MMX
@@ -226,6 +219,10 @@ static int vf_open(vf_instance_t *vf, char *args)
         vf->put_image=put_image;
         vf->uninit=uninit;
 
+    vf->priv = malloc(sizeof(struct vf_priv_s));
+    memset(vf->priv, 0, sizeof(struct vf_priv_s));
+    if (args) sscanf(args, "%d:%d", &vf->priv->brightness, &vf->priv->contrast);
+
         process = process_C;
 #if HAVE_MMX
         if(gCpuCaps.hasMMX) process = process_MMX;
@@ -234,25 +231,10 @@ static int vf_open(vf_instance_t *vf, char *args)
         return 1;
 }
 
-#define ST_OFF(f) M_ST_OFF(struct vf_priv_s,f)
-static const m_option_t vf_opts_fields[] = {
-  {"brightness", ST_OFF(brightness), CONF_TYPE_INT, M_OPT_RANGE,-100 ,100, NULL},
-  {"contrast", ST_OFF(contrast), CONF_TYPE_INT, M_OPT_RANGE,-100 ,100, NULL},
-  { NULL, NULL, 0, 0, 0, 0,  NULL }
-};
-
-static const m_struct_t vf_opts = {
-  "eq",
-  sizeof(struct vf_priv_s),
-  &vf_priv_dflt,
-  vf_opts_fields
-};
-
 const vf_info_t vf_info_eq = {
         "soft video equalizer",
         "eq",
         "Richard Felker",
         "",
         vf_open,
-        &vf_opts
 };

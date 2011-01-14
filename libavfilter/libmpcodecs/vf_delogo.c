@@ -33,17 +33,11 @@
 #include "vf.h"
 #include "libvo/fastmemcpy.h"
 
-#include "m_option.h"
-#include "m_struct.h"
-
 //===========================================================================//
 
-static struct vf_priv_s {
+struct vf_priv_s {
     unsigned int outfmt;
     int xoff, yoff, lw, lh, band, show;
-} const vf_priv_dflt = {
-    0,
-    0, 0, 0, 0, 0, 0
 };
 
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
@@ -197,11 +191,26 @@ static const unsigned int fmt_list[]={
 };
 
 static int vf_open(vf_instance_t *vf, char *args){
+    int res=0;
     vf->config=config;
     vf->put_image=put_image;
     vf->get_image=get_image;
     vf->query_format=query_format;
     vf->uninit=uninit;
+
+    vf->priv=malloc(sizeof(struct vf_priv_s));
+    memset(vf->priv, 0, sizeof(struct vf_priv_s));
+
+    if (args) res = sscanf(args, "%d:%d:%d:%d:%d",
+                          &vf->priv->xoff, &vf->priv->yoff,
+                          &vf->priv->lw, &vf->priv->lh,
+                          &vf->priv->band);
+
+    if (res != 5) {
+       mp_msg(MSGT_VFILTER, MSGL_ERR, "deLogo: syntax is \"delogo=xoff:yoff:width:height:band\"\n");
+       uninit(vf);
+       return 0;
+    }
 
     mp_msg(MSGT_VFILTER, MSGL_V, "delogo: %d x %d, %d x %d, band = %d\n",
            vf->priv->xoff, vf->priv->yoff,
@@ -232,31 +241,12 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-#define ST_OFF(f) M_ST_OFF(struct vf_priv_s,f)
-static const m_option_t vf_opts_fields[] = {
-    { "x", ST_OFF(xoff), CONF_TYPE_INT, 0, 0, 0, NULL },
-    { "y", ST_OFF(yoff), CONF_TYPE_INT, 0, 0, 0, NULL },
-    { "w", ST_OFF(lw), CONF_TYPE_INT, 0, 0, 0, NULL },
-    { "h", ST_OFF(lh), CONF_TYPE_INT, 0, 0, 0, NULL },
-    { "t", ST_OFF(band), CONF_TYPE_INT, 0, 0, 0, NULL },
-    { "band", ST_OFF(band), CONF_TYPE_INT, 0, 0, 0, NULL }, // alias
-    { NULL, NULL, 0, 0, 0, 0, NULL }
-};
-
-static const m_struct_t vf_opts = {
-    "delogo",
-    sizeof(struct vf_priv_s),
-    &vf_priv_dflt,
-    vf_opts_fields
-};
-
 const vf_info_t vf_info_delogo = {
     "simple logo remover",
     "delogo",
     "Jindrich Makovicka, Alex Beregszaszi",
     "",
     vf_open,
-    &vf_opts
 };
 
 //===========================================================================//

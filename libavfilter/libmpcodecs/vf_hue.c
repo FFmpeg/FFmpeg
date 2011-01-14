@@ -32,17 +32,10 @@
 
 #include "libvo/video_out.h"
 
-#include "m_option.h"
-#include "m_struct.h"
-
-static struct vf_priv_s {
+struct vf_priv_s {
         uint8_t *buf[2];
         float hue;
         float saturation;
-} const vf_priv_dflt = {
-  {NULL, NULL},
-  0.0,
-  1.0,
 };
 
 static void process_C(uint8_t *udst, uint8_t *vdst, uint8_t *usrc, uint8_t *vsrc, int dststride, int srcstride,
@@ -170,25 +163,14 @@ static int vf_open(vf_instance_t *vf, char *args)
         vf->put_image=put_image;
         vf->uninit=uninit;
 
+    vf->priv = malloc(sizeof(struct vf_priv_s));
+    memset(vf->priv, 0, sizeof(struct vf_priv_s));
+    sscanf(args, "%f:%f", &vf->priv->hue, &vf->priv->saturation);
         vf->priv->hue *= M_PI / 180.0;
 
         process = process_C;
         return 1;
 }
-
-#define ST_OFF(f) M_ST_OFF(struct vf_priv_s,f)
-static const m_option_t vf_opts_fields[] = {
-  {"hue", ST_OFF(hue), CONF_TYPE_FLOAT, M_OPT_RANGE,-180.0 ,180.0, NULL},
-  {"saturation", ST_OFF(saturation), CONF_TYPE_FLOAT, M_OPT_RANGE,-10.0 ,10.0, NULL},
-  { NULL, NULL, 0, 0, 0, 0,  NULL }
-};
-
-static const m_struct_t vf_opts = {
-  "hue",
-  sizeof(struct vf_priv_s),
-  &vf_priv_dflt,
-  vf_opts_fields
-};
 
 const vf_info_t vf_info_hue = {
         "hue changer",
@@ -196,5 +178,4 @@ const vf_info_t vf_info_hue = {
         "Michael Niedermayer",
         "",
         vf_open,
-        &vf_opts
 };
