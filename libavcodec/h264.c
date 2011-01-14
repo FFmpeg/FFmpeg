@@ -687,7 +687,6 @@ static void free_tables(H264Context *h){
 
 static void init_dequant8_coeff_table(H264Context *h){
     int i,q,x;
-    const int transpose = (h->h264dsp.h264_idct8_add != ff_h264_idct8_add_c); //FIXME ugly
     h->dequant8_coeff[0] = h->dequant8_buffer[0];
     h->dequant8_coeff[1] = h->dequant8_buffer[1];
 
@@ -701,7 +700,7 @@ static void init_dequant8_coeff_table(H264Context *h){
             int shift = div6[q];
             int idx = rem6[q];
             for(x=0; x<64; x++)
-                h->dequant8_coeff[i][q][transpose ? (x>>3)|((x&7)<<3) : x] =
+                h->dequant8_coeff[i][q][(x>>3)|((x&7)<<3)] =
                     ((uint32_t)dequant8_coeff_init[idx][ dequant8_coeff_init_scan[((x>>1)&12) | (x&3)] ] *
                     h->pps.scaling_matrix8[i][x]) << shift;
         }
@@ -710,7 +709,6 @@ static void init_dequant8_coeff_table(H264Context *h){
 
 static void init_dequant4_coeff_table(H264Context *h){
     int i,j,q,x;
-    const int transpose = (h->h264dsp.h264_idct_add != ff_h264_idct_add_c); //FIXME ugly
     for(i=0; i<6; i++ ){
         h->dequant4_coeff[i] = h->dequant4_buffer[i];
         for(j=0; j<i; j++){
@@ -726,7 +724,7 @@ static void init_dequant4_coeff_table(H264Context *h){
             int shift = div6[q] + 2;
             int idx = rem6[q];
             for(x=0; x<16; x++)
-                h->dequant4_coeff[i][q][transpose ? (x>>2)|((x<<2)&0xF) : x] =
+                h->dequant4_coeff[i][q][(x>>2)|((x<<2)&0xF)] =
                     ((uint32_t)dequant4_coeff_init[idx][(x&1) + ((x>>2)&1)] *
                     h->pps.scaling_matrix4[i][x]) << shift;
         }
@@ -1597,31 +1595,19 @@ static int init_poc(H264Context *h){
  */
 static void init_scan_tables(H264Context *h){
     int i;
-    if(h->h264dsp.h264_idct_add == ff_h264_idct_add_c){ //FIXME little ugly
-        memcpy(h->zigzag_scan, zigzag_scan, 16*sizeof(uint8_t));
-        memcpy(h-> field_scan,  field_scan, 16*sizeof(uint8_t));
-    }else{
-        for(i=0; i<16; i++){
+    for(i=0; i<16; i++){
 #define T(x) (x>>2) | ((x<<2) & 0xF)
-            h->zigzag_scan[i] = T(zigzag_scan[i]);
-            h-> field_scan[i] = T( field_scan[i]);
+        h->zigzag_scan[i] = T(zigzag_scan[i]);
+        h-> field_scan[i] = T( field_scan[i]);
 #undef T
-        }
     }
-    if(h->h264dsp.h264_idct8_add == ff_h264_idct8_add_c){
-        memcpy(h->zigzag_scan8x8,       ff_zigzag_direct,     64*sizeof(uint8_t));
-        memcpy(h->zigzag_scan8x8_cavlc, zigzag_scan8x8_cavlc, 64*sizeof(uint8_t));
-        memcpy(h->field_scan8x8,        field_scan8x8,        64*sizeof(uint8_t));
-        memcpy(h->field_scan8x8_cavlc,  field_scan8x8_cavlc,  64*sizeof(uint8_t));
-    }else{
-        for(i=0; i<64; i++){
+    for(i=0; i<64; i++){
 #define T(x) (x>>3) | ((x&7)<<3)
-            h->zigzag_scan8x8[i]       = T(ff_zigzag_direct[i]);
-            h->zigzag_scan8x8_cavlc[i] = T(zigzag_scan8x8_cavlc[i]);
-            h->field_scan8x8[i]        = T(field_scan8x8[i]);
-            h->field_scan8x8_cavlc[i]  = T(field_scan8x8_cavlc[i]);
+        h->zigzag_scan8x8[i]       = T(ff_zigzag_direct[i]);
+        h->zigzag_scan8x8_cavlc[i] = T(zigzag_scan8x8_cavlc[i]);
+        h->field_scan8x8[i]        = T(field_scan8x8[i]);
+        h->field_scan8x8_cavlc[i]  = T(field_scan8x8_cavlc[i]);
 #undef T
-        }
     }
     if(h->sps.transform_bypass){ //FIXME same ugly
         h->zigzag_scan_q0          = zigzag_scan;
