@@ -39,8 +39,8 @@
 #define interlaced_dct interlaced_dct_is_a_bad_name
 #define mb_intra mb_intra_is_not_initialized_see_mb_type
 
-#define LUMA_DC_BLOCK_INDEX   25
-#define CHROMA_DC_BLOCK_INDEX 26
+#define LUMA_DC_BLOCK_INDEX   24
+#define CHROMA_DC_BLOCK_INDEX 25
 
 #define CHROMA_DC_COEFF_TOKEN_VLC_BITS 8
 #define COEFF_TOKEN_VLC_BITS           8
@@ -722,8 +722,20 @@ o-o o-o
  / / /
 o-o o-o
 */
+
+/* Scan8 organization:
+ *   0 1 2 3 4 5 6 7
+ * 0   u u y y y y y
+ * 1 u U U y Y Y Y Y
+ * 2 u U U y Y Y Y Y
+ * 3   v v y Y Y Y Y
+ * 4 v V V y Y Y Y Y
+ * 5 v V V   DYDUDV
+ * DY/DU/DV are for luma/chroma DC.
+ */
+
 //This table must be here because scan8[constant] must be known at compiletime
-static const uint8_t scan8[16 + 2*4]={
+static const uint8_t scan8[16 + 2*4 + 3]={
  4+1*8, 5+1*8, 4+2*8, 5+2*8,
  6+1*8, 7+1*8, 6+2*8, 7+2*8,
  4+3*8, 5+3*8, 4+4*8, 5+4*8,
@@ -732,6 +744,7 @@ static const uint8_t scan8[16 + 2*4]={
  1+2*8, 2+2*8,
  1+4*8, 2+4*8,
  1+5*8, 2+5*8,
+ 4+5*8, 5+5*8, 6+5*8
 };
 
 static av_always_inline uint32_t pack16to32(int a, int b){

@@ -371,7 +371,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 
     //FIXME put trailing_onex into the context
 
-    if(n == CHROMA_DC_BLOCK_INDEX){
+    if(n >= CHROMA_DC_BLOCK_INDEX){
         coeff_token= get_vlc2(gb, chroma_dc_coeff_token_vlc.table, CHROMA_DC_COEFF_TOKEN_VLC_BITS, 1);
         total_coeff= coeff_token>>2;
     }else{
@@ -383,9 +383,9 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
             total_coeff= pred_non_zero_count(h, n);
             coeff_token= get_vlc2(gb, coeff_token_vlc[ coeff_token_table_index[total_coeff] ].table, COEFF_TOKEN_VLC_BITS, 2);
             total_coeff= coeff_token>>2;
-            h->non_zero_count_cache[ scan8[n] ]= total_coeff;
         }
     }
+    h->non_zero_count_cache[ scan8[n] ]= total_coeff;
 
     //FIXME set last_non_zero?
 
@@ -482,14 +482,14 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
     if(total_coeff == max_coeff)
         zeros_left=0;
     else{
-        if(n == CHROMA_DC_BLOCK_INDEX)
+        if(n >= CHROMA_DC_BLOCK_INDEX)
             zeros_left= get_vlc2(gb, (chroma_dc_total_zeros_vlc-1)[ total_coeff ].table, CHROMA_DC_TOTAL_ZEROS_VLC_BITS, 1);
         else
             zeros_left= get_vlc2(gb, (total_zeros_vlc-1)[ total_coeff ].table, TOTAL_ZEROS_VLC_BITS, 1);
     }
 
     scantable += zeros_left + total_coeff - 1;
-    if(n > 24){
+    if(n >= LUMA_DC_BLOCK_INDEX){
         block[*scantable] = level[0];
         for(i=1;i<total_coeff && zeros_left > 0;i++) {
             if(zeros_left < 7)
@@ -988,7 +988,7 @@ decode_intra_mb:
 
         if(cbp&0x30){
             for(chroma_idx=0; chroma_idx<2; chroma_idx++)
-                if( decode_residual(h, gb, h->mb + 256 + 16*4*chroma_idx, CHROMA_DC_BLOCK_INDEX, chroma_dc_scan, NULL, 4) < 0){
+                if( decode_residual(h, gb, h->mb + 256 + 16*4*chroma_idx, CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
                     return -1;
                 }
         }

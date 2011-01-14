@@ -965,6 +965,7 @@ static av_always_inline int get_cabac_cbf_ctx( H264Context *h, int cat, int idx,
             nza = h->left_cbp&0x100;
             nzb = h-> top_cbp&0x100;
         } else {
+            idx -= CHROMA_DC_BLOCK_INDEX;
             nza = (h->left_cbp>>(6+idx))&0x01;
             nzb = (h-> top_cbp>>(6+idx))&0x01;
         }
@@ -1060,8 +1061,7 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
     /* read coded block flag */
     if( is_dc || cat != 5 ) {
         if( get_cabac( CC, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n, is_dc ) ] ) == 0 ) {
-            if( !is_dc )
-                h->non_zero_count_cache[scan8[n]] = 0;
+            h->non_zero_count_cache[scan8[n]] = 0;
 
 #ifdef CABAC_ON_STACK
             h->cabac.range     = cc.range     ;
@@ -1112,7 +1112,8 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
         if( cat == 0 )
             h->cbp_table[h->mb_xy] |= 0x100;
         else
-            h->cbp_table[h->mb_xy] |= 0x40 << n;
+            h->cbp_table[h->mb_xy] |= 0x40 << (n - CHROMA_DC_BLOCK_INDEX);
+        h->non_zero_count_cache[scan8[n]] = coeff_count;
     } else {
         if( cat == 5 )
             fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, coeff_count, 1);
@@ -1642,7 +1643,7 @@ decode_intra_mb:
             //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 DC\n" );
             AV_ZERO128(h->mb_luma_dc+0);
             AV_ZERO128(h->mb_luma_dc+8);
-            decode_cabac_residual_dc( h, h->mb_luma_dc, 0, 0, scan, 16);
+            decode_cabac_residual_dc( h, h->mb_luma_dc, 0, LUMA_DC_BLOCK_INDEX, scan, 16);
 
             if( cbp&15 ) {
                 qmul = h->dequant4_coeff[0][s->qscale];
@@ -1681,7 +1682,7 @@ decode_intra_mb:
             int c;
             for( c = 0; c < 2; c++ ) {
                 //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-DC\n",c );
-                decode_cabac_residual_dc(h, h->mb + 256 + 16*4*c, 3, c, chroma_dc_scan, 4);
+                decode_cabac_residual_dc(h, h->mb + 256 + 16*4*c, 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
             }
         }
 
