@@ -158,3 +158,11 @@ void ff_metadata_conv_ctx(AVFormatContext *ctx, const AVMetadataConv *d_conv,
     for (i=0; i<ctx->nb_programs; i++)
         ff_metadata_conv(&ctx->programs[i]->metadata, d_conv, s_conv);
 }
+
+void av_metadata_copy(AVMetadata **dst, AVMetadata *src, int flags)
+{
+    AVMetadataTag *t = NULL;
+
+    while ((t = av_metadata_get(src, "", t, AV_METADATA_IGNORE_SUFFIX)))
+        av_metadata_set2(dst, t->key, t->value, flags);
+}

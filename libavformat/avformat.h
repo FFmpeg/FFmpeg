@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 92
+#define LIBAVFORMAT_VERSION_MINOR 93
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -225,6 +225,16 @@ int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int fl
 attribute_deprecated void av_metadata_conv(struct AVFormatContext *ctx, const AVMetadataConv *d_conv,
                                                                         const AVMetadataConv *s_conv);
 #endif
+
+/**
+ * Copy metadata from one AVMetadata struct into another.
+ * @param dst pointer to a pointer to a AVMetadata struct. If *dst is NULL,
+ *            this function will allocate a struct for you and put it in *dst
+ * @param src pointer to source AVMetadata struct
+ * @param flags flags to use when setting metadata in *dst
+ * @note metadata is read using the AV_METADATA_IGNORE_SUFFIX flag
+ */
+void av_metadata_copy(AVMetadata **dst, AVMetadata *src, int flags);
 
 /**
  * Free all the memory allocated for an AVMetadata struct.

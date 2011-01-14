@@ -1862,7 +1862,6 @@ static int copy_chapters(int infile, int outfile)
 
     for (i = 0; i < is->nb_chapters; i++) {
         AVChapter *in_ch = is->chapters[i], *out_ch;
-        AVMetadataTag *t = NULL;
         int64_t ts_off   = av_rescale_q(start_time - input_files_ts_offset[infile],
                                       AV_TIME_BASE_Q, in_ch->time_base);
         int64_t rt       = (recording_time == INT64_MAX) ? INT64_MAX :
@@ -1884,8 +1883,7 @@ static int copy_chapters(int infile, int outfile)
         out_ch->end       = FFMIN(rt, in_ch->end   - ts_off);
 
         if (metadata_chapters_autocopy)
-            while ((t = av_metadata_get(in_ch->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
-                av_metadata_set2(&out_ch->metadata, t->key, t->value, 0);
+            av_metadata_copy(&out_ch->metadata, in_ch->metadata, 0);
 
         os->nb_chapters++;
         os->chapters = av_realloc(os->chapters, sizeof(AVChapter)*os->nb_chapters);
@@ -2105,7 +2103,6 @@ static int transcode(AVFormatContext **output_files,
 
     /* for each output stream, we compute the right encoding parameters */
     for(i=0;i<nb_ostreams;i++) {
-        AVMetadataTag *t = NULL;
         ost = ost_table[i];
         os = output_files[ost->file_index];
         ist = ist_table[ost->source_index];
@@ -2114,9 +2111,8 @@ static int transcode(AVFormatContext **output_files,
         icodec = ist->st->codec;
 
         if (metadata_streams_autocopy)
-            while ((t = av_metadata_get(ist->st->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
-                av_metadata_set2(&ost->st->metadata, t->key, t->value, AV_METADATA_DONT_OVERWRITE);
-            }
+            av_metadata_copy(&ost->st->metadata, ist->st->metadata,
+                             AV_METADATA_DONT_OVERWRITE);
 
         ost->st->disposition = ist->st->disposition;
         codec->bits_per_raw_sample= icodec->bits_per_raw_sample;
@@ -2368,7 +2364,6 @@ static int transcode(AVFormatContext **output_files,
     for (i=0;i<nb_meta_data_maps;i++) {
         AVFormatContext *files[2];
         AVMetadata      **meta[2];
-        AVMetadataTag *mtag;
         int j;
 
 #define METADATA_CHECK_INDEX(index, nb_elems, desc)\
@@ -2411,18 +2406,15 @@ static int transcode(AVFormatContext **output_files,
             }
         }
 
-        mtag=NULL;
-        while((mtag=av_metadata_get(*meta[1], "", mtag, AV_METADATA_IGNORE_SUFFIX)))
-            av_metadata_set2(meta[0], mtag->key, mtag->value, AV_METADATA_DONT_OVERWRITE);
+        av_metadata_copy(meta[0], *meta[1], AV_METADATA_DONT_OVERWRITE);
     }
 
     /* copy global metadata by default */
     if (metadata_global_autocopy) {
-        AVMetadataTag *t = NULL;
 
-        while ((t = av_metadata_get(input_files[0]->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
             for (i = 0; i < nb_output_files; i++)
-                av_metadata_set2(&output_files[i]->metadata, t->key, t->value, AV_METADATA_DONT_OVERWRITE);
+            av_metadata_copy(&output_files[i]->metadata, input_files[0]->metadata,
+                             AV_METADATA_DONT_OVERWRITE);
     }
 
     /* copy chapters according to chapter maps */
@@ -3692,7 +3684,6 @@ static void opt_output_file(const char *filename)
     int input_has_video, input_has_audio, input_has_subtitle;
     AVFormatParameters params, *ap = &params;
     AVOutputFormat *file_oformat;
-    AVMetadataTag *tag = NULL;
 
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -3760,8 +3751,7 @@ static void opt_output_file(const char *filename)
 
         oc->timestamp = recording_timestamp;
 
-        while ((tag = av_metadata_get(metadata, "", tag, AV_METADATA_IGNORE_SUFFIX)))
-            av_metadata_set2(&oc->metadata, tag->key, tag->value, 0);
+        av_metadata_copy(&oc->metadata, metadata, 0);
         av_metadata_free(&metadata);
     }
 
