@@ -65,7 +65,7 @@ void ff_h264_idct8_add4_c(uint8_t *dst, const int *blockoffset, DCTELEM *block, 
 void ff_h264_idct_add8_c(uint8_t **dest, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
 
 void ff_h264_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qmul);
-void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qp);
+void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp);
 void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
 
 void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1,
