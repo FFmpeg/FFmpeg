@@ -1204,17 +1204,17 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             }else{
                 h->hpc.pred16x16[ h->intra16x16_pred_mode ](dest_y , linesize);
                 if(h->non_zero_count_cache[ scan8[LUMA_DC_BLOCK_INDEX] ]){
-                if(is_h264){
-                    if(!transform_bypass)
-                        h->h264dsp.h264_luma_dc_dequant_idct(h->mb, h->mb_luma_dc, h->dequant4_coeff[0][s->qscale][0]);
-                    else{
-                        static const uint8_t dc_mapping[16] = { 0*16, 1*16, 4*16, 5*16, 2*16, 3*16, 6*16, 7*16,
-                                                                8*16, 9*16,12*16,13*16,10*16,11*16,14*16,15*16};
-                        for(i = 0; i < 16; i++)
-                            h->mb[dc_mapping[i]] = h->mb_luma_dc[i];
-                    }
-                }else
-                    ff_svq3_luma_dc_dequant_idct_c(h->mb, h->mb_luma_dc, s->qscale);
+                    if(is_h264){
+                        if(!transform_bypass)
+                            h->h264dsp.h264_luma_dc_dequant_idct(h->mb, h->mb_luma_dc, h->dequant4_coeff[0][s->qscale][0]);
+                        else{
+                            static const uint8_t dc_mapping[16] = { 0*16, 1*16, 4*16, 5*16, 2*16, 3*16, 6*16, 7*16,
+                                                                    8*16, 9*16,12*16,13*16,10*16,11*16,14*16,15*16};
+                            for(i = 0; i < 16; i++)
+                                h->mb[dc_mapping[i]] = h->mb_luma_dc[i];
+                        }
+                    }else
+                        ff_svq3_luma_dc_dequant_idct_c(h->mb, h->mb_luma_dc, s->qscale);
                 }
             }
             if(h->deblocking_filter)
