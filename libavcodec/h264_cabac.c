@@ -1597,17 +1597,15 @@ decode_intra_mb:
     s->current_picture.mb_type[mb_xy]= mb_type;
 
     if( cbp || IS_INTRA16x16( mb_type ) ) {
-        const uint8_t *scan, *scan8x8, *dc_scan;
+        const uint8_t *scan, *scan8x8;
         const uint32_t *qmul;
 
         if(IS_INTERLACED(mb_type)){
             scan8x8= s->qscale ? h->field_scan8x8 : h->field_scan8x8_q0;
             scan= s->qscale ? h->field_scan : h->field_scan_q0;
-            dc_scan= luma_dc_field_scan;
         }else{
             scan8x8= s->qscale ? h->zigzag_scan8x8 : h->zigzag_scan8x8_q0;
             scan= s->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
-            dc_scan= luma_dc_zigzag_scan;
         }
 
         // decode_cabac_mb_dqp
@@ -1642,7 +1640,9 @@ decode_intra_mb:
         if( IS_INTRA16x16( mb_type ) ) {
             int i;
             //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 DC\n" );
-            decode_cabac_residual_dc( h, h->mb, 0, 0, dc_scan, 16);
+            AV_ZERO128(h->mb_luma_dc+0);
+            AV_ZERO128(h->mb_luma_dc+8);
+            decode_cabac_residual_dc( h, h->mb_luma_dc, 0, 0, scan, 16);
 
             if( cbp&15 ) {
                 qmul = h->dequant4_coeff[0][s->qscale];

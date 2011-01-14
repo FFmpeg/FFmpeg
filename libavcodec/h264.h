@@ -406,6 +406,7 @@ typedef struct H264Context{
     GetBitContext *inter_gb_ptr;
 
     DECLARE_ALIGNED(16, DCTELEM, mb)[16*24];
+    DECLARE_ALIGNED(16, DCTELEM, mb_luma_dc)[16];
     DCTELEM mb_padding[256];        ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either check that i is not too large or ensure that there is some unused stuff after mb
 
     /**
@@ -599,10 +600,6 @@ typedef struct H264Context{
 
 
 extern const uint8_t ff_h264_chroma_qp[52];
-
-void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp);
-
-void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
 
 /**
  * Decode SEI

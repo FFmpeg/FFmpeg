@@ -911,16 +911,14 @@ decode_intra_mb:
         int i8x8, i4x4, chroma_idx;
         int dquant;
         GetBitContext *gb= IS_INTRA(mb_type) ? h->intra_gb_ptr : h->inter_gb_ptr;
-        const uint8_t *scan, *scan8x8, *dc_scan;
+        const uint8_t *scan, *scan8x8;
 
         if(IS_INTERLACED(mb_type)){
             scan8x8= s->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
             scan= s->qscale ? h->field_scan : h->field_scan_q0;
-            dc_scan= luma_dc_field_scan;
         }else{
             scan8x8= s->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
             scan= s->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
-            dc_scan= luma_dc_zigzag_scan;
         }
 
         dquant= get_se_golomb(&s->gb);
@@ -939,7 +937,9 @@ decode_intra_mb:
         h->chroma_qp[0]= get_chroma_qp(h, 0, s->qscale);
         h->chroma_qp[1]= get_chroma_qp(h, 1, s->qscale);
         if(IS_INTRA16x16(mb_type)){
-            if( decode_residual(h, h->intra_gb_ptr, h->mb, LUMA_DC_BLOCK_INDEX, dc_scan, h->dequant4_coeff[0][s->qscale], 16) < 0){
+            AV_ZERO128(h->mb_luma_dc+0);
+            AV_ZERO128(h->mb_luma_dc+8);
+            if( decode_residual(h, h->intra_gb_ptr, h->mb_luma_dc, LUMA_DC_BLOCK_INDEX, scan, h->dequant4_coeff[0][s->qscale], 16) < 0){
                 return -1; //FIXME continue if partitioned and other return -1 too
             }
 

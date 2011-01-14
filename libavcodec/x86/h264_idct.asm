@@ -47,6 +47,7 @@ scan8_mem: db 4+1*8, 5+1*8, 4+2*8, 5+2*8
 %endif
 
 cextern pw_32
+cextern pw_1
 
 SECTION .text
 
@@ -854,3 +855,156 @@ cglobal h264_idct_add8_sse2, 5, 7, 8
     add8_sse2_cycle 2, 0x21
     add8_sse2_cycle 3, 0x29
     RET
+
+;void ff_h264_luma_dc_dequant_idct_mmx(DCTELEM *output, DCTELEM *input, int qmul)
+
+%macro WALSH4_1D 5
+    SUMSUB_BADC m%4, m%3, m%2, m%1, m%5
+    SUMSUB_BADC m%4, m%2, m%3, m%1, m%5
+    SWAP %1, %4, %3
+%endmacro
+
+%macro DEQUANT_MMX 3
+    mova        m7, [pw_1]
+    mova        m4, %1
+    punpcklwd   %1, m7
+    punpckhwd   m4, m7
+    mova        m5, %2
+    punpcklwd   %2, m7
+    punpckhwd   m5, m7
+    movd        m7, t3d
+    punpckldq   m7, m7
+    pmaddwd     %1, m7
+    pmaddwd     %2, m7
+    pmaddwd     m4, m7
+    pmaddwd     m5, m7
+    psrad       %1, %3
+    psrad       %2, %3
+    psrad       m4, %3
+    psrad       m5, %3
+    packssdw    %1, m4
+    packssdw    %2, m5
+%endmacro
+
+%macro STORE_WORDS_MMX 5
+    movd  t0d, %1
+    psrlq  %1, 32
+    movd  t1d, %1
+    mov [t2+%2*32], t0w
+    mov [t2+%4*32], t1w
+    shr   t0d, 16
+    shr   t1d, 16
+    mov [t2+%3*32], t0w
+    mov [t2+%5*32], t1w
+%endmacro
+
+%macro DEQUANT_STORE_MMX 1
+    DEQUANT_MMX m0, m1, %1
+    STORE_WORDS_MMX m0,  0,  1,  4,  5
+    STORE_WORDS_MMX m1,  2,  3,  6,  7
+
+    DEQUANT_MMX m2, m3, %1
+    STORE_WORDS_MMX m2,  8,  9, 12, 13
+    STORE_WORDS_MMX m3, 10, 11, 14, 15
+%endmacro
+
+%macro STORE_WORDS_SSE 9
+    movd  t0d, %1
+    psrldq  %1, 4
+    movd  t1d, %1
+    psrldq  %1, 4
+    mov [t2+%2*32], t0w
+    mov [t2+%4*32], t1w
+    shr   t0d, 16
+    shr   t1d, 16
+    mov [t2+%3*32], t0w
+    mov [t2+%5*32], t1w
+    movd  t0d, %1
+    psrldq  %1, 4
+    movd  t1d, %1
+    mov [t2+%6*32], t0w
+    mov [t2+%8*32], t1w
+    shr   t0d, 16
+    shr   t1d, 16
+    mov [t2+%7*32], t0w
+    mov [t2+%9*32], t1w
+%endmacro
+
+%macro DEQUANT_STORE_SSE2 1
+    movd      xmm4, t3d
+    movq      xmm5, [pw_1]
+    pshufd    xmm4, xmm4, 0
+    movq2dq   xmm0, m0
+    movq2dq   xmm1, m1
+    movq2dq   xmm2, m2
+    movq2dq   xmm3, m3
+    punpcklwd xmm0, xmm5
+    punpcklwd xmm1, xmm5
+    punpcklwd xmm2, xmm5
+    punpcklwd xmm3, xmm5
+    pmaddwd   xmm0, xmm4
+    pmaddwd   xmm1, xmm4
+    pmaddwd   xmm2, xmm4
+    pmaddwd   xmm3, xmm4
+    psrad     xmm0, %1
+    psrad     xmm1, %1
+    psrad     xmm2, %1
+    psrad     xmm3, %1
+    packssdw  xmm0, xmm1
+    packssdw  xmm2, xmm3
+    STORE_WORDS_SSE xmm0,  0,  1,  4,  5,  2,  3,  6,  7
+    STORE_WORDS_SSE xmm2,  8,  9, 12, 13, 10, 11, 14, 15
+%endmacro
+
+%macro IDCT_DC_DEQUANT 2
+cglobal h264_luma_dc_dequant_idct_%1, 3,4,%2
+    movq        m3, [r1+24]
+    movq        m2, [r1+16]
+    movq        m1, [r1+ 8]
+    movq        m0, [r1+ 0]
+    WALSH4_1D    0,1,2,3,4
+    TRANSPOSE4x4W 0,1,2,3,4
+    WALSH4_1D    0,1,2,3,4
+
+; shift, tmp, output, qmul
+%ifdef WIN64
+    DECLARE_REG_TMP 0,3,1,2
+    ; we can't avoid this, because r0 is the shift register (ecx) on win64
+    xchg        r0, t2
+%elifdef ARCH_X86_64
+    DECLARE_REG_TMP 3,1,0,2
+%else
+    DECLARE_REG_TMP 1,3,0,2
+%endif
+
+    cmp        t3d, 32767
+    jg .big_qmul
+    add        t3d, 128 << 16
+%ifidn %1,mmx
+    DEQUANT_STORE_MMX 8
+%else
+    DEQUANT_STORE_SSE2 8
+%endif
+    RET
+.big_qmul:
+    bsr        t0d, t3d
+    add        t3d, 128 << 16
+    mov        t1d, 7
+    cmp        t0d, t1d
+    cmovg      t0d, t1d
+    inc        t1d
+    shr        t3d, t0b
+    sub        t1d, t0d
+%ifidn %1,mmx
+    movd        m6, t1d
+    DEQUANT_STORE_MMX m6
+%else
+    movd      xmm6, t1d
+    DEQUANT_STORE_SSE2 xmm6
+%endif
+    RET
+%endmacro
+
+INIT_MMX
+IDCT_DC_DEQUANT mmx, 0
+IDCT_DC_DEQUANT sse2, 7

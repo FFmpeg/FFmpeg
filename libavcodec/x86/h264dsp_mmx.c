@@ -59,6 +59,8 @@ void ff_h264_idct_add16intra_sse2(uint8_t *dst, const int *block_offset, DCTELEM
                                   int stride, const uint8_t nnzc[6*8]);
 void ff_h264_idct_add8_sse2      (uint8_t **dest, const int *block_offset, DCTELEM *block,
                                   int stride, const uint8_t nnzc[6*8]);
+void ff_h264_luma_dc_dequant_idct_mmx (DCTELEM *output, DCTELEM *input, int qmul);
+void ff_h264_luma_dc_dequant_idct_sse2(DCTELEM *output, DCTELEM *input, int qmul);
 
 /***********************************/
 /* deblocking */
@@ -301,6 +303,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
         c->h264_idct8_add4     = ff_h264_idct8_add4_mmx;
         c->h264_idct_add8      = ff_h264_idct_add8_mmx;
         c->h264_idct_add16intra= ff_h264_idct_add16intra_mmx;
+        c->h264_luma_dc_dequant_idct= ff_h264_luma_dc_dequant_idct_mmx;
 
         if (mm_flags & AV_CPU_FLAG_MMX2) {
             c->h264_idct_dc_add= ff_h264_idct_dc_add_mmx2;
@@ -341,6 +344,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
             if (mm_flags&AV_CPU_FLAG_SSE2) {
                 c->h264_idct8_add = ff_h264_idct8_add_sse2;
                 c->h264_idct8_add4= ff_h264_idct8_add4_sse2;
+                c->h264_luma_dc_dequant_idct= ff_h264_luma_dc_dequant_idct_sse2;
 
                 c->weight_h264_pixels_tab[0]= ff_h264_weight_16x16_sse2;
                 c->weight_h264_pixels_tab[1]= ff_h264_weight_16x8_sse2;

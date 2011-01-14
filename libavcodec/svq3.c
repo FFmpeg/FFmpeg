@@ -126,21 +126,19 @@ static const uint32_t svq3_dequant_coeff[32] = {
 };
 
 
-void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp)
+void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qp)
 {
     const int qmul = svq3_dequant_coeff[qp];
 #define stride 16
     int i;
     int temp[16];
     static const int x_offset[4] = {0, 1*stride, 4* stride,  5*stride};
-    static const int y_offset[4] = {0, 2*stride, 8* stride, 10*stride};
 
     for (i = 0; i < 4; i++){
-        const int offset = y_offset[i];
-        const int z0 = 13*(block[offset+stride*0] +    block[offset+stride*4]);
-        const int z1 = 13*(block[offset+stride*0] -    block[offset+stride*4]);
-        const int z2 =  7* block[offset+stride*1] - 17*block[offset+stride*5];
-        const int z3 = 17* block[offset+stride*1] +  7*block[offset+stride*5];
+        const int z0= 13*(input[4*i+0] +    input[4*i+1]);
+        const int z1= 13*(input[4*i+0] -    input[4*i+1]);
+        const int z2=  7* input[4*i+2] - 17*input[4*i+3];
+        const int z3= 17* input[4*i+2] +  7*input[4*i+3];
 
         temp[4*i+0] = z0+z3;
         temp[4*i+1] = z1+z2;
@@ -155,10 +153,10 @@ void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp)
         const int z2 =  7* temp[4*1+i] - 17*temp[4*3+i];
         const int z3 = 17* temp[4*1+i] +  7*temp[4*3+i];
 
-        block[stride*0 +offset] = ((z0 + z3)*qmul + 0x80000) >> 20;
-        block[stride*2 +offset] = ((z1 + z2)*qmul + 0x80000) >> 20;
-        block[stride*8 +offset] = ((z1 - z2)*qmul + 0x80000) >> 20;
-        block[stride*10+offset] = ((z0 - z3)*qmul + 0x80000) >> 20;
+        output[stride*0 +offset] = ((z0 + z3)*qmul + 0x80000) >> 20;
+        output[stride*2 +offset] = ((z1 + z2)*qmul + 0x80000) >> 20;
+        output[stride*8 +offset] = ((z1 - z2)*qmul + 0x80000) >> 20;
+        output[stride*10+offset] = ((z0 - z3)*qmul + 0x80000) >> 20;
     }
 }
 #undef stride

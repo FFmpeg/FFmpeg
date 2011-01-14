@@ -246,46 +246,6 @@ int ff_h264_decode_rbsp_trailing(H264Context *h, const uint8_t *src){
     return 0;
 }
 
-/**
- * IDCT transforms the 16 dc values and dequantizes them.
- * @param qp quantization parameter
- */
-static void h264_luma_dc_dequant_idct_c(DCTELEM *block, int qp, int qmul){
-#define stride 16
-    int i;
-    int temp[16]; //FIXME check if this is a good idea
-    static const int x_offset[4]={0, 1*stride, 4* stride,  5*stride};
-    static const int y_offset[4]={0, 2*stride, 8* stride, 10*stride};
-
-//memset(block, 64, 2*256);
-//return;
-    for(i=0; i<4; i++){
-        const int offset= y_offset[i];
-        const int z0= block[offset+stride*0] + block[offset+stride*4];
-        const int z1= block[offset+stride*0] - block[offset+stride*4];
-        const int z2= block[offset+stride*1] - block[offset+stride*5];
-        const int z3= block[offset+stride*1] + block[offset+stride*5];
-
-        temp[4*i+0]= z0+z3;
-        temp[4*i+1]= z1+z2;
-        temp[4*i+2]= z1-z2;
-        temp[4*i+3]= z0-z3;
-    }
-
-    for(i=0; i<4; i++){
-        const int offset= x_offset[i];
-        const int z0= temp[4*0+i] + temp[4*2+i];
-        const int z1= temp[4*0+i] - temp[4*2+i];
-        const int z2= temp[4*1+i] - temp[4*3+i];
-        const int z3= temp[4*1+i] + temp[4*3+i];
-
-        block[stride*0 +offset]= ((((z0 + z3)*qmul + 128 ) >> 8)); //FIXME think about merging this into decode_residual
-        block[stride*2 +offset]= ((((z1 + z2)*qmul + 128 ) >> 8));
-        block[stride*8 +offset]= ((((z1 - z2)*qmul + 128 ) >> 8));
-        block[stride*10+offset]= ((((z0 - z3)*qmul + 128 ) >> 8));
-    }
-}
-
 #if 0
 /**
  * DCT transforms the 16 dc values.
@@ -1245,9 +1205,15 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                 h->hpc.pred16x16[ h->intra16x16_pred_mode ](dest_y , linesize);
                 if(is_h264){
                     if(!transform_bypass)
-                        h264_luma_dc_dequant_idct_c(h->mb, s->qscale, h->dequant4_coeff[0][s->qscale][0]);
+                        h->h264dsp.h264_luma_dc_dequant_idct(h->mb, h->mb_luma_dc, h->dequant4_coeff[0][s->qscale][0]);
+                    else{
+                        static const uint8_t dc_mapping[16] = { 0*16, 1*16, 4*16, 5*16, 2*16, 3*16, 6*16, 7*16,
+                                                                8*16, 9*16,12*16,13*16,10*16,11*16,14*16,15*16};
+                        for(i = 0; i < 16; i++)
+                            h->mb[dc_mapping[i]] = h->mb_luma_dc[i];
+                    }
                 }else
-                    ff_svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
+                    ff_svq3_luma_dc_dequant_idct_c(h->mb, h->mb_luma_dc, s->qscale);
             }
             if(h->deblocking_filter)
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0, simple);
