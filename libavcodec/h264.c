@@ -289,7 +289,7 @@ static void h264_luma_dc_dct_c(DCTELEM *block/*, int qp*/){
 #undef xStride
 #undef stride
 
-static void chroma_dc_dequant_idct_c(DCTELEM *block, int qp, int qmul){
+static void chroma_dc_dequant_idct_c(DCTELEM *block, int qmul){
     const int stride= 16*2;
     const int xStride= 16;
     int a,b,c,d,e;
@@ -1285,15 +1285,15 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             }else{
                 if(is_h264){
                     if(h->non_zero_count_cache[ scan8[CHROMA_DC_BLOCK_INDEX+0] ])
-                        chroma_dc_dequant_idct_c(h->mb + 16*16     , h->chroma_qp[0], h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp[0]][0]);
+                        chroma_dc_dequant_idct_c(h->mb + 16*16     , h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp[0]][0]);
                     if(h->non_zero_count_cache[ scan8[CHROMA_DC_BLOCK_INDEX+1] ])
-                        chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp[1], h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp[1]][0]);
+                        chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp[1]][0]);
                     h->h264dsp.h264_idct_add8(dest, block_offset,
                                               h->mb, uvlinesize,
                                               h->non_zero_count_cache);
                 }else{
-                    chroma_dc_dequant_idct_c(h->mb + 16*16     , h->chroma_qp[0], h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp[0]][0]);
-                    chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp[1], h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp[1]][0]);
+                    chroma_dc_dequant_idct_c(h->mb + 16*16     , h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp[0]][0]);
+                    chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp[1]][0]);
                     for(i=16; i<16+8; i++){
                         if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
                             uint8_t * const ptr= dest[(i&4)>>2] + block_offset[i];
