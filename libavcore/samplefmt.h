@@ -19,6 +19,8 @@
 #ifndef AVCORE_SAMPLEFMT_H
 #define AVCORE_SAMPLEFMT_H
 
+#include "avcore.h"
+
 /**
  * all in native-endian format
  */
