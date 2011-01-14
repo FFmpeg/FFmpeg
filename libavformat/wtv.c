@@ -166,12 +166,7 @@ static int parse_videoinfoheader2(AVFormatContext *s, AVStream *st)
 {
     ByteIOContext *pb = s->pb;
 
-    url_fskip(pb, 32);
-    st->codec->bit_rate = get_le32(pb);
-    url_fskip(pb, 20);
-    st->sample_aspect_ratio.num = get_le32(pb);
-    st->sample_aspect_ratio.den = get_le32(pb);
-    url_fskip(pb, 8);
+    url_fskip(pb, 72);  // picture aspect ratio is unreliable
     ff_get_bmp_header(pb, st);
 
     return 72 + 40;
