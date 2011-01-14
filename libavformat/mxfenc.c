@@ -1379,6 +1379,8 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
 static uint64_t mxf_parse_timestamp(time_t timestamp)
 {
     struct tm *time = gmtime(&timestamp);
+    if (!time)
+        return 0;
     return (uint64_t)(time->tm_year+1900) << 48 |
            (uint64_t)(time->tm_mon+1)     << 40 |
            (uint64_t) time->tm_mday       << 32 |
