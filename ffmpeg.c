@@ -213,6 +213,7 @@ static int video_sync_method= -1;
 static int audio_sync_method= 0;
 static float audio_drift_threshold= 0.1;
 static int copy_ts= 0;
+static int copy_tb;
 static int opt_shortest = 0;
 static int video_global_header = 0;
 static char *vstats_filename;
@@ -2143,7 +2144,7 @@ static int transcode(AVFormatContext **output_files,
                 goto fail;
             memcpy(codec->extradata, icodec->extradata, icodec->extradata_size);
             codec->extradata_size= icodec->extradata_size;
-            if(av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base) && av_q2d(ist->st->time_base) < 1.0/1000){
+            if(!copy_tb && av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base) && av_q2d(ist->st->time_base) < 1.0/1000){
                 codec->time_base = icodec->time_base;
                 codec->time_base.num *= icodec->ticks_per_frame;
                 av_reduce(&codec->time_base.num, &codec->time_base.den,
@@ -4214,6 +4215,7 @@ static const OptionDef options[] = {
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&audio_drift_threshold}, "audio drift threshold", "threshold" },
     { "vglobal", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_global_header}, "video global header storage type", "" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
+    { "copytb", OPT_BOOL | OPT_EXPERT, {(void*)&copy_tb}, "copy input stream time base when stream copying" },
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
     { "dts_delta_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "threshold" },
     { "programid", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&opt_programid}, "desired program number", "" },
