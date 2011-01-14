@@ -2877,9 +2877,13 @@ static int opt_thread_count(const char *opt, const char *arg)
 
 static void opt_audio_sample_fmt(const char *arg)
 {
-    if (strcmp(arg, "list"))
+    if (strcmp(arg, "list")) {
         audio_sample_fmt = av_get_sample_fmt(arg);
-    else {
+        if (audio_sample_fmt == AV_SAMPLE_FMT_NONE) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid sample format '%s'\n", arg);
+            ffmpeg_exit(1);
+        }
+    } else {
         list_fmts(av_get_sample_fmt_string, AV_SAMPLE_FMT_NB);
         ffmpeg_exit(0);
     }
