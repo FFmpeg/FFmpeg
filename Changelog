@@ -72,6 +72,7 @@ version <next>:
 - SubRip (srt) subtitle decoder
 - floating-point AC-3 encoder added
 - Lagarith decoder
+- ffmpeg -copytb option added
 
 
 version 0.6:

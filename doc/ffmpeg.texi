@@ -687,6 +687,8 @@ the parameter is the maximum samples per second by which the audio is changed.
 without any later correction.
 @item -copyts
 Copy timestamps from input to output.
+@item -copytb
+Copy input stream time base from input to output when stream copying.
 @item -shortest
 Finish encoding when the shortest input stream ends.
 @item -dts_delta_threshold
