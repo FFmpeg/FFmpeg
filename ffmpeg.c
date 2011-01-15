@@ -3816,7 +3816,6 @@ static void opt_output_file(const char *filename)
 
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM, NULL);
 
-    nb_streamid_map = 0;
     av_freep(&forced_key_frames);
 }
 

@@ -712,8 +712,10 @@ Set the maximum demux-decode delay.
 @item -muxpreload @var{seconds}
 Set the initial demux-decode delay.
 @item -streamid @var{output-stream-index}:@var{new-value}
-Assign a new value to a stream's stream-id field in the next output file.
-All stream-id fields are reset to default for each output file.
+Assign a new stream-id value to an output stream. This option should be
+specified prior to the output filename to which it applies.
+For the situation where multiple output files exist, a streamid
+may be reassigned to a different value.
 
 For example, to set the stream 0 PID to 33 and the stream 1 PID to 36 for
 an output mpegts file:
