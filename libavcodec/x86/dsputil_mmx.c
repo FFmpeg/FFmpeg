@@ -81,7 +81,7 @@ DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_FE ) = {0xFEFEFEFEFEFEFEFEULL, 0xFEFEF
 DECLARE_ALIGNED(16, const double, ff_pd_1)[2] = { 1.0, 1.0 };
 DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 
-#define JUMPALIGN() __asm__ volatile (ASMALIGN(3)::)
+#define JUMPALIGN() __asm__ volatile (".p2align 3"::)
 #define MOVQ_ZERO(regd)  __asm__ volatile ("pxor %%" #regd ", %%" #regd ::)
 
 #define MOVQ_BFE(regd) \
@@ -368,7 +368,7 @@ static void put_pixels4_mmx(uint8_t *block, const uint8_t *pixels, int line_size
 {
     __asm__ volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
-         ASMALIGN(3)
+         ".p2align 3                    \n\t"
          "1:                            \n\t"
          "movd (%1), %%mm0              \n\t"
          "movd (%1, %3), %%mm1          \n\t"
@@ -394,7 +394,7 @@ static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels, int line_size
 {
     __asm__ volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
-         ASMALIGN(3)
+         ".p2align 3                    \n\t"
          "1:                            \n\t"
          "movq (%1), %%mm0              \n\t"
          "movq (%1, %3), %%mm1          \n\t"
@@ -420,7 +420,7 @@ static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels, int line_siz
 {
     __asm__ volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
-         ASMALIGN(3)
+         ".p2align 3                    \n\t"
          "1:                            \n\t"
          "movq (%1), %%mm0              \n\t"
          "movq 8(%1), %%mm4             \n\t"

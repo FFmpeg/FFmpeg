@@ -275,7 +275,7 @@ vc1_put_ver_16b_ ## NAME ## _mmx(int16_t *dst, const uint8_t *src,      \
         LOAD_ROUNDER_MMX("%5")                                          \
         "movq      "MANGLE(ff_pw_53)", %%mm5\n\t"                       \
         "movq      "MANGLE(ff_pw_18)", %%mm6\n\t"                       \
-        ASMALIGN(3)                                                     \
+        ".p2align 3                \n\t"                                \
         "1:                        \n\t"                                \
         MSPEL_FILTER13_CORE(DO_UNPACK, "movd  1", A1, A2, A3, A4)       \
         NORMALIZE_MMX("%6")                                             \
@@ -331,7 +331,7 @@ OPNAME ## vc1_hor_16b_ ## NAME ## _mmx(uint8_t *dst, x86_reg stride,    \
         LOAD_ROUNDER_MMX("%4")                                          \
         "movq      "MANGLE(ff_pw_18)", %%mm6   \n\t"                    \
         "movq      "MANGLE(ff_pw_53)", %%mm5   \n\t"                    \
-        ASMALIGN(3)                                                     \
+        ".p2align 3                \n\t"                                \
         "1:                        \n\t"                                \
         MSPEL_FILTER13_CORE(DONT_UNPACK, "movq 2", A1, A2, A3, A4)      \
         NORMALIZE_MMX("$7")                                             \
@@ -369,7 +369,7 @@ OPNAME ## vc1_## NAME ## _mmx(uint8_t *dst, const uint8_t *src,         \
         LOAD_ROUNDER_MMX("%6")                                          \
         "movq      "MANGLE(ff_pw_53)", %%mm5       \n\t"                \
         "movq      "MANGLE(ff_pw_18)", %%mm6       \n\t"                \
-        ASMALIGN(3)                                                     \
+        ".p2align 3                \n\t"                                \
         "1:                        \n\t"                                \
         MSPEL_FILTER13_CORE(DO_UNPACK, "movd   1", A1, A2, A3, A4)      \
         NORMALIZE_MMX("$6")                                             \

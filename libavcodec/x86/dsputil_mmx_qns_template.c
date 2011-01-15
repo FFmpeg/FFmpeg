@@ -37,7 +37,7 @@ static int DEF(try_8x8basis)(int16_t rem[64], int16_t weight[64], int16_t basis[
         "movd  %4, %%mm5                \n\t"
         "punpcklwd %%mm5, %%mm5         \n\t"
         "punpcklwd %%mm5, %%mm5         \n\t"
-        ASMALIGN(4)
+        ".p2align 4                     \n\t"
         "1:                             \n\t"
         "movq  (%1, %0), %%mm0          \n\t"
         "movq  8(%1, %0), %%mm1         \n\t"
@@ -77,7 +77,7 @@ static void DEF(add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale)
                 "movd  %3, %%mm5        \n\t"
                 "punpcklwd %%mm5, %%mm5 \n\t"
                 "punpcklwd %%mm5, %%mm5 \n\t"
-                ASMALIGN(4)
+                ".p2align 4             \n\t"
                 "1:                     \n\t"
                 "movq  (%1, %0), %%mm0  \n\t"
                 "movq  8(%1, %0), %%mm1 \n\t"

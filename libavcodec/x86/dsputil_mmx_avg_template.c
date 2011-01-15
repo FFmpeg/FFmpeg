@@ -838,7 +838,7 @@ static void DEF(avg_pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int line
         "lea (%3, %3), %%"REG_a"        \n\t"
         "movq (%1), %%mm0               \n\t"
         PAVGB" 1(%1), %%mm0             \n\t"
-         ASMALIGN(3)
+         ".p2align 3                    \n\t"
         "1:                             \n\t"
         "movq (%1, %%"REG_a"), %%mm2    \n\t"
         "movq (%1, %3), %%mm1           \n\t"

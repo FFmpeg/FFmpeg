@@ -356,7 +356,7 @@ inline void ff_idct_xvid_sse2(short *block)
     TEST_TWO_ROWS("5*16(%0)", "6*16(%0)", "%%eax", "%%edx", CLEAR_ODD(ROW5), CLEAR_EVEN(ROW6))
     TEST_ONE_ROW("7*16(%0)", "%%esi", CLEAR_ODD(ROW7))
     iLLM_HEAD
-    ASMALIGN(4)
+    ".p2align 4 \n\t"
     JNZ("%%ecx", "2f")
     JNZ("%%eax", "3f")
     JNZ("%%edx", "4f")

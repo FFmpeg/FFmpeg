@@ -329,7 +329,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
         "movq           %4, %%mm6   \n\t"
         "movq           %5, %%mm7   \n\t"
         "jmp 2f                     \n\t"
-        ASMALIGN(4)
+        ".p2align        4          \n\t"
         "1:                         \n\t"
         PREFETCH"   32(%1)          \n\t"
         "movd         (%1), %%mm0   \n\t"
@@ -484,7 +484,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
         "movq           %4, %%mm6   \n\t"
         "movq           %5, %%mm7   \n\t"
         "jmp            2f          \n\t"
-        ASMALIGN(4)
+        ".p2align        4          \n\t"
         "1:                         \n\t"
         PREFETCH"   32(%1)          \n\t"
         "movd         (%1), %%mm0   \n\t"
@@ -1239,7 +1239,7 @@ static inline void RENAME(shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, 
         "pxor          %4, %%mm7        \n\t"
         "movq       %%mm7, %%mm6        \n\t"
         "pxor          %5, %%mm7        \n\t"
-        ASMALIGN(4)
+        ".p2align       4               \n\t"
         "1:                             \n\t"
         PREFETCH"     32(%1, %0)        \n\t"
         "movq           (%1, %0), %%mm0 \n\t"
@@ -1300,7 +1300,7 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long s
         "movq     "MANGLE(mask24r)", %%mm5              \n\t"
         "movq     "MANGLE(mask24g)", %%mm6              \n\t"
         "movq     "MANGLE(mask24b)", %%mm7              \n\t"
-        ASMALIGN(4)
+        ".p2align                 4                     \n\t"
         "1:                                             \n\t"
         PREFETCH" 32(%1, %%"REG_a")                     \n\t"
         "movq       (%1, %%"REG_a"), %%mm0              \n\t" // BGR BGR BG
@@ -1369,7 +1369,7 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
         //FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
         __asm__ volatile(
             "xor                 %%"REG_a", %%"REG_a"   \n\t"
-            ASMALIGN(4)
+            ".p2align                    4              \n\t"
             "1:                                         \n\t"
             PREFETCH"    32(%1, %%"REG_a", 2)           \n\t"
             PREFETCH"    32(%2, %%"REG_a")              \n\t"
@@ -1519,7 +1519,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
         //FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
         __asm__ volatile(
             "xor                %%"REG_a", %%"REG_a"    \n\t"
-            ASMALIGN(4)
+            ".p2align                   4               \n\t"
             "1:                                         \n\t"
             PREFETCH"   32(%1, %%"REG_a", 2)            \n\t"
             PREFETCH"   32(%2, %%"REG_a")               \n\t"
@@ -1648,7 +1648,7 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
             "xor                 %%"REG_a", %%"REG_a"   \n\t"
             "pcmpeqw                 %%mm7, %%mm7       \n\t"
             "psrlw                      $8, %%mm7       \n\t" // FF,00,FF,00...
-            ASMALIGN(4)
+            ".p2align                    4              \n\t"
             "1:                \n\t"
             PREFETCH" 64(%0, %%"REG_a", 4)              \n\t"
             "movq       (%0, %%"REG_a", 4), %%mm0       \n\t" // YUYV YUYV(0)
@@ -1701,7 +1701,7 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 
         __asm__ volatile(
             "xor                 %%"REG_a", %%"REG_a"   \n\t"
-            ASMALIGN(4)
+            ".p2align                    4              \n\t"
             "1:                                         \n\t"
             PREFETCH" 64(%0, %%"REG_a", 4)              \n\t"
             "movq       (%0, %%"REG_a", 4), %%mm0       \n\t" // YUYV YUYV(0)
@@ -1884,7 +1884,7 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
             "xor                 %%"REG_a", %%"REG_a"   \n\t"
             "pcmpeqw             %%mm7, %%mm7   \n\t"
             "psrlw                  $8, %%mm7   \n\t" // FF,00,FF,00...
-            ASMALIGN(4)
+            ".p2align                4          \n\t"
             "1:                                 \n\t"
             PREFETCH" 64(%0, %%"REG_a", 4)          \n\t"
             "movq       (%0, %%"REG_a", 4), %%mm0   \n\t" // UYVY UYVY(0)
@@ -1937,7 +1937,7 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 
         __asm__ volatile(
             "xor                 %%"REG_a", %%"REG_a"   \n\t"
-            ASMALIGN(4)
+            ".p2align                    4          \n\t"
             "1:                                 \n\t"
             PREFETCH" 64(%0, %%"REG_a", 4)          \n\t"
             "movq       (%0, %%"REG_a", 4), %%mm0   \n\t" // YUYV YUYV(0)
@@ -2012,7 +2012,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                 "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
                 "pxor                    %%mm7, %%mm7       \n\t"
                 "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
-                ASMALIGN(4)
+                ".p2align                    4              \n\t"
                 "1:                                         \n\t"
                 PREFETCH"    64(%0, %%"REG_d")              \n\t"
                 "movd          (%0, %%"REG_d"), %%mm0       \n\t"
@@ -2086,7 +2086,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "pxor                    %%mm7, %%mm7       \n\t"
             "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
             "add                 %%"REG_d", %%"REG_d"   \n\t"
-            ASMALIGN(4)
+            ".p2align                    4              \n\t"
             "1:                                         \n\t"
             PREFETCH"    64(%0, %%"REG_d")              \n\t"
             PREFETCH"    64(%1, %%"REG_d")              \n\t"
