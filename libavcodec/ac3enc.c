@@ -500,15 +500,25 @@ static void compute_exp_strategy(AC3EncodeContext *s)
 
 /**
  * Set each encoded exponent in a block to the minimum of itself and the
- * exponent in the same frequency bin of a following block.
- * exp[i] = min(exp[i], exp1[i]
+ * exponents in the same frequency bin of up to 5 following blocks.
  */
-static void exponent_min(uint8_t *exp, uint8_t *exp1, int n)
+static void exponent_min(uint8_t *exp, int num_reuse_blocks, int nb_coefs)
 {
-    int i;
-    for (i = 0; i < n; i++) {
-        if (exp1[i] < exp[i])
-            exp[i] = exp1[i];
+    int blk, i;
+
+    if (!num_reuse_blocks)
+        return;
+
+    for (i = 0; i < nb_coefs; i++) {
+        uint8_t min_exp = *exp;
+        uint8_t *exp1 = exp + AC3_MAX_COEFS;
+        for (blk = 0; blk < num_reuse_blocks; blk++) {
+            uint8_t next_exp = *exp1;
+            if (next_exp < min_exp)
+                min_exp = next_exp;
+            exp1 += AC3_MAX_COEFS;
+        }
+        *exp++ = min_exp;
     }
 }
 
@@ -589,7 +599,7 @@ static void encode_exponents(AC3EncodeContext *s)
 {
     int blk, blk1, ch;
     uint8_t *exp, *exp1, *exp_strategy;
-    int nb_coefs;
+    int nb_coefs, num_reuse_blocks;
 
     for (ch = 0; ch < s->channels; ch++) {
         exp          = s->blocks[0].exp[ch];
@@ -599,13 +609,16 @@ static void encode_exponents(AC3EncodeContext *s)
         blk = 0;
         while (blk < AC3_MAX_BLOCKS) {
             blk1 = blk + 1;
-            exp1 = exp + AC3_MAX_COEFS;
-            /* for the EXP_REUSE case we select the min of the exponents */
+
+            /* count the number of EXP_REUSE blocks after the current block */
             while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1] == EXP_REUSE) {
-                exponent_min(exp, exp1, nb_coefs);
                 blk1++;
-                exp1 += AC3_MAX_COEFS;
             }
+            num_reuse_blocks = blk1 - blk - 1;
+
+            /* for the EXP_REUSE case we select the min of the exponents */
+            exponent_min(exp, num_reuse_blocks, nb_coefs);
+
             encode_exponents_blk_ch(exp, nb_coefs,
                                     exp_strategy[blk]);
             /* copy encoded exponents for reuse case */
