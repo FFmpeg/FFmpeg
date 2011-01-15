@@ -404,6 +404,10 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
                         hi  = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
                         val = IVI_TOSIGNED((hi << 6) | lo); /* merge them and convert into signed val */
                     } else {
+                        if (sym >= 256U) {
+                            av_log(NULL, AV_LOG_ERROR, "Invalid sym encountered: %d.\n", sym);
+                            return -1;
+                        }
                         run = rvmap->runtab[sym];
                         val = rvmap->valtab[sym];
                     }
