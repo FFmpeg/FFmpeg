@@ -1049,29 +1049,6 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
 #define CC &h->cabac
 #endif
 
-
-    /* cat: 0-> DC 16x16  n = 0
-     *      1-> AC 16x16  n = luma4x4idx
-     *      2-> Luma4x4   n = luma4x4idx
-     *      3-> DC Chroma n = iCbCr
-     *      4-> AC Chroma n = 16 + 4 * iCbCr + chroma4x4idx
-     *      5-> Luma8x8   n = 4 * luma8x8idx
-     */
-
-    /* read coded block flag */
-    if( is_dc || cat != 5 ) {
-        if( get_cabac( CC, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n, is_dc ) ] ) == 0 ) {
-            h->non_zero_count_cache[scan8[n]] = 0;
-
-#ifdef CABAC_ON_STACK
-            h->cabac.range     = cc.range     ;
-            h->cabac.low       = cc.low       ;
-            h->cabac.bytestream= cc.bytestream;
-#endif
-            return;
-        }
-    }
-
     significant_coeff_ctx_base = h->cabac_state
         + significant_coeff_flag_offset[MB_FIELD][cat];
     last_coeff_ctx_base = h->cabac_state
@@ -1172,12 +1149,42 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
 
 }
 
-static void decode_cabac_residual_dc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int max_coeff ) {
+static void decode_cabac_residual_dc_internal( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int max_coeff ) {
     decode_cabac_residual_internal(h, block, cat, n, scantable, NULL, max_coeff, 1);
 }
 
-static void decode_cabac_residual_nondc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff ) {
+static void decode_cabac_residual_nondc_internal( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff ) {
     decode_cabac_residual_internal(h, block, cat, n, scantable, qmul, max_coeff, 0);
+}
+
+/* cat: 0-> DC 16x16  n = 0
+ *      1-> AC 16x16  n = luma4x4idx
+ *      2-> Luma4x4   n = luma4x4idx
+ *      3-> DC Chroma n = iCbCr
+ *      4-> AC Chroma n = 16 + 4 * iCbCr + chroma4x4idx
+ *      5-> Luma8x8   n = 4 * luma8x8idx */
+
+/* Partially inline the CABAC residual decode: inline the coded block flag.
+ * This has very little impact on binary size and improves performance
+ * because it allows improved constant propagation into get_cabac_cbf_ctx,
+ * as well as because most blocks have zero CBFs. */
+
+static av_always_inline void decode_cabac_residual_dc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int max_coeff ) {
+    /* read coded block flag */
+    if( get_cabac( CC, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n, 1 ) ] ) == 0 ) {
+        h->non_zero_count_cache[scan8[n]] = 0;
+        return;
+    }
+    decode_cabac_residual_dc_internal( h, block, cat, n, scantable, max_coeff );
+}
+
+static av_always_inline void decode_cabac_residual_nondc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff ) {
+    /* read coded block flag */
+    if( cat != 5 && get_cabac( CC, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n, 0 ) ] ) == 0 ) {
+        h->non_zero_count_cache[scan8[n]] = 0;
+        return;
+    }
+    decode_cabac_residual_nondc_internal( h, block, cat, n, scantable, qmul, max_coeff );
 }
 
 /**
@@ -1185,6 +1192,7 @@ static void decode_cabac_residual_nondc( H264Context *h, DCTELEM *block, int cat
  * @return 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
  */
 int ff_h264_decode_mb_cabac(H264Context *h) {
+    START_TIMER;
     MpegEncContext * const s = &h->s;
     int mb_xy;
     int mb_type, partition_count, cbp = 0;
@@ -1717,6 +1725,6 @@ decode_intra_mb:
         h->ref_count[0] >>= 1;
         h->ref_count[1] >>= 1;
     }
-
+STOP_TIMER("test");
     return 0;
 }
