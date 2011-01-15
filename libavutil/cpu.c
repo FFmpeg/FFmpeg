@@ -16,8 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdio.h>
-
 #include "cpu.h"
 #include "config.h"
 
@@ -39,6 +37,7 @@ int av_get_cpu_flags(void)
 #ifdef TEST
 
 #undef printf
+#include <stdio.h>
 
 int main(void)
 {
