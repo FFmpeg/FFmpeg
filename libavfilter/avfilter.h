@@ -28,7 +28,7 @@
 
 #define LIBAVFILTER_VERSION_MAJOR  1
 #define LIBAVFILTER_VERSION_MINOR 73
-#define LIBAVFILTER_VERSION_MICRO  1
+#define LIBAVFILTER_VERSION_MICRO  2
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -177,7 +177,7 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask);
  * Remove a reference to a buffer. If this is the last reference to the
  * buffer, the buffer itself is also automatically freed.
  *
- * @param ref reference to the buffer
+ * @param ref reference to the buffer, may be NULL
  */
 void avfilter_unref_buffer(AVFilterBufferRef *ref);
 
