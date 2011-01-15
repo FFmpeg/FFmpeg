@@ -183,6 +183,7 @@ static int wav_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     int64_t size, av_uninit(data_size);
+    int64_t sample_count=0;
     int rf64;
     unsigned int tag;
     ByteIOContext *pb = s->pb;
@@ -208,6 +209,7 @@ static int wav_read_header(AVFormatContext *s,
             return -1;
         get_le64(pb); /* RIFF size */
         data_size = get_le64(pb);
+        sample_count = get_le64(pb);
         url_fskip(pb, size - 16); /* skip rest of ds64 chunk */
     }
 
@@ -233,6 +235,11 @@ static int wav_read_header(AVFormatContext *s,
         wav->data_end = INT64_MAX;
     } else
         wav->data_end= url_ftell(pb) + size;
+
+    if (!sample_count && st->codec->channels && av_get_bits_per_sample(st->codec->codec_id))
+        sample_count = (size<<3) / (st->codec->channels * (uint64_t)av_get_bits_per_sample(st->codec->codec_id));
+    if (sample_count)
+        st->duration = sample_count;
     return 0;
 }
 
