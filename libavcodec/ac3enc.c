@@ -1289,10 +1289,10 @@ static void output_frame_header(AC3EncodeContext *s)
 /**
  * Write one audio block to the output bitstream.
  */
-static void output_audio_block(AC3EncodeContext *s, int block_num)
+static void output_audio_block(AC3EncodeContext *s, int blk)
 {
     int ch, i, baie, rbnd;
-    AC3Block *block = &s->blocks[block_num];
+    AC3Block *block = &s->blocks[blk];
 
     /* block switching */
     for (ch = 0; ch < s->fbw_channels; ch++)
@@ -1306,7 +1306,7 @@ static void output_audio_block(AC3EncodeContext *s, int block_num)
     put_bits(&s->pb, 1, 0);
 
     /* channel coupling */
-    if (!block_num) {
+    if (!blk) {
         put_bits(&s->pb, 1, 1); /* coupling strategy present */
         put_bits(&s->pb, 1, 0); /* no coupling strategy */
     } else {
@@ -1325,13 +1325,13 @@ static void output_audio_block(AC3EncodeContext *s, int block_num)
 
     /* exponent strategy */
     for (ch = 0; ch < s->fbw_channels; ch++)
-        put_bits(&s->pb, 2, s->exp_strategy[ch][block_num]);
+        put_bits(&s->pb, 2, s->exp_strategy[ch][blk]);
     if (s->lfe_on)
-        put_bits(&s->pb, 1, s->exp_strategy[s->lfe_channel][block_num]);
+        put_bits(&s->pb, 1, s->exp_strategy[s->lfe_channel][blk]);
 
     /* bandwidth */
     for (ch = 0; ch < s->fbw_channels; ch++) {
-        if (s->exp_strategy[ch][block_num] != EXP_REUSE)
+        if (s->exp_strategy[ch][blk] != EXP_REUSE)
             put_bits(&s->pb, 6, s->bandwidth_code[ch]);
     }
 
@@ -1339,14 +1339,14 @@ static void output_audio_block(AC3EncodeContext *s, int block_num)
     for (ch = 0; ch < s->channels; ch++) {
         int nb_groups;
 
-        if (s->exp_strategy[ch][block_num] == EXP_REUSE)
+        if (s->exp_strategy[ch][blk] == EXP_REUSE)
             continue;
 
         /* DC exponent */
         put_bits(&s->pb, 4, block->grouped_exp[ch][0]);
 
         /* exponent groups */
-        nb_groups = exponent_group_tab[s->exp_strategy[ch][block_num]-1][s->nb_coefs[ch]];
+        nb_groups = exponent_group_tab[s->exp_strategy[ch][blk]-1][s->nb_coefs[ch]];
         for (i = 1; i <= nb_groups; i++)
             put_bits(&s->pb, 7, block->grouped_exp[ch][i]);
 
@@ -1356,7 +1356,7 @@ static void output_audio_block(AC3EncodeContext *s, int block_num)
     }
 
     /* bit allocation info */
-    baie = (block_num == 0);
+    baie = (blk == 0);
     put_bits(&s->pb, 1, baie);
     if (baie) {
         put_bits(&s->pb, 2, s->slow_decay_code);
