@@ -235,7 +235,7 @@ void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end)
     if (ref->audio) {
         dprintf(ctx, " cl:%"PRId64"d sn:%d s:%d sr:%d p:%d",
                 ref->audio->channel_layout,
-                ref->audio->samples_nb,
+                ref->audio->nb_samples,
                 ref->audio->size,
                 ref->audio->sample_rate,
                 ref->audio->planar);

@@ -88,7 +88,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
     chans_nb = av_get_channel_layout_nb_channels(channel_layout);
 
     per_channel_size = size/chans_nb;
-    ref->audio->samples_nb = per_channel_size/sample_size;
+    ref->audio->nb_samples = per_channel_size/sample_size;
 
     /* Set the number of bytes to traverse to reach next sample of a particular channel:
      * For planar, this is simply the sample size.

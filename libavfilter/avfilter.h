@@ -27,8 +27,8 @@
 #include "libavcore/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 73
-#define LIBAVFILTER_VERSION_MICRO  2
+#define LIBAVFILTER_VERSION_MINOR 74
+#define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -99,7 +99,7 @@ typedef struct AVFilterBuffer {
  */
 typedef struct AVFilterBufferRefAudioProps {
     int64_t channel_layout;     ///< channel layout of audio buffer
-    int samples_nb;             ///< number of audio samples
+    int nb_samples;             ///< number of audio samples
     int size;                   ///< audio buffer size
     uint32_t sample_rate;       ///< audio buffer sample rate
     int planar;                 ///< audio buffer - planar or packed
