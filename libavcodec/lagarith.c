@@ -405,9 +405,13 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
             }
         }
     } else if (esc_count == 0xff) {
-        /* Plane is a solid run of 0 bytes */
+        /* Plane is a solid run of given value */
         for (i = 0; i < height; i++)
-            memset(dst + i * stride, 0, width);
+            memset(dst + i * stride, src[1], width);
+        /* Do not apply prediction.
+           Note: memset to 0 above, setting first value to src[1]
+           and applying prediction gives the same result. */
+        return 0;
     } else {
         av_log(l->avctx, AV_LOG_ERROR,
                "Invalid zero run escape code! (%#x)\n", esc_count);
