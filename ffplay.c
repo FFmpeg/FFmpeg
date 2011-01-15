@@ -1243,7 +1243,7 @@ retry:
 
             /* display picture */
             if (!display_disable)
-            video_display(is);
+                video_display(is);
 
             /* update queue size and signal for next picture */
             if (++is->pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE)
@@ -1262,7 +1262,7 @@ retry:
 
         /* display picture */
         if (!display_disable)
-        video_display(is);
+            video_display(is);
     }
     if (show_status) {
         static int64_t last_time;
