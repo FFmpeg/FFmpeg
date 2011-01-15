@@ -1242,6 +1242,7 @@ retry:
             }
 
             /* display picture */
+            if (!display_disable)
             video_display(is);
 
             /* update queue size and signal for next picture */
@@ -1260,6 +1261,7 @@ retry:
            than nothing, just to test the implementation */
 
         /* display picture */
+        if (!display_disable)
         video_display(is);
     }
     if (show_status) {
