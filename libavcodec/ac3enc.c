@@ -611,16 +611,15 @@ static void encode_exponents(AC3EncodeContext *s)
             blk1 = blk + 1;
 
             /* count the number of EXP_REUSE blocks after the current block */
-            while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1] == EXP_REUSE) {
+            while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1] == EXP_REUSE)
                 blk1++;
-            }
             num_reuse_blocks = blk1 - blk - 1;
 
             /* for the EXP_REUSE case we select the min of the exponents */
             exponent_min(exp, num_reuse_blocks, nb_coefs);
 
-            encode_exponents_blk_ch(exp, nb_coefs,
-                                    exp_strategy[blk]);
+            encode_exponents_blk_ch(exp, nb_coefs, exp_strategy[blk]);
+
             /* copy encoded exponents for reuse case */
             exp1 = exp + AC3_MAX_COEFS;
             while (blk < blk1-1) {
