@@ -232,7 +232,18 @@ static int wav_read_header(AVFormatContext *s,
 
     av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
-    size = find_tag(pb, MKTAG('d', 'a', 't', 'a'));
+    for (;;) {
+        if (url_feof(pb))
+            return -1;
+        size = next_tag(pb, &tag);
+        if (tag == MKTAG('d', 'a', 't', 'a')){
+            break;
+        }else if (tag == MKTAG('f','a','c','t') && !sample_count){
+            sample_count = get_le32(pb);
+            size -= 4;
+        }
+        url_fseek(pb, size, SEEK_CUR);
+    }
     if (rf64)
         size = data_size;
     if (size < 0)
