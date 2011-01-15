@@ -1757,14 +1757,17 @@ static av_cold int allocate_buffers(AVCodecContext *avctx)
                           alloc_fail);
 
         for (ch = 0; ch < s->channels; ch++) {
+            /* arrangement: block, channel, coeff */
             block->bap[ch]         = &s->bap_buffer        [AC3_MAX_COEFS * (blk * s->channels + ch)];
             block->mdct_coef[ch]   = &s->mdct_coef_buffer  [AC3_MAX_COEFS * (blk * s->channels + ch)];
-            block->exp[ch]         = &s->exp_buffer        [AC3_MAX_COEFS * (blk * s->channels + ch)];
             block->grouped_exp[ch] = &s->grouped_exp_buffer[128           * (blk * s->channels + ch)];
             block->psd[ch]         = &s->psd_buffer        [AC3_MAX_COEFS * (blk * s->channels + ch)];
             block->band_psd[ch]    = &s->band_psd_buffer   [64            * (blk * s->channels + ch)];
             block->mask[ch]        = &s->mask_buffer       [64            * (blk * s->channels + ch)];
             block->qmant[ch]       = &s->qmant_buffer      [AC3_MAX_COEFS * (blk * s->channels + ch)];
+
+            /* arrangement: channel, block, coeff */
+            block->exp[ch]         = &s->exp_buffer        [AC3_MAX_COEFS * (AC3_MAX_BLOCKS * ch + blk)];
         }
     }
 
