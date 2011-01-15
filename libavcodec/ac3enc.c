@@ -587,31 +587,36 @@ static void encode_exponents_blk_ch(uint8_t *exp, int nb_exps, int exp_strategy)
  */
 static void encode_exponents(AC3EncodeContext *s)
 {
-    int blk, blk1, blk2, ch;
-    AC3Block *block, *block1, *block2;
+    int blk, blk1, ch;
+    uint8_t *exp, *exp1, *exp_strategy;
+    int nb_coefs;
 
     for (ch = 0; ch < s->channels; ch++) {
+        exp          = s->blocks[0].exp[ch];
+        exp_strategy = s->exp_strategy[ch];
+        nb_coefs     = s->nb_coefs[ch];
+
         blk = 0;
-        block = &s->blocks[0];
         while (blk < AC3_MAX_BLOCKS) {
             blk1 = blk + 1;
-            block1 = block + 1;
+            exp1 = exp + AC3_MAX_COEFS;
             /* for the EXP_REUSE case we select the min of the exponents */
-            while (blk1 < AC3_MAX_BLOCKS && s->exp_strategy[ch][blk1] == EXP_REUSE) {
-                exponent_min(block->exp[ch], block1->exp[ch], s->nb_coefs[ch]);
+            while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1] == EXP_REUSE) {
+                exponent_min(exp, exp1, nb_coefs);
                 blk1++;
-                block1++;
+                exp1 += AC3_MAX_COEFS;
             }
-            encode_exponents_blk_ch(block->exp[ch], s->nb_coefs[ch],
-                                    s->exp_strategy[ch][blk]);
+            encode_exponents_blk_ch(exp, nb_coefs,
+                                    exp_strategy[blk]);
             /* copy encoded exponents for reuse case */
-            block2 = block + 1;
-            for (blk2 = blk+1; blk2 < blk1; blk2++, block2++) {
-                memcpy(block2->exp[ch], block->exp[ch],
-                       s->nb_coefs[ch] * sizeof(uint8_t));
+            exp1 = exp + AC3_MAX_COEFS;
+            while (blk < blk1-1) {
+                memcpy(exp1, exp, nb_coefs * sizeof(*exp));
+                exp1 += AC3_MAX_COEFS;
+                blk++;
             }
             blk = blk1;
-            block = block1;
+            exp = exp1;
         }
     }
 }
