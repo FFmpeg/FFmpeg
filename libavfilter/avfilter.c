@@ -23,6 +23,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
+#include "libavcore/audioconvert.h"
 #include "libavcore/imgutils.h"
 #include "avfilter.h"
 #include "internal.h"
