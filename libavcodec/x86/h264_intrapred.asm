@@ -344,28 +344,6 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
 %endif
     paddw        m0, m1           ; sum of H coefficients
 
-%ifidn %3, h264
-    pmullw       m0, [pw_5]
-    paddw        m0, [pw_32]
-    psraw        m0, 6
-%elifidn %3, rv40
-    pmullw       m0, [pw_5]
-    psraw        m0, 6
-%elifidn %3, svq3
-    movd        r3d, m0
-    movsx        r3, r3w
-    test         r3, r3
-    lea          r4, [r3+3]
-    cmovs        r3, r4
-    sar          r3, 2           ; H/4
-    lea          r3, [r3*5]      ; 5*(H/4)
-    test         r3, r3
-    lea          r4, [r3+15]
-    cmovs        r3, r4
-    sar          r3, 4           ; (5*(H/4))/16
-    movd         m0, r3d
-%endif
-
     lea          r4, [r0+r2*8-1]
     lea          r3, [r0+r2*4-1]
     add          r4, r2
@@ -468,8 +446,29 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
     movzx        r3, byte [r3+r2*2   ]
     lea          r3, [r3+r4+1]
     shl          r3, 4
+
     movd        r1d, m0
     movsx       r1d, r1w
+%ifnidn %3, svq3
+%ifidn %3, h264
+    lea         r1d, [r1d*5+32]
+%else ; rv40
+    lea         r1d, [r1d*5]
+%endif
+    sar         r1d, 6
+%else ; svq3
+    test        r1d, r1d
+    lea         r4d, [r1d+3]
+    cmovs       r1d, r4d
+    sar         r1d, 2           ; H/4
+    lea         r1d, [r1d*5]     ; 5*(H/4)
+    test        r1d, r1d
+    lea         r4d, [r1d+15]
+    cmovs       r1d, r4d
+    sar         r1d, 4           ; (5*(H/4))/16
+%endif
+    movd         m0, r1d
+
     add         r1d, r5d
     add         r3d, r1d
     shl         r1d, 3
