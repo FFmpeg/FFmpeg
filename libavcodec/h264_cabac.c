@@ -1171,7 +1171,7 @@ static void decode_cabac_residual_nondc_internal( H264Context *h, DCTELEM *block
 
 static av_always_inline void decode_cabac_residual_dc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int max_coeff ) {
     /* read coded block flag */
-    if( get_cabac( CC, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n, 1 ) ] ) == 0 ) {
+    if( get_cabac( &h->cabac, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n, 1 ) ] ) == 0 ) {
         h->non_zero_count_cache[scan8[n]] = 0;
         return;
     }
@@ -1180,7 +1180,7 @@ static av_always_inline void decode_cabac_residual_dc( H264Context *h, DCTELEM *
 
 static av_always_inline void decode_cabac_residual_nondc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff ) {
     /* read coded block flag */
-    if( cat != 5 && get_cabac( CC, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n, 0 ) ] ) == 0 ) {
+    if( cat != 5 && get_cabac( &h->cabac, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n, 0 ) ] ) == 0 ) {
         h->non_zero_count_cache[scan8[n]] = 0;
         return;
     }
