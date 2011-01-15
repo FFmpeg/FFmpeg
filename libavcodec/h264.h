@@ -407,6 +407,7 @@ typedef struct H264Context{
 
     DECLARE_ALIGNED(16, DCTELEM, mb)[16*24];
     DECLARE_ALIGNED(16, DCTELEM, mb_luma_dc)[16];
+    DECLARE_ALIGNED(16, DCTELEM, mb_chroma_dc)[2][4];
     DCTELEM mb_padding[256];        ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either check that i is not too large or ensure that there is some unused stuff after mb
 
     /**

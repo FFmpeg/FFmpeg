@@ -1680,9 +1680,10 @@ decode_intra_mb:
 
         if( cbp&0x30 ){
             int c;
+            AV_ZERO128(h->mb_chroma_dc);
             for( c = 0; c < 2; c++ ) {
                 //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-DC\n",c );
-                decode_cabac_residual_dc(h, h->mb + 256 + 16*4*c, 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
+                decode_cabac_residual_dc(h, h->mb_chroma_dc[c], 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
             }
         }
 

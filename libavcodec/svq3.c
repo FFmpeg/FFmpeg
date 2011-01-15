@@ -671,11 +671,12 @@ static int svq3_decode_mb(H264Context *h, unsigned int mb_type)
         }
 
         if ((cbp & 0x30)) {
+            AV_ZERO128(h->mb_chroma_dc);
             for (i = 0; i < 2; ++i) {
-              if (svq3_decode_block(&s->gb, &h->mb[16*(16 + 4*i)], 0, 3)){
-                av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding chroma dc block\n");
-                return -1;
-              }
+                if (svq3_decode_block(&s->gb, h->mb_chroma_dc[i], 0, 3)){
+                    av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding chroma dc block\n");
+                    return -1;
+                }
             }
 
             if ((cbp & 0x20)) {

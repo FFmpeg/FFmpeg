@@ -987,8 +987,9 @@ decode_intra_mb:
         }
 
         if(cbp&0x30){
+            AV_ZERO128(h->mb_chroma_dc);
             for(chroma_idx=0; chroma_idx<2; chroma_idx++)
-                if( decode_residual(h, gb, h->mb + 256 + 16*4*chroma_idx, CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
+                if( decode_residual(h, gb, h->mb_chroma_dc[chroma_idx], CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
                     return -1;
                 }
         }
