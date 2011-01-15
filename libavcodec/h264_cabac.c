@@ -1192,7 +1192,6 @@ static av_always_inline void decode_cabac_residual_nondc( H264Context *h, DCTELE
  * @return 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
  */
 int ff_h264_decode_mb_cabac(H264Context *h) {
-    START_TIMER;
     MpegEncContext * const s = &h->s;
     int mb_xy;
     int mb_type, partition_count, cbp = 0;
@@ -1725,6 +1724,6 @@ decode_intra_mb:
         h->ref_count[0] >>= 1;
         h->ref_count[1] >>= 1;
     }
-STOP_TIMER("test");
+
     return 0;
 }
