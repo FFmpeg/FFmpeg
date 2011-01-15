@@ -1506,6 +1506,12 @@ static int decode_packet(AVCodecContext *avctx,
         s->packet_sequence_number = packet_sequence_number;
 
         if (num_bits_prev_frame > 0) {
+            int remaining_packet_bits = s->buf_bit_size - get_bits_count(gb);
+            if (num_bits_prev_frame >= remaining_packet_bits) {
+                num_bits_prev_frame = remaining_packet_bits;
+                s->packet_done = 1;
+            }
+
             /** append the previous frame data to the remaining data from the
                 previous packet to create a full frame */
             save_bits(s, gb, num_bits_prev_frame, 1);
