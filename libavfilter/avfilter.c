@@ -246,6 +246,7 @@ void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end)
 
 void ff_dprintf_link(void *ctx, AVFilterLink *link, int end)
 {
+    if (link->type == AVMEDIA_TYPE_VIDEO) {
     dprintf(ctx,
             "link[%p s:%dx%d fmt:%-16s %-16s->%-16s]%s",
             link, link->w, link->h,
@@ -253,6 +254,18 @@ void ff_dprintf_link(void *ctx, AVFilterLink *link, int end)
             link->src ? link->src->filter->name : "",
             link->dst ? link->dst->filter->name : "",
             end ? "\n" : "");
+    } else {
+        char buf[128];
+        av_get_channel_layout_string(buf, sizeof(buf), -1, link->channel_layout);
+
+        dprintf(ctx,
+                "link[%p r:%"PRId64" cl:%s fmt:%-16s %-16s->%-16s]%s",
+                link, link->sample_rate, buf,
+                av_get_sample_fmt_name(link->format),
+                link->src ? link->src->filter->name : "",
+                link->dst ? link->dst->filter->name : "",
+                end ? "\n" : "");
+    }
 }
 
 AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
