@@ -441,7 +441,7 @@ static void extract_exponents(AC3EncodeContext *s)
  * Calculate exponent strategies for all blocks in a single channel.
  */
 static void compute_exp_strategy_ch(AC3EncodeContext *s, uint8_t *exp_strategy,
-                                    uint8_t **exp)
+                                    uint8_t *exp)
 {
     int blk, blk1;
     int exp_diff;
@@ -449,12 +449,14 @@ static void compute_exp_strategy_ch(AC3EncodeContext *s, uint8_t *exp_strategy,
     /* estimate if the exponent variation & decide if they should be
        reused in the next frame */
     exp_strategy[0] = EXP_NEW;
+    exp += AC3_MAX_COEFS;
     for (blk = 1; blk < AC3_MAX_BLOCKS; blk++) {
-        exp_diff = s->dsp.sad[0](NULL, exp[blk], exp[blk-1], 16, 16);
+        exp_diff = s->dsp.sad[0](NULL, exp, exp - AC3_MAX_COEFS, 16, 16);
         if (exp_diff > EXP_DIFF_THRESHOLD)
             exp_strategy[blk] = EXP_NEW;
         else
             exp_strategy[blk] = EXP_REUSE;
+        exp += AC3_MAX_COEFS;
     }
     emms_c();
 
@@ -482,20 +484,10 @@ static void compute_exp_strategy_ch(AC3EncodeContext *s, uint8_t *exp_strategy,
  */
 static void compute_exp_strategy(AC3EncodeContext *s)
 {
-    uint8_t *exp1[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS];
-    uint8_t exp_str1[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS];
     int ch, blk;
 
     for (ch = 0; ch < s->fbw_channels; ch++) {
-        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-            exp1[ch][blk]     = s->blocks[blk].exp[ch];
-            exp_str1[ch][blk] = s->exp_strategy[ch][blk];
-        }
-
-        compute_exp_strategy_ch(s, exp_str1[ch], exp1[ch]);
-
-        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
-            s->exp_strategy[ch][blk] = exp_str1[ch][blk];
+        compute_exp_strategy_ch(s, s->exp_strategy[ch], s->blocks[0].exp[ch]);
     }
     if (s->lfe_on) {
         ch = s->lfe_channel;
