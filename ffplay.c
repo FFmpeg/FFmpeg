@@ -1016,12 +1016,12 @@ static int refresh_thread(void *opaque)
 {
     VideoState *is= opaque;
     while(!is->abort_request){
-    SDL_Event event;
-    event.type = FF_REFRESH_EVENT;
-    event.user.data1 = opaque;
+        SDL_Event event;
+        event.type = FF_REFRESH_EVENT;
+        event.user.data1 = opaque;
         if(!is->refresh){
             is->refresh=1;
-    SDL_PushEvent(&event);
+            SDL_PushEvent(&event);
         }
         usleep(is->audio_st && is->show_audio ? rdftspeed*1000 : 5000); //FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
     }
