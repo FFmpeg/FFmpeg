@@ -75,7 +75,6 @@ typedef struct AC3Block {
     int16_t  **band_psd;                        ///< psd per critical band
     int16_t  **mask;                            ///< masking curve
     uint16_t **qmant;                           ///< quantized mantissas
-    uint8_t  exp_strategy[AC3_MAX_CHANNELS];    ///< exponent strategies
     int8_t   exp_shift[AC3_MAX_CHANNELS];       ///< exponent shift values
     uint8_t  new_rematrixing_strategy;          ///< send new rematrixing flags in this block
     uint8_t  rematrixing_flags[4];              ///< rematrixing flags
@@ -146,6 +145,8 @@ typedef struct AC3EncodeContext {
     int16_t *band_psd_buffer;
     int16_t *mask_buffer;
     uint16_t *qmant_buffer;
+
+    uint8_t exp_strategy[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< exponent strategies
 
     DECLARE_ALIGNED(16, SampleType, windowed_samples)[AC3_WINDOW_SIZE];
 } AC3EncodeContext;
@@ -488,19 +489,19 @@ static void compute_exp_strategy(AC3EncodeContext *s)
     for (ch = 0; ch < s->fbw_channels; ch++) {
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
             exp1[ch][blk]     = s->blocks[blk].exp[ch];
-            exp_str1[ch][blk] = s->blocks[blk].exp_strategy[ch];
+            exp_str1[ch][blk] = s->exp_strategy[ch][blk];
         }
 
         compute_exp_strategy_ch(s, exp_str1[ch], exp1[ch]);
 
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
-            s->blocks[blk].exp_strategy[ch] = exp_str1[ch][blk];
+            s->exp_strategy[ch][blk] = exp_str1[ch][blk];
     }
     if (s->lfe_on) {
         ch = s->lfe_channel;
-        s->blocks[0].exp_strategy[ch] = EXP_D15;
+        s->exp_strategy[ch][0] = EXP_D15;
         for (blk = 1; blk < AC3_MAX_BLOCKS; blk++)
-            s->blocks[blk].exp_strategy[ch] = EXP_REUSE;
+            s->exp_strategy[ch][blk] = EXP_REUSE;
     }
 }
 
@@ -604,13 +605,13 @@ static void encode_exponents(AC3EncodeContext *s)
             blk1 = blk + 1;
             block1 = block + 1;
             /* for the EXP_REUSE case we select the min of the exponents */
-            while (blk1 < AC3_MAX_BLOCKS && block1->exp_strategy[ch] == EXP_REUSE) {
+            while (blk1 < AC3_MAX_BLOCKS && s->exp_strategy[ch][blk1] == EXP_REUSE) {
                 exponent_min(block->exp[ch], block1->exp[ch], s->nb_coefs[ch]);
                 blk1++;
                 block1++;
             }
             encode_exponents_blk_ch(block->exp[ch], s->nb_coefs[ch],
-                                    block->exp_strategy[ch]);
+                                    s->exp_strategy[ch][blk]);
             /* copy encoded exponents for reuse case */
             block2 = block + 1;
             for (blk2 = blk+1; blk2 < blk1; blk2++, block2++) {
@@ -641,11 +642,11 @@ static void group_exponents(AC3EncodeContext *s)
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         for (ch = 0; ch < s->channels; ch++) {
-            if (block->exp_strategy[ch] == EXP_REUSE) {
+            if (s->exp_strategy[ch][blk] == EXP_REUSE) {
                 continue;
             }
-            group_size = block->exp_strategy[ch] + (block->exp_strategy[ch] == EXP_D45);
-            nb_groups = exponent_group_tab[block->exp_strategy[ch]-1][s->nb_coefs[ch]];
+            group_size = s->exp_strategy[ch][blk] + (s->exp_strategy[ch][blk] == EXP_D45);
+            nb_groups = exponent_group_tab[s->exp_strategy[ch][blk]-1][s->nb_coefs[ch]];
             bit_count += 4 + (nb_groups * 7);
             p = block->exp[ch];
 
@@ -795,8 +796,6 @@ static void count_frame_bits(AC3EncodeContext *s)
     int frame_bits = 0;
 
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-        uint8_t *exp_strategy = s->blocks[blk].exp_strategy;
-
         /* stereo rematrixing */
         if (s->channel_mode == AC3_CHMODE_STEREO &&
             s->blocks[blk].new_rematrixing_strategy) {
@@ -804,7 +803,7 @@ static void count_frame_bits(AC3EncodeContext *s)
         }
 
         for (ch = 0; ch < s->fbw_channels; ch++) {
-            if (exp_strategy[ch] != EXP_REUSE)
+            if (s->exp_strategy[ch][blk] != EXP_REUSE)
                 frame_bits += 6 + 2; /* chbwcod[6], gainrng[2] */
         }
     }
@@ -867,7 +866,7 @@ static void bit_alloc_masking(AC3EncodeContext *s)
             /* We only need psd and mask for calculating bap.
                Since we currently do not calculate bap when exponent
                strategy is EXP_REUSE we do not need to calculate psd or mask. */
-            if (block->exp_strategy[ch] != EXP_REUSE) {
+            if (s->exp_strategy[ch][blk] != EXP_REUSE) {
                 ff_ac3_bit_alloc_calc_psd(block->exp[ch], 0,
                                           s->nb_coefs[ch],
                                           block->psd[ch], block->band_psd[ch]);
@@ -930,7 +929,7 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
                blocks within a frame are the exponent values.  We can take
                advantage of that by reusing the bit allocation pointers
                whenever we reuse exponents. */
-            if (block->exp_strategy[ch] == EXP_REUSE) {
+            if (s->exp_strategy[ch][blk] == EXP_REUSE) {
                 memcpy(block->bap[ch], s->blocks[blk-1].bap[ch], AC3_MAX_COEFS);
             } else {
                 ff_ac3_bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
@@ -1006,16 +1005,16 @@ static int downgrade_exponents(AC3EncodeContext *s)
 
     for (ch = 0; ch < s->fbw_channels; ch++) {
         for (blk = AC3_MAX_BLOCKS-1; blk >= 0; blk--) {
-            if (s->blocks[blk].exp_strategy[ch] == EXP_D15) {
-                s->blocks[blk].exp_strategy[ch] = EXP_D25;
+            if (s->exp_strategy[ch][blk] == EXP_D15) {
+                s->exp_strategy[ch][blk] = EXP_D25;
                 return 0;
             }
         }
     }
     for (ch = 0; ch < s->fbw_channels; ch++) {
         for (blk = AC3_MAX_BLOCKS-1; blk >= 0; blk--) {
-            if (s->blocks[blk].exp_strategy[ch] == EXP_D25) {
-                s->blocks[blk].exp_strategy[ch] = EXP_D45;
+            if (s->exp_strategy[ch][blk] == EXP_D25) {
+                s->exp_strategy[ch][blk] = EXP_D45;
                 return 0;
             }
         }
@@ -1024,8 +1023,8 @@ static int downgrade_exponents(AC3EncodeContext *s)
         /* block 0 cannot reuse exponents, so only downgrade D45 to REUSE if
            the block number > 0 */
         for (blk = AC3_MAX_BLOCKS-1; blk > 0; blk--) {
-            if (s->blocks[blk].exp_strategy[ch] > EXP_REUSE) {
-                s->blocks[blk].exp_strategy[ch] = EXP_REUSE;
+            if (s->exp_strategy[ch][blk] > EXP_REUSE) {
+                s->exp_strategy[ch][blk] = EXP_REUSE;
                 return 0;
             }
         }
@@ -1326,13 +1325,13 @@ static void output_audio_block(AC3EncodeContext *s, int block_num)
 
     /* exponent strategy */
     for (ch = 0; ch < s->fbw_channels; ch++)
-        put_bits(&s->pb, 2, block->exp_strategy[ch]);
+        put_bits(&s->pb, 2, s->exp_strategy[ch][block_num]);
     if (s->lfe_on)
-        put_bits(&s->pb, 1, block->exp_strategy[s->lfe_channel]);
+        put_bits(&s->pb, 1, s->exp_strategy[s->lfe_channel][block_num]);
 
     /* bandwidth */
     for (ch = 0; ch < s->fbw_channels; ch++) {
-        if (block->exp_strategy[ch] != EXP_REUSE)
+        if (s->exp_strategy[ch][block_num] != EXP_REUSE)
             put_bits(&s->pb, 6, s->bandwidth_code[ch]);
     }
 
@@ -1340,14 +1339,14 @@ static void output_audio_block(AC3EncodeContext *s, int block_num)
     for (ch = 0; ch < s->channels; ch++) {
         int nb_groups;
 
-        if (block->exp_strategy[ch] == EXP_REUSE)
+        if (s->exp_strategy[ch][block_num] == EXP_REUSE)
             continue;
 
         /* DC exponent */
         put_bits(&s->pb, 4, block->grouped_exp[ch][0]);
 
         /* exponent groups */
-        nb_groups = exponent_group_tab[block->exp_strategy[ch]-1][s->nb_coefs[ch]];
+        nb_groups = exponent_group_tab[s->exp_strategy[ch][block_num]-1][s->nb_coefs[ch]];
         for (i = 1; i <= nb_groups; i++)
             put_bits(&s->pb, 7, block->grouped_exp[ch][i]);
 
