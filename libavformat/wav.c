@@ -140,6 +140,13 @@ AVOutputFormat wav_muxer = {
 
 
 #if CONFIG_WAV_DEMUXER
+
+static int64_t next_tag(ByteIOContext *pb, unsigned int *tag)
+{
+    *tag = get_le32(pb);
+    return get_le32(pb);
+}
+
 /* return the size of the found tag */
 static int64_t find_tag(ByteIOContext *pb, uint32_t tag1)
 {
@@ -149,8 +156,7 @@ static int64_t find_tag(ByteIOContext *pb, uint32_t tag1)
     for (;;) {
         if (url_feof(pb))
             return -1;
-        tag  = get_le32(pb);
-        size = get_le32(pb);
+        size = next_tag(pb, &tag);
         if (tag == tag1)
             break;
         url_fseek(pb, size, SEEK_CUR);
