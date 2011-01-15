@@ -247,13 +247,13 @@ void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end)
 void ff_dprintf_link(void *ctx, AVFilterLink *link, int end)
 {
     if (link->type == AVMEDIA_TYPE_VIDEO) {
-    dprintf(ctx,
-            "link[%p s:%dx%d fmt:%-16s %-16s->%-16s]%s",
-            link, link->w, link->h,
-            av_pix_fmt_descriptors[link->format].name,
-            link->src ? link->src->filter->name : "",
-            link->dst ? link->dst->filter->name : "",
-            end ? "\n" : "");
+        dprintf(ctx,
+                "link[%p s:%dx%d fmt:%-16s %-16s->%-16s]%s",
+                link, link->w, link->h,
+                av_pix_fmt_descriptors[link->format].name,
+                link->src ? link->src->filter->name : "",
+                link->dst ? link->dst->filter->name : "",
+                end ? "\n" : "");
     } else {
         char buf[128];
         av_get_channel_layout_string(buf, sizeof(buf), -1, link->channel_layout);
