@@ -642,9 +642,8 @@ static void group_exponents(AC3EncodeContext *s)
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         for (ch = 0; ch < s->channels; ch++) {
-            if (s->exp_strategy[ch][blk] == EXP_REUSE) {
+            if (s->exp_strategy[ch][blk] == EXP_REUSE)
                 continue;
-            }
             group_size = s->exp_strategy[ch][blk] + (s->exp_strategy[ch][blk] == EXP_D45);
             nb_groups = exponent_group_tab[s->exp_strategy[ch][blk]-1][s->nb_coefs[ch]];
             bit_count += 4 + (nb_groups * 7);
