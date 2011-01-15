@@ -1215,7 +1215,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                         }
                     }
                 }else
-                    ff_svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
+                    ff_svq3_luma_dc_dequant_idct_c(h->mb, h->mb_luma_dc, s->qscale);
             }
             if(h->deblocking_filter)
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0, simple);
