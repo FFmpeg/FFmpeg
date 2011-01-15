@@ -483,6 +483,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
         if (floor_setup->floor_type == 1) {
             int maximum_class = -1;
             uint_fast8_t  rangebits;
+            uint_fast32_t rangemax;
             uint_fast16_t floor1_values = 2;
 
             floor_setup->decode = vorbis_floor1_decode;
@@ -534,8 +535,15 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
 
 
             rangebits = get_bits(gb, 4);
+            rangemax = (1 << rangebits);
+            if (rangemax > vc->blocksize[1] / 2) {
+                av_log(vc->avccontext, AV_LOG_ERROR,
+                       "Floor value is too large for blocksize: %d (%d)\n",
+                       rangemax, vc->blocksize[1] / 2);
+                return -1;
+            }
             floor_setup->data.t1.list[0].x = 0;
-            floor_setup->data.t1.list[1].x = (1 << rangebits);
+            floor_setup->data.t1.list[1].x = rangemax;
 
             for (j = 0; j < floor_setup->data.t1.partitions; ++j) {
                 for (k = 0; k < floor_setup->data.t1.class_dimensions[floor_setup->data.t1.partition_class[j]]; ++k, ++floor1_values) {
