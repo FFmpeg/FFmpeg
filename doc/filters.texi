@@ -996,6 +996,8 @@ enable automatic detection
 @end table
 
 Default value is -1.
+If interlacing is unknown or decoder does not export this information,
+top field first will be assumed.
 
 @c man end VIDEO FILTERS
 
