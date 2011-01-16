@@ -105,7 +105,7 @@ I. BASICS:
 
     git diff --check
 
-  to doublecheck your changes before committing them to avoid trouble later
+  to double check your changes before committing them to avoid trouble later
   on. All experienced developers do this on each and every commit, no matter
   how small.
   Every one of them has been saved from looking like a fool by this many times.
@@ -133,7 +133,7 @@ I. BASICS:
   Git will commit the selected changes to your current local branch.
 
   You will be prompted for a log message in an editor, which is either
-  set in your personal configuration file throught
+  set in your personal configuration file through
 
     git config core.editor
 
