@@ -126,7 +126,6 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
     return ref;
 
 fail:
-    av_free(buf);
     if (ref && ref->audio)
         av_free(ref->audio);
     av_free(ref);
@@ -210,6 +209,7 @@ int avfilter_default_config_output_link(AVFilterLink *link)
         if (link->type == AVMEDIA_TYPE_VIDEO) {
             link->w = link->src->inputs[0]->w;
             link->h = link->src->inputs[0]->h;
+            link->sample_aspect_ratio = link->src->inputs[0]->sample_aspect_ratio;
             link->time_base = link->src->inputs[0]->time_base;
         } else if (link->type == AVMEDIA_TYPE_AUDIO) {
             link->channel_layout = link->src->inputs[0]->channel_layout;
