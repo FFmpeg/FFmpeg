@@ -223,5 +223,16 @@ I. BASICS:
   Will push the changes to the remote repository. Omitting refspec makes git
   push update all the remote branches matching the local ones.
 
+13. Finding a specific svn revission
+
+  Since version 1.7.1 git supports ':/foo' syntax for specifying commits
+  based on a regular expression. see man gitrevisions
+
+    git show :/'as revision 23456'
+
+  will show the svn changeset r23456. With older git versions searching in
+  the git log output is the easiest option (especially if a pager with
+  search capabilities is used).
+
 Contact the project admins <root at ffmpeg dot org> if you have technical
 problems with the GIT server.
