@@ -18,7 +18,7 @@ fi
 
 # check for git short hash
 if ! test $revision; then
-    revision=$(cd "$1" && git log -1 --pretty=format:%h 2> /dev/null)
+    revision=$(cd "$1" && git describe --always 2> /dev/null)
     test $revision && revision=git-$revision
 fi
 
