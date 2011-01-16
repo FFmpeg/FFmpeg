@@ -1590,8 +1590,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         }
     }
 
-//            if (len1 < 0)
-//                break;
     if (got_picture){
         is->skip_frames_index += 1;
         if(is->skip_frames_index >= is->skip_frames){
