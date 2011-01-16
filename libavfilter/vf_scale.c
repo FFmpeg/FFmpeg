@@ -138,8 +138,10 @@ static int config_props(AVFilterLink *outlink)
     scale->sws = sws_getContext(inlink ->w, inlink ->h, inlink ->format,
                                 outlink->w, outlink->h, outlink->format,
                                 scale->flags, NULL, NULL, NULL);
+    if (!scale->sws)
+        return AVERROR(EINVAL);
 
-    return !scale->sws;
+    return 0;
 }
 
 static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
