@@ -2970,6 +2970,7 @@ elif enabled armcc; then
     add_cflags -W${armcc_opt},--diag_suppress=2523
     add_cflags -W${armcc_opt},--diag_suppress=1207
     add_cflags -W${armcc_opt},--diag_suppress=1293 # assignment in condition
+    add_cflags -W${armcc_opt},--diag_suppress=3343 # hardfp compat
 elif enabled tms470; then
     add_cflags -pds=824 -pds=837
 fi
