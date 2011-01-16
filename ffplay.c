@@ -1570,16 +1570,15 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         return 0;
     }
 
-    is->video_st->codec->reordered_opaque = pkt->pts;
     len1 = avcodec_decode_video2(is->video_st->codec,
                                  frame, &got_picture,
                                  pkt);
 
     if (got_picture) {
         if (decoder_reorder_pts == -1) {
-            *pts = guess_correct_pts(&is->pts_ctx, frame->reordered_opaque, pkt->dts);
+            *pts = guess_correct_pts(&is->pts_ctx, frame->pkt_pts, pkt->dts);
         } else if (decoder_reorder_pts) {
-            *pts = frame->reordered_opaque;
+            *pts = frame->pkt_pts;
         } else {
             *pts = pkt->dts;
         }
