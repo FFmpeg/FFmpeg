@@ -1588,9 +1588,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         if (*pts == AV_NOPTS_VALUE) {
             *pts = 0;
         }
-    }
 
-    if (got_picture){
         is->skip_frames_index += 1;
         if(is->skip_frames_index >= is->skip_frames){
             is->skip_frames_index -= FFMAX(is->skip_frames, 1.0);
