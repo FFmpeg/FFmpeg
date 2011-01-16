@@ -1543,52 +1543,52 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
 {
     int len1, got_picture, i;
 
-        if (packet_queue_get(&is->videoq, pkt, 1) < 0)
-            return -1;
+    if (packet_queue_get(&is->videoq, pkt, 1) < 0)
+        return -1;
 
-        if(pkt->data == flush_pkt.data){
-            avcodec_flush_buffers(is->video_st->codec);
+    if (pkt->data == flush_pkt.data) {
+        avcodec_flush_buffers(is->video_st->codec);
 
-            SDL_LockMutex(is->pictq_mutex);
-            //Make sure there are no long delay timers (ideally we should just flush the que but thats harder)
-            for(i=0; i<VIDEO_PICTURE_QUEUE_SIZE; i++){
-                is->pictq[i].target_clock= 0;
-            }
-            while (is->pictq_size && !is->videoq.abort_request) {
-                SDL_CondWait(is->pictq_cond, is->pictq_mutex);
-            }
-            is->video_current_pos= -1;
-            SDL_UnlockMutex(is->pictq_mutex);
+        SDL_LockMutex(is->pictq_mutex);
+        //Make sure there are no long delay timers (ideally we should just flush the que but thats harder)
+        for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
+            is->pictq[i].target_clock= 0;
+        }
+        while (is->pictq_size && !is->videoq.abort_request) {
+            SDL_CondWait(is->pictq_cond, is->pictq_mutex);
+        }
+        is->video_current_pos = -1;
+        SDL_UnlockMutex(is->pictq_mutex);
 
-            init_pts_correction(&is->pts_ctx);
-            is->frame_last_pts= AV_NOPTS_VALUE;
-            is->frame_last_delay = 0;
-            is->frame_timer = (double)av_gettime() / 1000000.0;
-            is->skip_frames= 1;
-            is->skip_frames_index= 0;
-            return 0;
+        init_pts_correction(&is->pts_ctx);
+        is->frame_last_pts = AV_NOPTS_VALUE;
+        is->frame_last_delay = 0;
+        is->frame_timer = (double)av_gettime() / 1000000.0;
+        is->skip_frames = 1;
+        is->skip_frames_index = 0;
+        return 0;
+    }
+
+    /* NOTE: ipts is the PTS of the _first_ picture beginning in
+       this packet, if any */
+    is->video_st->codec->reordered_opaque = pkt->pts;
+    len1 = avcodec_decode_video2(is->video_st->codec,
+                                 frame, &got_picture,
+                                 pkt);
+
+    if (got_picture) {
+        if (decoder_reorder_pts == -1) {
+            *pts = guess_correct_pts(&is->pts_ctx, frame->reordered_opaque, pkt->dts);
+        } else if (decoder_reorder_pts) {
+            *pts = frame->reordered_opaque;
+        } else {
+            *pts = pkt->dts;
         }
 
-        /* NOTE: ipts is the PTS of the _first_ picture beginning in
-           this packet, if any */
-        is->video_st->codec->reordered_opaque= pkt->pts;
-        len1 = avcodec_decode_video2(is->video_st->codec,
-                                    frame, &got_picture,
-                                    pkt);
-
-        if (got_picture) {
-            if (decoder_reorder_pts == -1) {
-                *pts = guess_correct_pts(&is->pts_ctx, frame->reordered_opaque, pkt->dts);
-            } else if (decoder_reorder_pts) {
-                *pts = frame->reordered_opaque;
-            } else {
-                *pts = pkt->dts;
-            }
-
-            if (*pts == AV_NOPTS_VALUE) {
-                *pts = 0;
-            }
+        if (*pts == AV_NOPTS_VALUE) {
+            *pts = 0;
         }
+    }
 
 //            if (len1 < 0)
 //                break;
