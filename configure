@@ -2526,10 +2526,18 @@ elif enabled arm; then
     check_cflags -marm
     nogas=die
 
-    check_ld <<EOF && enable vfp_args
+    if     check_cpp_condition stddef.h "defined __ARM_PCS_VFP"; then
+        enable vfp_args
+    elif ! check_cpp_condition stddef.h "defined __ARM_PCS || defined __SOFTFP__"; then
+        case "${cross_prefix:-$cc}" in
+            *hardfloat*)         enable vfp_args;   fpabi=vfp ;;
+            *) check_ld <<EOF && enable vfp_args && fpabi=vfp || fpabi=soft ;;
 __asm__ (".eabi_attribute 28, 1");
 int main(void) { return 0; }
 EOF
+        esac
+        warn "Compiler does not indicate floating-point ABI, guessing $fpabi."
+    fi
 
     # We have to check if pld is a nop and disable it.
     check_asm pld '"pld [r0]"'
