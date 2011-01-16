@@ -223,7 +223,7 @@ I. BASICS:
   Will push the changes to the remote repository. Omitting refspec makes git
   push update all the remote branches matching the local ones.
 
-13. Finding a specific svn revission
+13. Finding a specific svn revision
 
   Since version 1.7.1 git supports ':/foo' syntax for specifying commits
   based on a regular expression. see man gitrevisions
