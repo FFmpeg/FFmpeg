@@ -1158,7 +1158,7 @@ int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b){
 void av_log_missing_feature(void *avc, const char *feature, int want_sample)
 {
     av_log(avc, AV_LOG_WARNING, "%s not implemented. Update your FFmpeg "
-            "version to the newest one from SVN. If the problem still "
+            "version to the newest one from Git. If the problem still "
             "occurs, it means that your file has a feature which has not "
             "been implemented.", feature);
     if(want_sample)
