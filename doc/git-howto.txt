@@ -239,6 +239,16 @@ I. BASICS:
   will show the svn changeset r23456. With older git versions searching in
   the git log output is the easiest option (especially if a pager with
   search capabilities is used).
+  This commit can be checked out with
+
+    git checkout -b svn_23456 :/'as revision 23456'
+
+  or for git < 1.7.1 with
+
+    git checkout -b svn_23456 $SHA1
+
+  where $SHA1 is the commit SHA1 from the 'git log' output.
+
 
 Contact the project admins <root at ffmpeg dot org> if you have technical
 problems with the GIT server.
