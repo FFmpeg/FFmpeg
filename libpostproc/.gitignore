@@ -1,0 +1,6 @@
+*.d
+*.exe
+*.ho
+*-example
+*-test
+libpostproc*

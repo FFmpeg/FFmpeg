@@ -1,0 +1,8 @@
+*.o
+*.d
+*.exe
+*.ho
+*-example
+*-test
+libavcodec*
+

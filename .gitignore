@@ -1,0 +1,15 @@
+.config
+.version
+*.o
+*.d
+*.exe
+*.ho
+*-test
+*_g
+config.*
+doxy
+ffmpeg
+ffplay
+ffprobe
+ffserver
+version.h
