@@ -29,7 +29,7 @@ API changes, most recent first:
 2011-01-07 - r26260 - lavc 52.105.0 - pkt_pts
   Add pkt_pts to AVFrame.
 
-2011-01-XX - r26XXX - lavc 52.104.0 - av_get_profile_name()
+2011-01-07 - r26259 - lavc 52.104.0 - av_get_profile_name()
   Add av_get_profile_name to libavcodec/avcodec.h.
 
 2010-12-27 - r26108 - lavfi 1.71.0 - AV_PERM_NEG_LINESIZES
