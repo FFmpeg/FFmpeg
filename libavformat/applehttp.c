@@ -306,7 +306,7 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* If this isn't a live stream, calculate the total duration of the
      * stream. */
     if (c->finished) {
-        int duration = 0;
+        int64_t duration = 0;
         for (i = 0; i < c->variants[0]->n_segments; i++)
             duration += c->variants[0]->segments[i]->duration;
         s->duration = duration * AV_TIME_BASE;
