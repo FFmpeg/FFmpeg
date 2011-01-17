@@ -130,6 +130,11 @@ I. BASICS:
 
     git add [-i|-p|-A] <filenames/dirnames>
 
+  Make sure you have told git your name and email address, e.g. by running
+    git config --global user.name "My Name"
+    git config --global user.email my@email.invalid
+  (--global to set the global configuration for all your git checkouts).
+
   Git will select the changes to the files for commit. Optionally you can use
   the interactive or the patch mode to select hunk by hunk what should be
   added to the commit.
