@@ -1,0 +1,7 @@
+*.d
+*.exe
+*.ho
+*-example
+*-test
+libswscale*
+*.o

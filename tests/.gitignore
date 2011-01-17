@@ -1,0 +1,12 @@
+*.o
+*.d
+*.exe
+audiogen
+base64
+data
+rotozoom
+seek_test
+tiny_psnr
+videogen
+vsynth1
+vsynth2
