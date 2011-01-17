@@ -1607,10 +1607,13 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
 #if CONFIG_AVFILTER
         if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ist->input_video_filter) {
+            AVRational sar;
+            if (ist->st->sample_aspect_ratio.num) sar = ist->st->sample_aspect_ratio;
+            else                                  sar = ist->st->codec->sample_aspect_ratio;
             // add it to be filtered
             av_vsrc_buffer_add_frame(ist->input_video_filter, &picture,
                                      ist->pts,
-                                     ist->st->codec->sample_aspect_ratio);
+                                     sar);
         }
 #endif
 
