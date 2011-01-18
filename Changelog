@@ -73,6 +73,7 @@ version <next>:
 - floating-point AC-3 encoder added
 - Lagarith decoder
 - ffmpeg -copytb option added
+- IVF muxer added
 
 
 version 0.6:
