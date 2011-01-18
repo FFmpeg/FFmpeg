@@ -1,9 +1,0 @@
-*.d
-*.o
-*.exe
-*.ho
-*-example
-*-test
-libavutil*
-avconfig.h
-
