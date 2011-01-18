@@ -117,7 +117,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
             dec->sample_rate = get_le32(pb);
             dec->bits_per_coded_sample = get_byte(pb);
             dec->channels = get_byte(pb);
-            tmp_codec = ff_codec_get_id(ff_voc_codec_tags, get_byte(pb));
+            tmp_codec = ff_codec_get_id(ff_voc_codec_tags, get_le16(pb));
             if (dec->codec_id == CODEC_ID_NONE)
                 dec->codec_id = tmp_codec;
             else if (dec->codec_id != tmp_codec)
