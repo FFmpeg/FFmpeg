@@ -1777,7 +1777,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
        set the channels based on a broken first frame.*/
     if (s->is_channels_set == 0) {
         s->is_channels_set = 1;
-    avctx->channels = channels;
+        avctx->channels = channels;
     }
     if (avctx->channels != channels) {
         av_log(avctx, AV_LOG_ERROR, "DCA decoder does not support number of "
