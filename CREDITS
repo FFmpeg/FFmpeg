@@ -1,5 +1,7 @@
-This file contains the name of the people who have contributed to
-FFmpeg. The names are sorted alphabetically by last name.
+This file contains the names of some of the people who have contributed to
+FFmpeg. The names are sorted alphabetically by last name.  As this file is
+currently quite outdated and git serves as a much better tool for determining
+authorship, it remains here for historical reasons only.
 
 Dénes Balatoni
 Michel Bardiaux
