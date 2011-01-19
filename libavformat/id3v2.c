@@ -74,7 +74,7 @@ static void read_ttag(AVFormatContext *s, ByteIOContext *pb, int taglen, const c
 
     switch (get_byte(pb)) { /* encoding type */
 
-    case 0:  /* ISO-8859-1 (0 - 255 maps directly into unicode) */
+    case ID3v2_ENCODING_ISO8859:
         q = dst;
         while (taglen-- && q - dst < dstlen - 7) {
             uint8_t tmp;
@@ -83,7 +83,7 @@ static void read_ttag(AVFormatContext *s, ByteIOContext *pb, int taglen, const c
         *q = 0;
         break;
 
-    case 1:  /* UTF-16 with BOM */
+    case ID3v2_ENCODING_UTF16BOM:
         taglen -= 2;
         switch (get_be16(pb)) {
         case 0xfffe:
@@ -96,7 +96,7 @@ static void read_ttag(AVFormatContext *s, ByteIOContext *pb, int taglen, const c
         }
         // fall-through
 
-    case 2:  /* UTF-16BE without BOM */
+    case ID3v2_ENCODING_UTF16BE:
         q = dst;
         while (taglen > 1 && q - dst < dstlen - 7) {
             uint32_t ch;
@@ -108,7 +108,7 @@ static void read_ttag(AVFormatContext *s, ByteIOContext *pb, int taglen, const c
         *q = 0;
         break;
 
-    case 3:  /* UTF-8 */
+    case ID3v2_ENCODING_UTF8:
         len = FFMIN(taglen, dstlen);
         get_buffer(pb, dst, len);
         dst[len] = 0;
