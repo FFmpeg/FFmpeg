@@ -37,6 +37,11 @@ typedef struct AVCodecTag {
     unsigned int tag;
 } AVCodecTag;
 
+typedef struct CodecMime{
+    char str[32];
+    enum CodecID id;
+} CodecMime;
+
 void ff_dynarray_add(intptr_t **tab_ptr, int *nb_ptr, intptr_t elem);
 
 #ifdef __GNUC__
