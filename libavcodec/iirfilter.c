@@ -158,7 +158,7 @@ void ff_iir_filter(const struct FFIIRFilterCoeffs *c, struct FFIIRFilterState *s
             *dst = av_clip_int16(lrintf(res));
             s->x[c->order - 1] = in;
             src += sstep;
-            dst += sstep;
+            dst += dstep;
         }
     }
 }
