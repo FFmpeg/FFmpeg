@@ -38,6 +38,13 @@
 #define ID3v2_FLAG_ENCRYPTION  0x0004
 #define ID3v2_FLAG_COMPRESSION 0x0008
 
+enum ID3v2Encoding {
+    ID3v2_ENCODING_ISO8859  = 0,
+    ID3v2_ENCODING_UTF16BOM = 1,
+    ID3v2_ENCODING_UTF16BE  = 2,
+    ID3v2_ENCODING_UTF8     = 3,
+};
+
 /**
  * Detect ID3v2 Header.
  * @param buf   must be ID3v2_HEADER_SIZE byte long
