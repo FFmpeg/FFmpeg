@@ -54,12 +54,6 @@ int ff_id3v2_match(const uint8_t *buf, const char *magic);
 int ff_id3v2_tag_len(const uint8_t *buf);
 
 /**
- * ID3v2 parser
- * Handles ID3v2.2, 2.3 and 2.4.
- */
-void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags);
-
-/**
  * Read an ID3v2 tag
  */
 void ff_id3v2_read(AVFormatContext *s, const char *magic);
