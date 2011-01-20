@@ -169,7 +169,9 @@ av_cold struct FFIIRFilterState* ff_iir_filter_init_state(int order)
     }                                                                       \
 }
 
-void ff_iir_filter(const struct FFIIRFilterCoeffs *c, struct FFIIRFilterState *s, int size, const int16_t *src, int sstep, int16_t *dst, int dstep)
+void ff_iir_filter(const struct FFIIRFilterCoeffs *c,
+                   struct FFIIRFilterState *s, int size,
+                   const int16_t *src, int sstep, int16_t *dst, int dstep)
 {
     if (c->order == 4) {
         FILTER_BW_O4(int16_t, S16)
