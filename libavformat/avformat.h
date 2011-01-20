@@ -161,6 +161,8 @@ struct AVFormatContext;
  *                 E.g for "Also sprach Zarathustra", artist would be "Richard
  *                 Strauss" and performer "London Philharmonic Orchestra".
  * publisher    -- name of the label/publisher.
+ * service_name     -- name of the service in broadcasting (channel name).
+ * service_provider -- name of the service provider in broadcasting.
  * title        -- name of the work.
  * track        -- number of this work in the set, can be in form current/total.
  */
