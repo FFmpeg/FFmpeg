@@ -661,20 +661,24 @@ static inline void emms(void)
 #   define STRIDE_ALIGN 8
 #endif
 
-#define LOCAL_ALIGNED(a, t, v, s, ...)                          \
-    uint8_t la_##v[sizeof(t s __VA_ARGS__) + (a)];              \
-    t (*v) __VA_ARGS__ = (void *)FFALIGN((uintptr_t)la_##v, a)
+#define LOCAL_ALIGNED_A(a, t, v, s, o, ...)             \
+    uint8_t la_##v[sizeof(t s o) + (a)];                \
+    t (*v) o = (void *)FFALIGN((uintptr_t)la_##v, a)
+
+#define LOCAL_ALIGNED_D(a, t, v, s, o, ...) DECLARE_ALIGNED(a, t, v) s o
+
+#define LOCAL_ALIGNED(a, t, v, ...) LOCAL_ALIGNED_A(a, t, v, __VA_ARGS__,,)
 
 #if HAVE_LOCAL_ALIGNED_8
-#   define LOCAL_ALIGNED_8(t, v, s, ...) DECLARE_ALIGNED(8, t, v) s __VA_ARGS__
+#   define LOCAL_ALIGNED_8(t, v, ...) LOCAL_ALIGNED_D(8, t, v, __VA_ARGS__,,)
 #else
-#   define LOCAL_ALIGNED_8(t, v, s, ...) LOCAL_ALIGNED(8, t, v, s, __VA_ARGS__)
+#   define LOCAL_ALIGNED_8(t, v, ...) LOCAL_ALIGNED(8, t, v, __VA_ARGS__)
 #endif
 
 #if HAVE_LOCAL_ALIGNED_16
-#   define LOCAL_ALIGNED_16(t, v, s, ...) DECLARE_ALIGNED(16, t, v) s __VA_ARGS__
+#   define LOCAL_ALIGNED_16(t, v, ...) LOCAL_ALIGNED_D(16, t, v, __VA_ARGS__,,)
 #else
-#   define LOCAL_ALIGNED_16(t, v, s, ...) LOCAL_ALIGNED(16, t, v, s, __VA_ARGS__)
+#   define LOCAL_ALIGNED_16(t, v, ...) LOCAL_ALIGNED(16, t, v, __VA_ARGS__)
 #endif
 
 /* PSNR */
