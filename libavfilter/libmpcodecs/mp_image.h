@@ -33,6 +33,8 @@
 #undef rand
 #undef srand
 #undef printf
+#define ASMALIGN(ZEROBITS) ".p2align " #ZEROBITS "\n\t"
+
 
 //--------- codec's requirements (filled by the codec/vf) ---------
 
