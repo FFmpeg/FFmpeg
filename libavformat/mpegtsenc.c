@@ -400,9 +400,9 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->tsid = DEFAULT_TSID;
     ts->onid = DEFAULT_ONID;
     /* allocate a single DVB service */
-    title = av_metadata_get(s->metadata, "title", NULL, 0);
+    title = av_metadata_get(s->metadata, "service_name", NULL, 0);
     if (!title)
-        title = av_metadata_get(s->metadata, "service_name", NULL, 0);
+        title = av_metadata_get(s->metadata, "title", NULL, 0);
     service_name = title ? title->value : DEFAULT_SERVICE_NAME;
     provider = av_metadata_get(s->metadata, "service_provider", NULL, 0);
     provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
