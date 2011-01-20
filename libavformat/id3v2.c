@@ -132,7 +132,7 @@ static void read_ttag(AVFormatContext *s, ByteIOContext *pb, int taglen, const c
         val = dst;
 
     if (val)
-        av_metadata_set2(&s->metadata, key, val, 0);
+        av_metadata_set2(&s->metadata, key, val, AV_METADATA_DONT_OVERWRITE);
 }
 
 static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
