@@ -47,29 +47,25 @@ typedef struct FFIIRFilterState{
 /// maximum supported filter order
 #define MAXORDER 30
 
-av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(void *avc,
-                                                enum IIRFilterType filt_type,
-                                                enum IIRFilterMode filt_mode,
-                                                int order, float cutoff_ratio,
-                                                float stopband, float ripple)
+static int butterworth_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
+                                   enum IIRFilterMode filt_mode,
+                                   int order, float cutoff_ratio,
+                                   float stopband)
 {
     int i, j;
-    FFIIRFilterCoeffs *c;
     double wa;
     double p[MAXORDER + 1][2];
 
-    if(filt_type != FF_FILTER_TYPE_BUTTERWORTH || filt_mode != FF_FILTER_MODE_LOWPASS)
-        return NULL;
-    if(order <= 1 || (order & 1) || order > MAXORDER || cutoff_ratio >= 1.0)
-        return NULL;
-
-    FF_ALLOCZ_OR_GOTO(avc, c,     sizeof(FFIIRFilterCoeffs),
-                      init_fail);
-    FF_ALLOC_OR_GOTO (avc, c->cx, sizeof(c->cx[0]) * ((order >> 1) + 1),
-                      init_fail);
-    FF_ALLOC_OR_GOTO (avc, c->cy, sizeof(c->cy[0]) * order,
-                      init_fail);
-    c->order = order;
+    if (filt_mode != FF_FILTER_MODE_LOWPASS) {
+        av_log(avc, AV_LOG_ERROR, "Butterworth filter currently only supports "
+               "low-pass filter mode\n");
+        return -1;
+    }
+    if (order & 1) {
+        av_log(avc, AV_LOG_ERROR, "Butterworth filter currently only supports "
+               "even filter orders\n");
+        return -1;
+    }
 
     wa = 2 * tan(M_PI * 0.5 * cutoff_ratio);
 
@@ -112,6 +108,38 @@ av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(void *avc,
                    (p[order][0] * p[order][0] + p[order][1] * p[order][1]);
     }
     c->gain /= 1 << order;
+
+    return 0;
+}
+
+av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(void *avc,
+                                                enum IIRFilterType filt_type,
+                                                enum IIRFilterMode filt_mode,
+                                                int order, float cutoff_ratio,
+                                                float stopband, float ripple)
+{
+    FFIIRFilterCoeffs *c;
+
+    if (order <= 0 || order > MAXORDER || cutoff_ratio >= 1.0)
+        return NULL;
+
+    FF_ALLOCZ_OR_GOTO(avc, c,     sizeof(FFIIRFilterCoeffs),
+                      init_fail);
+    FF_ALLOC_OR_GOTO (avc, c->cx, sizeof(c->cx[0]) * ((order >> 1) + 1),
+                      init_fail);
+    FF_ALLOC_OR_GOTO (avc, c->cy, sizeof(c->cy[0]) * order,
+                      init_fail);
+    c->order = order;
+
+    if (filt_type == FF_FILTER_TYPE_BUTTERWORTH) {
+        if (butterworth_init_coeffs(avc, c, filt_mode, order, cutoff_ratio,
+            stopband)) {
+            goto init_fail;
+        }
+    } else {
+        av_log(avc, AV_LOG_ERROR, "filter type is not currently implemented\n");
+        goto init_fail;
+    }
 
     return c;
 
