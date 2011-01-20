@@ -47,7 +47,8 @@ typedef struct FFIIRFilterState{
 /// maximum supported filter order
 #define MAXORDER 30
 
-av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType filt_type,
+av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(void *avc,
+                                                enum IIRFilterType filt_type,
                                                     enum IIRFilterMode filt_mode,
                                                     int order, float cutoff_ratio,
                                                     float stopband, float ripple)
@@ -62,9 +63,12 @@ av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType f
     if(order <= 1 || (order & 1) || order > MAXORDER || cutoff_ratio >= 1.0)
         return NULL;
 
-    c = av_malloc(sizeof(FFIIRFilterCoeffs));
-    c->cx = av_malloc(sizeof(c->cx[0]) * ((order >> 1) + 1));
-    c->cy = av_malloc(sizeof(c->cy[0]) * order);
+    FF_ALLOCZ_OR_GOTO(avc, c,     sizeof(FFIIRFilterCoeffs),
+                      init_fail);
+    FF_ALLOC_OR_GOTO (avc, c->cx, sizeof(c->cx[0]) * ((order >> 1) + 1),
+                      init_fail);
+    FF_ALLOC_OR_GOTO (avc, c->cy, sizeof(c->cy[0]) * order,
+                      init_fail);
     c->order = order;
 
     wa = 2 * tan(M_PI * 0.5 * cutoff_ratio);
@@ -110,6 +114,10 @@ av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType f
     c->gain /= 1 << order;
 
     return c;
+
+init_fail:
+    ff_iir_filter_free_coeffs(c);
+    return NULL;
 }
 
 av_cold struct FFIIRFilterState* ff_iir_filter_init_state(int order)

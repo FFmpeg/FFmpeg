@@ -49,6 +49,8 @@ enum IIRFilterMode{
 /**
  * Initialize filter coefficients.
  *
+ * @param avc          a pointer to an arbitrary struct of which the first
+ *                     field is a pointer to an AVClass struct
  * @param filt_type    filter type (e.g. Butterworth)
  * @param filt_mode    filter mode (e.g. lowpass)
  * @param order        filter order
@@ -58,7 +60,8 @@ enum IIRFilterMode{
  *
  * @return pointer to filter coefficients structure or NULL if filter cannot be created
  */
-struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType filt_type,
+struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(void *avc,
+                                                enum IIRFilterType filt_type,
                                                     enum IIRFilterMode filt_mode,
                                                     int order, float cutoff_ratio,
                                                     float stopband, float ripple);
