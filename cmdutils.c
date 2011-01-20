@@ -378,7 +378,7 @@ static int warned_cfg = 0;
         const char *indent = flags & INDENT? "  " : "";                 \
         if (flags & SHOW_VERSION) {                                     \
             unsigned int version = libname##_version();                 \
-            fprintf(outstream, "%slib%-10s %2d.%2d.%2d / %2d.%2d.%2d\n", \
+            fprintf(outstream, "%slib%-9s %2d.%3d.%2d / %2d.%3d.%2d\n", \
                     indent, #libname,                                   \
                     LIB##LIBNAME##_VERSION_MAJOR,                       \
                     LIB##LIBNAME##_VERSION_MINOR,                       \
