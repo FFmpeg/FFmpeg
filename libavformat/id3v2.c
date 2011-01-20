@@ -50,33 +50,6 @@ int ff_id3v2_tag_len(const uint8_t * buf)
     return len;
 }
 
-void ff_id3v2_read(AVFormatContext *s, const char *magic)
-{
-    int len, ret;
-    uint8_t buf[ID3v2_HEADER_SIZE];
-    int     found_header;
-    int64_t off;
-
-    do {
-        /* save the current offset in case there's nothing to read/skip */
-        off = url_ftell(s->pb);
-        ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
-        if (ret != ID3v2_HEADER_SIZE)
-            return;
-            found_header = ff_id3v2_match(buf, magic);
-            if (found_header) {
-            /* parse ID3v2 header */
-            len = ((buf[6] & 0x7f) << 21) |
-                  ((buf[7] & 0x7f) << 14) |
-                  ((buf[8] & 0x7f) << 7) |
-                   (buf[9] & 0x7f);
-            ff_id3v2_parse(s, len, buf[3], buf[5]);
-        } else {
-            url_fseek(s->pb, off, SEEK_SET);
-        }
-    } while (found_header);
-}
-
 static unsigned int get_size(ByteIOContext *s, int len)
 {
     int v = 0;
@@ -162,7 +135,7 @@ static void read_ttag(AVFormatContext *s, ByteIOContext *pb, int taglen, const c
         av_metadata_set2(&s->metadata, key, val, 0);
 }
 
-void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
+static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
 {
     int isv34, tlen, unsync;
     char tag[5];
@@ -274,6 +247,33 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
     av_log(s, AV_LOG_INFO, "ID3v2.%d tag skipped, cannot handle %s\n", version, reason);
     url_fskip(s->pb, len);
     av_free(buffer);
+}
+
+void ff_id3v2_read(AVFormatContext *s, const char *magic)
+{
+    int len, ret;
+    uint8_t buf[ID3v2_HEADER_SIZE];
+    int     found_header;
+    int64_t off;
+
+    do {
+        /* save the current offset in case there's nothing to read/skip */
+        off = url_ftell(s->pb);
+        ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
+        if (ret != ID3v2_HEADER_SIZE)
+            return;
+            found_header = ff_id3v2_match(buf, magic);
+            if (found_header) {
+            /* parse ID3v2 header */
+            len = ((buf[6] & 0x7f) << 21) |
+                  ((buf[7] & 0x7f) << 14) |
+                  ((buf[8] & 0x7f) << 7) |
+                   (buf[9] & 0x7f);
+            ff_id3v2_parse(s, len, buf[3], buf[5]);
+        } else {
+            url_fseek(s->pb, off, SEEK_SET);
+        }
+    } while (found_header);
 }
 
 const AVMetadataConv ff_id3v2_metadata_conv[] = {
