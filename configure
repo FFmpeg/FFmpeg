@@ -1487,6 +1487,7 @@ test_deps _encoder _decoder                                             \
     pbm=pbmpipe                                                         \
     pcx                                                                 \
     pgm="pgm pgmpipe"                                                   \
+    png                                                                 \
     ppm="ppm ppmpipe"                                                   \
     rawvideo="rgb yuv"                                                  \
     roq                                                                 \
