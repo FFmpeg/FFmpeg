@@ -391,18 +391,22 @@ static int mpegts_write_header(AVFormatContext *s)
     MpegTSWriteStream *ts_st;
     MpegTSService *service;
     AVStream *st, *pcr_st = NULL;
-    AVMetadataTag *title;
+    AVMetadataTag *title, *provider;
     int i, j;
     const char *service_name;
+    const char *provider_name;
     int *pids;
 
     ts->tsid = DEFAULT_TSID;
     ts->onid = DEFAULT_ONID;
     /* allocate a single DVB service */
     title = av_metadata_get(s->metadata, "title", NULL, 0);
+    if (!title)
+        title = av_metadata_get(s->metadata, "service_name", NULL, 0);
     service_name = title ? title->value : DEFAULT_SERVICE_NAME;
-    service = mpegts_add_service(ts, DEFAULT_SID,
-                                 DEFAULT_PROVIDER_NAME, service_name);
+    provider = av_metadata_get(s->metadata, "service_provider", NULL, 0);
+    provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
+    service = mpegts_add_service(ts, DEFAULT_SID, provider_name, service_name);
     service->pmt.write_packet = section_write_packet;
     service->pmt.opaque = s;
     service->pmt.cc = 15;
