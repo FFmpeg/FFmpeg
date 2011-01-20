@@ -250,26 +250,4 @@ void ff_h264_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qmul){
         output[stride* 4+offset]= ((((z1 - z2)*qmul + 128 ) >> 8));
         output[stride* 5+offset]= ((((z0 - z3)*qmul + 128 ) >> 8));
     }
-#undef stride
-}
-
-void ff_chroma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qmul){
-    const int stride= 16*2;
-    const int xStride= 16;
-    int a,b,c,d,e;
-
-    a= input[0];
-    b= input[1];
-    c= input[2];
-    d= input[3];
-
-    e= a-b;
-    a= a+b;
-    b= c-d;
-    c= c+d;
-
-    output[stride*0 + xStride*0]= ((a+c)*qmul) >> 7;
-    output[stride*0 + xStride*1]= ((e+b)*qmul) >> 7;
-    output[stride*1 + xStride*0]= ((a-c)*qmul) >> 7;
-    output[stride*1 + xStride*1]= ((e-b)*qmul) >> 7;
 }
