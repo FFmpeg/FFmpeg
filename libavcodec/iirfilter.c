@@ -118,48 +118,74 @@ av_cold struct FFIIRFilterState* ff_iir_filter_init_state(int order)
     return s;
 }
 
-#define FILTER(i0, i1, i2, i3)                    \
-    in =   *src * c->gain                         \
-         + c->cy[0]*s->x[i0] + c->cy[1]*s->x[i1]  \
-         + c->cy[2]*s->x[i2] + c->cy[3]*s->x[i3]; \
-    res =  (s->x[i0] + in      )*1                \
-         + (s->x[i1] + s->x[i3])*4                \
-         +  s->x[i2]            *6;               \
-    *dst = av_clip_int16(lrintf(res));            \
-    s->x[i0] = in;                                \
-    src += sstep;                                 \
-    dst += dstep;                                 \
+#define CONV_S16(dest, source) dest = av_clip_int16(lrintf(source));
+
+#define CONV_FLT(dest, source) dest = source;
+
+#define FILTER_BW_O4_1(i0, i1, i2, i3, fmt)         \
+    in = *src0 * c->gain                            \
+         + c->cy[0]*s->x[i0] + c->cy[1]*s->x[i1]    \
+         + c->cy[2]*s->x[i2] + c->cy[3]*s->x[i3];   \
+    res =  (s->x[i0] + in      )*1                  \
+         + (s->x[i1] + s->x[i3])*4                  \
+         +  s->x[i2]            *6;                 \
+    CONV_##fmt(*dst0, res)                          \
+    s->x[i0] = in;                                  \
+    src0 += sstep;                                  \
+    dst0 += dstep;
+
+#define FILTER_BW_O4(type, fmt) {           \
+    int i;                                  \
+    const type *src0 = src;                 \
+    type       *dst0 = dst;                 \
+    for (i = 0; i < size; i += 4) {         \
+        float in, res;                      \
+        FILTER_BW_O4_1(0, 1, 2, 3, fmt);    \
+        FILTER_BW_O4_1(1, 2, 3, 0, fmt);    \
+        FILTER_BW_O4_1(2, 3, 0, 1, fmt);    \
+        FILTER_BW_O4_1(3, 0, 1, 2, fmt);    \
+    }                                       \
+}
+
+#define FILTER_DIRECT_FORM_II(type, fmt) {                                  \
+    int i;                                                                  \
+    const type *src0 = src;                                                 \
+    type       *dst0 = dst;                                                 \
+    for (i = 0; i < size; i++) {                                            \
+        int j;                                                              \
+        float in, res;                                                      \
+        in = *src0 * c->gain;                                               \
+        for(j = 0; j < c->order; j++)                                       \
+            in += c->cy[j] * s->x[j];                                       \
+        res = s->x[0] + in + s->x[c->order >> 1] * c->cx[c->order >> 1];    \
+        for(j = 1; j < c->order >> 1; j++)                                  \
+            res += (s->x[j] + s->x[c->order - j]) * c->cx[j];               \
+        for(j = 0; j < c->order - 1; j++)                                   \
+            s->x[j] = s->x[j + 1];                                          \
+        CONV_##fmt(*dst0, res)                                              \
+        s->x[c->order - 1] = in;                                            \
+        src0 += sstep;                                                      \
+        dst0 += dstep;                                                      \
+    }                                                                       \
+}
 
 void ff_iir_filter(const struct FFIIRFilterCoeffs *c, struct FFIIRFilterState *s, int size, const int16_t *src, int sstep, int16_t *dst, int dstep)
 {
-    int i;
+    if (c->order == 4) {
+        FILTER_BW_O4(int16_t, S16)
+    } else {
+        FILTER_DIRECT_FORM_II(int16_t, S16)
+    }
+}
 
-    if(c->order == 4){
-        for(i = 0; i < size; i += 4){
-            float in, res;
-
-            FILTER(0, 1, 2, 3);
-            FILTER(1, 2, 3, 0);
-            FILTER(2, 3, 0, 1);
-            FILTER(3, 0, 1, 2);
-        }
-    }else{
-        for(i = 0; i < size; i++){
-            int j;
-            float in, res;
-            in = *src * c->gain;
-            for(j = 0; j < c->order; j++)
-                in += c->cy[j] * s->x[j];
-            res = s->x[0] + in + s->x[c->order >> 1] * c->cx[c->order >> 1];
-            for(j = 1; j < c->order >> 1; j++)
-                res += (s->x[j] + s->x[c->order - j]) * c->cx[j];
-            for(j = 0; j < c->order - 1; j++)
-                s->x[j] = s->x[j + 1];
-            *dst = av_clip_int16(lrintf(res));
-            s->x[c->order - 1] = in;
-            src += sstep;
-            dst += dstep;
-        }
+void ff_iir_filter_flt(const struct FFIIRFilterCoeffs *c,
+                       struct FFIIRFilterState *s, int size,
+                       const float *src, int sstep, void *dst, int dstep)
+{
+    if (c->order == 4) {
+        FILTER_BW_O4(float, FLT)
+    } else {
+        FILTER_DIRECT_FORM_II(float, FLT)
     }
 }
 
