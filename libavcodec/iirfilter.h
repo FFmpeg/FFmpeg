@@ -62,9 +62,9 @@ enum IIRFilterMode{
  */
 struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(void *avc,
                                                 enum IIRFilterType filt_type,
-                                                    enum IIRFilterMode filt_mode,
-                                                    int order, float cutoff_ratio,
-                                                    float stopband, float ripple);
+                                                enum IIRFilterMode filt_mode,
+                                                int order, float cutoff_ratio,
+                                                float stopband, float ripple);
 
 /**
  * Create new filter state.
