@@ -665,6 +665,8 @@ decode_intra_mb:
             if(pred_mode < 0)
                 return -1;
             h->chroma_pred_mode= pred_mode;
+        } else {
+            h->chroma_pred_mode = DC_128_PRED8x8;
         }
     }else if(partition_count==4){
         int i, j, sub_partition_count[4], list, ref[2][4];
