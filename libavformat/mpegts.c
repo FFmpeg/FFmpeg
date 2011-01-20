@@ -1211,8 +1211,8 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 if (name) {
                     AVProgram *program = av_new_program(ts->stream, sid);
                     if(program) {
-                        av_metadata_set2(&program->metadata, "name", name, 0);
-                        av_metadata_set2(&program->metadata, "provider_name", provider_name, 0);
+                        av_metadata_set2(&program->metadata, "service_name", name, 0);
+                        av_metadata_set2(&program->metadata, "service_provider", provider_name, 0);
                     }
                 }
                 av_free(name);
