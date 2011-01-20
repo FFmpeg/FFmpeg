@@ -164,6 +164,7 @@ av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(void *avc,
                                                 float stopband, float ripple)
 {
     FFIIRFilterCoeffs *c;
+    int ret = 0;
 
     if (order <= 0 || order > MAXORDER || cutoff_ratio >= 1.0)
         return NULL;
@@ -176,22 +177,22 @@ av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(void *avc,
                       init_fail);
     c->order = order;
 
-    if (filt_type == FF_FILTER_TYPE_BUTTERWORTH) {
-        if (butterworth_init_coeffs(avc, c, filt_mode, order, cutoff_ratio,
-            stopband)) {
-            goto init_fail;
-        }
-    } else if (filt_type == FF_FILTER_TYPE_BIQUAD) {
-        if (biquad_init_coeffs(avc, c, filt_mode, order, cutoff_ratio,
-            stopband)) {
-            goto init_fail;
-        }
-    } else {
+    switch (filt_type) {
+    case FF_FILTER_TYPE_BUTTERWORTH:
+        ret = butterworth_init_coeffs(avc, c, filt_mode, order, cutoff_ratio,
+                                      stopband);
+        break;
+    case FF_FILTER_TYPE_BIQUAD:
+        ret = biquad_init_coeffs(avc, c, filt_mode, order, cutoff_ratio,
+                                 stopband);
+        break;
+    default:
         av_log(avc, AV_LOG_ERROR, "filter type is not currently implemented\n");
         goto init_fail;
     }
 
-    return c;
+    if (!ret)
+        return c;
 
 init_fail:
     ff_iir_filter_free_coeffs(c);
