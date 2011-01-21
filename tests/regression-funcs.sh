@@ -54,6 +54,12 @@ echov(){
 
 FFMPEG_OPTS="-v 0 -y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
 
+run_ffmpeg()
+{
+    $echov $ffmpeg $FFMPEG_OPTS $*
+    $ffmpeg $FFMPEG_OPTS $*
+}
+
 do_ffmpeg()
 {
     f="$1"

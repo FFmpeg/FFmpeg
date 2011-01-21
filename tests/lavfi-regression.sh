@@ -14,11 +14,20 @@ eval do_$test=y
 rm -f "$logfile"
 rm -f "$benchfile"
 
+do_video_filter() {
+    label=$1
+    filters=$2
+    shift 2
+    printf '%-20s' $label >>$logfile
+    run_ffmpeg -f image2 -vcodec pgmyuv -i $raw_src    \
+        -vf "$filters" -vcodec rawvideo $* -f nut md5: >>$logfile
+}
+
 do_lavfi() {
     vfilters="slicify=random,$2"
 
     if [ $test = $1 ] ; then
-        do_video_encoding ${test}.nut "" "-vcodec rawvideo -vf $vfilters"
+        do_video_filter $test "$vfilters"
     fi
 }
 
@@ -48,10 +57,7 @@ do_lavfi_pixfmts(){
 
     pix_fmts=$($showfiltfmts $filter | awk -F '[ \r]' '/^INPUT/{ print $3 }' | sort | comm -12 - $out_fmts)
     for pix_fmt in $pix_fmts; do
-        output=${test}-${pix_fmt}.nut
-        do_video_encoding $output "" \
-            "-vf slicify=random,format=$pix_fmt,$filter=$filter_args -vcodec rawvideo -pix_fmt $pix_fmt"
-        rm ${outfile}${output}
+        do_video_filter $pix_fmt "slicify=random,format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
     done
 
     rm $exclude_fmts $out_fmts
@@ -69,10 +75,7 @@ do_lavfi_pixfmts "vflip"   ""
 if [ -n "$do_pixdesc_be" ] || [ -n "$do_pixdesc_le" ]; then
     pix_fmts="$($ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^IO' | cut -d' ' -f2 | sort)"
     for pix_fmt in $pix_fmts; do
-        output=lavfi_pixdesc-${pix_fmt}.nut
-        do_video_encoding $output "" \
-            "-vf slicify=random,format=$pix_fmt,pixdesctest -vcodec rawvideo -pix_fmt $pix_fmt"
-        rm ${outfile}${output}
+        do_video_filter $pix_fmt "slicify=random,format=$pix_fmt,pixdesctest" -pix_fmt $pix_fmt
     done
 fi
 
