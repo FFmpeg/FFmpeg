@@ -76,14 +76,38 @@ static void id3v2_put_size(AVFormatContext *s, int size)
     put_byte(s->pb, size       & 0x7f);
 }
 
-static void id3v2_put_ttag(AVFormatContext *s, const char *buf, int len,
-                           uint32_t tag)
+/**
+ * Write a text frame with one (normal frames) or two (TXXX frames) strings
+ * according to encoding (only UTF-8 or UTF-16+BOM supported).
+ * @return number of bytes written.
+ */
+static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2,
+                           uint32_t tag, enum ID3v2Encoding enc)
 {
+    int len;
+    uint8_t *pb;
+    void (*put)(ByteIOContext*, const char*) = avio_put_str;
+    ByteIOContext *dyn_buf;
+    if (url_open_dyn_buf(&dyn_buf) < 0)
+        return 0;
+
+    put_byte(dyn_buf, enc);
+    if (enc == ID3v2_ENCODING_UTF16BOM) {
+        put_le16(dyn_buf, 0xFEFF);      /* BOM */
+        put = avio_put_str16le;
+    }
+    put(dyn_buf, str1);
+    if (str2)
+        put(dyn_buf, str2);
+    len = url_close_dyn_buf(dyn_buf, &pb);
+
     put_be32(s->pb, tag);
-    id3v2_put_size(s, len + 1);
+    id3v2_put_size(s, len);
     put_be16(s->pb, 0);
-    put_byte(s->pb, 3); /* UTF-8 */
-    put_buffer(s->pb, buf, len);
+    put_buffer(s->pb, pb, len);
+
+    av_freep(&pb);
+    return len + ID3v2_HEADER_SIZE;
 }
 
 
@@ -148,25 +172,15 @@ static int mp3_write_header(struct AVFormatContext *s)
             int i;
             for (i = 0; *ff_id3v2_tags[i]; i++)
                 if (AV_RB32(t->key) == AV_RB32(ff_id3v2_tags[i])) {
-                    int len = strlen(t->value);
                     tag = AV_RB32(t->key);
-                    totlen += len + ID3v2_HEADER_SIZE + 2;
-                    id3v2_put_ttag(s, t->value, len + 1, tag);
+                    totlen += id3v2_put_ttag(s, t->value, NULL, tag, ID3v2_ENCODING_UTF8);
                     break;
                 }
         }
 
         if (!tag) { /* unknown tag, write as TXXX frame */
-            int   len = strlen(t->key), len1 = strlen(t->value);
-            char *buf = av_malloc(len + len1 + 2);
-            if (!buf)
-                return AVERROR(ENOMEM);
             tag = MKBETAG('T', 'X', 'X', 'X');
-            strcpy(buf,           t->key);
-            strcpy(buf + len + 1, t->value);
-            id3v2_put_ttag(s, buf, len + len1 + 2, tag);
-            totlen += len + len1 + ID3v2_HEADER_SIZE + 3;
-            av_free(buf);
+            totlen += id3v2_put_ttag(s, t->key, t->value, tag, ID3v2_ENCODING_UTF8);
         }
     }
 
