@@ -3244,7 +3244,7 @@ get_version LIBPOSTPROC libpostproc/postprocess.h
 get_version LIBAVCODEC  libavcodec/avcodec.h
 get_version LIBAVCORE   libavcore/avcore.h
 get_version LIBAVDEVICE libavdevice/avdevice.h
-get_version LIBAVFORMAT libavformat/avformat.h
+get_version LIBAVFORMAT libavformat/version.h
 get_version LIBAVUTIL   libavutil/avutil.h
 get_version LIBAVFILTER libavfilter/avfilter.h
 
