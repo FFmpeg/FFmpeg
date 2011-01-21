@@ -28,7 +28,8 @@
 /**
  * Apply Welch window function to audio block
  */
-static void apply_welch_window_c(const int32_t *data, int len, double *w_data)
+static void lpc_apply_welch_window_c(const int32_t *data, int len,
+                                     double *w_data)
 {
     int i, n2;
     double w;
@@ -55,7 +56,7 @@ static void apply_welch_window_c(const int32_t *data, int len, double *w_data)
  * A Welch window function is applied before calculation.
  */
 static void lpc_compute_autocorr_c(const double *data, int len, int lag,
-                             double *autoc)
+                                   double *autoc)
 {
     int i, j;
 
@@ -255,8 +256,8 @@ av_cold int ff_lpc_init(LPCContext *s, int blocksize, int max_order,
         s->windowed_samples = NULL;
     }
 
-    s->lpc_apply_welch_window = apply_welch_window_c;
-    s->lpc_compute_autocorr = lpc_compute_autocorr_c;
+    s->lpc_apply_welch_window = lpc_apply_welch_window_c;
+    s->lpc_compute_autocorr   = lpc_compute_autocorr_c;
 
     if (HAVE_MMX)
         ff_lpc_init_x86(s);

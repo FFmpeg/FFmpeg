@@ -23,7 +23,8 @@
 #include "libavutil/cpu.h"
 #include "libavcodec/lpc.h"
 
-static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data)
+static void lpc_apply_welch_window_sse2(const int32_t *data, int len,
+                                        double *w_data)
 {
     double c = 2.0 / (len-1.0);
     int n2 = len>>1;
@@ -70,7 +71,7 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
 }
 
 static void lpc_compute_autocorr_sse2(const double *data, int len, int lag,
-                                   double *autoc)
+                                      double *autoc)
 {
     int j;
 
@@ -140,7 +141,7 @@ av_cold void ff_lpc_init_x86(LPCContext *c)
     int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & (AV_CPU_FLAG_SSE2|AV_CPU_FLAG_SSE2SLOW)) {
-        c->lpc_apply_welch_window = apply_welch_window_sse2;
-        c->lpc_compute_autocorr = lpc_compute_autocorr_sse2;
+        c->lpc_apply_welch_window = lpc_apply_welch_window_sse2;
+        c->lpc_compute_autocorr   = lpc_compute_autocorr_sse2;
     }
 }
