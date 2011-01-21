@@ -23,7 +23,6 @@
 #include "libavutil/md5.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "golomb.h"
 #include "lpc.h"
 #include "flac.h"
@@ -95,7 +94,7 @@ typedef struct FlacEncodeContext {
     FlacFrame frame;
     CompressionOptions options;
     AVCodecContext *avctx;
-    DSPContext dsp;
+    LPCContext lpc_ctx;
     struct AVMD5 *md5ctx;
 } FlacEncodeContext;
 
@@ -217,7 +216,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    dsputil_init(&s->dsp, avctx);
+    ff_lpc_init(&s->lpc_ctx);
 
     if (avctx->sample_fmt != AV_SAMPLE_FMT_S16)
         return -1;
@@ -902,7 +901,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
 
     /* LPC */
     sub->type = FLAC_SUBFRAME_LPC;
-    opt_order = ff_lpc_calc_coefs(&s->dsp, smp, n, min_order, max_order,
+    opt_order = ff_lpc_calc_coefs(&s->lpc_ctx, smp, n, min_order, max_order,
                                   s->options.lpc_coeff_precision, coefs, shift, s->options.lpc_type,
                                   s->options.lpc_passes, omethod,
                                   MAX_LPC_SHIFT, 0);

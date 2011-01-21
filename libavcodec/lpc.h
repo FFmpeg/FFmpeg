@@ -36,18 +36,36 @@
 #define MAX_LPC_ORDER       32
 
 
+typedef struct LPCContext {
+    /**
+     * Perform autocorrelation on input samples with delay of 0 to lag.
+     * @param data  input samples.
+     *              no alignment needed.
+     * @param len   number of input samples to process
+     * @param lag   maximum delay to calculate
+     * @param autoc output autocorrelation coefficients.
+     *              constraints: array size must be at least lag+1.
+     */
+    void (*lpc_compute_autocorr)(const int32_t *data, int len, int lag,
+                                 double *autoc);
+} LPCContext;
+
+
 /**
  * Calculate LPC coefficients for multiple orders
  */
-int ff_lpc_calc_coefs(DSPContext *s,
+int ff_lpc_calc_coefs(LPCContext *s,
                       const int32_t *samples, int blocksize, int min_order,
                       int max_order, int precision,
                       int32_t coefs[][MAX_LPC_ORDER], int *shift,
                       enum AVLPCType lpc_type, int lpc_passes,
                       int omethod, int max_shift, int zero_shift);
 
-void ff_lpc_compute_autocorr(const int32_t *data, int len, int lag,
-                             double *autoc);
+/**
+ * Initialize LPCContext.
+ */
+void ff_lpc_init(LPCContext *s);
+void ff_lpc_init_x86(LPCContext *s);
 
 #ifdef LPC_USE_DOUBLE
 #define LPC_TYPE double

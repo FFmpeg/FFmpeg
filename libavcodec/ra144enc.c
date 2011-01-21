@@ -29,7 +29,6 @@
 
 #include "avcodec.h"
 #include "put_bits.h"
-#include "lpc.h"
 #include "celp_filters.h"
 #include "ra144.h"
 
@@ -53,7 +52,7 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     ractx->lpc_coef[0] = ractx->lpc_tables[0];
     ractx->lpc_coef[1] = ractx->lpc_tables[1];
     ractx->avctx = avctx;
-    dsputil_init(&ractx->dsp, avctx);
+    ff_lpc_init(&ractx->lpc_ctx);
     return 0;
 }
 
@@ -451,7 +450,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     energy = ff_energy_tab[quantize(ff_t_sqrt(energy >> 5) >> 10, ff_energy_tab,
                                     32)];
 
-    ff_lpc_calc_coefs(&ractx->dsp, lpc_data, NBLOCKS * BLOCKSIZE, LPC_ORDER,
+    ff_lpc_calc_coefs(&ractx->lpc_ctx, lpc_data, NBLOCKS * BLOCKSIZE, LPC_ORDER,
                       LPC_ORDER, 16, lpc_coefs, shift, AV_LPC_TYPE_LEVINSON,
                       0, ORDER_METHOD_EST, 12, 0);
     for (i = 0; i < LPC_ORDER; i++)

@@ -1166,10 +1166,6 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif
         }
 
-        if (CONFIG_LPC && mm_flags & (AV_CPU_FLAG_SSE2|AV_CPU_FLAG_SSE2SLOW)) {
-            c->lpc_compute_autocorr = ff_lpc_compute_autocorr_sse2;
-        }
-
 #if HAVE_SSSE3
         if(mm_flags & AV_CPU_FLAG_SSSE3){
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){

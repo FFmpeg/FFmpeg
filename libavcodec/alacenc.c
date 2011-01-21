@@ -51,11 +51,11 @@ typedef struct RiceContext {
     int rice_modifier;
 } RiceContext;
 
-typedef struct LPCContext {
+typedef struct AlacLPCContext {
     int lpc_order;
     int lpc_coeff[ALAC_MAX_LPC_ORDER+1];
     int lpc_quant;
-} LPCContext;
+} AlacLPCContext;
 
 typedef struct AlacEncodeContext {
     int compression_level;
@@ -69,8 +69,8 @@ typedef struct AlacEncodeContext {
     int interlacing_leftweight;
     PutBitContext pbctx;
     RiceContext rc;
-    LPCContext lpc[MAX_CHANNELS];
-    DSPContext dspctx;
+    AlacLPCContext lpc[MAX_CHANNELS];
+    LPCContext lpc_ctx;
     AVCodecContext *avctx;
 } AlacEncodeContext;
 
@@ -141,7 +141,7 @@ static void calc_predictor_params(AlacEncodeContext *s, int ch)
         s->lpc[ch].lpc_coeff[4] =   80;
         s->lpc[ch].lpc_coeff[5] =  -25;
     } else {
-        opt_order = ff_lpc_calc_coefs(&s->dspctx, s->sample_buf[ch],
+        opt_order = ff_lpc_calc_coefs(&s->lpc_ctx, s->sample_buf[ch],
                                       s->avctx->frame_size,
                                       s->min_prediction_order,
                                       s->max_prediction_order,
@@ -237,7 +237,7 @@ static void alac_stereo_decorrelation(AlacEncodeContext *s)
 static void alac_linear_predictor(AlacEncodeContext *s, int ch)
 {
     int i;
-    LPCContext lpc = s->lpc[ch];
+    AlacLPCContext lpc = s->lpc[ch];
 
     if(lpc.lpc_order == 31) {
         s->predictor_buf[0] = s->sample_buf[ch][0];
@@ -455,7 +455,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     avctx->coded_frame->key_frame = 1;
 
     s->avctx = avctx;
-    dsputil_init(&s->dspctx, avctx);
+    ff_lpc_init(&s->lpc_ctx);
 
     return 0;
 }
