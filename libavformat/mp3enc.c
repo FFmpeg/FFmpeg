@@ -24,6 +24,7 @@
 #include "id3v1.h"
 #include "id3v2.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 
 static int id3v1_set_string(AVFormatContext *s, const char *key,
                             uint8_t *buf, int buf_size)
@@ -148,7 +149,26 @@ AVOutputFormat mp2_muxer = {
 #endif
 
 #if CONFIG_MP3_MUXER
-static int id3v2_check_write_tag(AVFormatContext *s, AVMetadataTag *t, const char table[][4])
+typedef struct MP3Context {
+    const AVClass *class;
+    int id3v2_version;
+} MP3Context;
+
+static const AVOption options[] = {
+    { "id3v2_version", "Select ID3v2 version to write. Currently 3 and 4 are supported.",
+      offsetof(MP3Context, id3v2_version), FF_OPT_TYPE_INT, 4, 3, 4, AV_OPT_FLAG_ENCODING_PARAM},
+    { NULL },
+};
+
+static const AVClass mp3_muxer_class = {
+    "MP3 muxer",
+    av_default_item_name,
+    options,
+    LIBAVUTIL_VERSION_INT,
+};
+
+static int id3v2_check_write_tag(AVFormatContext *s, AVMetadataTag *t, const char table[][4],
+                                 enum ID3v2Encoding enc)
 {
     uint32_t tag;
     int i;
@@ -158,21 +178,23 @@ static int id3v2_check_write_tag(AVFormatContext *s, AVMetadataTag *t, const cha
     tag = AV_RB32(t->key);
     for (i = 0; *table[i]; i++)
         if (tag == AV_RB32(table[i]))
-            return id3v2_put_ttag(s, t->value, NULL, tag, ID3v2_ENCODING_UTF8);
+            return id3v2_put_ttag(s, t->value, NULL, tag, enc);
     return -1;
 }
 
 /**
- * Write an ID3v2.4 header at beginning of stream
+ * Write an ID3v2 header at beginning of stream
  */
 
 static int mp3_write_header(struct AVFormatContext *s)
 {
+    MP3Context  *mp3 = s->priv_data;
     AVMetadataTag *t = NULL;
-    int totlen = 0;
+    int totlen = 0, enc = mp3->id3v2_version == 3 ? ID3v2_ENCODING_UTF16BOM :
+                                                    ID3v2_ENCODING_UTF8;
     int64_t size_pos, cur_pos;
 
-    put_be32(s->pb, MKBETAG('I', 'D', '3', 0x04)); /* ID3v2.4 */
+    put_be32(s->pb, MKBETAG('I', 'D', '3', mp3->id3v2_version));
     put_byte(s->pb, 0);
     put_byte(s->pb, 0); /* flags */
 
@@ -181,22 +203,24 @@ static int mp3_write_header(struct AVFormatContext *s)
     put_be32(s->pb, 0);
 
     ff_metadata_conv(&s->metadata, ff_id3v2_34_metadata_conv, NULL);
-    ff_metadata_conv(&s->metadata, ff_id3v2_4_metadata_conv, NULL);
+    if (mp3->id3v2_version == 4)
+        ff_metadata_conv(&s->metadata, ff_id3v2_4_metadata_conv, NULL);
+
     while ((t = av_metadata_get(s->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
         int ret;
 
-        if ((ret = id3v2_check_write_tag(s, t, ff_id3v2_tags)) > 0) {
+        if ((ret = id3v2_check_write_tag(s, t, ff_id3v2_tags, enc)) > 0) {
             totlen += ret;
             continue;
         }
-        if ((ret = id3v2_check_write_tag(s, t, ff_id3v2_4_tags)) > 0) {
+        if ((ret = id3v2_check_write_tag(s, t, mp3->id3v2_version == 3 ?
+                                               ff_id3v2_3_tags : ff_id3v2_4_tags, enc)) > 0) {
             totlen += ret;
             continue;
         }
 
         /* unknown tag, write as TXXX frame */
-        if ((ret = id3v2_put_ttag(s, t->key, t->value, MKBETAG('T', 'X', 'X', 'X'),
-                                  ID3v2_ENCODING_UTF8)) < 0)
+        if ((ret = id3v2_put_ttag(s, t->key, t->value, MKBETAG('T', 'X', 'X', 'X'), enc)) < 0)
             return ret;
         totlen += ret;
     }
@@ -214,12 +238,13 @@ AVOutputFormat mp3_muxer = {
     NULL_IF_CONFIG_SMALL("MPEG audio layer 3"),
     "audio/x-mpeg",
     "mp3",
-    0,
+    sizeof(MP3Context),
     CODEC_ID_MP3,
     CODEC_ID_NONE,
     mp3_write_header,
     mp3_write_packet,
     mp3_write_trailer,
     AVFMT_NOTIMESTAMPS,
+    .priv_class = &mp3_muxer_class,
 };
 #endif
