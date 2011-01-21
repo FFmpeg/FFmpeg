@@ -65,12 +65,25 @@ int ff_id3v2_tag_len(const uint8_t *buf);
  */
 void ff_id3v2_read(AVFormatContext *s, const char *magic);
 
-extern const AVMetadataConv ff_id3v2_metadata_conv[];
+extern const AVMetadataConv ff_id3v2_34_metadata_conv[];
+extern const AVMetadataConv ff_id3v2_4_metadata_conv[];
+extern const AVMetadataConv ff_id3v2_2_metadata_conv[];
 
 /**
- * A list of ID3v2.4 text information frames.
+ * A list of text information frames allowed in both ID3 v2.3 and v2.4
  * http://www.id3.org/id3v2.4.0-frames
+ * http://www.id3.org/id3v2.4.0-changes
  */
 extern const char ff_id3v2_tags[][4];
+
+/**
+ * ID3v2.4-only text information frames.
+ */
+extern const char ff_id3v2_4_tags[][4];
+
+/**
+ * ID3v2.3-only text information frames.
+ */
+extern const char ff_id3v2_3_tags[][4];
 
 #endif /* AVFORMAT_ID3V2_H */

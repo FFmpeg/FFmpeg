@@ -273,46 +273,67 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic)
             url_fseek(s->pb, off, SEEK_SET);
         }
     } while (found_header);
-    ff_metadata_conv(&s->metadata, NULL, ff_id3v2_metadata_conv);
+    ff_metadata_conv(&s->metadata, NULL, ff_id3v2_34_metadata_conv);
+    ff_metadata_conv(&s->metadata, NULL, ff_id3v2_2_metadata_conv);
+    ff_metadata_conv(&s->metadata, NULL, ff_id3v2_4_metadata_conv);
 }
 
-const AVMetadataConv ff_id3v2_metadata_conv[] = {
+const AVMetadataConv ff_id3v2_34_metadata_conv[] = {
     { "TALB", "album"},
-    { "TAL",  "album"},
     { "TCOM", "composer"},
     { "TCON", "genre"},
-    { "TCO",  "genre"},
     { "TCOP", "copyright"},
-    { "TDRL", "date"},
-    { "TDRC", "date"},
-    { "TDEN", "creation_time"},
     { "TENC", "encoded_by"},
-    { "TEN",  "encoded_by"},
     { "TIT2", "title"},
-    { "TT2",  "title"},
     { "TLAN", "language"},
     { "TPE1", "artist"},
-    { "TP1",  "artist"},
     { "TPE2", "album_artist"},
-    { "TP2",  "album_artist"},
     { "TPE3", "performer"},
-    { "TP3",  "performer"},
     { "TPOS", "disc"},
     { "TPUB", "publisher"},
     { "TRCK", "track"},
-    { "TRK",  "track"},
-    { "TSOA", "album-sort"},
-    { "TSOP", "artist-sort"},
-    { "TSOT", "title-sort"},
     { "TSSE", "encoder"},
     { 0 }
 };
 
+const AVMetadataConv ff_id3v2_4_metadata_conv[] = {
+    { "TDRL", "date"},
+    { "TDRC", "date"},
+    { "TDEN", "creation_time"},
+    { "TSOA", "album-sort"},
+    { "TSOP", "artist-sort"},
+    { "TSOT", "title-sort"},
+    { 0 }
+};
+
+const AVMetadataConv ff_id3v2_2_metadata_conv[] = {
+    { "TAL",  "album"},
+    { "TCO",  "genre"},
+    { "TT2",  "title"},
+    { "TEN",  "encoded_by"},
+    { "TP1",  "artist"},
+    { "TP2",  "album_artist"},
+    { "TP3",  "performer"},
+    { "TRK",  "track"},
+    { 0 }
+};
+
+
 const char ff_id3v2_tags[][4] = {
-   "TALB", "TBPM", "TCOM", "TCON", "TCOP", "TDEN", "TDLY", "TDOR", "TDRC",
-   "TDRL", "TDTG", "TENC", "TEXT", "TFLT", "TIPL", "TIT1", "TIT2", "TIT3",
-   "TKEY", "TLAN", "TLEN", "TMCL", "TMED", "TMOO", "TOAL", "TOFN", "TOLY",
-   "TOPE", "TOWN", "TPE1", "TPE2", "TPE3", "TPE4", "TPOS", "TPRO", "TPUB",
-   "TRCK", "TRSN", "TRSO", "TSOA", "TSOP", "TSOT", "TSRC", "TSSE", "TSST",
+   "TALB", "TBPM", "TCOM", "TCON", "TCOP", "TDLY", "TENC", "TEXT",
+   "TFLT", "TIT1", "TIT2", "TIT3", "TKEY", "TLAN", "TLEN", "TMED",
+   "TOAL", "TOFN", "TOLY", "TOPE", "TOWN", "TPE1", "TPE2", "TPE3",
+   "TPE4", "TPOS", "TPUB", "TRCK", "TRSN", "TRSO", "TSRC", "TSSE",
+   { 0 },
+};
+
+const char ff_id3v2_4_tags[][4] = {
+   "TDEN", "TDOR", "TDRC", "TDRL", "TDTG", "TIPL", "TMCL", "TMOO",
+   "TPRO", "TSOA", "TSOP", "TSOT", "TSST",
+   { 0 },
+};
+
+const char ff_id3v2_3_tags[][4] = {
+   "TDAT", "TIME", "TORY", "TRDA", "TSIZ", "TYER",
    { 0 },
 };

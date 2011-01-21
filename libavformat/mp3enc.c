@@ -148,6 +148,20 @@ AVOutputFormat mp2_muxer = {
 #endif
 
 #if CONFIG_MP3_MUXER
+static int id3v2_check_write_tag(AVFormatContext *s, AVMetadataTag *t, const char table[][4])
+{
+    uint32_t tag;
+    int i;
+
+    if (t->key[0] != 'T' || strlen(t->key) != 4)
+        return -1;
+    tag = AV_RB32(t->key);
+    for (i = 0; *table[i]; i++)
+        if (tag == AV_RB32(table[i]))
+            return id3v2_put_ttag(s, t->value, NULL, tag, ID3v2_ENCODING_UTF8);
+    return -1;
+}
+
 /**
  * Write an ID3v2.4 header at beginning of stream
  */
@@ -166,29 +180,25 @@ static int mp3_write_header(struct AVFormatContext *s)
     size_pos = url_ftell(s->pb);
     put_be32(s->pb, 0);
 
-    ff_metadata_conv(&s->metadata, ff_id3v2_metadata_conv, NULL);
+    ff_metadata_conv(&s->metadata, ff_id3v2_34_metadata_conv, NULL);
+    ff_metadata_conv(&s->metadata, ff_id3v2_4_metadata_conv, NULL);
     while ((t = av_metadata_get(s->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
-        uint32_t tag = 0;
         int ret;
 
-        if (t->key[0] == 'T' && strlen(t->key) == 4) {
-            int i;
-            for (i = 0; *ff_id3v2_tags[i]; i++)
-                if (AV_RB32(t->key) == AV_RB32(ff_id3v2_tags[i])) {
-                    tag = AV_RB32(t->key);
-                    if ((ret = id3v2_put_ttag(s, t->value, NULL, tag, ID3v2_ENCODING_UTF8)) < 0)
-                        return ret;
-                    totlen += ret;
-                    break;
-                }
+        if ((ret = id3v2_check_write_tag(s, t, ff_id3v2_tags)) > 0) {
+            totlen += ret;
+            continue;
+        }
+        if ((ret = id3v2_check_write_tag(s, t, ff_id3v2_4_tags)) > 0) {
+            totlen += ret;
+            continue;
         }
 
-        if (!tag) { /* unknown tag, write as TXXX frame */
-            tag = MKBETAG('T', 'X', 'X', 'X');
-            if ((ret = id3v2_put_ttag(s, t->key, t->value, tag, ID3v2_ENCODING_UTF8)) < 0)
-                return ret;
-            totlen += ret;
-        }
+        /* unknown tag, write as TXXX frame */
+        if ((ret = id3v2_put_ttag(s, t->key, t->value, MKBETAG('T', 'X', 'X', 'X'),
+                                  ID3v2_ENCODING_UTF8)) < 0)
+            return ret;
+        totlen += ret;
     }
 
     cur_pos = url_ftell(s->pb);
