@@ -20,7 +20,6 @@
  */
 
 #include "libavutil/lls.h"
-#include "dsputil.h"
 
 #define LPC_USE_DOUBLE
 #include "lpc.h"
@@ -55,7 +54,7 @@ static void apply_welch_window(const int32_t *data, int len, double *w_data)
  * Calculate autocorrelation data from audio samples
  * A Welch window function is applied before calculation.
  */
-void ff_lpc_compute_autocorr(const int32_t *data, int len, int lag,
+static void lpc_compute_autocorr_c(const int32_t *data, int len, int lag,
                              double *autoc)
 {
     int i, j;
@@ -162,7 +161,7 @@ static int estimate_best_order(double *ref, int min_order, int max_order)
  * 1  = LPC with coeffs determined by Levinson-Durbin recursion
  * 2+ = LPC with coeffs determined by Cholesky factorization using (use_lpc-1) passes.
  */
-int ff_lpc_calc_coefs(DSPContext *s,
+int ff_lpc_calc_coefs(LPCContext *s,
                       const int32_t *samples, int blocksize, int min_order,
                       int max_order, int precision,
                       int32_t coefs[][MAX_LPC_ORDER], int *shift,
@@ -235,4 +234,12 @@ int ff_lpc_calc_coefs(DSPContext *s,
     }
 
     return opt_order;
+}
+
+av_cold void ff_lpc_init(LPCContext *s)
+{
+    s->lpc_compute_autocorr = lpc_compute_autocorr_c;
+
+    if (HAVE_MMX)
+        ff_lpc_init_x86(s);
 }

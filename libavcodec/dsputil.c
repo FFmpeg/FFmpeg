@@ -36,7 +36,6 @@
 #include "mathops.h"
 #include "mpegvideo.h"
 #include "config.h"
-#include "lpc.h"
 #include "ac3dec.h"
 #include "vorbis.h"
 #include "png.h"
@@ -4430,9 +4429,6 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #endif
 #if CONFIG_AC3_DECODER
     c->ac3_downmix = ff_ac3_downmix_c;
-#endif
-#if CONFIG_LPC
-    c->lpc_compute_autocorr = ff_lpc_compute_autocorr;
 #endif
     c->vector_fmul = vector_fmul_c;
     c->vector_fmul_reverse = vector_fmul_reverse_c;

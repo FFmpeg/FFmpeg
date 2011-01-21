@@ -20,7 +20,8 @@
  */
 
 #include "libavutil/x86_cpu.h"
-#include "dsputil_mmx.h"
+#include "libavutil/cpu.h"
+#include "libavcodec/lpc.h"
 
 static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data)
 {
@@ -68,7 +69,7 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
 #undef WELCH
 }
 
-void ff_lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
+static void lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                                    double *autoc)
 {
     double tmp[len + lag + 2];
@@ -139,5 +140,14 @@ void ff_lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                 :"r"(data1+len), "r"(data1+len-j)
             );
         }
+    }
+}
+
+av_cold void ff_lpc_init_x86(LPCContext *c)
+{
+    int mm_flags = av_get_cpu_flags();
+
+    if (mm_flags & (AV_CPU_FLAG_SSE2|AV_CPU_FLAG_SSE2SLOW)) {
+        c->lpc_compute_autocorr = lpc_compute_autocorr_sse2;
     }
 }

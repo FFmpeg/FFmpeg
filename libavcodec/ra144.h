@@ -23,7 +23,7 @@
 #define AVCODEC_RA144_H
 
 #include <stdint.h>
-#include "dsputil.h"
+#include "lpc.h"
 
 #define NBLOCKS         4       ///< number of subblocks within a block
 #define BLOCKSIZE       40      ///< subblock size in 16-bit words
@@ -34,7 +34,7 @@
 
 typedef struct {
     AVCodecContext *avctx;
-    DSPContext dsp;
+    LPCContext lpc_ctx;
 
     unsigned int     old_energy;        ///< previous frame energy
 
