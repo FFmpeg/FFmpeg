@@ -69,21 +69,13 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
 #undef WELCH
 }
 
-static void lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
+static void lpc_compute_autocorr_sse2(const double *data, int len, int lag,
                                    double *autoc)
 {
-    double tmp[len + lag + 2];
-    double *data1 = tmp + lag;
     int j;
 
-    if((x86_reg)data1 & 15)
-        data1++;
-
-    apply_welch_window_sse2(data, len, data1);
-
-    for(j=0; j<lag; j++)
-        data1[j-lag]= 0.0;
-    data1[len] = 0.0;
+    if((x86_reg)data & 15)
+        data++;
 
     for(j=0; j<lag; j+=2){
         x86_reg i = -len*sizeof(double);
@@ -114,7 +106,7 @@ static void lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                 "movsd     %%xmm1,  8(%1)           \n\t"
                 "movsd     %%xmm2, 16(%1)           \n\t"
                 :"+&r"(i)
-                :"r"(autoc+j), "r"(data1+len), "r"(data1+len-j)
+                :"r"(autoc+j), "r"(data+len), "r"(data+len-j)
                 :"memory"
             );
         } else {
@@ -137,7 +129,7 @@ static void lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                 "movsd     %%xmm0, %1               \n\t"
                 "movsd     %%xmm1, %2               \n\t"
                 :"+&r"(i), "=m"(autoc[j]), "=m"(autoc[j+1])
-                :"r"(data1+len), "r"(data1+len-j)
+                :"r"(data+len), "r"(data+len-j)
             );
         }
     }
@@ -148,6 +140,7 @@ av_cold void ff_lpc_init_x86(LPCContext *c)
     int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & (AV_CPU_FLAG_SSE2|AV_CPU_FLAG_SSE2SLOW)) {
+        c->lpc_apply_welch_window = apply_welch_window_sse2;
         c->lpc_compute_autocorr = lpc_compute_autocorr_sse2;
     }
 }

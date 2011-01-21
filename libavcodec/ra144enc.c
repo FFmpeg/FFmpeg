@@ -36,6 +36,7 @@
 static av_cold int ra144_encode_init(AVCodecContext * avctx)
 {
     RA144Context *ractx;
+    int ret;
 
     if (avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
         av_log(avctx, AV_LOG_ERROR, "invalid sample format\n");
@@ -52,7 +53,16 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     ractx->lpc_coef[0] = ractx->lpc_tables[0];
     ractx->lpc_coef[1] = ractx->lpc_tables[1];
     ractx->avctx = avctx;
-    ff_lpc_init(&ractx->lpc_ctx);
+    ret = ff_lpc_init(&ractx->lpc_ctx, avctx->frame_size, LPC_ORDER,
+                      AV_LPC_TYPE_LEVINSON);
+    return ret;
+}
+
+
+static av_cold int ra144_encode_close(AVCodecContext *avctx)
+{
+    RA144Context *ractx = avctx->priv_data;
+    ff_lpc_end(&ractx->lpc_ctx);
     return 0;
 }
 
@@ -506,5 +516,6 @@ AVCodec ra_144_encoder =
     sizeof(RA144Context),
     ra144_encode_init,
     ra144_encode_frame,
+    ra144_encode_close,
     .long_name = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K) encoder"),
 };

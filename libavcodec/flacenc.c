@@ -211,12 +211,10 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     int freq = avctx->sample_rate;
     int channels = avctx->channels;
     FlacEncodeContext *s = avctx->priv_data;
-    int i, level;
+    int i, level, ret;
     uint8_t *streaminfo;
 
     s->avctx = avctx;
-
-    ff_lpc_init(&s->lpc_ctx);
 
     if (avctx->sample_fmt != AV_SAMPLE_FMT_S16)
         return -1;
@@ -438,9 +436,12 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
 
+    ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size,
+                      s->options.max_prediction_order, AV_LPC_TYPE_LEVINSON);
+
     dprint_compression_options(s);
 
-    return 0;
+    return ret;
 }
 
 
@@ -1316,6 +1317,7 @@ static av_cold int flac_encode_close(AVCodecContext *avctx)
     if (avctx->priv_data) {
         FlacEncodeContext *s = avctx->priv_data;
         av_freep(&s->md5ctx);
+        ff_lpc_end(&s->lpc_ctx);
     }
     av_freep(&avctx->extradata);
     avctx->extradata_size = 0;
