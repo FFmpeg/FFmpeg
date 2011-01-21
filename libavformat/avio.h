@@ -378,6 +378,12 @@ attribute_deprecated void put_strz(ByteIOContext *s, const char *buf);
 int avio_put_str(ByteIOContext *s, const char *str);
 
 /**
+ * Convert an UTF-8 string to UTF-16LE and write it.
+ * @return number of bytes written.
+ */
+int avio_put_str16le(ByteIOContext *s, const char *str);
+
+/**
  * fseek() equivalent for ByteIOContext.
  * @return new position or AVERROR.
  */

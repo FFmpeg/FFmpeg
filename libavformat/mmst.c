@@ -34,7 +34,6 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/bytestream.h"
 #include "network.h"
-#include "asf.h"
 
 #define LOCAL_ADDRESS 0xc0a80081    // FIXME get and use correct local ip address.
 #define LOCAL_PORT    1037          // as above.
@@ -159,7 +158,7 @@ static void mms_put_utf16(MMSContext *mms, uint8_t *src)
     init_put_byte(&bic, mms->write_out_ptr,
             sizeof(mms->out_buffer) - size, 1, NULL, NULL, NULL, NULL);
 
-    len = ff_put_str16_nolen(&bic, src);
+    len = avio_put_str16le(&bic, src);
     mms->write_out_ptr += len;
 }
 
