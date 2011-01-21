@@ -1501,12 +1501,9 @@ static int dca_exss_parse_asset_header(DCAContext *s)
 
     if (extensions_mask & DCA_EXT_EXSS_XLL)
         s->profile = FF_PROFILE_DTS_HD_MA;
-    else if (extensions_mask & DCA_EXT_EXSS_XBR)
+    else if (extensions_mask & (DCA_EXT_EXSS_XBR | DCA_EXT_EXSS_X96 |
+                                DCA_EXT_EXSS_XXCH))
         s->profile = FF_PROFILE_DTS_HD_HRA;
-    else if (extensions_mask & DCA_EXT_EXSS_X96)
-        s->profile = FF_PROFILE_DTS_96_24;
-    else if (extensions_mask & DCA_EXT_EXSS_XXCH)
-        s->profile = FFMAX(s->profile, FF_PROFILE_DTS_ES);
 
     if (!(extensions_mask & DCA_EXT_CORE))
         av_log(s->avctx, AV_LOG_WARNING, "DTS core detection mismatch.\n");
