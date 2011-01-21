@@ -24,20 +24,18 @@ Image file demuxer.
 
 This demuxer reads from a list of image files specified by a pattern.
 
-The filename of each file to read must contain a sequential number,
-which specifies the position of the file in the sequence.
-
-The pattern must contain the string "%d" or "%0@var{N}d", which
-specifies the position of the characters representing the seqential
+The pattern may contain the string "%d" or "%0@var{N}d", which
+specifies the position of the characters representing a sequential
 number in each filename matched by the pattern. If the form
 "%d0@var{N}d" is used, the string representing the number in each
 filename is 0-padded and @var{N} is the total number of 0-padded
 digits representing the number. The literal character '%' can be
 specified in the pattern with the string "%%".
 
-The first filename of the file sequence specified by the pattern must
-contain a number inclusively contained between 0 and 4, all the
-following numbers must be sequential.
+If the pattern contains "%d" or "%0@var{N}d", the first filename of
+the file list specified by the pattern must contain a number
+inclusively contained between 0 and 4, all the following numbers must
+be sequential. This limitation may be hopefully fixed.
 
 The pattern may contain a suffix which is used to automatically
 determine the format of the images contained in the files.
@@ -57,6 +55,13 @@ video from the images in the file sequence @file{img-001.jpeg},
 second:
 @example
 ffmpeg -r 10 -f image2 -i 'img-%03d.jpeg' out.avi
+@end example
+
+Note that the pattern must not necessarily contain "%d" or
+"%0@var{N}d", for example to convert a single image file
+@file{img.jpeg} you can employ the command:
+@example
+ffmpeg -f image2 -i img.jpeg img.png
 @end example
 
 @c man end INPUT DEVICES
