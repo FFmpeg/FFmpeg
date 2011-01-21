@@ -156,20 +156,3 @@ const AVMetadataConv ff_asf_metadata_conv[] = {
 //  { "Year"               , "date"        }, TODO: conversion year<->date
     { 0 }
 };
-
-int ff_put_str16_nolen(ByteIOContext *s, const char *tag)
-{
-    const uint8_t *q = tag;
-    int ret = 0;
-
-    while (*q) {
-        uint32_t ch;
-        uint16_t tmp;
-
-        GET_UTF8(ch, *q++, break;)
-        PUT_UTF16(ch, tmp, put_le16(s, tmp);ret += 2;)
-    }
-    put_le16(s, 0);
-    ret += 2;
-    return ret;
-}
