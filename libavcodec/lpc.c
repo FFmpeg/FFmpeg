@@ -28,7 +28,7 @@
 /**
  * Apply Welch window function to audio block
  */
-static void apply_welch_window(const int32_t *data, int len, double *w_data)
+static void apply_welch_window_c(const int32_t *data, int len, double *w_data)
 {
     int i, n2;
     double w;
@@ -54,24 +54,16 @@ static void apply_welch_window(const int32_t *data, int len, double *w_data)
  * Calculate autocorrelation data from audio samples
  * A Welch window function is applied before calculation.
  */
-static void lpc_compute_autocorr_c(const int32_t *data, int len, int lag,
+static void lpc_compute_autocorr_c(const double *data, int len, int lag,
                              double *autoc)
 {
     int i, j;
-    double tmp[len + lag + 1];
-    double *data1= tmp + lag;
-
-    apply_welch_window(data, len, data1);
-
-    for(j=0; j<lag; j++)
-        data1[j-lag]= 0.0;
-    data1[len] = 0.0;
 
     for(j=0; j<lag; j+=2){
         double sum0 = 1.0, sum1 = 1.0;
         for(i=j; i<len; i++){
-            sum0 += data1[i] * data1[i-j];
-            sum1 += data1[i] * data1[i-j-1];
+            sum0 += data[i] * data[i-j];
+            sum1 += data[i] * data[i-j-1];
         }
         autoc[j  ] = sum0;
         autoc[j+1] = sum1;
@@ -80,8 +72,8 @@ static void lpc_compute_autocorr_c(const int32_t *data, int len, int lag,
     if(j==lag){
         double sum = 1.0;
         for(i=j-1; i<len; i+=2){
-            sum += data1[i  ] * data1[i-j  ]
-                 + data1[i+1] * data1[i-j+1];
+            sum += data[i  ] * data[i-j  ]
+                 + data[i+1] * data[i-j+1];
         }
         autoc[j] = sum;
     }
@@ -177,8 +169,19 @@ int ff_lpc_calc_coefs(LPCContext *s,
     assert(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER &&
            lpc_type > AV_LPC_TYPE_FIXED);
 
+    /* reinit LPC context if parameters have changed */
+    if (blocksize != s->blocksize || max_order != s->max_order ||
+        lpc_type  != s->lpc_type) {
+        ff_lpc_end(s);
+        ff_lpc_init(s, blocksize, max_order, lpc_type);
+    }
+
     if (lpc_type == AV_LPC_TYPE_LEVINSON) {
-        s->lpc_compute_autocorr(samples, blocksize, max_order, autoc);
+        double *windowed_samples = s->windowed_samples + max_order;
+
+        s->lpc_apply_welch_window(samples, blocksize, windowed_samples);
+
+        s->lpc_compute_autocorr(windowed_samples, blocksize, max_order, autoc);
 
         compute_lpc_coefs(autoc, max_order, &lpc[0][0], MAX_LPC_ORDER, 0, 1);
 
@@ -236,10 +239,32 @@ int ff_lpc_calc_coefs(LPCContext *s,
     return opt_order;
 }
 
-av_cold void ff_lpc_init(LPCContext *s)
+av_cold int ff_lpc_init(LPCContext *s, int blocksize, int max_order,
+                        enum AVLPCType lpc_type)
 {
+    s->blocksize = blocksize;
+    s->max_order = max_order;
+    s->lpc_type  = lpc_type;
+
+    if (lpc_type == AV_LPC_TYPE_LEVINSON) {
+        s->windowed_samples = av_mallocz((blocksize + max_order + 2) *
+                                         sizeof(*s->windowed_samples));
+        if (!s->windowed_samples)
+            return AVERROR(ENOMEM);
+    } else {
+        s->windowed_samples = NULL;
+    }
+
+    s->lpc_apply_welch_window = apply_welch_window_c;
     s->lpc_compute_autocorr = lpc_compute_autocorr_c;
 
     if (HAVE_MMX)
         ff_lpc_init_x86(s);
+
+    return 0;
+}
+
+av_cold void ff_lpc_end(LPCContext *s)
+{
+    av_freep(&s->windowed_samples);
 }

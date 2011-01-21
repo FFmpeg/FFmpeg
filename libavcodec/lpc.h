@@ -37,16 +37,35 @@
 
 
 typedef struct LPCContext {
+    int blocksize;
+    int max_order;
+    enum AVLPCType lpc_type;
+    double *windowed_samples;
+
+    /**
+     * Apply a Welch window to an array of input samples.
+     * The output samples have the same scale as the input, but are in double
+     * sample format.
+     * @param data    input samples
+     * @param len     number of input samples
+     * @param w_data  output samples
+     */
+    void (*lpc_apply_welch_window)(const int32_t *data, int len,
+                                   double *w_data);
     /**
      * Perform autocorrelation on input samples with delay of 0 to lag.
      * @param data  input samples.
-     *              no alignment needed.
+     *              constraints: no alignment needed, but must have have at
+     *              least lag*sizeof(double) valid bytes preceeding it, and
+     *              size must be at least (len+1)*sizeof(double) if data is
+     *              16-byte aligned or (len+2)*sizeof(double) if data is
+     *              unaligned.
      * @param len   number of input samples to process
      * @param lag   maximum delay to calculate
      * @param autoc output autocorrelation coefficients.
      *              constraints: array size must be at least lag+1.
      */
-    void (*lpc_compute_autocorr)(const int32_t *data, int len, int lag,
+    void (*lpc_compute_autocorr)(const double *data, int len, int lag,
                                  double *autoc);
 } LPCContext;
 
@@ -64,8 +83,14 @@ int ff_lpc_calc_coefs(LPCContext *s,
 /**
  * Initialize LPCContext.
  */
-void ff_lpc_init(LPCContext *s);
+int ff_lpc_init(LPCContext *s, int blocksize, int max_order,
+                enum AVLPCType lpc_type);
 void ff_lpc_init_x86(LPCContext *s);
+
+/**
+ * Uninitialize LPCContext.
+ */
+void ff_lpc_end(LPCContext *s);
 
 #ifdef LPC_USE_DOUBLE
 #define LPC_TYPE double

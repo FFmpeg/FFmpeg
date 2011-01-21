@@ -378,6 +378,7 @@ static void write_compressed_frame(AlacEncodeContext *s)
 static av_cold int alac_encode_init(AVCodecContext *avctx)
 {
     AlacEncodeContext *s    = avctx->priv_data;
+    int ret;
     uint8_t *alac_extradata = av_mallocz(ALAC_EXTRADATA_SIZE+1);
 
     avctx->frame_size      = DEFAULT_FRAME_SIZE;
@@ -455,9 +456,10 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     avctx->coded_frame->key_frame = 1;
 
     s->avctx = avctx;
-    ff_lpc_init(&s->lpc_ctx);
+    ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size, s->max_prediction_order,
+                      AV_LPC_TYPE_LEVINSON);
 
-    return 0;
+    return ret;
 }
 
 static int alac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
@@ -513,6 +515,8 @@ verbatim:
 
 static av_cold int alac_encode_close(AVCodecContext *avctx)
 {
+    AlacEncodeContext *s = avctx->priv_data;
+    ff_lpc_end(&s->lpc_ctx);
     av_freep(&avctx->extradata);
     avctx->extradata_size = 0;
     av_freep(&avctx->coded_frame);
