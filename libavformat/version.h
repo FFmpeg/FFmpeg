@@ -86,5 +86,8 @@
 #ifndef FF_API_SYMVER
 #define FF_API_SYMVER                  (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_OLD_AVIO
+#define FF_API_OLD_AVIO                (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 #endif //AVFORMAT_VERSION_H

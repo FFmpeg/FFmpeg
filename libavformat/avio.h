@@ -367,7 +367,15 @@ void put_le16(ByteIOContext *s, unsigned int val);
 void put_be16(ByteIOContext *s, unsigned int val);
 void put_tag(ByteIOContext *s, const char *tag);
 
-void put_strz(ByteIOContext *s, const char *buf);
+#if FF_API_OLD_AVIO
+attribute_deprecated void put_strz(ByteIOContext *s, const char *buf);
+#endif
+
+/**
+ * Write a NULL-terminated string.
+ * @return number of bytes written.
+ */
+int avio_put_str(ByteIOContext *s, const char *str);
 
 /**
  * fseek() equivalent for ByteIOContext.

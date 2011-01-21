@@ -265,12 +265,22 @@ void put_be32(ByteIOContext *s, unsigned int val)
     put_byte(s, val);
 }
 
+#if FF_API_OLD_AVIO
 void put_strz(ByteIOContext *s, const char *str)
 {
-    if (str)
-        put_buffer(s, (const unsigned char *) str, strlen(str) + 1);
-    else
+    avio_put_str(s, str);
+}
+#endif
+
+int avio_put_str(ByteIOContext *s, const char *str)
+{
+    int len = 1;
+    if (str) {
+        len += strlen(str);
+        put_buffer(s, (const unsigned char *) str, len);
+    } else
         put_byte(s, 0);
+    return len;
 }
 
 int ff_get_v_length(uint64_t val){
