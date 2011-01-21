@@ -1811,7 +1811,6 @@ tmpfile(){
 }
 
 trap 'rm -f -- $TMPFILES' EXIT
-trap exit HUP INT TERM
 
 tmpfile TMPC  .c
 tmpfile TMPE  $EXESUF
