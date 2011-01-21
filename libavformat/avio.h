@@ -33,6 +33,8 @@
 #include "libavutil/common.h"
 #include "libavutil/log.h"
 
+#include "libavformat/version.h"
+
 /* unbuffered I/O */
 
 /**
