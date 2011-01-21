@@ -137,15 +137,15 @@ static int biquad_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
 
     if (filt_mode == FF_FILTER_MODE_HIGHPASS) {
         c->gain  =  ((1.0 + cos_w0) / 2.0)  / a0;
-        x0       = (-(1.0 + cos_w0))        / a0;
-        x1       =  ((1.0 + cos_w0) / 2.0)  / a0;
+        x0       =  ((1.0 + cos_w0) / 2.0)  / a0;
+        x1       = (-(1.0 + cos_w0))        / a0;
     } else { // FF_FILTER_MODE_LOWPASS
         c->gain  =  ((1.0 - cos_w0) / 2.0)  / a0;
-        x0       =   (1.0 - cos_w0)         / a0;
-        x1       =  ((1.0 - cos_w0) / 2.0)  / a0;
+        x0       =  ((1.0 - cos_w0) / 2.0)  / a0;
+        x1       =   (1.0 - cos_w0)         / a0;
     }
-    c->cy[0] =  (2.0 *  cos_w0)        / a0;
-    c->cy[1] = (-1.0 + (sin_w0 / 2.0)) / a0;
+    c->cy[0] = (-1.0 + (sin_w0 / 2.0)) / a0;
+    c->cy[1] =  (2.0 *  cos_w0)        / a0;
 
     // divide by gain to make the x coeffs integers.
     // during filtering, the delay state will include the gain multiplication
