@@ -117,6 +117,6 @@ void ff_iir_filter(const struct FFIIRFilterCoeffs *coeffs, struct FFIIRFilterSta
  */
 void ff_iir_filter_flt(const struct FFIIRFilterCoeffs *coeffs,
                        struct FFIIRFilterState *state, int size,
-                       const float *src, int sstep, void *dst, int dstep);
+                       const float *src, int sstep, float *dst, int dstep);
 
 #endif /* AVCODEC_IIRFILTER_H */

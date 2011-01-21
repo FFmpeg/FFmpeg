@@ -269,7 +269,7 @@ void ff_iir_filter(const struct FFIIRFilterCoeffs *c,
 
 void ff_iir_filter_flt(const struct FFIIRFilterCoeffs *c,
                        struct FFIIRFilterState *s, int size,
-                       const float *src, int sstep, void *dst, int dstep)
+                       const float *src, int sstep, float *dst, int dstep)
 {
     if (c->order == 4) {
         FILTER_BW_O4(float, FLT)
