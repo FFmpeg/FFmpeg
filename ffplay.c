@@ -58,6 +58,7 @@
 const char program_name[] = "FFplay";
 const int program_birth_year = 2003;
 
+//#define DEBUG
 //#define DEBUG_SYNC
 
 #define MAX_QUEUE_SIZE (15 * 1024 * 1024)
@@ -1853,12 +1854,12 @@ static int video_thread(void *arg)
         }
 
         if (av_cmp_q(tb, is->video_st->time_base)) {
-            int64_t pts1 = pts_int;
+            av_unused int64_t pts1 = pts_int;
             pts_int = av_rescale_q(pts_int, tb, is->video_st->time_base);
-            av_log(NULL, AV_LOG_DEBUG, "video_thread(): "
-                   "tb:%d/%d pts:%"PRId64" -> tb:%d/%d pts:%"PRId64"\n",
-                   tb.num, tb.den, pts1,
-                   is->video_st->time_base.num, is->video_st->time_base.den, pts_int);
+            av_dlog(NULL, "video_thread(): "
+                    "tb:%d/%d pts:%"PRId64" -> tb:%d/%d pts:%"PRId64"\n",
+                    tb.num, tb.den, pts1,
+                    is->video_st->time_base.num, is->video_st->time_base.den, pts_int);
         }
 #else
         ret = get_video_frame(is, frame, &pts_int, &pkt);
