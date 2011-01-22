@@ -706,7 +706,7 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
     else
         avctx->sample_fmt = AV_SAMPLE_FMT_S32;
     if(avctx->channels <= 2 && !avctx->channel_layout)
-    avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
+        avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
 
     s->multichannel = avctx->channels > 2;
     /* lavf demuxer does not provide extradata, Matroska stores 0x403
@@ -775,11 +775,11 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     }
 
     if(!wc->mkv_mode){
-    s->samples = AV_RL32(buf); buf += 4;
-    if(!s->samples){
-        *data_size = 0;
-        return buf_size;
-    }
+        s->samples = AV_RL32(buf); buf += 4;
+        if(!s->samples){
+            *data_size = 0;
+            return buf_size;
+        }
     }else{
         s->samples = wc->samples;
     }
