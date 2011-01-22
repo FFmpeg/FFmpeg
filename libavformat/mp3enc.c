@@ -79,23 +79,25 @@ static void id3v2_put_size(AVFormatContext *s, int size)
 /**
  * Write a text frame with one (normal frames) or two (TXXX frames) strings
  * according to encoding (only UTF-8 or UTF-16+BOM supported).
- * @return number of bytes written.
+ * @return number of bytes written or a negative error code.
  */
 static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2,
-                           uint32_t tag, enum ID3v2Encoding enc)
+                          uint32_t tag, enum ID3v2Encoding enc)
 {
     int len;
     uint8_t *pb;
-    void (*put)(ByteIOContext*, const char*) = avio_put_str;
+    int (*put)(ByteIOContext*, const char*);
     ByteIOContext *dyn_buf;
     if (url_open_dyn_buf(&dyn_buf) < 0)
-        return 0;
+        return AVERROR(ENOMEM);
 
     put_byte(dyn_buf, enc);
     if (enc == ID3v2_ENCODING_UTF16BOM) {
         put_le16(dyn_buf, 0xFEFF);      /* BOM */
         put = avio_put_str16le;
-    }
+    } else
+        put = avio_put_str;
+
     put(dyn_buf, str1);
     if (str2)
         put(dyn_buf, str2);
@@ -167,20 +169,25 @@ static int mp3_write_header(struct AVFormatContext *s)
     ff_metadata_conv(&s->metadata, ff_id3v2_metadata_conv, NULL);
     while ((t = av_metadata_get(s->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
         uint32_t tag = 0;
+        int ret;
 
         if (t->key[0] == 'T' && strlen(t->key) == 4) {
             int i;
             for (i = 0; *ff_id3v2_tags[i]; i++)
                 if (AV_RB32(t->key) == AV_RB32(ff_id3v2_tags[i])) {
                     tag = AV_RB32(t->key);
-                    totlen += id3v2_put_ttag(s, t->value, NULL, tag, ID3v2_ENCODING_UTF8);
+                    if ((ret = id3v2_put_ttag(s, t->value, NULL, tag, ID3v2_ENCODING_UTF8)) < 0)
+                        return ret;
+                    totlen += ret;
                     break;
                 }
         }
 
         if (!tag) { /* unknown tag, write as TXXX frame */
             tag = MKBETAG('T', 'X', 'X', 'X');
-            totlen += id3v2_put_ttag(s, t->key, t->value, tag, ID3v2_ENCODING_UTF8);
+            if ((ret = id3v2_put_ttag(s, t->key, t->value, tag, ID3v2_ENCODING_UTF8)) < 0)
+                return ret;
+            totlen += ret;
         }
     }
 
