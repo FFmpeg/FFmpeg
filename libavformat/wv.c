@@ -85,25 +85,25 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb, int app
 
     wc->pos = url_ftell(pb);
     if(!append){
-    tag = get_le32(pb);
-    if (tag != MKTAG('w', 'v', 'p', 'k'))
-        return -1;
-    size = get_le32(pb);
-    if(size < 24 || size > WV_BLOCK_LIMIT){
-        av_log(ctx, AV_LOG_ERROR, "Incorrect block size %i\n", size);
-        return -1;
-    }
-    wc->blksize = size;
-    ver = get_le16(pb);
-    if(ver < 0x402 || ver > 0x410){
-        av_log(ctx, AV_LOG_ERROR, "Unsupported version %03X\n", ver);
-        return -1;
-    }
-    get_byte(pb); // track no
-    get_byte(pb); // track sub index
-    wc->samples = get_le32(pb); // total samples in file
-    wc->soff = get_le32(pb); // offset in samples of current block
-    get_buffer(pb, wc->extra, WV_EXTRA_SIZE);
+        tag = get_le32(pb);
+        if (tag != MKTAG('w', 'v', 'p', 'k'))
+            return -1;
+        size = get_le32(pb);
+        if(size < 24 || size > WV_BLOCK_LIMIT){
+            av_log(ctx, AV_LOG_ERROR, "Incorrect block size %i\n", size);
+            return -1;
+        }
+        wc->blksize = size;
+        ver = get_le16(pb);
+        if(ver < 0x402 || ver > 0x410){
+            av_log(ctx, AV_LOG_ERROR, "Unsupported version %03X\n", ver);
+            return -1;
+        }
+        get_byte(pb); // track no
+        get_byte(pb); // track sub index
+        wc->samples = get_le32(pb); // total samples in file
+        wc->soff = get_le32(pb); // offset in samples of current block
+        get_buffer(pb, wc->extra, WV_EXTRA_SIZE);
     }else{
         size = wc->blksize;
     }
