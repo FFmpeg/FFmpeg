@@ -226,4 +226,18 @@ void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
  */
 int ff_find_stream_index(AVFormatContext *s, int id);
 
+/**
+ * Internal version of av_index_search_timestamp
+ */
+int ff_index_search_timestamp(const AVIndexEntry *entries, int nb_entries,
+                              int64_t wanted_timestamp, int flags);
+
+/**
+ * Internal version of av_add_index_entry
+ */
+int ff_add_index_entry(AVIndexEntry **index_entries,
+                       int *nb_index_entries,
+                       unsigned int *index_entries_allocated_size,
+                       int64_t pos, int64_t timestamp, int size, int distance, int flags);
+
 #endif /* AVFORMAT_INTERNAL_H */

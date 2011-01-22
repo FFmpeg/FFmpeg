@@ -28,6 +28,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 #include "asf.h"
 #include "mpegts.h"
