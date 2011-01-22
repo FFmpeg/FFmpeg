@@ -638,10 +638,10 @@ static void free_tables(H264Context *h, int free_rbsp){
         av_freep(&hx->top_borders[0]);
         av_freep(&hx->s.obmc_scratchpad);
         if (free_rbsp){
-        av_freep(&hx->rbsp_buffer[1]);
-        av_freep(&hx->rbsp_buffer[0]);
-        hx->rbsp_buffer_size[0] = 0;
-        hx->rbsp_buffer_size[1] = 0;
+            av_freep(&hx->rbsp_buffer[1]);
+            av_freep(&hx->rbsp_buffer[0]);
+            hx->rbsp_buffer_size[0] = 0;
+            hx->rbsp_buffer_size[1] = 0;
         }
         if (i) av_freep(&h->thread_context[i]);
     }
