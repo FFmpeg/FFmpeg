@@ -1569,8 +1569,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         return 0;
     }
 
-    /* NOTE: ipts is the PTS of the _first_ picture beginning in
-       this packet, if any */
     is->video_st->codec->reordered_opaque = pkt->pts;
     len1 = avcodec_decode_video2(is->video_st->codec,
                                  frame, &got_picture,
