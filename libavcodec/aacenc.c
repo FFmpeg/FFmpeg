@@ -149,6 +149,11 @@ static void put_audio_specific_config(AVCodecContext *avctx)
     put_bits(&pb, 1, 0); //frame length - 1024 samples
     put_bits(&pb, 1, 0); //does not depend on core coder
     put_bits(&pb, 1, 0); //is not extension
+
+    //Explicitly Mark SBR absent
+    put_bits(&pb, 11, 0x27b); //sync extension
+    put_bits(&pb, 5,  AOT_SBR);
+    put_bits(&pb, 1,  0);
     flush_put_bits(&pb);
 }
 
@@ -193,8 +198,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     s->samples            = av_malloc(2 * 1024 * avctx->channels * sizeof(s->samples[0]));
     s->cpe                = av_mallocz(sizeof(ChannelElement) * aac_chan_configs[avctx->channels-1][0]);
-    avctx->extradata      = av_mallocz(2 + FF_INPUT_BUFFER_PADDING_SIZE);
-    avctx->extradata_size = 2;
+    avctx->extradata      = av_mallocz(5 + FF_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata_size = 5;
     put_audio_specific_config(avctx);
 
     sizes[0]   = swb_size_1024[i];
