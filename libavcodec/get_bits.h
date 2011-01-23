@@ -39,12 +39,11 @@
 #   define ALT_BITSTREAM_READER
 #endif
 
-#if !defined(LIBMPEG2_BITSTREAM_READER) && !defined(A32_BITSTREAM_READER) && !defined(ALT_BITSTREAM_READER)
+#if !defined(A32_BITSTREAM_READER) && !defined(ALT_BITSTREAM_READER)
 #   if ARCH_ARM && !HAVE_FAST_UNALIGNED
 #       define A32_BITSTREAM_READER
 #   else
 #       define ALT_BITSTREAM_READER
-//#define LIBMPEG2_BITSTREAM_READER
 //#define A32_BITSTREAM_READER
 #   endif
 #endif
@@ -55,10 +54,6 @@ typedef struct GetBitContext {
     const uint8_t *buffer, *buffer_end;
 #ifdef ALT_BITSTREAM_READER
     int index;
-#elif defined LIBMPEG2_BITSTREAM_READER
-    uint8_t *buffer_ptr;
-    uint32_t cache;
-    int bit_count;
 #elif defined A32_BITSTREAM_READER
     uint32_t *buffer_ptr;
     uint32_t cache0;
@@ -189,66 +184,6 @@ static inline void skip_bits_long(GetBitContext *s, int n){
     s->index += n;
 }
 
-#elif defined LIBMPEG2_BITSTREAM_READER
-//libmpeg2 like reader
-
-#   define MIN_CACHE_BITS 17
-
-#   define OPEN_READER(name, gb)\
-        int name##_bit_count=(gb)->bit_count;\
-        int name##_cache= (gb)->cache;\
-        uint8_t * name##_buffer_ptr=(gb)->buffer_ptr;\
-
-#   define CLOSE_READER(name, gb)\
-        (gb)->bit_count= name##_bit_count;\
-        (gb)->cache= name##_cache;\
-        (gb)->buffer_ptr= name##_buffer_ptr;\
-
-#   define UPDATE_CACHE(name, gb)\
-    if(name##_bit_count >= 0){\
-        name##_cache+= AV_RB16(name##_buffer_ptr) << name##_bit_count; \
-        name##_buffer_ptr+=2;\
-        name##_bit_count-= 16;\
-    }\
-
-#   define SKIP_CACHE(name, gb, num)\
-        name##_cache <<= (num);\
-
-#   define SKIP_COUNTER(name, gb, num)\
-        name##_bit_count += (num);\
-
-#   define SKIP_BITS(name, gb, num)\
-        {\
-            SKIP_CACHE(name, gb, num)\
-            SKIP_COUNTER(name, gb, num)\
-        }\
-
-#   define LAST_SKIP_BITS(name, gb, num) SKIP_BITS(name, gb, num)
-#   define LAST_SKIP_CACHE(name, gb, num) SKIP_CACHE(name, gb, num)
-
-#   define SHOW_UBITS(name, gb, num)\
-        NEG_USR32(name##_cache, num)
-
-#   define SHOW_SBITS(name, gb, num)\
-        NEG_SSR32(name##_cache, num)
-
-#   define GET_CACHE(name, gb)\
-        ((uint32_t)name##_cache)
-
-static inline int get_bits_count(const GetBitContext *s){
-    return (s->buffer_ptr - s->buffer)*8 - 16 + s->bit_count;
-}
-
-static inline void skip_bits_long(GetBitContext *s, int n){
-    OPEN_READER(re, s)
-    re_bit_count += n;
-    re_buffer_ptr += 2*(re_bit_count>>4);
-    re_bit_count &= 15;
-    re_cache = ((re_buffer_ptr[-2]<<8) + re_buffer_ptr[-1]) << (16+re_bit_count);
-    UPDATE_CACHE(re, s)
-    CLOSE_READER(re, s)
-}
-
 #elif defined A32_BITSTREAM_READER
 
 #   define MIN_CACHE_BITS 32
@@ -356,8 +291,7 @@ static inline int get_sbits(GetBitContext *s, int n){
 }
 
 /**
- * reads 1-17 bits.
- * Note, the alt bitstream reader can read up to 25 bits, but the libmpeg2 reader can't
+ * Read 1-25 bits.
  */
 static inline unsigned int get_bits(GetBitContext *s, int n){
     register int tmp;
@@ -370,8 +304,7 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
 }
 
 /**
- * shows 1-17 bits.
- * Note, the alt bitstream reader can read up to 25 bits, but the libmpeg2 reader can't
+ * Shows 1-25 bits.
  */
 static inline unsigned int show_bits(GetBitContext *s, int n){
     register int tmp;
@@ -484,10 +417,6 @@ static inline void init_get_bits(GetBitContext *s,
     s->buffer_end= buffer + buffer_size;
 #ifdef ALT_BITSTREAM_READER
     s->index=0;
-#elif defined LIBMPEG2_BITSTREAM_READER
-    s->buffer_ptr = (uint8_t*)((intptr_t)buffer&(~1));
-    s->bit_count = 16 + 8*((intptr_t)buffer&1);
-    skip_bits_long(s, 0);
 #elif defined A32_BITSTREAM_READER
     s->buffer_ptr = (uint32_t*)((intptr_t)buffer&(~3));
     s->bit_count = 32 + 8*((intptr_t)buffer&3);
