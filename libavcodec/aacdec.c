@@ -1062,9 +1062,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
 
                             UPDATE_CACHE(re, gb);
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
-#if MIN_CACHE_BITS < 20
-                            UPDATE_CACHE(re, gb);
-#endif
                             cb_idx = cb_vector_idx[code];
                             nnz = cb_idx >> 8 & 15;
                             bits = SHOW_UBITS(re, gb, nnz) << (32-nnz);
@@ -1157,12 +1154,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                                         return -1;
                                     }
 
-#if MIN_CACHE_BITS < 21
-                                    LAST_SKIP_BITS(re, gb, b + 1);
-                                    UPDATE_CACHE(re, gb);
-#else
                                     SKIP_BITS(re, gb, b + 1);
-#endif
                                     b += 4;
                                     n = (1 << b) + SHOW_UBITS(re, gb, b);
                                     LAST_SKIP_BITS(re, gb, b);
