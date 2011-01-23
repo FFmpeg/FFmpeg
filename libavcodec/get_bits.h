@@ -525,6 +525,27 @@ static av_always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
     return code;
 }
 
+static inline int decode012(GetBitContext *gb){
+    int n;
+    n = get_bits1(gb);
+    if (n == 0)
+        return 0;
+    else
+        return get_bits1(gb) + 1;
+}
+
+static inline int decode210(GetBitContext *gb){
+    if (get_bits1(gb))
+        return 0;
+    else
+        return 2 - get_bits1(gb);
+}
+
+static inline int get_bits_left(GetBitContext *gb)
+{
+    return gb->size_in_bits - get_bits_count(gb);
+}
+
 //#define TRACE
 
 #ifdef TRACE
@@ -584,26 +605,5 @@ static inline int get_xbits_trace(GetBitContext *s, int n, char *file,
 #else //TRACE
 #define tprintf(p, ...) {}
 #endif
-
-static inline int decode012(GetBitContext *gb){
-    int n;
-    n = get_bits1(gb);
-    if (n == 0)
-        return 0;
-    else
-        return get_bits1(gb) + 1;
-}
-
-static inline int decode210(GetBitContext *gb){
-    if (get_bits1(gb))
-        return 0;
-    else
-        return 2 - get_bits1(gb);
-}
-
-static inline int get_bits_left(GetBitContext *gb)
-{
-    return gb->size_in_bits - get_bits_count(gb);
-}
 
 #endif /* AVCODEC_GET_BITS_H */
