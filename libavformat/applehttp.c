@@ -181,7 +181,7 @@ struct variant_info {
 static void handle_variant_args(struct variant_info *info, const char *key,
                                 int key_len, char **dest, int *dest_len)
 {
-    if (strncmp(key, "BANDWIDTH", key_len)) {
+    if (!strncmp(key, "BANDWIDTH=", key_len)) {
         *dest     =        info->bandwidth;
         *dest_len = sizeof(info->bandwidth);
     }
