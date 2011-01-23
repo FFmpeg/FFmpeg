@@ -460,6 +460,15 @@ unsigned int get_le32(ByteIOContext *s);
 uint64_t get_le64(ByteIOContext *s);
 unsigned int get_le16(ByteIOContext *s);
 
+/**
+ * Read a UTF-16 string from pb and convert it to UTF-8.
+ * The reading will terminate when either a null or invalid character was
+ * encountered or maxlen bytes have been read.
+ * @return number of bytes read (is always <= maxlen)
+ */
+int avio_get_str16le(ByteIOContext *pb, int maxlen, char *buf, int buflen);
+int avio_get_str16be(ByteIOContext *pb, int maxlen, char *buf, int buflen);
+
 char *get_strz(ByteIOContext *s, char *buf, int maxlen);
 unsigned int get_be16(ByteIOContext *s);
 unsigned int get_be24(ByteIOContext *s);
