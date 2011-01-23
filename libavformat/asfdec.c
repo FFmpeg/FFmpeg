@@ -103,24 +103,6 @@ void ff_get_guid(ByteIOContext *s, ff_asf_guid *g)
     get_buffer(s, *g, sizeof(*g));
 }
 
-#if 0
-static void get_str16(ByteIOContext *pb, char *buf, int buf_size)
-{
-    int len, c;
-    char *q;
-
-    len = get_le16(pb);
-    q = buf;
-    while (len > 0) {
-        c = get_le16(pb);
-        if ((q - buf) < buf_size - 1)
-            *q++ = c;
-        len--;
-    }
-    *q = '\0';
-}
-#endif
-
 static int asf_probe(AVProbeData *pd)
 {
     /* check file header */
@@ -567,31 +549,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     url_fskip(pb, name_len - ret);
                 ff_new_chapter(s, i, (AVRational){1, 10000000}, pres_time, AV_NOPTS_VALUE, name );
             }
-#if 0
-        } else if (!ff_guidcmp(&g, &ff_asf_codec_comment_header)) {
-            int len, v1, n, num;
-            char str[256], *q;
-            char tag[16];
-
-            ff_get_guid(pb, &g);
-            print_guid(&g);
-
-            n = get_le32(pb);
-            for(i=0;i<n;i++) {
-                num = get_le16(pb); /* stream number */
-                get_str16(pb, str, sizeof(str));
-                get_str16(pb, str, sizeof(str));
-                len = get_le16(pb);
-                q = tag;
-                while (len > 0) {
-                    v1 = get_byte(pb);
-                    if ((q - tag) < sizeof(tag) - 1)
-                        *q++ = v1;
-                    len--;
-                }
-                *q = '\0';
-            }
-#endif
         } else if (url_feof(pb)) {
             return -1;
         } else {
