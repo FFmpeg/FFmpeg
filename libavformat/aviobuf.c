@@ -602,6 +602,28 @@ int ff_get_line(ByteIOContext *s, char *buf, int maxlen)
     return i;
 }
 
+#define GET_STR16(type, read) \
+    int avio_get_str16 ##type(ByteIOContext *pb, int maxlen, char *buf, int buflen)\
+{\
+    char* q = buf;\
+    int ret = 0;\
+    while (ret + 1 < maxlen) {\
+        uint8_t tmp;\
+        uint32_t ch;\
+        GET_UTF16(ch, (ret += 2) <= maxlen ? read(pb) : 0, break;)\
+        if (!ch)\
+            break;\
+        PUT_UTF8(ch, tmp, if (q - buf < buflen - 1) *q++ = tmp;)\
+    }\
+    *q = 0;\
+    return ret;\
+}\
+
+GET_STR16(le, get_le16)
+GET_STR16(be, get_be16)
+
+#undef GET_STR16
+
 uint64_t get_be64(ByteIOContext *s)
 {
     uint64_t val;
