@@ -1192,19 +1192,6 @@ static int modify_current_stream(HTTPContext *c, char *rates)
     return action_required;
 }
 
-
-static void do_switch_stream(HTTPContext *c, int i)
-{
-    if (c->switch_feed_streams[i] >= 0) {
-#ifdef PHILIP
-        c->feed_streams[i] = c->switch_feed_streams[i];
-#endif
-
-        /* Now update the stream */
-    }
-    c->switch_feed_streams[i] = -1;
-}
-
 /* XXX: factorize in utils.c ? */
 /* XXX: take care with different space meaning */
 static void skip_spaces(const char **pp)
@@ -1578,7 +1565,7 @@ static int http_parse_request(HTTPContext *c)
         if (modify_current_stream(c, ratebuf)) {
             for (i = 0; i < FF_ARRAY_ELEMS(c->feed_streams); i++) {
                 if (c->switch_feed_streams[i] >= 0)
-                    do_switch_stream(c, i);
+                    c->switch_feed_streams[i] = -1;
             }
         }
     }
@@ -2349,7 +2336,7 @@ static int http_prepare_data(HTTPContext *c)
                         for(i=0;i<c->stream->nb_streams;i++) {
                             if (c->switch_feed_streams[i] == pkt.stream_index)
                                 if (pkt.flags & AV_PKT_FLAG_KEY)
-                                    do_switch_stream(c, i);
+                                    c->switch_feed_streams[i] = -1;
                             if (c->switch_feed_streams[i] >= 0)
                                 c->switch_pending = 1;
                         }
