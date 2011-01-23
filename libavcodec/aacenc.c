@@ -151,7 +151,7 @@ static void put_audio_specific_config(AVCodecContext *avctx)
     put_bits(&pb, 1, 0); //is not extension
 
     //Explicitly Mark SBR absent
-    put_bits(&pb, 11, 0x27b); //sync extension
+    put_bits(&pb, 11, 0x2b7); //sync extension
     put_bits(&pb, 5,  AOT_SBR);
     put_bits(&pb, 1,  0);
     flush_put_bits(&pb);
