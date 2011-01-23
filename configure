@@ -2987,6 +2987,8 @@ elif enabled armcc; then
     add_cflags -W${armcc_opt},--diag_suppress=3343 # hardfp compat
 elif enabled tms470; then
     add_cflags -pds=824 -pds=837
+elif enabled pathscale; then
+    add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
 fi
 
 enabled_any $THREADS_LIST      && enable threads
