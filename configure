@@ -2306,6 +2306,7 @@ case $target_os in
         nm_opts='-P -g'
         ;;
     netbsd)
+        disable symver
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
         add_cppflags -D_XOPEN_SOURCE=600
@@ -2318,11 +2319,16 @@ case $target_os in
         # (simply quits with exit-code 1, no crash, no output).
         # Thus explicitly enable PIC here.
         enable pic
+        disable symver
         SHFLAGS='-shared'
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
         ;;
-    freebsd|dragonfly)
+    dragonfly)
+        enable malloc_aligned
+        disable symver
+        ;;
+    freebsd)
         enable malloc_aligned
         ;;
     bsd/os)
