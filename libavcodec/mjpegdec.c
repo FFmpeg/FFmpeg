@@ -416,16 +416,16 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     block[0] = val;
     /* AC coefs */
     i = 0;
-    {OPEN_READER(re, &s->gb)
+    {OPEN_READER(re, &s->gb);
     do {
         UPDATE_CACHE(re, &s->gb);
-        GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2)
+        GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2);
 
         i += ((unsigned)code) >> 4;
             code &= 0xf;
         if(code){
             if(code > MIN_CACHE_BITS - 16){
-                UPDATE_CACHE(re, &s->gb)
+                UPDATE_CACHE(re, &s->gb);
             }
             {
                 int cache=GET_CACHE(re,&s->gb);
@@ -433,7 +433,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
                 level = (NEG_USR32(sign ^ cache,code) ^ sign) - sign;
             }
 
-            LAST_SKIP_BITS(re, &s->gb, code)
+            LAST_SKIP_BITS(re, &s->gb, code);
 
             if (i > 63) {
                 av_log(s->avctx, AV_LOG_ERROR, "error count: %d\n", i);
@@ -443,7 +443,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
             block[j] = level * quant_matrix[j];
         }
     }while(i<63);
-    CLOSE_READER(re, &s->gb)}
+    CLOSE_READER(re, &s->gb);}
 
     return 0;
 }
@@ -475,17 +475,17 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block, uint8
         (*EOBRUN)--;
         return 0;
     }
-    {OPEN_READER(re, &s->gb)
+    {OPEN_READER(re, &s->gb);
     for(i=ss;;i++) {
         UPDATE_CACHE(re, &s->gb);
-        GET_VLC(code, re, &s->gb, s->vlcs[2][ac_index].table, 9, 2)
+        GET_VLC(code, re, &s->gb, s->vlcs[2][ac_index].table, 9, 2);
 
         run = ((unsigned) code) >> 4;
         code &= 0xF;
         if(code) {
             i += run;
             if(code > MIN_CACHE_BITS - 16){
-                UPDATE_CACHE(re, &s->gb)
+                UPDATE_CACHE(re, &s->gb);
             }
             {
                 int cache=GET_CACHE(re,&s->gb);
@@ -493,7 +493,7 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block, uint8
                 level = (NEG_USR32(sign ^ cache,code) ^ sign) - sign;
             }
 
-            LAST_SKIP_BITS(re, &s->gb, code)
+            LAST_SKIP_BITS(re, &s->gb, code);
 
             if (i >= se) {
                 if(i == se){
@@ -525,7 +525,7 @@ static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block, uint8
             }
         }
     }
-    CLOSE_READER(re, &s->gb)}
+    CLOSE_READER(re, &s->gb);}
     if(i > *last_nnz)
         *last_nnz = i;
     return 0;
@@ -569,7 +569,7 @@ static int decode_block_refinement(MJpegDecodeContext *s, DCTELEM *block, uint8_
     else {
         for(;;i++) {
             UPDATE_CACHE(re, &s->gb);
-            GET_VLC(code, re, &s->gb, s->vlcs[2][ac_index].table, 9, 2)
+            GET_VLC(code, re, &s->gb, s->vlcs[2][ac_index].table, 9, 2);
 
             if(code & 0xF) {
                 run = ((unsigned) code) >> 4;
@@ -583,7 +583,7 @@ static int decode_block_refinement(MJpegDecodeContext *s, DCTELEM *block, uint8_
                 if(i == se) {
                     if(i > *last_nnz)
                         *last_nnz = i;
-                    CLOSE_READER(re, &s->gb)
+                    CLOSE_READER(re, &s->gb);
                     return 0;
                 }
             }else{

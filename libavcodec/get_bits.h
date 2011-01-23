@@ -127,37 +127,37 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 
 #   define OPEN_READER(name, gb)\
         unsigned int name##_index= (gb)->index;\
-        int name##_cache= 0;\
+        int name##_cache= 0
 
 #   define CLOSE_READER(name, gb)\
-        (gb)->index= name##_index;\
+        (gb)->index= name##_index
 
 # ifdef ALT_BITSTREAM_READER_LE
 #   define UPDATE_CACHE(name, gb)\
-        name##_cache= AV_RL32( ((const uint8_t *)(gb)->buffer)+(name##_index>>3) ) >> (name##_index&0x07);\
+        name##_cache= AV_RL32( ((const uint8_t *)(gb)->buffer)+(name##_index>>3) ) >> (name##_index&0x07)
 
 #   define SKIP_CACHE(name, gb, num)\
-        name##_cache >>= (num);
+        name##_cache >>= (num)
 # else
 #   define UPDATE_CACHE(name, gb)\
-        name##_cache= AV_RB32( ((const uint8_t *)(gb)->buffer)+(name##_index>>3) ) << (name##_index&0x07);\
+        name##_cache= AV_RB32( ((const uint8_t *)(gb)->buffer)+(name##_index>>3) ) << (name##_index&0x07)
 
 #   define SKIP_CACHE(name, gb, num)\
-        name##_cache <<= (num);
+        name##_cache <<= (num)
 # endif
 
 // FIXME name?
 #   define SKIP_COUNTER(name, gb, num)\
-        name##_index += (num);\
+        name##_index += (num)
 
 #   define SKIP_BITS(name, gb, num)\
-        {\
-            SKIP_CACHE(name, gb, num)\
-            SKIP_COUNTER(name, gb, num)\
-        }\
+        do {\
+            SKIP_CACHE(name, gb, num);\
+            SKIP_COUNTER(name, gb, num);\
+        } while (0)
 
 #   define LAST_SKIP_BITS(name, gb, num) SKIP_COUNTER(name, gb, num)
-#   define LAST_SKIP_CACHE(name, gb, num) ;
+#   define LAST_SKIP_CACHE(name, gb, num)
 
 # ifdef ALT_BITSTREAM_READER_LE
 #   define SHOW_UBITS(name, gb, num)\
@@ -192,15 +192,16 @@ static inline void skip_bits_long(GetBitContext *s, int n){
         int name##_bit_count=(gb)->bit_count;\
         uint32_t name##_cache0= (gb)->cache0;\
         uint32_t name##_cache1= (gb)->cache1;\
-        uint32_t * name##_buffer_ptr=(gb)->buffer_ptr;\
+        uint32_t * name##_buffer_ptr=(gb)->buffer_ptr
 
-#   define CLOSE_READER(name, gb)\
+#   define CLOSE_READER(name, gb) do {\
         (gb)->bit_count= name##_bit_count;\
         (gb)->cache0= name##_cache0;\
         (gb)->cache1= name##_cache1;\
         (gb)->buffer_ptr= name##_buffer_ptr;\
+    } while (0)
 
-#   define UPDATE_CACHE(name, gb)\
+#   define UPDATE_CACHE(name, gb) do {\
     if(name##_bit_count > 0){\
         const uint32_t next= av_be2ne32( *name##_buffer_ptr );\
         name##_cache0 |= NEG_USR32(next,name##_bit_count);\
@@ -208,6 +209,7 @@ static inline void skip_bits_long(GetBitContext *s, int n){
         name##_buffer_ptr++;\
         name##_bit_count-= 32;\
     }\
+} while (0)
 
 #if ARCH_X86
 #   define SKIP_CACHE(name, gb, num)\
@@ -216,22 +218,23 @@ static inline void skip_bits_long(GetBitContext *s, int n){
             "shll %2, %1               \n\t"\
             : "+r" (name##_cache0), "+r" (name##_cache1)\
             : "Ic" ((uint8_t)(num))\
-           );
+           )
 #else
-#   define SKIP_CACHE(name, gb, num)\
+#   define SKIP_CACHE(name, gb, num) do {\
         name##_cache0 <<= (num);\
         name##_cache0 |= NEG_USR32(name##_cache1,num);\
-        name##_cache1 <<= (num);
+        name##_cache1 <<= (num);\
+    } while (0)
 #endif
 
 #   define SKIP_COUNTER(name, gb, num)\
-        name##_bit_count += (num);\
+        name##_bit_count += (num)
 
 #   define SKIP_BITS(name, gb, num)\
-        {\
-            SKIP_CACHE(name, gb, num)\
-            SKIP_COUNTER(name, gb, num)\
-        }\
+        do {\
+            SKIP_CACHE(name, gb, num);\
+            SKIP_COUNTER(name, gb, num);\
+        } while (0)
 
 #   define LAST_SKIP_BITS(name, gb, num) SKIP_BITS(name, gb, num)
 #   define LAST_SKIP_CACHE(name, gb, num) SKIP_CACHE(name, gb, num)
@@ -250,14 +253,14 @@ static inline int get_bits_count(const GetBitContext *s){
 }
 
 static inline void skip_bits_long(GetBitContext *s, int n){
-    OPEN_READER(re, s)
+    OPEN_READER(re, s);
     re_bit_count += n;
     re_buffer_ptr += re_bit_count>>5;
     re_bit_count &= 31;
     re_cache0 = av_be2ne32( re_buffer_ptr[-1] ) << re_bit_count;
     re_cache1 = 0;
-    UPDATE_CACHE(re, s)
-    CLOSE_READER(re, s)
+    UPDATE_CACHE(re, s);
+    CLOSE_READER(re, s);
 }
 
 #endif
@@ -271,22 +274,22 @@ static inline void skip_bits_long(GetBitContext *s, int n){
 static inline int get_xbits(GetBitContext *s, int n){
     register int sign;
     register int32_t cache;
-    OPEN_READER(re, s)
-    UPDATE_CACHE(re, s)
+    OPEN_READER(re, s);
+    UPDATE_CACHE(re, s);
     cache = GET_CACHE(re,s);
     sign=(~cache)>>31;
-    LAST_SKIP_BITS(re, s, n)
-    CLOSE_READER(re, s)
+    LAST_SKIP_BITS(re, s, n);
+    CLOSE_READER(re, s);
     return (NEG_USR32(sign ^ cache, n) ^ sign) - sign;
 }
 
 static inline int get_sbits(GetBitContext *s, int n){
     register int tmp;
-    OPEN_READER(re, s)
-    UPDATE_CACHE(re, s)
+    OPEN_READER(re, s);
+    UPDATE_CACHE(re, s);
     tmp= SHOW_SBITS(re, s, n);
-    LAST_SKIP_BITS(re, s, n)
-    CLOSE_READER(re, s)
+    LAST_SKIP_BITS(re, s, n);
+    CLOSE_READER(re, s);
     return tmp;
 }
 
@@ -295,11 +298,11 @@ static inline int get_sbits(GetBitContext *s, int n){
  */
 static inline unsigned int get_bits(GetBitContext *s, int n){
     register int tmp;
-    OPEN_READER(re, s)
-    UPDATE_CACHE(re, s)
+    OPEN_READER(re, s);
+    UPDATE_CACHE(re, s);
     tmp= SHOW_UBITS(re, s, n);
-    LAST_SKIP_BITS(re, s, n)
-    CLOSE_READER(re, s)
+    LAST_SKIP_BITS(re, s, n);
+    CLOSE_READER(re, s);
     return tmp;
 }
 
@@ -308,8 +311,8 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
  */
 static inline unsigned int show_bits(GetBitContext *s, int n){
     register int tmp;
-    OPEN_READER(re, s)
-    UPDATE_CACHE(re, s)
+    OPEN_READER(re, s);
+    UPDATE_CACHE(re, s);
     tmp= SHOW_UBITS(re, s, n);
 //    CLOSE_READER(re, s)
     return tmp;
@@ -317,10 +320,10 @@ static inline unsigned int show_bits(GetBitContext *s, int n){
 
 static inline void skip_bits(GetBitContext *s, int n){
  //Note gcc seems to optimize this to s->index+=n for the ALT_READER :))
-    OPEN_READER(re, s)
-    UPDATE_CACHE(re, s)
-    LAST_SKIP_BITS(re, s, n)
-    CLOSE_READER(re, s)
+    OPEN_READER(re, s);
+    UPDATE_CACHE(re, s);
+    LAST_SKIP_BITS(re, s, n);
+    CLOSE_READER(re, s);
 }
 
 static inline unsigned int get_bits1(GetBitContext *s){
@@ -449,12 +452,12 @@ int init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
 void free_vlc(VLC *vlc);
 
 #define INIT_VLC_STATIC(vlc, bits, a,b,c,d,e,f,g, static_size)\
-{\
+do {\
     static VLC_TYPE table[static_size][2];\
     (vlc)->table= table;\
     (vlc)->table_allocated= static_size;\
     init_vlc(vlc, bits, a,b,c,d,e,f,g, INIT_VLC_USE_NEW_STATIC);\
-}
+} while (0)
 
 
 /**
@@ -464,7 +467,7 @@ void free_vlc(VLC *vlc);
  * is undefined.
  */
 #define GET_VLC(code, name, gb, table, bits, max_depth)\
-{\
+do {\
     int n, nb_bits;\
     unsigned int index;\
 \
@@ -473,8 +476,8 @@ void free_vlc(VLC *vlc);
     n    = table[index][1];\
 \
     if(max_depth > 1 && n < 0){\
-        LAST_SKIP_BITS(name, gb, bits)\
-        UPDATE_CACHE(name, gb)\
+        LAST_SKIP_BITS(name, gb, bits);\
+        UPDATE_CACHE(name, gb);\
 \
         nb_bits = -n;\
 \
@@ -482,8 +485,8 @@ void free_vlc(VLC *vlc);
         code = table[index][0];\
         n    = table[index][1];\
         if(max_depth > 2 && n < 0){\
-            LAST_SKIP_BITS(name, gb, nb_bits)\
-            UPDATE_CACHE(name, gb)\
+            LAST_SKIP_BITS(name, gb, nb_bits);\
+            UPDATE_CACHE(name, gb);\
 \
             nb_bits = -n;\
 \
@@ -492,11 +495,11 @@ void free_vlc(VLC *vlc);
             n    = table[index][1];\
         }\
     }\
-    SKIP_BITS(name, gb, n)\
-}
+    SKIP_BITS(name, gb, n);\
+} while (0)
 
 #define GET_RL_VLC(level, run, name, gb, table, bits, max_depth, need_update)\
-{\
+do {\
     int n, nb_bits;\
     unsigned int index;\
 \
@@ -505,9 +508,9 @@ void free_vlc(VLC *vlc);
     n     = table[index].len;\
 \
     if(max_depth > 1 && n < 0){\
-        SKIP_BITS(name, gb, bits)\
+        SKIP_BITS(name, gb, bits);\
         if(need_update){\
-            UPDATE_CACHE(name, gb)\
+            UPDATE_CACHE(name, gb);\
         }\
 \
         nb_bits = -n;\
@@ -517,8 +520,8 @@ void free_vlc(VLC *vlc);
         n     = table[index].len;\
     }\
     run= table[index].run;\
-    SKIP_BITS(name, gb, n)\
-}
+    SKIP_BITS(name, gb, n);\
+} while (0)
 
 
 /**
@@ -534,12 +537,12 @@ static av_always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
 {
     int code;
 
-    OPEN_READER(re, s)
-    UPDATE_CACHE(re, s)
+    OPEN_READER(re, s);
+    UPDATE_CACHE(re, s);
 
-    GET_VLC(code, re, s, table, bits, max_depth)
+    GET_VLC(code, re, s, table, bits, max_depth);
 
-    CLOSE_READER(re, s)
+    CLOSE_READER(re, s);
     return code;
 }
 
