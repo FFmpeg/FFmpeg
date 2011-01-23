@@ -2284,8 +2284,7 @@ static void mov_read_chapters(AVFormatContext *s)
     AVStream *st = NULL;
     MOVStreamContext *sc;
     int64_t cur_pos;
-    uint8_t *title = NULL;
-    int i, len, i8, i16;
+    int i;
 
     for (i = 0; i < s->nb_streams; i++)
         if (s->streams[i]->id == mov->chapter_track) {
@@ -2304,43 +2303,33 @@ static void mov_read_chapters(AVFormatContext *s)
     for (i = 0; i < st->nb_index_entries; i++) {
         AVIndexEntry *sample = &st->index_entries[i];
         int64_t end = i+1 < st->nb_index_entries ? st->index_entries[i+1].timestamp : st->duration;
+        uint8_t title[512];
+        uint16_t ch;
+        int len;
 
         if (url_fseek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
             av_log(s, AV_LOG_ERROR, "Chapter %d not found in file\n", i);
             goto finish;
         }
 
-        title = av_malloc(sample->size+2);
-        get_buffer(sc->pb, title, sample->size);
-
         // the first two bytes are the length of the title
-        len = AV_RB16(title);
+        len = get_be16(sc->pb);
         if (len > sample->size-2)
             continue;
 
         // The samples could theoretically be in any encoding if there's an encd
         // atom following, but in practice are only utf-8 or utf-16, distinguished
         // instead by the presence of a BOM
-        if (AV_RB16(title+2) == 0xfeff) {
-            uint8_t *utf8 = av_malloc(2*len+3);
-
-            i8 = i16 = 0;
-            while (i16 < len) {
-                uint32_t ch;
-                uint8_t tmp;
-                GET_UTF16(ch, i16 < len ? AV_RB16(title + (i16+=2)) : 0, break;)
-                PUT_UTF8(ch, tmp, if (i8 < 2*len) utf8[2+i8++] = tmp;)
-            }
-            utf8[2+i8] = 0;
-            av_freep(&title);
-            title = utf8;
+        if ((ch = get_be16(sc->pb)) == 0xfeff)
+            avio_get_str16be(sc->pb, len, title, sizeof(title));
+        else {
+            AV_WB16(title, ch);
+            get_buffer(sc->pb, title + sizeof(ch), sizeof(title) - sizeof(ch));
         }
 
-        ff_new_chapter(s, i, st->time_base, sample->timestamp, end, title+2);
-        av_freep(&title);
+        ff_new_chapter(s, i, st->time_base, sample->timestamp, end, title);
     }
 finish:
-    av_free(title);
     url_fseek(sc->pb, cur_pos, SEEK_SET);
 }
 
