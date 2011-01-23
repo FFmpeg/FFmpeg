@@ -3122,6 +3122,8 @@ if enabled source_path_used; then
         libavdevice
         libavfilter
         libavfilter/$arch
+        libavfilter/libmpcodecs
+        libavfilter/libmpcodecs/libvo
         libavformat
         libavutil
         libavutil/$arch
