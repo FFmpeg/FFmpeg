@@ -825,7 +825,9 @@ need_realloc:
             if (ost->resample)
                 audio_resample_close(ost->resample);
         }
-        if (ost->resample_sample_fmt  == enc->sample_fmt &&
+        /* if audio_sync_method is >1 the resampler is needed for audio drift compensation */
+        if (audio_sync_method <= 1 &&
+            ost->resample_sample_fmt  == enc->sample_fmt &&
             ost->resample_channels    == enc->channels   &&
             ost->resample_sample_rate == enc->sample_rate) {
             ost->resample = NULL;
