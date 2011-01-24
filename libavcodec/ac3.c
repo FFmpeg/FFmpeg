@@ -237,29 +237,6 @@ void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
     } while (end > band_start_tab[band++]);
 }
 
-/* AC-3 bit allocation. The algorithm is the one described in the AC-3
-   spec. */
-void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
-                                   int8_t *exp, int start, int end,
-                                   int snr_offset, int fast_gain, int is_lfe,
-                                   int dba_mode, int dba_nsegs,
-                                   uint8_t *dba_offsets, uint8_t *dba_lengths,
-                                   uint8_t *dba_values)
-{
-    int16_t psd[AC3_MAX_COEFS];           /* scaled exponents */
-    int16_t band_psd[AC3_CRITICAL_BANDS]; /* interpolated exponents */
-    int16_t mask[AC3_CRITICAL_BANDS];   /* masking value */
-
-    ff_ac3_bit_alloc_calc_psd(exp, start, end, psd, band_psd);
-
-    ff_ac3_bit_alloc_calc_mask(s, band_psd, start, end, fast_gain, is_lfe,
-                               dba_mode, dba_nsegs, dba_offsets, dba_lengths,
-                               dba_values, mask);
-
-    ff_ac3_bit_alloc_calc_bap(mask, psd, start, end, snr_offset, s->floor,
-                              ff_ac3_bap_tab, bap);
-}
-
 /**
  * Initialize some tables.
  * note: This function must remain thread safe because it is called by the
