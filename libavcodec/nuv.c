@@ -116,8 +116,7 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height, int qualit
             return 0;
         avctx->width = c->width = width;
         avctx->height = c->height = height;
-        c->decomp_size = c->height * c->width * 3 / 2;
-        c->decomp_buf = av_realloc(c->decomp_buf, c->decomp_size + AV_LZO_OUTPUT_PADDING);
+        av_fast_malloc(&c->decomp_buf, &c->decomp_size, c->height * c->width * 3 / 2);
         if (!c->decomp_buf) {
             av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
             return 0;
