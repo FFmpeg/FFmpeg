@@ -37,8 +37,6 @@ extern const char program_name[];
  */
 extern const int program_birth_year;
 
-extern const int this_year;
-
 extern const char **opt_names;
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
