@@ -33,7 +33,7 @@
 #include "atrac.h"
 
 float sf_table[64];
-float qmf_window[48];
+static float qmf_window[48];
 
 static const float qmf_48tap_half[24] = {
    -0.00001461907, -0.00009205479,-0.000056157569,0.00030117269,
