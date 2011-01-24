@@ -51,7 +51,7 @@ static RTPDynamicProtocolHandler ff_realmedia_mp3_dynamic_handler = {
 };
 
 /* statistics functions */
-RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler= NULL;
+static RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler= NULL;
 
 void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
 {
