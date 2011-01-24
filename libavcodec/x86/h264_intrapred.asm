@@ -637,10 +637,6 @@ cglobal pred8x8_plane_%1, 2, 7, %2
 %endif
     paddw        m0, m1           ; sum of H coefficients
 
-    pmullw       m0, [pw_17]
-    paddw        m0, [pw_16]
-    psraw        m0, 5
-
     lea          r4, [r0+r2*4-1]
     lea          r3, [r0     -1]
     add          r4, r2
@@ -694,6 +690,10 @@ cglobal pred8x8_plane_%1, 2, 7, %2
     shl          r3, 4
     movd        r1d, m0
     movsx       r1d, r1w
+    imul        r1d, 17
+    add         r1d, 16
+    sar         r1d, 5
+    movd         m0, r1d
     add         r1d, r5d
     sub         r3d, r1d
     add         r1d, r1d
