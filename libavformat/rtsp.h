@@ -504,4 +504,11 @@ int ff_rtsp_tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
  */
 int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt);
 
+/**
+ * Do the SETUP requests for each stream for the chosen
+ * lower transport mode.
+ */
+int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
+                               int lower_transport, const char *real_challenge);
+
 #endif /* AVFORMAT_RTSP_H */

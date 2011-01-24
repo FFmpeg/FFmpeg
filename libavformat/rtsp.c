@@ -1017,7 +1017,7 @@ retry:
 /**
  * @return 0 on success, <0 on error, 1 if protocol is unavailable.
  */
-static int make_setup_request(AVFormatContext *s, const char *host, int port,
+int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                               int lower_transport, const char *real_challenge)
 {
     RTSPState *rt = s->priv_data;
@@ -1493,7 +1493,7 @@ redirect:
         int lower_transport = ff_log2_tab[lower_transport_mask &
                                   ~(lower_transport_mask - 1)];
 
-        err = make_setup_request(s, host, port, lower_transport,
+        err = ff_rtsp_make_setup_request(s, host, port, lower_transport,
                                  rt->server_type == RTSP_SERVER_REAL ?
                                      real_challenge : NULL);
         if (err < 0)
