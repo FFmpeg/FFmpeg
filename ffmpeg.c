@@ -172,7 +172,7 @@ static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int qp_hist = 0;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
-AVFilterGraph *graph = NULL;
+static AVFilterGraph *graph = NULL;
 #endif
 
 static int intra_only = 0;
@@ -251,7 +251,7 @@ static int64_t timer_start;
 
 static uint8_t *audio_buf;
 static uint8_t *audio_out;
-unsigned int allocated_audio_out_size, allocated_audio_buf_size;
+static unsigned int allocated_audio_out_size, allocated_audio_buf_size;
 
 static short *samples;
 
