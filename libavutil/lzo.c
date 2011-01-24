@@ -175,6 +175,14 @@ int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
     int state= 0;
     int x;
     LZOContext c;
+    if (!*outlen || !*inlen) {
+        int res = 0;
+        if (!*outlen)
+            res |= AV_LZO_OUTPUT_FULL;
+        if (!*inlen)
+            res |= AV_LZO_INPUT_DEPLETED;
+        return res;
+    }
     c.in = in;
     c.in_end = (const uint8_t *)in + *inlen;
     c.out = c.out_start = out;
