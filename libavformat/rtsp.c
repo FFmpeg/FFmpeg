@@ -1271,12 +1271,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
     return 0;
 
 fail:
-    for (i = 0; i < rt->nb_rtsp_streams; i++) {
-        if (rt->rtsp_streams[i]->rtp_handle) {
-            url_close(rt->rtsp_streams[i]->rtp_handle);
-            rt->rtsp_streams[i]->rtp_handle = NULL;
-        }
-    }
+    ff_rtsp_undo_setup(s);
     return err;
 }
 
