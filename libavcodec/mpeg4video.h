@@ -66,10 +66,7 @@ extern const uint16_t ff_mpeg4_intra_vlc[103][2];
 extern RLTable ff_mpeg4_rl_intra;
 
 /* Note this is identical to the intra rvlc except that it is reordered. */
-extern const uint16_t inter_rvlc[170][2];
 extern RLTable rvlc_rl_inter;
-
-extern const uint16_t intra_rvlc[170][2];
 extern RLTable rvlc_rl_intra;
 
 extern const uint16_t sprite_trajectory_tab[15][2];

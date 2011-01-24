@@ -115,7 +115,7 @@ RLTable ff_mpeg4_rl_intra = {
 };
 
 /* Note this is identical to the intra rvlc except that it is reordered. */
-const uint16_t inter_rvlc[170][2]={
+static const uint16_t inter_rvlc[170][2]={
 {0x0006,  3},{0x0001,  4},{0x0004,  5},{0x001C,  7},
 {0x003C,  8},{0x003D,  8},{0x007C,  9},{0x00FC, 10},
 {0x00FD, 10},{0x01FC, 11},{0x01FD, 11},{0x03FC, 12},
@@ -219,7 +219,7 @@ RLTable rvlc_rl_inter = {
     inter_rvlc_level,
 };
 
-const uint16_t intra_rvlc[170][2]={
+static const uint16_t intra_rvlc[170][2]={
 {0x0006,  3},{0x0007,  3},{0x000A,  4},{0x0009,  5},
 {0x0014,  6},{0x0015,  6},{0x0034,  7},{0x0074,  8},
 {0x0075,  8},{0x00DD,  9},{0x00EC,  9},{0x01EC, 10},
