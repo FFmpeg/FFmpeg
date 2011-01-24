@@ -86,6 +86,24 @@ static int rtsp_read_play(AVFormatContext *s)
     return 0;
 }
 
+/* pause the stream */
+static int rtsp_read_pause(AVFormatContext *s)
+{
+    RTSPState *rt = s->priv_data;
+    RTSPMessageHeader reply1, *reply = &reply1;
+
+    if (rt->state != RTSP_STATE_STREAMING)
+        return 0;
+    else if (!(rt->server_type == RTSP_SERVER_REAL && rt->need_subscription)) {
+        ff_rtsp_send_cmd(s, "PAUSE", rt->control_uri, NULL, reply, NULL);
+        if (reply->status_code != RTSP_STATUS_OK) {
+            return -1;
+        }
+    }
+    rt->state = RTSP_STATE_PAUSED;
+    return 0;
+}
+
 int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply)
 {
     RTSPState *rt = s->priv_data;
@@ -289,24 +307,6 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    return 0;
-}
-
-/* pause the stream */
-static int rtsp_read_pause(AVFormatContext *s)
-{
-    RTSPState *rt = s->priv_data;
-    RTSPMessageHeader reply1, *reply = &reply1;
-
-    if (rt->state != RTSP_STATE_STREAMING)
-        return 0;
-    else if (!(rt->server_type == RTSP_SERVER_REAL && rt->need_subscription)) {
-        ff_rtsp_send_cmd(s, "PAUSE", rt->control_uri, NULL, reply, NULL);
-        if (reply->status_code != RTSP_STATUS_OK) {
-            return -1;
-        }
-    }
-    rt->state = RTSP_STATE_PAUSED;
     return 0;
 }
 
