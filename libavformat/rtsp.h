@@ -511,4 +511,10 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt);
 int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                                int lower_transport, const char *real_challenge);
 
+/**
+ * Undo the effect of ff_rtsp_make_setup_request, close the
+ * transport_priv and rtp_handle fields.
+ */
+void ff_rtsp_undo_setup(AVFormatContext *s);
+
 #endif /* AVFORMAT_RTSP_H */
