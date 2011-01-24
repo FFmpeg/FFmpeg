@@ -45,7 +45,7 @@
 #include <float.h>
 
 static int volatile entangled_thread_counter=0;
-int (*ff_lockmgr_cb)(void **mutex, enum AVLockOp op);
+static int (*ff_lockmgr_cb)(void **mutex, enum AVLockOp op);
 static void *codec_mutex;
 
 void *av_fast_realloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_size)
