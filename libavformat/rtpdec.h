@@ -189,7 +189,6 @@ struct RTPDemuxContext {
     int max_frames_per_packet;
 };
 
-extern RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler;
 void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler);
 RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
                                                   enum AVMediaType codec_type);
