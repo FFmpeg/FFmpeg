@@ -40,8 +40,6 @@
 #include <limits.h>
 
 int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
-int dct_quantize_trellis_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
-void  denoise_dct_c(MpegEncContext *s, DCTELEM *block);
 
 /**
  * allocates a Picture
