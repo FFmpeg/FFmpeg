@@ -30,7 +30,6 @@
 
 
 extern float sf_table[64];
-extern float qmf_window[48];
 
 void atrac_generate_tables(void);
 void atrac_iqmf (float *inlo, float *inhi, unsigned int nIn, float *pOut, float *delayBuf, float *temp);
