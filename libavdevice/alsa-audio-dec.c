@@ -163,7 +163,7 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat alsa_demuxer = {
+AVInputFormat ff_alsa_demuxer = {
     "alsa",
     NULL_IF_CONFIG_SMALL("ALSA audio input"),
     sizeof(AlsaData),

@@ -178,7 +178,7 @@ static int tmv_read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat tmv_demuxer = {
+AVInputFormat ff_tmv_demuxer = {
     "tmv",
     NULL_IF_CONFIG_SMALL("8088flex TMV"),
     sizeof(TMVContext),

@@ -314,7 +314,7 @@ static int grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
-AVInputFormat bktr_demuxer = {
+AVInputFormat ff_bktr_demuxer = {
     "bktr",
     NULL_IF_CONFIG_SMALL("video grab"),
     sizeof(VideoData),

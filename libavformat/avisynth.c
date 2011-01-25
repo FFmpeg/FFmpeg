@@ -207,7 +207,7 @@ static int avisynth_read_seek(AVFormatContext *s, int stream_index, int64_t pts,
   return 0;
 }
 
-AVInputFormat avisynth_demuxer = {
+AVInputFormat ff_avisynth_demuxer = {
   "avs",
   NULL_IF_CONFIG_SMALL("AVISynth"),
   sizeof(AVISynthContext),

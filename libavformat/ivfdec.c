@@ -79,7 +79,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ivf_demuxer = {
+AVInputFormat ff_ivf_demuxer = {
     "ivf",
     NULL_IF_CONFIG_SMALL("On2 IVF"),
     0,

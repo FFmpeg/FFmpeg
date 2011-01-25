@@ -224,7 +224,7 @@ static int vid_read_packet(AVFormatContext *s,
     return 0;
 }
 
-AVInputFormat bethsoftvid_demuxer = {
+AVInputFormat ff_bethsoftvid_demuxer = {
     "bethsoftvid",
     NULL_IF_CONFIG_SMALL("Bethesda Softworks VID format"),
     sizeof(BVID_DemuxContext),

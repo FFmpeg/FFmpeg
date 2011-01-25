@@ -302,7 +302,7 @@ static int seq_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat tiertexseq_demuxer = {
+AVInputFormat ff_tiertexseq_demuxer = {
     "tiertexseq",
     NULL_IF_CONFIG_SMALL("Tiertex Limited SEQ format"),
     sizeof(SeqDemuxContext),

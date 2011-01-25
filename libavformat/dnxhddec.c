@@ -42,7 +42,7 @@ static int dnxhd_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-AVInputFormat dnxhd_demuxer = {
+AVInputFormat ff_dnxhd_demuxer = {
     "dnxhd",
     NULL_IF_CONFIG_SMALL("raw DNxHD (SMPTE VC-3)"),
     0,

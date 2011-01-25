@@ -55,7 +55,7 @@ static int mpegvideo_probe(AVProbeData *p)
     return 0;
 }
 
-AVInputFormat mpegvideo_demuxer = {
+AVInputFormat ff_mpegvideo_demuxer = {
     "mpegvideo",
     NULL_IF_CONFIG_SMALL("raw MPEG video"),
     0,

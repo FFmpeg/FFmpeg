@@ -225,7 +225,7 @@ static int spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat spdif_demuxer = {
+AVInputFormat ff_spdif_demuxer = {
     "spdif",
     NULL_IF_CONFIG_SMALL("IEC 61937 (compressed data in S/PDIF)"),
     0,

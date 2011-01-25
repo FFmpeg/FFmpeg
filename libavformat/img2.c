@@ -412,7 +412,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
 /* input */
 #if CONFIG_IMAGE2_DEMUXER
-AVInputFormat image2_demuxer = {
+AVInputFormat ff_image2_demuxer = {
     .name           = "image2",
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
     .priv_data_size = sizeof(VideoData),
@@ -423,7 +423,7 @@ AVInputFormat image2_demuxer = {
 };
 #endif
 #if CONFIG_IMAGE2PIPE_DEMUXER
-AVInputFormat image2pipe_demuxer = {
+AVInputFormat ff_image2pipe_demuxer = {
     .name           = "image2pipe",
     .long_name      = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     .priv_data_size = sizeof(VideoData),
@@ -434,7 +434,7 @@ AVInputFormat image2pipe_demuxer = {
 
 /* output */
 #if CONFIG_IMAGE2_MUXER
-AVOutputFormat image2_muxer = {
+AVOutputFormat ff_image2_muxer = {
     .name           = "image2",
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
     .extensions     = "bmp,jpeg,jpg,ljpg,pam,pbm,pcx,pgm,pgmyuv,png,"
@@ -447,7 +447,7 @@ AVOutputFormat image2_muxer = {
 };
 #endif
 #if CONFIG_IMAGE2PIPE_MUXER
-AVOutputFormat image2pipe_muxer = {
+AVOutputFormat ff_image2pipe_muxer = {
     .name           = "image2pipe",
     .long_name      = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     .priv_data_size = sizeof(VideoData),

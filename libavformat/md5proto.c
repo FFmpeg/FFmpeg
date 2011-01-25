@@ -82,7 +82,7 @@ static int md5_get_handle(URLContext *h)
     return (intptr_t)h->priv_data;
 }
 
-URLProtocol md5_protocol = {
+URLProtocol ff_md5_protocol = {
     .name                = "md5",
     .url_open            = md5_open,
     .url_write           = md5_write,

@@ -442,7 +442,7 @@ x11grab_read_close(AVFormatContext *s1)
 }
 
 /** x11 grabber device demuxer declaration */
-AVInputFormat x11_grab_device_demuxer =
+AVInputFormat ff_x11_grab_device_demuxer =
 {
     "x11grab",
     NULL_IF_CONFIG_SMALL("X11grab"),

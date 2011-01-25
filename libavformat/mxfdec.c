@@ -1014,7 +1014,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     return 0;
 }
 
-AVInputFormat mxf_demuxer = {
+AVInputFormat ff_mxf_demuxer = {
     "mxf",
     NULL_IF_CONFIG_SMALL("Material eXchange Format"),
     sizeof(MXFContext),

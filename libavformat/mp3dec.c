@@ -185,7 +185,7 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat mp3_demuxer = {
+AVInputFormat ff_mp3_demuxer = {
     "mp3",
     NULL_IF_CONFIG_SMALL("MPEG audio layer 2/3"),
     0,

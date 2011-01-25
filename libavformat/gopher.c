@@ -119,7 +119,7 @@ static int gopher_read(URLContext *h, uint8_t *buf, int size)
 }
 
 
-URLProtocol gopher_protocol = {
+URLProtocol ff_gopher_protocol = {
     "gopher",
     gopher_open,
     gopher_read,

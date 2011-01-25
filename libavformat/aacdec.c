@@ -81,7 +81,7 @@ static int adts_aac_read_header(AVFormatContext *s,
     return 0;
 }
 
-AVInputFormat aac_demuxer = {
+AVInputFormat ff_aac_demuxer = {
     "aac",
     NULL_IF_CONFIG_SMALL("raw ADTS AAC"),
     0,

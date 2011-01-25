@@ -156,7 +156,7 @@ static int voc_read_packet(AVFormatContext *s, AVPacket *pkt)
     return voc_get_packet(s, pkt, s->streams[0], 0);
 }
 
-AVInputFormat voc_demuxer = {
+AVInputFormat ff_voc_demuxer = {
     "voc",
     NULL_IF_CONFIG_SMALL("Creative Voice file format"),
     sizeof(VocDecContext),

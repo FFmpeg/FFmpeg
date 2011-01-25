@@ -498,7 +498,7 @@ static int udp_close(URLContext *h)
     return 0;
 }
 
-URLProtocol udp_protocol = {
+URLProtocol ff_udp_protocol = {
     "udp",
     udp_open,
     udp_read,

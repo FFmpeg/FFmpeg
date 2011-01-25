@@ -247,7 +247,7 @@ static int vqf_read_seek(AVFormatContext *s,
     return 0;
 }
 
-AVInputFormat vqf_demuxer = {
+AVInputFormat ff_vqf_demuxer = {
     "vqf",
     NULL_IF_CONFIG_SMALL("Nippon Telegraph and Telephone Corporation (NTT) TwinVQ"),
     sizeof(VqfContext),

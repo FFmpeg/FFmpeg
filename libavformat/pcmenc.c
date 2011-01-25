@@ -23,7 +23,7 @@
 #include "rawenc.h"
 
 #define PCMDEF(name, long_name, ext, codec) \
-AVOutputFormat pcm_ ## name ## _muxer = {\
+AVOutputFormat ff_pcm_ ## name ## _muxer = {\
     #name,\
     NULL_IF_CONFIG_SMALL(long_name),\
     NULL,\

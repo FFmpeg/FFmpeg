@@ -927,7 +927,7 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
                                av_interleave_packet_per_dts, gxf_compare_field_nb);
 }
 
-AVOutputFormat gxf_muxer = {
+AVOutputFormat ff_gxf_muxer = {
     "gxf",
     NULL_IF_CONFIG_SMALL("GXF format"),
     NULL,

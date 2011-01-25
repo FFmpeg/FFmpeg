@@ -123,7 +123,7 @@ static int flac_probe(AVProbeData *p)
     else                                            return AVPROBE_SCORE_MAX/2;
 }
 
-AVInputFormat flac_demuxer = {
+AVInputFormat ff_flac_demuxer = {
     "flac",
     NULL_IF_CONFIG_SMALL("raw FLAC"),
     0,

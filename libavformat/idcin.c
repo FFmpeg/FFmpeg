@@ -286,7 +286,7 @@ static int idcin_read_packet(AVFormatContext *s,
     return ret;
 }
 
-AVInputFormat idcin_demuxer = {
+AVInputFormat ff_idcin_demuxer = {
     "idcin",
     NULL_IF_CONFIG_SMALL("id Cinematic format"),
     sizeof(IdcinDemuxContext),

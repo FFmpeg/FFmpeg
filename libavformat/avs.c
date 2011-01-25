@@ -215,7 +215,7 @@ static int avs_read_close(AVFormatContext * s)
     return 0;
 }
 
-AVInputFormat avs_demuxer = {
+AVInputFormat ff_avs_demuxer = {
     "avs",
     NULL_IF_CONFIG_SMALL("AVS format"),
     sizeof(AvsFormat),

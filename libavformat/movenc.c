@@ -2232,7 +2232,7 @@ static int mov_write_trailer(AVFormatContext *s)
 }
 
 #if CONFIG_MOV_MUXER
-AVOutputFormat mov_muxer = {
+AVOutputFormat ff_mov_muxer = {
     "mov",
     NULL_IF_CONFIG_SMALL("MOV format"),
     NULL,
@@ -2248,7 +2248,7 @@ AVOutputFormat mov_muxer = {
 };
 #endif
 #if CONFIG_TGP_MUXER
-AVOutputFormat tgp_muxer = {
+AVOutputFormat ff_tgp_muxer = {
     "3gp",
     NULL_IF_CONFIG_SMALL("3GP format"),
     NULL,
@@ -2264,7 +2264,7 @@ AVOutputFormat tgp_muxer = {
 };
 #endif
 #if CONFIG_MP4_MUXER
-AVOutputFormat mp4_muxer = {
+AVOutputFormat ff_mp4_muxer = {
     "mp4",
     NULL_IF_CONFIG_SMALL("MP4 format"),
     "application/mp4",
@@ -2280,7 +2280,7 @@ AVOutputFormat mp4_muxer = {
 };
 #endif
 #if CONFIG_PSP_MUXER
-AVOutputFormat psp_muxer = {
+AVOutputFormat ff_psp_muxer = {
     "psp",
     NULL_IF_CONFIG_SMALL("PSP MP4 format"),
     NULL,
@@ -2296,7 +2296,7 @@ AVOutputFormat psp_muxer = {
 };
 #endif
 #if CONFIG_TG2_MUXER
-AVOutputFormat tg2_muxer = {
+AVOutputFormat ff_tg2_muxer = {
     "3g2",
     NULL_IF_CONFIG_SMALL("3GP2 format"),
     NULL,
@@ -2312,7 +2312,7 @@ AVOutputFormat tg2_muxer = {
 };
 #endif
 #if CONFIG_IPOD_MUXER
-AVOutputFormat ipod_muxer = {
+AVOutputFormat ff_ipod_muxer = {
     "ipod",
     NULL_IF_CONFIG_SMALL("iPod H.264 MP4 format"),
     "application/mp4",

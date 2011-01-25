@@ -192,7 +192,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat c93_demuxer = {
+AVInputFormat ff_c93_demuxer = {
     "c93",
     NULL_IF_CONFIG_SMALL("Interplay C93"),
     sizeof(C93DemuxContext),

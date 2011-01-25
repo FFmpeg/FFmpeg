@@ -207,7 +207,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat swf_demuxer = {
+AVInputFormat ff_swf_demuxer = {
     "swf",
     NULL_IF_CONFIG_SMALL("Flash format"),
     sizeof(SWFContext),

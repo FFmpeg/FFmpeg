@@ -793,7 +793,7 @@ static int write_trailer(AVFormatContext *s){
     return 0;
 }
 
-AVOutputFormat nut_muxer = {
+AVOutputFormat ff_nut_muxer = {
     "nut",
     NULL_IF_CONFIG_SMALL("NUT format"),
     "video/x-nut",

@@ -855,7 +855,7 @@ static int asf_write_trailer(AVFormatContext *s)
 }
 
 #if CONFIG_ASF_MUXER
-AVOutputFormat asf_muxer = {
+AVOutputFormat ff_asf_muxer = {
     "asf",
     NULL_IF_CONFIG_SMALL("ASF format"),
     "video/x-ms-asf",
@@ -876,7 +876,7 @@ AVOutputFormat asf_muxer = {
 #endif
 
 #if CONFIG_ASF_STREAM_MUXER
-AVOutputFormat asf_stream_muxer = {
+AVOutputFormat ff_asf_stream_muxer = {
     "asf_stream",
     NULL_IF_CONFIG_SMALL("ASF format"),
     "video/x-ms-asf",

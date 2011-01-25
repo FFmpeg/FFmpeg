@@ -344,7 +344,7 @@ static int gif_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat gif_muxer = {
+AVOutputFormat ff_gif_muxer = {
     "gif",
     NULL_IF_CONFIG_SMALL("GIF Animation"),
     "image/gif",

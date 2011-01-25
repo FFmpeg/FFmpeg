@@ -381,7 +381,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat caf_demuxer = {
+AVInputFormat ff_caf_demuxer = {
     "caf",
     NULL_IF_CONFIG_SMALL("Apple Core Audio Format"),
     sizeof(CaffContext),

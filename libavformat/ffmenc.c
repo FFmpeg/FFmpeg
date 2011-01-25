@@ -240,7 +240,7 @@ static int ffm_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ffm_muxer = {
+AVOutputFormat ff_ffm_muxer = {
     "ffm",
     NULL_IF_CONFIG_SMALL("FFM (FFserver live feed) format"),
     "",

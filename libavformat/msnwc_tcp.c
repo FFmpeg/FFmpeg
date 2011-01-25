@@ -130,7 +130,7 @@ static int msnwc_tcp_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     return HEADER_SIZE + size;
 }
 
-AVInputFormat msnwc_tcp_demuxer = {
+AVInputFormat ff_msnwc_tcp_demuxer = {
     "msnwctcp",
     NULL_IF_CONFIG_SMALL("MSN TCP Webcam stream"),
     0,

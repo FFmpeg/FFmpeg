@@ -67,7 +67,7 @@ static int h264_probe(AVProbeData *p)
     return 0;
 }
 
-AVInputFormat h264_demuxer = {
+AVInputFormat ff_h264_demuxer = {
     "h264",
     NULL_IF_CONFIG_SMALL("raw H.264 video format"),
     0,

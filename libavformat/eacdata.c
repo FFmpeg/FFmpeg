@@ -90,7 +90,7 @@ static int cdata_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ea_cdata_demuxer = {
+AVInputFormat ff_ea_cdata_demuxer = {
     "ea_cdata",
     NULL_IF_CONFIG_SMALL("Electronic Arts cdata"),
     sizeof(CdataDemuxContext),

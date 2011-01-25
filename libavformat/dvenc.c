@@ -399,7 +399,7 @@ static int dv_write_trailer(struct AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat dv_muxer = {
+AVOutputFormat ff_dv_muxer = {
     "dv",
     NULL_IF_CONFIG_SMALL("DV video format"),
     NULL,

@@ -518,7 +518,7 @@ static int dv_probe(AVProbeData *p)
 }
 
 #if CONFIG_DV_DEMUXER
-AVInputFormat dv_demuxer = {
+AVInputFormat ff_dv_demuxer = {
     "dv",
     NULL_IF_CONFIG_SMALL("DV video format"),
     sizeof(RawDVContext),

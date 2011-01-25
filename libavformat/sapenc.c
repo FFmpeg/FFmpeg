@@ -250,7 +250,7 @@ static int sap_write_packet(AVFormatContext *s, AVPacket *pkt)
     return ff_write_chained(rtpctx, 0, pkt, s);
 }
 
-AVOutputFormat sap_muxer = {
+AVOutputFormat ff_sap_muxer = {
     "sap",
     NULL_IF_CONFIG_SMALL("SAP output format"),
     NULL,

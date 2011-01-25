@@ -158,7 +158,7 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
     return ret;
 }
 
-AVInputFormat bfi_demuxer = {
+AVInputFormat ff_bfi_demuxer = {
     "bfi",
     NULL_IF_CONFIG_SMALL("Brute Force & Ignorance"),
     sizeof(BFIContext),

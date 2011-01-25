@@ -140,7 +140,7 @@ static int sox_read_packet(AVFormatContext *s,
     return 0;
 }
 
-AVInputFormat sox_demuxer = {
+AVInputFormat ff_sox_demuxer = {
     "sox",
     NULL_IF_CONFIG_SMALL("SoX native format"),
     0,

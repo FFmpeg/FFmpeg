@@ -35,7 +35,7 @@ RMStream *ff_rm_alloc_rmstream (void);
 void      ff_rm_free_rmstream  (RMStream *rms);
 
 /*< input format for Realmedia-style RTSP streams */
-extern AVInputFormat rdt_demuxer;
+extern AVInputFormat ff_rdt_demuxer;
 
 /**
  * Read the MDPR chunk, which contains stream-specific codec initialization

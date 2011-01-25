@@ -226,7 +226,7 @@ static int sap_fetch_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat sap_demuxer = {
+AVInputFormat ff_sap_demuxer = {
     "sap",
     NULL_IF_CONFIG_SMALL("SAP input format"),
     sizeof(struct SAPState),

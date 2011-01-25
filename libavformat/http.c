@@ -503,7 +503,7 @@ http_get_file_handle(URLContext *h)
     return url_get_file_handle(s->hd);
 }
 
-URLProtocol http_protocol = {
+URLProtocol ff_http_protocol = {
     "http",
     http_open,
     http_read,

@@ -62,7 +62,7 @@ static int h261_probe(AVProbeData *p)
     return 0;
 }
 
-AVInputFormat h261_demuxer = {
+AVInputFormat ff_h261_demuxer = {
     "h261",
     NULL_IF_CONFIG_SMALL("raw H.261"),
     0,

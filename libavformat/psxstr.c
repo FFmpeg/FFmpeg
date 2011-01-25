@@ -258,7 +258,7 @@ static int str_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat str_demuxer = {
+AVInputFormat ff_str_demuxer = {
     "psxstr",
     NULL_IF_CONFIG_SMALL("Sony Playstation STR format"),
     sizeof(StrDemuxContext),

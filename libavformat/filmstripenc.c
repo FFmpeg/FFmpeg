@@ -71,7 +71,7 @@ static int write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat filmstrip_muxer = {
+AVOutputFormat ff_filmstrip_muxer = {
     "filmstrip",
     NULL_IF_CONFIG_SMALL("Adobe Filmstrip"),
     NULL,

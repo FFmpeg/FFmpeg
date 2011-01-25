@@ -23,18 +23,18 @@
 #include "rdt.h"
 
 #define REGISTER_MUXER(X,x) { \
-    extern AVOutputFormat x##_muxer; \
-    if(CONFIG_##X##_MUXER) av_register_output_format(&x##_muxer); }
+    extern AVOutputFormat ff_##x##_muxer; \
+    if(CONFIG_##X##_MUXER) av_register_output_format(&ff_##x##_muxer); }
 
 #define REGISTER_DEMUXER(X,x) { \
-    extern AVInputFormat x##_demuxer; \
-    if(CONFIG_##X##_DEMUXER) av_register_input_format(&x##_demuxer); }
+    extern AVInputFormat ff_##x##_demuxer; \
+    if(CONFIG_##X##_DEMUXER) av_register_input_format(&ff_##x##_demuxer); }
 
 #define REGISTER_MUXDEMUX(X,x)  REGISTER_MUXER(X,x); REGISTER_DEMUXER(X,x)
 
 #define REGISTER_PROTOCOL(X,x) { \
-    extern URLProtocol x##_protocol; \
-    if(CONFIG_##X##_PROTOCOL) av_register_protocol2(&x##_protocol, sizeof(x##_protocol)); }
+    extern URLProtocol ff_##x##_protocol; \
+    if(CONFIG_##X##_PROTOCOL) av_register_protocol2(&ff_##x##_protocol, sizeof(ff_##x##_protocol)); }
 
 void av_register_all(void)
 {

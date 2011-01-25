@@ -926,7 +926,7 @@ static int nut_read_close(AVFormatContext *s)
 }
 
 #if CONFIG_NUT_DEMUXER
-AVInputFormat nut_demuxer = {
+AVInputFormat ff_nut_demuxer = {
     "nut",
     NULL_IF_CONFIG_SMALL("NUT format"),
     sizeof(NUTContext),

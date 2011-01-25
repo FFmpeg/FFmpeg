@@ -118,7 +118,7 @@ static int flac_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat flac_muxer = {
+AVOutputFormat ff_flac_muxer = {
     "flac",
     NULL_IF_CONFIG_SMALL("raw FLAC"),
     "audio/x-flac",

@@ -157,7 +157,7 @@ static int rtmp_get_file_handle(URLContext *s)
     return RTMP_Socket(r);
 }
 
-URLProtocol rtmp_protocol = {
+URLProtocol ff_rtmp_protocol = {
     "rtmp",
     rtmp_open,
     rtmp_read,
@@ -170,7 +170,7 @@ URLProtocol rtmp_protocol = {
     rtmp_get_file_handle
 };
 
-URLProtocol rtmpt_protocol = {
+URLProtocol ff_rtmpt_protocol = {
     "rtmpt",
     rtmp_open,
     rtmp_read,
@@ -183,7 +183,7 @@ URLProtocol rtmpt_protocol = {
     rtmp_get_file_handle
 };
 
-URLProtocol rtmpe_protocol = {
+URLProtocol ff_rtmpe_protocol = {
     "rtmpe",
     rtmp_open,
     rtmp_read,
@@ -196,7 +196,7 @@ URLProtocol rtmpe_protocol = {
     rtmp_get_file_handle
 };
 
-URLProtocol rtmpte_protocol = {
+URLProtocol ff_rtmpte_protocol = {
     "rtmpte",
     rtmp_open,
     rtmp_read,
@@ -209,7 +209,7 @@ URLProtocol rtmpte_protocol = {
     rtmp_get_file_handle
 };
 
-URLProtocol rtmps_protocol = {
+URLProtocol ff_rtmps_protocol = {
     "rtmps",
     rtmp_open,
     rtmp_read,

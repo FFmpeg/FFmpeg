@@ -118,7 +118,7 @@ static int xa_read_packet(AVFormatContext *s,
     return ret;
 }
 
-AVInputFormat xa_demuxer = {
+AVInputFormat ff_xa_demuxer = {
     "xa",
     NULL_IF_CONFIG_SMALL("Maxis XA File Format"),
     sizeof(MaxisXADemuxContext),

@@ -502,7 +502,7 @@ static int ogg_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ogg_muxer = {
+AVOutputFormat ff_ogg_muxer = {
     "ogg",
     NULL_IF_CONFIG_SMALL("Ogg"),
     "application/ogg",

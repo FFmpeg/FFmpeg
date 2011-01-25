@@ -65,7 +65,7 @@ static int dts_probe(AVProbeData *p)
     return 0;
 }
 
-AVInputFormat dts_demuxer = {
+AVInputFormat ff_dts_demuxer = {
     "dts",
     NULL_IF_CONFIG_SMALL("raw DTS"),
     0,

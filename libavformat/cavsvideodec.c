@@ -65,7 +65,7 @@ static int cavsvideo_probe(AVProbeData *p)
     return 0;
 }
 
-AVInputFormat cavsvideo_demuxer = {
+AVInputFormat ff_cavsvideo_demuxer = {
     "cavsvideo",
     NULL_IF_CONFIG_SMALL("raw Chinese AVS video"),
     0,

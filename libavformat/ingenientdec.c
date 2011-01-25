@@ -58,7 +58,7 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ingenient_demuxer = {
+AVInputFormat ff_ingenient_demuxer = {
     "ingenient",
     NULL_IF_CONFIG_SMALL("raw Ingenient MJPEG"),
     0,

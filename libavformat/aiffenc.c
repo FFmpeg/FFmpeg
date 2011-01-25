@@ -145,7 +145,7 @@ static int aiff_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat aiff_muxer = {
+AVOutputFormat ff_aiff_muxer = {
     "aiff",
     NULL_IF_CONFIG_SMALL("Audio IFF"),
     "audio/aiff",

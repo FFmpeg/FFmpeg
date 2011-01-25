@@ -1825,7 +1825,7 @@ static int sdp_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat sdp_demuxer = {
+AVInputFormat ff_sdp_demuxer = {
     "sdp",
     NULL_IF_CONFIG_SMALL("SDP"),
     sizeof(RTSPState),
@@ -1929,7 +1929,7 @@ fail:
     return ret;
 }
 
-AVInputFormat rtp_demuxer = {
+AVInputFormat ff_rtp_demuxer = {
     "rtp",
     NULL_IF_CONFIG_SMALL("RTP input format"),
     sizeof(RTSPState),

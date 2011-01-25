@@ -123,7 +123,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat mvi_demuxer = {
+AVInputFormat ff_mvi_demuxer = {
     "mvi",
     NULL_IF_CONFIG_SMALL("Motion Pixels MVI format"),
     sizeof(MviDemuxContext),

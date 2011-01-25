@@ -630,7 +630,7 @@ static int avi_write_trailer(AVFormatContext *s)
     return res;
 }
 
-AVOutputFormat avi_muxer = {
+AVOutputFormat ff_avi_muxer = {
     "avi",
     NULL_IF_CONFIG_SMALL("AVI format"),
     "video/x-msvideo",

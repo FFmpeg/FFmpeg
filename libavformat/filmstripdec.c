@@ -98,7 +98,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     return 0;
 }
 
-AVInputFormat filmstrip_demuxer = {
+AVInputFormat ff_filmstrip_demuxer = {
     "filmstrip",
     NULL_IF_CONFIG_SMALL("Adobe Filmstrip"),
     sizeof(FilmstripDemuxContext),

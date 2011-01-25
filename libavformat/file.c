@@ -94,7 +94,7 @@ static int file_close(URLContext *h)
     return close(fd);
 }
 
-URLProtocol file_protocol = {
+URLProtocol ff_file_protocol = {
     "file",
     file_open,
     file_read,
@@ -130,7 +130,7 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     return 0;
 }
 
-URLProtocol pipe_protocol = {
+URLProtocol ff_pipe_protocol = {
     "pipe",
     pipe_open,
     file_read,
