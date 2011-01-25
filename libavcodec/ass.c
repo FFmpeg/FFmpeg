@@ -22,11 +22,26 @@
 #include "avcodec.h"
 #include "ass.h"
 
-int ff_ass_subtitle_header(AVCodecContext *avctx,
-                           const char *font, int font_size,
-                           int color, int back_color,
-                           int bold, int italic, int underline,
-                           int alignment)
+/**
+ * Generate a suitable AVCodecContext.subtitle_header for SUBTITLE_ASS.
+ *
+ * @param avctx pointer to the AVCodecContext
+ * @param font name of the default font face to use
+ * @param font_size default font size to use
+ * @param color default text color to use (ABGR)
+ * @param back_color default background color to use (ABGR)
+ * @param bold 1 for bold text, 0 for normal text
+ * @param italic 1 for italic text, 0 for normal text
+ * @param underline 1 for underline text, 0 for normal text
+ * @param alignment position of the text (left, center, top...), defined after
+ *                  the layout of the numpad (1-3 sub, 4-6 mid, 7-9 top)
+ * @return >= 0 on success otherwise an error code <0
+ */
+static int ff_ass_subtitle_header(AVCodecContext *avctx,
+                                  const char *font, int font_size,
+                                  int color, int back_color,
+                                  int bold, int italic, int underline,
+                                  int alignment)
 {
     char header[512];
 
