@@ -1822,7 +1822,7 @@ set_default host_cc
 
 exesuf() {
     case $1 in
-        mingw32*|cygwin*|*-dos|freedos|opendos|os/2*) echo .exe ;;
+        mingw32*|cygwin*|*-dos|freedos|opendos|os/2*|symbian) echo .exe ;;
     esac
 }
 
@@ -2479,6 +2479,11 @@ case $target_os in
     qnx)
         add_cppflags -D_QNX_SOURCE
         network_extralibs="-lsocket"
+        ;;
+    symbian)
+        SLIBSUF=".dll"
+        enable dos_paths
+        add_cflags --include=$sysinclude/gcce/gcce.h
         ;;
     none)
         ;;
