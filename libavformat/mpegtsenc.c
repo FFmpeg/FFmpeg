@@ -573,7 +573,7 @@ static uint8_t* write_pcr_bits(uint8_t *buf, int64_t pcr)
     *buf++ = pcr_high >> 17;
     *buf++ = pcr_high >> 9;
     *buf++ = pcr_high >> 1;
-    *buf++ = ((pcr_high & 1) << 7) | (pcr_low >> 8);
+    *buf++ = pcr_high << 7 | pcr_low >> 8 | 0x7e;
     *buf++ = pcr_low;
 
     return buf;
