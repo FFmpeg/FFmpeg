@@ -28,7 +28,6 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include "sauce.h"
-#include <strings.h>
 
 #define LINE_RATE 6000 /* characters per second */
 
