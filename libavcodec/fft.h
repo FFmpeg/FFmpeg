@@ -106,8 +106,6 @@ extern SINTABLE(65536);
  * @param inverse         if 0 perform the forward transform, if 1 perform the inverse
  */
 int ff_fft_init(FFTContext *s, int nbits, int inverse);
-void ff_fft_permute_c(FFTContext *s, FFTComplex *z);
-void ff_fft_calc_c(FFTContext *s, FFTComplex *z);
 
 void ff_fft_init_altivec(FFTContext *s);
 void ff_fft_init_mmx(FFTContext *s);
