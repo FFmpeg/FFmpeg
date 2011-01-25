@@ -332,7 +332,7 @@ static int init(AVCodecParserContext *s)
     return 0;
 }
 
-AVCodecParser h264_parser = {
+AVCodecParser ff_h264_parser = {
     { CODEC_ID_H264 },
     sizeof(H264Context),
     init,

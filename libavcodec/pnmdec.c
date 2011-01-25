@@ -188,7 +188,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
 
 
 #if CONFIG_PGM_DECODER
-AVCodec pgm_decoder = {
+AVCodec ff_pgm_decoder = {
     "pgm",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PGM,
@@ -205,7 +205,7 @@ AVCodec pgm_decoder = {
 #endif
 
 #if CONFIG_PGMYUV_DECODER
-AVCodec pgmyuv_decoder = {
+AVCodec ff_pgmyuv_decoder = {
     "pgmyuv",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PGMYUV,
@@ -222,7 +222,7 @@ AVCodec pgmyuv_decoder = {
 #endif
 
 #if CONFIG_PPM_DECODER
-AVCodec ppm_decoder = {
+AVCodec ff_ppm_decoder = {
     "ppm",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PPM,
@@ -239,7 +239,7 @@ AVCodec ppm_decoder = {
 #endif
 
 #if CONFIG_PBM_DECODER
-AVCodec pbm_decoder = {
+AVCodec ff_pbm_decoder = {
     "pbm",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PBM,
@@ -256,7 +256,7 @@ AVCodec pbm_decoder = {
 #endif
 
 #if CONFIG_PAM_DECODER
-AVCodec pam_decoder = {
+AVCodec ff_pam_decoder = {
     "pam",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PAM,

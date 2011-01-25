@@ -842,7 +842,7 @@ erasure:
     return *data_size;
 }
 
-AVCodec qcelp_decoder =
+AVCodec ff_qcelp_decoder =
 {
     .name   = "qcelp",
     .type   = AVMEDIA_TYPE_AUDIO,

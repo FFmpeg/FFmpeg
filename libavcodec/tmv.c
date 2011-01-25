@@ -92,7 +92,7 @@ static av_cold int tmv_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec tmv_decoder = {
+AVCodec ff_tmv_decoder = {
     .name           = "tmv",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_TMV,

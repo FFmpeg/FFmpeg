@@ -97,7 +97,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 }
 
 #if CONFIG_R210_DECODER
-AVCodec r210_decoder = {
+AVCodec ff_r210_decoder = {
     "r210",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_R210,
@@ -111,7 +111,7 @@ AVCodec r210_decoder = {
 };
 #endif
 #if CONFIG_R10K_DECODER
-AVCodec r10k_decoder = {
+AVCodec ff_r10k_decoder = {
     "r10k",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_R10K,

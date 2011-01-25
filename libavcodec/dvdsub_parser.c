@@ -76,7 +76,7 @@ static av_cold void dvdsub_parse_close(AVCodecParserContext *s)
     av_freep(&pc->packet);
 }
 
-AVCodecParser dvdsub_parser = {
+AVCodecParser ff_dvdsub_parser = {
     { CODEC_ID_DVD_SUBTITLE },
     sizeof(DVDSubParseContext),
     dvdsub_parse_init,

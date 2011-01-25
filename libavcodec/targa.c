@@ -235,7 +235,7 @@ static av_cold int targa_end(AVCodecContext *avctx){
     return 0;
 }
 
-AVCodec targa_decoder = {
+AVCodec ff_targa_decoder = {
     "targa",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TARGA,

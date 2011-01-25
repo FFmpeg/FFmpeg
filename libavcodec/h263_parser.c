@@ -83,7 +83,7 @@ static int h263_parse(AVCodecParserContext *s,
     return next;
 }
 
-AVCodecParser h263_parser = {
+AVCodecParser ff_h263_parser = {
     { CODEC_ID_H263 },
     sizeof(ParseContext),
     NULL,

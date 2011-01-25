@@ -248,7 +248,7 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     return avpkt->size;
 }
 
-AVCodec yop_decoder = {
+AVCodec ff_yop_decoder = {
     "yop",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_YOP,

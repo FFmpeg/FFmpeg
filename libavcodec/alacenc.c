@@ -523,7 +523,7 @@ static av_cold int alac_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec alac_encoder = {
+AVCodec ff_alac_encoder = {
     "alac",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_ALAC,

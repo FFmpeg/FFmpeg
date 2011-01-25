@@ -343,7 +343,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
 }
 
 
-AVCodec dsicinvideo_decoder = {
+AVCodec ff_dsicinvideo_decoder = {
     "dsicinvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DSICINVIDEO,
@@ -356,7 +356,7 @@ AVCodec dsicinvideo_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("Delphine Software International CIN video"),
 };
 
-AVCodec dsicinaudio_decoder = {
+AVCodec ff_dsicinaudio_decoder = {
     "dsicinaudio",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_DSICINAUDIO,

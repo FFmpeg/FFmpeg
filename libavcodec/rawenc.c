@@ -55,7 +55,7 @@ static int raw_encode(AVCodecContext *avctx,
     return ret;
 }
 
-AVCodec rawvideo_encoder = {
+AVCodec ff_rawvideo_encoder = {
     "rawvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_RAWVIDEO,

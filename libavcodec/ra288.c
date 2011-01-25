@@ -203,7 +203,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
     return avctx->block_align;
 }
 
-AVCodec ra_288_decoder =
+AVCodec ff_ra_288_decoder =
 {
     "real_288",
     AVMEDIA_TYPE_AUDIO,

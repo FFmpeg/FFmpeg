@@ -189,7 +189,7 @@ static int pcx_encode_frame(AVCodecContext *avctx,
     return buf - buf_start;
 }
 
-AVCodec pcx_encoder = {
+AVCodec ff_pcx_encoder = {
     "pcx",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PCX,

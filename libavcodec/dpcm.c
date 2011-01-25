@@ -299,7 +299,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
 }
 
 #define DPCM_DECODER(id, name, long_name_)      \
-AVCodec name ## _decoder = {                    \
+AVCodec ff_ ## name ## _decoder = {             \
     #name,                                      \
     AVMEDIA_TYPE_AUDIO,                         \
     id,                                         \

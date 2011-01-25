@@ -169,7 +169,7 @@ fail:
     return AVERROR(EINVAL);
 }
 
-AVBitStreamFilter h264_mp4toannexb_bsf = {
+AVBitStreamFilter ff_h264_mp4toannexb_bsf = {
     "h264_mp4toannexb",
     sizeof(H264BSFContext),
     h264_mp4toannexb_filter,

@@ -382,7 +382,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size, voi
     return 0;
 }
 
-AVCodec nellymoser_encoder = {
+AVCodec ff_nellymoser_encoder = {
     .name = "nellymoser",
     .type = AVMEDIA_TYPE_AUDIO,
     .id = CODEC_ID_NELLYMOSER,

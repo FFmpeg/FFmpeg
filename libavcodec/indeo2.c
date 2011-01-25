@@ -224,7 +224,7 @@ static av_cold int ir2_decode_end(AVCodecContext *avctx){
     return 0;
 }
 
-AVCodec indeo2_decoder = {
+AVCodec ff_indeo2_decoder = {
     "indeo2",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_INDEO2,

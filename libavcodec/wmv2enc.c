@@ -211,7 +211,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
     }
 }
 
-AVCodec wmv2_encoder = {
+AVCodec ff_wmv2_encoder = {
     "wmv2",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_WMV2,

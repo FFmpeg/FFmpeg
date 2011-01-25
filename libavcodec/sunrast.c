@@ -184,7 +184,7 @@ static av_cold int sunrast_end(AVCodecContext *avctx) {
     return 0;
 }
 
-AVCodec sunrast_decoder = {
+AVCodec ff_sunrast_decoder = {
     "sunrast",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SUNRAST,

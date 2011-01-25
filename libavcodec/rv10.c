@@ -707,7 +707,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodec rv10_decoder = {
+AVCodec ff_rv10_decoder = {
     "rv10",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_RV10,
@@ -722,7 +722,7 @@ AVCodec rv10_decoder = {
     .pix_fmts= ff_pixfmt_list_420,
 };
 
-AVCodec rv20_decoder = {
+AVCodec ff_rv20_decoder = {
     "rv20",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_RV20,

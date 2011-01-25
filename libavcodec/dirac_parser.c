@@ -247,7 +247,7 @@ static void dirac_parse_close(AVCodecParserContext *s)
         av_free(pc->buffer);
 }
 
-AVCodecParser dirac_parser = {
+AVCodecParser ff_dirac_parser = {
     { CODEC_ID_DIRAC },
     sizeof(DiracParseContext),
     NULL,

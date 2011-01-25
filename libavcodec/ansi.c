@@ -422,7 +422,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ansi_decoder = {
+AVCodec ff_ansi_decoder = {
     .name           = "ansi",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_ANSI,

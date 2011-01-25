@@ -325,7 +325,7 @@ static av_cold int gif_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec gif_decoder = {
+AVCodec ff_gif_decoder = {
     "gif",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_GIF,

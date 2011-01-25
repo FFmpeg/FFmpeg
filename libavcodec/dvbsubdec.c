@@ -1479,7 +1479,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
 }
 
 
-AVCodec dvbsub_decoder = {
+AVCodec ff_dvbsub_decoder = {
     "dvbsub",
     AVMEDIA_TYPE_SUBTITLE,
     CODEC_ID_DVB_SUBTITLE,

@@ -783,7 +783,7 @@ static av_cold int MPA_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec mp2_encoder = {
+AVCodec ff_mp2_encoder = {
     "mp2",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MP2,

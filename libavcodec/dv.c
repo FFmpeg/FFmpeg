@@ -1290,7 +1290,7 @@ static int dvvideo_close(AVCodecContext *c)
 
 
 #if CONFIG_DVVIDEO_ENCODER
-AVCodec dvvideo_encoder = {
+AVCodec ff_dvvideo_encoder = {
     "dvvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DVVIDEO,
@@ -1303,7 +1303,7 @@ AVCodec dvvideo_encoder = {
 #endif // CONFIG_DVVIDEO_ENCODER
 
 #if CONFIG_DVVIDEO_DECODER
-AVCodec dvvideo_decoder = {
+AVCodec ff_dvvideo_decoder = {
     "dvvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DVVIDEO,

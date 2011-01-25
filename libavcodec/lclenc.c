@@ -170,7 +170,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec zlib_encoder = {
+AVCodec ff_zlib_encoder = {
     "zlib",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ZLIB,

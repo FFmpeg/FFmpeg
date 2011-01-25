@@ -169,7 +169,7 @@ static av_cold int ac3_parse_init(AVCodecParserContext *s1)
 }
 
 
-AVCodecParser ac3_parser = {
+AVCodecParser ff_ac3_parser = {
     { CODEC_ID_AC3, CODEC_ID_EAC3 },
     sizeof(AACAC3ParseContext),
     ac3_parse_init,

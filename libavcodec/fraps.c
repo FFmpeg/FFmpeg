@@ -355,7 +355,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 }
 
 
-AVCodec fraps_decoder = {
+AVCodec ff_fraps_decoder = {
     "fraps",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FRAPS,

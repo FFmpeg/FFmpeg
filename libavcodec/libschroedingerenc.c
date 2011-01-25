@@ -422,7 +422,7 @@ static int libschroedinger_encode_close(AVCodecContext *avccontext)
 }
 
 
-AVCodec libschroedinger_encoder = {
+AVCodec ff_libschroedinger_encoder = {
     "libschroedinger",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DIRAC,

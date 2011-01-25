@@ -3360,7 +3360,7 @@ av_cold int ff_h264_decode_end(AVCodecContext *avctx)
 }
 
 
-AVCodec h264_decoder = {
+AVCodec ff_h264_decoder = {
     "h264",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H264,
@@ -3375,7 +3375,7 @@ AVCodec h264_decoder = {
 };
 
 #if CONFIG_H264_VDPAU_DECODER
-AVCodec h264_vdpau_decoder = {
+AVCodec ff_h264_vdpau_decoder = {
     "h264_vdpau",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H264,

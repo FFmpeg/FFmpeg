@@ -2351,7 +2351,7 @@ av_cold static int latm_decode_init(AVCodecContext *avctx)
 }
 
 
-AVCodec aac_decoder = {
+AVCodec ff_aac_decoder = {
     "aac",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AAC,
@@ -2372,7 +2372,7 @@ AVCodec aac_decoder = {
     in MPEG transport streams which only contain one program.
     To do a more complex LATM demuxing a separate LATM demuxer should be used.
 */
-AVCodec aac_latm_decoder = {
+AVCodec ff_aac_latm_decoder = {
     .name = "aac_latm",
     .type = CODEC_TYPE_AUDIO,
     .id   = CODEC_ID_AAC_LATM,

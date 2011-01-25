@@ -145,7 +145,7 @@ read_header:
     return buf_ptr - buf;
 }
 
-AVCodec mjpegb_decoder = {
+AVCodec ff_mjpegb_decoder = {
     "mjpegb",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MJPEGB,

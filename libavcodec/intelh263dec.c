@@ -115,7 +115,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     return 0;
 }
 
-AVCodec h263i_decoder = {
+AVCodec ff_h263i_decoder = {
     "h263i",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H263I,

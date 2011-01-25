@@ -445,7 +445,7 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64])
     s->i_tex_bits += get_bits_diff(s);
 }
 
-AVCodec mjpeg_encoder = {
+AVCodec ff_mjpeg_encoder = {
     "mjpeg",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MJPEG,

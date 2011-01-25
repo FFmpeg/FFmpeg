@@ -814,7 +814,7 @@ int xvid_ff_2pass(void *ref, int cmd, void *p1, void *p2) {
 /**
  * Xvid codec definition for libavcodec.
  */
-AVCodec libxvid_encoder = {
+AVCodec ff_libxvid_encoder = {
     "libxvid",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG4,

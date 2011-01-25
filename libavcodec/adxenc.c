@@ -183,7 +183,7 @@ static int adx_encode_frame(AVCodecContext *avctx,
     return dst-frame;
 }
 
-AVCodec adpcm_adx_encoder = {
+AVCodec ff_adpcm_adx_encoder = {
     "adpcm_adx",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_ADPCM_ADX,

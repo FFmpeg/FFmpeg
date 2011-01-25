@@ -321,7 +321,7 @@ static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
     }
 }
 
-AVCodec h261_encoder = {
+AVCodec ff_h261_encoder = {
     "h261",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H261,

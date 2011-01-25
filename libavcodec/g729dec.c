@@ -312,7 +312,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     return buf_size;
 }
 
-AVCodec g729_decoder =
+AVCodec ff_g729_decoder =
 {
     "g729",
     AVMEDIA_TYPE_AUDIO,

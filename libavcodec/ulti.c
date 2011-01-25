@@ -404,7 +404,7 @@ static int ulti_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodec ulti_decoder = {
+AVCodec ff_ulti_decoder = {
     "ultimotion",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ULTI,

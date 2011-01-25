@@ -159,7 +159,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
     return buf - orig_buf;
 }
 
-AVCodec sgi_encoder = {
+AVCodec ff_sgi_encoder = {
     "sgi",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SGI,

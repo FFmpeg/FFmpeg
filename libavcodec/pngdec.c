@@ -657,7 +657,7 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec png_decoder = {
+AVCodec ff_png_decoder = {
     "png",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PNG,

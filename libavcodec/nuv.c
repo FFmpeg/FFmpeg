@@ -272,7 +272,7 @@ static av_cold int decode_end(AVCodecContext *avctx) {
     return 0;
 }
 
-AVCodec nuv_decoder = {
+AVCodec ff_nuv_decoder = {
     "nuv",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_NUV,

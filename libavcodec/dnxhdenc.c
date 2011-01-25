@@ -848,7 +848,7 @@ static int dnxhd_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec dnxhd_encoder = {
+AVCodec ff_dnxhd_encoder = {
     "dnxhd",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DNXHD,

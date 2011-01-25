@@ -92,7 +92,7 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec eightsvx_fib_decoder = {
+AVCodec ff_eightsvx_fib_decoder = {
   .name           = "8svx_fib",
   .type           = AVMEDIA_TYPE_AUDIO,
   .id             = CODEC_ID_8SVX_FIB,
@@ -102,7 +102,7 @@ AVCodec eightsvx_fib_decoder = {
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX fibonacci"),
 };
 
-AVCodec eightsvx_exp_decoder = {
+AVCodec ff_eightsvx_exp_decoder = {
   .name           = "8svx_exp",
   .type           = AVMEDIA_TYPE_AUDIO,
   .id             = CODEC_ID_8SVX_EXP,

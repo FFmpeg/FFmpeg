@@ -1054,7 +1054,7 @@ static int roq_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec roq_encoder =
+AVCodec ff_roq_encoder =
 {
     "roqvideo",
     AVMEDIA_TYPE_VIDEO,

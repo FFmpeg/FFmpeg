@@ -735,7 +735,7 @@ av_log(avctx, AV_LOG_DEBUG, "%"PRId64"\n", rdtsc()-time);
     return get_consumed_bytes(s, buf_size);
 }
 
-AVCodec h263_decoder = {
+AVCodec ff_h263_decoder = {
     "h263",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H263,

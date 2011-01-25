@@ -1875,7 +1875,7 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
-AVCodec dca_decoder = {
+AVCodec ff_dca_decoder = {
     .name = "dca",
     .type = AVMEDIA_TYPE_AUDIO,
     .id = CODEC_ID_DTS,

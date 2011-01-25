@@ -328,7 +328,7 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-AVCodec adpcm_g722_decoder = {
+AVCodec ff_adpcm_g722_decoder = {
     .name           = "g722",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_ADPCM_G722,
@@ -568,7 +568,7 @@ static int g722_encode_frame(AVCodecContext *avctx,
     return i;
 }
 
-AVCodec adpcm_g722_encoder = {
+AVCodec ff_adpcm_g722_encoder = {
     .name           = "g722",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_ADPCM_G722,

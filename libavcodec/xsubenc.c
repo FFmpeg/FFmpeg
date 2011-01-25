@@ -210,7 +210,7 @@ static av_cold int xsub_encoder_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec xsub_encoder = {
+AVCodec ff_xsub_encoder = {
     "xsub",
     AVMEDIA_TYPE_SUBTITLE,
     CODEC_ID_XSUB,

@@ -471,7 +471,7 @@ static av_cold int smc_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec smc_decoder = {
+AVCodec ff_smc_decoder = {
     "smc",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SMC,

@@ -668,7 +668,7 @@ static av_cold int rv40_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec rv40_decoder = {
+AVCodec ff_rv40_decoder = {
     "rv40",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_RV40,

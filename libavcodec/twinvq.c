@@ -1119,7 +1119,7 @@ static av_cold int twin_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec twinvq_decoder =
+AVCodec ff_twinvq_decoder =
 {
     "twinvq",
     AVMEDIA_TYPE_AUDIO,

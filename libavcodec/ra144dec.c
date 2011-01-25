@@ -114,7 +114,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
     return 20;
 }
 
-AVCodec ra_144_decoder =
+AVCodec ff_ra_144_decoder =
 {
     "real_144",
     AVMEDIA_TYPE_AUDIO,

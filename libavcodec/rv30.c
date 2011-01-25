@@ -266,7 +266,7 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec rv30_decoder = {
+AVCodec ff_rv30_decoder = {
     "rv30",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_RV30,

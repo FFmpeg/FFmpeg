@@ -650,7 +650,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec zmbv_decoder = {
+AVCodec ff_zmbv_decoder = {
     "zmbv",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ZMBV,

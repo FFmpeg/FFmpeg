@@ -279,7 +279,7 @@ static int mace_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodec mace3_decoder = {
+AVCodec ff_mace3_decoder = {
     "mace3",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MACE3,
@@ -291,7 +291,7 @@ AVCodec mace3_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 3:1"),
 };
 
-AVCodec mace6_decoder = {
+AVCodec ff_mace6_decoder = {
     "mace6",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MACE6,

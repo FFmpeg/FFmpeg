@@ -237,7 +237,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec pictor_decoder = {
+AVCodec ff_pictor_decoder = {
     "pictor",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PICTOR,

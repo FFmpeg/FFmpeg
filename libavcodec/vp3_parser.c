@@ -35,7 +35,7 @@ static int parse(AVCodecParserContext *s,
     return buf_size;
 }
 
-AVCodecParser vp3_parser = {
+AVCodecParser ff_vp3_parser = {
     { CODEC_ID_THEORA, CODEC_ID_VP3,
       CODEC_ID_VP6,    CODEC_ID_VP6F, CODEC_ID_VP6A },
     0,

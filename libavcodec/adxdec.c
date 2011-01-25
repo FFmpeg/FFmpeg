@@ -166,7 +166,7 @@ static int adx_decode_frame(AVCodecContext *avctx,
     return buf-buf0;
 }
 
-AVCodec adpcm_adx_decoder = {
+AVCodec ff_adpcm_adx_decoder = {
     "adpcm_adx",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_ADPCM_ADX,

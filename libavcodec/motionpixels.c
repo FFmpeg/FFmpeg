@@ -302,7 +302,7 @@ static av_cold int mp_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec motionpixels_decoder = {
+AVCodec ff_motionpixels_decoder = {
     "motionpixels",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MOTIONPIXELS,

@@ -83,7 +83,7 @@ retry:
     return next;
 }
 
-AVCodecParser pnm_parser = {
+AVCodecParser ff_pnm_parser = {
     { CODEC_ID_PGM, CODEC_ID_PGMYUV, CODEC_ID_PPM, CODEC_ID_PBM, CODEC_ID_PAM},
     sizeof(ParseContext),
     NULL,

@@ -212,7 +212,7 @@ static av_cold int mm_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec mmvideo_decoder = {
+AVCodec ff_mmvideo_decoder = {
     "mmvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MMVIDEO,

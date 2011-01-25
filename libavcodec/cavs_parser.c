@@ -97,7 +97,7 @@ static int cavsvideo_parse(AVCodecParserContext *s,
     return next;
 }
 
-AVCodecParser cavsvideo_parser = {
+AVCodecParser ff_cavsvideo_parser = {
     { CODEC_ID_CAVS },
     sizeof(ParseContext1),
     NULL,

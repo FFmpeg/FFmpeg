@@ -118,7 +118,7 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
     return 0;
 }
 
-AVCodec flv_decoder = {
+AVCodec ff_flv_decoder = {
     "flv",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FLV1,

@@ -1737,7 +1737,7 @@ static av_cold void flush(AVCodecContext *avctx)
 }
 
 
-AVCodec als_decoder = {
+AVCodec ff_als_decoder = {
     "als",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MP4ALS,

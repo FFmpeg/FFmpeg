@@ -154,7 +154,7 @@ static av_cold int tqi_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec eatqi_decoder = {
+AVCodec ff_eatqi_decoder = {
     "eatqi",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TQI,

@@ -709,7 +709,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
     }
 }
 
-AVCodec cavs_decoder = {
+AVCodec ff_cavs_decoder = {
     "cavs",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_CAVS,

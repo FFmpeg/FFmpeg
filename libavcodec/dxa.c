@@ -317,7 +317,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec dxa_decoder = {
+AVCodec ff_dxa_decoder = {
     "dxa",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DXA,

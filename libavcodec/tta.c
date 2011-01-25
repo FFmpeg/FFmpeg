@@ -456,7 +456,7 @@ static av_cold int tta_decode_close(AVCodecContext *avctx) {
     return 0;
 }
 
-AVCodec tta_decoder = {
+AVCodec ff_tta_decoder = {
     "tta",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_TTA,

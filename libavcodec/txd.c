@@ -155,7 +155,7 @@ static av_cold int txd_end(AVCodecContext *avctx) {
     return 0;
 }
 
-AVCodec txd_decoder = {
+AVCodec ff_txd_decoder = {
     "txd",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TXD,

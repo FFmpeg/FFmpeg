@@ -129,7 +129,7 @@ static int mpeg4video_parse(AVCodecParserContext *s,
 }
 
 
-AVCodecParser mpeg4video_parser = {
+AVCodecParser ff_mpeg4video_parser = {
     { CODEC_ID_MPEG4 },
     sizeof(ParseContext1),
     mpeg4video_parse_init,

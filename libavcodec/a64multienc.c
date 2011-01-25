@@ -362,7 +362,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     return 0;
 }
 
-AVCodec a64multi_encoder = {
+AVCodec ff_a64multi_encoder = {
     .name           = "a64multi",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_A64_MULTI,
@@ -375,7 +375,7 @@ AVCodec a64multi_encoder = {
     .capabilities   = CODEC_CAP_DELAY,
 };
 
-AVCodec a64multi5_encoder = {
+AVCodec ff_a64multi5_encoder = {
     .name           = "a64multi5",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_A64_MULTI5,

@@ -404,7 +404,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx,
     return c->cur_frame ? c->last_bits_used >> 3 : buf_size;
 }
 
-AVCodec mpc8_decoder = {
+AVCodec ff_mpc8_decoder = {
     "mpc8",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MUSEPACK8,

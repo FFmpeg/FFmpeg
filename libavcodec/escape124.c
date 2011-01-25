@@ -363,7 +363,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 }
 
 
-AVCodec escape124_decoder = {
+AVCodec ff_escape124_decoder = {
     "escape124",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ESCAPE124,

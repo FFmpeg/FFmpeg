@@ -84,7 +84,7 @@ void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level, int run, in
     }
 }
 
-AVCodec flv_encoder = {
+AVCodec ff_flv_encoder = {
     "flv",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FLV1,

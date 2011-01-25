@@ -484,7 +484,7 @@ static av_cold int wmv2_decode_end(AVCodecContext *avctx)
     return ff_h263_decode_end(avctx);
 }
 
-AVCodec wmv2_decoder = {
+AVCodec ff_wmv2_decoder = {
     "wmv2",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_WMV2,

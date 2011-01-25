@@ -1283,7 +1283,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 }
 
 
-AVCodec cook_decoder =
+AVCodec ff_cook_decoder =
 {
     .name = "cook",
     .type = AVMEDIA_TYPE_AUDIO,

@@ -130,7 +130,7 @@ static av_cold int bethsoftvid_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec bethsoftvid_decoder = {
+AVCodec ff_bethsoftvid_decoder = {
     .name = "bethsoftvid",
     .type = AVMEDIA_TYPE_VIDEO,
     .id = CODEC_ID_BETHSOFTVID,

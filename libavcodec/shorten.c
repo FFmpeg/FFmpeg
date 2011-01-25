@@ -541,7 +541,7 @@ static void shorten_flush(AVCodecContext *avctx){
         s->bitstream_index= 0;
 }
 
-AVCodec shorten_decoder = {
+AVCodec ff_shorten_decoder = {
     "shorten",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SHORTEN,

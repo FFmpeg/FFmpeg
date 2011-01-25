@@ -2471,7 +2471,7 @@ static int mpeg_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec mpeg1video_decoder = {
+AVCodec ff_mpeg1video_decoder = {
     "mpeg1video",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG1VIDEO,
@@ -2486,7 +2486,7 @@ AVCodec mpeg1video_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
 };
 
-AVCodec mpeg2video_decoder = {
+AVCodec ff_mpeg2video_decoder = {
     "mpeg2video",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG2VIDEO,
@@ -2502,7 +2502,7 @@ AVCodec mpeg2video_decoder = {
 };
 
 //legacy decoder
-AVCodec mpegvideo_decoder = {
+AVCodec ff_mpegvideo_decoder = {
     "mpegvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG2VIDEO,
@@ -2534,7 +2534,7 @@ static av_cold int mpeg_mc_decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-AVCodec mpeg_xvmc_decoder = {
+AVCodec ff_mpeg_xvmc_decoder = {
     "mpegvideo_xvmc",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG2VIDEO_XVMC,
@@ -2551,7 +2551,7 @@ AVCodec mpeg_xvmc_decoder = {
 #endif
 
 #if CONFIG_MPEG_VDPAU_DECODER
-AVCodec mpeg_vdpau_decoder = {
+AVCodec ff_mpeg_vdpau_decoder = {
     "mpegvideo_vdpau",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG2VIDEO,
@@ -2567,7 +2567,7 @@ AVCodec mpeg_vdpau_decoder = {
 #endif
 
 #if CONFIG_MPEG1_VDPAU_DECODER
-AVCodec mpeg1_vdpau_decoder = {
+AVCodec ff_mpeg1_vdpau_decoder = {
     "mpeg1video_vdpau",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG1VIDEO,

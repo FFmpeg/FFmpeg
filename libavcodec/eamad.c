@@ -306,7 +306,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec eamad_decoder = {
+AVCodec ff_eamad_decoder = {
     "eamad",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MAD,

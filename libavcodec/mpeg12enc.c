@@ -930,7 +930,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
     put_bits(&s->pb, table_vlc[112][1], table_vlc[112][0]);
 }
 
-AVCodec mpeg1video_encoder = {
+AVCodec ff_mpeg1video_encoder = {
     "mpeg1video",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG1VIDEO,
@@ -944,7 +944,7 @@ AVCodec mpeg1video_encoder = {
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
 };
 
-AVCodec mpeg2video_encoder = {
+AVCodec ff_mpeg2video_encoder = {
     "mpeg2video",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG2VIDEO,

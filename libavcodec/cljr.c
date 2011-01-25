@@ -140,7 +140,7 @@ static av_cold int encode_init(AVCodecContext *avctx){
 }
 #endif
 
-AVCodec cljr_decoder = {
+AVCodec ff_cljr_decoder = {
     "cljr",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_CLJR,
@@ -154,7 +154,7 @@ AVCodec cljr_decoder = {
 };
 
 #if CONFIG_CLJR_ENCODER
-AVCodec cljr_encoder = {
+AVCodec ff_cljr_encoder = {
     "cljr",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_CLJR,

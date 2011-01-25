@@ -84,7 +84,7 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
     return avctx->block_align;
 }
 
-AVCodec gsm_decoder = {
+AVCodec ff_gsm_decoder = {
     "gsm",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_GSM,
@@ -96,7 +96,7 @@ AVCodec gsm_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("GSM"),
 };
 
-AVCodec gsm_ms_decoder = {
+AVCodec ff_gsm_ms_decoder = {
     "gsm_ms",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_GSM_MS,

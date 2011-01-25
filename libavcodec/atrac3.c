@@ -1019,7 +1019,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 }
 
 
-AVCodec atrac3_decoder =
+AVCodec ff_atrac3_decoder =
 {
     .name = "atrac3",
     .type = AVMEDIA_TYPE_AUDIO,

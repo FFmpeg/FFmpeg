@@ -346,7 +346,7 @@ static av_cold int dnxhd_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec dnxhd_decoder = {
+AVCodec ff_dnxhd_decoder = {
     "dnxhd",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DNXHD,

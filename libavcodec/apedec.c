@@ -883,7 +883,7 @@ static void ape_flush(AVCodecContext *avctx)
     s->samples= 0;
 }
 
-AVCodec ape_decoder = {
+AVCodec ff_ape_decoder = {
     "ape",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_APE,

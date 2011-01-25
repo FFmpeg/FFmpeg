@@ -537,7 +537,7 @@ static av_cold int qtrle_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec qtrle_decoder = {
+AVCodec ff_qtrle_decoder = {
     "qtrle",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_QTRLE,

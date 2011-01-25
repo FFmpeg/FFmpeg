@@ -125,7 +125,7 @@ static int dca_parse(AVCodecParserContext * s,
     return next;
 }
 
-AVCodecParser dca_parser = {
+AVCodecParser ff_dca_parser = {
     {CODEC_ID_DTS},
     sizeof(DCAParseContext),
     dca_parse_init,

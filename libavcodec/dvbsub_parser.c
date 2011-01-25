@@ -179,7 +179,7 @@ static av_cold void dvbsub_parse_close(AVCodecParserContext *s)
     av_freep(&pc->packet_buf);
 }
 
-AVCodecParser dvbsub_parser = {
+AVCodecParser ff_dvbsub_parser = {
     { CODEC_ID_DVB_SUBTITLE },
     sizeof(DVBSubParseContext),
     dvbsub_parse_init,

@@ -3779,7 +3779,7 @@ int dct_quantize_c(MpegEncContext *s,
     return last_non_zero;
 }
 
-AVCodec h263_encoder = {
+AVCodec ff_h263_encoder = {
     "h263",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H263,
@@ -3791,7 +3791,7 @@ AVCodec h263_encoder = {
     .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996"),
 };
 
-AVCodec h263p_encoder = {
+AVCodec ff_h263p_encoder = {
     "h263p",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H263P,
@@ -3803,7 +3803,7 @@ AVCodec h263p_encoder = {
     .long_name= NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
 };
 
-AVCodec msmpeg4v1_encoder = {
+AVCodec ff_msmpeg4v1_encoder = {
     "msmpeg4v1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V1,
@@ -3815,7 +3815,7 @@ AVCodec msmpeg4v1_encoder = {
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 1"),
 };
 
-AVCodec msmpeg4v2_encoder = {
+AVCodec ff_msmpeg4v2_encoder = {
     "msmpeg4v2",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V2,
@@ -3827,7 +3827,7 @@ AVCodec msmpeg4v2_encoder = {
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
 };
 
-AVCodec msmpeg4v3_encoder = {
+AVCodec ff_msmpeg4v3_encoder = {
     "msmpeg4",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V3,
@@ -3839,7 +3839,7 @@ AVCodec msmpeg4v3_encoder = {
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
 };
 
-AVCodec wmv1_encoder = {
+AVCodec ff_wmv1_encoder = {
     "wmv1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_WMV1,
