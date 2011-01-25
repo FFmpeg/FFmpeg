@@ -2984,7 +2984,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     return 0;
 }
 
-void  denoise_dct_c(MpegEncContext *s, DCTELEM *block){
+static void denoise_dct_c(MpegEncContext *s, DCTELEM *block){
     const int intra= s->mb_intra;
     int i;
 
@@ -3008,9 +3008,9 @@ void  denoise_dct_c(MpegEncContext *s, DCTELEM *block){
     }
 }
 
-int dct_quantize_trellis_c(MpegEncContext *s,
-                        DCTELEM *block, int n,
-                        int qscale, int *overflow){
+static int dct_quantize_trellis_c(MpegEncContext *s,
+                                  DCTELEM *block, int n,
+                                  int qscale, int *overflow){
     const int *qmat;
     const uint8_t *scantable= s->intra_scantable.scantable;
     const uint8_t *perm_scantable= s->intra_scantable.permutated;
