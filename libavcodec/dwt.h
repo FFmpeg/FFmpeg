@@ -146,8 +146,6 @@ void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, in
 
 void ff_spatial_idwt_buffered_init(DWTCompose *cs, slice_buffer * sb, int width, int height, int stride_line, int type, int decomposition_count);
 void ff_spatial_idwt_buffered_slice(DWTContext *dsp, DWTCompose *cs, slice_buffer * slice_buf, int width, int height, int stride_line, int type, int decomposition_count, int y);
-void ff_spatial_idwt_init(DWTCompose *cs, IDWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count);
-void ff_spatial_idwt_slice(DWTCompose *cs, IDWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count, int y);
 void ff_spatial_idwt(IDWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count);
 
 void ff_dwt_init(DWTContext *c);

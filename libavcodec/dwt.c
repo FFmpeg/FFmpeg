@@ -697,7 +697,7 @@ void ff_spatial_idwt_buffered_slice(DWTContext *dsp, DWTCompose *cs, slice_buffe
     }
 }
 
-void ff_spatial_idwt_init(DWTCompose *cs, IDWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count){
+static void ff_spatial_idwt_init(DWTCompose *cs, IDWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count){
     int level;
     for(level=decomposition_count-1; level>=0; level--){
         switch(type){
@@ -707,7 +707,7 @@ void ff_spatial_idwt_init(DWTCompose *cs, IDWTELEM *buffer, int width, int heigh
     }
 }
 
-void ff_spatial_idwt_slice(DWTCompose *cs, IDWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count, int y){
+static void ff_spatial_idwt_slice(DWTCompose *cs, IDWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count, int y){
     const int support = type==1 ? 3 : 5;
     int level;
     if(type==2) return;
