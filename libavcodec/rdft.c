@@ -44,7 +44,7 @@ SINTABLE(16384);
 SINTABLE(32768);
 SINTABLE(65536);
 #endif
-SINTABLE_CONST FFTSample * const ff_sin_tabs[] = {
+static SINTABLE_CONST FFTSample * const ff_sin_tabs[] = {
     NULL, NULL, NULL, NULL,
     ff_sin_16, ff_sin_32, ff_sin_64, ff_sin_128, ff_sin_256, ff_sin_512, ff_sin_1024,
     ff_sin_2048, ff_sin_4096, ff_sin_8192, ff_sin_16384, ff_sin_32768, ff_sin_65536,
