@@ -92,7 +92,7 @@ static int srt_read_packet(AVFormatContext *s, AVPacket *pkt)
     return res;
 }
 
-AVInputFormat srt_demuxer = {
+AVInputFormat ff_srt_demuxer = {
     .name        = "srt",
     .long_name   = NULL_IF_CONFIG_SMALL("SubRip subtitle format"),
     .read_probe  = srt_probe,

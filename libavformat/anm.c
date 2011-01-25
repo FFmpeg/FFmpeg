@@ -225,7 +225,7 @@ repeat:
     return 0;
 }
 
-AVInputFormat anm_demuxer = {
+AVInputFormat ff_anm_demuxer = {
     "anm",
     NULL_IF_CONFIG_SMALL("Deluxe Paint Animation"),
     sizeof(AnmDemuxContext),

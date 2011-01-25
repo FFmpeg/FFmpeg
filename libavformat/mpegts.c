@@ -158,7 +158,7 @@ typedef struct PESContext {
     uint8_t *buffer;
 } PESContext;
 
-extern AVInputFormat mpegts_demuxer;
+extern AVInputFormat ff_mpegts_demuxer;
 
 static void clear_program(MpegTSContext *ts, unsigned int programid)
 {
@@ -1468,7 +1468,7 @@ static int mpegts_read_header(AVFormatContext *s,
     ts->stream = s;
     ts->auto_guess = 0;
 
-    if (s->iformat == &mpegts_demuxer) {
+    if (s->iformat == &ff_mpegts_demuxer) {
         /* normal demux */
 
         /* first do a scaning to get all the services */
@@ -1845,7 +1845,7 @@ void ff_mpegts_parse_close(MpegTSContext *ts)
     av_free(ts);
 }
 
-AVInputFormat mpegts_demuxer = {
+AVInputFormat ff_mpegts_demuxer = {
     "mpegts",
     NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
     sizeof(MpegTSContext),
@@ -1861,7 +1861,7 @@ AVInputFormat mpegts_demuxer = {
 #endif
 };
 
-AVInputFormat mpegtsraw_demuxer = {
+AVInputFormat ff_mpegtsraw_demuxer = {
     "mpegtsraw",
     NULL_IF_CONFIG_SMALL("MPEG-2 raw transport stream format"),
     sizeof(MpegTSContext),

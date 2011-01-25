@@ -452,7 +452,7 @@ static int vfw_read_packet(AVFormatContext *s, AVPacket *pkt)
     return pkt->size;
 }
 
-AVInputFormat vfwcap_demuxer = {
+AVInputFormat ff_vfwcap_demuxer = {
     "vfwcap",
     NULL_IF_CONFIG_SMALL("VFW video capture"),
     sizeof(struct vfw_ctx),

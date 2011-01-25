@@ -395,7 +395,7 @@ static int rtsp_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat rtsp_demuxer = {
+AVInputFormat ff_rtsp_demuxer = {
     "rtsp",
     NULL_IF_CONFIG_SMALL("RTSP input format"),
     sizeof(RTSPState),

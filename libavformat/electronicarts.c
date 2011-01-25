@@ -568,7 +568,7 @@ get_video_packet:
     return ret;
 }
 
-AVInputFormat ea_demuxer = {
+AVInputFormat ff_ea_demuxer = {
     "ea",
     NULL_IF_CONFIG_SMALL("Electronic Arts Multimedia Format"),
     sizeof(EaDemuxContext),

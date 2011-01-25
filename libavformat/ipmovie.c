@@ -620,7 +620,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
     return ret;
 }
 
-AVInputFormat ipmovie_demuxer = {
+AVInputFormat ff_ipmovie_demuxer = {
     "ipmovie",
     NULL_IF_CONFIG_SMALL("Interplay MVE format"),
     sizeof(IPMVEContext),

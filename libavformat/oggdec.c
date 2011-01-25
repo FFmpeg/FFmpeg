@@ -648,7 +648,7 @@ static int ogg_probe(AVProbeData *p)
         return 0;
 }
 
-AVInputFormat ogg_demuxer = {
+AVInputFormat ff_ogg_demuxer = {
     "ogg",
     NULL_IF_CONFIG_SMALL("Ogg"),
     sizeof (struct ogg),

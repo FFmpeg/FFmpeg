@@ -123,7 +123,7 @@ static int wav_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat wav_muxer = {
+AVOutputFormat ff_wav_muxer = {
     "wav",
     NULL_IF_CONFIG_SMALL("WAV format"),
     "audio/x-wav",
@@ -340,7 +340,7 @@ static int wav_read_seek(AVFormatContext *s,
     return pcm_read_seek(s, stream_index, timestamp, flags);
 }
 
-AVInputFormat wav_demuxer = {
+AVInputFormat ff_wav_demuxer = {
     "wav",
     NULL_IF_CONFIG_SMALL("WAV format"),
     sizeof(WAVContext),
@@ -426,7 +426,7 @@ static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
-AVInputFormat w64_demuxer = {
+AVInputFormat ff_w64_demuxer = {
     "w64",
     NULL_IF_CONFIG_SMALL("Sony Wave64 format"),
     sizeof(WAVContext),

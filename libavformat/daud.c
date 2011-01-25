@@ -65,7 +65,7 @@ static int daud_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 }
 
 #if CONFIG_DAUD_DEMUXER
-AVInputFormat daud_demuxer = {
+AVInputFormat ff_daud_demuxer = {
     "daud",
     NULL_IF_CONFIG_SMALL("D-Cinema audio format"),
     0,
@@ -79,7 +79,7 @@ AVInputFormat daud_demuxer = {
 #endif
 
 #if CONFIG_DAUD_MUXER
-AVOutputFormat daud_muxer =
+AVOutputFormat ff_daud_muxer =
 {
     "daud",
     NULL_IF_CONFIG_SMALL("D-Cinema audio format"),

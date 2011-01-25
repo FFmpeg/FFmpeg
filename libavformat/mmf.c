@@ -291,7 +291,7 @@ static int mmf_read_packet(AVFormatContext *s,
 }
 
 #if CONFIG_MMF_DEMUXER
-AVInputFormat mmf_demuxer = {
+AVInputFormat ff_mmf_demuxer = {
     "mmf",
     NULL_IF_CONFIG_SMALL("Yamaha SMAF"),
     sizeof(MMFContext),
@@ -303,7 +303,7 @@ AVInputFormat mmf_demuxer = {
 };
 #endif
 #if CONFIG_MMF_MUXER
-AVOutputFormat mmf_muxer = {
+AVOutputFormat ff_mmf_muxer = {
     "mmf",
     NULL_IF_CONFIG_SMALL("Yamaha SMAF"),
     "application/vnd.smaf",

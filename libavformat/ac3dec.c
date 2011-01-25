@@ -70,7 +70,7 @@ static int ac3_probe(AVProbeData *p)
     return ac3_eac3_probe(p, CODEC_ID_AC3);
 }
 
-AVInputFormat ac3_demuxer = {
+AVInputFormat ff_ac3_demuxer = {
     "ac3",
     NULL_IF_CONFIG_SMALL("raw AC-3"),
     0,
@@ -89,7 +89,7 @@ static int eac3_probe(AVProbeData *p)
     return ac3_eac3_probe(p, CODEC_ID_EAC3);
 }
 
-AVInputFormat eac3_demuxer = {
+AVInputFormat ff_eac3_demuxer = {
     "eac3",
     NULL_IF_CONFIG_SMALL("raw E-AC-3"),
     0,

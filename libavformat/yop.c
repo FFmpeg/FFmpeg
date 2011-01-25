@@ -202,7 +202,7 @@ static int yop_read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat yop_demuxer = {
+AVInputFormat ff_yop_demuxer = {
     "yop",
     NULL_IF_CONFIG_SMALL("Psygnosis YOP Format"),
     sizeof(YopDecContext),

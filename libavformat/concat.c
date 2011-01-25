@@ -188,7 +188,7 @@ static int64_t concat_seek(URLContext *h, int64_t pos, int whence)
     return result;
 }
 
-URLProtocol concat_protocol = {
+URLProtocol ff_concat_protocol = {
     "concat",
     concat_open,
     concat_read,

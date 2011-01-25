@@ -90,7 +90,7 @@ static int nc_read_packet(AVFormatContext *s, AVPacket *pkt)
     return size;
 }
 
-AVInputFormat nc_demuxer = {
+AVInputFormat ff_nc_demuxer = {
     "nc",
     NULL_IF_CONFIG_SMALL("NC camera feed format"),
     0,

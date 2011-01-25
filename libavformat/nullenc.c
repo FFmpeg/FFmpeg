@@ -26,7 +26,7 @@ static int null_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat null_muxer = {
+AVOutputFormat ff_null_muxer = {
     "null",
     NULL_IF_CONFIG_SMALL("raw null video format"),
     NULL,

@@ -233,7 +233,7 @@ static int rtsp_write_close(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat rtsp_muxer = {
+AVOutputFormat ff_rtsp_muxer = {
     "rtsp",
     NULL_IF_CONFIG_SMALL("RTSP output format"),
     NULL,

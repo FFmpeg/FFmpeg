@@ -377,7 +377,7 @@ static int r3d_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat r3d_demuxer = {
+AVInputFormat ff_r3d_demuxer = {
     "r3d",
     NULL_IF_CONFIG_SMALL("REDCODE R3D format"),
     sizeof(R3DContext),

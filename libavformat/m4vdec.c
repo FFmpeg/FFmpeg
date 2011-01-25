@@ -49,7 +49,7 @@ static int mpeg4video_probe(AVProbeData *probe_packet)
     return 0;
 }
 
-AVInputFormat m4v_demuxer = {
+AVInputFormat ff_m4v_demuxer = {
     "m4v",
     NULL_IF_CONFIG_SMALL("raw MPEG-4 video format"),
     0,

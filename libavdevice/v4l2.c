@@ -680,7 +680,7 @@ static int v4l2_read_close(AVFormatContext *s1)
     return 0;
 }
 
-AVInputFormat v4l2_demuxer = {
+AVInputFormat ff_v4l2_demuxer = {
     "video4linux2",
     NULL_IF_CONFIG_SMALL("Video4Linux2 device grab"),
     sizeof(struct video_data),

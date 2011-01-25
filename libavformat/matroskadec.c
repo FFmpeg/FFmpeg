@@ -1920,7 +1920,7 @@ static int matroska_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat matroska_demuxer = {
+AVInputFormat ff_matroska_demuxer = {
     "matroska,webm",
     NULL_IF_CONFIG_SMALL("Matroska/WebM file format"),
     sizeof(MatroskaDemuxContext),

@@ -90,7 +90,7 @@ next_chunk:
     return 0;
 }
 
-AVInputFormat txd_demuxer =
+AVInputFormat ff_txd_demuxer =
 {
     "txd",
     NULL_IF_CONFIG_SMALL("Renderware TeXture Dictionary"),

@@ -344,7 +344,7 @@ static int smacker_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat smacker_demuxer = {
+AVInputFormat ff_smacker_demuxer = {
     "smk",
     NULL_IF_CONFIG_SMALL("Smacker video"),
     sizeof(SmackerContext),

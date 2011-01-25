@@ -65,7 +65,7 @@ static int write_trailer(struct AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat md5_muxer = {
+AVOutputFormat ff_md5_muxer = {
     "md5",
     NULL_IF_CONFIG_SMALL("MD5 testing format"),
     NULL,
@@ -95,7 +95,7 @@ static int framemd5_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat framemd5_muxer = {
+AVOutputFormat ff_framemd5_muxer = {
     "framemd5",
     NULL_IF_CONFIG_SMALL("Per-frame MD5 testing format"),
     NULL,

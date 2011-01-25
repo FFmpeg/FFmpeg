@@ -444,7 +444,7 @@ static int rtp_write_trailer(AVFormatContext *s1)
     return 0;
 }
 
-AVOutputFormat rtp_muxer = {
+AVOutputFormat ff_rtp_muxer = {
     "rtp",
     NULL_IF_CONFIG_SMALL("RTP output format"),
     NULL,

@@ -53,7 +53,7 @@ static int mpjpeg_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat mpjpeg_muxer = {
+AVOutputFormat ff_mpjpeg_muxer = {
     "mpjpeg",
     NULL_IF_CONFIG_SMALL("MIME multipart JPEG format"),
     "multipart/x-mixed-replace;boundary=" BOUNDARY_TAG,

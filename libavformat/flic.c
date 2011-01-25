@@ -259,7 +259,7 @@ static int flic_read_packet(AVFormatContext *s,
     return ret;
 }
 
-AVInputFormat flic_demuxer = {
+AVInputFormat ff_flic_demuxer = {
     "flic",
     NULL_IF_CONFIG_SMALL("FLI/FLC/FLX animation format"),
     sizeof(FlicDemuxContext),

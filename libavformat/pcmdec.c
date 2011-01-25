@@ -47,7 +47,7 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 #define PCMDEF(name, long_name, ext, codec) \
-AVInputFormat pcm_ ## name ## _demuxer = {\
+AVInputFormat ff_pcm_ ## name ## _demuxer = {\
     #name,\
     NULL_IF_CONFIG_SMALL(long_name),\
     0,\

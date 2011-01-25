@@ -143,7 +143,7 @@ static int tta_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     return 0;
 }
 
-AVInputFormat tta_demuxer = {
+AVInputFormat ff_tta_demuxer = {
     "tta",
     NULL_IF_CONFIG_SMALL("True Audio"),
     sizeof(TTAContext),

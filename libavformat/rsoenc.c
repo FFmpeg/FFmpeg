@@ -100,7 +100,7 @@ static int rso_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat rso_muxer = {
+AVOutputFormat ff_rso_muxer = {
     .name           =   "rso",
     .long_name      =   NULL_IF_CONFIG_SMALL("Lego Mindstorms RSO format"),
     .extensions     =   "rso",

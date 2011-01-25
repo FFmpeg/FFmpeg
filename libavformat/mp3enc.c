@@ -134,7 +134,7 @@ static int mp3_write_trailer(struct AVFormatContext *s)
 }
 
 #if CONFIG_MP2_MUXER
-AVOutputFormat mp2_muxer = {
+AVOutputFormat ff_mp2_muxer = {
     "mp2",
     NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
     "audio/x-mpeg",
@@ -233,7 +233,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat mp3_muxer = {
+AVOutputFormat ff_mp3_muxer = {
     "mp3",
     NULL_IF_CONFIG_SMALL("MPEG audio layer 3"),
     "audio/x-mpeg",

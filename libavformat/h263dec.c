@@ -64,7 +64,7 @@ static int h263_probe(AVProbeData *p)
     return 0;
 }
 
-AVInputFormat h263_demuxer = {
+AVInputFormat ff_h263_demuxer = {
     "h263",
     NULL_IF_CONFIG_SMALL("raw H.263"),
     0,

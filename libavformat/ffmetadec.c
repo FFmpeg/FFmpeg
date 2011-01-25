@@ -163,7 +163,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_EOF;
 }
 
-AVInputFormat ffmetadata_demuxer = {
+AVInputFormat ff_ffmetadata_demuxer = {
     .name        = "ffmetadata",
     .long_name   = NULL_IF_CONFIG_SMALL("FFmpeg metadata in text format"),
     .read_probe  = probe,

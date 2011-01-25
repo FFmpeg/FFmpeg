@@ -457,7 +457,7 @@ static int rm_write_trailer(AVFormatContext *s)
 }
 
 
-AVOutputFormat rm_muxer = {
+AVOutputFormat ff_rm_muxer = {
     "rm",
     NULL_IF_CONFIG_SMALL("RealMedia format"),
     "application/vnd.rn-realmedia",

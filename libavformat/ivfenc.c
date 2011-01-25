@@ -58,7 +58,7 @@ static int ivf_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ivf_muxer = {
+AVOutputFormat ff_ivf_muxer = {
     .name = "ivf",
     .long_name = NULL_IF_CONFIG_SMALL("On2 IVF"),
     .extensions = "ivf",

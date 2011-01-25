@@ -989,7 +989,7 @@ static int rtmp_write(URLContext *h, const uint8_t *buf, int size)
     return size;
 }
 
-URLProtocol rtmp_protocol = {
+URLProtocol ff_rtmp_protocol = {
     "rtmp",
     rtmp_open,
     rtmp_read,

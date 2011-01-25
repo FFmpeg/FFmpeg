@@ -218,7 +218,7 @@ static int tcp_get_file_handle(URLContext *h)
     return s->fd;
 }
 
-URLProtocol tcp_protocol = {
+URLProtocol ff_tcp_protocol = {
     "tcp",
     tcp_open,
     tcp_read,

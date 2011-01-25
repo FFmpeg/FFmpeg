@@ -189,7 +189,7 @@ static int oma_read_probe(AVProbeData *p)
 }
 
 
-AVInputFormat oma_demuxer = {
+AVInputFormat ff_oma_demuxer = {
     "oma",
     NULL_IF_CONFIG_SMALL("Sony OpenMG audio"),
     0,

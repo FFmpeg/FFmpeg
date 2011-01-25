@@ -137,7 +137,7 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat adts_muxer = {
+AVOutputFormat ff_adts_muxer = {
     "adts",
     NULL_IF_CONFIG_SMALL("ADTS AAC"),
     "audio/aac",

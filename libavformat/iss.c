@@ -122,7 +122,7 @@ static int iss_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat iss_demuxer = {
+AVInputFormat ff_iss_demuxer = {
     "ISS",
     NULL_IF_CONFIG_SMALL("Funcom ISS format"),
     sizeof(IssDemuxContext),

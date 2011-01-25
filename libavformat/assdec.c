@@ -202,7 +202,7 @@ static int read_seek2(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat ass_demuxer = {
+AVInputFormat ff_ass_demuxer = {
     .name           = "ass",
     .long_name      = NULL_IF_CONFIG_SMALL("Advanced SubStation Alpha subtitle format"),
     .priv_data_size = sizeof(ASSContext),

@@ -35,7 +35,7 @@ static int roq_write_header(struct AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat roq_muxer =
+AVOutputFormat ff_roq_muxer =
 {
     "RoQ",
     NULL_IF_CONFIG_SMALL("raw id RoQ format"),

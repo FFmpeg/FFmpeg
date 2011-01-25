@@ -359,7 +359,7 @@ int rtp_get_rtcp_file_handle(URLContext *h) {
     return s->rtcp_fd;
 }
 
-URLProtocol rtp_protocol = {
+URLProtocol ff_rtp_protocol = {
     "rtp",
     rtp_open,
     rtp_read,

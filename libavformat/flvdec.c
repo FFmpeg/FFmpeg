@@ -491,7 +491,7 @@ static int flv_read_seek2(AVFormatContext *s, int stream_index,
 }
 #endif
 
-AVInputFormat flv_demuxer = {
+AVInputFormat ff_flv_demuxer = {
     "flv",
     NULL_IF_CONFIG_SMALL("FLV format"),
     sizeof(FLVContext),

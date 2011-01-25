@@ -109,7 +109,7 @@ static int vc1t_read_packet(AVFormatContext *s,
     return pkt->size;
 }
 
-AVInputFormat vc1t_demuxer = {
+AVInputFormat ff_vc1t_demuxer = {
     "vc1test",
     NULL_IF_CONFIG_SMALL("VC-1 test bitstream format"),
     0,

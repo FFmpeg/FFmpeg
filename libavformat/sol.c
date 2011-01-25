@@ -141,7 +141,7 @@ static int sol_read_packet(AVFormatContext *s,
     return 0;
 }
 
-AVInputFormat sol_demuxer = {
+AVInputFormat ff_sol_demuxer = {
     "sol",
     NULL_IF_CONFIG_SMALL("Sierra SOL format"),
     0,

@@ -77,7 +77,7 @@ static int write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ass_muxer = {
+AVOutputFormat ff_ass_muxer = {
     .name           = "ass",
     .long_name      = NULL_IF_CONFIG_SMALL("Advanced SubStation Alpha subtitle format"),
     .mime_type      = "text/x-ssa",

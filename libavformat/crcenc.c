@@ -54,7 +54,7 @@ static int crc_write_trailer(struct AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat crc_muxer = {
+AVOutputFormat ff_crc_muxer = {
     "crc",
     NULL_IF_CONFIG_SMALL("CRC testing format"),
     NULL,

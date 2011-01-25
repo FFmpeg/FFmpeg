@@ -93,7 +93,7 @@ static int audio_write_packet(AVFormatContext *s1, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat alsa_muxer = {
+AVOutputFormat ff_alsa_muxer = {
     "alsa",
     NULL_IF_CONFIG_SMALL("ALSA audio output"),
     "",

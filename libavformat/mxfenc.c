@@ -44,7 +44,7 @@
 static const int NTSC_samples_per_frame[] = { 1602, 1601, 1602, 1601, 1602, 0 };
 static const int PAL_samples_per_frame[]  = { 1920, 0 };
 
-extern AVOutputFormat mxf_d10_muxer;
+extern AVOutputFormat ff_mxf_d10_muxer;
 
 #define EDIT_UNITS_PER_BODY 250
 #define KAG_SIZE 512
@@ -1371,7 +1371,7 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
             }
         }
     }
-    if (s->oformat != &mxf_d10_muxer)
+    if (s->oformat != &ff_mxf_d10_muxer)
         sc->codec_ul = mxf_get_mpeg2_codec_ul(st->codec);
     return !!sc->codec_ul;
 }
@@ -1436,7 +1436,7 @@ static int mxf_write_header(AVFormatContext *s)
                 return -1;
             }
             av_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
-            if (s->oformat == &mxf_d10_muxer) {
+            if (s->oformat == &ff_mxf_d10_muxer) {
                 if (st->codec->bit_rate == 50000000)
                     if (mxf->time_base.den == 25) sc->index = 3;
                     else                          sc->index = 5;
@@ -1464,7 +1464,7 @@ static int mxf_write_header(AVFormatContext *s)
                 return -1;
             }
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
-            if (s->oformat == &mxf_d10_muxer) {
+            if (s->oformat == &ff_mxf_d10_muxer) {
                 if (st->index != 1) {
                     av_log(s, AV_LOG_ERROR, "MXF D-10 only support one audio track\n");
                     return -1;
@@ -1498,7 +1498,7 @@ static int mxf_write_header(AVFormatContext *s)
         present[sc->index]++;
     }
 
-    if (s->oformat == &mxf_d10_muxer) {
+    if (s->oformat == &ff_mxf_d10_muxer) {
         mxf->essence_container_count = 1;
     }
 
@@ -1720,7 +1720,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     mxf_write_klv_fill(s);
     put_buffer(pb, sc->track_essence_element_key, 16); // write key
-    if (s->oformat == &mxf_d10_muxer) {
+    if (s->oformat == &ff_mxf_d10_muxer) {
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
             mxf_write_d10_video_packet(s, st, pkt);
         else
@@ -1879,7 +1879,7 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
                                mxf_interleave_get_packet, mxf_compare_timestamps);
 }
 
-AVOutputFormat mxf_muxer = {
+AVOutputFormat ff_mxf_muxer = {
     "mxf",
     NULL_IF_CONFIG_SMALL("Material eXchange Format"),
     "application/mxf",
@@ -1895,7 +1895,7 @@ AVOutputFormat mxf_muxer = {
     mxf_interleave,
 };
 
-AVOutputFormat mxf_d10_muxer = {
+AVOutputFormat ff_mxf_d10_muxer = {
     "mxf_d10",
     NULL_IF_CONFIG_SMALL("Material eXchange Format, D-10 Mapping"),
     "application/mxf",

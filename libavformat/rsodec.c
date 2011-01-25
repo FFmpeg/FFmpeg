@@ -88,7 +88,7 @@ static int rso_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat rso_demuxer = {
+AVInputFormat ff_rso_demuxer = {
     .name           =   "rso",
     .long_name      =   NULL_IF_CONFIG_SMALL("Lego Mindstorms RSO format"),
     .extensions     =   "rso",

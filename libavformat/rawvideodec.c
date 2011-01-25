@@ -44,7 +44,7 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat rawvideo_demuxer = {
+AVInputFormat ff_rawvideo_demuxer = {
     "rawvideo",
     NULL_IF_CONFIG_SMALL("raw video format"),
     0,

@@ -150,7 +150,7 @@ static int nut_write_trailer(AVFormatContext * avf) {
     return 0;
 }
 
-AVOutputFormat libnut_muxer = {
+AVOutputFormat ff_libnut_muxer = {
     "libnut",
     "nut format",
     "video/x-nut",
@@ -297,7 +297,7 @@ static int nut_read_close(AVFormatContext *s) {
     return 0;
 }
 
-AVInputFormat libnut_demuxer = {
+AVInputFormat ff_libnut_demuxer = {
     "libnut",
     NULL_IF_CONFIG_SMALL("NUT format"),
     sizeof(NUTContext),

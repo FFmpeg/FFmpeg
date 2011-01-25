@@ -311,7 +311,7 @@ static int aiff_read_packet(AVFormatContext *s,
     return 0;
 }
 
-AVInputFormat aiff_demuxer = {
+AVInputFormat ff_aiff_demuxer = {
     "aiff",
     NULL_IF_CONFIG_SMALL("Audio IFF"),
     sizeof(AIFFInputContext),

@@ -343,7 +343,7 @@ static int fourxm_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat fourxm_demuxer = {
+AVInputFormat ff_fourxm_demuxer = {
     "4xm",
     NULL_IF_CONFIG_SMALL("4X Technologies format"),
     sizeof(FourxmDemuxContext),

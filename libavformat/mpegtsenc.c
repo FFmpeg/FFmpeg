@@ -948,7 +948,7 @@ static int mpegts_write_end(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat mpegts_muxer = {
+AVOutputFormat ff_mpegts_muxer = {
     "mpegts",
     NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
     "video/x-mpegts",

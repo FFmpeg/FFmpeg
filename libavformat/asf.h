@@ -229,7 +229,7 @@ extern const AVMetadataConv ff_asf_metadata_conv[];
 
 #define ASF_PL_FLAG_KEY_FRAME 0x80 //1000 0000
 
-extern AVInputFormat asf_demuxer;
+extern AVInputFormat ff_asf_demuxer;
 int ff_guidcmp(const void *g1, const void *g2);
 void ff_get_guid(ByteIOContext *s, ff_asf_guid *g);
 

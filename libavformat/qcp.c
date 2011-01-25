@@ -187,7 +187,7 @@ static int qcp_read_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_EOF;
 }
 
-AVInputFormat qcp_demuxer = {
+AVInputFormat ff_qcp_demuxer = {
     .name           = "qcp",
     .long_name      = NULL_IF_CONFIG_SMALL("QCP format"),
     .priv_data_size = sizeof(QCPContext),

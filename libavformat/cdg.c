@@ -55,7 +55,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat cdg_demuxer = {
+AVInputFormat ff_cdg_demuxer = {
     "cdg",
     NULL_IF_CONFIG_SMALL("CD Graphics Format"),
     0,
