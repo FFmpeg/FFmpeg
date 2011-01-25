@@ -44,7 +44,7 @@
          'url_open_dyn_packet_buf')
 */
 
-RTPDynamicProtocolHandler ff_realmedia_mp3_dynamic_handler = {
+static RTPDynamicProtocolHandler ff_realmedia_mp3_dynamic_handler = {
     .enc_name           = "X-MP3-draft-00",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = CODEC_ID_MP3ADU,
