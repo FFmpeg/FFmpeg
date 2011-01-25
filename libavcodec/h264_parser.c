@@ -26,14 +26,13 @@
  */
 
 #include "parser.h"
-#include "h264_parser.h"
 #include "h264data.h"
 #include "golomb.h"
 
 #include <assert.h>
 
 
-int ff_h264_find_frame_end(H264Context *h, const uint8_t *buf, int buf_size)
+static int ff_h264_find_frame_end(H264Context *h, const uint8_t *buf, int buf_size)
 {
     int i;
     uint32_t state;
