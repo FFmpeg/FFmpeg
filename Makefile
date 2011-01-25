@@ -16,8 +16,8 @@ MANPAGES    = $(PROGS-yes:%=doc/%.1)
 PODPAGES    = $(PROGS-yes:%=doc/%.pod)
 HTMLPAGES   = $(PROGS-yes:%=doc/%.html)
 TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws pktdumper probetest qt-faststart trasher))
-TESTPROGS   = audiogen videogen rotozoom tiny_psnr base64
-HOSTPROGS  := $(TESTPROGS:%=tests/%)
+TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
+HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 
 BASENAMES   = ffmpeg ffplay ffprobe ffserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
@@ -163,7 +163,7 @@ testclean:
 	$(RM) -r tests/vsynth1 tests/vsynth2 tests/data
 	$(RM) $(addprefix tests/,$(CLEANSUFFIXES))
 	$(RM) tests/seek_test$(EXESUF) tests/seek_test.o
-	$(RM) $(TESTPROGS:%=tests/%$(HOSTEXESUF))
+	$(RM) $(TESTTOOLS:%=tests/%$(HOSTEXESUF))
 
 clean:: testclean
 	$(RM) $(ALLPROGS) $(ALLPROGS_G)
