@@ -21,7 +21,7 @@ HOSTPROGS  := $(TESTPROGS:%=tests/%)
 
 BASENAMES   = ffmpeg ffplay ffprobe ffserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
-ALLPROGS_G  = $(BASENAMES:%=_g$(EXESUF))
+ALLPROGS_G  = $(BASENAMES:%=%_g$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
 ALLHTMLPAGES= $(BASENAMES:%=%.html)
 
