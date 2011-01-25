@@ -29,7 +29,6 @@
 #include "bytestream.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "iff.h"
 
 typedef struct {
     AVFrame frame;
@@ -120,7 +119,7 @@ static av_always_inline uint32_t gray2rgb(const uint32_t x) {
 /**
  * Convert CMAP buffer (stored in extradata) to lavc palette format
  */
-int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
+static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
 {
     int count, i;
 

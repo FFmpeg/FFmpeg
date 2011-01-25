@@ -30,7 +30,6 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavcodec/iff.h"
 #include "avformat.h"
 
 #define ID_8SVX       MKTAG('8','S','V','X')
