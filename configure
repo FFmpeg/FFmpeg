@@ -321,6 +321,14 @@ filter(){
     done
 }
 
+filter_out(){
+    pat=$1
+    shift
+    for v; do
+        eval "case $v in $pat) ;; *) echo $v ;; esac"
+    done
+}
+
 map(){
     m=$1
     shift
