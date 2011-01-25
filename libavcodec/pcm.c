@@ -508,7 +508,7 @@ AVCodec name_ ## _decoder = {                   \
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 PCM_CODEC  (CODEC_ID_PCM_ALAW,  AV_SAMPLE_FMT_S16, pcm_alaw, "PCM A-law");
-PCM_CODEC  (CODEC_ID_PCM_DVD,   AV_SAMPLE_FMT_S32, pcm_dvd, "PCM signed 20|24-bit big-endian");
+PCM_DECODER(CODEC_ID_PCM_DVD,   AV_SAMPLE_FMT_S32, pcm_dvd, "PCM signed 20|24-bit big-endian");
 PCM_CODEC  (CODEC_ID_PCM_F32BE, AV_SAMPLE_FMT_FLT, pcm_f32be, "PCM 32-bit floating point big-endian");
 PCM_CODEC  (CODEC_ID_PCM_F32LE, AV_SAMPLE_FMT_FLT, pcm_f32le, "PCM 32-bit floating point little-endian");
 PCM_CODEC  (CODEC_ID_PCM_F64BE, AV_SAMPLE_FMT_DBL, pcm_f64be, "PCM 64-bit floating point big-endian");
