@@ -205,7 +205,7 @@ int avfilter_config_links(AVFilterContext *filter)
     return 0;
 }
 
-char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
+static char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
 {
     snprintf(buf, buf_size, "%s%s%s%s%s%s",
              perms & AV_PERM_READ      ? "r" : "",
@@ -217,7 +217,7 @@ char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
     return buf;
 }
 
-void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end)
+static void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end)
 {
     av_unused char buf[16];
     dprintf(ctx,
@@ -245,7 +245,7 @@ void ff_dprintf_ref(void *ctx, AVFilterBufferRef *ref, int end)
     dprintf(ctx, "]%s", end ? "\n" : "");
 }
 
-void ff_dprintf_link(void *ctx, AVFilterLink *link, int end)
+static void ff_dprintf_link(void *ctx, AVFilterLink *link, int end)
 {
     if (link->type == AVMEDIA_TYPE_VIDEO) {
         dprintf(ctx,
@@ -268,6 +268,8 @@ void ff_dprintf_link(void *ctx, AVFilterLink *link, int end)
                 end ? "\n" : "");
     }
 }
+
+#define FF_DPRINTF_START(ctx, func) dprintf(NULL, "%-16s: ", #func)
 
 AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
