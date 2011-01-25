@@ -1503,8 +1503,8 @@ const int16_t * const ff_lpc_refl_cb[10]={
     lpc_refl_cb6, lpc_refl_cb7, lpc_refl_cb8, lpc_refl_cb9, lpc_refl_cb10
 };
 
-void ff_add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
-                const int8_t *s2, const int8_t *s3)
+static void ff_add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
+                       const int8_t *s2, const int8_t *s3)
 {
     int i;
     int v[3];
