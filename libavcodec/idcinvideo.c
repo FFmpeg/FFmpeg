@@ -253,7 +253,7 @@ static av_cold int idcin_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec idcin_decoder = {
+AVCodec ff_idcin_decoder = {
     "idcinvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_IDCIN,

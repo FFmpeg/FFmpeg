@@ -97,7 +97,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     return i;
 }
 
-AVCodec sp5x_decoder = {
+AVCodec ff_sp5x_decoder = {
     "sp5x",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SP5X,
@@ -112,7 +112,7 @@ AVCodec sp5x_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("Sunplus JPEG (SP5X)"),
 };
 
-AVCodec amv_decoder = {
+AVCodec ff_amv_decoder = {
     "amv",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_AMV,

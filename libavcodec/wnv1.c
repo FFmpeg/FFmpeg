@@ -154,7 +154,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
     return 0;
 }
 
-AVCodec wnv1_decoder = {
+AVCodec ff_wnv1_decoder = {
     "wnv1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_WNV1,

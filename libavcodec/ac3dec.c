@@ -1437,7 +1437,7 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ac3_decoder = {
+AVCodec ff_ac3_decoder = {
     .name = "ac3",
     .type = AVMEDIA_TYPE_AUDIO,
     .id = CODEC_ID_AC3,
@@ -1449,7 +1449,7 @@ AVCodec ac3_decoder = {
 };
 
 #if CONFIG_EAC3_DECODER
-AVCodec eac3_decoder = {
+AVCodec ff_eac3_decoder = {
     .name = "eac3",
     .type = AVMEDIA_TYPE_AUDIO,
     .id = CODEC_ID_EAC3,

@@ -455,7 +455,7 @@ static av_cold int cinepak_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec cinepak_decoder = {
+AVCodec ff_cinepak_decoder = {
     "cinepak",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_CINEPAK,

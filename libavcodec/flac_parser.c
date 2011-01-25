@@ -673,7 +673,7 @@ static void flac_parse_close(AVCodecParserContext *c)
     av_free(fpc->wrap_buf);
 }
 
-AVCodecParser flac_parser = {
+AVCodecParser ff_flac_parser = {
     { CODEC_ID_FLAC },
     sizeof(FLACParseContext),
     flac_parse_init,

@@ -572,7 +572,7 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
 }
 
 
-AVCodec svq1_encoder = {
+AVCodec ff_svq1_encoder = {
     "svq1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SVQ1,

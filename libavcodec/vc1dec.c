@@ -3345,7 +3345,7 @@ static av_cold int vc1_decode_end(AVCodecContext *avctx)
 }
 
 
-AVCodec vc1_decoder = {
+AVCodec ff_vc1_decoder = {
     "vc1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VC1,
@@ -3361,7 +3361,7 @@ AVCodec vc1_decoder = {
 };
 
 #if CONFIG_WMV3_DECODER
-AVCodec wmv3_decoder = {
+AVCodec ff_wmv3_decoder = {
     "wmv3",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_WMV3,
@@ -3378,7 +3378,7 @@ AVCodec wmv3_decoder = {
 #endif
 
 #if CONFIG_WMV3_VDPAU_DECODER
-AVCodec wmv3_vdpau_decoder = {
+AVCodec ff_wmv3_vdpau_decoder = {
     "wmv3_vdpau",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_WMV3,
@@ -3395,7 +3395,7 @@ AVCodec wmv3_vdpau_decoder = {
 #endif
 
 #if CONFIG_VC1_VDPAU_DECODER
-AVCodec vc1_vdpau_decoder = {
+AVCodec ff_vc1_vdpau_decoder = {
     "vc1_vdpau",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VC1,

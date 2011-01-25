@@ -367,7 +367,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec iff_ilbm_decoder = {
+AVCodec ff_iff_ilbm_decoder = {
     "iff_ilbm",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_IFF_ILBM,
@@ -380,7 +380,7 @@ AVCodec iff_ilbm_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("IFF ILBM"),
 };
 
-AVCodec iff_byterun1_decoder = {
+AVCodec ff_iff_byterun1_decoder = {
     "iff_byterun1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_IFF_BYTERUN1,

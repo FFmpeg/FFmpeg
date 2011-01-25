@@ -653,7 +653,7 @@ static av_cold int flac_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec flac_decoder = {
+AVCodec ff_flac_decoder = {
     "flac",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_FLAC,

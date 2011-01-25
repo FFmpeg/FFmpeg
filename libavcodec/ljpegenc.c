@@ -186,7 +186,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
 }
 
 
-AVCodec ljpeg_encoder = { //FIXME avoid MPV_* lossless JPEG should not need them
+AVCodec ff_ljpeg_encoder = { //FIXME avoid MPV_* lossless JPEG should not need them
     "ljpeg",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_LJPEG,

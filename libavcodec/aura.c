@@ -122,7 +122,7 @@ static av_cold int aura_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec aura2_decoder = {
+AVCodec ff_aura2_decoder = {
     "aura2",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_AURA2,

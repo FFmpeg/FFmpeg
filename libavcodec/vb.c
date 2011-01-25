@@ -287,7 +287,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec vb_decoder = {
+AVCodec ff_vb_decoder = {
     "vb",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VB,

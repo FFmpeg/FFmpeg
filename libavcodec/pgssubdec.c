@@ -473,7 +473,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
     return buf_size;
 }
 
-AVCodec pgssub_decoder = {
+AVCodec ff_pgssub_decoder = {
     "pgssub",
     AVMEDIA_TYPE_SUBTITLE,
     CODEC_ID_HDMV_PGS_SUBTITLE,

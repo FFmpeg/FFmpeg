@@ -1062,7 +1062,7 @@ static int svq3_decode_frame(AVCodecContext *avctx,
 }
 
 
-AVCodec svq3_decoder = {
+AVCodec ff_svq3_decoder = {
     "svq3",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SVQ3,

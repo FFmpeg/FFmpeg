@@ -613,7 +613,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
     return 0;
 }
 
-AVCodec asv1_decoder = {
+AVCodec ff_asv1_decoder = {
     "asv1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ASV1,
@@ -626,7 +626,7 @@ AVCodec asv1_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("ASUS V1"),
 };
 
-AVCodec asv2_decoder = {
+AVCodec ff_asv2_decoder = {
     "asv2",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ASV2,
@@ -640,7 +640,7 @@ AVCodec asv2_decoder = {
 };
 
 #if CONFIG_ASV1_ENCODER
-AVCodec asv1_encoder = {
+AVCodec ff_asv1_encoder = {
     "asv1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ASV1,
@@ -654,7 +654,7 @@ AVCodec asv1_encoder = {
 #endif
 
 #if CONFIG_ASV2_ENCODER
-AVCodec asv2_encoder = {
+AVCodec ff_asv2_encoder = {
     "asv2",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ASV2,

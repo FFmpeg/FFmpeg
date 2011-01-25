@@ -742,7 +742,7 @@ static av_cold int flic_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec flic_decoder = {
+AVCodec ff_flic_decoder = {
     "flic",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FLIC,

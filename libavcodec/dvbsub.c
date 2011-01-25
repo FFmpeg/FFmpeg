@@ -402,7 +402,7 @@ static int dvbsub_encode(AVCodecContext *avctx,
     return ret;
 }
 
-AVCodec dvbsub_encoder = {
+AVCodec ff_dvbsub_encoder = {
     "dvbsub",
     AVMEDIA_TYPE_SUBTITLE,
     CODEC_ID_DVB_SUBTITLE,

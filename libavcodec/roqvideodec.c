@@ -210,7 +210,7 @@ static av_cold int roq_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec roq_decoder = {
+AVCodec ff_roq_decoder = {
     "roqvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ROQ,

@@ -1097,7 +1097,7 @@ static av_cold int ipvideo_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec interplay_video_decoder = {
+AVCodec ff_interplay_video_decoder = {
     "interplayvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_INTERPLAY_VIDEO,

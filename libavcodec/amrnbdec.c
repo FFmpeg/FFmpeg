@@ -1036,7 +1036,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 }
 
 
-AVCodec amrnb_decoder = {
+AVCodec ff_amrnb_decoder = {
     .name           = "amrnb",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_AMR_NB,

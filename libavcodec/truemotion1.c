@@ -891,7 +891,7 @@ static av_cold int truemotion1_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec truemotion1_decoder = {
+AVCodec ff_truemotion1_decoder = {
     "truemotion1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TRUEMOTION1,

@@ -1188,7 +1188,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     return s->samples_left > 0 ? 0 : avpkt->size;
 }
 
-AVCodec wavpack_decoder = {
+AVCodec ff_wavpack_decoder = {
     "wavpack",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_WAVPACK,

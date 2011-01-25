@@ -105,7 +105,7 @@ static int latm_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
     return next;
 }
 
-AVCodecParser aac_latm_parser = {
+AVCodecParser ff_aac_latm_parser = {
     { CODEC_ID_AAC_LATM },
     sizeof(LATMParseContext),
     NULL,

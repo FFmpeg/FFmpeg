@@ -1137,7 +1137,7 @@ static av_cold int indeo3_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec indeo3_decoder = {
+AVCodec ff_indeo3_decoder = {
     "indeo3",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_INDEO3,

@@ -231,7 +231,7 @@ static int srt_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-AVCodec srt_decoder = {
+AVCodec ff_srt_decoder = {
     .name         = "srt",
     .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,

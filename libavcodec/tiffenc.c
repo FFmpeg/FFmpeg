@@ -442,7 +442,7 @@ fail:
     return ret;
 }
 
-AVCodec tiff_encoder = {
+AVCodec ff_tiff_encoder = {
     "tiff",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TIFF,

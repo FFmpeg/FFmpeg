@@ -194,7 +194,7 @@ static void libdirac_flush(AVCodecContext *avccontext)
 
 
 
-AVCodec libdirac_decoder = {
+AVCodec ff_libdirac_decoder = {
     "libdirac",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DIRAC,

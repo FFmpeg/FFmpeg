@@ -1974,7 +1974,7 @@ static int qdm2_decode_frame(AVCodecContext *avctx,
     return s->checksum_size;
 }
 
-AVCodec qdm2_decoder =
+AVCodec ff_qdm2_decoder =
 {
     .name = "qdm2",
     .type = AVMEDIA_TYPE_AUDIO,

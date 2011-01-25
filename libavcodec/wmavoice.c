@@ -2018,7 +2018,7 @@ static av_cold void wmavoice_flush(AVCodecContext *ctx)
     }
 }
 
-AVCodec wmavoice_decoder = {
+AVCodec ff_wmavoice_decoder = {
     "wmavoice",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_WMAVOICE,

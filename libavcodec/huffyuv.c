@@ -1416,7 +1416,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 #endif /* CONFIG_HUFFYUV_ENCODER || CONFIG_FFVHUFF_ENCODER */
 
 #if CONFIG_HUFFYUV_DECODER
-AVCodec huffyuv_decoder = {
+AVCodec ff_huffyuv_decoder = {
     "huffyuv",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_HUFFYUV,
@@ -1432,7 +1432,7 @@ AVCodec huffyuv_decoder = {
 #endif
 
 #if CONFIG_FFVHUFF_DECODER
-AVCodec ffvhuff_decoder = {
+AVCodec ff_ffvhuff_decoder = {
     "ffvhuff",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FFVHUFF,
@@ -1448,7 +1448,7 @@ AVCodec ffvhuff_decoder = {
 #endif
 
 #if CONFIG_HUFFYUV_ENCODER
-AVCodec huffyuv_encoder = {
+AVCodec ff_huffyuv_encoder = {
     "huffyuv",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_HUFFYUV,
@@ -1462,7 +1462,7 @@ AVCodec huffyuv_encoder = {
 #endif
 
 #if CONFIG_FFVHUFF_ENCODER
-AVCodec ffvhuff_encoder = {
+AVCodec ff_ffvhuff_encoder = {
     "ffvhuff",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FFVHUFF,

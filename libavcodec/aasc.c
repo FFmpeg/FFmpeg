@@ -109,7 +109,7 @@ static av_cold int aasc_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec aasc_decoder = {
+AVCodec ff_aasc_decoder = {
     "aasc",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_AASC,

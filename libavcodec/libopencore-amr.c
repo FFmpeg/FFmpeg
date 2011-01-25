@@ -139,7 +139,7 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     return packet_size;
 }
 
-AVCodec libopencore_amrnb_decoder = {
+AVCodec ff_libopencore_amrnb_decoder = {
     "libopencore_amrnb",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AMR_NB,
@@ -213,7 +213,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
     return written;
 }
 
-AVCodec libopencore_amrnb_encoder = {
+AVCodec ff_libopencore_amrnb_encoder = {
     "libopencore_amrnb",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AMR_NB,
@@ -310,7 +310,7 @@ static int amr_wb_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec libopencore_amrwb_decoder = {
+AVCodec ff_libopencore_amrwb_decoder = {
     "libopencore_amrwb",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AMR_WB,

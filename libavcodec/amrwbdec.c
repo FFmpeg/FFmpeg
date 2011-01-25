@@ -1225,7 +1225,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     return expected_fr_size;
 }
 
-AVCodec amrwb_decoder = {
+AVCodec ff_amrwb_decoder = {
     .name           = "amrwb",
     .type           = CODEC_TYPE_AUDIO,
     .id             = CODEC_ID_AMR_WB,

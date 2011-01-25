@@ -153,7 +153,7 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
-AVCodec libfaac_encoder = {
+AVCodec ff_libfaac_encoder = {
     "libfaac",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AAC,

@@ -296,7 +296,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx,
     return retval;
 }
 
-AVCodec pcm_bluray_decoder = {
+AVCodec ff_pcm_bluray_decoder = {
     "pcm_bluray",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_PCM_BLURAY,

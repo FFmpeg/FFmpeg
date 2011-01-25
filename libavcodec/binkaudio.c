@@ -286,7 +286,7 @@ static int decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodec binkaudio_rdft_decoder = {
+AVCodec ff_binkaudio_rdft_decoder = {
     "binkaudio_rdft",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_BINKAUDIO_RDFT,
@@ -298,7 +298,7 @@ AVCodec binkaudio_rdft_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("Bink Audio (RDFT)")
 };
 
-AVCodec binkaudio_dct_decoder = {
+AVCodec ff_binkaudio_dct_decoder = {
     "binkaudio_dct",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_BINKAUDIO_DCT,

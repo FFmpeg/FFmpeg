@@ -1338,7 +1338,7 @@ void ff_mpeg4_encode_video_packet_header(MpegEncContext *s)
     put_bits(&s->pb, 1, 0); /* no HEC */
 }
 
-AVCodec mpeg4_encoder = {
+AVCodec ff_mpeg4_encoder = {
     "mpeg4",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG4,

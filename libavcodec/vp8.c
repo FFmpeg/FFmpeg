@@ -1807,7 +1807,7 @@ static av_cold int vp8_decode_free(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec vp8_decoder = {
+AVCodec ff_vp8_decoder = {
     "vp8",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VP8,

@@ -1137,7 +1137,7 @@ error:
     return -1;
 }
 
-AVCodec mlp_decoder = {
+AVCodec ff_mlp_decoder = {
     "mlp",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MLP,
@@ -1150,7 +1150,7 @@ AVCodec mlp_decoder = {
 };
 
 #if CONFIG_TRUEHD_DECODER
-AVCodec truehd_decoder = {
+AVCodec ff_truehd_decoder = {
     "truehd",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_TRUEHD,

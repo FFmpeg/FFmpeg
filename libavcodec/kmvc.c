@@ -401,7 +401,7 @@ static av_cold int decode_end(AVCodecContext * avctx)
     return 0;
 }
 
-AVCodec kmvc_decoder = {
+AVCodec ff_kmvc_decoder = {
     "kmvc",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_KMVC,

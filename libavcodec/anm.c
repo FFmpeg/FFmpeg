@@ -183,7 +183,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec anm_decoder = {
+AVCodec ff_anm_decoder = {
     "anm",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_ANM,

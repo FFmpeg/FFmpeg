@@ -818,7 +818,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 }
 
 
-AVCodec indeo5_decoder = {
+AVCodec ff_indeo5_decoder = {
     .name           = "indeo5",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_INDEO5,

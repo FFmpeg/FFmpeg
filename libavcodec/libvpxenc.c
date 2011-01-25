@@ -494,7 +494,7 @@ static int vp8_encode(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     return coded_size;
 }
 
-AVCodec libvpx_encoder = {
+AVCodec ff_libvpx_encoder = {
     "libvpx",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VP8,

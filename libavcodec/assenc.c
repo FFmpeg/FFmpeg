@@ -57,7 +57,7 @@ static int ass_encode_frame(AVCodecContext *avctx,
     return total_len;
 }
 
-AVCodec ass_encoder = {
+AVCodec ff_ass_encoder = {
     .name         = "ass",
     .long_name    = NULL_IF_CONFIG_SMALL("Advanced SubStation Alpha subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,

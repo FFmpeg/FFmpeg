@@ -52,7 +52,7 @@ static int ass_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
     return avpkt->size;
 }
 
-AVCodec ass_decoder = {
+AVCodec ff_ass_decoder = {
     .name         = "ass",
     .long_name    = NULL_IF_CONFIG_SMALL("Advanced SubStation Alpha subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,

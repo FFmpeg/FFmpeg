@@ -184,7 +184,7 @@ static av_cold int libopenjpeg_decode_close(AVCodecContext *avctx)
 }
 
 
-AVCodec libopenjpeg_decoder = {
+AVCodec ff_libopenjpeg_decoder = {
     "libopenjpeg",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_JPEG2000,

@@ -641,7 +641,7 @@ static av_cold int h261_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec h261_decoder = {
+AVCodec ff_h261_decoder = {
     "h261",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H261,

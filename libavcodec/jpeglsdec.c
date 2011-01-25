@@ -363,7 +363,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
 }
 
 
-AVCodec jpegls_decoder = {
+AVCodec ff_jpegls_decoder = {
     "jpegls",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_JPEGLS,

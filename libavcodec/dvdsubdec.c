@@ -486,7 +486,7 @@ static int dvdsub_decode(AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodec dvdsub_decoder = {
+AVCodec ff_dvdsub_decoder = {
     "dvdsub",
     AVMEDIA_TYPE_SUBTITLE,
     CODEC_ID_DVD_SUBTITLE,

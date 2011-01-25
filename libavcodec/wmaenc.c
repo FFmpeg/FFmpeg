@@ -383,7 +383,7 @@ static int encode_superframe(AVCodecContext *avctx,
     return put_bits_ptr(&s->pb) - s->pb.buf;
 }
 
-AVCodec wmav1_encoder =
+AVCodec ff_wmav1_encoder =
 {
     "wmav1",
     AVMEDIA_TYPE_AUDIO,
@@ -396,7 +396,7 @@ AVCodec wmav1_encoder =
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
 };
 
-AVCodec wmav2_encoder =
+AVCodec ff_wmav2_encoder =
 {
     "wmav2",
     AVMEDIA_TYPE_AUDIO,

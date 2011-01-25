@@ -609,7 +609,7 @@ static av_cold int vqa_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec vqa_decoder = {
+AVCodec ff_vqa_decoder = {
     "vqavideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_WS_VQA,

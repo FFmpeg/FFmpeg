@@ -288,7 +288,7 @@ static void mpc7_decode_flush(AVCodecContext *avctx)
     c->frames_to_skip = 32;
 }
 
-AVCodec mpc7_decoder = {
+AVCodec ff_mpc7_decoder = {
     "mpc7",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_MUSEPACK7,

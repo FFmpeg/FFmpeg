@@ -250,7 +250,7 @@ static av_cold int flashsv_decode_end(AVCodecContext *avctx)
 }
 
 
-AVCodec flashsv_decoder = {
+AVCodec ff_flashsv_decoder = {
     "flashsv",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FLASHSV,

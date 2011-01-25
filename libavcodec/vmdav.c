@@ -565,7 +565,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
  * Public Data Structures
  */
 
-AVCodec vmdvideo_decoder = {
+AVCodec ff_vmdvideo_decoder = {
     "vmdvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VMDVIDEO,
@@ -578,7 +578,7 @@ AVCodec vmdvideo_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("Sierra VMD video"),
 };
 
-AVCodec vmdaudio_decoder = {
+AVCodec ff_vmdaudio_decoder = {
     "vmdaudio",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_VMDAUDIO,

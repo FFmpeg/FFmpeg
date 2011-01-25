@@ -215,7 +215,7 @@ static int dvdsub_encode(AVCodecContext *avctx,
     return ret;
 }
 
-AVCodec dvdsub_encoder = {
+AVCodec ff_dvdsub_encoder = {
     "dvdsub",
     AVMEDIA_TYPE_SUBTITLE,
     CODEC_ID_DVD_SUBTITLE,

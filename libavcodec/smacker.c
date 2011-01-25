@@ -689,7 +689,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
     return buf_size;
 }
 
-AVCodec smacker_decoder = {
+AVCodec ff_smacker_decoder = {
     "smackvid",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_SMACKVIDEO,
@@ -702,7 +702,7 @@ AVCodec smacker_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("Smacker video"),
 };
 
-AVCodec smackaud_decoder = {
+AVCodec ff_smackaud_decoder = {
     "smackaud",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SMACKAUDIO,

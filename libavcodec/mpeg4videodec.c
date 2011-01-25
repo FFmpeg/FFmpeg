@@ -2225,7 +2225,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec mpeg4_decoder = {
+AVCodec ff_mpeg4_decoder = {
     "mpeg4",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG4,
@@ -2243,7 +2243,7 @@ AVCodec mpeg4_decoder = {
 
 
 #if CONFIG_MPEG4_VDPAU_DECODER
-AVCodec mpeg4_vdpau_decoder = {
+AVCodec ff_mpeg4_vdpau_decoder = {
     "mpeg4_vdpau",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_MPEG4,

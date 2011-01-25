@@ -381,7 +381,7 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
     return consumed;
 }
 
-AVCodec truespeech_decoder = {
+AVCodec ff_truespeech_decoder = {
     "truespeech",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_TRUESPEECH,

@@ -219,7 +219,7 @@ static av_cold int seqvideo_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec tiertexseqvideo_decoder = {
+AVCodec ff_tiertexseqvideo_decoder = {
     "tiertexseqvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_TIERTEXSEQVIDEO,

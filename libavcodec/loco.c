@@ -285,7 +285,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
     return 0;
 }
 
-AVCodec loco_decoder = {
+AVCodec ff_loco_decoder = {
     "loco",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_LOCO,

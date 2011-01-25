@@ -336,7 +336,7 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec libxavs_encoder = {
+AVCodec ff_libxavs_encoder = {
     .name           = "libxavs",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_CAVS,

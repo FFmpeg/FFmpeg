@@ -935,7 +935,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     return (get_bits_count(&gb)+7)/8;
 }
 
-AVCodec sonic_decoder = {
+AVCodec ff_sonic_decoder = {
     "sonic",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SONIC,
@@ -949,7 +949,7 @@ AVCodec sonic_decoder = {
 #endif /* CONFIG_SONIC_DECODER */
 
 #if CONFIG_SONIC_ENCODER
-AVCodec sonic_encoder = {
+AVCodec ff_sonic_encoder = {
     "sonic",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SONIC,
@@ -963,7 +963,7 @@ AVCodec sonic_encoder = {
 #endif
 
 #if CONFIG_SONIC_LS_ENCODER
-AVCodec sonic_ls_encoder = {
+AVCodec ff_sonic_ls_encoder = {
     "sonicls",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_SONIC_LS,

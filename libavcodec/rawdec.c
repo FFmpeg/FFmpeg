@@ -195,7 +195,7 @@ static av_cold int raw_close_decoder(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec rawvideo_decoder = {
+AVCodec ff_rawvideo_decoder = {
     "rawvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_RAWVIDEO,

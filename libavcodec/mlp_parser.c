@@ -288,7 +288,7 @@ lost_sync:
     return 1;
 }
 
-AVCodecParser mlp_parser = {
+AVCodecParser ff_mlp_parser = {
     { CODEC_ID_MLP, CODEC_ID_TRUEHD },
     sizeof(MLPParseContext),
     mlp_init,

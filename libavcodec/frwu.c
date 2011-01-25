@@ -109,7 +109,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec frwu_decoder = {
+AVCodec ff_frwu_decoder = {
     "FRWU",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FRWU,

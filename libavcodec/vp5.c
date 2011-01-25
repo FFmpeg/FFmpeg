@@ -266,7 +266,7 @@ static av_cold int vp5_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec vp5_decoder = {
+AVCodec ff_vp5_decoder = {
     "vp5",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_VP5,

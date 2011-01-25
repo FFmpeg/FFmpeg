@@ -1786,7 +1786,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     return buf_size;
 }
 
-AVCodec ffv1_decoder = {
+AVCodec ff_ffv1_decoder = {
     "ffv1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FFV1,
@@ -1801,7 +1801,7 @@ AVCodec ffv1_decoder = {
 };
 
 #if CONFIG_FFV1_ENCODER
-AVCodec ffv1_encoder = {
+AVCodec ff_ffv1_encoder = {
     "ffv1",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FFV1,

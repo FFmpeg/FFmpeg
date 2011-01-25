@@ -107,7 +107,7 @@ static int aac_adtstoasc_filter(AVBitStreamFilterContext *bsfc,
     return 0;
 }
 
-AVBitStreamFilter aac_adtstoasc_bsf = {
+AVBitStreamFilter ff_aac_adtstoasc_bsf = {
     "aac_adtstoasc",
     sizeof(AACBSFContext),
     aac_adtstoasc_filter,

@@ -1673,7 +1673,7 @@ static av_cold int vorbis_decode_close(AVCodecContext *avccontext)
     return 0 ;
 }
 
-AVCodec vorbis_decoder = {
+AVCodec ff_vorbis_decoder = {
     "vorbis",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_VORBIS,
