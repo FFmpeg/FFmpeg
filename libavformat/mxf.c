@@ -52,7 +52,10 @@ const MXFCodecUL ff_mxf_codec_uls[] = {
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,       CODEC_ID_NONE },
 };
 
-const MXFPixelLayout ff_mxf_pixel_layouts[] = {
+static const struct {
+    enum PixelFormat pix_fmt;
+    const char data[16];
+} ff_mxf_pixel_layouts[] = {
     /**
      * See SMPTE 377M E.2.46
      *
