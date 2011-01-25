@@ -69,7 +69,6 @@ typedef struct MpegTSWrite {
 /* NOTE: 4 bytes must be left at the end for the crc32 */
 static void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
 {
-    MpegTSWrite *ts = ((AVFormatContext*)s->opaque)->priv_data;
     unsigned int crc;
     unsigned char packet[TS_PACKET_SIZE];
     const unsigned char *buf_ptr;
@@ -583,7 +582,6 @@ static uint8_t* write_pcr_bits(uint8_t *buf, int64_t pcr)
 /* Write a single null transport stream packet */
 static void mpegts_insert_null_packet(AVFormatContext *s)
 {
-    MpegTSWrite *ts = s->priv_data;
     uint8_t *q;
     uint8_t buf[TS_PACKET_SIZE];
 
