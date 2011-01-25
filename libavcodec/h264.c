@@ -233,7 +233,11 @@ nsc:
     return dst;
 }
 
-int ff_h264_decode_rbsp_trailing(H264Context *h, const uint8_t *src){
+/**
+ * Identify the exact end of the bitstream
+ * @return the length of the trailing, or 0 if damaged
+ */
+static int ff_h264_decode_rbsp_trailing(H264Context *h, const uint8_t *src){
     int v= *src;
     int r;
 
