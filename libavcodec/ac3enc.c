@@ -1815,7 +1815,7 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
 
     avctx->frame_size = AC3_FRAME_SIZE;
 
-    ac3_common_init();
+    ff_ac3_common_init();
 
     ret = validate_options(avctx, s);
     if (ret)

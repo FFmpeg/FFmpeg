@@ -115,7 +115,7 @@ typedef enum {
     EAC3_FRAME_TYPE_RESERVED
 } EAC3FrameType;
 
-void ac3_common_init(void);
+void ff_ac3_common_init(void);
 
 /**
  * Calculate the log power-spectral density of the input signal.
