@@ -28,8 +28,6 @@
 #include "ac3.h"
 #include "get_bits.h"
 
-#if CONFIG_HARDCODED_TABLES
-
 /**
  * Starting frequency coefficient bin for each critical band.
  */
@@ -40,6 +38,8 @@ static const uint8_t band_start_tab[AC3_CRITICAL_BANDS+1] = {
      34,  37, 40,  43,  46,  49,  55,  61,  67,  73,
      79,  85, 97, 109, 121, 133, 157, 181, 205, 229, 253
 };
+
+#if CONFIG_HARDCODED_TABLES
 
 /**
  * Map each frequency coefficient bin to the critical band that contains it.
@@ -70,13 +70,6 @@ static const uint8_t bin_to_band_tab[253] = {
 };
 
 #else /* CONFIG_HARDCODED_TABLES */
-static const uint8_t ff_ac3_critical_band_size_tab[AC3_CRITICAL_BANDS]={
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3,
-    3, 6, 6, 6, 6, 6, 6, 12, 12, 12, 12, 24, 24, 24, 24, 24
-};
-
-static uint8_t band_start_tab[51];
 static uint8_t bin_to_band_tab[253];
 #endif
 
@@ -251,14 +244,12 @@ void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
 av_cold void ac3_common_init(void)
 {
 #if !CONFIG_HARDCODED_TABLES
-    /* compute bndtab and masktab from bandsz */
+    /* compute bin_to_band_tab from band_start_tab */
     int bin = 0, band;
     for (band = 0; band < AC3_CRITICAL_BANDS; band++) {
-        int band_end = bin + ff_ac3_critical_band_size_tab[band];
-        band_start_tab[band] = bin;
+        int band_end = band_start_tab[band+1];
         while (bin < band_end)
             bin_to_band_tab[bin++] = band;
     }
-    band_start_tab[AC3_CRITICAL_BANDS] = bin;
 #endif /* !CONFIG_HARDCODED_TABLES */
 }
