@@ -72,8 +72,8 @@ static int write_trailer(AVFormatContext *s)
         put_tag(s->pb, ID_CHAPTER);
         put_byte(s->pb, '\n');
         url_fprintf(s->pb, "TIMEBASE=%d/%d\n", ch->time_base.num, ch->time_base.den);
-        url_fprintf(s->pb, "START=%lld\n", ch->start);
-        url_fprintf(s->pb, "END=%lld\n",   ch->end);
+        url_fprintf(s->pb, "START=%"PRId64"\n", ch->start);
+        url_fprintf(s->pb, "END=%"PRId64"\n",   ch->end);
         write_tags(s->pb, ch->metadata);
     }
 
