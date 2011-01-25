@@ -31,12 +31,12 @@ const uint8_t ff_png_pass_ymask[NB_PASSES] = {
 };
 
 /* minimum x value */
-const uint8_t ff_png_pass_xmin[NB_PASSES] = {
+static const uint8_t ff_png_pass_xmin[NB_PASSES] = {
     0, 4, 0, 2, 0, 1, 0
 };
 
 /* x shift to get row width */
-const uint8_t ff_png_pass_xshift[NB_PASSES] = {
+static const uint8_t ff_png_pass_xshift[NB_PASSES] = {
     3, 3, 2, 2, 1, 1, 0
 };
 

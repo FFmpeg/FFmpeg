@@ -55,12 +55,6 @@ extern const uint8_t ff_mngsig[8];
 /* Mask to determine which y pixels are valid in a pass */
 extern const uint8_t ff_png_pass_ymask[NB_PASSES];
 
-/* minimum x value */
-extern const uint8_t ff_png_pass_xmin[NB_PASSES];
-
-/* x shift to get row width */
-extern const uint8_t ff_png_pass_xshift[NB_PASSES];
-
 /* Mask to determine which pixels are valid in a pass */
 extern const uint8_t ff_png_pass_mask[NB_PASSES];
 
