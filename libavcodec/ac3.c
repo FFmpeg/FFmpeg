@@ -70,6 +70,12 @@ static const uint8_t bin_to_band_tab[253] = {
 };
 
 #else /* CONFIG_HARDCODED_TABLES */
+static const uint8_t ff_ac3_critical_band_size_tab[AC3_CRITICAL_BANDS]={
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3,
+    3, 6, 6, 6, 6, 6, 6, 12, 12, 12, 12, 24, 24, 24, 24, 24
+};
+
 static uint8_t band_start_tab[51];
 static uint8_t bin_to_band_tab[253];
 #endif

@@ -292,11 +292,6 @@ const uint16_t ff_ac3_fast_gain_tab[8]= {
     0x080, 0x100, 0x180, 0x200, 0x280, 0x300, 0x380, 0x400,
 };
 
-const uint8_t ff_ac3_critical_band_size_tab[AC3_CRITICAL_BANDS]={
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3,
-    3, 6, 6, 6, 6, 6, 6, 12, 12, 12, 12, 24, 24, 24, 24, 24
-};
 /**
  * Default channel map for a dependent substream defined by acmod
  */
