@@ -23,12 +23,7 @@
  * AAC LATM parser
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <sys/types.h>
-
+#include <stdint.h>
 #include "parser.h"
 
 #define LATM_HEADER     0x56e000        // 0x2b7 (11 bits)
