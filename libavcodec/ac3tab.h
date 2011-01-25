@@ -43,7 +43,6 @@ extern const uint16_t ff_ac3_slow_gain_tab[4];
 extern const uint16_t ff_ac3_db_per_bit_tab[4];
 extern const int16_t  ff_ac3_floor_tab[8];
 extern const uint16_t ff_ac3_fast_gain_tab[8];
-extern const uint8_t  ff_ac3_critical_band_size_tab[AC3_CRITICAL_BANDS];
 extern const uint16_t ff_eac3_default_chmap[8];
 
 /** Custom channel map locations bitmask
