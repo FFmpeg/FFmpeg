@@ -61,13 +61,6 @@ typedef struct {
 extern const MXFCodecUL ff_mxf_data_definition_uls[];
 extern const MXFCodecUL ff_mxf_codec_uls[];
 
-typedef struct {
-    enum PixelFormat pix_fmt;
-    const char data[16];
-} MXFPixelLayout;
-
-extern const MXFPixelLayout ff_mxf_pixel_layouts[];
-
 int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum PixelFormat *pix_fmt);
 
 #define PRINT_KEY(pc, s, x) dprintf(pc, "%s %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", s, \
