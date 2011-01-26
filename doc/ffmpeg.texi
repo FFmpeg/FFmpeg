@@ -977,6 +977,7 @@ file to which you want to add them.
 
 @include eval.texi
 @include demuxers.texi
+@include muxers.texi
 @include indevs.texi
 @include outdevs.texi
 @include protocols.texi
