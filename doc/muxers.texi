@@ -18,4 +18,54 @@ enabled muxers.
 
 A description of some of the currently available muxers follows.
 
+@section image2
+
+Image file muxer.
+
+This muxer writes video frames to multiple image files specified by a
+pattern.
+
+The pattern may contain the string "%d" or "%0@var{N}d", which
+specifies the position of the characters representing a numbering in
+the filenames. If the form "%d0@var{N}d" is used, the string
+representing the number in each filename is 0-padded to @var{N}
+digits. The literal character '%' can be specified in the pattern with
+the string "%%".
+
+If the pattern contains "%d" or "%0@var{N}d", the first filename of
+the file list specified will contain the number 1, all the following
+numbers will be sequential.
+
+The pattern may contain a suffix which is used to automatically
+determine the format of the image files to write.
+
+For example the pattern "img-%03d.bmp" will specify a sequence of
+filenames of the form @file{img-001.bmp}, @file{img-002.bmp}, ...,
+@file{img-010.bmp}, etc.
+The pattern "img%%-%d.jpg" will specify a sequence of filenames of the
+form @file{img%-1.jpg}, @file{img%-2.jpg}, ..., @file{img%-10.jpg},
+etc.
+
+The following example shows how to use @file{ffmpeg} for creating a
+sequence of files @file{img-001.jpeg}, @file{img-002.jpeg}, ...,
+taking one image every second from the input video:
+@example
+ffmpeg -i in.avi -r 1 -f image2 'img-%03d.jpeg'
+@end example
+
+Note that with @file{ffmpeg}, if the format is not specified with the
+@code{-f} option and the output filename specifies an image file
+format, the image2 muxer is automatically selected, so the previous
+command can be written as:
+@example
+ffmpeg -i in.avi -r 1 'img-%03d.jpeg'
+@end example
+
+Note also that the pattern must not necessarily contain "%d" or
+"%0@var{N}d", for example to create a single image file
+@file{img.jpeg} from the input video you can employ the command:
+@example
+ffmpeg -i in.avi -f image2 -vframes 1 img.jpeg
+@end example
+
 @c man end MUXERS
