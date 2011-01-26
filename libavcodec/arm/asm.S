@@ -50,6 +50,16 @@ ELF     .type   \name, %function
 \name:
 .endm
 
+.macro  const   name, align=2
+    .macro endconst
+ELF     .size   \name, . - \name
+        .purgem endconst
+    .endm
+        .section        .rodata
+        .align          \align
+\name:
+.endm
+
 .macro  mov32   rd, val
 #if HAVE_ARMV6T2
         movw            \rd, #(\val) & 0xffff
