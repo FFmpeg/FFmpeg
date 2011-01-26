@@ -2326,6 +2326,8 @@ static void mov_read_chapters(AVFormatContext *s)
         ch = get_be16(sc->pb);
         if (ch == 0xfeff)
             avio_get_str16be(sc->pb, len, title, title_len);
+        else if (ch == 0xfffe)
+            avio_get_str16le(sc->pb, len, title, title_len);
         else {
             AV_WB16(title, ch);
             get_strz(sc->pb, title + 2, len - 1);
