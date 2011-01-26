@@ -347,7 +347,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!img->is_pipe) {
         if (av_get_frame_filename(filename, sizeof(filename),
                                   img->path, img->img_number) < 0 && img->img_number>1) {
-            av_log(s, AV_LOG_ERROR, "Could not get frame filename from pattern\n");
+            av_log(s, AV_LOG_ERROR,
+                   "Could not get frame filename number %d from pattern '%s'\n",
+                   img->img_number, img->path);
             return AVERROR(EIO);
         }
         for(i=0; i<3; i++){
