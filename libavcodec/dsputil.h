@@ -216,6 +216,21 @@ typedef struct DSPContext {
     void (*add_pixels4)(uint8_t *pixels, DCTELEM *block, int line_size);
     int (*sum_abs_dctelem)(DCTELEM *block/*align 16*/);
     /**
+     * Motion estimation with emulated edge values.
+     * @param buf pointer to destination buffer (unaligned)
+     * @param src pointer to pixel source (unaligned)
+     * @param linesize width (in pixels) for src/buf
+     * @param block_w number of pixels (per row) to copy to buf
+     * @param block_h nummber of pixel rows to copy to buf
+     * @param src_x offset of src to start of row - this may be negative
+     * @param src_y offset of src to top of image - this may be negative
+     * @param w width of src in pixels
+     * @param h height of src in pixels
+     */
+    void (*emulated_edge_mc)(uint8_t *buf, const uint8_t *src, int linesize,
+                             int block_w, int block_h,
+                             int src_x, int src_y, int w, int h);
+    /**
      * translational global motion compensation.
      */
     void (*gmc1)(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int srcStride, int h, int x16, int y16, int rounder);

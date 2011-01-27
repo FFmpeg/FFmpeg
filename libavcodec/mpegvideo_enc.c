@@ -1548,11 +1548,11 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
 
     if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
         uint8_t *ebuf= s->edge_emu_buffer + 32;
-        ff_emulated_edge_mc(ebuf            , ptr_y , wrap_y,16,16,mb_x*16,mb_y*16, s->width   , s->height);
+        s->dsp.emulated_edge_mc(ebuf            , ptr_y , wrap_y,16,16,mb_x*16,mb_y*16, s->width   , s->height);
         ptr_y= ebuf;
-        ff_emulated_edge_mc(ebuf+18*wrap_y  , ptr_cb, wrap_c, 8, mb_block_height, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+        s->dsp.emulated_edge_mc(ebuf+18*wrap_y  , ptr_cb, wrap_c, 8, mb_block_height, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
         ptr_cb= ebuf+18*wrap_y;
-        ff_emulated_edge_mc(ebuf+18*wrap_y+8, ptr_cr, wrap_c, 8, mb_block_height, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+        s->dsp.emulated_edge_mc(ebuf+18*wrap_y+8, ptr_cr, wrap_c, 8, mb_block_height, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
         ptr_cr= ebuf+18*wrap_y+8;
     }
 

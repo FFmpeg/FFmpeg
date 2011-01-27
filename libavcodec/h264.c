@@ -361,7 +361,7 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
        || full_my < 0-extra_height
        || full_mx + 16/*FIXME*/ > pic_width + extra_width
        || full_my + 16/*FIXME*/ > pic_height + extra_height){
-        ff_emulated_edge_mc(s->edge_emu_buffer, src_y - 2 - 2*h->mb_linesize, h->mb_linesize, 16+5, 16+5/*FIXME*/, full_mx-2, full_my-2, pic_width, pic_height);
+        s->dsp.emulated_edge_mc(s->edge_emu_buffer, src_y - 2 - 2*h->mb_linesize, h->mb_linesize, 16+5, 16+5/*FIXME*/, full_mx-2, full_my-2, pic_width, pic_height);
             src_y= s->edge_emu_buffer + 2 + 2*h->mb_linesize;
         emu=1;
     }
@@ -382,13 +382,13 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
     src_cr= pic->data[2] + (mx>>3) + (my>>3)*h->mb_uvlinesize;
 
     if(emu){
-        ff_emulated_edge_mc(s->edge_emu_buffer, src_cb, h->mb_uvlinesize, 9, 9/*FIXME*/, (mx>>3), (my>>3), pic_width>>1, pic_height>>1);
+        s->dsp.emulated_edge_mc(s->edge_emu_buffer, src_cb, h->mb_uvlinesize, 9, 9/*FIXME*/, (mx>>3), (my>>3), pic_width>>1, pic_height>>1);
             src_cb= s->edge_emu_buffer;
     }
     chroma_op(dest_cb, src_cb, h->mb_uvlinesize, chroma_height, mx&7, my&7);
 
     if(emu){
-        ff_emulated_edge_mc(s->edge_emu_buffer, src_cr, h->mb_uvlinesize, 9, 9/*FIXME*/, (mx>>3), (my>>3), pic_width>>1, pic_height>>1);
+        s->dsp.emulated_edge_mc(s->edge_emu_buffer, src_cr, h->mb_uvlinesize, 9, 9/*FIXME*/, (mx>>3), (my>>3), pic_width>>1, pic_height>>1);
             src_cr= s->edge_emu_buffer;
     }
     chroma_op(dest_cr, src_cr, h->mb_uvlinesize, chroma_height, mx&7, my&7);

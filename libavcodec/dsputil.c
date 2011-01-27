@@ -4218,6 +4218,7 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->add_pixels8 = add_pixels8_c;
     c->add_pixels4 = add_pixels4_c;
     c->sum_abs_dctelem = sum_abs_dctelem_c;
+    c->emulated_edge_mc = ff_emulated_edge_mc;
     c->gmc1 = gmc1_c;
     c->gmc = ff_gmc_c;
     c->clear_block = clear_block_c;
