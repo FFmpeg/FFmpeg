@@ -568,8 +568,8 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     // -1024 - Compensate wrong IMDCT method.
     // 60    - Required to scale values to the correct range [-32768,32767]
     //         for float to int16 conversion. (1 << (60 / 4)) == 32768
-        ac->sf_scale  = 1. / -1024.;
-        ac->sf_offset = 60;
+    ac->sf_scale  = 1. / -1024.;
+    ac->sf_offset = 60;
 
     ff_aac_tableinit();
 
