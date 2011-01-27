@@ -311,7 +311,6 @@ typedef struct {
     DECLARE_ALIGNED(16, float, raXin)[32];
 
     int output;                 ///< type of output
-    float add_bias;             ///< output bias
     float scale_bias;           ///< output scale
 
     DECLARE_ALIGNED(16, float, subband_samples)[DCA_BLOCKS_MAX][DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][8];
@@ -868,7 +867,7 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
 
 static void qmf_32_subbands(DCAContext * s, int chans,
                             float samples_in[32][8], float *samples_out,
-                            float scale, float bias)
+                            float scale)
 {
     const float *prCoeff;
     int i;
@@ -897,7 +896,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
         s->synth.synth_filter_float(&s->imdct,
                               s->subband_fir_hist[chans], &s->hist_index[chans],
                               s->subband_fir_noidea[chans], prCoeff,
-                              samples_out, s->raXin, scale, bias);
+                              samples_out, s->raXin, scale, 0);
         samples_out+= 32;
 
     }
@@ -905,8 +904,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
 
 static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
                                   int num_deci_sample, float *samples_in,
-                                  float *samples_out, float scale,
-                                  float bias)
+                                  float *samples_out, float scale)
 {
     /* samples_in: An array holding decimated samples.
      *   Samples in current subframe starts from samples_in[0],
@@ -931,7 +929,7 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
     /* Interpolation */
     for (deciindex = 0; deciindex < num_deci_sample; deciindex++) {
         s->dcadsp.lfe_fir(samples_out, samples_in, prCoeff, decifactor,
-                          scale, bias);
+                          scale, 0);
         samples_in++;
         samples_out += 2 * decifactor;
     }
@@ -939,19 +937,19 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
 
 /* downmixing routines */
 #define MIX_REAR1(samples, si1, rs, coef) \
-     samples[i]     += (samples[si1] - add_bias) * coef[rs][0];  \
-     samples[i+256] += (samples[si1] - add_bias) * coef[rs][1];
+     samples[i]     += samples[si1] * coef[rs][0];  \
+     samples[i+256] += samples[si1] * coef[rs][1];
 
 #define MIX_REAR2(samples, si1, si2, rs, coef) \
-     samples[i]     += (samples[si1] - add_bias) * coef[rs][0] + (samples[si2] - add_bias) * coef[rs+1][0]; \
-     samples[i+256] += (samples[si1] - add_bias) * coef[rs][1] + (samples[si2] - add_bias) * coef[rs+1][1];
+     samples[i]     += samples[si1] * coef[rs][0] + samples[si2] * coef[rs+1][0]; \
+     samples[i+256] += samples[si1] * coef[rs][1] + samples[si2] * coef[rs+1][1];
 
 #define MIX_FRONT3(samples, coef) \
-    t = samples[i+c] - add_bias; \
-    u = samples[i+l] - add_bias; \
-    v = samples[i+r] - add_bias; \
-    samples[i]     = t * coef[0][0] + u * coef[1][0] + v * coef[2][0] + add_bias; \
-    samples[i+256] = t * coef[0][1] + u * coef[1][1] + v * coef[2][1] + add_bias;
+    t = samples[i+c]; \
+    u = samples[i+l]; \
+    v = samples[i+r]; \
+    samples[i]     = t * coef[0][0] + u * coef[1][0] + v * coef[2][0]; \
+    samples[i+256] = t * coef[0][1] + u * coef[1][1] + v * coef[2][1];
 
 #define DOWNMIX_TO_STEREO(op1, op2) \
     for (i = 0; i < 256; i++){ \
@@ -961,7 +959,7 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
 
 static void dca_downmix(float *samples, int srcfmt,
                         int downmix_coef[DCA_PRIM_CHANNELS_MAX][2],
-                        const int8_t *channel_mapping, float add_bias)
+                        const int8_t *channel_mapping)
 {
     int c,l,r,sl,sr,s;
     int i;
@@ -1193,13 +1191,12 @@ static int dca_filter_channels(DCAContext * s, int block_index)
 /*        static float pcm_to_double[8] =
             {32768.0, 32768.0, 524288.0, 524288.0, 0, 8388608.0, 8388608.0};*/
          qmf_32_subbands(s, k, subband_samples[k], &s->samples[256 * s->channel_order_tab[k]],
-                            M_SQRT1_2*s->scale_bias /*pcm_to_double[s->source_pcm_res] */ ,
-                            s->add_bias );
+                         M_SQRT1_2*s->scale_bias /*pcm_to_double[s->source_pcm_res] */ );
     }
 
     /* Down mixing */
     if (s->avctx->request_channels == 2 && s->prim_channels > 2) {
-        dca_downmix(s->samples, s->amode, s->downmix_coef, s->channel_order_tab, s->add_bias);
+        dca_downmix(s->samples, s->amode, s->downmix_coef, s->channel_order_tab);
     }
 
     /* Generate LFE samples for this subsubframe FIXME!!! */
@@ -1207,7 +1204,7 @@ static int dca_filter_channels(DCAContext * s, int block_index)
         lfe_interpolation_fir(s, s->lfe, 2 * s->lfe,
                               s->lfe_data + 2 * s->lfe * (block_index + 4),
                               &s->samples[256 * dca_lfe_index[s->amode]],
-                              (1.0/256.0)*s->scale_bias,  s->add_bias);
+                              (1.0/256.0)*s->scale_bias);
         /* Outputs 20bits pcm samples */
     }
 
@@ -1798,8 +1795,8 @@ static int dca_decode_frame(AVCodecContext * avctx,
             float* rt_chan   = s->samples + s->channel_order_tab[s->xch_base_channel - 1] * 256;
             int j;
             for(j = 0; j < 256; ++j) {
-                lt_chan[j] -= (back_chan[j] - s->add_bias) * M_SQRT1_2;
-                rt_chan[j] -= (back_chan[j] - s->add_bias) * M_SQRT1_2;
+                lt_chan[j] -= back_chan[j] * M_SQRT1_2;
+                rt_chan[j] -= back_chan[j] * M_SQRT1_2;
             }
         }
 
@@ -1841,11 +1838,6 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
         s->samples_chanptr[i] = s->samples + i * 256;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
-    if (s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
-        s->add_bias = 385.0f;
-        s->scale_bias = 1.0 / 32768.0;
-    } else {
-        s->add_bias = 0.0f;
         s->scale_bias = 1.0;
 
         /* allow downmixing to stereo */
@@ -1853,7 +1845,6 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
                 avctx->request_channels == 2) {
             avctx->channels = avctx->request_channels;
         }
-    }
 
 
     return 0;

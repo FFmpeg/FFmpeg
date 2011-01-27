@@ -276,7 +276,6 @@ typedef struct {
      * @{
      */
     float *output_data[MAX_CHANNELS];                 ///< Points to each element's 'ret' buffer (PCM output).
-    float add_bias;                                   ///< offset for dsp.float_to_int16
     float sf_scale;                                   ///< Pre-scale for correct IMDCT and dsp.float_to_int16.
     int sf_offset;                                    ///< offset into pow2sf_tab as appropriate for dsp.float_to_int16
     /** @} */

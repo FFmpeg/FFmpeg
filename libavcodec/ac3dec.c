@@ -196,13 +196,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     av_lfg_init(&s->dith_state, 0);
 
     /* set bias values for float to int16 conversion */
-    if(s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
-        s->add_bias = 385.0f;
-        s->mul_bias = 1.0f;
-    } else {
-        s->add_bias = 0.0f;
         s->mul_bias = 32767.0f;
-    }
 
     /* allow downmixing to stereo or mono */
     if (avctx->channels > 0 && avctx->request_channels > 0 &&
@@ -626,9 +620,6 @@ static void do_rematrixing(AC3DecodeContext *s)
 static inline void do_imdct(AC3DecodeContext *s, int channels)
 {
     int ch;
-    float add_bias = s->add_bias;
-    if(s->out_channels==1 && channels>1)
-        add_bias *= LEVEL_MINUS_3DB; // compensate for the gain in downmix
 
     for (ch=1; ch<=channels; ch++) {
         if (s->block_switch[ch]) {
@@ -637,13 +628,13 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             for(i=0; i<128; i++)
                 x[i] = s->transform_coeffs[ch][2*i];
             ff_imdct_half(&s->imdct_256, s->tmp_output, x);
-            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, add_bias, 128);
+            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, 0, 128);
             for(i=0; i<128; i++)
                 x[i] = s->transform_coeffs[ch][2*i+1];
             ff_imdct_half(&s->imdct_256, s->delay[ch-1], x);
         } else {
             ff_imdct_half(&s->imdct_512, s->tmp_output, s->transform_coeffs[ch]);
-            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, add_bias, 128);
+            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, 0, 128);
             memcpy(s->delay[ch-1], s->tmp_output+128, 128*sizeof(float));
         }
     }

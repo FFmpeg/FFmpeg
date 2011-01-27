@@ -3910,14 +3910,7 @@ static void vector_clipf_c(float *dst, const float *src, float min, float max, i
 }
 
 static av_always_inline int float_to_int16_one(const float *src){
-    int_fast32_t tmp = *(const int32_t*)src;
-    if(tmp & 0xf0000){
-        tmp = (0x43c0ffff - tmp)>>31;
-        // is this faster on some gcc/cpu combinations?
-//      if(tmp > 0x43c0ffff) tmp = 0xFFFF;
-//      else                 tmp = 0;
-    }
-    return tmp - 0x8000;
+    return av_clip_int16(lrintf(*src));
 }
 
 void ff_float_to_int16_c(int16_t *dst, const float *src, long len){
