@@ -49,7 +49,6 @@ typedef struct NellyMoserDecodeContext {
     float           state[128];
     AVLFG           random_state;
     GetBitContext   gb;
-    int             add_bias;
     float           scale_bias;
     DSPContext      dsp;
     FFTContext      imdct_ctx;
@@ -65,7 +64,7 @@ static void overlap_and_window(NellyMoserDecodeContext *s, float *state, float *
 
     while (bot < NELLY_BUF_LEN) {
         audio[bot] = a_in [bot]*ff_sine_128[bot]
-                    +state[bot]*ff_sine_128[top] + s->add_bias;
+                    +state[bot]*ff_sine_128[top];
 
         bot++;
         top--;
@@ -136,13 +135,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
 
     dsputil_init(&s->dsp, avctx);
 
-    if(s->dsp.float_to_int16 == ff_float_to_int16_c) {
-        s->add_bias = 385;
-        s->scale_bias = 1.0/(8*32768);
-    } else {
-        s->add_bias = 0;
         s->scale_bias = 1.0/(1*8);
-    }
 
     /* Generate overlap window */
     if (!ff_sine_128[127])

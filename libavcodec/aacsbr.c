@@ -1175,12 +1175,10 @@ static void sbr_qmf_analysis(DSPContext *dsp, FFTContext *mdct, const float *in,
 static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
                               float *out, float X[2][38][64],
                               float mdct_buf[2][64],
-                              float *v0, int *v_off, const unsigned int div,
-                              float bias, float scale)
+                              float *v0, int *v_off, const unsigned int div)
 {
     int i, n;
     const float *sbr_qmf_window = div ? sbr_qmf_window_ds : sbr_qmf_window_us;
-    int scale_and_bias = scale != 1.0f || bias != 0.0f;
     float *v;
     for (i = 0; i < 32; i++) {
         if (*v_off == 0) {
@@ -1222,9 +1220,6 @@ static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
         dsp->vector_fmul_add(out, v + ( 960 >> div), sbr_qmf_window + (448 >> div), out   , 64 >> div);
         dsp->vector_fmul_add(out, v + (1024 >> div), sbr_qmf_window + (512 >> div), out   , 64 >> div);
         dsp->vector_fmul_add(out, v + (1216 >> div), sbr_qmf_window + (576 >> div), out   , 64 >> div);
-        if (scale_and_bias)
-            for (n = 0; n < 64 >> div; n++)
-                out[n] = out[n] * scale + bias;
         out += 64 >> div;
     }
 }
@@ -1760,12 +1755,10 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
     sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, L, sbr->X[0], sbr->qmf_filter_scratch,
                       sbr->data[0].synthesis_filterbank_samples,
                       &sbr->data[0].synthesis_filterbank_samples_offset,
-                      downsampled,
-                      ac->add_bias, -1024 * ac->sf_scale);
+                      downsampled);
     if (nch == 2)
         sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, R, sbr->X[1], sbr->qmf_filter_scratch,
                           sbr->data[1].synthesis_filterbank_samples,
                           &sbr->data[1].synthesis_filterbank_samples_offset,
-                          downsampled,
-                          ac->add_bias, -1024 * ac->sf_scale);
+                          downsampled);
 }

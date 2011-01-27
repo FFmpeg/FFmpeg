@@ -768,9 +768,8 @@ next:
 /* decode a frame of frame_len samples */
 static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
 {
-    int ret, i, n, ch, incr;
-    int16_t *ptr;
-    float *iptr;
+    int ret, n, ch, incr;
+    const float *output[MAX_CHANNELS];
 
 #ifdef TRACE
     tprintf(s->avctx, "***decode_frame: %d size=%d\n", s->frame_count++, s->frame_len);
@@ -790,21 +789,6 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
     /* convert frame to integer */
     n = s->frame_len;
     incr = s->nb_channels;
-    if (s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
-        for(ch = 0; ch < s->nb_channels; ch++) {
-            ptr = samples + ch;
-            iptr = s->frame_out[ch];
-
-            for(i=0;i<n;i++) {
-                *ptr = av_clip_int16(lrintf(*iptr++));
-                ptr += incr;
-            }
-            /* prepare for next block */
-            memmove(&s->frame_out[ch][0], &s->frame_out[ch][s->frame_len],
-                    s->frame_len * sizeof(float));
-        }
-    } else {
-        const float *output[MAX_CHANNELS];
         for (ch = 0; ch < MAX_CHANNELS; ch++)
             output[ch] = s->frame_out[ch];
         s->dsp.float_to_int16_interleave(samples, output, n, incr);
@@ -812,7 +796,6 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
             /* prepare for next block */
             memmove(&s->frame_out[ch][0], &s->frame_out[ch][n], n * sizeof(float));
         }
-    }
 
 #ifdef TRACE
     dump_shorts(s, "samples", samples, n * s->nb_channels);

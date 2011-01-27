@@ -190,7 +190,6 @@ typedef struct {
 
 ///@defgroup opt optimization
     DSPContext dsp;                         ///< for optimization
-    float add_bias;                         ///< offset for float_to_int16 conversion
     float mul_bias;                         ///< scaling for float_to_int16 conversion
 ///@}
 

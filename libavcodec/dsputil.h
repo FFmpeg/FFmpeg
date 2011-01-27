@@ -435,8 +435,7 @@ typedef struct DSPContext {
      */
     void (*butterflies_float)(float *restrict v1, float *restrict v2, int len);
 
-    /* C version: convert floats from the range [384.0,386.0] to ints in [-32768,32767]
-     * simd versions: convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */
+    /* convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */
     void (*float_to_int16)(int16_t *dst, const float *src, long len);
     void (*float_to_int16_interleave)(int16_t *dst, const float **src, long len, int channels);
 
