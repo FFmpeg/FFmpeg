@@ -125,13 +125,14 @@ static int get_value(ByteIOContext *pb, int type){
 static void get_tag(AVFormatContext *s, const char *key, int type, int len)
 {
     char *value;
+    int64_t off = url_ftell(s->pb);
 
     if ((unsigned)len >= (UINT_MAX - 1)/2)
         return;
 
     value = av_malloc(2*len+1);
     if (!value)
-        return;
+        goto finish;
 
     if (type == 0) {         // UTF16-LE
         avio_get_str16le(s->pb, len, value, 2*len + 1);
@@ -139,13 +140,13 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
         uint64_t num = get_value(s->pb, type);
         snprintf(value, len, "%"PRIu64, num);
     } else {
-        url_fskip(s->pb, len);
-        av_freep(&value);
         av_log(s, AV_LOG_DEBUG, "Unsupported value type %d in tag %s.\n", type, key);
-        return;
+        goto finish;
     }
     av_metadata_set2(&s->metadata, key, value, 0);
+finish:
     av_freep(&value);
+    url_fseek(s->pb, off + len, SEEK_SET);
 }
 
 static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
