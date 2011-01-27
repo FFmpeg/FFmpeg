@@ -318,8 +318,8 @@ static int mov_write_ms_tag(ByteIOContext *pb, MOVTrack *track)
 {
     int64_t pos = url_ftell(pb);
     put_be32(pb, 0);
-    put_le32(pb, track->tag);
-    track->enc->codec_tag = track->tag >> 16;
+    put_le32(pb, track->tag); // store it byteswapped
+    track->enc->codec_tag = av_bswap16(track->tag >> 16);
     ff_put_wav_header(pb, track->enc);
     return updateSize(pb, pos);
 }
