@@ -256,11 +256,29 @@ av_cold struct FFIIRFilterState* ff_iir_filter_init_state(int order)
     }                                                                       \
 }
 
+#define FILTER_O2(type, fmt) {                                              \
+    int i;                                                                  \
+    const type *src0 = src;                                                 \
+    type       *dst0 = dst;                                                 \
+    for (i = 0; i < size; i++) {                                            \
+        float in = *src0   * c->gain  +                                     \
+                   s->x[0] * c->cy[0] +                                     \
+                   s->x[1] * c->cy[1];                                      \
+        CONV_##fmt(*dst0, s->x[0] + in + s->x[1] * c->cx[1])                \
+        s->x[0] = s->x[1];                                                  \
+        s->x[1] = in;                                                       \
+        src0 += sstep;                                                      \
+        dst0 += dstep;                                                      \
+    }                                                                       \
+}
+
 void ff_iir_filter(const struct FFIIRFilterCoeffs *c,
                    struct FFIIRFilterState *s, int size,
                    const int16_t *src, int sstep, int16_t *dst, int dstep)
 {
-    if (c->order == 4) {
+    if (c->order == 2) {
+        FILTER_O2(int16_t, S16)
+    } else if (c->order == 4) {
         FILTER_BW_O4(int16_t, S16)
     } else {
         FILTER_DIRECT_FORM_II(int16_t, S16)
@@ -271,7 +289,9 @@ void ff_iir_filter_flt(const struct FFIIRFilterCoeffs *c,
                        struct FFIIRFilterState *s, int size,
                        const float *src, int sstep, float *dst, int dstep)
 {
-    if (c->order == 4) {
+    if (c->order == 2) {
+        FILTER_O2(float, FLT)
+    } else if (c->order == 4) {
         FILTER_BW_O4(float, FLT)
     } else {
         FILTER_DIRECT_FORM_II(float, FLT)
