@@ -195,8 +195,8 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     dsputil_init(&s->dsp, avctx);
     av_lfg_init(&s->dith_state, 0);
 
-    /* set bias values for float to int16 conversion */
-        s->mul_bias = 32767.0f;
+    /* set scale value for float to int16 conversion */
+    s->mul_bias = 32767.0f;
 
     /* allow downmixing to stereo or mono */
     if (avctx->channels > 0 && avctx->request_channels > 0 &&

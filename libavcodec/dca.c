@@ -1838,14 +1838,13 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
         s->samples_chanptr[i] = s->samples + i * 256;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
-        s->scale_bias = 1.0;
+    s->scale_bias = 1.0;
 
-        /* allow downmixing to stereo */
-        if (avctx->channels > 0 && avctx->request_channels < avctx->channels &&
-                avctx->request_channels == 2) {
-            avctx->channels = avctx->request_channels;
-        }
-
+    /* allow downmixing to stereo */
+    if (avctx->channels > 0 && avctx->request_channels < avctx->channels &&
+        avctx->request_channels == 2) {
+        avctx->channels = avctx->request_channels;
+    }
 
     return 0;
 }

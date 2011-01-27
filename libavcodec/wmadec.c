@@ -789,13 +789,13 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
     /* convert frame to integer */
     n = s->frame_len;
     incr = s->nb_channels;
-        for (ch = 0; ch < MAX_CHANNELS; ch++)
-            output[ch] = s->frame_out[ch];
-        s->dsp.float_to_int16_interleave(samples, output, n, incr);
-        for(ch = 0; ch < incr; ch++) {
-            /* prepare for next block */
-            memmove(&s->frame_out[ch][0], &s->frame_out[ch][n], n * sizeof(float));
-        }
+    for (ch = 0; ch < MAX_CHANNELS; ch++)
+        output[ch] = s->frame_out[ch];
+    s->dsp.float_to_int16_interleave(samples, output, n, incr);
+    for (ch = 0; ch < incr; ch++) {
+        /* prepare for next block */
+        memmove(&s->frame_out[ch][0], &s->frame_out[ch][n], n * sizeof(float));
+    }
 
 #ifdef TRACE
     dump_shorts(s, "samples", samples, n * s->nb_channels);

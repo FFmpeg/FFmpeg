@@ -135,7 +135,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
 
     dsputil_init(&s->dsp, avctx);
 
-        s->scale_bias = 1.0/(1*8);
+    s->scale_bias = 1.0/(1*8);
 
     /* Generate overlap window */
     if (!ff_sine_128[127])
