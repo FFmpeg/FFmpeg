@@ -423,7 +423,7 @@ static int end_frame(AVCodecContext *avctx)
                                      commit_bitstream_and_slice_buffer);
 }
 
-AVHWAccel h264_dxva2_hwaccel = {
+AVHWAccel ff_h264_dxva2_hwaccel = {
     .name           = "h264_dxva2",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_H264,
