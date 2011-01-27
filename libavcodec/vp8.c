@@ -1234,7 +1234,7 @@ void vp8_mc(VP8Context *s, int luma,
         src += y_off * linesize + x_off;
         if (x_off < mx_idx || x_off >= width  - block_w - idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - idx[2][my]) {
-            ff_emulated_edge_mc(s->edge_emu_buffer, src - my_idx * linesize - mx_idx, linesize,
+            s->dsp.emulated_edge_mc(s->edge_emu_buffer, src - my_idx * linesize - mx_idx, linesize,
                                 block_w + idx[1][mx], block_h + idx[1][my],
                                 x_off - mx_idx, y_off - my_idx, width, height);
             src = s->edge_emu_buffer + mx_idx + linesize * my_idx;

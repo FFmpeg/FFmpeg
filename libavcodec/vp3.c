@@ -1432,7 +1432,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                             if(stride<0) temp -= 9*stride;
                             else temp += 9*stride;
 
-                            ff_emulated_edge_mc(temp, motion_source, stride, 9, 9, src_x, src_y, plane_width, plane_height);
+                            s->dsp.emulated_edge_mc(temp, motion_source, stride, 9, 9, src_x, src_y, plane_width, plane_height);
                             motion_source= temp;
                         }
                     }
