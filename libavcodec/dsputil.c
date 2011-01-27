@@ -355,38 +355,45 @@ void ff_emulated_edge_mc(uint8_t *buf, const uint8_t *src, int linesize, int blo
     start_x= FFMAX(0, -src_x);
     end_y= FFMIN(block_h, h-src_y);
     end_x= FFMIN(block_w, w-src_x);
+    assert(start_y < end_y && block_h);
+    assert(start_x < end_x && block_w);
 
-    // copy existing part
-    for(y=start_y; y<end_y; y++){
-        for(x=start_x; x<end_x; x++){
-            buf[x + y*linesize]= src[x + y*linesize];
-        }
-    }
+    w    = end_x - start_x;
+    src += start_y*linesize + start_x;
+    buf += start_x;
 
     //top
     for(y=0; y<start_y; y++){
-        for(x=start_x; x<end_x; x++){
-            buf[x + y*linesize]= buf[x + start_y*linesize];
-        }
+        memcpy(buf, src, w);
+        buf += linesize;
+    }
+
+    // copy existing part
+    for(; y<end_y; y++){
+        memcpy(buf, src, w);
+        src += linesize;
+        buf += linesize;
     }
 
     //bottom
-    for(y=end_y; y<block_h; y++){
-        for(x=start_x; x<end_x; x++){
-            buf[x + y*linesize]= buf[x + (end_y-1)*linesize];
-        }
+    src -= linesize;
+    for(; y<block_h; y++){
+        memcpy(buf, src, w);
+        buf += linesize;
     }
 
-    for(y=0; y<block_h; y++){
+    buf -= block_h * linesize + start_x;
+    while (block_h--){
        //left
         for(x=0; x<start_x; x++){
-            buf[x + y*linesize]= buf[start_x + y*linesize];
+            buf[x] = buf[start_x];
         }
 
        //right
         for(x=end_x; x<block_w; x++){
-            buf[x + y*linesize]= buf[end_x - 1 + y*linesize];
+            buf[x] = buf[end_x - 1];
         }
+        buf += linesize;
     }
 }
 
