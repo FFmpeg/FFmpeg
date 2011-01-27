@@ -116,10 +116,10 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 
 #ifdef DEBUG
     av_log(inlink->dst, AV_LOG_DEBUG,
-           "n:%"PRId64" interlaced:%d pos:%d pts:%"PRId64" t:%f -> pts:%"PRId64" t:%f\n",
+           "n:%"PRId64" interlaced:%d pos:%"PRId64" pts:%"PRId64" t:%f -> pts:%"PRId64" t:%f\n",
            (int64_t)setpts->var_values[VAR_N],
            (int)setpts->var_values[VAR_INTERLACED],
-           (int)setpts->var_values[VAR_POS],
+           inpicref ->pos,
            inpicref ->pts, inpicref ->pts * av_q2d(inlink->time_base),
            outpicref->pts, outpicref->pts * av_q2d(inlink->time_base));
 #endif
