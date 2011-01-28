@@ -243,6 +243,9 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         case CODEC_ID_AAC:
             stream_type = STREAM_TYPE_AUDIO_AAC;
             break;
+        case CODEC_ID_AAC_LATM:
+            stream_type = STREAM_TYPE_AUDIO_AAC_LATM;
+            break;
         case CODEC_ID_AC3:
             stream_type = STREAM_TYPE_AUDIO_AC3;
             break;
