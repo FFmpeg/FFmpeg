@@ -209,6 +209,7 @@ typedef struct SPS{
     int bit_depth_luma;                ///< bit_depth_luma_minus8 + 8
     int bit_depth_chroma;              ///< bit_depth_chroma_minus8 + 8
     int residual_color_transform_flag; ///< residual_colour_transform_flag
+    int constraint_set_flags;          ///< constraint_set[0-3]_flag
 }SPS;
 
 /**
@@ -610,6 +611,11 @@ int ff_h264_decode_sei(H264Context *h);
  * Decode SPS
  */
 int ff_h264_decode_seq_parameter_set(H264Context *h);
+
+/**
+ * compute profile from sps
+ */
+int ff_h264_get_profile(SPS *sps);
 
 /**
  * Decode PPS

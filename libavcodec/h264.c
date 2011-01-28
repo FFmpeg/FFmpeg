@@ -1678,6 +1678,33 @@ static void clone_slice(H264Context *dst, H264Context *src)
 }
 
 /**
+ * computes profile from profile_idc and constraint_set?_flags
+ *
+ * @param sps SPS
+ *
+ * @return profile as defined by FF_PROFILE_H264_*
+ */
+int ff_h264_get_profile(SPS *sps)
+{
+    int profile = sps->profile_idc;
+
+    switch(sps->profile_idc) {
+    case FF_PROFILE_H264_BASELINE:
+        // constraint_set1_flag set to 1
+        profile |= (sps->constraint_set_flags & 1<<1) ? FF_PROFILE_H264_CONSTRAINED : 0;
+        break;
+    case FF_PROFILE_H264_HIGH_10:
+    case FF_PROFILE_H264_HIGH_422:
+    case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
+        // constraint_set3_flag set to 1
+        profile |= (sps->constraint_set_flags & 1<<3) ? FF_PROFILE_H264_INTRA : 0;
+        break;
+    }
+
+    return profile;
+}
+
+/**
  * decodes a slice header.
  * This will also call MPV_common_init() and frame_start() as needed.
  *
@@ -1756,7 +1783,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
     h->sps = *h0->sps_buffers[h->pps.sps_id];
 
-    s->avctx->profile = h->sps.profile_idc;
+    s->avctx->profile = ff_h264_get_profile(&h->sps);
     s->avctx->level   = h->sps.level_idc;
     s->avctx->refs    = h->sps.ref_frame_count;
 
