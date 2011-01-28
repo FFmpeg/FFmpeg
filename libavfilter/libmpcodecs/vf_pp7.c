@@ -350,7 +350,7 @@ static int config(struct vf_instance *vf,
     int h= (height+16+15)&(~15);
 
     vf->priv->temp_stride= (width+16+15)&(~15);
-    vf->priv->src = memalign(8, vf->priv->temp_stride*(h+8)*sizeof(uint8_t));
+    vf->priv->src = av_malloc(vf->priv->temp_stride*(h+8)*sizeof(uint8_t));
 
     return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
@@ -410,7 +410,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 static void uninit(struct vf_instance *vf){
     if(!vf->priv) return;
 
-    free(vf->priv->src);
+    av_free(vf->priv->src);
     vf->priv->src= NULL;
 
     free(vf->priv);

@@ -108,7 +108,7 @@ static int config(struct vf_instance *vf,
     int i, j;
 
     vf->priv->pvStride= width;
-    vf->priv->pv= (void*)memalign(8, width*height*2*sizeof(int32_t));
+    vf->priv->pv= av_malloc(width*height*2*sizeof(int32_t));
     initPv(vf->priv, width, height);
 
     for(i=0; i<SUB_PIXELS; i++){
@@ -132,7 +132,7 @@ static int config(struct vf_instance *vf,
 static void uninit(struct vf_instance *vf){
     if(!vf->priv) return;
 
-    free(vf->priv->pv);
+    av_free(vf->priv->pv);
     vf->priv->pv= NULL;
 
     free(vf->priv);

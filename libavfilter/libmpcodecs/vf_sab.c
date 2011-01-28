@@ -95,7 +95,7 @@ static int allocStuff(FilterParam *f, int width, int height){
     SwsVector *vec;
     SwsFilter swsF;
     int i,x,y;
-    f->preFilterBuf= (uint8_t*)memalign(8, stride*height);
+    f->preFilterBuf= av_malloc(stride*height);
     f->preFilterStride= stride;
 
     vec = sws_getGaussianVec(f->preFilterRadius, f->quality);
@@ -119,7 +119,7 @@ static int allocStuff(FilterParam *f, int width, int height){
     vec = sws_getGaussianVec(f->radius, f->quality);
     f->distWidth= vec->length;
     f->distStride= (vec->length+7)&~7;
-    f->distCoeff= (int32_t*)memalign(8, f->distWidth*f->distStride*sizeof(int32_t));
+    f->distCoeff= av_malloc(f->distWidth*f->distStride*sizeof(int32_t));
 
     for(y=0; y<vec->length; y++){
         for(x=0; x<vec->length; x++){
@@ -153,10 +153,10 @@ static void freeBuffers(FilterParam *f){
     if(f->preFilterContext) sws_freeContext(f->preFilterContext);
     f->preFilterContext=NULL;
 
-    free(f->preFilterBuf);
+    av_free(f->preFilterBuf);
     f->preFilterBuf=NULL;
 
-    free(f->distCoeff);
+    av_free(f->distCoeff);
     f->distCoeff=NULL;
 }
 
