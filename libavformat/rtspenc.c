@@ -22,8 +22,8 @@
 #include "avformat.h"
 
 #include <sys/time.h>
-#if HAVE_SYS_SELECT_H
-#include <sys/select.h>
+#if HAVE_POLL_H
+#include <poll.h>
 #endif
 #include "network.h"
 #include "rtsp.h"
@@ -172,23 +172,16 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
-    fd_set rfds;
-    int n, tcp_fd;
-    struct timeval tv;
+    int n;
+    struct pollfd p = {url_get_file_handle(rt->rtsp_hd), POLLIN, 0};
     AVFormatContext *rtpctx;
     int ret;
 
-    tcp_fd = url_get_file_handle(rt->rtsp_hd);
-
     while (1) {
-        FD_ZERO(&rfds);
-        FD_SET(tcp_fd, &rfds);
-        tv.tv_sec = 0;
-        tv.tv_usec = 0;
-        n = select(tcp_fd + 1, &rfds, NULL, NULL, &tv);
+        n = poll(&p, 1, 0);
         if (n <= 0)
             break;
-        if (FD_ISSET(tcp_fd, &rfds)) {
+        if (p.revents & POLLIN) {
             RTSPMessageHeader reply;
 
             /* Don't let ff_rtsp_read_reply handle interleaved packets,

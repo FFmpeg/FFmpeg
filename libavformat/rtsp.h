@@ -326,6 +326,11 @@ typedef struct RTSPState {
      * The number of returned packets
      */
     uint64_t packets;
+
+    /**
+     * Polling array for udp
+     */
+    struct pollfd *p;
 } RTSPState;
 
 /**

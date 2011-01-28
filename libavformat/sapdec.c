@@ -25,8 +25,8 @@
 #include "network.h"
 #include "os_support.h"
 #include "internal.h"
-#if HAVE_SYS_SELECT_H
-#include <sys/select.h>
+#if HAVE_POLL_H
+#include <poll.h>
 #endif
 #include <sys/time.h>
 
@@ -183,19 +183,15 @@ static int sap_fetch_packet(AVFormatContext *s, AVPacket *pkt)
     struct SAPState *sap = s->priv_data;
     int fd = url_get_file_handle(sap->ann_fd);
     int n, ret;
-    fd_set rfds;
-    struct timeval tv;
+    struct pollfd p = {fd, POLLIN, 0};
     uint8_t recvbuf[1500];
 
     if (sap->eof)
         return AVERROR_EOF;
 
     while (1) {
-        FD_ZERO(&rfds);
-        FD_SET(fd, &rfds);
-        tv.tv_sec = tv.tv_usec = 0;
-        n = select(fd + 1, &rfds, NULL, NULL, &tv);
-        if (n <= 0 || !FD_ISSET(fd, &rfds))
+        n = poll(&p, 1, 0);
+        if (n <= 0 || !(p.revents & POLLIN))
             break;
         ret = url_read(sap->ann_fd, recvbuf, sizeof(recvbuf));
         if (ret >= 8) {
