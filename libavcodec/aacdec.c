@@ -1723,8 +1723,7 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
             (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
         ac->dsp.vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 0, 512);
     } else {
-        for (i = 0; i < 448; i++)
-            out[i] = saved[i];
+        memcpy(                        out,               saved,            448 * sizeof(float));
 
         if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
             ac->dsp.vector_fmul_window(out + 448 + 0*128, saved + 448,      buf + 0*128, swindow_prev, 0, 64);
@@ -1735,15 +1734,13 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
             memcpy(                    out + 448 + 4*128, temp, 64 * sizeof(float));
         } else {
             ac->dsp.vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, 0, 64);
-            for (i = 576; i < 1024; i++)
-                out[i] = buf[i-512];
+            memcpy(                    out + 576,         buf + 64,         448 * sizeof(float));
         }
     }
 
     // buffer update
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
-        for (i = 0; i < 64; i++)
-            saved[i] = temp[64 + i];
+        memcpy(                    saved,       temp + 64,         64 * sizeof(float));
         ac->dsp.vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 0, 64);
         ac->dsp.vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 0, 64);
         ac->dsp.vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 0, 64);
