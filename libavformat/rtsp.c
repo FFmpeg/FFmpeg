@@ -1795,8 +1795,9 @@ static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     content[size] ='\0';
 
-    ff_sdp_parse(s, content);
+    err = ff_sdp_parse(s, content);
     av_free(content);
+    if (err) goto fail;
 
     /* open each RTP stream */
     for (i = 0; i < rt->nb_rtsp_streams; i++) {

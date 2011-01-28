@@ -136,7 +136,7 @@ int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply)
     ret = ff_sdp_parse(s, (const char *)content);
     av_freep(&content);
     if (ret < 0)
-        return AVERROR_INVALIDDATA;
+        return ret;
 
     return 0;
 }
