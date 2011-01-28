@@ -3913,13 +3913,13 @@ static av_always_inline int float_to_int16_one(const float *src){
     return av_clip_int16(lrintf(*src));
 }
 
-void ff_float_to_int16_c(int16_t *dst, const float *src, long len){
+static void ff_float_to_int16_c(int16_t *dst, const float *src, long len){
     int i;
     for(i=0; i<len; i++)
         dst[i] = float_to_int16_one(src+i);
 }
 
-void ff_float_to_int16_interleave_c(int16_t *dst, const float **src, long len, int channels){
+static void ff_float_to_int16_interleave_c(int16_t *dst, const float **src, long len, int channels){
     int i,j,c;
     if(channels==2){
         for(i=0; i<len; i++){
