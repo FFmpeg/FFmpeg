@@ -2260,14 +2260,21 @@ typedef struct AVCodecContext {
 #define FF_PROFILE_DTS_HD_HRA  50
 #define FF_PROFILE_DTS_HD_MA   60
 
-#define FF_PROFILE_H264_BASELINE    66
-#define FF_PROFILE_H264_MAIN        77
-#define FF_PROFILE_H264_EXTENDED    88
-#define FF_PROFILE_H264_HIGH        100
-#define FF_PROFILE_H264_HIGH_10     110
-#define FF_PROFILE_H264_HIGH_422    122
-#define FF_PROFILE_H264_HIGH_444    244
-#define FF_PROFILE_H264_CAVLC_444   44
+#define FF_PROFILE_H264_CONSTRAINED  (1<<9)  // 8+1; constraint_set1_flag
+#define FF_PROFILE_H264_INTRA        (1<<11) // 8+3; constraint_set3_flag
+
+#define FF_PROFILE_H264_BASELINE             66
+#define FF_PROFILE_H264_CONSTRAINED_BASELINE (66|FF_PROFILE_H264_CONSTRAINED)
+#define FF_PROFILE_H264_MAIN                 77
+#define FF_PROFILE_H264_EXTENDED             88
+#define FF_PROFILE_H264_HIGH                 100
+#define FF_PROFILE_H264_HIGH_10              110
+#define FF_PROFILE_H264_HIGH_10_INTRA        (110|FF_PROFILE_H264_INTRA)
+#define FF_PROFILE_H264_HIGH_422             122
+#define FF_PROFILE_H264_HIGH_422_INTRA       (122|FF_PROFILE_H264_INTRA)
+#define FF_PROFILE_H264_HIGH_444_PREDICTIVE  244
+#define FF_PROFILE_H264_HIGH_444_INTRA       (244|FF_PROFILE_H264_INTRA)
+#define FF_PROFILE_H264_CAVLC_444            44
 
     /**
      * level
