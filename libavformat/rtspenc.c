@@ -26,6 +26,7 @@
 #include <poll.h>
 #endif
 #include "network.h"
+#include "os_support.h"
 #include "rtsp.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
