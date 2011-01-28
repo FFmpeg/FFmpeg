@@ -34,8 +34,8 @@
 #include "network.h"
 #include "os_support.h"
 #include <fcntl.h>
-#if HAVE_SYS_SELECT_H
-#include <sys/select.h>
+#if HAVE_POLL_H
+#include <sys/poll.h>
 #endif
 #include <sys/time.h>
 
@@ -221,9 +221,9 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     RTPContext *s = h->priv_data;
     struct sockaddr_storage from;
     socklen_t from_len;
-    int len, fd_max, n;
-    fd_set rfds;
-    struct timeval tv;
+    int len, n;
+    struct pollfd p[2] = {{s->rtp_fd, POLLIN, 0}, {s->rtcp_fd, POLLIN, 0}};
+
 #if 0
     for(;;) {
         from_len = sizeof(from);
@@ -242,18 +242,10 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
         if (url_interrupt_cb())
             return AVERROR(EINTR);
         /* build fdset to listen to RTP and RTCP packets */
-        FD_ZERO(&rfds);
-        fd_max = s->rtp_fd;
-        FD_SET(s->rtp_fd, &rfds);
-        if (s->rtcp_fd > fd_max)
-            fd_max = s->rtcp_fd;
-        FD_SET(s->rtcp_fd, &rfds);
-        tv.tv_sec = 0;
-        tv.tv_usec = 100 * 1000;
-        n = select(fd_max + 1, &rfds, NULL, NULL, &tv);
+        n = poll(p, 2, 100);
         if (n > 0) {
             /* first try RTCP */
-            if (FD_ISSET(s->rtcp_fd, &rfds)) {
+            if (p[1].revents & POLLIN) {
                 from_len = sizeof(from);
                 len = recvfrom (s->rtcp_fd, buf, size, 0,
                                 (struct sockaddr *)&from, &from_len);
@@ -266,7 +258,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 break;
             }
             /* then RTP */
-            if (FD_ISSET(s->rtp_fd, &rfds)) {
+            if (p[0].revents & POLLIN) {
                 from_len = sizeof(from);
                 len = recvfrom (s->rtp_fd, buf, size, 0,
                                 (struct sockaddr *)&from, &from_len);

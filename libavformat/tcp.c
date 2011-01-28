@@ -23,8 +23,8 @@
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
-#if HAVE_SYS_SELECT_H
-#include <sys/select.h>
+#if HAVE_POLL_H
+#include <poll.h>
 #endif
 #include <sys/time.h>
 
@@ -38,9 +38,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     struct addrinfo hints, *ai, *cur_ai;
     int port, fd = -1;
     TCPContext *s = NULL;
-    fd_set wfds, efds;
-    int fd_max, ret;
-    struct timeval tv;
+    int ret;
     socklen_t optlen;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
@@ -73,6 +71,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
  redo:
     ret = connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
     if (ret < 0) {
+        struct pollfd p = {fd, POLLOUT, 0};
         if (ff_neterrno() == FF_NETERROR(EINTR)) {
             if (url_interrupt_cb())
                 goto fail1;
@@ -88,15 +87,8 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
                 ret = AVERROR(EINTR);
                 goto fail1;
             }
-            fd_max = fd;
-            FD_ZERO(&wfds);
-            FD_ZERO(&efds);
-            FD_SET(fd, &wfds);
-            FD_SET(fd, &efds);
-            tv.tv_sec = 0;
-            tv.tv_usec = 100 * 1000;
-            ret = select(fd_max + 1, NULL, &wfds, &efds, &tv);
-            if (ret > 0 && (FD_ISSET(fd, &wfds) || FD_ISSET(fd, &efds)))
+            ret = poll(&p, 1, 100);
+            if (ret > 0)
                 break;
         }
 
@@ -140,20 +132,14 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    int len, fd_max, ret;
-    fd_set rfds;
-    struct timeval tv;
+    struct pollfd p = {s->fd, POLLIN, 0};
+    int len, ret;
 
     for (;;) {
         if (url_interrupt_cb())
             return AVERROR(EINTR);
-        fd_max = s->fd;
-        FD_ZERO(&rfds);
-        FD_SET(s->fd, &rfds);
-        tv.tv_sec = 0;
-        tv.tv_usec = 100 * 1000;
-        ret = select(fd_max + 1, &rfds, NULL, NULL, &tv);
-        if (ret > 0 && FD_ISSET(s->fd, &rfds)) {
+        ret = poll(&p, 1, 100);
+        if (ret == 1 && p.revents & POLLIN) {
             len = recv(s->fd, buf, size, 0);
             if (len < 0) {
                 if (ff_neterrno() != FF_NETERROR(EINTR) &&
@@ -171,21 +157,15 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
 static int tcp_write(URLContext *h, const uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    int ret, size1, fd_max, len;
-    fd_set wfds;
-    struct timeval tv;
+    int ret, size1, len;
+    struct pollfd p = {s->fd, POLLOUT, 0};
 
     size1 = size;
     while (size > 0) {
         if (url_interrupt_cb())
             return AVERROR(EINTR);
-        fd_max = s->fd;
-        FD_ZERO(&wfds);
-        FD_SET(s->fd, &wfds);
-        tv.tv_sec = 0;
-        tv.tv_usec = 100 * 1000;
-        ret = select(fd_max + 1, NULL, &wfds, NULL, &tv);
-        if (ret > 0 && FD_ISSET(s->fd, &wfds)) {
+        ret = poll(&p, 1, 100);
+        if (ret == 1 && p.revents & POLLOUT) {
             len = send(s->fd, buf, size, 0);
             if (len < 0) {
                 if (ff_neterrno() != FF_NETERROR(EINTR) &&

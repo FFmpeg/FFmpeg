@@ -26,8 +26,8 @@
 #include "avformat.h"
 
 #include <sys/time.h>
-#if HAVE_SYS_SELECT_H
-#include <sys/select.h>
+#if HAVE_POLL_H
+#include <poll.h>
 #endif
 #include <strings.h>
 #include "internal.h"
@@ -44,11 +44,11 @@
 //#define DEBUG
 //#define DEBUG_RTP_TCP
 
-/* Timeout values for socket select, in ms,
+/* Timeout values for socket poll, in ms,
  * and read_packet(), in seconds  */
-#define SELECT_TIMEOUT_MS 100
+#define POLL_TIMEOUT_MS 100
 #define READ_PACKET_TIMEOUT_S 10
-#define MAX_TIMEOUTS READ_PACKET_TIMEOUT_S * 1000 / SELECT_TIMEOUT_MS
+#define MAX_TIMEOUTS READ_PACKET_TIMEOUT_S * 1000 / POLL_TIMEOUT_MS
 #define SDP_MAX_SIZE 16384
 #define RECVBUF_SIZE 10 * RTP_MAX_PACKET_LENGTH
 
@@ -429,8 +429,14 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
     }
 }
 
+/**
+ * Parse the sdp description and allocate the rtp streams and the
+ * pollfd array used for udp ones.
+ */
+
 int ff_sdp_parse(AVFormatContext *s, const char *content)
 {
+    RTSPState *rt = s->priv_data;
     const char *p;
     int letter;
     /* Some SDP lines, particularly for Realmedia or ASF RTSP streams,
@@ -470,6 +476,8 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
         if (*p == '\n')
             p++;
     }
+    rt->p = av_malloc(sizeof(struct pollfd)*2*(rt->nb_rtsp_streams+1));
+    if (!rt->p) return AVERROR(ENOMEM);
     return 0;
 }
 #endif /* CONFIG_RTPDEC */
@@ -531,6 +539,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
         av_close_input_stream (rt->asf_ctx);
         rt->asf_ctx = NULL;
     }
+    av_free(rt->p);
     av_free(rt->recvbuf);
 }
 
@@ -1554,55 +1563,51 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
 {
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
-    fd_set rfds;
-    int fd, fd_rtcp, fd_max, n, i, ret, tcp_fd, timeout_cnt = 0;
-    struct timeval tv;
+    int n, i, ret, tcp_fd, timeout_cnt = 0;
+    int max_p = 0;
+    struct pollfd *p = rt->p;
 
     for (;;) {
         if (url_interrupt_cb())
             return AVERROR(EINTR);
         if (wait_end && wait_end - av_gettime() < 0)
             return AVERROR(EAGAIN);
-        FD_ZERO(&rfds);
+        max_p = 0;
         if (rt->rtsp_hd) {
-            tcp_fd = fd_max = url_get_file_handle(rt->rtsp_hd);
-            FD_SET(tcp_fd, &rfds);
+            tcp_fd = url_get_file_handle(rt->rtsp_hd);
+            p[max_p].fd = tcp_fd;
+            p[max_p++].events = POLLIN;
         } else {
-            fd_max = 0;
             tcp_fd = -1;
         }
         for (i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
             if (rtsp_st->rtp_handle) {
-                fd = url_get_file_handle(rtsp_st->rtp_handle);
-                fd_rtcp = rtp_get_rtcp_file_handle(rtsp_st->rtp_handle);
-                if (FFMAX(fd, fd_rtcp) > fd_max)
-                    fd_max = FFMAX(fd, fd_rtcp);
-                FD_SET(fd, &rfds);
-                FD_SET(fd_rtcp, &rfds);
+                p[max_p].fd = url_get_file_handle(rtsp_st->rtp_handle);
+                p[max_p++].events = POLLIN;
+                p[max_p].fd = rtp_get_rtcp_file_handle(rtsp_st->rtp_handle);
+                p[max_p++].events = POLLIN;
             }
         }
-        tv.tv_sec = 0;
-        tv.tv_usec = SELECT_TIMEOUT_MS * 1000;
-        n = select(fd_max + 1, &rfds, NULL, NULL, &tv);
+        n = poll(p, max_p, POLL_TIMEOUT_MS);
         if (n > 0) {
+            int j = 1 - (tcp_fd == -1);
             timeout_cnt = 0;
             for (i = 0; i < rt->nb_rtsp_streams; i++) {
                 rtsp_st = rt->rtsp_streams[i];
                 if (rtsp_st->rtp_handle) {
-                    fd = url_get_file_handle(rtsp_st->rtp_handle);
-                    fd_rtcp = rtp_get_rtcp_file_handle(rtsp_st->rtp_handle);
-                    if (FD_ISSET(fd_rtcp, &rfds) || FD_ISSET(fd, &rfds)) {
+                    if (p[j].revents & POLLIN || p[j+1].revents & POLLIN) {
                         ret = url_read(rtsp_st->rtp_handle, buf, buf_size);
                         if (ret > 0) {
                             *prtsp_st = rtsp_st;
                             return ret;
                         }
                     }
+                    j+=2;
                 }
             }
 #if CONFIG_RTSP_DEMUXER
-            if (tcp_fd != -1 && FD_ISSET(tcp_fd, &rfds)) {
+            if (tcp_fd != -1 && p[0].revents & POLLIN) {
                 RTSPMessageHeader reply;
 
                 ret = ff_rtsp_read_reply(s, &reply, NULL, 0, NULL);
