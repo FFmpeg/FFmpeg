@@ -1382,7 +1382,7 @@ void av_url_split(char *proto,         int proto_size,
 /**
  * Allocate the stream private data and write the stream header to an
  * output media file.
- * Note: this sets stream time-bases, if possible to stream->codec->time_base
+ * @note: this sets stream time-bases, if possible to stream->codec->time_base
  * but for some formats it might also be some other time base
  *
  * @param s media file handle
