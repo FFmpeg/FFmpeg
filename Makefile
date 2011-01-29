@@ -123,8 +123,8 @@ doc/ffprobe.pod doc/ffprobe.html: doc/demuxers.texi doc/indevs.texi doc/protocol
 doc/libavfilter.html: doc/filters.texi
 
 doc/%.html: TAG = HTML
-doc/%.html: doc/%.texi
-	$(M)cd doc && texi2html -monolithic -number $(<:doc/%=%)
+doc/%.html: doc/%.texi $(SRC_PATH_BARE)/doc/t2h.init
+	$(M)cd doc && texi2html -monolithic --init-file $(SRC_PATH_BARE)/doc/t2h.init $(<:doc/%=%)
 
 doc/%.pod: TAG = POD
 doc/%.pod: doc/%.texi

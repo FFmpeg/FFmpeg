@@ -2,11 +2,12 @@
 
 @settitle FFmpeg FAQ
 @titlepage
-@sp 7
 @center @titlefont{FFmpeg FAQ}
-@sp 3
 @end titlepage
 
+@top
+
+@contents
 
 @chapter General Questions
 

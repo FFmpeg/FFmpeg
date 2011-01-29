@@ -1,0 +1,24 @@
+# no horiz rules between sections
+$end_section = \&FFMPEG_end_section;
+sub FFMPEG_end_section($$)
+{
+}
+
+$print_page_foot = \&FFMPEG_print_page_foot;
+sub FFMPEG_print_page_foot($$)
+{
+    my $fh = shift;
+    print $fh "$SMALL_RULE\n";
+    T2H_DEFAULT_print_page_foot($fh);
+}
+
+# no navigation elements
+$SECTION_NAVIGATION = 0;
+# the same for texi2html 5.0
+$HEADERS = 0;
+
+# TOC and Chapter headings link
+$TOC_LINKS = 1;
+
+# print the TOC where @contents is used
+$INLINE_CONTENTS = 1;

@@ -2,11 +2,12 @@
 
 @settitle General Documentation
 @titlepage
-@sp 7
 @center @titlefont{General Documentation}
-@sp 3
 @end titlepage
 
+@top
+
+@contents
 
 @chapter external libraries
 
