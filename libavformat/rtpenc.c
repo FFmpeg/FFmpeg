@@ -192,7 +192,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
     RTPMuxContext *s = s1->priv_data;
     uint32_t rtp_ts;
 
-    dprintf(s1, "RTCP: %02x %"PRIx64" %x\n", s->payload_type, ntp_time, s->timestamp);
+    av_dlog(s1, "RTCP: %02x %"PRIx64" %x\n", s->payload_type, ntp_time, s->timestamp);
 
     s->last_rtcp_ntp_time = ntp_time;
     rtp_ts = av_rescale_q(ntp_time - s->first_rtcp_ntp_time, (AVRational){1, 1000000},
@@ -215,7 +215,7 @@ void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
 {
     RTPMuxContext *s = s1->priv_data;
 
-    dprintf(s1, "rtp_send_data size=%d\n", len);
+    av_dlog(s1, "rtp_send_data size=%d\n", len);
 
     /* build the RTP header */
     put_byte(s1->pb, (RTP_VERSION << 6));
@@ -364,7 +364,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     int rtcp_bytes;
     int size= pkt->size;
 
-    dprintf(s1, "%d: write len=%d\n", pkt->stream_index, size);
+    av_dlog(s1, "%d: write len=%d\n", pkt->stream_index, size);
 
     rtcp_bytes = ((s->octet_count - s->last_octet_count) * RTCP_TX_RATIO_NUM) /
         RTCP_TX_RATIO_DEN;

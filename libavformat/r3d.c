@@ -43,7 +43,7 @@ static int read_atom(AVFormatContext *s, Atom *atom)
     if (atom->size < 8)
         return -1;
     atom->tag = get_le32(s->pb);
-    dprintf(s, "atom %d %.4s offset %#llx\n",
+    av_dlog(s, "atom %d %.4s offset %#llx\n",
             atom->size, (char*)&atom->tag, atom->offset);
     return atom->size;
 }
@@ -61,16 +61,16 @@ static int r3d_read_red1(AVFormatContext *s)
 
     tmp  = get_byte(s->pb); // major version
     tmp2 = get_byte(s->pb); // minor version
-    dprintf(s, "version %d.%d\n", tmp, tmp2);
+    av_dlog(s, "version %d.%d\n", tmp, tmp2);
 
     tmp = get_be16(s->pb); // unknown
-    dprintf(s, "unknown1 %d\n", tmp);
+    av_dlog(s, "unknown1 %d\n", tmp);
 
     tmp = get_be32(s->pb);
     av_set_pts_info(st, 32, 1, tmp);
 
     tmp = get_be32(s->pb); // filenum
-    dprintf(s, "filenum %d\n", tmp);
+    av_dlog(s, "filenum %d\n", tmp);
 
     url_fskip(s->pb, 32); // unknown
 
@@ -78,13 +78,13 @@ static int r3d_read_red1(AVFormatContext *s)
     st->codec->height = get_be32(s->pb);
 
     tmp = get_be16(s->pb); // unknown
-    dprintf(s, "unknown2 %d\n", tmp);
+    av_dlog(s, "unknown2 %d\n", tmp);
 
     st->codec->time_base.den = get_be16(s->pb);
     st->codec->time_base.num = get_be16(s->pb);
 
     tmp = get_byte(s->pb); // audio channels
-    dprintf(s, "audio channels %d\n", tmp);
+    av_dlog(s, "audio channels %d\n", tmp);
     if (tmp > 0) {
         AVStream *ast = av_new_stream(s, 1);
         if (!ast)
@@ -99,10 +99,10 @@ static int r3d_read_red1(AVFormatContext *s)
     filename[sizeof(filename)-1] = 0;
     av_metadata_set2(&st->metadata, "filename", filename, 0);
 
-    dprintf(s, "filename %s\n", filename);
-    dprintf(s, "resolution %dx%d\n", st->codec->width, st->codec->height);
-    dprintf(s, "timescale %d\n", st->time_base.den);
-    dprintf(s, "frame rate %d/%d\n",
+    av_dlog(s, "filename %s\n", filename);
+    av_dlog(s, "resolution %dx%d\n", st->codec->width, st->codec->height);
+    av_dlog(s, "timescale %d\n", st->time_base.den);
+    av_dlog(s, "frame rate %d/%d\n",
             st->codec->time_base.num, st->codec->time_base.den);
 
     return 0;
@@ -125,13 +125,13 @@ static int r3d_read_rdvo(AVFormatContext *s, Atom *atom)
             r3d->video_offsets_count = i;
             break;
         }
-        dprintf(s, "video offset %d: %#x\n", i, r3d->video_offsets[i]);
+        av_dlog(s, "video offset %d: %#x\n", i, r3d->video_offsets[i]);
     }
 
     if (st->codec->time_base.den)
         st->duration = (uint64_t)r3d->video_offsets_count*
             st->time_base.den*st->codec->time_base.num/st->codec->time_base.den;
-    dprintf(s, "duration %lld\n", st->duration);
+    av_dlog(s, "duration %lld\n", st->duration);
 
     return 0;
 }
@@ -147,10 +147,10 @@ static void r3d_read_reos(AVFormatContext *s)
     get_be32(s->pb); // rdas offset
 
     tmp = get_be32(s->pb);
-    dprintf(s, "num video chunks %d\n", tmp);
+    av_dlog(s, "num video chunks %d\n", tmp);
 
     tmp = get_be32(s->pb);
-    dprintf(s, "num audio chunks %d\n", tmp);
+    av_dlog(s, "num audio chunks %d\n", tmp);
 
     url_fskip(s->pb, 6*4);
 }
@@ -176,7 +176,7 @@ static int r3d_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     s->data_offset = url_ftell(s->pb);
-    dprintf(s, "data offset %#llx\n", s->data_offset);
+    av_dlog(s, "data offset %#llx\n", s->data_offset);
     if (url_is_streamed(s->pb))
         return 0;
     // find REOB/REOF/REOS to load index
@@ -217,29 +217,29 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     dts = get_be32(s->pb);
 
     tmp = get_be32(s->pb);
-    dprintf(s, "frame num %d\n", tmp);
+    av_dlog(s, "frame num %d\n", tmp);
 
     tmp  = get_byte(s->pb); // major version
     tmp2 = get_byte(s->pb); // minor version
-    dprintf(s, "version %d.%d\n", tmp, tmp2);
+    av_dlog(s, "version %d.%d\n", tmp, tmp2);
 
     tmp = get_be16(s->pb); // unknown
-    dprintf(s, "unknown %d\n", tmp);
+    av_dlog(s, "unknown %d\n", tmp);
 
     if (tmp > 4) {
         tmp = get_be16(s->pb); // unknown
-        dprintf(s, "unknown %d\n", tmp);
+        av_dlog(s, "unknown %d\n", tmp);
 
         tmp = get_be16(s->pb); // unknown
-        dprintf(s, "unknown %d\n", tmp);
+        av_dlog(s, "unknown %d\n", tmp);
 
         tmp = get_be32(s->pb);
-        dprintf(s, "width %d\n", tmp);
+        av_dlog(s, "width %d\n", tmp);
         tmp = get_be32(s->pb);
-        dprintf(s, "height %d\n", tmp);
+        av_dlog(s, "height %d\n", tmp);
 
         tmp = get_be32(s->pb);
-        dprintf(s, "metadata len %d\n", tmp);
+        av_dlog(s, "metadata len %d\n", tmp);
     }
     tmp = atom->size - 8 - (url_ftell(s->pb) - pos);
     if (tmp < 0)
@@ -255,7 +255,7 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     if (st->codec->time_base.den)
         pkt->duration = (uint64_t)st->time_base.den*
             st->codec->time_base.num/st->codec->time_base.den;
-    dprintf(s, "pkt dts %lld duration %d\n", pkt->dts, pkt->duration);
+    av_dlog(s, "pkt dts %lld duration %d\n", pkt->dts, pkt->duration);
 
     return 0;
 }
@@ -275,17 +275,17 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     samples = get_be32(s->pb);
 
     tmp = get_be32(s->pb);
-    dprintf(s, "packet num %d\n", tmp);
+    av_dlog(s, "packet num %d\n", tmp);
 
     tmp = get_be16(s->pb); // unkown
-    dprintf(s, "unknown %d\n", tmp);
+    av_dlog(s, "unknown %d\n", tmp);
 
     tmp  = get_byte(s->pb); // major version
     tmp2 = get_byte(s->pb); // minor version
-    dprintf(s, "version %d.%d\n", tmp, tmp2);
+    av_dlog(s, "version %d.%d\n", tmp, tmp2);
 
     tmp = get_be32(s->pb); // unknown
-    dprintf(s, "unknown %d\n", tmp);
+    av_dlog(s, "unknown %d\n", tmp);
 
     size = atom->size - 8 - (url_ftell(s->pb) - pos);
     if (size < 0)
@@ -299,7 +299,7 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     pkt->stream_index = 1;
     pkt->dts = dts;
     pkt->duration = av_rescale(samples, st->time_base.den, st->codec->sample_rate);
-    dprintf(s, "pkt dts %lld duration %d samples %d sample rate %d\n",
+    av_dlog(s, "pkt dts %lld duration %d samples %d sample rate %d\n",
             pkt->dts, pkt->duration, samples, st->codec->sample_rate);
 
     return 0;
@@ -356,7 +356,7 @@ static int r3d_seek(AVFormatContext *s, int stream_index, int64_t sample_time, i
 
     frame_num = sample_time*st->codec->time_base.den/
         ((int64_t)st->codec->time_base.num*st->time_base.den);
-    dprintf(s, "seek frame num %d timestamp %lld\n", frame_num, sample_time);
+    av_dlog(s, "seek frame num %d timestamp %lld\n", frame_num, sample_time);
 
     if (frame_num < r3d->video_offsets_count) {
         url_fseek(s->pb, r3d->video_offsets_count, SEEK_SET);

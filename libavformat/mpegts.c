@@ -289,7 +289,7 @@ static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts, unsigned int 
     MpegTSFilter *filter;
     MpegTSSectionFilter *sec;
 
-    dprintf(ts->stream, "Filter: pid=0x%x\n", pid);
+    av_dlog(ts->stream, "Filter: pid=0x%x\n", pid);
 
     if (pid >= NB_PID_MAX || ts->pids[pid])
         return NULL;
@@ -678,7 +678,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     pes->header[2] == 0x01) {
                     /* it must be an mpeg2 PES stream */
                     code = pes->header[3] | 0x100;
-                    dprintf(pes->stream, "pid=%x pes_code=%#x\n", pes->pid, code);
+                    av_dlog(pes->stream, "pid=%x pes_code=%#x\n", pes->pid, code);
 
                     if ((pes->st && pes->st->discard == AVDISCARD_ALL) ||
                         code == 0x1be) /* padding_stream */
@@ -714,7 +714,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                         code != 0x1f8) {                  /* ITU-T Rec. H.222.1 type E stream */
                         pes->state = MPEGTS_PESHEADER;
                         if (pes->st->codec->codec_id == CODEC_ID_NONE) {
-                            dprintf(pes->stream, "pid=%x stream_type=%x probing\n",
+                            av_dlog(pes->stream, "pid=%x stream_type=%x probing\n",
                                     pes->pid, pes->stream_type);
                             pes->st->codec->codec_id = CODEC_ID_PROBE;
                         }
@@ -878,7 +878,7 @@ static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
         len = ff_mp4_read_descr(s, &pb, &tag);
         if (tag == MP4ESDescrTag) {
             *es_id = get_be16(&pb); /* ES_ID */
-            dprintf(s, "ES_ID %#x\n", *es_id);
+            av_dlog(s, "ES_ID %#x\n", *es_id);
             get_byte(&pb); /* priority */
             len = ff_mp4_read_descr(s, &pb, &tag);
             if (tag == MP4DecConfigDescrTag) {
@@ -912,7 +912,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
     if (desc_end > desc_list_end)
         return -1;
 
-    dprintf(fc, "tag: 0x%02x len=%d\n", desc_tag, desc_len);
+    av_dlog(fc, "tag: 0x%02x len=%d\n", desc_tag, desc_len);
 
     if (st->codec->codec_id == CODEC_ID_NONE &&
         stream_type == STREAM_TYPE_PRIVATE_DATA)
@@ -967,7 +967,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         break;
     case 0x05: /* registration descriptor */
         st->codec->codec_tag = bytestream_get_le32(pp);
-        dprintf(fc, "reg_desc=%.4s\n", (char*)&st->codec->codec_tag);
+        av_dlog(fc, "reg_desc=%.4s\n", (char*)&st->codec->codec_tag);
         if (st->codec->codec_id == CODEC_ID_NONE &&
             stream_type == STREAM_TYPE_PRIVATE_DATA)
             mpegts_find_stream_type(st, st->codec->codec_tag, REGD_types);
@@ -994,7 +994,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     int mp4_es_id = 0;
 
 #ifdef DEBUG
-    dprintf(ts->stream, "PMT: len %i\n", section_len);
+    av_dlog(ts->stream, "PMT: len %i\n", section_len);
     av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
 #endif
 
@@ -1003,7 +1003,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (parse_section_header(h, &p, p_end) < 0)
         return;
 
-    dprintf(ts->stream, "sid=0x%x sec_num=%d/%d\n",
+    av_dlog(ts->stream, "sid=0x%x sec_num=%d/%d\n",
            h->id, h->sec_num, h->last_sec_num);
 
     if (h->tid != PMT_TID)
@@ -1015,7 +1015,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
     add_pid_to_pmt(ts, h->id, pcr_pid);
 
-    dprintf(ts->stream, "pcr_pid=0x%x\n", pcr_pid);
+    av_dlog(ts->stream, "pcr_pid=0x%x\n", pcr_pid);
 
     program_info_length = get16(&p, p_end) & 0xfff;
     if (program_info_length < 0)
@@ -1025,7 +1025,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         tag = get8(&p, p_end);
         len = get8(&p, p_end);
 
-        dprintf(ts->stream, "program tag: 0x%02x len=%d\n", tag, len);
+        av_dlog(ts->stream, "program tag: 0x%02x len=%d\n", tag, len);
 
         if(len > program_info_length - 2)
             //something else is broken, exit the program_descriptors_loop
@@ -1114,7 +1114,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     int sid, pmt_pid;
 
 #ifdef DEBUG
-    dprintf(ts->stream, "PAT:\n");
+    av_dlog(ts->stream, "PAT:\n");
     av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
@@ -1133,7 +1133,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (pmt_pid < 0)
             break;
 
-        dprintf(ts->stream, "sid=0x%x pid=0x%x\n", sid, pmt_pid);
+        av_dlog(ts->stream, "sid=0x%x pid=0x%x\n", sid, pmt_pid);
 
         if (sid == 0x0000) {
             /* NIT info */
@@ -1158,7 +1158,7 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     char *name, *provider_name;
 
 #ifdef DEBUG
-    dprintf(ts->stream, "SDT:\n");
+    av_dlog(ts->stream, "SDT:\n");
     av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
 #endif
 
@@ -1196,7 +1196,7 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             if (desc_end > desc_list_end)
                 break;
 
-            dprintf(ts->stream, "tag: 0x%02x len=%d\n",
+            av_dlog(ts->stream, "tag: 0x%02x len=%d\n",
                    desc_tag, desc_len);
 
             switch(desc_tag) {
@@ -1484,7 +1484,7 @@ static int mpegts_read_header(AVFormatContext *s,
 
         ts->auto_guess = 1;
 
-        dprintf(ts->stream, "tuning done\n");
+        av_dlog(ts->stream, "tuning done\n");
 
         s->ctx_flags |= AVFMTCTX_NOHEADER;
     } else {

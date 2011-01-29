@@ -91,20 +91,20 @@ int ff_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
     }
 
 #if defined(DEBUG)
-    dprintf(NULL, "layer%d, %d Hz, %d kbits/s, ",
+    av_dlog(NULL, "layer%d, %d Hz, %d kbits/s, ",
            s->layer, s->sample_rate, s->bit_rate);
     if (s->nb_channels == 2) {
         if (s->layer == 3) {
             if (s->mode_ext & MODE_EXT_MS_STEREO)
-                dprintf(NULL, "ms-");
+                av_dlog(NULL, "ms-");
             if (s->mode_ext & MODE_EXT_I_STEREO)
-                dprintf(NULL, "i-");
+                av_dlog(NULL, "i-");
         }
-        dprintf(NULL, "stereo");
+        av_dlog(NULL, "stereo");
     } else {
-        dprintf(NULL, "mono");
+        av_dlog(NULL, "mono");
     }
-    dprintf(NULL, "\n");
+    av_dlog(NULL, "\n");
 #endif
     return 0;
 }

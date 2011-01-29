@@ -180,7 +180,7 @@ int ff_vaapi_common_end_frame(MpegEncContext *s)
     struct vaapi_context * const vactx = s->avctx->hwaccel_context;
     int ret = -1;
 
-    dprintf(s->avctx, "ff_vaapi_common_end_frame()\n");
+    av_dlog(s->avctx, "ff_vaapi_common_end_frame()\n");
 
     if (commit_slices(vactx) < 0)
         goto done;

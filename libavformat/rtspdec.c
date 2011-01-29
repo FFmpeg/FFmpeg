@@ -184,7 +184,7 @@ int ff_rtsp_tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     RTSPStream *rtsp_st;
 
 #ifdef DEBUG_RTP_TCP
-    dprintf(s, "tcp_read_packet:\n");
+    av_dlog(s, "tcp_read_packet:\n");
 #endif
 redo:
     for (;;) {
@@ -205,7 +205,7 @@ redo:
     id  = buf[0];
     len = AV_RB16(buf + 1);
 #ifdef DEBUG_RTP_TCP
-    dprintf(s, "id=%d len=%d\n", id, len);
+    av_dlog(s, "id=%d len=%d\n", id, len);
 #endif
     if (len > buf_size || len < 12)
         goto redo;
