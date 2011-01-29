@@ -124,10 +124,11 @@ static int Faac_encode_frame(AVCodecContext *avctx,
 {
     FaacAudioContext *s = avctx->priv_data;
     int bytes_written;
+    int num_samples = data ? avctx->frame_size : 0;
 
     bytes_written = faacEncEncode(s->faac_handle,
                                   data,
-                                  avctx->frame_size * avctx->channels,
+                                  num_samples * avctx->channels,
                                   frame,
                                   buf_size);
 
@@ -161,6 +162,7 @@ AVCodec ff_libfaac_encoder = {
     Faac_encode_init,
     Faac_encode_frame,
     Faac_encode_close,
+    .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("libfaac AAC (Advanced Audio Codec)"),
     .profiles = NULL_IF_CONFIG_SMALL(profiles),
