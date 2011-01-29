@@ -18,6 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "flv.h"
 #include "internal.h"
@@ -402,6 +404,10 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         if (!flv->delay && pkt->dts < 0)
             flv->delay = -pkt->dts;
+    } else if (enc->codec_id == CODEC_ID_AAC && pkt->size > 2 &&
+               (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
+        av_log(s, AV_LOG_ERROR, "malformated aac bitstream, use -absf aac_adtstoasc\n");
+        return -1;
     }
 
     ts = pkt->dts + flv->delay; // add delay to force positive dts
