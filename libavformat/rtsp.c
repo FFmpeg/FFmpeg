@@ -247,7 +247,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
     struct sockaddr_storage sdp_ip;
     int ttl;
 
-    dprintf(s, "sdp: %c='%s'\n", letter, buf);
+    av_dlog(s, "sdp: %c='%s'\n", letter, buf);
 
     p = buf;
     if (s1->skip_media && letter != 'm')
@@ -826,7 +826,7 @@ void ff_rtsp_skip_packet(AVFormatContext *s)
         return;
     len = AV_RB16(buf + 1);
 
-    dprintf(s, "skipping RTP packet len=%d\n", len);
+    av_dlog(s, "skipping RTP packet len=%d\n", len);
 
     /* skip payload */
     while (len > 0) {
@@ -860,7 +860,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
         for (;;) {
             ret = url_read_complete(rt->rtsp_hd, &ch, 1);
 #ifdef DEBUG_RTP_TCP
-            dprintf(s, "ret=%d c=%02x [%c]\n", ret, ch, ch);
+            av_dlog(s, "ret=%d c=%02x [%c]\n", ret, ch, ch);
 #endif
             if (ret != 1)
                 return AVERROR_EOF;
@@ -879,7 +879,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
         }
         *q = '\0';
 
-        dprintf(s, "line='%s'\n", buf);
+        av_dlog(s, "line='%s'\n", buf);
 
         /* test if last line */
         if (buf[0] == '\0')
@@ -984,7 +984,7 @@ static int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
         out_buf = base64buf;
     }
 
-    dprintf(s, "Sending:\n%s--\n", buf);
+    av_dlog(s, "Sending:\n%s--\n", buf);
 
     url_write(rt->rtsp_hd_out, out_buf, strlen(out_buf));
     if (send_content_length > 0 && send_content) {

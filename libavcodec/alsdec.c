@@ -253,24 +253,24 @@ static av_cold void dprint_specific_config(ALSDecContext *ctx)
     AVCodecContext *avctx    = ctx->avctx;
     ALSSpecificConfig *sconf = &ctx->sconf;
 
-    dprintf(avctx, "resolution = %i\n",           sconf->resolution);
-    dprintf(avctx, "floating = %i\n",             sconf->floating);
-    dprintf(avctx, "frame_length = %i\n",         sconf->frame_length);
-    dprintf(avctx, "ra_distance = %i\n",          sconf->ra_distance);
-    dprintf(avctx, "ra_flag = %i\n",              sconf->ra_flag);
-    dprintf(avctx, "adapt_order = %i\n",          sconf->adapt_order);
-    dprintf(avctx, "coef_table = %i\n",           sconf->coef_table);
-    dprintf(avctx, "long_term_prediction = %i\n", sconf->long_term_prediction);
-    dprintf(avctx, "max_order = %i\n",            sconf->max_order);
-    dprintf(avctx, "block_switching = %i\n",      sconf->block_switching);
-    dprintf(avctx, "bgmc = %i\n",                 sconf->bgmc);
-    dprintf(avctx, "sb_part = %i\n",              sconf->sb_part);
-    dprintf(avctx, "joint_stereo = %i\n",         sconf->joint_stereo);
-    dprintf(avctx, "mc_coding = %i\n",            sconf->mc_coding);
-    dprintf(avctx, "chan_config = %i\n",          sconf->chan_config);
-    dprintf(avctx, "chan_sort = %i\n",            sconf->chan_sort);
-    dprintf(avctx, "RLSLMS = %i\n",               sconf->rlslms);
-    dprintf(avctx, "chan_config_info = %i\n",     sconf->chan_config_info);
+    av_dlog(avctx, "resolution = %i\n",           sconf->resolution);
+    av_dlog(avctx, "floating = %i\n",             sconf->floating);
+    av_dlog(avctx, "frame_length = %i\n",         sconf->frame_length);
+    av_dlog(avctx, "ra_distance = %i\n",          sconf->ra_distance);
+    av_dlog(avctx, "ra_flag = %i\n",              sconf->ra_flag);
+    av_dlog(avctx, "adapt_order = %i\n",          sconf->adapt_order);
+    av_dlog(avctx, "coef_table = %i\n",           sconf->coef_table);
+    av_dlog(avctx, "long_term_prediction = %i\n", sconf->long_term_prediction);
+    av_dlog(avctx, "max_order = %i\n",            sconf->max_order);
+    av_dlog(avctx, "block_switching = %i\n",      sconf->block_switching);
+    av_dlog(avctx, "bgmc = %i\n",                 sconf->bgmc);
+    av_dlog(avctx, "sb_part = %i\n",              sconf->sb_part);
+    av_dlog(avctx, "joint_stereo = %i\n",         sconf->joint_stereo);
+    av_dlog(avctx, "mc_coding = %i\n",            sconf->mc_coding);
+    av_dlog(avctx, "chan_config = %i\n",          sconf->chan_config);
+    av_dlog(avctx, "chan_sort = %i\n",            sconf->chan_sort);
+    av_dlog(avctx, "RLSLMS = %i\n",               sconf->rlslms);
+    av_dlog(avctx, "chan_config_info = %i\n",     sconf->chan_config_info);
 #endif
 }
 

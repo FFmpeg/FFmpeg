@@ -85,7 +85,7 @@ static int avi_load_index(AVFormatContext *s);
 static int guess_ni_flag(AVFormatContext *s);
 
 #define print_tag(str, tag, size)                       \
-    dprintf(NULL, "%s: tag=%c%c%c%c size=0x%x\n",       \
+    av_dlog(NULL, "%s: tag=%c%c%c%c size=0x%x\n",       \
            str, tag & 0xff,                             \
            (tag >> 8) & 0xff,                           \
            (tag >> 16) & 0xff,                          \
@@ -380,7 +380,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 avi->movi_list = url_ftell(pb) - 4;
                 if(size) avi->movi_end = avi->movi_list + size + (size & 1);
                 else     avi->movi_end = url_fsize(pb);
-                dprintf(NULL, "movi end=%"PRIx64"\n", avi->movi_end);
+                av_dlog(NULL, "movi end=%"PRIx64"\n", avi->movi_end);
                 goto end_of_header;
             }
             else if (tag1 == MKTAG('I', 'N', 'F', 'O'))

@@ -1255,7 +1255,7 @@ static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
     }
     val = -1;
 found:
-    dprintf(NULL, "find_marker skipped %d bytes\n", skipped);
+    av_dlog(NULL, "find_marker skipped %d bytes\n", skipped);
     *pbuf_ptr = buf_ptr;
     return val;
 }

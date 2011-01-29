@@ -309,7 +309,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
         PRINT_KEY(s, "read packet", klv.key);
-        dprintf(s, "size %lld offset %#llx\n", klv.length, klv.offset);
+        av_dlog(s, "size %lld offset %#llx\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
             int res = mxf_decrypt_triplet(s, pkt, &klv);
             if (res < 0) {
@@ -518,12 +518,12 @@ static int mxf_read_source_package(void *arg, ByteIOContext *pb, int tag, int si
 static int mxf_read_index_table_segment(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
 {
     switch(tag) {
-    case 0x3F05: dprintf(NULL, "EditUnitByteCount %d\n", get_be32(pb)); break;
-    case 0x3F06: dprintf(NULL, "IndexSID %d\n", get_be32(pb)); break;
-    case 0x3F07: dprintf(NULL, "BodySID %d\n", get_be32(pb)); break;
-    case 0x3F0B: dprintf(NULL, "IndexEditRate %d/%d\n", get_be32(pb), get_be32(pb)); break;
-    case 0x3F0C: dprintf(NULL, "IndexStartPosition %lld\n", get_be64(pb)); break;
-    case 0x3F0D: dprintf(NULL, "IndexDuration %lld\n", get_be64(pb)); break;
+    case 0x3F05: av_dlog(NULL, "EditUnitByteCount %d\n", get_be32(pb)); break;
+    case 0x3F06: av_dlog(NULL, "IndexSID %d\n", get_be32(pb)); break;
+    case 0x3F07: av_dlog(NULL, "BodySID %d\n", get_be32(pb)); break;
+    case 0x3F0B: av_dlog(NULL, "IndexEditRate %d/%d\n", get_be32(pb), get_be32(pb)); break;
+    case 0x3F0C: av_dlog(NULL, "IndexStartPosition %lld\n", get_be64(pb)); break;
+    case 0x3F0D: av_dlog(NULL, "IndexDuration %lld\n", get_be64(pb)); break;
     }
     return 0;
 }
@@ -536,7 +536,7 @@ static void mxf_read_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
     do {
         code = get_byte(pb);
         value = get_byte(pb);
-        dprintf(NULL, "pixel layout: code %#x\n", code);
+        av_dlog(NULL, "pixel layout: code %#x\n", code);
 
         if (ofs < 16) {
             layout[ofs++] = code;
@@ -666,7 +666,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
     MXFPackage *temp_package = NULL;
     int i, j, k;
 
-    dprintf(mxf->fc, "metadata sets count %d\n", mxf->metadata_sets_count);
+    av_dlog(mxf->fc, "metadata sets count %d\n", mxf->metadata_sets_count);
     /* TODO: handle multiple material packages (OP3x) */
     for (i = 0; i < mxf->packages_count; i++) {
         material_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[i], MaterialPackage);
@@ -876,7 +876,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         uint64_t next = url_ftell(pb) + size;
         UID uid = {0};
 
-        dprintf(mxf->fc, "local tag %#04x size %d\n", tag, size);
+        av_dlog(mxf->fc, "local tag %#04x size %d\n", tag, size);
         if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
             av_log(mxf->fc, AV_LOG_ERROR, "local tag %#04x with 0 size\n", tag);
             continue;
@@ -887,7 +887,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
                 int local_tag = AV_RB16(mxf->local_tags+i*18);
                 if (local_tag == tag) {
                     memcpy(uid, mxf->local_tags+i*18+2, 16);
-                    dprintf(mxf->fc, "local tag %#04x\n", local_tag);
+                    av_dlog(mxf->fc, "local tag %#04x\n", local_tag);
                     PRINT_KEY(mxf->fc, "uid", uid);
                 }
             }
@@ -920,7 +920,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
         PRINT_KEY(s, "read header", klv.key);
-        dprintf(s, "size %lld offset %#llx\n", klv.length, klv.offset);
+        av_dlog(s, "size %lld offset %#llx\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             /* FIXME avoid seek */

@@ -890,7 +890,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
     next_coef:
 #if 0
         if (level != 0)
-            dprintf(s->avctx, "level[%d]=%d\n", i, level);
+            av_dlog(s->avctx, "level[%d]=%d\n", i, level);
 #endif
         /* encode using VLC */
         if (level != 0) {

@@ -122,7 +122,7 @@ static int read_data_packet(MMSHContext *mmsh, const int len)
         return AVERROR(EIO);
     }
     res = url_read_complete(mms->mms_hd, mms->in_buffer, len);
-    dprintf(NULL, "Data packet len = %d\n", len);
+    av_dlog(NULL, "Data packet len = %d\n", len);
     if (res != len) {
         av_log(NULL, AV_LOG_ERROR, "Read data packet failed!\n");
         return AVERROR(EIO);
@@ -156,7 +156,7 @@ static int get_http_header_data(MMSHContext *mmsh)
                 if (mms->asf_header) {
                     if (len != mms->asf_header_size) {
                         mms->asf_header_size = len;
-                        dprintf(NULL, "Header len changed from %d to %d\n",
+                        av_dlog(NULL, "Header len changed from %d to %d\n",
                                 mms->asf_header_size, len);
                         av_freep(&mms->asf_header);
                     }
@@ -201,7 +201,7 @@ static int get_http_header_data(MMSHContext *mmsh)
                     av_log(NULL, AV_LOG_ERROR, "Read other chunk type data failed!\n");
                     return AVERROR(EIO);
                 } else {
-                    dprintf(NULL, "Skip chunk type %d \n", chunk_type);
+                    av_dlog(NULL, "Skip chunk type %d \n", chunk_type);
                     continue;
                 }
             }
@@ -290,7 +290,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
         av_log(NULL, AV_LOG_ERROR, "Build play request failed!\n");
         goto fail;
     }
-    dprintf(NULL, "out_buffer is %s", headers);
+    av_dlog(NULL, "out_buffer is %s", headers);
     ff_http_set_headers(mms->mms_hd, headers);
 
     err = url_connect(mms->mms_hd);
@@ -304,12 +304,12 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
 
-    dprintf(NULL, "Connection successfully open\n");
+    av_dlog(NULL, "Connection successfully open\n");
     return 0;
 fail:
     av_freep(&stream_selection);
     mmsh_close(h);
-    dprintf(NULL, "Connection failed with error %d\n", err);
+    av_dlog(NULL, "Connection failed with error %d\n", err);
     return err;
 }
 

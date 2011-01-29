@@ -141,7 +141,7 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitle *sub,
         return -1;
     }
 
-    dprintf(avctx, "Pixel Count = %d, Area = %d\n", pixel_count, sub->rects[0]->w * sub->rects[0]->h);
+    av_dlog(avctx, "Pixel Count = %d, Area = %d\n", pixel_count, sub->rects[0]->w * sub->rects[0]->h);
 
     return 0;
 }
@@ -253,7 +253,7 @@ static void parse_palette_segment(AVCodecContext *avctx,
         YUV_TO_RGB1(cb, cr);
         YUV_TO_RGB2(r, g, b, y);
 
-        dprintf(avctx, "Color %d := (%d,%d,%d,%d)\n", color_id, r, g, b, alpha);
+        av_dlog(avctx, "Color %d := (%d,%d,%d,%d)\n", color_id, r, g, b, alpha);
 
         /* Store color in palette */
         ctx->clut[color_id] = RGBA(r,g,b,alpha);
@@ -282,7 +282,7 @@ static void parse_presentation_segment(AVCodecContext *avctx,
     int w = bytestream_get_be16(&buf);
     int h = bytestream_get_be16(&buf);
 
-    dprintf(avctx, "Video Dimensions %dx%d\n",
+    av_dlog(avctx, "Video Dimensions %dx%d\n",
             w, h);
     if (av_image_check_size(w, h, 0, avctx) >= 0)
         avcodec_set_dimensions(avctx, w, h);
@@ -317,7 +317,7 @@ static void parse_presentation_segment(AVCodecContext *avctx,
 
     /* TODO If cropping, cropping_x, cropping_y, cropping_width, cropping_height (all 2 bytes).*/
 
-    dprintf(avctx, "Subtitle Placement x=%d, y=%d\n", x, y);
+    av_dlog(avctx, "Subtitle Placement x=%d, y=%d\n", x, y);
 
     if (x > avctx->width || y > avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "Subtitle out of video bounds. x = %d, y = %d, video width = %d, video height = %d.\n",
@@ -433,7 +433,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
         segment_type   = bytestream_get_byte(&buf);
         segment_length = bytestream_get_be16(&buf);
 
-        dprintf(avctx, "Segment Length %d, Segment Type %x\n", segment_length, segment_type);
+        av_dlog(avctx, "Segment Length %d, Segment Type %x\n", segment_length, segment_type);
 
         if (segment_type != DISPLAY_SEGMENT && segment_length > buf_end - buf)
             break;

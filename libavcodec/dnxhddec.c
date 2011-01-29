@@ -107,7 +107,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
     ctx->height = AV_RB16(buf + 0x18);
     ctx->width  = AV_RB16(buf + 0x1a);
 
-    dprintf(ctx->avctx, "width %d, heigth %d\n", ctx->width, ctx->height);
+    av_dlog(ctx->avctx, "width %d, heigth %d\n", ctx->width, ctx->height);
 
     if (buf[0x21] & 0x40) {
         av_log(ctx->avctx, AV_LOG_ERROR, "10 bit per component\n");
@@ -115,7 +115,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
     }
 
     ctx->cid = AV_RB32(buf + 0x28);
-    dprintf(ctx->avctx, "compression id %d\n", ctx->cid);
+    av_dlog(ctx->avctx, "compression id %d\n", ctx->cid);
 
     if (dnxhd_init_vlc(ctx, ctx->cid) < 0)
         return -1;
@@ -128,7 +128,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
     ctx->mb_width = ctx->width>>4;
     ctx->mb_height = buf[0x16d];
 
-    dprintf(ctx->avctx, "mb width %d, mb height %d\n", ctx->mb_width, ctx->mb_height);
+    av_dlog(ctx->avctx, "mb width %d, mb height %d\n", ctx->mb_width, ctx->mb_height);
 
     if ((ctx->height+15)>>4 == ctx->mb_height && ctx->picture.interlaced_frame)
         ctx->height <<= 1;
@@ -141,7 +141,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
 
     for (i = 0; i < ctx->mb_height; i++) {
         ctx->mb_scan_index[i] = AV_RB32(buf + 0x170 + (i<<2));
-        dprintf(ctx->avctx, "mb scan index %d\n", ctx->mb_scan_index[i]);
+        av_dlog(ctx->avctx, "mb scan index %d\n", ctx->mb_scan_index[i]);
         if (buf_size < ctx->mb_scan_index[i] + 0x280) {
             av_log(ctx->avctx, AV_LOG_ERROR, "invalid mb scan index\n");
             return -1;
@@ -293,7 +293,7 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     AVFrame *picture = data;
     int first_field = 1;
 
-    dprintf(avctx, "frame size %d\n", buf_size);
+    av_dlog(avctx, "frame size %d\n", buf_size);
 
  decode_coding_unit:
     if (dnxhd_decode_header(ctx, buf, buf_size, first_field) < 0)
