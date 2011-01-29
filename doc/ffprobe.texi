@@ -2,10 +2,12 @@
 
 @settitle FFprobe Documentation
 @titlepage
-@sp 7
 @center @titlefont{FFprobe Documentation}
-@sp 3
 @end titlepage
+
+@top
+
+@contents
 
 @chapter Synopsis
 

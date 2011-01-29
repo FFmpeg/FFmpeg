@@ -2,10 +2,12 @@
 
 @settitle FFplay Documentation
 @titlepage
-@sp 7
 @center @titlefont{FFplay Documentation}
-@sp 3
 @end titlepage
+
+@top
+
+@contents
 
 @chapter Synopsis
 
