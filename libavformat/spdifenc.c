@@ -48,9 +48,12 @@
 #include "spdif.h"
 #include "libavcodec/ac3.h"
 #include "libavcodec/dca.h"
+#include "libavcodec/dcadata.h"
 #include "libavcodec/aacadtsdec.h"
+#include "libavutil/opt.h"
 
 typedef struct IEC61937Context {
+    const AVClass *av_class;
     enum IEC61937DataType data_type;///< burst info - reference to type of payload of the data-burst
     int length_code;                ///< length code in bits or bytes, depending on data type
     int pkt_offset;                 ///< data burst repetition period in bytes
@@ -68,11 +71,24 @@ typedef struct IEC61937Context {
     int hd_buf_count;               ///< number of frames in the hd audio buffer
     int hd_buf_filled;              ///< amount of bytes in the hd audio buffer
 
+    int dtshd_skip;                 ///< counter used for skipping DTS-HD frames
+
+    /* AVOptions: */
+    int dtshd_rate;
+    int dtshd_fallback;
+
     /// function, which generates codec dependent header information.
     /// Sets data_type and pkt_offset, and length_code, out_bytes, out_buf if necessary
     int (*header_info) (AVFormatContext *s, AVPacket *pkt);
 } IEC61937Context;
 
+static const AVOption options[] = {
+{ "dtshd_rate", "mux complete DTS frames in HD mode at the specified IEC958 rate (in Hz, default 0=disabled)", offsetof(IEC61937Context, dtshd_rate), FF_OPT_TYPE_INT, 0, 0, 768000, AV_OPT_FLAG_ENCODING_PARAM },
+{ "dtshd_fallback_time", "min secs to strip HD for after an overflow (-1: till the end, default 60)", offsetof(IEC61937Context, dtshd_fallback), FF_OPT_TYPE_INT, 60, -1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+{ NULL },
+};
+
+static const AVClass class = { "spdif", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
 
 static int spdif_header_ac3(AVFormatContext *s, AVPacket *pkt)
 {
@@ -115,15 +131,125 @@ static int spdif_header_eac3(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+/*
+ * DTS type IV (DTS-HD) can be transmitted with various frame repetition
+ * periods; longer repetition periods allow for longer packets and therefore
+ * higher bitrate. Longer repetition periods mean that the constant bitrate of
+ * the outputted IEC 61937 stream is higher.
+ * The repetition period is measured in IEC 60958 frames (4 bytes).
+ */
+enum {
+    DTS4_REP_PER_512   = 0x0,
+    DTS4_REP_PER_1024  = 0x1,
+    DTS4_REP_PER_2048  = 0x2,
+    DTS4_REP_PER_4096  = 0x3,
+    DTS4_REP_PER_8192  = 0x4,
+    DTS4_REP_PER_16384 = 0x5,
+};
+
+static int spdif_dts4_subtype(int period)
+{
+    switch (period) {
+    case 512:   return DTS4_REP_PER_512;
+    case 1024:  return DTS4_REP_PER_1024;
+    case 2048:  return DTS4_REP_PER_2048;
+    case 4096:  return DTS4_REP_PER_4096;
+    case 8192:  return DTS4_REP_PER_8192;
+    case 16384: return DTS4_REP_PER_16384;
+    }
+    return -1;
+}
+
+static int spdif_header_dts4(AVFormatContext *s, AVPacket *pkt, int core_size,
+                             int sample_rate, int blocks)
+{
+    IEC61937Context *ctx = s->priv_data;
+    static const char dtshd_start_code[10] = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfe, 0xfe };
+    int pkt_size = pkt->size;
+    int period;
+    int subtype;
+
+    if (!core_size) {
+        av_log(s, AV_LOG_ERROR, "HD mode not supported for this format\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!sample_rate) {
+        av_log(s, AV_LOG_ERROR, "Unknown DTS sample rate for HD\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    period = ctx->dtshd_rate * (blocks << 5) / sample_rate;
+    subtype = spdif_dts4_subtype(period);
+
+    if (subtype < 0) {
+        av_log(s, AV_LOG_ERROR, "Specified HD rate of %d Hz would require an "
+               "impossible repetition period of %d for the current DTS stream"
+               " (blocks = %d, sample rate = %d)\n", ctx->dtshd_rate, period,
+               blocks << 5, sample_rate);
+        return AVERROR(EINVAL);
+    }
+
+    /* set pkt_offset and DTS IV subtype according to the requested output
+     * rate */
+    ctx->pkt_offset = period * 4;
+    ctx->data_type = IEC61937_DTSHD | subtype << 8;
+
+    /* If the bitrate is too high for transmitting at the selected
+     * repetition period setting, strip DTS-HD until a good amount
+     * of consecutive non-overflowing HD frames have been observed.
+     * This generally only happens if the caller is cramming a Master
+     * Audio stream into 192kHz IEC 60958 (which may or may not fit). */
+    if (sizeof(dtshd_start_code) + 2 + pkt_size
+            > ctx->pkt_offset - BURST_HEADER_SIZE && core_size) {
+        if (!ctx->dtshd_skip)
+            av_log(s, AV_LOG_WARNING, "DTS-HD bitrate too high, "
+                                      "temporarily sending core only\n");
+        if (ctx->dtshd_fallback > 0)
+            ctx->dtshd_skip = sample_rate * ctx->dtshd_fallback / (blocks << 5);
+        else
+            /* skip permanently (-1) or just once (0) */
+            ctx->dtshd_skip = 1;
+    }
+    if (ctx->dtshd_skip && core_size) {
+        pkt_size = core_size;
+        if (ctx->dtshd_fallback >= 0)
+            --ctx->dtshd_skip;
+    }
+
+    ctx->out_bytes   = sizeof(dtshd_start_code) + 2 + pkt_size;
+    ctx->length_code = ctx->out_bytes;
+
+    ctx->hd_buf = av_fast_realloc(ctx->hd_buf, &ctx->hd_buf_size,
+                                  ctx->out_bytes);
+    if (!ctx->hd_buf)
+        return AVERROR(ENOMEM);
+
+    ctx->out_buf = ctx->hd_buf;
+
+    memcpy(ctx->hd_buf, dtshd_start_code, sizeof(dtshd_start_code));
+    AV_WB16(ctx->hd_buf + sizeof(dtshd_start_code), pkt_size);
+    memcpy(ctx->hd_buf + sizeof(dtshd_start_code) + 2, pkt->data, pkt_size);
+
+    return 0;
+}
+
 static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
 {
     IEC61937Context *ctx = s->priv_data;
     uint32_t syncword_dts = AV_RB32(pkt->data);
     int blocks;
+    int sample_rate = 0;
+    int core_size = 0;
+
+    if (pkt->size < 9)
+        return AVERROR_INVALIDDATA;
 
     switch (syncword_dts) {
     case DCA_MARKER_RAW_BE:
         blocks = (AV_RB16(pkt->data + 4) >> 2) & 0x7f;
+        core_size = ((AV_RB24(pkt->data + 5) >> 4) & 0x3fff) + 1;
+        sample_rate = dca_sample_rates[(pkt->data[8] >> 2) & 0x0f];
         break;
     case DCA_MARKER_RAW_LE:
         blocks = (AV_RL16(pkt->data + 4) >> 2) & 0x7f;
@@ -138,11 +264,22 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
             (((pkt->data[4] & 0x07) << 4) | ((pkt->data[7] & 0x3f) >> 2));
         ctx->extra_bswap = 1;
         break;
+    case DCA_HD_MARKER:
+        /* We only handle HD frames that are paired with core. However,
+           sometimes DTS-HD streams with core have a stray HD frame without
+           core in the beginning of the stream. */
+        av_log(s, AV_LOG_ERROR, "stray DTS-HD frame\n");
+        return AVERROR_INVALIDDATA;
     default:
         av_log(s, AV_LOG_ERROR, "bad DTS syncword 0x%x\n", syncword_dts);
         return AVERROR_INVALIDDATA;
     }
     blocks++;
+
+    if (ctx->dtshd_rate)
+        /* DTS type IV output requested */
+        return spdif_header_dts4(s, pkt, core_size, sample_rate, blocks);
+
     switch (blocks) {
     case  512 >> 5: ctx->data_type = IEC61937_DTS1; break;
     case 1024 >> 5: ctx->data_type = IEC61937_DTS2; break;
@@ -152,6 +289,13 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
                blocks << 5);
         return AVERROR(ENOSYS);
     }
+
+    /* discard extraneous data by default */
+    if (core_size && core_size < pkt->size) {
+        ctx->out_bytes = core_size;
+        ctx->length_code = core_size << 3;
+    }
+
     ctx->pkt_offset = blocks << 7;
 
     if (ctx->out_bytes == ctx->pkt_offset) {
@@ -159,6 +303,9 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
          * preamble as it would not fit in there. This is the case for dts
          * discs and dts-in-wav. */
         ctx->use_preamble = 0;
+    } else if (ctx->out_bytes > ctx->pkt_offset - BURST_HEADER_SIZE) {
+        av_log_ask_for_sample(s, "Unrecognized large DTS frame.");
+        /* This will fail with a "bitrate too high" in the caller */
     }
 
     return 0;
@@ -393,4 +540,5 @@ AVOutputFormat ff_spdif_muxer = {
     spdif_write_header,
     spdif_write_packet,
     spdif_write_trailer,
+    .priv_class = &class,
 };
