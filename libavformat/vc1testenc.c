@@ -47,6 +47,7 @@ static int vc1test_write_header(AVFormatContext *s)
         put_le32(pb, s->streams[0]->r_frame_rate.den);
     else
         put_le32(pb, 0xFFFFFFFF); //variable framerate
+    av_set_pts_info(s->streams[0], 32, 1, 1000);
 
     return 0;
 }
