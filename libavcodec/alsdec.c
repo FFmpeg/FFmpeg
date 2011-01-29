@@ -1564,6 +1564,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_freep(&ctx->chan_data);
     av_freep(&ctx->chan_data_buffer);
     av_freep(&ctx->reverted_channels);
+    av_freep(&ctx->crc_buffer);
 
     return 0;
 }
