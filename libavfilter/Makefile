@@ -2,6 +2,7 @@ include $(SUBDIR)../config.mak
 
 NAME = avfilter
 FFLIBS = avcore avutil
+FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
 FFLIBS-$(CONFIG_SCALE_FILTER) += swscale
 
 HEADERS = avfilter.h avfiltergraph.h
@@ -50,6 +51,7 @@ OBJS-$(CONFIG_YADIF_FILTER)                  += vf_yadif.o
 OBJS-$(CONFIG_BUFFER_FILTER)                 += vsrc_buffer.o
 OBJS-$(CONFIG_COLOR_FILTER)                  += vf_pad.o
 OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
+OBJS-$(CONFIG_MOVIE_FILTER)                  += vsrc_movie.o
 OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o

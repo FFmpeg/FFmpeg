@@ -71,6 +71,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (BUFFER,      buffer,      vsrc);
     REGISTER_FILTER (COLOR,       color,       vsrc);
     REGISTER_FILTER (FREI0R,      frei0r_src,  vsrc);
+    REGISTER_FILTER (MOVIE,       movie,       vsrc);
     REGISTER_FILTER (NULLSRC,     nullsrc,     vsrc);
 
     REGISTER_FILTER (NULLSINK,    nullsink,    vsink);
