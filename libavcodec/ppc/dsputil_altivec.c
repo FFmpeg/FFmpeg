@@ -230,7 +230,7 @@ static int sad16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, i
     int i;
     int s;
     const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
-    vector unsigned char perm1, perm2, *pix1v, *pix2v;
+    vector unsigned char perm1, perm2, pix1v_low, pix1v_high, pix2v_low, pix2v_high;
     vector unsigned char t1, t2, t3,t4, t5;
     vector unsigned int sad;
     vector signed int sumdiffs;
@@ -241,11 +241,13 @@ static int sad16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, i
     for (i = 0; i < h; i++) {
         /* Read potentially unaligned pixels into t1 and t2 */
         perm1 = vec_lvsl(0, pix1);
-        pix1v = (vector unsigned char *) pix1;
+        pix1v_high = vec_ld( 0, pix1);
+        pix1v_low  = vec_ld(15, pix1);
         perm2 = vec_lvsl(0, pix2);
-        pix2v = (vector unsigned char *) pix2;
-        t1 = vec_perm(pix1v[0], pix1v[1], perm1);
-        t2 = vec_perm(pix2v[0], pix2v[1], perm2);
+        pix2v_high = vec_ld( 0, pix2);
+        pix2v_low  = vec_ld(15, pix2);
+        t1 = vec_perm(pix1v_high, pix1v_low, perm1);
+        t2 = vec_perm(pix2v_high, pix2v_low, perm2);
 
         /* Calculate a sum of abs differences vector */
         t3 = vec_max(t1, t2);
