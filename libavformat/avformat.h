@@ -510,6 +510,8 @@ typedef struct AVStream {
      * This is the fundamental unit of time (in seconds) in terms
      * of which frame timestamps are represented. For fixed-fps content,
      * time base should be 1/framerate and timestamp increments should be 1.
+     * decoding: set by libavformat
+     * encoding: set by libavformat in av_write_header
      */
     AVRational time_base;
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
@@ -1380,6 +1382,8 @@ void av_url_split(char *proto,         int proto_size,
 /**
  * Allocate the stream private data and write the stream header to an
  * output media file.
+ * @note: this sets stream time-bases, if possible to stream->codec->time_base
+ * but for some formats it might also be some other time base
  *
  * @param s media file handle
  * @return 0 if OK, AVERROR_xxx on error
