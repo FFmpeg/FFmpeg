@@ -1307,10 +1307,11 @@ void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
     AVFrame *ref = s->framep[mb->ref_frame];
     VP56mv *bmv = mb->bmv;
 
-    if (mb->mode < VP8_MVMODE_SPLIT) {
+    switch (mb->partitioning) {
+    case VP8_SPLITMVMODE_NONE:
         vp8_mc_part(s, dst, ref, x_off, y_off,
                     0, 0, 16, 16, width, height, &mb->mv);
-    } else switch (mb->partitioning) {
+        break;
     case VP8_SPLITMVMODE_4x4: {
         int x, y;
         VP56mv uvmv;
