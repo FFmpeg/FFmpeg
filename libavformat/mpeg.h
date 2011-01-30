@@ -63,7 +63,7 @@ static const int lpcm_freq_tab[4] = { 48000, 96000, 44100, 32000 };
 /**
  * Parse MPEG-PES five-byte timestamp
  */
-static inline int64_t ff_parse_pes_pts(uint8_t *buf) {
+static inline int64_t ff_parse_pes_pts(const uint8_t *buf) {
     return (int64_t)(*buf & 0x0e) << 29 |
             (AV_RB16(buf+1) >> 1) << 15 |
              AV_RB16(buf+3) >> 1;
