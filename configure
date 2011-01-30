@@ -2109,7 +2109,7 @@ case "$arch" in
         arch="sparc"
         subarch="sparc64"
     ;;
-    i[3-6]86|i86pc|BePC|x86_64|amd64)
+    i[3-6]86|i86pc|BePC|x86pc|x86_64|amd64)
         arch="x86"
     ;;
 esac
@@ -2445,6 +2445,10 @@ case $target_os in
     gnu/kfreebsd)
         ;;
     gnu)
+        ;;
+    qnx)
+        add_cppflags -D_QNX_SOURCE
+        network_extralibs="-lsocket"
         ;;
     none)
         ;;
