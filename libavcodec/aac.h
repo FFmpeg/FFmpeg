@@ -35,6 +35,7 @@
 #include "fft.h"
 #include "mpeg4audio.h"
 #include "sbr.h"
+#include "fmtconvert.h"
 
 #include <stdint.h>
 
@@ -268,6 +269,7 @@ typedef struct {
     FFTContext mdct;
     FFTContext mdct_small;
     DSPContext dsp;
+    FmtConvertContext fmt_conv;
     int random_state;
     /** @} */
 

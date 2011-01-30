@@ -33,6 +33,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "fmtconvert.h"
 
 extern const uint16_t ff_wma_critical_freqs[25];
 
@@ -43,6 +44,7 @@ typedef struct {
     AVCodecContext *avctx;
     GetBitContext gb;
     DSPContext dsp;
+    FmtConvertContext fmt_conv;
     int first;
     int channels;
     int frame_len;          ///< transform size (samples)
@@ -71,6 +73,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);
+    ff_fmt_convert_init(&s->fmt_conv, avctx);
 
     /* determine frame length */
     if (avctx->sample_rate < 22050) {
@@ -222,7 +225,8 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
             ff_rdft_calc(&s->trans.rdft, coeffs);
     }
 
-    s->dsp.float_to_int16_interleave(out, (const float **)s->coeffs_ptr, s->frame_len, s->channels);
+    s->fmt_conv.float_to_int16_interleave(out, (const float **)s->coeffs_ptr,
+                                          s->frame_len, s->channels);
 
     if (!s->first) {
         int count = s->overlap_len * s->channels;

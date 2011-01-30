@@ -40,6 +40,7 @@
 #include "dca.h"
 #include "synth_filter.h"
 #include "dcadsp.h"
+#include "fmtconvert.h"
 
 //#define TRACE
 
@@ -347,6 +348,7 @@ typedef struct {
     FFTContext imdct;
     SynthFilterContext synth;
     DCADSPContext dcadsp;
+    FmtConvertContext fmt_conv;
 } DCAContext;
 
 static const uint16_t dca_vlc_offs[] = {
@@ -1115,7 +1117,7 @@ static int dca_subsubframe(DCAContext * s, int base_channel, int block_index)
                         block[m] = get_bitalloc(&s->gb, &dca_smpl_bitalloc[abits], sel);
                 }
 
-                s->dsp.int32_to_float_fmul_scalar(subband_samples[k][l],
+                s->fmt_conv.int32_to_float_fmul_scalar(subband_samples[k][l],
                                                   block, rscale, 8);
             }
 
@@ -1802,7 +1804,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
             }
         }
 
-        s->dsp.float_to_int16_interleave(samples, s->samples_chanptr, 256, channels);
+        s->fmt_conv.float_to_int16_interleave(samples, s->samples_chanptr, 256, channels);
         samples += 256 * channels;
     }
 
@@ -1835,6 +1837,7 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
     ff_mdct_init(&s->imdct, 6, 1, 1.0);
     ff_synth_filter_init(&s->synth);
     ff_dcadsp_init(&s->dcadsp);
+    ff_fmt_convert_init(&s->fmt_conv, avctx);
 
     for (i = 0; i < DCA_PRIM_CHANNELS_MAX+1; i++)
         s->samples_chanptr[i] = s->samples + i * 256;

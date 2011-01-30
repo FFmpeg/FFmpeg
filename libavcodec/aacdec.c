@@ -85,6 +85,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "fmtconvert.h"
 #include "lpc.h"
 
 #include "aac.h"
@@ -562,6 +563,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     ff_aac_sbr_init();
 
     dsputil_init(&ac->dsp, avctx);
+    ff_fmt_convert_init(&ac->fmt_conv, avctx);
 
     ac->random_state = 0x1f2e3d4c;
 
@@ -2032,7 +2034,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     *data_size = data_size_tmp;
 
     if (samples)
-        ac->dsp.float_to_int16_interleave(data, (const float **)ac->output_data, samples, avctx->channels);
+        ac->fmt_conv.float_to_int16_interleave(data, (const float **)ac->output_data, samples, avctx->channels);
 
     if (ac->output_configured)
         ac->output_configured = OC_LOCKED;

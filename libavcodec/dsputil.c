@@ -3867,12 +3867,6 @@ static float scalarproduct_float_c(const float *v1, const float *v2, int len)
     return p;
 }
 
-static void int32_to_float_fmul_scalar_c(float *dst, const int *src, float mul, int len){
-    int i;
-    for(i=0; i<len; i++)
-        dst[i] = src[i] * mul;
-}
-
 static inline uint32_t clipf_c_one(uint32_t a, uint32_t mini,
                    uint32_t maxi, uint32_t maxisign)
 {
@@ -3915,30 +3909,6 @@ static void vector_clipf_c(float *dst, const float *src, float min, float max, i
             dst[i + 6] = av_clipf(src[i + 6], min, max);
             dst[i + 7] = av_clipf(src[i + 7], min, max);
         }
-    }
-}
-
-static av_always_inline int float_to_int16_one(const float *src){
-    return av_clip_int16(lrintf(*src));
-}
-
-static void ff_float_to_int16_c(int16_t *dst, const float *src, long len){
-    int i;
-    for(i=0; i<len; i++)
-        dst[i] = float_to_int16_one(src+i);
-}
-
-static void ff_float_to_int16_interleave_c(int16_t *dst, const float **src, long len, int channels){
-    int i,j,c;
-    if(channels==2){
-        for(i=0; i<len; i++){
-            dst[2*i]   = float_to_int16_one(src[0]+i);
-            dst[2*i+1] = float_to_int16_one(src[1]+i);
-        }
-    }else{
-        for(c=0; c<channels; c++)
-            for(i=0, j=c; i<len; i++, j+=channels)
-                dst[j] = float_to_int16_one(src[c]+i);
     }
 }
 
@@ -4437,10 +4407,7 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_fmul_reverse = vector_fmul_reverse_c;
     c->vector_fmul_add = vector_fmul_add_c;
     c->vector_fmul_window = vector_fmul_window_c;
-    c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
     c->vector_clipf = vector_clipf_c;
-    c->float_to_int16 = ff_float_to_int16_c;
-    c->float_to_int16_interleave = ff_float_to_int16_interleave_c;
     c->scalarproduct_int16 = scalarproduct_int16_c;
     c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_c;
     c->scalarproduct_float = scalarproduct_float_c;

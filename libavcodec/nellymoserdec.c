@@ -38,6 +38,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "fmtconvert.h"
 
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"
@@ -52,6 +53,7 @@ typedef struct NellyMoserDecodeContext {
     float           scale_bias;
     DSPContext      dsp;
     FFTContext      imdct_ctx;
+    FmtConvertContext fmt_conv;
     DECLARE_ALIGNED(16, float,imdct_out)[NELLY_BUF_LEN * 2];
 } NellyMoserDecodeContext;
 
@@ -134,6 +136,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     ff_mdct_init(&s->imdct_ctx, 8, 1, 1.0);
 
     dsputil_init(&s->dsp, avctx);
+    ff_fmt_convert_init(&s->fmt_conv, avctx);
 
     s->scale_bias = 1.0/(1*8);
 
@@ -175,7 +178,7 @@ static int decode_tag(AVCodecContext * avctx,
 
     for (i=0 ; i<blocks ; i++) {
         nelly_decode_block(s, &buf[i*NELLY_BLOCK_LEN], s->float_buf);
-        s->dsp.float_to_int16(&samples[i*NELLY_SAMPLES], s->float_buf, NELLY_SAMPLES);
+        s->fmt_conv.float_to_int16(&samples[i*NELLY_SAMPLES], s->float_buf, NELLY_SAMPLES);
         *data_size += NELLY_SAMPLES*sizeof(int16_t);
     }
 
