@@ -30,6 +30,7 @@
 #include "mpegts.h"
 #include "internal.h"
 #include "seek.h"
+#include "mpeg.h"
 #include "isom.h"
 
 /* 1.0 second at 24Mbit/s */
@@ -601,14 +602,6 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     return 0;
 }
 
-static int64_t get_pts(const uint8_t *p)
-{
-    int64_t pts = (int64_t)((p[0] >> 1) & 0x07) << 30;
-    pts |= (AV_RB16(p + 1) >> 1) << 15;
-    pts |=  AV_RB16(p + 3) >> 1;
-    return pts;
-}
-
 static void new_pes_packet(PESContext *pes, AVPacket *pkt)
 {
     av_init_packet(pkt);
@@ -767,12 +760,12 @@ static int mpegts_push_data(MpegTSFilter *filter,
                 pes->pts = AV_NOPTS_VALUE;
                 pes->dts = AV_NOPTS_VALUE;
                 if ((flags & 0xc0) == 0x80) {
-                    pes->dts = pes->pts = get_pts(r);
+                    pes->dts = pes->pts = ff_parse_pes_pts(r);
                     r += 5;
                 } else if ((flags & 0xc0) == 0xc0) {
-                    pes->pts = get_pts(r);
+                    pes->pts = ff_parse_pes_pts(r);
                     r += 5;
-                    pes->dts = get_pts(r);
+                    pes->dts = ff_parse_pes_pts(r);
                     r += 5;
                 }
                 pes->extended_stream_id = -1;
