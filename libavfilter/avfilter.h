@@ -701,6 +701,24 @@ AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
                                              uint64_t channel_layout, int planar);
 
 /**
+ * Create an audio buffer reference wrapped around an already
+ * allocated samples buffer.
+ *
+ * @param data           pointers to the samples plane buffers
+ * @param linesize       linesize for the samples plane buffers
+ * @param perms          the required access permissions
+ * @param nb_samples     number of samples per channel
+ * @param sample_fmt     the format of each sample in the buffer to allocate
+ * @param channel_layout the channel layout of the buffer
+ */
+AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
+                                                             int linesize,
+                                                             int perms,
+                                                             int nb_samples,
+                                                             enum AVSampleFormat sample_fmt,
+                                                             uint64_t channel_layout);
+
+/**
  * Request an input frame from the filter at the other end of the link.
  *
  * @param link the input link
