@@ -235,30 +235,6 @@ int read_yesno(void);
  */
 int read_file(const char *filename, char **bufptr, size_t *size);
 
-typedef struct {
-    int64_t num_faulty_pts; /// Number of incorrect PTS values so far
-    int64_t num_faulty_dts; /// Number of incorrect DTS values so far
-    int64_t last_pts;       /// PTS of the last frame
-    int64_t last_dts;       /// DTS of the last frame
-} PtsCorrectionContext;
-
-/**
- * Reset the state of the PtsCorrectionContext.
- */
-void init_pts_correction(PtsCorrectionContext *ctx);
-
-/**
- * Attempt to guess proper monotonic timestamps for decoded video frames
- * which might have incorrect times. Input timestamps may wrap around, in
- * which case the output will as well.
- *
- * @param pts the pts field of the decoded AVPacket, as passed through
- * AVCodecContext.reordered_opaque
- * @param dts the dts field of the decoded AVPacket
- * @return one of the input values, may be AV_NOPTS_VALUE
- */
-int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t pts, int64_t dts);
-
 /**
  * Get a file corresponding to a preset file.
  *

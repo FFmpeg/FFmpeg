@@ -208,8 +208,6 @@ typedef struct VideoState {
     char filename[1024];
     int width, height, xleft, ytop;
 
-    PtsCorrectionContext pts_ctx;
-
 #if CONFIG_AVFILTER
     AVFilterContext *out_video_filter;          ///<the last filter in the video chain
 #endif
@@ -1286,7 +1284,7 @@ retry:
             if (is->audio_st && is->video_st)
                 av_diff = get_audio_clock(is) - get_video_clock(is);
             printf("%7.2f A-V:%7.3f s:%3.1f aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
-                   get_master_clock(is), av_diff, FFMAX(is->skip_frames-1, 0), aqsize / 1024, vqsize / 1024, sqsize, is->pts_ctx.num_faulty_dts, is->pts_ctx.num_faulty_pts);
+                   get_master_clock(is), av_diff, FFMAX(is->skip_frames-1, 0), aqsize / 1024, vqsize / 1024, sqsize, is->video_st->codec->pts_correction_num_faulty_dts, is->video_st->codec->pts_correction_num_faulty_pts);
             fflush(stdout);
             last_time = cur_time;
         }
@@ -1561,7 +1559,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         is->video_current_pos = -1;
         SDL_UnlockMutex(is->pictq_mutex);
 
-        init_pts_correction(&is->pts_ctx);
         is->frame_last_pts = AV_NOPTS_VALUE;
         is->frame_last_delay = 0;
         is->frame_timer = (double)av_gettime() / 1000000.0;
@@ -1576,7 +1573,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
 
     if (got_picture) {
         if (decoder_reorder_pts == -1) {
-            *pts = guess_correct_pts(&is->pts_ctx, frame->pkt_pts, frame->pkt_dts);
+            *pts = frame->best_effort_timestamp;
         } else if (decoder_reorder_pts) {
             *pts = frame->pkt_pts;
         } else {

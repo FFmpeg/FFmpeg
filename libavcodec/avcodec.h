@@ -1026,6 +1026,13 @@ typedef struct AVPanScan{
      * - decoding: Read by user.\
      */\
     int64_t pkt_dts;\
+\
+    /**\
+     * frame timestamp estimated using various heuristics, in stream time base\
+     * - encoding: unused\
+     * - decoding: set by libavcodec, read by user.\
+     */\
+    int64_t best_effort_timestamp;\
 
 
 #define FF_QSCALE_TYPE_MPEG1 0
@@ -2825,6 +2832,17 @@ typedef struct AVCodecContext {
      * - encoding: unused
      */
     AVPacket *pkt;
+
+    /**
+     * Current statistics for PTS correction.
+     * - decoding: maintained and used by libavcodec
+     * - encoding: unused
+     */
+    int64_t pts_correction_num_faulty_pts; /// Number of incorrect PTS values so far
+    int64_t pts_correction_num_faulty_dts; /// Number of incorrect DTS values so far
+    int64_t pts_correction_last_pts;       /// PTS of the last frame
+    int64_t pts_correction_last_dts;       /// DTS of the last frame
+
 } AVCodecContext;
 
 /**
