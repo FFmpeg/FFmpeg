@@ -421,6 +421,48 @@ AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
     return ret;
 }
 
+AVFilterBufferRef *
+avfilter_get_audio_buffer_ref_from_arrays(uint8_t *data[8], int linesize[8], int perms,
+                                          int nb_samples, enum AVSampleFormat sample_fmt,
+                                          int64_t channel_layout, int planar)
+{
+    AVFilterBuffer *samples = av_mallocz(sizeof(AVFilterBuffer));
+    AVFilterBufferRef *samplesref = av_mallocz(sizeof(AVFilterBufferRef));
+
+    if (!samples || !samplesref)
+        goto fail;
+
+    samplesref->buf = samples;
+    samplesref->buf->free = ff_avfilter_default_free_buffer;
+    if (!(samplesref->audio = av_mallocz(sizeof(AVFilterBufferRefAudioProps))))
+        goto fail;
+
+    samplesref->audio->nb_samples     = nb_samples;
+    samplesref->audio->channel_layout = channel_layout;
+    samplesref->audio->planar         = planar;
+
+    /* make sure the buffer gets read permission or it's useless for output */
+    samplesref->perms = perms | AV_PERM_READ;
+
+    samples->refcount = 1;
+    samplesref->type = AVMEDIA_TYPE_AUDIO;
+    samplesref->format = sample_fmt;
+
+    memcpy(samples->data,        data,     sizeof(samples->data));
+    memcpy(samples->linesize,    linesize, sizeof(samples->linesize));
+    memcpy(samplesref->data,     data,     sizeof(samplesref->data));
+    memcpy(samplesref->linesize, linesize, sizeof(samplesref->linesize));
+
+    return samplesref;
+
+fail:
+    if (samplesref && samplesref->audio)
+        av_freep(&samplesref->audio);
+    av_freep(&samplesref);
+    av_freep(&samples);
+    return NULL;
+}
+
 int avfilter_request_frame(AVFilterLink *link)
 {
     FF_DPRINTF_START(NULL, request_frame); ff_dlog_link(NULL, link, 1);

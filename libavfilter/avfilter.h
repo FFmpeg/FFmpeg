@@ -26,8 +26,8 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 14
-#define LIBAVFILTER_VERSION_MICRO  1
+#define LIBAVFILTER_VERSION_MINOR 15
+#define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -693,6 +693,23 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int lin
 AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
                                              enum AVSampleFormat sample_fmt, int nb_samples,
                                              int64_t channel_layout, int planar);
+
+/**
+ * Create an audio buffer reference wrapped around an already
+ * allocated samples buffer.
+ *
+ * @param data           pointers to the samples plane buffers
+ * @param linesize       linesize for the samples plane buffers
+ * @param perms          the required access permissions
+ * @param nb_samples     number of samples per channel
+ * @param sample_fmt     the format of each sample in the buffer to allocate
+ * @param channel_layout the channel layout of the buffer
+ * @param planar         audio data layout - planar or packed
+ */
+AVFilterBufferRef *
+avfilter_get_audio_buffer_ref_from_arrays(uint8_t *data[8], int linesize[8], int perms,
+                                          int nb_samples, enum AVSampleFormat sample_fmt,
+                                          int64_t channel_layout, int planar);
 
 /**
  * Request an input frame from the filter at the other end of the link.
