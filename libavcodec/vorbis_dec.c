@@ -31,6 +31,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "fmtconvert.h"
 
 #include "vorbis.h"
 #include "xiph.h"
@@ -127,6 +128,7 @@ typedef struct vorbis_context_s {
     AVCodecContext *avccontext;
     GetBitContext gb;
     DSPContext dsp;
+    FmtConvertContext fmt_conv;
 
     FFTContext mdct[2];
     uint_fast8_t  first_frame;
@@ -961,6 +963,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
 
     vc->avccontext = avccontext;
     dsputil_init(&vc->dsp, avccontext);
+    ff_fmt_convert_init(&vc->fmt_conv, avccontext);
 
     vc->scale_bias = 32768.0f;
 
@@ -1636,7 +1639,8 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
                               len * ff_vorbis_channel_layout_offsets[vc->audio_channels - 1][i];
     }
 
-    vc->dsp.float_to_int16_interleave(data, channel_ptrs, len, vc->audio_channels);
+    vc->fmt_conv.float_to_int16_interleave(data, channel_ptrs, len,
+                                           vc->audio_channels);
     *data_size = len * 2 * vc->audio_channels;
 
     return buf_size ;

@@ -12,6 +12,7 @@ OBJS = allcodecs.o                                                      \
        bitstream_filter.o                                               \
        dsputil.o                                                        \
        faanidct.o                                                       \
+       fmtconvert.o                                                     \
        imgconvert.o                                                     \
        jrevdct.o                                                        \
        opt.o                                                            \

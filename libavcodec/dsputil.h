@@ -392,7 +392,6 @@ typedef struct DSPContext {
     /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vector_fmul_window)(float *dst, const float *src0, const float *src1, const float *win, int len);
     /* assume len is a multiple of 8, and arrays are 16-byte aligned */
-    void (*int32_to_float_fmul_scalar)(float *dst, const int *src, float mul, int len);
     void (*vector_clipf)(float *dst /* align 16 */, const float *src /* align 16 */, float min, float max, int len /* align 16 */);
     /**
      * Multiply a vector of floats by a scalar float.  Source and
@@ -444,10 +443,6 @@ typedef struct DSPContext {
      * @param len length of vectors, multiple of 4
      */
     void (*butterflies_float)(float *restrict v1, float *restrict v2, int len);
-
-    /* convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */
-    void (*float_to_int16)(int16_t *dst, const float *src, long len);
-    void (*float_to_int16_interleave)(int16_t *dst, const float **src, long len, int channels);
 
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);

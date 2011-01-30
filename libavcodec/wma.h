@@ -26,6 +26,7 @@
 #include "put_bits.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "fmtconvert.h"
 
 /* size of blocks */
 #define BLOCK_MIN_BITS 7
@@ -134,6 +135,7 @@ typedef struct WMACodecContext {
     float lsp_pow_m_table1[(1 << LSP_POW_BITS)];
     float lsp_pow_m_table2[(1 << LSP_POW_BITS)];
     DSPContext dsp;
+    FmtConvertContext fmt_conv;
 
 #ifdef TRACE
     int frame_count;

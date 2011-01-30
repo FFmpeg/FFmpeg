@@ -39,6 +39,7 @@ YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o
 MMX-OBJS-$(CONFIG_VP8_DECODER)         += x86/vp8dsp-init.o
 MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
                                           x86/deinterlace.o             \
+                                          x86/fmtconvert.o              \
                                           x86/h264_chromamc.o           \
                                           $(YASM-OBJS-yes)
 
@@ -47,6 +48,7 @@ MMX-OBJS-$(CONFIG_FFT)                 += x86/fft.o
 OBJS-$(HAVE_MMX)                       += x86/dnxhd_mmx.o               \
                                           x86/dsputil_mmx.o             \
                                           x86/fdct_mmx.o                \
+                                          x86/fmtconvert_mmx.o          \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
                                           x86/motion_est_mmx.o          \
