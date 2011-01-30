@@ -138,7 +138,8 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     }
 
     x4->out_pic.key_frame = pic_out.b_keyframe;
-    x4->out_pic.quality   = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
+    if (bufsize)
+        x4->out_pic.quality = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
 
     return bufsize;
 }
