@@ -140,8 +140,7 @@ void ff_vp3_h_loop_filter_neon(uint8_t *, int, int *);
 
 void ff_vector_fmul_neon(float *dst, const float *src0, const float *src1, int len);
 void ff_vector_fmul_window_neon(float *dst, const float *src0,
-                                const float *src1, const float *win,
-                                float add_bias, int len);
+                                const float *src1, const float *win, int len);
 void ff_vector_fmul_scalar_neon(float *dst, const float *src, float mul,
                                 int len);
 void ff_vector_fmul_sv_scalar_2_neon(float *dst, const float *src,

@@ -2190,10 +2190,9 @@ static void vector_fmul_add_sse(float *dst, const float *src0, const float *src1
     );
 }
 
-static void vector_fmul_window_3dnow2(float *dst, const float *src0, const float *src1,
-                                      const float *win, float add_bias, int len){
 #if HAVE_6REGS
-    if(add_bias == 0){
+static void vector_fmul_window_3dnow2(float *dst, const float *src0, const float *src1,
+                                      const float *win, int len){
         x86_reg i = -len*4;
         x86_reg j = len*4-8;
         __asm__ volatile(
@@ -2220,15 +2219,10 @@ static void vector_fmul_window_3dnow2(float *dst, const float *src0, const float
             :"+r"(i), "+r"(j)
             :"r"(dst+len), "r"(src0+len), "r"(src1), "r"(win+len)
         );
-    }else
-#endif
-        ff_vector_fmul_window_c(dst, src0, src1, win, add_bias, len);
 }
 
 static void vector_fmul_window_sse(float *dst, const float *src0, const float *src1,
-                                   const float *win, float add_bias, int len){
-#if HAVE_6REGS
-    if(add_bias == 0){
+                                   const float *win, int len){
         x86_reg i = -len*4;
         x86_reg j = len*4-16;
         __asm__ volatile(
@@ -2256,10 +2250,8 @@ static void vector_fmul_window_sse(float *dst, const float *src0, const float *s
             :"+r"(i), "+r"(j)
             :"r"(dst+len), "r"(src0+len), "r"(src1), "r"(win+len)
         );
-    }else
-#endif
-        ff_vector_fmul_window_c(dst, src0, src1, win, add_bias, len);
 }
+#endif /* HAVE_6REGS */
 
 static void int32_to_float_fmul_scalar_sse(float *dst, const int *src, float mul, int len)
 {
@@ -2882,7 +2874,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
         if(mm_flags & AV_CPU_FLAG_3DNOWEXT){
             c->vector_fmul_reverse = vector_fmul_reverse_3dnow2;
+#if HAVE_6REGS
             c->vector_fmul_window = vector_fmul_window_3dnow2;
+#endif
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->float_to_int16_interleave = float_to_int16_interleave_3dn2;
             }
@@ -2899,7 +2893,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vector_fmul = vector_fmul_sse;
             c->vector_fmul_reverse = vector_fmul_reverse_sse;
             c->vector_fmul_add = vector_fmul_add_sse;
+#if HAVE_6REGS
             c->vector_fmul_window = vector_fmul_window_sse;
+#endif
             c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse;
             c->vector_clipf = vector_clipf_sse;
             c->float_to_int16 = float_to_int16_sse;

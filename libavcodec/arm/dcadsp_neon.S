@@ -29,7 +29,7 @@ function ff_dca_lfe_fir_neon, export=1
         cmp             r3,  #32
         moveq           r6,  #256/32
         movne           r6,  #256/64
-NOVFP   vldr            d0,  [sp, #16]          @ scale, bias
+NOVFP   vldr            s0,  [sp, #16]          @ scale
         mov             lr,  #-16
 1:
         vmov.f32        q2,  #0.0               @ v0
@@ -51,8 +51,7 @@ NOVFP   vldr            d0,  [sp, #16]          @ scale, bias
         vadd.f32        d4,  d4,  d5
         vadd.f32        d6,  d6,  d7
         vpadd.f32       d4,  d4,  d6
-        vdup.32         d5,  d0[1]
-        vmla.f32        d5,  d4,  d0[0]
+        vmul.f32        d5,  d4,  d0[0]
         vst1.32         {d5[0]},  [r0,:32]!
         vst1.32         {d5[1]},  [r4,:32]!
         bne             1b

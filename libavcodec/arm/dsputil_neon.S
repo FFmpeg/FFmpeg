@@ -777,11 +777,8 @@ function ff_vector_fmul_neon, export=1
 endfunc
 
 function ff_vector_fmul_window_neon, export=1
-VFP     vdup.32         q8,  d0[0]
-NOVFP   vld1.32         {d16[],d17[]}, [sp,:32]
         push            {r4,r5,lr}
-VFP     ldr             lr,  [sp, #12]
-NOVFP   ldr             lr,  [sp, #16]
+        ldr             lr,  [sp, #12]
         sub             r2,  r2,  #8
         sub             r5,  lr,  #2
         add             r2,  r2,  r5, lsl #2
@@ -793,14 +790,12 @@ NOVFP   ldr             lr,  [sp, #16]
         vld1.64         {d4,d5},  [r3,:128]!
         vld1.64         {d6,d7},  [r4,:128], r5
 1:      subs            lr,  lr,  #4
-        vmov            q11, q8
-        vmla.f32        d22, d0,  d4
-        vmov            q10, q8
-        vmla.f32        d23, d1,  d5
+        vmul.f32        d22, d0,  d4
         vrev64.32       q3,  q3
-        vmla.f32        d20, d0,  d7
+        vmul.f32        d23, d1,  d5
         vrev64.32       q1,  q1
-        vmla.f32        d21, d1,  d6
+        vmul.f32        d20, d0,  d7
+        vmul.f32        d21, d1,  d6
         beq             2f
         vmla.f32        d22, d3,  d7
         vld1.64         {d0,d1},  [r1,:128]!

@@ -23,7 +23,7 @@
 #include "dcadsp.h"
 
 static void dca_lfe_fir_c(float *out, const float *in, const float *coefs,
-                          int decifactor, float scale, float bias)
+                          int decifactor, float scale)
 {
     float *out2 = out + decifactor;
     const float *cf0 = coefs;
@@ -39,8 +39,8 @@ static void dca_lfe_fir_c(float *out, const float *in, const float *coefs,
             v0 += s * *cf0++;
             v1 += s * *--cf1;
         }
-        *out++  = (v0 * scale) + bias;
-        *out2++ = (v1 * scale) + bias;
+        *out++  = v0 * scale;
+        *out2++ = v1 * scale;
     }
 }
 

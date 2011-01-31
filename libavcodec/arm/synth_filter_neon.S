@@ -42,7 +42,7 @@ VFP     vpop            {d0}
 
         ldr             r5,  [sp, #9*4]         @ window
         ldr             r2,  [sp, #10*4]        @ out
-NOVFP   vldr            d0,  [sp, #12*4]        @ scale, bias
+NOVFP   vldr            s0,  [sp, #12*4]        @ scale
         add             r8,  r9,  #12*4
 
         mov             lr,  #64*4
@@ -90,10 +90,8 @@ NOVFP   vldr            d0,  [sp, #12*4]        @ scale, bias
         sub             r11, r11, #512*4
         b               2b
 3:
-        vdup.32         q8,  d0[1]
-        vdup.32         q9,  d0[1]
-        vmla.f32        q8,  q10, d0[0]
-        vmla.f32        q9,  q1,  d0[0]
+        vmul.f32        q8,  q10, d0[0]
+        vmul.f32        q9,  q1,  d0[0]
         vst1.32         {q3},     [r3,:128]
         sub             r3,  r3,  #16*4
         vst1.32         {q2},     [r3,:128]

@@ -1031,7 +1031,7 @@ static void wmapro_window(WMAProDecodeCtx *s)
         winlen >>= 1;
 
         s->dsp.vector_fmul_window(start, start, start + winlen,
-                                  window, 0, winlen);
+                                  window, winlen);
 
         s->channel[c].prev_block_len = s->subframe_len;
     }

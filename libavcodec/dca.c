@@ -896,7 +896,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
         s->synth.synth_filter_float(&s->imdct,
                               s->subband_fir_hist[chans], &s->hist_index[chans],
                               s->subband_fir_noidea[chans], prCoeff,
-                              samples_out, s->raXin, scale, 0);
+                              samples_out, s->raXin, scale);
         samples_out+= 32;
 
     }
@@ -929,7 +929,7 @@ static void lfe_interpolation_fir(DCAContext *s, int decimation_select,
     /* Interpolation */
     for (deciindex = 0; deciindex < num_deci_sample; deciindex++) {
         s->dcadsp.lfe_fir(samples_out, samples_in, prCoeff, decifactor,
-                          scale, 0);
+                          scale);
         samples_in++;
         samples_out += 2 * decifactor;
     }
