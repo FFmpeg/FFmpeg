@@ -141,7 +141,7 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
 
             /* overlap and window */
             q->dsp.vector_fmul_window(&q->bands[band_num][start_pos], prev_buf,
-                                      &su->spectrum[0][ref_pos + start_pos], ff_sine_32, 0, 16);
+                                      &su->spectrum[0][ref_pos + start_pos], ff_sine_32, 16);
 
             prev_buf = &su->spectrum[0][ref_pos+start_pos + 16];
             start_pos += block_size;

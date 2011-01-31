@@ -646,7 +646,6 @@ static void imdct_and_window(TwinContext *tctx, enum FrameType ftype, int wtype,
                                      prev_buf + (bsize-wsize)/2,
                                      buf1 + bsize*j,
                                      ff_sine_windows[av_log2(wsize)],
-                                     0.0,
                                      wsize/2);
         out2 += wsize;
 

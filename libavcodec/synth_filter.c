@@ -24,7 +24,7 @@
 static void synth_filter_float(FFTContext *imdct,
                            float *synth_buf_ptr, int *synth_buf_offset,
                            float synth_buf2[32], const float window[512],
-                           float out[32], const float in[32], float scale, float bias)
+                           float out[32], const float in[32], float scale)
 {
     float *synth_buf= synth_buf_ptr + *synth_buf_offset;
     int i, j;
@@ -48,8 +48,8 @@ static void synth_filter_float(FFTContext *imdct,
             c += window[i + j + 32]*( synth_buf[16 + i + j - 512]);
             d += window[i + j + 48]*( synth_buf[31 - i + j - 512]);
         }
-        out[i     ] = a*scale + bias;
-        out[i + 16] = b*scale + bias;
+        out[i     ] = a*scale;
+        out[i + 16] = b*scale;
         synth_buf2[i     ] = c;
         synth_buf2[i + 16] = d;
     }

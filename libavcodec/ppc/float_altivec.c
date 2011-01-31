@@ -90,13 +90,9 @@ static void vector_fmul_add_altivec(float *dst, const float *src0,
     }
 }
 
-static void vector_fmul_window_altivec(float *dst, const float *src0, const float *src1, const float *win, float add_bias, int len)
+static void vector_fmul_window_altivec(float *dst, const float *src0, const float *src1, const float *win, int len)
 {
-    union {
-        vector float v;
-        float s[4];
-    } vadd;
-    vector float vadd_bias, zero, t0, t1, s0, s1, wi, wj;
+    vector float zero, t0, t1, s0, s1, wi, wj;
     const vector unsigned char reverse = vcprm(3,2,1,0);
     int i,j;
 
@@ -104,8 +100,6 @@ static void vector_fmul_window_altivec(float *dst, const float *src0, const floa
     win += len;
     src0+= len;
 
-    vadd.s[0] = add_bias;
-    vadd_bias = vec_splat(vadd.v, 0);
     zero = (vector float)vec_splat_u32(0);
 
     for(i=-len*4, j=len*4-16; i<0; i+=16, j-=16) {
@@ -117,9 +111,9 @@ static void vector_fmul_window_altivec(float *dst, const float *src0, const floa
         s1 = vec_perm(s1, s1, reverse);
         wj = vec_perm(wj, wj, reverse);
 
-        t0 = vec_madd(s0, wj, vadd_bias);
+        t0 = vec_madd(s0, wj, zero);
         t0 = vec_nmsub(s1, wi, t0);
-        t1 = vec_madd(s0, wi, vadd_bias);
+        t1 = vec_madd(s0, wi, zero);
         t1 = vec_madd(s1, wj, t1);
         t1 = vec_perm(t1, t1, reverse);
 

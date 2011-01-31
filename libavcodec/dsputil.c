@@ -3776,7 +3776,9 @@ static void vector_fmul_add_c(float *dst, const float *src0, const float *src1, 
         dst[i] = src0[i] * src1[i] + src2[i];
 }
 
-void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1, const float *win, float add_bias, int len){
+static void vector_fmul_window_c(float *dst, const float *src0,
+                                 const float *src1, const float *win, int len)
+{
     int i,j;
     dst += len;
     win += len;
@@ -3786,8 +3788,8 @@ void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1, c
         float s1 = src1[j];
         float wi = win[i];
         float wj = win[j];
-        dst[i] = s0*wj - s1*wi + add_bias;
-        dst[j] = s0*wi + s1*wj + add_bias;
+        dst[i] = s0*wj - s1*wi;
+        dst[j] = s0*wi + s1*wj;
     }
 }
 
@@ -4434,7 +4436,7 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_fmul = vector_fmul_c;
     c->vector_fmul_reverse = vector_fmul_reverse_c;
     c->vector_fmul_add = vector_fmul_add_c;
-    c->vector_fmul_window = ff_vector_fmul_window_c;
+    c->vector_fmul_window = vector_fmul_window_c;
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
     c->vector_clipf = vector_clipf_c;
     c->float_to_int16 = ff_float_to_int16_c;

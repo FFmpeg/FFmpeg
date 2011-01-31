@@ -34,7 +34,7 @@ void ff_synth_filter_float_neon(FFTContext *imdct,
                                 float *synth_buf_ptr, int *synth_buf_offset,
                                 float synth_buf2[32], const float window[512],
                                 float out[32], const float in[32],
-                                float scale, float bias);
+                                float scale);
 
 av_cold void ff_fft_init_arm(FFTContext *s)
 {
