@@ -68,8 +68,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     int n = 0;
 
     if (!args ||
-        (n = sscanf(args, "%d:%d:%127[^:]:%d:%d", &c->w, &c->h, pix_fmt_str, &c->time_base.num, &c->time_base.den)) != 5) {
-        av_log(ctx, AV_LOG_ERROR, "Expected 5 arguments, but only %d found in '%s'\n", n, args);
+        (n = sscanf(args, "%d:%d:%127[^:]:%d:%d:%d:%d", &c->w, &c->h, pix_fmt_str,
+                    &c->time_base.num, &c->time_base.den,
+                    &c->pixel_aspect.num, &c->pixel_aspect.den)) != 7) {
+        av_log(ctx, AV_LOG_ERROR, "Expected 7 arguments, but only %d found in '%s'\n", n, args);
         return AVERROR(EINVAL);
     }
     if ((c->pix_fmt = av_get_pix_fmt(pix_fmt_str)) == PIX_FMT_NONE) {
@@ -100,6 +102,7 @@ static int config_props(AVFilterLink *link)
 
     link->w = c->w;
     link->h = c->h;
+    link->sample_aspect_ratio = c->pixel_aspect;
     link->time_base = c->time_base;
 
     return 0;
