@@ -112,22 +112,22 @@ version.h .version:
 
 alltools: $(TOOLS)
 
-documentation: $(addprefix doc/, developer.html faq.html general.html libavfilter.html \
-                                 $(ALLHTMLPAGES) $(ALLMANPAGES))
+DOCS = $(addprefix doc/, developer.html faq.html general.html libavfilter.html $(ALLHTMLPAGES) $(ALLMANPAGES))
 
-$(HTMLPAGES) $(PODPAGES): doc/fftools-common-opts.texi
+documentation: $(DOCS)
 
-doc/ffmpeg.pod doc/ffmpeg.html: doc/demuxers.texi doc/bitstream_filters.texi doc/eval.texi doc/indevs.texi doc/filters.texi doc/outdevs.texi doc/protocols.texi doc/metadata.texi
-doc/ffplay.pod doc/ffplay.html: doc/demuxers.texi doc/eval.texi doc/indevs.texi doc/filters.texi doc/outdevs.texi doc/protocols.texi
-doc/ffprobe.pod doc/ffprobe.html: doc/demuxers.texi doc/indevs.texi doc/protocols.texi
-doc/libavfilter.html: doc/filters.texi
+-include $(wildcard $(DOCS:%=%.d))
+
+TEXIDEP = awk '/^@include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 
 doc/%.html: TAG = HTML
 doc/%.html: doc/%.texi $(SRC_PATH_BARE)/doc/t2h.init
+	$(Q)$(TEXIDEP)
 	$(M)cd doc && texi2html -monolithic --init-file $(SRC_PATH_BARE)/doc/t2h.init $(<:doc/%=%)
 
 doc/%.pod: TAG = POD
 doc/%.pod: doc/%.texi
+	$(Q)$(TEXIDEP)
 	$(M)doc/texi2pod.pl $< $@
 
 doc/%.1: TAG = MAN
