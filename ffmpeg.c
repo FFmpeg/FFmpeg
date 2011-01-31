@@ -355,13 +355,21 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
     AVCodecContext *codec = ost->st->codec;
     AVCodecContext *icodec = ist->st->codec;
     FFSinkContext ffsink_ctx = { .pix_fmt = codec->pix_fmt };
+    AVRational sample_aspect_ratio;
     char args[255];
     int ret;
 
     graph = avfilter_graph_alloc();
 
-    snprintf(args, 255, "%d:%d:%d:%d:%d", ist->st->codec->width,
-             ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE);
+    if (ist->st->sample_aspect_ratio.num){
+        sample_aspect_ratio = ist->st->sample_aspect_ratio;
+    }else
+        sample_aspect_ratio = ist->st->codec->sample_aspect_ratio;
+
+    snprintf(args, 255, "%d:%d:%d:%d:%d:%d:%d", ist->st->codec->width,
+             ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE,
+             sample_aspect_ratio.num, sample_aspect_ratio.den);
+
     ret = avfilter_graph_create_filter(&ist->input_video_filter, avfilter_get_by_name("buffer"),
                                        "src", args, NULL, graph);
     if (ret < 0)
@@ -415,6 +423,8 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
 
     codec->width  = ist->output_video_filter->inputs[0]->w;
     codec->height = ist->output_video_filter->inputs[0]->h;
+    codec->sample_aspect_ratio = ost->st->sample_aspect_ratio =
+        ist->output_video_filter->inputs[0]->sample_aspect_ratio;
 
     return 0;
 }
@@ -2845,6 +2855,10 @@ static void opt_frame_aspect_ratio(const char *arg)
         ffmpeg_exit(1);
     }
     frame_aspect_ratio = ar;
+
+    x = vfilters ? strlen(vfilters) : 0;
+    vfilters = av_realloc(vfilters, x+100);
+    snprintf(vfilters+x, x+100, "%csetdar=%f\n", x?',':' ', ar);
 }
 
 static int opt_metadata(const char *opt, const char *arg)
