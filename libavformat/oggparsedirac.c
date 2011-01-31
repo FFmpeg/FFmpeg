@@ -42,7 +42,7 @@ static int dirac_header(AVFormatContext *s, int idx)
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_DIRAC;
     // dirac in ogg always stores timestamps as though the video were interlaced
-    st->time_base = (AVRational){st->codec->time_base.num, 2*st->codec->time_base.den};
+    av_set_pts_info(st, 64, st->codec->time_base.num, 2*st->codec->time_base.den);
     return 1;
 }
 
@@ -79,8 +79,7 @@ static int old_dirac_header(AVFormatContext *s, int idx)
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_DIRAC;
-    st->time_base.den = AV_RB32(buf+8);
-    st->time_base.num = AV_RB32(buf+12);
+    av_set_pts_info(st, 64, AV_RB32(buf+12), AV_RB32(buf+8));
     return 1;
 }
 
