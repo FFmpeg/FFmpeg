@@ -109,4 +109,26 @@ ffmpeg -i file.mpg -acodec copy -vcodec copy \
      -y out.ts
 @end example
 
+@section null
+
+Null muxer.
+
+This muxer does not generate any output file, it is mainly useful for
+testing or benchmarking purposes.
+
+For example to benchmark decoding with @file{ffmpeg} you can use the
+command:
+@example
+ffmpeg -benchmark -i INPUT -f null out.null
+@end example
+
+Note that the above command does not read or write the @file{out.null}
+file, but specifying the output file is required by the @file{ffmpeg}
+syntax.
+
+Alternatively you can write the command as:
+@example
+ffmpeg -benchmark -i INPUT -f null -
+@end example
+
 @c man end MUXERS
