@@ -96,6 +96,19 @@
 #endif
 #endif
 
+/**
+ * Mark a variable as used and prevent the compiler from optimizing it
+ * away.  This is useful for variables accessed only from inline
+ * assembler without the compiler being aware.
+ */
+#ifndef av_used
+#if AV_GCC_VERSION_AT_LEAST(3,1)
+#    define av_used __attribute__((used))
+#else
+#    define av_used
+#endif
+#endif
+
 #ifndef av_alias
 #if (!defined(__ICC) || __ICC > 1200) && AV_GCC_VERSION_AT_LEAST(3,3)
 #   define av_alias __attribute__((may_alias))
