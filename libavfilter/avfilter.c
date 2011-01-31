@@ -194,6 +194,10 @@ int avfilter_config_links(AVFilterContext *filter)
                 link->time_base = link->src && link->src->input_count ?
                     link->src->inputs[0]->time_base : AV_TIME_BASE_Q;
 
+            if (link->sample_aspect_ratio.num == 0 && link->sample_aspect_ratio.den == 0)
+                link->sample_aspect_ratio = link->src->input_count ?
+                    link->src->inputs[0]->sample_aspect_ratio : (AVRational){1,1};
+
             if ((config_link = link->dstpad->config_props))
                 if ((ret = config_link(link)) < 0)
                     return ret;
