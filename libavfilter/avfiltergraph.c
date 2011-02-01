@@ -32,14 +32,15 @@ AVFilterGraph *avfilter_graph_alloc(void)
     return av_mallocz(sizeof(AVFilterGraph));
 }
 
-void avfilter_graph_free(AVFilterGraph *graph)
+void avfilter_graph_free(AVFilterGraph **graph)
 {
-    if (!graph)
+    if (!*graph)
         return;
-    for (; graph->filter_count > 0; graph->filter_count --)
-        avfilter_free(graph->filters[graph->filter_count - 1]);
-    av_freep(&graph->scale_sws_opts);
-    av_freep(&graph->filters);
+    for (; (*graph)->filter_count > 0; (*graph)->filter_count--)
+        avfilter_free((*graph)->filters[(*graph)->filter_count - 1]);
+    av_freep(&(*graph)->scale_sws_opts);
+    av_freep(&(*graph)->filters);
+    av_freep(graph);
 }
 
 int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
