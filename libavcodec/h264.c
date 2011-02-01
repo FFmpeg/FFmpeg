@@ -3396,6 +3396,7 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_H264_HIGH_10_INTRA,        "High 10 Intra"         },
     { FF_PROFILE_H264_HIGH_422,             "High 4:2:2"            },
     { FF_PROFILE_H264_HIGH_422_INTRA,       "High 4:2:2 Intra"      },
+    { FF_PROFILE_H264_HIGH_444,             "High 4:4:4"            },
     { FF_PROFILE_H264_HIGH_444_PREDICTIVE,  "High 4:4:4 Predictive" },
     { FF_PROFILE_H264_HIGH_444_INTRA,       "High 4:4:4 Intra"      },
     { FF_PROFILE_H264_CAVLC_444,            "CAVLC 4:4:4"           },
