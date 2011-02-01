@@ -13,6 +13,11 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-06-06 - xxxxxx - lavfi 2.14.0 - AVFilterBufferRefAudioProps
+  Remove AVFilterBufferRefAudioProps.size, and use nb_samples in
+  avfilter_get_audio_buffer() and avfilter_default_get_audio_buffer() in
+  place of size.
+
 2011-06-06 - xxxxxx - lavu 51.6.0 - av_samples_alloc()
   Switch nb_channels and nb_samples parameters order in
   av_samples_alloc().

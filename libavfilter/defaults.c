@@ -81,7 +81,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
 }
 
 AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int perms,
-                                                     enum AVSampleFormat sample_fmt, int size,
+                                                     enum AVSampleFormat sample_fmt, int nb_samples,
                                                      int64_t channel_layout, int planar)
 {
     AVFilterBuffer *samples = av_mallocz(sizeof(AVFilterBuffer));
@@ -100,7 +100,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
         goto fail;
 
     ref->audio->channel_layout = channel_layout;
-    ref->audio->size           = size;
+    ref->audio->nb_samples     = nb_samples;
     ref->audio->planar         = planar;
 
     /* make sure the buffer gets read permission or it's useless for output */
@@ -112,8 +112,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
     sample_size = av_get_bits_per_sample_fmt(sample_fmt) >>3;
     chans_nb = av_get_channel_layout_nb_channels(channel_layout);
 
-    per_channel_size = size/chans_nb;
-    ref->audio->nb_samples = per_channel_size/sample_size;
+    per_channel_size = nb_samples * sample_size;
 
     /* Set the number of bytes to traverse to reach next sample of a particular channel:
      * For planar, this is simply the sample size.
@@ -124,7 +123,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
     memset(&samples->linesize[chans_nb], 0, (8-chans_nb) * sizeof(samples->linesize[0]));
 
     /* Calculate total buffer size, round to multiple of 16 to be SIMD friendly */
-    bufsize = (size + 15)&~15;
+    bufsize = (nb_samples * chans_nb * sample_size + 15)&~15;
     buf = av_malloc(bufsize);
     if (!buf)
         goto fail;
@@ -212,7 +211,7 @@ void avfilter_default_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *sa
 
     if (outlink) {
         outlink->out_buf = avfilter_default_get_audio_buffer(inlink, AV_PERM_WRITE, samplesref->format,
-                                                             samplesref->audio->size,
+                                                             samplesref->audio->nb_samples,
                                                              samplesref->audio->channel_layout,
                                                              samplesref->audio->planar);
         outlink->out_buf->pts                = samplesref->pts;

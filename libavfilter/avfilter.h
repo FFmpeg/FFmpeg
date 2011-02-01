@@ -26,7 +26,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 13
+#define LIBAVFILTER_VERSION_MINOR 14
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -98,8 +98,7 @@ typedef struct AVFilterBuffer {
  */
 typedef struct AVFilterBufferRefAudioProps {
     int64_t channel_layout;     ///< channel layout of audio buffer
-    int nb_samples;             ///< number of audio samples
-    int size;                   ///< audio buffer size
+    int nb_samples;             ///< number of audio samples per channel
     uint32_t sample_rate;       ///< audio buffer sample rate
     int planar;                 ///< audio buffer - planar or packed
 } AVFilterBufferRefAudioProps;
@@ -372,7 +371,7 @@ struct AVFilterPad {
      * Input audio pads only.
      */
     AVFilterBufferRef *(*get_audio_buffer)(AVFilterLink *link, int perms,
-                                           enum AVSampleFormat sample_fmt, int size,
+                                           enum AVSampleFormat sample_fmt, int nb_samples,
                                            int64_t channel_layout, int planar);
 
     /**
@@ -461,7 +460,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
 
 /** default handler for get_audio_buffer() for audio inputs */
 AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int perms,
-                                                     enum AVSampleFormat sample_fmt, int size,
+                                                     enum AVSampleFormat sample_fmt, int nb_samples,
                                                      int64_t channel_layout, int planar);
 
 /**
@@ -684,14 +683,14 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int lin
  *                       be requested
  * @param perms          the required access permissions
  * @param sample_fmt     the format of each sample in the buffer to allocate
- * @param size           the buffer size in bytes
+ * @param nb_samples     the number of samples per channel
  * @param channel_layout the number and type of channels per sample in the buffer to allocate
  * @param planar         audio data layout - planar or packed
  * @return               A reference to the samples. This must be unreferenced with
  *                       avfilter_unref_buffer when you are finished with it.
  */
 AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
-                                             enum AVSampleFormat sample_fmt, int size,
+                                             enum AVSampleFormat sample_fmt, int nb_samples,
                                              int64_t channel_layout, int planar);
 
 /**
