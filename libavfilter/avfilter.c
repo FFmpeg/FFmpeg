@@ -265,10 +265,9 @@ static void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
                 av_get_picture_type_char(ref->video->pict_type));
     }
     if (ref->audio) {
-        av_dlog(ctx, " cl:%"PRId64"d sn:%d s:%d sr:%d p:%d",
+        av_dlog(ctx, " cl:%"PRId64"d n:%d r:%d p:%d",
                 ref->audio->channel_layout,
                 ref->audio->nb_samples,
-                ref->audio->size,
                 ref->audio->sample_rate,
                 ref->audio->planar);
     }
@@ -368,16 +367,16 @@ fail:
 }
 
 AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
-                                             enum AVSampleFormat sample_fmt, int size,
-                                             uint64_t channel_layout, int planar)
+                                             enum AVSampleFormat sample_fmt, int nb_samples,
+                                             uint64_t channel_layout)
 {
     AVFilterBufferRef *ret = NULL;
 
     if (link->dstpad->get_audio_buffer)
-        ret = link->dstpad->get_audio_buffer(link, perms, sample_fmt, size, channel_layout, planar);
+        ret = link->dstpad->get_audio_buffer(link, perms, sample_fmt, nb_samples, channel_layout);
 
     if (!ret)
-        ret = avfilter_default_get_audio_buffer(link, perms, sample_fmt, size, channel_layout, planar);
+        ret = avfilter_default_get_audio_buffer(link, perms, sample_fmt, nb_samples, channel_layout);
 
     if (ret)
         ret->type = AVMEDIA_TYPE_AUDIO;
@@ -585,6 +584,9 @@ void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     /* prepare to copy the samples if the buffer has insufficient permissions */
     if ((dst->min_perms & samplesref->perms) != dst->min_perms ||
         dst->rej_perms & samplesref->perms) {
+        int  i, planar = av_sample_fmt_is_planar(samplesref->format);
+        int planes = !planar ? 1:
+                     av_get_channel_layout_nb_channels(samplesref->audio->channel_layout);
 
         av_log(link->dst, AV_LOG_DEBUG,
                "Copying audio data in avfilter (have perms %x, need %x, reject %x)\n",
@@ -592,14 +594,14 @@ void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
 
         link->cur_buf = avfilter_default_get_audio_buffer(link, dst->min_perms,
                                                           samplesref->format,
-                                                          samplesref->audio->size,
-                                                          samplesref->audio->channel_layout,
-                                                          samplesref->audio->planar);
+                                                          samplesref->audio->nb_samples,
+                                                          samplesref->audio->channel_layout);
         link->cur_buf->pts                = samplesref->pts;
         link->cur_buf->audio->sample_rate = samplesref->audio->sample_rate;
 
         /* Copy actual data into new samples buffer */
-        memcpy(link->cur_buf->data[0], samplesref->data[0], samplesref->audio->size);
+        for (i = 0; i < planes; i++)
+            memcpy(link->cur_buf->extended_data[i], samplesref->extended_data[i], samplesref->linesize[0]);
 
         avfilter_unref_buffer(samplesref);
     } else
