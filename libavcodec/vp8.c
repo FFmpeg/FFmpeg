@@ -30,6 +30,10 @@
 #include "h264pred.h"
 #include "rectangle.h"
 
+#if ARCH_ARM
+#   include "arm/vp8.h"
+#endif
+
 typedef struct {
     uint8_t filter_level;
     uint8_t inner_limit;
@@ -801,6 +805,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
     }
 }
 
+#ifndef decode_block_coeffs_internal
 /**
  * @param c arithmetic bitstream reader context
  * @param block destination for block coefficients
@@ -854,7 +859,7 @@ skip_eob:
                     int b = vp56_rac_get_prob(c, token_prob[9+a]);
                     int cat = (a<<1) + b;
                     coeff  = 3 + (8<<cat);
-                    coeff += vp8_rac_get_coeff(c, vp8_dct_cat_prob[cat]);
+                    coeff += vp8_rac_get_coeff(c, ff_vp8_dct_cat_prob[cat]);
                 }
             }
             token_prob = probs[i+1][2];
@@ -864,6 +869,7 @@ skip_eob:
 
     return i;
 }
+#endif
 
 static av_always_inline
 int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
