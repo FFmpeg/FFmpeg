@@ -479,6 +479,8 @@ void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     void (*filter_samples)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = link->dstpad;
 
+    FF_DPRINTF_START(NULL, filter_samples); ff_dlog_link(NULL, link, 1);
+
     if (!(filter_samples = dst->filter_samples))
         filter_samples = avfilter_default_filter_samples;
 
