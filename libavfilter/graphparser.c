@@ -393,7 +393,9 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
     return 0;
 
  fail:
-    avfilter_graph_free(graph);
+    for (; graph->filter_count > 0; graph->filter_count--)
+        avfilter_free(graph->filters[graph->filter_count - 1]);
+    av_freep(&graph->filters);
     free_inout(open_inputs);
     free_inout(open_outputs);
     free_inout(curr_inputs);
