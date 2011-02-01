@@ -532,6 +532,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
             if (rtsp_st->dynamic_handler && rtsp_st->dynamic_protocol_context)
                 rtsp_st->dynamic_handler->close(
                     rtsp_st->dynamic_protocol_context);
+            av_free(rtsp_st);
         }
     }
     av_free(rt->rtsp_streams);
