@@ -1782,30 +1782,20 @@ static AVFilter input_filter =
                                   { .name = NULL }},
 };
 
-#endif  /* CONFIG_AVFILTER */
-
-static int video_thread(void *arg)
+static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const char *vfilters)
 {
-    VideoState *is = arg;
-    AVFrame *frame= avcodec_alloc_frame();
-    int64_t pts_int;
-    double pts;
-    int ret;
-
-#if CONFIG_AVFILTER
-    int64_t pos;
     char sws_flags_str[128];
+    int ret;
     FFSinkContext ffsink_ctx = { .pix_fmt = PIX_FMT_YUV420P };
     AVFilterContext *filt_src = NULL, *filt_out = NULL;
-    AVFilterGraph *graph = avfilter_graph_alloc();
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
-    if (avfilter_graph_create_filter(&filt_src, &input_filter, "src",
-                                     NULL, is, graph) < 0)
+    if ((ret = avfilter_graph_create_filter(&filt_src, &input_filter, "src",
+                                            NULL, is, graph)) < 0)
         goto the_end;
-    if (avfilter_graph_create_filter(&filt_out, &ffsink, "out",
-                                     NULL, &ffsink_ctx, graph) < 0)
+    if ((ret = avfilter_graph_create_filter(&filt_out, &ffsink, "out",
+                                            NULL, &ffsink_ctx, graph)) < 0)
         goto the_end;
 
     if(vfilters) {
@@ -1822,17 +1812,40 @@ static int video_thread(void *arg)
         inputs->pad_idx = 0;
         inputs->next    = NULL;
 
-        if (avfilter_graph_parse(graph, vfilters, inputs, outputs, NULL) < 0)
+        if ((ret = avfilter_graph_parse(graph, vfilters, inputs, outputs, NULL)) < 0)
             goto the_end;
         av_freep(&vfilters);
     } else {
-        if(avfilter_link(filt_src, 0, filt_out, 0) < 0)          goto the_end;
+        if ((ret = avfilter_link(filt_src, 0, filt_out, 0)) < 0)
+            goto the_end;
     }
 
-    if (avfilter_graph_config(graph, NULL) < 0)
+    if ((ret = avfilter_graph_config(graph, NULL)) < 0)
         goto the_end;
 
     is->out_video_filter = filt_out;
+the_end:
+    return ret;
+}
+
+#endif  /* CONFIG_AVFILTER */
+
+static int video_thread(void *arg)
+{
+    VideoState *is = arg;
+    AVFrame *frame= avcodec_alloc_frame();
+    int64_t pts_int;
+    double pts;
+    int ret;
+
+#if CONFIG_AVFILTER
+    AVFilterGraph *graph = avfilter_graph_alloc();
+    AVFilterContext *filt_out = NULL;
+    int64_t pos;
+
+    if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
+        goto the_end;
+    filt_out = is->out_video_filter;
 #endif
 
     for(;;) {
