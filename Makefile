@@ -112,7 +112,7 @@ version.h .version:
 
 alltools: $(TOOLS)
 
-DOCS = $(addprefix doc/, developer.html faq.html general.html libavfilter.html $(ALLHTMLPAGES) $(ALLMANPAGES))
+DOCS = $(addprefix doc/, developer.html faq.html general.html libavfilter.html) $(HTMLPAGES) $(MANPAGES) $(PODPAGES)
 
 documentation: $(DOCS)
 
