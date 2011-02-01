@@ -1193,6 +1193,13 @@ void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
                        s->filter.simple, 0);
 }
 
+static const uint8_t subpel_idx[3][8] = {
+    { 0, 1, 2, 1, 2, 1, 2, 1 }, // nr. of left extra pixels,
+                                // also function pointer index
+    { 0, 3, 5, 3, 5, 3, 5, 3 }, // nr. of extra pixels required
+    { 0, 2, 3, 2, 3, 2, 3, 2 }, // nr. of right extra pixels
+};
+
 /**
  * Generic MC function.
  *
@@ -1211,37 +1218,70 @@ void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
  * @param mc_func motion compensation function pointers (bilinear or sixtap MC)
  */
 static av_always_inline
-void vp8_mc(VP8Context *s, int luma,
-            uint8_t *dst, uint8_t *src, const VP56mv *mv,
-            int x_off, int y_off, int block_w, int block_h,
-            int width, int height, int linesize,
-            vp8_mc_func mc_func[3][3])
+void vp8_mc_luma(VP8Context *s, uint8_t *dst, uint8_t *src, const VP56mv *mv,
+                 int x_off, int y_off, int block_w, int block_h,
+                 int width, int height, int linesize,
+                 vp8_mc_func mc_func[3][3])
 {
     if (AV_RN32A(mv)) {
-        static const uint8_t idx[3][8] = {
-            { 0, 1, 2, 1, 2, 1, 2, 1 }, // nr. of left extra pixels,
-                                        // also function pointer index
-            { 0, 3, 5, 3, 5, 3, 5, 3 }, // nr. of extra pixels required
-            { 0, 2, 3, 2, 3, 2, 3, 2 }, // nr. of right extra pixels
-        };
-        int mx = (mv->x << luma)&7, mx_idx = idx[0][mx];
-        int my = (mv->y << luma)&7, my_idx = idx[0][my];
 
-        x_off += mv->x >> (3 - luma);
-        y_off += mv->y >> (3 - luma);
+        int mx = (mv->x << 1)&7, mx_idx = subpel_idx[0][mx];
+        int my = (mv->y << 1)&7, my_idx = subpel_idx[0][my];
+
+        x_off += mv->x >> 2;
+        y_off += mv->y >> 2;
 
         // edge emulation
         src += y_off * linesize + x_off;
-        if (x_off < mx_idx || x_off >= width  - block_w - idx[2][mx] ||
-            y_off < my_idx || y_off >= height - block_h - idx[2][my]) {
+        if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
+            y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
             s->dsp.emulated_edge_mc(s->edge_emu_buffer, src - my_idx * linesize - mx_idx, linesize,
-                                block_w + idx[1][mx], block_h + idx[1][my],
-                                x_off - mx_idx, y_off - my_idx, width, height);
+                                    block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+                                    x_off - mx_idx, y_off - my_idx, width, height);
             src = s->edge_emu_buffer + mx_idx + linesize * my_idx;
         }
         mc_func[my_idx][mx_idx](dst, linesize, src, linesize, block_h, mx, my);
     } else
         mc_func[0][0](dst, linesize, src + y_off * linesize + x_off, linesize, block_h, 0, 0);
+}
+
+static av_always_inline
+void vp8_mc_chroma(VP8Context *s, uint8_t *dst1, uint8_t *dst2, uint8_t *src1,
+                   uint8_t *src2, const VP56mv *mv, int x_off, int y_off,
+                   int block_w, int block_h, int width, int height, int linesize,
+                   vp8_mc_func mc_func[3][3])
+{
+    if (AV_RN32A(mv)) {
+        int mx = mv->x&7, mx_idx = subpel_idx[0][mx];
+        int my = mv->y&7, my_idx = subpel_idx[0][my];
+
+        x_off += mv->x >> 3;
+        y_off += mv->y >> 3;
+
+        // edge emulation
+        src1 += y_off * linesize + x_off;
+        src2 += y_off * linesize + x_off;
+        if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
+            y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
+            s->dsp.emulated_edge_mc(s->edge_emu_buffer, src1 - my_idx * linesize - mx_idx, linesize,
+                                    block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+                                    x_off - mx_idx, y_off - my_idx, width, height);
+            src1 = s->edge_emu_buffer + mx_idx + linesize * my_idx;
+            mc_func[my_idx][mx_idx](dst1, linesize, src1, linesize, block_h, mx, my);
+
+            s->dsp.emulated_edge_mc(s->edge_emu_buffer, src2 - my_idx * linesize - mx_idx, linesize,
+                                    block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+                                    x_off - mx_idx, y_off - my_idx, width, height);
+            src2 = s->edge_emu_buffer + mx_idx + linesize * my_idx;
+            mc_func[my_idx][mx_idx](dst2, linesize, src2, linesize, block_h, mx, my);
+        } else {
+            mc_func[my_idx][mx_idx](dst1, linesize, src1, linesize, block_h, mx, my);
+            mc_func[my_idx][mx_idx](dst2, linesize, src2, linesize, block_h, mx, my);
+        }
+    } else {
+        mc_func[0][0](dst1, linesize, src1 + y_off * linesize + x_off, linesize, block_h, 0, 0);
+        mc_func[0][0](dst2, linesize, src2 + y_off * linesize + x_off, linesize, block_h, 0, 0);
+    }
 }
 
 static av_always_inline
@@ -1254,10 +1294,10 @@ void vp8_mc_part(VP8Context *s, uint8_t *dst[3],
     VP56mv uvmv = *mv;
 
     /* Y */
-    vp8_mc(s, 1, dst[0] + by_off * s->linesize + bx_off,
-           ref_frame->data[0], mv, x_off + bx_off, y_off + by_off,
-           block_w, block_h, width, height, s->linesize,
-           s->put_pixels_tab[block_w == 8]);
+    vp8_mc_luma(s, dst[0] + by_off * s->linesize + bx_off,
+                ref_frame->data[0], mv, x_off + bx_off, y_off + by_off,
+                block_w, block_h, width, height, s->linesize,
+                s->put_pixels_tab[block_w == 8]);
 
     /* U/V */
     if (s->profile == 3) {
@@ -1268,14 +1308,11 @@ void vp8_mc_part(VP8Context *s, uint8_t *dst[3],
     bx_off  >>= 1; by_off  >>= 1;
     width   >>= 1; height  >>= 1;
     block_w >>= 1; block_h >>= 1;
-    vp8_mc(s, 0, dst[1] + by_off * s->uvlinesize + bx_off,
-           ref_frame->data[1], &uvmv, x_off + bx_off, y_off + by_off,
-           block_w, block_h, width, height, s->uvlinesize,
-           s->put_pixels_tab[1 + (block_w == 4)]);
-    vp8_mc(s, 0, dst[2] + by_off * s->uvlinesize + bx_off,
-           ref_frame->data[2], &uvmv, x_off + bx_off, y_off + by_off,
-           block_w, block_h, width, height, s->uvlinesize,
-           s->put_pixels_tab[1 + (block_w == 4)]);
+    vp8_mc_chroma(s, dst[1] + by_off * s->uvlinesize + bx_off,
+                  dst[2] + by_off * s->uvlinesize + bx_off, ref_frame->data[1],
+                  ref_frame->data[2], &uvmv, x_off + bx_off, y_off + by_off,
+                  block_w, block_h, width, height, s->uvlinesize,
+                  s->put_pixels_tab[1 + (block_w == 4)]);
 }
 
 /* Fetch pixels for estimated mv 4 macroblocks ahead.
@@ -1319,11 +1356,11 @@ void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
         /* Y */
         for (y = 0; y < 4; y++) {
             for (x = 0; x < 4; x++) {
-                vp8_mc(s, 1, dst[0] + 4*y*s->linesize + x*4,
-                       ref->data[0], &bmv[4*y + x],
-                       4*x + x_off, 4*y + y_off, 4, 4,
-                       width, height, s->linesize,
-                       s->put_pixels_tab[2]);
+                vp8_mc_luma(s, dst[0] + 4*y*s->linesize + x*4,
+                            ref->data[0], &bmv[4*y + x],
+                            4*x + x_off, 4*y + y_off, 4, 4,
+                            width, height, s->linesize,
+                            s->put_pixels_tab[2]);
             }
         }
 
@@ -1345,16 +1382,12 @@ void inter_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
                     uvmv.x &= ~7;
                     uvmv.y &= ~7;
                 }
-                vp8_mc(s, 0, dst[1] + 4*y*s->uvlinesize + x*4,
-                       ref->data[1], &uvmv,
-                       4*x + x_off, 4*y + y_off, 4, 4,
-                       width, height, s->uvlinesize,
-                       s->put_pixels_tab[2]);
-                vp8_mc(s, 0, dst[2] + 4*y*s->uvlinesize + x*4,
-                       ref->data[2], &uvmv,
-                       4*x + x_off, 4*y + y_off, 4, 4,
-                       width, height, s->uvlinesize,
-                       s->put_pixels_tab[2]);
+                vp8_mc_chroma(s, dst[1] + 4*y*s->uvlinesize + x*4,
+                              dst[2] + 4*y*s->uvlinesize + x*4,
+                              ref->data[1], ref->data[2], &uvmv,
+                              4*x + x_off, 4*y + y_off, 4, 4,
+                              width, height, s->uvlinesize,
+                              s->put_pixels_tab[2]);
             }
         }
         break;
