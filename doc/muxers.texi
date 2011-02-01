@@ -18,6 +18,7 @@ enabled muxers.
 
 A description of some of the currently available muxers follows.
 
+@anchor{crc}
 @section crc
 
 CRC (Cyclic Redundancy Check) testing format.
@@ -49,6 +50,45 @@ and the input video converted to MPEG-2 video, use the command:
 @example
 ffmpeg -i INPUT -acodec pcm_u8 -vcodec mpeg2video -f crc -
 @end example
+
+See also the @code{framecrc} muxer (@pxref{framecrc}).
+
+@anchor{framecrc}
+@section framecrc
+
+Per-frame CRC (Cyclic Redundancy Check) testing format.
+
+This muxer computes and prints the Adler-32 CRC for each decoded audio
+and video frame. By default audio frames are converted to signed
+16-bit raw audio and video frames to raw video before computing the
+CRC.
+
+The output of the muxer consists of a line for each audio and video
+frame of the form: @var{stream_index}, @var{frame_dts},
+@var{frame_size}, 0x@var{CRC}, where @var{CRC} is a hexadecimal
+number 0-padded to 8 digits containing the CRC of the decoded frame.
+
+For example to compute the CRC of each decoded frame in the input, and
+store it in the file @file{out.crc}:
+@example
+ffmpeg -i INPUT -f framecrc out.crc
+@end example
+
+You can print the CRC of each decoded frame to stdout with the command:
+@example
+ffmpeg -i INPUT -f framecrc -
+@end example
+
+You can select the output format of each frame with @file{ffmpeg} by
+specifying the audio and video codec and format. For example, to
+compute the CRC of each decoded input audio frame converted to PCM
+unsigned 8-bit and of each decoded input video frame converted to
+MPEG-2 video, use the command:
+@example
+ffmpeg -i INPUT -acodec pcm_u8 -vcodec mpeg2video -f framecrc -
+@end example
+
+See also the @code{crc} muxer (@pxref{crc}).
 
 @section image2
 
