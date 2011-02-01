@@ -1664,8 +1664,80 @@ QPEL_2TAP(avg_,  8, 3dnow)
 static void just_return(void) { return; }
 #endif
 
-static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
-                    int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height){
+#if HAVE_YASM
+typedef void emu_edge_core_func (uint8_t *buf, const uint8_t *src,
+                                 x86_reg linesize, x86_reg start_y,
+                                 x86_reg end_y, x86_reg block_h,
+                                 x86_reg start_x, x86_reg end_x,
+                                 x86_reg block_w);
+extern emu_edge_core_func ff_emu_edge_core_mmx;
+extern emu_edge_core_func ff_emu_edge_core_sse;
+
+static av_always_inline
+void emulated_edge_mc(uint8_t *buf, const uint8_t *src, int linesize,
+                      int block_w, int block_h,
+                      int src_x, int src_y, int w, int h,
+                      emu_edge_core_func *core_fn)
+{
+    int start_y, start_x, end_y, end_x, src_y_add=0;
+
+    if(src_y>= h){
+        src_y_add = h-1-src_y;
+        src_y=h-1;
+    }else if(src_y<=-block_h){
+        src_y_add = 1-block_h-src_y;
+        src_y=1-block_h;
+    }
+    if(src_x>= w){
+        src+= (w-1-src_x);
+        src_x=w-1;
+    }else if(src_x<=-block_w){
+        src+= (1-block_w-src_x);
+        src_x=1-block_w;
+    }
+
+    start_y= FFMAX(0, -src_y);
+    start_x= FFMAX(0, -src_x);
+    end_y= FFMIN(block_h, h-src_y);
+    end_x= FFMIN(block_w, w-src_x);
+    assert(start_x < end_x && block_w > 0);
+    assert(start_y < end_y && block_h > 0);
+
+    // fill in the to-be-copied part plus all above/below
+    src += (src_y_add+start_y)*linesize + start_x;
+    buf += start_x;
+    core_fn(buf, src, linesize, start_y, end_y, block_h, start_x, end_x, block_w);
+}
+
+#if ARCH_X86_32
+static av_noinline
+void emulated_edge_mc_mmx(uint8_t *buf, const uint8_t *src, int linesize,
+                          int block_w, int block_h,
+                          int src_x, int src_y, int w, int h)
+{
+    emulated_edge_mc(buf, src, linesize, block_w, block_h, src_x, src_y,
+                     w, h, &ff_emu_edge_core_mmx);
+}
+#endif
+static av_noinline
+void emulated_edge_mc_sse(uint8_t *buf, const uint8_t *src, int linesize,
+                          int block_w, int block_h,
+                          int src_x, int src_y, int w, int h)
+{
+    emulated_edge_mc(buf, src, linesize, block_w, block_h, src_x, src_y,
+                     w, h, &ff_emu_edge_core_sse);
+}
+#endif /* HAVE_YASM */
+
+typedef void emulated_edge_mc_func (uint8_t *dst, const uint8_t *src,
+                                    int linesize, int block_w, int block_h,
+                                    int src_x, int src_y, int w, int h);
+
+static av_always_inline
+void gmc(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
+         int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height,
+         emulated_edge_mc_func *emu_edge_fn)
+{
     const int w = 8;
     const int ix = ox>>(16+shift);
     const int iy = oy>>(16+shift);
@@ -1701,7 +1773,7 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
     if( (unsigned)ix >= width-w ||
         (unsigned)iy >= height-h )
     {
-        ff_emulated_edge_mc(edge_buf, src, stride, w+1, h+1, ix, iy, width, height);
+        emu_edge_fn(edge_buf, src, stride, w+1, h+1, ix, iy, width, height);
         src = edge_buf;
     }
 
@@ -1781,6 +1853,30 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
         src += 4-h*stride;
     }
 }
+
+#if HAVE_YASM
+#if ARCH_X86_32
+static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
+                    int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height)
+{
+    gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
+        width, height, &emulated_edge_mc_mmx);
+}
+#endif
+static void gmc_sse(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
+                    int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height)
+{
+    gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
+        width, height, &emulated_edge_mc_sse);
+}
+#else
+static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
+                    int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height)
+{
+    gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
+        width, height, &ff_emulated_edge_mc);
+}
+#endif
 
 #define PREFETCH(name, op) \
 static void name(void *mem, int stride, int h){\
@@ -2626,7 +2722,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         SET_HPEL_FUNCS(avg, 1, 8, mmx);
         SET_HPEL_FUNCS(avg_no_rnd, 1, 8, mmx);
 
+#if ARCH_X86_32 || !HAVE_YASM
         c->gmc= gmc_mmx;
+#endif
+#if ARCH_X86_32 && HAVE_YASM
+        c->emulated_edge_mc = emulated_edge_mc_mmx;
+#endif
 
         c->add_bytes= add_bytes_mmx;
         c->add_bytes_l2= add_bytes_l2_mmx;
@@ -2913,6 +3014,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #if HAVE_YASM
             c->scalarproduct_int16 = ff_scalarproduct_int16_sse2;
             c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_sse2;
+
+            c->emulated_edge_mc = emulated_edge_mc_sse;
+            c->gmc= gmc_sse;
 #endif
         }
         if((mm_flags & AV_CPU_FLAG_SSSE3) && !(mm_flags & (AV_CPU_FLAG_SSE42|AV_CPU_FLAG_3DNOW)) && HAVE_YASM) // cachesplit
