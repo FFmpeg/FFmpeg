@@ -70,6 +70,7 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
             url_close_dyn_buf(rtpctx->pb, &ptr);
             av_free(ptr);
         }
+        av_free(rtpctx->streams[0]->info);
         av_free(rtpctx->streams[0]);
         av_free(rtpctx);
         return NULL;
