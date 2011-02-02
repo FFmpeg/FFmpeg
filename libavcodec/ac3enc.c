@@ -434,7 +434,7 @@ static void extract_exponents(AC3EncodeContext *s)
  * Exponent Difference Threshold.
  * New exponents are sent if their SAD exceed this number.
  */
-#define EXP_DIFF_THRESHOLD 1000
+#define EXP_DIFF_THRESHOLD 500
 
 
 /**
