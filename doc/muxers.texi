@@ -94,12 +94,13 @@ See also the @code{crc} muxer (@pxref{crc}).
 
 Image file muxer.
 
-This muxer writes video frames to multiple image files specified by a
-pattern.
+The image file muxer writes video frames to image files.
 
-The pattern may contain the string "%d" or "%0@var{N}d", which
+The output filenames are specified by a pattern, which can be used to
+produce sequentially numbered series of files.
+The pattern may contain the string "%d" or "%0@var{N}d", this string
 specifies the position of the characters representing a numbering in
-the filenames. If the form "%d0@var{N}d" is used, the string
+the filenames. If the form "%0@var{N}d" is used, the string
 representing the number in each filename is 0-padded to @var{N}
 digits. The literal character '%' can be specified in the pattern with
 the string "%%".
