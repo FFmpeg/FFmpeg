@@ -13,6 +13,15 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-02-02 - lavf 52.95.0
+  * 50196a9 - add a new installed header version.h.
+  * 4efd5cf, dccbd97, 93b78d1 - add several variants of public
+    avio_{put,get}_str* functions.  Deprecate corresponding semi-public
+    {put,get}_str*.
+
+2011-02-02 - dfd2a00 - lavu 50.37.0 - log.h
+  Make av_dlog public.
+
 2011-01-31 - X - lavfi 1.76.0 - vsrc_buffer
   Add sample_aspect_ratio fields to vsrc_buffer arguments
 
