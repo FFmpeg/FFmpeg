@@ -79,14 +79,12 @@ int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
     /* Set up the RTSPStreams for each AVStream */
     for (i = 0; i < s->nb_streams; i++) {
         RTSPStream *rtsp_st;
-        AVStream *st = s->streams[i];
 
         rtsp_st = av_mallocz(sizeof(RTSPStream));
         if (!rtsp_st)
             return AVERROR(ENOMEM);
         dynarray_add(&rt->rtsp_streams, &rt->nb_rtsp_streams, rtsp_st);
 
-        st->priv_data = rtsp_st;
         rtsp_st->stream_index = i;
 
         av_strlcpy(rtsp_st->control_url, rt->control_uri, sizeof(rtsp_st->control_url));
