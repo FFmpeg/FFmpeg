@@ -27,7 +27,7 @@
 #include "libavcore/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 75
+#define LIBAVFILTER_VERSION_MINOR 76
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -580,9 +580,10 @@ struct AVFilterLink {
 
     enum AVMediaType type;      ///< filter media type
 
-    /* These two parameters apply only to video */
+    /* These parameters apply only to video */
     int w;                      ///< agreed upon image width
     int h;                      ///< agreed upon image height
+    AVRational sample_aspect_ratio; ///< agreed upon sample aspect ratio
     /* These two parameters apply only to audio */
     int64_t channel_layout;     ///< channel layout of current buffer (see libavcore/audioconvert.h)
     int64_t sample_rate;        ///< samples per second

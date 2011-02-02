@@ -82,6 +82,9 @@ static int setdar_config_props(AVFilterLink *inlink)
 
     av_log(inlink->dst, AV_LOG_INFO, "w:%d h:%d -> dar:%d/%d par:%d/%d\n",
            inlink->w, inlink->h, dar.num, dar.den, aspect->aspect.num, aspect->aspect.den);
+
+    inlink->sample_aspect_ratio = aspect->aspect;
+
     return 0;
 }
 
@@ -108,6 +111,16 @@ AVFilter avfilter_vf_setdar = {
 #endif /* CONFIG_SETDAR_FILTER */
 
 #if CONFIG_SETSAR_FILTER
+/* for setdar filter, convert from frame aspect ratio to pixel aspect ratio */
+static int setsar_config_props(AVFilterLink *inlink)
+{
+    AspectContext *aspect = inlink->dst->priv;
+
+    inlink->sample_aspect_ratio = aspect->aspect;
+
+    return 0;
+}
+
 AVFilter avfilter_vf_setsar = {
     .name      = "setsar",
     .description = NULL_IF_CONFIG_SMALL("Set the pixel sample aspect ratio."),
@@ -118,6 +131,7 @@ AVFilter avfilter_vf_setsar = {
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
+                                    .config_props     = setsar_config_props,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .start_frame      = start_frame,
                                     .end_frame        = avfilter_null_end_frame },
