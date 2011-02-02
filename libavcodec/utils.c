@@ -396,6 +396,8 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
 
     /* If internal buffer type return the same buffer */
     if(pic->type == FF_BUFFER_TYPE_INTERNAL) {
+        if(s->pkt) pic->pkt_pts= s->pkt->pts;
+        else       pic->pkt_pts= AV_NOPTS_VALUE;
         pic->reordered_opaque= s->reordered_opaque;
         return 0;
     }
