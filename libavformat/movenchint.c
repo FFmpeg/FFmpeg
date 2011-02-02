@@ -86,6 +86,7 @@ fail:
     }
     if (track->rtp_ctx && track->rtp_ctx->streams[0]) {
         av_metadata_free(&track->rtp_ctx->streams[0]->metadata);
+        av_free(track->rtp_ctx->streams[0]->info);
         av_free(track->rtp_ctx->streams[0]);
     }
     if (track->rtp_ctx) {
@@ -490,6 +491,7 @@ void ff_mov_close_hinting(MOVTrack *track) {
     }
     av_metadata_free(&rtp_ctx->streams[0]->metadata);
     av_metadata_free(&rtp_ctx->metadata);
+    av_free(rtp_ctx->streams[0]->info);
     av_free(rtp_ctx->streams[0]);
     av_freep(&rtp_ctx);
 }
