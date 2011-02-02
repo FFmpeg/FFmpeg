@@ -273,8 +273,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             s1->default_ip = sdp_ip;
             s1->default_ttl = ttl;
         } else {
-            st = s->streams[s->nb_streams - 1];
-            rtsp_st = st->priv_data;
+            rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
             rtsp_st->sdp_ip = sdp_ip;
             rtsp_st->sdp_ttl = ttl;
         }
@@ -326,7 +325,6 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             st = av_new_stream(s, 0);
             if (!st)
                 return;
-            st->priv_data = rtsp_st;
             rtsp_st->stream_index = st->index;
             st->codec->codec_type = codec_type;
             if (rtsp_st->sdp_payload_type < RTP_PT_PRIVATE) {
@@ -355,8 +353,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             } else {
                 char proto[32];
                 /* get the control url */
-                st = s->streams[s->nb_streams - 1];
-                rtsp_st = st->priv_data;
+                rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
 
                 /* XXX: may need to add full url resolution */
                 av_url_split(proto, sizeof(proto), NULL, 0, NULL, 0,
@@ -377,7 +374,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             get_word(buf1, sizeof(buf1), &p);
             payload_type = atoi(buf1);
             st = s->streams[s->nb_streams - 1];
-            rtsp_st = st->priv_data;
+            rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
             sdp_parse_rtpmap(s, st, rtsp_st, payload_type, p);
         } else if (av_strstart(p, "fmtp:", &p) ||
                    av_strstart(p, "framesize:", &p)) {
@@ -385,9 +382,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             // let dynamic protocol handlers have a stab at the line.
             get_word(buf1, sizeof(buf1), &p);
             payload_type = atoi(buf1);
-            for (i = 0; i < s->nb_streams; i++) {
-                st      = s->streams[i];
-                rtsp_st = st->priv_data;
+            for (i = 0; i < rt->nb_rtsp_streams; i++) {
+                rtsp_st = rt->rtsp_streams[i];
                 if (rtsp_st->sdp_payload_type == payload_type &&
                     rtsp_st->dynamic_handler &&
                     rtsp_st->dynamic_handler->parse_sdp_a_line)
@@ -417,7 +413,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 if (rt->server_type == RTSP_SERVER_REAL)
                     ff_real_parse_sdp_a_line(s, s->nb_streams - 1, p);
 
-                rtsp_st = s->streams[s->nb_streams - 1]->priv_data;
+                rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
                 if (rtsp_st->dynamic_handler &&
                     rtsp_st->dynamic_handler->parse_sdp_a_line)
                     rtsp_st->dynamic_handler->parse_sdp_a_line(s,
