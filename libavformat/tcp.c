@@ -129,17 +129,26 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     return ret;
 }
 
+static int tcp_wait_fd(int fd, int write)
+{
+    int ev = write ? POLLOUT : POLLIN;
+    struct pollfd p = { .fd = fd, .events = ev, .revents = 0 };
+    int ret;
+
+    ret = poll(&p, 1, 100);
+    return ret < 0 ? ff_neterrno() : !!(p.revents & ev);
+}
+
 static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    struct pollfd p = {s->fd, POLLIN, 0};
     int len, ret;
 
     for (;;) {
         if (url_interrupt_cb())
             return AVERROR(EINTR);
-        ret = poll(&p, 1, 100);
-        if (ret == 1 && p.revents & POLLIN) {
+        ret = tcp_wait_fd(s->fd, 0);
+        if (ret > 0) {
             len = recv(s->fd, buf, size, 0);
             if (len < 0) {
                 if (ff_neterrno() != FF_NETERROR(EINTR) &&
@@ -147,9 +156,9 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
                     return ff_neterrno();
             } else return len;
         } else if (ret < 0) {
-            if (ff_neterrno() == FF_NETERROR(EINTR))
+            if (ret == FF_NETERROR(EINTR))
                 continue;
-            return -1;
+            return ret;
         }
     }
 }
@@ -158,14 +167,13 @@ static int tcp_write(URLContext *h, const uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
     int ret, size1, len;
-    struct pollfd p = {s->fd, POLLOUT, 0};
 
     size1 = size;
     while (size > 0) {
         if (url_interrupt_cb())
             return AVERROR(EINTR);
-        ret = poll(&p, 1, 100);
-        if (ret == 1 && p.revents & POLLOUT) {
+        ret = tcp_wait_fd(s->fd, 1);
+        if (ret > 0) {
             len = send(s->fd, buf, size, 0);
             if (len < 0) {
                 if (ff_neterrno() != FF_NETERROR(EINTR) &&
@@ -176,9 +184,9 @@ static int tcp_write(URLContext *h, const uint8_t *buf, int size)
             size -= len;
             buf += len;
         } else if (ret < 0) {
-            if (ff_neterrno() == FF_NETERROR(EINTR))
+            if (ret == FF_NETERROR(EINTR))
                 continue;
-            return -1;
+            return ret;
         }
     }
     return size1 - size;
