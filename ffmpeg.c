@@ -3013,7 +3013,7 @@ static void parse_meta_type(char *arg, char *type, int *index, char **endptr)
         *type = 'g';
 }
 
-static void opt_map_meta_data(const char *arg)
+static void opt_map_metadata(const char *arg)
 {
     AVMetaDataMap *m, *m1;
     char *p;
@@ -3037,6 +3037,13 @@ static void opt_map_meta_data(const char *arg)
         metadata_streams_autocopy = 0;
     if (m->type == 'c' || m1->type == 'c')
         metadata_chapters_autocopy = 0;
+}
+
+static void opt_map_meta_data(const char *arg)
+{
+    fprintf(stderr, "-map_meta_data is deprecated and will be removed soon. "
+                    "Use -map_metadata instead.\n");
+    opt_map_metadata(arg);
 }
 
 static void opt_map_chapters(const char *arg)
@@ -4197,7 +4204,10 @@ static const OptionDef options[] = {
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream[:syncfile:syncstream]" },
-    { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "set meta data information of outfile from infile", "outfile[,metadata]:infile[,metadata]" },
+    { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "DEPRECATED set meta data information of outfile from infile",
+      "outfile[,metadata]:infile[,metadata]" },
+    { "map_metadata", HAS_ARG | OPT_EXPERT, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
+      "outfile[,metadata]:infile[,metadata]" },
     { "map_chapters",  HAS_ARG | OPT_EXPERT, {(void*)opt_map_chapters},  "set chapters mapping", "outfile:infile" },
     { "t", OPT_FUNC2 | HAS_ARG, {(void*)opt_recording_time}, "record or transcode \"duration\" seconds of audio/video", "duration" },
     { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //

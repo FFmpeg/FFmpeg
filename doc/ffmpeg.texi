@@ -628,7 +628,10 @@ Just enumerate the input streams in the order you want them in the output.
 @var{sync_stream_id} if specified sets the input stream to sync
 against.
 @item -map_meta_data @var{outfile}[,@var{metadata}]:@var{infile}[,@var{metadata}]
-Set meta data information of @var{outfile} from @var{infile}. Note that those
+Deprecated, use @var{-map_metadata} instead.
+
+@item -map_metadata @var{outfile}[,@var{metadata}]:@var{infile}[,@var{metadata}]
+Set metadata information of @var{outfile} from @var{infile}. Note that those
 are file indices (zero-based), not filenames.
 Optional @var{metadata} parameters specify, which metadata to copy - (g)lobal
 (i.e. metadata that applies to the whole file), per-(s)tream, per-(c)hapter or
@@ -644,7 +647,7 @@ file index can be used to create a dummy mapping that just disables automatic co
 For example to copy metadata from the first stream of the input file to global metadata
 of the output file:
 @example
-ffmpeg -i in.ogg -map_meta_data 0:0,s0 out.mp3
+ffmpeg -i in.ogg -map_metadata 0:0,s0 out.mp3
 @end example
 @item -map_chapters @var{outfile}:@var{infile}
 Copy chapters from @var{infile} to @var{outfile}. If no chapter mapping is specified,
