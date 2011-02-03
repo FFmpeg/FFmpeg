@@ -31,6 +31,7 @@
 
 #include "libavutil/cpu.h"
 #include "avcodec.h"
+#include "libavcore/audioconvert.h"
 
 #if FF_API_OLD_SAMPLE_FMT
 /**

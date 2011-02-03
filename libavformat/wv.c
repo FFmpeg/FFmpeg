@@ -23,6 +23,7 @@
 #include "avformat.h"
 #include "apetag.h"
 #include "id3v1.h"
+#include "libavcore/audioconvert.h"
 
 // specs say that maximum block size is 1Mb
 #define WV_BLOCK_LIMIT 1047576
@@ -111,7 +112,7 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb, int app
     //parse flags
     bpp = ((wc->flags & 3) + 1) << 3;
     chan = 1 + !(wc->flags & WV_MONO);
-    chmask = wc->flags & WV_MONO ? CH_LAYOUT_MONO : CH_LAYOUT_STEREO;
+    chmask = wc->flags & WV_MONO ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
     rate = wv_rates[(wc->flags >> 23) & 0xF];
     wc->multichannel = !!((wc->flags & WV_SINGLE_BLOCK) != WV_SINGLE_BLOCK);
     if(wc->multichannel){
