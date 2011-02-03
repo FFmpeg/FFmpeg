@@ -545,10 +545,6 @@ typedef struct AVStream {
 
     int64_t nb_frames;                 ///< number of frames in this stream if known or 0
 
-#if FF_API_LAVF_UNUSED
-    attribute_deprecated int64_t unused[4+1];
-#endif
-
     int disposition; /**< AV_DISPOSITION_* bit field */
 
     AVProbeData probe_data;
@@ -701,11 +697,6 @@ typedef struct AVFormatContext {
 
     /* av_read_frame() support */
     AVStream *cur_st;
-#if FF_API_LAVF_UNUSED
-    const uint8_t *cur_ptr_deprecated;
-    int cur_len_deprecated;
-    AVPacket cur_pkt_deprecated;
-#endif
 
     /* av_seek_frame() support */
     int64_t data_offset; /**< offset of the first packet */
