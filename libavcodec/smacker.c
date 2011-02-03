@@ -677,12 +677,9 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
     for(i = 0; i < 4; i++) {
         if(vlc[i].table)
             free_vlc(&vlc[i]);
-        if(h[i].bits)
-            av_free(h[i].bits);
-        if(h[i].lengths)
-            av_free(h[i].lengths);
-        if(h[i].values)
-            av_free(h[i].values);
+        av_free(h[i].bits);
+        av_free(h[i].lengths);
+        av_free(h[i].values);
     }
 
     *data_size = unp_size;

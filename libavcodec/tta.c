@@ -449,8 +449,7 @@ static int tta_decode_frame(AVCodecContext *avctx,
 static av_cold int tta_decode_close(AVCodecContext *avctx) {
     TTAContext *s = avctx->priv_data;
 
-    if (s->decode_buffer)
-        av_free(s->decode_buffer);
+    av_free(s->decode_buffer);
     av_freep(&s->ch_ctx);
 
     return 0;

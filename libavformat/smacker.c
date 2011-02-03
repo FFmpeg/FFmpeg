@@ -334,12 +334,9 @@ static int smacker_read_close(AVFormatContext *s)
     int i;
 
     for(i = 0; i < 7; i++)
-        if(smk->bufs[i])
-            av_free(smk->bufs[i]);
-    if(smk->frm_size)
-        av_free(smk->frm_size);
-    if(smk->frm_flags)
-        av_free(smk->frm_flags);
+        av_free(smk->bufs[i]);
+    av_free(smk->frm_size);
+    av_free(smk->frm_flags);
 
     return 0;
 }
