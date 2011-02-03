@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-02-03 - f5b82f4 - lavc 52.109.0 - add CODEC_ID_PRORES
+  Add CODEC_ID_PRORES to avcodec.h.
+
 2011-02-02 - lavf 52.95.0
   * 50196a9 - add a new installed header version.h.
   * 4efd5cf, dccbd97, 93b78d1 - add several variants of public
