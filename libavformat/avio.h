@@ -373,22 +373,6 @@ int avio_check(const char *url, int flags);
  */
 void avio_set_interrupt_cb(int (*interrupt_cb)(void));
 
-#if FF_API_REGISTER_PROTOCOL
-extern URLProtocol *first_protocol;
-#endif
-
-#if FF_API_REGISTER_PROTOCOL
-/**
- * @deprecated Use av_register_protocol() instead.
- */
-attribute_deprecated int register_protocol(URLProtocol *protocol);
-
-/**
- * @deprecated Use av_register_protocol2() instead.
- */
-attribute_deprecated int av_register_protocol(URLProtocol *protocol);
-#endif
-
 /**
  * Allocate and initialize an AVIOContext for buffered I/O. It must be later
  * freed with av_free().

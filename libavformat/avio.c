@@ -84,29 +84,6 @@ int ffurl_register_protocol(URLProtocol *protocol, int size)
     return 0;
 }
 
-#if FF_API_REGISTER_PROTOCOL
-/* The layout of URLProtocol as of when major was bumped to 52 */
-struct URLProtocol_compat {
-    const char *name;
-    int (*url_open)(URLContext *h, const char *filename, int flags);
-    int (*url_read)(URLContext *h, unsigned char *buf, int size);
-    int (*url_write)(URLContext *h, unsigned char *buf, int size);
-    int64_t (*url_seek)(URLContext *h, int64_t pos, int whence);
-    int (*url_close)(URLContext *h);
-    struct URLProtocol *next;
-};
-
-int av_register_protocol(URLProtocol *protocol)
-{
-    return ffurl_register_protocol(protocol, sizeof(struct URLProtocol_compat));
-}
-
-int register_protocol(URLProtocol *protocol)
-{
-    return ffurl_register_protocol(protocol, sizeof(struct URLProtocol_compat));
-}
-#endif
-
 static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
                                    const char *filename, int flags)
 {
