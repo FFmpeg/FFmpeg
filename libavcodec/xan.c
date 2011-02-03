@@ -358,9 +358,6 @@ static void xan_wc3_decode_frame(XanContext *s) {
     }
 }
 
-static void xan_wc4_decode_frame(XanContext *s) {
-}
-
 #if RUNTIME_GAMMA
 static inline unsigned mul(unsigned a, unsigned b)
 {
@@ -515,23 +512,12 @@ static int xan_decode_frame(AVCodecContext *avctx,
     if (!s->frame_size)
         s->frame_size = s->current_frame.linesize[0] * s->avctx->height;
 
-    if (avctx->codec->id == CODEC_ID_XAN_WC3) {
-        memcpy(s->current_frame.data[1], s->palettes + s->cur_palette * AVPALETTE_COUNT, AVPALETTE_SIZE);
-    } else {
-        AVPaletteControl *palette_control = avctx->palctrl;
-        palette_control->palette_changed = 0;
-        memcpy(s->current_frame.data[1], palette_control->palette,
-               AVPALETTE_SIZE);
-        s->current_frame.palette_has_changed = 1;
-    }
+    memcpy(s->current_frame.data[1], s->palettes + s->cur_palette * AVPALETTE_COUNT, AVPALETTE_SIZE);
 
     s->buf = buf;
     s->size = buf_size;
 
-    if (avctx->codec->id == CODEC_ID_XAN_WC3)
-        xan_wc3_decode_frame(s);
-    else if (avctx->codec->id == CODEC_ID_XAN_WC4)
-        xan_wc4_decode_frame(s);
+    xan_wc3_decode_frame(s);
 
     /* release the last frame if it is allocated */
     if (s->last_frame.data[0])
@@ -577,17 +563,3 @@ AVCodec ff_xan_wc3_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("Wing Commander III / Xan"),
 };
 
-/*
-AVCodec ff_xan_wc4_decoder = {
-    "xan_wc4",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_XAN_WC4,
-    sizeof(XanContext),
-    xan_decode_init,
-    NULL,
-    xan_decode_end,
-    xan_decode_frame,
-    CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Wing Commander IV / Xxan"),
-};
-*/
