@@ -332,9 +332,7 @@ static void delete_state(DVBSubContext *ctx)
         ctx->region_list = region->next;
 
         delete_region_display_list(ctx, region);
-        if (region->pbuf)
-            av_free(region->pbuf);
-
+        av_free(region->pbuf);
         av_free(region);
     }
 
@@ -1032,8 +1030,7 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
     buf += 2;
 
     if (region->width * region->height != region->buf_size) {
-        if (region->pbuf)
-            av_free(region->pbuf);
+        av_free(region->pbuf);
 
         region->buf_size = region->width * region->height;
 

@@ -133,8 +133,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx,
     /* the block size could change between frames, make sure the buffer
      * is large enough, if not, get a larger one */
     if(s->block_size < s->block_width*s->block_height) {
-        if (s->tmpblock != NULL)
-            av_free(s->tmpblock);
+        av_free(s->tmpblock);
         if ((s->tmpblock = av_malloc(3*s->block_width*s->block_height)) == NULL) {
             av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
             return -1;
@@ -243,8 +242,7 @@ static av_cold int flashsv_decode_end(AVCodecContext *avctx)
         avctx->release_buffer(avctx, &s->frame);
 
     /* free the tmpblock */
-    if (s->tmpblock != NULL)
-        av_free(s->tmpblock);
+    av_free(s->tmpblock);
 
     return 0;
 }

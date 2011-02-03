@@ -2227,8 +2227,7 @@ static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
     int i;
 
     for (i = 0; i < s->frames; i++)
-        if (s->mp3decctx[i])
-            av_free(s->mp3decctx[i]);
+        av_free(s->mp3decctx[i]);
 
     return 0;
 }

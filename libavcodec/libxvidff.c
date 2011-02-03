@@ -533,12 +533,9 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
         av_free(x->twopassbuffer);
         av_free(x->old_twopassbuffer);
     }
-    if( x->twopassfile != NULL )
-        av_free(x->twopassfile);
-    if( x->intra_matrix != NULL )
-        av_free(x->intra_matrix);
-    if( x->inter_matrix != NULL )
-        av_free(x->inter_matrix);
+    av_free(x->twopassfile);
+    av_free(x->intra_matrix);
+    av_free(x->inter_matrix);
 
     return 0;
 }

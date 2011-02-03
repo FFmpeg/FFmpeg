@@ -185,8 +185,7 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
 
 static void tm2_free_codes(TM2Codes *code)
 {
-    if(code->recode)
-        av_free(code->recode);
+    av_free(code->recode);
     if(code->vlc.table)
         free_vlc(&code->vlc);
 }
@@ -859,13 +858,10 @@ static av_cold int decode_end(AVCodecContext *avctx){
     AVFrame *pic = &l->pic;
     int i;
 
-    if(l->last)
-        av_free(l->last);
-    if(l->clast)
-        av_free(l->clast);
+    av_free(l->last);
+    av_free(l->clast);
     for(i = 0; i < TM2_NUM_STREAMS; i++)
-        if(l->tokens[i])
-            av_free(l->tokens[i]);
+        av_free(l->tokens[i]);
     if(l->Y1){
         av_free(l->Y1);
         av_free(l->U1);
