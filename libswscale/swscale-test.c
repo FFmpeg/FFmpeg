@@ -104,8 +104,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
         int p;
 
         for (p = 0; p < 4; p++)
-            if (src[p])
-                av_freep(&src[p]);
+            av_freep(&src[p]);
 
         av_image_fill_linesizes(srcStride, srcFormat, srcW);
         for (p = 0; p < 4; p++) {
