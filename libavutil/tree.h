@@ -67,7 +67,7 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
  *                 return av_tree_insert(rootp, key, cmp, next);
  *             }
  *             void *tree_remove(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b, AVTreeNode **next)){
- *                 if(*next) av_freep(next);
+ *                 av_freep(next);
  *                 return av_tree_insert(rootp, key, cmp, next);
  *             }
  *             @endcode
