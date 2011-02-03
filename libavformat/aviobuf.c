@@ -38,9 +38,7 @@
 #define SHORT_SEEK_THRESHOLD 4096
 
 static void fill_buffer(AVIOContext *s);
-#if !FF_API_URL_RESETBUF
 static int url_resetbuf(AVIOContext *s, int flags);
-#endif
 
 int ffio_init_context(AVIOContext *s,
                   unsigned char *buffer,
@@ -878,18 +876,9 @@ int ffio_set_buf_size(AVIOContext *s, int buf_size)
     return 0;
 }
 
-#if FF_API_URL_RESETBUF
-int url_resetbuf(AVIOContext *s, int flags)
-#else
 static int url_resetbuf(AVIOContext *s, int flags)
-#endif
 {
-#if FF_API_URL_RESETBUF
-    if (flags & AVIO_RDWR)
-        return AVERROR(EINVAL);
-#else
     assert(flags == AVIO_WRONLY || flags == AVIO_RDONLY);
-#endif
 
     if (flags & AVIO_WRONLY) {
         s->buf_end = s->buffer + s->buffer_size;

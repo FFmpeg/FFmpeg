@@ -542,14 +542,6 @@ int avio_get_str16le(AVIOContext *pb, int maxlen, char *buf, int buflen);
 int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
 
 
-#if FF_API_URL_RESETBUF
-/** Reset the buffer for reading or writing.
- * @note Will drop any data currently in the buffer without transmitting it.
- * @param flags URL_RDONLY to set up the buffer for reading, or URL_WRONLY
- *        to set up the buffer for writing. */
-int url_resetbuf(AVIOContext *s, int flags);
-#endif
-
 /**
  * @defgroup open_modes URL open modes
  * The flags argument to avio_open must be one of the following
