@@ -2531,16 +2531,6 @@ typedef struct AVCodecContext {
     int compression_level;
 #define FF_COMPRESSION_DEFAULT -1
 
-#if FF_API_USE_LPC
-    /**
-     * Sets whether to use LPC mode - used by FLAC encoder.
-     * - encoding: Set by user.
-     * - decoding: unused
-     * @deprecated Deprecated in favor of lpc_type and lpc_passes.
-     */
-    int use_lpc;
-#endif
-
     /**
      * LPC coefficient precision - used by FLAC encoder
      * - encoding: Set by user.
