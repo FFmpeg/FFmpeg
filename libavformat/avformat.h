@@ -1409,22 +1409,6 @@ void av_dump_format(AVFormatContext *ic,
                     const char *url,
                     int is_output);
 
-#if FF_API_PARSE_FRAME_PARAM
-/**
- * Parse width and height out of string str.
- * @deprecated Use av_parse_video_frame_size instead.
- */
-attribute_deprecated int parse_image_size(int *width_ptr, int *height_ptr,
-                                          const char *str);
-
-/**
- * Convert framerate from a string to a fraction.
- * @deprecated Use av_parse_video_frame_rate instead.
- */
-attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
-                                          const char *arg);
-#endif
-
 #if FF_API_PARSE_DATE
 /**
  * Parse datestr and return a corresponding number of microseconds.

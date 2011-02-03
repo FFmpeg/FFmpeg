@@ -3320,24 +3320,6 @@ void av_dump_format(AVFormatContext *ic,
     av_free(printed);
 }
 
-#if FF_API_PARSE_FRAME_PARAM
-#include "libavutil/parseutils.h"
-
-int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
-{
-    return av_parse_video_size(width_ptr, height_ptr, str);
-}
-
-int parse_frame_rate(int *frame_rate_num, int *frame_rate_den, const char *arg)
-{
-    AVRational frame_rate;
-    int ret = av_parse_video_rate(&frame_rate, arg);
-    *frame_rate_num= frame_rate.num;
-    *frame_rate_den= frame_rate.den;
-    return ret;
-}
-#endif
-
 int64_t av_gettime(void)
 {
     struct timeval tv;
