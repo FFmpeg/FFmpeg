@@ -2363,7 +2363,7 @@ AVCodec ff_aac_decoder = {
 */
 AVCodec ff_aac_latm_decoder = {
     .name = "aac_latm",
-    .type = CODEC_TYPE_AUDIO,
+    .type = AVMEDIA_TYPE_AUDIO,
     .id   = CODEC_ID_AAC_LATM,
     .priv_data_size = sizeof(struct LATMContext),
     .init   = latm_decode_init,

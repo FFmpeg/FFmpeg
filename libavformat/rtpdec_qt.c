@@ -104,9 +104,9 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
 
         url_fseek(&pb, pos + 4, SEEK_SET);
         tag = get_le32(&pb);
-        if ((st->codec->codec_type == CODEC_TYPE_VIDEO &&
+        if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
                  tag != MKTAG('v','i','d','e')) ||
-            (st->codec->codec_type == CODEC_TYPE_AUDIO &&
+            (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
                  tag != MKTAG('s','o','u','n')))
             return AVERROR_INVALIDDATA;
         av_set_pts_info(st, 32, 1, get_be32(&pb));
@@ -248,7 +248,7 @@ RTPDynamicProtocolHandler ff_ ## m ## _rtp_ ## n ## _handler = { \
     .parse_packet     = qt_rtp_parse_packet, \
 };
 
-RTP_QT_HANDLER(qt,        vid, "X-QT",        CODEC_TYPE_VIDEO);
-RTP_QT_HANDLER(qt,        aud, "X-QT",        CODEC_TYPE_AUDIO);
-RTP_QT_HANDLER(quicktime, vid, "X-QUICKTIME", CODEC_TYPE_VIDEO);
-RTP_QT_HANDLER(quicktime, aud, "X-QUICKTIME", CODEC_TYPE_AUDIO);
+RTP_QT_HANDLER(qt,        vid, "X-QT",        AVMEDIA_TYPE_VIDEO);
+RTP_QT_HANDLER(qt,        aud, "X-QT",        AVMEDIA_TYPE_AUDIO);
+RTP_QT_HANDLER(quicktime, vid, "X-QUICKTIME", AVMEDIA_TYPE_VIDEO);
+RTP_QT_HANDLER(quicktime, aud, "X-QUICKTIME", AVMEDIA_TYPE_AUDIO);
