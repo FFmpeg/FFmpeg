@@ -862,18 +862,6 @@ attribute_deprecated enum CodecID av_guess_image2_codec(const char *filename);
 /* utils.c */
 void av_register_input_format(AVInputFormat *format);
 void av_register_output_format(AVOutputFormat *format);
-#if FF_API_GUESS_FORMAT
-attribute_deprecated AVOutputFormat *guess_stream_format(const char *short_name,
-                                    const char *filename,
-                                    const char *mime_type);
-
-/**
- * @deprecated Use av_guess_format() instead.
- */
-attribute_deprecated AVOutputFormat *guess_format(const char *short_name,
-                                                  const char *filename,
-                                                  const char *mime_type);
-#endif
 
 /**
  * Return the output format in the list of registered output formats
