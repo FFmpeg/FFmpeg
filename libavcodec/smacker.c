@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
+#include "libavcore/audioconvert.h"
 
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"
@@ -554,7 +555,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 static av_cold int smka_decode_init(AVCodecContext *avctx)
 {
-    avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
+    avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     avctx->sample_fmt = avctx->bits_per_coded_sample == 8 ? AV_SAMPLE_FMT_U8 : AV_SAMPLE_FMT_S16;
     return 0;
 }

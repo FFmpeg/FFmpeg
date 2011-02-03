@@ -106,7 +106,7 @@ enum DCAExtensionMask {
  * L = left, R = right, C = center, S = surround, F = front, R = rear, T = total, OV = overhead.
  * S  -> side, when both rear and back are configured move one of them to the side channel
  * OV -> center back
- * All 2 channel configurations -> CH_LAYOUT_STEREO
+ * All 2 channel configurations -> AV_CH_LAYOUT_STEREO
  */
 
 static const int64_t dca_core_channel_layout[] = {
@@ -117,7 +117,7 @@ static const int64_t dca_core_channel_layout[] = {
     AV_CH_LAYOUT_STEREO,                                                     ///< 2, LT +RT (left and right total)
     AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER,                                  ///< 3, C+L+R
     AV_CH_LAYOUT_STEREO|AV_CH_BACK_CENTER,                                   ///< 3, L+R+S
-    AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER|CH_BACK_CENTER,                   ///< 4, C + L + R+ S
+    AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER|AV_CH_BACK_CENTER,                ///< 4, C + L + R+ S
     AV_CH_LAYOUT_STEREO|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT,                    ///< 4, L + R +SL+ SR
     AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT, ///< 5, C + L + R+ SL+SR
     AV_CH_LAYOUT_STEREO|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER,                    ///< 6, CL + CR + L + R + SL + SR

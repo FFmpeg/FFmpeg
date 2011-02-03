@@ -30,6 +30,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "mpegaudio.h"
+#include "libavcore/audioconvert.h"
 
 #include "mpc.h"
 #include "mpcdata.h"
@@ -135,7 +136,7 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     c->frames = 1 << (get_bits(&gb, 3) * 2);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-    avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
+    avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
     if(vlc_initialized) return 0;
     av_log(avctx, AV_LOG_DEBUG, "Initing VLC\n");

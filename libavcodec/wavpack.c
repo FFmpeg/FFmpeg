@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "unary.h"
+#include "libavcore/audioconvert.h"
 
 /**
  * @file
@@ -706,7 +707,7 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
     else
         avctx->sample_fmt = AV_SAMPLE_FMT_S32;
     if(avctx->channels <= 2 && !avctx->channel_layout)
-        avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
+        avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
     s->multichannel = avctx->channels > 2;
     /* lavf demuxer does not provide extradata, Matroska stores 0x403

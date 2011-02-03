@@ -53,6 +53,7 @@
 #include "dsputil.h"
 #include "bytestream.h"
 #include "fft.h"
+#include "libavcore/audioconvert.h"
 
 #include "cookdata.h"
 
@@ -1274,7 +1275,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     if (channel_mask)
         avctx->channel_layout = channel_mask;
     else
-        avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
+        avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
 #ifdef COOKDEBUG
     dump_cook_context(q);

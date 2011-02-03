@@ -24,6 +24,7 @@
 #include "ac3_parser.h"
 #include "aac_ac3_parser.h"
 #include "get_bits.h"
+#include "libavcore/audioconvert.h"
 
 
 #define AC3_HEADER_SIZE 7
@@ -123,7 +124,7 @@ int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
     }
     hdr->channel_layout = ff_ac3_channel_layout_tab[hdr->channel_mode];
     if (hdr->lfe_on)
-        hdr->channel_layout |= CH_LOW_FREQUENCY;
+        hdr->channel_layout |= AV_CH_LOW_FREQUENCY;
 
     return 0;
 }

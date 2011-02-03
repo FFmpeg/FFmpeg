@@ -33,6 +33,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "libavcore/audioconvert.h"
 
 #define FLIC_FILE_MAGIC_1 0xAF11
 #define FLIC_FILE_MAGIC_2 0xAF12
@@ -160,7 +161,7 @@ static int flic_read_header(AVFormatContext *s,
         ast->codec->sample_fmt = AV_SAMPLE_FMT_U8;
         ast->codec->bit_rate = st->codec->sample_rate * 8;
         ast->codec->bits_per_coded_sample = 8;
-        ast->codec->channel_layout = CH_LAYOUT_MONO;
+        ast->codec->channel_layout = AV_CH_LAYOUT_MONO;
         ast->codec->extradata_size = 0;
 
         /* Since the header information is incorrect we have to figure out the
