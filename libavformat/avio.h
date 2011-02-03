@@ -101,9 +101,7 @@ typedef struct {
  * @deprecated This struct will be made private
  */
 typedef struct URLContext {
-#if FF_API_URL_CLASS
     const AVClass *av_class; ///< information for av_log(). Set by url_open().
-#endif
     struct URLProtocol *prot;
     int flags;
     int is_streamed;  /**< true if streamed (no seek possible), default = false */

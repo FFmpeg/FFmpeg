@@ -31,7 +31,6 @@
 #endif
 #include "url.h"
 
-#if FF_API_URL_CLASS
 /** @name Logging context. */
 /*@{*/
 static const char *urlcontext_to_name(void *ptr)
@@ -44,7 +43,6 @@ static const AVOption options[] = {{NULL}};
 static const AVClass urlcontext_class =
         { "URLContext", urlcontext_to_name, options, LIBAVUTIL_VERSION_INT };
 /*@}*/
-#endif
 
 static int default_interrupt_cb(void);
 
@@ -99,9 +97,7 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
         err = AVERROR(ENOMEM);
         goto fail;
     }
-#if FF_API_URL_CLASS
     uc->av_class = &urlcontext_class;
-#endif
     uc->filename = (char *) &uc[1];
     strcpy(uc->filename, filename);
     uc->prot = up;

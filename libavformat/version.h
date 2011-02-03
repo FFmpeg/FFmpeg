@@ -44,9 +44,6 @@
 #ifndef FF_API_OLD_METADATA2
 #define FF_API_OLD_METADATA2           (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
-#ifndef FF_API_URL_CLASS
-#define FF_API_URL_CLASS               (LIBAVFORMAT_VERSION_MAJOR >= 53)
-#endif
 #ifndef FF_API_READ_SEEK
 #define FF_API_READ_SEEK               (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
