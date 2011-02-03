@@ -138,12 +138,11 @@ void *av_realloc(void *ptr, FF_INTERNAL_MEM_TYPE size)
 
 void av_free(void *ptr)
 {
-    /* XXX: this test should not be needed on most libcs */
-    if (ptr)
 #if CONFIG_MEMALIGN_HACK
+    if (ptr)
         free((char*)ptr - ((char*)ptr)[-1]);
 #else
-        free(ptr);
+    free(ptr);
 #endif
 }
 
