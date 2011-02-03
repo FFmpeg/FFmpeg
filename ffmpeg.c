@@ -34,7 +34,7 @@
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
-#include "libavcodec/opt.h"
+#include "libavutil/opt.h"
 #include "libavcodec/audioconvert.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/parseutils.h"

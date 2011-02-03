@@ -20,7 +20,7 @@
 
 #include "libavutil/avutil.h"
 #include "libavutil/pixfmt.h"
-#include "libavcodec/opt.h"
+#include "libavutil/opt.h"
 #include "swscale.h"
 #include "swscale_internal.h"
 

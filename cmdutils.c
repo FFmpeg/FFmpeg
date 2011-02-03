@@ -38,7 +38,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/eval.h"
-#include "libavcodec/opt.h"
+#include "libavutil/opt.h"
 #include "cmdutils.h"
 #include "version.h"
 #if CONFIG_NETWORK

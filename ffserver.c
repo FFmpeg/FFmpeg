@@ -40,7 +40,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
-#include "libavcodec/opt.h"
+#include "libavutil/opt.h"
 #include <stdarg.h>
 #include <unistd.h>
 #include <fcntl.h>

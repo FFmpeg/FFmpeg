@@ -23,7 +23,7 @@
 
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/opt.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavdevice/avdevice.h"
 #include "cmdutils.h"
