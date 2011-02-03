@@ -923,9 +923,9 @@ static int rtmp_read(URLContext *s, uint8_t *buf, int size)
     return orig_size;
 }
 
-static int rtmp_write(URLContext *h, const uint8_t *buf, int size)
+static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 {
-    RTMPContext *rt = h->priv_data;
+    RTMPContext *rt = s->priv_data;
     int size_temp = size;
     int pktsize, pkttype;
     uint32_t ts;
