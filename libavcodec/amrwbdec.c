@@ -89,7 +89,7 @@ static av_cold int amrwb_decode_init(AVCodecContext *avctx)
     AMRWBContext *ctx = avctx->priv_data;
     int i;
 
-    avctx->sample_fmt = SAMPLE_FMT_FLT;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
     av_lfg_init(&ctx->prng, 1);
 
@@ -1233,5 +1233,5 @@ AVCodec ff_amrwb_decoder = {
     .init           = amrwb_decode_init,
     .decode         = amrwb_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Adaptive Multi-Rate WideBand"),
-    .sample_fmts    = (enum AVSampleFormat[]){SAMPLE_FMT_FLT,SAMPLE_FMT_NONE},
+    .sample_fmts    = (enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
 };
