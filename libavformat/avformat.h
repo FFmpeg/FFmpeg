@@ -672,10 +672,6 @@ typedef struct AVChapter {
     AVMetadata *metadata;
 } AVChapter;
 
-#if FF_API_MAX_STREAMS
-#define MAX_STREAMS 20
-#endif
-
 /**
  * Format I/O context.
  * New fields can be added to the end with minor version bumps.
@@ -691,11 +687,7 @@ typedef struct AVFormatContext {
     void *priv_data;
     AVIOContext *pb;
     unsigned int nb_streams;
-#if FF_API_MAX_STREAMS
-    AVStream *streams[MAX_STREAMS];
-#else
     AVStream **streams;
-#endif
     char filename[1024]; /**< input or output filename */
     /* stream info */
     int64_t timestamp;

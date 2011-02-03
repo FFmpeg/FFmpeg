@@ -95,9 +95,7 @@ static const char *http_state[] = {
     "RTSP_SEND_PACKET",
 };
 
-#if !FF_API_MAX_STREAMS
 #define MAX_STREAMS 20
-#endif
 
 #define IOBUFFER_INIT_SIZE 8192
 
@@ -2944,11 +2942,9 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
         snprintf(avc->filename, 1024, "rtp://0.0.0.0");
     }
 
-#if !FF_API_MAX_STREAMS
     if (avc->nb_streams >= INT_MAX/sizeof(*avc->streams) ||
         !(avc->streams = av_malloc(avc->nb_streams * sizeof(*avc->streams))))
         goto sdp_done;
-#endif
     if (avc->nb_streams >= INT_MAX/sizeof(*avs) ||
         !(avs = av_malloc(avc->nb_streams * sizeof(*avs))))
         goto sdp_done;
@@ -2961,9 +2957,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     av_sdp_create(&avc, 1, *pbuffer, 2048);
 
  sdp_done:
-#if !FF_API_MAX_STREAMS
     av_free(avc->streams);
-#endif
     av_metadata_free(&avc->metadata);
     av_free(avc);
     av_free(avs);

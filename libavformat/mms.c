@@ -24,11 +24,7 @@
 #include "asf.h"
 #include "libavutil/intreadwrite.h"
 
-#if FF_API_MAX_STREAMS
-#define MMS_MAX_STREAMS MAX_STREAMS
-#else
 #define MMS_MAX_STREAMS 256    /**< arbitrary sanity check value */
-#endif
 
 int ff_mms_read_header(MMSContext *mms, uint8_t *buf, const int size)
 {

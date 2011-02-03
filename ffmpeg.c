@@ -106,9 +106,7 @@ typedef struct AVChapterMap {
 static const OptionDef options[];
 
 #define MAX_FILES 100
-#if !FF_API_MAX_STREAMS
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
-#endif
 
 #define FFM_PACKET_SIZE 4096 //XXX a duplicate of the line in ffm.h
 
