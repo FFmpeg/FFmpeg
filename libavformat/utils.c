@@ -260,38 +260,6 @@ AVInputFormat *av_find_input_format(const char *short_name)
     return NULL;
 }
 
-#if FF_API_SYMVER && CONFIG_SHARED && HAVE_SYMVER
-FF_SYMVER(void, av_destruct_packet_nofree, (AVPacket *pkt), "LIBAVFORMAT_52")
-{
-    av_destruct_packet_nofree(pkt);
-}
-
-FF_SYMVER(void, av_destruct_packet, (AVPacket *pkt), "LIBAVFORMAT_52")
-{
-    av_destruct_packet(pkt);
-}
-
-FF_SYMVER(int, av_new_packet, (AVPacket *pkt, int size), "LIBAVFORMAT_52")
-{
-    return av_new_packet(pkt, size);
-}
-
-FF_SYMVER(int, av_dup_packet, (AVPacket *pkt), "LIBAVFORMAT_52")
-{
-    return av_dup_packet(pkt);
-}
-
-FF_SYMVER(void, av_free_packet, (AVPacket *pkt), "LIBAVFORMAT_52")
-{
-    av_free_packet(pkt);
-}
-
-FF_SYMVER(void, av_init_packet, (AVPacket *pkt), "LIBAVFORMAT_52")
-{
-    av_log(NULL, AV_LOG_WARNING, "Diverting av_*_packet function calls to libavcodec. Recompile to improve performance\n");
-    av_init_packet(pkt);
-}
-#endif
 
 int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
 {
