@@ -30,7 +30,7 @@ static int ivf_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
     ctx = s->streams[0]->codec;
-    if (ctx->codec_type != CODEC_TYPE_VIDEO || ctx->codec_id != CODEC_ID_VP8) {
+    if (ctx->codec_type != AVMEDIA_TYPE_VIDEO || ctx->codec_id != CODEC_ID_VP8) {
         av_log(s, AV_LOG_ERROR, "Currently only VP8 is supported!\n");
         return AVERROR(EINVAL);
     }
