@@ -84,10 +84,3 @@ AVFormatContext *avformat_alloc_context(void)
     ic->av_class = &av_format_context_class;
     return ic;
 }
-
-#if FF_API_ALLOC_FORMAT_CONTEXT
-AVFormatContext *av_alloc_format_context(void)
-{
-    return avformat_alloc_context();
-}
-#endif
