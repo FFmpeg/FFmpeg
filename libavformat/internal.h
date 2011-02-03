@@ -79,18 +79,6 @@ void ff_read_frame_flush(AVFormatContext *s);
 /** Get the current time since NTP epoch in microseconds. */
 uint64_t ff_ntp_time(void);
 
-#if FF_API_URL_SPLIT
-/**
- * @deprecated use av_url_split() instead
- */
-void ff_url_split(char *proto, int proto_size,
-                  char *authorization, int authorization_size,
-                  char *hostname, int hostname_size,
-                  int *port_ptr,
-                  char *path, int path_size,
-                  const char *url);
-#endif
-
 /**
  * Assemble a URL string from components. This is the reverse operation
  * of av_url_split.
