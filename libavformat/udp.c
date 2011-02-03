@@ -292,10 +292,7 @@ int ff_udp_get_local_port(URLContext *h)
  * streams at the same time.
  * @param h media file context
  */
-#if !FF_API_UDP_GET_FILE
-static
-#endif
-int udp_get_file_handle(URLContext *h)
+static int udp_get_file_handle(URLContext *h)
 {
     UDPContext *s = h->priv_data;
     return s->udp_fd;

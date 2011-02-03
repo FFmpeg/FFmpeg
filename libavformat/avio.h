@@ -605,10 +605,6 @@ int avio_open_dyn_buf(AVIOContext **s);
  */
 int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 
-#if FF_API_UDP_GET_FILE
-int udp_get_file_handle(URLContext *h);
-#endif
-
 /**
  * Iterate through names of available protocols.
  *
