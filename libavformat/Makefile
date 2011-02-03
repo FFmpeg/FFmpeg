@@ -10,7 +10,6 @@ OBJS = allformats.o         \
        id3v1.o              \
        id3v2.o              \
        metadata.o           \
-       metadata_compat.o    \
        options.o            \
        os_support.o         \
        sdp.o                \

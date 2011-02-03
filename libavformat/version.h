@@ -41,9 +41,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_OLD_METADATA
-#define FF_API_OLD_METADATA            (LIBAVFORMAT_VERSION_MAJOR < 53)
-#endif
 #ifndef FF_API_OLD_METADATA2
 #define FF_API_OLD_METADATA2           (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif

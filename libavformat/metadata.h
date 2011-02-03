@@ -43,11 +43,6 @@ struct AVMetadataConv{
 typedef struct AVMetadataConv AVMetadataConv;
 #endif
 
-#if FF_API_OLD_METADATA
-void ff_metadata_demux_compat(AVFormatContext *s);
-void ff_metadata_mux_compat(AVFormatContext *s);
-#endif
-
 void ff_metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
                                        const AVMetadataConv *s_conv);
 void ff_metadata_conv_ctx(AVFormatContext *ctx, const AVMetadataConv *d_conv,
