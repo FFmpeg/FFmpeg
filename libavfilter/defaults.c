@@ -126,7 +126,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
     return ref;
 
 fail:
-    if (ref && ref->audio)
+    if (ref)
         av_free(ref->audio);
     av_free(ref);
     av_free(samples);

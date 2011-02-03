@@ -1354,8 +1354,7 @@ static int avi_read_close(AVFormatContext *s)
         }
     }
 
-    if (avi->dv_demux)
-        av_free(avi->dv_demux);
+    av_free(avi->dv_demux);
 
     return 0;
 }
