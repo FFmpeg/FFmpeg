@@ -3227,14 +3227,6 @@ struct AVResampleContext;
 
 typedef struct ReSampleContext ReSampleContext;
 
-#if FF_API_AUDIO_OLD
-/**
- * @deprecated Use av_audio_resample_init() instead.
- */
-attribute_deprecated ReSampleContext *audio_resample_init(int output_channels, int input_channels,
-                                                          int output_rate, int input_rate);
-#endif
-
 /**
  *  Initialize audio resampling context.
  *
@@ -3705,25 +3697,6 @@ int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, 
  * @see avcodec_alloc_context, avcodec_find_decoder, avcodec_find_encoder
  */
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
-
-#if FF_API_AUDIO_OLD
-/**
- * Decode an audio frame from buf into samples.
- * Wrapper function which calls avcodec_decode_audio3.
- *
- * @deprecated Use avcodec_decode_audio3 instead.
- * @param avctx the codec context
- * @param[out] samples the output buffer
- * @param[in,out] frame_size_ptr the output buffer size in bytes
- * @param[in] buf the input buffer
- * @param[in] buf_size the input buffer size in bytes
- * @return On error a negative value is returned, otherwise the number of bytes
- * used or zero if no frame could be decompressed.
- */
-attribute_deprecated int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
-                         int *frame_size_ptr,
-                         const uint8_t *buf, int buf_size);
-#endif
 
 /**
  * Decode the audio frame of size avpkt->size from avpkt->data into samples.
