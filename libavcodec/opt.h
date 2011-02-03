@@ -45,11 +45,5 @@ attribute_deprecated const AVOption *av_set_string(void *obj, const char *name, 
  */
 attribute_deprecated const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc);
 #endif
-#if FF_API_OPT_SHOW
-/**
- * @deprecated Use av_opt_show2() instead.
- */
-attribute_deprecated int av_opt_show(void *obj, void *av_log_obj);
-#endif
 
 #endif /* AVCODEC_OPT_H */

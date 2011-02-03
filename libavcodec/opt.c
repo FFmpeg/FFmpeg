@@ -80,10 +80,3 @@ const AVOption *av_set_string(void *obj, const char *name, const char *val){
     return o;
 }
 #endif
-
-#if FF_API_OPT_SHOW
-int av_opt_show(void *obj, void *av_log_obj){
-    return av_opt_show2(obj, av_log_obj,
-                        AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
-}
-#endif
