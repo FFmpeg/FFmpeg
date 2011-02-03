@@ -3785,15 +3785,6 @@ int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
                          AVPacket *avpkt);
 
-#if FF_API_SUBTITLE_OLD
-/* Decode a subtitle message. Return -1 if error, otherwise return the
- * number of bytes used. If no subtitle could be decompressed,
- * got_sub_ptr is zero. Otherwise, the subtitle is stored in *sub. */
-attribute_deprecated int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
-                            int *got_sub_ptr,
-                            const uint8_t *buf, int buf_size);
-#endif
-
 /**
  * Decode a subtitle message.
  * Return a negative value on error, otherwise return the number of bytes used.

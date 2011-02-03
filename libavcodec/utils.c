@@ -692,20 +692,6 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
     return ret;
 }
 
-#if FF_API_SUBTITLE_OLD
-int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
-                            int *got_sub_ptr,
-                            const uint8_t *buf, int buf_size)
-{
-    AVPacket avpkt;
-    av_init_packet(&avpkt);
-    avpkt.data = buf;
-    avpkt.size = buf_size;
-
-    return avcodec_decode_subtitle2(avctx, sub, got_sub_ptr, &avpkt);
-}
-#endif
-
 int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                             int *got_sub_ptr,
                             AVPacket *avpkt)
