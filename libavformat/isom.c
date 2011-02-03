@@ -195,6 +195,12 @@ const AVCodecTag codec_movvideo_tags[] = {
     { CODEC_ID_SGI,   MKTAG('s', 'g', 'i', ' ') }, /* SGI  */
     { CODEC_ID_DPX,   MKTAG('d', 'p', 'x', ' ') }, /* DPX */
 
+    { CODEC_ID_PRORES, MKTAG('a', 'p', 'c', 'h') }, /* Apple ProRes 422 High Quality */
+    { CODEC_ID_PRORES, MKTAG('a', 'p', 'c', 'n') }, /* Apple ProRes 422 Standard Definition */
+    { CODEC_ID_PRORES, MKTAG('a', 'p', 'c', 's') }, /* Apple ProRes 422 LT */
+    { CODEC_ID_PRORES, MKTAG('a', 'p', 'c', 'o') }, /* Apple ProRes 422 Proxy */
+    { CODEC_ID_PRORES, MKTAG('a', 'p', '4', 'h') }, /* Apple ProRes 4444 */
+
     { CODEC_ID_NONE, 0 },
 };
 
