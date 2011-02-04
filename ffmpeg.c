@@ -505,25 +505,11 @@ static int ffmpeg_exit(int ret)
 
     /* close files */
     for(i=0;i<nb_output_files;i++) {
-        /* maybe av_close_output_file ??? */
         AVFormatContext *s = output_files[i];
         int j;
         if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             url_fclose(s->pb);
-        for(j=0;j<s->nb_streams;j++) {
-            av_metadata_free(&s->streams[j]->metadata);
-            av_free(s->streams[j]->codec);
-            av_free(s->streams[j]->info);
-            av_free(s->streams[j]);
-        }
-        for(j=0;j<s->nb_programs;j++) {
-            av_metadata_free(&s->programs[j]->metadata);
-        }
-        for(j=0;j<s->nb_chapters;j++) {
-            av_metadata_free(&s->chapters[j]->metadata);
-        }
-        av_metadata_free(&s->metadata);
-        av_free(s);
+        avformat_free_context(s);
         av_free(output_streams_for_file[i]);
     }
     for(i=0;i<nb_input_files;i++) {

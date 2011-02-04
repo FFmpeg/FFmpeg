@@ -81,17 +81,9 @@ fail:
         url_close_dyn_buf(track->rtp_ctx->pb, &buf);
         av_free(buf);
     }
-    if (track->rtp_ctx && track->rtp_ctx->streams[0]) {
-        av_metadata_free(&track->rtp_ctx->streams[0]->metadata);
-        av_free(track->rtp_ctx->streams[0]->codec->extradata);
-        av_free(track->rtp_ctx->streams[0]->codec);
-        av_free(track->rtp_ctx->streams[0]->info);
-        av_free(track->rtp_ctx->streams[0]);
-    }
     if (track->rtp_ctx) {
-        av_metadata_free(&track->rtp_ctx->metadata);
-        av_free(track->rtp_ctx->priv_data);
-        av_freep(&track->rtp_ctx);
+        avformat_free_context(track->rtp_ctx);
+        track->rtp_ctx = NULL;
     }
     av_freep(&track->enc);
     /* Set a default timescale, to avoid crashes in dump_format */
@@ -488,12 +480,6 @@ void ff_mov_close_hinting(MOVTrack *track) {
         url_close_dyn_buf(rtp_ctx->pb, &ptr);
         av_free(ptr);
     }
-    av_metadata_free(&rtp_ctx->streams[0]->metadata);
-    av_metadata_free(&rtp_ctx->metadata);
-    av_free(rtp_ctx->streams[0]->codec->extradata);
-    av_free(rtp_ctx->streams[0]->codec);
-    av_free(rtp_ctx->streams[0]->info);
-    av_free(rtp_ctx->streams[0]);
-    av_freep(&rtp_ctx);
+    avformat_free_context(rtp_ctx);
 }
 

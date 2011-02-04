@@ -46,13 +46,7 @@ static int sap_write_close(AVFormatContext *s)
             continue;
         av_write_trailer(rtpctx);
         url_fclose(rtpctx->pb);
-        av_metadata_free(&rtpctx->streams[0]->metadata);
-        av_metadata_free(&rtpctx->metadata);
-        av_free(rtpctx->streams[0]->codec->extradata);
-        av_free(rtpctx->streams[0]->codec);
-        av_free(rtpctx->streams[0]->info);
-        av_free(rtpctx->streams[0]);
-        av_free(rtpctx);
+        avformat_free_context(rtpctx);
         s->streams[i]->priv_data = NULL;
     }
 
