@@ -136,60 +136,35 @@ static int tcp_wait_fd(int fd, int write)
     int ret;
 
     ret = poll(&p, 1, 100);
-    return ret < 0 ? ff_neterrno() : !!(p.revents & ev);
+    return ret < 0 ? ff_neterrno() : p.revents & ev ? 0 : FF_NETERROR(EAGAIN);
 }
 
 static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    int len, ret;
+    int ret;
 
-    for (;;) {
-        if (url_interrupt_cb())
-            return AVERROR(EINTR);
+    if (!(h->flags & URL_FLAG_NONBLOCK)) {
         ret = tcp_wait_fd(s->fd, 0);
-        if (ret > 0) {
-            len = recv(s->fd, buf, size, 0);
-            if (len < 0) {
-                if (ff_neterrno() != FF_NETERROR(EINTR) &&
-                    ff_neterrno() != FF_NETERROR(EAGAIN))
-                    return ff_neterrno();
-            } else return len;
-        } else if (ret < 0) {
-            if (ret == FF_NETERROR(EINTR))
-                continue;
+        if (ret < 0)
             return ret;
-        }
     }
+    ret = recv(s->fd, buf, size, 0);
+    return ret < 0 ? ff_neterrno() : ret;
 }
 
 static int tcp_write(URLContext *h, const uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    int ret, size1, len;
+    int ret;
 
-    size1 = size;
-    while (size > 0) {
-        if (url_interrupt_cb())
-            return AVERROR(EINTR);
+    if (!(h->flags & URL_FLAG_NONBLOCK)) {
         ret = tcp_wait_fd(s->fd, 1);
-        if (ret > 0) {
-            len = send(s->fd, buf, size, 0);
-            if (len < 0) {
-                if (ff_neterrno() != FF_NETERROR(EINTR) &&
-                    ff_neterrno() != FF_NETERROR(EAGAIN))
-                    return ff_neterrno();
-                continue;
-            }
-            size -= len;
-            buf += len;
-        } else if (ret < 0) {
-            if (ret == FF_NETERROR(EINTR))
-                continue;
+        if (ret < 0)
             return ret;
-        }
     }
-    return size1 - size;
+    ret = send(s->fd, buf, size, 0);
+    return ret < 0 ? ff_neterrno() : ret;
 }
 
 static int tcp_close(URLContext *h)
