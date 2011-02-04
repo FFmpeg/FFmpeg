@@ -57,10 +57,7 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
     track->rtp_ctx->streams[0]->sample_aspect_ratio =
                         src_st->sample_aspect_ratio;
 
-    /* Remove the allocated codec context, link to the original one
-     * instead, to give the rtp muxer access to codec parameters. */
-    av_free(track->rtp_ctx->streams[0]->codec);
-    track->rtp_ctx->streams[0]->codec = src_st->codec;
+    avcodec_copy_context(track->rtp_ctx->streams[0]->codec, src_st->codec);
 
     if ((ret = url_open_dyn_packet_buf(&track->rtp_ctx->pb,
                                        RTP_MAX_PACKET_SIZE)) < 0)
@@ -86,6 +83,8 @@ fail:
     }
     if (track->rtp_ctx && track->rtp_ctx->streams[0]) {
         av_metadata_free(&track->rtp_ctx->streams[0]->metadata);
+        av_free(track->rtp_ctx->streams[0]->codec->extradata);
+        av_free(track->rtp_ctx->streams[0]->codec);
         av_free(track->rtp_ctx->streams[0]->info);
         av_free(track->rtp_ctx->streams[0]);
     }
@@ -491,6 +490,8 @@ void ff_mov_close_hinting(MOVTrack *track) {
     }
     av_metadata_free(&rtp_ctx->streams[0]->metadata);
     av_metadata_free(&rtp_ctx->metadata);
+    av_free(rtp_ctx->streams[0]->codec->extradata);
+    av_free(rtp_ctx->streams[0]->codec);
     av_free(rtp_ctx->streams[0]->info);
     av_free(rtp_ctx->streams[0]);
     av_freep(&rtp_ctx);
