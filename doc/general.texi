@@ -511,6 +511,8 @@ following image formats are supported:
     @tab not completely working
 @item Wing Commander III / Xan  @tab     @tab  X
     @tab Used in Wing Commander III .MVE files.
+@item Wing Commander IV / Xan  @tab     @tab  X
+    @tab Used in Wing Commander IV.
 @item Winnov WNV1            @tab     @tab  X
 @item WMV7                   @tab  X  @tab  X
 @item YAMAHA SMAF            @tab  X  @tab  X
