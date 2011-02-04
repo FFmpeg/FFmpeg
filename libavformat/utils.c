@@ -2556,12 +2556,17 @@ int av_read_pause(AVFormatContext *s)
 
 void av_close_input_stream(AVFormatContext *s)
 {
-    int i;
-    AVStream *st;
-
     flush_packet_queue(s);
     if (s->iformat->read_close)
         s->iformat->read_close(s);
+    avformat_free_context(s);
+}
+
+void avformat_free_context(AVFormatContext *s)
+{
+    int i;
+    AVStream *st;
+
     for(i=0;i<s->nb_streams;i++) {
         /* free all data in a stream component */
         st = s->streams[i];
