@@ -59,6 +59,9 @@ int ff_socket_nonblock(int socket, int enable);
 int ff_network_init(void);
 void ff_network_close(void);
 
+void ff_tls_init(void);
+void ff_tls_deinit(void);
+
 int ff_network_wait_fd(int fd, int write);
 
 int ff_inet_aton (const char * str, struct in_addr * add);

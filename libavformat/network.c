@@ -19,6 +19,85 @@
  */
 
 #include "network.h"
+#include "libavcodec/internal.h"
+
+#define THREADS (HAVE_PTHREADS || (defined(WIN32) && !defined(__MINGW32CE__)))
+
+#if THREADS
+#if HAVE_PTHREADS
+#include <pthread.h>
+#else
+#include "libavcodec/w32pthreads.h"
+#endif
+#endif
+
+#if CONFIG_OPENSSL
+#include <openssl/ssl.h>
+static int openssl_init;
+#if THREADS
+#include <openssl/crypto.h>
+#include "libavutil/avutil.h"
+pthread_mutex_t *openssl_mutexes;
+static void openssl_lock(int mode, int type, const char *file, int line)
+{
+    if (mode & CRYPTO_LOCK)
+        pthread_mutex_lock(&openssl_mutexes[type]);
+    else
+        pthread_mutex_unlock(&openssl_mutexes[type]);
+}
+#ifndef WIN32
+static unsigned long openssl_thread_id(void)
+{
+    return (intptr_t) pthread_self();
+}
+#endif
+#endif
+#endif
+
+void ff_tls_init(void)
+{
+    avpriv_lock_avformat();
+#if CONFIG_OPENSSL
+    if (!openssl_init) {
+        SSL_library_init();
+        SSL_load_error_strings();
+#if THREADS
+        if (!CRYPTO_get_locking_callback()) {
+            int i;
+            openssl_mutexes = av_malloc(sizeof(pthread_mutex_t) * CRYPTO_num_locks());
+            for (i = 0; i < CRYPTO_num_locks(); i++)
+                pthread_mutex_init(&openssl_mutexes[i], NULL);
+            CRYPTO_set_locking_callback(openssl_lock);
+#ifndef WIN32
+            CRYPTO_set_id_callback(openssl_thread_id);
+#endif
+        }
+#endif
+    }
+    openssl_init++;
+#endif
+    avpriv_unlock_avformat();
+}
+
+void ff_tls_deinit(void)
+{
+    avpriv_lock_avformat();
+#if CONFIG_OPENSSL
+    openssl_init--;
+    if (!openssl_init) {
+#if THREADS
+        if (CRYPTO_get_locking_callback() == openssl_lock) {
+            int i;
+            CRYPTO_set_locking_callback(NULL);
+            for (i = 0; i < CRYPTO_num_locks(); i++)
+                pthread_mutex_destroy(&openssl_mutexes[i]);
+            av_free(openssl_mutexes);
+        }
+#endif
+    }
+#endif
+    avpriv_unlock_avformat();
+}
 
 int ff_network_init(void)
 {
