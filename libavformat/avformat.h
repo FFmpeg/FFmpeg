@@ -1072,8 +1072,8 @@ attribute_deprecated AVFormatContext *av_alloc_format_context(void);
 
 /**
  * Allocate an AVFormatContext.
- * Can be freed with av_free() but do not forget to free everything you
- * explicitly allocated as well!
+ * avformat_free_context() can be used to free the context and everything
+ * allocated by the framework within it.
  */
 AVFormatContext *avformat_alloc_context(void);
 
@@ -1228,6 +1228,12 @@ void av_close_input_stream(AVFormatContext *s);
  * @param s media file handle
  */
 void av_close_input_file(AVFormatContext *s);
+
+/**
+ * Free an AVFormatContext and all its streams.
+ * @param s context to free
+ */
+void avformat_free_context(AVFormatContext *s);
 
 /**
  * Add a new stream to a media file.
