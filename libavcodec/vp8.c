@@ -1505,23 +1505,24 @@ static av_always_inline void filter_mb(VP8Context *s, uint8_t *dst[3], VP8Filter
     int inner_filter = f->inner_filter;
     int linesize = s->linesize;
     int uvlinesize = s->uvlinesize;
+    static const uint8_t hev_thresh_lut[2][64] = {
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+          2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+          3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+          3, 3, 3, 3 },
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+          2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+          2, 2, 2, 2 }
+    };
 
     if (!filter_level)
         return;
 
-    mbedge_lim = 2*(filter_level+2) + inner_limit;
-     bedge_lim = 2* filter_level    + inner_limit;
-    hev_thresh = filter_level >= 15;
+     bedge_lim = 2*filter_level + inner_limit;
+    mbedge_lim = bedge_lim + 4;
 
-    if (s->keyframe) {
-        if (filter_level >= 40)
-            hev_thresh = 2;
-    } else {
-        if (filter_level >= 40)
-            hev_thresh = 3;
-        else if (filter_level >= 20)
-            hev_thresh = 2;
-    }
+    hev_thresh = hev_thresh_lut[s->keyframe][filter_level];
 
     if (mb_x) {
         s->vp8dsp.vp8_h_loop_filter16y(dst[0],     linesize,
@@ -1577,8 +1578,8 @@ static av_always_inline void filter_mb_simple(VP8Context *s, uint8_t *dst, VP8Fi
     if (!filter_level)
         return;
 
-    mbedge_lim = 2*(filter_level+2) + inner_limit;
-     bedge_lim = 2* filter_level    + inner_limit;
+     bedge_lim = 2*filter_level + inner_limit;
+    mbedge_lim = bedge_lim + 4;
 
     if (mb_x)
         s->vp8dsp.vp8_h_loop_filter_simple(dst, linesize, mbedge_lim);
