@@ -498,13 +498,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
                 } else {
                     url_fclose(rtpctx->pb);
                 }
-                av_metadata_free(&rtpctx->streams[0]->metadata);
-                av_metadata_free(&rtpctx->metadata);
-                av_free(rtpctx->streams[0]->codec->extradata);
-                av_free(rtpctx->streams[0]->codec);
-                av_free(rtpctx->streams[0]->info);
-                av_free(rtpctx->streams[0]);
-                av_free(rtpctx);
+                avformat_free_context(rtpctx);
             } else if (rt->transport == RTSP_TRANSPORT_RDT && CONFIG_RTPDEC)
                 ff_rdt_parse_close(rtsp_st->transport_priv);
             else if (CONFIG_RTPDEC)
