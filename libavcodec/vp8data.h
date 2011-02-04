@@ -48,10 +48,8 @@ enum dct_token {
 #define MODE_I4x4 4
 
 enum inter_mvmode {
-    VP8_MVMODE_NEAREST = MODE_I4x4 + 1,
-    VP8_MVMODE_NEAR,
-    VP8_MVMODE_ZERO,
-    VP8_MVMODE_NEW,
+    VP8_MVMODE_ZERO = MODE_I4x4 + 1,
+    VP8_MVMODE_MV,
     VP8_MVMODE_SPLIT
 };
 
