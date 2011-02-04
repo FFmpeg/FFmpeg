@@ -22,6 +22,7 @@
 #include "movenc.h"
 #include "libavutil/intreadwrite.h"
 #include "internal.h"
+#include "rtpenc_chain.h"
 
 int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
 {
@@ -30,15 +31,9 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
     MOVTrack *src_track = &mov->tracks[src_index];
     AVStream *src_st    = s->streams[src_index];
     int ret = AVERROR(ENOMEM);
-    AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
 
     track->tag = MKTAG('r','t','p',' ');
     track->src_track = src_index;
-
-    if (!rtp_format) {
-        ret = AVERROR(ENOENT);
-        goto fail;
-    }
 
     track->enc = avcodec_alloc_context();
     if (!track->enc)
@@ -46,24 +41,9 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
     track->enc->codec_type = AVMEDIA_TYPE_DATA;
     track->enc->codec_tag  = track->tag;
 
-    track->rtp_ctx = avformat_alloc_context();
+    track->rtp_ctx = ff_rtp_chain_mux_open(s, src_st, NULL,
+                                           RTP_MAX_PACKET_SIZE);
     if (!track->rtp_ctx)
-        goto fail;
-    track->rtp_ctx->oformat = rtp_format;
-    if (!av_new_stream(track->rtp_ctx, 0))
-        goto fail;
-
-    /* Copy stream parameters */
-    track->rtp_ctx->streams[0]->sample_aspect_ratio =
-                        src_st->sample_aspect_ratio;
-
-    avcodec_copy_context(track->rtp_ctx->streams[0]->codec, src_st->codec);
-
-    if ((ret = url_open_dyn_packet_buf(&track->rtp_ctx->pb,
-                                       RTP_MAX_PACKET_SIZE)) < 0)
-        goto fail;
-    ret = av_write_header(track->rtp_ctx);
-    if (ret)
         goto fail;
 
     /* Copy the RTP AVStream timebase back to the hint AVStream */
@@ -76,15 +56,6 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
 fail:
     av_log(s, AV_LOG_WARNING,
            "Unable to initialize hinting of stream %d\n", src_index);
-    if (track->rtp_ctx && track->rtp_ctx->pb) {
-        uint8_t *buf;
-        url_close_dyn_buf(track->rtp_ctx->pb, &buf);
-        av_free(buf);
-    }
-    if (track->rtp_ctx) {
-        avformat_free_context(track->rtp_ctx);
-        track->rtp_ctx = NULL;
-    }
     av_freep(&track->enc);
     /* Set a default timescale, to avoid crashes in dump_format */
     track->timescale = 90000;
