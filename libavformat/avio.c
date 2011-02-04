@@ -206,24 +206,21 @@ int url_open(URLContext **puc, const char *filename, int flags)
     return ret;
 }
 
-int url_read(URLContext *h, unsigned char *buf, int size)
-{
-    int ret;
-    if (h->flags & URL_WRONLY)
-        return AVERROR(EIO);
-    ret = h->prot->url_read(h, buf, size);
-    return ret;
-}
-
-static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int size,
+static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int size, int size_min,
                                          int (*transfer_func)(URLContext *h, unsigned char *buf, int size))
 {
     int ret, len;
     int fast_retries = 5;
 
     len = 0;
-    while (len < size) {
+    while (len < size_min) {
+        if (url_interrupt_cb())
+            return AVERROR(EINTR);
         ret = transfer_func(h, buf+len, size-len);
+        if (ret == AVERROR(EINTR))
+            continue;
+        if (h->flags & URL_FLAG_NONBLOCK)
+            return ret;
         if (ret == AVERROR(EAGAIN)) {
             ret = 0;
             if (fast_retries)
@@ -239,9 +236,18 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
     return len;
 }
 
+int url_read(URLContext *h, unsigned char *buf, int size)
+{
+    if (h->flags & URL_WRONLY)
+        return AVERROR(EIO);
+    return retry_transfer_wrapper(h, buf, size, 1, h->prot->url_read);
+}
+
 int url_read_complete(URLContext *h, unsigned char *buf, int size)
 {
-    return retry_transfer_wrapper(h, buf, size, url_read);
+    if (h->flags & URL_WRONLY)
+        return AVERROR(EIO);
+    return retry_transfer_wrapper(h, buf, size, size, h->prot->url_read);
 }
 
 int url_write(URLContext *h, const unsigned char *buf, int size)
@@ -252,7 +258,7 @@ int url_write(URLContext *h, const unsigned char *buf, int size)
     if (h->max_packet_size && size > h->max_packet_size)
         return AVERROR(EIO);
 
-    return retry_transfer_wrapper(h, buf, size, h->prot->url_write);
+    return retry_transfer_wrapper(h, buf, size, size, h->prot->url_write);
 }
 
 int64_t url_seek(URLContext *h, int64_t pos, int whence)

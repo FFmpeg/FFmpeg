@@ -151,7 +151,6 @@ int url_read(URLContext *h, unsigned char *buf, int size);
 /**
  * Read as many bytes as possible (up to size), calling the
  * read function multiple times if necessary.
- * Will also retry if the read function returns AVERROR(EAGAIN).
  * This makes special short-read handling in applications
  * unnecessary, if the return value is < size then it is
  * certain there was either an error or the end of file was reached.
