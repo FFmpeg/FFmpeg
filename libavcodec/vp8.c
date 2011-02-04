@@ -1487,7 +1487,7 @@ static av_always_inline void filter_level_for_mb(VP8Context *s, VP8Macroblock *m
 
     interior_limit = filter_level;
     if (s->filter.sharpness) {
-        interior_limit >>= s->filter.sharpness > 4 ? 2 : 1;
+        interior_limit >>= (s->filter.sharpness + 3) >> 2;
         interior_limit = FFMIN(interior_limit, 9 - s->filter.sharpness);
     }
     interior_limit = FFMAX(interior_limit, 1);
