@@ -75,6 +75,8 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
     }
     avctx->sample_fmt = avctx->bits_per_coded_sample == 16 ? AV_SAMPLE_FMT_S16 :
                                                              AV_SAMPLE_FMT_S32;
+    if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
+        avctx->bits_per_raw_sample = avctx->bits_per_coded_sample;
 
     /* get the sample rate. Not all values are known or exist. */
     switch (header[2] & 0x0f) {
