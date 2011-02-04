@@ -74,6 +74,7 @@ version <next>:
 - Lagarith decoder
 - ffmpeg -copytb option added
 - IVF muxer added
+- Wing Commander IV movies decoder added
 
 
 version 0.6:
