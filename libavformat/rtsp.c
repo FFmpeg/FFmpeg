@@ -500,6 +500,8 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
                 }
                 av_metadata_free(&rtpctx->streams[0]->metadata);
                 av_metadata_free(&rtpctx->metadata);
+                av_free(rtpctx->streams[0]->codec->extradata);
+                av_free(rtpctx->streams[0]->codec);
                 av_free(rtpctx->streams[0]->info);
                 av_free(rtpctx->streams[0]);
                 av_free(rtpctx);
