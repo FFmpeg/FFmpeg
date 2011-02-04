@@ -63,9 +63,32 @@ typedef struct URLPollEntry {
     int revents;
 } URLPollEntry;
 
-#define URL_RDONLY 0
-#define URL_WRONLY 1
-#define URL_RDWR   2
+/**
+ * @defgroup open_modes URL open modes
+ * The flags argument to url_open and cosins must be one of the following
+ * constants, optionally ORed with other flags.
+ * @{
+ */
+#define URL_RDONLY 0  /**< read-only */
+#define URL_WRONLY 1  /**< write-only */
+#define URL_RDWR   2  /**< read-write */
+/**
+ * @}
+ */
+
+/**
+ * Use non-blocking mode.
+ * If this flag is set, operations on the context will return
+ * AVERROR(EAGAIN) if they can not be performed immediately.
+ * If this flag is not set, operations on the context will never return
+ * AVERROR(EAGAIN).
+ * Note that this flag does not affect the opening/connecting of the
+ * context. Connecting a protocol will always block if necessary (e.g. on
+ * network protocols) but never hang (e.g. on busy devices).
+ * Warning: non-blocking protocols is work-in-progress; this flag may be
+ * silently ignored.
+ */
+#define URL_FLAG_NONBLOCK 4
 
 typedef int URLInterruptCB(void);
 
