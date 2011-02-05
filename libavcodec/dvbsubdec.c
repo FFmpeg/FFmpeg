@@ -792,7 +792,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
                 map_table = NULL;
 
             x_pos += dvbsub_read_2bit_string(pbuf + (y_pos * region->width) + x_pos,
-                                                region->width - x_pos, &buf, buf_size,
+                                                region->width - x_pos, &buf, buf_end - buf,
                                                 non_mod, map_table);
             break;
         case 0x11:
@@ -807,7 +807,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
                 map_table = NULL;
 
             x_pos += dvbsub_read_4bit_string(pbuf + (y_pos * region->width) + x_pos,
-                                                region->width - x_pos, &buf, buf_size,
+                                                region->width - x_pos, &buf, buf_end - buf,
                                                 non_mod, map_table);
             break;
         case 0x12:
@@ -817,7 +817,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
             }
 
             x_pos += dvbsub_read_8bit_string(pbuf + (y_pos * region->width) + x_pos,
-                                                region->width - x_pos, &buf, buf_size,
+                                                region->width - x_pos, &buf, buf_end - buf,
                                                 non_mod, NULL);
             break;
 
