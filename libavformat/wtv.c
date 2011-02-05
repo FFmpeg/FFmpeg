@@ -783,18 +783,14 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             if (ff_find_stream_index(s, sid) < 0) {
                 ff_asf_guid mediatype, subtype, formattype;
                 int size;
-                consumed += 20;
-                url_fskip(pb, 16);
-                if (get_le32(pb)) {
-                    url_fskip(pb, 8);
+                    url_fskip(pb, 28);
                     ff_get_guid(pb, &mediatype);
                     ff_get_guid(pb, &subtype);
                     url_fskip(pb, 12);
                     ff_get_guid(pb, &formattype);
                     size = get_le32(pb);
                     parse_media_type(s, 0, sid, mediatype, subtype, formattype, size);
-                    consumed += 72 + size;
-                }
+                    consumed += 92 + size;
             }
         } else if (!ff_guidcmp(g, stream2_guid)) {
             int stream_index = ff_find_stream_index(s, sid);
