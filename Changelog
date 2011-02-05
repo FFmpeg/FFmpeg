@@ -57,6 +57,7 @@ easier to use. The changes are:
 - 4:2:2 H.264 decoding support
 - Pulseaudio input device
 - replacement Indeo 3 decoder
+- TLS/SSL and HTTPS protocol support
 
 
 version 0.7:
