@@ -78,6 +78,8 @@ void uninit_opts(void)
 #if CONFIG_SWSCALE
     av_freep(&sws_opts);
 #endif
+    av_freep(&opt_names);
+    av_freep(&opt_values);
 }
 
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
