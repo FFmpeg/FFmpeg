@@ -534,7 +534,6 @@ static int ffmpeg_exit(int ret)
         fclose(vstats_file);
     av_free(vstats_filename);
 
-    av_free(opt_names);
     av_free(streamid_map);
     av_free(input_codecs);
     av_free(output_codecs);
