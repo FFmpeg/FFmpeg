@@ -53,6 +53,16 @@ static unsigned long openssl_thread_id(void)
 #endif
 #endif
 #endif
+#if CONFIG_GNUTLS
+#include <gnutls/gnutls.h>
+#if THREADS && GNUTLS_VERSION_NUMBER <= 0x020b00
+#include <gcrypt.h>
+#include <errno.h>
+#undef malloc
+#undef free
+GCRY_THREAD_OPTION_PTHREAD_IMPL;
+#endif
+#endif
 
 void ff_tls_init(void)
 {
@@ -76,6 +86,13 @@ void ff_tls_init(void)
     }
     openssl_init++;
 #endif
+#if CONFIG_GNUTLS
+#if THREADS && GNUTLS_VERSION_NUMBER < 0x020b00
+    if (gcry_control(GCRYCTL_ANY_INITIALIZATION_P) == 0)
+        gcry_control(GCRYCTL_SET_THREAD_CBS, &gcry_threads_pthread);
+#endif
+    gnutls_global_init();
+#endif
     avpriv_unlock_avformat();
 }
 
@@ -95,6 +112,9 @@ void ff_tls_deinit(void)
         }
 #endif
     }
+#endif
+#if CONFIG_GNUTLS
+    gnutls_global_deinit();
 #endif
     avpriv_unlock_avformat();
 }
