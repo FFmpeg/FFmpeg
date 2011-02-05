@@ -1345,7 +1345,7 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
  */
 static void render_slice(Vp3DecodeContext *s, int slice)
 {
-    int x, y, i, j;
+    int x, y, i, j, fragment;
     LOCAL_ALIGNED_16(DCTELEM, block, [64]);
     int motion_x = 0xdeadbeef, motion_y = 0xdeadbeef;
     int motion_halfpel_index;
@@ -1390,8 +1390,9 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                 for (j = 0; j < 16; j++) {
                     x = 4*sb_x + hilbert_offset[j][0];
                     y = 4*sb_y + hilbert_offset[j][1];
+                    fragment = y*fragment_width + x;
 
-                    i = fragment_start + y*fragment_width + x;
+                    i = fragment_start + fragment;
 
                     // bounds check
                     if (x >= fragment_width || y >= fragment_height)
@@ -1415,8 +1416,8 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                     if ((s->all_fragments[i].coding_method > MODE_INTRA) &&
                         (s->all_fragments[i].coding_method != MODE_USING_GOLDEN)) {
                         int src_x, src_y;
-                        motion_x = motion_val[y*fragment_width + x][0];
-                        motion_y = motion_val[y*fragment_width + x][1];
+                        motion_x = motion_val[fragment][0];
+                        motion_y = motion_val[fragment][1];
 
                         src_x= (motion_x>>1) + 8*x;
                         src_y= (motion_y>>1) + 8*y;
