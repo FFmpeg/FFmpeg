@@ -91,7 +91,7 @@ theora_header (AVFormatContext * s, int idx)
             st->codec->time_base.num = 1;
             st->codec->time_base.den = 25;
         }
-        st->time_base = st->codec->time_base;
+        av_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
 
         st->sample_aspect_ratio.num = get_bits_long(&gb, 24);
         st->sample_aspect_ratio.den = get_bits_long(&gb, 24);

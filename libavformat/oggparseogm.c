@@ -83,14 +83,13 @@ ogm_header(AVFormatContext *s, int idx)
             st->codec->height = bytestream_get_le32(&p);
             st->codec->time_base.den = spu * 10000000;
             st->codec->time_base.num = time_unit;
-            st->time_base = st->codec->time_base;
+            av_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
         } else {
             st->codec->channels = bytestream_get_le16(&p);
             p += 2;                 /* block_align */
             st->codec->bit_rate = bytestream_get_le32(&p) * 8;
             st->codec->sample_rate = spu * 10000000 / time_unit;
-            st->time_base.num = 1;
-            st->time_base.den = st->codec->sample_rate;
+            av_set_pts_info(st, 64, 1, st->codec->sample_rate);
         }
     } else if (*p == 3) {
         if (os->psize > 8)
