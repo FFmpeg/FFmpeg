@@ -77,6 +77,12 @@ static void id3v2_put_size(AVFormatContext *s, int size)
     put_byte(s->pb, size       & 0x7f);
 }
 
+static int string_is_ascii(const uint8_t *str)
+{
+    while (*str && *str < 128) str++;
+    return !*str;
+}
+
 /**
  * Write a text frame with one (normal frames) or two (TXXX frames) strings
  * according to encoding (only UTF-8 or UTF-16+BOM supported).
@@ -91,6 +97,12 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
     ByteIOContext *dyn_buf;
     if (url_open_dyn_buf(&dyn_buf) < 0)
         return AVERROR(ENOMEM);
+
+    /* check if the strings are ASCII-only and use UTF16 only if
+     * they're not */
+    if (enc == ID3v2_ENCODING_UTF16BOM && string_is_ascii(str1) &&
+        (!str2 || string_is_ascii(str2)))
+        enc = ID3v2_ENCODING_ISO8859;
 
     put_byte(dyn_buf, enc);
     if (enc == ID3v2_ENCODING_UTF16BOM) {
