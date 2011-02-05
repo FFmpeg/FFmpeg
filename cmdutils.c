@@ -78,6 +78,14 @@ void uninit_opts(void)
 #if CONFIG_SWSCALE
     av_freep(&sws_opts);
 #endif
+    for (i = 0; i < opt_name_count; i++) {
+        //opt_values are only stored for codec-specific options in which case
+        //both the name and value are dup'd
+        if (opt_values[i]) {
+            av_freep(&opt_names[i]);
+            av_freep(&opt_values[i]);
+        }
+    }
     av_freep(&opt_names);
     av_freep(&opt_values);
 }
@@ -270,9 +278,9 @@ int opt_default(const char *opt, const char *arg){
 
     //FIXME we should always use avcodec_opts, ... for storing options so there will not be any need to keep track of what i set over this
     opt_values= av_realloc(opt_values, sizeof(void*)*(opt_name_count+1));
-    opt_values[opt_name_count]= o ? NULL : arg;
+    opt_values[opt_name_count]= o ? NULL : av_strdup(arg);
     opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
-    opt_names[opt_name_count++]= o ? o->name : opt;
+    opt_names[opt_name_count++]= o ? o->name : av_strdup(opt);
 
     if ((*avcodec_opts && avcodec_opts[0]->debug) || (avformat_opts && avformat_opts->debug))
         av_log_set_level(AV_LOG_DEBUG);
