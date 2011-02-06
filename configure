@@ -2672,7 +2672,7 @@ EOF
             elf*) enabled debug && append YASMFLAGS $yasm_debug ;;
         esac
 
-        check_yasm "pabsw xmm0, xmm0" && enable yasm ||
+        check_yasm "pextrd [eax], xmm0, 1" && enable yasm ||
             die "yasm not found, use --disable-yasm for a crippled build"
     fi
 
