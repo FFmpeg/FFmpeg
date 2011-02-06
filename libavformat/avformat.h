@@ -1267,7 +1267,8 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base,
                           int64_t start, int64_t end, const char *title);
 
 /**
- * Set the pts for a given stream.
+ * Set the pts for a given stream. If the new values would be invalid
+ * (<= 0), it leaves the AVStream unchanged.
  *
  * @param s stream
  * @param pts_wrap_bits number of bits effectively used by the pts
