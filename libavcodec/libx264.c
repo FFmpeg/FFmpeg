@@ -277,12 +277,11 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (avctx->level > 0)
         x4->params.i_level_idc = avctx->level;
 
-    if ((avctx->rc_buffer_size != 0) &&
+    if (avctx->rc_buffer_size && avctx->rc_initial_buffer_occupancy &&
         (avctx->rc_initial_buffer_occupancy <= avctx->rc_buffer_size)) {
         x4->params.rc.f_vbv_buffer_init =
             (float)avctx->rc_initial_buffer_occupancy / avctx->rc_buffer_size;
-    } else
-        x4->params.rc.f_vbv_buffer_init = 0.9;
+    }
 
     x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
