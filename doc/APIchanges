@@ -13,7 +13,7 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
-2011-02-XX - fe174fc - lavf 52.97.0 - avio.h
+2011-02-06 - fe174fc - lavf 52.97.0 - avio.h
   Add flag for non-blocking protocols: URL_FLAG_NONBLOCK
 
 2011-02-04 - f124b08 - lavf 52.96.0 - avformat_free_context()
