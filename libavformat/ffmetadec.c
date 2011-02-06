@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "ffmeta.h"
+#include "internal.h"
 
 static int probe(AVProbeData *p)
 {
