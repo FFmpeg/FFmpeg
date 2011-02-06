@@ -249,6 +249,7 @@ const AVCodecTag codec_movaudio_tags[] = {
     { CODEC_ID_QCELP, MKTAG('Q','c','l','q') },
     { CODEC_ID_QCELP, MKTAG('s','q','c','p') }, /* ISO Media fourcc */
 
+    { CODEC_ID_QDMC, MKTAG('Q', 'D', 'M', 'C') }, /* QDMC */
     { CODEC_ID_QDM2, MKTAG('Q', 'D', 'M', '2') }, /* QDM2 */
 
     { CODEC_ID_DVAUDIO, MKTAG('v', 'd', 'v', 'a') },
