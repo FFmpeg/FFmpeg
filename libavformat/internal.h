@@ -240,4 +240,25 @@ int ff_add_index_entry(AVIndexEntry **index_entries,
                        unsigned int *index_entries_allocated_size,
                        int64_t pos, int64_t timestamp, int size, int distance, int flags);
 
+/**
+ * Add a new chapter.
+ *
+ * @param s media file handle
+ * @param id unique ID for this chapter
+ * @param start chapter start time in time_base units
+ * @param end chapter end time in time_base units
+ * @param title chapter title
+ *
+ * @return AVChapter or NULL on error
+ */
+AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base,
+                          int64_t start, int64_t end, const char *title);
+
+/**
+ * Ensure the index uses less memory than the maximum specified in
+ * AVFormatContext.max_index_size by discarding entries if it grows
+ * too large.
+ */
+void ff_reduce_index(AVFormatContext *s, int stream_index);
+
 #endif /* AVFORMAT_INTERNAL_H */

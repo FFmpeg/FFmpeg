@@ -28,6 +28,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
+#include "internal.h"
 #include "oggdec.h"
 #include "vorbiscomment.h"
 

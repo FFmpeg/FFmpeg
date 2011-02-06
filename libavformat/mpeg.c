@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "mpeg.h"
 
 //#define DEBUG_SEEK

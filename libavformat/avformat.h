@@ -1251,22 +1251,6 @@ AVStream *av_new_stream(AVFormatContext *s, int id);
 AVProgram *av_new_program(AVFormatContext *s, int id);
 
 /**
- * Add a new chapter.
- * This function is NOT part of the public API
- * and should ONLY be used by demuxers.
- *
- * @param s media file handle
- * @param id unique ID for this chapter
- * @param start chapter start time in time_base units
- * @param end chapter end time in time_base units
- * @param title chapter title
- *
- * @return AVChapter or NULL on error
- */
-AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base,
-                          int64_t start, int64_t end, const char *title);
-
-/**
  * Set the pts for a given stream. If the new values would be invalid
  * (<= 0), it leaves the AVStream unchanged.
  *
@@ -1295,15 +1279,6 @@ int av_find_default_stream_index(AVFormatContext *s);
  * @return < 0 if no such timestamp could be found
  */
 int av_index_search_timestamp(AVStream *st, int64_t timestamp, int flags);
-
-/**
- * Ensure the index uses less memory than the maximum specified in
- * AVFormatContext.max_index_size by discarding entries if it grows
- * too large.
- * This function is not part of the public API and should only be called
- * by demuxers.
- */
-void ff_reduce_index(AVFormatContext *s, int stream_index);
 
 /**
  * Add an index entry into a sorted list. Update the entry if the list
