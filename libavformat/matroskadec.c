@@ -58,6 +58,7 @@ typedef enum {
     EBML_NEST,
     EBML_PASS,
     EBML_STOP,
+    EBML_TYPE_COUNT
 } EbmlType;
 
 typedef const struct EbmlSyntax {
@@ -780,6 +781,16 @@ static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
 static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                            EbmlSyntax *syntax, void *data)
 {
+    static const uint64_t max_lengths[EBML_TYPE_COUNT] = {
+        [EBML_UINT]  = 8,
+        [EBML_FLOAT] = 8,
+        // max. 16 MB for strings
+        [EBML_STR]   = 0x1000000,
+        [EBML_UTF8]  = 0x1000000,
+        // max. 256 MB for binary data
+        [EBML_BIN]   = 0x10000000,
+        // no limits for anything else
+    };
     ByteIOContext *pb = matroska->ctx->pb;
     uint32_t id = syntax->id;
     uint64_t length;
@@ -798,6 +809,12 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
         matroska->current_id = 0;
         if ((res = ebml_read_length(matroska, pb, &length)) < 0)
             return res;
+        if (max_lengths[syntax->type] && length > max_lengths[syntax->type]) {
+            av_log(matroska->ctx, AV_LOG_ERROR,
+                   "Invalid length 0x%"PRIx64" > 0x%"PRIx64" for syntax element %i\n",
+                   length, max_lengths[syntax->type], syntax->type);
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     switch (syntax->type) {
