@@ -312,7 +312,7 @@ send a reminder by email. Your patch should eventually be dealt with.
     If it depends on a parser or a library, did you add that dependency in
     configure?
 @item
-    Did you "svn add" the appropriate files before commiting?
+    Did you "git add" the appropriate files before committing?
 @end enumerate
 
 @section patch submission checklist
@@ -325,7 +325,7 @@ send a reminder by email. Your patch should eventually be dealt with.
 @item
     Is the patch a unified diff?
 @item
-    Is the patch against latest FFmpeg SVN?
+    Is the patch against latest FFmpeg git master branch?
 @item
     Are you subscribed to ffmpeg-dev?
     (the list is subscribers only due to spam)
@@ -388,7 +388,7 @@ send a reminder by email. Your patch should eventually be dealt with.
 @section Patch review process
 
 All patches posted to ffmpeg-devel will be reviewed, unless they contain a
-clear note that the patch is not for SVN.
+clear note that the patch is not for the git master branch.
 Reviews and comments will be posted as replies to the patch on the
 mailing list. The patch submitter then has to take care of every comment,
 that can be by resubmitting a changed patch or by discussion. Resubmitted

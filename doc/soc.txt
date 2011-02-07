@@ -9,14 +9,14 @@ it's a little late for this year's soc (2006).
 The Goal:
 Our goal in respect to soc is and must be of course exactly one thing and
 that is to improve FFmpeg, to reach this goal, code must
-* conform to the svn policy and patch submission guidelines
+* conform to the development policy and patch submission guidelines
 * must improve FFmpeg somehow (faster, smaller, "better",
   more codecs supported, fewer bugs, cleaner, ...)
 
 for mentors and other developers to help students to reach that goal it is
 essential that changes to their codebase are publicly visible, clean and
 easy reviewable that again leads us to:
-* use of a revision control system like svn
+* use of a revision control system like git
 * separation of cosmetic from non-cosmetic changes (this is almost entirely
   ignored by mentors and students in soc 2006 which might lead to a suprise
   when the code will be reviewed at the end before a possible inclusion in
