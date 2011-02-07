@@ -69,7 +69,7 @@ unassigned TODO: (unordered)
 - JPEG2000 decoder & encoder
 - MPEG4 GMC encoding support
 - macroblock based pixel format (better cache locality, somewhat complex, one paper claimed it faster for high res)
-- regression tests for codecs which do not have an encoder (I+P-frame bitstream in svn)
+- regression tests for codecs which do not have an encoder (I+P-frame bitstream in the 'master' branch)
 - add support for using mplayers video filters to ffmpeg
 - H264 encoder
 - per MB ratecontrol (so VCD and such do work better)
