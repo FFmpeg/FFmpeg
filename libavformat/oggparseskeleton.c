@@ -60,7 +60,7 @@ static int skeleton_header(AVFormatContext *s, int idx)
         start_den = AV_RL64(buf+20);
 
         if (start_den) {
-            int64_t base_den;
+            int base_den;
             av_reduce(&start_time, &base_den, start_num, start_den, INT_MAX);
             av_set_pts_info(st, 64, 1, base_den);
             os->lastpts =
