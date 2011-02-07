@@ -799,12 +799,12 @@ static void create_map(vorbis_context *vc, uint_fast8_t floor_number)
         vf->map_size[blockflag] = n;
     }
 
-#   ifdef V_DEBUG
+#ifdef V_DEBUG
     for (idx = 0; idx <= n; ++idx) {
         AV_DEBUG("floor0 map: map at pos %d is %d\n",
                  idx, map[idx]);
     }
-#   endif
+#endif
 }
 
 static int vorbis_parse_setup_hdr_modes(vorbis_context *vc)
