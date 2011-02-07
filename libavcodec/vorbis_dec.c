@@ -1037,7 +1037,6 @@ static int vorbis_floor0_decode(vorbis_context *vc,
             av_log(vc->avccontext, AV_LOG_ERROR,
                     "floor0 dec: booknumber too high!\n");
             book_idx =  0;
-            //FIXME: look above
         }
         AV_DEBUG("floor0 dec: booknumber: %u\n", book_idx);
         codebook = vc->codebooks[vf->book_list[book_idx]];
