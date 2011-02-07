@@ -25,7 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "internal.h"
 #include "dsputil.h"
 #include "avcodec.h"

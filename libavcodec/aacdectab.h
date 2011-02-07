@@ -30,7 +30,7 @@
 #ifndef AVCODEC_AACDECTAB_H
 #define AVCODEC_AACDECTAB_H
 
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 #include "aac.h"
 
 #include <stdint.h>

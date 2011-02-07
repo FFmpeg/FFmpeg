@@ -31,7 +31,7 @@ $(foreach VAR,$(SILENT),$(eval override $(VAR) = @$($(VAR))))
 $(eval INSTALL = @$(call ECHO,INSTALL,$$(^:$(SRC_DIR)/%=%)); $(INSTALL))
 endif
 
-ALLFFLIBS = avcodec avcore avdevice avfilter avformat avutil postproc swscale
+ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
 IFLAGS   := -I$(BUILD_ROOT_REL) -I$(SRC_PATH)
 CPPFLAGS := $(IFLAGS) $(CPPFLAGS)

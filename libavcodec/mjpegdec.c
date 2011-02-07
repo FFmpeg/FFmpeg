@@ -33,7 +33,7 @@
 //#define DEBUG
 #include <assert.h>
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mjpeg.h"

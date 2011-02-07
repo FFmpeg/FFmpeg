@@ -24,7 +24,7 @@
 #include "ac3_parser.h"
 #include "aac_ac3_parser.h"
 #include "get_bits.h"
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 
 
 #define AC3_HEADER_SIZE 7

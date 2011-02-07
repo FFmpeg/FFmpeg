@@ -16,14 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCORE_PARSEUTILS_H
-#define AVCORE_PARSEUTILS_H
+#ifndef AVUTIL_PARSEUTILS_H
+#define AVUTIL_PARSEUTILS_H
 
 #include "libavutil/rational.h"
 
 /**
  * @file
- * misc parsing utilities for libavcore
+ * misc parsing utilities
  */
 
 /**
@@ -72,4 +72,4 @@ int av_parse_video_rate(AVRational *rate, const char *str);
 int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
                    void *log_ctx);
 
-#endif /* AVCORE_PARSEUTILS_H */
+#endif /* AVUTIL_PARSEUTILS_H */

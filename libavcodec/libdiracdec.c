@@ -28,7 +28,7 @@
 * (http://dirac.sourceforge.net/specification.html).
 */
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "libdirac.h"
 
 #undef NDEBUG

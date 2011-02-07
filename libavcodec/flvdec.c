@@ -20,7 +20,7 @@
 #include "mpegvideo.h"
 #include "h263.h"
 #include "flv.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 
 void ff_flv2_decode_ac_esc(GetBitContext *gb, int *level, int *run, int *last){
     int is11 = get_bits1(gb);

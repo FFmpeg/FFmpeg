@@ -23,7 +23,7 @@
 
 #include "libavutil/bswap.h"
 #include "libavutil/lzo.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "rtjpeg.h"

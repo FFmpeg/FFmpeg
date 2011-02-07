@@ -22,7 +22,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "unary.h"
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 
 /**
  * @file

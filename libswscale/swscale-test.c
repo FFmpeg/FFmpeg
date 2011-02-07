@@ -25,7 +25,7 @@
 #include <stdarg.h>
 
 #undef HAVE_AV_CONFIG_H
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/avutil.h"
 #include "libavutil/crc.h"

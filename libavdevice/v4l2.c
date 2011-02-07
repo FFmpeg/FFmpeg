@@ -43,7 +43,7 @@
 #endif
 #include <time.h>
 #include <strings.h>
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 
 static const int desired_video_buffers = 256;
 

@@ -27,7 +27,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/libm.h"
-#include "libavcore/samplefmt.h"
+#include "libavutil/samplefmt.h"
 #include "avcodec.h"
 #include "audioconvert.h"
 

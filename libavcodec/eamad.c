@@ -34,7 +34,7 @@
 #include "aandcttab.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD i-frame */

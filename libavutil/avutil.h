@@ -40,7 +40,7 @@
 #define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
 
 #define LIBAVUTIL_VERSION_MAJOR 50
-#define LIBAVUTIL_VERSION_MINOR 37
+#define LIBAVUTIL_VERSION_MINOR 38
 #define LIBAVUTIL_VERSION_MICRO  0
 
 #define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
@@ -92,6 +92,18 @@ enum AVMediaType {
 #define FF_LAMBDA_MAX (256*128-1)
 
 #define FF_QUALITY_SCALE FF_LAMBDA_SCALE //FIXME maybe remove
+
+#define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
+#define AV_TIME_BASE            1000000
+#define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
+
+/**
+ * Those FF_API_* defines are not part of public API.
+ * They may change, break or disappear at any time.
+ */
+#ifndef FF_API_OLD_IMAGE_NAMES
+#define FF_API_OLD_IMAGE_NAMES (LIBAVUTIL_VERSION_MAJOR < 51)
+#endif
 
 #include "common.h"
 #include "error.h"

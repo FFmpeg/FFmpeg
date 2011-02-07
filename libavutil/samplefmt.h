@@ -16,10 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCORE_SAMPLEFMT_H
-#define AVCORE_SAMPLEFMT_H
-
-#include "avcore.h"
+#ifndef AVUTIL_SAMPLEFMT_H
+#define AVUTIL_SAMPLEFMT_H
 
 /**
  * all in native-endian format
@@ -31,7 +29,7 @@ enum AVSampleFormat {
     AV_SAMPLE_FMT_S32,         ///< signed 32 bits
     AV_SAMPLE_FMT_FLT,         ///< float
     AV_SAMPLE_FMT_DBL,         ///< double
-    AV_SAMPLE_FMT_NB           ///< Number of sample formats. DO NOT USE if dynamically linking to libavcore
+    AV_SAMPLE_FMT_NB           ///< Number of sample formats. DO NOT USE if linking dynamically
 };
 
 /**
@@ -69,4 +67,4 @@ char *av_get_sample_fmt_string(char *buf, int buf_size, enum AVSampleFormat samp
  */
 int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt);
 
-#endif /* AVCORE_SAMPLEFMT_H */
+#endif /* AVUTIL_SAMPLEFMT_H */

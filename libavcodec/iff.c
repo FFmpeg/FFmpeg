@@ -25,7 +25,7 @@
  * IFF PBM/ILBM bitmap decoder
  */
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "bytestream.h"
 #include "avcodec.h"
 #include "get_bits.h"

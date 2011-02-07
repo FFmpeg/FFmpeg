@@ -32,8 +32,8 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/audioconvert.h"
 #include "avformat.h"
-#include "libavcore/audioconvert.h"
 
 #define FLIC_FILE_MAGIC_1 0xAF11
 #define FLIC_FILE_MAGIC_2 0xAF12

@@ -33,7 +33,7 @@
 #include <float.h>
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "libavformat/avformat.h"
 #include "avfilter.h"
 

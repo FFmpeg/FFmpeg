@@ -32,7 +32,7 @@
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "libavutil/lzo.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define kVGT_TAG MKTAG('k', 'V', 'G', 'T')

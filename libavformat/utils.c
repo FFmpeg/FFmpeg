@@ -3341,7 +3341,7 @@ void dump_format(AVFormatContext *ic,
 }
 
 #if FF_API_PARSE_FRAME_PARAM
-#include "libavcore/parseutils.h"
+#include "libavutil/parseutils.h"
 
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
 {

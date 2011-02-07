@@ -29,7 +29,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/avstring.h"
 #include "libavutil/pixdesc.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "internal.h"
 
 static const char *var_names[] = {

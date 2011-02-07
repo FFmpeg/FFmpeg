@@ -26,7 +26,7 @@
 
 #include "libavutil/colorspace.h"
 #include "libavutil/pixdesc.h"
-#include "libavcore/parseutils.h"
+#include "libavutil/parseutils.h"
 #include "avfilter.h"
 
 enum { Y, U, V, A };

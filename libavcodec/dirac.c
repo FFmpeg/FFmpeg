@@ -25,7 +25,7 @@
  * @author Marco Gerards <marco@gnu.org>
  */
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "dirac.h"
 #include "avcodec.h"
 #include "golomb.h"

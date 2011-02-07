@@ -4,6 +4,7 @@ NAME = avutil
 
 HEADERS = adler32.h                                                     \
           attributes.h                                                  \
+          audioconvert.h                                                \
           avassert.h                                                    \
           avstring.h                                                    \
           avutil.h                                                      \
@@ -16,6 +17,7 @@ HEADERS = adler32.h                                                     \
           eval.h                                                        \
           fifo.h                                                        \
           file.h                                                        \
+          imgutils.h                                                    \
           intfloat_readwrite.h                                          \
           intreadwrite.h                                                \
           lfg.h                                                         \
@@ -25,16 +27,19 @@ HEADERS = adler32.h                                                     \
           md5.h                                                         \
           mem.h                                                         \
           opt.h                                                         \
+          parseutils.h                                                  \
           pixdesc.h                                                     \
           pixfmt.h                                                      \
           random_seed.h                                                 \
           rational.h                                                    \
+          samplefmt.h                                                   \
           sha1.h                                                        \
 
 BUILT_HEADERS = avconfig.h
 
 OBJS = adler32.o                                                        \
        aes.o                                                            \
+       audioconvert.o                                                   \
        avstring.o                                                       \
        base64.o                                                         \
        cpu.o                                                            \
@@ -44,6 +49,7 @@ OBJS = adler32.o                                                        \
        eval.o                                                           \
        fifo.o                                                           \
        file.o                                                           \
+       imgutils.o                                                       \
        intfloat_readwrite.o                                             \
        inverse.o                                                        \
        lfg.o                                                            \
@@ -54,10 +60,12 @@ OBJS = adler32.o                                                        \
        md5.o                                                            \
        mem.o                                                            \
        opt.o                                                            \
+       parseutils.o                                                     \
        pixdesc.o                                                        \
        random_seed.o                                                    \
        rational.o                                                       \
        rc4.o                                                            \
+       samplefmt.o                                                      \
        sha.o                                                            \
        tree.o                                                           \
        utils.o                                                          \

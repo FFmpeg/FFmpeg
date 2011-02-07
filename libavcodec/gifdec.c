@@ -22,7 +22,7 @@
 
 //#define DEBUG
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "lzw.h"

@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/avstring.h"
-#include "libavcore/parseutils.h"
+#include "libavutil/parseutils.h"
 #include "avcodec.h"
 #include "ass.h"
 

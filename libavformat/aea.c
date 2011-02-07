@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "pcm.h"
 #include "libavutil/intreadwrite.h"
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 
 #define AT1_SU_SIZE     212
 

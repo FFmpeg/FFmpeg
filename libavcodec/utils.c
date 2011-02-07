@@ -29,10 +29,9 @@
 #include "libavutil/integer.h"
 #include "libavutil/crc.h"
 #include "libavutil/pixdesc.h"
-#include "libavcore/audioconvert.h"
-#include "libavcore/imgutils.h"
-#include "libavcore/internal.h"
-#include "libavcore/samplefmt.h"
+#include "libavutil/audioconvert.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/samplefmt.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"
@@ -1169,7 +1168,7 @@ unsigned int av_xiphlacing(unsigned char *s, unsigned int v)
 }
 
 #if LIBAVCODEC_VERSION_MAJOR < 53
-#include "libavcore/parseutils.h"
+#include "libavutil/parseutils.h"
 
 int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str)
 {

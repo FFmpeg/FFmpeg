@@ -28,7 +28,7 @@
 #include "dsputil.h"
 #include "bytestream.h"
 #include "libavutil/colorspace.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 
 //#define DEBUG_PACKET_CONTENTS
 

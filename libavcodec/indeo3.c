@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "bytestream.h"
