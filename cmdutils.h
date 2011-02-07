@@ -309,7 +309,7 @@ int read_yesno(void);
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR error code in case of failure.
  */
-int read_file(const char *filename, char **bufptr, size_t *size);
+int cmdutils_read_file(const char *filename, char **bufptr, size_t *size);
 
 typedef struct {
     int64_t num_faulty_pts; /// Number of incorrect PTS values so far

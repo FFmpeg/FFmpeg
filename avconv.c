@@ -2178,7 +2178,7 @@ static int transcode_init(OutputFile *output_files,
                 } else {
                     char  *logbuffer;
                     size_t logbuffer_size;
-                    if (read_file(logfilename, &logbuffer, &logbuffer_size) < 0) {
+                    if (cmdutils_read_file(logfilename, &logbuffer, &logbuffer_size) < 0) {
                         av_log(NULL, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
                                logfilename);
                         exit_program(1);
