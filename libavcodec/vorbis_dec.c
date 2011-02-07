@@ -594,8 +594,6 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
 
             create_map(vc, i);
 
-            /* allocate mem for lsp coefficients */
-            {
                 /* codebook dim is for padding if codebook dim doesn't *
                  * divide order+1 then we need to read more data       */
                 floor_setup->data.t0.lsp =
@@ -603,7 +601,6 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
                               * sizeof(float));
                 if (!floor_setup->data.t0.lsp)
                     return -1;
-            }
 
 #ifdef V_DEBUG /* debug output parsed headers */
             AV_DEBUG("floor0 order: %u\n", floor_setup->data.t0.order);
@@ -1110,11 +1107,9 @@ static int vorbis_floor0_decode(vorbis_context *vc,
                 }
 
                 /* calculate linear floor value */
-                {
                     q = exp((((amplitude*vf->amplitude_offset) /
                               (((1 << vf->amplitude_bits) - 1) * sqrt(p + q)))
                              - vf->amplitude_offset) * .11512925f);
-                }
 
                 /* fill vector */
                 do {
