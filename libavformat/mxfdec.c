@@ -51,6 +51,35 @@
 #include "avformat.h"
 #include "mxf.h"
 
+typedef enum {
+    Header,
+    BodyPartition,
+    Footer
+} MXFPartitionType;
+
+typedef enum {
+    OP1a,
+    OP1b,
+    OP1c,
+    OP2a,
+    OP2b,
+    OP2c,
+    OP3a,
+    OP3b,
+    OP3c,
+    OPAtom,
+} MXFOP;
+
+typedef struct {
+    int closed;
+    int complete;
+    MXFPartitionType type;
+    uint64_t previous_partition;
+    uint64_t footer_partition;
+    int index_sid;
+    int body_sid;
+} MXFPartition;
+
 typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
@@ -126,6 +155,9 @@ typedef struct {
 } MXFMetadataSet;
 
 typedef struct {
+    MXFPartition *partitions;
+    unsigned partitions_count;
+    MXFOP op;
     UID *packages_refs;
     int packages_count;
     MXFMetadataSet **metadata_sets;
@@ -362,6 +394,69 @@ static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, U
     if (!mxf->local_tags)
         return -1;
     avio_read(pb, mxf->local_tags, item_num*item_len);
+    return 0;
+}
+
+static int mxf_read_partition_pack(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+{
+    MXFContext *mxf = arg;
+    MXFPartition *partition;
+    UID op;
+
+    if (mxf->partitions_count+1 >= UINT_MAX / sizeof(*mxf->partitions))
+        return AVERROR(ENOMEM);
+
+    mxf->partitions = av_realloc(mxf->partitions, (mxf->partitions_count + 1) * sizeof(*mxf->partitions));
+    if (!mxf->partitions)
+        return AVERROR(ENOMEM);
+
+    partition = &mxf->partitions[mxf->partitions_count++];
+
+    switch(uid[13]) {
+    case 2:
+        partition->type = Header;
+        break;
+    case 3:
+        partition->type = BodyPartition;
+        break;
+    case 4:
+        partition->type = Footer;
+        break;
+    default:
+        av_log(mxf->fc, AV_LOG_ERROR, "unknown partition type %i\n", uid[13]);
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* consider both footers to be closed (there is only Footer and CompleteFooter) */
+    partition->closed = partition->type == Footer || !(uid[14] & 1);
+    partition->complete = uid[14] > 2;
+    avio_skip(pb, 16);
+    partition->previous_partition = avio_rb64(pb);
+    partition->footer_partition = avio_rb64(pb);
+    avio_skip(pb, 16);
+    partition->index_sid = avio_rb32(pb);
+    avio_skip(pb, 8);
+    partition->body_sid = avio_rb32(pb);
+    avio_read(pb, op, sizeof(UID));
+
+    av_dlog(mxf->fc, "PartitionPack: PreviousPartition = 0x%lx, "
+            "FooterPartition = 0x%lx, IndexSID = %i, BodySID = %i\n",
+            partition->previous_partition, partition->footer_partition,
+            partition->index_sid, partition->body_sid);
+
+    if      (op[12] == 1 && op[13] == 1) mxf->op = OP1a;
+    else if (op[12] == 1 && op[13] == 2) mxf->op = OP1b;
+    else if (op[12] == 1 && op[13] == 3) mxf->op = OP1c;
+    else if (op[12] == 2 && op[13] == 1) mxf->op = OP2a;
+    else if (op[12] == 2 && op[13] == 2) mxf->op = OP2b;
+    else if (op[12] == 2 && op[13] == 3) mxf->op = OP2c;
+    else if (op[12] == 3 && op[13] == 1) mxf->op = OP3a;
+    else if (op[12] == 3 && op[13] == 2) mxf->op = OP3b;
+    else if (op[12] == 3 && op[13] == 3) mxf->op = OP3c;
+    else if (op[12] == 0x10)             mxf->op = OPAtom;
+    else
+        av_log(mxf->fc, AV_LOG_ERROR, "unknown operational pattern: %02xh %02xh\n", op[12], op[13]);
+
     return 0;
 }
 
@@ -844,6 +939,16 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 
 static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x05,0x01,0x00 }, mxf_read_primer_pack },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02,0x01,0x00 }, mxf_read_partition_pack },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02,0x02,0x00 }, mxf_read_partition_pack },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02,0x03,0x00 }, mxf_read_partition_pack },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02,0x04,0x00 }, mxf_read_partition_pack },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x03,0x01,0x00 }, mxf_read_partition_pack },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x03,0x02,0x00 }, mxf_read_partition_pack },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x03,0x03,0x00 }, mxf_read_partition_pack },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x03,0x04,0x00 }, mxf_read_partition_pack },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x04,0x02,0x00 }, mxf_read_partition_pack },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x04,0x04,0x00 }, mxf_read_partition_pack },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x18,0x00 }, mxf_read_content_storage, 0, AnyType },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x37,0x00 }, mxf_read_source_package, sizeof(MXFPackage), SourcePackage },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x36,0x00 }, mxf_read_material_package, sizeof(MXFPackage), MaterialPackage },
@@ -935,7 +1040,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 if (klv.key[5] == 0x53) {
                     res = mxf_read_local_tags(mxf, &klv, metadata->read, metadata->ctx_size, metadata->type);
                 } else
-                    res = metadata->read(mxf, s->pb, 0, 0, NULL);
+                    res = metadata->read(mxf, s->pb, 0, 0, klv.key);
                 if (res < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading header metadata\n");
                     return -1;
@@ -976,6 +1081,7 @@ static int mxf_read_close(AVFormatContext *s)
         }
         av_freep(&mxf->metadata_sets[i]);
     }
+    av_freep(&mxf->partitions);
     av_freep(&mxf->metadata_sets);
     av_freep(&mxf->aesc);
     av_freep(&mxf->local_tags);
