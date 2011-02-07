@@ -313,6 +313,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     char buf[256];
     struct sockaddr_storage my_addr;
     int len;
+    int reuse_specified = 0;
 
     h->is_streamed = 1;
     h->max_packet_size = 1472;
@@ -329,7 +330,14 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     p = strchr(uri, '?');
     if (p) {
-        s->reuse_socket = find_info_tag(buf, sizeof(buf), "reuse", p);
+        if (find_info_tag(buf, sizeof(buf), "reuse", p)) {
+            const char *endptr=NULL;
+            s->reuse_socket = strtol(buf, &endptr, 10);
+            /* assume if no digits were found it is a request to enable it */
+            if (buf == endptr)
+                s->reuse_socket = 1;
+            reuse_specified = 1;
+        }
         if (find_info_tag(buf, sizeof(buf), "ttl", p)) {
             s->ttl = strtol(buf, NULL, 10);
         }
@@ -366,9 +374,14 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     if (udp_fd < 0)
         goto fail;
 
-    if (s->reuse_socket)
+    /* Follow the requested reuse option, unless it's multicast in which
+     * case enable reuse unless explicitely disabled.
+     */
+    if (s->reuse_socket || (s->is_multicast && !reuse_specified)) {
+        s->reuse_socket = 1;
         if (setsockopt (udp_fd, SOL_SOCKET, SO_REUSEADDR, &(s->reuse_socket), sizeof(s->reuse_socket)) != 0)
             goto fail;
+    }
 
     /* the bind is needed to give a port to the socket now */
     /* if multicast, try the multicast address bind first */
