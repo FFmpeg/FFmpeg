@@ -97,7 +97,7 @@ uint64_t ff_ntp_time(void);
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code otherwise
  */
-int ff_probe_input_buffer(ByteIOContext **pb, AVInputFormat **fmt,
+int ff_probe_input_buffer(ByteIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size);
 
