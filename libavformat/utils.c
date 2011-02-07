@@ -524,7 +524,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
 #define PROBE_BUF_MIN 2048
 #define PROBE_BUF_MAX (1<<20)
 
-int ff_probe_input_buffer(ByteIOContext **pb, AVInputFormat **fmt,
+int ff_probe_input_buffer(ByteIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size)
 {
@@ -555,7 +555,7 @@ int ff_probe_input_buffer(ByteIOContext **pb, AVInputFormat **fmt,
 
         /* read probe data */
         buf = av_realloc(buf, probe_size + AVPROBE_PADDING_SIZE);
-        if ((ret = get_buffer(*pb, buf + buf_offset, probe_size - buf_offset)) < 0) {
+        if ((ret = get_buffer(pb, buf + buf_offset, probe_size - buf_offset)) < 0) {
             /* fail if error was not end of file, otherwise, lower score */
             if (ret != AVERROR_EOF) {
                 av_free(buf);
@@ -585,7 +585,7 @@ int ff_probe_input_buffer(ByteIOContext **pb, AVInputFormat **fmt,
     }
 
     /* rewind. reuse probe buffer to avoid seeking */
-    if ((ret = ff_rewind_with_probe_data(*pb, buf, pd.buf_size)) < 0)
+    if ((ret = ff_rewind_with_probe_data(pb, buf, pd.buf_size)) < 0)
         av_free(buf);
 
     return ret;
@@ -622,7 +622,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         if (buf_size > 0) {
             url_setbufsize(pb, buf_size);
         }
-        if (!fmt && (err = ff_probe_input_buffer(&pb, &fmt, filename, logctx, 0, logctx ? (*ic_ptr)->probesize : 0)) < 0) {
+        if (!fmt && (err = ff_probe_input_buffer(pb, &fmt, filename, logctx, 0, logctx ? (*ic_ptr)->probesize : 0)) < 0) {
             goto fail;
         }
     }
