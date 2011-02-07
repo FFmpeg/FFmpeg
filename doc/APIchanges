@@ -13,6 +13,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-02-08 - xxxxxxx - lavf 52.98.0 - av_probe_input_buffer
+  Add av_probe_input_buffer() to avformat.h for probing format from a
+  ByteIOContext.
+
 2011-02-06 - fe174fc - lavf 52.97.0 - avio.h
   Add flag for non-blocking protocols: URL_FLAG_NONBLOCK
 

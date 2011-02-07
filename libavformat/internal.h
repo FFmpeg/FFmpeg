@@ -82,25 +82,6 @@ void ff_read_frame_flush(AVFormatContext *s);
 /** Get the current time since NTP epoch in microseconds. */
 uint64_t ff_ntp_time(void);
 
-/**
- * Probe a bytestream to determine the input format. Each time a probe returns
- * with a score that is too low, the probe buffer size is increased and another
- * attempt is made. When the maximum probe size is reached, the input format
- * with the highest score is returned.
- *
- * @param pb the bytestream to probe
- * @param fmt the input format is put here
- * @param filename the filename of the stream
- * @param logctx the log context
- * @param offset the offset within the bytestream to probe from
- * @param max_probe_size the maximum probe buffer size (zero for default)
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code otherwise
- */
-int ff_probe_input_buffer(ByteIOContext *pb, AVInputFormat **fmt,
-                          const char *filename, void *logctx,
-                          unsigned int offset, unsigned int max_probe_size);
-
 #if FF_API_URL_SPLIT
 /**
  * @deprecated use av_url_split() instead
