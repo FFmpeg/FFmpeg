@@ -568,9 +568,9 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             /* zero would result in a div by zero later *
              * 2^0 - 1 == 0                             */
             if (floor_setup->data.t0.amplitude_bits == 0) {
-              av_log(vc->avccontext, AV_LOG_ERROR,
-                     "Floor 0 amplitude bits is 0.\n");
-              return -1;
+                av_log(vc->avccontext, AV_LOG_ERROR,
+                       "Floor 0 amplitude bits is 0.\n");
+                return -1;
             }
             floor_setup->data.t0.amplitude_offset = get_bits(gb, 8);
             floor_setup->data.t0.num_books        = get_bits(gb, 4) + 1;
@@ -606,22 +606,22 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             AV_DEBUG("floor0 order: %u\n", floor_setup->data.t0.order);
             AV_DEBUG("floor0 rate: %u\n", floor_setup->data.t0.rate);
             AV_DEBUG("floor0 bark map size: %u\n",
-              floor_setup->data.t0.bark_map_size);
+                     floor_setup->data.t0.bark_map_size);
             AV_DEBUG("floor0 amplitude bits: %u\n",
-              floor_setup->data.t0.amplitude_bits);
+                     floor_setup->data.t0.amplitude_bits);
             AV_DEBUG("floor0 amplitude offset: %u\n",
-              floor_setup->data.t0.amplitude_offset);
+                     floor_setup->data.t0.amplitude_offset);
             AV_DEBUG("floor0 number of books: %u\n",
-              floor_setup->data.t0.num_books);
+                     floor_setup->data.t0.num_books);
             AV_DEBUG("floor0 book list pointer: %p\n",
-              floor_setup->data.t0.book_list);
+                     floor_setup->data.t0.book_list);
             {
-              int idx;
-              for (idx = 0; idx < floor_setup->data.t0.num_books; ++idx) {
-                  AV_DEBUG("  Book %d: %u\n",
-                           idx+1,
-                           floor_setup->data.t0.book_list[idx]);
-              }
+                int idx;
+                for (idx = 0; idx < floor_setup->data.t0.num_books; ++idx) {
+                    AV_DEBUG("  Book %d: %u\n",
+                             idx+1,
+                             floor_setup->data.t0.book_list[idx]);
+                }
             }
 #endif
         } else {
