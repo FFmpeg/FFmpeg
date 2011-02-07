@@ -14,6 +14,8 @@ OBJS = allformats.o         \
        seek.o               \
        utils.o              \
 
+OBJS-$(CONFIG_NETWORK)                   += network.o
+
 # muxers/demuxers
 OBJS-$(CONFIG_A64_MUXER)                 += a64.o
 OBJS-$(CONFIG_AAC_DEMUXER)               += aacdec.o rawdec.o
