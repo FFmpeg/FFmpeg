@@ -18,7 +18,7 @@
 
 /**
  * @file
- * misc parsing utilities for libavcore
+ * misc parsing utilities
  */
 
 #include <strings.h>

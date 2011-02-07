@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCORE_IMGUTILS_H
-#define AVCORE_IMGUTILS_H
+#ifndef AVUTIL_IMGUTILS_H
+#define AVUTIL_IMGUTILS_H
 
 /**
  * @file
@@ -25,7 +25,7 @@
  */
 
 #include "libavutil/pixdesc.h"
-#include "avcore.h"
+#include "avutil.h"
 
 /**
  * Compute the max pixel step for each plane of an image with a
@@ -125,6 +125,8 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
  */
 int av_image_check_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx);
 
+int ff_set_systematic_pal2(uint32_t pal[256], enum PixelFormat pix_fmt);
+
 #if FF_API_OLD_IMAGE_NAMES
 attribute_deprecated
 void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
@@ -144,4 +146,4 @@ attribute_deprecated
 int av_check_image_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx);
 #endif
 
-#endif /* AVCORE_IMGUTILS_H */
+#endif /* AVUTIL_IMGUTILS_H */

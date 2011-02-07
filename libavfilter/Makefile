@@ -1,7 +1,7 @@
 include $(SUBDIR)../config.mak
 
 NAME = avfilter
-FFLIBS = avcore avutil
+FFLIBS = avutil
 FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
 FFLIBS-$(CONFIG_SCALE_FILTER) += swscale
 FFLIBS-$(CONFIG_MP_FILTER) += avcodec

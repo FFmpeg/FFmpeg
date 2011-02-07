@@ -26,7 +26,7 @@
 #include "avc.h"
 #include "flacenc.h"
 #include "avlanguage.h"
-#include "libavcore/samplefmt.h"
+#include "libavutil/samplefmt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/lfg.h"

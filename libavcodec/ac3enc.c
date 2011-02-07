@@ -28,7 +28,7 @@
 
 //#define DEBUG
 
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 #include "libavutil/crc.h"
 #include "avcodec.h"
 #include "put_bits.h"

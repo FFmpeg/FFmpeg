@@ -19,15 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCORE_AUDIOCONVERT_H
-#define AVCORE_AUDIOCONVERT_H
+#ifndef AVUTIL_AUDIOCONVERT_H
+#define AVUTIL_AUDIOCONVERT_H
+
+#include <stdint.h>
 
 /**
  * @file
  * audio conversion routines
  */
-
-#include "avcore.h"
 
 /* Audio channel masks */
 #define AV_CH_FRONT_LEFT             0x00000001
@@ -92,4 +92,4 @@ void av_get_channel_layout_string(char *buf, int buf_size, int nb_channels, int6
  */
 int av_get_channel_layout_nb_channels(int64_t channel_layout);
 
-#endif /* AVCORE_AUDIOCONVERT_H */
+#endif /* AVUTIL_AUDIOCONVERT_H */

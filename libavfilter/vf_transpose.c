@@ -27,7 +27,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "avfilter.h"
 
 typedef struct {

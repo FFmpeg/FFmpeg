@@ -28,8 +28,8 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/avassert.h"
-#include "libavcore/imgutils.h"
-#include "libavcore/parseutils.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/parseutils.h"
 
 enum { RED = 0, GREEN, BLUE, ALPHA };
 

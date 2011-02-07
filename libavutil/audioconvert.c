@@ -23,6 +23,7 @@
  * audio conversion routines
  */
 
+#include "libavutil/avutil.h"
 #include "libavutil/avstring.h"
 #include "audioconvert.h"
 

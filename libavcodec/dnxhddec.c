@@ -22,7 +22,7 @@
 //#define TRACE
 //#define DEBUG
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dnxhddata.h"

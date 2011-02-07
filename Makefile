@@ -30,7 +30,6 @@ FFLIBS-$(CONFIG_AVFORMAT) += avformat
 FFLIBS-$(CONFIG_AVCODEC)  += avcodec
 FFLIBS-$(CONFIG_POSTPROC) += postproc
 FFLIBS-$(CONFIG_SWSCALE)  += swscale
-FFLIBS-$(CONFIG_AVCORE)   += avcore
 
 FFLIBS := avutil
 

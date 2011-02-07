@@ -53,7 +53,7 @@
 #include "dsputil.h"
 #include "bytestream.h"
 #include "fft.h"
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 
 #include "cookdata.h"
 

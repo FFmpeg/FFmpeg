@@ -22,7 +22,7 @@
 #undef __STRICT_ANSI__ //workaround due to broken kernel headers
 #include "config.h"
 #include "libavutil/rational.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "libavformat/avformat.h"
 #include "libavcodec/dsputil.h"
 #include <unistd.h>

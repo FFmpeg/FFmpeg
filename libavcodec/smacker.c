@@ -32,7 +32,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"

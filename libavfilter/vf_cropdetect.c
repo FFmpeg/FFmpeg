@@ -23,7 +23,7 @@
  * Ported from MPlayer libmpcodecs/vf_cropdetect.c.
  */
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "avfilter.h"
 
 typedef struct {

@@ -27,7 +27,7 @@
 #include "avfilter.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 
 typedef struct {
     int max_step[4];    ///< max pixel step for each plane, expressed as a number of bytes

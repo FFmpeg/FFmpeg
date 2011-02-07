@@ -40,7 +40,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 
 #include "imcdata.h"
 

@@ -27,7 +27,7 @@
  */
 
 #include <errno.h>
-#include "libavcore/samplefmt.h"
+#include "libavutil/samplefmt.h"
 #include "libavutil/avutil.h"
 #include "libavutil/cpu.h"
 
@@ -437,7 +437,7 @@ enum CodecID {
 #endif
 
 #if FF_API_OLD_AUDIOCONVERT
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 
 /* Audio channel masks */
 #define CH_FRONT_LEFT            AV_CH_FRONT_LEFT

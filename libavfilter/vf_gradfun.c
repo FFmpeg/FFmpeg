@@ -32,7 +32,7 @@
  * Dither it back to 8bit.
  */
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/cpu.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"

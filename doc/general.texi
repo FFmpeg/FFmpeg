@@ -986,7 +986,7 @@ you should only need to add the directory where the LIB files are installed
 (i.e. @file{c:\msys\usr\local\bin}). This is not a typo, the LIB files are
 installed in the @file{bin} directory. And instead of adding the static
 libraries (@file{libxxx.a} files) you should add the MSVC import libraries
-(@file{avcodec.lib}, @file{avformat.lib}, @file{avcore.lib}, and
+(@file{avcodec.lib}, @file{avformat.lib}, and
 @file{avutil.lib}). Note that you should not use the GCC import
 libraries (@file{libxxx.dll.a} files), as these will give you undefined
 reference errors. There should be no need for @file{libmingwex.a},

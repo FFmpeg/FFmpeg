@@ -27,7 +27,7 @@
 #include "avcodec.h"
 #include "audioconvert.h"
 #include "libavutil/opt.h"
-#include "libavcore/samplefmt.h"
+#include "libavutil/samplefmt.h"
 
 struct AVResampleContext;
 

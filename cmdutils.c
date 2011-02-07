@@ -38,7 +38,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/eval.h"
 #include "libavcodec/opt.h"
-#include "libavcore/avcore.h"
 #include "cmdutils.h"
 #include "version.h"
 #if CONFIG_NETWORK
@@ -413,7 +412,6 @@ static int warned_cfg = 0;
 static void print_all_libs_info(FILE* outstream, int flags)
 {
     PRINT_LIB_INFO(outstream, avutil,   AVUTIL,   flags);
-    PRINT_LIB_INFO(outstream, avcore,   AVCORE,   flags);
     PRINT_LIB_INFO(outstream, avcodec,  AVCODEC,  flags);
     PRINT_LIB_INFO(outstream, avformat, AVFORMAT, flags);
     PRINT_LIB_INFO(outstream, avdevice, AVDEVICE, flags);

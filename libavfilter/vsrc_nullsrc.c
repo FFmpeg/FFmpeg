@@ -23,7 +23,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
-#include "libavcore/parseutils.h"
+#include "libavutil/parseutils.h"
 #include "avfilter.h"
 
 static const char *var_names[] = {

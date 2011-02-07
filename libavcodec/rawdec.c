@@ -28,8 +28,7 @@
 #include "imgconvert.h"
 #include "raw.h"
 #include "libavutil/intreadwrite.h"
-#include "libavcore/imgutils.h"
-#include "libavcore/internal.h"
+#include "libavutil/imgutils.h"
 
 typedef struct RawVideoContext {
     uint32_t palette[AVPALETTE_COUNT];

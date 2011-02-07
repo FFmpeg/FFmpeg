@@ -23,8 +23,7 @@
 #define AVFILTER_AVFILTER_H
 
 #include "libavutil/avutil.h"
-#include "libavcore/avcore.h"
-#include "libavcore/samplefmt.h"
+#include "libavutil/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
 #define LIBAVFILTER_VERSION_MINOR 76
@@ -585,7 +584,7 @@ struct AVFilterLink {
     int h;                      ///< agreed upon image height
     AVRational sample_aspect_ratio; ///< agreed upon sample aspect ratio
     /* These two parameters apply only to audio */
-    int64_t channel_layout;     ///< channel layout of current buffer (see libavcore/audioconvert.h)
+    int64_t channel_layout;     ///< channel layout of current buffer (see libavutil/audioconvert.h)
     int64_t sample_rate;        ///< samples per second
 
     int format;                 ///< agreed upon media format

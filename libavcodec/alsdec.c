@@ -36,7 +36,7 @@
 #include "bytestream.h"
 #include "bgmc.h"
 #include "dsputil.h"
-#include "libavcore/samplefmt.h"
+#include "libavutil/samplefmt.h"
 #include "libavutil/crc.h"
 
 #include <stdint.h>

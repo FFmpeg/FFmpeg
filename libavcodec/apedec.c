@@ -25,7 +25,7 @@
 #include "dsputil.h"
 #include "get_bits.h"
 #include "bytestream.h"
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 
 /**
  * @file

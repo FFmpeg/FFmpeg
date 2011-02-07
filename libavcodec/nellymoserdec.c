@@ -34,7 +34,7 @@
 #include "nellymoser.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"

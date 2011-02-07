@@ -28,7 +28,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 
 #include "libmpcodecs/vf.h"
 #include "libmpcodecs/img_format.h"

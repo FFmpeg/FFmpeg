@@ -24,7 +24,7 @@
  * PCM codecs for encodings found in MPEG streams (DVD/Blu-ray)
  */
 
-#include "libavcore/audioconvert.h"
+#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "bytestream.h"
 

@@ -33,7 +33,7 @@
 #include "faxcompr.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 
 typedef struct TiffContext {
     AVCodecContext *avctx;

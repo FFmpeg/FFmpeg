@@ -36,7 +36,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
-#include "libavcore/parseutils.h"
+#include "libavutil/parseutils.h"
 #include "libavcodec/opt.h"
 #include <stdarg.h>
 #include <unistd.h>
