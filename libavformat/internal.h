@@ -88,7 +88,7 @@ uint64_t ff_ntp_time(void);
  * attempt is made. When the maximum probe size is reached, the input format
  * with the highest score is returned.
  *
- * @param pb the bytestream to probe, it may be closed and opened again
+ * @param pb the bytestream to probe
  * @param fmt the input format is put here
  * @param filename the filename of the stream
  * @param logctx the log context
