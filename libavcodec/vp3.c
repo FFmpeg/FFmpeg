@@ -40,6 +40,7 @@
 
 #include "vp3data.h"
 #include "xiph.h"
+#include "thread.h"
 
 #define FRAGMENT_PIXELS 8
 
@@ -1318,6 +1319,15 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
     int h, cy;
     int offset[4];
 
+    if (HAVE_PTHREADS && s->avctx->active_thread_type&FF_THREAD_FRAME) {
+        int y_flipped = s->flipped_image ? s->avctx->height-y : y;
+
+        // At the end of the frame, report INT_MAX instead of the height of the frame.
+        // This makes the other threads' ff_thread_await_progress() calls cheaper, because
+        // they don't have to clip their values.
+        ff_thread_report_progress(&s->current_frame, y_flipped==s->avctx->height ? INT_MAX : y_flipped-1, 0);
+    }
+
     if(s->avctx->draw_horiz_band==NULL)
         return;
 
@@ -1337,6 +1347,28 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
 
     emms_c();
     s->avctx->draw_horiz_band(s->avctx, &s->current_frame, offset, y, 3, h);
+}
+
+/**
+ * Wait for the reference frame of the current fragment.
+ * The progress value is in luma pixel rows.
+ */
+static void await_reference_row(Vp3DecodeContext *s, Vp3Fragment *fragment, int motion_y, int y)
+{
+    AVFrame *ref_frame;
+    int ref_row;
+    int border = motion_y&1;
+
+    if (fragment->coding_method == MODE_USING_GOLDEN ||
+        fragment->coding_method == MODE_GOLDEN_MV)
+        ref_frame = &s->golden_frame;
+    else
+        ref_frame = &s->last_frame;
+
+    ref_row = y + (motion_y>>1);
+    ref_row = FFMAX(FFABS(ref_row), ref_row + 8 + border);
+
+    ff_thread_await_progress(ref_frame, ref_row, 0);
 }
 
 /*
@@ -1371,6 +1403,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         int fragment_width    = s->fragment_width[!!plane];
         int fragment_height   = s->fragment_height[!!plane];
         int fragment_start    = s->fragment_start[plane];
+        int do_await          = !plane && HAVE_PTHREADS && (s->avctx->active_thread_type&FF_THREAD_FRAME);
 
         if (!s->flipped_image) stride = -stride;
         if (CONFIG_GRAY && plane && (s->avctx->flags & CODEC_FLAG_GRAY))
@@ -1399,6 +1432,9 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                         continue;
 
                 first_pixel = 8*y*stride + 8*x;
+
+                if (do_await && s->all_fragments[i].coding_method != MODE_INTRA)
+                    await_reference_row(s, &s->all_fragments[i], motion_val[fragment][1], (16*y) >> s->chroma_y_shift);
 
                 /* transform if this block was coded */
                 if (s->all_fragments[i].coding_method != MODE_COPY) {
@@ -1721,6 +1757,81 @@ vlc_fail:
     return -1;
 }
 
+/// Release and shuffle frames after decode finishes
+static void update_frames(AVCodecContext *avctx)
+{
+    Vp3DecodeContext *s = avctx->priv_data;
+
+    /* release the last frame, if it is allocated and if it is not the
+     * golden frame */
+    if (s->last_frame.data[0] && s->last_frame.type != FF_BUFFER_TYPE_COPY)
+        ff_thread_release_buffer(avctx, &s->last_frame);
+
+    /* shuffle frames (last = current) */
+    s->last_frame= s->current_frame;
+
+    if (s->keyframe) {
+        if (s->golden_frame.data[0])
+            ff_thread_release_buffer(avctx, &s->golden_frame);
+        s->golden_frame = s->current_frame;
+        s->last_frame.type = FF_BUFFER_TYPE_COPY;
+    }
+
+    s->current_frame.data[0]= NULL; /* ensure that we catch any access to this released frame */
+}
+
+static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
+{
+    Vp3DecodeContext *s = dst->priv_data, *s1 = src->priv_data;
+    int qps_changed = 0, i, err;
+
+    if (!s1->current_frame.data[0]
+        ||s->width != s1->width
+        ||s->height!= s1->height)
+        return -1;
+
+    if (s != s1) {
+        // init tables if the first frame hasn't been decoded
+        if (!s->current_frame.data[0]) {
+            int y_fragment_count, c_fragment_count;
+            s->avctx = dst;
+            err = allocate_tables(dst);
+            if (err)
+                return err;
+            y_fragment_count = s->fragment_width[0] * s->fragment_height[0];
+            c_fragment_count = s->fragment_width[1] * s->fragment_height[1];
+            memcpy(s->motion_val[0], s1->motion_val[0], y_fragment_count * sizeof(*s->motion_val[0]));
+            memcpy(s->motion_val[1], s1->motion_val[1], c_fragment_count * sizeof(*s->motion_val[1]));
+        }
+
+#define copy_fields(to, from, start_field, end_field) memcpy(&to->start_field, &from->start_field, (char*)&to->end_field - (char*)&to->start_field)
+
+        // copy previous frame data
+        copy_fields(s, s1, golden_frame, dsp);
+
+        // copy qscale data if necessary
+        for (i = 0; i < 3; i++) {
+            if (s->qps[i] != s1->qps[1]) {
+                qps_changed = 1;
+                memcpy(&s->qmat[i], &s1->qmat[i], sizeof(s->qmat[i]));
+            }
+        }
+
+        if (s->qps[0] != s1->qps[0]) {
+            memcpy(&s->qscale_table, &s1->qscale_table, sizeof(s->qscale_table));
+            memcpy(&s->bounding_values_array, &s1->bounding_values_array, sizeof(s->bounding_values_array));
+        }
+
+        if (qps_changed)
+            copy_fields(s, s1, qps, superblock_count);
+#undef copy_fields
+    }
+
+    update_frames(dst);
+
+    return 0;
+}
+
 /*
  * This is the ffmpeg/libavcodec API frame decode function.
  */
@@ -1776,7 +1887,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     s->current_frame.reference = 3;
     s->current_frame.pict_type = s->keyframe ? FF_I_TYPE : FF_P_TYPE;
-    if (avctx->get_buffer(avctx, &s->current_frame) < 0) {
+    if (ff_thread_get_buffer(avctx, &s->current_frame) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         goto error;
     }
@@ -1805,7 +1916,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
             s->golden_frame.reference = 3;
             s->golden_frame.pict_type = FF_I_TYPE;
-            if (avctx->get_buffer(avctx, &s->golden_frame) < 0) {
+            if (ff_thread_get_buffer(avctx, &s->golden_frame) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 goto error;
             }
@@ -1818,6 +1929,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     s->current_frame.qstride= 0;
 
     memset(s->all_fragments, 0, s->fragment_count * sizeof(Vp3Fragment));
+    ff_thread_finish_setup(avctx);
 
     if (unpack_superblocks(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_superblocks\n");
@@ -1862,28 +1974,17 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     *data_size=sizeof(AVFrame);
     *(AVFrame*)data= s->current_frame;
 
-    /* release the last frame, if it is allocated and if it is not the
-     * golden frame */
-    if (s->last_frame.data[0] && s->last_frame.type != FF_BUFFER_TYPE_COPY)
-        avctx->release_buffer(avctx, &s->last_frame);
-
-    /* shuffle frames (last = current) */
-    s->last_frame= s->current_frame;
-
-    if (s->keyframe) {
-        if (s->golden_frame.data[0])
-            avctx->release_buffer(avctx, &s->golden_frame);
-        s->golden_frame = s->current_frame;
-        s->last_frame.type = FF_BUFFER_TYPE_COPY;
-    }
-
-    s->current_frame.data[0]= NULL; /* ensure that we catch any access to this released frame */
+    if (!HAVE_PTHREADS || !(s->avctx->active_thread_type&FF_THREAD_FRAME))
+        update_frames(avctx);
 
     return buf_size;
 
 error:
-    if (s->current_frame.data[0])
+    ff_thread_report_progress(&s->current_frame, INT_MAX, 0);
+
+    if (!HAVE_PTHREADS || !(s->avctx->active_thread_type&FF_THREAD_FRAME))
         avctx->release_buffer(avctx, &s->current_frame);
+
     return -1;
 }
 
@@ -1895,6 +1996,9 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     Vp3DecodeContext *s = avctx->priv_data;
     int i;
 
+    if (avctx->is_copy && !s->current_frame.data[0])
+        return 0;
+
     av_free(s->superblock_coding);
     av_free(s->all_fragments);
     av_free(s->coded_fragment_list[0]);
@@ -1903,6 +2007,8 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     av_free(s->macroblock_coding);
     av_free(s->motion_val[0]);
     av_free(s->motion_val[1]);
+
+    if (avctx->is_copy) return 0;
 
     for (i = 0; i < 16; i++) {
         free_vlc(&s->dc_vlc[i]);
@@ -1919,9 +2025,9 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
 
     /* release all frames */
     if (s->golden_frame.data[0])
-        avctx->release_buffer(avctx, &s->golden_frame);
+        ff_thread_release_buffer(avctx, &s->golden_frame);
     if (s->last_frame.data[0] && s->last_frame.type != FF_BUFFER_TYPE_COPY)
-        avctx->release_buffer(avctx, &s->last_frame);
+        ff_thread_release_buffer(avctx, &s->last_frame);
     /* no need to release the current_frame since it will always be pointing
      * to the same frame as either the golden or last frame */
 
@@ -2232,9 +2338,10 @@ AVCodec ff_theora_decoder = {
     NULL,
     vp3_decode_end,
     vp3_decode_frame,
-    CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND,
+    CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_FRAME_THREADS,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Theora"),
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context)
 };
 #endif
 
@@ -2247,7 +2354,8 @@ AVCodec ff_vp3_decoder = {
     NULL,
     vp3_decode_end,
     vp3_decode_frame,
-    CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND,
+    CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_FRAME_THREADS,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("On2 VP3"),
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context)
 };
