@@ -468,6 +468,11 @@ cglobal emu_edge_core_%1, 2, 7, 0
 %define valw  ax
 %define valw2 r10w
 %define valw3 r3w
+%ifdef WIN64
+%define valw4 r4w
+%else ; unix64
+%define valw4 r3w
+%endif
 %define vald eax
 %else
 %define vall  bl
@@ -475,6 +480,7 @@ cglobal emu_edge_core_%1, 2, 7, 0
 %define valw  bx
 %define valw2 r6w
 %define valw3 valw2
+%define valw4 valw3
 %define vald ebx
 %define stack_offset 0x14
 %endif
@@ -537,8 +543,10 @@ cglobal emu_edge_core_%1, 2, 7, 0
 %elif (%2-%%src_off) == 3
 %ifidn %1, top
     mov         valw2, [r1+%%src_off]
-%else ; %1 != top
+%elifidn %1, body
     mov         valw3, [r1+%%src_off]
+%elifidn %1, bottom
+    mov         valw4, [r1+%%src_off]
 %endif ; %1 ==/!= top
     mov          vall, [r1+%%src_off+2]
 %endif ; (%2-%%src_off) == 1/2/3
@@ -584,8 +592,10 @@ cglobal emu_edge_core_%1, 2, 7, 0
 %elif (%2-%%dst_off) == 3
 %ifidn %1, top
     mov    [r0+%%dst_off], valw2
-%else ; %1 != top
+%elifidn %1, body
     mov    [r0+%%dst_off], valw3
+%elifidn %1, bottom
+    mov    [r0+%%dst_off], valw4
 %endif ; %1 ==/!= top
     mov  [r0+%%dst_off+2], vall
 %endif ; (%2-%%dst_off) == 1/2/3
@@ -615,7 +625,7 @@ ALIGN 128
     WRITE_NUM_BYTES top,    %%n, %1          ;   write bytes
     add            r0 , r2                   ;   dst += linesize
 %ifdef ARCH_X86_64
-    dec            r3
+    dec            r3d
 %else ; ARCH_X86_32
     dec      dword r3m
 %endif ; ARCH_X86_64/32
@@ -627,7 +637,7 @@ ALIGN 128
     WRITE_NUM_BYTES body,   %%n, %1          ;   write bytes
     add            r0 , r2                   ;   dst += linesize
     add            r1 , r2                   ;   src += linesize
-    dec            r4
+    dec            r4d
     jnz .emuedge_copy_body_ %+ %%n %+ _loop  ; } while (--end_y)
 
     ; copy bottom pixels
@@ -638,7 +648,7 @@ ALIGN 128
 .emuedge_extend_bottom_ %+ %%n %+ _loop:     ; do {
     WRITE_NUM_BYTES bottom, %%n, %1          ;   write bytes
     add            r0 , r2                   ;   dst += linesize
-    dec            r5
+    dec            r5d
     jnz .emuedge_extend_bottom_ %+ %%n %+ _loop ; } while (--block_h)
 
 .emuedge_v_extend_end_ %+ %%n:
