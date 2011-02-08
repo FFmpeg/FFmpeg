@@ -32,6 +32,47 @@
 
 void ff_mms_set_stream_selection(URLContext *h, AVFormatContext *format);
 
+typedef struct {
+    int asfid2avid[128];                 ///< conversion table from asf ID 2 AVStream ID
+    ASFStream streams[128];              ///< it's max number and it's not that big
+    uint32_t stream_bitrates[128];       ///< max number of streams, bitrate for each (for streaming)
+    char stream_languages[128][6];       ///< max number of streams, language for each (RFC1766, e.g. en-US)
+    /* non streamed additonnal info */
+    uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
+    /* packet filling */
+    int packet_size_left;
+    int packet_nb_frames;
+    /* only for reading */
+    uint64_t data_offset;                ///< beginning of the first data packet
+    uint64_t data_object_offset;         ///< data object offset (excl. GUID & size)
+    uint64_t data_object_size;           ///< size of the data object
+    int index_read;
+
+    ASFMainHeader hdr;
+
+    int packet_flags;
+    int packet_property;
+    int packet_timestamp;
+    int packet_segsizetype;
+    int packet_segments;
+    int packet_seq;
+    int packet_replic_size;
+    int packet_key_frame;
+    int packet_padsize;
+    unsigned int packet_frag_offset;
+    unsigned int packet_frag_size;
+    int64_t packet_frag_timestamp;
+    int packet_multi_size;
+    int packet_obj_size;
+    int packet_time_delta;
+    int packet_time_start;
+    int64_t packet_pos;
+
+    int stream_index;
+
+    ASFStream* asf_st;                   ///< currently decoded stream
+} ASFContext;
+
 #undef NDEBUG
 #include <assert.h>
 
