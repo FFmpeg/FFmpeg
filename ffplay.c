@@ -2260,7 +2260,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     avctx->skip_loop_filter= skip_loop_filter;
     avctx->error_recognition= error_recognition;
     avctx->error_concealment= error_concealment;
-    avcodec_thread_init(avctx, thread_count);
+    avctx->thread_count= thread_count;
 
     set_context_opts(avctx, avcodec_opts[avctx->codec_type], 0, codec);
 
