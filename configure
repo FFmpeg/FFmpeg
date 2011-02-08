@@ -2306,6 +2306,7 @@ case $target_os in
     haiku)
         prefix_default="/boot/common"
         network_extralibs="-lnetwork"
+        host_libs=
         ;;
     sunos)
         FFSERVERLDFLAGS=""
