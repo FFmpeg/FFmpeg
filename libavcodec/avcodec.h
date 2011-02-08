@@ -32,7 +32,7 @@
 #include "libavutil/cpu.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 110
+#define LIBAVCODEC_VERSION_MINOR 111
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -728,6 +728,10 @@ typedef struct RcOverride{
  * Codec is able to deal with negative linesizes
  */
 #define CODEC_CAP_NEG_LINESIZES    0x0800
+/**
+ * Codec supports frame-level multithreading.
+ */
+#define CODEC_CAP_FRAME_THREADS    0x1000
 
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
@@ -1027,7 +1031,20 @@ typedef struct AVPanScan{
      * - decoding: Read by user.\
      */\
     int64_t pkt_dts;\
-
+\
+    /**\
+     * the AVCodecContext which ff_thread_get_buffer() was last called on\
+     * - encoding: Set by libavcodec.\
+     * - decoding: Set by libavcodec.\
+     */\
+    struct AVCodecContext *owner;\
+\
+    /**\
+     * used by multithreading to store frame-specific info\
+     * - encoding: Set by libavcodec.\
+     * - decoding: Set by libavcodec.\
+     */\
+    void *thread_opaque;
 
 #define FF_QSCALE_TYPE_MPEG1 0
 #define FF_QSCALE_TYPE_MPEG2 1
@@ -1239,6 +1256,10 @@ typedef struct AVCodecContext {
      * decoder to draw a horizontal band. It improves cache usage. Not
      * all codecs can do that. You must check the codec capabilities
      * beforehand.
+     * When multithreading is used, it may be called from multiple threads
+     * at the same time; threads might draw different parts of the same AVFrame,
+     * or multiple AVFrames, and there is no guarantee that slices will be drawn
+     * in order.
      * The function is also used by hardware acceleration APIs.
      * It is called at least once during frame decoding to pass
      * the data needed for hardware render.
@@ -1492,6 +1513,9 @@ typedef struct AVCodecContext {
      * if CODEC_CAP_DR1 is not set then get_buffer() must call
      * avcodec_default_get_buffer() instead of providing buffers allocated by
      * some other means.
+     * If frame multithreading is used and thread_safe_callbacks is set,
+     * it may be called from a different thread, but not from more than one at once.
+     * Does not need to be reentrant.
      * - encoding: unused
      * - decoding: Set by libavcodec, user can override.
      */
@@ -1501,6 +1525,8 @@ typedef struct AVCodecContext {
      * Called to release buffers which were allocated with get_buffer.
      * A released buffer can be reused in get_buffer().
      * pic.data[*] must be set to NULL.
+     * May be called from a different thread if frame multithreading is used,
+     * but not by more than one thread at once, so does not need to be reentrant.
      * - encoding: unused
      * - decoding: Set by libavcodec, user can override.
      */
@@ -1804,6 +1830,7 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_VIS_QP      0x00002000
 #define FF_DEBUG_VIS_MB_TYPE 0x00004000
 #define FF_DEBUG_BUFFERS     0x00008000
+#define FF_DEBUG_THREADS     0x00010000
 
     /**
      * debug
@@ -2827,6 +2854,44 @@ typedef struct AVCodecContext {
      * - encoding: unused
      */
     AVPacket *pkt;
+
+    /**
+     * Whether this is a copy of the context which had init() called on it.
+     * This is used by multithreading - shared tables and picture pointers
+     * should be freed from the original context only.
+     * - encoding: Set by libavcodec.
+     * - decoding: Set by libavcodec.
+     */
+    int is_copy;
+
+    /**
+     * Which multithreading methods to use.
+     * Use of FF_THREAD_FRAME will increase decoding delay by one frame per thread,
+     * so clients which cannot provide future frames should not use it.
+     *
+     * - encoding: Set by user, otherwise the default is used.
+     * - decoding: Set by user, otherwise the default is used.
+     */
+    int thread_type;
+#define FF_THREAD_FRAME   1 //< Decode more than one frame at once
+#define FF_THREAD_SLICE   2 //< Decode more than one part of a single frame at once
+
+    /**
+     * Which multithreading methods are in use by the codec.
+     * - encoding: Set by libavcodec.
+     * - decoding: Set by libavcodec.
+     */
+    int active_thread_type;
+
+    /**
+     * Set by the client if its custom get_buffer() callback can be called
+     * from another thread, which allows faster multithreaded decoding.
+     * draw_horiz_band() will be called from other threads regardless of this setting.
+     * Ignored if the default get_buffer() is used.
+     * - encoding: Set by user.
+     * - decoding: Set by user.
+     */
+    int thread_safe_callbacks;
 } AVCodecContext;
 
 /**
@@ -2879,6 +2944,26 @@ typedef struct AVCodec {
     uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
     AVClass *priv_class;                    ///< AVClass for the private context
     const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
+
+    /**
+     * @defgroup framethreading Frame-level threading support functions.
+     * @{
+     */
+    /**
+     * If defined, called on thread contexts when they are created.
+     * If the codec allocates writable tables in init(), re-allocate them here.
+     * priv_data will be set to a copy of the original.
+     */
+    int (*init_thread_copy)(AVCodecContext *);
+    /**
+     * Copy necessary context variables from a previous thread context to the current one.
+     * If not defined, the next thread will start automatically; otherwise, the codec
+     * must call ff_thread_finish_setup().
+     *
+     * dst and src will (rarely) point to the same context, in which case memcpy should be skipped.
+     */
+    int (*update_thread_context)(AVCodecContext *dst, const AVCodecContext *src);
+    /** @} */
 } AVCodec;
 
 /**

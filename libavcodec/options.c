@@ -250,6 +250,7 @@ static const AVOption options[]={
 {"vis_qp", "visualize quantization parameter (QP), lower QP are tinted greener", 0, FF_OPT_TYPE_CONST, FF_DEBUG_VIS_QP, INT_MIN, INT_MAX, V|D, "debug"},
 {"vis_mb_type", "visualize block types", 0, FF_OPT_TYPE_CONST, FF_DEBUG_VIS_MB_TYPE, INT_MIN, INT_MAX, V|D, "debug"},
 {"buffers", "picture buffer allocations", 0, FF_OPT_TYPE_CONST, FF_DEBUG_BUFFERS, INT_MIN, INT_MAX, V|D, "debug"},
+{"thread_ops", "threading operations", 0, FF_OPT_TYPE_CONST, FF_DEBUG_THREADS, INT_MIN, INT_MAX, V|D, "debug"},
 {"vismv", "visualize motion vectors (MVs)", OFFSET(debug_mv), FF_OPT_TYPE_INT, DEFAULT, 0, INT_MAX, V|D, "debug_mv"},
 {"pf", "forward predicted MVs of P-frames", 0, FF_OPT_TYPE_CONST, FF_DEBUG_VIS_MV_P_FOR, INT_MIN, INT_MAX, V|D, "debug_mv"},
 {"bf", "forward predicted MVs of B-frames", 0, FF_OPT_TYPE_CONST, FF_DEBUG_VIS_MV_B_FOR, INT_MIN, INT_MAX, V|D, "debug_mv"},
@@ -431,6 +432,9 @@ static const AVOption options[]={
 {"cholesky", NULL, 0, FF_OPT_TYPE_CONST, AV_LPC_TYPE_CHOLESKY, INT_MIN, INT_MAX, A|E, "lpc_type"},
 {"lpc_passes", "number of passes to use for Cholesky factorization during LPC analysis", OFFSET(lpc_passes), FF_OPT_TYPE_INT, -1, INT_MIN, INT_MAX, A|E},
 {"slices", "number of slices, used in parallelized decoding", OFFSET(slices), FF_OPT_TYPE_INT, 0, 0, INT_MAX, V|E},
+{"thread_type", "select multithreading type", OFFSET(thread_type), FF_OPT_TYPE_INT, FF_THREAD_SLICE|FF_THREAD_FRAME, 0, INT_MAX, V|E|D, "thread_type"},
+{"slice", NULL, 0, FF_OPT_TYPE_CONST, FF_THREAD_SLICE, INT_MIN, INT_MAX, V|E|D, "thread_type"},
+{"frame", NULL, 0, FF_OPT_TYPE_CONST, FF_THREAD_FRAME, INT_MIN, INT_MAX, V|E|D, "thread_type"},
 {NULL},
 };
 
