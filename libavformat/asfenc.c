@@ -188,6 +188,31 @@
                 2*PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS \
                 )
 
+typedef struct {
+    uint32_t seqno;
+    int is_streamed;
+    ASFStream streams[128];              ///< it's max number and it's not that big
+    /* non streamed additonnal info */
+    uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
+    int64_t duration;                    ///< in 100ns units
+    /* packet filling */
+    unsigned char multi_payloads_present;
+    int packet_size_left;
+    int packet_timestamp_start;
+    int packet_timestamp_end;
+    unsigned int packet_nb_payloads;
+    uint8_t packet_buf[PACKET_SIZE];
+    ByteIOContext pb;
+    /* only for reading */
+    uint64_t data_offset;                ///< beginning of the first data packet
+
+    int64_t last_indexed_pts;
+    ASFIndex* index_ptr;
+    uint32_t nb_index_count;
+    uint32_t nb_index_memory_alloc;
+    uint16_t maximum_packet;
+} ASFContext;
+
 static const AVCodecTag codec_asf_bmp_tags[] = {
     { CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
     { CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
