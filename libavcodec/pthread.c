@@ -256,7 +256,7 @@ static int thread_init(AVCodecContext *avctx)
         if(pthread_create(&c->workers[i], NULL, worker, avctx)) {
            avctx->thread_count = i;
            pthread_mutex_unlock(&c->current_job_lock);
-           avcodec_thread_free(avctx);
+           ff_thread_free(avctx);
            return -1;
         }
     }
@@ -870,7 +870,7 @@ static void validate_thread_parameters(AVCodecContext *avctx)
     }
 }
 
-int avcodec_thread_init(AVCodecContext *avctx, int thread_count)
+int ff_thread_init(AVCodecContext *avctx, int thread_count)
 {
     if (avctx->thread_opaque) {
         av_log(avctx, AV_LOG_ERROR, "avcodec_thread_init is ignored after avcodec_open\n");
@@ -891,7 +891,7 @@ int avcodec_thread_init(AVCodecContext *avctx, int thread_count)
     return 0;
 }
 
-void avcodec_thread_free(AVCodecContext *avctx)
+void ff_thread_free(AVCodecContext *avctx)
 {
     if (avctx->active_thread_type&FF_THREAD_FRAME)
         frame_thread_free(avctx, avctx->thread_count);

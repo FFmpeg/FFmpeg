@@ -69,10 +69,10 @@ static unsigned WINAPI attribute_align_arg thread_func(void *v){
 }
 
 /**
- * Free what has been allocated by avcodec_thread_init().
+ * Free what has been allocated by ff_thread_init().
  * Must be called after decoding has finished, especially do not call while avcodec_thread_execute() is running.
  */
-void avcodec_thread_free(AVCodecContext *s){
+void ff_thread_free(AVCodecContext *s){
     ThreadContext *c= s->thread_opaque;
     int i;
 
@@ -124,7 +124,7 @@ static int avcodec_thread_execute2(AVCodecContext *s, int (*func)(AVCodecContext
     avcodec_thread_execute(s, NULL, arg, ret, count, 0);
 }
 
-int avcodec_thread_init(AVCodecContext *s, int thread_count){
+int ff_thread_init(AVCodecContext *s, int thread_count){
     int i;
     ThreadContext *c;
     uint32_t threadid;
@@ -169,6 +169,6 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
 
     return 0;
 fail:
-    avcodec_thread_free(s);
+    ff_thread_free(s);
     return -1;
 }

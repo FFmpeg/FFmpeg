@@ -707,11 +707,6 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
                 choose_pixel_fmt(st, codec);
         }
 
-        if(!st->codec->thread_count)
-            st->codec->thread_count = 1;
-        if(st->codec->thread_count>1)
-            avcodec_thread_init(st->codec, st->codec->thread_count);
-
         if(st->codec->flags & CODEC_FLAG_BITEXACT)
             nopts = 1;
 
@@ -3248,7 +3243,7 @@ static void opt_input_file(const char *filename)
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st = ic->streams[i];
         AVCodecContext *dec = st->codec;
-        avcodec_thread_init(dec, thread_count);
+        dec->thread_count = thread_count;
         input_codecs = grow_array(input_codecs, sizeof(*input_codecs), &nb_input_codecs, nb_input_codecs + 1);
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -3406,7 +3401,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     ost->bitstream_filters = video_bitstream_filters;
     video_bitstream_filters= NULL;
 
-    avcodec_thread_init(st->codec, thread_count);
+    st->codec->thread_count= thread_count;
 
     video_enc = st->codec;
 
@@ -3553,7 +3548,7 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
     ost->bitstream_filters = audio_bitstream_filters;
     audio_bitstream_filters= NULL;
 
-    avcodec_thread_init(st->codec, thread_count);
+    st->codec->thread_count= thread_count;
 
     audio_enc = st->codec;
     audio_enc->codec_type = AVMEDIA_TYPE_AUDIO;
