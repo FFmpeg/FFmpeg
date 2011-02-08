@@ -293,7 +293,7 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
     v->profile = get_bits(gb, 2);
     if (v->profile == PROFILE_COMPLEX)
     {
-        av_log(avctx, AV_LOG_ERROR, "WMV3 Complex Profile is not fully supported\n");
+        av_log(avctx, AV_LOG_WARNING, "WMV3 Complex Profile is not fully supported\n");
     }
 
     if (v->profile == PROFILE_ADVANCED)
