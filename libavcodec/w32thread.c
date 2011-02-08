@@ -129,7 +129,13 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
     ThreadContext *c;
     uint32_t threadid;
 
+    if(!(s->thread_type & FF_THREAD_SLICE)){
+        av_log(s, AV_LOG_WARNING, "The requested thread algorithm is not supported with this thread library.\n");
+        return 0;
+    }
+
     s->thread_count= thread_count;
+    s->active_thread_type= FF_THREAD_SLICE;
 
     if (thread_count <= 1)
         return 0;

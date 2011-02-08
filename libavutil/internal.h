@@ -210,4 +210,15 @@
     type ff_##name args
 #endif
 
+/**
+ * Returns NULL if a threading library has not been enabled.
+ * Used to disable threading functions in AVCodec definitions
+ * when not needed.
+ */
+#if HAVE_THREADS
+#   define ONLY_IF_THREADS_ENABLED(x) x
+#else
+#   define ONLY_IF_THREADS_ENABLED(x) NULL
+#endif
+
 #endif /* AVUTIL_INTERNAL_H */

@@ -1691,6 +1691,7 @@ static int input_init(AVFilterContext *ctx, const char *args, void *opaque)
         codec->get_buffer     = input_get_buffer;
         codec->release_buffer = input_release_buffer;
         codec->reget_buffer   = input_reget_buffer;
+        codec->thread_safe_callbacks = 1;
     }
 
     priv->frame = avcodec_alloc_frame();

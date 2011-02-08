@@ -13,6 +13,11 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-02-09 - XXXXXXX - lavc 52.111.0 - threading API
+  Add CODEC_CAP_FRAME_THREADS with new restrictions on get_buffer()/
+  release_buffer()/draw_horiz_band() callbacks for appropriate codecs.
+  Add thread_type and active_thread_type fields to AVCodecContext.
+
 2011-02-08 - 3940caa - lavf 52.98.0 - av_probe_input_buffer
   Add av_probe_input_buffer() to avformat.h for probing format from a
   ByteIOContext.

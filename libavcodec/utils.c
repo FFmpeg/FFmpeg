@@ -37,6 +37,7 @@
 #include "dsputil.h"
 #include "libavutil/opt.h"
 #include "imgconvert.h"
+#include "thread.h"
 #include "audioconvert.h"
 #include "internal.h"
 #include <stdlib.h>
@@ -261,6 +262,11 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     (*picture_number)++;
 
     if(buf->base[0] && (buf->width != w || buf->height != h || buf->pix_fmt != s->pix_fmt)){
+        if(s->active_thread_type&FF_THREAD_FRAME) {
+            av_log_missing_feature(s, "Width/height changing with frame threads is", 0);
+            return -1;
+        }
+
         for(i=0; i<4; i++){
             av_freep(&buf->base[i]);
             buf->data[i]= NULL;
@@ -532,6 +538,14 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         goto free_and_end;
     }
     avctx->frame_number = 0;
+
+    if (HAVE_THREADS && !avctx->thread_opaque) {
+        ret = avcodec_thread_init(avctx, avctx->thread_count);
+        if (ret < 0) {
+            goto free_and_end;
+        }
+    }
+
     if (avctx->codec->max_lowres < avctx->lowres) {
         av_log(avctx, AV_LOG_ERROR, "The maximum value for lowres supported by the decoder is %d\n",
                avctx->codec->max_lowres);
@@ -543,7 +557,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     avctx->pts_correction_last_pts =
     avctx->pts_correction_last_dts = INT64_MIN;
 
-    if(avctx->codec->init){
+    if(avctx->codec->init && !(avctx->active_thread_type&FF_THREAD_FRAME)){
         ret = avctx->codec->init(avctx);
         if (ret < 0) {
             goto free_and_end;
@@ -674,13 +688,18 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 
     avctx->pkt = avpkt;
 
-    if((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size){
-        ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
-                                avpkt);
+    if((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type&FF_THREAD_FRAME)){
+        if (HAVE_PTHREADS && avctx->active_thread_type&FF_THREAD_FRAME)
+             ret = ff_thread_decode_frame(avctx, picture, got_picture_ptr,
+                                          avpkt);
+        else {
+            ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
+                              avpkt);
+            picture->pkt_dts= avpkt->dts;
+        }
 
         emms_c(); //needed to avoid an emms_c() call before every return;
 
-        picture->pkt_dts= avpkt->dts;
         picture->best_effort_timestamp = guess_correct_pts(avctx,
                                                            picture->pkt_pts,
                                                            picture->pkt_dts);
@@ -809,6 +828,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     if(avctx->codec && avctx->codec->encode)
         av_freep(&avctx->extradata);
     avctx->codec = NULL;
+    avctx->active_thread_type = 0;
     entangled_thread_counter--;
 
     /* Release any user-supplied mutex. */
@@ -1070,6 +1090,8 @@ void avcodec_init(void)
 
 void avcodec_flush_buffers(AVCodecContext *avctx)
 {
+    if(HAVE_PTHREADS && avctx->active_thread_type&FF_THREAD_FRAME)
+        ff_thread_flush(avctx);
     if(avctx->codec->flush)
         avctx->codec->flush(avctx);
 }
@@ -1270,3 +1292,30 @@ unsigned int ff_toupper4(unsigned int x)
             + (toupper((x>>16)&0xFF)<<16)
             + (toupper((x>>24)&0xFF)<<24);
 }
+
+#if !HAVE_PTHREADS
+
+int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
+{
+    f->owner = avctx;
+    return avctx->get_buffer(avctx, f);
+}
+
+void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)
+{
+    f->owner->release_buffer(f->owner, f);
+}
+
+void ff_thread_finish_setup(AVCodecContext *avctx)
+{
+}
+
+void ff_thread_report_progress(AVFrame *f, int progress, int field)
+{
+}
+
+void ff_thread_await_progress(AVFrame *f, int progress, int field)
+{
+}
+
+#endif

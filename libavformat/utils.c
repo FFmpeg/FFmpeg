@@ -930,6 +930,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     /* do we have a video B-frame ? */
     delay= st->codec->has_b_frames;
     presentation_delayed = 0;
+
+    // ignore delay caused by frame threading so that the mpeg2-without-dts
+    // warning will not trigger
+    if (delay && st->codec->active_thread_type&FF_THREAD_FRAME)
+        delay -= st->codec->thread_count-1;
+
     /* XXX: need has_b_frame, but cannot get it if the codec is
         not initialized */
     if (delay &&
