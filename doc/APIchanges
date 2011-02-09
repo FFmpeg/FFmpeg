@@ -13,7 +13,7 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
-2011-02-09 - XXXXXXX - lavc 52.112.0 - avcodec_thread_init()
+2011-02-09 - 5592734 - lavc 52.112.0 - avcodec_thread_init()
   Deprecate avcodec_thread_init()/avcodec_thread_free() use; instead
   set thread_count before calling avcodec_open.
 
