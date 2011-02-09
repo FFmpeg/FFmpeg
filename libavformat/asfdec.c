@@ -36,6 +36,7 @@ typedef struct {
     int asfid2avid[128];                 ///< conversion table from asf ID 2 AVStream ID
     ASFStream streams[128];              ///< it's max number and it's not that big
     uint32_t stream_bitrates[128];       ///< max number of streams, bitrate for each (for streaming)
+    AVRational dar[128];
     char stream_languages[128][6];       ///< max number of streams, language for each (RFC1766, e.g. en-US)
     /* non streamed additonnal info */
     /* packet filling */
@@ -192,10 +193,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ASFStream *asf_st;
     int size, i;
     int64_t gsize;
-    AVRational dar[128];
     uint32_t bitrate[128];
 
-    memset(dar, 0, sizeof(dar));
     memset(bitrate, 0, sizeof(bitrate));
 
     ff_get_guid(pb, &g);
@@ -477,9 +476,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                      * Asf stream count start at 1. I am using 0 to the container value since it's unused
                      */
                     if (!strcmp(name, "AspectRatioX")){
-                        dar[0].num= get_value(s->pb, value_type);
+                        asf->dar[0].num= get_value(s->pb, value_type);
                     } else if(!strcmp(name, "AspectRatioY")){
-                        dar[0].den= get_value(s->pb, value_type);
+                        asf->dar[0].den= get_value(s->pb, value_type);
                     } else
                         get_tag(s, name, value_type, value_len);
             }
@@ -503,8 +502,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 url_fskip(pb, value_len - 2);
 
                 if(stream_num<128){
-                    if     (!strcmp(name, "AspectRatioX")) dar[stream_num].num= value_num;
-                    else if(!strcmp(name, "AspectRatioY")) dar[stream_num].den= value_num;
+                    if     (!strcmp(name, "AspectRatioX")) asf->dar[stream_num].num= value_num;
+                    else if(!strcmp(name, "AspectRatioY")) asf->dar[stream_num].den= value_num;
                 }
             }
         } else if (!ff_guidcmp(&g, &ff_asf_ext_stream_header)) {
@@ -617,14 +616,14 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             AVStream *st = s->streams[stream_num];
             if (!st->codec->bit_rate)
                 st->codec->bit_rate = bitrate[i];
-            if (dar[i].num > 0 && dar[i].den > 0){
+            if (asf->dar[i].num > 0 && asf->dar[i].den > 0){
                 av_reduce(&st->sample_aspect_ratio.num,
                           &st->sample_aspect_ratio.den,
-                          dar[i].num, dar[i].den, INT_MAX);
-            } else if ((dar[0].num > 0) && (dar[0].den > 0) && (st->codec->codec_type==AVMEDIA_TYPE_VIDEO)) // Use ASF container value if the stream doesn't AR set.
+                          asf->dar[i].num, asf->dar[i].den, INT_MAX);
+            } else if ((asf->dar[0].num > 0) && (asf->dar[0].den > 0) && (st->codec->codec_type==AVMEDIA_TYPE_VIDEO)) // Use ASF container value if the stream doesn't AR set.
                 av_reduce(&st->sample_aspect_ratio.num,
                           &st->sample_aspect_ratio.den,
-                          dar[0].num, dar[0].den, INT_MAX);
+                          asf->dar[0].num, asf->dar[0].den, INT_MAX);
 
 //av_log(s, AV_LOG_INFO, "i=%d, st->codec->codec_type:%d, dar %d:%d sar=%d:%d\n", i, st->codec->codec_type, dar[i].num, dar[i].den, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
 
