@@ -551,6 +551,16 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
                avctx->codec->max_lowres);
         goto free_and_end;
     }
+    if (avctx->codec->sample_fmts && avctx->codec->encode) {
+        int i;
+        for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++)
+            if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
+                break;
+        if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
+            av_log(avctx, AV_LOG_ERROR, "Specified sample_fmt is not supported.\n");
+            goto free_and_end;
+        }
+    }
 
     if(avctx->codec->init && !(avctx->active_thread_type&FF_THREAD_FRAME)){
         ret = avctx->codec->init(avctx);
