@@ -193,9 +193,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ASFStream *asf_st;
     int size, i;
     int64_t gsize;
-    uint32_t bitrate[128];
-
-    memset(bitrate, 0, sizeof(bitrate));
 
     ff_get_guid(pb, &g);
     if (ff_guidcmp(&g, &ff_asf_header))
@@ -532,7 +529,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             payload_ext_ct = get_le16(pb); //payload-extension-system-count
 
             if (stream_num < 128)
-                bitrate[stream_num] = leak_rate;
+                asf->stream_bitrates[stream_num] = leak_rate;
 
             for (i=0; i<stream_ct; i++){
                 get_le16(pb);
@@ -615,7 +612,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if(stream_num>=0){
             AVStream *st = s->streams[stream_num];
             if (!st->codec->bit_rate)
-                st->codec->bit_rate = bitrate[i];
+                st->codec->bit_rate = asf->stream_bitrates[i];
             if (asf->dar[i].num > 0 && asf->dar[i].den > 0){
                 av_reduce(&st->sample_aspect_ratio.num,
                           &st->sample_aspect_ratio.den,
