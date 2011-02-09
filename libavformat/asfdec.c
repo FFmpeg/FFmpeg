@@ -49,11 +49,6 @@ static const ff_asf_guid stream_bitrate_guid = { /* (http://get.to/sdp) */
 /**********************************/
 /* decoding */
 
-int ff_guidcmp(const void *g1, const void *g2)
-{
-    return memcmp(g1, g2, sizeof(ff_asf_guid));
-}
-
 #ifdef DEBUG
 #define PRINT_IF_GUID(g,cmp) \
 if (!ff_guidcmp(g, &cmp)) \
