@@ -38,10 +38,8 @@ typedef struct {
     uint32_t stream_bitrates[128];       ///< max number of streams, bitrate for each (for streaming)
     char stream_languages[128][6];       ///< max number of streams, language for each (RFC1766, e.g. en-US)
     /* non streamed additonnal info */
-    uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
     /* packet filling */
     int packet_size_left;
-    int packet_nb_frames;
     /* only for reading */
     uint64_t data_offset;                ///< beginning of the first data packet
     uint64_t data_object_offset;         ///< data object offset (excl. GUID & size)
@@ -232,7 +230,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             ff_get_guid(pb, &asf->hdr.guid);
             asf->hdr.file_size          = get_le64(pb);
             asf->hdr.create_time        = get_le64(pb);
-            asf->nb_packets             = get_le64(pb);
+            get_le64(pb);                               /* number of packets */
             asf->hdr.play_time          = get_le64(pb);
             asf->hdr.send_time          = get_le64(pb);
             asf->hdr.preroll            = get_le32(pb);
@@ -1037,7 +1035,6 @@ static void asf_reset_header(AVFormatContext *s)
     ASFStream *asf_st;
     int i;
 
-    asf->packet_nb_frames = 0;
     asf->packet_size_left = 0;
     asf->packet_segments = 0;
     asf->packet_flags = 0;
