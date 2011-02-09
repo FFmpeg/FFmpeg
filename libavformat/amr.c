@@ -181,6 +181,7 @@ AVInputFormat ff_amr_demuxer = {
     amr_read_header,
     amr_read_packet,
     NULL,
+    .flags = AVFMT_GENERIC_INDEX,
 };
 #endif
 
