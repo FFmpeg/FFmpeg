@@ -33,9 +33,6 @@
 #include "mpeg.h"
 #include "isom.h"
 
-/* 1.0 second at 24Mbit/s */
-#define MAX_SCAN_PACKETS 32000
-
 /* maximum size in which we look for synchronisation if
    synchronisation is lost */
 #define MAX_RESYNC_SIZE 65536
