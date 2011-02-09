@@ -178,7 +178,8 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
         av_log(s, AV_LOG_DEBUG, "Unsupported value type %d in tag %s.\n", type, key);
         goto finish;
     }
-    av_metadata_set2(&s->metadata, key, value, 0);
+    if (*value)
+        av_metadata_set2(&s->metadata, key, value, 0);
 finish:
     av_freep(&value);
     url_fseek(s->pb, off + len, SEEK_SET);
