@@ -425,21 +425,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_tag(s, "copyright", 0, len3);
             get_tag(s, "comment"  , 0, len4);
             url_fskip(pb, len5);
-        } else if (!ff_guidcmp(&g, &stream_bitrate_guid)) {
-            int stream_count = get_le16(pb);
-            int j;
-
-//            av_log(s, AV_LOG_ERROR, "stream bitrate properties\n");
-//            av_log(s, AV_LOG_ERROR, "streams %d\n", streams);
-            for(j = 0; j < stream_count; j++) {
-                int flags, bitrate, stream_id;
-
-                flags= get_le16(pb);
-                bitrate= get_le32(pb);
-                stream_id= (flags & 0x7f);
-//                av_log(s, AV_LOG_ERROR, "flags: 0x%x stream id %d, bitrate %d\n", flags, stream_id, bitrate);
-                asf->stream_bitrates[stream_id]= bitrate;
-            }
         } else if (!ff_guidcmp(&g, &ff_asf_language_guid)) {
             int j;
             int stream_count = get_le16(pb);
