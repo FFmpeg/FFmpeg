@@ -121,6 +121,7 @@ static int amr_read_packet(AVFormatContext *s,
 {
     AVCodecContext *enc = s->streams[0]->codec;
     int read, size = 0, toc, mode;
+    int64_t pos = avio_tell(s->pb);
 
     if (s->pb->eof_reached)
     {
@@ -157,7 +158,7 @@ static int amr_read_packet(AVFormatContext *s,
     s->streams[0]->codec->bit_rate = size*8*50;
 
     pkt->stream_index = 0;
-    pkt->pos= avio_tell(s->pb);
+    pkt->pos = pos;
     pkt->data[0]=toc;
     pkt->duration= enc->codec_id == CODEC_ID_AMR_NB ? 160 : 320;
     read = avio_read(s->pb, pkt->data+1, size-1);
