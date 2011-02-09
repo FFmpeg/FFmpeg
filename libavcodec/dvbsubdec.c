@@ -1423,19 +1423,26 @@ static int dvbsub_decode(AVCodecContext *avctx,
 
 #endif
 
-    if (buf_size <= 2 || *buf != 0x0f)
+    if (buf_size <= 6 || *buf != 0x0f) {
+        av_dlog(avctx, "incomplete or broken packet");
         return -1;
+    }
 
     p = buf;
     p_end = buf + buf_size;
 
-    while (p < p_end && *p == 0x0f) {
+    while (p_end - p >= 6 && *p == 0x0f) {
         p += 1;
         segment_type = *p++;
         page_id = AV_RB16(p);
         p += 2;
         segment_length = AV_RB16(p);
         p += 2;
+
+        if (p_end - p < segment_length) {
+            av_dlog(avctx, "incomplete or broken packet");
+            return -1;
+        }
 
         if (page_id == ctx->composition_id || page_id == ctx->ancillary_id ||
             ctx->composition_id == -1 || ctx->ancillary_id == -1) {
