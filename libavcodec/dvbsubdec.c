@@ -1423,7 +1423,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
 
 #endif
 
-    if (buf_size <= 2)
+    if (buf_size <= 2 || *buf != 0x0f)
         return -1;
 
     p = buf;
@@ -1467,12 +1467,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
         p += segment_length;
     }
 
-    if (p != p_end) {
-        av_dlog(avctx, "Junk at end of packet\n");
-        return -1;
-    }
-
-    return buf_size;
+    return p - buf;
 }
 
 
