@@ -398,7 +398,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ByteIOContext *pb = s->pb;
     AVStream *st;
     ASFStream *asf_st;
-    int size, i;
+    int i;
     int64_t gsize;
 
     ff_get_guid(pb, &g);
@@ -559,7 +559,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_le32(pb);
                 get_le32(pb);
                 get_byte(pb);
-                size = get_le16(pb); /* size */
+                get_le16(pb);        /* size */
                 sizeX= get_le32(pb); /* size */
                 st->codec->width = get_le32(pb);
                 st->codec->height = get_le32(pb);
@@ -569,9 +569,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 tag1 = get_le32(pb);
                 url_fskip(pb, 20);
 //                av_log(s, AV_LOG_DEBUG, "size:%d tsize:%d sizeX:%d\n", size, total_size, sizeX);
-                size= sizeX;
-                if (size > 40) {
-                    st->codec->extradata_size = size - 40;
+                if (sizeX > 40) {
+                    st->codec->extradata_size = sizeX - 40;
                     st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                     get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
                 }
