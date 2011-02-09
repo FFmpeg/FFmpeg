@@ -184,6 +184,213 @@ finish:
     url_fseek(s->pb, off + len, SEEK_SET);
 }
 
+static int asf_read_file_properties(AVFormatContext *s, int64_t size)
+{
+    ASFContext *asf = s->priv_data;
+    ByteIOContext *pb = s->pb;
+
+    ff_get_guid(pb, &asf->hdr.guid);
+    asf->hdr.file_size          = get_le64(pb);
+    asf->hdr.create_time        = get_le64(pb);
+    get_le64(pb);                               /* number of packets */
+    asf->hdr.play_time          = get_le64(pb);
+    asf->hdr.send_time          = get_le64(pb);
+    asf->hdr.preroll            = get_le32(pb);
+    asf->hdr.ignore             = get_le32(pb);
+    asf->hdr.flags              = get_le32(pb);
+    asf->hdr.min_pktsize        = get_le32(pb);
+    asf->hdr.max_pktsize        = get_le32(pb);
+    asf->hdr.max_bitrate        = get_le32(pb);
+    s->packet_size = asf->hdr.max_pktsize;
+
+    return 0;
+}
+
+static int asf_read_ext_stream_properties(AVFormatContext *s, int64_t size)
+{
+    ASFContext *asf = s->priv_data;
+    ByteIOContext *pb = s->pb;
+    ff_asf_guid g;
+    int ext_len, payload_ext_ct, stream_ct, i;
+    uint32_t ext_d, leak_rate, stream_num;
+    unsigned int stream_languageid_index;
+
+    get_le64(pb); // starttime
+    get_le64(pb); // endtime
+    leak_rate = get_le32(pb); // leak-datarate
+    get_le32(pb); // bucket-datasize
+    get_le32(pb); // init-bucket-fullness
+    get_le32(pb); // alt-leak-datarate
+    get_le32(pb); // alt-bucket-datasize
+    get_le32(pb); // alt-init-bucket-fullness
+    get_le32(pb); // max-object-size
+    get_le32(pb); // flags (reliable,seekable,no_cleanpoints?,resend-live-cleanpoints, rest of bits reserved)
+    stream_num = get_le16(pb); // stream-num
+
+    stream_languageid_index = get_le16(pb); // stream-language-id-index
+    if (stream_num < 128)
+        asf->streams[stream_num].stream_language_index = stream_languageid_index;
+
+    get_le64(pb); // avg frametime in 100ns units
+    stream_ct = get_le16(pb); //stream-name-count
+    payload_ext_ct = get_le16(pb); //payload-extension-system-count
+
+    if (stream_num < 128)
+        asf->stream_bitrates[stream_num] = leak_rate;
+
+    for (i=0; i<stream_ct; i++){
+        get_le16(pb);
+        ext_len = get_le16(pb);
+        url_fseek(pb, ext_len, SEEK_CUR);
+    }
+
+    for (i=0; i<payload_ext_ct; i++){
+        ff_get_guid(pb, &g);
+        ext_d=get_le16(pb);
+        ext_len=get_le32(pb);
+        url_fseek(pb, ext_len, SEEK_CUR);
+    }
+
+    return 0;
+}
+
+static int asf_read_content_desc(AVFormatContext *s, int64_t size)
+{
+    ByteIOContext *pb = s->pb;
+    int len1, len2, len3, len4, len5;
+
+    len1 = get_le16(pb);
+    len2 = get_le16(pb);
+    len3 = get_le16(pb);
+    len4 = get_le16(pb);
+    len5 = get_le16(pb);
+    get_tag(s, "title"    , 0, len1);
+    get_tag(s, "author"   , 0, len2);
+    get_tag(s, "copyright", 0, len3);
+    get_tag(s, "comment"  , 0, len4);
+    url_fskip(pb, len5);
+
+    return 0;
+}
+
+static int asf_read_ext_content_desc(AVFormatContext *s, int64_t size)
+{
+    ByteIOContext *pb = s->pb;
+    ASFContext *asf = s->priv_data;
+    int desc_count, i, ret;
+
+    desc_count = get_le16(pb);
+    for(i=0;i<desc_count;i++) {
+        int name_len,value_type,value_len;
+        char name[1024];
+
+        name_len = get_le16(pb);
+        if (name_len%2)     // must be even, broken lavf versions wrote len-1
+            name_len += 1;
+        if ((ret = avio_get_str16le(pb, name_len, name, sizeof(name))) < name_len)
+            url_fskip(pb, name_len - ret);
+        value_type = get_le16(pb);
+        value_len  = get_le16(pb);
+        if (!value_type && value_len%2)
+            value_len += 1;
+        /**
+         * My sample has that stream set to 0 maybe that mean the container.
+         * Asf stream count start at 1. I am using 0 to the container value since it's unused
+         */
+        if (!strcmp(name, "AspectRatioX")){
+            asf->dar[0].num= get_value(s->pb, value_type);
+        } else if(!strcmp(name, "AspectRatioY")){
+            asf->dar[0].den= get_value(s->pb, value_type);
+        } else
+            get_tag(s, name, value_type, value_len);
+    }
+
+    return 0;
+}
+
+static int asf_read_language_list(AVFormatContext *s, int64_t size)
+{
+    ByteIOContext *pb = s->pb;
+    ASFContext *asf = s->priv_data;
+    int j, ret;
+    int stream_count = get_le16(pb);
+    for(j = 0; j < stream_count; j++) {
+        char lang[6];
+        unsigned int lang_len = get_byte(pb);
+        if ((ret = avio_get_str16le(pb, lang_len, lang, sizeof(lang))) < lang_len)
+            url_fskip(pb, lang_len - ret);
+        if (j < 128)
+            av_strlcpy(asf->stream_languages[j], lang, sizeof(*asf->stream_languages));
+    }
+
+    return 0;
+}
+
+static int asf_read_metadata(AVFormatContext *s, int64_t size)
+{
+    ByteIOContext *pb = s->pb;
+    ASFContext *asf = s->priv_data;
+    int n, stream_num, name_len, value_len, value_type, value_num;
+    int ret, i;
+    n = get_le16(pb);
+
+    for(i=0;i<n;i++) {
+        char name[1024];
+
+        get_le16(pb); //lang_list_index
+        stream_num= get_le16(pb);
+        name_len=   get_le16(pb);
+        value_type= get_le16(pb);
+        value_len=  get_le32(pb);
+
+        if ((ret = avio_get_str16le(pb, name_len, name, sizeof(name))) < name_len)
+            url_fskip(pb, name_len - ret);
+        //av_log(s, AV_LOG_ERROR, "%d %d %d %d %d <%s>\n", i, stream_num, name_len, value_type, value_len, name);
+        value_num= get_le16(pb);//we should use get_value() here but it does not work 2 is le16 here but le32 elsewhere
+        url_fskip(pb, value_len - 2);
+
+        if(stream_num<128){
+            if     (!strcmp(name, "AspectRatioX")) asf->dar[stream_num].num= value_num;
+            else if(!strcmp(name, "AspectRatioY")) asf->dar[stream_num].den= value_num;
+        }
+    }
+
+    return 0;
+}
+
+static int asf_read_marker(AVFormatContext *s, int64_t size)
+{
+    ByteIOContext *pb = s->pb;
+    int i, count, name_len, ret;
+    char name[1024];
+
+    get_le64(pb);            // reserved 16 bytes
+    get_le64(pb);            // ...
+    count = get_le32(pb);    // markers count
+    get_le16(pb);            // reserved 2 bytes
+    name_len = get_le16(pb); // name length
+    for(i=0;i<name_len;i++){
+        get_byte(pb); // skip the name
+    }
+
+    for(i=0;i<count;i++){
+        int64_t pres_time;
+        int name_len;
+
+        get_le64(pb);             // offset, 8 bytes
+        pres_time = get_le64(pb); // presentation time
+        get_le16(pb);             // entry length
+        get_le32(pb);             // send time
+        get_le32(pb);             // flags
+        name_len = get_le32(pb);  // name length
+        if ((ret = avio_get_str16le(pb, name_len * 2, name, sizeof(name))) < name_len)
+            url_fskip(pb, name_len - ret);
+        ff_new_chapter(s, i, (AVRational){1, 10000000}, pres_time, AV_NOPTS_VALUE, name );
+    }
+
+    return 0;
+}
+
 static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     ASFContext *asf = s->priv_data;
@@ -204,7 +411,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     memset(&asf->asfid2avid, -1, sizeof(asf->asfid2avid));
     for(;;) {
         uint64_t gpos= url_ftell(pb);
-        int ret;
         ff_get_guid(pb, &g);
         gsize = get_le64(pb);
         av_dlog(s, "%08"PRIx64": ", gpos);
@@ -223,19 +429,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (gsize < 24)
             return -1;
         if (!ff_guidcmp(&g, &ff_asf_file_header)) {
-            ff_get_guid(pb, &asf->hdr.guid);
-            asf->hdr.file_size          = get_le64(pb);
-            asf->hdr.create_time        = get_le64(pb);
-            get_le64(pb);                               /* number of packets */
-            asf->hdr.play_time          = get_le64(pb);
-            asf->hdr.send_time          = get_le64(pb);
-            asf->hdr.preroll            = get_le32(pb);
-            asf->hdr.ignore             = get_le32(pb);
-            asf->hdr.flags              = get_le32(pb);
-            asf->hdr.min_pktsize        = get_le32(pb);
-            asf->hdr.max_pktsize        = get_le32(pb);
-            asf->hdr.max_bitrate        = get_le32(pb);
-            s->packet_size = asf->hdr.max_pktsize;
+            asf_read_file_properties(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_stream_header)) {
             enum AVMediaType type;
             int type_specific_size, sizeX;
@@ -413,121 +607,15 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             pos2 = url_ftell(pb);
             url_fskip(pb, gsize - (pos2 - pos1 + 24));
         } else if (!ff_guidcmp(&g, &ff_asf_comment_header)) {
-            int len1, len2, len3, len4, len5;
-
-            len1 = get_le16(pb);
-            len2 = get_le16(pb);
-            len3 = get_le16(pb);
-            len4 = get_le16(pb);
-            len5 = get_le16(pb);
-            get_tag(s, "title"    , 0, len1);
-            get_tag(s, "author"   , 0, len2);
-            get_tag(s, "copyright", 0, len3);
-            get_tag(s, "comment"  , 0, len4);
-            url_fskip(pb, len5);
+            asf_read_content_desc(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_language_guid)) {
-            int j;
-            int stream_count = get_le16(pb);
-            for(j = 0; j < stream_count; j++) {
-                char lang[6];
-                unsigned int lang_len = get_byte(pb);
-                if ((ret = avio_get_str16le(pb, lang_len, lang, sizeof(lang))) < lang_len)
-                    url_fskip(pb, lang_len - ret);
-                if (j < 128)
-                    av_strlcpy(asf->stream_languages[j], lang, sizeof(*asf->stream_languages));
-            }
+            asf_read_language_list(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_extended_content_header)) {
-            int desc_count, i;
-
-            desc_count = get_le16(pb);
-            for(i=0;i<desc_count;i++) {
-                    int name_len,value_type,value_len;
-                    char name[1024];
-
-                    name_len = get_le16(pb);
-                    if (name_len%2)     // must be even, broken lavf versions wrote len-1
-                        name_len += 1;
-                    if ((ret = avio_get_str16le(pb, name_len, name, sizeof(name))) < name_len)
-                        url_fskip(pb, name_len - ret);
-                    value_type = get_le16(pb);
-                    value_len  = get_le16(pb);
-                    if (!value_type && value_len%2)
-                        value_len += 1;
-                    /**
-                     * My sample has that stream set to 0 maybe that mean the container.
-                     * Asf stream count start at 1. I am using 0 to the container value since it's unused
-                     */
-                    if (!strcmp(name, "AspectRatioX")){
-                        asf->dar[0].num= get_value(s->pb, value_type);
-                    } else if(!strcmp(name, "AspectRatioY")){
-                        asf->dar[0].den= get_value(s->pb, value_type);
-                    } else
-                        get_tag(s, name, value_type, value_len);
-            }
+            asf_read_ext_content_desc(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_metadata_header)) {
-            int n, stream_num, name_len, value_len, value_type, value_num;
-            n = get_le16(pb);
-
-            for(i=0;i<n;i++) {
-                char name[1024];
-
-                get_le16(pb); //lang_list_index
-                stream_num= get_le16(pb);
-                name_len=   get_le16(pb);
-                value_type= get_le16(pb);
-                value_len=  get_le32(pb);
-
-                if ((ret = avio_get_str16le(pb, name_len, name, sizeof(name))) < name_len)
-                    url_fskip(pb, name_len - ret);
-//av_log(s, AV_LOG_ERROR, "%d %d %d %d %d <%s>\n", i, stream_num, name_len, value_type, value_len, name);
-                value_num= get_le16(pb);//we should use get_value() here but it does not work 2 is le16 here but le32 elsewhere
-                url_fskip(pb, value_len - 2);
-
-                if(stream_num<128){
-                    if     (!strcmp(name, "AspectRatioX")) asf->dar[stream_num].num= value_num;
-                    else if(!strcmp(name, "AspectRatioY")) asf->dar[stream_num].den= value_num;
-                }
-            }
+            asf_read_metadata(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_ext_stream_header)) {
-            int ext_len, payload_ext_ct, stream_ct;
-            uint32_t ext_d, leak_rate, stream_num;
-            unsigned int stream_languageid_index;
-
-            get_le64(pb); // starttime
-            get_le64(pb); // endtime
-            leak_rate = get_le32(pb); // leak-datarate
-            get_le32(pb); // bucket-datasize
-            get_le32(pb); // init-bucket-fullness
-            get_le32(pb); // alt-leak-datarate
-            get_le32(pb); // alt-bucket-datasize
-            get_le32(pb); // alt-init-bucket-fullness
-            get_le32(pb); // max-object-size
-            get_le32(pb); // flags (reliable,seekable,no_cleanpoints?,resend-live-cleanpoints, rest of bits reserved)
-            stream_num = get_le16(pb); // stream-num
-
-            stream_languageid_index = get_le16(pb); // stream-language-id-index
-            if (stream_num < 128)
-                asf->streams[stream_num].stream_language_index = stream_languageid_index;
-
-            get_le64(pb); // avg frametime in 100ns units
-            stream_ct = get_le16(pb); //stream-name-count
-            payload_ext_ct = get_le16(pb); //payload-extension-system-count
-
-            if (stream_num < 128)
-                asf->stream_bitrates[stream_num] = leak_rate;
-
-            for (i=0; i<stream_ct; i++){
-                get_le16(pb);
-                ext_len = get_le16(pb);
-                url_fseek(pb, ext_len, SEEK_CUR);
-            }
-
-            for (i=0; i<payload_ext_ct; i++){
-                ff_get_guid(pb, &g);
-                ext_d=get_le16(pb);
-                ext_len=get_le32(pb);
-                url_fseek(pb, ext_len, SEEK_CUR);
-            }
+            asf_read_ext_stream_properties(s, gsize);
 
             // there could be a optional stream properties object to follow
             // if so the next iteration will pick it up
@@ -539,32 +627,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             v2 = get_le16(pb);
             continue;
         } else if (!ff_guidcmp(&g, &ff_asf_marker_header)) {
-            int i, count, name_len;
-            char name[1024];
-
-            get_le64(pb);            // reserved 16 bytes
-            get_le64(pb);            // ...
-            count = get_le32(pb);    // markers count
-            get_le16(pb);            // reserved 2 bytes
-            name_len = get_le16(pb); // name length
-            for(i=0;i<name_len;i++){
-                get_byte(pb); // skip the name
-            }
-
-            for(i=0;i<count;i++){
-                int64_t pres_time;
-                int name_len;
-
-                get_le64(pb);             // offset, 8 bytes
-                pres_time = get_le64(pb); // presentation time
-                get_le16(pb);             // entry length
-                get_le32(pb);             // send time
-                get_le32(pb);             // flags
-                name_len = get_le32(pb);  // name length
-                if ((ret = avio_get_str16le(pb, name_len * 2, name, sizeof(name))) < name_len)
-                    url_fskip(pb, name_len - ret);
-                ff_new_chapter(s, i, (AVRational){1, 10000000}, pres_time, AV_NOPTS_VALUE, name );
-            }
+            asf_read_marker(s, gsize);
         } else if (url_feof(pb)) {
             return -1;
         } else {
