@@ -153,6 +153,9 @@ static int amr_read_packet(AVFormatContext *s,
         return AVERROR(EIO);
     }
 
+    /* Both AMR formats have 50 frames per second */
+    s->streams[0]->codec->bit_rate = size*8*50;
+
     pkt->stream_index = 0;
     pkt->pos= avio_tell(s->pb);
     pkt->data[0]=toc;
