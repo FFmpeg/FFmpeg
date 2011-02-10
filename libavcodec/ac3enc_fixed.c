@@ -309,7 +309,6 @@ static void lshift_tab(int16_t *tab, int n, unsigned int lshift)
 static int normalize_samples(AC3EncodeContext *s)
 {
     int v = 14 - log2_tab(s->windowed_samples, AC3_WINDOW_SIZE);
-    v = FFMAX(0, v);
     lshift_tab(s->windowed_samples, AC3_WINDOW_SIZE, v);
     return v - 9;
 }
