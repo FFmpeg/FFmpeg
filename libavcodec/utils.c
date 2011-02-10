@@ -1340,7 +1340,7 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count)
 void avcodec_thread_free(AVCodecContext *s)
 {
 #if HAVE_THREADS
-    return ff_thread_free(s);
+    ff_thread_free(s);
 #endif
 }
 
