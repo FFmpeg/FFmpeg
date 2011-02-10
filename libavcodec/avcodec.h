@@ -32,7 +32,7 @@
 #include "libavutil/cpu.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 112
+#define LIBAVCODEC_VERSION_MINOR 113
 #define LIBAVCODEC_VERSION_MICRO  1
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -2892,6 +2892,14 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     int thread_safe_callbacks;
+
+    /**
+     * VBV delay coded in the last frame (in periods of a 27 MHz clock).
+     * Used for compliant TS muxing.
+     * - encoding: Set by libavcodec.
+     * - decoding: unused.
+     */
+    uint64_t vbv_delay;
 } AVCodecContext;
 
 /**

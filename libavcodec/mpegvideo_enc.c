@@ -1381,6 +1381,7 @@ vbv_retry:
             s->vbv_delay_ptr[1]  = vbv_delay>>5;
             s->vbv_delay_ptr[2] &= 0x07;
             s->vbv_delay_ptr[2] |= vbv_delay<<3;
+            avctx->vbv_delay = vbv_delay*300;
         }
         s->total_bits += s->frame_bits;
         avctx->frame_bits  = s->frame_bits;
