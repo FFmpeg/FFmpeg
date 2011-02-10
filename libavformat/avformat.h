@@ -472,6 +472,8 @@ typedef struct AVIndexEntry {
  * even when user did not explicitly ask for subtitles.
  */
 #define AV_DISPOSITION_FORCED    0x0040
+#define AV_DISPOSITION_HEARING_IMPAIRED  0x0080  /**< stream for hearing impaired audiences */
+#define AV_DISPOSITION_VISUAL_IMPAIRED   0x0100  /**< stream for visual impaired audiences */
 
 /**
  * Stream structure.
