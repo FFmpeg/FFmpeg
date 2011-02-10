@@ -1723,7 +1723,7 @@ static int mov_open_dref(ByteIOContext **pb, char *src, MOVDref *ref)
     }
 
     return AVERROR(ENOENT);
-};
+}
 
 static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
