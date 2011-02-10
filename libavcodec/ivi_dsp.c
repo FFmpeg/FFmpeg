@@ -461,7 +461,7 @@ void ff_ivi_mc_ ## size ##x## size ## suffix (int16_t *buf, const int16_t *ref_b
 #define OP_PUT(a, b)  (a) = (b)
 #define OP_ADD(a, b)  (a) += (b)
 
-IVI_MC_TEMPLATE(8, _no_delta, OP_PUT);
-IVI_MC_TEMPLATE(8, _delta,    OP_ADD);
-IVI_MC_TEMPLATE(4, _no_delta, OP_PUT);
-IVI_MC_TEMPLATE(4, _delta,    OP_ADD);
+IVI_MC_TEMPLATE(8, _no_delta, OP_PUT)
+IVI_MC_TEMPLATE(8, _delta,    OP_ADD)
+IVI_MC_TEMPLATE(4, _no_delta, OP_PUT)
+IVI_MC_TEMPLATE(4, _delta,    OP_ADD)
