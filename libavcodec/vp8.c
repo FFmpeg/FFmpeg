@@ -528,68 +528,6 @@ void clamp_mv(VP8Context *s, VP56mv *dst, const VP56mv *src, int mb_x, int mb_y)
                      ((s->mb_height - 1 - mb_y) << 6) + MARGIN);
 }
 
-static av_always_inline
-void find_near_mvs(VP8Context *s, VP8Macroblock *mb,
-                   VP56mv near[2], VP56mv *best, uint8_t cnt[4])
-{
-    VP8Macroblock *mb_edge[3] = { mb + 2 /* top */,
-                                  mb - 1 /* left */,
-                                  mb + 1 /* top-left */ };
-    enum { EDGE_TOP, EDGE_LEFT, EDGE_TOPLEFT };
-    VP56mv near_mv[4]  = {{ 0 }};
-    enum { CNT_ZERO, CNT_NEAREST, CNT_NEAR, CNT_SPLITMV };
-    int idx = CNT_ZERO;
-    int best_idx = CNT_ZERO;
-    int cur_sign_bias = s->sign_bias[mb->ref_frame];
-    int *sign_bias = s->sign_bias;
-
-    /* Process MB on top, left and top-left */
-    #define MV_EDGE_CHECK(n)\
-    {\
-        VP8Macroblock *edge = mb_edge[n];\
-        int edge_ref = edge->ref_frame;\
-        if (edge_ref != VP56_FRAME_CURRENT) {\
-            uint32_t mv = AV_RN32A(&edge->mv);\
-            if (mv) {\
-                if (cur_sign_bias != sign_bias[edge_ref]) {\
-                    /* SWAR negate of the values in mv. */\
-                    mv = ~mv;\
-                    mv = ((mv&0x7fff7fff) + 0x00010001) ^ (mv&0x80008000);\
-                }\
-                if (!n || mv != AV_RN32A(&near_mv[idx]))\
-                    AV_WN32A(&near_mv[++idx], mv);\
-                cnt[idx]      += 1 + (n != 2);\
-            } else\
-                cnt[CNT_ZERO] += 1 + (n != 2);\
-        }\
-    }
-    MV_EDGE_CHECK(0)
-    MV_EDGE_CHECK(1)
-    MV_EDGE_CHECK(2)
-
-    /* If we have three distinct MVs, merge first and last if they're the same */
-    if (cnt[CNT_SPLITMV] && AV_RN32A(&near_mv[1+EDGE_TOP]) == AV_RN32A(&near_mv[1+EDGE_TOPLEFT]))
-        cnt[CNT_NEAREST] += 1;
-
-    cnt[CNT_SPLITMV] = ((mb_edge[EDGE_LEFT]->mode   == VP8_MVMODE_SPLIT) +
-                        (mb_edge[EDGE_TOP]->mode    == VP8_MVMODE_SPLIT)) * 2 +
-                       (mb_edge[EDGE_TOPLEFT]->mode == VP8_MVMODE_SPLIT);
-
-    /* Swap near and nearest if necessary */
-    if (cnt[CNT_NEAR] > cnt[CNT_NEAREST]) {
-        FFSWAP(uint8_t,     cnt[CNT_NEAREST],     cnt[CNT_NEAR]);
-        FFSWAP( VP56mv, near_mv[CNT_NEAREST], near_mv[CNT_NEAR]);
-    }
-
-    /* Choose the best mv out of 0,0 and the nearest mv */
-    if (cnt[CNT_NEAREST] >= cnt[CNT_ZERO])
-        best_idx = CNT_NEAREST;
-
-    mb->mv  = near_mv[best_idx];
-    near[0] = near_mv[CNT_NEAREST];
-    near[1] = near_mv[CNT_NEAR];
-}
-
 /**
  * Motion vector coding, 17.1.
  */
@@ -700,6 +638,96 @@ int decode_splitmvs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb)
 }
 
 static av_always_inline
+void decode_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y)
+{
+    VP8Macroblock *mb_edge[3] = { mb + 2 /* top */,
+                                  mb - 1 /* left */,
+                                  mb + 1 /* top-left */ };
+    enum { CNT_ZERO, CNT_NEAREST, CNT_NEAR, CNT_SPLITMV };
+    enum { EDGE_TOP, EDGE_LEFT, EDGE_TOPLEFT };
+    int idx = CNT_ZERO;
+    int cur_sign_bias = s->sign_bias[mb->ref_frame];
+    int *sign_bias = s->sign_bias;
+    VP56mv near_mv[4];
+    uint8_t cnt[4] = { 0 };
+    VP56RangeCoder *c = &s->c;
+
+    AV_ZERO32(&near_mv[0]);
+    AV_ZERO32(&near_mv[1]);
+    AV_ZERO32(&near_mv[2]);
+
+    /* Process MB on top, left and top-left */
+    #define MV_EDGE_CHECK(n)\
+    {\
+        VP8Macroblock *edge = mb_edge[n];\
+        int edge_ref = edge->ref_frame;\
+        if (edge_ref != VP56_FRAME_CURRENT) {\
+            uint32_t mv = AV_RN32A(&edge->mv);\
+            if (mv) {\
+                if (cur_sign_bias != sign_bias[edge_ref]) {\
+                    /* SWAR negate of the values in mv. */\
+                    mv = ~mv;\
+                    mv = ((mv&0x7fff7fff) + 0x00010001) ^ (mv&0x80008000);\
+                }\
+                if (!n || mv != AV_RN32A(&near_mv[idx]))\
+                    AV_WN32A(&near_mv[++idx], mv);\
+                cnt[idx]      += 1 + (n != 2);\
+            } else\
+                cnt[CNT_ZERO] += 1 + (n != 2);\
+        }\
+    }
+
+    MV_EDGE_CHECK(0)
+    MV_EDGE_CHECK(1)
+    MV_EDGE_CHECK(2)
+
+    mb->partitioning = VP8_SPLITMVMODE_NONE;
+    if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_ZERO]][0])) {
+        mb->mode = VP8_MVMODE_MV;
+
+        /* If we have three distinct MVs, merge first and last if they're the same */
+        if (cnt[CNT_SPLITMV] && AV_RN32A(&near_mv[1+EDGE_TOP]) == AV_RN32A(&near_mv[1+EDGE_TOPLEFT]))
+            cnt[CNT_NEAREST] += 1;
+
+        /* Swap near and nearest if necessary */
+        if (cnt[CNT_NEAR] > cnt[CNT_NEAREST]) {
+            FFSWAP(uint8_t,     cnt[CNT_NEAREST],     cnt[CNT_NEAR]);
+            FFSWAP( VP56mv, near_mv[CNT_NEAREST], near_mv[CNT_NEAR]);
+        }
+
+        if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_NEAREST]][1])) {
+            if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_NEAR]][2])) {
+
+                /* Choose the best mv out of 0,0 and the nearest mv */
+                clamp_mv(s, &mb->mv, &near_mv[CNT_ZERO + (cnt[CNT_NEAREST] >= cnt[CNT_ZERO])], mb_x, mb_y);
+                cnt[CNT_SPLITMV] = ((mb_edge[EDGE_LEFT]->mode    == VP8_MVMODE_SPLIT) +
+                                    (mb_edge[EDGE_TOP]->mode     == VP8_MVMODE_SPLIT)) * 2 +
+                                    (mb_edge[EDGE_TOPLEFT]->mode == VP8_MVMODE_SPLIT);
+
+                if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_SPLITMV]][3])) {
+                    mb->mode = VP8_MVMODE_SPLIT;
+                    mb->mv = mb->bmv[decode_splitmvs(s, c, mb) - 1];
+                } else {
+                    mb->mv.y += read_mv_component(c, s->prob->mvc[0]);
+                    mb->mv.x += read_mv_component(c, s->prob->mvc[1]);
+                    mb->bmv[0] = mb->mv;
+                }
+            } else {
+                clamp_mv(s, &mb->mv, &near_mv[CNT_NEAR], mb_x, mb_y);
+                mb->bmv[0] = mb->mv;
+            }
+        } else {
+            clamp_mv(s, &mb->mv, &near_mv[CNT_NEAREST], mb_x, mb_y);
+            mb->bmv[0] = mb->mv;
+        }
+    } else {
+        mb->mode = VP8_MVMODE_ZERO;
+        AV_ZERO32(&mb->mv);
+        mb->bmv[0] = mb->mv;
+    }
+}
+
+static av_always_inline
 void decode_intra4x4_modes(VP8Context *s, VP56RangeCoder *c,
                            int mb_x, int keyframe)
 {
@@ -749,9 +777,6 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
         s->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, vp8_pred8x8c_prob_intra);
         mb->ref_frame = VP56_FRAME_CURRENT;
     } else if (vp56_rac_get_prob_branchy(c, s->prob->intra)) {
-        VP56mv near[2], best;
-        uint8_t cnt[4] = { 0 };
-
         // inter MB, 16.2
         if (vp56_rac_get_prob_branchy(c, s->prob->last))
             mb->ref_frame = vp56_rac_get_prob(c, s->prob->golden) ?
@@ -761,32 +786,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
         s->ref_count[mb->ref_frame-1]++;
 
         // motion vectors, 16.3
-        find_near_mvs(s, mb, near, &best, cnt);
-        if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[0]][0])) {
-            mb->mode = VP8_MVMODE_MV;
-            if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[1]][1])) {
-                if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[2]][2])) {
-                    if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[3]][3])) {
-                        mb->mode = VP8_MVMODE_SPLIT;
-                        clamp_mv(s, &mb->mv, &mb->mv, mb_x, mb_y);
-                        mb->mv = mb->bmv[decode_splitmvs(s, c, mb) - 1];
-                    } else {
-                        clamp_mv(s, &mb->mv, &mb->mv, mb_x, mb_y);
-                        mb->mv.y += read_mv_component(c, s->prob->mvc[0]);
-                        mb->mv.x += read_mv_component(c, s->prob->mvc[1]);
-                    }
-                } else
-                    clamp_mv(s, &mb->mv, &near[1], mb_x, mb_y);
-            } else
-                clamp_mv(s, &mb->mv, &near[0], mb_x, mb_y);
-        } else {
-            mb->mode = VP8_MVMODE_ZERO;
-            AV_ZERO32(&mb->mv);
-        }
-        if (mb->mode != VP8_MVMODE_SPLIT) {
-            mb->partitioning = VP8_SPLITMVMODE_NONE;
-            mb->bmv[0] = mb->mv;
-        }
+        decode_mvs(s, mb, mb_x, mb_y);
     } else {
         // intra MB, 16.1
         mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_inter, s->prob->pred16x16);
