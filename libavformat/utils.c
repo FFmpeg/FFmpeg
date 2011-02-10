@@ -2516,6 +2516,8 @@ int av_find_best_stream(AVFormatContext *ic,
             continue;
         if (wanted_stream_nb >= 0 && stream_number++ != wanted_stream_nb)
             continue;
+        if (st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED|AV_DISPOSITION_VISUAL_IMPAIRED))
+            continue;
         if (decoder_ret) {
             decoder = avcodec_find_decoder(ic->streams[i]->codec->codec_id);
             if (!decoder) {
