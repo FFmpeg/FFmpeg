@@ -223,7 +223,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     else
         page_state = 2; /* mode change */
     /* page_version = 0 + page_state */
-    *q++ = s->object_version | (page_state << 2) | 3;
+    *q++ = (s->object_version << 4) | (page_state << 2) | 3;
 
     for (region_id = 0; region_id < h->num_rects; region_id++) {
         *q++ = region_id;
