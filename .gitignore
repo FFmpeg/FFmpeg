@@ -1,6 +1,7 @@
 .config
 .version
 *.o
+*.so
 *.d
 *.exe
 *.ho
