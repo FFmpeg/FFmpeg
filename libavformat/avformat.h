@@ -752,7 +752,9 @@ typedef struct AVFormatContext {
 
     /* av_seek_frame() support */
     int64_t data_offset; /**< offset of the first packet */
-    int index_built;
+#if FF_API_INDEX_BUILT
+    attribute_deprecated int index_built;
+#endif
 
     int mux_rate;
     unsigned int packet_size;
