@@ -286,19 +286,15 @@ static int log2_tab(int16_t *tab, int n)
  * Left-shift each value in an array by a specified amount.
  * @param tab    input array
  * @param n      number of values in the array
- * @param lshift left shift amount. a negative value means right shift.
+ * @param lshift left shift amount
  */
-static void lshift_tab(int16_t *tab, int n, int lshift)
+static void lshift_tab(int16_t *tab, int n, unsigned int lshift)
 {
     int i;
 
     if (lshift > 0) {
         for (i = 0; i < n; i++)
             tab[i] <<= lshift;
-    } else if (lshift < 0) {
-        lshift = -lshift;
-        for (i = 0; i < n; i++)
-            tab[i] >>= lshift;
     }
 }
 
