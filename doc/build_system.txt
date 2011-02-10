@@ -4,6 +4,8 @@ some of its obscure features and options.
 Options to make:
 make V=1 <target>
     Build target with verbosity 1, instead of 1, 2 can be used too
+make SAMPLES=<path to the fate samples> <target>
+    specify the path to the fate samples at make time
 
 
 Useful standard make commands:
@@ -31,4 +33,5 @@ fate
 Setting up local fate:
 use the following command to get the fate test samples
 rsync -aL rsync://rsync.mplayerhq.hu:/samples/fate-suite/ fate/fate-suite
-pass --samples=<path to the samples> to configure
+pass --samples=<path to the samples> to configure or pass the path with the
+SAMPLES variable to make
