@@ -89,5 +89,8 @@
 #ifndef FF_API_OLD_AVIO
 #define FF_API_OLD_AVIO                (LIBAVFORMAT_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_INDEX_BUILT
+#define FF_API_INDEX_BUILT             (LIBAVFORMAT_VERSION_MAJOR < 53)
+#endif
 
 #endif //AVFORMAT_VERSION_H
