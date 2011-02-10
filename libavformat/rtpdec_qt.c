@@ -246,7 +246,7 @@ RTPDynamicProtocolHandler ff_ ## m ## _rtp_ ## n ## _handler = { \
     .open             = qt_rtp_new,    \
     .close            = qt_rtp_free,   \
     .parse_packet     = qt_rtp_parse_packet, \
-};
+}
 
 RTP_QT_HANDLER(qt,        vid, "X-QT",        AVMEDIA_TYPE_VIDEO);
 RTP_QT_HANDLER(qt,        aud, "X-QT",        AVMEDIA_TYPE_AUDIO);

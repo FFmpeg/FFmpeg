@@ -559,7 +559,7 @@ static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
     .open             = rdt_new_context, \
     .close            = rdt_free_context, \
     .parse_packet     = rdt_parse_packet \
-};
+}
 
 RDT_HANDLER(live_video, "x-pn-multirate-realvideo-live", AVMEDIA_TYPE_VIDEO);
 RDT_HANDLER(live_audio, "x-pn-multirate-realaudio-live", AVMEDIA_TYPE_AUDIO);

@@ -482,7 +482,7 @@ AVCodec ff_ ## name_ ## _encoder = {            \
     .close       = pcm_encode_close,            \
     .sample_fmts = (const enum AVSampleFormat[]){sample_fmt_,AV_SAMPLE_FMT_NONE}, \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
-};
+}
 #else
 #define PCM_ENCODER(id,sample_fmt_,name,long_name_)
 #endif
@@ -498,13 +498,13 @@ AVCodec ff_ ## name_ ## _decoder = {            \
     .decode         = pcm_decode_frame,         \
     .sample_fmts = (const enum AVSampleFormat[]){sample_fmt_,AV_SAMPLE_FMT_NONE}, \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
-};
+}
 #else
 #define PCM_DECODER(id,sample_fmt_,name,long_name_)
 #endif
 
 #define PCM_CODEC(id, sample_fmt_, name, long_name_)         \
-    PCM_ENCODER(id,sample_fmt_,name,long_name_) PCM_DECODER(id,sample_fmt_,name,long_name_)
+    PCM_ENCODER(id,sample_fmt_,name,long_name_); PCM_DECODER(id,sample_fmt_,name,long_name_)
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 PCM_CODEC  (CODEC_ID_PCM_ALAW,  AV_SAMPLE_FMT_S16, pcm_alaw, "PCM A-law");

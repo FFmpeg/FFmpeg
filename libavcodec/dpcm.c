@@ -309,7 +309,7 @@ AVCodec ff_ ## name ## _decoder = {             \
     NULL,                                       \
     dpcm_decode_frame,                          \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
-};
+}
 
 DPCM_DECODER(CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");
 DPCM_DECODER(CODEC_ID_ROQ_DPCM, roq_dpcm, "DPCM id RoQ");

@@ -1719,7 +1719,7 @@ AVCodec ff_ ## name ## _encoder = {             \
     NULL,                                       \
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE}, \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
-};
+}
 #else
 #define ADPCM_ENCODER(id,name,long_name_)
 #endif
@@ -1736,13 +1736,13 @@ AVCodec ff_ ## name ## _decoder = {             \
     NULL,                                       \
     adpcm_decode_frame,                         \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
-};
+}
 #else
 #define ADPCM_DECODER(id,name,long_name_)
 #endif
 
 #define ADPCM_CODEC(id,name,long_name_)         \
-    ADPCM_ENCODER(id,name,long_name_) ADPCM_DECODER(id,name,long_name_)
+    ADPCM_ENCODER(id,name,long_name_); ADPCM_DECODER(id,name,long_name_)
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 ADPCM_DECODER(CODEC_ID_ADPCM_4XM, adpcm_4xm, "ADPCM 4X Movie");
