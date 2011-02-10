@@ -33,6 +33,7 @@
 #include "avcodec.h"
 #include "put_bits.h"
 #include "dsputil.h"
+#include "ac3dsp.h"
 #include "ac3.h"
 #include "audioconvert.h"
 
@@ -86,6 +87,7 @@ typedef struct AC3Block {
 typedef struct AC3EncodeContext {
     PutBitContext pb;                       ///< bitstream writer context
     DSPContext dsp;
+    AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
     AC3MDCTContext mdct;                    ///< MDCT context
 
     AC3Block blocks[AC3_MAX_BLOCKS];        ///< per-block info
@@ -458,7 +460,6 @@ static void compute_exp_strategy_ch(AC3EncodeContext *s, uint8_t *exp_strategy,
             exp_strategy[blk] = EXP_REUSE;
         exp += AC3_MAX_COEFS;
     }
-    emms_c();
 
     /* now select the encoding strategy type : if exponents are often
        recoded, we use a coarse encoding */
@@ -494,31 +495,6 @@ static void compute_exp_strategy(AC3EncodeContext *s)
         s->exp_strategy[ch][0] = EXP_D15;
         for (blk = 1; blk < AC3_MAX_BLOCKS; blk++)
             s->exp_strategy[ch][blk] = EXP_REUSE;
-    }
-}
-
-
-/**
- * Set each encoded exponent in a block to the minimum of itself and the
- * exponents in the same frequency bin of up to 5 following blocks.
- */
-static void exponent_min(uint8_t *exp, int num_reuse_blocks, int nb_coefs)
-{
-    int blk, i;
-
-    if (!num_reuse_blocks)
-        return;
-
-    for (i = 0; i < nb_coefs; i++) {
-        uint8_t min_exp = *exp;
-        uint8_t *exp1 = exp + AC3_MAX_COEFS;
-        for (blk = 0; blk < num_reuse_blocks; blk++) {
-            uint8_t next_exp = *exp1;
-            if (next_exp < min_exp)
-                min_exp = next_exp;
-            exp1 += AC3_MAX_COEFS;
-        }
-        *exp++ = min_exp;
     }
 }
 
@@ -616,7 +592,7 @@ static void encode_exponents(AC3EncodeContext *s)
             num_reuse_blocks = blk1 - blk - 1;
 
             /* for the EXP_REUSE case we select the min of the exponents */
-            exponent_min(exp, num_reuse_blocks, nb_coefs);
+            s->ac3dsp.ac3_exponent_min(exp, num_reuse_blocks, nb_coefs);
 
             encode_exponents_blk_ch(exp, nb_coefs, exp_strategy[blk]);
 
@@ -704,6 +680,8 @@ static void process_exponents(AC3EncodeContext *s)
     encode_exponents(s);
 
     group_exponents(s);
+
+    emms_c();
 }
 
 
@@ -1856,6 +1834,7 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
     avctx->coded_frame= avcodec_alloc_frame();
 
     dsputil_init(&s->dsp, avctx);
+    ff_ac3dsp_init(&s->ac3dsp);
 
     return 0;
 init_fail:

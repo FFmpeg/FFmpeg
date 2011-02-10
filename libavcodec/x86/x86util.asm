@@ -434,3 +434,13 @@
     movh     [%7], %3
     movh  [%7+%8], %4
 %endmacro
+
+%macro PMINUB_MMX 3 ; dst, src, tmp
+    mova     %3, %1
+    psubusb  %3, %2
+    psubb    %1, %3
+%endmacro
+
+%macro PMINUB_MMXEXT 3 ; dst, src, ignored
+    pminub   %1, %2
+%endmacro
