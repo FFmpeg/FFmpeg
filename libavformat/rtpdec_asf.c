@@ -288,7 +288,7 @@ RTPDynamicProtocolHandler ff_ms_rtp_ ## n ## _handler = { \
     .open             = asfrtp_new_context, \
     .close            = asfrtp_free_context, \
     .parse_packet     = asfrtp_parse_packet,   \
-};
+}
 
 RTP_ASF_HANDLER(asf_pfv, "x-asf-pf",  AVMEDIA_TYPE_VIDEO);
 RTP_ASF_HANDLER(asf_pfa, "x-asf-pf",  AVMEDIA_TYPE_AUDIO);
