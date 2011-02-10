@@ -32,6 +32,7 @@
 #include "riff.h"
 #include "asf.h"
 #include "mpegts.h"
+#include <strings.h>
 
 /* Macros for formating GUIDs */
 #define PRI_GUID \
@@ -371,6 +372,8 @@ static const ff_asf_guid EVENTID_StreamIDSpanningEvent =
     {0x68,0xAB,0xF1,0xCA,0x53,0xE1,0x41,0x4D,0xA6,0xB3,0xA7,0xC9,0x98,0xDB,0x75,0xEE};
 static const ff_asf_guid EVENTID_TeletextSpanningEvent =
     {0x50,0xD9,0x99,0x95,0x33,0x5F,0x17,0x46,0xAF,0x7C,0x1E,0x54,0xB5,0x10,0xDA,0xA3};
+static const ff_asf_guid EVENTID_AudioTypeSpanningEvent =
+    {0xBE,0xBF,0x1C,0x50,0x49,0xB8,0xCE,0x42,0x9B,0xE9,0x3D,0xB8,0x69,0xFB,0x82,0xB3};
 
 /* Windows media GUIDs */
 
@@ -832,6 +835,19 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 consumed += buf_size;
                 ff_parse_mpeg2_descriptor(s, st, 0, &pbuf, buf + buf_size, 0, 0, 0, 0);
             }
+        } else if (!ff_guidcmp(g, EVENTID_AudioTypeSpanningEvent)) {
+            int stream_index = ff_find_stream_index(s, sid);
+            if (stream_index >= 0) {
+                AVStream *st = s->streams[stream_index];
+                int audio_type;
+                url_fskip(pb, 8);
+                audio_type = get_byte(pb);
+                if (audio_type == 2)
+                    st->disposition |= AV_DISPOSITION_HEARING_IMPAIRED;
+                else if (audio_type == 3)
+                    st->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED;
+                consumed += 9;
+            }
         } else if (!ff_guidcmp(g, EVENTID_DVBScramblingControlSpanningEvent)) {
             int stream_index = ff_find_stream_index(s, sid);
             if (stream_index >= 0) {
@@ -850,6 +866,8 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 if (language[0]) {
                     language[3] = 0;
                     av_metadata_set2(&st->metadata, "language", language, 0);
+                    if (!strcmp(language, "nar") || !strcmp(language, "NAR"))
+                        st->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED;
                 }
                 consumed += 15;
             }
@@ -887,7 +905,6 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             !ff_guidcmp(g, /* DSATTRIB_PicSampleSeq */ (const ff_asf_guid){0x02,0xAE,0x5B,0x2F,0x8F,0x7B,0x60,0x4F,0x82,0xD6,0xE4,0xEA,0x2F,0x1F,0x4C,0x99}) ||
             !ff_guidcmp(g, /* DSATTRIB_TRANSPORT_PROPERTIES */ (const ff_asf_guid){0x12,0xF6,0x22,0xB6,0xAD,0x47,0x71,0x46,0xAD,0x6C,0x05,0xA9,0x8E,0x65,0xDE,0x3A}) ||
             !ff_guidcmp(g, /* dvr_ms_vid_frame_rep_data */ (const ff_asf_guid){0xCC,0x32,0x64,0xDD,0x29,0xE2,0xDB,0x40,0x80,0xF6,0xD2,0x63,0x28,0xD2,0x76,0x1F}) ||
-            !ff_guidcmp(g, /* EVENTID_AudioTypeSpanningEvent */ (const ff_asf_guid){0xBE,0xBF,0x1C,0x50,0x49,0xB8,0xCE,0x42,0x9B,0xE9,0x3D,0xB8,0x69,0xFB,0x82,0xB3}) ||
             !ff_guidcmp(g, /* EVENTID_ChannelChangeSpanningEvent */ (const ff_asf_guid){0xE5,0xC5,0x67,0x90,0x5C,0x4C,0x05,0x42,0x86,0xC8,0x7A,0xFE,0x20,0xFE,0x1E,0xFA}) ||
             !ff_guidcmp(g, /* EVENTID_ChannelInfoSpanningEvent */ (const ff_asf_guid){0x80,0x6D,0xF3,0x41,0x32,0x41,0xC2,0x4C,0xB1,0x21,0x01,0xA4,0x32,0x19,0xD8,0x1B}) ||
             !ff_guidcmp(g, /* EVENTID_ChannelTypeSpanningEvent */ (const ff_asf_guid){0x51,0x1D,0xAB,0x72,0xD2,0x87,0x9B,0x48,0xBA,0x11,0x0E,0x08,0xDC,0x21,0x02,0x43}) ||
