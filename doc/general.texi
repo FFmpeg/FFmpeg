@@ -352,7 +352,6 @@ following image formats are supported:
 @item Bethesda VID video     @tab     @tab  X
     @tab Used in some games from Bethesda Softworks.
 @item Bink Video             @tab     @tab  X
-    @tab Support for version 'b' is missing.
 @item Brute Force & Ignorance   @tab   @tab X
     @tab Used in the game Flash Traffic: City of Angels.
 @item C93 video              @tab     @tab  X
