@@ -2494,8 +2494,6 @@ die_license_disabled version3 libopencore_amrwb
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
-check_deps $ARCH_EXT_LIST
-
 disabled optimizations || check_cflags -fomit-frame-pointer
 
 enable_pic() {
