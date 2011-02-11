@@ -109,13 +109,28 @@ int ff_get_cpu_flags_x86(void)
             rval |= AV_CPU_FLAG_MMX;
         if (ext_caps & (1<<22))
             rval |= AV_CPU_FLAG_MMX2;
+
+        /* Allow for selectively disabling SSE2 functions on AMD processors
+           with SSE2 support but not SSE4a. This includes Athlon64, some
+           Opteron, and some Sempron processors. MMX, SSE, or 3DNow! are faster
+           than SSE2 often enough to utilize this special-case flag.
+           AV_CPU_FLAG_SSE2 and AV_CPU_FLAG_SSE2SLOW are both set in this case
+           so that SSE2 is used unless explicitly disabled by checking
+           AV_CPU_FLAG_SSE2SLOW. */
+        if (!strncmp(vendor.c, "AuthenticAMD", 12) &&
+            rval & AV_CPU_FLAG_SSE2 && !(ecx & 0x00000040)) {
+            rval |= AV_CPU_FLAG_SSE2SLOW;
+        }
     }
 
     if (!strncmp(vendor.c, "GenuineIntel", 12) &&
         family == 6 && (model == 9 || model == 13 || model == 14)) {
         /* 6/9 (pentium-m "banias"), 6/13 (pentium-m "dothan"), and 6/14 (core1 "yonah")
          * theoretically support sse2, but it's usually slower than mmx,
-         * so let's just pretend they don't. */
+         * so let's just pretend they don't. AV_CPU_FLAG_SSE2 is disabled and
+         * AV_CPU_FLAG_SSE2SLOW is enabled so that SSE2 is not used unless
+         * explicitly enabled by checking AV_CPU_FLAG_SSE2SLOW. The same
+         * situation applies for AV_CPU_FLAG_SSE3 and AV_CPU_FLAG_SSE3SLOW. */
         if (rval & AV_CPU_FLAG_SSE2) rval ^= AV_CPU_FLAG_SSE2SLOW|AV_CPU_FLAG_SSE2;
         if (rval & AV_CPU_FLAG_SSE3) rval ^= AV_CPU_FLAG_SSE3SLOW|AV_CPU_FLAG_SSE3;
     }
