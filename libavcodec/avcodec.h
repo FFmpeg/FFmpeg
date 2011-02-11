@@ -2903,7 +2903,7 @@ typedef struct AVCodecContext {
 
     /**
      * Current statistics for PTS correction.
-     * - decoding: maintained and used by libavcodec
+     * - decoding: maintained and used by libavcodec, not intended to be used by user apps
      * - encoding: unused
      */
     int64_t pts_correction_num_faulty_pts; /// Number of incorrect PTS values so far
