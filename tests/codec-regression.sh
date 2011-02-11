@@ -249,8 +249,8 @@ do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 if [ -n "$do_qtrle" ] ; then
-do_video_encoding qtrle.mov "" ""
-do_video_decoding "" ""
+do_video_encoding qtrle.mov "" "-an -vcodec qtrle"
+do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 if [ -n "$do_rgb" ] ; then
