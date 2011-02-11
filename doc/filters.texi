@@ -657,13 +657,13 @@ Follow some examples:
 overlay=main_w-overlay_w-10:main_h-overlay_h-10
 
 # insert a transparent PNG logo in the bottom left corner of the input
-movie=0:png:logo.png [logo];
+movie=logo.png [logo];
 [in][logo] overlay=10:main_h-overlay_h-10 [out]
 
 # insert 2 different transparent PNG logos (second logo on bottom
 # right corner):
-movie=0:png:logo1.png [logo1];
-movie=0:png:logo2.png [logo2];
+movie=logo1.png [logo1];
+movie=logo2.png [logo2];
 [in][logo1]       overlay=10:H-h-10 [in+logo1];
 [in+logo1][logo2] overlay=W-w-10:H-h-10 [out]
 
