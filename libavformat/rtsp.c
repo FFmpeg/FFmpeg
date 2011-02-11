@@ -322,7 +322,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         if (!strcmp(ff_rtp_enc_name(rtsp_st->sdp_payload_type), "MP2T")) {
             /* no corresponding stream */
         } else {
-            st = av_new_stream(s, 0);
+            st = av_new_stream(s, rt->nb_rtsp_streams - 1);
             if (!st)
                 return;
             rtsp_st->stream_index = st->index;
