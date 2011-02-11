@@ -1044,7 +1044,7 @@ typedef struct AVPanScan{
      * - encoding: Set by libavcodec.\
      * - decoding: Set by libavcodec.\
      */\
-    void *thread_opaque;
+    void *thread_opaque;\
 
 #define FF_QSCALE_TYPE_MPEG1 0
 #define FF_QSCALE_TYPE_MPEG2 1
