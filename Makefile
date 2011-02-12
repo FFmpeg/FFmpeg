@@ -169,6 +169,7 @@ clean:: testclean
 	$(RM) $(CLEANSUFFIXES)
 	$(RM) doc/*.html doc/*.pod doc/*.1
 	$(RM) $(TOOLS)
+	$(RM) $(CLEANSUFFIXES:%=tools/%)
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
