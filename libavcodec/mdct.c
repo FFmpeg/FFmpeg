@@ -71,7 +71,7 @@ av_cold int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale)
     s->mdct_bits = nbits;
     s->mdct_size = n;
     n4 = n >> 2;
-    s->permutation = FF_MDCT_PERM_NONE;
+    s->mdct_permutation = FF_MDCT_PERM_NONE;
 
     if (ff_fft_init(s, s->mdct_bits - 2, inverse) < 0)
         goto fail;
@@ -80,7 +80,7 @@ av_cold int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale)
     if (!s->tcos)
         goto fail;
 
-    switch (s->permutation) {
+    switch (s->mdct_permutation) {
     case FF_MDCT_PERM_NONE:
         s->tsin = s->tcos + n4;
         tstep = 1;

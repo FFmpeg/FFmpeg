@@ -97,6 +97,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     if (!s->tmp_buf)
         goto fail;
     s->inverse = inverse;
+    s->fft_permutation = FF_FFT_PERM_DEFAULT;
 
     s->fft_permute = ff_fft_permute_c;
     s->fft_calc    = ff_fft_calc_c;
@@ -113,8 +114,12 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     for(j=4; j<=nbits; j++) {
         ff_init_ff_cos_tabs(j);
     }
-    for(i=0; i<n; i++)
-        s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = i;
+    for(i=0; i<n; i++) {
+        int j = i;
+        if (s->fft_permutation == FF_FFT_PERM_SWAP_LSBS)
+            j = (j&~3) | ((j>>1)&1) | ((j<<1)&2);
+        s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = j;
+    }
 
     return 0;
  fail:
