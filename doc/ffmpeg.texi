@@ -981,6 +981,7 @@ file to which you want to add them.
 @c man end EXAMPLES
 
 @include eval.texi
+@include encoders.texi
 @include demuxers.texi
 @include muxers.texi
 @include indevs.texi
