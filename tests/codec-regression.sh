@@ -75,6 +75,11 @@ do_video_encoding msmpeg4.avi "-qscale 10" "-an -vcodec msmpeg4"
 do_video_decoding
 fi
 
+if [ -n "$do_msvideo1" ] ; then
+do_video_encoding msvideo1.avi "" "-an -vcodec msvideo1"
+do_video_decoding "" "-pix_fmt yuv420p"
+fi
+
 if [ -n "$do_wmv1" ] ; then
 do_video_encoding wmv1.avi "-qscale 10" "-an -vcodec wmv1"
 do_video_decoding
