@@ -293,7 +293,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
             hr = AV_RL32(mms->in_buffer + 40);
             if (hr) {
                 av_log(NULL, AV_LOG_ERROR,
-                       "Server sent an error status code: 0x%08x\n", hr);
+                       "Server sent a message with packet type 0x%x and error status code 0x%08x\n", packet_type, hr);
                 return AVERROR_UNKNOWN;
             }
         } else {
