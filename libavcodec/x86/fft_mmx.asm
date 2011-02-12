@@ -51,6 +51,7 @@ SECTION_RODATA
 %define M_SQRT1_2 0.70710678118654752440
 ps_root2: times 4 dd M_SQRT1_2
 ps_root2mppm: dd -M_SQRT1_2, M_SQRT1_2, M_SQRT1_2, -M_SQRT1_2
+ps_p1p1m1p1: dd 0, 0, 1<<31, 0
 ps_m1p1: dd 1<<31, 0
 
 %assign i 16
@@ -95,54 +96,51 @@ section .text align=16
     SWAP     %3, %6
 %endmacro
 
-; in:  %1={r0,i0,r1,i1} %2={r2,i2,r3,i3}
+; in:  %1={r0,i0,r2,i2} %2={r1,i1,r3,i3}
 ; out: %1={r0,r1,r2,r3} %2={i0,i1,i2,i3}
 %macro T4_SSE 3
     mova     %3, %1
-    shufps   %1, %2, 0x64 ; {r0,i0,r3,i2}
-    shufps   %3, %2, 0xce ; {r1,i1,r2,i3}
+    addps    %1, %2       ; {t1,t2,t6,t5}
+    subps    %3, %2       ; {t3,t4,-t8,t7}
+    xorps    %3, [ps_p1p1m1p1]
     mova     %2, %1
-    addps    %1, %3       ; {t1,t2,t6,t5}
-    subps    %2, %3       ; {t3,t4,t8,t7}
+    shufps   %1, %3, 0x44 ; {t1,t2,t3,t4}
+    shufps   %2, %3, 0xbe ; {t6,t5,t7,t8}
     mova     %3, %1
-    shufps   %1, %2, 0x44 ; {t1,t2,t3,t4}
-    shufps   %3, %2, 0xbe ; {t6,t5,t7,t8}
+    addps    %1, %2       ; {r0,i0,r1,i1}
+    subps    %3, %2       ; {r2,i2,r3,i3}
     mova     %2, %1
-    addps    %1, %3       ; {r0,i0,r1,i1}
-    subps    %2, %3       ; {r2,i2,r3,i3}
-    mova     %3, %1
-    shufps   %1, %2, 0x88 ; {r0,r1,r2,r3}
-    shufps   %3, %2, 0xdd ; {i0,i1,i2,i3}
-    SWAP     %2, %3
+    shufps   %1, %3, 0x88 ; {r0,r1,r2,r3}
+    shufps   %2, %3, 0xdd ; {i0,i1,i2,i3}
 %endmacro
 
-%macro T8_SSE 6 ; r0,i0,r1,i1,t0,t1
-    mova     %5, %3
-    shufps   %3, %4, 0x44 ; {r4,i4,r6,i6}
-    shufps   %5, %4, 0xee ; {r5,i5,r7,i7}
+; in:  %1={r0,r1,r2,r3} %2={i0,i1,i2,i3} %3={r4,i4,r6,i6} %4={r5,i5,r7,i7}
+; out: %1={r0,r1,r2,r3} %2={i0,i1,i2,i3} %1={r4,r5,r6,r7} %2={i4,i5,i6,i7}
+%macro T8_SSE 6
     mova     %6, %3
-    subps    %3, %5       ; {r5,i5,r7,i7}
-    addps    %6, %5       ; {t1,t2,t3,t4}
-    mova     %5, %3
-    shufps   %5, %5, 0xb1 ; {i5,r5,i7,r7}
+    subps    %3, %4       ; {r5,i5,r7,i7}
+    addps    %6, %4       ; {t1,t2,t3,t4}
+    mova     %4, %3
+    shufps   %4, %4, 0xb1 ; {i5,r5,i7,r7}
     mulps    %3, [ps_root2mppm] ; {-r5,i5,r7,-i7}
-    mulps    %5, [ps_root2]
-    addps    %3, %5       ; {t8,t7,ta,t9}
-    mova     %5, %6
+    mulps    %4, [ps_root2]
+    addps    %3, %4       ; {t8,t7,ta,t9}
+    mova     %4, %6
     shufps   %6, %3, 0x36 ; {t3,t2,t9,t8}
-    shufps   %5, %3, 0x9c ; {t1,t4,t7,ta}
+    shufps   %4, %3, 0x9c ; {t1,t4,t7,ta}
     mova     %3, %6
-    addps    %6, %5       ; {t1,t2,t9,ta}
-    subps    %3, %5       ; {t6,t5,tc,tb}
-    mova     %5, %6
+    addps    %6, %4       ; {t1,t2,t9,ta}
+    subps    %3, %4       ; {t6,t5,tc,tb}
+    mova     %4, %6
     shufps   %6, %3, 0xd8 ; {t1,t9,t5,tb}
-    shufps   %5, %3, 0x8d ; {t2,ta,t6,tc}
+    shufps   %4, %3, 0x8d ; {t2,ta,t6,tc}
     mova     %3, %1
-    mova     %4, %2
+    mova     %5, %2
     addps    %1, %6       ; {r0,r1,r2,r3}
-    addps    %2, %5       ; {i0,i1,i2,i3}
+    addps    %2, %4       ; {i0,i1,i2,i3}
     subps    %3, %6       ; {r4,r5,r6,r7}
-    subps    %4, %5       ; {i4,i5,i6,i7}
+    subps    %5, %4       ; {i4,i5,i6,i7}
+    SWAP     %4, %5
 %endmacro
 
 ; scheduled for cpu-bound sizes
