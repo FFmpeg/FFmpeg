@@ -147,7 +147,7 @@ that match @code{*jpg} to the @file{/tmp} directory in the sequence of
 @file{img001.jpg}, @file{img002.jpg} and so on.
 
 @example
-  x=1; for i in *jpg; do counter=$(printf %03d $x); ln "$i" /tmp/img"$counter".jpg; x=$(($x+1)); done
+  x=1; for i in *jpg; do counter=$(printf %03d $x); ln -s "$i" /tmp/img"$counter".jpg; x=$(($x+1)); done
 @end example
 
 If you want to sequence them by oldest modified first, substitute
