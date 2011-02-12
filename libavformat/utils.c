@@ -3237,6 +3237,24 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
         if(st->codec->time_base.den && st->codec->time_base.num)
             print_fps(1/av_q2d(st->codec->time_base), "tbc");
     }
+    if (st->disposition & AV_DISPOSITION_DEFAULT)
+        av_log(NULL, AV_LOG_INFO, " (default)");
+    if (st->disposition & AV_DISPOSITION_DUB)
+        av_log(NULL, AV_LOG_INFO, " (dub)");
+    if (st->disposition & AV_DISPOSITION_ORIGINAL)
+        av_log(NULL, AV_LOG_INFO, " (original)");
+    if (st->disposition & AV_DISPOSITION_COMMENT)
+        av_log(NULL, AV_LOG_INFO, " (comment)");
+    if (st->disposition & AV_DISPOSITION_LYRICS)
+        av_log(NULL, AV_LOG_INFO, " (lyrics)");
+    if (st->disposition & AV_DISPOSITION_KARAOKE)
+        av_log(NULL, AV_LOG_INFO, " (karaoke)");
+    if (st->disposition & AV_DISPOSITION_FORCED)
+        av_log(NULL, AV_LOG_INFO, " (forced)");
+    if (st->disposition & AV_DISPOSITION_HEARING_IMPAIRED)
+        av_log(NULL, AV_LOG_INFO, " (hearing impaired)");
+    if (st->disposition & AV_DISPOSITION_VISUAL_IMPAIRED)
+        av_log(NULL, AV_LOG_INFO, " (visual impaired)");
     av_log(NULL, AV_LOG_INFO, "\n");
     dump_metadata(NULL, st->metadata, "    ");
 }
