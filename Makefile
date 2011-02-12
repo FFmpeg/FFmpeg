@@ -15,7 +15,7 @@ OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
 MANPAGES    = $(PROGS-yes:%=doc/%.1)
 PODPAGES    = $(PROGS-yes:%=doc/%.pod)
 HTMLPAGES   = $(PROGS-yes:%=doc/%.html)
-TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws pktdumper probetest qt-faststart trasher))
+TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws graph2dot lavfi-showfiltfmts pktdumper probetest qt-faststart trasher))
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 
