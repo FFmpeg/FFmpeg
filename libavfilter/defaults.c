@@ -84,47 +84,27 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
                                                      enum AVSampleFormat sample_fmt, int nb_samples,
                                                      int64_t channel_layout, int planar)
 {
-    AVFilterBuffer *samples = av_mallocz(sizeof(AVFilterBuffer));
-    AVFilterBufferRef *ref = NULL;
+    AVFilterBufferRef *samplesref = NULL;
+    int linesize[8];
+    uint8_t *data[8];
     int nb_channels = av_get_channel_layout_nb_channels(channel_layout);
 
-    if (!samples || !(ref = av_mallocz(sizeof(AVFilterBufferRef))))
-        goto fail;
-
-    ref->buf                   = samples;
-    ref->format                = sample_fmt;
-
-    ref->audio = av_mallocz(sizeof(AVFilterBufferRefAudioProps));
-    if (!ref->audio)
-        goto fail;
-
-    ref->audio->channel_layout = channel_layout;
-    ref->audio->nb_samples     = nb_samples;
-    ref->audio->planar         = planar;
-
-    /* make sure the buffer gets read permission or it's useless for output */
-    ref->perms = perms | AV_PERM_READ;
-
-    samples->refcount   = 1;
-    samples->free       = ff_avfilter_default_free_buffer;
-
     /* Calculate total buffer size, round to multiple of 16 to be SIMD friendly */
-    if (av_samples_alloc(samples->data, samples->linesize,
+    if (av_samples_alloc(data, linesize,
                          nb_channels, nb_samples, sample_fmt,
                          planar, 16) < 0)
-        goto fail;
+        return NULL;
 
-    memcpy(ref->data,     samples->data,     sizeof(ref->data));
-    memcpy(ref->linesize, samples->linesize, sizeof(ref->linesize));
+    samplesref =
+        avfilter_get_audio_buffer_ref_from_arrays(data, linesize, perms,
+                                                  nb_samples, sample_fmt,
+                                                  channel_layout, planar);
+    if (!samplesref) {
+        av_free(data[0]);
+        return NULL;
+    }
 
-    return ref;
-
-fail:
-    if (ref)
-        av_free(ref->audio);
-    av_free(ref);
-    av_free(samples);
-    return NULL;
+    return samplesref;
 }
 
 void avfilter_default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
