@@ -22,6 +22,7 @@
 
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/pixdesc.h"
+#include "libavutil/audioconvert.h"
 #include "libavfilter/avfiltergraph.h"
 
 static void usage(void)
@@ -67,10 +68,18 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                          dst_filter_ctx->filter->name);
 
                 fprintf(outfile, "\"%s\" -> \"%s\"", filter_ctx_label, dst_filter_ctx_label);
-                fprintf(outfile, " [ label= \"fmt:%s w:%d h:%d tb:%d/%d\" ];\n",
-                        link->type == AVMEDIA_TYPE_VIDEO ? av_pix_fmt_descriptors[link->format].name :
-                        link->type == AVMEDIA_TYPE_AUDIO ? av_get_sample_fmt_name(link->format) : "unknown",
-                        link->w, link->h, link->time_base.num, link->time_base.den);
+                if (link->type == AVMEDIA_TYPE_VIDEO) {
+                    fprintf(outfile, " [ label= \"fmt:%s w:%d h:%d tb:%d/%d\" ]",
+                            av_pix_fmt_descriptors[link->format].name,
+                            link->w, link->h, link->time_base.num, link->time_base.den);
+                } else if (link->type == AVMEDIA_TYPE_AUDIO) {
+                    char buf[255];
+                    av_get_channel_layout_string(buf, sizeof(buf), -1, link->channel_layout);
+                    fprintf(outfile, " [ label= \"fmt:%s sr:%"PRId64" cl:%s\" ]",
+                            av_get_sample_fmt_name(link->format),
+                            link->sample_rate, buf);
+                }
+                fprintf(outfile, ";\n");
             }
         }
     }
