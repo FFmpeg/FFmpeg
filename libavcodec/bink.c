@@ -1210,6 +1210,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
  */
 static av_cold void binkb_calc_quant()
 {
+    uint8_t inv_bink_scan[64];
     double s[64];
     int i, j;
 
@@ -1228,17 +1229,21 @@ static av_cold void binkb_calc_quant()
         }
     }
 
+    for (i = 0; i < 64; i++)
+        inv_bink_scan[bink_scan[i]] = i;
+
     for (j = 0; j < 16; j++) {
         for (i = 0; i < 64; i++) {
+            int k = inv_bink_scan[i];
             if (s[i] == 1.0) {
-                binkb_intra_quant[j][i] = (1L << 12) * binkb_intra_seed[i] *
+                binkb_intra_quant[j][k] = (1L << 12) * binkb_intra_seed[i] *
                                           binkb_num[j]/binkb_den[j];
-                binkb_inter_quant[j][i] = (1L << 12) * binkb_inter_seed[i] *
+                binkb_inter_quant[j][k] = (1L << 12) * binkb_inter_seed[i] *
                                           binkb_num[j]/binkb_den[j];
             } else {
-                binkb_intra_quant[j][i] = (1L << 12) * binkb_intra_seed[i] * s[i] *
+                binkb_intra_quant[j][k] = (1L << 12) * binkb_intra_seed[i] * s[i] *
                                           binkb_num[j]/(double)binkb_den[j];
-                binkb_inter_quant[j][i] = (1L << 12) * binkb_inter_seed[i] * s[i] *
+                binkb_inter_quant[j][k] = (1L << 12) * binkb_inter_seed[i] * s[i] *
                                           binkb_num[j]/(double)binkb_den[j];
             }
         }
