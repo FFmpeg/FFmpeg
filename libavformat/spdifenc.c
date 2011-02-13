@@ -142,24 +142,15 @@ static int spdif_header_eac3(AVFormatContext *s, AVPacket *pkt)
  * the outputted IEC 61937 stream is higher.
  * The repetition period is measured in IEC 60958 frames (4 bytes).
  */
-enum {
-    DTS4_REP_PER_512   = 0x0,
-    DTS4_REP_PER_1024  = 0x1,
-    DTS4_REP_PER_2048  = 0x2,
-    DTS4_REP_PER_4096  = 0x3,
-    DTS4_REP_PER_8192  = 0x4,
-    DTS4_REP_PER_16384 = 0x5,
-};
-
 static int spdif_dts4_subtype(int period)
 {
     switch (period) {
-    case 512:   return DTS4_REP_PER_512;
-    case 1024:  return DTS4_REP_PER_1024;
-    case 2048:  return DTS4_REP_PER_2048;
-    case 4096:  return DTS4_REP_PER_4096;
-    case 8192:  return DTS4_REP_PER_8192;
-    case 16384: return DTS4_REP_PER_16384;
+    case 512:   return 0x0;
+    case 1024:  return 0x1;
+    case 2048:  return 0x2;
+    case 4096:  return 0x3;
+    case 8192:  return 0x4;
+    case 16384: return 0x5;
     }
     return -1;
 }
@@ -212,7 +203,8 @@ static int spdif_header_dts4(AVFormatContext *s, AVPacket *pkt, int core_size,
         if (ctx->dtshd_fallback > 0)
             ctx->dtshd_skip = sample_rate * ctx->dtshd_fallback / (blocks << 5);
         else
-            /* skip permanently (-1) or just once (0) */
+            /* skip permanently (dtshd_fallback == -1) or just once
+             * (dtshd_fallback == 0) */
             ctx->dtshd_skip = 1;
     }
     if (ctx->dtshd_skip && core_size) {
@@ -224,8 +216,7 @@ static int spdif_header_dts4(AVFormatContext *s, AVPacket *pkt, int core_size,
     ctx->out_bytes   = sizeof(dtshd_start_code) + 2 + pkt_size;
     ctx->length_code = ctx->out_bytes;
 
-    ctx->hd_buf = av_fast_realloc(ctx->hd_buf, &ctx->hd_buf_size,
-                                  ctx->out_bytes);
+    av_fast_malloc(&ctx->hd_buf, &ctx->hd_buf_size, ctx->out_bytes);
     if (!ctx->hd_buf)
         return AVERROR(ENOMEM);
 
