@@ -62,7 +62,7 @@
 #define MUNGE_ROW(x) (((x) + 0x7F)>>8)
 #define IDCT_ROW(dest,src) IDCT_TRANSFORM(dest,0,1,2,3,4,5,6,7,0,1,2,3,4,5,6,7,MUNGE_ROW,src)
 
-static inline void bink_idct_col(DCTELEM *dest, const DCTELEM *src)
+static inline void bink_idct_col(int *dest, const DCTELEM *src)
 {
     if ((src[8]|src[16]|src[24]|src[32]|src[40]|src[48]|src[56])==0) {
         dest[0]  =
@@ -81,7 +81,7 @@ static inline void bink_idct_col(DCTELEM *dest, const DCTELEM *src)
 void ff_bink_idct_c(DCTELEM *block)
 {
     int i;
-    DCTELEM temp[64];
+    int temp[64];
 
     for (i = 0; i < 8; i++)
         bink_idct_col(&temp[i], &block[i]);
@@ -103,7 +103,7 @@ void ff_bink_idct_add_c(uint8_t *dest, int linesize, DCTELEM *block)
 void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
-    DCTELEM temp[64];
+    int temp[64];
     for (i = 0; i < 8; i++)
         bink_idct_col(&temp[i], &block[i]);
     for (i = 0; i < 8; i++) {
