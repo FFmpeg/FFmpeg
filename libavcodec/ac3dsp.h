@@ -35,6 +35,17 @@ typedef struct AC3DSPContext {
      * @param nb_coefs  number of frequency coefficients.
      */
     void (*ac3_exponent_min)(uint8_t *exp, int num_reuse_blocks, int nb_coefs);
+
+    /**
+     * Calculate the maximum MSB of the absolute value of each element in an
+     * array of int16_t.
+     * @param src input array
+     *            constraints: align 16. values must be in range [-32767,32767]
+     * @param len number of values in the array
+     *            constraints: multiple of 16 greater than 0
+     * @return    a value with the same MSB as max(abs(src[]))
+     */
+    int (*ac3_max_msb_abs_int16)(const int16_t *src, int len);
 } AC3DSPContext;
 
 void ff_ac3dsp_init    (AC3DSPContext *c);
