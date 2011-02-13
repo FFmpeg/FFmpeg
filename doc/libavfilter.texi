@@ -14,20 +14,8 @@
 Libavfilter is the filtering API of FFmpeg. It is the substitute of the
 now deprecated 'vhooks' and started as a Google Summer of Code project.
 
-Integrating libavfilter into the main FFmpeg repository is a work in
-progress. If you wish to try the unfinished development code of
-libavfilter then check it out from the libavfilter repository into
-some directory of your choice by:
-
-@example
-   svn checkout svn://svn.ffmpeg.org/soc/libavfilter
-@end example
-
-And then read the README file in the top directory to learn how to
-integrate it into ffmpeg and ffplay.
-
-But note that there may still be serious bugs in the code and its API
-and ABI should not be considered stable yet!
+Audio filtering integration into the main FFmpeg repository is a work in
+progress, so audio API and ABI should not be considered stable yet.
 
 @chapter Tutorial
 
