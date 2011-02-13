@@ -1866,8 +1866,11 @@ if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
 elif $cc -v 2>&1 | grep -qi ^gcc; then
     cc_type=gcc
     cc_version=__VERSION__
-    gcc_extra_ver=$(expr "$($cc --version | head -n1)" : '.*\((.*)\)')
-    cc_ident="gcc $($cc -dumpversion) $gcc_extra_ver"
+    gcc_version=$($cc --version | head -n1)
+    gcc_basever=$($cc -dumpversion)
+    gcc_pkg_ver=$(expr "$gcc_version" : '^[^ ]* \(([^)]*)\)')
+    gcc_ext_ver=$(expr "$gcc_version" : ".*$gcc_pkg_ver $gcc_basever \\(.*\\)")
+    cc_ident=$(cleanws "gcc $gcc_basever $gcc_pkg_ver $gcc_ext_ver")
     if ! $cc -dumpversion | grep -q '^2\.'; then
         CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
         AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
