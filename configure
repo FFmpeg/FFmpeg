@@ -313,6 +313,10 @@ sh_quote(){
     echo "$v"
 }
 
+cleanws(){
+    echo "$@" | sed 's/^ *//;s/  */ /g;s/ *$//'
+}
+
 filter(){
     pat=$1
     shift
