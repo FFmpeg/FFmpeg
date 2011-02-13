@@ -1867,7 +1867,7 @@ elif $cc -v 2>&1 | grep -qi ^gcc; then
     cc_version=__VERSION__
     gcc_version=$($cc --version | head -n1)
     gcc_basever=$($cc -dumpversion)
-    gcc_pkg_ver=$(expr "$gcc_version" : '^[^ ]* \(([^)]*)\)')
+    gcc_pkg_ver=$(expr "$gcc_version" : '[^ ]* \(([^)]*)\)')
     gcc_ext_ver=$(expr "$gcc_version" : ".*$gcc_pkg_ver $gcc_basever \\(.*\\)")
     cc_ident=$(cleanws "gcc $gcc_basever $gcc_pkg_ver $gcc_ext_ver")
     if ! $cc -dumpversion | grep -q '^2\.'; then
