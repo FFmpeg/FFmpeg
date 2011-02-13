@@ -198,6 +198,12 @@ int avfilter_config_links(AVFilterContext *filter)
                 link->sample_aspect_ratio = link->src->input_count ?
                     link->src->inputs[0]->sample_aspect_ratio : (AVRational){1,1};
 
+            if (link->sample_rate == 0 && link->src && link->src->input_count)
+                link->sample_rate = link->src->inputs[0]->sample_rate;
+
+            if (link->channel_layout == 0 && link->src && link->src->input_count)
+                link->channel_layout = link->src->inputs[0]->channel_layout;
+
             if ((config_link = link->dstpad->config_props))
                 if ((ret = config_link(link)) < 0)
                     return ret;
