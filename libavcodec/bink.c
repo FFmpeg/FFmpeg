@@ -571,24 +571,17 @@ static inline int binkb_get_value(BinkContext *c, int bundle_num)
     return ret;
 }
 
-typedef const uint32_t quant_matrices[16][64];
-static const quant_matrices * bink_quant_matrices[2][2] = {
-    { &bink_inter_quant,  &bink_intra_quant  },
-    { &binkb_inter_quant, &binkb_intra_quant },
-};
-
 /**
  * Read 8x8 block of DCT coefficients.
  *
  * @param gb       context for reading bits
  * @param block    place for storing coefficients
  * @param scan     scan order table
- * @param is_binkb use version 'b' quantizer matrices
- * @param is_intra tells what set of quantizer matrices to use
+ * @param quant_matrices quantization matrices
  * @return 0 for success, negative value in other cases
  */
 static int read_dct_coeffs(GetBitContext *gb, DCTELEM block[64], const uint8_t *scan,
-                           int is_binkb, int is_intra, int q)
+                           const uint32_t quant_matrices[16][64], int q)
 {
     int coef_list[128];
     int mode_list[128];
@@ -674,7 +667,7 @@ static int read_dct_coeffs(GetBitContext *gb, DCTELEM block[64], const uint8_t *
         quant_idx = q;
     }
 
-    quant = (*bink_quant_matrices[is_binkb][is_intra])[quant_idx];
+    quant = quant_matrices[quant_idx];
 
     block[0] = (block[0] * quant[0]) >> 11;
     for (i = 0; i < coef_count; i++) {
@@ -855,7 +848,7 @@ static int binkb_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
                 c->dsp.clear_block(block);
                 block[0] = binkb_get_value(c, BINKB_SRC_INTRA_DC);
                 qp = binkb_get_value(c, BINKB_SRC_INTRA_Q);
-                read_dct_coeffs(gb, block, c->scantable.permutated, 1, 1, qp);
+                read_dct_coeffs(gb, block, c->scantable.permutated, binkb_intra_quant, qp);
                 c->dsp.idct_put(dst, stride, block);
                 break;
             case 3:
@@ -888,7 +881,7 @@ static int binkb_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
                 c->dsp.clear_block(block);
                 block[0] = binkb_get_value(c, BINKB_SRC_INTER_DC);
                 qp = binkb_get_value(c, BINKB_SRC_INTER_Q);
-                read_dct_coeffs(gb, block, c->scantable.permutated, 1, 0, qp);
+                read_dct_coeffs(gb, block, c->scantable.permutated, binkb_inter_quant, qp);
                 c->dsp.idct_add(dst, stride, block);
                 break;
             case 5:
@@ -1028,7 +1021,7 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
                 case INTRA_BLOCK:
                     c->dsp.clear_block(block);
                     block[0] = get_value(c, BINK_SRC_INTRA_DC);
-                    read_dct_coeffs(gb, block, c->scantable.permutated, 0, 1, -1);
+                    read_dct_coeffs(gb, block, c->scantable.permutated, bink_intra_quant, -1);
                     c->dsp.idct(block);
                     c->dsp.put_pixels_nonclamped(block, ublock, 8);
                     break;
@@ -1112,7 +1105,7 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
             case INTRA_BLOCK:
                 c->dsp.clear_block(block);
                 block[0] = get_value(c, BINK_SRC_INTRA_DC);
-                read_dct_coeffs(gb, block, c->scantable.permutated, 0, 1, -1);
+                read_dct_coeffs(gb, block, c->scantable.permutated, bink_intra_quant, -1);
                 c->dsp.idct_put(dst, stride, block);
                 break;
             case FILL_BLOCK:
@@ -1126,7 +1119,7 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
                 c->dsp.put_pixels_tab[1][0](dst, ref, stride, 8);
                 c->dsp.clear_block(block);
                 block[0] = get_value(c, BINK_SRC_INTER_DC);
-                read_dct_coeffs(gb, block, c->scantable.permutated, 0, 0, -1);
+                read_dct_coeffs(gb, block, c->scantable.permutated, bink_inter_quant, -1);
                 c->dsp.idct_add(dst, stride, block);
                 break;
             case PATTERN_BLOCK:
