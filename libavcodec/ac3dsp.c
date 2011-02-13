@@ -42,9 +42,18 @@ static void ac3_exponent_min_c(uint8_t *exp, int num_reuse_blocks, int nb_coefs)
     }
 }
 
+static int ac3_max_msb_abs_int16_c(const int16_t *src, int len)
+{
+    int i, v = 0;
+    for (i = 0; i < len; i++)
+        v |= abs(src[i]);
+    return v;
+}
+
 av_cold void ff_ac3dsp_init(AC3DSPContext *c)
 {
     c->ac3_exponent_min = ac3_exponent_min_c;
+    c->ac3_max_msb_abs_int16 = ac3_max_msb_abs_int16_c;
 
     if (HAVE_MMX)
         ff_ac3dsp_init_x86(c);
