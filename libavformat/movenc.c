@@ -1981,7 +1981,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->cluster[trk->entry].cts = pkt->pts - pkt->dts;
     trk->cluster[trk->entry].flags = 0;
     if (pkt->flags & AV_PKT_FLAG_KEY) {
-        if (mov->mode == MODE_MOV && enc->codec_id == CODEC_ID_MPEG2VIDEO) {
+        if (mov->mode == MODE_MOV && enc->codec_id == CODEC_ID_MPEG2VIDEO &&
+            trk->entry > 0) { // force sync sample for the first key frame
             mov_parse_mpeg2_frame(pkt, &trk->cluster[trk->entry].flags);
             if (trk->cluster[trk->entry].flags & MOV_PARTIAL_SYNC_SAMPLE)
                 trk->flags |= MOV_TRACK_STPS;
