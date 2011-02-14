@@ -474,6 +474,7 @@ typedef struct AVIndexEntry {
 #define AV_DISPOSITION_FORCED    0x0040
 #define AV_DISPOSITION_HEARING_IMPAIRED  0x0080  /**< stream for hearing impaired audiences */
 #define AV_DISPOSITION_VISUAL_IMPAIRED   0x0100  /**< stream for visual impaired audiences */
+#define AV_DISPOSITION_CLEAN_EFFECTS     0x0200  /**< stream without voice */
 
 /**
  * Stream structure.
