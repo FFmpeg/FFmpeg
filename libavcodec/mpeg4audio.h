@@ -57,7 +57,7 @@ enum AudioObjectType {
     AOT_AAC_MAIN,              ///< Y                       Main
     AOT_AAC_LC,                ///< Y                       Low Complexity
     AOT_AAC_SSR,               ///< N (code in SoC repo)    Scalable Sample Rate
-    AOT_AAC_LTP,               ///< N (code in SoC repo)    Long Term Prediction
+    AOT_AAC_LTP,               ///< Y                       Long Term Prediction
     AOT_SBR,                   ///< Y                       Spectral Band Replication
     AOT_AAC_SCALABLE,          ///< N                       Scalable
     AOT_TWINVQ,                ///< N                       Twin Vector Quantizer
