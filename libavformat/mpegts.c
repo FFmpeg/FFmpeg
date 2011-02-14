@@ -954,6 +954,11 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         language[2] = get8(pp, desc_end);
         language[3] = 0;
         av_metadata_set2(&st->metadata, "language", language, 0);
+        switch (get8(pp, desc_end)) {
+            case 0x01: st->disposition |= AV_DISPOSITION_CLEAN_EFFECTS; break;
+            case 0x02: st->disposition |= AV_DISPOSITION_HEARING_IMPAIRED; break;
+            case 0x03: st->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED; break;
+        }
         break;
     case 0x05: /* registration descriptor */
         st->codec->codec_tag = bytestream_get_le32(pp);
