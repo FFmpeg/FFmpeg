@@ -3233,8 +3233,9 @@ typedef struct ReSampleContext ReSampleContext;
 attribute_deprecated ReSampleContext *audio_resample_init(int output_channels, int input_channels,
                                                           int output_rate, int input_rate);
 #endif
+
 /**
- *  Initialize audio resampling context
+ *  Initialize audio resampling context.
  *
  * @param output_channels  number of output channels
  * @param input_channels   number of input channels
@@ -3242,9 +3243,9 @@ attribute_deprecated ReSampleContext *audio_resample_init(int output_channels, i
  * @param input_rate       input sample rate
  * @param sample_fmt_out   requested output sample format
  * @param sample_fmt_in    input sample format
- * @param filter_length    length of each FIR filter in the filterbank relative to the cutoff freq
+ * @param filter_length    length of each FIR filter in the filterbank relative to the cutoff frequency
  * @param log2_phase_count log2 of the number of entries in the polyphase filterbank
- * @param linear           If 1 then the used FIR filter will be linearly interpolated
+ * @param linear           if 1 then the used FIR filter will be linearly interpolated
                            between the 2 closest, if 0 the closest will be used
  * @param cutoff           cutoff frequency, 1.0 corresponds to half the output sampling rate
  * @return allocated ReSampleContext, NULL if error occured
