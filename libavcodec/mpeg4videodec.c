@@ -1495,7 +1495,7 @@ end:
 static int mpeg4_decode_gop_header(MpegEncContext * s, GetBitContext *gb){
     int hours, minutes, seconds;
 
-    if(!show_bits(gb, 18)){
+    if(!show_bits(gb, 23)){
         av_log(s->avctx, AV_LOG_WARNING, "GOP header invalid\n");
         return -1;
     }
