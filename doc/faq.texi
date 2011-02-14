@@ -423,7 +423,7 @@ read "Programming Religion" at (@url{http://www.tux.org/lkml/#s15}).
 
 The build process creates ffmpeg_g, ffplay_g, etc. which contain full debug
 information. Those binaries are stripped to create ffmpeg, ffplay, etc. If
-you need the debug information, used the *_g versions.
+you need the debug information, use the *_g versions.
 
 @section I do not like the LGPL, can I contribute code under the GPL instead?
 
