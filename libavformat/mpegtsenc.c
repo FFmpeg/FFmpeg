@@ -289,6 +289,13 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = lang->value[0];
                 *q++ = lang->value[1];
                 *q++ = lang->value[2];
+                if (st->disposition & AV_DISPOSITION_CLEAN_EFFECTS)
+                    *q++ = 0x01;
+                else if (st->disposition & AV_DISPOSITION_HEARING_IMPAIRED)
+                    *q++ = 0x02;
+                else if (st->disposition & AV_DISPOSITION_VISUAL_IMPAIRED)
+                    *q++ = 0x03;
+                else
                 *q++ = 0; /* undefined type */
             }
             break;
