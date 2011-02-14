@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-02-14 - 910b5b8 - lavfi 1.76.0 - AVFilterLink sample_aspect_ratio
+  Add sample_aspect_ratio field to AVFilterLink.
+
 2011-02-09 - 5592734 - lavc 52.112.0 - avcodec_thread_init()
   Deprecate avcodec_thread_init()/avcodec_thread_free() use; instead
   set thread_count before calling avcodec_open.
