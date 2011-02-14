@@ -296,7 +296,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 else if (st->disposition & AV_DISPOSITION_VISUAL_IMPAIRED)
                     *q++ = 0x03;
                 else
-                *q++ = 0; /* undefined type */
+                    *q++ = 0; /* undefined type */
             }
             break;
         case AVMEDIA_TYPE_SUBTITLE:
