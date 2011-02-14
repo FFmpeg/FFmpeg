@@ -545,5 +545,6 @@ AVOutputFormat ff_spdif_muxer = {
     spdif_write_header,
     spdif_write_packet,
     spdif_write_trailer,
+    .flags = AVFMT_NOTIMESTAMPS,
     .priv_class = &class,
 };
