@@ -42,7 +42,7 @@
  * Y                    filterbank - standard
  * N (code in SoC repo) filterbank - Scalable Sample Rate
  * Y                    Temporal Noise Shaping
- * N (code in SoC repo) Long Term Prediction
+ * Y                    Long Term Prediction
  * Y                    intensity stereo
  * Y                    channel coupling
  * Y                    frequency domain prediction
@@ -478,6 +478,7 @@ static int decode_audio_specific_config(AACContext *ac,
     switch (m4ac->object_type) {
     case AOT_AAC_MAIN:
     case AOT_AAC_LC:
+    case AOT_AAC_LTP:
         if (decode_ga_specific_config(ac, avctx, &gb, m4ac, m4ac->chan_config))
             return -1;
         break;
@@ -580,8 +581,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
                     ff_aac_scalefactor_code, sizeof(ff_aac_scalefactor_code[0]), sizeof(ff_aac_scalefactor_code[0]),
                     352);
 
-    ff_mdct_init(&ac->mdct, 11, 1, 1.0);
-    ff_mdct_init(&ac->mdct_small, 8, 1, 1.0);
+    ff_mdct_init(&ac->mdct,       11, 1, 1.0);
+    ff_mdct_init(&ac->mdct_small,  8, 1, 1.0);
+    ff_mdct_init(&ac->mdct_ltp,   11, 0, 1.0);
     // window initialization
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
@@ -628,6 +630,20 @@ static int decode_prediction(AACContext *ac, IndividualChannelStream *ics,
         ics->prediction_used[sfb] = get_bits1(gb);
     }
     return 0;
+}
+
+/**
+ * Decode Long Term Prediction data; reference: table 4.xx.
+ */
+static void decode_ltp(AACContext *ac, LongTermPrediction *ltp,
+                       GetBitContext *gb, uint8_t max_sfb)
+{
+    int sfb;
+
+    ltp->lag  = get_bits(gb, 11);
+    ltp->coef = ltp_coef[get_bits(gb, 3)] * ac->sf_scale;
+    for (sfb = 0; sfb < FFMIN(max_sfb, MAX_LTP_LONG_SFB); sfb++)
+        ltp->used[sfb] = get_bits1(gb);
 }
 
 /**
@@ -684,9 +700,8 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
                 memset(ics, 0, sizeof(IndividualChannelStream));
                 return -1;
             } else {
-                av_log_missing_feature(ac->avctx, "Predictor bit set but LTP is", 1);
-                memset(ics, 0, sizeof(IndividualChannelStream));
-                return -1;
+                if ((ics->ltp.present = get_bits(gb, 1)))
+                    decode_ltp(ac, &ics->ltp, gb, ics->max_sfb);
             }
         }
     }
@@ -1420,6 +1435,9 @@ static int decode_cpe(AACContext *ac, GetBitContext *gb, ChannelElement *cpe)
         i = cpe->ch[1].ics.use_kb_window[0];
         cpe->ch[1].ics = cpe->ch[0].ics;
         cpe->ch[1].ics.use_kb_window[1] = i;
+        if (cpe->ch[1].ics.predictor_present && (ac->m4ac.object_type != AOT_AAC_MAIN))
+            if ((cpe->ch[1].ics.ltp.present = get_bits(gb, 1)))
+                decode_ltp(ac, &cpe->ch[1].ics.ltp, gb, cpe->ch[1].ics.max_sfb);
         ms_present = get_bits(gb, 2);
         if (ms_present == 3) {
             av_log(ac->avctx, AV_LOG_ERROR, "ms_present = 3 is reserved.\n");
@@ -1659,6 +1677,7 @@ static void apply_tns(float coef[1024], TemporalNoiseShaping *tns,
     int w, filt, m, i;
     int bottom, top, order, start, end, size, inc;
     float lpc[TNS_MAX_ORDER];
+    float tmp[TNS_MAX_ORDER];
 
     for (w = 0; w < ics->num_windows; w++) {
         bottom = ics->num_swb;
@@ -1684,12 +1703,116 @@ static void apply_tns(float coef[1024], TemporalNoiseShaping *tns,
             }
             start += w * 128;
 
-            // ar filter
-            for (m = 0; m < size; m++, start += inc)
-                for (i = 1; i <= FFMIN(m, order); i++)
-                    coef[start] -= coef[start - i * inc] * lpc[i - 1];
+            if (decode) {
+                // ar filter
+                for (m = 0; m < size; m++, start += inc)
+                    for (i = 1; i <= FFMIN(m, order); i++)
+                        coef[start] -= coef[start - i * inc] * lpc[i - 1];
+            } else {
+                // ma filter
+                for (m = 0; m < size; m++, start += inc) {
+                    tmp[0] = coef[start];
+                    for (i = 1; i <= FFMIN(m, order); i++)
+                        coef[start] += tmp[i] * lpc[i - 1];
+                    for (i = order; i > 0; i--)
+                        tmp[i] = tmp[i - 1];
+                }
+            }
         }
     }
+}
+
+/**
+ *  Apply windowing and MDCT to obtain the spectral
+ *  coefficient from the predicted sample by LTP.
+ */
+static void windowing_and_mdct_ltp(AACContext *ac, float *out,
+                                   float *in, IndividualChannelStream *ics)
+{
+    const float *lwindow      = ics->use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+    const float *swindow      = ics->use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
+    const float *lwindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+    const float *swindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
+
+    if (ics->window_sequence[0] != LONG_STOP_SEQUENCE) {
+        ac->dsp.vector_fmul(in, in, lwindow_prev, 1024);
+    } else {
+        memset(in, 0, 448 * sizeof(float));
+        ac->dsp.vector_fmul(in + 448, in + 448, swindow_prev, 128);
+        memcpy(in + 576, in + 576, 448 * sizeof(float));
+    }
+    if (ics->window_sequence[0] != LONG_START_SEQUENCE) {
+        ac->dsp.vector_fmul_reverse(in + 1024, in + 1024, lwindow, 1024);
+    } else {
+        memcpy(in + 1024, in + 1024, 448 * sizeof(float));
+        ac->dsp.vector_fmul_reverse(in + 1024 + 448, in + 1024 + 448, swindow, 128);
+        memset(in + 1024 + 576, 0, 448 * sizeof(float));
+    }
+    ff_mdct_calc(&ac->mdct_ltp, out, in);
+}
+
+/**
+ * Apply the long term prediction
+ */
+static void apply_ltp(AACContext *ac, SingleChannelElement *sce)
+{
+    const LongTermPrediction *ltp = &sce->ics.ltp;
+    const uint16_t *offsets = sce->ics.swb_offset;
+    int i, sfb;
+
+    if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
+        float *predTime = ac->buf_mdct;
+        float *predFreq = sce->ret;
+        int16_t num_samples = 2048;
+
+        if (ltp->lag < 1024)
+            num_samples = ltp->lag + 1024;
+        for (i = 0; i < num_samples; i++)
+            predTime[i] = sce->ltp_state[i + 2048 - ltp->lag] * ltp->coef;
+        memset(&predTime[i], 0, (2048 - i) * sizeof(float));
+
+        windowing_and_mdct_ltp(ac, predFreq, predTime, &sce->ics);
+
+        if (sce->tns.present)
+            apply_tns(predFreq, &sce->tns, &sce->ics, 0);
+
+        for (sfb = 0; sfb < FFMIN(sce->ics.max_sfb, MAX_LTP_LONG_SFB); sfb++)
+            if (ltp->used[sfb])
+                for (i = offsets[sfb]; i < offsets[sfb + 1]; i++)
+                    sce->coeffs[i] += predFreq[i];
+    }
+}
+
+/**
+ * Update the LTP buffer for next frame
+ */
+static void update_ltp(AACContext *ac, SingleChannelElement *sce)
+{
+    IndividualChannelStream *ics = &sce->ics;
+    float *saved     = sce->saved;
+    float *saved_ltp = sce->coeffs;
+    const float *lwindow = ics->use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+    const float *swindow = ics->use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
+    int i;
+
+    for (i = 0; i < 512; i++)
+        ac->buf_mdct[1535 - i] = ac->buf_mdct[512 + i];
+
+    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        memcpy(saved_ltp,       saved, 512 * sizeof(float));
+        memset(saved_ltp + 576, 0,     448 * sizeof(float));
+        ac->dsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     swindow,     128);
+    } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
+        memcpy(saved_ltp,       ac->buf_mdct + 512, 448 * sizeof(float));
+        memset(saved_ltp + 576, 0,                  448 * sizeof(float));
+        ac->dsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     swindow,     128);
+    } else { // LONG_STOP or ONLY_LONG
+        ac->dsp.vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     lwindow,     1024);
+    }
+
+    memcpy(sce->ltp_state, &sce->ltp_state[1024], 1024 * sizeof(int16_t));
+    ac->fmt_conv.float_to_int16(&(sce->ltp_state[1024]), sce->ret,  1024);
+    ac->fmt_conv.float_to_int16(&(sce->ltp_state[2048]), saved_ltp, 1024);
 }
 
 /**
@@ -1857,6 +1980,14 @@ static void spectral_to_sample(AACContext *ac)
             if (che) {
                 if (type <= TYPE_CPE)
                     apply_channel_coupling(ac, che, type, i, BEFORE_TNS, apply_dependent_coupling);
+                if (ac->m4ac.object_type == AOT_AAC_LTP) {
+                    if (che->ch[0].ics.predictor_present) {
+                        if (che->ch[0].ics.ltp.present)
+                            apply_ltp(ac, &che->ch[0]);
+                        if (che->ch[1].ics.ltp.present && type == TYPE_CPE)
+                            apply_ltp(ac, &che->ch[1]);
+                    }
+                }
                 if (che->ch[0].tns.present)
                     apply_tns(che->ch[0].coeffs, &che->ch[0].tns, &che->ch[0].ics, 1);
                 if (che->ch[1].tns.present)
@@ -1865,8 +1996,12 @@ static void spectral_to_sample(AACContext *ac)
                     apply_channel_coupling(ac, che, type, i, BETWEEN_TNS_AND_IMDCT, apply_dependent_coupling);
                 if (type != TYPE_CCE || che->coup.coupling_point == AFTER_IMDCT) {
                     imdct_and_windowing(ac, &che->ch[0]);
+                    if (ac->m4ac.object_type == AOT_AAC_LTP)
+                        update_ltp(ac, &che->ch[0]);
                     if (type == TYPE_CPE) {
                         imdct_and_windowing(ac, &che->ch[1]);
+                        if (ac->m4ac.object_type == AOT_AAC_LTP)
+                            update_ltp(ac, &che->ch[1]);
                     }
                     if (ac->m4ac.sbr > 0) {
                         ff_sbr_apply(ac, &che->sbr, type, che->ch[0].ret, che->ch[1].ret);
@@ -2080,6 +2215,7 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
 
     ff_mdct_end(&ac->mdct);
     ff_mdct_end(&ac->mdct_small);
+    ff_mdct_end(&ac->mdct_ltp);
     return 0;
 }
 
