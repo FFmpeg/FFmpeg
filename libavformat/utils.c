@@ -3255,6 +3255,8 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
         av_log(NULL, AV_LOG_INFO, " (hearing impaired)");
     if (st->disposition & AV_DISPOSITION_VISUAL_IMPAIRED)
         av_log(NULL, AV_LOG_INFO, " (visual impaired)");
+    if (st->disposition & AV_DISPOSITION_CLEAN_EFFECTS)
+        av_log(NULL, AV_LOG_INFO, " (clean effects)");
     av_log(NULL, AV_LOG_INFO, "\n");
     dump_metadata(NULL, st->metadata, "    ");
 }
