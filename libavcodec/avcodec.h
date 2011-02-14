@@ -3257,6 +3257,13 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                                         int linear, double cutoff);
 
 int audio_resample(ReSampleContext *s, short *output, short *input, int nb_samples);
+
+/**
+ * Free resample context s.
+ *
+ * @param s a non-NULL pointer to a resample context previously
+ * created with av_audio_resample_init()
+ */
 void audio_resample_close(ReSampleContext *s);
 
 
