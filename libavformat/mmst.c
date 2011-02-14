@@ -290,8 +290,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
                 return read_result < 0 ? read_result : AVERROR_IO;
             }
             packet_type= AV_RL16(mms->in_buffer+36);
-            hr = AV_RL32(mms->in_buffer + 40);
-            if (hr) {
+            if (read_result >= 44 && (hr = AV_RL32(mms->in_buffer + 40))) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Server sent a message with packet type 0x%x and error status code 0x%08x\n", packet_type, hr);
                 return AVERROR_UNKNOWN;
