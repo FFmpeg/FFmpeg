@@ -85,8 +85,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
     s->frame_len = 1 << frame_len_bits;
 
-    if (s->channels > MAX_CHANNELS) {
-        av_log(s->avctx, AV_LOG_ERROR, "too many channels: %d\n", s->channels);
+    if (avctx->channels > MAX_CHANNELS) {
+        av_log(s->avctx, AV_LOG_ERROR, "too many channels: %d\n", avctx->channels);
         return -1;
     }
 
