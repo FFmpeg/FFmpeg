@@ -81,12 +81,6 @@
  * - seek
  */
 
-#ifdef DEBUG
-#define PRINT(_v) printf _v
-#else
-#define PRINT(_v)
-#endif
-
 #if 0
 struct NSVf_header {
     uint32_t chunk_tag; /* 'NSVf' */
@@ -216,16 +210,12 @@ static const AVCodecTag nsv_codec_audio_tags[] = {
 //static int nsv_load_index(AVFormatContext *s);
 static int nsv_read_chunk(AVFormatContext *s, int fill_header);
 
-#ifdef DEBUG
-static void print_tag(const char *str, unsigned int tag, int size)
-{
-    printf("%s: tag=%c%c%c%c\n",
-           str, tag & 0xff,
-           (tag >> 8) & 0xff,
-           (tag >> 16) & 0xff,
-           (tag >> 24) & 0xff);
-}
-#endif
+#define print_tag(str, tag, size)       \
+    av_dlog(NULL, "%s: tag=%c%c%c%c\n", \
+            str, tag & 0xff,            \
+            (tag >> 8) & 0xff,          \
+            (tag >> 16) & 0xff,         \
+            (tag >> 24) & 0xff);
 
 /* try to find something we recognize, and set the state accordingly */
 static int nsv_resync(AVFormatContext *s)
@@ -235,43 +225,41 @@ static int nsv_resync(AVFormatContext *s)
     uint32_t v = 0;
     int i;
 
-    PRINT(("%s(), offset = %"PRId64", state = %d\n", __FUNCTION__, url_ftell(pb), nsv->state));
+    av_dlog(s, "%s(), offset = %"PRId64", state = %d\n", __FUNCTION__, url_ftell(pb), nsv->state);
 
     //nsv->state = NSV_UNSYNC;
 
     for (i = 0; i < NSV_MAX_RESYNC; i++) {
         if (url_feof(pb)) {
-            PRINT(("NSV EOF\n"));
+            av_dlog(s, "NSV EOF\n");
             nsv->state = NSV_UNSYNC;
             return -1;
         }
         v <<= 8;
         v |= get_byte(pb);
-/*
         if (i < 8) {
-            PRINT(("NSV resync: [%d] = %02x\n", i, v & 0x0FF));
+            av_dlog(s, "NSV resync: [%d] = %02x\n", i, v & 0x0FF);
         }
-*/
 
         if ((v & 0x0000ffff) == 0xefbe) { /* BEEF */
-            PRINT(("NSV resynced on BEEF after %d bytes\n", i+1));
+            av_dlog(s, "NSV resynced on BEEF after %d bytes\n", i+1);
             nsv->state = NSV_FOUND_BEEF;
             return 0;
         }
         /* we read as big endian, thus the MK*BE* */
         if (v == TB_NSVF) { /* NSVf */
-            PRINT(("NSV resynced on NSVf after %d bytes\n", i+1));
+            av_dlog(s, "NSV resynced on NSVf after %d bytes\n", i+1);
             nsv->state = NSV_FOUND_NSVF;
             return 0;
         }
         if (v == MKBETAG('N', 'S', 'V', 's')) { /* NSVs */
-            PRINT(("NSV resynced on NSVs after %d bytes\n", i+1));
+            av_dlog(s, "NSV resynced on NSVs after %d bytes\n", i+1);
             nsv->state = NSV_FOUND_NSVS;
             return 0;
         }
 
     }
-    PRINT(("NSV sync lost\n"));
+    av_dlog(s, "NSV sync lost\n");
     return -1;
 }
 
@@ -285,7 +273,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     int table_entries;
     int table_entries_used;
 
-    PRINT(("%s()\n", __FUNCTION__));
+    av_dlog(s, "%s()\n", __FUNCTION__);
 
     nsv->state = NSV_UNSYNC; /* in case we fail */
 
@@ -296,22 +284,22 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
 
     //s->file_size = (uint32_t)get_le32(pb);
     file_size = (uint32_t)get_le32(pb);
-    PRINT(("NSV NSVf chunk_size %u\n", size));
-    PRINT(("NSV NSVf file_size %u\n", file_size));
+    av_dlog(s, "NSV NSVf chunk_size %u\n", size);
+    av_dlog(s, "NSV NSVf file_size %u\n", file_size);
 
     nsv->duration = duration = get_le32(pb); /* in ms */
-    PRINT(("NSV NSVf duration %"PRId64" ms\n", duration));
+    av_dlog(s, "NSV NSVf duration %"PRId64" ms\n", duration);
     // XXX: store it in AVStreams
 
     strings_size = get_le32(pb);
     table_entries = get_le32(pb);
     table_entries_used = get_le32(pb);
-    PRINT(("NSV NSVf info-strings size: %d, table entries: %d, bis %d\n",
-            strings_size, table_entries, table_entries_used));
+    av_dlog(s, "NSV NSVf info-strings size: %d, table entries: %d, bis %d\n",
+            strings_size, table_entries, table_entries_used);
     if (url_feof(pb))
         return -1;
 
-    PRINT(("NSV got header; filepos %"PRId64"\n", url_ftell(pb)));
+    av_dlog(s, "NSV got header; filepos %"PRId64"\n", url_ftell(pb));
 
     if (strings_size > 0) {
         char *strings; /* last byte will be '\0' to play safe with str*() */
@@ -338,7 +326,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!p || p >= endp)
                 break;
             *p++ = '\0';
-            PRINT(("NSV NSVf INFO: %s='%s'\n", token, value));
+            av_dlog(s, "NSV NSVf INFO: %s='%s'\n", token, value);
             av_metadata_set2(&s->metadata, token, value, 0);
         }
         av_free(strings);
@@ -346,7 +334,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     if (url_feof(pb))
         return -1;
 
-    PRINT(("NSV got infos; filepos %"PRId64"\n", url_ftell(pb)));
+    av_dlog(s, "NSV got infos; filepos %"PRId64"\n", url_ftell(pb));
 
     if (table_entries_used > 0) {
         int i;
@@ -367,22 +355,22 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
         }
     }
 
-    PRINT(("NSV got index; filepos %"PRId64"\n", url_ftell(pb)));
+    av_dlog(s, "NSV got index; filepos %"PRId64"\n", url_ftell(pb));
 
 #ifdef DEBUG_DUMP_INDEX
 #define V(v) ((v<0x20 || v > 127)?'.':v)
     /* dump index */
-    PRINT(("NSV %d INDEX ENTRIES:\n", table_entries));
-    PRINT(("NSV [dataoffset][fileoffset]\n", table_entries));
+    av_dlog(s, "NSV %d INDEX ENTRIES:\n", table_entries);
+    av_dlog(s, "NSV [dataoffset][fileoffset]\n", table_entries);
     for (i = 0; i < table_entries; i++) {
         unsigned char b[8];
         url_fseek(pb, size + nsv->nsvs_file_offset[i], SEEK_SET);
         get_buffer(pb, b, 8);
-        PRINT(("NSV [0x%08lx][0x%08lx]: %02x %02x %02x %02x %02x %02x %02x %02x"
+        av_dlog(s, "NSV [0x%08lx][0x%08lx]: %02x %02x %02x %02x %02x %02x %02x %02x"
            "%c%c%c%c%c%c%c%c\n",
            nsv->nsvs_file_offset[i], size + nsv->nsvs_file_offset[i],
            b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
-           V(b[0]), V(b[1]), V(b[2]), V(b[3]), V(b[4]), V(b[5]), V(b[6]), V(b[7]) ));
+           V(b[0]), V(b[1]), V(b[2]), V(b[3]), V(b[4]), V(b[5]), V(b[6]), V(b[7]) );
     }
     //url_fseek(pb, size, SEEK_SET); /* go back to end of header */
 #undef V
@@ -406,7 +394,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
     int i;
     AVStream *st;
     NSVStream *nst;
-    PRINT(("%s()\n", __FUNCTION__));
+    av_dlog(s, "%s()\n", __FUNCTION__);
 
     vtag = get_le32(pb);
     atag = get_le32(pb);
@@ -414,7 +402,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
     vheight = get_le16(pb);
     i = get_byte(pb);
 
-    PRINT(("NSV NSVs framerate code %2x\n", i));
+    av_dlog(s, "NSV NSVs framerate code %2x\n", i);
     if(i&0x80) { /* odd way of giving native framerates from docs */
         int t=(i & 0x7F)>>2;
         if(t<16) framerate = (AVRational){1, t+1};
@@ -434,11 +422,10 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
 
     nsv->avsync = get_le16(pb);
     nsv->framerate = framerate;
-#ifdef DEBUG
+
     print_tag("NSV NSVs vtag", vtag, 0);
     print_tag("NSV NSVs atag", atag, 0);
-    PRINT(("NSV NSVs vsize %dx%d\n", vwidth, vheight));
-#endif
+    av_dlog(s, "NSV NSVs vsize %dx%d\n", vwidth, vheight);
 
     /* XXX change to ap != NULL ? */
     if (s->nb_streams == 0) { /* streams not yet published, let's do that */
@@ -502,7 +489,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
 #ifdef CHECK_SUBSEQUENT_NSVS
     } else {
         if (nsv->vtag != vtag || nsv->atag != atag || nsv->vwidth != vwidth || nsv->vheight != vwidth) {
-            PRINT(("NSV NSVs header values differ from the first one!!!\n"));
+            av_dlog(s, "NSV NSVs header values differ from the first one!!!\n");
             //return -1;
         }
 #endif /* CHECK_SUBSEQUENT_NSVS */
@@ -521,8 +508,8 @@ static int nsv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     NSVContext *nsv = s->priv_data;
     int i, err;
 
-    PRINT(("%s()\n", __FUNCTION__));
-    PRINT(("filename '%s'\n", s->filename));
+    av_dlog(s, "%s()\n", __FUNCTION__);
+    av_dlog(s, "filename '%s'\n", s->filename);
 
     nsv->state = NSV_UNSYNC;
     nsv->ahead[0].data = nsv->ahead[1].data = NULL;
@@ -543,7 +530,7 @@ static int nsv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* now read the first chunk, so we can attempt to decode more info */
     err = nsv_read_chunk(s, 1);
 
-    PRINT(("parsed header\n"));
+    av_dlog(s, "parsed header\n");
     return 0;
 }
 
@@ -561,7 +548,7 @@ static int nsv_read_chunk(AVFormatContext *s, int fill_header)
     uint16_t auxsize;
     uint32_t auxtag;
 
-    PRINT(("%s(%d)\n", __FUNCTION__, fill_header));
+    av_dlog(s, "%s(%d)\n", __FUNCTION__, fill_header);
 
     if (nsv->ahead[0].data || nsv->ahead[1].data)
         return 0; //-1; /* hey! eat what you've in your plate first! */
@@ -586,17 +573,17 @@ null_chunk_retry:
     asize = get_le16(pb);
     vsize = (vsize << 4) | (auxcount >> 4);
     auxcount &= 0x0f;
-    PRINT(("NSV CHUNK %d aux, %u bytes video, %d bytes audio\n", auxcount, vsize, asize));
+    av_dlog(s, "NSV CHUNK %d aux, %u bytes video, %d bytes audio\n", auxcount, vsize, asize);
     /* skip aux stuff */
     for (i = 0; i < auxcount; i++) {
         auxsize = get_le16(pb);
         auxtag = get_le32(pb);
-        PRINT(("NSV aux data: '%c%c%c%c', %d bytes\n",
+        av_dlog(s, "NSV aux data: '%c%c%c%c', %d bytes\n",
               (auxtag & 0x0ff),
               ((auxtag >> 8) & 0x0ff),
               ((auxtag >> 16) & 0x0ff),
               ((auxtag >> 24) & 0x0ff),
-              auxsize));
+              auxsize);
         url_fskip(pb, auxsize);
         vsize -= auxsize + sizeof(uint16_t) + sizeof(uint32_t); /* that's becoming braindead */
     }
@@ -621,10 +608,8 @@ null_chunk_retry:
         pkt->stream_index = st[NSV_ST_VIDEO]->index;//NSV_ST_VIDEO;
         pkt->dts = nst->frame_offset;
         pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? AV_PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
-/*
-        for (i = 0; i < MIN(8, vsize); i++)
-            PRINT(("NSV video: [%d] = %02x\n", i, pkt->data[i]));
-*/
+        for (i = 0; i < FFMIN(8, vsize); i++)
+            av_dlog(s, "NSV video: [%d] = %02x\n", i, pkt->data[i]);
     }
     if(st[NSV_ST_VIDEO])
         ((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset++;
@@ -642,11 +627,11 @@ null_chunk_retry:
             channels = get_byte(pb);
             samplerate = get_le16(pb);
             asize-=4;
-            PRINT(("NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate));
+            av_dlog(s, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
             if (fill_header) {
                 st[NSV_ST_AUDIO]->need_parsing = AVSTREAM_PARSE_NONE; /* we know everything */
                 if (bps != 16) {
-                    PRINT(("NSV AUDIO bit/sample != 16 (%d)!!!\n", bps));
+                    av_dlog(s, "NSV AUDIO bit/sample != 16 (%d)!!!\n", bps);
                 }
                 bps /= channels; // ???
                 if (bps == 8)
@@ -655,7 +640,7 @@ null_chunk_retry:
                 channels = 1;
                 st[NSV_ST_AUDIO]->codec->channels = channels;
                 st[NSV_ST_AUDIO]->codec->sample_rate = samplerate;
-                PRINT(("NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate));
+                av_dlog(s, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
             }
         }
         av_get_packet(pb, pkt, asize);
@@ -666,7 +651,7 @@ null_chunk_retry:
             pkt->dts = (((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset-1);
             pkt->dts *= (int64_t)1000        * nsv->framerate.den;
             pkt->dts += (int64_t)nsv->avsync * nsv->framerate.num;
-            PRINT(("NSV AUDIO: sync:%d, dts:%"PRId64, nsv->avsync, pkt->dts));
+            av_dlog(s, "NSV AUDIO: sync:%d, dts:%"PRId64, nsv->avsync, pkt->dts);
         }
         nst->frame_offset++;
     }
@@ -681,7 +666,7 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
     NSVContext *nsv = s->priv_data;
     int i, err = 0;
 
-    PRINT(("%s()\n", __FUNCTION__));
+    av_dlog(s, "%s()\n", __FUNCTION__);
 
     /* in case we don't already have something to eat ... */
     if (nsv->ahead[0].data == NULL && nsv->ahead[1].data == NULL)
@@ -692,7 +677,7 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* now pick one of the plates */
     for (i = 0; i < 2; i++) {
         if (nsv->ahead[i].data) {
-                PRINT(("%s: using cached packet[%d]\n", __FUNCTION__, i));
+            av_dlog(s, "%s: using cached packet[%d]\n", __FUNCTION__, i);
             /* avoid the cost of new_packet + memcpy(->data) */
             memcpy(pkt, &nsv->ahead[i], sizeof(AVPacket));
             nsv->ahead[i].data = NULL; /* we ate that one */
@@ -752,7 +737,7 @@ static int nsv_read_close(AVFormatContext *s)
 static int nsv_probe(AVProbeData *p)
 {
     int i;
-//    PRINT(("nsv_probe(), buf_size %d\n", p->buf_size));
+    av_dlog(s, "nsv_probe(), buf_size %d\n", p->buf_size);
     /* check file header */
     /* streamed files might not have any header */
     if (p->buf[0] == 'N' && p->buf[1] == 'S' &&
