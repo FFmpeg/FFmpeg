@@ -840,8 +840,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
     } else if(track->vosLen > 0)
         mov_write_glbl_tag(pb, track);
 
-    if (track->mode == MODE_MOV &&
-        track->enc->sample_aspect_ratio.den && track->enc->sample_aspect_ratio.num &&
+    if (track->enc->sample_aspect_ratio.den && track->enc->sample_aspect_ratio.num &&
         track->enc->sample_aspect_ratio.den != track->enc->sample_aspect_ratio.num) {
         mov_write_pasp_tag(pb, track);
     }
