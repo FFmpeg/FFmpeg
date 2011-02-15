@@ -13,6 +13,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-02-10 - 55bad0c - lavc 52.113.0 - vbv_delay
+  Add vbv_delay field to AVCodecContext
+
 2011-02-14 - 24a83bd - lavf 52.100.0 - AV_DISPOSITION_CLEAN_EFFECTS
   Add AV_DISPOSITION_CLEAN_EFFECTS disposition flag.
 
