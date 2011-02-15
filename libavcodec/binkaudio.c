@@ -41,7 +41,6 @@ extern const uint16_t ff_wma_critical_freqs[25];
 #define BINK_BLOCK_MAX_SIZE (MAX_CHANNELS << 11)
 
 typedef struct {
-    AVCodecContext *avctx;
     GetBitContext gb;
     DSPContext dsp;
     FmtConvertContext fmt_conv;
@@ -71,7 +70,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int i;
     int frame_len_bits;
 
-    s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);
     ff_fmt_convert_init(&s->fmt_conv, avctx);
 
@@ -86,7 +84,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->frame_len = 1 << frame_len_bits;
 
     if (avctx->channels > MAX_CHANNELS) {
-        av_log(s->avctx, AV_LOG_ERROR, "too many channels: %d\n", avctx->channels);
+        av_log(avctx, AV_LOG_ERROR, "too many channels: %d\n", avctx->channels);
         return -1;
     }
 
