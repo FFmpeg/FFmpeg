@@ -292,7 +292,7 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     if (rc < 0)
         return rc;
 
-    for(i = 0; i < (nfds_t) n; i++) {
+    for(i = 0; i < numfds; i++) {
         fds[i].revents = 0;
 
         if (FD_ISSET(fds[i].fd, &read_set))      fds[i].revents |= POLLIN;
