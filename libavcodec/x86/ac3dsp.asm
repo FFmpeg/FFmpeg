@@ -110,8 +110,7 @@ cglobal ac3_max_msb_abs_int16_%1, 2,2,5, src, len
     por         m2, m3
 %endif
 %ifidn mmsize, 16
-    mova        m0, m2
-    punpckhqdq  m0, m0
+    movhlps     m0, m2
     por         m2, m0
 %endif
     PSHUFLW     m0, m2, 0xe
