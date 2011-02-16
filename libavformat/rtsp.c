@@ -22,6 +22,7 @@
 #include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
 #include "avformat.h"
 
@@ -99,11 +100,11 @@ static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
     *end = AV_NOPTS_VALUE;
 
     get_word_sep(buf, sizeof(buf), "-", &p);
-    *start = parse_date(buf, 1);
+    av_parse_time(start, buf, 1);
     if (*p == '-') {
         p++;
         get_word_sep(buf, sizeof(buf), "-", &p);
-        *end = parse_date(buf, 1);
+        av_parse_time(end, buf, 1);
     }
 //    av_log(NULL, AV_LOG_DEBUG, "Range Start: %lld\n", *start);
 //    av_log(NULL, AV_LOG_DEBUG, "Range End: %lld\n", *end);
