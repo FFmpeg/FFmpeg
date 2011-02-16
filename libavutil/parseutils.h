@@ -106,4 +106,12 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
  */
 int av_parse_time(int64_t *timeval, const char *timestr, int duration);
 
+/**
+ * Attempt to find a specific tag in a URL.
+ *
+ * syntax: '?tag1=val1&tag2=val2...'. Little URL decoding is done.
+ * Return 1 if found.
+ */
+int av_find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
+
 #endif /* AVUTIL_PARSEUTILS_H */

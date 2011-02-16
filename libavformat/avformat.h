@@ -1501,13 +1501,12 @@ int64_t ffm_read_write_index(int fd);
 int ffm_write_write_index(int fd, int64_t pos);
 void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size);
 
+#if FF_API_FIND_INFO_TAG
 /**
- * Attempt to find a specific tag in a URL.
- *
- * syntax: '?tag1=val1&tag2=val2...'. Little URL decoding is done.
- * Return 1 if found.
+ * @deprecated use av_find_info_tag in libavutil instead.
  */
-int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
+attribute_deprecated int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
+#endif
 
 /**
  * Return in 'buf' the path with '%d' replaced by a number.
