@@ -36,6 +36,7 @@
 #define AV_CPU_FLAG_SSSE3        0x0080 ///< Conroe SSSE3 functions
 #define AV_CPU_FLAG_SSE4         0x0100 ///< Penryn SSE4.1 functions
 #define AV_CPU_FLAG_SSE42        0x0200 ///< Nehalem SSE4.2 functions
+#define AV_CPU_FLAG_AVX          0x4000 ///< AVX functions: requires OS support even if YMM registers aren't used
 #define AV_CPU_FLAG_IWMMXT       0x0100 ///< XScale IWMMXT
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
 
