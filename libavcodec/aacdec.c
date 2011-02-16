@@ -1763,8 +1763,8 @@ static void apply_ltp(AACContext *ac, SingleChannelElement *sce)
     int i, sfb;
 
     if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
-        float *predTime = ac->buf_mdct;
-        float *predFreq = sce->ret;
+        float *predTime = sce->ret;
+        float *predFreq = ac->buf_mdct;
         int16_t num_samples = 2048;
 
         if (ltp->lag < 1024)
@@ -1797,19 +1797,22 @@ static void update_ltp(AACContext *ac, SingleChannelElement *sce)
     const float *swindow = ics->use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
     int i;
 
-    for (i = 0; i < 512; i++)
-        ac->buf_mdct[1535 - i] = ac->buf_mdct[512 + i];
-
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         memcpy(saved_ltp,       saved, 512 * sizeof(float));
         memset(saved_ltp + 576, 0,     448 * sizeof(float));
-        ac->dsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     swindow,     128);
+        ac->dsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
+        for (i = 0; i < 64; i++)
+            saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * swindow[63 - i];
     } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
         memcpy(saved_ltp,       ac->buf_mdct + 512, 448 * sizeof(float));
         memset(saved_ltp + 576, 0,                  448 * sizeof(float));
-        ac->dsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     swindow,     128);
+        ac->dsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
+        for (i = 0; i < 64; i++)
+            saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * swindow[63 - i];
     } else { // LONG_STOP or ONLY_LONG
-        ac->dsp.vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     lwindow,     1024);
+        ac->dsp.vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     &lwindow[512],     512);
+        for (i = 0; i < 512; i++)
+            saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * lwindow[511 - i];
     }
 
     memcpy(sce->ltp_state, &sce->ltp_state[1024], 1024 * sizeof(int16_t));

@@ -272,7 +272,7 @@ typedef struct {
      * @defgroup temporary aligned temporary buffers (We do not want to have these on the stack.)
      * @{
      */
-    DECLARE_ALIGNED(16, float, buf_mdct)[2048];
+    DECLARE_ALIGNED(16, float, buf_mdct)[1024];
     /** @} */
 
     /**
