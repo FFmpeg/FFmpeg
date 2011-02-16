@@ -1478,34 +1478,17 @@ attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
                                           const char *arg);
 #endif
 
+#if FF_API_PARSE_DATE
 /**
  * Parse datestr and return a corresponding number of microseconds.
+ *
  * @param datestr String representing a date or a duration.
- * - If a date the syntax is:
- * @code
- *  now|{[{YYYY-MM-DD|YYYYMMDD}[T|t| ]]{{HH[:MM[:SS[.m...]]]}|{HH[MM[SS[.m...]]]}}[Z|z]}
- * @endcode
- * If the value is "now" it takes the current time.
- * Time is local time unless Z is appended, in which case it is
- * interpreted as UTC.
- * If the year-month-day part is not specified it takes the current
- * year-month-day.
- * @return the number of microseconds since 1st of January, 1970 up to
- * the time of the parsed date or INT64_MIN if datestr cannot be
- * successfully parsed.
- * - If a duration the syntax is:
- * @code
- *  [-]HH[:MM[:SS[.m...]]]
- *  [-]S+[.m...]
- * @endcode
- * @return the number of microseconds contained in a time interval
- * with the specified duration or INT64_MIN if datestr cannot be
- * successfully parsed.
- * @param duration Flag which tells how to interpret datestr, if
- * not zero datestr is interpreted as a duration, otherwise as a
- * date.
+ * See av_parse_time() for the syntax of the provided string.
+ * @deprecated in favor of av_parse_time()
  */
+attribute_deprecated
 int64_t parse_date(const char *datestr, int duration);
+#endif
 
 /**
  * Get the current time in microseconds.

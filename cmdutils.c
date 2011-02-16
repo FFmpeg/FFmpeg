@@ -35,6 +35,7 @@
 #include "libswscale/swscale.h"
 #include "libpostproc/postprocess.h"
 #include "libavutil/avstring.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/eval.h"
 #include "libavcodec/opt.h"
@@ -113,8 +114,8 @@ double parse_number_or_die(const char *context, const char *numstr, int type, do
 
 int64_t parse_time_or_die(const char *context, const char *timestr, int is_duration)
 {
-    int64_t us = parse_date(timestr, is_duration);
-    if (us == INT64_MIN) {
+    int64_t us;
+    if (av_parse_time(&us, timestr, is_duration) < 0) {
         fprintf(stderr, "Invalid %s specification for %s: %s\n",
                 is_duration ? "duration" : "date", context, timestr);
         exit(1);
