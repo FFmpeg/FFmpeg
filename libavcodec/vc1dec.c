@@ -1499,11 +1499,11 @@ static int vc1_decode_i_block(VC1Context *v, DCTELEM block[64], int n, int coded
 
         if(v->s.ac_pred) {
             if(!dc_pred_dir)
-                zz_table = wmv1_scantable[2];
+                zz_table = v->zz_8x8[2];
             else
-                zz_table = wmv1_scantable[3];
+                zz_table = v->zz_8x8[3];
         } else
-            zz_table = wmv1_scantable[1];
+            zz_table = v->zz_8x8[1];
 
         ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
         ac_val2 = ac_val;
@@ -1524,16 +1524,16 @@ static int vc1_decode_i_block(VC1Context *v, DCTELEM block[64], int n, int coded
         if(s->ac_pred) {
             if(dc_pred_dir) { //left
                 for(k = 1; k < 8; k++)
-                    block[k << 3] += ac_val[k];
+                    block[k] += ac_val[k];
             } else { //top
                 for(k = 1; k < 8; k++)
-                    block[k] += ac_val[k + 8];
+                    block[k << 3] += ac_val[k + 8];
             }
         }
         /* save AC coeffs for further prediction */
         for(k = 1; k < 8; k++) {
-            ac_val2[k] = block[k << 3];
-            ac_val2[k + 8] = block[k];
+            ac_val2[k] = block[k];
+            ac_val2[k + 8] = block[k << 3];
         }
 
         /* scale AC coeffs */
@@ -1570,15 +1570,15 @@ not_coded:
         if(s->ac_pred) {
             if(dc_pred_dir) { //left
                 for(k = 1; k < 8; k++) {
-                    block[k << 3] = ac_val[k] * scale;
-                    if(!v->pquantizer && block[k << 3])
-                        block[k << 3] += (block[k << 3] < 0) ? -v->pq : v->pq;
+                    block[k] = ac_val[k] * scale;
+                    if(!v->pquantizer && block[k])
+                        block[k] += (block[k] < 0) ? -v->pq : v->pq;
                 }
             } else { //top
                 for(k = 1; k < 8; k++) {
-                    block[k] = ac_val[k + 8] * scale;
-                    if(!v->pquantizer && block[k])
-                        block[k] += (block[k] < 0) ? -v->pq : v->pq;
+                    block[k << 3] = ac_val[k + 8] * scale;
+                    if(!v->pquantizer && block[k << 3])
+                        block[k << 3] += (block[k << 3] < 0) ? -v->pq : v->pq;
                 }
             }
             i = 63;
@@ -1682,11 +1682,11 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
 
         if(v->s.ac_pred) {
             if(!dc_pred_dir)
-                zz_table = wmv1_scantable[2];
+                zz_table = v->zz_8x8[2];
             else
-                zz_table = wmv1_scantable[3];
+                zz_table = v->zz_8x8[3];
         } else
-            zz_table = wmv1_scantable[1];
+            zz_table = v->zz_8x8[1];
 
         while (!last) {
             vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
@@ -1705,25 +1705,25 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
 
                 if(dc_pred_dir) { //left
                     for(k = 1; k < 8; k++)
-                        block[k << 3] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+                        block[k] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 } else { //top
                     for(k = 1; k < 8; k++)
-                        block[k] += (ac_val[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+                        block[k << 3] += (ac_val[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
             } else {
                 if(dc_pred_dir) { //left
                     for(k = 1; k < 8; k++)
-                        block[k << 3] += ac_val[k];
+                        block[k] += ac_val[k];
                 } else { //top
                     for(k = 1; k < 8; k++)
-                        block[k] += ac_val[k + 8];
+                        block[k << 3] += ac_val[k + 8];
                 }
             }
         }
         /* save AC coeffs for further prediction */
         for(k = 1; k < 8; k++) {
-            ac_val2[k] = block[k << 3];
-            ac_val2[k + 8] = block[k];
+            ac_val2[k] = block[k];
+            ac_val2[k + 8] = block[k << 3];
         }
 
         /* scale AC coeffs */
@@ -1765,15 +1765,15 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
         if(use_pred) {
             if(dc_pred_dir) { //left
                 for(k = 1; k < 8; k++) {
-                    block[k << 3] = ac_val2[k] * scale;
-                    if(!v->pquantizer && block[k << 3])
-                        block[k << 3] += (block[k << 3] < 0) ? -mquant : mquant;
+                    block[k] = ac_val2[k] * scale;
+                    if(!v->pquantizer && block[k])
+                        block[k] += (block[k] < 0) ? -mquant : mquant;
                 }
             } else { //top
                 for(k = 1; k < 8; k++) {
-                    block[k] = ac_val2[k + 8] * scale;
-                    if(!v->pquantizer && block[k])
-                        block[k] += (block[k] < 0) ? -mquant : mquant;
+                    block[k << 3] = ac_val2[k + 8] * scale;
+                    if(!v->pquantizer && block[k << 3])
+                        block[k << 3] += (block[k << 3] < 0) ? -mquant : mquant;
                 }
             }
             i = 63;
@@ -1884,17 +1884,14 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
 
     if(coded) {
         int last = 0, skip, value;
-        const uint8_t *zz_table;
         int k;
-
-        zz_table = wmv1_scantable[0];
 
         while (!last) {
             vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
             i += skip;
             if(i > 63)
                 break;
-            block[zz_table[i++]] = value;
+            block[v->zz_8x8[0][i++]] = value;
         }
 
         /* apply AC prediction if needed */
@@ -1906,25 +1903,25 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
 
                 if(dc_pred_dir) { //left
                     for(k = 1; k < 8; k++)
-                        block[k << 3] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+                        block[k] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 } else { //top
                     for(k = 1; k < 8; k++)
-                        block[k] += (ac_val[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+                        block[k << 3] += (ac_val[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
             } else {
                 if(dc_pred_dir) { //left
                     for(k = 1; k < 8; k++)
-                        block[k << 3] += ac_val[k];
+                        block[k] += ac_val[k];
                 } else { //top
                     for(k = 1; k < 8; k++)
-                        block[k] += ac_val[k + 8];
+                        block[k << 3] += ac_val[k + 8];
                 }
             }
         }
         /* save AC coeffs for further prediction */
         for(k = 1; k < 8; k++) {
-            ac_val2[k] = block[k << 3];
-            ac_val2[k + 8] = block[k];
+            ac_val2[k] = block[k];
+            ac_val2[k + 8] = block[k << 3];
         }
 
         /* scale AC coeffs */
@@ -1966,15 +1963,15 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
         if(use_pred) {
             if(dc_pred_dir) { //left
                 for(k = 1; k < 8; k++) {
-                    block[k << 3] = ac_val2[k] * scale;
-                    if(!v->pquantizer && block[k << 3])
-                        block[k << 3] += (block[k << 3] < 0) ? -mquant : mquant;
+                    block[k] = ac_val2[k] * scale;
+                    if(!v->pquantizer && block[k])
+                        block[k] += (block[k] < 0) ? -mquant : mquant;
                 }
             } else { //top
                 for(k = 1; k < 8; k++) {
-                    block[k] = ac_val2[k + 8] * scale;
-                    if(!v->pquantizer && block[k])
-                        block[k] += (block[k] < 0) ? -mquant : mquant;
+                    block[k << 3] = ac_val2[k + 8] * scale;
+                    if(!v->pquantizer && block[k << 3])
+                        block[k << 3] += (block[k << 3] < 0) ? -mquant : mquant;
                 }
             }
             i = 63;
@@ -2035,7 +2032,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
             i += skip;
             if(i > 63)
                 break;
-            idx = wmv1_scantable[0][i++];
+            idx = v->zz_8x8[0][i++];
             block[idx] = value * scale;
             if(!v->pquantizer)
                 block[idx] += (block[idx] < 0) ? -mquant : mquant;
@@ -3007,6 +3004,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     VC1Context *v = avctx->priv_data;
     MpegEncContext *s = &v->s;
     GetBitContext gb;
+    int i;
 
     if (!avctx->extradata_size || !avctx->extradata) return -1;
     if (!(avctx->flags & CODEC_FLAG_GRAY))
@@ -3025,6 +3023,13 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     if(ff_msmpeg4_decode_init(avctx) < 0)
         return -1;
     if (vc1_init_common(v) < 0) return -1;
+    for (i = 0; i < 64;  i++) {
+#define transpose(x) ((x>>3) | ((x&7)<<3))
+        v->zz_8x8[0][i] = transpose(wmv1_scantable[0][i]);
+        v->zz_8x8[1][i] = transpose(wmv1_scantable[1][i]);
+        v->zz_8x8[2][i] = transpose(wmv1_scantable[2][i]);
+        v->zz_8x8[3][i] = transpose(wmv1_scantable[3][i]);
+    }
 
     avctx->coded_width = avctx->width;
     avctx->coded_height = avctx->height;

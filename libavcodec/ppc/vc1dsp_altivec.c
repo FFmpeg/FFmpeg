@@ -154,7 +154,6 @@ static void vc1_inv_trans_8x8_altivec(DCTELEM block[64])
     src6 = vec_ld( 96, block);
     src7 = vec_ld(112, block);
 
-    TRANSPOSE8(src0, src1, src2, src3, src4, src5, src6, src7);
     s0 = vec_unpackl(src0);
     s1 = vec_unpackl(src1);
     s2 = vec_unpackl(src2);
