@@ -2135,10 +2135,10 @@ static int open_input_stream(HTTPContext *c, const char *info)
         strcpy(input_filename, c->stream->feed->feed_filename);
         buf_size = FFM_PACKET_SIZE;
         /* compute position (absolute time) */
-        if (find_info_tag(buf, sizeof(buf), "date", info)) {
+        if (av_find_info_tag(buf, sizeof(buf), "date", info)) {
             if ((ret = av_parse_time(&stream_pos, buf, 0)) < 0)
                 return ret;
-        } else if (find_info_tag(buf, sizeof(buf), "buffer", info)) {
+        } else if (av_find_info_tag(buf, sizeof(buf), "buffer", info)) {
             int prebuffer = strtol(buf, 0, 10);
             stream_pos = av_gettime() - prebuffer * (int64_t)1000000;
         } else
@@ -2147,7 +2147,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
         strcpy(input_filename, c->stream->feed_filename);
         buf_size = 0;
         /* compute position (relative time) */
-        if (find_info_tag(buf, sizeof(buf), "date", info)) {
+        if (av_find_info_tag(buf, sizeof(buf), "date", info)) {
             if ((ret = av_parse_time(&stream_pos, buf, 1)) < 0)
                 return ret;
         } else

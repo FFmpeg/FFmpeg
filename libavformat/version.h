@@ -98,5 +98,8 @@
 #ifndef FF_API_PARSE_DATE
 #define FF_API_PARSE_DATE              (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
+#ifndef FF_API_FIND_INFO_TAG
+#define FF_API_FIND_INFO_TAG           (LIBAVFORMAT_VERSION_MAJOR < 54)
+#endif
 
 #endif //AVFORMAT_VERSION_H

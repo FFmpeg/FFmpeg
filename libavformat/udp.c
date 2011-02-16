@@ -27,6 +27,7 @@
 #define _BSD_SOURCE     /* Needed for using struct ip_mreq with recent glibc */
 #define _DARWIN_C_SOURCE /* Needed for using IP_MULTICAST_TTL on OS X */
 #include "avformat.h"
+#include "libavutil/parseutils.h"
 #include <unistd.h>
 #include "internal.h"
 #include "network.h"
@@ -259,7 +260,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
     s->is_multicast = ff_is_multicast_address((struct sockaddr*) &s->dest_addr);
     p = strchr(uri, '?');
     if (p) {
-        if (find_info_tag(buf, sizeof(buf), "connect", p)) {
+        if (av_find_info_tag(buf, sizeof(buf), "connect", p)) {
             int was_connected = s->is_connected;
             s->is_connected = strtol(buf, NULL, 10);
             if (s->is_connected && !was_connected) {
@@ -330,7 +331,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     p = strchr(uri, '?');
     if (p) {
-        if (find_info_tag(buf, sizeof(buf), "reuse", p)) {
+        if (av_find_info_tag(buf, sizeof(buf), "reuse", p)) {
             const char *endptr=NULL;
             s->reuse_socket = strtol(buf, &endptr, 10);
             /* assume if no digits were found it is a request to enable it */
@@ -338,19 +339,19 @@ static int udp_open(URLContext *h, const char *uri, int flags)
                 s->reuse_socket = 1;
             reuse_specified = 1;
         }
-        if (find_info_tag(buf, sizeof(buf), "ttl", p)) {
+        if (av_find_info_tag(buf, sizeof(buf), "ttl", p)) {
             s->ttl = strtol(buf, NULL, 10);
         }
-        if (find_info_tag(buf, sizeof(buf), "localport", p)) {
+        if (av_find_info_tag(buf, sizeof(buf), "localport", p)) {
             s->local_port = strtol(buf, NULL, 10);
         }
-        if (find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
+        if (av_find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
             h->max_packet_size = strtol(buf, NULL, 10);
         }
-        if (find_info_tag(buf, sizeof(buf), "buffer_size", p)) {
+        if (av_find_info_tag(buf, sizeof(buf), "buffer_size", p)) {
             s->buffer_size = strtol(buf, NULL, 10);
         }
-        if (find_info_tag(buf, sizeof(buf), "connect", p)) {
+        if (av_find_info_tag(buf, sizeof(buf), "connect", p)) {
             s->is_connected = strtol(buf, NULL, 10);
         }
     }

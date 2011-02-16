@@ -21,6 +21,7 @@
 #include <string.h>
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
+#include "libavutil/parseutils.h"
 #include "libavcodec/xiph.h"
 #include "avformat.h"
 #include "internal.h"
@@ -136,7 +137,7 @@ static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
     if (p) {
         char buff[64];
 
-        if (find_info_tag(buff, sizeof(buff), "ttl", p)) {
+        if (av_find_info_tag(buff, sizeof(buff), "ttl", p)) {
             *ttl = strtol(buff, NULL, 10);
         } else {
             *ttl = 5;
