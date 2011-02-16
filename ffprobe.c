@@ -277,7 +277,7 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         return err;
     }
 
-    dump_format(fmt_ctx, 0, filename, 0);
+    av_dump_format(fmt_ctx, 0, filename, 0);
 
     /* bind a decoder to each input stream */
     for (i = 0; i < fmt_ctx->nb_streams; i++) {

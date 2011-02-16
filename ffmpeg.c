@@ -1977,7 +1977,7 @@ static int transcode(AVFormatContext **output_files,
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
         if (!os->nb_streams && !(os->oformat->flags & AVFMT_NOSTREAMS)) {
-            dump_format(output_files[i], i, output_files[i]->filename, 1);
+            av_dump_format(output_files[i], i, output_files[i]->filename, 1);
             fprintf(stderr, "Output file #%d does not contain any stream\n", i);
             ret = AVERROR(EINVAL);
             goto fail;
@@ -2028,7 +2028,7 @@ static int transcode(AVFormatContext **output_files,
                 /* Sanity check that the stream types match */
                 if (ist_table[ost->source_index]->st->codec->codec_type != ost->st->codec->codec_type) {
                     int i= ost->file_index;
-                    dump_format(output_files[i], i, output_files[i]->filename, 1);
+                    av_dump_format(output_files[i], i, output_files[i]->filename, 1);
                     fprintf(stderr, "Codec type mismatch for mapping #%d.%d -> #%d.%d\n",
                         stream_maps[n].file_index, stream_maps[n].stream_index,
                         ost->file_index, ost->index);
@@ -2079,7 +2079,7 @@ static int transcode(AVFormatContext **output_files,
                     }
                     if (!found) {
                         int i= ost->file_index;
-                        dump_format(output_files[i], i, output_files[i]->filename, 1);
+                        av_dump_format(output_files[i], i, output_files[i]->filename, 1);
                         fprintf(stderr, "Could not find input stream matching output stream #%d.%d\n",
                                 ost->file_index, ost->index);
                         ffmpeg_exit(1);
@@ -2459,7 +2459,7 @@ static int transcode(AVFormatContext **output_files,
     /* dump the file output parameters - cannot be done before in case
        of stream copy */
     for(i=0;i<nb_output_files;i++) {
-        dump_format(output_files[i], i, output_files[i]->filename, 1);
+        av_dump_format(output_files[i], i, output_files[i]->filename, 1);
     }
 
     /* dump the stream mapping */
@@ -3309,7 +3309,7 @@ static void opt_input_file(const char *filename)
     input_files_ts_offset[nb_input_files] = input_ts_offset - (copy_ts ? 0 : timestamp);
     /* dump the file content */
     if (verbose >= 0)
-        dump_format(ic, nb_input_files, filename, 0);
+        av_dump_format(ic, nb_input_files, filename, 0);
 
     nb_input_files++;
 

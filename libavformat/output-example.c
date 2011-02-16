@@ -481,7 +481,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    dump_format(oc, 0, filename, 1);
+    av_dump_format(oc, 0, filename, 1);
 
     /* now that all the parameters are set, we can open the audio and
        video codecs and allocate the necessary encode buffers */

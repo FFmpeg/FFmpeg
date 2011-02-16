@@ -2464,7 +2464,7 @@ static int decode_thread(void *arg)
                                  st_index[AVMEDIA_TYPE_VIDEO]),
                                 NULL, 0);
     if (show_status) {
-        dump_format(ic, 0, is->filename, 0);
+        av_dump_format(ic, 0, is->filename, 0);
     }
 
     /* open the streams */
