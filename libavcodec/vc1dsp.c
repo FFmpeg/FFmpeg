@@ -203,25 +203,25 @@ static void vc1_inv_trans_8x8_c(DCTELEM block[64])
 {
     int i;
     register int t1,t2,t3,t4,t5,t6,t7,t8;
-    DCTELEM *src, *dst;
+    DCTELEM *src, *dst, temp[64];
 
     src = block;
-    dst = block;
+    dst = temp;
     for(i = 0; i < 8; i++){
-        t1 = 12 * (src[0] + src[4]) + 4;
-        t2 = 12 * (src[0] - src[4]) + 4;
-        t3 = 16 * src[2] +  6 * src[6];
-        t4 =  6 * src[2] - 16 * src[6];
+        t1 = 12 * (src[ 0] + src[32]) + 4;
+        t2 = 12 * (src[ 0] - src[32]) + 4;
+        t3 = 16 * src[16] +  6 * src[48];
+        t4 =  6 * src[16] - 16 * src[48];
 
         t5 = t1 + t3;
         t6 = t2 + t4;
         t7 = t2 - t4;
         t8 = t1 - t3;
 
-        t1 = 16 * src[1] + 15 * src[3] +  9 * src[5] +  4 * src[7];
-        t2 = 15 * src[1] -  4 * src[3] - 16 * src[5] -  9 * src[7];
-        t3 =  9 * src[1] - 16 * src[3] +  4 * src[5] + 15 * src[7];
-        t4 =  4 * src[1] -  9 * src[3] + 15 * src[5] - 16 * src[7];
+        t1 = 16 * src[ 8] + 15 * src[24] +  9 * src[40] +  4 * src[56];
+        t2 = 15 * src[ 8] -  4 * src[24] - 16 * src[40] -  9 * src[56];
+        t3 =  9 * src[ 8] - 16 * src[24] +  4 * src[40] + 15 * src[56];
+        t4 =  4 * src[ 8] -  9 * src[24] + 15 * src[40] - 16 * src[56];
 
         dst[0] = (t5 + t1) >> 3;
         dst[1] = (t6 + t2) >> 3;
@@ -232,11 +232,11 @@ static void vc1_inv_trans_8x8_c(DCTELEM block[64])
         dst[6] = (t6 - t2) >> 3;
         dst[7] = (t5 - t1) >> 3;
 
-        src += 8;
+        src += 1;
         dst += 8;
     }
 
-    src = block;
+    src = temp;
     dst = block;
     for(i = 0; i < 8; i++){
         t1 = 12 * (src[ 0] + src[32]) + 64;
