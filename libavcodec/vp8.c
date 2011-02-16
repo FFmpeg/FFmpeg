@@ -125,6 +125,8 @@ typedef struct {
 
     int chroma_pred_mode;    ///< 8x8c pred mode of the current macroblock
     int segment;             ///< segment of the current macroblock
+    VP56mv mv_min;
+    VP56mv mv_max;
 
     int mbskip_enabled;
     int sign_bias[4]; ///< one state [0, 1] per ref frame type
@@ -522,14 +524,10 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
     return 0;
 }
 
-static av_always_inline
-void clamp_mv(VP8Context *s, VP56mv *dst, const VP56mv *src, int mb_x, int mb_y)
+static av_always_inline void clamp_mv(VP8Context *s, VP56mv *dst, const VP56mv *src)
 {
-#define MARGIN (16 << 2)
-    dst->x = av_clip(src->x, -((mb_x << 6) + MARGIN),
-                     ((s->mb_width  - 1 - mb_x) << 6) + MARGIN);
-    dst->y = av_clip(src->y, -((mb_y << 6) + MARGIN),
-                     ((s->mb_height - 1 - mb_y) << 6) + MARGIN);
+    dst->x = av_clip(src->x, s->mv_min.x, s->mv_max.x);
+    dst->y = av_clip(src->y, s->mv_min.y, s->mv_max.y);
 }
 
 /**
@@ -703,7 +701,7 @@ void decode_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y)
             if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_NEAR]][2])) {
 
                 /* Choose the best mv out of 0,0 and the nearest mv */
-                clamp_mv(s, &mb->mv, &near_mv[CNT_ZERO + (cnt[CNT_NEAREST] >= cnt[CNT_ZERO])], mb_x, mb_y);
+                clamp_mv(s, &mb->mv, &near_mv[CNT_ZERO + (cnt[CNT_NEAREST] >= cnt[CNT_ZERO])]);
                 cnt[CNT_SPLITMV] = ((mb_edge[EDGE_LEFT]->mode    == VP8_MVMODE_SPLIT) +
                                     (mb_edge[EDGE_TOP]->mode     == VP8_MVMODE_SPLIT)) * 2 +
                                     (mb_edge[EDGE_TOPLEFT]->mode == VP8_MVMODE_SPLIT);
@@ -717,11 +715,11 @@ void decode_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y)
                     mb->bmv[0] = mb->mv;
                 }
             } else {
-                clamp_mv(s, &mb->mv, &near_mv[CNT_NEAR], mb_x, mb_y);
+                clamp_mv(s, &mb->mv, &near_mv[CNT_NEAR]);
                 mb->bmv[0] = mb->mv;
             }
         } else {
-            clamp_mv(s, &mb->mv, &near_mv[CNT_NEAREST], mb_x, mb_y);
+            clamp_mv(s, &mb->mv, &near_mv[CNT_NEAREST]);
             mb->bmv[0] = mb->mv;
         }
     } else {
@@ -1707,6 +1705,10 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (s->keyframe)
         memset(s->intra4x4_pred_mode_top, DC_PRED, s->mb_width*4);
 
+    #define MARGIN (16 << 2)
+    s->mv_min.y = -MARGIN;
+    s->mv_max.y = ((s->mb_height - 1) << 6) + MARGIN;
+
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         VP56RangeCoder *c = &s->coeff_partition[mb_y & (s->num_coeff_partitions-1)];
         VP8Macroblock *mb = s->macroblocks + (s->mb_height - mb_y - 1)*2;
@@ -1729,6 +1731,9 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             if (mb_y == 1) // top left edge is also 129
                 s->top_border[0][15] = s->top_border[0][23] = s->top_border[0][31] = 129;
         }
+
+        s->mv_min.x = -MARGIN;
+        s->mv_max.x = ((s->mb_width  - 1) << 6) + MARGIN;
 
         for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
             /* Prefetch the current frame, 4 MBs ahead */
@@ -1770,6 +1775,8 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             dst[0] += 16;
             dst[1] += 8;
             dst[2] += 8;
+            s->mv_min.x -= 64;
+            s->mv_max.x -= 64;
         }
         if (s->deblock_filter) {
             if (s->filter.simple)
@@ -1777,6 +1784,8 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             else
                 filter_mb_row(s, mb_y);
         }
+        s->mv_min.y -= 64;
+        s->mv_max.y -= 64;
     }
 
 skip_decode:
