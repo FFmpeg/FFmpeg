@@ -31,7 +31,7 @@
 #if HAVE_ARMV6
 
 #define FASTDIV FASTDIV
-static inline av_const int FASTDIV(int a, int b)
+static av_always_inline av_const int FASTDIV(int a, int b)
 {
     int r, t;
     __asm__ volatile("cmp     %3, #2               \n\t"
@@ -43,7 +43,7 @@ static inline av_const int FASTDIV(int a, int b)
 }
 
 #define av_clip_uint8 av_clip_uint8_arm
-static inline av_const uint8_t av_clip_uint8_arm(int a)
+static av_always_inline av_const uint8_t av_clip_uint8_arm(int a)
 {
     unsigned x;
     __asm__ volatile ("usat %0, #8,  %1" : "=r"(x) : "r"(a));
@@ -51,7 +51,7 @@ static inline av_const uint8_t av_clip_uint8_arm(int a)
 }
 
 #define av_clip_int8 av_clip_int8_arm
-static inline av_const uint8_t av_clip_int8_arm(int a)
+static av_always_inline av_const uint8_t av_clip_int8_arm(int a)
 {
     unsigned x;
     __asm__ volatile ("ssat %0, #8,  %1" : "=r"(x) : "r"(a));
@@ -59,7 +59,7 @@ static inline av_const uint8_t av_clip_int8_arm(int a)
 }
 
 #define av_clip_uint16 av_clip_uint16_arm
-static inline av_const uint16_t av_clip_uint16_arm(int a)
+static av_always_inline av_const uint16_t av_clip_uint16_arm(int a)
 {
     unsigned x;
     __asm__ volatile ("usat %0, #16, %1" : "=r"(x) : "r"(a));
@@ -67,7 +67,7 @@ static inline av_const uint16_t av_clip_uint16_arm(int a)
 }
 
 #define av_clip_int16 av_clip_int16_arm
-static inline av_const int16_t av_clip_int16_arm(int a)
+static av_always_inline av_const int16_t av_clip_int16_arm(int a)
 {
     int x;
     __asm__ volatile ("ssat %0, #16, %1" : "=r"(x) : "r"(a));
@@ -77,7 +77,7 @@ static inline av_const int16_t av_clip_int16_arm(int a)
 #else /* HAVE_ARMV6 */
 
 #define FASTDIV FASTDIV
-static inline av_const int FASTDIV(int a, int b)
+static av_always_inline av_const int FASTDIV(int a, int b)
 {
     int r, t;
     __asm__ volatile("umull %1, %0, %2, %3"
@@ -88,7 +88,7 @@ static inline av_const int FASTDIV(int a, int b)
 #endif /* HAVE_ARMV6 */
 
 #define av_clipl_int32 av_clipl_int32_arm
-static inline av_const int32_t av_clipl_int32_arm(int64_t a)
+static av_always_inline av_const int32_t av_clipl_int32_arm(int64_t a)
 {
     int x, y;
     __asm__ volatile ("adds   %1, %R2, %Q2, lsr #31  \n\t"
