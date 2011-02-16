@@ -310,9 +310,9 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
 
     nb_coefs = FFMIN(s->nb_coefs[0], s->nb_coefs[1]);
 
-    s->blocks[0].new_rematrixing_strategy = 1;
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         block = &s->blocks[blk];
+        block->new_rematrixing_strategy = !blk;
         for (bnd = 0; bnd < 4; bnd++) {
             /* calculate calculate sum of squared coeffs for one band in one block */
             int start = ff_ac3_rematrix_band_tab[bnd];
@@ -337,7 +337,6 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
 
             /* determine if new rematrixing flags will be sent */
             if (blk &&
-                !block->new_rematrixing_strategy &&
                 block->rematrixing_flags[bnd] != block0->rematrixing_flags[bnd]) {
                 block->new_rematrixing_strategy = 1;
             }
