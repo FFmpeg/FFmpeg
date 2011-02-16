@@ -44,7 +44,7 @@ int main(void)
     int cpu_flags = av_get_cpu_flags();
 
     printf("cpu_flags = 0x%08X\n", cpu_flags);
-    printf("cpu_flags = %s%s%s%s%s%s%s%s%s%s%s%s\n",
+    printf("cpu_flags = %s%s%s%s%s%s%s%s%s%s%s%s%s\n",
 #if   ARCH_ARM
            cpu_flags & AV_CPU_FLAG_IWMMXT   ? "IWMMXT "     : "",
 #elif ARCH_PPC
@@ -60,6 +60,7 @@ int main(void)
            cpu_flags & AV_CPU_FLAG_SSSE3    ? "SSSE3 "      : "",
            cpu_flags & AV_CPU_FLAG_SSE4     ? "SSE4.1 "     : "",
            cpu_flags & AV_CPU_FLAG_SSE42    ? "SSE4.2 "     : "",
+           cpu_flags & AV_CPU_FLAG_AVX      ? "AVX "        : "",
            cpu_flags & AV_CPU_FLAG_3DNOW    ? "3DNow "      : "",
            cpu_flags & AV_CPU_FLAG_3DNOWEXT ? "3DNowExt "   : "");
 #endif

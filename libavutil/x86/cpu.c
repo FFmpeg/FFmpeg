@@ -35,6 +35,9 @@
            "=c" (ecx), "=d" (edx)\
          : "0" (index));
 
+#define xgetbv(index,eax,edx)                                   \
+    __asm__ ("xgetbv" : "=a"(eax), "=d"(edx) : "c" (index))
+
 /* Function to test if multimedia instructions are supported...  */
 int ff_get_cpu_flags_x86(void)
 {
@@ -93,6 +96,15 @@ int ff_get_cpu_flags_x86(void)
             rval |= AV_CPU_FLAG_SSE4;
         if (ecx & 0x00100000 )
             rval |= AV_CPU_FLAG_SSE42;
+#if HAVE_AVX
+        /* Check OXSAVE and AVX bits */
+        if ((ecx & 0x18000000) == 0x18000000) {
+            /* Check for OS support */
+            xgetbv(0, eax, edx);
+            if ((eax & 0x6) == 0x6)
+                rval |= AV_CPU_FLAG_AVX;
+        }
+#endif
 #endif
                   ;
     }
