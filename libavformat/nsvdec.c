@@ -737,7 +737,7 @@ static int nsv_read_close(AVFormatContext *s)
 static int nsv_probe(AVProbeData *p)
 {
     int i;
-    av_dlog(s, "nsv_probe(), buf_size %d\n", p->buf_size);
+    av_dlog(NULL, "nsv_probe(), buf_size %d\n", p->buf_size);
     /* check file header */
     /* streamed files might not have any header */
     if (p->buf[0] == 'N' && p->buf[1] == 'S' &&
