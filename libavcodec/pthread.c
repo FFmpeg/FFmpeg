@@ -292,7 +292,8 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
 
         if (fctx->die) break;
 
-        if (!codec->update_thread_context) ff_thread_finish_setup(avctx);
+        if (!codec->update_thread_context && avctx->thread_safe_callbacks)
+            ff_thread_finish_setup(avctx);
 
         pthread_mutex_lock(&p->mutex);
         avcodec_get_frame_defaults(&p->frame);
@@ -779,7 +780,8 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
         return avctx->get_buffer(avctx, f);
     }
 
-    if (p->state != STATE_SETTING_UP) {
+    if (p->state != STATE_SETTING_UP &&
+        (avctx->codec->update_thread_context || !avctx->thread_safe_callbacks)) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() cannot be called after ff_thread_finish_setup()\n");
         return -1;
     }
@@ -810,6 +812,9 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
         err = p->result;
 
         pthread_mutex_unlock(&p->progress_mutex);
+
+        if (!avctx->codec->update_thread_context)
+            ff_thread_finish_setup(avctx);
     }
 
     pthread_mutex_unlock(&p->parent->buffer_mutex);
