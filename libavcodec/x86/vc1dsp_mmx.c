@@ -28,6 +28,7 @@
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
+#include "libavcodec/vc1dsp.h"
 
 #define OP_PUT(S,D)
 #define OP_AVG(S,D) "pavgb " #S ", " #D " \n\t"
@@ -712,30 +713,45 @@ static void vc1_h_loop_filter16_sse4(uint8_t *src, int stride, int pq)
     ff_vc1_h_loop_filter8_sse4(src,          stride, pq);
     ff_vc1_h_loop_filter8_sse4(src+8*stride, stride, pq);
 }
+
 #endif
 
-void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx) {
+void ff_put_vc1_chroma_mc8_mmx_nornd  (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_vc1_chroma_mc8_mmx2_nornd (uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_vc1_chroma_mc8_3dnow_nornd(uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_put_vc1_chroma_mc8_ssse3_nornd(uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+void ff_avg_vc1_chroma_mc8_ssse3_nornd(uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
+
+void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
+{
     int mm_flags = av_get_cpu_flags();
 
-    dsp->put_vc1_mspel_pixels_tab[ 0] = ff_put_vc1_mspel_mc00_mmx;
-    dsp->put_vc1_mspel_pixels_tab[ 4] = put_vc1_mspel_mc01_mmx;
-    dsp->put_vc1_mspel_pixels_tab[ 8] = put_vc1_mspel_mc02_mmx;
-    dsp->put_vc1_mspel_pixels_tab[12] = put_vc1_mspel_mc03_mmx;
+    if (mm_flags & AV_CPU_FLAG_MMX) {
+        dsp->put_vc1_mspel_pixels_tab[ 0] = ff_put_vc1_mspel_mc00_mmx;
+        dsp->put_vc1_mspel_pixels_tab[ 4] = put_vc1_mspel_mc01_mmx;
+        dsp->put_vc1_mspel_pixels_tab[ 8] = put_vc1_mspel_mc02_mmx;
+        dsp->put_vc1_mspel_pixels_tab[12] = put_vc1_mspel_mc03_mmx;
 
-    dsp->put_vc1_mspel_pixels_tab[ 1] = put_vc1_mspel_mc10_mmx;
-    dsp->put_vc1_mspel_pixels_tab[ 5] = put_vc1_mspel_mc11_mmx;
-    dsp->put_vc1_mspel_pixels_tab[ 9] = put_vc1_mspel_mc12_mmx;
-    dsp->put_vc1_mspel_pixels_tab[13] = put_vc1_mspel_mc13_mmx;
+        dsp->put_vc1_mspel_pixels_tab[ 1] = put_vc1_mspel_mc10_mmx;
+        dsp->put_vc1_mspel_pixels_tab[ 5] = put_vc1_mspel_mc11_mmx;
+        dsp->put_vc1_mspel_pixels_tab[ 9] = put_vc1_mspel_mc12_mmx;
+        dsp->put_vc1_mspel_pixels_tab[13] = put_vc1_mspel_mc13_mmx;
 
-    dsp->put_vc1_mspel_pixels_tab[ 2] = put_vc1_mspel_mc20_mmx;
-    dsp->put_vc1_mspel_pixels_tab[ 6] = put_vc1_mspel_mc21_mmx;
-    dsp->put_vc1_mspel_pixels_tab[10] = put_vc1_mspel_mc22_mmx;
-    dsp->put_vc1_mspel_pixels_tab[14] = put_vc1_mspel_mc23_mmx;
+        dsp->put_vc1_mspel_pixels_tab[ 2] = put_vc1_mspel_mc20_mmx;
+        dsp->put_vc1_mspel_pixels_tab[ 6] = put_vc1_mspel_mc21_mmx;
+        dsp->put_vc1_mspel_pixels_tab[10] = put_vc1_mspel_mc22_mmx;
+        dsp->put_vc1_mspel_pixels_tab[14] = put_vc1_mspel_mc23_mmx;
 
-    dsp->put_vc1_mspel_pixels_tab[ 3] = put_vc1_mspel_mc30_mmx;
-    dsp->put_vc1_mspel_pixels_tab[ 7] = put_vc1_mspel_mc31_mmx;
-    dsp->put_vc1_mspel_pixels_tab[11] = put_vc1_mspel_mc32_mmx;
-    dsp->put_vc1_mspel_pixels_tab[15] = put_vc1_mspel_mc33_mmx;
+        dsp->put_vc1_mspel_pixels_tab[ 3] = put_vc1_mspel_mc30_mmx;
+        dsp->put_vc1_mspel_pixels_tab[ 7] = put_vc1_mspel_mc31_mmx;
+        dsp->put_vc1_mspel_pixels_tab[11] = put_vc1_mspel_mc32_mmx;
+        dsp->put_vc1_mspel_pixels_tab[15] = put_vc1_mspel_mc33_mmx;
+    }
 
     if (mm_flags & AV_CPU_FLAG_MMX2){
         dsp->avg_vc1_mspel_pixels_tab[ 0] = ff_avg_vc1_mspel_mc00_mmx2;
@@ -775,11 +791,16 @@ void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx) {
 #if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         ASSIGN_LF(mmx);
+        dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_mmx_nornd;
     }
     return;
     if (mm_flags & AV_CPU_FLAG_MMX2) {
         ASSIGN_LF(mmx2);
+        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_mmx2_nornd;
+    } else if (mm_flags & AV_CPU_FLAG_3DNOW) {
+        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_3dnow_nornd;
     }
+
     if (mm_flags & AV_CPU_FLAG_SSE2) {
         dsp->vc1_v_loop_filter8  = ff_vc1_v_loop_filter8_sse2;
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse2;
@@ -788,6 +809,8 @@ void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx) {
     }
     if (mm_flags & AV_CPU_FLAG_SSSE3) {
         ASSIGN_LF(ssse3);
+        dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_ssse3_nornd;
+        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_ssse3_nornd;
     }
     if (mm_flags & AV_CPU_FLAG_SSE4) {
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse4;
