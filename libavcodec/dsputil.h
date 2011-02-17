@@ -341,9 +341,6 @@ typedef struct DSPContext {
      */
     h264_chroma_mc_func put_h264_chroma_pixels_tab[3];
     h264_chroma_mc_func avg_h264_chroma_pixels_tab[3];
-    /* This is really one func used in VC-1 decoding */
-    h264_chroma_mc_func put_no_rnd_vc1_chroma_pixels_tab[3];
-    h264_chroma_mc_func avg_no_rnd_vc1_chroma_pixels_tab[3];
 
     qpel_mc_func put_h264_qpel_pixels_tab[4][16];
     qpel_mc_func avg_h264_qpel_pixels_tab[4][16];
@@ -503,29 +500,6 @@ typedef struct DSPContext {
                                unsigned int filter_shift, int32_t mask, int blocksize,
                                int32_t *sample_buffer);
 
-    /* vc1 functions */
-    void (*vc1_inv_trans_8x8)(DCTELEM *b);
-    void (*vc1_inv_trans_8x4)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*vc1_inv_trans_4x8)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*vc1_inv_trans_4x4)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*vc1_inv_trans_8x8_dc)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*vc1_inv_trans_8x4_dc)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*vc1_inv_trans_4x8_dc)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*vc1_inv_trans_4x4_dc)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*vc1_v_overlap)(uint8_t* src, int stride);
-    void (*vc1_h_overlap)(uint8_t* src, int stride);
-    void (*vc1_v_loop_filter4)(uint8_t *src, int stride, int pq);
-    void (*vc1_h_loop_filter4)(uint8_t *src, int stride, int pq);
-    void (*vc1_v_loop_filter8)(uint8_t *src, int stride, int pq);
-    void (*vc1_h_loop_filter8)(uint8_t *src, int stride, int pq);
-    void (*vc1_v_loop_filter16)(uint8_t *src, int stride, int pq);
-    void (*vc1_h_loop_filter16)(uint8_t *src, int stride, int pq);
-    /* put 8x8 block with bicubic interpolation and quarterpel precision
-     * last argument is actually round value instead of height
-     */
-    op_pixels_func put_vc1_mspel_pixels_tab[16];
-    op_pixels_func avg_vc1_mspel_pixels_tab[16];
-
     /* intrax8 functions */
     void (*x8_spatial_compensation[12])(uint8_t *src , uint8_t *dst, int linesize);
     void (*x8_setup_spatial_compensation)(uint8_t *src, uint8_t *dst, int linesize,
@@ -629,7 +603,6 @@ void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 void ff_dsputil_init_dwt(DSPContext *c);
 void ff_rv30dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_rv40dsp_init(DSPContext* c, AVCodecContext *avctx);
-void ff_vc1dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init_x86(DSPContext* c, AVCodecContext *avctx);

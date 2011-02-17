@@ -171,8 +171,6 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 
     if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
         dsputil_init_altivec(c, avctx);
-        if(CONFIG_VC1_DECODER)
-            vc1dsp_init_altivec(c, avctx);
         float_init_altivec(c, avctx);
         int_init_altivec(c, avctx);
         c->gmc1 = gmc1_altivec;

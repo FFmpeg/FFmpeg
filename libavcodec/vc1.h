@@ -26,6 +26,7 @@
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "intrax8.h"
+#include "vc1dsp.h"
 
 /** Markers used in VC-1 AP frame data */
 //@{
@@ -155,6 +156,7 @@ enum COTypes {
 typedef struct VC1Context{
     MpegEncContext s;
     IntraX8Context x8;
+    VC1DSPContext vc1dsp;
 
     int bits;
 

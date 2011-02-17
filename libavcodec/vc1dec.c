@@ -160,29 +160,30 @@ enum Imode {
 
 /** @} */ //Bitplane group
 
-static void vc1_loop_filter_iblk(MpegEncContext *s, int pq)
+static void vc1_loop_filter_iblk(VC1Context *v, int pq)
 {
+    MpegEncContext *s = &v->s;
     int j;
     if (!s->first_slice_line) {
-        s->dsp.vc1_v_loop_filter16(s->dest[0], s->linesize, pq);
+        v->vc1dsp.vc1_v_loop_filter16(s->dest[0], s->linesize, pq);
         if (s->mb_x)
-            s->dsp.vc1_h_loop_filter16(s->dest[0] - 16*s->linesize, s->linesize, pq);
-        s->dsp.vc1_h_loop_filter16(s->dest[0] - 16*s->linesize+8, s->linesize, pq);
+            v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16*s->linesize, s->linesize, pq);
+        v->vc1dsp.vc1_h_loop_filter16(s->dest[0] - 16*s->linesize+8, s->linesize, pq);
         for(j = 0; j < 2; j++){
-            s->dsp.vc1_v_loop_filter8(s->dest[j+1], s->uvlinesize, pq);
+            v->vc1dsp.vc1_v_loop_filter8(s->dest[j+1], s->uvlinesize, pq);
             if (s->mb_x)
-                s->dsp.vc1_h_loop_filter8(s->dest[j+1]-8*s->uvlinesize, s->uvlinesize, pq);
+                v->vc1dsp.vc1_h_loop_filter8(s->dest[j+1]-8*s->uvlinesize, s->uvlinesize, pq);
         }
     }
-    s->dsp.vc1_v_loop_filter16(s->dest[0] + 8*s->linesize, s->linesize, pq);
+    v->vc1dsp.vc1_v_loop_filter16(s->dest[0] + 8*s->linesize, s->linesize, pq);
 
     if (s->mb_y == s->mb_height-1) {
         if (s->mb_x) {
-            s->dsp.vc1_h_loop_filter16(s->dest[0], s->linesize, pq);
-            s->dsp.vc1_h_loop_filter8(s->dest[1], s->uvlinesize, pq);
-            s->dsp.vc1_h_loop_filter8(s->dest[2], s->uvlinesize, pq);
+            v->vc1dsp.vc1_h_loop_filter16(s->dest[0], s->linesize, pq);
+            v->vc1dsp.vc1_h_loop_filter8(s->dest[1], s->uvlinesize, pq);
+            v->vc1dsp.vc1_h_loop_filter8(s->dest[2], s->uvlinesize, pq);
         }
-        s->dsp.vc1_h_loop_filter16(s->dest[0] + 8, s->linesize, pq);
+        v->vc1dsp.vc1_h_loop_filter16(s->dest[0] + 8, s->linesize, pq);
     }
 }
 
@@ -342,11 +343,11 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
 
     if(s->mspel) {
         dxy = ((my & 3) << 2) | (mx & 3);
-        dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0]    , srcY    , s->linesize, v->rnd);
-        dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8, srcY + 8, s->linesize, v->rnd);
+        v->vc1dsp.put_vc1_mspel_pixels_tab[dxy](s->dest[0]    , srcY    , s->linesize, v->rnd);
+        v->vc1dsp.put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8, srcY + 8, s->linesize, v->rnd);
         srcY += s->linesize * 8;
-        dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize    , srcY    , s->linesize, v->rnd);
-        dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize + 8, srcY + 8, s->linesize, v->rnd);
+        v->vc1dsp.put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize    , srcY    , s->linesize, v->rnd);
+        v->vc1dsp.put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize + 8, srcY + 8, s->linesize, v->rnd);
     } else { // hpel mc - always used for luma
         dxy = (my & 2) | ((mx & 2) >> 1);
 
@@ -364,8 +365,8 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         dsp->put_h264_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
         dsp->put_h264_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     }else{
-        dsp->put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
-        dsp->put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
+        v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     }
 }
 
@@ -433,7 +434,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
 
     if(s->mspel) {
         dxy = ((my & 3) << 2) | (mx & 3);
-        dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + off, srcY, s->linesize, v->rnd);
+        v->vc1dsp.put_vc1_mspel_pixels_tab[dxy](s->dest[0] + off, srcY, s->linesize, v->rnd);
     } else { // hpel mc - always used for luma
         dxy = (my & 2) | ((mx & 2) >> 1);
         if(!v->rnd)
@@ -583,8 +584,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
         dsp->put_h264_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
         dsp->put_h264_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     }else{
-        dsp->put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
-        dsp->put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
+        v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     }
 }
 
@@ -906,11 +907,11 @@ static void vc1_interp_mc(VC1Context *v)
 
     if(s->mspel) {
         dxy = ((my & 3) << 2) | (mx & 3);
-        dsp->avg_vc1_mspel_pixels_tab[dxy](s->dest[0]    , srcY    , s->linesize, v->rnd);
-        dsp->avg_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8, srcY + 8, s->linesize, v->rnd);
+        v->vc1dsp.avg_vc1_mspel_pixels_tab[dxy](s->dest[0]    , srcY    , s->linesize, v->rnd);
+        v->vc1dsp.avg_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8, srcY + 8, s->linesize, v->rnd);
         srcY += s->linesize * 8;
-        dsp->avg_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize    , srcY    , s->linesize, v->rnd);
-        dsp->avg_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize + 8, srcY + 8, s->linesize, v->rnd);
+        v->vc1dsp.avg_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize    , srcY    , s->linesize, v->rnd);
+        v->vc1dsp.avg_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize + 8, srcY + 8, s->linesize, v->rnd);
     } else { // hpel mc
         dxy = (my & 2) | ((mx & 2) >> 1);
 
@@ -928,8 +929,8 @@ static void vc1_interp_mc(VC1Context *v)
         dsp->avg_h264_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
         dsp->avg_h264_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     }else{
-        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
-        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
+        v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     }
 }
 
@@ -2039,15 +2040,15 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
         }
         if(!skip_block){
             if(i==1)
-                s->dsp.vc1_inv_trans_8x8_dc(dst, linesize, block);
+                v->vc1dsp.vc1_inv_trans_8x8_dc(dst, linesize, block);
             else{
-                s->dsp.vc1_inv_trans_8x8(block);
+                v->vc1dsp.vc1_inv_trans_8x8(block);
                 s->dsp.add_pixels_clamped(block, dst, linesize);
             }
             if(apply_filter && cbp_top  & 0xC)
-                s->dsp.vc1_v_loop_filter8(dst, linesize, v->pq);
+                v->vc1dsp.vc1_v_loop_filter8(dst, linesize, v->pq);
             if(apply_filter && cbp_left & 0xA)
-                s->dsp.vc1_h_loop_filter8(dst, linesize, v->pq);
+                v->vc1dsp.vc1_h_loop_filter8(dst, linesize, v->pq);
         }
         break;
     case TT_4X4:
@@ -2068,13 +2069,13 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
             }
             if(!(subblkpat & (1 << (3 - j))) && !skip_block){
                 if(i==1)
-                    s->dsp.vc1_inv_trans_4x4_dc(dst + (j&1)*4 + (j&2)*2*linesize, linesize, block + off);
+                    v->vc1dsp.vc1_inv_trans_4x4_dc(dst + (j&1)*4 + (j&2)*2*linesize, linesize, block + off);
                 else
-                    s->dsp.vc1_inv_trans_4x4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, block + off);
+                    v->vc1dsp.vc1_inv_trans_4x4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, block + off);
                 if(apply_filter && (j&2 ? pat & (1<<(j-2)) : (cbp_top & (1 << (j + 2)))))
-                    s->dsp.vc1_v_loop_filter4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, v->pq);
+                    v->vc1dsp.vc1_v_loop_filter4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, v->pq);
                 if(apply_filter && (j&1 ? pat & (1<<(j-1)) : (cbp_left & (1 << (j + 1)))))
-                    s->dsp.vc1_h_loop_filter4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, v->pq);
+                    v->vc1dsp.vc1_h_loop_filter4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, v->pq);
             }
         }
         break;
@@ -2096,13 +2097,13 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
             }
             if(!(subblkpat & (1 << (1 - j))) && !skip_block){
                 if(i==1)
-                    s->dsp.vc1_inv_trans_8x4_dc(dst + j*4*linesize, linesize, block + off);
+                    v->vc1dsp.vc1_inv_trans_8x4_dc(dst + j*4*linesize, linesize, block + off);
                 else
-                    s->dsp.vc1_inv_trans_8x4(dst + j*4*linesize, linesize, block + off);
+                    v->vc1dsp.vc1_inv_trans_8x4(dst + j*4*linesize, linesize, block + off);
                 if(apply_filter && j ? pat & 0x3 : (cbp_top & 0xC))
-                    s->dsp.vc1_v_loop_filter8(dst + j*4*linesize, linesize, v->pq);
+                    v->vc1dsp.vc1_v_loop_filter8(dst + j*4*linesize, linesize, v->pq);
                 if(apply_filter && cbp_left & (2 << j))
-                    s->dsp.vc1_h_loop_filter4(dst + j*4*linesize, linesize, v->pq);
+                    v->vc1dsp.vc1_h_loop_filter4(dst + j*4*linesize, linesize, v->pq);
             }
         }
         break;
@@ -2124,13 +2125,13 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
             }
             if(!(subblkpat & (1 << (1 - j))) && !skip_block){
                 if(i==1)
-                    s->dsp.vc1_inv_trans_4x8_dc(dst + j*4, linesize, block + off);
+                    v->vc1dsp.vc1_inv_trans_4x8_dc(dst + j*4, linesize, block + off);
                 else
-                    s->dsp.vc1_inv_trans_4x8(dst + j*4, linesize, block + off);
+                    v->vc1dsp.vc1_inv_trans_4x8(dst + j*4, linesize, block + off);
                 if(apply_filter && cbp_top & (2 << j))
-                    s->dsp.vc1_v_loop_filter4(dst + j*4, linesize, v->pq);
+                    v->vc1dsp.vc1_v_loop_filter4(dst + j*4, linesize, v->pq);
                 if(apply_filter && j ? pat & 0x5 : (cbp_left & 0xA))
-                    s->dsp.vc1_h_loop_filter8(dst + j*4, linesize, v->pq);
+                    v->vc1dsp.vc1_h_loop_filter8(dst + j*4, linesize, v->pq);
             }
         }
         break;
@@ -2232,14 +2233,14 @@ static int vc1_decode_p_mb(VC1Context *v)
 
                     vc1_decode_intra_block(v, s->block[i], i, val, mquant, (i&4)?v->codingset2:v->codingset);
                     if((i>3) && (s->flags & CODEC_FLAG_GRAY)) continue;
-                    s->dsp.vc1_inv_trans_8x8(s->block[i]);
+                    v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
                     if(v->rangeredfrm) for(j = 0; j < 64; j++) s->block[i][j] <<= 1;
                     s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
                     if(v->pq >= 9 && v->overlap) {
                         if(v->c_avail)
-                            s->dsp.vc1_h_overlap(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
+                            v->vc1dsp.vc1_h_overlap(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
                         if(v->a_avail)
-                            s->dsp.vc1_v_overlap(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
+                            v->vc1dsp.vc1_v_overlap(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
                     }
                     if(apply_loop_filter && s->mb_x && s->mb_x != (s->mb_width - 1) && s->mb_y && s->mb_y != (s->mb_height - 1)){
                         int left_cbp, top_cbp;
@@ -2251,9 +2252,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                             top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
                         if(left_cbp & 0xC)
-                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
+                            v->vc1dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                         if(top_cbp  & 0xA)
-                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
+                            v->vc1dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                     }
                     block_cbp |= 0xF << (i << 2);
                 } else if(val) {
@@ -2268,9 +2269,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                             top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
                         if(left_cbp & 0xC)
-                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
+                            v->vc1dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                         if(top_cbp  & 0xA)
-                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
+                            v->vc1dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                     }
                     pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block, s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize, (i&4) && (s->flags & CODEC_FLAG_GRAY), filter, left_cbp, top_cbp);
                     block_cbp |= pat << (i << 2);
@@ -2363,14 +2364,14 @@ static int vc1_decode_p_mb(VC1Context *v)
 
                     vc1_decode_intra_block(v, s->block[i], i, is_coded[i], mquant, (i&4)?v->codingset2:v->codingset);
                     if((i>3) && (s->flags & CODEC_FLAG_GRAY)) continue;
-                    s->dsp.vc1_inv_trans_8x8(s->block[i]);
+                    v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
                     if(v->rangeredfrm) for(j = 0; j < 64; j++) s->block[i][j] <<= 1;
                     s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
                     if(v->pq >= 9 && v->overlap) {
                         if(v->c_avail)
-                            s->dsp.vc1_h_overlap(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
+                            v->vc1dsp.vc1_h_overlap(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
                         if(v->a_avail)
-                            s->dsp.vc1_v_overlap(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
+                            v->vc1dsp.vc1_v_overlap(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
                     }
                     if(v->s.loop_filter && s->mb_x && s->mb_x != (s->mb_width - 1) && s->mb_y && s->mb_y != (s->mb_height - 1)){
                         int left_cbp, top_cbp;
@@ -2382,9 +2383,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                             top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
                         if(left_cbp & 0xC)
-                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
+                            v->vc1dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                         if(top_cbp  & 0xA)
-                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
+                            v->vc1dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                     }
                     block_cbp |= 0xF << (i << 2);
                 } else if(is_coded[i]) {
@@ -2399,9 +2400,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                             top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
                         if(left_cbp & 0xC)
-                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
+                            v->vc1dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                         if(top_cbp  & 0xA)
-                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
+                            v->vc1dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                     }
                     pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block, s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize, (i&4) && (s->flags & CODEC_FLAG_GRAY), filter, left_cbp, top_cbp);
                     block_cbp |= pat << (i << 2);
@@ -2568,7 +2569,7 @@ static void vc1_decode_b_mb(VC1Context *v)
 
             vc1_decode_intra_block(v, s->block[i], i, val, mquant, (i&4)?v->codingset2:v->codingset);
             if((i>3) && (s->flags & CODEC_FLAG_GRAY)) continue;
-            s->dsp.vc1_inv_trans_8x8(s->block[i]);
+            v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
             if(v->rangeredfrm) for(j = 0; j < 64; j++) s->block[i][j] <<= 1;
             s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize);
         } else if(val) {
@@ -2650,7 +2651,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
 
                 vc1_decode_i_block(v, s->block[k], k, val, (k<4)? v->codingset : v->codingset2);
 
-                s->dsp.vc1_inv_trans_8x8(s->block[k]);
+                v->vc1dsp.vc1_inv_trans_8x8(s->block[k]);
                 if(v->pq >= 9 && v->overlap) {
                     for(j = 0; j < 64; j++) s->block[k][j] += 128;
                 }
@@ -2659,27 +2660,27 @@ static void vc1_decode_i_blocks(VC1Context *v)
             vc1_put_block(v, s->block);
             if(v->pq >= 9 && v->overlap) {
                 if(s->mb_x) {
-                    s->dsp.vc1_h_overlap(s->dest[0], s->linesize);
-                    s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
+                    v->vc1dsp.vc1_h_overlap(s->dest[0], s->linesize);
+                    v->vc1dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
                     if(!(s->flags & CODEC_FLAG_GRAY)) {
-                        s->dsp.vc1_h_overlap(s->dest[1], s->uvlinesize);
-                        s->dsp.vc1_h_overlap(s->dest[2], s->uvlinesize);
+                        v->vc1dsp.vc1_h_overlap(s->dest[1], s->uvlinesize);
+                        v->vc1dsp.vc1_h_overlap(s->dest[2], s->uvlinesize);
                     }
                 }
-                s->dsp.vc1_h_overlap(s->dest[0] + 8, s->linesize);
-                s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
+                v->vc1dsp.vc1_h_overlap(s->dest[0] + 8, s->linesize);
+                v->vc1dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
                 if(!s->first_slice_line) {
-                    s->dsp.vc1_v_overlap(s->dest[0], s->linesize);
-                    s->dsp.vc1_v_overlap(s->dest[0] + 8, s->linesize);
+                    v->vc1dsp.vc1_v_overlap(s->dest[0], s->linesize);
+                    v->vc1dsp.vc1_v_overlap(s->dest[0] + 8, s->linesize);
                     if(!(s->flags & CODEC_FLAG_GRAY)) {
-                        s->dsp.vc1_v_overlap(s->dest[1], s->uvlinesize);
-                        s->dsp.vc1_v_overlap(s->dest[2], s->uvlinesize);
+                        v->vc1dsp.vc1_v_overlap(s->dest[1], s->uvlinesize);
+                        v->vc1dsp.vc1_v_overlap(s->dest[2], s->uvlinesize);
                     }
                 }
-                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
-                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
+                v->vc1dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
+                v->vc1dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
             }
-            if(v->s.loop_filter) vc1_loop_filter_iblk(s, v->pq);
+            if(v->s.loop_filter) vc1_loop_filter_iblk(v, v->pq);
 
             if(get_bits_count(&s->gb) > v->bits) {
                 ff_er_add_slice(s, 0, 0, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END));
@@ -2790,34 +2791,34 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
 
                 vc1_decode_i_block_adv(v, s->block[k], k, val, (k<4)? v->codingset : v->codingset2, mquant);
 
-                s->dsp.vc1_inv_trans_8x8(s->block[k]);
+                v->vc1dsp.vc1_inv_trans_8x8(s->block[k]);
                 for(j = 0; j < 64; j++) s->block[k][j] += 128;
             }
 
             vc1_put_block(v, s->block);
             if(overlap) {
                 if(s->mb_x) {
-                    s->dsp.vc1_h_overlap(s->dest[0], s->linesize);
-                    s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
+                    v->vc1dsp.vc1_h_overlap(s->dest[0], s->linesize);
+                    v->vc1dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
                     if(!(s->flags & CODEC_FLAG_GRAY)) {
-                        s->dsp.vc1_h_overlap(s->dest[1], s->uvlinesize);
-                        s->dsp.vc1_h_overlap(s->dest[2], s->uvlinesize);
+                        v->vc1dsp.vc1_h_overlap(s->dest[1], s->uvlinesize);
+                        v->vc1dsp.vc1_h_overlap(s->dest[2], s->uvlinesize);
                     }
                 }
-                s->dsp.vc1_h_overlap(s->dest[0] + 8, s->linesize);
-                s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
+                v->vc1dsp.vc1_h_overlap(s->dest[0] + 8, s->linesize);
+                v->vc1dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
                 if(!s->first_slice_line) {
-                    s->dsp.vc1_v_overlap(s->dest[0], s->linesize);
-                    s->dsp.vc1_v_overlap(s->dest[0] + 8, s->linesize);
+                    v->vc1dsp.vc1_v_overlap(s->dest[0], s->linesize);
+                    v->vc1dsp.vc1_v_overlap(s->dest[0] + 8, s->linesize);
                     if(!(s->flags & CODEC_FLAG_GRAY)) {
-                        s->dsp.vc1_v_overlap(s->dest[1], s->uvlinesize);
-                        s->dsp.vc1_v_overlap(s->dest[2], s->uvlinesize);
+                        v->vc1dsp.vc1_v_overlap(s->dest[1], s->uvlinesize);
+                        v->vc1dsp.vc1_v_overlap(s->dest[2], s->uvlinesize);
                     }
                 }
-                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
-                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
+                v->vc1dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
+                v->vc1dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
             }
-            if(v->s.loop_filter) vc1_loop_filter_iblk(s, v->pq);
+            if(v->s.loop_filter) vc1_loop_filter_iblk(v, v->pq);
 
             if(get_bits_count(&s->gb) > v->bits) {
                 ff_er_add_slice(s, 0, 0, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END));
@@ -2929,7 +2930,7 @@ static void vc1_decode_b_blocks(VC1Context *v)
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i at %ix%i\n", get_bits_count(&s->gb), v->bits,s->mb_x,s->mb_y);
                 return;
             }
-            if(v->s.loop_filter) vc1_loop_filter_iblk(s, v->pq);
+            if(v->s.loop_filter) vc1_loop_filter_iblk(v, v->pq);
         }
         if (!v->s.loop_filter)
             ff_draw_horiz_band(s, s->mb_y * 16, 16);
@@ -3023,6 +3024,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     if(ff_msmpeg4_decode_init(avctx) < 0)
         return -1;
     if (vc1_init_common(v) < 0) return -1;
+    ff_vc1dsp_init(&v->vc1dsp);
     for (i = 0; i < 64;  i++) {
 #define transpose(x) ((x>>3) | ((x&7)<<3))
         v->zz_8x8[0][i] = transpose(wmv1_scantable[0][i]);

@@ -43,7 +43,6 @@ void ff_vp3_idct_add_altivec(uint8_t *dest, int line_size, DCTELEM *block);
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx);
-void vc1dsp_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void float_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void int_init_altivec(DSPContext* c, AVCodecContext *avctx);
 
