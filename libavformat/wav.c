@@ -334,7 +334,8 @@ static int wav_read_header(AVFormatContext *s,
         size = next_tag(pb, &tag);
         next_tag_ofs = avio_tell(pb) + size;
 
-        if (tag == MKTAG('f', 'm', 't', ' ')) {
+        switch (tag) {
+        case MKTAG('f', 'm', 't', ' '):
             /* only parse the first 'fmt ' tag found */
             if (!got_fmt && (ret = wav_parse_fmt_tag(s, size, &st) < 0)) {
                 return ret;
@@ -342,18 +343,22 @@ static int wav_read_header(AVFormatContext *s,
                 av_log(s, AV_LOG_WARNING, "found more than one 'fmt ' tag\n");
 
             got_fmt = 1;
-        } else if (tag == MKTAG('d', 'a', 't', 'a')) {
+            break;
+        case MKTAG('d', 'a', 't', 'a'):
             if (!got_fmt) {
                 av_log(s, AV_LOG_ERROR, "found no 'fmt ' tag before the 'data' tag\n");
                 return AVERROR_INVALIDDATA;
             }
 
+            goto break_loop;
+        case MKTAG('f','a','c','t'):
+            if (!sample_count)
+                sample_count = avio_rl32(pb);
             break;
-        }else if (tag == MKTAG('f','a','c','t') && !sample_count){
-            sample_count = avio_rl32(pb);
         }
         avio_seek(pb, next_tag_ofs, SEEK_SET);
     }
+break_loop:
     if (rf64)
         size = data_size;
     if (size < 0)
