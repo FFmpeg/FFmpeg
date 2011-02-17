@@ -283,12 +283,24 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         /* write optional descriptors here */
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            if (lang && strlen(lang->value) == 3) {
+            if (lang) {
+                char *p;
+                char *next = lang->value;
+                uint8_t *len_ptr;
+
                 *q++ = 0x0a; /* ISO 639 language descriptor */
-                *q++ = 4;
-                *q++ = lang->value[0];
-                *q++ = lang->value[1];
-                *q++ = lang->value[2];
+                len_ptr = q++;
+                *len_ptr = 0;
+
+                for (p = lang->value; next && *len_ptr < 255 / 4 * 4; p = next + 1) {
+                    next = strchr(p, ',');
+                    if (strlen(p) != 3 && (!next || next != p + 3))
+                        continue; /* not a 3-letter code */
+
+                    *q++ = *p++;
+                    *q++ = *p++;
+                    *q++ = *p++;
+
                 if (st->disposition & AV_DISPOSITION_CLEAN_EFFECTS)
                     *q++ = 0x01;
                 else if (st->disposition & AV_DISPOSITION_HEARING_IMPAIRED)
@@ -297,6 +309,12 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                     *q++ = 0x03;
                 else
                     *q++ = 0; /* undefined type */
+
+                    *len_ptr += 4;
+                }
+
+                if (*len_ptr == 0)
+                    q -= 2; /* no language codes were written */
             }
             break;
         case AVMEDIA_TYPE_SUBTITLE:
