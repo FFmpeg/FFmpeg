@@ -202,7 +202,7 @@ void ff_mdct_calc_c(FFTContext *s, FFTSample *out, const FFTSample *input)
 
     /* pre rotation */
     for(i=0;i<n8;i++) {
-        re = -input[2*i+3*n4] - input[n3-1-2*i];
+        re = -input[2*i+n3] - input[n3-1-2*i];
         im = -input[n4+2*i] + input[n4-1-2*i];
         j = revtab[i];
         CMUL(x[j].re, x[j].im, re, im, -tcos[i], tsin[i]);
