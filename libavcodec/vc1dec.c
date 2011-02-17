@@ -199,7 +199,7 @@ static void vc1_put_block(VC1Context *v, DCTELEM block[6][64])
         for(k = 0; k < 6; k++)
             for(j = 0; j < 8; j++)
                 for(i = 0; i < 8; i++)
-                    block[k][i + j*8] = ((block[k][i + j*8] - 128) << 1) + 128;
+                    block[k][i + j*8] = (block[k][i + j*8] - 64) << 1;
 
     }
     ys = v->s.current_picture.linesize[0];
