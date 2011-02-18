@@ -124,3 +124,16 @@ This is (again) another maintenance only release that addresses a fix
 for seekable HTTP and an exploitable bug in the FLIC decoder
 (cf. CVE-2010-3429 for details). Distributors and system integrators are
 encouraged to update and share their patches against this branch.
+
+
+
+* 0.5.4 Feb 20, 2011
+
+General notes
+-------------
+
+This is the first release that we cut after git migration. It is another
+maintenance only release that addresses several security issue that have
+brought to our attention. In detail, fixes for RV30/40, WMV, Vorbis and
+VC1 have been backported for trunk. Distributors and system integrators
+are encouraged to update and share their patches against this branch.
