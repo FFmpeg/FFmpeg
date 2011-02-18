@@ -99,6 +99,21 @@ enum DCAExtensionMask {
     DCA_EXT_EXSS_XLL   = 0x200, ///< lossless extension in ExSS
 };
 
+/* -1 are reserved or unknown */
+static const int dca_ext_audio_descr_mask[] = {
+    DCA_EXT_XCH,
+    -1,
+    DCA_EXT_X96,
+    DCA_EXT_XCH | DCA_EXT_X96,
+    -1,
+    -1,
+    DCA_EXT_XXCH,
+    -1,
+};
+
+/* extensions that reside in core substream */
+#define DCA_CORE_EXTS (DCA_EXT_XCH | DCA_EXT_XXCH | DCA_EXT_X96)
+
 /* Tables for mapping dts channel configurations to libavcodec multichannel api.
  * Some compromises have been made for special configurations. Most configurations
  * are never used so complete accuracy is not needed.
@@ -327,13 +342,11 @@ typedef struct {
     int current_subframe;
     int current_subsubframe;
 
-    /* XCh extension information */
-    int xch_present;
-    int xch_base_channel;       ///< index of first (only) channel containing XCH data
+    int core_ext_mask;          ///< present extensions in the core substream
 
-    /* Other detected extensions in the core substream */
-    int xxch_present;
-    int x96_present;
+    /* XCh extension information */
+    int xch_present;            ///< XCh extension present and valid
+    int xch_base_channel;       ///< index of first (only) channel containing XCH data
 
     /* ExSS header parser */
     int static_fields;          ///< static fields present
@@ -1508,12 +1521,9 @@ static int dca_exss_parse_asset_header(DCAContext *s)
 
     if (!(extensions_mask & DCA_EXT_CORE))
         av_log(s->avctx, AV_LOG_WARNING, "DTS core detection mismatch.\n");
-    if (!!(extensions_mask & DCA_EXT_XCH) != s->xch_present)
-        av_log(s->avctx, AV_LOG_WARNING, "DTS XCh detection mismatch.\n");
-    if (!!(extensions_mask & DCA_EXT_XXCH) != s->xxch_present)
-        av_log(s->avctx, AV_LOG_WARNING, "DTS XXCh detection mismatch.\n");
-    if (!!(extensions_mask & DCA_EXT_X96) != s->x96_present)
-        av_log(s->avctx, AV_LOG_WARNING, "DTS X96 detection mismatch.\n");
+    if ((extensions_mask & DCA_CORE_EXTS) != s->core_ext_mask)
+        av_log(s->avctx, AV_LOG_WARNING, "DTS extensions detection mismatch (%d, %d)\n",
+               extensions_mask & DCA_CORE_EXTS, s->core_ext_mask);
 
     return 0;
 }
@@ -1623,8 +1633,6 @@ static int dca_decode_frame(AVCodecContext * avctx,
 
 
     s->xch_present = 0;
-    s->x96_present = 0;
-    s->xxch_present = 0;
 
     s->dca_buffer_size = dca_convert_bitstream(buf, buf_size, s->dca_buffer,
                                                DCA_MAX_FRAME_SIZE + DCA_MAX_EXSS_HEADER_SIZE);
@@ -1652,10 +1660,23 @@ static int dca_decode_frame(AVCodecContext * avctx,
     /* record number of core channels incase less than max channels are requested */
     num_core_channels = s->prim_channels;
 
-    /* extensions start at 32-bit boundaries into bitstream */
-    skip_bits_long(&s->gb, (-get_bits_count(&s->gb)) & 31);
+    if (s->ext_coding)
+        s->core_ext_mask = dca_ext_audio_descr_mask[s->ext_descr];
+    else
+        s->core_ext_mask = 0;
 
     core_ss_end = FFMIN(s->frame_size, s->dca_buffer_size) * 8;
+
+    /* only scan for extensions if ext_descr was unknown or indicated a
+     * supported XCh extension */
+    if (s->core_ext_mask < 0 || s->core_ext_mask & DCA_EXT_XCH) {
+
+        /* if ext_descr was unknown, clear s->core_ext_mask so that the
+         * extensions scan can fill it up */
+        s->core_ext_mask = FFMAX(s->core_ext_mask, 0);
+
+        /* extensions start at 32-bit boundaries into bitstream */
+        skip_bits_long(&s->gb, (-get_bits_count(&s->gb)) & 31);
 
     while(core_ss_end - get_bits_count(&s->gb) >= 32) {
         uint32_t bits = get_bits_long(&s->gb, 32);
@@ -1675,7 +1696,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
             /* skip length-to-end-of-frame field for the moment */
             skip_bits(&s->gb, 10);
 
-            s->profile = FFMAX(s->profile, FF_PROFILE_DTS_ES);
+            s->core_ext_mask |= DCA_EXT_XCH;
 
             /* extension amode should == 1, number of channels in extension */
             /* AFAIK XCh is not used for more channels */
@@ -1699,8 +1720,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
             /* XXCh: extended channels */
             /* usually found either in core or HD part in DTS-HD HRA streams,
              * but not in DTS-ES which contains XCh extensions instead */
-            s->xxch_present = 1;
-            s->profile = FFMAX(s->profile, FF_PROFILE_DTS_ES);
+            s->core_ext_mask |= DCA_EXT_XXCH;
             break;
 
         case 0x1d95f262: {
@@ -1713,14 +1733,23 @@ static int dca_decode_frame(AVCodecContext * avctx,
             av_log(avctx, AV_LOG_DEBUG, "FSIZE96 = %d bytes\n", fsize96);
             av_log(avctx, AV_LOG_DEBUG, "REVNO = %d\n", get_bits(&s->gb, 4));
 
-            s->x96_present = 1;
-            s->profile = FFMAX(s->profile, FF_PROFILE_DTS_96_24);
+            s->core_ext_mask |= DCA_EXT_X96;
             break;
         }
         }
 
         skip_bits_long(&s->gb, (-get_bits_count(&s->gb)) & 31);
     }
+
+    } else {
+        /* no supported extensions, skip the rest of the core substream */
+        skip_bits_long(&s->gb, core_ss_end - get_bits_count(&s->gb));
+    }
+
+    if (s->core_ext_mask & DCA_EXT_X96)
+        s->profile = FF_PROFILE_DTS_96_24;
+    else if (s->core_ext_mask & (DCA_EXT_XCH | DCA_EXT_XXCH))
+        s->profile = FF_PROFILE_DTS_ES;
 
     /* check for ExSS (HD part) */
     if (s->dca_buffer_size - s->frame_size > 32
