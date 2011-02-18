@@ -20,6 +20,7 @@
  */
 
 #include "libavcodec/dsputil.h"
+#include "libavcodec/vc1dsp.h"
 
 #include "util_altivec.h"
 #include "dsputil_altivec.h"
@@ -321,6 +322,20 @@ static void vc1_inv_trans_8x4_altivec(uint8_t *dest, int stride, DCTELEM *block)
     ADD (dest, src3, perm1)
 }
 
+#define PUT_OP_U8_ALTIVEC(d, s, dst) d = s
+#define AVG_OP_U8_ALTIVEC(d, s, dst) d = vec_avg(dst, s)
+
+#define OP_U8_ALTIVEC                          PUT_OP_U8_ALTIVEC
+#define PREFIX_no_rnd_vc1_chroma_mc8_altivec   put_no_rnd_vc1_chroma_mc8_altivec
+#include "h264_template_altivec.c"
+#undef OP_U8_ALTIVEC
+#undef PREFIX_no_rnd_vc1_chroma_mc8_altivec
+
+#define OP_U8_ALTIVEC                          AVG_OP_U8_ALTIVEC
+#define PREFIX_no_rnd_vc1_chroma_mc8_altivec   avg_no_rnd_vc1_chroma_mc8_altivec
+#include "h264_template_altivec.c"
+#undef OP_U8_ALTIVEC
+#undef PREFIX_no_rnd_vc1_chroma_mc8_altivec
 
 void ff_vc1dsp_init_altivec(VC1DSPContext* dsp)
 {
@@ -329,4 +344,6 @@ void ff_vc1dsp_init_altivec(VC1DSPContext* dsp)
 
     dsp->vc1_inv_trans_8x8 = vc1_inv_trans_8x8_altivec;
     dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_altivec;
+    dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = put_no_rnd_vc1_chroma_mc8_altivec;
+    dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = avg_no_rnd_vc1_chroma_mc8_altivec;
 }
