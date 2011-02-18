@@ -105,7 +105,7 @@
 
 void RENAME(ff_yadif_filter_line)(uint8_t *dst,
                                   uint8_t *prev, uint8_t *cur, uint8_t *next,
-                                  int w, int refs, int parity, int mode)
+                                  int w, int prefs, int mrefs, int parity, int mode)
 {
     DECLARE_ALIGNED(16, uint8_t, tmp0[16]);
     DECLARE_ALIGNED(16, uint8_t, tmp1[16]);
@@ -226,8 +226,8 @@ void RENAME(ff_yadif_filter_line)(uint8_t *dst,
             :[prev] "r"(prev),\
              [cur]  "r"(cur),\
              [next] "r"(next),\
-             [prefs]"r"((x86_reg)refs),\
-             [mrefs]"r"((x86_reg)-refs),\
+             [prefs]"r"((x86_reg)prefs),\
+             [mrefs]"r"((x86_reg)mrefs),\
              [mode] "g"(mode)\
         );\
         __asm__ volatile(MOV" "MM"1, %0" :"=m"(*dst));\
