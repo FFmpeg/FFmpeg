@@ -32,7 +32,6 @@
 
 #define OP_U8_ALTIVEC                          PUT_OP_U8_ALTIVEC
 #define PREFIX_h264_chroma_mc8_altivec         put_h264_chroma_mc8_altivec
-#define PREFIX_no_rnd_vc1_chroma_mc8_altivec   put_no_rnd_vc1_chroma_mc8_altivec
 #define PREFIX_h264_chroma_mc8_num             altivec_put_h264_chroma_mc8_num
 #define PREFIX_h264_qpel16_h_lowpass_altivec   put_h264_qpel16_h_lowpass_altivec
 #define PREFIX_h264_qpel16_h_lowpass_num       altivec_put_h264_qpel16_h_lowpass_num
@@ -43,7 +42,6 @@
 #include "h264_template_altivec.c"
 #undef OP_U8_ALTIVEC
 #undef PREFIX_h264_chroma_mc8_altivec
-#undef PREFIX_no_rnd_vc1_chroma_mc8_altivec
 #undef PREFIX_h264_chroma_mc8_num
 #undef PREFIX_h264_qpel16_h_lowpass_altivec
 #undef PREFIX_h264_qpel16_h_lowpass_num
@@ -54,7 +52,6 @@
 
 #define OP_U8_ALTIVEC                          AVG_OP_U8_ALTIVEC
 #define PREFIX_h264_chroma_mc8_altivec         avg_h264_chroma_mc8_altivec
-#define PREFIX_no_rnd_vc1_chroma_mc8_altivec   avg_no_rnd_vc1_chroma_mc8_altivec
 #define PREFIX_h264_chroma_mc8_num             altivec_avg_h264_chroma_mc8_num
 #define PREFIX_h264_qpel16_h_lowpass_altivec   avg_h264_qpel16_h_lowpass_altivec
 #define PREFIX_h264_qpel16_h_lowpass_num       altivec_avg_h264_qpel16_h_lowpass_num
@@ -65,7 +62,6 @@
 #include "h264_template_altivec.c"
 #undef OP_U8_ALTIVEC
 #undef PREFIX_h264_chroma_mc8_altivec
-#undef PREFIX_no_rnd_vc1_chroma_mc8_altivec
 #undef PREFIX_h264_chroma_mc8_num
 #undef PREFIX_h264_qpel16_h_lowpass_altivec
 #undef PREFIX_h264_qpel16_h_lowpass_num
@@ -973,8 +969,6 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
     if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
         c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
         c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
-        c->put_no_rnd_vc1_chroma_pixels_tab[0] = put_no_rnd_vc1_chroma_mc8_altivec;
-        c->avg_no_rnd_vc1_chroma_pixels_tab[0] = avg_no_rnd_vc1_chroma_mc8_altivec;
 
 #define dspfunc(PFX, IDX, NUM) \
         c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_altivec; \
