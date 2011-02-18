@@ -150,7 +150,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w,
 {
     AVFilterBufferRef *picref;
     int width = FFALIGN(w, 32);
-    int height= FFALIGN(h+6, 32);
+    int height= FFALIGN(h+2, 32);
     int i;
 
     picref = avfilter_default_get_video_buffer(link, perms, width, height);
@@ -159,7 +159,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w,
     picref->video->h = h;
 
     for (i = 0; i < 3; i++)
-        picref->data[i] += 3 * picref->linesize[i];
+        picref->data[i] += picref->linesize[i];
 
     return picref;
 }
