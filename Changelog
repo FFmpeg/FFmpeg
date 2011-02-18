@@ -6,7 +6,8 @@ version 0.5.4:
 - Fix memory corruption in wmv parsing (addresses CVE-2010-3908)
 - Fix heap corruption crashes (addresses CVE-2011-0722)
 - Fix crashes in vorbis decoding found by zzuf (addresses CVE-2010-4704)
-- Fix another crash in vorbis decoder (addresses CVE-2011-0480, Chrome issue 68115)
+- Fix another crash in vorbis decoding (addresses CVE-2011-0480, Chrome issue 68115)
+- Fix invalid reads in vc1 decoding (related to CVE-2011-0723)
 
 
 
