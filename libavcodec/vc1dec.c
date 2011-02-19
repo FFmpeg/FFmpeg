@@ -1365,7 +1365,7 @@ static void vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip, int *value,
     if (index != vc1_ac_sizes[codingset] - 1) {
         run = vc1_index_decode_table[codingset][index][0];
         level = vc1_index_decode_table[codingset][index][1];
-        lst = index >= vc1_last_decode_table[codingset];
+        lst = index >= vc1_last_decode_table[codingset] || get_bits_left(gb) < 0;
         if(get_bits1(gb))
             level = -level;
     } else {
