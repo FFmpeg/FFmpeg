@@ -115,6 +115,34 @@ int ff_mms_asf_header_parser(MMSContext *mms)
                        "Corrupt stream (too many A/V streams)\n");
                 return AVERROR_INVALIDDATA;
             }
+        } else if (!memcmp(p, ff_asf_ext_stream_header, sizeof(ff_asf_guid))) {
+            if (end - p >= 88) {
+                int stream_count = AV_RL16(p + 84), ext_len_count = AV_RL16(p + 86);
+                uint64_t skip_bytes = 88;
+                while (stream_count--) {
+                    if (end - p < skip_bytes + 4) {
+                        av_log(NULL, AV_LOG_ERROR,
+                               "Corrupt stream (next stream name length is not in the buffer)\n");
+                        return AVERROR_INVALIDDATA;
+                    }
+                    skip_bytes += 4 + AV_RL16(p + skip_bytes + 2);
+                }
+                while (ext_len_count--) {
+                    if (end - p < skip_bytes + 22) {
+                        av_log(NULL, AV_LOG_ERROR,
+                               "Corrupt stream (next extension system info length is not in the buffer)\n");
+                        return AVERROR_INVALIDDATA;
+                    }
+                    skip_bytes += 22 + AV_RL32(p + skip_bytes + 18);
+                }
+                if (end - p < skip_bytes) {
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Corrupt stream (the last extension system info length is invalid)\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                if (chunksize - skip_bytes > 24)
+                    chunksize = skip_bytes;
+            }
         } else if (!memcmp(p, ff_asf_head1_guid, sizeof(ff_asf_guid))) {
             chunksize = 46; // see references [2] section 3.4. This should be set 46.
         }
