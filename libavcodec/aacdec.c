@@ -1386,13 +1386,13 @@ static void apply_mid_side_stereo(AACContext *ac, ChannelElement *cpe)
  *                      [1] mask is decoded from bitstream; [2] mask is all 1s;
  *                      [3] reserved for scalable AAC
  */
-static void apply_intensity_stereo(ChannelElement *cpe, int ms_present)
+static void apply_intensity_stereo(AACContext *ac, ChannelElement *cpe, int ms_present)
 {
     const IndividualChannelStream *ics = &cpe->ch[1].ics;
     SingleChannelElement         *sce1 = &cpe->ch[1];
     float *coef0 = cpe->ch[0].coeffs, *coef1 = cpe->ch[1].coeffs;
     const uint16_t *offsets = ics->swb_offset;
-    int g, group, i, k, idx = 0;
+    int g, group, i, idx = 0;
     int c;
     float scale;
     for (g = 0; g < ics->num_window_groups; g++) {
@@ -1405,8 +1405,10 @@ static void apply_intensity_stereo(ChannelElement *cpe, int ms_present)
                         c *= 1 - 2 * cpe->ms_mask[idx];
                     scale = c * sce1->sf[idx];
                     for (group = 0; group < ics->group_len[g]; group++)
-                        for (k = offsets[i]; k < offsets[i + 1]; k++)
-                            coef1[group * 128 + k] = scale * coef0[group * 128 + k];
+                        ac->dsp.vector_fmul_scalar(coef1 + group * 128 + offsets[i],
+                                                   coef0 + group * 128 + offsets[i],
+                                                   scale,
+                                                   offsets[i + 1] - offsets[i]);
                 }
             } else {
                 int bt_run_end = sce1->band_type_run_end[idx];
@@ -1459,7 +1461,7 @@ static int decode_cpe(AACContext *ac, GetBitContext *gb, ChannelElement *cpe)
         }
     }
 
-    apply_intensity_stereo(cpe, ms_present);
+    apply_intensity_stereo(ac, cpe, ms_present);
     return 0;
 }
 
