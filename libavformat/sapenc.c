@@ -240,7 +240,7 @@ static int sap_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!sap->last_time || now - sap->last_time > 5000000) {
         int ret = url_write(sap->ann_fd, sap->ann, sap->ann_size);
         /* Don't abort even if we get "Destination unreachable" */
-        if (ret < 0 && ret != FF_NETERROR(ECONNREFUSED))
+        if (ret < 0 && ret != AVERROR(ECONNREFUSED))
             return ret;
         sap->last_time = now;
     }

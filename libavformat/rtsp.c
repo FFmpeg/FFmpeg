@@ -1528,7 +1528,7 @@ redirect:
             goto fail;
         lower_transport_mask &= ~(1 << lower_transport);
         if (lower_transport_mask == 0 && err == 1) {
-            err = FF_NETERROR(EPROTONOSUPPORT);
+            err = AVERROR(EPROTONOSUPPORT);
             goto fail;
         }
     } while (err);
@@ -1615,7 +1615,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             }
 #endif
         } else if (n == 0 && ++timeout_cnt >= MAX_TIMEOUTS) {
-            return FF_NETERROR(ETIMEDOUT);
+            return AVERROR(ETIMEDOUT);
         } else if (n < 0 && errno != EINTR)
             return AVERROR(errno);
     }

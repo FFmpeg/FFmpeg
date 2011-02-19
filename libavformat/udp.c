@@ -455,7 +455,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
             return AVERROR(EINTR);
         ret = poll(&p, 1, 100);
         if (ret < 0) {
-            if (ff_neterrno() == FF_NETERROR(EINTR))
+            if (ff_neterrno() == AVERROR(EINTR))
                 continue;
             return AVERROR(EIO);
         }
@@ -463,8 +463,8 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
             continue;
         len = recv(s->udp_fd, buf, size, 0);
         if (len < 0) {
-            if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
-                ff_neterrno() != FF_NETERROR(EINTR))
+            if (ff_neterrno() != AVERROR(EAGAIN) &&
+                ff_neterrno() != AVERROR(EINTR))
                 return AVERROR(EIO);
         } else {
             break;
@@ -486,8 +486,8 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
         } else
             ret = send(s->udp_fd, buf, size, 0);
         if (ret < 0) {
-            if (ff_neterrno() != FF_NETERROR(EINTR) &&
-                ff_neterrno() != FF_NETERROR(EAGAIN))
+            if (ff_neterrno() != AVERROR(EINTR) &&
+                ff_neterrno() != AVERROR(EAGAIN))
                 return ff_neterrno();
         } else {
             break;
