@@ -23,6 +23,8 @@
 #ifndef AVCODEC_DXVA_INTERNAL_H
 #define AVCODEC_DXVA_INTERNAL_H
 
+#define _WIN32_WINNT 0x0600
+#define COBJMACROS
 #include "dxva2.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
