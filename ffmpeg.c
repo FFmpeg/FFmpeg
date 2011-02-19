@@ -1698,7 +1698,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         av_init_packet(&opkt);
 
                         if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) && !copy_initial_nonkeyframes)
-                            continue;
+                            goto cont;
 
                         /* no reencoding needed : output the packet directly */
                         /* force the input stream PTS */
@@ -1746,6 +1746,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         ost->frame_number++;
                         av_free_packet(&opkt);
                     }
+                    cont:
 #if CONFIG_AVFILTER
                     frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
                                        ost->output_video_filter && avfilter_poll_frame(ost->output_video_filter->inputs[0]);
