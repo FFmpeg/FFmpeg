@@ -1459,8 +1459,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 
                         if(src_x<0 || src_y<0 || src_x + 9 >= plane_width || src_y + 9 >= plane_height){
                             uint8_t *temp= s->edge_emu_buffer;
-                            if(stride<0) temp -= 9*stride;
-                            else temp += 9*stride;
+                            if(stride<0) temp -= 8*stride;
 
                             s->dsp.emulated_edge_mc(temp, motion_source, stride, 9, 9, src_x, src_y, plane_width, plane_height);
                             motion_source= temp;
