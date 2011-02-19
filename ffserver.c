@@ -692,8 +692,8 @@ static int http_server(void)
            second to handle timeouts */
         do {
             ret = poll(poll_table, poll_entry - poll_table, delay);
-            if (ret < 0 && ff_neterrno() != FF_NETERROR(EAGAIN) &&
-                ff_neterrno() != FF_NETERROR(EINTR))
+            if (ret < 0 && ff_neterrno() != AVERROR(EAGAIN) &&
+                ff_neterrno() != AVERROR(EINTR))
                 return -1;
         } while (ret < 0);
 
@@ -916,8 +916,8 @@ static int handle_connection(HTTPContext *c)
     read_loop:
         len = recv(c->fd, c->buffer_ptr, 1, 0);
         if (len < 0) {
-            if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
-                ff_neterrno() != FF_NETERROR(EINTR))
+            if (ff_neterrno() != AVERROR(EAGAIN) &&
+                ff_neterrno() != AVERROR(EINTR))
                 return -1;
         } else if (len == 0) {
             return -1;
@@ -952,8 +952,8 @@ static int handle_connection(HTTPContext *c)
             return 0;
         len = send(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr, 0);
         if (len < 0) {
-            if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
-                ff_neterrno() != FF_NETERROR(EINTR)) {
+            if (ff_neterrno() != AVERROR(EAGAIN) &&
+                ff_neterrno() != AVERROR(EINTR)) {
                 /* error : close connection */
                 av_freep(&c->pb_buffer);
                 return -1;
@@ -1022,8 +1022,8 @@ static int handle_connection(HTTPContext *c)
             return 0;
         len = send(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr, 0);
         if (len < 0) {
-            if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
-                ff_neterrno() != FF_NETERROR(EINTR)) {
+            if (ff_neterrno() != AVERROR(EAGAIN) &&
+                ff_neterrno() != AVERROR(EINTR)) {
                 /* error : close connection */
                 av_freep(&c->pb_buffer);
                 return -1;
@@ -1049,8 +1049,8 @@ static int handle_connection(HTTPContext *c)
         len = send(c->fd, c->packet_buffer_ptr,
                     c->packet_buffer_end - c->packet_buffer_ptr, 0);
         if (len < 0) {
-            if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
-                ff_neterrno() != FF_NETERROR(EINTR)) {
+            if (ff_neterrno() != AVERROR(EAGAIN) &&
+                ff_neterrno() != AVERROR(EINTR)) {
                 /* error : close connection */
                 av_freep(&c->packet_buffer);
                 return -1;
@@ -2550,8 +2550,8 @@ static int http_send_data(HTTPContext *c)
                 /* TCP data output */
                 len = send(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr, 0);
                 if (len < 0) {
-                    if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
-                        ff_neterrno() != FF_NETERROR(EINTR))
+                    if (ff_neterrno() != AVERROR(EAGAIN) &&
+                        ff_neterrno() != AVERROR(EINTR))
                         /* error : close connection */
                         return -1;
                     else
@@ -2624,8 +2624,8 @@ static int http_receive_data(HTTPContext *c)
         len = recv(c->fd, c->buffer_ptr, 1, 0);
 
         if (len < 0) {
-            if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
-                ff_neterrno() != FF_NETERROR(EINTR))
+            if (ff_neterrno() != AVERROR(EAGAIN) &&
+                ff_neterrno() != AVERROR(EINTR))
                 /* error : close connection */
                 goto fail;
             return 0;
@@ -2651,8 +2651,8 @@ static int http_receive_data(HTTPContext *c)
         len = recv(c->fd, c->buffer_ptr,
                    FFMIN(c->chunk_size, c->buffer_end - c->buffer_ptr), 0);
         if (len < 0) {
-            if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
-                ff_neterrno() != FF_NETERROR(EINTR))
+            if (ff_neterrno() != AVERROR(EAGAIN) &&
+                ff_neterrno() != AVERROR(EINTR))
                 /* error : close connection */
                 goto fail;
         } else if (len == 0)

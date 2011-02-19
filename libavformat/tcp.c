@@ -72,13 +72,13 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     ret = connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
     if (ret < 0) {
         struct pollfd p = {fd, POLLOUT, 0};
-        if (ff_neterrno() == FF_NETERROR(EINTR)) {
+        if (ff_neterrno() == AVERROR(EINTR)) {
             if (url_interrupt_cb())
                 goto fail1;
             goto redo;
         }
-        if (ff_neterrno() != FF_NETERROR(EINPROGRESS) &&
-            ff_neterrno() != FF_NETERROR(EAGAIN))
+        if (ff_neterrno() != AVERROR(EINPROGRESS) &&
+            ff_neterrno() != AVERROR(EAGAIN))
             goto fail;
 
         /* wait until we are connected or until abort */
@@ -136,7 +136,7 @@ static int tcp_wait_fd(int fd, int write)
     int ret;
 
     ret = poll(&p, 1, 100);
-    return ret < 0 ? ff_neterrno() : p.revents & ev ? 0 : FF_NETERROR(EAGAIN);
+    return ret < 0 ? ff_neterrno() : p.revents & ev ? 0 : AVERROR(EAGAIN);
 }
 
 static int tcp_read(URLContext *h, uint8_t *buf, int size)

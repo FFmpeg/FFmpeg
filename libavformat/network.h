@@ -27,9 +27,21 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#define ff_neterrno() (-WSAGetLastError())
-#define FF_NETERROR(err) (-WSA##err)
-#define WSAEAGAIN WSAEWOULDBLOCK
+#define EPROTONOSUPPORT WSAEPROTONOSUPPORT
+#define ETIMEDOUT       WSAETIMEDOUT
+#define ECONNREFUSED    WSAECONNREFUSED
+#define EINPROGRESS     WSAEINPROGRESS
+
+static inline int ff_neterrno() {
+    int err = WSAGetLastError();
+    switch (err) {
+    case WSAEWOULDBLOCK:
+        return AVERROR(EAGAIN);
+    case WSAEINTR:
+        return AVERROR(EINTR);
+    }
+    return -err;
+}
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -37,7 +49,6 @@
 #include <netdb.h>
 
 #define ff_neterrno() AVERROR(errno)
-#define FF_NETERROR(err) AVERROR(err)
 #endif
 
 #if HAVE_ARPA_INET_H

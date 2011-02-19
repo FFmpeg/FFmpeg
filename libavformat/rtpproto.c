@@ -231,8 +231,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
         len = recvfrom (s->rtp_fd, buf, size, 0,
                         (struct sockaddr *)&from, &from_len);
         if (len < 0) {
-            if (ff_neterrno() == FF_NETERROR(EAGAIN) ||
-                ff_neterrno() == FF_NETERROR(EINTR))
+            if (ff_neterrno() == AVERROR(EAGAIN) ||
+                ff_neterrno() == AVERROR(EINTR))
                 continue;
             return AVERROR(EIO);
         }
@@ -251,8 +251,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 len = recvfrom (s->rtcp_fd, buf, size, 0,
                                 (struct sockaddr *)&from, &from_len);
                 if (len < 0) {
-                    if (ff_neterrno() == FF_NETERROR(EAGAIN) ||
-                        ff_neterrno() == FF_NETERROR(EINTR))
+                    if (ff_neterrno() == AVERROR(EAGAIN) ||
+                        ff_neterrno() == AVERROR(EINTR))
                         continue;
                     return AVERROR(EIO);
                 }
@@ -264,15 +264,15 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 len = recvfrom (s->rtp_fd, buf, size, 0,
                                 (struct sockaddr *)&from, &from_len);
                 if (len < 0) {
-                    if (ff_neterrno() == FF_NETERROR(EAGAIN) ||
-                        ff_neterrno() == FF_NETERROR(EINTR))
+                    if (ff_neterrno() == AVERROR(EAGAIN) ||
+                        ff_neterrno() == AVERROR(EINTR))
                         continue;
                     return AVERROR(EIO);
                 }
                 break;
             }
         } else if (n < 0) {
-            if (ff_neterrno() == FF_NETERROR(EINTR))
+            if (ff_neterrno() == AVERROR(EINTR))
                 continue;
             return AVERROR(EIO);
         }
