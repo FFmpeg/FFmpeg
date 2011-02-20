@@ -437,8 +437,8 @@ static void diff_pixels_c(DCTELEM *restrict block, const uint8_t *s1,
 }
 
 
-static void put_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
-                                 int line_size)
+void ff_put_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
+                             int line_size)
 {
     int i;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
@@ -493,9 +493,9 @@ static void put_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels
     }
 }
 
-static void put_signed_pixels_clamped_c(const DCTELEM *block,
-                                        uint8_t *restrict pixels,
-                                        int line_size)
+void ff_put_signed_pixels_clamped_c(const DCTELEM *block,
+                                    uint8_t *restrict pixels,
+                                    int line_size)
 {
     int i, j;
 
@@ -535,8 +535,8 @@ static void put_pixels_nonclamped_c(const DCTELEM *block, uint8_t *restrict pixe
     }
 }
 
-static void add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
-                          int line_size)
+void ff_add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
+                             int line_size)
 {
     int i;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
@@ -3961,22 +3961,22 @@ void ff_wmv2_idct_c(short * block){
 static void ff_wmv2_idct_put_c(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_wmv2_idct_c(block);
-    put_pixels_clamped_c(block, dest, line_size);
+    ff_put_pixels_clamped_c(block, dest, line_size);
 }
 static void ff_wmv2_idct_add_c(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_wmv2_idct_c(block);
-    add_pixels_clamped_c(block, dest, line_size);
+    ff_add_pixels_clamped_c(block, dest, line_size);
 }
 static void ff_jref_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     j_rev_dct (block);
-    put_pixels_clamped_c(block, dest, line_size);
+    ff_put_pixels_clamped_c(block, dest, line_size);
 }
 static void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     j_rev_dct (block);
-    add_pixels_clamped_c(block, dest, line_size);
+    ff_add_pixels_clamped_c(block, dest, line_size);
 }
 
 static void ff_jref_idct4_put(uint8_t *dest, int line_size, DCTELEM *block)
@@ -4135,10 +4135,10 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     c->get_pixels = get_pixels_c;
     c->diff_pixels = diff_pixels_c;
-    c->put_pixels_clamped = put_pixels_clamped_c;
-    c->put_signed_pixels_clamped = put_signed_pixels_clamped_c;
+    c->put_pixels_clamped = ff_put_pixels_clamped_c;
+    c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_c;
     c->put_pixels_nonclamped = put_pixels_nonclamped_c;
-    c->add_pixels_clamped = add_pixels_clamped_c;
+    c->add_pixels_clamped = ff_add_pixels_clamped_c;
     c->add_pixels8 = add_pixels8_c;
     c->add_pixels4 = add_pixels4_c;
     c->sum_abs_dctelem = sum_abs_dctelem_c;
