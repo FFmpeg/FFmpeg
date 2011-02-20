@@ -1,6 +1,6 @@
 /*
  * Bink Audio decoder
- * Copyright (c) 2007-2010 Peter Ross (pross@xvid.org)
+ * Copyright (c) 2007-2011 Peter Ross (pross@xvid.org)
  * Copyright (c) 2009 Daniel Verkamp (daniel@drv.nu)
  *
  * This file is part of FFmpeg.
@@ -34,6 +34,7 @@
 #include "dsputil.h"
 #include "fft.h"
 #include "fmtconvert.h"
+#include "libavutil/intfloat_readwrite.h"
 
 extern const uint16_t ff_wma_critical_freqs[25];
 
@@ -44,6 +45,7 @@ typedef struct {
     GetBitContext gb;
     DSPContext dsp;
     FmtConvertContext fmt_conv;
+    int version_b;          ///< Bink version 'b'
     int first;
     int channels;
     int frame_len;          ///< transform size (samples)
@@ -87,11 +89,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    s->version_b = avctx->codec_tag == MKTAG('B','I','K','b');
+
     if (avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT) {
         // audio is already interleaved for the RDFT format variant
         sample_rate  *= avctx->channels;
         s->channels = 1;
-        frame_len_bits += av_log2(avctx->channels);
+        if (!s->version_b)
+            frame_len_bits += av_log2(avctx->channels);
     } else {
         s->channels = avctx->channels;
     }
@@ -162,8 +167,13 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
 
     for (ch = 0; ch < s->channels; ch++) {
         FFTSample *coeffs = s->coeffs_ptr[ch];
-        coeffs[0] = get_float(gb) * s->root;
-        coeffs[1] = get_float(gb) * s->root;
+        if (s->version_b) {
+            coeffs[0] = av_int2flt(get_bits(gb, 32)) * s->root;
+            coeffs[1] = av_int2flt(get_bits(gb, 32)) * s->root;
+        } else {
+            coeffs[0] = get_float(gb) * s->root;
+            coeffs[1] = get_float(gb) * s->root;
+        }
 
         for (i = 0; i < s->num_bands; i++) {
             /* constant is result of 0.066399999/log10(M_E) */
@@ -177,7 +187,9 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
         // parse coefficients
         i = 2;
         while (i < s->frame_len) {
-            if (get_bits1(gb)) {
+            if (s->version_b) {
+                j = i + 16;
+            } else if (get_bits1(gb)) {
                 j = i + rle_length_tab[get_bits(gb, 4)] * 8;
             } else {
                 j = i + 8;
