@@ -198,6 +198,10 @@ void ff_emulated_edge_mc(uint8_t *buf, const uint8_t *src, int linesize,
                          int block_w, int block_h,
                          int src_x, int src_y, int w, int h);
 
+void ff_add_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
+void ff_put_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
+void ff_put_signed_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
+
 /**
  * DSPContext.
  */
