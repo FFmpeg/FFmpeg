@@ -143,7 +143,8 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
             ast->codec->channels = flags & BINK_AUD_STEREO ? 2 : 1;
         }
 
-        url_fskip(pb, 4 * bink->num_audio_tracks);
+        for (i = 0; i < bink->num_audio_tracks; i++)
+            s->streams[i + 1]->id = avio_rl32(pb);
     }
 
     /* frame index table */
