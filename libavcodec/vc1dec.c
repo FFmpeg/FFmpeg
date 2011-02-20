@@ -187,39 +187,6 @@ static void vc1_loop_filter_iblk(VC1Context *v, int pq)
     }
 }
 
-/** Put block onto picture
- */
-static void vc1_put_block(VC1Context *v, DCTELEM block[6][64])
-{
-    uint8_t *Y;
-    int ys, us, vs;
-    DSPContext *dsp = &v->s.dsp;
-
-    if(v->rangeredfrm) {
-        int i, j, k;
-        for(k = 0; k < 6; k++)
-            for(j = 0; j < 8; j++)
-                for(i = 0; i < 8; i++)
-                    block[k][i + j*8] = (block[k][i + j*8] - 64) << 1;
-
-    }
-    ys = v->s.current_picture.linesize[0];
-    us = v->s.current_picture.linesize[1];
-    vs = v->s.current_picture.linesize[2];
-    Y = v->s.dest[0];
-
-    dsp->put_pixels_clamped(block[0], Y, ys);
-    dsp->put_pixels_clamped(block[1], Y + 8, ys);
-    Y += ys * 8;
-    dsp->put_pixels_clamped(block[2], Y, ys);
-    dsp->put_pixels_clamped(block[3], Y + 8, ys);
-
-    if(!(v->s.flags & CODEC_FLAG_GRAY)) {
-        dsp->put_pixels_clamped(block[4], v->s.dest[1], us);
-        dsp->put_pixels_clamped(block[5], v->s.dest[2], vs);
-    }
-}
-
 /** Do motion compensation over 1 macroblock
  * Mostly adapted hpel_motion and qpel_motion from mpegvideo.c
  */
@@ -2627,7 +2594,14 @@ static void vc1_decode_i_blocks(VC1Context *v)
         s->mb_x = 0;
         ff_init_block_index(s);
         for(; s->mb_x < s->mb_width; s->mb_x++) {
+            uint8_t *dst[6];
             ff_update_block_index(s);
+            dst[0] = s->dest[0];
+            dst[1] = dst[0] + 8;
+            dst[2] = s->dest[0] + s->linesize * 8;
+            dst[3] = dst[2] + 8;
+            dst[4] = s->dest[1];
+            dst[5] = s->dest[2];
             s->dsp.clear_blocks(s->block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_width;
             s->current_picture.mb_type[mb_pos] = MB_TYPE_INTRA;
@@ -2651,13 +2625,17 @@ static void vc1_decode_i_blocks(VC1Context *v)
 
                 vc1_decode_i_block(v, s->block[k], k, val, (k<4)? v->codingset : v->codingset2);
 
+                if (k > 3 && (s->flags & CODEC_FLAG_GRAY)) continue;
                 v->vc1dsp.vc1_inv_trans_8x8(s->block[k]);
                 if(v->pq >= 9 && v->overlap) {
-                    for(j = 0; j < 64; j++) s->block[k][j] += 128;
+                    if (v->rangeredfrm) for(j = 0; j < 64; j++) s->block[k][j] <<= 1;
+                    s->dsp.put_signed_pixels_clamped(s->block[k], dst[k], k & 4 ? s->uvlinesize : s->linesize);
+                } else {
+                    if (v->rangeredfrm) for(j = 0; j < 64; j++) s->block[k][j] = (s->block[k][j] - 64) << 1;
+                    s->dsp.put_pixels_clamped(s->block[k], dst[k], k & 4 ? s->uvlinesize : s->linesize);
                 }
             }
 
-            vc1_put_block(v, s->block);
             if(v->pq >= 9 && v->overlap) {
                 if(s->mb_x) {
                     v->vc1dsp.vc1_h_overlap(s->dest[0], s->linesize);
