@@ -36,7 +36,7 @@
          : "0" (index));
 
 #define xgetbv(index,eax,edx)                                   \
-    __asm__ ("xgetbv" : "=a"(eax), "=d"(edx) : "c" (index))
+    __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
 
 /* Function to test if multimedia instructions are supported...  */
 int ff_get_cpu_flags_x86(void)
