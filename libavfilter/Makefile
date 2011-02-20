@@ -11,6 +11,7 @@ OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
        avfiltergraph.o                                                  \
        defaults.o                                                       \
+       drawutils.o                                                      \
        formats.o                                                        \
        graphparser.o                                                    \
 
