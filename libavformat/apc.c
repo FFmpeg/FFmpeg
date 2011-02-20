@@ -32,7 +32,7 @@ static int apc_probe(AVProbeData *p)
 
 static int apc_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
 
     get_le32(pb); /* CRYO */

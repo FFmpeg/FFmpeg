@@ -44,7 +44,7 @@ typedef struct {
 #define BUFFER_DURATION 0
 
 
-static void put_str(ByteIOContext *s, const char *tag)
+static void put_str(AVIOContext *s, const char *tag)
 {
     put_be16(s,strlen(tag));
     while (*tag) {
@@ -52,7 +52,7 @@ static void put_str(ByteIOContext *s, const char *tag)
     }
 }
 
-static void put_str8(ByteIOContext *s, const char *tag)
+static void put_str8(AVIOContext *s, const char *tag)
 {
     put_byte(s, strlen(tag));
     while (*tag) {
@@ -64,7 +64,7 @@ static int rv10_write_header(AVFormatContext *ctx,
                              int data_size, int index_pos)
 {
     RMMuxContext *rm = ctx->priv_data;
-    ByteIOContext *s = ctx->pb;
+    AVIOContext *s = ctx->pb;
     StreamInfo *stream;
     unsigned char *data_offset_ptr, *start_ptr;
     const char *desc, *mimetype;
@@ -283,7 +283,7 @@ static void write_packet_header(AVFormatContext *ctx, StreamInfo *stream,
                                 int length, int key_frame)
 {
     int timestamp;
-    ByteIOContext *s = ctx->pb;
+    AVIOContext *s = ctx->pb;
 
     stream->nb_packets++;
     stream->packet_total_size += length;
@@ -347,7 +347,7 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 {
     uint8_t *buf1;
     RMMuxContext *rm = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     StreamInfo *stream = rm->audio_stream;
     int i;
 
@@ -375,7 +375,7 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int flags)
 {
     RMMuxContext *rm = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     StreamInfo *stream = rm->video_stream;
     int key_frame = !!(flags & AV_PKT_FLAG_KEY);
 
@@ -430,7 +430,7 @@ static int rm_write_trailer(AVFormatContext *s)
 {
     RMMuxContext *rm = s->priv_data;
     int data_size, index_pos, i;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     if (!url_is_streamed(s->pb)) {
         /* end of file: finish to write header */

@@ -52,7 +52,7 @@ static int dxa_probe(AVProbeData *p)
 
 static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     DXAContext *c = s->priv_data;
     AVStream *st, *ast;
     uint32_t tag;

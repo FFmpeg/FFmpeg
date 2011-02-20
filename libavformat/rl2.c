@@ -74,7 +74,7 @@ static int rl2_probe(AVProbeData *p)
 static av_cold int rl2_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     unsigned int frame_count;
     unsigned int audio_frame_counter = 0;
@@ -214,7 +214,7 @@ static int rl2_read_packet(AVFormatContext *s,
                             AVPacket *pkt)
 {
     Rl2DemuxContext *rl2 = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVIndexEntry *sample = NULL;
     int i;
     int ret = 0;

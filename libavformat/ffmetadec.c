@@ -30,7 +30,7 @@ static int probe(AVProbeData *p)
     return 0;
 }
 
-static void get_line(ByteIOContext *s, uint8_t *buf, int size)
+static void get_line(AVIOContext *s, uint8_t *buf, int size)
 {
     do {
         uint8_t c;

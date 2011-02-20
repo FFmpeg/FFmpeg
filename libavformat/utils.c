@@ -323,7 +323,7 @@ FF_SYMVER(void, av_init_packet, (AVPacket *pkt), "LIBAVFORMAT_52")
 }
 #endif
 
-int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size)
+int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
 {
     int ret= av_new_packet(pkt, size);
 
@@ -341,7 +341,7 @@ int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size)
     return ret;
 }
 
-int av_append_packet(ByteIOContext *s, AVPacket *pkt, int size)
+int av_append_packet(AVIOContext *s, AVPacket *pkt, int size)
 {
     int ret;
     int old_size;
@@ -442,7 +442,7 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeDa
  * Open a media file from an IO stream. 'fmt' must be specified.
  */
 int av_open_input_stream(AVFormatContext **ic_ptr,
-                         ByteIOContext *pb, const char *filename,
+                         AVIOContext *pb, const char *filename,
                          AVInputFormat *fmt, AVFormatParameters *ap)
 {
     int err;
@@ -479,7 +479,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         ic->priv_data = NULL;
     }
 
-    // e.g. AVFMT_NOFILE formats will not have a ByteIOContext
+    // e.g. AVFMT_NOFILE formats will not have a AVIOContext
     if (ic->pb)
         ff_id3v2_read(ic, ID3v2_DEFAULT_MAGIC);
 
@@ -524,7 +524,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
 #define PROBE_BUF_MIN 2048
 #define PROBE_BUF_MAX (1<<20)
 
-int av_probe_input_buffer(ByteIOContext *pb, AVInputFormat **fmt,
+int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size)
 {
@@ -598,7 +598,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 {
     int err;
     AVProbeData probe_data, *pd = &probe_data;
-    ByteIOContext *pb = NULL;
+    AVIOContext *pb = NULL;
     void *logctx= ap && ap->prealloced_context ? *ic_ptr : NULL;
 
     pd->filename = "";
@@ -2620,7 +2620,7 @@ void avformat_free_context(AVFormatContext *s)
 
 void av_close_input_file(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->iformat->flags & AVFMT_NOFILE ? NULL : s->pb;
+    AVIOContext *pb = s->iformat->flags & AVFMT_NOFILE ? NULL : s->pb;
     av_close_input_stream(s);
     if (pb)
         url_fclose(pb);

@@ -25,7 +25,7 @@
 #include "ffmeta.h"
 
 
-static void write_escape_str(ByteIOContext *s, const uint8_t *str)
+static void write_escape_str(AVIOContext *s, const uint8_t *str)
 {
     const uint8_t *p = str;
 
@@ -37,7 +37,7 @@ static void write_escape_str(ByteIOContext *s, const uint8_t *str)
     }
 }
 
-static void write_tags(ByteIOContext *s, AVMetadata *m)
+static void write_tags(AVIOContext *s, AVMetadata *m)
 {
     AVMetadataTag *t = NULL;
     while ((t = av_metadata_get(m, "", t, AV_METADATA_IGNORE_SUFFIX))) {

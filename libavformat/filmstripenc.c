@@ -53,7 +53,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 static int write_trailer(AVFormatContext *s)
 {
     FilmstripMuxContext *film = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st = s->streams[0];
     int i;
 

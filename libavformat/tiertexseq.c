@@ -78,7 +78,7 @@ static int seq_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX / 4;
 }
 
-static int seq_init_frame_buffers(SeqDemuxContext *seq, ByteIOContext *pb)
+static int seq_init_frame_buffers(SeqDemuxContext *seq, AVIOContext *pb)
 {
     int i, sz;
     TiertexSeqFrameBuffer *seq_buffer;
@@ -102,7 +102,7 @@ static int seq_init_frame_buffers(SeqDemuxContext *seq, ByteIOContext *pb)
     return 0;
 }
 
-static int seq_fill_buffer(SeqDemuxContext *seq, ByteIOContext *pb, int buffer_num, unsigned int data_offs, int data_size)
+static int seq_fill_buffer(SeqDemuxContext *seq, AVIOContext *pb, int buffer_num, unsigned int data_offs, int data_size)
 {
     TiertexSeqFrameBuffer *seq_buffer;
 
@@ -121,7 +121,7 @@ static int seq_fill_buffer(SeqDemuxContext *seq, ByteIOContext *pb, int buffer_n
     return 0;
 }
 
-static int seq_parse_frame_data(SeqDemuxContext *seq, ByteIOContext *pb)
+static int seq_parse_frame_data(SeqDemuxContext *seq, AVIOContext *pb)
 {
     unsigned int offset_table[4], buffer_num[4];
     TiertexSeqFrameBuffer *seq_buffer;
@@ -184,7 +184,7 @@ static int seq_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     int i, rc;
     SeqDemuxContext *seq = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
 
     /* init internal buffers */
@@ -241,7 +241,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int rc;
     SeqDemuxContext *seq = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     if (!seq->audio_buffer_full) {
         rc = seq_parse_frame_data(seq, pb);

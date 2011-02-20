@@ -30,7 +30,7 @@
 
 int ff_sauce_read(AVFormatContext *avctx, uint64_t *fsize, int *got_width, int get_height)
 {
-    ByteIOContext *pb = avctx->pb;
+    AVIOContext *pb = avctx->pb;
     char buf[36];
     int datatype, filetype, t1, t2, nb_comments, flags;
     uint64_t start_pos = url_fsize(pb) - 128;

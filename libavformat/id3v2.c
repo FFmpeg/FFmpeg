@@ -50,7 +50,7 @@ int ff_id3v2_tag_len(const uint8_t * buf)
     return len;
 }
 
-static unsigned int get_size(ByteIOContext *s, int len)
+static unsigned int get_size(AVIOContext *s, int len)
 {
     int v = 0;
     while (len--)
@@ -58,13 +58,13 @@ static unsigned int get_size(ByteIOContext *s, int len)
     return v;
 }
 
-static void read_ttag(AVFormatContext *s, ByteIOContext *pb, int taglen, const char *key)
+static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen, const char *key)
 {
     char *q, dst[512];
     const char *val = NULL;
     int len, dstlen = sizeof(dst) - 1;
     unsigned genre;
-    unsigned int (*get)(ByteIOContext*) = get_be16;
+    unsigned int (*get)(AVIOContext*) = get_be16;
 
     dst[0] = 0;
     if (taglen < 1)
@@ -142,7 +142,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
     int64_t next;
     int taghdrlen;
     const char *reason;
-    ByteIOContext pb;
+    AVIOContext pb;
     unsigned char *buffer = NULL;
     int buffer_size = 0;
 

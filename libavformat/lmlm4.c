@@ -78,7 +78,7 @@ static int lmlm4_read_header(AVFormatContext *s, AVFormatParameters *ap) {
 }
 
 static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int ret;
     unsigned int frame_type, packet_size, padding, frame_size;
 

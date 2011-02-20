@@ -113,14 +113,14 @@ static int gxf_find_lines_index(AVStream *st)
     return -1;
 }
 
-static void gxf_write_padding(ByteIOContext *pb, int64_t to_pad)
+static void gxf_write_padding(AVIOContext *pb, int64_t to_pad)
 {
     for (; to_pad > 0; to_pad--) {
         put_byte(pb, 0);
     }
 }
 
-static int64_t updatePacketSize(ByteIOContext *pb, int64_t pos)
+static int64_t updatePacketSize(AVIOContext *pb, int64_t pos)
 {
     int64_t curpos;
     int size;
@@ -137,7 +137,7 @@ static int64_t updatePacketSize(ByteIOContext *pb, int64_t pos)
     return curpos - pos;
 }
 
-static int64_t updateSize(ByteIOContext *pb, int64_t pos)
+static int64_t updateSize(AVIOContext *pb, int64_t pos)
 {
     int64_t curpos;
 
@@ -148,7 +148,7 @@ static int64_t updateSize(ByteIOContext *pb, int64_t pos)
     return curpos - pos;
 }
 
-static void gxf_write_packet_header(ByteIOContext *pb, GXFPktType type)
+static void gxf_write_packet_header(AVIOContext *pb, GXFPktType type)
 {
     put_be32(pb, 0); /* packet leader for synchro */
     put_byte(pb, 1);
@@ -159,7 +159,7 @@ static void gxf_write_packet_header(ByteIOContext *pb, GXFPktType type)
     put_byte(pb, 0xE2); /* trailer 2 */
 }
 
-static int gxf_write_mpeg_auxiliary(ByteIOContext *pb, AVStream *st)
+static int gxf_write_mpeg_auxiliary(AVIOContext *pb, AVStream *st)
 {
     GXFStreamContext *sc = st->priv_data;
     char buffer[1024];
@@ -197,7 +197,7 @@ static int gxf_write_mpeg_auxiliary(ByteIOContext *pb, AVStream *st)
     return size + 3;
 }
 
-static int gxf_write_timecode_auxiliary(ByteIOContext *pb, GXFStreamContext *sc)
+static int gxf_write_timecode_auxiliary(AVIOContext *pb, GXFStreamContext *sc)
 {
     put_byte(pb, 0); /* fields */
     put_byte(pb, 0);  /* seconds */
@@ -210,7 +210,7 @@ static int gxf_write_timecode_auxiliary(ByteIOContext *pb, GXFStreamContext *sc)
 
 static int gxf_write_track_description(AVFormatContext *s, GXFStreamContext *sc, int index)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos;
     int mpeg = sc->track_type == 4 || sc->track_type == 9;
 
@@ -267,7 +267,7 @@ static int gxf_write_track_description(AVFormatContext *s, GXFStreamContext *sc,
 static int gxf_write_material_data_section(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos;
     const char *filename = strrchr(s->filename, '/');
 
@@ -315,7 +315,7 @@ static int gxf_write_material_data_section(AVFormatContext *s)
 static int gxf_write_track_description_section(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos;
     int i;
 
@@ -332,7 +332,7 @@ static int gxf_write_track_description_section(AVFormatContext *s)
 static int gxf_write_map_packet(AVFormatContext *s, int rewrite)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos = url_ftell(pb);
 
     if (!rewrite) {
@@ -362,7 +362,7 @@ static int gxf_write_map_packet(AVFormatContext *s, int rewrite)
 static int gxf_write_flt_packet(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos = url_ftell(pb);
     int fields_per_flt = (gxf->nb_fields+1) / 1000 + 1;
     int flt_entries = gxf->nb_fields / fields_per_flt;
@@ -387,7 +387,7 @@ static int gxf_write_flt_packet(AVFormatContext *s)
 static int gxf_write_umf_material_description(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int timecode_base = gxf->time_base.den == 60000 ? 60 : 50;
 
     // XXX drop frame
@@ -418,7 +418,7 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
 static int gxf_write_umf_payload(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     put_le32(pb, gxf->umf_length); /* total length of the umf data */
     put_le32(pb, 3); /* version */
@@ -437,7 +437,7 @@ static int gxf_write_umf_payload(AVFormatContext *s)
 
 static int gxf_write_umf_track_description(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     GXFContext *gxf = s->priv_data;
     int64_t pos = url_ftell(pb);
     int i;
@@ -455,7 +455,7 @@ static int gxf_write_umf_track_description(AVFormatContext *s)
     return url_ftell(pb) - pos;
 }
 
-static int gxf_write_umf_media_mpeg(ByteIOContext *pb, AVStream *st)
+static int gxf_write_umf_media_mpeg(AVIOContext *pb, AVStream *st)
 {
     GXFStreamContext *sc = st->priv_data;
 
@@ -478,7 +478,7 @@ static int gxf_write_umf_media_mpeg(ByteIOContext *pb, AVStream *st)
     return 32;
 }
 
-static int gxf_write_umf_media_timecode(ByteIOContext *pb, GXFStreamContext *sc)
+static int gxf_write_umf_media_timecode(AVIOContext *pb, GXFStreamContext *sc)
 {
     put_le32(pb, 1); /* non drop frame */
     put_le32(pb, 0); /* reserved */
@@ -491,7 +491,7 @@ static int gxf_write_umf_media_timecode(ByteIOContext *pb, GXFStreamContext *sc)
     return 32;
 }
 
-static int gxf_write_umf_media_dv(ByteIOContext *pb, GXFStreamContext *sc)
+static int gxf_write_umf_media_dv(AVIOContext *pb, GXFStreamContext *sc)
 {
     int i;
 
@@ -501,7 +501,7 @@ static int gxf_write_umf_media_dv(ByteIOContext *pb, GXFStreamContext *sc)
     return 32;
 }
 
-static int gxf_write_umf_media_audio(ByteIOContext *pb, GXFStreamContext *sc)
+static int gxf_write_umf_media_audio(AVIOContext *pb, GXFStreamContext *sc)
 {
     put_le64(pb, av_dbl2int(1)); /* sound level to begin to */
     put_le64(pb, av_dbl2int(1)); /* sound level to begin to */
@@ -513,7 +513,7 @@ static int gxf_write_umf_media_audio(ByteIOContext *pb, GXFStreamContext *sc)
 }
 
 #if 0
-static int gxf_write_umf_media_mjpeg(ByteIOContext *pb, GXFStreamContext *sc)
+static int gxf_write_umf_media_mjpeg(AVIOContext *pb, GXFStreamContext *sc)
 {
     put_be64(pb, 0); /* FIXME FLOAT max chroma quant level */
     put_be64(pb, 0); /* FIXME FLOAT max luma quant level */
@@ -526,7 +526,7 @@ static int gxf_write_umf_media_mjpeg(ByteIOContext *pb, GXFStreamContext *sc)
 static int gxf_write_umf_media_description(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos;
     int i, j;
 
@@ -588,7 +588,7 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
 static int gxf_write_umf_packet(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos = url_ftell(pb);
 
     gxf_write_packet_header(pb, PKT_UMF);
@@ -625,7 +625,7 @@ static void gxf_init_timecode_track(GXFStreamContext *sc, GXFStreamContext *vsc)
 
 static int gxf_write_header(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     GXFContext *gxf = s->priv_data;
     GXFStreamContext *vsc = NULL;
     uint8_t tracks[255] = {0};
@@ -754,7 +754,7 @@ static int gxf_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int gxf_write_eos_packet(ByteIOContext *pb)
+static int gxf_write_eos_packet(AVIOContext *pb)
 {
     int64_t pos = url_ftell(pb);
 
@@ -765,7 +765,7 @@ static int gxf_write_eos_packet(ByteIOContext *pb)
 static int gxf_write_trailer(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t end;
     int i;
 
@@ -809,7 +809,7 @@ static int gxf_parse_mpeg_frame(GXFStreamContext *sc, const uint8_t *buf, int si
 static int gxf_write_media_preamble(AVFormatContext *s, AVPacket *pkt, int size)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st = s->streams[pkt->stream_index];
     GXFStreamContext *sc = st->priv_data;
     unsigned field_nb;
@@ -856,7 +856,7 @@ static int gxf_write_media_preamble(AVFormatContext *s, AVPacket *pkt, int size)
 static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st = s->streams[pkt->stream_index];
     int64_t pos = url_ftell(pb);
     int padding = 0;

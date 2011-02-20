@@ -42,7 +42,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
                                uint32_t *timestamp, const uint8_t *buf,
                                int len, int flags)
 {
-    ByteIOContext pb;
+    AVIOContext pb;
     GetBitContext gb;
     int packing_scheme, has_payload_desc, has_packet_info, alen,
         has_marker_bit = flags & RTP_FLAG_MARKER;

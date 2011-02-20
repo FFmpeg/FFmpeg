@@ -39,7 +39,7 @@ typedef struct {
     int sample_start_pos;
 } IssDemuxContext;
 
-static void get_token(ByteIOContext *s, char *buf, int maxlen)
+static void get_token(AVIOContext *s, char *buf, int maxlen)
 {
     int i = 0;
     char c;
@@ -68,7 +68,7 @@ static int iss_probe(AVProbeData *p)
 static av_cold int iss_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     IssDemuxContext *iss = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     char token[MAX_TOKEN_SIZE];
     int stereo, rate_divisor;

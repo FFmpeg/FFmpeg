@@ -33,7 +33,7 @@
 struct SAPState {
     URLContext *ann_fd;
     AVFormatContext *sdp_ctx;
-    ByteIOContext sdp_pb;
+    AVIOContext sdp_pb;
     uint16_t hash;
     char *sdp;
     int eof;

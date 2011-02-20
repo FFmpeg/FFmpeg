@@ -37,7 +37,7 @@ static int read_header(AVFormatContext *s,
                        AVFormatParameters *ap)
 {
     FilmstripDemuxContext *film = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
 
     if (url_is_streamed(s->pb))

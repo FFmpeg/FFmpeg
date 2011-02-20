@@ -50,13 +50,13 @@ struct segment {
 
 /*
  * Each variant has its own demuxer. If it currently is active,
- * it has an open ByteIOContext too, and potentially an AVPacket
+ * it has an open AVIOContext too, and potentially an AVPacket
  * containing the next packet from this stream.
  */
 struct variant {
     int bandwidth;
     char url[MAX_URL_SIZE];
-    ByteIOContext *pb;
+    AVIOContext *pb;
     AVFormatContext *ctx;
     AVPacket pkt;
     int stream_offset;
@@ -78,7 +78,7 @@ typedef struct AppleHTTPContext {
     int max_start_seq, min_end_seq;
 } AppleHTTPContext;
 
-static int read_chomp_line(ByteIOContext *s, char *buf, int maxlen)
+static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
 {
     int len = ff_get_line(s, buf, maxlen);
     while (len > 0 && isspace(buf[len - 1]))
@@ -202,7 +202,7 @@ static void handle_variant_args(struct variant_info *info, const char *key,
 }
 
 static int parse_playlist(AppleHTTPContext *c, const char *url,
-                          struct variant *var, ByteIOContext *in)
+                          struct variant *var, AVIOContext *in)
 {
     int ret = 0, duration = 0, is_segment = 0, is_variant = 0, bandwidth = 0;
     char line[1024];

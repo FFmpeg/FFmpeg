@@ -92,7 +92,7 @@ static int fourxm_probe(AVProbeData *p)
 static int fourxm_read_header(AVFormatContext *s,
                               AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int fourcc_tag;
     unsigned int size;
     int header_size;
@@ -244,7 +244,7 @@ static int fourxm_read_packet(AVFormatContext *s,
                               AVPacket *pkt)
 {
     FourxmDemuxContext *fourxm = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int fourcc_tag;
     unsigned int size, out_size;
     int ret = 0;

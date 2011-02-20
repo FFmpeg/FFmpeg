@@ -163,7 +163,7 @@ typedef struct HTTPContext {
 
     /* RTSP state specific */
     uint8_t *pb_buffer; /* XXX: use that in all the code */
-    ByteIOContext *pb;
+    AVIOContext *pb;
     int seq; /* RTSP sequence number */
 
     /* RTP state specific */
@@ -1854,7 +1854,7 @@ static int http_parse_request(HTTPContext *c)
     return 0;
 }
 
-static void fmt_bytecount(ByteIOContext *pb, int64_t count)
+static void fmt_bytecount(AVIOContext *pb, int64_t count)
 {
     static const char *suffix = " kMGTP";
     const char *s;
@@ -1871,7 +1871,7 @@ static void compute_status(HTTPContext *c)
     char *p;
     time_t ti;
     int i, len;
-    ByteIOContext *pb;
+    AVIOContext *pb;
 
     if (url_open_dyn_buf(&pb) < 0) {
         /* XXX: return an error ? */
@@ -2491,7 +2491,7 @@ static int http_send_data(HTTPContext *c)
 
                 if (c->rtp_protocol == RTSP_LOWER_TRANSPORT_TCP) {
                     /* RTP packets are sent inside the RTSP TCP connection */
-                    ByteIOContext *pb;
+                    AVIOContext *pb;
                     int interleaved_index, size;
                     uint8_t header[4];
                     HTTPContext *rtsp_c;
@@ -2712,7 +2712,7 @@ static int http_receive_data(HTTPContext *c)
         } else {
             /* We have a header in our hands that contains useful data */
             AVFormatContext *s = NULL;
-            ByteIOContext *pb;
+            AVIOContext *pb;
             AVInputFormat *fmt_in;
             int i;
 

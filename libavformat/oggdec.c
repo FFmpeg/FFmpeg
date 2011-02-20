@@ -84,7 +84,7 @@ static int
 ogg_restore (AVFormatContext * s, int discard)
 {
     struct ogg *ogg = s->priv_data;
-    ByteIOContext *bc = s->pb;
+    AVIOContext *bc = s->pb;
     struct ogg_state *ost = ogg->state;
     int i;
 
@@ -194,7 +194,7 @@ ogg_new_buf(struct ogg *ogg, int idx)
 static int
 ogg_read_page (AVFormatContext * s, int *str)
 {
-    ByteIOContext *bc = s->pb;
+    AVIOContext *bc = s->pb;
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os;
     int i = 0;
@@ -601,7 +601,7 @@ ogg_read_timestamp (AVFormatContext * s, int stream_index, int64_t * pos_arg,
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + stream_index;
-    ByteIOContext *bc = s->pb;
+    AVIOContext *bc = s->pb;
     int64_t pts = AV_NOPTS_VALUE;
     int i;
     url_fseek(bc, *pos_arg, SEEK_SET);

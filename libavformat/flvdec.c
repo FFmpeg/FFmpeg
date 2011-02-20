@@ -110,7 +110,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
     return 0;
 }
 
-static int amf_get_string(ByteIOContext *ioc, char *buffer, int buffsize) {
+static int amf_get_string(AVIOContext *ioc, char *buffer, int buffsize) {
     int length = get_be16(ioc);
     if(length >= buffsize) {
         url_fskip(ioc, length);
@@ -126,7 +126,7 @@ static int amf_get_string(ByteIOContext *ioc, char *buffer, int buffsize) {
 
 static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vstream, const char *key, int64_t max_pos, int depth) {
     AVCodecContext *acodec, *vcodec;
-    ByteIOContext *ioc;
+    AVIOContext *ioc;
     AMFDataType amf_type;
     char str_val[256];
     double num_val;
@@ -213,7 +213,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
 static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     AMFDataType type;
     AVStream *stream, *astream, *vstream;
-    ByteIOContext *ioc;
+    AVIOContext *ioc;
     int i;
     char buffer[11]; //only needs to hold the string "onMetaData". Anything longer is something we don't want.
 

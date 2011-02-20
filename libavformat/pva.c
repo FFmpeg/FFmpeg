@@ -67,7 +67,7 @@ static int pva_read_header(AVFormatContext *s, AVFormatParameters *ap) {
 
 static int read_part_of_packet(AVFormatContext *s, int64_t *pts,
                                int *len, int *strid, int read_packet) {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     PVAContext *pvactx = s->priv_data;
     int syncword, streamid, reserved, flags, length, pts_flag;
     int64_t pva_pts = AV_NOPTS_VALUE, startpos;
@@ -157,7 +157,7 @@ recover:
 }
 
 static int pva_read_packet(AVFormatContext *s, AVPacket *pkt) {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pva_pts;
     int ret, length, streamid;
 
@@ -173,7 +173,7 @@ static int pva_read_packet(AVFormatContext *s, AVPacket *pkt) {
 
 static int64_t pva_read_timestamp(struct AVFormatContext *s, int stream_index,
                                           int64_t *pos, int64_t pos_limit) {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     PVAContext *pvactx = s->priv_data;
     int length, streamid;
     int64_t res = AV_NOPTS_VALUE;

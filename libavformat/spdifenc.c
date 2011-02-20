@@ -473,7 +473,7 @@ static int spdif_write_trailer(AVFormatContext *s)
 }
 
 static av_always_inline void spdif_put_16(IEC61937Context *ctx,
-                                          ByteIOContext *pb, unsigned int val)
+                                          AVIOContext *pb, unsigned int val)
 {
     if (ctx->spdif_flags & SPDIF_FLAG_BIGENDIAN)
         put_be16(pb, val);

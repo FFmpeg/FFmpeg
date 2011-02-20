@@ -178,6 +178,6 @@ static av_always_inline int ff_guidcmp(const void *g1, const void *g2)
     return memcmp(g1, g2, sizeof(ff_asf_guid));
 }
 
-void ff_get_guid(ByteIOContext *s, ff_asf_guid *g);
+void ff_get_guid(AVIOContext *s, ff_asf_guid *g);
 
 #endif /* AVFORMAT_ASF_H */

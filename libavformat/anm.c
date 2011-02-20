@@ -79,7 +79,7 @@ static int read_header(AVFormatContext *s,
                        AVFormatParameters *ap)
 {
     AnmDemuxContext *anm = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     int i, ret;
 
@@ -177,7 +177,7 @@ static int read_packet(AVFormatContext *s,
                        AVPacket *pkt)
 {
     AnmDemuxContext *anm = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     Page *p;
     int tmp, record_size;
 

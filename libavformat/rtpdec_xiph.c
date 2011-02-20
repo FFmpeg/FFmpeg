@@ -42,7 +42,7 @@
 struct PayloadContext {
     unsigned ident;             ///< 24-bit stream configuration identifier
     uint32_t timestamp;
-    ByteIOContext* fragment;    ///< buffer for split payloads
+    AVIOContext* fragment;    ///< buffer for split payloads
     uint8_t *split_buf;
     int split_pos, split_buf_len, split_buf_size;
     int split_pkts;

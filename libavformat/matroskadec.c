@@ -515,7 +515,7 @@ static const char *matroska_doctypes[] = { "matroska", "webm" };
  */
 static int ebml_level_end(MatroskaDemuxContext *matroska)
 {
-    ByteIOContext *pb = matroska->ctx->pb;
+    AVIOContext *pb = matroska->ctx->pb;
     int64_t pos = url_ftell(pb);
 
     if (matroska->num_levels > 0) {
@@ -536,7 +536,7 @@ static int ebml_level_end(MatroskaDemuxContext *matroska)
  * number.
  * Returns: number of bytes read, < 0 on error
  */
-static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
+static int ebml_read_num(MatroskaDemuxContext *matroska, AVIOContext *pb,
                          int max_size, uint64_t *number)
 {
     int read = 1, n = 1;
@@ -581,7 +581,7 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
  * This needs special handling for the "unknown length" case which has multiple
  * encodings.
  */
-static int ebml_read_length(MatroskaDemuxContext *matroska, ByteIOContext *pb,
+static int ebml_read_length(MatroskaDemuxContext *matroska, AVIOContext *pb,
                             uint64_t *number)
 {
     int res = ebml_read_num(matroska, pb, 8, number);
@@ -594,7 +594,7 @@ static int ebml_read_length(MatroskaDemuxContext *matroska, ByteIOContext *pb,
  * Read the next element as an unsigned int.
  * 0 is success, < 0 is failure.
  */
-static int ebml_read_uint(ByteIOContext *pb, int size, uint64_t *num)
+static int ebml_read_uint(AVIOContext *pb, int size, uint64_t *num)
 {
     int n = 0;
 
@@ -613,7 +613,7 @@ static int ebml_read_uint(ByteIOContext *pb, int size, uint64_t *num)
  * Read the next element as a float.
  * 0 is success, < 0 is failure.
  */
-static int ebml_read_float(ByteIOContext *pb, int size, double *num)
+static int ebml_read_float(AVIOContext *pb, int size, double *num)
 {
     if (size == 0) {
         *num = 0;
@@ -631,7 +631,7 @@ static int ebml_read_float(ByteIOContext *pb, int size, double *num)
  * Read the next element as an ASCII string.
  * 0 is success, < 0 is failure.
  */
-static int ebml_read_ascii(ByteIOContext *pb, int size, char **str)
+static int ebml_read_ascii(AVIOContext *pb, int size, char **str)
 {
     av_free(*str);
     /* EBML strings are usually not 0-terminated, so we allocate one
@@ -651,7 +651,7 @@ static int ebml_read_ascii(ByteIOContext *pb, int size, char **str)
  * Read the next element as binary data.
  * 0 is success, < 0 is failure.
  */
-static int ebml_read_binary(ByteIOContext *pb, int length, EbmlBin *bin)
+static int ebml_read_binary(AVIOContext *pb, int length, EbmlBin *bin)
 {
     av_free(bin->data);
     if (!(bin->data = av_malloc(length)))
@@ -674,7 +674,7 @@ static int ebml_read_binary(ByteIOContext *pb, int length, EbmlBin *bin)
  */
 static int ebml_read_master(MatroskaDemuxContext *matroska, uint64_t length)
 {
-    ByteIOContext *pb = matroska->ctx->pb;
+    AVIOContext *pb = matroska->ctx->pb;
     MatroskaLevel *level;
 
     if (matroska->num_levels >= EBML_MAX_DEPTH) {
@@ -697,7 +697,7 @@ static int ebml_read_master(MatroskaDemuxContext *matroska, uint64_t length)
 static int matroska_ebmlnum_uint(MatroskaDemuxContext *matroska,
                                  uint8_t *data, uint32_t size, uint64_t *num)
 {
-    ByteIOContext pb;
+    AVIOContext pb;
     init_put_byte(&pb, data, size, 0, NULL, NULL, NULL, NULL);
     return ebml_read_num(matroska, &pb, FFMIN(size, 8), num);
 }
@@ -791,7 +791,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
         [EBML_BIN]   = 0x10000000,
         // no limits for anything else
     };
-    ByteIOContext *pb = matroska->ctx->pb;
+    AVIOContext *pb = matroska->ctx->pb;
     uint32_t id = syntax->id;
     uint64_t length;
     int res;
@@ -1242,7 +1242,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         uint8_t *extradata = NULL;
         int extradata_size = 0;
         int extradata_offset = 0;
-        ByteIOContext b;
+        AVIOContext b;
 
         /* Apply some sanity checks. */
         if (track->type != MATROSKA_TRACK_TYPE_VIDEO &&

@@ -117,7 +117,7 @@ static inline int64_t gb_get_v(GetBitContext *gb)
     return v;
 }
 
-static void mpc8_get_chunk_header(ByteIOContext *pb, int *tag, int64_t *size)
+static void mpc8_get_chunk_header(AVIOContext *pb, int *tag, int64_t *size)
 {
     int64_t pos;
     pos = url_ftell(pb);
@@ -171,7 +171,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
 
 static void mpc8_handle_chunk(AVFormatContext *s, int tag, int64_t chunk_pos, int64_t size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos, off;
 
     switch(tag){
@@ -189,7 +189,7 @@ static void mpc8_handle_chunk(AVFormatContext *s, int tag, int64_t chunk_pos, in
 static int mpc8_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MPCContext *c = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     int tag = 0;
     int64_t size, pos;

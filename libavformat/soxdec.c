@@ -44,7 +44,7 @@ static int sox_probe(AVProbeData *p)
 static int sox_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned header_size, comment_size;
     double sample_rate, sample_rate_frac;
     AVStream *st;

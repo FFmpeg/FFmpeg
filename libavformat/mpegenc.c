@@ -491,7 +491,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     return AVERROR(ENOMEM);
 }
 
-static inline void put_timestamp(ByteIOContext *pb, int id, int64_t timestamp)
+static inline void put_timestamp(AVIOContext *pb, int id, int64_t timestamp)
 {
     put_byte(pb,
              (id << 4) |
@@ -613,7 +613,7 @@ static int get_packet_payload_size(AVFormatContext *ctx, int stream_index,
 #endif
 
 /* Write an MPEG padding packet header. */
-static void put_padding_packet(AVFormatContext *ctx, ByteIOContext *pb,int packet_bytes)
+static void put_padding_packet(AVFormatContext *ctx, AVIOContext *pb,int packet_bytes)
 {
     MpegMuxContext *s = ctx->priv_data;
     int i;

@@ -245,7 +245,7 @@ static int find_sample_match(const uint8_t *data, int len,
 }
 
 static void output_immediate(const uint8_t *data, int size,
-                             ByteIOContext *out, int *entries)
+                             AVIOContext *out, int *entries)
 {
     while (size > 0) {
         int len = size;
@@ -264,7 +264,7 @@ static void output_immediate(const uint8_t *data, int size,
     }
 }
 
-static void output_match(ByteIOContext *out, int match_sample,
+static void output_match(AVIOContext *out, int match_sample,
                          int match_offset, int match_len, int *entries)
 {
     put_byte(out, 2); /* sample constructor */
@@ -278,7 +278,7 @@ static void output_match(ByteIOContext *out, int match_sample,
 }
 
 static void describe_payload(const uint8_t *data, int size,
-                             ByteIOContext *out, int *entries,
+                             AVIOContext *out, int *entries,
                              HintSampleQueue *queue)
 {
     /* Describe the payload using different constructors */
@@ -309,7 +309,7 @@ static void describe_payload(const uint8_t *data, int size,
  * @param pts pointer where the timestamp for the written RTP hint is stored
  * @return the number of RTP packets in the written hint
  */
-static int write_hint_packets(ByteIOContext *out, const uint8_t *data,
+static int write_hint_packets(AVIOContext *out, const uint8_t *data,
                               int size, MOVTrack *trk, int64_t *pts)
 {
     int64_t curpos;
@@ -392,7 +392,7 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
     AVFormatContext *rtp_ctx = trk->rtp_ctx;
     uint8_t *buf = NULL;
     int size;
-    ByteIOContext *hintbuf = NULL;
+    AVIOContext *hintbuf = NULL;
     AVPacket hint_pkt;
     int ret = 0, count;
 

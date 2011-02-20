@@ -70,7 +70,7 @@ static int cin_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int cin_read_file_header(CinDemuxContext *cin, ByteIOContext *pb) {
+static int cin_read_file_header(CinDemuxContext *cin, AVIOContext *pb) {
     CinFileHeader *hdr = &cin->file_header;
 
     if (get_le32(pb) != 0x55AA0000)
@@ -95,7 +95,7 @@ static int cin_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int rc;
     CinDemuxContext *cin = s->priv_data;
     CinFileHeader *hdr = &cin->file_header;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
 
     rc = cin_read_file_header(cin, pb);
@@ -138,7 +138,7 @@ static int cin_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
-static int cin_read_frame_header(CinDemuxContext *cin, ByteIOContext *pb) {
+static int cin_read_frame_header(CinDemuxContext *cin, AVIOContext *pb) {
     CinFrameHeader *hdr = &cin->frame_header;
 
     hdr->video_frame_type = get_byte(pb);
@@ -159,7 +159,7 @@ static int cin_read_frame_header(CinDemuxContext *cin, ByteIOContext *pb) {
 static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     CinDemuxContext *cin = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     CinFrameHeader *hdr = &cin->frame_header;
     int rc, palette_type, pkt_size;
     int ret;

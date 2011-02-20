@@ -29,7 +29,7 @@
 
 static int rso_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int id, rate, bps;
     unsigned int size;
     enum CodecID codec;

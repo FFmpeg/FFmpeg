@@ -124,7 +124,7 @@ static int iff_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     IffDemuxContext *iff = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     uint32_t chunk_id, data_size;
     int compression = -1;
@@ -276,7 +276,7 @@ static int iff_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     IffDemuxContext *iff = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st = s->streams[0];
     int ret;
 

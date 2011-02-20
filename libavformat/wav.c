@@ -39,7 +39,7 @@ typedef struct {
 static int wav_write_header(AVFormatContext *s)
 {
     WAVContext *wav = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t fmt, fact;
 
     put_tag(pb, "RIFF");
@@ -77,7 +77,7 @@ static int wav_write_header(AVFormatContext *s)
 
 static int wav_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb  = s->pb;
+    AVIOContext *pb  = s->pb;
     WAVContext    *wav = s->priv_data;
     put_buffer(pb, pkt->data, pkt->size);
     if(pkt->pts != AV_NOPTS_VALUE) {
@@ -91,7 +91,7 @@ static int wav_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int wav_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb  = s->pb;
+    AVIOContext *pb  = s->pb;
     WAVContext    *wav = s->priv_data;
     int64_t file_size;
 
@@ -141,14 +141,14 @@ AVOutputFormat ff_wav_muxer = {
 
 #if CONFIG_WAV_DEMUXER
 
-static int64_t next_tag(ByteIOContext *pb, unsigned int *tag)
+static int64_t next_tag(AVIOContext *pb, unsigned int *tag)
 {
     *tag = get_le32(pb);
     return get_le32(pb);
 }
 
 /* return the size of the found tag */
-static int64_t find_tag(ByteIOContext *pb, uint32_t tag1)
+static int64_t find_tag(AVIOContext *pb, uint32_t tag1)
 {
     unsigned int tag;
     int64_t size;
@@ -192,7 +192,7 @@ static int wav_read_header(AVFormatContext *s,
     int64_t sample_count=0;
     int rf64;
     unsigned int tag;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     WAVContext *wav = s->priv_data;
 
@@ -263,7 +263,7 @@ static int wav_read_header(AVFormatContext *s,
 /** Find chunk with w64 GUID by skipping over other chunks
  * @return the size of the found chunk
  */
-static int64_t find_guid(ByteIOContext *pb, const uint8_t guid1[16])
+static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
 {
     uint8_t guid[16];
     int64_t size;
@@ -379,7 +379,7 @@ static int w64_probe(AVProbeData *p)
 static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     int64_t size;
-    ByteIOContext *pb  = s->pb;
+    AVIOContext *pb  = s->pb;
     WAVContext    *wav = s->priv_data;
     AVStream *st;
     uint8_t guid[16];

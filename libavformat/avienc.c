@@ -63,7 +63,7 @@ static inline AVIIentry* avi_get_ientry(AVIIndex* idx, int ent_id)
     return &idx->cluster[cl][id];
 }
 
-static int64_t avi_start_new_riff(AVFormatContext *s, ByteIOContext *pb,
+static int64_t avi_start_new_riff(AVFormatContext *s, AVIOContext *pb,
                                   const char* riff_tag, const char* list_tag)
 {
     AVIContext *avi= s->priv_data;
@@ -102,7 +102,7 @@ static char* avi_stream2fourcc(char* tag, int index, enum AVMediaType type)
     return tag;
 }
 
-static void avi_write_info_tag(ByteIOContext *pb, const char *tag, const char *str)
+static void avi_write_info_tag(AVIOContext *pb, const char *tag, const char *str)
 {
     int len = strlen(str);
     if (len > 0) {
@@ -117,7 +117,7 @@ static void avi_write_info_tag(ByteIOContext *pb, const char *tag, const char *s
 
 static int avi_write_counters(AVFormatContext* s, int riff_id)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVIContext *avi = s->priv_data;
     int n, au_byterate, au_ssize, au_scale, nb_frames = 0;
     int64_t file_size;
@@ -152,7 +152,7 @@ static int avi_write_counters(AVFormatContext* s, int riff_id)
 static int avi_write_header(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int bitrate, n, i, nb_frames, au_byterate, au_ssize, au_scale;
     AVCodecContext *stream, *video_enc;
     int64_t list1, list2, strh, strf;
@@ -393,7 +393,7 @@ static int avi_write_header(AVFormatContext *s)
 
 static int avi_write_ix(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVIContext *avi = s->priv_data;
     char tag[5];
     char ix_tag[] = "ix00";
@@ -451,7 +451,7 @@ static int avi_write_ix(AVFormatContext *s)
 
 static int avi_write_idx1(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVIContext *avi = s->priv_data;
     int64_t idx_chunk;
     int i;
@@ -503,7 +503,7 @@ static int avi_write_idx1(AVFormatContext *s)
 static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned char tag[5];
     unsigned int flags=0;
     const int stream_index= pkt->stream_index;
@@ -578,7 +578,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int avi_write_trailer(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int res = 0;
     int i, j, n, nb_frames;
     int64_t file_size;

@@ -81,7 +81,7 @@ static int vmd_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     VmdDemuxContext *vmd = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st = NULL, *vst;
     unsigned int toc_offset;
     unsigned char *raw_frame_table;
@@ -234,7 +234,7 @@ static int vmd_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     VmdDemuxContext *vmd = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int ret = 0;
     vmd_frame *frame;
 

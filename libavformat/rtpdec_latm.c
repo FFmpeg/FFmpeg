@@ -26,7 +26,7 @@
 #include <strings.h>
 
 struct PayloadContext {
-    ByteIOContext *dyn_buf;
+    AVIOContext *dyn_buf;
     uint8_t *buf;
     int pos, len;
     uint32_t timestamp;

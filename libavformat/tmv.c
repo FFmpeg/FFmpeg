@@ -65,7 +65,7 @@ static int tmv_probe(AVProbeData *p)
 static int tmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     TMVContext *tmv   = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *vst, *ast;
     AVRational fps;
     unsigned comp_method, char_cols, char_rows, features;
@@ -142,7 +142,7 @@ static int tmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int tmv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     TMVContext *tmv   = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int ret, pkt_size = tmv->stream_index ?
                         tmv->audio_chunk_size : tmv->video_chunk_size;
 

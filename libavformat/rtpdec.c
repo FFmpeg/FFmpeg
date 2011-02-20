@@ -237,7 +237,7 @@ static void rtcp_update_jitter(RTPStatistics *s, uint32_t sent_timestamp, uint32
 
 int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
 {
-    ByteIOContext *pb;
+    AVIOContext *pb;
     uint8_t *buf;
     int len;
     int rtcp_bytes;
@@ -334,7 +334,7 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
 
 void rtp_send_punch_packets(URLContext* rtp_handle)
 {
-    ByteIOContext *pb;
+    AVIOContext *pb;
     uint8_t *buf;
     int len;
 

@@ -334,7 +334,7 @@ int av_register_protocol2(URLProtocol *protocol, int size);
  * New fields can be added to the end with minor version bumps.
  * Removal, reordering and changes to existing fields require a major
  * version bump.
- * sizeof(ByteIOContext) must not be used outside libav*.
+ * sizeof(AVIOContext) must not be used outside libav*.
  */
 typedef struct {
     unsigned char *buffer;
@@ -357,130 +357,134 @@ typedef struct {
     int (*read_pause)(void *opaque, int pause);
     int64_t (*read_seek)(void *opaque, int stream_index,
                          int64_t timestamp, int flags);
-} ByteIOContext;
-
-int init_put_byte(ByteIOContext *s,
-                  unsigned char *buffer,
-                  int buffer_size,
-                  int write_flag,
-                  void *opaque,
-                  int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  int64_t (*seek)(void *opaque, int64_t offset, int whence));
-ByteIOContext *av_alloc_put_byte(
-                  unsigned char *buffer,
-                  int buffer_size,
-                  int write_flag,
-                  void *opaque,
-                  int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  int64_t (*seek)(void *opaque, int64_t offset, int whence));
-
-void put_byte(ByteIOContext *s, int b);
-void put_nbyte(ByteIOContext *s, int b, int count);
-void put_buffer(ByteIOContext *s, const unsigned char *buf, int size);
-void put_le64(ByteIOContext *s, uint64_t val);
-void put_be64(ByteIOContext *s, uint64_t val);
-void put_le32(ByteIOContext *s, unsigned int val);
-void put_be32(ByteIOContext *s, unsigned int val);
-void put_le24(ByteIOContext *s, unsigned int val);
-void put_be24(ByteIOContext *s, unsigned int val);
-void put_le16(ByteIOContext *s, unsigned int val);
-void put_be16(ByteIOContext *s, unsigned int val);
-void put_tag(ByteIOContext *s, const char *tag);
+} AVIOContext;
 
 #if FF_API_OLD_AVIO
-attribute_deprecated void put_strz(ByteIOContext *s, const char *buf);
+typedef attribute_deprecated AVIOContext ByteIOContext;
+#endif
+
+int init_put_byte(AVIOContext *s,
+                  unsigned char *buffer,
+                  int buffer_size,
+                  int write_flag,
+                  void *opaque,
+                  int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int64_t (*seek)(void *opaque, int64_t offset, int whence));
+AVIOContext *av_alloc_put_byte(
+                  unsigned char *buffer,
+                  int buffer_size,
+                  int write_flag,
+                  void *opaque,
+                  int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int64_t (*seek)(void *opaque, int64_t offset, int whence));
+
+void put_byte(AVIOContext *s, int b);
+void put_nbyte(AVIOContext *s, int b, int count);
+void put_buffer(AVIOContext *s, const unsigned char *buf, int size);
+void put_le64(AVIOContext *s, uint64_t val);
+void put_be64(AVIOContext *s, uint64_t val);
+void put_le32(AVIOContext *s, unsigned int val);
+void put_be32(AVIOContext *s, unsigned int val);
+void put_le24(AVIOContext *s, unsigned int val);
+void put_be24(AVIOContext *s, unsigned int val);
+void put_le16(AVIOContext *s, unsigned int val);
+void put_be16(AVIOContext *s, unsigned int val);
+void put_tag(AVIOContext *s, const char *tag);
+
+#if FF_API_OLD_AVIO
+attribute_deprecated void put_strz(AVIOContext *s, const char *buf);
 #endif
 
 /**
  * Write a NULL-terminated string.
  * @return number of bytes written.
  */
-int avio_put_str(ByteIOContext *s, const char *str);
+int avio_put_str(AVIOContext *s, const char *str);
 
 /**
  * Convert an UTF-8 string to UTF-16LE and write it.
  * @return number of bytes written.
  */
-int avio_put_str16le(ByteIOContext *s, const char *str);
+int avio_put_str16le(AVIOContext *s, const char *str);
 
 /**
- * fseek() equivalent for ByteIOContext.
+ * fseek() equivalent for AVIOContext.
  * @return new position or AVERROR.
  */
-int64_t url_fseek(ByteIOContext *s, int64_t offset, int whence);
+int64_t url_fseek(AVIOContext *s, int64_t offset, int whence);
 
 /**
  * Skip given number of bytes forward.
  * @param offset number of bytes
  * @return 0 on success, <0 on error
  */
-int url_fskip(ByteIOContext *s, int64_t offset);
+int url_fskip(AVIOContext *s, int64_t offset);
 
 /**
- * ftell() equivalent for ByteIOContext.
+ * ftell() equivalent for AVIOContext.
  * @return position or AVERROR.
  */
-int64_t url_ftell(ByteIOContext *s);
+int64_t url_ftell(AVIOContext *s);
 
 /**
  * Get the filesize.
  * @return filesize or AVERROR
  */
-int64_t url_fsize(ByteIOContext *s);
+int64_t url_fsize(AVIOContext *s);
 
 /**
- * feof() equivalent for ByteIOContext.
+ * feof() equivalent for AVIOContext.
  * @return non zero if and only if end of file
  */
-int url_feof(ByteIOContext *s);
+int url_feof(AVIOContext *s);
 
-int url_ferror(ByteIOContext *s);
+int url_ferror(AVIOContext *s);
 
-int av_url_read_fpause(ByteIOContext *h, int pause);
-int64_t av_url_read_fseek(ByteIOContext *h, int stream_index,
+int av_url_read_fpause(AVIOContext *h, int pause);
+int64_t av_url_read_fseek(AVIOContext *h, int stream_index,
                           int64_t timestamp, int flags);
 
 #define URL_EOF (-1)
 /** @note return URL_EOF (-1) if EOF */
-int url_fgetc(ByteIOContext *s);
+int url_fgetc(AVIOContext *s);
 
 /** @warning currently size is limited */
 #ifdef __GNUC__
-int url_fprintf(ByteIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
+int url_fprintf(AVIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
 #else
-int url_fprintf(ByteIOContext *s, const char *fmt, ...);
+int url_fprintf(AVIOContext *s, const char *fmt, ...);
 #endif
 
 /** @note unlike fgets, the EOL character is not returned and a whole
     line is parsed. return NULL if first char read was EOF */
-char *url_fgets(ByteIOContext *s, char *buf, int buf_size);
+char *url_fgets(AVIOContext *s, char *buf, int buf_size);
 
-void put_flush_packet(ByteIOContext *s);
+void put_flush_packet(AVIOContext *s);
 
 
 /**
- * Read size bytes from ByteIOContext into buf.
+ * Read size bytes from AVIOContext into buf.
  * @return number of bytes read or AVERROR
  */
-int get_buffer(ByteIOContext *s, unsigned char *buf, int size);
+int get_buffer(AVIOContext *s, unsigned char *buf, int size);
 
 /**
- * Read size bytes from ByteIOContext into buf.
+ * Read size bytes from AVIOContext into buf.
  * This reads at most 1 packet. If that is not enough fewer bytes will be
  * returned.
  * @return number of bytes read or AVERROR
  */
-int get_partial_buffer(ByteIOContext *s, unsigned char *buf, int size);
+int get_partial_buffer(AVIOContext *s, unsigned char *buf, int size);
 
 /** @note return 0 if EOF, so you cannot use it if EOF handling is
     necessary */
-int get_byte(ByteIOContext *s);
-unsigned int get_le24(ByteIOContext *s);
-unsigned int get_le32(ByteIOContext *s);
-uint64_t get_le64(ByteIOContext *s);
-unsigned int get_le16(ByteIOContext *s);
+int get_byte(AVIOContext *s);
+unsigned int get_le24(AVIOContext *s);
+unsigned int get_le32(AVIOContext *s);
+uint64_t get_le64(AVIOContext *s);
+unsigned int get_le16(AVIOContext *s);
 
 /**
  * Read a UTF-16 string from pb and convert it to UTF-8.
@@ -488,77 +492,77 @@ unsigned int get_le16(ByteIOContext *s);
  * encountered or maxlen bytes have been read.
  * @return number of bytes read (is always <= maxlen)
  */
-int avio_get_str16le(ByteIOContext *pb, int maxlen, char *buf, int buflen);
-int avio_get_str16be(ByteIOContext *pb, int maxlen, char *buf, int buflen);
+int avio_get_str16le(AVIOContext *pb, int maxlen, char *buf, int buflen);
+int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
 
-char *get_strz(ByteIOContext *s, char *buf, int maxlen);
-unsigned int get_be16(ByteIOContext *s);
-unsigned int get_be24(ByteIOContext *s);
-unsigned int get_be32(ByteIOContext *s);
-uint64_t get_be64(ByteIOContext *s);
+char *get_strz(AVIOContext *s, char *buf, int maxlen);
+unsigned int get_be16(AVIOContext *s);
+unsigned int get_be24(AVIOContext *s);
+unsigned int get_be32(AVIOContext *s);
+uint64_t get_be64(AVIOContext *s);
 
-uint64_t ff_get_v(ByteIOContext *bc);
+uint64_t ff_get_v(AVIOContext *bc);
 
-static inline int url_is_streamed(ByteIOContext *s)
+static inline int url_is_streamed(AVIOContext *s)
 {
     return s->is_streamed;
 }
 
 /**
- * Create and initialize a ByteIOContext for accessing the
+ * Create and initialize a AVIOContext for accessing the
  * resource referenced by the URLContext h.
  * @note When the URLContext h has been opened in read+write mode, the
- * ByteIOContext can be used only for writing.
+ * AVIOContext can be used only for writing.
  *
- * @param s Used to return the pointer to the created ByteIOContext.
+ * @param s Used to return the pointer to the created AVIOContext.
  * In case of failure the pointed to value is set to NULL.
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int url_fdopen(ByteIOContext **s, URLContext *h);
+int url_fdopen(AVIOContext **s, URLContext *h);
 
 /** @warning must be called before any I/O */
-int url_setbufsize(ByteIOContext *s, int buf_size);
+int url_setbufsize(AVIOContext *s, int buf_size);
 #if FF_API_URL_RESETBUF
 /** Reset the buffer for reading or writing.
  * @note Will drop any data currently in the buffer without transmitting it.
  * @param flags URL_RDONLY to set up the buffer for reading, or URL_WRONLY
  *        to set up the buffer for writing. */
-int url_resetbuf(ByteIOContext *s, int flags);
+int url_resetbuf(AVIOContext *s, int flags);
 #endif
 
 /**
- * Rewind the ByteIOContext using the specified buffer containing the first buf_size bytes of the file.
+ * Rewind the AVIOContext using the specified buffer containing the first buf_size bytes of the file.
  * Used after probing to avoid seeking.
  * Joins buf and s->buffer, taking any overlap into consideration.
  * @note s->buffer must overlap with buf or they can't be joined and the function fails
  * @note This function is NOT part of the public API
  *
- * @param s The read-only ByteIOContext to rewind
+ * @param s The read-only AVIOContext to rewind
  * @param buf The probe buffer containing the first buf_size bytes of the file
  * @param buf_size The size of buf
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int ff_rewind_with_probe_data(ByteIOContext *s, unsigned char *buf, int buf_size);
+int ff_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size);
 
 /**
- * Create and initialize a ByteIOContext for accessing the
+ * Create and initialize a AVIOContext for accessing the
  * resource indicated by url.
  * @note When the resource indicated by url has been opened in
- * read+write mode, the ByteIOContext can be used only for writing.
+ * read+write mode, the AVIOContext can be used only for writing.
  *
- * @param s Used to return the pointer to the created ByteIOContext.
+ * @param s Used to return the pointer to the created AVIOContext.
  * In case of failure the pointed to value is set to NULL.
  * @param flags flags which control how the resource indicated by url
  * is to be opened
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int url_fopen(ByteIOContext **s, const char *url, int flags);
+int url_fopen(AVIOContext **s, const char *url, int flags);
 
-int url_fclose(ByteIOContext *s);
-URLContext *url_fileno(ByteIOContext *s);
+int url_fclose(AVIOContext *s);
+URLContext *url_fileno(AVIOContext *s);
 
 /**
  * Return the maximum packet size associated to packetized buffered file
@@ -568,12 +572,12 @@ URLContext *url_fileno(ByteIOContext *s);
  * @param s buffered file handle
  * @return maximum packet size in bytes
  */
-int url_fget_max_packet_size(ByteIOContext *s);
+int url_fget_max_packet_size(AVIOContext *s);
 
-int url_open_buf(ByteIOContext **s, uint8_t *buf, int buf_size, int flags);
+int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags);
 
 /** return the written or read size */
-int url_close_buf(ByteIOContext *s);
+int url_close_buf(AVIOContext *s);
 
 /**
  * Open a write only memory stream.
@@ -581,7 +585,7 @@ int url_close_buf(ByteIOContext *s);
  * @param s new IO context
  * @return zero if no error.
  */
-int url_open_dyn_buf(ByteIOContext **s);
+int url_open_dyn_buf(AVIOContext **s);
 
 /**
  * Open a write only packetized memory stream with a maximum packet
@@ -592,7 +596,7 @@ int url_open_dyn_buf(ByteIOContext **s);
  * @param max_packet_size maximum packet size (must be > 0)
  * @return zero if no error.
  */
-int url_open_dyn_packet_buf(ByteIOContext **s, int max_packet_size);
+int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
 
 /**
  * Return the written size and a pointer to the buffer. The buffer
@@ -604,12 +608,12 @@ int url_open_dyn_packet_buf(ByteIOContext **s, int max_packet_size);
  * @param pbuffer pointer to a byte buffer
  * @return the length of the byte buffer
  */
-int url_close_dyn_buf(ByteIOContext *s, uint8_t **pbuffer);
+int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 
 unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
                                     unsigned int len);
-unsigned long get_checksum(ByteIOContext *s);
-void init_checksum(ByteIOContext *s,
+unsigned long get_checksum(AVIOContext *s);
+void init_checksum(AVIOContext *s,
                    unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
                    unsigned long checksum);
 

@@ -132,7 +132,7 @@ static void print_guid(const ff_asf_guid *g)
 #define print_guid(g)
 #endif
 
-void ff_get_guid(ByteIOContext *s, ff_asf_guid *g)
+void ff_get_guid(AVIOContext *s, ff_asf_guid *g)
 {
     assert(sizeof(*g) == 16);
     get_buffer(s, *g, sizeof(*g));
@@ -147,7 +147,7 @@ static int asf_probe(AVProbeData *pd)
         return 0;
 }
 
-static int get_value(ByteIOContext *pb, int type){
+static int get_value(AVIOContext *pb, int type){
     switch(type){
         case 2: return get_le32(pb);
         case 3: return get_le32(pb);
@@ -187,7 +187,7 @@ finish:
 static int asf_read_file_properties(AVFormatContext *s, int64_t size)
 {
     ASFContext *asf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     ff_get_guid(pb, &asf->hdr.guid);
     asf->hdr.file_size          = get_le64(pb);
@@ -209,7 +209,7 @@ static int asf_read_file_properties(AVFormatContext *s, int64_t size)
 static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
 {
     ASFContext *asf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     ASFStream *asf_st;
     ff_asf_guid g;
@@ -395,7 +395,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
 static int asf_read_ext_stream_properties(AVFormatContext *s, int64_t size)
 {
     ASFContext *asf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     ff_asf_guid g;
     int ext_len, payload_ext_ct, stream_ct, i;
     uint32_t ext_d, leak_rate, stream_num;
@@ -442,7 +442,7 @@ static int asf_read_ext_stream_properties(AVFormatContext *s, int64_t size)
 
 static int asf_read_content_desc(AVFormatContext *s, int64_t size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int len1, len2, len3, len4, len5;
 
     len1 = get_le16(pb);
@@ -461,7 +461,7 @@ static int asf_read_content_desc(AVFormatContext *s, int64_t size)
 
 static int asf_read_ext_content_desc(AVFormatContext *s, int64_t size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     ASFContext *asf = s->priv_data;
     int desc_count, i, ret;
 
@@ -496,7 +496,7 @@ static int asf_read_ext_content_desc(AVFormatContext *s, int64_t size)
 
 static int asf_read_language_list(AVFormatContext *s, int64_t size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     ASFContext *asf = s->priv_data;
     int j, ret;
     int stream_count = get_le16(pb);
@@ -514,7 +514,7 @@ static int asf_read_language_list(AVFormatContext *s, int64_t size)
 
 static int asf_read_metadata(AVFormatContext *s, int64_t size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     ASFContext *asf = s->priv_data;
     int n, stream_num, name_len, value_len, value_type, value_num;
     int ret, i;
@@ -546,7 +546,7 @@ static int asf_read_metadata(AVFormatContext *s, int64_t size)
 
 static int asf_read_marker(AVFormatContext *s, int64_t size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int i, count, name_len, ret;
     char name[1024];
 
@@ -581,7 +581,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     ASFContext *asf = s->priv_data;
     ff_asf_guid g;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int i;
     int64_t gsize;
 
@@ -715,7 +715,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
  * @param pb context to read data from
  * @return 0 on success, <0 on error
  */
-static int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb)
+static int ff_asf_get_packet(AVFormatContext *s, AVIOContext *pb)
 {
     ASFContext *asf = s->priv_data;
     uint32_t packet_length, padsize;
@@ -800,7 +800,7 @@ static int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb)
  *
  * @return <0 if error
  */
-static int asf_read_frame_header(AVFormatContext *s, ByteIOContext *pb){
+static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
     ASFContext *asf = s->priv_data;
     int rsize = 1;
     int num = get_byte(pb);
@@ -879,7 +879,7 @@ static int asf_read_frame_header(AVFormatContext *s, ByteIOContext *pb){
  * @return 0 if data was stored in pkt, <0 on error or 1 if more ASF
  *          packets need to be loaded (through asf_get_packet())
  */
-static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
+static int ff_asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
 {
     ASFContext *asf = s->priv_data;
     ASFStream *asf_st = 0;

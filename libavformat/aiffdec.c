@@ -47,7 +47,7 @@ static enum CodecID aiff_codec_get_id(int bps)
 }
 
 /* returns the size of the found tag */
-static int get_tag(ByteIOContext *pb, uint32_t * tag)
+static int get_tag(AVIOContext *pb, uint32_t * tag)
 {
     int size;
 
@@ -83,7 +83,7 @@ static void get_meta(AVFormatContext *s, const char *key, int size)
 }
 
 /* Returns the number of sound data frames or negative on error */
-static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
+static unsigned int get_aiff_header(AVIOContext *pb, AVCodecContext *codec,
                              int size, unsigned version)
 {
     AVExtFloat ext;
@@ -177,7 +177,7 @@ static int aiff_read_header(AVFormatContext *s,
     int64_t offset = 0;
     uint32_t tag;
     unsigned version = AIFF_C_VERSION1;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream * st;
     AIFFInputContext *aiff = s->priv_data;
 

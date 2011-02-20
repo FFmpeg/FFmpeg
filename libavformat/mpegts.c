@@ -851,7 +851,7 @@ static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
                          int *es_id, uint8_t **dec_config_descr,
                          int *dec_config_descr_size)
 {
-    ByteIOContext pb;
+    AVIOContext pb;
     int tag;
     unsigned len;
 
@@ -913,7 +913,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         get16(pp, desc_end);
         if (st->codec->codec_id == CODEC_ID_AAC_LATM &&
             mp4_dec_config_descr_len && mp4_es_id == pid) {
-            ByteIOContext pb;
+            AVIOContext pb;
             init_put_byte(&pb, mp4_dec_config_descr,
                           mp4_dec_config_descr_len, 0, NULL, NULL, NULL, NULL);
             ff_mp4_read_dec_config_descr(fc, st, &pb);
@@ -1307,7 +1307,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
    get_packet_size() ?) */
 static int mpegts_resync(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int c, i;
 
     for(i = 0;i < MAX_RESYNC_SIZE; i++) {
@@ -1327,7 +1327,7 @@ static int mpegts_resync(AVFormatContext *s)
 /* return -1 if error or EOF. Return 0 if OK. */
 static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int skip, len;
 
     for(;;) {
@@ -1439,7 +1439,7 @@ static int mpegts_read_header(AVFormatContext *s,
                               AVFormatParameters *ap)
 {
     MpegTSContext *ts = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     uint8_t buf[5*1024];
     int len;
     int64_t pos;

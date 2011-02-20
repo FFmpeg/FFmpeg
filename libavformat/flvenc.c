@@ -139,14 +139,14 @@ static int get_audio_flags(AVCodecContext *enc){
     return flags;
 }
 
-static void put_amf_string(ByteIOContext *pb, const char *str)
+static void put_amf_string(AVIOContext *pb, const char *str)
 {
     size_t len = strlen(str);
     put_be16(pb, len);
     put_buffer(pb, str, len);
 }
 
-static void put_avc_eos_tag(ByteIOContext *pb, unsigned ts) {
+static void put_avc_eos_tag(AVIOContext *pb, unsigned ts) {
     put_byte(pb, FLV_TAG_TYPE_VIDEO);
     put_be24(pb, 5);  /* Tag Data Size */
     put_be24(pb, ts);  /* lower 24 bits of timestamp in ms*/
@@ -158,20 +158,20 @@ static void put_avc_eos_tag(ByteIOContext *pb, unsigned ts) {
     put_be32(pb, 16);  /* Size of FLV tag */
 }
 
-static void put_amf_double(ByteIOContext *pb, double d)
+static void put_amf_double(AVIOContext *pb, double d)
 {
     put_byte(pb, AMF_DATA_TYPE_NUMBER);
     put_be64(pb, av_dbl2int(d));
 }
 
-static void put_amf_bool(ByteIOContext *pb, int b) {
+static void put_amf_bool(AVIOContext *pb, int b) {
     put_byte(pb, AMF_DATA_TYPE_BOOL);
     put_byte(pb, !!b);
 }
 
 static int flv_write_header(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
     AVCodecContext *audio_enc = NULL, *video_enc = NULL;
     int i;
@@ -330,7 +330,7 @@ static int flv_write_trailer(AVFormatContext *s)
 {
     int64_t file_size;
 
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
     int i;
 
@@ -357,7 +357,7 @@ static int flv_write_trailer(AVFormatContext *s)
 
 static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[pkt->stream_index]->codec;
     FLVContext *flv = s->priv_data;
     unsigned ts;

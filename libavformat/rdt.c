@@ -130,7 +130,7 @@ ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
 static int
 rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
 {
-    ByteIOContext pb;
+    AVIOContext pb;
     int size;
     uint32_t tag;
 
@@ -295,7 +295,7 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
                   const uint8_t *buf, int len, int flags)
 {
     int seq = 1, res;
-    ByteIOContext pb;
+    AVIOContext pb;
 
     if (rdt->audio_pkt_cnt == 0) {
         int pos;

@@ -87,7 +87,7 @@ static int sol_read_header(AVFormatContext *s,
 {
     int size;
     unsigned int magic,tag;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int id, channels, rate, type;
     enum CodecID codec;
     AVStream *st;

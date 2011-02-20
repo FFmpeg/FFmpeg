@@ -193,7 +193,7 @@ void av_metadata_free(AVMetadata **m);
  * @param size desired payload size
  * @return >0 (read size) if OK, AVERROR_xxx otherwise
  */
-int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size);
+int av_get_packet(AVIOContext *s, AVPacket *pkt, int size);
 
 
 /**
@@ -209,7 +209,7 @@ int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size);
  * @return >0 (read size) if OK, AVERROR_xxx otherwise, previous data
  *         will not be lost even if an error occurs.
  */
-int av_append_packet(ByteIOContext *s, AVPacket *pkt, int size);
+int av_append_packet(AVIOContext *s, AVPacket *pkt, int size);
 
 /*************************************************/
 /* fractional numbers for exact pts handling */
@@ -688,7 +688,7 @@ typedef struct AVFormatContext {
     struct AVInputFormat *iformat;
     struct AVOutputFormat *oformat;
     void *priv_data;
-    ByteIOContext *pb;
+    AVIOContext *pb;
     unsigned int nb_streams;
 #if FF_API_MAX_STREAMS
     AVStream *streams[MAX_STREAMS];
@@ -1060,7 +1060,7 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code otherwise
  */
-int av_probe_input_buffer(ByteIOContext *pb, AVInputFormat **fmt,
+int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size);
 
@@ -1069,7 +1069,7 @@ int av_probe_input_buffer(ByteIOContext *pb, AVInputFormat **fmt,
  *        This does not open the needed codecs for decoding the stream[s].
  */
 int av_open_input_stream(AVFormatContext **ic_ptr,
-                         ByteIOContext *pb, const char *filename,
+                         AVIOContext *pb, const char *filename,
                          AVInputFormat *fmt, AVFormatParameters *ap);
 
 /**

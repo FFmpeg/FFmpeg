@@ -255,7 +255,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
     char filename[1024];
     int i;
     int size[3]={0}, ret[3]={0};
-    ByteIOContext *f[3];
+    AVIOContext *f[3];
     AVCodecContext *codec= s1->streams[0]->codec;
 
     if (!s->is_pipe) {
@@ -339,7 +339,7 @@ static int write_header(AVFormatContext *s)
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VideoData *img = s->priv_data;
-    ByteIOContext *pb[3];
+    AVIOContext *pb[3];
     char filename[1024];
     AVCodecContext *codec= s->streams[ pkt->stream_index ]->codec;
     int i;

@@ -47,7 +47,7 @@ static int cdata_probe(AVProbeData *p)
 static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     CdataDemuxContext *cdata = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int sample_rate, header;
     AVStream *st;
 

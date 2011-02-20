@@ -140,7 +140,7 @@ enum MXFWrappingScheme {
     Clip,
 };
 
-typedef int MXFMetadataReadFunc(void *arg, ByteIOContext *pb, int tag, int size, UID uid);
+typedef int MXFMetadataReadFunc(void *arg, AVIOContext *pb, int tag, int size, UID uid);
 
 typedef struct {
     const UID key;
@@ -161,7 +161,7 @@ static const uint8_t mxf_sony_mpeg4_extradata[]            = { 0x06,0x0e,0x2b,0x
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
-static int64_t klv_decode_ber_length(ByteIOContext *pb)
+static int64_t klv_decode_ber_length(AVIOContext *pb)
 {
     uint64_t size = get_byte(pb);
     if (size & 0x80) { /* long form */
@@ -176,7 +176,7 @@ static int64_t klv_decode_ber_length(ByteIOContext *pb)
     return size;
 }
 
-static int mxf_read_sync(ByteIOContext *pb, const uint8_t *key, unsigned size)
+static int mxf_read_sync(AVIOContext *pb, const uint8_t *key, unsigned size)
 {
     int i, b;
     for (i = 0; i < size && !url_feof(pb); i++) {
@@ -189,7 +189,7 @@ static int mxf_read_sync(ByteIOContext *pb, const uint8_t *key, unsigned size)
     return i == size;
 }
 
-static int klv_read_packet(KLVPacket *klv, ByteIOContext *pb)
+static int klv_read_packet(KLVPacket *klv, AVIOContext *pb)
 {
     if (!mxf_read_sync(pb, mxf_klv_key, 4))
         return -1;
@@ -215,7 +215,7 @@ static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv)
 }
 
 /* XXX: use AVBitStreamFilter */
-static int mxf_get_d10_aes3_packet(ByteIOContext *pb, AVStream *st, AVPacket *pkt, int64_t length)
+static int mxf_get_d10_aes3_packet(AVIOContext *pb, AVStream *st, AVPacket *pkt, int64_t length)
 {
     const uint8_t *buf_ptr, *end_ptr;
     uint8_t *data_ptr;
@@ -246,7 +246,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
 {
     static const uint8_t checkv[16] = {0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b};
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t end = url_ftell(pb) + klv->length;
     uint64_t size;
     uint64_t orig_size;
@@ -344,7 +344,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_EOF;
 }
 
-static int mxf_read_primer_pack(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     MXFContext *mxf = arg;
     int item_num = get_be32(pb);
@@ -376,7 +376,7 @@ static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
     return 0;
 }
 
-static int mxf_read_cryptographic_context(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_cryptographic_context(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     MXFCryptoContext *cryptocontext = arg;
     if (size != 16)
@@ -386,7 +386,7 @@ static int mxf_read_cryptographic_context(void *arg, ByteIOContext *pb, int tag,
     return 0;
 }
 
-static int mxf_read_content_storage(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     MXFContext *mxf = arg;
     switch (tag) {
@@ -404,7 +404,7 @@ static int mxf_read_content_storage(void *arg, ByteIOContext *pb, int tag, int s
     return 0;
 }
 
-static int mxf_read_source_clip(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_source_clip(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     MXFStructuralComponent *source_clip = arg;
     switch(tag) {
@@ -426,7 +426,7 @@ static int mxf_read_source_clip(void *arg, ByteIOContext *pb, int tag, int size,
     return 0;
 }
 
-static int mxf_read_material_package(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_material_package(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     MXFPackage *package = arg;
     switch(tag) {
@@ -444,7 +444,7 @@ static int mxf_read_material_package(void *arg, ByteIOContext *pb, int tag, int 
     return 0;
 }
 
-static int mxf_read_track(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_track(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     MXFTrack *track = arg;
     switch(tag) {
@@ -465,7 +465,7 @@ static int mxf_read_track(void *arg, ByteIOContext *pb, int tag, int size, UID u
     return 0;
 }
 
-static int mxf_read_sequence(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_sequence(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     MXFSequence *sequence = arg;
     switch(tag) {
@@ -489,7 +489,7 @@ static int mxf_read_sequence(void *arg, ByteIOContext *pb, int tag, int size, UI
     return 0;
 }
 
-static int mxf_read_source_package(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_source_package(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     MXFPackage *package = arg;
     switch(tag) {
@@ -515,7 +515,7 @@ static int mxf_read_source_package(void *arg, ByteIOContext *pb, int tag, int si
     return 0;
 }
 
-static int mxf_read_index_table_segment(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_index_table_segment(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     switch(tag) {
     case 0x3F05: av_dlog(NULL, "EditUnitByteCount %d\n", get_be32(pb)); break;
@@ -528,7 +528,7 @@ static int mxf_read_index_table_segment(void *arg, ByteIOContext *pb, int tag, i
     return 0;
 }
 
-static void mxf_read_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
+static void mxf_read_pixel_layout(AVIOContext *pb, MXFDescriptor *descriptor)
 {
     int code, value, ofs = 0;
     char layout[16] = {0};
@@ -547,7 +547,7 @@ static void mxf_read_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
     ff_mxf_decode_pixel_layout(layout, &descriptor->pix_fmt);
 }
 
-static int mxf_read_generic_descriptor(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     MXFDescriptor *descriptor = arg;
     switch(tag) {
@@ -864,7 +864,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
 
 static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadFunc *read_child, int ctx_size, enum MXFMetadataSetType type)
 {
-    ByteIOContext *pb = mxf->fc->pb;
+    AVIOContext *pb = mxf->fc->pb;
     MXFMetadataSet *ctx = ctx_size ? av_mallocz(ctx_size) : mxf;
     uint64_t klv_end = url_ftell(pb) + klv->length;
 

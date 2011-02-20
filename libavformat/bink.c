@@ -70,7 +70,7 @@ static int probe(AVProbeData *p)
 static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     BinkDemuxContext *bink = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     uint32_t fps_num, fps_den;
     AVStream *vst, *ast;
     unsigned int i;
@@ -177,7 +177,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     BinkDemuxContext *bink = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int ret;
 
     if (bink->current_track < 0) {

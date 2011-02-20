@@ -105,7 +105,7 @@ static int ffm_read_data(AVFormatContext *s,
                          uint8_t *buf, int size, int header)
 {
     FFMContext *ffm = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int len, fill_size, size1, frame_offset, id;
 
     size1 = size;
@@ -170,7 +170,7 @@ static int ffm_read_data(AVFormatContext *s,
 static void ffm_seek1(AVFormatContext *s, int64_t pos1)
 {
     FFMContext *ffm = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos;
 
     pos = FFMIN(pos1, ffm->file_size - FFM_PACKET_SIZE);
@@ -183,7 +183,7 @@ static void ffm_seek1(AVFormatContext *s, int64_t pos1)
 
 static int64_t get_dts(AVFormatContext *s, int64_t pos)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t dts;
 
     ffm_seek1(s, pos);
@@ -198,7 +198,7 @@ static int64_t get_dts(AVFormatContext *s, int64_t pos)
 static void adjust_write_index(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pts;
     //int64_t orig_write_index = ffm->write_index;
     int64_t pos_min, pos_max;
@@ -267,7 +267,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     FFMContext *ffm = s->priv_data;
     AVStream *st;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVCodecContext *codec;
     int i, nb_streams;
     uint32_t tag;

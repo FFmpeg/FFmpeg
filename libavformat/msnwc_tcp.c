@@ -71,7 +71,7 @@ static int msnwc_tcp_probe(AVProbeData *p)
 
 static int msnwc_tcp_read_header(AVFormatContext *ctx, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = ctx->pb;
+    AVIOContext *pb = ctx->pb;
     AVCodecContext *codec;
     AVStream *st;
 
@@ -100,7 +100,7 @@ static int msnwc_tcp_read_header(AVFormatContext *ctx, AVFormatParameters *ap)
 
 static int msnwc_tcp_read_packet(AVFormatContext *ctx, AVPacket *pkt)
 {
-    ByteIOContext *pb = ctx->pb;
+    AVIOContext *pb = ctx->pb;
     uint16_t keyframe;
     uint32_t size, timestamp;
 

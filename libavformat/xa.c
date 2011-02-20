@@ -66,7 +66,7 @@ static int xa_read_header(AVFormatContext *s,
                AVFormatParameters *ap)
 {
     MaxisXADemuxContext *xa = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
 
     /*Set up the XA Audio Decoder*/
@@ -96,7 +96,7 @@ static int xa_read_packet(AVFormatContext *s,
 {
     MaxisXADemuxContext *xa = s->priv_data;
     AVStream *st = s->streams[0];
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int packet_size;
     int ret;
 

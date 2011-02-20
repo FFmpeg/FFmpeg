@@ -33,7 +33,7 @@ static const char AMRWB_header [] = "#!AMR-WB\n";
 #if CONFIG_AMR_MUXER
 static int amr_write_header(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
 
     s->priv_data = NULL;
@@ -78,7 +78,7 @@ static int amr_probe(AVProbeData *p)
 static int amr_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     uint8_t header[9];
 

@@ -76,7 +76,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     int i, len, header_remaining;
     ASSContext *ass = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     int allocated[2]={0};
     uint8_t *p, **dst[2]={0};

@@ -31,7 +31,7 @@
 #include "rtpdec_formats.h"
 
 struct PayloadContext {
-    ByteIOContext *data;
+    AVIOContext *data;
     uint32_t       timestamp;
     int is_keyframe;
 };

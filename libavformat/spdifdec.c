@@ -163,7 +163,7 @@ static int spdif_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 static int spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     enum IEC61937DataType data_type;
     enum CodecID codec_id;
     uint32_t state = 0;

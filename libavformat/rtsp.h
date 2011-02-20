@@ -193,7 +193,7 @@ enum RTSPServerType {
 /**
  * Private data for the RTSP demuxer.
  *
- * @todo Use ByteIOContext instead of URLContext
+ * @todo Use AVIOContext instead of URLContext
  */
 typedef struct RTSPState {
     URLContext *rtsp_hd; /* RTSP TCP connection handle */
@@ -218,7 +218,7 @@ typedef struct RTSPState {
     int64_t seek_timestamp;
 
     /* XXX: currently we use unbuffered input */
-    //    ByteIOContext rtsp_gb;
+    //    AVIOContext rtsp_gb;
 
     int seq;                          /**< RTSP command sequence number */
 

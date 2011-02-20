@@ -85,7 +85,7 @@ static int wc3_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     Wc3DemuxContext *wc3 = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int fourcc_tag;
     unsigned int size;
     AVStream *st;
@@ -196,7 +196,7 @@ static int wc3_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     Wc3DemuxContext *wc3 = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int fourcc_tag;
     unsigned int size;
     int packet_read = 0;
