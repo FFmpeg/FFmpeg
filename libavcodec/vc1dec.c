@@ -2704,7 +2704,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
  */
 static void vc1_decode_i_blocks_adv(VC1Context *v)
 {
-    int k, j;
+    int k;
     MpegEncContext *s = &v->s;
     int cbp, val;
     uint8_t *coded_val;
@@ -2747,7 +2747,14 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
         s->mb_x = 0;
         ff_init_block_index(s);
         for(;s->mb_x < s->mb_width; s->mb_x++) {
+            uint8_t *dst[6];
             ff_update_block_index(s);
+            dst[0] = s->dest[0];
+            dst[1] = dst[0] + 8;
+            dst[2] = s->dest[0] + s->linesize * 8;
+            dst[3] = dst[2] + 8;
+            dst[4] = s->dest[1];
+            dst[5] = s->dest[2];
             s->dsp.clear_blocks(s->block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_stride;
             s->current_picture.mb_type[mb_pos] = MB_TYPE_INTRA;
@@ -2791,11 +2798,12 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
 
                 vc1_decode_i_block_adv(v, s->block[k], k, val, (k<4)? v->codingset : v->codingset2, mquant);
 
+                if (k > 3 && (s->flags & CODEC_FLAG_GRAY)) continue;
                 v->vc1dsp.vc1_inv_trans_8x8(s->block[k]);
-                for(j = 0; j < 64; j++) s->block[k][j] += 128;
+                s->dsp.put_signed_pixels_clamped(s->block[k], dst[k],
+                                                 k & 4 ? s->uvlinesize : s->linesize);
             }
 
-            vc1_put_block(v, s->block);
             if(overlap) {
                 if(s->mb_x) {
                     v->vc1dsp.vc1_h_overlap(s->dest[0], s->linesize);
