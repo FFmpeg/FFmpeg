@@ -134,7 +134,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!ast)
                 return AVERROR(ENOMEM);
             ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-            ast->codec->codec_tag   = 0;
+            ast->codec->codec_tag   = vst->codec->codec_tag;
             ast->codec->sample_rate = avio_rl16(pb);
             av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             flags = avio_rl16(pb);
