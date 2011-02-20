@@ -87,9 +87,21 @@ int init_put_byte(AVIOContext *s,
     return ffio_init_context(s, buffer, buffer_size, write_flag, opaque,
                                 read_packet, write_packet, seek);
 }
+AVIOContext *av_alloc_put_byte(
+                  unsigned char *buffer,
+                  int buffer_size,
+                  int write_flag,
+                  void *opaque,
+                  int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int64_t (*seek)(void *opaque, int64_t offset, int whence))
+{
+    return avio_alloc_context(buffer, buffer_size, write_flag, opaque,
+                              read_packet, write_packet, seek);
+}
 #endif
 
-AVIOContext *av_alloc_put_byte(
+AVIOContext *avio_alloc_context(
                   unsigned char *buffer,
                   int buffer_size,
                   int write_flag,

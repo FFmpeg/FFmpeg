@@ -236,7 +236,7 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
         return NULL;
     }
 
-    pb = av_alloc_put_byte(buffer, 1 << wf->sector_bits, 0, wf,
+    pb = avio_alloc_context(buffer, 1 << wf->sector_bits, 0, wf,
                            wtvfile_read_packet, NULL, wtvfile_seek);
     if (!pb) {
         av_free(buffer);
