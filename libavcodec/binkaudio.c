@@ -81,7 +81,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     } else {
         frame_len_bits = 11;
     }
-    s->frame_len = 1 << frame_len_bits;
 
     if (avctx->channels > MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR, "too many channels: %d\n", avctx->channels);
@@ -91,14 +90,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT) {
         // audio is already interleaved for the RDFT format variant
         sample_rate  *= avctx->channels;
-        s->frame_len *= avctx->channels;
         s->channels = 1;
-        if (avctx->channels == 2)
-            frame_len_bits++;
+        frame_len_bits += av_log2(avctx->channels);
     } else {
         s->channels = avctx->channels;
     }
 
+    s->frame_len     = 1 << frame_len_bits;
     s->overlap_len   = s->frame_len / 16;
     s->block_size    = (s->frame_len - s->overlap_len) * s->channels;
     sample_rate_half = (sample_rate + 1) / 2;
