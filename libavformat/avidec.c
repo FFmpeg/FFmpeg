@@ -752,7 +752,7 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt) {
         AVIStream *ast = st->priv_data;
         AVInputFormat *sub_demuxer;
         AVRational time_base;
-        AVIOContext *pb = av_alloc_put_byte(pkt->data + 7,
+        AVIOContext *pb = avio_alloc_context( pkt->data + 7,
                                               pkt->size - 7,
                                               0, NULL, NULL, NULL, NULL);
         AVProbeData pd;
