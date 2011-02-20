@@ -26,6 +26,7 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "rtp.h"
 #include "rtpdec.h"
 #include "isom.h"
@@ -69,7 +70,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
      * http://developer.apple.com/quicktime/icefloe/dispatch026.html
      */
     init_get_bits(&gb, buf, len << 3);
-    init_put_byte(&pb, buf, len, 0, NULL, NULL, NULL, NULL);
+    ffio_init_context(&pb, buf, len, 0, NULL, NULL, NULL, NULL);
 
     if (len < 4)
         return AVERROR_INVALIDDATA;

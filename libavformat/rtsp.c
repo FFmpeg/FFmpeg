@@ -25,6 +25,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
 #include "avformat.h"
+#include "avio_internal.h"
 
 #include <sys/time.h>
 #if HAVE_POLL_H
@@ -1913,7 +1914,7 @@ static int rtp_read_header(AVFormatContext *s,
              port, payload_type);
     av_log(s, AV_LOG_VERBOSE, "SDP:\n%s\n", sdp);
 
-    init_put_byte(&pb, sdp, strlen(sdp), 0, NULL, NULL, NULL, NULL);
+    ffio_init_context(&pb, sdp, strlen(sdp), 0, NULL, NULL, NULL, NULL);
     s->pb = &pb;
 
     /* sdp_read_header initializes this again */

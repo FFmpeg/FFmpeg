@@ -29,6 +29,7 @@
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"
+#include "avio_internal.h"
 #include "seek.h"
 #include "mpeg.h"
 #include "isom.h"
@@ -855,7 +856,7 @@ static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
     int tag;
     unsigned len;
 
-    init_put_byte(&pb, buf, size, 0, NULL, NULL, NULL, NULL);
+    ffio_init_context(&pb, buf, size, 0, NULL, NULL, NULL, NULL);
 
     len = ff_mp4_read_descr(s, &pb, &tag);
     if (tag == MP4IODescrTag) {
@@ -914,7 +915,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         if (st->codec->codec_id == CODEC_ID_AAC_LATM &&
             mp4_dec_config_descr_len && mp4_es_id == pid) {
             AVIOContext pb;
-            init_put_byte(&pb, mp4_dec_config_descr,
+            ffio_init_context(&pb, mp4_dec_config_descr,
                           mp4_dec_config_descr_len, 0, NULL, NULL, NULL, NULL);
             ff_mp4_read_dec_config_descr(fc, st, &pb);
             if (st->codec->codec_id == CODEC_ID_AAC &&

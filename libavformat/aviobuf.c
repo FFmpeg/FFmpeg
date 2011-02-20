@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include <stdarg.h>
 
@@ -40,7 +41,7 @@ static void fill_buffer(AVIOContext *s);
 static int url_resetbuf(AVIOContext *s, int flags);
 #endif
 
-int init_put_byte(AVIOContext *s,
+int ffio_init_context(AVIOContext *s,
                   unsigned char *buffer,
                   int buffer_size,
                   int write_flag,
@@ -73,6 +74,21 @@ int init_put_byte(AVIOContext *s,
     return 0;
 }
 
+#if FF_API_OLD_AVIO
+int init_put_byte(AVIOContext *s,
+                  unsigned char *buffer,
+                  int buffer_size,
+                  int write_flag,
+                  void *opaque,
+                  int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int64_t (*seek)(void *opaque, int64_t offset, int whence))
+{
+    return ffio_init_context(s, buffer, buffer_size, write_flag, opaque,
+                                read_packet, write_packet, seek);
+}
+#endif
+
 AVIOContext *av_alloc_put_byte(
                   unsigned char *buffer,
                   int buffer_size,
@@ -83,7 +99,7 @@ AVIOContext *av_alloc_put_byte(
                   int64_t (*seek)(void *opaque, int64_t offset, int whence))
 {
     AVIOContext *s = av_mallocz(sizeof(AVIOContext));
-    init_put_byte(s, buffer, buffer_size, write_flag, opaque,
+    ffio_init_context(s, buffer, buffer_size, write_flag, opaque,
                   read_packet, write_packet, seek);
     return s;
 }
@@ -664,7 +680,7 @@ int url_fdopen(AVIOContext **s, URLContext *h)
         return AVERROR(ENOMEM);
     }
 
-    if (init_put_byte(*s, buffer, buffer_size,
+    if (ffio_init_context(*s, buffer, buffer_size,
                       (h->flags & URL_WRONLY || h->flags & URL_RDWR), h,
                       url_read, url_write, url_seek) < 0) {
         av_free(buffer);
@@ -865,7 +881,7 @@ int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags)
     *s = av_mallocz(sizeof(AVIOContext));
     if(!*s)
         return AVERROR(ENOMEM);
-    ret = init_put_byte(*s, buf, buf_size,
+    ret = ffio_init_context(*s, buf, buf_size,
                         (flags & URL_WRONLY || flags & URL_RDWR),
                         NULL, NULL, NULL, NULL);
     if(ret != 0)
@@ -964,7 +980,7 @@ static int url_open_dyn_buf_internal(AVIOContext **s, int max_packet_size)
         return AVERROR(ENOMEM);
     }
     d->io_buffer_size = io_buffer_size;
-    ret = init_put_byte(*s, d->io_buffer, io_buffer_size,
+    ret = ffio_init_context(*s, d->io_buffer, io_buffer_size,
                         1, d, NULL,
                         max_packet_size ? dyn_packet_buf_write : dyn_buf_write,
                         max_packet_size ? NULL : dyn_buf_seek);

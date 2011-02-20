@@ -24,6 +24,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "metadata.h"
+#include "avio_internal.h"
 
 int ff_id3v2_match(const uint8_t *buf, const char * magic)
 {
@@ -216,7 +217,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
                         j--;
                     }
                 }
-                init_put_byte(&pb, buffer, j, 0, NULL, NULL, NULL, NULL);
+                ffio_init_context(&pb, buffer, j, 0, NULL, NULL, NULL, NULL);
                 read_ttag(s, &pb, j, tag);
             } else {
                 read_ttag(s, s->pb, tlen, tag);

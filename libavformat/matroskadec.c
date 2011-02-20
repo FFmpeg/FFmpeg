@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include "avformat.h"
 #include "internal.h"
+#include "avio_internal.h"
 /* For ff_codec_get_id(). */
 #include "riff.h"
 #include "isom.h"
@@ -698,7 +699,7 @@ static int matroska_ebmlnum_uint(MatroskaDemuxContext *matroska,
                                  uint8_t *data, uint32_t size, uint64_t *num)
 {
     AVIOContext pb;
-    init_put_byte(&pb, data, size, 0, NULL, NULL, NULL, NULL);
+    ffio_init_context(&pb, data, size, 0, NULL, NULL, NULL, NULL);
     return ebml_read_num(matroska, &pb, FFMIN(size, 8), num);
 }
 
@@ -1328,7 +1329,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (!strcmp(track->codec_id, "A_MS/ACM")
                    && track->codec_priv.size >= 14
                    && track->codec_priv.data != NULL) {
-            init_put_byte(&b, track->codec_priv.data, track->codec_priv.size,
+            ffio_init_context(&b, track->codec_priv.data, track->codec_priv.size,
                           URL_RDONLY, NULL, NULL, NULL, NULL);
             ff_get_wav_header(&b, st->codec, track->codec_priv.size);
             codec_id = st->codec->codec_id;
@@ -1373,7 +1374,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             extradata = av_mallocz(extradata_size);
             if (extradata == NULL)
                 return AVERROR(ENOMEM);
-            init_put_byte(&b, extradata, extradata_size, 1,
+            ffio_init_context(&b, extradata, extradata_size, 1,
                           NULL, NULL, NULL, NULL);
             put_buffer(&b, "TTA1", 4);
             put_le16(&b, 1);
@@ -1390,7 +1391,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (codec_id == CODEC_ID_RA_288 || codec_id == CODEC_ID_COOK ||
                    codec_id == CODEC_ID_ATRAC3 || codec_id == CODEC_ID_SIPR) {
             int flavor;
-            init_put_byte(&b, track->codec_priv.data,track->codec_priv.size,
+            ffio_init_context(&b, track->codec_priv.data,track->codec_priv.size,
                           0, NULL, NULL, NULL, NULL);
             url_fskip(&b, 22);
             flavor                       = get_be16(&b);
