@@ -164,7 +164,6 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
 
     for (ch = 0; ch < s->channels; ch++) {
         FFTSample *coeffs = s->coeffs_ptr[ch];
-        q = 0.0f;
         coeffs[0] = get_float(gb) * s->root;
         coeffs[1] = get_float(gb) * s->root;
 
@@ -174,10 +173,8 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
             quant[i] = expf(FFMIN(value, 95) * 0.15289164787221953823f) * s->root;
         }
 
-        // find band (k)
-        for (k = 0; s->bands[k] < 1; k++) {
-            q = quant[k];
-        }
+        k = 0;
+        q = quant[0];
 
         // parse coefficients
         i = 2;
