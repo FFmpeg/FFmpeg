@@ -76,7 +76,7 @@ version <next>:
 - IVF muxer added
 - Wing Commander IV movies decoder added
 - movie source added
-- Bink version 'b' video decoder
+- Bink version 'b' audio and video decoder
 
 
 version 0.6:
