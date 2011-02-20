@@ -114,10 +114,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     /* populate bands data */
-    s->bands[0] = 1;
+    s->bands[0] = 2;
     for (i = 1; i < s->num_bands; i++)
-        s->bands[i] = ff_wma_critical_freqs[i - 1] * (s->frame_len / 2) / sample_rate_half;
-    s->bands[s->num_bands] = s->frame_len / 2;
+        s->bands[i] = (ff_wma_critical_freqs[i - 1] * s->frame_len / sample_rate_half) & ~1;
+    s->bands[s->num_bands] = s->frame_len;
 
     s->first = 1;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -194,11 +194,11 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
             if (width == 0) {
                 memset(coeffs + i, 0, (j - i) * sizeof(*coeffs));
                 i = j;
-                while (s->bands[k] * 2 < i)
+                while (s->bands[k] < i)
                     q = quant[k++];
             } else {
                 while (i < j) {
-                    if (s->bands[k] * 2 == i)
+                    if (s->bands[k] == i)
                         q = quant[k++];
                     coeff = get_bits(gb, width);
                     if (coeff) {
