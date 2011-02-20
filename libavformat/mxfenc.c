@@ -305,7 +305,7 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x3D0A, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x02,0x03,0x02,0x01,0x00,0x00,0x00}}, /* Block Align */
 };
 
-static void mxf_write_uuid(ByteIOContext *pb, enum MXFMetadataSetType type, int value)
+static void mxf_write_uuid(AVIOContext *pb, enum MXFMetadataSetType type, int value)
 {
     put_buffer(pb, uuid_base, 12);
     put_be16(pb, type);
@@ -321,7 +321,7 @@ static void mxf_write_umid(AVFormatContext *s, int type)
     put_byte(s->pb, type);
 }
 
-static void mxf_write_refs_count(ByteIOContext *pb, int ref_count)
+static void mxf_write_refs_count(AVIOContext *pb, int ref_count)
 {
     put_be32(pb, ref_count);
     put_be32(pb, 16);
@@ -335,7 +335,7 @@ static int klv_ber_length(uint64_t len)
         return (av_log2(len) >> 3) + 2;
 }
 
-static int klv_encode_ber_length(ByteIOContext *pb, uint64_t len)
+static int klv_encode_ber_length(AVIOContext *pb, uint64_t len)
 {
     // Determine the best BER size
     int size;
@@ -356,7 +356,7 @@ static int klv_encode_ber_length(ByteIOContext *pb, uint64_t len)
     return 0;
 }
 
-static void klv_encode_ber4_length(ByteIOContext *pb, int len)
+static void klv_encode_ber4_length(AVIOContext *pb, int len)
 {
     put_byte(pb, 0x80 + 3);
     put_be24(pb, len);
@@ -376,7 +376,7 @@ static int mxf_get_essence_container_ul_index(enum CodecID id)
 
 static void mxf_write_primer_pack(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int local_tag_number, i = 0;
 
     local_tag_number = FF_ARRAY_ELEMS(mxf_local_tag_batch);
@@ -393,13 +393,13 @@ static void mxf_write_primer_pack(AVFormatContext *s)
     }
 }
 
-static void mxf_write_local_tag(ByteIOContext *pb, int size, int tag)
+static void mxf_write_local_tag(AVIOContext *pb, int size, int tag)
 {
     put_be16(pb, tag);
     put_be16(pb, size);
 }
 
-static void mxf_write_metadata_key(ByteIOContext *pb, unsigned int value)
+static void mxf_write_metadata_key(AVIOContext *pb, unsigned int value)
 {
     put_buffer(pb, header_metadata_key, 13);
     put_be24(pb, value);
@@ -429,7 +429,7 @@ static const MXFCodecUL *mxf_get_data_definition_ul(int type)
 static void mxf_write_essence_container_refs(AVFormatContext *s)
 {
     MXFContext *c = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int i;
 
     mxf_write_refs_count(pb, c->essence_container_count);
@@ -443,7 +443,7 @@ static void mxf_write_essence_container_refs(AVFormatContext *s)
 static void mxf_write_preface(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     mxf_write_metadata_key(pb, 0x012f00);
     PRINT_KEY(s, "preface key", pb->buf_ptr - 16);
@@ -487,7 +487,7 @@ static void mxf_write_preface(AVFormatContext *s)
 /*
  * Write a local tag containing an ascii string as utf-16
  */
-static void mxf_write_local_tag_utf16(ByteIOContext *pb, int tag, const char *value)
+static void mxf_write_local_tag_utf16(AVIOContext *pb, int tag, const char *value)
 {
     int i, size = strlen(value);
     mxf_write_local_tag(pb, size*2, tag);
@@ -498,7 +498,7 @@ static void mxf_write_local_tag_utf16(ByteIOContext *pb, int tag, const char *va
 static void mxf_write_identification(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     const char *company = "FFmpeg";
     const char *product = "OP1a Muxer";
     const char *version;
@@ -536,7 +536,7 @@ static void mxf_write_identification(AVFormatContext *s)
 
 static void mxf_write_content_storage(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     mxf_write_metadata_key(pb, 0x011800);
     PRINT_KEY(s, "content storage key", pb->buf_ptr - 16);
@@ -562,7 +562,7 @@ static void mxf_write_content_storage(AVFormatContext *s)
 static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     MXFStreamContext *sc = st->priv_data;
 
     mxf_write_metadata_key(pb, 0x013b00);
@@ -603,7 +603,7 @@ static const uint8_t smpte_12m_timecode_track_data_ul[] = { 0x06,0x0E,0x2B,0x34,
 static void mxf_write_common_fields(AVFormatContext *s, AVStream *st)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     // find data define uls
     mxf_write_local_tag(pb, 16, 0x0201);
@@ -622,7 +622,7 @@ static void mxf_write_common_fields(AVFormatContext *s, AVStream *st)
 static void mxf_write_sequence(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     enum MXFMetadataSetType component;
 
     mxf_write_metadata_key(pb, 0x010f00);
@@ -650,7 +650,7 @@ static void mxf_write_sequence(AVFormatContext *s, AVStream *st, enum MXFMetadat
 static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     mxf_write_metadata_key(pb, 0x011400);
     klv_encode_ber_length(pb, 75);
@@ -677,7 +677,7 @@ static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, enum 
 
 static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int i;
 
     mxf_write_metadata_key(pb, 0x011100);
@@ -714,7 +714,7 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enu
 static void mxf_write_multi_descriptor(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     const uint8_t *ul;
     int i;
 
@@ -752,7 +752,7 @@ static void mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UID k
 {
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     put_buffer(pb, key, 16);
     klv_encode_ber4_length(pb, size+20+8+12+20);
@@ -780,7 +780,7 @@ static const UID mxf_generic_sound_descriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0
 static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
 {
     MXFStreamContext *sc = st->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int stored_height = (st->codec->height+15)/16*16;
     int display_height;
     int f1, f2;
@@ -856,7 +856,7 @@ static void mxf_write_cdci_desc(AVFormatContext *s, AVStream *st)
 
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int profile_and_level = (st->codec->profile<<4) | st->codec->level;
 
     mxf_write_cdci_common(s, st, mxf_mpegvideo_descriptor_key, 8+5);
@@ -874,7 +874,7 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
 
 static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     mxf_write_generic_desc(s, st, key, size+5+12+8+8);
 
@@ -896,7 +896,7 @@ static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, con
 
 static void mxf_write_wav_common(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     mxf_write_generic_sound_common(s, st, key, size+6+8);
 
@@ -926,7 +926,7 @@ static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st)
 static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int i, track_count = s->nb_streams+1;
 
     if (type == MaterialPackage) {
@@ -996,7 +996,7 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
 
 static int mxf_write_essence_container_data(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     mxf_write_metadata_key(pb, 0x012300);
     klv_encode_ber_length(pb, 72);
@@ -1039,7 +1039,7 @@ static unsigned klv_fill_size(uint64_t size)
 static void mxf_write_index_table_segment(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int i, j, temporal_reordering = 0;
     int key_index = mxf->last_key_index;
 
@@ -1187,7 +1187,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
                                 const uint8_t *key, int write_metadata)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t header_byte_count_offset;
     unsigned index_byte_count = 0;
     uint64_t partition_offset = url_ftell(pb);
@@ -1557,7 +1557,7 @@ static uint32_t ff_framenum_to_12m_time_code(unsigned frame, int drop, int fps)
 static void mxf_write_system_item(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned frame;
     uint32_t time_code;
 
@@ -1598,7 +1598,7 @@ static void mxf_write_system_item(AVFormatContext *s)
 static void mxf_write_d10_video_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int packet_size = (uint64_t)st->codec->bit_rate*mxf->time_base.num /
         (8*mxf->time_base.den); // frame size
     int pad;
@@ -1628,7 +1628,7 @@ static void mxf_write_d10_video_packet(AVFormatContext *s, AVStream *st, AVPacke
 static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int frame_size = pkt->size / st->codec->block_align;
     uint8_t *samples = pkt->data;
     uint8_t *end = pkt->data + pkt->size;
@@ -1660,7 +1660,7 @@ static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacke
 static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st = s->streams[pkt->stream_index];
     MXFStreamContext *sc = st->priv_data;
     MXFIndexEntry ie = {0};
@@ -1739,7 +1739,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 static void mxf_write_random_index_pack(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     uint64_t pos = url_ftell(pb);
     int i;
 
@@ -1766,7 +1766,7 @@ static void mxf_write_random_index_pack(AVFormatContext *s)
 static int mxf_write_footer(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     mxf->duration = mxf->last_indexed_edit_unit + mxf->edit_units_count;
 

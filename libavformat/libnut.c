@@ -46,7 +46,7 @@ static const AVCodecTag nut_tags[] = {
 
 #if CONFIG_LIBNUT_MUXER
 static int av_write(void * h, size_t len, const uint8_t * buf) {
-    ByteIOContext * bc = h;
+    AVIOContext * bc = h;
     put_buffer(bc, buf, len);
     //put_flush_packet(bc);
     return len;
@@ -54,7 +54,7 @@ static int av_write(void * h, size_t len, const uint8_t * buf) {
 
 static int nut_write_header(AVFormatContext * avf) {
     NUTContext * priv = avf->priv_data;
-    ByteIOContext * bc = avf->pb;
+    AVIOContext * bc = avf->pb;
     nut_muxer_opts_tt mopts = {
         .output = {
             .priv = bc,
@@ -137,7 +137,7 @@ static int nut_write_packet(AVFormatContext * avf, AVPacket * pkt) {
 }
 
 static int nut_write_trailer(AVFormatContext * avf) {
-    ByteIOContext * bc = avf->pb;
+    AVIOContext * bc = avf->pb;
     NUTContext * priv = avf->priv_data;
     int i;
 
@@ -172,12 +172,12 @@ static int nut_probe(AVProbeData *p) {
 }
 
 static size_t av_read(void * h, size_t len, uint8_t * buf) {
-    ByteIOContext * bc = h;
+    AVIOContext * bc = h;
     return get_buffer(bc, buf, len);
 }
 
 static off_t av_seek(void * h, long long pos, int whence) {
-    ByteIOContext * bc = h;
+    AVIOContext * bc = h;
     if (whence == SEEK_END) {
         pos = url_fsize(bc) + pos;
         whence = SEEK_SET;
@@ -187,7 +187,7 @@ static off_t av_seek(void * h, long long pos, int whence) {
 
 static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
     NUTContext * priv = avf->priv_data;
-    ByteIOContext * bc = avf->pb;
+    AVIOContext * bc = avf->pb;
     nut_demuxer_opts_tt dopts = {
         .input = {
             .priv = bc,

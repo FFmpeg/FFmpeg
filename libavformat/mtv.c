@@ -79,7 +79,7 @@ static int mtv_probe(AVProbeData *p)
 static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MTVDemuxContext *mtv = s->priv_data;
-    ByteIOContext   *pb  = s->pb;
+    AVIOContext   *pb  = s->pb;
     AVStream        *st;
     unsigned int    audio_subsegments;
 
@@ -156,7 +156,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MTVDemuxContext *mtv = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int ret;
 #if !HAVE_BIGENDIAN
     int i;

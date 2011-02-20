@@ -32,20 +32,20 @@
 #include "avio.h"
 #include "internal.h"
 
-int64_t ff_start_tag(ByteIOContext *pb, const char *tag);
-void ff_end_tag(ByteIOContext *pb, int64_t start);
+int64_t ff_start_tag(AVIOContext *pb, const char *tag);
+void ff_end_tag(AVIOContext *pb, int64_t start);
 
 /**
  * Read BITMAPINFOHEADER structure and set AVStream codec width, height and
  * bits_per_encoded_sample fields. Does not read extradata.
  * @return codec tag
  */
-int ff_get_bmp_header(ByteIOContext *pb, AVStream *st);
+int ff_get_bmp_header(AVIOContext *pb, AVStream *st);
 
-void ff_put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf);
-int ff_put_wav_header(ByteIOContext *pb, AVCodecContext *enc);
+void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf);
+int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc);
 enum CodecID ff_wav_codec_get_id(unsigned int tag, int bps);
-void ff_get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size);
+void ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size);
 
 extern const AVCodecTag ff_codec_bmp_tags[];
 extern const AVCodecTag ff_codec_wav_tags[];

@@ -57,7 +57,7 @@
 #define WTV_BIGSECTOR_BITS 18
 
 typedef struct {
-    ByteIOContext *pb_filesystem;  /** file system (AVFormatContext->pb) */
+    AVIOContext *pb_filesystem;  /** file system (AVFormatContext->pb) */
 
     int sector_bits;     /** sector shift bits; used to convert sector number into pb_filesystem offset */
     uint32_t *sectors;   /** file allocation table */
@@ -74,7 +74,7 @@ typedef struct {
 static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
 {
     WtvFile *wf = opaque;
-    ByteIOContext *pb = wf->pb_filesystem;
+    AVIOContext *pb = wf->pb_filesystem;
     int nread = 0;
 
     if (wf->error || url_ferror(pb))
@@ -113,7 +113,7 @@ static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
 static int64_t wtvfile_seek(void *opaque, int64_t offset, int whence)
 {
     WtvFile *wf = opaque;
-    ByteIOContext *pb = wf->pb_filesystem;
+    AVIOContext *pb = wf->pb_filesystem;
 
     if (whence == AVSEEK_SIZE)
         return wf->length;
@@ -136,7 +136,7 @@ static int64_t wtvfile_seek(void *opaque, int64_t offset, int whence)
  * @param     count maximum number of integers to read
  * @return    total number of integers read
  */
-static int read_ints(ByteIOContext *pb, uint32_t *data, int count)
+static int read_ints(AVIOContext *pb, uint32_t *data, int count)
 {
     int i, total = 0;
     for (i = 0; i < count; i++) {
@@ -153,9 +153,9 @@ static int read_ints(ByteIOContext *pb, uint32_t *data, int count)
  * @param depth         File allocation table depth
  * @return NULL on error
  */
-static ByteIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int depth, AVFormatContext *s)
+static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int depth, AVFormatContext *s)
 {
-    ByteIOContext *pb;
+    AVIOContext *pb;
     WtvFile *wf;
     uint8_t *buffer;
 
@@ -257,7 +257,7 @@ static const ff_asf_guid dir_entry_guid =
  * @param      filename_size size of filename
  * @return NULL on error
  */
-static ByteIOContext * wtvfile_open2(AVFormatContext *s, const uint8_t *buf, int buf_size, const uint8_t *filename, int filename_size)
+static AVIOContext * wtvfile_open2(AVFormatContext *s, const uint8_t *buf, int buf_size, const uint8_t *filename, int filename_size)
 {
     const uint8_t *buf_end = buf + buf_size;
 
@@ -298,7 +298,7 @@ static ByteIOContext * wtvfile_open2(AVFormatContext *s, const uint8_t *buf, int
 /**
  * Close file opened with wtvfile_open_sector(), or wtv_open()
  */
-static void wtvfile_close(ByteIOContext *pb)
+static void wtvfile_close(AVIOContext *pb)
 {
     WtvFile *wf = pb->opaque;
     av_free(wf->sectors);
@@ -316,7 +316,7 @@ typedef struct {
 } WtvStream;
 
 typedef struct {
-    ByteIOContext *pb;       /** timeline file */
+    AVIOContext *pb;       /** timeline file */
     int64_t epoch;
     int64_t pts;             /** pts for next data chunk */
     int64_t last_valid_pts;  /** latest valid pts, used for interative seeking */
@@ -462,7 +462,7 @@ static void oledate_to_iso8601(char *buf, int buf_size, int64_t value)
     strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", gmtime(&t));
 }
 
-static void get_attachment(AVFormatContext *s, ByteIOContext *pb, int length)
+static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
 {
     char mime[1024];
     char description[1024];
@@ -495,7 +495,7 @@ done:
     url_fseek(pb, pos + length, SEEK_SET);
 }
 
-static void get_tag(AVFormatContext *s, ByteIOContext *pb, const char *key, int type, int length)
+static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int type, int length)
 {
     int buf_size = FFMAX(2*length, LEN_PRETTY_GUID) + 1;
     char *buf = av_malloc(buf_size);
@@ -550,7 +550,7 @@ static void get_tag(AVFormatContext *s, ByteIOContext *pb, const char *key, int 
 /**
  * Parse metadata entries
  */
-static void parse_legacy_attrib(AVFormatContext *s, ByteIOContext *pb)
+static void parse_legacy_attrib(AVFormatContext *s, AVIOContext *pb)
 {
     ff_asf_guid guid;
     int length, type;
@@ -580,7 +580,7 @@ static void parse_legacy_attrib(AVFormatContext *s, ByteIOContext *pb)
 static int parse_videoinfoheader2(AVFormatContext *s, AVStream *st)
 {
     WtvContext *wtv = s->priv_data;
-    ByteIOContext *pb = wtv->pb;
+    AVIOContext *pb = wtv->pb;
 
     url_fskip(pb, 72);  // picture aspect ratio is unreliable
     ff_get_bmp_header(pb, st);
@@ -650,7 +650,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
                                    ff_asf_guid formattype, int size)
 {
     WtvContext *wtv = s->priv_data;
-    ByteIOContext *pb = wtv->pb;
+    AVIOContext *pb = wtv->pb;
     if (!ff_guidcmp(subtype, mediasubtype_cpfilters_processed) &&
         !ff_guidcmp(formattype, format_cpfilters_processed)) {
         ff_asf_guid actual_subtype;
@@ -769,7 +769,7 @@ enum {
 static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_ptr)
 {
     WtvContext *wtv = s->priv_data;
-    ByteIOContext *pb = wtv->pb;
+    AVIOContext *pb = wtv->pb;
     while (!url_feof(pb)) {
         ff_asf_guid g;
         int len, sid, consumed;
@@ -945,7 +945,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     WtvContext *wtv = s->priv_data;
     int root_sector, root_size;
     uint8_t root[WTV_SECTOR_SIZE];
-    ByteIOContext *pb;
+    AVIOContext *pb;
     int64_t timeline_pos;
     int ret;
 
@@ -1035,7 +1035,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     WtvContext *wtv = s->priv_data;
-    ByteIOContext *pb = wtv->pb;
+    AVIOContext *pb = wtv->pb;
     int stream_index, len, ret;
 
     stream_index = parse_chunks(s, SEEK_TO_DATA, 0, &len);
@@ -1055,7 +1055,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
                      int64_t ts, int flags)
 {
     WtvContext *wtv = s->priv_data;
-    ByteIOContext *pb = wtv->pb;
+    AVIOContext *pb = wtv->pb;
     AVStream *st = s->streams[0];
     int64_t ts_relative;
     int i;

@@ -47,7 +47,7 @@ static int mmf_rate_code(int rate)
 }
 
 /* Copy of end_tag() from avienc.c, but for big-endian chunk size */
-static void end_tag_be(ByteIOContext *pb, int64_t start)
+static void end_tag_be(AVIOContext *pb, int64_t start)
 {
     int64_t pos;
 
@@ -60,7 +60,7 @@ static void end_tag_be(ByteIOContext *pb, int64_t start)
 static int mmf_write_header(AVFormatContext *s)
 {
     MMFContext *mmf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos;
     int rate;
 
@@ -108,13 +108,13 @@ static int mmf_write_header(AVFormatContext *s)
 
 static int mmf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     put_buffer(pb, pkt->data, pkt->size);
     return 0;
 }
 
 /* Write a variable-length symbol */
-static void put_varlength(ByteIOContext *pb, int val)
+static void put_varlength(AVIOContext *pb, int val)
 {
     if(val < 128)
         put_byte(pb, val);
@@ -127,7 +127,7 @@ static void put_varlength(ByteIOContext *pb, int val)
 
 static int mmf_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     MMFContext *mmf = s->priv_data;
     int64_t pos, size;
     int gatetime;
@@ -183,7 +183,7 @@ static int mmf_read_header(AVFormatContext *s,
 {
     MMFContext *mmf = s->priv_data;
     unsigned int tag;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     int64_t file_size, size;
     int rate, params;

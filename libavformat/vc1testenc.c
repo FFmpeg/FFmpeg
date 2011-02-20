@@ -27,7 +27,7 @@ typedef struct RCVContext {
 static int vc1test_write_header(AVFormatContext *s)
 {
     AVCodecContext *avc = s->streams[0]->codec;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     if (avc->codec_id != CODEC_ID_WMV3) {
         av_log(s, AV_LOG_ERROR, "Only WMV3 is accepted!\n");
@@ -55,7 +55,7 @@ static int vc1test_write_header(AVFormatContext *s)
 static int vc1test_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RCVContext *ctx = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     if (!pkt->size)
         return 0;
@@ -71,7 +71,7 @@ static int vc1test_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int vc1test_write_trailer(AVFormatContext *s)
 {
     RCVContext *ctx = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     if (!url_is_streamed(s->pb)) {
         url_fseek(pb, 0, SEEK_SET);

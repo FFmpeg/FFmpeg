@@ -55,7 +55,7 @@ static int nuv_probe(AVProbeData *p) {
  * \param myth set if this is a MythTVVideo format file
  * \return 1 if all required codec data was found
  */
-static int get_codec_data(ByteIOContext *pb, AVStream *vst,
+static int get_codec_data(AVIOContext *pb, AVStream *vst,
                           AVStream *ast, int myth) {
     nuv_frametype frametype;
     if (!vst && !myth)
@@ -122,7 +122,7 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
 
 static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
     NUVContext *ctx = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     char id_string[12];
     double aspect, fps;
     int is_mythtv, width, height, v_packs, a_packs;
@@ -191,7 +191,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
 
 static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
     NUVContext *ctx = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     uint8_t hdr[HDRSIZE];
     nuv_frametype frametype;
     int ret, size;

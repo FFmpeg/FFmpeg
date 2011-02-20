@@ -82,7 +82,7 @@ static int qcp_probe(AVProbeData *pd)
 
 static int qcp_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     QCPContext    *c  = s->priv_data;
     AVStream      *st = av_new_stream(s, 0);
     uint8_t       buf[16];
@@ -136,7 +136,7 @@ static int qcp_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 static int qcp_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     QCPContext    *c  = s->priv_data;
     unsigned int  chunk_size, tag;
 

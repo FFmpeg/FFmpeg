@@ -47,7 +47,7 @@ typedef struct RPLContext {
     uint32_t frame_in_part;
 } RPLContext;
 
-static int read_line(ByteIOContext * pb, char* line, int bufsize)
+static int read_line(AVIOContext * pb, char* line, int bufsize)
 {
     int i;
     for (i = 0; i < bufsize - 1; i++) {
@@ -76,7 +76,7 @@ static int32_t read_int(const char* line, const char** endptr, int* error)
     return result;
 }
 
-static int32_t read_line_and_int(ByteIOContext * pb, int* error)
+static int32_t read_line_and_int(AVIOContext * pb, int* error)
 {
     char line[RPL_LINE_LENGTH];
     const char *endptr;
@@ -110,7 +110,7 @@ static AVRational read_fps(const char* line, int* error)
 
 static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     RPLContext *rpl = s->priv_data;
     AVStream *vst = NULL, *ast = NULL;
     int total_audio_size;
@@ -274,7 +274,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RPLContext *rpl = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream* stream;
     AVIndexEntry* index_entry;
     uint32_t ret;

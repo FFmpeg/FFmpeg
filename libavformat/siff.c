@@ -84,7 +84,7 @@ static int create_audio_stream(AVFormatContext *s, SIFFContext *c)
     return 0;
 }
 
-static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, ByteIOContext *pb)
+static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
 {
     AVStream *st;
     int width, height;
@@ -135,7 +135,7 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, ByteIOContext *pb
     return 0;
 }
 
-static int siff_parse_soun(AVFormatContext *s, SIFFContext *c, ByteIOContext *pb)
+static int siff_parse_soun(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
 {
     if (get_le32(pb) != TAG_SHDR){
         av_log(s, AV_LOG_ERROR, "Header chunk is missing\n");
@@ -154,7 +154,7 @@ static int siff_parse_soun(AVFormatContext *s, SIFFContext *c, ByteIOContext *pb
 
 static int siff_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     SIFFContext *c = s->priv_data;
     uint32_t tag;
 

@@ -40,7 +40,7 @@ typedef struct {
 static int sox_write_header(AVFormatContext *s)
 {
     SoXContext *sox = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
     AVMetadataTag *comment;
     size_t comment_len = 0, comment_size;
@@ -84,7 +84,7 @@ static int sox_write_header(AVFormatContext *s)
 
 static int sox_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     put_buffer(pb, pkt->data, pkt->size);
     return 0;
 }
@@ -92,7 +92,7 @@ static int sox_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int sox_write_trailer(AVFormatContext *s)
 {
     SoXContext *sox = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
 
     if (!url_is_streamed(s->pb)) {

@@ -53,7 +53,7 @@ static int probe(AVProbeData *p)
 /** Read audio description chunk */
 static int read_desc_chunk(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     CaffContext *caf  = s->priv_data;
     AVStream *st;
     int flags;
@@ -93,7 +93,7 @@ static int read_desc_chunk(AVFormatContext *s)
 /** Read magic cookie chunk */
 static int read_kuki_chunk(AVFormatContext *s, int64_t size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st      = s->streams[0];
 
     if (size < 0 || size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE)
@@ -144,7 +144,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
 /** Read packet table chunk */
 static int read_pakt_chunk(AVFormatContext *s, int64_t size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st      = s->streams[0];
     CaffContext *caf  = s->priv_data;
     int64_t pos = 0, ccount;
@@ -179,7 +179,7 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
 /** Read information chunk */
 static void read_info_chunk(AVFormatContext *s, int64_t size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int i;
     unsigned int nb_entries = get_be32(pb);
     for (i = 0; i < nb_entries; i++) {
@@ -194,7 +194,7 @@ static void read_info_chunk(AVFormatContext *s, int64_t size)
 static int read_header(AVFormatContext *s,
                        AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     CaffContext *caf  = s->priv_data;
     AVStream *st;
     uint32_t tag = 0;
@@ -301,7 +301,7 @@ static int read_header(AVFormatContext *s,
 
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st      = s->streams[0];
     CaffContext *caf  = s->priv_data;
     int res, pkt_size = 0, pkt_frames = 0;

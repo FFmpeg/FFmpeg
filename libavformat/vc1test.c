@@ -44,7 +44,7 @@ static int vc1t_probe(AVProbeData *p)
 static int vc1t_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     int frames;
     uint32_t fps;
@@ -87,7 +87,7 @@ static int vc1t_read_header(AVFormatContext *s,
 static int vc1t_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int frame_size;
     int keyframe = 0;
     uint32_t pts;

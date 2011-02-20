@@ -36,7 +36,7 @@ static int daud_header(AVFormatContext *s, AVFormatParameters *ap) {
 }
 
 static int daud_packet(AVFormatContext *s, AVPacket *pkt) {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int ret, size;
     if (url_feof(pb))
         return AVERROR(EIO);

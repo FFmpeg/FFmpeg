@@ -64,7 +64,7 @@ static const unsigned char sipr_swaps[38][2] = {
 
 const unsigned char ff_sipr_subpk_size[4] = { 29, 19, 37, 20 };
 
-static inline void get_strl(ByteIOContext *pb, char *buf, int buf_size, int len)
+static inline void get_strl(AVIOContext *pb, char *buf, int buf_size, int len)
 {
     int i;
     char *q, r;
@@ -78,12 +78,12 @@ static inline void get_strl(ByteIOContext *pb, char *buf, int buf_size, int len)
     if (buf_size > 0) *q = '\0';
 }
 
-static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
+static void get_str8(AVIOContext *pb, char *buf, int buf_size)
 {
     get_strl(pb, buf, buf_size, get_byte(pb));
 }
 
-static int rm_read_extradata(ByteIOContext *pb, AVCodecContext *avctx, unsigned size)
+static int rm_read_extradata(AVIOContext *pb, AVCodecContext *avctx, unsigned size)
 {
     if (size >= 1<<24)
         return -1;
@@ -120,7 +120,7 @@ void ff_rm_free_rmstream (RMStream *rms)
     av_free_packet(&rms->pkt);
 }
 
-static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
+static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
                                      AVStream *st, RMStream *ast, int read_all)
 {
     char buf[256];
@@ -264,7 +264,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
 }
 
 int
-ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
+ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
                            AVStream *st, RMStream *rst, int codec_data_size)
 {
     unsigned int v;
@@ -330,7 +330,7 @@ skip:
  * of the INDX chunk, and will bail out if not. */
 static int rm_read_index(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int size, n_pkts, str_id, next_off, n, pos, pts;
     AVStream *st;
 
@@ -387,7 +387,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     RMDemuxContext *rm = s->priv_data;
     AVStream *st;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int tag;
     int tag_size;
     unsigned int start_time, duration;
@@ -490,7 +490,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
-static int get_num(ByteIOContext *pb, int *len)
+static int get_num(AVIOContext *pb, int *len)
 {
     int n, n1;
 
@@ -511,7 +511,7 @@ static int get_num(ByteIOContext *pb, int *len)
 
 static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_index, int64_t *pos){
     RMDemuxContext *rm = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     uint32_t state=0xFFFFFFFF;
 
@@ -577,7 +577,7 @@ skip:
     return -1;
 }
 
-static int rm_assemble_video_frame(AVFormatContext *s, ByteIOContext *pb,
+static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
                                    RMDemuxContext *rm, RMStream *vst,
                                    AVPacket *pkt, int len, int *pseq)
 {
@@ -700,7 +700,7 @@ void ff_rm_reorder_sipr_data(uint8_t *buf, int sub_packet_h, int framesize)
 }
 
 int
-ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
+ff_rm_parse_packet (AVFormatContext *s, AVIOContext *pb,
                     AVStream *st, RMStream *ast, int len, AVPacket *pkt,
                     int *seq, int flags, int64_t timestamp)
 {
@@ -791,7 +791,7 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
 }
 
 int
-ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
+ff_rm_retrieve_cache (AVFormatContext *s, AVIOContext *pb,
                       AVStream *st, RMStream *ast, AVPacket *pkt)
 {
     RMDemuxContext *rm = s->priv_data;

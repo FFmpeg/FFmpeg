@@ -152,7 +152,7 @@ static int send_command_packet(MMSTContext *mmst)
 
 static void mms_put_utf16(MMSContext *mms, uint8_t *src)
 {
-    ByteIOContext bic;
+    AVIOContext bic;
     int size = mms->write_out_ptr - mms->out_buffer;
     int len;
     init_put_byte(&bic, mms->write_out_ptr,

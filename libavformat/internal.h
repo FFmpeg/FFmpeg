@@ -157,20 +157,20 @@ int ff_get_v_length(uint64_t val);
 /**
  * Put val using a variable number of bytes.
  */
-void ff_put_v(ByteIOContext *bc, uint64_t val);
+void ff_put_v(AVIOContext *bc, uint64_t val);
 
 /**
- * Read a whole line of text from ByteIOContext. Stop reading after reaching
+ * Read a whole line of text from AVIOContext. Stop reading after reaching
  * either a \n, a \0 or EOF. The returned string is always \0 terminated,
  * and may be truncated if the buffer is too small.
  *
- * @param s the read-only ByteIOContext
+ * @param s the read-only AVIOContext
  * @param buf buffer to store the read line
  * @param maxlen size of the buffer
  * @return the length of the string written in the buffer, not including the
  *         final \0
  */
-int ff_get_line(ByteIOContext *s, char *buf, int maxlen);
+int ff_get_line(AVIOContext *s, char *buf, int maxlen);
 
 #define SPACE_CHARS " \t\r\n"
 

@@ -23,7 +23,7 @@
 static int ivf_write_header(AVFormatContext *s)
 {
     AVCodecContext *ctx;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "Format supports only exactly one video stream\n");
@@ -49,7 +49,7 @@ static int ivf_write_header(AVFormatContext *s)
 
 static int ivf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     put_le32(pb, pkt->size);
     put_le64(pb, pkt->pts);
     put_buffer(pb, pkt->data, pkt->size);

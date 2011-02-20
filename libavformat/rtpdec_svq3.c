@@ -33,7 +33,7 @@
 #include "rtpdec_formats.h"
 
 struct PayloadContext {
-    ByteIOContext *pktbuf;
+    AVIOContext *pktbuf;
     int64_t        timestamp;
 };
 

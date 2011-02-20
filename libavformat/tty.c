@@ -42,7 +42,7 @@ typedef struct {
 static int efi_read(AVFormatContext *avctx, uint64_t start_pos)
 {
     TtyDemuxContext *s = avctx->priv_data;
-    ByteIOContext *pb = avctx->pb;
+    AVIOContext *pb = avctx->pb;
     char buf[37];
     int len;
 

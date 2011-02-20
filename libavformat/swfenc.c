@@ -27,7 +27,7 @@
 static void put_swf_tag(AVFormatContext *s, int tag)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     swf->tag_pos = url_ftell(pb);
     swf->tag = tag;
@@ -43,7 +43,7 @@ static void put_swf_tag(AVFormatContext *s, int tag)
 static void put_swf_end_tag(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t pos;
     int tag_len, tag;
 
@@ -78,7 +78,7 @@ static inline void max_nbits(int *nbits_ptr, int val)
         *nbits_ptr = n;
 }
 
-static void put_swf_rect(ByteIOContext *pb,
+static void put_swf_rect(AVIOContext *pb,
                          int xmin, int xmax, int ymin, int ymax)
 {
     PutBitContext p;
@@ -134,7 +134,7 @@ static void put_swf_line_edge(PutBitContext *pb, int dx, int dy)
 
 #define FRAC_BITS 16
 
-static void put_swf_matrix(ByteIOContext *pb,
+static void put_swf_matrix(AVIOContext *pb,
                            int a, int b, int c, int d, int tx, int ty)
 {
     PutBitContext p;
@@ -173,7 +173,7 @@ static void put_swf_matrix(ByteIOContext *pb,
 static int swf_write_header(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     PutBitContext p;
     uint8_t buf1[256];
     int i, width, height, rate, rate_base;
@@ -334,7 +334,7 @@ static int swf_write_video(AVFormatContext *s,
                            AVCodecContext *enc, const uint8_t *buf, int size)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     /* Flash Player limit */
     if (swf->swf_frame_number == 16000)
@@ -473,7 +473,7 @@ static int swf_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int swf_write_trailer(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVCodecContext *enc, *video_enc;
     int file_size, i;
 

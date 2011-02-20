@@ -100,7 +100,7 @@ static inline int get_duration(AVIStream *ast, int len){
         return 1;
 }
 
-static int get_riff(AVFormatContext *s, ByteIOContext *pb)
+static int get_riff(AVFormatContext *s, AVIOContext *pb)
 {
     AVIContext *avi = s->priv_data;
     char header[8];
@@ -126,7 +126,7 @@ static int get_riff(AVFormatContext *s, ByteIOContext *pb)
 
 static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int longs_pre_entry= get_le16(pb);
     int index_sub_type = get_byte(pb);
     int index_type     = get_byte(pb);
@@ -246,7 +246,7 @@ static void clean_index(AVFormatContext *s){
 
 static int avi_read_tag(AVFormatContext *s, AVStream *st, uint32_t tag, uint32_t size)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     char key[5] = {0}, *value;
 
     size += (size & 1);
@@ -335,7 +335,7 @@ static void avi_read_nikon(AVFormatContext *s, uint64_t end)
 static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int tag, tag1, handler;
     int codec_type, stream_index, frame_period, bit_rate;
     unsigned int size;
@@ -752,7 +752,7 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt) {
         AVIStream *ast = st->priv_data;
         AVInputFormat *sub_demuxer;
         AVRational time_base;
-        ByteIOContext *pb = av_alloc_put_byte(pkt->data + 7,
+        AVIOContext *pb = av_alloc_put_byte(pkt->data + 7,
                                               pkt->size - 7,
                                               0, NULL, NULL, NULL, NULL);
         AVProbeData pd;
@@ -834,7 +834,7 @@ static int get_stream_idx(int *d){
 static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int n, d[8];
     unsigned int size;
     int64_t i, sync;
@@ -1110,7 +1110,7 @@ resync:
 static int avi_read_idx1(AVFormatContext *s, int size)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int nb_index_entries, i;
     AVStream *st;
     AVIStream *ast;
@@ -1192,7 +1192,7 @@ static int guess_ni_flag(AVFormatContext *s){
 static int avi_load_index(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     uint32_t tag, size;
     int64_t pos= url_ftell(pb);
     int ret = -1;

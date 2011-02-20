@@ -52,7 +52,7 @@ static int txd_read_header(AVFormatContext *s, AVFormatParameters *ap) {
 }
 
 static int txd_read_packet(AVFormatContext *s, AVPacket *pkt) {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int id, chunk_size, marker;
     int ret;
 

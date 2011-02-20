@@ -49,7 +49,7 @@ static const AVCodecTag codec_au_tags[] = {
 
 #if CONFIG_AU_MUXER
 /* AUDIO_FILE header */
-static int put_au_header(ByteIOContext *pb, AVCodecContext *enc)
+static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
 {
     if(!enc->codec_tag)
         return -1;
@@ -64,7 +64,7 @@ static int put_au_header(ByteIOContext *pb, AVCodecContext *enc)
 
 static int au_write_header(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     s->priv_data = NULL;
 
@@ -80,14 +80,14 @@ static int au_write_header(AVFormatContext *s)
 
 static int au_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     put_buffer(pb, pkt->data, pkt->size);
     return 0;
 }
 
 static int au_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t file_size;
 
     if (!url_is_streamed(s->pb)) {
@@ -121,7 +121,7 @@ static int au_read_header(AVFormatContext *s,
 {
     int size;
     unsigned int tag;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned int id, channels, rate;
     enum CodecID codec;
     AVStream *st;

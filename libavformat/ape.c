@@ -151,7 +151,7 @@ static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
 
 static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     APEContext *ape = s->priv_data;
     AVStream *st;
     uint32_t tag;

@@ -23,7 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "swf.h"
 
-static int get_swf_tag(ByteIOContext *pb, int *len_ptr)
+static int get_swf_tag(AVIOContext *pb, int *len_ptr)
 {
     int tag, len;
 
@@ -55,7 +55,7 @@ static int swf_probe(AVProbeData *p)
 static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int nbits, len, tag;
 
     tag = get_be32(pb) & 0xffffff00;
@@ -82,7 +82,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SWFContext *swf = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *vst = NULL, *ast = NULL, *st = 0;
     int tag, len, i, frame, v;
 

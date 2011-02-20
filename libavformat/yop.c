@@ -50,7 +50,7 @@ static int yop_probe(AVProbeData *probe_packet)
 static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     YopDecContext *yop = s->priv_data;
-    ByteIOContext *pb  = s->pb;
+    AVIOContext *pb  = s->pb;
 
     AVCodecContext *audio_dec, *video_dec;
     AVStream *audio_stream, *video_stream;
@@ -114,7 +114,7 @@ static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     YopDecContext *yop = s->priv_data;
-    ByteIOContext *pb  = s->pb;
+    AVIOContext *pb  = s->pb;
 
     int ret;
     int actual_video_data_size = yop->frame_size -

@@ -73,12 +73,12 @@
 /* links atom IDs to parse functions */
 typedef struct MOVParseTableEntry {
     uint32_t type;
-    int (*parse)(MOVContext *ctx, ByteIOContext *pb, MOVAtom atom);
+    int (*parse)(MOVContext *ctx, AVIOContext *pb, MOVAtom atom);
 } MOVParseTableEntry;
 
 static const MOVParseTableEntry mov_default_parse_table[];
 
-static int mov_metadata_trkn(MOVContext *c, ByteIOContext *pb, unsigned len)
+static int mov_metadata_trkn(MOVContext *c, AVIOContext *pb, unsigned len)
 {
     char buf[16];
 
@@ -110,7 +110,7 @@ static const uint32_t mac_to_unicode[128] = {
     0x00AF,0x02D8,0x02D9,0x02DA,0x00B8,0x02DD,0x02DB,0x02C7,
 };
 
-static int mov_read_mac_string(MOVContext *c, ByteIOContext *pb, int len,
+static int mov_read_mac_string(MOVContext *c, AVIOContext *pb, int len,
                                char *dst, int dstlen)
 {
     char *p = dst;
@@ -128,7 +128,7 @@ static int mov_read_mac_string(MOVContext *c, ByteIOContext *pb, int len,
     return p - dst;
 }
 
-static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
 #ifdef MOV_EXPORT_ALL_METADATA
     char tmp_key[5];
@@ -137,7 +137,7 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     const char *key = NULL;
     uint16_t str_size, langcode = 0;
     uint32_t data_type = 0;
-    int (*parse)(MOVContext*, ByteIOContext*, unsigned) = NULL;
+    int (*parse)(MOVContext*, AVIOContext*, unsigned) = NULL;
 
     switch (atom.type) {
     case MKTAG(0xa9,'n','a','m'): key = "title";     break;
@@ -218,7 +218,7 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_chpl(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_chpl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int64_t start;
     int i, nb_chapters, str_len, version;
@@ -250,7 +250,7 @@ static int mov_read_chpl(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int64_t total_size = 0;
     MOVAtom a;
@@ -259,7 +259,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     if (atom.size < 0)
         atom.size = INT64_MAX;
     while (total_size + 8 < atom.size && !url_feof(pb)) {
-        int (*parse)(MOVContext*, ByteIOContext*, MOVAtom) = NULL;
+        int (*parse)(MOVContext*, AVIOContext*, MOVAtom) = NULL;
         a.size = atom.size;
         a.type=0;
         if(atom.size >= 8) {
@@ -319,7 +319,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -423,7 +423,7 @@ static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     uint32_t type;
@@ -460,7 +460,7 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
+int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     int tag, len;
@@ -483,12 +483,12 @@ int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_esds(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     return ff_mov_read_esds(c->fc, pb, atom);
 }
 
-static int mov_read_dac3(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_dac3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     int ac3info, acmod, lfeon;
@@ -505,7 +505,7 @@ static int mov_read_dac3(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_pasp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_pasp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     const int num = get_be32(pb);
     const int den = get_be32(pb);
@@ -529,7 +529,7 @@ static int mov_read_pasp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 }
 
 /* this atom contains actual media data */
-static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_mdat(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     if(atom.size == 0) /* wrong one (MP4) */
         return 0;
@@ -538,7 +538,7 @@ static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 }
 
 /* read major brand, minor version and compatible brands and store them as metadata */
-static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     uint32_t minor_ver;
     int comp_brand_size;
@@ -570,7 +570,7 @@ static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 }
 
 /* this atom should contain all header atoms */
-static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_moov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     if (mov_read_default(c, pb, atom) < 0)
         return -1;
@@ -580,7 +580,7 @@ static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0; /* now go for mdat */
 }
 
-static int mov_read_moof(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_moof(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     c->fragment.moof_offset = url_ftell(pb) - 8;
     av_dlog(c->fc, "moof offset %llx\n", c->fragment.moof_offset);
@@ -600,7 +600,7 @@ static void mov_metadata_creation_time(AVMetadata **metadata, time_t time)
     }
 }
 
-static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -639,7 +639,7 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_mvhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_mvhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     time_t creation_time;
     int version = get_byte(pb); /* version */
@@ -677,7 +677,7 @@ static int mov_read_mvhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_smi(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
 
@@ -701,7 +701,7 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_enda(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_enda(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     int little_endian;
@@ -734,7 +734,7 @@ static int mov_read_enda(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 }
 
 /* FIXME modify qdm2/svq3/h264 decoders to take full atom as extradata */
-static int mov_read_extradata(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     uint64_t size;
@@ -758,7 +758,7 @@ static int mov_read_extradata(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
 
@@ -789,7 +789,7 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
  * This function reads atom content and puts data in extradata without tag
  * nor size unlike mov_read_extradata.
  */
-static int mov_read_glbl(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_glbl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
 
@@ -814,7 +814,7 @@ static int mov_read_glbl(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
  * but can have extradata appended at the end after the 40 bytes belonging
  * to the struct.
  */
-static int mov_read_strf(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_strf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
 
@@ -837,7 +837,7 @@ static int mov_read_strf(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -908,7 +908,7 @@ enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags)
     return CODEC_ID_NONE;
 }
 
-int ff_mov_read_stsd_entries(MOVContext *c, ByteIOContext *pb, int entries)
+int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -1244,7 +1244,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, ByteIOContext *pb, int entries)
     return 0;
 }
 
-static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int entries;
 
@@ -1255,7 +1255,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return ff_mov_read_stsd_entries(c, pb, entries);
 }
 
-static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -1288,7 +1288,7 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_stps(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_stps(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -1317,7 +1317,7 @@ static int mov_read_stps(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -1349,7 +1349,7 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -1417,7 +1417,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -1464,7 +1464,7 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -1682,7 +1682,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     }
 }
 
-static int mov_open_dref(ByteIOContext **pb, char *src, MOVDref *ref)
+static int mov_open_dref(AVIOContext **pb, char *src, MOVDref *ref)
 {
     /* try relative path, we do not try the absolute because it can leak information about our
        system to an attacker */
@@ -1725,7 +1725,7 @@ static int mov_open_dref(ByteIOContext **pb, char *src, MOVDref *ref)
     return AVERROR(ENOENT);
 }
 
-static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
@@ -1824,7 +1824,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_ilst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_ilst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int ret;
     c->itunes_metadata = 1;
@@ -1833,7 +1833,7 @@ static int mov_read_ilst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return ret;
 }
 
-static int mov_read_meta(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_meta(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     while (atom.size > 8) {
         uint32_t tag = get_le32(pb);
@@ -1847,7 +1847,7 @@ static int mov_read_meta(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int i;
     int width;
@@ -1930,7 +1930,7 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_tfhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_tfhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVFragment *frag = &c->fragment;
     MOVTrackExt *trex = NULL;
@@ -1965,13 +1965,13 @@ static int mov_read_tfhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_chap(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_chap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     c->chapter_track = get_be32(pb);
     return 0;
 }
 
-static int mov_read_trex(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_trex(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVTrackExt *trex;
 
@@ -1992,7 +1992,7 @@ static int mov_read_trex(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_trun(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVFragment *frag = &c->fragment;
     AVStream *st = NULL;
@@ -2070,7 +2070,7 @@ static int mov_read_trun(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 /* this atom should be null (from specs), but some buggy files put the 'moov' atom inside it... */
 /* like the files created with Adobe Premiere 5.0, for samples see */
 /* http://graphics.tudelft.nl/~wouter/publications/soundtests/ */
-static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_wide(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int err;
 
@@ -2090,10 +2090,10 @@ static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return err;
 }
 
-static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_cmov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
 #if CONFIG_ZLIB
-    ByteIOContext ctx;
+    AVIOContext ctx;
     uint8_t *cmov_data;
     uint8_t *moov_data; /* uncompressed data */
     long cmov_len, moov_len;
@@ -2142,7 +2142,7 @@ free_and_return:
 }
 
 /* edit list atom */
-static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVStreamContext *sc;
     int i, edit_count;
@@ -2343,7 +2343,7 @@ finish:
 static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MOVContext *mov = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int err;
     MOVAtom atom = { AV_RL32("root") };
 

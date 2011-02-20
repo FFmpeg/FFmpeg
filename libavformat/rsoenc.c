@@ -27,7 +27,7 @@
 
 static int rso_write_header(AVFormatContext *s)
 {
-    ByteIOContext  *pb  = s->pb;
+    AVIOContext  *pb  = s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
 
     if (!enc->codec_tag)
@@ -73,7 +73,7 @@ static int rso_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int rso_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t file_size;
     uint16_t coded_file_size;
 

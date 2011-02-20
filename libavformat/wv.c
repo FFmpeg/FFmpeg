@@ -76,7 +76,7 @@ static int wv_probe(AVProbeData *p)
         return 0;
 }
 
-static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb, int append)
+static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int append)
 {
     WVContext *wc = ctx->priv_data;
     uint32_t tag, ver;
@@ -201,7 +201,7 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb, int app
 static int wv_read_header(AVFormatContext *s,
                           AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     WVContext *wc = s->priv_data;
     AVStream *st;
 

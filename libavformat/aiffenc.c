@@ -31,7 +31,7 @@ typedef struct {
 static int aiff_write_header(AVFormatContext *s)
 {
     AIFFOutputContext *aiff = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
     AVExtFloat sample_rate;
     int aifc = 0;
@@ -104,14 +104,14 @@ static int aiff_write_header(AVFormatContext *s)
 
 static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     put_buffer(pb, pkt->data, pkt->size);
     return 0;
 }
 
 static int aiff_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AIFFOutputContext *aiff = s->priv_data;
     AVCodecContext *enc = s->streams[0]->codec;
 

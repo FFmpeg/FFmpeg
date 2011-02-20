@@ -49,7 +49,7 @@ static int bfi_probe(AVProbeData * p)
 static int bfi_read_header(AVFormatContext * s, AVFormatParameters * ap)
 {
     BFIContext *bfi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *vstream;
     AVStream *astream;
     int fps, chunk_header;
@@ -107,7 +107,7 @@ static int bfi_read_header(AVFormatContext * s, AVFormatParameters * ap)
 static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
 {
     BFIContext *bfi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int ret, audio_offset, video_offset, chunk_size, audio_size = 0;
     if (bfi->nframes == 0 || url_feof(pb)) {
         return AVERROR(EIO);

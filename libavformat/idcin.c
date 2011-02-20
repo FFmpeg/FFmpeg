@@ -142,7 +142,7 @@ static int idcin_probe(AVProbeData *p)
 static int idcin_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     IdcinDemuxContext *idcin = s->priv_data;
     AVStream *st;
     unsigned int width, height;
@@ -221,7 +221,7 @@ static int idcin_read_packet(AVFormatContext *s,
     unsigned int command;
     unsigned int chunk_size;
     IdcinDemuxContext *idcin = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int i;
     int palette_scale;
     unsigned char r, g, b;

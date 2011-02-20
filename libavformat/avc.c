@@ -67,7 +67,7 @@ const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end){
     return out;
 }
 
-int ff_avc_parse_nal_units(ByteIOContext *pb, const uint8_t *buf_in, int size)
+int ff_avc_parse_nal_units(AVIOContext *pb, const uint8_t *buf_in, int size)
 {
     const uint8_t *p = buf_in;
     const uint8_t *end = p + size;
@@ -88,7 +88,7 @@ int ff_avc_parse_nal_units(ByteIOContext *pb, const uint8_t *buf_in, int size)
 
 int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
 {
-    ByteIOContext *pb;
+    AVIOContext *pb;
     int ret = url_open_dyn_buf(&pb);
     if(ret < 0)
         return ret;
@@ -100,7 +100,7 @@ int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
     return 0;
 }
 
-int ff_isom_write_avcc(ByteIOContext *pb, const uint8_t *data, int len)
+int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
 {
     if (len > 6) {
         /* check for h264 start code */

@@ -68,7 +68,7 @@ static int roq_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     RoqDemuxContext *roq = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int framerate;
     AVStream *st;
     unsigned char preamble[RoQ_CHUNK_PREAMBLE_SIZE];
@@ -100,7 +100,7 @@ static int roq_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     RoqDemuxContext *roq = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int ret = 0;
     unsigned int chunk_size;
     unsigned int chunk_type;

@@ -111,7 +111,7 @@ static int sync(AVFormatContext *s, uint8_t *header)
  */
 static int get_packet_header(AVFormatContext *s, uint8_t *header, uint32_t *format)
 {
-    ByteIOContext   *pb  = s->pb;
+    AVIOContext   *pb  = s->pb;
     int track_size, samples, ret;
     AVStream *st;
 
@@ -198,7 +198,7 @@ static int get_packet_header(AVFormatContext *s, uint8_t *header, uint32_t *form
 static int lxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     LXFDemuxContext *lxf = s->priv_data;
-    ByteIOContext   *pb  = s->pb;
+    AVIOContext   *pb  = s->pb;
     uint8_t header[LXF_PACKET_HEADER_SIZE], header_data[LXF_HEADER_DATA_SIZE];
     int ret;
     AVStream *st;
@@ -281,7 +281,7 @@ static void deplanarize(LXFDemuxContext *lxf, AVStream *ast, uint8_t *out, int b
 static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     LXFDemuxContext *lxf = s->priv_data;
-    ByteIOContext   *pb  = s->pb;
+    AVIOContext   *pb  = s->pb;
     uint8_t header[LXF_PACKET_HEADER_SIZE], *buf;
     AVStream *ast = NULL;
     uint32_t stream, format;

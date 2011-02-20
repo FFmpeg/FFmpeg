@@ -118,7 +118,7 @@ int ff_adts_write_frame_header(ADTSContext *ctx,
 static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ADTSContext *adts = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     uint8_t buf[ADTS_HEADER_SIZE];
 
     if (!pkt->size)

@@ -64,7 +64,7 @@ typedef struct {
     OGGPageList *page_list;
 } OGGContext;
 
-static void ogg_update_checksum(AVFormatContext *s, ByteIOContext *pb, int64_t crc_offset)
+static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc_offset)
 {
     int64_t pos = url_ftell(pb);
     uint32_t checksum = get_checksum(pb);
@@ -76,7 +76,7 @@ static void ogg_update_checksum(AVFormatContext *s, ByteIOContext *pb, int64_t c
 static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
 {
     OGGStreamContext *oggstream = s->streams[page->stream_index]->priv_data;
-    ByteIOContext *pb;
+    AVIOContext *pb;
     int64_t crc_offset;
     int ret, size;
     uint8_t *buf;

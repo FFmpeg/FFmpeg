@@ -27,7 +27,7 @@
 #define MVI_VIDEO_STREAM_INDEX 1
 
 typedef struct MviDemuxContext {
-    unsigned int (*get_int)(ByteIOContext *);
+    unsigned int (*get_int)(AVIOContext *);
     uint32_t audio_data_size;
     uint64_t audio_size_counter;
     uint64_t audio_frame_size;
@@ -38,7 +38,7 @@ typedef struct MviDemuxContext {
 static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MviDemuxContext *mvi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *ast, *vst;
     unsigned int version, frames_count, msecs_per_frame, player_version;
 
@@ -100,7 +100,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, count;
     MviDemuxContext *mvi = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     if (mvi->video_frame_size == 0) {
         mvi->video_frame_size = (mvi->get_int)(pb);

@@ -93,8 +93,8 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
 {
     int len;
     uint8_t *pb;
-    int (*put)(ByteIOContext*, const char*);
-    ByteIOContext *dyn_buf;
+    int (*put)(AVIOContext*, const char*);
+    AVIOContext *dyn_buf;
     if (url_open_dyn_buf(&dyn_buf) < 0)
         return AVERROR(ENOMEM);
 

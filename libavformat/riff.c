@@ -319,14 +319,14 @@ const AVCodecTag ff_codec_wav_tags[] = {
 };
 
 #if CONFIG_MUXERS
-int64_t ff_start_tag(ByteIOContext *pb, const char *tag)
+int64_t ff_start_tag(AVIOContext *pb, const char *tag)
 {
     put_tag(pb, tag);
     put_le32(pb, 0);
     return url_ftell(pb);
 }
 
-void ff_end_tag(ByteIOContext *pb, int64_t start)
+void ff_end_tag(AVIOContext *pb, int64_t start)
 {
     int64_t pos;
 
@@ -338,7 +338,7 @@ void ff_end_tag(ByteIOContext *pb, int64_t start)
 
 /* WAVEFORMATEX header */
 /* returns the size or -1 on error */
-int ff_put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
+int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
 {
     int bps, blkalign, bytespersec;
     int hdrsize = 18;
@@ -445,7 +445,7 @@ int ff_put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 }
 
 /* BITMAPINFOHEADER header */
-void ff_put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf)
+void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf)
 {
     put_le32(pb, 40 + enc->extradata_size); /* size */
     put_le32(pb, enc->width);
@@ -477,7 +477,7 @@ void ff_put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag 
  * WAVEFORMATEX adds 'WORD  cbSize' and basically makes itself
  * an openended structure.
  */
-void ff_get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
+void ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
 {
     int id;
 
@@ -544,7 +544,7 @@ enum CodecID ff_wav_codec_get_id(unsigned int tag, int bps)
     return id;
 }
 
-int ff_get_bmp_header(ByteIOContext *pb, AVStream *st)
+int ff_get_bmp_header(AVIOContext *pb, AVStream *st)
 {
     int tag1;
     get_le32(pb); /* size */

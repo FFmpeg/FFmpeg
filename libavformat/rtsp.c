@@ -1855,7 +1855,7 @@ static int rtp_read_header(AVFormatContext *s,
     int payload_type;
     AVCodecContext codec;
     struct sockaddr_storage addr;
-    ByteIOContext pb;
+    AVIOContext pb;
     socklen_t addrlen = sizeof(addr);
 
     if (!ff_network_init())

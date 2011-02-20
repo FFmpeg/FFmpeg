@@ -74,7 +74,7 @@ typedef struct {
 
 typedef struct MatroskaMuxContext {
     int             mode;
-    ByteIOContext   *dyn_bc;
+    AVIOContext   *dyn_bc;
     ebml_master     segment;
     int64_t         segment_offset;
     ebml_master     cluster;
@@ -108,7 +108,7 @@ static int ebml_id_size(unsigned int id)
     return (av_log2(id+1)-1)/7+1;
 }
 
-static void put_ebml_id(ByteIOContext *pb, unsigned int id)
+static void put_ebml_id(AVIOContext *pb, unsigned int id)
 {
     int i = ebml_id_size(id);
     while (i--)
@@ -120,7 +120,7 @@ static void put_ebml_id(ByteIOContext *pb, unsigned int id)
  *
  * @param bytes The number of bytes the size should occupy (maximum: 8).
  */
-static void put_ebml_size_unknown(ByteIOContext *pb, int bytes)
+static void put_ebml_size_unknown(AVIOContext *pb, int bytes)
 {
     assert(bytes <= 8);
     put_byte(pb, 0x1ff >> bytes);
@@ -144,7 +144,7 @@ static int ebml_num_size(uint64_t num)
  * @param bytes The number of bytes that need to be used to write the number.
  *              If zero, any number of bytes can be used.
  */
-static void put_ebml_num(ByteIOContext *pb, uint64_t num, int bytes)
+static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
 {
     int i, needed_bytes = ebml_num_size(num);
 
@@ -163,7 +163,7 @@ static void put_ebml_num(ByteIOContext *pb, uint64_t num, int bytes)
         put_byte(pb, num >> i*8);
 }
 
-static void put_ebml_uint(ByteIOContext *pb, unsigned int elementid, uint64_t val)
+static void put_ebml_uint(AVIOContext *pb, unsigned int elementid, uint64_t val)
 {
     int i, bytes = 1;
     uint64_t tmp = val;
@@ -175,14 +175,14 @@ static void put_ebml_uint(ByteIOContext *pb, unsigned int elementid, uint64_t va
         put_byte(pb, val >> i*8);
 }
 
-static void put_ebml_float(ByteIOContext *pb, unsigned int elementid, double val)
+static void put_ebml_float(AVIOContext *pb, unsigned int elementid, double val)
 {
     put_ebml_id(pb, elementid);
     put_ebml_num(pb, 8, 0);
     put_be64(pb, av_dbl2int(val));
 }
 
-static void put_ebml_binary(ByteIOContext *pb, unsigned int elementid,
+static void put_ebml_binary(AVIOContext *pb, unsigned int elementid,
                             const void *buf, int size)
 {
     put_ebml_id(pb, elementid);
@@ -190,7 +190,7 @@ static void put_ebml_binary(ByteIOContext *pb, unsigned int elementid,
     put_buffer(pb, buf, size);
 }
 
-static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, const char *str)
+static void put_ebml_string(AVIOContext *pb, unsigned int elementid, const char *str)
 {
     put_ebml_binary(pb, elementid, str, strlen(str));
 }
@@ -201,7 +201,7 @@ static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, const cha
  *
  * @param size The number of bytes to reserve, which must be at least 2.
  */
-static void put_ebml_void(ByteIOContext *pb, uint64_t size)
+static void put_ebml_void(AVIOContext *pb, uint64_t size)
 {
     int64_t currentpos = url_ftell(pb);
 
@@ -219,7 +219,7 @@ static void put_ebml_void(ByteIOContext *pb, uint64_t size)
         put_byte(pb, 0);
 }
 
-static ebml_master start_ebml_master(ByteIOContext *pb, unsigned int elementid, uint64_t expectedsize)
+static ebml_master start_ebml_master(AVIOContext *pb, unsigned int elementid, uint64_t expectedsize)
 {
     int bytes = expectedsize ? ebml_num_size(expectedsize) : 8;
     put_ebml_id(pb, elementid);
@@ -227,7 +227,7 @@ static ebml_master start_ebml_master(ByteIOContext *pb, unsigned int elementid, 
     return (ebml_master){ url_ftell(pb), bytes };
 }
 
-static void end_ebml_master(ByteIOContext *pb, ebml_master master)
+static void end_ebml_master(AVIOContext *pb, ebml_master master)
 {
     int64_t pos = url_ftell(pb);
 
@@ -237,7 +237,7 @@ static void end_ebml_master(ByteIOContext *pb, ebml_master master)
     url_fseek(pb, pos, SEEK_SET);
 }
 
-static void put_xiph_size(ByteIOContext *pb, int size)
+static void put_xiph_size(AVIOContext *pb, int size)
 {
     int i;
     for (i = 0; i < size / 255; i++)
@@ -256,7 +256,7 @@ static void put_xiph_size(ByteIOContext *pb, int size)
  * @param numelements The maximum number of elements that will be indexed
  *                    by this seek head, 0 if unlimited.
  */
-static mkv_seekhead * mkv_start_seekhead(ByteIOContext *pb, int64_t segment_offset, int numelements)
+static mkv_seekhead * mkv_start_seekhead(AVIOContext *pb, int64_t segment_offset, int numelements)
 {
     mkv_seekhead *new_seekhead = av_mallocz(sizeof(mkv_seekhead));
     if (new_seekhead == NULL)
@@ -304,7 +304,7 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
  * @return The file offset where the seekhead was written,
  * -1 if an error occurred.
  */
-static int64_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
+static int64_t mkv_write_seekhead(AVIOContext *pb, mkv_seekhead *seekhead)
 {
     ebml_master metaseek, seekentry;
     int64_t currentpos;
@@ -373,7 +373,7 @@ static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t clus
     return 0;
 }
 
-static int64_t mkv_write_cues(ByteIOContext *pb, mkv_cues *cues, int num_tracks)
+static int64_t mkv_write_cues(AVIOContext *pb, mkv_cues *cues, int num_tracks)
 {
     ebml_master cues_element;
     int64_t currentpos;
@@ -408,7 +408,7 @@ static int64_t mkv_write_cues(ByteIOContext *pb, mkv_cues *cues, int num_tracks)
     return currentpos;
 }
 
-static int put_xiph_codecpriv(AVFormatContext *s, ByteIOContext *pb, AVCodecContext *codec)
+static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb, AVCodecContext *codec)
 {
     uint8_t *header_start[3];
     int header_len[3];
@@ -463,9 +463,9 @@ static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int 
     }
 }
 
-static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodecContext *codec, int native_id, int qt_id)
+static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecContext *codec, int native_id, int qt_id)
 {
-    ByteIOContext *dyn_cp;
+    AVIOContext *dyn_cp;
     uint8_t *codecpriv;
     int ret, codecpriv_size;
 
@@ -522,7 +522,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
 static int mkv_write_tracks(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     ebml_master tracks;
     int i, j, ret;
 
@@ -650,7 +650,7 @@ static int mkv_write_tracks(AVFormatContext *s)
 static int mkv_write_chapters(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     ebml_master chapters, editionentry;
     AVRational scale = {1, 1E9};
     int i, ret;
@@ -691,7 +691,7 @@ static int mkv_write_chapters(AVFormatContext *s)
     return 0;
 }
 
-static void mkv_write_simpletag(ByteIOContext *pb, AVMetadataTag *t)
+static void mkv_write_simpletag(AVIOContext *pb, AVMetadataTag *t)
 {
     uint8_t *key = av_strdup(t->key);
     uint8_t *p   = key;
@@ -790,7 +790,7 @@ static int mkv_write_tags(AVFormatContext *s)
 static int mkv_write_header(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     ebml_master ebml_header, segment_info;
     AVMetadataTag *tag;
     int ret, i;
@@ -901,7 +901,7 @@ static int ass_get_duration(const uint8_t *p)
     return end - start;
 }
 
-static int mkv_write_ass_blocks(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
+static int mkv_write_ass_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     int i, layer = 0, max_duration = 0, size, line_size, data_size = pkt->size;
@@ -946,7 +946,7 @@ static int mkv_write_ass_blocks(AVFormatContext *s, ByteIOContext *pb, AVPacket 
     return max_duration;
 }
 
-static void mkv_write_block(AVFormatContext *s, ByteIOContext *pb,
+static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
                             unsigned int blockid, AVPacket *pkt, int flags)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -992,7 +992,7 @@ static int srt_get_duration(uint8_t **buf)
     return duration;
 }
 
-static int mkv_write_srt_blocks(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
+static int mkv_write_srt_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
 {
     ebml_master blockgroup;
     AVPacket pkt2 = *pkt;
@@ -1026,7 +1026,7 @@ static void mkv_flush_dynbuf(AVFormatContext *s)
 static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     int keyframe = !!(pkt->flags & AV_PKT_FLAG_KEY);
     int duration = pkt->duration;
@@ -1090,7 +1090,7 @@ static int mkv_copy_packet(MatroskaMuxContext *mkv, const AVPacket *pkt)
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = url_is_streamed(s->pb) ? mkv->dyn_bc : s->pb;
+    AVIOContext *pb = url_is_streamed(s->pb) ? mkv->dyn_bc : s->pb;
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     int ret, keyframe = !!(pkt->flags & AV_PKT_FLAG_KEY);
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
@@ -1132,7 +1132,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t currentpos, cuespos;
     int ret;
 

@@ -33,12 +33,12 @@ struct gxf_stream_info {
 
 /**
  * \brief parses a packet header, extracting type and length
- * \param pb ByteIOContext to read header from
+ * \param pb AVIOContext to read header from
  * \param type detected packet type is stored here
  * \param length detected packet length, excluding header is stored here
  * \return 0 if header not found or contains invalid data, 1 otherwise
  */
-static int parse_packet_header(ByteIOContext *pb, GXFPktType *type, int *length) {
+static int parse_packet_header(AVIOContext *pb, GXFPktType *type, int *length) {
     if (get_be32(pb))
         return 0;
     if (get_byte(pb) != 1)
@@ -157,7 +157,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
  * \param len length of tag section, will be adjusted to contain remaining bytes
  * \param si struct to store collected information into
  */
-static void gxf_material_tags(ByteIOContext *pb, int *len, struct gxf_stream_info *si) {
+static void gxf_material_tags(AVIOContext *pb, int *len, struct gxf_stream_info *si) {
     si->first_field = AV_NOPTS_VALUE;
     si->last_field = AV_NOPTS_VALUE;
     while (*len >= 2) {
@@ -206,7 +206,7 @@ static AVRational fps_umf2avr(uint32_t flags) {
  * \param len length of tag section, will be adjusted to contain remaining bytes
  * \param si struct to store collected information into
  */
-static void gxf_track_tags(ByteIOContext *pb, int *len, struct gxf_stream_info *si) {
+static void gxf_track_tags(AVIOContext *pb, int *len, struct gxf_stream_info *si) {
     si->frames_per_second = (AVRational){0, 0};
     si->fields_per_frame = 0;
     while (*len >= 2) {
@@ -231,7 +231,7 @@ static void gxf_track_tags(ByteIOContext *pb, int *len, struct gxf_stream_info *
  * \brief read index from FLT packet into stream 0 av_index
  */
 static void gxf_read_index(AVFormatContext *s, int pkt_len) {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st = s->streams[0];
     uint32_t fields_per_map = get_le32(pb);
     uint32_t map_cnt = get_le32(pb);
@@ -259,7 +259,7 @@ static void gxf_read_index(AVFormatContext *s, int pkt_len) {
 }
 
 static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     GXFPktType pkt_type;
     int map_len;
     int len;
@@ -387,7 +387,7 @@ static int64_t gxf_resync_media(AVFormatContext *s, uint64_t max_interval, int t
     int cur_track;
     int64_t cur_timestamp = AV_NOPTS_VALUE;
     int len;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     GXFPktType type;
     tmp = get_be32(pb);
 start:
@@ -419,7 +419,7 @@ out:
 }
 
 static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     GXFPktType pkt_type;
     int pkt_len;
     while (!url_feof(pb)) {
@@ -506,7 +506,7 @@ static int gxf_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int
 
 static int64_t gxf_read_timestamp(AVFormatContext *s, int stream_index,
                                   int64_t *pos, int64_t pos_limit) {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int64_t res;
     if (url_fseek(pb, *pos, SEEK_SET) < 0)
         return AV_NOPTS_VALUE;

@@ -341,7 +341,7 @@ int ff_mov_lang_to_iso639(unsigned code, char to[4])
     return 1;
 }
 
-int ff_mp4_read_descr_len(ByteIOContext *pb)
+int ff_mp4_read_descr_len(AVIOContext *pb)
 {
     int len = 0;
     int count = 4;
@@ -354,7 +354,7 @@ int ff_mp4_read_descr_len(ByteIOContext *pb)
     return len;
 }
 
-int ff_mp4_read_descr(AVFormatContext *fc, ByteIOContext *pb, int *tag)
+int ff_mp4_read_descr(AVFormatContext *fc, AVIOContext *pb, int *tag)
 {
     int len;
     *tag = get_byte(pb);
@@ -372,7 +372,7 @@ static const AVCodecTag mp4_audio_types[] = {
     { CODEC_ID_NONE,   AOT_NULL },
 };
 
-int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, ByteIOContext *pb)
+int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext *pb)
 {
     int len, tag;
     int object_type_id = get_byte(pb);

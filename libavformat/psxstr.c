@@ -98,7 +98,7 @@ static int str_probe(AVProbeData *p)
 static int str_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     StrDemuxContext *str = s->priv_data;
     unsigned char sector[RAW_CD_SECTOR_SIZE];
     int start;
@@ -127,7 +127,7 @@ static int str_read_header(AVFormatContext *s,
 static int str_read_packet(AVFormatContext *s,
                            AVPacket *ret_pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     StrDemuxContext *str = s->priv_data;
     unsigned char sector[RAW_CD_SECTOR_SIZE];
     int channel;

@@ -60,7 +60,7 @@ static int vid_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
     BVID_DemuxContext *vid = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *stream;
 
     /* load main header. Contents:
@@ -97,7 +97,7 @@ static int vid_read_header(AVFormatContext *s,
 }
 
 #define BUFFER_PADDING_SIZE 1000
-static int read_frame(BVID_DemuxContext *vid, ByteIOContext *pb, AVPacket *pkt,
+static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
                       uint8_t block_type, AVFormatContext *s, int npixels)
 {
     uint8_t * vidbuf_start = NULL;
@@ -174,7 +174,7 @@ static int vid_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     BVID_DemuxContext *vid = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     unsigned char block_type;
     int audio_length;
     int ret_value;

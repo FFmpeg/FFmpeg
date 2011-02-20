@@ -88,7 +88,7 @@ typedef struct {
 } MOVTrackExt;
 
 typedef struct MOVStreamContext {
-    ByteIOContext *pb;
+    AVIOContext *pb;
     int ffindex;          ///< AVStream index
     int next_chunk;
     unsigned int chunk_count;
@@ -141,18 +141,18 @@ typedef struct MOVContext {
     int chapter_track;
 } MOVContext;
 
-int ff_mp4_read_descr_len(ByteIOContext *pb);
-int ff_mp4_read_descr(AVFormatContext *fc, ByteIOContext *pb, int *tag);
-int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, ByteIOContext *pb);
+int ff_mp4_read_descr_len(AVIOContext *pb);
+int ff_mp4_read_descr(AVFormatContext *fc, AVIOContext *pb, int *tag);
+int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext *pb);
 
 #define MP4IODescrTag                   0x02
 #define MP4ESDescrTag                   0x03
 #define MP4DecConfigDescrTag            0x04
 #define MP4DecSpecificDescrTag          0x05
 
-int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom);
+int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom);
 enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
-int ff_mov_read_stsd_entries(MOVContext *c, ByteIOContext *pb, int entries);
+int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries);
 
 #endif /* AVFORMAT_ISOM_H */

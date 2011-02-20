@@ -27,7 +27,7 @@ static void flush_packet(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
     int fill_size, h;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     fill_size = ffm->packet_end - ffm->packet_ptr;
     memset(ffm->packet_ptr, 0, fill_size);
@@ -84,7 +84,7 @@ static int ffm_write_header(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
     AVStream *st;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVCodecContext *codec;
     int bit_rate, i;
 
@@ -228,7 +228,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int ffm_write_trailer(AVFormatContext *s)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     FFMContext *ffm = s->priv_data;
 
     /* flush packets */
