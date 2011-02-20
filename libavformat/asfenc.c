@@ -22,6 +22,7 @@
 #include "metadata.h"
 #include "riff.h"
 #include "asf.h"
+#include "avio_internal.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -578,7 +579,7 @@ static int asf_write_header(AVFormatContext *s)
     asf->packet_nb_payloads = 0;
     asf->packet_timestamp_start = -1;
     asf->packet_timestamp_end = -1;
-    init_put_byte(&asf->pb, asf->packet_buf, s->packet_size, 1,
+    ffio_init_context(&asf->pb, asf->packet_buf, s->packet_size, 1,
                   NULL, NULL, NULL, NULL);
 
     return 0;
@@ -676,7 +677,7 @@ static void flush_packet(AVFormatContext *s)
     asf->packet_nb_payloads = 0;
     asf->packet_timestamp_start = -1;
     asf->packet_timestamp_end = -1;
-    init_put_byte(&asf->pb, asf->packet_buf, s->packet_size, 1,
+    ffio_init_context(&asf->pb, asf->packet_buf, s->packet_size, 1,
                   NULL, NULL, NULL, NULL);
 }
 

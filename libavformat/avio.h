@@ -361,9 +361,8 @@ typedef struct {
 
 #if FF_API_OLD_AVIO
 typedef attribute_deprecated AVIOContext ByteIOContext;
-#endif
 
-int init_put_byte(AVIOContext *s,
+attribute_deprecated int init_put_byte(AVIOContext *s,
                   unsigned char *buffer,
                   int buffer_size,
                   int write_flag,
@@ -371,6 +370,7 @@ int init_put_byte(AVIOContext *s,
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int64_t (*seek)(void *opaque, int64_t offset, int whence));
+#endif
 AVIOContext *av_alloc_put_byte(
                   unsigned char *buffer,
                   int buffer_size,

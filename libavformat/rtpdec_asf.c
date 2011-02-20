@@ -32,6 +32,7 @@
 #include "rtpdec_formats.h"
 #include "rtsp.h"
 #include "asf.h"
+#include "avio_internal.h"
 
 /**
  * From MSDN 2.2.1.4, we learn that ASF data packets over RTP should not
@@ -84,7 +85,7 @@ static int packetizer_read(void *opaque, uint8_t *buf, int buf_size)
 
 static void init_packetizer(AVIOContext *pb, uint8_t *buf, int len)
 {
-    init_put_byte(pb, buf, len, 0, NULL, packetizer_read, NULL, NULL);
+    ffio_init_context(pb, buf, len, 0, NULL, packetizer_read, NULL, NULL);
 
     /* this "fills" the buffer with its current content */
     pb->pos     = len;
@@ -176,7 +177,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
 
         av_freep(&asf->buf);
 
-        init_put_byte(pb, buf, len, 0, NULL, NULL, NULL, NULL);
+        ffio_init_context(pb, buf, len, 0, NULL, NULL, NULL, NULL);
 
         while (url_ftell(pb) + 4 < len) {
             int start_off = url_ftell(pb);
