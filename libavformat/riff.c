@@ -322,7 +322,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
 int64_t ff_start_tag(AVIOContext *pb, const char *tag)
 {
     put_tag(pb, tag);
-    put_le32(pb, 0);
+    avio_wl32(pb, 0);
     return url_ftell(pb);
 }
 
@@ -332,7 +332,7 @@ void ff_end_tag(AVIOContext *pb, int64_t start)
 
     pos = url_ftell(pb);
     url_fseek(pb, start - 4, SEEK_SET);
-    put_le32(pb, (uint32_t)(pos - start));
+    avio_wl32(pb, (uint32_t)(pos - start));
     url_fseek(pb, pos, SEEK_SET);
 }
 
@@ -354,12 +354,12 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
                           || av_get_bits_per_sample(enc->codec_id) > 16;
 
     if (waveformatextensible) {
-        put_le16(pb, 0xfffe);
+        avio_wl16(pb, 0xfffe);
     } else {
-        put_le16(pb, enc->codec_tag);
+        avio_wl16(pb, enc->codec_tag);
     }
-    put_le16(pb, enc->channels);
-    put_le32(pb, enc->sample_rate);
+    avio_wl16(pb, enc->channels);
+    avio_wl32(pb, enc->sample_rate);
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
         bps = 0;
     } else if (enc->codec_id == CODEC_ID_ADPCM_G726) {
@@ -393,9 +393,9 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
     } else {
         bytespersec = enc->bit_rate / 8;
     }
-    put_le32(pb, bytespersec); /* bytes per second */
-    put_le16(pb, blkalign); /* block align */
-    put_le16(pb, bps); /* bits per sample */
+    avio_wl32(pb, bytespersec); /* bytes per second */
+    avio_wl16(pb, blkalign); /* block align */
+    avio_wl16(pb, bps); /* bits per sample */
     if (enc->codec_id == CODEC_ID_MP3) {
         hdrsize += 12;
         bytestream_put_le16(&riff_extradata, 1);    /* wID */
@@ -425,20 +425,20 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
     }
     if(waveformatextensible) {                                    /* write WAVEFORMATEXTENSIBLE extensions */
         hdrsize += 22;
-        put_le16(pb, riff_extradata - riff_extradata_start + 22); /* 22 is WAVEFORMATEXTENSIBLE size */
-        put_le16(pb, enc->bits_per_coded_sample);                 /* ValidBitsPerSample || SamplesPerBlock || Reserved */
-        put_le32(pb, enc->channel_layout);                        /* dwChannelMask */
-        put_le32(pb, enc->codec_tag);                             /* GUID + next 3 */
-        put_le32(pb, 0x00100000);
-        put_le32(pb, 0xAA000080);
-        put_le32(pb, 0x719B3800);
+        avio_wl16(pb, riff_extradata - riff_extradata_start + 22); /* 22 is WAVEFORMATEXTENSIBLE size */
+        avio_wl16(pb, enc->bits_per_coded_sample);                 /* ValidBitsPerSample || SamplesPerBlock || Reserved */
+        avio_wl32(pb, enc->channel_layout);                        /* dwChannelMask */
+        avio_wl32(pb, enc->codec_tag);                             /* GUID + next 3 */
+        avio_wl32(pb, 0x00100000);
+        avio_wl32(pb, 0xAA000080);
+        avio_wl32(pb, 0x719B3800);
     } else if(riff_extradata - riff_extradata_start) {
-        put_le16(pb, riff_extradata - riff_extradata_start);
+        avio_wl16(pb, riff_extradata - riff_extradata_start);
     }
-    put_buffer(pb, riff_extradata_start, riff_extradata - riff_extradata_start);
+    avio_write(pb, riff_extradata_start, riff_extradata - riff_extradata_start);
     if(hdrsize&1){
         hdrsize++;
-        put_byte(pb, 0);
+        avio_w8(pb, 0);
     }
 
     return hdrsize;
@@ -447,25 +447,25 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
 /* BITMAPINFOHEADER header */
 void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf)
 {
-    put_le32(pb, 40 + enc->extradata_size); /* size */
-    put_le32(pb, enc->width);
+    avio_wl32(pb, 40 + enc->extradata_size); /* size */
+    avio_wl32(pb, enc->width);
     //We always store RGB TopDown
-    put_le32(pb, enc->codec_tag ? enc->height : -enc->height);
-    put_le16(pb, 1); /* planes */
+    avio_wl32(pb, enc->codec_tag ? enc->height : -enc->height);
+    avio_wl16(pb, 1); /* planes */
 
-    put_le16(pb, enc->bits_per_coded_sample ? enc->bits_per_coded_sample : 24); /* depth */
+    avio_wl16(pb, enc->bits_per_coded_sample ? enc->bits_per_coded_sample : 24); /* depth */
     /* compression type */
-    put_le32(pb, enc->codec_tag);
-    put_le32(pb, enc->width * enc->height * 3);
-    put_le32(pb, 0);
-    put_le32(pb, 0);
-    put_le32(pb, 0);
-    put_le32(pb, 0);
+    avio_wl32(pb, enc->codec_tag);
+    avio_wl32(pb, enc->width * enc->height * 3);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
 
-    put_buffer(pb, enc->extradata, enc->extradata_size);
+    avio_write(pb, enc->extradata, enc->extradata_size);
 
     if (!for_asf && enc->extradata_size & 1)
-        put_byte(pb, 0);
+        avio_w8(pb, 0);
 }
 #endif //CONFIG_MUXERS
 

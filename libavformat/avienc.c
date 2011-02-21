@@ -108,10 +108,10 @@ static void avi_write_info_tag(AVIOContext *pb, const char *tag, const char *str
     if (len > 0) {
         len++;
         put_tag(pb, tag);
-        put_le32(pb, len);
+        avio_wl32(pb, len);
         avio_put_str(pb, str);
         if (len & 1)
-            put_byte(pb, 0);
+            avio_w8(pb, 0);
     }
 }
 
@@ -132,9 +132,9 @@ static int avi_write_counters(AVFormatContext* s, int riff_id)
         url_fseek(pb, avist->frames_hdr_strm, SEEK_SET);
         ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
         if(au_ssize == 0) {
-            put_le32(pb, avist->packet_count);
+            avio_wl32(pb, avist->packet_count);
         } else {
-            put_le32(pb, avist->audio_strm_length / au_ssize);
+            avio_wl32(pb, avist->audio_strm_length / au_ssize);
         }
         if(stream->codec_type == AVMEDIA_TYPE_VIDEO)
             nb_frames = FFMAX(nb_frames, avist->packet_count);
@@ -142,7 +142,7 @@ static int avi_write_counters(AVFormatContext* s, int riff_id)
     if(riff_id == 1) {
         assert(avi->frames_hdr_all);
         url_fseek(pb, avi->frames_hdr_all, SEEK_SET);
-        put_le32(pb, nb_frames);
+        avio_wl32(pb, nb_frames);
     }
     url_fseek(pb, file_size, SEEK_SET);
 
@@ -170,7 +170,7 @@ static int avi_write_header(AVFormatContext *s)
 
     /* avi header */
     put_tag(pb, "avih");
-    put_le32(pb, 14 * 4);
+    avio_wl32(pb, 14 * 4);
     bitrate = 0;
 
     video_enc = NULL;
@@ -184,32 +184,32 @@ static int avi_write_header(AVFormatContext *s)
     nb_frames = 0;
 
     if(video_enc){
-        put_le32(pb, (uint32_t)(INT64_C(1000000) * video_enc->time_base.num / video_enc->time_base.den));
+        avio_wl32(pb, (uint32_t)(INT64_C(1000000) * video_enc->time_base.num / video_enc->time_base.den));
     } else {
-        put_le32(pb, 0);
+        avio_wl32(pb, 0);
     }
-    put_le32(pb, bitrate / 8); /* XXX: not quite exact */
-    put_le32(pb, 0); /* padding */
+    avio_wl32(pb, bitrate / 8); /* XXX: not quite exact */
+    avio_wl32(pb, 0); /* padding */
     if (url_is_streamed(pb))
-        put_le32(pb, AVIF_TRUSTCKTYPE | AVIF_ISINTERLEAVED); /* flags */
+        avio_wl32(pb, AVIF_TRUSTCKTYPE | AVIF_ISINTERLEAVED); /* flags */
     else
-        put_le32(pb, AVIF_TRUSTCKTYPE | AVIF_HASINDEX | AVIF_ISINTERLEAVED); /* flags */
+        avio_wl32(pb, AVIF_TRUSTCKTYPE | AVIF_HASINDEX | AVIF_ISINTERLEAVED); /* flags */
     avi->frames_hdr_all = url_ftell(pb); /* remember this offset to fill later */
-    put_le32(pb, nb_frames); /* nb frames, filled later */
-    put_le32(pb, 0); /* initial frame */
-    put_le32(pb, s->nb_streams); /* nb streams */
-    put_le32(pb, 1024 * 1024); /* suggested buffer size */
+    avio_wl32(pb, nb_frames); /* nb frames, filled later */
+    avio_wl32(pb, 0); /* initial frame */
+    avio_wl32(pb, s->nb_streams); /* nb streams */
+    avio_wl32(pb, 1024 * 1024); /* suggested buffer size */
     if(video_enc){
-        put_le32(pb, video_enc->width);
-        put_le32(pb, video_enc->height);
+        avio_wl32(pb, video_enc->width);
+        avio_wl32(pb, video_enc->height);
     } else {
-        put_le32(pb, 0);
-        put_le32(pb, 0);
+        avio_wl32(pb, 0);
+        avio_wl32(pb, 0);
     }
-    put_le32(pb, 0); /* reserved */
-    put_le32(pb, 0); /* reserved */
-    put_le32(pb, 0); /* reserved */
-    put_le32(pb, 0); /* reserved */
+    avio_wl32(pb, 0); /* reserved */
+    avio_wl32(pb, 0); /* reserved */
+    avio_wl32(pb, 0); /* reserved */
+    avio_wl32(pb, 0); /* reserved */
 
     /* stream list */
     for(i=0;i<n;i++) {
@@ -236,39 +236,39 @@ static int avi_write_header(AVFormatContext *s)
         }
         if(stream->codec_type == AVMEDIA_TYPE_VIDEO ||
            stream->codec_id == CODEC_ID_XSUB)
-            put_le32(pb, stream->codec_tag);
+            avio_wl32(pb, stream->codec_tag);
         else
-            put_le32(pb, 1);
-        put_le32(pb, 0); /* flags */
-        put_le16(pb, 0); /* priority */
-        put_le16(pb, 0); /* language */
-        put_le32(pb, 0); /* initial frame */
+            avio_wl32(pb, 1);
+        avio_wl32(pb, 0); /* flags */
+        avio_wl16(pb, 0); /* priority */
+        avio_wl16(pb, 0); /* language */
+        avio_wl32(pb, 0); /* initial frame */
 
         ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
 
-        put_le32(pb, au_scale); /* scale */
-        put_le32(pb, au_byterate); /* rate */
+        avio_wl32(pb, au_scale); /* scale */
+        avio_wl32(pb, au_byterate); /* rate */
         av_set_pts_info(s->streams[i], 64, au_scale, au_byterate);
 
-        put_le32(pb, 0); /* start */
+        avio_wl32(pb, 0); /* start */
         avist->frames_hdr_strm = url_ftell(pb); /* remember this offset to fill later */
         if (url_is_streamed(pb))
-            put_le32(pb, AVI_MAX_RIFF_SIZE); /* FIXME: this may be broken, but who cares */
+            avio_wl32(pb, AVI_MAX_RIFF_SIZE); /* FIXME: this may be broken, but who cares */
         else
-            put_le32(pb, 0); /* length, XXX: filled later */
+            avio_wl32(pb, 0); /* length, XXX: filled later */
 
         /* suggested buffer size */ //FIXME set at the end to largest chunk
         if(stream->codec_type == AVMEDIA_TYPE_VIDEO)
-            put_le32(pb, 1024 * 1024);
+            avio_wl32(pb, 1024 * 1024);
         else if(stream->codec_type == AVMEDIA_TYPE_AUDIO)
-            put_le32(pb, 12 * 1024);
+            avio_wl32(pb, 12 * 1024);
         else
-            put_le32(pb, 0);
-        put_le32(pb, -1); /* quality */
-        put_le32(pb, au_ssize); /* sample size */
-        put_le32(pb, 0);
-        put_le16(pb, stream->width);
-        put_le16(pb, stream->height);
+            avio_wl32(pb, 0);
+        avio_wl32(pb, -1); /* quality */
+        avio_wl32(pb, au_ssize); /* sample size */
+        avio_wl32(pb, 0);
+        avio_wl16(pb, stream->width);
+        avio_wl16(pb, stream->height);
         ff_end_tag(pb, strh);
 
       if(stream->codec_type != AVMEDIA_TYPE_DATA){
@@ -307,16 +307,16 @@ static int avi_write_header(AVFormatContext *s)
              */
             avist->indexes.entry = avist->indexes.ents_allocated = 0;
             avist->indexes.indx_start = ff_start_tag(pb, "JUNK");
-            put_le16(pb, 4);        /* wLongsPerEntry */
-            put_byte(pb, 0);        /* bIndexSubType (0 == frame index) */
-            put_byte(pb, 0);        /* bIndexType (0 == AVI_INDEX_OF_INDEXES) */
-            put_le32(pb, 0);        /* nEntriesInUse (will fill out later on) */
+            avio_wl16(pb, 4);        /* wLongsPerEntry */
+            avio_w8(pb, 0);          /* bIndexSubType (0 == frame index) */
+            avio_w8(pb, 0);          /* bIndexType (0 == AVI_INDEX_OF_INDEXES) */
+            avio_wl32(pb, 0);        /* nEntriesInUse (will fill out later on) */
             put_tag(pb, avi_stream2fourcc(&tag[0], i, stream->codec_type));
                                     /* dwChunkId */
-            put_le64(pb, 0);        /* dwReserved[3]
-            put_le32(pb, 0);           Must be 0.    */
+            avio_wl64(pb, 0);        /* dwReserved[3]
+            avio_wl32(pb, 0);           Must be 0.    */
             for (j=0; j < AVI_MASTER_INDEX_SIZE * 2; j++)
-                 put_le64(pb, 0);
+                 avio_wl64(pb, 0);
             ff_end_tag(pb, avist->indexes.indx_start);
         }
 
@@ -329,26 +329,26 @@ static int avi_write_header(AVFormatContext *s)
             int num, den;
             av_reduce(&num, &den, dar.num, dar.den, 0xFFFF);
 
-            put_le32(pb, 0); //video format  = unknown
-            put_le32(pb, 0); //video standard= unknown
-            put_le32(pb, lrintf(1.0/av_q2d(stream->time_base)));
-            put_le32(pb, stream->width );
-            put_le32(pb, stream->height);
-            put_le16(pb, den);
-            put_le16(pb, num);
-            put_le32(pb, stream->width );
-            put_le32(pb, stream->height);
-            put_le32(pb, 1); //progressive FIXME
+            avio_wl32(pb, 0); //video format  = unknown
+            avio_wl32(pb, 0); //video standard= unknown
+            avio_wl32(pb, lrintf(1.0/av_q2d(stream->time_base)));
+            avio_wl32(pb, stream->width );
+            avio_wl32(pb, stream->height);
+            avio_wl16(pb, den);
+            avio_wl16(pb, num);
+            avio_wl32(pb, stream->width );
+            avio_wl32(pb, stream->height);
+            avio_wl32(pb, 1); //progressive FIXME
 
-            put_le32(pb, stream->height);
-            put_le32(pb, stream->width );
-            put_le32(pb, stream->height);
-            put_le32(pb, stream->width );
-            put_le32(pb, 0);
-            put_le32(pb, 0);
+            avio_wl32(pb, stream->height);
+            avio_wl32(pb, stream->width );
+            avio_wl32(pb, stream->height);
+            avio_wl32(pb, stream->width );
+            avio_wl32(pb, 0);
+            avio_wl32(pb, 0);
 
-            put_le32(pb, 0);
-            put_le32(pb, 0);
+            avio_wl32(pb, 0);
+            avio_wl32(pb, 0);
             ff_end_tag(pb, vprp);
         }
 
@@ -360,9 +360,9 @@ static int avi_write_header(AVFormatContext *s)
         avi->odml_list = ff_start_tag(pb, "JUNK");
         put_tag(pb, "odml");
         put_tag(pb, "dmlh");
-        put_le32(pb, 248);
+        avio_wl32(pb, 248);
         for (i = 0; i < 248; i+= 4)
-             put_le32(pb, 0);
+             avio_wl32(pb, 0);
         ff_end_tag(pb, avi->odml_list);
     }
 
@@ -380,7 +380,7 @@ static int avi_write_header(AVFormatContext *s)
     /* some padding for easier tag editing */
     list2 = ff_start_tag(pb, "JUNK");
     for (i = 0; i < 1016; i += 4)
-        put_le32(pb, 0);
+        avio_wl32(pb, 0);
     ff_end_tag(pb, list2);
 
     avi->movi_list = ff_start_tag(pb, "LIST");
@@ -414,21 +414,21 @@ static int avi_write_ix(AVFormatContext *s)
          /* Writing AVI OpenDML leaf index chunk */
          ix = url_ftell(pb);
          put_tag(pb, &ix_tag[0]);     /* ix?? */
-         put_le32(pb, avist->indexes.entry * 8 + 24);
+         avio_wl32(pb, avist->indexes.entry * 8 + 24);
                                       /* chunk size */
-         put_le16(pb, 2);             /* wLongsPerEntry */
-         put_byte(pb, 0);             /* bIndexSubType (0 == frame index) */
-         put_byte(pb, 1);             /* bIndexType (1 == AVI_INDEX_OF_CHUNKS) */
-         put_le32(pb, avist->indexes.entry);
+         avio_wl16(pb, 2);             /* wLongsPerEntry */
+         avio_w8(pb, 0);             /* bIndexSubType (0 == frame index) */
+         avio_w8(pb, 1);             /* bIndexType (1 == AVI_INDEX_OF_CHUNKS) */
+         avio_wl32(pb, avist->indexes.entry);
                                       /* nEntriesInUse */
          put_tag(pb, &tag[0]);        /* dwChunkId */
-         put_le64(pb, avi->movi_list);/* qwBaseOffset */
-         put_le32(pb, 0);             /* dwReserved_3 (must be 0) */
+         avio_wl64(pb, avi->movi_list);/* qwBaseOffset */
+         avio_wl32(pb, 0);             /* dwReserved_3 (must be 0) */
 
          for (j=0; j<avist->indexes.entry; j++) {
              AVIIentry* ie = avi_get_ientry(&avist->indexes, j);
-             put_le32(pb, ie->pos + 8);
-             put_le32(pb, ((uint32_t)ie->len & ~0x80000000) |
+             avio_wl32(pb, ie->pos + 8);
+             avio_wl32(pb, ((uint32_t)ie->len & ~0x80000000) |
                           (ie->flags & 0x10 ? 0 : 0x80000000));
          }
          put_flush_packet(pb);
@@ -438,11 +438,11 @@ static int avi_write_ix(AVFormatContext *s)
          url_fseek(pb, avist->indexes.indx_start - 8, SEEK_SET);
          put_tag(pb, "indx");                 /* enabling this entry */
          url_fskip(pb, 8);
-         put_le32(pb, avi->riff_id);          /* nEntriesInUse */
+         avio_wl32(pb, avi->riff_id);         /* nEntriesInUse */
          url_fskip(pb, 16*avi->riff_id);
-         put_le64(pb, ix);                    /* qwOffset */
-         put_le32(pb, pos - ix);              /* dwSize */
-         put_le32(pb, avist->indexes.entry); /* dwDuration */
+         avio_wl64(pb, ix);                   /* qwOffset */
+         avio_wl32(pb, pos - ix);             /* dwSize */
+         avio_wl32(pb, avist->indexes.entry); /* dwDuration */
 
          url_fseek(pb, pos, SEEK_SET);
     }
@@ -487,9 +487,9 @@ static int avi_write_idx1(AVFormatContext *s)
                 avi_stream2fourcc(&tag[0], stream_id,
                                   s->streams[stream_id]->codec->codec_type);
                 put_tag(pb, &tag[0]);
-                put_le32(pb, ie->flags);
-                put_le32(pb, ie->pos);
-                put_le32(pb, ie->len);
+                avio_wl32(pb, ie->flags);
+                avio_wl32(pb, ie->pos);
+                avio_wl32(pb, ie->len);
                 avist->entry++;
             }
         } while (!empty);
@@ -565,11 +565,11 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         idx->entry++;
     }
 
-    put_buffer(pb, tag, 4);
-    put_le32(pb, size);
-    put_buffer(pb, pkt->data, size);
+    avio_write(pb, tag, 4);
+    avio_wl32(pb, size);
+    avio_write(pb, pkt->data, size);
     if (size & 1)
-        put_byte(pb, 0);
+        avio_w8(pb, 0);
 
     put_flush_packet(pb);
     return 0;
@@ -611,7 +611,7 @@ static int avi_write_trailer(AVFormatContext *s)
                     }
                 }
             }
-            put_le32(pb, nb_frames);
+            avio_wl32(pb, nb_frames);
             url_fseek(pb, file_size, SEEK_SET);
 
             avi_write_counters(s, avi->riff_id);

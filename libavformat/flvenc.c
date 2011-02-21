@@ -142,31 +142,31 @@ static int get_audio_flags(AVCodecContext *enc){
 static void put_amf_string(AVIOContext *pb, const char *str)
 {
     size_t len = strlen(str);
-    put_be16(pb, len);
-    put_buffer(pb, str, len);
+    avio_wb16(pb, len);
+    avio_write(pb, str, len);
 }
 
 static void put_avc_eos_tag(AVIOContext *pb, unsigned ts) {
-    put_byte(pb, FLV_TAG_TYPE_VIDEO);
-    put_be24(pb, 5);  /* Tag Data Size */
-    put_be24(pb, ts);  /* lower 24 bits of timestamp in ms*/
-    put_byte(pb, (ts >> 24) & 0x7F);  /* MSB of ts in ms*/
-    put_be24(pb, 0);  /* StreamId = 0 */
-    put_byte(pb, 23);  /* ub[4] FrameType = 1, ub[4] CodecId = 7 */
-    put_byte(pb, 2);  /* AVC end of sequence */
-    put_be24(pb, 0);  /* Always 0 for AVC EOS. */
-    put_be32(pb, 16);  /* Size of FLV tag */
+    avio_w8(pb, FLV_TAG_TYPE_VIDEO);
+    avio_wb24(pb, 5);  /* Tag Data Size */
+    avio_wb24(pb, ts);  /* lower 24 bits of timestamp in ms*/
+    avio_w8(pb, (ts >> 24) & 0x7F);  /* MSB of ts in ms*/
+    avio_wb24(pb, 0);  /* StreamId = 0 */
+    avio_w8(pb, 23);  /* ub[4] FrameType = 1, ub[4] CodecId = 7 */
+    avio_w8(pb, 2);  /* AVC end of sequence */
+    avio_wb24(pb, 0);  /* Always 0 for AVC EOS. */
+    avio_wb32(pb, 16);  /* Size of FLV tag */
 }
 
 static void put_amf_double(AVIOContext *pb, double d)
 {
-    put_byte(pb, AMF_DATA_TYPE_NUMBER);
-    put_be64(pb, av_dbl2int(d));
+    avio_w8(pb, AMF_DATA_TYPE_NUMBER);
+    avio_wb64(pb, av_dbl2int(d));
 }
 
 static void put_amf_bool(AVIOContext *pb, int b) {
-    put_byte(pb, AMF_DATA_TYPE_BOOL);
-    put_byte(pb, !!b);
+    avio_w8(pb, AMF_DATA_TYPE_BOOL);
+    avio_w8(pb, !!b);
 }
 
 static int flv_write_header(AVFormatContext *s)
@@ -200,19 +200,19 @@ static int flv_write_header(AVFormatContext *s)
         av_set_pts_info(s->streams[i], 32, 1, 1000); /* 32 bit pts in ms */
     }
     put_tag(pb,"FLV");
-    put_byte(pb,1);
-    put_byte(pb,   FLV_HEADER_FLAG_HASAUDIO * !!audio_enc
+    avio_w8(pb,1);
+    avio_w8(pb,   FLV_HEADER_FLAG_HASAUDIO * !!audio_enc
                  + FLV_HEADER_FLAG_HASVIDEO * !!video_enc);
-    put_be32(pb,9);
-    put_be32(pb,0);
+    avio_wb32(pb,9);
+    avio_wb32(pb,0);
 
     for(i=0; i<s->nb_streams; i++){
         if(s->streams[i]->codec->codec_tag == 5){
-            put_byte(pb,8); // message type
-            put_be24(pb,0); // include flags
-            put_be24(pb,0); // time stamp
-            put_be32(pb,0); // reserved
-            put_be32(pb,11); // size
+            avio_w8(pb,8); // message type
+            avio_wb24(pb,0); // include flags
+            avio_wb24(pb,0); // time stamp
+            avio_wb32(pb,0); // reserved
+            avio_wb32(pb,11); // size
             flv->reserved=5;
         }
     }
@@ -220,21 +220,21 @@ static int flv_write_header(AVFormatContext *s)
     flv->last_video_ts = -1;
 
     /* write meta_tag */
-    put_byte(pb, 18);         // tag type META
+    avio_w8(pb, 18);         // tag type META
     metadata_size_pos= url_ftell(pb);
-    put_be24(pb, 0);          // size of data part (sum of all parts below)
-    put_be24(pb, 0);          // time stamp
-    put_be32(pb, 0);          // reserved
+    avio_wb24(pb, 0);          // size of data part (sum of all parts below)
+    avio_wb24(pb, 0);          // time stamp
+    avio_wb32(pb, 0);          // reserved
 
     /* now data of data_size size */
 
     /* first event name as a string */
-    put_byte(pb, AMF_DATA_TYPE_STRING);
+    avio_w8(pb, AMF_DATA_TYPE_STRING);
     put_amf_string(pb, "onMetaData"); // 12 bytes
 
     /* mixed array (hash) with size and string/type/data tuples */
-    put_byte(pb, AMF_DATA_TYPE_MIXEDARRAY);
-    put_be32(pb, 5*!!video_enc + 5*!!audio_enc + 2); // +2 for duration and file size
+    avio_w8(pb, AMF_DATA_TYPE_MIXEDARRAY);
+    avio_wb32(pb, 5*!!video_enc + 5*!!audio_enc + 2); // +2 for duration and file size
 
     put_amf_string(pb, "duration");
     flv->duration_offset= url_ftell(pb);
@@ -276,7 +276,7 @@ static int flv_write_header(AVFormatContext *s)
 
     while ((tag = av_metadata_get(s->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
         put_amf_string(pb, tag->key);
-        put_byte(pb, AMF_DATA_TYPE_STRING);
+        avio_w8(pb, AMF_DATA_TYPE_STRING);
         put_amf_string(pb, tag->value);
     }
 
@@ -285,41 +285,41 @@ static int flv_write_header(AVFormatContext *s)
     put_amf_double(pb, 0); // delayed write
 
     put_amf_string(pb, "");
-    put_byte(pb, AMF_END_OF_OBJECT);
+    avio_w8(pb, AMF_END_OF_OBJECT);
 
     /* write total size of tag */
     data_size= url_ftell(pb) - metadata_size_pos - 10;
     url_fseek(pb, metadata_size_pos, SEEK_SET);
-    put_be24(pb, data_size);
+    avio_wb24(pb, data_size);
     url_fseek(pb, data_size + 10 - 3, SEEK_CUR);
-    put_be32(pb, data_size + 11);
+    avio_wb32(pb, data_size + 11);
 
     for (i = 0; i < s->nb_streams; i++) {
         AVCodecContext *enc = s->streams[i]->codec;
         if (enc->codec_id == CODEC_ID_AAC || enc->codec_id == CODEC_ID_H264) {
             int64_t pos;
-            put_byte(pb, enc->codec_type == AVMEDIA_TYPE_VIDEO ?
+            avio_w8(pb, enc->codec_type == AVMEDIA_TYPE_VIDEO ?
                      FLV_TAG_TYPE_VIDEO : FLV_TAG_TYPE_AUDIO);
-            put_be24(pb, 0); // size patched later
-            put_be24(pb, 0); // ts
-            put_byte(pb, 0); // ts ext
-            put_be24(pb, 0); // streamid
+            avio_wb24(pb, 0); // size patched later
+            avio_wb24(pb, 0); // ts
+            avio_w8(pb, 0); // ts ext
+            avio_wb24(pb, 0); // streamid
             pos = url_ftell(pb);
             if (enc->codec_id == CODEC_ID_AAC) {
-                put_byte(pb, get_audio_flags(enc));
-                put_byte(pb, 0); // AAC sequence header
-                put_buffer(pb, enc->extradata, enc->extradata_size);
+                avio_w8(pb, get_audio_flags(enc));
+                avio_w8(pb, 0); // AAC sequence header
+                avio_write(pb, enc->extradata, enc->extradata_size);
             } else {
-                put_byte(pb, enc->codec_tag | FLV_FRAME_KEY); // flags
-                put_byte(pb, 0); // AVC sequence header
-                put_be24(pb, 0); // composition time
+                avio_w8(pb, enc->codec_tag | FLV_FRAME_KEY); // flags
+                avio_w8(pb, 0); // AVC sequence header
+                avio_wb24(pb, 0); // composition time
                 ff_isom_write_avcc(pb, enc->extradata, enc->extradata_size);
             }
             data_size = url_ftell(pb) - pos;
             url_fseek(pb, -data_size - 10, SEEK_CUR);
-            put_be24(pb, data_size);
+            avio_wb24(pb, data_size);
             url_fseek(pb, data_size + 10 - 3, SEEK_CUR);
-            put_be32(pb, data_size + 11); // previous tag size
+            avio_wb32(pb, data_size + 11); // previous tag size
         }
     }
 
@@ -376,7 +376,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         flags_size= 1;
 
     if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
-        put_byte(pb, FLV_TAG_TYPE_VIDEO);
+        avio_w8(pb, FLV_TAG_TYPE_VIDEO);
 
         flags = enc->codec_tag;
         if(flags == 0) {
@@ -391,7 +391,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         assert(size);
 
-        put_byte(pb, FLV_TAG_TYPE_AUDIO);
+        avio_w8(pb, FLV_TAG_TYPE_AUDIO);
     }
 
     if (enc->codec_id == CODEC_ID_H264) {
@@ -409,25 +409,25 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (flv->last_video_ts < ts)
             flv->last_video_ts = ts;
     }
-    put_be24(pb,size + flags_size);
-    put_be24(pb,ts);
-    put_byte(pb,(ts >> 24) & 0x7F); // timestamps are 32bits _signed_
-    put_be24(pb,flv->reserved);
-    put_byte(pb,flags);
+    avio_wb24(pb,size + flags_size);
+    avio_wb24(pb,ts);
+    avio_w8(pb,(ts >> 24) & 0x7F); // timestamps are 32bits _signed_
+    avio_wb24(pb,flv->reserved);
+    avio_w8(pb,flags);
     if (enc->codec_id == CODEC_ID_VP6)
-        put_byte(pb,0);
+        avio_w8(pb,0);
     if (enc->codec_id == CODEC_ID_VP6F)
-        put_byte(pb, enc->extradata_size ? enc->extradata[0] : 0);
+        avio_w8(pb, enc->extradata_size ? enc->extradata[0] : 0);
     else if (enc->codec_id == CODEC_ID_AAC)
-        put_byte(pb,1); // AAC raw
+        avio_w8(pb,1); // AAC raw
     else if (enc->codec_id == CODEC_ID_H264) {
-        put_byte(pb,1); // AVC NALU
-        put_be24(pb,pkt->pts - pkt->dts);
+        avio_w8(pb,1); // AVC NALU
+        avio_wb24(pb,pkt->pts - pkt->dts);
     }
 
-    put_buffer(pb, data ? data : pkt->data, size);
+    avio_write(pb, data ? data : pkt->data, size);
 
-    put_be32(pb,size+flags_size+11); // previous tag size
+    avio_wb32(pb,size+flags_size+11); // previous tag size
     flv->duration = FFMAX(flv->duration, pkt->pts + flv->delay + pkt->duration);
 
     put_flush_packet(pb);

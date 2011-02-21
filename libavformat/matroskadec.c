@@ -1376,12 +1376,12 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 return AVERROR(ENOMEM);
             ffio_init_context(&b, extradata, extradata_size, 1,
                           NULL, NULL, NULL, NULL);
-            put_buffer(&b, "TTA1", 4);
-            put_le16(&b, 1);
-            put_le16(&b, track->audio.channels);
-            put_le16(&b, track->audio.bitdepth);
-            put_le32(&b, track->audio.out_samplerate);
-            put_le32(&b, matroska->ctx->duration * track->audio.out_samplerate);
+            avio_write(&b, "TTA1", 4);
+            avio_wl16(&b, 1);
+            avio_wl16(&b, track->audio.channels);
+            avio_wl16(&b, track->audio.bitdepth);
+            avio_wl32(&b, track->audio.out_samplerate);
+            avio_wl32(&b, matroska->ctx->duration * track->audio.out_samplerate);
         } else if (codec_id == CODEC_ID_RV10 || codec_id == CODEC_ID_RV20 ||
                    codec_id == CODEC_ID_RV30 || codec_id == CODEC_ID_RV40) {
             extradata_offset = 26;

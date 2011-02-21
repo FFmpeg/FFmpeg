@@ -368,9 +368,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if(codec->codec_id == CODEC_ID_RAWVIDEO){
         int ysize = codec->width * codec->height;
-        put_buffer(pb[0], pkt->data        , ysize);
-        put_buffer(pb[1], pkt->data + ysize, (pkt->size - ysize)/2);
-        put_buffer(pb[2], pkt->data + ysize +(pkt->size - ysize)/2, (pkt->size - ysize)/2);
+        avio_write(pb[0], pkt->data        , ysize);
+        avio_write(pb[1], pkt->data + ysize, (pkt->size - ysize)/2);
+        avio_write(pb[2], pkt->data + ysize +(pkt->size - ysize)/2, (pkt->size - ysize)/2);
         put_flush_packet(pb[1]);
         put_flush_packet(pb[2]);
         url_fclose(pb[1]);
@@ -382,15 +382,15 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                AV_RL32(st->codec->extradata+4) == MKTAG('j','p','2','h')){
                 if(pkt->size < 8 || AV_RL32(pkt->data+4) != MKTAG('j','p','2','c'))
                     goto error;
-                put_be32(pb[0], 12);
+                avio_wb32(pb[0], 12);
                 put_tag (pb[0], "jP  ");
-                put_be32(pb[0], 0x0D0A870A); // signature
-                put_be32(pb[0], 20);
+                avio_wb32(pb[0], 0x0D0A870A); // signature
+                avio_wb32(pb[0], 20);
                 put_tag (pb[0], "ftyp");
                 put_tag (pb[0], "jp2 ");
-                put_be32(pb[0], 0);
+                avio_wb32(pb[0], 0);
                 put_tag (pb[0], "jp2 ");
-                put_buffer(pb[0], st->codec->extradata, st->codec->extradata_size);
+                avio_write(pb[0], st->codec->extradata, st->codec->extradata_size);
             }else if(pkt->size < 8 ||
                      (!st->codec->extradata_size &&
                       AV_RL32(pkt->data+4) != MKTAG('j','P',' ',' '))){ // signature
@@ -399,7 +399,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 return -1;
             }
         }
-        put_buffer(pb[0], pkt->data, pkt->size);
+        avio_write(pb[0], pkt->data, pkt->size);
     }
     put_flush_packet(pb[0]);
     if (!img->is_pipe) {

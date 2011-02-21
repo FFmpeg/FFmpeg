@@ -268,12 +268,12 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
         return -1;
 
     // Receiver Report
-    put_byte(pb, (RTP_VERSION << 6) + 1); /* 1 report block */
-    put_byte(pb, RTCP_RR);
-    put_be16(pb, 7); /* length in words - 1 */
+    avio_w8(pb, (RTP_VERSION << 6) + 1); /* 1 report block */
+    avio_w8(pb, RTCP_RR);
+    avio_wb16(pb, 7); /* length in words - 1 */
     // our own SSRC: we use the server's SSRC + 1 to avoid conflicts
-    put_be32(pb, s->ssrc + 1);
-    put_be32(pb, s->ssrc); // server SSRC
+    avio_wb32(pb, s->ssrc + 1);
+    avio_wb32(pb, s->ssrc); // server SSRC
     // some placeholders we should really fill...
     // RFC 1889/p64
     extended_max= stats->cycles + stats->max_seq;
@@ -290,34 +290,34 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
 
     fraction= (fraction<<24) | lost;
 
-    put_be32(pb, fraction); /* 8 bits of fraction, 24 bits of total packets lost */
-    put_be32(pb, extended_max); /* max sequence received */
-    put_be32(pb, stats->jitter>>4); /* jitter */
+    avio_wb32(pb, fraction); /* 8 bits of fraction, 24 bits of total packets lost */
+    avio_wb32(pb, extended_max); /* max sequence received */
+    avio_wb32(pb, stats->jitter>>4); /* jitter */
 
     if(s->last_rtcp_ntp_time==AV_NOPTS_VALUE)
     {
-        put_be32(pb, 0); /* last SR timestamp */
-        put_be32(pb, 0); /* delay since last SR */
+        avio_wb32(pb, 0); /* last SR timestamp */
+        avio_wb32(pb, 0); /* delay since last SR */
     } else {
         uint32_t middle_32_bits= s->last_rtcp_ntp_time>>16; // this is valid, right? do we need to handle 64 bit values special?
         uint32_t delay_since_last= ntp_time - s->last_rtcp_ntp_time;
 
-        put_be32(pb, middle_32_bits); /* last SR timestamp */
-        put_be32(pb, delay_since_last); /* delay since last SR */
+        avio_wb32(pb, middle_32_bits); /* last SR timestamp */
+        avio_wb32(pb, delay_since_last); /* delay since last SR */
     }
 
     // CNAME
-    put_byte(pb, (RTP_VERSION << 6) + 1); /* 1 report block */
-    put_byte(pb, RTCP_SDES);
+    avio_w8(pb, (RTP_VERSION << 6) + 1); /* 1 report block */
+    avio_w8(pb, RTCP_SDES);
     len = strlen(s->hostname);
-    put_be16(pb, (6 + len + 3) / 4); /* length in words - 1 */
-    put_be32(pb, s->ssrc);
-    put_byte(pb, 0x01);
-    put_byte(pb, len);
-    put_buffer(pb, s->hostname, len);
+    avio_wb16(pb, (6 + len + 3) / 4); /* length in words - 1 */
+    avio_wb32(pb, s->ssrc);
+    avio_w8(pb, 0x01);
+    avio_w8(pb, len);
+    avio_write(pb, s->hostname, len);
     // padding
     for (len = (6 + len) % 4; len % 4; len++) {
-        put_byte(pb, 0);
+        avio_w8(pb, 0);
     }
 
     put_flush_packet(pb);
@@ -342,11 +342,11 @@ void rtp_send_punch_packets(URLContext* rtp_handle)
     if (url_open_dyn_buf(&pb) < 0)
         return;
 
-    put_byte(pb, (RTP_VERSION << 6));
-    put_byte(pb, 0); /* Payload type */
-    put_be16(pb, 0); /* Seq */
-    put_be32(pb, 0); /* Timestamp */
-    put_be32(pb, 0); /* SSRC */
+    avio_w8(pb, (RTP_VERSION << 6));
+    avio_w8(pb, 0); /* Payload type */
+    avio_wb16(pb, 0); /* Seq */
+    avio_wb32(pb, 0); /* Timestamp */
+    avio_wb32(pb, 0); /* SSRC */
 
     put_flush_packet(pb);
     len = url_close_dyn_buf(pb, &buf);
@@ -358,10 +358,10 @@ void rtp_send_punch_packets(URLContext* rtp_handle)
     if (url_open_dyn_buf(&pb) < 0)
         return;
 
-    put_byte(pb, (RTP_VERSION << 6));
-    put_byte(pb, RTCP_RR); /* receiver report */
-    put_be16(pb, 1); /* length in words - 1 */
-    put_be32(pb, 0); /* our own SSRC */
+    avio_w8(pb, (RTP_VERSION << 6));
+    avio_w8(pb, RTCP_RR); /* receiver report */
+    avio_wb16(pb, 1); /* length in words - 1 */
+    avio_wb32(pb, 0); /* our own SSRC */
 
     put_flush_packet(pb);
     len = url_close_dyn_buf(pb, &buf);

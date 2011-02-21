@@ -69,7 +69,7 @@ static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc
     int64_t pos = url_ftell(pb);
     uint32_t checksum = get_checksum(pb);
     url_fseek(pb, crc_offset, SEEK_SET);
-    put_be32(pb, checksum);
+    avio_wb32(pb, checksum);
     url_fseek(pb, pos, SEEK_SET);
 }
 
@@ -86,16 +86,16 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
         return ret;
     init_checksum(pb, ff_crc04C11DB7_update, 0);
     put_tag(pb, "OggS");
-    put_byte(pb, 0);
-    put_byte(pb, page->flags | extra_flags);
-    put_le64(pb, page->granule);
-    put_le32(pb, oggstream->serial_num);
-    put_le32(pb, oggstream->page_counter++);
+    avio_w8(pb, 0);
+    avio_w8(pb, page->flags | extra_flags);
+    avio_wl64(pb, page->granule);
+    avio_wl32(pb, oggstream->serial_num);
+    avio_wl32(pb, oggstream->page_counter++);
     crc_offset = url_ftell(pb);
-    put_le32(pb, 0); // crc
-    put_byte(pb, page->segments_count);
-    put_buffer(pb, page->segments, page->segments_count);
-    put_buffer(pb, page->data, page->size);
+    avio_wl32(pb, 0); // crc
+    avio_w8(pb, page->segments_count);
+    avio_write(pb, page->segments, page->segments_count);
+    avio_write(pb, page->data, page->size);
 
     ogg_update_checksum(s, pb, crc_offset);
     put_flush_packet(pb);
@@ -104,7 +104,7 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     if (size < 0)
         return size;
 
-    put_buffer(s->pb, buf, size);
+    avio_write(s->pb, buf, size);
     put_flush_packet(s->pb);
     av_free(buf);
     oggstream->page_count--;

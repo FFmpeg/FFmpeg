@@ -251,14 +251,14 @@ static void output_immediate(const uint8_t *data, int size,
         int len = size;
         if (len > 14)
             len = 14;
-        put_byte(out, 1); /* immediate constructor */
-        put_byte(out, len); /* amount of valid data */
-        put_buffer(out, data, len);
+        avio_w8(out, 1); /* immediate constructor */
+        avio_w8(out, len); /* amount of valid data */
+        avio_write(out, data, len);
         data += len;
         size -= len;
 
         for (; len < 14; len++)
-            put_byte(out, 0);
+            avio_w8(out, 0);
 
         (*entries)++;
     }
@@ -267,13 +267,13 @@ static void output_immediate(const uint8_t *data, int size,
 static void output_match(AVIOContext *out, int match_sample,
                          int match_offset, int match_len, int *entries)
 {
-    put_byte(out, 2); /* sample constructor */
-    put_byte(out, 0); /* track reference */
-    put_be16(out, match_len);
-    put_be32(out, match_sample);
-    put_be32(out, match_offset);
-    put_be16(out, 1); /* bytes per block */
-    put_be16(out, 1); /* samples per block */
+    avio_w8(out, 2); /* sample constructor */
+    avio_w8(out, 0); /* track reference */
+    avio_wb16(out, match_len);
+    avio_wb32(out, match_sample);
+    avio_wb32(out, match_offset);
+    avio_wb16(out, 1); /* bytes per block */
+    avio_wb16(out, 1); /* samples per block */
     (*entries)++;
 }
 
@@ -318,8 +318,8 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
 
     count_pos = url_ftell(out);
     /* RTPsample header */
-    put_be16(out, 0); /* packet count */
-    put_be16(out, 0); /* reserved */
+    avio_wb16(out, 0); /* packet count */
+    avio_wb16(out, 0); /* reserved */
 
     while (size > 4) {
         uint32_t packet_len = AV_RB32(data);
@@ -354,12 +354,12 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
 
         count++;
         /* RTPpacket header */
-        put_be32(out, 0); /* relative_time */
-        put_buffer(out, data, 2); /* RTP header */
-        put_be16(out, seq); /* RTPsequenceseed */
-        put_be16(out, 0); /* reserved + flags */
+        avio_wb32(out, 0); /* relative_time */
+        avio_write(out, data, 2); /* RTP header */
+        avio_wb16(out, seq); /* RTPsequenceseed */
+        avio_wb16(out, 0); /* reserved + flags */
         entries_pos = url_ftell(out);
-        put_be16(out, 0); /* entry count */
+        avio_wb16(out, 0); /* entry count */
 
         data += 12;
         size -= 12;
@@ -373,13 +373,13 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
 
         curpos = url_ftell(out);
         url_fseek(out, entries_pos, SEEK_SET);
-        put_be16(out, entries);
+        avio_wb16(out, entries);
         url_fseek(out, curpos, SEEK_SET);
     }
 
     curpos = url_ftell(out);
     url_fseek(out, count_pos, SEEK_SET);
-    put_be16(out, count);
+    avio_wb16(out, count);
     url_fseek(out, curpos, SEEK_SET);
     return count;
 }

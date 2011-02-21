@@ -47,7 +47,7 @@ static const AVCodecTag nut_tags[] = {
 #if CONFIG_LIBNUT_MUXER
 static int av_write(void * h, size_t len, const uint8_t * buf) {
     AVIOContext * bc = h;
-    put_buffer(bc, buf, len);
+    avio_write(bc, buf, len);
     //put_flush_packet(bc);
     return len;
 }

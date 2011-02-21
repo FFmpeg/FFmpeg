@@ -2514,10 +2514,10 @@ static int http_send_data(HTTPContext *c)
                     header[1] = interleaved_index;
                     header[2] = len >> 8;
                     header[3] = len;
-                    put_buffer(pb, header, 4);
+                    avio_write(pb, header, 4);
                     /* write RTP packet data */
                     c->buffer_ptr += 4;
-                    put_buffer(pb, c->buffer_ptr, len);
+                    avio_write(pb, c->buffer_ptr, len);
                     size = url_close_dyn_buf(pb, &c->packet_buffer);
                     /* prepare asynchronous TCP sending */
                     rtsp_c->packet_buffer_ptr = c->packet_buffer;
@@ -3018,7 +3018,7 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
     url_fprintf(c->pb, "Content-Type: application/sdp\r\n");
     url_fprintf(c->pb, "Content-Length: %d\r\n", content_length);
     url_fprintf(c->pb, "\r\n");
-    put_buffer(c->pb, content, content_length);
+    avio_write(c->pb, content, content_length);
     av_free(content);
 }
 

@@ -54,11 +54,11 @@ static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
     if(!enc->codec_tag)
         return -1;
     put_tag(pb, ".snd");       /* magic number */
-    put_be32(pb, 24);           /* header size */
-    put_be32(pb, AU_UNKNOWN_SIZE); /* data size */
-    put_be32(pb, (uint32_t)enc->codec_tag);     /* codec ID */
-    put_be32(pb, enc->sample_rate);
-    put_be32(pb, (uint32_t)enc->channels);
+    avio_wb32(pb, 24);           /* header size */
+    avio_wb32(pb, AU_UNKNOWN_SIZE); /* data size */
+    avio_wb32(pb, (uint32_t)enc->codec_tag);     /* codec ID */
+    avio_wb32(pb, enc->sample_rate);
+    avio_wb32(pb, (uint32_t)enc->channels);
     return 0;
 }
 
@@ -81,7 +81,7 @@ static int au_write_header(AVFormatContext *s)
 static int au_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb = s->pb;
-    put_buffer(pb, pkt->data, pkt->size);
+    avio_write(pb, pkt->data, pkt->size);
     return 0;
 }
 
@@ -95,7 +95,7 @@ static int au_write_trailer(AVFormatContext *s)
         /* update file size */
         file_size = url_ftell(pb);
         url_fseek(pb, 8, SEEK_SET);
-        put_be32(pb, (uint32_t)(file_size - 24));
+        avio_wb32(pb, (uint32_t)(file_size - 24));
         url_fseek(pb, file_size, SEEK_SET);
 
         put_flush_packet(pb);

@@ -57,7 +57,7 @@ static int a64_write_header(struct AVFormatContext *s)
         return AVERROR(EINVAL);
         break;
     }
-    put_buffer(s->pb, header, 2);
+    avio_write(s->pb, header, 2);
     c->prev_pkt.size = 0;
     c->prev_frame_count = 0;
     return 0;
@@ -110,18 +110,18 @@ static int a64_write_packet(struct AVFormatContext *s, AVPacket *pkt)
             for(i = 0; i < num_frames; i++) {
                 if(pkt->data) {
                     /* if available, put newest charset chunk into buffer */
-                    put_buffer(s->pb, pkt->data + ch_chunksize * i, ch_chunksize);
+                    avio_write(s->pb, pkt->data + ch_chunksize * i, ch_chunksize);
                 } else {
                     /* a bit ugly, but is there an alternative to put many zeros? */
-                    for(j = 0; j < ch_chunksize; j++) put_byte(s->pb, 0);
+                    for(j = 0; j < ch_chunksize; j++) avio_w8(s->pb, 0);
                 }
 
                 if(c->prev_pkt.data) {
                     /* put frame (screen + colram) from last packet into buffer */
-                    put_buffer(s->pb, c->prev_pkt.data + charset_size + frame_size * i, frame_size);
+                    avio_write(s->pb, c->prev_pkt.data + charset_size + frame_size * i, frame_size);
                 } else {
                     /* a bit ugly, but is there an alternative to put many zeros? */
-                    for(j = 0; j < frame_size; j++) put_byte(s->pb, 0);
+                    for(j = 0; j < frame_size; j++) avio_w8(s->pb, 0);
                 }
             }
 
@@ -145,7 +145,7 @@ static int a64_write_packet(struct AVFormatContext *s, AVPacket *pkt)
         default:
             /* Write things as is. Nice for self-contained frames from non-multicolor modes or if played
              * directly from ram and not from a streaming device (rrnet/mmc) */
-            if(pkt) put_buffer(s->pb, pkt->data, pkt->size);
+            if(pkt) avio_write(s->pb, pkt->data, pkt->size);
         break;
     }
 

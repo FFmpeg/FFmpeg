@@ -39,11 +39,11 @@ int ff_flac_write_header(AVIOContext *pb, AVCodecContext *codec,
 
     /* write "fLaC" stream marker and first metadata block header if needed */
     if (format == FLAC_EXTRADATA_FORMAT_STREAMINFO) {
-        put_buffer(pb, header, 8);
+        avio_write(pb, header, 8);
     }
 
     /* write STREAMINFO or full header */
-    put_buffer(pb, codec->extradata, codec->extradata_size);
+    avio_write(pb, codec->extradata, codec->extradata_size);
 
     return 0;
 }

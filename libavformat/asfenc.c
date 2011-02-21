@@ -226,7 +226,7 @@ static const AVCodecTag codec_asf_bmp_tags[] = {
 static void put_guid(AVIOContext *s, const ff_asf_guid *g)
 {
     assert(sizeof(*g) == 16);
-    put_buffer(s, *g, sizeof(*g));
+    avio_write(s, *g, sizeof(*g));
 }
 
 static void put_str16(AVIOContext *s, const char *tag)
@@ -239,8 +239,8 @@ static void put_str16(AVIOContext *s, const char *tag)
 
     avio_put_str16le(dyn_buf, tag);
     len = url_close_dyn_buf(dyn_buf, &pb);
-    put_le16(s, len);
-    put_buffer(s, pb, len);
+    avio_wl16(s, len);
+    avio_write(s, pb, len);
     av_freep(&pb);
 }
 
@@ -250,7 +250,7 @@ static int64_t put_header(AVIOContext *pb, const ff_asf_guid *g)
 
     pos = url_ftell(pb);
     put_guid(pb, g);
-    put_le64(pb, 24);
+    avio_wl64(pb, 24);
     return pos;
 }
 
@@ -261,7 +261,7 @@ static void end_header(AVIOContext *pb, int64_t pos)
 
     pos1 = url_ftell(pb);
     url_fseek(pb, pos + 16, SEEK_SET);
-    put_le64(pb, pos1 - pos);
+    avio_wl64(pb, pos1 - pos);
     url_fseek(pb, pos1, SEEK_SET);
 }
 
@@ -273,11 +273,11 @@ static void put_chunk(AVFormatContext *s, int type, int payload_length, int flag
     int length;
 
     length = payload_length + 8;
-    put_le16(pb, type);
-    put_le16(pb, length);    //size
-    put_le32(pb, asf->seqno);//sequence number
-    put_le16(pb, flags); /* unknown bytes */
-    put_le16(pb, length);    //size_confirm
+    avio_wl16(pb, type);
+    avio_wl16(pb, length);    //size
+    avio_wl32(pb, asf->seqno);//sequence number
+    avio_wl16(pb, flags); /* unknown bytes */
+    avio_wl16(pb, length);    //size_confirm
     asf->seqno++;
 }
 
@@ -331,33 +331,33 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     }
 
     put_guid(pb, &ff_asf_header);
-    put_le64(pb, -1); /* header length, will be patched after */
-    put_le32(pb, 3 + has_title + !!metadata_count + s->nb_streams); /* number of chunks in header */
-    put_byte(pb, 1); /* ??? */
-    put_byte(pb, 2); /* ??? */
+    avio_wl64(pb, -1); /* header length, will be patched after */
+    avio_wl32(pb, 3 + has_title + !!metadata_count + s->nb_streams); /* number of chunks in header */
+    avio_w8(pb, 1); /* ??? */
+    avio_w8(pb, 2); /* ??? */
 
     /* file header */
     header_offset = url_ftell(pb);
     hpos = put_header(pb, &ff_asf_file_header);
     put_guid(pb, &ff_asf_my_guid);
-    put_le64(pb, file_size);
+    avio_wl64(pb, file_size);
     file_time = 0;
-    put_le64(pb, unix_to_file_time(file_time));
-    put_le64(pb, asf->nb_packets); /* number of packets */
-    put_le64(pb, duration); /* end time stamp (in 100ns units) */
-    put_le64(pb, asf->duration); /* duration (in 100ns units) */
-    put_le64(pb, PREROLL_TIME); /* start time stamp */
-    put_le32(pb, (asf->is_streamed || url_is_streamed(pb)) ? 3 : 2); /* ??? */
-    put_le32(pb, s->packet_size); /* packet size */
-    put_le32(pb, s->packet_size); /* packet size */
-    put_le32(pb, bit_rate); /* Nominal data rate in bps */
+    avio_wl64(pb, unix_to_file_time(file_time));
+    avio_wl64(pb, asf->nb_packets); /* number of packets */
+    avio_wl64(pb, duration); /* end time stamp (in 100ns units) */
+    avio_wl64(pb, asf->duration); /* duration (in 100ns units) */
+    avio_wl64(pb, PREROLL_TIME); /* start time stamp */
+    avio_wl32(pb, (asf->is_streamed || url_is_streamed(pb)) ? 3 : 2); /* ??? */
+    avio_wl32(pb, s->packet_size); /* packet size */
+    avio_wl32(pb, s->packet_size); /* packet size */
+    avio_wl32(pb, bit_rate); /* Nominal data rate in bps */
     end_header(pb, hpos);
 
     /* unknown headers */
     hpos = put_header(pb, &ff_asf_head1_guid);
     put_guid(pb, &ff_asf_head2_guid);
-    put_le32(pb, 6);
-    put_le16(pb, 0);
+    avio_wl32(pb, 6);
+    avio_wl16(pb, 0);
     end_header(pb, hpos);
 
     /* title and other infos */
@@ -373,20 +373,20 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
         for (n = 0; n < FF_ARRAY_ELEMS(tags); n++) {
             len = tags[n] ? avio_put_str16le(dyn_buf, tags[n]->value) : 0;
-            put_le16(pb, len);
+            avio_wl16(pb, len);
         }
         len = url_close_dyn_buf(dyn_buf, &buf);
-        put_buffer(pb, buf, len);
+        avio_write(pb, buf, len);
         av_freep(&buf);
         end_header(pb, hpos);
     }
     if (metadata_count) {
         AVMetadataTag *tag = NULL;
         hpos = put_header(pb, &ff_asf_extended_content_header);
-        put_le16(pb, metadata_count);
+        avio_wl16(pb, metadata_count);
         while ((tag = av_metadata_get(s->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
             put_str16(pb, tag->key);
-            put_le16(pb, 0);
+            avio_wl16(pb, 0);
             put_str16(pb, tag->value);
         }
         end_header(pb, hpos);
@@ -424,19 +424,19 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
             put_guid(pb, &ff_asf_video_stream);
             put_guid(pb, &ff_asf_video_conceal_none);
         }
-        put_le64(pb, 0); /* ??? */
+        avio_wl64(pb, 0); /* ??? */
         es_pos = url_ftell(pb);
-        put_le32(pb, extra_size); /* wav header len */
-        put_le32(pb, extra_size2); /* additional data len */
-        put_le16(pb, n + 1); /* stream number */
-        put_le32(pb, 0); /* ??? */
+        avio_wl32(pb, extra_size); /* wav header len */
+        avio_wl32(pb, extra_size2); /* additional data len */
+        avio_wl16(pb, n + 1); /* stream number */
+        avio_wl32(pb, 0); /* ??? */
 
         if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
             /* WAVEFORMATEX header */
             int wavsize = ff_put_wav_header(pb, enc);
             if ((enc->codec_id != CODEC_ID_MP3) && (enc->codec_id != CODEC_ID_MP2) && (enc->codec_id != CODEC_ID_ADPCM_IMA_WAV) && (enc->extradata_size==0)) {
                 wavsize += 2;
-                put_le16(pb, 0);
+                avio_wl16(pb, 0);
             }
 
             if (wavsize < 0)
@@ -444,25 +444,25 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
             if (wavsize != extra_size) {
                 cur_pos = url_ftell(pb);
                 url_fseek(pb, es_pos, SEEK_SET);
-                put_le32(pb, wavsize); /* wav header len */
+                avio_wl32(pb, wavsize); /* wav header len */
                 url_fseek(pb, cur_pos, SEEK_SET);
             }
             /* ERROR Correction */
-            put_byte(pb, 0x01);
+            avio_w8(pb, 0x01);
             if(enc->codec_id == CODEC_ID_ADPCM_G726 || !enc->block_align){
-                put_le16(pb, 0x0190);
-                put_le16(pb, 0x0190);
+                avio_wl16(pb, 0x0190);
+                avio_wl16(pb, 0x0190);
             }else{
-                put_le16(pb, enc->block_align);
-                put_le16(pb, enc->block_align);
+                avio_wl16(pb, enc->block_align);
+                avio_wl16(pb, enc->block_align);
             }
-            put_le16(pb, 0x01);
-            put_byte(pb, 0x00);
+            avio_wl16(pb, 0x01);
+            avio_w8(pb, 0x00);
         } else {
-            put_le32(pb, enc->width);
-            put_le32(pb, enc->height);
-            put_byte(pb, 2); /* ??? */
-            put_le16(pb, 40 + enc->extradata_size); /* size */
+            avio_wl32(pb, enc->width);
+            avio_wl32(pb, enc->height);
+            avio_w8(pb, 2); /* ??? */
+            avio_wl16(pb, 40 + enc->extradata_size); /* size */
 
             /* BITMAPINFOHEADER header */
             ff_put_bmp_header(pb, enc, ff_codec_bmp_tags, 1);
@@ -474,7 +474,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
     hpos = put_header(pb, &ff_asf_codec_comment_header);
     put_guid(pb, &ff_asf_codec_comment1_header);
-    put_le32(pb, s->nb_streams);
+    avio_wl32(pb, s->nb_streams);
     for(n=0;n<s->nb_streams;n++) {
         AVCodec *p;
         const char *desc;
@@ -486,11 +486,11 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         p = avcodec_find_encoder(enc->codec_id);
 
         if(enc->codec_type == AVMEDIA_TYPE_AUDIO)
-            put_le16(pb, 2);
+            avio_wl16(pb, 2);
         else if(enc->codec_type == AVMEDIA_TYPE_VIDEO)
-            put_le16(pb, 1);
+            avio_wl16(pb, 1);
         else
-            put_le16(pb, -1);
+            avio_wl16(pb, -1);
 
         if(enc->codec_id == CODEC_ID_WMAV2)
             desc = "Windows Media Audio V8";
@@ -502,21 +502,21 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
         avio_put_str16le(dyn_buf, desc);
         len = url_close_dyn_buf(dyn_buf, &buf);
-        put_le16(pb, len / 2); // "number of characters" = length in bytes / 2
+        avio_wl16(pb, len / 2); // "number of characters" = length in bytes / 2
 
-        put_buffer(pb, buf, len);
+        avio_write(pb, buf, len);
         av_freep(&buf);
 
-        put_le16(pb, 0); /* no parameters */
+        avio_wl16(pb, 0); /* no parameters */
 
 
         /* id */
         if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
-            put_le16(pb, 2);
-            put_le16(pb, enc->codec_tag);
+            avio_wl16(pb, 2);
+            avio_wl16(pb, enc->codec_tag);
         } else {
-            put_le16(pb, 4);
-            put_le32(pb, enc->codec_tag);
+            avio_wl16(pb, 4);
+            avio_wl32(pb, enc->codec_tag);
         }
         if(!enc->codec_tag)
             return -1;
@@ -531,25 +531,25 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         header_size += 8 + 30 + 50;
 
         url_fseek(pb, header_offset - 10 - 30, SEEK_SET);
-        put_le16(pb, header_size);
+        avio_wl16(pb, header_size);
         url_fseek(pb, header_offset - 2 - 30, SEEK_SET);
-        put_le16(pb, header_size);
+        avio_wl16(pb, header_size);
 
         header_size -= 8 + 30 + 50;
     }
     header_size += 24 + 6;
     url_fseek(pb, header_offset - 14, SEEK_SET);
-    put_le64(pb, header_size);
+    avio_wl64(pb, header_size);
     url_fseek(pb, cur_pos, SEEK_SET);
 
     /* movie chunk, followed by packets of packet_size */
     asf->data_offset = cur_pos;
     put_guid(pb, &ff_asf_data_header);
-    put_le64(pb, data_chunk_size);
+    avio_wl64(pb, data_chunk_size);
     put_guid(pb, &ff_asf_my_guid);
-    put_le64(pb, asf->nb_packets); /* nb packets */
-    put_byte(pb, 1); /* ??? */
-    put_byte(pb, 1); /* ??? */
+    avio_wl64(pb, asf->nb_packets); /* nb packets */
+    avio_w8(pb, 1); /* ??? */
+    avio_w8(pb, 1); /* ??? */
     return 0;
 }
 
@@ -614,9 +614,9 @@ static int put_payload_parsing_info(
         padsize--;
     assert(padsize>=0);
 
-    put_byte(pb, ASF_PACKET_ERROR_CORRECTION_FLAGS);
+    avio_w8(pb, ASF_PACKET_ERROR_CORRECTION_FLAGS);
     for (i = 0; i < ASF_PACKET_ERROR_CORRECTION_DATA_SIZE; i++){
-        put_byte(pb, 0x0);
+        avio_w8(pb, 0x0);
     }
 
     if (asf->multi_payloads_present)
@@ -628,19 +628,19 @@ static int put_payload_parsing_info(
         else
             iLengthTypeFlags |= ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_WORD;
     }
-    put_byte(pb, iLengthTypeFlags);
+    avio_w8(pb, iLengthTypeFlags);
 
-    put_byte(pb, ASF_PPI_PROPERTY_FLAGS);
+    avio_w8(pb, ASF_PPI_PROPERTY_FLAGS);
 
     if (iLengthTypeFlags & ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_WORD)
-        put_le16(pb, padsize - 2);
+        avio_wl16(pb, padsize - 2);
     if (iLengthTypeFlags & ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_BYTE)
-        put_byte(pb, padsize - 1);
+        avio_w8(pb, padsize - 1);
 
-    put_le32(pb, sendtime);
-    put_le16(pb, duration);
+    avio_wl32(pb, sendtime);
+    avio_wl16(pb, duration);
     if (asf->multi_payloads_present)
-        put_byte(pb, nb_payloads | ASF_PAYLOAD_FLAGS);
+        avio_w8(pb, nb_payloads | ASF_PAYLOAD_FLAGS);
 
     ppi_size = url_ftell(pb) - start;
 
@@ -670,7 +670,7 @@ static void flush_packet(AVFormatContext *s)
     assert(packet_hdr_size <= asf->packet_size_left);
     memset(asf->packet_buf + packet_filled_size, 0, asf->packet_size_left);
 
-    put_buffer(s->pb, asf->packet_buf, s->packet_size - packet_hdr_size);
+    avio_write(s->pb, asf->packet_buf, s->packet_size - packet_hdr_size);
 
     put_flush_packet(s->pb);
     asf->nb_packets++;
@@ -698,23 +698,23 @@ static void put_payload_header(
     val = stream->num;
     if (flags & AV_PKT_FLAG_KEY)
         val |= ASF_PL_FLAG_KEY_FRAME;
-    put_byte(pb, val);
+    avio_w8(pb, val);
 
-    put_byte(pb, stream->seq);  //Media object number
-    put_le32(pb, m_obj_offset); //Offset Into Media Object
+    avio_w8(pb, stream->seq);  //Media object number
+    avio_wl32(pb, m_obj_offset); //Offset Into Media Object
 
     // Replicated Data shall be at least 8 bytes long.
     // The first 4 bytes of data shall contain the
     // Size of the Media Object that the payload belongs to.
     // The next 4 bytes of data shall contain the
     // Presentation Time for the media object that the payload belongs to.
-    put_byte(pb, ASF_PAYLOAD_REPLICATED_DATA_LENGTH);
+    avio_w8(pb, ASF_PAYLOAD_REPLICATED_DATA_LENGTH);
 
-    put_le32(pb, m_obj_size);       //Replicated Data - Media Object Size
-    put_le32(pb, presentation_time);//Replicated Data - Presentation Time
+    avio_wl32(pb, m_obj_size);       //Replicated Data - Media Object Size
+    avio_wl32(pb, presentation_time);//Replicated Data - Presentation Time
 
     if (asf->multi_payloads_present){
-        put_le16(pb, payload_len);   //payload length
+        avio_wl16(pb, payload_len);   //payload length
     }
 }
 
@@ -762,7 +762,7 @@ static void put_frame(
                 payload_len = frag_len1 - 2;  //additional byte need to put padding length
 
             put_payload_header(s, stream, timestamp+PREROLL_TIME, m_obj_size, m_obj_offset, payload_len, flags);
-            put_buffer(&asf->pb, buf, payload_len);
+            avio_write(&asf->pb, buf, payload_len);
 
             if (asf->multi_payloads_present)
                 asf->packet_size_left -= (payload_len + PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS);
@@ -837,14 +837,14 @@ static int asf_write_index(AVFormatContext *s, ASFIndex *index, uint16_t max, ui
     int i;
 
     put_guid(pb, &ff_asf_simple_index_header);
-    put_le64(pb, 24 + 16 + 8 + 4 + 4 + (4 + 2)*count);
+    avio_wl64(pb, 24 + 16 + 8 + 4 + 4 + (4 + 2)*count);
     put_guid(pb, &ff_asf_my_guid);
-    put_le64(pb, ASF_INDEXED_INTERVAL);
-    put_le32(pb, max);
-    put_le32(pb, count);
+    avio_wl64(pb, ASF_INDEXED_INTERVAL);
+    avio_wl32(pb, max);
+    avio_wl32(pb, count);
     for(i=0; i<count; i++) {
-        put_le32(pb, index[i].packet_number);
-        put_le16(pb, index[i].packet_count);
+        avio_wl32(pb, index[i].packet_number);
+        avio_wl16(pb, index[i].packet_count);
     }
 
     return 0;

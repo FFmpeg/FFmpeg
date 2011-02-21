@@ -71,10 +71,10 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
 
 static void id3v2_put_size(AVFormatContext *s, int size)
 {
-    put_byte(s->pb, size >> 21 & 0x7f);
-    put_byte(s->pb, size >> 14 & 0x7f);
-    put_byte(s->pb, size >> 7  & 0x7f);
-    put_byte(s->pb, size       & 0x7f);
+    avio_w8(s->pb, size >> 21 & 0x7f);
+    avio_w8(s->pb, size >> 14 & 0x7f);
+    avio_w8(s->pb, size >> 7  & 0x7f);
+    avio_w8(s->pb, size       & 0x7f);
 }
 
 static int string_is_ascii(const uint8_t *str)
@@ -104,9 +104,9 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
         (!str2 || string_is_ascii(str2)))
         enc = ID3v2_ENCODING_ISO8859;
 
-    put_byte(dyn_buf, enc);
+    avio_w8(dyn_buf, enc);
     if (enc == ID3v2_ENCODING_UTF16BOM) {
-        put_le16(dyn_buf, 0xFEFF);      /* BOM */
+        avio_wl16(dyn_buf, 0xFEFF);      /* BOM */
         put = avio_put_str16le;
     } else
         put = avio_put_str;
@@ -116,10 +116,10 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
         put(dyn_buf, str2);
     len = url_close_dyn_buf(dyn_buf, &pb);
 
-    put_be32(s->pb, tag);
+    avio_wb32(s->pb, tag);
     id3v2_put_size(s, len);
-    put_be16(s->pb, 0);
-    put_buffer(s->pb, pb, len);
+    avio_wb16(s->pb, 0);
+    avio_write(s->pb, pb, len);
 
     av_freep(&pb);
     return len + ID3v2_HEADER_SIZE;
@@ -128,7 +128,7 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
 
 static int mp3_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
-    put_buffer(s->pb, pkt->data, pkt->size);
+    avio_write(s->pb, pkt->data, pkt->size);
     put_flush_packet(s->pb);
     return 0;
 }
@@ -139,7 +139,7 @@ static int mp3_write_trailer(struct AVFormatContext *s)
 
     /* write the id3v1 tag */
     if (id3v1_create_tag(s, buf) > 0) {
-        put_buffer(s->pb, buf, ID3v1_TAG_SIZE);
+        avio_write(s->pb, buf, ID3v1_TAG_SIZE);
         put_flush_packet(s->pb);
     }
     return 0;
@@ -206,13 +206,13 @@ static int mp3_write_header(struct AVFormatContext *s)
                                                     ID3v2_ENCODING_UTF8;
     int64_t size_pos, cur_pos;
 
-    put_be32(s->pb, MKBETAG('I', 'D', '3', mp3->id3v2_version));
-    put_byte(s->pb, 0);
-    put_byte(s->pb, 0); /* flags */
+    avio_wb32(s->pb, MKBETAG('I', 'D', '3', mp3->id3v2_version));
+    avio_w8(s->pb, 0);
+    avio_w8(s->pb, 0); /* flags */
 
     /* reserve space for size */
     size_pos = url_ftell(s->pb);
-    put_be32(s->pb, 0);
+    avio_wb32(s->pb, 0);
 
     ff_metadata_conv(&s->metadata, ff_id3v2_34_metadata_conv, NULL);
     if (mp3->id3v2_version == 4)

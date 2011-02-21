@@ -43,7 +43,7 @@ static int wav_write_header(AVFormatContext *s)
     int64_t fmt, fact;
 
     put_tag(pb, "RIFF");
-    put_le32(pb, 0); /* file length */
+    avio_wl32(pb, 0); /* file length */
     put_tag(pb, "WAVE");
 
     /* format header */
@@ -59,7 +59,7 @@ static int wav_write_header(AVFormatContext *s)
     if (s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
         && !url_is_streamed(s->pb)) {
         fact = ff_start_tag(pb, "fact");
-        put_le32(pb, 0);
+        avio_wl32(pb, 0);
         ff_end_tag(pb, fact);
     }
 
@@ -79,7 +79,7 @@ static int wav_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb  = s->pb;
     WAVContext    *wav = s->priv_data;
-    put_buffer(pb, pkt->data, pkt->size);
+    avio_write(pb, pkt->data, pkt->size);
     if(pkt->pts != AV_NOPTS_VALUE) {
         wav->minpts        = FFMIN(wav->minpts, pkt->pts);
         wav->maxpts        = FFMAX(wav->maxpts, pkt->pts);
@@ -103,7 +103,7 @@ static int wav_write_trailer(AVFormatContext *s)
         /* update file size */
         file_size = url_ftell(pb);
         url_fseek(pb, 4, SEEK_SET);
-        put_le32(pb, (uint32_t)(file_size - 8));
+        avio_wl32(pb, (uint32_t)(file_size - 8));
         url_fseek(pb, file_size, SEEK_SET);
 
         put_flush_packet(pb);
@@ -115,7 +115,7 @@ static int wav_write_trailer(AVFormatContext *s)
                                            s->streams[0]->codec->sample_rate * (int64_t)s->streams[0]->time_base.num,
                                            s->streams[0]->time_base.den);
             url_fseek(pb, wav->data-12, SEEK_SET);
-            put_le32(pb, number_of_samples);
+            avio_wl32(pb, number_of_samples);
             url_fseek(pb, file_size, SEEK_SET);
             put_flush_packet(pb);
         }
