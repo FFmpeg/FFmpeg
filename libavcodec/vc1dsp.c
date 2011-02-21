@@ -199,7 +199,7 @@ static void vc1_inv_trans_8x8_dc_c(uint8_t *dest, int linesize, DCTELEM *block)
     }
 }
 
-static void vc1_inv_trans_8x8_c(DCTELEM block[64])
+static av_always_inline void vc1_inv_trans_8x8_c(DCTELEM block[64], int shl, int sub)
 {
     int i;
     register int t1,t2,t3,t4,t5,t6,t7,t8;
@@ -254,18 +254,48 @@ static void vc1_inv_trans_8x8_c(DCTELEM block[64])
         t3 =  9 * src[ 8] - 16 * src[24] +  4 * src[40] + 15 * src[56];
         t4 =  4 * src[ 8] -  9 * src[24] + 15 * src[40] - 16 * src[56];
 
-        dst[ 0] = (t5 + t1) >> 7;
-        dst[ 8] = (t6 + t2) >> 7;
-        dst[16] = (t7 + t3) >> 7;
-        dst[24] = (t8 + t4) >> 7;
-        dst[32] = (t8 - t4 + 1) >> 7;
-        dst[40] = (t7 - t3 + 1) >> 7;
-        dst[48] = (t6 - t2 + 1) >> 7;
-        dst[56] = (t5 - t1 + 1) >> 7;
+        dst[ 0] = (((t5 + t1    ) >> 7) - sub) << shl;
+        dst[ 8] = (((t6 + t2    ) >> 7) - sub) << shl;
+        dst[16] = (((t7 + t3    ) >> 7) - sub) << shl;
+        dst[24] = (((t8 + t4    ) >> 7) - sub) << shl;
+        dst[32] = (((t8 - t4 + 1) >> 7) - sub) << shl;
+        dst[40] = (((t7 - t3 + 1) >> 7) - sub) << shl;
+        dst[48] = (((t6 - t2 + 1) >> 7) - sub) << shl;
+        dst[56] = (((t5 - t1 + 1) >> 7) - sub) << shl;
 
         src++;
         dst++;
     }
+}
+
+static void vc1_inv_trans_8x8_add_c(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    vc1_inv_trans_8x8_c(block, 0, 0);
+    ff_add_pixels_clamped_c(block, dest, linesize);
+}
+
+static void vc1_inv_trans_8x8_put_signed_c(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    vc1_inv_trans_8x8_c(block, 0, 0);
+    ff_put_signed_pixels_clamped_c(block, dest, linesize);
+}
+
+static void vc1_inv_trans_8x8_put_signed_rangered_c(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    vc1_inv_trans_8x8_c(block, 1, 0);
+    ff_put_signed_pixels_clamped_c(block, dest, linesize);
+}
+
+static void vc1_inv_trans_8x8_put_c(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    vc1_inv_trans_8x8_c(block, 0, 0);
+    ff_put_pixels_clamped_c(block, dest, linesize);
+}
+
+static void vc1_inv_trans_8x8_put_rangered_c(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    vc1_inv_trans_8x8_c(block, 1, 64);
+    ff_put_pixels_clamped_c(block, dest, linesize);
 }
 
 /** Do inverse transform on 8x4 part of block
@@ -662,7 +692,11 @@ static void avg_no_rnd_vc1_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*a
 }
 
 av_cold void ff_vc1dsp_init(VC1DSPContext* dsp) {
-    dsp->vc1_inv_trans_8x8 = vc1_inv_trans_8x8_c;
+    dsp->vc1_inv_trans_8x8_add = vc1_inv_trans_8x8_add_c;
+    dsp->vc1_inv_trans_8x8_put_signed[0] = vc1_inv_trans_8x8_put_signed_c;
+    dsp->vc1_inv_trans_8x8_put_signed[1] = vc1_inv_trans_8x8_put_signed_rangered_c;
+    dsp->vc1_inv_trans_8x8_put[0] = vc1_inv_trans_8x8_put_c;
+    dsp->vc1_inv_trans_8x8_put[1] = vc1_inv_trans_8x8_put_rangered_c;
     dsp->vc1_inv_trans_4x8 = vc1_inv_trans_4x8_c;
     dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_c;
     dsp->vc1_inv_trans_4x4 = vc1_inv_trans_4x4_c;

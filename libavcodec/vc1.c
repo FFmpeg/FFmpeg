@@ -280,6 +280,28 @@ static int vop_dquant_decoding(VC1Context *v)
 
 static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb);
 
+static void simple_idct_put_rangered(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    int i;
+    ff_simple_idct(block);
+    for (i = 0; i < 64; i++) block[i] = (block[i] - 64) << 1;
+    ff_put_pixels_clamped_c(block, dest, line_size);
+}
+
+static void simple_idct_put_signed(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_simple_idct(block);
+    ff_put_signed_pixels_clamped_c(block, dest, line_size);
+}
+
+static void simple_idct_put_signed_rangered(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    int i;
+    ff_simple_idct(block);
+    for (i = 0; i < 64; i++) block[i] <<= 1;
+    ff_put_signed_pixels_clamped_c(block, dest, line_size);
+}
+
 /**
  * Decode Simple/Main Profiles sequence header
  * @see Figure 7-8, p16-17
@@ -337,7 +359,11 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
     v->res_fasttx = get_bits1(gb);
     if (!v->res_fasttx)
     {
-        v->vc1dsp.vc1_inv_trans_8x8 = ff_simple_idct;
+        v->vc1dsp.vc1_inv_trans_8x8_add = ff_simple_idct_add;
+        v->vc1dsp.vc1_inv_trans_8x8_put[0] = ff_simple_idct_put;
+        v->vc1dsp.vc1_inv_trans_8x8_put[1] = simple_idct_put_rangered;
+        v->vc1dsp.vc1_inv_trans_8x8_put_signed[0] = simple_idct_put_signed;
+        v->vc1dsp.vc1_inv_trans_8x8_put_signed[1] = simple_idct_put_signed_rangered;
         v->vc1dsp.vc1_inv_trans_8x4 = ff_simple_idct84_add;
         v->vc1dsp.vc1_inv_trans_4x8 = ff_simple_idct48_add;
         v->vc1dsp.vc1_inv_trans_4x4 = ff_simple_idct44_add;
