@@ -154,7 +154,7 @@ static void free_variant_list(AppleHTTPContext *c)
         free_segment_list(var);
         av_free_packet(&var->pkt);
         if (var->pb)
-            url_fclose(var->pb);
+            avio_close(var->pb);
         if (var->ctx) {
             var->ctx->pb = NULL;
             av_close_input_file(var->ctx);
@@ -211,7 +211,7 @@ static int parse_playlist(AppleHTTPContext *c, const char *url,
 
     if (!in) {
         close_in = 1;
-        if ((ret = url_fopen(&in, url, URL_RDONLY)) < 0)
+        if ((ret = avio_open(&in, url, URL_RDONLY)) < 0)
             return ret;
     }
 
@@ -284,7 +284,7 @@ static int parse_playlist(AppleHTTPContext *c, const char *url,
 
 fail:
     if (close_in)
-        url_fclose(in);
+        avio_close(in);
     return ret;
 }
 
@@ -338,7 +338,7 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
         ret = av_open_input_file(&v->ctx, v->segments[0]->url, NULL, 0, NULL);
         if (ret < 0)
             goto fail;
-        url_fclose(v->ctx->pb);
+        avio_close(v->ctx->pb);
         v->ctx->pb = NULL;
         v->stream_offset = stream_offset;
         /* Create new AVStreams for each stream in this variant */
@@ -378,7 +378,7 @@ static int open_variant(AppleHTTPContext *c, struct variant *var, int skip)
     }
     if (c->cur_seq_no - var->start_seq_no >= var->n_segments)
         return c->finished ? AVERROR_EOF : 0;
-    ret = url_fopen(&var->pb,
+    ret = avio_open(&var->pb,
                     var->segments[c->cur_seq_no - var->start_seq_no]->url,
                     URL_RDONLY);
     if (ret < 0)
@@ -435,7 +435,7 @@ start:
                    "Closing variant stream %d, no longer needed\n", i);
             av_free_packet(&var->pkt);
             reset_packet(&var->pkt);
-            url_fclose(var->pb);
+            avio_close(var->pb);
             var->pb = NULL;
             changed = 1;
         } else if (!var->pb && var->needed) {
@@ -484,7 +484,7 @@ start:
     for (i = 0; i < c->n_variants; i++) {
         struct variant *var = c->variants[i];
         if (var->pb) {
-            url_fclose(var->pb);
+            avio_close(var->pb);
             var->pb = NULL;
         }
     }
@@ -558,7 +558,7 @@ static int applehttp_read_seek(AVFormatContext *s, int stream_index,
     for (i = 0; i < c->n_variants; i++) {
         struct variant *var = c->variants[i];
         if (var->pb) {
-            url_fclose(var->pb);
+            avio_close(var->pb);
             var->pb = NULL;
         }
         av_free_packet(&var->pkt);

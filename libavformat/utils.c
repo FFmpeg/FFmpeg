@@ -616,7 +616,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
        hack needed to handle RTSP/TCP */
     if (!fmt || !(fmt->flags & AVFMT_NOFILE)) {
         /* if no file needed do not try to open one */
-        if ((err=url_fopen(&pb, filename, URL_RDONLY)) < 0) {
+        if ((err=avio_open(&pb, filename, URL_RDONLY)) < 0) {
             goto fail;
         }
         if (buf_size > 0) {
@@ -647,7 +647,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
  fail:
     av_freep(&pd->buf);
     if (pb)
-        url_fclose(pb);
+        avio_close(pb);
     if (ap && ap->prealloced_context)
         av_free(*ic_ptr);
     *ic_ptr = NULL;
@@ -2623,7 +2623,7 @@ void av_close_input_file(AVFormatContext *s)
     AVIOContext *pb = s->iformat->flags & AVFMT_NOFILE ? NULL : s->pb;
     av_close_input_stream(s);
     if (pb)
-        url_fclose(pb);
+        avio_close(pb);
 }
 
 AVStream *av_new_stream(AVFormatContext *s, int id)

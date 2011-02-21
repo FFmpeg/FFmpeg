@@ -492,7 +492,7 @@ int main(int argc, char **argv)
 
     /* open the output file, if needed */
     if (!(fmt->flags & AVFMT_NOFILE)) {
-        if (url_fopen(&oc->pb, filename, URL_WRONLY) < 0) {
+        if (avio_open(&oc->pb, filename, URL_WRONLY) < 0) {
             fprintf(stderr, "Could not open '%s'\n", filename);
             exit(1);
         }
@@ -545,7 +545,7 @@ int main(int argc, char **argv)
 
     if (!(fmt->flags & AVFMT_NOFILE)) {
         /* close the output file */
-        url_fclose(oc->pb);
+        avio_close(oc->pb);
     }
 
     /* free the stream */

@@ -356,6 +356,15 @@ void put_nbyte(AVIOContext *s, int b, int count)
 {
     ffio_fill(s, b, count);
 }
+
+int url_fopen(AVIOContext **s, const char *filename, int flags)
+{
+    return avio_open(s, filename, flags);
+}
+int url_fclose(AVIOContext *s)
+{
+    return avio_close(s);
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -843,7 +852,7 @@ int ff_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size)
     return 0;
 }
 
-int url_fopen(AVIOContext **s, const char *filename, int flags)
+int avio_open(AVIOContext **s, const char *filename, int flags)
 {
     URLContext *h;
     int err;
@@ -859,7 +868,7 @@ int url_fopen(AVIOContext **s, const char *filename, int flags)
     return 0;
 }
 
-int url_fclose(AVIOContext *s)
+int avio_close(AVIOContext *s)
 {
     URLContext *h = s->opaque;
 

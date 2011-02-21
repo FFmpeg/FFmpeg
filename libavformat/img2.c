@@ -269,7 +269,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
                                   s->path, s->img_number)<0 && s->img_number > 1)
             return AVERROR(EIO);
         for(i=0; i<3; i++){
-            if (url_fopen(&f[i], filename, URL_RDONLY) < 0) {
+            if (avio_open(&f[i], filename, URL_RDONLY) < 0) {
                 if(i==1)
                     break;
                 av_log(s1, AV_LOG_ERROR, "Could not open file : %s\n",filename);
@@ -300,7 +300,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
         if(size[i]){
             ret[i]= avio_read(f[i], pkt->data + pkt->size, size[i]);
             if (!s->is_pipe)
-                url_fclose(f[i]);
+                avio_close(f[i]);
             if(ret[i]>0)
                 pkt->size += ret[i];
         }
@@ -353,7 +353,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
         }
         for(i=0; i<3; i++){
-            if (url_fopen(&pb[i], filename, URL_WRONLY) < 0) {
+            if (avio_open(&pb[i], filename, URL_WRONLY) < 0) {
                 av_log(s, AV_LOG_ERROR, "Could not open file : %s\n",filename);
                 return AVERROR(EIO);
             }
@@ -373,8 +373,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb[2], pkt->data + ysize +(pkt->size - ysize)/2, (pkt->size - ysize)/2);
         put_flush_packet(pb[1]);
         put_flush_packet(pb[2]);
-        url_fclose(pb[1]);
-        url_fclose(pb[2]);
+        avio_close(pb[1]);
+        avio_close(pb[2]);
     }else{
         if(av_str2id(img_tags, s->filename) == CODEC_ID_JPEG2000){
             AVStream *st = s->streams[0];
@@ -403,7 +403,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     put_flush_packet(pb[0]);
     if (!img->is_pipe) {
-        url_fclose(pb[0]);
+        avio_close(pb[0]);
     }
 
     img->img_number++;

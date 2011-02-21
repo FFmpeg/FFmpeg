@@ -46,7 +46,7 @@ static int sap_write_close(AVFormatContext *s)
         if (!rtpctx)
             continue;
         av_write_trailer(rtpctx);
-        url_fclose(rtpctx->pb);
+        avio_close(rtpctx->pb);
         avformat_free_context(rtpctx);
         s->streams[i]->priv_data = NULL;
     }
