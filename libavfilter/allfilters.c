@@ -45,6 +45,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (CROP,        crop,        vf);
     REGISTER_FILTER (CROPDETECT,  cropdetect,  vf);
     REGISTER_FILTER (DRAWBOX,     drawbox,     vf);
+    REGISTER_FILTER (FADE,        fade,        vf);
     REGISTER_FILTER (FIFO,        fifo,        vf);
     REGISTER_FILTER (FORMAT,      format,      vf);
     REGISTER_FILTER (FREI0R,      frei0r,      vf);
