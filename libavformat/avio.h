@@ -385,6 +385,7 @@ attribute_deprecated AVIOContext *av_alloc_put_byte(
  * @{
  */
 attribute_deprecated int          get_buffer(AVIOContext *s, unsigned char *buf, int size);
+attribute_deprecated int          get_partial_buffer(AVIOContext *s, unsigned char *buf, int size);
 attribute_deprecated int          get_byte(AVIOContext *s);
 attribute_deprecated unsigned int get_le16(AVIOContext *s);
 attribute_deprecated unsigned int get_le24(AVIOContext *s);
@@ -497,14 +498,6 @@ void put_flush_packet(AVIOContext *s);
  * @return number of bytes read or AVERROR
  */
 int avio_read(AVIOContext *s, unsigned char *buf, int size);
-
-/**
- * Read size bytes from AVIOContext into buf.
- * This reads at most 1 packet. If that is not enough fewer bytes will be
- * returned.
- * @return number of bytes read or AVERROR
- */
-int get_partial_buffer(AVIOContext *s, unsigned char *buf, int size);
 
 /** @note return 0 if EOF, so you cannot use it if EOF handling is
     necessary */

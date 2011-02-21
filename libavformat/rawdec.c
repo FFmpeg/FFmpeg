@@ -21,6 +21,7 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "rawdec.h"
 
 /* raw input */
@@ -81,7 +82,7 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->pos= url_ftell(s->pb);
     pkt->stream_index = 0;
-    ret = get_partial_buffer(s->pb, pkt->data, size);
+    ret = ffio_read_partial(s->pb, pkt->data, size);
     if (ret < 0) {
         av_free_packet(pkt);
         return ret;
