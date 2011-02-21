@@ -261,7 +261,7 @@ typedef struct AVFormatParameters {
 #endif
 } AVFormatParameters;
 
-//! Demuxer will use url_fopen, no opened file should be provided by the caller.
+//! Demuxer will use avio_open, no opened file should be provided by the caller.
 #define AVFMT_NOFILE        0x0001
 #define AVFMT_NEEDNUMBER    0x0002 /**< Needs '%d' in filename. */
 #define AVFMT_SHOW_IDS      0x0008 /**< Show format stream IDs numbers. */

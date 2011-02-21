@@ -410,6 +410,18 @@ attribute_deprecated void         put_be16(AVIOContext *s, unsigned int val);
 /**
  * @}
  */
+
+
+/**
+ * @defgroup old_url_f_funcs Old url_f* functions
+ * @deprecated use the avio_ -prefixed functions instead.
+ * @{
+ */
+attribute_deprecated int url_fopen( AVIOContext **s, const char *url, int flags);
+attribute_deprecated int url_fclose(AVIOContext *s);
+/**
+ * @}
+ */
 #endif
 
 AVIOContext *avio_alloc_context(
@@ -591,9 +603,9 @@ int ff_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size);
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int url_fopen(AVIOContext **s, const char *url, int flags);
+int avio_open(AVIOContext **s, const char *url, int flags);
 
-int url_fclose(AVIOContext *s);
+int avio_close(AVIOContext *s);
 URLContext *url_fileno(AVIOContext *s);
 
 /**

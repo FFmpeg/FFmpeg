@@ -498,7 +498,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
                     url_close_dyn_buf(rtpctx->pb, &ptr);
                     av_free(ptr);
                 } else {
-                    url_fclose(rtpctx->pb);
+                    avio_close(rtpctx->pb);
                 }
                 avformat_free_context(rtpctx);
             } else if (rt->transport == RTSP_TRANSPORT_RDT && CONFIG_RTPDEC)

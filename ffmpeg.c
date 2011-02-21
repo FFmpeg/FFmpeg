@@ -508,7 +508,7 @@ static int ffmpeg_exit(int ret)
         AVFormatContext *s = output_files[i];
         int j;
         if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
-            url_fclose(s->pb);
+            avio_close(s->pb);
         avformat_free_context(s);
         av_free(output_streams_for_file[i]);
     }
@@ -3789,7 +3789,7 @@ static void opt_output_file(const char *filename)
         }
 
         /* open the file */
-        if ((err = url_fopen(&oc->pb, filename, URL_WRONLY)) < 0) {
+        if ((err = avio_open(&oc->pb, filename, URL_WRONLY)) < 0) {
             print_error(filename, err);
             ffmpeg_exit(1);
         }

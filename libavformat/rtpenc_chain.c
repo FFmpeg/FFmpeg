@@ -60,7 +60,7 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
 
     if (ret) {
         if (handle) {
-            url_fclose(rtpctx->pb);
+            avio_close(rtpctx->pb);
         } else {
             uint8_t *ptr;
             url_close_dyn_buf(rtpctx->pb, &ptr);

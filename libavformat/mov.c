@@ -1718,7 +1718,7 @@ static int mov_open_dref(AVIOContext **pb, char *src, MOVDref *ref)
 
             av_strlcat(filename, ref->path + l + 1, 1024);
 
-            if (!url_fopen(pb, filename, URL_RDONLY))
+            if (!avio_open(pb, filename, URL_RDONLY))
                 return 0;
         }
     }
@@ -2546,7 +2546,7 @@ static int mov_read_close(AVFormatContext *s)
         }
         av_freep(&sc->drefs);
         if (sc->pb && sc->pb != s->pb)
-            url_fclose(sc->pb);
+            avio_close(sc->pb);
 
         av_freep(&st->codec->palctrl);
     }
