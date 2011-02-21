@@ -40,4 +40,6 @@ int ffio_init_context(AVIOContext *s,
  */
 int ffio_read_partial(AVIOContext *s, unsigned char *buf, int size);
 
+void ffio_fill(AVIOContext *s, int b, int count);
+
 #endif // AVFORMAT_AVIO_INTERNAL_H

@@ -141,7 +141,7 @@ void avio_w8(AVIOContext *s, int b)
         flush_buffer(s);
 }
 
-void put_nbyte(AVIOContext *s, int b, int count)
+void ffio_fill(AVIOContext *s, int b, int count)
 {
     while (count > 0) {
         int len = FFMIN(s->buf_end - s->buf_ptr, count);
@@ -351,6 +351,10 @@ void put_byte(AVIOContext *s, int val)
 void put_buffer(AVIOContext *s, const unsigned char *buf, int size)
 {
     avio_write(s, buf, size);
+}
+void put_nbyte(AVIOContext *s, int b, int count)
+{
+    ffio_fill(s, b, count);
 }
 #endif
 
