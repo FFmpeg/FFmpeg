@@ -182,10 +182,10 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
         while (url_ftell(pb) + 4 < len) {
             int start_off = url_ftell(pb);
 
-            mflags = get_byte(pb);
+            mflags = avio_r8(pb);
             if (mflags & 0x80)
                 flags |= RTP_FLAG_KEY;
-            len_off = get_be24(pb);
+            len_off = avio_rb24(pb);
             if (mflags & 0x20)   /**< relative timestamp */
                 url_fskip(pb, 4);
             if (mflags & 0x10)   /**< has duration */

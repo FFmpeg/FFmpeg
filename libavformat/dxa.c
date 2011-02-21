@@ -61,17 +61,17 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int num, den;
     int flags;
 
-    tag = get_le32(pb);
+    tag = avio_rl32(pb);
     if (tag != MKTAG('D', 'E', 'X', 'A'))
         return -1;
-    flags = get_byte(pb);
-    c->frames = get_be16(pb);
+    flags = avio_r8(pb);
+    c->frames = avio_rb16(pb);
     if(!c->frames){
         av_log(s, AV_LOG_ERROR, "File contains no frames ???\n");
         return -1;
     }
 
-    fps = get_be32(pb);
+    fps = avio_rb32(pb);
     if(fps > 0){
         den = 1000;
         num = fps;
@@ -82,8 +82,8 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
         den = 10;
         num = 1;
     }
-    w = get_be16(pb);
-    h = get_be16(pb);
+    w = avio_rb16(pb);
+    h = avio_rb16(pb);
     c->has_sound = 0;
 
     st = av_new_stream(s, 0);
@@ -91,13 +91,13 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
 
     // Parse WAV data header
-    if(get_le32(pb) == MKTAG('W', 'A', 'V', 'E')){
+    if(avio_rl32(pb) == MKTAG('W', 'A', 'V', 'E')){
         uint32_t size, fsize;
         c->has_sound = 1;
-        size = get_be32(pb);
+        size = avio_rb32(pb);
         c->vidpos = url_ftell(pb) + size;
         url_fskip(pb, 16);
-        fsize = get_le32(pb);
+        fsize = avio_rl32(pb);
 
         ast = av_new_stream(s, 0);
         if (!ast)
@@ -105,8 +105,8 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
         ff_get_wav_header(pb, ast->codec, fsize);
         // find 'data' chunk
         while(url_ftell(pb) < c->vidpos && !url_feof(pb)){
-            tag = get_le32(pb);
-            fsize = get_le32(pb);
+            tag = avio_rl32(pb);
+            fsize = avio_rl32(pb);
             if(tag == MKTAG('d', 'a', 't', 'a')) break;
             url_fskip(pb, fsize);
         }
@@ -163,7 +163,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     url_fseek(s->pb, c->vidpos, SEEK_SET);
     while(!url_feof(s->pb) && c->frames){
-        get_buffer(s->pb, buf, 4);
+        avio_read(s->pb, buf, 4);
         switch(AV_RL32(buf)){
         case MKTAG('N', 'U', 'L', 'L'):
             if(av_new_packet(pkt, 4 + pal_size) < 0)
@@ -178,10 +178,10 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
         case MKTAG('C', 'M', 'A', 'P'):
             pal_size = 768+4;
             memcpy(pal, buf, 4);
-            get_buffer(s->pb, pal + 4, 768);
+            avio_read(s->pb, pal + 4, 768);
             break;
         case MKTAG('F', 'R', 'A', 'M'):
-            get_buffer(s->pb, buf + 4, DXA_EXTRA_SIZE - 4);
+            avio_read(s->pb, buf + 4, DXA_EXTRA_SIZE - 4);
             size = AV_RB32(buf + 5);
             if(size > 0xFFFFFF){
                 av_log(s, AV_LOG_ERROR, "Frame size is too big: %d\n", size);
@@ -190,7 +190,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(av_new_packet(pkt, size + DXA_EXTRA_SIZE + pal_size) < 0)
                 return AVERROR(ENOMEM);
             memcpy(pkt->data + pal_size, buf, DXA_EXTRA_SIZE);
-            ret = get_buffer(s->pb, pkt->data + DXA_EXTRA_SIZE + pal_size, size);
+            ret = avio_read(s->pb, pkt->data + DXA_EXTRA_SIZE + pal_size, size);
             if(ret != size){
                 av_free_packet(pkt);
                 return AVERROR(EIO);

@@ -61,31 +61,31 @@ static int thp_read_header(AVFormatContext *s,
     int i;
 
     /* Read the file header.  */
-                           get_be32(pb); /* Skip Magic.  */
-    thp->version         = get_be32(pb);
+                           avio_rb32(pb); /* Skip Magic.  */
+    thp->version         = avio_rb32(pb);
 
-                           get_be32(pb); /* Max buf size.  */
-                           get_be32(pb); /* Max samples.  */
+                           avio_rb32(pb); /* Max buf size.  */
+                           avio_rb32(pb); /* Max samples.  */
 
-    thp->fps             = av_d2q(av_int2flt(get_be32(pb)), INT_MAX);
-    thp->framecnt        = get_be32(pb);
-    thp->first_framesz   = get_be32(pb);
-                           get_be32(pb); /* Data size.  */
+    thp->fps             = av_d2q(av_int2flt(avio_rb32(pb)), INT_MAX);
+    thp->framecnt        = avio_rb32(pb);
+    thp->first_framesz   = avio_rb32(pb);
+                           avio_rb32(pb); /* Data size.  */
 
-    thp->compoff         = get_be32(pb);
-                           get_be32(pb); /* offsetDataOffset.  */
-    thp->first_frame     = get_be32(pb);
-    thp->last_frame      = get_be32(pb);
+    thp->compoff         = avio_rb32(pb);
+                           avio_rb32(pb); /* offsetDataOffset.  */
+    thp->first_frame     = avio_rb32(pb);
+    thp->last_frame      = avio_rb32(pb);
 
     thp->next_framesz    = thp->first_framesz;
     thp->next_frame      = thp->first_frame;
 
     /* Read the component structure.  */
     url_fseek (pb, thp->compoff, SEEK_SET);
-    thp->compcount       = get_be32(pb);
+    thp->compcount       = avio_rb32(pb);
 
     /* Read the list of component types.  */
-    get_buffer(pb, thp->components, 16);
+    avio_read(pb, thp->components, 16);
 
     for (i = 0; i < thp->compcount; i++) {
         if (thp->components[i] == 0) {
@@ -103,14 +103,14 @@ static int thp_read_header(AVFormatContext *s,
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_THP;
             st->codec->codec_tag = 0;  /* no fourcc */
-            st->codec->width = get_be32(pb);
-            st->codec->height = get_be32(pb);
+            st->codec->width = avio_rb32(pb);
+            st->codec->height = avio_rb32(pb);
             st->codec->sample_rate = av_q2d(thp->fps);
             thp->vst = st;
             thp->video_stream_index = st->index;
 
             if (thp->version == 0x11000)
-                get_be32(pb); /* Unknown.  */
+                avio_rb32(pb); /* Unknown.  */
         } else if (thp->components[i] == 1) {
             if (thp->has_audio != 0)
                 break;
@@ -123,8 +123,8 @@ static int thp_read_header(AVFormatContext *s,
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->codec_id = CODEC_ID_ADPCM_THP;
             st->codec->codec_tag = 0;  /* no fourcc */
-            st->codec->channels    = get_be32(pb); /* numChannels.  */
-            st->codec->sample_rate = get_be32(pb); /* Frequency.  */
+            st->codec->channels    = avio_rb32(pb); /* numChannels.  */
+            st->codec->sample_rate = avio_rb32(pb); /* Frequency.  */
 
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
@@ -153,15 +153,15 @@ static int thp_read_packet(AVFormatContext *s,
 
         /* Locate the next frame and read out its size.  */
         thp->next_frame += thp->next_framesz;
-        thp->next_framesz = get_be32(pb);
+        thp->next_framesz = avio_rb32(pb);
 
-                        get_be32(pb); /* Previous total size.  */
-        size          = get_be32(pb); /* Total size of this frame.  */
+                        avio_rb32(pb); /* Previous total size.  */
+        size          = avio_rb32(pb); /* Total size of this frame.  */
 
         /* Store the audiosize so the next time this function is called,
            the audio can be read.  */
         if (thp->has_audio)
-            thp->audiosize = get_be32(pb); /* Audio size.  */
+            thp->audiosize = avio_rb32(pb); /* Audio size.  */
         else
             thp->frame++;
 

@@ -96,7 +96,7 @@ static int vmd_read_header(AVFormatContext *s,
 
     /* fetch the main header, including the 2 header length bytes */
     url_fseek(pb, 0, SEEK_SET);
-    if (get_buffer(pb, vmd->vmd_header, VMD_HEADER_SIZE) != VMD_HEADER_SIZE)
+    if (avio_read(pb, vmd->vmd_header, VMD_HEADER_SIZE) != VMD_HEADER_SIZE)
         return AVERROR(EIO);
 
     if(vmd->vmd_header[16] == 'i' && vmd->vmd_header[17] == 'v' && vmd->vmd_header[18] == '3')
@@ -172,7 +172,7 @@ static int vmd_read_header(AVFormatContext *s,
         av_free(vmd->frame_table);
         return AVERROR(ENOMEM);
     }
-    if (get_buffer(pb, raw_frame_table, raw_frame_table_size) !=
+    if (avio_read(pb, raw_frame_table, raw_frame_table_size) !=
         raw_frame_table_size) {
         av_free(raw_frame_table);
         av_free(vmd->frame_table);
@@ -189,7 +189,7 @@ static int vmd_read_header(AVFormatContext *s,
             int type;
             uint32_t size;
 
-            get_buffer(pb, chunk, BYTES_PER_FRAME_RECORD);
+            avio_read(pb, chunk, BYTES_PER_FRAME_RECORD);
             type = chunk[0];
             size = AV_RL32(&chunk[2]);
             if(!size && type != 1)
@@ -250,9 +250,9 @@ static int vmd_read_packet(AVFormatContext *s,
     pkt->pos= url_ftell(pb);
     memcpy(pkt->data, frame->frame_record, BYTES_PER_FRAME_RECORD);
     if(vmd->is_indeo3)
-        ret = get_buffer(pb, pkt->data, frame->frame_size);
+        ret = avio_read(pb, pkt->data, frame->frame_size);
     else
-        ret = get_buffer(pb, pkt->data + BYTES_PER_FRAME_RECORD,
+        ret = avio_read(pb, pkt->data + BYTES_PER_FRAME_RECORD,
             frame->frame_size);
 
     if (ret != frame->frame_size) {

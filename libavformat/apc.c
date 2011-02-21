@@ -35,9 +35,9 @@ static int apc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIOContext *pb = s->pb;
     AVStream *st;
 
-    get_le32(pb); /* CRYO */
-    get_le32(pb); /* _APC */
-    get_le32(pb); /* 1.20 */
+    avio_rl32(pb); /* CRYO */
+    avio_rl32(pb); /* _APC */
+    avio_rl32(pb); /* 1.20 */
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -46,8 +46,8 @@ static int apc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
 
-    get_le32(pb); /* number of samples */
-    st->codec->sample_rate = get_le32(pb);
+    avio_rl32(pb); /* number of samples */
+    st->codec->sample_rate = avio_rl32(pb);
 
     st->codec->extradata_size = 2 * 4;
     st->codec->extradata = av_malloc(st->codec->extradata_size +
@@ -56,10 +56,10 @@ static int apc_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(ENOMEM);
 
     /* initial predictor values for adpcm decoder */
-    get_buffer(pb, st->codec->extradata, 2 * 4);
+    avio_read(pb, st->codec->extradata, 2 * 4);
 
     st->codec->channels = 1;
-    if (get_le32(pb))
+    if (avio_rl32(pb))
         st->codec->channels = 2;
 
     st->codec->bits_per_coded_sample = 4;

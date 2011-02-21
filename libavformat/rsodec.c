@@ -35,10 +35,10 @@ static int rso_read_header(AVFormatContext *s, AVFormatParameters *ap)
     enum CodecID codec;
     AVStream *st;
 
-    id   = get_be16(pb);
-    size = get_be16(pb);
-    rate = get_be16(pb);
-    get_be16(pb);   /* play mode ? (0x0000 = don't loop) */
+    id   = avio_rb16(pb);
+    size = avio_rb16(pb);
+    rate = avio_rb16(pb);
+    avio_rb16(pb);   /* play mode ? (0x0000 = don't loop) */
 
     codec = ff_codec_get_id(ff_codec_rso_tags, id);
 

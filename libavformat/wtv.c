@@ -88,7 +88,7 @@ static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
         int remaining_in_sector = (1 << wf->sector_bits) - (wf->position & ((1 << wf->sector_bits) - 1));
         int read_request        = FFMIN(buf_size - nread, remaining_in_sector);
 
-        n = get_buffer(pb, buf, read_request);
+        n = avio_read(pb, buf, read_request);
         if (n <= 0)
             break;
         nread += n;
@@ -140,7 +140,7 @@ static int read_ints(AVIOContext *pb, uint32_t *data, int count)
 {
     int i, total = 0;
     for (i = 0; i < count; i++) {
-        if ((data[total] = get_le32(pb)))
+        if ((data[total] = avio_rl32(pb)))
            total++;
     }
     return total;
@@ -474,9 +474,9 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     if (strcmp(mime, "image/jpeg"))
         goto done;
 
-    get_byte(pb);
+    avio_r8(pb);
     avio_get_str16le(pb, INT_MAX, description, sizeof(description));
-    filesize = get_le32(pb);
+    filesize = avio_rl32(pb);
     if (!filesize)
         goto done;
 
@@ -490,7 +490,7 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     if (!st->codec->extradata)
         goto done;
     st->codec->extradata_size = filesize;
-    get_buffer(pb, st->codec->extradata, filesize);
+    avio_read(pb, st->codec->extradata, filesize);
 done:
     url_fseek(pb, pos + length, SEEK_SET);
 }
@@ -503,7 +503,7 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
         return;
 
     if (type == 0 && length == 4) {
-        snprintf(buf, buf_size, "%"PRIi32, get_le32(pb));
+        snprintf(buf, buf_size, "%"PRIi32, avio_rl32(pb));
     } else if (type == 1) {
         avio_get_str16le(pb, length, buf, buf_size);
         if (!strlen(buf)) {
@@ -511,9 +511,9 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
            return;
         }
     } else if (type == 3 && length == 4) {
-        strcpy(buf, get_le32(pb) ? "true" : "false");
+        strcpy(buf, avio_rl32(pb) ? "true" : "false");
     } else if (type == 4 && length == 8) {
-        int64_t num = get_le64(pb);
+        int64_t num = avio_rl64(pb);
         if (!strcmp(key, "WM/EncodingTime") ||
             !strcmp(key, "WM/MediaOriginalBroadcastDateTime"))
             filetime_to_iso8601(buf, buf_size, num);
@@ -527,10 +527,10 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
         else
             snprintf(buf, buf_size, "%"PRIi64, num);
     } else if (type == 5 && length == 2) {
-        snprintf(buf, buf_size, "%"PRIi16, get_le16(pb));
+        snprintf(buf, buf_size, "%"PRIi16, avio_rl16(pb));
     } else if (type == 6 && length == 16) {
         ff_asf_guid guid;
-        get_buffer(pb, guid, 16);
+        avio_read(pb, guid, 16);
         snprintf(buf, buf_size, PRI_PRETTY_GUID, ARG_PRETTY_GUID(guid));
     } else if (type == 2 && !strcmp(key, "WM/Picture")) {
         get_attachment(s, pb, length);
@@ -557,8 +557,8 @@ static void parse_legacy_attrib(AVFormatContext *s, AVIOContext *pb)
     while(!url_feof(pb)) {
         char key[1024];
         ff_get_guid(pb, &guid);
-        type   = get_le32(pb);
-        length = get_le32(pb);
+        type   = avio_rl32(pb);
+        length = avio_rl32(pb);
         if (!length)
             break;
         if (ff_guidcmp(&guid, metadata_guid)) {
@@ -775,10 +775,10 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
         int len, sid, consumed;
 
         ff_get_guid(pb, &g);
-        len = get_le32(pb);
+        len = avio_rl32(pb);
         if (len < 32)
             break;
-        sid = get_le32(pb) & 0x7FFF;
+        sid = avio_rl32(pb) & 0x7FFF;
         url_fskip(pb, 8);
         consumed = 32;
 
@@ -791,7 +791,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 ff_get_guid(pb, &subtype);
                 url_fskip(pb, 12);
                 ff_get_guid(pb, &formattype);
-                size = get_le32(pb);
+                size = avio_rl32(pb);
                 parse_media_type(s, 0, sid, mediatype, subtype, formattype, size);
                 consumed += 92 + size;
             }
@@ -805,7 +805,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 ff_get_guid(pb, &subtype);
                 url_fskip(pb, 12);
                 ff_get_guid(pb, &formattype);
-                size = get_le32(pb);
+                size = avio_rl32(pb);
                 parse_media_type(s, s->streams[stream_index], sid, mediatype, subtype, formattype, size);
                 consumed += 76 + size;
             }
@@ -831,7 +831,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 }
 
                 buf_size = FFMIN(len - consumed, sizeof(buf));
-                get_buffer(pb, buf, buf_size);
+                avio_read(pb, buf, buf_size);
                 consumed += buf_size;
                 ff_parse_mpeg2_descriptor(s, st, 0, &pbuf, buf + buf_size, 0, 0, 0, 0);
             }
@@ -841,7 +841,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 AVStream *st = s->streams[stream_index];
                 int audio_type;
                 url_fskip(pb, 8);
-                audio_type = get_byte(pb);
+                audio_type = avio_r8(pb);
                 if (audio_type == 2)
                     st->disposition |= AV_DISPOSITION_HEARING_IMPAIRED;
                 else if (audio_type == 3)
@@ -852,7 +852,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             int stream_index = ff_find_stream_index(s, sid);
             if (stream_index >= 0) {
                 url_fskip(pb, 12);
-                if (get_le32(pb))
+                if (avio_rl32(pb))
                     av_log(s, AV_LOG_WARNING, "DVB scrambled stream detected (st:%d), decoding will likely fail\n", stream_index);
                 consumed += 16;
             }
@@ -862,7 +862,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 AVStream *st = s->streams[stream_index];
                 uint8_t language[4];
                 url_fskip(pb, 12);
-                get_buffer(pb, language, 3);
+                avio_read(pb, language, 3);
                 if (language[0]) {
                     language[3] = 0;
                     av_metadata_set2(&st->metadata, "language", language, 0);
@@ -875,7 +875,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             int stream_index = ff_find_stream_index(s, sid);
             if (stream_index >= 0) {
                 url_fskip(pb, 8);
-                wtv->pts = get_le64(pb);
+                wtv->pts = avio_rl64(pb);
                 consumed += 16;
                 if (wtv->pts == -1)
                     wtv->pts = AV_NOPTS_VALUE;
@@ -955,16 +955,16 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     /* read root directory sector */
     url_fskip(s->pb, 0x30);
-    root_size = get_le32(s->pb);
+    root_size = avio_rl32(s->pb);
     if (root_size > sizeof(root)) {
         av_log(s, AV_LOG_ERROR, "root directory size exceeds sector size\n");
         return AVERROR_INVALIDDATA;
     }
     url_fskip(s->pb, 4);
-    root_sector = get_le32(s->pb);
+    root_sector = avio_rl32(s->pb);
 
     url_fseek(s->pb, root_sector << WTV_SECTOR_BITS, SEEK_SET);
-    root_size = get_buffer(s->pb, root, root_size);
+    root_size = avio_read(s->pb, root, root_size);
     if (root_size < 0)
         return AVERROR_INVALIDDATA;
 
@@ -995,8 +995,8 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         pb = wtvfile_open(s, root, root_size, table_0_entries_time_le16);
         if (pb) {
             while(1) {
-                uint64_t timestamp = get_le64(pb);
-                uint64_t frame_nb  = get_le64(pb);
+                uint64_t timestamp = avio_rl64(pb);
+                uint64_t frame_nb  = avio_rl64(pb);
                 if (url_feof(pb))
                     break;
                 ff_add_index_entry(&wtv->index_entries, &wtv->nb_index_entries, &wtv->index_entries_allocated_size,
@@ -1009,8 +1009,8 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
                 if (pb) {
                     int i;
                     while (1) {
-                        uint64_t frame_nb = get_le64(pb);
-                        uint64_t position = get_le64(pb);
+                        uint64_t frame_nb = avio_rl64(pb);
+                        uint64_t position = avio_rl64(pb);
                         if (url_feof(pb))
                             break;
                         for (i = wtv->nb_index_entries - 1; i >= 0; i--) {

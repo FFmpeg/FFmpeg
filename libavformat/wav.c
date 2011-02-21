@@ -143,8 +143,8 @@ AVOutputFormat ff_wav_muxer = {
 
 static int64_t next_tag(AVIOContext *pb, unsigned int *tag)
 {
-    *tag = get_le32(pb);
-    return get_le32(pb);
+    *tag = avio_rl32(pb);
+    return avio_rl32(pb);
 }
 
 /* return the size of the found tag */
@@ -197,25 +197,25 @@ static int wav_read_header(AVFormatContext *s,
     WAVContext *wav = s->priv_data;
 
     /* check RIFF header */
-    tag = get_le32(pb);
+    tag = avio_rl32(pb);
 
     rf64 = tag == MKTAG('R', 'F', '6', '4');
     if (!rf64 && tag != MKTAG('R', 'I', 'F', 'F'))
         return -1;
-    get_le32(pb); /* file size */
-    tag = get_le32(pb);
+    avio_rl32(pb); /* file size */
+    tag = avio_rl32(pb);
     if (tag != MKTAG('W', 'A', 'V', 'E'))
         return -1;
 
     if (rf64) {
-        if (get_le32(pb) != MKTAG('d', 's', '6', '4'))
+        if (avio_rl32(pb) != MKTAG('d', 's', '6', '4'))
             return -1;
-        size = get_le32(pb);
+        size = avio_rl32(pb);
         if (size < 16)
             return -1;
-        get_le64(pb); /* RIFF size */
-        data_size = get_le64(pb);
-        sample_count = get_le64(pb);
+        avio_rl64(pb); /* RIFF size */
+        data_size = avio_rl64(pb);
+        sample_count = avio_rl64(pb);
         url_fskip(pb, size - 16); /* skip rest of ds64 chunk */
     }
 
@@ -239,7 +239,7 @@ static int wav_read_header(AVFormatContext *s,
         if (tag == MKTAG('d', 'a', 't', 'a')){
             break;
         }else if (tag == MKTAG('f','a','c','t') && !sample_count){
-            sample_count = get_le32(pb);
+            sample_count = avio_rl32(pb);
             size -= 4;
         }
         url_fseek(pb, size, SEEK_CUR);
@@ -269,8 +269,8 @@ static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
     int64_t size;
 
     while (!url_feof(pb)) {
-        get_buffer(pb, guid, 16);
-        size = get_le64(pb);
+        avio_read(pb, guid, 16);
+        size = avio_rl64(pb);
         if (size <= 24)
             return -1;
         if (!memcmp(guid, guid1, 16))
@@ -384,14 +384,14 @@ static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream *st;
     uint8_t guid[16];
 
-    get_buffer(pb, guid, 16);
+    avio_read(pb, guid, 16);
     if (memcmp(guid, guid_riff, 16))
         return -1;
 
-    if (get_le64(pb) < 16 + 8 + 16 + 8 + 16 + 8) /* riff + wave + fmt + sizes */
+    if (avio_rl64(pb) < 16 + 8 + 16 + 8 + 16 + 8) /* riff + wave + fmt + sizes */
         return -1;
 
-    get_buffer(pb, guid, 16);
+    avio_read(pb, guid, 16);
     if (memcmp(guid, guid_wave, 16)) {
         av_log(s, AV_LOG_ERROR, "could not find wave guid\n");
         return -1;

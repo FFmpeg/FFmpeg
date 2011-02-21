@@ -860,24 +860,24 @@ static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
 
     len = ff_mp4_read_descr(s, &pb, &tag);
     if (tag == MP4IODescrTag) {
-        get_be16(&pb); // ID
-        get_byte(&pb);
-        get_byte(&pb);
-        get_byte(&pb);
-        get_byte(&pb);
-        get_byte(&pb);
+        avio_rb16(&pb); // ID
+        avio_r8(&pb);
+        avio_r8(&pb);
+        avio_r8(&pb);
+        avio_r8(&pb);
+        avio_r8(&pb);
         len = ff_mp4_read_descr(s, &pb, &tag);
         if (tag == MP4ESDescrTag) {
-            *es_id = get_be16(&pb); /* ES_ID */
+            *es_id = avio_rb16(&pb); /* ES_ID */
             av_dlog(s, "ES_ID %#x\n", *es_id);
-            get_byte(&pb); /* priority */
+            avio_r8(&pb); /* priority */
             len = ff_mp4_read_descr(s, &pb, &tag);
             if (tag == MP4DecConfigDescrTag) {
                 *dec_config_descr = av_malloc(len);
                 if (!*dec_config_descr)
                     return AVERROR(ENOMEM);
                 *dec_config_descr_size = len;
-                get_buffer(&pb, *dec_config_descr, len);
+                avio_read(&pb, *dec_config_descr, len);
             }
         }
     }
@@ -1332,7 +1332,7 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size)
     int skip, len;
 
     for(;;) {
-        len = get_buffer(pb, buf, TS_PACKET_SIZE);
+        len = avio_read(pb, buf, TS_PACKET_SIZE);
         if (len != TS_PACKET_SIZE)
             return AVERROR(EIO);
         /* check paquet sync byte */
@@ -1455,7 +1455,7 @@ static int mpegts_read_header(AVFormatContext *s,
 
     /* read the first 1024 bytes to get packet size */
     pos = url_ftell(pb);
-    len = get_buffer(pb, buf, sizeof(buf));
+    len = avio_read(pb, buf, sizeof(buf));
     if (len != sizeof(buf))
         goto fail;
     ts->raw_packet_size = get_packet_size(buf, sizeof(buf));
@@ -1565,7 +1565,7 @@ static int mpegts_raw_read_packet(AVFormatContext *s,
             pos = url_ftell(s->pb);
             for(i = 0; i < MAX_PACKET_READAHEAD; i++) {
                 url_fseek(s->pb, pos + i * ts->raw_packet_size, SEEK_SET);
-                get_buffer(s->pb, pcr_buf, 12);
+                avio_read(s->pb, pcr_buf, 12);
                 if (parse_pcr(&next_pcr_h, &next_pcr_l, pcr_buf) == 0) {
                     /* XXX: not precise enough */
                     ts->pcr_incr = ((next_pcr_h - pcr_h) * 300 + (next_pcr_l - pcr_l)) /
@@ -1650,7 +1650,7 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
     if (find_next) {
         for(;;) {
             url_fseek(s->pb, pos, SEEK_SET);
-            if (get_buffer(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
+            if (avio_read(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
                 return AV_NOPTS_VALUE;
             if ((pcr_pid < 0 || (AV_RB16(buf + 1) & 0x1fff) == pcr_pid) &&
                 parse_pcr(&timestamp, &pcr_l, buf) == 0) {
@@ -1664,7 +1664,7 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
             if (pos < 0)
                 return AV_NOPTS_VALUE;
             url_fseek(s->pb, pos, SEEK_SET);
-            if (get_buffer(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
+            if (avio_read(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
                 return AV_NOPTS_VALUE;
             if ((pcr_pid < 0 || (AV_RB16(buf + 1) & 0x1fff) == pcr_pid) &&
                 parse_pcr(&timestamp, &pcr_l, buf) == 0) {
@@ -1775,7 +1775,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, in
 
     for(;;) {
         url_fseek(s->pb, pos, SEEK_SET);
-        if (get_buffer(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
+        if (avio_read(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
             return -1;
 //        pid = AV_RB16(buf + 1) & 0x1fff;
         if(buf[1] & 0x40) break;

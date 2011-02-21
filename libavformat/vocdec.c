@@ -46,7 +46,7 @@ static int voc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream *st;
 
     url_fskip(pb, 20);
-    header_size = get_le16(pb) - 22;
+    header_size = avio_rl16(pb) - 22;
     if (header_size != 4) {
         av_log(s, AV_LOG_ERROR, "unknown header size: %d\n", header_size);
         return AVERROR(ENOSYS);
@@ -73,10 +73,10 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
     int channels = 1;
 
     while (!voc->remaining_size) {
-        type = get_byte(pb);
+        type = avio_r8(pb);
         if (type == VOC_TYPE_EOF)
             return AVERROR(EIO);
-        voc->remaining_size = get_le24(pb);
+        voc->remaining_size = avio_rl24(pb);
         if (!voc->remaining_size) {
             if (url_is_streamed(s->pb))
                 return AVERROR(EIO);
@@ -86,11 +86,11 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 
         switch (type) {
         case VOC_TYPE_VOICE_DATA:
-            dec->sample_rate = 1000000 / (256 - get_byte(pb));
+            dec->sample_rate = 1000000 / (256 - avio_r8(pb));
             if (sample_rate)
                 dec->sample_rate = sample_rate;
             dec->channels = channels;
-            tmp_codec = get_byte(pb);
+            tmp_codec = avio_r8(pb);
             dec->bits_per_coded_sample = av_get_bits_per_sample(dec->codec_id);
             voc->remaining_size -= 2;
             max_size -= 2;
@@ -101,19 +101,19 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
             break;
 
         case VOC_TYPE_EXTENDED:
-            sample_rate = get_le16(pb);
-            get_byte(pb);
-            channels = get_byte(pb) + 1;
+            sample_rate = avio_rl16(pb);
+            avio_r8(pb);
+            channels = avio_r8(pb) + 1;
             sample_rate = 256000000 / (channels * (65536 - sample_rate));
             voc->remaining_size = 0;
             max_size -= 4;
             break;
 
         case VOC_TYPE_NEW_VOICE_DATA:
-            dec->sample_rate = get_le32(pb);
-            dec->bits_per_coded_sample = get_byte(pb);
-            dec->channels = get_byte(pb);
-            tmp_codec = get_le16(pb);
+            dec->sample_rate = avio_rl32(pb);
+            dec->bits_per_coded_sample = avio_r8(pb);
+            dec->channels = avio_r8(pb);
+            tmp_codec = avio_rl16(pb);
             url_fskip(pb, 4);
             voc->remaining_size -= 12;
             max_size -= 12;

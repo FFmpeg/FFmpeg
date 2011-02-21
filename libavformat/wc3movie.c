@@ -105,8 +105,8 @@ static int wc3_read_header(AVFormatContext *s,
 
     /* traverse through the chunks and load the header information before
      * the first BRCH tag */
-    fourcc_tag = get_le32(pb);
-    size = (get_be32(pb) + 1) & (~1);
+    fourcc_tag = avio_rl32(pb);
+    size = (avio_rb32(pb) + 1) & (~1);
 
     do {
         switch (fourcc_tag) {
@@ -127,7 +127,7 @@ static int wc3_read_header(AVFormatContext *s,
             buffer = av_malloc(size+1);
             if (!buffer)
                 return AVERROR(ENOMEM);
-            if ((ret = get_buffer(pb, buffer, size)) != size)
+            if ((ret = avio_read(pb, buffer, size)) != size)
                 return AVERROR(EIO);
             buffer[size] = 0;
             av_metadata_set2(&s->metadata, "title", buffer,
@@ -136,8 +136,8 @@ static int wc3_read_header(AVFormatContext *s,
 
         case SIZE_TAG:
             /* video resolution override */
-            wc3->width  = get_le32(pb);
-            wc3->height = get_le32(pb);
+            wc3->width  = avio_rl32(pb);
+            wc3->height = avio_rl32(pb);
             break;
 
         case PALT_TAG:
@@ -154,9 +154,9 @@ static int wc3_read_header(AVFormatContext *s,
             break;
         }
 
-        fourcc_tag = get_le32(pb);
+        fourcc_tag = avio_rl32(pb);
         /* chunk sizes are 16-bit aligned */
-        size = (get_be32(pb) + 1) & (~1);
+        size = (avio_rb32(pb) + 1) & (~1);
         if (url_feof(pb))
             return AVERROR(EIO);
 
@@ -205,9 +205,9 @@ static int wc3_read_packet(AVFormatContext *s,
 
     while (!packet_read) {
 
-        fourcc_tag = get_le32(pb);
+        fourcc_tag = avio_rl32(pb);
         /* chunk sizes are 16-bit aligned */
-        size = (get_be32(pb) + 1) & (~1);
+        size = (avio_rb32(pb) + 1) & (~1);
         if (url_feof(pb))
             return AVERROR(EIO);
 
@@ -242,7 +242,7 @@ static int wc3_read_packet(AVFormatContext *s,
 #if 0
             url_fseek(pb, size, SEEK_CUR);
 #else
-            if ((unsigned)size > sizeof(text) || (ret = get_buffer(pb, text, size)) != size)
+            if ((unsigned)size > sizeof(text) || (ret = avio_read(pb, text, size)) != size)
                 ret = AVERROR(EIO);
             else {
                 int i = 0;

@@ -410,7 +410,7 @@ static int dv_read_header(AVFormatContext *s,
     if (!c->dv_demux)
         return -1;
 
-    state = get_be32(s->pb);
+    state = avio_rb32(s->pb);
     while ((state & 0xffffff7f) != 0x1f07003f) {
         if (url_feof(s->pb)) {
             av_log(s, AV_LOG_ERROR, "Cannot find DV header.\n");
@@ -420,14 +420,14 @@ static int dv_read_header(AVFormatContext *s,
             marker_pos = url_ftell(s->pb);
         if (state == 0xff3f0701 && url_ftell(s->pb) - marker_pos == 80) {
             url_fseek(s->pb, -163, SEEK_CUR);
-            state = get_be32(s->pb);
+            state = avio_rb32(s->pb);
             break;
         }
-        state = (state << 8) | get_byte(s->pb);
+        state = (state << 8) | avio_r8(s->pb);
     }
     AV_WB32(c->buf, state);
 
-    if (get_buffer(s->pb, c->buf + 4, DV_PROFILE_BYTES - 4) <= 0 ||
+    if (avio_read(s->pb, c->buf + 4, DV_PROFILE_BYTES - 4) <= 0 ||
         url_fseek(s->pb, -DV_PROFILE_BYTES, SEEK_CUR) < 0)
         return AVERROR(EIO);
 
@@ -455,7 +455,7 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!c->dv_demux->sys)
             return AVERROR(EIO);
         size = c->dv_demux->sys->frame_size;
-        if (get_buffer(s->pb, c->buf, size) <= 0)
+        if (avio_read(s->pb, c->buf, size) <= 0)
             return AVERROR(EIO);
 
         size = dv_produce_packet(c->dv_demux, pkt, c->buf, size);

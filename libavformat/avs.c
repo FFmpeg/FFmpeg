@@ -62,11 +62,11 @@ static int avs_read_header(AVFormatContext * s, AVFormatParameters * ap)
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     url_fskip(s->pb, 4);
-    avs->width = get_le16(s->pb);
-    avs->height = get_le16(s->pb);
-    avs->bits_per_sample = get_le16(s->pb);
-    avs->fps = get_le16(s->pb);
-    avs->nb_frames = get_le32(s->pb);
+    avs->width = avio_rl16(s->pb);
+    avs->height = avio_rl16(s->pb);
+    avs->bits_per_sample = avio_rl16(s->pb);
+    avs->fps = avio_rl16(s->pb);
+    avs->nb_frames = avio_rl32(s->pb);
     avs->remaining_frame_size = 0;
     avs->remaining_audio_size = 0;
 
@@ -104,7 +104,7 @@ avs_read_video_packet(AVFormatContext * s, AVPacket * pkt,
     pkt->data[palette_size + 1] = type;
     pkt->data[palette_size + 2] = size & 0xFF;
     pkt->data[palette_size + 3] = (size >> 8) & 0xFF;
-    ret = get_buffer(s->pb, pkt->data + palette_size + 4, size - 4) + 4;
+    ret = avio_read(s->pb, pkt->data + palette_size + 4, size - 4) + 4;
     if (ret < size) {
         av_free_packet(pkt);
         return AVERROR(EIO);
@@ -154,20 +154,20 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
 
     while (1) {
         if (avs->remaining_frame_size <= 0) {
-            if (!get_le16(s->pb))    /* found EOF */
+            if (!avio_rl16(s->pb))    /* found EOF */
                 return AVERROR(EIO);
-            avs->remaining_frame_size = get_le16(s->pb) - 4;
+            avs->remaining_frame_size = avio_rl16(s->pb) - 4;
         }
 
         while (avs->remaining_frame_size > 0) {
-            sub_type = get_byte(s->pb);
-            type = get_byte(s->pb);
-            size = get_le16(s->pb);
+            sub_type = avio_r8(s->pb);
+            type = avio_r8(s->pb);
+            size = avio_rl16(s->pb);
             avs->remaining_frame_size -= size;
 
             switch (type) {
             case AVS_PALETTE:
-                ret = get_buffer(s->pb, palette, size - 4);
+                ret = avio_read(s->pb, palette, size - 4);
                 if (ret < size - 4)
                     return AVERROR(EIO);
                 palette_size = size;

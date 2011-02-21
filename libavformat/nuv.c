@@ -62,16 +62,16 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
         return 1; // no codec data needed
     while (!url_feof(pb)) {
         int size, subtype;
-        frametype = get_byte(pb);
+        frametype = avio_r8(pb);
         switch (frametype) {
             case NUV_EXTRADATA:
-                subtype = get_byte(pb);
+                subtype = avio_r8(pb);
                 url_fskip(pb, 6);
-                size = PKTSIZE(get_le32(pb));
+                size = PKTSIZE(avio_rl32(pb));
                 if (vst && subtype == 'R') {
                     vst->codec->extradata_size = size;
                     vst->codec->extradata = av_malloc(size);
-                    get_buffer(pb, vst->codec->extradata, size);
+                    avio_read(pb, vst->codec->extradata, size);
                     size = 0;
                     if (!myth)
                         return 1;
@@ -79,12 +79,12 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
                 break;
             case NUV_MYTHEXT:
                 url_fskip(pb, 7);
-                size = PKTSIZE(get_le32(pb));
+                size = PKTSIZE(avio_rl32(pb));
                 if (size != 128 * 4)
                     break;
-                get_le32(pb); // version
+                avio_rl32(pb); // version
                 if (vst) {
-                    vst->codec->codec_tag = get_le32(pb);
+                    vst->codec->codec_tag = avio_rl32(pb);
                     vst->codec->codec_id =
                         ff_codec_get_id(ff_codec_bmp_tags, vst->codec->codec_tag);
                     if (vst->codec->codec_tag == MKTAG('R', 'J', 'P', 'G'))
@@ -93,10 +93,10 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
                     url_fskip(pb, 4);
 
                 if (ast) {
-                    ast->codec->codec_tag = get_le32(pb);
-                    ast->codec->sample_rate = get_le32(pb);
-                    ast->codec->bits_per_coded_sample = get_le32(pb);
-                    ast->codec->channels = get_le32(pb);
+                    ast->codec->codec_tag = avio_rl32(pb);
+                    ast->codec->sample_rate = avio_rl32(pb);
+                    ast->codec->bits_per_coded_sample = avio_rl32(pb);
+                    ast->codec->channels = avio_rl32(pb);
                     ast->codec->codec_id =
                         ff_wav_codec_get_id(ast->codec->codec_tag,
                                          ast->codec->bits_per_coded_sample);
@@ -112,7 +112,7 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
                 break;
             default:
                 url_fskip(pb, 7);
-                size = PKTSIZE(get_le32(pb));
+                size = PKTSIZE(avio_rl32(pb));
                 break;
         }
         url_fskip(pb, size);
@@ -128,27 +128,27 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
     int is_mythtv, width, height, v_packs, a_packs;
     int stream_nr = 0;
     AVStream *vst = NULL, *ast = NULL;
-    get_buffer(pb, id_string, 12);
+    avio_read(pb, id_string, 12);
     is_mythtv = !memcmp(id_string, "MythTVVideo", 12);
     url_fskip(pb, 5); // version string
     url_fskip(pb, 3); // padding
-    width = get_le32(pb);
-    height = get_le32(pb);
-    get_le32(pb); // unused, "desiredwidth"
-    get_le32(pb); // unused, "desiredheight"
-    get_byte(pb); // 'P' == progressive, 'I' == interlaced
+    width = avio_rl32(pb);
+    height = avio_rl32(pb);
+    avio_rl32(pb); // unused, "desiredwidth"
+    avio_rl32(pb); // unused, "desiredheight"
+    avio_r8(pb); // 'P' == progressive, 'I' == interlaced
     url_fskip(pb, 3); // padding
-    aspect = av_int2dbl(get_le64(pb));
+    aspect = av_int2dbl(avio_rl64(pb));
     if (aspect > 0.9999 && aspect < 1.0001)
         aspect = 4.0 / 3.0;
-    fps = av_int2dbl(get_le64(pb));
+    fps = av_int2dbl(avio_rl64(pb));
 
     // number of packets per stream type, -1 means unknown, e.g. streaming
-    v_packs = get_le32(pb);
-    a_packs = get_le32(pb);
-    get_le32(pb); // text
+    v_packs = avio_rl32(pb);
+    a_packs = avio_rl32(pb);
+    avio_rl32(pb); // text
 
-    get_le32(pb); // keyframe distance (?)
+    avio_rl32(pb); // keyframe distance (?)
 
     if (v_packs) {
         ctx->v_id = stream_nr++;
@@ -198,7 +198,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
     while (!url_feof(pb)) {
         int copyhdrsize = ctx->rtjpg_video ? HDRSIZE : 0;
         uint64_t pos = url_ftell(pb);
-        ret = get_buffer(pb, hdr, HDRSIZE);
+        ret = avio_read(pb, hdr, HDRSIZE);
         if (ret < HDRSIZE)
             return ret < 0 ? ret : AVERROR(EIO);
         frametype = hdr[0];
@@ -225,7 +225,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->v_id;
                 memcpy(pkt->data, hdr, copyhdrsize);
-                ret = get_buffer(pb, pkt->data + copyhdrsize, size);
+                ret = avio_read(pb, pkt->data + copyhdrsize, size);
                 if (ret < 0) {
                     av_free_packet(pkt);
                     return ret;

@@ -55,20 +55,20 @@ static int sox_read_header(AVFormatContext *s,
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
 
-    if (get_le32(pb) == SOX_TAG) {
+    if (avio_rl32(pb) == SOX_TAG) {
         st->codec->codec_id = CODEC_ID_PCM_S32LE;
-        header_size         = get_le32(pb);
+        header_size         = avio_rl32(pb);
         url_fskip(pb, 8); /* sample count */
-        sample_rate         = av_int2dbl(get_le64(pb));
-        st->codec->channels = get_le32(pb);
-        comment_size        = get_le32(pb);
+        sample_rate         = av_int2dbl(avio_rl64(pb));
+        st->codec->channels = avio_rl32(pb);
+        comment_size        = avio_rl32(pb);
     } else {
         st->codec->codec_id = CODEC_ID_PCM_S32BE;
-        header_size         = get_be32(pb);
+        header_size         = avio_rb32(pb);
         url_fskip(pb, 8); /* sample count */
-        sample_rate         = av_int2dbl(get_be64(pb));
-        st->codec->channels = get_be32(pb);
-        comment_size        = get_be32(pb);
+        sample_rate         = av_int2dbl(avio_rb64(pb));
+        st->codec->channels = avio_rb32(pb);
+        comment_size        = avio_rb32(pb);
     }
 
     if (comment_size > 0xFFFFFFFFU - SOX_FIXED_HDR - 4U) {
@@ -95,7 +95,7 @@ static int sox_read_header(AVFormatContext *s,
 
     if (comment_size && comment_size < UINT_MAX) {
         char *comment = av_malloc(comment_size+1);
-        if (get_buffer(pb, comment, comment_size) != comment_size) {
+        if (avio_read(pb, comment, comment_size) != comment_size) {
             av_freep(&comment);
             return AVERROR(EIO);
         }

@@ -84,16 +84,16 @@ static int read_header(AVFormatContext *s,
     int i, ret;
 
     url_fskip(pb, 4); /* magic number */
-    if (get_le16(pb) != MAX_PAGES) {
+    if (avio_rl16(pb) != MAX_PAGES) {
         av_log_ask_for_sample(s, "max_pages != " AV_STRINGIFY(MAX_PAGES) "\n");
         return AVERROR_INVALIDDATA;
     }
 
-    anm->nb_pages   = get_le16(pb);
-    anm->nb_records = get_le32(pb);
+    anm->nb_pages   = avio_rl16(pb);
+    anm->nb_records = avio_rl32(pb);
     url_fskip(pb, 2); /* max records per page */
-    anm->page_table_offset = get_le16(pb);
-    if (get_le32(pb) != ANIM_TAG)
+    anm->page_table_offset = avio_rl16(pb);
+    if (avio_rl32(pb) != ANIM_TAG)
         return AVERROR_INVALIDDATA;
 
     /* video stream */
@@ -103,32 +103,32 @@ static int read_header(AVFormatContext *s,
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = CODEC_ID_ANM;
     st->codec->codec_tag  = 0; /* no fourcc */
-    st->codec->width      = get_le16(pb);
-    st->codec->height     = get_le16(pb);
-    if (get_byte(pb) != 0)
+    st->codec->width      = avio_rl16(pb);
+    st->codec->height     = avio_rl16(pb);
+    if (avio_r8(pb) != 0)
         goto invalid;
     url_fskip(pb, 1); /* frame rate multiplier info */
 
     /* ignore last delta record (used for looping) */
-    if (get_byte(pb))  /* has_last_delta */
+    if (avio_r8(pb))  /* has_last_delta */
         anm->nb_records = FFMAX(anm->nb_records - 1, 0);
 
     url_fskip(pb, 1); /* last_delta_valid */
 
-    if (get_byte(pb) != 0)
+    if (avio_r8(pb) != 0)
         goto invalid;
 
-    if (get_byte(pb) != 1)
+    if (avio_r8(pb) != 1)
         goto invalid;
 
     url_fskip(pb, 1); /* other recs per frame */
 
-    if (get_byte(pb) != 1)
+    if (avio_r8(pb) != 1)
         goto invalid;
 
     url_fskip(pb, 32); /* record_types */
-    st->nb_frames = get_le32(pb);
-    av_set_pts_info(st, 64, 1, get_le16(pb));
+    st->nb_frames = avio_rl32(pb);
+    av_set_pts_info(st, 64, 1, avio_rl16(pb));
     url_fskip(pb, 58);
 
     /* color cycling and palette data */
@@ -138,7 +138,7 @@ static int read_header(AVFormatContext *s,
         ret = AVERROR(ENOMEM);
         goto close_and_return;
     }
-    ret = get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
+    ret = avio_read(pb, st->codec->extradata, st->codec->extradata_size);
     if (ret < 0)
         goto close_and_return;
 
@@ -149,9 +149,9 @@ static int read_header(AVFormatContext *s,
 
     for (i = 0; i < MAX_PAGES; i++) {
         Page *p = &anm->pt[i];
-        p->base_record = get_le16(pb);
-        p->nb_records  = get_le16(pb);
-        p->size        = get_le16(pb);
+        p->base_record = avio_rl16(pb);
+        p->nb_records  = avio_rl16(pb);
+        p->size        = avio_rl16(pb);
     }
 
     /* find page of first frame */
@@ -211,7 +211,7 @@ repeat:
     tmp = url_ftell(pb);
     url_fseek(pb, anm->page_table_offset + MAX_PAGES*6 + (anm->page<<16) +
               8 + anm->record * 2, SEEK_SET);
-    record_size = get_le16(pb);
+    record_size = avio_rl16(pb);
     url_fseek(pb, tmp, SEEK_SET);
 
     /* fetch record */

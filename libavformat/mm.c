@@ -90,18 +90,18 @@ static int read_header(AVFormatContext *s,
     unsigned int type, length;
     unsigned int frame_rate, width, height;
 
-    type = get_le16(pb);
-    length = get_le32(pb);
+    type = avio_rl16(pb);
+    length = avio_rl32(pb);
 
     if (type != MM_TYPE_HEADER)
         return AVERROR_INVALIDDATA;
 
     /* read header */
-    get_le16(pb);   /* total number of chunks */
-    frame_rate = get_le16(pb);
-    get_le16(pb);   /* ibm-pc video bios mode */
-    width = get_le16(pb);
-    height = get_le16(pb);
+    avio_rl16(pb);   /* total number of chunks */
+    frame_rate = avio_rl16(pb);
+    avio_rl16(pb);   /* ibm-pc video bios mode */
+    width = avio_rl16(pb);
+    height = avio_rl16(pb);
     url_fseek(pb, length - 10, SEEK_CUR);  /* unknown data */
 
     /* video stream */
@@ -143,7 +143,7 @@ static int read_packet(AVFormatContext *s,
 
     while(1) {
 
-        if (get_buffer(pb, preamble, MM_PREAMBLE_SIZE) != MM_PREAMBLE_SIZE) {
+        if (avio_read(pb, preamble, MM_PREAMBLE_SIZE) != MM_PREAMBLE_SIZE) {
             return AVERROR(EIO);
         }
 
@@ -162,7 +162,7 @@ static int read_packet(AVFormatContext *s,
             if (av_new_packet(pkt, length + MM_PREAMBLE_SIZE))
                 return AVERROR(ENOMEM);
             memcpy(pkt->data, preamble, MM_PREAMBLE_SIZE);
-            if (get_buffer(pb, pkt->data + MM_PREAMBLE_SIZE, length) != length)
+            if (avio_read(pb, pkt->data + MM_PREAMBLE_SIZE, length) != length)
                 return AVERROR(EIO);
             pkt->size = length + MM_PREAMBLE_SIZE;
             pkt->stream_index = 0;

@@ -97,7 +97,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
                 vcodec->extradata_size = 1;
                 vcodec->extradata = av_malloc(1);
             }
-            vcodec->extradata[0] = get_byte(s->pb);
+            vcodec->extradata[0] = avio_r8(s->pb);
             return 1; // 1 byte body size adjustment for flv_read_packet()
         case FLV_CODECID_H264:
             vcodec->codec_id = CODEC_ID_H264;
@@ -111,13 +111,13 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
 }
 
 static int amf_get_string(AVIOContext *ioc, char *buffer, int buffsize) {
-    int length = get_be16(ioc);
+    int length = avio_rb16(ioc);
     if(length >= buffsize) {
         url_fskip(ioc, length);
         return -1;
     }
 
-    get_buffer(ioc, buffer, length);
+    avio_read(ioc, buffer, length);
 
     buffer[length] = '\0';
 
@@ -134,13 +134,13 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
     num_val = 0;
     ioc = s->pb;
 
-    amf_type = get_byte(ioc);
+    amf_type = avio_r8(ioc);
 
     switch(amf_type) {
         case AMF_DATA_TYPE_NUMBER:
-            num_val = av_int2dbl(get_be64(ioc)); break;
+            num_val = av_int2dbl(avio_rb64(ioc)); break;
         case AMF_DATA_TYPE_BOOL:
-            num_val = get_byte(ioc); break;
+            num_val = avio_r8(ioc); break;
         case AMF_DATA_TYPE_STRING:
             if(amf_get_string(ioc, str_val, sizeof(str_val)) < 0)
                 return -1;
@@ -148,12 +148,12 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         case AMF_DATA_TYPE_OBJECT: {
             unsigned int keylen;
 
-            while(url_ftell(ioc) < max_pos - 2 && (keylen = get_be16(ioc))) {
+            while(url_ftell(ioc) < max_pos - 2 && (keylen = avio_rb16(ioc))) {
                 url_fskip(ioc, keylen); //skip key string
                 if(amf_parse_object(s, NULL, NULL, NULL, max_pos, depth + 1) < 0)
                     return -1; //if we couldn't skip, bomb out.
             }
-            if(get_byte(ioc) != AMF_END_OF_OBJECT)
+            if(avio_r8(ioc) != AMF_END_OF_OBJECT)
                 return -1;
         }
             break;
@@ -168,13 +168,13 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
                 if(amf_parse_object(s, astream, vstream, str_val, max_pos, depth + 1) < 0)
                     return -1;
             }
-            if(get_byte(ioc) != AMF_END_OF_OBJECT)
+            if(avio_r8(ioc) != AMF_END_OF_OBJECT)
                 return -1;
             break;
         case AMF_DATA_TYPE_ARRAY: {
             unsigned int arraylen, i;
 
-            arraylen = get_be32(ioc);
+            arraylen = avio_rb32(ioc);
             for(i = 0; i < arraylen && url_ftell(ioc) < max_pos - 1; i++) {
                 if(amf_parse_object(s, NULL, NULL, NULL, max_pos, depth + 1) < 0)
                     return -1; //if we couldn't skip, bomb out.
@@ -222,7 +222,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     ioc = s->pb;
 
     //first object needs to be "onMetaData" string
-    type = get_byte(ioc);
+    type = avio_r8(ioc);
     if(type != AMF_DATA_TYPE_STRING || amf_get_string(ioc, buffer, sizeof(buffer)) < 0 || strcmp(buffer, "onMetaData"))
         return -1;
 
@@ -255,7 +255,7 @@ static int flv_read_header(AVFormatContext *s,
     int offset, flags;
 
     url_fskip(s->pb, 4);
-    flags = get_byte(s->pb);
+    flags = avio_r8(s->pb);
     /* old flvtool cleared this field */
     /* FIXME: better fix needed */
     if (!flags) {
@@ -276,7 +276,7 @@ static int flv_read_header(AVFormatContext *s,
             return AVERROR(ENOMEM);
     }
 
-    offset = get_be32(s->pb);
+    offset = avio_rb32(s->pb);
     url_fseek(s->pb, offset, SEEK_SET);
     url_fskip(s->pb, 4);
 
@@ -292,7 +292,7 @@ static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = size;
-    get_buffer(s->pb, st->codec->extradata, st->codec->extradata_size);
+    avio_read(s->pb, st->codec->extradata, st->codec->extradata_size);
     return 0;
 }
 
@@ -306,10 +306,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
  for(;;url_fskip(s->pb, 4)){ /* pkt size is repeated at end. skip it */
     pos = url_ftell(s->pb);
-    type = get_byte(s->pb);
-    size = get_be24(s->pb);
-    dts = get_be24(s->pb);
-    dts |= get_byte(s->pb) << 24;
+    type = avio_r8(s->pb);
+    size = avio_rb24(s->pb);
+    dts = avio_rb24(s->pb);
+    dts |= avio_r8(s->pb) << 24;
 //    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, dts:%d\n", type, size, dts);
     if (url_feof(s->pb))
         return AVERROR_EOF;
@@ -323,11 +323,11 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (type == FLV_TAG_TYPE_AUDIO) {
         is_audio=1;
-        flags = get_byte(s->pb);
+        flags = avio_r8(s->pb);
         size--;
     } else if (type == FLV_TAG_TYPE_VIDEO) {
         is_audio=0;
-        flags = get_byte(s->pb);
+        flags = avio_r8(s->pb);
         size--;
         if ((flags & 0xf0) == 0x50) /* video info / command frame */
             goto skip;
@@ -375,11 +375,11 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         const int64_t pos= url_ftell(s->pb);
         const int64_t fsize= url_fsize(s->pb);
         url_fseek(s->pb, fsize-4, SEEK_SET);
-        size= get_be32(s->pb);
+        size= avio_rb32(s->pb);
         url_fseek(s->pb, fsize-3-size, SEEK_SET);
-        if(size == get_be24(s->pb) + 11){
-            uint32_t ts = get_be24(s->pb);
-            ts |= get_byte(s->pb) << 24;
+        if(size == avio_rb24(s->pb) + 11){
+            uint32_t ts = avio_rb24(s->pb);
+            ts |= avio_r8(s->pb) << 24;
             s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
         }
         url_fseek(s->pb, pos, SEEK_SET);
@@ -400,10 +400,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (st->codec->codec_id == CODEC_ID_AAC ||
         st->codec->codec_id == CODEC_ID_H264) {
-        int type = get_byte(s->pb);
+        int type = avio_r8(s->pb);
         size--;
         if (st->codec->codec_id == CODEC_ID_H264) {
-            int32_t cts = (get_be24(s->pb)+0xff800000)^0xff800000; // sign extension
+            int32_t cts = (avio_rb24(s->pb)+0xff800000)^0xff800000; // sign extension
             pts = dts + cts;
             if (cts < 0) { // dts are wrong
                 flv->wrong_dts = 1;

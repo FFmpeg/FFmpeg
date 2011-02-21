@@ -93,15 +93,15 @@ static int sol_read_header(AVFormatContext *s,
     AVStream *st;
 
     /* check ".snd" header */
-    magic = get_le16(pb);
-    tag = get_le32(pb);
+    magic = avio_rl16(pb);
+    tag = avio_rl32(pb);
     if (tag != MKTAG('S', 'O', 'L', 0))
         return -1;
-    rate = get_le16(pb);
-    type = get_byte(pb);
-    size = get_le32(pb);
+    rate = avio_rl16(pb);
+    type = avio_r8(pb);
+    size = avio_rl32(pb);
     if (magic != 0x0B8D)
-        get_byte(pb); /* newer SOLs contain padding byte */
+        avio_r8(pb); /* newer SOLs contain padding byte */
 
     codec = sol_codec_id(magic, type);
     channels = sol_channels(magic, type);

@@ -200,7 +200,7 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
     struct frame_attributes *s1 = s->priv_data;
 
     for (i=0; i<MAX_YUV4_HEADER; i++) {
-        header[i] = get_byte(pb);
+        header[i] = avio_r8(pb);
         if (header[i] == '\n') {
             header[i+1] = 0x20;  // Add a space after last option. Makes parsing "444" vs "444alpha" easier.
             header[i+2] = 0;
@@ -352,7 +352,7 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     struct frame_attributes *s1 = s->priv_data;
 
     for (i=0; i<MAX_FRAME_HEADER; i++) {
-        header[i] = get_byte(s->pb);
+        header[i] = avio_r8(s->pb);
         if (header[i] == '\n') {
             header[i+1] = 0;
             break;

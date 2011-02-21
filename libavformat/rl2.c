@@ -96,20 +96,20 @@ static av_cold int rl2_read_header(AVFormatContext *s,
     int ret = 0;
 
     url_fskip(pb,4);          /* skip FORM tag */
-    back_size = get_le32(pb); /**< get size of the background frame */
-    signature = get_be32(pb);
-    data_size = get_be32(pb);
-    frame_count = get_le32(pb);
+    back_size = avio_rl32(pb); /**< get size of the background frame */
+    signature = avio_rb32(pb);
+    data_size = avio_rb32(pb);
+    frame_count = avio_rl32(pb);
 
     /* disallow back_sizes and frame_counts that may lead to overflows later */
     if(back_size > INT_MAX/2  || frame_count > INT_MAX / sizeof(uint32_t))
         return AVERROR_INVALIDDATA;
 
-    encoding_method = get_le16(pb);
-    sound_rate = get_le16(pb);
-    rate = get_le16(pb);
-    channels = get_le16(pb);
-    def_sound_size = get_le16(pb);
+    encoding_method = avio_rl16(pb);
+    sound_rate = avio_rl16(pb);
+    rate = avio_rl16(pb);
+    channels = avio_rl16(pb);
+    def_sound_size = avio_rl16(pb);
 
     /** setup video stream */
     st = av_new_stream(s, 0);
@@ -133,7 +133,7 @@ static av_cold int rl2_read_header(AVFormatContext *s,
     if(!st->codec->extradata)
         return AVERROR(ENOMEM);
 
-    if(get_buffer(pb,st->codec->extradata,st->codec->extradata_size) !=
+    if(avio_read(pb,st->codec->extradata,st->codec->extradata_size) !=
                       st->codec->extradata_size)
         return AVERROR(EIO);
 
@@ -173,11 +173,11 @@ static av_cold int rl2_read_header(AVFormatContext *s,
 
     /** read offset and size tables */
     for(i=0; i < frame_count;i++)
-        chunk_size[i] = get_le32(pb);
+        chunk_size[i] = avio_rl32(pb);
     for(i=0; i < frame_count;i++)
-        chunk_offset[i] = get_le32(pb);
+        chunk_offset[i] = avio_rl32(pb);
     for(i=0; i < frame_count;i++)
-        audio_size[i] = get_le32(pb) & 0xFFFF;
+        audio_size[i] = avio_rl32(pb) & 0xFFFF;
 
     /** build the sample index */
     for(i=0;i<frame_count;i++){

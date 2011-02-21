@@ -86,7 +86,7 @@ static int seq_init_frame_buffers(SeqDemuxContext *seq, AVIOContext *pb)
     url_fseek(pb, 256, SEEK_SET);
 
     for (i = 0; i < SEQ_NUM_FRAME_BUFFERS; i++) {
-        sz = get_le16(pb);
+        sz = avio_rl16(pb);
         if (sz == 0)
             break;
         else {
@@ -114,7 +114,7 @@ static int seq_fill_buffer(SeqDemuxContext *seq, AVIOContext *pb, int buffer_num
         return AVERROR_INVALIDDATA;
 
     url_fseek(pb, seq->current_frame_offs + data_offs, SEEK_SET);
-    if (get_buffer(pb, seq_buffer->data + seq_buffer->fill_size, data_size) != data_size)
+    if (avio_read(pb, seq_buffer->data + seq_buffer->fill_size, data_size) != data_size)
         return AVERROR(EIO);
 
     seq_buffer->fill_size += data_size;
@@ -131,7 +131,7 @@ static int seq_parse_frame_data(SeqDemuxContext *seq, AVIOContext *pb)
     url_fseek(pb, seq->current_frame_offs, SEEK_SET);
 
     /* sound data */
-    seq->current_audio_data_offs = get_le16(pb);
+    seq->current_audio_data_offs = avio_rl16(pb);
     if (seq->current_audio_data_offs) {
         seq->current_audio_data_size = SEQ_AUDIO_BUFFER_SIZE * 2;
     } else {
@@ -139,7 +139,7 @@ static int seq_parse_frame_data(SeqDemuxContext *seq, AVIOContext *pb)
     }
 
     /* palette data */
-    seq->current_pal_data_offs = get_le16(pb);
+    seq->current_pal_data_offs = avio_rl16(pb);
     if (seq->current_pal_data_offs) {
         seq->current_pal_data_size = 768;
     } else {
@@ -148,10 +148,10 @@ static int seq_parse_frame_data(SeqDemuxContext *seq, AVIOContext *pb)
 
     /* video data */
     for (i = 0; i < 4; i++)
-        buffer_num[i] = get_byte(pb);
+        buffer_num[i] = avio_r8(pb);
 
     for (i = 0; i < 4; i++)
-        offset_table[i] = get_le16(pb);
+        offset_table[i] = avio_rl16(pb);
 
     for (i = 0; i < 3; i++) {
         if (offset_table[i]) {
@@ -257,7 +257,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (seq->current_pal_data_size) {
                 pkt->data[0] |= 1;
                 url_fseek(pb, seq->current_frame_offs + seq->current_pal_data_offs, SEEK_SET);
-                if (get_buffer(pb, &pkt->data[1], seq->current_pal_data_size) != seq->current_pal_data_size)
+                if (avio_read(pb, &pkt->data[1], seq->current_pal_data_size) != seq->current_pal_data_size)
                     return AVERROR(EIO);
             }
             if (seq->current_video_data_size) {

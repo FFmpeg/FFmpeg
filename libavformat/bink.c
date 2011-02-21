@@ -82,17 +82,17 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!vst)
         return AVERROR(ENOMEM);
 
-    vst->codec->codec_tag = get_le32(pb);
+    vst->codec->codec_tag = avio_rl32(pb);
 
-    bink->file_size = get_le32(pb) + 8;
-    vst->duration   = get_le32(pb);
+    bink->file_size = avio_rl32(pb) + 8;
+    vst->duration   = avio_rl32(pb);
 
     if (vst->duration > 1000000) {
         av_log(s, AV_LOG_ERROR, "invalid header: more than 1000000 frames\n");
         return AVERROR(EIO);
     }
 
-    if (get_le32(pb) > bink->file_size) {
+    if (avio_rl32(pb) > bink->file_size) {
         av_log(s, AV_LOG_ERROR,
                "invalid header: largest frame size greater than file size\n");
         return AVERROR(EIO);
@@ -100,11 +100,11 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     url_fskip(pb, 4);
 
-    vst->codec->width  = get_le32(pb);
-    vst->codec->height = get_le32(pb);
+    vst->codec->width  = avio_rl32(pb);
+    vst->codec->height = avio_rl32(pb);
 
-    fps_num = get_le32(pb);
-    fps_den = get_le32(pb);
+    fps_num = avio_rl32(pb);
+    fps_den = avio_rl32(pb);
     if (fps_num == 0 || fps_den == 0) {
         av_log(s, AV_LOG_ERROR, "invalid header: invalid fps (%d/%d)\n", fps_num, fps_den);
         return AVERROR(EIO);
@@ -115,9 +115,9 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     vst->codec->codec_id   = CODEC_ID_BINKVIDEO;
     vst->codec->extradata  = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
     vst->codec->extradata_size = 4;
-    get_buffer(pb, vst->codec->extradata, 4);
+    avio_read(pb, vst->codec->extradata, 4);
 
-    bink->num_audio_tracks = get_le32(pb);
+    bink->num_audio_tracks = avio_rl32(pb);
 
     if (bink->num_audio_tracks > BINK_MAX_AUDIO_TRACKS) {
         av_log(s, AV_LOG_ERROR,
@@ -135,9 +135,9 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
                 return AVERROR(ENOMEM);
             ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
             ast->codec->codec_tag   = 0;
-            ast->codec->sample_rate = get_le16(pb);
+            ast->codec->sample_rate = avio_rl16(pb);
             av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
-            flags = get_le16(pb);
+            flags = avio_rl16(pb);
             ast->codec->codec_id = flags & BINK_AUD_USEDCT ?
                                    CODEC_ID_BINKAUDIO_DCT : CODEC_ID_BINKAUDIO_RDFT;
             ast->codec->channels = flags & BINK_AUD_STEREO ? 2 : 1;
@@ -147,14 +147,14 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     /* frame index table */
-    next_pos = get_le32(pb);
+    next_pos = avio_rl32(pb);
     for (i = 0; i < vst->duration; i++) {
         pos = next_pos;
         if (i == vst->duration - 1) {
             next_pos = bink->file_size;
             keyframe = 0;
         } else {
-            next_pos = get_le32(pb);
+            next_pos = avio_rl32(pb);
             keyframe = pos & 1;
         }
         pos &= ~1;
@@ -201,7 +201,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     while (bink->current_track < bink->num_audio_tracks) {
-        uint32_t audio_size = get_le32(pb);
+        uint32_t audio_size = avio_rl32(pb);
         if (audio_size > bink->remain_packet_size - 4) {
             av_log(s, AV_LOG_ERROR,
                    "frame %"PRId64": audio size in header (%u) > size of packet left (%u)\n",

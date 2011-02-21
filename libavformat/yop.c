@@ -83,14 +83,14 @@ static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     url_fskip(pb, 6);
 
-    frame_rate              = get_byte(pb);
-    yop->frame_size         = get_byte(pb) * 2048;
-    video_dec->width        = get_le16(pb);
-    video_dec->height       = get_le16(pb);
+    frame_rate              = avio_r8(pb);
+    yop->frame_size         = avio_r8(pb) * 2048;
+    video_dec->width        = avio_rl16(pb);
+    video_dec->height       = avio_rl16(pb);
 
     video_stream->sample_aspect_ratio = (AVRational){1, 2};
 
-    ret = get_buffer(pb, video_dec->extradata, 8);
+    ret = avio_read(pb, video_dec->extradata, 8);
     if (ret < 8)
         return ret < 0 ? ret : AVERROR_EOF;
 
@@ -138,7 +138,7 @@ static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     yop->video_packet.pos = url_ftell(pb);
 
-    ret = get_buffer(pb, yop->video_packet.data, yop->palette_size);
+    ret = avio_read(pb, yop->video_packet.data, yop->palette_size);
     if (ret < 0) {
         goto err_out;
     }else if (ret < yop->palette_size) {
@@ -155,7 +155,7 @@ static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     url_fskip(pb, yop->audio_block_length - ret);
 
-    ret = get_buffer(pb, yop->video_packet.data + yop->palette_size,
+    ret = avio_read(pb, yop->video_packet.data + yop->palette_size,
                      actual_video_data_size);
     if (ret < 0)
         goto err_out;

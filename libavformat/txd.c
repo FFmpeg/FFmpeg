@@ -57,9 +57,9 @@ static int txd_read_packet(AVFormatContext *s, AVPacket *pkt) {
     int ret;
 
 next_chunk:
-    id         = get_le32(pb);
-    chunk_size = get_le32(pb);
-    marker     = get_le32(pb);
+    id         = avio_rl32(pb);
+    chunk_size = avio_rl32(pb);
+    marker     = avio_rl32(pb);
 
     if (url_feof(s->pb))
         return AVERROR_EOF;

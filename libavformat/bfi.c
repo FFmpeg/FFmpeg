@@ -66,24 +66,24 @@ static int bfi_read_header(AVFormatContext * s, AVFormatParameters * ap)
 
     /* Set the total number of frames. */
     url_fskip(pb, 8);
-    chunk_header           = get_le32(pb);
-    bfi->nframes           = get_le32(pb);
-    get_le32(pb);
-    get_le32(pb);
-    get_le32(pb);
-    fps                    = get_le32(pb);
+    chunk_header           = avio_rl32(pb);
+    bfi->nframes           = avio_rl32(pb);
+    avio_rl32(pb);
+    avio_rl32(pb);
+    avio_rl32(pb);
+    fps                    = avio_rl32(pb);
     url_fskip(pb, 12);
-    vstream->codec->width  = get_le32(pb);
-    vstream->codec->height = get_le32(pb);
+    vstream->codec->width  = avio_rl32(pb);
+    vstream->codec->height = avio_rl32(pb);
 
     /*Load the palette to extradata */
     url_fskip(pb, 8);
     vstream->codec->extradata      = av_malloc(768);
     vstream->codec->extradata_size = 768;
-    get_buffer(pb, vstream->codec->extradata,
+    avio_read(pb, vstream->codec->extradata,
                vstream->codec->extradata_size);
 
-    astream->codec->sample_rate = get_le32(pb);
+    astream->codec->sample_rate = avio_rl32(pb);
 
     /* Set up the video codec... */
     av_set_pts_info(vstream, 32, 1, fps);
@@ -119,14 +119,14 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
         while(state != MKTAG('S','A','V','I')){
             if (url_feof(pb))
                 return AVERROR(EIO);
-            state = 256*state + get_byte(pb);
+            state = 256*state + avio_r8(pb);
         }
         /* Now that the chunk's location is confirmed, we proceed... */
-        chunk_size      = get_le32(pb);
-        get_le32(pb);
-        audio_offset    = get_le32(pb);
-        get_le32(pb);
-        video_offset    = get_le32(pb);
+        chunk_size      = avio_rl32(pb);
+        avio_rl32(pb);
+        audio_offset    = avio_rl32(pb);
+        avio_rl32(pb);
+        video_offset    = avio_rl32(pb);
         audio_size      = video_offset - audio_offset;
         bfi->video_size = chunk_size - video_offset;
 

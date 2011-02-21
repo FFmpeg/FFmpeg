@@ -82,7 +82,7 @@ static int amr_read_header(AVFormatContext *s,
     AVStream *st;
     uint8_t header[9];
 
-    get_buffer(pb, header, 6);
+    avio_read(pb, header, 6);
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -91,7 +91,7 @@ static int amr_read_header(AVFormatContext *s,
     }
     if(memcmp(header,AMR_header,6)!=0)
     {
-        get_buffer(pb, header+6, 3);
+        avio_read(pb, header+6, 3);
         if(memcmp(header,AMRWB_header,9)!=0)
         {
             return -1;
@@ -128,7 +128,7 @@ static int amr_read_packet(AVFormatContext *s,
     }
 
 //FIXME this is wrong, this should rather be in a AVParset
-    toc=get_byte(s->pb);
+    toc=avio_r8(s->pb);
     mode = (toc >> 3) & 0x0F;
 
     if (enc->codec_id == CODEC_ID_AMR_NB)
@@ -157,7 +157,7 @@ static int amr_read_packet(AVFormatContext *s,
     pkt->pos= url_ftell(s->pb);
     pkt->data[0]=toc;
     pkt->duration= enc->codec_id == CODEC_ID_AMR_NB ? 160 : 320;
-    read = get_buffer(s->pb, pkt->data+1, size-1);
+    read = avio_read(s->pb, pkt->data+1, size-1);
 
     if (read != size-1)
     {

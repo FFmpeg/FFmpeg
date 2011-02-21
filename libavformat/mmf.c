@@ -188,15 +188,15 @@ static int mmf_read_header(AVFormatContext *s,
     int64_t file_size, size;
     int rate, params;
 
-    tag = get_le32(pb);
+    tag = avio_rl32(pb);
     if (tag != MKTAG('M', 'M', 'M', 'D'))
         return -1;
-    file_size = get_be32(pb);
+    file_size = avio_rb32(pb);
 
     /* Skip some unused chunks that may or may not be present */
     for(;; url_fseek(pb, size, SEEK_CUR)) {
-        tag = get_le32(pb);
-        size = get_be32(pb);
+        tag = avio_rl32(pb);
+        size = avio_rb32(pb);
         if(tag == MKTAG('C','N','T','I')) continue;
         if(tag == MKTAG('O','P','D','A')) continue;
         break;
@@ -212,22 +212,22 @@ static int mmf_read_header(AVFormatContext *s,
         return -1;
     }
 
-    get_byte(pb); /* format type */
-    get_byte(pb); /* sequence type */
-    params = get_byte(pb); /* (channel << 7) | (format << 4) | rate */
+    avio_r8(pb); /* format type */
+    avio_r8(pb); /* sequence type */
+    params = avio_r8(pb); /* (channel << 7) | (format << 4) | rate */
     rate = mmf_rate(params & 0x0f);
     if(rate  < 0) {
         av_log(s, AV_LOG_ERROR, "Invalid sample rate\n");
         return -1;
     }
-    get_byte(pb); /* wave base bit */
-    get_byte(pb); /* time base d */
-    get_byte(pb); /* time base g */
+    avio_r8(pb); /* wave base bit */
+    avio_r8(pb); /* time base d */
+    avio_r8(pb); /* time base g */
 
     /* Skip some unused chunks that may or may not be present */
     for(;; url_fseek(pb, size, SEEK_CUR)) {
-        tag = get_le32(pb);
-        size = get_be32(pb);
+        tag = avio_rl32(pb);
+        size = avio_rb32(pb);
         if(tag == MKTAG('A','t','s','q')) continue;
         if(tag == MKTAG('A','s','p','I')) continue;
         break;
@@ -280,7 +280,7 @@ static int mmf_read_packet(AVFormatContext *s,
         return AVERROR(EIO);
     pkt->stream_index = 0;
 
-    ret = get_buffer(s->pb, pkt->data, pkt->size);
+    ret = avio_read(s->pb, pkt->data, pkt->size);
     if (ret < 0)
         av_free_packet(pkt);
 

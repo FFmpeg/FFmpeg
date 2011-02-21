@@ -332,7 +332,7 @@ int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
 
     pkt->pos= url_ftell(s);
 
-    ret= get_buffer(s, pkt->data, size);
+    ret= avio_read(s, pkt->data, size);
     if(ret<=0)
         av_free_packet(pkt);
     else
@@ -351,7 +351,7 @@ int av_append_packet(AVIOContext *s, AVPacket *pkt, int size)
     ret = av_grow_packet(pkt, size);
     if (ret < 0)
         return ret;
-    ret = get_buffer(s, pkt->data + old_size, size);
+    ret = avio_read(s, pkt->data + old_size, size);
     av_shrink_packet(pkt, old_size + FFMAX(ret, 0));
     return ret;
 }
@@ -555,7 +555,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
 
         /* read probe data */
         buf = av_realloc(buf, probe_size + AVPROBE_PADDING_SIZE);
-        if ((ret = get_buffer(pb, buf + buf_offset, probe_size - buf_offset)) < 0) {
+        if ((ret = avio_read(pb, buf + buf_offset, probe_size - buf_offset)) < 0) {
             /* fail if error was not end of file, otherwise, lower score */
             if (ret != AVERROR_EOF) {
                 av_free(buf);

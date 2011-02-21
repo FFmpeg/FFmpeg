@@ -91,13 +91,13 @@ static int qcp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!st)
         return AVERROR(ENOMEM);
 
-    get_be32(pb);                    // "RIFF"
-    s->file_size = get_le32(pb) + 8;
+    avio_rb32(pb);                    // "RIFF"
+    s->file_size = avio_rl32(pb) + 8;
     url_fskip(pb, 8 + 4 + 1 + 1);    // "QLCMfmt " + chunk-size + major-version + minor-version
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->channels   = 1;
-    get_buffer(pb, buf, 16);
+    avio_read(pb, buf, 16);
     if (is_qcelp_13k_guid(buf)) {
         st->codec->codec_id = CODEC_ID_QCELP;
     } else if (!memcmp(buf, guid_evrc, 16)) {
@@ -111,19 +111,19 @@ static int qcp_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR_INVALIDDATA;
     }
     url_fskip(pb, 2 + 80); // codec-version + codec-name
-    st->codec->bit_rate = get_le16(pb);
+    st->codec->bit_rate = avio_rl16(pb);
 
-    s->packet_size = get_le16(pb);
+    s->packet_size = avio_rl16(pb);
     url_fskip(pb, 2); // block-size
-    st->codec->sample_rate = get_le16(pb);
+    st->codec->sample_rate = avio_rl16(pb);
     url_fskip(pb, 2); // sample-size
 
     memset(c->rates_per_mode, -1, sizeof(c->rates_per_mode));
-    nb_rates = get_le32(pb);
+    nb_rates = avio_rl32(pb);
     nb_rates = FFMIN(nb_rates, 8);
     for (i=0; i<nb_rates; i++) {
-        int size = get_byte(pb);
-        int mode = get_byte(pb);
+        int size = avio_r8(pb);
+        int mode = avio_r8(pb);
         if (mode > QCP_MAX_MODE) {
             av_log(s, AV_LOG_WARNING, "Unknown entry %d=>%d in rate-map-table.\n ", mode, size);
         } else
@@ -142,7 +142,7 @@ static int qcp_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     while(!url_feof(pb)) {
         if (c->data_size) {
-            int pkt_size, ret, mode = get_byte(pb);
+            int pkt_size, ret, mode = avio_r8(pb);
 
             if (s->packet_size) {
                 pkt_size = s->packet_size - 1;
@@ -165,14 +165,14 @@ static int qcp_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         }
 
-        if (url_ftell(pb) & 1 && get_byte(pb))
+        if (url_ftell(pb) & 1 && avio_r8(pb))
             av_log(s, AV_LOG_WARNING, "Padding should be 0.\n");
 
-        tag        = get_le32(pb);
-        chunk_size = get_le32(pb);
+        tag        = avio_rl32(pb);
+        chunk_size = avio_rl32(pb);
         switch (tag) {
         case MKTAG('v', 'r', 'a', 't'):
-            if (get_le32(pb)) // var-rate-flag
+            if (avio_rl32(pb)) // var-rate-flag
                 s->packet_size = 0;
             url_fskip(pb, 4); // size-in-packets
             break;

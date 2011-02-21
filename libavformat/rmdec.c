@@ -71,7 +71,7 @@ static inline void get_strl(AVIOContext *pb, char *buf, int buf_size, int len)
 
     q = buf;
     for(i=0;i<len;i++) {
-        r = get_byte(pb);
+        r = avio_r8(pb);
         if (i < buf_size - 1)
             *q++ = r;
     }
@@ -80,7 +80,7 @@ static inline void get_strl(AVIOContext *pb, char *buf, int buf_size, int len)
 
 static void get_str8(AVIOContext *pb, char *buf, int buf_size)
 {
-    get_strl(pb, buf, buf_size, get_byte(pb));
+    get_strl(pb, buf, buf_size, avio_r8(pb));
 }
 
 static int rm_read_extradata(AVIOContext *pb, AVCodecContext *avctx, unsigned size)
@@ -90,7 +90,7 @@ static int rm_read_extradata(AVIOContext *pb, AVCodecContext *avctx, unsigned si
     avctx->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata)
         return AVERROR(ENOMEM);
-    avctx->extradata_size = get_buffer(pb, avctx->extradata, size);
+    avctx->extradata_size = avio_read(pb, avctx->extradata, size);
     memset(avctx->extradata + avctx->extradata_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     if (avctx->extradata_size != size)
         return AVERROR(EIO);
@@ -102,7 +102,7 @@ static void rm_read_metadata(AVFormatContext *s, int wide)
     char buf[1024];
     int i;
     for (i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
-        int len = wide ? get_be16(s->pb) : get_byte(s->pb);
+        int len = wide ? avio_rb16(s->pb) : avio_r8(s->pb);
         get_strl(s->pb, buf, sizeof(buf), len);
         av_metadata_set2(&s->metadata, ff_rm_metadata[i], buf, 0);
     }
@@ -128,15 +128,15 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
     int ret;
 
     /* ra type header */
-    version = get_be16(pb); /* version */
+    version = avio_rb16(pb); /* version */
     if (version == 3) {
-        int header_size = get_be16(pb);
+        int header_size = avio_rb16(pb);
         int64_t startpos = url_ftell(pb);
         url_fskip(pb, 14);
         rm_read_metadata(s, 0);
         if ((startpos + header_size) >= url_ftell(pb) + 2) {
             // fourcc (should always be "lpcJ")
-            get_byte(pb);
+            avio_r8(pb);
             get_str8(pb, buf, sizeof(buf));
         }
         // Skip extra header crap (this should never happen)
@@ -151,28 +151,28 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
         int codecdata_length;
         /* old version (4) */
         url_fskip(pb, 2); /* unused */
-        get_be32(pb); /* .ra4 */
-        get_be32(pb); /* data size */
-        get_be16(pb); /* version2 */
-        get_be32(pb); /* header size */
-        flavor= get_be16(pb); /* add codec info / flavor */
-        ast->coded_framesize = coded_framesize = get_be32(pb); /* coded frame size */
-        get_be32(pb); /* ??? */
-        get_be32(pb); /* ??? */
-        get_be32(pb); /* ??? */
-        ast->sub_packet_h = sub_packet_h = get_be16(pb); /* 1 */
-        st->codec->block_align= get_be16(pb); /* frame size */
-        ast->sub_packet_size = sub_packet_size = get_be16(pb); /* sub packet size */
-        get_be16(pb); /* ??? */
+        avio_rb32(pb); /* .ra4 */
+        avio_rb32(pb); /* data size */
+        avio_rb16(pb); /* version2 */
+        avio_rb32(pb); /* header size */
+        flavor= avio_rb16(pb); /* add codec info / flavor */
+        ast->coded_framesize = coded_framesize = avio_rb32(pb); /* coded frame size */
+        avio_rb32(pb); /* ??? */
+        avio_rb32(pb); /* ??? */
+        avio_rb32(pb); /* ??? */
+        ast->sub_packet_h = sub_packet_h = avio_rb16(pb); /* 1 */
+        st->codec->block_align= avio_rb16(pb); /* frame size */
+        ast->sub_packet_size = sub_packet_size = avio_rb16(pb); /* sub packet size */
+        avio_rb16(pb); /* ??? */
         if (version == 5) {
-            get_be16(pb); get_be16(pb); get_be16(pb);
+            avio_rb16(pb); avio_rb16(pb); avio_rb16(pb);
         }
-        st->codec->sample_rate = get_be16(pb);
-        get_be32(pb);
-        st->codec->channels = get_be16(pb);
+        st->codec->sample_rate = avio_rb16(pb);
+        avio_rb32(pb);
+        st->codec->channels = avio_rb16(pb);
         if (version == 5) {
-            get_be32(pb);
-            get_buffer(pb, buf, 4);
+            avio_rb32(pb);
+            avio_read(pb, buf, 4);
             buf[4] = 0;
         } else {
             get_str8(pb, buf, sizeof(buf)); /* desc */
@@ -201,10 +201,10 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
         case CODEC_ID_COOK:
         case CODEC_ID_ATRAC3:
         case CODEC_ID_SIPR:
-            get_be16(pb); get_byte(pb);
+            avio_rb16(pb); avio_r8(pb);
             if (version == 5)
-                get_byte(pb);
-            codecdata_length = get_be32(pb);
+                avio_r8(pb);
+            codecdata_length = avio_rb32(pb);
             if(codecdata_length + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)codecdata_length){
                 av_log(s, AV_LOG_ERROR, "codecdata_length too large\n");
                 return -1;
@@ -236,16 +236,16 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
             av_new_packet(&ast->pkt, ast->audio_framesize * sub_packet_h);
             break;
         case CODEC_ID_AAC:
-            get_be16(pb); get_byte(pb);
+            avio_rb16(pb); avio_r8(pb);
             if (version == 5)
-                get_byte(pb);
-            codecdata_length = get_be32(pb);
+                avio_r8(pb);
+            codecdata_length = avio_rb32(pb);
             if(codecdata_length + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)codecdata_length){
                 av_log(s, AV_LOG_ERROR, "codecdata_length too large\n");
                 return -1;
             }
             if (codecdata_length >= 1) {
-                get_byte(pb);
+                avio_r8(pb);
                 if ((ret = rm_read_extradata(pb, st->codec, codecdata_length - 1)) < 0)
                     return ret;
             }
@@ -254,9 +254,9 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
             av_strlcpy(st->codec->codec_name, buf, sizeof(st->codec->codec_name));
         }
         if (read_all) {
-            get_byte(pb);
-            get_byte(pb);
-            get_byte(pb);
+            avio_r8(pb);
+            avio_r8(pb);
+            avio_r8(pb);
             rm_read_metadata(s, 0);
         }
     }
@@ -274,32 +274,32 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
 
     av_set_pts_info(st, 64, 1, 1000);
     codec_pos = url_ftell(pb);
-    v = get_be32(pb);
+    v = avio_rb32(pb);
     if (v == MKTAG(0xfd, 'a', 'r', '.')) {
         /* ra type header */
         if (rm_read_audio_stream_info(s, pb, st, rst, 0))
             return -1;
     } else {
         int fps, fps2;
-        if (get_le32(pb) != MKTAG('V', 'I', 'D', 'O')) {
+        if (avio_rl32(pb) != MKTAG('V', 'I', 'D', 'O')) {
         fail1:
             av_log(st->codec, AV_LOG_ERROR, "Unsupported video codec\n");
             goto skip;
         }
-        st->codec->codec_tag = get_le32(pb);
+        st->codec->codec_tag = avio_rl32(pb);
         st->codec->codec_id  = ff_codec_get_id(ff_rm_codec_tags,
                                                st->codec->codec_tag);
 //        av_log(s, AV_LOG_DEBUG, "%X %X\n", st->codec->codec_tag, MKTAG('R', 'V', '2', '0'));
         if (st->codec->codec_id == CODEC_ID_NONE)
             goto fail1;
-        st->codec->width = get_be16(pb);
-        st->codec->height = get_be16(pb);
+        st->codec->width = avio_rb16(pb);
+        st->codec->height = avio_rb16(pb);
         st->codec->time_base.num= 1;
-        fps= get_be16(pb);
+        fps= avio_rb16(pb);
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        get_be32(pb);
-        fps2= get_be16(pb);
-        get_be16(pb);
+        avio_rb32(pb);
+        fps2= avio_rb16(pb);
+        avio_rb16(pb);
 
         if ((ret = rm_read_extradata(pb, st->codec, codec_data_size - (url_ftell(pb) - codec_pos))) < 0)
             return ret;
@@ -335,15 +335,15 @@ static int rm_read_index(AVFormatContext *s)
     AVStream *st;
 
     do {
-        if (get_le32(pb) != MKTAG('I','N','D','X'))
+        if (avio_rl32(pb) != MKTAG('I','N','D','X'))
             return -1;
-        size     = get_be32(pb);
+        size     = avio_rb32(pb);
         if (size < 20)
             return -1;
         url_fskip(pb, 2);
-        n_pkts   = get_be32(pb);
-        str_id   = get_be16(pb);
-        next_off = get_be32(pb);
+        n_pkts   = avio_rb32(pb);
+        str_id   = avio_rb16(pb);
+        next_off = avio_rb32(pb);
         for (n = 0; n < s->nb_streams; n++)
             if (s->streams[n]->id == str_id) {
                 st = s->streams[n];
@@ -354,8 +354,8 @@ static int rm_read_index(AVFormatContext *s)
 
         for (n = 0; n < n_pkts; n++) {
             url_fskip(pb, 2);
-            pts = get_be32(pb);
-            pos = get_be32(pb);
+            pts = avio_rb32(pb);
+            pos = avio_rb32(pb);
             url_fskip(pb, 4); /* packet no. */
 
             av_add_index_entry(st, pos, pts, 0, 0, AVINDEX_KEYFRAME);
@@ -395,7 +395,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     char buf[128];
     int flags = 0;
 
-    tag = get_le32(pb);
+    tag = avio_rl32(pb);
     if (tag == MKTAG('.', 'r', 'a', 0xfd)) {
         /* very old .ra format */
         return rm_read_header_old(s, ap);
@@ -403,17 +403,17 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(EIO);
     }
 
-    get_be32(pb); /* header size */
-    get_be16(pb);
-    get_be32(pb);
-    get_be32(pb); /* number of headers */
+    avio_rb32(pb); /* header size */
+    avio_rb16(pb);
+    avio_rb32(pb);
+    avio_rb32(pb); /* number of headers */
 
     for(;;) {
         if (url_feof(pb))
             return -1;
-        tag = get_le32(pb);
-        tag_size = get_be32(pb);
-        get_be16(pb);
+        tag = avio_rl32(pb);
+        tag_size = avio_rb32(pb);
+        avio_rb16(pb);
 #if 0
         printf("tag=%c%c%c%c (%08x) size=%d\n",
                (tag) & 0xff,
@@ -428,17 +428,17 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         switch(tag) {
         case MKTAG('P', 'R', 'O', 'P'):
             /* file header */
-            get_be32(pb); /* max bit rate */
-            get_be32(pb); /* avg bit rate */
-            get_be32(pb); /* max packet size */
-            get_be32(pb); /* avg packet size */
-            get_be32(pb); /* nb packets */
-            get_be32(pb); /* duration */
-            get_be32(pb); /* preroll */
-            indx_off = get_be32(pb); /* index offset */
-            data_off = get_be32(pb); /* data offset */
-            get_be16(pb); /* nb streams */
-            flags = get_be16(pb); /* flags */
+            avio_rb32(pb); /* max bit rate */
+            avio_rb32(pb); /* avg bit rate */
+            avio_rb32(pb); /* max packet size */
+            avio_rb32(pb); /* avg packet size */
+            avio_rb32(pb); /* nb packets */
+            avio_rb32(pb); /* duration */
+            avio_rb32(pb); /* preroll */
+            indx_off = avio_rb32(pb); /* index offset */
+            data_off = avio_rb32(pb); /* data offset */
+            avio_rb16(pb); /* nb streams */
+            flags = avio_rb16(pb); /* flags */
             break;
         case MKTAG('C', 'O', 'N', 'T'):
             rm_read_metadata(s, 1);
@@ -447,14 +447,14 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st = av_new_stream(s, 0);
             if (!st)
                 return AVERROR(ENOMEM);
-            st->id = get_be16(pb);
-            get_be32(pb); /* max bit rate */
-            st->codec->bit_rate = get_be32(pb); /* bit rate */
-            get_be32(pb); /* max packet size */
-            get_be32(pb); /* avg packet size */
-            start_time = get_be32(pb); /* start time */
-            get_be32(pb); /* preroll */
-            duration = get_be32(pb); /* duration */
+            st->id = avio_rb16(pb);
+            avio_rb32(pb); /* max bit rate */
+            st->codec->bit_rate = avio_rb32(pb); /* bit rate */
+            avio_rb32(pb); /* max packet size */
+            avio_rb32(pb); /* avg packet size */
+            start_time = avio_rb32(pb); /* start time */
+            avio_rb32(pb); /* preroll */
+            duration = avio_rb32(pb); /* duration */
             st->start_time = start_time;
             st->duration = duration;
             get_str8(pb, buf, sizeof(buf)); /* desc */
@@ -462,7 +462,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->codec_type = AVMEDIA_TYPE_DATA;
             st->priv_data = ff_rm_alloc_rmstream();
             if (ff_rm_read_mdpr_codecdata(s, s->pb, st, st->priv_data,
-                                          get_be32(pb)) < 0)
+                                          avio_rb32(pb)) < 0)
                 return -1;
             break;
         case MKTAG('D', 'A', 'T', 'A'):
@@ -474,10 +474,10 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
     }
  header_end:
-    rm->nb_packets = get_be32(pb); /* number of packets */
+    rm->nb_packets = avio_rb32(pb); /* number of packets */
     if (!rm->nb_packets && (flags & 4))
         rm->nb_packets = 3600 * 25;
-    get_be32(pb); /* next data header */
+    avio_rb32(pb); /* next data header */
 
     if (!data_off)
         data_off = url_ftell(pb) - 18;
@@ -494,13 +494,13 @@ static int get_num(AVIOContext *pb, int *len)
 {
     int n, n1;
 
-    n = get_be16(pb);
+    n = avio_rb16(pb);
     (*len)-=2;
     n &= 0x7FFF;
     if (n >= 0x4000) {
         return n - 0x4000;
     } else {
-        n1 = get_be16(pb);
+        n1 = avio_rb16(pb);
         (*len)-=2;
         return (n << 16) | n1;
     }
@@ -524,13 +524,13 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
             *timestamp = AV_NOPTS_VALUE;
             *flags= 0;
         }else{
-            state= (state<<8) + get_byte(pb);
+            state= (state<<8) + avio_r8(pb);
 
             if(state == MKBETAG('I', 'N', 'D', 'X')){
                 int n_pkts, expected_len;
-                len = get_be32(pb);
+                len = avio_rb32(pb);
                 url_fskip(pb, 2);
-                n_pkts = get_be32(pb);
+                n_pkts = avio_rb32(pb);
                 expected_len = 20 + n_pkts * 14;
                 if (len == 20)
                     /* some files don't add index entries to chunk size... */
@@ -553,10 +553,10 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
             len=state - 12;
             state= 0xFFFFFFFF;
 
-            num = get_be16(pb);
-            *timestamp = get_be32(pb);
-            get_byte(pb); /* reserved */
-            *flags = get_byte(pb); /* flags */
+            num = avio_rb16(pb);
+            *timestamp = avio_rb32(pb);
+            avio_r8(pb); /* reserved */
+            *flags = avio_r8(pb); /* flags */
         }
         for(i=0;i<s->nb_streams;i++) {
             st = s->streams[i];
@@ -584,16 +584,16 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
     int hdr, seq, pic_num, len2, pos;
     int type;
 
-    hdr = get_byte(pb); len--;
+    hdr = avio_r8(pb); len--;
     type = hdr >> 6;
 
     if(type != 3){  // not frame as a part of packet
-        seq = get_byte(pb); len--;
+        seq = avio_r8(pb); len--;
     }
     if(type != 1){  // not whole frame
         len2 = get_num(pb, &len);
         pos  = get_num(pb, &len);
-        pic_num = get_byte(pb); len--;
+        pic_num = avio_r8(pb); len--;
     }
     if(len<0)
         return -1;
@@ -609,7 +609,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
         pkt->data[0] = 0;
         AV_WL32(pkt->data + 1, 1);
         AV_WL32(pkt->data + 5, 0);
-        get_buffer(pb, pkt->data + 9, len);
+        avio_read(pb, pkt->data + 9, len);
         return 0;
     }
     //now we have to deal with single slice
@@ -635,7 +635,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
     AV_WL32(vst->pkt.data - 3 + 8*vst->cur_slice, vst->videobufpos - 8*vst->slices - 1);
     if(vst->videobufpos + len > vst->videobufsize)
         return 1;
-    if (get_buffer(pb, vst->pkt.data + vst->videobufpos, len) != len)
+    if (avio_read(pb, vst->pkt.data + vst->videobufpos, len) != len)
         return AVERROR(EIO);
     vst->videobufpos += len;
     rm->remaining_len-= len;
@@ -730,15 +730,15 @@ ff_rm_parse_packet (AVFormatContext *s, AVIOContext *pb,
             switch(st->codec->codec_id) {
                 case CODEC_ID_RA_288:
                     for (x = 0; x < h/2; x++)
-                        get_buffer(pb, ast->pkt.data+x*2*w+y*cfs, cfs);
+                        avio_read(pb, ast->pkt.data+x*2*w+y*cfs, cfs);
                     break;
                 case CODEC_ID_ATRAC3:
                 case CODEC_ID_COOK:
                     for (x = 0; x < w/sps; x++)
-                        get_buffer(pb, ast->pkt.data+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), sps);
+                        avio_read(pb, ast->pkt.data+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), sps);
                     break;
                 case CODEC_ID_SIPR:
-                    get_buffer(pb, ast->pkt.data + y * w, w);
+                    avio_read(pb, ast->pkt.data + y * w, w);
                     break;
             }
 
@@ -753,10 +753,10 @@ ff_rm_parse_packet (AVFormatContext *s, AVIOContext *pb,
         } else if (st->codec->codec_id == CODEC_ID_AAC) {
             int x;
             rm->audio_stream_num = st->index;
-            ast->sub_packet_cnt = (get_be16(pb) & 0xf0) >> 4;
+            ast->sub_packet_cnt = (avio_rb16(pb) & 0xf0) >> 4;
             if (ast->sub_packet_cnt) {
                 for (x = 0; x < ast->sub_packet_cnt; x++)
-                    ast->sub_packet_lengths[x] = get_be16(pb);
+                    ast->sub_packet_lengths[x] = avio_rb16(pb);
                 rm->audio_pkt_cnt = ast->sub_packet_cnt;
                 ast->audiotimestamp = timestamp;
             } else
@@ -916,9 +916,9 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
 
         st = s->streams[stream_index2];
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            h= get_byte(s->pb); len--;
+            h= avio_r8(s->pb); len--;
             if(!(h & 0x40)){
-                seq = get_byte(s->pb); len--;
+                seq = avio_r8(s->pb); len--;
             }
         }
 

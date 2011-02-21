@@ -49,8 +49,8 @@ static int vc1t_read_header(AVFormatContext *s,
     int frames;
     uint32_t fps;
 
-    frames = get_le24(pb);
-    if(get_byte(pb) != 0xC5 || get_le32(pb) != 4)
+    frames = avio_rl24(pb);
+    if(avio_r8(pb) != 0xC5 || avio_rl32(pb) != 4)
         return -1;
 
     /* init video codec */
@@ -63,13 +63,13 @@ static int vc1t_read_header(AVFormatContext *s,
 
     st->codec->extradata = av_malloc(VC1_EXTRADATA_SIZE);
     st->codec->extradata_size = VC1_EXTRADATA_SIZE;
-    get_buffer(pb, st->codec->extradata, VC1_EXTRADATA_SIZE);
-    st->codec->height = get_le32(pb);
-    st->codec->width = get_le32(pb);
-    if(get_le32(pb) != 0xC)
+    avio_read(pb, st->codec->extradata, VC1_EXTRADATA_SIZE);
+    st->codec->height = avio_rl32(pb);
+    st->codec->width = avio_rl32(pb);
+    if(avio_rl32(pb) != 0xC)
         return -1;
     url_fskip(pb, 8);
-    fps = get_le32(pb);
+    fps = avio_rl32(pb);
     if(fps == 0xFFFFFFFF)
         av_set_pts_info(st, 32, 1, 1000);
     else{
@@ -95,10 +95,10 @@ static int vc1t_read_packet(AVFormatContext *s,
     if(url_feof(pb))
         return AVERROR(EIO);
 
-    frame_size = get_le24(pb);
-    if(get_byte(pb) & 0x80)
+    frame_size = avio_rl24(pb);
+    if(avio_r8(pb) & 0x80)
         keyframe = 1;
-    pts = get_le32(pb);
+    pts = avio_rl32(pb);
     if(av_get_packet(pb, pkt, frame_size) < 0)
         return AVERROR(EIO);
     if(s->streams[0]->time_base.den == 1000)

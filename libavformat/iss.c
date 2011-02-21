@@ -44,7 +44,7 @@ static void get_token(AVIOContext *s, char *buf, int maxlen)
     int i = 0;
     char c;
 
-    while ((c = get_byte(s))) {
+    while ((c = avio_r8(s))) {
         if(c == ' ')
             break;
         if (i < maxlen-1)
@@ -52,7 +52,7 @@ static void get_token(AVIOContext *s, char *buf, int maxlen)
     }
 
     if(!c)
-        get_byte(s);
+        avio_r8(s);
 
     buf[i] = 0; /* Ensure null terminated, but may be truncated */
 }

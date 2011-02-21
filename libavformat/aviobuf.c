@@ -298,6 +298,32 @@ void put_strz(AVIOContext *s, const char *str)
 {
     avio_put_str(s, str);
 }
+
+#define GET(name, type) \
+    type get_be ##name(AVIOContext *s) \
+{\
+    return avio_rb ##name(s);\
+}\
+    type get_le ##name(AVIOContext *s) \
+{\
+    return avio_rl ##name(s);\
+}
+
+GET(16, unsigned int)
+GET(24, unsigned int)
+GET(32, unsigned int)
+GET(64, uint64_t)
+
+#undef GET
+
+int get_byte(AVIOContext *s)
+{
+   return avio_r8(s);
+}
+int get_buffer(AVIOContext *s, unsigned char *buf, int size)
+{
+    return avio_read(s, buf, size);
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -457,7 +483,7 @@ void init_checksum(AVIOContext *s,
 }
 
 /* XXX: put an inline version */
-int get_byte(AVIOContext *s)
+int avio_r8(AVIOContext *s)
 {
     if (s->buf_ptr >= s->buf_end)
         fill_buffer(s);
@@ -475,7 +501,7 @@ int url_fgetc(AVIOContext *s)
     return URL_EOF;
 }
 
-int get_buffer(AVIOContext *s, unsigned char *buf, int size)
+int avio_read(AVIOContext *s, unsigned char *buf, int size)
 {
     int len, size1;
 
@@ -545,58 +571,58 @@ int get_partial_buffer(AVIOContext *s, unsigned char *buf, int size)
     return len;
 }
 
-unsigned int get_le16(AVIOContext *s)
+unsigned int avio_rl16(AVIOContext *s)
 {
     unsigned int val;
-    val = get_byte(s);
-    val |= get_byte(s) << 8;
+    val = avio_r8(s);
+    val |= avio_r8(s) << 8;
     return val;
 }
 
-unsigned int get_le24(AVIOContext *s)
+unsigned int avio_rl24(AVIOContext *s)
 {
     unsigned int val;
-    val = get_le16(s);
-    val |= get_byte(s) << 16;
+    val = avio_rl16(s);
+    val |= avio_r8(s) << 16;
     return val;
 }
 
-unsigned int get_le32(AVIOContext *s)
+unsigned int avio_rl32(AVIOContext *s)
 {
     unsigned int val;
-    val = get_le16(s);
-    val |= get_le16(s) << 16;
+    val = avio_rl16(s);
+    val |= avio_rl16(s) << 16;
     return val;
 }
 
-uint64_t get_le64(AVIOContext *s)
+uint64_t avio_rl64(AVIOContext *s)
 {
     uint64_t val;
-    val = (uint64_t)get_le32(s);
-    val |= (uint64_t)get_le32(s) << 32;
+    val = (uint64_t)avio_rl32(s);
+    val |= (uint64_t)avio_rl32(s) << 32;
     return val;
 }
 
-unsigned int get_be16(AVIOContext *s)
+unsigned int avio_rb16(AVIOContext *s)
 {
     unsigned int val;
-    val = get_byte(s) << 8;
-    val |= get_byte(s);
+    val = avio_r8(s) << 8;
+    val |= avio_r8(s);
     return val;
 }
 
-unsigned int get_be24(AVIOContext *s)
+unsigned int avio_rb24(AVIOContext *s)
 {
     unsigned int val;
-    val = get_be16(s) << 8;
-    val |= get_byte(s);
+    val = avio_rb16(s) << 8;
+    val |= avio_r8(s);
     return val;
 }
-unsigned int get_be32(AVIOContext *s)
+unsigned int avio_rb32(AVIOContext *s)
 {
     unsigned int val;
-    val = get_be16(s) << 16;
-    val |= get_be16(s);
+    val = avio_rb16(s) << 16;
+    val |= avio_rb16(s);
     return val;
 }
 
@@ -605,7 +631,7 @@ char *get_strz(AVIOContext *s, char *buf, int maxlen)
     int i = 0;
     char c;
 
-    while ((c = get_byte(s))) {
+    while ((c = avio_r8(s))) {
         if (i < maxlen-1)
             buf[i++] = c;
     }
@@ -621,7 +647,7 @@ int ff_get_line(AVIOContext *s, char *buf, int maxlen)
     char c;
 
     do {
-        c = get_byte(s);
+        c = avio_r8(s);
         if (c && i < maxlen-1)
             buf[i++] = c;
     } while (c != '\n' && c);
@@ -647,16 +673,16 @@ int ff_get_line(AVIOContext *s, char *buf, int maxlen)
     return ret;\
 }\
 
-GET_STR16(le, get_le16)
-GET_STR16(be, get_be16)
+GET_STR16(le, avio_rl16)
+GET_STR16(be, avio_rb16)
 
 #undef GET_STR16
 
-uint64_t get_be64(AVIOContext *s)
+uint64_t avio_rb64(AVIOContext *s)
 {
     uint64_t val;
-    val = (uint64_t)get_be32(s) << 32;
-    val |= (uint64_t)get_be32(s);
+    val = (uint64_t)avio_rb32(s) << 32;
+    val |= (uint64_t)avio_rb32(s);
     return val;
 }
 
@@ -665,7 +691,7 @@ uint64_t ff_get_v(AVIOContext *bc){
     int tmp;
 
     do{
-        tmp = get_byte(bc);
+        tmp = avio_r8(bc);
         val= (val<<7) + (tmp&127);
     }while(tmp&128);
     return val;

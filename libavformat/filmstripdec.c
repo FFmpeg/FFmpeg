@@ -44,7 +44,7 @@ static int read_header(AVFormatContext *s,
         return AVERROR(EIO);
 
     url_fseek(pb, url_fsize(pb) - 36, SEEK_SET);
-    if (get_be32(pb) != RAND_TAG) {
+    if (avio_rb32(pb) != RAND_TAG) {
         av_log(s, AV_LOG_ERROR, "magic number not found");
         return AVERROR_INVALIDDATA;
     }
@@ -53,8 +53,8 @@ static int read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->nb_frames = get_be32(pb);
-    if (get_be16(pb) != 0) {
+    st->nb_frames = avio_rb32(pb);
+    if (avio_rb16(pb) != 0) {
         av_log_ask_for_sample(s, "unsupported packing method\n");
         return AVERROR_INVALIDDATA;
     }
@@ -64,10 +64,10 @@ static int read_header(AVFormatContext *s,
     st->codec->codec_id   = CODEC_ID_RAWVIDEO;
     st->codec->pix_fmt    = PIX_FMT_RGBA;
     st->codec->codec_tag  = 0; /* no fourcc */
-    st->codec->width      = get_be16(pb);
-    st->codec->height     = get_be16(pb);
-    film->leading         = get_be16(pb);
-    av_set_pts_info(st, 64, 1, get_be16(pb));
+    st->codec->width      = avio_rb16(pb);
+    st->codec->height     = avio_rb16(pb);
+    film->leading         = avio_rb16(pb);
+    av_set_pts_info(st, 64, 1, avio_rb16(pb));
 
     url_fseek(pb, 0, SEEK_SET);
 
