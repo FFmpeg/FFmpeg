@@ -146,7 +146,7 @@ static void vc1_inv_trans_8x8_altivec(DCTELEM block[64],
     const vector  signed int vec_1s = vec_splat_s32(1);
     const vector unsigned int vec_1 = vec_splat_u32(1);
     const vector unsigned short rangered_shift = vec_splat_u16(1);
-    const vector   signed short signed_bias = vec_sl(vec_splat_u16(4),
+    const vector   signed short signed_bias = vec_sl(vec_splat_s16(4),
                                                      vec_splat_u16(4));
 
     src0 = vec_ld(  0, block);
@@ -219,23 +219,23 @@ static void vc1_inv_trans_8x8_altivec(DCTELEM block[64],
 
     if (rangered) {
         if (!sign) {
-            vec_sub(src0, signed_bias);
-            vec_sub(src1, signed_bias);
-            vec_sub(src2, signed_bias);
-            vec_sub(src3, signed_bias);
-            vec_sub(src4, signed_bias);
-            vec_sub(src5, signed_bias);
-            vec_sub(src6, signed_bias);
-            vec_sub(src7, signed_bias);
+            src0 = vec_sub(src0, signed_bias);
+            src1 = vec_sub(src1, signed_bias);
+            src2 = vec_sub(src2, signed_bias);
+            src3 = vec_sub(src3, signed_bias);
+            src4 = vec_sub(src4, signed_bias);
+            src5 = vec_sub(src5, signed_bias);
+            src6 = vec_sub(src6, signed_bias);
+            src7 = vec_sub(src7, signed_bias);
         }
-        vec_sl(src0, rangered_shift);
-        vec_sl(src1, rangered_shift);
-        vec_sl(src2, rangered_shift);
-        vec_sl(src3, rangered_shift);
-        vec_sl(src4, rangered_shift);
-        vec_sl(src5, rangered_shift);
-        vec_sl(src6, rangered_shift);
-        vec_sl(src7, rangered_shift);
+        src0 = vec_sl(src0, rangered_shift);
+        src1 = vec_sl(src1, rangered_shift);
+        src2 = vec_sl(src2, rangered_shift);
+        src3 = vec_sl(src3, rangered_shift);
+        src4 = vec_sl(src4, rangered_shift);
+        src5 = vec_sl(src5, rangered_shift);
+        src6 = vec_sl(src6, rangered_shift);
+        src7 = vec_sl(src7, rangered_shift);
     }
 
     vec_st(src0,  0, block);
