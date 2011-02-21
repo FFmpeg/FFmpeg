@@ -207,7 +207,7 @@ ogg_read_page (AVFormatContext * s, int *str)
     uint8_t sync[4];
     int sp = 0;
 
-    if (get_buffer (bc, sync, 4) < 4)
+    if (avio_read (bc, sync, 4) < 4)
         return -1;
 
     do{
@@ -233,10 +233,10 @@ ogg_read_page (AVFormatContext * s, int *str)
         return -1;
 
     flags = url_fgetc (bc);
-    gp = get_le64 (bc);
-    serial = get_le32 (bc);
-    seq = get_le32 (bc);
-    crc = get_le32 (bc);
+    gp = avio_rl64 (bc);
+    serial = avio_rl32 (bc);
+    seq = avio_rl32 (bc);
+    crc = avio_rl32 (bc);
     nsegs = url_fgetc (bc);
 
     idx = ogg_find_stream (ogg, serial);
@@ -252,7 +252,7 @@ ogg_read_page (AVFormatContext * s, int *str)
     if(os->psize > 0)
         ogg_new_buf(ogg, idx);
 
-    if (get_buffer (bc, os->segments, nsegs) < nsegs)
+    if (avio_read (bc, os->segments, nsegs) < nsegs)
         return -1;
 
     os->nsegs = nsegs;
@@ -284,7 +284,7 @@ ogg_read_page (AVFormatContext * s, int *str)
         os->buf = nb;
     }
 
-    if (get_buffer (bc, os->buf + os->bufpos, size) < size)
+    if (avio_read (bc, os->buf + os->bufpos, size) < size)
         return -1;
 
     os->bufpos += size;

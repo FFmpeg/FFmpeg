@@ -53,20 +53,20 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     vst->codec->extradata_size = 2;
     vst->codec->extradata = av_mallocz(2 + FF_INPUT_BUFFER_PADDING_SIZE);
 
-    version                  = get_byte(pb);
-    vst->codec->extradata[0] = get_byte(pb);
-    vst->codec->extradata[1] = get_byte(pb);
-    frames_count             = get_le32(pb);
-    msecs_per_frame          = get_le32(pb);
-    vst->codec->width        = get_le16(pb);
-    vst->codec->height       = get_le16(pb);
-    get_byte(pb);
-    ast->codec->sample_rate  = get_le16(pb);
-    mvi->audio_data_size     = get_le32(pb);
-    get_byte(pb);
-    player_version           = get_le32(pb);
-    get_le16(pb);
-    get_byte(pb);
+    version                  = avio_r8(pb);
+    vst->codec->extradata[0] = avio_r8(pb);
+    vst->codec->extradata[1] = avio_r8(pb);
+    frames_count             = avio_rl32(pb);
+    msecs_per_frame          = avio_rl32(pb);
+    vst->codec->width        = avio_rl16(pb);
+    vst->codec->height       = avio_rl16(pb);
+    avio_r8(pb);
+    ast->codec->sample_rate  = avio_rl16(pb);
+    mvi->audio_data_size     = avio_rl32(pb);
+    avio_r8(pb);
+    player_version           = avio_rl32(pb);
+    avio_rl16(pb);
+    avio_r8(pb);
 
     if (frames_count == 0 || mvi->audio_data_size == 0)
         return AVERROR_INVALIDDATA;
@@ -87,7 +87,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = CODEC_ID_MOTIONPIXELS;
 
-    mvi->get_int = (vst->codec->width * vst->codec->height < (1 << 16)) ? get_le16 : get_le24;
+    mvi->get_int = (vst->codec->width * vst->codec->height < (1 << 16)) ? avio_rl16 : avio_rl24;
 
     mvi->audio_frame_size   = ((uint64_t)mvi->audio_data_size << MVI_FRAC_BITS) / frames_count;
     mvi->audio_size_counter = (ast->codec->sample_rate * 830 / mvi->audio_frame_size - 1) * mvi->audio_frame_size;

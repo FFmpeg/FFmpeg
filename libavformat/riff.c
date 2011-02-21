@@ -481,25 +481,25 @@ void ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
 {
     int id;
 
-    id = get_le16(pb);
+    id = avio_rl16(pb);
     codec->codec_type = AVMEDIA_TYPE_AUDIO;
     codec->codec_tag = id;
-    codec->channels = get_le16(pb);
-    codec->sample_rate = get_le32(pb);
-    codec->bit_rate = get_le32(pb) * 8;
-    codec->block_align = get_le16(pb);
+    codec->channels = avio_rl16(pb);
+    codec->sample_rate = avio_rl32(pb);
+    codec->bit_rate = avio_rl32(pb) * 8;
+    codec->block_align = avio_rl16(pb);
     if (size == 14) {  /* We're dealing with plain vanilla WAVEFORMAT */
         codec->bits_per_coded_sample = 8;
     }else
-        codec->bits_per_coded_sample = get_le16(pb);
+        codec->bits_per_coded_sample = avio_rl16(pb);
     if (size >= 18) {  /* We're obviously dealing with WAVEFORMATEX */
-        int cbSize = get_le16(pb); /* cbSize */
+        int cbSize = avio_rl16(pb); /* cbSize */
         size -= 18;
         cbSize = FFMIN(size, cbSize);
         if (cbSize >= 22 && id == 0xfffe) { /* WAVEFORMATEXTENSIBLE */
-            codec->bits_per_coded_sample = get_le16(pb);
-            codec->channel_layout = get_le32(pb); /* dwChannelMask */
-            id = get_le32(pb); /* 4 first bytes of GUID */
+            codec->bits_per_coded_sample = avio_rl16(pb);
+            codec->channel_layout = avio_rl32(pb); /* dwChannelMask */
+            id = avio_rl32(pb); /* 4 first bytes of GUID */
             url_fskip(pb, 12); /* skip end of GUID */
             cbSize -= 22;
             size -= 22;
@@ -507,7 +507,7 @@ void ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
         codec->extradata_size = cbSize;
         if (cbSize > 0) {
             codec->extradata = av_mallocz(codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-            get_buffer(pb, codec->extradata, codec->extradata_size);
+            avio_read(pb, codec->extradata, codec->extradata_size);
             size -= cbSize;
         }
 
@@ -547,17 +547,17 @@ enum CodecID ff_wav_codec_get_id(unsigned int tag, int bps)
 int ff_get_bmp_header(AVIOContext *pb, AVStream *st)
 {
     int tag1;
-    get_le32(pb); /* size */
-    st->codec->width = get_le32(pb);
-    st->codec->height = (int32_t)get_le32(pb);
-    get_le16(pb); /* planes */
-    st->codec->bits_per_coded_sample= get_le16(pb); /* depth */
-    tag1 = get_le32(pb);
-    get_le32(pb); /* ImageSize */
-    get_le32(pb); /* XPelsPerMeter */
-    get_le32(pb); /* YPelsPerMeter */
-    get_le32(pb); /* ClrUsed */
-    get_le32(pb); /* ClrImportant */
+    avio_rl32(pb); /* size */
+    st->codec->width = avio_rl32(pb);
+    st->codec->height = (int32_t)avio_rl32(pb);
+    avio_rl16(pb); /* planes */
+    st->codec->bits_per_coded_sample= avio_rl16(pb); /* depth */
+    tag1 = avio_rl32(pb);
+    avio_rl32(pb); /* ImageSize */
+    avio_rl32(pb); /* XPelsPerMeter */
+    avio_rl32(pb); /* YPelsPerMeter */
+    avio_rl32(pb); /* ClrUsed */
+    avio_rl32(pb); /* ClrImportant */
     return tag1;
 }
 #endif // CONFIG_DEMUXERS

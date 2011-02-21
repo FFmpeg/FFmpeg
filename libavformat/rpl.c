@@ -51,7 +51,7 @@ static int read_line(AVIOContext * pb, char* line, int bufsize)
 {
     int i;
     for (i = 0; i < bufsize - 1; i++) {
-        int b = get_byte(pb);
+        int b = avio_r8(pb);
         if (b == 0)
             break;
         if (b == '\n') {
@@ -301,8 +301,8 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
         // multiple frames per chunk in Escape 124 samples.
         uint32_t frame_size, frame_flags;
 
-        frame_flags = get_le32(pb);
-        frame_size = get_le32(pb);
+        frame_flags = avio_rl32(pb);
+        frame_size = avio_rl32(pb);
         if (url_fseek(pb, -8, SEEK_CUR) < 0)
             return AVERROR(EIO);
 

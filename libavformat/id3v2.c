@@ -55,7 +55,7 @@ static unsigned int get_size(AVIOContext *s, int len)
 {
     int v = 0;
     while (len--)
-        v = (v << 7) + (get_byte(s) & 0x7F);
+        v = (v << 7) + (avio_r8(s) & 0x7F);
     return v;
 }
 
@@ -65,7 +65,7 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen, const cha
     const char *val = NULL;
     int len, dstlen = sizeof(dst) - 1;
     unsigned genre;
-    unsigned int (*get)(AVIOContext*) = get_be16;
+    unsigned int (*get)(AVIOContext*) = avio_rb16;
 
     dst[0] = 0;
     if (taglen < 1)
@@ -73,22 +73,22 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen, const cha
 
     taglen--; /* account for encoding type byte */
 
-    switch (get_byte(pb)) { /* encoding type */
+    switch (avio_r8(pb)) { /* encoding type */
 
     case ID3v2_ENCODING_ISO8859:
         q = dst;
         while (taglen-- && q - dst < dstlen - 7) {
             uint8_t tmp;
-            PUT_UTF8(get_byte(pb), tmp, *q++ = tmp;)
+            PUT_UTF8(avio_r8(pb), tmp, *q++ = tmp;)
         }
         *q = 0;
         break;
 
     case ID3v2_ENCODING_UTF16BOM:
         taglen -= 2;
-        switch (get_be16(pb)) {
+        switch (avio_rb16(pb)) {
         case 0xfffe:
-            get = get_le16;
+            get = avio_rl16;
         case 0xfeff:
             break;
         default:
@@ -111,7 +111,7 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen, const cha
 
     case ID3v2_ENCODING_UTF8:
         len = FFMIN(taglen, dstlen);
-        get_buffer(pb, dst, len);
+        avio_read(pb, dst, len);
         dst[len] = 0;
         break;
     default:
@@ -178,18 +178,18 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         int tunsync = 0;
 
         if (isv34) {
-            get_buffer(s->pb, tag, 4);
+            avio_read(s->pb, tag, 4);
             tag[4] = 0;
             if(version==3){
-                tlen = get_be32(s->pb);
+                tlen = avio_rb32(s->pb);
             }else
                 tlen = get_size(s->pb, 4);
-            tflags = get_be16(s->pb);
+            tflags = avio_rb16(s->pb);
             tunsync = tflags & ID3v2_FLAG_UNSYNCH;
         } else {
-            get_buffer(s->pb, tag, 3);
+            avio_read(s->pb, tag, 3);
             tag[3] = 0;
-            tlen = get_be24(s->pb);
+            tlen = avio_rb24(s->pb);
         }
         len -= taghdrlen + tlen;
 
@@ -199,7 +199,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         next = url_ftell(s->pb) + tlen;
 
         if (tflags & ID3v2_FLAG_DATALEN) {
-            get_be32(s->pb);
+            avio_rb32(s->pb);
             tlen -= 4;
         }
 
@@ -211,7 +211,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
                 int i, j;
                 av_fast_malloc(&buffer, &buffer_size, tlen);
                 for (i = 0, j = 0; i < tlen; i++, j++) {
-                    buffer[j] = get_byte(s->pb);
+                    buffer[j] = avio_r8(s->pb);
                     if (j > 0 && !buffer[j] && buffer[j - 1] == 0xff) {
                         /* Unsynchronised byte, skip it */
                         j--;
@@ -259,7 +259,7 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic)
     do {
         /* save the current offset in case there's nothing to read/skip */
         off = url_ftell(s->pb);
-        ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
+        ret = avio_read(s->pb, buf, ID3v2_HEADER_SIZE);
         if (ret != ID3v2_HEADER_SIZE)
             break;
             found_header = ff_id3v2_match(buf, magic);

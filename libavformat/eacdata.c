@@ -51,7 +51,7 @@ static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
     unsigned int sample_rate, header;
     AVStream *st;
 
-    header = get_be16(pb);
+    header = avio_rb16(pb);
     switch (header) {
         case 0x0400: cdata->channels = 1; break;
         case 0x0404: cdata->channels = 2; break;
@@ -61,7 +61,7 @@ static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
             return -1;
     };
 
-    sample_rate = get_be16(pb);
+    sample_rate = avio_rb16(pb);
     url_fskip(pb, 12);
 
     st = av_new_stream(s, 0);

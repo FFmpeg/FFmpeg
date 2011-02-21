@@ -30,11 +30,11 @@ static int get_swf_tag(AVIOContext *pb, int *len_ptr)
     if (url_feof(pb))
         return -1;
 
-    tag = get_le16(pb);
+    tag = avio_rl16(pb);
     len = tag & 0x3f;
     tag = tag >> 6;
     if (len == 0x3f) {
-        len = get_le32(pb);
+        len = avio_rl32(pb);
     }
 //    av_log(NULL, AV_LOG_DEBUG, "Tag: %d - Len: %d\n", tag, len);
     *len_ptr = len;
@@ -58,7 +58,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIOContext *pb = s->pb;
     int nbits, len, tag;
 
-    tag = get_be32(pb) & 0xffffff00;
+    tag = avio_rb32(pb) & 0xffffff00;
 
     if (tag == MKBETAG('C', 'W', 'S', 0)) {
         av_log(s, AV_LOG_ERROR, "Compressed SWF format not supported\n");
@@ -66,13 +66,13 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     if (tag != MKBETAG('F', 'W', 'S', 0))
         return AVERROR(EIO);
-    get_le32(pb);
+    avio_rl32(pb);
     /* skip rectangle size */
-    nbits = get_byte(pb) >> 3;
+    nbits = avio_r8(pb) >> 3;
     len = (4 * nbits - 3 + 7) / 8;
     url_fskip(pb, len);
-    swf->frame_rate = get_le16(pb); /* 8.8 fixed */
-    get_le16(pb); /* frame count */
+    swf->frame_rate = avio_rl16(pb); /* 8.8 fixed */
+    avio_rl16(pb); /* frame count */
 
     swf->samples_per_frame = 0;
     s->ctx_flags |= AVFMTCTX_NOHEADER;
@@ -92,7 +92,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (tag < 0)
             return AVERROR(EIO);
         if (tag == TAG_VIDEOSTREAM) {
-            int ch_id = get_le16(pb);
+            int ch_id = avio_rl16(pb);
             len -= 2;
 
             for (i=0; i<s->nb_streams; i++) {
@@ -101,16 +101,16 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     goto skip;
             }
 
-            get_le16(pb);
-            get_le16(pb);
-            get_le16(pb);
-            get_byte(pb);
+            avio_rl16(pb);
+            avio_rl16(pb);
+            avio_rl16(pb);
+            avio_r8(pb);
             /* Check for FLV1 */
             vst = av_new_stream(s, ch_id);
             if (!vst)
                 return -1;
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            vst->codec->codec_id = ff_codec_get_id(swf_codec_tags, get_byte(pb));
+            vst->codec->codec_id = ff_codec_get_id(swf_codec_tags, avio_r8(pb));
             av_set_pts_info(vst, 16, 256, swf->frame_rate);
             vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
             len -= 8;
@@ -124,9 +124,9 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     goto skip;
             }
 
-            get_byte(pb);
-            v = get_byte(pb);
-            swf->samples_per_frame = get_le16(pb);
+            avio_r8(pb);
+            v = avio_r8(pb);
+            swf->samples_per_frame = avio_rl16(pb);
             ast = av_new_stream(s, -1); /* -1 to avoid clash with video stream ch_id */
             if (!ast)
                 return -1;
@@ -141,12 +141,12 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             len -= 4;
         } else if (tag == TAG_VIDEOFRAME) {
-            int ch_id = get_le16(pb);
+            int ch_id = avio_rl16(pb);
             len -= 2;
             for(i=0; i<s->nb_streams; i++) {
                 st = s->streams[i];
                 if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && st->id == ch_id) {
-                    frame = get_le16(pb);
+                    frame = avio_rl16(pb);
                     av_get_packet(pb, pkt, len-2);
                     pkt->pos = pos;
                     pkt->pts = frame;
@@ -185,17 +185,17 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
                 st = vst;
             }
-            get_le16(pb); /* BITMAP_ID */
+            avio_rl16(pb); /* BITMAP_ID */
             av_new_packet(pkt, len-2);
-            get_buffer(pb, pkt->data, 4);
+            avio_read(pb, pkt->data, 4);
             if (AV_RB32(pkt->data) == 0xffd8ffd9 ||
                 AV_RB32(pkt->data) == 0xffd9ffd8) {
                 /* old SWF files containing SOI/EOI as data start */
                 /* files created by swink have reversed tag */
                 pkt->size -= 4;
-                get_buffer(pb, pkt->data, pkt->size);
+                avio_read(pb, pkt->data, pkt->size);
             } else {
-                get_buffer(pb, pkt->data + 4, pkt->size - 4);
+                avio_read(pb, pkt->data + 4, pkt->size - 4);
             }
             pkt->pos = pos;
             pkt->stream_index = st->index;

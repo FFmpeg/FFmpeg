@@ -127,15 +127,15 @@ static int au_read_header(AVFormatContext *s,
     AVStream *st;
 
     /* check ".snd" header */
-    tag = get_le32(pb);
+    tag = avio_rl32(pb);
     if (tag != MKTAG('.', 's', 'n', 'd'))
         return -1;
-    size = get_be32(pb); /* header size */
-    get_be32(pb); /* data size */
+    size = avio_rb32(pb); /* header size */
+    avio_rb32(pb); /* data size */
 
-    id = get_be32(pb);
-    rate = get_be32(pb);
-    channels = get_be32(pb);
+    id = avio_rb32(pb);
+    rate = avio_rb32(pb);
+    channels = avio_rb32(pb);
 
     codec = ff_codec_get_id(codec_au_tags, id);
 

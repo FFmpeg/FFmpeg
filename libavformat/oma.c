@@ -79,7 +79,7 @@ static int oma_read_header(AVFormatContext *s,
     AVStream *st;
 
     ff_id3v2_read(s, ID3v2_EA3_MAGIC);
-    ret = get_buffer(s->pb, buf, EA3_HEADER_SIZE);
+    ret = avio_read(s->pb, buf, EA3_HEADER_SIZE);
 
     if (memcmp(buf, ((const uint8_t[]){'E', 'A', '3'}),3) || buf[4] != 0 || buf[5] != EA3_HEADER_SIZE) {
         av_log(s, AV_LOG_ERROR, "Couldn't find the EA3 header !\n");

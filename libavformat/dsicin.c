@@ -73,16 +73,16 @@ static int cin_probe(AVProbeData *p)
 static int cin_read_file_header(CinDemuxContext *cin, AVIOContext *pb) {
     CinFileHeader *hdr = &cin->file_header;
 
-    if (get_le32(pb) != 0x55AA0000)
+    if (avio_rl32(pb) != 0x55AA0000)
         return AVERROR_INVALIDDATA;
 
-    hdr->video_frame_size   = get_le32(pb);
-    hdr->video_frame_width  = get_le16(pb);
-    hdr->video_frame_height = get_le16(pb);
-    hdr->audio_frequency    = get_le32(pb);
-    hdr->audio_bits         = get_byte(pb);
-    hdr->audio_stereo       = get_byte(pb);
-    hdr->audio_frame_size   = get_le16(pb);
+    hdr->video_frame_size   = avio_rl32(pb);
+    hdr->video_frame_width  = avio_rl16(pb);
+    hdr->video_frame_height = avio_rl16(pb);
+    hdr->audio_frequency    = avio_rl32(pb);
+    hdr->audio_bits         = avio_r8(pb);
+    hdr->audio_stereo       = avio_r8(pb);
+    hdr->audio_frame_size   = avio_rl16(pb);
 
     if (hdr->audio_frequency != 22050 || hdr->audio_bits != 16 || hdr->audio_stereo != 0)
         return AVERROR_INVALIDDATA;
@@ -141,16 +141,16 @@ static int cin_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int cin_read_frame_header(CinDemuxContext *cin, AVIOContext *pb) {
     CinFrameHeader *hdr = &cin->frame_header;
 
-    hdr->video_frame_type = get_byte(pb);
-    hdr->audio_frame_type = get_byte(pb);
-    hdr->pal_colors_count = get_le16(pb);
-    hdr->video_frame_size = get_le32(pb);
-    hdr->audio_frame_size = get_le32(pb);
+    hdr->video_frame_type = avio_r8(pb);
+    hdr->audio_frame_type = avio_r8(pb);
+    hdr->pal_colors_count = avio_rl16(pb);
+    hdr->video_frame_size = avio_rl32(pb);
+    hdr->audio_frame_size = avio_rl32(pb);
 
     if (url_feof(pb) || url_ferror(pb))
         return AVERROR(EIO);
 
-    if (get_le32(pb) != 0xAA55AA55)
+    if (avio_rl32(pb) != 0xAA55AA55)
         return AVERROR_INVALIDDATA;
 
     return 0;
@@ -191,7 +191,7 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->data[2] = hdr->pal_colors_count >> 8;
         pkt->data[3] = hdr->video_frame_type;
 
-        ret = get_buffer(pb, &pkt->data[4], pkt_size);
+        ret = avio_read(pb, &pkt->data[4], pkt_size);
         if (ret < 0) {
             av_free_packet(pkt);
             return ret;

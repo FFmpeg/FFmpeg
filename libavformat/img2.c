@@ -298,7 +298,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
     pkt->size= 0;
     for(i=0; i<3; i++){
         if(size[i]){
-            ret[i]= get_buffer(f[i], pkt->data + pkt->size, size[i]);
+            ret[i]= avio_read(f[i], pkt->data + pkt->size, size[i]);
             if (!s->is_pipe)
                 url_fclose(f[i]);
             if(ret[i]>0)

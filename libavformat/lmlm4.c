@@ -82,9 +82,9 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
     int ret;
     unsigned int frame_type, packet_size, padding, frame_size;
 
-    get_be16(pb);                       /* channel number */
-    frame_type  = get_be16(pb);
-    packet_size = get_be32(pb);
+    avio_rb16(pb);                       /* channel number */
+    frame_type  = avio_rb16(pb);
+    packet_size = avio_rb32(pb);
     padding     = -packet_size & 511;
     frame_size  = packet_size - 8;
 

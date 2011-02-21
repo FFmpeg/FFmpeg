@@ -63,7 +63,7 @@ static int aea_read_header(AVFormatContext *s,
 
     /* Parse the amount of channels and skip to pos 2048(0x800) */
     url_fskip(s->pb, 264);
-    st->codec->channels = get_byte(s->pb);
+    st->codec->channels = avio_r8(s->pb);
     url_fskip(s->pb, 1783);
 
 

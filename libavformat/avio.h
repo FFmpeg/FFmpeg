@@ -378,6 +378,25 @@ attribute_deprecated AVIOContext *av_alloc_put_byte(
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int64_t (*seek)(void *opaque, int64_t offset, int whence));
+
+/**
+ * @defgroup old_avio_funcs Old put_/get_*() functions
+ * @deprecated use the avio_ -prefixed functions instead.
+ * @{
+ */
+attribute_deprecated int          get_buffer(AVIOContext *s, unsigned char *buf, int size);
+attribute_deprecated int          get_byte(AVIOContext *s);
+attribute_deprecated unsigned int get_le16(AVIOContext *s);
+attribute_deprecated unsigned int get_le24(AVIOContext *s);
+attribute_deprecated unsigned int get_le32(AVIOContext *s);
+attribute_deprecated uint64_t     get_le64(AVIOContext *s);
+attribute_deprecated unsigned int get_be16(AVIOContext *s);
+attribute_deprecated unsigned int get_be24(AVIOContext *s);
+attribute_deprecated unsigned int get_be32(AVIOContext *s);
+attribute_deprecated uint64_t     get_be64(AVIOContext *s);
+/**
+ * @}
+ */
 #endif
 
 AVIOContext *avio_alloc_context(
@@ -477,7 +496,7 @@ void put_flush_packet(AVIOContext *s);
  * Read size bytes from AVIOContext into buf.
  * @return number of bytes read or AVERROR
  */
-int get_buffer(AVIOContext *s, unsigned char *buf, int size);
+int avio_read(AVIOContext *s, unsigned char *buf, int size);
 
 /**
  * Read size bytes from AVIOContext into buf.
@@ -489,11 +508,11 @@ int get_partial_buffer(AVIOContext *s, unsigned char *buf, int size);
 
 /** @note return 0 if EOF, so you cannot use it if EOF handling is
     necessary */
-int get_byte(AVIOContext *s);
-unsigned int get_le24(AVIOContext *s);
-unsigned int get_le32(AVIOContext *s);
-uint64_t get_le64(AVIOContext *s);
-unsigned int get_le16(AVIOContext *s);
+int          avio_r8  (AVIOContext *s);
+unsigned int avio_rl16(AVIOContext *s);
+unsigned int avio_rl24(AVIOContext *s);
+unsigned int avio_rl32(AVIOContext *s);
+uint64_t     avio_rl64(AVIOContext *s);
 
 /**
  * Read a UTF-16 string from pb and convert it to UTF-8.
@@ -505,10 +524,10 @@ int avio_get_str16le(AVIOContext *pb, int maxlen, char *buf, int buflen);
 int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
 
 char *get_strz(AVIOContext *s, char *buf, int maxlen);
-unsigned int get_be16(AVIOContext *s);
-unsigned int get_be24(AVIOContext *s);
-unsigned int get_be32(AVIOContext *s);
-uint64_t get_be64(AVIOContext *s);
+unsigned int avio_rb16(AVIOContext *s);
+unsigned int avio_rb24(AVIOContext *s);
+unsigned int avio_rb32(AVIOContext *s);
+uint64_t     avio_rb64(AVIOContext *s);
 
 uint64_t ff_get_v(AVIOContext *bc);
 

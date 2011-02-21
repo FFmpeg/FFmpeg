@@ -36,9 +36,9 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream *st;
     AVRational time_base;
 
-    get_le32(s->pb); // DKIF
-    get_le16(s->pb); // version
-    get_le16(s->pb); // header size
+    avio_rl32(s->pb); // DKIF
+    avio_rl16(s->pb); // version
+    avio_rl16(s->pb); // header size
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -46,13 +46,13 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_tag  = get_le32(s->pb);
+    st->codec->codec_tag  = avio_rl32(s->pb);
     st->codec->codec_id   = ff_codec_get_id(ff_codec_bmp_tags, st->codec->codec_tag);
-    st->codec->width      = get_le16(s->pb);
-    st->codec->height     = get_le16(s->pb);
-    time_base.den         = get_le32(s->pb);
-    time_base.num         = get_le32(s->pb);
-    st->duration          = get_le64(s->pb);
+    st->codec->width      = avio_rl16(s->pb);
+    st->codec->height     = avio_rl16(s->pb);
+    time_base.den         = avio_rl32(s->pb);
+    time_base.num         = avio_rl32(s->pb);
+    st->duration          = avio_rl64(s->pb);
 
     st->need_parsing      = AVSTREAM_PARSE_HEADERS;
 
@@ -68,8 +68,8 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, size = get_le32(s->pb);
-    int64_t   pts = get_le64(s->pb);
+    int ret, size = avio_rl32(s->pb);
+    int64_t   pts = avio_rl64(s->pb);
 
     ret = av_get_packet(s->pb, pkt, size);
     pkt->stream_index = 0;

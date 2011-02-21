@@ -104,20 +104,20 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         data_len = get_bits(&gb, 16);
 
         url_fseek(&pb, pos + 4, SEEK_SET);
-        tag = get_le32(&pb);
+        tag = avio_rl32(&pb);
         if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
                  tag != MKTAG('v','i','d','e')) ||
             (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
                  tag != MKTAG('s','o','u','n')))
             return AVERROR_INVALIDDATA;
-        av_set_pts_info(st, 32, 1, get_be32(&pb));
+        av_set_pts_info(st, 32, 1, avio_rb32(&pb));
 
         if (pos + data_len > len)
             return AVERROR_INVALIDDATA;
         /* TLVs */
         while (url_ftell(&pb) + 4 < pos + data_len) {
-            int tlv_len = get_be16(&pb);
-            tag = get_le16(&pb);
+            int tlv_len = avio_rb16(&pb);
+            tag = avio_rl16(&pb);
             if (url_ftell(&pb) + tlv_len > pos + data_len)
                 return AVERROR_INVALIDDATA;
 

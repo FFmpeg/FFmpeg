@@ -101,7 +101,7 @@ static int get_metadata(AVFormatContext *s,
     if (!buf)
         return AVERROR(ENOMEM);
 
-    if (get_buffer(s->pb, buf, data_size) < 0) {
+    if (avio_read(s->pb, buf, data_size) < 0) {
         av_free(buf);
         return AVERROR(EIO);
     }
@@ -136,14 +136,14 @@ static int iff_read_header(AVFormatContext *s,
     st->codec->channels = 1;
     url_fskip(pb, 8);
     // codec_tag used by ByteRun1 decoder to distinguish progressive (PBM) and interlaced (ILBM) content
-    st->codec->codec_tag = get_le32(pb);
+    st->codec->codec_tag = avio_rl32(pb);
 
     while(!url_feof(pb)) {
         uint64_t orig_pos;
         int res;
         const char *metadata_tag = NULL;
-        chunk_id = get_le32(pb);
-        data_size = get_be32(pb);
+        chunk_id = avio_rl32(pb);
+        data_size = avio_rb32(pb);
         orig_pos = url_ftell(pb);
 
         switch(chunk_id) {
@@ -153,10 +153,10 @@ static int iff_read_header(AVFormatContext *s,
             if (data_size < 14)
                 return AVERROR_INVALIDDATA;
             url_fskip(pb, 12);
-            st->codec->sample_rate = get_be16(pb);
+            st->codec->sample_rate = avio_rb16(pb);
             if (data_size >= 16) {
                 url_fskip(pb, 1);
-                compression        = get_byte(pb);
+                compression        = avio_r8(pb);
             }
             break;
 
@@ -168,7 +168,7 @@ static int iff_read_header(AVFormatContext *s,
         case ID_CHAN:
             if (data_size < 4)
                 return AVERROR_INVALIDDATA;
-            st->codec->channels = (get_be32(pb) < 6) ? 1 : 2;
+            st->codec->channels = (avio_rb32(pb) < 6) ? 1 : 2;
             break;
 
         case ID_CMAP:
@@ -176,7 +176,7 @@ static int iff_read_header(AVFormatContext *s,
             st->codec->extradata      = av_malloc(data_size);
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
-            if (get_buffer(pb, st->codec->extradata, data_size) < 0)
+            if (avio_read(pb, st->codec->extradata, data_size) < 0)
                 return AVERROR(EIO);
             break;
 
@@ -184,18 +184,18 @@ static int iff_read_header(AVFormatContext *s,
             st->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
             if (data_size <= 8)
                 return AVERROR_INVALIDDATA;
-            st->codec->width                 = get_be16(pb);
-            st->codec->height                = get_be16(pb);
+            st->codec->width                 = avio_rb16(pb);
+            st->codec->height                = avio_rb16(pb);
             url_fskip(pb, 4); // x, y offset
-            st->codec->bits_per_coded_sample = get_byte(pb);
+            st->codec->bits_per_coded_sample = avio_r8(pb);
             if (data_size >= 11) {
                 url_fskip(pb, 1); // masking
-                compression                  = get_byte(pb);
+                compression                  = avio_r8(pb);
             }
             if (data_size >= 16) {
                 url_fskip(pb, 3); // paddding, transparent
-                st->sample_aspect_ratio.num  = get_byte(pb);
-                st->sample_aspect_ratio.den  = get_byte(pb);
+                st->sample_aspect_ratio.num  = avio_r8(pb);
+                st->sample_aspect_ratio.den  = avio_r8(pb);
             }
             break;
 
@@ -286,7 +286,7 @@ static int iff_read_packet(AVFormatContext *s,
     if(st->codec->channels == 2) {
         uint8_t sample_buffer[PACKET_SIZE];
 
-        ret = get_buffer(pb, sample_buffer, PACKET_SIZE);
+        ret = avio_read(pb, sample_buffer, PACKET_SIZE);
         if(av_new_packet(pkt, PACKET_SIZE) < 0) {
             av_log(s, AV_LOG_ERROR, "cannot allocate packet\n");
             return AVERROR(ENOMEM);

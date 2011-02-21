@@ -543,10 +543,10 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, AVIOContext *pb,
     int read = 1, n = 1;
     uint64_t total = 0;
 
-    /* The first byte tells us the length in bytes - get_byte() can normally
+    /* The first byte tells us the length in bytes - avio_r8() can normally
      * return 0, but since that's not a valid first ebmlID byte, we can
      * use it safely here to catch EOS. */
-    if (!(total = get_byte(pb))) {
+    if (!(total = avio_r8(pb))) {
         /* we might encounter EOS here */
         if (!url_feof(pb)) {
             int64_t pos = url_ftell(pb);
@@ -570,7 +570,7 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, AVIOContext *pb,
     /* read out length */
     total ^= 1 << ff_log2_tab[total];
     while (n++ < read)
-        total = (total << 8) | get_byte(pb);
+        total = (total << 8) | avio_r8(pb);
 
     *number = total;
 
@@ -605,7 +605,7 @@ static int ebml_read_uint(AVIOContext *pb, int size, uint64_t *num)
     /* big-endian ordering; build up number */
     *num = 0;
     while (n++ < size)
-        *num = (*num << 8) | get_byte(pb);
+        *num = (*num << 8) | avio_r8(pb);
 
     return 0;
 }
@@ -619,9 +619,9 @@ static int ebml_read_float(AVIOContext *pb, int size, double *num)
     if (size == 0) {
         *num = 0;
     } else if (size == 4) {
-        *num= av_int2flt(get_be32(pb));
+        *num= av_int2flt(avio_rb32(pb));
     } else if(size==8){
-        *num= av_int2dbl(get_be64(pb));
+        *num= av_int2dbl(avio_rb64(pb));
     } else
         return AVERROR_INVALIDDATA;
 
@@ -639,7 +639,7 @@ static int ebml_read_ascii(AVIOContext *pb, int size, char **str)
      * byte more, read the string and NULL-terminate it ourselves. */
     if (!(*str = av_malloc(size + 1)))
         return AVERROR(ENOMEM);
-    if (get_buffer(pb, (uint8_t *) *str, size) != size) {
+    if (avio_read(pb, (uint8_t *) *str, size) != size) {
         av_freep(str);
         return AVERROR(EIO);
     }
@@ -660,7 +660,7 @@ static int ebml_read_binary(AVIOContext *pb, int length, EbmlBin *bin)
 
     bin->size = length;
     bin->pos  = url_ftell(pb);
-    if (get_buffer(pb, bin->data, length) != length) {
+    if (avio_read(pb, bin->data, length) != length) {
         av_freep(&bin->data);
         return AVERROR(EIO);
     }
@@ -1394,12 +1394,12 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             ffio_init_context(&b, track->codec_priv.data,track->codec_priv.size,
                           0, NULL, NULL, NULL, NULL);
             url_fskip(&b, 22);
-            flavor                       = get_be16(&b);
-            track->audio.coded_framesize = get_be32(&b);
+            flavor                       = avio_rb16(&b);
+            track->audio.coded_framesize = avio_rb32(&b);
             url_fskip(&b, 12);
-            track->audio.sub_packet_h    = get_be16(&b);
-            track->audio.frame_size      = get_be16(&b);
-            track->audio.sub_packet_size = get_be16(&b);
+            track->audio.sub_packet_h    = avio_rb16(&b);
+            track->audio.frame_size      = avio_rb16(&b);
+            track->audio.sub_packet_size = avio_rb16(&b);
             track->audio.buf = av_malloc(track->audio.frame_size * track->audio.sub_packet_h);
             if (codec_id == CODEC_ID_RA_288) {
                 st->codec->block_align = track->audio.coded_framesize;

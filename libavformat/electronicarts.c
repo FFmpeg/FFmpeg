@@ -82,11 +82,11 @@ static uint32_t read_arbitary(AVIOContext *pb) {
     int i;
     uint32_t word;
 
-    size = get_byte(pb);
+    size = avio_r8(pb);
 
     word = 0;
     for (i = 0; i < size; i++) {
-        byte = get_byte(pb);
+        byte = avio_r8(pb);
         word <<= 8;
         word |= byte;
     }
@@ -112,7 +112,7 @@ static int process_audio_header_elements(AVFormatContext *s)
     while (!url_feof(pb) && inHeader) {
         int inSubheader;
         uint8_t byte;
-        byte = get_byte(pb);
+        byte = avio_r8(pb);
 
         switch (byte) {
         case 0xFD:
@@ -120,7 +120,7 @@ static int process_audio_header_elements(AVFormatContext *s)
             inSubheader = 1;
             while (!url_feof(pb) && inSubheader) {
                 uint8_t subbyte;
-                subbyte = get_byte(pb);
+                subbyte = avio_r8(pb);
 
                 switch (subbyte) {
                 case 0x80:
@@ -218,10 +218,10 @@ static int process_audio_header_eacs(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int compression_type;
 
-    ea->sample_rate  = ea->big_endian ? get_be32(pb) : get_le32(pb);
-    ea->bytes        = get_byte(pb);   /* 1=8-bit, 2=16-bit */
-    ea->num_channels = get_byte(pb);
-    compression_type = get_byte(pb);
+    ea->sample_rate  = ea->big_endian ? avio_rb32(pb) : avio_rl32(pb);
+    ea->bytes        = avio_r8(pb);   /* 1=8-bit, 2=16-bit */
+    ea->num_channels = avio_r8(pb);
+    compression_type = avio_r8(pb);
     url_fskip(pb, 13);
 
     switch (compression_type) {
@@ -249,9 +249,9 @@ static int process_audio_header_sead(AVFormatContext *s)
     EaDemuxContext *ea = s->priv_data;
     AVIOContext *pb = s->pb;
 
-    ea->sample_rate  = get_le32(pb);
-    ea->bytes        = get_le32(pb);  /* 1=8-bit, 2=16-bit */
-    ea->num_channels = get_le32(pb);
+    ea->sample_rate  = avio_rl32(pb);
+    ea->bytes        = avio_rl32(pb);  /* 1=8-bit, 2=16-bit */
+    ea->num_channels = avio_rl32(pb);
     ea->audio_codec  = CODEC_ID_ADPCM_IMA_EA_SEAD;
 
     return 1;
@@ -262,8 +262,8 @@ static int process_video_header_mdec(AVFormatContext *s)
     EaDemuxContext *ea = s->priv_data;
     AVIOContext *pb = s->pb;
     url_fskip(pb, 4);
-    ea->width  = get_le16(pb);
-    ea->height = get_le16(pb);
+    ea->width  = avio_rl16(pb);
+    ea->height = avio_rl16(pb);
     ea->time_base = (AVRational){1,15};
     ea->video_codec = CODEC_ID_MDEC;
     return 1;
@@ -275,8 +275,8 @@ static int process_video_header_vp6(AVFormatContext *s)
     AVIOContext *pb = s->pb;
 
     url_fskip(pb, 16);
-    ea->time_base.den = get_le32(pb);
-    ea->time_base.num = get_le32(pb);
+    ea->time_base.den = avio_rl32(pb);
+    ea->time_base.num = avio_rl32(pb);
     ea->video_codec = CODEC_ID_VP6;
 
     return 1;
@@ -296,8 +296,8 @@ static int process_ea_header(AVFormatContext *s) {
         unsigned int startpos = url_ftell(pb);
         int err = 0;
 
-        blockid = get_le32(pb);
-        size = get_le32(pb);
+        blockid = avio_rl32(pb);
+        size = avio_rl32(pb);
         if (i == 0)
             ea->big_endian = size > 0x000FFFFF;
         if (ea->big_endian)
@@ -305,7 +305,7 @@ static int process_ea_header(AVFormatContext *s) {
 
         switch (blockid) {
             case ISNh_TAG:
-                if (get_le32(pb) != EACS_TAG) {
+                if (avio_rl32(pb) != EACS_TAG) {
                     av_log (s, AV_LOG_ERROR, "unknown 1SNh headerid\n");
                     return 0;
                 }
@@ -314,7 +314,7 @@ static int process_ea_header(AVFormatContext *s) {
 
             case SCHl_TAG :
             case SHEN_TAG :
-                blockid = get_le32(pb);
+                blockid = avio_rl32(pb);
                 if (blockid == GSTR_TAG) {
                     url_fskip(pb, 4);
                 } else if ((blockid & 0xFFFF)!=PT00_TAG) {
@@ -467,8 +467,8 @@ static int ea_read_packet(AVFormatContext *s,
     int av_uninit(num_samples);
 
     while (!packet_read) {
-        chunk_type = get_le32(pb);
-        chunk_size = (ea->big_endian ? get_be32(pb) : get_le32(pb)) - 8;
+        chunk_type = avio_rl32(pb);
+        chunk_size = (ea->big_endian ? avio_rb32(pb) : avio_rl32(pb)) - 8;
 
         switch (chunk_type) {
         /* audio data */
@@ -485,7 +485,7 @@ static int ea_read_packet(AVFormatContext *s,
                 break;
             } else if (ea->audio_codec == CODEC_ID_PCM_S16LE_PLANAR ||
                        ea->audio_codec == CODEC_ID_MP3) {
-                num_samples = get_le32(pb);
+                num_samples = avio_rl32(pb);
                 url_fskip(pb, 8);
                 chunk_size -= 12;
             }

@@ -47,19 +47,19 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
         ff_id3v1_read(s);
 
     start_offset = url_ftell(s->pb);
-    if (get_le32(s->pb) != AV_RL32("TTA1"))
+    if (avio_rl32(s->pb) != AV_RL32("TTA1"))
         return -1; // not tta file
 
     url_fskip(s->pb, 2); // FIXME: flags
-    channels = get_le16(s->pb);
-    bps = get_le16(s->pb);
-    samplerate = get_le32(s->pb);
+    channels = avio_rl16(s->pb);
+    bps = avio_rl16(s->pb);
+    samplerate = avio_rl32(s->pb);
     if(samplerate <= 0 || samplerate > 1000000){
         av_log(s, AV_LOG_ERROR, "nonsense samplerate\n");
         return -1;
     }
 
-    datalen = get_le32(s->pb);
+    datalen = avio_rl32(s->pb);
     if(datalen < 0){
         av_log(s, AV_LOG_ERROR, "nonsense datalen\n");
         return -1;
@@ -87,7 +87,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     framepos = url_ftell(s->pb) + 4*c->totalframes + 4;
 
     for (i = 0; i < c->totalframes; i++) {
-        uint32_t size = get_le32(s->pb);
+        uint32_t size = avio_rl32(s->pb);
         av_add_index_entry(st, framepos, i*framelen, size, 0, AVINDEX_KEYFRAME);
         framepos += size;
     }
@@ -101,13 +101,13 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     st->codec->extradata_size = url_ftell(s->pb) - start_offset;
     if(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)st->codec->extradata_size){
-        //this check is redundant as get_buffer should fail
+        //this check is redundant as avio_read should fail
         av_log(s, AV_LOG_ERROR, "extradata_size too large\n");
         return -1;
     }
     st->codec->extradata = av_mallocz(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE);
     url_fseek(s->pb, start_offset, SEEK_SET);
-    get_buffer(s->pb, st->codec->extradata, st->codec->extradata_size);
+    avio_read(s->pb, st->codec->extradata, st->codec->extradata_size);
 
     return 0;
 }

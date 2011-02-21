@@ -54,8 +54,8 @@ static int get_tag(AVIOContext *pb, uint32_t * tag)
     if (url_feof(pb))
         return AVERROR(EIO);
 
-    *tag = get_le32(pb);
-    size = get_be32(pb);
+    *tag = avio_rl32(pb);
+    size = avio_rb32(pb);
 
     if (size < 0)
         size = 0x7fffffff;
@@ -74,7 +74,7 @@ static void get_meta(AVFormatContext *s, const char *key, int size)
         return;
     }
 
-    res = get_buffer(s->pb, str, size);
+    res = avio_read(s->pb, str, size);
     if (res < 0)
         return;
 
@@ -93,18 +93,18 @@ static unsigned int get_aiff_header(AVIOContext *pb, AVCodecContext *codec,
     if (size & 1)
         size++;
     codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    codec->channels = get_be16(pb);
-    num_frames = get_be32(pb);
-    codec->bits_per_coded_sample = get_be16(pb);
+    codec->channels = avio_rb16(pb);
+    num_frames = avio_rb32(pb);
+    codec->bits_per_coded_sample = avio_rb16(pb);
 
-    get_buffer(pb, (uint8_t*)&ext, sizeof(ext));/* Sample rate is in */
+    avio_read(pb, (uint8_t*)&ext, sizeof(ext));/* Sample rate is in */
     sample_rate = av_ext2dbl(ext);          /* 80 bits BE IEEE extended float */
     codec->sample_rate = sample_rate;
     size -= 18;
 
     /* Got an AIFF-C? */
     if (version == AIFF_C_VERSION1) {
-        codec->codec_tag = get_le32(pb);
+        codec->codec_tag = avio_rl32(pb);
         codec->codec_id  = ff_codec_get_id(ff_codec_aiff_tags, codec->codec_tag);
 
         switch (codec->codec_id) {
@@ -187,7 +187,7 @@ static int aiff_read_header(AVFormatContext *s,
         return AVERROR_INVALIDDATA;
 
     /* AIFF data type */
-    tag = get_le32(pb);
+    tag = avio_rl32(pb);
     if (tag == MKTAG('A', 'I', 'F', 'F'))       /* Got an AIFF file */
         version = AIFF;
     else if (tag != MKTAG('A', 'I', 'F', 'C'))  /* An AIFF-C file then */
@@ -217,7 +217,7 @@ static int aiff_read_header(AVFormatContext *s,
                 goto got_sound;
             break;
         case MKTAG('F', 'V', 'E', 'R'):     /* Version chunk */
-            version = get_be32(pb);
+            version = avio_rb32(pb);
             break;
         case MKTAG('N', 'A', 'M', 'E'):     /* Sample name chunk */
             get_meta(s, "title"    , size);
@@ -233,8 +233,8 @@ static int aiff_read_header(AVFormatContext *s,
             break;
         case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
             aiff->data_end = url_ftell(pb) + size;
-            offset = get_be32(pb);      /* Offset of sound data */
-            get_be32(pb);               /* BlockSize... don't care */
+            offset = avio_rb32(pb);      /* Offset of sound data */
+            avio_rb32(pb);               /* BlockSize... don't care */
             offset += url_ftell(pb);    /* Compute absolute data offset */
             if (st->codec->block_align)    /* Assume COMM already parsed */
                 goto got_sound;
@@ -251,7 +251,7 @@ static int aiff_read_header(AVFormatContext *s,
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
             st->codec->extradata_size = size;
-            get_buffer(pb, st->codec->extradata, size);
+            avio_read(pb, st->codec->extradata, size);
             break;
         default: /* Jump */
             if (size & 1)   /* Always even aligned */

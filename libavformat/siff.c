@@ -89,28 +89,28 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
     AVStream *st;
     int width, height;
 
-    if (get_le32(pb) != TAG_VBHD){
+    if (avio_rl32(pb) != TAG_VBHD){
         av_log(s, AV_LOG_ERROR, "Header chunk is missing\n");
         return -1;
     }
-    if(get_be32(pb) != 32){
+    if(avio_rb32(pb) != 32){
         av_log(s, AV_LOG_ERROR, "Header chunk size is incorrect\n");
         return -1;
     }
-    if(get_le16(pb) != 1){
+    if(avio_rl16(pb) != 1){
         av_log(s, AV_LOG_ERROR, "Incorrect header version\n");
         return -1;
     }
-    width = get_le16(pb);
-    height = get_le16(pb);
+    width = avio_rl16(pb);
+    height = avio_rl16(pb);
     url_fskip(pb, 4);
-    c->frames = get_le16(pb);
+    c->frames = avio_rl16(pb);
     if(!c->frames){
         av_log(s, AV_LOG_ERROR, "File contains no frames ???\n");
         return -1;
     }
-    c->bits = get_le16(pb);
-    c->rate = get_le16(pb);
+    c->bits = avio_rl16(pb);
+    c->rate = avio_rl16(pb);
     c->block_align = c->rate * (c->bits >> 3);
 
     url_fskip(pb, 16); //zeroes
@@ -137,17 +137,17 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
 
 static int siff_parse_soun(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
 {
-    if (get_le32(pb) != TAG_SHDR){
+    if (avio_rl32(pb) != TAG_SHDR){
         av_log(s, AV_LOG_ERROR, "Header chunk is missing\n");
         return -1;
     }
-    if(get_be32(pb) != 8){
+    if(avio_rb32(pb) != 8){
         av_log(s, AV_LOG_ERROR, "Header chunk size is incorrect\n");
         return -1;
     }
     url_fskip(pb, 4); //unknown value
-    c->rate = get_le16(pb);
-    c->bits = get_le16(pb);
+    c->rate = avio_rl16(pb);
+    c->bits = avio_rl16(pb);
     c->block_align = c->rate * (c->bits >> 3);
     return create_audio_stream(s, c);
 }
@@ -158,10 +158,10 @@ static int siff_read_header(AVFormatContext *s, AVFormatParameters *ap)
     SIFFContext *c = s->priv_data;
     uint32_t tag;
 
-    if (get_le32(pb) != TAG_SIFF)
+    if (avio_rl32(pb) != TAG_SIFF)
         return -1;
     url_fskip(pb, 4); //ignore size
-    tag = get_le32(pb);
+    tag = avio_rl32(pb);
 
     if (tag != TAG_VBV1 && tag != TAG_SOUN){
         av_log(s, AV_LOG_ERROR, "Not a VBV file\n");
@@ -172,7 +172,7 @@ static int siff_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     if (tag == TAG_SOUN && siff_parse_soun(s, c, pb) < 0)
         return -1;
-    if (get_le32(pb) != MKTAG('B', 'O', 'D', 'Y')){
+    if (avio_rl32(pb) != MKTAG('B', 'O', 'D', 'Y')){
         av_log(s, AV_LOG_ERROR, "'BODY' chunk is missing\n");
         return -1;
     }
@@ -190,12 +190,12 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (c->cur_frame >= c->frames)
             return AVERROR(EIO);
         if (c->curstrm == -1){
-            c->pktsize = get_le32(s->pb) - 4;
-            c->flags = get_le16(s->pb);
+            c->pktsize = avio_rl32(s->pb) - 4;
+            c->flags = avio_rl16(s->pb);
             c->gmcsize = (c->flags & VB_HAS_GMC) ? 4 : 0;
             if (c->gmcsize)
-                get_buffer(s->pb, c->gmc, c->gmcsize);
-            c->sndsize = (c->flags & VB_HAS_AUDIO) ? get_le32(s->pb): 0;
+                avio_read(s->pb, c->gmc, c->gmcsize);
+            c->sndsize = (c->flags & VB_HAS_AUDIO) ? avio_rl32(s->pb): 0;
             c->curstrm = !!(c->flags & VB_HAS_AUDIO);
         }
 
@@ -206,7 +206,7 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
             AV_WL16(pkt->data, c->flags);
             if (c->gmcsize)
                 memcpy(pkt->data + 2, c->gmc, c->gmcsize);
-            get_buffer(s->pb, pkt->data + 2 + c->gmcsize, size - c->gmcsize - 2);
+            avio_read(s->pb, pkt->data + 2 + c->gmcsize, size - c->gmcsize - 2);
             pkt->stream_index = 0;
             c->curstrm = -1;
         }else{

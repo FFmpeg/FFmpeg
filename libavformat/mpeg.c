@@ -113,7 +113,7 @@ static int mpegps_read_header(AVFormatContext *s,
 
     m->sofdec = -1;
     do {
-        v = get_byte(s->pb);
+        v = avio_r8(s->pb);
         m->header_state = m->header_state << 8 | v;
         m->sofdec++;
     } while (v == sofdec[i] && i++ < 6);
@@ -128,8 +128,8 @@ static int64_t get_pts(AVIOContext *pb, int c)
 {
     uint8_t buf[5];
 
-    buf[0] = c<0 ? get_byte(pb) : c;
-    get_buffer(pb, buf+1, 4);
+    buf[0] = c<0 ? avio_r8(pb) : c;
+    avio_read(pb, buf+1, 4);
 
     return ff_parse_pes_pts(buf);
 }
@@ -145,7 +145,7 @@ static int find_next_start_code(AVIOContext *pb, int *size_ptr,
     while (n > 0) {
         if (url_feof(pb))
             break;
-        v = get_byte(pb);
+        v = avio_r8(pb);
         n--;
         if (state == 0x000001) {
             state = ((state << 8) | v) & 0xffffff;
@@ -176,7 +176,7 @@ static int find_prev_start_code(AVIOContext *pb, int *size_ptr)
     if (pos < 0)
         pos = 0;
     url_fseek(pb, pos, SEEK_SET);
-    get_byte(pb);
+    avio_r8(pb);
 
     pos = pos_start;
     for(;;) {
@@ -186,7 +186,7 @@ static int find_prev_start_code(AVIOContext *pb, int *size_ptr)
             goto the_end;
         }
         url_fseek(pb, pos, SEEK_SET);
-        start_code = get_be32(pb);
+        start_code = avio_rb32(pb);
         if ((start_code & 0xffffff00) == 0x100)
             break;
     }
@@ -206,27 +206,27 @@ static long mpegps_psm_parse(MpegDemuxContext *m, AVIOContext *pb)
 {
     int psm_length, ps_info_length, es_map_length;
 
-    psm_length = get_be16(pb);
-    get_byte(pb);
-    get_byte(pb);
-    ps_info_length = get_be16(pb);
+    psm_length = avio_rb16(pb);
+    avio_r8(pb);
+    avio_r8(pb);
+    ps_info_length = avio_rb16(pb);
 
     /* skip program_stream_info */
     url_fskip(pb, ps_info_length);
-    es_map_length = get_be16(pb);
+    es_map_length = avio_rb16(pb);
 
     /* at least one es available? */
     while (es_map_length >= 4){
-        unsigned char type      = get_byte(pb);
-        unsigned char es_id     = get_byte(pb);
-        uint16_t es_info_length = get_be16(pb);
+        unsigned char type      = avio_r8(pb);
+        unsigned char es_id     = avio_r8(pb);
+        uint16_t es_info_length = avio_rb16(pb);
         /* remember mapping from stream id to stream type */
         m->psm_es_type[es_id] = type;
         /* skip program_stream_info */
         url_fskip(pb, es_info_length);
         es_map_length -= 4 + es_info_length;
     }
-    get_be32(pb); /* crc32 */
+    avio_rb32(pb); /* crc32 */
     return 2 + psm_length;
 }
 
@@ -264,16 +264,16 @@ static int mpegps_read_pes_header(AVFormatContext *s,
     if (startcode == SYSTEM_HEADER_START_CODE)
         goto redo;
     if (startcode == PADDING_STREAM) {
-        url_fskip(s->pb, get_be16(s->pb));
+        url_fskip(s->pb, avio_rb16(s->pb));
         goto redo;
     }
     if (startcode == PRIVATE_STREAM_2) {
-        len = get_be16(s->pb);
+        len = avio_rb16(s->pb);
         if (!m->sofdec) {
             while (len-- >= 6) {
-                if (get_byte(s->pb) == 'S') {
+                if (avio_r8(s->pb) == 'S') {
                     uint8_t buf[5];
-                    get_buffer(s->pb, buf, sizeof(buf));
+                    avio_read(s->pb, buf, sizeof(buf));
                     m->sofdec = !memcmp(buf, "ofdec", 5);
                     len -= sizeof(buf);
                     break;
@@ -297,14 +297,14 @@ static int mpegps_read_pes_header(AVFormatContext *s,
     if (ppos) {
         *ppos = url_ftell(s->pb) - 4;
     }
-    len = get_be16(s->pb);
+    len = avio_rb16(s->pb);
     pts =
     dts = AV_NOPTS_VALUE;
     /* stuffing */
     for(;;) {
         if (len < 1)
             goto error_redo;
-        c = get_byte(s->pb);
+        c = avio_r8(s->pb);
         len--;
         /* XXX: for mpeg1, should test only bit 7 */
         if (c != 0xff)
@@ -312,8 +312,8 @@ static int mpegps_read_pes_header(AVFormatContext *s,
     }
     if ((c & 0xc0) == 0x40) {
         /* buffer scale & size */
-        get_byte(s->pb);
-        c = get_byte(s->pb);
+        avio_r8(s->pb);
+        c = avio_r8(s->pb);
         len -= 2;
     }
     if ((c & 0xe0) == 0x20) {
@@ -331,8 +331,8 @@ static int mpegps_read_pes_header(AVFormatContext *s,
             goto redo;
         }
 #endif
-        flags = get_byte(s->pb);
-        header_len = get_byte(s->pb);
+        flags = avio_r8(s->pb);
+        header_len = avio_r8(s->pb);
         len -= 2;
         if (header_len > len)
             goto error_redo;
@@ -350,7 +350,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
             av_log(s, AV_LOG_WARNING, "Further flags set but no bytes left\n");
         }
         if (flags & 0x01) { /* PES extension */
-            pes_ext = get_byte(s->pb);
+            pes_ext = avio_r8(s->pb);
             header_len--;
             /* Skip PES private data, program packet sequence counter and P-STD buffer */
             skip = (pes_ext >> 4) & 0xb;
@@ -363,10 +363,10 @@ static int mpegps_read_pes_header(AVFormatContext *s,
             header_len -= skip;
 
             if (pes_ext & 0x01) { /* PES extension 2 */
-                ext2_len = get_byte(s->pb);
+                ext2_len = avio_r8(s->pb);
                 header_len--;
                 if ((ext2_len & 0x7f) > 0) {
-                    id_ext = get_byte(s->pb);
+                    id_ext = avio_r8(s->pb);
                     if ((id_ext & 0x80) == 0)
                         startcode = ((startcode & 0xff) << 8) | id_ext;
                     header_len--;
@@ -381,17 +381,17 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         goto redo;
 
     if (startcode == PRIVATE_STREAM_1 && !m->psm_es_type[startcode & 0xff]) {
-        startcode = get_byte(s->pb);
+        startcode = avio_r8(s->pb);
         len--;
         if (startcode >= 0x80 && startcode <= 0xcf) {
             /* audio: skip header */
-            get_byte(s->pb);
-            get_byte(s->pb);
-            get_byte(s->pb);
+            avio_r8(s->pb);
+            avio_r8(s->pb);
+            avio_r8(s->pb);
             len -= 3;
             if (startcode >= 0xb0 && startcode <= 0xbf) {
                 /* MLP/TrueHD audio has a 4-byte header */
-                get_byte(s->pb);
+                avio_r8(s->pb);
                 len--;
             }
         }
@@ -432,7 +432,7 @@ static int mpegps_read_packet(AVFormatContext *s,
         return len;
 
     if(startcode == 0x1bd) {
-        dvdaudio_substream_type = get_byte(s->pb);
+        dvdaudio_substream_type = avio_r8(s->pb);
         url_fskip(s->pb, 3);
         len -= 4;
     }
@@ -474,7 +474,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     } else if (startcode >= 0x1e0 && startcode <= 0x1ef) {
         static const unsigned char avs_seqh[4] = { 0, 0, 1, 0xb0 };
         unsigned char buf[8];
-        get_buffer(s->pb, buf, 8);
+        avio_read(s->pb, buf, 8);
         url_fseek(s->pb, -8, SEEK_CUR);
         if(!memcmp(buf, avs_seqh, 4) && (buf[6] != 0 || buf[7] != 1))
             codec_id = CODEC_ID_CAVS;
@@ -547,9 +547,9 @@ static int mpegps_read_packet(AVFormatContext *s,
            audio data */
         if (len <= 3)
             goto skip;
-        get_byte(s->pb); /* emphasis (1), muse(1), reserved(1), frame number(5) */
-        b1 = get_byte(s->pb); /* quant (2), freq(2), reserved(1), channels(3) */
-        get_byte(s->pb); /* dynamic range control (0x80 = off) */
+        avio_r8(s->pb); /* emphasis (1), muse(1), reserved(1), frame number(5) */
+        b1 = avio_r8(s->pb); /* quant (2), freq(2), reserved(1), channels(3) */
+        avio_r8(s->pb); /* dynamic range control (0x80 = off) */
         len -= 3;
         freq = (b1 >> 4) & 3;
         st->codec->sample_rate = lpcm_freq_tab[freq];
@@ -564,7 +564,7 @@ static int mpegps_read_packet(AVFormatContext *s,
             return AVERROR(EINVAL);
     }
     av_new_packet(pkt, len);
-    get_buffer(s->pb, pkt->data, pkt->size);
+    avio_read(s->pb, pkt->data, pkt->size);
     pkt->pts = pts;
     pkt->dts = dts;
     pkt->pos = dummy_pos;

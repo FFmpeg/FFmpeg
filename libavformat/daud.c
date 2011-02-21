@@ -40,8 +40,8 @@ static int daud_packet(AVFormatContext *s, AVPacket *pkt) {
     int ret, size;
     if (url_feof(pb))
         return AVERROR(EIO);
-    size = get_be16(pb);
-    get_be16(pb); // unknown
+    size = avio_rb16(pb);
+    avio_rb16(pb); // unknown
     ret = av_get_packet(pb, pkt, size);
     pkt->stream_index = 0;
     return ret;

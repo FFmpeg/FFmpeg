@@ -39,9 +39,9 @@ static int get_str(AVIOContext *bc, char *string, unsigned int maxlen){
     unsigned int len= ff_get_v(bc);
 
     if(len && maxlen)
-        get_buffer(bc, string, FFMIN(len, maxlen));
+        avio_read(bc, string, FFMIN(len, maxlen));
     while(len > maxlen){
-        get_byte(bc);
+        avio_r8(bc);
         len--;
     }
 
@@ -64,8 +64,8 @@ static int64_t get_s(AVIOContext *bc){
 static uint64_t get_fourcc(AVIOContext *bc){
     unsigned int len= ff_get_v(bc);
 
-    if     (len==2) return get_le16(bc);
-    else if(len==4) return get_le32(bc);
+    if     (len==2) return avio_rl16(bc);
+    else if(len==4) return avio_rl32(bc);
     else            return -1;
 }
 
@@ -106,7 +106,7 @@ static int get_packetheader(NUTContext *nut, AVIOContext *bc, int calculate_chec
     init_checksum(bc, ff_crc04C11DB7_update, startcode);
     size= ff_get_v(bc);
     if(size > 4096)
-        get_be32(bc);
+        avio_rb32(bc);
     if(get_checksum(bc) && size > 4096)
         return -1;
 
@@ -122,7 +122,7 @@ static uint64_t find_any_startcode(AVIOContext *bc, int64_t pos){
         url_fseek(bc, pos, SEEK_SET); //note, this may fail if the stream is not seekable, but that should not matter, as in this case we simply start where we currently are
 
     while(!url_feof(bc)){
-        state= (state<<8) | get_byte(bc);
+        state= (state<<8) | avio_r8(bc);
         if((state>>56) != 'N')
             continue;
         switch(state){
@@ -182,7 +182,7 @@ static int skip_reserved(AVIOContext *bc, int64_t pos){
         return -1;
     }else{
         while(pos--)
-            get_byte(bc);
+            avio_r8(bc);
         return 0;
     }
 }
@@ -279,7 +279,7 @@ static int decode_main_header(NUTContext *nut){
                 return AVERROR_INVALIDDATA;
             }
             nut->header[i]= av_malloc(nut->header_len[i]);
-            get_buffer(bc, nut->header[i], nut->header_len[i]);
+            avio_read(bc, nut->header[i], nut->header_len[i]);
         }
         assert(nut->header_len[0]==0);
     }
@@ -355,7 +355,7 @@ static int decode_stream_header(NUTContext *nut){
     GET_V(st->codec->extradata_size, tmp < (1<<30));
     if(st->codec->extradata_size){
         st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-        get_buffer(bc, st->codec->extradata, st->codec->extradata_size);
+        avio_read(bc, st->codec->extradata, st->codec->extradata_size);
     }
 
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
@@ -514,8 +514,8 @@ static int find_and_decode_index(NUTContext *nut){
     int ret= -1;
 
     url_fseek(bc, filesize-12, SEEK_SET);
-    url_fseek(bc, filesize-get_be64(bc), SEEK_SET);
-    if(get_be64(bc) != INDEX_STARTCODE){
+    url_fseek(bc, filesize-avio_rb64(bc), SEEK_SET);
+    if(avio_rb64(bc) != INDEX_STARTCODE){
         av_log(s, AV_LOG_ERROR, "no index at the end\n");
         return -1;
     }
@@ -722,7 +722,7 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, ui
     size -= nut->header_len[*header_idx];
 
     if(flags&FLAG_CHECKSUM){
-        get_be32(bc); //FIXME check this
+        avio_rb32(bc); //FIXME check this
     }else if(size > 2*nut->max_distance || FFABS(stc->last_pts - *pts) > stc->max_pts_distance){
         av_log(s, AV_LOG_ERROR, "frame size > 2max_distance and no checksum\n");
         return AVERROR_INVALIDDATA;
@@ -764,7 +764,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code){
     av_new_packet(pkt, size + nut->header_len[header_idx]);
     memcpy(pkt->data, nut->header[header_idx], nut->header_len[header_idx]);
     pkt->pos= url_ftell(bc); //FIXME
-    get_buffer(bc, pkt->data + nut->header_len[header_idx], size);
+    avio_read(bc, pkt->data + nut->header_len[header_idx], size);
 
     pkt->stream_index = stream_id;
     if (stc->last_flags & FLAG_KEY)
@@ -789,13 +789,13 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         if(tmp){
             pos-=8;
         }else{
-            frame_code = get_byte(bc);
+            frame_code = avio_r8(bc);
             if(url_feof(bc))
                 return -1;
             if(frame_code == 'N'){
                 tmp= frame_code;
                 for(i=1; i<8; i++)
-                    tmp = (tmp<<8) + get_byte(bc);
+                    tmp = (tmp<<8) + avio_r8(bc);
             }
         }
         switch(tmp){
@@ -812,7 +812,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         case SYNCPOINT_STARTCODE:
             if(decode_syncpoint(nut, &ts, &back_ptr)<0)
                 goto resync;
-            frame_code = get_byte(bc);
+            frame_code = avio_r8(bc);
         case 0:
             ret= decode_frame(nut, pkt, frame_code);
             if(ret==0)

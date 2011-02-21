@@ -173,7 +173,7 @@ static int nut_probe(AVProbeData *p) {
 
 static size_t av_read(void * h, size_t len, uint8_t * buf) {
     AVIOContext * bc = h;
-    return get_buffer(bc, buf, len);
+    return avio_read(bc, buf, len);
 }
 
 static off_t av_seek(void * h, long long pos, int whence) {

@@ -86,7 +86,7 @@ static int sync(AVFormatContext *s, uint8_t *header)
     uint8_t buf[LXF_IDENT_LENGTH];
     int ret;
 
-    if ((ret = get_buffer(s->pb, buf, LXF_IDENT_LENGTH)) != LXF_IDENT_LENGTH)
+    if ((ret = avio_read(s->pb, buf, LXF_IDENT_LENGTH)) != LXF_IDENT_LENGTH)
         return ret < 0 ? ret : AVERROR_EOF;
 
     while (memcmp(buf, LXF_IDENT, LXF_IDENT_LENGTH)) {
@@ -94,7 +94,7 @@ static int sync(AVFormatContext *s, uint8_t *header)
             return AVERROR_EOF;
 
         memmove(buf, &buf[1], LXF_IDENT_LENGTH-1);
-        buf[LXF_IDENT_LENGTH-1] = get_byte(s->pb);
+        buf[LXF_IDENT_LENGTH-1] = avio_r8(s->pb);
     }
 
     memcpy(header, LXF_IDENT, LXF_IDENT_LENGTH);
@@ -120,7 +120,7 @@ static int get_packet_header(AVFormatContext *s, uint8_t *header, uint32_t *form
         return ret;
 
     //read the rest of the packet header
-    if ((ret = get_buffer(pb, header + LXF_IDENT_LENGTH,
+    if ((ret = avio_read(pb, header + LXF_IDENT_LENGTH,
                           LXF_PACKET_HEADER_SIZE - LXF_IDENT_LENGTH)) !=
                           LXF_PACKET_HEADER_SIZE - LXF_IDENT_LENGTH) {
         return ret < 0 ? ret : AVERROR_EOF;
@@ -214,7 +214,7 @@ static int lxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = get_buffer(pb, header_data, LXF_HEADER_DATA_SIZE)) != LXF_HEADER_DATA_SIZE)
+    if ((ret = avio_read(pb, header_data, LXF_HEADER_DATA_SIZE)) != LXF_HEADER_DATA_SIZE)
         return ret < 0 ? ret : AVERROR_EOF;
 
     if (!(st = av_new_stream(s, 0)))
@@ -315,7 +315,7 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     //read non-20-bit audio data into lxf->temp so we can deplanarize it
     buf = ast && ast->codec->codec_id != CODEC_ID_PCM_LXF ? lxf->temp : pkt->data;
 
-    if ((ret2 = get_buffer(pb, buf, ret)) != ret) {
+    if ((ret2 = avio_read(pb, buf, ret)) != ret) {
         av_free_packet(pkt);
         return ret2 < 0 ? ret2 : AVERROR_EOF;
     }

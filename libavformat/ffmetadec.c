@@ -36,11 +36,11 @@ static void get_line(AVIOContext *s, uint8_t *buf, int size)
         uint8_t c;
         int i = 0;
 
-        while ((c = get_byte(s))) {
+        while ((c = avio_r8(s))) {
             if (c == '\\') {
                 if (i < size - 1)
                     buf[i++] = c;
-                c = get_byte(s);
+                c = avio_r8(s);
             } else if (c == '\n')
                 break;
 

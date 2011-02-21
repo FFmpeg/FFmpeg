@@ -57,13 +57,13 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size, pts, type;
 retry:
-    type= get_be16(s->pb); // 257 or 258
-    size= get_be16(s->pb);
+    type= avio_rb16(s->pb); // 257 or 258
+    size= avio_rb16(s->pb);
 
-    get_be16(s->pb); //some flags, 0x80 indicates end of frame
-    get_be16(s->pb); //packet number
-    pts=get_be32(s->pb);
-    get_be32(s->pb); //6A 13 E3 88
+    avio_rb16(s->pb); //some flags, 0x80 indicates end of frame
+    avio_rb16(s->pb); //packet number
+    pts=avio_rb32(s->pb);
+    avio_rb32(s->pb); //6A 13 E3 88
 
     size -= 12;
     if(size<1)
