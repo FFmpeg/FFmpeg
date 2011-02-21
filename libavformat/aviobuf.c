@@ -324,6 +324,10 @@ int get_buffer(AVIOContext *s, unsigned char *buf, int size)
 {
     return avio_read(s, buf, size);
 }
+int get_partial_buffer(AVIOContext *s, unsigned char *buf, int size)
+{
+    return ffio_read_partial(s, buf, size);
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -548,7 +552,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
     return size1 - size;
 }
 
-int get_partial_buffer(AVIOContext *s, unsigned char *buf, int size)
+int ffio_read_partial(AVIOContext *s, unsigned char *buf, int size)
 {
     int len;
 
