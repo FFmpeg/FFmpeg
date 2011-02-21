@@ -169,6 +169,7 @@ External library support:
                            and libraw1394 [no]
   --enable-libdirac        enable Dirac support via libdirac [no]
   --enable-libfaac         enable FAAC support via libfaac [no]
+  --enable-libfreetype     enable libfreetype [no]
   --enable-libgsm          enable GSM support via libgsm [no]
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
   --enable-libnut          enable NUT (de)muxing via libnut,
@@ -928,6 +929,7 @@ CONFIG_LIST="
     libdc1394
     libdirac
     libfaac
+    libfreetype
     libgsm
     libmp3lame
     libnut
@@ -1077,6 +1079,7 @@ HAVE_LIST="
     llrintf
     local_aligned_16
     local_aligned_8
+    localtime_r
     log2
     log2f
     loongson
@@ -1462,6 +1465,7 @@ udp_protocol_deps="network"
 # filters
 blackframe_filter_deps="gpl"
 cropdetect_filter_deps="gpl"
+drawtext_filter_deps="libfreetype"
 frei0r_filter_deps="frei0r dlopen strtok_r"
 frei0r_src_filter_deps="frei0r dlopen strtok_r"
 hqdn3d_filter_deps="gpl"
@@ -2782,6 +2786,7 @@ check_func  getrusage
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_func  inet_aton $network_extralibs
 check_func  isatty
+check_func  localtime_r
 check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  mkstemp
 check_func  mmap
@@ -2868,6 +2873,7 @@ enabled libdirac   && require_pkg_config dirac                          \
     "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
     "dirac_decoder_init dirac_encoder_init"
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
+enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
 enabled libmp3lame && require  "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
 enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut

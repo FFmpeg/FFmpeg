@@ -353,6 +353,129 @@ drawbox
 drawbox=10:20:200:60:red@@0.5"
 @end example
 
+@section drawtext
+
+Draw text string or text from specified file on top of video using the
+libfreetype library.
+
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-libfreetype}.
+
+The filter also recognizes strftime() sequences in the provided text
+and expands them accordingly. Check the documentation of strftime().
+
+The filter accepts parameters as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+The description of the accepted parameters follows.
+
+@table @option
+
+@item fontfile
+The font file to be used for drawing text. Path must be included.
+This parameter is mandatory.
+
+@item text
+The text string to be drawn. The text must be a sequence of UTF-8
+encoded characters.
+This parameter is mandatory if no file is specified with the parameter
+@var{textfile}.
+
+@item textfile
+A text file containing text to be drawn. The text must be a sequence
+of UTF-8 encoded characters.
+
+This parameter is mandatory if no text string is specified with the
+parameter @var{text}.
+
+If both text and textfile are specified, an error is thrown.
+
+@item x, y
+The offsets where text will be drawn within the video frame.
+Relative to the top/left border of the output image.
+
+The default value of @var{x} and @var{y} is 0.
+
+@item fontsize
+The font size to be used for drawing text.
+The default value of @var{fontsize} is 16.
+
+@item fontcolor
+The color to be used for drawing fonts.
+Either a string (e.g. "red") or in 0xRRGGBB[AA] format
+(e.g. "0xff000033"), possibly followed by an alpha specifier.
+The default value of @var{fontcolor} is "black".
+
+@item boxcolor
+The color to be used for drawing box around text.
+Either a string (e.g. "yellow") or in 0xRRGGBB[AA] format
+(e.g. "0xff00ff"), possibly followed by an alpha specifier.
+The default value of @var{boxcolor} is "white".
+
+@item box
+Used to draw a box around text using background color.
+Value should be either 1 (enable) or 0 (disable).
+The default value of @var{box} is 0.
+
+@item ft_load_flags
+Flags to be used for loading the fonts.
+
+The flags map the corresponding flags supported by libfreetype, and are
+a combination of the following values:
+@table @var
+@item default
+@item no_scale
+@item no_hinting
+@item render
+@item no_bitmap
+@item vertical_layout
+@item force_autohint
+@item crop_bitmap
+@item pedantic
+@item ignore_global_advance_width
+@item no_recurse
+@item ignore_transform
+@item monochrome
+@item linear_design
+@item no_autohint
+@item end table
+@end table
+
+Default value is "render".
+
+For more information consult the documentation for the FT_LOAD_*
+libfreetype flags.
+
+@item tabsize
+The size in number of spaces to use for rendering the tab.
+Default value is 4.
+@end table
+
+For example the command:
+@example
+drawtext="fontfile=/usr/share/fonts/truetype/freefont/FreeSerif.ttf: text='Test Text'"
+@end example
+
+will draw "Test Text" with font FreeSerif, using the default values
+for the optional parameters.
+
+The command:
+@example
+drawtext="fontfile=/usr/share/fonts/truetype/freefont/FreeSerif.ttf: text='Test Text':\
+          x=100: y=50: fontsize=24: fontcolor=yellow@@0.2: box=1: boxcolor=red@@0.2"
+@end example
+
+will draw 'Test Text' with font FreeSerif of size 24 at position x=100
+and y=50 (counting from the top-left corner of the screen), text is
+yellow with a red box around it. Both the text and the box have an
+opacity of 20%.
+
+Note that the double quotes are not necessary if spaces are not used
+within the parameter list.
+
+For more information about libfreetype, check:
+@url{http://www.freetype.org/}.
+
 @section fade
 
 Apply fade-in/out effect to input video.
