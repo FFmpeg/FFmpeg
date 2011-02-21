@@ -387,10 +387,10 @@ static int config_input(AVFilterLink *inlink)
     luma_pos    = ((x)          ) + ((y)          ) * picref->linesize[0]; \
     chroma_pos1 = ((x) >> (hsub)) + ((y) >> (vsub)) * picref->linesize[1]; \
     chroma_pos2 = ((x) >> (hsub)) + ((y) >> (vsub)) * picref->linesize[2]; \
-    alpha = (yuva_color[3] * (val)) / 255;                               \
-    picref->data[0][luma_pos] = (alpha * yuva_color[0] + (255 - alpha) * picref->data[0][luma_pos]) >> 8; \
-    picref->data[1][chroma_pos1] = (alpha * yuva_color[1] + (255 - alpha) * picref->data[1][chroma_pos1]) >> 8; \
-    picref->data[2][chroma_pos2] = (alpha * yuva_color[2] + (255 - alpha) * picref->data[2][chroma_pos2]) >> 8; \
+    alpha = yuva_color[3] * (val) * 129;                               \
+    picref->data[0][luma_pos]    = (alpha * yuva_color[0] + (255*255*129 - alpha) * picref->data[0][luma_pos]   ) >> 23; \
+    picref->data[1][chroma_pos1] = (alpha * yuva_color[1] + (255*255*129 - alpha) * picref->data[1][chroma_pos1]) >> 23; \
+    picref->data[2][chroma_pos2] = (alpha * yuva_color[2] + (255*255*129 - alpha) * picref->data[2][chroma_pos2]) >> 23; \
 }
 
 static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap, unsigned int x,
@@ -422,10 +422,10 @@ static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap, u
 
 #define SET_PIXEL_RGB(picref, rgba_color, val, x, y, pixel_step, r_off, g_off, b_off, a_off) { \
     p   = picref->data[0] + (x) * pixel_step + ((y) * picref->linesize[0]); \
-    alpha = (rgba_color[3] * (val)) / 255;                              \
-    *(p+r_off) = (alpha * rgba_color[0] + (255 - alpha) * *(p+r_off)) >> 8; \
-    *(p+g_off) = (alpha * rgba_color[1] + (255 - alpha) * *(p+g_off)) >> 8; \
-    *(p+b_off) = (alpha * rgba_color[2] + (255 - alpha) * *(p+b_off)) >> 8; \
+    alpha = rgba_color[3] * (val) * 129;                              \
+    *(p+r_off) = (alpha * rgba_color[0] + (255*255*129 - alpha) * *(p+r_off)) >> 23; \
+    *(p+g_off) = (alpha * rgba_color[1] + (255*255*129 - alpha) * *(p+g_off)) >> 23; \
+    *(p+b_off) = (alpha * rgba_color[2] + (255*255*129 - alpha) * *(p+b_off)) >> 23; \
 }
 
 static inline int draw_glyph_rgb(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
