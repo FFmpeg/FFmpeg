@@ -30,10 +30,10 @@
 static int flac_write_block_padding(AVIOContext *pb, unsigned int n_padding_bytes,
                                     int last_block)
 {
-    put_byte(pb, last_block ? 0x81 : 0x01);
-    put_be24(pb, n_padding_bytes);
+    avio_w8(pb, last_block ? 0x81 : 0x01);
+    avio_wb24(pb, n_padding_bytes);
     while (n_padding_bytes > 0) {
-        put_byte(pb, 0);
+        avio_w8(pb, 0);
         n_padding_bytes--;
     }
     return 0;
@@ -58,7 +58,7 @@ static int flac_write_block_comment(AVIOContext *pb, AVMetadata **m,
     bytestream_put_be24(&p, len);
     ff_vorbiscomment_write(&p, m, vendor, count);
 
-    put_buffer(pb, p0, len+4);
+    avio_write(pb, p0, len+4);
     av_freep(&p0);
     p = NULL;
 
@@ -102,7 +102,7 @@ static int flac_write_trailer(struct AVFormatContext *s)
         /* rewrite the STREAMINFO header block data */
         file_size = url_ftell(pb);
         url_fseek(pb, 8, SEEK_SET);
-        put_buffer(pb, streaminfo, FLAC_STREAMINFO_SIZE);
+        avio_write(pb, streaminfo, FLAC_STREAMINFO_SIZE);
         url_fseek(pb, file_size, SEEK_SET);
         put_flush_packet(pb);
     } else {
@@ -113,7 +113,7 @@ static int flac_write_trailer(struct AVFormatContext *s)
 
 static int flac_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
-    put_buffer(s->pb, pkt->data, pkt->size);
+    avio_write(s->pb, pkt->data, pkt->size);
     put_flush_packet(s->pb);
     return 0;
 }

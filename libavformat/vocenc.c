@@ -37,10 +37,10 @@ static int voc_write_header(AVFormatContext *s)
         || s->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
         return AVERROR_PATCHWELCOME;
 
-    put_buffer(pb, ff_voc_magic, sizeof(ff_voc_magic) - 1);
-    put_le16(pb, header_size);
-    put_le16(pb, version);
-    put_le16(pb, ~version + 0x1234);
+    avio_write(pb, ff_voc_magic, sizeof(ff_voc_magic) - 1);
+    avio_wl16(pb, header_size);
+    avio_wl16(pb, version);
+    avio_wl16(pb, ~version + 0x1234);
 
     return 0;
 }
@@ -53,39 +53,39 @@ static int voc_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!voc->param_written) {
         if (enc->codec_tag > 0xFF) {
-            put_byte(pb, VOC_TYPE_NEW_VOICE_DATA);
-            put_le24(pb, pkt->size + 12);
-            put_le32(pb, enc->sample_rate);
-            put_byte(pb, enc->bits_per_coded_sample);
-            put_byte(pb, enc->channels);
-            put_le16(pb, enc->codec_tag);
-            put_le32(pb, 0);
+            avio_w8(pb, VOC_TYPE_NEW_VOICE_DATA);
+            avio_wl24(pb, pkt->size + 12);
+            avio_wl32(pb, enc->sample_rate);
+            avio_w8(pb, enc->bits_per_coded_sample);
+            avio_w8(pb, enc->channels);
+            avio_wl16(pb, enc->codec_tag);
+            avio_wl32(pb, 0);
         } else {
             if (s->streams[0]->codec->channels > 1) {
-                put_byte(pb, VOC_TYPE_EXTENDED);
-                put_le24(pb, 4);
-                put_le16(pb, 65536-256000000/(enc->sample_rate*enc->channels));
-                put_byte(pb, enc->codec_tag);
-                put_byte(pb, enc->channels - 1);
+                avio_w8(pb, VOC_TYPE_EXTENDED);
+                avio_wl24(pb, 4);
+                avio_wl16(pb, 65536-256000000/(enc->sample_rate*enc->channels));
+                avio_w8(pb, enc->codec_tag);
+                avio_w8(pb, enc->channels - 1);
             }
-            put_byte(pb, VOC_TYPE_VOICE_DATA);
-            put_le24(pb, pkt->size + 2);
-            put_byte(pb, 256 - 1000000 / enc->sample_rate);
-            put_byte(pb, enc->codec_tag);
+            avio_w8(pb, VOC_TYPE_VOICE_DATA);
+            avio_wl24(pb, pkt->size + 2);
+            avio_w8(pb, 256 - 1000000 / enc->sample_rate);
+            avio_w8(pb, enc->codec_tag);
         }
         voc->param_written = 1;
     } else {
-        put_byte(pb, VOC_TYPE_VOICE_DATA_CONT);
-        put_le24(pb, pkt->size);
+        avio_w8(pb, VOC_TYPE_VOICE_DATA_CONT);
+        avio_wl24(pb, pkt->size);
     }
 
-    put_buffer(pb, pkt->data, pkt->size);
+    avio_write(pb, pkt->data, pkt->size);
     return 0;
 }
 
 static int voc_write_trailer(AVFormatContext *s)
 {
-    put_byte(s->pb, 0);
+    avio_w8(s->pb, 0);
     return 0;
 }
 

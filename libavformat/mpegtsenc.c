@@ -415,7 +415,7 @@ static MpegTSService *mpegts_add_service(MpegTSWrite *ts,
 static void section_write_packet(MpegTSSection *s, const uint8_t *packet)
 {
     AVFormatContext *ctx = s->opaque;
-    put_buffer(ctx->pb, packet, TS_PACKET_SIZE);
+    avio_write(ctx->pb, packet, TS_PACKET_SIZE);
 }
 
 static int mpegts_write_header(AVFormatContext *s)
@@ -625,7 +625,7 @@ static void mpegts_insert_null_packet(AVFormatContext *s)
     *q++ = 0xff;
     *q++ = 0x10;
     memset(q, 0x0FF, TS_PACKET_SIZE - (q - buf));
-    put_buffer(s->pb, buf, TS_PACKET_SIZE);
+    avio_write(s->pb, buf, TS_PACKET_SIZE);
 }
 
 /* Write a single transport stream packet with a PCR and no payload */
@@ -650,7 +650,7 @@ static void mpegts_insert_pcr_only(AVFormatContext *s, AVStream *st)
 
     /* stuffing bytes */
     memset(q, 0xFF, TS_PACKET_SIZE - (q - buf));
-    put_buffer(s->pb, buf, TS_PACKET_SIZE);
+    avio_write(s->pb, buf, TS_PACKET_SIZE);
 }
 
 static void write_pts(uint8_t *q, int fourbits, int64_t pts)
@@ -844,7 +844,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         memcpy(buf + TS_PACKET_SIZE - len, payload, len);
         payload += len;
         payload_size -= len;
-        put_buffer(s->pb, buf, TS_PACKET_SIZE);
+        avio_write(s->pb, buf, TS_PACKET_SIZE);
     }
     put_flush_packet(s->pb);
 }

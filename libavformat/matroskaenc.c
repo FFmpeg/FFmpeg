@@ -112,7 +112,7 @@ static void put_ebml_id(AVIOContext *pb, unsigned int id)
 {
     int i = ebml_id_size(id);
     while (i--)
-        put_byte(pb, id >> (i*8));
+        avio_w8(pb, id >> (i*8));
 }
 
 /**
@@ -123,9 +123,9 @@ static void put_ebml_id(AVIOContext *pb, unsigned int id)
 static void put_ebml_size_unknown(AVIOContext *pb, int bytes)
 {
     assert(bytes <= 8);
-    put_byte(pb, 0x1ff >> bytes);
+    avio_w8(pb, 0x1ff >> bytes);
     while (--bytes)
-        put_byte(pb, 0xff);
+        avio_w8(pb, 0xff);
 }
 
 /**
@@ -160,7 +160,7 @@ static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
 
     num |= 1ULL << bytes*7;
     for (i = bytes - 1; i >= 0; i--)
-        put_byte(pb, num >> i*8);
+        avio_w8(pb, num >> i*8);
 }
 
 static void put_ebml_uint(AVIOContext *pb, unsigned int elementid, uint64_t val)
@@ -172,14 +172,14 @@ static void put_ebml_uint(AVIOContext *pb, unsigned int elementid, uint64_t val)
     put_ebml_id(pb, elementid);
     put_ebml_num(pb, bytes, 0);
     for (i = bytes - 1; i >= 0; i--)
-        put_byte(pb, val >> i*8);
+        avio_w8(pb, val >> i*8);
 }
 
 static void put_ebml_float(AVIOContext *pb, unsigned int elementid, double val)
 {
     put_ebml_id(pb, elementid);
     put_ebml_num(pb, 8, 0);
-    put_be64(pb, av_dbl2int(val));
+    avio_wb64(pb, av_dbl2int(val));
 }
 
 static void put_ebml_binary(AVIOContext *pb, unsigned int elementid,
@@ -187,7 +187,7 @@ static void put_ebml_binary(AVIOContext *pb, unsigned int elementid,
 {
     put_ebml_id(pb, elementid);
     put_ebml_num(pb, size, 0);
-    put_buffer(pb, buf, size);
+    avio_write(pb, buf, size);
 }
 
 static void put_ebml_string(AVIOContext *pb, unsigned int elementid, const char *str)
@@ -216,7 +216,7 @@ static void put_ebml_void(AVIOContext *pb, uint64_t size)
     else
         put_ebml_num(pb, size-9, 8);
     while(url_ftell(pb) < currentpos + size)
-        put_byte(pb, 0);
+        avio_w8(pb, 0);
 }
 
 static ebml_master start_ebml_master(AVIOContext *pb, unsigned int elementid, uint64_t expectedsize)
@@ -241,8 +241,8 @@ static void put_xiph_size(AVIOContext *pb, int size)
 {
     int i;
     for (i = 0; i < size / 255; i++)
-        put_byte(pb, 255);
-    put_byte(pb, size % 255);
+        avio_w8(pb, 255);
+    avio_w8(pb, size % 255);
 }
 
 /**
@@ -426,12 +426,12 @@ static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb, AVCodecContex
         return -1;
     }
 
-    put_byte(pb, 2);                    // number packets - 1
+    avio_w8(pb, 2);                    // number packets - 1
     for (j = 0; j < 2; j++) {
         put_xiph_size(pb, header_len[j]);
     }
     for (j = 0; j < 3; j++)
-        put_buffer(pb, header_start[j], header_len[j]);
+        avio_write(pb, header_start[j], header_len[j]);
 
     return 0;
 }
@@ -481,13 +481,13 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
         else if (codec->codec_id == CODEC_ID_H264)
             ret = ff_isom_write_avcc(dyn_cp, codec->extradata, codec->extradata_size);
         else if (codec->extradata_size)
-            put_buffer(dyn_cp, codec->extradata, codec->extradata_size);
+            avio_write(dyn_cp, codec->extradata, codec->extradata_size);
     } else if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (qt_id) {
             if (!codec->codec_tag)
                 codec->codec_tag = ff_codec_get_tag(codec_movvideo_tags, codec->codec_id);
             if (codec->extradata_size)
-                put_buffer(dyn_cp, codec->extradata, codec->extradata_size);
+                avio_write(dyn_cp, codec->extradata, codec->extradata_size);
         } else {
             if (!codec->codec_tag)
                 codec->codec_tag = ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id);
@@ -932,10 +932,10 @@ static int mkv_write_ass_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *p
         blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(size));
         put_ebml_id(pb, MATROSKA_ID_BLOCK);
         put_ebml_num(pb, size+4, 0);
-        put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
-        put_be16(pb, pkt->pts - mkv->cluster_pts);
-        put_byte(pb, 0);
-        put_buffer(pb, buffer, size);
+        avio_w8(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
+        avio_wb16(pb, pkt->pts - mkv->cluster_pts);
+        avio_w8(pb, 0);
+        avio_write(pb, buffer, size);
         put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
         end_ebml_master(pb, blockgroup);
 
@@ -965,10 +965,10 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         data = pkt->data;
     put_ebml_id(pb, blockid);
     put_ebml_num(pb, size+4, 0);
-    put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
-    put_be16(pb, ts - mkv->cluster_pts);
-    put_byte(pb, flags);
-    put_buffer(pb, data, size);
+    avio_w8(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
+    avio_wb16(pb, ts - mkv->cluster_pts);
+    avio_w8(pb, flags);
+    avio_write(pb, data, size);
     if (data != pkt->data)
         av_free(data);
 }
@@ -1018,7 +1018,7 @@ static void mkv_flush_dynbuf(AVFormatContext *s)
         return;
 
     bufsize = url_close_dyn_buf(mkv->dyn_bc, &dyn_buf);
-    put_buffer(s->pb, dyn_buf, bufsize);
+    avio_write(s->pb, dyn_buf, bufsize);
     av_free(dyn_buf);
     mkv->dyn_bc = NULL;
 }

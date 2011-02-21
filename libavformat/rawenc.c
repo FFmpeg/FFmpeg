@@ -25,7 +25,7 @@
 
 int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    put_buffer(s->pb, pkt->data, pkt->size);
+    avio_write(s->pb, pkt->data, pkt->size);
     put_flush_packet(s->pb);
     return 0;
 }

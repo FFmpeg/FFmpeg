@@ -134,7 +134,7 @@ static void flush_buffer(AVIOContext *s)
     s->buf_ptr = s->buffer;
 }
 
-void put_byte(AVIOContext *s, int b)
+void avio_w8(AVIOContext *s, int b)
 {
     *(s->buf_ptr)++ = b;
     if (s->buf_ptr >= s->buf_end)
@@ -155,7 +155,7 @@ void put_nbyte(AVIOContext *s, int b, int count)
     }
 }
 
-void put_buffer(AVIOContext *s, const unsigned char *buf, int size)
+void avio_write(AVIOContext *s, const unsigned char *buf, int size)
 {
     while (size > 0) {
         int len = FFMIN(s->buf_end - s->buf_ptr, size);
@@ -277,20 +277,20 @@ int url_ferror(AVIOContext *s)
     return s->error;
 }
 
-void put_le32(AVIOContext *s, unsigned int val)
+void avio_wl32(AVIOContext *s, unsigned int val)
 {
-    put_byte(s, val);
-    put_byte(s, val >> 8);
-    put_byte(s, val >> 16);
-    put_byte(s, val >> 24);
+    avio_w8(s, val);
+    avio_w8(s, val >> 8);
+    avio_w8(s, val >> 16);
+    avio_w8(s, val >> 24);
 }
 
-void put_be32(AVIOContext *s, unsigned int val)
+void avio_wb32(AVIOContext *s, unsigned int val)
 {
-    put_byte(s, val >> 24);
-    put_byte(s, val >> 16);
-    put_byte(s, val >> 8);
-    put_byte(s, val);
+    avio_w8(s, val >> 24);
+    avio_w8(s, val >> 16);
+    avio_w8(s, val >> 8);
+    avio_w8(s, val);
 }
 
 #if FF_API_OLD_AVIO
@@ -316,6 +316,22 @@ GET(64, uint64_t)
 
 #undef GET
 
+#define PUT(name, type ) \
+    void put_le ##name(AVIOContext *s, type val)\
+{\
+        avio_wl ##name(s, val);\
+}\
+    void put_be ##name(AVIOContext *s, type val)\
+{\
+        avio_wb ##name(s, val);\
+}
+
+PUT(16, unsigned int)
+PUT(24, unsigned int)
+PUT(32, unsigned int)
+PUT(64, uint64_t)
+#undef PUT
+
 int get_byte(AVIOContext *s)
 {
    return avio_r8(s);
@@ -328,6 +344,14 @@ int get_partial_buffer(AVIOContext *s, unsigned char *buf, int size)
 {
     return ffio_read_partial(s, buf, size);
 }
+void put_byte(AVIOContext *s, int val)
+{
+    avio_w8(s, val);
+}
+void put_buffer(AVIOContext *s, const unsigned char *buf, int size)
+{
+    avio_write(s, buf, size);
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -335,9 +359,9 @@ int avio_put_str(AVIOContext *s, const char *str)
     int len = 1;
     if (str) {
         len += strlen(str);
-        put_buffer(s, (const unsigned char *) str, len);
+        avio_write(s, (const unsigned char *) str, len);
     } else
-        put_byte(s, 0);
+        avio_w8(s, 0);
     return len;
 }
 
@@ -351,9 +375,9 @@ int avio_put_str16le(AVIOContext *s, const char *str)
         uint16_t tmp;
 
         GET_UTF8(ch, *q++, break;)
-        PUT_UTF16(ch, tmp, put_le16(s, tmp);ret += 2;)
+        PUT_UTF16(ch, tmp, avio_wl16(s, tmp);ret += 2;)
     }
-    put_le16(s, 0);
+    avio_wl16(s, 0);
     ret += 2;
     return ret;
 }
@@ -371,51 +395,51 @@ void ff_put_v(AVIOContext *bc, uint64_t val){
     int i= ff_get_v_length(val);
 
     while(--i>0)
-        put_byte(bc, 128 | (val>>(7*i)));
+        avio_w8(bc, 128 | (val>>(7*i)));
 
-    put_byte(bc, val&127);
+    avio_w8(bc, val&127);
 }
 
-void put_le64(AVIOContext *s, uint64_t val)
+void avio_wl64(AVIOContext *s, uint64_t val)
 {
-    put_le32(s, (uint32_t)(val & 0xffffffff));
-    put_le32(s, (uint32_t)(val >> 32));
+    avio_wl32(s, (uint32_t)(val & 0xffffffff));
+    avio_wl32(s, (uint32_t)(val >> 32));
 }
 
-void put_be64(AVIOContext *s, uint64_t val)
+void avio_wb64(AVIOContext *s, uint64_t val)
 {
-    put_be32(s, (uint32_t)(val >> 32));
-    put_be32(s, (uint32_t)(val & 0xffffffff));
+    avio_wb32(s, (uint32_t)(val >> 32));
+    avio_wb32(s, (uint32_t)(val & 0xffffffff));
 }
 
-void put_le16(AVIOContext *s, unsigned int val)
+void avio_wl16(AVIOContext *s, unsigned int val)
 {
-    put_byte(s, val);
-    put_byte(s, val >> 8);
+    avio_w8(s, val);
+    avio_w8(s, val >> 8);
 }
 
-void put_be16(AVIOContext *s, unsigned int val)
+void avio_wb16(AVIOContext *s, unsigned int val)
 {
-    put_byte(s, val >> 8);
-    put_byte(s, val);
+    avio_w8(s, val >> 8);
+    avio_w8(s, val);
 }
 
-void put_le24(AVIOContext *s, unsigned int val)
+void avio_wl24(AVIOContext *s, unsigned int val)
 {
-    put_le16(s, val & 0xffff);
-    put_byte(s, val >> 16);
+    avio_wl16(s, val & 0xffff);
+    avio_w8(s, val >> 16);
 }
 
-void put_be24(AVIOContext *s, unsigned int val)
+void avio_wb24(AVIOContext *s, unsigned int val)
 {
-    put_be16(s, val >> 8);
-    put_byte(s, val);
+    avio_wb16(s, val >> 8);
+    avio_w8(s, val);
 }
 
 void put_tag(AVIOContext *s, const char *tag)
 {
     while (*tag) {
-        put_byte(s, *tag++);
+        avio_w8(s, *tag++);
     }
 }
 
@@ -855,7 +879,7 @@ int url_fprintf(AVIOContext *s, const char *fmt, ...)
     va_start(ap, fmt);
     ret = vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
-    put_buffer(s, buf, strlen(buf));
+    avio_write(s, buf, strlen(buf));
     return ret;
 }
 #endif //CONFIG_MUXERS
@@ -1056,7 +1080,7 @@ int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 
     /* don't attempt to pad fixed-size packet buffers */
     if (!s->max_packet_size) {
-        put_buffer(s, padbuf, sizeof(padbuf));
+        avio_write(s, padbuf, sizeof(padbuf));
         padding = FF_INPUT_BUFFER_PADDING_SIZE;
     }
 

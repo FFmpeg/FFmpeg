@@ -68,7 +68,7 @@ static int latm_parse_packet(AVFormatContext *ctx, PayloadContext *data,
             if ((ret = url_open_dyn_buf(&data->dyn_buf)) < 0)
                 return ret;
         }
-        put_buffer(data->dyn_buf, buf, len);
+        avio_write(data->dyn_buf, buf, len);
 
         if (!(flags & RTP_FLAG_MARKER))
             return AVERROR(EAGAIN);

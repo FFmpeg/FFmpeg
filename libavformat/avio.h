@@ -395,6 +395,17 @@ attribute_deprecated unsigned int get_be16(AVIOContext *s);
 attribute_deprecated unsigned int get_be24(AVIOContext *s);
 attribute_deprecated unsigned int get_be32(AVIOContext *s);
 attribute_deprecated uint64_t     get_be64(AVIOContext *s);
+
+attribute_deprecated void         put_byte(AVIOContext *s, int b);
+attribute_deprecated void         put_buffer(AVIOContext *s, const unsigned char *buf, int size);
+attribute_deprecated void         put_le64(AVIOContext *s, uint64_t val);
+attribute_deprecated void         put_be64(AVIOContext *s, uint64_t val);
+attribute_deprecated void         put_le32(AVIOContext *s, unsigned int val);
+attribute_deprecated void         put_be32(AVIOContext *s, unsigned int val);
+attribute_deprecated void         put_le24(AVIOContext *s, unsigned int val);
+attribute_deprecated void         put_be24(AVIOContext *s, unsigned int val);
+attribute_deprecated void         put_le16(AVIOContext *s, unsigned int val);
+attribute_deprecated void         put_be16(AVIOContext *s, unsigned int val);
 /**
  * @}
  */
@@ -409,17 +420,17 @@ AVIOContext *avio_alloc_context(
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int64_t (*seek)(void *opaque, int64_t offset, int whence));
 
-void put_byte(AVIOContext *s, int b);
+void avio_w8(AVIOContext *s, int b);
 void put_nbyte(AVIOContext *s, int b, int count);
-void put_buffer(AVIOContext *s, const unsigned char *buf, int size);
-void put_le64(AVIOContext *s, uint64_t val);
-void put_be64(AVIOContext *s, uint64_t val);
-void put_le32(AVIOContext *s, unsigned int val);
-void put_be32(AVIOContext *s, unsigned int val);
-void put_le24(AVIOContext *s, unsigned int val);
-void put_be24(AVIOContext *s, unsigned int val);
-void put_le16(AVIOContext *s, unsigned int val);
-void put_be16(AVIOContext *s, unsigned int val);
+void avio_write(AVIOContext *s, const unsigned char *buf, int size);
+void avio_wl64(AVIOContext *s, uint64_t val);
+void avio_wb64(AVIOContext *s, uint64_t val);
+void avio_wl32(AVIOContext *s, unsigned int val);
+void avio_wb32(AVIOContext *s, unsigned int val);
+void avio_wl24(AVIOContext *s, unsigned int val);
+void avio_wb24(AVIOContext *s, unsigned int val);
+void avio_wl16(AVIOContext *s, unsigned int val);
+void avio_wb16(AVIOContext *s, unsigned int val);
 void put_tag(AVIOContext *s, const char *tag);
 
 #if FF_API_OLD_AVIO

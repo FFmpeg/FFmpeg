@@ -213,7 +213,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                 if (!asf->pktbuf)
                     return AVERROR(EIO);
 
-                put_buffer(asf->pktbuf, buf + off, len - off);
+                avio_write(asf->pktbuf, buf + off, len - off);
                 url_fskip(pb, len - off);
                 if (!(flags & RTP_FLAG_MARKER))
                     return -1;

@@ -254,7 +254,7 @@ static void put_str(AVIOContext *bc, const char *string){
     int len= strlen(string);
 
     ff_put_v(bc, len);
-    put_buffer(bc, string, len);
+    avio_write(bc, string, len);
 }
 
 static void put_s(AVIOContext *bc, int64_t val){
@@ -285,16 +285,16 @@ static void put_packet(NUTContext *nut, AVIOContext *bc, AVIOContext *dyn_bc, in
 
     if(forw_ptr > 4096)
         init_checksum(bc, ff_crc04C11DB7_update, 0);
-    put_be64(bc, startcode);
+    avio_wb64(bc, startcode);
     ff_put_v(bc, forw_ptr);
     if(forw_ptr > 4096)
-        put_le32(bc, get_checksum(bc));
+        avio_wl32(bc, get_checksum(bc));
 
     if(calculate_checksum)
         init_checksum(bc, ff_crc04C11DB7_update, 0);
-    put_buffer(bc, dyn_buf, dyn_size);
+    avio_write(bc, dyn_buf, dyn_size);
     if(calculate_checksum)
-        put_le32(bc, get_checksum(bc));
+        avio_wl32(bc, get_checksum(bc));
 
     av_free(dyn_buf);
 }
@@ -366,7 +366,7 @@ static void write_mainheader(NUTContext *nut, AVIOContext *bc){
     ff_put_v(bc, nut->header_count-1);
     for(i=1; i<nut->header_count; i++){
         ff_put_v(bc, nut->header_len[i]);
-        put_buffer(bc, nut->header[i], nut->header_len[i]);
+        avio_write(bc, nut->header[i], nut->header_len[i]);
     }
 }
 
@@ -382,7 +382,7 @@ static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc, AVStream 
     }
     ff_put_v(bc, 4);
     if (codec->codec_tag){
-        put_le32(bc, codec->codec_tag);
+        avio_wl32(bc, codec->codec_tag);
     } else {
         av_log(avctx, AV_LOG_ERROR, "No codec tag defined for stream %d\n", i);
         return AVERROR(EINVAL);
@@ -392,10 +392,10 @@ static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc, AVStream 
     ff_put_v(bc, nut->stream[i].msb_pts_shift);
     ff_put_v(bc, nut->stream[i].max_pts_distance);
     ff_put_v(bc, codec->has_b_frames);
-    put_byte(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
+    avio_w8(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
 
     ff_put_v(bc, codec->extradata_size);
-    put_buffer(bc, codec->extradata, codec->extradata_size);
+    avio_write(bc, codec->extradata, codec->extradata_size);
 
     switch(codec->codec_type){
     case AVMEDIA_TYPE_AUDIO:
@@ -450,7 +450,7 @@ static int write_globalinfo(NUTContext *nut, AVIOContext *bc){
     ff_put_v(bc, count);
 
     dyn_size= url_close_dyn_buf(dyn_bc, &dyn_buf);
-    put_buffer(bc, dyn_buf, dyn_size);
+    avio_write(bc, dyn_buf, dyn_size);
     av_free(dyn_buf);
     return 0;
 }
@@ -479,7 +479,7 @@ static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id){
 
         ff_put_v(bc, count);
 
-        put_buffer(bc, dyn_buf, dyn_size);
+        avio_write(bc, dyn_buf, dyn_size);
     }
 
     av_free(dyn_buf);
@@ -575,8 +575,8 @@ static int write_header(AVFormatContext *s){
     build_frame_code(s);
     assert(nut->frame_code['N'].flags == FLAG_INVALID);
 
-    put_buffer(bc, ID_STRING, strlen(ID_STRING));
-    put_byte(bc, 0);
+    avio_write(bc, ID_STRING, strlen(ID_STRING));
+    avio_w8(bc, 0);
 
     if ((ret = write_headers(s, bc)) < 0)
         return ret;
@@ -749,7 +749,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     header_idx= fc->header_idx;
 
     init_checksum(bc, ff_crc04C11DB7_update, 0);
-    put_byte(bc, frame_code);
+    avio_w8(bc, frame_code);
     if(flags & FLAG_CODED){
         ff_put_v(bc, (flags^needed_flags) & ~(FLAG_CODED));
         flags = needed_flags;
@@ -759,10 +759,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     if(flags & FLAG_SIZE_MSB)   ff_put_v(bc, pkt->size / fc->size_mul);
     if(flags & FLAG_HEADER_IDX) ff_put_v(bc, header_idx= best_header_idx);
 
-    if(flags & FLAG_CHECKSUM)   put_le32(bc, get_checksum(bc));
+    if(flags & FLAG_CHECKSUM)   avio_wl32(bc, get_checksum(bc));
     else                        get_checksum(bc);
 
-    put_buffer(bc, pkt->data + nut->header_len[header_idx], pkt->size - nut->header_len[header_idx]);
+    avio_write(bc, pkt->data + nut->header_len[header_idx], pkt->size - nut->header_len[header_idx]);
     nus->last_flags= flags;
     nus->last_pts= pkt->pts;
 

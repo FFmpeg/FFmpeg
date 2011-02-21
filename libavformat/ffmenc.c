@@ -36,14 +36,14 @@ static void flush_packet(AVFormatContext *s)
         av_abort();
 
     /* put header */
-    put_be16(pb, PACKET_ID);
-    put_be16(pb, fill_size);
-    put_be64(pb, ffm->dts);
+    avio_wb16(pb, PACKET_ID);
+    avio_wb16(pb, fill_size);
+    avio_wb64(pb, ffm->dts);
     h = ffm->frame_offset;
     if (ffm->first_packet)
         h |= 0x8000;
-    put_be16(pb, h);
-    put_buffer(pb, ffm->packet, ffm->packet_end - ffm->packet);
+    avio_wb16(pb, h);
+    avio_write(pb, ffm->packet, ffm->packet_end - ffm->packet);
     put_flush_packet(pb);
 
     /* prepare next packet */
@@ -91,17 +91,17 @@ static int ffm_write_header(AVFormatContext *s)
     ffm->packet_size = FFM_PACKET_SIZE;
 
     /* header */
-    put_le32(pb, MKTAG('F', 'F', 'M', '1'));
-    put_be32(pb, ffm->packet_size);
-    put_be64(pb, 0); /* current write position */
+    avio_wl32(pb, MKTAG('F', 'F', 'M', '1'));
+    avio_wb32(pb, ffm->packet_size);
+    avio_wb64(pb, 0); /* current write position */
 
-    put_be32(pb, s->nb_streams);
+    avio_wb32(pb, s->nb_streams);
     bit_rate = 0;
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
         bit_rate += st->codec->bit_rate;
     }
-    put_be32(pb, bit_rate);
+    avio_wb32(pb, bit_rate);
 
     /* list of streams */
     for(i=0;i<s->nb_streams;i++) {
@@ -110,82 +110,82 @@ static int ffm_write_header(AVFormatContext *s)
 
         codec = st->codec;
         /* generic info */
-        put_be32(pb, codec->codec_id);
-        put_byte(pb, codec->codec_type);
-        put_be32(pb, codec->bit_rate);
-        put_be32(pb, st->quality);
-        put_be32(pb, codec->flags);
-        put_be32(pb, codec->flags2);
-        put_be32(pb, codec->debug);
+        avio_wb32(pb, codec->codec_id);
+        avio_w8(pb, codec->codec_type);
+        avio_wb32(pb, codec->bit_rate);
+        avio_wb32(pb, st->quality);
+        avio_wb32(pb, codec->flags);
+        avio_wb32(pb, codec->flags2);
+        avio_wb32(pb, codec->debug);
         /* specific info */
         switch(codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            put_be32(pb, codec->time_base.num);
-            put_be32(pb, codec->time_base.den);
-            put_be16(pb, codec->width);
-            put_be16(pb, codec->height);
-            put_be16(pb, codec->gop_size);
-            put_be32(pb, codec->pix_fmt);
-            put_byte(pb, codec->qmin);
-            put_byte(pb, codec->qmax);
-            put_byte(pb, codec->max_qdiff);
-            put_be16(pb, (int) (codec->qcompress * 10000.0));
-            put_be16(pb, (int) (codec->qblur * 10000.0));
-            put_be32(pb, codec->bit_rate_tolerance);
+            avio_wb32(pb, codec->time_base.num);
+            avio_wb32(pb, codec->time_base.den);
+            avio_wb16(pb, codec->width);
+            avio_wb16(pb, codec->height);
+            avio_wb16(pb, codec->gop_size);
+            avio_wb32(pb, codec->pix_fmt);
+            avio_w8(pb, codec->qmin);
+            avio_w8(pb, codec->qmax);
+            avio_w8(pb, codec->max_qdiff);
+            avio_wb16(pb, (int) (codec->qcompress * 10000.0));
+            avio_wb16(pb, (int) (codec->qblur * 10000.0));
+            avio_wb32(pb, codec->bit_rate_tolerance);
             avio_put_str(pb, codec->rc_eq ? codec->rc_eq : "tex^qComp");
-            put_be32(pb, codec->rc_max_rate);
-            put_be32(pb, codec->rc_min_rate);
-            put_be32(pb, codec->rc_buffer_size);
-            put_be64(pb, av_dbl2int(codec->i_quant_factor));
-            put_be64(pb, av_dbl2int(codec->b_quant_factor));
-            put_be64(pb, av_dbl2int(codec->i_quant_offset));
-            put_be64(pb, av_dbl2int(codec->b_quant_offset));
-            put_be32(pb, codec->dct_algo);
-            put_be32(pb, codec->strict_std_compliance);
-            put_be32(pb, codec->max_b_frames);
-            put_be32(pb, codec->luma_elim_threshold);
-            put_be32(pb, codec->chroma_elim_threshold);
-            put_be32(pb, codec->mpeg_quant);
-            put_be32(pb, codec->intra_dc_precision);
-            put_be32(pb, codec->me_method);
-            put_be32(pb, codec->mb_decision);
-            put_be32(pb, codec->nsse_weight);
-            put_be32(pb, codec->frame_skip_cmp);
-            put_be64(pb, av_dbl2int(codec->rc_buffer_aggressivity));
-            put_be32(pb, codec->codec_tag);
-            put_byte(pb, codec->thread_count);
-            put_be32(pb, codec->coder_type);
-            put_be32(pb, codec->me_cmp);
-            put_be32(pb, codec->partitions);
-            put_be32(pb, codec->me_subpel_quality);
-            put_be32(pb, codec->me_range);
-            put_be32(pb, codec->keyint_min);
-            put_be32(pb, codec->scenechange_threshold);
-            put_be32(pb, codec->b_frame_strategy);
-            put_be64(pb, av_dbl2int(codec->qcompress));
-            put_be64(pb, av_dbl2int(codec->qblur));
-            put_be32(pb, codec->max_qdiff);
-            put_be32(pb, codec->refs);
-            put_be32(pb, codec->directpred);
+            avio_wb32(pb, codec->rc_max_rate);
+            avio_wb32(pb, codec->rc_min_rate);
+            avio_wb32(pb, codec->rc_buffer_size);
+            avio_wb64(pb, av_dbl2int(codec->i_quant_factor));
+            avio_wb64(pb, av_dbl2int(codec->b_quant_factor));
+            avio_wb64(pb, av_dbl2int(codec->i_quant_offset));
+            avio_wb64(pb, av_dbl2int(codec->b_quant_offset));
+            avio_wb32(pb, codec->dct_algo);
+            avio_wb32(pb, codec->strict_std_compliance);
+            avio_wb32(pb, codec->max_b_frames);
+            avio_wb32(pb, codec->luma_elim_threshold);
+            avio_wb32(pb, codec->chroma_elim_threshold);
+            avio_wb32(pb, codec->mpeg_quant);
+            avio_wb32(pb, codec->intra_dc_precision);
+            avio_wb32(pb, codec->me_method);
+            avio_wb32(pb, codec->mb_decision);
+            avio_wb32(pb, codec->nsse_weight);
+            avio_wb32(pb, codec->frame_skip_cmp);
+            avio_wb64(pb, av_dbl2int(codec->rc_buffer_aggressivity));
+            avio_wb32(pb, codec->codec_tag);
+            avio_w8(pb, codec->thread_count);
+            avio_wb32(pb, codec->coder_type);
+            avio_wb32(pb, codec->me_cmp);
+            avio_wb32(pb, codec->partitions);
+            avio_wb32(pb, codec->me_subpel_quality);
+            avio_wb32(pb, codec->me_range);
+            avio_wb32(pb, codec->keyint_min);
+            avio_wb32(pb, codec->scenechange_threshold);
+            avio_wb32(pb, codec->b_frame_strategy);
+            avio_wb64(pb, av_dbl2int(codec->qcompress));
+            avio_wb64(pb, av_dbl2int(codec->qblur));
+            avio_wb32(pb, codec->max_qdiff);
+            avio_wb32(pb, codec->refs);
+            avio_wb32(pb, codec->directpred);
             break;
         case AVMEDIA_TYPE_AUDIO:
-            put_be32(pb, codec->sample_rate);
-            put_le16(pb, codec->channels);
-            put_le16(pb, codec->frame_size);
-            put_le16(pb, codec->sample_fmt);
+            avio_wb32(pb, codec->sample_rate);
+            avio_wl16(pb, codec->channels);
+            avio_wl16(pb, codec->frame_size);
+            avio_wl16(pb, codec->sample_fmt);
             break;
         default:
             return -1;
         }
         if (codec->flags & CODEC_FLAG_GLOBAL_HEADER) {
-            put_be32(pb, codec->extradata_size);
-            put_buffer(pb, codec->extradata, codec->extradata_size);
+            avio_wb32(pb, codec->extradata_size);
+            avio_write(pb, codec->extradata, codec->extradata_size);
         }
     }
 
     /* flush until end of block reached */
     while ((url_ftell(pb) % ffm->packet_size) != 0)
-        put_byte(pb, 0);
+        avio_w8(pb, 0);
 
     put_flush_packet(pb);
 

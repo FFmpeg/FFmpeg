@@ -31,8 +31,8 @@ static void write_escape_str(AVIOContext *s, const uint8_t *str)
 
     while (*p) {
         if (*p == '#' || *p == ';' || *p == '=' || *p == '\\' || *p == '\n')
-            put_byte(s, '\\');
-        put_byte(s, *p);
+            avio_w8(s, '\\');
+        avio_w8(s, *p);
         p++;
     }
 }
@@ -42,17 +42,17 @@ static void write_tags(AVIOContext *s, AVMetadata *m)
     AVMetadataTag *t = NULL;
     while ((t = av_metadata_get(m, "", t, AV_METADATA_IGNORE_SUFFIX))) {
         write_escape_str(s, t->key);
-        put_byte(s, '=');
+        avio_w8(s, '=');
         write_escape_str(s, t->value);
-        put_byte(s, '\n');
+        avio_w8(s, '\n');
     }
 }
 
 static int write_header(AVFormatContext *s)
 {
     put_tag(s->pb, ID_STRING);
-    put_byte(s->pb, '1');          // version
-    put_byte(s->pb, '\n');
+    avio_w8(s->pb, '1');          // version
+    avio_w8(s->pb, '\n');
     put_flush_packet(s->pb);
     return 0;
 }
@@ -65,14 +65,14 @@ static int write_trailer(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         put_tag(s->pb, ID_STREAM);
-        put_byte(s->pb, '\n');
+        avio_w8(s->pb, '\n');
         write_tags(s->pb, s->streams[i]->metadata);
     }
 
     for (i = 0; i < s->nb_chapters; i++) {
         AVChapter *ch = s->chapters[i];
         put_tag(s->pb, ID_CHAPTER);
-        put_byte(s->pb, '\n');
+        avio_w8(s->pb, '\n');
         url_fprintf(s->pb, "TIMEBASE=%d/%d\n", ch->time_base.num, ch->time_base.den);
         url_fprintf(s->pb, "START=%"PRId64"\n", ch->start);
         url_fprintf(s->pb, "END=%"PRId64"\n",   ch->end);

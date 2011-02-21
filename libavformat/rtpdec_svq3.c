@@ -94,7 +94,7 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     if (!sv->pktbuf)
         return AVERROR_INVALIDDATA;
 
-    put_buffer(sv->pktbuf, buf, len);
+    avio_write(sv->pktbuf, buf, len);
 
     if (end_packet) {
         av_init_packet(pkt);
