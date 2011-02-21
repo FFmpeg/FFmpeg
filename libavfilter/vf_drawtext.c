@@ -389,9 +389,8 @@ static int config_input(AVFilterLink *inlink)
     chroma_pos2 = ((x) >> (hsub)) + ((y) >> (vsub)) * picref->linesize[2]; \
     alpha = (yuva_color[3] * (val)) / 255;                               \
     picref->data[0][luma_pos] = (alpha * yuva_color[0] + (255 - alpha) * picref->data[0][luma_pos]) >> 8; \
-    alpha = (yuva_color[3] * (val)) / 224;                               \
-    picref->data[1][chroma_pos1] = 16 + (alpha * (yuva_color[1]-16) + (224 - alpha) * (picref->data[1][chroma_pos1]-16)) / 224; \
-    picref->data[2][chroma_pos2] = 16 + (alpha * (yuva_color[2]-16) + (224 - alpha) * (picref->data[2][chroma_pos2]-16)) / 224; \
+    picref->data[1][chroma_pos1] = (alpha * yuva_color[1] + (255 - alpha) * picref->data[1][chroma_pos1]) >> 8; \
+    picref->data[2][chroma_pos2] = (alpha * yuva_color[2] + (255 - alpha) * picref->data[2][chroma_pos2]) >> 8; \
 }
 
 static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap, unsigned int x,
