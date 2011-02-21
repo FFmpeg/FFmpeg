@@ -45,6 +45,7 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "spdif.h"
 #include "libavcodec/ac3.h"
 #include "libavcodec/dca.h"
