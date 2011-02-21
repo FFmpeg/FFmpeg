@@ -397,6 +397,7 @@ attribute_deprecated unsigned int get_be32(AVIOContext *s);
 attribute_deprecated uint64_t     get_be64(AVIOContext *s);
 
 attribute_deprecated void         put_byte(AVIOContext *s, int b);
+attribute_deprecated void         put_nbyte(AVIOContext *s, int b, int count);
 attribute_deprecated void         put_buffer(AVIOContext *s, const unsigned char *buf, int size);
 attribute_deprecated void         put_le64(AVIOContext *s, uint64_t val);
 attribute_deprecated void         put_be64(AVIOContext *s, uint64_t val);
@@ -421,7 +422,6 @@ AVIOContext *avio_alloc_context(
                   int64_t (*seek)(void *opaque, int64_t offset, int whence));
 
 void avio_w8(AVIOContext *s, int b);
-void put_nbyte(AVIOContext *s, int b, int count);
 void avio_write(AVIOContext *s, const unsigned char *buf, int size);
 void avio_wl64(AVIOContext *s, uint64_t val);
 void avio_wb64(AVIOContext *s, uint64_t val);
