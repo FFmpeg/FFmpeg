@@ -34,7 +34,7 @@ typedef struct TargaContext {
 } TargaContext;
 
 #define CHECK_BUFFER_SIZE(buf, buf_end, needed, where) \
-    if(buf + needed > buf_end){ \
+    if(needed > buf_end - buf){ \
         av_log(avctx, AV_LOG_ERROR, "Problem: unexpected end of data while reading " where "\n"); \
         return -1; \
     } \
