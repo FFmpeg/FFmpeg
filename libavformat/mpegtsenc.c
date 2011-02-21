@@ -746,7 +746,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                     *q++ = 0xe0;
             } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
                        (st->codec->codec_id == CODEC_ID_MP2 ||
-                        st->codec->codec_id == CODEC_ID_MP3)) {
+                        st->codec->codec_id == CODEC_ID_MP3 ||
+                        st->codec->codec_id == CODEC_ID_AAC)) {
                 *q++ = 0xc0;
             } else {
                 *q++ = 0xbd;
