@@ -1094,8 +1094,13 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         s->pict_type, s->dropable);*/
 
     if(s->codec_id != CODEC_ID_H264){
-        if((s->last_picture_ptr==NULL || s->last_picture_ptr->data[0]==NULL) && s->pict_type!=AV_PICTURE_TYPE_I){
-            av_log(avctx, AV_LOG_ERROR, "warning: first frame is no keyframe\n");
+        if((s->last_picture_ptr==NULL || s->last_picture_ptr->data[0]==NULL) &&
+           (s->pict_type!=AV_PICTURE_TYPE_I || s->picture_structure != PICT_FRAME)){
+            if (s->pict_type != AV_PICTURE_TYPE_I)
+                av_log(avctx, AV_LOG_ERROR, "warning: first frame is no keyframe\n");
+            else if (s->picture_structure != PICT_FRAME)
+                av_log(avctx, AV_LOG_INFO, "allocate dummy last picture for field based first keyframe\n");
+
             /* Allocate a dummy frame */
             i= ff_find_unused_picture(s, 0);
             s->last_picture_ptr= &s->picture[i];
