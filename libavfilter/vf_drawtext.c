@@ -55,13 +55,17 @@ typedef struct {
     char *textfile;                 ///< file with text to be drawn
     unsigned int x;                 ///< x position to start drawing text
     unsigned int y;                 ///< y position to start drawing text
+    int shadowx, shadowy;
     unsigned int fontsize;          ///< font size to use
     char *fontcolor_string;         ///< font color as string
     char *boxcolor_string;          ///< box color as string
+    char *shadowcolor_string;       ///< shadow color as string
     uint8_t fontcolor[4];           ///< foreground color
     uint8_t boxcolor[4];            ///< background color
+    uint8_t shadowcolor[4];         ///< shadow color
     uint8_t fontcolor_rgba[4];      ///< foreground color in RGBA
     uint8_t boxcolor_rgba[4];       ///< background color in RGBA
+    uint8_t shadowcolor_rgba[4];    ///< shadow color in RGBA
 
     short int draw_box;             ///< draw box around text - true or false
     int use_kerning;                ///< font kerning is used - true/false
@@ -85,10 +89,13 @@ static const AVOption drawtext_options[]= {
 {"textfile", "set text file",        OFFSET(textfile),         FF_OPT_TYPE_STRING, 0,  CHAR_MIN, CHAR_MAX },
 {"fontcolor","set foreground color", OFFSET(fontcolor_string), FF_OPT_TYPE_STRING, 0,  CHAR_MIN, CHAR_MAX },
 {"boxcolor", "set box color",        OFFSET(boxcolor_string),  FF_OPT_TYPE_STRING, 0,  CHAR_MIN, CHAR_MAX },
+{"shadowcolor", "set shadow color",  OFFSET(shadowcolor_string),  FF_OPT_TYPE_STRING, 0,  CHAR_MIN, CHAR_MAX },
 {"box",      "set box",              OFFSET(draw_box),         FF_OPT_TYPE_INT,    0,         0,        1 },
 {"fontsize", "set font size",        OFFSET(fontsize),         FF_OPT_TYPE_INT,   16,         1,       72 },
 {"x",        "set x",                OFFSET(x),                FF_OPT_TYPE_INT,    0,         0,  INT_MAX },
 {"y",        "set y",                OFFSET(y),                FF_OPT_TYPE_INT,    0,         0,  INT_MAX },
+{"shadowx",  "set x",                OFFSET(shadowx),          FF_OPT_TYPE_INT,    0,   INT_MIN,  INT_MAX },
+{"shadowy",  "set y",                OFFSET(shadowy),          FF_OPT_TYPE_INT,    0,   INT_MIN,  INT_MAX },
 {"tabsize",  "set tab size",         OFFSET(tabsize),          FF_OPT_TYPE_INT,    4,         0,  INT_MAX },
 
 /* FT_LOAD_* flags */
@@ -217,6 +224,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     av_opt_set_defaults2(dtext, 0, 0);
     dtext->fontcolor_string = av_strdup("black");
     dtext->boxcolor_string = av_strdup("white");
+    dtext->shadowcolor_string = av_strdup("black");
 
     if ((err = (av_set_options_string(dtext, args, "=", ":"))) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
@@ -266,6 +274,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if ((err = av_parse_color(dtext->boxcolor_rgba, dtext->boxcolor_string, -1, ctx))) {
         av_log(ctx, AV_LOG_ERROR,
                "Invalid box color '%s'\n", dtext->boxcolor_string);
+        return err;
+    }
+
+    if ((err = av_parse_color(dtext->shadowcolor_rgba, dtext->shadowcolor_string, -1, ctx))) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Invalid shadow color '%s'\n", dtext->shadowcolor_string);
         return err;
     }
 
@@ -338,6 +352,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&dtext->fontcolor_string);
     av_freep(&dtext->boxcolor_string);
     av_freep(&dtext->positions);
+    av_freep(&dtext->shadowcolor_string);
     av_tree_enumerate(dtext->glyphs, NULL, NULL, glyph_enu_free);
     av_tree_destroy(dtext->glyphs);
     dtext->glyphs = 0;
@@ -373,6 +388,11 @@ static int config_input(AVFilterLink *inlink)
         dtext->fontcolor[1] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
         dtext->fontcolor[2] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
         dtext->fontcolor[3] = rgba[3];
+        rgba = dtext->shadowcolor_rgba;
+        dtext->shadowcolor[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
+        dtext->shadowcolor[1] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
+        dtext->shadowcolor[2] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
+        dtext->shadowcolor[3] = rgba[3];
     }
 
     return 0;
@@ -495,7 +515,7 @@ static inline int is_newline(uint32_t c)
 }
 
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
-                        int width, int height)
+                       int width, int height, const uint8_t rgbcolor[4], const uint8_t yuvcolor[4], int x, int y)
 {
     char *text = dtext->text;
     uint32_t code = 0;
@@ -520,12 +540,12 @@ static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
 
         if (dtext->is_packed_rgb) {
             draw_glyph_rgb(picref, &glyph->bitmap,
-                           dtext->positions[i].x, dtext->positions[i].y, width, height,
-                           dtext->pixel_step[0], dtext->fontcolor_rgba, dtext->rgba_map);
+                           dtext->positions[i].x+x, dtext->positions[i].y+y, width, height,
+                           dtext->pixel_step[0], rgbcolor, dtext->rgba_map);
         } else {
             draw_glyph_yuv(picref, &glyph->bitmap,
-                           dtext->positions[i].x, dtext->positions[i].y, width, height,
-                           dtext->fontcolor, dtext->hsub, dtext->vsub);
+                           dtext->positions[i].x+x, dtext->positions[i].y+y, width, height,
+                           yuvcolor, dtext->hsub, dtext->vsub);
         }
     }
 
@@ -643,7 +663,14 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
                 dtext->box_line, dtext->pixel_step, dtext->boxcolor,
                 dtext->hsub, dtext->vsub, dtext->is_packed_rgb, dtext->rgba_map);
 
-    if ((ret = draw_glyphs(dtext, picref, width, height)) < 0)
+    if (dtext->shadowx || dtext->shadowy) {
+        if ((ret = draw_glyphs(dtext, picref, width, height, dtext->shadowcolor_rgba,
+                               dtext->shadowcolor, dtext->shadowx, dtext->shadowy)) < 0)
+            return ret;
+    }
+
+    if ((ret = draw_glyphs(dtext, picref, width, height, dtext->fontcolor_rgba,
+                           dtext->fontcolor, 0, 0)) < 0)
         return ret;
 
     return 0;
