@@ -568,6 +568,39 @@ avplay tcp://@var{hostname}:@var{port}
 
 @end table
 
+@section tls
+
+Transport Layer Security (TLS) / Secure Sockets Layer (SSL)
+
+The required syntax for a TLS url is:
+@example
+tls://@var{hostname}:@var{port}
+@end example
+
+The following parameters can be set via command line options
+(or in code via @code{AVOption}s):
+
+@table @option
+
+@item ca_file
+A file containing certificate authority (CA) root certificates to treat
+as trusted. If the linked TLS library contains a default this might not
+need to be specified for verification to work, but not all libraries and
+setups have defaults built in.
+
+@item tls_verify=@var{1|0}
+If enabled, try to verify the peer that we are communicating with.
+Note, if using OpenSSL, this currently only makes sure that the
+peer certificate is signed by one of the root certificates in the CA
+database, but it does not validate that the certificate actually
+matches the host name we are trying to connect to. (With GnuTLS,
+the host name is validated as well.)
+
+This is disabled by default since it requires a CA database to be
+provided by the caller in many cases.
+
+@end table
+
 @section udp
 
 User Datagram Protocol.
