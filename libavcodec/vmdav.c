@@ -486,15 +486,15 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
         memset(data, 0, silent_size);
         data += silent_size;
     }
-        if (s->bits == 16)
-            vmdaudio_decode_audio(s, data, buf, data_size, s->channels == 2);
-        else {
-            /* copy the data but convert it to signed */
-            for (i = 0; i < data_size; i++){
-                *data++ = buf[i] + 0x80;
-                *data++ = buf[i] + 0x80;
-            }
+    if (s->bits == 16)
+        vmdaudio_decode_audio(s, data, buf, data_size, s->channels == 2);
+    else {
+        /* copy the data but convert it to signed */
+        for (i = 0; i < data_size; i++){
+            *data++ = buf[i] + 0x80;
+            *data++ = buf[i] + 0x80;
         }
+    }
 
     return silent_size + data_size * 2;
 }
