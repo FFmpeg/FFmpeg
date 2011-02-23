@@ -518,6 +518,10 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
         return buf_size;
 
     block_type = buf[6];
+    if (block_type < BLOCK_TYPE_AUDIO || block_type > BLOCK_TYPE_SILENCE) {
+        av_log(avctx, AV_LOG_ERROR, "unknown block type: %d\n", block_type);
+        return AVERROR(EINVAL);
+    }
 
     if (block_type == BLOCK_TYPE_AUDIO) {
         /* the chunk contains audio */
