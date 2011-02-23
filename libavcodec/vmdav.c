@@ -514,8 +514,11 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     /* point to the start of the encoded data */
     const unsigned char *p = buf + 16;
 
-    if (buf_size < 16)
+    if (buf_size < 16) {
+        av_log(avctx, AV_LOG_WARNING, "skipping small junk packet\n");
+        *data_size = 0;
         return buf_size;
+    }
 
     block_type = buf[6];
     if (block_type < BLOCK_TYPE_AUDIO || block_type > BLOCK_TYPE_SILENCE) {
