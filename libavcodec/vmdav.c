@@ -481,9 +481,6 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
 {
     int i;
 
-//    if (silence)
-//        av_log(s->avctx, AV_LOG_INFO, "silent block!\n");
-
     if (silence) {
         memset(data, 0, data_size * 2);
     } else {
