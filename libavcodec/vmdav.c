@@ -484,19 +484,19 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
 //    if (silence)
 //        av_log(s->avctx, AV_LOG_INFO, "silent block!\n");
 
-        if (silence) {
-            memset(data, 0, data_size * 2);
-        } else {
-            if (s->bits == 16)
-                vmdaudio_decode_audio(s, data, buf, data_size, s->channels == 2);
-            else {
-                /* copy the data but convert it to signed */
-                for (i = 0; i < data_size; i++){
-                    *data++ = buf[i] + 0x80;
-                    *data++ = buf[i] + 0x80;
-                }
+    if (silence) {
+        memset(data, 0, data_size * 2);
+    } else {
+        if (s->bits == 16)
+            vmdaudio_decode_audio(s, data, buf, data_size, s->channels == 2);
+        else {
+            /* copy the data but convert it to signed */
+            for (i = 0; i < data_size; i++){
+                *data++ = buf[i] + 0x80;
+                *data++ = buf[i] + 0x80;
             }
         }
+    }
 
     return data_size * 2;
 }
