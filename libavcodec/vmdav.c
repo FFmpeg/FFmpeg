@@ -475,19 +475,16 @@ static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
 static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
     const uint8_t *buf, int silence, int data_size)
 {
-    int bytes_decoded = 0;
     int i;
 
 //    if (silence)
 //        av_log(s->avctx, AV_LOG_INFO, "silent block!\n");
-    if (s->channels == 2) {
 
-        /* stereo handling */
         if (silence) {
             memset(data, 0, data_size * 2);
         } else {
             if (s->bits == 16)
-                vmdaudio_decode_audio(s, data, buf, data_size, 1);
+                vmdaudio_decode_audio(s, data, buf, data_size, s->channels == 2);
             else {
                 /* copy the data but convert it to signed */
                 for (i = 0; i < data_size; i++){
@@ -496,24 +493,6 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
                 }
             }
         }
-    } else {
-        bytes_decoded = data_size * 2;
-
-        /* mono handling */
-        if (silence) {
-            memset(data, 0, data_size * 2);
-        } else {
-            if (s->bits == 16) {
-                vmdaudio_decode_audio(s, data, buf, data_size, 0);
-            } else {
-                /* copy the data but convert it to signed */
-                for (i = 0; i < data_size; i++){
-                    *data++ = buf[i] + 0x80;
-                    *data++ = buf[i] + 0x80;
-                }
-            }
-        }
-    }
 
     return data_size * 2;
 }
