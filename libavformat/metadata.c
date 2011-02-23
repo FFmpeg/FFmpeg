@@ -91,7 +91,9 @@ int av_metadata_set(AVMetadata **pm, const char *key, const char *value)
 {
     return av_metadata_set2(pm, key, value, 0);
 }
+#endif
 
+#if FF_API_OLD_METADATA2
 void av_metadata_conv(AVFormatContext *ctx, const AVMetadataConv *d_conv,
                                             const AVMetadataConv *s_conv)
 {

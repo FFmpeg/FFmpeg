@@ -118,7 +118,7 @@ typedef struct {
 }AVMetadataTag;
 
 typedef struct AVMetadata AVMetadata;
-#if FF_API_OLD_METADATA
+#if FF_API_OLD_METADATA2
 typedef struct AVMetadataConv AVMetadataConv;
 #endif
 
@@ -159,7 +159,7 @@ attribute_deprecated int av_metadata_set(AVMetadata **pm, const char *key, const
  */
 int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int flags);
 
-#if FF_API_OLD_METADATA
+#if FF_API_OLD_METADATA2
 /**
  * This function is provided for compatibility reason and currently does nothing.
  */
@@ -317,7 +317,7 @@ typedef struct AVOutputFormat {
 
     enum CodecID subtitle_codec; /**< default subtitle codec */
 
-#if FF_API_OLD_METADATA
+#if FF_API_OLD_METADATA2
     const AVMetadataConv *metadata_conv;
 #endif
 
@@ -437,7 +437,7 @@ typedef struct AVInputFormat {
      */
     int (*read_seek2)(struct AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
 
-#if FF_API_OLD_METADATA
+#if FF_API_OLD_METADATA2
     const AVMetadataConv *metadata_conv;
 #endif
 
