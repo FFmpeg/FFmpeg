@@ -420,6 +420,7 @@ static av_cold int vmdvideo_decode_end(AVCodecContext *avctx)
 
 typedef struct VmdAudioContext {
     AVCodecContext *avctx;
+    int out_bps;
     int channels;
     int bits;
     int block_align;
@@ -451,6 +452,7 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
     s->bits = avctx->bits_per_coded_sample;
     s->block_align = avctx->block_align;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    s->out_bps = av_get_bits_per_sample_fmt(avctx->sample_fmt) >> 3;
 
     av_log(s->avctx, AV_LOG_DEBUG, "%d channels, %d bits/sample, block align = %d, sample rate = %d\n",
             s->channels, s->bits, s->block_align, avctx->sample_rate);
@@ -480,7 +482,7 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
     const uint8_t *buf, int silent_chunks, int data_size)
 {
     int i;
-    int silent_size = s->block_align * silent_chunks * 2;
+    int silent_size = s->block_align * silent_chunks * s->out_bps;
 
     if (silent_chunks) {
         memset(data, 0, silent_size);
@@ -496,7 +498,7 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
         }
     }
 
-    return silent_size + data_size * 2;
+    return silent_size + data_size * s->out_bps;
 }
 
 static int vmdaudio_decode_frame(AVCodecContext *avctx,
@@ -535,7 +537,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     }
 
     /* ensure output buffer is large enough */
-    if (*data_size < (s->block_align*silent_chunks + buf_size) * 2)
+    if (*data_size < (s->block_align*silent_chunks + buf_size) * s->out_bps)
         return -1;
 
     *data_size = vmdaudio_loadsound(s, output_samples, buf, silent_chunks, buf_size);
