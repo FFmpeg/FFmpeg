@@ -85,8 +85,8 @@ static int64_t avi_start_new_riff(AVFormatContext *s, AVIOContext *pb,
 
 static char* avi_stream2fourcc(char* tag, int index, enum AVMediaType type)
 {
-    tag[0] = '0';
-    tag[1] = '0' + index;
+    tag[0] = '0' + index/10;
+    tag[1] = '0' + index%10;
     if (type == AVMEDIA_TYPE_VIDEO) {
         tag[2] = 'd';
         tag[3] = 'c';
@@ -157,6 +157,12 @@ static int avi_write_header(AVFormatContext *s)
     AVCodecContext *stream, *video_enc;
     int64_t list1, list2, strh, strf;
     AVMetadataTag *t = NULL;
+
+    if (s->nb_streams > AVI_MAX_STREAM_COUNT) {
+        av_log(s, AV_LOG_ERROR, "AVI does not support >%d streams\n",
+               AVI_MAX_STREAM_COUNT);
+        return -1;
+    }
 
     for(n=0;n<s->nb_streams;n++) {
         s->streams[n]->priv_data= av_mallocz(sizeof(AVIStream));
