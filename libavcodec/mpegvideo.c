@@ -1869,9 +1869,14 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
        /* save DCT coefficients */
        int i,j;
        DCTELEM *dct = &s->current_picture.dct_coeff[mb_xy*64*6];
-       for(i=0; i<6; i++)
-           for(j=0; j<64; j++)
+       av_log(s->avctx, AV_LOG_DEBUG, "DCT coeffs of MB at %dx%d:\n", s->mb_x, s->mb_y);
+       for(i=0; i<6; i++){
+           for(j=0; j<64; j++){
                *dct++ = block[i][s->dsp.idct_permutation[j]];
+               av_log(s->avctx, AV_LOG_DEBUG, "%5d", dct[-1]);
+           }
+           av_log(s->avctx, AV_LOG_DEBUG, "\n");
+       }
     }
 
     s->current_picture.qscale_table[mb_xy]= s->qscale;
