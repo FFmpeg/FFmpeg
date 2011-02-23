@@ -511,9 +511,6 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     int block_type;
     unsigned char *output_samples = (unsigned char *)data;
 
-    /* point to the start of the encoded data */
-    const unsigned char *p = buf + 16;
-
     if (buf_size < 16) {
         av_log(avctx, AV_LOG_WARNING, "skipping small junk packet\n");
         *data_size = 0;
@@ -525,29 +522,33 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "unknown block type: %d\n", block_type);
         return AVERROR(EINVAL);
     }
+    buf      += 16;
+    buf_size -= 16;
 
     if (block_type == BLOCK_TYPE_AUDIO) {
         /* the chunk contains audio */
-        *data_size = vmdaudio_loadsound(s, output_samples, p, 0, buf_size - 16);
+        *data_size = vmdaudio_loadsound(s, output_samples, buf, 0, buf_size);
     } else if (block_type == BLOCK_TYPE_INITIAL) {
         /* initial chunk, may contain audio and silence */
-        uint32_t flags = AV_RB32(p);
+        uint32_t flags = AV_RB32(buf);
         int raw_block_size = s->block_align *
                              (av_get_bits_per_sample_fmt(avctx->sample_fmt) / 8);
         int silent_chunks = av_popcount(flags);
-        if(*data_size < (s->block_align*silent_chunks + buf_size - 20) * 2)
+        buf      += 4;
+        buf_size -= 4;
+        if(*data_size < (s->block_align*silent_chunks + buf_size) * 2)
             return -1;
         *data_size = 0;
         memset(output_samples, 0, raw_block_size * silent_chunks);
         output_samples += raw_block_size * silent_chunks;
         *data_size = raw_block_size * silent_chunks;
-        *data_size += vmdaudio_loadsound(s, output_samples, p + 4, 0, buf_size - 20);
+        *data_size += vmdaudio_loadsound(s, output_samples, buf, 0, buf_size);
     } else if (block_type == BLOCK_TYPE_SILENCE) {
         /* silent chunk */
-        *data_size = vmdaudio_loadsound(s, output_samples, p, 1, s->block_align);
+        *data_size = vmdaudio_loadsound(s, output_samples, buf, 1, s->block_align);
     }
 
-    return buf_size;
+    return avpkt->size;
 }
 
 
