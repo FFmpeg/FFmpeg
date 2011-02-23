@@ -39,7 +39,7 @@ struct AVMetadataConv{
     const char *native;
     const char *generic;
 };
-#if !FF_API_OLD_METADATA
+#if !FF_API_OLD_METADATA2
 typedef struct AVMetadataConv AVMetadataConv;
 #endif
 
