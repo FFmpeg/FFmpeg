@@ -421,9 +421,6 @@ static av_cold int vmdvideo_decode_end(AVCodecContext *avctx)
 typedef struct VmdAudioContext {
     AVCodecContext *avctx;
     int out_bps;
-    int channels;
-    int bits;
-    int block_align;
     int predictors[2];
 } VmdAudioContext;
 
@@ -448,14 +445,13 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
     VmdAudioContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    s->channels = avctx->channels;
-    s->bits = avctx->bits_per_coded_sample;
-    s->block_align = avctx->block_align;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     s->out_bps = av_get_bits_per_sample_fmt(avctx->sample_fmt) >> 3;
 
-    av_log(s->avctx, AV_LOG_DEBUG, "%d channels, %d bits/sample, block align = %d, sample rate = %d\n",
-            s->channels, s->bits, s->block_align, avctx->sample_rate);
+    av_log(avctx, AV_LOG_DEBUG, "%d channels, %d bits/sample, "
+           "block align = %d, sample rate = %d\n",
+           avctx->channels, avctx->bits_per_coded_sample, avctx->block_align,
+           avctx->sample_rate);
 
     return 0;
 }
@@ -482,14 +478,14 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
     const uint8_t *buf, int silent_chunks, int data_size)
 {
     int i;
-    int silent_size = s->block_align * silent_chunks * s->out_bps;
+    int silent_size = s->avctx->block_align * silent_chunks * s->out_bps;
 
     if (silent_chunks) {
         memset(data, 0, silent_size);
         data += silent_size;
     }
-    if (s->bits == 16)
-        vmdaudio_decode_audio(s, data, buf, data_size, s->channels == 2);
+    if (s->avctx->bits_per_coded_sample == 16)
+        vmdaudio_decode_audio(s, data, buf, data_size, s->avctx->channels == 2);
     else {
         /* copy the data but convert it to signed */
         for (i = 0; i < data_size; i++){
@@ -537,7 +533,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     }
 
     /* ensure output buffer is large enough */
-    if (*data_size < (s->block_align*silent_chunks + buf_size) * s->out_bps)
+    if (*data_size < (avctx->block_align*silent_chunks + buf_size) * s->out_bps)
         return -1;
 
     *data_size = vmdaudio_loadsound(s, output_samples, buf, silent_chunks, buf_size);
