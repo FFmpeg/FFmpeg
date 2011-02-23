@@ -477,13 +477,15 @@ static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
 }
 
 static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
-    const uint8_t *buf, int silence, int data_size)
+    const uint8_t *buf, int silent_chunks, int data_size)
 {
     int i;
+    int silent_size = s->block_align * silent_chunks * 2;
 
-    if (silence) {
-        memset(data, 0, data_size * 2);
-    } else {
+    if (silent_chunks) {
+        memset(data, 0, silent_size);
+        data += silent_size;
+    }
         if (s->bits == 16)
             vmdaudio_decode_audio(s, data, buf, data_size, s->channels == 2);
         else {
@@ -493,9 +495,8 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
                 *data++ = buf[i] + 0x80;
             }
         }
-    }
 
-    return data_size * 2;
+    return silent_size + data_size * 2;
 }
 
 static int vmdaudio_decode_frame(AVCodecContext *avctx,
@@ -528,21 +529,15 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     } else if (block_type == BLOCK_TYPE_INITIAL) {
         /* initial chunk, may contain audio and silence */
         uint32_t flags = AV_RB32(buf);
-        int raw_block_size = s->block_align *
-                             (av_get_bits_per_sample_fmt(avctx->sample_fmt) / 8);
         int silent_chunks = av_popcount(flags);
         buf      += 4;
         buf_size -= 4;
         if(*data_size < (s->block_align*silent_chunks + buf_size) * 2)
             return -1;
-        *data_size = 0;
-        memset(output_samples, 0, raw_block_size * silent_chunks);
-        output_samples += raw_block_size * silent_chunks;
-        *data_size = raw_block_size * silent_chunks;
-        *data_size += vmdaudio_loadsound(s, output_samples, buf, 0, buf_size);
+        *data_size = vmdaudio_loadsound(s, output_samples, buf, silent_chunks, buf_size);
     } else if (block_type == BLOCK_TYPE_SILENCE) {
         /* silent chunk */
-        *data_size = vmdaudio_loadsound(s, output_samples, buf, 1, s->block_align);
+        *data_size = vmdaudio_loadsound(s, output_samples, buf, 1, 0);
     }
 
     return avpkt->size;
