@@ -539,7 +539,8 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     } else if (buf[6] == 2) {
         /* initial chunk, may contain audio and silence */
         uint32_t flags = AV_RB32(p);
-        int raw_block_size = s->block_align * s->bits / 8;
+        int raw_block_size = s->block_align *
+                             (av_get_bits_per_sample_fmt(avctx->sample_fmt) / 8);
         int silent_chunks;
         if(flags == 0xFFFFFFFF)
             silent_chunks = 32;
