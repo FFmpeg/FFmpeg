@@ -534,7 +534,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
         *data_size += vmdaudio_loadsound(s, output_samples, p + 4, 0, buf_size - 20);
     } else if (buf[6] == 3) {
         /* silent chunk */
-        *data_size = vmdaudio_loadsound(s, output_samples, p, 1, 0);
+        *data_size = vmdaudio_loadsound(s, output_samples, p, 1, s->block_align);
     }
 
     return buf_size;
