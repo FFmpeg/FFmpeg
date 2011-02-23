@@ -520,11 +520,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
         uint32_t flags = AV_RB32(p);
         int raw_block_size = s->block_align *
                              (av_get_bits_per_sample_fmt(avctx->sample_fmt) / 8);
-        int silent_chunks;
-        if(flags == 0xFFFFFFFF)
-            silent_chunks = 32;
-        else
-            silent_chunks = av_log2(flags + 1);
+        int silent_chunks = av_popcount(flags);
         if(*data_size < (s->block_align*silent_chunks + buf_size - 20) * 2)
             return -1;
         *data_size = 0;
