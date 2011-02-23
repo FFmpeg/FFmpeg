@@ -445,7 +445,10 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
     VmdAudioContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    if (avctx->bits_per_coded_sample == 16)
+        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    else
+        avctx->sample_fmt = AV_SAMPLE_FMT_U8;
     s->out_bps = av_get_bits_per_sample_fmt(avctx->sample_fmt) >> 3;
 
     av_log(avctx, AV_LOG_DEBUG, "%d channels, %d bits/sample, "
@@ -477,21 +480,17 @@ static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
 static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
     const uint8_t *buf, int silent_chunks, int data_size)
 {
-    int i;
     int silent_size = s->avctx->block_align * silent_chunks * s->out_bps;
 
     if (silent_chunks) {
-        memset(data, 0, silent_size);
+        memset(data, s->out_bps == 2 ? 0x00 : 0x80, silent_size);
         data += silent_size;
     }
     if (s->avctx->bits_per_coded_sample == 16)
         vmdaudio_decode_audio(s, data, buf, data_size, s->avctx->channels == 2);
     else {
-        /* copy the data but convert it to signed */
-        for (i = 0; i < data_size; i++){
-            *data++ = buf[i] + 0x80;
-            *data++ = buf[i] + 0x80;
-        }
+        /* just copy the data */
+        memcpy(data, buf, data_size);
     }
 
     return silent_size + data_size * s->out_bps;
