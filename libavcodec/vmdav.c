@@ -414,6 +414,10 @@ static av_cold int vmdvideo_decode_end(AVCodecContext *avctx)
  * Audio Decoder
  */
 
+#define BLOCK_TYPE_AUDIO    1
+#define BLOCK_TYPE_INITIAL  2
+#define BLOCK_TYPE_SILENCE  3
+
 typedef struct VmdAudioContext {
     AVCodecContext *avctx;
     int channels;
@@ -504,6 +508,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     VmdAudioContext *s = avctx->priv_data;
+    int block_type;
     unsigned char *output_samples = (unsigned char *)data;
 
     /* point to the start of the encoded data */
@@ -512,10 +517,12 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     if (buf_size < 16)
         return buf_size;
 
-    if (buf[6] == 1) {
+    block_type = buf[6];
+
+    if (block_type == BLOCK_TYPE_AUDIO) {
         /* the chunk contains audio */
         *data_size = vmdaudio_loadsound(s, output_samples, p, 0, buf_size - 16);
-    } else if (buf[6] == 2) {
+    } else if (block_type == BLOCK_TYPE_INITIAL) {
         /* initial chunk, may contain audio and silence */
         uint32_t flags = AV_RB32(p);
         int raw_block_size = s->block_align *
@@ -528,7 +535,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
         output_samples += raw_block_size * silent_chunks;
         *data_size = raw_block_size * silent_chunks;
         *data_size += vmdaudio_loadsound(s, output_samples, p + 4, 0, buf_size - 20);
-    } else if (buf[6] == 3) {
+    } else if (block_type == BLOCK_TYPE_SILENCE) {
         /* silent chunk */
         *data_size = vmdaudio_loadsound(s, output_samples, p, 1, s->block_align);
     }
