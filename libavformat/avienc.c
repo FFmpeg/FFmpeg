@@ -20,6 +20,7 @@
  */
 #include "avformat.h"
 #include "avi.h"
+#include "avio_internal.h"
 #include "riff.h"
 #include "libavutil/intreadwrite.h"
 
@@ -77,9 +78,9 @@ static int64_t avi_start_new_riff(AVFormatContext *s, AVIOContext *pb,
     }
 
     avi->riff_start = ff_start_tag(pb, "RIFF");
-    put_tag(pb, riff_tag);
+    ffio_wfourcc(pb, riff_tag);
     loff = ff_start_tag(pb, "LIST");
-    put_tag(pb, list_tag);
+    ffio_wfourcc(pb, list_tag);
     return loff;
 }
 
@@ -107,7 +108,7 @@ static void avi_write_info_tag(AVIOContext *pb, const char *tag, const char *str
     int len = strlen(str);
     if (len > 0) {
         len++;
-        put_tag(pb, tag);
+        ffio_wfourcc(pb, tag);
         avio_wl32(pb, len);
         avio_put_str(pb, str);
         if (len & 1)
@@ -175,7 +176,7 @@ static int avi_write_header(AVFormatContext *s)
     list1 = avi_start_new_riff(s, pb, "AVI ", "hdrl");
 
     /* avi header */
-    put_tag(pb, "avih");
+    ffio_wfourcc(pb, "avih");
     avio_wl32(pb, 14 * 4);
     bitrate = 0;
 
@@ -221,7 +222,7 @@ static int avi_write_header(AVFormatContext *s)
     for(i=0;i<n;i++) {
         AVIStream *avist= s->streams[i]->priv_data;
         list2 = ff_start_tag(pb, "LIST");
-        put_tag(pb, "strl");
+        ffio_wfourcc(pb, "strl");
 
         stream = s->streams[i]->codec;
 
@@ -235,10 +236,10 @@ static int avi_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "Subtitle streams other than DivX XSUB are not supported by the AVI muxer.\n");
                 return AVERROR_PATCHWELCOME;
             }
-        case AVMEDIA_TYPE_VIDEO: put_tag(pb, "vids"); break;
-        case AVMEDIA_TYPE_AUDIO: put_tag(pb, "auds"); break;
-//        case AVMEDIA_TYPE_TEXT : put_tag(pb, "txts"); break;
-        case AVMEDIA_TYPE_DATA : put_tag(pb, "dats"); break;
+        case AVMEDIA_TYPE_VIDEO: ffio_wfourcc(pb, "vids"); break;
+        case AVMEDIA_TYPE_AUDIO: ffio_wfourcc(pb, "auds"); break;
+//      case AVMEDIA_TYPE_TEXT : ffio_wfourcc(pb, "txts"); break;
+        case AVMEDIA_TYPE_DATA : ffio_wfourcc(pb, "dats"); break;
         }
         if(stream->codec_type == AVMEDIA_TYPE_VIDEO ||
            stream->codec_id == CODEC_ID_XSUB)
@@ -317,7 +318,7 @@ static int avi_write_header(AVFormatContext *s)
             avio_w8(pb, 0);          /* bIndexSubType (0 == frame index) */
             avio_w8(pb, 0);          /* bIndexType (0 == AVI_INDEX_OF_INDEXES) */
             avio_wl32(pb, 0);        /* nEntriesInUse (will fill out later on) */
-            put_tag(pb, avi_stream2fourcc(&tag[0], i, stream->codec_type));
+            ffio_wfourcc(pb, avi_stream2fourcc(&tag[0], i, stream->codec_type));
                                     /* dwChunkId */
             avio_wl64(pb, 0);        /* dwReserved[3]
             avio_wl32(pb, 0);           Must be 0.    */
@@ -364,8 +365,8 @@ static int avi_write_header(AVFormatContext *s)
     if (!url_is_streamed(pb)) {
         /* AVI could become an OpenDML one, if it grows beyond 2Gb range */
         avi->odml_list = ff_start_tag(pb, "JUNK");
-        put_tag(pb, "odml");
-        put_tag(pb, "dmlh");
+        ffio_wfourcc(pb, "odml");
+        ffio_wfourcc(pb, "dmlh");
         avio_wl32(pb, 248);
         for (i = 0; i < 248; i+= 4)
              avio_wl32(pb, 0);
@@ -375,7 +376,7 @@ static int avi_write_header(AVFormatContext *s)
     ff_end_tag(pb, list1);
 
     list2 = ff_start_tag(pb, "LIST");
-    put_tag(pb, "INFO");
+    ffio_wfourcc(pb, "INFO");
     ff_metadata_conv(&s->metadata, ff_avi_metadata_conv, NULL);
     for (i = 0; *ff_avi_tags[i]; i++) {
         if ((t = av_metadata_get(s->metadata, ff_avi_tags[i], NULL, AV_METADATA_MATCH_CASE)))
@@ -390,7 +391,7 @@ static int avi_write_header(AVFormatContext *s)
     ff_end_tag(pb, list2);
 
     avi->movi_list = ff_start_tag(pb, "LIST");
-    put_tag(pb, "movi");
+    ffio_wfourcc(pb, "movi");
 
     put_flush_packet(pb);
 
@@ -419,7 +420,7 @@ static int avi_write_ix(AVFormatContext *s)
 
          /* Writing AVI OpenDML leaf index chunk */
          ix = url_ftell(pb);
-         put_tag(pb, &ix_tag[0]);     /* ix?? */
+         ffio_wfourcc(pb, &ix_tag[0]);     /* ix?? */
          avio_wl32(pb, avist->indexes.entry * 8 + 24);
                                       /* chunk size */
          avio_wl16(pb, 2);             /* wLongsPerEntry */
@@ -427,7 +428,7 @@ static int avi_write_ix(AVFormatContext *s)
          avio_w8(pb, 1);             /* bIndexType (1 == AVI_INDEX_OF_CHUNKS) */
          avio_wl32(pb, avist->indexes.entry);
                                       /* nEntriesInUse */
-         put_tag(pb, &tag[0]);        /* dwChunkId */
+         ffio_wfourcc(pb, &tag[0]);    /* dwChunkId */
          avio_wl64(pb, avi->movi_list);/* qwBaseOffset */
          avio_wl32(pb, 0);             /* dwReserved_3 (must be 0) */
 
@@ -442,7 +443,7 @@ static int avi_write_ix(AVFormatContext *s)
 
          /* Updating one entry in the AVI OpenDML master index */
          url_fseek(pb, avist->indexes.indx_start - 8, SEEK_SET);
-         put_tag(pb, "indx");                 /* enabling this entry */
+         ffio_wfourcc(pb, "indx");            /* enabling this entry */
          url_fskip(pb, 8);
          avio_wl32(pb, avi->riff_id);         /* nEntriesInUse */
          url_fskip(pb, 16*avi->riff_id);
@@ -492,7 +493,7 @@ static int avi_write_idx1(AVFormatContext *s)
                 avist= s->streams[stream_id]->priv_data;
                 avi_stream2fourcc(&tag[0], stream_id,
                                   s->streams[stream_id]->codec->codec_type);
-                put_tag(pb, &tag[0]);
+                ffio_wfourcc(pb, &tag[0]);
                 avio_wl32(pb, ie->flags);
                 avio_wl32(pb, ie->pos);
                 avio_wl32(pb, ie->len);
@@ -601,7 +602,7 @@ static int avi_write_trailer(AVFormatContext *s)
 
             file_size = url_ftell(pb);
             url_fseek(pb, avi->odml_list - 8, SEEK_SET);
-            put_tag(pb, "LIST"); /* Making this AVI OpenDML one */
+            ffio_wfourcc(pb, "LIST"); /* Making this AVI OpenDML one */
             url_fskip(pb, 16);
 
             for (n=nb_frames=0;n<s->nb_streams;n++) {

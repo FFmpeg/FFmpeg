@@ -28,6 +28,7 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "pcm.h"
 #include "riff.h"
 
@@ -53,7 +54,7 @@ static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
 {
     if(!enc->codec_tag)
         return -1;
-    put_tag(pb, ".snd");       /* magic number */
+    ffio_wfourcc(pb, ".snd");    /* magic number */
     avio_wb32(pb, 24);           /* header size */
     avio_wb32(pb, AU_UNKNOWN_SIZE); /* data size */
     avio_wb32(pb, (uint32_t)enc->codec_tag);     /* codec ID */

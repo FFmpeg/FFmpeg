@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "avio_internal.h"
 #include "rm.h"
 
 typedef struct {
@@ -74,13 +75,13 @@ static int rv10_write_header(AVFormatContext *ctx,
 
     start_ptr = s->buf_ptr;
 
-    put_tag(s, ".RMF");
+    ffio_wfourcc(s, ".RMF");
     avio_wb32(s,18); /* header size */
     avio_wb16(s,0);
     avio_wb32(s,0);
     avio_wb32(s,4 + ctx->nb_streams); /* num headers */
 
-    put_tag(s,"PROP");
+    ffio_wfourcc(s,"PROP");
     avio_wb32(s, 50);
     avio_wb16(s, 0);
     packet_max_size = 0;
@@ -123,7 +124,7 @@ static int rv10_write_header(AVFormatContext *ctx,
 
     /* comments */
 
-    put_tag(s,"CONT");
+    ffio_wfourcc(s,"CONT");
     size =  4 * 2 + 10;
     for(i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
         tag = av_metadata_get(ctx->metadata, ff_rm_metadata[i], NULL, 0);
@@ -151,7 +152,7 @@ static int rv10_write_header(AVFormatContext *ctx,
             codec_data_size = 34;
         }
 
-        put_tag(s,"MDPR");
+        ffio_wfourcc(s,"MDPR");
         size = 10 + 9 * 4 + strlen(desc) + strlen(mimetype) + codec_data_size;
         avio_wb32(s, size);
         avio_wb16(s, 0);
@@ -186,7 +187,7 @@ static int rv10_write_header(AVFormatContext *ctx,
             put_tag(s, ".ra");
             avio_w8(s, 0xfd);
             avio_wb32(s, 0x00040000); /* version */
-            put_tag(s, ".ra4");
+            ffio_wfourcc(s, ".ra4");
             avio_wb32(s, 0x01b53530); /* stream length */
             avio_wb16(s, 4); /* unknown */
             avio_wb32(s, 0x39); /* header size */
@@ -239,10 +240,11 @@ static int rv10_write_header(AVFormatContext *ctx,
         } else {
             /* video codec info */
             avio_wb32(s,34); /* size */
+            ffio_wfourcc(s, "VIDO");
             if(stream->enc->codec_id == CODEC_ID_RV10)
-                put_tag(s,"VIDORV10");
+                ffio_wfourcc(s,"RV10");
             else
-                put_tag(s,"VIDORV20");
+                ffio_wfourcc(s,"RV20");
             avio_wb16(s, stream->enc->width);
             avio_wb16(s, stream->enc->height);
             avio_wb16(s, (int) stream->frame_rate); /* frames per seconds ? */
@@ -270,7 +272,7 @@ static int rv10_write_header(AVFormatContext *ctx,
     data_offset_ptr[3] = data_pos;
 
     /* data stream */
-    put_tag(s,"DATA");
+    ffio_wfourcc(s, "DATA");
     avio_wb32(s,data_size + 10 + 8);
     avio_wb16(s,0);
 

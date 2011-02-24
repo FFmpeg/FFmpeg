@@ -21,6 +21,7 @@
 
 #include "libavcodec/avcodec.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "riff.h"
 #include "libavcodec/bytestream.h"
 
@@ -321,7 +322,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
 #if CONFIG_MUXERS
 int64_t ff_start_tag(AVIOContext *pb, const char *tag)
 {
-    put_tag(pb, tag);
+    ffio_wfourcc(pb, tag);
     avio_wl32(pb, 0);
     return url_ftell(pb);
 }
