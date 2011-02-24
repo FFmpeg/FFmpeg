@@ -73,12 +73,12 @@ static void filter_line_c(uint8_t *dst,
                           + FFABS(cur[mrefs+1] - cur[prefs+1]) - 1;
 
 #define CHECK(j)\
-    {   int score = FFABS(cur[mrefs-1+j] - cur[prefs-1-j])\
-                  + FFABS(cur[mrefs  +j] - cur[prefs  -j])\
-                  + FFABS(cur[mrefs+1+j] - cur[prefs+1-j]);\
+    {   int score = FFABS(cur[mrefs-1+(j)] - cur[prefs-1-(j)])\
+                  + FFABS(cur[mrefs  +(j)] - cur[prefs  -(j)])\
+                  + FFABS(cur[mrefs+1+(j)] - cur[prefs+1-(j)]);\
         if (score < spatial_score) {\
             spatial_score= score;\
-            spatial_pred= (cur[mrefs  +j] + cur[prefs  -j])>>1;\
+            spatial_pred= (cur[mrefs  +(j)] + cur[prefs  -(j)])>>1;\
 
         CHECK(-1) CHECK(-2) }} }}
         CHECK( 1) CHECK( 2) }} }}
