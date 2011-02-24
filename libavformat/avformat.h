@@ -949,7 +949,7 @@ enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
  * @param buf buffer
  * @param size buffer size
  *
- * @see av_hex_dump_log, av_pkt_dump, av_pkt_dump_log
+ * @see av_hex_dump_log, av_pkt_dump2, av_pkt_dump_log2
  */
 void av_hex_dump(FILE *f, uint8_t *buf, int size);
 
@@ -963,7 +963,7 @@ void av_hex_dump(FILE *f, uint8_t *buf, int size);
  * @param buf buffer
  * @param size buffer size
  *
- * @see av_hex_dump, av_pkt_dump, av_pkt_dump_log
+ * @see av_hex_dump, av_pkt_dump2, av_pkt_dump_log2
  */
 void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size);
 
@@ -973,8 +973,11 @@ void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size);
  * @param f The file stream pointer where the dump should be sent to.
  * @param pkt packet to dump
  * @param dump_payload True if the payload must be displayed, too.
+ * @param st AVStream that the packet belongs to
  */
-void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
+void av_pkt_dump2(FILE *f, AVPacket *pkt, int dump_payload, AVStream *st);
+
+attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 
 /**
  * Send a nice dump of a packet to the log.
@@ -985,8 +988,13 @@ void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
  * higher importance.
  * @param pkt packet to dump
  * @param dump_payload True if the payload must be displayed, too.
+ * @param st AVStream that the packet belongs to
  */
-void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload);
+void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
+                      AVStream *st);
+
+attribute_deprecated void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt,
+                                          int dump_payload);
 
 /**
  * Initialize libavformat and register all the muxers, demuxers and
