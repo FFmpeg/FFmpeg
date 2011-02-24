@@ -2578,7 +2578,8 @@ static int transcode(AVFormatContext **output_files,
         memset(no_packet, 0, sizeof(no_packet));
 
         if (do_pkt_dump) {
-            av_pkt_dump_log(NULL, AV_LOG_DEBUG, &pkt, do_hex_dump);
+            av_pkt_dump_log2(NULL, AV_LOG_DEBUG, &pkt, do_hex_dump,
+                             is->streams[pkt.stream_index]);
         }
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
