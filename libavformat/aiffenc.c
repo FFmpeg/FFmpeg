@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "aiff.h"
+#include "avio_internal.h"
 
 typedef struct {
     int64_t form;
@@ -43,10 +44,10 @@ static int aiff_write_header(AVFormatContext *s)
         aifc = 1;
 
     /* FORM AIFF header */
-    put_tag(pb, "FORM");
+    ffio_wfourcc(pb, "FORM");
     aiff->form = url_ftell(pb);
     avio_wb32(pb, 0);                    /* file length */
-    put_tag(pb, aifc ? "AIFC" : "AIFF");
+    ffio_wfourcc(pb, aifc ? "AIFC" : "AIFF");
 
     if (aifc) { // compressed audio
         enc->bits_per_coded_sample = 16;
@@ -55,13 +56,13 @@ static int aiff_write_header(AVFormatContext *s)
             return -1;
         }
         /* Version chunk */
-        put_tag(pb, "FVER");
+        ffio_wfourcc(pb, "FVER");
         avio_wb32(pb, 4);
         avio_wb32(pb, 0xA2805140);
     }
 
     /* Common chunk */
-    put_tag(pb, "COMM");
+    ffio_wfourcc(pb, "COMM");
     avio_wb32(pb, aifc ? 24 : 18); /* size */
     avio_wb16(pb, enc->channels);  /* Number of channels */
 
@@ -88,7 +89,7 @@ static int aiff_write_header(AVFormatContext *s)
     }
 
     /* Sound data chunk */
-    put_tag(pb, "SSND");
+    ffio_wfourcc(pb, "SSND");
     aiff->ssnd = url_ftell(pb);         /* Sound chunk size */
     avio_wb32(pb, 0);                    /* Sound samples data size */
     avio_wb32(pb, 0);                    /* Data offset */

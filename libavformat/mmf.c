@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "avio_internal.h"
 #include "pcm.h"
 #include "riff.h"
 
@@ -70,7 +71,7 @@ static int mmf_write_header(AVFormatContext *s)
         return -1;
     }
 
-    put_tag(pb, "MMMD");
+    ffio_wfourcc(pb, "MMMD");
     avio_wb32(pb, 0);
     pos = ff_start_tag(pb, "CNTI");
     avio_w8(pb, 0); /* class */
@@ -91,7 +92,7 @@ static int mmf_write_header(AVFormatContext *s)
     avio_w8(pb, 2); /* time base d */
     avio_w8(pb, 2); /* time base g */
 
-    put_tag(pb, "Atsq");
+    ffio_wfourcc(pb, "Atsq");
     avio_wb32(pb, 16);
     mmf->atsqpos = url_ftell(pb);
     /* Will be filled on close */

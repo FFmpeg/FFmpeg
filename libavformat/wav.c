@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "avio_internal.h"
 #include "pcm.h"
 #include "riff.h"
 
@@ -42,9 +43,9 @@ static int wav_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t fmt, fact;
 
-    put_tag(pb, "RIFF");
+    ffio_wfourcc(pb, "RIFF");
     avio_wl32(pb, 0); /* file length */
-    put_tag(pb, "WAVE");
+    ffio_wfourcc(pb, "WAVE");
 
     /* format header */
     fmt = ff_start_tag(pb, "fmt ");

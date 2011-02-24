@@ -25,6 +25,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/flac.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "vorbiscomment.h"
 
@@ -85,7 +86,7 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     if (ret < 0)
         return ret;
     init_checksum(pb, ff_crc04C11DB7_update, 0);
-    put_tag(pb, "OggS");
+    ffio_wfourcc(pb, "OggS");
     avio_w8(pb, 0);
     avio_w8(pb, page->flags | extra_flags);
     avio_wl64(pb, page->granule);
