@@ -449,12 +449,14 @@ void avio_wb24(AVIOContext *s, unsigned int val)
     avio_w8(s, val);
 }
 
+#if FF_API_OLD_AVIO
 void put_tag(AVIOContext *s, const char *tag)
 {
     while (*tag) {
         avio_w8(s, *tag++);
     }
 }
+#endif
 
 /* Input stream */
 
