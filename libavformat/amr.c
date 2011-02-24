@@ -40,11 +40,11 @@ static int amr_write_header(AVFormatContext *s)
 
     if (enc->codec_id == CODEC_ID_AMR_NB)
     {
-        put_tag(pb, AMR_header);       /* magic number */
+        avio_write(pb, AMR_header,   sizeof(AMR_header)   - 1); /* magic number */
     }
     else if(enc->codec_id == CODEC_ID_AMR_WB)
     {
-        put_tag(pb, AMRWB_header);       /* magic number */
+        avio_write(pb, AMRWB_header, sizeof(AMRWB_header) - 1); /* magic number */
     }
     else
     {

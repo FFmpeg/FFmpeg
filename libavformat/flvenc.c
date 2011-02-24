@@ -199,7 +199,7 @@ static int flv_write_header(AVFormatContext *s)
         }
         av_set_pts_info(s->streams[i], 32, 1, 1000); /* 32 bit pts in ms */
     }
-    put_tag(pb,"FLV");
+    avio_write(pb, "FLV", 3);
     avio_w8(pb,1);
     avio_w8(pb,   FLV_HEADER_FLAG_HASAUDIO * !!audio_enc
                  + FLV_HEADER_FLAG_HASVIDEO * !!video_enc);

@@ -79,7 +79,7 @@ static int mmf_write_header(AVFormatContext *s)
     avio_w8(pb, 0); /* code type */
     avio_w8(pb, 0); /* status */
     avio_w8(pb, 0); /* counts */
-    put_tag(pb, "VN:libavcodec,"); /* metadata ("ST:songtitle,VN:version,...") */
+    avio_write(pb, "VN:libavcodec,", sizeof("VN:libavcodec,") -1); /* metadata ("ST:songtitle,VN:version,...") */
     end_tag_be(pb, pos);
 
     avio_write(pb, "ATR\x00", 4);

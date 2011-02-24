@@ -114,8 +114,8 @@ static int gif_image_write_header(AVIOContext *pb,
     int i;
     unsigned int v;
 
-    put_tag(pb, "GIF");
-    put_tag(pb, "89a");
+    avio_write(pb, "GIF", 3);
+    avio_write(pb, "89a", 3);
     avio_wl16(pb, width);
     avio_wl16(pb, height);
 
@@ -162,7 +162,7 @@ static int gif_image_write_header(AVIOContext *pb,
     avio_w8(pb, 0x21);
     avio_w8(pb, 0xff);
     avio_w8(pb, 0x0b);
-        put_tag(pb, "NETSCAPE2.0");  // bytes 4 to 14
+        avio_write(pb, "NETSCAPE2.0", sizeof("NETSCAPE2.0") - 1);  // bytes 4 to 14
         avio_w8(pb, 0x03); // byte 15
         avio_w8(pb, 0x01); // byte 16
         avio_wl16(pb, (uint16_t)loop_count);
