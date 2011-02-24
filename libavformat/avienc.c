@@ -318,7 +318,7 @@ static int avi_write_header(AVFormatContext *s)
             avio_w8(pb, 0);          /* bIndexSubType (0 == frame index) */
             avio_w8(pb, 0);          /* bIndexType (0 == AVI_INDEX_OF_INDEXES) */
             avio_wl32(pb, 0);        /* nEntriesInUse (will fill out later on) */
-            ffio_wfourcc(pb, avi_stream2fourcc(&tag[0], i, stream->codec_type));
+            ffio_wfourcc(pb, avi_stream2fourcc(tag, i, stream->codec_type));
                                     /* dwChunkId */
             avio_wl64(pb, 0);        /* dwReserved[3]
             avio_wl32(pb, 0);           Must be 0.    */
@@ -415,12 +415,12 @@ static int avi_write_ix(AVFormatContext *s)
         AVIStream *avist= s->streams[i]->priv_data;
          int64_t ix, pos;
 
-         avi_stream2fourcc(&tag[0], i, s->streams[i]->codec->codec_type);
+         avi_stream2fourcc(tag, i, s->streams[i]->codec->codec_type);
          ix_tag[3] = '0' + i;
 
          /* Writing AVI OpenDML leaf index chunk */
          ix = url_ftell(pb);
-         ffio_wfourcc(pb, &ix_tag[0]);     /* ix?? */
+         ffio_wfourcc(pb, ix_tag);     /* ix?? */
          avio_wl32(pb, avist->indexes.entry * 8 + 24);
                                       /* chunk size */
          avio_wl16(pb, 2);             /* wLongsPerEntry */
@@ -428,7 +428,7 @@ static int avi_write_ix(AVFormatContext *s)
          avio_w8(pb, 1);             /* bIndexType (1 == AVI_INDEX_OF_CHUNKS) */
          avio_wl32(pb, avist->indexes.entry);
                                       /* nEntriesInUse */
-         ffio_wfourcc(pb, &tag[0]);    /* dwChunkId */
+         ffio_wfourcc(pb, tag);        /* dwChunkId */
          avio_wl64(pb, avi->movi_list);/* qwBaseOffset */
          avio_wl32(pb, 0);             /* dwReserved_3 (must be 0) */
 
@@ -491,9 +491,9 @@ static int avi_write_idx1(AVFormatContext *s)
             }
             if (!empty) {
                 avist= s->streams[stream_id]->priv_data;
-                avi_stream2fourcc(&tag[0], stream_id,
+                avi_stream2fourcc(tag, stream_id,
                                   s->streams[stream_id]->codec->codec_type);
-                ffio_wfourcc(pb, &tag[0]);
+                ffio_wfourcc(pb, tag);
                 avio_wl32(pb, ie->flags);
                 avio_wl32(pb, ie->pos);
                 avio_wl32(pb, ie->len);
@@ -545,7 +545,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         avi->movi_list = avi_start_new_riff(s, pb, "AVIX", "movi");
     }
 
-    avi_stream2fourcc(&tag[0], stream_index, enc->codec_type);
+    avi_stream2fourcc(tag, stream_index, enc->codec_type);
     if(pkt->flags&AV_PKT_FLAG_KEY)
         flags = 0x10;
     if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
