@@ -50,7 +50,7 @@ static void write_tags(AVIOContext *s, AVMetadata *m)
 
 static int write_header(AVFormatContext *s)
 {
-    put_tag(s->pb, ID_STRING);
+    avio_write(s->pb, ID_STRING, sizeof(ID_STRING) - 1);
     avio_w8(s->pb, '1');          // version
     avio_w8(s->pb, '\n');
     put_flush_packet(s->pb);
@@ -64,14 +64,14 @@ static int write_trailer(AVFormatContext *s)
     write_tags(s->pb, s->metadata);
 
     for (i = 0; i < s->nb_streams; i++) {
-        put_tag(s->pb, ID_STREAM);
+        avio_write(s->pb, ID_STREAM, sizeof(ID_STREAM) - 1);
         avio_w8(s->pb, '\n');
         write_tags(s->pb, s->streams[i]->metadata);
     }
 
     for (i = 0; i < s->nb_chapters; i++) {
         AVChapter *ch = s->chapters[i];
-        put_tag(s->pb, ID_CHAPTER);
+        avio_write(s->pb, ID_CHAPTER, sizeof(ID_CHAPTER) - 1);
         avio_w8(s->pb, '\n');
         url_fprintf(s->pb, "TIMEBASE=%d/%d\n", ch->time_base.num, ch->time_base.den);
         url_fprintf(s->pb, "START=%"PRId64"\n", ch->start);

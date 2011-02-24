@@ -184,7 +184,7 @@ static int rv10_write_header(AVFormatContext *ctx,
             coded_frame_size = (stream->enc->bit_rate *
                                 stream->enc->frame_size) / (8 * sample_rate);
             /* audio codec info */
-            put_tag(s, ".ra");
+            avio_write(s, ".ra", 3);
             avio_w8(s, 0xfd);
             avio_wb32(s, 0x00040000); /* version */
             ffio_wfourcc(s, ".ra4");

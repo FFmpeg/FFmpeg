@@ -224,7 +224,7 @@ static int gxf_write_track_description(AVFormatContext *s, GXFStreamContext *sc,
     /* media file name */
     avio_w8(pb, TRACK_NAME);
     avio_w8(pb, strlen(ES_NAME_PATTERN) + 3);
-    put_tag(pb, ES_NAME_PATTERN);
+    avio_write(pb, ES_NAME_PATTERN, sizeof(ES_NAME_PATTERN) - 1);
     avio_wb16(pb, sc->media_info);
     avio_w8(pb, 0);
 
@@ -269,6 +269,7 @@ static int gxf_write_material_data_section(AVFormatContext *s)
     GXFContext *gxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t pos;
+    int len;
     const char *filename = strrchr(s->filename, '/');
 
     pos = url_ftell(pb);
@@ -279,10 +280,12 @@ static int gxf_write_material_data_section(AVFormatContext *s)
         filename++;
     else
         filename = s->filename;
+    len = strlen(filename);
+
     avio_w8(pb, MAT_NAME);
-    avio_w8(pb, strlen(SERVER_PATH) + strlen(filename) + 1);
-    put_tag(pb, SERVER_PATH);
-    put_tag(pb, filename);
+    avio_w8(pb, strlen(SERVER_PATH) + len + 1);
+    avio_write(pb, SERVER_PATH, sizeof(SERVER_PATH) - 1);
+    avio_write(pb, filename, len);
     avio_w8(pb, 0);
 
     /* first field */

@@ -229,7 +229,7 @@ static int swf_write_header(AVFormatContext *s)
     else
         swf->samples_per_frame = (swf->audio_enc->sample_rate * rate_base) / rate;
 
-    put_tag(pb, "FWS");
+    avio_write(pb, "FWS", 3);
 
     if (!strcmp("avm2", s->oformat->name))
         version = 9;
@@ -361,7 +361,7 @@ static int swf_write_video(AVFormatContext *s,
             avio_wl16(pb, VIDEO_ID);
             put_swf_matrix(pb, 1 << FRAC_BITS, 0, 0, 1 << FRAC_BITS, 0, 0);
             avio_wl16(pb, swf->video_frame_number);
-            put_tag(pb, "video");
+            avio_write(pb, "video", 5);
             avio_w8(pb, 0x00);
             put_swf_end_tag(s);
         } else {
