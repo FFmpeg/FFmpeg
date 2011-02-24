@@ -407,6 +407,7 @@ attribute_deprecated void         put_le24(AVIOContext *s, unsigned int val);
 attribute_deprecated void         put_be24(AVIOContext *s, unsigned int val);
 attribute_deprecated void         put_le16(AVIOContext *s, unsigned int val);
 attribute_deprecated void         put_be16(AVIOContext *s, unsigned int val);
+attribute_deprecated void         put_tag(AVIOContext *s, const char *tag);
 /**
  * @}
  */
@@ -443,7 +444,6 @@ void avio_wl24(AVIOContext *s, unsigned int val);
 void avio_wb24(AVIOContext *s, unsigned int val);
 void avio_wl16(AVIOContext *s, unsigned int val);
 void avio_wb16(AVIOContext *s, unsigned int val);
-void put_tag(AVIOContext *s, const char *tag);
 
 #if FF_API_OLD_AVIO
 attribute_deprecated void put_strz(AVIOContext *s, const char *buf);
