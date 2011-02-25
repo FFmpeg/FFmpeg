@@ -1216,11 +1216,16 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     /* Track width and height, for visual only */
     if(st && (track->enc->codec_type == AVMEDIA_TYPE_VIDEO ||
               track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
+        if(track->mode == MODE_MOV) {
+            avio_wb32(pb, track->enc->width << 16);
+            avio_wb32(pb, track->enc->height << 16);
+        } else {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
         if(!sample_aspect_ratio || track->height != track->enc->height)
             sample_aspect_ratio = 1;
         avio_wb32(pb, sample_aspect_ratio * track->enc->width*0x10000);
         avio_wb32(pb, track->height*0x10000);
+        }
     }
     else {
         avio_wb32(pb, 0);
@@ -1228,6 +1233,31 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     }
     return 0x5c;
 }
+
+static int mov_write_tapt_tag(ByteIOContext *pb, MOVTrack *track)
+{
+    int32_t width = av_rescale(track->enc->sample_aspect_ratio.num, track->enc->width,
+                               track->enc->sample_aspect_ratio.den);
+
+    int64_t pos = url_ftell(pb);
+
+    avio_wb32(pb, 0); /* size */
+    put_tag(pb, "tapt");
+
+    avio_wb32(pb, 20);
+    put_tag(pb, "clef");
+    avio_wb32(pb, 0);
+    avio_wb32(pb, width << 16);
+    avio_wb32(pb, track->enc->height << 16);
+
+    avio_wb32(pb, 20);
+    put_tag(pb, "enof");
+    avio_wb32(pb, 0);
+    avio_wb32(pb, track->enc->width << 16);
+    avio_wb32(pb, track->enc->height << 16);
+
+    return updateSize(pb, pos);
+};
 
 // This box seems important for the psp playback ... without it the movie seems to hang
 static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
@@ -1311,6 +1341,11 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
         mov_write_uuid_tag_psp(pb,track);  // PSP Movies require this uuid box
     if (track->tag == MKTAG('r','t','p',' '))
         mov_write_udta_sdp(pb, track->rtp_ctx->streams[0]->codec, track->trackID);
+    if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO && track->mode == MODE_MOV) {
+        double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
+        if (0.0 != sample_aspect_ratio && 1.0 != sample_aspect_ratio)
+            mov_write_tapt_tag(pb, track);
+    };
     return updateSize(pb, pos);
 }
 
