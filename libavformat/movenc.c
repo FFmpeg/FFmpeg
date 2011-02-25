@@ -1233,7 +1233,7 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     return 0x5c;
 }
 
-static int mov_write_tapt_tag(ByteIOContext *pb, MOVTrack *track)
+static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
 {
     int32_t width = av_rescale(track->enc->sample_aspect_ratio.num, track->enc->width,
                                track->enc->sample_aspect_ratio.den);
@@ -1241,16 +1241,16 @@ static int mov_write_tapt_tag(ByteIOContext *pb, MOVTrack *track)
     int64_t pos = url_ftell(pb);
 
     avio_wb32(pb, 0); /* size */
-    put_tag(pb, "tapt");
+    ffio_wfourcc(pb, "tapt");
 
     avio_wb32(pb, 20);
-    put_tag(pb, "clef");
+    ffio_wfourcc(pb, "clef");
     avio_wb32(pb, 0);
     avio_wb32(pb, width << 16);
     avio_wb32(pb, track->enc->height << 16);
 
     avio_wb32(pb, 20);
-    put_tag(pb, "enof");
+    ffio_wfourcc(pb, "enof");
     avio_wb32(pb, 0);
     avio_wb32(pb, track->enc->width << 16);
     avio_wb32(pb, track->enc->height << 16);
