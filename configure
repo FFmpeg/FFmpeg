@@ -2433,7 +2433,7 @@ case $target_os in
         ranlib="echo ignoring ranlib"
         ;;
     os/2*)
-        strip="lxlite"
+        strip="lxlite -CS"
         ln_s="cp -f"
         add_ldflags -Zomf -Zbin-files -Zargs-wild -Zmap
         SHFLAGS='$(SUBDIR)$(NAME).def -Zdll -Zomf'
