@@ -2215,7 +2215,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
 
 //FIXME all pal and rgb srcFormats could do this convertion as well
 //FIXME all scalers more complex than bilinear could do half of this transform
-static void RENAME(chrRangeToJpeg)(uint16_t *dst, int width)
+static void RENAME(chrRangeToJpeg)(int16_t *dst, int width)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -2223,7 +2223,7 @@ static void RENAME(chrRangeToJpeg)(uint16_t *dst, int width)
         dst[i+VOFW] = (FFMIN(dst[i+VOFW],30775)*4663 - 9289992)>>12; //-264
     }
 }
-static void RENAME(chrRangeFromJpeg)(uint16_t *dst, int width)
+static void RENAME(chrRangeFromJpeg)(int16_t *dst, int width)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -2231,13 +2231,13 @@ static void RENAME(chrRangeFromJpeg)(uint16_t *dst, int width)
         dst[i+VOFW] = (dst[i+VOFW]*1799 + 4081085)>>11; //1469
     }
 }
-static void RENAME(lumRangeToJpeg)(uint16_t *dst, int width)
+static void RENAME(lumRangeToJpeg)(int16_t *dst, int width)
 {
     int i;
     for (i = 0; i < width; i++)
         dst[i] = (FFMIN(dst[i],30189)*19077 - 39057361)>>14;
 }
-static void RENAME(lumRangeFromJpeg)(uint16_t *dst, int width)
+static void RENAME(lumRangeFromJpeg)(int16_t *dst, int width)
 {
     int i;
     for (i = 0; i < width; i++)

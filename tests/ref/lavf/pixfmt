@@ -10,9 +10,9 @@ ac68f9fdd9d55efd0306d9b004038761 *./tests/data/pixfmt/yuyv422.yuv
 304128 ./tests/data/pixfmt/yuv410p.yuv
 8594ea0b8d7c2c964525b0801b5351de *./tests/data/pixfmt/yuv411p.yuv
 304128 ./tests/data/pixfmt/yuv411p.yuv
-66673539adf8cda28e3b76068d3aae61 *./tests/data/pixfmt/yuvj420p.yuv
+e176bd14185788110e055f945de7f95f *./tests/data/pixfmt/yuvj420p.yuv
 304128 ./tests/data/pixfmt/yuvj420p.yuv
-572bf387dd1e3f073cbfd082e055ca81 *./tests/data/pixfmt/yuvj422p.yuv
+472028e46a81c98d9b2477507def4723 *./tests/data/pixfmt/yuvj422p.yuv
 304128 ./tests/data/pixfmt/yuvj422p.yuv
 c10442da177c9f1d12be3c53be6fa12c *./tests/data/pixfmt/yuvj444p.yuv
 304128 ./tests/data/pixfmt/yuvj444p.yuv
