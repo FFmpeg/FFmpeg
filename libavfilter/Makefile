@@ -127,6 +127,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/pullup.o
 
 -include $(SUBDIR)$(ARCH)/Makefile
 
-DIRS = x86
+DIRS = x86 libmpcodecs
 
 include $(SUBDIR)../subdir.mak
