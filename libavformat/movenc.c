@@ -1220,11 +1220,11 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
             avio_wb32(pb, track->enc->width << 16);
             avio_wb32(pb, track->enc->height << 16);
         } else {
-        double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
-        if(!sample_aspect_ratio || track->height != track->enc->height)
-            sample_aspect_ratio = 1;
-        avio_wb32(pb, sample_aspect_ratio * track->enc->width*0x10000);
-        avio_wb32(pb, track->height*0x10000);
+            double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
+            if(!sample_aspect_ratio || track->height != track->enc->height)
+                sample_aspect_ratio = 1;
+            avio_wb32(pb, sample_aspect_ratio * track->enc->width*0x10000);
+            avio_wb32(pb, track->height*0x10000);
         }
     }
     else {
