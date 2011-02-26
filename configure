@@ -244,7 +244,8 @@ Developer options (useful when working on FFmpeg itself):
   --disable-optimizations  disable compiler optimizations
   --enable-extra-warnings  enable more compiler warnings
   --disable-stripping      disable stripping of executables and shared libraries
-  --samples=PATH           location of test samples for FATE
+  --samples=PATH           location of test samples for FATE, if not set use
+                           \$FATE_SAMPLES at make invocation time.
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
