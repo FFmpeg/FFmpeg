@@ -1294,6 +1294,8 @@ function ff_put_vp8_epel8_h4v6_neon, export=1
         pop             {r4,pc}
 endfunc
 
+.ltorg
+
 function ff_put_vp8_epel4_v6_neon, export=1
         sub             r2,  r2,  r3,  lsl #1
         push            {r4,lr}
