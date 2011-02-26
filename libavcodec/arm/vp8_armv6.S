@@ -56,7 +56,7 @@
 
 function ff_decode_block_coeffs_armv6, export=1
         push            {r0,r1,r4-r11,lr}
-        movrel          lr,  ff_vp56_norm_shift
+        movrel          lr,  X(ff_vp56_norm_shift)
         ldrd            r4,  r5,  [sp, #44]             @ token_prob, qmul
         cmp             r3,  #0
         ldr             r11, [r5]
