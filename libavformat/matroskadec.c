@@ -128,6 +128,7 @@ typedef struct {
     int      sub_packet_size;
     int      sub_packet_cnt;
     int      pkt_cnt;
+    uint64_t buf_timecode;
     uint8_t *buf;
 } MatroskaTrackAudio;
 
@@ -1746,6 +1747,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 int x;
 
                 if (!track->audio.pkt_cnt) {
+                    if (track->audio.sub_packet_cnt == 0)
+                        track->audio.buf_timecode = timecode;
                     if (st->codec->codec_id == CODEC_ID_RA_288)
                         for (x=0; x<h/2; x++)
                             memcpy(track->audio.buf+x*2*w+y*cfs,
@@ -1768,6 +1771,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     av_new_packet(pkt, a);
                     memcpy(pkt->data, track->audio.buf
                            + a * (h*w / a - track->audio.pkt_cnt--), a);
+                    pkt->pts = track->audio.buf_timecode;
+                    track->audio.buf_timecode = AV_NOPTS_VALUE;
                     pkt->pos = pos;
                     pkt->stream_index = st->index;
                     dynarray_add(&matroska->packets,&matroska->num_packets,pkt);
@@ -1911,6 +1916,9 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
 
     index_min = index;
     for (i=0; i < matroska->tracks.nb_elem; i++) {
+        tracks[i].audio.pkt_cnt = 0;
+        tracks[i].audio.sub_packet_cnt = 0;
+        tracks[i].audio.buf_timecode = AV_NOPTS_VALUE;
         tracks[i].end_timecode = 0;
         if (tracks[i].type == MATROSKA_TRACK_TYPE_SUBTITLE
             && !tracks[i].stream->discard != AVDISCARD_ALL) {
