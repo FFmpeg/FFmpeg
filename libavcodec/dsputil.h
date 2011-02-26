@@ -637,7 +637,11 @@ static inline void emms(void)
     __asm__ volatile ("emms;":::"memory");
 }
 
-#define emms_c() emms()
+#define emms_c() \
+{\
+    if(av_get_cpu_flags() & AV_CPU_FLAG_MMX)\
+        emms();\
+}
 
 #elif ARCH_ARM
 
