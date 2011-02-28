@@ -103,9 +103,9 @@ static int wav_write_trailer(AVFormatContext *s)
 
         /* update file size */
         file_size = url_ftell(pb);
-        url_fseek(pb, 4, SEEK_SET);
+        avio_seek(pb, 4, SEEK_SET);
         avio_wl32(pb, (uint32_t)(file_size - 8));
-        url_fseek(pb, file_size, SEEK_SET);
+        avio_seek(pb, file_size, SEEK_SET);
 
         put_flush_packet(pb);
 
@@ -115,9 +115,9 @@ static int wav_write_trailer(AVFormatContext *s)
             number_of_samples = av_rescale(wav->maxpts - wav->minpts + wav->last_duration,
                                            s->streams[0]->codec->sample_rate * (int64_t)s->streams[0]->time_base.num,
                                            s->streams[0]->time_base.den);
-            url_fseek(pb, wav->data-12, SEEK_SET);
+            avio_seek(pb, wav->data-12, SEEK_SET);
             avio_wl32(pb, number_of_samples);
-            url_fseek(pb, file_size, SEEK_SET);
+            avio_seek(pb, file_size, SEEK_SET);
             put_flush_packet(pb);
         }
     }
@@ -160,7 +160,7 @@ static int64_t find_tag(AVIOContext *pb, uint32_t tag1)
         size = next_tag(pb, &tag);
         if (tag == tag1)
             break;
-        url_fseek(pb, size, SEEK_CUR);
+        avio_seek(pb, size, SEEK_CUR);
     }
     return size;
 }
@@ -243,7 +243,7 @@ static int wav_read_header(AVFormatContext *s,
             sample_count = avio_rl32(pb);
             size -= 4;
         }
-        url_fseek(pb, size, SEEK_CUR);
+        avio_seek(pb, size, SEEK_CUR);
     }
     if (rf64)
         size = data_size;

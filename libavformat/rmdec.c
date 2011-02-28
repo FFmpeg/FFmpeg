@@ -363,7 +363,7 @@ static int rm_read_index(AVFormatContext *s)
 
 skip:
         if (next_off && url_ftell(pb) != next_off &&
-            url_fseek(pb, next_off, SEEK_SET) < 0)
+            avio_seek(pb, next_off, SEEK_SET) < 0)
             return -1;
     } while (next_off);
 
@@ -482,9 +482,9 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!data_off)
         data_off = url_ftell(pb) - 18;
     if (indx_off && !url_is_streamed(pb) && !(s->flags & AVFMT_FLAG_IGNIDX) &&
-        url_fseek(pb, indx_off, SEEK_SET) >= 0) {
+        avio_seek(pb, indx_off, SEEK_SET) >= 0) {
         rm_read_index(s);
-        url_fseek(pb, data_off + 18, SEEK_SET);
+        avio_seek(pb, data_off + 18, SEEK_SET);
     }
 
     return 0;
@@ -904,7 +904,7 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
     if(rm->old_format)
         return AV_NOPTS_VALUE;
 
-    url_fseek(s->pb, pos, SEEK_SET);
+    avio_seek(s->pb, pos, SEEK_SET);
     rm->remaining_len=0;
     for(;;){
         int seq=1;

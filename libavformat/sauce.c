@@ -35,7 +35,7 @@ int ff_sauce_read(AVFormatContext *avctx, uint64_t *fsize, int *got_width, int g
     int datatype, filetype, t1, t2, nb_comments, flags;
     uint64_t start_pos = url_fsize(pb) - 128;
 
-    url_fseek(pb, start_pos, SEEK_SET);
+    avio_seek(pb, start_pos, SEEK_SET);
     if (avio_read(pb, buf, 7) != 7)
         return -1;
     if (memcmp(buf, "SAUCE00", 7))
@@ -82,7 +82,7 @@ int ff_sauce_read(AVFormatContext *avctx, uint64_t *fsize, int *got_width, int g
     *fsize -= 128;
 
     if (nb_comments > 0) {
-        url_fseek(pb, start_pos - 64*nb_comments - 5, SEEK_SET);
+        avio_seek(pb, start_pos - 64*nb_comments - 5, SEEK_SET);
         if (avio_read(pb, buf, 5) == 5 && !memcmp(buf, "COMNT", 5)) {
             int i;
             char *str = av_malloc(65*nb_comments + 1);

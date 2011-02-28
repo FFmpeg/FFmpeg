@@ -217,7 +217,7 @@ static int film_read_packet(AVFormatContext *s,
     sample = &film->sample_table[film->current_sample];
 
     /* position the stream (will probably be there anyway) */
-    url_fseek(pb, sample->sample_offset, SEEK_SET);
+    avio_seek(pb, sample->sample_offset, SEEK_SET);
 
     /* do a special song and dance when loading FILM Cinepak chunks */
     if ((sample->stream == film->video_stream_index) &&

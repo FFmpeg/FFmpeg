@@ -176,7 +176,7 @@ void put_flush_packet(AVIOContext *s)
     s->must_flush = 0;
 }
 
-int64_t url_fseek(AVIOContext *s, int64_t offset, int whence)
+int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
 {
     int64_t offset1;
     int64_t pos;
@@ -235,13 +235,13 @@ int64_t url_fseek(AVIOContext *s, int64_t offset, int whence)
 
 int url_fskip(AVIOContext *s, int64_t offset)
 {
-    int64_t ret = url_fseek(s, offset, SEEK_CUR);
+    int64_t ret = avio_seek(s, offset, SEEK_CUR);
     return ret < 0 ? ret : 0;
 }
 
 int64_t url_ftell(AVIOContext *s)
 {
-    return url_fseek(s, 0, SEEK_CUR);
+    return avio_seek(s, 0, SEEK_CUR);
 }
 
 int64_t url_fsize(AVIOContext *s)
@@ -364,6 +364,10 @@ int url_fopen(AVIOContext **s, const char *filename, int flags)
 int url_fclose(AVIOContext *s)
 {
     return avio_close(s);
+}
+int64_t url_fseek(AVIOContext *s, int64_t offset, int whence)
+{
+    return avio_seek(s, offset, whence);
 }
 #endif
 

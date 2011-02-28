@@ -230,7 +230,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             break;
         }
         /* Skip to end of tag */
-        url_fseek(s->pb, next, SEEK_SET);
+        avio_seek(s->pb, next, SEEK_SET);
     }
 
     if (len > 0) {
@@ -271,7 +271,7 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic)
                    (buf[9] & 0x7f);
             ff_id3v2_parse(s, len, buf[3], buf[5]);
         } else {
-            url_fseek(s->pb, off, SEEK_SET);
+            avio_seek(s->pb, off, SEEK_SET);
         }
     } while (found_header);
     ff_metadata_conv(&s->metadata, NULL, ff_id3v2_34_metadata_conv);

@@ -240,7 +240,7 @@ static int vqf_read_seek(AVFormatContext *s,
     st->cur_dts = av_rescale(pos, st->time_base.den,
                              st->codec->bit_rate * (int64_t)st->time_base.num);
 
-    if ((ret = url_fseek(s->pb, ((pos-7) >> 3) + s->data_offset, SEEK_SET)) < 0)
+    if ((ret = avio_seek(s->pb, ((pos-7) >> 3) + s->data_offset, SEEK_SET)) < 0)
         return ret;
 
     c->remaining_bits = -7 - ((pos-7)&7);

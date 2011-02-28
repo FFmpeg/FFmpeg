@@ -1267,9 +1267,9 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
         header_byte_count = pos - start + klv_fill_size(pos);
 
         // update header_byte_count
-        url_fseek(pb, header_byte_count_offset, SEEK_SET);
+        avio_seek(pb, header_byte_count_offset, SEEK_SET);
         avio_wb64(pb, header_byte_count);
-        url_fseek(pb, pos, SEEK_SET);
+        avio_seek(pb, pos, SEEK_SET);
     }
 
     put_flush_packet(pb);
@@ -1785,7 +1785,7 @@ static int mxf_write_footer(AVFormatContext *s)
     mxf_write_random_index_pack(s);
 
     if (!url_is_streamed(s->pb)) {
-        url_fseek(pb, 0, SEEK_SET);
+        avio_seek(pb, 0, SEEK_SET);
         if (mxf->edit_unit_byte_count) {
             mxf_write_partition(s, 1, 2, header_closed_partition_key, 1);
             mxf_write_klv_fill(s);

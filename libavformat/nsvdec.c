@@ -364,7 +364,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     av_dlog(s, "NSV [dataoffset][fileoffset]\n", table_entries);
     for (i = 0; i < table_entries; i++) {
         unsigned char b[8];
-        url_fseek(pb, size + nsv->nsvs_file_offset[i], SEEK_SET);
+        avio_seek(pb, size + nsv->nsvs_file_offset[i], SEEK_SET);
         avio_read(pb, b, 8);
         av_dlog(s, "NSV [0x%08lx][0x%08lx]: %02x %02x %02x %02x %02x %02x %02x %02x"
            "%c%c%c%c%c%c%c%c\n",
@@ -372,11 +372,11 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
            b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
            V(b[0]), V(b[1]), V(b[2]), V(b[3]), V(b[4]), V(b[5]), V(b[6]), V(b[7]) );
     }
-    //url_fseek(pb, size, SEEK_SET); /* go back to end of header */
+    //avio_seek(pb, size, SEEK_SET); /* go back to end of header */
 #undef V
 #endif
 
-    url_fseek(pb, nsv->base_offset + size, SEEK_SET); /* required for dumbdriving-271.nsv (2 extra bytes) */
+    avio_seek(pb, nsv->base_offset + size, SEEK_SET); /* required for dumbdriving-271.nsv (2 extra bytes) */
 
     if (url_feof(pb))
         return -1;
@@ -700,7 +700,7 @@ static int nsv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     if(index < 0)
         return -1;
 
-    url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
+    avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET);
     nst->frame_offset = st->index_entries[index].timestamp;
     nsv->state = NSV_UNSYNC;
     return 0;

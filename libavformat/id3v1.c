@@ -232,12 +232,12 @@ void ff_id3v1_read(AVFormatContext *s)
         /* XXX: change that */
         filesize = url_fsize(s->pb);
         if (filesize > 128) {
-            url_fseek(s->pb, filesize - 128, SEEK_SET);
+            avio_seek(s->pb, filesize - 128, SEEK_SET);
             ret = avio_read(s->pb, buf, ID3v1_TAG_SIZE);
             if (ret == ID3v1_TAG_SIZE) {
                 parse_tag(s, buf);
             }
-            url_fseek(s->pb, 0, SEEK_SET);
+            avio_seek(s->pb, 0, SEEK_SET);
         }
     }
 }

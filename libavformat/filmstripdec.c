@@ -43,7 +43,7 @@ static int read_header(AVFormatContext *s,
     if (url_is_streamed(s->pb))
         return AVERROR(EIO);
 
-    url_fseek(pb, url_fsize(pb) - 36, SEEK_SET);
+    avio_seek(pb, url_fsize(pb) - 36, SEEK_SET);
     if (avio_rb32(pb) != RAND_TAG) {
         av_log(s, AV_LOG_ERROR, "magic number not found");
         return AVERROR_INVALIDDATA;
@@ -69,7 +69,7 @@ static int read_header(AVFormatContext *s,
     film->leading         = avio_rb16(pb);
     av_set_pts_info(st, 64, 1, avio_rb16(pb));
 
-    url_fseek(pb, 0, SEEK_SET);
+    avio_seek(pb, 0, SEEK_SET);
 
     return 0;
 }
@@ -94,7 +94,7 @@ static int read_packet(AVFormatContext *s,
 static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
     AVStream *st = s->streams[stream_index];
-    url_fseek(s->pb, FFMAX(timestamp, 0) * st->codec->width * st->codec->height * 4, SEEK_SET);
+    avio_seek(s->pb, FFMAX(timestamp, 0) * st->codec->width * st->codec->height * 4, SEEK_SET);
     return 0;
 }
 

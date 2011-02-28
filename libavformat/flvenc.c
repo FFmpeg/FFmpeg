@@ -289,9 +289,9 @@ static int flv_write_header(AVFormatContext *s)
 
     /* write total size of tag */
     data_size= url_ftell(pb) - metadata_size_pos - 10;
-    url_fseek(pb, metadata_size_pos, SEEK_SET);
+    avio_seek(pb, metadata_size_pos, SEEK_SET);
     avio_wb24(pb, data_size);
-    url_fseek(pb, data_size + 10 - 3, SEEK_CUR);
+    avio_seek(pb, data_size + 10 - 3, SEEK_CUR);
     avio_wb32(pb, data_size + 11);
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -316,9 +316,9 @@ static int flv_write_header(AVFormatContext *s)
                 ff_isom_write_avcc(pb, enc->extradata, enc->extradata_size);
             }
             data_size = url_ftell(pb) - pos;
-            url_fseek(pb, -data_size - 10, SEEK_CUR);
+            avio_seek(pb, -data_size - 10, SEEK_CUR);
             avio_wb24(pb, data_size);
-            url_fseek(pb, data_size + 10 - 3, SEEK_CUR);
+            avio_seek(pb, data_size + 10 - 3, SEEK_CUR);
             avio_wb32(pb, data_size + 11); // previous tag size
         }
     }
@@ -346,12 +346,12 @@ static int flv_write_trailer(AVFormatContext *s)
     file_size = url_ftell(pb);
 
     /* update informations */
-    url_fseek(pb, flv->duration_offset, SEEK_SET);
+    avio_seek(pb, flv->duration_offset, SEEK_SET);
     put_amf_double(pb, flv->duration / (double)1000);
-    url_fseek(pb, flv->filesize_offset, SEEK_SET);
+    avio_seek(pb, flv->filesize_offset, SEEK_SET);
     put_amf_double(pb, file_size);
 
-    url_fseek(pb, file_size, SEEK_SET);
+    avio_seek(pb, file_size, SEEK_SET);
     return 0;
 }
 

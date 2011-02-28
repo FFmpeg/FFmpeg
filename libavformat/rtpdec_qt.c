@@ -103,7 +103,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         skip_bits(&gb, 12); // reserved
         data_len = get_bits(&gb, 16);
 
-        url_fseek(&pb, pos + 4, SEEK_SET);
+        avio_seek(&pb, pos + 4, SEEK_SET);
         tag = avio_rl32(&pb);
         if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
                  tag != MKTAG('v','i','d','e')) ||
@@ -157,7 +157,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         /* 32-bit alignment */
         url_fskip(&pb, ((url_ftell(&pb) + 3) & ~3) - url_ftell(&pb));
     } else
-        url_fseek(&pb, 4, SEEK_SET);
+        avio_seek(&pb, 4, SEEK_SET);
 
     if (has_packet_info) {
         av_log_missing_feature(s, "RTP-X-QT with packet specific info", 1);

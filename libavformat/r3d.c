@@ -180,7 +180,7 @@ static int r3d_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (url_is_streamed(s->pb))
         return 0;
     // find REOB/REOF/REOS to load index
-    url_fseek(s->pb, url_fsize(s->pb)-48-8, SEEK_SET);
+    avio_seek(s->pb, url_fsize(s->pb)-48-8, SEEK_SET);
     if (read_atom(s, &atom) < 0)
         av_log(s, AV_LOG_ERROR, "error reading end atom\n");
 
@@ -192,7 +192,7 @@ static int r3d_read_header(AVFormatContext *s, AVFormatParameters *ap)
     r3d_read_reos(s);
 
     if (r3d->rdvo_offset) {
-        url_fseek(s->pb, r3d->rdvo_offset, SEEK_SET);
+        avio_seek(s->pb, r3d->rdvo_offset, SEEK_SET);
         if (read_atom(s, &atom) < 0)
             av_log(s, AV_LOG_ERROR, "error reading 'rdvo' atom\n");
         if (atom.tag == MKTAG('R','D','V','O')) {
@@ -202,7 +202,7 @@ static int r3d_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
  out:
-    url_fseek(s->pb, s->data_offset, SEEK_SET);
+    avio_seek(s->pb, s->data_offset, SEEK_SET);
     return 0;
 }
 
@@ -359,7 +359,7 @@ static int r3d_seek(AVFormatContext *s, int stream_index, int64_t sample_time, i
     av_dlog(s, "seek frame num %d timestamp %lld\n", frame_num, sample_time);
 
     if (frame_num < r3d->video_offsets_count) {
-        url_fseek(s->pb, r3d->video_offsets_count, SEEK_SET);
+        avio_seek(s->pb, r3d->video_offsets_count, SEEK_SET);
     } else {
         av_log(s, AV_LOG_ERROR, "could not seek to frame %d\n", frame_num);
         return -1;

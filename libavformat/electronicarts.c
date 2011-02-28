@@ -369,10 +369,10 @@ static int process_ea_header(AVFormatContext *s) {
             return err;
         }
 
-        url_fseek(pb, startpos + size, SEEK_SET);
+        avio_seek(pb, startpos + size, SEEK_SET);
     }
 
-    url_fseek(pb, 0, SEEK_SET);
+    avio_seek(pb, 0, SEEK_SET);
 
     return 1;
 }
@@ -536,12 +536,12 @@ static int ea_read_packet(AVFormatContext *s,
         case fVGT_TAG:
         case MADm_TAG:
         case MADe_TAG:
-            url_fseek(pb, -8, SEEK_CUR);     // include chunk preamble
+            avio_seek(pb, -8, SEEK_CUR);     // include chunk preamble
             chunk_size += 8;
             goto get_video_packet;
 
         case mTCD_TAG:
-            url_fseek(pb, 8, SEEK_CUR);  // skip ea dct header
+            avio_seek(pb, 8, SEEK_CUR);  // skip ea dct header
             chunk_size -= 8;
             goto get_video_packet;
 
@@ -560,7 +560,7 @@ get_video_packet:
             break;
 
         default:
-            url_fseek(pb, chunk_size, SEEK_CUR);
+            avio_seek(pb, chunk_size, SEEK_CUR);
             break;
         }
     }

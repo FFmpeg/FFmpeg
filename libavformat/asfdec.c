@@ -181,7 +181,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
     av_metadata_set2(&s->metadata, key, value, 0);
 finish:
     av_freep(&value);
-    url_fseek(s->pb, off + len, SEEK_SET);
+    avio_seek(s->pb, off + len, SEEK_SET);
 }
 
 static int asf_read_file_properties(AVFormatContext *s, int64_t size)
@@ -427,14 +427,14 @@ static int asf_read_ext_stream_properties(AVFormatContext *s, int64_t size)
     for (i=0; i<stream_ct; i++){
         avio_rl16(pb);
         ext_len = avio_rl16(pb);
-        url_fseek(pb, ext_len, SEEK_CUR);
+        avio_seek(pb, ext_len, SEEK_CUR);
     }
 
     for (i=0; i<payload_ext_ct; i++){
         ff_get_guid(pb, &g);
         ext_d=avio_rl16(pb);
         ext_len=avio_rl32(pb);
-        url_fseek(pb, ext_len, SEEK_CUR);
+        avio_seek(pb, ext_len, SEEK_CUR);
     }
 
     return 0;
@@ -653,7 +653,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
         if(url_ftell(pb) != gpos + gsize)
             av_log(s, AV_LOG_DEBUG, "gpos mismatch our pos=%"PRIu64", end=%"PRIu64"\n", url_ftell(pb)-gpos, gsize);
-        url_fseek(pb, gpos + gsize, SEEK_SET);
+        avio_seek(pb, gpos + gsize, SEEK_SET);
     }
     ff_get_guid(pb, &g);
     avio_rl64(pb);
@@ -757,7 +757,7 @@ static int ff_asf_get_packet(AVFormatContext *s, AVIOContext *pb)
         d= avio_r8(pb);
         rsize+=3;
     }else{
-        url_fseek(pb, -1, SEEK_CUR); //FIXME
+        avio_seek(pb, -1, SEEK_CUR); //FIXME
     }
 
     asf->packet_flags    = c;
@@ -1145,7 +1145,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
     if (s->packet_size > 0)
         pos= (pos+s->packet_size-1-s->data_offset)/s->packet_size*s->packet_size+ s->data_offset;
     *ppos= pos;
-    url_fseek(s->pb, pos, SEEK_SET);
+    avio_seek(s->pb, pos, SEEK_SET);
 
 //printf("asf_read_pts\n");
     asf_reset_header(s);
@@ -1187,7 +1187,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
     int64_t current_pos= url_ftell(s->pb);
     int i;
 
-    url_fseek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET);
+    avio_seek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET);
     ff_get_guid(s->pb, &g);
 
     /* the data object can be followed by other top-level objects,
@@ -1195,10 +1195,10 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
     while (ff_guidcmp(&g, &index_guid)) {
         int64_t gsize= avio_rl64(s->pb);
         if (gsize < 24 || url_feof(s->pb)) {
-            url_fseek(s->pb, current_pos, SEEK_SET);
+            avio_seek(s->pb, current_pos, SEEK_SET);
             return;
         }
-        url_fseek(s->pb, gsize-24, SEEK_CUR);
+        avio_seek(s->pb, gsize-24, SEEK_CUR);
         ff_get_guid(s->pb, &g);
     }
 
@@ -1226,7 +1226,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
         }
         asf->index_read= 1;
     }
-    url_fseek(s->pb, current_pos, SEEK_SET);
+    avio_seek(s->pb, current_pos, SEEK_SET);
 }
 
 static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flags)
@@ -1264,7 +1264,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
 
     // various attempts to find key frame have failed so far
     //    asf_reset_header(s);
-    //    url_fseek(s->pb, pos, SEEK_SET);
+    //    avio_seek(s->pb, pos, SEEK_SET);
     //    key_pos = pos;
     //     for(i=0;i<16;i++){
     //         pos = url_ftell(s->pb);
@@ -1285,7 +1285,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
 
         /* do the seek */
         av_log(s, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos);
-        url_fseek(s->pb, pos, SEEK_SET);
+        avio_seek(s->pb, pos, SEEK_SET);
     }
     asf_reset_header(s);
     return 0;

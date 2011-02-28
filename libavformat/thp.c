@@ -81,7 +81,7 @@ static int thp_read_header(AVFormatContext *s,
     thp->next_frame      = thp->first_frame;
 
     /* Read the component structure.  */
-    url_fseek (pb, thp->compoff, SEEK_SET);
+    avio_seek (pb, thp->compoff, SEEK_SET);
     thp->compcount       = avio_rb32(pb);
 
     /* Read the list of component types.  */
@@ -149,7 +149,7 @@ static int thp_read_packet(AVFormatContext *s,
         if (thp->frame >= thp->framecnt)
             return AVERROR(EIO);
 
-        url_fseek(pb, thp->next_frame, SEEK_SET);
+        avio_seek(pb, thp->next_frame, SEEK_SET);
 
         /* Locate the next frame and read out its size.  */
         thp->next_frame += thp->next_framesz;

@@ -260,9 +260,9 @@ static void end_header(AVIOContext *pb, int64_t pos)
     int64_t pos1;
 
     pos1 = url_ftell(pb);
-    url_fseek(pb, pos + 16, SEEK_SET);
+    avio_seek(pb, pos + 16, SEEK_SET);
     avio_wl64(pb, pos1 - pos);
-    url_fseek(pb, pos1, SEEK_SET);
+    avio_seek(pb, pos1, SEEK_SET);
 }
 
 /* write an asf chunk (only used in streaming case) */
@@ -443,9 +443,9 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
                 return -1;
             if (wavsize != extra_size) {
                 cur_pos = url_ftell(pb);
-                url_fseek(pb, es_pos, SEEK_SET);
+                avio_seek(pb, es_pos, SEEK_SET);
                 avio_wl32(pb, wavsize); /* wav header len */
-                url_fseek(pb, cur_pos, SEEK_SET);
+                avio_seek(pb, cur_pos, SEEK_SET);
             }
             /* ERROR Correction */
             avio_w8(pb, 0x01);
@@ -530,17 +530,17 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     if (asf->is_streamed) {
         header_size += 8 + 30 + 50;
 
-        url_fseek(pb, header_offset - 10 - 30, SEEK_SET);
+        avio_seek(pb, header_offset - 10 - 30, SEEK_SET);
         avio_wl16(pb, header_size);
-        url_fseek(pb, header_offset - 2 - 30, SEEK_SET);
+        avio_seek(pb, header_offset - 2 - 30, SEEK_SET);
         avio_wl16(pb, header_size);
 
         header_size -= 8 + 30 + 50;
     }
     header_size += 24 + 6;
-    url_fseek(pb, header_offset - 14, SEEK_SET);
+    avio_seek(pb, header_offset - 14, SEEK_SET);
     avio_wl64(pb, header_size);
-    url_fseek(pb, cur_pos, SEEK_SET);
+    avio_seek(pb, cur_pos, SEEK_SET);
 
     /* movie chunk, followed by packets of packet_size */
     asf->data_offset = cur_pos;
@@ -871,7 +871,7 @@ static int asf_write_trailer(AVFormatContext *s)
     } else {
         /* rewrite an updated header */
         file_size = url_ftell(s->pb);
-        url_fseek(s->pb, 0, SEEK_SET);
+        avio_seek(s->pb, 0, SEEK_SET);
         asf_write_header1(s, file_size, data_size - asf->data_offset);
     }
 

@@ -237,7 +237,7 @@ static int rl2_read_packet(AVFormatContext *s,
     ++rl2->index_pos[stream_id];
 
     /** position the stream (will probably be there anyway) */
-    url_fseek(pb, sample->pos, SEEK_SET);
+    avio_seek(pb, sample->pos, SEEK_SET);
 
     /** fill the packet */
     ret = av_get_packet(pb, pkt, sample->size);

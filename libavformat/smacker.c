@@ -240,7 +240,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* if we demuxed all streams, pass another frame */
     if(smk->curstream < 0) {
-        url_fseek(s->pb, smk->nextpos, 0);
+        avio_seek(s->pb, smk->nextpos, 0);
         frame_size = smk->frm_size[smk->cur_frame] & (~3);
         flags = smk->frm_flags[smk->cur_frame];
         /* handle palette change event */
@@ -279,7 +279,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                     sz++;
                 }
             }
-            url_fseek(s->pb, pos, 0);
+            avio_seek(s->pb, pos, 0);
             palchange |= 1;
         }
         flags >>= 1;

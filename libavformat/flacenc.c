@@ -101,9 +101,9 @@ static int flac_write_trailer(struct AVFormatContext *s)
     if (!url_is_streamed(pb)) {
         /* rewrite the STREAMINFO header block data */
         file_size = url_ftell(pb);
-        url_fseek(pb, 8, SEEK_SET);
+        avio_seek(pb, 8, SEEK_SET);
         avio_write(pb, streaminfo, FLAC_STREAMINFO_SIZE);
-        url_fseek(pb, file_size, SEEK_SET);
+        avio_seek(pb, file_size, SEEK_SET);
         put_flush_packet(pb);
     } else {
         av_log(s, AV_LOG_WARNING, "unable to rewrite FLAC header.\n");

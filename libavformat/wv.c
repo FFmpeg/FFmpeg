@@ -175,7 +175,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
             av_log(ctx, AV_LOG_ERROR, "Cannot determine custom sampling rate\n");
             return -1;
         }
-        url_fseek(pb, block_end - wc->blksize + 24, SEEK_SET);
+        avio_seek(pb, block_end - wc->blksize + 24, SEEK_SET);
     }
     if(!wc->bpp) wc->bpp = bpp;
     if(!wc->chan) wc->chan = chan;
@@ -228,7 +228,7 @@ static int wv_read_header(AVFormatContext *s,
         ff_ape_parse_tag(s);
         if(!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
             ff_id3v1_read(s);
-        url_fseek(s->pb, cur, SEEK_SET);
+        avio_seek(s->pb, cur, SEEK_SET);
     }
 
     return 0;
@@ -320,7 +320,7 @@ static int wv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     /* if found, seek there */
     if (index >= 0){
         wc->block_parsed = 1;
-        url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
+        avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET);
         return 0;
     }
     /* if timestamp is out of bounds, return error */
@@ -331,7 +331,7 @@ static int wv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     do{
         ret = av_read_frame(s, pkt);
         if (ret < 0){
-            url_fseek(s->pb, pos, SEEK_SET);
+            avio_seek(s->pb, pos, SEEK_SET);
             return -1;
         }
         pts = pkt->pts;

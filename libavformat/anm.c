@@ -143,7 +143,7 @@ static int read_header(AVFormatContext *s,
         goto close_and_return;
 
     /* read page table */
-    ret = url_fseek(pb, anm->page_table_offset, SEEK_SET);
+    ret = avio_seek(pb, anm->page_table_offset, SEEK_SET);
     if (ret < 0)
         goto close_and_return;
 
@@ -192,7 +192,7 @@ repeat:
 
     /* parse page header */
     if (anm->record < 0) {
-        url_fseek(pb, anm->page_table_offset + MAX_PAGES*6 + (anm->page<<16), SEEK_SET);
+        avio_seek(pb, anm->page_table_offset + MAX_PAGES*6 + (anm->page<<16), SEEK_SET);
         url_fskip(pb, 8 + 2*p->nb_records);
         anm->record = 0;
     }
@@ -209,10 +209,10 @@ repeat:
 
     /* fetch record size */
     tmp = url_ftell(pb);
-    url_fseek(pb, anm->page_table_offset + MAX_PAGES*6 + (anm->page<<16) +
+    avio_seek(pb, anm->page_table_offset + MAX_PAGES*6 + (anm->page<<16) +
               8 + anm->record * 2, SEEK_SET);
     record_size = avio_rl16(pb);
-    url_fseek(pb, tmp, SEEK_SET);
+    avio_seek(pb, tmp, SEEK_SET);
 
     /* fetch record */
     pkt->size = av_get_packet(s->pb, pkt, record_size);

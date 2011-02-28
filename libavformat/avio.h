@@ -420,6 +420,7 @@ attribute_deprecated void         put_tag(AVIOContext *s, const char *tag);
  */
 attribute_deprecated int url_fopen( AVIOContext **s, const char *url, int flags);
 attribute_deprecated int url_fclose(AVIOContext *s);
+attribute_deprecated int64_t url_fseek(AVIOContext *s, int64_t offset, int whence);
 /**
  * @}
  */
@@ -465,7 +466,7 @@ int avio_put_str16le(AVIOContext *s, const char *str);
  * fseek() equivalent for AVIOContext.
  * @return new position or AVERROR.
  */
-int64_t url_fseek(AVIOContext *s, int64_t offset, int whence);
+int64_t avio_seek(AVIOContext *s, int64_t offset, int whence);
 
 /**
  * Skip given number of bytes forward.

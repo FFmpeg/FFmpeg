@@ -50,7 +50,7 @@ static void put_swf_end_tag(AVFormatContext *s)
     pos = url_ftell(pb);
     tag_len = pos - swf->tag_pos - 2;
     tag = swf->tag;
-    url_fseek(pb, swf->tag_pos, SEEK_SET);
+    avio_seek(pb, swf->tag_pos, SEEK_SET);
     if (tag & TAG_LONG) {
         tag &= ~TAG_LONG;
         avio_wl16(pb, (tag << 6) | 0x3f);
@@ -59,7 +59,7 @@ static void put_swf_end_tag(AVFormatContext *s)
         assert(tag_len < 0x3f);
         avio_wl16(pb, (tag << 6) | tag_len);
     }
-    url_fseek(pb, pos, SEEK_SET);
+    avio_seek(pb, pos, SEEK_SET);
 }
 
 static inline void max_nbits(int *nbits_ptr, int val)
@@ -494,13 +494,13 @@ static int swf_write_trailer(AVFormatContext *s)
     /* patch file size and number of frames if not streamed */
     if (!url_is_streamed(s->pb) && video_enc) {
         file_size = url_ftell(pb);
-        url_fseek(pb, 4, SEEK_SET);
+        avio_seek(pb, 4, SEEK_SET);
         avio_wl32(pb, file_size);
-        url_fseek(pb, swf->duration_pos, SEEK_SET);
+        avio_seek(pb, swf->duration_pos, SEEK_SET);
         avio_wl16(pb, swf->video_frame_number);
-        url_fseek(pb, swf->vframes_pos, SEEK_SET);
+        avio_seek(pb, swf->vframes_pos, SEEK_SET);
         avio_wl16(pb, swf->video_frame_number);
-        url_fseek(pb, file_size, SEEK_SET);
+        avio_seek(pb, file_size, SEEK_SET);
     }
     return 0;
 }

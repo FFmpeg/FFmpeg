@@ -41,7 +41,7 @@ static int flac_read_header(AVFormatContext *s,
 
     /* if fLaC marker is not found, assume there is no header */
     if (avio_rl32(s->pb) != MKTAG('f','L','a','C')) {
-        url_fseek(s->pb, -4, SEEK_CUR);
+        avio_seek(s->pb, -4, SEEK_CUR);
         return 0;
     }
 
@@ -65,7 +65,7 @@ static int flac_read_header(AVFormatContext *s,
             break;
         /* skip metadata block for unsupported types */
         default:
-            ret = url_fseek(s->pb, metadata_size, SEEK_CUR);
+            ret = avio_seek(s->pb, metadata_size, SEEK_CUR);
             if (ret < 0)
                 return ret;
         }

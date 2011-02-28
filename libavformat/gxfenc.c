@@ -131,9 +131,9 @@ static int64_t updatePacketSize(AVIOContext *pb, int64_t pos)
         size = url_ftell(pb) - pos;
     }
     curpos = url_ftell(pb);
-    url_fseek(pb, pos + 6, SEEK_SET);
+    avio_seek(pb, pos + 6, SEEK_SET);
     avio_wb32(pb, size);
-    url_fseek(pb, curpos, SEEK_SET);
+    avio_seek(pb, curpos, SEEK_SET);
     return curpos - pos;
 }
 
@@ -142,9 +142,9 @@ static int64_t updateSize(AVIOContext *pb, int64_t pos)
     int64_t curpos;
 
     curpos = url_ftell(pb);
-    url_fseek(pb, pos, SEEK_SET);
+    avio_seek(pb, pos, SEEK_SET);
     avio_wb16(pb, curpos - pos - 2);
-    url_fseek(pb, curpos, SEEK_SET);
+    avio_seek(pb, curpos, SEEK_SET);
     return curpos - pos;
 }
 
@@ -581,9 +581,9 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
         }
 
         curpos = url_ftell(pb);
-        url_fseek(pb, startpos, SEEK_SET);
+        avio_seek(pb, startpos, SEEK_SET);
         avio_wl16(pb, curpos - startpos);
-        url_fseek(pb, curpos, SEEK_SET);
+        avio_seek(pb, curpos, SEEK_SET);
     }
     return url_ftell(pb) - pos;
 }
@@ -776,7 +776,7 @@ static int gxf_write_trailer(AVFormatContext *s)
 
     gxf_write_eos_packet(pb);
     end = url_ftell(pb);
-    url_fseek(pb, 0, SEEK_SET);
+    avio_seek(pb, 0, SEEK_SET);
     /* overwrite map, flt and umf packets with new values */
     gxf_write_map_packet(s, 1);
     gxf_write_flt_packet(s);
@@ -784,12 +784,12 @@ static int gxf_write_trailer(AVFormatContext *s)
     put_flush_packet(pb);
     /* update duration in all map packets */
     for (i = 1; i < gxf->map_offsets_nb; i++) {
-        url_fseek(pb, gxf->map_offsets[i], SEEK_SET);
+        avio_seek(pb, gxf->map_offsets[i], SEEK_SET);
         gxf_write_map_packet(s, 1);
         put_flush_packet(pb);
     }
 
-    url_fseek(pb, end, SEEK_SET);
+    avio_seek(pb, end, SEEK_SET);
 
     av_freep(&gxf->flt_entries);
     av_freep(&gxf->map_offsets);

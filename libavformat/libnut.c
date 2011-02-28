@@ -182,7 +182,7 @@ static off_t av_seek(void * h, long long pos, int whence) {
         pos = url_fsize(bc) + pos;
         whence = SEEK_SET;
     }
-    return url_fseek(bc, pos, whence);
+    return avio_seek(bc, pos, whence);
 }
 
 static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {

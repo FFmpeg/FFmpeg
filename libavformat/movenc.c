@@ -40,9 +40,9 @@
 static int64_t updateSize(AVIOContext *pb, int64_t pos)
 {
     int64_t curpos = url_ftell(pb);
-    url_fseek(pb, pos, SEEK_SET);
+    avio_seek(pb, pos, SEEK_SET);
     avio_wb32(pb, curpos - pos); /* rewrite size */
-    url_fseek(pb, curpos, SEEK_SET);
+    avio_seek(pb, curpos, SEEK_SET);
 
     return curpos - pos;
 }
@@ -131,9 +131,9 @@ static int mov_write_stsc_tag(AVIOContext *pb, MOVTrack *track)
         }
     }
     curpos = url_ftell(pb);
-    url_fseek(pb, entryPos, SEEK_SET);
+    avio_seek(pb, entryPos, SEEK_SET);
     avio_wb32(pb, index); // rewrite size
-    url_fseek(pb, curpos, SEEK_SET);
+    avio_seek(pb, curpos, SEEK_SET);
 
     return updateSize(pb, pos);
 }
@@ -156,9 +156,9 @@ static int mov_write_stss_tag(AVIOContext *pb, MOVTrack *track, uint32_t flag)
         }
     }
     curpos = url_ftell(pb);
-    url_fseek(pb, entryPos, SEEK_SET);
+    avio_seek(pb, entryPos, SEEK_SET);
     avio_wb32(pb, index); // rewrite size
-    url_fseek(pb, curpos, SEEK_SET);
+    avio_seek(pb, curpos, SEEK_SET);
     return updateSize(pb, pos);
 }
 
@@ -2236,16 +2236,16 @@ static int mov_write_trailer(AVFormatContext *s)
 
     /* Write size of mdat tag */
     if (mov->mdat_size+8 <= UINT32_MAX) {
-        url_fseek(pb, mov->mdat_pos, SEEK_SET);
+        avio_seek(pb, mov->mdat_pos, SEEK_SET);
         avio_wb32(pb, mov->mdat_size+8);
     } else {
         /* overwrite 'wide' placeholder atom */
-        url_fseek(pb, mov->mdat_pos - 8, SEEK_SET);
+        avio_seek(pb, mov->mdat_pos - 8, SEEK_SET);
         avio_wb32(pb, 1); /* special value: real atom size will be 64 bit value after tag field */
         ffio_wfourcc(pb, "mdat");
         avio_wb64(pb, mov->mdat_size+16);
     }
-    url_fseek(pb, moov_pos, SEEK_SET);
+    avio_seek(pb, moov_pos, SEEK_SET);
 
     mov_write_moov_tag(pb, mov, s);
 

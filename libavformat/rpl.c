@@ -250,7 +250,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
     error |= read_line(pb, line, sizeof(line));  // offset to key frame list
 
     // Read the index
-    url_fseek(pb, chunk_catalog_offset, SEEK_SET);
+    avio_seek(pb, chunk_catalog_offset, SEEK_SET);
     total_audio_size = 0;
     for (i = 0; i < number_of_chunks; i++) {
         int64_t offset, video_size, audio_size;
@@ -292,7 +292,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
     index_entry = &stream->index_entries[rpl->chunk_number];
 
     if (rpl->frame_in_part == 0)
-        if (url_fseek(pb, index_entry->pos, SEEK_SET) < 0)
+        if (avio_seek(pb, index_entry->pos, SEEK_SET) < 0)
             return AVERROR(EIO);
 
     if (stream->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
@@ -303,7 +303,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         frame_flags = avio_rl32(pb);
         frame_size = avio_rl32(pb);
-        if (url_fseek(pb, -8, SEEK_CUR) < 0)
+        if (avio_seek(pb, -8, SEEK_CUR) < 0)
             return AVERROR(EIO);
 
         ret = av_get_packet(pb, pkt, frame_size);

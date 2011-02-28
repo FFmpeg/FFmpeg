@@ -46,7 +46,7 @@ static int efi_read(AVFormatContext *avctx, uint64_t start_pos)
     char buf[37];
     int len;
 
-    url_fseek(pb, start_pos, SEEK_SET);
+    avio_seek(pb, start_pos, SEEK_SET);
     if (avio_r8(pb) != 0x1A)
         return -1;
 
@@ -95,7 +95,7 @@ static int read_header(AVFormatContext *avctx,
         if (ff_sauce_read(avctx, &s->fsize, 0, 0) < 0)
             efi_read(avctx, s->fsize - 51);
 
-        url_fseek(avctx->pb, 0, SEEK_SET);
+        avio_seek(avctx->pb, 0, SEEK_SET);
     }
 
     return 0;

@@ -49,7 +49,7 @@ int pcm_read_seek(AVFormatContext *s,
 
     /* recompute exact position */
     st->cur_dts = av_rescale(pos, st->time_base.den, byte_rate * (int64_t)st->time_base.num);
-    if ((ret = url_fseek(s->pb, pos + s->data_offset, SEEK_SET)) < 0)
+    if ((ret = avio_seek(s->pb, pos + s->data_offset, SEEK_SET)) < 0)
         return ret;
     return 0;
 }

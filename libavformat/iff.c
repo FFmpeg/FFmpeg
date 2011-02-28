@@ -226,7 +226,7 @@ static int iff_read_header(AVFormatContext *s,
         url_fskip(pb, data_size - (url_ftell(pb) - orig_pos) + (data_size & 1));
     }
 
-    url_fseek(pb, iff->body_pos, SEEK_SET);
+    avio_seek(pb, iff->body_pos, SEEK_SET);
 
     switch(st->codec->codec_type) {
     case AVMEDIA_TYPE_AUDIO:

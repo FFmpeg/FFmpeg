@@ -292,7 +292,7 @@ static int read_header(AVFormatContext *s,
 
     /* position the stream at the start of data */
     if (caf->data_size >= 0)
-        url_fseek(pb, caf->data_start, SEEK_SET);
+        avio_seek(pb, caf->data_start, SEEK_SET);
 
     return 0;
 }
@@ -377,7 +377,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
         return -1;
     }
 
-    url_fseek(s->pb, pos + caf->data_start, SEEK_SET);
+    avio_seek(s->pb, pos + caf->data_start, SEEK_SET);
     return 0;
 }
 

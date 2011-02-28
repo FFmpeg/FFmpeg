@@ -277,7 +277,7 @@ static int flv_read_header(AVFormatContext *s,
     }
 
     offset = avio_rb32(s->pb);
-    url_fseek(s->pb, offset, SEEK_SET);
+    avio_seek(s->pb, offset, SEEK_SET);
     url_fskip(s->pb, 4);
 
     s->start_time = 0;
@@ -337,7 +337,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         else /* skip packet */
             av_log(s, AV_LOG_DEBUG, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
     skip:
-        url_fseek(s->pb, next, SEEK_SET);
+        avio_seek(s->pb, next, SEEK_SET);
         continue;
     }
 
@@ -361,7 +361,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
        ||(st->discard >= AVDISCARD_BIDIR  &&  ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_DISP_INTER && !is_audio))
        || st->discard >= AVDISCARD_ALL
        ){
-        url_fseek(s->pb, next, SEEK_SET);
+        avio_seek(s->pb, next, SEEK_SET);
         continue;
     }
     if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY)
@@ -374,15 +374,15 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         int size;
         const int64_t pos= url_ftell(s->pb);
         const int64_t fsize= url_fsize(s->pb);
-        url_fseek(s->pb, fsize-4, SEEK_SET);
+        avio_seek(s->pb, fsize-4, SEEK_SET);
         size= avio_rb32(s->pb);
-        url_fseek(s->pb, fsize-3-size, SEEK_SET);
+        avio_seek(s->pb, fsize-3-size, SEEK_SET);
         if(size == avio_rb24(s->pb) + 11){
             uint32_t ts = avio_rb24(s->pb);
             ts |= avio_r8(s->pb) << 24;
             s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
         }
-        url_fseek(s->pb, pos, SEEK_SET);
+        avio_seek(s->pb, pos, SEEK_SET);
     }
 
     if(is_audio){

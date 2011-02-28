@@ -104,7 +104,7 @@ static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR_INVALIDDATA;
     }
 
-    url_fseek(pb, 2048, SEEK_SET);
+    avio_seek(pb, 2048, SEEK_SET);
 
     av_set_pts_info(video_stream, 32, 1, frame_rate);
 
@@ -198,7 +198,7 @@ static int yop_read_seek(AVFormatContext *s, int stream_index,
     frame_pos      = timestamp * yop->frame_size + pos_min;
     yop->odd_frame = timestamp & 1;
 
-    url_fseek(s->pb, frame_pos, SEEK_SET);
+    avio_seek(s->pb, frame_pos, SEEK_SET);
     return 0;
 }
 

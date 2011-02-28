@@ -238,9 +238,9 @@ static int mp3_write_header(struct AVFormatContext *s)
     }
 
     cur_pos = url_ftell(s->pb);
-    url_fseek(s->pb, size_pos, SEEK_SET);
+    avio_seek(s->pb, size_pos, SEEK_SET);
     id3v2_put_size(s, totlen);
-    url_fseek(s->pb, cur_pos, SEEK_SET);
+    avio_seek(s->pb, cur_pos, SEEK_SET);
 
     return 0;
 }

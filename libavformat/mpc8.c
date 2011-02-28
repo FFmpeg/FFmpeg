@@ -135,7 +135,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     int i, t, seekd;
     GetBitContext gb;
 
-    url_fseek(s->pb, off, SEEK_SET);
+    avio_seek(s->pb, off, SEEK_SET);
     mpc8_get_chunk_header(s->pb, &tag, &size);
     if(tag != TAG_SEEKTABLE){
         av_log(s, AV_LOG_ERROR, "No seek table at given position\n");
@@ -179,7 +179,7 @@ static void mpc8_handle_chunk(AVFormatContext *s, int tag, int64_t chunk_pos, in
         pos = url_ftell(pb) + size;
         off = ff_get_v(pb);
         mpc8_parse_seektable(s, chunk_pos + off);
-        url_fseek(pb, pos, SEEK_SET);
+        avio_seek(pb, pos, SEEK_SET);
         break;
     default:
         url_fskip(pb, size);
@@ -273,7 +273,7 @@ static int mpc8_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
     int index = av_index_search_timestamp(st, timestamp, flags);
 
     if(index < 0) return -1;
-    url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
+    avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET);
     c->frame = st->index_entries[index].timestamp;
     return 0;
 }
