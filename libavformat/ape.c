@@ -187,7 +187,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
         /* Skip any unknown bytes at the end of the descriptor.
            This is for future compatibility */
         if (ape->descriptorlength > 52)
-            url_fseek(pb, ape->descriptorlength - 52, SEEK_CUR);
+            avio_seek(pb, ape->descriptorlength - 52, SEEK_CUR);
 
         /* Read header data */
         ape->compressiontype      = avio_rl16(pb);
@@ -212,7 +212,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
         ape->finalframeblocks     = avio_rl32(pb);
 
         if (ape->formatflags & MAC_FORMAT_FLAG_HAS_PEAK_LEVEL) {
-            url_fseek(pb, 4, SEEK_CUR); /* Skip the peak level */
+            avio_seek(pb, 4, SEEK_CUR); /* Skip the peak level */
             ape->headerlength += 4;
         }
 
@@ -289,7 +289,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
     /* try to read APE tags */
     if (!url_is_streamed(pb)) {
         ff_ape_parse_tag(s);
-        url_fseek(pb, 0, SEEK_SET);
+        avio_seek(pb, 0, SEEK_SET);
     }
 
     av_log(s, AV_LOG_DEBUG, "Decoding file - v%d.%02d, compression level %d\n", ape->fileversion / 1000, (ape->fileversion % 1000) / 10, ape->compressiontype);
@@ -342,7 +342,7 @@ static int ape_read_packet(AVFormatContext * s, AVPacket * pkt)
     if (ape->currentframe > ape->totalframes)
         return AVERROR(EIO);
 
-    url_fseek (s->pb, ape->frames[ape->currentframe].pos, SEEK_SET);
+    avio_seek (s->pb, ape->frames[ape->currentframe].pos, SEEK_SET);
 
     /* Calculate how many blocks there are in this frame */
     if (ape->currentframe == (ape->totalframes - 1))

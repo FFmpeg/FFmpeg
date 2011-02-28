@@ -118,7 +118,7 @@ static int ffm_read_data(AVFormatContext *s,
             len = size;
         if (len == 0) {
             if (url_ftell(pb) == ffm->file_size)
-                url_fseek(pb, ffm->packet_size, SEEK_SET);
+                avio_seek(pb, ffm->packet_size, SEEK_SET);
     retry_read:
             id = avio_rb16(pb); /* PACKET_ID */
             if (id != PACKET_ID)
@@ -137,7 +137,7 @@ static int ffm_read_data(AVFormatContext *s,
                 if (!frame_offset) {
                     /* This packet has no frame headers in it */
                     if (url_ftell(pb) >= ffm->packet_size * 3) {
-                        url_fseek(pb, -ffm->packet_size * 2, SEEK_CUR);
+                        avio_seek(pb, -ffm->packet_size * 2, SEEK_CUR);
                         goto retry_read;
                     }
                     /* This is bad, we cannot find a valid frame header */
@@ -178,7 +178,7 @@ static void ffm_seek1(AVFormatContext *s, int64_t pos1)
 #ifdef DEBUG_SEEK
     av_log(s, AV_LOG_DEBUG, "seek to %"PRIx64" -> %"PRIx64"\n", pos1, pos);
 #endif
-    url_fseek(pb, pos, SEEK_SET);
+    avio_seek(pb, pos, SEEK_SET);
 }
 
 static int64_t get_dts(AVFormatContext *s, int64_t pos)
@@ -248,7 +248,7 @@ static void adjust_write_index(AVFormatContext *s)
     //printf("pts range %0.6f - %0.6f\n", get_dts(s, 0) / 1000000. , get_dts(s, ffm->file_size - 2 * FFM_PACKET_SIZE) / 1000000. );
 
  end:
-    url_fseek(pb, ptr, SEEK_SET);
+    avio_seek(pb, ptr, SEEK_SET);
 }
 
 

@@ -112,7 +112,7 @@ static int str_read_header(AVFormatContext *s,
     else
         start = 0;
 
-    url_fseek(pb, start, SEEK_SET);
+    avio_seek(pb, start, SEEK_SET);
 
     for(i=0; i<32; i++){
         str->channels[i].video_stream_index=

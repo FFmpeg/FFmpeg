@@ -419,7 +419,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                     url_fskip(pb, len);
             }
         }
-        url_fseek(pb, next, SEEK_SET);
+        avio_seek(pb, next, SEEK_SET);
     }
     return 0;
 }
@@ -1840,7 +1840,7 @@ static int mov_read_meta(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         uint32_t tag = avio_rl32(pb);
         atom.size -= 4;
         if (tag == MKTAG('h','d','l','r')) {
-            url_fseek(pb, -8, SEEK_CUR);
+            avio_seek(pb, -8, SEEK_CUR);
             atom.size += 8;
             return mov_read_default(c, pb, atom);
         }
@@ -2308,7 +2308,7 @@ static void mov_read_chapters(AVFormatContext *s)
         uint16_t ch;
         int len, title_len;
 
-        if (url_fseek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
+        if (avio_seek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
             av_log(s, AV_LOG_ERROR, "Chapter %d not found in file\n", i);
             goto finish;
         }
@@ -2338,7 +2338,7 @@ static void mov_read_chapters(AVFormatContext *s)
         av_freep(&title);
     }
 finish:
-    url_fseek(sc->pb, cur_pos, SEEK_SET);
+    avio_seek(sc->pb, cur_pos, SEEK_SET);
 }
 
 static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -2421,7 +2421,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     sc->current_sample++;
 
     if (st->discard != AVDISCARD_ALL) {
-        if (url_fseek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
+        if (avio_seek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
             av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n",
                    sc->ffindex, sample->pos);
             return -1;

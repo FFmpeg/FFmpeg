@@ -74,7 +74,7 @@ static int vc1test_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
 
     if (!url_is_streamed(s->pb)) {
-        url_fseek(pb, 0, SEEK_SET);
+        avio_seek(pb, 0, SEEK_SET);
         avio_wl24(pb, ctx->frames);
         put_flush_packet(pb);
     }

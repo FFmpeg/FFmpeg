@@ -83,7 +83,7 @@ static int seq_init_frame_buffers(SeqDemuxContext *seq, AVIOContext *pb)
     int i, sz;
     TiertexSeqFrameBuffer *seq_buffer;
 
-    url_fseek(pb, 256, SEEK_SET);
+    avio_seek(pb, 256, SEEK_SET);
 
     for (i = 0; i < SEQ_NUM_FRAME_BUFFERS; i++) {
         sz = avio_rl16(pb);
@@ -113,7 +113,7 @@ static int seq_fill_buffer(SeqDemuxContext *seq, AVIOContext *pb, int buffer_num
     if (seq_buffer->fill_size + data_size > seq_buffer->data_size || data_size <= 0)
         return AVERROR_INVALIDDATA;
 
-    url_fseek(pb, seq->current_frame_offs + data_offs, SEEK_SET);
+    avio_seek(pb, seq->current_frame_offs + data_offs, SEEK_SET);
     if (avio_read(pb, seq_buffer->data + seq_buffer->fill_size, data_size) != data_size)
         return AVERROR(EIO);
 
@@ -128,7 +128,7 @@ static int seq_parse_frame_data(SeqDemuxContext *seq, AVIOContext *pb)
     int i, e, err;
 
     seq->current_frame_offs += SEQ_FRAME_SIZE;
-    url_fseek(pb, seq->current_frame_offs, SEEK_SET);
+    avio_seek(pb, seq->current_frame_offs, SEEK_SET);
 
     /* sound data */
     seq->current_audio_data_offs = avio_rl16(pb);
@@ -256,7 +256,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->data[0] = 0;
             if (seq->current_pal_data_size) {
                 pkt->data[0] |= 1;
-                url_fseek(pb, seq->current_frame_offs + seq->current_pal_data_offs, SEEK_SET);
+                avio_seek(pb, seq->current_frame_offs + seq->current_pal_data_offs, SEEK_SET);
                 if (avio_read(pb, &pkt->data[1], seq->current_pal_data_size) != seq->current_pal_data_size)
                     return AVERROR(EIO);
             }
@@ -279,7 +279,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (seq->current_audio_data_offs == 0) /* end of data reached */
         return AVERROR(EIO);
 
-    url_fseek(pb, seq->current_frame_offs + seq->current_audio_data_offs, SEEK_SET);
+    avio_seek(pb, seq->current_frame_offs + seq->current_audio_data_offs, SEEK_SET);
     rc = av_get_packet(pb, pkt, seq->current_audio_data_size);
     if (rc < 0)
         return rc;

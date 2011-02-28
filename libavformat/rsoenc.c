@@ -91,9 +91,9 @@ static int rso_write_trailer(AVFormatContext *s)
     }
 
     /* update file size */
-    url_fseek(pb, 2, SEEK_SET);
+    avio_seek(pb, 2, SEEK_SET);
     avio_wb16(pb, coded_file_size);
-    url_fseek(pb, file_size, SEEK_SET);
+    avio_seek(pb, file_size, SEEK_SET);
 
     put_flush_packet(pb);
 

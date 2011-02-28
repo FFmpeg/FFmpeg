@@ -130,7 +130,7 @@ static int avi_write_counters(AVFormatContext* s, int riff_id)
 
         assert(avist->frames_hdr_strm);
         stream = s->streams[n]->codec;
-        url_fseek(pb, avist->frames_hdr_strm, SEEK_SET);
+        avio_seek(pb, avist->frames_hdr_strm, SEEK_SET);
         ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
         if(au_ssize == 0) {
             avio_wl32(pb, avist->packet_count);
@@ -142,10 +142,10 @@ static int avi_write_counters(AVFormatContext* s, int riff_id)
     }
     if(riff_id == 1) {
         assert(avi->frames_hdr_all);
-        url_fseek(pb, avi->frames_hdr_all, SEEK_SET);
+        avio_seek(pb, avi->frames_hdr_all, SEEK_SET);
         avio_wl32(pb, nb_frames);
     }
-    url_fseek(pb, file_size, SEEK_SET);
+    avio_seek(pb, file_size, SEEK_SET);
 
     return 0;
 }
@@ -442,7 +442,7 @@ static int avi_write_ix(AVFormatContext *s)
          pos = url_ftell(pb);
 
          /* Updating one entry in the AVI OpenDML master index */
-         url_fseek(pb, avist->indexes.indx_start - 8, SEEK_SET);
+         avio_seek(pb, avist->indexes.indx_start - 8, SEEK_SET);
          ffio_wfourcc(pb, "indx");            /* enabling this entry */
          url_fskip(pb, 8);
          avio_wl32(pb, avi->riff_id);         /* nEntriesInUse */
@@ -451,7 +451,7 @@ static int avi_write_ix(AVFormatContext *s)
          avio_wl32(pb, pos - ix);             /* dwSize */
          avio_wl32(pb, avist->indexes.entry); /* dwDuration */
 
-         url_fseek(pb, pos, SEEK_SET);
+         avio_seek(pb, pos, SEEK_SET);
     }
     return 0;
 }
@@ -601,7 +601,7 @@ static int avi_write_trailer(AVFormatContext *s)
             ff_end_tag(pb, avi->riff_start);
 
             file_size = url_ftell(pb);
-            url_fseek(pb, avi->odml_list - 8, SEEK_SET);
+            avio_seek(pb, avi->odml_list - 8, SEEK_SET);
             ffio_wfourcc(pb, "LIST"); /* Making this AVI OpenDML one */
             url_fskip(pb, 16);
 
@@ -619,7 +619,7 @@ static int avi_write_trailer(AVFormatContext *s)
                 }
             }
             avio_wl32(pb, nb_frames);
-            url_fseek(pb, file_size, SEEK_SET);
+            avio_seek(pb, file_size, SEEK_SET);
 
             avi_write_counters(s, avi->riff_id);
         }

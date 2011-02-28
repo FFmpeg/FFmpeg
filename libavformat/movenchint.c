@@ -372,15 +372,15 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
         size -= packet_len;
 
         curpos = url_ftell(out);
-        url_fseek(out, entries_pos, SEEK_SET);
+        avio_seek(out, entries_pos, SEEK_SET);
         avio_wb16(out, entries);
-        url_fseek(out, curpos, SEEK_SET);
+        avio_seek(out, curpos, SEEK_SET);
     }
 
     curpos = url_ftell(out);
-    url_fseek(out, count_pos, SEEK_SET);
+    avio_seek(out, count_pos, SEEK_SET);
     avio_wb16(out, count);
-    url_fseek(out, curpos, SEEK_SET);
+    avio_seek(out, curpos, SEEK_SET);
     return count;
 }
 

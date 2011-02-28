@@ -95,7 +95,7 @@ static int vmd_read_header(AVFormatContext *s,
     int sound_buffers;
 
     /* fetch the main header, including the 2 header length bytes */
-    url_fseek(pb, 0, SEEK_SET);
+    avio_seek(pb, 0, SEEK_SET);
     if (avio_read(pb, vmd->vmd_header, VMD_HEADER_SIZE) != VMD_HEADER_SIZE)
         return AVERROR(EIO);
 
@@ -155,7 +155,7 @@ static int vmd_read_header(AVFormatContext *s,
     toc_offset = AV_RL32(&vmd->vmd_header[812]);
     vmd->frame_count = AV_RL16(&vmd->vmd_header[6]);
     vmd->frames_per_block = AV_RL16(&vmd->vmd_header[18]);
-    url_fseek(pb, toc_offset, SEEK_SET);
+    avio_seek(pb, toc_offset, SEEK_SET);
 
     raw_frame_table = NULL;
     vmd->frame_table = NULL;
@@ -243,7 +243,7 @@ static int vmd_read_packet(AVFormatContext *s,
 
     frame = &vmd->frame_table[vmd->current_frame];
     /* position the stream (will probably be there already) */
-    url_fseek(pb, frame->frame_offset, SEEK_SET);
+    avio_seek(pb, frame->frame_offset, SEEK_SET);
 
     if (av_new_packet(pkt, frame->frame_size + BYTES_PER_FRAME_RECORD))
         return AVERROR(ENOMEM);

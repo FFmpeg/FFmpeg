@@ -332,9 +332,9 @@ void ff_end_tag(AVIOContext *pb, int64_t start)
     int64_t pos;
 
     pos = url_ftell(pb);
-    url_fseek(pb, start - 4, SEEK_SET);
+    avio_seek(pb, start - 4, SEEK_SET);
     avio_wl32(pb, (uint32_t)(pos - start));
-    url_fseek(pb, pos, SEEK_SET);
+    avio_seek(pb, pos, SEEK_SET);
 }
 
 /* WAVEFORMATEX header */

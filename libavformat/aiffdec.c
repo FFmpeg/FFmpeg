@@ -152,7 +152,7 @@ static unsigned int get_aiff_header(AVIOContext *pb, AVCodecContext *codec,
 
     /* Chunk is over */
     if (size)
-        url_fseek(pb, size, SEEK_CUR);
+        avio_seek(pb, size, SEEK_CUR);
 
     return num_frames;
 }
@@ -276,7 +276,7 @@ got_sound:
         st->nb_frames * st->codec->frame_size : st->nb_frames;
 
     /* Position the stream at the first block */
-    url_fseek(pb, offset, SEEK_SET);
+    avio_seek(pb, offset, SEEK_SET);
 
     return 0;
 }

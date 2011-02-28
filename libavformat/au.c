@@ -95,9 +95,9 @@ static int au_write_trailer(AVFormatContext *s)
 
         /* update file size */
         file_size = url_ftell(pb);
-        url_fseek(pb, 8, SEEK_SET);
+        avio_seek(pb, 8, SEEK_SET);
         avio_wb32(pb, (uint32_t)(file_size - 24));
-        url_fseek(pb, file_size, SEEK_SET);
+        avio_seek(pb, file_size, SEEK_SET);
 
         put_flush_packet(pb);
     }
@@ -147,7 +147,7 @@ static int au_read_header(AVFormatContext *s,
 
     if (size >= 24) {
         /* skip unused data */
-        url_fseek(pb, size - 24, SEEK_CUR);
+        avio_seek(pb, size - 24, SEEK_CUR);
     }
 
     /* now we are ready: build format streams */

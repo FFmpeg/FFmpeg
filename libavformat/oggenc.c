@@ -69,9 +69,9 @@ static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc
 {
     int64_t pos = url_ftell(pb);
     uint32_t checksum = get_checksum(pb);
-    url_fseek(pb, crc_offset, SEEK_SET);
+    avio_seek(pb, crc_offset, SEEK_SET);
     avio_wb32(pb, checksum);
-    url_fseek(pb, pos, SEEK_SET);
+    avio_seek(pb, pos, SEEK_SET);
 }
 
 static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)

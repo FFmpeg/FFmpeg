@@ -115,7 +115,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
             c->bpc = ((c->bpc + ast->codec->block_align - 1) / ast->codec->block_align) * ast->codec->block_align;
         c->bytes_left = fsize;
         c->wavpos = url_ftell(pb);
-        url_fseek(pb, c->vidpos, SEEK_SET);
+        avio_seek(pb, c->vidpos, SEEK_SET);
     }
 
     /* now we are ready: build format streams */
@@ -151,7 +151,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if(!c->readvid && c->has_sound && c->bytes_left){
         c->readvid = 1;
-        url_fseek(s->pb, c->wavpos, SEEK_SET);
+        avio_seek(s->pb, c->wavpos, SEEK_SET);
         size = FFMIN(c->bytes_left, c->bpc);
         ret = av_get_packet(s->pb, pkt, size);
         pkt->stream_index = 1;
@@ -161,7 +161,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
         c->wavpos = url_ftell(s->pb);
         return 0;
     }
-    url_fseek(s->pb, c->vidpos, SEEK_SET);
+    avio_seek(s->pb, c->vidpos, SEEK_SET);
     while(!url_feof(s->pb) && c->frames){
         avio_read(s->pb, buf, 4);
         switch(AV_RL32(buf)){

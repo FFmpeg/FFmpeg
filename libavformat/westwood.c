@@ -231,7 +231,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     st->codec->codec_tag = 0;  /* no fourcc */
 
     /* skip to the start of the VQA header */
-    url_fseek(pb, 20, SEEK_SET);
+    avio_seek(pb, 20, SEEK_SET);
 
     /* the VQA header needs to go to the decoder */
     st->codec->extradata_size = VQA_HEADER_SIZE;
@@ -303,7 +303,7 @@ static int wsvqa_read_header(AVFormatContext *s,
             break;
         }
 
-        url_fseek(pb, chunk_size, SEEK_CUR);
+        avio_seek(pb, chunk_size, SEEK_CUR);
     } while (chunk_tag != FINF_TAG);
 
     return 0;
@@ -348,7 +348,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
             }
             /* stay on 16-bit alignment */
             if (skip_byte)
-                url_fseek(pb, 1, SEEK_CUR);
+                avio_seek(pb, 1, SEEK_CUR);
 
             return ret;
         } else {
@@ -359,7 +359,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
             default:
                 av_log(s, AV_LOG_INFO, "Skipping unknown chunk 0x%08X\n", chunk_type);
             }
-            url_fseek(pb, chunk_size + skip_byte, SEEK_CUR);
+            avio_seek(pb, chunk_size + skip_byte, SEEK_CUR);
         }
     }
 

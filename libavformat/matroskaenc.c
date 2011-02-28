@@ -231,10 +231,10 @@ static void end_ebml_master(AVIOContext *pb, ebml_master master)
 {
     int64_t pos = url_ftell(pb);
 
-    if (url_fseek(pb, master.pos - master.sizebytes, SEEK_SET) < 0)
+    if (avio_seek(pb, master.pos - master.sizebytes, SEEK_SET) < 0)
         return;
     put_ebml_num(pb, pos - master.pos, master.sizebytes);
-    url_fseek(pb, pos, SEEK_SET);
+    avio_seek(pb, pos, SEEK_SET);
 }
 
 static void put_xiph_size(AVIOContext *pb, int size)
@@ -313,7 +313,7 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, mkv_seekhead *seekhead)
     currentpos = url_ftell(pb);
 
     if (seekhead->reserved_size > 0)
-        if (url_fseek(pb, seekhead->filepos, SEEK_SET) < 0)
+        if (avio_seek(pb, seekhead->filepos, SEEK_SET) < 0)
             return -1;
 
     metaseek = start_ebml_master(pb, MATROSKA_ID_SEEKHEAD, seekhead->reserved_size);
@@ -334,7 +334,7 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, mkv_seekhead *seekhead)
     if (seekhead->reserved_size > 0) {
         uint64_t remaining = seekhead->filepos + seekhead->reserved_size - url_ftell(pb);
         put_ebml_void(pb, remaining);
-        url_fseek(pb, currentpos, SEEK_SET);
+        avio_seek(pb, currentpos, SEEK_SET);
 
         currentpos = seekhead->filepos;
     }
@@ -1163,10 +1163,10 @@ static int mkv_write_trailer(AVFormatContext *s)
         // update the duration
         av_log(s, AV_LOG_DEBUG, "end duration = %" PRIu64 "\n", mkv->duration);
         currentpos = url_ftell(pb);
-        url_fseek(pb, mkv->duration_offset, SEEK_SET);
+        avio_seek(pb, mkv->duration_offset, SEEK_SET);
         put_ebml_float(pb, MATROSKA_ID_DURATION, mkv->duration);
 
-        url_fseek(pb, currentpos, SEEK_SET);
+        avio_seek(pb, currentpos, SEEK_SET);
     }
 
     end_ebml_master(pb, mkv->segment);

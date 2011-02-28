@@ -67,7 +67,7 @@ static int vid_read_header(AVFormatContext *s,
     *    bytes: 'V' 'I' 'D'
     *    int16s: always_512, nframes, width, height, delay, always_14
     */
-    url_fseek(pb, 5, SEEK_CUR);
+    avio_seek(pb, 5, SEEK_CUR);
     vid->nframes = avio_rl16(pb);
 
     stream = av_new_stream(s, 0);
@@ -146,7 +146,7 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
         if(bytes_copied == npixels){ // sometimes no stop character is given, need to keep track of bytes copied
             // may contain a 0 byte even if read all pixels
             if(avio_r8(pb))
-                url_fseek(pb, -1, SEEK_CUR);
+                avio_seek(pb, -1, SEEK_CUR);
             break;
         }
         if(bytes_copied > npixels)
@@ -185,7 +185,7 @@ static int vid_read_packet(AVFormatContext *s,
     block_type = avio_r8(pb);
     switch(block_type){
         case PALETTE_BLOCK:
-            url_fseek(pb, -1, SEEK_CUR);     // include block type
+            avio_seek(pb, -1, SEEK_CUR);     // include block type
             ret_value = av_get_packet(pb, pkt, 3 * 256 + 1);
             if(ret_value != 3 * 256 + 1){
                 av_free_packet(pkt);

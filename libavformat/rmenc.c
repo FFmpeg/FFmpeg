@@ -436,7 +436,7 @@ static int rm_write_trailer(AVFormatContext *s)
 
     if (!url_is_streamed(s->pb)) {
         /* end of file: finish to write header */
-        index_pos = url_fseek(pb, 0, SEEK_CUR);
+        index_pos = avio_seek(pb, 0, SEEK_CUR);
         data_size = index_pos - rm->data_pos;
 
         /* FIXME: write index */
@@ -445,7 +445,7 @@ static int rm_write_trailer(AVFormatContext *s)
         avio_wb32(pb, 0);
         avio_wb32(pb, 0);
 
-        url_fseek(pb, 0, SEEK_SET);
+        avio_seek(pb, 0, SEEK_SET);
         for(i=0;i<s->nb_streams;i++)
             rm->streams[i].total_frames = rm->streams[i].nb_frames;
         rv10_write_header(s, data_size, 0);

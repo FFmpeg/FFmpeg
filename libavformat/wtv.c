@@ -98,7 +98,7 @@ static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
             int i = wf->position >> wf->sector_bits;
             if (i >= wf->nb_sectors ||
                 (wf->sectors[i] != wf->sectors[i - 1] + (1 << (wf->sector_bits - WTV_SECTOR_BITS)) &&
-                url_fseek(pb, (int64_t)wf->sectors[i] << WTV_SECTOR_BITS, SEEK_SET) < 0)) {
+                avio_seek(pb, (int64_t)wf->sectors[i] << WTV_SECTOR_BITS, SEEK_SET) < 0)) {
                 wf->error = 1;
                 break;
             }
@@ -123,7 +123,7 @@ static int64_t wtvfile_seek(void *opaque, int64_t offset, int whence)
         offset = wf->length;
 
     wf->error = offset < 0 || offset >= wf->length ||
-                url_fseek(pb, ((int64_t)wf->sectors[offset >> wf->sector_bits] << WTV_SECTOR_BITS)
+                avio_seek(pb, ((int64_t)wf->sectors[offset >> wf->sector_bits] << WTV_SECTOR_BITS)
                               + (offset & ((1 << wf->sector_bits) - 1)), SEEK_SET) < 0;
     wf->position = offset;
     return offset;
@@ -159,7 +159,7 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
     WtvFile *wf;
     uint8_t *buffer;
 
-    if (url_fseek(s->pb, first_sector << WTV_SECTOR_BITS, SEEK_SET) < 0)
+    if (avio_seek(s->pb, first_sector << WTV_SECTOR_BITS, SEEK_SET) < 0)
         return NULL;
 
     wf = av_mallocz(sizeof(WtvFile));
@@ -195,7 +195,7 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
         }
         wf->nb_sectors = 0;
         for (i = 0; i < nb_sectors1; i++) {
-            if (url_fseek(s->pb, (int64_t)sectors1[i] << WTV_SECTOR_BITS, SEEK_SET) < 0)
+            if (avio_seek(s->pb, (int64_t)sectors1[i] << WTV_SECTOR_BITS, SEEK_SET) < 0)
                 break;
             wf->nb_sectors += read_ints(s->pb, wf->sectors + i * WTV_SECTOR_SIZE / 4, WTV_SECTOR_SIZE / 4);
         }
@@ -222,7 +222,7 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
 
     /* seek to intial sector */
     wf->position = 0;
-    if (url_fseek(s->pb, (int64_t)wf->sectors[0] << WTV_SECTOR_BITS, SEEK_SET) < 0) {
+    if (avio_seek(s->pb, (int64_t)wf->sectors[0] << WTV_SECTOR_BITS, SEEK_SET) < 0) {
         av_free(wf->sectors);
         av_free(wf);
         return NULL;
@@ -492,7 +492,7 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     st->codec->extradata_size = filesize;
     avio_read(pb, st->codec->extradata, filesize);
 done:
-    url_fseek(pb, pos + length, SEEK_SET);
+    avio_seek(pb, pos + length, SEEK_SET);
 }
 
 static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int type, int length)
@@ -665,7 +665,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         url_fskip(pb, size - 32);
         ff_get_guid(pb, &actual_subtype);
         ff_get_guid(pb, &actual_formattype);
-        url_fseek(pb, -size, SEEK_CUR);
+        avio_seek(pb, -size, SEEK_CUR);
 
         st = parse_media_type(s, st, sid, mediatype, actual_subtype, actual_formattype, size - 32);
         url_fskip(pb, 32);
@@ -963,7 +963,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     url_fskip(s->pb, 4);
     root_sector = avio_rl32(s->pb);
 
-    url_fseek(s->pb, root_sector << WTV_SECTOR_BITS, SEEK_SET);
+    avio_seek(s->pb, root_sector << WTV_SECTOR_BITS, SEEK_SET);
     root_size = avio_read(s->pb, root, root_size);
     if (root_size < 0)
         return AVERROR_INVALIDDATA;
@@ -978,7 +978,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     ret = parse_chunks(s, SEEK_TO_DATA, 0, 0);
     if (ret < 0)
         return ret;
-    url_fseek(wtv->pb, -32, SEEK_CUR);
+    avio_seek(wtv->pb, -32, SEEK_CUR);
 
     timeline_pos = url_ftell(s->pb); // save before opening another file
 
@@ -1028,7 +1028,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
     }
 
-    url_fseek(s->pb, timeline_pos, SEEK_SET);
+    avio_seek(s->pb, timeline_pos, SEEK_SET);
     return 0;
 }
 
@@ -1072,9 +1072,9 @@ static int read_seek(AVFormatContext *s, int stream_index,
     i = ff_index_search_timestamp(wtv->index_entries, wtv->nb_index_entries, ts_relative, flags);
     if (i < 0) {
         if (wtv->last_valid_pts == AV_NOPTS_VALUE || ts < wtv->last_valid_pts)
-            url_fseek(pb, 0, SEEK_SET);
+            avio_seek(pb, 0, SEEK_SET);
         else if (st->duration != AV_NOPTS_VALUE && ts_relative > st->duration && wtv->nb_index_entries)
-            url_fseek(pb, wtv->index_entries[wtv->nb_index_entries - 1].pos, SEEK_SET);
+            avio_seek(pb, wtv->index_entries[wtv->nb_index_entries - 1].pos, SEEK_SET);
         if (parse_chunks(s, SEEK_TO_PTS, ts, 0) < 0)
             return AVERROR(ERANGE);
         return 0;
@@ -1083,7 +1083,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
     if (wtv->epoch != AV_NOPTS_VALUE)
         wtv->pts += wtv->epoch;
     wtv->last_valid_pts = wtv->pts;
-    url_fseek(pb, wtv->index_entries[i].pos, SEEK_SET);
+    avio_seek(pb, wtv->index_entries[i].pos, SEEK_SET);
     return 0;
 }
 

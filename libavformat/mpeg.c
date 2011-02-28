@@ -175,7 +175,7 @@ static int find_prev_start_code(AVIOContext *pb, int *size_ptr)
     pos = pos_start - 16386;
     if (pos < 0)
         pos = 0;
-    url_fseek(pb, pos, SEEK_SET);
+    avio_seek(pb, pos, SEEK_SET);
     avio_r8(pb);
 
     pos = pos_start;
@@ -185,7 +185,7 @@ static int find_prev_start_code(AVIOContext *pb, int *size_ptr)
             start_code = -1;
             goto the_end;
         }
-        url_fseek(pb, pos, SEEK_SET);
+        avio_seek(pb, pos, SEEK_SET);
         start_code = avio_rb32(pb);
         if ((start_code & 0xffffff00) == 0x100)
             break;
@@ -244,7 +244,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
     int64_t last_sync= url_ftell(s->pb);
 
  error_redo:
-        url_fseek(s->pb, last_sync, SEEK_SET);
+        avio_seek(s->pb, last_sync, SEEK_SET);
  redo:
         /* next start code (should be immediately after) */
         m->header_state = 0xff;
@@ -475,7 +475,7 @@ static int mpegps_read_packet(AVFormatContext *s,
         static const unsigned char avs_seqh[4] = { 0, 0, 1, 0xb0 };
         unsigned char buf[8];
         avio_read(s->pb, buf, 8);
-        url_fseek(s->pb, -8, SEEK_CUR);
+        avio_seek(s->pb, -8, SEEK_CUR);
         if(!memcmp(buf, avs_seqh, 4) && (buf[6] != 0 || buf[7] != 1))
             codec_id = CODEC_ID_CAVS;
         else
@@ -587,7 +587,7 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
 #ifdef DEBUG_SEEK
     printf("read_dts: pos=0x%"PRIx64" next=%d -> ", pos, find_next);
 #endif
-    if (url_fseek(s->pb, pos, SEEK_SET) < 0)
+    if (avio_seek(s->pb, pos, SEEK_SET) < 0)
         return AV_NOPTS_VALUE;
 
     for(;;) {

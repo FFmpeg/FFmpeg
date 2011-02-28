@@ -831,7 +831,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                      return ebml_parse_nest(matroska, syntax->def.n, data);
     case EBML_PASS:  return ebml_parse_id(matroska, syntax->def.n, id, data);
     case EBML_STOP:  return 1;
-    default:         return url_fseek(pb,length,SEEK_CUR)<0 ? AVERROR(EIO) : 0;
+    default:         return avio_seek(pb,length,SEEK_CUR)<0 ? AVERROR(EIO) : 0;
     }
     if (res == AVERROR_INVALIDDATA)
         av_log(matroska->ctx, AV_LOG_ERROR, "Invalid element\n");
@@ -1130,7 +1130,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
             continue;
 
         /* seek */
-        if (url_fseek(matroska->ctx->pb, offset, SEEK_SET) != offset)
+        if (avio_seek(matroska->ctx->pb, offset, SEEK_SET) != offset)
             continue;
 
         /* We don't want to lose our seekhead level, so we add
@@ -1159,7 +1159,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     }
 
     /* seek back */
-    url_fseek(matroska->ctx->pb, before_pos, SEEK_SET);
+    avio_seek(matroska->ctx->pb, before_pos, SEEK_SET);
     matroska->level_up = level_up;
     matroska->current_id = saved_id;
 }
@@ -1889,7 +1889,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     timestamp = FFMAX(timestamp, st->index_entries[0].timestamp);
 
     if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
-        url_fseek(s->pb, st->index_entries[st->nb_index_entries-1].pos, SEEK_SET);
+        avio_seek(s->pb, st->index_entries[st->nb_index_entries-1].pos, SEEK_SET);
         while ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
             matroska_clear_queue(matroska);
             if (matroska_parse_cluster(matroska) < 0)
@@ -1914,7 +1914,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         }
     }
 
-    url_fseek(s->pb, st->index_entries[index_min].pos, SEEK_SET);
+    avio_seek(s->pb, st->index_entries[index_min].pos, SEEK_SET);
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
     matroska->skip_to_timecode = st->index_entries[index].timestamp;
     matroska->done = 0;

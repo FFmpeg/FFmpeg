@@ -74,7 +74,7 @@ void ff_ape_parse_tag(AVFormatContext *s)
     if (file_size < APE_TAG_FOOTER_BYTES)
         return;
 
-    url_fseek(pb, file_size - APE_TAG_FOOTER_BYTES, SEEK_SET);
+    avio_seek(pb, file_size - APE_TAG_FOOTER_BYTES, SEEK_SET);
 
     avio_read(pb, buf, 8);     /* APETAGEX */
     if (strncmp(buf, "APETAGEX", 8)) {
@@ -105,7 +105,7 @@ void ff_ape_parse_tag(AVFormatContext *s)
         return;
     }
 
-    url_fseek(pb, file_size - tag_bytes, SEEK_SET);
+    avio_seek(pb, file_size - tag_bytes, SEEK_SET);
 
     for (i=0; i<fields; i++)
         if (ape_tag_read_field(s) < 0) break;

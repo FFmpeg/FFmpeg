@@ -146,7 +146,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     // Jump over header
 
-    if(url_fseek(pb, MTV_HEADER_SIZE, SEEK_SET) != MTV_HEADER_SIZE)
+    if(avio_seek(pb, MTV_HEADER_SIZE, SEEK_SET) != MTV_HEADER_SIZE)
         return AVERROR(EIO);
 
     return 0;

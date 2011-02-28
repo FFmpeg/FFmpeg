@@ -100,12 +100,12 @@ static int sox_write_trailer(AVFormatContext *s)
         /* update number of samples */
         int64_t file_size = url_ftell(pb);
         int64_t num_samples = (file_size - sox->header_size - 4LL) >> 2LL;
-        url_fseek(pb, 8, SEEK_SET);
+        avio_seek(pb, 8, SEEK_SET);
         if (enc->codec_id == CODEC_ID_PCM_S32LE) {
             avio_wl64(pb, num_samples);
         } else
             avio_wb64(pb, num_samples);
-        url_fseek(pb, file_size, SEEK_SET);
+        avio_seek(pb, file_size, SEEK_SET);
 
         put_flush_packet(pb);
     }

@@ -101,7 +101,7 @@ static int wc3_read_header(AVFormatContext *s,
     wc3->vpkt.data = NULL; wc3->vpkt.size = 0;
 
     /* skip the first 3 32-bit numbers */
-    url_fseek(pb, 12, SEEK_CUR);
+    avio_seek(pb, 12, SEEK_CUR);
 
     /* traverse through the chunks and load the header information before
      * the first BRCH tag */
@@ -114,12 +114,12 @@ static int wc3_read_header(AVFormatContext *s,
         case SOND_TAG:
         case INDX_TAG:
             /* SOND unknown, INDX unnecessary; ignore both */
-            url_fseek(pb, size, SEEK_CUR);
+            avio_seek(pb, size, SEEK_CUR);
             break;
 
         case PC__TAG:
             /* number of palettes, unneeded */
-            url_fseek(pb, 12, SEEK_CUR);
+            avio_seek(pb, 12, SEEK_CUR);
             break;
 
         case BNAM_TAG:
@@ -142,7 +142,7 @@ static int wc3_read_header(AVFormatContext *s,
 
         case PALT_TAG:
             /* one of several palettes */
-            url_fseek(pb, -8, SEEK_CUR);
+            avio_seek(pb, -8, SEEK_CUR);
             av_append_packet(pb, &wc3->vpkt, 8 + PALETTE_SIZE);
             break;
 
@@ -219,13 +219,13 @@ static int wc3_read_packet(AVFormatContext *s,
 
         case SHOT_TAG:
             /* load up new palette */
-            url_fseek(pb, -8, SEEK_CUR);
+            avio_seek(pb, -8, SEEK_CUR);
             av_append_packet(pb, &wc3->vpkt, 8 + 4);
             break;
 
         case VGA__TAG:
             /* send out video chunk */
-            url_fseek(pb, -8, SEEK_CUR);
+            avio_seek(pb, -8, SEEK_CUR);
             ret= av_append_packet(pb, &wc3->vpkt, 8 + size);
             // ignore error if we have some data
             if (wc3->vpkt.size > 0)
@@ -240,7 +240,7 @@ static int wc3_read_packet(AVFormatContext *s,
         case TEXT_TAG:
             /* subtitle chunk */
 #if 0
-            url_fseek(pb, size, SEEK_CUR);
+            avio_seek(pb, size, SEEK_CUR);
 #else
             if ((unsigned)size > sizeof(text) || (ret = avio_read(pb, text, size)) != size)
                 ret = AVERROR(EIO);

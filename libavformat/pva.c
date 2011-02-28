@@ -182,7 +182,7 @@ static int64_t pva_read_timestamp(struct AVFormatContext *s, int stream_index,
 
     while (*pos < pos_limit) {
         res = AV_NOPTS_VALUE;
-        url_fseek(pb, *pos, SEEK_SET);
+        avio_seek(pb, *pos, SEEK_SET);
 
         pvactx->continue_pes = 0;
         if (read_part_of_packet(s, &res, &length, &streamid, 0)) {

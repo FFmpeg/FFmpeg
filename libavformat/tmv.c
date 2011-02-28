@@ -173,7 +173,7 @@ static int tmv_read_seek(AVFormatContext *s, int stream_index,
     pos = timestamp *
           (tmv->audio_chunk_size + tmv->video_chunk_size + tmv->padding);
 
-    url_fseek(s->pb, pos + TMV_HEADER_SIZE, SEEK_SET);
+    avio_seek(s->pb, pos + TMV_HEADER_SIZE, SEEK_SET);
     tmv->stream_index = 0;
     return 0;
 }

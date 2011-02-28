@@ -897,7 +897,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         else if (read_child(ctx, pb, tag, size, uid) < 0)
             return -1;
 
-        url_fseek(pb, next, SEEK_SET);
+        avio_seek(pb, next, SEEK_SET);
     }
     if (ctx_size) ctx->type = type;
     return ctx_size ? mxf_add_metadata_set(mxf, ctx) : 0;
@@ -912,7 +912,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
         return -1;
     }
-    url_fseek(s->pb, -14, SEEK_CUR);
+    avio_seek(s->pb, -14, SEEK_CUR);
     mxf->fc = s;
     while (!url_feof(s->pb)) {
         const MXFMetadataReadTableEntry *metadata;
@@ -924,7 +924,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             /* FIXME avoid seek */
-            url_fseek(s->pb, klv.offset, SEEK_SET);
+            avio_seek(s->pb, klv.offset, SEEK_SET);
             break;
         }
 
@@ -1009,7 +1009,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     if (sample_time < 0)
         sample_time = 0;
     seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
-    url_fseek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
+    avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
     av_update_cur_dts(s, st, sample_time);
     return 0;
 }

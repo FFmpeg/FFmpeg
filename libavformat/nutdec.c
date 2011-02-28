@@ -119,7 +119,7 @@ static uint64_t find_any_startcode(AVIOContext *bc, int64_t pos){
     uint64_t state=0;
 
     if(pos >= 0)
-        url_fseek(bc, pos, SEEK_SET); //note, this may fail if the stream is not seekable, but that should not matter, as in this case we simply start where we currently are
+        avio_seek(bc, pos, SEEK_SET); //note, this may fail if the stream is not seekable, but that should not matter, as in this case we simply start where we currently are
 
     while(!url_feof(bc)){
         state= (state<<8) | avio_r8(bc);
@@ -178,7 +178,7 @@ static int nut_probe(AVProbeData *p){
 static int skip_reserved(AVIOContext *bc, int64_t pos){
     pos -= url_ftell(bc);
     if(pos<0){
-        url_fseek(bc, pos, SEEK_CUR);
+        avio_seek(bc, pos, SEEK_CUR);
         return -1;
     }else{
         while(pos--)
@@ -513,8 +513,8 @@ static int find_and_decode_index(NUTContext *nut){
     int8_t *has_keyframe;
     int ret= -1;
 
-    url_fseek(bc, filesize-12, SEEK_SET);
-    url_fseek(bc, filesize-avio_rb64(bc), SEEK_SET);
+    avio_seek(bc, filesize-12, SEEK_SET);
+    avio_seek(bc, filesize-avio_rb64(bc), SEEK_SET);
     if(avio_rb64(bc) != INDEX_STARTCODE){
         av_log(s, AV_LOG_ERROR, "no index at the end\n");
         return -1;
@@ -655,7 +655,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if(!url_is_streamed(bc)){
         int64_t orig_pos= url_ftell(bc);
         find_and_decode_index(nut);
-        url_fseek(bc, orig_pos, SEEK_SET);
+        avio_seek(bc, orig_pos, SEEK_SET);
     }
     assert(nut->next_startcode == SYNCPOINT_STARTCODE);
 
@@ -803,7 +803,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         case STREAM_STARTCODE:
         case INDEX_STARTCODE:
             skip= get_packetheader(nut, bc, 0, tmp);
-            url_fseek(bc, skip, SEEK_CUR);
+            avio_seek(bc, skip, SEEK_CUR);
             break;
         case INFO_STARTCODE:
             if(decode_info_header(nut)<0)
@@ -900,7 +900,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
     }
     av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos2);
     pos= find_startcode(s->pb, SYNCPOINT_STARTCODE, pos2);
-    url_fseek(s->pb, pos, SEEK_SET);
+    avio_seek(s->pb, pos, SEEK_SET);
     av_log(NULL, AV_LOG_DEBUG, "SP: %"PRId64"\n", pos);
     if(pos2 > pos || pos2 + 15 < pos){
         av_log(NULL, AV_LOG_ERROR, "no syncpoint at backptr pos\n");
