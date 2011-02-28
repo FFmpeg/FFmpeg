@@ -175,7 +175,7 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
 int url_alloc(URLContext **puc, const char *filename, int flags)
 {
     URLProtocol *up;
-    char proto_str[128];
+    char proto_str[128], proto_nested[128], *ptr;
     size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
 
     if (filename[proto_len] != ':' || is_dos_path(filename))
@@ -183,9 +183,16 @@ int url_alloc(URLContext **puc, const char *filename, int flags)
     else
         av_strlcpy(proto_str, filename, FFMIN(proto_len+1, sizeof(proto_str)));
 
+    av_strlcpy(proto_nested, proto_str, sizeof(proto_nested));
+    if ((ptr = strchr(proto_nested, '+')))
+        *ptr = '\0';
+
     up = first_protocol;
     while (up != NULL) {
         if (!strcmp(proto_str, up->name))
+            return url_alloc_for_protocol (puc, up, filename, flags);
+        if (up->flags & URL_PROTOCOL_FLAG_NESTED_SCHEME &&
+            !strcmp(proto_nested, up->name))
             return url_alloc_for_protocol (puc, up, filename, flags);
         up = up->next;
     }
