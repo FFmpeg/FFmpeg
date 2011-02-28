@@ -281,6 +281,8 @@ int64_t av_url_read_seek(URLContext *h, int stream_index,
  */
 #define AVSEEK_FORCE 0x20000
 
+#define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
+
 typedef struct URLProtocol {
     const char *name;
     int (*url_open)(URLContext *h, const char *url, int flags);
