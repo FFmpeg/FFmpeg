@@ -94,7 +94,8 @@ struct AVFormatContext;
  * filename     -- original name of the file.
  * genre        -- <self-evident>.
  * language     -- main language in which the work is performed, preferably
- *                 in ISO 639-2 format.
+ *                 in ISO 639-2 format. Multiple languages can be specified by
+ *                 separating them with commas.
  * performer    -- artist who performed the work, if different from artist.
  *                 E.g for "Also sprach Zarathustra", artist would be "Richard
  *                 Strauss" and performer "London Philharmonic Orchestra".
