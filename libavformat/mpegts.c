@@ -802,7 +802,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
              * a couple of seconds to milliseconds for properly muxed files.
              * total_size is the number of bytes following pes_packet_length
              * in the pes header, i.e. not counting the first 6 bytes */
-            if (pes->total_size < MAX_PES_PAYLOAD &&
+            if (!ts->stop_parse && pes->total_size < MAX_PES_PAYLOAD &&
                 pes->pes_header_size + pes->data_index == pes->total_size + 6) {
                 ts->stop_parse = 1;
                 new_pes_packet(pes, ts->pkt);
