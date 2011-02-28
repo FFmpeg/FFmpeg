@@ -295,6 +295,7 @@ typedef struct URLProtocol {
     int (*url_get_file_handle)(URLContext *h);
     int priv_data_size;
     const AVClass *priv_data_class;
+    int flags;
 } URLProtocol;
 
 #if FF_API_REGISTER_PROTOCOL
