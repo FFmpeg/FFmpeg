@@ -233,11 +233,13 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
     return offset;
 }
 
+#if FF_API_OLD_AVIO
 int url_fskip(AVIOContext *s, int64_t offset)
 {
     int64_t ret = avio_seek(s, offset, SEEK_CUR);
     return ret < 0 ? ret : 0;
 }
+#endif
 
 int64_t url_ftell(AVIOContext *s)
 {
