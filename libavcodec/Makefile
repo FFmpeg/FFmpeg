@@ -337,9 +337,6 @@ OBJS-$(CONFIG_SNOW_ENCODER)            += snow.o rangecoder.o motion_est.o \
                                           ituh263enc.o mpegvideo_enc.o     \
                                           mpeg12data.o
 OBJS-$(CONFIG_SOL_DPCM_DECODER)        += dpcm.o
-OBJS-$(CONFIG_SONIC_DECODER)           += sonic.o
-OBJS-$(CONFIG_SONIC_ENCODER)           += sonic.o
-OBJS-$(CONFIG_SONIC_LS_ENCODER)        += sonic.o
 OBJS-$(CONFIG_SP5X_DECODER)            += sp5xdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_SRT_DECODER)             += srtdec.o ass.o
 OBJS-$(CONFIG_SUNRAST_DECODER)         += sunrast.o
