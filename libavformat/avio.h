@@ -421,6 +421,7 @@ attribute_deprecated void         put_tag(AVIOContext *s, const char *tag);
 attribute_deprecated int url_fopen( AVIOContext **s, const char *url, int flags);
 attribute_deprecated int url_fclose(AVIOContext *s);
 attribute_deprecated int64_t url_fseek(AVIOContext *s, int64_t offset, int whence);
+attribute_deprecated int url_fskip(AVIOContext *s, int64_t offset);
 /**
  * @}
  */
@@ -467,13 +468,6 @@ int avio_put_str16le(AVIOContext *s, const char *str);
  * @return new position or AVERROR.
  */
 int64_t avio_seek(AVIOContext *s, int64_t offset, int whence);
-
-/**
- * Skip given number of bytes forward.
- * @param offset number of bytes
- * @return 0 on success, <0 on error
- */
-int url_fskip(AVIOContext *s, int64_t offset);
 
 /**
  * ftell() equivalent for AVIOContext.
