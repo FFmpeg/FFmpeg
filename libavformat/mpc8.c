@@ -182,7 +182,7 @@ static void mpc8_handle_chunk(AVFormatContext *s, int tag, int64_t chunk_pos, in
         avio_seek(pb, pos, SEEK_SET);
         break;
     default:
-        url_fskip(pb, size);
+        avio_seek(pb, size, SEEK_CUR);
     }
 }
 
@@ -212,7 +212,7 @@ static int mpc8_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
     pos = url_ftell(pb);
-    url_fskip(pb, 4); //CRC
+    avio_seek(pb, 4, SEEK_CUR); //CRC
     c->ver = avio_r8(pb);
     if(c->ver != 8){
         av_log(s, AV_LOG_ERROR, "Unknown stream version %d\n", c->ver);

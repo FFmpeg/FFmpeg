@@ -45,13 +45,13 @@ static int voc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int header_size;
     AVStream *st;
 
-    url_fskip(pb, 20);
+    avio_seek(pb, 20, SEEK_CUR);
     header_size = avio_rl16(pb) - 22;
     if (header_size != 4) {
         av_log(s, AV_LOG_ERROR, "unknown header size: %d\n", header_size);
         return AVERROR(ENOSYS);
     }
-    url_fskip(pb, header_size);
+    avio_seek(pb, header_size, SEEK_CUR);
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
@@ -114,13 +114,13 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
             dec->bits_per_coded_sample = avio_r8(pb);
             dec->channels = avio_r8(pb);
             tmp_codec = avio_rl16(pb);
-            url_fskip(pb, 4);
+            avio_seek(pb, 4, SEEK_CUR);
             voc->remaining_size -= 12;
             max_size -= 12;
             break;
 
         default:
-            url_fskip(pb, voc->remaining_size);
+            avio_seek(pb, voc->remaining_size, SEEK_CUR);
             max_size -= voc->remaining_size;
             voc->remaining_size = 0;
             break;

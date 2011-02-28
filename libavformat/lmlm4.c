@@ -100,7 +100,7 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
     if ((ret = av_get_packet(pb, pkt, frame_size)) <= 0)
         return AVERROR(EIO);
 
-    url_fskip(pb, padding);
+    avio_seek(pb, padding, SEEK_CUR);
 
     switch (frame_type) {
         case LMLM4_I_FRAME:

@@ -149,13 +149,13 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
                 break;
             }
             default:
-                url_fskip(&pb, tlv_len);
+                avio_seek(&pb, tlv_len, SEEK_CUR);
                 break;
             }
         }
 
         /* 32-bit alignment */
-        url_fskip(&pb, ((url_ftell(&pb) + 3) & ~3) - url_ftell(&pb));
+        avio_seek(&pb, ((url_ftell(&pb) + 3) & ~3) - url_ftell(&pb), SEEK_CUR);
     } else
         avio_seek(&pb, 4, SEEK_SET);
 

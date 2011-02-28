@@ -103,7 +103,7 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
     }
     width = avio_rl16(pb);
     height = avio_rl16(pb);
-    url_fskip(pb, 4);
+    avio_seek(pb, 4, SEEK_CUR);
     c->frames = avio_rl16(pb);
     if(!c->frames){
         av_log(s, AV_LOG_ERROR, "File contains no frames ???\n");
@@ -113,7 +113,7 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
     c->rate = avio_rl16(pb);
     c->block_align = c->rate * (c->bits >> 3);
 
-    url_fskip(pb, 16); //zeroes
+    avio_seek(pb, 16, SEEK_CUR); //zeroes
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -145,7 +145,7 @@ static int siff_parse_soun(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
         av_log(s, AV_LOG_ERROR, "Header chunk size is incorrect\n");
         return -1;
     }
-    url_fskip(pb, 4); //unknown value
+    avio_seek(pb, 4, SEEK_CUR); //unknown value
     c->rate = avio_rl16(pb);
     c->bits = avio_rl16(pb);
     c->block_align = c->rate * (c->bits >> 3);
@@ -160,7 +160,7 @@ static int siff_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if (avio_rl32(pb) != TAG_SIFF)
         return -1;
-    url_fskip(pb, 4); //ignore size
+    avio_seek(pb, 4, SEEK_CUR); //ignore size
     tag = avio_rl32(pb);
 
     if (tag != TAG_VBV1 && tag != TAG_SOUN){
@@ -176,7 +176,7 @@ static int siff_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "'BODY' chunk is missing\n");
         return -1;
     }
-    url_fskip(pb, 4); //ignore size
+    avio_seek(pb, 4, SEEK_CUR); //ignore size
 
     return 0;
 }

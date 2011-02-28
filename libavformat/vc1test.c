@@ -68,7 +68,7 @@ static int vc1t_read_header(AVFormatContext *s,
     st->codec->width = avio_rl32(pb);
     if(avio_rl32(pb) != 0xC)
         return -1;
-    url_fskip(pb, 8);
+    avio_seek(pb, 8, SEEK_CUR);
     fps = avio_rl32(pb);
     if(fps == 0xFFFFFFFF)
         av_set_pts_info(st, 32, 1, 1000);

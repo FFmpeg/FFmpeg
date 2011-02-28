@@ -114,22 +114,22 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             av_log(s, AV_LOG_ERROR, "invalid AAC magic cookie\n");
             return AVERROR_INVALIDDATA;
         }
-        url_fskip(pb, skip);
+        avio_seek(pb, skip, SEEK_CUR);
     } else if (st->codec->codec_id == CODEC_ID_ALAC) {
 #define ALAC_PREAMBLE 12
 #define ALAC_HEADER   36
         if (size < ALAC_PREAMBLE + ALAC_HEADER) {
             av_log(s, AV_LOG_ERROR, "invalid ALAC magic cookie\n");
-            url_fskip(pb, size);
+            avio_seek(pb, size, SEEK_CUR);
             return AVERROR_INVALIDDATA;
         }
-        url_fskip(pb, ALAC_PREAMBLE);
+        avio_seek(pb, ALAC_PREAMBLE, SEEK_CUR);
         st->codec->extradata = av_mallocz(ALAC_HEADER + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!st->codec->extradata)
             return AVERROR(ENOMEM);
         avio_read(pb, st->codec->extradata, ALAC_HEADER);
         st->codec->extradata_size = ALAC_HEADER;
-        url_fskip(pb, size - ALAC_PREAMBLE - ALAC_HEADER);
+        avio_seek(pb, size - ALAC_PREAMBLE - ALAC_HEADER, SEEK_CUR);
     } else {
         st->codec->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!st->codec->extradata)
@@ -201,7 +201,7 @@ static int read_header(AVFormatContext *s,
     int found_data, ret;
     int64_t size;
 
-    url_fskip(pb, 8); /* magic, version, file flags */
+    avio_seek(pb, 8, SEEK_CUR); /* magic, version, file flags */
 
     /* audio description chunk */
     if (avio_rb32(pb) != MKBETAG('d','e','s','c')) {
@@ -233,11 +233,11 @@ static int read_header(AVFormatContext *s,
 
         switch (tag) {
         case MKBETAG('d','a','t','a'):
-            url_fskip(pb, 4); /* edit count */
+            avio_seek(pb, 4, SEEK_CUR); /* edit count */
             caf->data_start = url_ftell(pb);
             caf->data_size  = size < 0 ? -1 : size - 4;
             if (caf->data_size > 0 && !url_is_streamed(pb))
-                url_fskip(pb, caf->data_size);
+                avio_seek(pb, caf->data_size, SEEK_CUR);
             found_data = 1;
             break;
 
@@ -265,7 +265,7 @@ static int read_header(AVFormatContext *s,
         case MKBETAG('f','r','e','e'):
             if (size < 0)
                 return AVERROR_INVALIDDATA;
-            url_fskip(pb, size);
+            avio_seek(pb, size, SEEK_CUR);
             break;
         }
     }

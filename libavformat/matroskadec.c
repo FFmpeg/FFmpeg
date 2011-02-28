@@ -1393,10 +1393,10 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             int flavor;
             ffio_init_context(&b, track->codec_priv.data,track->codec_priv.size,
                           0, NULL, NULL, NULL, NULL);
-            url_fskip(&b, 22);
+            avio_seek(&b, 22, SEEK_CUR);
             flavor                       = avio_rb16(&b);
             track->audio.coded_framesize = avio_rb32(&b);
-            url_fskip(&b, 12);
+            avio_seek(&b, 12, SEEK_CUR);
             track->audio.sub_packet_h    = avio_rb16(&b);
             track->audio.frame_size      = avio_rb16(&b);
             track->audio.sub_packet_size = avio_rb16(&b);

@@ -171,7 +171,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
     unsync = flags & 0x80;
 
     if (isv34 && flags & 0x40) /* Extended header present, just skip over it */
-        url_fskip(s->pb, get_size(s->pb, 4));
+        avio_seek(s->pb, get_size(s->pb, 4), SEEK_CUR);
 
     while (len >= taghdrlen) {
         unsigned int tflags;
@@ -205,7 +205,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
 
         if (tflags & (ID3v2_FLAG_ENCRYPTION | ID3v2_FLAG_COMPRESSION)) {
             av_log(s, AV_LOG_WARNING, "Skipping encrypted/compressed ID3v2 frame %s.\n", tag);
-            url_fskip(s->pb, tlen);
+            avio_seek(s->pb, tlen, SEEK_CUR);
         } else if (tag[0] == 'T') {
             if (unsync || tunsync) {
                 int i, j;
@@ -226,7 +226,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         else if (!tag[0]) {
             if (tag[1])
                 av_log(s, AV_LOG_WARNING, "invalid frame id, assuming padding");
-            url_fskip(s->pb, tlen);
+            avio_seek(s->pb, tlen, SEEK_CUR);
             break;
         }
         /* Skip to end of tag */
@@ -235,17 +235,17 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
 
     if (len > 0) {
         /* Skip padding */
-        url_fskip(s->pb, len);
+        avio_seek(s->pb, len, SEEK_CUR);
     }
     if (version == 4 && flags & 0x10) /* Footer preset, always 10 bytes, skip over it */
-        url_fskip(s->pb, 10);
+        avio_seek(s->pb, 10, SEEK_CUR);
 
     av_free(buffer);
     return;
 
   error:
     av_log(s, AV_LOG_INFO, "ID3v2.%d tag skipped, cannot handle %s\n", version, reason);
-    url_fskip(s->pb, len);
+    avio_seek(s->pb, len, SEEK_CUR);
     av_free(buffer);
 }
 

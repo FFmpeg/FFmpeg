@@ -584,7 +584,7 @@ null_chunk_retry:
               ((auxtag >> 16) & 0x0ff),
               ((auxtag >> 24) & 0x0ff),
               auxsize);
-        url_fskip(pb, auxsize);
+        avio_seek(pb, auxsize, SEEK_CUR);
         vsize -= auxsize + sizeof(uint16_t) + sizeof(uint32_t); /* that's becoming braindead */
     }
 

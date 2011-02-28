@@ -83,10 +83,10 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream        *st;
     unsigned int    audio_subsegments;
 
-    url_fskip(pb, 3);
+    avio_seek(pb, 3, SEEK_CUR);
     mtv->file_size         = avio_rl32(pb);
     mtv->segments          = avio_rl32(pb);
-    url_fskip(pb, 32);
+    avio_seek(pb, 32, SEEK_CUR);
     mtv->audio_identifier  = avio_rl24(pb);
     mtv->audio_br          = avio_rl16(pb);
     mtv->img_colorfmt      = avio_rl24(pb);
@@ -105,7 +105,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
         mtv->img_height=mtv->img_segment_size / (mtv->img_bpp>>3)
                         / mtv->img_width;
 
-    url_fskip(pb, 4);
+    avio_seek(pb, 4, SEEK_CUR);
     audio_subsegments = avio_rl16(pb);
     mtv->full_segment_size =
         audio_subsegments * (MTV_AUDIO_PADDING_SIZE + MTV_ASUBCHUNK_DATA_SIZE) +
@@ -164,7 +164,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if((url_ftell(pb) - s->data_offset + mtv->img_segment_size) % mtv->full_segment_size)
     {
-        url_fskip(pb, MTV_AUDIO_PADDING_SIZE);
+        avio_seek(pb, MTV_AUDIO_PADDING_SIZE, SEEK_CUR);
 
         ret = av_get_packet(pb, pkt, MTV_ASUBCHUNK_DATA_SIZE);
         if(ret < 0)

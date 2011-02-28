@@ -239,7 +239,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
 
         /* Skip any stored wav header */
         if (!(ape->formatflags & MAC_FORMAT_FLAG_CREATE_WAV_HEADER))
-            url_fskip(pb, ape->wavheaderlength);
+            avio_seek(pb, ape->wavheaderlength, SEEK_CUR);
     }
 
     if(ape->totalframes > UINT_MAX / sizeof(APEFrame)){

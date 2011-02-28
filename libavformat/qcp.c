@@ -93,7 +93,7 @@ static int qcp_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     avio_rb32(pb);                    // "RIFF"
     s->file_size = avio_rl32(pb) + 8;
-    url_fskip(pb, 8 + 4 + 1 + 1);    // "QLCMfmt " + chunk-size + major-version + minor-version
+    avio_seek(pb, 8 + 4 + 1 + 1, SEEK_CUR);    // "QLCMfmt " + chunk-size + major-version + minor-version
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->channels   = 1;
@@ -110,13 +110,13 @@ static int qcp_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "Unknown codec GUID.\n");
         return AVERROR_INVALIDDATA;
     }
-    url_fskip(pb, 2 + 80); // codec-version + codec-name
+    avio_seek(pb, 2 + 80, SEEK_CUR); // codec-version + codec-name
     st->codec->bit_rate = avio_rl16(pb);
 
     s->packet_size = avio_rl16(pb);
-    url_fskip(pb, 2); // block-size
+    avio_seek(pb, 2, SEEK_CUR); // block-size
     st->codec->sample_rate = avio_rl16(pb);
-    url_fskip(pb, 2); // sample-size
+    avio_seek(pb, 2, SEEK_CUR); // sample-size
 
     memset(c->rates_per_mode, -1, sizeof(c->rates_per_mode));
     nb_rates = avio_rl32(pb);
@@ -129,7 +129,7 @@ static int qcp_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else
             c->rates_per_mode[mode] = size;
     }
-    url_fskip(pb, 16 - 2*nb_rates + 20); // empty entries of rate-map-table + reserved
+    avio_seek(pb, 16 - 2*nb_rates + 20, SEEK_CUR); // empty entries of rate-map-table + reserved
 
     return 0;
 }
@@ -174,14 +174,14 @@ static int qcp_read_packet(AVFormatContext *s, AVPacket *pkt)
         case MKTAG('v', 'r', 'a', 't'):
             if (avio_rl32(pb)) // var-rate-flag
                 s->packet_size = 0;
-            url_fskip(pb, 4); // size-in-packets
+            avio_seek(pb, 4, SEEK_CUR); // size-in-packets
             break;
         case MKTAG('d', 'a', 't', 'a'):
             c->data_size = chunk_size;
             break;
 
         default:
-            url_fskip(pb, chunk_size);
+            avio_seek(pb, chunk_size, SEEK_CUR);
         }
     }
     return AVERROR_EOF;

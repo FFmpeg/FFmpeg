@@ -217,7 +217,7 @@ static int wav_read_header(AVFormatContext *s,
         avio_rl64(pb); /* RIFF size */
         data_size = avio_rl64(pb);
         sample_count = avio_rl64(pb);
-        url_fskip(pb, size - 16); /* skip rest of ds64 chunk */
+        avio_seek(pb, size - 16, SEEK_CUR); /* skip rest of ds64 chunk */
     }
 
     /* parse fmt header */
@@ -276,7 +276,7 @@ static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
             return -1;
         if (!memcmp(guid, guid1, 16))
             return size;
-        url_fskip(pb, FFALIGN(size, INT64_C(8)) - 24);
+        avio_seek(pb, FFALIGN(size, INT64_C(8)) - 24, SEEK_CUR);
     }
     return -1;
 }
@@ -410,7 +410,7 @@ static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     /* subtract chunk header size - normal wav file doesn't count it */
     ff_get_wav_header(pb, st->codec, size - 24);
-    url_fskip(pb, FFALIGN(size, INT64_C(8)) - size);
+    avio_seek(pb, FFALIGN(size, INT64_C(8)) - size, SEEK_CUR);
 
     st->need_parsing = AVSTREAM_PARSE_FULL;
 

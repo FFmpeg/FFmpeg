@@ -321,12 +321,12 @@ static void avi_read_nikon(AVFormatContext *s, uint64_t end)
                 }
                 if (name)
                     av_metadata_set2(&s->metadata, name, buffer, 0);
-                url_fskip(s->pb, size);
+                avio_seek(s->pb, size, SEEK_CUR);
             }
             break;
         }
         default:
-            url_fskip(s->pb, size);
+            avio_seek(s->pb, size, SEEK_CUR);
             break;
         }
     }
@@ -392,13 +392,13 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             unsigned char date[64] = {0};
             size += (size & 1);
             size -= avio_read(pb, date, FFMIN(size, sizeof(date)-1));
-            url_fskip(pb, size);
+            avio_seek(pb, size, SEEK_CUR);
             avi_metadata_creation_time(&s->metadata, date);
             break;
         }
         case MKTAG('d', 'm', 'l', 'h'):
             avi->is_odml = 1;
-            url_fskip(pb, size + (size & 1));
+            avio_seek(pb, size + (size & 1), SEEK_CUR);
             break;
         case MKTAG('a', 'm', 'v', 'h'):
             amv_file_format=1;
@@ -410,13 +410,13 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             avio_rl32(pb);
             avi->non_interleaved |= avio_rl32(pb) & AVIF_MUSTUSEINDEX;
 
-            url_fskip(pb, 2 * 4);
+            avio_seek(pb, 2 * 4, SEEK_CUR);
             avio_rl32(pb);
             avio_rl32(pb);
             avih_width=avio_rl32(pb);
             avih_height=avio_rl32(pb);
 
-            url_fskip(pb, size - 10 * 4);
+            avio_seek(pb, size - 10 * 4, SEEK_CUR);
             break;
         case MKTAG('s', 't', 'r', 'h'):
             /* stream header */
@@ -425,7 +425,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             handler = avio_rl32(pb); /* codec tag */
 
             if(tag1 == MKTAG('p', 'a', 'd', 's')){
-                url_fskip(pb, size - 8);
+                avio_seek(pb, size - 8, SEEK_CUR);
                 break;
             }else{
                 stream_index++;
@@ -469,10 +469,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         goto fail;
                 }
                 s->streams[0]->priv_data = ast;
-                url_fskip(pb, 3 * 4);
+                avio_seek(pb, 3 * 4, SEEK_CUR);
                 ast->scale = avio_rl32(pb);
                 ast->rate = avio_rl32(pb);
-                url_fskip(pb, 4);  /* start time */
+                avio_seek(pb, 4, SEEK_CUR);  /* start time */
 
                 dv_dur = avio_rl32(pb);
                 if (ast->scale > 0 && ast->rate > 0 && dv_dur > 0) {
@@ -485,7 +485,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                  */
 
                 stream_index = s->nb_streams - 1;
-                url_fskip(pb, size - 9*4);
+                avio_seek(pb, size - 9*4, SEEK_CUR);
                 break;
             }
 
@@ -542,12 +542,12 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if(ast->sample_size == 0)
                 st->duration = st->nb_frames;
             ast->frame_offset= ast->cum_len;
-            url_fskip(pb, size - 12 * 4);
+            avio_seek(pb, size - 12 * 4, SEEK_CUR);
             break;
         case MKTAG('s', 't', 'r', 'f'):
             /* stream header */
             if (stream_index >= (unsigned)s->nb_streams || avi->dv_demux) {
-                url_fskip(pb, size);
+                avio_seek(pb, size, SEEK_CUR);
             } else {
                 uint64_t cur_pos = url_ftell(pb);
                 if (cur_pos < list_end)
@@ -560,7 +560,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         st->codec->height=avih_height;
                         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                         st->codec->codec_id = CODEC_ID_AMV;
-                        url_fskip(pb, size);
+                        avio_seek(pb, size, SEEK_CUR);
                         break;
                     }
                     tag1 = ff_get_bmp_header(pb, st);
@@ -620,7 +620,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     }
                     st->codec->height= FFABS(st->codec->height);
 
-//                    url_fskip(pb, size - 5 * 4);
+//                    avio_seek(pb, size - 5 * 4, SEEK_CUR);
                     break;
                 case AVMEDIA_TYPE_AUDIO:
                     ff_get_wav_header(pb, st->codec, size);
@@ -630,7 +630,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         ast->sample_size= st->codec->block_align;
                     }
                     if (size&1) /* 2-aligned (fix for Stargate SG-1 - 3x18 - Shades of Grey.avi) */
-                        url_fskip(pb, 1);
+                        avio_seek(pb, 1, SEEK_CUR);
                     /* Force parsing as several audio frames can be in
                      * one packet and timestamps refer to packet start. */
                     st->need_parsing = AVSTREAM_PARSE_TIMESTAMPS;
@@ -658,7 +658,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec->codec_type = AVMEDIA_TYPE_DATA;
                     st->codec->codec_id= CODEC_ID_NONE;
                     st->codec->codec_tag= 0;
-                    url_fskip(pb, size);
+                    avio_seek(pb, size, SEEK_CUR);
                     break;
                 }
             }
@@ -710,7 +710,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
             /* skip tag */
             size += (size & 1);
-            url_fskip(pb, size);
+            avio_seek(pb, size, SEEK_CUR);
             break;
         }
     }
@@ -762,7 +762,7 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt) {
             goto error;
 
         ret = avio_get_str16le(pb, desc_len, desc, sizeof(desc));
-        url_fskip(pb, desc_len - ret);
+        avio_seek(pb, desc_len - ret, SEEK_CUR);
         if (*desc)
             av_metadata_set2(&st->metadata, "title", desc, 0);
 
@@ -1008,14 +1008,14 @@ resync:
         //parse JUNK
            ||(d[0] == 'J' && d[1] == 'U' && d[2] == 'N' && d[3] == 'K')
            ||(d[0] == 'i' && d[1] == 'd' && d[2] == 'x' && d[3] == '1')){
-            url_fskip(pb, size);
+            avio_seek(pb, size, SEEK_CUR);
 //av_log(s, AV_LOG_DEBUG, "SKIP\n");
             goto resync;
         }
 
         //parse stray LIST
         if(d[0] == 'L' && d[1] == 'I' && d[2] == 'S' && d[3] == 'T'){
-            url_fskip(pb, 4);
+            avio_seek(pb, 4, SEEK_CUR);
             goto resync;
         }
 
@@ -1026,7 +1026,7 @@ resync:
 
         //detect ##ix chunk and skip
         if(d[2] == 'i' && d[3] == 'x' && n < s->nb_streams){
-            url_fskip(pb, size);
+            avio_seek(pb, size, SEEK_CUR);
             goto resync;
         }
 
@@ -1060,7 +1060,7 @@ resync:
                /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & AV_PKT_FLAG_KEY))*/ //FIXME needs a little reordering
                || st->discard >= AVDISCARD_ALL){
                 ast->frame_offset += get_duration(ast, size);
-                url_fskip(pb, size);
+                avio_seek(pb, size, SEEK_CUR);
                 goto resync;
             }
 

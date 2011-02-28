@@ -134,7 +134,7 @@ static int iff_read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
 
     st->codec->channels = 1;
-    url_fskip(pb, 8);
+    avio_seek(pb, 8, SEEK_CUR);
     // codec_tag used by ByteRun1 decoder to distinguish progressive (PBM) and interlaced (ILBM) content
     st->codec->codec_tag = avio_rl32(pb);
 
@@ -152,10 +152,10 @@ static int iff_read_header(AVFormatContext *s,
 
             if (data_size < 14)
                 return AVERROR_INVALIDDATA;
-            url_fskip(pb, 12);
+            avio_seek(pb, 12, SEEK_CUR);
             st->codec->sample_rate = avio_rb16(pb);
             if (data_size >= 16) {
-                url_fskip(pb, 1);
+                avio_seek(pb, 1, SEEK_CUR);
                 compression        = avio_r8(pb);
             }
             break;
@@ -186,14 +186,14 @@ static int iff_read_header(AVFormatContext *s,
                 return AVERROR_INVALIDDATA;
             st->codec->width                 = avio_rb16(pb);
             st->codec->height                = avio_rb16(pb);
-            url_fskip(pb, 4); // x, y offset
+            avio_seek(pb, 4, SEEK_CUR); // x, y offset
             st->codec->bits_per_coded_sample = avio_r8(pb);
             if (data_size >= 11) {
-                url_fskip(pb, 1); // masking
+                avio_seek(pb, 1, SEEK_CUR); // masking
                 compression                  = avio_r8(pb);
             }
             if (data_size >= 16) {
-                url_fskip(pb, 3); // paddding, transparent
+                avio_seek(pb, 3, SEEK_CUR); // paddding, transparent
                 st->sample_aspect_ratio.num  = avio_r8(pb);
                 st->sample_aspect_ratio.den  = avio_r8(pb);
             }
@@ -223,7 +223,7 @@ static int iff_read_header(AVFormatContext *s,
                 return res;
             }
         }
-        url_fskip(pb, data_size - (url_ftell(pb) - orig_pos) + (data_size & 1));
+        avio_seek(pb, data_size - (url_ftell(pb) - orig_pos) + (data_size & 1), SEEK_CUR);
     }
 
     avio_seek(pb, iff->body_pos, SEEK_SET);

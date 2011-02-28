@@ -58,14 +58,14 @@ static int sox_read_header(AVFormatContext *s,
     if (avio_rl32(pb) == SOX_TAG) {
         st->codec->codec_id = CODEC_ID_PCM_S32LE;
         header_size         = avio_rl32(pb);
-        url_fskip(pb, 8); /* sample count */
+        avio_seek(pb, 8, SEEK_CUR); /* sample count */
         sample_rate         = av_int2dbl(avio_rl64(pb));
         st->codec->channels = avio_rl32(pb);
         comment_size        = avio_rl32(pb);
     } else {
         st->codec->codec_id = CODEC_ID_PCM_S32BE;
         header_size         = avio_rb32(pb);
-        url_fskip(pb, 8); /* sample count */
+        avio_seek(pb, 8, SEEK_CUR); /* sample count */
         sample_rate         = av_int2dbl(avio_rb64(pb));
         st->codec->channels = avio_rb32(pb);
         comment_size        = avio_rb32(pb);
@@ -105,7 +105,7 @@ static int sox_read_header(AVFormatContext *s,
                                AV_METADATA_DONT_STRDUP_VAL);
     }
 
-    url_fskip(pb, header_size - SOX_FIXED_HDR - comment_size);
+    avio_seek(pb, header_size - SOX_FIXED_HDR - comment_size, SEEK_CUR);
 
     st->codec->sample_rate           = sample_rate;
     st->codec->bits_per_coded_sample = 32;
