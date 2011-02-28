@@ -187,11 +187,11 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                 flags |= RTP_FLAG_KEY;
             len_off = avio_rb24(pb);
             if (mflags & 0x20)   /**< relative timestamp */
-                url_fskip(pb, 4);
+                avio_seek(pb, 4, SEEK_CUR);
             if (mflags & 0x10)   /**< has duration */
-                url_fskip(pb, 4);
+                avio_seek(pb, 4, SEEK_CUR);
             if (mflags & 0x8)    /**< has location ID */
-                url_fskip(pb, 4);
+                avio_seek(pb, 4, SEEK_CUR);
             off = url_ftell(pb);
 
             if (!(mflags & 0x40)) {
@@ -214,7 +214,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                     return AVERROR(EIO);
 
                 avio_write(asf->pktbuf, buf + off, len - off);
-                url_fskip(pb, len - off);
+                avio_seek(pb, len - off, SEEK_CUR);
                 if (!(flags & RTP_FLAG_MARKER))
                     return -1;
                 out_len     = url_close_dyn_buf(asf->pktbuf, &asf->buf);
@@ -234,7 +234,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                 asf->buf = av_realloc(asf->buf, out_len);
                 memcpy(asf->buf + prev_len, buf + off,
                        FFMIN(cur_len, len - off));
-                url_fskip(pb, cur_len);
+                avio_seek(pb, cur_len, SEEK_CUR);
             }
         }
 

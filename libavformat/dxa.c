@@ -96,7 +96,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
         c->has_sound = 1;
         size = avio_rb32(pb);
         c->vidpos = url_ftell(pb) + size;
-        url_fskip(pb, 16);
+        avio_seek(pb, 16, SEEK_CUR);
         fsize = avio_rl32(pb);
 
         ast = av_new_stream(s, 0);
@@ -108,7 +108,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
             tag = avio_rl32(pb);
             fsize = avio_rl32(pb);
             if(tag == MKTAG('d', 'a', 't', 'a')) break;
-            url_fskip(pb, fsize);
+            avio_seek(pb, fsize, SEEK_CUR);
         }
         c->bpc = (fsize + c->frames - 1) / c->frames;
         if(ast->codec->block_align)

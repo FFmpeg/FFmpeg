@@ -70,7 +70,7 @@ static void get_meta(AVFormatContext *s, const char *key, int size)
     int res;
 
     if (!str) {
-        url_fskip(s->pb, size);
+        avio_seek(s->pb, size, SEEK_CUR);
         return;
     }
 
@@ -242,7 +242,7 @@ static int aiff_read_header(AVFormatContext *s,
                 av_log(s, AV_LOG_ERROR, "file is not seekable\n");
                 return -1;
             }
-            url_fskip(pb, size - 8);
+            avio_seek(pb, size - 8, SEEK_CUR);
             break;
         case MKTAG('w', 'a', 'v', 'e'):
             if ((uint64_t)size > (1<<30))
@@ -256,7 +256,7 @@ static int aiff_read_header(AVFormatContext *s,
         default: /* Jump */
             if (size & 1)   /* Always even aligned */
                 size++;
-            url_fskip (pb, size);
+            avio_seek(pb, size, SEEK_CUR);
         }
     }
 

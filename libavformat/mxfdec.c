@@ -262,7 +262,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
         av_aes_init(mxf->aesc, s->key, 128, 1);
     }
     // crypto context
-    url_fskip(pb, klv_decode_ber_length(pb));
+    avio_seek(pb, klv_decode_ber_length(pb), SEEK_CUR);
     // plaintext offset
     klv_decode_ber_length(pb);
     plaintext_size = avio_rb64(pb);
@@ -297,7 +297,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
                      &pkt->data[plaintext_size], size >> 4, ivec, 1);
     pkt->size = orig_size;
     pkt->stream_index = index;
-    url_fskip(pb, end - url_ftell(pb));
+    avio_seek(pb, end - url_ftell(pb), SEEK_CUR);
     return 0;
 }
 
@@ -339,7 +339,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             return 0;
         } else
         skip:
-            url_fskip(s->pb, klv.length);
+            avio_seek(s->pb, klv.length, SEEK_CUR);
     }
     return AVERROR_EOF;
 }
@@ -397,7 +397,7 @@ static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int siz
         mxf->packages_refs = av_malloc(mxf->packages_count * sizeof(UID));
         if (!mxf->packages_refs)
             return -1;
-        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        avio_seek(pb, 4, SEEK_CUR); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)mxf->packages_refs, mxf->packages_count * sizeof(UID));
         break;
     }
@@ -416,7 +416,7 @@ static int mxf_read_source_clip(void *arg, AVIOContext *pb, int tag, int size, U
         break;
     case 0x1101:
         /* UMID, only get last 16 bytes */
-        url_fskip(pb, 16);
+        avio_seek(pb, 16, SEEK_CUR);
         avio_read(pb, source_clip->source_package_uid, 16);
         break;
     case 0x1102:
@@ -437,7 +437,7 @@ static int mxf_read_material_package(void *arg, AVIOContext *pb, int tag, int si
         package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
         if (!package->tracks_refs)
             return -1;
-        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        avio_seek(pb, 4, SEEK_CUR); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
         break;
     }
@@ -482,7 +482,7 @@ static int mxf_read_sequence(void *arg, AVIOContext *pb, int tag, int size, UID 
         sequence->structural_components_refs = av_malloc(sequence->structural_components_count * sizeof(UID));
         if (!sequence->structural_components_refs)
             return -1;
-        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        avio_seek(pb, 4, SEEK_CUR); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
         break;
     }
@@ -500,12 +500,12 @@ static int mxf_read_source_package(void *arg, AVIOContext *pb, int tag, int size
         package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
         if (!package->tracks_refs)
             return -1;
-        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        avio_seek(pb, 4, SEEK_CUR); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
         break;
     case 0x4401:
         /* UMID, only get last 16 bytes */
-        url_fskip(pb, 16);
+        avio_seek(pb, 16, SEEK_CUR);
         avio_read(pb, package->package_uid, 16);
         break;
     case 0x4701:
@@ -558,7 +558,7 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
         descriptor->sub_descriptors_refs = av_malloc(descriptor->sub_descriptors_count * sizeof(UID));
         if (!descriptor->sub_descriptors_refs)
             return -1;
-        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        avio_seek(pb, 4, SEEK_CUR); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
         break;
     case 0x3004:
@@ -943,7 +943,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
         }
         if (!metadata->read)
-            url_fskip(s->pb, klv.length);
+            avio_seek(s->pb, klv.length, SEEK_CUR);
     }
     return mxf_parse_structural_metadata(mxf);
 }

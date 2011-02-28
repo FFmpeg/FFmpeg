@@ -59,7 +59,7 @@ static int read_header(AVFormatContext *s,
         return AVERROR_INVALIDDATA;
     }
 
-    url_fskip(pb, 2);
+    avio_seek(pb, 2, SEEK_CUR);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = CODEC_ID_RAWVIDEO;
     st->codec->pix_fmt    = PIX_FMT_RGBA;
@@ -84,7 +84,7 @@ static int read_packet(AVFormatContext *s,
         return AVERROR(EIO);
     pkt->dts = url_ftell(s->pb) / (st->codec->width * (st->codec->height + film->leading) * 4);
     pkt->size = av_get_packet(s->pb, pkt, st->codec->width * st->codec->height * 4);
-    url_fskip(s->pb, st->codec->width * film->leading * 4);
+    avio_seek(s->pb, st->codec->width * film->leading * 4, SEEK_CUR);
     if (pkt->size < 0)
         return pkt->size;
     pkt->flags |= AV_PKT_FLAG_KEY;

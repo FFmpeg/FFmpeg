@@ -222,7 +222,7 @@ static int process_audio_header_eacs(AVFormatContext *s)
     ea->bytes        = avio_r8(pb);   /* 1=8-bit, 2=16-bit */
     ea->num_channels = avio_r8(pb);
     compression_type = avio_r8(pb);
-    url_fskip(pb, 13);
+    avio_seek(pb, 13, SEEK_CUR);
 
     switch (compression_type) {
     case 0:
@@ -261,7 +261,7 @@ static int process_video_header_mdec(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
     AVIOContext *pb = s->pb;
-    url_fskip(pb, 4);
+    avio_seek(pb, 4, SEEK_CUR);
     ea->width  = avio_rl16(pb);
     ea->height = avio_rl16(pb);
     ea->time_base = (AVRational){1,15};
@@ -274,7 +274,7 @@ static int process_video_header_vp6(AVFormatContext *s)
     EaDemuxContext *ea = s->priv_data;
     AVIOContext *pb = s->pb;
 
-    url_fskip(pb, 16);
+    avio_seek(pb, 16, SEEK_CUR);
     ea->time_base.den = avio_rl32(pb);
     ea->time_base.num = avio_rl32(pb);
     ea->video_codec = CODEC_ID_VP6;
@@ -316,7 +316,7 @@ static int process_ea_header(AVFormatContext *s) {
             case SHEN_TAG :
                 blockid = avio_rl32(pb);
                 if (blockid == GSTR_TAG) {
-                    url_fskip(pb, 4);
+                    avio_seek(pb, 4, SEEK_CUR);
                 } else if ((blockid & 0xFFFF)!=PT00_TAG) {
                     av_log (s, AV_LOG_ERROR, "unknown SCHl headerid\n");
                     return 0;
@@ -474,19 +474,19 @@ static int ea_read_packet(AVFormatContext *s,
         /* audio data */
         case ISNh_TAG:
             /* header chunk also contains data; skip over the header portion*/
-            url_fskip(pb, 32);
+            avio_seek(pb, 32, SEEK_CUR);
             chunk_size -= 32;
         case ISNd_TAG:
         case SCDl_TAG:
         case SNDC_TAG:
         case SDEN_TAG:
             if (!ea->audio_codec) {
-                url_fskip(pb, chunk_size);
+                avio_seek(pb, chunk_size, SEEK_CUR);
                 break;
             } else if (ea->audio_codec == CODEC_ID_PCM_S16LE_PLANAR ||
                        ea->audio_codec == CODEC_ID_MP3) {
                 num_samples = avio_rl32(pb);
-                url_fskip(pb, 8);
+                avio_seek(pb, 8, SEEK_CUR);
                 chunk_size -= 12;
             }
             ret = av_get_packet(pb, pkt, chunk_size);

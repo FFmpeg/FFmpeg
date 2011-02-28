@@ -174,7 +174,7 @@ static void gxf_material_tags(AVIOContext *pb, int *len, struct gxf_stream_info 
             else if (tag == MAT_LAST_FIELD)
                 si->last_field = value;
         } else
-            url_fskip(pb, tlen);
+            avio_seek(pb, tlen, SEEK_CUR);
     }
 }
 
@@ -223,7 +223,7 @@ static void gxf_track_tags(AVIOContext *pb, int *len, struct gxf_stream_info *si
             else if (tag == TRACK_FPF && (value == 1 || value == 2))
                 si->fields_per_frame = value;
         } else
-            url_fskip(pb, tlen);
+            avio_seek(pb, tlen, SEEK_CUR);
     }
 }
 
@@ -238,7 +238,7 @@ static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     int i;
     pkt_len -= 8;
     if (s->flags & AVFMT_FLAG_IGNIDX) {
-        url_fskip(pb, pkt_len);
+        avio_seek(pb, pkt_len, SEEK_CUR);
         return;
     }
     if (map_cnt > 1000) {
@@ -247,7 +247,7 @@ static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     }
     if (pkt_len < 4 * map_cnt) {
         av_log(s, AV_LOG_ERROR, "invalid index length\n");
-        url_fskip(pb, pkt_len);
+        avio_seek(pb, pkt_len, SEEK_CUR);
         return;
     }
     pkt_len -= 4 * map_cnt;
@@ -255,7 +255,7 @@ static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     for (i = 0; i < map_cnt; i++)
         av_add_index_entry(st, (uint64_t)avio_rl32(pb) * 1024,
                            i * (uint64_t)fields_per_map + 1, 0, 0, 0);
-    url_fskip(pb, pkt_len);
+    avio_seek(pb, pkt_len, SEEK_CUR);
 }
 
 static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
@@ -283,7 +283,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     }
     map_len -= len;
     gxf_material_tags(pb, &len, &si);
-    url_fskip(pb, len);
+    avio_seek(pb, len, SEEK_CUR);
     map_len -= 2;
     len = avio_rb16(pb); // length of track description
     if (len > map_len) {
@@ -301,7 +301,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
         track_len = avio_rb16(pb);
         len -= track_len;
         gxf_track_tags(pb, &track_len, &si);
-        url_fskip(pb, track_len);
+        avio_seek(pb, track_len, SEEK_CUR);
         if (!(track_type & 0x80)) {
            av_log(s, AV_LOG_ERROR, "invalid track type %x\n", track_type);
            continue;
@@ -326,7 +326,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     if (len < 0)
         av_log(s, AV_LOG_ERROR, "invalid track description length specified\n");
     if (map_len)
-        url_fskip(pb, map_len);
+        avio_seek(pb, map_len, SEEK_CUR);
     if (!parse_packet_header(pb, &pkt_type, &len)) {
         av_log(s, AV_LOG_ERROR, "sync lost in header\n");
         return -1;
@@ -342,8 +342,8 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
         if (len >= 0x39) {
             AVRational fps;
             len -= 0x39;
-            url_fskip(pb, 5); // preamble
-            url_fskip(pb, 0x30); // payload description
+            avio_seek(pb, 5, SEEK_CUR); // preamble
+            avio_seek(pb, 0x30, SEEK_CUR); // payload description
             fps = fps_umf2avr(avio_rl32(pb));
             if (!main_timebase.num || !main_timebase.den) {
                 // this may not always be correct, but simply the best we can get
@@ -354,7 +354,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
             av_log(s, AV_LOG_INFO, "UMF packet too short\n");
     } else
         av_log(s, AV_LOG_INFO, "UMF packet missing\n");
-    url_fskip(pb, len);
+    avio_seek(pb, len, SEEK_CUR);
     // set a fallback value, 60000/1001 is specified for audio-only files
     // so use that regardless of why we do not know the video frame rate.
     if (!main_timebase.num || !main_timebase.den)
@@ -437,7 +437,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
             continue;
         }
         if (pkt_type != PKT_MEDIA) {
-            url_fskip(pb, pkt_len);
+            avio_seek(pb, pkt_len, SEEK_CUR);
             continue;
         }
         if (pkt_len < 16) {
@@ -462,7 +462,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
             int last  = field_info & 0xffff; // last is exclusive
             int bps = av_get_bits_per_sample(st->codec->codec_id)>>3;
             if (first <= last && last*bps <= pkt_len) {
-                url_fskip(pb, first*bps);
+                avio_seek(pb, first*bps, SEEK_CUR);
                 skip = pkt_len - last*bps;
                 pkt_len = (last-first)*bps;
             } else
@@ -470,7 +470,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         }
         ret = av_get_packet(pb, pkt, pkt_len);
         if (skip)
-            url_fskip(pb, skip);
+            avio_seek(pb, skip, SEEK_CUR);
         pkt->stream_index = stream_index;
         pkt->dts = field_nr;
         return ret;

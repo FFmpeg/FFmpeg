@@ -757,7 +757,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code){
        ||(discard >= AVDISCARD_BIDIR && last_IP_pts != AV_NOPTS_VALUE && last_IP_pts > pts)
        || discard >= AVDISCARD_ALL
        || stc->skip_until_key_frame){
-        url_fskip(bc, size);
+        avio_seek(bc, size, SEEK_CUR);
         return 1;
     }
 

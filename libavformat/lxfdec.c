@@ -137,8 +137,8 @@ static int get_packet_header(AVFormatContext *s, uint8_t *header, uint32_t *form
     case 0:
         //video
         //skip VBI data and metadata
-        url_fskip(pb, (int64_t)(uint32_t)AV_RL32(&header[44]) +
-                      (int64_t)(uint32_t)AV_RL32(&header[52]));
+        avio_seek(pb, (int64_t)(uint32_t)AV_RL32(&header[44]) +
+                      (int64_t)(uint32_t)AV_RL32(&header[52]), SEEK_CUR);
         break;
     case 1:
         //audio
@@ -255,7 +255,7 @@ static int lxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if (format == 1) {
         //skip extended field data
-        url_fskip(s->pb, (uint32_t)AV_RL32(&header[40]));
+        avio_seek(s->pb, (uint32_t)AV_RL32(&header[40]), SEEK_CUR);
     }
 
     return 0;

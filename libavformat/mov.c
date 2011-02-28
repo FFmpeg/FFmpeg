@@ -296,7 +296,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             parse = mov_read_udta_string;
 
         if (!parse) { /* skip leaf atoms data */
-            url_fskip(pb, a.size);
+            avio_seek(pb, a.size, SEEK_CUR);
         } else {
             int64_t start_pos = url_ftell(pb);
             int64_t left;
@@ -308,14 +308,14 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 return 0;
             left = a.size - url_ftell(pb) + start_pos;
             if (left > 0) /* skip garbage at atom end */
-                url_fskip(pb, left);
+                avio_seek(pb, left, SEEK_CUR);
         }
 
         total_size += a.size;
     }
 
     if (total_size < atom.size && atom.size < 0x7ffff)
-        url_fskip(pb, atom.size - total_size);
+        avio_seek(pb, atom.size - total_size, SEEK_CUR);
 
     return 0;
 }
@@ -357,7 +357,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             uint16_t volume_len, len;
             int16_t type;
 
-            url_fskip(pb, 10);
+            avio_seek(pb, 10, SEEK_CUR);
 
             volume_len = avio_r8(pb);
             volume_len = FFMIN(volume_len, 27);
@@ -365,7 +365,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             dref->volume[volume_len] = 0;
             av_log(c->fc, AV_LOG_DEBUG, "volume %s, len %d\n", dref->volume, volume_len);
 
-            url_fskip(pb, 12);
+            avio_seek(pb, 12, SEEK_CUR);
 
             len = avio_r8(pb);
             len = FFMIN(len, 63);
@@ -373,7 +373,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             dref->filename[len] = 0;
             av_log(c->fc, AV_LOG_DEBUG, "filename %s, len %d\n", dref->filename, len);
 
-            url_fskip(pb, 16);
+            avio_seek(pb, 16, SEEK_CUR);
 
             /* read next level up_from_alias/down_to_target */
             dref->nlvl_from = avio_rb16(pb);
@@ -381,7 +381,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             av_log(c->fc, AV_LOG_DEBUG, "nlvl from %d, nlvl to %d\n",
                    dref->nlvl_from, dref->nlvl_to);
 
-            url_fskip(pb, 16);
+            avio_seek(pb, 16, SEEK_CUR);
 
             for (type = 0; type != -1 && url_ftell(pb) < next; ) {
                 type = avio_rb16(pb);
@@ -416,7 +416,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                             dref->dir[j] = '/';
                     av_log(c->fc, AV_LOG_DEBUG, "dir %s\n", dref->dir);
                 } else
-                    url_fskip(pb, len);
+                    avio_seek(pb, len, SEEK_CUR);
             }
         }
         avio_seek(pb, next, SEEK_SET);
@@ -663,9 +663,9 @@ static int mov_read_mvhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_rb16(pb); /* preferred volume */
 
-    url_fskip(pb, 10); /* reserved */
+    avio_seek(pb, 10, SEEK_CUR); /* reserved */
 
-    url_fskip(pb, 36); /* display matrix */
+    avio_seek(pb, 36, SEEK_CUR); /* display matrix */
 
     avio_rb32(pb); /* preview time */
     avio_rb32(pb); /* preview duration */
@@ -782,7 +782,7 @@ static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (mov_read_default(c, pb, atom) < 0)
             return -1;
     } else
-        url_fskip(pb, atom.size);
+        avio_seek(pb, atom.size, SEEK_CUR);
     return 0;
 }
 
@@ -833,7 +833,7 @@ static int mov_read_strf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!st->codec->extradata)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = atom.size - 40;
-    url_fskip(pb, 40);
+    avio_seek(pb, 40, SEEK_CUR);
     avio_read(pb, st->codec->extradata, atom.size - 40);
     return 0;
 }
@@ -945,7 +945,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
              * in the MOV demuxer, patch welcome. */
         multiple_stsd:
             av_log(c->fc, AV_LOG_WARNING, "multiple fourcc not supported\n");
-            url_fskip(pb, size - (url_ftell(pb) - start_pos));
+            avio_seek(pb, size - (url_ftell(pb) - start_pos), SEEK_CUR);
             continue;
         }
         /* we cannot demux concatenated h264 streams because of different extradata */
@@ -1003,7 +1003,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                 len = 31;
             mov_read_mac_string(c, pb, len, st->codec->codec_name, 32);
             if (len < 31)
-                url_fskip(pb, 31 - len);
+                avio_seek(pb, 31 - len, SEEK_CUR);
             /* codec_tag YV12 triggers an UV swap in rawdec.c */
             if (!memcmp(st->codec->codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25))
                 st->codec->codec_tag=MKTAG('I', '4', '2', '0');
@@ -1174,7 +1174,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             st->codec->height = sc->height;
         } else {
             /* other codec type, just skip (rtp, mp4s, tmcd ...) */
-            url_fskip(pb, size - (url_ftell(pb) - start_pos));
+            avio_seek(pb, size - (url_ftell(pb) - start_pos), SEEK_CUR);
         }
         /* this will read extra atoms at the end (wave, alac, damr, avcC, SMI ...) */
         a.size = size - (url_ftell(pb) - start_pos);
@@ -1182,7 +1182,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             if (mov_read_default(c, pb, a) < 0)
                 return -1;
         } else if (a.size > 0)
-            url_fskip(pb, a.size);
+            avio_seek(pb, a.size, SEEK_CUR);
     }
 
     if(st->codec->codec_type==AVMEDIA_TYPE_AUDIO && st->codec->sample_rate==0 && sc->time_scale>1)
@@ -2078,13 +2078,13 @@ static int mov_read_wide(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (atom.size < 8)
         return 0; /* continue */
     if (avio_rb32(pb) != 0) { /* 0 sized mdat atom... use the 'wide' atom size */
-        url_fskip(pb, atom.size - 4);
+        avio_seek(pb, atom.size - 4, SEEK_CUR);
         return 0;
     }
     atom.type = avio_rl32(pb);
     atom.size -= 8;
     if (atom.type != MKTAG('m','d','a','t')) {
-        url_fskip(pb, atom.size);
+        avio_seek(pb, atom.size, SEEK_CUR);
         return 0;
     }
     err = mov_read_mdat(c, pb, atom);
