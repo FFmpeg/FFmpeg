@@ -3217,15 +3217,14 @@ static int vc1_decode_frame(AVCodecContext *avctx,
             divider = find_next_marker(buf, buf + buf_size);
             if((divider == (buf + buf_size)) || AV_RB32(divider) != VC1_CODE_FIELD){
                 av_log(avctx, AV_LOG_ERROR, "Error in WVC1 interlaced frame\n");
-                av_free(buf2);
-                return -1;
+                goto err;
             }
 
             buf_size2 = vc1_unescape_buffer(buf, divider - buf, buf2);
             // TODO
             if(!v->warn_interlaced++)
                 av_log(v->s.avctx, AV_LOG_ERROR, "Interlaced WVC1 support is not implemented\n");
-            av_free(buf2);return -1;
+            goto err;
         }else{
             buf_size2 = vc1_unescape_buffer(buf, buf_size, buf2);
         }
@@ -3235,19 +3234,16 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     // do parse frame header
     if(v->profile < PROFILE_ADVANCED) {
         if(vc1_parse_frame_header(v, &s->gb) == -1) {
-            av_free(buf2);
-            return -1;
+            goto err;
         }
     } else {
         if(vc1_parse_frame_header_adv(v, &s->gb) == -1) {
-            av_free(buf2);
-            return -1;
+            goto err;
         }
     }
 
     if(v->res_sprite && (s->pict_type!=FF_I_TYPE)){
-        av_free(buf2);
-        return -1;
+        goto err;
     }
 
     // for hurry_up==5
@@ -3256,33 +3252,29 @@ static int vc1_decode_frame(AVCodecContext *avctx,
 
     /* skip B-frames if we don't have reference frames */
     if(s->last_picture_ptr==NULL && (s->pict_type==FF_B_TYPE || s->dropable)){
-        av_free(buf2);
-        return -1;//buf_size;
+        goto err;
     }
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && s->pict_type==FF_B_TYPE) return -1;//buf_size;
     if(   (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==FF_B_TYPE)
        || (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=FF_I_TYPE)
        ||  avctx->skip_frame >= AVDISCARD_ALL) {
-        av_free(buf2);
-        return buf_size;
+        goto end;
     }
     /* skip everything if we are in a hurry>=5 */
     if(avctx->hurry_up>=5) {
-        av_free(buf2);
-        return -1;//buf_size;
+        goto err;
     }
 
     if(s->next_p_frame_damaged){
         if(s->pict_type==FF_B_TYPE)
-            return buf_size;
+            goto end;
         else
             s->next_p_frame_damaged=0;
     }
 
     if(MPV_frame_start(s, avctx) < 0) {
-        av_free(buf2);
-        return -1;
+        goto err;
     }
 
     s->me.qpel_put= s->dsp.put_qpel_pixels_tab;
@@ -3293,17 +3285,17 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         ff_vdpau_vc1_decode_picture(s, buf_start, (buf + buf_size) - buf_start);
     else if (avctx->hwaccel) {
         if (avctx->hwaccel->start_frame(avctx, buf, buf_size) < 0)
-            return -1;
+            goto err;
         if (avctx->hwaccel->decode_slice(avctx, buf_start, (buf + buf_size) - buf_start) < 0)
-            return -1;
+            goto err;
         if (avctx->hwaccel->end_frame(avctx) < 0)
-            return -1;
+            goto err;
     } else {
         ff_er_frame_start(s);
 
         v->bits = buf_size * 8;
         vc1_decode_blocks(v);
-//av_log(s->avctx, AV_LOG_INFO, "Consumed %i/%i bits\n", get_bits_count(&s->gb), buf_size*8);
+//av_log(s->avctx, AV_LOG_INFO, "Consumed %i/%i bits\n", get_bits_count(&s->gb), s->gb.size_in_bits);
 //  if(get_bits_count(&s->gb) > buf_size * 8)
 //      return -1;
         ff_er_frame_end(s);
@@ -3324,8 +3316,13 @@ assert(s->current_picture.pict_type == s->pict_type);
         ff_print_debug_info(s, pict);
     }
 
+end:
     av_free(buf2);
     return buf_size;
+
+err:
+    av_free(buf2);
+    return -1;
 }
 
 
