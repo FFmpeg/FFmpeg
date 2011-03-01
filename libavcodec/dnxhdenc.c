@@ -24,10 +24,19 @@
 //#define DEBUG
 #define RC_VARIANCE 1 // use variance or ssd for fast rc
 
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "dnxhdenc.h"
+
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+
+static const AVOption options[]={
+    {"nitris_compat", "encode with Avid Nitris compatibility", offsetof(DNXHDEncContext, nitris_compat), FF_OPT_TYPE_INT, 0, 0, 1, VE},
+{NULL}
+};
+static const AVClass class = { "dnxhd", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
 
 int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 
@@ -146,7 +155,7 @@ static int dnxhd_init_rc(DNXHDEncContext *ctx)
     if (ctx->m.avctx->mb_decision != FF_MB_DECISION_RD)
         FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_cmp, ctx->m.mb_num*sizeof(RCCMPEntry), fail);
 
-    ctx->frame_bits = (ctx->cid_table->coding_unit_size - 640 - 4) * 8;
+    ctx->frame_bits = (ctx->cid_table->coding_unit_size - 640 - 4 - ctx->min_padding) * 8;
     ctx->qscale = 1;
     ctx->lambda = 2<<LAMBDA_FRAC_BITS; // qscale 2
     return 0;
@@ -197,6 +206,10 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
         ctx->m.intra_quant_bias = avctx->intra_quant_bias;
     if (dnxhd_init_qmat(ctx, ctx->m.intra_quant_bias, 0) < 0) // XXX tune lbias/cbias
         return -1;
+
+    // Avid Nitris hardware decoder requires a minimum amount of padding in the coding unit payload
+    if (ctx->nitris_compat)
+        ctx->min_padding = 1600;
 
     if (dnxhd_init_vlc(ctx) < 0)
         return -1;
@@ -858,4 +871,5 @@ AVCodec ff_dnxhd_encoder = {
     dnxhd_encode_end,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
+    .priv_class = &class,
 };
