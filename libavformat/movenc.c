@@ -1217,7 +1217,7 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
               track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
         if(track->mode == MODE_MOV) {
             avio_wb32(pb, track->enc->width << 16);
-            avio_wb32(pb, track->enc->height << 16);
+            avio_wb32(pb, track->height << 16);
         } else {
             double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
             if(!sample_aspect_ratio || track->height != track->enc->height)
