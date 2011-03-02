@@ -675,20 +675,13 @@ unsigned int avio_rb32(AVIOContext *s)
     return val;
 }
 
+#if FF_API_OLD_AVIO
 char *get_strz(AVIOContext *s, char *buf, int maxlen)
 {
-    int i = 0;
-    char c;
-
-    while ((c = avio_r8(s))) {
-        if (i < maxlen-1)
-            buf[i++] = c;
-    }
-
-    buf[i] = 0; /* Ensure null terminated, but may be truncated */
-
+    avio_get_str(s, INT_MAX, buf, maxlen);
     return buf;
 }
+#endif
 
 int ff_get_line(AVIOContext *s, char *buf, int maxlen)
 {
