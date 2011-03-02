@@ -65,7 +65,7 @@
 #endif
 
 #ifndef av_cold
-#if (!defined(__ICC) || __ICC > 1110) && AV_GCC_VERSION_AT_LEAST(4,3)
+#if (!defined(__INTEL_COMPILER) || __INTEL_COMPILER > 1110) && AV_GCC_VERSION_AT_LEAST(4,3)
 #    define av_cold __attribute__((cold))
 #else
 #    define av_cold
@@ -73,7 +73,7 @@
 #endif
 
 #ifndef av_flatten
-#if (!defined(__ICC) || __ICC > 1110) && AV_GCC_VERSION_AT_LEAST(4,1)
+#if (!defined(__INTEL_COMPILER) || __INTEL_COMPILER > 1110) && AV_GCC_VERSION_AT_LEAST(4,1)
 #    define av_flatten __attribute__((flatten))
 #else
 #    define av_flatten
@@ -110,7 +110,7 @@
 #endif
 
 #ifndef av_alias
-#if (!defined(__ICC) || __ICC > 1200) && AV_GCC_VERSION_AT_LEAST(3,3)
+#if (!defined(__INTEL_COMPILER) || __INTEL_COMPILER > 1200) && AV_GCC_VERSION_AT_LEAST(3,3)
 #   define av_alias __attribute__((may_alias))
 #else
 #   define av_alias
@@ -118,7 +118,7 @@
 #endif
 
 #ifndef av_uninit
-#if defined(__GNUC__) && !defined(__ICC)
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #    define av_uninit(x) x=x
 #else
 #    define av_uninit(x) x

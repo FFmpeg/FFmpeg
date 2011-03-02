@@ -29,7 +29,7 @@
 #include "attributes.h"
 #include "avutil.h"
 
-#if defined(__ICC) && _ICC < 1200 || defined(__SUNPRO_C)
+#if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1200 || defined(__SUNPRO_C)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
 #elif defined(__TI_COMPILER_VERSION__)
@@ -56,7 +56,7 @@
     #define av_malloc_attrib
 #endif
 
-#if (!defined(__ICC) || __ICC > 1200) && AV_GCC_VERSION_AT_LEAST(4,3)
+#if (!defined(__INTEL_COMPILER) || __INTEL_COMPILER > 1200) && AV_GCC_VERSION_AT_LEAST(4,3)
     #define av_alloc_size(n) __attribute__((alloc_size(n)))
 #else
     #define av_alloc_size(n)
