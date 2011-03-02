@@ -683,6 +683,11 @@ static int frame_thread_init(AVCodecContext *avctx)
     FrameThreadContext *fctx;
     int i, err = 0;
 
+    if (thread_count <= 1) {
+        avctx->active_thread_type = 0;
+        return 0;
+    }
+
     avctx->thread_opaque = fctx = av_mallocz(sizeof(FrameThreadContext));
 
     fctx->threads = av_mallocz(sizeof(PerThreadContext) * thread_count);
@@ -881,8 +886,6 @@ int ff_thread_init(AVCodecContext *avctx, int thread_count)
         av_log(avctx, AV_LOG_ERROR, "avcodec_thread_init is ignored after avcodec_open\n");
         return -1;
     }
-
-    avctx->thread_count = FFMAX(1, thread_count);
 
     if (avctx->codec) {
         validate_thread_parameters(avctx);
