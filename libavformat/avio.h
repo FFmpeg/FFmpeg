@@ -548,7 +548,12 @@ int avio_get_str(AVIOContext *pb, int maxlen, char *buf, int buflen);
 int avio_get_str16le(AVIOContext *pb, int maxlen, char *buf, int buflen);
 int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
 
-char *get_strz(AVIOContext *s, char *buf, int maxlen);
+#if FF_API_OLD_AVIO
+/**
+ * @deprecated use avio_get_str instead
+ */
+attribute_deprecated char *get_strz(AVIOContext *s, char *buf, int maxlen);
+#endif
 unsigned int avio_rb16(AVIOContext *s);
 unsigned int avio_rb24(AVIOContext *s);
 unsigned int avio_rb32(AVIOContext *s);
