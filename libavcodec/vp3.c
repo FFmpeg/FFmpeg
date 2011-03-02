@@ -1915,6 +1915,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
             }
             s->last_frame = s->golden_frame;
             s->last_frame.type = FF_BUFFER_TYPE_COPY;
+            ff_thread_report_progress(&s->last_frame, INT_MAX, 0);
         }
     }
 
