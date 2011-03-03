@@ -45,7 +45,7 @@ static int aiff_write_header(AVFormatContext *s)
 
     /* FORM AIFF header */
     ffio_wfourcc(pb, "FORM");
-    aiff->form = url_ftell(pb);
+    aiff->form = avio_tell(pb);
     avio_wb32(pb, 0);                    /* file length */
     ffio_wfourcc(pb, aifc ? "AIFC" : "AIFF");
 
@@ -66,7 +66,7 @@ static int aiff_write_header(AVFormatContext *s)
     avio_wb32(pb, aifc ? 24 : 18); /* size */
     avio_wb16(pb, enc->channels);  /* Number of channels */
 
-    aiff->frames = url_ftell(pb);
+    aiff->frames = avio_tell(pb);
     avio_wb32(pb, 0);              /* Number of frames */
 
     if (!enc->bits_per_coded_sample)
@@ -90,7 +90,7 @@ static int aiff_write_header(AVFormatContext *s)
 
     /* Sound data chunk */
     ffio_wfourcc(pb, "SSND");
-    aiff->ssnd = url_ftell(pb);         /* Sound chunk size */
+    aiff->ssnd = avio_tell(pb);         /* Sound chunk size */
     avio_wb32(pb, 0);                    /* Sound samples data size */
     avio_wb32(pb, 0);                    /* Data offset */
     avio_wb32(pb, 0);                    /* Block-size (block align) */
@@ -118,7 +118,7 @@ static int aiff_write_trailer(AVFormatContext *s)
 
     /* Chunks sizes must be even */
     int64_t file_size, end_size;
-    end_size = file_size = url_ftell(pb);
+    end_size = file_size = avio_tell(pb);
     if (file_size & 1) {
         avio_w8(pb, 0);
         end_size++;

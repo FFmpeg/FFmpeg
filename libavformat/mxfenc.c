@@ -1171,14 +1171,14 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
 
 static void mxf_write_klv_fill(AVFormatContext *s)
 {
-    unsigned pad = klv_fill_size(url_ftell(s->pb));
+    unsigned pad = klv_fill_size(avio_tell(s->pb));
     if (pad) {
         avio_write(s->pb, klv_fill_key, 16);
         pad -= 16 + 4;
         klv_encode_ber4_length(s->pb, pad);
         for (; pad; pad--)
             avio_w8(s->pb, 0);
-        assert(!(url_ftell(s->pb) & (KAG_SIZE-1)));
+        assert(!(avio_tell(s->pb) & (KAG_SIZE-1)));
     }
 }
 
@@ -1190,7 +1190,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
     AVIOContext *pb = s->pb;
     int64_t header_byte_count_offset;
     unsigned index_byte_count = 0;
-    uint64_t partition_offset = url_ftell(pb);
+    uint64_t partition_offset = avio_tell(pb);
 
     if (!mxf->edit_unit_byte_count && mxf->edit_units_count)
         index_byte_count = 85 + 12+(s->nb_streams+1)*6 +
@@ -1233,7 +1233,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
     avio_wb64(pb, mxf->footer_partition_offset); // footerPartition
 
     // set offset
-    header_byte_count_offset = url_ftell(pb);
+    header_byte_count_offset = avio_tell(pb);
     avio_wb64(pb, 0); // headerByteCount, update later
 
     // indexTable
@@ -1260,10 +1260,10 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
         unsigned header_byte_count;
 
         mxf_write_klv_fill(s);
-        start = url_ftell(s->pb);
+        start = avio_tell(s->pb);
         mxf_write_primer_pack(s);
         mxf_write_header_metadata_sets(s);
-        pos = url_ftell(s->pb);
+        pos = avio_tell(s->pb);
         header_byte_count = pos - start + klv_fill_size(pos);
 
         // update header_byte_count
@@ -1617,7 +1617,7 @@ static void mxf_write_d10_video_packet(AVFormatContext *s, AVStream *st, AVPacke
         klv_encode_ber4_length(s->pb, pad);
         for (; pad; pad--)
             avio_w8(s->pb, 0);
-        assert(!(url_ftell(s->pb) & (KAG_SIZE-1)));
+        assert(!(avio_tell(s->pb) & (KAG_SIZE-1)));
     } else {
         av_log(s, AV_LOG_WARNING, "cannot fill d-10 video packet\n");
         for (; pad > 0; pad--)
@@ -1740,7 +1740,7 @@ static void mxf_write_random_index_pack(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
-    uint64_t pos = url_ftell(pb);
+    uint64_t pos = avio_tell(pb);
     int i;
 
     avio_write(pb, random_index_pack_key, 16);
@@ -1760,7 +1760,7 @@ static void mxf_write_random_index_pack(AVFormatContext *s)
     avio_wb32(pb, 0); // BodySID of footer partition
     avio_wb64(pb, mxf->footer_partition_offset);
 
-    avio_wb32(pb, url_ftell(pb) - pos + 4);
+    avio_wb32(pb, avio_tell(pb) - pos + 4);
 }
 
 static int mxf_write_footer(AVFormatContext *s)
@@ -1771,7 +1771,7 @@ static int mxf_write_footer(AVFormatContext *s)
     mxf->duration = mxf->last_indexed_edit_unit + mxf->edit_units_count;
 
     mxf_write_klv_fill(s);
-    mxf->footer_partition_offset = url_ftell(pb);
+    mxf->footer_partition_offset = avio_tell(pb);
     if (mxf->edit_unit_byte_count) { // no need to repeat index
         mxf_write_partition(s, 0, 0, footer_partition_key, 0);
     } else {

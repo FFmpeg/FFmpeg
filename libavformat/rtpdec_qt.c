@@ -115,10 +115,10 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         if (pos + data_len > len)
             return AVERROR_INVALIDDATA;
         /* TLVs */
-        while (url_ftell(&pb) + 4 < pos + data_len) {
+        while (avio_tell(&pb) + 4 < pos + data_len) {
             int tlv_len = avio_rb16(&pb);
             tag = avio_rl16(&pb);
-            if (url_ftell(&pb) + tlv_len > pos + data_len)
+            if (avio_tell(&pb) + tlv_len > pos + data_len)
                 return AVERROR_INVALIDDATA;
 
 #define MKTAG16(a,b) MKTAG(a,b,0,0)
@@ -155,7 +155,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         }
 
         /* 32-bit alignment */
-        avio_seek(&pb, ((url_ftell(&pb) + 3) & ~3) - url_ftell(&pb), SEEK_CUR);
+        avio_seek(&pb, ((avio_tell(&pb) + 3) & ~3) - avio_tell(&pb), SEEK_CUR);
     } else
         avio_seek(&pb, 4, SEEK_SET);
 
@@ -164,7 +164,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         return AVERROR_NOTSUPP;
     }
 
-    alen = len - url_ftell(&pb);
+    alen = len - avio_tell(&pb);
     if (alen <= 0)
         return AVERROR_INVALIDDATA;
 
@@ -182,7 +182,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         }
         if (!qt->pkt.data)
             return AVERROR(ENOMEM);
-        memcpy(qt->pkt.data + qt->pkt.size, buf + url_ftell(&pb), alen);
+        memcpy(qt->pkt.data + qt->pkt.size, buf + avio_tell(&pb), alen);
         qt->pkt.size += alen;
         if (has_marker_bit) {
             *pkt = qt->pkt;
@@ -203,7 +203,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         qt->remaining = (alen / qt->bytes_per_frame) - 1;
         if (av_new_packet(pkt, qt->bytes_per_frame))
             return AVERROR(ENOMEM);
-        memcpy(pkt->data, buf + url_ftell(&pb), qt->bytes_per_frame);
+        memcpy(pkt->data, buf + avio_tell(&pb), qt->bytes_per_frame);
         pkt->flags = flags & RTP_FLAG_KEY ? AV_PKT_FLAG_KEY : 0;
         pkt->stream_index = st->index;
         if (qt->remaining > 0) {
@@ -215,7 +215,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
             }
             qt->pkt.size = qt->remaining * qt->bytes_per_frame;
             memcpy(qt->pkt.data,
-                   buf + url_ftell(&pb) + qt->bytes_per_frame,
+                   buf + avio_tell(&pb) + qt->bytes_per_frame,
                    qt->remaining * qt->bytes_per_frame);
             qt->pkt.flags = pkt->flags;
             return 1;

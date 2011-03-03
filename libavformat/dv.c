@@ -417,8 +417,8 @@ static int dv_read_header(AVFormatContext *s,
             return -1;
         }
         if (state == 0x003f0700 || state == 0xff3f0700)
-            marker_pos = url_ftell(s->pb);
-        if (state == 0xff3f0701 && url_ftell(s->pb) - marker_pos == 80) {
+            marker_pos = avio_tell(s->pb);
+        if (state == 0xff3f0701 && avio_tell(s->pb) - marker_pos == 80) {
             avio_seek(s->pb, -163, SEEK_CUR);
             state = avio_rb32(s->pb);
             break;

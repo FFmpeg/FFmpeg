@@ -223,7 +223,7 @@ static int flic_read_packet(AVFormatContext *s,
             }
             pkt->stream_index = flic->video_stream_index;
             pkt->pts = flic->frame_number++;
-            pkt->pos = url_ftell(pb);
+            pkt->pos = avio_tell(pb);
             memcpy(pkt->data, preamble, FLIC_PREAMBLE_SIZE);
             ret = avio_read(pb, pkt->data + FLIC_PREAMBLE_SIZE,
                 size - FLIC_PREAMBLE_SIZE);
@@ -242,7 +242,7 @@ static int flic_read_packet(AVFormatContext *s,
             avio_seek(pb, 10, SEEK_CUR);
 
             pkt->stream_index = flic->audio_stream_index;
-            pkt->pos = url_ftell(pb);
+            pkt->pos = avio_tell(pb);
             ret = avio_read(pb, pkt->data, size);
 
             if (ret != size) {

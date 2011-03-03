@@ -154,7 +154,7 @@ static int amr_read_packet(AVFormatContext *s,
     }
 
     pkt->stream_index = 0;
-    pkt->pos= url_ftell(s->pb);
+    pkt->pos= avio_tell(s->pb);
     pkt->data[0]=toc;
     pkt->duration= enc->codec_id == CODEC_ID_AMR_NB ? 160 : 320;
     read = avio_read(s->pb, pkt->data+1, size-1);

@@ -82,7 +82,7 @@ static int read_packet(AVFormatContext *s,
 
     if (url_feof(s->pb))
         return AVERROR(EIO);
-    pkt->dts = url_ftell(s->pb) / (st->codec->width * (st->codec->height + film->leading) * 4);
+    pkt->dts = avio_tell(s->pb) / (st->codec->width * (st->codec->height + film->leading) * 4);
     pkt->size = av_get_packet(s->pb, pkt, st->codec->width * st->codec->height * 4);
     avio_seek(s->pb, st->codec->width * film->leading * 4, SEEK_CUR);
     if (pkt->size < 0)

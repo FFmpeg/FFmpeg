@@ -247,7 +247,7 @@ static int vmd_read_packet(AVFormatContext *s,
 
     if (av_new_packet(pkt, frame->frame_size + BYTES_PER_FRAME_RECORD))
         return AVERROR(ENOMEM);
-    pkt->pos= url_ftell(pb);
+    pkt->pos= avio_tell(pb);
     memcpy(pkt->data, frame->frame_record, BYTES_PER_FRAME_RECORD);
     if(vmd->is_indeo3)
         ret = avio_read(pb, pkt->data, frame->frame_size);

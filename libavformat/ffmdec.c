@@ -65,7 +65,7 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
     len = ffm->packet_end - ffm->packet_ptr;
     if (size <= len)
         return 1;
-    pos = url_ftell(s->pb);
+    pos = avio_tell(s->pb);
     if (!ffm->write_index) {
         if (pos == ffm->file_size)
             return AVERROR_EOF;
@@ -117,7 +117,7 @@ static int ffm_read_data(AVFormatContext *s,
         if (len > size)
             len = size;
         if (len == 0) {
-            if (url_ftell(pb) == ffm->file_size)
+            if (avio_tell(pb) == ffm->file_size)
                 avio_seek(pb, ffm->packet_size, SEEK_SET);
     retry_read:
             id = avio_rb16(pb); /* PACKET_ID */
@@ -136,7 +136,7 @@ static int ffm_read_data(AVFormatContext *s,
             if (ffm->first_packet || (frame_offset & 0x8000)) {
                 if (!frame_offset) {
                     /* This packet has no frame headers in it */
-                    if (url_ftell(pb) >= ffm->packet_size * 3) {
+                    if (avio_tell(pb) >= ffm->packet_size * 3) {
                         avio_seek(pb, -ffm->packet_size * 2, SEEK_CUR);
                         goto retry_read;
                     }
@@ -203,7 +203,7 @@ static void adjust_write_index(AVFormatContext *s)
     //int64_t orig_write_index = ffm->write_index;
     int64_t pos_min, pos_max;
     int64_t pts_start;
-    int64_t ptr = url_ftell(pb);
+    int64_t ptr = avio_tell(pb);
 
 
     pos_min = 0;
@@ -381,7 +381,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     /* get until end of block reached */
-    while ((url_ftell(pb) % ffm->packet_size) != 0)
+    while ((avio_tell(pb) % ffm->packet_size) != 0)
         avio_r8(pb);
 
     /* init packet demux */
@@ -410,7 +410,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
 
         av_dlog(s, "pos=%08"PRIx64" spos=%"PRIx64", write_index=%"PRIx64" size=%"PRIx64"\n",
-               url_ftell(s->pb), s->pb->pos, ffm->write_index, ffm->file_size);
+               avio_tell(s->pb), s->pb->pos, ffm->write_index, ffm->file_size);
         if (ffm_read_data(s, ffm->header, FRAME_HEADER_SIZE, 1) !=
             FRAME_HEADER_SIZE)
             return -1;
@@ -437,7 +437,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
             ffm->read_state = READ_HEADER;
             return -1;
         }
-        pkt->pos = url_ftell(s->pb);
+        pkt->pos = avio_tell(s->pb);
         if (ffm->header[1] & FLAG_KEY_FRAME)
             pkt->flags |= AV_PKT_FLAG_KEY;
 

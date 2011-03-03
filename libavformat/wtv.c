@@ -468,7 +468,7 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     char description[1024];
     unsigned int filesize;
     AVStream *st;
-    int64_t pos = url_ftell(pb);
+    int64_t pos = avio_tell(pb);
 
     avio_get_str16le(pb, INT_MAX, mime, sizeof(mime));
     if (strcmp(mime, "image/jpeg"))
@@ -980,7 +980,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         return ret;
     avio_seek(wtv->pb, -32, SEEK_CUR);
 
-    timeline_pos = url_ftell(s->pb); // save before opening another file
+    timeline_pos = avio_tell(s->pb); // save before opening another file
 
     /* read metadata */
     pb = wtvfile_open(s, root, root_size, table_0_entries_legacy_attrib_le16);

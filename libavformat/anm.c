@@ -208,7 +208,7 @@ repeat:
     }
 
     /* fetch record size */
-    tmp = url_ftell(pb);
+    tmp = avio_tell(pb);
     avio_seek(pb, anm->page_table_offset + MAX_PAGES*6 + (anm->page<<16) +
               8 + anm->record * 2, SEEK_SET);
     record_size = avio_rl16(pb);

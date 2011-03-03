@@ -73,7 +73,7 @@ static int read_part_of_packet(AVFormatContext *s, int64_t *pts,
     int64_t pva_pts = AV_NOPTS_VALUE, startpos;
 
 recover:
-    startpos = url_ftell(pb);
+    startpos = avio_tell(pb);
 
     syncword = avio_rb16(pb);
     streamid = avio_r8(pb);
@@ -190,7 +190,7 @@ static int64_t pva_read_timestamp(struct AVFormatContext *s, int stream_index,
             continue;
         }
         if (streamid - 1 != stream_index || res == AV_NOPTS_VALUE) {
-            *pos = url_ftell(pb) + length;
+            *pos = avio_tell(pb) + length;
             continue;
         }
         break;

@@ -160,7 +160,7 @@ static int get_value(AVIOContext *pb, int type){
 static void get_tag(AVFormatContext *s, const char *key, int type, int len)
 {
     char *value;
-    int64_t off = url_ftell(s->pb);
+    int64_t off = avio_tell(s->pb);
 
     if ((unsigned)len >= (UINT_MAX - 1)/2)
         return;
@@ -226,7 +226,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         return AVERROR(EINVAL);
     }
 
-    pos1 = url_ftell(pb);
+    pos1 = avio_tell(pb);
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -301,7 +301,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
             st->need_parsing = AVSTREAM_PARSE_FULL;
         }
         /* We have to init the frame size at some point .... */
-        pos2 = url_ftell(pb);
+        pos2 = avio_tell(pb);
         if (size >= (pos2 + 8 - pos1 + 24)) {
             asf_st->ds_span = avio_r8(pb);
             asf_st->ds_packet_size = avio_rl16(pb);
@@ -338,7 +338,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
                 break;
         }
     } else if (type == AVMEDIA_TYPE_VIDEO &&
-            size - (url_ftell(pb) - pos1 + 24) >= 51) {
+            size - (avio_tell(pb) - pos1 + 24) >= 51) {
         avio_rl32(pb);
         avio_rl32(pb);
         avio_r8(pb);
@@ -387,7 +387,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         if(st->codec->codec_id == CODEC_ID_H264)
             st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
     }
-    pos2 = url_ftell(pb);
+    pos2 = avio_tell(pb);
     avio_seek(pb, size - (pos2 - pos1 + 24), SEEK_CUR);
 
     return 0;
@@ -595,14 +595,14 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     avio_r8(pb);
     memset(&asf->asfid2avid, -1, sizeof(asf->asfid2avid));
     for(;;) {
-        uint64_t gpos= url_ftell(pb);
+        uint64_t gpos= avio_tell(pb);
         ff_get_guid(pb, &g);
         gsize = avio_rl64(pb);
         av_dlog(s, "%08"PRIx64": ", gpos);
         print_guid(&g);
         av_dlog(s, "  size=0x%"PRIx64"\n", gsize);
         if (!ff_guidcmp(&g, &ff_asf_data_header)) {
-            asf->data_object_offset = url_ftell(pb);
+            asf->data_object_offset = avio_tell(pb);
             // if not streaming, gsize is not unlimited (how?), and there is enough space in the file..
             if (!(asf->hdr.flags & 0x01) && gsize >= 100) {
                 asf->data_object_size = gsize - 24;
@@ -652,8 +652,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 }
             }
         }
-        if(url_ftell(pb) != gpos + gsize)
-            av_log(s, AV_LOG_DEBUG, "gpos mismatch our pos=%"PRIu64", end=%"PRIu64"\n", url_ftell(pb)-gpos, gsize);
+        if(avio_tell(pb) != gpos + gsize)
+            av_log(s, AV_LOG_DEBUG, "gpos mismatch our pos=%"PRIu64", end=%"PRIu64"\n", avio_tell(pb)-gpos, gsize);
         avio_seek(pb, gpos + gsize, SEEK_SET);
     }
     ff_get_guid(pb, &g);
@@ -662,7 +662,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     avio_r8(pb);
     if (url_feof(pb))
         return -1;
-    asf->data_offset = url_ftell(pb);
+    asf->data_offset = avio_tell(pb);
     asf->packet_size_left = 0;
 
 
@@ -726,7 +726,7 @@ static int ff_asf_get_packet(AVFormatContext *s, AVIOContext *pb)
     // if we do not know packet size, allow skipping up to 32 kB
     off= 32768;
     if (s->packet_size > 0)
-        off= (url_ftell(pb) - s->data_offset) % s->packet_size + 3;
+        off= (avio_tell(pb) - s->data_offset) % s->packet_size + 3;
 
     c=d=e=-1;
     while(off-- > 0){
@@ -746,7 +746,7 @@ static int ff_asf_get_packet(AVFormatContext *s, AVIOContext *pb)
         if (url_ferror(pb) == AVERROR(EAGAIN))
             return AVERROR(EAGAIN);
         if (!url_feof(pb))
-            av_log(s, AV_LOG_ERROR, "ff asf bad header %x  at:%"PRId64"\n", c, url_ftell(pb));
+            av_log(s, AV_LOG_ERROR, "ff asf bad header %x  at:%"PRId64"\n", c, avio_tell(pb));
     }
     if ((c & 0x8f) == 0x82) {
         if (d || e) {
@@ -770,11 +770,11 @@ static int ff_asf_get_packet(AVFormatContext *s, AVIOContext *pb)
 
     //the following checks prevent overflows and infinite loops
     if(!packet_length || packet_length >= (1U<<29)){
-        av_log(s, AV_LOG_ERROR, "invalid packet_length %d at:%"PRId64"\n", packet_length, url_ftell(pb));
+        av_log(s, AV_LOG_ERROR, "invalid packet_length %d at:%"PRId64"\n", packet_length, avio_tell(pb));
         return -1;
     }
     if(padsize >= packet_length){
-        av_log(s, AV_LOG_ERROR, "invalid padsize %d at:%"PRId64"\n", padsize, url_ftell(pb));
+        av_log(s, AV_LOG_ERROR, "invalid padsize %d at:%"PRId64"\n", padsize, avio_tell(pb));
         return -1;
     }
 
@@ -892,12 +892,12 @@ static int ff_asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pk
             || asf->packet_segments < 1) {
             //asf->packet_size_left <= asf->packet_padsize) {
             int ret = asf->packet_size_left + asf->packet_padsize;
-            //printf("PacketLeftSize:%d  Pad:%d Pos:%"PRId64"\n", asf->packet_size_left, asf->packet_padsize, url_ftell(pb));
+            //printf("PacketLeftSize:%d  Pad:%d Pos:%"PRId64"\n", asf->packet_size_left, asf->packet_padsize, avio_tell(pb));
             assert(ret>=0);
             /* fail safe */
             avio_seek(pb, ret, SEEK_CUR);
 
-            asf->packet_pos= url_ftell(pb);
+            asf->packet_pos= avio_tell(pb);
             if (asf->data_object_size != (uint64_t)-1 &&
                 (asf->packet_pos - asf->data_object_offset >= asf->data_object_size))
                 return AVERROR_EOF; /* Do not exceed the size of the data object */
@@ -1185,7 +1185,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
 {
     ff_asf_guid g;
     ASFContext *asf = s->priv_data;
-    int64_t current_pos= url_ftell(s->pb);
+    int64_t current_pos= avio_tell(s->pb);
     int i;
 
     avio_seek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET);
@@ -1268,7 +1268,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
     //    avio_seek(s->pb, pos, SEEK_SET);
     //    key_pos = pos;
     //     for(i=0;i<16;i++){
-    //         pos = url_ftell(s->pb);
+    //         pos = avio_tell(s->pb);
     //         if (av_read_frame(s, &pkt) < 0){
     //             av_log(s, AV_LOG_INFO, "seek failed\n");
     //             return -1;

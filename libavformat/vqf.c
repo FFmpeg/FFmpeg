@@ -200,7 +200,7 @@ static int vqf_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
     int size = (c->frame_bit_len - c->remaining_bits + 7)>>3;
 
-    pkt->pos          = url_ftell(s->pb);
+    pkt->pos          = avio_tell(s->pb);
     pkt->stream_index = 0;
 
     if (av_new_packet(pkt, size+2) < 0)

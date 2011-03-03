@@ -165,7 +165,7 @@ static int qcp_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         }
 
-        if (url_ftell(pb) & 1 && avio_r8(pb))
+        if (avio_tell(pb) & 1 && avio_r8(pb))
             av_log(s, AV_LOG_WARNING, "Padding should be 0.\n");
 
         tag        = avio_rl32(pb);

@@ -162,7 +162,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int i;
 #endif
 
-    if((url_ftell(pb) - s->data_offset + mtv->img_segment_size) % mtv->full_segment_size)
+    if((avio_tell(pb) - s->data_offset + mtv->img_segment_size) % mtv->full_segment_size)
     {
         avio_seek(pb, MTV_AUDIO_PADDING_SIZE, SEEK_CUR);
 

@@ -102,7 +102,7 @@ static int wav_write_trailer(AVFormatContext *s)
         ff_end_tag(pb, wav->data);
 
         /* update file size */
-        file_size = url_ftell(pb);
+        file_size = avio_tell(pb);
         avio_seek(pb, 4, SEEK_SET);
         avio_wl32(pb, (uint32_t)(file_size - 8));
         avio_seek(pb, file_size, SEEK_SET);
@@ -252,7 +252,7 @@ static int wav_read_header(AVFormatContext *s,
     if (!size) {
         wav->data_end = INT64_MAX;
     } else
-        wav->data_end= url_ftell(pb) + size;
+        wav->data_end= avio_tell(pb) + size;
 
     if (!sample_count && st->codec->channels && av_get_bits_per_sample(st->codec->codec_id))
         sample_count = (size<<3) / (st->codec->channels * (uint64_t)av_get_bits_per_sample(st->codec->codec_id));
@@ -296,7 +296,7 @@ static int wav_read_packet(AVFormatContext *s,
 
     st = s->streams[0];
 
-    left = wav->data_end - url_ftell(s->pb);
+    left = wav->data_end - avio_tell(s->pb);
     if (left <= 0){
         if (CONFIG_W64_DEMUXER && wav->w64)
             left = find_guid(s->pb, guid_data) - 24;
@@ -304,7 +304,7 @@ static int wav_read_packet(AVFormatContext *s,
             left = find_tag(s->pb, MKTAG('d', 'a', 't', 'a'));
         if (left < 0)
             return AVERROR_EOF;
-        wav->data_end= url_ftell(s->pb) + left;
+        wav->data_end= avio_tell(s->pb) + left;
     }
 
     size = MAX_SIZE;
@@ -421,7 +421,7 @@ static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "could not find data guid\n");
         return -1;
     }
-    wav->data_end = url_ftell(pb) + size - 24;
+    wav->data_end = avio_tell(pb) + size - 24;
     wav->w64      = 1;
 
     return 0;

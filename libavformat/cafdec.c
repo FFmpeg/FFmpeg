@@ -106,9 +106,9 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
         int strt, skip;
         MOVAtom atom;
 
-        strt = url_ftell(pb);
+        strt = avio_tell(pb);
         ff_mov_read_esds(s, pb, atom);
-        skip = size - (url_ftell(pb) - strt);
+        skip = size - (avio_tell(pb) - strt);
         if (skip < 0 || !st->codec->extradata ||
             st->codec->codec_id != CODEC_ID_AAC) {
             av_log(s, AV_LOG_ERROR, "invalid AAC magic cookie\n");
@@ -150,7 +150,7 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
     int64_t pos = 0, ccount;
     int num_packets, i;
 
-    ccount = url_ftell(pb);
+    ccount = avio_tell(pb);
 
     num_packets = avio_rb64(pb);
     if (num_packets < 0 || INT32_MAX / sizeof(AVIndexEntry) < num_packets)
@@ -167,7 +167,7 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
         st->duration += caf->frames_per_packet ? caf->frames_per_packet : ff_mp4_read_descr_len(pb);
     }
 
-    if (url_ftell(pb) - ccount != size) {
+    if (avio_tell(pb) - ccount != size) {
         av_log(s, AV_LOG_ERROR, "error reading packet table\n");
         return -1;
     }
@@ -234,7 +234,7 @@ static int read_header(AVFormatContext *s,
         switch (tag) {
         case MKBETAG('d','a','t','a'):
             avio_seek(pb, 4, SEEK_CUR); /* edit count */
-            caf->data_start = url_ftell(pb);
+            caf->data_start = avio_tell(pb);
             caf->data_size  = size < 0 ? -1 : size - 4;
             if (caf->data_size > 0 && !url_is_streamed(pb))
                 avio_seek(pb, caf->data_size, SEEK_CUR);
@@ -312,7 +312,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* don't read past end of data chunk */
     if (caf->data_size > 0) {
-        left = (caf->data_start + caf->data_size) - url_ftell(pb);
+        left = (caf->data_start + caf->data_size) - avio_tell(pb);
         if (left <= 0)
             return AVERROR(EIO);
     }

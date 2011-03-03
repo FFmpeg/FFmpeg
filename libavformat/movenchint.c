@@ -316,7 +316,7 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
     int64_t count_pos, entries_pos;
     int count = 0, entries;
 
-    count_pos = url_ftell(out);
+    count_pos = avio_tell(out);
     /* RTPsample header */
     avio_wb16(out, 0); /* packet count */
     avio_wb16(out, 0); /* reserved */
@@ -358,7 +358,7 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
         avio_write(out, data, 2); /* RTP header */
         avio_wb16(out, seq); /* RTPsequenceseed */
         avio_wb16(out, 0); /* reserved + flags */
-        entries_pos = url_ftell(out);
+        entries_pos = avio_tell(out);
         avio_wb16(out, 0); /* entry count */
 
         data += 12;
@@ -371,13 +371,13 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
         data += packet_len;
         size -= packet_len;
 
-        curpos = url_ftell(out);
+        curpos = avio_tell(out);
         avio_seek(out, entries_pos, SEEK_SET);
         avio_wb16(out, entries);
         avio_seek(out, curpos, SEEK_SET);
     }
 
-    curpos = url_ftell(out);
+    curpos = avio_tell(out);
     avio_seek(out, count_pos, SEEK_SET);
     avio_wb16(out, count);
     avio_seek(out, curpos, SEEK_SET);

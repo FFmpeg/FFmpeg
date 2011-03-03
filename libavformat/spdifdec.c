@@ -185,7 +185,7 @@ static int spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret)
         return ret;
 
-    pkt->pos = url_ftell(pb) - BURST_HEADER_SIZE;
+    pkt->pos = avio_tell(pb) - BURST_HEADER_SIZE;
 
     if (avio_read(pb, pkt->data, pkt->size) < pkt->size) {
         av_free_packet(pkt);

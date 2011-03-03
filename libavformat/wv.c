@@ -84,7 +84,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
     int rate, bpp, chan;
     uint32_t chmask;
 
-    wc->pos = url_ftell(pb);
+    wc->pos = avio_tell(pb);
     if(!append){
         tag = avio_rl32(pb);
         if (tag != MKTAG('w', 'v', 'p', 'k'))
@@ -120,12 +120,12 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
         chmask = wc->chmask;
     }
     if((rate == -1 || !chan) && !wc->block_parsed){
-        int64_t block_end = url_ftell(pb) + wc->blksize - 24;
+        int64_t block_end = avio_tell(pb) + wc->blksize - 24;
         if(url_is_streamed(pb)){
             av_log(ctx, AV_LOG_ERROR, "Cannot determine additional parameters\n");
             return -1;
         }
-        while(url_ftell(pb) < block_end){
+        while(avio_tell(pb) < block_end){
             int id, size;
             id = avio_r8(pb);
             size = (id & 0x80) ? avio_rl24(pb) : avio_r8(pb);
@@ -224,7 +224,7 @@ static int wv_read_header(AVFormatContext *s,
     st->duration = wc->samples;
 
     if(!url_is_streamed(s->pb)) {
-        int64_t cur = url_ftell(s->pb);
+        int64_t cur = avio_tell(s->pb);
         ff_ape_parse_tag(s);
         if(!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
             ff_id3v1_read(s);
@@ -327,7 +327,7 @@ static int wv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     if(timestamp < 0 || timestamp >= s->duration)
         return -1;
 
-    pos = url_ftell(s->pb);
+    pos = avio_tell(s->pb);
     do{
         ret = av_read_frame(s, pkt);
         if (ret < 0){

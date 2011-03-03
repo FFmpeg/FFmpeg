@@ -405,7 +405,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             debug_ipmovie("audio frame\n");
 
             /* log position and move on for now */
-            s->audio_chunk_offset = url_ftell(pb);
+            s->audio_chunk_offset = avio_tell(pb);
             s->audio_chunk_size = opcode_size;
             avio_seek(pb, opcode_size, SEEK_CUR);
             break;
@@ -471,7 +471,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             debug_ipmovie("set decoding map\n");
 
             /* log position and move on for now */
-            s->decode_map_chunk_offset = url_ftell(pb);
+            s->decode_map_chunk_offset = avio_tell(pb);
             s->decode_map_chunk_size = opcode_size;
             avio_seek(pb, opcode_size, SEEK_CUR);
             break;
@@ -480,7 +480,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             debug_ipmovie("set video data\n");
 
             /* log position and move on for now */
-            s->video_chunk_offset = url_ftell(pb);
+            s->video_chunk_offset = avio_tell(pb);
             s->video_chunk_size = opcode_size;
             avio_seek(pb, opcode_size, SEEK_CUR);
             break;
@@ -494,7 +494,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
     }
 
     /* make a note of where the stream is sitting */
-    s->next_chunk_offset = url_ftell(pb);
+    s->next_chunk_offset = avio_tell(pb);
 
     /* dispatch the first of any pending packets */
     if ((chunk_type == CHUNK_VIDEO) || (chunk_type == CHUNK_AUDIO_ONLY))
@@ -541,7 +541,7 @@ static int ipmovie_read_header(AVFormatContext *s,
     ipmovie->decode_map_chunk_offset = 0;
 
     /* on the first read, this will position the stream at the first chunk */
-    ipmovie->next_chunk_offset = url_ftell(pb) + 4;
+    ipmovie->next_chunk_offset = avio_tell(pb) + 4;
 
     /* process the first chunk which should be CHUNK_INIT_VIDEO */
     if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_VIDEO)

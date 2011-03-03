@@ -144,7 +144,7 @@ static int iff_read_header(AVFormatContext *s,
         const char *metadata_tag = NULL;
         chunk_id = avio_rl32(pb);
         data_size = avio_rb32(pb);
-        orig_pos = url_ftell(pb);
+        orig_pos = avio_tell(pb);
 
         switch(chunk_id) {
         case ID_VHDR:
@@ -161,7 +161,7 @@ static int iff_read_header(AVFormatContext *s,
             break;
 
         case ID_BODY:
-            iff->body_pos = url_ftell(pb);
+            iff->body_pos = avio_tell(pb);
             iff->body_size = data_size;
             break;
 
@@ -223,7 +223,7 @@ static int iff_read_header(AVFormatContext *s,
                 return res;
             }
         }
-        avio_seek(pb, data_size - (url_ftell(pb) - orig_pos) + (data_size & 1), SEEK_CUR);
+        avio_seek(pb, data_size - (avio_tell(pb) - orig_pos) + (data_size & 1), SEEK_CUR);
     }
 
     avio_seek(pb, iff->body_pos, SEEK_SET);

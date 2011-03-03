@@ -38,7 +38,7 @@ typedef struct {
 
 static int read_atom(AVFormatContext *s, Atom *atom)
 {
-    atom->offset = url_ftell(s->pb);
+    atom->offset = avio_tell(s->pb);
     atom->size = avio_rb32(s->pb);
     if (atom->size < 8)
         return -1;
@@ -175,7 +175,7 @@ static int r3d_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
 
-    s->data_offset = url_ftell(s->pb);
+    s->data_offset = avio_tell(s->pb);
     av_dlog(s, "data offset %#llx\n", s->data_offset);
     if (url_is_streamed(s->pb))
         return 0;
@@ -210,7 +210,7 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
 {
     AVStream *st = s->streams[0];
     int tmp, tmp2;
-    uint64_t pos = url_ftell(s->pb);
+    uint64_t pos = avio_tell(s->pb);
     unsigned dts;
     int ret;
 
@@ -241,7 +241,7 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
         tmp = avio_rb32(s->pb);
         av_dlog(s, "metadata len %d\n", tmp);
     }
-    tmp = atom->size - 8 - (url_ftell(s->pb) - pos);
+    tmp = atom->size - 8 - (avio_tell(s->pb) - pos);
     if (tmp < 0)
         return -1;
     ret = av_get_packet(s->pb, pkt, tmp);
@@ -264,7 +264,7 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
 {
     AVStream *st = s->streams[1];
     int tmp, tmp2, samples, size;
-    uint64_t pos = url_ftell(s->pb);
+    uint64_t pos = avio_tell(s->pb);
     unsigned dts;
     int ret;
 
@@ -287,7 +287,7 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     tmp = avio_rb32(s->pb); // unknown
     av_dlog(s, "unknown %d\n", tmp);
 
-    size = atom->size - 8 - (url_ftell(s->pb) - pos);
+    size = atom->size - 8 - (avio_tell(s->pb) - pos);
     if (size < 0)
         return -1;
     ret = av_get_packet(s->pb, pkt, size);

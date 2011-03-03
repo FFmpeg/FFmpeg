@@ -141,7 +141,7 @@ static int roq_read_packet(AVFormatContext *s,
 
         case RoQ_QUAD_CODEBOOK:
             /* packet needs to contain both this codebook and next VQ chunk */
-            codebook_offset = url_ftell(pb) - RoQ_CHUNK_PREAMBLE_SIZE;
+            codebook_offset = avio_tell(pb) - RoQ_CHUNK_PREAMBLE_SIZE;
             codebook_size = chunk_size;
             avio_seek(pb, codebook_size, SEEK_CUR);
             if (avio_read(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) !=
@@ -197,7 +197,7 @@ static int roq_read_packet(AVFormatContext *s,
                 roq->audio_frame_count += (chunk_size / roq->audio_channels);
             }
 
-            pkt->pos= url_ftell(pb);
+            pkt->pos= avio_tell(pb);
             ret = avio_read(pb, pkt->data + RoQ_CHUNK_PREAMBLE_SIZE,
                 chunk_size);
             if (ret != chunk_size)

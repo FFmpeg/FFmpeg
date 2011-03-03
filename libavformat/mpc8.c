@@ -120,10 +120,10 @@ static inline int64_t gb_get_v(GetBitContext *gb)
 static void mpc8_get_chunk_header(AVIOContext *pb, int *tag, int64_t *size)
 {
     int64_t pos;
-    pos = url_ftell(pb);
+    pos = avio_tell(pb);
     *tag = avio_rl16(pb);
     *size = ff_get_v(pb);
-    *size -= url_ftell(pb) - pos;
+    *size -= avio_tell(pb) - pos;
 }
 
 static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
@@ -176,7 +176,7 @@ static void mpc8_handle_chunk(AVFormatContext *s, int tag, int64_t chunk_pos, in
 
     switch(tag){
     case TAG_SEEKTBLOFF:
-        pos = url_ftell(pb) + size;
+        pos = avio_tell(pb) + size;
         off = ff_get_v(pb);
         mpc8_parse_seektable(s, chunk_pos + off);
         avio_seek(pb, pos, SEEK_SET);
@@ -194,14 +194,14 @@ static int mpc8_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int tag = 0;
     int64_t size, pos;
 
-    c->header_pos = url_ftell(pb);
+    c->header_pos = avio_tell(pb);
     if(avio_rl32(pb) != TAG_MPCK){
         av_log(s, AV_LOG_ERROR, "Not a Musepack8 file\n");
         return -1;
     }
 
     while(!url_feof(pb)){
-        pos = url_ftell(pb);
+        pos = avio_tell(pb);
         mpc8_get_chunk_header(pb, &tag, &size);
         if(tag == TAG_STREAMHDR)
             break;
@@ -211,7 +211,7 @@ static int mpc8_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "Stream header not found\n");
         return -1;
     }
-    pos = url_ftell(pb);
+    pos = avio_tell(pb);
     avio_seek(pb, 4, SEEK_CUR); //CRC
     c->ver = avio_r8(pb);
     if(c->ver != 8){
@@ -236,7 +236,7 @@ static int mpc8_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->sample_rate = mpc8_rate[st->codec->extradata[0] >> 5];
     av_set_pts_info(st, 32, 1152  << (st->codec->extradata[1]&3)*2, st->codec->sample_rate);
     st->duration = c->samples / (1152 << (st->codec->extradata[1]&3)*2);
-    size -= url_ftell(pb) - pos;
+    size -= avio_tell(pb) - pos;
 
     return 0;
 }
@@ -248,7 +248,7 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t pos, size;
 
     while(!url_feof(s->pb)){
-        pos = url_ftell(s->pb);
+        pos = avio_tell(s->pb);
         mpc8_get_chunk_header(s->pb, &tag, &size);
         if (size < 0)
             return -1;

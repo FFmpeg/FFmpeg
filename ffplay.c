@@ -2805,7 +2805,7 @@ static void event_loop(void)
                         }else if(cur_stream->audio_stream >= 0 && cur_stream->audio_pkt.pos>=0){
                             pos= cur_stream->audio_pkt.pos;
                         }else
-                            pos = url_ftell(cur_stream->ic->pb);
+                            pos = avio_tell(cur_stream->ic->pb);
                         if (cur_stream->ic->bit_rate)
                             incr *= cur_stream->ic->bit_rate / 8.0;
                         else

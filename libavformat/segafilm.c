@@ -222,7 +222,7 @@ static int film_read_packet(AVFormatContext *s,
     /* do a special song and dance when loading FILM Cinepak chunks */
     if ((sample->stream == film->video_stream_index) &&
         (film->video_type == CODEC_ID_CINEPAK)) {
-        pkt->pos= url_ftell(pb);
+        pkt->pos= avio_tell(pb);
         if (av_new_packet(pkt, sample->sample_size))
             return AVERROR(ENOMEM);
         avio_read(pb, pkt->data, sample->sample_size);
@@ -240,7 +240,7 @@ static int film_read_packet(AVFormatContext *s,
             film->stereo_buffer = av_malloc(film->stereo_buffer_size);
         }
 
-        pkt->pos= url_ftell(pb);
+        pkt->pos= avio_tell(pb);
         ret = avio_read(pb, film->stereo_buffer, sample->sample_size);
         if (ret != sample->sample_size)
             ret = AVERROR(EIO);

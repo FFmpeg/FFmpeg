@@ -62,7 +62,7 @@ ogg_save (AVFormatContext * s)
     struct ogg_state *ost =
         av_malloc(sizeof (*ost) + (ogg->nstreams-1) * sizeof (*ogg->streams));
     int i;
-    ost->pos = url_ftell (s->pb);
+    ost->pos = avio_tell (s->pb);
     ost->curidx = ogg->curidx;
     ost->next = ogg->state;
     ost->nstreams = ogg->nstreams;
@@ -247,7 +247,7 @@ ogg_read_page (AVFormatContext * s, int *str)
     }
 
     os = ogg->streams + idx;
-    os->page_pos = url_ftell(bc) - 27;
+    os->page_pos = avio_tell(bc) - 27;
 
     if(os->psize > 0)
         ogg_new_buf(ogg, idx);
@@ -607,7 +607,7 @@ ogg_read_timestamp (AVFormatContext * s, int stream_index, int64_t * pos_arg,
     avio_seek(bc, *pos_arg, SEEK_SET);
     ogg_reset(ogg);
 
-    while (url_ftell(bc) < pos_limit && !ogg_packet(s, &i, NULL, NULL, pos_arg)) {
+    while (avio_tell(bc) < pos_limit && !ogg_packet(s, &i, NULL, NULL, pos_arg)) {
         if (i == stream_index) {
             pts = ogg_calc_pts(s, i, NULL);
             if (os->keyframe_seek && !(os->pflags & AV_PKT_FLAG_KEY))

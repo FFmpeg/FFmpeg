@@ -324,14 +324,14 @@ int64_t ff_start_tag(AVIOContext *pb, const char *tag)
 {
     ffio_wfourcc(pb, tag);
     avio_wl32(pb, 0);
-    return url_ftell(pb);
+    return avio_tell(pb);
 }
 
 void ff_end_tag(AVIOContext *pb, int64_t start)
 {
     int64_t pos;
 
-    pos = url_ftell(pb);
+    pos = avio_tell(pb);
     avio_seek(pb, start - 4, SEEK_SET);
     avio_wl32(pb, (uint32_t)(pos - start));
     avio_seek(pb, pos, SEEK_SET);
