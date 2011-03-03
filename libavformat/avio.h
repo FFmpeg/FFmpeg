@@ -526,6 +526,20 @@ unsigned int avio_rl32(AVIOContext *s);
 uint64_t     avio_rl64(AVIOContext *s);
 
 /**
+ * Read a string from pb into buf. The reading will terminate when either
+ * a NULL character was encountered, maxlen bytes have been read, or nothing
+ * more can be read from pb. The result is guaranteed to be NULL-terminated, it
+ * will be truncated if buf is too small.
+ * Note that the string is not interpreted or validated in any way, it
+ * might get truncated in the middle of a sequence for multi-byte encodings.
+ *
+ * @return number of bytes read (is always <= maxlen).
+ * If reading ends on EOF or error, the return value will be one more than
+ * bytes actually read.
+ */
+int avio_get_str(AVIOContext *pb, int maxlen, char *buf, int buflen);
+
+/**
  * Read a UTF-16 string from pb and convert it to UTF-8.
  * The reading will terminate when either a null or invalid character was
  * encountered or maxlen bytes have been read.
