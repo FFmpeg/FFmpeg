@@ -1365,7 +1365,7 @@ static void print_report(AVFormatContext **output_files,
 
     total_size = url_fsize(oc->pb);
     if(total_size<0) // FIXME improve url_fsize() so it works with non seekable output too
-        total_size= url_ftell(oc->pb);
+        total_size= avio_tell(oc->pb);
 
     buf[0] = '\0';
     ti1 = 1e10;
@@ -2571,7 +2571,7 @@ static int transcode(AVFormatContext **output_files,
         }
 
         /* finish if limit size exhausted */
-        if (limit_filesize != 0 && limit_filesize <= url_ftell(output_files[0]->pb))
+        if (limit_filesize != 0 && limit_filesize <= avio_tell(output_files[0]->pb))
             break;
 
         /* read a frame from it and output it in the fifo */

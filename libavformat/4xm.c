@@ -283,7 +283,7 @@ static int fourxm_read_packet(AVFormatContext *s,
                 return AVERROR(EIO);
             pkt->stream_index = fourxm->video_stream_index;
             pkt->pts = fourxm->video_pts;
-            pkt->pos = url_ftell(s->pb);
+            pkt->pos = avio_tell(s->pb);
             memcpy(pkt->data, header, 8);
             ret = avio_read(s->pb, &pkt->data[8], size);
 

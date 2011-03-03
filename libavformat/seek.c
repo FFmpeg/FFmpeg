@@ -405,7 +405,7 @@ AVParserState *ff_store_parser_state(AVFormatContext *s)
         return NULL;
     }
 
-    state->fpos = url_ftell(s->pb);
+    state->fpos = avio_tell(s->pb);
 
     // copy context structures
     state->cur_st                           = s->cur_st;

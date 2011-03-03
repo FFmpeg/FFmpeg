@@ -87,7 +87,7 @@ static av_cold int iss_read_header(AVFormatContext *s, AVFormatParameters *ap)
     get_token(pb, token, sizeof(token)); //Version ID
     get_token(pb, token, sizeof(token)); //Size
 
-    iss->sample_start_pos = url_ftell(pb);
+    iss->sample_start_pos = avio_tell(pb);
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -116,7 +116,7 @@ static int iss_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EIO);
 
     pkt->stream_index = 0;
-    pkt->pts = url_ftell(s->pb) - iss->sample_start_pos;
+    pkt->pts = avio_tell(s->pb) - iss->sample_start_pos;
     if(s->streams[0]->codec->channels > 0)
         pkt->pts /= s->streams[0]->codec->channels*2;
     return 0;

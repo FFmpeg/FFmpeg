@@ -77,7 +77,7 @@ static int rso_write_trailer(AVFormatContext *s)
     int64_t file_size;
     uint16_t coded_file_size;
 
-    file_size = url_ftell(pb);
+    file_size = avio_tell(pb);
 
     if (file_size < 0)
         return file_size;

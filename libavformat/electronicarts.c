@@ -293,7 +293,7 @@ static int process_ea_header(AVFormatContext *s) {
     int i;
 
     for (i=0; i<5 && (!ea->audio_codec || !ea->video_codec); i++) {
-        unsigned int startpos = url_ftell(pb);
+        unsigned int startpos = avio_tell(pb);
         int err = 0;
 
         blockid = avio_rl32(pb);

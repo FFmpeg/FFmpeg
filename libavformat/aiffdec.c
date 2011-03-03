@@ -232,10 +232,10 @@ static int aiff_read_header(AVFormatContext *s,
             get_meta(s, "comment"  , size);
             break;
         case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
-            aiff->data_end = url_ftell(pb) + size;
+            aiff->data_end = avio_tell(pb) + size;
             offset = avio_rb32(pb);      /* Offset of sound data */
             avio_rb32(pb);               /* BlockSize... don't care */
-            offset += url_ftell(pb);    /* Compute absolute data offset */
+            offset += avio_tell(pb);    /* Compute absolute data offset */
             if (st->codec->block_align)    /* Assume COMM already parsed */
                 goto got_sound;
             if (url_is_streamed(pb)) {
@@ -292,7 +292,7 @@ static int aiff_read_packet(AVFormatContext *s,
     int res, size;
 
     /* calculate size of remaining data */
-    max_size = aiff->data_end - url_ftell(s->pb);
+    max_size = aiff->data_end - avio_tell(s->pb);
     if (max_size <= 0)
         return AVERROR_EOF;
 

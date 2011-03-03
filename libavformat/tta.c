@@ -46,7 +46,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
-    start_offset = url_ftell(s->pb);
+    start_offset = avio_tell(s->pb);
     if (avio_rl32(s->pb) != AV_RL32("TTA1"))
         return -1; // not tta file
 
@@ -84,7 +84,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->start_time = 0;
     st->duration = datalen;
 
-    framepos = url_ftell(s->pb) + 4*c->totalframes + 4;
+    framepos = avio_tell(s->pb) + 4*c->totalframes + 4;
 
     for (i = 0; i < c->totalframes; i++) {
         uint32_t size = avio_rl32(s->pb);
@@ -99,7 +99,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->sample_rate = samplerate;
     st->codec->bits_per_coded_sample = bps;
 
-    st->codec->extradata_size = url_ftell(s->pb) - start_offset;
+    st->codec->extradata_size = avio_tell(s->pb) - start_offset;
     if(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)st->codec->extradata_size){
         //this check is redundant as avio_read should fail
         av_log(s, AV_LOG_ERROR, "extradata_size too large\n");

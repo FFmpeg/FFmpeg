@@ -147,7 +147,7 @@ static int mp3_read_header(AVFormatContext *s,
     // lcm of all mp3 sample rates
     av_set_pts_info(st, 64, 1, 14112000);
 
-    off = url_ftell(s->pb);
+    off = avio_tell(s->pb);
 
     if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
         ff_id3v1_read(s);

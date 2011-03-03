@@ -639,13 +639,13 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     if(pkt->pts < 0)
         return -1;
 
-    if(1LL<<(20+3*nut->header_count) <= url_ftell(bc))
+    if(1LL<<(20+3*nut->header_count) <= avio_tell(bc))
         write_headers(s, bc);
 
     if(key_frame && !(nus->last_flags & FLAG_KEY))
         store_sp= 1;
 
-    if(pkt->size + 30/*FIXME check*/ + url_ftell(bc) >= nut->last_syncpoint_pos + nut->max_distance)
+    if(pkt->size + 30/*FIXME check*/ + avio_tell(bc) >= nut->last_syncpoint_pos + nut->max_distance)
         store_sp= 1;
 
 //FIXME: Ensure store_sp is 1 in the first place.
@@ -668,7 +668,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
         sp= av_tree_find(nut->syncpoints, &dummy, (void *) ff_nut_sp_pos_cmp,
                          NULL);
 
-        nut->last_syncpoint_pos= url_ftell(bc);
+        nut->last_syncpoint_pos= avio_tell(bc);
         ret = url_open_dyn_buf(&dyn_bc);
         if(ret < 0)
             return ret;

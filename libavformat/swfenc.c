@@ -29,7 +29,7 @@ static void put_swf_tag(AVFormatContext *s, int tag)
     SWFContext *swf = s->priv_data;
     AVIOContext *pb = s->pb;
 
-    swf->tag_pos = url_ftell(pb);
+    swf->tag_pos = avio_tell(pb);
     swf->tag = tag;
     /* reserve some room for the tag */
     if (tag & TAG_LONG) {
@@ -47,7 +47,7 @@ static void put_swf_end_tag(AVFormatContext *s)
     int64_t pos;
     int tag_len, tag;
 
-    pos = url_ftell(pb);
+    pos = avio_tell(pb);
     tag_len = pos - swf->tag_pos - 2;
     tag = swf->tag;
     avio_seek(pb, swf->tag_pos, SEEK_SET);
@@ -246,7 +246,7 @@ static int swf_write_header(AVFormatContext *s)
 
     put_swf_rect(pb, 0, width * 20, 0, height * 20);
     avio_wl16(pb, (rate * 256) / rate_base); /* frame rate */
-    swf->duration_pos = url_ftell(pb);
+    swf->duration_pos = avio_tell(pb);
     avio_wl16(pb, (uint16_t)(DUMMY_DURATION * (int64_t)rate / rate_base)); /* frame count */
 
     /* avm2/swf v9 (also v8?) files require a file attribute tag */
@@ -346,7 +346,7 @@ static int swf_write_video(AVFormatContext *s,
             /* create a new video object */
             put_swf_tag(s, TAG_VIDEOSTREAM);
             avio_wl16(pb, VIDEO_ID);
-            swf->vframes_pos = url_ftell(pb);
+            swf->vframes_pos = avio_tell(pb);
             avio_wl16(pb, 15000); /* hard flash player limit */
             avio_wl16(pb, enc->width);
             avio_wl16(pb, enc->height);
@@ -493,7 +493,7 @@ static int swf_write_trailer(AVFormatContext *s)
 
     /* patch file size and number of frames if not streamed */
     if (!url_is_streamed(s->pb) && video_enc) {
-        file_size = url_ftell(pb);
+        file_size = avio_tell(pb);
         avio_seek(pb, 4, SEEK_SET);
         avio_wl32(pb, file_size);
         avio_seek(pb, swf->duration_pos, SEEK_SET);

@@ -123,9 +123,9 @@ static int avs_read_audio_packet(AVFormatContext * s, AVPacket * pkt)
     AvsFormat *avs = s->priv_data;
     int ret, size;
 
-    size = url_ftell(s->pb);
+    size = avio_tell(s->pb);
     ret = voc_get_packet(s, pkt, avs->st_audio, avs->remaining_audio_size);
-    size = url_ftell(s->pb) - size;
+    size = avio_tell(s->pb) - size;
     avs->remaining_audio_size -= size;
 
     if (ret == AVERROR(EIO))

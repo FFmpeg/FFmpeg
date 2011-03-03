@@ -98,7 +98,7 @@ static inline uint64_t get_vb_trace(AVIOContext *bc, char *file, char *func, int
 static int get_packetheader(NUTContext *nut, AVIOContext *bc, int calculate_checksum, uint64_t startcode)
 {
     int64_t size;
-//    start= url_ftell(bc) - 8;
+//    start= avio_tell(bc) - 8;
 
     startcode= av_be2ne64(startcode);
     startcode= ff_crc04C11DB7_update(0, (uint8_t*)&startcode, 8);
@@ -148,7 +148,7 @@ static int64_t find_startcode(AVIOContext *bc, uint64_t code, int64_t pos){
     for(;;){
         uint64_t startcode= find_any_startcode(bc, pos);
         if(startcode == code)
-            return url_ftell(bc) - 8;
+            return avio_tell(bc) - 8;
         else if(startcode == 0)
             return -1;
         pos=-1;
@@ -176,7 +176,7 @@ static int nut_probe(AVProbeData *p){
     dst= tmp;
 
 static int skip_reserved(AVIOContext *bc, int64_t pos){
-    pos -= url_ftell(bc);
+    pos -= avio_tell(bc);
     if(pos<0){
         avio_seek(bc, pos, SEEK_CUR);
         return -1;
@@ -196,7 +196,7 @@ static int decode_main_header(NUTContext *nut){
     int64_t tmp_match;
 
     end= get_packetheader(nut, bc, 1, MAIN_STARTCODE);
-    end += url_ftell(bc);
+    end += avio_tell(bc);
 
     GET_V(tmp              , tmp >=2 && tmp <= 3)
     GET_V(stream_count     , tmp > 0 && tmp <= NUT_MAX_STREAMS)
@@ -267,7 +267,7 @@ static int decode_main_header(NUTContext *nut){
     }
     assert(nut->frame_code['N'].flags == FLAG_INVALID);
 
-    if(end > url_ftell(bc) + 4){
+    if(end > avio_tell(bc) + 4){
         int rem= 1024;
         GET_V(nut->header_count, tmp<128U)
         nut->header_count++;
@@ -306,7 +306,7 @@ static int decode_stream_header(NUTContext *nut){
     AVStream *st;
 
     end= get_packetheader(nut, bc, 1, STREAM_STARTCODE);
-    end += url_ftell(bc);
+    end += avio_tell(bc);
 
     GET_V(stream_id, tmp < s->nb_streams && !nut->stream[tmp].time_base);
     stc= &nut->stream[stream_id];
@@ -409,7 +409,7 @@ static int decode_info_header(NUTContext *nut){
     AVMetadata **metadata = NULL;
 
     end= get_packetheader(nut, bc, 1, INFO_STARTCODE);
-    end += url_ftell(bc);
+    end += avio_tell(bc);
 
     GET_V(stream_id_plus1, tmp <= s->nb_streams)
     chapter_id   = get_s(bc);
@@ -480,10 +480,10 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     AVIOContext *bc = s->pb;
     int64_t end, tmp;
 
-    nut->last_syncpoint_pos= url_ftell(bc)-8;
+    nut->last_syncpoint_pos= avio_tell(bc)-8;
 
     end= get_packetheader(nut, bc, 1, SYNCPOINT_STARTCODE);
-    end += url_ftell(bc);
+    end += avio_tell(bc);
 
     tmp= ff_get_v(bc);
     *back_ptr= nut->last_syncpoint_pos - 16*ff_get_v(bc);
@@ -521,7 +521,7 @@ static int find_and_decode_index(NUTContext *nut){
     }
 
     end= get_packetheader(nut, bc, 1, INDEX_STARTCODE);
-    end += url_ftell(bc);
+    end += avio_tell(bc);
 
     ff_get_v(bc); //max_pts
     GET_V(syncpoint_count, tmp < INT_MAX/8 && tmp > 0)
@@ -635,7 +635,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     pos=0;
     for(;;){
         uint64_t startcode= find_any_startcode(bc, pos);
-        pos= url_ftell(bc);
+        pos= avio_tell(bc);
 
         if(startcode==0){
             av_log(s, AV_LOG_ERROR, "EOF before video frames\n");
@@ -653,7 +653,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     s->data_offset= pos-8;
 
     if(!url_is_streamed(bc)){
-        int64_t orig_pos= url_ftell(bc);
+        int64_t orig_pos= avio_tell(bc);
         find_and_decode_index(nut);
         avio_seek(bc, orig_pos, SEEK_SET);
     }
@@ -671,8 +671,8 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, ui
     int size, flags, size_mul, pts_delta, i, reserved_count;
     uint64_t tmp;
 
-    if(url_ftell(bc) > nut->last_syncpoint_pos + nut->max_distance){
-        av_log(s, AV_LOG_ERROR, "Last frame must have been damaged %"PRId64" > %"PRId64" + %d\n", url_ftell(bc), nut->last_syncpoint_pos, nut->max_distance);
+    if(avio_tell(bc) > nut->last_syncpoint_pos + nut->max_distance){
+        av_log(s, AV_LOG_ERROR, "Last frame must have been damaged %"PRId64" > %"PRId64" + %d\n", avio_tell(bc), nut->last_syncpoint_pos, nut->max_distance);
         return AVERROR_INVALIDDATA;
     }
 
@@ -763,7 +763,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code){
 
     av_new_packet(pkt, size + nut->header_len[header_idx]);
     memcpy(pkt->data, nut->header[header_idx], nut->header_len[header_idx]);
-    pkt->pos= url_ftell(bc); //FIXME
+    pkt->pos= avio_tell(bc); //FIXME
     avio_read(bc, pkt->data + nut->header_len[header_idx], size);
 
     pkt->stream_index = stream_id;
@@ -782,7 +782,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t ts, back_ptr;
 
     for(;;){
-        int64_t pos= url_ftell(bc);
+        int64_t pos= avio_tell(bc);
         uint64_t tmp= nut->next_startcode;
         nut->next_startcode=0;
 

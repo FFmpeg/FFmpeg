@@ -67,7 +67,7 @@ typedef struct {
 
 static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc_offset)
 {
-    int64_t pos = url_ftell(pb);
+    int64_t pos = avio_tell(pb);
     uint32_t checksum = get_checksum(pb);
     avio_seek(pb, crc_offset, SEEK_SET);
     avio_wb32(pb, checksum);
@@ -92,7 +92,7 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     avio_wl64(pb, page->granule);
     avio_wl32(pb, oggstream->serial_num);
     avio_wl32(pb, oggstream->page_counter++);
-    crc_offset = url_ftell(pb);
+    crc_offset = avio_tell(pb);
     avio_wl32(pb, 0); // crc
     avio_w8(pb, page->segments_count);
     avio_write(pb, page->segments, page->segments_count);

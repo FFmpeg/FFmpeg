@@ -100,7 +100,7 @@ static int flac_write_trailer(struct AVFormatContext *s)
 
     if (!url_is_streamed(pb)) {
         /* rewrite the STREAMINFO header block data */
-        file_size = url_ftell(pb);
+        file_size = avio_tell(pb);
         avio_seek(pb, 8, SEEK_SET);
         avio_write(pb, streaminfo, FLAC_STREAMINFO_SIZE);
         avio_seek(pb, file_size, SEEK_SET);

@@ -305,7 +305,7 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
         flags = (flags & RTP_FLAG_KEY) ? 2 : 0;
         res = ff_rm_parse_packet (rdt->rmctx, &pb, st, rdt->rmst[st->index], len, pkt,
                                   &seq, flags, *timestamp);
-        pos = url_ftell(&pb);
+        pos = avio_tell(&pb);
         if (res < 0)
             return res;
         if (res > 0) {

@@ -330,7 +330,7 @@ int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
     if(ret<0)
         return ret;
 
-    pkt->pos= url_ftell(s);
+    pkt->pos= avio_tell(s);
 
     ret= avio_read(s, pkt->data, size);
     if(ret<=0)
@@ -490,7 +490,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     }
 
     if (pb && !ic->data_offset)
-        ic->data_offset = url_ftell(ic->pb);
+        ic->data_offset = avio_tell(ic->pb);
 
 #if FF_API_OLD_METADATA
     ff_metadata_demux_compat(ic);
@@ -2212,7 +2212,7 @@ int av_find_stream_info(AVFormatContext *ic)
     int i, count, ret, read_size, j;
     AVStream *st;
     AVPacket pkt1, *pkt;
-    int64_t old_offset = url_ftell(ic->pb);
+    int64_t old_offset = avio_tell(ic->pb);
 
     for(i=0;i<ic->nb_streams;i++) {
         AVCodec *codec;

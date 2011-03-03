@@ -80,7 +80,7 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     if (av_new_packet(pkt, size) < 0)
         return AVERROR(ENOMEM);
 
-    pkt->pos= url_ftell(s->pb);
+    pkt->pos= avio_tell(s->pb);
     pkt->stream_index = 0;
     ret = ffio_read_partial(s->pb, pkt->data, size);
     if (ret < 0) {

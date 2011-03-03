@@ -396,7 +396,7 @@ start:
     READ_ONE();
     if (tmp != 1)
         goto start;
-    last_pos = url_ftell(pb);
+    last_pos = avio_tell(pb);
     if (avio_seek(pb, -5, SEEK_CUR) < 0)
         goto out;
     if (!parse_packet_header(pb, &type, &len) || type != PKT_MEDIA) {
@@ -407,7 +407,7 @@ start:
     avio_r8(pb);
     cur_track = avio_r8(pb);
     cur_timestamp = avio_rb32(pb);
-    last_found_pos = url_ftell(pb) - 16 - 6;
+    last_found_pos = avio_tell(pb) - 16 - 6;
     if ((track >= 0 && track != cur_track) || (timestamp >= 0 && timestamp > cur_timestamp)) {
         if (avio_seek(pb, last_pos, SEEK_SET) >= 0)
             goto start;
@@ -511,7 +511,7 @@ static int64_t gxf_read_timestamp(AVFormatContext *s, int stream_index,
     if (avio_seek(pb, *pos, SEEK_SET) < 0)
         return AV_NOPTS_VALUE;
     res = gxf_resync_media(s, pos_limit - *pos, -1, -1);
-    *pos = url_ftell(pb);
+    *pos = avio_tell(pb);
     return res;
 }
 

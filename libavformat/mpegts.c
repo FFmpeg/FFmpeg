@@ -1265,7 +1265,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
     if (p >= p_end)
         return 0;
 
-    pos = url_ftell(ts->stream->pb);
+    pos = avio_tell(ts->stream->pb);
     ts->pos47= pos % ts->raw_packet_size;
 
     if (tss->type == MPEGTS_SECTION) {
@@ -1454,7 +1454,7 @@ static int mpegts_read_header(AVFormatContext *s,
     }
 
     /* read the first 1024 bytes to get packet size */
-    pos = url_ftell(pb);
+    pos = avio_tell(pb);
     len = avio_read(pb, buf, sizeof(buf));
     if (len != sizeof(buf))
         goto fail;
@@ -1552,7 +1552,7 @@ static int mpegts_raw_read_packet(AVFormatContext *s,
 
     if (av_new_packet(pkt, TS_PACKET_SIZE) < 0)
         return AVERROR(ENOMEM);
-    pkt->pos= url_ftell(s->pb);
+    pkt->pos= avio_tell(s->pb);
     ret = read_packet(s, pkt->data, ts->raw_packet_size);
     if (ret < 0) {
         av_free_packet(pkt);
@@ -1562,7 +1562,7 @@ static int mpegts_raw_read_packet(AVFormatContext *s,
         /* compute exact PCR for each packet */
         if (parse_pcr(&pcr_h, &pcr_l, pkt->data) == 0) {
             /* we read the next PCR (XXX: optimize it by using a bigger buffer */
-            pos = url_ftell(s->pb);
+            pos = avio_tell(s->pb);
             for(i = 0; i < MAX_PACKET_READAHEAD; i++) {
                 avio_seek(s->pb, pos + i * ts->raw_packet_size, SEEK_SET);
                 avio_read(s->pb, pcr_buf, 12);
@@ -1591,7 +1591,7 @@ static int mpegts_read_packet(AVFormatContext *s,
     MpegTSContext *ts = s->priv_data;
     int ret, i;
 
-    if (url_ftell(s->pb) != ts->last_pos) {
+    if (avio_tell(s->pb) != ts->last_pos) {
         /* seek detected, flush pes buffer */
         for (i = 0; i < NB_PID_MAX; i++) {
             if (ts->pids[i] && ts->pids[i]->type == MPEGTS_PES) {
@@ -1620,7 +1620,7 @@ static int mpegts_read_packet(AVFormatContext *s,
         }
     }
 
-    ts->last_pos = url_ftell(s->pb);
+    ts->last_pos = avio_tell(s->pb);
 
     return ret;
 }
@@ -1771,7 +1771,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, in
     if(av_seek_frame_binary(s, stream_index, target_ts, flags) < 0)
         return -1;
 
-    pos= url_ftell(s->pb);
+    pos= avio_tell(s->pb);
 
     for(;;) {
         avio_seek(s->pb, pos, SEEK_SET);

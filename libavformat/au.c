@@ -94,7 +94,7 @@ static int au_write_trailer(AVFormatContext *s)
     if (!url_is_streamed(s->pb)) {
 
         /* update file size */
-        file_size = url_ftell(pb);
+        file_size = avio_tell(pb);
         avio_seek(pb, 8, SEEK_SET);
         avio_wb32(pb, (uint32_t)(file_size - 24));
         avio_seek(pb, file_size, SEEK_SET);

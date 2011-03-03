@@ -98,7 +98,7 @@ static int sox_write_trailer(AVFormatContext *s)
 
     if (!url_is_streamed(s->pb)) {
         /* update number of samples */
-        int64_t file_size = url_ftell(pb);
+        int64_t file_size = avio_tell(pb);
         int64_t num_samples = (file_size - sox->header_size - 4LL) >> 2LL;
         avio_seek(pb, 8, SEEK_SET);
         if (enc->codec_id == CODEC_ID_PCM_S32LE) {

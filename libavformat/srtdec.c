@@ -75,7 +75,7 @@ static inline int is_eol(char c)
 static int srt_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     char buffer[2048], *ptr = buffer, *ptr2;
-    int64_t pos = url_ftell(s->pb);
+    int64_t pos = avio_tell(s->pb);
     int res = AVERROR_EOF;
 
     do {

@@ -272,7 +272,7 @@ static int nut_read_packet(AVFormatContext * avf, AVPacket * pkt) {
     if (pd.flags & NUT_FLAG_KEY) pkt->flags |= AV_PKT_FLAG_KEY;
     pkt->pts = pd.pts;
     pkt->stream_index = pd.stream;
-    pkt->pos = url_ftell(avf->pb);
+    pkt->pos = avio_tell(avf->pb);
 
     ret = nut_read_frame(priv->nut, &pd.len, pkt->data);
 

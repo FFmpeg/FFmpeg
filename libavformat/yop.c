@@ -136,7 +136,7 @@ static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
-    yop->video_packet.pos = url_ftell(pb);
+    yop->video_packet.pos = avio_tell(pb);
 
     ret = avio_read(pb, yop->video_packet.data, yop->palette_size);
     if (ret < 0) {

@@ -595,7 +595,7 @@ static void retransmit_si_info(AVFormatContext *s)
 
 static int64_t get_pcr(const MpegTSWrite *ts, AVIOContext *pb)
 {
-    return av_rescale(url_ftell(pb) + 11, 8 * PCR_TIME_BASE, ts->mux_rate) +
+    return av_rescale(avio_tell(pb) + 11, 8 * PCR_TIME_BASE, ts->mux_rate) +
            ts->first_pcr;
 }
 

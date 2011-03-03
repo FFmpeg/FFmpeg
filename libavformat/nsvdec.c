@@ -225,7 +225,7 @@ static int nsv_resync(AVFormatContext *s)
     uint32_t v = 0;
     int i;
 
-    av_dlog(s, "%s(), offset = %"PRId64", state = %d\n", __FUNCTION__, url_ftell(pb), nsv->state);
+    av_dlog(s, "%s(), offset = %"PRId64", state = %d\n", __FUNCTION__, avio_tell(pb), nsv->state);
 
     //nsv->state = NSV_UNSYNC;
 
@@ -299,7 +299,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     if (url_feof(pb))
         return -1;
 
-    av_dlog(s, "NSV got header; filepos %"PRId64"\n", url_ftell(pb));
+    av_dlog(s, "NSV got header; filepos %"PRId64"\n", avio_tell(pb));
 
     if (strings_size > 0) {
         char *strings; /* last byte will be '\0' to play safe with str*() */
@@ -334,7 +334,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     if (url_feof(pb))
         return -1;
 
-    av_dlog(s, "NSV got infos; filepos %"PRId64"\n", url_ftell(pb));
+    av_dlog(s, "NSV got infos; filepos %"PRId64"\n", avio_tell(pb));
 
     if (table_entries_used > 0) {
         int i;
@@ -355,7 +355,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
         }
     }
 
-    av_dlog(s, "NSV got index; filepos %"PRId64"\n", url_ftell(pb));
+    av_dlog(s, "NSV got index; filepos %"PRId64"\n", avio_tell(pb));
 
 #ifdef DEBUG_DUMP_INDEX
 #define V(v) ((v<0x20 || v > 127)?'.':v)

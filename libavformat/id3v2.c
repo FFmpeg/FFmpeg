@@ -196,7 +196,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         if (len < 0)
             break;
 
-        next = url_ftell(s->pb) + tlen;
+        next = avio_tell(s->pb) + tlen;
 
         if (tflags & ID3v2_FLAG_DATALEN) {
             avio_rb32(s->pb);
@@ -258,7 +258,7 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic)
 
     do {
         /* save the current offset in case there's nothing to read/skip */
-        off = url_ftell(s->pb);
+        off = avio_tell(s->pb);
         ret = avio_read(s->pb, buf, ID3v2_HEADER_SIZE);
         if (ret != ID3v2_HEADER_SIZE)
             break;

@@ -219,7 +219,7 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ((int32_t*)st->codec->extradata)[3] = av_le2ne32(smk->type_size);
 
     smk->curstream = -1;
-    smk->nextpos = url_ftell(pb);
+    smk->nextpos = avio_tell(pb);
 
     return 0;
 }
@@ -244,7 +244,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         frame_size = smk->frm_size[smk->cur_frame] & (~3);
         flags = smk->frm_flags[smk->cur_frame];
         /* handle palette change event */
-        pos = url_ftell(s->pb);
+        pos = avio_tell(s->pb);
         if(flags & SMACKER_PAL){
             int size, sz, t, off, j, pos;
             uint8_t *pal = smk->pal;
@@ -256,7 +256,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             frame_size -= size;
             frame_size--;
             sz = 0;
-            pos = url_ftell(s->pb) + size;
+            pos = avio_tell(s->pb) + size;
             while(sz < 256){
                 t = avio_r8(s->pb);
                 if(t & 0x80){ /* skip palette entries */
@@ -313,7 +313,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->stream_index = smk->videoindex;
         pkt->size = ret + 769;
         smk->cur_frame++;
-        smk->nextpos = url_ftell(s->pb);
+        smk->nextpos = avio_tell(s->pb);
     } else {
         if (av_new_packet(pkt, smk->buf_sizes[smk->curstream]))
             return AVERROR(ENOMEM);

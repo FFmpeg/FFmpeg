@@ -186,7 +186,7 @@ static int str_read_packet(AVFormatContext *s,
                     if (av_new_packet(pkt, sector_count*VIDEO_DATA_CHUNK_SIZE))
                         return AVERROR(EIO);
 
-                    pkt->pos= url_ftell(pb) - RAW_CD_SECTOR_SIZE;
+                    pkt->pos= avio_tell(pb) - RAW_CD_SECTOR_SIZE;
                     pkt->stream_index =
                         str->channels[channel].video_stream_index;
                 }

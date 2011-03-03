@@ -422,6 +422,7 @@ attribute_deprecated int url_fopen( AVIOContext **s, const char *url, int flags)
 attribute_deprecated int url_fclose(AVIOContext *s);
 attribute_deprecated int64_t url_fseek(AVIOContext *s, int64_t offset, int whence);
 attribute_deprecated int url_fskip(AVIOContext *s, int64_t offset);
+attribute_deprecated int64_t url_ftell(AVIOContext *s);
 /**
  * @}
  */
@@ -473,7 +474,7 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence);
  * ftell() equivalent for AVIOContext.
  * @return position or AVERROR.
  */
-int64_t url_ftell(AVIOContext *s);
+#define avio_tell(s) avio_seek((s), 0, SEEK_CUR)
 
 /**
  * Get the filesize.

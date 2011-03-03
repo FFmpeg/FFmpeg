@@ -211,7 +211,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     avio_w8(s->pb, 0); /* flags */
 
     /* reserve space for size */
-    size_pos = url_ftell(s->pb);
+    size_pos = avio_tell(s->pb);
     avio_wb32(s->pb, 0);
 
     ff_metadata_conv(&s->metadata, ff_id3v2_34_metadata_conv, NULL);
@@ -237,7 +237,7 @@ static int mp3_write_header(struct AVFormatContext *s)
         totlen += ret;
     }
 
-    cur_pos = url_ftell(s->pb);
+    cur_pos = avio_tell(s->pb);
     avio_seek(s->pb, size_pos, SEEK_SET);
     id3v2_put_size(s, totlen);
     avio_seek(s->pb, cur_pos, SEEK_SET);

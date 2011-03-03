@@ -95,7 +95,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
         uint32_t size, fsize;
         c->has_sound = 1;
         size = avio_rb32(pb);
-        c->vidpos = url_ftell(pb) + size;
+        c->vidpos = avio_tell(pb) + size;
         avio_seek(pb, 16, SEEK_CUR);
         fsize = avio_rl32(pb);
 
@@ -104,7 +104,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
             return -1;
         ff_get_wav_header(pb, ast->codec, fsize);
         // find 'data' chunk
-        while(url_ftell(pb) < c->vidpos && !url_feof(pb)){
+        while(avio_tell(pb) < c->vidpos && !url_feof(pb)){
             tag = avio_rl32(pb);
             fsize = avio_rl32(pb);
             if(tag == MKTAG('d', 'a', 't', 'a')) break;
@@ -114,7 +114,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if(ast->codec->block_align)
             c->bpc = ((c->bpc + ast->codec->block_align - 1) / ast->codec->block_align) * ast->codec->block_align;
         c->bytes_left = fsize;
-        c->wavpos = url_ftell(pb);
+        c->wavpos = avio_tell(pb);
         avio_seek(pb, c->vidpos, SEEK_SET);
     }
 
@@ -133,7 +133,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st->codec->height >>= 1;
     }
     c->readvid = !c->has_sound;
-    c->vidpos  = url_ftell(pb);
+    c->vidpos  = avio_tell(pb);
     s->start_time = 0;
     s->duration = (int64_t)c->frames * AV_TIME_BASE * num / den;
     av_log(s, AV_LOG_DEBUG, "%d frame(s)\n",c->frames);
@@ -158,7 +158,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
         if(ret != size)
             return AVERROR(EIO);
         c->bytes_left -= size;
-        c->wavpos = url_ftell(s->pb);
+        c->wavpos = avio_tell(s->pb);
         return 0;
     }
     avio_seek(s->pb, c->vidpos, SEEK_SET);
@@ -172,7 +172,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(pal_size) memcpy(pkt->data, pal, pal_size);
             memcpy(pkt->data + pal_size, buf, 4);
             c->frames--;
-            c->vidpos = url_ftell(s->pb);
+            c->vidpos = avio_tell(s->pb);
             c->readvid = 0;
             return 0;
         case MKTAG('C', 'M', 'A', 'P'):
@@ -198,7 +198,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(pal_size) memcpy(pkt->data, pal, pal_size);
             pkt->stream_index = 0;
             c->frames--;
-            c->vidpos = url_ftell(s->pb);
+            c->vidpos = avio_tell(s->pb);
             c->readvid = 0;
             return 0;
         default:

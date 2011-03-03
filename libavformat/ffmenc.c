@@ -32,7 +32,7 @@ static void flush_packet(AVFormatContext *s)
     fill_size = ffm->packet_end - ffm->packet_ptr;
     memset(ffm->packet_ptr, 0, fill_size);
 
-    if (url_ftell(pb) % ffm->packet_size)
+    if (avio_tell(pb) % ffm->packet_size)
         av_abort();
 
     /* put header */
@@ -184,7 +184,7 @@ static int ffm_write_header(AVFormatContext *s)
     }
 
     /* flush until end of block reached */
-    while ((url_ftell(pb) % ffm->packet_size) != 0)
+    while ((avio_tell(pb) % ffm->packet_size) != 0)
         avio_w8(pb, 0);
 
     put_flush_packet(pb);

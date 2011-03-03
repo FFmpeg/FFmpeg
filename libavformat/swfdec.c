@@ -87,7 +87,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
     int tag, len, i, frame, v;
 
     for(;;) {
-        uint64_t pos = url_ftell(pb);
+        uint64_t pos = avio_tell(pb);
         tag = get_swf_tag(pb, &len);
         if (tag < 0)
             return AVERROR(EIO);

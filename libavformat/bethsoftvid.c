@@ -112,7 +112,7 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
         return AVERROR(ENOMEM);
 
     // save the file position for the packet, include block type
-    position = url_ftell(pb) - 1;
+    position = avio_tell(pb) - 1;
 
     vidbuf_start[vidbuf_nbytes++] = block_type;
 

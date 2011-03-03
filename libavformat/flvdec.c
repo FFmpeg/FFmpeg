@@ -148,7 +148,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         case AMF_DATA_TYPE_OBJECT: {
             unsigned int keylen;
 
-            while(url_ftell(ioc) < max_pos - 2 && (keylen = avio_rb16(ioc))) {
+            while(avio_tell(ioc) < max_pos - 2 && (keylen = avio_rb16(ioc))) {
                 avio_seek(ioc, keylen, SEEK_CUR); //skip key string
                 if(amf_parse_object(s, NULL, NULL, NULL, max_pos, depth + 1) < 0)
                     return -1; //if we couldn't skip, bomb out.
@@ -163,7 +163,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
             break; //these take up no additional space
         case AMF_DATA_TYPE_MIXEDARRAY:
             avio_seek(ioc, 4, SEEK_CUR); //skip 32-bit max array index
-            while(url_ftell(ioc) < max_pos - 2 && amf_get_string(ioc, str_val, sizeof(str_val)) > 0) {
+            while(avio_tell(ioc) < max_pos - 2 && amf_get_string(ioc, str_val, sizeof(str_val)) > 0) {
                 //this is the only case in which we would want a nested parse to not skip over the object
                 if(amf_parse_object(s, astream, vstream, str_val, max_pos, depth + 1) < 0)
                     return -1;
@@ -175,7 +175,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
             unsigned int arraylen, i;
 
             arraylen = avio_rb32(ioc);
-            for(i = 0; i < arraylen && url_ftell(ioc) < max_pos - 1; i++) {
+            for(i = 0; i < arraylen && avio_tell(ioc) < max_pos - 1; i++) {
                 if(amf_parse_object(s, NULL, NULL, NULL, max_pos, depth + 1) < 0)
                     return -1; //if we couldn't skip, bomb out.
             }
@@ -305,7 +305,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = NULL;
 
  for(;;avio_seek(s->pb, 4, SEEK_CUR)){ /* pkt size is repeated at end. skip it */
-    pos = url_ftell(s->pb);
+    pos = avio_tell(s->pb);
     type = avio_r8(s->pb);
     size = avio_rb24(s->pb);
     dts = avio_rb24(s->pb);
@@ -319,7 +319,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if(size == 0)
         continue;
 
-    next= size + url_ftell(s->pb);
+    next= size + avio_tell(s->pb);
 
     if (type == FLV_TAG_TYPE_AUDIO) {
         is_audio=1;
@@ -372,7 +372,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     // if not streamed and no duration from metadata then seek to end to find the duration from the timestamps
     if(!url_is_streamed(s->pb) && (!s->duration || s->duration==AV_NOPTS_VALUE)){
         int size;
-        const int64_t pos= url_ftell(s->pb);
+        const int64_t pos= avio_tell(s->pb);
         const int64_t fsize= url_fsize(s->pb);
         avio_seek(s->pb, fsize-4, SEEK_SET);
         size= avio_rb32(s->pb);

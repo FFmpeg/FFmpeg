@@ -112,7 +112,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     n = s->chars_per_frame;
     if (s->fsize) {
         // ignore metadata buffer
-        uint64_t p = url_ftell(avctx->pb);
+        uint64_t p = avio_tell(avctx->pb);
         if (p + s->chars_per_frame > s->fsize)
             n = s->fsize - p;
     }

@@ -114,7 +114,7 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         if (ret < 0)
             return ret;
         av_metadata_copy(&s->metadata, rt->asf_ctx->metadata, 0);
-        rt->asf_pb_pos = url_ftell(&pb);
+        rt->asf_pb_pos = avio_tell(&pb);
         av_free(buf);
         rt->asf_ctx->pb = NULL;
     }
@@ -179,8 +179,8 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
 
         ffio_init_context(pb, buf, len, 0, NULL, NULL, NULL, NULL);
 
-        while (url_ftell(pb) + 4 < len) {
-            int start_off = url_ftell(pb);
+        while (avio_tell(pb) + 4 < len) {
+            int start_off = avio_tell(pb);
 
             mflags = avio_r8(pb);
             if (mflags & 0x80)
@@ -192,7 +192,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                 avio_seek(pb, 4, SEEK_CUR);
             if (mflags & 0x8)    /**< has location ID */
                 avio_seek(pb, 4, SEEK_CUR);
-            off = url_ftell(pb);
+            off = avio_tell(pb);
 
             if (!(mflags & 0x40)) {
                 /**
@@ -201,7 +201,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                  * ASF packet. This is used to spread one ASF packet over
                  * multiple RTP packets.
                  */
-                if (asf->pktbuf && len_off != url_ftell(asf->pktbuf)) {
+                if (asf->pktbuf && len_off != avio_tell(asf->pktbuf)) {
                     uint8_t *p;
                     url_close_dyn_buf(asf->pktbuf, &p);
                     asf->pktbuf = NULL;
@@ -248,7 +248,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
         int i;
 
         res = av_read_packet(rt->asf_ctx, pkt);
-        rt->asf_pb_pos = url_ftell(pb);
+        rt->asf_pb_pos = avio_tell(pb);
         if (res != 0)
             break;
         for (i = 0; i < s->nb_streams; i++) {

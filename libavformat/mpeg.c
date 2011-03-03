@@ -169,7 +169,7 @@ static int find_prev_start_code(AVIOContext *pb, int *size_ptr)
     int max_size, start_code;
 
     max_size = *size_ptr;
-    pos_start = url_ftell(pb);
+    pos_start = avio_tell(pb);
 
     /* in order to go faster, we fill the buffer */
     pos = pos_start - 16386;
@@ -241,7 +241,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
     int len, size, startcode, c, flags, header_len;
     int pes_ext, ext2_len, id_ext, skip;
     int64_t pts, dts;
-    int64_t last_sync= url_ftell(s->pb);
+    int64_t last_sync= avio_tell(s->pb);
 
  error_redo:
         avio_seek(s->pb, last_sync, SEEK_SET);
@@ -250,8 +250,8 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         m->header_state = 0xff;
         size = MAX_SYNC_SIZE;
         startcode = find_next_start_code(s->pb, &size, &m->header_state);
-        last_sync = url_ftell(s->pb);
-    //printf("startcode=%x pos=0x%"PRIx64"\n", startcode, url_ftell(s->pb));
+        last_sync = avio_tell(s->pb);
+    //printf("startcode=%x pos=0x%"PRIx64"\n", startcode, avio_tell(s->pb));
     if (startcode < 0){
         if(url_feof(s->pb))
             return AVERROR_EOF;
@@ -295,7 +295,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
           (startcode == 0x1bd) || (startcode == 0x1fd)))
         goto redo;
     if (ppos) {
-        *ppos = url_ftell(s->pb) - 4;
+        *ppos = avio_tell(s->pb) - 4;
     }
     len = avio_rb16(s->pb);
     pts =

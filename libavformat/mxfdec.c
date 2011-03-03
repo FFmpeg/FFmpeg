@@ -193,7 +193,7 @@ static int klv_read_packet(KLVPacket *klv, AVIOContext *pb)
 {
     if (!mxf_read_sync(pb, mxf_klv_key, 4))
         return -1;
-    klv->offset = url_ftell(pb) - 4;
+    klv->offset = avio_tell(pb) - 4;
     memcpy(klv->key, mxf_klv_key, 4);
     avio_read(pb, klv->key + 4, 12);
     klv->length = klv_decode_ber_length(pb);
@@ -247,7 +247,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     static const uint8_t checkv[16] = {0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b};
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int64_t end = url_ftell(pb) + klv->length;
+    int64_t end = avio_tell(pb) + klv->length;
     uint64_t size;
     uint64_t orig_size;
     uint64_t plaintext_size;
@@ -297,7 +297,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
                      &pkt->data[plaintext_size], size >> 4, ivec, 1);
     pkt->size = orig_size;
     pkt->stream_index = index;
-    avio_seek(pb, end - url_ftell(pb), SEEK_CUR);
+    avio_seek(pb, end - avio_tell(pb), SEEK_CUR);
     return 0;
 }
 
@@ -866,14 +866,14 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
 {
     AVIOContext *pb = mxf->fc->pb;
     MXFMetadataSet *ctx = ctx_size ? av_mallocz(ctx_size) : mxf;
-    uint64_t klv_end = url_ftell(pb) + klv->length;
+    uint64_t klv_end = avio_tell(pb) + klv->length;
 
     if (!ctx)
         return -1;
-    while (url_ftell(pb) + 4 < klv_end) {
+    while (avio_tell(pb) + 4 < klv_end) {
         int tag = avio_rb16(pb);
         int size = avio_rb16(pb); /* KLV specified by 0x53 */
-        uint64_t next = url_ftell(pb) + size;
+        uint64_t next = avio_tell(pb) + size;
         UID uid = {0};
 
         av_dlog(mxf->fc, "local tag %#04x size %d\n", tag, size);
