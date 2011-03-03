@@ -474,6 +474,12 @@ int avio_put_str16le(AVIOContext *s, const char *str);
 int64_t avio_seek(AVIOContext *s, int64_t offset, int whence);
 
 /**
+ * Skip given number of bytes forward
+ * @return new position or AVERROR.
+ */
+#define avio_skip(s, offset) avio_seek(s, offset, SEEK_CUR)
+
+/**
  * ftell() equivalent for AVIOContext.
  * @return position or AVERROR.
  */
