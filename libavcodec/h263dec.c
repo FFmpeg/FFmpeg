@@ -387,8 +387,10 @@ retry:
         int i;
         for(i=0; i<buf_size-3; i++){
             if(buf[i]==0 && buf[i+1]==0 && buf[i+2]==1){
-                if(buf[i+3]==0xB0)
+                if(buf[i+3]==0xB0){
+                    av_log(s->avctx, AV_LOG_WARNING, "Discarding excessive bitstream in packed xvid\n");
                     s->bitstream_buffer_size=0;
+                }
                 break;
             }
         }
