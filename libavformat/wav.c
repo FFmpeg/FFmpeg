@@ -287,13 +287,13 @@ static int wav_read_header(AVFormatContext *s,
              * know where the data tag ends
              */
             if (!pb->seekable || (!rf64 && !size))
-            goto break_loop;
+                goto break_loop;
 
             data_ofs = avio_tell(pb);
             break;
         case MKTAG('f','a','c','t'):
             if(!sample_count)
-            sample_count = avio_rl32(pb);
+                sample_count = avio_rl32(pb);
             break;
         }
         avio_seek(pb, next_tag_ofs, SEEK_SET);
