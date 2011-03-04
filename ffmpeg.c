@@ -1364,8 +1364,8 @@ static void print_report(AVFormatContext **output_files,
 
     oc = output_files[0];
 
-    total_size = url_fsize(oc->pb);
-    if(total_size<0) // FIXME improve url_fsize() so it works with non seekable output too
+    total_size = avio_size(oc->pb);
+    if(total_size<0) // FIXME improve avio_size() so it works with non seekable output too
         total_size= avio_tell(oc->pb);
 
     buf[0] = '\0';

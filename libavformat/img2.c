@@ -276,7 +276,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
                 av_log(s1, AV_LOG_ERROR, "Could not open file : %s\n",filename);
                 return AVERROR(EIO);
             }
-            size[i]= url_fsize(f[i]);
+            size[i]= avio_size(f[i]);
 
             if(codec->codec_id != CODEC_ID_RAWVIDEO)
                 break;

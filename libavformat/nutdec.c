@@ -508,7 +508,7 @@ static int find_and_decode_index(NUTContext *nut){
     AVIOContext *bc = s->pb;
     uint64_t tmp, end;
     int i, j, syncpoint_count;
-    int64_t filesize= url_fsize(bc);
+    int64_t filesize= avio_size(bc);
     int64_t *syncpoints;
     int8_t *has_keyframe;
     int ret= -1;

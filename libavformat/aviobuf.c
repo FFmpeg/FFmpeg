@@ -246,7 +246,7 @@ int64_t url_ftell(AVIOContext *s)
 }
 #endif
 
-int64_t url_fsize(AVIOContext *s)
+int64_t avio_size(AVIOContext *s)
 {
     int64_t size;
 
@@ -370,6 +370,10 @@ int url_fclose(AVIOContext *s)
 int64_t url_fseek(AVIOContext *s, int64_t offset, int whence)
 {
     return avio_seek(s, offset, whence);
+}
+int64_t url_fsize(AVIOContext *s)
+{
+    return avio_size(s);
 }
 #endif
 

@@ -190,7 +190,7 @@ static int yop_read_seek(AVFormatContext *s, int stream_index,
         return -1;
 
     pos_min        = s->data_offset;
-    pos_max        = url_fsize(s->pb) - yop->frame_size;
+    pos_max        = avio_size(s->pb) - yop->frame_size;
     frame_count    = (pos_max - pos_min) / yop->frame_size;
 
     timestamp      = FFMAX(0, FFMIN(frame_count, timestamp));

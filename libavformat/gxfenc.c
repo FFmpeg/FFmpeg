@@ -310,7 +310,7 @@ static int gxf_write_material_data_section(AVFormatContext *s)
     /* estimated size */
     avio_w8(pb, MAT_SIZE);
     avio_w8(pb, 4);
-    avio_wb32(pb, url_fsize(pb) / 1024);
+    avio_wb32(pb, avio_size(pb) / 1024);
 
     return updateSize(pb, pos);
 }

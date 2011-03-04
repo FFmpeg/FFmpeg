@@ -180,7 +180,7 @@ static int r3d_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (url_is_streamed(s->pb))
         return 0;
     // find REOB/REOF/REOS to load index
-    avio_seek(s->pb, url_fsize(s->pb)-48-8, SEEK_SET);
+    avio_seek(s->pb, avio_size(s->pb)-48-8, SEEK_SET);
     if (read_atom(s, &atom) < 0)
         av_log(s, AV_LOG_ERROR, "error reading end atom\n");
 

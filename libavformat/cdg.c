@@ -38,7 +38,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     /// 75 sectors/sec * 4 packets/sector = 300 packets/sec
     av_set_pts_info(vst, 32, 1, 300);
 
-    ret = url_fsize(s->pb);
+    ret = avio_size(s->pb);
     if (ret > 0)
         vst->duration = (ret * vst->time_base.den) / (CDG_PACKET_SIZE * 300);
 

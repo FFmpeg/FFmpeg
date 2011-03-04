@@ -43,7 +43,7 @@ static int read_header(AVFormatContext *s,
     if (url_is_streamed(s->pb))
         return AVERROR(EIO);
 
-    avio_seek(pb, url_fsize(pb) - 36, SEEK_SET);
+    avio_seek(pb, avio_size(pb) - 36, SEEK_SET);
     if (avio_rb32(pb) != RAND_TAG) {
         av_log(s, AV_LOG_ERROR, "magic number not found");
         return AVERROR_INVALIDDATA;
