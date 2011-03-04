@@ -607,6 +607,13 @@ typedef struct AVStream {
     int codec_info_nb_frames;
 
     /**
+     * Stream Identifier
+     * This is the MPEG-TS stream identifier +1
+     * 0 means unknown
+     */
+    int stream_identifier;
+
+    /**
      * Stream informations used internally by av_find_stream_info()
      */
 #define MAX_STD_TIMEBASES (60*12+5)

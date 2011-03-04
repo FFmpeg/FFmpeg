@@ -994,6 +994,9 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             stream_type == STREAM_TYPE_PRIVATE_DATA)
             mpegts_find_stream_type(st, st->codec->codec_tag, REGD_types);
         break;
+    case 0x52: /* stream identifier descriptor */
+        st->stream_identifier = 1 + get8(pp, desc_end);
+        break;
     default:
         break;
     }
