@@ -42,6 +42,9 @@ int ffio_read_partial(AVIOContext *s, unsigned char *buf, int size);
 
 void ffio_fill(AVIOContext *s, int b, int count);
 
-#define ffio_wfourcc(pb, str) avio_wl32(pb, MKTAG((str)[0], (str)[1], (str)[2], (str)[3]))
+static av_always_inline void ffio_wfourcc(AVIOContext *pb, const uint8_t *s)
+{
+    avio_wl32(pb, MKTAG(s[0], s[1], s[2], s[3]));
+}
 
 #endif // AVFORMAT_AVIO_INTERNAL_H
