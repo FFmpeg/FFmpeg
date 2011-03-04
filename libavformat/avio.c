@@ -214,8 +214,6 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
 
     len = 0;
     while (len < size_min) {
-        if (url_interrupt_cb())
-            return AVERROR(EINTR);
         ret = transfer_func(h, buf+len, size-len);
         if (ret == AVERROR(EINTR))
             continue;
