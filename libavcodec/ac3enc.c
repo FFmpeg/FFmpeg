@@ -27,8 +27,10 @@
  */
 
 //#define DEBUG
+//#define ASSERT_LEVEL 2
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/avassert.h"
 #include "libavutil/crc.h"
 #include "avcodec.h"
 #include "put_bits.h"
@@ -1101,7 +1103,7 @@ static inline int sym_quant(int c, int e, int levels)
         v = (v + 1) >> 1;
         v = (levels >> 1) - v;
     }
-    assert(v >= 0 && v < levels);
+    av_assert2(v >= 0 && v < levels);
     return v;
 }
 
@@ -1123,7 +1125,7 @@ static inline int asym_quant(int c, int e, int qbits)
     m = (1 << (qbits-1));
     if (v >= m)
         v = m - 1;
-    assert(v >= -m);
+    av_assert2(v >= -m);
     return v & ((1 << qbits)-1);
 }
 
@@ -1439,7 +1441,7 @@ static void output_frame_end(AC3EncodeContext *s)
     flush_put_bits(&s->pb);
     frame = s->pb.buf;
     pad_bytes = s->frame_size - (put_bits_ptr(&s->pb) - frame) - 2;
-    assert(pad_bytes >= 0);
+    av_assert2(pad_bytes >= 0);
     if (pad_bytes > 0)
         memset(put_bits_ptr(&s->pb), 0, pad_bytes);
 
