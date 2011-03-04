@@ -47,6 +47,9 @@ COMPILE_S = $(call COMPILE,AS)
 %.o: %.cpp
 	$(COMPILE_CXX)
 
+%.s: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -S -o $@ $<
+
 %.o: %.S
 	$(COMPILE_S)
 
