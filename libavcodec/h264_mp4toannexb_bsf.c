@@ -75,7 +75,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
     if (!ctx->extradata_parsed) {
         uint16_t unit_size;
         uint64_t total_size = 0;
-        uint8_t *out = NULL, unit_nb, sps_done = 0;
+        uint8_t *out = NULL, unit_nb, sps_done = 0, sps_seen = 0, pps_seen = 0;
         const uint8_t *extradata = avctx->extradata+4;
         static const uint8_t nalu_header[4] = {0, 0, 0, 1};
 
@@ -89,7 +89,15 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         if (!unit_nb) {
             unit_nb = *extradata++; /* number of pps unit(s) */
             sps_done++;
+
+            if (unit_nb)
+                pps_seen = 1;
         }
+        else
+        {
+            sps_seen = 1;
+        }
+
         while (unit_nb--) {
             void *tmp;
 
@@ -114,7 +122,14 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
                 unit_nb = *extradata++; /* number of pps unit(s) */
         }
 
-        memset(out + total_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+        if(out)
+            memset(out + total_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+
+        if (!sps_seen)
+            av_log(avctx, AV_LOG_WARNING, "Warning: SPS NALU missing or invalid. The resulting stream may not play.\n");
+        if (!pps_seen)
+            av_log(avctx, AV_LOG_WARNING, "Warning: PPS NALU missing or invalid. The resulting stream may not play.\n");
+
         av_free(avctx->extradata);
         avctx->extradata      = out;
         avctx->extradata_size = total_size;
