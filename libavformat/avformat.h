@@ -647,6 +647,9 @@ typedef struct AVProgram {
     unsigned int   *stream_index;
     unsigned int   nb_stream_indexes;
     AVMetadata *metadata;
+
+    int program_num;
+    int pmt_pid;
 } AVProgram;
 
 #define AVFMTCTX_NOHEADER      0x0001 /**< signal that no header is present
@@ -844,6 +847,12 @@ typedef struct AVFormatContext {
      * decoding: number of frames used to probe fps
      */
     int fps_probe_size;
+
+    /**
+     * Transport stream id.
+     * This will be moved into demuxer private options. Thus no API/ABI compatibility
+     */
+    int ts_id;
 } AVFormatContext;
 
 typedef struct AVPacketList {

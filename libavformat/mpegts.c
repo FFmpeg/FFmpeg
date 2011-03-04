@@ -1137,6 +1137,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     SectionHeader h1, *h = &h1;
     const uint8_t *p, *p_end;
     int sid, pmt_pid;
+    AVProgram *program;
 
 #ifdef DEBUG
     av_dlog(ts->stream, "PAT:\n");
@@ -1148,6 +1149,8 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
     if (h->tid != PAT_TID)
         return;
+
+    ts->stream->ts_id = h->id;
 
     clear_programs(ts);
     for(;;) {
@@ -1163,7 +1166,9 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (sid == 0x0000) {
             /* NIT info */
         } else {
-            av_new_program(ts->stream, sid);
+            program = av_new_program(ts->stream, sid);
+            program->program_num = sid;
+            program->pmt_pid = pmt_pid;
             if (ts->pids[pmt_pid])
                 mpegts_close_filter(ts, ts->pids[pmt_pid]);
             mpegts_open_section_filter(ts, pmt_pid, pmt_cb, ts, 1);
