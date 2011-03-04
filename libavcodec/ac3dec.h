@@ -103,12 +103,12 @@ typedef struct {
     int cpl_strategy_exists[AC3_MAX_BLOCKS];///< coupling strategy exists               (cplstre)
     int channel_in_cpl[AC3_MAX_CHANNELS];   ///< channel in coupling                    (chincpl)
     int phase_flags_in_use;                 ///< phase flags in use                     (phsflginu)
-    int phase_flags[18];                    ///< phase flags                            (phsflg)
+    int phase_flags[AC3_MAX_CPL_BANDS];     ///< phase flags                            (phsflg)
     int num_cpl_bands;                      ///< number of coupling bands               (ncplbnd)
-    uint8_t cpl_band_sizes[18];             ///< number of coeffs in each coupling band
+    uint8_t cpl_band_sizes[AC3_MAX_CPL_BANDS]; ///< number of coeffs in each coupling band
     int firstchincpl;                       ///< first channel in coupling
     int first_cpl_coords[AC3_MAX_CHANNELS]; ///< first coupling coordinates states      (firstcplcos)
-    int cpl_coords[AC3_MAX_CHANNELS][18];   ///< coupling coordinates                   (cplco)
+    int cpl_coords[AC3_MAX_CHANNELS][AC3_MAX_CPL_BANDS]; ///< coupling coordinates      (cplco)
 ///@}
 
 ///@defgroup spx spectral extension
