@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "libavutil/parseutils.h"
 #include <unistd.h>
 #include "internal.h"
 #include "network.h"
@@ -38,6 +39,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     struct addrinfo hints, *ai, *cur_ai;
     int port, fd = -1;
     TCPContext *s = NULL;
+    int listen_socket = 0;
+    const char *p;
+    char buf[256];
     int ret;
     socklen_t optlen;
     char hostname[1024],proto[1024],path[1024];
@@ -48,6 +52,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (strcmp(proto,"tcp") || port <= 0 || port >= 65536)
         return AVERROR(EINVAL);
 
+    p = strchr(uri, '?');
+    if (p) {
+        if (av_find_info_tag(buf, sizeof(buf), "listen", p))
+            listen_socket = 1;
+    }
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -66,10 +75,21 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     fd = socket(cur_ai->ai_family, cur_ai->ai_socktype, cur_ai->ai_protocol);
     if (fd < 0)
         goto fail;
+
+    if (listen_socket) {
+        int fd1;
+        ret = bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
+        listen(fd, 1);
+        fd1 = accept(fd, NULL, NULL);
+        closesocket(fd);
+        fd = fd1;
+    } else {
+ redo:
+        ret = connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
+    }
+
     ff_socket_nonblock(fd, 1);
 
- redo:
-    ret = connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
     if (ret < 0) {
         struct pollfd p = {fd, POLLOUT, 0};
         if (ff_neterrno() == AVERROR(EINTR)) {

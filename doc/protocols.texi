@@ -402,6 +402,23 @@ ffplay sap://[ff0e::2:7ffe]
 
 Trasmission Control Protocol.
 
+The required syntax for a TCP url is:
+@example
+tcp://@var{hostname}:@var{port}[?@var{options}]
+@end example
+
+@table @option
+
+@item listen
+Listen for an incoming connection
+
+@example
+ffmpeg -i @var{input} -f @var{format} tcp://@var{hostname}:@var{port}?listen
+ffplay tcp://@var{hostname}:@var{port}
+@end example
+
+@end table
+
 @section udp
 
 User Datagram Protocol.
