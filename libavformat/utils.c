@@ -367,11 +367,11 @@ int av_filename_number_test(const char *filename)
     return filename && (av_get_frame_filename(buf, sizeof(buf), filename, 1)>=0);
 }
 
-AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max)
+AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score_ret)
 {
     AVProbeData lpd = *pd;
     AVInputFormat *fmt1 = NULL, *fmt;
-    int score;
+    int score, score_max=0;
 
     if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
         int id3len = ff_id3v2_tag_len(lpd.buf);
@@ -393,13 +393,25 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
                 score = 50;
             }
         }
-        if (score > *score_max) {
-            *score_max = score;
+        if (score > score_max) {
+            score_max = score;
             fmt = fmt1;
-        }else if (score == *score_max)
+        }else if (score == score_max)
             fmt = NULL;
     }
+    *score_ret= score_max;
     return fmt;
+}
+
+AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max)
+{
+    int score_ret;
+    AVInputFormat *fmt= av_probe_input_format3(pd, is_opened, &score_ret);
+    if(score_ret > *score_max){
+        *score_max= score_ret;
+        return fmt;
+    }else
+        return NULL;
 }
 
 AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened){
@@ -407,7 +419,7 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened){
     return av_probe_input_format2(pd, is_opened, &score);
 }
 
-static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeData *pd, int score)
+static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeData *pd)
 {
     static const struct {
         const char *name; enum CodecID id; enum AVMediaType type;
@@ -422,7 +434,8 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeDa
         { "mpegvideo", CODEC_ID_MPEG2VIDEO, AVMEDIA_TYPE_VIDEO },
         { 0 }
     };
-    AVInputFormat *fmt = av_probe_input_format2(pd, 1, &score);
+    int score;
+    AVInputFormat *fmt = av_probe_input_format3(pd, 1, &score);
 
     if (fmt) {
         int i;
@@ -436,7 +449,7 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeDa
             }
         }
     }
-    return !!fmt;
+    return score;
 }
 
 /************************************************************/
@@ -688,8 +701,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (pktl) {
             *pkt = pktl->pkt;
-            if(s->streams[pkt->stream_index]->codec->codec_id != CODEC_ID_PROBE ||
-               !s->streams[pkt->stream_index]->probe_packets){
+            if(s->streams[pkt->stream_index]->request_probe <= 0){
                 s->raw_packet_buffer = pktl->next;
                 s->raw_packet_buffer_remaining_size += pkt->size;
                 av_free(pktl);
@@ -703,7 +715,8 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (!pktl || ret == AVERROR(EAGAIN))
                 return ret;
             for (i = 0; i < s->nb_streams; i++)
-                s->streams[i]->probe_packets = 0;
+                if(s->streams[i]->request_probe > 0)
+                    s->streams[i]->request_probe = -1;
             continue;
         }
         st= s->streams[pkt->stream_index];
@@ -720,14 +733,13 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             break;
         }
 
-        if(!pktl && (st->codec->codec_id != CODEC_ID_PROBE ||
-                     !st->probe_packets))
+        if(!pktl && st->request_probe <= 0)
             return ret;
 
         add_to_pktbuf(&s->raw_packet_buffer, pkt, &s->raw_packet_buffer_end);
         s->raw_packet_buffer_remaining_size -= pkt->size;
 
-        if(st->codec->codec_id == CODEC_ID_PROBE && st->probe_packets){
+        if(st->request_probe>0){
             AVProbeData *pd = &st->probe_data;
             int end;
             av_log(s, AV_LOG_DEBUG, "probing stream %d pp:%d\n", st->index, st->probe_packets);
@@ -742,12 +754,13 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
                  || st->probe_packets<=0;
 
             if(end || av_log2(pd->buf_size) != av_log2(pd->buf_size - pkt->size)){
-                set_codec_from_probe_data(s, st, pd, end ? 0 : AVPROBE_SCORE_MAX/4);
-                if(st->codec->codec_id != CODEC_ID_PROBE || end){
+                int score= set_codec_from_probe_data(s, st, pd);
+                if(    (st->codec->codec_id != CODEC_ID_NONE && score > AVPROBE_SCORE_MAX/4)
+                    || end){
                     pd->buf_size=0;
                     av_freep(&pd->buf);
-                    st->probe_packets= 0;
-                    if(st->codec->codec_id != CODEC_ID_PROBE){
+                    st->request_probe= -1;
+                    if(st->codec->codec_id != CODEC_ID_NONE){
                     av_log(s, AV_LOG_DEBUG, "probed stream %d\n", st->index);
                     }else
                         av_log(s, AV_LOG_WARNING, "probed stream %d failed\n", st->index);

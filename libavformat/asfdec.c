@@ -292,7 +292,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         if (is_dvr_ms_audio) {
             // codec_id and codec_tag are unreliable in dvr_ms
             // files. Set them later by probing stream.
-            st->codec->codec_id = CODEC_ID_PROBE;
+            st->request_probe= 1;
             st->codec->codec_tag = 0;
         }
         if (st->codec->codec_id == CODEC_ID_AAC) {

@@ -421,6 +421,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     MpegDemuxContext *m = s->priv_data;
     AVStream *st;
     int len, startcode, i, es_type;
+    int request_probe= 0;
     enum CodecID codec_id = CODEC_ID_NONE;
     enum AVMediaType type;
     int64_t pts, dts, dummy_pos; //dummy_pos is needed for the index building to work
@@ -479,7 +480,7 @@ static int mpegps_read_packet(AVFormatContext *s,
         if(!memcmp(buf, avs_seqh, 4) && (buf[6] != 0 || buf[7] != 1))
             codec_id = CODEC_ID_CAVS;
         else
-            codec_id = CODEC_ID_PROBE;
+            request_probe= 1;
         type = AVMEDIA_TYPE_VIDEO;
     } else if (startcode >= 0x1c0 && startcode <= 0x1df) {
         type = AVMEDIA_TYPE_AUDIO;
@@ -534,6 +535,7 @@ static int mpegps_read_packet(AVFormatContext *s,
         goto skip;
     st->codec->codec_type = type;
     st->codec->codec_id = codec_id;
+    st->request_probe     = request_probe;
     if (codec_id != CODEC_ID_PCM_S16BE)
         st->need_parsing = AVSTREAM_PARSE_FULL;
  found:

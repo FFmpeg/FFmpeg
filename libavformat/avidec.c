@@ -652,7 +652,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     break;
                 case AVMEDIA_TYPE_SUBTITLE:
                     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-                    st->codec->codec_id   = CODEC_ID_PROBE;
+                    st->request_probe= 1;
                     break;
                 default:
                     st->codec->codec_type = AVMEDIA_TYPE_DATA;

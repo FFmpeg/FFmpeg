@@ -638,6 +638,12 @@ typedef struct AVStream {
         double duration_error[MAX_STD_TIMEBASES];
         int64_t codec_info_duration;
     } *info;
+
+    /**
+     * flag to indicate that probing is requested
+     * NOT PART OF PUBLIC API
+     */
+    int request_probe;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
@@ -1055,6 +1061,15 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened);
  *                  to retry with a larger probe buffer.
  */
 AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max);
+
+/**
+ * Guess the file format.
+ *
+ * @param is_opened Whether the file is already opened; determines whether
+ *                  demuxers with or without AVFMT_NOFILE are probed.
+ * @param score_ret The score of the best detection.
+ */
+AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score_ret);
 
 /**
  * Probe a bytestream to determine the input format. Each time a probe returns
