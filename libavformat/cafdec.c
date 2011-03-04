@@ -284,7 +284,7 @@ static int read_header(AVFormatContext *s,
                                 "block size or frame size are variable.\n");
         return AVERROR_INVALIDDATA;
     }
-    s->file_size = url_fsize(pb);
+    s->file_size = avio_size(pb);
     s->file_size = FFMAX(0, s->file_size);
 
     av_set_pts_info(st, 64, 1, st->codec->sample_rate);

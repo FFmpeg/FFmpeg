@@ -89,7 +89,7 @@ static int read_header(AVFormatContext *avctx,
     s->chars_per_frame = FFMAX(av_q2d(st->time_base) * (ap->sample_rate ? ap->sample_rate : LINE_RATE), 1);
 
     if (!url_is_streamed(avctx->pb)) {
-        s->fsize = url_fsize(avctx->pb);
+        s->fsize = avio_size(avctx->pb);
         st->duration = (s->fsize + s->chars_per_frame - 1) / s->chars_per_frame;
 
         if (ff_sauce_read(avctx, &s->fsize, 0, 0) < 0)

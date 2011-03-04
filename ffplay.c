@@ -2838,7 +2838,7 @@ static void event_loop(void)
             }
             if (cur_stream) {
                 if(seek_by_bytes || cur_stream->ic->duration<=0){
-                    uint64_t size=  url_fsize(cur_stream->ic->pb);
+                    uint64_t size=  avio_size(cur_stream->ic->pb);
                     stream_seek(cur_stream, size*x/cur_stream->width, 0, 1);
                 }else{
                     int64_t ts;

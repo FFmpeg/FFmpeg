@@ -80,7 +80,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
         if (!voc->remaining_size) {
             if (url_is_streamed(s->pb))
                 return AVERROR(EIO);
-            voc->remaining_size = url_fsize(pb) - avio_tell(pb);
+            voc->remaining_size = avio_size(pb) - avio_tell(pb);
         }
         max_size -= 4;
 

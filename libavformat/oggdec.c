@@ -462,7 +462,7 @@ ogg_get_length (AVFormatContext * s)
     if (s->duration != AV_NOPTS_VALUE)
         return 0;
 
-    size = url_fsize(s->pb);
+    size = avio_size(s->pb);
     if(size < 0)
         return 0;
     end = size > MAX_PAGE_SIZE? size - MAX_PAGE_SIZE: 0;

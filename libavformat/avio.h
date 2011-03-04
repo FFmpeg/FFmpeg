@@ -426,6 +426,7 @@ attribute_deprecated int url_fclose(AVIOContext *s);
 attribute_deprecated int64_t url_fseek(AVIOContext *s, int64_t offset, int whence);
 attribute_deprecated int url_fskip(AVIOContext *s, int64_t offset);
 attribute_deprecated int64_t url_ftell(AVIOContext *s);
+attribute_deprecated int64_t url_fsize(AVIOContext *s);
 #define URL_EOF (-1)
 attribute_deprecated int url_fgetc(AVIOContext *s);
 /**
@@ -491,7 +492,7 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence);
  * Get the filesize.
  * @return filesize or AVERROR
  */
-int64_t url_fsize(AVIOContext *s);
+int64_t avio_size(AVIOContext *s);
 
 /**
  * feof() equivalent for AVIOContext.

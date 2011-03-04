@@ -373,7 +373,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if(!url_is_streamed(s->pb) && (!s->duration || s->duration==AV_NOPTS_VALUE)){
         int size;
         const int64_t pos= avio_tell(s->pb);
-        const int64_t fsize= url_fsize(s->pb);
+        const int64_t fsize= avio_size(s->pb);
         avio_seek(s->pb, fsize-4, SEEK_SET);
         size= avio_rb32(s->pb);
         avio_seek(s->pb, fsize-3-size, SEEK_SET);

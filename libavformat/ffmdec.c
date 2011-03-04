@@ -282,7 +282,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ffm->write_index = avio_rb64(pb);
     /* get also filesize */
     if (!url_is_streamed(pb)) {
-        ffm->file_size = url_fsize(pb);
+        ffm->file_size = avio_size(pb);
         if (ffm->write_index)
             adjust_write_index(s);
     } else {

@@ -1557,7 +1557,7 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
 
     if(ts_max == AV_NOPTS_VALUE){
         int step= 1024;
-        filesize = url_fsize(s->pb);
+        filesize = avio_size(s->pb);
         pos_max = filesize - 1;
         do{
             pos_max -= step;
@@ -1666,7 +1666,7 @@ static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos,
 #endif
 
     pos_min = s->data_offset;
-    pos_max = url_fsize(s->pb) - 1;
+    pos_max = avio_size(s->pb) - 1;
 
     if     (pos < pos_min) pos= pos_min;
     else if(pos > pos_max) pos= pos_max;
@@ -2007,7 +2007,7 @@ static void av_estimate_timings(AVFormatContext *ic, int64_t old_offset)
     if (ic->iformat->flags & AVFMT_NOFILE) {
         file_size = 0;
     } else {
-        file_size = url_fsize(ic->pb);
+        file_size = avio_size(ic->pb);
         if (file_size < 0)
             file_size = 0;
     }

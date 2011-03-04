@@ -304,7 +304,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (err < 0)
                 return err;
             if (c->found_moov && c->found_mdat &&
-                (url_is_streamed(pb) || start_pos + a.size == url_fsize(pb)))
+                (url_is_streamed(pb) || start_pos + a.size == avio_size(pb)))
                 return 0;
             left = a.size - avio_tell(pb) + start_pos;
             if (left > 0) /* skip garbage at atom end */
@@ -2351,7 +2351,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     mov->fc = s;
     /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
     if(!url_is_streamed(pb))
-        atom.size = url_fsize(pb);
+        atom.size = avio_size(pb);
     else
         atom.size = INT64_MAX;
 
