@@ -237,6 +237,8 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
         if (ret)
            fast_retries = FFMAX(fast_retries, 2);
         len += ret;
+        if (url_interrupt_cb())
+            return AVERROR(EINTR);
     }
     return len;
 }
