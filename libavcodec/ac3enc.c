@@ -117,6 +117,7 @@ typedef struct AC3EncodeContext {
     int nb_coefs[AC3_MAX_CHANNELS];
 
     int rematrixing;                        ///< determines how rematrixing strategy is calculated
+    int num_rematrixing_bands;              ///< number of rematrixing bands
 
     /* bitrate allocation control */
     int slow_gain_code;                     ///< slow gain code                         (sgaincod)
@@ -305,6 +306,8 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
     int blk, bnd, i;
     AC3Block *block, *block0;
 
+    s->num_rematrixing_bands = 4;
+
     if (s->rematrixing & AC3_REMATRIXING_IS_STATIC)
         return;
 
@@ -313,7 +316,7 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         block = &s->blocks[blk];
         block->new_rematrixing_strategy = !blk;
-        for (bnd = 0; bnd < 4; bnd++) {
+        for (bnd = 0; bnd < s->num_rematrixing_bands; bnd++) {
             /* calculate calculate sum of squared coeffs for one band in one block */
             int start = ff_ac3_rematrix_band_tab[bnd];
             int end   = FFMIN(nb_coefs, ff_ac3_rematrix_band_tab[bnd+1]);
@@ -365,7 +368,7 @@ static void apply_rematrixing(AC3EncodeContext *s)
         AC3Block *block = &s->blocks[blk];
         if (block->new_rematrixing_strategy)
             flags = block->rematrixing_flags;
-        for (bnd = 0; bnd < 4; bnd++) {
+        for (bnd = 0; bnd < s->num_rematrixing_bands; bnd++) {
             if (flags[bnd]) {
                 start = ff_ac3_rematrix_band_tab[bnd];
                 end   = FFMIN(nb_coefs, ff_ac3_rematrix_band_tab[bnd+1]);
@@ -785,7 +788,7 @@ static void count_frame_bits(AC3EncodeContext *s)
         /* stereo rematrixing */
         if (s->channel_mode == AC3_CHMODE_STEREO &&
             s->blocks[blk].new_rematrixing_strategy) {
-            frame_bits += 4;
+            frame_bits += s->num_rematrixing_bands;
         }
 
         for (ch = 0; ch < s->fbw_channels; ch++) {
@@ -1304,7 +1307,7 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
         put_bits(&s->pb, 1, block->new_rematrixing_strategy);
         if (block->new_rematrixing_strategy) {
             /* rematrixing flags */
-            for (rbnd = 0; rbnd < 4; rbnd++)
+            for (rbnd = 0; rbnd < s->num_rematrixing_bands; rbnd++)
                 put_bits(&s->pb, 1, block->rematrixing_flags[rbnd]);
         }
     }
