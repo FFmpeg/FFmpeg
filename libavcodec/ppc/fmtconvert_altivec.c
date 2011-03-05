@@ -132,7 +132,7 @@ float_to_int16_interleave_altivec(int16_t *dst, const float **src,
    }
 }
 
-void ff_fmt_convert_init_ppc(FmtConvertContext *c, AVCodecContext *avctx)
+void ff_fmt_convert_init_altivec(FmtConvertContext *c, AVCodecContext *avctx)
 {
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_altivec;
     if(!(avctx->flags & CODEC_FLAG_BITEXACT)) {
