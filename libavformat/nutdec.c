@@ -653,7 +653,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     s->data_offset= pos-8;
 
-    if(!url_is_streamed(bc)){
+    if(bc->seekable){
         int64_t orig_pos= avio_tell(bc);
         find_and_decode_index(nut);
         avio_seek(bc, orig_pos, SEEK_SET);

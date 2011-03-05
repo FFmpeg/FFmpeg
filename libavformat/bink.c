@@ -247,7 +247,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     BinkDemuxContext *bink = s->priv_data;
     AVStream *vst = s->streams[0];
 
-    if (url_is_streamed(s->pb))
+    if (!s->pb->seekable)
         return -1;
 
     /* seek to the first frame */

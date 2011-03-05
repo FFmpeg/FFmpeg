@@ -332,6 +332,8 @@ attribute_deprecated int av_register_protocol(URLProtocol *protocol);
  */
 int av_register_protocol2(URLProtocol *protocol, int size);
 
+#define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
+
 /**
  * Bytestream IO Context.
  * New fields can be added to the end with minor version bumps.
@@ -351,7 +353,9 @@ typedef struct {
     int must_flush; /**< true if the next seek should flush */
     int eof_reached; /**< true if eof reached */
     int write_flag;  /**< true if open for writing */
-    int is_streamed;
+#if FF_API_OLD_AVIO
+    attribute_deprecated int is_streamed;
+#endif
     int max_packet_size;
     unsigned long checksum;
     unsigned char *checksum_ptr;
@@ -360,6 +364,10 @@ typedef struct {
     int (*read_pause)(void *opaque, int pause);
     int64_t (*read_seek)(void *opaque, int stream_index,
                          int64_t timestamp, int flags);
+    /**
+     * A combination of AVIO_SEEKABLE_ flags or 0 when the stream is not seekable.
+     */
+    int seekable;
 } AVIOContext;
 
 #if FF_API_OLD_AVIO
@@ -604,10 +612,15 @@ unsigned int avio_rb24(AVIOContext *s);
 unsigned int avio_rb32(AVIOContext *s);
 uint64_t     avio_rb64(AVIOContext *s);
 
-static inline int url_is_streamed(AVIOContext *s)
+#if FF_API_OLD_AVIO
+/**
+ * @deprecated Use AVIOContext.seekable field directly.
+ */
+attribute_deprecated static inline int url_is_streamed(AVIOContext *s)
 {
-    return s->is_streamed;
+    return !s->seekable;
 }
+#endif
 
 /**
  * Create and initialize a AVIOContext for accessing the

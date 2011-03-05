@@ -62,7 +62,10 @@ int ffio_init_context(AVIOContext *s,
     s->must_flush = 0;
     s->eof_reached = 0;
     s->error = 0;
+#if FF_API_OLD_AVIO
     s->is_streamed = 0;
+#endif
+    s->seekable = AVIO_SEEKABLE_NORMAL;
     s->max_packet_size = 0;
     s->update_checksum= NULL;
     if(!read_packet && !write_flag){
@@ -202,7 +205,7 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
         offset1 >= 0 && offset1 <= (s->buf_end - s->buffer)) {
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
-    } else if ((s->is_streamed ||
+    } else if ((!s->seekable ||
                offset1 <= s->buf_end + SHORT_SEEK_THRESHOLD - s->buffer) &&
                !s->write_flag && offset1 >= 0 &&
               (whence != SEEK_END || force)) {
@@ -831,7 +834,10 @@ int url_fdopen(AVIOContext **s, URLContext *h)
         av_freep(s);
         return AVERROR(EIO);
     }
+#if FF_API_OLD_AVIO
     (*s)->is_streamed = h->is_streamed;
+#endif
+    (*s)->seekable = h->is_streamed ? 0 : AVIO_SEEKABLE_NORMAL;
     (*s)->max_packet_size = max_packet_size;
     if(h->prot) {
         (*s)->read_pause = (int (*)(void *, int))h->prot->url_read_pause;

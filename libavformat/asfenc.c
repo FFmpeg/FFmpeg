@@ -347,7 +347,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     avio_wl64(pb, duration); /* end time stamp (in 100ns units) */
     avio_wl64(pb, asf->duration); /* duration (in 100ns units) */
     avio_wl64(pb, PREROLL_TIME); /* start time stamp */
-    avio_wl32(pb, (asf->is_streamed || url_is_streamed(pb)) ? 3 : 2); /* ??? */
+    avio_wl32(pb, (asf->is_streamed || !pb->seekable ) ? 3 : 2); /* ??? */
     avio_wl32(pb, s->packet_size); /* packet size */
     avio_wl32(pb, s->packet_size); /* packet size */
     avio_wl32(pb, bit_rate); /* Nominal data rate in bps */
@@ -866,7 +866,7 @@ static int asf_write_trailer(AVFormatContext *s)
     }
     avio_flush(s->pb);
 
-    if (asf->is_streamed || url_is_streamed(s->pb)) {
+    if (asf->is_streamed || !s->pb->seekable) {
         put_chunk(s, 0x4524, 0, 0); /* end of stream */
     } else {
         /* rewrite an updated header */

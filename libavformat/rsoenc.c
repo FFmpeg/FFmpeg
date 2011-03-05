@@ -38,7 +38,7 @@ static int rso_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (url_is_streamed(s->pb)) {
+    if (!s->pb->seekable) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return AVERROR_INVALIDDATA;
     }

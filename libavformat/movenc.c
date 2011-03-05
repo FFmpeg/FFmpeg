@@ -1955,7 +1955,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     unsigned int samplesInChunk = 0;
     int size= pkt->size;
 
-    if (url_is_streamed(s->pb)) return 0; /* Can't handle that */
+    if (!s->pb->seekable) return 0; /* Can't handle that */
     if (!size) return 0; /* Discard 0 sized packets */
 
     if (enc->codec_id == CODEC_ID_AMR_NB) {
@@ -2090,7 +2090,7 @@ static int mov_write_header(AVFormatContext *s)
     MOVMuxContext *mov = s->priv_data;
     int i, hint_track = 0;
 
-    if (url_is_streamed(s->pb)) {
+    if (!s->pb->seekable) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return -1;
     }

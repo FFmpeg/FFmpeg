@@ -296,7 +296,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
     ape_dumpinfo(s, ape);
 
     /* try to read APE tags */
-    if (!url_is_streamed(pb)) {
+    if (pb->seekable) {
         ff_ape_parse_tag(s);
         avio_seek(pb, 0, SEEK_SET);
     }

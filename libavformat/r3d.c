@@ -177,7 +177,7 @@ static int r3d_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     s->data_offset = avio_tell(s->pb);
     av_dlog(s, "data offset %#llx\n", s->data_offset);
-    if (url_is_streamed(s->pb))
+    if (!s->pb->seekable)
         return 0;
     // find REOB/REOF/REOS to load index
     avio_seek(s->pb, avio_size(s->pb)-48-8, SEEK_SET);

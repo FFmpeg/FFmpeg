@@ -304,7 +304,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (err < 0)
                 return err;
             if (c->found_moov && c->found_mdat &&
-                (url_is_streamed(pb) || start_pos + a.size == avio_size(pb)))
+                (!pb->seekable || start_pos + a.size == avio_size(pb)))
                 return 0;
             left = a.size - avio_tell(pb) + start_pos;
             if (left > 0) /* skip garbage at atom end */
@@ -2354,7 +2354,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     mov->fc = s;
     /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
-    if(!url_is_streamed(pb))
+    if(pb->seekable)
         atom.size = avio_size(pb);
     else
         atom.size = INT64_MAX;
@@ -2370,7 +2370,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     av_dlog(mov->fc, "on_parse_exit_offset=%lld\n", avio_tell(pb));
 
-    if (!url_is_streamed(pb) && mov->chapter_track > 0)
+    if (pb->seekable && mov->chapter_track > 0)
         mov_read_chapters(s);
 
     return 0;
@@ -2388,8 +2388,8 @@ static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
             AVIndexEntry *current_sample = &avst->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp, AV_TIME_BASE, msc->time_scale);
             av_dlog(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
-            if (!sample || (url_is_streamed(s->pb) && current_sample->pos < sample->pos) ||
-                (!url_is_streamed(s->pb) &&
+            if (!sample || (!s->pb->seekable && current_sample->pos < sample->pos) ||
+                (s->pb->seekable &&
                  ((msc->pb != s->pb && dts < best_dts) || (msc->pb == s->pb &&
                  ((FFABS(best_dts - dts) <= AV_TIME_BASE && current_sample->pos < sample->pos) ||
                   (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts)))))) {
@@ -2413,7 +2413,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     sample = mov_find_next_sample(s, &st);
     if (!sample) {
         mov->found_mdat = 0;
-        if (!url_is_streamed(s->pb) ||
+        if (s->pb->seekable||
             mov_read_default(mov, s->pb, (MOVAtom){ AV_RL32("root"), INT64_MAX }) < 0 ||
             s->pb->eof_reached)
             return AVERROR_EOF;

@@ -93,7 +93,7 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->duration = c->fcount;
 
     /* try to read APE tags */
-    if (!url_is_streamed(s->pb)) {
+    if (s->pb->seekable) {
         int64_t pos = avio_tell(s->pb);
         ff_ape_parse_tag(s);
         if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))

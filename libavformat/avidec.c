@@ -665,7 +665,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         case MKTAG('i', 'n', 'd', 'x'):
             i= avio_tell(pb);
-            if(!url_is_streamed(pb) && !(s->flags & AVFMT_FLAG_IGNIDX)){
+            if(pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX)){
                 read_braindead_odml_indx(s, 0);
             }
             avio_seek(pb, i+size, SEEK_SET);
@@ -721,7 +721,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
 
-    if(!avi->index_loaded && !url_is_streamed(pb))
+    if(!avi->index_loaded && pb->seekable)
         avi_load_index(s);
     avi->index_loaded = 1;
     avi->non_interleaved |= guess_ni_flag(s);

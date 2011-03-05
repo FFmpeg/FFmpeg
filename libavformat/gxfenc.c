@@ -634,7 +634,7 @@ static int gxf_write_header(AVFormatContext *s)
     uint8_t tracks[255] = {0};
     int i, media_info = 0;
 
-    if (url_is_streamed(pb)) {
+    if (!pb->seekable) {
         av_log(s, AV_LOG_ERROR, "gxf muxer does not support streamed output, patch welcome");
         return -1;
     }

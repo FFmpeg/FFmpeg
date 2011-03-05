@@ -88,7 +88,7 @@ static int read_header(AVFormatContext *avctx,
     /* simulate tty display speed */
     s->chars_per_frame = FFMAX(av_q2d(st->time_base) * (ap->sample_rate ? ap->sample_rate : LINE_RATE), 1);
 
-    if (!url_is_streamed(avctx->pb)) {
+    if (avctx->pb->seekable) {
         s->fsize = avio_size(avctx->pb);
         st->duration = (s->fsize + s->chars_per_frame - 1) / s->chars_per_frame;
 

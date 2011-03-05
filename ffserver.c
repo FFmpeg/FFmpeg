@@ -2260,7 +2260,7 @@ static int http_prepare_data(HTTPContext *c)
             /* XXX: potential leak */
             return -1;
         }
-        c->fmt_ctx.pb->is_streamed = 1;
+        c->fmt_ctx.pb->seekable = 0;
 
         /*
          * HACK to avoid mpeg ps muxer to spit many underflow errors
@@ -2399,7 +2399,7 @@ static int http_prepare_data(HTTPContext *c)
                     }
                     ost = ctx->streams[pkt.stream_index];
 
-                    ctx->pb->is_streamed = 1;
+                    ctx->pb->seekable = 0;
                     if (pkt.dts != AV_NOPTS_VALUE)
                         pkt.dts = av_rescale_q(pkt.dts, ist->time_base, ost->time_base);
                     if (pkt.pts != AV_NOPTS_VALUE)
@@ -2436,7 +2436,7 @@ static int http_prepare_data(HTTPContext *c)
             /* XXX: potential leak */
             return -1;
         }
-        c->fmt_ctx.pb->is_streamed = 1;
+        c->fmt_ctx.pb->seekable = 0;
         av_write_trailer(ctx);
         len = url_close_dyn_buf(ctx->pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
@@ -2723,7 +2723,7 @@ static int http_receive_data(HTTPContext *c)
 
             pb = avio_alloc_context(c->buffer, c->buffer_end - c->buffer,
                                     0, NULL, NULL, NULL, NULL);
-            pb->is_streamed = 1;
+            pb->seekable = 0;
 
             if (av_open_input_stream(&s, pb, c->stream->feed_filename, fmt_in, NULL) < 0) {
                 av_free(pb);
