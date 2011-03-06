@@ -601,21 +601,6 @@ int url_resetbuf(AVIOContext *s, int flags);
 #endif
 
 /**
- * Rewind the AVIOContext using the specified buffer containing the first buf_size bytes of the file.
- * Used after probing to avoid seeking.
- * Joins buf and s->buffer, taking any overlap into consideration.
- * @note s->buffer must overlap with buf or they can't be joined and the function fails
- * @note This function is NOT part of the public API
- *
- * @param s The read-only AVIOContext to rewind
- * @param buf The probe buffer containing the first buf_size bytes of the file
- * @param buf_size The size of buf
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code in case of failure
- */
-int ff_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size);
-
-/**
  * Create and initialize a AVIOContext for accessing the
  * resource indicated by url.
  * @note When the resource indicated by url has been opened in
