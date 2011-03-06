@@ -2331,7 +2331,7 @@ static void mov_read_chapters(AVFormatContext *s)
             avio_get_str16le(sc->pb, len, title, title_len);
         else {
             AV_WB16(title, ch);
-            avio_get_str(sc->pb, len - 2, title + 2, title_len - 2);
+            get_strz(sc->pb, title + 2, len - 1);
         }
 
         ff_new_chapter(s, i, st->time_base, sample->timestamp, end, title);
