@@ -1312,8 +1312,8 @@ static int mpegts_resync(AVFormatContext *s)
     int c, i;
 
     for(i = 0;i < MAX_RESYNC_SIZE; i++) {
-        c = url_fgetc(pb);
-        if (c < 0)
+        c = avio_r8(pb);
+        if (url_feof(pb))
             return -1;
         if (c == 0x47) {
             avio_seek(pb, -1, SEEK_CUR);

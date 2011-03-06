@@ -218,8 +218,8 @@ ogg_read_page (AVFormatContext * s, int *str)
             sync[(sp + 2) & 3] == 'g' && sync[(sp + 3) & 3] == 'S')
             break;
 
-        c = url_fgetc (bc);
-        if (c < 0)
+        c = avio_r8(bc);
+        if (url_feof(bc))
             return -1;
         sync[sp++ & 3] = c;
     }while (i++ < MAX_PAGE_SIZE);
@@ -229,15 +229,15 @@ ogg_read_page (AVFormatContext * s, int *str)
         return -1;
     }
 
-    if (url_fgetc (bc) != 0)      /* version */
+    if (avio_r8(bc) != 0)      /* version */
         return -1;
 
-    flags = url_fgetc (bc);
+    flags = avio_r8(bc);
     gp = avio_rl64 (bc);
     serial = avio_rl32 (bc);
     seq = avio_rl32 (bc);
     crc = avio_rl32 (bc);
-    nsegs = url_fgetc (bc);
+    nsegs = avio_r8(bc);
 
     idx = ogg_find_stream (ogg, serial);
     if (idx < 0){
