@@ -514,9 +514,11 @@ int url_fprintf(AVIOContext *s, const char *fmt, ...) __attribute__ ((__format__
 int url_fprintf(AVIOContext *s, const char *fmt, ...);
 #endif
 
+#if FF_API_OLD_AVIO
 /** @note unlike fgets, the EOL character is not returned and a whole
     line is parsed. return NULL if first char read was EOF */
-char *url_fgets(AVIOContext *s, char *buf, int buf_size);
+attribute_deprecated char *url_fgets(AVIOContext *s, char *buf, int buf_size);
+#endif
 
 void put_flush_packet(AVIOContext *s);
 

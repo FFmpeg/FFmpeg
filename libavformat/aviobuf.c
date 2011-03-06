@@ -915,6 +915,7 @@ int url_fprintf(AVIOContext *s, const char *fmt, ...)
 }
 #endif //CONFIG_MUXERS
 
+#if FF_API_OLD_AVIO
 char *url_fgets(AVIOContext *s, char *buf, int buf_size)
 {
     int c;
@@ -935,6 +936,7 @@ char *url_fgets(AVIOContext *s, char *buf, int buf_size)
         *q = '\0';
     return buf;
 }
+#endif
 
 int url_fget_max_packet_size(AVIOContext *s)
 {
