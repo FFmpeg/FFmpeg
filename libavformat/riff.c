@@ -299,6 +299,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { CODEC_ID_IMC,             0x0401 },
     { CODEC_ID_GSM_MS,          0x1500 },
     { CODEC_ID_TRUESPEECH,      0x1501 },
+    { CODEC_ID_AAC,             0x1600 }, /* ADTS AAC */
     { CODEC_ID_AAC_LATM,        0x1602 },
     { CODEC_ID_AC3,             0x2000 },
     { CODEC_ID_DTS,             0x2001 },
