@@ -942,12 +942,12 @@ char *url_fgets(AVIOContext *s, char *buf, int buf_size)
         *q = '\0';
     return buf;
 }
-#endif
 
 int url_fget_max_packet_size(AVIOContext *s)
 {
     return s->max_packet_size;
 }
+#endif
 
 int av_url_read_fpause(AVIOContext *s, int pause)
 {
