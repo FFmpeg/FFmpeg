@@ -633,15 +633,12 @@ int avio_open(AVIOContext **s, const char *url, int flags);
 int avio_close(AVIOContext *s);
 URLContext *url_fileno(AVIOContext *s);
 
+#if FF_API_OLD_AVIO
 /**
- * Return the maximum packet size associated to packetized buffered file
- * handle. If the file is not packetized (stream like http or file on
- * disk), then 0 is returned.
- *
- * @param s buffered file handle
- * @return maximum packet size in bytes
+ * @deprecated use AVIOContext.max_packet_size directly.
  */
-int url_fget_max_packet_size(AVIOContext *s);
+attribute_deprecated int url_fget_max_packet_size(AVIOContext *s);
+#endif
 
 int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags);
 

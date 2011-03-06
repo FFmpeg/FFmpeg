@@ -93,7 +93,7 @@ static int rtp_write_header(AVFormatContext *s1)
         s->first_rtcp_ntp_time = (s1->start_time_realtime / 1000) * 1000 +
                                  NTP_OFFSET_US;
 
-    max_packet_size = url_fget_max_packet_size(s1->pb);
+    max_packet_size = s1->pb->max_packet_size;
     if (max_packet_size <= 12)
         return AVERROR(EIO);
     s->buf = av_malloc(max_packet_size);
