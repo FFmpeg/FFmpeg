@@ -109,7 +109,7 @@ FFmpeg library.
 General notes
 -------------
 
-This is a maintenance only release that addresses a small number of security
+This is a maintenance-only release that addresses a small number of security
 and portability issues. Distributors and system integrators are encouraged
 to update and share their patches against this branch.
 
@@ -120,20 +120,20 @@ to update and share their patches against this branch.
 General notes
 -------------
 
-This is (again) another maintenance only release that addresses a fix
+This is (again) another maintenance-only release that addresses a fix
 for seekable HTTP and an exploitable bug in the FLIC decoder
 (cf. CVE-2010-3429 for details). Distributors and system integrators are
 encouraged to update and share their patches against this branch.
 
 
 
-* 0.5.4 Feb 20, 2011
+* 0.5.4 Feb 24, 2011
 
 General notes
 -------------
 
 This is the first release that we cut after git migration. It is another
-maintenance only release that addresses several security issue that have
+maintenance-only release that addresses several security issues that were
 brought to our attention. In detail, fixes for RV30/40, WMV, Vorbis and
-VC1 have been backported for trunk. Distributors and system integrators
+VC-1 have been backported from trunk. Distributors and system integrators
 are encouraged to update and share their patches against this branch.

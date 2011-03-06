@@ -3,11 +3,11 @@ releases are sorted from youngest to oldest.
 
 version 0.5.4:
 
-- Fix memory corruption in wmv parsing (addresses CVE-2010-3908)
+- Fix memory corruption in WMV parsing (addresses CVE-2010-3908)
 - Fix heap corruption crashes (addresses CVE-2011-0722)
-- Fix crashes in vorbis decoding found by zzuf (addresses CVE-2010-4704)
-- Fix another crash in vorbis decoding (addresses CVE-2011-0480, Chrome issue 68115)
-- Fix invalid reads in vc1 decoding (related to CVE-2011-0723)
+- Fix crashes in Vorbis decoding found by zzuf (addresses CVE-2010-4704)
+- Fix another crash in Vorbis decoding (addresses CVE-2011-0480, Chrome issue 68115)
+- Fix invalid reads in VC-1 decoding (related to CVE-2011-0723)
 
 
 
@@ -23,7 +23,7 @@ version 0.5.3:
 version 0.5.2:
 
 - Hurd support
-- PowerPC without Altivec compilation issues
+- PowerPC without AltiVec compilation issues
 - validate channels and samplerate in the Vorbis decoder
 
 
