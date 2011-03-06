@@ -837,7 +837,7 @@ static int url_resetbuf(AVIOContext *s, int flags)
     return 0;
 }
 
-int ff_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size)
+int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size)
 {
     int64_t buffer_start;
     int buffer_size;
