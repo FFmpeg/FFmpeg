@@ -426,6 +426,8 @@ attribute_deprecated int url_fclose(AVIOContext *s);
 attribute_deprecated int64_t url_fseek(AVIOContext *s, int64_t offset, int whence);
 attribute_deprecated int url_fskip(AVIOContext *s, int64_t offset);
 attribute_deprecated int64_t url_ftell(AVIOContext *s);
+#define URL_EOF (-1)
+attribute_deprecated int url_fgetc(AVIOContext *s);
 /**
  * @}
  */
@@ -502,10 +504,6 @@ int url_ferror(AVIOContext *s);
 int av_url_read_fpause(AVIOContext *h, int pause);
 int64_t av_url_read_fseek(AVIOContext *h, int stream_index,
                           int64_t timestamp, int flags);
-
-#define URL_EOF (-1)
-/** @note return URL_EOF (-1) if EOF */
-int url_fgetc(AVIOContext *s);
 
 /** @warning currently size is limited */
 #ifdef __GNUC__
