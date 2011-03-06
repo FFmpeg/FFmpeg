@@ -357,6 +357,16 @@ set_weak(){
     done
 }
 
+set_safe(){
+    var=$1
+    shift
+    eval $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')='$*'
+}
+
+get_safe(){
+    eval echo \$$(echo "$1" | sed 's/[^A-Za-z0-9_]/_/g')
+}
+
 pushvar(){
     for var in $*; do
         eval level=\${${var}_level:=0}
@@ -742,6 +752,20 @@ check_lib2(){
     check_func_headers "$headers" "$funcs" "$@" && add_extralibs "$@"
 }
 
+check_pkg_config(){
+    log check_pkg_config "$@"
+    pkg="$1"
+    headers="$2"
+    funcs="$3"
+    shift 3
+    $pkg_config --exists $pkg || return
+    pkg_cflags=$($pkg_config --cflags $pkg)
+    pkg_libs=$($pkg_config --libs $pkg)
+    check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
+        set_safe ${pkg}_cflags $pkg_cflags   &&
+        set_safe ${pkg}_libs   $pkg_libs
+}
+
 check_exec(){
     check_ld "$@" && { enabled cross_compile || $TMPE >> $logfile 2>&1; }
 }
@@ -821,6 +845,13 @@ require2(){
     func="$3"
     shift 3
     check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
+}
+
+require_pkg_config(){
+    pkg="$1"
+    check_pkg_config "$@" || die "ERROR: $pkg not found"
+    add_cflags    $(get_safe ${pkg}_cflags)
+    add_extralibs $(get_safe ${pkg}_libs)
 }
 
 check_host_cc(){
@@ -1149,6 +1180,7 @@ CMDLINE_SET="
     logfile
     malloc_prefix
     nm
+    pkg_config
     samples
     source_path
     strip
@@ -1587,6 +1619,7 @@ host_cc_default="gcc"
 ln_s="ln -sf"
 nm_default="nm"
 objformat="elf"
+pkg_config_default=pkg-config
 ranlib="ranlib"
 strip_default="strip"
 yasmexe="yasm"
@@ -1796,12 +1829,13 @@ set_default arch target_os
 ar_default="${cross_prefix}${ar_default}"
 cc_default="${cross_prefix}${cc_default}"
 nm_default="${cross_prefix}${nm_default}"
+pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib="${cross_prefix}${ranlib}"
 strip_default="${cross_prefix}${strip_default}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default cc nm strip sysinclude
+set_default cc nm pkg_config strip sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
