@@ -225,9 +225,9 @@ static int parse_tag(AVFormatContext *s, const uint8_t *buf)
 
 void ff_id3v1_read(AVFormatContext *s)
 {
-    int ret, filesize;
+    int ret;
     uint8_t buf[ID3v1_TAG_SIZE];
-    int64_t position = url_ftell(s->pb);
+    int64_t filesize, position = url_ftell(s->pb);
 
     if (!url_is_streamed(s->pb)) {
         /* XXX: change that */
