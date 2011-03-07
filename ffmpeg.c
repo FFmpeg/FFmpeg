@@ -509,7 +509,8 @@ static int read_key(void)
 
 static int decode_interrupt_cb(void)
 {
-    return q_pressed || (q_pressed = read_key() == 'q');
+    q_pressed += read_key() == 'q';
+    return q_pressed > 1;
 }
 
 static int ffmpeg_exit(int ret)
