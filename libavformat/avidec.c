@@ -178,7 +178,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
 #ifdef DEBUG_SEEK
             av_log(s, AV_LOG_ERROR, "pos:%"PRId64", len:%X\n", pos, len);
 #endif
-            if(url_feof(pb))
+            if(pb->eof_reached)
                 return -1;
 
             if(last_pos == pos || pos == base - 8)
@@ -195,7 +195,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
             avio_rl32(pb);       /* size */
             duration = avio_rl32(pb);
 
-            if(url_feof(pb))
+            if(pb->eof_reached)
                 return -1;
 
             pos = avio_tell(pb);
@@ -360,7 +360,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     codec_type = -1;
     frame_period = 0;
     for(;;) {
-        if (url_feof(pb))
+        if (pb->eof_reached)
             goto fail;
         tag = avio_rl32(pb);
         size = avio_rl32(pb);
@@ -989,7 +989,7 @@ resync:
     }
 
     memset(d, -1, sizeof(int)*8);
-    for(i=sync=avio_tell(pb); !url_feof(pb); i++) {
+    for(i=sync=avio_tell(pb); !pb->eof_reached; i++) {
         int j;
 
         for(j=0; j<7; j++)
@@ -1145,7 +1145,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
 #if defined(DEBUG_SEEK)
         av_log(s, AV_LOG_DEBUG, "%d cum_len=%"PRId64"\n", len, ast->cum_len);
 #endif
-        if(url_feof(pb))
+        if(pb->eof_reached)
             return -1;
 
         if(last_pos == pos)
@@ -1203,7 +1203,7 @@ static int avi_load_index(AVFormatContext *s)
     printf("movi_end=0x%"PRIx64"\n", avi->movi_end);
 #endif
     for(;;) {
-        if (url_feof(pb))
+        if (pb->eof_reached)
             break;
         tag = avio_rl32(pb);
         size = avio_rl32(pb);

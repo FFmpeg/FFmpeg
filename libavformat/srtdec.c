@@ -81,7 +81,7 @@ static int srt_read_packet(AVFormatContext *s, AVPacket *pkt)
     do {
         ptr2 = ptr;
         ptr += ff_get_line(s->pb, ptr, sizeof(buffer)+buffer-ptr);
-    } while (!is_eol(*ptr2) && !url_feof(s->pb) && ptr-buffer<sizeof(buffer)-1);
+    } while (!is_eol(*ptr2) && !s->pb->eof_reached && ptr-buffer<sizeof(buffer)-1);
 
     if (buffer[0] && !(res = av_new_packet(pkt, ptr-buffer))) {
         memcpy(pkt->data, buffer, pkt->size);

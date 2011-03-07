@@ -409,7 +409,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     avio_rb32(pb); /* number of headers */
 
     for(;;) {
-        if (url_feof(pb))
+        if (pb->eof_reached)
             return -1;
         tag = avio_rl32(pb);
         tag_size = avio_rb32(pb);
@@ -515,7 +515,7 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
     AVStream *st;
     uint32_t state=0xFFFFFFFF;
 
-    while(!url_feof(pb)){
+    while(!pb->eof_reached){
         int len, num, i;
         *pos= avio_tell(pb) - 3;
         if(rm->remaining_len > 0){
@@ -848,7 +848,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
                     st = s->streams[i];
             }
 
-            if(len<0 || url_feof(s->pb))
+            if(len<0 || s->pb->eof_reached)
                 return AVERROR(EIO);
 
             res = ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,

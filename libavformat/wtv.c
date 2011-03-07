@@ -79,7 +79,7 @@ static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
 
     if (wf->error || url_ferror(pb))
         return -1;
-    if (wf->position >= wf->length || url_feof(pb))
+    if (wf->position >= wf->length || pb->eof_reached)
         return 0;
 
     buf_size = FFMIN(buf_size, wf->length - wf->position);
@@ -554,7 +554,7 @@ static void parse_legacy_attrib(AVFormatContext *s, AVIOContext *pb)
 {
     ff_asf_guid guid;
     int length, type;
-    while(!url_feof(pb)) {
+    while(!pb->eof_reached) {
         char key[1024];
         ff_get_guid(pb, &guid);
         type   = avio_rl32(pb);
@@ -770,7 +770,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
 {
     WtvContext *wtv = s->priv_data;
     AVIOContext *pb = wtv->pb;
-    while (!url_feof(pb)) {
+    while (!pb->eof_reached) {
         ff_asf_guid g;
         int len, sid, consumed;
 
@@ -997,7 +997,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
             while(1) {
                 uint64_t timestamp = avio_rl64(pb);
                 uint64_t frame_nb  = avio_rl64(pb);
-                if (url_feof(pb))
+                if (pb->eof_reached)
                     break;
                 ff_add_index_entry(&wtv->index_entries, &wtv->nb_index_entries, &wtv->index_entries_allocated_size,
                                    0, timestamp, frame_nb, 0, AVINDEX_KEYFRAME);
@@ -1011,7 +1011,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
                     while (1) {
                         uint64_t frame_nb = avio_rl64(pb);
                         uint64_t position = avio_rl64(pb);
-                        if (url_feof(pb))
+                        if (pb->eof_reached)
                             break;
                         for (i = wtv->nb_index_entries - 1; i >= 0; i--) {
                             AVIndexEntry *e = wtv->index_entries + i;

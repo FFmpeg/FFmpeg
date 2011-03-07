@@ -311,7 +311,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     dts = avio_rb24(s->pb);
     dts |= avio_r8(s->pb) << 24;
 //    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, dts:%d\n", type, size, dts);
-    if (url_feof(s->pb))
+    if (s->pb->eof_reached)
         return AVERROR_EOF;
     avio_seek(s->pb, 3, SEEK_CUR); /* stream id, always 0 */
     flags = 0;

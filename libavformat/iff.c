@@ -138,7 +138,7 @@ static int iff_read_header(AVFormatContext *s,
     // codec_tag used by ByteRun1 decoder to distinguish progressive (PBM) and interlaced (ILBM) content
     st->codec->codec_tag = avio_rl32(pb);
 
-    while(!url_feof(pb)) {
+    while(!pb->eof_reached) {
         uint64_t orig_pos;
         int res;
         const char *metadata_tag = NULL;

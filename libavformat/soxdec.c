@@ -127,7 +127,7 @@ static int sox_read_packet(AVFormatContext *s,
 {
     int ret, size;
 
-    if (url_feof(s->pb))
+    if (s->pb->eof_reached)
         return AVERROR_EOF;
 
     size = SOX_SAMPLES*s->streams[0]->codec->block_align;

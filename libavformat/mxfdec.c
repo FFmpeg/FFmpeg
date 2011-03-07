@@ -179,7 +179,7 @@ static int64_t klv_decode_ber_length(AVIOContext *pb)
 static int mxf_read_sync(AVIOContext *pb, const uint8_t *key, unsigned size)
 {
     int i, b;
-    for (i = 0; i < size && !url_feof(pb); i++) {
+    for (i = 0; i < size && !pb->eof_reached; i++) {
         b = avio_r8(pb);
         if (b == key[0])
             i = 0;
@@ -305,7 +305,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     KLVPacket klv;
 
-    while (!url_feof(s->pb)) {
+    while (!s->pb->eof_reached) {
         if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
         PRINT_KEY(s, "read packet", klv.key);
@@ -914,7 +914,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     avio_seek(s->pb, -14, SEEK_CUR);
     mxf->fc = s;
-    while (!url_feof(s->pb)) {
+    while (!s->pb->eof_reached) {
         const MXFMetadataReadTableEntry *metadata;
 
         if (klv_read_packet(&klv, s->pb) < 0)

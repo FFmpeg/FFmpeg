@@ -130,7 +130,7 @@ static int sol_read_packet(AVFormatContext *s,
 {
     int ret;
 
-    if (url_feof(s->pb))
+    if (s->pb->eof_reached)
         return AVERROR(EIO);
     ret= av_get_packet(s->pb, pkt, MAX_SIZE);
     pkt->stream_index = 0;

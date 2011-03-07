@@ -92,7 +92,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     header_remaining= INT_MAX;
     dst[0] = &st->codec->extradata;
     dst[1] = &ass->event_buffer;
-    while(!url_feof(pb)){
+    while(!pb->eof_reached){
         uint8_t line[MAX_LINESIZE];
 
         len = ff_get_line(pb, line, sizeof(line));

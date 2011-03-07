@@ -224,7 +224,7 @@ static int parse_playlist(AppleHTTPContext *c, const char *url,
     if (var)
         free_segment_list(var);
     c->finished = 0;
-    while (!url_feof(in)) {
+    while (!in->eof_reached) {
         read_chomp_line(in, line, sizeof(line));
         if (av_strstart(line, "#EXT-X-STREAM-INF:", &ptr)) {
             struct variant_info info = {{0}};
@@ -457,7 +457,7 @@ start:
         if (var->pb && !var->pkt.data) {
             ret = av_read_frame(var->ctx, &var->pkt);
             if (ret < 0) {
-                if (!url_feof(var->pb))
+                if (!var->pb->eof_reached)
                     return ret;
                 reset_packet(&var->pkt);
             }

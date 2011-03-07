@@ -48,7 +48,7 @@ static void get_line(AVIOContext *s, uint8_t *buf, int size)
                 buf[i++] = c;
         }
         buf[i] = 0;
-    } while (!url_feof(s) && (buf[0] == ';' || buf[0] == '#' || buf[0] == 0));
+    } while (!s->eof_reached && (buf[0] == ';' || buf[0] == '#' || buf[0] == 0));
 }
 
 static AVChapter *read_chapter(AVFormatContext *s)
@@ -126,7 +126,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVMetadata **m = &s->metadata;
     uint8_t line[1024];
 
-    while(!url_feof(s->pb)) {
+    while(!s->pb->eof_reached) {
         get_line(s->pb, line, sizeof(line));
 
         if (!memcmp(line, ID_STREAM, strlen(ID_STREAM))) {

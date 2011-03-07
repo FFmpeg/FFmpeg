@@ -1329,7 +1329,7 @@ static int mpegts_resync(AVFormatContext *s)
 
     for(i = 0;i < MAX_RESYNC_SIZE; i++) {
         c = avio_r8(pb);
-        if (url_feof(pb))
+        if (pb->eof_reached)
             return -1;
         if (c == 0x47) {
             avio_seek(pb, -1, SEEK_CUR);

@@ -155,7 +155,7 @@ static int64_t find_tag(AVIOContext *pb, uint32_t tag1)
     int64_t size;
 
     for (;;) {
-        if (url_feof(pb))
+        if (pb->eof_reached)
             return -1;
         size = next_tag(pb, &tag);
         if (tag == tag1)
@@ -234,7 +234,7 @@ static int wav_read_header(AVFormatContext *s,
     av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     for (;;) {
-        if (url_feof(pb))
+        if (pb->eof_reached)
             return -1;
         size = next_tag(pb, &tag);
         if (tag == MKTAG('d', 'a', 't', 'a')){
@@ -269,7 +269,7 @@ static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
     uint8_t guid[16];
     int64_t size;
 
-    while (!url_feof(pb)) {
+    while (!pb->eof_reached) {
         avio_read(pb, guid, 16);
         size = avio_rl64(pb);
         if (size <= 24)

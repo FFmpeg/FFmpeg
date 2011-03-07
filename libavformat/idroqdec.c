@@ -111,7 +111,7 @@ static int roq_read_packet(AVFormatContext *s,
 
     while (!packet_read) {
 
-        if (url_feof(s->pb))
+        if (s->pb->eof_reached)
             return AVERROR(EIO);
 
         /* get the next chunk preamble */

@@ -227,7 +227,7 @@ static int idcin_read_packet(AVFormatContext *s,
     unsigned char r, g, b;
     unsigned char palette_buffer[768];
 
-    if (url_feof(s->pb))
+    if (s->pb->eof_reached)
         return AVERROR(EIO);
 
     if (idcin->next_chunk_is_video) {

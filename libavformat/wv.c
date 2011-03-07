@@ -241,7 +241,7 @@ static int wv_read_packet(AVFormatContext *s,
     int ret;
     int size, ver, off;
 
-    if (url_feof(s->pb))
+    if (s->pb->eof_reached)
         return AVERROR(EIO);
     if(wc->block_parsed){
         if(wv_read_block_header(s, s->pb, 0) < 0)

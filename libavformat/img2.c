@@ -287,7 +287,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
             infer_size(&codec->width, &codec->height, size[0]);
     } else {
         f[0] = s1->pb;
-        if (url_feof(f[0]))
+        if (f[0]->eof_reached)
             return AVERROR(EIO);
         size[0]= 4096;
     }

@@ -639,7 +639,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             continue;
         } else if (!ff_guidcmp(&g, &ff_asf_marker_header)) {
             asf_read_marker(s, gsize);
-        } else if (url_feof(pb)) {
+        } else if (pb->eof_reached) {
             return -1;
         } else {
             if (!s->keylen) {
@@ -660,7 +660,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     avio_rl64(pb);
     avio_r8(pb);
     avio_r8(pb);
-    if (url_feof(pb))
+    if (pb->eof_reached)
         return -1;
     asf->data_offset = avio_tell(pb);
     asf->packet_size_left = 0;
@@ -745,12 +745,12 @@ static int ff_asf_get_packet(AVFormatContext *s, AVIOContext *pb)
          */
         if (url_ferror(pb) == AVERROR(EAGAIN))
             return AVERROR(EAGAIN);
-        if (!url_feof(pb))
+        if (!pb->eof_reached)
             av_log(s, AV_LOG_ERROR, "ff asf bad header %x  at:%"PRId64"\n", c, avio_tell(pb));
     }
     if ((c & 0x8f) == 0x82) {
         if (d || e) {
-            if (!url_feof(pb))
+            if (!pb->eof_reached)
                 av_log(s, AV_LOG_ERROR, "ff asf bad non zero\n");
             return -1;
         }
@@ -886,7 +886,7 @@ static int ff_asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pk
     ASFStream *asf_st = 0;
     for (;;) {
         int ret;
-        if(url_feof(pb))
+        if(pb->eof_reached)
             return AVERROR_EOF;
         if (asf->packet_size_left < FRAME_HEADER_SIZE
             || asf->packet_segments < 1) {
@@ -1195,7 +1195,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
        skip them until the simple index object is reached */
     while (ff_guidcmp(&g, &index_guid)) {
         int64_t gsize= avio_rl64(s->pb);
-        if (gsize < 24 || url_feof(s->pb)) {
+        if (gsize < 24 || s->pb->eof_reached) {
             avio_seek(s->pb, current_pos, SEEK_SET);
             return;
         }

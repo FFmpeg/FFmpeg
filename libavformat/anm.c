@@ -181,7 +181,7 @@ static int read_packet(AVFormatContext *s,
     Page *p;
     int tmp, record_size;
 
-    if (url_feof(s->pb))
+    if (s->pb->eof_reached)
         return AVERROR(EIO);
 
     if (anm->page < 0)

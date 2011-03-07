@@ -60,7 +60,7 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
     nuv_frametype frametype;
     if (!vst && !myth)
         return 1; // no codec data needed
-    while (!url_feof(pb)) {
+    while (!pb->eof_reached) {
         int size, subtype;
         frametype = avio_r8(pb);
         switch (frametype) {
@@ -195,7 +195,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
     uint8_t hdr[HDRSIZE];
     nuv_frametype frametype;
     int ret, size;
-    while (!url_feof(pb)) {
+    while (!pb->eof_reached) {
         int copyhdrsize = ctx->rtjpg_video ? HDRSIZE : 0;
         uint64_t pos = avio_tell(pb);
         ret = avio_read(pb, hdr, HDRSIZE);

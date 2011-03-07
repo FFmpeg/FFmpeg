@@ -368,7 +368,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
 
 #define READ_ONE() \
     { \
-        if (!max_interval-- || url_feof(pb)) \
+        if (!max_interval-- || pb->eof_reached) \
             goto out; \
         tmp = tmp << 8 | avio_r8(pb); \
     }
@@ -422,13 +422,13 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
     AVIOContext *pb = s->pb;
     GXFPktType pkt_type;
     int pkt_len;
-    while (!url_feof(pb)) {
+    while (!pb->eof_reached) {
         AVStream *st;
         int track_type, track_id, ret;
         int field_nr, field_info, skip = 0;
         int stream_index;
         if (!parse_packet_header(pb, &pkt_type, &pkt_len)) {
-            if (!url_feof(pb))
+            if (!pb->eof_reached)
                 av_log(s, AV_LOG_ERROR, "sync lost\n");
             return -1;
         }

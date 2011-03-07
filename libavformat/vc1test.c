@@ -92,7 +92,7 @@ static int vc1t_read_packet(AVFormatContext *s,
     int keyframe = 0;
     uint32_t pts;
 
-    if(url_feof(pb))
+    if(pb->eof_reached)
         return AVERROR(EIO);
 
     frame_size = avio_rl24(pb);

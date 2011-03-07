@@ -51,7 +51,7 @@ static int get_tag(AVIOContext *pb, uint32_t * tag)
 {
     int size;
 
-    if (url_feof(pb))
+    if (pb->eof_reached)
         return AVERROR(EIO);
 
     *tag = avio_rl32(pb);

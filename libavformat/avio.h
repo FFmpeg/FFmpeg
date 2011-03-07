@@ -432,6 +432,11 @@ attribute_deprecated int url_fgetc(AVIOContext *s);
 /**
  * @}
  */
+
+/**
+ * @deprecated use AVIOContext.eof_reached
+ */
+attribute_deprecated int url_feof(AVIOContext *s);
 #endif
 
 AVIOContext *avio_alloc_context(
@@ -493,12 +498,6 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence);
  * @return filesize or AVERROR
  */
 int64_t avio_size(AVIOContext *s);
-
-/**
- * feof() equivalent for AVIOContext.
- * @return non zero if and only if end of file
- */
-int url_feof(AVIOContext *s);
 
 int url_ferror(AVIOContext *s);
 

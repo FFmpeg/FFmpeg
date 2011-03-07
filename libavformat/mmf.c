@@ -266,7 +266,7 @@ static int mmf_read_packet(AVFormatContext *s,
     AVStream *st;
     int ret, size;
 
-    if (url_feof(s->pb))
+    if (s->pb->eof_reached)
         return AVERROR(EIO);
     st = s->streams[0];
 

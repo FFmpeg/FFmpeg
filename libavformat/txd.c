@@ -61,7 +61,7 @@ next_chunk:
     chunk_size = avio_rl32(pb);
     marker     = avio_rl32(pb);
 
-    if (url_feof(s->pb))
+    if (s->pb->eof_reached)
         return AVERROR_EOF;
     if (marker != TXD_MARKER && marker != TXD_MARKER2) {
         av_log(s, AV_LOG_ERROR, "marker does not match\n");

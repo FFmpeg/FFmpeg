@@ -200,7 +200,7 @@ static int mpc8_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
 
-    while(!url_feof(pb)){
+    while(!pb->eof_reached){
         pos = avio_tell(pb);
         mpc8_get_chunk_header(pb, &tag, &size);
         if(tag == TAG_STREAMHDR)
@@ -247,7 +247,7 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
     int tag;
     int64_t pos, size;
 
-    while(!url_feof(s->pb)){
+    while(!s->pb->eof_reached){
         pos = avio_tell(s->pb);
         mpc8_get_chunk_header(s->pb, &tag, &size);
         if (size < 0)

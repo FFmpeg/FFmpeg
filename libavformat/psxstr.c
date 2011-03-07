@@ -241,7 +241,7 @@ static int str_read_packet(AVFormatContext *s,
             break;
         }
 
-        if (url_feof(pb))
+        if (pb->eof_reached)
             return AVERROR(EIO);
     }
 }

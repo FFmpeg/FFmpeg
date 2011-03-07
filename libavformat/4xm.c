@@ -259,7 +259,7 @@ static int fourxm_read_packet(AVFormatContext *s,
             return ret;
         fourcc_tag = AV_RL32(&header[0]);
         size = AV_RL32(&header[4]);
-        if (url_feof(pb))
+        if (pb->eof_reached)
             return AVERROR(EIO);
         switch (fourcc_tag) {
 

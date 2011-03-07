@@ -143,7 +143,7 @@ static int find_next_start_code(AVIOContext *pb, int *size_ptr,
     state = *header_state;
     n = *size_ptr;
     while (n > 0) {
-        if (url_feof(pb))
+        if (pb->eof_reached)
             break;
         v = avio_r8(pb);
         n--;
@@ -253,7 +253,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         last_sync = avio_tell(s->pb);
     //printf("startcode=%x pos=0x%"PRIx64"\n", startcode, avio_tell(s->pb));
     if (startcode < 0){
-        if(url_feof(s->pb))
+        if(s->pb->eof_reached)
             return AVERROR_EOF;
         //FIXME we should remember header_state
         return AVERROR(EAGAIN);

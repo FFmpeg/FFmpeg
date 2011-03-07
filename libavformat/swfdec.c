@@ -27,7 +27,7 @@ static int get_swf_tag(AVIOContext *pb, int *len_ptr)
 {
     int tag, len;
 
-    if (url_feof(pb))
+    if (pb->eof_reached)
         return -1;
 
     tag = avio_rl16(pb);

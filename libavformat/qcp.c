@@ -140,7 +140,7 @@ static int qcp_read_packet(AVFormatContext *s, AVPacket *pkt)
     QCPContext    *c  = s->priv_data;
     unsigned int  chunk_size, tag;
 
-    while(!url_feof(pb)) {
+    while(!pb->eof_reached) {
         if (c->data_size) {
             int pkt_size, ret, mode = avio_r8(pb);
 
