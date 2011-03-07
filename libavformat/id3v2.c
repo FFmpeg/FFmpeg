@@ -138,7 +138,8 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen, const cha
 
 static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
 {
-    int isv34, tlen, unsync;
+    int isv34, unsync;
+    unsigned tlen;
     char tag[5];
     int64_t next;
     int taghdrlen;
@@ -191,6 +192,8 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             tag[3] = 0;
             tlen = avio_rb24(s->pb);
         }
+        if (tlen > (1<<28))
+            break;
         len -= taghdrlen + tlen;
 
         if (len < 0)
