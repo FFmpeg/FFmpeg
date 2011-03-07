@@ -80,6 +80,7 @@ version <next>:
 - Bitmap Brothers JV playback system
 - Apple HTTP Live Streaming protocol handler
 - sndio support for playback and record
+- Linux framebuffer input device added
 
 
 version 0.6:
