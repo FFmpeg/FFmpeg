@@ -115,7 +115,7 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen, const cha
         dst[len] = 0;
         break;
     default:
-        av_log(s, AV_LOG_WARNING, "Unknown encoding in tag %s\n.", key);
+        av_log(s, AV_LOG_WARNING, "Unknown encoding in tag %s.\n", key);
     }
 
     if (!(strcmp(key, "TCON") && strcmp(key, "TCO"))
