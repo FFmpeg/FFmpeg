@@ -92,9 +92,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
 
             if (unit_nb)
                 pps_seen = 1;
-        }
-        else
-        {
+        } else {
             sps_seen = 1;
         }
 
