@@ -2505,8 +2505,9 @@ static int transcode(AVFormatContext **output_files,
         print_sdp(output_files, nb_output_files);
     }
 
-    if (!using_stdin && verbose >= 0) {
-        fprintf(stderr, "Press [q] to stop encoding\n");
+    if (!using_stdin) {
+        if(verbose >= 0)
+            fprintf(stderr, "Press [q] to stop encoding\n");
         url_set_interrupt_cb(decode_interrupt_cb);
     }
     term_init();
