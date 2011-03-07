@@ -1626,7 +1626,12 @@ static int dca_decode_frame(AVCodecContext * avctx,
     int lfe_samples;
     int num_core_channels = 0;
     int i;
+    /* ffdshow custom code */
+#if CONFIG_AUDIO_FLOAT
+    float *samples = data;
+#else
     int16_t *samples = data;
+#endif
     DCAContext *s = avctx->priv_data;
     int channels;
     int core_ss_end;
@@ -1812,9 +1817,10 @@ static int dca_decode_frame(AVCodecContext * avctx,
         return -1;
     }
 
-    if (*data_size < (s->sample_blocks / 8) * 256 * sizeof(int16_t) * channels)
+    /* ffdshow custom code */
+    if (*data_size < (s->sample_blocks / 8) * 256 * sizeof(samples[0]) * channels)
         return -1;
-    *data_size = 256 / 8 * s->sample_blocks * sizeof(int16_t) * channels;
+    *data_size = 256 / 8 * s->sample_blocks * sizeof(samples[0]) * channels;
 
     /* filter to get final output */
     for (i = 0; i < (s->sample_blocks / 8); i++) {
@@ -1833,7 +1839,13 @@ static int dca_decode_frame(AVCodecContext * avctx,
             }
         }
 
+        /* interleave samples */
+#if CONFIG_AUDIO_FLOAT
+        /* ffdshow custom code */
+        float_interleave(samples, s->samples_chanptr, 256, channels);
+#else
         s->fmt_conv.float_to_int16_interleave(samples, s->samples_chanptr, 256, channels);
+#endif
         samples += 256 * channels;
     }
 
@@ -1870,7 +1882,12 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
 
     for (i = 0; i < DCA_PRIM_CHANNELS_MAX+1; i++)
         s->samples_chanptr[i] = s->samples + i * 256;
+    /* ffdshow custom code */
+#if CONFIG_AUDIO_FLOAT
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+#else
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+#endif
 
     s->scale_bias = 1.0;
 

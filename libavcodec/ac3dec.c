@@ -188,8 +188,13 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     ff_fmt_convert_init(&s->fmt_conv, avctx);
     av_lfg_init(&s->dith_state, 0);
 
+    /* ffdshow custom code */
+#if CONFIG_AUDIO_FLOAT
+    s->mul_bias = 1.0f;
+#else
     /* set scale value for float to int16 conversion */
     s->mul_bias = 32767.0f;
+#endif
 
     /* allow downmixing to stereo or mono */
     if (avctx->channels > 0 && avctx->request_channels > 0 &&
@@ -204,7 +209,12 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
         if (!s->input_buffer)
             return AVERROR(ENOMEM);
 
+    /* ffdshow custom code */
+#if CONFIG_AUDIO_FLOAT
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+#else
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+#endif
     return 0;
 }
 
@@ -1299,7 +1309,12 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     AC3DecodeContext *s = avctx->priv_data;
+    /* ffdshow custom code */
+#if CONFIG_AUDIO_FLOAT
+    float *out_samples = (float *)data;
+#else
     int16_t *out_samples = (int16_t *)data;
+#endif
     int blk, ch, err;
     const uint8_t *channel_map;
     const float *output[AC3_MAX_CHANNELS];
@@ -1405,10 +1420,15 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
             av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
             err = 1;
         }
+        /* ffdshow custom code */
+#if CONFIG_AUDIO_FLOAT
+        float_interleave_noscale(out_samples, output, 256, s->out_channels);
+#else
         s->fmt_conv.float_to_int16_interleave(out_samples, output, 256, s->out_channels);
+#endif
         out_samples += 256 * s->out_channels;
     }
-    *data_size = s->num_blocks * 256 * avctx->channels * sizeof (int16_t);
+    *data_size = s->num_blocks * 256 * avctx->channels * sizeof (out_samples[0]); /* ffdshow custom code */
     return FFMIN(buf_size, s->frame_size);
 }
 
