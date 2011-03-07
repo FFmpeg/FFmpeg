@@ -700,20 +700,17 @@ EOF
 check_func_headers(){
     log check_func_headers "$@"
     headers=$1
-    func=$2
+    funcs=$2
     shift 2
-    disable $func
-    incs=""
-    for hdr in $headers; do
-        incs="$incs
-#include <$hdr>"
-    done
-    check_ld "$@" <<EOF && enable $func && enable_safe $headers
-$incs
-int main(int argc, char **argv){
-    return (long) $func;
-}
-EOF
+    {
+        for hdr in $headers; do
+            echo "#include <$hdr>"
+        done
+        for func in $funcs; do
+            echo "long check_$func(void) { return (long) $func; }"
+        done
+        echo "int main(void) { return 0; }"
+    } | check_ld "$@" && enable $funcs && enable_safe $headers
 }
 
 check_cpp_condition(){
@@ -740,9 +737,9 @@ check_lib(){
 check_lib2(){
     log check_lib2 "$@"
     headers="$1"
-    func="$2"
+    funcs="$2"
     shift 2
-    check_func_headers "$headers" $func "$@" && add_extralibs "$@"
+    check_func_headers "$headers" "$funcs" "$@" && add_extralibs "$@"
 }
 
 check_exec(){
