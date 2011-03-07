@@ -549,7 +549,12 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
             return -1;
     }
 
+    /* ffdshow custom code */
+#if CONFIG_AUDIO_FLOAT
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+#else
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+#endif
 
     AAC_INIT_VLC_STATIC( 0, 304);
     AAC_INIT_VLC_STATIC( 1, 270);
@@ -2166,7 +2171,12 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         avctx->frame_size = samples;
     }
 
+    /* ffdshow custom code */
+#if CONFIG_AUDIO_FLOAT
+    data_size_tmp = samples * avctx->channels * sizeof(float);
+#else
     data_size_tmp = samples * avctx->channels * sizeof(int16_t);
+#endif
     if (*data_size < data_size_tmp) {
         av_log(avctx, AV_LOG_ERROR,
                "Output buffer too small (%d) or trying to output too many samples (%d) for this frame.\n",
@@ -2175,8 +2185,14 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     }
     *data_size = data_size_tmp;
 
-    if (samples)
+    if (samples) {
+        /* ffdshow custom code */
+#if CONFIG_AUDIO_FLOAT
+        float_interleave(data, (const float **)ac->output_data, samples, avctx->channels);
+#else
         ac->fmt_conv.float_to_int16_interleave(data, (const float **)ac->output_data, samples, avctx->channels);
+#endif
+    }
 
     if (ac->output_configured)
         ac->output_configured = OC_LOCKED;
@@ -2494,7 +2510,11 @@ AVCodec ff_aac_decoder = {
     aac_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
     .sample_fmts = (const enum AVSampleFormat[]) {
+#if CONFIG_AUDIO_FLOAT
+        AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE
+#else
         AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE
+#endif
     },
     .channel_layouts = aac_channel_layout,
 };
@@ -2514,7 +2534,11 @@ AVCodec ff_aac_latm_decoder = {
     .decode = latm_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("AAC LATM (Advanced Audio Codec LATM syntax)"),
     .sample_fmts = (const enum AVSampleFormat[]) {
+#if CONFIG_AUDIO_FLOAT
+        AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE
+#else
         AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE
+#endif
     },
     .channel_layouts = aac_channel_layout,
 };
