@@ -36,6 +36,8 @@ typedef int16_t SampleType;
 typedef int32_t CoefType;
 typedef int64_t CoefSumType;
 
+#define MUL_COEF(a,b) MUL64(a,b)
+
 
 /**
  * Compex number.
