@@ -214,6 +214,8 @@ unknown_opt:
                     fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg, opt);
                     exit(1);
                 }
+            } else if (po->flags & OPT_DUMMY) {
+                /* Do nothing for this option */
             } else {
                 po->u.func_arg(arg);
             }

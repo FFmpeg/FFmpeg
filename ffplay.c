@@ -3023,6 +3023,7 @@ static const OptionDef options[] = {
 #endif
     { "rdftspeed", OPT_INT | HAS_ARG| OPT_AUDIO | OPT_EXPERT, {(void*)&rdftspeed}, "rdft speed", "msecs" },
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
+    { "i", OPT_DUMMY, NULL, "ffmpeg compatibility dummy option", ""},
     { NULL, },
 };
 
