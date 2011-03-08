@@ -78,7 +78,7 @@ typedef struct AC3Block {
     int16_t  **band_psd;                        ///< psd per critical band
     int16_t  **mask;                            ///< masking curve
     uint16_t **qmant;                           ///< quantized mantissas
-    int8_t   exp_shift[AC3_MAX_CHANNELS];       ///< exponent shift values
+    int8_t   coeff_shift[AC3_MAX_CHANNELS];     ///< fixed-point coefficient shift values
     uint8_t  new_rematrixing_strategy;          ///< send new rematrixing flags in this block
     uint8_t  rematrixing_flags[4];              ///< rematrixing flags
 } AC3Block;
@@ -269,7 +269,7 @@ static void apply_mdct(AC3EncodeContext *s)
 
             apply_window(&s->dsp, s->windowed_samples, input_samples, s->mdct.window, AC3_WINDOW_SIZE);
 
-            block->exp_shift[ch] = normalize_samples(s);
+            block->coeff_shift[ch] = normalize_samples(s);
 
             mdct512(&s->mdct, block->mdct_coef[ch], s->windowed_samples);
         }
@@ -416,14 +416,13 @@ static void extract_exponents(AC3EncodeContext *s)
             AC3Block *block = &s->blocks[blk];
             uint8_t *exp   = block->exp[ch];
             int32_t *coef = block->fixed_coef[ch];
-            int exp_shift  = block->exp_shift[ch];
             for (i = 0; i < AC3_MAX_COEFS; i++) {
                 int e;
                 int v = abs(coef[i]);
                 if (v == 0)
                     e = 24;
                 else {
-                    e = 23 - av_log2(v) + exp_shift;
+                    e = 23 - av_log2(v);
                     if (e >= 24) {
                         e = 24;
                         coef[i] = 0;
@@ -1139,7 +1138,7 @@ static inline int asym_quant(int c, int e, int qbits)
  * Quantize a set of mantissas for a single channel in a single block.
  */
 static void quantize_mantissas_blk_ch(AC3EncodeContext *s, int32_t *fixed_coef,
-                                      int8_t exp_shift, uint8_t *exp,
+                                      uint8_t *exp,
                                       uint8_t *bap, uint16_t *qmant, int n)
 {
     int i;
@@ -1147,7 +1146,7 @@ static void quantize_mantissas_blk_ch(AC3EncodeContext *s, int32_t *fixed_coef,
     for (i = 0; i < n; i++) {
         int v;
         int c = fixed_coef[i];
-        int e = exp[i] - exp_shift;
+        int e = exp[i];
         int b = bap[i];
         switch (b) {
         case 0:
@@ -1243,7 +1242,7 @@ static void quantize_mantissas(AC3EncodeContext *s)
         s->qmant1_ptr = s->qmant2_ptr = s->qmant4_ptr = NULL;
 
         for (ch = 0; ch < s->channels; ch++) {
-            quantize_mantissas_blk_ch(s, block->fixed_coef[ch], block->exp_shift[ch],
+            quantize_mantissas_blk_ch(s, block->fixed_coef[ch],
                                       block->exp[ch], block->bap[ch],
                                       block->qmant[ch], s->nb_coefs[ch]);
         }

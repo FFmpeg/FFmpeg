@@ -295,28 +295,54 @@ static void lshift_tab(int16_t *tab, int n, unsigned int lshift)
 
 
 /**
+ * Shift each value in an array by a specified amount.
+ * @param src    input array
+ * @param n      number of values in the array
+ * @param shift  shift amount (negative=right, positive=left)
+ */
+static void shift_int32(int32_t *src, int n, int shift)
+{
+    int i;
+
+    if (shift > 0) {
+        for (i = 0; i < n; i++)
+            src[i] <<= shift;
+    } else if (shift < 0) {
+        shift = -shift;
+        for (i = 0; i < n; i++)
+            src[i] >>= shift;
+    }
+}
+
+
+/**
  * Normalize the input samples to use the maximum available precision.
- * This assumes signed 16-bit input samples. Exponents are reduced by 9 to
- * match the 24-bit internal precision for MDCT coefficients.
+ * This assumes signed 16-bit input samples.
  *
- * @return exponent shift
+ * @return coefficient shift
  */
 static int normalize_samples(AC3EncodeContext *s)
 {
     int v = 14 - log2_tab(s, s->windowed_samples, AC3_WINDOW_SIZE);
     lshift_tab(s->windowed_samples, AC3_WINDOW_SIZE, v);
-    return v - 9;
+    return 9 - v;
 }
 
 
 /**
- * Scale MDCT coefficients from float to fixed-point.
+ * Scale MDCT coefficients to 24-bit fixed-point.
  */
 static void scale_coefficients(AC3EncodeContext *s)
 {
-    /* scaling/conversion is obviously not needed for the fixed-point encoder
-       since the coefficients are already fixed-point. */
-    return;
+    int blk, ch;
+
+    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+        AC3Block *block = &s->blocks[blk];
+        for (ch = 0; ch < s->channels; ch++) {
+            shift_int32(block->mdct_coef[ch], AC3_MAX_COEFS,
+                        block->coeff_shift[ch]);
+        }
+    }
 }
 
 
