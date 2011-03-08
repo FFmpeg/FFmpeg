@@ -598,7 +598,6 @@ static int aac_encode_frame(AVCodecContext *avctx,
             }
             for (j = 0; j < chans; j++) {
                 s->cur_channel = start_ch + j;
-                s->scoefs = cpe->ch[j].ret;
                 encode_individual_channel(avctx, s, &cpe->ch[j], cpe->common_window);
             }
             start_ch += chans;
