@@ -1933,6 +1933,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
         st= ic->streams[i];
         st->cur_dts= st->first_dts;
         st->last_IP_pts = AV_NOPTS_VALUE;
+        st->reference_dts = AV_NOPTS_VALUE;
     }
 }
 
