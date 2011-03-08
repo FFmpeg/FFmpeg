@@ -27,6 +27,7 @@
 #define _BSD_SOURCE     /* Needed for using struct ip_mreq with recent glibc */
 #define _DARWIN_C_SOURCE /* Needed for using IP_MULTICAST_TTL on OS X */
 #include "avformat.h"
+#include "avio_internal.h"
 #include "libavutil/parseutils.h"
 #include <unistd.h>
 #include "internal.h"
@@ -243,7 +244,7 @@ static int udp_port(struct sockaddr_storage *addr, int addr_len)
  * @param uri of the remote server
  * @return zero if no error.
  */
-int udp_set_remote_url(URLContext *h, const char *uri)
+int ff_udp_set_remote_url(URLContext *h, const char *uri)
 {
     UDPContext *s = h->priv_data;
     char hostname[256], buf[10];
@@ -282,7 +283,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
  * @param h media file context
  * @return the local port number
  */
-int udp_get_local_port(URLContext *h)
+int ff_udp_get_local_port(URLContext *h)
 {
     UDPContext *s = h->priv_data;
     return s->local_port;
@@ -365,7 +366,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (flags & URL_WRONLY)
             goto fail;
     } else {
-        if (udp_set_remote_url(h, uri) < 0)
+        if (ff_udp_set_remote_url(h, uri) < 0)
             goto fail;
     }
 
