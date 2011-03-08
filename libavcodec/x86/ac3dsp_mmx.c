@@ -32,6 +32,12 @@ extern int ff_ac3_max_msb_abs_int16_mmxext(const int16_t *src, int len);
 extern int ff_ac3_max_msb_abs_int16_sse2  (const int16_t *src, int len);
 extern int ff_ac3_max_msb_abs_int16_ssse3 (const int16_t *src, int len);
 
+extern void ff_ac3_lshift_int16_mmx (int16_t *src, int len, unsigned int lshift);
+extern void ff_ac3_lshift_int16_sse2(int16_t *src, int len, unsigned int lshift);
+
+extern void ff_ac3_shift_int32_mmx (int32_t *src, int len, int shift);
+extern void ff_ac3_shift_int32_sse2(int32_t *src, int len, int shift);
+
 av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c)
 {
     int mm_flags = av_get_cpu_flags();
@@ -40,6 +46,8 @@ av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c)
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->ac3_exponent_min = ff_ac3_exponent_min_mmx;
         c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_mmx;
+        c->ac3_lshift_int16 = ff_ac3_lshift_int16_mmx;
+        c->ac3_shift_int32  = ff_ac3_shift_int32_mmx;
     }
     if (mm_flags & AV_CPU_FLAG_MMX2 && HAVE_MMX2) {
         c->ac3_exponent_min = ff_ac3_exponent_min_mmxext;
@@ -48,6 +56,11 @@ av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c)
     if (mm_flags & AV_CPU_FLAG_SSE2 && HAVE_SSE) {
         c->ac3_exponent_min = ff_ac3_exponent_min_sse2;
         c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_sse2;
+
+        if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
+            c->ac3_lshift_int16 = ff_ac3_lshift_int16_sse2;
+            c->ac3_shift_int32  = ff_ac3_shift_int32_sse2;
+        }
     }
     if (mm_flags & AV_CPU_FLAG_SSSE3 && HAVE_SSSE3) {
         c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_ssse3;

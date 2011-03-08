@@ -133,3 +133,77 @@ INIT_XMM
 AC3_MAX_MSB_ABS_INT16 sse2, min_max
 %define ABS2 ABS2_SSSE3
 AC3_MAX_MSB_ABS_INT16 ssse3, or_abs
+
+;-----------------------------------------------------------------------------
+; macro used for ff_ac3_lshift_int16() and ff_ac3_shift_int32()
+;-----------------------------------------------------------------------------
+
+%macro AC3_SHIFT_4MM 3 ; src/dst, shift instruction, shift amount
+    mova  m1, [%1         ]
+    mova  m2, [%1+mmsize  ]
+    mova  m3, [%1+mmsize*2]
+    mova  m4, [%1+mmsize*3]
+    %2    m1, %3
+    %2    m2, %3
+    %2    m3, %3
+    %2    m4, %3
+    mova  [%1         ], m1
+    mova  [%1+mmsize  ], m2
+    mova  [%1+mmsize*2], m3
+    mova  [%1+mmsize*3], m4
+    add   %1, mmsize*4
+%endmacro
+
+;-----------------------------------------------------------------------------
+; void ff_ac3_lshift_int16(int16_t *src, int len, unsigned int shift)
+;-----------------------------------------------------------------------------
+
+%macro AC3_LSHIFT_INT16 1
+cglobal ac3_lshift_int16_%1, 3,3,5, src, len, shift
+    test   shiftd, shiftd
+    jz .end
+    movd       m0, shiftd
+    ALIGN 8
+.loop:
+    AC3_SHIFT_4MM srcq, psllw, m0
+    sub      lend, mmsize*2
+    ja .loop
+.end:
+    REP_RET
+%endmacro
+
+INIT_MMX
+AC3_LSHIFT_INT16 mmx
+INIT_XMM
+AC3_LSHIFT_INT16 sse2
+
+;-----------------------------------------------------------------------------
+; void ff_ac3_shift_int32(int32_t *src, int len, int shift)
+;-----------------------------------------------------------------------------
+
+%macro AC3_SHIFT_INT32 1
+cglobal ac3_shift_int32_%1, 3,3,5, src, len, shift
+    test   shiftd, shiftd
+    je .end
+    js .shift_right
+    movd       m0, shiftd
+.loop_left:
+    AC3_SHIFT_4MM srcq, pslld, m0
+    sub      lend, mmsize
+    ja .loop_left
+    jmp .end
+.shift_right:
+    neg    shiftd
+    movd       m0, shiftd
+.loop_right:
+    AC3_SHIFT_4MM srcq, psrad, m0
+    sub      lend, mmsize
+    ja .loop_right
+.end:
+    REP_RET
+%endmacro
+
+INIT_MMX
+AC3_SHIFT_INT32 mmx
+INIT_XMM
+AC3_SHIFT_INT32 sse2
