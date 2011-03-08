@@ -281,8 +281,8 @@ unknown_opt:
                     fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg, opt);
                     exit(1);
                 }
-            } else {
-                po->u.func_arg(arg);
+            } else if (po->u.func_arg) {
+                    po->u.func_arg(arg);
             }
             if(po->flags & OPT_EXIT)
                 exit(0);
