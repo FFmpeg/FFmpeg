@@ -62,7 +62,7 @@ static const PixelFormatTag pix_fmt_bps_mov[] = {
     { PIX_FMT_NONE, 0 },
 };
 
-static enum PixelFormat find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc)
+enum PixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc)
 {
     while (tags->pix_fmt >= 0) {
         if (tags->fourcc == fourcc)
@@ -77,11 +77,11 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     RawVideoContext *context = avctx->priv_data;
 
     if (avctx->codec_tag == MKTAG('r','a','w',' '))
-        avctx->pix_fmt = find_pix_fmt(pix_fmt_bps_mov, avctx->bits_per_coded_sample);
+        avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_mov, avctx->bits_per_coded_sample);
     else if (avctx->codec_tag)
-        avctx->pix_fmt = find_pix_fmt(ff_raw_pix_fmt_tags, avctx->codec_tag);
+        avctx->pix_fmt = ff_find_pix_fmt(ff_raw_pix_fmt_tags, avctx->codec_tag);
     else if (avctx->pix_fmt == PIX_FMT_NONE && avctx->bits_per_coded_sample)
-        avctx->pix_fmt = find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
+        avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
 
     ff_set_systematic_pal2(context->palette, avctx->pix_fmt);
     context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
