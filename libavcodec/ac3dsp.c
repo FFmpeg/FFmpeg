@@ -109,6 +109,8 @@ av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
     c->ac3_rshift_int32 = ac3_rshift_int32_c;
     c->float_to_fixed24 = float_to_fixed24_c;
 
+    if (ARCH_ARM)
+        ff_ac3dsp_init_arm(c, bit_exact);
     if (HAVE_MMX)
         ff_ac3dsp_init_x86(c, bit_exact);
 }
