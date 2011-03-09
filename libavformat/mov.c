@@ -1499,7 +1499,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         sc->ctts_data[i].count   = count;
         sc->ctts_data[i].duration= duration;
-        if (duration < 0)
+        if (duration < 0 && i+1<entries)
             sc->dts_shift = FFMAX(sc->dts_shift, -duration);
     }
 
