@@ -1282,7 +1282,7 @@ static av_always_inline void idct_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblo
                             s->vp8dsp.vp8_idct_add(ch_dst+4*x, s->block[4+ch][(y<<1)+x], s->uvlinesize);
                         nnz4 >>= 8;
                         if (!nnz4)
-                            break;
+                            goto chroma_idct_end;
                     }
                     ch_dst += 4*s->uvlinesize;
                 }
@@ -1290,6 +1290,7 @@ static av_always_inline void idct_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblo
                 s->vp8dsp.vp8_idct_dc_add4uv(ch_dst, s->block[4+ch], s->uvlinesize);
             }
         }
+chroma_idct_end: ;
     }
 }
 
