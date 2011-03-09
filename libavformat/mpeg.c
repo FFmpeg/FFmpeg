@@ -71,6 +71,7 @@ static int mpegps_probe(AVProbeData *p)
             // and audio streams
             else if((code & 0xe0) == AUDIO_ID &&  pes) {audio++; i+=len;}
             else if(code == PRIVATE_STREAM_1  &&  pes) {priv1++; i+=len;}
+            else if(code == 0x1fd             &&  pes) vid++; //VC1
 
             else if((code & 0xf0) == VIDEO_ID && !pes) invalid++;
             else if((code & 0xe0) == AUDIO_ID && !pes) invalid++;
@@ -78,7 +79,7 @@ static int mpegps_probe(AVProbeData *p)
         }
     }
 
-    if(vid+audio > invalid)     /* invalid VDR files nd short PES streams */
+    if(vid+audio > invalid+1)     /* invalid VDR files nd short PES streams */
         score= AVPROBE_SCORE_MAX/4;
 
 //av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d %d len:%d\n", sys, priv1, pspack,vid, audio, invalid, p->buf_size);
