@@ -25,3 +25,7 @@
 int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
                              int64_t pts, AVRational pixel_aspect);
 
+int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
+                              int64_t pts, AVRational pixel_aspect, int width,
+                              int height, enum PixelFormat  pix_fmt,
+                              const char *sws_param);
