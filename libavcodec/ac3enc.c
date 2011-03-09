@@ -328,10 +328,10 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
                 CoefType rt = block->mdct_coef[1][i];
                 CoefType md = lt + rt;
                 CoefType sd = lt - rt;
-                sum[0] += MUL_COEF(lt, lt);
-                sum[1] += MUL_COEF(rt, rt);
-                sum[2] += MUL_COEF(md, md);
-                sum[3] += MUL_COEF(sd, sd);
+                sum[0] += lt * lt;
+                sum[1] += rt * rt;
+                sum[2] += md * md;
+                sum[3] += sd * sd;
             }
 
             /* compare sums to determine if rematrixing will be used for this band */
