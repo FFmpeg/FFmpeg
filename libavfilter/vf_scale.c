@@ -205,6 +205,8 @@ static int config_props(AVFilterLink *outlink)
 
     scale->input_is_pal = av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL;
 
+    if (scale->sws)
+        sws_freeContext(scale->sws);
     scale->sws = sws_getContext(inlink ->w, inlink ->h, inlink ->format,
                                 outlink->w, outlink->h, outlink->format,
                                 scale->flags, NULL, NULL, NULL);
