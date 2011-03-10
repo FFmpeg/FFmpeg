@@ -231,6 +231,7 @@ Codecs:
   zmbv*                                 Kostya Shishkov
 
 Hardware acceleration:
+  crystalhd.c                           Philip Langdale
   dxva2*                                Laurent Aimar
   vaapi*                                Gwenole Beauchesne
   vdpau*                                Carl Eugen Hoyos

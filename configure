@@ -878,6 +878,7 @@ CONFIG_LIST="
     avformat
     avisynth
     bzlib
+    crystalhd
     dct
     doc
     dwt
@@ -1244,6 +1245,7 @@ h263_vaapi_hwaccel_select="vaapi h263_decoder"
 h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
 h264_decoder_select="golomb h264dsp h264pred"
+h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf"
 h264_dxva2_hwaccel_deps="dxva2api_h"
 h264_dxva2_hwaccel_select="dxva2 h264_decoder"
 h264_vaapi_hwaccel_select="vaapi"
@@ -1266,13 +1268,16 @@ mpeg4_decoder_select="h263_decoder mpeg4video_parser"
 mpeg4_encoder_select="h263_encoder"
 mpeg_vdpau_decoder_select="vdpau mpegvideo_decoder"
 mpeg1_vdpau_decoder_select="vdpau mpeg1video_decoder"
+mpeg2_crystalhd_decoder_select="crystalhd"
 mpeg2_dxva2_hwaccel_deps="dxva2api_h"
 mpeg2_dxva2_hwaccel_select="dxva2 mpeg2video_decoder"
 mpeg2_vaapi_hwaccel_select="vaapi mpeg2video_decoder"
+mpeg4_crystalhd_decoder_select="crystalhd"
 mpeg4_vaapi_hwaccel_select="vaapi mpeg4_decoder"
 mpeg4_vdpau_decoder_select="vdpau mpeg4_decoder"
 mpeg_xvmc_decoder_deps="X11_extensions_XvMClib_h"
 mpeg_xvmc_decoder_select="mpegvideo_decoder"
+msmpeg4_crystalhd_decoder_select="crystalhd"
 msmpeg4v1_decoder_select="h263_decoder"
 msmpeg4v1_encoder_select="h263_encoder"
 msmpeg4v2_decoder_select="h263_decoder"
@@ -1309,6 +1314,7 @@ truehd_decoder_select="mlp_decoder"
 tscc_decoder_select="zlib"
 twinvq_decoder_select="mdct lsp"
 vc1_decoder_select="h263_decoder"
+vc1_crystalhd_decoder_select="crystalhd"
 vc1_dxva2_hwaccel_deps="dxva2api_h DXVA_PictureParameters_wDecodedPictureIndex"
 vc1_dxva2_hwaccel_select="dxva2 vc1_decoder"
 vc1_vaapi_hwaccel_select="vaapi vc1_decoder"
@@ -1330,6 +1336,7 @@ wmv1_encoder_select="h263_encoder"
 wmv2_decoder_select="h263_decoder"
 wmv2_encoder_select="h263_encoder"
 wmv3_decoder_select="vc1_decoder"
+wmv3_crystalhd_decoder_select="crystalhd"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
 wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
@@ -1338,6 +1345,7 @@ zlib_encoder_select="zlib"
 zmbv_decoder_select="zlib"
 zmbv_encoder_select="zlib"
 
+crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 vaapi_deps="va_va_h"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
@@ -2760,6 +2768,7 @@ check_func_headers windows.h VirtualAlloc
 check_header conio.h
 check_header dlfcn.h
 check_header dxva2api.h
+check_header libcrystalhd/libcrystalhd_if.h
 check_header malloc.h
 check_header poll.h
 check_header sys/mman.h
@@ -2808,6 +2817,7 @@ for thread in $THREADS_LIST; do
 done
 
 check_lib math.h sin -lm
+disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsGetVersion -lcrystalhd
 disabled vaapi || check_lib va/va.h vaInitialize -lva
 
 check_mathfunc exp2
