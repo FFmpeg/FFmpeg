@@ -76,7 +76,15 @@ static int audio_write_packet(AVFormatContext *s1, AVPacket *pkt)
     int size     = pkt->size;
     uint8_t *buf = pkt->data;
 
-    while((res = snd_pcm_writei(s->h, buf, size / s->frame_size)) < 0) {
+    size /= s->frame_size;
+    if (s->reorder_func) {
+        if (size > s->reorder_buf_size)
+            if (ff_alsa_extend_reorder_buf(s, size))
+                return AVERROR(ENOMEM);
+        s->reorder_func(buf, s->reorder_buf, size);
+        buf = s->reorder_buf;
+    }
+    while ((res = snd_pcm_writei(s->h, buf, size)) < 0) {
         if (res == -EAGAIN) {
 
             return AVERROR(EAGAIN);
