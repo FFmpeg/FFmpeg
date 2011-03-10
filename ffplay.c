@@ -2568,6 +2568,7 @@ static int decode_thread(void *arg)
                     goto fail;
                 }
             }
+            eof=0;
             continue;
         }
         ret = av_read_frame(ic, pkt);
