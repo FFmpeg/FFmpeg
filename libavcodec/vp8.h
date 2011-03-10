@@ -233,8 +233,7 @@ typedef struct {
         uint8_t golden;
         uint8_t pred16x16[4];
         uint8_t pred8x8c[3];
-        /* Padded to allow overreads */
-        uint8_t token[4][17][3][NUM_DCT_TOKENS-1];
+        uint8_t token[4][16][3][NUM_DCT_TOKENS-1];
         uint8_t mvc[2][19];
     } prob[2];
 } VP8Context;
