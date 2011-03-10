@@ -1114,7 +1114,6 @@ HAVE_LIST="
     sys_soundcard_h
     sys_videoio_h
     ten_operands
-    termios_h
     threads
     truncf
     vfp_args
@@ -2791,7 +2790,6 @@ check_header poll.h
 check_header sys/mman.h
 check_header sys/resource.h
 check_header sys/select.h
-check_header termios.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
 check_header X11/extensions/XvMClib.h
