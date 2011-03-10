@@ -127,6 +127,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (INDEO5, indeo5);
     REGISTER_DECODER (INTERPLAY_VIDEO, interplay_video);
     REGISTER_ENCDEC  (JPEGLS, jpegls);
+    REGISTER_DECODER (JV, jv);
     REGISTER_DECODER (KGV1, kgv1);
     REGISTER_DECODER (KMVC, kmvc);
     REGISTER_DECODER (LAGARITH, lagarith);

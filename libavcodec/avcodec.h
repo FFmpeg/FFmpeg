@@ -32,8 +32,8 @@
 #include "libavutil/cpu.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 113
-#define LIBAVCODEC_VERSION_MICRO  2
+#define LIBAVCODEC_VERSION_MINOR 114
+#define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -261,6 +261,7 @@ enum CodecID {
     CODEC_ID_MXPEG,
     CODEC_ID_LAGARITH,
     CODEC_ID_PRORES,
+    CODEC_ID_JV,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
