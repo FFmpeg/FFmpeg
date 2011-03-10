@@ -640,7 +640,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
  *         otherwise, the index of the last coeff decoded plus one
  */
 static int decode_block_coeffs_internal(VP56RangeCoder *c, DCTELEM block[16],
-                                        uint8_t probs[8][3][NUM_DCT_TOKENS-1],
+                                        uint8_t probs[16][3][NUM_DCT_TOKENS-1],
                                         int i, uint8_t *token_prob, int16_t qmul[2])
 {
     goto skip_eob;
