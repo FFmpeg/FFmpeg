@@ -39,10 +39,15 @@
         other formats */
 #define DEFAULT_CODEC_ID AV_NE(CODEC_ID_PCM_S16BE, CODEC_ID_PCM_S16LE)
 
+typedef void (*ff_reorder_func)(const void *, void *, int);
+
 typedef struct {
     snd_pcm_t *h;
     int frame_size;  ///< preferred size for reads and writes
     int period_size; ///< bytes per sample * channels
+    ff_reorder_func reorder_func;
+    void *reorder_buf;
+    int reorder_buf_size; ///< in frames
 } AlsaData;
 
 /**
@@ -81,5 +86,7 @@ int ff_alsa_close(AVFormatContext *s1);
  * @return 0 if OK, AVERROR_xxx on error
  */
 int ff_alsa_xrun_recover(AVFormatContext *s1, int err);
+
+int ff_alsa_extend_reorder_buf(AlsaData *s, int size);
 
 #endif /* AVDEVICE_ALSA_AUDIO_H */
