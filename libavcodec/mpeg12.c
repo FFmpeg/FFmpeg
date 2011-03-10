@@ -406,6 +406,10 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 }
                 break;
             case MT_FIELD:
+                if(s->progressive_sequence){
+                    av_log(s->avctx, AV_LOG_ERROR, "MT_FIELD in progressive_sequence\n");
+                    return -1;
+                }
                 s->mv_type = MV_TYPE_FIELD;
                 if (s->picture_structure == PICT_FRAME) {
                     mb_type |= MB_TYPE_16x8 | MB_TYPE_INTERLACED;
@@ -443,6 +447,10 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 }
                 break;
             case MT_DMV:
+                if(s->progressive_sequence){
+                    av_log(s->avctx, AV_LOG_ERROR, "MT_DMV in progressive_sequence\n");
+                    return -1;
+                }
                 s->mv_type = MV_TYPE_DMV;
                 for(i=0;i<2;i++) {
                     if (USES_LIST(mb_type, i)) {
@@ -1587,7 +1595,6 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
 
     if(s->progressive_sequence && !s->frame_pred_frame_dct){
         av_log(s->avctx, AV_LOG_ERROR, "invalid frame_pred_frame_dct\n");
-        s->frame_pred_frame_dct= 1;
     }
 
     if(s->picture_structure == PICT_FRAME){
