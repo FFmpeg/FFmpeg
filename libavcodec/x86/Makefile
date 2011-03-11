@@ -17,10 +17,8 @@ MMX-OBJS-$(CONFIG_H264PRED)            += x86/h264_intrapred_init.o
 
 YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp_yasm.o
 
-MMX-OBJS-$(CONFIG_AC3_ENCODER)         += x86/ac3dsp_mmx.o
-MMX-OBJS-$(CONFIG_AC3_FIXED_ENCODER)   += x86/ac3dsp_mmx.o
-YASM-OBJS-$(CONFIG_AC3_ENCODER)        += x86/ac3dsp.o
-YASM-OBJS-$(CONFIG_AC3_FIXED_ENCODER)  += x86/ac3dsp.o
+MMX-OBJS-$(CONFIG_AC3DSP)              += x86/ac3dsp_mmx.o
+YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
 MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
 MMX-OBJS-$(CONFIG_MP1FLOAT_DECODER)    += x86/mpegaudiodec_mmx.o
 MMX-OBJS-$(CONFIG_MP2FLOAT_DECODER)    += x86/mpegaudiodec_mmx.o

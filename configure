@@ -899,6 +899,7 @@ COMPONENT_LIST="
 CONFIG_LIST="
     $COMPONENT_LIST
     aandct
+    ac3dsp
     avcodec
     avdevice
     avfilter
@@ -1237,7 +1238,8 @@ aac_decoder_select="mdct rdft"
 aac_encoder_select="mdct"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="mdct ac3_parser"
-ac3_encoder_select="mdct"
+ac3_encoder_select="mdct ac3dsp"
+ac3_fixed_encoder_select="ac3dsp"
 alac_encoder_select="lpc"
 amrnb_decoder_select="lsp"
 amrwb_decoder_select="lsp"
