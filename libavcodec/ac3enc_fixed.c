@@ -278,40 +278,6 @@ static int log2_tab(AC3EncodeContext *s, int16_t *src, int len)
 
 
 /**
- * Left-shift each value in an array by a specified amount.
- * @param tab    input array
- * @param n      number of values in the array
- * @param lshift left shift amount
- */
-static void lshift_tab(int16_t *tab, int n, unsigned int lshift)
-{
-    int i;
-
-    if (lshift > 0) {
-        for (i = 0; i < n; i++)
-            tab[i] <<= lshift;
-    }
-}
-
-
-/**
- * Right-shift each value in an array of int32_t by a specified amount.
- * @param src    input array
- * @param len    number of values in the array
- * @param shift  right shift amount
- */
-static void ac3_rshift_int32_c(int32_t *src, unsigned int len, unsigned int shift)
-{
-    int i;
-
-    if (shift > 0) {
-        for (i = 0; i < len; i++)
-            src[i] >>= shift;
-    }
-}
-
-
-/**
  * Normalize the input samples to use the maximum available precision.
  * This assumes signed 16-bit input samples.
  *
@@ -320,7 +286,8 @@ static void ac3_rshift_int32_c(int32_t *src, unsigned int len, unsigned int shif
 static int normalize_samples(AC3EncodeContext *s)
 {
     int v = 14 - log2_tab(s, s->windowed_samples, AC3_WINDOW_SIZE);
-    lshift_tab(s->windowed_samples, AC3_WINDOW_SIZE, v);
+    if (v > 0)
+        s->ac3dsp.ac3_lshift_int16(s->windowed_samples, AC3_WINDOW_SIZE, v);
     /* +6 to right-shift from 31-bit to 25-bit */
     return v + 6;
 }
@@ -336,8 +303,8 @@ static void scale_coefficients(AC3EncodeContext *s)
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         for (ch = 0; ch < s->channels; ch++) {
-            ac3_rshift_int32_c(block->mdct_coef[ch], AC3_MAX_COEFS,
-                               block->coeff_shift[ch]);
+            s->ac3dsp.ac3_rshift_int32(block->mdct_coef[ch], AC3_MAX_COEFS,
+                                       block->coeff_shift[ch]);
         }
     }
 }
