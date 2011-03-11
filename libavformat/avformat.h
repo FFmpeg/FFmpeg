@@ -650,6 +650,7 @@ typedef struct AVProgram {
 
     int program_num;
     int pmt_pid;
+    int pcr_pid;
 } AVProgram;
 
 #define AVFMTCTX_NOHEADER      0x0001 /**< signal that no header is present
