@@ -1047,7 +1047,7 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
                whenever we reuse exponents. */
             block = s->blocks[blk].exp_ref_block[ch];
             if (s->exp_strategy[ch][blk] != EXP_REUSE) {
-                ff_ac3_bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
+                s->ac3dsp.bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
                                           s->nb_coefs[ch], snr_offset,
                                           s->bit_alloc.floor, ff_ac3_bap_tab,
                                           block->bap[ch]);
