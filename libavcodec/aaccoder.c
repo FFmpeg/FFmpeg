@@ -723,7 +723,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
             sce->zeroes[w*16+g] = !nz;
             if (nz)
                 minthr = FFMIN(minthr, uplim);
-            allz = FFMAX(allz, nz);
+            allz |= nz;
         }
     }
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
