@@ -36,6 +36,8 @@ typedef int16_t SampleType;
 typedef int32_t CoefType;
 typedef int64_t CoefSumType;
 
+#define MAC_COEF(d,a,b) MAC64(d,a,b)
+
 
 /**
  * Compex number.
