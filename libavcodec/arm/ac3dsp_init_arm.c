@@ -29,8 +29,17 @@ void ff_ac3_lshift_int16_neon(int16_t *src, unsigned len, unsigned shift);
 void ff_ac3_rshift_int32_neon(int32_t *src, unsigned len, unsigned shift);
 void ff_float_to_fixed24_neon(int32_t *dst, const float *src, unsigned int len);
 
+void ff_ac3_bit_alloc_calc_bap_armv6(int16_t *mask, int16_t *psd,
+                                     int start, int end,
+                                     int snr_offset, int floor,
+                                     const uint8_t *bap_tab, uint8_t *bap);
+
 av_cold void ff_ac3dsp_init_arm(AC3DSPContext *c, int bit_exact)
 {
+    if (HAVE_ARMV6) {
+        c->bit_alloc_calc_bap    = ff_ac3_bit_alloc_calc_bap_armv6;
+    }
+
     if (HAVE_NEON) {
         c->ac3_exponent_min      = ff_ac3_exponent_min_neon;
         c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_neon;
