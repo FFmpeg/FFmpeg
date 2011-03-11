@@ -3098,6 +3098,10 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
             return -1;
         }
     }
+    avctx->profile = v->profile;
+    if (v->profile == PROFILE_ADVANCED)
+        avctx->level = v->level;
+
     avctx->has_b_frames= !!(avctx->max_b_frames);
     s->low_delay = !avctx->has_b_frames;
 
@@ -3345,6 +3349,13 @@ static av_cold int vc1_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+static const AVProfile profiles[] = {
+    { FF_PROFILE_VC1_SIMPLE,   "Simple"   },
+    { FF_PROFILE_VC1_MAIN,     "Main"     },
+    { FF_PROFILE_VC1_COMPLEX,  "Complex"  },
+    { FF_PROFILE_VC1_ADVANCED, "Advanced" },
+    { FF_PROFILE_UNKNOWN },
+};
 
 AVCodec ff_vc1_decoder = {
     "vc1",
@@ -3358,7 +3369,8 @@ AVCodec ff_vc1_decoder = {
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
-    .pix_fmts = ff_hwaccel_pixfmt_list_420
+    .pix_fmts = ff_hwaccel_pixfmt_list_420,
+    .profiles = NULL_IF_CONFIG_SMALL(profiles)
 };
 
 #if CONFIG_WMV3_DECODER
@@ -3374,7 +3386,8 @@ AVCodec ff_wmv3_decoder = {
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
-    .pix_fmts = ff_hwaccel_pixfmt_list_420
+    .pix_fmts = ff_hwaccel_pixfmt_list_420,
+    .profiles = NULL_IF_CONFIG_SMALL(profiles)
 };
 #endif
 
@@ -3391,7 +3404,8 @@ AVCodec ff_wmv3_vdpau_decoder = {
     CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9 VDPAU"),
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_VDPAU_WMV3, PIX_FMT_NONE}
+    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_VDPAU_WMV3, PIX_FMT_NONE},
+    .profiles = NULL_IF_CONFIG_SMALL(profiles)
 };
 #endif
 
@@ -3408,6 +3422,7 @@ AVCodec ff_vc1_vdpau_decoder = {
     CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1 VDPAU"),
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_VDPAU_VC1, PIX_FMT_NONE}
+    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_VDPAU_VC1, PIX_FMT_NONE},
+    .profiles = NULL_IF_CONFIG_SMALL(profiles)
 };
 #endif
