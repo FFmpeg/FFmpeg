@@ -474,7 +474,7 @@ void decode_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y)
     enum { EDGE_TOP, EDGE_LEFT, EDGE_TOPLEFT };
     int idx = CNT_ZERO;
     int cur_sign_bias = s->sign_bias[mb->ref_frame];
-    int *sign_bias = s->sign_bias;
+    int8_t *sign_bias = s->sign_bias;
     VP56mv near_mv[4];
     uint8_t cnt[4] = { 0 };
     VP56RangeCoder *c = &s->c;
@@ -640,7 +640,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
  *         otherwise, the index of the last coeff decoded plus one
  */
 static int decode_block_coeffs_internal(VP56RangeCoder *c, DCTELEM block[16],
-                                        uint8_t probs[8][3][NUM_DCT_TOKENS-1],
+                                        uint8_t probs[16][3][NUM_DCT_TOKENS-1],
                                         int i, uint8_t *token_prob, int16_t qmul[2])
 {
     goto skip_eob;
@@ -1282,7 +1282,7 @@ static av_always_inline void idct_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblo
                             s->vp8dsp.vp8_idct_add(ch_dst+4*x, s->block[4+ch][(y<<1)+x], s->uvlinesize);
                         nnz4 >>= 8;
                         if (!nnz4)
-                            break;
+                            goto chroma_idct_end;
                     }
                     ch_dst += 4*s->uvlinesize;
                 }
@@ -1290,6 +1290,7 @@ static av_always_inline void idct_mb(VP8Context *s, uint8_t *dst[3], VP8Macroblo
                 s->vp8dsp.vp8_idct_dc_add4uv(ch_dst, s->block[4+ch], s->uvlinesize);
             }
         }
+chroma_idct_end: ;
     }
 }
 

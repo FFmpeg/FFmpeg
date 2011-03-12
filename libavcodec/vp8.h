@@ -85,48 +85,87 @@ typedef struct {
 
 typedef struct {
     AVCodecContext *avctx;
-    DSPContext dsp;
-    VP8DSPContext vp8dsp;
-    H264PredContext hpc;
-    vp8_mc_func put_pixels_tab[3][3][3];
-    AVFrame frames[4];
     AVFrame *framep[4];
     uint8_t *edge_emu_buffer;
-    VP56RangeCoder c;   ///< header context, includes mb modes and motion vectors
-    int profile;
 
-    int mb_width;   /* number of horizontal MB */
-    int mb_height;  /* number of vertical MB */
+    uint16_t mb_width;   /* number of horizontal MB */
+    uint16_t mb_height;  /* number of vertical MB */
     int linesize;
     int uvlinesize;
 
-    int keyframe;
-    int invisible;
-    int update_last;    ///< update VP56_FRAME_PREVIOUS with the current one
-    int update_golden;  ///< VP56_FRAME_NONE if not updated, or which frame to copy if so
-    int update_altref;
-    int deblock_filter;
+    uint8_t keyframe;
+    uint8_t deblock_filter;
+    uint8_t mbskip_enabled;
+    uint8_t segment;             ///< segment of the current macroblock
+    uint8_t chroma_pred_mode;    ///< 8x8c pred mode of the current macroblock
+    uint8_t profile;
+    VP56mv mv_min;
+    VP56mv mv_max;
+
+    int8_t sign_bias[4]; ///< one state [0, 1] per ref frame type
+    int ref_count[3];
 
     /**
-     * If this flag is not set, all the probability updates
-     * are discarded after this frame is decoded.
+     * Base parameters for segmentation, i.e. per-macroblock parameters.
+     * These must be kept unchanged even if segmentation is not used for
+     * a frame, since the values persist between interframes.
      */
-    int update_probabilities;
+    struct {
+        uint8_t enabled;
+        uint8_t absolute_vals;
+        uint8_t update_map;
+        int8_t base_quant[4];
+        int8_t filter_level[4];     ///< base loop filter level
+    } segmentation;
 
-    /**
-     * All coefficients are contained in separate arith coding contexts.
-     * There can be 1, 2, 4, or 8 of these after the header context.
-     */
-    int num_coeff_partitions;
-    VP56RangeCoder coeff_partition[8];
+    struct {
+        uint8_t simple;
+        uint8_t level;
+        uint8_t sharpness;
+    } filter;
 
     VP8Macroblock *macroblocks;
-    VP8Macroblock *macroblocks_base;
     VP8FilterStrength *filter_strength;
 
     uint8_t *intra4x4_pred_mode_top;
     uint8_t intra4x4_pred_mode_left[4];
     uint8_t *segmentation_map;
+
+    /**
+     * Macroblocks can have one of 4 different quants in a frame when
+     * segmentation is enabled.
+     * If segmentation is disabled, only the first segment's values are used.
+     */
+    struct {
+        // [0] - DC qmul  [1] - AC qmul
+        int16_t luma_qmul[2];
+        int16_t luma_dc_qmul[2];    ///< luma dc-only block quant
+        int16_t chroma_qmul[2];
+    } qmat[4];
+
+    struct {
+        uint8_t enabled;    ///< whether each mb can have a different strength based on mode/ref
+
+        /**
+         * filter strength adjustment for the following macroblock modes:
+         * [0-3] - i16x16 (always zero)
+         * [4]   - i4x4
+         * [5]   - zero mv
+         * [6]   - inter modes except for zero or split mv
+         * [7]   - split mv
+         *  i16x16 modes never have any adjustment
+         */
+        int8_t mode[VP8_MVMODE_SPLIT+1];
+
+        /**
+         * filter strength adjustment for macroblocks that reference:
+         * [0] - intra / VP56_FRAME_CURRENT
+         * [1] - VP56_FRAME_PREVIOUS
+         * [2] - VP56_FRAME_GOLDEN
+         * [3] - altref / VP56_FRAME_GOLDEN2
+         */
+        int8_t ref[4];
+    } lf_delta;
 
     /**
      * Cache of the top row needed for intra prediction
@@ -151,73 +190,10 @@ typedef struct {
      *     2+-> full transform
      */
     DECLARE_ALIGNED(16, uint8_t, non_zero_count_cache)[6][4];
+    VP56RangeCoder c;   ///< header context, includes mb modes and motion vectors
     DECLARE_ALIGNED(16, DCTELEM, block)[6][4][16];
     DECLARE_ALIGNED(16, DCTELEM, block_dc)[16];
     uint8_t intra4x4_pred_mode_mb[16];
-
-    int chroma_pred_mode;    ///< 8x8c pred mode of the current macroblock
-    int segment;             ///< segment of the current macroblock
-    VP56mv mv_min;
-    VP56mv mv_max;
-
-    int mbskip_enabled;
-    int sign_bias[4]; ///< one state [0, 1] per ref frame type
-    int ref_count[3];
-
-    /**
-     * Base parameters for segmentation, i.e. per-macroblock parameters.
-     * These must be kept unchanged even if segmentation is not used for
-     * a frame, since the values persist between interframes.
-     */
-    struct {
-        int enabled;
-        int absolute_vals;
-        int update_map;
-        int8_t base_quant[4];
-        int8_t filter_level[4];     ///< base loop filter level
-    } segmentation;
-
-    /**
-     * Macroblocks can have one of 4 different quants in a frame when
-     * segmentation is enabled.
-     * If segmentation is disabled, only the first segment's values are used.
-     */
-    struct {
-        // [0] - DC qmul  [1] - AC qmul
-        int16_t luma_qmul[2];
-        int16_t luma_dc_qmul[2];    ///< luma dc-only block quant
-        int16_t chroma_qmul[2];
-    } qmat[4];
-
-    struct {
-        int simple;
-        int level;
-        int sharpness;
-    } filter;
-
-    struct {
-        int enabled;    ///< whether each mb can have a different strength based on mode/ref
-
-        /**
-         * filter strength adjustment for the following macroblock modes:
-         * [0-3] - i16x16 (always zero)
-         * [4]   - i4x4
-         * [5]   - zero mv
-         * [6]   - inter modes except for zero or split mv
-         * [7]   - split mv
-         *  i16x16 modes never have any adjustment
-         */
-        int8_t mode[VP8_MVMODE_SPLIT+1];
-
-        /**
-         * filter strength adjustment for macroblocks that reference:
-         * [0] - intra / VP56_FRAME_CURRENT
-         * [1] - VP56_FRAME_PREVIOUS
-         * [2] - VP56_FRAME_GOLDEN
-         * [3] - altref / VP56_FRAME_GOLDEN2
-         */
-        int8_t ref[4];
-    } lf_delta;
 
     /**
      * These are all of the updatable probabilities for binary decisions.
@@ -233,10 +209,33 @@ typedef struct {
         uint8_t golden;
         uint8_t pred16x16[4];
         uint8_t pred8x8c[3];
-        /* Padded to allow overreads */
-        uint8_t token[4][17][3][NUM_DCT_TOKENS-1];
+        uint8_t token[4][16][3][NUM_DCT_TOKENS-1];
         uint8_t mvc[2][19];
     } prob[2];
+
+    VP8Macroblock *macroblocks_base;
+    int invisible;
+    int update_last;    ///< update VP56_FRAME_PREVIOUS with the current one
+    int update_golden;  ///< VP56_FRAME_NONE if not updated, or which frame to copy if so
+    int update_altref;
+
+    /**
+     * If this flag is not set, all the probability updates
+     * are discarded after this frame is decoded.
+     */
+    int update_probabilities;
+
+    /**
+     * All coefficients are contained in separate arith coding contexts.
+     * There can be 1, 2, 4, or 8 of these after the header context.
+     */
+    int num_coeff_partitions;
+    VP56RangeCoder coeff_partition[8];
+    DSPContext dsp;
+    VP8DSPContext vp8dsp;
+    H264PredContext hpc;
+    vp8_mc_func put_pixels_tab[3][3][3];
+    AVFrame frames[4];
 } VP8Context;
 
 #endif

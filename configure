@@ -357,6 +357,16 @@ set_weak(){
     done
 }
 
+set_safe(){
+    var=$1
+    shift
+    eval $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')='$*'
+}
+
+get_safe(){
+    eval echo \$$(echo "$1" | sed 's/[^A-Za-z0-9_]/_/g')
+}
+
 pushvar(){
     for var in $*; do
         eval level=\${${var}_level:=0}
@@ -700,20 +710,17 @@ EOF
 check_func_headers(){
     log check_func_headers "$@"
     headers=$1
-    func=$2
+    funcs=$2
     shift 2
-    disable $func
-    incs=""
-    for hdr in $headers; do
-        incs="$incs
-#include <$hdr>"
-    done
-    check_ld "$@" <<EOF && enable $func && enable_safe $headers
-$incs
-int main(int argc, char **argv){
-    return (long) $func;
-}
-EOF
+    {
+        for hdr in $headers; do
+            echo "#include <$hdr>"
+        done
+        for func in $funcs; do
+            echo "long check_$func(void) { return (long) $func; }"
+        done
+        echo "int main(void) { return 0; }"
+    } | check_ld "$@" && enable $funcs && enable_safe $headers
 }
 
 check_cpp_condition(){
@@ -740,9 +747,23 @@ check_lib(){
 check_lib2(){
     log check_lib2 "$@"
     headers="$1"
-    func="$2"
+    funcs="$2"
     shift 2
-    check_func_headers "$headers" $func "$@" && add_extralibs "$@"
+    check_func_headers "$headers" "$funcs" "$@" && add_extralibs "$@"
+}
+
+check_pkg_config(){
+    log check_pkg_config "$@"
+    pkg="$1"
+    headers="$2"
+    funcs="$3"
+    shift 3
+    $pkg_config --exists $pkg || return
+    pkg_cflags=$($pkg_config --cflags $pkg)
+    pkg_libs=$($pkg_config --libs $pkg)
+    check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
+        set_safe ${pkg}_cflags $pkg_cflags   &&
+        set_safe ${pkg}_libs   $pkg_libs
 }
 
 check_exec(){
@@ -826,6 +847,13 @@ require2(){
     check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
 }
 
+require_pkg_config(){
+    pkg="$1"
+    check_pkg_config "$@" || die "ERROR: $pkg not found"
+    add_cflags    $(get_safe ${pkg}_cflags)
+    add_extralibs $(get_safe ${pkg}_libs)
+}
+
 check_host_cc(){
     log check_host_cc "$@"
     cat > $TMPC
@@ -872,6 +900,7 @@ COMPONENT_LIST="
 CONFIG_LIST="
     $COMPONENT_LIST
     aandct
+    ac3dsp
     avcodec
     avdevice
     avfilter
@@ -1151,6 +1180,7 @@ CMDLINE_SET="
     logfile
     malloc_prefix
     nm
+    pkg_config
     samples
     source_path
     strip
@@ -1212,7 +1242,8 @@ aac_decoder_select="mdct rdft"
 aac_encoder_select="mdct"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="mdct ac3_parser"
-ac3_encoder_select="mdct"
+ac3_encoder_select="mdct ac3dsp"
+ac3_fixed_encoder_select="ac3dsp"
 alac_encoder_select="lpc"
 amrnb_decoder_select="lsp"
 amrwb_decoder_select="lsp"
@@ -1588,6 +1619,7 @@ host_cc_default="gcc"
 ln_s="ln -sf"
 nm_default="nm"
 objformat="elf"
+pkg_config_default=pkg-config
 ranlib="ranlib"
 strip_default="strip"
 yasmexe="yasm"
@@ -1797,12 +1829,13 @@ set_default arch target_os
 ar_default="${cross_prefix}${ar_default}"
 cc_default="${cross_prefix}${cc_default}"
 nm_default="${cross_prefix}${nm_default}"
+pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib="${cross_prefix}${ranlib}"
 strip_default="${cross_prefix}${strip_default}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default cc nm strip sysinclude
+set_default cc nm pkg_config strip sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -2835,9 +2868,9 @@ check_mathfunc truncf
 # these are off by default, so fail if requested and not available
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
-enabled libdirac   && add_cflags $(pkg-config --cflags dirac) &&
-                      require  libdirac libdirac_decoder/dirac_parser.h dirac_decoder_init $(pkg-config --libs dirac) &&
-                      require  libdirac libdirac_encoder/dirac_encoder.h dirac_encoder_init $(pkg-config --libs dirac)
+enabled libdirac   && require_pkg_config dirac                          \
+    "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
+    "dirac_decoder_init dirac_encoder_init"
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfreetype && add_cflags $(pkg-config --cflags freetype2) && require libfreetype ft2build.h FT_Init_FreeType -lfreetype
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
@@ -2845,13 +2878,10 @@ enabled libmp3lame && require  "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_q
 enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut
 enabled libopencore_amrnb  && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb  && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
-enabled libopencv  && { check_lib opencv/cv.h cvCreateImageHeader $(pkg-config --libs opencv) ||
-                        die "ERROR: libopencv not found"; }
+enabled libopencv  && require_pkg_config opencv opencv/cv.h cvCreateImageHeader
 enabled libopenjpeg && require libopenjpeg openjpeg.h opj_version -lopenjpeg
-enabled librtmp    && { check_lib librtmp/rtmp.h RTMP_Socket $(pkg-config --libs librtmp) ||
-                        die "ERROR: librtmp not found or RTMP_Socket() missing, librtmp version must be >= 2.2.f"; }
-enabled libschroedinger && add_cflags $(pkg-config --cflags schroedinger-1.0) &&
-                           require libschroedinger schroedinger/schro.h schro_init $(pkg-config --libs schroedinger-1.0)
+enabled librtmp    && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
+enabled libschroedinger && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
 enabled libtheora  && require  libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
@@ -2876,11 +2906,7 @@ if enabled libdc1394; then
     die "ERROR: No version of libdc1394 found "
 fi
 
-SDL_CONFIG="${cross_prefix}sdl-config"
-if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
-    sdl_cflags=$("${SDL_CONFIG}" --cflags)
-    sdl_libs=$("${SDL_CONFIG}" --libs)
-    check_func_headers SDL.h SDL_Init $sdl_cflags $sdl_libs &&
+if check_pkg_config sdl SDL.h SDL_Init; then
     check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
     enable sdl &&
     check_struct SDL.h SDL_VideoInfo current_w $sdl_cflags && enable sdl_video_size
