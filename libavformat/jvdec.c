@@ -31,7 +31,7 @@
 typedef struct {
     int audio_size;    /** audio packet size (bytes) */
     int video_size;    /** video packet size (bytes) */
-    int palette;       /** frame contains palette change */
+    int palette_size;  /** palette size (bytes) */
     int video_type;    /** per-frame video compression type */
 } JVFrame;
 
@@ -113,7 +113,7 @@ static int read_header(AVFormatContext *s,
 
         jvf->audio_size = avio_rl32(pb);
         jvf->video_size = avio_rl32(pb);
-        jvf->palette    = avio_r8(pb);
+        jvf->palette_size = avio_r8(pb) ? 768 : 0;
         if (avio_r8(pb))
              av_log(s, AV_LOG_WARNING, "unsupported audio codec\n");
         jvf->video_type = avio_r8(pb);
@@ -152,8 +152,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         case JV_VIDEO:
             jv->state++;
-            if (jvf->video_size || jvf->palette) {
-                int size = jvf->video_size + (jvf->palette ? 768 : 0);
+            if (jvf->video_size || jvf->palette_size) {
+                int size = jvf->video_size + jvf->palette_size;
                 if (av_new_packet(pkt, size + 5))
                     return AVERROR(ENOMEM);
 
@@ -171,7 +171,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         case JV_PADDING:
             avio_skip(pb, FFMAX(e->size - jvf->audio_size - jvf->video_size
-                                        - (jvf->palette ? 768 : 0), 0));
+                                        - jvf->palette_size, 0));
             jv->state = JV_AUDIO;
             jv->pts++;
         }
