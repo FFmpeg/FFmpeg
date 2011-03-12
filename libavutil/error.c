@@ -37,6 +37,7 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
     case AVERROR_FILTER_NOT_FOUND:  errstr = "Filter not found"; break;
     case AVERROR_BSF_NOT_FOUND:     errstr = "Bitstream filter not found"; break;
     case AVERROR_STREAM_NOT_FOUND:  errstr = "Stream not found"; break;
+    case AVERROR_EXIT:              errstr = "Immediate exit requested"; break;
     }
 
     if (errstr) {
