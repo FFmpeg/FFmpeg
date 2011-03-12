@@ -204,7 +204,7 @@ static int fbdev_read_packet(AVFormatContext *avctx, AVPacket *pkt)
             return AVERROR(EAGAIN);
         ts.tv_sec  =  delay / 1000000;
         ts.tv_nsec = (delay % 1000000) * 1000;
-        while (nanosleep(&ts, &ts) == EINTR);
+        while (nanosleep(&ts, &ts) < 0 && errno == EINTR);
     }
 
     if ((ret = av_new_packet(pkt, fbdev->frame_size)) < 0)
