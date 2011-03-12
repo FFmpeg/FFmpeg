@@ -2859,7 +2859,10 @@ static void opt_audio_sample_fmt(const char *arg)
             ffmpeg_exit(1);
         }
     } else {
-        list_fmts(av_get_sample_fmt_string, AV_SAMPLE_FMT_NB);
+        int i;
+        char fmt_str[128];
+        for (i = -1; i < AV_SAMPLE_FMT_NB; i++)
+            printf("%s\n", av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), i));
         ffmpeg_exit(0);
     }
 }
