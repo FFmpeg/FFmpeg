@@ -57,3 +57,24 @@ function ff_ac3_exponent_min_neon, export=1
         bgt             1b
         pop             {pc}
 endfunc
+
+function ff_ac3_lshift_int16_neon, export=1
+        vdup.16         q0,  r2
+1:      vld1.16         {q1},     [r0,:128]
+        vshl.s16        q1,  q1,  q0
+        vst1.16         {q1},     [r0,:128]!
+        subs            r1,  r1,  #8
+        bgt             1b
+        bx              lr
+endfunc
+
+function ff_ac3_rshift_int32_neon, export=1
+        rsb             r2,  r2,  #0
+        vdup.32         q0,  r2
+1:      vld1.32         {q1},     [r0,:128]
+        vshl.s32        q1,  q1,  q0
+        vst1.32         {q1},     [r0,:128]!
+        subs            r1,  r1,  #4
+        bgt             1b
+        bx              lr
+endfunc
