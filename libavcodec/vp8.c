@@ -695,7 +695,7 @@ skip_eob:
 
 static av_always_inline
 int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
-                        uint8_t probs[8][3][NUM_DCT_TOKENS-1],
+                        uint8_t probs[16][3][NUM_DCT_TOKENS-1],
                         int i, int zero_nhood, int16_t qmul[2])
 {
     uint8_t *token_prob = probs[i][zero_nhood];
