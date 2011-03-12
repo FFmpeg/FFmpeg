@@ -237,7 +237,7 @@ void url_get_filename(URLContext *h, char *buf, int buf_size);
 
 /**
  * The callback is called in blocking functions to test regulary if
- * asynchronous interruption is needed. AVERROR(EINTR) is returned
+ * asynchronous interruption is needed. AVERROR_EXIT is returned
  * in this case by the interrupted function. 'NULL' means no interrupt
  * callback is given.
  */
