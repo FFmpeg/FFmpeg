@@ -506,7 +506,6 @@ static int ffmpeg_exit(int ret)
     /* close files */
     for(i=0;i<nb_output_files;i++) {
         AVFormatContext *s = output_files[i];
-        int j;
         if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             avio_close(s->pb);
         avformat_free_context(s);
