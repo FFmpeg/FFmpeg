@@ -178,10 +178,6 @@ typedef struct AC3EncodeContext {
     int frame_bits;                         ///< all frame bits except exponents and mantissas
     int exponent_bits;                      ///< number of bits used for exponents
 
-    /* mantissa encoding */
-    int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
-    uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
-
     SampleType **planar_samples;
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
@@ -199,6 +195,10 @@ typedef struct AC3EncodeContext {
     DECLARE_ALIGNED(16, SampleType, windowed_samples)[AC3_WINDOW_SIZE];
 } AC3EncodeContext;
 
+typedef struct AC3Mant {
+    uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
+    int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
+} AC3Mant;
 
 #define CMIXLEV_NUM_OPTIONS 3
 static const float cmixlev_options[CMIXLEV_NUM_OPTIONS] = {
@@ -1248,7 +1248,7 @@ static inline int asym_quant(int c, int e, int qbits)
 /**
  * Quantize a set of mantissas for a single channel in a single block.
  */
-static void quantize_mantissas_blk_ch(AC3EncodeContext *s, int32_t *fixed_coef,
+static void quantize_mantissas_blk_ch(AC3Mant *s, int32_t *fixed_coef,
                                       uint8_t *exp,
                                       uint8_t *bap, uint16_t *qmant, int n)
 {
@@ -1350,12 +1350,11 @@ static void quantize_mantissas(AC3EncodeContext *s)
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         AC3Block *ref_block;
-        s->mant1_cnt  = s->mant2_cnt  = s->mant4_cnt  = 0;
-        s->qmant1_ptr = s->qmant2_ptr = s->qmant4_ptr = NULL;
+        AC3Mant m = { 0 };
 
         for (ch = 0; ch < s->channels; ch++) {
             ref_block = block->exp_ref_block[ch];
-            quantize_mantissas_blk_ch(s, block->fixed_coef[ch],
+            quantize_mantissas_blk_ch(&m, block->fixed_coef[ch],
                                       ref_block->exp[ch], ref_block->bap[ch],
                                       block->qmant[ch], s->nb_coefs[ch]);
         }
