@@ -116,6 +116,8 @@ static int read_header(AVFormatContext *s,
         jvf->audio_size = avio_rl32(pb);
         jvf->video_size = avio_rl32(pb);
         jvf->palette_size = avio_r8(pb) ? 768 : 0;
+        jvf->video_size = FFMIN(FFMAX(jvf->video_size, 0),
+                                INT_MAX - JV_PREAMBLE_SIZE - jvf->palette_size);
         if (avio_r8(pb))
              av_log(s, AV_LOG_WARNING, "unsupported audio codec\n");
         jvf->video_type = avio_r8(pb);
