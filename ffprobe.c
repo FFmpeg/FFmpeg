@@ -285,7 +285,7 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         AVCodec *codec;
 
         if (!(codec = avcodec_find_decoder(stream->codec->codec_id))) {
-            fprintf(stderr, "Unsupported codec (id=%d) for input stream %d\n",
+            fprintf(stderr, "Unsupported codec with id %d for input stream %d\n",
                     stream->codec->codec_id, stream->index);
         } else if (avcodec_open(stream->codec, codec) < 0) {
             fprintf(stderr, "Error while opening codec for input stream %d\n",
