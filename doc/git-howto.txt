@@ -44,11 +44,11 @@ I. BASICS:
 
 1. Cloning the source tree:
 
-    git clone git://git.ffmpeg.org/ffmpeg.git <target>
+    git clone git://git.libav.org/libav.git <target>
 
   This will put the FFmpeg sources into the directory <target>.
 
-    git clone git@git.ffmpeg.org:ffmpeg.git <target>
+    git clone git@git.libav.org:libav.git <target>
 
   This will put the FFmpeg sources into the directory <target> and let
   you push back your changes to the remote repository.
@@ -97,7 +97,7 @@ I. BASICS:
     git log <filename(s)>
 
   You may also use the graphical tools like gitview or gitk or the web
-  interface available at http://git.ffmpeg.org/
+  interface available at http://git.libav.org/
 
 6. Checking source tree status:
 
@@ -255,5 +255,5 @@ I. BASICS:
   where $SHA1 is the commit SHA1 from the 'git log' output.
 
 
-Contact the project admins <git at ffmpeg dot org> if you have technical
+Contact the project admins <git at libav dot org> if you have technical
 problems with the GIT server.

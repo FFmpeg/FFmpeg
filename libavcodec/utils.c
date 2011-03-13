@@ -1204,8 +1204,8 @@ void av_log_ask_for_sample(void *avc, const char *msg)
     if (msg)
         av_log(avc, AV_LOG_WARNING, "%s ", msg);
     av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
-            "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
-            "and contact the ffmpeg-devel mailing list.\n");
+            "of this file to ftp://upload.libav.org/MPlayer/incoming/ "
+            "and contact the libav-devel mailing list.\n");
 }
 
 static AVHWAccel *first_hwaccel = NULL;

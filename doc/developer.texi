@@ -151,7 +151,7 @@ should also be avoided if they don't make the code easier to understand.
    ask/discuss it on the developer mailing list.
 @item
    Do not change behavior of the programs (renaming options etc) or public
-   API or ABI without first discussing it on the ffmpeg-devel mailing list.
+   API or ABI without first discussing it on the libav-devel mailing list.
    Do not remove functionality from the code. Just improve!
 
    Note: Redundant code can be removed.
@@ -160,7 +160,7 @@ should also be avoided if they don't make the code easier to understand.
    which change behavior, defaults etc, without asking first. The same
    applies to compiler warning fixes, trivial looking fixes and to code
    maintained by other developers. We usually have a reason for doing things
-   the way we do. Send your changes as patches to the ffmpeg-devel mailing
+   the way we do. Send your changes as patches to the libav-devel mailing
    list, and if the code maintainers say OK, you may commit. This does not
    apply to files you wrote and/or maintain.
 @item
@@ -182,27 +182,27 @@ should also be avoided if they don't make the code easier to understand.
    particular bug. Comments such as "fixed!" or "Changed it." are unacceptable.
 @item
    If you apply a patch by someone else, include the name and email address in
-   the log message. Since the ffmpeg-cvslog mailing list is publicly
+   the log message. Since the libav-commits mailing list is publicly
    archived you should add some SPAM protection to the email address. Send an
-   answer to ffmpeg-devel (or wherever you got the patch from) saying that
+   answer to libav-devel (or wherever you got the patch from) saying that
    you applied the patch.
 @item
    When applying patches that have been discussed (at length) on the mailing
    list, reference the thread in the log message.
 @item
     Do NOT commit to code actively maintained by others without permission.
-    Send a patch to ffmpeg-devel instead. If no one answers within a reasonable
+    Send a patch to libav-devel instead. If no one answers within a reasonable
     timeframe (12h for build failures and security fixes, 3 days small changes,
     1 week for big patches) then commit your patch if you think it is OK.
     Also note, the maintainer can simply ask for more time to review!
 @item
-    Subscribe to the ffmpeg-cvslog mailing list. The diffs of all commits
+    Subscribe to the libav-commits mailing list. The diffs of all commits
     are sent there and reviewed by all the other developers. Bugs and possible
     improvements or general questions regarding commits are discussed there. We
     expect you to react if problems with your code are uncovered.
 @item
     Update the documentation if you change behavior or add features. If you are
-    unsure how best to do this, send a patch to ffmpeg-devel, the documentation
+    unsure how best to do this, send a patch to libav-devel, the documentation
     maintainer(s) will review and commit your stuff.
 @item
     Try to keep important discussions and requests (also) on the public
@@ -261,8 +261,8 @@ verify that there are no big problems.
 
 Patches should be posted as base64 encoded attachments (or any other
 encoding which ensures that the patch will not be trashed during
-transmission) to the ffmpeg-devel mailing list, see
-@url{http://lists.mplayerhq.hu/mailman/listinfo/ffmpeg-devel}
+transmission) to the libav-devel mailing list, see
+@url{https://lists.libav.org/mailman/listinfo/libav-devel}
 
 It also helps quite a bit if you tell us what the patch does (for example
 'replaces lrint by lrintf'), and why (for example '*BSD isn't C99 compliant
@@ -361,7 +361,7 @@ send a reminder by email. Your patch should eventually be dealt with.
     If the patch fixes a bug, did you provide enough information, including
     a sample, so the bug can be reproduced and the fix can be verified?
     Note please do not attach samples >100k to mails but rather provide a
-    URL, you can upload to ftp://upload.ffmpeg.org
+    URL, you can upload to ftp://upload.libav.org
 @item
     Did you provide a verbose summary about what the patch does change?
 @item
@@ -387,7 +387,7 @@ send a reminder by email. Your patch should eventually be dealt with.
 
 @section Patch review process
 
-All patches posted to ffmpeg-devel will be reviewed, unless they contain a
+All patches posted to libav-devel will be reviewed, unless they contain a
 clear note that the patch is not for the git master branch.
 Reviews and comments will be posted as replies to the patch on the
 mailing list. The patch submitter then has to take care of every comment,

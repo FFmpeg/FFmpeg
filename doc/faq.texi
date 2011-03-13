@@ -25,7 +25,7 @@ Nowhere. We do not support old FFmpeg versions in any way, we simply lack
 the time, motivation and manpower to do so. If you have a problem with an
 old version of FFmpeg, upgrade to the latest Subversion snapshot. If you
 still experience the problem, then you can report it according to the
-guidelines in @url{http://ffmpeg.org/bugreports.html}.
+guidelines in @url{http://libav.org/bugreports.html}.
 
 @section Why doesn't FFmpeg support feature [xyz]?
 
@@ -40,13 +40,13 @@ No. Windows DLLs are not portable, bloated and often slow.
 Moreover FFmpeg strives to support all codecs natively.
 A DLL loader is not conducive to that goal.
 
-@section My bug report/mail to ffmpeg-devel/user has not received any replies.
+@section My bug report/mail to libav-devel/user has not received any replies.
 
 Likely reasons
 @itemize
 @item We are busy and haven't had time yet to read your report or
 investigate the issue.
-@item You didn't follow @url{http://ffmpeg.org/bugreports.html}.
+@item You didn't follow @url{http://libav.org/bugreports.html}.
 @item You didn't use Subversion HEAD.
 @item You reported a segmentation fault without gdb output.
 @item You describe a problem but not how to reproduce it.
@@ -124,7 +124,7 @@ problem and an NP-hard problem...
 @section ffmpeg does not work; what is wrong?
 
 Try a @code{make distclean} in the ffmpeg source directory before the build. If this does not help see
-(@url{http://ffmpeg.org/bugreports.html}).
+(@url{http://libav.org/bugreports.html}).
 
 @section How do I encode single pictures into movies?
 

@@ -20,7 +20,7 @@ libavfilter then check it out from the libavfilter repository into
 some directory of your choice by:
 
 @example
-   svn checkout svn://svn.ffmpeg.org/soc/libavfilter
+   svn checkout svn://svn.libav.org/soc/libavfilter
 @end example
 
 And then read the README file in the top directory to learn how to
