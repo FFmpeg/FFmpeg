@@ -59,10 +59,6 @@ static av_cold int mm_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = PIX_FMT_PAL8;
 
     s->frame.reference = 1;
-    if (avctx->get_buffer(avctx, &s->frame)) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
-    }
 
     return 0;
 }
@@ -181,6 +177,11 @@ static int mm_decode_frame(AVCodecContext *avctx,
     type = AV_RL16(&buf[0]);
     buf += MM_PREAMBLE_SIZE;
     buf_size -= MM_PREAMBLE_SIZE;
+
+    if (avctx->reget_buffer(avctx, &s->frame) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+        return -1;
+    }
 
     switch(type) {
     case MM_TYPE_PALETTE   : mm_decode_pal(s, buf, buf_end); return buf_size;
