@@ -108,3 +108,27 @@ function ff_ac3_extract_exponents_neon, export=1
         bgt             1b
         bx              lr
 endfunc
+
+function ff_ac3_sum_square_butterfly_int32_neon, export=1
+        vmov.i64        q0,  #0
+        vmov.i64        q1,  #0
+        vmov.i64        q2,  #0
+        vmov.i64        q3,  #0
+1:
+        vld1.32         {d16},    [r1]!
+        vld1.32         {d17},    [r2]!
+        vadd.s32        d18, d16, d17
+        vsub.s32        d19, d16, d17
+        vmlal.s32       q0,  d16, d16
+        vmlal.s32       q1,  d17, d17
+        vmlal.s32       q2,  d18, d18
+        vmlal.s32       q3,  d19, d19
+        subs            r3,  r3,  #2
+        bgt             1b
+        vadd.s64        d0,  d0,  d1
+        vadd.s64        d1,  d2,  d3
+        vadd.s64        d2,  d4,  d5
+        vadd.s64        d3,  d6,  d7
+        vst1.64         {q0-q1},  [r0]
+        bx              lr
+endfunc
