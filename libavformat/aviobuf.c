@@ -924,7 +924,6 @@ URLContext *url_fileno(AVIOContext *s)
     return s->opaque;
 }
 
-#if CONFIG_MUXERS
 int avio_printf(AVIOContext *s, const char *fmt, ...)
 {
     va_list ap;
@@ -937,7 +936,6 @@ int avio_printf(AVIOContext *s, const char *fmt, ...)
     avio_write(s, buf, strlen(buf));
     return ret;
 }
-#endif //CONFIG_MUXERS
 
 #if FF_API_OLD_AVIO
 char *url_fgets(AVIOContext *s, char *buf, int buf_size)
