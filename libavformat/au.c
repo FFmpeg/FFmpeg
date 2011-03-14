@@ -74,7 +74,7 @@ static int au_write_header(AVFormatContext *s)
         return -1;
     }
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }
@@ -99,7 +99,7 @@ static int au_write_trailer(AVFormatContext *s)
         avio_wb32(pb, (uint32_t)(file_size - 24));
         avio_seek(pb, file_size, SEEK_SET);
 
-        put_flush_packet(pb);
+        avio_flush(pb);
     }
 
     return 0;

@@ -170,7 +170,7 @@ void avio_write(AVIOContext *s, const unsigned char *buf, int size)
     }
 }
 
-void put_flush_packet(AVIOContext *s)
+void avio_flush(AVIOContext *s)
 {
     flush_buffer(s);
     s->must_flush = 0;
@@ -392,6 +392,10 @@ int url_fprintf(AVIOContext *s, const char *fmt, ...)
     va_end(ap);
     avio_write(s, buf, strlen(buf));
     return ret;
+}
+void put_flush_packet(AVIOContext *s)
+{
+    avio_flush(s);
 }
 #endif
 
@@ -1013,7 +1017,7 @@ int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags)
 
 int url_close_buf(AVIOContext *s)
 {
-    put_flush_packet(s);
+    avio_flush(s);
     return s->buf_ptr - s->buffer;
 }
 #endif
@@ -1141,7 +1145,7 @@ int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
         padding = FF_INPUT_BUFFER_PADDING_SIZE;
     }
 
-    put_flush_packet(s);
+    avio_flush(s);
 
     *pbuffer = d->buffer;
     size = d->size;

@@ -133,7 +133,7 @@ static int mp3_write_trailer(struct AVFormatContext *s)
     /* write the id3v1 tag */
     if (id3v1_create_tag(s, buf) > 0) {
         avio_write(s->pb, buf, ID3v1_TAG_SIZE);
-        put_flush_packet(s->pb);
+        avio_flush(s->pb);
     }
     return 0;
 }

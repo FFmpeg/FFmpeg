@@ -37,7 +37,7 @@ static void md5_finish(struct AVFormatContext *s, char *buf)
     buf[offset+1] = 0;
 
     avio_write(s->pb, buf, strlen(buf));
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
 }
 
 #if CONFIG_MD5_MUXER

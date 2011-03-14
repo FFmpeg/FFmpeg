@@ -753,7 +753,7 @@ static int gxf_write_header(AVFormatContext *s)
 
     gxf->packet_count = 3;
 
-    put_flush_packet(pb);
+    avio_flush(pb);
     return 0;
 }
 
@@ -781,12 +781,12 @@ static int gxf_write_trailer(AVFormatContext *s)
     gxf_write_map_packet(s, 1);
     gxf_write_flt_packet(s);
     gxf_write_umf_packet(s);
-    put_flush_packet(pb);
+    avio_flush(pb);
     /* update duration in all map packets */
     for (i = 1; i < gxf->map_offsets_nb; i++) {
         avio_seek(pb, gxf->map_offsets[i], SEEK_SET);
         gxf_write_map_packet(s, 1);
-        put_flush_packet(pb);
+        avio_flush(pb);
     }
 
     avio_seek(pb, end, SEEK_SET);
@@ -895,7 +895,7 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         gxf->packet_count = 0;
     }
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }

@@ -326,7 +326,7 @@ static int swf_write_header(AVFormatContext *s)
         put_swf_end_tag(s);
     }
 
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
     return 0;
 }
 
@@ -432,7 +432,7 @@ static int swf_write_video(AVFormatContext *s,
     put_swf_tag(s, TAG_SHOWFRAME);
     put_swf_end_tag(s);
 
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
 
     return 0;
 }
@@ -489,7 +489,7 @@ static int swf_write_trailer(AVFormatContext *s)
     put_swf_tag(s, TAG_END);
     put_swf_end_tag(s);
 
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
 
     /* patch file size and number of frames if not streamed */
     if (!url_is_streamed(s->pb) && video_enc) {

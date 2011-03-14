@@ -102,7 +102,7 @@ static int mmf_write_header(AVFormatContext *s)
 
     av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }
@@ -160,7 +160,7 @@ static int mmf_write_trailer(AVFormatContext *s)
 
         avio_seek(pb, pos, SEEK_SET);
 
-        put_flush_packet(pb);
+        avio_flush(pb);
     }
     return 0;
 }

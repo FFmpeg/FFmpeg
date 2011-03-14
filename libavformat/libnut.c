@@ -48,7 +48,7 @@ static const AVCodecTag nut_tags[] = {
 static int av_write(void * h, size_t len, const uint8_t * buf) {
     AVIOContext * bc = h;
     avio_write(bc, buf, len);
-    //put_flush_packet(bc);
+    //avio_flush(bc);
     return len;
 }
 
@@ -142,7 +142,7 @@ static int nut_write_trailer(AVFormatContext * avf) {
     int i;
 
     nut_muxer_uninit_reorder(priv->nut);
-    put_flush_packet(bc);
+    avio_flush(bc);
 
     for(i = 0; priv->s[i].type != -1; i++ ) av_freep(&priv->s[i].fourcc);
     av_freep(&priv->s);

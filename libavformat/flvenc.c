@@ -430,7 +430,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_wb32(pb,size+flags_size+11); // previous tag size
     flv->duration = FFMAX(flv->duration, pkt->pts + flv->delay + pkt->duration);
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     av_free(data);
 

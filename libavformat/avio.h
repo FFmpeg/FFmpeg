@@ -435,6 +435,7 @@ attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...) __att
 #else
 attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...);
 #endif
+attribute_deprecated void put_flush_packet(AVIOContext *s);
 /**
  * @}
  */
@@ -529,7 +530,7 @@ int avio_printf(AVIOContext *s, const char *fmt, ...);
 attribute_deprecated char *url_fgets(AVIOContext *s, char *buf, int buf_size);
 #endif
 
-void put_flush_packet(AVIOContext *s);
+void avio_flush(AVIOContext *s);
 
 
 /**

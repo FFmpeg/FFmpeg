@@ -639,7 +639,7 @@ static int write_header(AVFormatContext *s){
     if ((ret = write_headers(s, bc)) < 0)
         return ret;
 
-    put_flush_packet(bc);
+    avio_flush(bc);
 
     //FIXME index
 
@@ -843,7 +843,7 @@ static int write_trailer(AVFormatContext *s){
 
     while(nut->header_count<3)
         write_headers(s, bc);
-    put_flush_packet(bc);
+    avio_flush(bc);
     ff_nut_free_sp(nut);
     av_freep(&nut->stream);
     av_freep(&nut->time_base);

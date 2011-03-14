@@ -71,7 +71,7 @@ static int wav_write_header(AVFormatContext *s)
     /* data header */
     wav->data = ff_start_tag(pb, "data");
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }
@@ -96,7 +96,7 @@ static int wav_write_trailer(AVFormatContext *s)
     WAVContext    *wav = s->priv_data;
     int64_t file_size;
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     if (!url_is_streamed(s->pb)) {
         ff_end_tag(pb, wav->data);
@@ -107,7 +107,7 @@ static int wav_write_trailer(AVFormatContext *s)
         avio_wl32(pb, (uint32_t)(file_size - 8));
         avio_seek(pb, file_size, SEEK_SET);
 
-        put_flush_packet(pb);
+        avio_flush(pb);
 
         if(s->streams[0]->codec->codec_tag != 0x01) {
             /* Update num_samps in fact chunk */
@@ -118,7 +118,7 @@ static int wav_write_trailer(AVFormatContext *s)
             avio_seek(pb, wav->data-12, SEEK_SET);
             avio_wl32(pb, number_of_samples);
             avio_seek(pb, file_size, SEEK_SET);
-            put_flush_packet(pb);
+            avio_flush(pb);
         }
     }
     return 0;

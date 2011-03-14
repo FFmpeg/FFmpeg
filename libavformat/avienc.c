@@ -393,7 +393,7 @@ static int avi_write_header(AVFormatContext *s)
     avi->movi_list = ff_start_tag(pb, "LIST");
     ffio_wfourcc(pb, "movi");
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }
@@ -438,7 +438,7 @@ static int avi_write_ix(AVFormatContext *s)
              avio_wl32(pb, ((uint32_t)ie->len & ~0x80000000) |
                           (ie->flags & 0x10 ? 0 : 0x80000000));
          }
-         put_flush_packet(pb);
+         avio_flush(pb);
          pos = avio_tell(pb);
 
          /* Updating one entry in the AVI OpenDML master index */
@@ -578,7 +578,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (size & 1)
         avio_w8(pb, 0);
 
-    put_flush_packet(pb);
+    avio_flush(pb);
     return 0;
 }
 
@@ -624,7 +624,7 @@ static int avi_write_trailer(AVFormatContext *s)
             avi_write_counters(s, avi->riff_id);
         }
     }
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     for (i=0; i<s->nb_streams; i++) {
          AVIStream *avist= s->streams[i]->priv_data;

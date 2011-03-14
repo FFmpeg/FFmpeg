@@ -320,7 +320,7 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
         avio_w8(pb, 0);
     }
 
-    put_flush_packet(pb);
+    avio_flush(pb);
     len = url_close_dyn_buf(pb, &buf);
     if ((len > 0) && buf) {
         int result;
@@ -348,7 +348,7 @@ void rtp_send_punch_packets(URLContext* rtp_handle)
     avio_wb32(pb, 0); /* Timestamp */
     avio_wb32(pb, 0); /* SSRC */
 
-    put_flush_packet(pb);
+    avio_flush(pb);
     len = url_close_dyn_buf(pb, &buf);
     if ((len > 0) && buf)
         url_write(rtp_handle, buf, len);
@@ -363,7 +363,7 @@ void rtp_send_punch_packets(URLContext* rtp_handle)
     avio_wb16(pb, 1); /* length in words - 1 */
     avio_wb32(pb, 0); /* our own SSRC */
 
-    put_flush_packet(pb);
+    avio_flush(pb);
     len = url_close_dyn_buf(pb, &buf);
     if ((len > 0) && buf)
         url_write(rtp_handle, buf, len);
