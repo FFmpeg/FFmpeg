@@ -2570,7 +2570,7 @@ static int decode_thread(void *arg)
         if (ret < 0) {
             if (ret == AVERROR_EOF || ic->pb->eof_reached)
                 eof=1;
-            if (url_ferror(ic->pb))
+            if (ic->pb->error)
                 break;
             SDL_Delay(100); /* wait for user event */
             continue;

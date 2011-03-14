@@ -743,7 +743,7 @@ static int ff_asf_get_packet(AVFormatContext *s, AVIOContext *pb)
          * imply complete -EAGAIN handling support at random positions in
          * the stream.
          */
-        if (url_ferror(pb) == AVERROR(EAGAIN))
+        if (pb->error == AVERROR(EAGAIN))
             return AVERROR(EAGAIN);
         if (!pb->eof_reached)
             av_log(s, AV_LOG_ERROR, "ff asf bad header %x  at:%"PRId64"\n", c, avio_tell(pb));
