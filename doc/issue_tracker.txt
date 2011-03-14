@@ -1,11 +1,11 @@
-FFmpeg's bug/patch/feature request tracker manual
-=================================================
+Libav's bug/patch/feature request tracker manual
+================================================
 
 NOTE: This is a draft.
 
 Overview:
 ---------
-FFmpeg uses Roundup for tracking issues, new issues and changes to
+Libav uses Roundup for tracking issues, new issues and changes to
 existing issues can be done through a web interface and through email.
 It is possible to subscribe to individual issues by adding yourself to the
 nosy list or to subscribe to the ffmpeg-issues mailing list which receives
@@ -60,7 +60,7 @@ critical
     No feature request can be critical.
 
 important
-    Bugs which make FFmpeg unusable for a significant number of users, and
+    Bugs which make Libav unusable for a significant number of users, and
     patches fixing them.
     Examples here might be completely broken MPEG-4 decoding or a build issue
     on Linux.
@@ -81,7 +81,7 @@ minor
 wish
     Something that is desirable to have but that there is no urgency at
     all to implement, e.g. something completely cosmetic like a website
-    restyle or a personalized doxy template or the FFmpeg logo.
+    restyle or a personalized doxy template or the Libav logo.
     This priority is not valid for bugs.
 
 

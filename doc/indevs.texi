@@ -1,10 +1,10 @@
 @chapter Input Devices
 @c man begin INPUT DEVICES
 
-Input devices are configured elements in FFmpeg which allow to access
+Input devices are configured elements in Libav which allow to access
 the data coming from a multimedia device attached to your system.
 
-When you configure your FFmpeg build, all the supported input devices
+When you configure your Libav build, all the supported input devices
 are enabled by default. You can list all available ones using the
 configure option "--list-indevs".
 
@@ -70,7 +70,7 @@ A JACK input device creates one or more JACK writable clients, one for
 each audio channel, with name @var{client_name}:input_@var{N}, where
 @var{client_name} is the name provided by the application, and @var{N}
 is a number which identifies the channel.
-Each writable client will send the acquired data to the FFmpeg input
+Each writable client will send the acquired data to the Libav input
 device.
 
 Once you have created one or more JACK readable clients, you need to

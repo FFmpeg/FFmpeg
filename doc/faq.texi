@@ -1,8 +1,8 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle FFmpeg FAQ
+@settitle Libav FAQ
 @titlepage
-@center @titlefont{FFmpeg FAQ}
+@center @titlefont{Libav FAQ}
 @end titlepage
 
 @top
@@ -11,33 +11,33 @@
 
 @chapter General Questions
 
-@section When will the next FFmpeg version be released? / Why are FFmpeg releases so few and far between?
+@section When will the next Libav version be released? / Why are Libav releases so few and far between?
 
-Like most open source projects FFmpeg suffers from a certain lack of
+Like most open source projects Libav suffers from a certain lack of
 manpower. For this reason the developers have to prioritize the work
 they do and putting out releases is not at the top of the list, fixing
 bugs and reviewing patches takes precedence. Please don't complain or
 request more timely and/or frequent releases unless you are willing to
 help out creating them.
 
-@section I have a problem with an old version of FFmpeg; where should I report it?
-Nowhere. We do not support old FFmpeg versions in any way, we simply lack
+@section I have a problem with an old version of Libav; where should I report it?
+Nowhere. We do not support old Libav versions in any way, we simply lack
 the time, motivation and manpower to do so. If you have a problem with an
-old version of FFmpeg, upgrade to the latest Subversion snapshot. If you
+old version of Libav, upgrade to the latest Subversion snapshot. If you
 still experience the problem, then you can report it according to the
 guidelines in @url{http://libav.org/bugreports.html}.
 
-@section Why doesn't FFmpeg support feature [xyz]?
+@section Why doesn't Libav support feature [xyz]?
 
-Because no one has taken on that task yet. FFmpeg development is
+Because no one has taken on that task yet. Libav development is
 driven by the tasks that are important to the individual developers.
 If there is a feature that is important to you, the best way to get
 it implemented is to undertake the task yourself or sponsor a developer.
 
-@section FFmpeg does not support codec XXX. Can you include a Windows DLL loader to support it?
+@section Libav does not support codec XXX. Can you include a Windows DLL loader to support it?
 
 No. Windows DLLs are not portable, bloated and often slow.
-Moreover FFmpeg strives to support all codecs natively.
+Moreover Libav strives to support all codecs natively.
 A DLL loader is not conducive to that goal.
 
 @section My bug report/mail to libav-devel/user has not received any replies.
@@ -55,10 +55,10 @@ libav* from another application.
 @item You speak about a video having problems on playback but
 not what you use to play it.
 @item We have no faint clue what you are talking about besides
-that it is related to FFmpeg.
+that it is related to Libav.
 @end itemize
 
-@section Is there a forum for FFmpeg? I do not like mailing lists.
+@section Is there a forum for Libav? I do not like mailing lists.
 
 You may view our mailing lists with a more forum-alike look here:
 @url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user},
@@ -272,7 +272,7 @@ material, and try '-top 0/1' if the result looks really messed-up.
 
 @section How can I read DirectShow files?
 
-If you have built FFmpeg with @code{./configure --enable-avisynth}
+If you have built Libav with @code{./configure --enable-avisynth}
 (only possible on MinGW/Cygwin platforms),
 then you may use any file that DirectShow can read as input.
 
@@ -368,11 +368,11 @@ examining all of the vbv_delay values and making complicated computations."
 
 @chapter Development
 
-@section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat?
+@section Are there examples illustrating how to use the Libav libraries, particularly libavcodec and libavformat?
 
-Yes. Read the Developers Guide of the FFmpeg documentation. Alternatively,
+Yes. Read the Developers Guide of the Libav documentation. Alternatively,
 examine the source code for one of the many open source projects that
-already incorporate FFmpeg at (@url{projects.html}).
+already incorporate Libav at (@url{projects.html}).
 
 @section Can you support my C compiler XXX?
 
@@ -383,14 +383,14 @@ with @code{#ifdef}s related to the compiler.
 @section Is Microsoft Visual C++ supported?
 
 No. Microsoft Visual C++ is not compliant to the C99 standard and does
-not - among other things - support the inline assembly used in FFmpeg.
+not - among other things - support the inline assembly used in Libav.
 If you wish to use MSVC++ for your
 project then you can link the MSVC++ code with libav* as long as
 you compile the latter with a working C compiler. For more information, see
-the @emph{Microsoft Visual C++ compatibility} section in the FFmpeg
+the @emph{Microsoft Visual C++ compatibility} section in the Libav
 documentation.
 
-There have been efforts to make FFmpeg compatible with MSVC++ in the
+There have been efforts to make Libav compatible with MSVC++ in the
 past. However, they have all been rejected as too intrusive, especially
 since MinGW does the job adequately. None of the core developers
 work with MSVC++ and thus this item is low priority. Should you find
@@ -398,13 +398,13 @@ the silver bullet that solves this problem, feel free to shoot it at us.
 
 We strongly recommend you to move over from MSVC++ to MinGW tools.
 
-@section Can I use FFmpeg or libavcodec under Windows?
+@section Can I use Libav or libavcodec under Windows?
 
-Yes, but the Cygwin or MinGW tools @emph{must} be used to compile FFmpeg.
-Read the @emph{Windows} section in the FFmpeg documentation to find more
+Yes, but the Cygwin or MinGW tools @emph{must} be used to compile Libav.
+Read the @emph{Windows} section in the Libav documentation to find more
 information.
 
-To get help and instructions for building FFmpeg under Windows, check out
+To get help and instructions for building Libav under Windows, check out
 the FFmpeg Windows Help Forum at
 @url{http://ffmpeg.arrozcru.org/}.
 
@@ -414,7 +414,7 @@ No. These tools are too bloated and they complicate the build.
 
 @section Why not rewrite ffmpeg in object-oriented C++?
 
-FFmpeg is already organized in a highly modular manner and does not need to
+Libav is already organized in a highly modular manner and does not need to
 be rewritten in a formal object language. Further, many of the developers
 favor straight C; it works for them. For more arguments on this matter,
 read "Programming Religion" at (@url{http://www.tux.org/lkml/#s15}).
@@ -441,16 +441,16 @@ the compilation failure then you are probably not qualified for this.
 
 @section I'm using libavcodec from within my C++ application but the linker complains about missing symbols which seem to be available.
 
-FFmpeg is a pure C project, so to use the libraries within your C++ application
+Libav is a pure C project, so to use the libraries within your C++ application
 you need to explicitly state that you are using a C library. You can do this by
-encompassing your FFmpeg includes using @code{extern "C"}.
+encompassing your Libav includes using @code{extern "C"}.
 
 See @url{http://www.parashift.com/c++-faq-lite/mixing-c-and-cpp.html#faq-32.3}
 
 @section I have a file in memory / a API different from *open/*read/ libc how do I use it with libavformat?
 
 You have to implement a URLProtocol, see @file{libavformat/file.c} in
-FFmpeg and @file{libmpdemux/demux_lavf.c} in MPlayer sources.
+Libav and @file{libmpdemux/demux_lavf.c} in MPlayer sources.
 
 @section I get "No compatible shell script interpreter found." in MSys.
 

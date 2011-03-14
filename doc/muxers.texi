@@ -1,10 +1,10 @@
 @chapter Muxers
 @c man begin MUXERS
 
-Muxers are configured elements in FFmpeg which allow writing
+Muxers are configured elements in Libav which allow writing
 multimedia streams to a particular type of file.
 
-When you configure your FFmpeg build, all the supported muxers
+When you configure your Libav build, all the supported muxers
 are enabled by default. You can list all available muxers using the
 configure option @code{--list-muxers}.
 

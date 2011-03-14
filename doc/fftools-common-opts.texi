@@ -88,6 +88,6 @@ can be disabled setting the environment variable
 @env{FFMPEG_FORCE_NOCOLOR} or @env{NO_COLOR}, or can be forced setting
 the environment variable @env{FFMPEG_FORCE_COLOR}.
 The use of the environment variable @env{NO_COLOR} is deprecated and
-will be dropped in a following FFmpeg version.
+will be dropped in a following Libav version.
 
 @end table
