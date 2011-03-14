@@ -487,13 +487,19 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence);
  * Skip given number of bytes forward
  * @return new position or AVERROR.
  */
-#define avio_skip(s, offset) avio_seek(s, offset, SEEK_CUR)
+static av_always_inline int64_t avio_skip(AVIOContext *s, int64_t offset)
+{
+    return avio_seek(s, offset, SEEK_CUR);
+}
 
 /**
  * ftell() equivalent for AVIOContext.
  * @return position or AVERROR.
  */
-#define avio_tell(s) avio_seek((s), 0, SEEK_CUR)
+static av_always_inline int64_t avio_tell(AVIOContext *s)
+{
+    return avio_seek(s, 0, SEEK_CUR);
+}
 
 /**
  * Get the filesize.
