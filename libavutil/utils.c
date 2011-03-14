@@ -31,7 +31,7 @@ unsigned avutil_version(void)
 
 const char *avutil_configuration(void)
 {
-    return FFMPEG_CONFIGURATION;
+    return LIBAV_CONFIGURATION;
 }
 
 const char *avutil_license(void)

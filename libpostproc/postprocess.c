@@ -94,7 +94,7 @@ unsigned postproc_version(void)
 
 const char *postproc_configuration(void)
 {
-    return FFMPEG_CONFIGURATION;
+    return LIBAV_CONFIGURATION;
 }
 
 const char *postproc_license(void)

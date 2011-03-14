@@ -25,7 +25,7 @@ unsigned avdevice_version(void)
 
 const char * avdevice_configuration(void)
 {
-    return FFMPEG_CONFIGURATION;
+    return LIBAV_CONFIGURATION;
 }
 
 const char * avdevice_license(void)
