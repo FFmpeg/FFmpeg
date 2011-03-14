@@ -377,6 +377,10 @@ int64_t url_fsize(AVIOContext *s)
 {
     return avio_size(s);
 }
+int url_setbufsize(AVIOContext *s, int buf_size)
+{
+    return ffio_set_buf_size(s, buf_size);
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -490,7 +494,7 @@ static void fill_buffer(AVIOContext *s)
 
     /* make buffer smaller in case it ended up large after probing */
     if (s->buffer_size > max_buffer_size) {
-        url_setbufsize(s, max_buffer_size);
+        ffio_set_buf_size(s, max_buffer_size);
 
         s->checksum_ptr = dst = s->buffer;
         len = s->buffer_size;
@@ -801,7 +805,7 @@ int url_fdopen(AVIOContext **s, URLContext *h)
     return 0;
 }
 
-int url_setbufsize(AVIOContext *s, int buf_size)
+int ffio_set_buf_size(AVIOContext *s, int buf_size)
 {
     uint8_t *buffer;
     buffer = av_malloc(buf_size);

@@ -621,7 +621,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             goto fail;
         }
         if (buf_size > 0) {
-            url_setbufsize(pb, buf_size);
+            ffio_set_buf_size(pb, buf_size);
         }
         if (!fmt && (err = av_probe_input_buffer(pb, &fmt, filename, logctx, 0, logctx ? (*ic_ptr)->probesize : 0)) < 0) {
             goto fail;

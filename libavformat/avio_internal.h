@@ -63,4 +63,7 @@ int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size
 
 uint64_t ffio_read_varlen(AVIOContext *bc);
 
+/** @warning must be called before any I/O */
+int ffio_set_buf_size(AVIOContext *s, int buf_size);
+
 #endif // AVFORMAT_AVIO_INTERNAL_H

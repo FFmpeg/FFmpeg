@@ -429,6 +429,7 @@ attribute_deprecated int64_t url_ftell(AVIOContext *s);
 attribute_deprecated int64_t url_fsize(AVIOContext *s);
 #define URL_EOF (-1)
 attribute_deprecated int url_fgetc(AVIOContext *s);
+attribute_deprecated int url_setbufsize(AVIOContext *s, int buf_size);
 /**
  * @}
  */
@@ -586,8 +587,6 @@ static inline int url_is_streamed(AVIOContext *s)
  */
 int url_fdopen(AVIOContext **s, URLContext *h);
 
-/** @warning must be called before any I/O */
-int url_setbufsize(AVIOContext *s, int buf_size);
 #if FF_API_URL_RESETBUF
 /** Reset the buffer for reading or writing.
  * @note Will drop any data currently in the buffer without transmitting it.
