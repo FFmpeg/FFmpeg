@@ -753,7 +753,7 @@ uint64_t avio_rb64(AVIOContext *s)
     return val;
 }
 
-uint64_t ff_get_v(AVIOContext *bc){
+uint64_t ffio_read_varlen(AVIOContext *bc){
     uint64_t val = 0;
     int tmp;
 

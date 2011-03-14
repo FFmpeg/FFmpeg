@@ -22,6 +22,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/unary.h"
 #include "avformat.h"
+#include "avio_internal.h"
 
 /// Two-byte MPC tag
 #define MKMPCTAG(a, b) (a | (b << 8))
@@ -122,7 +123,7 @@ static void mpc8_get_chunk_header(AVIOContext *pb, int *tag, int64_t *size)
     int64_t pos;
     pos = avio_tell(pb);
     *tag = avio_rl16(pb);
-    *size = ff_get_v(pb);
+    *size = ffio_read_varlen(pb);
     *size -= avio_tell(pb) - pos;
 }
 
@@ -177,7 +178,7 @@ static void mpc8_handle_chunk(AVFormatContext *s, int tag, int64_t chunk_pos, in
     switch(tag){
     case TAG_SEEKTBLOFF:
         pos = avio_tell(pb) + size;
-        off = ff_get_v(pb);
+        off = ffio_read_varlen(pb);
         mpc8_parse_seektable(s, chunk_pos + off);
         avio_seek(pb, pos, SEEK_SET);
         break;
@@ -218,8 +219,8 @@ static int mpc8_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "Unknown stream version %d\n", c->ver);
         return -1;
     }
-    c->samples = ff_get_v(pb);
-    ff_get_v(pb); //silence samples at the beginning
+    c->samples = ffio_read_varlen(pb);
+    ffio_read_varlen(pb); //silence samples at the beginning
 
     st = av_new_stream(s, 0);
     if (!st)

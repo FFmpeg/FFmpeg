@@ -568,8 +568,6 @@ unsigned int avio_rb24(AVIOContext *s);
 unsigned int avio_rb32(AVIOContext *s);
 uint64_t     avio_rb64(AVIOContext *s);
 
-uint64_t ff_get_v(AVIOContext *bc);
-
 static inline int url_is_streamed(AVIOContext *s)
 {
     return s->is_streamed;
