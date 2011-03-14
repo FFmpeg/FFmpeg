@@ -415,6 +415,9 @@ attribute_deprecated void         put_tag(AVIOContext *s, const char *tag);
  * @}
  */
 
+attribute_deprecated int     av_url_read_fpause(AVIOContext *h,    int pause);
+attribute_deprecated int64_t av_url_read_fseek( AVIOContext *h,    int stream_index,
+                                                int64_t timestamp, int flags);
 
 /**
  * @defgroup old_url_f_funcs Old url_f* functions
@@ -512,10 +515,6 @@ static av_always_inline int64_t avio_tell(AVIOContext *s)
  * @return filesize or AVERROR
  */
 int64_t avio_size(AVIOContext *s);
-
-int av_url_read_fpause(AVIOContext *h, int pause);
-int64_t av_url_read_fseek(AVIOContext *h, int stream_index,
-                          int64_t timestamp, int flags);
 
 /** @warning currently size is limited */
 #ifdef __GNUC__

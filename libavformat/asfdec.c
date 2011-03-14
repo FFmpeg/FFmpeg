@@ -25,6 +25,7 @@
 #include "libavutil/avstring.h"
 #include "libavcodec/mpegaudio.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "riff.h"
 #include "asf.h"
 #include "asfcrypt.h"
@@ -1243,7 +1244,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
 
     /* Try using the protocol's read_seek if available */
     if(s->pb) {
-        int ret = av_url_read_fseek(s->pb, stream_index, pts, flags);
+        int ret = ffio_read_seek(s->pb, stream_index, pts, flags);
         if(ret >= 0)
             asf_reset_header(s);
         if (ret != AVERROR(ENOSYS))
