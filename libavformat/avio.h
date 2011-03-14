@@ -430,6 +430,11 @@ attribute_deprecated int64_t url_fsize(AVIOContext *s);
 #define URL_EOF (-1)
 attribute_deprecated int url_fgetc(AVIOContext *s);
 attribute_deprecated int url_setbufsize(AVIOContext *s, int buf_size);
+#ifdef __GNUC__
+attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
+#else
+attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...);
+#endif
 /**
  * @}
  */
@@ -513,9 +518,9 @@ int64_t av_url_read_fseek(AVIOContext *h, int stream_index,
 
 /** @warning currently size is limited */
 #ifdef __GNUC__
-int url_fprintf(AVIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
+int avio_printf(AVIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
 #else
-int url_fprintf(AVIOContext *s, const char *fmt, ...);
+int avio_printf(AVIOContext *s, const char *fmt, ...);
 #endif
 
 #if FF_API_OLD_AVIO

@@ -381,6 +381,18 @@ int url_setbufsize(AVIOContext *s, int buf_size)
 {
     return ffio_set_buf_size(s, buf_size);
 }
+int url_fprintf(AVIOContext *s, const char *fmt, ...)
+{
+    va_list ap;
+    char buf[4096];
+    int ret;
+
+    va_start(ap, fmt);
+    ret = vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+    avio_write(s, buf, strlen(buf));
+    return ret;
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -913,7 +925,7 @@ URLContext *url_fileno(AVIOContext *s)
 }
 
 #if CONFIG_MUXERS
-int url_fprintf(AVIOContext *s, const char *fmt, ...)
+int avio_printf(AVIOContext *s, const char *fmt, ...)
 {
     va_list ap;
     char buf[4096];
