@@ -3298,7 +3298,7 @@ cat > $TMPH <<EOF
 #ifndef LIBAV_CONFIG_H
 #define LIBAV_CONFIG_H
 #define LIBAV_CONFIGURATION "$(c_escape $LIBAV_CONFIGURATION)"
-#define FFMPEG_LICENSE "$(c_escape $license)"
+#define LIBAV_LICENSE "$(c_escape $license)"
 #define FFMPEG_DATADIR "$(eval c_escape $datadir)"
 #define CC_TYPE "$cc_type"
 #define CC_VERSION $cc_version
