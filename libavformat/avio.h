@@ -629,9 +629,9 @@ URLContext *url_fileno(AVIOContext *s);
  * @deprecated use AVIOContext.max_packet_size directly.
  */
 attribute_deprecated int url_fget_max_packet_size(AVIOContext *s);
-#endif
 
-int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags);
+attribute_deprecated int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags);
+#endif
 
 /** return the written or read size */
 int url_close_buf(AVIOContext *s);

@@ -996,6 +996,7 @@ int64_t av_url_read_fseek(AVIOContext *s, int stream_index,
  * back to the server even if CONFIG_MUXERS is false. */
 #if CONFIG_MUXERS || CONFIG_NETWORK
 /* buffer handling */
+#if FF_API_OLD_AVIO
 int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags)
 {
     int ret;
@@ -1009,6 +1010,7 @@ int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags)
         av_freep(s);
     return ret;
 }
+#endif
 
 int url_close_buf(AVIOContext *s)
 {

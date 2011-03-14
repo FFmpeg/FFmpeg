@@ -2721,7 +2721,8 @@ static int http_receive_data(HTTPContext *c)
             if (!fmt_in)
                 goto fail;
 
-            url_open_buf(&pb, c->buffer, c->buffer_end - c->buffer, URL_RDONLY);
+            pb = avio_alloc_context(c->buffer, c->buffer_end - c->buffer,
+                                    0, NULL, NULL, NULL, NULL);
             pb->is_streamed = 1;
 
             if (av_open_input_stream(&s, pb, c->stream->feed_filename, fmt_in, NULL) < 0) {
