@@ -1010,13 +1010,13 @@ int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags)
         av_freep(s);
     return ret;
 }
-#endif
 
 int url_close_buf(AVIOContext *s)
 {
     put_flush_packet(s);
     return s->buf_ptr - s->buffer;
 }
+#endif
 
 /* output in a dynamic buffer */
 
