@@ -3088,6 +3088,7 @@ static int av_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in,
 
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
     AVStream *st= s->streams[ pkt->stream_index];
+    int ret;
 
     //FIXME/XXX/HACK drop zero sized packets
     if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO && pkt->size==0)
@@ -3095,11 +3096,11 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
 
     av_dlog(s, "av_interleaved_write_frame size:%d dts:%"PRId64" pts:%"PRId64"\n",
             pkt->size, pkt->dts, pkt->pts);
-    if(compute_pkt_fields2(s, st, pkt) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
-        return -1;
+    if((ret = compute_pkt_fields2(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
+        return ret;
 
     if(pkt->dts == AV_NOPTS_VALUE && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
-        return -1;
+        return AVERROR(EINVAL);
 
     for(;;){
         AVPacket opkt;
