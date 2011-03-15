@@ -46,28 +46,6 @@ typedef struct AC3DSPContext {
      * @return    a value with the same MSB as max(abs(src[]))
      */
     int (*ac3_max_msb_abs_int16)(const int16_t *src, int len);
-
-    /*
-     * Left-shift each value in an array of int16_t by a specified amount.
-     * @param src    input array
-     *               constraints: align 16
-     * @param len    number of values in the array
-     *               constraints: multiple of 32 greater than 0
-     * @param shift  left shift amount
-     *               constraints: range [0,15]
-     */
-    void (*ac3_lshift_int16)(int16_t *src, int len, unsigned int shift);
-
-    /**
-     * Shift each value in an array of int32_t by a specified amount.
-     * @param src    input array
-     *               constraints: align 16
-     * @param len    number of values in the array
-     *               constraints: multiple of 16 greater than 0
-     * @param shift  shift amount (negative = right, positive = left)
-     *               constraints: range [-31,31]
-     */
-    void (*ac3_shift_int32)(int32_t *src, int len, int shift);
 } AC3DSPContext;
 
 void ff_ac3dsp_init    (AC3DSPContext *c);

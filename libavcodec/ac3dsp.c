@@ -50,36 +50,10 @@ static int ac3_max_msb_abs_int16_c(const int16_t *src, int len)
     return v;
 }
 
-static void ac3_lshift_int16_c(int16_t *src, int len, unsigned int shift)
-{
-    int i;
-
-    if (shift > 0) {
-        for (i = 0; i < len; i++)
-            src[i] <<= shift;
-    }
-}
-
-static void ac3_shift_int32_c(int32_t *src, int len, int shift)
-{
-    int i;
-
-    if (shift > 0) {
-        for (i = 0; i < len; i++)
-            src[i] <<= shift;
-    } else if (shift < 0) {
-        shift = -shift;
-        for (i = 0; i < len; i++)
-            src[i] >>= shift;
-    }
-}
-
 av_cold void ff_ac3dsp_init(AC3DSPContext *c)
 {
     c->ac3_exponent_min = ac3_exponent_min_c;
     c->ac3_max_msb_abs_int16 = ac3_max_msb_abs_int16_c;
-    c->ac3_lshift_int16 = ac3_lshift_int16_c;
-    c->ac3_shift_int32  = ac3_shift_int32_c;
 
     if (HAVE_MMX)
         ff_ac3dsp_init_x86(c);
