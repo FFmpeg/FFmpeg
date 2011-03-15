@@ -59,7 +59,7 @@ static av_always_inline av_const int64_t MUL64(int a, int b)
     __asm__ (
         "imull %2"
         :"=A"(rt)
-        :"a"(a), "g"(b)
+        :"a"(a), "rm"(b)
     );
     return rt;
 }
