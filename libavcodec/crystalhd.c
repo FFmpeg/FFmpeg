@@ -87,13 +87,13 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 
-/* Timeout parameter passed to DtsProcOutput() in us */
+/** Timeout parameter passed to DtsProcOutput() in us */
 #define OUTPUT_PROC_TIMEOUT 50
-/* Step between fake timestamps passed to hardware in units of 100ns */
+/** Step between fake timestamps passed to hardware in units of 100ns */
 #define TIMESTAMP_UNIT 100000
-/* Initial value in us of the wait in decode() */
+/** Initial value in us of the wait in decode() */
 #define BASE_WAIT 10000
-/* Increment in us to adjust wait in decode() */
+/** Increment in us to adjust wait in decode() */
 #define WAIT_UNIT 1000
 
 
