@@ -242,6 +242,10 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
             url_fskip(pb, ape->wavheaderlength);
     }
 
+    if(!ape->totalframes){
+        av_log(s, AV_LOG_ERROR, "No frames in the file!\n");
+        return AVERROR(EINVAL);
+    }
     if(ape->totalframes > UINT_MAX / sizeof(APEFrame)){
         av_log(s, AV_LOG_ERROR, "Too many frames: %d\n", ape->totalframes);
         return -1;
