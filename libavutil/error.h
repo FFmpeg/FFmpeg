@@ -66,6 +66,8 @@
 #define AVERROR_BSF_NOT_FOUND      (-MKTAG(0xF8,'B','S','F')) ///< Bitstream filter not found
 #define AVERROR_STREAM_NOT_FOUND   (-MKTAG(0xF8,'S','T','R')) ///< Stream not found
 
+#define AVERROR_EXIT (-MKTAG('E','X','I','T')) ///< Immediate exit was requested; the called function should not be restarted
+
 /**
  * Put a description of the AVERROR code errnum in errbuf.
  * In case of failure the global variable errno is set to indicate the

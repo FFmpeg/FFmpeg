@@ -318,7 +318,7 @@ retry:
             return AVERROR_EOF;
         while (av_gettime() - s->last_load_time < s->target_duration*1000000) {
             if (url_interrupt_cb())
-                return AVERROR(EINTR);
+                return AVERROR_EXIT;
             usleep(100*1000);
         }
         goto retry;
@@ -328,7 +328,7 @@ retry:
     ret = url_open(&s->seg_hd, url, URL_RDONLY);
     if (ret < 0) {
         if (url_interrupt_cb())
-            return AVERROR(EINTR);
+            return AVERROR_EXIT;
         av_log(NULL, AV_LOG_WARNING, "Unable to open %s\n", url);
         s->cur_seq_no++;
         goto retry;

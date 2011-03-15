@@ -77,7 +77,7 @@ static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
     AVIOContext *pb = wf->pb_filesystem;
     int nread = 0;
 
-    if (wf->error || url_ferror(pb))
+    if (wf->error || pb->error)
         return -1;
     if (wf->position >= wf->length || url_feof(pb))
         return 0;

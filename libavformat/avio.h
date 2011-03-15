@@ -237,7 +237,7 @@ void url_get_filename(URLContext *h, char *buf, int buf_size);
 
 /**
  * The callback is called in blocking functions to test regulary if
- * asynchronous interruption is needed. AVERROR(EINTR) is returned
+ * asynchronous interruption is needed. AVERROR_EXIT is returned
  * in this case by the interrupted function. 'NULL' means no interrupt
  * callback is given.
  */
@@ -432,6 +432,8 @@ attribute_deprecated int url_fgetc(AVIOContext *s);
 /**
  * @}
  */
+
+attribute_deprecated int url_ferror(AVIOContext *s);
 #endif
 
 AVIOContext *avio_alloc_context(
@@ -499,8 +501,6 @@ int64_t avio_size(AVIOContext *s);
  * @return non zero if and only if end of file
  */
 int url_feof(AVIOContext *s);
-
-int url_ferror(AVIOContext *s);
 
 int av_url_read_fpause(AVIOContext *h, int pause);
 int64_t av_url_read_fseek(AVIOContext *h, int stream_index,

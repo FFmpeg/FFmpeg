@@ -131,10 +131,10 @@ mdct_alloc_fail:
 
 
 /** Complex multiply */
-#define CMUL(pre, pim, are, aim, bre, bim)              \
+#define CMUL(pre, pim, are, aim, bre, bim, rshift)      \
 {                                                       \
-   pre = (MUL16(are, bre) - MUL16(aim, bim)) >> 15;     \
-   pim = (MUL16(are, bim) + MUL16(bre, aim)) >> 15;     \
+   pre = (MUL16(are, bre) - MUL16(aim, bim)) >> rshift; \
+   pim = (MUL16(are, bim) + MUL16(bre, aim)) >> rshift; \
 }
 
 
@@ -195,7 +195,7 @@ static void fft(AC3MDCTContext *mdct, IComplex *z, int ln)
             p++;
             q++;
             for(l = nblocks; l < np2; l += nblocks) {
-                CMUL(tmp_re, tmp_im, mdct->costab[l], -mdct->sintab[l], q->re, q->im);
+                CMUL(tmp_re, tmp_im, mdct->costab[l], -mdct->sintab[l], q->re, q->im, 15);
                 BF(p->re, p->im, q->re,  q->im,
                    p->re, p->im, tmp_re, tmp_im);
                 p++;
@@ -234,7 +234,7 @@ static void mdct512(AC3MDCTContext *mdct, int32_t *out, int16_t *in)
     for (i = 0; i < n4; i++) {
         re =  ((int)rot[   2*i] - (int)rot[ n-1-2*i]) >> 1;
         im = -((int)rot[n2+2*i] - (int)rot[n2-1-2*i]) >> 1;
-        CMUL(x[i].re, x[i].im, re, im, -mdct->xcos1[i], mdct->xsin1[i]);
+        CMUL(x[i].re, x[i].im, re, im, -mdct->xcos1[i], mdct->xsin1[i], 15);
     }
 
     fft(mdct, x, mdct->nbits - 2);
@@ -243,7 +243,7 @@ static void mdct512(AC3MDCTContext *mdct, int32_t *out, int16_t *in)
     for (i = 0; i < n4; i++) {
         re = x[i].re;
         im = x[i].im;
-        CMUL(out[n2-1-2*i], out[2*i], re, im, mdct->xsin1[i], mdct->xcos1[i]);
+        CMUL(out[n2-1-2*i], out[2*i], re, im, mdct->xsin1[i], mdct->xcos1[i], 0);
     }
 }
 
@@ -278,45 +278,35 @@ static int log2_tab(AC3EncodeContext *s, int16_t *src, int len)
 
 
 /**
- * Left-shift each value in an array by a specified amount.
- * @param tab    input array
- * @param n      number of values in the array
- * @param lshift left shift amount
- */
-static void lshift_tab(int16_t *tab, int n, unsigned int lshift)
-{
-    int i;
-
-    if (lshift > 0) {
-        for (i = 0; i < n; i++)
-            tab[i] <<= lshift;
-    }
-}
-
-
-/**
  * Normalize the input samples to use the maximum available precision.
- * This assumes signed 16-bit input samples. Exponents are reduced by 9 to
- * match the 24-bit internal precision for MDCT coefficients.
+ * This assumes signed 16-bit input samples.
  *
  * @return exponent shift
  */
 static int normalize_samples(AC3EncodeContext *s)
 {
     int v = 14 - log2_tab(s, s->windowed_samples, AC3_WINDOW_SIZE);
-    lshift_tab(s->windowed_samples, AC3_WINDOW_SIZE, v);
-    return v - 9;
+    if (v > 0)
+        s->ac3dsp.ac3_lshift_int16(s->windowed_samples, AC3_WINDOW_SIZE, v);
+    /* +6 to right-shift from 31-bit to 25-bit */
+    return v + 6;
 }
 
 
 /**
- * Scale MDCT coefficients from float to fixed-point.
+ * Scale MDCT coefficients to 25-bit signed fixed-point.
  */
 static void scale_coefficients(AC3EncodeContext *s)
 {
-    /* scaling/conversion is obviously not needed for the fixed-point encoder
-       since the coefficients are already fixed-point. */
-    return;
+    int blk, ch;
+
+    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+        AC3Block *block = &s->blocks[blk];
+        for (ch = 0; ch < s->channels; ch++) {
+            s->ac3dsp.ac3_rshift_int32(block->mdct_coef[ch], AC3_MAX_COEFS,
+                                       block->coeff_shift[ch]);
+        }
+    }
 }
 
 

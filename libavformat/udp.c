@@ -452,7 +452,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
 
     for(;;) {
         if (url_interrupt_cb())
-            return AVERROR(EINTR);
+            return AVERROR_EXIT;
         ret = poll(&p, 1, 100);
         if (ret < 0) {
             if (ff_neterrno() == AVERROR(EINTR))

@@ -36,6 +36,8 @@ typedef float SampleType;
 typedef float CoefType;
 typedef float CoefSumType;
 
+#define MAC_COEF(d,a,b) ((d)+=(a)*(b))
+
 
 typedef struct AC3MDCTContext {
     const float *window;    ///< MDCT window function

@@ -281,12 +281,14 @@ int url_feof(AVIOContext *s)
     return s->eof_reached;
 }
 
+#if FF_API_OLD_AVIO
 int url_ferror(AVIOContext *s)
 {
     if(!s)
         return 0;
     return s->error;
 }
+#endif
 
 void avio_wl32(AVIOContext *s, unsigned int val)
 {
@@ -606,7 +608,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
         }
     }
     if (size1 == size) {
-        if (url_ferror(s)) return url_ferror(s);
+        if (s->error)      return s->error;
         if (url_feof(s))   return AVERROR_EOF;
     }
     return size1 - size;
@@ -629,7 +631,7 @@ int ffio_read_partial(AVIOContext *s, unsigned char *buf, int size)
     memcpy(buf, s->buf_ptr, len);
     s->buf_ptr += len;
     if (!len) {
-        if (url_ferror(s)) return url_ferror(s);
+        if (s->error)      return s->error;
         if (url_feof(s))   return AVERROR_EOF;
     }
     return len;

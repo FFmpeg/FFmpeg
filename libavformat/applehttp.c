@@ -528,7 +528,7 @@ reload:
         return AVERROR_EOF;
     while (av_gettime() - c->last_load_time < c->target_duration*1000000) {
         if (url_interrupt_cb())
-            return AVERROR(EINTR);
+            return AVERROR_EXIT;
         usleep(100*1000);
     }
     /* Enough time has elapsed since the last reload */

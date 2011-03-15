@@ -133,3 +133,48 @@ INIT_XMM
 AC3_MAX_MSB_ABS_INT16 sse2, min_max
 %define ABS2 ABS2_SSSE3
 AC3_MAX_MSB_ABS_INT16 ssse3, or_abs
+
+;-----------------------------------------------------------------------------
+; macro used for ff_ac3_lshift_int16() and ff_ac3_rshift_int32()
+;-----------------------------------------------------------------------------
+
+%macro AC3_SHIFT 4 ; l/r, 16/32, shift instruction, instruction set
+cglobal ac3_%1shift_int%2_%4, 3,3,5, src, len, shift
+    movd      m0, shiftd
+.loop:
+    mova      m1, [srcq         ]
+    mova      m2, [srcq+mmsize  ]
+    mova      m3, [srcq+mmsize*2]
+    mova      m4, [srcq+mmsize*3]
+    %3        m1, m0
+    %3        m2, m0
+    %3        m3, m0
+    %3        m4, m0
+    mova  [srcq         ], m1
+    mova  [srcq+mmsize  ], m2
+    mova  [srcq+mmsize*2], m3
+    mova  [srcq+mmsize*3], m4
+    add     srcq, mmsize*4
+    sub     lend, mmsize*32/%2
+    ja .loop
+.end:
+    REP_RET
+%endmacro
+
+;-----------------------------------------------------------------------------
+; void ff_ac3_lshift_int16(int16_t *src, unsigned int len, unsigned int shift)
+;-----------------------------------------------------------------------------
+
+INIT_MMX
+AC3_SHIFT l, 16, psllw, mmx
+INIT_XMM
+AC3_SHIFT l, 16, psllw, sse2
+
+;-----------------------------------------------------------------------------
+; void ff_ac3_rshift_int32(int32_t *src, unsigned int len, unsigned int shift)
+;-----------------------------------------------------------------------------
+
+INIT_MMX
+AC3_SHIFT r, 32, psrad, mmx
+INIT_XMM
+AC3_SHIFT r, 32, psrad, sse2
