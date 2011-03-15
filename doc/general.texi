@@ -81,6 +81,8 @@ library:
     @tab Audio format used in some games by CRYO Interactive Entertainment.
 @item D-Cinema audio            @tab X @tab X
 @item Deluxe Paint Animation    @tab   @tab X
+@item DFA                       @tab   @tab X
+    @tab This format is used in Chronomaster game
 @item DV video                  @tab X @tab X
 @item DXA                       @tab   @tab X
     @tab This format is used in the non-Windows version of the Feeble Files
@@ -371,6 +373,8 @@ following image formats are supported:
 @item Cirrus Logic AccuPak   @tab     @tab  X
     @tab fourcc: CLJR
 @item Creative YUV (CYUV)    @tab     @tab  X
+@item DFA                    @tab     @tab  X
+    @tab Codec used in Chronomaster game.
 @item Dirac                  @tab  E  @tab  E
     @tab supported through external libdirac/libschroedinger libraries
 @item Deluxe Paint Animation @tab     @tab  X

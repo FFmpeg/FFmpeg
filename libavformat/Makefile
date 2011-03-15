@@ -55,6 +55,7 @@ OBJS-$(CONFIG_CDG_DEMUXER)               += cdg.o
 OBJS-$(CONFIG_CRC_MUXER)                 += crcenc.o
 OBJS-$(CONFIG_DAUD_DEMUXER)              += daud.o
 OBJS-$(CONFIG_DAUD_MUXER)                += daud.o
+OBJS-$(CONFIG_DFA_DEMUXER)               += dfa.o
 OBJS-$(CONFIG_DIRAC_DEMUXER)             += diracdec.o rawdec.o
 OBJS-$(CONFIG_DIRAC_MUXER)               += rawenc.o
 OBJS-$(CONFIG_DNXHD_DEMUXER)             += dnxhddec.o rawdec.o

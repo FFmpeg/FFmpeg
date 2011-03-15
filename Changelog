@@ -81,6 +81,7 @@ version <next>:
 - Apple HTTP Live Streaming protocol handler
 - sndio support for playback and record
 - Linux framebuffer input device added
+- Chronomaster DFA decoder
 
 
 version 0.6:
