@@ -3093,7 +3093,8 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
     if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO && pkt->size==0)
         return 0;
 
-//av_log(NULL, AV_LOG_DEBUG, "av_interleaved_write_frame %d %"PRId64" %"PRId64"\n", pkt->size, pkt->dts, pkt->pts);
+    av_dlog(s, "av_interleaved_write_frame size:%d dts:%"PRId64" pts:%"PRId64"\n",
+            pkt->size, pkt->dts, pkt->pts);
     if(compute_pkt_fields2(s, st, pkt) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return -1;
 
