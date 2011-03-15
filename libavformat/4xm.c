@@ -106,7 +106,7 @@ static int fourxm_read_header(AVFormatContext *s,
     fourxm->fps = 1.0;
 
     /* skip the first 3 32-bit numbers */
-    avio_seek(pb, 12, SEEK_CUR);
+    avio_skip(pb, 12);
 
     /* check for LIST-HEAD */
     GET_LIST_HEADER();
@@ -322,12 +322,12 @@ static int fourxm_read_packet(AVFormatContext *s,
                 fourxm->tracks[track_number].audio_pts += audio_frame_count;
 
             } else {
-                avio_seek(pb, size, SEEK_CUR);
+                avio_skip(pb, size);
             }
             break;
 
         default:
-            avio_seek(pb, size, SEEK_CUR);
+            avio_skip(pb, size);
             break;
         }
     }

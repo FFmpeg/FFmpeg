@@ -161,16 +161,16 @@ rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
         num = avio_rb16(&pb);
         if (rule_nr < 0 || rule_nr >= num)
             return -1;
-        avio_seek(&pb, rule_nr * 2, SEEK_CUR);
+        avio_skip(&pb, rule_nr * 2);
         chunk_nr = avio_rb16(&pb);
-        avio_seek(&pb, (num - 1 - rule_nr) * 2, SEEK_CUR);
+        avio_skip(&pb, (num - 1 - rule_nr) * 2);
 
         /* read MDPR chunks */
         num = avio_rb16(&pb);
         if (chunk_nr >= num)
             return -1;
         while (chunk_nr--)
-            avio_seek(&pb, avio_rb32(&pb), SEEK_CUR);
+            avio_skip(&pb, avio_rb32(&pb));
         size = avio_rb32(&pb);
     } else {
         size = rdt->mlti_data_size;

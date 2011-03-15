@@ -147,7 +147,7 @@ static int au_read_header(AVFormatContext *s,
 
     if (size >= 24) {
         /* skip unused data */
-        avio_seek(pb, size - 24, SEEK_CUR);
+        avio_skip(pb, size - 24);
     }
 
     /* now we are ready: build format streams */

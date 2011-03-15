@@ -195,7 +195,7 @@ static int mmf_read_header(AVFormatContext *s,
     file_size = avio_rb32(pb);
 
     /* Skip some unused chunks that may or may not be present */
-    for(;; avio_seek(pb, size, SEEK_CUR)) {
+    for(;; avio_skip(pb, size)) {
         tag = avio_rl32(pb);
         size = avio_rb32(pb);
         if(tag == MKTAG('C','N','T','I')) continue;
@@ -226,7 +226,7 @@ static int mmf_read_header(AVFormatContext *s,
     avio_r8(pb); /* time base g */
 
     /* Skip some unused chunks that may or may not be present */
-    for(;; avio_seek(pb, size, SEEK_CUR)) {
+    for(;; avio_skip(pb, size)) {
         tag = avio_rl32(pb);
         size = avio_rb32(pb);
         if(tag == MKTAG('A','t','s','q')) continue;

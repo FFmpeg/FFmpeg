@@ -50,7 +50,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (avio_rl32(s->pb) != AV_RL32("TTA1"))
         return -1; // not tta file
 
-    avio_seek(s->pb, 2, SEEK_CUR); // FIXME: flags
+    avio_skip(s->pb, 2); // FIXME: flags
     channels = avio_rl16(s->pb);
     bps = avio_rl16(s->pb);
     samplerate = avio_rl32(s->pb);
@@ -65,7 +65,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
 
-    avio_seek(s->pb, 4, SEEK_CUR); // header crc
+    avio_skip(s->pb, 4); // header crc
 
     framelen = samplerate*256/245;
     c->totalframes = datalen / framelen + ((datalen % framelen) ? 1 : 0);
@@ -91,7 +91,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_add_index_entry(st, framepos, i*framelen, size, 0, AVINDEX_KEYFRAME);
         framepos += size;
     }
-    avio_seek(s->pb, 4, SEEK_CUR); // seektable crc
+    avio_skip(s->pb, 4); // seektable crc
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_TTA;

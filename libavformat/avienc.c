@@ -444,9 +444,9 @@ static int avi_write_ix(AVFormatContext *s)
          /* Updating one entry in the AVI OpenDML master index */
          avio_seek(pb, avist->indexes.indx_start - 8, SEEK_SET);
          ffio_wfourcc(pb, "indx");            /* enabling this entry */
-         avio_seek(pb, 8, SEEK_CUR);
+         avio_skip(pb, 8);
          avio_wl32(pb, avi->riff_id);         /* nEntriesInUse */
-         avio_seek(pb, 16*avi->riff_id, SEEK_CUR);
+         avio_skip(pb, 16*avi->riff_id);
          avio_wl64(pb, ix);                   /* qwOffset */
          avio_wl32(pb, pos - ix);             /* dwSize */
          avio_wl32(pb, avist->indexes.entry); /* dwDuration */
@@ -603,7 +603,7 @@ static int avi_write_trailer(AVFormatContext *s)
             file_size = avio_tell(pb);
             avio_seek(pb, avi->odml_list - 8, SEEK_SET);
             ffio_wfourcc(pb, "LIST"); /* Making this AVI OpenDML one */
-            avio_seek(pb, 16, SEEK_CUR);
+            avio_skip(pb, 16);
 
             for (n=nb_frames=0;n<s->nb_streams;n++) {
                 AVCodecContext *stream = s->streams[n]->codec;

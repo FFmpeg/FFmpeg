@@ -72,7 +72,7 @@ static int r3d_read_red1(AVFormatContext *s)
     tmp = avio_rb32(s->pb); // filenum
     av_dlog(s, "filenum %d\n", tmp);
 
-    avio_seek(s->pb, 32, SEEK_CUR); // unknown
+    avio_skip(s->pb, 32); // unknown
 
     st->codec->width  = avio_rb32(s->pb);
     st->codec->height = avio_rb32(s->pb);
@@ -152,7 +152,7 @@ static void r3d_read_reos(AVFormatContext *s)
     tmp = avio_rb32(s->pb);
     av_dlog(s, "num audio chunks %d\n", tmp);
 
-    avio_seek(s->pb, 6*4, SEEK_CUR);
+    avio_skip(s->pb, 6*4);
 }
 
 static int r3d_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -332,7 +332,7 @@ static int r3d_read_packet(AVFormatContext *s, AVPacket *pkt)
             break;
         default:
         skip:
-            avio_seek(s->pb, atom.size-8, SEEK_CUR);
+            avio_skip(s->pb, atom.size-8);
         }
     }
     return err;

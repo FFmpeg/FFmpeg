@@ -136,14 +136,14 @@ static int roq_read_packet(AVFormatContext *s,
                 break;
             }
             /* don't care about this chunk anymore */
-            avio_seek(pb, RoQ_CHUNK_PREAMBLE_SIZE, SEEK_CUR);
+            avio_skip(pb, RoQ_CHUNK_PREAMBLE_SIZE);
             break;
 
         case RoQ_QUAD_CODEBOOK:
             /* packet needs to contain both this codebook and next VQ chunk */
             codebook_offset = avio_tell(pb) - RoQ_CHUNK_PREAMBLE_SIZE;
             codebook_size = chunk_size;
-            avio_seek(pb, codebook_size, SEEK_CUR);
+            avio_skip(pb, codebook_size);
             if (avio_read(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) !=
                 RoQ_CHUNK_PREAMBLE_SIZE)
                 return AVERROR(EIO);

@@ -81,7 +81,7 @@ static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
     video_dec->codec_type   = AVMEDIA_TYPE_VIDEO;
     video_dec->codec_id     = CODEC_ID_YOP;
 
-    avio_seek(pb, 6, SEEK_CUR);
+    avio_skip(pb, 6);
 
     frame_rate              = avio_r8(pb);
     yop->frame_size         = avio_r8(pb) * 2048;
@@ -153,7 +153,7 @@ static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
     // Set position to the start of the frame
     pkt->pos = yop->video_packet.pos;
 
-    avio_seek(pb, yop->audio_block_length - ret, SEEK_CUR);
+    avio_skip(pb, yop->audio_block_length - ret);
 
     ret = avio_read(pb, yop->video_packet.data + yop->palette_size,
                      actual_video_data_size);

@@ -757,7 +757,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code){
        ||(discard >= AVDISCARD_BIDIR && last_IP_pts != AV_NOPTS_VALUE && last_IP_pts > pts)
        || discard >= AVDISCARD_ALL
        || stc->skip_until_key_frame){
-        avio_seek(bc, size, SEEK_CUR);
+        avio_skip(bc, size);
         return 1;
     }
 
@@ -803,7 +803,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         case STREAM_STARTCODE:
         case INDEX_STARTCODE:
             skip= get_packetheader(nut, bc, 0, tmp);
-            avio_seek(bc, skip, SEEK_CUR);
+            avio_skip(bc, skip);
             break;
         case INFO_STARTCODE:
             if(decode_info_header(nut)<0)

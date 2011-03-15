@@ -61,7 +61,7 @@ static int avs_read_header(AVFormatContext * s, AVFormatParameters * ap)
 
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
-    avio_seek(s->pb, 4, SEEK_CUR);
+    avio_skip(s->pb, 4);
     avs->width = avio_rl16(s->pb);
     avs->height = avio_rl16(s->pb);
     avs->bits_per_sample = avio_rl16(s->pb);
@@ -204,7 +204,7 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
                 break;
 
             default:
-                avio_seek(s->pb, size - 4, SEEK_CUR);
+                avio_skip(s->pb, size - 4);
             }
         }
     }

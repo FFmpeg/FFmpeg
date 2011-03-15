@@ -153,7 +153,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
                     chmask = avio_rl32(pb);
                     break;
                 case 5:
-                    avio_seek(pb, 1, SEEK_CUR);
+                    avio_skip(pb, 1);
                     chan |= (avio_r8(pb) & 0xF) << 8;
                     chmask = avio_rl24(pb);
                     break;
@@ -166,10 +166,10 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
                 rate = avio_rl24(pb);
                 break;
             default:
-                avio_seek(pb, size, SEEK_CUR);
+                avio_skip(pb, size);
             }
             if(id&0x40)
-                avio_seek(pb, 1, SEEK_CUR);
+                avio_skip(pb, 1);
         }
         if(rate == -1){
             av_log(ctx, AV_LOG_ERROR, "Cannot determine custom sampling rate\n");

@@ -122,7 +122,7 @@ recover:
             if (pes_signal != 1) {
                 pva_log(s, AV_LOG_WARNING, "expected signaled PES packet, "
                                           "trying to recover\n");
-                avio_seek(pb, length - 9, SEEK_CUR);
+                avio_skip(pb, length - 9);
                 if (!read_packet)
                     return AVERROR(EIO);
                 goto recover;

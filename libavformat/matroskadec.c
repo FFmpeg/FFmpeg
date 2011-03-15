@@ -831,7 +831,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                      return ebml_parse_nest(matroska, syntax->def.n, data);
     case EBML_PASS:  return ebml_parse_id(matroska, syntax->def.n, id, data);
     case EBML_STOP:  return 1;
-    default:         return avio_seek(pb,length,SEEK_CUR)<0 ? AVERROR(EIO) : 0;
+    default:         return avio_skip(pb,length)<0 ? AVERROR(EIO) : 0;
     }
     if (res == AVERROR_INVALIDDATA)
         av_log(matroska->ctx, AV_LOG_ERROR, "Invalid element\n");
@@ -1393,10 +1393,10 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             int flavor;
             ffio_init_context(&b, track->codec_priv.data,track->codec_priv.size,
                           0, NULL, NULL, NULL, NULL);
-            avio_seek(&b, 22, SEEK_CUR);
+            avio_skip(&b, 22);
             flavor                       = avio_rb16(&b);
             track->audio.coded_framesize = avio_rb32(&b);
-            avio_seek(&b, 12, SEEK_CUR);
+            avio_skip(&b, 12);
             track->audio.sub_packet_h    = avio_rb16(&b);
             track->audio.frame_size      = avio_rb16(&b);
             track->audio.sub_packet_size = avio_rb16(&b);

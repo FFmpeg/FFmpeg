@@ -239,7 +239,7 @@ static int flic_read_packet(AVFormatContext *s,
             }
 
             /* skip useless 10B sub-header (yes, it's not accounted for in the chunk header) */
-            avio_seek(pb, 10, SEEK_CUR);
+            avio_skip(pb, 10);
 
             pkt->stream_index = flic->audio_stream_index;
             pkt->pos = avio_tell(pb);
@@ -253,7 +253,7 @@ static int flic_read_packet(AVFormatContext *s,
             packet_read = 1;
         } else {
             /* not interested in this chunk */
-            avio_seek(pb, size - 6, SEEK_CUR);
+            avio_skip(pb, size - 6);
         }
     }
 

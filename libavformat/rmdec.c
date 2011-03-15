@@ -132,7 +132,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
     if (version == 3) {
         int header_size = avio_rb16(pb);
         int64_t startpos = avio_tell(pb);
-        avio_seek(pb, 14, SEEK_CUR);
+        avio_skip(pb, 14);
         rm_read_metadata(s, 0);
         if ((startpos + header_size) >= avio_tell(pb) + 2) {
             // fourcc (should always be "lpcJ")
@@ -141,7 +141,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
         }
         // Skip extra header crap (this should never happen)
         if ((startpos + header_size) > avio_tell(pb))
-            avio_seek(pb, header_size + startpos - avio_tell(pb), SEEK_CUR);
+            avio_skip(pb, header_size + startpos - avio_tell(pb));
         st->codec->sample_rate = 8000;
         st->codec->channels = 1;
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -150,7 +150,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
         int flavor, sub_packet_h, coded_framesize, sub_packet_size;
         int codecdata_length;
         /* old version (4) */
-        avio_seek(pb, 2, SEEK_CUR); /* unused */
+        avio_skip(pb, 2); /* unused */
         avio_rb32(pb); /* .ra4 */
         avio_rb32(pb); /* data size */
         avio_rb16(pb); /* version2 */
@@ -321,7 +321,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
 skip:
     /* skip codec info */
     size = avio_tell(pb) - codec_pos;
-    avio_seek(pb, codec_data_size - size, SEEK_CUR);
+    avio_skip(pb, codec_data_size - size);
 
     return 0;
 }
@@ -340,7 +340,7 @@ static int rm_read_index(AVFormatContext *s)
         size     = avio_rb32(pb);
         if (size < 20)
             return -1;
-        avio_seek(pb, 2, SEEK_CUR);
+        avio_skip(pb, 2);
         n_pkts   = avio_rb32(pb);
         str_id   = avio_rb16(pb);
         next_off = avio_rb32(pb);
@@ -353,10 +353,10 @@ static int rm_read_index(AVFormatContext *s)
             goto skip;
 
         for (n = 0; n < n_pkts; n++) {
-            avio_seek(pb, 2, SEEK_CUR);
+            avio_skip(pb, 2);
             pts = avio_rb32(pb);
             pos = avio_rb32(pb);
-            avio_seek(pb, 4, SEEK_CUR); /* packet no. */
+            avio_skip(pb, 4); /* packet no. */
 
             av_add_index_entry(st, pos, pts, 0, 0, AVINDEX_KEYFRAME);
         }
@@ -469,7 +469,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             goto header_end;
         default:
             /* unknown tag: skip it */
-            avio_seek(pb, tag_size - 10, SEEK_CUR);
+            avio_skip(pb, tag_size - 10);
             break;
         }
     }
@@ -529,7 +529,7 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
             if(state == MKBETAG('I', 'N', 'D', 'X')){
                 int n_pkts, expected_len;
                 len = avio_rb32(pb);
-                avio_seek(pb, 2, SEEK_CUR);
+                avio_skip(pb, 2);
                 n_pkts = avio_rb32(pb);
                 expected_len = 20 + n_pkts * 14;
                 if (len == 20)
@@ -566,7 +566,7 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
         if (i == s->nb_streams) {
 skip:
             /* skip packet if unknown number */
-            avio_seek(pb, len, SEEK_CUR);
+            avio_skip(pb, len);
             rm->remaining_len = 0;
             continue;
         }
@@ -929,7 +929,7 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
                 break;
         }
 
-        avio_seek(s->pb, len, SEEK_CUR);
+        avio_skip(s->pb, len);
     }
     *ppos = pos;
     return dts;

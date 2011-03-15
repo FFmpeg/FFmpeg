@@ -95,7 +95,7 @@ static av_cold int rl2_read_header(AVFormatContext *s,
     int i;
     int ret = 0;
 
-    avio_seek(pb,4, SEEK_CUR);          /* skip FORM tag */
+    avio_skip(pb,4);          /* skip FORM tag */
     back_size = avio_rl32(pb); /**< get size of the background frame */
     signature = avio_rb32(pb);
     data_size = avio_rb32(pb);

@@ -65,19 +65,19 @@ static int bfi_read_header(AVFormatContext * s, AVFormatParameters * ap)
         return AVERROR(ENOMEM);
 
     /* Set the total number of frames. */
-    avio_seek(pb, 8, SEEK_CUR);
+    avio_skip(pb, 8);
     chunk_header           = avio_rl32(pb);
     bfi->nframes           = avio_rl32(pb);
     avio_rl32(pb);
     avio_rl32(pb);
     avio_rl32(pb);
     fps                    = avio_rl32(pb);
-    avio_seek(pb, 12, SEEK_CUR);
+    avio_skip(pb, 12);
     vstream->codec->width  = avio_rl32(pb);
     vstream->codec->height = avio_rl32(pb);
 
     /*Load the palette to extradata */
-    avio_seek(pb, 8, SEEK_CUR);
+    avio_skip(pb, 8);
     vstream->codec->extradata      = av_malloc(768);
     vstream->codec->extradata_size = 768;
     avio_read(pb, vstream->codec->extradata,

@@ -187,7 +187,7 @@ static int64_t get_dts(AVFormatContext *s, int64_t pos)
     int64_t dts;
 
     ffm_seek1(s, pos);
-    avio_seek(pb, 4, SEEK_CUR);
+    avio_skip(pb, 4);
     dts = avio_rb64(pb);
 #ifdef DEBUG_SEEK
     av_log(s, AV_LOG_DEBUG, "dts=%0.6f\n", dts / 1000000.0);

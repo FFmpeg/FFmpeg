@@ -1362,7 +1362,7 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size)
         } else {
             skip = raw_packet_size - TS_PACKET_SIZE;
             if (skip > 0)
-                avio_seek(pb, skip, SEEK_CUR);
+                avio_skip(pb, skip);
             break;
         }
     }

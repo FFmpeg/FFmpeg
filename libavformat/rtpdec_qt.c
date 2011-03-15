@@ -149,13 +149,13 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
                 break;
             }
             default:
-                avio_seek(&pb, tlv_len, SEEK_CUR);
+                avio_skip(&pb, tlv_len);
                 break;
             }
         }
 
         /* 32-bit alignment */
-        avio_seek(&pb, ((avio_tell(&pb) + 3) & ~3) - avio_tell(&pb), SEEK_CUR);
+        avio_skip(&pb, ((avio_tell(&pb) + 3) & ~3) - avio_tell(&pb));
     } else
         avio_seek(&pb, 4, SEEK_SET);
 

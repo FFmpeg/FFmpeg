@@ -152,7 +152,7 @@ static int tmv_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret = av_get_packet(pb, pkt, pkt_size);
 
     if (tmv->stream_index)
-        avio_seek(pb, tmv->padding, SEEK_CUR);
+        avio_skip(pb, tmv->padding);
 
     pkt->stream_index  = tmv->stream_index;
     tmv->stream_index ^= 1;

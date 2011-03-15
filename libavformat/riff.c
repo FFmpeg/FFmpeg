@@ -502,7 +502,7 @@ void ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
             codec->bits_per_coded_sample = avio_rl16(pb);
             codec->channel_layout = avio_rl32(pb); /* dwChannelMask */
             id = avio_rl32(pb); /* 4 first bytes of GUID */
-            avio_seek(pb, 12, SEEK_CUR); /* skip end of GUID */
+            avio_skip(pb, 12); /* skip end of GUID */
             cbSize -= 22;
             size -= 22;
         }
@@ -515,7 +515,7 @@ void ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
 
         /* It is possible for the chunk to contain garbage at the end */
         if (size > 0)
-            avio_seek(pb, size, SEEK_CUR);
+            avio_skip(pb, size);
     }
     codec->codec_id = ff_wav_codec_get_id(id, codec->bits_per_coded_sample);
     if (codec->codec_id == CODEC_ID_AAC_LATM) {

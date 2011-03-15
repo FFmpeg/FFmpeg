@@ -104,19 +104,19 @@ static int msnwc_tcp_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     uint16_t keyframe;
     uint32_t size, timestamp;
 
-    avio_seek(pb, 1, SEEK_CUR); /* one byte has been read ahead */
-    avio_seek(pb, 2, SEEK_CUR);
-    avio_seek(pb, 2, SEEK_CUR);
+    avio_skip(pb, 1); /* one byte has been read ahead */
+    avio_skip(pb, 2);
+    avio_skip(pb, 2);
     keyframe = avio_rl16(pb);
     size = avio_rl32(pb);
-    avio_seek(pb, 4, SEEK_CUR);
-    avio_seek(pb, 4, SEEK_CUR);
+    avio_skip(pb, 4);
+    avio_skip(pb, 4);
     timestamp = avio_rl32(pb);
 
     if(!size || av_get_packet(pb, pkt, size) != size)
         return -1;
 
-    avio_seek(pb, 1, SEEK_CUR); /* Read ahead one byte of struct size like read_header */
+    avio_skip(pb, 1); /* Read ahead one byte of struct size like read_header */
 
     pkt->pts = timestamp;
     pkt->dts = timestamp;

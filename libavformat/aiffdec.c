@@ -70,7 +70,7 @@ static void get_meta(AVFormatContext *s, const char *key, int size)
     int res;
 
     if (!str) {
-        avio_seek(s->pb, size, SEEK_CUR);
+        avio_skip(s->pb, size);
         return;
     }
 
@@ -152,7 +152,7 @@ static unsigned int get_aiff_header(AVIOContext *pb, AVCodecContext *codec,
 
     /* Chunk is over */
     if (size)
-        avio_seek(pb, size, SEEK_CUR);
+        avio_skip(pb, size);
 
     return num_frames;
 }
@@ -242,7 +242,7 @@ static int aiff_read_header(AVFormatContext *s,
                 av_log(s, AV_LOG_ERROR, "file is not seekable\n");
                 return -1;
             }
-            avio_seek(pb, size - 8, SEEK_CUR);
+            avio_skip(pb, size - 8);
             break;
         case MKTAG('w', 'a', 'v', 'e'):
             if ((uint64_t)size > (1<<30))
@@ -256,7 +256,7 @@ static int aiff_read_header(AVFormatContext *s,
         default: /* Jump */
             if (size & 1)   /* Always even aligned */
                 size++;
-            avio_seek(pb, size, SEEK_CUR);
+            avio_skip(pb, size);
         }
     }
 

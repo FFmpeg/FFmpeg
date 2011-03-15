@@ -102,7 +102,7 @@ static int read_header(AVFormatContext *s,
     avio_rl16(pb);   /* ibm-pc video bios mode */
     width = avio_rl16(pb);
     height = avio_rl16(pb);
-    avio_seek(pb, length - 10, SEEK_CUR);  /* unknown data */
+    avio_skip(pb, length - 10);  /* unknown data */
 
     /* video stream */
     st = av_new_stream(s, 0);
@@ -181,7 +181,7 @@ static int read_packet(AVFormatContext *s,
 
         default :
             av_log(s, AV_LOG_INFO, "unknown chunk type 0x%x\n", type);
-            avio_seek(pb, length, SEEK_CUR);
+            avio_skip(pb, length);
         }
     }
 

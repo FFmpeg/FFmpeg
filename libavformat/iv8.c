@@ -70,7 +70,7 @@ retry:
         return -1;
 
     if(type==258){
-        avio_seek(s->pb, size, SEEK_CUR);
+        avio_skip(s->pb, size);
         goto retry;
     }
 

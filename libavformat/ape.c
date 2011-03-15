@@ -187,7 +187,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
         /* Skip any unknown bytes at the end of the descriptor.
            This is for future compatibility */
         if (ape->descriptorlength > 52)
-            avio_seek(pb, ape->descriptorlength - 52, SEEK_CUR);
+            avio_skip(pb, ape->descriptorlength - 52);
 
         /* Read header data */
         ape->compressiontype      = avio_rl16(pb);
@@ -212,7 +212,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
         ape->finalframeblocks     = avio_rl32(pb);
 
         if (ape->formatflags & MAC_FORMAT_FLAG_HAS_PEAK_LEVEL) {
-            avio_seek(pb, 4, SEEK_CUR); /* Skip the peak level */
+            avio_skip(pb, 4); /* Skip the peak level */
             ape->headerlength += 4;
         }
 
@@ -239,7 +239,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
 
         /* Skip any stored wav header */
         if (!(ape->formatflags & MAC_FORMAT_FLAG_CREATE_WAV_HEADER))
-            avio_seek(pb, ape->wavheaderlength, SEEK_CUR);
+            avio_skip(pb, ape->wavheaderlength);
     }
 
     if(!ape->totalframes){
