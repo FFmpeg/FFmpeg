@@ -116,8 +116,11 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
             memcpy(out+total_size-unit_size,   extradata+2, unit_size);
             extradata += 2+unit_size;
 
-            if (!unit_nb && !sps_done++)
+            if (!unit_nb && !sps_done++) {
                 unit_nb = *extradata++; /* number of pps unit(s) */
+                if (unit_nb)
+                    pps_seen = 1;
+            }
         }
 
         if(out)
