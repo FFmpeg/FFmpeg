@@ -16,7 +16,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#define _BSD_SOURCE //strdup
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -601,7 +600,7 @@ static int vf_open(vf_instance_t *vf, char *args)
    struct vf_priv_s *p;
    char *filename="framediff.log", *ap, *q, *a;
 
-   if(args && !(args=strdup(args)))
+   if(args && !(args=av_strdup(args)))
       {
    nomem:
       mp_msg(MSGT_VFILTER, MSGL_FATAL,

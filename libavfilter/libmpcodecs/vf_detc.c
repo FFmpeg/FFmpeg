@@ -16,7 +16,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#define _BSD_SOURCE //strdup
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -413,7 +412,7 @@ static void parse_var(struct vf_priv_s *p, char *var)
 static void parse_args(struct vf_priv_s *p, char *args)
 {
         char *next, *orig;
-        for (args=orig=strdup(args); args; args=next) {
+        for (args=orig=av_strdup(args); args; args=next) {
                 next = strchr(args, ':');
                 if (next) *next++ = 0;
                 parse_var(p, args);
