@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  Ramiro Polla <ramiro@lisha.ufsc.br>
+ * Copyright (C) 2008  Ramiro Polla
  *
  * This file is part of FFmpeg.
  *
