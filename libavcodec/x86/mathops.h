@@ -35,7 +35,7 @@ static av_always_inline av_const int MULL(int a, int b, unsigned shift)
         "imull %3               \n\t"
         "shrdl %4, %%edx, %%eax \n\t"
         :"=a"(rt), "=d"(dummy)
-        :"a"(a), "rm"(b), "i"(shift)
+        :"a"(a), "rm"(b), "ci"((uint8_t)shift)
     );
     return rt;
 }
