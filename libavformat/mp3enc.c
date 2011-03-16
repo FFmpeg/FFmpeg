@@ -23,6 +23,7 @@
 #include "avformat.h"
 #include "id3v1.h"
 #include "id3v2.h"
+#include "rawenc.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 
@@ -125,14 +126,6 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
     return len + ID3v2_HEADER_SIZE;
 }
 
-
-static int mp3_write_packet(struct AVFormatContext *s, AVPacket *pkt)
-{
-    avio_write(s->pb, pkt->data, pkt->size);
-    put_flush_packet(s->pb);
-    return 0;
-}
-
 static int mp3_write_trailer(struct AVFormatContext *s)
 {
     uint8_t buf[ID3v1_TAG_SIZE];
@@ -155,7 +148,7 @@ AVOutputFormat ff_mp2_muxer = {
     CODEC_ID_MP2,
     CODEC_ID_NONE,
     NULL,
-    mp3_write_packet,
+    ff_raw_write_packet,
     mp3_write_trailer,
 };
 #endif
@@ -254,7 +247,7 @@ AVOutputFormat ff_mp3_muxer = {
     CODEC_ID_MP3,
     CODEC_ID_NONE,
     mp3_write_header,
-    mp3_write_packet,
+    ff_raw_write_packet,
     mp3_write_trailer,
     AVFMT_NOTIMESTAMPS,
     .priv_class = &mp3_muxer_class,
