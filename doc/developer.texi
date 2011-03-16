@@ -74,7 +74,7 @@ Indent size is 4.
 The presentation is one inspired by 'indent -i4 -kr -nut'.
 The TAB character is forbidden outside of Makefiles as is any
 form of trailing whitespace. Commits containing either will be
-rejected by the Subversion repository.
+rejected by the git repository.
 
 The main priority in Libav is simplicity and small code size in order to
 minimize the bug count.

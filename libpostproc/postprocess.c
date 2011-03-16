@@ -71,7 +71,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 ...
 */
 
-//Changelog: use the Subversion log
+//Changelog: use git log
 
 #include "config.h"
 #include "libavutil/avutil.h"
