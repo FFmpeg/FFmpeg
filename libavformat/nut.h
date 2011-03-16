@@ -82,6 +82,10 @@ typedef struct {
 } StreamContext;
 
 typedef struct {
+    AVRational *time_base;
+} ChapterContext;
+
+typedef struct {
     AVFormatContext *avf;
 //    int written_packet_size;
 //    int64_t packet_start;
@@ -90,6 +94,7 @@ typedef struct {
     const uint8_t *header[128];
     uint64_t next_startcode;     ///< stores the next startcode if it has already been parsed but the stream is not seekable
     StreamContext *stream;
+    ChapterContext *chapter;
     unsigned int max_distance;
     unsigned int time_base_count;
     int64_t last_syncpoint_pos;

@@ -241,9 +241,9 @@ static void build_frame_code(AVFormatContext *s){
     nut->frame_code['N'].flags= FLAG_INVALID;
 }
 
-static void put_tt(NUTContext *nut, StreamContext *nus, AVIOContext *bc, uint64_t val){
+static void put_tt(NUTContext *nut, AVRational *time_base, AVIOContext *bc, uint64_t val){
     val *= nut->time_base_count;
-    val += nus->time_base - nut->time_base;
+    val += time_base - nut->time_base;
     ff_put_v(bc, val);
 }
 
@@ -486,6 +486,34 @@ static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id){
     return count;
 }
 
+static int write_chapter(NUTContext *nut, AVIOContext *bc, int id)
+{
+    AVIOContext *dyn_bc;
+    uint8_t *dyn_buf = NULL;
+    AVMetadataTag *t = NULL;
+    AVChapter *ch    = nut->avf->chapters[id];
+    int ret, dyn_size, count = 0;
+
+    ret = url_open_dyn_buf(&dyn_bc);
+    if (ret < 0)
+        return ret;
+
+    ff_put_v(bc, 0);                                        // stream_id_plus1
+    put_s(bc, id + 1);                                      // chapter_id
+    put_tt(nut, nut->chapter[id].time_base, bc, ch->start); // chapter_start
+    ff_put_v(bc, ch->end - ch->start);                      // chapter_len
+
+    while ((t = av_metadata_get(ch->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
+        count += add_info(dyn_bc, t->key, t->value);
+
+    ff_put_v(bc, count);
+
+    dyn_size = url_close_dyn_buf(dyn_bc, &dyn_buf);
+    avio_write(bc, dyn_buf, dyn_size);
+    av_freep(&dyn_buf);
+    return 0;
+}
+
 static int write_headers(AVFormatContext *avctx, AVIOContext *bc){
     NUTContext *nut = avctx->priv_data;
     AVIOContext *dyn_bc;
@@ -530,6 +558,20 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc){
         }
     }
 
+    for (i = 0; i < nut->avf->nb_chapters; i++) {
+        ret = url_open_dyn_buf(&dyn_bc);
+        if (ret < 0)
+            return ret;
+        ret = write_chapter(nut, dyn_bc, i);
+        if (ret < 0) {
+            uint8_t *buf;
+            url_close_dyn_buf(dyn_bc, &buf);
+            av_freep(&buf);
+            return ret;
+        }
+        put_packet(nut, bc, dyn_bc, 1, INFO_STARTCODE);
+    }
+
     nut->last_syncpoint_pos= INT_MIN;
     nut->header_count++;
     return 0;
@@ -543,7 +585,9 @@ static int write_header(AVFormatContext *s){
     nut->avf= s;
 
     nut->stream   = av_mallocz(sizeof(StreamContext)*s->nb_streams);
-    nut->time_base= av_mallocz(sizeof(AVRational   )*s->nb_streams);
+    nut->chapter  = av_mallocz(sizeof(ChapterContext)*s->nb_chapters);
+    nut->time_base= av_mallocz(sizeof(AVRational   )*(s->nb_streams +
+                                                      s->nb_chapters));
 
     for(i=0; i<s->nb_streams; i++){
         AVStream *st= s->streams[i];
@@ -568,6 +612,20 @@ static int write_header(AVFormatContext *s){
         else
             nut->stream[i].msb_pts_shift = 14;
         nut->stream[i].max_pts_distance= FFMAX(time_base.den, time_base.num) / time_base.num;
+    }
+
+    for (i = 0; i < s->nb_chapters; i++) {
+        AVChapter *ch = s->chapters[i];
+
+        for (j = 0; j < nut->time_base_count; j++) {
+            if (!memcmp(&ch->time_base, &nut->time_base[j], sizeof(AVRational)))
+                break;
+        }
+
+        nut->time_base[j] = ch->time_base;
+        nut->chapter[i].time_base = &nut->time_base[j];
+        if(j == nut->time_base_count)
+            nut->time_base_count++;
     }
 
     nut->max_distance = MAX_DISTANCE;
@@ -672,7 +730,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
         ret = url_open_dyn_buf(&dyn_bc);
         if(ret < 0)
             return ret;
-        put_tt(nut, nus, dyn_bc, pkt->dts);
+        put_tt(nut, nus->time_base, dyn_bc, pkt->dts);
         ff_put_v(dyn_bc, sp ? (nut->last_syncpoint_pos - sp->pos)>>4 : 0);
         put_packet(nut, bc, dyn_bc, 1, SYNCPOINT_STARTCODE);
 
