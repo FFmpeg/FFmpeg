@@ -1698,7 +1698,11 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         av_init_packet(&opkt);
 
                         if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) && !copy_initial_nonkeyframes)
+#if !CONFIG_AVFILTER
+                            continue;
+#else
                             goto cont;
+#endif
 
                         /* no reencoding needed : output the packet directly */
                         /* force the input stream PTS */
@@ -1746,8 +1750,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         ost->frame_number++;
                         av_free_packet(&opkt);
                     }
-                    cont:
 #if CONFIG_AVFILTER
+                    cont:
                     frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
                                        ost->output_video_filter && avfilter_poll_frame(ost->output_video_filter->inputs[0]);
                     if(ost->picref)
@@ -3402,7 +3406,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_VIDEO);
             codec = avcodec_find_encoder(codec_id);
         }
-
+#if CONFIG_AVFILTER
         if(frame_aspect_ratio > 0){
             i = vfilters ? strlen(vfilters) : 0;
             vfilters = av_realloc(vfilters, i+100);
@@ -3412,6 +3416,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
 
         ost->avfilter= vfilters;
         vfilters= NULL;
+#endif
     }
 
     avcodec_get_context_defaults3(st->codec, codec);
