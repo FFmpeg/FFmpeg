@@ -85,13 +85,30 @@ static void ac3_rshift_int32_c(int32_t *src, unsigned int len,
     } while (len > 0);
 }
 
-av_cold void ff_ac3dsp_init(AC3DSPContext *c)
+static void float_to_fixed24_c(int32_t *dst, const float *src, unsigned int len)
+{
+    const float scale = 1 << 24;
+    do {
+        *dst++ = lrintf(*src++ * scale);
+        *dst++ = lrintf(*src++ * scale);
+        *dst++ = lrintf(*src++ * scale);
+        *dst++ = lrintf(*src++ * scale);
+        *dst++ = lrintf(*src++ * scale);
+        *dst++ = lrintf(*src++ * scale);
+        *dst++ = lrintf(*src++ * scale);
+        *dst++ = lrintf(*src++ * scale);
+        len -= 8;
+    } while (len > 0);
+}
+
+av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
 {
     c->ac3_exponent_min = ac3_exponent_min_c;
     c->ac3_max_msb_abs_int16 = ac3_max_msb_abs_int16_c;
     c->ac3_lshift_int16 = ac3_lshift_int16_c;
     c->ac3_rshift_int32 = ac3_rshift_int32_c;
+    c->float_to_fixed24 = float_to_fixed24_c;
 
     if (HAVE_MMX)
-        ff_ac3dsp_init_x86(c);
+        ff_ac3dsp_init_x86(c, bit_exact);
 }
