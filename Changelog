@@ -60,6 +60,7 @@ easier to use. The changes are:
 - libcdio-paranoia input device for audio CD grabbing
 - Apple ProRes decoder
 - CELT in Ogg demuxing
+- G.723.1 demuxer and decoder
 
 
 version 0.8:

@@ -106,6 +106,7 @@ library:
 @item framecrc testing format   @tab X @tab
 @item FunCom ISS                @tab   @tab X
     @tab Audio format used in various games from FunCom like The Longest Journey.
+@item G.723.1                   @tab   @tab X
 @item G.729 BIT                 @tab X @tab X
 @item GIF Animation             @tab X @tab
 @item GXF                       @tab X @tab X
