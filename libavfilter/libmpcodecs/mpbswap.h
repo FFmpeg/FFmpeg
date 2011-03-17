@@ -31,8 +31,4 @@
 #define be2me_16(v) av_be2ne16(v)
 #define be2me_32(v) av_be2ne32(v)
 
-#ifndef HAVE_SWAB
-void swab(const void *from, void *to, ssize_t n);
-#endif
-
 #endif /* MPLAYER_MPBSWAP_H */
