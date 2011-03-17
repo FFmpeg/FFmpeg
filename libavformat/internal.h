@@ -239,4 +239,15 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base,
  */
 void ff_reduce_index(AVFormatContext *s, int stream_index);
 
+/*
+ * Convert a relative url into an absolute url, given a base url.
+ *
+ * @param buf the buffer where output absolute url is written
+ * @param size the size of buf
+ * @param base the base url, may be equal to buf.
+ * @param rel the new url, which is interpreted relative to base
+ */
+void ff_make_absolute_url(char *buf, int size, const char *base,
+                          const char *rel);
+
 #endif /* AVFORMAT_INTERNAL_H */
