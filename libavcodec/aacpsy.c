@@ -39,8 +39,8 @@
  * constants for 3GPP AAC psychoacoustic model
  * @{
  */
-#define PSY_3GPP_SPREAD_HI   1.5f // spreading factor for ascending threshold spreading  (15 dB/Bark)
-#define PSY_3GPP_SPREAD_LOW  3.0f // spreading factor for descending threshold spreading (30 dB/Bark)
+#define PSY_3GPP_THR_SPREAD_HI   1.5f // spreading factor for low-to-hi threshold spreading  (15 dB/Bark)
+#define PSY_3GPP_THR_SPREAD_LOW  3.0f // spreading factor for hi-to-low threshold spreading  (30 dB/Bark)
 
 #define PSY_3GPP_RPEMIN      0.01f
 #define PSY_3GPP_RPELEV      2.0f
@@ -256,8 +256,8 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
         for (g = 0; g < ctx->num_bands[j] - 1; g++) {
             AacPsyCoeffs *coeff = &coeffs[g];
             float bark_width = coeffs[g+1].barks - coeffs->barks;
-            coeff->spread_low[0] = pow(10.0, -bark_width * PSY_3GPP_SPREAD_LOW);
-            coeff->spread_hi [0] = pow(10.0, -bark_width * PSY_3GPP_SPREAD_HI);
+            coeff->spread_low[0] = pow(10.0, -bark_width * PSY_3GPP_THR_SPREAD_LOW);
+            coeff->spread_hi [0] = pow(10.0, -bark_width * PSY_3GPP_THR_SPREAD_HI);
         }
         start = 0;
         for (g = 0; g < ctx->num_bands[j]; g++) {
@@ -395,9 +395,9 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
     AacPsyChannel *pch  = &pctx->ch[channel];
     int start = 0;
     int i, w, g;
-    const int num_bands       = ctx->num_bands[wi->num_windows == 8];
-    const uint8_t* band_sizes = ctx->bands[wi->num_windows == 8];
-    AacPsyCoeffs *coeffs     = &pctx->psy_coef[wi->num_windows == 8];
+    const int      num_bands  = ctx->num_bands[wi->num_windows == 8];
+    const uint8_t *band_sizes = ctx->bands[wi->num_windows == 8];
+    AacPsyCoeffs  *coeffs     = &pctx->psy_coef[wi->num_windows == 8];
 
     //calculate energies, initial thresholds and related values - 5.4.2 "Threshold Calculation"
     for (w = 0; w < wi->num_windows*16; w += 16) {
@@ -410,17 +410,19 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
             start        += band_sizes[g];
         }
     }
-    //modify thresholds - spread, threshold in quiet - 5.4.3 "Spreaded Energy Calculation"
+    //modify thresholds and energies - spread, threshold in quiet, pre-echo control
     for (w = 0; w < wi->num_windows*16; w += 16) {
-
         AacPsyBand *bands = &pch->band[w];
+        //5.4.2.3 "Spreading" & 5.4.3 "Spreaded Energy Calculation"
         for (g = 1; g < num_bands; g++)
             bands[g].thr = FFMAX(bands[g].thr, bands[g-1].thr * coeffs[g].spread_hi[0]);
         for (g = num_bands - 2; g >= 0; g--)
             bands[g].thr = FFMAX(bands[g].thr, bands[g+1].thr * coeffs[g].spread_low[0]);
+        //5.4.2.4 "Threshold in quiet"
         for (g = 0; g < num_bands; g++) {
             AacPsyBand *band = &bands[g];
             band->thr_quiet = band->thr = FFMAX(band->thr, coeffs[g].ath);
+            //5.4.2.5 "Pre-echo control"
             if (!(wi->window_type[0] == LONG_STOP_SEQUENCE || (wi->window_type[1] == LONG_START_SEQUENCE && !w)))
                 band->thr = FFMAX(PSY_3GPP_RPEMIN*band->thr, FFMIN(band->thr,
                                   PSY_3GPP_RPELEV*pch->prev_band[w+g].thr_quiet));
@@ -436,6 +438,7 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
             psy_band->energy    = band->energy;
         }
     }
+
     memcpy(pch->prev_band, pch->band, sizeof(pch->band));
 }
 
