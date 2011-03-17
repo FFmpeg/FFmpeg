@@ -604,6 +604,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             SUBFRAME_SIZE,
             10,
             1,
+            0,
             0x800))
             /* Overflow occured, downscale excitation signal... */
             for (j = 0; j < 2 * SUBFRAME_SIZE + PITCH_DELAY_MAX + INTERPOL_LEN; j++)
@@ -625,6 +626,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                     SUBFRAME_SIZE,
                     10,
                     0,
+                    0,
                     0x800);
         } else {
             ff_celp_lp_synthesis_filter(
@@ -633,6 +635,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                     ctx->exc  + i * SUBFRAME_SIZE,
                     SUBFRAME_SIZE,
                     10,
+                    0,
                     0,
                     0x800);
         }

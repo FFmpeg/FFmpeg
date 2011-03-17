@@ -433,7 +433,7 @@ static int16_t get_tilt_comp(DSPContext *dsp, int16_t *lp_gn,
     lp_gn[10] = 4096; //1.0 in (3.12)
 
     /* Apply 1/A(z/FORMANT_PP_FACTOR_DEN) filter to hf. */
-    ff_celp_lp_synthesis_filter(lp_gn + 11, lp_gd + 1, lp_gn + 11, 22, 10, 0, 0x800);
+    ff_celp_lp_synthesis_filter(lp_gn + 11, lp_gd + 1, lp_gn + 11, 22, 10, 0, 0, 0x800);
     /* Now lp_gn (starting with 10) contains impulse response
        of A(z/FORMANT_PP_FACTOR_NUM)/A(z/FORMANT_PP_FACTOR_DEN) filter. */
 
@@ -554,7 +554,7 @@ void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int* voicing,
     /* Apply second half of short-term postfilter: 1/A(z/FORMANT_PP_FACTOR_DEN) */
     ff_celp_lp_synthesis_filter(pos_filter_data + 10, lp_gd + 1,
                                 residual_filt_buf + 10,
-                                subframe_size, 10, 0, 0x800);
+                                subframe_size, 10, 0, 0, 0x800);
     memcpy(pos_filter_data, pos_filter_data + subframe_size, 10 * sizeof(int16_t));
 
     *ht_prev_data = apply_tilt_comp(speech, pos_filter_data + 10, tilt_comp_coeff,
