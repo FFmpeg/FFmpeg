@@ -236,6 +236,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
     if (!asf_st)
         return AVERROR(ENOMEM);
     st->priv_data = asf_st;
+    st->start_time = 0;
     start_time = asf->hdr.preroll;
 
     asf_st->stream_language_index = 128; // invalid stream index means no language info
@@ -960,7 +961,7 @@ static int ff_asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pk
             /* new packet */
             av_new_packet(&asf_st->pkt, asf->packet_obj_size);
             asf_st->seq = asf->packet_seq;
-            asf_st->pkt.dts = asf->packet_frag_timestamp;
+            asf_st->pkt.dts = asf->packet_frag_timestamp - asf->hdr.preroll;
             asf_st->pkt.stream_index = asf->stream_index;
             asf_st->pkt.pos =
             asf_st->packet_pos= asf->packet_pos;
