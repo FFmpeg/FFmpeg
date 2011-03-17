@@ -450,6 +450,7 @@ attribute_deprecated void put_flush_packet(AVIOContext *s);
 attribute_deprecated int url_open_dyn_buf(AVIOContext **s);
 attribute_deprecated int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
 attribute_deprecated int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
+attribute_deprecated int url_fdopen(AVIOContext **s, URLContext *h);
 /**
  * @}
  */
@@ -624,19 +625,6 @@ attribute_deprecated static inline int url_is_streamed(AVIOContext *s)
     return !s->seekable;
 }
 #endif
-
-/**
- * Create and initialize a AVIOContext for accessing the
- * resource referenced by the URLContext h.
- * @note When the URLContext h has been opened in read+write mode, the
- * AVIOContext can be used only for writing.
- *
- * @param s Used to return the pointer to the created AVIOContext.
- * In case of failure the pointed to value is set to NULL.
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code in case of failure
- */
-int url_fdopen(AVIOContext **s, URLContext *h);
 
 #if FF_API_URL_RESETBUF
 /** Reset the buffer for reading or writing.

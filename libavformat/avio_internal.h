@@ -92,4 +92,17 @@ unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
  */
 int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
 
+/**
+ * Create and initialize a AVIOContext for accessing the
+ * resource referenced by the URLContext h.
+ * @note When the URLContext h has been opened in read+write mode, the
+ * AVIOContext can be used only for writing.
+ *
+ * @param s Used to return the pointer to the created AVIOContext.
+ * In case of failure the pointed to value is set to NULL.
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR code in case of failure
+ */
+int ffio_fdopen(AVIOContext **s, URLContext *h);
+
 #endif // AVFORMAT_AVIO_INTERNAL_H

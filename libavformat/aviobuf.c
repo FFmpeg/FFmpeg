@@ -431,6 +431,10 @@ int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
     return avio_close_dyn_buf(s, pbuffer);
 }
+int url_fdopen(AVIOContext **s, URLContext *h)
+{
+    return ffio_fdopen(s, h);
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -818,7 +822,7 @@ uint64_t ffio_read_varlen(AVIOContext *bc){
     return val;
 }
 
-int url_fdopen(AVIOContext **s, URLContext *h)
+int ffio_fdopen(AVIOContext **s, URLContext *h)
 {
     uint8_t *buffer;
     int buffer_size, max_packet_size;
@@ -943,7 +947,7 @@ int avio_open(AVIOContext **s, const char *filename, int flags)
     err = url_open(&h, filename, flags);
     if (err < 0)
         return err;
-    err = url_fdopen(s, h);
+    err = ffio_fdopen(s, h);
     if (err < 0) {
         url_close(h);
         return err;
