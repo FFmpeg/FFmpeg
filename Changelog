@@ -8,6 +8,8 @@ version 0.5.4:
 - Fix crashes in Vorbis decoding found by zzuf (addresses CVE-2010-4704)
 - Fix another crash in Vorbis decoding (addresses CVE-2011-0480, Chrome issue 68115)
 - Fix invalid reads in VC-1 decoding (related to CVE-2011-0723)
+- Do not attempt to decode APE file with no frames
+  (adresses http://packetstorm.linuxsecurity.com/1103-exploits/vlc105-dos.txt)
 
 
 
