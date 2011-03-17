@@ -85,7 +85,7 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     ret = url_open_dyn_buf(&pb);
     if (ret < 0)
         return ret;
-    init_checksum(pb, ff_crc04C11DB7_update, 0);
+    ffio_init_checksum(pb, ff_crc04C11DB7_update, 0);
     ffio_wfourcc(pb, "OggS");
     avio_w8(pb, 0);
     avio_w8(pb, page->flags | extra_flags);

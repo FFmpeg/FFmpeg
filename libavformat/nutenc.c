@@ -24,6 +24,7 @@
 #include "libavcodec/mpegaudiodata.h"
 #include "nut.h"
 #include "internal.h"
+#include "avio_internal.h"
 
 static int find_expected_header(AVCodecContext *c, int size, int key_frame, uint8_t out[64]){
     int sample_rate= c->sample_rate;
@@ -284,14 +285,14 @@ static void put_packet(NUTContext *nut, AVIOContext *bc, AVIOContext *dyn_bc, in
     int forw_ptr= dyn_size + 4*calculate_checksum;
 
     if(forw_ptr > 4096)
-        init_checksum(bc, ff_crc04C11DB7_update, 0);
+        ffio_init_checksum(bc, ff_crc04C11DB7_update, 0);
     avio_wb64(bc, startcode);
     ff_put_v(bc, forw_ptr);
     if(forw_ptr > 4096)
         avio_wl32(bc, get_checksum(bc));
 
     if(calculate_checksum)
-        init_checksum(bc, ff_crc04C11DB7_update, 0);
+        ffio_init_checksum(bc, ff_crc04C11DB7_update, 0);
     avio_write(bc, dyn_buf, dyn_size);
     if(calculate_checksum)
         avio_wl32(bc, get_checksum(bc));
@@ -806,7 +807,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     needed_flags= get_needed_flags(nut, nus, fc, pkt);
     header_idx= fc->header_idx;
 
-    init_checksum(bc, ff_crc04C11DB7_update, 0);
+    ffio_init_checksum(bc, ff_crc04C11DB7_update, 0);
     avio_w8(bc, frame_code);
     if(flags & FLAG_CODED){
         ff_put_v(bc, (flags^needed_flags) & ~(FLAG_CODED));
