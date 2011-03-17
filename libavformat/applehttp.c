@@ -519,7 +519,7 @@ reload:
                c->max_start_seq - c->cur_seq_no);
         c->cur_seq_no = c->max_start_seq;
     }
-    /* If more segments exit, open the next one */
+    /* If more segments exist, open the next one */
     if (c->cur_seq_no < c->min_end_seq)
         goto start;
     /* We've reached the end of the playlists - return eof if this is a
