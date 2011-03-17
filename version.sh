@@ -23,7 +23,7 @@ if [ -z "$2" ]; then
     exit
 fi
 
-NEW_REVISION="#define LIBAV_VERSION \"$version\""
+NEW_REVISION="#define FFMPEG_VERSION \"$version\""
 OLD_REVISION=$(cat version.h 2> /dev/null)
 
 # Update version.h only on revision changes to avoid spurious rebuilds
