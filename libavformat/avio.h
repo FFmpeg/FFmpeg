@@ -675,8 +675,6 @@ int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
  */
 int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 
-unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
-                                    unsigned int len);
 unsigned long get_checksum(AVIOContext *s);
 
 #if FF_API_UDP_GET_FILE
