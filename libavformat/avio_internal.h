@@ -77,6 +77,7 @@ int ff_udp_get_local_port(URLContext *h);
 void ffio_init_checksum(AVIOContext *s,
                         unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
                         unsigned long checksum);
+unsigned long ffio_get_checksum(AVIOContext *s);
 unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
                                     unsigned int len);
 

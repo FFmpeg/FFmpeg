@@ -108,7 +108,7 @@ static int get_packetheader(NUTContext *nut, AVIOContext *bc, int calculate_chec
     size= ffio_read_varlen(bc);
     if(size > 4096)
         avio_rb32(bc);
-    if(get_checksum(bc) && size > 4096)
+    if(ffio_get_checksum(bc) && size > 4096)
         return -1;
 
     ffio_init_checksum(bc, calculate_checksum ? ff_crc04C11DB7_update : NULL, 0);
@@ -285,7 +285,7 @@ static int decode_main_header(NUTContext *nut){
         assert(nut->header_len[0]==0);
     }
 
-    if(skip_reserved(bc, end) || get_checksum(bc)){
+    if(skip_reserved(bc, end) || ffio_get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "main header checksum mismatch\n");
         return AVERROR_INVALIDDATA;
     }
@@ -374,7 +374,7 @@ static int decode_stream_header(NUTContext *nut){
         ffio_read_varlen(bc); // samplerate_den
         GET_V(st->codec->channels, tmp > 0)
     }
-    if(skip_reserved(bc, end) || get_checksum(bc)){
+    if(skip_reserved(bc, end) || ffio_get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "stream header %d checksum mismatch\n", stream_id);
         return -1;
     }
@@ -469,7 +469,7 @@ static int decode_info_header(NUTContext *nut){
         }
     }
 
-    if(skip_reserved(bc, end) || get_checksum(bc)){
+    if(skip_reserved(bc, end) || ffio_get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "info header checksum mismatch\n");
         return -1;
     }
@@ -493,7 +493,7 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
 
     ff_nut_reset_ts(nut, nut->time_base[tmp % nut->time_base_count], tmp / nut->time_base_count);
 
-    if(skip_reserved(bc, end) || get_checksum(bc)){
+    if(skip_reserved(bc, end) || ffio_get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "sync point checksum mismatch\n");
         return -1;
     }
@@ -590,7 +590,7 @@ static int find_and_decode_index(NUTContext *nut){
         }
     }
 
-    if(skip_reserved(bc, end) || get_checksum(bc)){
+    if(skip_reserved(bc, end) || ffio_get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "index checksum mismatch\n");
         goto fail;
     }

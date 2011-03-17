@@ -68,7 +68,7 @@ typedef struct {
 static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc_offset)
 {
     int64_t pos = avio_tell(pb);
-    uint32_t checksum = get_checksum(pb);
+    uint32_t checksum = ffio_get_checksum(pb);
     avio_seek(pb, crc_offset, SEEK_SET);
     avio_wb32(pb, checksum);
     avio_seek(pb, pos, SEEK_SET);

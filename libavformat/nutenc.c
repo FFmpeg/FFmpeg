@@ -289,13 +289,13 @@ static void put_packet(NUTContext *nut, AVIOContext *bc, AVIOContext *dyn_bc, in
     avio_wb64(bc, startcode);
     ff_put_v(bc, forw_ptr);
     if(forw_ptr > 4096)
-        avio_wl32(bc, get_checksum(bc));
+        avio_wl32(bc, ffio_get_checksum(bc));
 
     if(calculate_checksum)
         ffio_init_checksum(bc, ff_crc04C11DB7_update, 0);
     avio_write(bc, dyn_buf, dyn_size);
     if(calculate_checksum)
-        avio_wl32(bc, get_checksum(bc));
+        avio_wl32(bc, ffio_get_checksum(bc));
 
     av_free(dyn_buf);
 }
@@ -818,8 +818,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
     if(flags & FLAG_SIZE_MSB)   ff_put_v(bc, pkt->size / fc->size_mul);
     if(flags & FLAG_HEADER_IDX) ff_put_v(bc, header_idx= best_header_idx);
 
-    if(flags & FLAG_CHECKSUM)   avio_wl32(bc, get_checksum(bc));
-    else                        get_checksum(bc);
+    if(flags & FLAG_CHECKSUM)   avio_wl32(bc, ffio_get_checksum(bc));
+    else                        ffio_get_checksum(bc);
 
     avio_write(bc, pkt->data + nut->header_len[header_idx], pkt->size - nut->header_len[header_idx]);
     nus->last_flags= flags;
