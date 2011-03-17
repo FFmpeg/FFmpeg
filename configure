@@ -3143,7 +3143,7 @@ echo
 for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf indev outdev; do
     echo "Enabled ${type}s:"
     eval list=\$$(toupper $type)_LIST
-    print_enabled '_*' $list | sort | pr -3 -t
+    print_enabled '_*' $list | sort | pr -r -3 -t
     echo
 done
 
