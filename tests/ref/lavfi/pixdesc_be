@@ -1,6 +1,8 @@
 abgr                037bf9df6a765520ad6d490066bf4b89
 argb                c442a8261c2265a07212ef0f72e35f5a
 bgr24               0d0cb38ab3fa0b2ec0865c14f78b217b
+bgr48be             4ba0ff7fc9e011ea264610ad1585bb1f
+bgr48le             d022bfdd6a07d5dcc693799322a386b4
 bgr4_byte           50d23cc82d9dcef2fd12adb81fb9b806
 bgr555be            49f01b1f1f0c84fd9e776dd34cc3c280
 bgr565be            257cf78afa35dc31e9696f139c916715
