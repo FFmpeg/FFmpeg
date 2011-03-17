@@ -122,11 +122,11 @@ with name "STREAM".
 @settitle FFprobe media prober
 
 @c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffserver(1) and the Libav HTML documentation
+ffmpeg(1), ffplay(1), ffserver(1) and the FFmpeg HTML documentation
 @c man end
 
 @c man begin AUTHORS
-The Libav developers
+The FFmpeg developers
 @c man end
 
 @end ignore

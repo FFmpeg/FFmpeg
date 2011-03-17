@@ -11,13 +11,13 @@
 
 @chapter external libraries
 
-Libav can be hooked up with a number of external libraries to add support
+FFmpeg can be hooked up with a number of external libraries to add support
 for more formats. None of them are used by default, their use has to be
 explicitly requested by passing the appropriate flags to @file{./configure}.
 
 @section OpenCORE AMR
 
-Libav can make use of the OpenCORE libraries for AMR-NB
+FFmpeg can make use of the OpenCORE libraries for AMR-NB
 decoding/encoding and AMR-WB decoding.
 
 Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the instructions for
@@ -27,7 +27,7 @@ installing the libraries. Then pass @code{--enable-libopencore-amrnb} and/or
 Note that OpenCORE is under the Apache License 2.0 (see
 @url{http://www.apache.org/licenses/LICENSE-2.0} for details), which is
 incompatible with the LGPL version 2.1 and GPL version 2. You have to
-upgrade Libav's license to LGPL version 3 (or if you have enabled
+upgrade FFmpeg's license to LGPL version 3 (or if you have enabled
 GPL components, GPL version 3) to use it.
 
 
@@ -37,7 +37,7 @@ You can use the @code{-formats} and @code{-codecs} options to have an exhaustive
 
 @section File Formats
 
-Libav supports the following file formats through the @code{libavformat}
+FFmpeg supports the following file formats through the @code{libavformat}
 library:
 
 @multitable @columnfractions .4 .1 .1 .4
@@ -751,18 +751,18 @@ Using a cross-compiler is preferred for various reasons.
 
 @subsection DJGPP
 
-Libav cannot be compiled because of broken system headers, add
+FFmpeg cannot be compiled because of broken system headers, add
 @code{--extra-cflags=-U__STRICT_ANSI__} to the configure options as a
 workaround.
 
 @section OS/2
 
-For information about compiling Libav on OS/2 see
+For information about compiling FFmpeg on OS/2 see
 @url{http://www.edm2.com/index.php/FFmpeg}.
 
 @section Unix-like
 
-Some parts of Libav cannot be built with version 2.15 of the GNU
+Some parts of FFmpeg cannot be built with version 2.15 of the GNU
 assembler which is still provided by a few AMD64 distributions. To
 make sure your compiler really uses the required version of gas
 after a binutils upgrade, run:
@@ -777,7 +777,7 @@ to configure.
 
 @subsection BSD
 
-BSD make will not build Libav, you need to install and use GNU Make
+BSD make will not build FFmpeg, you need to install and use GNU Make
 (@file{gmake}).
 
 @subsubsection FreeBSD
@@ -790,7 +790,7 @@ getting the system headers fixed.
 
 @subsection (Open)Solaris
 
-GNU Make is required to build Libav, so you have to invoke (@file{gmake}),
+GNU Make is required to build FFmpeg, so you have to invoke (@file{gmake}),
 standard Solaris Make will not work. When building with a non-c99 front-end
 (gcc, generic suncc) add either @code{--extra-libs=/usr/lib/values-xpg6.o}
 or @code{--extra-libs=/usr/lib/64/values-xpg6.o} to the configure options
@@ -808,22 +808,22 @@ bash ./configure
 MacOS X on PowerPC or ARM (iPhone) requires a preprocessor from
 @url{http://github.com/yuvi/gas-preprocessor} to build the optimized
 assembler functions. Just download the Perl script and put it somewhere
-in your PATH, Libav's configure will pick it up automatically.
+in your PATH, FFmpeg's configure will pick it up automatically.
 
 @section Windows
 
-To get help and instructions for building Libav under Windows, check out
+To get help and instructions for building FFmpeg under Windows, check out
 the FFmpeg Windows Help Forum at
 @url{http://ffmpeg.arrozcru.org/}.
 
 @subsection Native Windows compilation
 
-Libav can be built to run natively on Windows using the MinGW tools. Install
+FFmpeg can be built to run natively on Windows using the MinGW tools. Install
 the latest versions of MSYS and MinGW from @url{http://www.mingw.org/}.
 You can find detailed installation
 instructions in the download section and the FAQ.
 
-Libav does not build out-of-the-box with the packages the automated MinGW
+FFmpeg does not build out-of-the-box with the packages the automated MinGW
 installer provides. It also requires coreutils to be installed and many other
 packages updated to the latest version. The minimum version for some packages
 are listed below:
@@ -835,7 +835,7 @@ are listed below:
 @item mingw-runtime 3.15
 @end itemize
 
-Libav automatically passes @code{-fno-common} to the compiler to work around
+FFmpeg automatically passes @code{-fno-common} to the compiler to work around
 a GCC bug (see @url{http://gcc.gnu.org/bugzilla/show_bug.cgi?id=37216}).
 
 Within the MSYS shell, configure and make with:
@@ -866,14 +866,14 @@ Edit the @file{bin/sdl-config} script so that it points to the correct prefix
 where SDL was installed. Verify that @file{sdl-config} can be launched from
 the MSYS command line.
 
-@item By using @code{./configure --enable-shared} when configuring Libav,
+@item By using @code{./configure --enable-shared} when configuring FFmpeg,
 you can build libavutil, libavcodec and libavformat as DLLs.
 
 @end itemize
 
 @subsection Microsoft Visual C++ compatibility
 
-As stated in the FAQ, Libav will not compile under MSVC++. However, if you
+As stated in the FAQ, FFmpeg will not compile under MSVC++. However, if you
 want to use the libav* libraries in your own applications, you can still
 compile those applications using MSVC++. But the libav* libraries you link
 to @emph{must} be built with MinGW. However, you will not be able to debug
@@ -881,13 +881,13 @@ inside the libav* libraries, since MSVC++ does not recognize the debug
 symbols generated by GCC.
 We strongly recommend you to move over from MSVC++ to MinGW tools.
 
-This description of how to use the Libav libraries with MSVC++ is based on
+This description of how to use the FFmpeg libraries with MSVC++ is based on
 Microsoft Visual C++ 2005 Express Edition. If you have a different version,
 you might have to modify the procedures slightly.
 
 @subsubsection Using static libraries
 
-Assuming you have just built and installed Libav in @file{/usr/local}.
+Assuming you have just built and installed FFmpeg in @file{/usr/local}.
 
 @enumerate
 
@@ -898,13 +898,13 @@ Application Wizard, uncheck the "Precompiled headers" option.
 @item Write the source code for your application, or, for testing, just
 copy the code from an existing sample application into the source file
 that MSVC++ has already created for you. For example, you can copy
-@file{libavformat/output-example.c} from the Libav distribution.
+@file{libavformat/output-example.c} from the FFmpeg distribution.
 
 @item Open the "Project / Properties" dialog box. In the "Configuration"
 combo box, select "All Configurations" so that the changes you make will
 affect both debug and release builds. In the tree view on the left hand
 side, select "C/C++ / General", then edit the "Additional Include
-Directories" setting to contain the path where the Libav includes were
+Directories" setting to contain the path where the FFmpeg includes were
 installed (i.e. @file{c:\msys\1.0\local\include}).
 Do not add MinGW's include directory here, or the include files will
 conflict with MSVC's.
@@ -912,7 +912,7 @@ conflict with MSVC's.
 @item Still in the "Project / Properties" dialog box, select
 "Linker / General" from the tree view and edit the
 "Additional Library Directories" setting to contain the @file{lib}
-directory where Libav was installed (i.e. @file{c:\msys\1.0\local\lib}),
+directory where FFmpeg was installed (i.e. @file{c:\msys\1.0\local\lib}),
 the directory where MinGW libs are installed (i.e. @file{c:\mingw\lib}),
 and the directory where MinGW's GCC libs are installed
 (i.e. @file{C:\mingw\lib\gcc\mingw32\4.2.1-sjlj}). Then select
@@ -929,13 +929,13 @@ set to "Multi-threaded DLL".
 
 @item Click "OK" to close the "Project / Properties" dialog box.
 
-@item MSVC++ lacks some C99 header files that are fundamental for Libav.
+@item MSVC++ lacks some C99 header files that are fundamental for FFmpeg.
 Get msinttypes from @url{http://code.google.com/p/msinttypes/downloads/list}
 and install it in MSVC++'s include directory
 (i.e. @file{C:\Program Files\Microsoft Visual Studio 8\VC\include}).
 
 @item MSVC++ also does not understand the @code{inline} keyword used by
-Libav, so you must add this line before @code{#include}ing libav*:
+FFmpeg, so you must add this line before @code{#include}ing libav*:
 @example
 #define inline _inline
 @end example
@@ -968,10 +968,10 @@ and run @file{c:\msys\1.0\msys.bat} from there.
 @item Within the MSYS shell, run @code{lib.exe}. If you get a help message
 from @file{Microsoft (R) Library Manager}, this means your environment
 variables are set up correctly, the @file{Microsoft (R) Library Manager}
-is on the path and will be used by Libav to create
+is on the path and will be used by FFmpeg to create
 MSVC++-compatible import libraries.
 
-@item Build Libav with
+@item Build FFmpeg with
 
 @example
 ./configure --enable-shared --enable-memalign-hack
@@ -1000,7 +1000,7 @@ of DLL files, but the ones that are actually used to run your application
 are the ones with a major version number in their filenames
 (i.e. @file{avcodec-51.dll}).
 
-Libav headers do not declare global data for Windows DLLs through the usual
+FFmpeg headers do not declare global data for Windows DLLs through the usual
 dllexport/dllimport interface. Such data will be exported properly while
 building, but to use them in your MSVC++ code you will have to edit the
 appropriate headers and mark the data as dllimport. For example, in
@@ -1014,14 +1014,14 @@ extern __declspec(dllimport) const AVPixFmtDescriptor av_pix_fmt_descriptors[];
 You must use the MinGW cross compilation tools available at
 @url{http://www.mingw.org/}.
 
-Then configure Libav with the following options:
+Then configure FFmpeg with the following options:
 @example
 ./configure --target-os=mingw32 --cross-prefix=i386-mingw32msvc-
 @end example
 (you can change the cross-prefix according to the prefix chosen for the
 MinGW tools).
 
-Then you can easily test Libav with Wine
+Then you can easily test FFmpeg with Wine
 (@url{http://www.winehq.com/}).
 
 @subsection Compilation under Cygwin
@@ -1055,7 +1055,7 @@ shared libraries:
 ./configure --enable-shared --disable-static --extra-cflags=-fno-reorder-functions
 @end example
 
-If you want to build Libav with additional libraries, download Cygwin
+If you want to build FFmpeg with additional libraries, download Cygwin
 "Devel" packages for Ogg and Vorbis from any Cygwin packages repository:
 @example
 libogg-devel, libvorbis-devel

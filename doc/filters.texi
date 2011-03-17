@@ -92,7 +92,7 @@ Follows a BNF description for the filtergraph syntax:
 @chapter Audio Filters
 @c man begin AUDIO FILTERS
 
-When you configure your Libav build, you can disable any of the
+When you configure your FFmpeg build, you can disable any of the
 existing filters using --disable-filters.
 The configure output will show the audio filters included in your
 build.
@@ -155,7 +155,7 @@ tools.
 @chapter Video Filters
 @c man begin VIDEO FILTERS
 
-When you configure your Libav build, you can disable any of the
+When you configure your FFmpeg build, you can disable any of the
 existing filters using --disable-filters.
 The configure output will show the video filters included in your
 build.
@@ -531,7 +531,7 @@ format=yuv420p:yuv444p:yuv410p
 Apply a frei0r effect to the input video.
 
 To enable compilation of this filter you need to install the frei0r
-header and configure Libav with --enable-frei0r.
+header and configure FFmpeg with --enable-frei0r.
 
 The filter supports the syntax:
 @example
@@ -669,7 +669,7 @@ Pass the video source unchanged to the output.
 Apply video transform using libopencv.
 
 To enable this filter install libopencv library and headers and
-configure Libav with --enable-libopencv.
+configure FFmpeg with --enable-libopencv.
 
 The filter takes the parameters: @var{filter_name}@{:=@}@var{filter_params}.
 
@@ -1314,7 +1314,7 @@ timebase. The expression can contain the constants "PI", "E", "PHI",
 Provide a frei0r source.
 
 To enable compilation of this filter you need to install the frei0r
-header and configure Libav with --enable-frei0r.
+header and configure FFmpeg with --enable-frei0r.
 
 The source supports the syntax:
 @example

@@ -201,7 +201,7 @@ Inline asm vs. external asm
 ---------------------------
 Both inline asm (__asm__("..") in a .c file, handled by a compiler such as gcc)
 and external asm (.s or .asm files, handled by an assembler such as yasm/nasm)
-are accepted in Libav. Which one to use differs per specific case.
+are accepted in FFmpeg. Which one to use differs per specific case.
 
 - if your code is intended to be inlined in a C function, inline asm is always
    better, because external asm cannot be inlined

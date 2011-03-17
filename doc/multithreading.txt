@@ -1,7 +1,7 @@
-Libav multithreading methods
+FFmpeg multithreading methods
 ==============================================
 
-Libav provides two methods for multithreading codecs.
+FFmpeg provides two methods for multithreading codecs.
 
 Slice threading decodes multiple parts of a frame at the same time, using
 AVCodecContext execute() and execute2().
