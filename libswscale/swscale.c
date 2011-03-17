@@ -698,6 +698,18 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             dest+=12;\
         }\
         break;\
+    case PIX_FMT_BGR48BE:\
+    case PIX_FMT_BGR48LE:\
+        func(uint8_t,0)\
+            ((uint8_t*)dest)[ 0] = ((uint8_t*)dest)[ 1] = b[Y1];\
+            ((uint8_t*)dest)[ 2] = ((uint8_t*)dest)[ 3] = g[Y1];\
+            ((uint8_t*)dest)[ 4] = ((uint8_t*)dest)[ 5] = r[Y1];\
+            ((uint8_t*)dest)[ 6] = ((uint8_t*)dest)[ 7] = b[Y2];\
+            ((uint8_t*)dest)[ 8] = ((uint8_t*)dest)[ 9] = g[Y2];\
+            ((uint8_t*)dest)[10] = ((uint8_t*)dest)[11] = r[Y2];\
+            dest+=12;\
+        }\
+        break;\
     case PIX_FMT_RGBA:\
     case PIX_FMT_BGRA:\
         if (CONFIG_SMALL) {\
@@ -1029,6 +1041,49 @@ static inline void rgb48ToUV_half(uint8_t *dstU, uint8_t *dstV,
         int r= src1[12*i + 0] + src1[12*i + 6];
         int g= src1[12*i + 2] + src1[12*i + 8];
         int b= src1[12*i + 4] + src1[12*i + 10];
+
+        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
+        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
+    }
+}
+
+static inline void bgr48ToY(uint8_t *dst, const uint8_t *src, long width,
+                            uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        int b = src[i*6+0];
+        int g = src[i*6+2];
+        int r = src[i*6+4];
+
+        dst[i] = (RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+    }
+}
+
+static inline void bgr48ToUV(uint8_t *dstU, uint8_t *dstV,
+                             const uint8_t *src1, const uint8_t *src2,
+                             long width, uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        int b = src1[6*i + 0];
+        int g = src1[6*i + 2];
+        int r = src1[6*i + 4];
+
+        dstU[i] = (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+        dstV[i] = (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+    }
+}
+
+static inline void bgr48ToUV_half(uint8_t *dstU, uint8_t *dstV,
+                                  const uint8_t *src1, const uint8_t *src2,
+                                  long width, uint32_t *unused)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        int b= src1[12*i + 0] + src1[12*i + 6];
+        int g= src1[12*i + 2] + src1[12*i + 8];
+        int r= src1[12*i + 4] + src1[12*i + 10];
 
         dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
         dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
@@ -1788,6 +1843,8 @@ void ff_get_unscaled_swscale(SwsContext *c)
         && srcFormat != PIX_FMT_MONOWHITE && dstFormat != PIX_FMT_MONOWHITE
         && srcFormat != PIX_FMT_RGB48LE   && dstFormat != PIX_FMT_RGB48LE
         && srcFormat != PIX_FMT_RGB48BE   && dstFormat != PIX_FMT_RGB48BE
+        && srcFormat != PIX_FMT_BGR48LE   && dstFormat != PIX_FMT_BGR48LE
+        && srcFormat != PIX_FMT_BGR48BE   && dstFormat != PIX_FMT_BGR48BE
         && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
         c->swScale= rgbToRgbWrapper;
 

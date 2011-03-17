@@ -99,6 +99,16 @@ const int *sws_getCoefficients(int colorspace)
     dst[12*i+ 8] = dst[12*i+ 9] = g[Y]; \
     dst[12*i+10] = dst[12*i+11] = b[Y];
 
+#define PUTBGR48(dst,src,i)             \
+    Y = src[2*i];                       \
+    dst[12*i+ 0] = dst[12*i+ 1] = b[Y]; \
+    dst[12*i+ 2] = dst[12*i+ 3] = g[Y]; \
+    dst[12*i+ 4] = dst[12*i+ 5] = r[Y]; \
+    Y = src[2*i+1];                     \
+    dst[12*i+ 6] = dst[12*i+ 7] = b[Y]; \
+    dst[12*i+ 8] = dst[12*i+ 9] = g[Y]; \
+    dst[12*i+10] = dst[12*i+11] = r[Y];
+
 #define YUV2RGBFUNC(func_name, dst_type, alpha) \
 static int func_name(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY, \
                      int srcSliceH, uint8_t* dst[], int dstStride[]) \
@@ -173,6 +183,32 @@ ENDYUV2RGBLINE(48)
     LOADCHROMA(1);
     PUTRGB48(dst_2,py_2,1);
     PUTRGB48(dst_1,py_1,1);
+ENDYUV2RGBFUNC()
+
+YUV2RGBFUNC(yuv2rgb_c_bgr48, uint8_t, 0)
+    LOADCHROMA(0);
+    PUTBGR48(dst_1,py_1,0);
+    PUTBGR48(dst_2,py_2,0);
+
+    LOADCHROMA(1);
+    PUTBGR48(dst_2,py_2,1);
+    PUTBGR48(dst_1,py_1,1);
+
+    LOADCHROMA(2);
+    PUTBGR48(dst_1,py_1,2);
+    PUTBGR48(dst_2,py_2,2);
+
+    LOADCHROMA(3);
+    PUTBGR48(dst_2,py_2,3);
+    PUTBGR48(dst_1,py_1,3);
+ENDYUV2RGBLINE(48)
+    LOADCHROMA(0);
+    PUTBGR48(dst_1,py_1,0);
+    PUTBGR48(dst_2,py_2,0);
+
+    LOADCHROMA(1);
+    PUTBGR48(dst_2,py_2,1);
+    PUTBGR48(dst_1,py_1,1);
 ENDYUV2RGBFUNC()
 
 YUV2RGBFUNC(yuv2rgb_c_32, uint32_t, 0)
@@ -568,6 +604,8 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
     av_log(c, AV_LOG_WARNING, "No accelerated colorspace conversion found from %s to %s.\n", sws_format_name(c->srcFormat), sws_format_name(c->dstFormat));
 
     switch (c->dstFormat) {
+    case PIX_FMT_BGR48BE:
+    case PIX_FMT_BGR48LE:    return yuv2rgb_c_bgr48;
     case PIX_FMT_RGB48BE:
     case PIX_FMT_RGB48LE:    return yuv2rgb_c_48;
     case PIX_FMT_ARGB:

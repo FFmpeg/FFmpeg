@@ -341,6 +341,8 @@ const char *sws_format_name(enum PixelFormat format);
 #define is16BPS(x)      (           \
            (x)==PIX_FMT_GRAY16BE    \
         || (x)==PIX_FMT_GRAY16LE    \
+        || (x)==PIX_FMT_BGR48BE     \
+        || (x)==PIX_FMT_BGR48LE     \
         || (x)==PIX_FMT_RGB48BE     \
         || (x)==PIX_FMT_RGB48LE     \
         || (x)==PIX_FMT_YUV420P16LE \
@@ -405,7 +407,9 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_MONOWHITE   \
     )
 #define isBGRinInt(x)   (           \
-           (x)==PIX_FMT_BGR32       \
+           (x)==PIX_FMT_BGR48BE     \
+        || (x)==PIX_FMT_BGR48LE     \
+        || (x)==PIX_FMT_BGR32       \
         || (x)==PIX_FMT_BGR32_1     \
         || (x)==PIX_FMT_BGR24       \
         || (x)==PIX_FMT_BGR565BE    \
@@ -428,7 +432,9 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_RGB24       \
     )
 #define isBGRinBytes(x) (           \
-           (x)==PIX_FMT_BGRA        \
+           (x)==PIX_FMT_BGR48BE     \
+        || (x)==PIX_FMT_BGR48LE     \
+        || (x)==PIX_FMT_BGRA        \
         || (x)==PIX_FMT_ABGR        \
         || (x)==PIX_FMT_BGR24       \
     )
