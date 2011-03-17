@@ -1078,7 +1078,7 @@ unsigned avcodec_version( void )
 
 const char *avcodec_configuration(void)
 {
-    return LIBAV_CONFIGURATION;
+    return FFMPEG_CONFIGURATION;
 }
 
 const char *avcodec_license(void)

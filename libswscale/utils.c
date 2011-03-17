@@ -53,7 +53,7 @@ unsigned swscale_version(void)
 
 const char *swscale_configuration(void)
 {
-    return LIBAV_CONFIGURATION;
+    return FFMPEG_CONFIGURATION;
 }
 
 const char *swscale_license(void)

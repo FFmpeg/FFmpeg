@@ -34,7 +34,7 @@ unsigned avfilter_version(void) {
 
 const char *avfilter_configuration(void)
 {
-    return LIBAV_CONFIGURATION;
+    return FFMPEG_CONFIGURATION;
 }
 
 const char *avfilter_license(void)

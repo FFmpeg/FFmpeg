@@ -54,7 +54,7 @@ unsigned avformat_version(void)
 
 const char *avformat_configuration(void)
 {
-    return LIBAV_CONFIGURATION;
+    return FFMPEG_CONFIGURATION;
 }
 
 const char *avformat_license(void)

@@ -177,7 +177,7 @@ distclean::
 	$(RM) version.h config.* libavutil/avconfig.h
 
 config:
-	$(SRC_PATH)/configure $(value LIBAV_CONFIGURATION)
+	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
 
 # regression tests
 
