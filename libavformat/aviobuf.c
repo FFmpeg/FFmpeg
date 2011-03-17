@@ -923,10 +923,12 @@ int avio_close(AVIOContext *s)
     return url_close(h);
 }
 
+#if FF_API_OLD_AVIO
 URLContext *url_fileno(AVIOContext *s)
 {
     return s->opaque;
 }
+#endif
 
 int avio_printf(AVIOContext *s, const char *fmt, ...)
 {

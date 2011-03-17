@@ -623,9 +623,10 @@ int url_resetbuf(AVIOContext *s, int flags);
 int avio_open(AVIOContext **s, const char *url, int flags);
 
 int avio_close(AVIOContext *s);
-URLContext *url_fileno(AVIOContext *s);
 
 #if FF_API_OLD_AVIO
+attribute_deprecated URLContext *url_fileno(AVIOContext *s);
+
 /**
  * @deprecated use AVIOContext.max_packet_size directly.
  */
