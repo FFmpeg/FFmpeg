@@ -38,6 +38,7 @@ version <next>:
 - RTMPS protocol support
 - RTMPTS protocol support
 - JPEG 2000 encoding support through OpenJPEG
+- G.723.1 demuxer and decoder
 
 
 version 0.8:
