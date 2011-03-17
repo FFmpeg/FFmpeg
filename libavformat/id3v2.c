@@ -186,7 +186,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
 {
     int isv34, tlen, unsync;
     char tag[5];
-    int64_t next;
+    int64_t next, end = avio_tell(s->pb) + len;
     int taghdrlen;
     const char *reason;
     AVIOContext pb;
@@ -284,8 +284,9 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         avio_skip(s->pb, len);
     }
     if (version == 4 && flags & 0x10) /* Footer preset, always 10 bytes, skip over it */
-        avio_skip(s->pb, 10);
+        end += 10;
 
+    avio_seek(s->pb, end, SEEK_SET);
     av_free(buffer);
     return;
 
