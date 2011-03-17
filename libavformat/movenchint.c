@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "internal.h"
 #include "rtpenc_chain.h"
+#include "avio_internal.h"
 
 int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
 {
@@ -409,7 +410,7 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
     /* Fetch the output from the RTP muxer, open a new output buffer
      * for next time. */
     size = avio_close_dyn_buf(rtp_ctx->pb, &buf);
-    if ((ret = url_open_dyn_packet_buf(&rtp_ctx->pb,
+    if ((ret = ffio_open_dyn_packet_buf(&rtp_ctx->pb,
                                        RTP_MAX_PACKET_SIZE)) < 0)
         goto done;
 

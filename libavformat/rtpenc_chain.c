@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "rtpenc_chain.h"
+#include "avio_internal.h"
 
 AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
                                        URLContext *handle, int packet_size)
@@ -55,7 +56,7 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
     if (handle) {
         url_fdopen(&rtpctx->pb, handle);
     } else
-        url_open_dyn_packet_buf(&rtpctx->pb, packet_size);
+        ffio_open_dyn_packet_buf(&rtpctx->pb, packet_size);
     ret = av_write_header(rtpctx);
 
     if (ret) {

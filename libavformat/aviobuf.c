@@ -423,6 +423,10 @@ int url_open_dyn_buf(AVIOContext **s)
 {
     return avio_open_dyn_buf(s);
 }
+int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size)
+{
+    return ffio_open_dyn_packet_buf(s, max_packet_size);
+}
 int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
     return avio_close_dyn_buf(s, pbuffer);
@@ -1160,7 +1164,7 @@ int avio_open_dyn_buf(AVIOContext **s)
     return url_open_dyn_buf_internal(s, 0);
 }
 
-int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size)
+int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size)
 {
     if (max_packet_size <= 0)
         return -1;

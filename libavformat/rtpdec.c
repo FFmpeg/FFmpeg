@@ -41,7 +41,7 @@
          buffer to 'rtp_write_packet' contains all the packets for ONE
          frame. Each packet should have a four byte header containing
          the length in big endian format (same trick as
-         'url_open_dyn_packet_buf')
+         'ffio_open_dyn_packet_buf')
 */
 
 static RTPDynamicProtocolHandler ff_realmedia_mp3_dynamic_handler = {
