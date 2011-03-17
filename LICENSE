@@ -1,17 +1,17 @@
-FFmpeg:
+Libav:
 -------
 
-Most files in FFmpeg are under the GNU Lesser General Public License version 2.1
+Most files in Libav are under the GNU Lesser General Public License version 2.1
 or later (LGPL v2.1+). Read the file COPYING.LGPLv2.1 for details. Some other
 files have MIT/X11/BSD-style licenses. In combination the LGPL v2.1+ applies to
-FFmpeg.
+Libav.
 
-Some optional parts of FFmpeg are licensed under the GNU General Public License
+Some optional parts of Libav are licensed under the GNU General Public License
 version 2 or later (GPL v2+). See the file COPYING.GPLv2 for details. None of
 these parts are used by default, you have to explicitly pass --enable-gpl to
-configure to activate them. In this case, FFmpeg's license changes to GPL v2+.
+configure to activate them. In this case, Libav's license changes to GPL v2+.
 
-Specifically, the GPL parts of FFmpeg are
+Specifically, the GPL parts of Libav are
 
 - libpostproc
 - optional x86 optimizations in the files
@@ -33,14 +33,14 @@ external libraries:
 -------------------
 
 Some external libraries, e.g. libx264, are under GPL and can be used in
-conjunction with FFmpeg. They require --enable-gpl to be passed to configure
+conjunction with Libav. They require --enable-gpl to be passed to configure
 as well.
 
 The OpenCORE external libraries are under the Apache License 2.0. That license
 is incompatible with the LGPL v2.1 and the GPL v2, but not with version 3 of
-those licenses. So to combine the OpenCORE libraries with FFmpeg, the license
+those licenses. So to combine the OpenCORE libraries with Libav, the license
 version needs to be upgraded by passing --enable-version3 to configure.
 
-The nonfree external library libfaac can be hooked up in FFmpeg. You need to
+The nonfree external library libfaac can be hooked up in Libav. You need to
 pass --enable-nonfree to configure to enable it. Employ this option with care
-as FFmpeg then becomes nonfree and unredistributable.
+as Libav then becomes nonfree and unredistributable.

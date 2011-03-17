@@ -53,13 +53,13 @@ unsigned swscale_version(void)
 
 const char *swscale_configuration(void)
 {
-    return FFMPEG_CONFIGURATION;
+    return LIBAV_CONFIGURATION;
 }
 
 const char *swscale_license(void)
 {
 #define LICENSE_PREFIX "libswscale license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return LICENSE_PREFIX LIBAV_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
 #define RET 0xC3 //near return opcode for x86

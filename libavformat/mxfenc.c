@@ -1272,7 +1272,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
         avio_seek(pb, pos, SEEK_SET);
     }
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 }
 
 static const UID mxf_mpeg2_codec_uls[] = {
@@ -1731,7 +1731,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         mxf->body_offset += 16+4+pkt->size + klv_fill_size(16+4+pkt->size);
     }
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }
@@ -1795,7 +1795,7 @@ static int mxf_write_footer(AVFormatContext *s)
         }
     }
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     ff_audio_interleave_close(s);
 

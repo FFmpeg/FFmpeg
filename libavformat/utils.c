@@ -54,13 +54,13 @@ unsigned avformat_version(void)
 
 const char *avformat_configuration(void)
 {
-    return FFMPEG_CONFIGURATION;
+    return LIBAV_CONFIGURATION;
 }
 
 const char *avformat_license(void)
 {
 #define LICENSE_PREFIX "libavformat license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+    return LICENSE_PREFIX LIBAV_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
 /* fraction handling */
@@ -624,7 +624,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             goto fail;
         }
         if (buf_size > 0) {
-            url_setbufsize(pb, buf_size);
+            ffio_set_buf_size(pb, buf_size);
         }
         if (!fmt && (err = av_probe_input_buffer(pb, &fmt, filename, logctx, 0, logctx ? (*ic_ptr)->probesize : 0)) < 0) {
             goto fail;
@@ -3822,4 +3822,55 @@ int ff_find_stream_index(AVFormatContext *s, int id)
             return i;
     }
     return -1;
+}
+
+void ff_make_absolute_url(char *buf, int size, const char *base,
+                          const char *rel)
+{
+    char *sep;
+    /* Absolute path, relative to the current server */
+    if (base && strstr(base, "://") && rel[0] == '/') {
+        if (base != buf)
+            av_strlcpy(buf, base, size);
+        sep = strstr(buf, "://");
+        if (sep) {
+            sep += 3;
+            sep = strchr(sep, '/');
+            if (sep)
+                *sep = '\0';
+        }
+        av_strlcat(buf, rel, size);
+        return;
+    }
+    /* If rel actually is an absolute url, just copy it */
+    if (!base || strstr(rel, "://") || rel[0] == '/') {
+        av_strlcpy(buf, rel, size);
+        return;
+    }
+    if (base != buf)
+        av_strlcpy(buf, base, size);
+    /* Remove the file name from the base url */
+    sep = strrchr(buf, '/');
+    if (sep)
+        sep[1] = '\0';
+    else
+        buf[0] = '\0';
+    while (av_strstart(rel, "../", NULL) && sep) {
+        /* Remove the path delimiter at the end */
+        sep[0] = '\0';
+        sep = strrchr(buf, '/');
+        /* If the next directory name to pop off is "..", break here */
+        if (!strcmp(sep ? &sep[1] : buf, "..")) {
+            /* Readd the slash we just removed */
+            av_strlcat(buf, "/", size);
+            break;
+        }
+        /* Cut off the directory name */
+        if (sep)
+            sep[1] = '\0';
+        else
+            buf[0] = '\0';
+        rel += 3;
+    }
+    av_strlcat(buf, rel, size);
 }

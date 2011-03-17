@@ -149,7 +149,7 @@ static int a64_write_packet(struct AVFormatContext *s, AVPacket *pkt)
         break;
     }
 
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
     return 0;
 }
 

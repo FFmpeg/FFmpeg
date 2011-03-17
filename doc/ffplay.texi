@@ -20,9 +20,9 @@ ffplay [options] @file{input_file}
 @chapter Description
 @c man begin DESCRIPTION
 
-FFplay is a very simple and portable media player using the FFmpeg
+FFplay is a very simple and portable media player using the Libav
 libraries and the SDL library. It is mostly used as a testbed for the
-various FFmpeg APIs.
+various Libav APIs.
 @c man end
 
 @chapter Options
@@ -169,11 +169,11 @@ Seek to percentage in file corresponding to fraction of width.
 @settitle FFplay media player
 
 @c man begin SEEALSO
-ffmpeg(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
+ffmpeg(1), ffprobe(1), ffserver(1) and the Libav HTML documentation
 @c man end
 
 @c man begin AUTHORS
-The FFmpeg developers
+The Libav developers
 @c man end
 
 @end ignore

@@ -399,7 +399,7 @@ static int warned_cfg = 0;
         }                                                               \
         if (flags & SHOW_CONFIG) {                                      \
             const char *cfg = libname##_configuration();                \
-            if (strcmp(FFMPEG_CONFIGURATION, cfg)) {                    \
+            if (strcmp(LIBAV_CONFIGURATION, cfg)) {                     \
                 if (!warned_cfg) {                                      \
                     fprintf(outstream,                                  \
                             "%sWARNING: library configuration mismatch\n", \
@@ -425,17 +425,17 @@ static void print_all_libs_info(FILE* outstream, int flags)
 
 void show_banner(void)
 {
-    fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-%d the FFmpeg developers\n",
+    fprintf(stderr, "%s version " LIBAV_VERSION ", Copyright (c) %d-%d the Libav developers\n",
             program_name, program_birth_year, this_year);
     fprintf(stderr, "  built on %s %s with %s %s\n",
             __DATE__, __TIME__, CC_TYPE, CC_VERSION);
-    fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
+    fprintf(stderr, "  configuration: " LIBAV_CONFIGURATION "\n");
     print_all_libs_info(stderr, INDENT|SHOW_CONFIG);
     print_all_libs_info(stderr, INDENT|SHOW_VERSION);
 }
 
 void show_version(void) {
-    printf("%s " FFMPEG_VERSION "\n", program_name);
+    printf("%s " LIBAV_VERSION "\n", program_name);
     print_all_libs_info(stdout, SHOW_VERSION);
 }
 

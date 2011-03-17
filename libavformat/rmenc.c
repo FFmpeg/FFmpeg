@@ -341,7 +341,7 @@ static int rm_write_header(AVFormatContext *s)
 
     if (rv10_write_header(s, 0, 0))
         return AVERROR_INVALIDDATA;
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
     return 0;
 }
 
@@ -368,7 +368,7 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
     } else {
         avio_write(pb, buf, size);
     }
-    put_flush_packet(pb);
+    avio_flush(pb);
     stream->nb_frames++;
     av_free(buf1);
     return 0;
@@ -413,7 +413,7 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
     avio_w8(pb, stream->nb_frames & 0xff);
 
     avio_write(pb, buf, size);
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     stream->nb_frames++;
     return 0;
@@ -454,7 +454,7 @@ static int rm_write_trailer(AVFormatContext *s)
         avio_wb32(pb, 0);
         avio_wb32(pb, 0);
     }
-    put_flush_packet(pb);
+    avio_flush(pb);
     return 0;
 }
 

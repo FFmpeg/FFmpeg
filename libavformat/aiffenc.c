@@ -98,7 +98,7 @@ static int aiff_write_header(AVFormatContext *s)
     av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
 
     /* Data is starting here */
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }
@@ -140,7 +140,7 @@ static int aiff_write_trailer(AVFormatContext *s)
         /* return to the end */
         avio_seek(pb, end_size, SEEK_SET);
 
-        put_flush_packet(pb);
+        avio_flush(pb);
     }
 
     return 0;

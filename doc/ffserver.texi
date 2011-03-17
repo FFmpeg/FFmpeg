@@ -266,11 +266,11 @@ rather than as a daemon.
 @c man begin SEEALSO
 
 ffmpeg(1), ffplay(1), ffprobe(1), the @file{ffmpeg/doc/ffserver.conf}
-example and the FFmpeg HTML documentation
+example and the Libav HTML documentation
 @c man end
 
 @c man begin AUTHORS
-The FFmpeg developers
+The Libav developers
 @c man end
 
 @end ignore

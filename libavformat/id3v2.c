@@ -136,6 +136,52 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen, const cha
         av_metadata_set2(&s->metadata, key, val, AV_METADATA_DONT_OVERWRITE);
 }
 
+static int is_number(const char *str)
+{
+    while (*str >= '0' && *str <= '9') str++;
+    return !*str;
+}
+
+static AVMetadataTag* get_date_tag(AVMetadata *m, const char *tag)
+{
+    AVMetadataTag *t;
+    if ((t = av_metadata_get(m, tag, NULL, AV_METADATA_MATCH_CASE)) &&
+        strlen(t->value) == 4 && is_number(t->value))
+        return t;
+    return NULL;
+}
+
+static void merge_date(AVMetadata **m)
+{
+    AVMetadataTag *t;
+    char date[17] = {0};      // YYYY-MM-DD hh:mm
+
+    if (!(t = get_date_tag(*m, "TYER")) &&
+        !(t = get_date_tag(*m, "TYE")))
+        return;
+    av_strlcpy(date, t->value, 5);
+    av_metadata_set2(m, "TYER", NULL, 0);
+    av_metadata_set2(m, "TYE",  NULL, 0);
+
+    if (!(t = get_date_tag(*m, "TDAT")) &&
+        !(t = get_date_tag(*m, "TDA")))
+        goto finish;
+    snprintf(date + 4, sizeof(date) - 4, "-%.2s-%.2s", t->value + 2, t->value);
+    av_metadata_set2(m, "TDAT", NULL, 0);
+    av_metadata_set2(m, "TDA",  NULL, 0);
+
+    if (!(t = get_date_tag(*m, "TIME")) &&
+        !(t = get_date_tag(*m, "TIM")))
+        goto finish;
+    snprintf(date + 10, sizeof(date) - 10, " %.2s:%.2s", t->value, t->value + 2);
+    av_metadata_set2(m, "TIME", NULL, 0);
+    av_metadata_set2(m, "TIM",  NULL, 0);
+
+finish:
+    if (date[0])
+        av_metadata_set2(m, "date", date, 0);
+}
+
 static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
 {
     int isv34, unsync;
@@ -172,7 +218,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
     unsync = flags & 0x80;
 
     if (isv34 && flags & 0x40) /* Extended header present, just skip over it */
-        avio_seek(s->pb, get_size(s->pb, 4), SEEK_CUR);
+        avio_skip(s->pb, get_size(s->pb, 4));
 
     while (len >= taghdrlen) {
         unsigned int tflags;
@@ -208,7 +254,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
 
         if (tflags & (ID3v2_FLAG_ENCRYPTION | ID3v2_FLAG_COMPRESSION)) {
             av_log(s, AV_LOG_WARNING, "Skipping encrypted/compressed ID3v2 frame %s.\n", tag);
-            avio_seek(s->pb, tlen, SEEK_CUR);
+            avio_skip(s->pb, tlen);
         } else if (tag[0] == 'T') {
             if (unsync || tunsync) {
                 int i, j;
@@ -229,7 +275,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         else if (!tag[0]) {
             if (tag[1])
                 av_log(s, AV_LOG_WARNING, "invalid frame id, assuming padding");
-            avio_seek(s->pb, tlen, SEEK_CUR);
+            avio_skip(s->pb, tlen);
             break;
         }
         /* Skip to end of tag */
@@ -238,10 +284,10 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
 
     if (len > 0) {
         /* Skip padding */
-        avio_seek(s->pb, len, SEEK_CUR);
+        avio_skip(s->pb, len);
     }
     if (version == 4 && flags & 0x10) /* Footer preset, always 10 bytes, skip over it */
-        avio_seek(s->pb, 10, SEEK_CUR);
+        avio_skip(s->pb, 10);
 
     av_free(buffer);
     return;
@@ -280,6 +326,7 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic)
     ff_metadata_conv(&s->metadata, NULL, ff_id3v2_34_metadata_conv);
     ff_metadata_conv(&s->metadata, NULL, ff_id3v2_2_metadata_conv);
     ff_metadata_conv(&s->metadata, NULL, ff_id3v2_4_metadata_conv);
+    merge_date(&s->metadata);
 }
 
 const AVMetadataConv ff_id3v2_34_metadata_conv[] = {

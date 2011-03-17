@@ -107,7 +107,7 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
         /* Check tag version */
         if(avio_rb16(s->pb) == 1) {
             /* skip delay and quality */
-            avio_seek(s->pb, 4, SEEK_CUR);
+            avio_skip(s->pb, 4);
             frames = avio_rb32(s->pb);
             size = avio_rb32(s->pb);
         }

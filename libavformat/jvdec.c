@@ -139,7 +139,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
     AVStream *ast = s->streams[0];
 
-    while (!url_feof(s->pb) && jv->pts < ast->nb_index_entries) {
+    while (!s->pb->eof_reached && jv->pts < ast->nb_index_entries) {
         const AVIndexEntry *e   = ast->index_entries + jv->pts;
         const JVFrame      *jvf = jv->frames + jv->pts;
 

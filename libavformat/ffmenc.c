@@ -44,7 +44,7 @@ static void flush_packet(AVFormatContext *s)
         h |= 0x8000;
     avio_wb16(pb, h);
     avio_write(pb, ffm->packet, ffm->packet_end - ffm->packet);
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     /* prepare next packet */
     ffm->frame_offset = 0; /* no key frame */
@@ -187,7 +187,7 @@ static int ffm_write_header(AVFormatContext *s)
     while ((avio_tell(pb) % ffm->packet_size) != 0)
         avio_w8(pb, 0);
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     /* init packet mux */
     ffm->packet_ptr = ffm->packet;
@@ -235,7 +235,7 @@ static int ffm_write_trailer(AVFormatContext *s)
     if (ffm->packet_ptr > ffm->packet)
         flush_packet(s);
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }

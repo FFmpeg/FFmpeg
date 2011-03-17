@@ -206,7 +206,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
     avio_wb32(s1->pb, rtp_ts);
     avio_wb32(s1->pb, s->packet_count);
     avio_wb32(s1->pb, s->octet_count);
-    put_flush_packet(s1->pb);
+    avio_flush(s1->pb);
 }
 
 /* send an rtp packet. sequence number is incremented, but the caller
@@ -225,7 +225,7 @@ void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
     avio_wb32(s1->pb, s->ssrc);
 
     avio_write(s1->pb, buf1, len);
-    put_flush_packet(s1->pb);
+    avio_flush(s1->pb);
 
     s->seq++;
     s->octet_count += len;

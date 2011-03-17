@@ -62,7 +62,7 @@ static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
     };
 
     sample_rate = avio_rb16(pb);
-    avio_seek(pb, 12, SEEK_CUR);
+    avio_skip(pb, 12);
 
     st = av_new_stream(s, 0);
     if (!st)

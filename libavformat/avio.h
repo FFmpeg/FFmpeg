@@ -429,6 +429,13 @@ attribute_deprecated int64_t url_ftell(AVIOContext *s);
 attribute_deprecated int64_t url_fsize(AVIOContext *s);
 #define URL_EOF (-1)
 attribute_deprecated int url_fgetc(AVIOContext *s);
+attribute_deprecated int url_setbufsize(AVIOContext *s, int buf_size);
+#ifdef __GNUC__
+attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
+#else
+attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...);
+#endif
+attribute_deprecated void put_flush_packet(AVIOContext *s);
 /**
  * @}
  */
@@ -488,7 +495,10 @@ int64_t avio_skip(AVIOContext *s, int64_t offset);
  * ftell() equivalent for AVIOContext.
  * @return position or AVERROR.
  */
-#define avio_tell(s) avio_seek((s), 0, SEEK_CUR)
+static av_always_inline int64_t avio_tell(AVIOContext *s)
+{
+    return avio_seek(s, 0, SEEK_CUR);
+}
 
 /**
  * Get the filesize.
@@ -508,9 +518,9 @@ int64_t av_url_read_fseek(AVIOContext *h, int stream_index,
 
 /** @warning currently size is limited */
 #ifdef __GNUC__
-int url_fprintf(AVIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
+int avio_printf(AVIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
 #else
-int url_fprintf(AVIOContext *s, const char *fmt, ...);
+int avio_printf(AVIOContext *s, const char *fmt, ...);
 #endif
 
 #if FF_API_OLD_AVIO
@@ -519,7 +529,7 @@ int url_fprintf(AVIOContext *s, const char *fmt, ...);
 attribute_deprecated char *url_fgets(AVIOContext *s, char *buf, int buf_size);
 #endif
 
-void put_flush_packet(AVIOContext *s);
+void avio_flush(AVIOContext *s);
 
 
 /**
@@ -570,8 +580,6 @@ unsigned int avio_rb24(AVIOContext *s);
 unsigned int avio_rb32(AVIOContext *s);
 uint64_t     avio_rb64(AVIOContext *s);
 
-uint64_t ff_get_v(AVIOContext *bc);
-
 static inline int url_is_streamed(AVIOContext *s)
 {
     return s->is_streamed;
@@ -590,8 +598,6 @@ static inline int url_is_streamed(AVIOContext *s)
  */
 int url_fdopen(AVIOContext **s, URLContext *h);
 
-/** @warning must be called before any I/O */
-int url_setbufsize(AVIOContext *s, int buf_size);
 #if FF_API_URL_RESETBUF
 /** Reset the buffer for reading or writing.
  * @note Will drop any data currently in the buffer without transmitting it.
@@ -623,12 +629,12 @@ URLContext *url_fileno(AVIOContext *s);
  * @deprecated use AVIOContext.max_packet_size directly.
  */
 attribute_deprecated int url_fget_max_packet_size(AVIOContext *s);
-#endif
 
-int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags);
+attribute_deprecated int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags);
 
 /** return the written or read size */
-int url_close_buf(AVIOContext *s);
+attribute_deprecated int url_close_buf(AVIOContext *s);
+#endif
 
 /**
  * Open a write only memory stream.

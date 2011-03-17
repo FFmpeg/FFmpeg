@@ -287,7 +287,7 @@ static int gif_write_header(AVFormatContext *s)
 
     gif_image_write_header(pb, width, height, loop_count, NULL);
 
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
     return 0;
 }
 
@@ -322,7 +322,7 @@ static int gif_write_video(AVFormatContext *s,
     gif_image_write_image(pb, 0, 0, enc->width, enc->height,
                           buf, enc->width * 3, PIX_FMT_RGB24);
 
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
     return 0;
 }
 
@@ -340,7 +340,7 @@ static int gif_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
 
     avio_w8(pb, 0x3b);
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
     return 0;
 }
 

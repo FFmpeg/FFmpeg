@@ -1,10 +1,10 @@
 @chapter Demuxers
 @c man begin DEMUXERS
 
-Demuxers are configured elements in FFmpeg which allow to read the
+Demuxers are configured elements in Libav which allow to read the
 multimedia streams from a particular type of file.
 
-When you configure your FFmpeg build, all the supported demuxers
+When you configure your Libav build, all the supported demuxers
 are enabled by default. You can list all available ones using the
 configure option "--list-demuxers".
 

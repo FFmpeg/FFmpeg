@@ -78,7 +78,7 @@ static int sox_write_header(AVFormatContext *s)
     for ( ; comment_size > comment_len; comment_len++)
         avio_w8(pb, 0);
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }
@@ -107,7 +107,7 @@ static int sox_write_trailer(AVFormatContext *s)
             avio_wb64(pb, num_samples);
         avio_seek(pb, file_size, SEEK_SET);
 
-        put_flush_packet(pb);
+        avio_flush(pb);
     }
 
     return 0;

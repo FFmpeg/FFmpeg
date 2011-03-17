@@ -1,4 +1,4 @@
-FFmpeg currently uses a custom build system, this text attempts to document
+Libav currently uses a custom build system, this text attempts to document
 some of its obscure features and options.
 
 Options to make:

@@ -66,7 +66,7 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
         switch (frametype) {
             case NUV_EXTRADATA:
                 subtype = avio_r8(pb);
-                avio_seek(pb, 6, SEEK_CUR);
+                avio_skip(pb, 6);
                 size = PKTSIZE(avio_rl32(pb));
                 if (vst && subtype == 'R') {
                     vst->codec->extradata_size = size;
@@ -78,7 +78,7 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
                 }
                 break;
             case NUV_MYTHEXT:
-                avio_seek(pb, 7, SEEK_CUR);
+                avio_skip(pb, 7);
                 size = PKTSIZE(avio_rl32(pb));
                 if (size != 128 * 4)
                     break;
@@ -90,7 +90,7 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
                     if (vst->codec->codec_tag == MKTAG('R', 'J', 'P', 'G'))
                         vst->codec->codec_id = CODEC_ID_NUV;
                 } else
-                    avio_seek(pb, 4, SEEK_CUR);
+                    avio_skip(pb, 4);
 
                 if (ast) {
                     ast->codec->codec_tag = avio_rl32(pb);
@@ -102,20 +102,20 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
                                          ast->codec->bits_per_coded_sample);
                     ast->need_parsing = AVSTREAM_PARSE_FULL;
                 } else
-                    avio_seek(pb, 4 * 4, SEEK_CUR);
+                    avio_skip(pb, 4 * 4);
 
                 size -= 6 * 4;
-                avio_seek(pb, size, SEEK_CUR);
+                avio_skip(pb, size);
                 return 1;
             case NUV_SEEKP:
                 size = 11;
                 break;
             default:
-                avio_seek(pb, 7, SEEK_CUR);
+                avio_skip(pb, 7);
                 size = PKTSIZE(avio_rl32(pb));
                 break;
         }
-        avio_seek(pb, size, SEEK_CUR);
+        avio_skip(pb, size);
     }
     return 0;
 }
@@ -130,14 +130,14 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
     AVStream *vst = NULL, *ast = NULL;
     avio_read(pb, id_string, 12);
     is_mythtv = !memcmp(id_string, "MythTVVideo", 12);
-    avio_seek(pb, 5, SEEK_CUR); // version string
-    avio_seek(pb, 3, SEEK_CUR); // padding
+    avio_skip(pb, 5); // version string
+    avio_skip(pb, 3); // padding
     width = avio_rl32(pb);
     height = avio_rl32(pb);
     avio_rl32(pb); // unused, "desiredwidth"
     avio_rl32(pb); // unused, "desiredheight"
     avio_r8(pb); // 'P' == progressive, 'I' == interlaced
-    avio_seek(pb, 3, SEEK_CUR); // padding
+    avio_skip(pb, 3); // padding
     aspect = av_int2dbl(avio_rl64(pb));
     if (aspect > 0.9999 && aspect < 1.0001)
         aspect = 4.0 / 3.0;
@@ -206,13 +206,13 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
         switch (frametype) {
             case NUV_EXTRADATA:
                 if (!ctx->rtjpg_video) {
-                    avio_seek(pb, size, SEEK_CUR);
+                    avio_skip(pb, size);
                     break;
                 }
             case NUV_VIDEO:
                 if (ctx->v_id < 0) {
                     av_log(s, AV_LOG_ERROR, "Video packet in file without video stream!\n");
-                    avio_seek(pb, size, SEEK_CUR);
+                    avio_skip(pb, size);
                     break;
                 }
                 ret = av_new_packet(pkt, copyhdrsize + size);
@@ -236,7 +236,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
             case NUV_AUDIO:
                 if (ctx->a_id < 0) {
                     av_log(s, AV_LOG_ERROR, "Audio packet in file without audio stream!\n");
-                    avio_seek(pb, size, SEEK_CUR);
+                    avio_skip(pb, size);
                     break;
                 }
                 ret = av_get_packet(pb, pkt, size);
@@ -250,7 +250,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 // contains no data, size value is invalid
                 break;
             default:
-                avio_seek(pb, size, SEEK_CUR);
+                avio_skip(pb, size);
                 break;
         }
     }

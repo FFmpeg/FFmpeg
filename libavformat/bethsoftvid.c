@@ -67,7 +67,7 @@ static int vid_read_header(AVFormatContext *s,
     *    bytes: 'V' 'I' 'D'
     *    int16s: always_512, nframes, width, height, delay, always_14
     */
-    avio_seek(pb, 5, SEEK_CUR);
+    avio_skip(pb, 5);
     vid->nframes = avio_rl16(pb);
 
     stream = av_new_stream(s, 0);

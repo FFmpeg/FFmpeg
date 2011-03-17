@@ -74,7 +74,7 @@ static int au_write_header(AVFormatContext *s)
         return -1;
     }
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }
@@ -99,7 +99,7 @@ static int au_write_trailer(AVFormatContext *s)
         avio_wb32(pb, (uint32_t)(file_size - 24));
         avio_seek(pb, file_size, SEEK_SET);
 
-        put_flush_packet(pb);
+        avio_flush(pb);
     }
 
     return 0;
@@ -147,7 +147,7 @@ static int au_read_header(AVFormatContext *s,
 
     if (size >= 24) {
         /* skip unused data */
-        avio_seek(pb, size - 24, SEEK_CUR);
+        avio_skip(pb, size - 24);
     }
 
     /* now we are ready: build format streams */

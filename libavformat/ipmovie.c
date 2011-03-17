@@ -299,12 +299,12 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
 
         case OPCODE_END_OF_STREAM:
             debug_ipmovie("end of stream\n");
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_END_OF_CHUNK:
             debug_ipmovie("end of chunk\n");
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_CREATE_TIMER:
@@ -359,7 +359,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
 
         case OPCODE_START_STOP_AUDIO:
             debug_ipmovie("start/stop audio\n");
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_INIT_VIDEO_BUFFERS:
@@ -393,12 +393,12 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
         case OPCODE_UNKNOWN_14:
         case OPCODE_UNKNOWN_15:
             debug_ipmovie("unknown (but documented) opcode %02X\n", opcode_type);
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_SEND_BUFFER:
             debug_ipmovie("send buffer\n");
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_AUDIO_FRAME:
@@ -407,22 +407,22 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             /* log position and move on for now */
             s->audio_chunk_offset = avio_tell(pb);
             s->audio_chunk_size = opcode_size;
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_SILENCE_FRAME:
             debug_ipmovie("silence frame\n");
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_INIT_VIDEO_MODE:
             debug_ipmovie("initialize video mode\n");
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_CREATE_GRADIENT:
             debug_ipmovie("create gradient\n");
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_SET_PALETTE:
@@ -464,7 +464,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
 
         case OPCODE_SET_PALETTE_COMPRESSED:
             debug_ipmovie("set palette compressed\n");
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_SET_DECODING_MAP:
@@ -473,7 +473,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             /* log position and move on for now */
             s->decode_map_chunk_offset = avio_tell(pb);
             s->decode_map_chunk_size = opcode_size;
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         case OPCODE_VIDEO_DATA:
@@ -482,7 +482,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             /* log position and move on for now */
             s->video_chunk_offset = avio_tell(pb);
             s->video_chunk_size = opcode_size;
-            avio_seek(pb, opcode_size, SEEK_CUR);
+            avio_skip(pb, opcode_size);
             break;
 
         default:

@@ -1,7 +1,7 @@
 @chapter Bitstream Filters
 @c man begin BITSTREAM FILTERS
 
-When you configure your FFmpeg build, all the supported bitstream
+When you configure your Libav build, all the supported bitstream
 filters are enabled by default. You can list all available ones using
 the configure option @code{--list-bsfs}.
 

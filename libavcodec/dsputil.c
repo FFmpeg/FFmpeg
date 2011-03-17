@@ -222,6 +222,12 @@ static void bswap_buf(uint32_t *dst, const uint32_t *src, int w){
     }
 }
 
+static void bswap16_buf(uint16_t *dst, const uint16_t *src, int len)
+{
+    while (len--)
+        *dst++ = av_bswap16(*src++);
+}
+
 static int sse4_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h)
 {
     int s, i;
@@ -4324,6 +4330,7 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->add_hfyu_left_prediction  = add_hfyu_left_prediction_c;
     c->add_hfyu_left_prediction_bgr32 = add_hfyu_left_prediction_bgr32_c;
     c->bswap_buf= bswap_buf;
+    c->bswap16_buf = bswap16_buf;
 #if CONFIG_PNG_DECODER
     c->add_png_paeth_prediction= ff_add_png_paeth_prediction;
 #endif

@@ -79,6 +79,7 @@ version <next>:
 - Bink version 'b' audio and video decoder
 - Bitmap Brothers JV playback system
 - Linux framebuffer input device added
+- Apple HTTP Live Streaming protocol handler
 
 
 version 0.6:

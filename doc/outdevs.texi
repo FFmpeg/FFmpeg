@@ -1,10 +1,10 @@
 @chapter Output Devices
 @c man begin OUTPUT DEVICES
 
-Output devices are configured elements in FFmpeg which allow to write
+Output devices are configured elements in Libav which allow to write
 multimedia data to an output device attached to your system.
 
-When you configure your FFmpeg build, all the supported output devices
+When you configure your Libav build, all the supported output devices
 are enabled by default. You can list all available ones using the
 configure option "--list-outdevs".
 

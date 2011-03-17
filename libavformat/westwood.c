@@ -303,7 +303,7 @@ static int wsvqa_read_header(AVFormatContext *s,
             break;
         }
 
-        avio_seek(pb, chunk_size, SEEK_CUR);
+        avio_skip(pb, chunk_size);
     } while (chunk_tag != FINF_TAG);
 
     return 0;
@@ -348,7 +348,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
             }
             /* stay on 16-bit alignment */
             if (skip_byte)
-                avio_seek(pb, 1, SEEK_CUR);
+                avio_skip(pb, 1);
 
             return ret;
         } else {
@@ -359,7 +359,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
             default:
                 av_log(s, AV_LOG_INFO, "Skipping unknown chunk 0x%08X\n", chunk_type);
             }
-            avio_seek(pb, chunk_size + skip_byte, SEEK_CUR);
+            avio_skip(pb, chunk_size + skip_byte);
         }
     }
 

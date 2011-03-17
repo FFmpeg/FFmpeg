@@ -8,9 +8,9 @@ it's a little late for this year's soc (2006).
 
 The Goal:
 Our goal in respect to soc is and must be of course exactly one thing and
-that is to improve FFmpeg, to reach this goal, code must
+that is to improve Libav, to reach this goal, code must
 * conform to the development policy and patch submission guidelines
-* must improve FFmpeg somehow (faster, smaller, "better",
+* must improve Libav somehow (faster, smaller, "better",
   more codecs supported, fewer bugs, cleaner, ...)
 
 for mentors and other developers to help students to reach that goal it is
@@ -20,5 +20,5 @@ easy reviewable that again leads us to:
 * separation of cosmetic from non-cosmetic changes (this is almost entirely
   ignored by mentors and students in soc 2006 which might lead to a suprise
   when the code will be reviewed at the end before a possible inclusion in
-  FFmpeg, individual changes were generally not reviewable due to cosmetics).
+  Libav, individual changes were generally not reviewable due to cosmetics).
 * frequent commits, so that comments can be provided early

@@ -35,11 +35,11 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     w = avio_rl16(s->pb);
     h = avio_rl16(s->pb);
 
-    avio_seek(s->pb, 8, SEEK_CUR); // zero + size (padded?)
-    avio_seek(s->pb, 2, SEEK_CUR);
+    avio_skip(s->pb, 8); // zero + size (padded?)
+    avio_skip(s->pb, 2);
     unk1 = avio_rl16(s->pb);
     unk2 = avio_rl16(s->pb);
-    avio_seek(s->pb, 22, SEEK_CUR); // ASCII timestamp
+    avio_skip(s->pb, 22); // ASCII timestamp
 
     av_log(s, AV_LOG_DEBUG, "Ingenient packet: size=%d, width=%d, height=%d, unk1=%d unk2=%d\n",
         size, w, h, unk1, unk2);

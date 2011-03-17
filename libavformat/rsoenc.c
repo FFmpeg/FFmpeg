@@ -60,7 +60,7 @@ static int rso_write_header(AVFormatContext *s)
     avio_wb16(pb, enc->sample_rate);
     avio_wb16(pb, 0x0000);           /* play mode ? (0x0000 = don't loop) */
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }
@@ -95,7 +95,7 @@ static int rso_write_trailer(AVFormatContext *s)
     avio_wb16(pb, coded_file_size);
     avio_seek(pb, file_size, SEEK_SET);
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     return 0;
 }

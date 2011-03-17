@@ -30,7 +30,7 @@ static int roq_write_header(struct AVFormatContext *s)
     };
 
     avio_write(s->pb, header, 8);
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
 
     return 0;
 }

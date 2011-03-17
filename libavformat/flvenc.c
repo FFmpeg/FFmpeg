@@ -291,7 +291,7 @@ static int flv_write_header(AVFormatContext *s)
     data_size= avio_tell(pb) - metadata_size_pos - 10;
     avio_seek(pb, metadata_size_pos, SEEK_SET);
     avio_wb24(pb, data_size);
-    avio_seek(pb, data_size + 10 - 3, SEEK_CUR);
+    avio_skip(pb, data_size + 10 - 3);
     avio_wb32(pb, data_size + 11);
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -318,7 +318,7 @@ static int flv_write_header(AVFormatContext *s)
             data_size = avio_tell(pb) - pos;
             avio_seek(pb, -data_size - 10, SEEK_CUR);
             avio_wb24(pb, data_size);
-            avio_seek(pb, data_size + 10 - 3, SEEK_CUR);
+            avio_skip(pb, data_size + 10 - 3);
             avio_wb32(pb, data_size + 11); // previous tag size
         }
     }
@@ -430,7 +430,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_wb32(pb,size+flags_size+11); // previous tag size
     flv->duration = FFMAX(flv->duration, pkt->pts + flv->delay + pkt->duration);
 
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     av_free(data);
 

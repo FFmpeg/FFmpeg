@@ -579,7 +579,7 @@ static int mpegts_write_header(AVFormatContext *s)
            service->pcr_packet_period,
            ts->sdt_packet_period, ts->pat_packet_period);
 
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
 
     return 0;
 
@@ -865,7 +865,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         payload_size -= len;
         avio_write(s->pb, buf, TS_PACKET_SIZE);
     }
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
 }
 
 static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
@@ -988,7 +988,7 @@ static int mpegts_write_end(AVFormatContext *s)
         }
         av_freep(&ts_st->adts);
     }
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
 
     for(i = 0; i < ts->nb_services; i++) {
         service = ts->services[i];

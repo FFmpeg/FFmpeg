@@ -1,7 +1,7 @@
 @chapter Metadata
 @c man begin METADATA
 
-FFmpeg is able to dump metadata from media files into a simple UTF-8-encoded
+Libav is able to dump metadata from media files into a simple UTF-8-encoded
 INI-like text file and then load it back using the metadata muxer/demuxer.
 
 The file format is as follows:
@@ -53,7 +53,7 @@ A ffmetadata file might look like this:
 ;FFMETADATA1
 title=bike\\shed
 ;this is a comment
-artist=FFmpeg troll team
+artist=Libav troll team
 
 [CHAPTER]
 TIMEBASE=1/1000

@@ -99,14 +99,14 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     avio_write(pb, page->data, page->size);
 
     ogg_update_checksum(s, pb, crc_offset);
-    put_flush_packet(pb);
+    avio_flush(pb);
 
     size = url_close_dyn_buf(pb, &buf);
     if (size < 0)
         return size;
 
     avio_write(s->pb, buf, size);
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
     av_free(buf);
     oggstream->page_count--;
     return 0;

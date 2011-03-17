@@ -122,7 +122,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
                     return AVERROR(ENOMEM);
                 c93->audio->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             }
-            avio_seek(pb, 26, SEEK_CUR); /* VOC header */
+            avio_skip(pb, 26); /* VOC header */
             ret = voc_get_packet(s, pkt, c93->audio, datasize - 26);
             if (ret > 0) {
                 pkt->stream_index = 1;

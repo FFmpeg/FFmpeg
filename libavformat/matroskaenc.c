@@ -873,7 +873,7 @@ static int mkv_write_header(AVFormatContext *s)
     mkv->cur_audio_pkt.size = 0;
     mkv->audio_buffer_size  = 0;
 
-    put_flush_packet(pb);
+    avio_flush(pb);
     return 0;
 }
 
@@ -1172,7 +1172,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     end_ebml_master(pb, mkv->segment);
     av_free(mkv->tracks);
     av_destruct_packet(&mkv->cur_audio_pkt);
-    put_flush_packet(pb);
+    avio_flush(pb);
     return 0;
 }
 

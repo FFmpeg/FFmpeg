@@ -15,6 +15,11 @@ API changes, most recent first:
 2011-XX-XX - XXXXXXX - lavu  XX.XXX.X - pixfmt.h
   Add PIX_FMT_BGR48LE and PIX_FMT_BGR48BE pixel formats
 
+2011-03-02 - 863c471 - lavf  52.103.0 - av_pkt_dump2, av_pkt_dump_log2
+  Add new functions av_pkt_dump2, av_pkt_dump_log2 that uses the
+  source stream timebase for outputting timestamps. Deprecate
+  av_pkt_dump and av_pkt_dump_log.
+
 2011-02-20 - e731b8d - lavf  52.102.0 - avio.h
   * e731b8d - rename init_put_byte() to ffio_init_context(), deprecating the
               original, and move it to a private header so it is no longer

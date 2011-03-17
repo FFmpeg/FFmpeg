@@ -113,7 +113,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
 static int amf_get_string(AVIOContext *ioc, char *buffer, int buffsize) {
     int length = avio_rb16(ioc);
     if(length >= buffsize) {
-        avio_seek(ioc, length, SEEK_CUR);
+        avio_skip(ioc, length);
         return -1;
     }
 
@@ -149,7 +149,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
             unsigned int keylen;
 
             while(avio_tell(ioc) < max_pos - 2 && (keylen = avio_rb16(ioc))) {
-                avio_seek(ioc, keylen, SEEK_CUR); //skip key string
+                avio_skip(ioc, keylen); //skip key string
                 if(amf_parse_object(s, NULL, NULL, NULL, max_pos, depth + 1) < 0)
                     return -1; //if we couldn't skip, bomb out.
             }
@@ -162,7 +162,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         case AMF_DATA_TYPE_UNSUPPORTED:
             break; //these take up no additional space
         case AMF_DATA_TYPE_MIXEDARRAY:
-            avio_seek(ioc, 4, SEEK_CUR); //skip 32-bit max array index
+            avio_skip(ioc, 4); //skip 32-bit max array index
             while(avio_tell(ioc) < max_pos - 2 && amf_get_string(ioc, str_val, sizeof(str_val)) > 0) {
                 //this is the only case in which we would want a nested parse to not skip over the object
                 if(amf_parse_object(s, astream, vstream, str_val, max_pos, depth + 1) < 0)
@@ -182,7 +182,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         }
             break;
         case AMF_DATA_TYPE_DATE:
-            avio_seek(ioc, 8 + 2, SEEK_CUR); //timestamp (double) and UTC offset (int16)
+            avio_skip(ioc, 8 + 2); //timestamp (double) and UTC offset (int16)
             break;
         default: //unsupported type, we couldn't skip
             return -1;
@@ -254,7 +254,7 @@ static int flv_read_header(AVFormatContext *s,
 {
     int offset, flags;
 
-    avio_seek(s->pb, 4, SEEK_CUR);
+    avio_skip(s->pb, 4);
     flags = avio_r8(s->pb);
     /* old flvtool cleared this field */
     /* FIXME: better fix needed */
@@ -278,7 +278,7 @@ static int flv_read_header(AVFormatContext *s,
 
     offset = avio_rb32(s->pb);
     avio_seek(s->pb, offset, SEEK_SET);
-    avio_seek(s->pb, 4, SEEK_CUR);
+    avio_skip(s->pb, 4);
 
     s->start_time = 0;
 
@@ -304,7 +304,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t dts, pts = AV_NOPTS_VALUE;
     AVStream *st = NULL;
 
- for(;;avio_seek(s->pb, 4, SEEK_CUR)){ /* pkt size is repeated at end. skip it */
+ for(;;avio_skip(s->pb, 4)){ /* pkt size is repeated at end. skip it */
     pos = avio_tell(s->pb);
     type = avio_r8(s->pb);
     size = avio_rb24(s->pb);
@@ -313,7 +313,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 //    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, dts:%d\n", type, size, dts);
     if (url_feof(s->pb))
         return AVERROR_EOF;
-    avio_seek(s->pb, 3, SEEK_CUR); /* stream id, always 0 */
+    avio_skip(s->pb, 3); /* stream id, always 0 */
     flags = 0;
 
     if(size == 0)
@@ -454,7 +454,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->flags |= AV_PKT_FLAG_KEY;
 
 leave:
-    avio_seek(s->pb, 4, SEEK_CUR);
+    avio_skip(s->pb, 4);
     return ret;
 }
 

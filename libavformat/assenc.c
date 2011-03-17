@@ -50,7 +50,7 @@ static int write_header(AVFormatContext *s)
         last=p;
     }
 
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
 
     return 0;
 }
@@ -59,7 +59,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     avio_write(s->pb, pkt->data, pkt->size);
 
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
 
     return 0;
 }
@@ -72,7 +72,7 @@ static int write_trailer(AVFormatContext *s)
     avio_write(s->pb, avctx->extradata      + ass->extra_index,
                       avctx->extradata_size - ass->extra_index);
 
-    put_flush_packet(s->pb);
+    avio_flush(s->pb);
 
     return 0;
 }

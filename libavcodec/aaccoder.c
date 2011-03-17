@@ -146,34 +146,34 @@ static av_always_inline float quantize_and_encode_band_cost_template(
             curidx *= range;
             curidx += quants[j] + off;
         }
-            curbits =  ff_aac_spectral_bits[cb-1][curidx];
-            vec     = &ff_aac_codebook_vectors[cb-1][curidx*dim];
-            if (BT_UNSIGNED) {
-                for (k = 0; k < dim; k++) {
-                    float t = fabsf(in[i+k]);
-                    float di;
-                    if (BT_ESC && vec[k] == 64.0f) { //FIXME: slow
-                        if (t >= CLIPPED_ESCAPE) {
-                            di = t - CLIPPED_ESCAPE;
-                            curbits += 21;
-                        } else {
-                            int c = av_clip(quant(t, Q), 0, 8191);
-                            di = t - c*cbrtf(c)*IQ;
-                            curbits += av_log2(c)*2 - 4 + 1;
-                        }
+        curbits =  ff_aac_spectral_bits[cb-1][curidx];
+        vec     = &ff_aac_codebook_vectors[cb-1][curidx*dim];
+        if (BT_UNSIGNED) {
+            for (k = 0; k < dim; k++) {
+                float t = fabsf(in[i+k]);
+                float di;
+                if (BT_ESC && vec[k] == 64.0f) { //FIXME: slow
+                    if (t >= CLIPPED_ESCAPE) {
+                        di = t - CLIPPED_ESCAPE;
+                        curbits += 21;
                     } else {
-                        di = t - vec[k]*IQ;
+                        int c = av_clip(quant(t, Q), 0, 8191);
+                        di = t - c*cbrtf(c)*IQ;
+                        curbits += av_log2(c)*2 - 4 + 1;
                     }
-                    if (vec[k] != 0.0f)
-                        curbits++;
-                    rd += di*di;
+                } else {
+                    di = t - vec[k]*IQ;
                 }
-            } else {
-                for (k = 0; k < dim; k++) {
-                    float di = in[i+k] - vec[k]*IQ;
-                    rd += di*di;
-                }
+                if (vec[k] != 0.0f)
+                    curbits++;
+                rd += di*di;
             }
+        } else {
+            for (k = 0; k < dim; k++) {
+                float di = in[i+k] - vec[k]*IQ;
+                rd += di*di;
+            }
+        }
         cost    += rd * lambda + curbits;
         resbits += curbits;
         if (cost >= uplim)
@@ -575,7 +575,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
         int qnrg = av_clip_uint8(log2f(sqrtf(qnrgf/qcnt))*4 - 31 + SCALE_ONE_POS - SCALE_DIV_512);
         q1 = qnrg + 30;
         q0 = qnrg - 30;
-    //av_log(NULL, AV_LOG_ERROR, "q0 %d, q1 %d\n", q0, q1);
+        //av_log(NULL, AV_LOG_ERROR, "q0 %d, q1 %d\n", q0, q1);
         if (q0 < q0low) {
             q1 += q0low - q0;
             q0  = q0low;
@@ -723,7 +723,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
             sce->zeroes[w*16+g] = !nz;
             if (nz)
                 minthr = FFMIN(minthr, uplim);
-            allz = FFMAX(allz, nz);
+            allz |= nz;
         }
     }
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
