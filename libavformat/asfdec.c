@@ -1219,10 +1219,10 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
             int pktnum=avio_rl32(s->pb);
             int pktct =avio_rl16(s->pb);
             int64_t pos      = s->data_offset + s->packet_size*(int64_t)pktnum;
-            int64_t index_pts= av_rescale(itime, i, 10000);
+            int64_t index_pts= FFMAX(av_rescale(itime, i, 10000) - asf->hdr.preroll, 0);
 
             if(pos != last_pos){
-            av_log(s, AV_LOG_DEBUG, "pktnum:%d, pktct:%d\n", pktnum, pktct);
+            av_log(s, AV_LOG_DEBUG, "pktnum:%d, pktct:%d  pts: %"PRId64"\n", pktnum, pktct, index_pts);
             av_add_index_entry(s->streams[stream_index], pos, index_pts, s->packet_size, 0, AVINDEX_KEYFRAME);
             last_pos=pos;
             }
