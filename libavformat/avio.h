@@ -447,6 +447,7 @@ attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...) __att
 attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...);
 #endif
 attribute_deprecated void put_flush_packet(AVIOContext *s);
+attribute_deprecated int url_open_dyn_buf(AVIOContext **s);
 /**
  * @}
  */
@@ -680,7 +681,7 @@ attribute_deprecated int url_close_buf(AVIOContext *s);
  * @param s new IO context
  * @return zero if no error.
  */
-int url_open_dyn_buf(AVIOContext **s);
+int avio_open_dyn_buf(AVIOContext **s);
 
 /**
  * Open a write only packetized memory stream with a maximum packet
@@ -696,7 +697,7 @@ int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
 /**
  * Return the written size and a pointer to the buffer. The buffer
  * must be freed with av_free(). If the buffer is opened with
- * url_open_dyn_buf, then padding of FF_INPUT_BUFFER_PADDING_SIZE is
+ * avio_open_dyn_buf, then padding of FF_INPUT_BUFFER_PADDING_SIZE is
  * added; if opened with url_open_dyn_packet_buf, no padding is added.
  *
  * @param s IO context

@@ -455,7 +455,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
     uint8_t *codecpriv;
     int ret, codecpriv_size;
 
-    ret = url_open_dyn_buf(&dyn_cp);
+    ret = avio_open_dyn_buf(&dyn_cp);
     if(ret < 0)
         return ret;
 
@@ -1026,7 +1026,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
     if (!s->pb->seekable) {
         if (!mkv->dyn_bc)
-            url_open_dyn_buf(&mkv->dyn_bc);
+            avio_open_dyn_buf(&mkv->dyn_bc);
         pb = mkv->dyn_bc;
     }
 

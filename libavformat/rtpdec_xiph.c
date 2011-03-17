@@ -176,7 +176,7 @@ static int xiph_handle_packet(AVFormatContext * ctx,
         // end packet has been lost somewhere, so drop buffered data
         free_fragment_if_needed(data);
 
-        if((res = url_open_dyn_buf(&data->fragment)) < 0)
+        if((res = avio_open_dyn_buf(&data->fragment)) < 0)
             return res;
 
         avio_write(data->fragment, buf, pkt_len);

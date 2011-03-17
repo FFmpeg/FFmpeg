@@ -234,7 +234,7 @@ static void put_str16(AVIOContext *s, const char *tag)
     int len;
     uint8_t *pb;
     AVIOContext *dyn_buf;
-    if (url_open_dyn_buf(&dyn_buf) < 0)
+    if (avio_open_dyn_buf(&dyn_buf) < 0)
         return;
 
     avio_put_str16le(dyn_buf, tag);
@@ -366,7 +366,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         uint8_t *buf;
         AVIOContext *dyn_buf;
 
-        if (url_open_dyn_buf(&dyn_buf) < 0)
+        if (avio_open_dyn_buf(&dyn_buf) < 0)
             return AVERROR(ENOMEM);
 
         hpos = put_header(pb, &ff_asf_comment_header);
@@ -497,7 +497,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         else
             desc = p ? p->name : enc->codec_name;
 
-        if ( url_open_dyn_buf(&dyn_buf) < 0)
+        if ( avio_open_dyn_buf(&dyn_buf) < 0)
             return AVERROR(ENOMEM);
 
         avio_put_str16le(dyn_buf, desc);

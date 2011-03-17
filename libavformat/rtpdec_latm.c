@@ -65,7 +65,7 @@ static int latm_parse_packet(AVFormatContext *ctx, PayloadContext *data,
             av_freep(&data->buf);
 
             data->timestamp = *timestamp;
-            if ((ret = url_open_dyn_buf(&data->dyn_buf)) < 0)
+            if ((ret = avio_open_dyn_buf(&data->dyn_buf)) < 0)
                 return ret;
         }
         avio_write(data->dyn_buf, buf, len);

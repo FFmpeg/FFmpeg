@@ -264,7 +264,7 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
         return -1;
     s->last_octet_count = s->octet_count;
 
-    if (url_open_dyn_buf(&pb) < 0)
+    if (avio_open_dyn_buf(&pb) < 0)
         return -1;
 
     // Receiver Report
@@ -339,7 +339,7 @@ void rtp_send_punch_packets(URLContext* rtp_handle)
     int len;
 
     /* Send a small RTP packet */
-    if (url_open_dyn_buf(&pb) < 0)
+    if (avio_open_dyn_buf(&pb) < 0)
         return;
 
     avio_w8(pb, (RTP_VERSION << 6));
@@ -355,7 +355,7 @@ void rtp_send_punch_packets(URLContext* rtp_handle)
     av_free(buf);
 
     /* Send a minimal RTCP RR */
-    if (url_open_dyn_buf(&pb) < 0)
+    if (avio_open_dyn_buf(&pb) < 0)
         return;
 
     avio_w8(pb, (RTP_VERSION << 6));

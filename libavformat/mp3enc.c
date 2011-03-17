@@ -96,7 +96,7 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
     uint8_t *pb;
     int (*put)(AVIOContext*, const char*);
     AVIOContext *dyn_buf;
-    if (url_open_dyn_buf(&dyn_buf) < 0)
+    if (avio_open_dyn_buf(&dyn_buf) < 0)
         return AVERROR(ENOMEM);
 
     /* check if the strings are ASCII-only and use UTF16 only if

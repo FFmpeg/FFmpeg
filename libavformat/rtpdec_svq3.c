@@ -86,7 +86,7 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
             url_close_dyn_buf(sv->pktbuf, &tmp);
             av_free(tmp);
         }
-        if ((res = url_open_dyn_buf(&sv->pktbuf)) < 0)
+        if ((res = avio_open_dyn_buf(&sv->pktbuf)) < 0)
             return res;
         sv->timestamp   = *timestamp;
     }

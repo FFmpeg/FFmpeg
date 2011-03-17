@@ -436,7 +436,7 @@ static int write_globalinfo(NUTContext *nut, AVIOContext *bc){
     AVIOContext *dyn_bc;
     uint8_t *dyn_buf=NULL;
     int count=0, dyn_size;
-    int ret = url_open_dyn_buf(&dyn_bc);
+    int ret = avio_open_dyn_buf(&dyn_bc);
     if(ret < 0)
         return ret;
 
@@ -462,7 +462,7 @@ static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id){
     AVIOContext *dyn_bc;
     uint8_t *dyn_buf=NULL;
     int count=0, dyn_size, i;
-    int ret = url_open_dyn_buf(&dyn_bc);
+    int ret = avio_open_dyn_buf(&dyn_bc);
     if(ret < 0)
         return ret;
 
@@ -495,7 +495,7 @@ static int write_chapter(NUTContext *nut, AVIOContext *bc, int id)
     AVChapter *ch    = nut->avf->chapters[id];
     int ret, dyn_size, count = 0;
 
-    ret = url_open_dyn_buf(&dyn_bc);
+    ret = avio_open_dyn_buf(&dyn_bc);
     if (ret < 0)
         return ret;
 
@@ -522,14 +522,14 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc){
 
     ff_metadata_conv_ctx(avctx, ff_nut_metadata_conv, NULL);
 
-    ret = url_open_dyn_buf(&dyn_bc);
+    ret = avio_open_dyn_buf(&dyn_bc);
     if(ret < 0)
         return ret;
     write_mainheader(nut, dyn_bc);
     put_packet(nut, bc, dyn_bc, 1, MAIN_STARTCODE);
 
     for (i=0; i < nut->avf->nb_streams; i++){
-        ret = url_open_dyn_buf(&dyn_bc);
+        ret = avio_open_dyn_buf(&dyn_bc);
         if(ret < 0)
             return ret;
         if ((ret = write_streamheader(avctx, dyn_bc, nut->avf->streams[i], i)) < 0)
@@ -537,14 +537,14 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc){
         put_packet(nut, bc, dyn_bc, 1, STREAM_STARTCODE);
     }
 
-    ret = url_open_dyn_buf(&dyn_bc);
+    ret = avio_open_dyn_buf(&dyn_bc);
     if(ret < 0)
         return ret;
     write_globalinfo(nut, dyn_bc);
     put_packet(nut, bc, dyn_bc, 1, INFO_STARTCODE);
 
     for (i = 0; i < nut->avf->nb_streams; i++) {
-        ret = url_open_dyn_buf(&dyn_bc);
+        ret = avio_open_dyn_buf(&dyn_bc);
         if(ret < 0)
             return ret;
         ret = write_streaminfo(nut, dyn_bc, i);
@@ -560,7 +560,7 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc){
     }
 
     for (i = 0; i < nut->avf->nb_chapters; i++) {
-        ret = url_open_dyn_buf(&dyn_bc);
+        ret = avio_open_dyn_buf(&dyn_bc);
         if (ret < 0)
             return ret;
         ret = write_chapter(nut, dyn_bc, i);
@@ -728,7 +728,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt){
                          NULL);
 
         nut->last_syncpoint_pos= avio_tell(bc);
-        ret = url_open_dyn_buf(&dyn_bc);
+        ret = avio_open_dyn_buf(&dyn_bc);
         if(ret < 0)
             return ret;
         put_tt(nut, nus->time_base, dyn_bc, pkt->dts);

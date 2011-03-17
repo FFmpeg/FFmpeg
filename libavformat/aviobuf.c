@@ -419,6 +419,10 @@ unsigned long get_checksum(AVIOContext *s)
 {
     return ffio_get_checksum(s);
 }
+int url_open_dyn_buf(AVIOContext **s)
+{
+    return avio_open_dyn_buf(s);
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -1023,7 +1027,7 @@ int64_t ffio_read_seek(AVIOContext *s, int stream_index,
     return ret;
 }
 
-/* url_open_dyn_buf and url_close_dyn_buf are used in rtp.c to send a response
+/* avio_open_dyn_buf and url_close_dyn_buf are used in rtp.c to send a response
  * back to the server even if CONFIG_MUXERS is false. */
 #if CONFIG_MUXERS || CONFIG_NETWORK
 /* buffer handling */
@@ -1147,7 +1151,7 @@ static int url_open_dyn_buf_internal(AVIOContext **s, int max_packet_size)
     return ret;
 }
 
-int url_open_dyn_buf(AVIOContext **s)
+int avio_open_dyn_buf(AVIOContext **s)
 {
     return url_open_dyn_buf_internal(s, 0);
 }

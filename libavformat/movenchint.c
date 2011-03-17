@@ -417,7 +417,7 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
         goto done;
 
     /* Open a buffer for writing the hint */
-    if ((ret = url_open_dyn_buf(&hintbuf)) < 0)
+    if ((ret = avio_open_dyn_buf(&hintbuf)) < 0)
         goto done;
     av_init_packet(&hint_pkt);
     count = write_hint_packets(hintbuf, buf, size, trk, &hint_pkt.dts);

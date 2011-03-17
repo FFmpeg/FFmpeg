@@ -85,7 +85,7 @@ static int vp8_handle_packet(AVFormatContext *ctx,
             // that for the next av_get_packet call
             ret = end_packet ? 1 : 0;
         }
-        if ((res = url_open_dyn_buf(&vp8->data)) < 0)
+        if ((res = avio_open_dyn_buf(&vp8->data)) < 0)
             return res;
         vp8->is_keyframe = *buf & 1;
         vp8->timestamp   = ts;
