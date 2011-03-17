@@ -448,6 +448,7 @@ attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...);
 #endif
 attribute_deprecated void put_flush_packet(AVIOContext *s);
 attribute_deprecated int url_open_dyn_buf(AVIOContext **s);
+attribute_deprecated int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 /**
  * @}
  */
@@ -704,7 +705,7 @@ int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
  * @param pbuffer pointer to a byte buffer
  * @return the length of the byte buffer
  */
-int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
+int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 
 #if FF_API_UDP_GET_FILE
 int udp_get_file_handle(URLContext *h);

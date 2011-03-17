@@ -238,7 +238,7 @@ static void put_str16(AVIOContext *s, const char *tag)
         return;
 
     avio_put_str16le(dyn_buf, tag);
-    len = url_close_dyn_buf(dyn_buf, &pb);
+    len = avio_close_dyn_buf(dyn_buf, &pb);
     avio_wl16(s, len);
     avio_write(s, pb, len);
     av_freep(&pb);
@@ -375,7 +375,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
             len = tags[n] ? avio_put_str16le(dyn_buf, tags[n]->value) : 0;
             avio_wl16(pb, len);
         }
-        len = url_close_dyn_buf(dyn_buf, &buf);
+        len = avio_close_dyn_buf(dyn_buf, &buf);
         avio_write(pb, buf, len);
         av_freep(&buf);
         end_header(pb, hpos);
@@ -501,7 +501,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
             return AVERROR(ENOMEM);
 
         avio_put_str16le(dyn_buf, desc);
-        len = url_close_dyn_buf(dyn_buf, &buf);
+        len = avio_close_dyn_buf(dyn_buf, &buf);
         avio_wl16(pb, len / 2); // "number of characters" = length in bytes / 2
 
         avio_write(pb, buf, len);

@@ -63,7 +63,7 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
             avio_close(rtpctx->pb);
         } else {
             uint8_t *ptr;
-            url_close_dyn_buf(rtpctx->pb, &ptr);
+            avio_close_dyn_buf(rtpctx->pb, &ptr);
             av_free(ptr);
         }
         avformat_free_context(rtpctx);

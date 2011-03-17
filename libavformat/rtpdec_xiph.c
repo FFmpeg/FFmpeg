@@ -57,7 +57,7 @@ static inline void free_fragment_if_needed(PayloadContext * data)
 {
     if (data->fragment) {
         uint8_t* p;
-        url_close_dyn_buf(data->fragment, &p);
+        avio_close_dyn_buf(data->fragment, &p);
         av_free(p);
         data->fragment = NULL;
     }
@@ -203,7 +203,7 @@ static int xiph_handle_packet(AVFormatContext * ctx,
         if (fragmented == 3) {
             // end of xiph data packet
             av_init_packet(pkt);
-            pkt->size = url_close_dyn_buf(data->fragment, &pkt->data);
+            pkt->size = avio_close_dyn_buf(data->fragment, &pkt->data);
 
             if (pkt->size < 0) {
                 av_log(ctx, AV_LOG_ERROR,

@@ -115,7 +115,7 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
     put(dyn_buf, str1);
     if (str2)
         put(dyn_buf, str2);
-    len = url_close_dyn_buf(dyn_buf, &pb);
+    len = avio_close_dyn_buf(dyn_buf, &pb);
 
     avio_wb32(s->pb, tag);
     id3v2_put_size(s, len);

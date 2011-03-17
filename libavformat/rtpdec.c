@@ -321,7 +321,7 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
     }
 
     avio_flush(pb);
-    len = url_close_dyn_buf(pb, &buf);
+    len = avio_close_dyn_buf(pb, &buf);
     if ((len > 0) && buf) {
         int result;
         av_dlog(s->ic, "sending %d bytes of RR\n", len);
@@ -349,7 +349,7 @@ void rtp_send_punch_packets(URLContext* rtp_handle)
     avio_wb32(pb, 0); /* SSRC */
 
     avio_flush(pb);
-    len = url_close_dyn_buf(pb, &buf);
+    len = avio_close_dyn_buf(pb, &buf);
     if ((len > 0) && buf)
         url_write(rtp_handle, buf, len);
     av_free(buf);
@@ -364,7 +364,7 @@ void rtp_send_punch_packets(URLContext* rtp_handle)
     avio_wb32(pb, 0); /* our own SSRC */
 
     avio_flush(pb);
-    len = url_close_dyn_buf(pb, &buf);
+    len = avio_close_dyn_buf(pb, &buf);
     if ((len > 0) && buf)
         url_write(rtp_handle, buf, len);
     av_free(buf);

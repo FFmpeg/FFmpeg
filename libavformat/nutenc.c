@@ -281,7 +281,7 @@ static inline void put_s_trace(AVIOContext *bc, int64_t v, char *file, char *fun
 //FIXME remove calculate_checksum
 static void put_packet(NUTContext *nut, AVIOContext *bc, AVIOContext *dyn_bc, int calculate_checksum, uint64_t startcode){
     uint8_t *dyn_buf=NULL;
-    int dyn_size= url_close_dyn_buf(dyn_bc, &dyn_buf);
+    int dyn_size= avio_close_dyn_buf(dyn_bc, &dyn_buf);
     int forw_ptr= dyn_size + 4*calculate_checksum;
 
     if(forw_ptr > 4096)
@@ -450,7 +450,7 @@ static int write_globalinfo(NUTContext *nut, AVIOContext *bc){
 
     ff_put_v(bc, count);
 
-    dyn_size= url_close_dyn_buf(dyn_bc, &dyn_buf);
+    dyn_size= avio_close_dyn_buf(dyn_bc, &dyn_buf);
     avio_write(bc, dyn_buf, dyn_size);
     av_free(dyn_buf);
     return 0;
@@ -470,7 +470,7 @@ static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id){
         if (st->disposition & ff_nut_dispositions[i].flag)
             count += add_info(dyn_bc, "Disposition", ff_nut_dispositions[i].str);
     }
-    dyn_size = url_close_dyn_buf(dyn_bc, &dyn_buf);
+    dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
 
     if (count) {
         ff_put_v(bc, stream_id + 1); //stream_id_plus1
@@ -509,7 +509,7 @@ static int write_chapter(NUTContext *nut, AVIOContext *bc, int id)
 
     ff_put_v(bc, count);
 
-    dyn_size = url_close_dyn_buf(dyn_bc, &dyn_buf);
+    dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
     avio_write(bc, dyn_buf, dyn_size);
     av_freep(&dyn_buf);
     return 0;
@@ -554,7 +554,7 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc){
             put_packet(nut, bc, dyn_bc, 1, INFO_STARTCODE);
         else {
             uint8_t* buf;
-            url_close_dyn_buf(dyn_bc, &buf);
+            avio_close_dyn_buf(dyn_bc, &buf);
             av_free(buf);
         }
     }
@@ -566,7 +566,7 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc){
         ret = write_chapter(nut, dyn_bc, i);
         if (ret < 0) {
             uint8_t *buf;
-            url_close_dyn_buf(dyn_bc, &buf);
+            avio_close_dyn_buf(dyn_bc, &buf);
             av_freep(&buf);
             return ret;
         }

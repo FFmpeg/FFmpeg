@@ -96,7 +96,7 @@ int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
     ff_avc_parse_nal_units(pb, buf_in, *size);
 
     av_freep(buf);
-    *size = url_close_dyn_buf(pb, buf);
+    *size = avio_close_dyn_buf(pb, buf);
     return 0;
 }
 

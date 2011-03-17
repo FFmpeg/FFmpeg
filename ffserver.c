@@ -872,7 +872,7 @@ static void close_connection(HTTPContext *c)
             if (avio_open_dyn_buf(&ctx->pb) >= 0) {
                 av_write_trailer(ctx);
                 av_freep(&c->pb_buffer);
-                url_close_dyn_buf(ctx->pb, &c->pb_buffer);
+                avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
             }
         }
     }
@@ -2101,7 +2101,7 @@ static void compute_status(HTTPContext *c)
     avio_printf(pb, "<hr size=1 noshade>Generated at %s", p);
     avio_printf(pb, "</body>\n</html>\n");
 
-    len = url_close_dyn_buf(pb, &c->pb_buffer);
+    len = avio_close_dyn_buf(pb, &c->pb_buffer);
     c->buffer_ptr = c->pb_buffer;
     c->buffer_end = c->pb_buffer + len;
 }
@@ -2277,7 +2277,7 @@ static int http_prepare_data(HTTPContext *c)
         }
         av_metadata_free(&c->fmt_ctx.metadata);
 
-        len = url_close_dyn_buf(c->fmt_ctx.pb, &c->pb_buffer);
+        len = avio_close_dyn_buf(c->fmt_ctx.pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
         c->buffer_end = c->pb_buffer + len;
 
@@ -2410,7 +2410,7 @@ static int http_prepare_data(HTTPContext *c)
                         c->state = HTTPSTATE_SEND_DATA_TRAILER;
                     }
 
-                    len = url_close_dyn_buf(ctx->pb, &c->pb_buffer);
+                    len = avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
                     c->cur_frame_bytes = len;
                     c->buffer_ptr = c->pb_buffer;
                     c->buffer_end = c->pb_buffer + len;
@@ -2438,7 +2438,7 @@ static int http_prepare_data(HTTPContext *c)
         }
         c->fmt_ctx.pb->seekable = 0;
         av_write_trailer(ctx);
-        len = url_close_dyn_buf(ctx->pb, &c->pb_buffer);
+        len = avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
         c->buffer_end = c->pb_buffer + len;
 
@@ -2518,7 +2518,7 @@ static int http_send_data(HTTPContext *c)
                     /* write RTP packet data */
                     c->buffer_ptr += 4;
                     avio_write(pb, c->buffer_ptr, len);
-                    size = url_close_dyn_buf(pb, &c->packet_buffer);
+                    size = avio_close_dyn_buf(pb, &c->packet_buffer);
                     /* prepare asynchronous TCP sending */
                     rtsp_c->packet_buffer_ptr = c->packet_buffer;
                     rtsp_c->packet_buffer_end = c->packet_buffer + size;
@@ -2907,7 +2907,7 @@ static int rtsp_parse_request(HTTPContext *c)
         rtsp_reply_error(c, RTSP_STATUS_METHOD);
 
  the_end:
-    len = url_close_dyn_buf(c->pb, &c->pb_buffer);
+    len = avio_close_dyn_buf(c->pb, &c->pb_buffer);
     c->pb = NULL; /* safety */
     if (len < 0) {
         /* XXX: cannot do more */
@@ -3456,7 +3456,7 @@ static int rtp_new_av_stream(HTTPContext *c,
         av_free(ctx);
         return -1;
     }
-    url_close_dyn_buf(ctx->pb, &dummy_buf);
+    avio_close_dyn_buf(ctx->pb, &dummy_buf);
     av_free(dummy_buf);
 
     c->rtp_ctx[stream_index] = ctx;

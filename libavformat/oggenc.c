@@ -101,7 +101,7 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     ogg_update_checksum(s, pb, crc_offset);
     avio_flush(pb);
 
-    size = url_close_dyn_buf(pb, &buf);
+    size = avio_close_dyn_buf(pb, &buf);
     if (size < 0)
         return size;
 

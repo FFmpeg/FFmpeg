@@ -1691,7 +1691,7 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
         if (s->nb_chapters)
             mov_write_chpl_tag(pb_buf, s);
 
-    if ((size = url_close_dyn_buf(pb_buf, &buf)) > 0) {
+    if ((size = avio_close_dyn_buf(pb_buf, &buf)) > 0) {
         avio_wb32(pb, size+8);
         ffio_wfourcc(pb, "udta");
         avio_write(pb, buf, size);

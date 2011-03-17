@@ -135,7 +135,7 @@ static int tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
     int size;
     uint8_t *interleave_header, *interleaved_packet;
 
-    size = url_close_dyn_buf(rtpctx->pb, &buf);
+    size = avio_close_dyn_buf(rtpctx->pb, &buf);
     ptr = buf;
     while (size > 4) {
         uint32_t packet_len = AV_RB32(ptr);

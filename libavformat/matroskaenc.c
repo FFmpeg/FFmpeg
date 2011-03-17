@@ -498,7 +498,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
         ff_put_wav_header(dyn_cp, codec);
     }
 
-    codecpriv_size = url_close_dyn_buf(dyn_cp, &codecpriv);
+    codecpriv_size = avio_close_dyn_buf(dyn_cp, &codecpriv);
     if (codecpriv_size)
         put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codecpriv, codecpriv_size);
     av_free(codecpriv);
@@ -1003,7 +1003,7 @@ static void mkv_flush_dynbuf(AVFormatContext *s)
     if (!mkv->dyn_bc)
         return;
 
-    bufsize = url_close_dyn_buf(mkv->dyn_bc, &dyn_buf);
+    bufsize = avio_close_dyn_buf(mkv->dyn_bc, &dyn_buf);
     avio_write(s->pb, dyn_buf, bufsize);
     av_free(dyn_buf);
     mkv->dyn_bc = NULL;

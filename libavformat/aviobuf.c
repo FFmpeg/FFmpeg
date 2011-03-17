@@ -423,6 +423,10 @@ int url_open_dyn_buf(AVIOContext **s)
 {
     return avio_open_dyn_buf(s);
 }
+int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
+{
+    return avio_close_dyn_buf(s, pbuffer);
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -1027,7 +1031,7 @@ int64_t ffio_read_seek(AVIOContext *s, int stream_index,
     return ret;
 }
 
-/* avio_open_dyn_buf and url_close_dyn_buf are used in rtp.c to send a response
+/* avio_open_dyn_buf and avio_close_dyn_buf are used in rtp.c to send a response
  * back to the server even if CONFIG_MUXERS is false. */
 #if CONFIG_MUXERS || CONFIG_NETWORK
 /* buffer handling */
@@ -1163,7 +1167,7 @@ int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size)
     return url_open_dyn_buf_internal(s, max_packet_size);
 }
 
-int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
+int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
     DynBuffer *d = s->opaque;
     int size;
