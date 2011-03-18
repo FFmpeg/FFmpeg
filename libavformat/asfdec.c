@@ -235,7 +235,6 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
     if (!asf_st)
         return AVERROR(ENOMEM);
     st->priv_data = asf_st;
-    st->start_time = 0;
     start_time = asf->hdr.preroll;
 
     asf_st->stream_language_index = 128; // invalid stream index means no language info

@@ -534,6 +534,8 @@ typedef struct AVStream {
      * Only set this if you are absolutely 100% sure that the value you set
      * it to really is the pts of the first frame.
      * This may be undefined (AV_NOPTS_VALUE).
+     * @note The ASF header does NOT contain a correct start_time the ASF
+     * demuxer must NOT set this.
      */
     int64_t start_time;
 
