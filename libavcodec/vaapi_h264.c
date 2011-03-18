@@ -3,20 +3,20 @@
  *
  * Copyright (C) 2008-2009 Splitted-Desktop Systems
  *
- * This file is part of FFmpeg.
+ * This file is part of Libav.
  *
- * FFmpeg is free software; you can redistribute it and/or
+ * Libav is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * FFmpeg is distributed in the hope that it will be useful,
+ * Libav is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with FFmpeg; if not, write to the Free Software
+ * License along with Libav; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -24,7 +24,7 @@
 #include "h264.h"
 
 /** @file
- *  This file implements the glue code between FFmpeg's and VA API's
+ *  This file implements the glue code between Libav's and VA API's
  *  structures for H.264 decoding.
  */
 
@@ -42,10 +42,10 @@ static void init_vaapi_pic(VAPictureH264 *va_pic)
 }
 
 /**
- * Translate an FFmpeg Picture into its VA API form.
+ * Translate an Libav Picture into its VA API form.
  *
  * @param[out] va_pic          A pointer to VA API's own picture struct
- * @param[in]  pic             A pointer to the FFmpeg picture struct to convert
+ * @param[in]  pic             A pointer to the Libav picture struct to convert
  * @param[in]  pic_structure   The picture field type (as defined in mpegvideo.h),
  *                             supersedes pic's field type if nonzero.
  */
@@ -145,11 +145,11 @@ static int fill_vaapi_ReferenceFrames(VAPictureParameterBufferH264 *pic_param,
 }
 
 /**
- * Fill in VA API reference picture lists from the FFmpeg reference
+ * Fill in VA API reference picture lists from the Libav reference
  * picture list.
  *
  * @param[out] RefPicList  VA API internal reference picture list
- * @param[in]  ref_list    A pointer to the FFmpeg reference list
+ * @param[in]  ref_list    A pointer to the Libav reference list
  * @param[in]  ref_count   The number of reference pictures in ref_list
  */
 static void fill_vaapi_RefPicList(VAPictureH264 RefPicList[32],

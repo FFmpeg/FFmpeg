@@ -8,7 +8,7 @@
  * is in front of the data, thus facilitating network streaming.
  *
  * To compile this program, start from the base directory from which you
- * are building FFmpeg and type:
+ * are building Libav and type:
  *  make tools/qt-faststart
  * The qt-faststart program will be built in the tools/ directory. If you
  * do not build the program in this manner, correct results are not

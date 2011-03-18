@@ -1,20 +1,20 @@
 /*
  * copyright (c) 2001 Fabrice Bellard
  *
- * This file is part of FFmpeg.
+ * This file is part of Libav.
  *
- * FFmpeg is free software; you can redistribute it and/or
+ * Libav is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * FFmpeg is distributed in the hope that it will be useful,
+ * Libav is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with FFmpeg; if not, write to the Free Software
+ * License along with Libav; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -4264,7 +4264,7 @@ attribute_deprecated int av_parse_video_frame_rate(AVRational *frame_rate, const
 
 /**
  * Logs a generic warning message about a missing feature. This function is
- * intended to be used internally by FFmpeg (libavcodec, libavformat, etc.)
+ * intended to be used internally by Libav (libavcodec, libavformat, etc.)
  * only, and would normally not be used by applications.
  * @param[in] avc a pointer to an arbitrary struct of which the first field is
  * a pointer to an AVClass struct
@@ -4278,7 +4278,7 @@ void av_log_missing_feature(void *avc, const char *feature, int want_sample);
 
 /**
  * Log a generic warning message asking for a sample. This function is
- * intended to be used internally by FFmpeg (libavcodec, libavformat, etc.)
+ * intended to be used internally by Libav (libavcodec, libavformat, etc.)
  * only, and would normally not be used by applications.
  * @param[in] avc a pointer to an arbitrary struct of which the first field is
  * a pointer to an AVClass struct
@@ -4315,7 +4315,7 @@ enum AVLockOp {
  * lockmgr should store/get a pointer to a user allocated mutex. It's
  * NULL upon AV_LOCK_CREATE and != NULL for all other ops.
  *
- * @param cb User defined callback. Note: FFmpeg may invoke calls to this
+ * @param cb User defined callback. Note: Libav may invoke calls to this
  *           callback during the call to av_lockmgr_register().
  *           Thus, the application must be prepared to handle that.
  *           If cb is set to NULL the lockmgr will be unregistered.
