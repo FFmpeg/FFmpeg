@@ -846,6 +846,7 @@ static int write_trailer(AVFormatContext *s){
     avio_flush(bc);
     ff_nut_free_sp(nut);
     av_freep(&nut->stream);
+    av_freep(&nut->chapter);
     av_freep(&nut->time_base);
 
     return 0;

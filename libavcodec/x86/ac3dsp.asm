@@ -22,6 +22,11 @@
 %include "x86inc.asm"
 %include "x86util.asm"
 
+SECTION_RODATA
+
+; 16777216.0f - used in ff_float_to_fixed24()
+pf_1_24: times 4 dd 0x4B800000
+
 SECTION .text
 
 ;-----------------------------------------------------------------------------
@@ -178,3 +183,113 @@ INIT_MMX
 AC3_SHIFT r, 32, psrad, mmx
 INIT_XMM
 AC3_SHIFT r, 32, psrad, sse2
+
+;-----------------------------------------------------------------------------
+; void ff_float_to_fixed24(int32_t *dst, const float *src, unsigned int len)
+;-----------------------------------------------------------------------------
+
+; The 3DNow! version is not bit-identical because pf2id uses truncation rather
+; than round-to-nearest.
+INIT_MMX
+cglobal float_to_fixed24_3dnow, 3,3,0, dst, src, len
+    movq   m0, [pf_1_24]
+.loop:
+    movq   m1, [srcq   ]
+    movq   m2, [srcq+8 ]
+    movq   m3, [srcq+16]
+    movq   m4, [srcq+24]
+    pfmul  m1, m0
+    pfmul  m2, m0
+    pfmul  m3, m0
+    pfmul  m4, m0
+    pf2id  m1, m1
+    pf2id  m2, m2
+    pf2id  m3, m3
+    pf2id  m4, m4
+    movq  [dstq   ], m1
+    movq  [dstq+8 ], m2
+    movq  [dstq+16], m3
+    movq  [dstq+24], m4
+    add  srcq, 32
+    add  dstq, 32
+    sub  lend, 8
+    ja .loop
+    REP_RET
+
+INIT_XMM
+cglobal float_to_fixed24_sse, 3,3,3, dst, src, len
+    movaps     m0, [pf_1_24]
+.loop:
+    movaps     m1, [srcq   ]
+    movaps     m2, [srcq+16]
+    mulps      m1, m0
+    mulps      m2, m0
+    cvtps2pi  mm0, m1
+    movhlps    m1, m1
+    cvtps2pi  mm1, m1
+    cvtps2pi  mm2, m2
+    movhlps    m2, m2
+    cvtps2pi  mm3, m2
+    movq  [dstq   ], mm0
+    movq  [dstq+ 8], mm1
+    movq  [dstq+16], mm2
+    movq  [dstq+24], mm3
+    add      srcq, 32
+    add      dstq, 32
+    sub      lend, 8
+    ja .loop
+    REP_RET
+
+INIT_XMM
+cglobal float_to_fixed24_sse2, 3,3,9, dst, src, len
+    movaps     m0, [pf_1_24]
+.loop:
+    movaps     m1, [srcq    ]
+    movaps     m2, [srcq+16 ]
+    movaps     m3, [srcq+32 ]
+    movaps     m4, [srcq+48 ]
+%ifdef m8
+    movaps     m5, [srcq+64 ]
+    movaps     m6, [srcq+80 ]
+    movaps     m7, [srcq+96 ]
+    movaps     m8, [srcq+112]
+%endif
+    mulps      m1, m0
+    mulps      m2, m0
+    mulps      m3, m0
+    mulps      m4, m0
+%ifdef m8
+    mulps      m5, m0
+    mulps      m6, m0
+    mulps      m7, m0
+    mulps      m8, m0
+%endif
+    cvtps2dq   m1, m1
+    cvtps2dq   m2, m2
+    cvtps2dq   m3, m3
+    cvtps2dq   m4, m4
+%ifdef m8
+    cvtps2dq   m5, m5
+    cvtps2dq   m6, m6
+    cvtps2dq   m7, m7
+    cvtps2dq   m8, m8
+%endif
+    movdqa  [dstq    ], m1
+    movdqa  [dstq+16 ], m2
+    movdqa  [dstq+32 ], m3
+    movdqa  [dstq+48 ], m4
+%ifdef m8
+    movdqa  [dstq+64 ], m5
+    movdqa  [dstq+80 ], m6
+    movdqa  [dstq+96 ], m7
+    movdqa  [dstq+112], m8
+    add      srcq, 128
+    add      dstq, 128
+    sub      lenq, 32
+%else
+    add      srcq, 64
+    add      dstq, 64
+    sub      lenq, 16
+%endif
+    ja .loop
+    REP_RET
