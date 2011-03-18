@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# FFmpeg configure script
+# Libav configure script
 #
 # Copyright (c) 2000-2002 Fabrice Bellard
 # Copyright (c) 2005-2008 Diego Biurrun
@@ -44,9 +44,9 @@ if test "$E1" != 0 || test "$E2" = 0; then
     echo "No compatible shell script interpreter found."
     echo "This configure script requires a POSIX-compatible shell"
     echo "such as bash or ksh."
-    echo "THIS IS NOT A BUG IN FFMPEG, DO NOT REPORT IT AS SUCH."
+    echo "THIS IS NOT A BUG IN LIBAV, DO NOT REPORT IT AS SUCH."
     echo "Instead, install a working POSIX-compatible shell."
-    echo "Disabling this configure test will create a broken FFmpeg."
+    echo "Disabling this configure test will create a broken Libav."
     if test "$BASH_VERSION" = '2.04.0(1)-release'; then
         echo "This bash version ($BASH_VERSION) is broken on your platform."
         echo "Upgrade to a later version if available."
@@ -239,7 +239,7 @@ Advanced options (experts only):
   --malloc-prefix=PFX      prefix malloc and related names with PFX
   --enable-sram            allow use of on-chip SRAM
 
-Developer options (useful when working on FFmpeg itself):
+Developer options (useful when working on Libav itself):
   --disable-debug          disable debugging symbols
   --enable-debug=LEVEL     set the debug level [$debuglevel]
   --enable-gprof           enable profiling with gprof [$gprof]
@@ -275,8 +275,8 @@ die(){
     cat <<EOF
 
 If you think configure made a mistake, make sure you are using the latest
-version from SVN.  If the latest version fails, report the problem to the
-ffmpeg-user@mplayerhq.hu mailing list or IRC #ffmpeg on irc.freenode.net.
+version from Git.  If the latest version fails, report the problem to the
+libav-user@libav.org mailing list or IRC #libav on irc.freenode.net.
 EOF
     if disabled logging; then
         cat <<EOF
@@ -2167,7 +2167,7 @@ case $target_os in
     openbsd)
         enable malloc_aligned
         # On OpenBSD 4.5. the compiler does not use PIC unless
-        # explicitly using -fPIC. FFmpeg builds fine without PIC,
+        # explicitly using -fPIC. Libav builds fine without PIC,
         # however the generated executable will not do anything
         # (simply quits with exit-code 1, no crash, no output).
         # Thus explicitly enable PIC here.
@@ -3161,12 +3161,12 @@ Cflags: -I\${includedir}
 EOF
 }
 
-pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION"
-pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
-pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "libavcodec = $LIBAVCODEC_VERSION"
-pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "libavformat = $LIBAVFORMAT_VERSION"
+pkgconfig_generate libavutil "Libav utility library" "$LIBAVUTIL_VERSION"
+pkgconfig_generate libavcodec "Libav codec library" "$LIBAVCODEC_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
+pkgconfig_generate libavformat "Libav container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "libavcodec = $LIBAVCODEC_VERSION"
+pkgconfig_generate libavdevice "Libav device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "libavformat = $LIBAVFORMAT_VERSION"
 enabled avfilter &&
-    pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
+    pkgconfig_generate libavfilter "Libav video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
 enabled postproc &&
-    pkgconfig_generate libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION"
-pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
+    pkgconfig_generate libpostproc "Libav post processing library" "$LIBPOSTPROC_VERSION"
+pkgconfig_generate libswscale "Libav image rescaling library" "$LIBSWSCALE_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
