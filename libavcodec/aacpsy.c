@@ -397,7 +397,7 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
     int i, w, g;
     const int      num_bands  = ctx->num_bands[wi->num_windows == 8];
     const uint8_t *band_sizes = ctx->bands[wi->num_windows == 8];
-    AacPsyCoeffs  *coeffs     = &pctx->psy_coef[wi->num_windows == 8];
+    AacPsyCoeffs  *coeffs     = pctx->psy_coef[wi->num_windows == 8];
 
     //calculate energies, initial thresholds and related values - 5.4.2 "Threshold Calculation"
     for (w = 0; w < wi->num_windows*16; w += 16) {
