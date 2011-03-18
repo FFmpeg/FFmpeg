@@ -66,6 +66,7 @@ library:
     @tab Used in Z and Z95 games.
 @item Brute Force & Ignorance   @tab   @tab X
     @tab Used in the game Flash Traffic: City of Angels.
+@item BWF                       @tab X @tab
 @item Interplay C93             @tab   @tab X
     @tab Used in the game Cyberia from Interplay.
 @item Delphine Software International CIN @tab   @tab X
