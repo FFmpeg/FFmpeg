@@ -1,6 +1,13 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.6.2:
+
+- Fix invalid reads in VC-1 decoding (related to CVE-2011-0723)
+- Do not attempt to decode APE file with no frames
+  (adresses http://packetstorm.linuxsecurity.com/1103-exploits/vlc105-dos.txt)
+
+
 version 0.6.1:
 
 - fix autodetection of E-AC-3 substream samples

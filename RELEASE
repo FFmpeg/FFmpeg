@@ -121,3 +121,26 @@ HE-AAC v2 backport
 
 This release includes a backport of the AAC decoder from trunk, which
 enables proper playback of HE-AAC v2 media.
+
+
+* 0.6.2
+
+General notes
+-------------
+
+This is a maintenance-only release that addresses a small number of security
+and portability issues. Distributors and system integrators are encouraged
+to update and share their patches against this branch.
+
+Security fixes
+--------------
+
+Programming errors in container and codec implementations may lead to
+denial of service or the execution of arbitrary code if the user is
+tricked into opening a malformed media file or stream.
+
+Affected and updated have been the implementations of the following
+codecs and container formats:
+
+ - VC1 decoder (Change related to CVE-2011-0723)
+ - APE decoder (cf. http://packetstorm.linuxsecurity.com/1103-exploits/vlc105-dos.txt)
