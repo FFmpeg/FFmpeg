@@ -1320,7 +1320,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
            of the buffer, which can be caused by a damaged input stream. */
         if (is_swapped) {
             int cnt = FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE) >> 1;
-            s->dsp.bswap16_buf(s->input_buffer, buf, cnt);
+            s->dsp.bswap16_buf((uint16_t *)s->input_buffer, (const uint16_t *)buf, cnt);
         } else
         memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
         buf = s->input_buffer;
