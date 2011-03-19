@@ -146,7 +146,7 @@ void ff_imdct_half_c(FFTContext *s, FFTSample *output, const FFTSample *input)
         in1 += 2;
         in2 -= 2;
     }
-    ff_fft_calc(s, z);
+    s->fft_calc(s, z);
 
     /* post rotation + reordering */
     for(k = 0; k < n8; k++) {
@@ -213,7 +213,7 @@ void ff_mdct_calc_c(FFTContext *s, FFTSample *out, const FFTSample *input)
         CMUL(x[j].re, x[j].im, re, im, -tcos[n8 + i], tsin[n8 + i]);
     }
 
-    ff_fft_calc(s, x);
+    s->fft_calc(s, x);
 
     /* post rotation */
     for(i=0;i<n8;i++) {

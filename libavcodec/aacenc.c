@@ -250,7 +250,7 @@ static void apply_window_and_mdct(AVCodecContext *avctx, AACEncContext *s,
             for (i = 0; i < 1024; i++)
                 sce->saved[i] = audio[i * chans];
         }
-        ff_mdct_calc(&s->mdct1024, sce->coeffs, output);
+        s->mdct1024.mdct_calc(&s->mdct1024, sce->coeffs, output);
     } else {
         for (k = 0; k < 1024; k += 128) {
             for (i = 448 + k; i < 448 + k + 256; i++)
@@ -259,7 +259,7 @@ static void apply_window_and_mdct(AVCodecContext *avctx, AACEncContext *s,
                                          : audio[(i-1024)*chans];
             s->dsp.vector_fmul        (output,     output, k ?  swindow : pwindow, 128);
             s->dsp.vector_fmul_reverse(output+128, output+128, swindow, 128);
-            ff_mdct_calc(&s->mdct128, sce->coeffs + k, output);
+            s->mdct128.mdct_calc(&s->mdct128, sce->coeffs + k, output);
         }
         for (i = 0; i < 1024; i++)
             sce->saved[i] = audio[i * chans];

@@ -39,7 +39,14 @@ struct FFTContext {
     /* pre/post rotation tables */
     FFTSample *tcos;
     FFTSample *tsin;
+    /**
+     * Do the permutation needed BEFORE calling fft_calc().
+     */
     void (*fft_permute)(struct FFTContext *s, FFTComplex *z);
+    /**
+     * Do a complex FFT with the parameters defined in ff_fft_init(). The
+     * input data must be permuted before. No 1.0/sqrt(n) normalization is done.
+     */
     void (*fft_calc)(struct FFTContext *s, FFTComplex *z);
     void (*imdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*imdct_half)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
@@ -115,39 +122,7 @@ void ff_fft_init_mmx(FFTContext *s);
 void ff_fft_init_arm(FFTContext *s);
 void ff_dct_init_mmx(DCTContext *s);
 
-/**
- * Do the permutation needed BEFORE calling ff_fft_calc().
- */
-static inline void ff_fft_permute(FFTContext *s, FFTComplex *z)
-{
-    s->fft_permute(s, z);
-}
-/**
- * Do a complex FFT with the parameters defined in ff_fft_init(). The
- * input data must be permuted before. No 1.0/sqrt(n) normalization is done.
- */
-static inline void ff_fft_calc(FFTContext *s, FFTComplex *z)
-{
-    s->fft_calc(s, z);
-}
 void ff_fft_end(FFTContext *s);
-
-/* MDCT computation */
-
-static inline void ff_imdct_calc(FFTContext *s, FFTSample *output, const FFTSample *input)
-{
-    s->imdct_calc(s, output, input);
-}
-static inline void ff_imdct_half(FFTContext *s, FFTSample *output, const FFTSample *input)
-{
-    s->imdct_half(s, output, input);
-}
-
-static inline void ff_mdct_calc(FFTContext *s, FFTSample *output,
-                                const FFTSample *input)
-{
-    s->mdct_calc(s, output, input);
-}
 
 /**
  * Maximum window size for ff_kbd_window_init.
@@ -213,11 +188,6 @@ void ff_rdft_end(RDFTContext *s);
 
 void ff_rdft_init_arm(RDFTContext *s);
 
-static av_always_inline void ff_rdft_calc(RDFTContext *s, FFTSample *data)
-{
-    s->rdft_calc(s, data);
-}
-
 /* Discrete Cosine Transform */
 
 struct DCTContext {
@@ -239,7 +209,6 @@ struct DCTContext {
  * @note the first element of the input of DST-I is ignored
  */
 int  ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType type);
-void ff_dct_calc(DCTContext *s, FFTSample *data);
 void ff_dct_end (DCTContext *s);
 
 #endif /* AVCODEC_FFT_H */

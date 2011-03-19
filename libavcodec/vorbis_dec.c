@@ -1448,7 +1448,7 @@ void vorbis_inverse_coupling(float *mag, float *ang, int blocksize)
 static int vorbis_parse_audio_packet(vorbis_context *vc)
 {
     GetBitContext *gb = &vc->gb;
-
+    FFTContext *mdct;
     uint_fast8_t previous_window = vc->previous_window;
     uint_fast8_t mode_number;
     uint_fast8_t blockflag;
@@ -1552,11 +1552,13 @@ static int vorbis_parse_audio_packet(vorbis_context *vc)
 
 // Dotproduct, MDCT
 
+    mdct = &vc->mdct[blockflag];
+
     for (j = vc->audio_channels-1;j >= 0; j--) {
         ch_floor_ptr = vc->channel_floors   + j           * blocksize / 2;
         ch_res_ptr   = vc->channel_residues + res_chan[j] * blocksize / 2;
         vc->dsp.vector_fmul(ch_floor_ptr, ch_floor_ptr, ch_res_ptr, blocksize / 2);
-        ff_imdct_half(&vc->mdct[blockflag], ch_res_ptr, ch_floor_ptr);
+        mdct->imdct_half(mdct, ch_res_ptr, ch_floor_ptr);
     }
 
 // Overlap/add, save data for next overlapping  FPMATH

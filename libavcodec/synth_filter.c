@@ -29,7 +29,7 @@ static void synth_filter_float(FFTContext *imdct,
     float *synth_buf= synth_buf_ptr + *synth_buf_offset;
     int i, j;
 
-    ff_imdct_half(imdct, synth_buf, in);
+    imdct->imdct_half(imdct, synth_buf, in);
 
     for (i = 0; i < 16; i++){
         float a= synth_buf2[i     ];

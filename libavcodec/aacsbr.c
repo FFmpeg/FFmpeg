@@ -1155,7 +1155,7 @@ static void sbr_qmf_analysis(DSPContext *dsp, FFTContext *mdct, const float *in,
         }
         z[64+63] = z[32];
 
-        ff_imdct_half(mdct, z, z+64);
+        mdct->imdct_half(mdct, z, z+64);
         for (k = 0; k < 32; k++) {
             W[1][i][k][0] = -z[63-k];
             W[1][i][k][1] = z[k];
@@ -1190,7 +1190,7 @@ static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
                 X[0][i][   n] = -X[0][i][n];
                 X[0][i][32+n] =  X[1][i][31-n];
             }
-            ff_imdct_half(mdct, mdct_buf[0], X[0][i]);
+            mdct->imdct_half(mdct, mdct_buf[0], X[0][i]);
             for (n = 0; n < 32; n++) {
                 v[     n] =  mdct_buf[0][63 - 2*n];
                 v[63 - n] = -mdct_buf[0][62 - 2*n];
@@ -1199,8 +1199,8 @@ static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
             for (n = 1; n < 64; n+=2) {
                 X[1][i][n] = -X[1][i][n];
             }
-            ff_imdct_half(mdct, mdct_buf[0], X[0][i]);
-            ff_imdct_half(mdct, mdct_buf[1], X[1][i]);
+            mdct->imdct_half(mdct, mdct_buf[0], X[0][i]);
+            mdct->imdct_half(mdct, mdct_buf[1], X[1][i]);
             for (n = 0; n < 64; n++) {
                 v[      n] = -mdct_buf[0][63 -   n] + mdct_buf[1][  n    ];
                 v[127 - n] =  mdct_buf[0][63 -   n] + mdct_buf[1][  n    ];

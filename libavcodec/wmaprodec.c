@@ -1222,6 +1222,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
             get_bits_count(&s->gb) - s->subframe_offset);
 
     if (transmit_coeffs) {
+        FFTContext *mdct = &s->mdct_ctx[av_log2(subframe_len) - WMAPRO_BLOCK_MIN_BITS];
         /** reconstruct the per channel data */
         inverse_channel_transform(s);
         for (i = 0; i < s->channels_for_cur_subframe; i++) {
@@ -1246,9 +1247,8 @@ static int decode_subframe(WMAProDecodeCtx *s)
                                           quant, end - start);
             }
 
-            /** apply imdct (ff_imdct_half == DCTIV with reverse) */
-            ff_imdct_half(&s->mdct_ctx[av_log2(subframe_len) - WMAPRO_BLOCK_MIN_BITS],
-                          s->channel[c].coeffs, s->tmp);
+            /** apply imdct (imdct_half == DCTIV with reverse) */
+            mdct->imdct_half(mdct, s->channel[c].coeffs, s->tmp);
         }
     }
 

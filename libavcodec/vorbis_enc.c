@@ -935,7 +935,7 @@ static int apply_window_and_mdct(vorbis_enc_context *venc, const signed short *a
     }
 
     for (channel = 0; channel < venc->channels; channel++)
-        ff_mdct_calc(&venc->mdct[0], venc->coeffs + channel * window_len,
+        venc->mdct[0].mdct_calc(&venc->mdct[0], venc->coeffs + channel * window_len,
                      venc->samples + channel * window_len * 2);
 
     if (samples) {
