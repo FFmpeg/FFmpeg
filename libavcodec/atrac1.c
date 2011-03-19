@@ -36,6 +36,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "sinewin.h"
 
 #include "atrac.h"
 #include "atrac1data.h"

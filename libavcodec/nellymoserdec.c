@@ -39,6 +39,7 @@
 #include "dsputil.h"
 #include "fft.h"
 #include "fmtconvert.h"
+#include "sinewin.h"
 
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"

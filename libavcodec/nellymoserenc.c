@@ -39,6 +39,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "sinewin.h"
 
 #define BITSTREAM_WRITER_LE
 #include "put_bits.h"

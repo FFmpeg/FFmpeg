@@ -38,6 +38,7 @@
 #include "libavutil/lzo.h"
 #include "avfft.h"
 #include "fft.h"
+#include "sinewin.h"
 
 #define MAX_BLOCKS           8   ///< maximum number of blocks per frame
 #define MAX_LSPS             16  ///< maximum filter order

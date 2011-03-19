@@ -35,6 +35,7 @@
 #include "dsputil.h"
 #include "mpeg4audio.h"
 #include "kbdwin.h"
+#include "sinewin.h"
 
 #include "aac.h"
 #include "aactab.h"

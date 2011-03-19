@@ -1,5 +1,5 @@
 /*
- * Generate a header file for hardcoded MDCT tables
+ * Generate a header file for hardcoded sine windows
  *
  * Copyright (c) 2009 Reimar Döffinger <Reimar.Doeffinger@gmx.de>
  *
@@ -29,7 +29,7 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#include "mdct_tablegen.h"
+#include "sinewin_tablegen.h"
 #include "tableprint.h"
 
 int main(void)

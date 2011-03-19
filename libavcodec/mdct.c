@@ -30,8 +30,6 @@
  * MDCT/IMDCT transforms.
  */
 
-#include "mdct_tablegen.h"
-
 /**
  * init MDCT or IMDCT computation.
  */

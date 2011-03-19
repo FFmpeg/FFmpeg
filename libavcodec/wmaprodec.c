@@ -92,6 +92,7 @@
 #include "put_bits.h"
 #include "wmaprodata.h"
 #include "dsputil.h"
+#include "sinewin.h"
 #include "wma.h"
 
 /** current decoder limitations */

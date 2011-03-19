@@ -62,19 +62,16 @@ struct FFTContext {
 #if CONFIG_HARDCODED_TABLES
 #define COSTABLE_CONST const
 #define SINTABLE_CONST const
-#define SINETABLE_CONST const
 #else
 #define COSTABLE_CONST
 #define SINTABLE_CONST
-#define SINETABLE_CONST
 #endif
 
 #define COSTABLE(size) \
     COSTABLE_CONST DECLARE_ALIGNED(16, FFTSample, ff_cos_##size)[size/2]
 #define SINTABLE(size) \
     SINTABLE_CONST DECLARE_ALIGNED(16, FFTSample, ff_sin_##size)[size/2]
-#define SINETABLE(size) \
-    SINETABLE_CONST DECLARE_ALIGNED(16, float, ff_sine_##size)[size]
+
 extern COSTABLE(16);
 extern COSTABLE(32);
 extern COSTABLE(64);
@@ -123,27 +120,6 @@ void ff_fft_init_arm(FFTContext *s);
 void ff_dct_init_mmx(DCTContext *s);
 
 void ff_fft_end(FFTContext *s);
-
-/**
- * Generate a sine window.
- * @param   window  pointer to half window
- * @param   n       size of half window
- */
-void ff_sine_window_init(float *window, int n);
-
-/**
- * initialize the specified entry of ff_sine_windows
- */
-void ff_init_ff_sine_windows(int index);
-extern SINETABLE(  32);
-extern SINETABLE(  64);
-extern SINETABLE( 128);
-extern SINETABLE( 256);
-extern SINETABLE( 512);
-extern SINETABLE(1024);
-extern SINETABLE(2048);
-extern SINETABLE(4096);
-extern SINETABLE_CONST float * const ff_sine_windows[13];
 
 int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale);
 void ff_imdct_calc_c(FFTContext *s, FFTSample *output, const FFTSample *input);

@@ -24,6 +24,7 @@
 #include "dsputil.h"
 #include "fft.h"
 #include "lsp.h"
+#include "sinewin.h"
 
 #include <math.h>
 #include <stdint.h>

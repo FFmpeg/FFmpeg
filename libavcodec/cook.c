@@ -54,6 +54,7 @@
 #include "bytestream.h"
 #include "fft.h"
 #include "libavutil/audioconvert.h"
+#include "sinewin.h"
 
 #include "cookdata.h"
 

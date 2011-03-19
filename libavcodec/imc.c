@@ -41,6 +41,7 @@
 #include "dsputil.h"
 #include "fft.h"
 #include "libavutil/audioconvert.h"
+#include "sinewin.h"
 
 #include "imcdata.h"
 
