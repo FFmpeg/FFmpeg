@@ -80,6 +80,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum PixelFormat pix_fmts[] = {
         PIX_FMT_RGB48BE,      PIX_FMT_RGB48LE,
+        PIX_FMT_BGR48BE,      PIX_FMT_BGR48LE,
         PIX_FMT_ARGB,         PIX_FMT_RGBA,
         PIX_FMT_ABGR,         PIX_FMT_BGRA,
         PIX_FMT_RGB24,        PIX_FMT_BGR24,
