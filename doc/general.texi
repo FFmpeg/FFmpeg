@@ -1032,7 +1032,7 @@ llrint() in its C library.
 Install your Cygwin with all the "Base" packages, plus the
 following "Devel" ones:
 @example
-binutils, gcc4-core, make, subversion, mingw-runtime, texi2html
+binutils, gcc4-core, make, git, mingw-runtime, texi2html
 @end example
 
 And the following "Utils" one:

@@ -23,7 +23,7 @@ help out creating them.
 @section I have a problem with an old version of FFmpeg; where should I report it?
 Nowhere. We do not support old FFmpeg versions in any way, we simply lack
 the time, motivation and manpower to do so. If you have a problem with an
-old version of FFmpeg, upgrade to the latest Subversion snapshot. If you
+old version of FFmpeg, upgrade to the latest git snapshot. If you
 still experience the problem, then you can report it according to the
 guidelines in @url{http://ffmpeg.org/bugreports.html}.
 
@@ -47,7 +47,7 @@ Likely reasons
 @item We are busy and haven't had time yet to read your report or
 investigate the issue.
 @item You didn't follow @url{http://ffmpeg.org/bugreports.html}.
-@item You didn't use Subversion HEAD.
+@item You didn't use git HEAD.
 @item You reported a segmentation fault without gdb output.
 @item You describe a problem but not how to reproduce it.
 @item It's unclear if you use ffmpeg as command line tool or use

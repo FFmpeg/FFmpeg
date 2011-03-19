@@ -1,8 +1,5 @@
 #!/bin/sh
 
-revision=$(cd "$1" && cat snapshot_version 2> /dev/null)
-test "$revision" && revision=SVN-r$revision
-
 # check for git short hash
 if ! test "$revision"; then
     revision=$(cd "$1" && git describe --tags --match N 2> /dev/null)

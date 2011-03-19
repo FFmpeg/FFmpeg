@@ -29,7 +29,6 @@ checkout(){
     case "$repo" in
         file:*|/*) src="${repo#file:}"      ;;
         git:*)     git clone "$repo" "$src" ;;
-        svn:*)     svn co    "$repo" "$src" ;;
     esac
 }
 
@@ -37,7 +36,6 @@ update()(
     cd ${src} || return
     case "$repo" in
         git:*) git pull ;;
-        svn:*) svn up   ;;
     esac
 )
 
