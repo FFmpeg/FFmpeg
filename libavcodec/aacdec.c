@@ -87,6 +87,7 @@
 #include "fft.h"
 #include "fmtconvert.h"
 #include "lpc.h"
+#include "kbdwin.h"
 
 #include "aac.h"
 #include "aactab.h"

@@ -28,6 +28,7 @@
 
 #define CONFIG_AC3ENC_FLOAT 1
 #include "ac3enc.c"
+#include "kbdwin.h"
 
 
 /**

@@ -125,19 +125,6 @@ void ff_dct_init_mmx(DCTContext *s);
 void ff_fft_end(FFTContext *s);
 
 /**
- * Maximum window size for ff_kbd_window_init.
- */
-#define FF_KBD_WINDOW_MAX 1024
-
-/**
- * Generate a Kaiser-Bessel Derived Window.
- * @param   window  pointer to half window
- * @param   alpha   determines window shape
- * @param   n       size of half window, max FF_KBD_WINDOW_MAX
- */
-void ff_kbd_window_init(float *window, float alpha, int n);
-
-/**
  * Generate a sine window.
  * @param   window  pointer to half window
  * @param   n       size of half window
