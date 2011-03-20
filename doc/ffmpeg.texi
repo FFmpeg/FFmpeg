@@ -622,11 +622,43 @@ Synchronize read on input.
 @section Advanced options
 
 @table @option
-@item -map @var{input_stream_id}[:@var{sync_stream_id}]
-Set stream mapping from input streams to output streams.
-Just enumerate the input streams in the order you want them in the output.
-@var{sync_stream_id} if specified sets the input stream to sync
-against.
+@item -map @var{input_file_id}.@var{input_stream_id}[:@var{sync_file_id}.@var{sync_stream_id}]
+
+Designate an input stream as a source for the output file. Each input
+stream is identified by the input file index @var{input_file_id} and
+the input stream index @var{input_stream_id} within the input
+file. Both indexes start at 0. If specified,
+@var{sync_file_id}.@var{sync_stream_id} sets which input stream
+is used as a presentation sync reference.
+
+The @code{-map} options must be specified just after the output file.
+If any @code{-map} options are used, the number of @code{-map} options
+on the command line must match the number of streams in the output
+file. The first @code{-map} option on the command line specifies the
+source for output stream 0, the second @code{-map} option specifies
+the source for output stream 1, etc.
+
+For example, if you have two audio streams in the first input file,
+these streams are identified by "0.0" and "0.1". You can use
+@code{-map} to select which stream to place in an output file. For
+example:
+@example
+ffmpeg -i INPUT out.wav -map 0.1
+@end example
+will map the input stream in @file{INPUT} identified by "0.1" to
+the (single) output stream in @file{out.wav}.
+
+For example, to select the stream with index 2 from input file
+@file{a.mov} (specified by the identifier "0.2"), and stream with
+index 6 from input @file{b.mov} (specified by the identifier "1.6"),
+and copy them to the output file @file{out.mov}:
+@example
+ffmpeg -i a.mov -i b.mov -vcodec copy -acodec copy out.mov -map 0.2 -map 1.6
+@end example
+
+To add more streams to the output file, you can use the
+@code{-newaudio}, @code{-newvideo}, @code{-newsubtitle} options.
+
 @item -map_meta_data @var{outfile}[,@var{metadata}]:@var{infile}[,@var{metadata}]
 Deprecated, use @var{-map_metadata} instead.
 
