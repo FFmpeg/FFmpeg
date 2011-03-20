@@ -47,4 +47,6 @@ struct DCTContext {
 int  ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType type);
 void ff_dct_end (DCTContext *s);
 
+void ff_dct_init_mmx(DCTContext *s);
+
 #endif
