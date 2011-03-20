@@ -506,9 +506,15 @@ static int applehttp_read_seek(AVFormatContext *s, int stream_index,
     if ((flags & AVSEEK_FLAG_BYTE) || !c->variants[0]->finished)
         return AVERROR(ENOSYS);
 
-    /* Reset the variants */
+    timestamp = av_rescale_rnd(timestamp, 1, stream_index >= 0 ?
+                               s->streams[stream_index]->time_base.den :
+                               AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
+                               AV_ROUND_DOWN : AV_ROUND_UP);
+    ret = AVERROR(EIO);
     for (i = 0; i < c->n_variants; i++) {
+        /* Reset reading */
         struct variant *var = c->variants[i];
+        int64_t pos = 0;
         if (var->input) {
             url_close(var->input);
             var->input = NULL;
@@ -516,16 +522,7 @@ static int applehttp_read_seek(AVFormatContext *s, int stream_index,
         av_free_packet(&var->pkt);
         reset_packet(&var->pkt);
         var->pb.eof_reached = 0;
-    }
 
-    timestamp = av_rescale_rnd(timestamp, 1, stream_index >= 0 ?
-                               s->streams[stream_index]->time_base.den :
-                               AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
-                               AV_ROUND_DOWN : AV_ROUND_UP);
-    ret = AVERROR(EIO);
-    for (i = 0; i < c->n_variants; i++) {
-        struct variant *var = c->variants[i];
-        int64_t pos = 0;
         /* Locate the segment that contains the target timestamp */
         for (j = 0; j < var->n_segments; j++) {
             if (timestamp >= pos &&
