@@ -27,6 +27,7 @@
 #define AVUTIL_MEM_H
 
 #include "attributes.h"
+#include "error.h"
 #include "avutil.h"
 
 #if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
@@ -143,5 +144,20 @@ void av_freep(void *ptr);
  * @param elem    Element to be added.
  */
 void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem);
+
+/**
+ * Multiply two size_t values checking for overflow.
+ * @return  0 if success, AVERROR(EINVAL) if overflow.
+ */
+static inline int av_size_mult(size_t a, size_t b, size_t *r)
+{
+    size_t t = a * b;
+    /* Hack inspired from glibc: only try the division if nelem and elsize
+     * are both greater than sqrt(SIZE_MAX). */
+    if ((a | b) >= ((size_t)1 << (sizeof(size_t) * 4)) && a && t / a != b)
+        return AVERROR(EINVAL);
+    *r = t;
+    return 0;
+}
 
 #endif /* AVUTIL_MEM_H */
