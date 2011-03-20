@@ -30,7 +30,6 @@
 #include <math.h>
 #include "libavutil/mathematics.h"
 #include "dct.h"
-#include "x86/fft.h"
 
 #define DCT32_FLOAT
 #include "dct32.c"
