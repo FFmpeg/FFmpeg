@@ -898,9 +898,20 @@ static void roq_encode_video(RoqContext *enc)
     for (i=0; i<enc->width*enc->height/64; i++)
         gather_data_for_cel(tempData->cel_evals + i, enc, tempData);
 
-    /* Quake 3 can't handle chunks bigger than 65536 bytes */
-    if (tempData->mainChunkSize/8 > 65536) {
-        enc->lambda *= .8;
+    /* Quake 3 can't handle chunks bigger than 65535 bytes */
+    if (tempData->mainChunkSize/8 > 65535) {
+        av_log(enc->avctx, AV_LOG_ERROR,
+               "Warning, generated a frame too big (%d > 65535), "
+               "try using a smaller qscale value.\n",
+               tempData->mainChunkSize/8);
+        enc->lambda *= 1.5;
+        tempData->mainChunkSize = 0;
+        memset(tempData->used_option, 0, sizeof(tempData->used_option));
+        memset(tempData->codebooks.usedCB4, 0,
+               sizeof(tempData->codebooks.usedCB4));
+        memset(tempData->codebooks.usedCB2, 0,
+               sizeof(tempData->codebooks.usedCB2));
+
         goto retry_encode;
     }
 
