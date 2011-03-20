@@ -83,9 +83,9 @@ static void mdct512(AC3MDCTContext *mdct, float *out, float *in)
  * Apply KBD window to input samples prior to MDCT.
  */
 static void apply_window(DSPContext *dsp, float *output, const float *input,
-                         const float *window, int n)
+                         const float *window, unsigned int len)
 {
-    dsp->vector_fmul(output, input, window, n);
+    dsp->vector_fmul(output, input, window, len);
 }
 
 

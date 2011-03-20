@@ -167,7 +167,7 @@ static av_cold int mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
 static void mdct512(AC3MDCTContext *mdct, CoefType *out, SampleType *in);
 
 static void apply_window(DSPContext *dsp, SampleType *output, const SampleType *input,
-                         const SampleType *window, int n);
+                         const SampleType *window, unsigned int len);
 
 static int normalize_samples(AC3EncodeContext *s);
 

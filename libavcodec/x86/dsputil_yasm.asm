@@ -27,6 +27,8 @@ pb_zzzzzzzz77777777: times 8 db -1
 pb_7: times 8 db 7
 pb_zzzz3333zzzzbbbb: db -1,-1,-1,-1,3,3,3,3,-1,-1,-1,-1,11,11,11,11
 pb_zz11zz55zz99zzdd: db -1,-1,1,1,-1,-1,5,5,-1,-1,9,9,-1,-1,13,13
+pb_revwords: db 14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1
+pd_16384: times 4 dd 16384
 
 section .text align=16
 
@@ -201,6 +203,130 @@ SCALARPRODUCT_LOOP 0
     movd   eax, m6
     RET
 
+
+;-----------------------------------------------------------------------------
+; void ff_apply_window_int16(int16_t *output, const int16_t *input,
+;                            const int16_t *window, unsigned int len)
+;-----------------------------------------------------------------------------
+
+%macro REVERSE_WORDS_MMXEXT 1-2
+    pshufw   %1, %1, 0x1B
+%endmacro
+
+%macro REVERSE_WORDS_SSE2 1-2
+    pshuflw  %1, %1, 0x1B
+    pshufhw  %1, %1, 0x1B
+    pshufd   %1, %1, 0x4E
+%endmacro
+
+%macro REVERSE_WORDS_SSSE3 2
+    pshufb  %1, %2
+%endmacro
+
+; dst = (dst * src) >> 15
+; pmulhw cuts off the bottom bit, so we have to lshift by 1 and add it back
+; in from the pmullw result.
+%macro MUL16FIXED_MMXEXT 3 ; dst, src, temp
+    mova    %3, %1
+    pmulhw  %1, %2
+    pmullw  %3, %2
+    psrlw   %3, 15
+    psllw   %1, 1
+    por     %1, %3
+%endmacro
+
+; dst = ((dst * src) + (1<<14)) >> 15
+%macro MUL16FIXED_SSSE3 3 ; dst, src, unused
+    pmulhrsw   %1, %2
+%endmacro
+
+%macro APPLY_WINDOW_INT16 3 ; %1=instruction set, %2=mmxext/sse2 bit exact version, %3=has_ssse3
+cglobal apply_window_int16_%1, 4,5,6, output, input, window, offset, offset2
+    lea     offset2q, [offsetq-mmsize]
+%if %2
+    mova          m5, [pd_16384]
+%elifidn %1, ssse3
+    mova          m5, [pb_revwords]
+    ALIGN 16
+%endif
+.loop:
+%if %2
+    ; This version expands 16-bit to 32-bit, multiplies by the window,
+    ; adds 16384 for rounding, right shifts 15, then repacks back to words to
+    ; save to the output. The window is reversed for the second half.
+    mova          m3, [windowq+offset2q]
+    mova          m4, [ inputq+offset2q]
+    pxor          m0, m0
+    punpcklwd     m0, m3
+    punpcklwd     m1, m4
+    pmaddwd       m0, m1
+    paddd         m0, m5
+    psrad         m0, 15
+    pxor          m2, m2
+    punpckhwd     m2, m3
+    punpckhwd     m1, m4
+    pmaddwd       m2, m1
+    paddd         m2, m5
+    psrad         m2, 15
+    packssdw      m0, m2
+    mova  [outputq+offset2q], m0
+    REVERSE_WORDS m3
+    mova          m4, [ inputq+offsetq]
+    pxor          m0, m0
+    punpcklwd     m0, m3
+    punpcklwd     m1, m4
+    pmaddwd       m0, m1
+    paddd         m0, m5
+    psrad         m0, 15
+    pxor          m2, m2
+    punpckhwd     m2, m3
+    punpckhwd     m1, m4
+    pmaddwd       m2, m1
+    paddd         m2, m5
+    psrad         m2, 15
+    packssdw      m0, m2
+    mova  [outputq+offsetq], m0
+%elif %3
+    ; This version does the 16x16->16 multiplication in-place without expanding
+    ; to 32-bit. The ssse3 version is bit-identical.
+    mova          m0, [windowq+offset2q]
+    mova          m1, [ inputq+offset2q]
+    pmulhrsw      m1, m0
+    REVERSE_WORDS m0, m5
+    pmulhrsw      m0, [ inputq+offsetq ]
+    mova  [outputq+offset2q], m1
+    mova  [outputq+offsetq ], m0
+%else
+    ; This version does the 16x16->16 multiplication in-place without expanding
+    ; to 32-bit. The mmxext and sse2 versions do not use rounding, and
+    ; therefore are not bit-identical to the C version.
+    mova          m0, [windowq+offset2q]
+    mova          m1, [ inputq+offset2q]
+    mova          m2, [ inputq+offsetq ]
+    MUL16FIXED    m1, m0, m3
+    REVERSE_WORDS m0
+    MUL16FIXED    m2, m0, m3
+    mova  [outputq+offset2q], m1
+    mova  [outputq+offsetq ], m2
+%endif
+    add      offsetd, mmsize
+    sub     offset2d, mmsize
+    jae .loop
+    REP_RET
+%endmacro
+
+INIT_MMX
+%define REVERSE_WORDS REVERSE_WORDS_MMXEXT
+%define MUL16FIXED MUL16FIXED_MMXEXT
+APPLY_WINDOW_INT16 mmxext,     0, 0
+APPLY_WINDOW_INT16 mmxext_ba,  1, 0
+INIT_XMM
+%define REVERSE_WORDS REVERSE_WORDS_SSE2
+APPLY_WINDOW_INT16 sse2,       0, 0
+APPLY_WINDOW_INT16 sse2_ba,    1, 0
+APPLY_WINDOW_INT16 ssse3_atom, 0, 1
+%define REVERSE_WORDS REVERSE_WORDS_SSSE3
+APPLY_WINDOW_INT16 ssse3,      0, 1
 
 
 ; void add_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top)
