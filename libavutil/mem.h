@@ -88,6 +88,16 @@ void *av_malloc(size_t size) av_malloc_attrib av_alloc_size(1);
 void *av_realloc(void *ptr, size_t size) av_alloc_size(2);
 
 /**
+ * Allocate or reallocate a block of memory.
+ * This function does the same thing as av_realloc, except:
+ * - It takes two arguments and checks the result of the multiplication for
+ *   integer overflow.
+ * - It frees the input block in case of failure, thus avoiding the memory
+ *   leak with the classic "buf = realloc(buf); if (!buf) return -1;".
+ */
+void *av_realloc_f(void *ptr, size_t nelem, size_t elsize);
+
+/**
  * Free a memory block which has been allocated with av_malloc(z)() or
  * av_realloc().
  * @param ptr Pointer to the memory block which should be freed.
