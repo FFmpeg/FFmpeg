@@ -61,6 +61,8 @@ struct variant {
     AVPacket pkt;
     int stream_offset;
 
+    int finished;
+    int target_duration;
     int start_seq_no;
     int n_segments;
     struct segment **segments;
@@ -68,8 +70,6 @@ struct variant {
 };
 
 typedef struct AppleHTTPContext {
-    int target_duration;
-    int finished;
     int n_variants;
     struct variant **variants;
     int cur_seq_no;
@@ -170,9 +170,10 @@ static int parse_playlist(AppleHTTPContext *c, const char *url,
         goto fail;
     }
 
-    if (var)
+    if (var) {
         free_segment_list(var);
-    c->finished = 0;
+        var->finished = 0;
+    }
     while (!in->eof_reached) {
         read_chomp_line(in, line, sizeof(line));
         if (av_strstart(line, "#EXT-X-STREAM-INF:", &ptr)) {
@@ -182,7 +183,14 @@ static int parse_playlist(AppleHTTPContext *c, const char *url,
                                &info);
             bandwidth = atoi(info.bandwidth);
         } else if (av_strstart(line, "#EXT-X-TARGETDURATION:", &ptr)) {
-            c->target_duration = atoi(ptr);
+            if (!var) {
+                var = new_variant(c, 0, url, NULL);
+                if (!var) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+            }
+            var->target_duration = atoi(ptr);
         } else if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
             if (!var) {
                 var = new_variant(c, 0, url, NULL);
@@ -193,7 +201,8 @@ static int parse_playlist(AppleHTTPContext *c, const char *url,
             }
             var->start_seq_no = atoi(ptr);
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
-            c->finished = 1;
+            if (var)
+                var->finished = 1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
             duration   = atoi(ptr);
@@ -268,7 +277,7 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     /* If this isn't a live stream, calculate the total duration of the
      * stream. */
-    if (c->finished) {
+    if (c->variants[0]->finished) {
         int64_t duration = 0;
         for (i = 0; i < c->variants[0]->n_segments; i++)
             duration += c->variants[0]->segments[i]->duration;
@@ -306,7 +315,7 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     c->cur_seq_no = c->max_start_seq;
     /* If this is a live stream with more than 3 segments, start at the
      * third last segment. */
-    if (!c->finished && c->min_end_seq - c->max_start_seq > 3)
+    if (!c->variants[0]->finished && c->min_end_seq - c->max_start_seq > 3)
         c->cur_seq_no = c->min_end_seq - 2;
 
     return 0;
@@ -326,7 +335,7 @@ static int open_variant(AppleHTTPContext *c, struct variant *var, int skip)
         return 0;
     }
     if (c->cur_seq_no - var->start_seq_no >= var->n_segments)
-        return c->finished ? AVERROR_EOF : 0;
+        return c->variants[0]->finished ? AVERROR_EOF : 0;
     ret = avio_open(&var->pb,
                     var->segments[c->cur_seq_no - var->start_seq_no]->url,
                     URL_RDONLY);
@@ -390,7 +399,7 @@ start:
         } else if (!var->pb && var->needed) {
             if (first)
                 av_log(s, AV_LOG_DEBUG, "Opening variant stream %d\n", i);
-            if (first && !c->finished)
+            if (first && !var->finished)
                 if ((ret = parse_playlist(c, var->url, var, NULL)) < 0)
                     return ret;
             ret = open_variant(c, var, first);
@@ -442,11 +451,11 @@ start:
     first = 0;
     c->cur_seq_no++;
 reload:
-    if (!c->finished) {
+    if (!c->variants[0]->finished) {
         /* If this is a live stream and target_duration has elapsed since
          * the last playlist reload, reload the variant playlists now. */
         int64_t now = av_gettime();
-        if (now - c->last_load_time >= c->target_duration*1000000) {
+        if (now - c->last_load_time >= c->variants[0]->target_duration*1000000) {
             c->max_start_seq = 0;
             c->min_end_seq   = INT_MAX;
             for (i = 0; i < c->n_variants; i++) {
@@ -473,9 +482,10 @@ reload:
         goto start;
     /* We've reached the end of the playlists - return eof if this is a
      * non-live stream, wait until the next playlist reload if it is live. */
-    if (c->finished)
+    if (c->variants[0]->finished)
         return AVERROR_EOF;
-    while (av_gettime() - c->last_load_time < c->target_duration*1000000) {
+    while (av_gettime() - c->last_load_time <
+           c->variants[0]->target_duration*1000000) {
         if (url_interrupt_cb())
             return AVERROR_EXIT;
         usleep(100*1000);
@@ -500,7 +510,7 @@ static int applehttp_read_seek(AVFormatContext *s, int stream_index,
     int i;
     struct variant *var = c->variants[0];
 
-    if ((flags & AVSEEK_FLAG_BYTE) || !c->finished)
+    if ((flags & AVSEEK_FLAG_BYTE) || !c->variants[0]->finished)
         return AVERROR(ENOSYS);
 
     /* Reset the variants */
