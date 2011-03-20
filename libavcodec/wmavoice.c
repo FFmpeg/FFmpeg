@@ -36,8 +36,8 @@
 #include "acelp_filters.h"
 #include "lsp.h"
 #include "libavutil/lzo.h"
-#include "avfft.h"
-#include "fft.h"
+#include "dct.h"
+#include "rdft.h"
 #include "sinewin.h"
 
 #define MAX_BLOCKS           8   ///< maximum number of blocks per frame

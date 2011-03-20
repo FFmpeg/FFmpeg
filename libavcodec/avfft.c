@@ -19,6 +19,8 @@
 #include "libavutil/mem.h"
 #include "avfft.h"
 #include "fft.h"
+#include "rdft.h"
+#include "dct.h"
 
 /* FFT */
 

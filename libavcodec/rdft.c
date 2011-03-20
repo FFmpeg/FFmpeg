@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "libavutil/mathematics.h"
-#include "fft.h"
+#include "rdft.h"
 
 /**
  * @file

@@ -27,6 +27,8 @@
 #include "libavutil/lfg.h"
 #include "libavutil/log.h"
 #include "fft.h"
+#include "dct.h"
+#include "rdft.h"
 #include <math.h>
 #include <unistd.h>
 #include <sys/time.h>

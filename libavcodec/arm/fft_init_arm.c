@@ -19,6 +19,7 @@
  */
 
 #include "libavcodec/fft.h"
+#include "libavcodec/rdft.h"
 #include "libavcodec/synth_filter.h"
 
 void ff_fft_permute_neon(FFTContext *s, FFTComplex *z);
