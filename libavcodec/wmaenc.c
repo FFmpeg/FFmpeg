@@ -33,11 +33,17 @@ static int encode_init(AVCodecContext * avctx){
 
     s->avctx = avctx;
 
-    if(avctx->channels > MAX_CHANNELS)
-        return -1;
+    if(avctx->channels > MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR, "too many channels: got %i, need %i or fewer",
+               avctx->channels, MAX_CHANNELS);
+        return AVERROR(EINVAL);
+    }
 
-    if(avctx->bit_rate < 24*1000)
-        return -1;
+    if(avctx->bit_rate < 24*1000) {
+        av_log(avctx, AV_LOG_ERROR, "bitrate too low: got %i, need 24000 or higher\n",
+               avctx->bit_rate);
+        return AVERROR(EINVAL);
+    }
 
     /* extract flag infos */
     flags1 = 0;
