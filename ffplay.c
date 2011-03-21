@@ -2568,9 +2568,9 @@ static int decode_thread(void *arg)
         }
         ret = av_read_frame(ic, pkt);
         if (ret < 0) {
-            if (ret == AVERROR_EOF || ic->pb->eof_reached)
+            if (ret == AVERROR_EOF || (ic->pb && ic->pb->eof_reached))
                 eof=1;
-            if (ic->pb->error)
+            if (ic->pb && ic->pb->error)
                 break;
             SDL_Delay(100); /* wait for user event */
             continue;
