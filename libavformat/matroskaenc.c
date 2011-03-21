@@ -439,28 +439,15 @@ static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb, AVCodecContex
 static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int *sample_rate, int *output_sample_rate)
 {
     int sri;
+    MPEG4AudioConfig mp4ac;
 
-    if (codec->extradata_size < 2) {
-        av_log(s, AV_LOG_WARNING, "No AAC extradata, unable to determine samplerate.\n");
+    if (ff_mpeg4audio_get_config(&mp4ac, codec->extradata, codec->extradata_size) < 0) {
+        av_log(s, AV_LOG_WARNING, "Error parsing AAC extradata, unable to determine samplerate.\n");
         return;
     }
 
-    sri = ((codec->extradata[0] << 1) & 0xE) | (codec->extradata[1] >> 7);
-    if (sri > 12) {
-        av_log(s, AV_LOG_WARNING, "AAC samplerate index out of bounds\n");
-        return;
-    }
-    *sample_rate = ff_mpeg4audio_sample_rates[sri];
-
-    // if sbr, get output sample rate as well
-    if (codec->extradata_size == 5) {
-        sri = (codec->extradata[4] >> 3) & 0xF;
-        if (sri > 12) {
-            av_log(s, AV_LOG_WARNING, "AAC output samplerate index out of bounds\n");
-            return;
-        }
-        *output_sample_rate = ff_mpeg4audio_sample_rates[sri];
-    }
+    *sample_rate        = mp4ac.sample_rate;
+    *output_sample_rate = mp4ac.ext_sample_rate;
 }
 
 static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecContext *codec, int native_id, int qt_id)
