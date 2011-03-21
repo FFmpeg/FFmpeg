@@ -9,6 +9,7 @@ test_ref=$2
 raw_src_dir=$3
 target_exec=$4
 target_path=$5
+threads=${6:-1}
 
 datadir="./tests/data"
 target_datadir="${target_path}/${datadir}"
@@ -52,7 +53,7 @@ echov(){
 
 . $(dirname $0)/md5.sh
 
-FFMPEG_OPTS="-v 0 -y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
+FFMPEG_OPTS="-v 0 -threads $threads -y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
 
 run_ffmpeg()
 {

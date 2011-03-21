@@ -15,6 +15,7 @@ command=$5
 cmp=${6:-diff}
 ref=${7:-"${base}/ref/fate/${test}"}
 fuzz=$8
+threads=${9:-1}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -48,7 +49,7 @@ run(){
 }
 
 ffmpeg(){
-    run ffmpeg -v 0 "$@"
+    run ffmpeg -v 0 -threads $threads "$@"
 }
 
 framecrc(){
@@ -77,7 +78,7 @@ regtest(){
     cleanfiles="$cleanfiles $outfile $errfile"
     outfile=tests/data/regression/$2/$t
     errfile=tests/data/$t.$2.err
-    ${base}/${1}-regression.sh $t $2 $3 "$target_exec" "$target_path"
+    ${base}/${1}-regression.sh $t $2 $3 "$target_exec" "$target_path" "$threads"
 }
 
 codectest(){
