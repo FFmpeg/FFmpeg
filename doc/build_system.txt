@@ -1,37 +1,30 @@
 Libav currently uses a custom build system, this text attempts to document
 some of its obscure features and options.
 
-Options to make:
-make V=1 <target>
-    Build target with verbosity 1, instead of 1, 2 can be used too
-make SAMPLES=<path to the fate samples> <target>
-    specify the path to the fate samples at make time
+Makefile variables:
 
+V
+    Disable the default terse mode, the full command issued by make and its
+    output will be shown on the screen.
 
-Useful standard make commands:
-make -t <target>
-    Touch all files that otherwise would be build, this is useful to reduce
-    unneeded rebuilding when changing headers, but note you must force rebuilds
-    of files that actually need it by hand then.
+DESTDIR
+    Destination directory for the install targets, useful to prepare packages
+    or install Libav in cross-environments.
 
-make -j<num>
-    rebuild with multiple jobs at the same time. Faster on multi processor systems
+Makefile targets:
 
-make -k
-    continue build in case of errors, this is useful for the regression tests
-    sometimes but note it will still not run all reg tests.
+all
+    Default target, builds all the libraries and the executables.
 
+install
+    Install headers, libraries and programs.
 
-Targets to make:
-fate-list
-    Will list all fate/regression test targets
+libavformat/output-example
+    Build the libavformat basic example.
 
-fate
-    Run the fate test suite, note you must have installed it
+libavcodec/api-example
+    Build the libavcodec basic example.
 
+libswscale/swscale-test
+    Build the swscale self-test (useful also as example).
 
-Setting up local fate:
-use the following command to get the fate test samples
-rsync -aL rsync://rsync.mplayerhq.hu:/samples/fate-suite/ fate/fate-suite
-pass --samples=<path to the samples> to configure or pass the path with the
-SAMPLES variable to make
