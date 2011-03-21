@@ -29,6 +29,8 @@
 //#define DEBUG
 //#define ASSERT_LEVEL 2
 
+#include <stdint.h>
+
 #include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
@@ -39,6 +41,7 @@
 #include "ac3dsp.h"
 #include "ac3.h"
 #include "audioconvert.h"
+#include "fft.h"
 
 
 #ifndef CONFIG_AC3ENC_FLOAT
@@ -55,16 +58,22 @@
 #define AC3_REMATRIXING_NONE    1
 #define AC3_REMATRIXING_ALWAYS  3
 
-/** Scale a float value by 2^bits and convert to an integer. */
-#define SCALE_FLOAT(a, bits) lrintf((a) * (float)(1 << (bits)))
-
-
 #if CONFIG_AC3ENC_FLOAT
-#include "ac3enc_float.h"
+#define MAC_COEF(d,a,b) ((d)+=(a)*(b))
+typedef float SampleType;
+typedef float CoefType;
+typedef float CoefSumType;
 #else
-#include "ac3enc_fixed.h"
+#define MAC_COEF(d,a,b) MAC64(d,a,b)
+typedef int16_t SampleType;
+typedef int32_t CoefType;
+typedef int64_t CoefSumType;
 #endif
 
+typedef struct AC3MDCTContext {
+    const SampleType *window;           ///< MDCT window function
+    FFTContext fft;                     ///< FFT context for MDCT calculation
+} AC3MDCTContext;
 
 /**
  * Encoding Options used by AVOption.
@@ -279,8 +288,6 @@ static av_cold void mdct_end(AC3MDCTContext *mdct);
 static av_cold int mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
                              int nbits);
 
-static void mdct512(AC3MDCTContext *mdct, CoefType *out, SampleType *in);
-
 static void apply_window(DSPContext *dsp, SampleType *output, const SampleType *input,
                          const SampleType *window, unsigned int len);
 
@@ -386,7 +393,8 @@ static void apply_mdct(AC3EncodeContext *s)
 
             block->coeff_shift[ch] = normalize_samples(s);
 
-            mdct512(&s->mdct, block->mdct_coef[ch], s->windowed_samples);
+            s->mdct.fft.mdct_calcw(&s->mdct.fft, block->mdct_coef[ch],
+                                   s->windowed_samples);
         }
     }
 }
