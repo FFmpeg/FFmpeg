@@ -21,10 +21,14 @@
 
 #include <strings.h>
 #include "avformat.h"
+#include "avio_internal.h"
 #include "id3v1.h"
 #include "id3v2.h"
 #include "rawenc.h"
 #include "libavutil/avstring.h"
+#include "libavcodec/mpegaudio.h"
+#include "libavcodec/mpegaudiodata.h"
+#include "libavcodec/mpegaudiodecheader.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
@@ -128,15 +132,31 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
     return len + ID3v2_HEADER_SIZE;
 }
 
+typedef struct MP3Context {
+    const AVClass *class;
+    int id3v2_version;
+    int64_t nb_frames_offset;
+} MP3Context;
+
 static int mp3_write_trailer(struct AVFormatContext *s)
 {
     uint8_t buf[ID3v1_TAG_SIZE];
+    MP3Context *mp3 = s->priv_data;
 
     /* write the id3v1 tag */
     if (id3v1_create_tag(s, buf) > 0) {
         avio_write(s->pb, buf, ID3v1_TAG_SIZE);
-        avio_flush(s->pb);
     }
+
+    /* write number of frames */
+    if (mp3 && mp3->nb_frames_offset) {
+        avio_seek(s->pb, mp3->nb_frames_offset, SEEK_SET);
+        avio_wb32(s->pb, s->streams[0]->nb_frames);
+        avio_seek(s->pb, 0, SEEK_END);
+    }
+
+    avio_flush(s->pb);
+
     return 0;
 }
 
@@ -156,10 +176,6 @@ AVOutputFormat ff_mp2_muxer = {
 #endif
 
 #if CONFIG_MP3_MUXER
-typedef struct MP3Context {
-    const AVClass *class;
-    int id3v2_version;
-} MP3Context;
 
 static const AVOption options[] = {
     { "id3v2_version", "Select ID3v2 version to write. Currently 3 and 4 are supported.",
@@ -187,6 +203,52 @@ static int id3v2_check_write_tag(AVFormatContext *s, AVDictionaryEntry *t, const
         if (tag == AV_RB32(table[i]))
             return id3v2_put_ttag(s, t->value, NULL, tag, enc);
     return -1;
+}
+
+/* insert a dummy frame containing number of frames */
+static void mp3_write_xing(AVFormatContext *s)
+{
+    AVCodecContext *codec = s->streams[0]->codec;
+    MP3Context       *mp3 = s->priv_data;
+    int       bitrate_idx = 1;    // 32 kbps
+    int64_t   xing_offset = (codec->channels == 2) ? 32 : 17;
+    int32_t        header;
+    MPADecodeHeader  mpah;
+    int srate_idx, i, channels;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(ff_mpa_freq_tab); i++)
+        if (ff_mpa_freq_tab[i] == codec->sample_rate) {
+            srate_idx = i;
+            break;
+        }
+    if (i == FF_ARRAY_ELEMS(ff_mpa_freq_tab)) {
+        av_log(s, AV_LOG_ERROR, "Unsupported sample rate.\n");
+        return;
+    }
+
+    switch (codec->channels) {
+    case 1:  channels = MPA_MONO;                                          break;
+    case 2:  channels = MPA_STEREO;                                        break;
+    default: av_log(s, AV_LOG_ERROR, "Unsupported number of channels.\n"); return;
+    }
+
+    /* dummy MPEG audio header */
+    header  =  0xff                                  << 24; // sync
+    header |= (0x7 << 5 | 0x3 << 3 | 0x1 << 1 | 0x1) << 16; // sync/mpeg-1/layer 3/no crc*/
+    header |= (bitrate_idx << 4 | srate_idx << 2)    <<  8;
+    header |= channels << 6;
+    avio_wb32(s->pb, header);
+
+    ff_mpegaudio_decode_header(&mpah, header);
+
+    ffio_fill(s->pb, 0, xing_offset);
+    ffio_wfourcc(s->pb, "Xing");
+    avio_wb32(s->pb, 0x1);    // only number of frames
+    mp3->nb_frames_offset = avio_tell(s->pb);
+    avio_wb32(s->pb, 0);
+
+    mpah.frame_size -= 4 + xing_offset + 4 + 4 + 4;
+    ffio_fill(s->pb, 0, mpah.frame_size);
 }
 
 /**
@@ -236,6 +298,9 @@ static int mp3_write_header(struct AVFormatContext *s)
     avio_seek(s->pb, size_pos, SEEK_SET);
     id3v2_put_size(s, totlen);
     avio_seek(s->pb, cur_pos, SEEK_SET);
+
+    if (s->pb->seekable)
+        mp3_write_xing(s);
 
     return 0;
 }
