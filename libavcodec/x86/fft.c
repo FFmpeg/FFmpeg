@@ -18,6 +18,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavcodec/dsputil.h"
+#include "libavcodec/dct.h"
 #include "fft.h"
 
 av_cold void ff_fft_init_mmx(FFTContext *s)

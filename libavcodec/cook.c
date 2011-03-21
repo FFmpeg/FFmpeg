@@ -54,6 +54,7 @@
 #include "bytestream.h"
 #include "fft.h"
 #include "libavutil/audioconvert.h"
+#include "sinewin.h"
 
 #include "cookdata.h"
 
@@ -753,7 +754,7 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
     int i;
 
     /* Inverse modified discrete cosine transform */
-    ff_imdct_calc(&q->mdct_ctx, q->mono_mdct_output, inbuffer);
+    q->mdct_ctx.imdct_calc(&q->mdct_ctx, q->mono_mdct_output, inbuffer);
 
     q->imlt_window (q, buffer1, gains_ptr, previous_buffer);
 

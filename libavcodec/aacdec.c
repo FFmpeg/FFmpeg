@@ -87,6 +87,8 @@
 #include "fft.h"
 #include "fmtconvert.h"
 #include "lpc.h"
+#include "kbdwin.h"
+#include "sinewin.h"
 
 #include "aac.h"
 #include "aactab.h"
@@ -1750,7 +1752,7 @@ static void windowing_and_mdct_ltp(AACContext *ac, float *out,
         ac->dsp.vector_fmul_reverse(in + 1024 + 448, in + 1024 + 448, swindow, 128);
         memset(in + 1024 + 576, 0, 448 * sizeof(float));
     }
-    ff_mdct_calc(&ac->mdct_ltp, out, in);
+    ac->mdct_ltp.mdct_calc(&ac->mdct_ltp, out, in);
 }
 
 /**
@@ -1839,9 +1841,9 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
     // imdct
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         for (i = 0; i < 1024; i += 128)
-            ff_imdct_half(&ac->mdct_small, buf + i, in + i);
+            ac->mdct_small.imdct_half(&ac->mdct_small, buf + i, in + i);
     } else
-        ff_imdct_half(&ac->mdct, buf, in);
+        ac->mdct.imdct_half(&ac->mdct, buf, in);
 
     /* window overlapping
      * NOTE: To simplify the overlapping code, all 'meaningless' short to long

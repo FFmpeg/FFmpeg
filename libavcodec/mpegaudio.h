@@ -33,7 +33,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
-#include "fft.h"
+#include "dct.h"
 
 #define CONFIG_AUDIO_NONSHORT 0
 

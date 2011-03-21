@@ -27,6 +27,8 @@
 #include "libavutil/lfg.h"
 #include "libavutil/log.h"
 #include "fft.h"
+#include "dct.h"
+#include "rdft.h"
 #include <math.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -327,20 +329,20 @@ int main(int argc, char **argv)
     case TRANSFORM_MDCT:
         if (do_inverse) {
             imdct_ref((float *)tab_ref, (float *)tab1, fft_nbits);
-            ff_imdct_calc(m, tab2, (float *)tab1);
+            m->imdct_calc(m, tab2, (float *)tab1);
             err = check_diff((float *)tab_ref, tab2, fft_size, scale);
         } else {
             mdct_ref((float *)tab_ref, (float *)tab1, fft_nbits);
 
-            ff_mdct_calc(m, tab2, (float *)tab1);
+            m->mdct_calc(m, tab2, (float *)tab1);
 
             err = check_diff((float *)tab_ref, tab2, fft_size / 2, scale);
         }
         break;
     case TRANSFORM_FFT:
         memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
-        ff_fft_permute(s, tab);
-        ff_fft_calc(s, tab);
+        s->fft_permute(s, tab);
+        s->fft_calc(s, tab);
 
         fft_ref(tab_ref, tab1, fft_nbits);
         err = check_diff((float *)tab_ref, (float *)tab, fft_size * 2, 1.0);
@@ -357,7 +359,7 @@ int main(int argc, char **argv)
             memcpy(tab2, tab1, fft_size * sizeof(FFTSample));
             tab2[1] = tab1[fft_size_2].re;
 
-            ff_rdft_calc(r, tab2);
+            r->rdft_calc(r, tab2);
             fft_ref(tab_ref, tab1, fft_nbits);
             for (i = 0; i < fft_size; i++) {
                 tab[i].re = tab2[i];
@@ -369,7 +371,7 @@ int main(int argc, char **argv)
                 tab2[i]    = tab1[i].re;
                 tab1[i].im = 0;
             }
-            ff_rdft_calc(r, tab2);
+            r->rdft_calc(r, tab2);
             fft_ref(tab_ref, tab1, fft_nbits);
             tab_ref[0].im = tab_ref[fft_size_2].re;
             err = check_diff((float *)tab_ref, (float *)tab2, fft_size, 1.0);
@@ -377,7 +379,7 @@ int main(int argc, char **argv)
         break;
     case TRANSFORM_DCT:
         memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
-        ff_dct_calc(d, tab);
+        d->dct_calc(d, tab);
         if (do_inverse) {
             idct_ref(tab_ref, tab1, fft_nbits);
         } else {
@@ -402,22 +404,22 @@ int main(int argc, char **argv)
                 switch (transform) {
                 case TRANSFORM_MDCT:
                     if (do_inverse) {
-                        ff_imdct_calc(m, (float *)tab, (float *)tab1);
+                        m->imdct_calc(m, (float *)tab, (float *)tab1);
                     } else {
-                        ff_mdct_calc(m, (float *)tab, (float *)tab1);
+                        m->mdct_calc(m, (float *)tab, (float *)tab1);
                     }
                     break;
                 case TRANSFORM_FFT:
                     memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
-                    ff_fft_calc(s, tab);
+                    s->fft_calc(s, tab);
                     break;
                 case TRANSFORM_RDFT:
                     memcpy(tab2, tab1, fft_size * sizeof(FFTSample));
-                    ff_rdft_calc(r, tab2);
+                    r->rdft_calc(r, tab2);
                     break;
                 case TRANSFORM_DCT:
                     memcpy(tab2, tab1, fft_size * sizeof(FFTSample));
-                    ff_dct_calc(d, tab2);
+                    d->dct_calc(d, tab2);
                     break;
                 }
             }

@@ -32,7 +32,8 @@
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "dsputil.h"
-#include "fft.h"
+#include "dct.h"
+#include "rdft.h"
 #include "fmtconvert.h"
 #include "libavutil/intfloat_readwrite.h"
 
@@ -223,11 +224,11 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
 
         if (CONFIG_BINKAUDIO_DCT_DECODER && use_dct) {
             coeffs[0] /= 0.5;
-            ff_dct_calc (&s->trans.dct,  coeffs);
+            s->trans.dct.dct_calc(&s->trans.dct,  coeffs);
             s->dsp.vector_fmul_scalar(coeffs, coeffs, s->frame_len / 2, s->frame_len);
         }
         else if (CONFIG_BINKAUDIO_RDFT_DECODER)
-            ff_rdft_calc(&s->trans.rdft, coeffs);
+            s->trans.rdft.rdft_calc(&s->trans.rdft, coeffs);
     }
 
     s->fmt_conv.float_to_int16_interleave(out, (const float **)s->coeffs_ptr,

@@ -36,6 +36,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "sinewin.h"
 
 #include "atrac.h"
 #include "atrac1data.h"
@@ -99,7 +100,7 @@ static void at1_imdct(AT1Ctx *q, float *spec, float *out, int nbits,
         for (i = 0; i < transf_size / 2; i++)
             FFSWAP(float, spec[i], spec[transf_size - 1 - i]);
     }
-    ff_imdct_half(mdct_context, out, spec);
+    mdct_context->imdct_half(mdct_context, out, spec);
 }
 
 

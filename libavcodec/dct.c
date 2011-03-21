@@ -29,8 +29,7 @@
 
 #include <math.h>
 #include "libavutil/mathematics.h"
-#include "fft.h"
-#include "x86/fft.h"
+#include "dct.h"
 
 #define DCT32_FLOAT
 #include "dct32.c"
@@ -59,7 +58,7 @@ static void ff_dst_calc_I_c(DCTContext *ctx, FFTSample *data)
     }
 
     data[n/2] *= 2;
-    ff_rdft_calc(&ctx->rdft, data);
+    ctx->rdft.rdft_calc(&ctx->rdft, data);
 
     data[0] *= 0.5f;
 
@@ -93,7 +92,7 @@ static void ff_dct_calc_I_c(DCTContext *ctx, FFTSample *data)
         data[n - i] = tmp1 + s;
     }
 
-    ff_rdft_calc(&ctx->rdft, data);
+    ctx->rdft.rdft_calc(&ctx->rdft, data);
     data[n] = data[1];
     data[1] = next;
 
@@ -121,7 +120,7 @@ static void ff_dct_calc_III_c(DCTContext *ctx, FFTSample *data)
 
     data[1] = 2 * next;
 
-    ff_rdft_calc(&ctx->rdft, data);
+    ctx->rdft.rdft_calc(&ctx->rdft, data);
 
     for (i = 0; i < n / 2; i++) {
         float tmp1 = data[i        ] * inv_n;
@@ -152,7 +151,7 @@ static void ff_dct_calc_II_c(DCTContext *ctx, FFTSample *data)
         data[n-i-1] = tmp1 - s;
     }
 
-    ff_rdft_calc(&ctx->rdft, data);
+    ctx->rdft.rdft_calc(&ctx->rdft, data);
 
     next = data[1] * 0.5;
     data[1] *= -1;
@@ -174,11 +173,6 @@ static void ff_dct_calc_II_c(DCTContext *ctx, FFTSample *data)
 static void dct32_func(DCTContext *ctx, FFTSample *data)
 {
     ctx->dct32(data, data);
-}
-
-void ff_dct_calc(DCTContext *s, FFTSample *data)
-{
-    s->dct_calc(s, data);
 }
 
 av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)

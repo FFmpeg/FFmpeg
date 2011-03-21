@@ -19,6 +19,8 @@
 #include "libavutil/mem.h"
 #include "avfft.h"
 #include "fft.h"
+#include "rdft.h"
+#include "dct.h"
 
 /* FFT */
 
@@ -101,7 +103,7 @@ RDFTContext *av_rdft_init(int nbits, enum RDFTransformType trans)
 
 void av_rdft_calc(RDFTContext *s, FFTSample *data)
 {
-    ff_rdft_calc(s, data);
+    s->rdft_calc(s, data);
 }
 
 void av_rdft_end(RDFTContext *s)
@@ -128,7 +130,7 @@ DCTContext *av_dct_init(int nbits, enum DCTTransformType inverse)
 
 void av_dct_calc(DCTContext *s, FFTSample *data)
 {
-    ff_dct_calc(s, data);
+    s->dct_calc(s, data);
 }
 
 void av_dct_end(DCTContext *s)

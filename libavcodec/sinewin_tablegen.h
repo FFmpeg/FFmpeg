@@ -1,5 +1,5 @@
 /*
- * Header file for hardcoded MDCT tables
+ * Header file for hardcoded sine windows
  *
  * Copyright (c) 2009 Reimar Döffinger <Reimar.Doeffinger@gmx.de>
  *
@@ -36,7 +36,7 @@ SINETABLE(1024);
 SINETABLE(2048);
 SINETABLE(4096);
 #else
-#include "libavcodec/mdct_tables.h"
+#include "libavcodec/sinewin_tables.h"
 #endif
 
 SINETABLE_CONST float * const ff_sine_windows[] = {

@@ -447,6 +447,7 @@ static int wma_decode_block(WMACodecContext *s)
     int coef_nb_bits, total_gain;
     int nb_coefs[MAX_CHANNELS];
     float mdct_norm;
+    FFTContext *mdct;
 
 #ifdef TRACE
     tprintf(s->avctx, "***decode_block: %d:%d\n", s->frame_count - 1, s->block_num);
@@ -742,12 +743,14 @@ static int wma_decode_block(WMACodecContext *s)
     }
 
 next:
+    mdct = &s->mdct_ctx[bsize];
+
     for(ch = 0; ch < s->nb_channels; ch++) {
         int n4, index;
 
         n4 = s->block_len / 2;
         if(s->channel_coded[ch]){
-            ff_imdct_calc(&s->mdct_ctx[bsize], s->output, s->coefs[ch]);
+            mdct->imdct_calc(mdct, s->output, s->coefs[ch]);
         }else if(!(s->ms_stereo && ch==1))
             memset(s->output, 0, sizeof(s->output));
 

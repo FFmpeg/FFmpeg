@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "sinewin.h"
 #include "wma.h"
 #include "wmadata.h"
 

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "libavutil/mathematics.h"
-#include "fft.h"
+#include "rdft.h"
 
 /**
  * @file
@@ -65,8 +65,8 @@ static void ff_rdft_calc_c(RDFTContext* s, FFTSample* data)
     const FFTSample *tsin = s->tsin;
 
     if (!s->inverse) {
-        ff_fft_permute(&s->fft, (FFTComplex*)data);
-        ff_fft_calc(&s->fft, (FFTComplex*)data);
+        s->fft.fft_permute(&s->fft, (FFTComplex*)data);
+        s->fft.fft_calc(&s->fft, (FFTComplex*)data);
     }
     /* i=0 is a special case because of packing, the DC term is real, so we
        are going to throw the N/2 term (also real) in with it. */
@@ -91,8 +91,8 @@ static void ff_rdft_calc_c(RDFTContext* s, FFTSample* data)
     if (s->inverse) {
         data[0] *= k1;
         data[1] *= k1;
-        ff_fft_permute(&s->fft, (FFTComplex*)data);
-        ff_fft_calc(&s->fft, (FFTComplex*)data);
+        s->fft.fft_permute(&s->fft, (FFTComplex*)data);
+        s->fft.fft_calc(&s->fft, (FFTComplex*)data);
     }
 }
 

@@ -28,6 +28,7 @@
 
 #define CONFIG_AC3ENC_FLOAT 1
 #include "ac3enc.c"
+#include "kbdwin.h"
 
 
 /**
@@ -74,7 +75,7 @@ static av_cold int mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
  */
 static void mdct512(AC3MDCTContext *mdct, float *out, float *in)
 {
-    ff_mdct_calc(&mdct->fft, out, in);
+    mdct->fft.mdct_calc(&mdct->fft, out, in);
 }
 
 

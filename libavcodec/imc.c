@@ -41,6 +41,7 @@
 #include "dsputil.h"
 #include "fft.h"
 #include "libavutil/audioconvert.h"
+#include "sinewin.h"
 
 #include "imcdata.h"
 
@@ -564,8 +565,8 @@ static void imc_imdct256(IMCContext *q) {
     }
 
     /* FFT */
-    ff_fft_permute(&q->fft, q->samples);
-    ff_fft_calc (&q->fft, q->samples);
+    q->fft.fft_permute(&q->fft, q->samples);
+    q->fft.fft_calc   (&q->fft, q->samples);
 
     /* postrotation, window and reorder */
     for(i = 0; i < COEFFS/2; i++){

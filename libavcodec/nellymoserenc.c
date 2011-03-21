@@ -39,6 +39,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "sinewin.h"
 
 #define BITSTREAM_WRITER_LE
 #include "put_bits.h"
@@ -116,13 +117,13 @@ static void apply_mdct(NellyMoserEncodeContext *s)
     s->dsp.vector_fmul(s->in_buff, s->buf[s->bufsel], ff_sine_128, NELLY_BUF_LEN);
     s->dsp.vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, s->buf[s->bufsel] + NELLY_BUF_LEN, ff_sine_128,
                                NELLY_BUF_LEN);
-    ff_mdct_calc(&s->mdct_ctx, s->mdct_out, s->in_buff);
+    s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out, s->in_buff);
 
     s->dsp.vector_fmul(s->buf[s->bufsel] + NELLY_BUF_LEN, s->buf[s->bufsel] + NELLY_BUF_LEN,
                        ff_sine_128, NELLY_BUF_LEN);
     s->dsp.vector_fmul_reverse(s->buf[s->bufsel] + 2 * NELLY_BUF_LEN, s->buf[1 - s->bufsel], ff_sine_128,
                                NELLY_BUF_LEN);
-    ff_mdct_calc(&s->mdct_ctx, s->mdct_out + NELLY_BUF_LEN, s->buf[s->bufsel] + NELLY_BUF_LEN);
+    s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out + NELLY_BUF_LEN, s->buf[s->bufsel] + NELLY_BUF_LEN);
 }
 
 static av_cold int encode_init(AVCodecContext *avctx)

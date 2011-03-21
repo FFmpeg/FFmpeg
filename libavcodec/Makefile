@@ -43,6 +43,7 @@ OBJS-$(CONFIG_LSP)                     += lsp.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
 RDFT-OBJS-$(CONFIG_HARDCODED_TABLES)   += sin_tables.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o $(RDFT-OBJS-yes)
+OBJS-$(CONFIG_SINEWIN)                 += sinewin.o
 OBJS-$(CONFIG_VAAPI)                   += vaapi.o
 OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 
@@ -50,14 +51,14 @@ OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 OBJS-$(CONFIG_A64MULTI_ENCODER)        += a64multienc.o elbg.o
 OBJS-$(CONFIG_A64MULTI5_ENCODER)       += a64multienc.o elbg.o
 OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o aacsbr.o aacps.o \
-                                          aacadtsdec.o mpeg4audio.o
+                                          aacadtsdec.o mpeg4audio.o kbdwin.o
 OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o    \
                                           aacpsy.o aactab.o      \
                                           psymodel.o iirfilter.o \
-                                          mpeg4audio.o
+                                          mpeg4audio.o kbdwin.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
 OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3dec_data.o ac3.o
-OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc_float.o ac3tab.o ac3.o
+OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc_float.o ac3tab.o ac3.o kbdwin.o
 OBJS-$(CONFIG_AC3_FIXED_ENCODER)       += ac3enc_fixed.o ac3tab.o ac3.o
 OBJS-$(CONFIG_ALAC_DECODER)            += alac.o
 OBJS-$(CONFIG_ALAC_ENCODER)            += alacenc.o
@@ -694,7 +695,7 @@ $(SUBDIR)%_tablegen$(HOSTEXESUF): $(SUBDIR)%_tablegen.c $(SUBDIR)%_tablegen.h $(
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $(filter %.c,$^) $(HOSTLIBS)
 
 GEN_HEADERS = cbrt_tables.h aacps_tables.h aac_tables.h dv_tables.h     \
-              mdct_tables.h mpegaudio_tables.h motionpixels_tables.h    \
+              sinewin_tables.h mpegaudio_tables.h motionpixels_tables.h \
               pcm_tables.h qdm2_tables.h
 GEN_HEADERS := $(addprefix $(SUBDIR), $(GEN_HEADERS))
 
@@ -706,7 +707,7 @@ $(SUBDIR)aacdec.o: $(SUBDIR)cbrt_tables.h
 $(SUBDIR)aacps.o: $(SUBDIR)aacps_tables.h
 $(SUBDIR)aactab.o: $(SUBDIR)aac_tables.h
 $(SUBDIR)dv.o: $(SUBDIR)dv_tables.h
-$(SUBDIR)mdct.o: $(SUBDIR)mdct_tables.h
+$(SUBDIR)sinewin.o: $(SUBDIR)sinewin_tables.h
 $(SUBDIR)mpegaudiodec.o: $(SUBDIR)mpegaudio_tables.h
 $(SUBDIR)mpegaudiodec_float.o: $(SUBDIR)mpegaudio_tables.h
 $(SUBDIR)motionpixels.o: $(SUBDIR)motionpixels_tables.h
