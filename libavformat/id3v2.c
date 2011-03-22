@@ -279,10 +279,6 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         avio_seek(s->pb, next, SEEK_SET);
     }
 
-    if (len > 0) {
-        /* Skip padding */
-        avio_skip(s->pb, len);
-    }
     if (version == 4 && flags & 0x10) /* Footer preset, always 10 bytes, skip over it */
         end += 10;
 
