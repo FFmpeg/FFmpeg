@@ -74,8 +74,13 @@ int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt);
  * format sample_fmt.
  *
  * The pointers array is filled with the pointers to the samples data:
- * data[c] points to the first sample of channel c.
- * data[c] + linesize[0] points to the second sample of channel c
+ * for planar, set the start point of each plane's data within the buffer,
+ * for packed, set the start point of the entire buffer only.
+ *
+ * The linesize array is filled with the aligned size of each samples
+ * plane, that is linesize[i] will contain the linesize of the plane i,
+ * and will be zero for all the unused planes. All linesize values are
+ * equal.
  *
  * @param pointers array to be filled with the pointer for each plane, may be NULL
  * @param linesizes array to be filled with the linesize, may be NULL
