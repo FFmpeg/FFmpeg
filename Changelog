@@ -1,6 +1,11 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.6.3:
+
+- fix compilation with --enable-hardcoded-tables
+
+
 version 0.6.2:
 
 - Fix invalid reads in VC-1 decoding (related to CVE-2011-0723)
