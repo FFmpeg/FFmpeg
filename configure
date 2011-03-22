@@ -2407,7 +2407,7 @@ case $target_os in
             enable malloc_aligned
             LIBTARGET="i386:x86-64"
         elif enabled arm; then
-            LIBTARGET=arm
+            LIBTARGET=arm-wince
         fi
         shlibdir_default="$bindir_default"
         disable ffserver
