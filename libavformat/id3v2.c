@@ -237,11 +237,11 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             tag[3] = 0;
             tlen = avio_rb24(s->pb);
         }
-        len -= taghdrlen + tlen;
-
-        if (len < 0)
+        if (tlen < 0 || tlen > len - taghdrlen) {
+            av_log(s, AV_LOG_WARNING, "Invalid size in frame %s, skipping the rest of tag.\n", tag);
             break;
-
+        }
+        len -= taghdrlen + tlen;
         next = avio_tell(s->pb) + tlen;
 
         if (tflags & ID3v2_FLAG_DATALEN) {
