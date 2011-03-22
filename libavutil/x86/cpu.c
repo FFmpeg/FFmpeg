@@ -135,8 +135,8 @@ int ff_get_cpu_flags_x86(void)
         }
     }
 
-    if (!strncmp(vendor.c, "GenuineIntel", 12) &&
-        family == 6 && (model == 9 || model == 13 || model == 14)) {
+    if (!strncmp(vendor.c, "GenuineIntel", 12)) {
+        if (family == 6 && (model == 9 || model == 13 || model == 14)) {
         /* 6/9 (pentium-m "banias"), 6/13 (pentium-m "dothan"), and 6/14 (core1 "yonah")
          * theoretically support sse2, but it's usually slower than mmx,
          * so let's just pretend they don't. AV_CPU_FLAG_SSE2 is disabled and
@@ -145,6 +145,14 @@ int ff_get_cpu_flags_x86(void)
          * situation applies for AV_CPU_FLAG_SSE3 and AV_CPU_FLAG_SSE3SLOW. */
         if (rval & AV_CPU_FLAG_SSE2) rval ^= AV_CPU_FLAG_SSE2SLOW|AV_CPU_FLAG_SSE2;
         if (rval & AV_CPU_FLAG_SSE3) rval ^= AV_CPU_FLAG_SSE3SLOW|AV_CPU_FLAG_SSE3;
+        }
+        /* The Atom processor has SSSE3 support, which is useful in many cases,
+         * but sometimes the SSSE3 version is slower than the SSE2 equivalent
+         * on the Atom, but is generally faster on other processors supporting
+         * SSSE3. This flag allows for selectively disabling certain SSSE3
+         * functions on the Atom. */
+        if (family == 6 && model == 28)
+            rval |= AV_CPU_FLAG_ATOM;
     }
 
     return rval;
