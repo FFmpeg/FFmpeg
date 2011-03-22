@@ -1314,6 +1314,11 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
 
     /* copy input buffer to decoder context to avoid reading past the end
        of the buffer, which can be caused by a damaged input stream. */
+    if (buf_size >= 2 && AV_RB16(buf) == 0x770B) {
+        // seems to be byte-swapped AC-3
+        int cnt = FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE) >> 1;
+        s->dsp.bswap16_buf((uint16_t *)s->input_buffer, (const uint16_t *)buf, cnt);
+    } else
         memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
     buf = s->input_buffer;
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
