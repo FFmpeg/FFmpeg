@@ -209,11 +209,9 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     s->downmixed = 1;
 
     /* allocate context input buffer */
-    if (avctx->error_recognition >= FF_ER_CAREFUL) {
         s->input_buffer = av_mallocz(AC3_FRAME_BUFFER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!s->input_buffer)
             return AVERROR(ENOMEM);
-    }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     return 0;
@@ -1314,15 +1312,12 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     const uint8_t *channel_map;
     const float *output[AC3_MAX_CHANNELS];
 
-    /* initialize the GetBitContext with the start of valid AC-3 Frame */
-    if (s->input_buffer) {
         /* copy input buffer to decoder context to avoid reading past the end
            of the buffer, which can be caused by a damaged input stream. */
         memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
-        init_get_bits(&s->gbc, s->input_buffer, buf_size * 8);
-    } else {
+    buf = s->input_buffer;
+    /* initialize the GetBitContext with the start of valid AC-3 Frame */
         init_get_bits(&s->gbc, buf, buf_size * 8);
-    }
 
     /* parse the syncinfo */
     *data_size = 0;
