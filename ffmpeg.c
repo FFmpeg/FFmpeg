@@ -69,7 +69,7 @@
 #include <sys/select.h>
 #endif
 
-#if HAVE_CONIO_H
+#if HAVE_KBHIT
 #include <conio.h>
 #endif
 #include <time.h>
@@ -435,7 +435,7 @@ static void term_init(void)
 /* read a key without blocking */
 static int read_key(void)
 {
-#if HAVE_CONIO_H
+#if HAVE_KBHIT
     if(kbhit())
         return(getch());
 #endif
@@ -2437,7 +2437,7 @@ static int transcode(AVFormatContext **output_files,
     }
 
     if (!using_stdin && verbose >= 0) {
-#if HAVE_CONIO_H
+#if HAVE_KBHIT
         fprintf(stderr, "Press [q] to stop encoding\n");
 #else
         fprintf(stderr, "Press ctrl-c to stop encoding\n");
