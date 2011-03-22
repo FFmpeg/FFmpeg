@@ -492,8 +492,10 @@ typedef struct DSPContext {
 #define BASIS_SHIFT 16
 #define RECON_SHIFT 6
 
-    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w);
+    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w, int sides);
 #define EDGE_WIDTH 16
+#define EDGE_TOP    1
+#define EDGE_BOTTOM 2
 
     void (*prefetch)(void *mem, int stride, int h);
 

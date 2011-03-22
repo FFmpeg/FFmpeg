@@ -392,9 +392,9 @@ typedef struct H264Context{
     /**
      * num_ref_idx_l0/1_active_minus1 + 1
      */
+    uint8_t *list_counts;            ///< Array of list_count per MB specifying the slice type
     unsigned int ref_count[2];   ///< counts frames or fields, depending on current mb mode
     unsigned int list_count;
-    uint8_t *list_counts;            ///< Array of list_count per MB specifying the slice type
     Picture ref_list[2][48];         /**< 0..15: frame refs, 16..47: mbaff field refs.
                                           Reordered version of default_ref_list
                                           according to picture reordering in slice header */
@@ -504,7 +504,9 @@ typedef struct H264Context{
     Picture *long_ref[32];
     Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
     Picture *delayed_pic[MAX_DELAYED_PIC_COUNT+2]; //FIXME size?
+    Picture *next_output_pic;
     int outputed_poc;
+    int next_outputed_poc;
 
     /**
      * memory management control operations buffer.

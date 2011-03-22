@@ -35,6 +35,7 @@
 #include "mpeg4video_parser.h"
 #include "msmpeg4.h"
 #include "vdpau_internal.h"
+#include "thread.h"
 #include "flv.h"
 #include "mpeg4video.h"
 
@@ -235,6 +236,7 @@ static int decode_slice(MpegEncContext *s){
                     if(++s->mb_x >= s->mb_width){
                         s->mb_x=0;
                         ff_draw_horiz_band(s, s->mb_y*mb_size, mb_size);
+                        MPV_report_decode_progress(s);
                         s->mb_y++;
                     }
                     return 0;
@@ -255,6 +257,7 @@ static int decode_slice(MpegEncContext *s){
         }
 
         ff_draw_horiz_band(s, s->mb_y*mb_size, mb_size);
+        MPV_report_decode_progress(s);
 
         s->mb_x= 0;
     }
@@ -638,6 +641,8 @@ retry:
 
     if(MPV_frame_start(s, avctx) < 0)
         return -1;
+
+    if (!s->divx_packed) ff_thread_finish_setup(avctx);
 
     if (CONFIG_MPEG4_VDPAU_DECODER && (s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)) {
         ff_vdpau_mpeg4_decode_picture(s, s->gb.buffer, s->gb.buffer_end - s->gb.buffer);

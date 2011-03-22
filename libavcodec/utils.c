@@ -366,6 +366,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
     assert(pic->type==FF_BUFFER_TYPE_INTERNAL);
     assert(s->internal_buffer_count);
 
+    if(s->internal_buffer){
     buf = NULL; /* avoids warning */
     for(i=0; i<s->internal_buffer_count; i++){ //just 3-5 checks so is not worth to optimize
         buf= &((InternalBuffer*)s->internal_buffer)[i];
@@ -377,6 +378,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
     last = &((InternalBuffer*)s->internal_buffer)[s->internal_buffer_count];
 
     FFSWAP(InternalBuffer, *buf, *last);
+    }
 
     for(i=0; i<4; i++){
         pic->data[i]=NULL;
@@ -572,6 +574,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
             goto free_and_end;
         }
     }
+
     ret=0;
 end:
     entangled_thread_counter--;
@@ -1298,9 +1301,9 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
 unsigned int ff_toupper4(unsigned int x)
 {
     return     toupper( x     &0xFF)
-            + (toupper((x>>8 )&0xFF)<<8 )
-            + (toupper((x>>16)&0xFF)<<16)
-            + (toupper((x>>24)&0xFF)<<24);
+    + (toupper((x>>8 )&0xFF)<<8 )
+    + (toupper((x>>16)&0xFF)<<16)
+    + (toupper((x>>24)&0xFF)<<24);
 }
 
 #if !HAVE_PTHREADS

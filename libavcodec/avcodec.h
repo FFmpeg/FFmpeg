@@ -725,10 +725,12 @@ typedef struct RcOverride{
  * Codec should fill in channel configuration and samplerate instead of container
  */
 #define CODEC_CAP_CHANNEL_CONF     0x0400
+
 /**
  * Codec is able to deal with negative linesizes
  */
 #define CODEC_CAP_NEG_LINESIZES    0x0800
+
 /**
  * Codec supports frame-level multithreading.
  */
@@ -2983,7 +2985,9 @@ typedef struct AVCodec {
     const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
     const int64_t *channel_layouts;         ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
     uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
+
     AVClass *priv_class;                    ///< AVClass for the private context
+
     const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
 
     /**
