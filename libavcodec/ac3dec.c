@@ -1312,12 +1312,12 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     const uint8_t *channel_map;
     const float *output[AC3_MAX_CHANNELS];
 
-        /* copy input buffer to decoder context to avoid reading past the end
-           of the buffer, which can be caused by a damaged input stream. */
+    /* copy input buffer to decoder context to avoid reading past the end
+       of the buffer, which can be caused by a damaged input stream. */
         memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
     buf = s->input_buffer;
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
-        init_get_bits(&s->gbc, buf, buf_size * 8);
+    init_get_bits(&s->gbc, buf, buf_size * 8);
 
     /* parse the syncinfo */
     *data_size = 0;
