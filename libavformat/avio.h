@@ -416,7 +416,7 @@ attribute_deprecated void         put_tag(AVIOContext *s, const char *tag);
  */
 
 attribute_deprecated int     av_url_read_fpause(AVIOContext *h,    int pause);
-attribute_deprecated int64_t av_url_read_fseek( AVIOContext *h,    int stream_index,
+attribute_deprecated int64_t av_url_read_fseek (AVIOContext *h,    int stream_index,
                                                 int64_t timestamp, int flags);
 
 /**
