@@ -2442,8 +2442,6 @@ case $target_os in
         check_cflags -fno-common
         ;;
     *-dos|freedos|opendos)
-        disable ffplay
-        disable $INDEV_LIST $OUTDEV_LIST
         network_extralibs="-lsocket"
         objformat="coff"
         enable dos_paths
