@@ -103,8 +103,7 @@ static int rtsp_write_record(AVFormatContext *s)
     char cmd[1024];
 
     snprintf(cmd, sizeof(cmd),
-             "Range: npt=%0.3f-\r\n",
-             (double) 0);
+             "Range: npt=0.000-\r\n");
     ff_rtsp_send_cmd(s, "RECORD", rt->control_uri, cmd, reply, NULL);
     if (reply->status_code != RTSP_STATUS_OK)
         return -1;
