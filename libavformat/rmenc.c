@@ -436,7 +436,7 @@ static int rm_write_trailer(AVFormatContext *s)
 
     if (!url_is_streamed(s->pb)) {
         /* end of file: finish to write header */
-        index_pos = avio_seek(pb, 0, SEEK_CUR);
+        index_pos = avio_tell(pb);
         data_size = index_pos - rm->data_pos;
 
         /* FIXME: write index */

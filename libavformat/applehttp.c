@@ -496,7 +496,8 @@ static int applehttp_read_seek(AVFormatContext *s, int stream_index,
                                int64_t timestamp, int flags)
 {
     AppleHTTPContext *c = s->priv_data;
-    int pos = 0, i;
+    int64_t pos = 0;
+    int i;
     struct variant *var = c->variants[0];
 
     if ((flags & AVSEEK_FLAG_BYTE) || !c->finished)

@@ -99,7 +99,6 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse);
 void ff_fft_init_altivec(FFTContext *s);
 void ff_fft_init_mmx(FFTContext *s);
 void ff_fft_init_arm(FFTContext *s);
-void ff_dct_init_mmx(DCTContext *s);
 
 void ff_fft_end(FFTContext *s);
 

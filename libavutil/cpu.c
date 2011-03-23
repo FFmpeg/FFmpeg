@@ -58,6 +58,7 @@ int main(void)
            cpu_flags & AV_CPU_FLAG_SSE3     ? "SSE3 "       : "",
            cpu_flags & AV_CPU_FLAG_SSE3SLOW ? "SSE3(slow) " : "",
            cpu_flags & AV_CPU_FLAG_SSSE3    ? "SSSE3 "      : "",
+           cpu_flags & AV_CPU_FLAG_ATOM     ? "Atom "       : "",
            cpu_flags & AV_CPU_FLAG_SSE4     ? "SSE4.1 "     : "",
            cpu_flags & AV_CPU_FLAG_SSE42    ? "SSE4.2 "     : "",
            cpu_flags & AV_CPU_FLAG_AVX      ? "AVX "        : "",

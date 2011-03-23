@@ -28,6 +28,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "flv.h"
 
 typedef struct {
@@ -461,7 +462,7 @@ leave:
 static int flv_read_seek(AVFormatContext *s, int stream_index,
     int64_t ts, int flags)
 {
-    return av_url_read_fseek(s->pb, stream_index, ts, flags);
+    return ffio_read_seek(s->pb, stream_index, ts, flags);
 }
 
 #if 0 /* don't know enough to implement this */
@@ -482,7 +483,7 @@ static int flv_read_seek2(AVFormatContext *s, int stream_index,
             ts = av_rescale_rnd(ts, 1000, AV_TIME_BASE,
                 flags & AVSEEK_FLAG_BACKWARD ? AV_ROUND_DOWN : AV_ROUND_UP);
         }
-        ret = av_url_read_fseek(s->pb, stream_index, ts, flags);
+        ret = ffio_read_seek(s->pb, stream_index, ts, flags);
     }
 
     if (ret == AVERROR(ENOSYS))

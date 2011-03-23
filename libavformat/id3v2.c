@@ -187,9 +187,9 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
     int isv34, unsync;
     unsigned tlen;
     char tag[5];
-    int64_t next;
+    int64_t next, end = avio_tell(s->pb) + len;
     int taghdrlen;
-    const char *reason;
+    const char *reason = NULL;
     AVIOContext pb;
     unsigned char *buffer = NULL;
     int buffer_size = 0;
@@ -282,20 +282,15 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         avio_seek(s->pb, next, SEEK_SET);
     }
 
-    if (len > 0) {
-        /* Skip padding */
-        avio_skip(s->pb, len);
-    }
     if (version == 4 && flags & 0x10) /* Footer preset, always 10 bytes, skip over it */
-        avio_skip(s->pb, 10);
-
-    av_free(buffer);
-    return;
+        end += 10;
 
   error:
-    av_log(s, AV_LOG_INFO, "ID3v2.%d tag skipped, cannot handle %s\n", version, reason);
-    avio_seek(s->pb, len, SEEK_CUR);
+    if (reason)
+        av_log(s, AV_LOG_INFO, "ID3v2.%d tag skipped, cannot handle %s\n", version, reason);
+    avio_seek(s->pb, end, SEEK_SET);
     av_free(buffer);
+    return;
 }
 
 void ff_id3v2_read(AVFormatContext *s, const char *magic)

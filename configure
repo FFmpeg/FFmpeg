@@ -1040,7 +1040,6 @@ HAVE_LIST="
     bswap
     closesocket
     cmov
-    conio_h
     dcbzl
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
@@ -1070,6 +1069,7 @@ HAVE_LIST="
     inet_aton
     inline_asm
     isatty
+    kbhit
     ldbrx
     libdc1394_1
     libdc1394_2
@@ -1118,7 +1118,6 @@ HAVE_LIST="
     sys_soundcard_h
     sys_videoio_h
     ten_operands
-    termios_h
     threads
     truncf
     vfp_args
@@ -2423,7 +2422,7 @@ case $target_os in
         LIBTARGET=i386
         if enabled x86_64; then
             enable malloc_aligned
-            LIBTARGET=x64
+            LIBTARGET="i386:x86-64"
         elif enabled arm; then
             LIBTARGET=arm
         fi
@@ -2433,7 +2432,7 @@ case $target_os in
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
-        SLIB_EXTRA_CMD=-'$(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)'
+        SLIB_EXTRA_CMD=-'$(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) -D $(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_EXTRA_CMD='-install -m 644 $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"; \
             install -m 644 $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)"; \
             install -d "$(LIBDIR)"; \
@@ -2794,6 +2793,7 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func  setrlimit
 check_func  strerror_r
 check_func  strtok_r
+check_func_headers conio.h kbhit
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
@@ -2801,7 +2801,6 @@ check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h VirtualAlloc
 
-check_header conio.h
 check_header dlfcn.h
 check_header dxva2api.h
 check_header libcrystalhd/libcrystalhd_if.h
@@ -2810,7 +2809,6 @@ check_header poll.h
 check_header sys/mman.h
 check_header sys/resource.h
 check_header sys/select.h
-check_header termios.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
 check_header X11/extensions/XvMClib.h

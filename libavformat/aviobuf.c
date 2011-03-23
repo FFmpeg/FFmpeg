@@ -406,6 +406,15 @@ void put_flush_packet(AVIOContext *s)
 {
     avio_flush(s);
 }
+int av_url_read_fpause(AVIOContext *s, int pause)
+{
+    return ffio_read_pause(s, pause);
+}
+int64_t av_url_read_fseek(AVIOContext *s, int stream_index,
+                         int64_t timestamp, int flags)
+{
+    return ffio_read_seek(s, stream_index, timestamp, flags);
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -932,10 +941,12 @@ int avio_close(AVIOContext *s)
     return url_close(h);
 }
 
+#if FF_API_OLD_AVIO
 URLContext *url_fileno(AVIOContext *s)
 {
     return s->opaque;
 }
+#endif
 
 int avio_printf(AVIOContext *s, const char *fmt, ...)
 {
@@ -978,15 +989,15 @@ int url_fget_max_packet_size(AVIOContext *s)
 }
 #endif
 
-int av_url_read_fpause(AVIOContext *s, int pause)
+int ffio_read_pause(AVIOContext *s, int pause)
 {
     if (!s->read_pause)
         return AVERROR(ENOSYS);
     return s->read_pause(s->opaque, pause);
 }
 
-int64_t av_url_read_fseek(AVIOContext *s, int stream_index,
-                          int64_t timestamp, int flags)
+int64_t ffio_read_seek(AVIOContext *s, int stream_index,
+                       int64_t timestamp, int flags)
 {
     URLContext *h = s->opaque;
     int64_t ret;

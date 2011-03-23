@@ -1157,7 +1157,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                 continue;
             snprintf(transport, sizeof(transport) - 1,
                      "%s/TCP;", trans_pref);
-            if (rt->server_type == RTSP_SERVER_WMS)
+            if (rt->transport != RTSP_TRANSPORT_RDT)
                 av_strlcat(transport, "unicast;", sizeof(transport));
             av_strlcatf(transport, sizeof(transport),
                         "interleaved=%d-%d",

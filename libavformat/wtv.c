@@ -701,10 +701,10 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
             return NULL;
         if (!ff_guidcmp(formattype, format_videoinfo2)) {
             int consumed = parse_videoinfoheader2(s, st);
-            avio_seek(pb, FFMAX(size - consumed, 0), SEEK_CUR);
+            avio_skip(pb, FFMAX(size - consumed, 0));
         } else if (!ff_guidcmp(formattype, format_mpeg2_video)) {
             int consumed = parse_videoinfoheader2(s, st);
-            avio_seek(pb, FFMAX(size - consumed, 0), SEEK_CUR);
+            avio_skip(pb, FFMAX(size - consumed, 0));
         } else {
             if (ff_guidcmp(formattype, format_none))
                 av_log(s, AV_LOG_WARNING, "unknown formattype:"PRI_GUID"\n", ARG_GUID(formattype));

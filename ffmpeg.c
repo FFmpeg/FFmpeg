@@ -69,12 +69,7 @@
 #include <sys/select.h>
 #endif
 
-#if HAVE_TERMIOS_H
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/time.h>
-#include <termios.h>
-#elif HAVE_CONIO_H
+#if HAVE_KBHIT
 #include <conio.h>
 #endif
 #include <time.h>
@@ -343,12 +338,6 @@ typedef struct AVInputFile {
     int nb_streams;       /* nb streams we are aware of */
 } AVInputFile;
 
-#if HAVE_TERMIOS_H
-
-/* init terminal so that we can grab keys */
-static struct termios oldtty;
-#endif
-
 #if CONFIG_AVFILTER
 
 static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
@@ -436,9 +425,6 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
 static void term_exit(void)
 {
     av_log(NULL, AV_LOG_QUIET, "");
-#if HAVE_TERMIOS_H
-    tcsetattr (0, TCSANOW, &oldtty);
-#endif
 }
 
 static volatile int received_sigterm = 0;
@@ -452,26 +438,6 @@ sigterm_handler(int sig)
 
 static void term_init(void)
 {
-#if HAVE_TERMIOS_H
-    struct termios tty;
-
-    tcgetattr (0, &tty);
-    oldtty = tty;
-    atexit(term_exit);
-
-    tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP
-                          |INLCR|IGNCR|ICRNL|IXON);
-    tty.c_oflag |= OPOST;
-    tty.c_lflag &= ~(ECHO|ECHONL|ICANON|IEXTEN);
-    tty.c_cflag &= ~(CSIZE|PARENB);
-    tty.c_cflag |= CS8;
-    tty.c_cc[VMIN] = 1;
-    tty.c_cc[VTIME] = 0;
-
-    tcsetattr (0, TCSANOW, &tty);
-    signal(SIGQUIT, sigterm_handler); /* Quit (POSIX).  */
-#endif
-
     signal(SIGINT , sigterm_handler); /* Interrupt (ANSI).  */
     signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
 #ifdef SIGXCPU
@@ -482,25 +448,7 @@ static void term_init(void)
 /* read a key without blocking */
 static int read_key(void)
 {
-#if HAVE_TERMIOS_H
-    int n = 1;
-    unsigned char ch;
-    struct timeval tv;
-    fd_set rfds;
-
-    FD_ZERO(&rfds);
-    FD_SET(0, &rfds);
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
-    n = select(1, &rfds, NULL, NULL, &tv);
-    if (n > 0) {
-        n = read(0, &ch, 1);
-        if (n == 1)
-            return ch;
-
-        return n;
-    }
-#elif HAVE_CONIO_H
+#if HAVE_KBHIT
     if(kbhit())
         return(getch());
 #endif
@@ -2511,7 +2459,11 @@ static int transcode(AVFormatContext **output_files,
 
     if (!using_stdin) {
         if(verbose >= 0)
+#if HAVE_KBHIT
             fprintf(stderr, "Press [q] to stop encoding\n");
+#else
+            fprintf(stderr, "Press ctrl-c to stop encoding\n");
+#endif
         url_set_interrupt_cb(decode_interrupt_cb);
     }
     term_init();

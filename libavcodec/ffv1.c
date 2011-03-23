@@ -792,7 +792,7 @@ static av_cold int init_slice_contexts(FFV1Context *f){
         fs->slice_x     = sxs;
         fs->slice_y     = sys;
 
-        fs->sample_buffer = av_malloc(6 * (fs->width+6) * sizeof(*fs->sample_buffer));
+        fs->sample_buffer = av_malloc(9 * (fs->width+6) * sizeof(*fs->sample_buffer));
         if (!fs->sample_buffer)
             return AVERROR(ENOMEM);
     }
