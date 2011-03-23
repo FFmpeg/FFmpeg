@@ -1084,19 +1084,21 @@ static void matroska_convert_tags(AVFormatContext *s)
         if (tags[i].target.attachuid) {
             MatroskaAttachement *attachment = matroska->attachments.elem;
             for (j=0; j<matroska->attachments.nb_elem; j++)
-                if (attachment[j].uid == tags[i].target.attachuid)
+                if (attachment[j].uid == tags[i].target.attachuid
+                    && attachment[j].stream)
                     matroska_convert_tag(s, &tags[i].tag,
                                          &attachment[j].stream->metadata, NULL);
         } else if (tags[i].target.chapteruid) {
             MatroskaChapter *chapter = matroska->chapters.elem;
             for (j=0; j<matroska->chapters.nb_elem; j++)
-                if (chapter[j].uid == tags[i].target.chapteruid)
+                if (chapter[j].uid == tags[i].target.chapteruid
+                    && chapter[j].chapter)
                     matroska_convert_tag(s, &tags[i].tag,
                                          &chapter[j].chapter->metadata, NULL);
         } else if (tags[i].target.trackuid) {
             MatroskaTrack *track = matroska->tracks.elem;
             for (j=0; j<matroska->tracks.nb_elem; j++)
-                if (track[j].uid == tags[i].target.trackuid)
+                if (track[j].uid == tags[i].target.trackuid && track[j].stream)
                     matroska_convert_tag(s, &tags[i].tag,
                                          &track[j].stream->metadata, NULL);
         } else {
