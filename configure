@@ -2410,7 +2410,6 @@ case $target_os in
             LIBTARGET=arm-wince
         fi
         shlibdir_default="$bindir_default"
-        disable ffserver
         SLIBPREF=""
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
@@ -2443,7 +2442,7 @@ case $target_os in
         check_cflags -fno-common
         ;;
     *-dos|freedos|opendos)
-        disable ffplay ffserver
+        disable ffplay
         disable $INDEV_LIST $OUTDEV_LIST
         network_extralibs="-lsocket"
         objformat="coff"
