@@ -3286,7 +3286,7 @@ get_version(){
 
 get_version LIBSWSCALE  libswscale/swscale.h
 get_version LIBPOSTPROC libpostproc/postprocess.h
-get_version LIBAVCODEC  libavcodec/avcodec.h
+get_version LIBAVCODEC  libavcodec/version.h
 get_version LIBAVDEVICE libavdevice/avdevice.h
 get_version LIBAVFORMAT libavformat/version.h
 get_version LIBAVUTIL   libavutil/avutil.h
