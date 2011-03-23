@@ -120,7 +120,7 @@ I. BASICS:
 
   For cosmetics-only commits you should get (almost) empty output from
 
-    git diff -wb <filename(s)>
+    git diff -w -b <filename(s)>
 
   Also check the output of
 
