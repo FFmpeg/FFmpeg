@@ -169,7 +169,7 @@ int32_t ff_scalarproduct_and_madd_int16_neon(int16_t *v1, const int16_t *v2,
                                              const int16_t *v3, int len, int mul);
 
 void ff_apply_window_int16_neon(int16_t *dst, const int16_t *src,
-                                const int16_t *window, int n);
+                                const int16_t *window, unsigned n);
 
 void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
 {
