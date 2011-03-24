@@ -614,6 +614,10 @@ static int mkv_write_tracks(AVFormatContext *s)
 
             case AVMEDIA_TYPE_SUBTITLE:
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_SUBTITLE);
+                if (!native_id) {
+                    av_log(s, AV_LOG_ERROR, "Subtitle codec %d is not supported.\n", codec->codec_id);
+                    return AVERROR(ENOSYS);
+                }
                 break;
             default:
                 av_log(s, AV_LOG_ERROR, "Only audio, video, and subtitles are supported for Matroska.\n");
