@@ -61,14 +61,14 @@ static AVChapter *read_chapter(AVFormatContext *s)
 
     if (sscanf(line, "TIMEBASE=%d/%d", &tb.num, &tb.den))
         get_line(s->pb, line, sizeof(line));
-    if (!sscanf(line, "START=%lld", &start)) {
+    if (!sscanf(line, "START=%"SCNd64, &start)) {
         av_log(s, AV_LOG_ERROR, "Expected chapter start timestamp, found %s.\n", line);
         start = (s->nb_chapters && s->chapters[s->nb_chapters - 1]->end != AV_NOPTS_VALUE) ?
                  s->chapters[s->nb_chapters - 1]->end : 0;
     } else
         get_line(s->pb, line, sizeof(line));
 
-    if (!sscanf(line, "END=%lld", &end)) {
+    if (!sscanf(line, "END=%"SCNd64, &end)) {
         av_log(s, AV_LOG_ERROR, "Expected chapter end timestamp, found %s.\n", line);
         end = AV_NOPTS_VALUE;
     }
