@@ -2100,6 +2100,7 @@ static int transcode(AVFormatContext **output_files,
                 codec->sample_rate = icodec->sample_rate;
                 codec->channels = icodec->channels;
                 codec->frame_size = icodec->frame_size;
+                codec->audio_service_type = icodec->audio_service_type;
                 codec->block_align= icodec->block_align;
                 if(codec->block_align == 1 && codec->codec_id == CODEC_ID_MP3)
                     codec->block_align= 0;
