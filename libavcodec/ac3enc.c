@@ -1657,6 +1657,18 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
     if (s->cutoff > (s->sample_rate >> 1))
         s->cutoff = s->sample_rate >> 1;
 
+    /* validate audio service type / channels combination */
+    if ((avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_KARAOKE &&
+         avctx->channels == 1) ||
+        ((avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_COMMENTARY ||
+          avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_EMERGENCY  ||
+          avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_VOICE_OVER)
+         && avctx->channels > 1)) {
+        av_log(avctx, AV_LOG_ERROR, "invalid audio service type for the "
+                                    "specified number of channels\n");
+        return AVERROR(EINVAL);
+    }
+
     return 0;
 }
 
@@ -1799,7 +1811,9 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
         return ret;
 
     s->bitstream_id   = 8 + s->bit_alloc.sr_shift;
-    s->bitstream_mode = 0; /* complete main audio service */
+    s->bitstream_mode = avctx->audio_service_type;
+    if (s->bitstream_mode == AV_AUDIO_SERVICE_TYPE_KARAOKE)
+        s->bitstream_mode = 0x7;
 
     s->frame_size_min  = 2 * ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
     s->bits_written    = 0;
