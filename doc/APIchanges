@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-03-25 - 34b47d7 - lavc 52.115.0 - AVCodecContext.audio_service_type
+  Add audio_service_type field to AVCodecContext.
+
 2011-03-02 - 863c471 - lavf  52.103.0 - av_pkt_dump2, av_pkt_dump_log2
   Add new functions av_pkt_dump2, av_pkt_dump_log2 that uses the
   source stream timebase for outputting timestamps. Deprecate
