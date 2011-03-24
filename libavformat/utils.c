@@ -2445,6 +2445,19 @@ int av_find_stream_info(AVFormatContext *ic)
         }else if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if(!st->codec->bits_per_coded_sample)
                 st->codec->bits_per_coded_sample= av_get_bits_per_sample(st->codec->codec_id);
+            // set stream disposition based on audio service type
+            switch (st->codec->audio_service_type) {
+            case AV_AUDIO_SERVICE_TYPE_EFFECTS:
+                st->disposition = AV_DISPOSITION_CLEAN_EFFECTS;    break;
+            case AV_AUDIO_SERVICE_TYPE_VISUALLY_IMPAIRED:
+                st->disposition = AV_DISPOSITION_VISUAL_IMPAIRED;  break;
+            case AV_AUDIO_SERVICE_TYPE_HEARING_IMPAIRED:
+                st->disposition = AV_DISPOSITION_HEARING_IMPAIRED; break;
+            case AV_AUDIO_SERVICE_TYPE_COMMENTARY:
+                st->disposition = AV_DISPOSITION_COMMENT;          break;
+            case AV_AUDIO_SERVICE_TYPE_KARAOKE:
+                st->disposition = AV_DISPOSITION_KARAOKE;          break;
+            }
         }
     }
 
