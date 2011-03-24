@@ -141,7 +141,7 @@ const uint8_t ff_ac3_rematrix_band_tab[5] = { 13, 25, 37, 61, 253 };
 /* AC-3 MDCT window */
 
 /* MDCT window */
-const int16_t ff_ac3_window[AC3_WINDOW_SIZE/2] = {
+DECLARE_ALIGNED(16, const int16_t, ff_ac3_window)[AC3_WINDOW_SIZE/2] = {
     4,    7,   12,   16,   21,   28,   34,   42,
    51,   61,   72,   84,   97,  111,  127,  145,
   164,  184,  207,  231,  257,  285,  315,  347,

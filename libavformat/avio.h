@@ -416,7 +416,7 @@ attribute_deprecated void         put_tag(AVIOContext *s, const char *tag);
  */
 
 attribute_deprecated int     av_url_read_fpause(AVIOContext *h,    int pause);
-attribute_deprecated int64_t av_url_read_fseek( AVIOContext *h,    int stream_index,
+attribute_deprecated int64_t av_url_read_fseek (AVIOContext *h,    int stream_index,
                                                 int64_t timestamp, int flags);
 
 /**
@@ -444,6 +444,9 @@ attribute_deprecated void put_flush_packet(AVIOContext *s);
  */
 
 attribute_deprecated int url_ferror(AVIOContext *s);
+
+attribute_deprecated int udp_set_remote_url(URLContext *h, const char *uri);
+attribute_deprecated int udp_get_local_port(URLContext *h);
 #endif
 
 AVIOContext *avio_alloc_context(
@@ -674,9 +677,6 @@ void init_checksum(AVIOContext *s,
                    unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
                    unsigned long checksum);
 
-/* udp.c */
-int udp_set_remote_url(URLContext *h, const char *uri);
-int udp_get_local_port(URLContext *h);
 #if FF_API_UDP_GET_FILE
 int udp_get_file_handle(URLContext *h);
 #endif

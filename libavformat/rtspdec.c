@@ -59,14 +59,10 @@ static int rtsp_read_play(AVFormatContext *s)
         if (rt->state == RTSP_STATE_PAUSED) {
             cmd[0] = 0;
         } else {
-            if (!rt->seek_timestamp) {
-                snprintf(cmd, sizeof(cmd), "Range: npt=0.000-\r\n");
-            } else {
-                snprintf(cmd, sizeof(cmd),
-                         "Range: npt=%"PRId64".%03"PRId64"-\r\n",
-                         rt->seek_timestamp / AV_TIME_BASE,
-                         rt->seek_timestamp / (AV_TIME_BASE / 1000) % 1000);
-            }
+            snprintf(cmd, sizeof(cmd),
+                     "Range: npt=%"PRId64".%03"PRId64"-\r\n",
+                     rt->seek_timestamp / AV_TIME_BASE,
+                     rt->seek_timestamp / (AV_TIME_BASE / 1000) % 1000);
         }
         ff_rtsp_send_cmd(s, "PLAY", rt->control_uri, cmd, reply, NULL);
         if (reply->status_code != RTSP_STATUS_OK) {

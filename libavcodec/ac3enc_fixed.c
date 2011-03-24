@@ -252,15 +252,9 @@ static void mdct512(AC3MDCTContext *mdct, int32_t *out, int16_t *in)
  * Apply KBD window to input samples prior to MDCT.
  */
 static void apply_window(DSPContext *dsp, int16_t *output, const int16_t *input,
-                         const int16_t *window, int n)
+                         const int16_t *window, unsigned int len)
 {
-    int i;
-    int n2 = n >> 1;
-
-    for (i = 0; i < n2; i++) {
-        output[i]     = MUL16(input[i],     window[i]) >> 15;
-        output[n-i-1] = MUL16(input[n-i-1], window[i]) >> 15;
-    }
+    dsp->apply_window_int16(output, input, window, len);
 }
 
 

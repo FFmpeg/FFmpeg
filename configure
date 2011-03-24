@@ -2424,7 +2424,7 @@ case $target_os in
             enable malloc_aligned
             LIBTARGET="i386:x86-64"
         elif enabled arm; then
-            LIBTARGET=arm
+            LIBTARGET=arm-wince
         fi
         shlibdir_default="$bindir_default"
         disable ffserver
@@ -3009,10 +3009,11 @@ if enabled icc; then
     check_cflags -w1
     # -wd: Disable following warnings
     # 144, 167, 556: -Wno-pointer-sign
+    # 1292: attribute "foo" ignored
     # 10006: ignoring unknown option -fno-signed-zeros
     # 10148: ignoring unknown option -Wno-parentheses
     # 10156: ignoring option '-W'; no argument required
-    check_cflags -wd144,167,556,10006,10148,10156
+    check_cflags -wd144,167,556,1292,10006,10148,10156
     # 11030: Warning unknown option --as-needed
     # 10156: ignoring option '-export'; no argument required
     check_ldflags -wd10156,11030
@@ -3310,7 +3311,7 @@ get_version(){
 
 get_version LIBSWSCALE  libswscale/swscale.h
 get_version LIBPOSTPROC libpostproc/postprocess.h
-get_version LIBAVCODEC  libavcodec/avcodec.h
+get_version LIBAVCODEC  libavcodec/version.h
 get_version LIBAVDEVICE libavdevice/avdevice.h
 get_version LIBAVFORMAT libavformat/version.h
 get_version LIBAVUTIL   libavutil/avutil.h

@@ -27,6 +27,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/avstring.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "rtpdec.h"
 
 #include <unistd.h>
@@ -71,10 +72,10 @@ int rtp_set_remote_url(URLContext *h, const char *uri)
                  path, sizeof(path), uri);
 
     ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, port, "%s", path);
-    udp_set_remote_url(s->rtp_hd, buf);
+    ff_udp_set_remote_url(s->rtp_hd, buf);
 
     ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, port + 1, "%s", path);
-    udp_set_remote_url(s->rtcp_hd, buf);
+    ff_udp_set_remote_url(s->rtcp_hd, buf);
     return 0;
 }
 
@@ -191,7 +192,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     if (url_open(&s->rtp_hd, buf, flags) < 0)
         goto fail;
     if (local_rtp_port>=0 && local_rtcp_port<0)
-        local_rtcp_port = udp_get_local_port(s->rtp_hd) + 1;
+        local_rtcp_port = ff_udp_get_local_port(s->rtp_hd) + 1;
 
     build_udp_url(buf, sizeof(buf),
                   hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
@@ -326,7 +327,7 @@ static int rtp_close(URLContext *h)
 int rtp_get_local_rtp_port(URLContext *h)
 {
     RTPContext *s = h->priv_data;
-    return udp_get_local_port(s->rtp_hd);
+    return ff_udp_get_local_port(s->rtp_hd);
 }
 
 /**
@@ -338,7 +339,7 @@ int rtp_get_local_rtp_port(URLContext *h)
 int rtp_get_local_rtcp_port(URLContext *h)
 {
     RTPContext *s = h->priv_data;
-    return udp_get_local_port(s->rtcp_hd);
+    return ff_udp_get_local_port(s->rtcp_hd);
 }
 
 static int rtp_get_file_handle(URLContext *h)

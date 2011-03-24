@@ -56,7 +56,7 @@
     #define av_malloc_attrib
 #endif
 
-#if (!defined(__INTEL_COMPILER) || __INTEL_COMPILER > 1200) && AV_GCC_VERSION_AT_LEAST(4,3)
+#if AV_GCC_VERSION_AT_LEAST(4,3)
     #define av_alloc_size(n) __attribute__((alloc_size(n)))
 #else
     #define av_alloc_size(n)

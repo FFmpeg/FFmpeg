@@ -9,6 +9,7 @@ test_ref=$2
 raw_src_dir=$3
 target_exec=$4
 target_path=$5
+threads=${6:-1}
 
 datadir="./tests/data"
 target_datadir="${target_path}/${datadir}"
@@ -52,7 +53,7 @@ echov(){
 
 . $(dirname $0)/md5.sh
 
-FFMPEG_OPTS="-v 0 -y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
+FFMPEG_OPTS="-v 0 -threads $threads -y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
 
 run_ffmpeg()
 {
@@ -65,8 +66,7 @@ do_ffmpeg()
     f="$1"
     shift
     set -- $* ${target_path}/$f
-    $echov $ffmpeg $FFMPEG_OPTS $*
-    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench
+    run_ffmpeg -benchmark $* > $bench
     do_md5sum $f >> $logfile
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
@@ -84,8 +84,7 @@ do_ffmpeg_nomd5()
     f="$1"
     shift
     set -- $* ${target_path}/$f
-    $echov $ffmpeg $FFMPEG_OPTS $*
-    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench
+    run_ffmpeg -benchmark $* > $bench
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
     elif [ $f = $pcm_dst ] ; then
@@ -101,8 +100,7 @@ do_ffmpeg_crc()
 {
     f="$1"
     shift
-    $echov $ffmpeg $FFMPEG_OPTS $* -f crc "$target_crcfile"
-    $ffmpeg $FFMPEG_OPTS $* -f crc "$target_crcfile"
+    run_ffmpeg $* -f crc "$target_crcfile"
     echo "$f $(cat $crcfile)" >> $logfile
 }
 
@@ -110,8 +108,7 @@ do_ffmpeg_nocheck()
 {
     f="$1"
     shift
-    $echov $ffmpeg $FFMPEG_OPTS $*
-    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench
+    run_ffmpeg -benchmark $* > $bench
     expr "$(cat $bench)" : '.*utime=\(.*s\)' > $bench2
     echo $(cat $bench2) $f >> $benchfile
 }

@@ -67,8 +67,12 @@ uint64_t ffio_read_varlen(AVIOContext *bc);
 int ffio_set_buf_size(AVIOContext *s, int buf_size);
 
 int     ffio_read_pause(AVIOContext *h,    int pause);
-int64_t ffio_read_seek( AVIOContext *h,    int stream_index,
+int64_t ffio_read_seek (AVIOContext *h,    int stream_index,
                         int64_t timestamp, int flags);
+
+/* udp.c */
+int ff_udp_set_remote_url(URLContext *h, const char *uri);
+int ff_udp_get_local_port(URLContext *h);
 
 
 #endif // AVFORMAT_AVIO_INTERNAL_H
