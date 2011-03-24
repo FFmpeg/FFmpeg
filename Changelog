@@ -3,11 +3,11 @@ releases are sorted from youngest to oldest.
 
 version 0.6.3:
 
-- fix compilation with --enable-hardcoded-tables
 
 
 version 0.6.2:
 
+- fix compilation with --enable-hardcoded-tables
 - Fix invalid reads in VC-1 decoding (related to CVE-2011-0723)
 - Do not attempt to decode APE file with no frames
   (adresses http://packetstorm.linuxsecurity.com/1103-exploits/vlc105-dos.txt)
