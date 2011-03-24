@@ -38,9 +38,6 @@
 #include "ac3dec_data.h"
 #include "kbdwin.h"
 
-/** Large enough for maximum possible frame size when the specification limit is ignored */
-#define AC3_FRAME_BUFFER_SIZE 32768
-
 /**
  * table for ungrouping 3 values in 7 bits.
  * used for exponents and bap=2 mantissas
@@ -205,11 +202,6 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
         avctx->channels = avctx->request_channels;
     }
     s->downmixed = 1;
-
-    /* allocate context input buffer */
-        s->input_buffer = av_mallocz(AC3_FRAME_BUFFER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!s->input_buffer)
-            return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -1435,8 +1427,6 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
     AC3DecodeContext *s = avctx->priv_data;
     ff_mdct_end(&s->imdct_512);
     ff_mdct_end(&s->imdct_256);
-
-    av_freep(&s->input_buffer);
 
     return 0;
 }
