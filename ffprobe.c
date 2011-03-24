@@ -261,12 +261,15 @@ static void show_format(AVFormatContext *fmt_ctx)
 static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
 {
     int err, i;
+    AVFormatParameters fmt_params;
     AVFormatContext *fmt_ctx;
 
+    memset(&fmt_params, 0, sizeof(fmt_params));
+    fmt_params.prealloced_context = 1;
     fmt_ctx = avformat_alloc_context();
     set_context_opts(fmt_ctx, avformat_opts, AV_OPT_FLAG_DECODING_PARAM, NULL);
 
-    if ((err = av_open_input_file(&fmt_ctx, filename, iformat, 0, NULL)) < 0) {
+    if ((err = av_open_input_file(&fmt_ctx, filename, iformat, 0, &fmt_params)) < 0) {
         print_error(filename, err);
         return err;
     }
