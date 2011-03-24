@@ -2428,6 +2428,7 @@ case $target_os in
         check_cpp_condition _mingw.h "defined (__MINGW64_VERSION_MAJOR) || (__MINGW32_MAJOR_VERSION > 3) \
                                       || (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
                 die "ERROR: MinGW runtime version must be >= 3.15."
+        add_cppflags -U__STRICT_ANSI__
         ;;
     cygwin*)
         target_os=cygwin
