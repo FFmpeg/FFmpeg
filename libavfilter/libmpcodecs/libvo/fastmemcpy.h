@@ -39,7 +39,7 @@ static inline void * mem2agpcpy_pic(void * dst, const void * src, int bytesPerLi
     if(dstStride == srcStride)
     {
         if (srcStride < 0) {
-                src = (uint8_t*)src + (height-1)*srcStride;
+                src = (const uint8_t*)src + (height-1)*srcStride;
                 dst = (uint8_t*)dst + (height-1)*dstStride;
                 srcStride = -srcStride;
         }
@@ -51,7 +51,7 @@ static inline void * mem2agpcpy_pic(void * dst, const void * src, int bytesPerLi
         for(i=0; i<height; i++)
         {
             mem2agpcpy(dst, src, bytesPerLine);
-            src = (uint8_t*)src + srcStride;
+            src = (const uint8_t*)src + srcStride;
             dst = (uint8_t*)dst + dstStride;
         }
     }
@@ -76,7 +76,7 @@ static inline void * memcpy_pic2(void * dst, const void * src,
     if(!limit2width && dstStride == srcStride)
     {
         if (srcStride < 0) {
-                src = (uint8_t*)src + (height-1)*srcStride;
+                src = (const uint8_t*)src + (height-1)*srcStride;
                 dst = (uint8_t*)dst + (height-1)*dstStride;
                 srcStride = -srcStride;
         }
@@ -88,7 +88,7 @@ static inline void * memcpy_pic2(void * dst, const void * src,
         for(i=0; i<height; i++)
         {
             fast_memcpy(dst, src, bytesPerLine);
-            src = (uint8_t*)src + srcStride;
+            src = (const uint8_t*)src + srcStride;
             dst = (uint8_t*)dst + dstStride;
         }
     }
