@@ -2206,7 +2206,7 @@ case $target_os in
         LIBTARGET=i386
         if enabled x86_64; then
             enable malloc_aligned
-            LIBTARGET=x64
+            LIBTARGET="i386:x86-64"
         elif enabled arm; then
             LIBTARGET=arm
         fi
@@ -2216,7 +2216,7 @@ case $target_os in
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
-        SLIB_EXTRA_CMD='-lib.exe /machine:$(LIBTARGET) /def:$$(@:$(SLIBSUF)=.def) /out:$(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)'
+        SLIB_EXTRA_CMD=-'$(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) -D $(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_EXTRA_CMD='-install -m 644 $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"; \
             install -m 644 $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)"; \
             install -d "$(LIBDIR)"; \
@@ -2224,6 +2224,7 @@ case $target_os in
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"'
         SHFLAGS='-shared -Wl,--output-def,$$(@:$(SLIBSUF)=.def) -Wl,--out-implib,$(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
         objformat="win32"
+        dlltool="${cross_prefix}dlltool"
         enable dos_paths
         check_cflags -fno-common
         if ! enabled x86_64; then
@@ -3002,6 +3003,7 @@ CPPFLAGS=$CPPFLAGS
 CFLAGS=$CFLAGS
 ASFLAGS=$ASFLAGS
 CC_O=$CC_O
+DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
 FFSERVERLDFLAGS=$FFSERVERLDFLAGS
 SHFLAGS=$SHFLAGS
