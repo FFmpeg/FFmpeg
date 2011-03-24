@@ -82,6 +82,14 @@ const char* av_default_item_name(void* ptr){
     return (*(AVClass**)ptr)->class_name;
 }
 
+static void sanitize(uint8_t *line){
+    while(*line){
+        if(*line < 0x08 || (*line > 0x0D && *line < 0x20))
+            *line='?';
+        line++;
+    }
+}
+
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix=1;
@@ -121,8 +129,9 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
         fprintf(stderr, "    Last message repeated %d times\n", count);
         count=0;
     }
-    colored_fputs(av_clip(level>>3, 0, 6), line);
     strcpy(prev, line);
+    sanitize(line);
+    colored_fputs(av_clip(level>>3, 0, 6), line);
 }
 
 static void (*av_log_callback)(void*, int, const char*, va_list) = av_log_default_callback;
