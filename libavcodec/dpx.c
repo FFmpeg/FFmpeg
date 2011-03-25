@@ -68,6 +68,11 @@ static int decode_frame(AVCodecContext *avctx,
 
     unsigned int rgbBuffer;
 
+    if (avpkt->size <= 0x324) {
+        av_log(avctx, AV_LOG_ERROR, "Packet too small for DPX header\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     magic_num = AV_RB32(buf);
     buf += 4;
 
@@ -83,6 +88,10 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     offset = read32(&buf, endian);
+    if (avpkt->size <= offset) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid data start offset\n");
+        return AVERROR_INVALIDDATA;
+    }
     // Need to end in 0x304 offset from start of file
     buf = avpkt->data + 0x304;
     w = read32(&buf, endian);
@@ -122,7 +131,7 @@ static int decode_frame(AVCodecContext *avctx,
         case 10:
             avctx->pix_fmt = PIX_FMT_RGB48;
             target_packet_size = 6;
-            source_packet_size = elements * 2;
+            source_packet_size = 4;
             break;
         case 12:
         case 16:
@@ -156,6 +165,10 @@ static int decode_frame(AVCodecContext *avctx,
     ptr    = p->data[0];
     stride = p->linesize[0];
 
+    if (source_packet_size*avctx->width*avctx->height > buf_end - buf) {
+        av_log(avctx, AV_LOG_ERROR, "Overread buffer. Invalid header?\n");
+        return -1;
+    }
     switch (bits_per_color) {
         case 10:
             for (x = 0; x < avctx->height; x++) {
@@ -173,10 +186,6 @@ static int decode_frame(AVCodecContext *avctx,
         case 8:
         case 12: // Treat 12-bit as 16-bit
         case 16:
-            if (source_packet_size*avctx->width*avctx->height > buf_end - buf) {
-                av_log(avctx, AV_LOG_ERROR, "Overread buffer. Invalid header?\n");
-                return -1;
-            }
             if (source_packet_size == target_packet_size) {
                 for (x = 0; x < avctx->height; x++) {
                     memcpy(ptr, buf, target_packet_size*avctx->width);
