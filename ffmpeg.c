@@ -433,6 +433,7 @@ static void
 sigterm_handler(int sig)
 {
     received_sigterm = sig;
+    q_pressed++;
     term_exit();
 }
 
