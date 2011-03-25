@@ -1156,7 +1156,8 @@ void MPV_frame_end(MpegEncContext *s)
     //just to make sure that all data is rendered.
     if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration){
         ff_xvmc_field_end(s);
-    }else if(!s->avctx->hwaccel
+   }else if((s->error_count || s->encoding)
+       && !s->avctx->hwaccel
        && !(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
        && s->unrestricted_mv
        && s->current_picture.reference
