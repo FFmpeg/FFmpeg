@@ -641,7 +641,7 @@ check_ld(){
         test "${f}" = "${f#-l}" && flags="$flags $f" || libs="$libs $f"
     done
     check_cc $($filter_cflags $flags) || return
-    check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $extralibs $libs
+    check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $libs $extralibs
 }
 
 check_cppflags(){
