@@ -34,8 +34,8 @@ static void yuv_a_to_rgba(const uint8_t *ycbcr, const uint8_t *alpha, uint32_t *
 
     for (i = num_values; i > 0; i--) {
         y = *ycbcr++;
-        cb = *ycbcr++;
         cr = *ycbcr++;
+        cb = *ycbcr++;
         YUV_TO_RGB1_CCIR(cb, cr);
         YUV_TO_RGB2_CCIR(r, g, b, y);
         *rgba++ = (*alpha++ << 24) | (r << 16) | (g << 8) | b;
