@@ -167,6 +167,8 @@ static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int qp_hist = 0;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
+#else
+static unsigned int sws_flags = SWS_BICUBIC;
 #endif
 
 static int intra_only = 0;
@@ -238,8 +240,6 @@ static int force_fps = 0;
 static char *forced_key_frames = NULL;
 
 static float dts_delta_threshold = 10;
-
-static unsigned int sws_flags = SWS_BICUBIC;
 
 static int64_t timer_start;
 
