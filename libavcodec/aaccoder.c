@@ -817,7 +817,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 int prevsc = sce->sf_idx[w*16+g];
                 if (dists[w*16+g] > uplims[w*16+g] && sce->sf_idx[w*16+g] > 60) {
                     if (find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]-1))
-                    sce->sf_idx[w*16+g]--;
+                        sce->sf_idx[w*16+g]--;
                     else //Try to make sure there is some energy in every band
                         sce->sf_idx[w*16+g]-=2;
                 }
