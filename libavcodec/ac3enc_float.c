@@ -120,5 +120,6 @@ AVCodec ff_ac3_encoder = {
     NULL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
+    .priv_class = &ac3enc_class,
     .channel_layouts = ac3_channel_layouts,
 };

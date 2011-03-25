@@ -32,6 +32,7 @@
 #include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "put_bits.h"
 #include "dsputil.h"
@@ -66,6 +67,36 @@
 
 
 /**
+ * Encoding Options used by AVOption.
+ */
+typedef struct AC3EncOptions {
+    /* AC-3 metadata options*/
+    int dialogue_level;
+    int bitstream_mode;
+    float center_mix_level;
+    float surround_mix_level;
+    int dolby_surround_mode;
+    int audio_production_info;
+    int mixing_level;
+    int room_type;
+    int copyright;
+    int original;
+    int extended_bsi_1;
+    int preferred_stereo_downmix;
+    float ltrt_center_mix_level;
+    float ltrt_surround_mix_level;
+    float loro_center_mix_level;
+    float loro_surround_mix_level;
+    int extended_bsi_2;
+    int dolby_surround_ex_mode;
+    int dolby_headphone_mode;
+    int ad_converter_type;
+
+    /* other encoding options */
+    int allow_per_frame_metadata;
+} AC3EncOptions;
+
+/**
  * Data for a single audio block.
  */
 typedef struct AC3Block {
@@ -87,6 +118,8 @@ typedef struct AC3Block {
  * AC-3 encoder private context.
  */
 typedef struct AC3EncodeContext {
+    AVClass *av_class;                      ///< AVClass used for AVOption
+    AC3EncOptions options;                  ///< encoding options
     PutBitContext pb;                       ///< bitstream writer context
     DSPContext dsp;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
@@ -111,8 +144,17 @@ typedef struct AC3EncodeContext {
     int channels;                           ///< total number of channels               (nchans)
     int lfe_on;                             ///< indicates if there is an LFE channel   (lfeon)
     int lfe_channel;                        ///< channel index of the LFE channel
+    int has_center;                         ///< indicates if there is a center channel
+    int has_surround;                       ///< indicates if there are one or more surround channels
     int channel_mode;                       ///< channel mode                           (acmod)
     const uint8_t *channel_map;             ///< channel map used to reorder channels
+
+    int center_mix_level;                   ///< center mix level code
+    int surround_mix_level;                 ///< surround mix level code
+    int ltrt_center_mix_level;              ///< Lt/Rt center mix level code
+    int ltrt_surround_mix_level;            ///< Lt/Rt surround mix level code
+    int loro_center_mix_level;              ///< Lo/Ro center mix level code
+    int loro_surround_mix_level;            ///< Lo/Ro surround mix level code
 
     int cutoff;                             ///< user-specified cutoff frequency, in Hz
     int bandwidth_code[AC3_MAX_CHANNELS];   ///< bandwidth code (0 to 60)               (chbwcod)
@@ -155,6 +197,78 @@ typedef struct AC3EncodeContext {
 
     DECLARE_ALIGNED(16, SampleType, windowed_samples)[AC3_WINDOW_SIZE];
 } AC3EncodeContext;
+
+
+#define CMIXLEV_NUM_OPTIONS 3
+static const float cmixlev_options[CMIXLEV_NUM_OPTIONS] = {
+    LEVEL_MINUS_3DB, LEVEL_MINUS_4POINT5DB, LEVEL_MINUS_6DB
+};
+
+#define SURMIXLEV_NUM_OPTIONS 3
+static const float surmixlev_options[SURMIXLEV_NUM_OPTIONS] = {
+    LEVEL_MINUS_3DB, LEVEL_MINUS_6DB, LEVEL_ZERO
+};
+
+#define EXTMIXLEV_NUM_OPTIONS 8
+static const float extmixlev_options[EXTMIXLEV_NUM_OPTIONS] = {
+    LEVEL_PLUS_3DB,  LEVEL_PLUS_1POINT5DB,  LEVEL_ONE,       LEVEL_MINUS_4POINT5DB,
+    LEVEL_MINUS_3DB, LEVEL_MINUS_4POINT5DB, LEVEL_MINUS_6DB, LEVEL_ZERO
+};
+
+
+#define OFFSET(param) offsetof(AC3EncodeContext, options.param)
+#define AC3ENC_PARAM (AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
+
+static const AVOption options[] = {
+/* Metadata Options */
+{"per_frame_metadata", "Allow Changing Metadata Per-Frame", OFFSET(allow_per_frame_metadata), FF_OPT_TYPE_INT, 0, 0, 1, AC3ENC_PARAM},
+/* downmix levels */
+{"center_mixlev", "Center Mix Level", OFFSET(center_mix_level), FF_OPT_TYPE_FLOAT, LEVEL_MINUS_4POINT5DB, 0.0, 1.0, AC3ENC_PARAM},
+{"surround_mixlev", "Surround Mix Level", OFFSET(surround_mix_level), FF_OPT_TYPE_FLOAT, LEVEL_MINUS_6DB, 0.0, 1.0, AC3ENC_PARAM},
+/* audio production information */
+{"mixing_level", "Mixing Level", OFFSET(mixing_level), FF_OPT_TYPE_INT, -1, -1, 111, AC3ENC_PARAM},
+{"room_type", "Room Type", OFFSET(room_type), FF_OPT_TYPE_INT, -1, -1, 2, AC3ENC_PARAM, "room_type"},
+    {"notindicated", "Not Indicated (default)", 0, FF_OPT_TYPE_CONST, 0, INT_MIN, INT_MAX, AC3ENC_PARAM, "room_type"},
+    {"large",        "Large Room",              0, FF_OPT_TYPE_CONST, 1, INT_MIN, INT_MAX, AC3ENC_PARAM, "room_type"},
+    {"small",        "Small Room",              0, FF_OPT_TYPE_CONST, 2, INT_MIN, INT_MAX, AC3ENC_PARAM, "room_type"},
+/* other metadata options */
+{"copyright", "Copyright Bit", OFFSET(copyright), FF_OPT_TYPE_INT, 0, 0, 1, AC3ENC_PARAM},
+{"dialnorm", "Dialogue Level (dB)", OFFSET(dialogue_level), FF_OPT_TYPE_INT, -31, -31, -1, AC3ENC_PARAM},
+{"dsur_mode", "Dolby Surround Mode", OFFSET(dolby_surround_mode), FF_OPT_TYPE_INT, 0, 0, 2, AC3ENC_PARAM, "dsur_mode"},
+    {"notindicated", "Not Indicated (default)",    0, FF_OPT_TYPE_CONST, 0, INT_MIN, INT_MAX, AC3ENC_PARAM, "dsur_mode"},
+    {"on",           "Dolby Surround Encoded",     0, FF_OPT_TYPE_CONST, 1, INT_MIN, INT_MAX, AC3ENC_PARAM, "dsur_mode"},
+    {"off",          "Not Dolby Surround Encoded", 0, FF_OPT_TYPE_CONST, 2, INT_MIN, INT_MAX, AC3ENC_PARAM, "dsur_mode"},
+{"original", "Original Bit Stream", OFFSET(original), FF_OPT_TYPE_INT, 1, 0, 1, AC3ENC_PARAM},
+/* extended bitstream information */
+{"dmix_mode", "Preferred Stereo Downmix Mode", OFFSET(preferred_stereo_downmix), FF_OPT_TYPE_INT, -1, -1, 2, AC3ENC_PARAM, "dmix_mode"},
+    {"notindicated", "Not Indicated (default)", 0, FF_OPT_TYPE_CONST, 0, INT_MIN, INT_MAX, AC3ENC_PARAM, "dmix_mode"},
+    {"ltrt", "Lt/Rt Downmix Preferred",         0, FF_OPT_TYPE_CONST, 1, INT_MIN, INT_MAX, AC3ENC_PARAM, "dmix_mode"},
+    {"loro", "Lo/Ro Downmix Preferred",         0, FF_OPT_TYPE_CONST, 2, INT_MIN, INT_MAX, AC3ENC_PARAM, "dmix_mode"},
+{"ltrt_cmixlev", "Lt/Rt Center Mix Level", OFFSET(ltrt_center_mix_level), FF_OPT_TYPE_FLOAT, -1.0, -1.0, 2.0, AC3ENC_PARAM},
+{"ltrt_surmixlev", "Lt/Rt Surround Mix Level", OFFSET(ltrt_surround_mix_level), FF_OPT_TYPE_FLOAT, -1.0, -1.0, 2.0, AC3ENC_PARAM},
+{"loro_cmixlev", "Lo/Ro Center Mix Level", OFFSET(loro_center_mix_level), FF_OPT_TYPE_FLOAT, -1.0, -1.0, 2.0, AC3ENC_PARAM},
+{"loro_surmixlev", "Lo/Ro Surround Mix Level", OFFSET(loro_surround_mix_level), FF_OPT_TYPE_FLOAT, -1.0, -1.0, 2.0, AC3ENC_PARAM},
+{"dsurex_mode", "Dolby Surround EX Mode", OFFSET(dolby_surround_ex_mode), FF_OPT_TYPE_INT, -1, -1, 2, AC3ENC_PARAM, "dsurex_mode"},
+    {"notindicated", "Not Indicated (default)",       0, FF_OPT_TYPE_CONST, 0, INT_MIN, INT_MAX, AC3ENC_PARAM, "dsurex_mode"},
+    {"on",           "Dolby Surround EX Encoded",     0, FF_OPT_TYPE_CONST, 1, INT_MIN, INT_MAX, AC3ENC_PARAM, "dsurex_mode"},
+    {"off",          "Not Dolby Surround EX Encoded", 0, FF_OPT_TYPE_CONST, 2, INT_MIN, INT_MAX, AC3ENC_PARAM, "dsurex_mode"},
+{"dheadphone_mode", "Dolby Headphone Mode", OFFSET(dolby_headphone_mode), FF_OPT_TYPE_INT, -1, -1, 2, AC3ENC_PARAM, "dheadphone_mode"},
+    {"notindicated", "Not Indicated (default)",     0, FF_OPT_TYPE_CONST, 0, INT_MIN, INT_MAX, AC3ENC_PARAM, "dheadphone_mode"},
+    {"on",           "Dolby Headphone Encoded",     0, FF_OPT_TYPE_CONST, 1, INT_MIN, INT_MAX, AC3ENC_PARAM, "dheadphone_mode"},
+    {"off",          "Not Dolby Headphone Encoded", 0, FF_OPT_TYPE_CONST, 2, INT_MIN, INT_MAX, AC3ENC_PARAM, "dheadphone_mode"},
+{"ad_conv_type", "A/D Converter Type", OFFSET(ad_converter_type), FF_OPT_TYPE_INT, -1, -1, 1, AC3ENC_PARAM, "ad_conv_type"},
+    {"standard", "Standard (default)", 0, FF_OPT_TYPE_CONST, 0, INT_MIN, INT_MAX, AC3ENC_PARAM, "ad_conv_type"},
+    {"hdcd",     "HDCD",               0, FF_OPT_TYPE_CONST, 1, INT_MIN, INT_MAX, AC3ENC_PARAM, "ad_conv_type"},
+{NULL}
+};
+
+#if CONFIG_AC3ENC_FLOAT
+static AVClass ac3enc_class = { "AC-3 Encoder", av_default_item_name,
+                                options, LIBAVUTIL_VERSION_INT };
+#else
+static AVClass ac3enc_class = { "Fixed-Point AC-3 Encoder", av_default_item_name,
+                                options, LIBAVUTIL_VERSION_INT };
+#endif
 
 
 /* prototypes for functions in ac3enc_fixed.c and ac3enc_float.c */
@@ -786,8 +900,18 @@ static void bit_alloc_init(AC3EncodeContext *s)
  */
 static void count_frame_bits(AC3EncodeContext *s)
 {
+    AC3EncOptions *opt = &s->options;
     int blk, ch;
     int frame_bits = 0;
+
+    if (opt->audio_production_info)
+        frame_bits += 7;
+    if (s->bitstream_id == 6) {
+        if (opt->extended_bsi_1)
+            frame_bits += 14;
+        if (opt->extended_bsi_2)
+            frame_bits += 14;
+    }
 
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         /* stereo rematrixing */
@@ -1245,6 +1369,8 @@ static void quantize_mantissas(AC3EncodeContext *s)
  */
 static void output_frame_header(AC3EncodeContext *s)
 {
+    AC3EncOptions *opt = &s->options;
+
     put_bits(&s->pb, 16, 0x0b77);   /* frame header */
     put_bits(&s->pb, 16, 0);        /* crc1: will be filled later */
     put_bits(&s->pb, 2,  s->bit_alloc.sr_code);
@@ -1253,20 +1379,43 @@ static void output_frame_header(AC3EncodeContext *s)
     put_bits(&s->pb, 3,  s->bitstream_mode);
     put_bits(&s->pb, 3,  s->channel_mode);
     if ((s->channel_mode & 0x01) && s->channel_mode != AC3_CHMODE_MONO)
-        put_bits(&s->pb, 2, 1);     /* XXX -4.5 dB */
+        put_bits(&s->pb, 2, s->center_mix_level);
     if (s->channel_mode & 0x04)
-        put_bits(&s->pb, 2, 1);     /* XXX -6 dB */
+        put_bits(&s->pb, 2, s->surround_mix_level);
     if (s->channel_mode == AC3_CHMODE_STEREO)
-        put_bits(&s->pb, 2, 0);     /* surround not indicated */
+        put_bits(&s->pb, 2, opt->dolby_surround_mode);
     put_bits(&s->pb, 1, s->lfe_on); /* LFE */
-    put_bits(&s->pb, 5, 31);        /* dialog norm: -31 db */
+    put_bits(&s->pb, 5, -opt->dialogue_level);
     put_bits(&s->pb, 1, 0);         /* no compression control word */
     put_bits(&s->pb, 1, 0);         /* no lang code */
-    put_bits(&s->pb, 1, 0);         /* no audio production info */
-    put_bits(&s->pb, 1, 0);         /* no copyright */
-    put_bits(&s->pb, 1, 1);         /* original bitstream */
+    put_bits(&s->pb, 1, opt->audio_production_info);
+    if (opt->audio_production_info) {
+        put_bits(&s->pb, 5, opt->mixing_level - 80);
+        put_bits(&s->pb, 2, opt->room_type);
+    }
+    put_bits(&s->pb, 1, opt->copyright);
+    put_bits(&s->pb, 1, opt->original);
+    if (s->bitstream_id == 6) {
+        /* alternate bit stream syntax */
+        put_bits(&s->pb, 1, opt->extended_bsi_1);
+        if (opt->extended_bsi_1) {
+            put_bits(&s->pb, 2, opt->preferred_stereo_downmix);
+            put_bits(&s->pb, 3, s->ltrt_center_mix_level);
+            put_bits(&s->pb, 3, s->ltrt_surround_mix_level);
+            put_bits(&s->pb, 3, s->loro_center_mix_level);
+            put_bits(&s->pb, 3, s->loro_surround_mix_level);
+        }
+        put_bits(&s->pb, 1, opt->extended_bsi_2);
+        if (opt->extended_bsi_2) {
+            put_bits(&s->pb, 2, opt->dolby_surround_ex_mode);
+            put_bits(&s->pb, 2, opt->dolby_headphone_mode);
+            put_bits(&s->pb, 1, opt->ad_converter_type);
+            put_bits(&s->pb, 9, 0);     /* xbsi2 and encinfo : reserved */
+        }
+    } else {
     put_bits(&s->pb, 1, 0);         /* no time code 1 */
     put_bits(&s->pb, 1, 0);         /* no time code 2 */
+    }
     put_bits(&s->pb, 1, 0);         /* no additional bit stream info */
 }
 
@@ -1479,6 +1628,268 @@ static void output_frame(AC3EncodeContext *s, unsigned char *frame)
 }
 
 
+static void dprint_options(AVCodecContext *avctx)
+{
+#ifdef DEBUG
+    AC3EncodeContext *s = avctx->priv_data;
+    AC3EncOptions *opt = &s->options;
+    char strbuf[32];
+
+    switch (s->bitstream_id) {
+    case  6:  strncpy(strbuf, "AC-3 (alt syntax)", 32);      break;
+    case  8:  strncpy(strbuf, "AC-3 (standard)", 32);        break;
+    case  9:  strncpy(strbuf, "AC-3 (dnet half-rate)", 32);  break;
+    case 10:  strncpy(strbuf, "AC-3 (dnet quater-rate", 32); break;
+    default: snprintf(strbuf, 32, "ERROR");
+    }
+    av_dlog(avctx, "bitstream_id: %s (%d)\n", strbuf, s->bitstream_id);
+    av_dlog(avctx, "sample_fmt: %s\n", av_get_sample_fmt_name(avctx->sample_fmt));
+    av_get_channel_layout_string(strbuf, 32, s->channels, avctx->channel_layout);
+    av_dlog(avctx, "channel_layout: %s\n", strbuf);
+    av_dlog(avctx, "sample_rate: %d\n", s->sample_rate);
+    av_dlog(avctx, "bit_rate: %d\n", s->bit_rate);
+    if (s->cutoff)
+        av_dlog(avctx, "cutoff: %d\n", s->cutoff);
+
+    av_dlog(avctx, "per_frame_metadata: %s\n",
+            opt->allow_per_frame_metadata?"on":"off");
+    if (s->has_center)
+        av_dlog(avctx, "center_mixlev: %0.3f (%d)\n", opt->center_mix_level,
+                s->center_mix_level);
+    else
+        av_dlog(avctx, "center_mixlev: {not written}\n");
+    if (s->has_surround)
+        av_dlog(avctx, "surround_mixlev: %0.3f (%d)\n", opt->surround_mix_level,
+                s->surround_mix_level);
+    else
+        av_dlog(avctx, "surround_mixlev: {not written}\n");
+    if (opt->audio_production_info) {
+        av_dlog(avctx, "mixing_level: %ddB\n", opt->mixing_level);
+        switch (opt->room_type) {
+        case 0:  strncpy(strbuf, "notindicated", 32); break;
+        case 1:  strncpy(strbuf, "large", 32);        break;
+        case 2:  strncpy(strbuf, "small", 32);        break;
+        default: snprintf(strbuf, 32, "ERROR (%d)", opt->room_type);
+        }
+        av_dlog(avctx, "room_type: %s\n", strbuf);
+    } else {
+        av_dlog(avctx, "mixing_level: {not written}\n");
+        av_dlog(avctx, "room_type: {not written}\n");
+    }
+    av_dlog(avctx, "copyright: %s\n", opt->copyright?"on":"off");
+    av_dlog(avctx, "dialnorm: %ddB\n", opt->dialogue_level);
+    if (s->channel_mode == AC3_CHMODE_STEREO) {
+        switch (opt->dolby_surround_mode) {
+        case 0:  strncpy(strbuf, "notindicated", 32); break;
+        case 1:  strncpy(strbuf, "on", 32);           break;
+        case 2:  strncpy(strbuf, "off", 32);          break;
+        default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_surround_mode);
+        }
+        av_dlog(avctx, "dsur_mode: %s\n", strbuf);
+    } else {
+        av_dlog(avctx, "dsur_mode: {not written}\n");
+    }
+    av_dlog(avctx, "original: %s\n", opt->original?"on":"off");
+
+    if (s->bitstream_id == 6) {
+        if (opt->extended_bsi_1) {
+            switch (opt->preferred_stereo_downmix) {
+            case 0:  strncpy(strbuf, "notindicated", 32); break;
+            case 1:  strncpy(strbuf, "ltrt", 32);         break;
+            case 2:  strncpy(strbuf, "loro", 32);         break;
+            default: snprintf(strbuf, 32, "ERROR (%d)", opt->preferred_stereo_downmix);
+            }
+            av_dlog(avctx, "dmix_mode: %s\n", strbuf);
+            av_dlog(avctx, "ltrt_cmixlev: %0.3f (%d)\n",
+                    opt->ltrt_center_mix_level, s->ltrt_center_mix_level);
+            av_dlog(avctx, "ltrt_surmixlev: %0.3f (%d)\n",
+                    opt->ltrt_surround_mix_level, s->ltrt_surround_mix_level);
+            av_dlog(avctx, "loro_cmixlev: %0.3f (%d)\n",
+                    opt->loro_center_mix_level, s->loro_center_mix_level);
+            av_dlog(avctx, "loro_surmixlev: %0.3f (%d)\n",
+                    opt->loro_surround_mix_level, s->loro_surround_mix_level);
+        } else {
+            av_dlog(avctx, "extended bitstream info 1: {not written}\n");
+        }
+        if (opt->extended_bsi_2) {
+            switch (opt->dolby_surround_ex_mode) {
+            case 0:  strncpy(strbuf, "notindicated", 32); break;
+            case 1:  strncpy(strbuf, "on", 32);           break;
+            case 2:  strncpy(strbuf, "off", 32);          break;
+            default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_surround_ex_mode);
+            }
+            av_dlog(avctx, "dsurex_mode: %s\n", strbuf);
+            switch (opt->dolby_headphone_mode) {
+            case 0:  strncpy(strbuf, "notindicated", 32); break;
+            case 1:  strncpy(strbuf, "on", 32);           break;
+            case 2:  strncpy(strbuf, "off", 32);          break;
+            default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_headphone_mode);
+            }
+            av_dlog(avctx, "dheadphone_mode: %s\n", strbuf);
+
+            switch (opt->ad_converter_type) {
+            case 0:  strncpy(strbuf, "standard", 32); break;
+            case 1:  strncpy(strbuf, "hdcd", 32);     break;
+            default: snprintf(strbuf, 32, "ERROR (%d)", opt->ad_converter_type);
+            }
+            av_dlog(avctx, "ad_conv_type: %s\n", strbuf);
+        } else {
+            av_dlog(avctx, "extended bitstream info 2: {not written}\n");
+        }
+    }
+#endif
+}
+
+
+#define FLT_OPTION_THRESHOLD 0.01
+
+static int validate_float_option(float v, const float *v_list, int v_list_size)
+{
+    int i;
+
+    for (i = 0; i < v_list_size; i++) {
+        if (v < (v_list[i] + FLT_OPTION_THRESHOLD) &&
+            v > (v_list[i] - FLT_OPTION_THRESHOLD))
+            break;
+    }
+    if (i == v_list_size)
+        return -1;
+
+    return i;
+}
+
+
+static void validate_mix_level(void *log_ctx, const char *opt_name,
+                               float *opt_param, const float *list,
+                               int list_size, int default_value, int min_value,
+                               int *ctx_param)
+{
+    int mixlev = validate_float_option(*opt_param, list, list_size);
+    if (mixlev < min_value) {
+        mixlev = default_value;
+        if (*opt_param >= 0.0) {
+            av_log(log_ctx, AV_LOG_WARNING, "requested %s is not valid. using "
+                   "default value: %0.3f\n", opt_name, list[mixlev]);
+        }
+    }
+    *opt_param = list[mixlev];
+    *ctx_param = mixlev;
+}
+
+
+/**
+ * Validate metadata options as set by AVOption system.
+ * These values can optionally be changed per-frame.
+ */
+static int validate_metadata(AVCodecContext *avctx)
+{
+    AC3EncodeContext *s = avctx->priv_data;
+    AC3EncOptions *opt = &s->options;
+
+    /* validate mixing levels */
+    if (s->has_center) {
+        validate_mix_level(avctx, "center_mix_level", &opt->center_mix_level,
+                           cmixlev_options, CMIXLEV_NUM_OPTIONS, 1, 0,
+                           &s->center_mix_level);
+    }
+    if (s->has_surround) {
+        validate_mix_level(avctx, "surround_mix_level", &opt->surround_mix_level,
+                           surmixlev_options, SURMIXLEV_NUM_OPTIONS, 1, 0,
+                           &s->surround_mix_level);
+    }
+
+    /* set audio production info flag */
+    if (opt->mixing_level >= 0 || opt->room_type >= 0) {
+        if (opt->mixing_level < 0) {
+            av_log(avctx, AV_LOG_ERROR, "mixing_level must be set if "
+                   "room_type is set\n");
+            return AVERROR(EINVAL);
+        }
+        if (opt->mixing_level < 80) {
+            av_log(avctx, AV_LOG_ERROR, "invalid mixing level. must be between "
+                   "80dB and 111dB\n");
+            return AVERROR(EINVAL);
+        }
+        /* default room type */
+        if (opt->room_type < 0)
+            opt->room_type = 0;
+        opt->audio_production_info = 1;
+    } else {
+        opt->audio_production_info = 0;
+    }
+
+    /* set extended bsi 1 flag */
+    if ((s->has_center || s->has_surround) &&
+        (opt->preferred_stereo_downmix >= 0 ||
+         opt->ltrt_center_mix_level   >= 0 ||
+         opt->ltrt_surround_mix_level >= 0 ||
+         opt->loro_center_mix_level   >= 0 ||
+         opt->loro_surround_mix_level >= 0)) {
+        /* default preferred stereo downmix */
+        if (opt->preferred_stereo_downmix < 0)
+            opt->preferred_stereo_downmix = 0;
+        /* validate Lt/Rt center mix level */
+        validate_mix_level(avctx, "ltrt_center_mix_level",
+                           &opt->ltrt_center_mix_level, extmixlev_options,
+                           EXTMIXLEV_NUM_OPTIONS, 5, 0,
+                           &s->ltrt_center_mix_level);
+        /* validate Lt/Rt surround mix level */
+        validate_mix_level(avctx, "ltrt_surround_mix_level",
+                           &opt->ltrt_surround_mix_level, extmixlev_options,
+                           EXTMIXLEV_NUM_OPTIONS, 6, 3,
+                           &s->ltrt_surround_mix_level);
+        /* validate Lo/Ro center mix level */
+        validate_mix_level(avctx, "loro_center_mix_level",
+                           &opt->loro_center_mix_level, extmixlev_options,
+                           EXTMIXLEV_NUM_OPTIONS, 5, 0,
+                           &s->loro_center_mix_level);
+        /* validate Lo/Ro surround mix level */
+        validate_mix_level(avctx, "loro_surround_mix_level",
+                           &opt->loro_surround_mix_level, extmixlev_options,
+                           EXTMIXLEV_NUM_OPTIONS, 6, 3,
+                           &s->loro_surround_mix_level);
+        opt->extended_bsi_1 = 1;
+    } else {
+        opt->extended_bsi_1 = 0;
+    }
+
+    /* set extended bsi 2 flag */
+    if (opt->dolby_surround_ex_mode >= 0 ||
+        opt->dolby_headphone_mode   >= 0 ||
+        opt->ad_converter_type      >= 0) {
+        /* default dolby surround ex mode */
+        if (opt->dolby_surround_ex_mode < 0)
+            opt->dolby_surround_ex_mode = 0;
+        /* default dolby headphone mode */
+        if (opt->dolby_headphone_mode < 0)
+            opt->dolby_headphone_mode = 0;
+        /* default A/D converter type */
+        if (opt->ad_converter_type < 0)
+            opt->ad_converter_type = 0;
+        opt->extended_bsi_2 = 1;
+    } else {
+        opt->extended_bsi_2 = 0;
+    }
+
+    /* set bitstream id for alternate bitstream syntax */
+    if (opt->extended_bsi_1 || opt->extended_bsi_2) {
+        if (s->bitstream_id > 8 && s->bitstream_id < 11) {
+            static int warn_once = 1;
+            if (warn_once) {
+                av_log(avctx, AV_LOG_WARNING, "alternate bitstream syntax is "
+                       "not compatible with reduced samplerates. writing of "
+                       "extended bitstream information will be disabled.\n");
+                warn_once = 0;
+            }
+        } else {
+            s->bitstream_id = 6;
+        }
+    }
+
+    return 0;
+}
+
+
 /**
  * Encode a single AC-3 frame.
  */
@@ -1488,6 +1899,12 @@ static int ac3_encode_frame(AVCodecContext *avctx, unsigned char *frame,
     AC3EncodeContext *s = avctx->priv_data;
     const SampleType *samples = data;
     int ret;
+
+    if (s->options.allow_per_frame_metadata) {
+        ret = validate_metadata(avctx);
+        if (ret)
+            return ret;
+    }
 
     if (s->bit_alloc.sr_code == 1)
         adjust_frame_size(s);
@@ -1597,6 +2014,8 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
     default:
         return AVERROR(EINVAL);
     }
+    s->has_center   = (s->channel_mode & 0x01) && s->channel_mode != AC3_CHMODE_MONO;
+    s->has_surround =  s->channel_mode & 0x04;
 
     s->channel_map  = ff_ac3_enc_channel_map[s->channel_mode][s->lfe_on];
     *channel_layout = ch_layout;
@@ -1635,6 +2054,7 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
     s->sample_rate        = avctx->sample_rate;
     s->bit_alloc.sr_shift = i % 3;
     s->bit_alloc.sr_code  = i / 3;
+    s->bitstream_id       = 8 + s->bit_alloc.sr_shift;
 
     /* validate bit rate */
     for (i = 0; i < 19; i++) {
@@ -1668,6 +2088,10 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
                                     "specified number of channels\n");
         return AVERROR(EINVAL);
     }
+
+    ret = validate_metadata(avctx);
+    if (ret)
+        return ret;
 
     return 0;
 }
@@ -1810,7 +2234,6 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
     if (ret)
         return ret;
 
-    s->bitstream_id   = 8 + s->bit_alloc.sr_shift;
     s->bitstream_mode = avctx->audio_service_type;
     if (s->bitstream_mode == AV_AUDIO_SERVICE_TYPE_KARAOKE)
         s->bitstream_mode = 0x7;
@@ -1848,6 +2271,8 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
 
     dsputil_init(&s->dsp, avctx);
     ff_ac3dsp_init(&s->ac3dsp, avctx->flags & CODEC_FLAG_BITEXACT);
+
+    dprint_options(avctx);
 
     return 0;
 init_fail:
