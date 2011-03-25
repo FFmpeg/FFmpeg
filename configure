@@ -280,7 +280,7 @@ die(){
 
 If you think configure made a mistake, make sure you are using the latest
 version from Git.  If the latest version fails, report the problem to the
-ffmpeg-user@mplayerhq.hu mailing list or IRC #ffmpeg on irc.freenode.net.
+ffmpeg-user@ffmpeg.org mailing list or IRC #ffmpeg on irc.freenode.net.
 EOF
     if disabled logging; then
         cat <<EOF
