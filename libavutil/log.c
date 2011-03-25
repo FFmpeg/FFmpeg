@@ -59,7 +59,8 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix=1;
     static int count;
-    static char line[1024], prev[1024];
+    static char prev[1024];
+    char line[1024];
     static const uint8_t color[]={0x41,0x41,0x11,0x03,9,9,9};
     AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
     if(level>av_log_level)
