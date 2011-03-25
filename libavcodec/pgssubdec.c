@@ -246,8 +246,8 @@ static void parse_palette_segment(AVCodecContext *avctx,
     while (buf < buf_end) {
         color_id  = bytestream_get_byte(&buf);
         y         = bytestream_get_byte(&buf);
-        cb        = bytestream_get_byte(&buf);
         cr        = bytestream_get_byte(&buf);
+        cb        = bytestream_get_byte(&buf);
         alpha     = bytestream_get_byte(&buf);
 
         YUV_TO_RGB1(cb, cr);
