@@ -1924,7 +1924,9 @@ static int slice_decode_thread(AVCodecContext *c, void *arg){
 
         start_code= -1;
         buf = ff_find_start_code(buf, s->gb.buffer_end, &start_code);
-        mb_y= start_code - SLICE_MIN_START_CODE;
+        mb_y= (start_code - SLICE_MIN_START_CODE) << field_pic;
+        if (s->picture_structure == PICT_BOTTOM_FIELD)
+            mb_y++;
         if(mb_y < 0 || mb_y >= s->end_mb_y)
             return -1;
     }
@@ -2342,6 +2344,16 @@ static int decode_chunks(AVCodecContext *avctx,
             break;
 
         case PICTURE_START_CODE:
+            if (avctx->thread_count > 1 && s->slice_count) {
+                int i;
+
+                avctx->execute(avctx, slice_decode_thread,
+                               s2->thread_context, NULL,
+                               s->slice_count, sizeof(void*));
+                for (i = 0; i < s->slice_count; i++)
+                    s2->error_count += s2->thread_context[i]->error_count;
+                s->slice_count = 0;
+            }
             if(last_code == 0 || last_code == SLICE_MIN_START_CODE){
             if(mpeg_decode_postinit(avctx) < 0){
                 av_log(avctx, AV_LOG_ERROR, "mpeg_decode_postinit() failure\n");

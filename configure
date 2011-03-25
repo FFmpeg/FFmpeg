@@ -1488,7 +1488,7 @@ ffmpeg_select="buffer_filter"
 ffplay_deps="avcodec avformat swscale sdl"
 ffplay_select="rdft"
 ffprobe_deps="avcodec avformat"
-ffserver_deps="avformat ffm_muxer rtp_protocol rtsp_demuxer"
+ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 
 doc_deps="texi2html"
@@ -2427,7 +2427,6 @@ case $target_os in
             LIBTARGET=arm-wince
         fi
         shlibdir_default="$bindir_default"
-        disable ffserver
         SLIBPREF=""
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
@@ -2446,6 +2445,7 @@ case $target_os in
         check_cpp_condition _mingw.h "defined (__MINGW64_VERSION_MAJOR) || (__MINGW32_MAJOR_VERSION > 3) \
                                       || (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
                 die "ERROR: MinGW runtime version must be >= 3.15."
+        add_cppflags -U__STRICT_ANSI__
         ;;
     cygwin*)
         target_os=cygwin
@@ -2460,8 +2460,6 @@ case $target_os in
         check_cflags -fno-common
         ;;
     *-dos|freedos|opendos)
-        disable ffplay ffserver
-        disable $INDEV_LIST $OUTDEV_LIST
         network_extralibs="-lsocket"
         objformat="coff"
         enable dos_paths
@@ -2742,6 +2740,8 @@ if enabled asm; then
         $nogas "GNU assembler not found, install gas-preprocessor"
 fi
 
+check_ldflags -Wl,--as-needed
+
 if check_func dlopen; then
     ldl=
 elif check_func dlopen -ldl; then
@@ -2976,7 +2976,6 @@ enabled extra_warnings && check_cflags -Winline
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
-check_ldflags -Wl,--as-needed
 check_ldflags '-Wl,-rpath-link,\$(BUILD_ROOT)/libpostproc -Wl,-rpath-link,\$(BUILD_ROOT)/libswscale -Wl,-rpath-link,\$(BUILD_ROOT)/libavfilter -Wl,-rpath-link,\$(BUILD_ROOT)/libavdevice -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
