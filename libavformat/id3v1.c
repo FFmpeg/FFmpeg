@@ -227,6 +227,7 @@ void ff_id3v1_read(AVFormatContext *s)
 {
     int ret, filesize;
     uint8_t buf[ID3v1_TAG_SIZE];
+    int64_t position = avio_tell(s->pb);
 
     if (!url_is_streamed(s->pb)) {
         /* XXX: change that */
@@ -237,7 +238,7 @@ void ff_id3v1_read(AVFormatContext *s)
             if (ret == ID3v1_TAG_SIZE) {
                 parse_tag(s, buf);
             }
-            avio_seek(s->pb, 0, SEEK_SET);
+            avio_seek(s->pb, position, SEEK_SET);
         }
     }
 }
