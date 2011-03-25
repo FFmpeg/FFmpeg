@@ -94,7 +94,7 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
             break;
         case '<':
             tag_close = in[1] == '/';
-            if (sscanf(in+tag_close+1, "%128[^>]>%n%c", buffer, &len,&c) >= 2) {
+            if (sscanf(in+tag_close+1, "%127[^>]>%n%c", buffer, &len,&c) >= 2) {
                 if ((param = strchr(buffer, ' ')))
                     *param++ = 0;
                 if ((!tag_close && sptr < FF_ARRAY_ELEMS(stack)) ||
