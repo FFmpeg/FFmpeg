@@ -2246,7 +2246,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[12][64]){
  * @param h is the normal height, this will be reduced automatically if needed for the last row
  */
 void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
-	const int field_pic= s->picture_structure != PICT_FRAME;
+    const int field_pic= s->picture_structure != PICT_FRAME;
     if(field_pic){
         h <<= 1;
         y <<= 1;
