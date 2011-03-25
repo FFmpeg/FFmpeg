@@ -1474,8 +1474,8 @@ frei0r_filter_deps="frei0r dlopen strtok_r"
 frei0r_src_filter_deps="frei0r dlopen strtok_r"
 hqdn3d_filter_deps="gpl"
 mp_filter_deps="gpl"
-scale_filter_deps="swscale"
 ocv_filter_deps="libopencv"
+scale_filter_deps="swscale"
 yadif_filter_deps="gpl"
 
 # libraries
