@@ -94,7 +94,8 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix=1;
     static int count;
-    static char line[1024], prev[1024];
+    static char prev[1024];
+    char line[1024];
     static int is_atty;
     AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
     if(level>av_log_level)
