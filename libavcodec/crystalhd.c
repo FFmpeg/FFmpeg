@@ -503,32 +503,13 @@ static av_cold int init(AVCodecContext *avctx)
 }
 
 
-/*
- * The CrystalHD doesn't report interlaced H.264 content in a way that allows
- * us to distinguish between specific cases that require different handling.
- * So, for now, we have to hard-code the behaviour we want.
- *
- * The default behaviour is to assume MBAFF with input and output fieldpairs.
- *
- * Define ASSUME_PAFF_OVER_MBAFF to treat input as PAFF with separate input
- * and output fields.
- *
- * Define ASSUME_TWO_INPUTS_ONE_OUTPUT to treat input as separate fields but
- * output as a single fieldpair.
- *
- * Define both to mess up your playback.
- */
-#define ASSUME_PAFF_OVER_MBAFF 0
-#define ASSUME_TWO_INPUTS_ONE_OUTPUT 0
 static inline CopyRet copy_frame(AVCodecContext *avctx,
                                  BC_DTS_PROC_OUT *output,
-                                 void *data, int *data_size,
-                                 uint8_t second_field)
+                                 void *data, int *data_size)
 {
     BC_STATUS ret;
     BC_DTS_STATUS decoder_status;
-    uint8_t is_paff;
-    uint8_t next_frame_same;
+    uint8_t trust_interlaced;
     uint8_t interlaced;
 
     CHDContext *priv = avctx->priv_data;
@@ -577,17 +558,51 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
        return RET_ERROR;
     }
 
-    is_paff           = ASSUME_PAFF_OVER_MBAFF ||
-                        !(output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC);
-    next_frame_same   = output->PicInfo.picture_number ==
-                        (decoder_status.picNumFlags & ~0x40000000);
-    interlaced        = ((output->PicInfo.flags &
-                          VDEC_FLAG_INTERLACED_SRC) && is_paff) ||
-                         next_frame_same || bottom_field || second_field;
+    /*
+     * For most content, we can trust the interlaced flag returned
+     * by the hardware, but sometimes we can't. These are the
+     * conditions under which we can trust the flag:
+     *
+     * 1) It's not h.264 content
+     * 2) The UNKNOWN_SRC flag is not set
+     * 3) We know we're expecting a second field
+     * 4) The hardware reports this picture and the next picture
+     *    have the same picture number.
+     *
+     * Note that there can still be interlaced content that will
+     * fail this check, if the hardware hasn't decoded the next
+     * picture or if there is a corruption in the stream. (In either
+     * case a 0 will be returned for the next picture number)
+     */
+    trust_interlaced = avctx->codec->id != CODEC_ID_H264 ||
+                       !(output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) ||
+                       priv->need_second_field ||
+                       (decoder_status.picNumFlags & ~0x40000000) ==
+                       output->PicInfo.picture_number;
 
-    av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: next_frame_same: %u | %u | %u\n",
-           next_frame_same, output->PicInfo.picture_number,
-           decoder_status.picNumFlags & ~0x40000000);
+    /*
+     * If we got a false negative for trust_interlaced on the first field,
+     * we will realise our mistake here when we see that the picture number is that
+     * of the previous picture. We cannot recover the frame and should discard the
+     * second field to keep the correct number of output frames.
+     */
+    if (output->PicInfo.picture_number == priv->last_picture && !priv->need_second_field) {
+        av_log(avctx, AV_LOG_WARNING,
+               "Incorrectly guessed progressive frame. Discarding second field\n");
+        /* Returning without providing a picture. */
+        return RET_OK;
+    }
+
+    interlaced = (output->PicInfo.flags & VDEC_FLAG_INTERLACED_SRC) &&
+                 trust_interlaced;
+
+    if (!trust_interlaced && (decoder_status.picNumFlags & ~0x40000000) == 0) {
+        av_log(avctx, AV_LOG_VERBOSE,
+               "Next picture number unknown. Assuming progressive frame.\n");
+    }
+
+    av_log(avctx, AV_LOG_VERBOSE, "Interlaced state: %d | trust_interlaced %d\n",
+           interlaced, trust_interlaced);
 
     if (priv->pic.data[0] && !priv->need_second_field)
         avctx->release_buffer(avctx, &priv->pic);
@@ -655,8 +670,15 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         *(AVFrame *)data = priv->pic;
     }
 
-    if (ASSUME_TWO_INPUTS_ONE_OUTPUT &&
-        output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) {
+    /*
+     * Two types of PAFF content have been observed. One form causes the
+     * hardware to return a field pair and the other individual fields,
+     * even though the input is always individual fields. We must skip
+     * copying on the next decode() call to maintain pipeline length in
+     * the first case.
+     */
+    if (!interlaced && (output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) &&
+        (pic_type == PICT_TOP_FIELD || pic_type == PICT_BOTTOM_FIELD)) {
         av_log(priv->avctx, AV_LOG_VERBOSE, "Fieldpair from two packets.\n");
         return RET_SKIP_NEXT_COPY;
     }
@@ -672,8 +694,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 
 
 static inline CopyRet receive_frame(AVCodecContext *avctx,
-                                    void *data, int *data_size,
-                                    uint8_t second_field)
+                                    void *data, int *data_size)
 {
     BC_STATUS ret;
     BC_DTS_PROC_OUT output = {
@@ -730,7 +751,7 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
                priv->last_picture = output.PicInfo.picture_number - 1;
             }
 
-            copy_ret = copy_frame(avctx, &output, data, data_size, second_field);
+            copy_ret = copy_frame(avctx, &output, data, data_size);
             if (*data_size > 0) {
                 avctx->has_b_frames--;
                 priv->last_picture++;
@@ -865,7 +886,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
     }
 
     do {
-        rec_ret = receive_frame(avctx, data, data_size, 0);
+        rec_ret = receive_frame(avctx, data, data_size);
         if (rec_ret == RET_OK && *data_size == 0) {
             /*
              * This case is for when the encoded fields are stored
@@ -891,7 +912,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
                 ret = DtsGetDriverStatus(dev, &decoder_status);
                 if (ret == BC_STS_SUCCESS &&
                     decoder_status.ReadyListCount > 0) {
-                    rec_ret = receive_frame(avctx, data, data_size, 1);
+                    rec_ret = receive_frame(avctx, data, data_size);
                     if ((rec_ret == RET_OK && *data_size > 0) ||
                         rec_ret == RET_ERROR)
                         break;
