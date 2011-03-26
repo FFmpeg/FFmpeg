@@ -224,6 +224,17 @@ expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3} @var{c4} @var{c5}
 @var{c6} @var{c7}]"
 @end table
 
+@section earwax
+
+Make audio easier to listen to on headphones.
+
+This filter adds `cues' to 44.1kHz stereo (i.e. audio CD format) audio
+so that when listened to on headphones the stereo image is moved from
+inside your head (standard for headphones) to outside and in front of
+the listener (standard for speakers).
+
+Ported from SoX.
+
 @section volume
 
 Adjust the input audio volume.

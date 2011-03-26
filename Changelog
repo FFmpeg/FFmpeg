@@ -74,6 +74,7 @@ easier to use. The changes are:
 - replacement Indeo 3 decoder
 - new ffmpeg option: -map_channel
 - volume audio filter added
+- earwax audio filter added
 
 
 version 0.8:
