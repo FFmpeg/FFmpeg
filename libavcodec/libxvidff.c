@@ -456,8 +456,8 @@ static int xvid_encode_frame(AVCodecContext *avctx,
                                           XVID_TYPE_AUTO;
 
     /* Pixel aspect ratio setting */
-    if (avctx->sample_aspect_ratio.num < 1 || avctx->sample_aspect_ratio.num > 255 ||
-        avctx->sample_aspect_ratio.den < 1 || avctx->sample_aspect_ratio.den > 255) {
+    if (avctx->sample_aspect_ratio.num < 0 || avctx->sample_aspect_ratio.num > 255 ||
+        avctx->sample_aspect_ratio.den < 0 || avctx->sample_aspect_ratio.den > 255) {
         av_log(avctx, AV_LOG_ERROR, "Invalid pixel aspect ratio %i/%i\n",
                avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den);
         return -1;
