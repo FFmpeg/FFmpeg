@@ -512,7 +512,8 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 {
     BC_STATUS ret;
     BC_DTS_STATUS decoder_status;
-    uint8_t trust_interlaced;
+    uint8_t confirmed_interlaced;
+    uint8_t ignore_interlaced;
     uint8_t interlaced;
 
     CHDContext *priv = avctx->priv_data;
@@ -560,50 +561,50 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     }
 
     /*
-     * For most content, we can trust the interlaced flag returned
-     * by the hardware, but sometimes we can't. These are the
-     * conditions under which we can trust the flag:
+     * If we're expecting a second field, or we know that the next
+     * picture has the same number as the current picture, then we're
+     * definitely interlaced.
      *
-     * 1) It's not h.264 content
-     * 2) The UNKNOWN_SRC flag is not set
-     * 3) We know we're expecting a second field
-     * 4) The hardware reports this picture and the next picture
-     *    have the same picture number.
-     *
-     * Note that there can still be interlaced content that will
-     * fail this check, if the hardware hasn't decoded the next
-     * picture or if there is a corruption in the stream. (In either
-     * case a 0 will be returned for the next picture number)
+     * Note that this test can return false negatives if the hardware
+     * hasn't decoded the next picture or if there is a corruption in
+     * the stream. (In either case a 0 will be returned for the next
+     * picture number)
      */
-    trust_interlaced = avctx->codec->id != CODEC_ID_H264 ||
-                       !(output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) ||
-                       priv->need_second_field ||
-                       (decoder_status.picNumFlags & ~0x40000000) ==
-                       output->PicInfo.picture_number;
+    confirmed_interlaced = ((decoder_status.picNumFlags & ~0x40000000) ==
+                            output->PicInfo.picture_number) ||
+                            priv->need_second_field;
 
     /*
-     * If we got a false negative for trust_interlaced on the first field,
+     * If we got a false negative for confirmed_interlaced on the first field,
      * we will realise our mistake here when we see that the picture number is that
      * of the previous picture. We cannot recover the frame and should discard the
      * second field to keep the correct number of output frames.
      */
     if (output->PicInfo.picture_number == priv->last_picture && !priv->need_second_field) {
         av_log(avctx, AV_LOG_WARNING,
-               "Incorrectly guessed progressive frame. Discarding second field\n");
+               "Incorrectly guessed progressie frame. Discarding second field\n");
         /* Returning without providing a picture. */
         return RET_OK;
     }
 
-    interlaced = (output->PicInfo.flags & VDEC_FLAG_INTERLACED_SRC) &&
-                 trust_interlaced;
+    /*
+     * Testing has, so far, shown that we can't trust the interlaced flag for
+     * H.264 content when VDEC_FLAG_UNKNOWN_SRC is set.
+     */
+    ignore_interlaced = avctx->codec->id == CODEC_ID_H264 &&
+                        (output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) &&
+                        (pic_type == 0 || pic_type == PICT_FRAME ||
+                         !confirmed_interlaced);
+    interlaced        = (output->PicInfo.flags & VDEC_FLAG_INTERLACED_SRC) &&
+                        (!ignore_interlaced || confirmed_interlaced);
 
-    if (!trust_interlaced && (decoder_status.picNumFlags & ~0x40000000) == 0) {
-        av_log(avctx, AV_LOG_VERBOSE,
+    if (ignore_interlaced && (decoder_status.picNumFlags & ~0x40000000) == 0) {
+        av_log(avctx, AV_LOG_WARNING,
                "Next picture number unknown. Assuming progressive frame.\n");
     }
 
-    av_log(avctx, AV_LOG_VERBOSE, "Interlaced state: %d | trust_interlaced %d\n",
-           interlaced, trust_interlaced);
+    av_log(avctx, AV_LOG_VERBOSE, "Interlaced state: %d | ignore_interlaced %d\n",
+           interlaced, ignore_interlaced);
 
     if (priv->pic.data[0] && !priv->need_second_field)
         avctx->release_buffer(avctx, &priv->pic);
