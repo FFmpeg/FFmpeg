@@ -744,9 +744,9 @@ static void rtsp_parse_rtp_info(RTSPState *rt, const char *p)
         if (!strcmp(key, "url"))
             av_strlcpy(url, value, sizeof(url));
         else if (!strcmp(key, "seq"))
-            seq = strtol(value, NULL, 10);
+            seq = strtoul(value, NULL, 10);
         else if (!strcmp(key, "rtptime"))
-            rtptime = strtol(value, NULL, 10);
+            rtptime = strtoul(value, NULL, 10);
         if (*p == ',') {
             handle_rtp_info(rt, url, seq, rtptime);
             url[0] = '\0';
