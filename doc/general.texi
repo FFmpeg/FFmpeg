@@ -279,7 +279,7 @@ following image formats are supported:
     @tab Only uncompressed GIFs are generated.
 @item BMP          @tab X @tab X
     @tab Microsoft BMP image
-@item DPX          @tab   @tab X
+@item DPX          @tab X @tab X
     @tab Digital Picture Exchange
 @item JPEG         @tab X @tab X
     @tab Progressive JPEG is not supported.
