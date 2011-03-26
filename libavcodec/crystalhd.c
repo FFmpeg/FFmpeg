@@ -1,7 +1,7 @@
 /*
  * - CrystalHD decoder module -
  *
- * Copyright(C) 2010 Philip Langdale <ffmpeg.philipl@overt.org>
+ * Copyright(C) 2010,2011 Philip Langdale <ffmpeg.philipl@overt.org>
  *
  * This file is part of FFmpeg.
  *
