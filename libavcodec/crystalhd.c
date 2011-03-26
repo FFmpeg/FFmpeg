@@ -506,13 +506,23 @@ static av_cold int init(AVCodecContext *avctx)
 }
 
 
+/*
+ * The CrystalHD doesn't report interlaced H.264 content in a way that allows
+ * us to distinguish between specific cases that require different handling.
+ * So, for now, we have to hard-code the behaviour we want.
+ *
+ * Specifically, there are PAFF samples where input is always separate fields
+ * but the hardware returns separate fields on one occasion and a field-pair
+ * on another. The code assumes the first case and define
+ * ASSUME_TWO_INPUTS_ONE_OUTPUT to assume the second case.
+ */
+#define ASSUME_TWO_INPUTS_ONE_OUTPUT 0
 static inline CopyRet copy_frame(AVCodecContext *avctx,
                                  BC_DTS_PROC_OUT *output,
                                  void *data, int *data_size)
 {
     BC_STATUS ret;
     BC_DTS_STATUS decoder_status;
-    uint8_t confirmed_interlaced;
     uint8_t ignore_interlaced;
     uint8_t interlaced;
 
@@ -561,47 +571,15 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     }
 
     /*
-     * If we're expecting a second field, or we know that the next
-     * picture has the same number as the current picture, then we're
-     * definitely interlaced.
-     *
-     * Note that this test can return false negatives if the hardware
-     * hasn't decoded the next picture or if there is a corruption in
-     * the stream. (In either case a 0 will be returned for the next
-     * picture number)
-     */
-    confirmed_interlaced = ((decoder_status.picNumFlags & ~0x40000000) ==
-                            output->PicInfo.picture_number) ||
-                            priv->need_second_field;
-
-    /*
-     * If we got a false negative for confirmed_interlaced on the first field,
-     * we will realise our mistake here when we see that the picture number is that
-     * of the previous picture. We cannot recover the frame and should discard the
-     * second field to keep the correct number of output frames.
-     */
-    if (output->PicInfo.picture_number == priv->last_picture && !priv->need_second_field) {
-        av_log(avctx, AV_LOG_WARNING,
-               "Incorrectly guessed progressie frame. Discarding second field\n");
-        /* Returning without providing a picture. */
-        return RET_OK;
-    }
-
-    /*
      * Testing has, so far, shown that we can't trust the interlaced flag for
      * H.264 content when VDEC_FLAG_UNKNOWN_SRC is set.
      */
     ignore_interlaced = avctx->codec->id == CODEC_ID_H264 &&
                         (output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) &&
                         (pic_type == 0 || pic_type == PICT_FRAME ||
-                         !confirmed_interlaced);
+                         ASSUME_TWO_INPUTS_ONE_OUTPUT);
     interlaced        = (output->PicInfo.flags & VDEC_FLAG_INTERLACED_SRC) &&
-                        (!ignore_interlaced || confirmed_interlaced);
-
-    if (ignore_interlaced && (decoder_status.picNumFlags & ~0x40000000) == 0) {
-        av_log(avctx, AV_LOG_WARNING,
-               "Next picture number unknown. Assuming progressive frame.\n");
-    }
+                        !ignore_interlaced;
 
     av_log(avctx, AV_LOG_VERBOSE, "Interlaced state: %d | ignore_interlaced %d\n",
            interlaced, ignore_interlaced);
@@ -672,15 +650,8 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         *(AVFrame *)data = priv->pic;
     }
 
-    /*
-     * Two types of PAFF content have been observed. One form causes the
-     * hardware to return a field pair and the other individual fields,
-     * even though the input is always individual fields. We must skip
-     * copying on the next decode() call to maintain pipeline length in
-     * the first case.
-     */
-    if (!interlaced && (output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) &&
-        (pic_type == PICT_TOP_FIELD || pic_type == PICT_BOTTOM_FIELD)) {
+    if (ASSUME_TWO_INPUTS_ONE_OUTPUT &&
+        output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) {
         av_log(priv->avctx, AV_LOG_VERBOSE, "Fieldpair from two packets.\n");
         return RET_SKIP_NEXT_COPY;
     }
