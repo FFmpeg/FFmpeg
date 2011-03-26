@@ -231,15 +231,17 @@ static uint64_t opaque_list_push(CHDContext *priv, uint64_t reordered_opaque)
  * The OpaqueList is built in decode order, while elements will be removed
  * in presentation order. If frames are reordered, this means we must be
  * able to remove elements that are not the first element.
+ *
+ * Returned node must be freed by caller.
  */
-static uint64_t opaque_list_pop(CHDContext *priv, uint64_t fake_timestamp)
+static OpaqueList *opaque_list_pop(CHDContext *priv, uint64_t fake_timestamp)
 {
     OpaqueList *node = priv->head;
 
     if (!priv->head) {
         av_log(priv->avctx, AV_LOG_ERROR,
                "CrystalHD: Attempted to query non-existent timestamps.\n");
-        return AV_NOPTS_VALUE;
+        return NULL;
     }
 
     /*
@@ -247,14 +249,13 @@ static uint64_t opaque_list_pop(CHDContext *priv, uint64_t fake_timestamp)
      * the head pointer rather than the previous element in the list.
      */
     if (priv->head->fake_timestamp == fake_timestamp) {
-        uint64_t reordered_opaque = node->reordered_opaque;
         priv->head = node->next;
-        av_free(node);
 
         if (!priv->head->next)
             priv->tail = priv->head;
 
-        return reordered_opaque;
+        node->next = NULL;
+        return node;
     }
 
     /*
@@ -262,24 +263,23 @@ static uint64_t opaque_list_pop(CHDContext *priv, uint64_t fake_timestamp)
      * previous element available to rewrite its next pointer.
      */
     while (node->next) {
-        OpaqueList *next = node->next;
-        if (next->fake_timestamp == fake_timestamp) {
-            uint64_t reordered_opaque = next->reordered_opaque;
-            node->next = next->next;
-            av_free(next);
+        OpaqueList *current = node->next;
+        if (current->fake_timestamp == fake_timestamp) {
+            node->next = current->next;
 
             if (!node->next)
                priv->tail = node;
 
-            return reordered_opaque;
+            current->next = NULL;
+            return current;
         } else {
-            node = next;
+            node = current;
         }
     }
 
     av_log(priv->avctx, AV_LOG_VERBOSE,
            "CrystalHD: Couldn't match fake_timestamp.\n");
-    return AV_NOPTS_VALUE;
+    return NULL;
 }
 
 
@@ -517,6 +517,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     uint8_t interlaced;
 
     CHDContext *priv = avctx->priv_data;
+    int64_t pkt_pts  = AV_NOPTS_VALUE;
 
     uint8_t bottom_field = (output->PicInfo.flags & VDEC_FLAG_BOTTOMFIELD) ==
                            VDEC_FLAG_BOTTOMFIELD;
@@ -529,6 +530,16 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     int sStride;
     uint8_t *dst;
     int dStride;
+
+    if (output->PicInfo.timeStamp != 0) {
+        OpaqueList *node = opaque_list_pop(priv, output->PicInfo.timeStamp);
+        if (node) {
+            pkt_pts = node->reordered_opaque;
+            av_free(node);
+        }
+        av_log(avctx, AV_LOG_VERBOSE, "output \"pts\": %"PRIu64"\n",
+               output->PicInfo.timeStamp);
+    }
 
     ret = DtsGetDriverStatus(priv->dev, &decoder_status);
     if (ret != BC_STS_SUCCESS) {
@@ -608,11 +619,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     if (interlaced)
         priv->pic.top_field_first = !bottom_first;
 
-    if (output->PicInfo.timeStamp != 0) {
-        priv->pic.pkt_pts = opaque_list_pop(priv, output->PicInfo.timeStamp);
-        av_log(avctx, AV_LOG_VERBOSE, "output \"pts\": %"PRIu64"\n",
-               priv->pic.pkt_pts);
-    }
+    priv->pic.pkt_pts = pkt_pts;
 
     if (!priv->need_second_field) {
         *data_size       = sizeof(AVFrame);
