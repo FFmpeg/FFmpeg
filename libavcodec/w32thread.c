@@ -125,7 +125,7 @@ static int avcodec_thread_execute2(AVCodecContext *s, int (*func)(AVCodecContext
     avcodec_thread_execute(s, NULL, arg, ret, count, 0);
 }
 
-int ff_thread_init(AVCodecContext *s, int thread_count){
+int ff_thread_init(AVCodecContext *s){
     int i;
     ThreadContext *c;
     uint32_t threadid;
@@ -135,7 +135,6 @@ int ff_thread_init(AVCodecContext *s, int thread_count){
         return 0;
     }
 
-    s->thread_count= thread_count;
     s->active_thread_type= FF_THREAD_SLICE;
 
     if (thread_count <= 1)

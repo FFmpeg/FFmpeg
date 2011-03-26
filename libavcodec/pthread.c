@@ -880,7 +880,7 @@ static void validate_thread_parameters(AVCodecContext *avctx)
     }
 }
 
-int ff_thread_init(AVCodecContext *avctx, int thread_count)
+int ff_thread_init(AVCodecContext *avctx)
 {
     if (avctx->thread_opaque) {
         av_log(avctx, AV_LOG_ERROR, "avcodec_thread_init is ignored after avcodec_open\n");

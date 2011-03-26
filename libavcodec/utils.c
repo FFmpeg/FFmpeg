@@ -541,7 +541,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     avctx->frame_number = 0;
 
     if (HAVE_THREADS && !avctx->thread_opaque) {
-        ret = ff_thread_init(avctx, avctx->thread_count);
+        ret = ff_thread_init(avctx);
         if (ret < 0) {
             goto free_and_end;
         }
@@ -1193,8 +1193,7 @@ int av_get_bits_per_sample_format(enum AVSampleFormat sample_fmt) {
 #endif
 
 #if !HAVE_THREADS
-int ff_thread_init(AVCodecContext *s, int thread_count){
-    s->thread_count = thread_count;
+int ff_thread_init(AVCodecContext *s){
     return -1;
 }
 #endif
@@ -1337,7 +1336,9 @@ void ff_thread_await_progress(AVFrame *f, int progress, int field)
 
 int avcodec_thread_init(AVCodecContext *s, int thread_count)
 {
-    return ff_thread_init(s, thread_count);
+    s->thread_count = thread_count;
+    s->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
+    return ff_thread_init(s);
 }
 
 void avcodec_thread_free(AVCodecContext *s)
