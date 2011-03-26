@@ -232,7 +232,13 @@ The following abbreviations are recognized:
 @end table
 
 @item -aspect @var{aspect}
-Set aspect ratio (4:3, 16:9 or 1.3333, 1.7777).
+Set the video display aspect ratio specified by @var{aspect}.
+
+@var{aspect} can be a floating point number string, or a string of the
+form @var{num}:@var{den}, where @var{num} and @var{den} are the
+numerator and denominator of the aspect ratio. For example "4:3",
+"16:9", "1.3333", and "1.7777" are valid argument values.
+
 @item -croptop @var{size}
 @item -cropbottom @var{size}
 @item -cropleft @var{size}
