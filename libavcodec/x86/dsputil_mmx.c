@@ -783,7 +783,7 @@ static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
 
 /* draw the edges of width 'w' of an image of size width, height
    this mmx version can only handle w==8 || w==16 */
-static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
+static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w, int sides)
 {
     uint8_t *ptr, *last_line;
     int i;
@@ -836,36 +836,43 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
         );
     }
 
-    for(i=0;i<w;i+=4) {
-        /* top and bottom (and hopefully also the corners) */
-        ptr= buf - (i + 1) * wrap - w;
-        __asm__ volatile(
-                "1:                             \n\t"
-                "movq (%1, %0), %%mm0           \n\t"
-                "movq %%mm0, (%0)               \n\t"
-                "movq %%mm0, (%0, %2)           \n\t"
-                "movq %%mm0, (%0, %2, 2)        \n\t"
-                "movq %%mm0, (%0, %3)           \n\t"
-                "add $8, %0                     \n\t"
-                "cmp %4, %0                     \n\t"
-                " jb 1b                         \n\t"
-                : "+r" (ptr)
-                : "r" ((x86_reg)buf - (x86_reg)ptr - w), "r" ((x86_reg)-wrap), "r" ((x86_reg)-wrap*3), "r" (ptr+width+2*w)
-        );
-        ptr= last_line + (i + 1) * wrap - w;
-        __asm__ volatile(
-                "1:                             \n\t"
-                "movq (%1, %0), %%mm0           \n\t"
-                "movq %%mm0, (%0)               \n\t"
-                "movq %%mm0, (%0, %2)           \n\t"
-                "movq %%mm0, (%0, %2, 2)        \n\t"
-                "movq %%mm0, (%0, %3)           \n\t"
-                "add $8, %0                     \n\t"
-                "cmp %4, %0                     \n\t"
-                " jb 1b                         \n\t"
-                : "+r" (ptr)
-                : "r" ((x86_reg)last_line - (x86_reg)ptr - w), "r" ((x86_reg)wrap), "r" ((x86_reg)wrap*3), "r" (ptr+width+2*w)
-        );
+    /* top and bottom (and hopefully also the corners) */
+    if (sides&EDGE_TOP) {
+        for(i = 0; i < w; i += 4) {
+            ptr= buf - (i + 1) * wrap - w;
+            __asm__ volatile(
+                    "1:                             \n\t"
+                    "movq (%1, %0), %%mm0           \n\t"
+                    "movq %%mm0, (%0)               \n\t"
+                    "movq %%mm0, (%0, %2)           \n\t"
+                    "movq %%mm0, (%0, %2, 2)        \n\t"
+                    "movq %%mm0, (%0, %3)           \n\t"
+                    "add $8, %0                     \n\t"
+                    "cmp %4, %0                     \n\t"
+                    " jb 1b                         \n\t"
+                    : "+r" (ptr)
+                    : "r" ((x86_reg)buf - (x86_reg)ptr - w), "r" ((x86_reg)-wrap), "r" ((x86_reg)-wrap*3), "r" (ptr+width+2*w)
+            );
+        }
+    }
+
+    if (sides&EDGE_BOTTOM) {
+        for(i = 0; i < w; i += 4) {
+            ptr= last_line + (i + 1) * wrap - w;
+            __asm__ volatile(
+                    "1:                             \n\t"
+                    "movq (%1, %0), %%mm0           \n\t"
+                    "movq %%mm0, (%0)               \n\t"
+                    "movq %%mm0, (%0, %2)           \n\t"
+                    "movq %%mm0, (%0, %2, 2)        \n\t"
+                    "movq %%mm0, (%0, %3)           \n\t"
+                    "add $8, %0                     \n\t"
+                    "cmp %4, %0                     \n\t"
+                    " jb 1b                         \n\t"
+                    : "+r" (ptr)
+                    : "r" ((x86_reg)last_line - (x86_reg)ptr - w), "r" ((x86_reg)wrap), "r" ((x86_reg)wrap*3), "r" (ptr+width+2*w)
+            );
+        }
     }
 }
 
