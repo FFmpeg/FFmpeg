@@ -112,6 +112,7 @@ OBJS-$(CONFIG_DNXHD_ENCODER)           += dnxhdenc.o dnxhddata.o       \
                                           ratecontrol.o mpeg12data.o   \
                                           mpegvideo.o
 OBJS-$(CONFIG_DPX_DECODER)             += dpx.o
+OBJS-$(CONFIG_DPX_ENCODER)             += dpxenc.o
 OBJS-$(CONFIG_DSICINAUDIO_DECODER)     += dsicinav.o
 OBJS-$(CONFIG_DSICINVIDEO_DECODER)     += dsicinav.o
 OBJS-$(CONFIG_DVBSUB_DECODER)          += dvbsubdec.o

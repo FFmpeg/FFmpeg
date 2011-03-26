@@ -87,6 +87,7 @@ version <next>:
 - sndio support for playback and record
 - Linux framebuffer input device added
 - Chronomaster DFA decoder
+- DPX image encoder
 
 
 version 0.6:
