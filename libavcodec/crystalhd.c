@@ -597,8 +597,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 
         for (sY = 0; sY < height; dY++, sY++) {
             memcpy(&(dst[dY * dStride]), &(src[sY * sStride]), bwidth);
-            if (interlaced)
-                dY++;
+            dY++;
         }
     } else {
         av_image_copy_plane(dst, dStride, src, sStride, bwidth, height);
