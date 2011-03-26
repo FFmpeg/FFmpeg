@@ -84,6 +84,7 @@
 #include <libcrystalhd/libcrystalhd_if.h>
 
 #include "avcodec.h"
+#include "h264.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 
@@ -119,6 +120,8 @@ typedef struct {
     AVCodecContext *avctx;
     AVFrame pic;
     HANDLE dev;
+
+    AVCodecParserContext *parser;
 
     uint8_t is_70012;
     uint8_t *sps_pps_buf;
@@ -316,6 +319,8 @@ static av_cold int uninit(AVCodecContext *avctx)
     DtsCloseDecoder(device);
     DtsDeviceClose(device);
 
+    av_parser_close(priv->parser);
+
     av_free(priv->sps_pps_buf);
 
     if (priv->pic.data[0])
@@ -478,6 +483,13 @@ static av_cold int init(AVCodecContext *avctx)
         goto fail;
     }
 
+    if (avctx->codec->id == CODEC_ID_H264) {
+        priv->parser = av_parser_init(avctx->codec->id);
+        if (!priv->parser)
+            av_log(avctx, AV_LOG_WARNING,
+                   "Cannot open the h.264 parser! Interlaced h.264 content "
+                   "will not be detected reliably.\n");
+    }
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Init complete.\n");
 
     return 0;
@@ -737,11 +749,28 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
     CHDContext *priv   = avctx->priv_data;
     HANDLE dev         = priv->dev;
     int len            = avpkt->size;
+    uint8_t pic_type   = 0;
 
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: decode_frame\n");
 
     if (len) {
         int32_t tx_free = (int32_t)DtsTxFreeSize(dev);
+
+        if (priv->parser) {
+            uint8_t *pout;
+            int psize = len;
+            H264Context *h = priv->parser->priv_data;
+
+            while (psize)
+                ret = av_parser_parse2(priv->parser, avctx, &pout, &psize,
+                                       avpkt->data, len, avctx->pkt->pts,
+                                       avctx->pkt->dts, len - psize);
+            av_log(avctx, AV_LOG_VERBOSE,
+                   "CrystalHD: parser picture type %d\n",
+                   h->s.picture_structure);
+            pic_type = h->s.picture_structure;
+        }
+
         if (len < tx_free - 1024) {
             /*
              * Despite being notionally opaque, either libcrystalhd or
