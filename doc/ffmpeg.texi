@@ -586,6 +586,28 @@ Set the ISO 639 language code (3 letters) of the current audio stream.
 @table @option
 @item -atag @var{fourcc/tag}
 Force audio tag/fourcc.
+@item -audio_service_type @var{type}
+Set the type of service that the audio stream contains.
+@table @option
+@item ma
+Main Audio Service (default)
+@item ef
+Effects
+@item vi
+Visually Impaired
+@item hi
+Hearing Impaired
+@item di
+Dialogue
+@item co
+Commentary
+@item em
+Emergency
+@item vo
+Voice Over
+@item ka
+Karaoke
+@end table
 @item -absf @var{bitstream_filter}
 Bitstream filters available are "dump_extra", "remove_extra", "noise", "mp3comp", "mp3decomp".
 @end table

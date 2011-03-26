@@ -1,11 +1,38 @@
 FFmpeg currently uses a custom build system, this text attempts to document
 some of its obscure features and options.
 
-Options to make:
-make V=1 <target>
-    Build target with verbosity 1, instead of 1, 2 can be used too
-make SAMPLES=<path to the fate samples> <target>
-    specify the path to the fate samples at make time
+Makefile variables:
+
+V
+    Disable the default terse mode, the full command issued by make and its
+    output will be shown on the screen.
+
+DESTDIR
+    Destination directory for the install targets, useful to prepare packages
+    or install Libav in cross-environments.
+
+Makefile targets:
+
+all
+    Default target, builds all the libraries and the executables.
+
+fate
+    Run the fate test suite, note you must have installed it
+
+fate-list
+    Will list all fate/regression test targets
+
+install
+    Install headers, libraries and programs.
+
+libavformat/output-example
+    Build the libavformat basic example.
+
+libavcodec/api-example
+    Build the libavcodec basic example.
+
+libswscale/swscale-test
+    Build the swscale self-test (useful also as example).
 
 
 Useful standard make commands:
@@ -21,17 +48,3 @@ make -k
     continue build in case of errors, this is useful for the regression tests
     sometimes but note it will still not run all reg tests.
 
-
-Targets to make:
-fate-list
-    Will list all fate/regression test targets
-
-fate
-    Run the fate test suite, note you must have installed it
-
-
-Setting up local fate:
-use the following command to get the fate test samples
-rsync -aL rsync://rsync.mplayerhq.hu:/samples/fate-suite/ fate/fate-suite
-pass --samples=<path to the samples> to configure or pass the path with the
-SAMPLES variable to make

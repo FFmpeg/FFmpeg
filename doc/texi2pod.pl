@@ -231,10 +231,12 @@ while(<$inf>) {
 
     # Single line command handlers.
 
-    /^\@(?:section|unnumbered|unnumberedsec|center)\s+(.+)$/
+    /^\@(?:section|unnumbered|unnumberedsec|center|heading)\s+(.+)$/
         and $_ = "\n=head2 $1\n";
-    /^\@subsection\s+(.+)$/
+    /^\@(?:subsection|subheading)\s+(.+)$/
         and $_ = "\n=head3 $1\n";
+    /^\@(?:subsubsection|subsubheading)\s+(.+)$/
+        and $_ = "\n=head4 $1\n";
 
     # Block command handlers:
     /^\@itemize\s*(\@[a-z]+|\*|-)?/ and do {

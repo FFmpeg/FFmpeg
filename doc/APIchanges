@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-03-25 - 34b47d7 - lavc 52.115.0 - AVCodecContext.audio_service_type
+  Add audio_service_type field to AVCodecContext.
+
 2011-XX-XX - XXXXXXX - lavu  XX.XXX.X - pixfmt.h
   Add PIX_FMT_BGR48LE and PIX_FMT_BGR48BE pixel formats
 

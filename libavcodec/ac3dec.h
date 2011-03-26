@@ -79,6 +79,7 @@ typedef struct {
     int bit_rate;                           ///< stream bit rate, in bits-per-second
     int sample_rate;                        ///< sample frequency, in Hz
     int num_blocks;                         ///< number of audio blocks
+    int bitstream_mode;                     ///< bitstream mode                         (bsmod)
     int channel_mode;                       ///< channel mode                           (acmod)
     int channel_layout;                     ///< channel layout
     int lfe_on;                             ///< lfe channel in use

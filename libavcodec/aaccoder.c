@@ -817,7 +817,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 int prevsc = sce->sf_idx[w*16+g];
                 if (dists[w*16+g] > uplims[w*16+g] && sce->sf_idx[w*16+g] > 60) {
                     if (find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]-1))
-                    sce->sf_idx[w*16+g]--;
+                        sce->sf_idx[w*16+g]--;
                     else //Try to make sure there is some energy in every band
                         sce->sf_idx[w*16+g]-=2;
                 }
@@ -1057,7 +1057,7 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
                     for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
                         M[i] = (sce0->coeffs[start+w2*128+i]
                               + sce1->coeffs[start+w2*128+i]) * 0.5;
-                        S[i] =  sce0->coeffs[start+w2*128+i]
+                        S[i] =  M[i]
                               - sce1->coeffs[start+w2*128+i];
                     }
                     abs_pow34_v(L34, sce0->coeffs+start+w2*128, sce0->ics.swb_sizes[g]);

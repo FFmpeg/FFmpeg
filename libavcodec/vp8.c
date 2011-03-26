@@ -512,7 +512,7 @@ void decode_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y)
         mb->mode = VP8_MVMODE_MV;
 
         /* If we have three distinct MVs, merge first and last if they're the same */
-        if (cnt[CNT_SPLITMV] && AV_RN32A(&near_mv[1+VP8_EDGE_TOP]) == AV_RN32A(&near_mv[1+VP8_EDGE_TOPLEFT]))
+        if (cnt[CNT_SPLITMV] && AV_RN32A(&near_mv[1 + VP8_EDGE_TOP]) == AV_RN32A(&near_mv[1 + VP8_EDGE_TOPLEFT]))
             cnt[CNT_NEAREST] += 1;
 
         /* Swap near and nearest if necessary */

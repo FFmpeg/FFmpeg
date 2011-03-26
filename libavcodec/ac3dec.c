@@ -273,6 +273,7 @@ static int parse_frame_header(AC3DecodeContext *s)
 
     /* get decoding parameters from header info */
     s->bit_alloc_params.sr_code     = hdr.sr_code;
+    s->bitstream_mode               = hdr.bitstream_mode;
     s->channel_mode                 = hdr.channel_mode;
     s->channel_layout               = hdr.channel_layout;
     s->lfe_on                       = hdr.lfe_on;
@@ -1399,6 +1400,10 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         if(s->out_channels < s->channels)
             s->output_mode  = s->out_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
     }
+    /* set audio service type based on bitstream mode for AC-3 */
+    avctx->audio_service_type = s->bitstream_mode;
+    if (s->bitstream_mode == 0x7 && s->channels > 1)
+        avctx->audio_service_type = AV_AUDIO_SERVICE_TYPE_KARAOKE;
 
     /* decode the audio blocks */
     channel_map = ff_ac3_dec_channel_map[s->output_mode & ~AC3_OUTPUT_LFEON][s->lfe_on];
