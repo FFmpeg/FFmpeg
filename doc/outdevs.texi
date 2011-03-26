@@ -26,4 +26,8 @@ ALSA (Advanced Linux Sound Architecture) output device.
 
 OSS (Open Sound System) output device.
 
+@section sndio
+
+sndio audio output device.
+
 @c man end OUTPUT DEVICES

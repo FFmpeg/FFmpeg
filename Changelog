@@ -79,6 +79,7 @@ version <next>:
 - Bink version 'b' audio and video decoder
 - Bitmap Brothers JV playback system
 - Apple HTTP Live Streaming protocol handler
+- sndio support for playback and record
 
 
 version 0.6:
