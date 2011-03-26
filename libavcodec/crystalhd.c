@@ -114,6 +114,7 @@ typedef struct OpaqueList {
     struct OpaqueList *next;
     uint64_t fake_timestamp;
     uint64_t reordered_opaque;
+    uint8_t pic_type;
 } OpaqueList;
 
 typedef struct {
@@ -209,7 +210,8 @@ static inline void print_frame_info(CHDContext *priv, BC_DTS_PROC_OUT *output)
  * OpaqueList functions
  ****************************************************************************/
 
-static uint64_t opaque_list_push(CHDContext *priv, uint64_t reordered_opaque)
+static uint64_t opaque_list_push(CHDContext *priv, uint64_t reordered_opaque,
+                                 uint8_t pic_type)
 {
     OpaqueList *newNode = av_mallocz(sizeof (OpaqueList));
     if (!newNode) {
@@ -226,6 +228,7 @@ static uint64_t opaque_list_push(CHDContext *priv, uint64_t reordered_opaque)
     }
     priv->tail = newNode;
     newNode->reordered_opaque = reordered_opaque;
+    newNode->pic_type = pic_type;
 
     return newNode->fake_timestamp;
 }
@@ -530,6 +533,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 
     CHDContext *priv = avctx->priv_data;
     int64_t pkt_pts  = AV_NOPTS_VALUE;
+    uint8_t pic_type = 0;
 
     uint8_t bottom_field = (output->PicInfo.flags & VDEC_FLAG_BOTTOMFIELD) ==
                            VDEC_FLAG_BOTTOMFIELD;
@@ -547,10 +551,23 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         OpaqueList *node = opaque_list_pop(priv, output->PicInfo.timeStamp);
         if (node) {
             pkt_pts = node->reordered_opaque;
+            pic_type = node->pic_type;
             av_free(node);
+        } else {
+            /*
+             * We will encounter a situation where a timestamp cannot be
+             * popped if a second field is being returned. In this case,
+             * each field has the same timestamp and the first one will
+             * cause it to be popped. To keep subsequent calculations
+             * simple, pic_type should be set a FIELD value - doesn't
+             * matter which, but I chose BOTTOM.
+             */
+            pic_type = PICT_BOTTOM_FIELD;
         }
         av_log(avctx, AV_LOG_VERBOSE, "output \"pts\": %"PRIu64"\n",
                output->PicInfo.timeStamp);
+        av_log(avctx, AV_LOG_VERBOSE, "output picture type %d\n",
+               pic_type);
     }
 
     ret = DtsGetDriverStatus(priv->dev, &decoder_status);
@@ -781,7 +798,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
              * avoiding mangling so we need to build a mapping to values
              * we know will not be mangled.
              */
-            uint64_t pts = opaque_list_push(priv, avctx->pkt->pts);
+            uint64_t pts = opaque_list_push(priv, avctx->pkt->pts, pic_type);
             if (!pts) {
                 return AVERROR(ENOMEM);
             }
