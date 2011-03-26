@@ -42,9 +42,50 @@ static const uint8_t mlp_channels[32] = {
     5, 6, 5, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
+static const uint64_t mlp_layout[32] = {
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_2_1,
+    AV_CH_LAYOUT_2_2,
+    AV_CH_LAYOUT_STEREO|AV_CH_LOW_FREQUENCY,
+    AV_CH_LAYOUT_2_1|AV_CH_LOW_FREQUENCY,
+    AV_CH_LAYOUT_2_2|AV_CH_LOW_FREQUENCY,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT0,
+    AV_CH_LAYOUT_SURROUND|AV_CH_LOW_FREQUENCY,
+    AV_CH_LAYOUT_4POINT0|AV_CH_LOW_FREQUENCY,
+    AV_CH_LAYOUT_5POINT1,
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT0,
+    AV_CH_LAYOUT_SURROUND|AV_CH_LOW_FREQUENCY,
+    AV_CH_LAYOUT_4POINT0|AV_CH_LOW_FREQUENCY,
+    AV_CH_LAYOUT_5POINT1,
+    AV_CH_LAYOUT_2_2|AV_CH_LOW_FREQUENCY,
+    AV_CH_LAYOUT_5POINT0,
+    AV_CH_LAYOUT_5POINT1,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
 static const uint8_t thd_chancount[13] = {
 //  LR    C   LFE  LRs LRvh  LRc LRrs  Cs   Ts  LRsd  LRw  Cvh  LFE2
      2,   1,   1,   2,   2,   2,   2,   1,   1,   2,   2,   1,   1
+};
+
+static const uint64_t thd_layout[13] = {
+    AV_CH_FRONT_LEFT|AV_CH_FRONT_RIGHT,                     // LR
+    AV_CH_FRONT_CENTER,                                     // C
+    AV_CH_LOW_FREQUENCY,                                    // LFE
+    AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT,                       // LRs
+    AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_FRONT_RIGHT,             // LRvh
+    AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT,                       // LRc
+    AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT,                       // LRrs
+    AV_CH_BACK_CENTER,                                      // Cs
+    AV_CH_TOP_BACK_CENTER,                                  // Ts
+    AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT,                       // LRsd
+    AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER, // LRw
+    AV_CH_TOP_BACK_CENTER,                                  // Cvh
+    AV_CH_LOW_FREQUENCY                                     // LFE2
 };
 
 static int mlp_samplerate(int in)
@@ -63,6 +104,16 @@ static int truehd_channels(int chanmap)
         channels += thd_chancount[i] * ((chanmap >> i) & 1);
 
     return channels;
+}
+
+static int64_t truehd_layout(int chanmap)
+{
+    int layout = 0, i;
+
+    for (i = 0; i < 13; i++)
+        layout |= thd_layout[i] * ((chanmap >> i) & 1);
+
+    return layout;
 }
 
 /** Read a major sync info header - contains high level information about
@@ -264,12 +315,16 @@ static int mlp_parse(AVCodecParserContext *s,
         if (mh.stream_type == 0xbb) {
             /* MLP stream */
             avctx->channels = mlp_channels[mh.channels_mlp];
+            avctx->channel_layout = mlp_layout[mh.channels_mlp];
         } else { /* mh.stream_type == 0xba */
             /* TrueHD stream */
-            if (mh.channels_thd_stream2)
+            if (mh.channels_thd_stream2) {
                 avctx->channels = truehd_channels(mh.channels_thd_stream2);
-            else
+                avctx->channel_layout = truehd_layout(mh.channels_thd_stream2);
+            } else {
                 avctx->channels = truehd_channels(mh.channels_thd_stream1);
+                avctx->channel_layout = truehd_layout(mh.channels_thd_stream1);
+            }
         }
 
         if (!mh.is_vbr) /* Stream is CBR */
