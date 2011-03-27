@@ -404,10 +404,6 @@ Yes, but the Cygwin or MinGW tools @emph{must} be used to compile Libav.
 Read the @emph{Windows} section in the Libav documentation to find more
 information.
 
-To get help and instructions for building Libav under Windows, check out
-the FFmpeg Windows Help Forum at
-@url{http://ffmpeg.arrozcru.org/}.
-
 @section Can you add automake, libtool or autoconf support?
 
 No. These tools are too bloated and they complicate the build.

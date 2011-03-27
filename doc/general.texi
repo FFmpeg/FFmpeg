@@ -808,10 +808,6 @@ in your PATH, Libav's configure will pick it up automatically.
 
 @section Windows
 
-To get help and instructions for building Libav under Windows, check out
-the FFmpeg Windows Help Forum at
-@url{http://ffmpeg.arrozcru.org/}.
-
 @subsection Native Windows compilation
 
 Libav can be built to run natively on Windows using the MinGW tools. Install
