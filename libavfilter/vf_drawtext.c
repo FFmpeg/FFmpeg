@@ -498,7 +498,7 @@ static inline void drawbox(AVFilterBufferRef *picref, unsigned int x, unsigned i
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
                        int width, int height, const uint8_t rgbcolor[4], const uint8_t yuvcolor[4], int x, int y)
 {
-    char *text = dtext->text;
+    char *text = HAVE_LOCALTIME_R ? dtext->expanded_text : dtext->text;
     uint32_t code = 0;
     int i;
     uint8_t *p;
