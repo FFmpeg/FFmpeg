@@ -814,37 +814,37 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
     do {
         rec_ret = receive_frame(avctx, data, data_size, 0);
         if (rec_ret == RET_OK && *data_size == 0) {
-                /*
-                 * This case is for when the encoded fields are stored
-                 * separately and we get a separate avpkt for each one. To keep
-                 * the pipeline stable, we should return nothing and wait for
-                 * the next time round to grab the second field.
-                 * H.264 PAFF is an example of this.
-                 */
-                av_log(avctx, AV_LOG_VERBOSE, "Returning after first field.\n");
-                avctx->has_b_frames--;
+            /*
+             * This case is for when the encoded fields are stored
+             * separately and we get a separate avpkt for each one. To keep
+             * the pipeline stable, we should return nothing and wait for
+             * the next time round to grab the second field.
+             * H.264 PAFF is an example of this.
+             */
+            av_log(avctx, AV_LOG_VERBOSE, "Returning after first field.\n");
+            avctx->has_b_frames--;
         } else if (rec_ret == RET_COPY_NEXT_FIELD) {
-                /*
-                 * This case is for when the encoded fields are stored in a
-                 * single avpkt but the hardware returns then separately. Unless
-                 * we grab the second field before returning, we'll slip another
-                 * frame in the pipeline and if that happens a lot, we're sunk.
-                 * So we have to get that second field now.
-                 * Interlaced mpeg2 and vc1 are examples of this.
-                 */
-                av_log(avctx, AV_LOG_VERBOSE, "Trying to get second field.\n");
-                while (1) {
-                    usleep(priv->decode_wait);
-                    ret = DtsGetDriverStatus(dev, &decoder_status);
-                    if (ret == BC_STS_SUCCESS &&
-                        decoder_status.ReadyListCount > 0) {
-                        rec_ret = receive_frame(avctx, data, data_size, 1);
-                        if ((rec_ret == RET_OK && *data_size > 0) ||
-                            rec_ret == RET_ERROR)
-                            break;
-                    }
+            /*
+             * This case is for when the encoded fields are stored in a
+             * single avpkt but the hardware returns then separately. Unless
+             * we grab the second field before returning, we'll slip another
+             * frame in the pipeline and if that happens a lot, we're sunk.
+             * So we have to get that second field now.
+             * Interlaced mpeg2 and vc1 are examples of this.
+             */
+            av_log(avctx, AV_LOG_VERBOSE, "Trying to get second field.\n");
+            while (1) {
+                usleep(priv->decode_wait);
+                ret = DtsGetDriverStatus(dev, &decoder_status);
+                if (ret == BC_STS_SUCCESS &&
+                    decoder_status.ReadyListCount > 0) {
+                    rec_ret = receive_frame(avctx, data, data_size, 1);
+                    if ((rec_ret == RET_OK && *data_size > 0) ||
+                        rec_ret == RET_ERROR)
+                        break;
                 }
-                av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Got second field.\n");
+            }
+            av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Got second field.\n");
         } else if (rec_ret == RET_SKIP_NEXT_COPY) {
             /*
              * Two input packets got turned into a field pair. Gawd.
