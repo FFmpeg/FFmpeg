@@ -411,13 +411,15 @@ This parameter is mandatory.
 @item text
 The text string to be drawn. The text must be a sequence of UTF-8
 encoded characters.
-This parameter is mandatory if no file is specified.
+This parameter is mandatory if no file is specified with the parameter
+@var{textfile}.
 
 @item textfile
 A text file containing text to be drawn. The text must be a sequence
-of UTF-8 encoded characters
+of UTF-8 encoded characters.
 
-This parameter is mandatory if no text string is specified.
+This parameter is mandatory if no text string is specified with the
+parameter @var{text}.
 
 If both text and textfile are specified, an error is thrown.
 
@@ -429,7 +431,7 @@ The default value of @var{x} and @var{y} is 0.
 
 @item fontsize
 The font size to be used for drawing text.
-The default value of @var{size} is 16.
+The default value of @var{fontsize} is 16.
 
 @item fontcolor
 The color to be used for drawing fonts.
@@ -485,7 +487,7 @@ Default value is 4.
 
 For example the command:
 @example
-drawtext=fontfile=FreeSerif.ttf: text='Test Text': x=100: y=50: fontsize=24: fontcolor=yellow@@0.2: boxcolor=red@@0.2: box=1"
+drawtext="fontfile=FreeSerif.ttf: text='Test Text': x=100: y=50: fontsize=24: fontcolor=yellow@@0.2: boxcolor=red@@0.2: box=1"
 @end example
 
 will draw 'Test Text' with font FreeSerif of size 24 at position
@@ -496,7 +498,7 @@ Note that the double quotes are not necessary if spaces are not used
 within the parameter list.
 
 For more information about libfreetype, check:
-@url{http://www.freetype.org/}
+@url{http://www.freetype.org/}.
 
 @section fifo
 
