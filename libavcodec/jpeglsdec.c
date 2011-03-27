@@ -262,9 +262,9 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
     JLSState *state;
     int off = 0, stride = 1, width, shift;
 
-    zero = av_mallocz(s->picture.linesize[0]);
+    zero = av_mallocz(s->picture_ptr->linesize[0]);
     last = zero;
-    cur = s->picture.data[0];
+    cur = s->picture_ptr->data[0];
 
     state = av_mallocz(sizeof(JLSState));
     /* initialize JPEG-LS state from JPEG parameters */
@@ -299,7 +299,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
                 t = *((uint16_t*)last);
             }
             last = cur;
-            cur += s->picture.linesize[0];
+            cur += s->picture_ptr->linesize[0];
 
             if (s->restart_interval && !--s->restart_count) {
                 align_get_bits(&s->gb);
@@ -309,7 +309,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
     } else if(ilv == 1) { /* line interleaving */
         int j;
         int Rc[3] = {0, 0, 0};
-        memset(cur, 0, s->picture.linesize[0]);
+        memset(cur, 0, s->picture_ptr->linesize[0]);
         width = s->width * 3;
         for(i = 0; i < s->height; i++) {
             for(j = 0; j < 3; j++) {
@@ -322,7 +322,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
                 }
             }
             last = cur;
-            cur += s->picture.linesize[0];
+            cur += s->picture_ptr->linesize[0];
         }
     } else if(ilv == 2) { /* sample interleaving */
         av_log(s->avctx, AV_LOG_ERROR, "Sample interleaved images are not supported.\n");
@@ -337,22 +337,22 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
         w = s->width * s->nb_components;
 
         if(s->bits <= 8){
-            uint8_t *src = s->picture.data[0];
+            uint8_t *src = s->picture_ptr->data[0];
 
             for(i = 0; i < s->height; i++){
                 for(x = off; x < w; x+= stride){
                     src[x] <<= shift;
                 }
-                src += s->picture.linesize[0];
+                src += s->picture_ptr->linesize[0];
             }
         }else{
-            uint16_t *src = (uint16_t*) s->picture.data[0];
+            uint16_t *src = (uint16_t*) s->picture_ptr->data[0];
 
             for(i = 0; i < s->height; i++){
                 for(x = 0; x < w; x++){
                     src[x] <<= shift;
                 }
-                src += s->picture.linesize[0]/2;
+                src += s->picture_ptr->linesize[0]/2;
             }
         }
     }

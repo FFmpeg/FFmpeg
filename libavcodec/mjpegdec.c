@@ -81,6 +81,9 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
 
+    if (!s->picture_ptr)
+        s->picture_ptr = &s->picture;
+
     s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);
     ff_init_scantable(s->dsp.idct_permutation, &s->scantable, ff_zigzag_direct);
@@ -282,8 +285,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             s->height < ((s->org_height * 3) / 4)) {
             s->interlaced = 1;
             s->bottom_field = s->interlace_polarity;
-            s->picture.interlaced_frame = 1;
-            s->picture.top_field_first = !s->interlace_polarity;
+            s->picture_ptr->interlaced_frame = 1;
+            s->picture_ptr->top_field_first = !s->interlace_polarity;
             height *= 2;
         }
 
@@ -342,20 +345,19 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             s->avctx->pix_fmt = PIX_FMT_GRAY16;
     }
 
-    if(s->picture.data[0])
-        s->avctx->release_buffer(s->avctx, &s->picture);
+    if(s->picture_ptr->data[0])
+        s->avctx->release_buffer(s->avctx, s->picture_ptr);
 
-    s->picture.reference= 0;
-    if(s->avctx->get_buffer(s->avctx, &s->picture) < 0){
+    if(s->avctx->get_buffer(s->avctx, s->picture_ptr) < 0){
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    s->picture.pict_type= FF_I_TYPE;
-    s->picture.key_frame= 1;
+    s->picture_ptr->pict_type= FF_I_TYPE;
+    s->picture_ptr->key_frame= 1;
     s->got_picture = 1;
 
     for(i=0; i<3; i++){
-        s->linesize[i]= s->picture.linesize[i] << s->interlaced;
+        s->linesize[i]= s->picture_ptr->linesize[i] << s->interlaced;
     }
 
 //    printf("%d %d %d %d %d %d\n", s->width, s->height, s->linesize[0], s->linesize[1], s->interlaced, s->avctx->height);
@@ -635,7 +637,7 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point
     }
     for(mb_y = 0; mb_y < s->mb_height; mb_y++) {
         const int modified_predictor= mb_y ? predictor : 1;
-        uint8_t *ptr = s->picture.data[0] + (linesize * mb_y);
+        uint8_t *ptr = s->picture_ptr->data[0] + (linesize * mb_y);
 
         if (s->interlaced && s->bottom_field)
             ptr += linesize >> 1;
@@ -712,7 +714,7 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
                     for(j=0; j<n; j++) {
                         int pred;
 
-                        ptr = s->picture.data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
+                        ptr = s->picture_ptr->data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
                         if(y==0 && mb_y==0){
                             if(x==0 && mb_x==0){
                                 pred= 128 << point_transform;
@@ -752,7 +754,7 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
                     for(j=0; j<n; j++) {
                         int pred;
 
-                        ptr = s->picture.data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
+                        ptr = s->picture_ptr->data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
                         PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
                         *ptr= pred + (mjpeg_decode_dc(s, s->dc_index[i]) << point_transform);
                         if (++x == h) {
@@ -804,7 +806,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
     }
     for(i=0; i < nb_components; i++) {
         int c = s->comp_index[i];
-        data[c] = s->picture.data[c];
+        data[c] = s->picture_ptr->data[c];
         reference_data[c] = reference ? reference->data[c] : NULL;
         linesize[c]=s->linesize[c];
         s->coefs_finished[c] |= 1;
@@ -889,7 +891,7 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss, int s
     int mb_x, mb_y;
     int EOBRUN = 0;
     int c = s->comp_index[0];
-    uint8_t* data = s->picture.data[c];
+    uint8_t* data = s->picture_ptr->data[c];
     const uint8_t *reference_data = reference ? reference->data[c] : NULL;
     int linesize = s->linesize[c];
     int last_scan = 0;
@@ -1521,7 +1523,7 @@ eoi_parser:
                             if (s->bottom_field == !s->interlace_polarity)
                                 goto not_the_end;
                         }
-                        *picture = s->picture;
+                        *picture = *s->picture_ptr;
                         *data_size = sizeof(AVFrame);
 
                         if(!s->lossless){
@@ -1593,8 +1595,8 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
     MJpegDecodeContext *s = avctx->priv_data;
     int i, j;
 
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
+    if (s->picture_ptr && s->picture_ptr->data[0])
+        avctx->release_buffer(avctx, s->picture_ptr);
 
     av_free(s->buffer);
     av_free(s->qscale_table);
