@@ -771,10 +771,32 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
     return 0;
 }
 
-static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, int Al){
+static av_always_inline void mjpeg_copy_block(uint8_t *dst, const uint8_t *src,
+                                              int linesize, int lowres)
+{
+    switch (lowres) {
+    case 0: copy_block8(dst, src, linesize, linesize, 8);
+        break;
+    case 1: copy_block4(dst, src, linesize, linesize, 4);
+        break;
+    case 2: copy_block2(dst, src, linesize, linesize, 2);
+        break;
+    case 3: *dst = *src;
+        break;
+    }
+}
+
+static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, int Al,
+                             const uint8_t *mb_bitmask, const AVFrame *reference){
     int i, mb_x, mb_y;
     uint8_t* data[MAX_COMPONENTS];
+    const uint8_t *reference_data[MAX_COMPONENTS];
     int linesize[MAX_COMPONENTS];
+    GetBitContext mb_bitmask_gb;
+
+    if (mb_bitmask) {
+        init_get_bits(&mb_bitmask_gb, mb_bitmask, s->mb_width*s->mb_height);
+    }
 
     if(s->flipped && s->avctx->flags & CODEC_FLAG_EMU_EDGE) {
         av_log(s->avctx, AV_LOG_ERROR, "Can not flip image with CODEC_FLAG_EMU_EDGE set!\n");
@@ -783,17 +805,22 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
     for(i=0; i < nb_components; i++) {
         int c = s->comp_index[i];
         data[c] = s->picture.data[c];
+        reference_data[c] = reference ? reference->data[c] : NULL;
         linesize[c]=s->linesize[c];
         s->coefs_finished[c] |= 1;
         if(s->flipped) {
             //picture should be flipped upside-down for this codec
-            data[c] += (linesize[c] * (s->v_scount[i] * (8 * s->mb_height -((s->height/s->v_max)&7)) - 1 ));
+            int offset = (linesize[c] * (s->v_scount[i] * (8 * s->mb_height -((s->height/s->v_max)&7)) - 1 ));
+            data[c] += offset;
+            reference_data[c] += offset;
             linesize[c] *= -1;
         }
     }
 
     for(mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
+            const int copy_mb = mb_bitmask && !get_bits1(&mb_bitmask_gb);
+
             if (s->restart_interval && !s->restart_count)
                 s->restart_count = s->restart_interval;
 
@@ -804,6 +831,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
             for(i=0;i<nb_components;i++) {
                 uint8_t *ptr;
                 int n, h, v, x, y, c, j;
+                int block_offset;
                 n = s->nb_blocks[i];
                 c = s->comp_index[i];
                 h = s->h_scount[i];
@@ -811,12 +839,16 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
                 x = 0;
                 y = 0;
                 for(j=0;j<n;j++) {
-                    ptr = data[c] +
-                        (((linesize[c] * (v * mb_y + y) * 8) +
-                        (h * mb_x + x) * 8) >> s->avctx->lowres);
+                    block_offset = (((linesize[c] * (v * mb_y + y) * 8) +
+                                     (h * mb_x + x) * 8) >> s->avctx->lowres);
+
                     if(s->interlaced && s->bottom_field)
-                        ptr += linesize[c] >> 1;
+                        block_offset += linesize[c] >> 1;
+                    ptr = data[c] + block_offset;
                     if(!s->progressive) {
+                        if (copy_mb) {
+                            mjpeg_copy_block(ptr, reference_data[c] + block_offset, linesize[c], s->avctx->lowres);
+                        } else {
                         s->dsp.clear_block(s->block);
                         if(decode_block(s, s->block, i,
                                      s->dc_index[i], s->ac_index[i],
@@ -825,6 +857,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
                             return -1;
                         }
                         s->dsp.idct_put(ptr, linesize[c], s->block);
+                        }
                     } else {
                         int block_idx = s->block_stride[c] * (v * mb_y + y) + (h * mb_x + x);
                         DCTELEM *block = s->blocks[c][block_idx];
@@ -898,7 +931,8 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss, int s
     return 0;
 }
 
-int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
+int ff_mjpeg_decode_sos(MJpegDecodeContext *s,
+                        const uint8_t *mb_bitmask, const AVFrame *reference)
 {
     int len, nb_components, i, h, v, predictor, point_transform;
     int index, id;
@@ -1003,7 +1037,8 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
             if(mjpeg_decode_scan_progressive_ac(s, predictor, ilv, prev_shift, point_transform) < 0)
                 return -1;
         } else {
-            if(mjpeg_decode_scan(s, nb_components, prev_shift, point_transform) < 0)
+            if(mjpeg_decode_scan(s, nb_components, prev_shift, point_transform,
+                                 mb_bitmask, reference) < 0)
                 return -1;
         }
     }
@@ -1470,7 +1505,7 @@ eoi_parser:
                         av_log(avctx, AV_LOG_WARNING, "Can not process SOS before SOF, skipping\n");
                         break;
                     }
-                    ff_mjpeg_decode_sos(s);
+                    ff_mjpeg_decode_sos(s, NULL, NULL);
                     /* buggy avid puts EOI every 10-20th frame */
                     /* if restart period is over process EOI */
                     if ((s->buggy_avid && !s->interlaced) || s->restart_interval)
