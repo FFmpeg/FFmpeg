@@ -115,6 +115,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
 int ff_mjpeg_decode_dqt(MJpegDecodeContext *s);
 int ff_mjpeg_decode_dht(MJpegDecodeContext *s);
 int ff_mjpeg_decode_sof(MJpegDecodeContext *s);
-int ff_mjpeg_decode_sos(MJpegDecodeContext *s);
+int ff_mjpeg_decode_sos(MJpegDecodeContext *s,
+                        const uint8_t *mb_bitmask, const AVFrame *reference);
 
 #endif /* AVCODEC_MJPEGDEC_H */
