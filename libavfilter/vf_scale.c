@@ -24,9 +24,39 @@
  */
 
 #include "avfilter.h"
+#include "libavutil/avstring.h"
+#include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 #include "libswscale/swscale.h"
+
+static const char *var_names[] = {
+    "PI",
+    "PHI",
+    "E",
+    "in_w",   "iw",
+    "in_h",   "ih",
+    "out_w",  "ow",
+    "out_h",  "oh",
+    "a",
+    "hsub",
+    "vsub",
+    NULL
+};
+
+enum var_name {
+    VAR_PI,
+    VAR_PHI,
+    VAR_E,
+    VAR_IN_W,   VAR_IW,
+    VAR_IN_H,   VAR_IH,
+    VAR_OUT_W,  VAR_OW,
+    VAR_OUT_H,  VAR_OH,
+    VAR_A,
+    VAR_HSUB,
+    VAR_VSUB,
+    VARS_NB
+};
 
 typedef struct {
     struct SwsContext *sws;     ///< software scaler context
@@ -44,6 +74,9 @@ typedef struct {
     int slice_y;                ///< top of current output slice
     int input_is_pal;           ///< set to 1 if the input format is paletted
     int interlaced;
+
+    char w_expr[256];             ///< width  expression string
+    char h_expr[256];             ///< height expression string
 } ScaleContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -51,9 +84,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     ScaleContext *scale = ctx->priv;
     const char *p;
 
+    av_strlcpy(scale->w_expr, "iw", sizeof(scale->w_expr));
+    av_strlcpy(scale->h_expr, "ih", sizeof(scale->h_expr));
+
     scale->flags = SWS_BILINEAR;
     if (args) {
-        sscanf(args, "%d:%d", &scale->w, &scale->h);
+        sscanf(args, "%255[^:]:%255[^:]", scale->w_expr, scale->h_expr);
         p = strstr(args,"flags=");
         if (p) scale->flags = strtoul(p+6, NULL, 0);
         if(strstr(args,"interl=1")){
@@ -61,14 +97,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         }else if(strstr(args,"interl=-1"))
             scale->interlaced=-1;
     }
-
-    /* sanity check params */
-    if (scale->w <  -1 || scale->h <  -1) {
-        av_log(ctx, AV_LOG_ERROR, "Size values less than -1 are not acceptable.\n");
-        return AVERROR(EINVAL);
-    }
-    if (scale->w == -1 && scale->h == -1)
-        scale->w = scale->h = 0;
 
     return 0;
 }
@@ -118,6 +146,48 @@ static int config_props(AVFilterLink *outlink)
     AVFilterLink *inlink = outlink->src->inputs[0];
     ScaleContext *scale = ctx->priv;
     int64_t w, h;
+    double var_values[VARS_NB], res;
+    char *expr;
+    int ret;
+
+    var_values[VAR_PI]    = M_PI;
+    var_values[VAR_PHI]   = M_PHI;
+    var_values[VAR_E]     = M_E;
+    var_values[VAR_IN_W]  = var_values[VAR_IW] = inlink->w;
+    var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
+    var_values[VAR_OUT_W] = var_values[VAR_OW] = NAN;
+    var_values[VAR_OUT_H] = var_values[VAR_OH] = NAN;
+    var_values[VAR_A]     = (float) inlink->w / inlink->h;
+    var_values[VAR_HSUB]  = 2<<av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
+    var_values[VAR_VSUB]  = 2<<av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+
+    /* evaluate width and height */
+    av_expr_parse_and_eval(&res, (expr = scale->w_expr),
+                           var_names, var_values,
+                           NULL, NULL, NULL, NULL, NULL, 0, ctx);
+    scale->w = var_values[VAR_OW] = res;
+    if ((ret = av_expr_parse_and_eval(&res, (expr = scale->h_expr),
+                                      var_names, var_values,
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto fail;
+    scale->h = var_values[VAR_OH] = res;
+    /* evaluate again the width, as it may depend on the output height */
+    if ((ret = av_expr_parse_and_eval(&res, (expr = scale->w_expr),
+                                      var_names, var_values,
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto fail;
+    scale->w = res;
+
+    w = scale->w;
+    h = scale->h;
+
+    /* sanity check params */
+    if (w <  -1 || h <  -1) {
+        av_log(ctx, AV_LOG_ERROR, "Size values less than -1 are not acceptable.\n");
+        return AVERROR(EINVAL);
+    }
+    if (w == -1 && h == -1)
+        scale->w = scale->h = 0;
 
     if (!(w = scale->w))
         w = inlink->w;
@@ -159,6 +229,11 @@ static int config_props(AVFilterLink *outlink)
         return AVERROR(EINVAL);
 
     return 0;
+
+fail:
+    av_log(NULL, AV_LOG_ERROR,
+           "Error when evaluating the expression '%s'\n", expr);
+    return ret;
 }
 
 static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)

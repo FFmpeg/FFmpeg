@@ -1004,13 +1004,33 @@ can be used to test the monowhite pixel format descriptor definition.
 
 Scale the input video to @var{width}:@var{height} and/or convert the image format.
 
-For example the command:
+The parameters @var{width} and @var{height} are expressions containing
+the following constants:
 
-@example
-./ffmpeg -i in.avi -vf "scale=200:100" out.avi
-@end example
+@table @option
+@item E, PI, PHI
+the corresponding mathematical approximated values for e
+(euler number), pi (greek PI), phi (golden ratio)
 
-will scale the input video to a size of 200x100.
+@item in_w, in_h
+the input width and heigth
+
+@item iw, ih
+same as @var{in_w} and @var{in_h}
+
+@item out_w, out_h
+the output (cropped) width and heigth
+
+@item ow, oh
+same as @var{out_w} and @var{out_h}
+
+@item a
+input display aspect ratio, same as @var{iw} / @var{ih}
+
+@item hsub, vsub
+horizontal and vertical chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
+@end table
 
 If the input image format is different from the format requested by
 the next filter, the scale filter will convert the input to the
@@ -1024,6 +1044,36 @@ use, for the respective output size, a value that maintains the aspect
 ratio of the input image.
 
 The default value of @var{width} and @var{height} is 0.
+
+Some examples follow:
+@example
+# scale the input video to a size of 200x100.
+scale=200:100
+
+# scale the input to 2x
+scale=2*iw:2*ih
+# the above is the same as
+scale=2*in_w:2*in_h
+
+# scale the input to half size
+scale=iw/2:ih/2
+
+# increase the width, and set the height to the same size
+scale=3/2*iw:ow
+
+# seek for Greek harmony
+scale=iw:1/PHI*iw
+scale=ih*PHI:ih
+
+# increase the height, and set the width to 3/2 of the height
+scale=3/2*oh:3/5*ih
+
+# increase the size, but make the size a multiple of the chroma
+scale="trunc(3/2*iw/hsub)*hsub:trunc(3/2*ih/vsub)*vsub"
+
+# increase the width to a maximum of 500 pixels, keep the same input aspect ratio
+scale='min(500\, iw*3/2):-1'
+@end example
 
 @anchor{setdar}
 @section setdar
