@@ -154,6 +154,23 @@ ffmpeg -f oss -i /dev/dsp /tmp/oss.wav
 For more information about OSS see:
 @url{http://manuals.opensound.com/usersguide/dsp.html}
 
+@section sndio
+
+sndio input device.
+
+To enable this input device during configuration you need libsndio
+installed on your system.
+
+The filename to provide to the input device is the device node
+representing the sndio input device, and is usually set to
+@file{/dev/audio0}.
+
+For example to grab from @file{/dev/audio0} using @file{ffmpeg} use the
+command:
+@example
+ffmpeg -f sndio -i /dev/audio0 /tmp/oss.wav
+@end example
+
 @section video4linux and video4linux2
 
 Video4Linux and Video4Linux2 input video devices.

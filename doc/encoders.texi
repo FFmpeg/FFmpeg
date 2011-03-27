@@ -17,4 +17,340 @@ with the options @code{--enable-encoder=@var{ENCODER}} /
 The option @code{-codecs} of the ff* tools will display the list of
 enabled encoders.
 
+A description of some of the currently available encoders follows.
+
+@section Audio Encoders
+
+@subsection ac3 and ac3_fixed
+
+AC-3 audio encoders.
+
+These encoders implement part of ATSC A/52:2010 and ETSI TS 102 366, as well as
+the undocumented RealAudio 3 (a.k.a. dnet).
+
+The @var{ac3} encoder uses floating-point math, while the @var{ac3_fixed}
+encoder only uses fixed-point integer math. This does not mean that one is
+always faster, just that one or the other may be better suited to a
+particular system. The floating-point encoder will generally produce better
+quality audio for a given bitrate. The @var{ac3_fixed} encoder is not the
+default codec for any of the output formats, so it must be specified explicitly
+using the option @code{-acodec ac3_fixed} in order to use it.
+
+@subheading AC-3 Metadata
+
+The AC-3 metadata options are used to set parameters that describe the audio,
+but in most cases do not affect the audio encoding itself. Some of the options
+do directly affect or influence the decoding and playback of the resulting
+bitstream, while others are just for informational purposes. A few of the
+options will add bits to the output stream that could otherwise be used for
+audio data, and will thus affect the quality of the output. Those will be
+indicated accordingly with a note in the option list below.
+
+These parameters are described in detail in several publicly-available
+documents.
+@itemize
+@item @uref{http://www.atsc.org/cms/standards/a_52-2010.pdf,A/52:2010 - Digital Audio Compression (AC-3) (E-AC-3) Standard}
+@item @uref{http://www.atsc.org/cms/standards/a_54a_with_corr_1.pdf,A/54 - Guide to the Use of the ATSC Digital Television Standard}
+@item @uref{http://www.dolby.com/uploadedFiles/zz-_Shared_Assets/English_PDFs/Professional/18_Metadata.Guide.pdf,Dolby Metadata Guide}
+@item @uref{http://www.dolby.com/uploadedFiles/zz-_Shared_Assets/English_PDFs/Professional/46_DDEncodingGuidelines.pdf,Dolby Digital Professional Encoding Guidelines}
+@end itemize
+
+@subsubheading Metadata Control Options
+
+@table @option
+
+@item -per_frame_metadata @var{boolean}
+Allow Per-Frame Metadata. Specifies if the encoder should check for changing
+metadata for each frame.
+@table @option
+@item 0
+The metadata values set at initialization will be used for every frame in the
+stream. (default)
+@item 1
+Metadata values can be changed before encoding each frame.
+@end table
+
+@end table
+
+@subsubheading Downmix Levels
+
+@table @option
+
+@item -center_mixlev @var{level}
+Center Mix Level. The amount of gain the decoder should apply to the center
+channel when downmixing to stereo. This field will only be written to the
+bitstream if a center channel is present. The value is specified as a scale
+factor. There are 3 valid values:
+@table @option
+@item 0.707
+Apply -3dB gain
+@item 0.595
+Apply -4.5dB gain (default)
+@item 0.500
+Apply -6dB gain
+@end table
+
+@item -surround_mixlev @var{level}
+Surround Mix Level. The amount of gain the decoder should apply to the surround
+channel(s) when downmixing to stereo. This field will only be written to the
+bitstream if one or more surround channels are present. The value is specified
+as a scale factor.  There are 3 valid values:
+@table @option
+@item 0.707
+Apply -3dB gain
+@item 0.500
+Apply -6dB gain (default)
+@item 0.000
+Silence Surround Channel(s)
+@end table
+
+@end table
+
+@subsubheading Audio Production Information
+Audio Production Information is optional information describing the mixing
+environment.  Either none or both of the fields are written to the bitstream.
+
+@table @option
+
+@item -mixing_level @var{number}
+Mixing Level. Specifies peak sound pressure level (SPL) in the production
+environment when the mix was mastered. Valid values are 80 to 111, or -1 for
+unknown or not indicated. The default value is -1, but that value cannot be
+used if the Audio Production Information is written to the bitstream. Therefore,
+if the @code{room_type} option is not the default value, the @code{mixing_level}
+option must not be -1.
+
+@item -room_type @var{type}
+Room Type. Describes the equalization used during the final mixing session at
+the studio or on the dubbing stage. A large room is a dubbing stage with the
+industry standard X-curve equalization; a small room has flat equalization.
+This field will not be written to the bitstream if both the @code{mixing_level}
+option and the @code{room_type} option have the default values.
+@table @option
+@item 0
+@itemx notindicated
+Not Indicated (default)
+@item 1
+@itemx large
+Large Room
+@item 2
+@itemx small
+Small Room
+@end table
+
+@end table
+
+@subsubheading Other Metadata Options
+
+@table @option
+
+@item -copyright @var{boolean}
+Copyright Indicator. Specifies whether a copyright exists for this audio.
+@table @option
+@item 0
+@itemx off
+No Copyright Exists (default)
+@item 1
+@itemx on
+Copyright Exists
+@end table
+
+@item -dialnorm @var{value}
+Dialogue Normalization. Indicates how far the average dialogue level of the
+program is below digital 100% full scale (0 dBFS). This parameter determines a
+level shift during audio reproduction that sets the average volume of the
+dialogue to a preset level. The goal is to match volume level between program
+sources. A value of -31dB will result in no volume level change, relative to
+the source volume, during audio reproduction. Valid values are whole numbers in
+the range -31 to -1, with -31 being the default.
+
+@item -dsur_mode @var{mode}
+Dolby Surround Mode. Specifies whether the stereo signal uses Dolby Surround
+(Pro Logic). This field will only be written to the bitstream if the audio
+stream is stereo. Using this option does @b{NOT} mean the encoder will actually
+apply Dolby Surround processing.
+@table @option
+@item 0
+@itemx notindicated
+Not Indicated (default)
+@item 1
+@itemx off
+Not Dolby Surround Encoded
+@item 2
+@itemx on
+Dolby Surround Encoded
+@end table
+
+@item -original @var{boolean}
+Original Bit Stream Indicator. Specifies whether this audio is from the
+original source and not a copy.
+@table @option
+@item 0
+@itemx off
+Not Original Source
+@item 1
+@itemx on
+Original Source (default)
+@end table
+
+@end table
+
+@subsubheading Extended Bitstream Information
+The extended bitstream options are part of the Alternate Bit Stream Syntax as
+specified in Annex D of the A/52:2010 standard. It is grouped into 2 parts.
+If any one parameter in a group is specified, all values in that group will be
+written to the bitstream.  Default values are used for those that are written
+but have not been specified.  If the mixing levels are written, the decoder
+will use these values instead of the ones specified in the @code{center_mixlev}
+and @code{surround_mixlev} options if it supports the Alternate Bit Stream
+Syntax.
+
+@subsubheading Extended Bitstream Information - Part 1
+
+@table @option
+
+@item -dmix_mode @var{mode}
+Preferred Stereo Downmix Mode. Allows the user to select either Lt/Rt
+(Dolby Surround) or Lo/Ro (normal stereo) as the preferred stereo downmix mode.
+@table @option
+@item 0
+@itemx notindicated
+Not Indicated (default)
+@item 1
+@itemx ltrt
+Lt/Rt Downmix Preferred
+@item 2
+@itemx loro
+Lo/Ro Downmix Preferred
+@end table
+
+@item -ltrt_cmixlev @var{level}
+Lt/Rt Center Mix Level. The amount of gain the decoder should apply to the
+center channel when downmixing to stereo in Lt/Rt mode.
+@table @option
+@item 1.414
+Apply +3dB gain
+@item 1.189
+Apply +1.5dB gain
+@item 1.000
+Apply 0dB gain
+@item 0.841
+Apply -1.5dB gain
+@item 0.707
+Apply -3.0dB gain
+@item 0.595
+Apply -4.5dB gain (default)
+@item 0.500
+Apply -6.0dB gain
+@item 0.000
+Silence Center Channel
+@end table
+
+@item -ltrt_surmixlev @var{level}
+Lt/Rt Surround Mix Level. The amount of gain the decoder should apply to the
+surround channel(s) when downmixing to stereo in Lt/Rt mode.
+@table @option
+@item 0.841
+Apply -1.5dB gain
+@item 0.707
+Apply -3.0dB gain
+@item 0.595
+Apply -4.5dB gain
+@item 0.500
+Apply -6.0dB gain (default)
+@item 0.000
+Silence Surround Channel(s)
+@end table
+
+@item -loro_cmixlev @var{level}
+Lo/Ro Center Mix Level. The amount of gain the decoder should apply to the
+center channel when downmixing to stereo in Lo/Ro mode.
+@table @option
+@item 1.414
+Apply +3dB gain
+@item 1.189
+Apply +1.5dB gain
+@item 1.000
+Apply 0dB gain
+@item 0.841
+Apply -1.5dB gain
+@item 0.707
+Apply -3.0dB gain
+@item 0.595
+Apply -4.5dB gain (default)
+@item 0.500
+Apply -6.0dB gain
+@item 0.000
+Silence Center Channel
+@end table
+
+@item -loro_surmixlev @var{level}
+Lo/Ro Surround Mix Level. The amount of gain the decoder should apply to the
+surround channel(s) when downmixing to stereo in Lo/Ro mode.
+@table @option
+@item 0.841
+Apply -1.5dB gain
+@item 0.707
+Apply -3.0dB gain
+@item 0.595
+Apply -4.5dB gain
+@item 0.500
+Apply -6.0dB gain (default)
+@item 0.000
+Silence Surround Channel(s)
+@end table
+
+@end table
+
+@subsubheading Extended Bitstream Information - Part 2
+
+@table @option
+
+@item -dsurex_mode @var{mode}
+Dolby Surround EX Mode. Indicates whether the stream uses Dolby Surround EX
+(7.1 matrixed to 5.1). Using this option does @b{NOT} mean the encoder will actually
+apply Dolby Surround EX processing.
+@table @option
+@item 0
+@itemx notindicated
+Not Indicated (default)
+@item 1
+@itemx on
+Dolby Surround EX On
+@item 2
+@itemx off
+Dolby Surround EX Off
+@end table
+
+@item -dheadphone_mode @var{mode}
+Dolby Headphone Mode. Indicates whether the stream uses Dolby Headphone
+encoding (multi-channel matrixed to 2.0 for use with headphones). Using this
+option does @b{NOT} mean the encoder will actually apply Dolby Headphone
+processing.
+@table @option
+@item 0
+@itemx notindicated
+Not Indicated (default)
+@item 1
+@itemx on
+Dolby Headphone On
+@item 2
+@itemx off
+Dolby Headphone Off
+@end table
+
+@item -ad_conv_type @var{type}
+A/D Converter Type. Indicates whether the audio has passed through HDCD A/D
+conversion.
+@table @option
+@item 0
+@itemx standard
+Standard A/D Converter (default)
+@item 1
+@itemx hdcd
+HDCD A/D Converter
+@end table
+
+@end table
+
 @c man end ENCODERS

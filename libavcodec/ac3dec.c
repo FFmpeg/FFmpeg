@@ -67,16 +67,6 @@ static const uint8_t quantization_tab[16] = {
 static float dynamic_range_tab[256];
 
 /** Adjustments in dB gain */
-#define LEVEL_PLUS_3DB          1.4142135623730950
-#define LEVEL_PLUS_1POINT5DB    1.1892071150027209
-#define LEVEL_MINUS_1POINT5DB   0.8408964152537145
-#define LEVEL_MINUS_3DB         0.7071067811865476
-#define LEVEL_MINUS_4POINT5DB   0.5946035575013605
-#define LEVEL_MINUS_6DB         0.5000000000000000
-#define LEVEL_MINUS_9DB         0.3535533905932738
-#define LEVEL_ZERO              0.0000000000000000
-#define LEVEL_ONE               1.0000000000000000
-
 static const float gain_levels[9] = {
     LEVEL_PLUS_3DB,
     LEVEL_PLUS_1POINT5DB,
