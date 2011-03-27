@@ -739,7 +739,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     m->avfctx= ctx;
 
-    if(!args || 1!=sscanf(args, "%255[^:]", name)){
+    if(!args || 1!=sscanf(args, "%255[^:=]", name)){
         av_log(ctx, AV_LOG_ERROR, "Invalid parameter.\n");
         return AVERROR(EINVAL);
     }
