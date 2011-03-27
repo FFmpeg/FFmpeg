@@ -60,6 +60,18 @@ The function returns the loaded value.
 Evaluate expression @var{expr} while the expression @var{cond} is
 non-zero, and returns the value of the last @var{expr} evaluation, or
 NAN if @var{cond} was always false.
+
+@item ceil(expr)
+Round the value of expression @var{expr} upwards to the nearest
+integer. For example, "ceil(1.5)" is "2.0".
+
+@item floor(expr)
+Round the value of expression @var{expr} downwards to the nearest
+integer. For example, "floor(-1.5)" is "-2.0".
+
+@item trunc(expr)
+Round the value of expression @var{expr} towards zero to the nearest
+integer. For example, "trunc(-1.5)" is "-1.0".
 @end table
 
 Note that:
