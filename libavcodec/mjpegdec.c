@@ -34,6 +34,7 @@
 #include <assert.h>
 
 #include "libavutil/imgutils.h"
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mjpeg.h"
@@ -80,6 +81,9 @@ static void build_basic_mjpeg_vlc(MJpegDecodeContext * s) {
 av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
+
+    if (!s->picture_ptr)
+        s->picture_ptr = &s->picture;
 
     s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);
@@ -282,8 +286,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             s->height < ((s->org_height * 3) / 4)) {
             s->interlaced = 1;
             s->bottom_field = s->interlace_polarity;
-            s->picture.interlaced_frame = 1;
-            s->picture.top_field_first = !s->interlace_polarity;
+            s->picture_ptr->interlaced_frame = 1;
+            s->picture_ptr->top_field_first = !s->interlace_polarity;
             height *= 2;
         }
 
@@ -342,20 +346,19 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             s->avctx->pix_fmt = PIX_FMT_GRAY16;
     }
 
-    if(s->picture.data[0])
-        s->avctx->release_buffer(s->avctx, &s->picture);
+    if(s->picture_ptr->data[0])
+        s->avctx->release_buffer(s->avctx, s->picture_ptr);
 
-    s->picture.reference= 0;
-    if(s->avctx->get_buffer(s->avctx, &s->picture) < 0){
+    if(s->avctx->get_buffer(s->avctx, s->picture_ptr) < 0){
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    s->picture.pict_type= FF_I_TYPE;
-    s->picture.key_frame= 1;
+    s->picture_ptr->pict_type= FF_I_TYPE;
+    s->picture_ptr->key_frame= 1;
     s->got_picture = 1;
 
     for(i=0; i<3; i++){
-        s->linesize[i]= s->picture.linesize[i] << s->interlaced;
+        s->linesize[i]= s->picture_ptr->linesize[i] << s->interlaced;
     }
 
 //    printf("%d %d %d %d %d %d\n", s->width, s->height, s->linesize[0], s->linesize[1], s->interlaced, s->avctx->height);
@@ -804,7 +807,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
     }
     for(i=0; i < nb_components; i++) {
         int c = s->comp_index[i];
-        data[c] = s->picture.data[c];
+        data[c] = s->picture_ptr->data[c];
         reference_data[c] = reference ? reference->data[c] : NULL;
         linesize[c]=s->linesize[c];
         s->coefs_finished[c] |= 1;
@@ -1017,6 +1020,7 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s,
         skip_bits(&s->gb, 8);
 
     if(s->lossless){
+        av_assert0(s->picture_ptr == &s->picture);
         if(CONFIG_JPEGLS_DECODER && s->ls){
 //            for(){
 //            reset_ls_coding_parameters(s, 0);
@@ -1034,6 +1038,7 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s,
         }
     }else{
         if(s->progressive && predictor) {
+            av_assert0(s->picture_ptr == &s->picture);
             if(mjpeg_decode_scan_progressive_ac(s, predictor, ilv, prev_shift, point_transform) < 0)
                 return -1;
         } else {
@@ -1504,7 +1509,7 @@ eoi_parser:
                             if (s->bottom_field == !s->interlace_polarity)
                                 goto not_the_end;
                         }
-                        *picture = s->picture;
+                        *picture = *s->picture_ptr;
                         *data_size = sizeof(AVFrame);
 
                         if(!s->lossless){
@@ -1576,8 +1581,8 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
     MJpegDecodeContext *s = avctx->priv_data;
     int i, j;
 
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
+    if (s->picture_ptr && s->picture_ptr->data[0])
+        avctx->release_buffer(avctx, s->picture_ptr);
 
     av_free(s->buffer);
     av_free(s->qscale_table);

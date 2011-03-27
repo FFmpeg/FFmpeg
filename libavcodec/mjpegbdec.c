@@ -129,7 +129,7 @@ read_header:
 
     //XXX FIXME factorize, this looks very similar to the EOI code
 
-    *picture= s->picture;
+    *picture= *s->picture_ptr;
     *data_size = sizeof(AVFrame);
 
     if(!s->lossless){
