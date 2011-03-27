@@ -4,6 +4,11 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+- many many things we forgot because we rather write code than changelogs
+- libmpcodecs video filter support (3 times as many filters than before)
+- mpeg2 aspect ratio dection fixed
+- libxvid aspect pickiness fixed
+- Frame multithreaded decoding
 - WebM support in Matroska de/muxer
 - low overhead Ogg muxing
 - MMS-TCP support
