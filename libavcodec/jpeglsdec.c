@@ -281,9 +281,9 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     JLSState *state;
     int off = 0, stride = 1, width, shift, ret = 0;
 
-    zero = av_mallocz(s->picture.linesize[0]);
+    zero = av_mallocz(s->picture_ptr->linesize[0]);
     last = zero;
-    cur  = s->picture.data[0];
+    cur  = s->picture_ptr->data[0];
 
     state = av_mallocz(sizeof(JLSState));
     /* initialize JPEG-LS state from JPEG parameters */
@@ -330,7 +330,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
                 t = *((uint16_t *)last);
             }
             last = cur;
-            cur += s->picture.linesize[0];
+            cur += s->picture_ptr->linesize[0];
 
             if (s->restart_interval && !--s->restart_count) {
                 align_get_bits(&s->gb);
@@ -341,7 +341,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         int j;
         int Rc[3] = { 0, 0, 0 };
         stride = (s->nb_components > 1) ? 3 : 1;
-        memset(cur, 0, s->picture.linesize[0]);
+        memset(cur, 0, s->picture_ptr->linesize[0]);
         width = s->width * stride;
         for (i = 0; i < s->height; i++) {
             for (j = 0; j < stride; j++) {
@@ -355,7 +355,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
                 }
             }
             last = cur;
-            cur += s->picture.linesize[0];
+            cur += s->picture_ptr->linesize[0];
         }
     } else if (ilv == 2) { /* sample interleaving */
         avpriv_report_missing_feature(s->avctx, "Sample interleaved images");
@@ -369,7 +369,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         w = s->width * s->nb_components;
 
         if (s->bits <= 8) {
-            uint8_t *src = s->picture.data[0];
+            uint8_t *src = s->picture_ptr->data[0];
 
             for (i = 0; i < s->height; i++) {
                 switch(s->xfrm) {
@@ -404,7 +404,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
                     }
                     break;
                 }
-                src += s->picture.linesize[0];
+                src += s->picture_ptr->linesize[0];
             }
         }else
             avpriv_report_missing_feature(s->avctx, "16bit xfrm");
@@ -416,20 +416,20 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         w = s->width * s->nb_components;
 
         if (s->bits <= 8) {
-            uint8_t *src = s->picture.data[0];
+            uint8_t *src = s->picture_ptr->data[0];
 
             for (i = 0; i < s->height; i++) {
                 for (x = off; x < w; x += stride)
                     src[x] <<= shift;
-                src += s->picture.linesize[0];
+                src += s->picture_ptr->linesize[0];
             }
         } else {
-            uint16_t *src = (uint16_t *)s->picture.data[0];
+            uint16_t *src = (uint16_t *)s->picture_ptr->data[0];
 
             for (i = 0; i < s->height; i++) {
                 for (x = 0; x < w; x++)
                     src[x] <<= shift;
-                src += s->picture.linesize[0] / 2;
+                src += s->picture_ptr->linesize[0] / 2;
             }
         }
     }
