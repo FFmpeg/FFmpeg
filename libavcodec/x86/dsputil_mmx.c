@@ -836,9 +836,9 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w,
         );
     }
 
-    for(i=0;i<w;i+=4) {
-        /* top and bottom (and hopefully also the corners) */
-        if (sides&EDGE_TOP) {
+    /* top and bottom (and hopefully also the corners) */
+    if (sides&EDGE_TOP) {
+        for(i = 0; i < w; i += 4) {
             ptr= buf - (i + 1) * wrap - w;
             __asm__ volatile(
                     "1:                             \n\t"
@@ -854,8 +854,10 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w,
                     : "r" ((x86_reg)buf - (x86_reg)ptr - w), "r" ((x86_reg)-wrap), "r" ((x86_reg)-wrap*3), "r" (ptr+width+2*w)
             );
         }
+    }
 
-        if (sides&EDGE_BOTTOM) {
+    if (sides&EDGE_BOTTOM) {
+        for(i = 0; i < w; i += 4) {
             ptr= last_line + (i + 1) * wrap - w;
             __asm__ volatile(
                     "1:                             \n\t"

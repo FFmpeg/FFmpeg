@@ -303,12 +303,6 @@ static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w, i
     uint8_t *ptr, *last_line;
     int i;
 
-    last_line = buf + (height - 1) * wrap;
-    for(i=0;i<w;i++) {
-        /* top and bottom */
-        if (sides&EDGE_TOP)    memcpy(buf - (i + 1) * wrap, buf, width);
-        if (sides&EDGE_BOTTOM) memcpy(last_line + (i + 1) * wrap, last_line, width);
-    }
     /* left and right */
     ptr = buf;
     for(i=0;i<height;i++) {
@@ -316,18 +310,16 @@ static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w, i
         memset(ptr + width, ptr[width-1], w);
         ptr += wrap;
     }
-    /* corners */
-    for(i=0;i<w;i++) {
-        if (sides&EDGE_TOP) {
-            memset(buf - (i + 1) * wrap - w, buf[0], w); /* top left */
-            memset(buf - (i + 1) * wrap + width, buf[width-1], w); /* top right */
-        }
 
-        if (sides&EDGE_BOTTOM) {
-            memset(last_line + (i + 1) * wrap - w, last_line[0], w); /* top left */
-            memset(last_line + (i + 1) * wrap + width, last_line[width-1], w); /* top right */
-        }
-    }
+    /* top and bottom + corners */
+    buf -= w;
+    last_line = buf + (height - 1) * wrap;
+    if (sides & EDGE_TOP)
+        for(i = 0; i < w; i++)
+            memcpy(buf - (i + 1) * wrap, buf, width + w + w); // top
+    if (sides & EDGE_BOTTOM)
+        for (i = 0; i < w; i++)
+            memcpy(last_line + (i + 1) * wrap, last_line, width + w + w); // bottom
 }
 
 /**

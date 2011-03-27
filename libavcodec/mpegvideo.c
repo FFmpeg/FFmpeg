@@ -1165,9 +1165,9 @@ void MPV_frame_end(MpegEncContext *s)
        && !(s->flags&CODEC_FLAG_EMU_EDGE)) {
         int edges = EDGE_BOTTOM | EDGE_TOP, h = s->v_edge_pos;
 
-            s->dsp.draw_edges(s->current_picture_ptr->data[0], s->linesize  , s->h_edge_pos   , h   , EDGE_WIDTH  , edges);
-            s->dsp.draw_edges(s->current_picture_ptr->data[1], s->uvlinesize, s->h_edge_pos>>1, h>>1, EDGE_WIDTH/2, edges);
-            s->dsp.draw_edges(s->current_picture_ptr->data[2], s->uvlinesize, s->h_edge_pos>>1, h>>1, EDGE_WIDTH/2, edges);
+            s->dsp.draw_edges(s->current_picture.data[0], s->linesize  , s->h_edge_pos   , h   , EDGE_WIDTH  , edges);
+            s->dsp.draw_edges(s->current_picture.data[1], s->uvlinesize, s->h_edge_pos>>1, h>>1, EDGE_WIDTH/2, edges);
+            s->dsp.draw_edges(s->current_picture.data[2], s->uvlinesize, s->h_edge_pos>>1, h>>1, EDGE_WIDTH/2, edges);
 
     }
 
