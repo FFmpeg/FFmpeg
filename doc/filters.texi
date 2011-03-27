@@ -644,6 +644,104 @@ a float number which specifies chroma temporal strength, defaults to
 @var{luma_tmp}*@var{chroma_spatial}/@var{luma_spatial}
 @end table
 
+@section mp
+
+Apply an MPlayer filter to the input video.
+
+This filter provides a wrapper around most of the filters of
+MPlayer/MEncoder.
+
+This wrapper is considered experimental. Some of the wrapped filters
+may not work properly and we may drop support for them, as they will
+be implemented natively into FFmpeg. Thus you should avoid
+depending on them when writing portable scripts.
+
+The filters accepts the parameters:
+@var{filter_name}[:=]@var{filter_params}
+
+@var{filter_name} is the name of a supported MPlayer filter,
+@var{filter_params} is a string containing the parameters accepted by
+the named filter.
+
+The list of the currently supported filters follows:
+@table @var
+@item 2xsai
+@item blackframe
+@item boxblur
+@item cropdetect
+@item decimate
+@item delogo
+@item denoise3d
+@item detc
+@item dint
+@item divtc
+@item down3dright
+@item dsize
+@item eq2
+@item eq
+@item field
+@item fil
+@item fixpts
+@item framestep
+@item fspp
+@item geq
+@item gradfun
+@item harddup
+@item hqdn3d
+@item hue
+@item il
+@item ilpack
+@item ivtc
+@item kerndeint
+@item mcdeint
+@item mirror
+@item noise
+@item ow
+@item palette
+@item perspective
+@item phase
+@item pp7
+@item pullup
+@item qp
+@item rectangle
+@item remove_logo
+@item rgbtest
+@item rotate
+@item sab
+@item screenshot
+@item smartblur
+@item softpulldown
+@item softskip
+@item spp
+@item swapuv
+@item telecine
+@item test
+@item tile
+@item tinterlace
+@item unsharp
+@item uspp
+@item yuvcsp
+@item yvu9
+@end table
+
+The parameter syntax and behavior for the listed filters are the same
+of the corresponding MPlayer filters. For detailed instructions check
+the "VIDEO FILTERS" section in the MPlayer manual.
+
+Some examples follow:
+@example
+# remove a logo by interpolating the surrounding pixels
+mp=delogo=200:200:80:20:1
+
+# adjust gamma, brightness, contrast
+mp=eq2=1.0:2:0.5
+
+# tweak hue and saturation
+mp=hue=100:-10
+@end example
+
+See also mplayer(1), @url{http://www.mplayerhq.hu/}.
+
 @section noformat
 
 Force libavfilter not to use any of the specified pixel formats for the
