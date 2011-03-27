@@ -353,39 +353,6 @@ drawbox
 drawbox=10:20:200:60:red@@0.5"
 @end example
 
-@section fade
-
-Apply fade-in/out effect to input video.
-
-It accepts the parameters:
-@var{type}:@var{start_frame}:@var{nb_frames}
-
-@var{type} specifies if the effect type, can be either "in" for
-fade-in, or "out" for a fade-out effect.
-
-@var{start_frame} specifies the number of the start frame for starting
-to apply the fade effect.
-
-@var{nb_frames} specifies the number of frames for which the fade
-effect has to last. At the end of the fade-in effect the output video
-will have the same intensity as the input video, at the end of the
-fade-out transition the output video will be completely black.
-
-A few usage examples follow, usable too as test scenarios.
-@example
-# fade in first 30 frames of video
-fade=in:0:30
-
-# fade out last 45 frames of a 200-frame video
-fade=out:155:45
-
-# fade in first 25 frames and fade out last 25 frames of a 1000-frame video
-fade=in:0:25, fade=out:975:25
-
-# make first 5 frames black, then fade in from frame 5-24
-fade=in:5:20
-@end example
-
 @section drawtext
 
 Draw text string or text from specified file on top of video using the
@@ -499,6 +466,39 @@ within the parameter list.
 
 For more information about libfreetype, check:
 @url{http://www.freetype.org/}.
+
+@section fade
+
+Apply fade-in/out effect to input video.
+
+It accepts the parameters:
+@var{type}:@var{start_frame}:@var{nb_frames}
+
+@var{type} specifies if the effect type, can be either "in" for
+fade-in, or "out" for a fade-out effect.
+
+@var{start_frame} specifies the number of the start frame for starting
+to apply the fade effect.
+
+@var{nb_frames} specifies the number of frames for which the fade
+effect has to last. At the end of the fade-in effect the output video
+will have the same intensity as the input video, at the end of the
+fade-out transition the output video will be completely black.
+
+A few usage examples follow, usable too as test scenarios.
+@example
+# fade in first 30 frames of video
+fade=in:0:30
+
+# fade out last 45 frames of a 200-frame video
+fade=out:155:45
+
+# fade in first 25 frames and fade out last 25 frames of a 1000-frame video
+fade=in:0:25, fade=out:975:25
+
+# make first 5 frames black, then fade in from frame 5-24
+fade=in:5:20
+@end example
 
 @section fifo
 
