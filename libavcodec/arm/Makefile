@@ -16,6 +16,7 @@ OBJS-$(CONFIG_H264PRED)                += arm/h264pred_init_arm.o
 OBJS                                   += arm/dsputil_init_arm.o        \
                                           arm/dsputil_arm.o             \
                                           arm/fft_init_arm.o            \
+                                          arm/fft_fixed_init_arm.o      \
                                           arm/fmtconvert_init_arm.o     \
                                           arm/jrevdct_arm.o             \
                                           arm/mpegvideo_arm.o           \
@@ -41,6 +42,7 @@ OBJS-$(HAVE_IWMMXT)                    += arm/dsputil_iwmmxt.o          \
                                           arm/mpegvideo_iwmmxt.o        \
 
 NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
+                                          arm/fft_fixed_neon.o          \
 
 NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
 
