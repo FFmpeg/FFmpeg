@@ -1074,14 +1074,11 @@ static void quantize_mantissas_blk_ch(AC3Mant *s, int32_t *fixed_coef,
     int i;
 
     for (i = start_freq; i < end_freq; i++) {
-        int v;
         int c = fixed_coef[i];
         int e = exp[i];
-        int b = bap[i];
-        switch (b) {
-        case 0:
-            v = 0;
-            break;
+        int v = bap[i];
+        if (v)
+        switch (v) {
         case 1:
             v = sym_quant(c, e, 3);
             switch (s->mant1_cnt) {
@@ -1150,7 +1147,7 @@ static void quantize_mantissas_blk_ch(AC3Mant *s, int32_t *fixed_coef,
             v = asym_quant(c, e, 16);
             break;
         default:
-            v = asym_quant(c, e, b - 1);
+            v = asym_quant(c, e, v - 1);
             break;
         }
         qmant[i] = v;
