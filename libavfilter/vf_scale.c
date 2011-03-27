@@ -25,10 +25,12 @@
 
 #include "avfilter.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/avassert.h"
 #include "libswscale/swscale.h"
 
 typedef struct {
     struct SwsContext *sws;     ///< software scaler context
+    struct SwsContext *isws[2]; ///< software scaler context for interlaced material
 
     /**
      * New dimensions. Special values are:
@@ -41,6 +43,7 @@ typedef struct {
     int hsub, vsub;             ///< chroma subsampling
     int slice_y;                ///< top of current output slice
     int input_is_pal;           ///< set to 1 if the input format is paletted
+    int interlaced;
 } ScaleContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -53,6 +56,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         sscanf(args, "%d:%d", &scale->w, &scale->h);
         p = strstr(args,"flags=");
         if (p) scale->flags = strtoul(p+6, NULL, 0);
+        if(strstr(args,"interl=1")){
+            scale->interlaced=1;
+        }else if(strstr(args,"interl=-1"))
+            scale->interlaced=-1;
     }
 
     /* sanity check params */
@@ -70,6 +77,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     ScaleContext *scale = ctx->priv;
     sws_freeContext(scale->sws);
+    sws_freeContext(scale->isws[0]);
+    sws_freeContext(scale->isws[1]);
     scale->sws = NULL;
 }
 
@@ -138,6 +147,12 @@ static int config_props(AVFilterLink *outlink)
     scale->sws = sws_getContext(inlink ->w, inlink ->h, inlink ->format,
                                 outlink->w, outlink->h, outlink->format,
                                 scale->flags, NULL, NULL, NULL);
+    scale->isws[0] = sws_getContext(inlink ->w, inlink ->h/2, inlink ->format,
+                                    outlink->w, outlink->h/2, outlink->format,
+                                    scale->flags, NULL, NULL, NULL);
+    scale->isws[1] = sws_getContext(inlink ->w, inlink ->h/2, inlink ->format,
+                                    outlink->w, outlink->h/2, outlink->format,
+                                    scale->flags, NULL, NULL, NULL);
     if (!scale->sws)
         return AVERROR(EINVAL);
 
@@ -169,26 +184,46 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     avfilter_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
 }
 
+static int scale_slice(AVFilterLink *link, struct SwsContext *sws, int y, int h, int mul, int field)
+{
+    ScaleContext *scale = link->dst->priv;
+    AVFilterBufferRef *cur_pic = link->cur_buf;
+    AVFilterBufferRef *out_buf = link->dst->outputs[0]->out_buf;
+    const uint8_t *in[4], *out[4];
+    int in_stride[4],out_stride[4];
+    int i;
+
+    for(i=0; i<4; i++){
+        int vsub= ((i+1)&2) ? scale->vsub : 0;
+         in_stride[i] = cur_pic->linesize[i] * mul;
+        out_stride[i] = out_buf->linesize[i] * mul;
+         in[i] = cur_pic->data[i] + ((y>>vsub)+field) * cur_pic->linesize[i];
+        out[i] = out_buf->data[i] +            field  * out_buf->linesize[i];
+    }
+    if(scale->input_is_pal){
+         in[1] = cur_pic->data[1];
+        out[1] = out_buf->data[1];
+    }
+
+    return sws_scale(sws, in, in_stride, y/mul, h,
+                         out,out_stride);
+}
+
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     ScaleContext *scale = link->dst->priv;
     int out_h;
-    AVFilterBufferRef *cur_pic = link->cur_buf;
-    const uint8_t *data[4];
 
     if (scale->slice_y == 0 && slice_dir == -1)
         scale->slice_y = link->dst->outputs[0]->h;
 
-    data[0] = cur_pic->data[0] +  y               * cur_pic->linesize[0];
-    data[1] = scale->input_is_pal ?
-              cur_pic->data[1] :
-              cur_pic->data[1] + (y>>scale->vsub) * cur_pic->linesize[1];
-    data[2] = cur_pic->data[2] + (y>>scale->vsub) * cur_pic->linesize[2];
-    data[3] = cur_pic->data[3] +  y               * cur_pic->linesize[3];
-
-    out_h = sws_scale(scale->sws, data, cur_pic->linesize, y, h,
-                      link->dst->outputs[0]->out_buf->data,
-                      link->dst->outputs[0]->out_buf->linesize);
+    if(scale->interlaced>0 || (scale->interlaced<0 && link->cur_buf->video->interlaced)){
+        av_assert0(y%4 == 0);
+        out_h = scale_slice(link, scale->isws[0], y, (h+1)/2, 2, 0);
+        out_h+= scale_slice(link, scale->isws[1], y,  h   /2, 2, 1);
+    }else{
+        out_h = scale_slice(link, scale->sws, y, h, 1, 0);
+    }
 
     if (slice_dir == -1)
         scale->slice_y -= out_h;
