@@ -102,10 +102,11 @@
  ****************************************************************************/
 
 typedef enum {
-    RET_ERROR          = -1,
-    RET_OK             = 0,
-    RET_COPY_AGAIN     = 1,
-    RET_SKIP_NEXT_COPY = 2,
+    RET_ERROR           = -1,
+    RET_OK              = 0,
+    RET_COPY_AGAIN      = 1,
+    RET_SKIP_NEXT_COPY  = 2,
+    RET_COPY_NEXT_FIELD = 3,
 } CopyRet;
 
 typedef struct OpaqueList {
@@ -624,7 +625,13 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         return RET_SKIP_NEXT_COPY;
     }
 
-    return RET_OK;
+    /*
+     * Testing has shown that in all cases where we don't want to return the
+     * full frame immediately, VDEC_FLAG_UNKNOWN_SRC is set.
+     */
+    return priv->need_second_field &&
+           !(output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) ?
+           RET_COPY_NEXT_FIELD : RET_OK;
 }
 
 
@@ -806,8 +813,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
 
     do {
         rec_ret = receive_frame(avctx, data, data_size, 0);
-        if (rec_ret == 0 && *data_size == 0) {
-            if (avctx->codec->id == CODEC_ID_H264) {
+        if (rec_ret == RET_OK && *data_size == 0) {
                 /*
                  * This case is for when the encoded fields are stored
                  * separately and we get a separate avpkt for each one. To keep
@@ -817,7 +823,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
                  */
                 av_log(avctx, AV_LOG_VERBOSE, "Returning after first field.\n");
                 avctx->has_b_frames--;
-            } else {
+        } else if (rec_ret == RET_COPY_NEXT_FIELD) {
                 /*
                  * This case is for when the encoded fields are stored in a
                  * single avpkt but the hardware returns then separately. Unless
@@ -833,13 +839,12 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
                     if (ret == BC_STS_SUCCESS &&
                         decoder_status.ReadyListCount > 0) {
                         rec_ret = receive_frame(avctx, data, data_size, 1);
-                        if ((rec_ret == 0 && *data_size > 0) ||
+                        if ((rec_ret == RET_OK && *data_size > 0) ||
                             rec_ret == RET_ERROR)
                             break;
                     }
                 }
                 av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Got second field.\n");
-            }
         } else if (rec_ret == RET_SKIP_NEXT_COPY) {
             /*
              * Two input packets got turned into a field pair. Gawd.
