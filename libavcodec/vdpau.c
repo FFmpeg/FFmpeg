@@ -369,4 +369,40 @@ void ff_vdpau_mpeg4_decode_picture(MpegEncContext *s, const uint8_t *buf,
     render->bitstream_buffers_used = 0;
 }
 
+// Only dummy functions for now
+static int vdpau_mpeg2_start_frame(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
+{
+    return 0;
+}
+
+static int vdpau_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
+{
+    return 0;
+}
+
+static int vdpau_mpeg2_end_frame(AVCodecContext *avctx)
+{
+    return 0;
+}
+
+AVHWAccel ff_mpeg1_vdpau_hwaccel = {
+    .name           = "mpeg1_vdpau",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_MPEG1VIDEO,
+    .pix_fmt        = PIX_FMT_VDPAU_MPEG1,
+    .start_frame    = vdpau_mpeg2_start_frame,
+    .end_frame      = vdpau_mpeg2_end_frame,
+    .decode_slice   = vdpau_mpeg2_decode_slice,
+};
+
+AVHWAccel ff_mpeg2_vdpau_hwaccel = {
+    .name           = "mpeg2_vdpau",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_MPEG2VIDEO,
+    .pix_fmt        = PIX_FMT_VDPAU_MPEG2,
+    .start_frame    = vdpau_mpeg2_start_frame,
+    .end_frame      = vdpau_mpeg2_end_frame,
+    .decode_slice   = vdpau_mpeg2_decode_slice,
+};
+
 /* @}*/
