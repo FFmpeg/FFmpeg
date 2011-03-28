@@ -9,7 +9,7 @@ V
 
 DESTDIR
     Destination directory for the install targets, useful to prepare packages
-    or install Libav in cross-environments.
+    or install FFmpeg in cross-environments.
 
 Makefile targets:
 
