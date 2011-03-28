@@ -1209,9 +1209,9 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #if CONFIG_RUNTIME_CPUDETECT
 #  define COMPILE_C 1
 #  if   ARCH_X86
-#    define COMPILE_MMX     HAVE_MMX
-#    define COMPILE_MMX2    HAVE_MMX2
-#    define COMPILE_3DNOW   HAVE_AMD3DNOW
+#    define COMPILE_MMX     1
+#    define COMPILE_MMX2    1
+#    define COMPILE_3DNOW   1
 #  elif ARCH_PPC
 #    define COMPILE_ALTIVEC HAVE_ALTIVEC
 #  endif
