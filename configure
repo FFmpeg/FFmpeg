@@ -2854,7 +2854,7 @@ for thread in $THREADS_LIST; do
 done
 
 check_lib math.h sin -lm
-disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsGetVersion -lcrystalhd
+disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersion -lcrystalhd || disable crystalhd
 disabled vaapi || check_lib va/va.h vaInitialize -lva
 
 check_mathfunc exp2
