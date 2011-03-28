@@ -112,6 +112,7 @@ typedef struct AC3Block {
     uint8_t  coeff_shift[AC3_MAX_CHANNELS];     ///< fixed-point coefficient shift values
     uint8_t  new_rematrixing_strategy;          ///< send new rematrixing flags in this block
     uint8_t  rematrixing_flags[4];              ///< rematrixing flags
+    struct AC3Block *exp_ref_block[AC3_MAX_CHANNELS]; ///< reference blocks for EXP_REUSE
 } AC3Block;
 
 /**
@@ -692,7 +693,7 @@ static void encode_exponents_blk_ch(uint8_t *exp, int nb_exps, int exp_strategy)
 static void encode_exponents(AC3EncodeContext *s)
 {
     int blk, blk1, ch;
-    uint8_t *exp, *exp1, *exp_strategy;
+    uint8_t *exp, *exp_strategy;
     int nb_coefs, num_reuse_blocks;
 
     for (ch = 0; ch < s->channels; ch++) {
@@ -704,9 +705,13 @@ static void encode_exponents(AC3EncodeContext *s)
         while (blk < AC3_MAX_BLOCKS) {
             blk1 = blk + 1;
 
-            /* count the number of EXP_REUSE blocks after the current block */
-            while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1] == EXP_REUSE)
+            /* count the number of EXP_REUSE blocks after the current block
+               and set exponent reference block pointers */
+            s->blocks[blk].exp_ref_block[ch] = &s->blocks[blk];
+            while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1] == EXP_REUSE) {
+                s->blocks[blk1].exp_ref_block[ch] = &s->blocks[blk];
                 blk1++;
+            }
             num_reuse_blocks = blk1 - blk - 1;
 
             /* for the EXP_REUSE case we select the min of the exponents */
@@ -714,15 +719,8 @@ static void encode_exponents(AC3EncodeContext *s)
 
             encode_exponents_blk_ch(exp, nb_coefs, exp_strategy[blk]);
 
-            /* copy encoded exponents for reuse case */
-            exp1 = exp + AC3_MAX_COEFS;
-            while (blk < blk1-1) {
-                memcpy(exp1, exp, nb_coefs * sizeof(*exp));
-                exp1 += AC3_MAX_COEFS;
-                blk++;
-            }
+            exp += AC3_MAX_COEFS * (num_reuse_blocks + 1);
             blk = blk1;
-            exp = exp1;
         }
     }
 }
@@ -1035,7 +1033,7 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
     reset_block_bap(s);
     mantissa_bits = 0;
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-        AC3Block *block = &s->blocks[blk];
+        AC3Block *block;
         // initialize grouped mantissa counts. these are set so that they are
         // padded to the next whole group size when bits are counted in
         // compute_mantissa_size_final
@@ -1047,9 +1045,8 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
                blocks within a frame are the exponent values.  We can take
                advantage of that by reusing the bit allocation pointers
                whenever we reuse exponents. */
-            if (s->exp_strategy[ch][blk] == EXP_REUSE) {
-                memcpy(block->bap[ch], s->blocks[blk-1].bap[ch], AC3_MAX_COEFS);
-            } else {
+            block = s->blocks[blk].exp_ref_block[ch];
+            if (s->exp_strategy[ch][blk] != EXP_REUSE) {
                 ff_ac3_bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
                                           s->nb_coefs[ch], snr_offset,
                                           s->bit_alloc.floor, ff_ac3_bap_tab,
@@ -1352,12 +1349,14 @@ static void quantize_mantissas(AC3EncodeContext *s)
 
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
+        AC3Block *ref_block;
         s->mant1_cnt  = s->mant2_cnt  = s->mant4_cnt  = 0;
         s->qmant1_ptr = s->qmant2_ptr = s->qmant4_ptr = NULL;
 
         for (ch = 0; ch < s->channels; ch++) {
+            ref_block = block->exp_ref_block[ch];
             quantize_mantissas_blk_ch(s, block->fixed_coef[ch],
-                                      block->exp[ch], block->bap[ch],
+                                      ref_block->exp[ch], ref_block->bap[ch],
                                       block->qmant[ch], s->nb_coefs[ch]);
         }
     }
@@ -1516,9 +1515,10 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
     /* mantissas */
     for (ch = 0; ch < s->channels; ch++) {
         int b, q;
+        AC3Block *ref_block = block->exp_ref_block[ch];
         for (i = 0; i < s->nb_coefs[ch]; i++) {
             q = block->qmant[ch][i];
-            b = block->bap[ch][i];
+            b = ref_block->bap[ch][i];
             switch (b) {
             case 0:                                         break;
             case 1: if (q != 128) put_bits(&s->pb,   5, q); break;
