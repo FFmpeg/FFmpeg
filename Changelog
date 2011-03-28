@@ -82,6 +82,7 @@ version <next>:
 - sndio support for playback and record
 - Linux framebuffer input device added
 - Chronomaster DFA decoder
+- Mobotix MxPEG decoder
 
 
 version 0.6:
