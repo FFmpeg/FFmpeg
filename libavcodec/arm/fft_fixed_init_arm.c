@@ -22,11 +22,21 @@
 #include "libavcodec/fft.h"
 
 void ff_fft_fixed_calc_neon(FFTContext *s, FFTComplex *z);
+void ff_mdct_fixed_calc_neon(FFTContext *s, FFTSample *o, const FFTSample *i);
+void ff_mdct_fixed_calcw_neon(FFTContext *s, FFTDouble *o, const FFTSample *i);
 
 av_cold void ff_fft_fixed_init_arm(FFTContext *s)
 {
     if (HAVE_NEON) {
         s->fft_permutation = FF_FFT_PERM_SWAP_LSBS;
         s->fft_calc        = ff_fft_fixed_calc_neon;
+
+#if CONFIG_MDCT
+        if (!s->inverse && s->mdct_bits >= 5) {
+            s->mdct_permutation = FF_MDCT_PERM_INTERLEAVE;
+            s->mdct_calc        = ff_mdct_fixed_calc_neon;
+            s->mdct_calcw       = ff_mdct_fixed_calcw_neon;
+        }
+#endif
     }
 }

@@ -45,6 +45,7 @@ NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
                                           arm/fft_fixed_neon.o          \
 
 NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
+                                          arm/mdct_fixed_neon.o         \
 
 NEON-OBJS-$(CONFIG_RDFT)               += arm/rdft_neon.o               \
 
