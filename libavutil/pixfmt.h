@@ -135,6 +135,10 @@ enum PixelFormat {
     PIX_FMT_Y400A,     ///< 8bit gray, 8bit alpha
     PIX_FMT_BGR48BE,   ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as big-endian
     PIX_FMT_BGR48LE,   ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as little-endian
+    PIX_FMT_YUV420P9BE, ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
+    PIX_FMT_YUV420P9LE, ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+    PIX_FMT_YUV420P10BE,///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
+    PIX_FMT_YUV420P10LE,///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -159,6 +163,8 @@ enum PixelFormat {
 #define PIX_FMT_BGR555 PIX_FMT_NE(BGR555BE, BGR555LE)
 #define PIX_FMT_BGR444 PIX_FMT_NE(BGR444BE, BGR444LE)
 
+#define PIX_FMT_YUV420P9  PIX_FMT_NE(YUV420P9BE , YUV420P9LE)
+#define PIX_FMT_YUV420P10 PIX_FMT_NE(YUV420P10BE, YUV420P10LE)
 #define PIX_FMT_YUV420P16 PIX_FMT_NE(YUV420P16BE, YUV420P16LE)
 #define PIX_FMT_YUV422P16 PIX_FMT_NE(YUV422P16BE, YUV422P16LE)
 #define PIX_FMT_YUV444P16 PIX_FMT_NE(YUV444P16BE, YUV444P16LE)
