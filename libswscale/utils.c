@@ -112,6 +112,8 @@ const char *swscale_license(void)
         || (x)==PIX_FMT_YUV420P16BE   \
         || (x)==PIX_FMT_YUV422P16BE   \
         || (x)==PIX_FMT_YUV444P16BE   \
+        || (x)==PIX_FMT_YUV420P9    \
+        || (x)==PIX_FMT_YUV420P10   \
     )
 
 int sws_isSupportedInput(enum PixelFormat pix_fmt)
