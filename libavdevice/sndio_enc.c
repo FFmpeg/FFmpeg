@@ -49,9 +49,7 @@ static int audio_write_packet(AVFormatContext *s1, AVPacket *pkt)
     int len, ret;
 
     while (size > 0) {
-        len = s->buffer_size - s->buffer_offset;
-        if (len > size)
-            len = size;
+        len = FFMIN(s->buffer_size - s->buffer_offset, size);
         memcpy(s->buffer + s->buffer_offset, buf, len);
         buf  += len;
         size -= len;
