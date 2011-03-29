@@ -53,19 +53,24 @@ void ff_fdct_mmx(DCTELEM *block);
 void ff_fdct_mmx2(DCTELEM *block);
 void ff_fdct_sse2(DCTELEM *block);
 
-void ff_h264_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride);
-void ff_h264_idct_add_c(uint8_t *dst, DCTELEM *block, int stride);
-void ff_h264_idct8_dc_add_c(uint8_t *dst, DCTELEM *block, int stride);
-void ff_h264_idct_dc_add_c(uint8_t *dst, DCTELEM *block, int stride);
-void ff_h264_lowres_idct_add_c(uint8_t *dst, int stride, DCTELEM *block);
-void ff_h264_lowres_idct_put_c(uint8_t *dst, int stride, DCTELEM *block);
-void ff_h264_idct_add16_c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
-void ff_h264_idct_add16intra_c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
-void ff_h264_idct8_add4_c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
-void ff_h264_idct_add8_c(uint8_t **dest, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+#define H264_IDCT(depth) \
+void ff_h264_idct8_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
+void ff_h264_idct_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
+void ff_h264_idct8_dc_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
+void ff_h264_idct_dc_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
+void ff_h264_lowres_idct_add_ ## depth ## _c(uint8_t *dst, int stride, DCTELEM *block);\
+void ff_h264_lowres_idct_put_ ## depth ## _c(uint8_t *dst, int stride, DCTELEM *block);\
+void ff_h264_idct_add16_ ## depth ## _c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
+void ff_h264_idct_add16intra_ ## depth ## _c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
+void ff_h264_idct8_add4_ ## depth ## _c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
+void ff_h264_idct_add8_ ## depth ## _c(uint8_t **dest, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
+void ff_h264_luma_dc_dequant_idct_ ## depth ## _c(DCTELEM *output, DCTELEM *input, int qmul);\
+void ff_h264_chroma_dc_dequant_idct_ ## depth ## _c(DCTELEM *block, int qmul);
 
-void ff_h264_chroma_dc_dequant_idct_c(DCTELEM *block, int qmul);
-void ff_h264_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qmul);
+H264_IDCT( 8)
+H264_IDCT( 9)
+H264_IDCT(10)
+
 void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qp);
 void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
 
@@ -82,10 +87,20 @@ extern const uint8_t ff_zigzag248_direct[64];
 extern uint32_t ff_squareTbl[512];
 extern uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
 
-void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride);
+#define PUTAVG_PIXELS(depth)\
+void ff_put_pixels8x8_ ## depth ## _c(uint8_t *dst, uint8_t *src, int stride);\
+void ff_avg_pixels8x8_ ## depth ## _c(uint8_t *dst, uint8_t *src, int stride);\
+void ff_put_pixels16x16_ ## depth ## _c(uint8_t *dst, uint8_t *src, int stride);\
+void ff_avg_pixels16x16_ ## depth ## _c(uint8_t *dst, uint8_t *src, int stride);
+
+PUTAVG_PIXELS( 8)
+PUTAVG_PIXELS( 9)
+PUTAVG_PIXELS(10)
+
+#define ff_put_pixels8x8_c ff_put_pixels8x8_8_c
+#define ff_avg_pixels8x8_c ff_avg_pixels8x8_8_c
+#define ff_put_pixels16x16_c ff_put_pixels16x16_8_c
+#define ff_avg_pixels16x16_c ff_avg_pixels16x16_8_c
 
 /* VP3 DSP functions */
 void ff_vp3_idct_c(DCTELEM *block/* align 16*/);
@@ -187,9 +202,16 @@ typedef struct ScanTable{
 
 void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
 
-void ff_emulated_edge_mc(uint8_t *buf, const uint8_t *src, int linesize,
-                         int block_w, int block_h,
+#define EMULATED_EDGE(depth) \
+void ff_emulated_edge_mc_ ## depth (uint8_t *buf, const uint8_t *src, int linesize,\
+                         int block_w, int block_h,\
                          int src_x, int src_y, int w, int h);
+
+EMULATED_EDGE(8)
+EMULATED_EDGE(9)
+EMULATED_EDGE(10)
+
+#define ff_emulated_edge_mc ff_emulated_edge_mc_8
 
 void ff_add_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
 void ff_put_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
@@ -562,6 +584,7 @@ void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scant
 void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type);
 
 #define         BYTE_VEC32(c)   ((c)*0x01010101UL)
+#define         BYTE_VEC64(c)   ((c)*0x0001000100010001UL)
 
 static inline uint32_t rnd_avg32(uint32_t a, uint32_t b)
 {
@@ -571,6 +594,16 @@ static inline uint32_t rnd_avg32(uint32_t a, uint32_t b)
 static inline uint32_t no_rnd_avg32(uint32_t a, uint32_t b)
 {
     return (a & b) + (((a ^ b) & ~BYTE_VEC32(0x01)) >> 1);
+}
+
+static inline uint64_t rnd_avg64(uint64_t a, uint64_t b)
+{
+    return (a | b) - (((a ^ b) & ~BYTE_VEC64(0x01)) >> 1);
+}
+
+static inline uint64_t no_rnd_avg64(uint64_t a, uint64_t b)
+{
+    return (a & b) + (((a ^ b) & ~BYTE_VEC64(0x01)) >> 1);
 }
 
 static inline int get_penalty_factor(int lambda, int lambda2, int type){

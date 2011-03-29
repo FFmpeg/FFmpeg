@@ -72,6 +72,8 @@ int ff_pix_sum_armv6(uint8_t *pix, int line_size);
 
 void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 {
+    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+
     if (!avctx->lowres && (avctx->idct_algo == FF_IDCT_AUTO ||
                            avctx->idct_algo == FF_IDCT_SIMPLEARMV6)) {
         c->idct_put              = ff_simple_idct_put_armv6;
@@ -80,6 +82,7 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
         c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
     }
 
+    if (!high_bit_depth) {
     c->put_pixels_tab[0][0] = ff_put_pixels16_armv6;
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_armv6;
     c->put_pixels_tab[0][2] = ff_put_pixels16_y2_armv6;
@@ -100,6 +103,7 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 
     c->avg_pixels_tab[0][0] = ff_avg_pixels16_armv6;
     c->avg_pixels_tab[1][0] = ff_avg_pixels8_armv6;
+    }
 
     c->add_pixels_clamped = ff_add_pixels_clamped_armv6;
     c->get_pixels = ff_get_pixels_armv6;

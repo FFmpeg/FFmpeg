@@ -965,8 +965,10 @@ H264_WEIGHT( 8, 8)
 H264_WEIGHT( 8, 4)
 
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
+    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
 
     if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
+    if (!high_bit_depth) {
         c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
         c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
 
@@ -992,11 +994,13 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
         dspfunc(avg_h264_qpel, 0, 16);
 #undef dspfunc
     }
+    }
 }
 
-void ff_h264dsp_init_ppc(H264DSPContext *c)
+void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth)
 {
     if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
+    if (bit_depth == 8) {
         c->h264_idct_add = ff_h264_idct_add_altivec;
         c->h264_idct_add8 = ff_h264_idct_add8_altivec;
         c->h264_idct_add16 = ff_h264_idct_add16_altivec;
@@ -1018,5 +1022,6 @@ void ff_h264dsp_init_ppc(H264DSPContext *c)
         c->biweight_h264_pixels_tab[2] = ff_biweight_h264_pixels8x16_altivec;
         c->biweight_h264_pixels_tab[3] = ff_biweight_h264_pixels8x8_altivec;
         c->biweight_h264_pixels_tab[4] = ff_biweight_h264_pixels8x4_altivec;
+    }
     }
 }

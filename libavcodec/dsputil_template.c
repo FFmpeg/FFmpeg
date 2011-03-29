@@ -27,25 +27,55 @@
  * DSP utils
  */
 
-#include "dsputil.h"
+#include "high_bit_depth.h"
 
-#define BIT_DEPTH 8
+static inline void FUNC(copy_block2)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
+{
+    int i;
+    for(i=0; i<h; i++)
+    {
+        AV_WN2P(dst   , AV_RN2P(src   ));
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
 
-#define pixel  uint8_t
-#define pixel2 uint16_t
-#define pixel4 uint32_t
-#define dctcoef int16_t
+static inline void FUNC(copy_block4)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
+{
+    int i;
+    for(i=0; i<h; i++)
+    {
+        AV_WN4P(dst   , AV_RN4P(src   ));
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
 
-#define FUNC(a)  a
-#define FUNCC(a) a ## _c
-#define INIT_CLIP uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-#define CLIP(a) cm[a]
-#define AV_RN2P AV_RN16
-#define AV_RN4P AV_RN32
-#define PIXEL_MAX ((1<<BIT_DEPTH)-1)
+static inline void FUNC(copy_block8)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
+{
+    int i;
+    for(i=0; i<h; i++)
+    {
+        AV_WN4P(dst                , AV_RN4P(src                ));
+        AV_WN4P(dst+4*sizeof(pixel), AV_RN4P(src+4*sizeof(pixel)));
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
 
-#define no_rnd_avg_pixel4 no_rnd_avg32
-#define    rnd_avg_pixel4    rnd_avg32
+static inline void FUNC(copy_block16)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
+{
+    int i;
+    for(i=0; i<h; i++)
+    {
+        AV_WN4P(dst                 , AV_RN4P(src                 ));
+        AV_WN4P(dst+ 4*sizeof(pixel), AV_RN4P(src+ 4*sizeof(pixel)));
+        AV_WN4P(dst+ 8*sizeof(pixel), AV_RN4P(src+ 8*sizeof(pixel)));
+        AV_WN4P(dst+12*sizeof(pixel), AV_RN4P(src+12*sizeof(pixel)));
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
 
 /* draw the edges of width 'w' of an image of size width, height */
 //FIXME check that this is ok for mpeg4 interlaced
@@ -1317,10 +1347,22 @@ H264_MC(avg_, 16)
 #undef op2_avg
 #undef op2_put
 
-#define put_h264_qpel8_mc00_c  ff_put_pixels8x8_c
-#define avg_h264_qpel8_mc00_c  ff_avg_pixels8x8_c
-#define put_h264_qpel16_mc00_c ff_put_pixels16x16_c
-#define avg_h264_qpel16_mc00_c ff_avg_pixels16x16_c
+#if BIT_DEPTH == 8
+#   define put_h264_qpel8_mc00_8_c  ff_put_pixels8x8_8_c
+#   define avg_h264_qpel8_mc00_8_c  ff_avg_pixels8x8_8_c
+#   define put_h264_qpel16_mc00_8_c ff_put_pixels16x16_8_c
+#   define avg_h264_qpel16_mc00_8_c ff_avg_pixels16x16_8_c
+#elif BIT_DEPTH == 9
+#   define put_h264_qpel8_mc00_9_c  ff_put_pixels8x8_9_c
+#   define avg_h264_qpel8_mc00_9_c  ff_avg_pixels8x8_9_c
+#   define put_h264_qpel16_mc00_9_c ff_put_pixels16x16_9_c
+#   define avg_h264_qpel16_mc00_9_c ff_avg_pixels16x16_9_c
+#elif BIT_DEPTH == 10
+#   define put_h264_qpel8_mc00_10_c  ff_put_pixels8x8_10_c
+#   define avg_h264_qpel8_mc00_10_c  ff_avg_pixels8x8_10_c
+#   define put_h264_qpel16_mc00_10_c ff_put_pixels16x16_10_c
+#   define avg_h264_qpel16_mc00_10_c ff_avg_pixels16x16_10_c
+#endif
 
 void FUNCC(ff_put_pixels8x8)(uint8_t *dst, uint8_t *src, int stride) {
     FUNCC(put_pixels8)(dst, src, stride, 8);

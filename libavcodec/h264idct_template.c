@@ -25,7 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include "dsputil.h"
+#include "high_bit_depth.h"
 
 #ifndef AVCODEC_H264IDCT_INTERNAL_H
 #define AVCODEC_H264IDCT_INTERNAL_H
@@ -41,12 +41,6 @@ static const uint8_t scan8[16 + 2*4]={
  1+5*8, 2+5*8,
 };
 #endif
-
-#define pixel  uint8_t
-#define dctcoef DCTELEM
-#define INIT_CLIP uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-#define CLIP(a) cm[a]
-#define FUNCC(a) a ## _c
 
 static av_always_inline void FUNCC(idct_internal)(uint8_t *_dst, DCTELEM *_block, int stride, int block_stride, int shift, int add){
     int i;

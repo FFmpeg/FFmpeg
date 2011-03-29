@@ -270,6 +270,9 @@ static void put_pixels16_axp_asm(uint8_t *block, const uint8_t *pixels,
 
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
 {
+    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+
+    if (!high_bit_depth) {
     c->put_pixels_tab[0][0] = put_pixels16_axp_asm;
     c->put_pixels_tab[0][1] = put_pixels16_x2_axp;
     c->put_pixels_tab[0][2] = put_pixels16_y2_axp;
@@ -311,6 +314,7 @@ void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
     c->avg_no_rnd_pixels_tab[1][3] = avg_no_rnd_pixels_xy2_axp;
 
     c->clear_blocks = clear_blocks_axp;
+    }
 
     /* amask clears all bits that correspond to present features.  */
     if (amask(AMASK_MVI) == 0) {

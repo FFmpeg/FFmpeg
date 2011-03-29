@@ -26,21 +26,7 @@
  */
 
 #include "mathops.h"
-#include "dsputil.h"
-
-#define BIT_DEPTH 8
-
-#define pixel uint8_t
-#define pixel4 uint32_t
-#define dctcoef DCTELEM
-
-#define INIT_CLIP uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-#define CLIP(a) cm[a]
-#define FUNC(a) a
-#define FUNCC(a) a ## _c
-#define PIXEL_SPLAT_X4(x) ((x)*0x01010101U)
-#define AV_WN4P  AV_WN32
-#define AV_WN4PA AV_WN32A
+#include "high_bit_depth.h"
 
 static void FUNCC(pred4x4_vertical)(uint8_t *_src, const uint8_t *topright, int _stride){
     pixel *src = (pixel*)_src;

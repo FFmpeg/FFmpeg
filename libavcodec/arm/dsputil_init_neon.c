@@ -173,6 +173,8 @@ void ff_apply_window_int16_neon(int16_t *dst, const int16_t *src,
 
 void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
 {
+    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+
     if (!avctx->lowres) {
         if (avctx->idct_algo == FF_IDCT_AUTO ||
             avctx->idct_algo == FF_IDCT_SIMPLENEON) {
@@ -190,6 +192,7 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
         }
     }
 
+    if (!high_bit_depth) {
     c->clear_block  = ff_clear_block_neon;
     c->clear_blocks = ff_clear_blocks_neon;
 
@@ -213,12 +216,14 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
 
     c->avg_pixels_tab[0][0] = ff_avg_pixels16_neon;
     c->avg_pixels_tab[1][0] = ff_avg_pixels8_neon;
+    }
 
     c->add_pixels_clamped = ff_add_pixels_clamped_neon;
     c->put_pixels_clamped = ff_put_pixels_clamped_neon;
     c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_neon;
 
     if (CONFIG_H264_DECODER) {
+        if (!high_bit_depth) {
         c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_neon;
         c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_neon;
         c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_neon;
@@ -294,6 +299,7 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
         c->avg_h264_qpel_pixels_tab[1][13] = ff_avg_h264_qpel8_mc13_neon;
         c->avg_h264_qpel_pixels_tab[1][14] = ff_avg_h264_qpel8_mc23_neon;
         c->avg_h264_qpel_pixels_tab[1][15] = ff_avg_h264_qpel8_mc33_neon;
+        }
     }
 
     if (CONFIG_VP3_DECODER) {

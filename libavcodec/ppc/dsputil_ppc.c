@@ -153,8 +153,11 @@ static void prefetch_ppc(void *mem, int stride, int h)
 
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
+    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+
     // Common optimizations whether AltiVec is available or not
     c->prefetch = prefetch_ppc;
+    if (!high_bit_depth) {
     switch (check_dcbzl_effect()) {
         case 32:
             c->clear_blocks = clear_blocks_dcbz32_ppc;
@@ -164,6 +167,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
             break;
         default:
             break;
+    }
     }
 
 #if HAVE_ALTIVEC

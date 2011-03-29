@@ -75,6 +75,8 @@ static void simple_idct_arm_add(uint8_t *dest, int line_size, DCTELEM *block)
 
 void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 {
+    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+
     ff_put_pixels_clamped = c->put_pixels_clamped;
     ff_add_pixels_clamped = c->add_pixels_clamped;
 
@@ -95,6 +97,7 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 
     c->add_pixels_clamped = ff_add_pixels_clamped_arm;
 
+    if (!high_bit_depth) {
     c->put_pixels_tab[0][0] = ff_put_pixels16_arm;
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_arm;
     c->put_pixels_tab[0][2] = ff_put_pixels16_y2_arm;
@@ -112,6 +115,7 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
     c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_arm;
     c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_arm;
     c->put_no_rnd_pixels_tab[1][3] = ff_put_no_rnd_pixels8_xy2_arm;
+    }
 
     if (HAVE_ARMV5TE) ff_dsputil_init_armv5te(c, avctx);
     if (HAVE_ARMV6)   ff_dsputil_init_armv6(c, avctx);

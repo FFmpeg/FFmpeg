@@ -421,10 +421,13 @@ static void ff_fdct_mlib(DCTELEM *data)
 
 void dsputil_init_mlib(DSPContext* c, AVCodecContext *avctx)
 {
+    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+
     c->get_pixels  = get_pixels_mlib;
     c->diff_pixels = diff_pixels_mlib;
     c->add_pixels_clamped = add_pixels_clamped_mlib;
 
+    if (!high_bit_depth) {
     c->put_pixels_tab[0][0] = put_pixels16_mlib;
     c->put_pixels_tab[0][1] = put_pixels16_x2_mlib;
     c->put_pixels_tab[0][2] = put_pixels16_y2_mlib;
@@ -445,6 +448,7 @@ void dsputil_init_mlib(DSPContext* c, AVCodecContext *avctx)
 
     c->put_no_rnd_pixels_tab[0][0] = put_pixels16_mlib;
     c->put_no_rnd_pixels_tab[1][0] = put_pixels8_mlib;
+    }
 
     c->bswap_buf = bswap_buf_mlib;
 }
