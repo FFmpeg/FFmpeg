@@ -181,9 +181,7 @@ static int audio_write_packet(AVFormatContext *s1, AVPacket *pkt)
     uint8_t *buf= pkt->data;
 
     while (size > 0) {
-        len = AUDIO_BLOCK_SIZE - s->buffer_ptr;
-        if (len > size)
-            len = size;
+        len = FFMIN(AUDIO_BLOCK_SIZE - s->buffer_ptr, size);
         memcpy(s->buffer + s->buffer_ptr, buf, len);
         s->buffer_ptr += len;
         if (s->buffer_ptr >= AUDIO_BLOCK_SIZE) {
