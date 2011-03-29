@@ -1930,12 +1930,23 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,
                       h->sps.num_units_in_tick, den, 1<<30);
         }
+
+        switch (h->sps.bit_depth_luma) {
+            case 9 :
+                s->avctx->pix_fmt = PIX_FMT_YUV420P9;
+                break;
+            case 10 :
+                s->avctx->pix_fmt = PIX_FMT_YUV420P10;
+                break;
+            default:
         s->avctx->pix_fmt = s->avctx->get_format(s->avctx,
                                                  s->avctx->codec->pix_fmts ?
                                                  s->avctx->codec->pix_fmts :
                                                  s->avctx->color_range == AVCOL_RANGE_JPEG ?
                                                  hwaccel_pixfmt_list_h264_jpeg_420 :
                                                  ff_hwaccel_pixfmt_list_420);
+        }
+
         s->avctx->hwaccel = ff_find_hwaccel(s->avctx->codec->id, s->avctx->pix_fmt);
 
         if (MPV_common_init(s) < 0)
