@@ -108,7 +108,7 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f);
  */
 void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f);
 
-int ff_thread_init(AVCodecContext *s, int thread_count);
+int ff_thread_init(AVCodecContext *s);
 void ff_thread_free(AVCodecContext *s);
 
 #endif /* AVCODEC_THREAD_H */
