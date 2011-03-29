@@ -55,6 +55,7 @@ static void fill_vaapi_pic(VAPictureH264 *va_pic,
 {
     if (pic_structure == 0)
         pic_structure = pic->reference;
+    pic_structure &= PICT_FRAME; /* PICT_TOP_FIELD|PICT_BOTTOM_FIELD */
 
     va_pic->picture_id = ff_vaapi_get_surface_id(pic);
     va_pic->frame_idx  = pic->long_ref ? pic->pic_id : pic->frame_num;
