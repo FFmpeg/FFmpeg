@@ -42,9 +42,18 @@ static const uint8_t scan8[16 + 2*4]={
 };
 #endif
 
-static av_always_inline void idct_internal(uint8_t *dst, DCTELEM *block, int stride, int block_stride, int shift, int add){
+#define pixel  uint8_t
+#define dctcoef DCTELEM
+#define INIT_CLIP uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+#define CLIP(a) cm[a]
+#define FUNCC(a) a ## _c
+
+static av_always_inline void FUNCC(idct_internal)(uint8_t *_dst, DCTELEM *_block, int stride, int block_stride, int shift, int add){
     int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    INIT_CLIP
+    pixel *dst = (pixel*)_dst;
+    dctcoef *block = (dctcoef*)_block;
+    stride /= sizeof(pixel);
 
     block[0] += 1<<(shift-1);
 
@@ -66,28 +75,31 @@ static av_always_inline void idct_internal(uint8_t *dst, DCTELEM *block, int str
         const int z2= (block[1 + block_stride*i]>>1) -  block[3 + block_stride*i];
         const int z3=  block[1 + block_stride*i]     + (block[3 + block_stride*i]>>1);
 
-        dst[i + 0*stride]= cm[ add*dst[i + 0*stride] + ((z0 + z3) >> shift) ];
-        dst[i + 1*stride]= cm[ add*dst[i + 1*stride] + ((z1 + z2) >> shift) ];
-        dst[i + 2*stride]= cm[ add*dst[i + 2*stride] + ((z1 - z2) >> shift) ];
-        dst[i + 3*stride]= cm[ add*dst[i + 3*stride] + ((z0 - z3) >> shift) ];
+        dst[i + 0*stride]= CLIP(add*dst[i + 0*stride] + ((z0 + z3) >> shift));
+        dst[i + 1*stride]= CLIP(add*dst[i + 1*stride] + ((z1 + z2) >> shift));
+        dst[i + 2*stride]= CLIP(add*dst[i + 2*stride] + ((z1 - z2) >> shift));
+        dst[i + 3*stride]= CLIP(add*dst[i + 3*stride] + ((z0 - z3) >> shift));
     }
 }
 
-void ff_h264_idct_add_c(uint8_t *dst, DCTELEM *block, int stride){
-    idct_internal(dst, block, stride, 4, 6, 1);
+void FUNCC(ff_h264_idct_add)(uint8_t *dst, DCTELEM *block, int stride){
+    FUNCC(idct_internal)(dst, block, stride, 4, 6, 1);
 }
 
-void ff_h264_lowres_idct_add_c(uint8_t *dst, int stride, DCTELEM *block){
-    idct_internal(dst, block, stride, 8, 3, 1);
+void FUNCC(ff_h264_lowres_idct_add)(uint8_t *dst, int stride, DCTELEM *block){
+    FUNCC(idct_internal)(dst, block, stride, 8, 3, 1);
 }
 
-void ff_h264_lowres_idct_put_c(uint8_t *dst, int stride, DCTELEM *block){
-    idct_internal(dst, block, stride, 8, 3, 0);
+void FUNCC(ff_h264_lowres_idct_put)(uint8_t *dst, int stride, DCTELEM *block){
+    FUNCC(idct_internal)(dst, block, stride, 8, 3, 0);
 }
 
-void ff_h264_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride){
+void FUNCC(ff_h264_idct8_add)(uint8_t *_dst, DCTELEM *_block, int stride){
     int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    INIT_CLIP
+    pixel *dst = (pixel*)_dst;
+    dctcoef *block = (dctcoef*)_block;
+    stride /= sizeof(pixel);
 
     block[0] += 32;
 
@@ -144,90 +156,96 @@ void ff_h264_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride){
         const int b5 = (a3>>2) - a5;
         const int b7 =  a7 - (a1>>2);
 
-        dst[i + 0*stride] = cm[ dst[i + 0*stride] + ((b0 + b7) >> 6) ];
-        dst[i + 1*stride] = cm[ dst[i + 1*stride] + ((b2 + b5) >> 6) ];
-        dst[i + 2*stride] = cm[ dst[i + 2*stride] + ((b4 + b3) >> 6) ];
-        dst[i + 3*stride] = cm[ dst[i + 3*stride] + ((b6 + b1) >> 6) ];
-        dst[i + 4*stride] = cm[ dst[i + 4*stride] + ((b6 - b1) >> 6) ];
-        dst[i + 5*stride] = cm[ dst[i + 5*stride] + ((b4 - b3) >> 6) ];
-        dst[i + 6*stride] = cm[ dst[i + 6*stride] + ((b2 - b5) >> 6) ];
-        dst[i + 7*stride] = cm[ dst[i + 7*stride] + ((b0 - b7) >> 6) ];
+        dst[i + 0*stride] = CLIP( dst[i + 0*stride] + ((b0 + b7) >> 6) );
+        dst[i + 1*stride] = CLIP( dst[i + 1*stride] + ((b2 + b5) >> 6) );
+        dst[i + 2*stride] = CLIP( dst[i + 2*stride] + ((b4 + b3) >> 6) );
+        dst[i + 3*stride] = CLIP( dst[i + 3*stride] + ((b6 + b1) >> 6) );
+        dst[i + 4*stride] = CLIP( dst[i + 4*stride] + ((b6 - b1) >> 6) );
+        dst[i + 5*stride] = CLIP( dst[i + 5*stride] + ((b4 - b3) >> 6) );
+        dst[i + 6*stride] = CLIP( dst[i + 6*stride] + ((b2 - b5) >> 6) );
+        dst[i + 7*stride] = CLIP( dst[i + 7*stride] + ((b0 - b7) >> 6) );
     }
 }
 
 // assumes all AC coefs are 0
-void ff_h264_idct_dc_add_c(uint8_t *dst, DCTELEM *block, int stride){
+void FUNCC(ff_h264_idct_dc_add)(uint8_t *_dst, DCTELEM *block, int stride){
     int i, j;
-    int dc = (block[0] + 32) >> 6;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP + dc;
+    int dc = (((dctcoef*)block)[0] + 32) >> 6;
+    INIT_CLIP
+    pixel *dst = (pixel*)_dst;
+    stride /= sizeof(pixel);
     for( j = 0; j < 4; j++ )
     {
         for( i = 0; i < 4; i++ )
-            dst[i] = cm[ dst[i] ];
+            dst[i] = CLIP( dst[i] + dc );
         dst += stride;
     }
 }
 
-void ff_h264_idct8_dc_add_c(uint8_t *dst, DCTELEM *block, int stride){
+void FUNCC(ff_h264_idct8_dc_add)(uint8_t *_dst, DCTELEM *block, int stride){
     int i, j;
-    int dc = (block[0] + 32) >> 6;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP + dc;
+    int dc = (((dctcoef*)block)[0] + 32) >> 6;
+    INIT_CLIP
+    pixel *dst = (pixel*)_dst;
+    stride /= sizeof(pixel);
     for( j = 0; j < 8; j++ )
     {
         for( i = 0; i < 8; i++ )
-            dst[i] = cm[ dst[i] ];
+            dst[i] = CLIP( dst[i] + dc );
         dst += stride;
     }
 }
 
-void ff_h264_idct_add16_c(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+void FUNCC(ff_h264_idct_add16)(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
     int i;
     for(i=0; i<16; i++){
         int nnz = nnzc[ scan8[i] ];
         if(nnz){
-            if(nnz==1 && block[i*16]) ff_h264_idct_dc_add_c(dst + block_offset[i], block + i*16, stride);
-            else                      idct_internal        (dst + block_offset[i], block + i*16, stride, 4, 6, 1);
+            if(nnz==1 && ((dctcoef*)block)[i*16]) FUNCC(ff_h264_idct_dc_add)(dst + block_offset[i], block + i*16*sizeof(pixel), stride);
+            else                                  FUNCC(idct_internal      )(dst + block_offset[i], block + i*16*sizeof(pixel), stride, 4, 6, 1);
         }
     }
 }
 
-void ff_h264_idct_add16intra_c(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+void FUNCC(ff_h264_idct_add16intra)(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
     int i;
     for(i=0; i<16; i++){
-        if(nnzc[ scan8[i] ]) idct_internal        (dst + block_offset[i], block + i*16, stride, 4, 6, 1);
-        else if(block[i*16]) ff_h264_idct_dc_add_c(dst + block_offset[i], block + i*16, stride);
+        if(nnzc[ scan8[i] ])             FUNCC(idct_internal      )(dst + block_offset[i], block + i*16*sizeof(pixel), stride, 4, 6, 1);
+        else if(((dctcoef*)block)[i*16]) FUNCC(ff_h264_idct_dc_add)(dst + block_offset[i], block + i*16*sizeof(pixel), stride);
     }
 }
 
-void ff_h264_idct8_add4_c(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+void FUNCC(ff_h264_idct8_add4)(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
     int i;
     for(i=0; i<16; i+=4){
         int nnz = nnzc[ scan8[i] ];
         if(nnz){
-            if(nnz==1 && block[i*16]) ff_h264_idct8_dc_add_c(dst + block_offset[i], block + i*16, stride);
-            else                      ff_h264_idct8_add_c   (dst + block_offset[i], block + i*16, stride);
+            if(nnz==1 && ((dctcoef*)block)[i*16]) FUNCC(ff_h264_idct8_dc_add)(dst + block_offset[i], block + i*16*sizeof(pixel), stride);
+            else                                  FUNCC(ff_h264_idct8_add   )(dst + block_offset[i], block + i*16*sizeof(pixel), stride);
         }
     }
 }
 
-void ff_h264_idct_add8_c(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+void FUNCC(ff_h264_idct_add8)(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
     int i;
     for(i=16; i<16+8; i++){
         if(nnzc[ scan8[i] ])
-            ff_h264_idct_add_c   (dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
-        else if(block[i*16])
-            ff_h264_idct_dc_add_c(dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
+            FUNCC(ff_h264_idct_add   )(dest[(i&4)>>2] + block_offset[i], block + i*16*sizeof(pixel), stride);
+        else if(((dctcoef*)block)[i*16])
+            FUNCC(ff_h264_idct_dc_add)(dest[(i&4)>>2] + block_offset[i], block + i*16*sizeof(pixel), stride);
     }
 }
 /**
  * IDCT transforms the 16 dc values and dequantizes them.
  * @param qp quantization parameter
  */
-void ff_h264_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qmul){
+void FUNCC(ff_h264_luma_dc_dequant_idct)(DCTELEM *_output, DCTELEM *_input, int qmul){
 #define stride 16
     int i;
     int temp[16];
     static const uint8_t x_offset[4]={0, 2*stride, 8*stride, 10*stride};
+    dctcoef *input = (dctcoef*)_input;
+    dctcoef *output = (dctcoef*)_output;
 
     for(i=0; i<4; i++){
         const int z0= input[4*i+0] + input[4*i+1];
@@ -256,10 +274,11 @@ void ff_h264_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qmul){
 #undef stride
 }
 
-void ff_h264_chroma_dc_dequant_idct_c(DCTELEM *block, int qmul){
+void FUNCC(ff_h264_chroma_dc_dequant_idct)(DCTELEM *_block, int qmul){
     const int stride= 16*2;
     const int xStride= 16;
     int a,b,c,d,e;
+    dctcoef *block = (dctcoef*)_block;
 
     a= block[stride*0 + xStride*0];
     b= block[stride*0 + xStride*1];
