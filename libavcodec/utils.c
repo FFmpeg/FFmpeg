@@ -273,6 +273,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         int unaligned;
         AVPicture picture;
         int stride_align[4];
+        const int pixel_size = av_pix_fmt_descriptors[s->pix_fmt].comp[0].step_minus1+1;
 
         avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
 
@@ -322,7 +323,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             if((s->flags&CODEC_FLAG_EMU_EDGE) || !size[2])
                 buf->data[i] = buf->base[i];
             else
-                buf->data[i] = buf->base[i] + FFALIGN((buf->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift), stride_align[i]);
+                buf->data[i] = buf->base[i] + FFALIGN((buf->linesize[i]*EDGE_WIDTH>>v_shift) + (pixel_size*EDGE_WIDTH>>h_shift), stride_align[i]);
         }
         if(size[1] && !size[2])
             ff_set_systematic_pal2((uint32_t*)buf->data[1], s->pix_fmt);

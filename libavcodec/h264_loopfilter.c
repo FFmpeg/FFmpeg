@@ -544,10 +544,10 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
         //{ int i; for (i = 0; i < 4; i++) tprintf(s->avctx, " bS[%d]:%d", i, bS[i]); tprintf(s->avctx, "\n"); }
         if( dir == 0 ) {
-            filter_mb_edgev( &img_y[4*edge], linesize, bS, qp, h );
+            filter_mb_edgev( &img_y[4*edge << h->pixel_shift], linesize, bS, qp, h );
             if( (edge&1) == 0 ) {
-                filter_mb_edgecv( &img_cb[2*edge], uvlinesize, bS, h->chroma_qp[0], h);
-                filter_mb_edgecv( &img_cr[2*edge], uvlinesize, bS, h->chroma_qp[1], h);
+                filter_mb_edgecv( &img_cb[2*edge << h->pixel_shift], uvlinesize, bS, h->chroma_qp[0], h);
+                filter_mb_edgecv( &img_cr[2*edge << h->pixel_shift], uvlinesize, bS, h->chroma_qp[1], h);
             }
         } else {
             filter_mb_edgeh( &img_y[4*edge*linesize], linesize, bS, qp, h );

@@ -1577,6 +1577,7 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     int perms = AV_PERM_WRITE;
     int i, w, h, stride[4];
     unsigned edge;
+    int pixel_size;
 
     if (codec->codec->capabilities & CODEC_CAP_NEG_LINESIZES)
         perms |= AV_PERM_NEG_LINESIZES;
@@ -1598,6 +1599,7 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     if(!(ref = avfilter_get_video_buffer(ctx->outputs[0], perms, w, h)))
         return -1;
 
+    pixel_size = av_pix_fmt_descriptors[ref->format].comp[0].step_minus1+1;
     ref->video->w = codec->width;
     ref->video->h = codec->height;
     for(i = 0; i < 4; i ++) {
@@ -1605,7 +1607,7 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
         unsigned vshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->format].log2_chroma_h : 0;
 
         if (ref->data[i]) {
-            ref->data[i]    += (edge >> hshift) + ((edge * ref->linesize[i]) >> vshift);
+            ref->data[i]    += ((edge * pixel_size) >> hshift) + ((edge * ref->linesize[i]) >> vshift);
         }
         pic->data[i]     = ref->data[i];
         pic->linesize[i] = ref->linesize[i];
