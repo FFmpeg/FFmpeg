@@ -270,6 +270,7 @@ static int h264_parse(AVCodecParserContext *s,
             assert(pc->last_index + next >= 0 );
             ff_h264_find_frame_end(h, &pc->buffer[pc->last_index + next], -next); //update state
         }
+    }
 
         parse_nal_units(s, avctx, buf, buf_size);
 
@@ -282,10 +283,10 @@ static int h264_parse(AVCodecParserContext *s,
             s->dts_ref_dts_delta = INT_MIN;
             s->pts_dts_delta     = INT_MIN;
         }
+
         if (s->flags & PARSER_FLAG_ONCE) {
             s->flags &= PARSER_FLAG_COMPLETE_FRAMES;
         }
-    }
 
     *poutbuf = buf;
     *poutbuf_size = buf_size;
