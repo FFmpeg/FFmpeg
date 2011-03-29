@@ -64,7 +64,7 @@ av_cold int ff_sndio_open(AVFormatContext *s1, int is_output,
         goto fail;
     }
 
-    if (par.bits != 16 || par.sig != 1 || par.le != SIO_LE_NATIVE ||
+    if (par.bits != 16 || par.sig != 1 ||
         (is_output  && (par.pchan != s->channels)) ||
         (!is_output && (par.rchan != s->channels)) ||
         (par.rate != s->sample_rate)) {
