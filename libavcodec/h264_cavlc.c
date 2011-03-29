@@ -488,37 +488,44 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
             zeros_left= get_vlc2(gb, (total_zeros_vlc-1)[ total_coeff ].table, TOTAL_ZEROS_VLC_BITS, 1);
     }
 
-    scantable += zeros_left + total_coeff - 1;
-    if(n >= LUMA_DC_BLOCK_INDEX){
-        block[*scantable] = level[0];
-        for(i=1;i<total_coeff && zeros_left > 0;i++) {
-            if(zeros_left < 7)
-                run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1);
-            else
-                run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2);
-            zeros_left -= run_before;
-            scantable -= 1 + run_before;
-            block[*scantable]= level[i];
-        }
-        for(;i<total_coeff;i++) {
-            scantable--;
-            block[*scantable]= level[i];
-        }
-    }else{
-        block[*scantable] = (level[0] * qmul[*scantable] + 32)>>6;
-        for(i=1;i<total_coeff && zeros_left > 0;i++) {
-            if(zeros_left < 7)
-                run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1);
-            else
-                run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2);
-            zeros_left -= run_before;
-            scantable -= 1 + run_before;
-            block[*scantable]= (level[i] * qmul[*scantable] + 32)>>6;
-        }
-        for(;i<total_coeff;i++) {
-            scantable--;
-            block[*scantable]= (level[i] * qmul[*scantable] + 32)>>6;
-        }
+#define STORE_BLOCK(type) \
+    scantable += zeros_left + total_coeff - 1; \
+    if(n >= LUMA_DC_BLOCK_INDEX){ \
+        ((type*)block)[*scantable] = level[0]; \
+        for(i=1;i<total_coeff && zeros_left > 0;i++) { \
+            if(zeros_left < 7) \
+                run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1); \
+            else \
+                run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2); \
+            zeros_left -= run_before; \
+            scantable -= 1 + run_before; \
+            ((type*)block)[*scantable]= level[i]; \
+        } \
+        for(;i<total_coeff;i++) { \
+            scantable--; \
+            ((type*)block)[*scantable]= level[i]; \
+        } \
+    }else{ \
+        ((type*)block)[*scantable] = ((int)(level[0] * qmul[*scantable] + 32))>>6; \
+        for(i=1;i<total_coeff && zeros_left > 0;i++) { \
+            if(zeros_left < 7) \
+                run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1); \
+            else \
+                run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2); \
+            zeros_left -= run_before; \
+            scantable -= 1 + run_before; \
+            ((type*)block)[*scantable]= ((int)(level[i] * qmul[*scantable] + 32))>>6; \
+        } \
+        for(;i<total_coeff;i++) { \
+            scantable--; \
+            ((type*)block)[*scantable]= ((int)(level[i] * qmul[*scantable] + 32))>>6; \
+        } \
+    }
+
+    if (h->pixel_size == 2) {
+        STORE_BLOCK(int32_t)
+    } else {
+        STORE_BLOCK(int16_t)
     }
 
     if(zeros_left<0){
@@ -605,7 +612,7 @@ decode_intra_mb:
         align_get_bits(&s->gb);
 
         // The pixels are stored in the same order as levels in h->mb array.
-        for(x=0; x < (CHROMA ? 384 : 256); x++){
+        for(x=0; x < (CHROMA ? 384 : 256)*h->sps.bit_depth_luma/8; x++){
             ((uint8_t*)h->mb)[x]= get_bits(&s->gb, 8);
         }
 
@@ -941,6 +948,8 @@ decode_intra_mb:
         if(IS_INTRA16x16(mb_type)){
             AV_ZERO128(h->mb_luma_dc+0);
             AV_ZERO128(h->mb_luma_dc+8);
+            AV_ZERO128(h->mb_luma_dc+16);
+            AV_ZERO128(h->mb_luma_dc+24);
             if( decode_residual(h, h->intra_gb_ptr, h->mb_luma_dc, LUMA_DC_BLOCK_INDEX, scan, h->dequant4_coeff[0][s->qscale], 16) < 0){
                 return -1; //FIXME continue if partitioned and other return -1 too
             }
@@ -951,7 +960,7 @@ decode_intra_mb:
                 for(i8x8=0; i8x8<4; i8x8++){
                     for(i4x4=0; i4x4<4; i4x4++){
                         const int index= i4x4 + 4*i8x8;
-                        if( decode_residual(h, h->intra_gb_ptr, h->mb + 16*index, index, scan + 1, h->dequant4_coeff[0][s->qscale], 15) < 0 ){
+                        if( decode_residual(h, h->intra_gb_ptr, h->mb + 16*index*h->pixel_size, index, scan + 1, h->dequant4_coeff[0][s->qscale], 15) < 0 ){
                             return -1;
                         }
                     }
@@ -963,7 +972,7 @@ decode_intra_mb:
             for(i8x8=0; i8x8<4; i8x8++){
                 if(cbp & (1<<i8x8)){
                     if(IS_8x8DCT(mb_type)){
-                        DCTELEM *buf = &h->mb[64*i8x8];
+                        DCTELEM *buf = &h->mb[64*i8x8*h->pixel_size];
                         uint8_t *nnz;
                         for(i4x4=0; i4x4<4; i4x4++){
                             if( decode_residual(h, gb, buf, i4x4+4*i8x8, scan8x8+16*i4x4,
@@ -976,7 +985,7 @@ decode_intra_mb:
                         for(i4x4=0; i4x4<4; i4x4++){
                             const int index= i4x4 + 4*i8x8;
 
-                            if( decode_residual(h, gb, h->mb + 16*index, index, scan, h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale], 16) <0 ){
+                            if( decode_residual(h, gb, h->mb + 16*index*h->pixel_size, index, scan, h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale], 16) <0 ){
                                 return -1;
                             }
                         }
@@ -990,7 +999,7 @@ decode_intra_mb:
 
         if(cbp&0x30){
             for(chroma_idx=0; chroma_idx<2; chroma_idx++)
-                if( decode_residual(h, gb, h->mb + 256 + 16*4*chroma_idx, CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
+                if( decode_residual(h, gb, h->mb + (256 + 16*4*chroma_idx)*h->pixel_size, CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
                     return -1;
                 }
         }
@@ -1000,7 +1009,7 @@ decode_intra_mb:
                 const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[chroma_idx]];
                 for(i4x4=0; i4x4<4; i4x4++){
                     const int index= 16 + 4*chroma_idx + i4x4;
-                    if( decode_residual(h, gb, h->mb + 16*index, index, scan + 1, qmul, 15) < 0){
+                    if( decode_residual(h, gb, h->mb + 16*index*h->pixel_size, index, scan + 1, qmul, 15) < 0){
                         return -1;
                     }
                 }
