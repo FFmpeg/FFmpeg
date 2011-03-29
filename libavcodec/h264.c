@@ -45,12 +45,12 @@
 //#undef NDEBUG
 #include <assert.h>
 
-static const uint8_t rem6[52]={
-0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3,
+static const uint8_t rem6[QP_MAX_MAX+1]={
+0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3,
 };
 
-static const uint8_t div6[52]={
-0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8,
+static const uint8_t div6[QP_MAX_MAX+1]={
+0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9,10,10,10,10,
 };
 
 static const enum PixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
@@ -769,6 +769,7 @@ static void free_tables(H264Context *h, int free_rbsp){
 
 static void init_dequant8_coeff_table(H264Context *h){
     int i,q,x;
+    const int max_qp = 51 + 6*(h->sps.bit_depth_luma-8);
     h->dequant8_coeff[0] = h->dequant8_buffer[0];
     h->dequant8_coeff[1] = h->dequant8_buffer[1];
 
@@ -778,7 +779,7 @@ static void init_dequant8_coeff_table(H264Context *h){
             break;
         }
 
-        for(q=0; q<52; q++){
+        for(q=0; q<max_qp+1; q++){
             int shift = div6[q];
             int idx = rem6[q];
             for(x=0; x<64; x++)
@@ -791,6 +792,7 @@ static void init_dequant8_coeff_table(H264Context *h){
 
 static void init_dequant4_coeff_table(H264Context *h){
     int i,j,q,x;
+    const int max_qp = 51 + 6*(h->sps.bit_depth_luma-8);
     for(i=0; i<6; i++ ){
         h->dequant4_coeff[i] = h->dequant4_buffer[i];
         for(j=0; j<i; j++){
@@ -802,7 +804,7 @@ static void init_dequant4_coeff_table(H264Context *h){
         if(j<i)
             continue;
 
-        for(q=0; q<52; q++){
+        for(q=0; q<max_qp+1; q++){
             int shift = div6[q] + 2;
             int idx = rem6[q];
             for(x=0; x<16; x++)
@@ -1003,6 +1005,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
 
     ff_h264_decode_init_vlc();
 
+    h->sps.bit_depth_luma = 8;
     h->pixel_size = 1;
 
     h->thread_context[0] = h;
@@ -1771,7 +1774,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                     for(i=16; i<16+8; i++){
                         if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
                             uint8_t * const ptr= dest[(i&4)>>2] + block_offset[i];
-                            ff_svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, ff_h264_chroma_qp[s->qscale + 12] - 12, 2);
+                            ff_svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, ff_h264_chroma_qp[0][s->qscale + 12] - 12, 2);
                         }
                     }
                 }
@@ -2589,7 +2592,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     h->last_qscale_diff = 0;
     tmp = h->pps.init_qp + get_se_golomb(&s->gb);
-    if(tmp>51){
+    if(tmp>51+6*(h->sps.bit_depth_luma-8)){
         av_log(s->avctx, AV_LOG_ERROR, "QP %u out of range\n", tmp);
         return -1;
     }
