@@ -60,7 +60,6 @@ distclean:: clean
 install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 	$(Q)mkdir -p "$(SHLIBDIR)"
 	$$(INSTALL) -m 755 $$< "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
-	$$(STRIP) "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
 	$(Q)cd "$(SHLIBDIR)" && \
 		$(LN_S) $(SLIBNAME_WITH_VERSION) $(SLIBNAME_WITH_MAJOR)
 	$(Q)cd "$(SHLIBDIR)" && \

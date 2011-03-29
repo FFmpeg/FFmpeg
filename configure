@@ -242,7 +242,6 @@ Developer options (useful when working on Libav itself):
   --enable-debug=LEVEL     set the debug level [$debuglevel]
   --disable-optimizations  disable compiler optimizations
   --enable-extra-warnings  enable more compiler warnings
-  --disable-stripping      disable stripping of executables and shared libraries
   --samples=PATH           location of test samples for FATE, if not set use
                            \$FATE_SAMPLES at make invocation time.
 
@@ -1142,7 +1141,6 @@ CMDLINE_SELECT="
     extra_warnings
     logging
     optimizations
-    stripping
     symver
     yasm
 "
@@ -1180,7 +1178,6 @@ CMDLINE_SET="
     pkg_config
     samples
     source_path
-    strip
     sysinclude
     sysroot
     target_exec
@@ -1608,7 +1605,6 @@ nm_default="nm"
 objformat="elf"
 pkg_config_default=pkg-config
 ranlib="ranlib"
-strip_default="strip"
 yasmexe="yasm"
 nogas=":"
 
@@ -1641,7 +1637,6 @@ enable network
 enable optimizations
 enable protocols
 enable static
-enable stripping
 enable swscale
 enable swscale_alpha
 
@@ -1818,11 +1813,10 @@ cc_default="${cross_prefix}${cc_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib="${cross_prefix}${ranlib}"
-strip_default="${cross_prefix}${strip_default}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default cc nm pkg_config strip sysinclude
+set_default cc nm pkg_config sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -2381,7 +2375,6 @@ case $target_os in
         ;;
     bsd/os)
         add_extralibs -lpoll -lgnugetopt
-        strip="strip -d"
         ;;
     darwin)
         enable malloc_aligned
@@ -2389,7 +2382,6 @@ case $target_os in
         enabled ppc && add_asflags -force_cpusubtype_ALL
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR)'
         enabled x86_32 && append SHFLAGS -Wl,-read_only_relocs,suppress
-        strip="${strip} -x"
         add_ldflags -Wl,-dynamic,-search_paths_first
         SLIBSUF=".dylib"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME).$(LIBVERSION)$(SLIBSUF)'
@@ -2459,7 +2451,6 @@ case $target_os in
         ranlib="echo ignoring ranlib"
         ;;
     os/2*)
-        strip="lxlite -CS"
         ln_s="cp -f"
         add_ldflags -Zomf -Zbin-files -Zargs-wild -Zmap
         SHFLAGS='$(SUBDIR)$(NAME).def -Zdll -Zomf'
@@ -3110,7 +3101,6 @@ if enabled sparc; then
     echo "VIS enabled               ${vis-no}"
 fi
 echo "debug symbols             ${debug-no}"
-echo "strip symbols             ${stripping-no}"
 echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
@@ -3204,8 +3194,6 @@ if enabled source_path_used; then
     map 'test -f "$source_path/$v" && $ln_s "$source_path/$v" $v' $FILES
 fi
 
-enabled stripping || strip="echo skipping strip"
-
 config_files="$TMPH config.mak"
 
 cat > config.mak <<EOF
@@ -3233,9 +3221,7 @@ YASM=$yasmexe
 YASMDEP=$yasmexe
 AR=$ar
 RANLIB=$ranlib
-CP=cp -p
 LN_S=$ln_s
-STRIP=$strip
 CPPFLAGS=$CPPFLAGS
 CFLAGS=$CFLAGS
 ASFLAGS=$ASFLAGS
