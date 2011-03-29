@@ -27,12 +27,19 @@
 
 #include "dsputil.h"
 
-#define op_scale1(x)  block[x] = av_clip_uint8( (block[x]*weight + offset) >> log2_denom )
-#define op_scale2(x)  dst[x] = av_clip_uint8( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
+#define BIT_DEPTH 8
+#define pixel uint8_t
+#define av_clip_pixel av_clip_uint8
+#define FUNCC(a) a ## _c
+
+#define op_scale1(x)  block[x] = av_clip_pixel( (block[x]*weight + offset) >> log2_denom )
+#define op_scale2(x)  dst[x] = av_clip_pixel( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
 #define H264_WEIGHT(W,H) \
-static void weight_h264_pixels ## W ## x ## H ## _c(uint8_t *block, int stride, int log2_denom, int weight, int offset){ \
+static void FUNCC(weight_h264_pixels ## W ## x ## H)(uint8_t *p_block, int stride, int log2_denom, int weight, int offset){ \
     int y; \
-    offset <<= log2_denom; \
+    pixel *block = (pixel*)p_block; \
+    stride >>= sizeof(pixel)-1; \
+    offset <<= (log2_denom + (BIT_DEPTH-8)); \
     if(log2_denom) offset += 1<<(log2_denom-1); \
     for(y=0; y<H; y++, block += stride){ \
         op_scale1(0); \
@@ -56,8 +63,11 @@ static void weight_h264_pixels ## W ## x ## H ## _c(uint8_t *block, int stride, 
         op_scale1(15); \
     } \
 } \
-static void biweight_h264_pixels ## W ## x ## H ## _c(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offset){ \
+static void FUNCC(biweight_h264_pixels ## W ## x ## H)(uint8_t *p_dst, uint8_t *p_src, int stride, int log2_denom, int weightd, int weights, int offset){ \
     int y; \
+    pixel *dst = (pixel*)p_dst; \
+    pixel *src = (pixel*)p_src; \
+    stride >>= sizeof(pixel)-1; \
     offset = ((offset + 1) | 1) << log2_denom; \
     for(y=0; y<H; y++, dst += stride, src += stride){ \
         op_scale2(0); \
@@ -97,9 +107,12 @@ H264_WEIGHT(2,2)
 #undef op_scale2
 #undef H264_WEIGHT
 
-static av_always_inline av_flatten void h264_loop_filter_luma_c(uint8_t *pix, int xstride, int ystride, int alpha, int beta, int8_t *tc0)
+static av_always_inline av_flatten void FUNCC(h264_loop_filter_luma)(uint8_t *p_pix, int xstride, int ystride, int alpha, int beta, int8_t *tc0)
 {
+    pixel *pix = (pixel*)p_pix;
     int i, d;
+    xstride >>= sizeof(pixel)-1;
+    ystride >>= sizeof(pixel)-1;
     for( i = 0; i < 4; i++ ) {
         if( tc0[i] < 0 ) {
             pix += 4*ystride;
@@ -132,25 +145,28 @@ static av_always_inline av_flatten void h264_loop_filter_luma_c(uint8_t *pix, in
                 }
 
                 i_delta = av_clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
-                pix[-xstride] = av_clip_uint8( p0 + i_delta );    /* p0' */
-                pix[0]        = av_clip_uint8( q0 - i_delta );    /* q0' */
+                pix[-xstride] = av_clip_pixel( p0 + i_delta );    /* p0' */
+                pix[0]        = av_clip_pixel( q0 - i_delta );    /* q0' */
             }
             pix += ystride;
         }
     }
 }
-static void h264_v_loop_filter_luma_c(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+static void FUNCC(h264_v_loop_filter_luma)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    h264_loop_filter_luma_c(pix, stride, 1, alpha, beta, tc0);
+    FUNCC(h264_loop_filter_luma)(pix, stride, sizeof(pixel), alpha, beta, tc0);
 }
-static void h264_h_loop_filter_luma_c(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+static void FUNCC(h264_h_loop_filter_luma)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    h264_loop_filter_luma_c(pix, 1, stride, alpha, beta, tc0);
+    FUNCC(h264_loop_filter_luma)(pix, sizeof(pixel), stride, alpha, beta, tc0);
 }
 
-static av_always_inline av_flatten void h264_loop_filter_luma_intra_c(uint8_t *pix, int xstride, int ystride, int alpha, int beta)
+static av_always_inline av_flatten void FUNCC(h264_loop_filter_luma_intra)(uint8_t *p_pix, int xstride, int ystride, int alpha, int beta)
 {
+    pixel *pix = (pixel*)p_pix;
     int d;
+    xstride >>= sizeof(pixel)-1;
+    ystride >>= sizeof(pixel)-1;
     for( d = 0; d < 16; d++ ) {
         const int p2 = pix[-3*xstride];
         const int p1 = pix[-2*xstride];
@@ -196,18 +212,21 @@ static av_always_inline av_flatten void h264_loop_filter_luma_intra_c(uint8_t *p
         pix += ystride;
     }
 }
-static void h264_v_loop_filter_luma_intra_c(uint8_t *pix, int stride, int alpha, int beta)
+static void FUNCC(h264_v_loop_filter_luma_intra)(uint8_t *pix, int stride, int alpha, int beta)
 {
-    h264_loop_filter_luma_intra_c(pix, stride, 1, alpha, beta);
+    FUNCC(h264_loop_filter_luma_intra)(pix, stride, sizeof(pixel), alpha, beta);
 }
-static void h264_h_loop_filter_luma_intra_c(uint8_t *pix, int stride, int alpha, int beta)
+static void FUNCC(h264_h_loop_filter_luma_intra)(uint8_t *pix, int stride, int alpha, int beta)
 {
-    h264_loop_filter_luma_intra_c(pix, 1, stride, alpha, beta);
+    FUNCC(h264_loop_filter_luma_intra)(pix, sizeof(pixel), stride, alpha, beta);
 }
 
-static av_always_inline av_flatten void h264_loop_filter_chroma_c(uint8_t *pix, int xstride, int ystride, int alpha, int beta, int8_t *tc0)
+static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma)(uint8_t *p_pix, int xstride, int ystride, int alpha, int beta, int8_t *tc0)
 {
+    pixel *pix = (pixel*)p_pix;
     int i, d;
+    xstride >>= sizeof(pixel)-1;
+    ystride >>= sizeof(pixel)-1;
     for( i = 0; i < 4; i++ ) {
         const int tc = tc0[i];
         if( tc <= 0 ) {
@@ -226,25 +245,28 @@ static av_always_inline av_flatten void h264_loop_filter_chroma_c(uint8_t *pix, 
 
                 int delta = av_clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
 
-                pix[-xstride] = av_clip_uint8( p0 + delta );    /* p0' */
-                pix[0]        = av_clip_uint8( q0 - delta );    /* q0' */
+                pix[-xstride] = av_clip_pixel( p0 + delta );    /* p0' */
+                pix[0]        = av_clip_pixel( q0 - delta );    /* q0' */
             }
             pix += ystride;
         }
     }
 }
-static void h264_v_loop_filter_chroma_c(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+static void FUNCC(h264_v_loop_filter_chroma)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    h264_loop_filter_chroma_c(pix, stride, 1, alpha, beta, tc0);
+    FUNCC(h264_loop_filter_chroma)(pix, stride, sizeof(pixel), alpha, beta, tc0);
 }
-static void h264_h_loop_filter_chroma_c(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+static void FUNCC(h264_h_loop_filter_chroma)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    h264_loop_filter_chroma_c(pix, 1, stride, alpha, beta, tc0);
+    FUNCC(h264_loop_filter_chroma)(pix, sizeof(pixel), stride, alpha, beta, tc0);
 }
 
-static av_always_inline av_flatten void h264_loop_filter_chroma_intra_c(uint8_t *pix, int xstride, int ystride, int alpha, int beta)
+static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma_intra)(uint8_t *p_pix, int xstride, int ystride, int alpha, int beta)
 {
+    pixel *pix = (pixel*)p_pix;
     int d;
+    xstride >>= sizeof(pixel)-1;
+    ystride >>= sizeof(pixel)-1;
     for( d = 0; d < 8; d++ ) {
         const int p0 = pix[-1*xstride];
         const int p1 = pix[-2*xstride];
@@ -261,11 +283,11 @@ static av_always_inline av_flatten void h264_loop_filter_chroma_intra_c(uint8_t 
         pix += ystride;
     }
 }
-static void h264_v_loop_filter_chroma_intra_c(uint8_t *pix, int stride, int alpha, int beta)
+static void FUNCC(h264_v_loop_filter_chroma_intra)(uint8_t *pix, int stride, int alpha, int beta)
 {
-    h264_loop_filter_chroma_intra_c(pix, stride, 1, alpha, beta);
+    FUNCC(h264_loop_filter_chroma_intra)(pix, stride, sizeof(pixel), alpha, beta);
 }
-static void h264_h_loop_filter_chroma_intra_c(uint8_t *pix, int stride, int alpha, int beta)
+static void FUNCC(h264_h_loop_filter_chroma_intra)(uint8_t *pix, int stride, int alpha, int beta)
 {
-    h264_loop_filter_chroma_intra_c(pix, 1, stride, alpha, beta);
+    FUNCC(h264_loop_filter_chroma_intra)(pix, sizeof(pixel), stride, alpha, beta);
 }
