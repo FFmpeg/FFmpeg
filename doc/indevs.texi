@@ -71,7 +71,7 @@ console. It is accessed through a file device node, usually
 For more detailed information read the file
 Documentation/fb/framebuffer.txt included in the Linux source tree.
 
-For example, to record from the framebuffer device @file{/dev/fb0} with
+To record from the framebuffer device @file{/dev/fb0} with
 @file{ffmpeg}:
 @example
 ffmpeg -f fbdev -r 10 -i /dev/fb0 out.avi

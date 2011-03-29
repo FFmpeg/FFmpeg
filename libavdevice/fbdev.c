@@ -57,8 +57,7 @@ static struct rgb_pixfmt_map_entry rgb_pixfmt_map[] = {
     {  24,      16,           8,           0,            0,   PIX_FMT_BGR24 },
 };
 
-static enum PixelFormat
-get_pixfmt_from_fb_varinfo(struct fb_var_screeninfo *varinfo)
+static enum PixelFormat get_pixfmt_from_fb_varinfo(struct fb_var_screeninfo *varinfo)
 {
     int i;
 

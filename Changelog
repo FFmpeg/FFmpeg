@@ -78,9 +78,10 @@ version <next>:
 - movie source added
 - Bink version 'b' audio and video decoder
 - Bitmap Brothers JV playback system
-- Linux framebuffer input device added
 - Apple HTTP Live Streaming protocol handler
 - sndio support for playback and record
+- Linux framebuffer input device added
+- Chronomaster DFA decoder
 
 
 version 0.6:
