@@ -108,6 +108,7 @@
  */
 #define DELAYED_PIC_REF 4
 
+#define QP_MAX_NUM (51 + 2*6)           // The maximum supported qp
 
 /* NAL unit types */
 enum {
@@ -354,8 +355,8 @@ typedef struct H264Context{
      */
     PPS pps; //FIXME move to Picture perhaps? (->no) do we need that?
 
-    uint32_t dequant4_buffer[6][52][16]; //FIXME should these be moved down?
-    uint32_t dequant8_buffer[2][52][64];
+    uint32_t dequant4_buffer[6][QP_MAX_NUM+1][16]; //FIXME should these be moved down?
+    uint32_t dequant8_buffer[2][QP_MAX_NUM+1][64];
     uint32_t (*dequant4_coeff[6])[16];
     uint32_t (*dequant8_coeff[2])[64];
 
@@ -601,7 +602,7 @@ typedef struct H264Context{
 }H264Context;
 
 
-extern const uint8_t ff_h264_chroma_qp[52];
+extern const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM+1]; ///< One chroma qp table for each supported bit depth (8, 9, 10).
 
 /**
  * Decode SEI

@@ -689,13 +689,14 @@ void ff_h264_init_cabac_states(H264Context *h) {
     MpegEncContext * const s = &h->s;
     int i;
     const int8_t (*tab)[2];
+    const int slice_qp = av_clip(s->qscale - 6*(h->sps.bit_depth_luma-8), 0, 51);
 
     if( h->slice_type_nos == AV_PICTURE_TYPE_I ) tab = cabac_context_init_I;
     else                                 tab = cabac_context_init_PB[h->cabac_init_idc];
 
     /* calculate pre-state */
     for( i= 0; i < 460; i++ ) {
-        int pre = 2*(((tab[i][0] * s->qscale) >>4 ) + tab[i][1]) - 127;
+        int pre = 2*(((tab[i][0] * slice_qp) >>4 ) + tab[i][1]) - 127;
 
         pre^= pre>>31;
         if(pre > 124)
@@ -1631,11 +1632,12 @@ decode_intra_mb:
         if(get_cabac_noinline( &h->cabac, &h->cabac_state[60 + (h->last_qscale_diff != 0)])){
             int val = 1;
             int ctx= 2;
+            const int max_qp = 51 + 6*(h->sps.bit_depth_luma-8);
 
             while( get_cabac_noinline( &h->cabac, &h->cabac_state[60 + ctx] ) ) {
                 ctx= 3;
                 val++;
-                if(val > 102){ //prevent infinite loop
+                if(val > 2*max_qp){ //prevent infinite loop
                     av_log(h->s.avctx, AV_LOG_ERROR, "cabac decode of qscale diff failed at %d %d\n", s->mb_x, s->mb_y);
                     return -1;
                 }
@@ -1647,9 +1649,9 @@ decode_intra_mb:
                 val= -((val + 1)>>1);
             h->last_qscale_diff = val;
             s->qscale += val;
-            if(((unsigned)s->qscale) > 51){
-                if(s->qscale<0) s->qscale+= 52;
-                else            s->qscale-= 52;
+            if(((unsigned)s->qscale) > max_qp){
+                if(s->qscale<0) s->qscale+= max_qp+1;
+                else            s->qscale-= max_qp+1;
             }
             h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
             h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
