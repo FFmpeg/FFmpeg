@@ -894,7 +894,7 @@ static void clone_tables(H264Context *dst, H264Context *src, int i){
     dst->list_counts              = src->list_counts;
 
     dst->s.obmc_scratchpad = NULL;
-    ff_h264_pred_init(&dst->hpc, src->s.codec_id);
+    ff_h264_pred_init(&dst->hpc, src->s.codec_id, src->sps.bit_depth_luma);
 }
 
 /**
@@ -922,8 +922,8 @@ static av_cold void common_init(H264Context *h){
     s->height = s->avctx->height;
     s->codec_id= s->avctx->codec->id;
 
-    ff_h264dsp_init(&h->h264dsp);
-    ff_h264_pred_init(&h->hpc, s->codec_id);
+    ff_h264dsp_init(&h->h264dsp, 8);
+    ff_h264_pred_init(&h->hpc, s->codec_id, 8);
 
     h->dequant_coeff_pps= -1;
     s->unrestricted_mv=1;
@@ -1005,7 +1005,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
 
     ff_h264_decode_init_vlc();
 
-    h->sps.bit_depth_luma = 8;
+    h->sps.bit_depth_luma = avctx->bits_per_raw_sample = 8;
     h->pixel_size = 1;
 
     h->thread_context[0] = h;
@@ -3467,6 +3467,20 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 
             if(avctx->has_b_frames < 2)
                 avctx->has_b_frames= !s->low_delay;
+
+            if (avctx->bits_per_raw_sample != h->sps.bit_depth_luma) {
+                if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 10) {
+                    avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
+                    h->pixel_size = (h->sps.bit_depth_luma+7)/8;
+
+                    ff_h264dsp_init(&h->h264dsp, h->sps.bit_depth_luma);
+                    ff_h264_pred_init(&h->hpc, s->codec_id, h->sps.bit_depth_luma);
+                    dsputil_init(&s->dsp, s->avctx);
+                } else {
+                    av_log(avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d\n", h->sps.bit_depth_luma);
+                    return -1;
+                }
+            }
             break;
         case NAL_PPS:
             init_get_bits(&s->gb, ptr, bit_length);

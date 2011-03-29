@@ -101,8 +101,8 @@ typedef struct H264PredContext{
     void (*pred16x16_add[3])(uint8_t *pix/*align 16*/, const int *block_offset, const DCTELEM *block/*align 16*/, int stride);
 }H264PredContext;
 
-void ff_h264_pred_init(H264PredContext *h, int codec_id);
-void ff_h264_pred_init_arm(H264PredContext *h, int codec_id);
-void ff_h264_pred_init_x86(H264PredContext *h, int codec_id);
+void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth);
+void ff_h264_pred_init_arm(H264PredContext *h, int codec_id, const int bit_depth);
+void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth);
 
 #endif /* AVCODEC_H264PRED_H */

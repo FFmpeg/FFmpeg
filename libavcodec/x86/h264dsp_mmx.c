@@ -285,10 +285,11 @@ H264_BIWEIGHT_MMX    ( 4,  8)
 H264_BIWEIGHT_MMX    ( 4,  4)
 H264_BIWEIGHT_MMX    ( 4,  2)
 
-void ff_h264dsp_init_x86(H264DSPContext *c)
+void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth)
 {
     int mm_flags = av_get_cpu_flags();
 
+    if (bit_depth == 8) {
     if (mm_flags & AV_CPU_FLAG_MMX2) {
         c->h264_loop_filter_strength= h264_loop_filter_strength_mmx2;
     }
@@ -377,6 +378,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c)
                 c->biweight_h264_pixels_tab[4]= ff_h264_biweight_8x4_ssse3;
             }
         }
+    }
     }
 #endif
 }

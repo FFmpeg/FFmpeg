@@ -95,9 +95,13 @@ void ff_pred4x4_tm_vp8_mmxext      (uint8_t *src, const uint8_t *topright, int s
 void ff_pred4x4_tm_vp8_ssse3       (uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_vertical_vp8_mmxext(uint8_t *src, const uint8_t *topright, int stride);
 
-void ff_h264_pred_init_x86(H264PredContext *h, int codec_id)
+void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth)
 {
     int mm_flags = av_get_cpu_flags();
+    const int high_depth = bit_depth > 8;
+
+    if (high_depth)
+        return;
 
 #if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {

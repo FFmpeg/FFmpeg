@@ -1384,7 +1384,7 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     if (MPV_common_init(s) < 0)
         return -1;
 
-    ff_h264_pred_init(&r->h, CODEC_ID_RV40);
+    ff_h264_pred_init(&r->h, CODEC_ID_RV40, 8);
 
     r->intra_types_stride = 4*s->mb_stride + 4;
     r->intra_types_hist = av_malloc(r->intra_types_stride * 4 * 2 * sizeof(*r->intra_types_hist));
