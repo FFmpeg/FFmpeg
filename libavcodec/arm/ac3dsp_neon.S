@@ -78,3 +78,17 @@ function ff_ac3_rshift_int32_neon, export=1
         bgt             1b
         bx              lr
 endfunc
+
+function ff_float_to_fixed24_neon, export=1
+1:      vld1.32         {q0-q1},  [r1,:128]!
+        vcvt.s32.f32    q0,  q0,  #24
+        vld1.32         {q2-q3},  [r1,:128]!
+        vcvt.s32.f32    q1,  q1,  #24
+        vcvt.s32.f32    q2,  q2,  #24
+        vst1.32         {q0-q1},  [r0,:128]!
+        vcvt.s32.f32    q3,  q3,  #24
+        vst1.32         {q2-q3},  [r0,:128]!
+        subs            r2,  r2,  #16
+        bgt             1b
+        bx              lr
+endfunc

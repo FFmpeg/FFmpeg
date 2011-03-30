@@ -81,7 +81,7 @@ static int decode_tsw1(uint8_t *frame, int width, int height,
             v = bytestream_get_le16(&src);
             offset = (v & 0x1FFF) << 1;
             count = ((v >> 13) + 2) << 1;
-            if (frame - offset < frame_start || frame_end - frame < count)
+            if (frame - frame_start < offset || frame_end - frame < count)
                 return -1;
             av_memcpy_backptr(frame, offset, count);
             frame += count;
@@ -117,7 +117,7 @@ static int decode_dsw1(uint8_t *frame, int width, int height,
             v = bytestream_get_le16(&src);
             offset = (v & 0x1FFF) << 1;
             count = ((v >> 13) + 2) << 1;
-            if (frame - offset < frame_start || frame_end - frame < count)
+            if (frame - frame_start < offset || frame_end - frame < count)
                 return -1;
             // can't use av_memcpy_backptr() since it can overwrite following pixels
             for (v = 0; v < count; v++)
@@ -157,7 +157,7 @@ static int decode_dds1(uint8_t *frame, int width, int height,
             v = bytestream_get_le16(&src);
             offset = (v & 0x1FFF) << 2;
             count = ((v >> 13) + 2) << 1;
-            if (frame - offset < frame_start || frame_end - frame < count*2 + width)
+            if (frame - frame_start < offset || frame_end - frame < count*2 + width)
                 return -1;
             for (i = 0; i < count; i++) {
                 frame[0] = frame[1] =

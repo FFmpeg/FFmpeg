@@ -10,7 +10,6 @@ PROGS-$(CONFIG_FFPROBE)  += ffprobe
 PROGS-$(CONFIG_FFSERVER) += ffserver
 
 PROGS      := $(PROGS-yes:%=%$(EXESUF))
-PROGS_G     = $(PROGS-yes:%=%_g$(EXESUF))
 OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
 MANPAGES    = $(PROGS-yes:%=doc/%.1)
 PODPAGES    = $(PROGS-yes:%=doc/%.pod)
@@ -21,7 +20,6 @@ HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 
 BASENAMES   = ffmpeg ffplay ffprobe ffserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
-ALLPROGS_G  = $(BASENAMES:%=%_g$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
 
 FFLIBS-$(CONFIG_AVDEVICE) += avdevice
@@ -53,10 +51,6 @@ INSTALL_PROGS_TARGETS-$(CONFIG_SHARED) = install-libs
 
 all: $(FF_DEP_LIBS) $(PROGS) $(ALL_TARGETS-yes)
 
-$(PROGS): %$(EXESUF): %_g$(EXESUF)
-	$(CP) $< $@
-	$(STRIP) $@
-
 config.h: .config
 .config: $(wildcard $(FFLIBS:%=$(SRC_DIR)/lib%/all*.c))
 	@-tput bold 2>/dev/null
@@ -80,10 +74,10 @@ endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
-ffplay_g$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
-ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
+ffplay$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
+ffserver$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 
-%_g$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
+%$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
 
 tools/%$(EXESUF): tools/%.o
@@ -165,7 +159,7 @@ testclean:
 	$(RM) $(TESTTOOLS:%=tests/%$(HOSTEXESUF))
 
 clean:: testclean
-	$(RM) $(ALLPROGS) $(ALLPROGS_G)
+	$(RM) $(ALLPROGS)
 	$(RM) $(CLEANSUFFIXES)
 	$(RM) doc/*.html doc/*.pod doc/*.1
 	$(RM) $(TOOLS)

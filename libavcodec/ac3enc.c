@@ -178,10 +178,6 @@ typedef struct AC3EncodeContext {
     int frame_bits;                         ///< all frame bits except exponents and mantissas
     int exponent_bits;                      ///< number of bits used for exponents
 
-    /* mantissa encoding */
-    int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
-    uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
-
     SampleType **planar_samples;
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
@@ -199,6 +195,10 @@ typedef struct AC3EncodeContext {
     DECLARE_ALIGNED(16, SampleType, windowed_samples)[AC3_WINDOW_SIZE];
 } AC3EncodeContext;
 
+typedef struct AC3Mant {
+    uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
+    int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
+} AC3Mant;
 
 #define CMIXLEV_NUM_OPTIONS 3
 static const float cmixlev_options[CMIXLEV_NUM_OPTIONS] = {
@@ -928,31 +928,6 @@ static void count_frame_bits(AC3EncodeContext *s)
 
 
 /**
- * Calculate the number of bits needed to encode a set of mantissas.
- */
-static int compute_mantissa_size(int mant_cnt[5], uint8_t *bap, int nb_coefs)
-{
-    int bits, b, i;
-
-    bits = 0;
-    for (i = 0; i < nb_coefs; i++) {
-        b = bap[i];
-        if (b <= 4) {
-            // bap=1 to bap=4 will be counted in compute_mantissa_size_final
-            mant_cnt[b]++;
-        } else if (b <= 13) {
-            // bap=5 to bap=13 use (bap-1) bits
-            bits += b - 1;
-        } else {
-            // bap=14 uses 14 bits and bap=15 uses 16 bits
-            bits += (b == 14) ? 14 : 16;
-        }
-    }
-    return bits;
-}
-
-
-/**
  * Finalize the mantissa bit count by adding in the grouped mantissas.
  */
 static int compute_mantissa_size_final(int mant_cnt[5])
@@ -1047,12 +1022,12 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
                whenever we reuse exponents. */
             block = s->blocks[blk].exp_ref_block[ch];
             if (s->exp_strategy[ch][blk] != EXP_REUSE) {
-                ff_ac3_bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
+                s->ac3dsp.bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
                                           s->nb_coefs[ch], snr_offset,
                                           s->bit_alloc.floor, ff_ac3_bap_tab,
                                           block->bap[ch]);
             }
-            mantissa_bits += compute_mantissa_size(mant_cnt, block->bap[ch], s->nb_coefs[ch]);
+            mantissa_bits += s->ac3dsp.compute_mantissa_size(mant_cnt, block->bap[ch], s->nb_coefs[ch]);
         }
         mantissa_bits += compute_mantissa_size_final(mant_cnt);
     }
@@ -1248,7 +1223,7 @@ static inline int asym_quant(int c, int e, int qbits)
 /**
  * Quantize a set of mantissas for a single channel in a single block.
  */
-static void quantize_mantissas_blk_ch(AC3EncodeContext *s, int32_t *fixed_coef,
+static void quantize_mantissas_blk_ch(AC3Mant *s, int32_t *fixed_coef,
                                       uint8_t *exp,
                                       uint8_t *bap, uint16_t *qmant, int n)
 {
@@ -1350,12 +1325,11 @@ static void quantize_mantissas(AC3EncodeContext *s)
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         AC3Block *ref_block;
-        s->mant1_cnt  = s->mant2_cnt  = s->mant4_cnt  = 0;
-        s->qmant1_ptr = s->qmant2_ptr = s->qmant4_ptr = NULL;
+        AC3Mant m = { 0 };
 
         for (ch = 0; ch < s->channels; ch++) {
             ref_block = block->exp_ref_block[ch];
-            quantize_mantissas_blk_ch(s, block->fixed_coef[ch],
+            quantize_mantissas_blk_ch(&m, block->fixed_coef[ch],
                                       ref_block->exp[ch], ref_block->bap[ch],
                                       block->qmant[ch], s->nb_coefs[ch]);
         }

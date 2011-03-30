@@ -52,6 +52,7 @@
 
 #include "libavutil/lfg.h"
 #include "ac3.h"
+#include "ac3dsp.h"
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
@@ -192,6 +193,7 @@ typedef struct {
 
 ///@defgroup opt optimization
     DSPContext dsp;                         ///< for optimization
+    AC3DSPContext ac3dsp;
     FmtConvertContext fmt_conv;             ///< optimized conversion functions
     float mul_bias;                         ///< scaling for float_to_int16 conversion
 ///@}

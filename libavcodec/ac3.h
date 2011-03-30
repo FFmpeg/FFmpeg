@@ -175,23 +175,4 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
                                uint8_t *dba_lengths, uint8_t *dba_values,
                                int16_t *mask);
 
-/**
- * Calculate bit allocation pointers.
- * The SNR is the difference between the masking curve and the signal.  AC-3
- * uses this value for each frequency bin to allocate bits.  The snroffset
- * parameter is a global adjustment to the SNR for all bins.
- *
- * @param[in]  mask       masking curve
- * @param[in]  psd        signal power for each frequency bin
- * @param[in]  start      starting bin location
- * @param[in]  end        ending bin location
- * @param[in]  snr_offset SNR adjustment
- * @param[in]  floor      noise floor
- * @param[in]  bap_tab    look-up table for bit allocation pointers
- * @param[out] bap        bit allocation pointers
- */
-void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
-                               int snr_offset, int floor,
-                               const uint8_t *bap_tab, uint8_t *bap);
-
 #endif /* AVCODEC_AC3_H */

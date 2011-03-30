@@ -81,6 +81,30 @@ typedef struct AC3DSPContext {
      *            constraints: multiple of 32 greater than zero
      */
     void (*float_to_fixed24)(int32_t *dst, const float *src, unsigned int len);
+
+    /**
+     * Calculate bit allocation pointers.
+     * The SNR is the difference between the masking curve and the signal.  AC-3
+     * uses this value for each frequency bin to allocate bits.  The snroffset
+     * parameter is a global adjustment to the SNR for all bins.
+     *
+     * @param[in]  mask       masking curve
+     * @param[in]  psd        signal power for each frequency bin
+     * @param[in]  start      starting bin location
+     * @param[in]  end        ending bin location
+     * @param[in]  snr_offset SNR adjustment
+     * @param[in]  floor      noise floor
+     * @param[in]  bap_tab    look-up table for bit allocation pointers
+     * @param[out] bap        bit allocation pointers
+     */
+    void (*bit_alloc_calc_bap)(int16_t *mask, int16_t *psd, int start, int end,
+                               int snr_offset, int floor,
+                               const uint8_t *bap_tab, uint8_t *bap);
+
+    /**
+     * Calculate the number of bits needed to encode a set of mantissas.
+     */
+    int (*compute_mantissa_size)(int mant_cnt[5], uint8_t *bap, int nb_coefs);
 } AC3DSPContext;
 
 void ff_ac3dsp_init    (AC3DSPContext *c, int bit_exact);
