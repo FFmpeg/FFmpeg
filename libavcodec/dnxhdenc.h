@@ -39,6 +39,7 @@ typedef struct {
 } RCEntry;
 
 typedef struct DNXHDEncContext {
+    AVClass *class;
     MpegEncContext m; ///< Used for quantization dsp functions
 
     AVFrame frame;
