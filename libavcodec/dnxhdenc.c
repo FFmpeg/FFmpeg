@@ -433,7 +433,7 @@ static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg, int jobnr, i
             int n = dnxhd_switch_matrix(ctx, i);
 
             memcpy(block, src_block, 64*sizeof(*block));
-            last_index = ctx->m.dct_quantize((MpegEncContext*)ctx, block, i, qscale, &overflow);
+            last_index = ctx->m.dct_quantize(&ctx->m, block, i, qscale, &overflow);
             ac_bits += dnxhd_calc_ac_bits(ctx, block, last_index);
 
             diff = block[0] - ctx->m.last_dc[n];
@@ -478,7 +478,7 @@ static int dnxhd_encode_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
             DCTELEM *block = ctx->blocks[i];
             int last_index, overflow;
             int n = dnxhd_switch_matrix(ctx, i);
-            last_index = ctx->m.dct_quantize((MpegEncContext*)ctx, block, i, qscale, &overflow);
+            last_index = ctx->m.dct_quantize(&ctx->m, block, i, qscale, &overflow);
             //START_TIMER;
             dnxhd_encode_block(ctx, block, last_index, n);
             //STOP_TIMER("encode_block");
