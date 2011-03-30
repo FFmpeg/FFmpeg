@@ -238,16 +238,9 @@ static int mov_write_enda_tag(AVIOContext *pb)
     return 10;
 }
 
-static unsigned int descrLength(unsigned int len)
-{
-    int i;
-    for(i=1; len>>(7*i); i++);
-    return len + 1 + i;
-}
-
 static void putDescr(AVIOContext *pb, int tag, unsigned int size)
 {
-    int i= descrLength(size) - size - 2;
+    int i = 3;
     avio_w8(pb, tag);
     for(; i>0; i--)
         avio_w8(pb, (size>>(7*i)) | 0x80);
@@ -257,15 +250,14 @@ static void putDescr(AVIOContext *pb, int tag, unsigned int size)
 static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
 {
     int64_t pos = avio_tell(pb);
-    int decoderSpecificInfoLen = track->vosLen ? descrLength(track->vosLen):0;
+    int decoderSpecificInfoLen = track->vosLen ? 5+track->vosLen : 0;
 
     avio_wb32(pb, 0); // size
     ffio_wfourcc(pb, "esds");
     avio_wb32(pb, 0); // Version
 
     // ES descriptor
-    putDescr(pb, 0x03, 3 + descrLength(13 + decoderSpecificInfoLen) +
-             descrLength(1));
+    putDescr(pb, 0x03, 3 + 5+13 + decoderSpecificInfoLen + 5+1);
     avio_wb16(pb, track->trackID);
     avio_w8(pb, 0x00); // flags (= no flags)
 
