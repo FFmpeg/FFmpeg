@@ -2945,7 +2945,13 @@ check_func XOpenDisplay -lX11           &&
 check_func XShmCreateImage -lX11 -lXext &&
 check_func XFixesGetCursorImage -lX11 -lXext -lXfixes
 
-disabled vaapi || check_lib va/va.h vaInitialize -lva || disable vaapi
+if ! disabled vaapi; then
+    check_lib va/va.h vaInitialize -lva && {
+        check_cpp_condition va/va_version.h "VA_CHECK_VERSION(0,32,0)" ||
+        { echolog "Please upgrade to VA-API >= 0.32 if you would like VA-API support." &&
+          disable vaapi; }
+    } || disable vaapi
+fi
 
 if ! disabled vdpau && enabled vdpau_vdpau_h; then
 check_cpp_condition \
