@@ -410,10 +410,9 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
         nanosleep(&ts, NULL);
     }
 
-    if (av_new_packet(pkt, s->frame_size) < 0) {
-        return AVERROR(EIO);
-    }
-
+    av_init_packet(pkt);
+    pkt->data = image->data;
+    pkt->size = s->frame_size;
     pkt->pts = curtime;
 
     if(s->use_shm) {
@@ -430,9 +429,6 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
         paint_mouse_pointer(image, s);
     }
 
-
-    /* XXX: avoid memcpy */
-    memcpy(pkt->data, image->data, s->frame_size);
     return s->frame_size;
 }
 
