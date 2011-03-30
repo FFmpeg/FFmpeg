@@ -2948,8 +2948,7 @@ check_func XFixesGetCursorImage -lX11 -lXext -lXfixes
 if ! disabled vaapi; then
     check_lib va/va.h vaInitialize -lva && {
         check_cpp_condition va/va_version.h "VA_CHECK_VERSION(0,32,0)" ||
-        { echolog "Please upgrade to VA-API >= 0.32 if you would like VA-API support." &&
-          disable vaapi; }
+        warn "Please upgrade to VA-API >= 0.32 if you would like full VA-API support.";
     } || disable vaapi
 fi
 
