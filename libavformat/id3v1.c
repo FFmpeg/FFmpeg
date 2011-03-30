@@ -227,7 +227,7 @@ void ff_id3v1_read(AVFormatContext *s)
 {
     int ret;
     uint8_t buf[ID3v1_TAG_SIZE];
-    int64_t filesize, position = url_ftell(s->pb);
+    int64_t filesize, position = avio_tell(s->pb);
 
     if (!url_is_streamed(s->pb)) {
         /* XXX: change that */

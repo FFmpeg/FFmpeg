@@ -246,7 +246,7 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx){
     avctx->coded_frame= p;
     a->avctx= avctx;
 
-    p->qscale_table= av_mallocz( p->qstride * a->mb_height);
+    p->qscale_table= av_mallocz(a->mb_width);
 
     return 0;
 }

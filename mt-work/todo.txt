@@ -2,7 +2,7 @@ Todo
 
 -- For other people
 - Multithread vp8 or vc1.
-- Multithread an intra codec like mjpeg.
+- Multithread an intra codec like mjpeg (trivial).
 - Fix mpeg1 (see below).
 - Try the first three items under Optimization.
 - Fix h264 (see below).
@@ -14,6 +14,8 @@ General critical:
 - Error resilience has to run before ff_report_frame_progress()
 is called. Otherwise there will be race conditions. (This might already
 work.) In general testing error paths should be done more.
+- 'make fate THREADS=2' doesn't pass. Most failures are due to
+bugs in vsync in ffmpeg.c, which are currently obscuring real failures.
 
 h264:
 - Files split at the wrong NAL unit don't (and can't)
@@ -39,7 +41,7 @@ with threads on. Currently disabled for this reason.
 -- Prove correct
 
 - decode_update_progress() in h264.c
-h264_race_checking branch has some work on h264,
+race_checking branch has some work on h264,
 but not that function. It might be worth putting
 the branch under #ifdef DEBUG in mainline, but
 the code would have to be cleaner.
@@ -48,9 +50,11 @@ the code would have to be cleaner.
 
 -- Optimization
 
+- Merge h264 decode_update_progress() with loop_filter().
+Add CODEC_CAP_DRAW_HORIZ_BAND as a side effect.
 - EMU_EDGE is always set for h264 PAFF+MT
 because draw_edges() writes into the other field's
-thread's pixels.
+thread's pixels. Needs an option to skip T/B fields.
 - Check update_thread_context() functions and make
 sure they only copy what they need to.
 - Try some more optimization of the "ref < 48; ref++"
