@@ -137,11 +137,11 @@ int ff_thread_init(AVCodecContext *s){
 
     s->active_thread_type= FF_THREAD_SLICE;
 
-    if (thread_count <= 1)
+    if (s->thread_count <= 1)
         return 0;
 
     assert(!s->thread_opaque);
-    c= av_mallocz(sizeof(ThreadContext)*thread_count);
+    c= av_mallocz(sizeof(ThreadContext)*s->thread_count);
     s->thread_opaque= c;
     if(!(c[0].work_sem = CreateSemaphore(NULL, 0, INT_MAX, NULL)))
         goto fail;
@@ -150,7 +150,7 @@ int ff_thread_init(AVCodecContext *s){
     if(!(c[0].done_sem = CreateSemaphore(NULL, 0, INT_MAX, NULL)))
         goto fail;
 
-    for(i=0; i<thread_count; i++){
+    for(i=0; i<s->thread_count; i++){
 //printf("init semaphors %d\n", i); fflush(stdout);
         c[i].avctx= s;
         c[i].work_sem = c[0].work_sem;
