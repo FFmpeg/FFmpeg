@@ -34,7 +34,7 @@
 #define MAX_FILTER_SIZE 256
 
 #if ARCH_X86
-#define VOFW 21502
+#define VOFW 21504
 #else
 #define VOFW 2048 // faster on PPC and not tested on others
 #endif
