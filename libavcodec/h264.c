@@ -1612,8 +1612,11 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                                             idct_dc_add(ptr, h->mb + i*16, linesize);
                                         else
                                             idct_add   (ptr, h->mb + i*16, linesize);
-                                    }else
+                                    }
+#if CONFIG_SVQ3_DECODER
+                                    else
                                         ff_svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
+#endif
                                 }
                             }
                         }
@@ -1632,8 +1635,11 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                                 h->mb[dc_mapping[i]] = h->mb_luma_dc[i];
                         }
                     }
-                }else
+                }
+#if CONFIG_SVQ3_DECODER
+                else
                     ff_svq3_luma_dc_dequant_idct_c(h->mb, h->mb_luma_dc, s->qscale);
+#endif
             }
             if(h->deblocking_filter)
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0, simple);
@@ -1677,7 +1683,9 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                         }
                     }
                 }
-            }else{
+            }
+#if CONFIG_SVQ3_DECODER
+            else{
                 for(i=0; i<16; i++){
                     if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
                         uint8_t * const ptr= dest_y + block_offset[i];
@@ -1685,6 +1693,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                     }
                 }
             }
+#endif
         }
 
         if((simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)) && (h->cbp&0x30)){
@@ -1709,7 +1718,9 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                     h->h264dsp.h264_idct_add8(dest, block_offset,
                                               h->mb, uvlinesize,
                                               h->non_zero_count_cache);
-                }else{
+                }
+#if CONFIG_SVQ3_DECODER
+                else{
                     chroma_dc_dequant_idct_c(h->mb + 16*16     , h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp[0]][0]);
                     chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp[1]][0]);
                     for(i=16; i<16+8; i++){
@@ -1719,6 +1730,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                         }
                     }
                 }
+#endif
             }
         }
     }
