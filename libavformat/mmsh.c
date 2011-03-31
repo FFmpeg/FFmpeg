@@ -32,6 +32,7 @@
 #include "mms.h"
 #include "asf.h"
 #include "http.h"
+#include "url.h"
 
 #define CHUNK_HEADER_LENGTH 4   // 2bytes chunk type and 2bytes chunk length.
 #define EXT_HEADER_LENGTH   8   // 4bytes sequence, 2bytes useless and 2bytes chunk length.
@@ -232,7 +233,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
         port = 80; // default mmsh protocol port
     ff_url_join(httpname, sizeof(httpname), "http", NULL, host, port, path);
 
-    if (url_alloc(&mms->mms_hd, httpname, URL_RDONLY) < 0) {
+    if (ffurl_alloc(&mms->mms_hd, httpname, URL_RDONLY) < 0) {
         return AVERROR(EIO);
     }
 
@@ -260,7 +261,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
     // close the socket and then reopen it for sending the second play request.
     url_close(mms->mms_hd);
     memset(headers, 0, sizeof(headers));
-    if (url_alloc(&mms->mms_hd, httpname, URL_RDONLY) < 0) {
+    if (ffurl_alloc(&mms->mms_hd, httpname, URL_RDONLY) < 0) {
         return AVERROR(EIO);
     }
     stream_selection = av_mallocz(mms->stream_num * 19 + 1);

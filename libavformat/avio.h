@@ -102,20 +102,8 @@ typedef int URLInterruptCB(void);
  */
 attribute_deprecated int url_open_protocol (URLContext **puc, struct URLProtocol *up,
                                             const char *url, int flags);
+attribute_deprecated int url_alloc(URLContext **h, const char *url, int flags);
 #endif
-
-/**
- * Create a URLContext for accessing to the resource indicated by
- * url, but do not initiate the connection yet.
- *
- * @param puc pointer to the location where, in case of success, the
- * function puts the pointer to the created URLContext
- * @param flags flags which control how the resource indicated by url
- * is to be opened
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code in case of failure
- */
-int url_alloc(URLContext **h, const char *url, int flags);
 
 /**
  * Connect an URLContext that has been allocated by url_alloc

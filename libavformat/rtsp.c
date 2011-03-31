@@ -42,6 +42,7 @@
 #include "rdt.h"
 #include "rtpdec_formats.h"
 #include "rtpenc_chain.h"
+#include "url.h"
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP
@@ -1395,7 +1396,7 @@ redirect:
                  av_get_random_seed(), av_get_random_seed());
 
         /* GET requests */
-        if (url_alloc(&rt->rtsp_hd, httpname, URL_RDONLY) < 0) {
+        if (ffurl_alloc(&rt->rtsp_hd, httpname, URL_RDONLY) < 0) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1416,7 +1417,7 @@ redirect:
         }
 
         /* POST requests */
-        if (url_alloc(&rt->rtsp_hd_out, httpname, URL_WRONLY) < 0 ) {
+        if (ffurl_alloc(&rt->rtsp_hd_out, httpname, URL_WRONLY) < 0 ) {
             err = AVERROR(EIO);
             goto fail;
         }

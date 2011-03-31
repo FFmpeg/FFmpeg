@@ -29,6 +29,7 @@
 #if CONFIG_NETWORK
 #include "network.h"
 #endif
+#include "url.h"
 
 #if FF_API_URL_CLASS
 /** @name Logging context. */
@@ -167,6 +168,10 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     *puc = NULL;
     return ret;
 }
+int url_alloc(URLContext **puc, const char *filename, int flags)
+{
+    return ffurl_alloc(puc, filename, flags);
+}
 #endif
 
 #define URL_SCHEME_CHARS                        \
@@ -174,7 +179,7 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"                \
     "0123456789+-."
 
-int url_alloc(URLContext **puc, const char *filename, int flags)
+int ffurl_alloc(URLContext **puc, const char *filename, int flags)
 {
     URLProtocol *up;
     char proto_str[128], proto_nested[128], *ptr;
@@ -204,7 +209,7 @@ int url_alloc(URLContext **puc, const char *filename, int flags)
 
 int url_open(URLContext **puc, const char *filename, int flags)
 {
-    int ret = url_alloc(puc, filename, flags);
+    int ret = ffurl_alloc(puc, filename, flags);
     if (ret)
         return ret;
     ret = url_connect(*puc);
