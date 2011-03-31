@@ -57,11 +57,13 @@ typedef struct URLContext {
     int is_connected;
 } URLContext;
 
+#if FF_API_OLD_AVIO
 typedef struct URLPollEntry {
     URLContext *handle;
     int events;
     int revents;
 } URLPollEntry;
+#endif
 
 /**
  * @defgroup open_modes URL open modes
@@ -243,8 +245,10 @@ void url_get_filename(URLContext *h, char *buf, int buf_size);
  */
 void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 
+#if FF_API_OLD_AVIO
 /* not implemented */
-int url_poll(URLPollEntry *poll_table, int n, int timeout);
+attribute_deprecated int url_poll(URLPollEntry *poll_table, int n, int timeout);
+#endif
 
 /**
  * Pause and resume playing - only meaningful if using a network streaming
