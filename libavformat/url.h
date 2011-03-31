@@ -86,4 +86,20 @@ int ffurl_read_complete(URLContext *h, unsigned char *buf, int size);
  */
 int ffurl_write(URLContext *h, const unsigned char *buf, int size);
 
+/**
+ * Change the position that will be used by the next read/write
+ * operation on the resource accessed by h.
+ *
+ * @param pos specifies the new position to set
+ * @param whence specifies how pos should be interpreted, it must be
+ * one of SEEK_SET (seek from the beginning), SEEK_CUR (seek from the
+ * current position), SEEK_END (seek from the end), or AVSEEK_SIZE
+ * (return the filesize of the requested resource, pos is ignored).
+ * @return a negative value corresponding to an AVERROR code in case
+ * of failure, or the resulting file position, measured in bytes from
+ * the beginning of the file. You can use this feature together with
+ * SEEK_CUR to read the current file position.
+ */
+int64_t ffurl_seek(URLContext *h, int64_t pos, int whence);
+
 #endif //AVFORMAT_URL_H

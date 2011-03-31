@@ -141,7 +141,7 @@ static int concat_read(URLContext *h, unsigned char *buf, int size)
             return total ? total : result;
         if (!result)
             if (i + 1 == data->length ||
-                url_seek(nodes[++i].uc, 0, SEEK_SET) < 0)
+                ffurl_seek(nodes[++i].uc, 0, SEEK_SET) < 0)
                 break;
         total += result;
         buf   += result;
@@ -169,7 +169,7 @@ static int64_t concat_seek(URLContext *h, int64_t pos, int whence)
         /* get the absolute position */
         for (i = 0; i != data->current; i++)
             pos += nodes[i].size;
-        pos += url_seek(nodes[i].uc, 0, SEEK_CUR);
+        pos += ffurl_seek(nodes[i].uc, 0, SEEK_CUR);
         whence = SEEK_SET;
         /* fall through with the absolute position */
     case SEEK_SET:
@@ -180,7 +180,7 @@ static int64_t concat_seek(URLContext *h, int64_t pos, int whence)
         return AVERROR(EINVAL);
     }
 
-    result = url_seek(nodes[i].uc, pos, whence);
+    result = ffurl_seek(nodes[i].uc, pos, whence);
     if (result >= 0) {
         data->current = i;
         while (i)

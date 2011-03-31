@@ -143,10 +143,10 @@ int ffurl_connect(URLContext* uc)
     if (err)
         return err;
     uc->is_connected = 1;
-    //We must be careful here as url_seek() could be slow, for example for http
+    //We must be careful here as ffurl_seek() could be slow, for example for http
     if(   (uc->flags & (URL_WRONLY | URL_RDWR))
        || !strcmp(uc->prot->name, "file"))
-        if(!uc->is_streamed && url_seek(uc, 0, SEEK_SET) < 0)
+        if(!uc->is_streamed && ffurl_seek(uc, 0, SEEK_SET) < 0)
             uc->is_streamed= 1;
     return 0;
 }
@@ -191,6 +191,10 @@ int url_read_complete(URLContext *h, unsigned char *buf, int size)
 int url_write(URLContext *h, const unsigned char *buf, int size)
 {
     return ffurl_write(h, buf, size);
+}
+int64_t url_seek(URLContext *h, int64_t pos, int whence)
+{
+    return ffurl_seek(h, pos, whence);
 }
 #endif
 
@@ -295,7 +299,7 @@ int ffurl_write(URLContext *h, const unsigned char *buf, int size)
     return retry_transfer_wrapper(h, buf, size, size, h->prot->url_write);
 }
 
-int64_t url_seek(URLContext *h, int64_t pos, int whence)
+int64_t ffurl_seek(URLContext *h, int64_t pos, int whence)
 {
     int64_t ret;
 
@@ -334,13 +338,13 @@ int64_t url_filesize(URLContext *h)
 {
     int64_t pos, size;
 
-    size= url_seek(h, 0, AVSEEK_SIZE);
+    size= ffurl_seek(h, 0, AVSEEK_SIZE);
     if(size<0){
-        pos = url_seek(h, 0, SEEK_CUR);
-        if ((size = url_seek(h, -1, SEEK_END)) < 0)
+        pos = ffurl_seek(h, 0, SEEK_CUR);
+        if ((size = ffurl_seek(h, -1, SEEK_END)) < 0)
             return size;
         size++;
-        url_seek(h, pos, SEEK_SET);
+        ffurl_seek(h, pos, SEEK_SET);
     }
     return size;
 }
