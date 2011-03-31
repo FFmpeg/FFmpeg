@@ -93,7 +93,7 @@ static int sap_read_header(AVFormatContext *s,
         int addr_type, auth_len;
         int pos;
 
-        ret = url_read(sap->ann_fd, recvbuf, sizeof(recvbuf) - 1);
+        ret = ffurl_read(sap->ann_fd, recvbuf, sizeof(recvbuf) - 1);
         if (ret == AVERROR(EAGAIN))
             continue;
         if (ret < 0)
@@ -195,7 +195,7 @@ static int sap_fetch_packet(AVFormatContext *s, AVPacket *pkt)
         n = poll(&p, 1, 0);
         if (n <= 0 || !(p.revents & POLLIN))
             break;
-        ret = url_read(sap->ann_fd, recvbuf, sizeof(recvbuf));
+        ret = ffurl_read(sap->ann_fd, recvbuf, sizeof(recvbuf));
         if (ret >= 8) {
             uint16_t hash = AV_RB16(&recvbuf[2]);
             /* Should ideally check the source IP address, too */

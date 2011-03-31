@@ -58,4 +58,15 @@ int ffurl_connect(URLContext *h);
  */
 int ffurl_open(URLContext **h, const char *url, int flags);
 
+/**
+ * Read up to size bytes from the resource accessed by h, and store
+ * the read bytes in buf.
+ *
+ * @return The number of bytes actually read, or a negative value
+ * corresponding to an AVERROR code in case of error. A value of zero
+ * indicates that it is not possible to read more from the accessed
+ * resource (except if the value of the size argument is also zero).
+ */
+int ffurl_read(URLContext *h, unsigned char *buf, int size);
+
 #endif //AVFORMAT_URL_H

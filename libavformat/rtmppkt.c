@@ -25,6 +25,7 @@
 
 #include "rtmppkt.h"
 #include "flv.h"
+#include "url.h"
 
 void ff_amf_write_bool(uint8_t **dst, int val)
 {
@@ -78,7 +79,7 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
     enum RTMPPacketType type;
     int size = 0;
 
-    if (url_read(h, &hdr, 1) != 1)
+    if (ffurl_read(h, &hdr, 1) != 1)
         return AVERROR(EIO);
     size++;
     channel_id = hdr & 0x3F;

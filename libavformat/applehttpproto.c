@@ -241,7 +241,7 @@ static int applehttp_read(URLContext *h, uint8_t *buf, int size)
 
 start:
     if (s->seg_hd) {
-        ret = url_read(s->seg_hd, buf, size);
+        ret = ffurl_read(s->seg_hd, buf, size);
         if (ret > 0)
             return ret;
     }

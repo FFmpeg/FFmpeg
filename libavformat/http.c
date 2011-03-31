@@ -171,7 +171,7 @@ static int http_getc(HTTPContext *s)
 {
     int len;
     if (s->buf_ptr >= s->buf_end) {
-        len = url_read(s->hd, s->buffer, BUFFER_SIZE);
+        len = ffurl_read(s->hd, s->buffer, BUFFER_SIZE);
         if (len < 0) {
             return AVERROR(EIO);
         } else if (len == 0) {
@@ -407,7 +407,7 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
     } else {
         if (!s->willclose && s->filesize >= 0 && s->off >= s->filesize)
             return AVERROR_EOF;
-        len = url_read(s->hd, buf, size);
+        len = ffurl_read(s->hd, buf, size);
     }
     if (len > 0) {
         s->off += len;

@@ -115,7 +115,7 @@ static int gopher_open(URLContext *h, const char *uri, int flags)
 static int gopher_read(URLContext *h, uint8_t *buf, int size)
 {
     GopherContext *s = h->priv_data;
-    int len = url_read(s->hd, buf, size);
+    int len = ffurl_read(s->hd, buf, size);
     return len;
 }
 

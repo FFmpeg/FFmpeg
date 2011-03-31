@@ -1594,7 +1594,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                 rtsp_st = rt->rtsp_streams[i];
                 if (rtsp_st->rtp_handle) {
                     if (p[j].revents & POLLIN || p[j+1].revents & POLLIN) {
-                        ret = url_read(rtsp_st->rtp_handle, buf, buf_size);
+                        ret = ffurl_read(rtsp_st->rtp_handle, buf, buf_size);
                         if (ret > 0) {
                             *prtsp_st = rtsp_st;
                             return ret;
@@ -1868,7 +1868,7 @@ static int rtp_read_header(AVFormatContext *s,
         goto fail;
 
     while (1) {
-        ret = url_read(in, recvbuf, sizeof(recvbuf));
+        ret = ffurl_read(in, recvbuf, sizeof(recvbuf));
         if (ret == AVERROR(EAGAIN))
             continue;
         if (ret < 0)

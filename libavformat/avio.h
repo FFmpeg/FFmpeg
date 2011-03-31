@@ -105,18 +105,8 @@ attribute_deprecated int url_open_protocol (URLContext **puc, struct URLProtocol
 attribute_deprecated int url_alloc(URLContext **h, const char *url, int flags);
 attribute_deprecated int url_connect(URLContext *h);
 attribute_deprecated int url_open(URLContext **h, const char *url, int flags);
+attribute_deprecated int url_read(URLContext *h, unsigned char *buf, int size);
 #endif
-
-/**
- * Read up to size bytes from the resource accessed by h, and store
- * the read bytes in buf.
- *
- * @return The number of bytes actually read, or a negative value
- * corresponding to an AVERROR code in case of error. A value of zero
- * indicates that it is not possible to read more from the accessed
- * resource (except if the value of the size argument is also zero).
- */
-int url_read(URLContext *h, unsigned char *buf, int size);
 
 /**
  * Read as many bytes as possible (up to size), calling the

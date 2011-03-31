@@ -180,6 +180,10 @@ int url_open(URLContext **puc, const char *filename, int flags)
 {
     return ffurl_open(puc, filename, flags);
 }
+int url_read(URLContext *h, unsigned char *buf, int size)
+{
+    return ffurl_read(h, buf, size);
+}
 #endif
 
 #define URL_SCHEME_CHARS                        \
@@ -258,7 +262,7 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
     return len;
 }
 
-int url_read(URLContext *h, unsigned char *buf, int size)
+int ffurl_read(URLContext *h, unsigned char *buf, int size)
 {
     if (h->flags & URL_WRONLY)
         return AVERROR(EIO);

@@ -136,7 +136,7 @@ static int concat_read(URLContext *h, unsigned char *buf, int size)
     size_t i = data->current;
 
     while (size > 0) {
-        result = url_read(nodes[i].uc, buf, size);
+        result = ffurl_read(nodes[i].uc, buf, size);
         if (result < 0)
             return total ? total : result;
         if (!result)
