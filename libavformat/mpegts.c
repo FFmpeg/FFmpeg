@@ -1350,7 +1350,7 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size)
     for(;;) {
         len = avio_read(pb, buf, TS_PACKET_SIZE);
         if (len != TS_PACKET_SIZE)
-            return AVERROR(EIO);
+            return len < 0 ? len : AVERROR_EOF;
         /* check paquet sync byte */
         if (buf[0] != 0x47) {
             /* find a new packet start */
