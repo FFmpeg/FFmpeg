@@ -818,7 +818,7 @@ void ff_rtsp_skip_packet(AVFormatContext *s)
     int ret, len, len1;
     uint8_t buf[1024];
 
-    ret = url_read_complete(rt->rtsp_hd, buf, 3);
+    ret = ffurl_read_complete(rt->rtsp_hd, buf, 3);
     if (ret != 3)
         return;
     len = AV_RB16(buf + 1);
@@ -830,7 +830,7 @@ void ff_rtsp_skip_packet(AVFormatContext *s)
         len1 = len;
         if (len1 > sizeof(buf))
             len1 = sizeof(buf);
-        ret = url_read_complete(rt->rtsp_hd, buf, len1);
+        ret = ffurl_read_complete(rt->rtsp_hd, buf, len1);
         if (ret != len1)
             return;
         len -= len1;
@@ -855,7 +855,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     for (;;) {
         q = buf;
         for (;;) {
-            ret = url_read_complete(rt->rtsp_hd, &ch, 1);
+            ret = ffurl_read_complete(rt->rtsp_hd, &ch, 1);
 #ifdef DEBUG_RTP_TCP
             av_dlog(s, "ret=%d c=%02x [%c]\n", ret, ch, ch);
 #endif
@@ -903,7 +903,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     if (content_length > 0) {
         /* leave some room for a trailing '\0' (useful for simple parsing) */
         content = av_malloc(content_length + 1);
-        (void)url_read_complete(rt->rtsp_hd, content, content_length);
+        ffurl_read_complete(rt->rtsp_hd, content, content_length);
         content[content_length] = '\0';
     }
     if (content_ptr)

@@ -106,16 +106,8 @@ attribute_deprecated int url_alloc(URLContext **h, const char *url, int flags);
 attribute_deprecated int url_connect(URLContext *h);
 attribute_deprecated int url_open(URLContext **h, const char *url, int flags);
 attribute_deprecated int url_read(URLContext *h, unsigned char *buf, int size);
+attribute_deprecated int url_read_complete(URLContext *h, unsigned char *buf, int size);
 #endif
-
-/**
- * Read as many bytes as possible (up to size), calling the
- * read function multiple times if necessary.
- * This makes special short-read handling in applications
- * unnecessary, if the return value is < size then it is
- * certain there was either an error or the end of file was reached.
- */
-int url_read_complete(URLContext *h, unsigned char *buf, int size);
 
 /**
  * Write size bytes from buf to the resource accessed by h.

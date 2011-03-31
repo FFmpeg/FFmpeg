@@ -241,7 +241,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
     MMSSCPacketType packet_type= -1;
     MMSContext *mms = &mmst->mms;
     for(;;) {
-        read_result = url_read_complete(mms->mms_hd, mms->in_buffer, 8);
+        read_result = ffurl_read_complete(mms->mms_hd, mms->in_buffer, 8);
         if (read_result != 8) {
             if(read_result < 0) {
                 av_log(NULL, AV_LOG_ERROR,
@@ -261,7 +261,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
             int length_remaining, hr;
 
             mmst->incoming_flags= mms->in_buffer[3];
-            read_result= url_read_complete(mms->mms_hd, mms->in_buffer+8, 4);
+            read_result= ffurl_read_complete(mms->mms_hd, mms->in_buffer+8, 4);
             if(read_result != 4) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Reading command packet length failed: %d (%s)\n",
@@ -281,7 +281,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
                        length_remaining, sizeof(mms->in_buffer) - 12);
                 return AVERROR_INVALIDDATA;
             }
-            read_result = url_read_complete(mms->mms_hd, mms->in_buffer + 12,
+            read_result = ffurl_read_complete(mms->mms_hd, mms->in_buffer + 12,
                                             length_remaining) ;
             if (read_result != length_remaining) {
                 av_log(NULL, AV_LOG_ERROR,
@@ -319,7 +319,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
             }
             mms->remaining_in_len    = length_remaining;
             mms->read_in_ptr         = mms->in_buffer;
-            read_result= url_read_complete(mms->mms_hd, mms->in_buffer, length_remaining);
+            read_result= ffurl_read_complete(mms->mms_hd, mms->in_buffer, length_remaining);
             if(read_result != length_remaining) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Failed to read packet data of size %d: %d (%s)\n",

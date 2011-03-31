@@ -79,7 +79,7 @@ static ChunkType get_chunk_header(MMSHContext *mmsh, int *len)
     ChunkType chunk_type;
     int chunk_len, res, ext_header_len;
 
-    res = url_read_complete(mms->mms_hd, chunk_header, CHUNK_HEADER_LENGTH);
+    res = ffurl_read_complete(mms->mms_hd, chunk_header, CHUNK_HEADER_LENGTH);
     if (res != CHUNK_HEADER_LENGTH) {
         av_log(NULL, AV_LOG_ERROR, "Read data packet header failed!\n");
         return AVERROR(EIO);
@@ -101,7 +101,7 @@ static ChunkType get_chunk_header(MMSHContext *mmsh, int *len)
         return AVERROR_INVALIDDATA;
     }
 
-    res = url_read_complete(mms->mms_hd, ext_header, ext_header_len);
+    res = ffurl_read_complete(mms->mms_hd, ext_header, ext_header_len);
     if (res != ext_header_len) {
         av_log(NULL, AV_LOG_ERROR, "Read ext header failed!\n");
         return AVERROR(EIO);
@@ -122,7 +122,7 @@ static int read_data_packet(MMSHContext *mmsh, const int len)
                len, sizeof(mms->in_buffer));
         return AVERROR(EIO);
     }
-    res = url_read_complete(mms->mms_hd, mms->in_buffer, len);
+    res = ffurl_read_complete(mms->mms_hd, mms->in_buffer, len);
     av_dlog(NULL, "Data packet len = %d\n", len);
     if (res != len) {
         av_log(NULL, AV_LOG_ERROR, "Read data packet failed!\n");
@@ -174,7 +174,7 @@ static int get_http_header_data(MMSHContext *mmsh)
                        len, mms->asf_header_size);
                 return AVERROR(EIO);
             }
-            res = url_read_complete(mms->mms_hd, mms->asf_header, len);
+            res = ffurl_read_complete(mms->mms_hd, mms->asf_header, len);
             if (res != len) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Recv asf header data len %d != expected len %d\n", res, len);
@@ -197,7 +197,7 @@ static int get_http_header_data(MMSHContext *mmsh)
                            len, sizeof(mms->in_buffer));
                     return AVERROR(EIO);
                 }
-                res = url_read_complete(mms->mms_hd, mms->in_buffer, len);
+                res = ffurl_read_complete(mms->mms_hd, mms->in_buffer, len);
                 if (res != len) {
                     av_log(NULL, AV_LOG_ERROR, "Read other chunk type data failed!\n");
                     return AVERROR(EIO);

@@ -487,12 +487,12 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     client_pos = rtmp_handshake_imprint_with_digest(tosend + 1);
 
     url_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE + 1);
-    i = url_read_complete(rt->stream, serverdata, RTMP_HANDSHAKE_PACKET_SIZE + 1);
+    i = ffurl_read_complete(rt->stream, serverdata, RTMP_HANDSHAKE_PACKET_SIZE + 1);
     if (i != RTMP_HANDSHAKE_PACKET_SIZE + 1) {
         av_log(LOG_CONTEXT, AV_LOG_ERROR, "Cannot read RTMP handshake response\n");
         return -1;
     }
-    i = url_read_complete(rt->stream, clientdata, RTMP_HANDSHAKE_PACKET_SIZE);
+    i = ffurl_read_complete(rt->stream, clientdata, RTMP_HANDSHAKE_PACKET_SIZE);
     if (i != RTMP_HANDSHAKE_PACKET_SIZE) {
         av_log(LOG_CONTEXT, AV_LOG_ERROR, "Cannot read RTMP handshake response\n");
         return -1;

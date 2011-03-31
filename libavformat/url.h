@@ -69,4 +69,13 @@ int ffurl_open(URLContext **h, const char *url, int flags);
  */
 int ffurl_read(URLContext *h, unsigned char *buf, int size);
 
+/**
+ * Read as many bytes as possible (up to size), calling the
+ * read function multiple times if necessary.
+ * This makes special short-read handling in applications
+ * unnecessary, if the return value is < size then it is
+ * certain there was either an error or the end of file was reached.
+ */
+int ffurl_read_complete(URLContext *h, unsigned char *buf, int size);
+
 #endif //AVFORMAT_URL_H
