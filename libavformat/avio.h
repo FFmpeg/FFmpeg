@@ -447,6 +447,11 @@ attribute_deprecated int url_ferror(AVIOContext *s);
 
 attribute_deprecated int udp_set_remote_url(URLContext *h, const char *uri);
 attribute_deprecated int udp_get_local_port(URLContext *h);
+
+attribute_deprecated void init_checksum(AVIOContext *s,
+                   unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
+                   unsigned long checksum);
+attribute_deprecated unsigned long get_checksum(AVIOContext *s);
 #endif
 
 AVIOContext *avio_alloc_context(
@@ -669,13 +674,6 @@ int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
  * @return the length of the byte buffer
  */
 int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
-
-unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
-                                    unsigned int len);
-unsigned long get_checksum(AVIOContext *s);
-void init_checksum(AVIOContext *s,
-                   unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
-                   unsigned long checksum);
 
 #if FF_API_UDP_GET_FILE
 int udp_get_file_handle(URLContext *h);

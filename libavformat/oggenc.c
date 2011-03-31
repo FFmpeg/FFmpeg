@@ -68,7 +68,7 @@ typedef struct {
 static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc_offset)
 {
     int64_t pos = avio_tell(pb);
-    uint32_t checksum = get_checksum(pb);
+    uint32_t checksum = ffio_get_checksum(pb);
     avio_seek(pb, crc_offset, SEEK_SET);
     avio_wb32(pb, checksum);
     avio_seek(pb, pos, SEEK_SET);
@@ -85,7 +85,7 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     ret = url_open_dyn_buf(&pb);
     if (ret < 0)
         return ret;
-    init_checksum(pb, ff_crc04C11DB7_update, 0);
+    ffio_init_checksum(pb, ff_crc04C11DB7_update, 0);
     ffio_wfourcc(pb, "OggS");
     avio_w8(pb, 0);
     avio_w8(pb, page->flags | extra_flags);

@@ -415,6 +415,16 @@ int64_t av_url_read_fseek(AVIOContext *s, int stream_index,
 {
     return ffio_read_seek(s, stream_index, timestamp, flags);
 }
+void init_checksum(AVIOContext *s,
+                   unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
+                   unsigned long checksum)
+{
+    ffio_init_checksum(s, update_checksum, checksum);
+}
+unsigned long get_checksum(AVIOContext *s)
+{
+    return ffio_get_checksum(s);
+}
 #endif
 
 int avio_put_str(AVIOContext *s, const char *str)
@@ -557,14 +567,14 @@ unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
     return av_crc(av_crc_get_table(AV_CRC_32_IEEE), checksum, buf, len);
 }
 
-unsigned long get_checksum(AVIOContext *s)
+unsigned long ffio_get_checksum(AVIOContext *s)
 {
     s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_ptr - s->checksum_ptr);
     s->update_checksum= NULL;
     return s->checksum;
 }
 
-void init_checksum(AVIOContext *s,
+void ffio_init_checksum(AVIOContext *s,
                    unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
                    unsigned long checksum)
 {

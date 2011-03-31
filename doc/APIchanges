@@ -462,15 +462,21 @@ API changes, most recent first:
 
 2010-05-26 - r23334 - lavc 52.72.0 - CODEC_CAP_EXPERIMENTAL
   Add CODEC_CAP_EXPERIMENTAL flag.
+  NOTE: this was backported to 0.6
 
 2010-05-23 - r23255 - lavu 50.16.0 - av_get_random_seed()
   Add av_get_random_seed().
 
 2010-05-18 - r23161 - lavf 52.63.0 - AVFMT_FLAG_RTP_HINT
   Add AVFMT_FLAG_RTP_HINT as possible value for AVFormatContext.flags.
+  NOTE: this was backported to 0.6
 
 2010-05-09 - r23066 - lavfi 1.20.0 - AVFilterPicRef
   Add interlaced and top_field_first fields to AVFilterPicRef.
+
+------------------------------8<-------------------------------------
+                   0.6 branch was cut here
+----------------------------->8--------------------------------------
 
 2010-05-01 - r23002 - lavf 52.62.0 - probe function
   Add av_probe_input_format2 to API, it allows ignoring probe
