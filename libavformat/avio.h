@@ -103,12 +103,8 @@ typedef int URLInterruptCB(void);
 attribute_deprecated int url_open_protocol (URLContext **puc, struct URLProtocol *up,
                                             const char *url, int flags);
 attribute_deprecated int url_alloc(URLContext **h, const char *url, int flags);
+attribute_deprecated int url_connect(URLContext *h);
 #endif
-
-/**
- * Connect an URLContext that has been allocated by url_alloc
- */
-int url_connect(URLContext *h);
 
 /**
  * Create an URLContext for accessing to the resource indicated by

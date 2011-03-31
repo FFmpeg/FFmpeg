@@ -137,7 +137,7 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
     return err;
 }
 
-int url_connect(URLContext* uc)
+int ffurl_connect(URLContext* uc)
 {
     int err = uc->prot->url_open(uc, uc->filename, uc->flags);
     if (err)
@@ -160,7 +160,7 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     ret = url_alloc_for_protocol(puc, up, filename, flags);
     if (ret)
         goto fail;
-    ret = url_connect(*puc);
+    ret = ffurl_connect(*puc);
     if (!ret)
         return 0;
  fail:
@@ -171,6 +171,10 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
 int url_alloc(URLContext **puc, const char *filename, int flags)
 {
     return ffurl_alloc(puc, filename, flags);
+}
+int url_connect(URLContext* uc)
+{
+    return ffurl_connect(uc);
 }
 #endif
 
@@ -212,7 +216,7 @@ int url_open(URLContext **puc, const char *filename, int flags)
     int ret = ffurl_alloc(puc, filename, flags);
     if (ret)
         return ret;
-    ret = url_connect(*puc);
+    ret = ffurl_connect(*puc);
     if (!ret)
         return 0;
     url_close(*puc);

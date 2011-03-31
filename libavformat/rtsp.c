@@ -1411,7 +1411,7 @@ redirect:
         ff_http_set_headers(rt->rtsp_hd, headers);
 
         /* complete the connection */
-        if (url_connect(rt->rtsp_hd)) {
+        if (ffurl_connect(rt->rtsp_hd)) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1453,7 +1453,7 @@ redirect:
         ff_http_init_auth_state(rt->rtsp_hd_out, rt->rtsp_hd);
 
         /* complete the connection */
-        if (url_connect(rt->rtsp_hd_out)) {
+        if (ffurl_connect(rt->rtsp_hd_out)) {
             err = AVERROR(EIO);
             goto fail;
         }

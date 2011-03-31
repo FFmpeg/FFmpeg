@@ -40,4 +40,9 @@
  */
 int ffurl_alloc(URLContext **h, const char *url, int flags);
 
+/**
+ * Connect an URLContext that has been allocated by ffurl_alloc
+ */
+int ffurl_connect(URLContext *h);
+
 #endif //AVFORMAT_URL_H

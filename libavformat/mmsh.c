@@ -248,7 +248,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
              host, port, mmsh->request_seq++);
     ff_http_set_headers(mms->mms_hd, headers);
 
-    err = url_connect(mms->mms_hd);
+    err = ffurl_connect(mms->mms_hd);
     if (err) {
         goto fail;
     }
@@ -294,7 +294,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
     av_dlog(NULL, "out_buffer is %s", headers);
     ff_http_set_headers(mms->mms_hd, headers);
 
-    err = url_connect(mms->mms_hd);
+    err = ffurl_connect(mms->mms_hd);
     if (err) {
           goto fail;
     }
