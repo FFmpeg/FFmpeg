@@ -112,6 +112,7 @@ attribute_deprecated int64_t url_seek(URLContext *h, int64_t pos, int whence);
 attribute_deprecated int url_close(URLContext *h);
 attribute_deprecated int64_t url_filesize(URLContext *h);
 attribute_deprecated int url_get_file_handle(URLContext *h);
+attribute_deprecated int url_get_max_packet_size(URLContext *h);
 #endif
 
 /**
@@ -119,16 +120,6 @@ attribute_deprecated int url_get_file_handle(URLContext *h);
  * exists, 0 otherwise.
  */
 int url_exist(const char *url);
-
-/**
- * Return the maximum packet size associated to packetized file
- * handle. If the file is not packetized (stream like HTTP or file on
- * disk), then 0 is returned.
- *
- * @param h file handle
- * @return maximum packet size in bytes
- */
-int url_get_max_packet_size(URLContext *h);
 
 /**
  * Copy the filename of the resource accessed by h to buf.

@@ -888,7 +888,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         rt->flv_off  = 0;
     }
 
-    s->max_packet_size = url_get_max_packet_size(rt->stream);
+    s->max_packet_size = rt->stream->max_packet_size;
     s->is_streamed     = 1;
     return 0;
 

@@ -218,7 +218,7 @@ static int sap_write_header(AVFormatContext *s)
     pos += strlen(&sap->ann[pos]);
     sap->ann_size = pos;
 
-    if (sap->ann_size > url_get_max_packet_size(sap->ann_fd)) {
+    if (sap->ann_size > sap->ann_fd->max_packet_size) {
         av_log(s, AV_LOG_ERROR, "Announcement too large to send in one "
                                 "packet\n");
         goto fail;

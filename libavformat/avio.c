@@ -208,6 +208,10 @@ int url_get_file_handle(URLContext *h)
 {
     return ffurl_get_file_handle(h);
 }
+int url_get_max_packet_size(URLContext *h)
+{
+    return h->max_packet_size;
+}
 #endif
 
 #define URL_SCHEME_CHARS                        \
@@ -366,11 +370,6 @@ int ffurl_get_file_handle(URLContext *h)
     if (!h->prot->url_get_file_handle)
         return -1;
     return h->prot->url_get_file_handle(h);
-}
-
-int url_get_max_packet_size(URLContext *h)
-{
-    return h->max_packet_size;
 }
 
 void url_get_filename(URLContext *h, char *buf, int buf_size)
