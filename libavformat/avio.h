@@ -109,16 +109,8 @@ attribute_deprecated int url_read(URLContext *h, unsigned char *buf, int size);
 attribute_deprecated int url_read_complete(URLContext *h, unsigned char *buf, int size);
 attribute_deprecated int url_write(URLContext *h, const unsigned char *buf, int size);
 attribute_deprecated int64_t url_seek(URLContext *h, int64_t pos, int whence);
+attribute_deprecated int url_close(URLContext *h);
 #endif
-
-/**
- * Close the resource accessed by the URLContext h, and free the
- * memory used by it.
- *
- * @return a negative value if an error condition occurred, 0
- * otherwise
- */
-int url_close(URLContext *h);
 
 /**
  * Return a non-zero value if the resource indicated by url

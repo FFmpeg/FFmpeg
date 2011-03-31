@@ -786,7 +786,7 @@ static int rtmp_close(URLContext *h)
         gen_delete_stream(h, rt);
 
     av_freep(&rt->flv_data);
-    url_close(rt->stream);
+    ffurl_close(rt->stream);
     av_free(rt);
     return 0;
 }

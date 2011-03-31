@@ -164,7 +164,7 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     if (!ret)
         return 0;
  fail:
-    url_close(*puc);
+    ffurl_close(*puc);
     *puc = NULL;
     return ret;
 }
@@ -195,6 +195,10 @@ int url_write(URLContext *h, const unsigned char *buf, int size)
 int64_t url_seek(URLContext *h, int64_t pos, int whence)
 {
     return ffurl_seek(h, pos, whence);
+}
+int url_close(URLContext *h)
+{
+    return ffurl_close(h);
 }
 #endif
 
@@ -239,7 +243,7 @@ int ffurl_open(URLContext **puc, const char *filename, int flags)
     ret = ffurl_connect(*puc);
     if (!ret)
         return 0;
-    url_close(*puc);
+    ffurl_close(*puc);
     *puc = NULL;
     return ret;
 }
@@ -309,7 +313,7 @@ int64_t ffurl_seek(URLContext *h, int64_t pos, int whence)
     return ret;
 }
 
-int url_close(URLContext *h)
+int ffurl_close(URLContext *h)
 {
     int ret = 0;
     if (!h) return 0; /* can happen when ffurl_open fails */
@@ -330,7 +334,7 @@ int url_exist(const char *filename)
     URLContext *h;
     if (ffurl_open(&h, filename, URL_RDONLY) < 0)
         return 0;
-    url_close(h);
+    ffurl_close(h);
     return 1;
 }
 

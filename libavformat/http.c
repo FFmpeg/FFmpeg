@@ -134,7 +134,7 @@ static int http_open_cnx(URLContext *h)
         goto fail;
     if (s->http_code == 401) {
         if (cur_auth_type == HTTP_AUTH_NONE && s->auth_state.auth_type != HTTP_AUTH_NONE) {
-            url_close(hd);
+            ffurl_close(hd);
             goto redo;
         } else
             goto fail;
@@ -142,7 +142,7 @@ static int http_open_cnx(URLContext *h)
     if ((s->http_code == 301 || s->http_code == 302 || s->http_code == 303 || s->http_code == 307)
         && location_changed == 1) {
         /* url moved, get next */
-        url_close(hd);
+        ffurl_close(hd);
         if (redirects++ >= MAX_REDIRECTS)
             return AVERROR(EIO);
         location_changed = 0;
@@ -151,7 +151,7 @@ static int http_open_cnx(URLContext *h)
     return 0;
  fail:
     if (hd)
-        url_close(hd);
+        ffurl_close(hd);
     s->hd = NULL;
     return AVERROR(EIO);
 }
@@ -457,7 +457,7 @@ static int http_close(URLContext *h)
     }
 
     if (s->hd)
-        url_close(s->hd);
+        ffurl_close(s->hd);
     return ret;
 }
 
@@ -493,7 +493,7 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
         s->off = old_off;
         return -1;
     }
-    url_close(old_hd);
+    ffurl_close(old_hd);
     return off;
 }
 

@@ -54,7 +54,7 @@ static int sap_read_close(AVFormatContext *s)
     if (sap->sdp_ctx)
         av_close_input_stream(sap->sdp_ctx);
     if (sap->ann_fd)
-        url_close(sap->ann_fd);
+        ffurl_close(sap->ann_fd);
     av_freep(&sap->sdp);
     ff_network_close();
     return 0;

@@ -102,4 +102,13 @@ int ffurl_write(URLContext *h, const unsigned char *buf, int size);
  */
 int64_t ffurl_seek(URLContext *h, int64_t pos, int whence);
 
+/**
+ * Close the resource accessed by the URLContext h, and free the
+ * memory used by it.
+ *
+ * @return a negative value if an error condition occurred, 0
+ * otherwise
+ */
+int ffurl_close(URLContext *h);
+
 #endif //AVFORMAT_URL_H

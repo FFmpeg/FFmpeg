@@ -509,7 +509,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
         }
         rtsp_st->transport_priv = NULL;
         if (rtsp_st->rtp_handle)
-            url_close(rtsp_st->rtp_handle);
+            ffurl_close(rtsp_st->rtp_handle);
         rtsp_st->rtp_handle = NULL;
     }
 }
@@ -1297,8 +1297,8 @@ fail:
 void ff_rtsp_close_connections(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
-    if (rt->rtsp_hd_out != rt->rtsp_hd) url_close(rt->rtsp_hd_out);
-    url_close(rt->rtsp_hd);
+    if (rt->rtsp_hd_out != rt->rtsp_hd) ffurl_close(rt->rtsp_hd_out);
+    ffurl_close(rt->rtsp_hd);
     rt->rtsp_hd = rt->rtsp_hd_out = NULL;
 }
 
@@ -1888,7 +1888,7 @@ static int rtp_read_header(AVFormatContext *s,
         break;
     }
     getsockname(url_get_file_handle(in), (struct sockaddr*) &addr, &addrlen);
-    url_close(in);
+    ffurl_close(in);
     in = NULL;
 
     memset(&codec, 0, sizeof(codec));
@@ -1927,7 +1927,7 @@ static int rtp_read_header(AVFormatContext *s,
 
 fail:
     if (in)
-        url_close(in);
+        ffurl_close(in);
     ff_network_close();
     return ret;
 }

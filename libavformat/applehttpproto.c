@@ -246,7 +246,7 @@ start:
             return ret;
     }
     if (s->seg_hd) {
-        url_close(s->seg_hd);
+        ffurl_close(s->seg_hd);
         s->seg_hd = NULL;
         s->cur_seq_no++;
     }
@@ -292,7 +292,7 @@ static int applehttp_close(URLContext *h)
 
     free_segment_list(s);
     free_variant_list(s);
-    url_close(s->seg_hd);
+    ffurl_close(s->seg_hd);
     av_free(s);
     return 0;
 }

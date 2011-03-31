@@ -212,9 +212,9 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 
  fail:
     if (s->rtp_hd)
-        url_close(s->rtp_hd);
+        ffurl_close(s->rtp_hd);
     if (s->rtcp_hd)
-        url_close(s->rtcp_hd);
+        ffurl_close(s->rtcp_hd);
     av_free(s);
     return AVERROR(EIO);
 }
@@ -313,8 +313,8 @@ static int rtp_close(URLContext *h)
 {
     RTPContext *s = h->priv_data;
 
-    url_close(s->rtp_hd);
-    url_close(s->rtcp_hd);
+    ffurl_close(s->rtp_hd);
+    ffurl_close(s->rtcp_hd);
     av_free(s);
     return 0;
 }

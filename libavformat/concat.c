@@ -47,7 +47,7 @@ static av_cold int concat_close(URLContext *h)
     struct concat_nodes *nodes = data->nodes;
 
     for (i = 0; i != data->length; i++)
-        err |= url_close(nodes[i].uc);
+        err |= ffurl_close(nodes[i].uc);
 
     av_freep(&data->nodes);
     av_freep(&h->priv_data);
@@ -106,7 +106,7 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
 
         /* creating size */
         if ((size = url_filesize(uc)) < 0) {
-            url_close(uc);
+            ffurl_close(uc);
             err = AVERROR(ENOSYS);
             break;
         }

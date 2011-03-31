@@ -950,7 +950,7 @@ int avio_open(AVIOContext **s, const char *filename, int flags)
         return err;
     err = ffio_fdopen(s, h);
     if (err < 0) {
-        url_close(h);
+        ffurl_close(h);
         return err;
     }
     return 0;
@@ -962,7 +962,7 @@ int avio_close(AVIOContext *s)
 
     av_free(s->buffer);
     av_free(s);
-    return url_close(h);
+    return ffurl_close(h);
 }
 
 #if FF_API_OLD_AVIO

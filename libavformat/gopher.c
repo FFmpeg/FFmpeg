@@ -69,7 +69,7 @@ static int gopher_close(URLContext *h)
 {
     GopherContext *s = h->priv_data;
     if (s->hd) {
-        url_close(s->hd);
+        ffurl_close(s->hd);
         s->hd = NULL;
     }
     av_freep(&h->priv_data);
