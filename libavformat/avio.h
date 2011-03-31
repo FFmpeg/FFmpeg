@@ -458,6 +458,22 @@ attribute_deprecated void init_checksum(AVIOContext *s,
 attribute_deprecated unsigned long get_checksum(AVIOContext *s);
 #endif
 
+/**
+ * Allocate and initialize an AVIOContext for buffered I/O. It must be later
+ * freed with av_free().
+ *
+ * @param buffer Memory block for input/output operations via AVIOContext.
+ * @param buffer_size The buffer size is very important for performance.
+ *        For protocols with fixed blocksize it should be set to this blocksize.
+ *        For others a typical size is a cache page, e.g. 4kb.
+ * @param write_flag Set to 1 if the buffer should be writable, 0 otherwise.
+ * @param opaque An opaque pointer to user-specific data.
+ * @param read_packet  A function for refilling the buffer, may be NULL.
+ * @param write_packet A function for writing the buffer contents, may be NULL.
+ * @param seek A function for seeking to specified byte position, may be NULL.
+ *
+ * @return Allocated AVIOContext or NULL on failure.
+ */
 AVIOContext *avio_alloc_context(
                   unsigned char *buffer,
                   int buffer_size,
