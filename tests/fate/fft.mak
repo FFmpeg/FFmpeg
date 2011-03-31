@@ -33,3 +33,17 @@ fate-idct1d: CMD = run libavcodec/fft-test -d -i
 FATE_TESTS += $(FATE_FFT)
 fate-fft-test: $(FATE_FFT)
 $(FATE_FFT): REF = /dev/null
+
+FATE_FFT_FIXED = fate-fft-fixed  fate-ifft-fixed  \
+                 fate-mdct-fixed fate-imdct-fixed
+
+fate-fft-fixed:   CMD = run libavcodec/fft-fixed-test
+fate-ifft-fixed:  CMD = run libavcodec/fft-fixed-test -i
+fate-mdct-fixed:  CMD = run libavcodec/fft-fixed-test -m
+fate-imdct-fixed: CMD = run libavcodec/fft-fixed-test -m -i
+
+fate-fft-fixed-test: $(FATE_FFT_FIXED)
+$(FATE_FFT_FIXED): libavcodec/fft-fixed-test$(EXESUF)
+$(FATE_FFT_FIXED): REF = /dev/null
+
+FATE_TESTS += $(FATE_FFT_FIXED)
