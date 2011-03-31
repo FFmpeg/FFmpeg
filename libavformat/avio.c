@@ -150,6 +150,7 @@ int url_connect(URLContext* uc)
     return 0;
 }
 
+#if FF_API_OLD_AVIO
 int url_open_protocol (URLContext **puc, struct URLProtocol *up,
                        const char *filename, int flags)
 {
@@ -166,6 +167,7 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     *puc = NULL;
     return ret;
 }
+#endif
 
 #define URL_SCHEME_CHARS                        \
     "abcdefghijklmnopqrstuvwxyz"                \

@@ -94,19 +94,15 @@ typedef struct URLPollEntry {
 
 typedef int URLInterruptCB(void);
 
+#if FF_API_OLD_AVIO
 /**
- * Create a URLContext for accessing to the resource indicated by
- * url, and open it using the URLProtocol up.
- *
- * @param puc pointer to the location where, in case of success, the
- * function puts the pointer to the created URLContext
- * @param flags flags which control how the resource indicated by url
- * is to be opened
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code in case of failure
+ * @defgroup old_url_funcs Old url_* functions
+ * @deprecated use the buffered API based on AVIOContext instead
+ * @{
  */
-int url_open_protocol (URLContext **puc, struct URLProtocol *up,
-                       const char *url, int flags);
+attribute_deprecated int url_open_protocol (URLContext **puc, struct URLProtocol *up,
+                                            const char *url, int flags);
+#endif
 
 /**
  * Create a URLContext for accessing to the resource indicated by
@@ -337,6 +333,10 @@ attribute_deprecated int av_register_protocol(URLProtocol *protocol);
 int av_register_protocol2(URLProtocol *protocol, int size);
 
 #define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
+
+/**
+ * @}
+ */
 
 /**
  * Bytestream IO Context.
