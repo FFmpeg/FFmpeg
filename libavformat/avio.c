@@ -212,6 +212,10 @@ int url_get_max_packet_size(URLContext *h)
 {
     return h->max_packet_size;
 }
+void url_get_filename(URLContext *h, char *buf, int buf_size)
+{
+    av_strlcpy(buf, h->filename, buf_size);
+}
 #endif
 
 #define URL_SCHEME_CHARS                        \
@@ -371,12 +375,6 @@ int ffurl_get_file_handle(URLContext *h)
         return -1;
     return h->prot->url_get_file_handle(h);
 }
-
-void url_get_filename(URLContext *h, char *buf, int buf_size)
-{
-    av_strlcpy(buf, h->filename, buf_size);
-}
-
 
 static int default_interrupt_cb(void)
 {
