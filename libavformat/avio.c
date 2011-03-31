@@ -200,6 +200,10 @@ int url_close(URLContext *h)
 {
     return ffurl_close(h);
 }
+int64_t url_filesize(URLContext *h)
+{
+    return ffurl_size(h);
+}
 #endif
 
 #define URL_SCHEME_CHARS                        \
@@ -338,7 +342,7 @@ int url_exist(const char *filename)
     return 1;
 }
 
-int64_t url_filesize(URLContext *h)
+int64_t ffurl_size(URLContext *h)
 {
     int64_t pos, size;
 

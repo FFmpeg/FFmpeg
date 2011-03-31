@@ -110,6 +110,7 @@ attribute_deprecated int url_read_complete(URLContext *h, unsigned char *buf, in
 attribute_deprecated int url_write(URLContext *h, const unsigned char *buf, int size);
 attribute_deprecated int64_t url_seek(URLContext *h, int64_t pos, int whence);
 attribute_deprecated int url_close(URLContext *h);
+attribute_deprecated int64_t url_filesize(URLContext *h);
 #endif
 
 /**
@@ -117,13 +118,6 @@ attribute_deprecated int url_close(URLContext *h);
  * exists, 0 otherwise.
  */
 int url_exist(const char *url);
-
-/**
- * Return the filesize of the resource accessed by h, AVERROR(ENOSYS)
- * if the operation is not supported by h, or another negative value
- * corresponding to an AVERROR error code in case of failure.
- */
-int64_t url_filesize(URLContext *h);
 
 /**
  * Return the file descriptor associated with this URL. For RTP, this

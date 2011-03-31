@@ -105,7 +105,7 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
             break;
 
         /* creating size */
-        if ((size = url_filesize(uc)) < 0) {
+        if ((size = ffurl_size(uc)) < 0) {
             ffurl_close(uc);
             err = AVERROR(ENOSYS);
             break;

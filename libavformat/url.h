@@ -111,4 +111,11 @@ int64_t ffurl_seek(URLContext *h, int64_t pos, int whence);
  */
 int ffurl_close(URLContext *h);
 
+/**
+ * Return the filesize of the resource accessed by h, AVERROR(ENOSYS)
+ * if the operation is not supported by h, or another negative value
+ * corresponding to an AVERROR error code in case of failure.
+ */
+int64_t ffurl_size(URLContext *h);
+
 #endif //AVFORMAT_URL_H
