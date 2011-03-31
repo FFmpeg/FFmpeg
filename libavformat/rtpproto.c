@@ -297,7 +297,7 @@ static int rtp_write(URLContext *h, const uint8_t *buf, int size)
         hd = s->rtp_hd;
     }
 
-    ret = url_write(hd, buf, size);
+    ret = ffurl_write(hd, buf, size);
 #if 0
     {
         struct timespec ts;

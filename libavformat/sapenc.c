@@ -54,7 +54,7 @@ static int sap_write_close(AVFormatContext *s)
 
     if (sap->last_time && sap->ann && sap->ann_fd) {
         sap->ann[0] |= 4; /* Session deletion*/
-        url_write(sap->ann_fd, sap->ann, sap->ann_size);
+        ffurl_write(sap->ann_fd, sap->ann, sap->ann_size);
     }
 
     av_freep(&sap->ann);
@@ -239,7 +239,7 @@ static int sap_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t now = av_gettime();
 
     if (!sap->last_time || now - sap->last_time > 5000000) {
-        int ret = url_write(sap->ann_fd, sap->ann, sap->ann_size);
+        int ret = ffurl_write(sap->ann_fd, sap->ann, sap->ann_size);
         /* Don't abort even if we get "Destination unreachable" */
         if (ret < 0 && ret != AVERROR(ECONNREFUSED))
             return ret;

@@ -68,7 +68,7 @@ static int md5_close(URLContext *h)
         err = ffurl_open(&out, filename, URL_WRONLY);
         if (err)
             return err;
-        err = url_write(out, buf, i*2+1);
+        err = ffurl_write(out, buf, i*2+1);
         url_close(out);
     } else {
         if (fwrite(buf, 1, i*2+1, stdout) < i*2+1)

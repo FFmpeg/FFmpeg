@@ -215,15 +215,15 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
     }
     prev_pkt[pkt->channel_id].extra      = pkt->extra;
 
-    url_write(h, pkt_hdr, p-pkt_hdr);
+    ffurl_write(h, pkt_hdr, p-pkt_hdr);
     size = p - pkt_hdr + pkt->data_size;
     while (off < pkt->data_size) {
         int towrite = FFMIN(chunk_size, pkt->data_size - off);
-        url_write(h, pkt->data + off, towrite);
+        ffurl_write(h, pkt->data + off, towrite);
         off += towrite;
         if (off < pkt->data_size) {
             uint8_t marker = 0xC0 | pkt->channel_id;
-            url_write(h, &marker, 1);
+            ffurl_write(h, &marker, 1);
             size++;
         }
     }

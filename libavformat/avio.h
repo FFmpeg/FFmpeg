@@ -107,15 +107,8 @@ attribute_deprecated int url_connect(URLContext *h);
 attribute_deprecated int url_open(URLContext **h, const char *url, int flags);
 attribute_deprecated int url_read(URLContext *h, unsigned char *buf, int size);
 attribute_deprecated int url_read_complete(URLContext *h, unsigned char *buf, int size);
+attribute_deprecated int url_write(URLContext *h, const unsigned char *buf, int size);
 #endif
-
-/**
- * Write size bytes from buf to the resource accessed by h.
- *
- * @return the number of bytes actually written, or a negative value
- * corresponding to an AVERROR code in case of failure
- */
-int url_write(URLContext *h, const unsigned char *buf, int size);
 
 /**
  * Passing this as the "whence" parameter to a seek function causes it to

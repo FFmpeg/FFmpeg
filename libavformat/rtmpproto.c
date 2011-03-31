@@ -486,7 +486,7 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
         tosend[i] = av_lfg_get(&rnd) >> 24;
     client_pos = rtmp_handshake_imprint_with_digest(tosend + 1);
 
-    url_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE + 1);
+    ffurl_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE + 1);
     i = ffurl_read_complete(rt->stream, serverdata, RTMP_HANDSHAKE_PACKET_SIZE + 1);
     if (i != RTMP_HANDSHAKE_PACKET_SIZE + 1) {
         av_log(LOG_CONTEXT, AV_LOG_ERROR, "Cannot read RTMP handshake response\n");
@@ -532,9 +532,9 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
                          tosend + RTMP_HANDSHAKE_PACKET_SIZE - 32);
 
         // write reply back to the server
-        url_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE);
+        ffurl_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE);
     } else {
-        url_write(rt->stream, serverdata+1, RTMP_HANDSHAKE_PACKET_SIZE);
+        ffurl_write(rt->stream, serverdata+1, RTMP_HANDSHAKE_PACKET_SIZE);
     }
 
     return 0;

@@ -139,7 +139,7 @@ static int send_command_packet(MMSTContext *mmst)
     memset(mms->write_out_ptr, 0, exact_length - len);
 
     // write it out.
-    write_result= url_write(mms->mms_hd, mms->out_buffer, exact_length);
+    write_result= ffurl_write(mms->mms_hd, mms->out_buffer, exact_length);
     if(write_result != exact_length) {
         av_log(NULL, AV_LOG_ERROR,
                "Failed to write data of length %d: %d (%s)\n",

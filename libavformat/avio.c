@@ -188,6 +188,10 @@ int url_read_complete(URLContext *h, unsigned char *buf, int size)
 {
     return ffurl_read_complete(h, buf, size);
 }
+int url_write(URLContext *h, const unsigned char *buf, int size)
+{
+    return ffurl_write(h, buf, size);
+}
 #endif
 
 #define URL_SCHEME_CHARS                        \
@@ -280,7 +284,7 @@ int ffurl_read_complete(URLContext *h, unsigned char *buf, int size)
     return retry_transfer_wrapper(h, buf, size, size, h->prot->url_read);
 }
 
-int url_write(URLContext *h, const unsigned char *buf, int size)
+int ffurl_write(URLContext *h, const unsigned char *buf, int size)
 {
     if (!(h->flags & (URL_WRONLY | URL_RDWR)))
         return AVERROR(EIO);

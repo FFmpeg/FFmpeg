@@ -78,4 +78,12 @@ int ffurl_read(URLContext *h, unsigned char *buf, int size);
  */
 int ffurl_read_complete(URLContext *h, unsigned char *buf, int size);
 
+/**
+ * Write size bytes from buf to the resource accessed by h.
+ *
+ * @return the number of bytes actually written, or a negative value
+ * corresponding to an AVERROR code in case of failure
+ */
+int ffurl_write(URLContext *h, const unsigned char *buf, int size);
+
 #endif //AVFORMAT_URL_H

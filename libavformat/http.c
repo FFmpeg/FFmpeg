@@ -333,7 +333,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              authstr ? authstr : "");
 
     av_freep(&authstr);
-    if (url_write(s->hd, s->buffer, strlen(s->buffer)) < 0)
+    if (ffurl_write(s->hd, s->buffer, strlen(s->buffer)) < 0)
         return AVERROR(EIO);
 
     /* init input buffer */
@@ -427,7 +427,7 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
 
     if (s->chunksize == -1) {
         /* non-chunked data is sent without any special encoding */
-        return url_write(s->hd, buf, size);
+        return ffurl_write(s->hd, buf, size);
     }
 
     /* silently ignore zero-size data since chunk encoding that would
@@ -436,9 +436,9 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
         /* upload data using chunked encoding */
         snprintf(temp, sizeof(temp), "%x\r\n", size);
 
-        if ((ret = url_write(s->hd, temp, strlen(temp))) < 0 ||
-            (ret = url_write(s->hd, buf, size)) < 0 ||
-            (ret = url_write(s->hd, crlf, sizeof(crlf) - 1)) < 0)
+        if ((ret = ffurl_write(s->hd, temp, strlen(temp))) < 0 ||
+            (ret = ffurl_write(s->hd, buf, size)) < 0 ||
+            (ret = ffurl_write(s->hd, crlf, sizeof(crlf) - 1)) < 0)
             return ret;
     }
     return size;
@@ -452,7 +452,7 @@ static int http_close(URLContext *h)
 
     /* signal end of chunked encoding if used */
     if ((h->flags & URL_WRONLY) && s->chunksize != -1) {
-        ret = url_write(s->hd, footer, sizeof(footer) - 1);
+        ret = ffurl_write(s->hd, footer, sizeof(footer) - 1);
         ret = ret > 0 ? 0 : ret;
     }
 

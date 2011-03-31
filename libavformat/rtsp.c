@@ -983,14 +983,14 @@ static int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
 
     av_dlog(s, "Sending:\n%s--\n", buf);
 
-    url_write(rt->rtsp_hd_out, out_buf, strlen(out_buf));
+    ffurl_write(rt->rtsp_hd_out, out_buf, strlen(out_buf));
     if (send_content_length > 0 && send_content) {
         if (rt->control_transport == RTSP_MODE_TUNNEL) {
             av_log(s, AV_LOG_ERROR, "tunneling of RTSP requests "
                                     "with content data not supported\n");
             return AVERROR_PATCHWELCOME;
         }
-        url_write(rt->rtsp_hd_out, send_content, send_content_length);
+        ffurl_write(rt->rtsp_hd_out, send_content, send_content_length);
     }
     rt->last_cmd_time = av_gettime();
 

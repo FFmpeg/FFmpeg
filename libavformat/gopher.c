@@ -35,7 +35,7 @@ typedef struct {
 static int gopher_write(URLContext *h, const uint8_t *buf, int size)
 {
     GopherContext *s = h->priv_data;
-    return url_write(s->hd, buf, size);
+    return ffurl_write(s->hd, buf, size);
 }
 
 static int gopher_connect(URLContext *h, const char *path)
