@@ -35,6 +35,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/bytestream.h"
 #include "network.h"
+#include "url.h"
 
 #define LOCAL_ADDRESS 0xc0a80081    // FIXME get and use correct local ip address.
 #define LOCAL_PORT    1037          // as above.
@@ -522,7 +523,7 @@ static int mms_open(URLContext *h, const char *uri, int flags)
 
     // establish tcp connection.
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mmst->host, port, NULL);
-    err = url_open(&mms->mms_hd, tcpname, URL_RDWR);
+    err = ffurl_open(&mms->mms_hd, tcpname, URL_RDWR);
     if (err)
         goto fail;
 

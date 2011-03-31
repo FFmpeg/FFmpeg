@@ -104,20 +104,8 @@ attribute_deprecated int url_open_protocol (URLContext **puc, struct URLProtocol
                                             const char *url, int flags);
 attribute_deprecated int url_alloc(URLContext **h, const char *url, int flags);
 attribute_deprecated int url_connect(URLContext *h);
+attribute_deprecated int url_open(URLContext **h, const char *url, int flags);
 #endif
-
-/**
- * Create an URLContext for accessing to the resource indicated by
- * url, and open it.
- *
- * @param puc pointer to the location where, in case of success, the
- * function puts the pointer to the created URLContext
- * @param flags flags which control how the resource indicated by url
- * is to be opened
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code in case of failure
- */
-int url_open(URLContext **h, const char *url, int flags);
 
 /**
  * Read up to size bytes from the resource accessed by h, and store

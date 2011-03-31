@@ -45,4 +45,17 @@ int ffurl_alloc(URLContext **h, const char *url, int flags);
  */
 int ffurl_connect(URLContext *h);
 
+/**
+ * Create an URLContext for accessing to the resource indicated by
+ * url, and open it.
+ *
+ * @param puc pointer to the location where, in case of success, the
+ * function puts the pointer to the created URLContext
+ * @param flags flags which control how the resource indicated by url
+ * is to be opened
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR code in case of failure
+ */
+int ffurl_open(URLContext **h, const char *url, int flags);
+
 #endif //AVFORMAT_URL_H

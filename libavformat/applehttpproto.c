@@ -29,6 +29,7 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include "internal.h"
+#include "url.h"
 #include <unistd.h>
 
 /*
@@ -274,7 +275,7 @@ retry:
     }
     url = s->segments[s->cur_seq_no - s->start_seq_no]->url,
     av_log(NULL, AV_LOG_DEBUG, "opening %s\n", url);
-    ret = url_open(&s->seg_hd, url, URL_RDONLY);
+    ret = ffurl_open(&s->seg_hd, url, URL_RDONLY);
     if (ret < 0) {
         if (url_interrupt_cb())
             return AVERROR_EXIT;

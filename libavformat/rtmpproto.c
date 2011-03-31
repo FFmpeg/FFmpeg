@@ -36,6 +36,7 @@
 #include "flv.h"
 #include "rtmp.h"
 #include "rtmppkt.h"
+#include "url.h"
 
 /* we can't use av_log() with URLContext yet... */
 #if FF_API_URL_CLASS
@@ -820,7 +821,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         port = RTMP_DEFAULT_PORT;
     ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
 
-    if (url_open(&rt->stream, buf, URL_RDWR) < 0) {
+    if (ffurl_open(&rt->stream, buf, URL_RDWR) < 0) {
         av_log(LOG_CONTEXT, AV_LOG_ERROR, "Cannot open connection %s\n", buf);
         goto fail;
     }

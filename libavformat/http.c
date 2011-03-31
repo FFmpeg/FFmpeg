@@ -28,6 +28,7 @@
 #include "http.h"
 #include "os_support.h"
 #include "httpauth.h"
+#include "url.h"
 #include "libavutil/opt.h"
 
 /* XXX: POST protocol is not completely implemented because ffmpeg uses
@@ -123,7 +124,7 @@ static int http_open_cnx(URLContext *h)
         port = 80;
 
     ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
-    err = url_open(&hd, buf, URL_RDWR);
+    err = ffurl_open(&hd, buf, URL_RDWR);
     if (err < 0)
         goto fail;
 

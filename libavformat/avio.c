@@ -176,6 +176,10 @@ int url_connect(URLContext* uc)
 {
     return ffurl_connect(uc);
 }
+int url_open(URLContext **puc, const char *filename, int flags)
+{
+    return ffurl_open(puc, filename, flags);
+}
 #endif
 
 #define URL_SCHEME_CHARS                        \
@@ -211,7 +215,7 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags)
     return AVERROR(ENOENT);
 }
 
-int url_open(URLContext **puc, const char *filename, int flags)
+int ffurl_open(URLContext **puc, const char *filename, int flags)
 {
     int ret = ffurl_alloc(puc, filename, flags);
     if (ret)
@@ -292,7 +296,7 @@ int64_t url_seek(URLContext *h, int64_t pos, int whence)
 int url_close(URLContext *h)
 {
     int ret = 0;
-    if (!h) return 0; /* can happen when url_open fails */
+    if (!h) return 0; /* can happen when ffurl_open fails */
 
     if (h->is_connected && h->prot->url_close)
         ret = h->prot->url_close(h);
@@ -308,7 +312,7 @@ int url_close(URLContext *h)
 int url_exist(const char *filename)
 {
     URLContext *h;
-    if (url_open(&h, filename, URL_RDONLY) < 0)
+    if (ffurl_open(&h, filename, URL_RDONLY) < 0)
         return 0;
     url_close(h);
     return 1;

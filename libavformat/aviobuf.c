@@ -25,6 +25,7 @@
 #include "avio.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "url.h"
 #include <stdarg.h>
 
 #define IO_BUFFER_SIZE 32768
@@ -944,7 +945,7 @@ int avio_open(AVIOContext **s, const char *filename, int flags)
     URLContext *h;
     int err;
 
-    err = url_open(&h, filename, flags);
+    err = ffurl_open(&h, filename, flags);
     if (err < 0)
         return err;
     err = ffio_fdopen(s, h);

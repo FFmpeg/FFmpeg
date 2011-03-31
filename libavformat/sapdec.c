@@ -26,6 +26,7 @@
 #include "os_support.h"
 #include "internal.h"
 #include "avio_internal.h"
+#include "url.h"
 #if HAVE_POLL_H
 #include <poll.h>
 #endif
@@ -84,7 +85,7 @@ static int sap_read_header(AVFormatContext *s,
 
     ff_url_join(url, sizeof(url), "udp", NULL, host, port, "?localport=%d",
                 port);
-    ret = url_open(&sap->ann_fd, url, URL_RDONLY);
+    ret = ffurl_open(&sap->ann_fd, url, URL_RDONLY);
     if (ret)
         goto fail;
 

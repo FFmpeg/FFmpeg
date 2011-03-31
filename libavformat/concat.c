@@ -24,6 +24,7 @@
 #include "avformat.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
+#include "url.h"
 
 #define AV_CAT_SEPARATOR "|"
 
@@ -100,7 +101,7 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
         uri += len + strspn(uri+len, AV_CAT_SEPARATOR);
 
         /* creating URLContext */
-        if ((err = url_open(&uc, node_uri, flags)) < 0)
+        if ((err = ffurl_open(&uc, node_uri, flags)) < 0)
             break;
 
         /* creating size */

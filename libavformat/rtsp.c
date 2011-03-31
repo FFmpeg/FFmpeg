@@ -1116,14 +1116,14 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                                 "?localport=%d", j);
                     /* we will use two ports per rtp stream (rtp and rtcp) */
                     j += 2;
-                    if (url_open(&rtsp_st->rtp_handle, buf, URL_RDWR) == 0)
+                    if (ffurl_open(&rtsp_st->rtp_handle, buf, URL_RDWR) == 0)
                         goto rtp_opened;
                 }
             }
 
 #if 0
             /* then try on any port */
-            if (url_open(&rtsp_st->rtp_handle, "rtp://", URL_RDONLY) < 0) {
+            if (ffurl_open(&rtsp_st->rtp_handle, "rtp://", URL_RDONLY) < 0) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
@@ -1269,7 +1269,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                         namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
             ff_url_join(url, sizeof(url), "rtp", NULL, namebuf,
                         port, "?ttl=%d", ttl);
-            if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
+            if (ffurl_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
@@ -1460,7 +1460,7 @@ redirect:
     } else {
         /* open the tcp connection */
         ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port, NULL);
-        if (url_open(&rt->rtsp_hd, tcpname, URL_RDWR) < 0) {
+        if (ffurl_open(&rt->rtsp_hd, tcpname, URL_RDWR) < 0) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1807,7 +1807,7 @@ static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     namebuf, rtsp_st->sdp_port,
                     "?localport=%d&ttl=%d", rtsp_st->sdp_port,
                     rtsp_st->sdp_ttl);
-        if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
+        if (ffurl_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
             err = AVERROR_INVALIDDATA;
             goto fail;
         }
@@ -1863,7 +1863,7 @@ static int rtp_read_header(AVFormatContext *s,
     if (!ff_network_init())
         return AVERROR(EIO);
 
-    ret = url_open(&in, s->filename, URL_RDONLY);
+    ret = ffurl_open(&in, s->filename, URL_RDONLY);
     if (ret)
         goto fail;
 

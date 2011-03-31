@@ -26,6 +26,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "network.h"
+#include "url.h"
 
 typedef struct {
     URLContext *hd;
@@ -99,7 +100,7 @@ static int gopher_open(URLContext *h, const char *uri, int flags)
     ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
 
     s->hd = NULL;
-    err = url_open(&s->hd, buf, URL_RDWR);
+    err = ffurl_open(&s->hd, buf, URL_RDWR);
     if (err < 0)
         goto fail;
 

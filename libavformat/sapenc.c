@@ -28,6 +28,7 @@
 #include "network.h"
 #include "os_support.h"
 #include "rtpenc_chain.h"
+#include "url.h"
 
 struct SAPState {
     uint8_t    *ann;
@@ -145,7 +146,7 @@ static int sap_write_header(AVFormatContext *s)
                     "?ttl=%d", ttl);
         if (!same_port)
             base_port += 2;
-        ret = url_open(&fd, url, URL_WRONLY);
+        ret = ffurl_open(&fd, url, URL_WRONLY);
         if (ret) {
             ret = AVERROR(EIO);
             goto fail;
@@ -157,7 +158,7 @@ static int sap_write_header(AVFormatContext *s)
 
     ff_url_join(url, sizeof(url), "udp", NULL, announce_addr, port,
                 "?ttl=%d&connect=1", ttl);
-    ret = url_open(&sap->ann_fd, url, URL_WRONLY);
+    ret = ffurl_open(&sap->ann_fd, url, URL_WRONLY);
     if (ret) {
         ret = AVERROR(EIO);
         goto fail;
