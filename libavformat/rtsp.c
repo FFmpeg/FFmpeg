@@ -1468,7 +1468,7 @@ redirect:
     }
     rt->seq = 0;
 
-    tcp_fd = url_get_file_handle(rt->rtsp_hd);
+    tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
     if (!getpeername(tcp_fd, (struct sockaddr*) &peer, &peer_len)) {
         getnameinfo((struct sockaddr*) &peer, peer_len, host, sizeof(host),
                     NULL, 0, NI_NUMERICHOST);
@@ -1571,7 +1571,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             return AVERROR(EAGAIN);
         max_p = 0;
         if (rt->rtsp_hd) {
-            tcp_fd = url_get_file_handle(rt->rtsp_hd);
+            tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
             p[max_p].fd = tcp_fd;
             p[max_p++].events = POLLIN;
         } else {
@@ -1580,7 +1580,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         for (i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
             if (rtsp_st->rtp_handle) {
-                p[max_p].fd = url_get_file_handle(rtsp_st->rtp_handle);
+                p[max_p].fd = ffurl_get_file_handle(rtsp_st->rtp_handle);
                 p[max_p++].events = POLLIN;
                 p[max_p].fd = rtp_get_rtcp_file_handle(rtsp_st->rtp_handle);
                 p[max_p++].events = POLLIN;
@@ -1887,7 +1887,7 @@ static int rtp_read_header(AVFormatContext *s,
         payload_type = recvbuf[1] & 0x7f;
         break;
     }
-    getsockname(url_get_file_handle(in), (struct sockaddr*) &addr, &addrlen);
+    getsockname(ffurl_get_file_handle(in), (struct sockaddr*) &addr, &addrlen);
     ffurl_close(in);
     in = NULL;
 

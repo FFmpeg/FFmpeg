@@ -183,7 +183,7 @@ fail:
 static int sap_fetch_packet(AVFormatContext *s, AVPacket *pkt)
 {
     struct SAPState *sap = s->priv_data;
-    int fd = url_get_file_handle(sap->ann_fd);
+    int fd = ffurl_get_file_handle(sap->ann_fd);
     int n, ret;
     struct pollfd p = {fd, POLLIN, 0};
     uint8_t recvbuf[1500];

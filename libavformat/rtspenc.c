@@ -173,7 +173,7 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
     int n;
-    struct pollfd p = {url_get_file_handle(rt->rtsp_hd), POLLIN, 0};
+    struct pollfd p = {ffurl_get_file_handle(rt->rtsp_hd), POLLIN, 0};
     AVFormatContext *rtpctx;
     int ret;
 

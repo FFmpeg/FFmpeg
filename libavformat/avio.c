@@ -204,6 +204,10 @@ int64_t url_filesize(URLContext *h)
 {
     return ffurl_size(h);
 }
+int url_get_file_handle(URLContext *h)
+{
+    return ffurl_get_file_handle(h);
+}
 #endif
 
 #define URL_SCHEME_CHARS                        \
@@ -357,7 +361,7 @@ int64_t ffurl_size(URLContext *h)
     return size;
 }
 
-int url_get_file_handle(URLContext *h)
+int ffurl_get_file_handle(URLContext *h)
 {
     if (!h->prot->url_get_file_handle)
         return -1;

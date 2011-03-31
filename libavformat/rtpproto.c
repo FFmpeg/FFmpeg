@@ -203,8 +203,8 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 
     /* just to ease handle access. XXX: need to suppress direct handle
        access */
-    s->rtp_fd = url_get_file_handle(s->rtp_hd);
-    s->rtcp_fd = url_get_file_handle(s->rtcp_hd);
+    s->rtp_fd = ffurl_get_file_handle(s->rtp_hd);
+    s->rtcp_fd = ffurl_get_file_handle(s->rtcp_hd);
 
     h->max_packet_size = url_get_max_packet_size(s->rtp_hd);
     h->is_streamed = 1;

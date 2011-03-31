@@ -501,7 +501,7 @@ static int
 http_get_file_handle(URLContext *h)
 {
     HTTPContext *s = h->priv_data;
-    return url_get_file_handle(s->hd);
+    return ffurl_get_file_handle(s->hd);
 }
 
 URLProtocol ff_http_protocol = {

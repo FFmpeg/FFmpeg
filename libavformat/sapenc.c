@@ -164,7 +164,7 @@ static int sap_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    udp_fd = url_get_file_handle(sap->ann_fd);
+    udp_fd = ffurl_get_file_handle(sap->ann_fd);
     if (getsockname(udp_fd, (struct sockaddr*) &localaddr, &addrlen)) {
         ret = AVERROR(EIO);
         goto fail;

@@ -111,6 +111,7 @@ attribute_deprecated int url_write(URLContext *h, const unsigned char *buf, int 
 attribute_deprecated int64_t url_seek(URLContext *h, int64_t pos, int whence);
 attribute_deprecated int url_close(URLContext *h);
 attribute_deprecated int64_t url_filesize(URLContext *h);
+attribute_deprecated int url_get_file_handle(URLContext *h);
 #endif
 
 /**
@@ -118,14 +119,6 @@ attribute_deprecated int64_t url_filesize(URLContext *h);
  * exists, 0 otherwise.
  */
 int url_exist(const char *url);
-
-/**
- * Return the file descriptor associated with this URL. For RTP, this
- * will return only the RTP file descriptor, not the RTCP file descriptor.
- *
- * @return the file descriptor associated with this URL, or <0 on error.
- */
-int url_get_file_handle(URLContext *h);
 
 /**
  * Return the maximum packet size associated to packetized file

@@ -118,4 +118,12 @@ int ffurl_close(URLContext *h);
  */
 int64_t ffurl_size(URLContext *h);
 
+/**
+ * Return the file descriptor associated with this URL. For RTP, this
+ * will return only the RTP file descriptor, not the RTCP file descriptor.
+ *
+ * @return the file descriptor associated with this URL, or <0 on error.
+ */
+int ffurl_get_file_handle(URLContext *h);
+
 #endif //AVFORMAT_URL_H
