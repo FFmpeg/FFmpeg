@@ -68,7 +68,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     unsigned int rgbBuffer;
 
-    if (avpkt->size <= 0x324) {
+    if (avpkt->size <= 1634) {
         av_log(avctx, AV_LOG_ERROR, "Packet too small for DPX header\n");
         return AVERROR_INVALIDDATA;
     }
@@ -105,6 +105,10 @@ static int decode_frame(AVCodecContext *avctx,
     buf += 3;
     avctx->bits_per_raw_sample =
     bits_per_color = buf[0];
+
+    buf += 825;
+    avctx->sample_aspect_ratio.num = read32(&buf, endian);
+    avctx->sample_aspect_ratio.den = read32(&buf, endian);
 
     switch (descriptor) {
         case 51: // RGBA
