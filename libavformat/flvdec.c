@@ -130,54 +130,49 @@ static int amf_get_string(AVIOContext *ioc, char *buffer, int buffsize) {
 }
 
 static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream *vstream, int64_t max_pos) {
-    unsigned int arraylen = 0, timeslen = 0, fileposlen = 0, i;
-    double num_val;
+    unsigned int timeslen = 0, fileposlen = 0, i;
     char str_val[256];
     int64_t *times = NULL;
     int64_t *filepositions = NULL;
     int ret = 0;
 
     while (avio_tell(ioc) < max_pos - 2 && amf_get_string(ioc, str_val, sizeof(str_val)) > 0) {
-        int64_t* current_array;
+        int64_t** current_array;
+        unsigned int arraylen;
 
         // Expect array object in context
         if (avio_r8(ioc) != AMF_DATA_TYPE_ARRAY)
             break;
 
         arraylen = avio_rb32(ioc);
-        /*
-         * Expect only 'times' or 'filepositions' sub-arrays in other case refuse to use such metadata
-         * for indexing
-         */
-        if (!strcmp(KEYFRAMES_TIMESTAMP_TAG, str_val) && !times) {
-            if (!(times = av_mallocz(sizeof(*times) * arraylen))) {
-                ret = AVERROR(ENOMEM);
-                goto finish;
-            }
-            timeslen = arraylen;
-            current_array = times;
-        } else if (!strcmp(KEYFRAMES_BYTEOFFSET_TAG, str_val) && !filepositions) {
-            if (!(filepositions = av_mallocz(sizeof(*filepositions) * arraylen))) {
-                ret = AVERROR(ENOMEM);
-                goto finish;
-            }
-            fileposlen = arraylen;
-            current_array = filepositions;
-        } else // unexpected metatag inside keyframes, will not use such metadata for indexing
+        if(arraylen>>28)
             break;
+
+        if       (!strcmp(KEYFRAMES_TIMESTAMP_TAG , str_val) && !times){
+            current_array= &times;
+            timeslen= arraylen;
+        }else if (!strcmp(KEYFRAMES_BYTEOFFSET_TAG, str_val) && !filepositions){
+            current_array= &filepositions;
+            fileposlen= arraylen;
+        }else // unexpected metatag inside keyframes, will not use such metadata for indexing
+            break;
+
+        if (!(*current_array = av_mallocz(sizeof(**current_array) * arraylen))) {
+            ret = AVERROR(ENOMEM);
+            goto finish;
+        }
 
         for (i = 0; i < arraylen && avio_tell(ioc) < max_pos - 1; i++) {
             if (avio_r8(ioc) != AMF_DATA_TYPE_NUMBER)
                 goto finish;
-            num_val = av_int2dbl(avio_rb64(ioc));
-            current_array[i] = num_val;
+            current_array[0][i] = av_int2dbl(avio_rb64(ioc));
         }
     }
 
-    if (timeslen == fileposlen)
-         for(i = 0; i < arraylen; i++)
+    if (timeslen == fileposlen) {
+         for(i = 0; i < timeslen; i++)
              av_add_index_entry(vstream, filepositions[i], times[i]*1000, 0, 0, AVINDEX_KEYFRAME);
-    else
+    } else
         av_log(s, AV_LOG_WARNING, "Invalid keyframes object, skipping.\n");
 
 finish:
