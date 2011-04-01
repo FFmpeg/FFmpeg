@@ -30,6 +30,7 @@
 #include <string.h>
 #include "libavutil/mathematics.h"
 #include "fft.h"
+#include "fft-internal.h"
 
 /* cos(2*pi*x/n) for 0<=x<=n/4, followed by its reverse */
 #if !CONFIG_HARDCODED_TABLES
@@ -47,10 +48,21 @@ COSTABLE(16384);
 COSTABLE(32768);
 COSTABLE(65536);
 #endif
-COSTABLE_CONST FFTSample * const ff_cos_tabs[] = {
+COSTABLE_CONST FFTSample * const FFT_NAME(ff_cos_tabs)[] = {
     NULL, NULL, NULL, NULL,
-    ff_cos_16, ff_cos_32, ff_cos_64, ff_cos_128, ff_cos_256, ff_cos_512, ff_cos_1024,
-    ff_cos_2048, ff_cos_4096, ff_cos_8192, ff_cos_16384, ff_cos_32768, ff_cos_65536,
+    FFT_NAME(ff_cos_16),
+    FFT_NAME(ff_cos_32),
+    FFT_NAME(ff_cos_64),
+    FFT_NAME(ff_cos_128),
+    FFT_NAME(ff_cos_256),
+    FFT_NAME(ff_cos_512),
+    FFT_NAME(ff_cos_1024),
+    FFT_NAME(ff_cos_2048),
+    FFT_NAME(ff_cos_4096),
+    FFT_NAME(ff_cos_8192),
+    FFT_NAME(ff_cos_16384),
+    FFT_NAME(ff_cos_32768),
+    FFT_NAME(ff_cos_65536),
 };
 
 static void ff_fft_permute_c(FFTContext *s, FFTComplex *z);
@@ -73,9 +85,9 @@ av_cold void ff_init_ff_cos_tabs(int index)
     int i;
     int m = 1<<index;
     double freq = 2*M_PI/m;
-    FFTSample *tab = ff_cos_tabs[index];
+    FFTSample *tab = FFT_NAME(ff_cos_tabs)[index];
     for(i=0; i<=m/4; i++)
-        tab[i] = cos(i*freq);
+        tab[i] = FIX15(cos(i*freq));
     for(i=1; i<m/4; i++)
         tab[m/2-i] = tab[i];
 #endif
@@ -107,9 +119,11 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     s->mdct_calc   = ff_mdct_calc_c;
 #endif
 
+#if CONFIG_FFT_FLOAT
     if (ARCH_ARM)     ff_fft_init_arm(s);
     if (HAVE_ALTIVEC) ff_fft_init_altivec(s);
     if (HAVE_MMX)     ff_fft_init_mmx(s);
+#endif
 
     for(j=4; j<=nbits; j++) {
         ff_init_ff_cos_tabs(j);
@@ -144,13 +158,6 @@ av_cold void ff_fft_end(FFTContext *s)
     av_freep(&s->tmp_buf);
 }
 
-#define sqrthalf (float)M_SQRT1_2
-
-#define BF(x,y,a,b) {\
-    x = a - b;\
-    y = a + b;\
-}
-
 #define BUTTERFLIES(a0,a1,a2,a3) {\
     BF(t3, t5, t5, t1);\
     BF(a2.re, a0.re, a0.re, t5);\
@@ -174,10 +181,8 @@ av_cold void ff_fft_end(FFTContext *s)
 }
 
 #define TRANSFORM(a0,a1,a2,a3,wre,wim) {\
-    t1 = a2.re * wre + a2.im * wim;\
-    t2 = a2.im * wre - a2.re * wim;\
-    t5 = a3.re * wre - a3.im * wim;\
-    t6 = a3.im * wre + a3.re * wim;\
+    CMUL(t1, t2, a2.re, a2.im, wre, -wim);\
+    CMUL(t5, t6, a3.re, a3.im, wre,  wim);\
     BUTTERFLIES(a0,a1,a2,a3)\
 }
 
@@ -193,7 +198,7 @@ av_cold void ff_fft_end(FFTContext *s)
 #define PASS(name)\
 static void name(FFTComplex *z, const FFTSample *wre, unsigned int n)\
 {\
-    FFTSample t1, t2, t3, t4, t5, t6;\
+    FFTDouble t1, t2, t3, t4, t5, t6;\
     int o1 = 2*n;\
     int o2 = 4*n;\
     int o3 = 6*n;\
@@ -222,12 +227,12 @@ static void fft##n(FFTComplex *z)\
     fft##n2(z);\
     fft##n4(z+n4*2);\
     fft##n4(z+n4*3);\
-    pass(z,ff_cos_##n,n4/2);\
+    pass(z,FFT_NAME(ff_cos_##n),n4/2);\
 }
 
 static void fft4(FFTComplex *z)
 {
-    FFTSample t1, t2, t3, t4, t5, t6, t7, t8;
+    FFTDouble t1, t2, t3, t4, t5, t6, t7, t8;
 
     BF(t3, t1, z[0].re, z[1].re);
     BF(t8, t6, z[3].re, z[2].re);
@@ -241,7 +246,7 @@ static void fft4(FFTComplex *z)
 
 static void fft8(FFTComplex *z)
 {
-    FFTSample t1, t2, t3, t4, t5, t6, t7, t8;
+    FFTDouble t1, t2, t3, t4, t5, t6, t7, t8;
 
     fft4(z);
 
@@ -262,7 +267,9 @@ static void fft8(FFTComplex *z)
 #if !CONFIG_SMALL
 static void fft16(FFTComplex *z)
 {
-    FFTSample t1, t2, t3, t4, t5, t6;
+    FFTDouble t1, t2, t3, t4, t5, t6;
+    FFTSample cos_16_1 = FFT_NAME(ff_cos_16)[1];
+    FFTSample cos_16_3 = FFT_NAME(ff_cos_16)[3];
 
     fft8(z);
     fft4(z+8);
@@ -270,8 +277,8 @@ static void fft16(FFTComplex *z)
 
     TRANSFORM_ZERO(z[0],z[4],z[8],z[12]);
     TRANSFORM(z[2],z[6],z[10],z[14],sqrthalf,sqrthalf);
-    TRANSFORM(z[1],z[5],z[9],z[13],ff_cos_16[1],ff_cos_16[3]);
-    TRANSFORM(z[3],z[7],z[11],z[15],ff_cos_16[3],ff_cos_16[1]);
+    TRANSFORM(z[1],z[5],z[9],z[13],cos_16_1,cos_16_3);
+    TRANSFORM(z[3],z[7],z[11],z[15],cos_16_3,cos_16_1);
 }
 #else
 DECL_FFT(16,8,4)

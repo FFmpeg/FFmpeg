@@ -1553,7 +1553,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
         for (i = 0; i < sc->chunk_count; i++) {
             current_offset = sc->chunk_offsets[i];
-            if (stsc_index + 1 < sc->stsc_count &&
+            while (stsc_index + 1 < sc->stsc_count &&
                 i + 1 == sc->stsc_data[stsc_index + 1].first)
                 stsc_index++;
             for (j = 0; j < sc->stsc_data[stsc_index].count; j++) {
