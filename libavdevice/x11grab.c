@@ -105,6 +105,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n", s1->filename, param, x_off, y_off, ap->width, ap->height);
 
     dpy = XOpenDisplay(param);
+    av_freep(&param);
     if(!dpy) {
         av_log(s1, AV_LOG_ERROR, "Could not open X display.\n");
         return AVERROR(EIO);
