@@ -274,6 +274,8 @@ typedef struct AVOutputStream {
     int resample_width;
     int resample_pix_fmt;
 
+    float frame_aspect_ratio;
+
     /* forced key frames */
     int64_t *forced_kf_pts;
     int forced_kf_count;
@@ -411,6 +413,8 @@ static int configure_video_filters(AVInputStream *ist, AVOutputStream *ost)
     codec->width  = ost->output_video_filter->inputs[0]->w;
     codec->height = ost->output_video_filter->inputs[0]->h;
     codec->sample_aspect_ratio = ost->st->sample_aspect_ratio =
+        ost->frame_aspect_ratio ? // overriden by the -aspect cli option
+        av_d2q(ost->frame_aspect_ratio*codec->height/codec->width, 255) :
         ost->output_video_filter->inputs[0]->sample_aspect_ratio;
 
     return 0;
@@ -1623,7 +1627,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             break;
                         case AVMEDIA_TYPE_VIDEO:
 #if CONFIG_AVFILTER
-                            if (ost->picref->video)
+                            if (ost->picref->video && !ost->frame_aspect_ratio)
                                 ost->st->codec->sample_aspect_ratio = ost->picref->video->pixel_aspect;
 #endif
                             do_video_out(os, ost, ist, &picture, &frame_size);
@@ -2132,6 +2136,13 @@ static int transcode(AVFormatContext **output_files,
                 codec->width = icodec->width;
                 codec->height = icodec->height;
                 codec->has_b_frames = icodec->has_b_frames;
+                if (!codec->sample_aspect_ratio.num) {
+                    codec->sample_aspect_ratio =
+                    ost->st->sample_aspect_ratio =
+                        ist->st->sample_aspect_ratio.num ? ist->st->sample_aspect_ratio :
+                        ist->st->codec->sample_aspect_ratio.num ?
+                        ist->st->codec->sample_aspect_ratio : (AVRational){0, 1};
+                }
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 codec->width = icodec->width;
@@ -3220,11 +3231,6 @@ static void opt_input_file(const char *filename)
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
             frame_height = dec->height;
             frame_width  = dec->width;
-            if(ic->streams[i]->sample_aspect_ratio.num)
-                frame_aspect_ratio=av_q2d(ic->streams[i]->sample_aspect_ratio);
-            else
-                frame_aspect_ratio=av_q2d(dec->sample_aspect_ratio);
-            frame_aspect_ratio *= (float) dec->width / dec->height;
             frame_pix_fmt = dec->pix_fmt;
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
@@ -3337,7 +3343,6 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     AVCodecContext *video_enc;
     enum CodecID codec_id = CODEC_ID_NONE;
     AVCodec *codec= NULL;
-    int i;
 
     st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
     if (!st) {
@@ -3358,14 +3363,9 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
             codec = avcodec_find_encoder(codec_id);
         }
 
+        ost->frame_aspect_ratio = frame_aspect_ratio;
+        frame_aspect_ratio = 0;
 #if CONFIG_AVFILTER
-        if (frame_aspect_ratio > 0){
-            i = vfilters ? strlen(vfilters) : 0;
-            vfilters = av_realloc(vfilters, i+100);
-            snprintf(vfilters+i, i+100, "%csetdar=%f\n", i?',':' ', frame_aspect_ratio);
-            frame_aspect_ratio=0;
-        }
-
         ost->avfilter= vfilters;
         vfilters = NULL;
 #endif
@@ -3412,7 +3412,6 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
 
         video_enc->width = frame_width;
         video_enc->height = frame_height;
-        video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*video_enc->height/video_enc->width, 255);
         video_enc->pix_fmt = frame_pix_fmt;
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
 
