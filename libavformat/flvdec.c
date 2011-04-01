@@ -31,10 +31,6 @@
 #include "avio_internal.h"
 #include "flv.h"
 
-#define KEYFRAMES_TAG            "keyframes"
-#define KEYFRAMES_TIMESTAMP_TAG  "times"
-#define KEYFRAMES_BYTEOFFSET_TAG "filepositions"
-
 typedef struct {
     int wrong_dts; ///< wrong dts due to negative cts
 } FLVContext;

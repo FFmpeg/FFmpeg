@@ -42,6 +42,11 @@
 
 #define AMF_END_OF_OBJECT         0x09
 
+#define KEYFRAMES_TAG            "keyframes"
+#define KEYFRAMES_TIMESTAMP_TAG  "times"
+#define KEYFRAMES_BYTEOFFSET_TAG "filepositions"
+
+
 enum {
     FLV_HEADER_FLAG_HASVIDEO = 1,
     FLV_HEADER_FLAG_HASAUDIO = 4,
