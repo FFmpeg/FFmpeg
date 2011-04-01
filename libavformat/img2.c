@@ -496,7 +496,7 @@ AVInputFormat ff_image2pipe_demuxer = {
 AVOutputFormat ff_image2_muxer = {
     .name           = "image2",
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
-    .extensions     = "bmp,jpeg,jpg,ljpg,pam,pbm,pcx,pgm,pgmyuv,png,"
+    .extensions     = "bmp,dpx,jpeg,jpg,ljpg,pam,pbm,pcx,pgm,pgmyuv,png,"
                       "ppm,sgi,tga,tif,tiff,jp2",
     .priv_data_size = sizeof(VideoData),
     .video_codec    = CODEC_ID_MJPEG,
