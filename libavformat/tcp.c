@@ -71,6 +71,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
  redo:
     ret = connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
     if (ret < 0) {
+        int timeout=50;
         struct pollfd p = {fd, POLLOUT, 0};
         if (ff_neterrno() == AVERROR(EINTR)) {
             if (url_interrupt_cb()) {
@@ -92,6 +93,12 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             ret = poll(&p, 1, 100);
             if (ret > 0)
                 break;
+            if(!--timeout){
+                av_log(NULL, AV_LOG_ERROR,
+                    "TCP open %s:%d timeout\n",
+                    hostname, port);
+                goto fail;
+            }
         }
 
         /* test error */
