@@ -3419,9 +3419,12 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
         }
 #if CONFIG_AVFILTER
         if(frame_aspect_ratio > 0){
+            char *tmp;
             i = vfilters ? strlen(vfilters) : 0;
-            vfilters = av_realloc(vfilters, i+100);
-            snprintf(vfilters+i, i+100, "%csetdar=%f\n", i?',':' ', frame_aspect_ratio);
+            tmp= av_malloc(i+100);
+            snprintf(tmp, i+100, "setdar=%f%c%s\n", frame_aspect_ratio, i?',':' ', vfilters ? vfilters : "");
+            av_freep(&vfilters);
+            vfilters= tmp;
             frame_aspect_ratio=0;
         }
 
