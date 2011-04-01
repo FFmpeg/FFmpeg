@@ -2300,8 +2300,9 @@ static int transcode(AVFormatContext **output_files,
             }
         }
         if(codec->codec_type == AVMEDIA_TYPE_VIDEO){
+            /* maximum video buffer size is 6-bytes per pixel, plus DPX header size */
             int size= codec->width * codec->height;
-            bit_buffer_size= FFMAX(bit_buffer_size, 6*size + 200);
+            bit_buffer_size= FFMAX(bit_buffer_size, 6*size + 1664);
         }
     }
 
