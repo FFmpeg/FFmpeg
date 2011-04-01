@@ -40,7 +40,7 @@
 #define MAX_QUANT_TABLES 8
 #define MAX_CONTEXT_INPUTS 5
 
-extern const uint8_t ff_log2_run[32];
+extern const uint8_t ff_log2_run[41];
 
 static const int8_t quant3[256]={
  0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
