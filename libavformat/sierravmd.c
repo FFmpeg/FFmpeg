@@ -99,7 +99,7 @@ static int vmd_read_header(AVFormatContext *s,
     if (avio_read(pb, vmd->vmd_header, VMD_HEADER_SIZE) != VMD_HEADER_SIZE)
         return AVERROR(EIO);
 
-    if(vmd->vmd_header[16] == 'i' && vmd->vmd_header[17] == 'v' && vmd->vmd_header[18] == '3')
+    if(vmd->vmd_header[24] == 'i' && vmd->vmd_header[25] == 'v' && vmd->vmd_header[26] == '3')
         vmd->is_indeo3 = 1;
     else
         vmd->is_indeo3 = 0;
@@ -249,7 +249,7 @@ static int vmd_read_packet(AVFormatContext *s,
         return AVERROR(ENOMEM);
     pkt->pos= avio_tell(pb);
     memcpy(pkt->data, frame->frame_record, BYTES_PER_FRAME_RECORD);
-    if(vmd->is_indeo3)
+    if(vmd->is_indeo3 && frame->frame_record[0] == 0x02)
         ret = avio_read(pb, pkt->data, frame->frame_size);
     else
         ret = avio_read(pb, pkt->data + BYTES_PER_FRAME_RECORD,

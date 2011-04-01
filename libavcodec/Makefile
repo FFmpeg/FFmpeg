@@ -661,7 +661,7 @@ SKIPHEADERS                            += mpegaudio3.h
 
 EXAMPLES = api
 
-TESTPROGS = cabac dct eval fft h264 iirfilter rangecoder snow
+TESTPROGS = cabac dct eval fft fft-fixed h264 iirfilter rangecoder snow
 TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 
