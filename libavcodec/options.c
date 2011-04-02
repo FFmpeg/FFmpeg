@@ -105,7 +105,9 @@ static const AVOption options[]={
 {"extradata_size", NULL, OFFSET(extradata_size), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"time_base", NULL, OFFSET(time_base), FF_OPT_TYPE_RATIONAL, DEFAULT, INT_MIN, INT_MAX},
 {"g", "set the group of picture size", OFFSET(gop_size), FF_OPT_TYPE_INT, 12, INT_MIN, INT_MAX, V|E},
+#if FF_API_RATE_EMU
 {"rate_emu", "frame rate emulation", OFFSET(rate_emu), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
+#endif
 {"ar", "set audio sampling rate (in Hz)", OFFSET(sample_rate), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"ac", "set number of audio channels", OFFSET(channels), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"cutoff", "set cutoff bandwidth", OFFSET(cutoff), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, A|E},

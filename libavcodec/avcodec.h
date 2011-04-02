@@ -1208,13 +1208,15 @@ typedef struct AVCodecContext {
      */
     enum PixelFormat pix_fmt;
 
+#if FF_API_RATE_EMU
     /**
      * Frame rate emulation. If not zero, the lower layer (i.e. format handler)
      * has to read frames at native frame rate.
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int rate_emu;
+    attribute_deprecated int rate_emu;
+#endif
 
     /**
      * If non NULL, 'draw_horiz_band' is called by the libavcodec
