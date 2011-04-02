@@ -105,6 +105,7 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
     }
 }
 
+#if LIBAVCODEC_VERSION_MINOR < 53
 /**
  *
  * @param buf           input
@@ -139,6 +140,7 @@ int av_parser_parse(AVCodecParserContext *s,
 {
     return av_parser_parse2(s, avctx, poutbuf, poutbuf_size, buf, buf_size, pts, dts, AV_NOPTS_VALUE);
 }
+#endif
 
 int av_parser_parse2(AVCodecParserContext *s,
                      AVCodecContext *avctx,
