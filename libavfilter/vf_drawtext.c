@@ -98,8 +98,8 @@ static const AVOption drawtext_options[]= {
 {"fontsize", "set font size",        OFFSET(fontsize),         FF_OPT_TYPE_INT,   16,         1,       72 },
 {"x",        "set x",                OFFSET(x),                FF_OPT_TYPE_INT,    0,         0,  INT_MAX },
 {"y",        "set y",                OFFSET(y),                FF_OPT_TYPE_INT,    0,         0,  INT_MAX },
-{"shadowx",  "set x",                OFFSET(shadowx),          FF_OPT_TYPE_INT,    0,         0,  INT_MAX },
-{"shadowy",  "set y",                OFFSET(shadowy),          FF_OPT_TYPE_INT,    0,         0,  INT_MAX },
+{"shadowx",  "set x",                OFFSET(shadowx),          FF_OPT_TYPE_INT,    0,   INT_MIN,  INT_MAX },
+{"shadowy",  "set y",                OFFSET(shadowy),          FF_OPT_TYPE_INT,    0,   INT_MIN,  INT_MAX },
 {"tabsize",  "set tab size",         OFFSET(tabsize),          FF_OPT_TYPE_INT,    4,         0,  INT_MAX },
 
 /* FT_LOAD_* flags */
