@@ -74,7 +74,7 @@ static int read_header(AVFormatContext *s,
     if (!ast || !vst)
         return AVERROR(ENOMEM);
 
-    vst->codec->codec_type  = CODEC_TYPE_VIDEO;
+    vst->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id    = CODEC_ID_JV;
     vst->codec->codec_tag   = 0; /* no fourcc */
     vst->codec->width       = avio_rl16(pb);
@@ -85,7 +85,7 @@ static int read_header(AVFormatContext *s,
 
     avio_skip(pb, 4);
 
-    ast->codec->codec_type  = CODEC_TYPE_AUDIO;
+    ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     ast->codec->codec_id    = CODEC_ID_PCM_U8;
     ast->codec->codec_tag   = 0; /* no fourcc */
     ast->codec->sample_rate = avio_rl16(pb);
@@ -151,7 +151,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
                     return AVERROR(ENOMEM);
                 pkt->stream_index = 0;
                 pkt->pts          = e->timestamp;
-                pkt->flags       |= PKT_FLAG_KEY;
+                pkt->flags       |= AV_PKT_FLAG_KEY;
                 return 0;
             }
         case JV_VIDEO:
@@ -170,7 +170,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
                 pkt->stream_index = 1;
                 pkt->pts          = jv->pts;
                 if (jvf->video_type != 1)
-                    pkt->flags |= PKT_FLAG_KEY;
+                    pkt->flags |= AV_PKT_FLAG_KEY;
                 return 0;
             }
         case JV_PADDING:
