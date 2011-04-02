@@ -3116,7 +3116,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
                 if(s->mb_y >= s->mb_height){
                     tprintf(s->avctx, "slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
 
-                    if(get_bits_count(&s->gb) == s->gb.size_in_bits ) {
+                    if(   get_bits_count(&s->gb) == s->gb.size_in_bits
+                       || get_bits_count(&s->gb) <  s->gb.size_in_bits && s->avctx->error_recognition < FF_ER_AGGRESSIVE) {
                         ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
 
                         return 0;
