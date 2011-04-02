@@ -274,7 +274,7 @@ static int poll_frame(AVFilterLink *link)
             return ret;
         val = avfilter_poll_frame(link->src->inputs[0]);
     }
-    assert(yadif->next);
+    assert(yadif->next || !val);
 
     return val * ((yadif->mode&1)+1);
 }
