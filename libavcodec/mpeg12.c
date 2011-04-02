@@ -2301,7 +2301,7 @@ static int decode_chunks(AVCodecContext *avctx,
             break;
 
         case PICTURE_START_CODE:
-            if (avctx->thread_count > 1 && s->slice_count) {
+            if (HAVE_THREADS && (avctx->active_thread_type&FF_THREAD_SLICE) && s->slice_count) {
                 int i;
 
                 avctx->execute(avctx, slice_decode_thread,
