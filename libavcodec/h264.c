@@ -2339,8 +2339,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         MPV_common_end(s);
     }
     if (!s->context_initialized) {
-        if(h != h0)
-            return -1;  // we cant (re-)initialize context during parallel decoding
+        if (h != h0) {
+            av_log(h->s.avctx, AV_LOG_ERROR, "Cannot (re-)initialize context during parallel decoding.\n");
+            return -1;
+        }
 
         avcodec_set_dimensions(s->avctx, s->width, s->height);
         s->avctx->sample_aspect_ratio= h->sps.sar;
@@ -2384,8 +2386,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
         s->avctx->hwaccel = ff_find_hwaccel(s->avctx->codec->id, s->avctx->pix_fmt);
 
-        if (MPV_common_init(s) < 0)
+        if (MPV_common_init(s) < 0) {
+            av_log(h->s.avctx, AV_LOG_ERROR, "MPV_common_init() failed.\n");
             return -1;
+        }
         s->first_field = 0;
         h->prev_interlaced_frame = 1;
 
@@ -2393,8 +2397,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         ff_h264_alloc_tables(h);
 
         if (!HAVE_THREADS || !(s->avctx->active_thread_type&FF_THREAD_SLICE)) {
-            if (context_init(h) < 0)
+            if (context_init(h) < 0) {
+                av_log(h->s.avctx, AV_LOG_ERROR, "context_init() failed.\n");
                 return -1;
+            }
         } else {
             for(i = 1; i < s->avctx->thread_count; i++) {
                 H264Context *c;
@@ -2410,8 +2416,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             }
 
             for(i = 0; i < s->avctx->thread_count; i++)
-                if(context_init(h->thread_context[i]) < 0)
+                if (context_init(h->thread_context[i]) < 0) {
+                    av_log(h->s.avctx, AV_LOG_ERROR, "context_init() failed.\n");
                     return -1;
+                }
         }
     }
 
@@ -2706,8 +2714,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 av_log(s->avctx, AV_LOG_INFO, "Cannot parallelize deblocking type 1, decoding such frames in sequential order\n");
                 h0->single_decode_warning = 1;
             }
-            if(h != h0)
-                return 1; // deblocking switched inside frame
+            if (h != h0) {
+                av_log(h->s.avctx, AV_LOG_ERROR, "Deblocking switched inside frame.\n");
+                return 1;
+            }
         }
     }
     h->qp_thresh= 15 + 52 - FFMIN(h->slice_alpha_c0_offset, h->slice_beta_offset) - FFMAX3(0, h->pps.chroma_qp_index_offset[0], h->pps.chroma_qp_index_offset[1]);
