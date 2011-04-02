@@ -418,6 +418,17 @@ Used to draw a box around text using background color.
 Value should be either 1 (enable) or 0 (disable).
 The default value of @var{box} is 0.
 
+@item shadowx, shadowy
+The x and y offsets for the text shadow position with respect to the
+position of the text. They can be either positive or negative
+values. Default value for both is "0".
+
+@item shadowcolor
+The color to be used for drawing a shadow behind the drawn text.  It
+can be a color name (e.g. "yellow") or a string in the 0xRRGGBB[AA]
+form (e.g. "0xff00ff"), possibly followed by an alpha specifier.
+The default value of @var{shadowcolor} is "black".
+
 @item ft_load_flags
 Flags to be used for loading the fonts.
 
