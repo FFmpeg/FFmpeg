@@ -73,6 +73,31 @@ do { \
     else               AV_WL32(p, value); \
 } while(0)
 
+static void encode_rgb48_10bit(AVCodecContext *avctx, const AVPicture *pic, uint8_t *dst)
+{
+    DPXContext *s = avctx->priv_data;
+    const uint8_t *src = pic->data[0];
+    int x, y;
+
+    for (y = 0; y < avctx->height; y++) {
+        for (x = 0; x < avctx->width; x++) {
+            int value;
+            if ((avctx->pix_fmt & 1)) {
+                value = ((AV_RB16(src + 6*x + 4) & 0xFFC0) >> 4)
+                      | ((AV_RB16(src + 6*x + 2) & 0xFFC0) << 6)
+                      | ((AV_RB16(src + 6*x + 0) & 0xFFC0) << 16);
+            } else {
+                value = ((AV_RL16(src + 6*x + 4) & 0xFFC0) >> 4)
+                      | ((AV_RL16(src + 6*x + 2) & 0xFFC0) << 6)
+                      | ((AV_RL16(src + 6*x + 0) & 0xFFC0) << 16);
+            }
+            write32(dst, value);
+            dst += 4;
+        }
+        src += pic->linesize[0];
+    }
+}
+
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data)
 {
     DPXContext *s = avctx->priv_data;
@@ -102,16 +127,31 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     buf[801] = 2; /* linear transfer */
     buf[802] = 2; /* linear colorimetric */
     buf[803] = s->bits_per_component;
+    write16(buf + 804, s->bits_per_component == 10 ? 1 : 0); /* packing method */
 
     /* Image source information header */
     write32(buf + 1628, avctx->sample_aspect_ratio.num);
     write32(buf + 1632, avctx->sample_aspect_ratio.den);
 
+    switch(s->bits_per_component) {
+    case 8:
+    case 16:
     size = avpicture_layout((AVPicture*)data, avctx->pix_fmt,
                             avctx->width, avctx->height,
                             buf + HEADER_SIZE, buf_size - HEADER_SIZE);
     if (size < 0)
         return size;
+        break;
+    case 10:
+        size = avctx->height * avctx->width * 4;
+        if (buf_size < HEADER_SIZE + size)
+            return -1;
+        encode_rgb48_10bit(avctx, (AVPicture*)data, buf + HEADER_SIZE);
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", bits_per_component);
+        return -1;
+    }
 
     size += HEADER_SIZE;
 
