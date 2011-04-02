@@ -591,20 +591,24 @@ retry:
     if((s->codec_id==CODEC_ID_H263 || s->codec_id==CODEC_ID_H263P || s->codec_id == CODEC_ID_H263I))
         s->gob_index = ff_h263_get_gob_height(s);
 
-    // for hurry_up==5
+    // for skipping the frame
     s->current_picture.pict_type= s->pict_type;
     s->current_picture.key_frame= s->pict_type == FF_I_TYPE;
 
     /* skip B-frames if we don't have reference frames */
     if(s->last_picture_ptr==NULL && (s->pict_type==FF_B_TYPE || s->dropable)) return get_consumed_bytes(s, buf_size);
+#if FF_API_HURRY_UP
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && s->pict_type==FF_B_TYPE) return get_consumed_bytes(s, buf_size);
+#endif
     if(   (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==FF_B_TYPE)
        || (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=FF_I_TYPE)
        ||  avctx->skip_frame >= AVDISCARD_ALL)
         return get_consumed_bytes(s, buf_size);
+#if FF_API_HURRY_UP
     /* skip everything if we are in a hurry>=5 */
     if(avctx->hurry_up>=5) return get_consumed_bytes(s, buf_size);
+#endif
 
     if(s->next_p_frame_damaged){
         if(s->pict_type==FF_B_TYPE)

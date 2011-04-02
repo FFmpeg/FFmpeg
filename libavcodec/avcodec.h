@@ -1320,13 +1320,15 @@ typedef struct AVCodecContext {
 
     int b_frame_strategy;
 
+#if FF_API_HURRY_UP
     /**
      * hurry up amount
      * - encoding: unused
      * - decoding: Set by user. 1-> Skip B-frames, 2-> Skip IDCT/dequant too, 5-> Skip everything except header
      * @deprecated Deprecated in favor of skip_idct and skip_frame.
      */
-    int hurry_up;
+    attribute_deprecated int hurry_up;
+#endif
 
     struct AVCodec *codec;
 

@@ -387,8 +387,10 @@ typedef struct MpegEncContext {
     int no_rounding;  /**< apply no rounding to motion compensation (MPEG4, msmpeg4, ...)
                         for b-frames rounding mode is always 0 */
 
+#if FF_API_HURRY_UP
     int hurry_up;     /**< when set to 1 during decoding, b frames will be skipped
                          when set to 2 idct/dequant will be skipped too */
+#endif
 
     /* macroblock layer */
     int mb_x, mb_y;
