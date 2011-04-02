@@ -149,7 +149,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         encode_rgb48_10bit(avctx, (AVPicture*)data, buf + HEADER_SIZE);
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", bits_per_component);
+        av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", s->bits_per_component);
         return -1;
     }
 
