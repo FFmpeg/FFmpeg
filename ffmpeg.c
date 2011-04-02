@@ -1948,7 +1948,7 @@ static int transcode(AVFormatContext **output_files,
                      int nb_input_files,
                      AVStreamMap *stream_maps, int nb_stream_maps)
 {
-    int ret = 0, i, j, k, n, nb_istreams = 0, nb_ostreams = 0;
+    int ret = 0, i, j, k, n, nb_istreams = 0, nb_ostreams = 0, step;
     AVFormatContext *is, *os;
     AVCodecContext *codec, *icodec;
     AVOutputStream *ost, **ost_table = NULL;
@@ -1959,6 +1959,8 @@ static int transcode(AVFormatContext **output_files,
     int want_sdp = 1;
     uint8_t no_packet[MAX_FILES]={0};
     int no_packet_count=0;
+    int nb_frame_threshold[AVMEDIA_TYPE_NB]={0};
+    int nb_streams[AVMEDIA_TYPE_NB]={0};
 
     file_table= av_mallocz(nb_input_files * sizeof(AVInputFile));
     if (!file_table)
@@ -2043,6 +2045,43 @@ static int transcode(AVFormatContext **output_files,
     ost_table = av_mallocz(sizeof(AVOutputStream *) * nb_ostreams);
     if (!ost_table)
         goto fail;
+
+    for(k=0;k<nb_output_files;k++) {
+        os = output_files[k];
+        for(i=0;i<os->nb_streams;i++,n++) {
+            nb_streams[os->streams[i]->codec->codec_type]++;
+        }
+    }
+    for(step=1<<30; step; step>>=1){
+        int found_streams[AVMEDIA_TYPE_NB]={0};
+        for(j=0; j<AVMEDIA_TYPE_NB; j++)
+            nb_frame_threshold[j] += step;
+
+        for(j=0; j<nb_istreams; j++) {
+            int skip=0;
+            ist = ist_table[j];
+            if(opt_programid){
+                int pi,si;
+                AVFormatContext *f= input_files[ ist->file_index ];
+                skip=1;
+                for(pi=0; pi<f->nb_programs; pi++){
+                    AVProgram *p= f->programs[pi];
+                    if(p->id == opt_programid)
+                        for(si=0; si<p->nb_stream_indexes; si++){
+                            if(f->streams[ p->stream_index[si] ] == ist->st)
+                                skip=0;
+                        }
+                }
+            }
+            if (ist->discard && ist->st->discard != AVDISCARD_ALL && !skip
+                && nb_frame_threshold[ist->st->codec->codec_type] <= ist->st->codec_info_nb_frames){
+                found_streams[ist->st->codec->codec_type]++;
+            }
+        }
+        for(j=0; j<AVMEDIA_TYPE_NB; j++)
+            if(found_streams[j] < nb_streams[j])
+                nb_frame_threshold[j] -= step;
+    }
     n = 0;
     for(k=0;k<nb_output_files;k++) {
         os = output_files[k];
@@ -2065,7 +2104,6 @@ static int transcode(AVFormatContext **output_files,
                 }
 
             } else {
-                int best_nb_frames=-1;
                 /* get corresponding input stream index : we select the first one with the right type */
                 found = 0;
                 for(j=0;j<nb_istreams;j++) {
@@ -2085,12 +2123,11 @@ static int transcode(AVFormatContext **output_files,
                         }
                     }
                     if (ist->discard && ist->st->discard != AVDISCARD_ALL && !skip &&
-                        ist->st->codec->codec_type == ost->st->codec->codec_type) {
-                        if(best_nb_frames < ist->st->codec_info_nb_frames){
-                            best_nb_frames= ist->st->codec_info_nb_frames;
+                        ist->st->codec->codec_type == ost->st->codec->codec_type &&
+                        nb_frame_threshold[ist->st->codec->codec_type] <= ist->st->codec_info_nb_frames) {
                             ost->source_index = j;
                             found = 1;
-                        }
+                            break;
                     }
                 }
 
