@@ -136,11 +136,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     switch(s->bits_per_component) {
     case 8:
     case 16:
-    size = avpicture_layout((AVPicture*)data, avctx->pix_fmt,
-                            avctx->width, avctx->height,
-                            buf + HEADER_SIZE, buf_size - HEADER_SIZE);
-    if (size < 0)
-        return size;
+        size = avpicture_layout((AVPicture*)data, avctx->pix_fmt,
+                                avctx->width, avctx->height,
+                                buf + HEADER_SIZE, buf_size - HEADER_SIZE);
+        if (size < 0)
+            return size;
         break;
     case 10:
         size = avctx->height * avctx->width * 4;
