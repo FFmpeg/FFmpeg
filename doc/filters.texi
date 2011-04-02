@@ -410,8 +410,7 @@ The default value of @var{fontcolor} is "black".
 The color to be used for drawing box around text.
 Either a string (e.g. "yellow") or in 0xRRGGBB[AA] format
 (e.g. "0xff00ff"), possibly followed by an alpha specifier.
-
-The default value of @var{bgcolor} is "white".
+The default value of @var{boxcolor} is "white".
 
 @item box
 Used to draw a box around text using background color.
