@@ -2459,14 +2459,18 @@ static int decode_chunks(AVCodecContext *avctx,
                 /* Skip P-frames if we do not have a reference frame or we have an invalid header. */
                     if(s2->pict_type==FF_P_TYPE && !s->sync) break;
                 }
+#if FF_API_HURRY_UP
                 /* Skip B-frames if we are in a hurry. */
                 if(avctx->hurry_up && s2->pict_type==FF_B_TYPE) break;
+#endif
                 if(  (avctx->skip_frame >= AVDISCARD_NONREF && s2->pict_type==FF_B_TYPE)
                     ||(avctx->skip_frame >= AVDISCARD_NONKEY && s2->pict_type!=FF_I_TYPE)
                     || avctx->skip_frame >= AVDISCARD_ALL)
                     break;
+#if FF_API_HURRY_UP
                 /* Skip everything if we are in a hurry>=5. */
                 if(avctx->hurry_up>=5) break;
+#endif
 
                 if (!s->mpeg_enc_ctx_allocated) break;
 

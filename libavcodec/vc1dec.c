@@ -3374,7 +3374,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         goto err;
     }
 
-    // for hurry_up==5
+    // for skipping the frame
     s->current_picture.pict_type= s->pict_type;
     s->current_picture.key_frame= s->pict_type == FF_I_TYPE;
 
@@ -3382,17 +3382,21 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     if(s->last_picture_ptr==NULL && (s->pict_type==FF_B_TYPE || s->dropable)){
         goto err;
     }
+#if FF_API_HURRY_UP
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && s->pict_type==FF_B_TYPE) return -1;//buf_size;
+#endif
     if(   (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==FF_B_TYPE)
        || (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=FF_I_TYPE)
        ||  avctx->skip_frame >= AVDISCARD_ALL) {
         goto end;
     }
+#if FF_API_HURRY_UP
     /* skip everything if we are in a hurry>=5 */
     if(avctx->hurry_up>=5) {
         goto err;
     }
+#endif
 
     if(s->next_p_frame_damaged){
         if(s->pict_type==FF_B_TYPE)

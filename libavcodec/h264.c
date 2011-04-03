@@ -3313,8 +3313,12 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 
         buf_index += consumed;
 
-        if(  (s->hurry_up == 1 && h->nal_ref_idc  == 0) //FIXME do not discard SEI id
-           ||(avctx->skip_frame >= AVDISCARD_NONREF && h->nal_ref_idc  == 0))
+        //FIXME do not discard SEI id
+        if(
+#if FF_API_HURRY_UP
+           (s->hurry_up == 1 && h->nal_ref_idc  == 0) ||
+#endif
+           (avctx->skip_frame >= AVDISCARD_NONREF && h->nal_ref_idc  == 0))
             continue;
 
       again:
@@ -3350,7 +3354,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                     ff_vdpau_h264_picture_start(s);
             }
 
-            if(hx->redundant_pic_count==0 && hx->s.hurry_up < 5
+            if(hx->redundant_pic_count==0
+#if FF_API_HURRY_UP
+               && hx->s.hurry_up < 5
+#endif
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
                && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=FF_B_TYPE)
                && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==FF_I_TYPE)
@@ -3388,7 +3395,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 
             if(hx->redundant_pic_count==0 && hx->intra_gb_ptr && hx->s.data_partitioning
                && s->context_initialized
+#if FF_API_HURRY_UP
                && s->hurry_up < 5
+#endif
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
                && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=FF_B_TYPE)
                && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==FF_I_TYPE)
@@ -3511,7 +3520,12 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if(!(s->flags2 & CODEC_FLAG2_CHUNKS) && !s->current_picture_ptr){
-        if (avctx->skip_frame >= AVDISCARD_NONREF || s->hurry_up) return 0;
+        if (avctx->skip_frame >= AVDISCARD_NONREF
+#if FF_API_HURRY_UP
+                || s->hurry_up
+#endif
+           )
+            return 0;
         av_log(avctx, AV_LOG_ERROR, "no frame!\n");
         return -1;
     }

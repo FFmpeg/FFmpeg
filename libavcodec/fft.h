@@ -53,6 +53,10 @@ typedef struct FFTContext FFTContext;
 
 #endif /* CONFIG_FFT_FLOAT */
 
+typedef struct FFTDComplex {
+    FFTDouble re, im;
+} FFTDComplex;
+
 /* FFT computation */
 
 struct FFTContext {
@@ -77,6 +81,7 @@ struct FFTContext {
     void (*imdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*imdct_half)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*mdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
+    void (*mdct_calcw)(struct FFTContext *s, FFTDouble *output, const FFTSample *input);
     int fft_permutation;
 #define FF_FFT_PERM_DEFAULT   0
 #define FF_FFT_PERM_SWAP_LSBS 1

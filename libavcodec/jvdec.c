@@ -205,7 +205,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 AVCodec ff_jv_decoder = {
     .name           = "jv",
     .long_name      = NULL_IF_CONFIG_SMALL("Bitmap Brothers JV video"),
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_JV,
     .priv_data_size = sizeof(JvContext),
     .init           = decode_init,
