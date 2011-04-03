@@ -355,7 +355,7 @@ static struct termios oldtty;
 
 #if CONFIG_AVFILTER
 
-static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
+static int configure_video_filters(AVInputStream *ist, AVOutputStream *ost)
 {
     AVFilterContext *last_filter, *filter;
     /** filter graph containing all filters including input & output */
@@ -2308,7 +2308,7 @@ static int transcode(AVFormatContext **output_files,
                 ist->decoding_needed = 1;
 
 #if CONFIG_AVFILTER
-                if (configure_filters(ist, ost)) {
+                if (configure_video_filters(ist, ost)) {
                     fprintf(stderr, "Error opening filters!\n");
                     exit(1);
                 }
