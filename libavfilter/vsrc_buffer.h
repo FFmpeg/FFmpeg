@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVFILTER_VSRC_BUFFER_H
+#define AVFILTER_VSRC_BUFFER_H
+
 #include "libavcodec/avcodec.h" /* AVFrame */
 #include "avfilter.h"
 
@@ -29,3 +32,5 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
                               int64_t pts, AVRational pixel_aspect, int width,
                               int height, enum PixelFormat  pix_fmt,
                               const char *sws_param);
+
+#endif /* AVFILTER_VSRC_BUFFER_H */
