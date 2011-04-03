@@ -321,7 +321,7 @@ send a reminder by email. Your patch should eventually be dealt with.
 @item
     Does fate pass with the patch applied? (make fate)
 @item
-    Is the patch a unified diff?
+    Was the patch generated with git format-patch or send-email?
 @item
     Is the patch against latest FFmpeg git master branch?
 @item
@@ -341,9 +341,6 @@ send a reminder by email. Your patch should eventually be dealt with.
     Did you test your decoder or demuxer against damaged data? If no, see
     tools/trasher and the noise bitstream filter. Your decoder or demuxer
     should not crash or end in a (near) infinite loop when fed damaged data.
-@item
-    Is the patch created from the root of the source tree, so it can be
-    applied with @code{patch -p0}?
 @item
     Does the patch not mix functional and cosmetic changes?
 @item
@@ -379,8 +376,6 @@ send a reminder by email. Your patch should eventually be dealt with.
 @item
     Lines with similar content should be aligned vertically when doing so
     improves readability.
-@item
-    Did you provide a suggestion for a clear commit log message?
 @end enumerate
 
 @section Patch review process
