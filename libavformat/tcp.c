@@ -131,23 +131,13 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     return ret;
 }
 
-static int tcp_wait_fd(int fd, int write)
-{
-    int ev = write ? POLLOUT : POLLIN;
-    struct pollfd p = { .fd = fd, .events = ev, .revents = 0 };
-    int ret;
-
-    ret = poll(&p, 1, 100);
-    return ret < 0 ? ff_neterrno() : p.revents & ev ? 0 : AVERROR(EAGAIN);
-}
-
 static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
     int ret;
 
     if (!(h->flags & URL_FLAG_NONBLOCK)) {
-        ret = tcp_wait_fd(s->fd, 0);
+        ret = ff_network_wait_fd(s->fd, 0);
         if (ret < 0)
             return ret;
     }
@@ -161,7 +151,7 @@ static int tcp_write(URLContext *h, const uint8_t *buf, int size)
     int ret;
 
     if (!(h->flags & URL_FLAG_NONBLOCK)) {
-        ret = tcp_wait_fd(s->fd, 1);
+        ret = ff_network_wait_fd(s->fd, 1);
         if (ret < 0)
             return ret;
     }

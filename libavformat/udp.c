@@ -33,9 +33,6 @@
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
-#if HAVE_POLL_H
-#include <poll.h>
-#endif
 #include <sys/time.h>
 
 #ifndef IPV6_ADD_MEMBERSHIP
@@ -447,31 +444,15 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
-    struct pollfd p = {s->udp_fd, POLLIN, 0};
-    int len;
     int ret;
 
-    for(;;) {
-        if (url_interrupt_cb())
-            return AVERROR_EXIT;
-        ret = poll(&p, 1, 100);
-        if (ret < 0) {
-            if (ff_neterrno() == AVERROR(EINTR))
-                continue;
-            return AVERROR(EIO);
-        }
-        if (!(ret == 1 && p.revents & POLLIN))
-            continue;
-        len = recv(s->udp_fd, buf, size, 0);
-        if (len < 0) {
-            if (ff_neterrno() != AVERROR(EAGAIN) &&
-                ff_neterrno() != AVERROR(EINTR))
-                return AVERROR(EIO);
-        } else {
-            break;
-        }
+    if (!(h->flags & URL_FLAG_NONBLOCK)) {
+        ret = ff_network_wait_fd(s->udp_fd, 0);
+        if (ret < 0)
+            return ret;
     }
-    return len;
+    ret = recv(s->udp_fd, buf, size, 0);
+    return ret < 0 ? ff_neterrno() : ret;
 }
 
 static int udp_write(URLContext *h, const uint8_t *buf, int size)
@@ -479,22 +460,20 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
     UDPContext *s = h->priv_data;
     int ret;
 
-    for(;;) {
-        if (!s->is_connected) {
-            ret = sendto (s->udp_fd, buf, size, 0,
-                          (struct sockaddr *) &s->dest_addr,
-                          s->dest_addr_len);
-        } else
-            ret = send(s->udp_fd, buf, size, 0);
-        if (ret < 0) {
-            if (ff_neterrno() != AVERROR(EINTR) &&
-                ff_neterrno() != AVERROR(EAGAIN))
-                return ff_neterrno();
-        } else {
-            break;
-        }
+    if (!(h->flags & URL_FLAG_NONBLOCK)) {
+        ret = ff_network_wait_fd(s->udp_fd, 1);
+        if (ret < 0)
+            return ret;
     }
-    return size;
+
+    if (!s->is_connected) {
+        ret = sendto (s->udp_fd, buf, size, 0,
+                      (struct sockaddr *) &s->dest_addr,
+                      s->dest_addr_len);
+    } else
+        ret = send(s->udp_fd, buf, size, 0);
+
+    return ret < 0 ? ff_neterrno() : ret;
 }
 
 static int udp_close(URLContext *h)
