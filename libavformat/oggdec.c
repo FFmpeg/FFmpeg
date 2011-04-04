@@ -164,6 +164,7 @@ ogg_new_stream (AVFormatContext * s, uint32_t serial)
     os->bufsize = DECODER_BUFFER_SIZE;
     os->buf = av_malloc(os->bufsize);
     os->header = -1;
+    os->page_begin = 1;
 
     st = av_new_stream (s, idx);
     if (!st)
@@ -241,12 +242,27 @@ ogg_read_page (AVFormatContext * s, int *str)
 
     idx = ogg_find_stream (ogg, serial);
     if (idx < 0){
+        for (i = 0; i < ogg->nstreams; i++) {
+            if (!ogg->streams[i].page_begin) {
+                int n;
+
+                for (n = 0; n < ogg->nstreams; n++) {
+                    av_free(ogg->streams[n].buf);
+                    av_free(ogg->streams[n].private);
+                }
+                ogg->curidx   = -1;
+                ogg->nstreams = 0;
+                break;
+            }
+        }
         idx = ogg_new_stream (s, serial);
         if (idx < 0)
             return -1;
     }
 
     os = ogg->streams + idx;
+    if (!(flags & OGG_FLAG_BOS))
+        os->page_begin = 0;
     os->page_pos = avio_tell(bc) - 27;
 
     if(os->psize > 0)
