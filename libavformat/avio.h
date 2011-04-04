@@ -600,4 +600,17 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 int udp_get_file_handle(URLContext *h);
 #endif
 
+/**
+ * Iterate through names of available protocols.
+ *
+ * @param opaque A private pointer representing current protocol.
+ *        It must be a pointer to NULL on first iteration and will
+ *        be updated by successive calls to avio_enum_protocols.
+ * @param output If set to 1, iterate over output protocols,
+ *               otherwise over input protocols.
+ *
+ * @return A static string containing the name of current protocol or NULL
+ */
+const char *avio_enum_protocols(void **opaque, int output);
+
 #endif /* AVFORMAT_AVIO_H */
