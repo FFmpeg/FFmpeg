@@ -117,6 +117,7 @@ attribute_deprecated void url_get_filename(URLContext *h, char *buf, int buf_siz
 attribute_deprecated int av_url_read_pause(URLContext *h, int pause);
 attribute_deprecated int64_t av_url_read_seek(URLContext *h, int stream_index,
                                               int64_t timestamp, int flags);
+attribute_deprecated void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 #endif
 
 /**
@@ -131,7 +132,7 @@ int url_exist(const char *url);
  * in this case by the interrupted function. 'NULL' means no interrupt
  * callback is given.
  */
-void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
+void avio_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 
 #if FF_API_OLD_AVIO
 /* not implemented */

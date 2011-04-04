@@ -2393,7 +2393,7 @@ static int decode_thread(void *arg)
     is->subtitle_stream = -1;
 
     global_video_state = is;
-    url_set_interrupt_cb(decode_interrupt_cb);
+    avio_set_interrupt_cb(decode_interrupt_cb);
 
     memset(ap, 0, sizeof(*ap));
 
@@ -2612,7 +2612,7 @@ static int decode_thread(void *arg)
         av_close_input_file(is->ic);
         is->ic = NULL; /* safety */
     }
-    url_set_interrupt_cb(NULL);
+    avio_set_interrupt_cb(NULL);
 
     if (ret != 0) {
         SDL_Event event;

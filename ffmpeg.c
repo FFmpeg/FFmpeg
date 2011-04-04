@@ -2451,7 +2451,7 @@ static int transcode(AVFormatContext **output_files,
 #else
         fprintf(stderr, "Press ctrl-c to stop encoding\n");
 #endif
-        url_set_interrupt_cb(decode_interrupt_cb);
+        avio_set_interrupt_cb(decode_interrupt_cb);
     }
     term_init();
 
@@ -4289,7 +4289,7 @@ int main(int argc, char **argv)
 
 #if HAVE_ISATTY
     if(isatty(STDIN_FILENO))
-        url_set_interrupt_cb(decode_interrupt_cb);
+        avio_set_interrupt_cb(decode_interrupt_cb);
 #endif
 
     init_opts();

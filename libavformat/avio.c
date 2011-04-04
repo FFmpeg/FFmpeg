@@ -216,6 +216,10 @@ void url_get_filename(URLContext *h, char *buf, int buf_size)
 {
     av_strlcpy(buf, h->filename, buf_size);
 }
+void url_set_interrupt_cb(URLInterruptCB *interrupt_cb)
+{
+    avio_set_interrupt_cb(interrupt_cb);
+}
 #endif
 
 #define URL_SCHEME_CHARS                        \
@@ -381,7 +385,7 @@ static int default_interrupt_cb(void)
     return 0;
 }
 
-void url_set_interrupt_cb(URLInterruptCB *interrupt_cb)
+void avio_set_interrupt_cb(URLInterruptCB *interrupt_cb)
 {
     if (!interrupt_cb)
         interrupt_cb = default_interrupt_cb;
