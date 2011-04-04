@@ -136,10 +136,10 @@ void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 #if FF_API_OLD_AVIO
 /* not implemented */
 attribute_deprecated int url_poll(URLPollEntry *poll_table, int n, int timeout);
-#endif
 
 
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
+#endif
 
 typedef struct URLProtocol {
     const char *name;
