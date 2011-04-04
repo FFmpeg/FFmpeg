@@ -3374,6 +3374,15 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         goto err;
     }
 
+    s->current_picture_ptr->repeat_pict = 0;
+    if (v->rff){
+        s->current_picture_ptr->repeat_pict = 1;
+    }else if (v->rptfrm){
+        s->current_picture_ptr->repeat_pict = v->rptfrm * 2;
+    }
+
+    s->current_picture_ptr->top_field_first = v->tff;
+
     // for skipping the frame
     s->current_picture.pict_type= s->pict_type;
     s->current_picture.key_frame= s->pict_type == FF_I_TYPE;
