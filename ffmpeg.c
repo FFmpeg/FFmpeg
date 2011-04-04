@@ -1390,6 +1390,14 @@ static void print_report(AVFormatContext **output_files,
     }
 }
 
+static void generate_silence(uint8_t* buf, enum AVSampleFormat sample_fmt, size_t size)
+{
+    int fill_char = 0x00;
+    if (sample_fmt == AV_SAMPLE_FMT_U8)
+        fill_char = 0x80;
+    memset(buf, fill_char, size);
+}
+
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int output_packet(AVInputStream *ist, int ist_index,
                          AVOutputStream **ost_table, int nb_ostreams,
@@ -1732,7 +1740,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                     int frame_bytes = enc->frame_size*osize*enc->channels;
                                     if (allocated_audio_buf_size < frame_bytes)
                                         ffmpeg_exit(1);
-                                    memset(audio_buf+fifo_bytes, 0, frame_bytes - fifo_bytes);
+                                    generate_silence(audio_buf+fifo_bytes, enc->sample_fmt, frame_bytes - fifo_bytes);
                                 }
 
                                 ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, (short *)audio_buf);
