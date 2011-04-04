@@ -57,7 +57,7 @@ URLProtocol *av_protocol_next(URLProtocol *p)
     else  return first_protocol;
 }
 
-int av_register_protocol2(URLProtocol *protocol, int size)
+int ffurl_register_protocol(URLProtocol *protocol, int size)
 {
     URLProtocol **p;
     if (size < sizeof(URLProtocol)) {
@@ -86,12 +86,12 @@ struct URLProtocol_compat {
 
 int av_register_protocol(URLProtocol *protocol)
 {
-    return av_register_protocol2(protocol, sizeof(struct URLProtocol_compat));
+    return ffurl_register_protocol(protocol, sizeof(struct URLProtocol_compat));
 }
 
 int register_protocol(URLProtocol *protocol)
 {
-    return av_register_protocol2(protocol, sizeof(struct URLProtocol_compat));
+    return ffurl_register_protocol(protocol, sizeof(struct URLProtocol_compat));
 }
 #endif
 
@@ -219,6 +219,10 @@ void url_get_filename(URLContext *h, char *buf, int buf_size)
 void url_set_interrupt_cb(URLInterruptCB *interrupt_cb)
 {
     avio_set_interrupt_cb(interrupt_cb);
+}
+int av_register_protocol2(URLProtocol *protocol, int size)
+{
+    return ffurl_register_protocol(protocol, size);
 }
 #endif
 

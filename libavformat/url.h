@@ -131,4 +131,11 @@ int64_t ffurl_size(URLContext *h);
  */
 int ffurl_get_file_handle(URLContext *h);
 
+/**
+ * Register the URLProtocol protocol.
+ *
+ * @param size the size of the URLProtocol struct referenced
+ */
+int ffurl_register_protocol(URLProtocol *protocol, int size);
+
 #endif //AVFORMAT_URL_H

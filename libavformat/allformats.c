@@ -21,6 +21,7 @@
 #include "avformat.h"
 #include "rtp.h"
 #include "rdt.h"
+#include "url.h"
 
 #define REGISTER_MUXER(X,x) { \
     extern AVOutputFormat ff_##x##_muxer; \
@@ -34,7 +35,7 @@
 
 #define REGISTER_PROTOCOL(X,x) { \
     extern URLProtocol ff_##x##_protocol; \
-    if(CONFIG_##X##_PROTOCOL) av_register_protocol2(&ff_##x##_protocol, sizeof(ff_##x##_protocol)); }
+    if(CONFIG_##X##_PROTOCOL) ffurl_register_protocol(&ff_##x##_protocol, sizeof(ff_##x##_protocol)); }
 
 void av_register_all(void)
 {

@@ -184,12 +184,14 @@ attribute_deprecated int register_protocol(URLProtocol *protocol);
 attribute_deprecated int av_register_protocol(URLProtocol *protocol);
 #endif
 
+#if FF_API_OLD_AVIO
 /**
  * Register the URLProtocol protocol.
  *
  * @param size the size of the URLProtocol struct referenced
  */
-int av_register_protocol2(URLProtocol *protocol, int size);
+attribute_deprecated int av_register_protocol2(URLProtocol *protocol, int size);
+#endif
 
 #define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
 
