@@ -556,7 +556,7 @@ static void fill_buffer(AVIOContext *s)
     }
 
     /* make buffer smaller in case it ended up large after probing */
-    if (s->buffer_size > max_buffer_size) {
+    if (s->read_packet && s->buffer_size > max_buffer_size) {
         ffio_set_buf_size(s, max_buffer_size);
 
         s->checksum_ptr = dst = s->buffer;
