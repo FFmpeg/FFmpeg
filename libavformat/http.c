@@ -124,7 +124,7 @@ static int http_open_cnx(URLContext *h)
         port = 80;
 
     ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
-    err = ffurl_open(&hd, buf, URL_RDWR);
+    err = ffurl_open(&hd, buf, AVIO_RDWR);
     if (err < 0)
         goto fail;
 
@@ -296,7 +296,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
 
 
     /* send http header */
-    post = h->flags & URL_WRONLY;
+    post = h->flags & AVIO_WRONLY;
     authstr = ff_http_auth_create_response(&s->auth_state, auth, path,
                                         post ? "POST" : "GET");
 
@@ -451,7 +451,7 @@ static int http_close(URLContext *h)
     HTTPContext *s = h->priv_data;
 
     /* signal end of chunked encoding if used */
-    if ((h->flags & URL_WRONLY) && s->chunksize != -1) {
+    if ((h->flags & AVIO_WRONLY) && s->chunksize != -1) {
         ret = ffurl_write(s->hd, footer, sizeof(footer) - 1);
         ret = ret > 0 ? 0 : ret;
     }

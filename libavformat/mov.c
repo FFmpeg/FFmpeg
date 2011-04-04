@@ -1722,7 +1722,7 @@ static int mov_open_dref(AVIOContext **pb, char *src, MOVDref *ref)
 
             av_strlcat(filename, ref->path + l + 1, 1024);
 
-            if (!avio_open(pb, filename, URL_RDONLY))
+            if (!avio_open(pb, filename, AVIO_RDONLY))
                 return 0;
         }
     }

@@ -63,7 +63,6 @@ typedef struct URLPollEntry {
     int events;
     int revents;
 } URLPollEntry;
-#endif
 
 /**
  * @defgroup open_modes URL open modes
@@ -91,6 +90,7 @@ typedef struct URLPollEntry {
  * silently ignored.
  */
 #define URL_FLAG_NONBLOCK 4
+#endif
 
 typedef int URLInterruptCB(void);
 
@@ -510,6 +510,33 @@ attribute_deprecated static inline int url_is_streamed(AVIOContext *s)
  *        to set up the buffer for writing. */
 int url_resetbuf(AVIOContext *s, int flags);
 #endif
+
+/**
+ * @defgroup open_modes URL open modes
+ * The flags argument to avio_open must be one of the following
+ * constants, optionally ORed with other flags.
+ * @{
+ */
+#define AVIO_RDONLY 0  /**< read-only */
+#define AVIO_WRONLY 1  /**< write-only */
+#define AVIO_RDWR   2  /**< read-write */
+/**
+ * @}
+ */
+
+/**
+ * Use non-blocking mode.
+ * If this flag is set, operations on the context will return
+ * AVERROR(EAGAIN) if they can not be performed immediately.
+ * If this flag is not set, operations on the context will never return
+ * AVERROR(EAGAIN).
+ * Note that this flag does not affect the opening/connecting of the
+ * context. Connecting a protocol will always block if necessary (e.g. on
+ * network protocols) but never hang (e.g. on busy devices).
+ * Warning: non-blocking protocols is work-in-progress; this flag may be
+ * silently ignored.
+ */
+#define AVIO_FLAG_NONBLOCK 4
 
 /**
  * Create and initialize a AVIOContext for accessing the

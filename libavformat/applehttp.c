@@ -169,7 +169,7 @@ static int parse_playlist(AppleHTTPContext *c, const char *url,
 
     if (!in) {
         close_in = 1;
-        if ((ret = avio_open(&in, url, URL_RDONLY)) < 0)
+        if ((ret = avio_open(&in, url, AVIO_RDONLY)) < 0)
             return ret;
     }
 
@@ -292,7 +292,7 @@ reload:
 
         ret = url_open(&v->input,
                        v->segments[v->cur_seq_no - v->start_seq_no]->url,
-                       URL_RDONLY);
+                       AVIO_RDONLY);
         if (ret < 0)
             return ret;
     }

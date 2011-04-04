@@ -59,9 +59,9 @@ static int file_open(URLContext *h, const char *filename, int flags)
 
     av_strstart(filename, "file:", &filename);
 
-    if (flags & URL_RDWR) {
+    if (flags & AVIO_RDWR) {
         access = O_CREAT | O_TRUNC | O_RDWR;
-    } else if (flags & URL_WRONLY) {
+    } else if (flags & AVIO_WRONLY) {
         access = O_CREAT | O_TRUNC | O_WRONLY;
     } else {
         access = O_RDONLY;
@@ -116,7 +116,7 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
 
     fd = strtol(filename, &final, 10);
     if((filename == final) || *final ) {/* No digits found, or something like 10ab */
-        if (flags & URL_WRONLY) {
+        if (flags & AVIO_WRONLY) {
             fd = 1;
         } else {
             fd = 0;

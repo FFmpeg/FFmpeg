@@ -156,7 +156,7 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
     TCPContext *s = h->priv_data;
     int ret;
 
-    if (!(h->flags & URL_FLAG_NONBLOCK)) {
+    if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
         ret = ff_network_wait_fd(s->fd, 0);
         if (ret < 0)
             return ret;
@@ -170,7 +170,7 @@ static int tcp_write(URLContext *h, const uint8_t *buf, int size)
     TCPContext *s = h->priv_data;
     int ret;
 
-    if (!(h->flags & URL_FLAG_NONBLOCK)) {
+    if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
         ret = ff_network_wait_fd(s->fd, 1);
         if (ret < 0)
             return ret;
