@@ -115,6 +115,8 @@ attribute_deprecated int url_get_file_handle(URLContext *h);
 attribute_deprecated int url_get_max_packet_size(URLContext *h);
 attribute_deprecated void url_get_filename(URLContext *h, char *buf, int buf_size);
 attribute_deprecated int av_url_read_pause(URLContext *h, int pause);
+attribute_deprecated int64_t av_url_read_seek(URLContext *h, int stream_index,
+                                              int64_t timestamp, int flags);
 #endif
 
 /**
@@ -136,25 +138,6 @@ void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 attribute_deprecated int url_poll(URLPollEntry *poll_table, int n, int timeout);
 #endif
 
-/**
- * Seek to a given timestamp relative to some component stream.
- * Only meaningful if using a network streaming protocol (e.g. MMS.).
- * @param stream_index The stream index that the timestamp is relative to.
- *        If stream_index is (-1) the timestamp should be in AV_TIME_BASE
- *        units from the beginning of the presentation.
- *        If a stream_index >= 0 is used and the protocol does not support
- *        seeking based on component streams, the call will fail with ENOTSUP.
- * @param timestamp timestamp in AVStream.time_base units
- *        or if there is no stream specified then in AV_TIME_BASE units.
- * @param flags Optional combination of AVSEEK_FLAG_BACKWARD, AVSEEK_FLAG_BYTE
- *        and AVSEEK_FLAG_ANY. The protocol may silently ignore
- *        AVSEEK_FLAG_BACKWARD and AVSEEK_FLAG_ANY, but AVSEEK_FLAG_BYTE will
- *        fail with ENOTSUP if used and not supported.
- * @return >= 0 on success
- * @see AVInputFormat::read_seek
- */
-int64_t av_url_read_seek(URLContext *h, int stream_index,
-                         int64_t timestamp, int flags);
 
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
 

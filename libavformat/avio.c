@@ -395,7 +395,6 @@ int av_url_read_pause(URLContext *h, int pause)
         return AVERROR(ENOSYS);
     return h->prot->url_read_pause(h, pause);
 }
-#endif
 
 int64_t av_url_read_seek(URLContext *h,
         int stream_index, int64_t timestamp, int flags)
@@ -404,3 +403,4 @@ int64_t av_url_read_seek(URLContext *h,
         return AVERROR(ENOSYS);
     return h->prot->url_read_seek(h, stream_index, timestamp, flags);
 }
+#endif
