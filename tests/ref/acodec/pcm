@@ -22,12 +22,12 @@ stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
 1058444 ./tests/data/acodec/pcm_s16le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
-352a6bcf51d0f3ca4bf27c423a3d4d14 *./tests/data/acodec/pcm_s16be.mkv
- 1060650 ./tests/data/acodec/pcm_s16be.mkv
+af717ca95eaca310772eb1238c745d1b *./tests/data/acodec/pcm_s16be.mkv
+1060638 ./tests/data/acodec/pcm_s16be.mkv
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
-2c089d83b2699c02c9358415e00a9707 *./tests/data/acodec/pcm_s16le.mkv
- 1060650 ./tests/data/acodec/pcm_s16le.mkv
+c4f51bf32fad2f7af8ea5beedb56168b *./tests/data/acodec/pcm_s16le.mkv
+1060638 ./tests/data/acodec/pcm_s16le.mkv
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
 07ffe7ffb78f3648b6524debdde5aec1 *./tests/data/acodec/pcm_s24be.mov
