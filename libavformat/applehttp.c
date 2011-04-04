@@ -31,6 +31,7 @@
 #include "internal.h"
 #include <unistd.h>
 #include "avio_internal.h"
+#include "url.h"
 
 #define INITIAL_BUFFER_SIZE 32768
 

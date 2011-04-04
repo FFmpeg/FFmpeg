@@ -24,6 +24,7 @@
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
+#include "url.h"
 #if HAVE_POLL_H
 #include <poll.h>
 #endif

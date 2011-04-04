@@ -31,6 +31,7 @@
 #include "libavutil/avstring.h"
 #include "riff.h"
 #include "audiointerleave.h"
+#include "url.h"
 #include <sys/time.h>
 #include <time.h>
 #include <strings.h>

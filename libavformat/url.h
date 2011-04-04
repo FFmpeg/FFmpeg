@@ -30,6 +30,8 @@
 
 #if !FF_API_OLD_AVIO
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
+
+extern URLInterruptCB *url_interrupt_cb;
 #endif
 
 /**

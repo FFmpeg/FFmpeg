@@ -163,7 +163,9 @@ typedef struct URLProtocol {
 extern URLProtocol *first_protocol;
 #endif
 
+#if FF_API_OLD_AVIO
 extern URLInterruptCB *url_interrupt_cb;
+#endif
 
 /**
  * If protocol is NULL, returns the first registered protocol,
