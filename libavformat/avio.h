@@ -114,6 +114,7 @@ attribute_deprecated int64_t url_filesize(URLContext *h);
 attribute_deprecated int url_get_file_handle(URLContext *h);
 attribute_deprecated int url_get_max_packet_size(URLContext *h);
 attribute_deprecated void url_get_filename(URLContext *h, char *buf, int buf_size);
+attribute_deprecated int av_url_read_pause(URLContext *h, int pause);
 #endif
 
 /**
@@ -134,13 +135,6 @@ void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 /* not implemented */
 attribute_deprecated int url_poll(URLPollEntry *poll_table, int n, int timeout);
 #endif
-
-/**
- * Pause and resume playing - only meaningful if using a network streaming
- * protocol (e.g. MMS).
- * @param pause 1 for pause, 0 for resume
- */
-int av_url_read_pause(URLContext *h, int pause);
 
 /**
  * Seek to a given timestamp relative to some component stream.

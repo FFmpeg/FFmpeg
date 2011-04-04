@@ -66,6 +66,11 @@ uint64_t ffio_read_varlen(AVIOContext *bc);
 /** @warning must be called before any I/O */
 int ffio_set_buf_size(AVIOContext *s, int buf_size);
 
+/**
+ * Pause and resume playing - only meaningful if using a network streaming
+ * protocol (e.g. MMS).
+ * @param pause 1 for pause, 0 for resume
+ */
 int     ffio_read_pause(AVIOContext *h,    int pause);
 int64_t ffio_read_seek (AVIOContext *h,    int stream_index,
                         int64_t timestamp, int flags);
