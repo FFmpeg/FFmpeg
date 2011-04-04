@@ -704,7 +704,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                         code != 0x1ff && code != 0x1f2 && /* program_stream_directory, DSMCC_stream */
                         code != 0x1f8) {                  /* ITU-T Rec. H.222.1 type E stream */
                         pes->state = MPEGTS_PESHEADER;
-                        if (!pes->st->request_probe) {
+                        if (pes->st->codec->codec_id == CODEC_ID_NONE && !pes->st->request_probe) {
                             av_dlog(pes->stream, "pid=%x stream_type=%x probing\n",
                                     pes->pid, pes->stream_type);
                             pes->st->request_probe= 1;
