@@ -653,20 +653,16 @@ void show_bsfs(void)
 
 void show_protocols(void)
 {
-    URLProtocol *up=NULL;
+    void *opaque = NULL;
+    const char *name;
 
     printf("Supported file protocols:\n"
-           "I.. = Input  supported\n"
-           ".O. = Output supported\n"
-           "..S = Seek   supported\n"
-           "FLAGS NAME\n"
-           "----- \n");
-    while((up = av_protocol_next(up)))
-        printf("%c%c%c   %s\n",
-               up->url_read  ? 'I' : '.',
-               up->url_write ? 'O' : '.',
-               up->url_seek  ? 'S' : '.',
-               up->name);
+           "Input:\n");
+    while ((name = avio_enum_protocols(&opaque, 0)))
+        printf("%s\n", name);
+    printf("Output:\n");
+    while ((name = avio_enum_protocols(&opaque, 1)))
+        printf("%s\n", name);
 }
 
 void show_filters(void)

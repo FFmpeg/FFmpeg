@@ -170,12 +170,14 @@ extern URLProtocol *first_protocol;
 extern URLInterruptCB *url_interrupt_cb;
 #endif
 
+#if FF_API_OLD_AVIO
 /**
  * If protocol is NULL, returns the first registered protocol,
  * if protocol is non-NULL, returns the next registered protocol after protocol,
  * or NULL if protocol is the last one.
  */
-URLProtocol *av_protocol_next(URLProtocol *p);
+attribute_deprecated URLProtocol *av_protocol_next(URLProtocol *p);
+#endif
 
 #if FF_API_REGISTER_PROTOCOL
 /**

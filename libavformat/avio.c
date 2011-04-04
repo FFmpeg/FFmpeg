@@ -51,11 +51,13 @@ static int default_interrupt_cb(void);
 URLProtocol *first_protocol = NULL;
 int (*url_interrupt_cb)(void) = default_interrupt_cb;
 
+#if FF_API_OLD_AVIO
 URLProtocol *av_protocol_next(URLProtocol *p)
 {
     if(p) return p->next;
     else  return first_protocol;
 }
+#endif
 
 const char *avio_enum_protocols(void **opaque, int output)
 {
