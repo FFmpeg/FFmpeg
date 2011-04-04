@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "internal.h"
 #include "rtpenc_chain.h"
+#include "avio_internal.h"
 
 int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
 {
@@ -408,8 +409,8 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
 
     /* Fetch the output from the RTP muxer, open a new output buffer
      * for next time. */
-    size = url_close_dyn_buf(rtp_ctx->pb, &buf);
-    if ((ret = url_open_dyn_packet_buf(&rtp_ctx->pb,
+    size = avio_close_dyn_buf(rtp_ctx->pb, &buf);
+    if ((ret = ffio_open_dyn_packet_buf(&rtp_ctx->pb,
                                        RTP_MAX_PACKET_SIZE)) < 0)
         goto done;
 
@@ -417,14 +418,14 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
         goto done;
 
     /* Open a buffer for writing the hint */
-    if ((ret = url_open_dyn_buf(&hintbuf)) < 0)
+    if ((ret = avio_open_dyn_buf(&hintbuf)) < 0)
         goto done;
     av_init_packet(&hint_pkt);
     count = write_hint_packets(hintbuf, buf, size, trk, &hint_pkt.dts);
     av_freep(&buf);
 
     /* Write the hint data into the hint track */
-    hint_pkt.size = size = url_close_dyn_buf(hintbuf, &buf);
+    hint_pkt.size = size = avio_close_dyn_buf(hintbuf, &buf);
     hint_pkt.data = buf;
     hint_pkt.pts  = hint_pkt.dts;
     hint_pkt.stream_index = track_index;
@@ -448,7 +449,7 @@ void ff_mov_close_hinting(MOVTrack *track) {
         return;
     if (rtp_ctx->pb) {
         av_write_trailer(rtp_ctx);
-        url_close_dyn_buf(rtp_ctx->pb, &ptr);
+        avio_close_dyn_buf(rtp_ctx->pb, &ptr);
         av_free(ptr);
     }
     avformat_free_context(rtp_ctx);

@@ -78,7 +78,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
             return AVERROR(EIO);
         voc->remaining_size = avio_rl24(pb);
         if (!voc->remaining_size) {
-            if (url_is_streamed(s->pb))
+            if (!s->pb->seekable)
                 return AVERROR(EIO);
             voc->remaining_size = avio_size(pb) - avio_tell(pb);
         }

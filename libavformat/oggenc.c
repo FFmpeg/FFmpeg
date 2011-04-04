@@ -82,7 +82,7 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     int ret, size;
     uint8_t *buf;
 
-    ret = url_open_dyn_buf(&pb);
+    ret = avio_open_dyn_buf(&pb);
     if (ret < 0)
         return ret;
     ffio_init_checksum(pb, ff_crc04C11DB7_update, 0);
@@ -101,7 +101,7 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     ogg_update_checksum(s, pb, crc_offset);
     avio_flush(pb);
 
-    size = url_close_dyn_buf(pb, &buf);
+    size = avio_close_dyn_buf(pb, &buf);
     if (size < 0)
         return size;
 

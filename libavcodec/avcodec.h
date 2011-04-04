@@ -1829,19 +1829,21 @@ typedef struct AVCodecContext {
      */
     uint64_t error[4];
 
+#if FF_API_MB_Q
     /**
      * minimum MB quantizer
      * - encoding: unused
      * - decoding: unused
      */
-    int mb_qmin;
+    attribute_deprecated int mb_qmin;
 
     /**
      * maximum MB quantizer
      * - encoding: unused
      * - decoding: unused
      */
-    int mb_qmax;
+    attribute_deprecated int mb_qmax;
+#endif
 
     /**
      * motion estimation comparison function
@@ -2162,16 +2164,19 @@ typedef struct AVCodecContext {
      */
     int error_rate;
 
+#if FF_API_ANTIALIAS_ALGO
     /**
      * MP3 antialias algorithm, see FF_AA_* below.
      * - encoding: unused
      * - decoding: Set by user.
      */
-    int antialias_algo;
+    attribute_deprecated int antialias_algo;
 #define FF_AA_AUTO    0
 #define FF_AA_FASTINT 1 //not implemented yet
 #define FF_AA_INT     2
 #define FF_AA_FLOAT   3
+#endif
+
     /**
      * quantizer noise shaping
      * - encoding: Set by user.

@@ -40,7 +40,7 @@ static int read_header(AVFormatContext *s,
     AVIOContext *pb = s->pb;
     AVStream *st;
 
-    if (url_is_streamed(s->pb))
+    if (!s->pb->seekable)
         return AVERROR(EIO);
 
     avio_seek(pb, avio_size(pb) - 36, SEEK_SET);

@@ -29,6 +29,7 @@
 #include "os_support.h"
 #include "rtsp.h"
 #include "internal.h"
+#include "avio_internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
 
@@ -135,14 +136,14 @@ static int tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
     int size;
     uint8_t *interleave_header, *interleaved_packet;
 
-    size = url_close_dyn_buf(rtpctx->pb, &buf);
+    size = avio_close_dyn_buf(rtpctx->pb, &buf);
     ptr = buf;
     while (size > 4) {
         uint32_t packet_len = AV_RB32(ptr);
         int id;
         /* The interleaving header is exactly 4 bytes, which happens to be
          * the same size as the packet length header from
-         * url_open_dyn_packet_buf. So by writing the interleaving header
+         * ffio_open_dyn_packet_buf. So by writing the interleaving header
          * over these bytes, we get a consecutive interleaved packet
          * that can be written in one call. */
         interleaved_packet = interleave_header = ptr;
@@ -162,7 +163,7 @@ static int tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
         size -= packet_len;
     }
     av_free(buf);
-    url_open_dyn_packet_buf(&rtpctx->pb, RTSP_TCP_MAX_PACKET_SIZE);
+    ffio_open_dyn_packet_buf(&rtpctx->pb, RTSP_TCP_MAX_PACKET_SIZE);
     return 0;
 }
 

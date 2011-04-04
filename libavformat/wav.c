@@ -57,7 +57,7 @@ static int wav_write_header(AVFormatContext *s)
     ff_end_tag(pb, fmt);
 
     if (s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
-        && !url_is_streamed(s->pb)) {
+        && s->pb->seekable) {
         fact = ff_start_tag(pb, "fact");
         avio_wl32(pb, 0);
         ff_end_tag(pb, fact);
@@ -97,7 +97,7 @@ static int wav_write_trailer(AVFormatContext *s)
 
     avio_flush(pb);
 
-    if (!url_is_streamed(s->pb)) {
+    if (s->pb->seekable) {
         ff_end_tag(pb, wav->data);
 
         /* update file size */

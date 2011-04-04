@@ -495,7 +495,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
                 av_write_trailer(rtpctx);
                 if (rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
                     uint8_t *ptr;
-                    url_close_dyn_buf(rtpctx->pb, &ptr);
+                    avio_close_dyn_buf(rtpctx->pb, &ptr);
                     av_free(ptr);
                 } else {
                     avio_close(rtpctx->pb);

@@ -12,6 +12,46 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-04-03 - lavf 52.105.0 - avio.h
+  Large-scale renaming/deprecating of AVIOContext-related functions:
+    724f6a0 deprecate url_fdopen
+    403ee83 deprecate url_open_dyn_packet_buf
+    6dc7d80 rename url_close_dyn_buf       -> avio_close_dyn_buf
+    b92c545 rename url_open_dyn_buf        -> avio_open_dyn_buf
+    8978fed introduce an AVIOContext.seekable field as a replacement for
+            AVIOContext.is_streamed and url_is_streamed()
+    b64030f deprecate get_checksum()
+    4c4427a deprecate init_checksum()
+    4ec153b deprecate udp_set_remote_url/get_local_port
+    933e90a deprecate av_url_read_fseek/fpause
+    8d9769a deprecate url_fileno
+    b7f2fdd rename put_flush_packet -> avio_flush
+    35f1023 deprecate url_close_buf
+    83fddae deprecate url_open_buf
+    d9d86e0 rename url_fprintf -> avio_printf
+    59f65d9 deprecate url_setbufsize
+    3e68b3b deprecate url_ferror
+    66e5b1d deprecate url_feof
+    e8bb2e2 deprecate url_fget_max_packet_size
+    76aa876 rename url_fsize -> avio_size
+    e519753 deprecate url_fgetc
+    655e45e deprecate url_fgets
+    a2704c9 rename url_ftell -> avio_tell
+    e16ead0 deprecate get_strz() in favor of avio_get_str
+    0300db8,2af07d3 rename url_fskip -> avio_skip
+    6b4aa5d rename url_fseek -> avio_seek
+    61840b4 deprecate put_tag
+    22a3212 rename url_fopen/fclose -> avio_open/close.
+    0ac8e2b deprecate put_nbyte
+    77eb550 rename put_byte          -> avio_w8
+                   put_[b/l]e<type>  -> avio_w[b/l]<type>
+                   put_buffer        -> avio_write
+    b7effd4 rename get_byte          -> avio_r8,
+                   get_[b/l]e<type>  -> avio_r[b/l]<type>
+                   get_buffer        -> avio_read
+    b3db9ce deprecate get_partial_buffer
+    8d9ac96 rename av_alloc_put_byte -> avio_alloc_context
+
 2011-03-25 - 34b47d7 - lavc 52.115.0 - AVCodecContext.audio_service_type
   Add audio_service_type field to AVCodecContext.
 

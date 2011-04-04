@@ -43,7 +43,7 @@ static void latm_free_context(PayloadContext *data)
         return;
     if (data->dyn_buf) {
         uint8_t *p;
-        url_close_dyn_buf(data->dyn_buf, &p);
+        avio_close_dyn_buf(data->dyn_buf, &p);
         av_free(p);
     }
     av_free(data->buf);
@@ -60,12 +60,12 @@ static int latm_parse_packet(AVFormatContext *ctx, PayloadContext *data,
         if (!data->dyn_buf || data->timestamp != *timestamp) {
             av_freep(&data->buf);
             if (data->dyn_buf)
-                url_close_dyn_buf(data->dyn_buf, &data->buf);
+                avio_close_dyn_buf(data->dyn_buf, &data->buf);
             data->dyn_buf = NULL;
             av_freep(&data->buf);
 
             data->timestamp = *timestamp;
-            if ((ret = url_open_dyn_buf(&data->dyn_buf)) < 0)
+            if ((ret = avio_open_dyn_buf(&data->dyn_buf)) < 0)
                 return ret;
         }
         avio_write(data->dyn_buf, buf, len);
@@ -73,7 +73,7 @@ static int latm_parse_packet(AVFormatContext *ctx, PayloadContext *data,
         if (!(flags & RTP_FLAG_MARKER))
             return AVERROR(EAGAIN);
         av_free(data->buf);
-        data->len = url_close_dyn_buf(data->dyn_buf, &data->buf);
+        data->len = avio_close_dyn_buf(data->dyn_buf, &data->buf);
         data->dyn_buf = NULL;
         data->pos = 0;
     }

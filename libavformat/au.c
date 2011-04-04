@@ -91,7 +91,7 @@ static int au_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t file_size;
 
-    if (!url_is_streamed(s->pb)) {
+    if (s->pb->seekable) {
 
         /* update file size */
         file_size = avio_tell(pb);

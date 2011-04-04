@@ -121,7 +121,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
     }
     if((rate == -1 || !chan) && !wc->block_parsed){
         int64_t block_end = avio_tell(pb) + wc->blksize - 24;
-        if(url_is_streamed(pb)){
+        if(!pb->seekable){
             av_log(ctx, AV_LOG_ERROR, "Cannot determine additional parameters\n");
             return -1;
         }
@@ -223,7 +223,7 @@ static int wv_read_header(AVFormatContext *s,
     st->start_time = 0;
     st->duration = wc->samples;
 
-    if(!url_is_streamed(s->pb)) {
+    if(s->pb->seekable) {
         int64_t cur = avio_tell(s->pb);
         ff_ape_parse_tag(s);
         if(!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))

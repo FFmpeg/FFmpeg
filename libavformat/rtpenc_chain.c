@@ -20,7 +20,9 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "rtpenc_chain.h"
+#include "avio_internal.h"
 
 AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
                                        URLContext *handle, int packet_size)
@@ -53,9 +55,9 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
     avcodec_copy_context(rtpctx->streams[0]->codec, st->codec);
 
     if (handle) {
-        url_fdopen(&rtpctx->pb, handle);
+        ffio_fdopen(&rtpctx->pb, handle);
     } else
-        url_open_dyn_packet_buf(&rtpctx->pb, packet_size);
+        ffio_open_dyn_packet_buf(&rtpctx->pb, packet_size);
     ret = av_write_header(rtpctx);
 
     if (ret) {
@@ -63,7 +65,7 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
             avio_close(rtpctx->pb);
         } else {
             uint8_t *ptr;
-            url_close_dyn_buf(rtpctx->pb, &ptr);
+            avio_close_dyn_buf(rtpctx->pb, &ptr);
             av_free(ptr);
         }
         avformat_free_context(rtpctx);

@@ -332,6 +332,8 @@ attribute_deprecated int av_register_protocol(URLProtocol *protocol);
  */
 int av_register_protocol2(URLProtocol *protocol, int size);
 
+#define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
+
 /**
  * Bytestream IO Context.
  * New fields can be added to the end with minor version bumps.
@@ -351,7 +353,9 @@ typedef struct {
     int must_flush; /**< true if the next seek should flush */
     int eof_reached; /**< true if eof reached */
     int write_flag;  /**< true if open for writing */
-    int is_streamed;
+#if FF_API_OLD_AVIO
+    attribute_deprecated int is_streamed;
+#endif
     int max_packet_size;
     unsigned long checksum;
     unsigned char *checksum_ptr;
@@ -360,6 +364,10 @@ typedef struct {
     int (*read_pause)(void *opaque, int pause);
     int64_t (*read_seek)(void *opaque, int stream_index,
                          int64_t timestamp, int flags);
+    /**
+     * A combination of AVIO_SEEKABLE_ flags or 0 when the stream is not seekable.
+     */
+    int seekable;
 } AVIOContext;
 
 #if FF_API_OLD_AVIO
@@ -439,6 +447,10 @@ attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...) __att
 attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...);
 #endif
 attribute_deprecated void put_flush_packet(AVIOContext *s);
+attribute_deprecated int url_open_dyn_buf(AVIOContext **s);
+attribute_deprecated int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
+attribute_deprecated int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
+attribute_deprecated int url_fdopen(AVIOContext **s, URLContext *h);
 /**
  * @}
  */
@@ -603,23 +615,15 @@ unsigned int avio_rb24(AVIOContext *s);
 unsigned int avio_rb32(AVIOContext *s);
 uint64_t     avio_rb64(AVIOContext *s);
 
-static inline int url_is_streamed(AVIOContext *s)
-{
-    return s->is_streamed;
-}
-
+#if FF_API_OLD_AVIO
 /**
- * Create and initialize a AVIOContext for accessing the
- * resource referenced by the URLContext h.
- * @note When the URLContext h has been opened in read+write mode, the
- * AVIOContext can be used only for writing.
- *
- * @param s Used to return the pointer to the created AVIOContext.
- * In case of failure the pointed to value is set to NULL.
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code in case of failure
+ * @deprecated Use AVIOContext.seekable field directly.
  */
-int url_fdopen(AVIOContext **s, URLContext *h);
+attribute_deprecated static inline int url_is_streamed(AVIOContext *s)
+{
+    return !s->seekable;
+}
+#endif
 
 #if FF_API_URL_RESETBUF
 /** Reset the buffer for reading or writing.
@@ -666,30 +670,18 @@ attribute_deprecated int url_close_buf(AVIOContext *s);
  * @param s new IO context
  * @return zero if no error.
  */
-int url_open_dyn_buf(AVIOContext **s);
-
-/**
- * Open a write only packetized memory stream with a maximum packet
- * size of 'max_packet_size'.  The stream is stored in a memory buffer
- * with a big endian 4 byte header giving the packet size in bytes.
- *
- * @param s new IO context
- * @param max_packet_size maximum packet size (must be > 0)
- * @return zero if no error.
- */
-int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
+int avio_open_dyn_buf(AVIOContext **s);
 
 /**
  * Return the written size and a pointer to the buffer. The buffer
- * must be freed with av_free(). If the buffer is opened with
- * url_open_dyn_buf, then padding of FF_INPUT_BUFFER_PADDING_SIZE is
- * added; if opened with url_open_dyn_packet_buf, no padding is added.
+ * must be freed with av_free().
+ * Padding of FF_INPUT_BUFFER_PADDING_SIZE is added to the buffer.
  *
  * @param s IO context
  * @param pbuffer pointer to a byte buffer
  * @return the length of the byte buffer
  */
-int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
+int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 
 #if FF_API_UDP_GET_FILE
 int udp_get_file_handle(URLContext *h);

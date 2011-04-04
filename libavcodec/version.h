@@ -77,5 +77,11 @@
 #ifndef FF_API_RATE_EMU
 #define FF_API_RATE_EMU         (LIBAVCODEC_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_MB_Q
+#define FF_API_MB_Q             (LIBAVCODEC_VERSION_MAJOR < 53)
+#endif
+#ifndef FF_API_ANTIALIAS_ALGO
+#define FF_API_ANTIALIAS_ALGO   (LIBAVCODEC_VERSION_MAJOR < 54)
+#endif
 
 #endif /* AVCODEC_VERSION_H */

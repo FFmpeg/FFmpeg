@@ -89,14 +89,14 @@ int ff_avc_parse_nal_units(AVIOContext *pb, const uint8_t *buf_in, int size)
 int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
 {
     AVIOContext *pb;
-    int ret = url_open_dyn_buf(&pb);
+    int ret = avio_open_dyn_buf(&pb);
     if(ret < 0)
         return ret;
 
     ff_avc_parse_nal_units(pb, buf_in, *size);
 
     av_freep(buf);
-    *size = url_close_dyn_buf(pb, buf);
+    *size = avio_close_dyn_buf(pb, buf);
     return 0;
 }
 

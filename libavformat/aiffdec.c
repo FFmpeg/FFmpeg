@@ -238,7 +238,7 @@ static int aiff_read_header(AVFormatContext *s,
             offset += avio_tell(pb);    /* Compute absolute data offset */
             if (st->codec->block_align)    /* Assume COMM already parsed */
                 goto got_sound;
-            if (url_is_streamed(pb)) {
+            if (!pb->seekable) {
                 av_log(s, AV_LOG_ERROR, "file is not seekable\n");
                 return -1;
             }

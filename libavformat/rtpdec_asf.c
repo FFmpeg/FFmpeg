@@ -203,12 +203,12 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                  */
                 if (asf->pktbuf && len_off != avio_tell(asf->pktbuf)) {
                     uint8_t *p;
-                    url_close_dyn_buf(asf->pktbuf, &p);
+                    avio_close_dyn_buf(asf->pktbuf, &p);
                     asf->pktbuf = NULL;
                     av_free(p);
                 }
                 if (!len_off && !asf->pktbuf &&
-                    (res = url_open_dyn_buf(&asf->pktbuf)) < 0)
+                    (res = avio_open_dyn_buf(&asf->pktbuf)) < 0)
                     return res;
                 if (!asf->pktbuf)
                     return AVERROR(EIO);
@@ -217,7 +217,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                 avio_skip(pb, len - off);
                 if (!(flags & RTP_FLAG_MARKER))
                     return -1;
-                out_len     = url_close_dyn_buf(asf->pktbuf, &asf->buf);
+                out_len     = avio_close_dyn_buf(asf->pktbuf, &asf->buf);
                 asf->pktbuf = NULL;
             } else {
                 /**
@@ -272,7 +272,7 @@ static void asfrtp_free_context(PayloadContext *asf)
 {
     if (asf->pktbuf) {
         uint8_t *p = NULL;
-        url_close_dyn_buf(asf->pktbuf, &p);
+        avio_close_dyn_buf(asf->pktbuf, &p);
         asf->pktbuf = NULL;
         av_free(p);
     }

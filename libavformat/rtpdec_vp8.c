@@ -41,7 +41,7 @@ static void prepare_packet(AVPacket *pkt, PayloadContext *vp8, int stream)
     av_init_packet(pkt);
     pkt->stream_index = stream;
     pkt->flags        = vp8->is_keyframe ? AV_PKT_FLAG_KEY : 0;
-    pkt->size         = url_close_dyn_buf(vp8->data, &pkt->data);
+    pkt->size         = avio_close_dyn_buf(vp8->data, &pkt->data);
     pkt->destruct     = av_destruct_packet;
     vp8->data         = NULL;
 }
@@ -85,7 +85,7 @@ static int vp8_handle_packet(AVFormatContext *ctx,
             // that for the next av_get_packet call
             ret = end_packet ? 1 : 0;
         }
-        if ((res = url_open_dyn_buf(&vp8->data)) < 0)
+        if ((res = avio_open_dyn_buf(&vp8->data)) < 0)
             return res;
         vp8->is_keyframe = *buf & 1;
         vp8->timestamp   = ts;
@@ -138,7 +138,7 @@ static void vp8_free_context(PayloadContext *vp8)
 {
     if (vp8->data) {
         uint8_t *tmp;
-        url_close_dyn_buf(vp8->data, &tmp);
+        avio_close_dyn_buf(vp8->data, &tmp);
         av_free(tmp);
     }
     av_free(vp8);

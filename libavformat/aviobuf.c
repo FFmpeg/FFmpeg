@@ -62,7 +62,10 @@ int ffio_init_context(AVIOContext *s,
     s->must_flush = 0;
     s->eof_reached = 0;
     s->error = 0;
+#if FF_API_OLD_AVIO
     s->is_streamed = 0;
+#endif
+    s->seekable = AVIO_SEEKABLE_NORMAL;
     s->max_packet_size = 0;
     s->update_checksum= NULL;
     if(!read_packet && !write_flag){
@@ -202,7 +205,7 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
         offset1 >= 0 && offset1 <= (s->buf_end - s->buffer)) {
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
-    } else if ((s->is_streamed ||
+    } else if ((!s->seekable ||
                offset1 <= s->buf_end + SHORT_SEEK_THRESHOLD - s->buffer) &&
                !s->write_flag && offset1 >= 0 &&
               (whence != SEEK_END || force)) {
@@ -424,6 +427,22 @@ void init_checksum(AVIOContext *s,
 unsigned long get_checksum(AVIOContext *s)
 {
     return ffio_get_checksum(s);
+}
+int url_open_dyn_buf(AVIOContext **s)
+{
+    return avio_open_dyn_buf(s);
+}
+int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size)
+{
+    return ffio_open_dyn_packet_buf(s, max_packet_size);
+}
+int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
+{
+    return avio_close_dyn_buf(s, pbuffer);
+}
+int url_fdopen(AVIOContext **s, URLContext *h)
+{
+    return ffio_fdopen(s, h);
 }
 #endif
 
@@ -812,7 +831,7 @@ uint64_t ffio_read_varlen(AVIOContext *bc){
     return val;
 }
 
-int url_fdopen(AVIOContext **s, URLContext *h)
+int ffio_fdopen(AVIOContext **s, URLContext *h)
 {
     uint8_t *buffer;
     int buffer_size, max_packet_size;
@@ -840,7 +859,10 @@ int url_fdopen(AVIOContext **s, URLContext *h)
         av_freep(s);
         return AVERROR(EIO);
     }
+#if FF_API_OLD_AVIO
     (*s)->is_streamed = h->is_streamed;
+#endif
+    (*s)->seekable = h->is_streamed ? 0 : AVIO_SEEKABLE_NORMAL;
     (*s)->max_packet_size = max_packet_size;
     if(h->prot) {
         (*s)->read_pause = (int (*)(void *, int))h->prot->url_read_pause;
@@ -934,7 +956,7 @@ int avio_open(AVIOContext **s, const char *filename, int flags)
     err = url_open(&h, filename, flags);
     if (err < 0)
         return err;
-    err = url_fdopen(s, h);
+    err = ffio_fdopen(s, h);
     if (err < 0) {
         url_close(h);
         return err;
@@ -1026,7 +1048,7 @@ int64_t ffio_read_seek(AVIOContext *s, int stream_index,
     return ret;
 }
 
-/* url_open_dyn_buf and url_close_dyn_buf are used in rtp.c to send a response
+/* avio_open_dyn_buf and avio_close_dyn_buf are used in rtp.c to send a response
  * back to the server even if CONFIG_MUXERS is false. */
 #if CONFIG_MUXERS || CONFIG_NETWORK
 /* buffer handling */
@@ -1123,7 +1145,6 @@ static int64_t dyn_buf_seek(void *opaque, int64_t offset, int whence)
 static int url_open_dyn_buf_internal(AVIOContext **s, int max_packet_size)
 {
     DynBuffer *d;
-    int ret;
     unsigned io_buffer_size = max_packet_size ? max_packet_size : 1024;
 
     if(sizeof(DynBuffer) + io_buffer_size < io_buffer_size)
@@ -1131,38 +1152,31 @@ static int url_open_dyn_buf_internal(AVIOContext **s, int max_packet_size)
     d = av_mallocz(sizeof(DynBuffer) + io_buffer_size);
     if (!d)
         return AVERROR(ENOMEM);
-    *s = av_mallocz(sizeof(AVIOContext));
+    d->io_buffer_size = io_buffer_size;
+    *s = avio_alloc_context(d->io_buffer, d->io_buffer_size, 1, d, NULL,
+                            max_packet_size ? dyn_packet_buf_write : dyn_buf_write,
+                            max_packet_size ? NULL : dyn_buf_seek);
     if(!*s) {
         av_free(d);
         return AVERROR(ENOMEM);
     }
-    d->io_buffer_size = io_buffer_size;
-    ret = ffio_init_context(*s, d->io_buffer, io_buffer_size,
-                        1, d, NULL,
-                        max_packet_size ? dyn_packet_buf_write : dyn_buf_write,
-                        max_packet_size ? NULL : dyn_buf_seek);
-    if (ret == 0) {
-        (*s)->max_packet_size = max_packet_size;
-    } else {
-        av_free(d);
-        av_freep(s);
-    }
-    return ret;
+    (*s)->max_packet_size = max_packet_size;
+    return 0;
 }
 
-int url_open_dyn_buf(AVIOContext **s)
+int avio_open_dyn_buf(AVIOContext **s)
 {
     return url_open_dyn_buf_internal(s, 0);
 }
 
-int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size)
+int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size)
 {
     if (max_packet_size <= 0)
         return -1;
     return url_open_dyn_buf_internal(s, max_packet_size);
 }
 
-int url_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
+int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
     DynBuffer *d = s->opaque;
     int size;

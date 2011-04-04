@@ -455,7 +455,7 @@ ogg_get_length (AVFormatContext * s)
     int i;
     int64_t size, end;
 
-    if(url_is_streamed(s->pb))
+    if(!s->pb->seekable)
         return 0;
 
 // already set

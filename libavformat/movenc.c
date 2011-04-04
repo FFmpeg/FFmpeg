@@ -1653,7 +1653,7 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
             return 0;
         }
 
-    ret = url_open_dyn_buf(&pb_buf);
+    ret = avio_open_dyn_buf(&pb_buf);
     if(ret < 0)
         return ret;
 
@@ -1684,7 +1684,7 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
         if (s->nb_chapters)
             mov_write_chpl_tag(pb_buf, s);
 
-    if ((size = url_close_dyn_buf(pb_buf, &buf)) > 0) {
+    if ((size = avio_close_dyn_buf(pb_buf, &buf)) > 0) {
         avio_wb32(pb, size+8);
         ffio_wfourcc(pb, "udta");
         avio_write(pb, buf, size);
@@ -1948,7 +1948,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     unsigned int samplesInChunk = 0;
     int size= pkt->size;
 
-    if (url_is_streamed(s->pb)) return 0; /* Can't handle that */
+    if (!s->pb->seekable) return 0; /* Can't handle that */
     if (!size) return 0; /* Discard 0 sized packets */
 
     if (enc->codec_id == CODEC_ID_AMR_NB) {
@@ -2083,7 +2083,7 @@ static int mov_write_header(AVFormatContext *s)
     MOVMuxContext *mov = s->priv_data;
     int i, hint_track = 0;
 
-    if (url_is_streamed(s->pb)) {
+    if (!s->pb->seekable) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return -1;
     }

@@ -428,7 +428,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
  }
 
     // if not streamed and no duration from metadata then seek to end to find the duration from the timestamps
-    if(!url_is_streamed(s->pb) && (!s->duration || s->duration==AV_NOPTS_VALUE)){
+    if(s->pb->seekable && (!s->duration || s->duration==AV_NOPTS_VALUE)){
         int size;
         const int64_t pos= avio_tell(s->pb);
         const int64_t fsize= avio_size(s->pb);
@@ -530,7 +530,7 @@ static int flv_read_seek2(AVFormatContext *s, int stream_index,
 
     if (ts - min_ts > (uint64_t)(max_ts - ts)) flags |= AVSEEK_FLAG_BACKWARD;
 
-    if (url_is_streamed(s->pb)) {
+    if (!s->pb->seekable) {
         if (stream_index < 0) {
             stream_index = av_find_default_stream_index(s);
             if (stream_index < 0)

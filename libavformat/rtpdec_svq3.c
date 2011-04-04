@@ -83,10 +83,10 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
 
         if (sv->pktbuf) {
             uint8_t *tmp;
-            url_close_dyn_buf(sv->pktbuf, &tmp);
+            avio_close_dyn_buf(sv->pktbuf, &tmp);
             av_free(tmp);
         }
-        if ((res = url_open_dyn_buf(&sv->pktbuf)) < 0)
+        if ((res = avio_open_dyn_buf(&sv->pktbuf)) < 0)
             return res;
         sv->timestamp   = *timestamp;
     }
@@ -100,7 +100,7 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
         av_init_packet(pkt);
         pkt->stream_index = st->index;
         *timestamp        = sv->timestamp;
-        pkt->size         = url_close_dyn_buf(sv->pktbuf, &pkt->data);
+        pkt->size         = avio_close_dyn_buf(sv->pktbuf, &pkt->data);
         pkt->destruct     = av_destruct_packet;
         sv->pktbuf        = NULL;
         return 0;
@@ -118,7 +118,7 @@ static void svq3_extradata_free(PayloadContext *sv)
 {
     if (sv->pktbuf) {
         uint8_t *buf;
-        url_close_dyn_buf(sv->pktbuf, &buf);
+        avio_close_dyn_buf(sv->pktbuf, &buf);
         av_free(buf);
     }
     av_free(sv);

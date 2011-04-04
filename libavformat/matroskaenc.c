@@ -455,7 +455,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
     uint8_t *codecpriv;
     int ret, codecpriv_size;
 
-    ret = url_open_dyn_buf(&dyn_cp);
+    ret = avio_open_dyn_buf(&dyn_cp);
     if(ret < 0)
         return ret;
 
@@ -498,7 +498,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
         ff_put_wav_header(dyn_cp, codec);
     }
 
-    codecpriv_size = url_close_dyn_buf(dyn_cp, &codecpriv);
+    codecpriv_size = avio_close_dyn_buf(dyn_cp, &codecpriv);
     if (codecpriv_size)
         put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codecpriv, codecpriv_size);
     av_free(codecpriv);
@@ -852,7 +852,7 @@ static int mkv_write_header(AVFormatContext *s)
         if (ret < 0) return ret;
     }
 
-    if (url_is_streamed(s->pb))
+    if (!s->pb->seekable)
         mkv_write_seekhead(pb, mkv->main_seekhead);
 
     mkv->cues = mkv_start_cues(mkv->segment_offset);
@@ -1007,7 +1007,7 @@ static void mkv_flush_dynbuf(AVFormatContext *s)
     if (!mkv->dyn_bc)
         return;
 
-    bufsize = url_close_dyn_buf(mkv->dyn_bc, &dyn_buf);
+    bufsize = avio_close_dyn_buf(mkv->dyn_bc, &dyn_buf);
     avio_write(s->pb, dyn_buf, bufsize);
     av_free(dyn_buf);
     mkv->dyn_bc = NULL;
@@ -1028,9 +1028,9 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EINVAL);
     }
 
-    if (url_is_streamed(s->pb)) {
+    if (!s->pb->seekable) {
         if (!mkv->dyn_bc)
-            url_open_dyn_buf(&mkv->dyn_bc);
+            avio_open_dyn_buf(&mkv->dyn_bc);
         pb = mkv->dyn_bc;
     }
 
@@ -1080,16 +1080,16 @@ static int mkv_copy_packet(MatroskaMuxContext *mkv, const AVPacket *pkt)
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    AVIOContext *pb = url_is_streamed(s->pb) ? mkv->dyn_bc : s->pb;
+    AVIOContext *pb = s->pb->seekable ? s->pb : mkv->dyn_bc;
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     int ret, keyframe = !!(pkt->flags & AV_PKT_FLAG_KEY);
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
-    int cluster_size = avio_tell(pb) - (url_is_streamed(s->pb) ? 0 : mkv->cluster_pos);
+    int cluster_size = avio_tell(pb) - (s->pb->seekable ? mkv->cluster_pos : 0);
 
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
     // after 4k and on a keyframe
     if (mkv->cluster_pos &&
-        ((url_is_streamed(s->pb) && (cluster_size > 32*1024 || ts > mkv->cluster_pts + 1000))
+        ((!s->pb->seekable && (cluster_size > 32*1024 || ts > mkv->cluster_pts + 1000))
          ||                      cluster_size > 5*1024*1024 || ts > mkv->cluster_pts + 5000
          || (codec->codec_type == AVMEDIA_TYPE_VIDEO && keyframe && cluster_size > 4*1024))) {
         av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64
@@ -1143,7 +1143,7 @@ static int mkv_write_trailer(AVFormatContext *s)
         end_ebml_master(pb, mkv->cluster);
     }
 
-    if (!url_is_streamed(pb)) {
+    if (pb->seekable) {
         cuespos = mkv_write_cues(pb, mkv->cues, s->nb_streams);
 
         ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES    , cuespos);

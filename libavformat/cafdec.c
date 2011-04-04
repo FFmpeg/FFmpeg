@@ -223,7 +223,7 @@ static int read_header(AVFormatContext *s,
 
         /* stop at data chunk if seeking is not supported or
            data chunk size is unknown */
-        if (found_data && (caf->data_size < 0 || url_is_streamed(pb)))
+        if (found_data && (caf->data_size < 0 || !pb->seekable))
             break;
 
         tag  = avio_rb32(pb);
@@ -236,7 +236,7 @@ static int read_header(AVFormatContext *s,
             avio_skip(pb, 4); /* edit count */
             caf->data_start = avio_tell(pb);
             caf->data_size  = size < 0 ? -1 : size - 4;
-            if (caf->data_size > 0 && !url_is_streamed(pb))
+            if (caf->data_size > 0 && pb->seekable)
                 avio_skip(pb, caf->data_size);
             found_data = 1;
             break;
