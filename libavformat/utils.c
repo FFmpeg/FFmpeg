@@ -371,7 +371,7 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
 {
     AVProbeData lpd = *pd;
     AVInputFormat *fmt1 = NULL, *fmt;
-    int score;
+    int score, id3 = 0;
 
     if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
         int id3len = ff_id3v2_tag_len(lpd.buf);
@@ -379,6 +379,7 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
             lpd.buf += id3len;
             lpd.buf_size -= id3len;
         }
+        id3 = 1;
     }
 
     fmt = NULL;
@@ -399,6 +400,16 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
         }else if (score == *score_max)
             fmt = NULL;
     }
+
+    /* a hack for files with huge id3v2 tags -- try to guess by file extension. */
+    if (!fmt && id3 && *score_max < AVPROBE_SCORE_MAX/4) {
+        while ((fmt = av_iformat_next(fmt)))
+            if (fmt->extensions && av_match_ext(lpd.filename, fmt->extensions)) {
+                *score_max = AVPROBE_SCORE_MAX/4;
+                break;
+            }
+    }
+
     return fmt;
 }
 
