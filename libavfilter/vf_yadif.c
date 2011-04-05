@@ -20,6 +20,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/common.h"
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "yadif.h"
 
@@ -51,6 +52,8 @@ typedef struct {
     void (*filter_line)(uint8_t *dst,
                         uint8_t *prev, uint8_t *cur, uint8_t *next,
                         int w, int prefs, int mrefs, int parity, int mode);
+
+    const AVPixFmtDescriptor *csp;
 } YADIFContext;
 
 static void filter_line_c(uint8_t *dst,
@@ -121,11 +124,16 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
     YADIFContext *yadif = ctx->priv;
     int y, i;
 
-    for (i = 0; i < 3; i++) {
-        int is_chroma = !!i;
-        int w = dstpic->video->w >> is_chroma;
-        int h = dstpic->video->h >> is_chroma;
+    for (i = 0; i < yadif->csp->nb_components; i++) {
+        int w = dstpic->video->w;
+        int h = dstpic->video->h;
         int refs = yadif->cur->linesize[i];
+
+        if (i) {
+        /* Why is this not part of the per-plane description thing? */
+            w >>= yadif->csp->log2_chroma_w;
+            h >>= yadif->csp->log2_chroma_h;
+        }
 
         for (y = 0; y < h; y++) {
             if ((y ^ parity) & 1) {
@@ -180,6 +188,9 @@ static void return_frame(AVFilterContext *ctx, int is_second)
     if (is_second)
         yadif->out = avfilter_get_video_buffer(link, AV_PERM_WRITE | AV_PERM_PRESERVE |
                                                AV_PERM_REUSE, link->w, link->h);
+
+    if (!yadif->csp)
+        yadif->csp = &av_pix_fmt_descriptors[link->format];
 
     filter(ctx, yadif->out, tff ^ !is_second, tff);
 
@@ -292,7 +303,16 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum PixelFormat pix_fmts[] = {
         PIX_FMT_YUV420P,
+        PIX_FMT_YUV422P,
+        PIX_FMT_YUV444P,
+        PIX_FMT_YUV410P,
+        PIX_FMT_YUV411P,
         PIX_FMT_GRAY8,
+        PIX_FMT_YUVJ420P,
+        PIX_FMT_YUVJ422P,
+        PIX_FMT_YUVJ444P,
+        PIX_FMT_YUV440P,
+        PIX_FMT_YUVJ440P,
         PIX_FMT_NONE
     };
 
@@ -308,6 +328,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     yadif->mode = 0;
     yadif->parity = -1;
+    yadif->csp = NULL;
 
     if (args) sscanf(args, "%d:%d", &yadif->mode, &yadif->parity);
 
