@@ -62,6 +62,7 @@ untested special converters
 #include "rgb2rgb.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/x86_cpu.h"
+#include "libavutil/cpu.h"
 #include "libavutil/avutil.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/bswap.h"
@@ -1314,6 +1315,12 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
 {
 #if CONFIG_RUNTIME_CPUDETECT
     int flags = c->flags;
+
+    int cpuflags = av_get_cpu_flags();
+
+    flags |= (cpuflags & AV_CPU_FLAG_MMX ? SWS_CPU_CAPS_MMX : 0);
+    flags |= (cpuflags & AV_CPU_FLAG_MMX2 ? SWS_CPU_CAPS_MMX2 : 0);
+    flags |= (cpuflags & AV_CPU_FLAG_3DNOW ? SWS_CPU_CAPS_3DNOW : 0);
 
 #if ARCH_X86
     // ordered per speed fastest first
