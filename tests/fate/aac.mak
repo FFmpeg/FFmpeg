@@ -18,6 +18,10 @@ FATE_AAC += fate-aac-al_sbr_ps_06_ur
 fate-aac-al_sbr_ps_06_ur: CMD = pcm -i $(SAMPLES)/aac/al_sbr_ps_06_new.mp4
 fate-aac-al_sbr_ps_06_ur: REF = $(SAMPLES)/aac/al_sbr_ps_06_ur.s16
 
+FATE_AAC += fate-aac-latm_000000001180bc60
+fate-aac-latm_000000001180bc60: CMD = pcm -i $(SAMPLES)/aac/latm_000000001180bc60.mpg
+fate-aac-latm_000000001180bc60: REF = $(SAMPLES)/aac/latm_000000001180bc60.s16
+
 FATE_TESTS += $(FATE_AAC)
 fate-aac: $(FATE_AAC)
 $(FATE_AAC): CMP = oneoff
