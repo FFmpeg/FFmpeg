@@ -100,9 +100,9 @@ enum {
  * information for single band used by 3GPP TS26.403-inspired psychoacoustic model
  */
 typedef struct AacPsyBand{
-    float energy;    ///< band energy
-    float thr;       ///< energy threshold
-    float thr_quiet; ///< threshold in quiet
+    float energy;       ///< band energy
+    float thr;          ///< energy threshold
+    float thr_quiet;    ///< threshold in quiet
     float nz_lines;     ///< number of non-zero spectral lines
     float active_lines; ///< number of active spectral lines
     float pe;           ///< perceptual entropy
@@ -566,43 +566,46 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
     float desired_bits, desired_pe, delta_pe, reduction, spread_en[128] = {0};
     float a = 0.0f, active_lines = 0.0f, norm_fac = 0.0f;
     float pe = pctx->chan_bitrate > 32000 ? 0.0f : FFMAX(50.0f, 100.0f - pctx->chan_bitrate * 100.0f / 32000.0f);
-    const int      num_bands  = ctx->num_bands[wi->num_windows == 8];
-    const uint8_t *band_sizes = ctx->bands[wi->num_windows == 8];
-    AacPsyCoeffs  *coeffs     = pctx->psy_coef[wi->num_windows == 8];
+    const int      num_bands   = ctx->num_bands[wi->num_windows == 8];
+    const uint8_t *band_sizes  = ctx->bands[wi->num_windows == 8];
+    AacPsyCoeffs  *coeffs      = pctx->psy_coef[wi->num_windows == 8];
     const float avoid_hole_thr = wi->num_windows == 8 ? PSY_3GPP_AH_THR_SHORT : PSY_3GPP_AH_THR_LONG;
 
     //calculate energies, initial thresholds and related values - 5.4.2 "Threshold Calculation"
     for (w = 0; w < wi->num_windows*16; w += 16) {
         for (g = 0; g < num_bands; g++) {
             AacPsyBand *band = &pch->band[w+g];
+
             float form_factor = 0.0f;
             band->energy = 0.0f;
             for (i = 0; i < band_sizes[g]; i++) {
                 band->energy += coefs[start+i] * coefs[start+i];
                 form_factor  += sqrtf(fabs(coefs[start+i]));
             }
-            band->thr     = band->energy * 0.001258925f;
+            band->thr      = band->energy * 0.001258925f;
             band->nz_lines = form_factor / powf(band->energy / band_sizes[g], 0.25f);
 
-            start        += band_sizes[g];
+            start += band_sizes[g];
         }
     }
     //modify thresholds and energies - spread, threshold in quiet, pre-echo control
     for (w = 0; w < wi->num_windows*16; w += 16) {
         AacPsyBand *bands = &pch->band[w];
+
         //5.4.2.3 "Spreading" & 5.4.3 "Spreaded Energy Calculation"
         spread_en[0] = bands[0].energy;
         for (g = 1; g < num_bands; g++) {
-            bands[g].thr = FFMAX(bands[g].thr, bands[g-1].thr * coeffs[g].spread_hi[0]);
+            bands[g].thr   = FFMAX(bands[g].thr,    bands[g-1].thr * coeffs[g].spread_hi[0]);
             spread_en[w+g] = FFMAX(bands[g].energy, spread_en[w+g-1] * coeffs[g].spread_hi[1]);
         }
         for (g = num_bands - 2; g >= 0; g--) {
-            bands[g].thr = FFMAX(bands[g].thr, bands[g+1].thr * coeffs[g].spread_low[0]);
+            bands[g].thr   = FFMAX(bands[g].thr,   bands[g+1].thr * coeffs[g].spread_low[0]);
             spread_en[w+g] = FFMAX(spread_en[w+g], spread_en[w+g+1] * coeffs[g].spread_low[1]);
         }
         //5.4.2.4 "Threshold in quiet"
         for (g = 0; g < num_bands; g++) {
             AacPsyBand *band = &bands[g];
+
             band->thr_quiet = band->thr = FFMAX(band->thr, coeffs[g].ath);
             //5.4.2.5 "Pre-echo control"
             if (!(wi->window_type[0] == LONG_STOP_SEQUENCE || (wi->window_type[1] == LONG_START_SEQUENCE && !w)))
