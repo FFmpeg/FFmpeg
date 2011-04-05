@@ -56,25 +56,6 @@ typedef struct {
     const AVPixFmtDescriptor *csp;
 } YADIFContext;
 
-static void filter_line_c(uint8_t *dst,
-                          uint8_t *prev, uint8_t *cur, uint8_t *next,
-                          int w, int prefs, int mrefs, int parity, int mode)
-{
-    int x;
-    uint8_t *prev2 = parity ? prev : cur ;
-    uint8_t *next2 = parity ? cur  : next;
-    for (x = 0;  x < w; x++) {
-        int c = cur[mrefs];
-        int d = (prev2[0] + next2[0])>>1;
-        int e = cur[prefs];
-        int temporal_diff0 = FFABS(prev2[0] - next2[0]);
-        int temporal_diff1 =(FFABS(prev[mrefs] - c) + FFABS(prev[prefs] - e) )>>1;
-        int temporal_diff2 =(FFABS(next[mrefs] - c) + FFABS(next[prefs] - e) )>>1;
-        int diff = FFMAX3(temporal_diff0>>1, temporal_diff1, temporal_diff2);
-        int spatial_pred = (c+e)>>1;
-        int spatial_score = FFABS(cur[mrefs-1] - cur[prefs-1]) + FFABS(c-e)
-                          + FFABS(cur[mrefs+1] - cur[prefs+1]) - 1;
-
 #define CHECK(j)\
     {   int score = FFABS(cur[mrefs-1+(j)] - cur[prefs-1-(j)])\
                   + FFABS(cur[mrefs  +(j)] - cur[prefs  -(j)])\
@@ -83,39 +64,55 @@ static void filter_line_c(uint8_t *dst,
             spatial_score= score;\
             spatial_pred= (cur[mrefs  +(j)] + cur[prefs  -(j)])>>1;\
 
-        CHECK(-1) CHECK(-2) }} }}
-        CHECK( 1) CHECK( 2) }} }}
-
-        if (mode < 2) {
-            int b = (prev2[2*mrefs] + next2[2*mrefs])>>1;
-            int f = (prev2[2*prefs] + next2[2*prefs])>>1;
-#if 0
-            int a = cur[-3*refs];
-            int g = cur[+3*refs];
-            int max = FFMAX3(d-e, d-c, FFMIN3(FFMAX(b-c,f-e),FFMAX(b-c,b-a),FFMAX(f-g,f-e)) );
-            int min = FFMIN3(d-e, d-c, FFMAX3(FFMIN(b-c,f-e),FFMIN(b-c,b-a),FFMIN(f-g,f-e)) );
-#else
-            int max = FFMAX3(d-e, d-c, FFMIN(b-c, f-e));
-            int min = FFMIN3(d-e, d-c, FFMAX(b-c, f-e));
-#endif
-
-            diff = FFMAX3(diff, min, -max);
-        }
-
-        if (spatial_pred > d + diff)
-           spatial_pred = d + diff;
-        else if (spatial_pred < d - diff)
-           spatial_pred = d - diff;
-
-        dst[0] = spatial_pred;
-
-        dst++;
-        cur++;
-        prev++;
-        next++;
-        prev2++;
-        next2++;
+#define FILTER \
+    for (x = 0;  x < w; x++) { \
+        int c = cur[mrefs]; \
+        int d = (prev2[0] + next2[0])>>1; \
+        int e = cur[prefs]; \
+        int temporal_diff0 = FFABS(prev2[0] - next2[0]); \
+        int temporal_diff1 =(FFABS(prev[mrefs] - c) + FFABS(prev[prefs] - e) )>>1; \
+        int temporal_diff2 =(FFABS(next[mrefs] - c) + FFABS(next[prefs] - e) )>>1; \
+        int diff = FFMAX3(temporal_diff0>>1, temporal_diff1, temporal_diff2); \
+        int spatial_pred = (c+e)>>1; \
+        int spatial_score = FFABS(cur[mrefs-1] - cur[prefs-1]) + FFABS(c-e) \
+                          + FFABS(cur[mrefs+1] - cur[prefs+1]) - 1; \
+ \
+        CHECK(-1) CHECK(-2) }} }} \
+        CHECK( 1) CHECK( 2) }} }} \
+ \
+        if (mode < 2) { \
+            int b = (prev2[2*mrefs] + next2[2*mrefs])>>1; \
+            int f = (prev2[2*prefs] + next2[2*prefs])>>1; \
+            int max = FFMAX3(d-e, d-c, FFMIN(b-c, f-e)); \
+            int min = FFMIN3(d-e, d-c, FFMAX(b-c, f-e)); \
+ \
+            diff = FFMAX3(diff, min, -max); \
+        } \
+ \
+        if (spatial_pred > d + diff) \
+           spatial_pred = d + diff; \
+        else if (spatial_pred < d - diff) \
+           spatial_pred = d - diff; \
+ \
+        dst[0] = spatial_pred; \
+ \
+        dst++; \
+        cur++; \
+        prev++; \
+        next++; \
+        prev2++; \
+        next2++; \
     }
+
+static void filter_line_c(uint8_t *dst,
+                          uint8_t *prev, uint8_t *cur, uint8_t *next,
+                          int w, int prefs, int mrefs, int parity, int mode)
+{
+    int x;
+    uint8_t *prev2 = parity ? prev : cur ;
+    uint8_t *next2 = parity ? cur  : next;
+
+    FILTER
 }
 
 static void filter_line_c_16bit(uint16_t *dst,
@@ -127,59 +124,8 @@ static void filter_line_c_16bit(uint16_t *dst,
     uint16_t *next2 = parity ? cur  : next;
     mrefs /= 2;
     prefs /= 2;
-    for (x = 0;  x < w; x++) {
-        int c = cur[mrefs];
-        int d = (prev2[0] + next2[0])>>1;
-        int e = cur[prefs];
-        int temporal_diff0 = FFABS(prev2[0] - next2[0]);
-        int temporal_diff1 =(FFABS(prev[mrefs] - c) + FFABS(prev[prefs] - e) )>>1;
-        int temporal_diff2 =(FFABS(next[mrefs] - c) + FFABS(next[prefs] - e) )>>1;
-        int diff = FFMAX3(temporal_diff0>>1, temporal_diff1, temporal_diff2);
-        int spatial_pred = (c+e)>>1;
-        int spatial_score = FFABS(cur[mrefs-1] - cur[prefs-1]) + FFABS(c-e)
-                          + FFABS(cur[mrefs+1] - cur[prefs+1]) - 1;
 
-#define CHECK(j)\
-    {   int score = FFABS(cur[mrefs-1+j] - cur[prefs-1-j])\
-                  + FFABS(cur[mrefs  +j] - cur[prefs  -j])\
-                  + FFABS(cur[mrefs+1+j] - cur[prefs+1-j]);\
-        if (score < spatial_score) {\
-            spatial_score= score;\
-            spatial_pred= (cur[mrefs  +j] + cur[prefs  -j])>>1;\
-
-        CHECK(-1) CHECK(-2) }} }}
-        CHECK( 1) CHECK( 2) }} }}
-
-        if (mode < 2) {
-            int b = (prev2[2*mrefs] + next2[2*mrefs])>>1;
-            int f = (prev2[2*prefs] + next2[2*prefs])>>1;
-#if 0
-            int a = cur[-3*refs];
-            int g = cur[+3*refs];
-            int max = FFMAX3(d-e, d-c, FFMIN3(FFMAX(b-c,f-e),FFMAX(b-c,b-a),FFMAX(f-g,f-e)) );
-            int min = FFMIN3(d-e, d-c, FFMAX3(FFMIN(b-c,f-e),FFMIN(b-c,b-a),FFMIN(f-g,f-e)) );
-#else
-            int max = FFMAX3(d-e, d-c, FFMIN(b-c, f-e));
-            int min = FFMIN3(d-e, d-c, FFMAX(b-c, f-e));
-#endif
-
-            diff = FFMAX3(diff, min, -max);
-        }
-
-        if (spatial_pred > d + diff)
-           spatial_pred = d + diff;
-        else if (spatial_pred < d - diff)
-           spatial_pred = d - diff;
-
-        dst[0] = spatial_pred;
-
-        dst++;
-        cur++;
-        prev++;
-        next++;
-        prev2++;
-        next2++;
-    }
+    FILTER
 }
 
 static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
