@@ -686,7 +686,10 @@ typedef struct MpegEncContext {
     void (*denoise_dct)(struct MpegEncContext *s, DCTELEM *block);
 } MpegEncContext;
 
-#define REBASE_PICTURE(pic, new_ctx, old_ctx) (pic ? &new_ctx->picture[pic - old_ctx->picture] : NULL)
+#define REBASE_PICTURE(pic, new_ctx, old_ctx) (pic ? \
+    (pic >= old_ctx->picture && pic < old_ctx->picture+old_ctx->picture_count ?\
+        &new_ctx->picture[pic - old_ctx->picture] : pic - (Picture*)old_ctx + (Picture*)new_ctx)\
+    : NULL)
 
 void MPV_decode_defaults(MpegEncContext *s);
 int MPV_common_init(MpegEncContext *s);
