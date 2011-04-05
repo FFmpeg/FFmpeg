@@ -584,3 +584,9 @@ void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssiz
     *au_scale /= gcd;
     *au_rate /= gcd;
 }
+
+void ff_get_guid(AVIOContext *s, ff_asf_guid *g)
+{
+    assert(sizeof(*g) == 16);
+    avio_read(s, *g, sizeof(*g));
+}
