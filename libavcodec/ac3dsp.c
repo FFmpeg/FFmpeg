@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "ac3.h"
 #include "ac3dsp.h"
@@ -149,6 +150,27 @@ static int ac3_compute_mantissa_size_c(int mant_cnt[5], uint8_t *bap,
     return bits;
 }
 
+static void ac3_extract_exponents_c(uint8_t *exp, int32_t *coef, int nb_coefs)
+{
+    int i;
+
+    for (i = 0; i < nb_coefs; i++) {
+        int e;
+        int v = abs(coef[i]);
+        if (v == 0)
+            e = 24;
+        else {
+            e = 23 - av_log2(v);
+            if (e >= 24) {
+                e = 24;
+                coef[i] = 0;
+            }
+            av_assert2(e >= 0);
+        }
+        exp[i] = e;
+    }
+}
+
 av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
 {
     c->ac3_exponent_min = ac3_exponent_min_c;
@@ -158,6 +180,7 @@ av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
     c->float_to_fixed24 = float_to_fixed24_c;
     c->bit_alloc_calc_bap = ac3_bit_alloc_calc_bap_c;
     c->compute_mantissa_size = ac3_compute_mantissa_size_c;
+    c->extract_exponents = ac3_extract_exponents_c;
 
     if (ARCH_ARM)
         ff_ac3dsp_init_arm(c, bit_exact);

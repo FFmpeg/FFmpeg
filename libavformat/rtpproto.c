@@ -29,6 +29,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "rtpdec.h"
+#include "url.h"
 
 #include <unistd.h>
 #include <stdarg.h>
@@ -189,7 +190,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     build_udp_url(buf, sizeof(buf),
                   hostname, rtp_port, local_rtp_port, ttl, max_packet_size,
                   connect);
-    if (url_open(&s->rtp_hd, buf, flags) < 0)
+    if (ffurl_open(&s->rtp_hd, buf, flags) < 0)
         goto fail;
     if (local_rtp_port>=0 && local_rtcp_port<0)
         local_rtcp_port = ff_udp_get_local_port(s->rtp_hd) + 1;
@@ -197,23 +198,23 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     build_udp_url(buf, sizeof(buf),
                   hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
                   connect);
-    if (url_open(&s->rtcp_hd, buf, flags) < 0)
+    if (ffurl_open(&s->rtcp_hd, buf, flags) < 0)
         goto fail;
 
     /* just to ease handle access. XXX: need to suppress direct handle
        access */
-    s->rtp_fd = url_get_file_handle(s->rtp_hd);
-    s->rtcp_fd = url_get_file_handle(s->rtcp_hd);
+    s->rtp_fd = ffurl_get_file_handle(s->rtp_hd);
+    s->rtcp_fd = ffurl_get_file_handle(s->rtcp_hd);
 
-    h->max_packet_size = url_get_max_packet_size(s->rtp_hd);
+    h->max_packet_size = s->rtp_hd->max_packet_size;
     h->is_streamed = 1;
     return 0;
 
  fail:
     if (s->rtp_hd)
-        url_close(s->rtp_hd);
+        ffurl_close(s->rtp_hd);
     if (s->rtcp_hd)
-        url_close(s->rtcp_hd);
+        ffurl_close(s->rtcp_hd);
     av_free(s);
     return AVERROR(EIO);
 }
@@ -296,7 +297,7 @@ static int rtp_write(URLContext *h, const uint8_t *buf, int size)
         hd = s->rtp_hd;
     }
 
-    ret = url_write(hd, buf, size);
+    ret = ffurl_write(hd, buf, size);
 #if 0
     {
         struct timespec ts;
@@ -312,8 +313,8 @@ static int rtp_close(URLContext *h)
 {
     RTPContext *s = h->priv_data;
 
-    url_close(s->rtp_hd);
-    url_close(s->rtcp_hd);
+    ffurl_close(s->rtp_hd);
+    ffurl_close(s->rtcp_hd);
     av_free(s);
     return 0;
 }

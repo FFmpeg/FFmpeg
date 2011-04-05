@@ -110,7 +110,7 @@ static av_always_inline float quantize_and_encode_band_cost_template(
     const float IQ = ff_aac_pow2sf_tab[200 + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
     const float  Q = ff_aac_pow2sf_tab[200 - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
     const float CLIPPED_ESCAPE = 165140.0f*IQ;
-    int i, j, k;
+    int i, j;
     float cost = 0;
     const int dim = BT_PAIR ? 2 : 4;
     int resbits = 0;
@@ -149,10 +149,10 @@ static av_always_inline float quantize_and_encode_band_cost_template(
         curbits =  ff_aac_spectral_bits[cb-1][curidx];
         vec     = &ff_aac_codebook_vectors[cb-1][curidx*dim];
         if (BT_UNSIGNED) {
-            for (k = 0; k < dim; k++) {
-                float t = fabsf(in[i+k]);
+            for (j = 0; j < dim; j++) {
+                float t = fabsf(in[i+j]);
                 float di;
-                if (BT_ESC && vec[k] == 64.0f) { //FIXME: slow
+                if (BT_ESC && vec[j] == 64.0f) { //FIXME: slow
                     if (t >= CLIPPED_ESCAPE) {
                         di = t - CLIPPED_ESCAPE;
                         curbits += 21;
@@ -162,15 +162,15 @@ static av_always_inline float quantize_and_encode_band_cost_template(
                         curbits += av_log2(c)*2 - 4 + 1;
                     }
                 } else {
-                    di = t - vec[k]*IQ;
+                    di = t - vec[j]*IQ;
                 }
-                if (vec[k] != 0.0f)
+                if (vec[j] != 0.0f)
                     curbits++;
                 rd += di*di;
             }
         } else {
-            for (k = 0; k < dim; k++) {
-                float di = in[i+k] - vec[k]*IQ;
+            for (j = 0; j < dim; j++) {
+                float di = in[i+j] - vec[j]*IQ;
                 rd += di*di;
             }
         }

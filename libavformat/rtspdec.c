@@ -28,6 +28,7 @@
 #include "os_support.h"
 #include "rtsp.h"
 #include "rdt.h"
+#include "url.h"
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP
@@ -200,7 +201,7 @@ redo:
         if (rt->state != RTSP_STATE_STREAMING)
             return 0;
     }
-    ret = url_read_complete(rt->rtsp_hd, buf, 3);
+    ret = ffurl_read_complete(rt->rtsp_hd, buf, 3);
     if (ret != 3)
         return -1;
     id  = buf[0];
@@ -211,7 +212,7 @@ redo:
     if (len > buf_size || len < 12)
         goto redo;
     /* get the data */
-    ret = url_read_complete(rt->rtsp_hd, buf, len);
+    ret = ffurl_read_complete(rt->rtsp_hd, buf, len);
     if (ret != len)
         return -1;
     if (rt->transport == RTSP_TRANSPORT_RDT &&

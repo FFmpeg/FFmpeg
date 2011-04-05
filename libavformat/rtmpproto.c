@@ -36,6 +36,7 @@
 #include "flv.h"
 #include "rtmp.h"
 #include "rtmppkt.h"
+#include "url.h"
 
 /* we can't use av_log() with URLContext yet... */
 #if FF_API_URL_CLASS
@@ -485,13 +486,13 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
         tosend[i] = av_lfg_get(&rnd) >> 24;
     client_pos = rtmp_handshake_imprint_with_digest(tosend + 1);
 
-    url_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE + 1);
-    i = url_read_complete(rt->stream, serverdata, RTMP_HANDSHAKE_PACKET_SIZE + 1);
+    ffurl_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE + 1);
+    i = ffurl_read_complete(rt->stream, serverdata, RTMP_HANDSHAKE_PACKET_SIZE + 1);
     if (i != RTMP_HANDSHAKE_PACKET_SIZE + 1) {
         av_log(LOG_CONTEXT, AV_LOG_ERROR, "Cannot read RTMP handshake response\n");
         return -1;
     }
-    i = url_read_complete(rt->stream, clientdata, RTMP_HANDSHAKE_PACKET_SIZE);
+    i = ffurl_read_complete(rt->stream, clientdata, RTMP_HANDSHAKE_PACKET_SIZE);
     if (i != RTMP_HANDSHAKE_PACKET_SIZE) {
         av_log(LOG_CONTEXT, AV_LOG_ERROR, "Cannot read RTMP handshake response\n");
         return -1;
@@ -531,9 +532,9 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
                          tosend + RTMP_HANDSHAKE_PACKET_SIZE - 32);
 
         // write reply back to the server
-        url_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE);
+        ffurl_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE);
     } else {
-        url_write(rt->stream, serverdata+1, RTMP_HANDSHAKE_PACKET_SIZE);
+        ffurl_write(rt->stream, serverdata+1, RTMP_HANDSHAKE_PACKET_SIZE);
     }
 
     return 0;
@@ -785,7 +786,7 @@ static int rtmp_close(URLContext *h)
         gen_delete_stream(h, rt);
 
     av_freep(&rt->flv_data);
-    url_close(rt->stream);
+    ffurl_close(rt->stream);
     av_free(rt);
     return 0;
 }
@@ -820,7 +821,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         port = RTMP_DEFAULT_PORT;
     ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
 
-    if (url_open(&rt->stream, buf, URL_RDWR) < 0) {
+    if (ffurl_open(&rt->stream, buf, URL_RDWR) < 0) {
         av_log(LOG_CONTEXT, AV_LOG_ERROR, "Cannot open connection %s\n", buf);
         goto fail;
     }
@@ -887,7 +888,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         rt->flv_off  = 0;
     }
 
-    s->max_packet_size = url_get_max_packet_size(rt->stream);
+    s->max_packet_size = rt->stream->max_packet_size;
     s->is_streamed     = 1;
     return 0;
 

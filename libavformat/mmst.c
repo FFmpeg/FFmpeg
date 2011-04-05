@@ -35,6 +35,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/bytestream.h"
 #include "network.h"
+#include "url.h"
 
 #define LOCAL_ADDRESS 0xc0a80081    // FIXME get and use correct local ip address.
 #define LOCAL_PORT    1037          // as above.
@@ -138,7 +139,7 @@ static int send_command_packet(MMSTContext *mmst)
     memset(mms->write_out_ptr, 0, exact_length - len);
 
     // write it out.
-    write_result= url_write(mms->mms_hd, mms->out_buffer, exact_length);
+    write_result= ffurl_write(mms->mms_hd, mms->out_buffer, exact_length);
     if(write_result != exact_length) {
         av_log(NULL, AV_LOG_ERROR,
                "Failed to write data of length %d: %d (%s)\n",
@@ -240,7 +241,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
     MMSSCPacketType packet_type= -1;
     MMSContext *mms = &mmst->mms;
     for(;;) {
-        read_result = url_read_complete(mms->mms_hd, mms->in_buffer, 8);
+        read_result = ffurl_read_complete(mms->mms_hd, mms->in_buffer, 8);
         if (read_result != 8) {
             if(read_result < 0) {
                 av_log(NULL, AV_LOG_ERROR,
@@ -260,7 +261,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
             int length_remaining, hr;
 
             mmst->incoming_flags= mms->in_buffer[3];
-            read_result= url_read_complete(mms->mms_hd, mms->in_buffer+8, 4);
+            read_result= ffurl_read_complete(mms->mms_hd, mms->in_buffer+8, 4);
             if(read_result != 4) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Reading command packet length failed: %d (%s)\n",
@@ -280,7 +281,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
                        length_remaining, sizeof(mms->in_buffer) - 12);
                 return AVERROR_INVALIDDATA;
             }
-            read_result = url_read_complete(mms->mms_hd, mms->in_buffer + 12,
+            read_result = ffurl_read_complete(mms->mms_hd, mms->in_buffer + 12,
                                             length_remaining) ;
             if (read_result != length_remaining) {
                 av_log(NULL, AV_LOG_ERROR,
@@ -318,7 +319,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
             }
             mms->remaining_in_len    = length_remaining;
             mms->read_in_ptr         = mms->in_buffer;
-            read_result= url_read_complete(mms->mms_hd, mms->in_buffer, length_remaining);
+            read_result= ffurl_read_complete(mms->mms_hd, mms->in_buffer, length_remaining);
             if(read_result != length_remaining) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Failed to read packet data of size %d: %d (%s)\n",
@@ -463,7 +464,7 @@ static int mms_close(URLContext *h)
     MMSContext *mms   = &mmst->mms;
     if(mms->mms_hd) {
         send_close_packet(mmst);
-        url_close(mms->mms_hd);
+        ffurl_close(mms->mms_hd);
     }
 
     /* free all separately allocated pointers in mms */
@@ -522,7 +523,7 @@ static int mms_open(URLContext *h, const char *uri, int flags)
 
     // establish tcp connection.
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mmst->host, port, NULL);
-    err = url_open(&mms->mms_hd, tcpname, URL_RDWR);
+    err = ffurl_open(&mms->mms_hd, tcpname, URL_RDWR);
     if (err)
         goto fail;
 

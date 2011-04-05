@@ -32,6 +32,7 @@
 #include "avio_internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "url.h"
 
 #define SDP_MAX_SIZE 16384
 
@@ -158,7 +159,7 @@ static int tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
         interleave_header[0] = '$';
         interleave_header[1] = id;
         AV_WB16(interleave_header + 2, packet_len);
-        url_write(rt->rtsp_hd_out, interleaved_packet, 4 + packet_len);
+        ffurl_write(rt->rtsp_hd_out, interleaved_packet, 4 + packet_len);
         ptr += packet_len;
         size -= packet_len;
     }
@@ -172,7 +173,7 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
     int n;
-    struct pollfd p = {url_get_file_handle(rt->rtsp_hd), POLLIN, 0};
+    struct pollfd p = {ffurl_get_file_handle(rt->rtsp_hd), POLLIN, 0};
     AVFormatContext *rtpctx;
     int ret;
 

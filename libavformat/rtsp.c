@@ -42,6 +42,7 @@
 #include "rdt.h"
 #include "rtpdec_formats.h"
 #include "rtpenc_chain.h"
+#include "url.h"
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP
@@ -508,7 +509,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
         }
         rtsp_st->transport_priv = NULL;
         if (rtsp_st->rtp_handle)
-            url_close(rtsp_st->rtp_handle);
+            ffurl_close(rtsp_st->rtp_handle);
         rtsp_st->rtp_handle = NULL;
     }
 }
@@ -817,7 +818,7 @@ void ff_rtsp_skip_packet(AVFormatContext *s)
     int ret, len, len1;
     uint8_t buf[1024];
 
-    ret = url_read_complete(rt->rtsp_hd, buf, 3);
+    ret = ffurl_read_complete(rt->rtsp_hd, buf, 3);
     if (ret != 3)
         return;
     len = AV_RB16(buf + 1);
@@ -829,7 +830,7 @@ void ff_rtsp_skip_packet(AVFormatContext *s)
         len1 = len;
         if (len1 > sizeof(buf))
             len1 = sizeof(buf);
-        ret = url_read_complete(rt->rtsp_hd, buf, len1);
+        ret = ffurl_read_complete(rt->rtsp_hd, buf, len1);
         if (ret != len1)
             return;
         len -= len1;
@@ -854,7 +855,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     for (;;) {
         q = buf;
         for (;;) {
-            ret = url_read_complete(rt->rtsp_hd, &ch, 1);
+            ret = ffurl_read_complete(rt->rtsp_hd, &ch, 1);
 #ifdef DEBUG_RTP_TCP
             av_dlog(s, "ret=%d c=%02x [%c]\n", ret, ch, ch);
 #endif
@@ -902,7 +903,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     if (content_length > 0) {
         /* leave some room for a trailing '\0' (useful for simple parsing) */
         content = av_malloc(content_length + 1);
-        (void)url_read_complete(rt->rtsp_hd, content, content_length);
+        ffurl_read_complete(rt->rtsp_hd, content, content_length);
         content[content_length] = '\0';
     }
     if (content_ptr)
@@ -982,14 +983,14 @@ static int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
 
     av_dlog(s, "Sending:\n%s--\n", buf);
 
-    url_write(rt->rtsp_hd_out, out_buf, strlen(out_buf));
+    ffurl_write(rt->rtsp_hd_out, out_buf, strlen(out_buf));
     if (send_content_length > 0 && send_content) {
         if (rt->control_transport == RTSP_MODE_TUNNEL) {
             av_log(s, AV_LOG_ERROR, "tunneling of RTSP requests "
                                     "with content data not supported\n");
             return AVERROR_PATCHWELCOME;
         }
-        url_write(rt->rtsp_hd_out, send_content, send_content_length);
+        ffurl_write(rt->rtsp_hd_out, send_content, send_content_length);
     }
     rt->last_cmd_time = av_gettime();
 
@@ -1115,14 +1116,14 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                                 "?localport=%d", j);
                     /* we will use two ports per rtp stream (rtp and rtcp) */
                     j += 2;
-                    if (url_open(&rtsp_st->rtp_handle, buf, URL_RDWR) == 0)
+                    if (ffurl_open(&rtsp_st->rtp_handle, buf, URL_RDWR) == 0)
                         goto rtp_opened;
                 }
             }
 
 #if 0
             /* then try on any port */
-            if (url_open(&rtsp_st->rtp_handle, "rtp://", URL_RDONLY) < 0) {
+            if (ffurl_open(&rtsp_st->rtp_handle, "rtp://", URL_RDONLY) < 0) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
@@ -1268,7 +1269,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                         namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
             ff_url_join(url, sizeof(url), "rtp", NULL, namebuf,
                         port, "?ttl=%d", ttl);
-            if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
+            if (ffurl_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
@@ -1296,8 +1297,8 @@ fail:
 void ff_rtsp_close_connections(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
-    if (rt->rtsp_hd_out != rt->rtsp_hd) url_close(rt->rtsp_hd_out);
-    url_close(rt->rtsp_hd);
+    if (rt->rtsp_hd_out != rt->rtsp_hd) ffurl_close(rt->rtsp_hd_out);
+    ffurl_close(rt->rtsp_hd);
     rt->rtsp_hd = rt->rtsp_hd_out = NULL;
 }
 
@@ -1395,7 +1396,7 @@ redirect:
                  av_get_random_seed(), av_get_random_seed());
 
         /* GET requests */
-        if (url_alloc(&rt->rtsp_hd, httpname, URL_RDONLY) < 0) {
+        if (ffurl_alloc(&rt->rtsp_hd, httpname, URL_RDONLY) < 0) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1410,13 +1411,13 @@ redirect:
         ff_http_set_headers(rt->rtsp_hd, headers);
 
         /* complete the connection */
-        if (url_connect(rt->rtsp_hd)) {
+        if (ffurl_connect(rt->rtsp_hd)) {
             err = AVERROR(EIO);
             goto fail;
         }
 
         /* POST requests */
-        if (url_alloc(&rt->rtsp_hd_out, httpname, URL_WRONLY) < 0 ) {
+        if (ffurl_alloc(&rt->rtsp_hd_out, httpname, URL_WRONLY) < 0 ) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1452,14 +1453,14 @@ redirect:
         ff_http_init_auth_state(rt->rtsp_hd_out, rt->rtsp_hd);
 
         /* complete the connection */
-        if (url_connect(rt->rtsp_hd_out)) {
+        if (ffurl_connect(rt->rtsp_hd_out)) {
             err = AVERROR(EIO);
             goto fail;
         }
     } else {
         /* open the tcp connection */
         ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port, NULL);
-        if (url_open(&rt->rtsp_hd, tcpname, URL_RDWR) < 0) {
+        if (ffurl_open(&rt->rtsp_hd, tcpname, URL_RDWR) < 0) {
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1467,7 +1468,7 @@ redirect:
     }
     rt->seq = 0;
 
-    tcp_fd = url_get_file_handle(rt->rtsp_hd);
+    tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
     if (!getpeername(tcp_fd, (struct sockaddr*) &peer, &peer_len)) {
         getnameinfo((struct sockaddr*) &peer, peer_len, host, sizeof(host),
                     NULL, 0, NI_NUMERICHOST);
@@ -1570,7 +1571,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             return AVERROR(EAGAIN);
         max_p = 0;
         if (rt->rtsp_hd) {
-            tcp_fd = url_get_file_handle(rt->rtsp_hd);
+            tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
             p[max_p].fd = tcp_fd;
             p[max_p++].events = POLLIN;
         } else {
@@ -1579,7 +1580,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         for (i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
             if (rtsp_st->rtp_handle) {
-                p[max_p].fd = url_get_file_handle(rtsp_st->rtp_handle);
+                p[max_p].fd = ffurl_get_file_handle(rtsp_st->rtp_handle);
                 p[max_p++].events = POLLIN;
                 p[max_p].fd = rtp_get_rtcp_file_handle(rtsp_st->rtp_handle);
                 p[max_p++].events = POLLIN;
@@ -1593,7 +1594,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                 rtsp_st = rt->rtsp_streams[i];
                 if (rtsp_st->rtp_handle) {
                     if (p[j].revents & POLLIN || p[j+1].revents & POLLIN) {
-                        ret = url_read(rtsp_st->rtp_handle, buf, buf_size);
+                        ret = ffurl_read(rtsp_st->rtp_handle, buf, buf_size);
                         if (ret > 0) {
                             *prtsp_st = rtsp_st;
                             return ret;
@@ -1806,7 +1807,7 @@ static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     namebuf, rtsp_st->sdp_port,
                     "?localport=%d&ttl=%d", rtsp_st->sdp_port,
                     rtsp_st->sdp_ttl);
-        if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
+        if (ffurl_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
             err = AVERROR_INVALIDDATA;
             goto fail;
         }
@@ -1862,12 +1863,12 @@ static int rtp_read_header(AVFormatContext *s,
     if (!ff_network_init())
         return AVERROR(EIO);
 
-    ret = url_open(&in, s->filename, URL_RDONLY);
+    ret = ffurl_open(&in, s->filename, URL_RDONLY);
     if (ret)
         goto fail;
 
     while (1) {
-        ret = url_read(in, recvbuf, sizeof(recvbuf));
+        ret = ffurl_read(in, recvbuf, sizeof(recvbuf));
         if (ret == AVERROR(EAGAIN))
             continue;
         if (ret < 0)
@@ -1886,8 +1887,8 @@ static int rtp_read_header(AVFormatContext *s,
         payload_type = recvbuf[1] & 0x7f;
         break;
     }
-    getsockname(url_get_file_handle(in), (struct sockaddr*) &addr, &addrlen);
-    url_close(in);
+    getsockname(ffurl_get_file_handle(in), (struct sockaddr*) &addr, &addrlen);
+    ffurl_close(in);
     in = NULL;
 
     memset(&codec, 0, sizeof(codec));
@@ -1926,7 +1927,7 @@ static int rtp_read_header(AVFormatContext *s,
 
 fail:
     if (in)
-        url_close(in);
+        ffurl_close(in);
     ff_network_close();
     return ret;
 }

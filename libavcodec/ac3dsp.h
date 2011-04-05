@@ -105,6 +105,8 @@ typedef struct AC3DSPContext {
      * Calculate the number of bits needed to encode a set of mantissas.
      */
     int (*compute_mantissa_size)(int mant_cnt[5], uint8_t *bap, int nb_coefs);
+
+    void (*extract_exponents)(uint8_t *exp, int32_t *coef, int nb_coefs);
 } AC3DSPContext;
 
 void ff_ac3dsp_init    (AC3DSPContext *c, int bit_exact);

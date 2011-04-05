@@ -26,6 +26,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "network.h"
+#include "url.h"
 
 typedef struct {
     URLContext *hd;
@@ -34,7 +35,7 @@ typedef struct {
 static int gopher_write(URLContext *h, const uint8_t *buf, int size)
 {
     GopherContext *s = h->priv_data;
-    return url_write(s->hd, buf, size);
+    return ffurl_write(s->hd, buf, size);
 }
 
 static int gopher_connect(URLContext *h, const char *path)
@@ -68,7 +69,7 @@ static int gopher_close(URLContext *h)
 {
     GopherContext *s = h->priv_data;
     if (s->hd) {
-        url_close(s->hd);
+        ffurl_close(s->hd);
         s->hd = NULL;
     }
     av_freep(&h->priv_data);
@@ -99,7 +100,7 @@ static int gopher_open(URLContext *h, const char *uri, int flags)
     ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
 
     s->hd = NULL;
-    err = url_open(&s->hd, buf, URL_RDWR);
+    err = ffurl_open(&s->hd, buf, URL_RDWR);
     if (err < 0)
         goto fail;
 
@@ -114,7 +115,7 @@ static int gopher_open(URLContext *h, const char *uri, int flags)
 static int gopher_read(URLContext *h, uint8_t *buf, int size)
 {
     GopherContext *s = h->priv_data;
-    int len = url_read(s->hd, buf, size);
+    int len = ffurl_read(s->hd, buf, size);
     return len;
 }
 

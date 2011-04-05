@@ -25,6 +25,7 @@
 #include "avio.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "url.h"
 #include <stdarg.h>
 
 #define IO_BUFFER_SIZE 32768
@@ -836,7 +837,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     uint8_t *buffer;
     int buffer_size, max_packet_size;
 
-    max_packet_size = url_get_max_packet_size(h);
+    max_packet_size = h->max_packet_size;
     if (max_packet_size) {
         buffer_size = max_packet_size; /* no need to bufferize more than one packet */
     } else {
@@ -854,7 +855,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
 
     if (ffio_init_context(*s, buffer, buffer_size,
                       (h->flags & URL_WRONLY || h->flags & URL_RDWR), h,
-                      url_read, url_write, url_seek) < 0) {
+                      ffurl_read, ffurl_write, ffurl_seek) < 0) {
         av_free(buffer);
         av_freep(s);
         return AVERROR(EIO);
@@ -953,12 +954,12 @@ int avio_open(AVIOContext **s, const char *filename, int flags)
     URLContext *h;
     int err;
 
-    err = url_open(&h, filename, flags);
+    err = ffurl_open(&h, filename, flags);
     if (err < 0)
         return err;
     err = ffio_fdopen(s, h);
     if (err < 0) {
-        url_close(h);
+        ffurl_close(h);
         return err;
     }
     return 0;
@@ -970,7 +971,7 @@ int avio_close(AVIOContext *s)
 
     av_free(s->buffer);
     av_free(s);
-    return url_close(h);
+    return ffurl_close(h);
 }
 
 #if FF_API_OLD_AVIO

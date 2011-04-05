@@ -57,11 +57,13 @@ typedef struct URLContext {
     int is_connected;
 } URLContext;
 
+#if FF_API_OLD_AVIO
 typedef struct URLPollEntry {
     URLContext *handle;
     int events;
     int revents;
 } URLPollEntry;
+#endif
 
 /**
  * @defgroup open_modes URL open modes
@@ -92,148 +94,33 @@ typedef struct URLPollEntry {
 
 typedef int URLInterruptCB(void);
 
+#if FF_API_OLD_AVIO
 /**
- * Create a URLContext for accessing to the resource indicated by
- * url, and open it using the URLProtocol up.
- *
- * @param puc pointer to the location where, in case of success, the
- * function puts the pointer to the created URLContext
- * @param flags flags which control how the resource indicated by url
- * is to be opened
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code in case of failure
+ * @defgroup old_url_funcs Old url_* functions
+ * @deprecated use the buffered API based on AVIOContext instead
+ * @{
  */
-int url_open_protocol (URLContext **puc, struct URLProtocol *up,
-                       const char *url, int flags);
-
-/**
- * Create a URLContext for accessing to the resource indicated by
- * url, but do not initiate the connection yet.
- *
- * @param puc pointer to the location where, in case of success, the
- * function puts the pointer to the created URLContext
- * @param flags flags which control how the resource indicated by url
- * is to be opened
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code in case of failure
- */
-int url_alloc(URLContext **h, const char *url, int flags);
-
-/**
- * Connect an URLContext that has been allocated by url_alloc
- */
-int url_connect(URLContext *h);
-
-/**
- * Create an URLContext for accessing to the resource indicated by
- * url, and open it.
- *
- * @param puc pointer to the location where, in case of success, the
- * function puts the pointer to the created URLContext
- * @param flags flags which control how the resource indicated by url
- * is to be opened
- * @return 0 in case of success, a negative value corresponding to an
- * AVERROR code in case of failure
- */
-int url_open(URLContext **h, const char *url, int flags);
-
-/**
- * Read up to size bytes from the resource accessed by h, and store
- * the read bytes in buf.
- *
- * @return The number of bytes actually read, or a negative value
- * corresponding to an AVERROR code in case of error. A value of zero
- * indicates that it is not possible to read more from the accessed
- * resource (except if the value of the size argument is also zero).
- */
-int url_read(URLContext *h, unsigned char *buf, int size);
-
-/**
- * Read as many bytes as possible (up to size), calling the
- * read function multiple times if necessary.
- * This makes special short-read handling in applications
- * unnecessary, if the return value is < size then it is
- * certain there was either an error or the end of file was reached.
- */
-int url_read_complete(URLContext *h, unsigned char *buf, int size);
-
-/**
- * Write size bytes from buf to the resource accessed by h.
- *
- * @return the number of bytes actually written, or a negative value
- * corresponding to an AVERROR code in case of failure
- */
-int url_write(URLContext *h, const unsigned char *buf, int size);
-
-/**
- * Passing this as the "whence" parameter to a seek function causes it to
- * return the filesize without seeking anywhere. Supporting this is optional.
- * If it is not supported then the seek function will return <0.
- */
-#define AVSEEK_SIZE 0x10000
-
-/**
- * Change the position that will be used by the next read/write
- * operation on the resource accessed by h.
- *
- * @param pos specifies the new position to set
- * @param whence specifies how pos should be interpreted, it must be
- * one of SEEK_SET (seek from the beginning), SEEK_CUR (seek from the
- * current position), SEEK_END (seek from the end), or AVSEEK_SIZE
- * (return the filesize of the requested resource, pos is ignored).
- * @return a negative value corresponding to an AVERROR code in case
- * of failure, or the resulting file position, measured in bytes from
- * the beginning of the file. You can use this feature together with
- * SEEK_CUR to read the current file position.
- */
-int64_t url_seek(URLContext *h, int64_t pos, int whence);
-
-/**
- * Close the resource accessed by the URLContext h, and free the
- * memory used by it.
- *
- * @return a negative value if an error condition occurred, 0
- * otherwise
- */
-int url_close(URLContext *h);
+attribute_deprecated int url_open_protocol (URLContext **puc, struct URLProtocol *up,
+                                            const char *url, int flags);
+attribute_deprecated int url_alloc(URLContext **h, const char *url, int flags);
+attribute_deprecated int url_connect(URLContext *h);
+attribute_deprecated int url_open(URLContext **h, const char *url, int flags);
+attribute_deprecated int url_read(URLContext *h, unsigned char *buf, int size);
+attribute_deprecated int url_read_complete(URLContext *h, unsigned char *buf, int size);
+attribute_deprecated int url_write(URLContext *h, const unsigned char *buf, int size);
+attribute_deprecated int64_t url_seek(URLContext *h, int64_t pos, int whence);
+attribute_deprecated int url_close(URLContext *h);
+attribute_deprecated int64_t url_filesize(URLContext *h);
+attribute_deprecated int url_get_file_handle(URLContext *h);
+attribute_deprecated int url_get_max_packet_size(URLContext *h);
+attribute_deprecated void url_get_filename(URLContext *h, char *buf, int buf_size);
+#endif
 
 /**
  * Return a non-zero value if the resource indicated by url
  * exists, 0 otherwise.
  */
 int url_exist(const char *url);
-
-/**
- * Return the filesize of the resource accessed by h, AVERROR(ENOSYS)
- * if the operation is not supported by h, or another negative value
- * corresponding to an AVERROR error code in case of failure.
- */
-int64_t url_filesize(URLContext *h);
-
-/**
- * Return the file descriptor associated with this URL. For RTP, this
- * will return only the RTP file descriptor, not the RTCP file descriptor.
- *
- * @return the file descriptor associated with this URL, or <0 on error.
- */
-int url_get_file_handle(URLContext *h);
-
-/**
- * Return the maximum packet size associated to packetized file
- * handle. If the file is not packetized (stream like HTTP or file on
- * disk), then 0 is returned.
- *
- * @param h file handle
- * @return maximum packet size in bytes
- */
-int url_get_max_packet_size(URLContext *h);
-
-/**
- * Copy the filename of the resource accessed by h to buf.
- *
- * @param buf_size size in bytes of buf
- */
-void url_get_filename(URLContext *h, char *buf, int buf_size);
 
 /**
  * The callback is called in blocking functions to test regulary if
@@ -243,8 +130,10 @@ void url_get_filename(URLContext *h, char *buf, int buf_size);
  */
 void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 
+#if FF_API_OLD_AVIO
 /* not implemented */
-int url_poll(URLPollEntry *poll_table, int n, int timeout);
+attribute_deprecated int url_poll(URLPollEntry *poll_table, int n, int timeout);
+#endif
 
 /**
  * Pause and resume playing - only meaningful if using a network streaming
@@ -272,14 +161,6 @@ int av_url_read_pause(URLContext *h, int pause);
  */
 int64_t av_url_read_seek(URLContext *h, int stream_index,
                          int64_t timestamp, int flags);
-
-/**
- * Oring this flag as into the "whence" parameter to a seek function causes it to
- * seek by any means (like reopening and linear reading) or other normally unreasonble
- * means that can be extreemly slow.
- * This may be ignored by the seek code.
- */
-#define AVSEEK_FORCE 0x20000
 
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
 
@@ -333,6 +214,10 @@ attribute_deprecated int av_register_protocol(URLProtocol *protocol);
 int av_register_protocol2(URLProtocol *protocol, int size);
 
 #define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
+
+/**
+ * @}
+ */
 
 /**
  * Bytestream IO Context.
@@ -517,6 +402,21 @@ int avio_put_str(AVIOContext *s, const char *str);
  * @return number of bytes written.
  */
 int avio_put_str16le(AVIOContext *s, const char *str);
+
+/**
+ * Passing this as the "whence" parameter to a seek function causes it to
+ * return the filesize without seeking anywhere. Supporting this is optional.
+ * If it is not supported then the seek function will return <0.
+ */
+#define AVSEEK_SIZE 0x10000
+
+/**
+ * Oring this flag as into the "whence" parameter to a seek function causes it to
+ * seek by any means (like reopening and linear reading) or other normally unreasonble
+ * means that can be extreemly slow.
+ * This may be ignored by the seek code.
+ */
+#define AVSEEK_FORCE 0x20000
 
 /**
  * fseek() equivalent for AVIOContext.

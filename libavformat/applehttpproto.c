@@ -29,6 +29,7 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include "internal.h"
+#include "url.h"
 #include <unistd.h>
 
 /*
@@ -240,12 +241,12 @@ static int applehttp_read(URLContext *h, uint8_t *buf, int size)
 
 start:
     if (s->seg_hd) {
-        ret = url_read(s->seg_hd, buf, size);
+        ret = ffurl_read(s->seg_hd, buf, size);
         if (ret > 0)
             return ret;
     }
     if (s->seg_hd) {
-        url_close(s->seg_hd);
+        ffurl_close(s->seg_hd);
         s->seg_hd = NULL;
         s->cur_seq_no++;
     }
@@ -274,7 +275,7 @@ retry:
     }
     url = s->segments[s->cur_seq_no - s->start_seq_no]->url,
     av_log(NULL, AV_LOG_DEBUG, "opening %s\n", url);
-    ret = url_open(&s->seg_hd, url, URL_RDONLY);
+    ret = ffurl_open(&s->seg_hd, url, URL_RDONLY);
     if (ret < 0) {
         if (url_interrupt_cb())
             return AVERROR_EXIT;
@@ -291,7 +292,7 @@ static int applehttp_close(URLContext *h)
 
     free_segment_list(s);
     free_variant_list(s);
-    url_close(s->seg_hd);
+    ffurl_close(s->seg_hd);
     av_free(s);
     return 0;
 }
