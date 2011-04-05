@@ -101,5 +101,8 @@
 #ifndef FF_API_FIND_INFO_TAG
 #define FF_API_FIND_INFO_TAG           (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
+#ifndef FF_API_PKT_DUMP
+#define FF_API_PKT_DUMP                (LIBAVFORMAT_VERSION_MAJOR < 54)
+#endif
 
 #endif //AVFORMAT_VERSION_H

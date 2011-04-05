@@ -978,7 +978,6 @@ void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size);
  */
 void av_pkt_dump2(FILE *f, AVPacket *pkt, int dump_payload, AVStream *st);
 
-attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 
 /**
  * Send a nice dump of a packet to the log.
@@ -994,7 +993,10 @@ attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
                       AVStream *st);
 
+#if FF_API_PKT_DUMP
+attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 attribute_deprecated void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt,
+#endif
                                           int dump_payload);
 
 /**
