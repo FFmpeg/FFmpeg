@@ -901,6 +901,7 @@ CONFIG_LIST="
     $COMPONENT_LIST
     aandct
     ac3dsp
+    audio_float
     avcodec
     avdevice
     avfilter
