@@ -2429,7 +2429,7 @@ case $target_os in
         LIBTARGET=i386
         if enabled x86_64; then
             enable malloc_aligned
-            LIBTARGET="i386:x86-64"
+            LIBTARGET=x64
         elif enabled arm; then
             LIBTARGET=arm-wince
         fi
