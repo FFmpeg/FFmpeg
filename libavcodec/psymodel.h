@@ -26,6 +26,8 @@
 
 /** maximum possible number of bands */
 #define PSY_MAX_BANDS 128
+/** maximum number of channels */
+#define PSY_MAX_CHANS 20
 
 /**
  * single band psychoacoustic information
@@ -61,6 +63,13 @@ typedef struct FFPsyContext {
     uint8_t **bands;                  ///< scalefactor band sizes for possible frame sizes
     int     *num_bands;               ///< number of scalefactor bands for possible frame sizes
     int num_lens;                     ///< number of scalefactor band sets
+
+    float pe[PSY_MAX_CHANS];          ///< total PE for each channel in the frame
+
+    struct {
+        int size;                     ///< size of the bitresevoir in bits
+        int bits;                     ///< number of bits used in the bitresevoir
+    } bitres;
 
     void* model_priv_data;            ///< psychoacoustic model implementation private data
 } FFPsyContext;
