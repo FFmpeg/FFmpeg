@@ -899,7 +899,9 @@ AVInputFormat  *av_iformat_next(AVInputFormat  *f);
  */
 AVOutputFormat *av_oformat_next(AVOutputFormat *f);
 
-enum CodecID av_guess_image2_codec(const char *filename);
+#if FF_API_GUESS_IMG2_CODEC
+attribute_deprecated enum CodecID av_guess_image2_codec(const char *filename);
+#endif
 
 /* XXX: Use automatic init with either ELF sections or C file parser */
 /* modules. */
