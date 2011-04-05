@@ -320,6 +320,13 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { CODEC_ID_NONE,      0 },
 };
 
+const AVCodecGuid ff_codec_wav_guids[] = {
+    {CODEC_ID_AC3,        {0x2C,0x80,0x6D,0xE0,0x46,0xDB,0xCF,0x11,0xB4,0xD1,0x00,0x80,0x5F,0x6C,0xBB,0xEA}},
+    {CODEC_ID_EAC3,       {0xAF,0x87,0xFB,0xA7,0x02,0x2D,0xFB,0x42,0xA4,0xD4,0x05,0xCD,0x93,0x84,0x3B,0xDD}},
+    {CODEC_ID_MP2,        {0x2B,0x80,0x6D,0xE0,0x46,0xDB,0xCF,0x11,0xB4,0xD1,0x00,0x80,0x5F,0x6C,0xBB,0xEA}},
+    {CODEC_ID_NONE}
+};
+
 #if CONFIG_MUXERS
 int64_t ff_start_tag(AVIOContext *pb, const char *tag)
 {
@@ -589,4 +596,14 @@ void ff_get_guid(AVIOContext *s, ff_asf_guid *g)
 {
     assert(sizeof(*g) == 16);
     avio_read(s, *g, sizeof(*g));
+}
+
+enum CodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
+{
+    int i;
+    for (i = 0; guids[i].id != CODEC_ID_NONE; i++) {
+        if (!ff_guidcmp(guids[i].guid, guid))
+            return guids[i].id;
+    }
+    return CODEC_ID_NONE;
 }
