@@ -544,6 +544,7 @@ static void mpegts_find_stream_type(AVStream *st,
         if (stream_type == types->stream_type) {
             st->codec->codec_type = types->codec_type;
             st->codec->codec_id   = types->codec_id;
+            st->request_probe     = 0;
             return;
         }
     }
