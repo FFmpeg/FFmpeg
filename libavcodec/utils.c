@@ -474,6 +474,12 @@ AVFrame *avcodec_alloc_frame(void){
     return pic;
 }
 
+static void avcodec_get_subtitle_defaults(AVSubtitle *sub)
+{
+    memset(sub, 0, sizeof(*sub));
+    sub->pts = AV_NOPTS_VALUE;
+}
+
 int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 {
     int ret= -1;
@@ -795,6 +801,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 
     avctx->pkt = avpkt;
     *got_sub_ptr = 0;
+    avcodec_get_subtitle_defaults(sub);
     ret = avctx->codec->decode(avctx, sub, got_sub_ptr, avpkt);
     if (*got_sub_ptr)
         avctx->frame_number++;

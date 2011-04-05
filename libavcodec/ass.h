@@ -70,13 +70,6 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
 int ff_ass_subtitle_header_default(AVCodecContext *avctx);
 
 /**
- * Initialize an AVSubtitle structure for use with ff_ass_add_rect().
- *
- * @param sub pointer to the AVSubtitle
- */
-void ff_ass_init(AVSubtitle *sub);
-
-/**
  * Add an ASS dialog line to an AVSubtitle as a new AVSubtitleRect.
  *
  * @param sub pointer to the AVSubtitle

@@ -357,7 +357,6 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
      *      not been cleared by a subsequent empty display command.
      */
 
-    memset(sub, 0, sizeof(*sub));
     // Blank if last object_number was 0.
     // Note that this may be wrong for more complex subtitles.
     if (!ctx->presentation.object_number)

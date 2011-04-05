@@ -62,11 +62,6 @@ int ff_ass_subtitle_header_default(AVCodecContext *avctx)
                                          ASS_DEFAULT_ALIGNMENT);
 }
 
-void ff_ass_init(AVSubtitle *sub)
-{
-    memset(sub, 0, sizeof(*sub));
-}
-
 static int ts_to_string(char *str, int strlen, int ts)
 {
     int h, m, s;

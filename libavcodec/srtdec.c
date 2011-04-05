@@ -216,8 +216,6 @@ static int srt_decode_frame(AVCodecContext *avctx,
     if (avpkt->size <= 0)
         return avpkt->size;
 
-    ff_ass_init(sub);
-
     while (ptr < end && *ptr) {
         ptr = read_ts(ptr, &ts_start, &ts_end, &x1, &y1, &x2, &y2);
         if (!ptr)

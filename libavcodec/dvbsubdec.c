@@ -1323,10 +1323,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
     int i;
     int offset_x=0, offset_y=0;
 
-    sub->rects = NULL;
-    sub->start_display_time = 0;
     sub->end_display_time = ctx->time_out * 1000;
-    sub->format = 0;
 
     if (display_def) {
         offset_x = display_def->x;
