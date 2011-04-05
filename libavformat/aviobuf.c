@@ -1040,9 +1040,6 @@ int64_t ffio_read_seek(AVIOContext *s, int stream_index,
     return ret;
 }
 
-/* avio_open_dyn_buf and avio_close_dyn_buf are used in rtp.c to send a response
- * back to the server even if CONFIG_MUXERS is false. */
-#if CONFIG_MUXERS || CONFIG_NETWORK
 /* buffer handling */
 #if FF_API_OLD_AVIO
 int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_size, int flags)
@@ -1189,4 +1186,3 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
     av_free(s);
     return size - padding;
 }
-#endif /* CONFIG_MUXERS || CONFIG_NETWORK */
