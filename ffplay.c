@@ -1662,7 +1662,9 @@ static int input_init(AVFilterContext *ctx, const char *args, void *opaque)
     priv->is = opaque;
     codec    = priv->is->video_st->codec;
     codec->opaque = ctx;
-    if(codec->codec->capabilities & CODEC_CAP_DR1) {
+    if((codec->codec->capabilities & CODEC_CAP_DR1)
+       && codec->codec_id != CODEC_ID_SVQ1 //chroma alignment from lavfi is insufficient
+    ) {
         priv->use_dr1 = 1;
         codec->get_buffer     = input_get_buffer;
         codec->release_buffer = input_release_buffer;
