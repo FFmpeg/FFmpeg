@@ -1582,9 +1582,6 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     int i, w, h, stride[4];
     unsigned edge;
 
-    if(av_image_check_size(w, h, 0, codec))
-        return -1;
-
     if (codec->codec->capabilities & CODEC_CAP_NEG_LINESIZES)
         perms |= AV_PERM_NEG_LINESIZES;
 
@@ -1597,6 +1594,10 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
 
     w = codec->width;
     h = codec->height;
+
+    if(av_image_check_size(w, h, 0, codec))
+        return -1;
+
     avcodec_align_dimensions2(codec, &w, &h, stride);
     edge = codec->flags & CODEC_FLAG_EMU_EDGE ? 0 : avcodec_get_edge_width();
     w += edge << 1;
