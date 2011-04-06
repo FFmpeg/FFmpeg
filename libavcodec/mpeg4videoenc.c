@@ -650,8 +650,6 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
                     x= s->mb_x*16;
                     y= s->mb_y*16;
-                    if(x+16 > s->width)  x= s->width-16;
-                    if(y+16 > s->height) y= s->height-16;
 
                     offset= x + y*s->linesize;
                     p_pic= s->new_picture.data[0] + offset;
@@ -667,7 +665,21 @@ void mpeg4_encode_mb(MpegEncContext * s,
                         b_pic= pic->data[0] + offset;
                         if(pic->type != FF_BUFFER_TYPE_SHARED)
                             b_pic+= INPLACE_OFFSET;
-                        diff= s->dsp.sad[0](NULL, p_pic, b_pic, s->linesize, 16);
+
+                        if(x+16 > s->width || y+16 > s->height){
+                            int x1,y1;
+                            int xe= FFMIN(16, s->width - x);
+                            int ye= FFMIN(16, s->height- y);
+                            diff=0;
+                            for(y1=0; y1<ye; y1++){
+                                for(x1=0; x1<xe; x1++){
+                                    diff+= FFABS(p_pic[x1+y1*s->linesize] - b_pic[x1+y1*s->linesize]);
+                                }
+                            }
+                            diff= diff*256/(xe*ye);
+                        }else{
+                            diff= s->dsp.sad[0](NULL, p_pic, b_pic, s->linesize, 16);
+                        }
                         if(diff>s->qscale*70){ //FIXME check that 70 is optimal
                             s->mb_skipped=0;
                             break;
