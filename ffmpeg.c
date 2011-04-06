@@ -149,6 +149,7 @@ static int nb_streamid_map = 0;
 static int frame_width  = 0;
 static int frame_height = 0;
 static float frame_aspect_ratio = 0;
+static int frame_aspect_ratio_override = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static int frame_bits_per_raw_sample = 0;
 static enum AVSampleFormat audio_sample_fmt = AV_SAMPLE_FMT_NONE;
@@ -390,16 +391,6 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
                  codec->height,
                  (int)av_get_int(sws_opts, "sws_flags", NULL));
         if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
-                                                NULL, args, NULL, ost->graph)) < 0)
-            return ret;
-        if ((ret = avfilter_link(last_filter, 0, filter, 0)) < 0)
-            return ret;
-        last_filter = filter;
-    }
-    if (av_cmp_q(codec->sample_aspect_ratio, icodec->sample_aspect_ratio)) {
-        snprintf(args, 255, "%d:%d",
-                 codec->sample_aspect_ratio.num, codec->sample_aspect_ratio.den);
-        if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("setsar"),
                                                 NULL, args, NULL, ost->graph)) < 0)
             return ret;
         if ((ret = avfilter_link(last_filter, 0, filter, 0)) < 0)
@@ -2912,6 +2903,7 @@ static void opt_frame_aspect_ratio(const char *arg)
         ffmpeg_exit(1);
     }
     frame_aspect_ratio = ar;
+    frame_aspect_ratio_override = 1;
 }
 
 static int opt_metadata(const char *opt, const char *arg)
@@ -3352,6 +3344,7 @@ static void opt_input_file(const char *filename)
             else
                 frame_aspect_ratio=av_q2d(dec->sample_aspect_ratio);
             frame_aspect_ratio *= (float) dec->width / dec->height;
+            frame_aspect_ratio_override = 0;
             frame_pix_fmt = dec->pix_fmt;
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
@@ -3456,6 +3449,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     AVCodecContext *video_enc;
     enum CodecID codec_id = CODEC_ID_NONE;
     AVCodec *codec= NULL;
+    int i;
 
     st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
     if (!st) {
@@ -3476,6 +3470,14 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
             codec = avcodec_find_encoder(codec_id);
         }
 #if CONFIG_AVFILTER
+        if(frame_aspect_ratio_override){
+            i = vfilters ? strlen(vfilters) : 0;
+            vfilters = av_realloc(vfilters, i+100);
+            snprintf(vfilters+i, 100, "%csetdar=%f\n", i?',':' ', frame_aspect_ratio);
+            frame_aspect_ratio=0;
+            frame_aspect_ratio_override=0;
+        }
+
         ost->avfilter= vfilters;
         vfilters= NULL;
 #endif
