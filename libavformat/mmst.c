@@ -146,7 +146,7 @@ static int send_command_packet(MMSTContext *mmst)
                exact_length, write_result,
                write_result < 0 ? strerror(write_result) :
                    "The server closed the connection");
-        return AVERROR_IO;
+        return AVERROR(EIO);
     }
 
     return 0;
@@ -268,7 +268,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
                        read_result,
                        read_result < 0 ? strerror(read_result) :
                            "The server closed the connection");
-                return read_result < 0 ? read_result : AVERROR_IO;
+                return read_result < 0 ? read_result : AVERROR(EIO);
             }
 
             length_remaining= AV_RL32(mms->in_buffer+8) + 4;
@@ -289,13 +289,13 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
                        length_remaining, read_result,
                        read_result < 0 ? strerror(read_result) :
                            "The server closed the connection");
-                return read_result < 0 ? read_result : AVERROR_IO;
+                return read_result < 0 ? read_result : AVERROR(EIO);
             }
             packet_type= AV_RL16(mms->in_buffer+36);
             if (read_result >= 44 && (hr = AV_RL32(mms->in_buffer + 40))) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Server sent a message with packet type 0x%x and error status code 0x%08x\n", packet_type, hr);
-                return AVERROR_UNKNOWN;
+                return AVERROR(EINVAL);
             }
         } else {
             int length_remaining;
@@ -326,7 +326,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
                        length_remaining, read_result,
                        read_result < 0 ? strerror(read_result) :
                            "The server closed the connection");
-                return read_result < 0 ? read_result : AVERROR_IO;
+                return read_result < 0 ? read_result : AVERROR(EIO);
             }
 
             // if we successfully read everything.
@@ -550,7 +550,7 @@ static int mms_open(URLContext *h, const char *uri, int flags)
     if((mmst->incoming_flags != 0X08) && (mmst->incoming_flags != 0X0C)) {
         av_log(NULL, AV_LOG_ERROR,
                "The server does not support MMST (try MMSH or RTSP)\n");
-        err = AVERROR_NOFMT;
+        err = AVERROR(EINVAL);
         goto fail;
     }
     err = ff_mms_asf_header_parser(mms);
@@ -604,7 +604,7 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
                     av_log(NULL, AV_LOG_ERROR,
                            "Incoming pktlen %d is larger than ASF pktsize %d\n",
                            mms->remaining_in_len, mms->asf_packet_len);
-                    result= AVERROR_IO;
+                    result= AVERROR(EIO);
                 } else {
                     // copy the data to the packet buffer.
                     result = ff_mms_read_data(mms, buf, size);
