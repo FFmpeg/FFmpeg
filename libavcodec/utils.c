@@ -1337,7 +1337,6 @@ void ff_thread_await_progress(AVFrame *f, int progress, int field)
 int avcodec_thread_init(AVCodecContext *s, int thread_count)
 {
     s->thread_count = thread_count;
-    s->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
     return ff_thread_init(s);
 }
 

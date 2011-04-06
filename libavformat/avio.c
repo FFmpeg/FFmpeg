@@ -388,6 +388,7 @@ void url_set_interrupt_cb(URLInterruptCB *interrupt_cb)
     url_interrupt_cb = interrupt_cb;
 }
 
+#if FF_API_OLD_AVIO
 int av_url_read_pause(URLContext *h, int pause)
 {
     if (!h->prot->url_read_pause)
@@ -402,3 +403,4 @@ int64_t av_url_read_seek(URLContext *h,
         return AVERROR(ENOSYS);
     return h->prot->url_read_seek(h, stream_index, timestamp, flags);
 }
+#endif

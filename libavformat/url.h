@@ -26,6 +26,11 @@
 #define AVFORMAT_URL_H
 
 #include "avio.h"
+#include "libavformat/version.h"
+
+#if !FF_API_OLD_AVIO
+#define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
+#endif
 
 /**
  * Create a URLContext for accessing to the resource indicated by
