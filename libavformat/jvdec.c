@@ -192,7 +192,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
     int i;
 
     if (flags & (AVSEEK_FLAG_BYTE|AVSEEK_FLAG_FRAME))
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
 
     switch(stream_index) {
     case 0:

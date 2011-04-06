@@ -98,7 +98,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         if (!is_start || !is_finish) {
             av_log_missing_feature(s, "RTP-X-QT with payload description "
                                       "split over several packets", 1);
-            return AVERROR_NOTSUPP;
+            return AVERROR(ENOSYS);
         }
         skip_bits(&gb, 12); // reserved
         data_len = get_bits(&gb, 16);
@@ -161,7 +161,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
 
     if (has_packet_info) {
         av_log_missing_feature(s, "RTP-X-QT with packet specific info", 1);
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
     }
 
     alen = len - avio_tell(&pb);
@@ -224,7 +224,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
 
     default:  /* unimplemented */
         av_log_missing_feature(NULL, "RTP-X-QT with packing scheme 2", 1);
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
     }
 }
 
