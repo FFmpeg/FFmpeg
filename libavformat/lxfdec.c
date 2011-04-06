@@ -218,7 +218,7 @@ static int lxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return ret < 0 ? ret : AVERROR_EOF;
 
     if (!(st = av_new_stream(s, 0)))
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     st->duration          = AV_RL32(&header_data[32]);
     video_params          = AV_RL32(&header_data[40]);
@@ -244,7 +244,7 @@ static int lxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if ((lxf->channels = (disk_params >> 2) & 0xF)) {
         if (!(st = av_new_stream(s, 1)))
-            return AVERROR_NOMEM;
+            return AVERROR(ENOMEM);
 
         st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
         st->codec->sample_rate = LXF_SAMPLERATE;
