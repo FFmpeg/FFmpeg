@@ -180,7 +180,7 @@ config:
 
 # regression tests
 
-check: test checkheaders
+check: test
 
 fulltest test: codectest lavftest lavfitest seektest
 
