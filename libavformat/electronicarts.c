@@ -416,6 +416,9 @@ static int ea_read_header(AVFormatContext *s,
         ea->video_stream_index = st->index;
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id = ea->video_codec;
+        // parsing is necessary to make FFmpeg generate correct timestamps
+        if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO)
+            st->need_parsing = AVSTREAM_PARSE_HEADERS;
         st->codec->codec_tag = 0;  /* no fourcc */
         st->codec->time_base = ea->time_base;
         st->codec->width = ea->width;
