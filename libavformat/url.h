@@ -140,4 +140,8 @@ int ffurl_get_file_handle(URLContext *h);
  */
 int ffurl_register_protocol(URLProtocol *protocol, int size);
 
+/* udp.c */
+int ff_udp_set_remote_url(URLContext *h, const char *uri);
+int ff_udp_get_local_port(URLContext *h);
+
 #endif //AVFORMAT_URL_H
