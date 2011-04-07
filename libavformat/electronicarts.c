@@ -330,12 +330,10 @@ static int process_ea_header(AVFormatContext *s) {
 
             case MVIh_TAG :
                 ea->video_codec = CODEC_ID_CMV;
-                ea->time_base = (AVRational){0,0};
                 break;
 
             case kVGT_TAG:
                 ea->video_codec = CODEC_ID_TGV;
-                ea->time_base = (AVRational){0,0};
                 break;
 
             case mTCD_TAG :
@@ -420,7 +418,8 @@ static int ea_read_header(AVFormatContext *s,
         if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         st->codec->codec_tag = 0;  /* no fourcc */
-        st->codec->time_base = ea->time_base;
+        if (ea->time_base.num)
+            av_set_pts_info(st, 64, ea->time_base.num, ea->time_base.den);
         st->codec->width = ea->width;
         st->codec->height = ea->height;
     }
