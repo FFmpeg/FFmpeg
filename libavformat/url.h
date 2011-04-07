@@ -32,6 +32,17 @@
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
 
 extern int (*url_interrupt_cb)(void);
+
+typedef struct URLContext {
+    const AVClass *av_class;    /**< information for av_log(). Set by url_open(). */
+    struct URLProtocol *prot;
+    void *priv_data;
+    char *filename;             /**< specified URL */
+    int flags;
+    int max_packet_size;        /**< if non zero, the stream is packetized with this max packet size */
+    int is_streamed;            /**< true if streamed (no seek possible), default = false */
+    int is_connected;
+} URLContext;
 #endif
 
 /**

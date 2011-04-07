@@ -21,7 +21,7 @@
 #ifndef AVFORMAT_MMS_H
 #define AVFORMAT_MMS_H
 
-#include "avformat.h"
+#include "url.h"
 
 typedef struct {
     int id;

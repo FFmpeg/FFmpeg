@@ -25,6 +25,7 @@
  */
 
 #include "avformat.h"
+#include "url.h"
 
 #include <librtmp/rtmp.h>
 #include <librtmp/log.h>

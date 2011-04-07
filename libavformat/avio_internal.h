@@ -21,6 +21,7 @@
 #define AVFORMAT_AVIO_INTERNAL_H
 
 #include "avio.h"
+#include "url.h"
 
 int ffio_init_context(AVIOContext *s,
                   unsigned char *buffer,

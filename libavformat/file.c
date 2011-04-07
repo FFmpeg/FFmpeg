@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include "os_support.h"
+#include "url.h"
 
 
 /* standard file protocol */

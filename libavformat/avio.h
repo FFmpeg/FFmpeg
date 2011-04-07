@@ -37,12 +37,14 @@
 
 /* unbuffered I/O */
 
+#if FF_API_OLD_AVIO
 /**
  * URL Context.
  * New fields can be added to the end with minor version bumps.
  * Removal, reordering and changes to existing fields require a major
  * version bump.
  * sizeof(URLContext) must not be used outside libav*.
+ * @deprecated This struct will be made private
  */
 typedef struct URLContext {
 #if FF_API_URL_CLASS
@@ -57,7 +59,6 @@ typedef struct URLContext {
     int is_connected;
 } URLContext;
 
-#if FF_API_OLD_AVIO
 typedef struct URLPollEntry {
     URLContext *handle;
     int events;
