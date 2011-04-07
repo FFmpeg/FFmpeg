@@ -1291,7 +1291,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_EA:
-        if (buf_size < 4 || AV_RL32(src) >= ((buf_size - 12) * 2)) {
+        if (buf_size < 12 || AV_RL32(src) > (buf_size - 12)/30*28) {
             src += buf_size;
             break;
         }
