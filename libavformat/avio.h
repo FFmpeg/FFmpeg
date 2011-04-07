@@ -90,11 +90,9 @@ typedef struct URLPollEntry {
  * silently ignored.
  */
 #define URL_FLAG_NONBLOCK 4
-#endif
 
 typedef int URLInterruptCB(void);
 
-#if FF_API_OLD_AVIO
 /**
  * @defgroup old_url_funcs Old url_* functions
  * @deprecated use the buffered API based on AVIOContext instead
@@ -117,7 +115,7 @@ attribute_deprecated void url_get_filename(URLContext *h, char *buf, int buf_siz
 attribute_deprecated int av_url_read_pause(URLContext *h, int pause);
 attribute_deprecated int64_t av_url_read_seek(URLContext *h, int stream_index,
                                               int64_t timestamp, int flags);
-attribute_deprecated void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
+attribute_deprecated void url_set_interrupt_cb(int (*interrupt_cb)(void));
 #endif
 
 /**
@@ -132,7 +130,7 @@ int url_exist(const char *url);
  * in this case by the interrupted function. 'NULL' means no interrupt
  * callback is given.
  */
-void avio_set_interrupt_cb(URLInterruptCB *interrupt_cb);
+void avio_set_interrupt_cb(int (*interrupt_cb)(void));
 
 #if FF_API_OLD_AVIO
 /* not implemented */

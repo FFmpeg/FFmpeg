@@ -49,7 +49,7 @@ static const AVClass urlcontext_class =
 static int default_interrupt_cb(void);
 
 URLProtocol *first_protocol = NULL;
-URLInterruptCB *url_interrupt_cb = default_interrupt_cb;
+int (*url_interrupt_cb)(void) = default_interrupt_cb;
 
 URLProtocol *av_protocol_next(URLProtocol *p)
 {
@@ -389,7 +389,7 @@ static int default_interrupt_cb(void)
     return 0;
 }
 
-void avio_set_interrupt_cb(URLInterruptCB *interrupt_cb)
+void avio_set_interrupt_cb(int (*interrupt_cb)(void))
 {
     if (!interrupt_cb)
         interrupt_cb = default_interrupt_cb;
