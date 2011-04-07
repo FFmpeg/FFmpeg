@@ -2910,9 +2910,11 @@ static void loop_filter(H264Context *h){
     int linesize, uvlinesize, mb_x, mb_y;
     const int end_mb_y= s->mb_y + FRAME_MBAFF;
     const int old_slice_type= h->slice_type;
+    const int end_mb_x  = s->mb_x;
 
     if(h->deblocking_filter) {
-        for(mb_x= 0; mb_x<s->mb_width; mb_x++){
+        int start_x= s->resync_mb_y == s->mb_y ? s->resync_mb_x : 0;
+        for(mb_x= start_x; mb_x<end_mb_x; mb_x++){
             for(mb_y=end_mb_y - FRAME_MBAFF; mb_y<= end_mb_y; mb_y++){
                 int mb_xy, mb_type;
                 mb_xy = h->mb_xy = mb_x + mb_y*s->mb_stride;
@@ -2957,7 +2959,7 @@ static void loop_filter(H264Context *h){
         }
     }
     h->slice_type= old_slice_type;
-    s->mb_x= 0;
+    s->mb_x= end_mb_x;
     s->mb_y= end_mb_y - FRAME_MBAFF;
     h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
     h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
@@ -3059,8 +3061,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             }
 
             if( ++s->mb_x >= s->mb_width ) {
-                s->mb_x = 0;
                 loop_filter(h);
+                s->mb_x = 0;
                 decode_finish_row(h);
                 ++s->mb_y;
                 if(FIELD_OR_MBAFF_PICTURE) {
@@ -3071,6 +3073,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             }
 
             if( eos || s->mb_y >= s->mb_height ) {
+                if(s->mb_x)
+                    loop_filter(h);
                 tprintf(s->avctx, "slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
                 return 0;
@@ -3099,8 +3103,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             }
 
             if(++s->mb_x >= s->mb_width){
-                s->mb_x=0;
                 loop_filter(h);
+                s->mb_x=0;
                 decode_finish_row(h);
                 ++s->mb_y;
                 if(FIELD_OR_MBAFF_PICTURE) {
@@ -3127,6 +3131,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             if(get_bits_count(&s->gb) >= s->gb.size_in_bits && s->mb_skip_run<=0){
                 tprintf(s->avctx, "slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
                 if(get_bits_count(&s->gb) == s->gb.size_in_bits ){
+                    if(s->mb_x)
+                        loop_filter(h);
                     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
 
                     return 0;
