@@ -139,8 +139,11 @@ attribute_deprecated int url_poll(URLPollEntry *poll_table, int n, int timeout);
 
 
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
-#endif
 
+/**
+ * @deprecated This struct is to be made private. Use the higher-level
+ *             AVIOContext-based API instead.
+ */
 typedef struct URLProtocol {
     const char *name;
     int (*url_open)(URLContext *h, const char *url, int flags);
@@ -157,6 +160,7 @@ typedef struct URLProtocol {
     const AVClass *priv_data_class;
     int flags;
 } URLProtocol;
+#endif
 
 #if FF_API_REGISTER_PROTOCOL
 extern URLProtocol *first_protocol;

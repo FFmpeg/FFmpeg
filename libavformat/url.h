@@ -43,6 +43,23 @@ typedef struct URLContext {
     int is_streamed;            /**< true if streamed (no seek possible), default = false */
     int is_connected;
 } URLContext;
+
+typedef struct URLProtocol {
+    const char *name;
+    int     (*url_open)( URLContext *h, const char *url, int flags);
+    int     (*url_read)( URLContext *h, unsigned char *buf, int size);
+    int     (*url_write)(URLContext *h, const unsigned char *buf, int size);
+    int64_t (*url_seek)( URLContext *h, int64_t pos, int whence);
+    int     (*url_close)(URLContext *h);
+    struct URLProtocol *next;
+    int (*url_read_pause)(URLContext *h, int pause);
+    int64_t (*url_read_seek)(URLContext *h, int stream_index,
+                             int64_t timestamp, int flags);
+    int (*url_get_file_handle)(URLContext *h);
+    int priv_data_size;
+    const AVClass *priv_data_class;
+    int flags;
+} URLProtocol;
 #endif
 
 /**
