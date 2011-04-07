@@ -181,7 +181,7 @@ static int applehttp_open(URLContext *h, const char *uri, int flags)
     const char *nested_url;
 
     if (flags & (URL_WRONLY | URL_RDWR))
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
 
     s = av_mallocz(sizeof(AppleHTTPContext));
     if (!s)

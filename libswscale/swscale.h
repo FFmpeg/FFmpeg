@@ -48,7 +48,7 @@
  * They may change, break or disappear at any time.
  */
 #ifndef FF_API_SWS_GETCONTEXT
-#define FF_API_SWS_GETCONTEXT  (LIBSWSCALE_VERSION_MAJOR < 1)
+#define FF_API_SWS_GETCONTEXT  (LIBSWSCALE_VERSION_MAJOR < 2)
 #endif
 
 /**
@@ -185,9 +185,9 @@ void sws_freeContext(struct SwsContext *swsContext);
  * @param dstFormat the destination image format
  * @param flags specify which algorithm and options to use for rescaling
  * @return a pointer to an allocated context, or NULL in case of error
- * @deprecated use sws_alloc_context() and sws_init_context()
+ * @note this function is to be removed after a saner alternative is
+ *       written
  */
-attribute_deprecated
 struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
                                   int dstW, int dstH, enum PixelFormat dstFormat,
                                   int flags, SwsFilter *srcFilter,

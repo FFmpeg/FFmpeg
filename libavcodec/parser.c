@@ -105,7 +105,7 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
     }
 }
 
-#if LIBAVCODEC_VERSION_MINOR < 53
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
  *
  * @param buf           input

@@ -1061,7 +1061,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
     int i;
 
     if ((flags & AVSEEK_FLAG_FRAME) || (flags & AVSEEK_FLAG_BYTE))
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
 
     /* timestamp adjustment is required because wtv->pts values are absolute,
      * whereas AVIndexEntry->timestamp values are relative to epoch. */
