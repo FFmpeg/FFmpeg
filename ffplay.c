@@ -31,6 +31,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/avassert.h"
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
@@ -1582,6 +1583,8 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     int i, w, h, stride[4];
     unsigned edge;
 
+    av_assert0(codec->flags & CODEC_FLAG_EMU_EDGE);
+
     if (codec->codec->capabilities & CODEC_CAP_NEG_LINESIZES)
         perms |= AV_PERM_NEG_LINESIZES;
 
@@ -1664,8 +1667,8 @@ static int input_init(AVFilterContext *ctx, const char *args, void *opaque)
     codec    = priv->is->video_st->codec;
     codec->opaque = ctx;
     if((codec->codec->capabilities & CODEC_CAP_DR1)
-       && codec->codec_id != CODEC_ID_SVQ1 //chroma alignment from lavfi is insufficient
     ) {
+        codec->flags |= CODEC_FLAG_EMU_EDGE;
         priv->use_dr1 = 1;
         codec->get_buffer     = input_get_buffer;
         codec->release_buffer = input_release_buffer;
