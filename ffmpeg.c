@@ -110,6 +110,8 @@ static const OptionDef options[];
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
 #endif
 
+#define FFM_PACKET_SIZE 4096 //XXX a duplicate of the line in ffm.h
+
 static const char *last_asked_format = NULL;
 static AVFormatContext *input_files[MAX_FILES];
 static int64_t input_files_ts_offset[MAX_FILES];

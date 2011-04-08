@@ -29,6 +29,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include "libavformat/avformat.h"
+#include "libavformat/ffm.h"
 #include "libavformat/network.h"
 #include "libavformat/os_support.h"
 #include "libavformat/rtpdec.h"

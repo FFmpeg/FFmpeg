@@ -1508,12 +1508,6 @@ int64_t parse_date(const char *datestr, int duration);
  */
 int64_t av_gettime(void);
 
-/* ffm-specific for ffserver */
-#define FFM_PACKET_SIZE 4096
-int64_t ffm_read_write_index(int fd);
-int ffm_write_write_index(int fd, int64_t pos);
-void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size);
-
 #if FF_API_FIND_INFO_TAG
 /**
  * @deprecated use av_find_info_tag in libavutil instead.
