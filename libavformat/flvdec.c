@@ -203,7 +203,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         case AMF_DATA_TYPE_OBJECT: {
             unsigned int keylen;
 
-            if (key && !strcmp(KEYFRAMES_TAG, key) && depth == 1)
+            if (ioc->seekable && key && !strcmp(KEYFRAMES_TAG, key) && depth == 1)
                 if (parse_keyframes_index(s, ioc, vstream, max_pos) < 0)
                     return -1;
 
