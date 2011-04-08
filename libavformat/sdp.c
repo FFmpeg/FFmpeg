@@ -474,7 +474,7 @@ void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *des
     sdp_write_media_attributes(buff, size, c, payload_type);
 }
 
-int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
+int av_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
 {
     AVMetadataTag *title = av_metadata_get(ac[0]->metadata, "title", NULL, 0);
     struct sdp_session_level s;
@@ -531,12 +531,19 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     return 0;
 }
 #else
-int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
+int av_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
 {
     return AVERROR(ENOSYS);
 }
 
 void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, const char *dest_type, int port, int ttl)
 {
+}
+#endif
+
+#if FF_API_SDP_CREATE
+int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
+{
+    return av_sdp_create(ac, n_files, buff, size);
 }
 #endif

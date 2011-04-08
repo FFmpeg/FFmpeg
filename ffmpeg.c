@@ -1797,7 +1797,7 @@ static void print_sdp(AVFormatContext **avc, int n)
 {
     char sdp[2048];
 
-    avf_sdp_create(avc, n, sdp, sizeof(sdp));
+    av_sdp_create(avc, n, sdp, sizeof(sdp));
     printf("SDP:\n%s\n", sdp);
     fflush(stdout);
 }

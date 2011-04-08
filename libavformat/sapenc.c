@@ -208,7 +208,7 @@ static int sap_write_header(AVFormatContext *s)
     av_strlcpy(&sap->ann[pos], "application/sdp", sap->ann_size - pos);
     pos += strlen(&sap->ann[pos]) + 1;
 
-    if (avf_sdp_create(contexts, s->nb_streams, &sap->ann[pos],
+    if (av_sdp_create(contexts, s->nb_streams, &sap->ann[pos],
                        sap->ann_size - pos)) {
         ret = AVERROR_INVALIDDATA;
         goto fail;

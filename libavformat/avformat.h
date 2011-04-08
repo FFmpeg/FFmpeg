@@ -1558,7 +1558,11 @@ int av_filename_number_test(const char *filename);
  * @param size the size of the buffer
  * @return 0 if OK, AVERROR_xxx on error
  */
-int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
+int av_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
+
+#if FF_API_SDP_CREATE
+attribute_deprecated int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
+#endif
 
 /**
  * Return a positive value if the given filename has one of the given
