@@ -605,9 +605,6 @@ int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 {
     int pqindex, lowquant, status;
 
-    if(v->res_sprite) {
-        skip_bits(gb, 2); //not yet deciphered
-    }
     if(v->finterpflag) v->interpfrm = get_bits1(gb);
     skip_bits(gb, 2); //framecnt unused
     v->rangeredfrm = 0;
