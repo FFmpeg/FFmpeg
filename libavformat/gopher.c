@@ -121,10 +121,9 @@ static int gopher_read(URLContext *h, uint8_t *buf, int size)
 
 
 URLProtocol ff_gopher_protocol = {
-    "gopher",
-    gopher_open,
-    gopher_read,
-    gopher_write,
-    NULL, /*seek*/
-    gopher_close,
+    .name      = "gopher",
+    .url_open  = gopher_open,
+    .url_read  = gopher_read,
+    .url_write = gopher_write,
+    .url_close = gopher_close,
 };

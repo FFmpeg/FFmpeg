@@ -195,11 +195,10 @@ static int tcp_get_file_handle(URLContext *h)
 }
 
 URLProtocol ff_tcp_protocol = {
-    "tcp",
-    tcp_open,
-    tcp_read,
-    tcp_write,
-    NULL, /* seek */
-    tcp_close,
+    .name                = "tcp",
+    .url_open            = tcp_open,
+    .url_read            = tcp_read,
+    .url_write           = tcp_write,
+    .url_close           = tcp_close,
     .url_get_file_handle = tcp_get_file_handle,
 };
