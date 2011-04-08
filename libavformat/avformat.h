@@ -1553,12 +1553,12 @@ int av_filename_number_test(const char *filename);
  *           all the contexts in the array (an AVCodecContext per RTP stream)
  *           must contain only one AVStream.
  * @param n_files number of AVCodecContexts contained in ac
- * @param buff buffer where the SDP will be stored (must be allocated by
- *             the caller)
+ * @param buf buffer where the SDP will be stored (must be allocated by
+ *            the caller)
  * @param size the size of the buffer
  * @return 0 if OK, AVERROR_xxx on error
  */
-int av_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
+int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size);
 
 #if FF_API_SDP_CREATE
 attribute_deprecated int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
