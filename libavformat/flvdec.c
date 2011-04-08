@@ -131,6 +131,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
     int64_t *times = NULL;
     int64_t *filepositions = NULL;
     int ret = 0;
+    int64_t initial_pos = url_ftell(ioc);
 
     while (avio_tell(ioc) < max_pos - 2 && amf_get_string(ioc, str_val, sizeof(str_val)) > 0) {
         int64_t** current_array;
@@ -174,7 +175,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
 finish:
     av_freep(&times);
     av_freep(&filepositions);
-    avio_seek(ioc, max_pos, SEEK_SET);
+    avio_seek(ioc, initial_pos, SEEK_SET);
     return ret;
 }
 
