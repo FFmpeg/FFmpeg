@@ -12,6 +12,11 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-04-08 - lavf 52.106.0 - avformat.h
+  Minor avformat.h cleanup:
+    a9bf9d8 deprecate av_guess_image2_codec
+    c3675df rename avf_sdp_create->av_sdp_create
+
 2011-04-03 - lavf 52.105.0 - avio.h
   Large-scale renaming/deprecating of AVIOContext-related functions:
     724f6a0 deprecate url_fdopen
