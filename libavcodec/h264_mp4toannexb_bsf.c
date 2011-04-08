@@ -87,11 +87,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
         /* retrieve sps and pps unit(s) */
         unit_nb = *extradata++ & 0x1f; /* number of sps unit(s) */
         if (!unit_nb) {
-            unit_nb = *extradata++; /* number of pps unit(s) */
-            sps_done++;
-
-            if (unit_nb)
-                pps_seen = 1;
+            goto pps;
         } else {
             sps_seen = 1;
         }
@@ -115,7 +111,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
             memcpy(out+total_size-unit_size-4, nalu_header, 4);
             memcpy(out+total_size-unit_size,   extradata+2, unit_size);
             extradata += 2+unit_size;
-
+pps:
             if (!unit_nb && !sps_done++) {
                 unit_nb = *extradata++; /* number of pps unit(s) */
                 if (unit_nb)
