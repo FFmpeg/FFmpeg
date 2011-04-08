@@ -274,7 +274,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
         input  = s->buffer[0];
     }
 
-    lenout= 4*nb_samples * s->ratio + 16;
+    lenout= 2*s->output_channels*nb_samples * s->ratio + 16;
 
     if (s->sample_fmt[1] != AV_SAMPLE_FMT_S16) {
         output_bak = output;
