@@ -63,7 +63,6 @@ typedef struct URLPollEntry {
     int events;
     int revents;
 } URLPollEntry;
-#endif
 
 /**
  * @defgroup open_modes URL open modes
@@ -91,6 +90,7 @@ typedef struct URLPollEntry {
  * silently ignored.
  */
 #define URL_FLAG_NONBLOCK 4
+#endif
 
 typedef int URLInterruptCB(void);
 
@@ -117,6 +117,7 @@ attribute_deprecated void url_get_filename(URLContext *h, char *buf, int buf_siz
 attribute_deprecated int av_url_read_pause(URLContext *h, int pause);
 attribute_deprecated int64_t av_url_read_seek(URLContext *h, int stream_index,
                                               int64_t timestamp, int flags);
+attribute_deprecated void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 #endif
 
 /**
@@ -131,7 +132,7 @@ int url_exist(const char *url);
  * in this case by the interrupted function. 'NULL' means no interrupt
  * callback is given.
  */
-void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
+void avio_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 
 #if FF_API_OLD_AVIO
 /* not implemented */
@@ -162,7 +163,9 @@ typedef struct URLProtocol {
 extern URLProtocol *first_protocol;
 #endif
 
+#if FF_API_OLD_AVIO
 extern URLInterruptCB *url_interrupt_cb;
+#endif
 
 /**
  * If protocol is NULL, returns the first registered protocol,
@@ -183,12 +186,14 @@ attribute_deprecated int register_protocol(URLProtocol *protocol);
 attribute_deprecated int av_register_protocol(URLProtocol *protocol);
 #endif
 
+#if FF_API_OLD_AVIO
 /**
  * Register the URLProtocol protocol.
  *
  * @param size the size of the URLProtocol struct referenced
  */
-int av_register_protocol2(URLProtocol *protocol, int size);
+attribute_deprecated int av_register_protocol2(URLProtocol *protocol, int size);
+#endif
 
 #define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
 
@@ -509,6 +514,33 @@ attribute_deprecated static inline int url_is_streamed(AVIOContext *s)
  *        to set up the buffer for writing. */
 int url_resetbuf(AVIOContext *s, int flags);
 #endif
+
+/**
+ * @defgroup open_modes URL open modes
+ * The flags argument to avio_open must be one of the following
+ * constants, optionally ORed with other flags.
+ * @{
+ */
+#define AVIO_RDONLY 0  /**< read-only */
+#define AVIO_WRONLY 1  /**< write-only */
+#define AVIO_RDWR   2  /**< read-write */
+/**
+ * @}
+ */
+
+/**
+ * Use non-blocking mode.
+ * If this flag is set, operations on the context will return
+ * AVERROR(EAGAIN) if they can not be performed immediately.
+ * If this flag is not set, operations on the context will never return
+ * AVERROR(EAGAIN).
+ * Note that this flag does not affect the opening/connecting of the
+ * context. Connecting a protocol will always block if necessary (e.g. on
+ * network protocols) but never hang (e.g. on busy devices).
+ * Warning: non-blocking protocols is work-in-progress; this flag may be
+ * silently ignored.
+ */
+#define AVIO_FLAG_NONBLOCK 4
 
 /**
  * Create and initialize a AVIOContext for accessing the

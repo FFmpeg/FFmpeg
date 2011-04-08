@@ -93,7 +93,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         goto fail;
     }
 
-    if (flags & URL_WRONLY)
+    if (flags & AVIO_WRONLY)
         RTMP_EnableWrite(r);
 
     if (!RTMP_Connect(r, NULL) || !RTMP_ConnectStream(r, 0)) {

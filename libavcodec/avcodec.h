@@ -2601,7 +2601,7 @@ typedef struct AVCodecContext {
      */
     int64_t timecode_frame_start;
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_REQUEST_CHANNELS
     /**
      * Decoder should decode to this many channels if it can (0 for default)
      * - encoding: unused

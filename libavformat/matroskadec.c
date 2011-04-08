@@ -1333,7 +1333,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                    && track->codec_priv.size >= 14
                    && track->codec_priv.data != NULL) {
             ffio_init_context(&b, track->codec_priv.data, track->codec_priv.size,
-                          URL_RDONLY, NULL, NULL, NULL, NULL);
+                          AVIO_RDONLY, NULL, NULL, NULL, NULL);
             ff_get_wav_header(&b, st->codec, track->codec_priv.size);
             codec_id = st->codec->codec_id;
             extradata_offset = FFMIN(track->codec_priv.size, 18);

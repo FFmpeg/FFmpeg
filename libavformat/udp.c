@@ -33,9 +33,7 @@
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
-#if HAVE_POLL_H
-#include <poll.h>
-#endif
+#include "url.h"
 #include <sys/time.h>
 
 #ifndef IPV6_ADD_MEMBERSHIP
@@ -320,7 +318,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     h->is_streamed = 1;
     h->max_packet_size = 1472;
 
-    is_output = (flags & URL_WRONLY);
+    is_output = (flags & AVIO_WRONLY);
 
     s = av_mallocz(sizeof(UDPContext));
     if (!s)
@@ -363,14 +361,14 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     /* XXX: fix av_url_split */
     if (hostname[0] == '\0' || hostname[0] == '?') {
         /* only accepts null hostname if input */
-        if (flags & URL_WRONLY)
+        if (flags & AVIO_WRONLY)
             goto fail;
     } else {
         if (ff_udp_set_remote_url(h, uri) < 0)
             goto fail;
     }
 
-    if (s->is_multicast && !(h->flags & URL_WRONLY))
+    if (s->is_multicast && !(h->flags & AVIO_WRONLY))
         s->local_port = port;
     udp_fd = udp_socket_create(s, &my_addr, &len);
     if (udp_fd < 0)
@@ -387,7 +385,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     /* the bind is needed to give a port to the socket now */
     /* if multicast, try the multicast address bind first */
-    if (s->is_multicast && !(h->flags & URL_WRONLY)) {
+    if (s->is_multicast && !(h->flags & AVIO_WRONLY)) {
         bind_ret = bind(udp_fd,(struct sockaddr *)&s->dest_addr, len);
     }
     /* bind to the local address if not multicast or if the multicast
@@ -400,7 +398,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     s->local_port = udp_port(&my_addr, len);
 
     if (s->is_multicast) {
-        if (h->flags & URL_WRONLY) {
+        if (h->flags & AVIO_WRONLY) {
             /* output */
             if (udp_set_multicast_ttl(udp_fd, s->ttl, (struct sockaddr *)&s->dest_addr) < 0)
                 goto fail;
@@ -447,31 +445,15 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
-    struct pollfd p = {s->udp_fd, POLLIN, 0};
-    int len;
     int ret;
 
-    for(;;) {
-        if (url_interrupt_cb())
-            return AVERROR_EXIT;
-        ret = poll(&p, 1, 100);
-        if (ret < 0) {
-            if (ff_neterrno() == AVERROR(EINTR))
-                continue;
-            return AVERROR(EIO);
-        }
-        if (!(ret == 1 && p.revents & POLLIN))
-            continue;
-        len = recv(s->udp_fd, buf, size, 0);
-        if (len < 0) {
-            if (ff_neterrno() != AVERROR(EAGAIN) &&
-                ff_neterrno() != AVERROR(EINTR))
-                return AVERROR(EIO);
-        } else {
-            break;
-        }
+    if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
+        ret = ff_network_wait_fd(s->udp_fd, 0);
+        if (ret < 0)
+            return ret;
     }
-    return len;
+    ret = recv(s->udp_fd, buf, size, 0);
+    return ret < 0 ? ff_neterrno() : ret;
 }
 
 static int udp_write(URLContext *h, const uint8_t *buf, int size)
@@ -479,29 +461,27 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
     UDPContext *s = h->priv_data;
     int ret;
 
-    for(;;) {
-        if (!s->is_connected) {
-            ret = sendto (s->udp_fd, buf, size, 0,
-                          (struct sockaddr *) &s->dest_addr,
-                          s->dest_addr_len);
-        } else
-            ret = send(s->udp_fd, buf, size, 0);
-        if (ret < 0) {
-            if (ff_neterrno() != AVERROR(EINTR) &&
-                ff_neterrno() != AVERROR(EAGAIN))
-                return ff_neterrno();
-        } else {
-            break;
-        }
+    if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
+        ret = ff_network_wait_fd(s->udp_fd, 1);
+        if (ret < 0)
+            return ret;
     }
-    return size;
+
+    if (!s->is_connected) {
+        ret = sendto (s->udp_fd, buf, size, 0,
+                      (struct sockaddr *) &s->dest_addr,
+                      s->dest_addr_len);
+    } else
+        ret = send(s->udp_fd, buf, size, 0);
+
+    return ret < 0 ? ff_neterrno() : ret;
 }
 
 static int udp_close(URLContext *h)
 {
     UDPContext *s = h->priv_data;
 
-    if (s->is_multicast && !(h->flags & URL_WRONLY))
+    if (s->is_multicast && !(h->flags & AVIO_WRONLY))
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
     closesocket(s->udp_fd);
     av_free(s);

@@ -1144,10 +1144,13 @@ static int mkv_write_trailer(AVFormatContext *s)
     }
 
     if (pb->seekable) {
-        cuespos = mkv_write_cues(pb, mkv->cues, s->nb_streams);
+        if (mkv->cues->num_entries) {
+            cuespos = mkv_write_cues(pb, mkv->cues, s->nb_streams);
 
-        ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES    , cuespos);
-        if (ret < 0) return ret;
+            ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES, cuespos);
+            if (ret < 0) return ret;
+        }
+
         mkv_write_seekhead(pb, mkv->main_seekhead);
 
         // update the duration

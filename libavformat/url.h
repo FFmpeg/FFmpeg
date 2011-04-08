@@ -30,6 +30,8 @@
 
 #if !FF_API_OLD_AVIO
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
+
+extern URLInterruptCB *url_interrupt_cb;
 #endif
 
 /**
@@ -130,5 +132,12 @@ int64_t ffurl_size(URLContext *h);
  * @return the file descriptor associated with this URL, or <0 on error.
  */
 int ffurl_get_file_handle(URLContext *h);
+
+/**
+ * Register the URLProtocol protocol.
+ *
+ * @param size the size of the URLProtocol struct referenced
+ */
+int ffurl_register_protocol(URLProtocol *protocol, int size);
 
 #endif //AVFORMAT_URL_H

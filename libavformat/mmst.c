@@ -523,7 +523,7 @@ static int mms_open(URLContext *h, const char *uri, int flags)
 
     // establish tcp connection.
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mmst->host, port, NULL);
-    err = ffurl_open(&mms->mms_hd, tcpname, URL_RDWR);
+    err = ffurl_open(&mms->mms_hd, tcpname, AVIO_RDWR);
     if (err)
         goto fail;
 

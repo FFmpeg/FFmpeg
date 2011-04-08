@@ -2569,7 +2569,7 @@ static int transcode(AVFormatContext **output_files,
     if (!using_stdin) {
         if(verbose >= 0)
             fprintf(stderr, "Press [q] to stop encoding\n");
-        url_set_interrupt_cb(decode_interrupt_cb);
+        avio_set_interrupt_cb(decode_interrupt_cb);
     }
     term_init();
 
@@ -3887,7 +3887,7 @@ static void opt_output_file(const char *filename)
         }
 
         /* open the file */
-        if ((err = avio_open(&oc->pb, filename, URL_WRONLY)) < 0) {
+        if ((err = avio_open(&oc->pb, filename, AVIO_WRONLY)) < 0) {
             print_error(filename, err);
             ffmpeg_exit(1);
         }
@@ -4426,7 +4426,7 @@ int main(int argc, char **argv)
 
 #if HAVE_ISATTY
     if(isatty(STDIN_FILENO))
-        url_set_interrupt_cb(decode_interrupt_cb);
+        avio_set_interrupt_cb(decode_interrupt_cb);
 #endif
 
     init_opts();

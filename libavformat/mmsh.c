@@ -233,7 +233,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
         port = 80; // default mmsh protocol port
     ff_url_join(httpname, sizeof(httpname), "http", NULL, host, port, path);
 
-    if (ffurl_alloc(&mms->mms_hd, httpname, URL_RDONLY) < 0) {
+    if (ffurl_alloc(&mms->mms_hd, httpname, AVIO_RDONLY) < 0) {
         return AVERROR(EIO);
     }
 
@@ -261,7 +261,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
     // close the socket and then reopen it for sending the second play request.
     ffurl_close(mms->mms_hd);
     memset(headers, 0, sizeof(headers));
-    if (ffurl_alloc(&mms->mms_hd, httpname, URL_RDONLY) < 0) {
+    if (ffurl_alloc(&mms->mms_hd, httpname, AVIO_RDONLY) < 0) {
         return AVERROR(EIO);
     }
     stream_selection = av_mallocz(mms->stream_num * 19 + 1);
