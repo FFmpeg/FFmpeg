@@ -374,6 +374,25 @@ int url_exist(const char *filename)
     return 1;
 }
 
+int avio_check(const char *url, int flags)
+{
+    URLContext *h;
+    int ret = ffurl_alloc(&h, url, flags);
+    if (ret)
+        return ret;
+
+    if (h->prot->url_check) {
+        ret = h->prot->url_check(h, flags);
+    } else {
+        ret = ffurl_connect(h);
+        if (ret >= 0)
+            ret = flags;
+    }
+
+    ffurl_close(h);
+    return ret;
+}
+
 int64_t ffurl_size(URLContext *h)
 {
     int64_t pos, size;

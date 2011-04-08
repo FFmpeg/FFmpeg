@@ -134,6 +134,7 @@ typedef struct URLProtocol {
     int priv_data_size;
     const AVClass *priv_data_class;
     int flags;
+    int (*url_check)(URLContext *h, int mask);
 } URLProtocol;
 
 typedef struct URLPollEntry {
@@ -345,6 +346,23 @@ attribute_deprecated int url_close_buf(AVIOContext *s);
  * exists, 0 otherwise.
  */
 int url_exist(const char *url);
+
+/**
+ * Return AVIO_* access flags corresponding to the access permissions
+ * of the resource in url, or a negative value corresponding to an
+ * AVERROR code in case of failure. The returned access flags are
+ * masked by the value in flags.
+ *
+ * @note This function is intrinsically unsafe, in the sense that the
+ * checked resource may change its existence or permission status from
+ * one call to another. Thus you should not trust the returned value,
+ * unless you are sure that no other processes are accessing the
+ * checked resource.
+ *
+ * @note This function is slightly broken until next major bump
+ *       because of AVIO_RDONLY == 0. Don't use it until then.
+ */
+int avio_check(const char *url, int flags);
 
 /**
  * The callback is called in blocking functions to test regulary if

@@ -59,6 +59,7 @@ typedef struct URLProtocol {
     int priv_data_size;
     const AVClass *priv_data_class;
     int flags;
+    int (*url_check)(URLContext *h, int mask);
 } URLProtocol;
 #endif
 
