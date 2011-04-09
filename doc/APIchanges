@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-04-10 - lavu  50.40.0 - pixfmt.h
+  Add PIX_FMT_BGR48LE and PIX_FMT_BGR48BE pixel formats
+
 2011-04-08 - lavf 52.106.0 - avformat.h
   Minor avformat.h cleanup:
     a9bf9d8 deprecate av_guess_image2_codec
