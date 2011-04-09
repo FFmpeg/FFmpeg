@@ -29,6 +29,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include "libavformat/avformat.h"
+#include "libavformat/ffm.h"
 #include "libavformat/network.h"
 #include "libavformat/os_support.h"
 #include "libavformat/rtpdec.h"
@@ -2957,7 +2958,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
         avc->streams[i]->codec = stream->streams[i]->codec;
     }
     *pbuffer = av_mallocz(2048);
-    avf_sdp_create(&avc, 1, *pbuffer, 2048);
+    av_sdp_create(&avc, 1, *pbuffer, 2048);
 
  sdp_done:
 #if !FF_API_MAX_STREAMS

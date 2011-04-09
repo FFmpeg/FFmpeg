@@ -474,14 +474,14 @@ void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *des
     sdp_write_media_attributes(buff, size, c, payload_type);
 }
 
-int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
+int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
 {
     AVMetadataTag *title = av_metadata_get(ac[0]->metadata, "title", NULL, 0);
     struct sdp_session_level s;
     int i, j, port, ttl, is_multicast;
     char dst[32], dst_type[5];
 
-    memset(buff, 0, size);
+    memset(buf, 0, size);
     memset(&s, 0, sizeof(struct sdp_session_level));
     s.user = "-";
     s.src_addr = "127.0.0.1";    /* FIXME: Properly set this */
@@ -506,7 +506,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
             }
         }
     }
-    sdp_write_header(buff, size, &s);
+    sdp_write_header(buf, size, &s);
 
     dst[0] = 0;
     for (i = 0; i < n_files; i++) {
@@ -518,11 +518,11 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
                 ttl = 0;
         }
         for (j = 0; j < ac[i]->nb_streams; j++) {
-            ff_sdp_write_media(buff, size,
+            ff_sdp_write_media(buf, size,
                                   ac[i]->streams[j]->codec, dst[0] ? dst : NULL,
                                   dst_type, (port > 0) ? port + j * 2 : 0, ttl);
             if (port <= 0) {
-                av_strlcatf(buff, size,
+                av_strlcatf(buf, size,
                                    "a=control:streamid=%d\r\n", i + j);
             }
         }
@@ -531,12 +531,19 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     return 0;
 }
 #else
-int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
+int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
 {
     return AVERROR(ENOSYS);
 }
 
 void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, const char *dest_type, int port, int ttl)
 {
+}
+#endif
+
+#if FF_API_SDP_CREATE
+int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
+{
+    return av_sdp_create(ac, n_files, buff, size);
 }
 #endif

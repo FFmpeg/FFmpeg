@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include "os_support.h"
+#include "url.h"
 
 
 /* standard file protocol */
@@ -95,12 +96,12 @@ static int file_close(URLContext *h)
 }
 
 URLProtocol ff_file_protocol = {
-    "file",
-    file_open,
-    file_read,
-    file_write,
-    file_seek,
-    file_close,
+    .name                = "file",
+    .url_open            = file_open,
+    .url_read            = file_read,
+    .url_write           = file_write,
+    .url_seek            = file_seek,
+    .url_close           = file_close,
     .url_get_file_handle = file_get_handle,
 };
 
@@ -131,10 +132,10 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
 }
 
 URLProtocol ff_pipe_protocol = {
-    "pipe",
-    pipe_open,
-    file_read,
-    file_write,
+    .name                = "pipe",
+    .url_open            = pipe_open,
+    .url_read            = file_read,
+    .url_write           = file_write,
     .url_get_file_handle = file_get_handle,
 };
 

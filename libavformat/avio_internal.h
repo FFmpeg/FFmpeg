@@ -21,6 +21,7 @@
 #define AVFORMAT_AVIO_INTERNAL_H
 
 #include "avio.h"
+#include "url.h"
 
 int ffio_init_context(AVIOContext *s,
                   unsigned char *buffer,
@@ -91,10 +92,6 @@ int     ffio_read_pause(AVIOContext *h,    int pause);
  */
 int64_t ffio_read_seek (AVIOContext *h,    int stream_index,
                         int64_t timestamp, int flags);
-
-/* udp.c */
-int ff_udp_set_remote_url(URLContext *h, const char *uri);
-int ff_udp_get_local_port(URLContext *h);
 
 void ffio_init_checksum(AVIOContext *s,
                         unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),

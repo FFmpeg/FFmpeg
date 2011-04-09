@@ -489,11 +489,10 @@ static int udp_close(URLContext *h)
 }
 
 URLProtocol ff_udp_protocol = {
-    "udp",
-    udp_open,
-    udp_read,
-    udp_write,
-    NULL, /* seek */
-    udp_close,
+    .name                = "udp",
+    .url_open            = udp_open,
+    .url_read            = udp_read,
+    .url_write           = udp_write,
+    .url_close           = udp_close,
     .url_get_file_handle = udp_get_file_handle,
 };

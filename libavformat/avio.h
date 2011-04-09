@@ -37,12 +37,14 @@
 
 /* unbuffered I/O */
 
+#if FF_API_OLD_AVIO
 /**
  * URL Context.
  * New fields can be added to the end with minor version bumps.
  * Removal, reordering and changes to existing fields require a major
  * version bump.
  * sizeof(URLContext) must not be used outside libav*.
+ * @deprecated This struct will be made private
  */
 typedef struct URLContext {
 #if FF_API_URL_CLASS
@@ -57,7 +59,6 @@ typedef struct URLContext {
     int is_connected;
 } URLContext;
 
-#if FF_API_OLD_AVIO
 typedef struct URLPollEntry {
     URLContext *handle;
     int events;
@@ -90,11 +91,9 @@ typedef struct URLPollEntry {
  * silently ignored.
  */
 #define URL_FLAG_NONBLOCK 4
-#endif
 
 typedef int URLInterruptCB(void);
 
-#if FF_API_OLD_AVIO
 /**
  * @defgroup old_url_funcs Old url_* functions
  * @deprecated use the buffered API based on AVIOContext instead
@@ -117,7 +116,7 @@ attribute_deprecated void url_get_filename(URLContext *h, char *buf, int buf_siz
 attribute_deprecated int av_url_read_pause(URLContext *h, int pause);
 attribute_deprecated int64_t av_url_read_seek(URLContext *h, int stream_index,
                                               int64_t timestamp, int flags);
-attribute_deprecated void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
+attribute_deprecated void url_set_interrupt_cb(int (*interrupt_cb)(void));
 #endif
 
 /**
@@ -132,7 +131,7 @@ int url_exist(const char *url);
  * in this case by the interrupted function. 'NULL' means no interrupt
  * callback is given.
  */
-void avio_set_interrupt_cb(URLInterruptCB *interrupt_cb);
+void avio_set_interrupt_cb(int (*interrupt_cb)(void));
 
 #if FF_API_OLD_AVIO
 /* not implemented */
@@ -140,8 +139,11 @@ attribute_deprecated int url_poll(URLPollEntry *poll_table, int n, int timeout);
 
 
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
-#endif
 
+/**
+ * @deprecated This struct is to be made private. Use the higher-level
+ *             AVIOContext-based API instead.
+ */
 typedef struct URLProtocol {
     const char *name;
     int (*url_open)(URLContext *h, const char *url, int flags);
@@ -158,6 +160,7 @@ typedef struct URLProtocol {
     const AVClass *priv_data_class;
     int flags;
 } URLProtocol;
+#endif
 
 #if FF_API_REGISTER_PROTOCOL
 extern URLProtocol *first_protocol;
@@ -595,5 +598,19 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 #if FF_API_UDP_GET_FILE
 int udp_get_file_handle(URLContext *h);
 #endif
+
+/**
+ * Iterate through names of available protocols.
+ * @note it is recommanded to use av_protocol_next() instead of this
+ *
+ * @param opaque A private pointer representing current protocol.
+ *        It must be a pointer to NULL on first iteration and will
+ *        be updated by successive calls to avio_enum_protocols.
+ * @param output If set to 1, iterate over output protocols,
+ *               otherwise over input protocols.
+ *
+ * @return A static string containing the name of current protocol or NULL
+ */
+const char *avio_enum_protocols(void **opaque, int output);
 
 #endif /* AVFORMAT_AVIO_H */

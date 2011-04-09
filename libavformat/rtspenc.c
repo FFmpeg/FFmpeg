@@ -66,7 +66,7 @@ int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
     ff_url_join(sdp_ctx.filename, sizeof(sdp_ctx.filename),
                 "rtsp", NULL, addr, -1, NULL);
     ctx_array[0] = &sdp_ctx;
-    if (avf_sdp_create(ctx_array, 1, sdp, SDP_MAX_SIZE)) {
+    if (av_sdp_create(ctx_array, 1, sdp, SDP_MAX_SIZE)) {
         av_free(sdp);
         return AVERROR_INVALIDDATA;
     }

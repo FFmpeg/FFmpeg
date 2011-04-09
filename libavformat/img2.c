@@ -24,6 +24,7 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "internal.h"
 #include <strings.h>
 
 typedef struct {
@@ -185,9 +186,16 @@ static int read_probe(AVProbeData *p)
     return 0;
 }
 
+enum CodecID ff_guess_image2_codec(const char *filename)
+{
+    return av_str2id(img_tags, filename);
+}
+
+#if FF_API_GUESS_IMG2_CODEC
 enum CodecID av_guess_image2_codec(const char *filename){
     return av_str2id(img_tags, filename);
 }
+#endif
 
 static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {

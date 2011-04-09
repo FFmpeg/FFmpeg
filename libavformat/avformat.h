@@ -907,7 +907,9 @@ AVInputFormat  *av_iformat_next(AVInputFormat  *f);
  */
 AVOutputFormat *av_oformat_next(AVOutputFormat *f);
 
-enum CodecID av_guess_image2_codec(const char *filename);
+#if FF_API_GUESS_IMG2_CODEC
+attribute_deprecated enum CodecID av_guess_image2_codec(const char *filename);
+#endif
 
 /* XXX: Use automatic init with either ELF sections or C file parser */
 /* modules. */
@@ -986,7 +988,6 @@ void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size);
  */
 void av_pkt_dump2(FILE *f, AVPacket *pkt, int dump_payload, AVStream *st);
 
-attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 
 /**
  * Send a nice dump of a packet to the log.
@@ -1002,7 +1003,10 @@ attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
                       AVStream *st);
 
+#if FF_API_PKT_DUMP
+attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 attribute_deprecated void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt,
+#endif
                                           int dump_payload);
 
 /**
@@ -1521,12 +1525,6 @@ int64_t parse_date(const char *datestr, int duration);
  */
 int64_t av_gettime(void);
 
-/* ffm-specific for ffserver */
-#define FFM_PACKET_SIZE 4096
-int64_t ffm_read_write_index(int fd);
-int ffm_write_write_index(int fd, int64_t pos);
-void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size);
-
 #if FF_API_FIND_INFO_TAG
 /**
  * @deprecated use av_find_info_tag in libavutil instead.
@@ -1566,12 +1564,16 @@ int av_filename_number_test(const char *filename);
  *           all the contexts in the array (an AVCodecContext per RTP stream)
  *           must contain only one AVStream.
  * @param n_files number of AVCodecContexts contained in ac
- * @param buff buffer where the SDP will be stored (must be allocated by
- *             the caller)
+ * @param buf buffer where the SDP will be stored (must be allocated by
+ *            the caller)
  * @param size the size of the buffer
  * @return 0 if OK, AVERROR_xxx on error
  */
-int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
+int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size);
+
+#if FF_API_SDP_CREATE
+attribute_deprecated int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
+#endif
 
 /**
  * Return a positive value if the given filename has one of the given

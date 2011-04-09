@@ -355,11 +355,10 @@ int rtp_get_rtcp_file_handle(URLContext *h) {
 }
 
 URLProtocol ff_rtp_protocol = {
-    "rtp",
-    rtp_open,
-    rtp_read,
-    rtp_write,
-    NULL, /* seek */
-    rtp_close,
+    .name                = "rtp",
+    .url_open            = rtp_open,
+    .url_read            = rtp_read,
+    .url_write           = rtp_write,
+    .url_close           = rtp_close,
     .url_get_file_handle = rtp_get_file_handle,
 };

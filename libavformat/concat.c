@@ -190,10 +190,9 @@ static int64_t concat_seek(URLContext *h, int64_t pos, int whence)
 }
 
 URLProtocol ff_concat_protocol = {
-    "concat",
-    concat_open,
-    concat_read,
-    NULL,
-    concat_seek,
-    concat_close,
+    .name      = "concat",
+    .url_open  = concat_open,
+    .url_read  = concat_read,
+    .url_seek  = concat_seek,
+    .url_close = concat_close,
 };

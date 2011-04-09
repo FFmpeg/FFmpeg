@@ -49,12 +49,22 @@ static const AVClass urlcontext_class =
 static int default_interrupt_cb(void);
 
 URLProtocol *first_protocol = NULL;
-URLInterruptCB *url_interrupt_cb = default_interrupt_cb;
+int (*url_interrupt_cb)(void) = default_interrupt_cb;
 
 URLProtocol *av_protocol_next(URLProtocol *p)
 {
     if(p) return p->next;
     else  return first_protocol;
+}
+
+const char *avio_enum_protocols(void **opaque, int output)
+{
+    URLProtocol **p = opaque;
+    *p = *p ? (*p)->next : first_protocol;
+    if (!*p) return NULL;
+    if ((output && (*p)->url_write) || (!output && (*p)->url_read))
+        return (*p)->name;
+    return avio_enum_protocols(opaque, output);
 }
 
 int ffurl_register_protocol(URLProtocol *protocol, int size)
@@ -389,7 +399,7 @@ static int default_interrupt_cb(void)
     return 0;
 }
 
-void avio_set_interrupt_cb(URLInterruptCB *interrupt_cb)
+void avio_set_interrupt_cb(int (*interrupt_cb)(void))
 {
     if (!interrupt_cb)
         interrupt_cb = default_interrupt_cb;

@@ -23,6 +23,7 @@
 #define AVFORMAT_RTMPPKT_H
 
 #include "avformat.h"
+#include "url.h"
 
 /** maximum possible number of different RTMP channels */
 #define RTMP_CHANNELS 65599

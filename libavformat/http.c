@@ -505,13 +505,13 @@ http_get_file_handle(URLContext *h)
 }
 
 URLProtocol ff_http_protocol = {
-    "http",
-    http_open,
-    http_read,
-    http_write,
-    http_seek,
-    http_close,
+    .name                = "http",
+    .url_open            = http_open,
+    .url_read            = http_read,
+    .url_write           = http_write,
+    .url_seek            = http_seek,
+    .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
-    .priv_data_size = sizeof(HTTPContext),
-    .priv_data_class = &httpcontext_class,
+    .priv_data_size      = sizeof(HTTPContext),
+    .priv_data_class     = &httpcontext_class,
 };

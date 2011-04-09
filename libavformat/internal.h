@@ -250,4 +250,6 @@ void ff_reduce_index(AVFormatContext *s, int stream_index);
 void ff_make_absolute_url(char *buf, int size, const char *base,
                           const char *rel);
 
+enum CodecID ff_guess_image2_codec(const char *filename);
+
 #endif /* AVFORMAT_INTERNAL_H */

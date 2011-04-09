@@ -25,6 +25,7 @@
 #include "libavcodec/avcodec.h"
 #include "avformat.h"
 #include "rtp.h"
+#include "url.h"
 
 typedef struct PayloadContext PayloadContext;
 typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;

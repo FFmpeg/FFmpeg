@@ -31,8 +31,6 @@
 #include "asfcrypt.h"
 #include "avlanguage.h"
 
-void ff_mms_set_stream_selection(URLContext *h, AVFormatContext *format);
-
 typedef struct {
     int asfid2avid[128];                 ///< conversion table from asf ID 2 AVStream ID
     ASFStream streams[128];              ///< it's max number and it's not that big

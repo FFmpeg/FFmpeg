@@ -219,7 +219,7 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
 #if CONFIG_IMAGE2_MUXER
     if (!short_name && filename &&
         av_filename_number_test(filename) &&
-        av_guess_image2_codec(filename) != CODEC_ID_NONE) {
+        ff_guess_image2_codec(filename) != CODEC_ID_NONE) {
         return av_guess_format("image2", NULL, NULL);
     }
 #endif
@@ -272,7 +272,7 @@ enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
 
 #if CONFIG_IMAGE2_MUXER
         if(!strcmp(fmt->name, "image2") || !strcmp(fmt->name, "image2pipe")){
-            codec_id= av_guess_image2_codec(filename);
+            codec_id= ff_guess_image2_codec(filename);
         }
 #endif
         if(codec_id == CODEC_ID_NONE)
@@ -3574,22 +3574,26 @@ static void pkt_dump_internal(void *avcl, FILE *f, int level, AVPacket *pkt, int
         av_hex_dump(f, pkt->data, pkt->size);
 }
 
+#if FF_API_PKT_DUMP
 void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload)
 {
     AVRational tb = { 1, AV_TIME_BASE };
     pkt_dump_internal(NULL, f, 0, pkt, dump_payload, tb);
 }
+#endif
 
 void av_pkt_dump2(FILE *f, AVPacket *pkt, int dump_payload, AVStream *st)
 {
     pkt_dump_internal(NULL, f, 0, pkt, dump_payload, st->time_base);
 }
 
+#if FF_API_PKT_DUMP
 void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload)
 {
     AVRational tb = { 1, AV_TIME_BASE };
     pkt_dump_internal(avcl, NULL, level, pkt, dump_payload, tb);
 }
+#endif
 
 void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
                       AVStream *st)

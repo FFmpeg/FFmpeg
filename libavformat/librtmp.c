@@ -25,6 +25,7 @@
  */
 
 #include "avformat.h"
+#include "url.h"
 
 #include <librtmp/rtmp.h>
 #include <librtmp/log.h>
@@ -158,66 +159,56 @@ static int rtmp_get_file_handle(URLContext *s)
 }
 
 URLProtocol ff_rtmp_protocol = {
-    "rtmp",
-    rtmp_open,
-    rtmp_read,
-    rtmp_write,
-    NULL,                   /* seek */
-    rtmp_close,
-    NULL,                   /* next */
-    rtmp_read_pause,
-    rtmp_read_seek,
-    rtmp_get_file_handle
+    .name                = "rtmp",
+    .url_open            = rtmp_open,
+    .url_read            = rtmp_read,
+    .url_write           = rtmp_write,
+    .url_close           = rtmp_close,
+    .url_read_pause      = rtmp_read_pause,
+    .url_read_seek       = rtmp_read_seek,
+    .url_get_file_handle = rtmp_get_file_handle
 };
 
 URLProtocol ff_rtmpt_protocol = {
-    "rtmpt",
-    rtmp_open,
-    rtmp_read,
-    rtmp_write,
-    NULL,                   /* seek */
-    rtmp_close,
-    NULL,                   /* next */
-    rtmp_read_pause,
-    rtmp_read_seek,
-    rtmp_get_file_handle
+    .name                = "rtmpt",
+    .url_open            = rtmp_open,
+    .url_read            = rtmp_read,
+    .url_write           = rtmp_write,
+    .url_close           = rtmp_close,
+    .url_read_pause      = rtmp_read_pause,
+    .url_read_seek       = rtmp_read_seek,
+    .url_get_file_handle = rtmp_get_file_handle
 };
 
 URLProtocol ff_rtmpe_protocol = {
-    "rtmpe",
-    rtmp_open,
-    rtmp_read,
-    rtmp_write,
-    NULL,                   /* seek */
-    rtmp_close,
-    NULL,                   /* next */
-    rtmp_read_pause,
-    rtmp_read_seek,
-    rtmp_get_file_handle
+    .name                = "rtmpe",
+    .url_open            = rtmp_open,
+    .url_read            = rtmp_read,
+    .url_write           = rtmp_write,
+    .url_close           = rtmp_close,
+    .url_read_pause      = rtmp_read_pause,
+    .url_read_seek       = rtmp_read_seek,
+    .url_get_file_handle = rtmp_get_file_handle
 };
 
 URLProtocol ff_rtmpte_protocol = {
-    "rtmpte",
-    rtmp_open,
-    rtmp_read,
-    rtmp_write,
-    NULL,                   /* seek */
-    rtmp_close,
-    NULL,                   /* next */
-    rtmp_read_pause,
-    rtmp_read_seek,
-    rtmp_get_file_handle
+    .name                = "rtmpte",
+    .url_open            = rtmp_open,
+    .url_read            = rtmp_read,
+    .url_write           = rtmp_write,
+    .url_close           = rtmp_close,
+    .url_read_pause      = rtmp_read_pause,
+    .url_read_seek       = rtmp_read_seek,
+    .url_get_file_handle = rtmp_get_file_handle
 };
 
 URLProtocol ff_rtmps_protocol = {
-    "rtmps",
-    rtmp_open,
-    rtmp_read,
-    rtmp_write,
-    NULL,                   /* seek */
-    rtmp_close,
-    NULL,                   /* next */
-    rtmp_read_pause,
-    rtmp_read_seek,
-    rtmp_get_file_handle
+    .name                = "rtmps",
+    .url_open            = rtmp_open,
+    .url_read            = rtmp_read,
+    .url_write           = rtmp_write,
+    .url_close           = rtmp_close,
+    .url_read_pause      = rtmp_read_pause,
+    .url_read_seek       = rtmp_read_seek,
+    .url_get_file_handle = rtmp_get_file_handle
 };

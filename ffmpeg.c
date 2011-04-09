@@ -47,6 +47,8 @@
 #include "libavutil/libm.h"
 #include "libavformat/os_support.h"
 
+#include "libavformat/ffm.h" // not public API
+
 #if CONFIG_AVFILTER
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
@@ -1881,7 +1883,7 @@ static void print_sdp(AVFormatContext **avc, int n)
 {
     char sdp[2048];
 
-    avf_sdp_create(avc, n, sdp, sizeof(sdp));
+    av_sdp_create(avc, n, sdp, sizeof(sdp));
     printf("SDP:\n%s\n", sdp);
     fflush(stdout);
 }

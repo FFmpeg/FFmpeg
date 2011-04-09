@@ -298,11 +298,9 @@ static int applehttp_close(URLContext *h)
 }
 
 URLProtocol ff_applehttp_protocol = {
-    "applehttp",
-    applehttp_open,
-    applehttp_read,
-    NULL, /* write */
-    NULL, /* seek */
-    applehttp_close,
-    .flags = URL_PROTOCOL_FLAG_NESTED_SCHEME,
+    .name      = "applehttp",
+    .url_open  = applehttp_open,
+    .url_read  = applehttp_read,
+    .url_close = applehttp_close,
+    .flags     = URL_PROTOCOL_FLAG_NESTED_SCHEME,
 };

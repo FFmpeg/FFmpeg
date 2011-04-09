@@ -22,7 +22,7 @@
 #ifndef AVFORMAT_HTTP_H
 #define AVFORMAT_HTTP_H
 
-#include "avio.h"
+#include "url.h"
 
 /**
  * Set custom HTTP headers.
