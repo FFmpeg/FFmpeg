@@ -272,7 +272,7 @@ Set video buffer verifier buffer size (in bits).
 Force video codec to @var{codec}. Use the @code{copy} special value to
 tell that the raw codec data must be copied as is.
 @item -sameq
-Use same video quality as source (implies VBR).
+Use same quantizer as source (implies VBR).
 
 @item -pass @var{n}
 Select the pass number (1 or 2). It is used to do two-pass
