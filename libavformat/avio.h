@@ -461,13 +461,25 @@ void avio_flush(AVIOContext *s);
  */
 int avio_read(AVIOContext *s, unsigned char *buf, int size);
 
-/** @note return 0 if EOF, so you cannot use it if EOF handling is
-    necessary */
+/**
+ * @defgroup avio_read Functions for reading from AVIOContext.
+ * @{
+ *
+ * @note return 0 if EOF, so you cannot use it if EOF handling is
+ *       necessary
+ */
 int          avio_r8  (AVIOContext *s);
 unsigned int avio_rl16(AVIOContext *s);
 unsigned int avio_rl24(AVIOContext *s);
 unsigned int avio_rl32(AVIOContext *s);
 uint64_t     avio_rl64(AVIOContext *s);
+unsigned int avio_rb16(AVIOContext *s);
+unsigned int avio_rb24(AVIOContext *s);
+unsigned int avio_rb32(AVIOContext *s);
+uint64_t     avio_rb64(AVIOContext *s);
+/**
+ * @}
+ */
 
 /**
  * Read a string from pb into buf. The reading will terminate when either
@@ -492,10 +504,6 @@ int avio_get_str(AVIOContext *pb, int maxlen, char *buf, int buflen);
 int avio_get_str16le(AVIOContext *pb, int maxlen, char *buf, int buflen);
 int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
 
-unsigned int avio_rb16(AVIOContext *s);
-unsigned int avio_rb24(AVIOContext *s);
-unsigned int avio_rb32(AVIOContext *s);
-uint64_t     avio_rb64(AVIOContext *s);
 
 #if FF_API_URL_RESETBUF
 /** Reset the buffer for reading or writing.
