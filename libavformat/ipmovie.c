@@ -97,6 +97,8 @@ typedef struct IPMVEContext {
     unsigned int video_width;
     unsigned int video_height;
     int64_t video_pts;
+    uint32_t     palette[256];
+    int          has_palette;
 
     unsigned int audio_bits;
     unsigned int audio_channels;
@@ -115,8 +117,6 @@ typedef struct IPMVEContext {
     int decode_map_chunk_size;
 
     int64_t next_chunk_offset;
-
-    AVPaletteControl palette_control;
 
 } IPMVEContext;
 
@@ -161,6 +161,17 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
 
         if (av_new_packet(pkt, s->decode_map_chunk_size + s->video_chunk_size))
             return CHUNK_NOMEM;
+
+        if (s->has_palette) {
+            uint8_t *pal;
+
+            pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
+                                          AVPALETTE_SIZE);
+            if (pal) {
+                memcpy(pal, s->palette, AVPALETTE_SIZE);
+                s->has_palette = 0;
+            }
+        }
 
         pkt->pos= s->decode_map_chunk_offset;
         avio_seek(pb, s->decode_map_chunk_offset, SEEK_SET);
@@ -456,10 +467,9 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
                 r = scratch[j++] * 4;
                 g = scratch[j++] * 4;
                 b = scratch[j++] * 4;
-                s->palette_control.palette[i] = (r << 16) | (g << 8) | (b);
+                s->palette[i] = (r << 16) | (g << 8) | (b);
             }
-            /* indicate a palette change */
-            s->palette_control.palette_changed = 1;
+            s->has_palette = 1;
             break;
 
         case OPCODE_SET_PALETTE_COMPRESSED:
@@ -572,9 +582,6 @@ static int ipmovie_read_header(AVFormatContext *s,
     st->codec->width = ipmovie->video_width;
     st->codec->height = ipmovie->video_height;
     st->codec->bits_per_coded_sample = ipmovie->video_bpp;
-
-    /* palette considerations */
-    st->codec->palctrl = &ipmovie->palette_control;
 
     if (ipmovie->audio_type) {
         st = av_new_stream(s, 0);

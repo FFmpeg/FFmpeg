@@ -86,8 +86,6 @@ typedef struct IdcinDemuxContext {
     int audio_present;
 
     int64_t pts;
-
-    AVPaletteControl palctrl;
 } IdcinDemuxContext;
 
 static int idcin_probe(AVProbeData *p)
@@ -172,8 +170,6 @@ static int idcin_read_header(AVFormatContext *s,
     if (avio_read(pb, st->codec->extradata, HUFFMAN_TABLE_SIZE) !=
         HUFFMAN_TABLE_SIZE)
         return AVERROR(EIO);
-    /* save a reference in order to transport the palette */
-    st->codec->palctrl = &idcin->palctrl;
 
     /* if sample rate is 0, assume no audio */
     if (sample_rate) {
@@ -226,6 +222,7 @@ static int idcin_read_packet(AVFormatContext *s,
     int palette_scale;
     unsigned char r, g, b;
     unsigned char palette_buffer[768];
+    uint32_t palette[256];
 
     if (s->pb->eof_reached)
         return AVERROR(EIO);
@@ -236,7 +233,6 @@ static int idcin_read_packet(AVFormatContext *s,
             return AVERROR(EIO);
         } else if (command == 1) {
             /* trigger a palette change */
-            idcin->palctrl.palette_changed = 1;
             if (avio_read(pb, palette_buffer, 768) != 768)
                 return AVERROR(EIO);
             /* scale the palette as necessary */
@@ -251,7 +247,7 @@ static int idcin_read_packet(AVFormatContext *s,
                 r = palette_buffer[i * 3    ] << palette_scale;
                 g = palette_buffer[i * 3 + 1] << palette_scale;
                 b = palette_buffer[i * 3 + 2] << palette_scale;
-                idcin->palctrl.palette[i] = (r << 16) | (g << 8) | (b);
+                palette[i] = (r << 16) | (g << 8) | (b);
             }
         }
 
@@ -262,6 +258,15 @@ static int idcin_read_packet(AVFormatContext *s,
         ret= av_get_packet(pb, pkt, chunk_size);
         if (ret < 0)
             return ret;
+        if (command == 1) {
+            uint8_t *pal;
+
+            pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
+                                          AVPALETTE_SIZE);
+            if (ret < 0)
+                return ret;
+            memcpy(pal, palette, AVPALETTE_SIZE);
+        }
         pkt->stream_index = idcin->video_stream_index;
         pkt->pts = idcin->pts;
     } else {

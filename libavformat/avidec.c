@@ -590,15 +590,14 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     /* This code assumes that extradata contains only palette. */
                     /* This is true for all paletted codecs implemented in FFmpeg. */
                     if (st->codec->extradata_size && (st->codec->bits_per_coded_sample <= 8)) {
-                        st->codec->palctrl = av_mallocz(sizeof(AVPaletteControl));
 #if HAVE_BIGENDIAN
                         for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)
-                            st->codec->palctrl->palette[i] = av_bswap32(((uint32_t*)st->codec->extradata)[i]);
+                            ast->pal[i] = av_bswap32(((uint32_t*)st->codec->extradata)[i]);
 #else
-                        memcpy(st->codec->palctrl->palette, st->codec->extradata,
+                        memcpy(ast->pal, st->codec->extradata,
                                FFMIN(st->codec->extradata_size, AVPALETTE_SIZE));
 #endif
-                        st->codec->palctrl->palette_changed = 1;
+                        ast->has_pal = 1;
                     }
 
                     print_tag("video", tag1, 0);
@@ -932,14 +931,14 @@ resync:
             return err;
 
         if(ast->has_pal && pkt->data && pkt->size<(unsigned)INT_MAX/2){
-            void *ptr= av_realloc(pkt->data, pkt->size + 4*256 + FF_INPUT_BUFFER_PADDING_SIZE);
-            if(ptr){
-            ast->has_pal=0;
-            pkt->size += 4*256;
-            pkt->data= ptr;
-                memcpy(pkt->data + pkt->size - 4*256, ast->pal, 4*256);
-            }else
-                av_log(s, AV_LOG_ERROR, "Failed to append palette\n");
+            uint8_t *pal;
+            pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
+            if(!pal){
+                av_log(s, AV_LOG_ERROR, "Failed to allocate data for palette\n");
+            }else{
+                memcpy(pal, ast->pal, AVPALETTE_SIZE);
+                ast->has_pal = 0;
+            }
         }
 
         if (CONFIG_DV_DEMUXER && avi->dv_demux) {
@@ -1340,7 +1339,6 @@ static int avi_read_close(AVFormatContext *s)
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
         AVIStream *ast = st->priv_data;
-        av_free(st->codec->palctrl);
         if (ast) {
             if (ast->sub_ctx) {
                 av_freep(&ast->sub_ctx->pb);
