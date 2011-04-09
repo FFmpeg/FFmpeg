@@ -327,6 +327,8 @@ send a reminder by email. Your patch should eventually be dealt with.
     See @url{http://kerneltrap.org/files/Jeremy/DCO.txt} for the meaning
     of sign off.
 @item
+    Did you provide a clear git commit log message?
+@item
     Is the patch against latest FFmpeg git master branch?
 @item
     Are you subscribed to ffmpeg-dev?
