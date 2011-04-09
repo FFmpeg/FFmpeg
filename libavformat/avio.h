@@ -555,6 +555,12 @@ int url_resetbuf(AVIOContext *s, int flags);
  */
 int avio_open(AVIOContext **s, const char *url, int flags);
 
+/**
+ * Close the resource accessed by the AVIOContext s and free it.
+ * This function can only be used if s was opened by avio_open().
+ *
+ * @return 0 on success, an AVERROR < 0 on error.
+ */
 int avio_close(AVIOContext *s);
 
 /**
