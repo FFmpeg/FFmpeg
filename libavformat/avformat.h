@@ -998,8 +998,8 @@ void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
 #if FF_API_PKT_DUMP
 attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 attribute_deprecated void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt,
-#endif
                                           int dump_payload);
+#endif
 
 /**
  * Initialize libavformat and register all the muxers, demuxers and
