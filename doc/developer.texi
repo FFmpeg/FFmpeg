@@ -314,7 +314,7 @@ send a reminder by email. Your patch should eventually be dealt with.
 
 @enumerate
 @item
-    Do the regression tests pass with the patch applied?
+    Does @code{make fate} pass with the patch applied?
 @item
     Does @code{make checkheaders} pass with the patch applied?
 @item
