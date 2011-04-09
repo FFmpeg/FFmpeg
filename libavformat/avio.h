@@ -43,10 +43,15 @@
  * sizeof(AVIOContext) must not be used outside libav*.
  */
 typedef struct {
-    unsigned char *buffer;
-    int buffer_size;
-    unsigned char *buf_ptr, *buf_end;
-    void *opaque;
+    unsigned char *buffer;  /**< Start of the buffer. */
+    int buffer_size;        /**< Maximum buffer size */
+    unsigned char *buf_ptr; /**< Current position in the buffer */
+    unsigned char *buf_end; /**< End of the data, may be less than
+                                 buffer+buffer_size if the read function returned
+                                 less data than requested, e.g. for streams where
+                                 no more data has been received yet. */
+    void *opaque;           /**< A private pointer, passed to the read/write/seek/...
+                                 functions. */
     int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
     int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
     int64_t (*seek)(void *opaque, int64_t offset, int whence);
