@@ -471,6 +471,10 @@ regions by truncation to 8bit colordepth.
 Interpolate the gradients that should go where the bands are, and
 dither them.
 
+This filter is designed for playback only.  Do not use it prior to
+lossy compression, because compression tends to lose the dither and
+bring back the bands.
+
 The filter takes two optional parameters, separated by ':':
 @var{strength}:@var{radius}
 
