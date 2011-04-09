@@ -32,6 +32,45 @@
 
 #include "libavformat/version.h"
 
+
+#define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
+
+/**
+ * Bytestream IO Context.
+ * New fields can be added to the end with minor version bumps.
+ * Removal, reordering and changes to existing fields require a major
+ * version bump.
+ * sizeof(AVIOContext) must not be used outside libav*.
+ */
+typedef struct {
+    unsigned char *buffer;
+    int buffer_size;
+    unsigned char *buf_ptr, *buf_end;
+    void *opaque;
+    int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
+    int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
+    int64_t (*seek)(void *opaque, int64_t offset, int whence);
+    int64_t pos; /**< position in the file of the current buffer */
+    int must_flush; /**< true if the next seek should flush */
+    int eof_reached; /**< true if eof reached */
+    int write_flag;  /**< true if open for writing */
+#if FF_API_OLD_AVIO
+    attribute_deprecated int is_streamed;
+#endif
+    int max_packet_size;
+    unsigned long checksum;
+    unsigned char *checksum_ptr;
+    unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
+    int error;         ///< contains the error code or 0 if no error happened
+    int (*read_pause)(void *opaque, int pause);
+    int64_t (*read_seek)(void *opaque, int stream_index,
+                         int64_t timestamp, int flags);
+    /**
+     * A combination of AVIO_SEEKABLE_ flags or 0 when the stream is not seekable.
+     */
+    int seekable;
+} AVIOContext;
+
 /* unbuffered I/O */
 
 #if FF_API_OLD_AVIO
@@ -197,47 +236,9 @@ attribute_deprecated int av_register_protocol(URLProtocol *protocol);
 attribute_deprecated int av_register_protocol2(URLProtocol *protocol, int size);
 #endif
 
-#define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
-
 /**
  * @}
  */
-
-/**
- * Bytestream IO Context.
- * New fields can be added to the end with minor version bumps.
- * Removal, reordering and changes to existing fields require a major
- * version bump.
- * sizeof(AVIOContext) must not be used outside libav*.
- */
-typedef struct {
-    unsigned char *buffer;
-    int buffer_size;
-    unsigned char *buf_ptr, *buf_end;
-    void *opaque;
-    int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
-    int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
-    int64_t (*seek)(void *opaque, int64_t offset, int whence);
-    int64_t pos; /**< position in the file of the current buffer */
-    int must_flush; /**< true if the next seek should flush */
-    int eof_reached; /**< true if eof reached */
-    int write_flag;  /**< true if open for writing */
-#if FF_API_OLD_AVIO
-    attribute_deprecated int is_streamed;
-#endif
-    int max_packet_size;
-    unsigned long checksum;
-    unsigned char *checksum_ptr;
-    unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
-    int error;         ///< contains the error code or 0 if no error happened
-    int (*read_pause)(void *opaque, int pause);
-    int64_t (*read_seek)(void *opaque, int stream_index,
-                         int64_t timestamp, int flags);
-    /**
-     * A combination of AVIO_SEEKABLE_ flags or 0 when the stream is not seekable.
-     */
-    int seekable;
-} AVIOContext;
 
 #if FF_API_OLD_AVIO
 typedef attribute_deprecated AVIOContext ByteIOContext;
