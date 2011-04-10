@@ -406,6 +406,8 @@ static inline int RENAME(yuva420_rgb32)(SwsContext *c, const uint8_t *src[],
     YUV2RGB_ENDLOOP(4)
     YUV2RGB_OPERANDS_ALPHA
     YUV2RGB_ENDFUNC
+#else
+    return 0;
 #endif
 }
 
@@ -449,5 +451,7 @@ static inline int RENAME(yuva420_bgr32)(SwsContext *c, const uint8_t *src[],
     YUV2RGB_ENDLOOP(4)
     YUV2RGB_OPERANDS_ALPHA
     YUV2RGB_ENDFUNC
+#else
+    return 0;
 #endif
 }
