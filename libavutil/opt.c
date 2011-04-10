@@ -57,7 +57,7 @@ static int av_set_number2(void *obj, const char *name, double num, int den, int6
     if (o_out)
         *o_out= o;
     if (!o || o->offset<=0)
-        return AVERROR(ENOENT);
+        return AVERROR_OPTION_NOT_FOUND;
 
     if (o->max*den < num*intnum || o->min*den > num*intnum) {
         av_log(obj, AV_LOG_ERROR, "Value %lf for parameter '%s' out of range\n", num, name);
@@ -119,7 +119,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
     if (o_out)
         *o_out = o;
     if (!o)
-        return AVERROR(ENOENT);
+        return AVERROR_OPTION_NOT_FOUND;
     if (!val || o->offset<=0)
         return AVERROR(EINVAL);
 
@@ -490,7 +490,7 @@ static int parse_key_value_pair(void *ctx, const char **buf,
     av_log(ctx, AV_LOG_DEBUG, "Setting value '%s' for key '%s'\n", val, key);
 
     ret = av_set_string3(ctx, key, val, 1, NULL);
-    if (ret == AVERROR(ENOENT))
+    if (ret == AVERROR_OPTION_NOT_FOUND)
         av_log(ctx, AV_LOG_ERROR, "Key '%s' not found.\n", key);
 
     av_free(key);
