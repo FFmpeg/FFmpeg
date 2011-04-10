@@ -639,7 +639,7 @@ static inline void prefetch_motion(H264Context *h, int list){
         uint8_t **src= h->ref_list[list][refn].data;
         int off= mx*h->pixel_size + (my + (s->mb_x&3)*4)*h->mb_linesize + 64*h->pixel_size;
         s->dsp.prefetch(src[0]+off, s->linesize, 4);
-        off= (mx>>1)*h->pixel_size + ((my>>1)*h->pixel_size + (s->mb_x&7))*s->uvlinesize + 64*h->pixel_size;
+        off= (mx>>1)*h->pixel_size + ((my>>1) + (s->mb_x&7))*s->uvlinesize + 64*h->pixel_size;
         s->dsp.prefetch(src[1]+off, src[2]-src[1], 2);
     }
 }
