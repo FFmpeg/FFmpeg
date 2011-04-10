@@ -189,20 +189,22 @@ static int fbdev_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         fbdev->time_frame = av_gettime();
 
     /* wait based on the frame rate */
-    curtime = av_gettime();
-    delay = fbdev->time_frame - curtime;
-    av_dlog(avctx,
-            "time_frame:%"PRId64" curtime:%"PRId64" delay:%"PRId64"\n",
-            fbdev->time_frame, curtime, delay);
-    if (delay > 0) {
+    while (1) {
+        curtime = av_gettime();
+        delay = fbdev->time_frame - curtime;
+        av_dlog(avctx,
+                "time_frame:%"PRId64" curtime:%"PRId64" delay:%"PRId64"\n",
+                fbdev->time_frame, curtime, delay);
+        if (delay <= 0) {
+            fbdev->time_frame += INT64_C(1000000) * av_q2d(fbdev->time_base);
+            break;
+        }
         if (avctx->flags & AVFMT_FLAG_NONBLOCK)
             return AVERROR(EAGAIN);
         ts.tv_sec  =  delay / 1000000;
         ts.tv_nsec = (delay % 1000000) * 1000;
         while (nanosleep(&ts, &ts) < 0 && errno == EINTR);
     }
-    /* compute the time of the next frame */
-    fbdev->time_frame += INT64_C(1000000) * av_q2d(fbdev->time_base);
 
     if ((ret = av_new_packet(pkt, fbdev->frame_size)) < 0)
         return ret;
