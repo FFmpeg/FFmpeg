@@ -41,6 +41,11 @@
  * Removal, reordering and changes to existing fields require a major
  * version bump.
  * sizeof(AVIOContext) must not be used outside libav*.
+ *
+ * @note None of the function pointers in AVIOContext should be called
+ *       directly, they should only be set by the client application
+ *       when implementing custom I/O. Normally these are set to the
+ *       function pointers specified in avio_alloc_context()
  */
 typedef struct {
     unsigned char *buffer;  /**< Start of the buffer. */
@@ -67,7 +72,15 @@ typedef struct {
     unsigned char *checksum_ptr;
     unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
     int error;              /**< contains the error code or 0 if no error happened */
+    /**
+     * Pause or resume playback for network streaming protocols - e.g. MMS.
+     */
     int (*read_pause)(void *opaque, int pause);
+    /**
+     * Seek to a given timestamp in stream with the specified stream_index.
+     * Needed for some network streaming protocols which don't support seeking
+     * to byte position.
+     */
     int64_t (*read_seek)(void *opaque, int stream_index,
                          int64_t timestamp, int flags);
     /**
