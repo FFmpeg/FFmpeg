@@ -3216,6 +3216,7 @@ static void execute_decode_slices(H264Context *h, int context_count){
             hx = h->thread_context[i];
             hx->s.error_recognition = avctx->error_recognition;
             hx->s.error_count = 0;
+            hx->x264_build= h->x264_build;
         }
 
         avctx->execute(avctx, (void *)decode_slice,
