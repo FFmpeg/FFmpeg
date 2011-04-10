@@ -42,7 +42,6 @@
 #define AVERROR_PATCHWELCOME    (-MKTAG('P','A','W','E')) ///< Not yet implemented in Libav, patches welcome
 
 #define AVERROR_INVALIDDATA     (-MKTAG('I','N','D','A')) ///< Invalid data found when processing input
-#define AVERROR_NUMEXPECTED     (-MKTAG('N','U','E','X')) ///< Number syntax expected in filename
 
 #define AVERROR_DEMUXER_NOT_FOUND  (-MKTAG(0xF8,'D','E','M')) ///< Demuxer not found
 #define AVERROR_MUXER_NOT_FOUND    (-MKTAG(0xF8,'M','U','X')) ///< Muxer not found
