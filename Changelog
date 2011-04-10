@@ -90,6 +90,7 @@ version 0.7_beta1:
 - AAC encoding via libvo-aacenc
 - AMR-WB encoding via libvo-amrwbenc
 - xWMA demuxer
+- fieldorder video filter added
 
 
 version 0.6:
