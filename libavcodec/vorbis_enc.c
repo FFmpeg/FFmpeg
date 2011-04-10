@@ -394,7 +394,7 @@ static void put_float(PutBitContext *pb, float f)
     mant = (int)ldexp(frexp(f, &exp), 20);
     exp += 788 - 20;
     if (mant < 0) {
-        res |= (1 << 31);
+        res |= (1U << 31);
         mant = -mant;
     }
     res |= mant | (exp << 21);
