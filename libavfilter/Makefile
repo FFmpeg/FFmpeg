@@ -29,6 +29,7 @@ OBJS-$(CONFIG_CROPDETECT_FILTER)             += vf_cropdetect.o
 OBJS-$(CONFIG_DRAWBOX_FILTER)                += vf_drawbox.o
 OBJS-$(CONFIG_DRAWTEXT_FILTER)               += vf_drawtext.o
 OBJS-$(CONFIG_FADE_FILTER)                   += vf_fade.o
+OBJS-$(CONFIG_FIELDORDER_FILTER)             += vf_fieldorder.o
 OBJS-$(CONFIG_FIFO_FILTER)                   += vf_fifo.o
 OBJS-$(CONFIG_FORMAT_FILTER)                 += vf_format.o
 OBJS-$(CONFIG_FREI0R_FILTER)                 += vf_frei0r.o

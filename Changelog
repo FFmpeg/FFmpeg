@@ -90,6 +90,7 @@ version <next>:
 - DPX image encoder
 - MicroDVD subtitle file muxer and demuxer
 - Playstation Portable PMP format demuxer
+- fieldorder video filter added
 
 
 version 0.6:

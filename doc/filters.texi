@@ -520,6 +520,39 @@ fade=in:0:25, fade=out:975:25
 fade=in:5:20
 @end example
 
+@section fieldorder
+
+Transform the field order of the input video.
+
+It accepts one parameter which specifies the required field order that
+the input interlaced video will be transformed to. The parameter can
+assume one of the following values:
+
+@table @option
+@item 0 or bff
+output bottom field first
+@item 1 or tff
+output top field first
+@end table
+
+Default value is "tff".
+
+Transformation is achieved by shifting the picture content up or down
+by one line, and filling the remaining line with appropriate picture content.
+This method is consistent with most broadcast field order converters.
+
+If the input video is not flagged as being interlaced, or it is already
+flagged as being of the required output field order then this filter does
+not alter the incoming video.
+
+This filter is very useful when converting to or from PAL DV material,
+which is bottom field first.
+
+For example:
+@example
+./ffmpeg -i in.vob -vf "fieldorder=bff" out.dv
+@end example
+
 @section fifo
 
 Buffer input images and send them when they are requested.
