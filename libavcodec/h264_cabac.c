@@ -1101,12 +1101,12 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
         }
     }
 
-    do {
-        uint8_t *ctx = coeff_abs_level1_ctx[node_ctx] + abs_level_m1_ctx_base;
-
-        int j= scantable[index[--coeff_count]];
 
 #define STORE_BLOCK(type) \
+    do {\
+        uint8_t *ctx = coeff_abs_level1_ctx[node_ctx] + abs_level_m1_ctx_base;\
+\
+        int j= scantable[index[--coeff_count]];\
         if( get_cabac( CC, ctx ) == 0 ) { \
             node_ctx = coeff_abs_level_transition[0][node_ctx]; \
             if( is_dc ) { \
@@ -1141,14 +1141,14 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
             }else{ \
                 ((type*)block)[j] = ((int)(get_cabac_bypass_sign( CC, -coeff_abs ) * qmul[j] + 32)) >> 6; \
             } \
-        }
+        }\
+    } while( coeff_count );
 
         if (h->pixel_shift) {
             STORE_BLOCK(int32_t)
         } else {
             STORE_BLOCK(int16_t)
         }
-    } while( coeff_count );
 #ifdef CABAC_ON_STACK
             h->cabac.range     = cc.range     ;
             h->cabac.low       = cc.low       ;
