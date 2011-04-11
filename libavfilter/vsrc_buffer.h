@@ -22,6 +22,11 @@
 #ifndef AVFILTER_VSRC_BUFFER_H
 #define AVFILTER_VSRC_BUFFER_H
 
+/**
+ * @file
+ * memory buffer source API for video
+ */
+
 #include "libavcodec/avcodec.h" /* AVFrame */
 #include "avfilter.h"
 
