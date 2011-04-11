@@ -1361,7 +1361,6 @@ static void alloc_picture(void *opaque)
 static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t pos)
 {
     VideoPicture *vp;
-    int dst_pix_fmt;
 #if CONFIG_AVFILTER
     AVPicture pict_src;
 #endif
@@ -1424,7 +1423,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         /* get a pointer on the bitmap */
         SDL_LockYUVOverlay (vp->bmp);
 
-        dst_pix_fmt = PIX_FMT_YUV420P;
         memset(&pict,0,sizeof(AVPicture));
         pict.data[0] = vp->bmp->pixels[0];
         pict.data[1] = vp->bmp->pixels[2];
@@ -1450,7 +1448,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
             vp->width, vp->height, vp->pix_fmt, vp->width, vp->height,
-            dst_pix_fmt, sws_flags, NULL, NULL, NULL);
+            PIX_FMT_YUV_420P, sws_flags, NULL, NULL, NULL);
         if (is->img_convert_ctx == NULL) {
             fprintf(stderr, "Cannot initialize the conversion context\n");
             exit(1);
