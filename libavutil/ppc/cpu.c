@@ -20,6 +20,7 @@
 #undef _POSIX_C_SOURCE
 #include <sys/sysctl.h>
 #elif defined(__OpenBSD__)
+#undef _POSIX_C_SOURCE
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <machine/cpu.h>

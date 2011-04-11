@@ -306,6 +306,12 @@ typedef struct VC1Context{
     uint8_t range_mapuv;
     //@}
 
+    /** Frame decoding info for sprite modes */
+    //@{
+    int new_sprite;
+    int two_sprites;
+    //@}
+
     int p_frame_skipped;
     int bi_type;
     int x8_type;
