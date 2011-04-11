@@ -2788,19 +2788,20 @@ static int opt_metadata(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_qscale(const char *arg)
+static int opt_qscale(const char *opt, const char *arg)
 {
-    video_qscale = atof(arg);
-    if (video_qscale <= 0 ||
-        video_qscale > 255) {
+    video_qscale = parse_number_or_die(opt, arg, OPT_FLOAT, 0, 255);
+    if (video_qscale == 0) {
         fprintf(stderr, "qscale must be > 0.0 and <= 255\n");
-        ffmpeg_exit(1);
+        return AVERROR(EINVAL);
     }
+    return 0;
 }
 
-static void opt_top_field_first(const char *arg)
+static int opt_top_field_first(const char *opt, const char *arg)
 {
-    top_field_first= atoi(arg);
+    top_field_first = parse_number_or_die(opt, arg, OPT_INT, 0, 1);
+    return 0;
 }
 
 static int opt_thread_count(const char *opt, const char *arg)
@@ -2842,9 +2843,10 @@ static int opt_audio_channels(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_video_channel(const char *arg)
+static int opt_video_channel(const char *opt, const char *arg)
 {
-    video_channel = strtol(arg, NULL, 0);
+    video_channel = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
+    return 0;
 }
 
 static void opt_video_standard(const char *arg)
@@ -3825,15 +3827,10 @@ static void opt_output_file(const char *filename)
 }
 
 /* same option as mencoder */
-static void opt_pass(const char *pass_str)
+static int opt_pass(const char *opt, const char *arg)
 {
-    int pass;
-    pass = atoi(pass_str);
-    if (pass != 1 && pass != 2) {
-        fprintf(stderr, "pass number can be only 1 or 2\n");
-        ffmpeg_exit(1);
-    }
-    do_pass = pass;
+    do_pass = parse_number_or_die(opt, arg, OPT_INT, 1, 2);
+    return 0;
 }
 
 static int64_t getutime(void)
@@ -4254,13 +4251,13 @@ static const OptionDef options[] = {
     { "intra", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_only}, "use only intra frames"},
     { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
-    { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantizer scale (VBR)", "q" },
+    { "qscale", HAS_ARG | OPT_FUNC2 | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantizer scale (VBR)", "q" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me_threshold", HAS_ARG | OPT_FUNC2 | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "threshold" },
     { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quality},
       "use same quantizer as source (implies VBR)" },
-    { "pass", HAS_ARG | OPT_VIDEO, {(void*)&opt_pass}, "select the pass number (1 or 2)", "n" },
+    { "pass", HAS_ARG | OPT_FUNC2 | OPT_VIDEO, {(void*)opt_pass}, "select the pass number (1 or 2)", "n" },
     { "passlogfile", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void*)&pass_logfilename_prefix}, "select two pass log file name prefix", "prefix" },
     { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace},
       "deinterlace pictures" },
@@ -4272,7 +4269,7 @@ static const OptionDef options[] = {
 #endif
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
-    { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
+    { "top", HAS_ARG | OPT_FUNC2 | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
     { "vtag", OPT_FUNC2 | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_codec_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "newvideo", OPT_VIDEO | OPT_FUNC2, {(void*)opt_new_stream}, "add a new video stream to the current output stream" },
@@ -4304,7 +4301,7 @@ static const OptionDef options[] = {
     { "stag", OPT_FUNC2 | HAS_ARG | OPT_EXPERT | OPT_SUBTITLE, {(void*)opt_codec_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
 
     /* grab options */
-    { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_channel}, "set video grab channel (DV1394 only)", "channel" },
+    { "vc", HAS_ARG | OPT_FUNC2 | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_channel}, "set video grab channel (DV1394 only)", "channel" },
     { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_standard}, "set television standard (NTSC, PAL (SECAM))", "standard" },
     { "isync", OPT_BOOL | OPT_EXPERT | OPT_GRAB, {(void*)&input_sync}, "sync read on input", "" },
 
