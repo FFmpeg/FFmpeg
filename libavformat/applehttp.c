@@ -309,10 +309,13 @@ reload:
     c->end_of_segment = 1;
     c->cur_seq_no = v->cur_seq_no;
 
-    v->needed = 0;
-    for (i = v->stream_offset; i < v->stream_offset + v->ctx->nb_streams; i++) {
-        if (v->parent->streams[i]->discard < AVDISCARD_ALL)
-            v->needed = 1;
+    if (v->ctx) {
+        v->needed = 0;
+        for (i = v->stream_offset; i < v->stream_offset + v->ctx->nb_streams;
+             i++) {
+            if (v->parent->streams[i]->discard < AVDISCARD_ALL)
+                v->needed = 1;
+        }
     }
     if (!v->needed) {
         av_log(v->parent, AV_LOG_INFO, "No longer receiving variant %d\n",
