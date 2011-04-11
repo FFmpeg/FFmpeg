@@ -30,8 +30,6 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
-#define FAST_BGR2YV12 // use 7-bit instead of 15-bit coefficients
-
 void (*rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb24tobgr16)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long src_size);

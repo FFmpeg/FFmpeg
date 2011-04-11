@@ -76,8 +76,6 @@ untested special converters
 //#undef ARCH_X86
 #define DITHER1XBPP
 
-#define FAST_BGR2YV12 // use 7 bit coefficients instead of 15 bit
-
 #define isPacked(x)         (       \
            (x)==PIX_FMT_PAL8        \
         || (x)==PIX_FMT_YUYV422     \
