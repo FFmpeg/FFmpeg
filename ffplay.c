@@ -710,14 +710,11 @@ static void video_image_display(VideoState *is)
             aspect_ratio = 1.0;
         aspect_ratio *= (float)vp->width / (float)vp->height;
 
-        if (is->subtitle_st)
-        {
-            if (is->subpq_size > 0)
-            {
+        if (is->subtitle_st) {
+            if (is->subpq_size > 0) {
                 sp = &is->subpq[is->subpq_rindex];
 
-                if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000))
-                {
+                if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000)) {
                     SDL_LockYUVOverlay (vp->bmp);
 
                     pict.data[0] = vp->bmp->pixels[0];
