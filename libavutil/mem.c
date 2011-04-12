@@ -61,7 +61,7 @@ void  free(void *ptr);
    memory allocator. You do not need to suppress this file because the
    linker will do it automatically. */
 
-void *av_malloc(FF_INTERNAL_MEM_TYPE size)
+void *av_malloc(size_t size)
 {
     void *ptr = NULL;
 #if CONFIG_MEMALIGN_HACK
@@ -116,7 +116,7 @@ void *av_malloc(FF_INTERNAL_MEM_TYPE size)
     return ptr;
 }
 
-void *av_realloc(void *ptr, FF_INTERNAL_MEM_TYPE size)
+void *av_realloc(void *ptr, size_t size)
 {
 #if CONFIG_MEMALIGN_HACK
     int diff;
@@ -153,7 +153,7 @@ void av_freep(void *arg)
     *ptr = NULL;
 }
 
-void *av_mallocz(FF_INTERNAL_MEM_TYPE size)
+void *av_mallocz(size_t size)
 {
     void *ptr = av_malloc(size);
     if (ptr)

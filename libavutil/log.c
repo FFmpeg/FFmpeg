@@ -29,10 +29,7 @@
 #include "avutil.h"
 #include "log.h"
 
-#if LIBAVUTIL_VERSION_MAJOR > 50
-static
-#endif
-int av_log_level = AV_LOG_INFO;
+static int av_log_level = AV_LOG_INFO;
 static int flags;
 
 #if defined(_WIN32) && !defined(__MINGW32CE__)
