@@ -673,6 +673,7 @@ following image formats are supported:
 @item Sierra VMD audio       @tab     @tab  X
     @tab Used in Sierra VMD files.
 @item Smacker audio          @tab     @tab  X
+@item SMPTE 302M AES3 audio  @tab     @tab  X
 @item Speex                  @tab     @tab  E
     @tab supported through external library libspeex
 @item True Audio (TTA)       @tab     @tab  X
