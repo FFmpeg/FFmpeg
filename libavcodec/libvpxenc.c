@@ -64,6 +64,7 @@ typedef struct VP8EncoderContext {
     int arnr_type;
     int lag_in_frames;
     int error_resilient;
+    int crf;
 } VP8Context;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -84,6 +85,7 @@ static const char *const ctlidstr[] = {
     [VP8E_SET_ARNR_MAXFRAMES]    = "VP8E_SET_ARNR_MAXFRAMES",
     [VP8E_SET_ARNR_STRENGTH]     = "VP8E_SET_ARNR_STRENGTH",
     [VP8E_SET_ARNR_TYPE]         = "VP8E_SET_ARNR_TYPE",
+    [VP8E_SET_CQ_LEVEL]          = "VP8E_SET_CQ_LEVEL",
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -251,8 +253,10 @@ static av_cold int vp8_init(AVCodecContext *avctx)
         enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
                                               AV_ROUND_NEAR_INF);
 
-    if (avctx->rc_min_rate == avctx->rc_max_rate &&
-        avctx->rc_min_rate == avctx->bit_rate)
+    if (ctx->crf)
+        enccfg.rc_end_usage = VPX_CQ;
+    else if (avctx->rc_min_rate == avctx->rc_max_rate &&
+             avctx->rc_min_rate == avctx->bit_rate)
         enccfg.rc_end_usage = VPX_CBR;
 
     if (avctx->qmin > 0)
@@ -343,6 +347,7 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, avctx->noise_reduction);
     codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
     codecctl_int(avctx, VP8E_SET_STATIC_THRESHOLD,  avctx->mb_threshold);
+    codecctl_int(avctx, VP8E_SET_CQ_LEVEL,          ctx->crf);
 
     //provide dummy value to initialize wrapper, values will be updated each _encode()
     vpx_img_wrap(&ctx->rawimg, VPX_IMG_FMT_I420, avctx->width, avctx->height, 1,
@@ -553,6 +558,7 @@ static const AVOption options[] = {
                          "though earlier partitions have been lost. Note that intra predicition"
                          " is still done over the partition boundary.",       0, AV_OPT_TYPE_CONST, {.i64 = VPX_ERROR_RESILIENT_PARTITIONS}, 0, 0, VE, "er"},
 #endif
+    { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63, VE },
     { NULL }
 };
 

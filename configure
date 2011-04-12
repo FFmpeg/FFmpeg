@@ -3344,8 +3344,8 @@ enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lv
 enabled libvpx     && {
     enabled libvpx_decoder && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
                                 die "ERROR: libvpx decoder version must be >=0.9.1"; }
-    enabled libvpx_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_enc_init_ver -lvpx ||
-                                die "ERROR: libvpx encoder version must be >=0.9.1"; } }
+    enabled libvpx_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VPX_CQ" -lvpx ||
+                                die "ERROR: libvpx encoder version must be >=0.9.6"; } }
 enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 &&
                       { check_cpp_condition x264.h "X264_BUILD >= 118" ||
                         die "ERROR: libx264 version must be >= 0.118."; }
