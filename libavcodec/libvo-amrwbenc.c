@@ -33,7 +33,7 @@ typedef struct AMRWBContext {
     int    allow_dtx;
 } AMRWBContext;
 
-static int getWBBitrateMode(int bitrate)
+static int get_wb_bitrate_mode(int bitrate)
 {
     /* make the correspondance between bitrate and mode */
     static const int rates[] = {  6600,  8850, 12650, 14250, 15850, 18250,
@@ -61,7 +61,7 @@ static av_cold int amr_wb_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
-    if ((s->mode = getWBBitrateMode(avctx->bit_rate)) < 0) {
+    if ((s->mode = get_wb_bitrate_mode(avctx->bit_rate)) < 0) {
         av_log(avctx, AV_LOG_ERROR, wb_bitrate_unsupported);
         return AVERROR(ENOSYS);
     }
@@ -91,7 +91,7 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
     AMRWBContext *s = avctx->priv_data;
     int size;
 
-    if ((s->mode = getWBBitrateMode(avctx->bit_rate)) < 0) {
+    if ((s->mode = get_wb_bitrate_mode(avctx->bit_rate)) < 0) {
         av_log(avctx, AV_LOG_ERROR, wb_bitrate_unsupported);
         return AVERROR(ENOSYS);
     }
