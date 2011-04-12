@@ -529,7 +529,7 @@ leave:
 static int flv_read_seek(AVFormatContext *s, int stream_index,
     int64_t ts, int flags)
 {
-    return ffio_read_seek(s->pb, stream_index, ts, flags);
+    return avio_seek_time(s->pb, stream_index, ts, flags);
 }
 
 #if 0 /* don't know enough to implement this */
@@ -550,7 +550,7 @@ static int flv_read_seek2(AVFormatContext *s, int stream_index,
             ts = av_rescale_rnd(ts, 1000, AV_TIME_BASE,
                 flags & AVSEEK_FLAG_BACKWARD ? AV_ROUND_DOWN : AV_ROUND_UP);
         }
-        ret = ffio_read_seek(s->pb, stream_index, ts, flags);
+        ret = avio_seek_time(s->pb, stream_index, ts, flags);
     }
 
     if (ret == AVERROR(ENOSYS))
