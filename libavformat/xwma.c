@@ -40,6 +40,7 @@ static int xwma_probe(AVProbeData *p)
 static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     int64_t size, av_uninit(data_size);
+    int ret;
     uint32_t dpds_table_size = 0;
     uint32_t *dpds_table = 0;
     unsigned int tag;
@@ -70,7 +71,9 @@ static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!st)
         return AVERROR(ENOMEM);
 
-    ff_get_wav_header(pb, st->codec, size);
+    ret = ff_get_wav_header(pb, st->codec, size);
+    if (ret < 0)
+        return ret;
     st->need_parsing = AVSTREAM_PARSE_NONE;
 
     /* All xWMA files I have seen contained WMAv2 data. If there are files

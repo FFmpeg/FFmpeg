@@ -60,6 +60,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int w, h;
     int num, den;
     int flags;
+    int ret;
 
     tag = avio_rl32(pb);
     if (tag != MKTAG('D', 'E', 'X', 'A'))
@@ -102,7 +103,9 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
         ast = av_new_stream(s, 0);
         if (!ast)
             return -1;
-        ff_get_wav_header(pb, ast->codec, fsize);
+        ret = ff_get_wav_header(pb, ast->codec, fsize);
+        if (ret < 0)
+            return ret;
         // find 'data' chunk
         while(avio_tell(pb) < c->vidpos && !pb->eof_reached){
             tag = avio_rl32(pb);
