@@ -92,20 +92,20 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int x_off = 0;
     int y_off = 0;
     int use_shm;
-    char *param, *offset;
+    char *dpyname, *offset;
 
-    param = av_strdup(s1->filename);
-    offset = strchr(param, '+');
+    dpyname = av_strdup(s1->filename);
+    offset = strchr(dpyname, '+');
     if (offset) {
         sscanf(offset, "%d,%d", &x_off, &y_off);
         x11grab->nomouse= strstr(offset, "nomouse");
         *offset= 0;
     }
 
-    av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n", s1->filename, param, x_off, y_off, ap->width, ap->height);
+    av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n", s1->filename, dpyname, x_off, y_off, ap->width, ap->height);
 
-    dpy = XOpenDisplay(param);
-    av_freep(&param);
+    dpy = XOpenDisplay(dpyname);
+    av_freep(&dpyname);
     if(!dpy) {
         av_log(s1, AV_LOG_ERROR, "Could not open X display.\n");
         return AVERROR(EIO);
