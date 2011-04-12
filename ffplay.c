@@ -265,6 +265,7 @@ static int exit_on_keydown;
 static int exit_on_mousedown;
 static int loop=1;
 static int framedrop=1;
+static int show_mode = SHOW_MODE_VIDEO;
 
 static int rdftspeed=20;
 #if CONFIG_AVFILTER
@@ -2461,6 +2462,8 @@ static int decode_thread(void *arg)
         av_dump_format(ic, 0, is->filename, 0);
     }
 
+    is->show_mode = show_mode;
+
     /* open the streams */
     if (st_index[AVMEDIA_TYPE_AUDIO] >= 0) {
         stream_component_open(is, st_index[AVMEDIA_TYPE_AUDIO]);
@@ -2970,6 +2973,15 @@ static int opt_thread_count(const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_show_mode(const char *opt, const char *arg)
+{
+    show_mode = !strcmp(arg, "video") ? SHOW_MODE_VIDEO :
+                !strcmp(arg, "waves") ? SHOW_MODE_WAVES :
+                !strcmp(arg, "rdft" ) ? SHOW_MODE_RDFT  :
+                parse_number_or_die(opt, arg, OPT_INT, 0, SHOW_MODE_NB-1);
+    return 0;
+}
+
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
     { "x", HAS_ARG | OPT_FUNC2, {(void*)opt_width}, "force displayed width", "width" },
@@ -3013,6 +3025,7 @@ static const OptionDef options[] = {
     { "vf", OPT_STRING | HAS_ARG, {(void*)&vfilters}, "video filters", "filter list" },
 #endif
     { "rdftspeed", OPT_INT | HAS_ARG| OPT_AUDIO | OPT_EXPERT, {(void*)&rdftspeed}, "rdft speed", "msecs" },
+    { "showmode", HAS_ARG | OPT_FUNC2, {(void*)opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode" },
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { "i", OPT_DUMMY, {NULL}, "ffmpeg compatibility dummy option", ""},
     { NULL, },

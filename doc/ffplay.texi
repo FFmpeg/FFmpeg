@@ -58,6 +58,24 @@ Force format.
 Set window title (default is the input filename).
 @item -loop @var{number}
 Loops movie playback <number> times. 0 means forever.
+@item -showmode @var{mode}
+Set the show mode to use.
+Available values for @var{mode} are:
+@table @samp
+@item 0, video
+show video
+@item 1, waves
+show audio waves
+@item 2, rdft
+show audio frequency band using RDFT ((Inverse) Real Discrete Fourier Transform)
+@end table
+
+Default value is "video", if video is not present or cannot be played
+"rdft" is automatically selected.
+
+You can interactively cycle through the available show modes by
+pressing the key @key{w}.
+
 @item -vf @var{filter_graph}
 @var{filter_graph} is a description of the filter graph to apply to
 the input video.
