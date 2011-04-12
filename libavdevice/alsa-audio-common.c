@@ -40,6 +40,8 @@ static av_cold snd_pcm_format_t codec_id_to_pcm_format(int codec_id)
         case CODEC_ID_PCM_F32BE: return SND_PCM_FORMAT_FLOAT_BE;
         case CODEC_ID_PCM_S32LE: return SND_PCM_FORMAT_S32_LE;
         case CODEC_ID_PCM_S32BE: return SND_PCM_FORMAT_S32_BE;
+        case CODEC_ID_PCM_S24LE: return SND_PCM_FORMAT_S24_3LE;
+        case CODEC_ID_PCM_S24BE: return SND_PCM_FORMAT_S24_3BE;
         case CODEC_ID_PCM_S16LE: return SND_PCM_FORMAT_S16_LE;
         case CODEC_ID_PCM_S16BE: return SND_PCM_FORMAT_S16_BE;
         case CODEC_ID_PCM_S8:    return SND_PCM_FORMAT_S8;
