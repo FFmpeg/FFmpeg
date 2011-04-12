@@ -94,14 +94,6 @@ enum AVMediaType {
 #define AV_TIME_BASE            1000000
 #define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
 
-/**
- * Those FF_API_* defines are not part of public API.
- * They may change, break or disappear at any time.
- */
-#ifndef FF_API_OLD_IMAGE_NAMES
-#define FF_API_OLD_IMAGE_NAMES (LIBAVUTIL_VERSION_MAJOR < 51)
-#endif
-
 #include "common.h"
 #include "error.h"
 #include "mathematics.h"
