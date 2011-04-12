@@ -1233,5 +1233,5 @@ AVCodec ff_amrwb_decoder = {
     .init           = amrwb_decode_init,
     .decode         = amrwb_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Adaptive Multi-Rate WideBand"),
-    .sample_fmts    = (enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
+    .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
 };
