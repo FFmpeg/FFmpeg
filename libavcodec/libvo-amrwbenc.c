@@ -27,11 +27,6 @@ static const char wb_bitrate_unsupported[] =
     "bitrate not supported: use one of 6.6k, 8.85k, 12.65k, 14.25k, 15.85k, "
     "18.25k, 19.85k, 23.05k, or 23.85k\n";
 
-typedef struct AMRWB_bitrates {
-    int rate;
-    int mode;
-} AMRWB_bitrates;
-
 typedef struct AMRWBContext {
     void  *state;
     int    mode;
@@ -41,20 +36,13 @@ typedef struct AMRWBContext {
 static int getWBBitrateMode(int bitrate)
 {
     /* make the correspondance between bitrate and mode */
-    static const AMRWB_bitrates rates[] = { { 6600, 0},
-                               { 8850, 1},
-                               {12650, 2},
-                               {14250, 3},
-                               {15850, 4},
-                               {18250, 5},
-                               {19850, 6},
-                               {23050, 7},
-                               {23850, 8}, };
+    static const int rates[] = {  6600,  8850, 12650, 14250, 15850, 18250,
+                                 19850, 23050, 23850 };
     int i;
 
     for (i = 0; i < 9; i++)
-        if (rates[i].rate == bitrate)
-            return rates[i].mode;
+        if (rates[i] == bitrate)
+            return i;
     /* no bitrate matching, return an error */
     return -1;
 }
