@@ -135,7 +135,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
     char str_val[256];
     int64_t *times = NULL;
     int64_t *filepositions = NULL;
-    int ret = 0;
+    int ret = AVERROR(ENOSYS);
     int64_t initial_pos = avio_tell(ioc);
 
     while (avio_tell(ioc) < max_pos - 2 && amf_get_string(ioc, str_val, sizeof(str_val)) > 0) {
@@ -173,6 +173,12 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
             num_val = av_int2dbl(avio_rb64(ioc));
             current_array[i] = num_val;
         }
+        if (times && filepositions) {
+            // All done, exiting at a position allowing amf_parse_object
+            // to finish parsing the object
+            ret = 0;
+            break;
+        }
     }
 
     if (timeslen == fileposlen)
@@ -184,7 +190,10 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
 finish:
     av_freep(&times);
     av_freep(&filepositions);
-    avio_seek(ioc, initial_pos, SEEK_SET);
+    // If we got unexpected data, but successfully reset back to
+    // the start pos, the caller can continue parsing
+    if (ret < 0 && avio_seek(ioc, initial_pos, SEEK_SET) > 0)
+        return 0;
     return ret;
 }
 
