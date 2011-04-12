@@ -123,7 +123,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     use_shm = XShmQueryExtension(dpy);
-    av_log(s1, AV_LOG_INFO, "shared memory extension %s found\n", use_shm ? "" : "not");
+    av_log(s1, AV_LOG_INFO, "shared memory extension%s found\n", use_shm ? "" : " not");
 
     if(use_shm) {
         int scr = XDefaultScreen(dpy);
