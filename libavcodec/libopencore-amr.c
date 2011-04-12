@@ -231,11 +231,6 @@ AVCodec ff_libopencore_amrnb_encoder = {
 /* -----------AMR wideband ------------*/
 #if CONFIG_LIBOPENCORE_AMRWB
 
-#ifdef _TYPEDEF_H
-//To avoid duplicate typedefs from typedef in amr-nb
-#define typedef_h
-#endif
-
 #include <opencore-amrwb/dec_if.h>
 #include <opencore-amrwb/if_rom.h>
 
