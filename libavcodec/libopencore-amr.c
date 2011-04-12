@@ -73,7 +73,7 @@ static int getBitrateMode(int bitrate)
 typedef struct AMRContext {
     int   frameCount;
     void *decState;
-    int  *enstate;
+    void *enstate;
     int   enc_bitrate;
 } AMRContext;
 
