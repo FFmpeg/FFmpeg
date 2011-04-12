@@ -1768,22 +1768,6 @@ typedef struct AVCodecContext {
      */
     uint64_t error[4];
 
-#if FF_API_MB_Q
-    /**
-     * minimum MB quantizer
-     * - encoding: unused
-     * - decoding: unused
-     */
-    attribute_deprecated int mb_qmin;
-
-    /**
-     * maximum MB quantizer
-     * - encoding: unused
-     * - decoding: unused
-     */
-    attribute_deprecated int mb_qmax;
-#endif
-
     /**
      * motion estimation comparison function
      * - encoding: Set by user.
