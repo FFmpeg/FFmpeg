@@ -245,8 +245,8 @@ ogg_read_page (AVFormatContext * s, int *str)
                 int n;
 
                 for (n = 0; n < ogg->nstreams; n++) {
-                    av_free(ogg->streams[n].buf);
-                    av_free(ogg->streams[n].private);
+                    av_freep(&ogg->streams[n].buf);
+                    av_freep(&ogg->streams[n].private);
                 }
                 ogg->curidx   = -1;
                 ogg->nstreams = 0;
