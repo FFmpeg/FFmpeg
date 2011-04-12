@@ -37,7 +37,7 @@ function ff_ac3_bit_alloc_calc_bap_armv6, export=1
         ldrb            r10, [r4], #1
 1:
         ldrsh           r9,  [r0], #2                   @ mask[band]
-        ldr           r8,  =0x1fe0
+        ldr             r8,  =0x1fe0
         sub             r9,  r9,  r12                   @   - snr_offset
         mov             r11, r10
         ldrb            r10, [r4], #1                   @ band_start_tab[band++]
