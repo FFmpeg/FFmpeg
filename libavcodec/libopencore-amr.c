@@ -84,7 +84,7 @@ static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
     s->frameCount = 0;
     s->decState   = Decoder_Interface_init();
     if (!s->decState) {
-        av_log(avctx, AV_LOG_ERROR, "Decoder_Interface_init error\r\n");
+        av_log(avctx, AV_LOG_ERROR, "Decoder_Interface_init error\n");
         return -1;
     }
 
