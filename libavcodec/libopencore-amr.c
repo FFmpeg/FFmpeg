@@ -239,20 +239,9 @@ AVCodec ff_libopencore_amrnb_encoder = {
 #include <opencore-amrwb/dec_if.h>
 #include <opencore-amrwb/if_rom.h>
 
-static const char wb_bitrate_unsupported[] =
-    "bitrate not supported: use one of 6.6k, 8.85k, 12.65k, 14.25k, 15.85k, 18.25k, 19.85k, 23.05k, or 23.85k\n";
-
-/* Common code for fixed and float version*/
-typedef struct AMRWB_bitrates {
-    int rate;
-    int mode;
-} AMRWB_bitrates;
-
 typedef struct AMRWBContext {
     int    frameCount;
     void  *state;
-    int    mode;
-    Word16 allow_dtx;
 } AMRWBContext;
 
 static av_cold int amr_wb_decode_init(AVCodecContext *avctx)
