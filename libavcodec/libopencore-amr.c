@@ -112,7 +112,6 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AMRContext *s = avctx->priv_data;
-    const uint8_t *amrData = buf;
     static const uint8_t block_size[16] = { 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
     enum Mode dec_mode;
     int packet_size;
@@ -130,10 +129,10 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     s->frameCount++;
-    /* av_log(NULL, AV_LOG_DEBUG, "packet_size=%d amrData= 0x%X %X %X %X\n",
-              packet_size, amrData[0], amrData[1], amrData[2], amrData[3]); */
+    /* av_log(NULL, AV_LOG_DEBUG, "packet_size=%d buf= 0x%X %X %X %X\n",
+              packet_size, buf[0], buf[1], buf[2], buf[3]); */
     /* call decoder */
-    Decoder_Interface_Decode(s->decState, amrData, data, 0);
+    Decoder_Interface_Decode(s->decState, buf, data, 0);
     *data_size = 160 * 2;
 
     return packet_size;
@@ -262,7 +261,6 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AMRWBContext *s = avctx->priv_data;
-    const uint8_t *amrData = buf;
     int mode;
     int packet_size;
     static const uint8_t block_size[16] = {18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1};
@@ -271,7 +269,7 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
         /* nothing to do */
         return 0;
 
-    mode = (amrData[0] >> 3) & 0x000F;
+    mode = (buf[0] >> 3) & 0x000F;
     packet_size = block_size[mode];
 
     if (packet_size > buf_size) {
@@ -281,7 +279,7 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     s->frameCount++;
-    D_IF_decode(s->state, amrData, data, _good_frame);
+    D_IF_decode(s->state, buf, data, _good_frame);
     *data_size = 320 * 2;
     return packet_size;
 }
