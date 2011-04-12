@@ -339,13 +339,14 @@ attribute_deprecated int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_siz
 
 /** return the written or read size */
 attribute_deprecated int url_close_buf(AVIOContext *s);
-#endif // FF_API_OLD_AVIO
 
 /**
  * Return a non-zero value if the resource indicated by url
  * exists, 0 otherwise.
+ * @deprecated Use avio_check instead.
  */
-int url_exist(const char *url);
+attribute_deprecated int url_exist(const char *url);
+#endif // FF_API_OLD_AVIO
 
 /**
  * Return AVIO_* access flags corresponding to the access permissions
