@@ -91,6 +91,8 @@ version <next>:
 - MicroDVD subtitle file muxer and demuxer
 - Playstation Portable PMP format demuxer
 - fieldorder video filter added
+- AAC encoding via libvo-aacenc
+- AMR-WB encoding via libvo-amrwbenc
 
 
 version 0.6:
