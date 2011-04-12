@@ -57,9 +57,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_OLD_EVAL_NAMES
-#define FF_API_OLD_EVAL_NAMES (LIBAVUTIL_VERSION_MAJOR < 51)
-#endif
 
 /**
  * Return the LIBAVUTIL_VERSION_INT constant.
