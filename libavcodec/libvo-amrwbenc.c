@@ -41,7 +41,7 @@ typedef struct AMRWBContext {
 static int getWBBitrateMode(int bitrate)
 {
     /* make the correspondance between bitrate and mode */
-    AMRWB_bitrates rates[] = { { 6600, 0},
+    static const AMRWB_bitrates rates[] = { { 6600, 0},
                                { 8850, 1},
                                {12650, 2},
                                {14250, 3},

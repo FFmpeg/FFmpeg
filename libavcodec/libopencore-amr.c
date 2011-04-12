@@ -53,7 +53,7 @@ typedef struct AMR_bitrates {
 static int getBitrateMode(int bitrate)
 {
     /* make the correspondance between bitrate and mode */
-    AMR_bitrates rates[] = { { 4750, MR475},
+    static const AMR_bitrates rates[] = {{ 4750, MR475},
                              { 5150, MR515},
                              { 5900, MR59},
                              { 6700, MR67},
