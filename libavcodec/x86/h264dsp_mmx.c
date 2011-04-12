@@ -379,6 +379,6 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth)
             }
         }
     }
-    }
 #endif
+    }
 }
