@@ -48,7 +48,7 @@ static int volatile entangled_thread_counter=0;
 static int (*ff_lockmgr_cb)(void **mutex, enum AVLockOp op);
 static void *codec_mutex;
 
-void *av_fast_realloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_size)
+void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
 {
     if(min_size < *size)
         return ptr;
@@ -64,7 +64,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_s
     return ptr;
 }
 
-void av_fast_malloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_size)
+void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size)
 {
     void **p = ptr;
     if (min_size < *size)
@@ -93,13 +93,6 @@ void avcodec_register(AVCodec *codec)
     *p = codec;
     codec->next = NULL;
 }
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-void register_avcodec(AVCodec *codec)
-{
-    avcodec_register(codec);
-}
-#endif
 
 unsigned avcodec_get_edge_width(void)
 {
@@ -219,12 +212,6 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
     align = FFMAX3(align, linesize_align[1], linesize_align[2]);
     *width=FFALIGN(*width, align);
 }
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-int avcodec_check_dimensions(void *av_log_ctx, unsigned int w, unsigned int h){
-    return av_image_check_size(w, h, 0, av_log_ctx);
-}
-#endif
 
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     int i;
@@ -1123,20 +1110,6 @@ unsigned int av_xiphlacing(unsigned char *s, unsigned int v)
     return n;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
-#include "libavutil/parseutils.h"
-
-int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str)
-{
-    return av_parse_video_size(width_ptr, height_ptr, str);
-}
-
-int av_parse_video_frame_rate(AVRational *frame_rate, const char *arg)
-{
-    return av_parse_video_rate(frame_rate, arg);
-}
-#endif
-
 int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b){
     int i;
     for(i=0; i<size && !(tab[i][0]==a && tab[i][1]==b); i++);
@@ -1239,23 +1212,6 @@ void ff_thread_report_progress(AVFrame *f, int progress, int field)
 
 void ff_thread_await_progress(AVFrame *f, int progress, int field)
 {
-}
-
-#endif
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-
-int avcodec_thread_init(AVCodecContext *s, int thread_count)
-{
-    s->thread_count = thread_count;
-    return ff_thread_init(s);
-}
-
-void avcodec_thread_free(AVCodecContext *s)
-{
-#if HAVE_THREADS
-    ff_thread_free(s);
-#endif
 }
 
 #endif

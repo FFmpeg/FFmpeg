@@ -15,7 +15,6 @@ OBJS = allcodecs.o                                                      \
        fmtconvert.o                                                     \
        imgconvert.o                                                     \
        jrevdct.o                                                        \
-       opt.o                                                            \
        options.o                                                        \
        parser.o                                                         \
        raw.o                                                            \
