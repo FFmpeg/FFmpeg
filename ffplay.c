@@ -218,7 +218,6 @@ typedef struct VideoState {
 } VideoState;
 
 static void show_help(void);
-static int audio_write_get_buf_size(VideoState *is);
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
@@ -766,6 +765,13 @@ static void video_image_display(VideoState *is)
                        QERGB(0x00, 0x00, 0x00));
 #endif
     }
+}
+
+/* get the current audio output buffer size, in samples. With SDL, we
+   cannot have a precise information */
+static int audio_write_get_buf_size(VideoState *is)
+{
+    return is->audio_buf_size - is->audio_buf_index;
 }
 
 static inline int compute_mod(int a, int b)
@@ -2145,14 +2151,6 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
         }
     }
 }
-
-/* get the current audio output buffer size, in samples. With SDL, we
-   cannot have a precise information */
-static int audio_write_get_buf_size(VideoState *is)
-{
-    return is->audio_buf_size - is->audio_buf_index;
-}
-
 
 /* prepare a new audio buffer */
 static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
