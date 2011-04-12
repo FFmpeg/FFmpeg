@@ -51,6 +51,23 @@ static av_cold snd_pcm_format_t codec_id_to_pcm_format(int codec_id)
     }
 }
 
+#define REORDER_OUT_50(NAME, TYPE) \
+static void alsa_reorder_ ## NAME ## _out_50(const void *in_v, void *out_v, int n) \
+{ \
+    const TYPE *in = in_v; \
+    TYPE * out = out_v; \
+\
+    while (n-- > 0) { \
+        out[0] = in[0]; \
+        out[1] = in[1]; \
+        out[2] = in[3]; \
+        out[3] = in[4]; \
+        out[4] = in[2]; \
+        in  += 5; \
+        out += 5; \
+    } \
+}
+
 #define REORDER_OUT_51(NAME, TYPE) \
 static void alsa_reorder_ ## NAME ## _out_51(const void *in_v, void *out_v, int n) \
 { \
@@ -89,8 +106,10 @@ static void alsa_reorder_ ## NAME ## _out_71(const void *in_v, void *out_v, int 
     } \
 }
 
+REORDER_OUT_50(s16, int16_t)
 REORDER_OUT_51(s16, int16_t)
 REORDER_OUT_71(s16, int16_t)
+REORDER_OUT_50(s32, int32_t)
 REORDER_OUT_51(s32, int32_t)
 REORDER_OUT_71(s32, int32_t)
 
@@ -102,6 +121,8 @@ static av_cold ff_reorder_func find_reorder_func(int codec_id,
 {
     return
     codec_id == CODEC_ID_PCM_S16LE || codec_id == CODEC_ID_PCM_S16BE ?
+        layout == AV_CH_LAYOUT_5POINT0_BACK || layout == AV_CH_LAYOUT_5POINT0 ?
+            out ? alsa_reorder_s16_out_50 : NULL :
         layout == AV_CH_LAYOUT_QUAD ? REORDER_DUMMY :
         layout == AV_CH_LAYOUT_5POINT1_BACK || layout == AV_CH_LAYOUT_5POINT1 ?
             out ? alsa_reorder_s16_out_51 : NULL :
@@ -109,6 +130,8 @@ static av_cold ff_reorder_func find_reorder_func(int codec_id,
             out ? alsa_reorder_s16_out_71 : NULL :
             NULL :
     codec_id == CODEC_ID_PCM_S32LE || codec_id == CODEC_ID_PCM_S32BE ?
+        layout == AV_CH_LAYOUT_5POINT0_BACK || layout == AV_CH_LAYOUT_5POINT0 ?
+            out ? alsa_reorder_s32_out_50 : NULL :
         layout == AV_CH_LAYOUT_5POINT1_BACK || layout == AV_CH_LAYOUT_5POINT1 ?
             out ? alsa_reorder_s32_out_51 : NULL :
         layout == AV_CH_LAYOUT_7POINT1 ?
