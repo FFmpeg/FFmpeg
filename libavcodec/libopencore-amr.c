@@ -234,7 +234,6 @@ AVCodec ff_libopencore_amrnb_encoder = {
 #include <opencore-amrwb/if_rom.h>
 
 typedef struct AMRWBContext {
-    int    frameCount;
     void  *state;
 } AMRWBContext;
 
@@ -242,7 +241,6 @@ static av_cold int amr_wb_decode_init(AVCodecContext *avctx)
 {
     AMRWBContext *s = avctx->priv_data;
 
-    s->frameCount = 0;
     s->state      = D_IF_init();
 
     amr_decode_fix_avctx(avctx);
@@ -278,7 +276,6 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    s->frameCount++;
     D_IF_decode(s->state, buf, data, _good_frame);
     *data_size = 320 * 2;
     return packet_size;
