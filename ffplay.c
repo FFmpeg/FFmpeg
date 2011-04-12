@@ -167,7 +167,9 @@ typedef struct VideoState {
     enum AVSampleFormat audio_src_fmt;
     AVAudioConvert *reformat_ctx;
 
-    int show_audio; /* if true, display audio samples */
+    enum {
+        SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB
+    } show_mode;
     int16_t sample_array[SAMPLE_ARRAY_SIZE];
     int sample_array_index;
     int last_i_start;
@@ -789,7 +791,7 @@ static void video_audio_display(VideoState *s)
     channels = s->audio_st->codec->channels;
     nb_display_channels = channels;
     if (!s->paused) {
-        int data_used= s->show_audio==1 ? s->width : (2*nb_freq);
+        int data_used= s->show_mode == SHOW_MODE_WAVES ? s->width : (2*nb_freq);
         n = 2 * channels;
         delay = audio_write_get_buf_size(s);
         delay /= n;
@@ -806,7 +808,7 @@ static void video_audio_display(VideoState *s)
             delay = data_used;
 
         i_start= x = compute_mod(s->sample_array_index - delay * channels, SAMPLE_ARRAY_SIZE);
-        if(s->show_audio==1){
+        if (s->show_mode == SHOW_MODE_WAVES) {
             h= INT_MIN;
             for(i=0; i<1000; i+=channels){
                 int idx= (SAMPLE_ARRAY_SIZE + x - i) % SAMPLE_ARRAY_SIZE;
@@ -828,7 +830,7 @@ static void video_audio_display(VideoState *s)
     }
 
     bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
-    if(s->show_audio==1){
+    if (s->show_mode == SHOW_MODE_WAVES) {
         fill_rectangle(screen,
                        s->xleft, s->ytop, s->width, s->height,
                        bgcolor);
@@ -968,7 +970,7 @@ static void video_display(VideoState *is)
 {
     if(!screen)
         video_open(cur_stream);
-    if (is->audio_st && is->show_audio)
+    if (is->audio_st && is->show_mode != SHOW_MODE_VIDEO)
         video_audio_display(is);
     else if (is->video_st)
         video_image_display(is);
@@ -985,7 +987,8 @@ static int refresh_thread(void *opaque)
             is->refresh=1;
             SDL_PushEvent(&event);
         }
-        usleep(is->audio_st && is->show_audio ? rdftspeed*1000 : 5000); //FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
+        //FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
+        usleep(is->audio_st && is->show_mode != SHOW_MODE_VIDEO ? rdftspeed*1000 : 5000);
     }
     return 0;
 }
@@ -2165,7 +2168,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
                is->audio_buf_size = 1024;
                memset(is->audio_buf, 0, is->audio_buf_size);
            } else {
-               if (is->show_audio)
+               if (is->show_mode != SHOW_MODE_VIDEO)
                    update_sample_display(is, (int16_t *)is->audio_buf, audio_size);
                audio_size = synchronize_audio(is, (int16_t *)is->audio_buf, audio_size,
                                               pts);
@@ -2470,7 +2473,7 @@ static int decode_thread(void *arg)
     is->refresh_tid = SDL_CreateThread(refresh_thread, is);
     if(ret<0) {
         if (!display_disable)
-            is->show_audio = 2;
+            is->show_mode = SHOW_MODE_RDFT;
     }
 
     if (st_index[AVMEDIA_TYPE_SUBTITLE] >= 0) {
@@ -2725,7 +2728,7 @@ static void toggle_audio_display(void)
 {
     if (cur_stream) {
         int bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
-        cur_stream->show_audio = (cur_stream->show_audio + 1) % 3;
+        cur_stream->show_mode = (cur_stream->show_mode + 1) % SHOW_MODE_NB;
         fill_rectangle(screen,
                     cur_stream->xleft, cur_stream->ytop, cur_stream->width, cur_stream->height,
                     bgcolor);
