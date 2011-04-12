@@ -92,7 +92,7 @@ static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
 
     if (avctx->channels > 1) {
         av_log(avctx, AV_LOG_ERROR, "amr_nb: multichannel decoding not supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     return 0;
@@ -126,7 +126,7 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     if (packet_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n",
                buf_size, packet_size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->frameCount++;
@@ -159,12 +159,12 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
 
     if (avctx->sample_rate != 8000) {
         av_log(avctx, AV_LOG_ERROR, "Only 8000Hz sample rate supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     if (avctx->channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "Only mono supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     avctx->frame_size  = 160;
@@ -178,7 +178,7 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
 
     if ((s->enc_bitrate = getBitrateMode(avctx->bit_rate)) < 0) {
         av_log(avctx, AV_LOG_ERROR, nb_bitrate_unsupported);
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     return 0;
@@ -202,7 +202,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 
     if ((s->enc_bitrate = getBitrateMode(avctx->bit_rate)) < 0) {
         av_log(avctx, AV_LOG_ERROR, nb_bitrate_unsupported);
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     written = Encoder_Interface_Encode(s->enstate, s->enc_bitrate, data,
@@ -250,7 +250,7 @@ static av_cold int amr_wb_decode_init(AVCodecContext *avctx)
 
     if (avctx->channels > 1) {
         av_log(avctx, AV_LOG_ERROR, "amr_wb: multichannel decoding not supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     return 0;
@@ -277,7 +277,7 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
     if (packet_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n",
                buf_size, packet_size + 1);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->frameCount++;

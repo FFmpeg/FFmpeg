@@ -65,17 +65,17 @@ static av_cold int amr_wb_encode_init(AVCodecContext *avctx)
 
     if (avctx->sample_rate != 16000) {
         av_log(avctx, AV_LOG_ERROR, "Only 16000Hz sample rate supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     if (avctx->channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "Only mono supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     if ((s->mode = getWBBitrateMode(avctx->bit_rate)) < 0) {
         av_log(avctx, AV_LOG_ERROR, wb_bitrate_unsupported);
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     avctx->frame_size  = 320;
@@ -105,7 +105,7 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
 
     if ((s->mode = getWBBitrateMode(avctx->bit_rate)) < 0) {
         av_log(avctx, AV_LOG_ERROR, wb_bitrate_unsupported);
-        return -1;
+        return AVERROR(ENOSYS);
     }
     size = E_IF_encode(s->state, s->mode, data, frame, s->allow_dtx);
     return size;
