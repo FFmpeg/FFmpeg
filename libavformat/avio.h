@@ -357,9 +357,6 @@ attribute_deprecated int url_exist(const char *url);
  * one call to another. Thus you should not trust the returned value,
  * unless you are sure that no other processes are accessing the
  * checked resource.
- *
- * @note This function is slightly broken until next major bump
- *       because of AVIO_RDONLY == 0. Don't use it until then.
  */
 int avio_check(const char *url, int flags);
 
@@ -530,15 +527,9 @@ int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
  * constants, optionally ORed with other flags.
  * @{
  */
-#if LIBAVFORMAT_VERSION_MAJOR < 53
-#define AVIO_RDONLY 0  /**< read-only */
-#define AVIO_WRONLY 1  /**< write-only */
-#define AVIO_RDWR   2  /**< read-write */
-#else
 #define AVIO_RDONLY 1  /**< read-only */
 #define AVIO_WRONLY 2  /**< write-only */
 #define AVIO_RDWR   4  /**< read-write */
-#endif
 /**
  * @}
  */
@@ -555,11 +546,7 @@ int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
  * Warning: non-blocking protocols is work-in-progress; this flag may be
  * silently ignored.
  */
-#if LIBAVFORMAT_VERSION_MAJOR < 53
-#define AVIO_FLAG_NONBLOCK 4
-#else
 #define AVIO_FLAG_NONBLOCK 8
-#endif
 
 /**
  * Create and initialize a AVIOContext for accessing the
