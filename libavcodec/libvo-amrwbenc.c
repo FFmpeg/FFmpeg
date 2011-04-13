@@ -120,8 +120,8 @@ AVCodec ff_libvo_amrwbenc_encoder = {
     amr_wb_encode_frame,
     amr_wb_encode_close,
     NULL,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
-    .long_name = NULL_IF_CONFIG_SMALL("VisualOn libvo-amrwbenc Adaptive Multi-Rate "
+    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
+    .long_name = NULL_IF_CONFIG_SMALL("libvo-amrwbenc Adaptive Multi-Rate "
                                       "(AMR) Wide-Band"),
 };
 

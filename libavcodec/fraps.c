@@ -180,7 +180,7 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
         /* bit 31 means same as previous pic */
-        f->pict_type = (header & (1<<31))? FF_P_TYPE : FF_I_TYPE;
+        f->pict_type = (header & (1U<<31))? FF_P_TYPE : FF_I_TYPE;
         f->key_frame = f->pict_type == FF_I_TYPE;
 
         if (f->pict_type == FF_I_TYPE) {
@@ -223,7 +223,7 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
         /* bit 31 means same as previous pic */
-        f->pict_type = (header & (1<<31))? FF_P_TYPE : FF_I_TYPE;
+        f->pict_type = (header & (1U<<31))? FF_P_TYPE : FF_I_TYPE;
         f->key_frame = f->pict_type == FF_I_TYPE;
 
         if (f->pict_type == FF_I_TYPE) {

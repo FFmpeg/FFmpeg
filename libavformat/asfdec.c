@@ -1234,7 +1234,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
 
     /* Try using the protocol's read_seek if available */
     if(s->pb) {
-        int ret = ffio_read_seek(s->pb, stream_index, pts, flags);
+        int ret = avio_seek_time(s->pb, stream_index, pts, flags);
         if(ret >= 0)
             asf_reset_header(s);
         if (ret != AVERROR(ENOSYS))

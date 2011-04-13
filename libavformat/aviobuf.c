@@ -412,12 +412,12 @@ void put_flush_packet(AVIOContext *s)
 }
 int av_url_read_fpause(AVIOContext *s, int pause)
 {
-    return ffio_read_pause(s, pause);
+    return avio_pause(s, pause);
 }
 int64_t av_url_read_fseek(AVIOContext *s, int stream_index,
                          int64_t timestamp, int flags)
 {
-    return ffio_read_seek(s, stream_index, timestamp, flags);
+    return avio_seek_time(s, stream_index, timestamp, flags);
 }
 void init_checksum(AVIOContext *s,
                    unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
@@ -1022,14 +1022,14 @@ int url_fget_max_packet_size(AVIOContext *s)
 }
 #endif
 
-int ffio_read_pause(AVIOContext *s, int pause)
+int avio_pause(AVIOContext *s, int pause)
 {
     if (!s->read_pause)
         return AVERROR(ENOSYS);
     return s->read_pause(s->opaque, pause);
 }
 
-int64_t ffio_read_seek(AVIOContext *s, int stream_index,
+int64_t avio_seek_time(AVIOContext *s, int stream_index,
                        int64_t timestamp, int flags)
 {
     URLContext *h = s->opaque;
