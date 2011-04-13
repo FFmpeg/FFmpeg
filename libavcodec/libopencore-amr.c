@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "libavutil/avstring.h"
 
 static void amr_decode_fix_avctx(AVCodecContext *avctx)
 {
@@ -40,9 +41,6 @@ static void amr_decode_fix_avctx(AVCodecContext *avctx)
 #include <opencore-amrnb/interf_dec.h>
 #include <opencore-amrnb/interf_enc.h>
 
-static const char nb_bitrate_unsupported[] =
-    "bitrate not supported: use one of 4.75k, 5.15k, 5.9k, 6.7k, 7.4k, 7.95k, 10.2k or 12.2k\n";
-
 /* Common code for fixed and float version*/
 typedef struct AMR_bitrates {
     int       rate;
@@ -50,20 +48,32 @@ typedef struct AMR_bitrates {
 } AMR_bitrates;
 
 /* Match desired bitrate */
-static int get_bitrate_mode(int bitrate)
+static int get_bitrate_mode(int bitrate, void *log_ctx)
 {
     /* make the correspondance between bitrate and mode */
     static const AMR_bitrates rates[] = {
         { 4750, MR475 }, { 5150, MR515 }, {  5900, MR59  }, {  6700, MR67  },
         { 7400, MR74 },  { 7950, MR795 }, { 10200, MR102 }, { 12200, MR122 }
     };
-    int i;
+    int i, best = -1, min_diff = 0;
+    char log_buf[200];
 
-    for (i = 0; i < 8; i++)
+    for (i = 0; i < 8; i++) {
         if (rates[i].rate == bitrate)
             return rates[i].mode;
-    /* no bitrate matching, return an error */
-    return -1;
+        if (best < 0 || abs(rates[i].rate - bitrate) < min_diff) {
+            best     = i;
+            min_diff = abs(rates[i].rate - bitrate);
+        }
+    }
+    /* no bitrate matching exactly, log a warning */
+    snprintf(log_buf, sizeof(log_buf), "bitrate not supported: use one of ");
+    for (i = 0; i < 8; i++)
+        av_strlcatf(log_buf, sizeof(log_buf), "%.2fk, ", rates[i].rate    / 1000.f);
+    av_strlcatf(log_buf, sizeof(log_buf), "using %.2fk", rates[best].rate / 1000.f);
+    av_log(log_ctx, AV_LOG_WARNING, "%s\n", log_buf);
+
+    return best;
 }
 
 typedef struct AMRContext {
@@ -171,10 +181,7 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if ((s->enc_bitrate = get_bitrate_mode(avctx->bit_rate)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, nb_bitrate_unsupported);
-        return AVERROR(ENOSYS);
-    }
+    s->enc_bitrate = get_bitrate_mode(avctx->bit_rate, avctx);
 
     return 0;
 }
@@ -195,10 +202,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
     AMRContext *s = avctx->priv_data;
     int written;
 
-    if ((s->enc_bitrate = get_bitrate_mode(avctx->bit_rate)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, nb_bitrate_unsupported);
-        return AVERROR(ENOSYS);
-    }
+    s->enc_bitrate = get_bitrate_mode(avctx->bit_rate, avctx);
 
     written = Encoder_Interface_Encode(s->enc_state, s->enc_bitrate, data,
                                        frame, 0);

@@ -22,10 +22,7 @@
 #include <vo-amrwbenc/enc_if.h>
 
 #include "avcodec.h"
-
-static const char wb_bitrate_unsupported[] =
-    "bitrate not supported: use one of 6.6k, 8.85k, 12.65k, 14.25k, 15.85k, "
-    "18.25k, 19.85k, 23.05k, or 23.85k\n";
+#include "libavutil/avstring.h"
 
 typedef struct AMRWBContext {
     void  *state;
@@ -33,18 +30,30 @@ typedef struct AMRWBContext {
     int    allow_dtx;
 } AMRWBContext;
 
-static int get_wb_bitrate_mode(int bitrate)
+static int get_wb_bitrate_mode(int bitrate, void *log_ctx)
 {
     /* make the correspondance between bitrate and mode */
     static const int rates[] = {  6600,  8850, 12650, 14250, 15850, 18250,
                                  19850, 23050, 23850 };
-    int i;
+    int i, best = -1, min_diff = 0;
+    char log_buf[200];
 
-    for (i = 0; i < 9; i++)
+    for (i = 0; i < 9; i++) {
         if (rates[i] == bitrate)
             return i;
-    /* no bitrate matching, return an error */
-    return -1;
+        if (best < 0 || abs(rates[i] - bitrate) < min_diff) {
+            best     = i;
+            min_diff = abs(rates[i] - bitrate);
+        }
+    }
+    /* no bitrate matching exactly, log a warning */
+    snprintf(log_buf, sizeof(log_buf), "bitrate not supported: use one of ");
+    for (i = 0; i < 9; i++)
+        av_strlcatf(log_buf, sizeof(log_buf), "%.2fk, ", rates[i]    / 1000.f);
+    av_strlcatf(log_buf, sizeof(log_buf), "using %.2fk", rates[best] / 1000.f);
+    av_log(log_ctx, AV_LOG_WARNING, "%s\n", log_buf);
+
+    return best;
 }
 
 static av_cold int amr_wb_encode_init(AVCodecContext *avctx)
@@ -61,10 +70,7 @@ static av_cold int amr_wb_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
-    if ((s->mode = get_wb_bitrate_mode(avctx->bit_rate)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, wb_bitrate_unsupported);
-        return AVERROR(ENOSYS);
-    }
+    s->mode = get_wb_bitrate_mode(avctx->bit_rate, avctx);
 
     avctx->frame_size  = 320;
     avctx->coded_frame = avcodec_alloc_frame();
@@ -91,10 +97,7 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
     AMRWBContext *s = avctx->priv_data;
     int size;
 
-    if ((s->mode = get_wb_bitrate_mode(avctx->bit_rate)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, wb_bitrate_unsupported);
-        return AVERROR(ENOSYS);
-    }
+    s->mode = get_wb_bitrate_mode(avctx->bit_rate, avctx);
     size = E_IF_encode(s->state, s->mode, data, frame, s->allow_dtx);
     return size;
 }
