@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 
 static void amr_decode_fix_avctx(AVCodecContext *avctx)
 {
@@ -77,12 +78,23 @@ static int get_bitrate_mode(int bitrate, void *log_ctx)
 }
 
 typedef struct AMRContext {
+    AVClass *av_class;
     int   frame_count;
     void *dec_state;
     void *enc_state;
     int   enc_bitrate;
     int   enc_mode;
+    int   enc_dtx;
 } AMRContext;
+
+static const AVOption options[] = {
+    { "dtx", "Allow DTX (generate comfort noise)", offsetof(AMRContext, enc_dtx), FF_OPT_TYPE_INT, 0, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL }
+};
+
+static const AVClass class = {
+    "libopencore_amrnb", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+};
 
 static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
 {
@@ -176,7 +188,7 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
     avctx->frame_size  = 160;
     avctx->coded_frame = avcodec_alloc_frame();
 
-    s->enc_state = Encoder_Interface_init(0);
+    s->enc_state = Encoder_Interface_init(s->enc_dtx);
     if (!s->enc_state) {
         av_log(avctx, AV_LOG_ERROR, "Encoder_Interface_init error\n");
         return -1;
@@ -228,6 +240,7 @@ AVCodec ff_libopencore_amrnb_encoder = {
     NULL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("OpenCORE Adaptive Multi-Rate (AMR) Narrow-Band"),
+    .priv_class = &class,
 };
 
 #endif

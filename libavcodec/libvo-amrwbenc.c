@@ -23,13 +23,24 @@
 
 #include "avcodec.h"
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 
 typedef struct AMRWBContext {
+    AVClass *av_class;
     void  *state;
     int    mode;
     int    last_bitrate;
     int    allow_dtx;
 } AMRWBContext;
+
+static const AVOption options[] = {
+    { "dtx", "Allow DTX (generate comfort noise)", offsetof(AMRWBContext, allow_dtx), FF_OPT_TYPE_INT, 0, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL }
+};
+
+static const AVClass class = {
+    "libvo_amrwbenc", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+};
 
 static int get_wb_bitrate_mode(int bitrate, void *log_ctx)
 {
@@ -78,7 +89,6 @@ static av_cold int amr_wb_encode_init(AVCodecContext *avctx)
     avctx->coded_frame = avcodec_alloc_frame();
 
     s->state     = E_IF_init();
-    s->allow_dtx = 0;
 
     return 0;
 }
@@ -119,5 +129,6 @@ AVCodec ff_libvo_amrwbenc_encoder = {
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Android VisualOn Adaptive Multi-Rate "
                                       "(AMR) Wide-Band"),
+    .priv_class = &class,
 };
 
