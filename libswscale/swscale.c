@@ -1211,8 +1211,6 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     } else if (flags & SWS_CPU_CAPS_MMX) {
         sws_init_swScale_MMX(c);
         return swScale_MMX;
-    } else {
-        return swScale_c;
     }
 
 #else
@@ -1220,11 +1218,8 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     if (flags & SWS_CPU_CAPS_ALTIVEC) {
         sws_init_swScale_altivec(c);
         return swScale_altivec;
-    } else {
-        return swScale_c;
     }
 #endif
-    return swScale_c;
 #endif /* ARCH_X86 */
 #else //CONFIG_RUNTIME_CPUDETECT
 #if   COMPILE_TEMPLATE_MMX2
@@ -1239,10 +1234,10 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
 #elif COMPILE_TEMPLATE_ALTIVEC
     sws_init_swScale_altivec(c);
     return swScale_altivec;
-#else
-    return swScale_c;
 #endif
 #endif //!CONFIG_RUNTIME_CPUDETECT
+
+    return swScale_c;
 }
 
 static void copyPlane(const uint8_t *src, int srcStride,
