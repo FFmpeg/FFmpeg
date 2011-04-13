@@ -125,6 +125,6 @@ AVCodec ff_libvo_aacenc_encoder = {
     aac_encode_close,
     NULL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
-    .long_name = NULL_IF_CONFIG_SMALL("libvo-aacenc AAC"),
+    .long_name = NULL_IF_CONFIG_SMALL("Android VisualOn AAC"),
 };
 
