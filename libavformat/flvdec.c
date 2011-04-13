@@ -211,7 +211,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
 
             if (ioc->seekable && key && !strcmp(KEYFRAMES_TAG, key) && depth == 1)
                 if (parse_keyframes_index(s, ioc, vstream, max_pos) < 0)
-                    return -1;
+                    av_log(s, AV_LOG_ERROR, "Keyframe index parsing failed\n");
 
             while(avio_tell(ioc) < max_pos - 2 && (keylen = avio_rb16(ioc))) {
                 avio_skip(ioc, keylen); //skip key string
