@@ -1445,7 +1445,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
             vp->width, vp->height, vp->pix_fmt, vp->width, vp->height,
-            PIX_FMT_YUV_420P, sws_flags, NULL, NULL, NULL);
+            PIX_FMT_YUV420P, sws_flags, NULL, NULL, NULL);
         if (is->img_convert_ctx == NULL) {
             fprintf(stderr, "Cannot initialize the conversion context\n");
             exit(1);
