@@ -134,9 +134,9 @@ static av_cold ff_reorder_func find_reorder_func(int codec_id,
     return
     codec_id == CODEC_ID_PCM_U16LE || codec_id == CODEC_ID_PCM_U16BE ||
     codec_id == CODEC_ID_PCM_S16LE || codec_id == CODEC_ID_PCM_S16BE ?
+        layout == AV_CH_LAYOUT_QUAD ? REORDER_DUMMY :
         layout == AV_CH_LAYOUT_5POINT0_BACK || layout == AV_CH_LAYOUT_5POINT0 ?
             out ? alsa_reorder_int16_out_50 : NULL :
-        layout == AV_CH_LAYOUT_QUAD ? REORDER_DUMMY :
         layout == AV_CH_LAYOUT_5POINT1_BACK || layout == AV_CH_LAYOUT_5POINT1 ?
             out ? alsa_reorder_int16_out_51 : NULL :
         layout == AV_CH_LAYOUT_7POINT1 ?
@@ -151,7 +151,7 @@ static av_cold ff_reorder_func find_reorder_func(int codec_id,
             out ? alsa_reorder_int32_out_51 : NULL :
         layout == AV_CH_LAYOUT_7POINT1 ?
             out ? alsa_reorder_int32_out_71 : NULL :
-           NULL :
+            NULL :
     codec_id == CODEC_ID_PCM_F32LE || codec_id == CODEC_ID_PCM_F32BE ?
         layout == AV_CH_LAYOUT_QUAD ? REORDER_DUMMY :
         layout == AV_CH_LAYOUT_5POINT0_BACK || layout == AV_CH_LAYOUT_5POINT0 ?
