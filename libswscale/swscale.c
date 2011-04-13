@@ -1197,17 +1197,14 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #define COMPILE_TEMPLATE_AMD3DNOW 0
 #define COMPILE_TEMPLATE_ALTIVEC 0
 
-#if COMPILE_C
-#define RENAME(a) a ## _C
 #include "swscale_template.c"
-#endif
 
 #if COMPILE_ALTIVEC
 #undef RENAME
 #undef COMPILE_TEMPLATE_ALTIVEC
 #define COMPILE_TEMPLATE_ALTIVEC 1
 #define RENAME(a) a ## _altivec
-#include "swscale_template.c"
+#include "ppc/swscale_template.c"
 #endif
 
 #if ARCH_X86
@@ -1222,7 +1219,7 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #define COMPILE_TEMPLATE_MMX2 0
 #define COMPILE_TEMPLATE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX
-#include "swscale_template.c"
+#include "x86/swscale_template.c"
 #endif
 
 //MMX2 versions
@@ -1235,7 +1232,7 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #define COMPILE_TEMPLATE_MMX2 1
 #define COMPILE_TEMPLATE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX2
-#include "swscale_template.c"
+#include "x86/swscale_template.c"
 #endif
 
 //3DNOW versions
@@ -1248,13 +1245,15 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #define COMPILE_TEMPLATE_MMX2 0
 #define COMPILE_TEMPLATE_AMD3DNOW 1
 #define RENAME(a) a ## _3DNow
-#include "swscale_template.c"
+#include "x86/swscale_template.c"
 #endif
 
 #endif //ARCH_X86
 
 SwsFunc ff_getSwsFunc(SwsContext *c)
 {
+    sws_init_swScale_c(c);
+
 #if CONFIG_RUNTIME_CPUDETECT
     int flags = c->flags;
 
@@ -1270,8 +1269,7 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
         sws_init_swScale_MMX(c);
         return swScale_MMX;
     } else {
-        sws_init_swScale_C(c);
-        return swScale_C;
+        return swScale_c;
     }
 
 #else
@@ -1280,12 +1278,10 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
         sws_init_swScale_altivec(c);
         return swScale_altivec;
     } else {
-        sws_init_swScale_C(c);
-        return swScale_C;
+        return swScale_c;
     }
 #endif
-    sws_init_swScale_C(c);
-    return swScale_C;
+    return swScale_c;
 #endif /* ARCH_X86 */
 #else //CONFIG_RUNTIME_CPUDETECT
 #if   COMPILE_TEMPLATE_MMX2
@@ -1301,8 +1297,7 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     sws_init_swScale_altivec(c);
     return swScale_altivec;
 #else
-    sws_init_swScale_C(c);
-    return swScale_C;
+    return swScale_c;
 #endif
 #endif //!CONFIG_RUNTIME_CPUDETECT
 }
