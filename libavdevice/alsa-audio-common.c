@@ -121,6 +121,9 @@ REORDER_OUT_71(int16, int16_t)
 REORDER_OUT_50(int32, int32_t)
 REORDER_OUT_51(int32, int32_t)
 REORDER_OUT_71(int32, int32_t)
+REORDER_OUT_50(f32, float)
+REORDER_OUT_51(f32, float)
+REORDER_OUT_71(f32, float)
 
 #define REORDER_DUMMY ((void *)1)
 
@@ -149,6 +152,15 @@ static av_cold ff_reorder_func find_reorder_func(int codec_id,
         layout == AV_CH_LAYOUT_7POINT1 ?
             out ? alsa_reorder_int32_out_71 : NULL :
            NULL :
+    codec_id == CODEC_ID_PCM_F32LE || codec_id == CODEC_ID_PCM_F32BE ?
+        layout == AV_CH_LAYOUT_QUAD ? REORDER_DUMMY :
+        layout == AV_CH_LAYOUT_5POINT0_BACK || layout == AV_CH_LAYOUT_5POINT0 ?
+            out ? alsa_reorder_f32_out_50 : NULL :
+        layout == AV_CH_LAYOUT_5POINT1_BACK || layout == AV_CH_LAYOUT_5POINT1 ?
+            out ? alsa_reorder_f32_out_51 : NULL :
+        layout == AV_CH_LAYOUT_7POINT1 ?
+            out ? alsa_reorder_f32_out_71 : NULL :
+            NULL :
         NULL;
 }
 
