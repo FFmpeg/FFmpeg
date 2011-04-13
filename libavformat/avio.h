@@ -537,9 +537,15 @@ int url_resetbuf(AVIOContext *s, int flags);
  * constants, optionally ORed with other flags.
  * @{
  */
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 #define AVIO_RDONLY 0  /**< read-only */
 #define AVIO_WRONLY 1  /**< write-only */
 #define AVIO_RDWR   2  /**< read-write */
+#else
+#define AVIO_RDONLY 1  /**< read-only */
+#define AVIO_WRONLY 2  /**< write-only */
+#define AVIO_RDWR   4  /**< read-write */
+#endif
 /**
  * @}
  */
@@ -556,7 +562,11 @@ int url_resetbuf(AVIOContext *s, int flags);
  * Warning: non-blocking protocols is work-in-progress; this flag may be
  * silently ignored.
  */
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 #define AVIO_FLAG_NONBLOCK 4
+#else
+#define AVIO_FLAG_NONBLOCK 8
+#endif
 
 /**
  * Create and initialize a AVIOContext for accessing the
