@@ -116,8 +116,8 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     enum Mode dec_mode;
     int packet_size;
 
-    /* av_log(NULL, AV_LOG_DEBUG, "amr_decode_frame buf=%p buf_size=%d frameCount=%d!!\n",
-              buf, buf_size, s->frameCount); */
+    av_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frameCount=%d!!\n",
+            buf, buf_size, s->frameCount);
 
     dec_mode = (buf[0] >> 3) & 0x000F;
     packet_size = block_size[dec_mode] + 1;
@@ -129,8 +129,8 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     s->frameCount++;
-    /* av_log(NULL, AV_LOG_DEBUG, "packet_size=%d buf= 0x%X %X %X %X\n",
-              packet_size, buf[0], buf[1], buf[2], buf[3]); */
+    av_dlog(avctx, "packet_size=%d buf= 0x%X %X %X %X\n",
+              packet_size, buf[0], buf[1], buf[2], buf[3]);
     /* call decoder */
     Decoder_Interface_Decode(s->decState, buf, data, 0);
     *data_size = 160 * 2;
@@ -206,8 +206,8 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 
     written = Encoder_Interface_Encode(s->enstate, s->enc_bitrate, data,
                                        frame, 0);
-    /* av_log(NULL, AV_LOG_DEBUG, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
-              written, s->enc_bitrate, frame[0] ); */
+    av_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
+            written, s->enc_bitrate, frame[0]);
 
     return written;
 }
