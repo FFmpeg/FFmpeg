@@ -100,19 +100,19 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
     return 0;
 }
 
-#define DUP_DATA(dst, size, padding) \
+#define DUP_DATA(dst, src, size, padding) \
     do { \
         void *data; \
         if (padding) { \
             if ((unsigned)(size) > (unsigned)(size) + FF_INPUT_BUFFER_PADDING_SIZE) \
-                return AVERROR(ENOMEM); \
+                goto failed_alloc; \
             data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE); \
         } else { \
             data = av_malloc(size); \
         } \
         if (!data) \
-            return AVERROR(ENOMEM); \
-        memcpy(data, dst, size); \
+            goto failed_alloc; \
+        memcpy(data, src, size); \
         if (padding) \
             memset((uint8_t*)data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE); \
         dst = data; \
@@ -120,20 +120,32 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
 
 int av_dup_packet(AVPacket *pkt)
 {
+    AVPacket tmp_pkt;
+
     if (((pkt->destruct == av_destruct_packet_nofree) || (pkt->destruct == NULL)) && pkt->data) {
-        DUP_DATA(pkt->data, pkt->size, 1);
+        tmp_pkt = *pkt;
+
+        pkt->data      = NULL;
+        pkt->side_data = NULL;
+        DUP_DATA(pkt->data, tmp_pkt.data, pkt->size, 1);
         pkt->destruct = av_destruct_packet;
 
         if (pkt->side_data_elems) {
             int i;
 
-            DUP_DATA(pkt->side_data, pkt->side_data_elems * sizeof(*pkt->side_data), 0);
+            DUP_DATA(pkt->side_data, tmp_pkt.side_data,
+                     pkt->side_data_elems * sizeof(*pkt->side_data), 0);
+            memset(pkt->side_data, 0, pkt->side_data_elems * sizeof(*pkt->side_data));
             for (i = 0; i < pkt->side_data_elems; i++) {
-                DUP_DATA(pkt->side_data[i].data, pkt->side_data[i].size, 1);
+                DUP_DATA(pkt->side_data[i].data, tmp_pkt.side_data[i].data,
+                         pkt->side_data[i].size, 1);
             }
         }
     }
     return 0;
+failed_alloc:
+    av_destruct_packet(pkt);
+    return AVERROR(ENOMEM);
 }
 
 void av_free_packet(AVPacket *pkt)
