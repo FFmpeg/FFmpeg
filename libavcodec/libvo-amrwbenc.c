@@ -27,6 +27,7 @@
 typedef struct AMRWBContext {
     void  *state;
     int    mode;
+    int    last_bitrate;
     int    allow_dtx;
 } AMRWBContext;
 
@@ -70,7 +71,8 @@ static av_cold int amr_wb_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
-    s->mode = get_wb_bitrate_mode(avctx->bit_rate, avctx);
+    s->mode            = get_wb_bitrate_mode(avctx->bit_rate, avctx);
+    s->last_bitrate    = avctx->bit_rate;
 
     avctx->frame_size  = 320;
     avctx->coded_frame = avcodec_alloc_frame();
@@ -97,7 +99,10 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
     AMRWBContext *s = avctx->priv_data;
     int size;
 
-    s->mode = get_wb_bitrate_mode(avctx->bit_rate, avctx);
+    if (s->last_bitrate != avctx->bit_rate) {
+        s->mode         = get_wb_bitrate_mode(avctx->bit_rate, avctx);
+        s->last_bitrate = avctx->bit_rate;
+    }
     size = E_IF_encode(s->state, s->mode, data, frame, s->allow_dtx);
     return size;
 }

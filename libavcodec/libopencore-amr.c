@@ -81,6 +81,7 @@ typedef struct AMRContext {
     void *dec_state;
     void *enc_state;
     int   enc_bitrate;
+    int   enc_mode;
 } AMRContext;
 
 static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
@@ -181,7 +182,8 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    s->enc_bitrate = get_bitrate_mode(avctx->bit_rate, avctx);
+    s->enc_mode    = get_bitrate_mode(avctx->bit_rate, avctx);
+    s->enc_bitrate = avctx->bit_rate;
 
     return 0;
 }
@@ -202,12 +204,15 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
     AMRContext *s = avctx->priv_data;
     int written;
 
-    s->enc_bitrate = get_bitrate_mode(avctx->bit_rate, avctx);
+    if (s->enc_bitrate != avctx->bit_rate) {
+        s->enc_mode    = get_bitrate_mode(avctx->bit_rate, avctx);
+        s->enc_bitrate = avctx->bit_rate;
+    }
 
-    written = Encoder_Interface_Encode(s->enc_state, s->enc_bitrate, data,
+    written = Encoder_Interface_Encode(s->enc_state, s->enc_mode, data,
                                        frame, 0);
     av_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
-            written, s->enc_bitrate, frame[0]);
+            written, s->enc_mode, frame[0]);
 
     return written;
 }
