@@ -69,11 +69,8 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long s
     uint8_t *dest = dst;
     const uint8_t *s = src;
     const uint8_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint8_t *mm_end;
-#endif
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s):"memory");
     mm_end = end - 23;
     __asm__ volatile("movq        %0, %%mm7"::"m"(mask32a):"memory");
@@ -104,21 +101,11 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long s
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
-#if HAVE_BIGENDIAN
-        /* RGB24 (= R,G,B) -> RGB32 (= A,B,G,R) */
-        *dest++ = 255;
-        *dest++ = s[2];
-        *dest++ = s[1];
-        *dest++ = s[0];
-        s+=3;
-#else
         *dest++ = *s++;
         *dest++ = *s++;
         *dest++ = *s++;
         *dest++ = 255;
-#endif
     }
 }
 
@@ -164,11 +151,8 @@ static inline void RENAME(rgb32tobgr24)(const uint8_t *src, uint8_t *dst, long s
     uint8_t *dest = dst;
     const uint8_t *s = src;
     const uint8_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint8_t *mm_end;
-#endif
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s):"memory");
     mm_end = end - 31;
     while (s < mm_end) {
@@ -191,21 +175,11 @@ static inline void RENAME(rgb32tobgr24)(const uint8_t *src, uint8_t *dst, long s
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
-#if HAVE_BIGENDIAN
-        /* RGB32 (= A,B,G,R) -> RGB24 (= R,G,B) */
-        s++;
-        dest[2] = *s++;
-        dest[1] = *s++;
-        dest[0] = *s++;
-        dest += 3;
-#else
         *dest++ = *s++;
         *dest++ = *s++;
         *dest++ = *s++;
         s++;
-#endif
     }
 }
 
@@ -222,7 +196,6 @@ static inline void RENAME(rgb15to16)(const uint8_t *src, uint8_t *dst, long src_
     register const uint8_t *end;
     const uint8_t *mm_end;
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s));
     __asm__ volatile("movq        %0, %%mm4"::"m"(mask15s));
     mm_end = end - 15;
@@ -247,7 +220,6 @@ static inline void RENAME(rgb15to16)(const uint8_t *src, uint8_t *dst, long src_
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     mm_end = end - 3;
     while (s < mm_end) {
         register unsigned x= *((const uint32_t *)s);
@@ -268,7 +240,6 @@ static inline void RENAME(rgb16to15)(const uint8_t *src, uint8_t *dst, long src_
     register const uint8_t *end;
     const uint8_t *mm_end;
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s));
     __asm__ volatile("movq        %0, %%mm7"::"m"(mask15rg));
     __asm__ volatile("movq        %0, %%mm6"::"m"(mask15b));
@@ -298,7 +269,6 @@ static inline void RENAME(rgb16to15)(const uint8_t *src, uint8_t *dst, long src_
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     mm_end = end - 3;
     while (s < mm_end) {
         register uint32_t x= *((const uint32_t*)s);
@@ -316,12 +286,9 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
 {
     const uint8_t *s = src;
     const uint8_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint8_t *mm_end;
-#endif
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     mm_end = end - 15;
 #if 1 //is faster only if multiplies are reasonably fast (FIXME figure out on which CPUs this is faster, on Athlon it is slightly faster)
     __asm__ volatile(
@@ -401,7 +368,6 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
 #endif
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         register int rgb = *(const uint32_t*)s; s += 4;
         *d++ = ((rgb&0xFF)>>3) + ((rgb&0xFC00)>>5) + ((rgb&0xF80000)>>8);
@@ -412,12 +378,9 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long s
 {
     const uint8_t *s = src;
     const uint8_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint8_t *mm_end;
-#endif
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*src):"memory");
     __asm__ volatile(
         "movq          %0, %%mm7    \n\t"
@@ -460,7 +423,6 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long s
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         register int rgb = *(const uint32_t*)s; s += 4;
         *d++ = ((rgb&0xF8)<<8) + ((rgb&0xFC00)>>5) + ((rgb&0xF80000)>>19);
@@ -471,12 +433,9 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
 {
     const uint8_t *s = src;
     const uint8_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint8_t *mm_end;
-#endif
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     mm_end = end - 15;
 #if 1 //is faster only if multiplies are reasonably fast (FIXME figure out on which CPUs this is faster, on Athlon it is slightly faster)
     __asm__ volatile(
@@ -556,7 +515,6 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
 #endif
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         register int rgb = *(const uint32_t*)s; s += 4;
         *d++ = ((rgb&0xFF)>>3) + ((rgb&0xF800)>>6) + ((rgb&0xF80000)>>9);
@@ -567,12 +525,9 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long s
 {
     const uint8_t *s = src;
     const uint8_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint8_t *mm_end;
-#endif
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*src):"memory");
     __asm__ volatile(
         "movq          %0, %%mm7    \n\t"
@@ -615,7 +570,6 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long s
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         register int rgb = *(const uint32_t*)s; s += 4;
         *d++ = ((rgb&0xF8)<<7) + ((rgb&0xF800)>>6) + ((rgb&0xF80000)>>19);
@@ -626,12 +580,9 @@ static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, long s
 {
     const uint8_t *s = src;
     const uint8_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint8_t *mm_end;
-#endif
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*src):"memory");
     __asm__ volatile(
         "movq         %0, %%mm7     \n\t"
@@ -674,7 +625,6 @@ static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, long s
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         const int b = *s++;
         const int g = *s++;
@@ -687,12 +637,9 @@ static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, long src_
 {
     const uint8_t *s = src;
     const uint8_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint8_t *mm_end;
-#endif
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*src):"memory");
     __asm__ volatile(
         "movq         %0, %%mm7     \n\t"
@@ -735,7 +682,6 @@ static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, long src_
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         const int r = *s++;
         const int g = *s++;
@@ -748,12 +694,9 @@ static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long s
 {
     const uint8_t *s = src;
     const uint8_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint8_t *mm_end;
-#endif
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*src):"memory");
     __asm__ volatile(
         "movq          %0, %%mm7    \n\t"
@@ -796,7 +739,6 @@ static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long s
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         const int b = *s++;
         const int g = *s++;
@@ -809,12 +751,9 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, long src_
 {
     const uint8_t *s = src;
     const uint8_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint8_t *mm_end;
-#endif
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*src):"memory");
     __asm__ volatile(
         "movq         %0, %%mm7     \n\t"
@@ -857,7 +796,6 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, long src_
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         const int r = *s++;
         const int g = *s++;
@@ -890,13 +828,10 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, long src_
 static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint16_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint16_t *mm_end;
-#endif
     uint8_t *d = dst;
     const uint16_t *s = (const uint16_t*)src;
     end = s + src_size/2;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s):"memory");
     mm_end = end - 7;
     while (s < mm_end) {
@@ -984,7 +919,6 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, long s
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
@@ -997,13 +931,10 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, long s
 static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint16_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint16_t *mm_end;
-#endif
     uint8_t *d = (uint8_t *)dst;
     const uint16_t *s = (const uint16_t *)src;
     end = s + src_size/2;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s):"memory");
     mm_end = end - 7;
     while (s < mm_end) {
@@ -1090,7 +1021,6 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, long s
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
@@ -1122,13 +1052,10 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, long s
 static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint16_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint16_t *mm_end;
-#endif
     uint8_t *d = dst;
     const uint16_t *s = (const uint16_t *)src;
     end = s + src_size/2;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s):"memory");
     __asm__ volatile("pxor    %%mm7,%%mm7    \n\t":::"memory");
     __asm__ volatile("pcmpeqd %%mm6,%%mm6    \n\t":::"memory");
@@ -1154,34 +1081,23 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
-#if HAVE_BIGENDIAN
-        *d++ = 255;
-        *d++ = (bgr&0x7C00)>>7;
-        *d++ = (bgr&0x3E0)>>2;
-        *d++ = (bgr&0x1F)<<3;
-#else
         *d++ = (bgr&0x1F)<<3;
         *d++ = (bgr&0x3E0)>>2;
         *d++ = (bgr&0x7C00)>>7;
         *d++ = 255;
-#endif
     }
 }
 
 static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint16_t *end;
-#if COMPILE_TEMPLATE_MMX
     const uint16_t *mm_end;
-#endif
     uint8_t *d = dst;
     const uint16_t *s = (const uint16_t*)src;
     end = s + src_size/2;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s):"memory");
     __asm__ volatile("pxor    %%mm7,%%mm7    \n\t":::"memory");
     __asm__ volatile("pcmpeqd %%mm6,%%mm6    \n\t":::"memory");
@@ -1207,21 +1123,13 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-#endif
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
-#if HAVE_BIGENDIAN
-        *d++ = 255;
-        *d++ = (bgr&0xF800)>>8;
-        *d++ = (bgr&0x7E0)>>3;
-        *d++ = (bgr&0x1F)<<3;
-#else
         *d++ = (bgr&0x1F)<<3;
         *d++ = (bgr&0x7E0)>>3;
         *d++ = (bgr&0xF800)>>8;
         *d++ = 255;
-#endif
     }
 }
 
@@ -1230,7 +1138,6 @@ static inline void RENAME(shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, 
     x86_reg idx = 15 - src_size;
     const uint8_t *s = src-idx;
     uint8_t *d = dst-idx;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
         "test          %0, %0           \n\t"
         "jns           2f               \n\t"
@@ -1281,7 +1188,6 @@ static inline void RENAME(shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, 
         : "+&r"(idx)
         : "r" (s), "r" (d), "m" (mask32b), "m" (mask32r), "m" (mmx_one)
         : "memory");
-#endif
     for (; idx<15; idx+=4) {
         register int v = *(const uint32_t *)&s[idx], g = v & 0xff00ff00;
         v &= 0xff00ff;
@@ -1292,7 +1198,6 @@ static inline void RENAME(shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, 
 static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     unsigned i;
-#if COMPILE_TEMPLATE_MMX
     x86_reg mmx_size= 23 - src_size;
     __asm__ volatile (
         "test             %%"REG_a", %%"REG_a"          \n\t"
@@ -1348,7 +1253,6 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long s
     src_size= 23-mmx_size;
     src-= src_size;
     dst-= src_size;
-#endif
     for (i=0; i<src_size; i+=3) {
         register uint8_t x;
         x          = src[i + 2];
@@ -1365,7 +1269,6 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
     long y;
     const x86_reg chromWidth= width>>1;
     for (y=0; y<height; y++) {
-#if COMPILE_TEMPLATE_MMX
         //FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
         __asm__ volatile(
             "xor                 %%"REG_a", %%"REG_a"   \n\t"
@@ -1400,88 +1303,6 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
             ::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "g" (chromWidth)
             : "%"REG_a
         );
-#else
-
-#if ARCH_ALPHA && HAVE_MVI
-#define pl2yuy2(n)                  \
-    y1 = yc[n];                     \
-    y2 = yc2[n];                    \
-    u = uc[n];                      \
-    v = vc[n];                      \
-    __asm__("unpkbw %1, %0" : "=r"(y1) : "r"(y1));  \
-    __asm__("unpkbw %1, %0" : "=r"(y2) : "r"(y2));  \
-    __asm__("unpkbl %1, %0" : "=r"(u) : "r"(u));    \
-    __asm__("unpkbl %1, %0" : "=r"(v) : "r"(v));    \
-    yuv1 = (u << 8) + (v << 24);                \
-    yuv2 = yuv1 + y2;               \
-    yuv1 += y1;                     \
-    qdst[n]  = yuv1;                \
-    qdst2[n] = yuv2;
-
-        int i;
-        uint64_t *qdst = (uint64_t *) dst;
-        uint64_t *qdst2 = (uint64_t *) (dst + dstStride);
-        const uint32_t *yc = (uint32_t *) ysrc;
-        const uint32_t *yc2 = (uint32_t *) (ysrc + lumStride);
-        const uint16_t *uc = (uint16_t*) usrc, *vc = (uint16_t*) vsrc;
-        for (i = 0; i < chromWidth; i += 8) {
-            uint64_t y1, y2, yuv1, yuv2;
-            uint64_t u, v;
-            /* Prefetch */
-            __asm__("ldq $31,64(%0)" :: "r"(yc));
-            __asm__("ldq $31,64(%0)" :: "r"(yc2));
-            __asm__("ldq $31,64(%0)" :: "r"(uc));
-            __asm__("ldq $31,64(%0)" :: "r"(vc));
-
-            pl2yuy2(0);
-            pl2yuy2(1);
-            pl2yuy2(2);
-            pl2yuy2(3);
-
-            yc    += 4;
-            yc2   += 4;
-            uc    += 4;
-            vc    += 4;
-            qdst  += 4;
-            qdst2 += 4;
-        }
-        y++;
-        ysrc += lumStride;
-        dst += dstStride;
-
-#elif HAVE_FAST_64BIT
-        int i;
-        uint64_t *ldst = (uint64_t *) dst;
-        const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
-        for (i = 0; i < chromWidth; i += 2) {
-            uint64_t k, l;
-            k = yc[0] + (uc[0] << 8) +
-                (yc[1] << 16) + (vc[0] << 24);
-            l = yc[2] + (uc[1] << 8) +
-                (yc[3] << 16) + (vc[1] << 24);
-            *ldst++ = k + (l << 32);
-            yc += 4;
-            uc += 2;
-            vc += 2;
-        }
-
-#else
-        int i, *idst = (int32_t *) dst;
-        const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
-        for (i = 0; i < chromWidth; i++) {
-#if HAVE_BIGENDIAN
-            *idst++ = (yc[0] << 24)+ (uc[0] << 16) +
-                (yc[1] << 8) + (vc[0] << 0);
-#else
-            *idst++ = yc[0] + (uc[0] << 8) +
-                (yc[1] << 16) + (vc[0] << 24);
-#endif
-            yc += 2;
-            uc++;
-            vc++;
-        }
-#endif
-#endif
         if ((y&(vertLumPerChroma-1)) == vertLumPerChroma-1) {
             usrc += chromStride;
             vsrc += chromStride;
@@ -1489,11 +1310,9 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
         ysrc += lumStride;
         dst  += dstStride;
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__(EMMS"       \n\t"
             SFENCE"     \n\t"
             :::"memory");
-#endif
 }
 
 /**
@@ -1515,7 +1334,6 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
     long y;
     const x86_reg chromWidth= width>>1;
     for (y=0; y<height; y++) {
-#if COMPILE_TEMPLATE_MMX
         //FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
         __asm__ volatile(
             "xor                %%"REG_a", %%"REG_a"    \n\t"
@@ -1550,42 +1368,6 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
             ::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "g" (chromWidth)
             : "%"REG_a
         );
-#else
-//FIXME adapt the Alpha ASM code from yv12->yuy2
-
-#if HAVE_FAST_64BIT
-        int i;
-        uint64_t *ldst = (uint64_t *) dst;
-        const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
-        for (i = 0; i < chromWidth; i += 2) {
-            uint64_t k, l;
-            k = uc[0] + (yc[0] << 8) +
-                (vc[0] << 16) + (yc[1] << 24);
-            l = uc[1] + (yc[2] << 8) +
-                (vc[1] << 16) + (yc[3] << 24);
-            *ldst++ = k + (l << 32);
-            yc += 4;
-            uc += 2;
-            vc += 2;
-        }
-
-#else
-        int i, *idst = (int32_t *) dst;
-        const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
-        for (i = 0; i < chromWidth; i++) {
-#if HAVE_BIGENDIAN
-            *idst++ = (uc[0] << 24)+ (yc[0] << 16) +
-                (vc[0] << 8) + (yc[1] << 0);
-#else
-            *idst++ = uc[0] + (yc[0] << 8) +
-               (vc[0] << 16) + (yc[1] << 24);
-#endif
-            yc += 2;
-            uc++;
-            vc++;
-        }
-#endif
-#endif
         if ((y&(vertLumPerChroma-1)) == vertLumPerChroma-1) {
             usrc += chromStride;
             vsrc += chromStride;
@@ -1593,11 +1375,9 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
         ysrc += lumStride;
         dst += dstStride;
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__(EMMS"       \n\t"
             SFENCE"     \n\t"
             :::"memory");
-#endif
 }
 
 /**
@@ -1643,7 +1423,6 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
     long y;
     const x86_reg chromWidth= width>>1;
     for (y=0; y<height; y+=2) {
-#if COMPILE_TEMPLATE_MMX
         __asm__ volatile(
             "xor                 %%"REG_a", %%"REG_a"   \n\t"
             "pcmpeqw                 %%mm7, %%mm7       \n\t"
@@ -1725,32 +1504,14 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
             ::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "g" (chromWidth)
             : "memory", "%"REG_a
         );
-#else
-        long i;
-        for (i=0; i<chromWidth; i++) {
-            ydst[2*i+0]     = src[4*i+0];
-            udst[i]     = src[4*i+1];
-            ydst[2*i+1]     = src[4*i+2];
-            vdst[i]     = src[4*i+3];
-        }
-        ydst += lumStride;
-        src  += srcStride;
-
-        for (i=0; i<chromWidth; i++) {
-            ydst[2*i+0]     = src[4*i+0];
-            ydst[2*i+1]     = src[4*i+2];
-        }
-#endif
         udst += chromStride;
         vdst += chromStride;
         ydst += lumStride;
         src  += srcStride;
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(EMMS"       \n\t"
                      SFENCE"     \n\t"
                      :::"memory");
-#endif
 }
 
 static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWidth, long srcHeight, long srcStride, long dstStride)
@@ -1859,11 +1620,9 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
     }
 #endif
 
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(EMMS"       \n\t"
                      SFENCE"     \n\t"
                      :::"memory");
-#endif
 }
 
 /**
@@ -1879,7 +1638,6 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
     long y;
     const x86_reg chromWidth= width>>1;
     for (y=0; y<height; y+=2) {
-#if COMPILE_TEMPLATE_MMX
         __asm__ volatile(
             "xor                 %%"REG_a", %%"REG_a"   \n\t"
             "pcmpeqw             %%mm7, %%mm7   \n\t"
@@ -1961,32 +1719,14 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
             ::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "g" (chromWidth)
             : "memory", "%"REG_a
         );
-#else
-        long i;
-        for (i=0; i<chromWidth; i++) {
-            udst[i]     = src[4*i+0];
-            ydst[2*i+0] = src[4*i+1];
-            vdst[i]     = src[4*i+2];
-            ydst[2*i+1] = src[4*i+3];
-        }
-        ydst += lumStride;
-        src  += srcStride;
-
-        for (i=0; i<chromWidth; i++) {
-            ydst[2*i+0] = src[4*i+1];
-            ydst[2*i+1] = src[4*i+3];
-        }
-#endif
         udst += chromStride;
         vdst += chromStride;
         ydst += lumStride;
         src  += srcStride;
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(EMMS"       \n\t"
                      SFENCE"     \n\t"
                      :::"memory");
-#endif
 }
 
 /**
@@ -2002,7 +1742,6 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 {
     long y;
     const x86_reg chromWidth= width>>1;
-#if COMPILE_TEMPLATE_MMX
     for (y=0; y<height-2; y+=2) {
         long i;
         for (i=0; i<2; i++) {
@@ -2236,9 +1975,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
     __asm__ volatile(EMMS"       \n\t"
                      SFENCE"     \n\t"
                      :::"memory");
-#else
-    y=0;
-#endif
+
     for (; y<height; y+=2) {
         long i;
         for (i=0; i<chromWidth; i++) {
@@ -2296,7 +2033,6 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
     for (h=0; h < height; h++) {
         long w;
 
-#if COMPILE_TEMPLATE_MMX
 #if COMPILE_TEMPLATE_SSE2
         __asm__(
             "xor              %%"REG_a", %%"REG_a"  \n\t"
@@ -2347,23 +2083,15 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
             dest[2*w+0] = src1[w];
             dest[2*w+1] = src2[w];
         }
-#else
-        for (w=0; w < width; w++) {
-            dest[2*w+0] = src1[w];
-            dest[2*w+1] = src2[w];
-        }
-#endif
         dest += dstStride;
         src1 += src1Stride;
         src2 += src2Stride;
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__(
             EMMS"       \n\t"
             SFENCE"     \n\t"
             ::: "memory"
             );
-#endif
 }
 
 static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
@@ -2375,17 +2103,14 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
     x86_reg y;
     long x,w,h;
     w=width/2; h=height/2;
-#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
         PREFETCH" %0    \n\t"
         PREFETCH" %1    \n\t"
         ::"m"(*(src1+srcStride1)),"m"(*(src2+srcStride2)):"memory");
-#endif
     for (y=0;y<h;y++) {
         const uint8_t* s1=src1+srcStride1*(y>>1);
         uint8_t* d=dst1+dstStride1*y;
         x=0;
-#if COMPILE_TEMPLATE_MMX
         for (;x<w-31;x+=32) {
             __asm__ volatile(
                 PREFETCH"   32%1        \n\t"
@@ -2417,14 +2142,12 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
                 :"m"(s1[x])
                 :"memory");
         }
-#endif
         for (;x<w;x++) d[2*x]=d[2*x+1]=s1[x];
     }
     for (y=0;y<h;y++) {
         const uint8_t* s2=src2+srcStride2*(y>>1);
         uint8_t* d=dst2+dstStride2*y;
         x=0;
-#if COMPILE_TEMPLATE_MMX
         for (;x<w-31;x+=32) {
             __asm__ volatile(
                 PREFETCH"   32%1        \n\t"
@@ -2456,16 +2179,13 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
                 :"m"(s2[x])
                 :"memory");
         }
-#endif
         for (;x<w;x++) d[2*x]=d[2*x+1]=s2[x];
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__(
             EMMS"       \n\t"
             SFENCE"     \n\t"
             ::: "memory"
         );
-#endif
 }
 
 static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
@@ -2483,7 +2203,6 @@ static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2
         const uint8_t* vp=src3+srcStride3*(y>>2);
         uint8_t* d=dst+dstStride*y;
         x=0;
-#if COMPILE_TEMPLATE_MMX
         for (;x<w-7;x+=8) {
             __asm__ volatile(
                 PREFETCH"   32(%1, %0)          \n\t"
@@ -2536,7 +2255,6 @@ static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2
                 : "r"(yp), "r" (up), "r"(vp), "r"(d)
                 :"memory");
         }
-#endif
         for (; x<w; x++) {
             const long x2 = x<<2;
             d[8*x+0] = yp[x2];
@@ -2549,13 +2267,11 @@ static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2
             d[8*x+7] = vp[x];
         }
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__(
             EMMS"       \n\t"
             SFENCE"     \n\t"
             ::: "memory"
         );
-#endif
 }
 
 static void RENAME(extract_even)(const uint8_t *src, uint8_t *dst, x86_reg count)
@@ -2564,7 +2280,6 @@ static void RENAME(extract_even)(const uint8_t *src, uint8_t *dst, x86_reg count
     src += 2*count;
     count= - count;
 
-#if COMPILE_TEMPLATE_MMX
     if(count <= -16) {
         count += 15;
         __asm__ volatile(
@@ -2590,7 +2305,6 @@ static void RENAME(extract_even)(const uint8_t *src, uint8_t *dst, x86_reg count
         );
         count -= 15;
     }
-#endif
     while(count<0) {
         dst[count]= src[2*count];
         count++;
@@ -2603,7 +2317,6 @@ static void RENAME(extract_even2)(const uint8_t *src, uint8_t *dst0, uint8_t *ds
     dst1+=   count;
     src += 4*count;
     count= - count;
-#if COMPILE_TEMPLATE_MMX
     if(count <= -8) {
         count += 7;
         __asm__ volatile(
@@ -2637,7 +2350,6 @@ static void RENAME(extract_even2)(const uint8_t *src, uint8_t *dst0, uint8_t *ds
         );
         count -= 7;
     }
-#endif
     while(count<0) {
         dst0[count]= src[4*count+0];
         dst1[count]= src[4*count+2];
@@ -2704,7 +2416,6 @@ static void RENAME(extract_odd2)(const uint8_t *src, uint8_t *dst0, uint8_t *dst
     dst1+=   count;
     src += 4*count;
     count= - count;
-#if COMPILE_TEMPLATE_MMX
     if(count <= -8) {
         count += 7;
         __asm__ volatile(
@@ -2738,7 +2449,6 @@ static void RENAME(extract_odd2)(const uint8_t *src, uint8_t *dst0, uint8_t *dst
         );
         count -= 7;
     }
-#endif
     src++;
     while(count<0) {
         dst0[count]= src[4*count+0];
@@ -2820,13 +2530,11 @@ static void RENAME(yuyvtoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
         src += srcStride;
         ydst+= lumStride;
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__(
             EMMS"       \n\t"
             SFENCE"     \n\t"
             ::: "memory"
         );
-#endif
 }
 
 static void RENAME(yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
@@ -2845,13 +2553,11 @@ static void RENAME(yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
         udst+= chromStride;
         vdst+= chromStride;
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__(
             EMMS"       \n\t"
             SFENCE"     \n\t"
             ::: "memory"
         );
-#endif
 }
 
 static void RENAME(uyvytoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
@@ -2872,13 +2578,11 @@ static void RENAME(uyvytoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
         src += srcStride;
         ydst+= lumStride;
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__(
             EMMS"       \n\t"
             SFENCE"     \n\t"
             ::: "memory"
         );
-#endif
 }
 
 static void RENAME(uyvytoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
@@ -2897,13 +2601,11 @@ static void RENAME(uyvytoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
         udst+= chromStride;
         vdst+= chromStride;
     }
-#if COMPILE_TEMPLATE_MMX
     __asm__(
             EMMS"       \n\t"
             SFENCE"     \n\t"
             ::: "memory"
         );
-#endif
 }
 
 static inline void RENAME(rgb2rgb_init)(void)

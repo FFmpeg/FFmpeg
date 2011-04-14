@@ -81,15 +81,12 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 
 //Note: We have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW + MMX2 one.
 
-#define COMPILE_TEMPLATE_MMX 0
 #define COMPILE_TEMPLATE_MMX2 0
 #define COMPILE_TEMPLATE_AMD3DNOW 0
 #define COMPILE_TEMPLATE_SSE2 0
 
 //MMX versions
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMX
-#define COMPILE_TEMPLATE_MMX 1
 #define RENAME(a) a ## _MMX
 #include "rgb2rgb_template.c"
 
