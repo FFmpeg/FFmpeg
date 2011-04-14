@@ -186,6 +186,10 @@ static char *subtitle_codec_name = NULL;
 static char *subtitle_language = NULL;
 static unsigned int subtitle_codec_tag = 0;
 
+static int data_disable = 0;
+static char *data_codec_name = NULL;
+static unsigned int data_codec_tag = 0;
+
 static float mux_preload= 0.5;
 static float mux_max_delay= 0.7;
 
@@ -204,6 +208,7 @@ static char *pass_logfilename_prefix = NULL;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
 static int subtitle_stream_copy = 0;
+static int data_stream_copy = 0;
 static int video_sync_method= -1;
 static int audio_sync_method= 0;
 static float audio_drift_threshold= 0.1;
@@ -490,6 +495,7 @@ static int ffmpeg_exit(int ret)
     av_free(video_codec_name);
     av_free(audio_codec_name);
     av_free(subtitle_codec_name);
+    av_free(data_codec_name);
 
     av_free(video_standard);
 
@@ -2135,6 +2141,8 @@ static int transcode(AVFormatContext **output_files,
                 codec->width = icodec->width;
                 codec->height = icodec->height;
                 break;
+            case AVMEDIA_TYPE_DATA:
+                break;
             default:
                 abort();
             }
@@ -2902,6 +2910,11 @@ static void opt_subtitle_codec(const char *arg)
     opt_codec(&subtitle_stream_copy, &subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, arg);
 }
 
+static void opt_data_codec(const char *arg)
+{
+    opt_codec(&data_stream_copy, &data_codec_name, AVMEDIA_TYPE_DATA, arg);
+}
+
 static int opt_codec_tag(const char *opt, const char *arg)
 {
     char *tail;
@@ -3294,15 +3307,19 @@ static void opt_input_file(const char *filename)
     av_freep(&subtitle_codec_name);
 }
 
-static void check_audio_video_sub_inputs(int *has_video_ptr, int *has_audio_ptr,
-                                         int *has_subtitle_ptr)
+static void check_inputs(int *has_video_ptr,
+                         int *has_audio_ptr,
+                         int *has_subtitle_ptr,
+                         int *has_data_ptr)
 {
-    int has_video, has_audio, has_subtitle, i, j;
+    int has_video, has_audio, has_subtitle, has_data, i, j;
     AVFormatContext *ic;
 
     has_video = 0;
     has_audio = 0;
     has_subtitle = 0;
+    has_data = 0;
+
     for(j=0;j<nb_input_files;j++) {
         ic = input_files[j];
         for(i=0;i<ic->nb_streams;i++) {
@@ -3320,6 +3337,7 @@ static void check_audio_video_sub_inputs(int *has_video_ptr, int *has_audio_ptr,
             case AVMEDIA_TYPE_DATA:
             case AVMEDIA_TYPE_ATTACHMENT:
             case AVMEDIA_TYPE_UNKNOWN:
+                has_data = 1;
                 break;
             default:
                 abort();
@@ -3329,6 +3347,7 @@ static void check_audio_video_sub_inputs(int *has_video_ptr, int *has_audio_ptr,
     *has_video_ptr = has_video;
     *has_audio_ptr = has_audio;
     *has_subtitle_ptr = has_subtitle;
+    *has_data_ptr = has_data;
 }
 
 static void new_video_stream(AVFormatContext *oc, int file_idx)
@@ -3555,6 +3574,45 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
     audio_stream_copy = 0;
 }
 
+static void new_data_stream(AVFormatContext *oc, int file_idx)
+{
+    AVStream *st;
+    AVOutputStream *ost;
+    AVCodec *codec=NULL;
+    AVCodecContext *data_enc;
+
+    st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
+    if (!st) {
+        fprintf(stderr, "Could not alloc stream\n");
+        ffmpeg_exit(1);
+    }
+    ost = new_output_stream(oc, file_idx);
+    data_enc = st->codec;
+    output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
+    if (!data_stream_copy) {
+        fprintf(stderr, "Data stream encoding not supported yet (only streamcopy)\n");
+        ffmpeg_exit(1);
+    }
+    avcodec_get_context_defaults3(st->codec, codec);
+
+    data_enc->codec_type = AVMEDIA_TYPE_DATA;
+
+    if (data_codec_tag)
+        data_enc->codec_tag= data_codec_tag;
+
+    if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
+        data_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        avcodec_opts[AVMEDIA_TYPE_DATA]->flags |= CODEC_FLAG_GLOBAL_HEADER;
+    }
+    if (data_stream_copy) {
+        st->stream_copy = 1;
+    }
+
+    data_disable = 0;
+    av_freep(&data_codec_name);
+    data_stream_copy = 0;
+}
+
 static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
@@ -3625,6 +3683,7 @@ static int opt_new_stream(const char *opt, const char *arg)
     if      (!strcmp(opt, "newvideo"   )) new_video_stream   (oc, file_idx);
     else if (!strcmp(opt, "newaudio"   )) new_audio_stream   (oc, file_idx);
     else if (!strcmp(opt, "newsubtitle")) new_subtitle_stream(oc, file_idx);
+    else if (!strcmp(opt, "newdata"    )) new_data_stream    (oc, file_idx);
     else av_assert0(0);
     return 0;
 }
@@ -3655,8 +3714,8 @@ static int opt_streamid(const char *opt, const char *arg)
 static void opt_output_file(const char *filename)
 {
     AVFormatContext *oc;
-    int err, use_video, use_audio, use_subtitle;
-    int input_has_video, input_has_audio, input_has_subtitle;
+    int err, use_video, use_audio, use_subtitle, use_data;
+    int input_has_video, input_has_audio, input_has_subtitle, input_has_data;
     AVFormatParameters params, *ap = &params;
     AVOutputFormat *file_oformat;
 
@@ -3701,28 +3760,36 @@ static void opt_output_file(const char *filename)
         use_video = file_oformat->video_codec != CODEC_ID_NONE || video_stream_copy || video_codec_name;
         use_audio = file_oformat->audio_codec != CODEC_ID_NONE || audio_stream_copy || audio_codec_name;
         use_subtitle = file_oformat->subtitle_codec != CODEC_ID_NONE || subtitle_stream_copy || subtitle_codec_name;
+        use_data = data_stream_copy ||  data_codec_name; /* XXX once generic data codec will be available add a ->data_codec reference and use it here */
 
         /* disable if no corresponding type found and at least one
            input file */
         if (nb_input_files > 0) {
-            check_audio_video_sub_inputs(&input_has_video, &input_has_audio,
-                                         &input_has_subtitle);
+            check_inputs(&input_has_video,
+                         &input_has_audio,
+                         &input_has_subtitle,
+                         &input_has_data);
+
             if (!input_has_video)
                 use_video = 0;
             if (!input_has_audio)
                 use_audio = 0;
             if (!input_has_subtitle)
                 use_subtitle = 0;
+            if (!input_has_data)
+                use_data = 0;
         }
 
         /* manual disable */
         if (audio_disable)    use_audio    = 0;
         if (video_disable)    use_video    = 0;
         if (subtitle_disable) use_subtitle = 0;
+        if (data_disable)     use_data     = 0;
 
         if (use_video)    new_video_stream(oc, nb_output_files);
         if (use_audio)    new_audio_stream(oc, nb_output_files);
         if (use_subtitle) new_subtitle_stream(oc, nb_output_files);
+        if (use_data)     new_data_stream(oc, nb_output_files);
 
         oc->timestamp = recording_timestamp;
 
@@ -4138,6 +4205,8 @@ static int opt_preset(const char *opt, const char *arg)
             opt_video_codec(tmp2);
         }else if(!strcmp(tmp, "scodec")){
             opt_subtitle_codec(tmp2);
+        }else if(!strcmp(tmp, "dcodec")){
+            opt_data_codec(tmp2);
         }else if(opt_default(tmp, tmp2) < 0){
             fprintf(stderr, "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'\n", filename, line, tmp, tmp2);
             ffmpeg_exit(1);
@@ -4280,6 +4349,8 @@ static const OptionDef options[] = {
     { "vpre", OPT_FUNC2 | HAS_ARG | OPT_VIDEO | OPT_EXPERT, {(void*)opt_preset}, "set the video options to the indicated preset", "preset" },
     { "spre", OPT_FUNC2 | HAS_ARG | OPT_SUBTITLE | OPT_EXPERT, {(void*)opt_preset}, "set the subtitle options to the indicated preset", "preset" },
     { "fpre", OPT_FUNC2 | HAS_ARG | OPT_EXPERT, {(void*)opt_preset}, "set options from indicated preset file", "filename" },
+    /* data codec support */
+    { "dcodec", HAS_ARG | OPT_DATA, {(void*)opt_data_codec}, "force data codec ('copy' to copy stream)", "codec" },
 
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },

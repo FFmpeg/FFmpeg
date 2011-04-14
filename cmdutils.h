@@ -122,6 +122,7 @@ typedef struct {
 #define OPT_FUNC2  0x0400
 #define OPT_INT64  0x0800
 #define OPT_EXIT   0x1000
+#define OPT_DATA   0x2000
      union {
         void (*func_arg)(const char *); //FIXME passing error code as int return would be nicer then exit() in the func
         int *int_arg;
