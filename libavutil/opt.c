@@ -33,10 +33,9 @@
 //FIXME order them and do a bin search
 const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mask, int flags)
 {
-    AVClass *c= *(AVClass**)v; //FIXME silly way of storing AVClass
-    const AVOption *o= c->option;
+    const AVOption *o = NULL;
 
-    for (; o && o->name; o++) {
+    while ((o = av_next_option(v, o))) {
         if (!strcmp(o->name, name) && (!unit || (o->unit && !strcmp(o->unit, unit))) && (o->flags & mask) == flags)
             return o;
     }
