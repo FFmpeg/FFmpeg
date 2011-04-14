@@ -796,13 +796,19 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
 
         if (priv->parser) {
             uint8_t *pout;
-            int psize = len;
+            int psize;
+            const uint8_t *in_data = avpkt->data;
+            int in_len = len;
             H264Context *h = priv->parser->priv_data;
 
-            while (psize)
-                ret = av_parser_parse2(priv->parser, avctx, &pout, &psize,
-                                       avpkt->data, len, avctx->pkt->pts,
-                                       avctx->pkt->dts, len - psize);
+            while (in_len) {
+                int index;
+                index = av_parser_parse2(priv->parser, avctx, &pout, &psize,
+                                         in_data, in_len, avctx->pkt->pts,
+                                         avctx->pkt->dts, 0);
+                in_data += index;
+                in_len -= index;
+            }
             av_log(avctx, AV_LOG_VERBOSE,
                    "CrystalHD: parser picture type %d\n",
                    h->s.picture_structure);
