@@ -31,6 +31,8 @@
 
 #define STR(s)         AV_TOSTRING(s) //AV_STRINGIFY is too long
 
+#define FAST_BGR2YV12 //use 7-bit instead of 15-bit coefficients
+
 #define MAX_FILTER_SIZE 256
 
 #if ARCH_X86

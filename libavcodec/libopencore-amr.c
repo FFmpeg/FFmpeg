@@ -20,6 +20,8 @@
  */
 
 #include "avcodec.h"
+#include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 
 static void amr_decode_fix_avctx(AVCodecContext *avctx)
 {
@@ -40,9 +42,6 @@ static void amr_decode_fix_avctx(AVCodecContext *avctx)
 #include <opencore-amrnb/interf_dec.h>
 #include <opencore-amrnb/interf_enc.h>
 
-static const char nb_bitrate_unsupported[] =
-    "bitrate not supported: use one of 4.75k, 5.15k, 5.9k, 6.7k, 7.4k, 7.95k, 10.2k or 12.2k\n";
-
 /* Common code for fixed and float version*/
 typedef struct AMR_bitrates {
     int       rate;
@@ -50,41 +49,61 @@ typedef struct AMR_bitrates {
 } AMR_bitrates;
 
 /* Match desired bitrate */
-static int getBitrateMode(int bitrate)
+static int get_bitrate_mode(int bitrate, void *log_ctx)
 {
     /* make the correspondance between bitrate and mode */
-    AMR_bitrates rates[] = { { 4750, MR475},
-                             { 5150, MR515},
-                             { 5900, MR59},
-                             { 6700, MR67},
-                             { 7400, MR74},
-                             { 7950, MR795},
-                             {10200, MR102},
-                             {12200, MR122}, };
-    int i;
+    static const AMR_bitrates rates[] = {
+        { 4750, MR475 }, { 5150, MR515 }, {  5900, MR59  }, {  6700, MR67  },
+        { 7400, MR74 },  { 7950, MR795 }, { 10200, MR102 }, { 12200, MR122 }
+    };
+    int i, best = -1, min_diff = 0;
+    char log_buf[200];
 
-    for (i = 0; i < 8; i++)
+    for (i = 0; i < 8; i++) {
         if (rates[i].rate == bitrate)
             return rates[i].mode;
-    /* no bitrate matching, return an error */
-    return -1;
+        if (best < 0 || abs(rates[i].rate - bitrate) < min_diff) {
+            best     = i;
+            min_diff = abs(rates[i].rate - bitrate);
+        }
+    }
+    /* no bitrate matching exactly, log a warning */
+    snprintf(log_buf, sizeof(log_buf), "bitrate not supported: use one of ");
+    for (i = 0; i < 8; i++)
+        av_strlcatf(log_buf, sizeof(log_buf), "%.2fk, ", rates[i].rate    / 1000.f);
+    av_strlcatf(log_buf, sizeof(log_buf), "using %.2fk", rates[best].rate / 1000.f);
+    av_log(log_ctx, AV_LOG_WARNING, "%s\n", log_buf);
+
+    return best;
 }
 
 typedef struct AMRContext {
-    int   frameCount;
-    void *decState;
-    int  *enstate;
+    AVClass *av_class;
+    int   frame_count;
+    void *dec_state;
+    void *enc_state;
     int   enc_bitrate;
+    int   enc_mode;
+    int   enc_dtx;
 } AMRContext;
+
+static const AVOption options[] = {
+    { "dtx", "Allow DTX (generate comfort noise)", offsetof(AMRContext, enc_dtx), FF_OPT_TYPE_INT, 0, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL }
+};
+
+static const AVClass class = {
+    "libopencore_amrnb", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+};
 
 static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
 {
-    AMRContext *s = avctx->priv_data;
+    AMRContext *s  = avctx->priv_data;
 
-    s->frameCount = 0;
-    s->decState   = Decoder_Interface_init();
-    if (!s->decState) {
-        av_log(avctx, AV_LOG_ERROR, "Decoder_Interface_init error\r\n");
+    s->frame_count = 0;
+    s->dec_state   = Decoder_Interface_init();
+    if (!s->dec_state) {
+        av_log(avctx, AV_LOG_ERROR, "Decoder_Interface_init error\n");
         return -1;
     }
 
@@ -92,7 +111,7 @@ static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
 
     if (avctx->channels > 1) {
         av_log(avctx, AV_LOG_ERROR, "amr_nb: multichannel decoding not supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     return 0;
@@ -102,7 +121,7 @@ static av_cold int amr_nb_decode_close(AVCodecContext *avctx)
 {
     AMRContext *s = avctx->priv_data;
 
-    Decoder_Interface_exit(s->decState);
+    Decoder_Interface_exit(s->dec_state);
     return 0;
 }
 
@@ -111,29 +130,28 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    AMRContext *s = avctx->priv_data;
-    const uint8_t *amrData = buf;
+    AMRContext *s      = avctx->priv_data;
     static const uint8_t block_size[16] = { 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
     enum Mode dec_mode;
     int packet_size;
 
-    /* av_log(NULL, AV_LOG_DEBUG, "amr_decode_frame buf=%p buf_size=%d frameCount=%d!!\n",
-              buf, buf_size, s->frameCount); */
+    av_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frame_count=%d!!\n",
+            buf, buf_size, s->frame_count);
 
-    dec_mode = (buf[0] >> 3) & 0x000F;
+    dec_mode    = (buf[0] >> 3) & 0x000F;
     packet_size = block_size[dec_mode] + 1;
 
     if (packet_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n",
                buf_size, packet_size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
-    s->frameCount++;
-    /* av_log(NULL, AV_LOG_DEBUG, "packet_size=%d amrData= 0x%X %X %X %X\n",
-              packet_size, amrData[0], amrData[1], amrData[2], amrData[3]); */
+    s->frame_count++;
+    av_dlog(avctx, "packet_size=%d buf= 0x%X %X %X %X\n",
+              packet_size, buf[0], buf[1], buf[2], buf[3]);
     /* call decoder */
-    Decoder_Interface_Decode(s->decState, amrData, data, 0);
+    Decoder_Interface_Decode(s->dec_state, buf, data, 0);
     *data_size = 160 * 2;
 
     return packet_size;
@@ -155,31 +173,29 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
 {
     AMRContext *s = avctx->priv_data;
 
-    s->frameCount = 0;
+    s->frame_count = 0;
 
     if (avctx->sample_rate != 8000) {
         av_log(avctx, AV_LOG_ERROR, "Only 8000Hz sample rate supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     if (avctx->channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "Only mono supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     avctx->frame_size  = 160;
     avctx->coded_frame = avcodec_alloc_frame();
 
-    s->enstate=Encoder_Interface_init(0);
-    if (!s->enstate) {
+    s->enc_state = Encoder_Interface_init(s->enc_dtx);
+    if (!s->enc_state) {
         av_log(avctx, AV_LOG_ERROR, "Encoder_Interface_init error\n");
         return -1;
     }
 
-    if ((s->enc_bitrate = getBitrateMode(avctx->bit_rate)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, nb_bitrate_unsupported);
-        return -1;
-    }
+    s->enc_mode    = get_bitrate_mode(avctx->bit_rate, avctx);
+    s->enc_bitrate = avctx->bit_rate;
 
     return 0;
 }
@@ -188,7 +204,7 @@ static av_cold int amr_nb_encode_close(AVCodecContext *avctx)
 {
     AMRContext *s = avctx->priv_data;
 
-    Encoder_Interface_exit(s->enstate);
+    Encoder_Interface_exit(s->enc_state);
     av_freep(&avctx->coded_frame);
     return 0;
 }
@@ -200,15 +216,15 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
     AMRContext *s = avctx->priv_data;
     int written;
 
-    if ((s->enc_bitrate = getBitrateMode(avctx->bit_rate)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, nb_bitrate_unsupported);
-        return -1;
+    if (s->enc_bitrate != avctx->bit_rate) {
+        s->enc_mode    = get_bitrate_mode(avctx->bit_rate, avctx);
+        s->enc_bitrate = avctx->bit_rate;
     }
 
-    written = Encoder_Interface_Encode(s->enstate, s->enc_bitrate, data,
+    written = Encoder_Interface_Encode(s->enc_state, s->enc_mode, data,
                                        frame, 0);
-    /* av_log(NULL, AV_LOG_DEBUG, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
-              written, s->enc_bitrate, frame[0] ); */
+    av_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
+            written, s->enc_mode, frame[0]);
 
     return written;
 }
@@ -224,6 +240,7 @@ AVCodec ff_libopencore_amrnb_encoder = {
     NULL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("OpenCORE Adaptive Multi-Rate (AMR) Narrow-Band"),
+    .priv_class = &class,
 };
 
 #endif
@@ -231,42 +248,24 @@ AVCodec ff_libopencore_amrnb_encoder = {
 /* -----------AMR wideband ------------*/
 #if CONFIG_LIBOPENCORE_AMRWB
 
-#ifdef _TYPEDEF_H
-//To avoid duplicate typedefs from typedef in amr-nb
-#define typedef_h
-#endif
-
 #include <opencore-amrwb/dec_if.h>
 #include <opencore-amrwb/if_rom.h>
 
-static const char wb_bitrate_unsupported[] =
-    "bitrate not supported: use one of 6.6k, 8.85k, 12.65k, 14.25k, 15.85k, 18.25k, 19.85k, 23.05k, or 23.85k\n";
-
-/* Common code for fixed and float version*/
-typedef struct AMRWB_bitrates {
-    int rate;
-    int mode;
-} AMRWB_bitrates;
-
 typedef struct AMRWBContext {
-    int    frameCount;
     void  *state;
-    int    mode;
-    Word16 allow_dtx;
 } AMRWBContext;
 
 static av_cold int amr_wb_decode_init(AVCodecContext *avctx)
 {
     AMRWBContext *s = avctx->priv_data;
 
-    s->frameCount = 0;
-    s->state      = D_IF_init();
+    s->state        = D_IF_init();
 
     amr_decode_fix_avctx(avctx);
 
     if (avctx->channels > 1) {
         av_log(avctx, AV_LOG_ERROR, "amr_wb: multichannel decoding not supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     return 0;
@@ -277,8 +276,7 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    AMRWBContext *s = avctx->priv_data;
-    const uint8_t *amrData = buf;
+    AMRWBContext *s    = avctx->priv_data;
     int mode;
     int packet_size;
     static const uint8_t block_size[16] = {18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1};
@@ -287,17 +285,16 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
         /* nothing to do */
         return 0;
 
-    mode = (amrData[0] >> 3) & 0x000F;
+    mode        = (buf[0] >> 3) & 0x000F;
     packet_size = block_size[mode];
 
     if (packet_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n",
                buf_size, packet_size + 1);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
-    s->frameCount++;
-    D_IF_decode(s->state, amrData, data, _good_frame);
+    D_IF_decode(s->state, buf, data, _good_frame);
     *data_size = 320 * 2;
     return packet_size;
 }

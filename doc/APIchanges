@@ -12,6 +12,38 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-04-12 - lavf 52.107.0 - avio.h
+  Avio cleanup, part II - deprecate the entire URLContext API:
+    175389c add avio_check as a replacement for url_exist
+    ff1ec0c add avio_pause and avio_seek_time as replacements
+            for _av_url_read_fseek/fpause
+    cdc6a87 deprecate av_protocol_next(), avio_enum_protocols
+            should be used instead.
+    80c6e23 rename url_set_interrupt_cb->avio_set_interrupt_cb.
+    f87b1b3 rename open flags: URL_* -> AVIO_*
+    f8270bb add avio_enum_protocols.
+    5593f03 deprecate URLProtocol.
+    c486dad deprecate URLContext.
+    026e175 deprecate the typedef for URLInterruptCB
+    8e76a19 deprecate av_register_protocol2.
+    b840484 deprecate URL_PROTOCOL_FLAG_NESTED_SCHEME
+    1305d93 deprecate av_url_read_seek
+    fa104e1 deprecate av_url_read_pause
+    727c7aa deprecate url_get_filename().
+    5958df3 deprecate url_max_packet_size().
+    1869ea0 deprecate url_get_file_handle().
+    32a97d4 deprecate url_filesize().
+    e52a914 deprecate url_close().
+    58a48c6 deprecate url_seek().
+    925e908 deprecate url_write().
+    dce3756 deprecate url_read_complete().
+    bc371ac deprecate url_read().
+    0589da0 deprecate url_open().
+    62eaaea deprecate url_connect.
+    5652bb9 deprecate url_alloc.
+    333e894 deprecate url_open_protocol
+    e230705 deprecate url_poll and URLPollEntry
+
 2011-04-10 - lavu  50.40.0 - pixfmt.h
   Add PIX_FMT_BGR48LE and PIX_FMT_BGR48BE pixel formats
 

@@ -1279,7 +1279,8 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
     int i;
     MVTable *mv;
 
-    ff_h263_decode_init(avctx);
+    if (ff_h263_decode_init(avctx) < 0)
+        return -1;
 
     common_init(s);
 

@@ -363,6 +363,7 @@ int ffurl_close(URLContext *h)
     return ret;
 }
 
+#if FF_API_OLD_AVIO
 int url_exist(const char *filename)
 {
     URLContext *h;
@@ -370,6 +371,26 @@ int url_exist(const char *filename)
         return 0;
     ffurl_close(h);
     return 1;
+}
+#endif
+
+int avio_check(const char *url, int flags)
+{
+    URLContext *h;
+    int ret = ffurl_alloc(&h, url, flags);
+    if (ret)
+        return ret;
+
+    if (h->prot->url_check) {
+        ret = h->prot->url_check(h, flags);
+    } else {
+        ret = ffurl_connect(h);
+        if (ret >= 0)
+            ret = flags;
+    }
+
+    ffurl_close(h);
+    return ret;
 }
 
 int64_t ffurl_size(URLContext *h)

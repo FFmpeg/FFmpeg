@@ -134,6 +134,7 @@ typedef struct URLProtocol {
     int priv_data_size;
     const AVClass *priv_data_class;
     int flags;
+    int (*url_check)(URLContext *h, int mask);
 } URLProtocol;
 
 typedef struct URLPollEntry {
@@ -335,13 +336,31 @@ attribute_deprecated int url_open_buf(AVIOContext **s, uint8_t *buf, int buf_siz
 
 /** return the written or read size */
 attribute_deprecated int url_close_buf(AVIOContext *s);
-#endif // FF_API_OLD_AVIO
 
 /**
  * Return a non-zero value if the resource indicated by url
  * exists, 0 otherwise.
+ * @deprecated Use avio_check instead.
  */
-int url_exist(const char *url);
+attribute_deprecated int url_exist(const char *url);
+#endif // FF_API_OLD_AVIO
+
+/**
+ * Return AVIO_* access flags corresponding to the access permissions
+ * of the resource in url, or a negative value corresponding to an
+ * AVERROR code in case of failure. The returned access flags are
+ * masked by the value in flags.
+ *
+ * @note This function is intrinsically unsafe, in the sense that the
+ * checked resource may change its existence or permission status from
+ * one call to another. Thus you should not trust the returned value,
+ * unless you are sure that no other processes are accessing the
+ * checked resource.
+ *
+ * @note This function is slightly broken until next major bump
+ *       because of AVIO_RDONLY == 0. Don't use it until then.
+ */
+int avio_check(const char *url, int flags);
 
 /**
  * The callback is called in blocking functions to test regulary if
@@ -537,9 +556,15 @@ int url_resetbuf(AVIOContext *s, int flags);
  * constants, optionally ORed with other flags.
  * @{
  */
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 #define AVIO_RDONLY 0  /**< read-only */
 #define AVIO_WRONLY 1  /**< write-only */
 #define AVIO_RDWR   2  /**< read-write */
+#else
+#define AVIO_RDONLY 1  /**< read-only */
+#define AVIO_WRONLY 2  /**< write-only */
+#define AVIO_RDWR   4  /**< read-write */
+#endif
 /**
  * @}
  */
@@ -556,7 +581,11 @@ int url_resetbuf(AVIOContext *s, int flags);
  * Warning: non-blocking protocols is work-in-progress; this flag may be
  * silently ignored.
  */
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 #define AVIO_FLAG_NONBLOCK 4
+#else
+#define AVIO_FLAG_NONBLOCK 8
+#endif
 
 /**
  * Create and initialize a AVIOContext for accessing the
