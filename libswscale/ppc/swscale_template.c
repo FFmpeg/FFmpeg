@@ -20,7 +20,7 @@
 
 
 #if COMPILE_TEMPLATE_ALTIVEC
-#include "ppc/swscale_altivec_template.c"
+#include "swscale_altivec_template.c"
 #endif
 
 static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
