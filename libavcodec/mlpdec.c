@@ -453,6 +453,11 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
             FFSWAP(int, s->ch_assign[3], s->ch_assign[5]);
         }
     }
+    if (m->avctx->codec_id == CODEC_ID_TRUEHD &&
+        m->avctx->channel_layout == AV_CH_LAYOUT_7POINT1) {
+        FFSWAP(int, s->ch_assign[4], s->ch_assign[6]);
+        FFSWAP(int, s->ch_assign[5], s->ch_assign[7]);
+    }
 
     checksum = ff_mlp_restart_checksum(buf, get_bits_count(gbp) - start_count);
 
