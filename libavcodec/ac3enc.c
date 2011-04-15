@@ -1052,7 +1052,8 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
     int snr_offset, snr_incr;
 
     bits_left = 8 * s->frame_size - (s->frame_bits + s->exponent_bits);
-    av_assert2(bits_left >= 0);
+    if (bits_left < 0)
+        return AVERROR(EINVAL);
 
     snr_offset = s->coarse_snr_offset << 4;
 
