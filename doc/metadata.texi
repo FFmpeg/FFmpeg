@@ -65,4 +65,20 @@ title=chapter \#1
 title=multi\
 line
 @end example
+
+By using the ffmetadata muxer and demuxer it is possible to extract
+metadata from an input file to an ffmetadata file, and then transcode
+the file into an output file with the edited ffmetadata file.
+
+Extracting an ffmetadata file with @file{ffmpeg} goes as follows:
+@example
+ffmpeg -i INPUT -f ffmetadata FFMETADATAFILE
+@end example
+
+Reinserting edited metadata information from the FFMETADATAFILE file can
+be done as:
+@example
+ffmpeg -i INPUT -i FFMETADATAFILE -map_metadata 1 -codec copy OUTPUT
+@end example
+
 @c man end METADATA
