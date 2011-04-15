@@ -259,6 +259,8 @@ library:
     @tab Multimedia format used in Westwood Studios games.
 @item Westwood Studios VQA      @tab   @tab X
     @tab Multimedia format used in Westwood Studios games.
+@item xWMA                      @tab   @tab X
+    @tab Microsoft audio container used by XAudio 2.
 @item YUV4MPEG pipe             @tab X @tab X
 @item Psygnosis YOP             @tab   @tab X
 @end multitable

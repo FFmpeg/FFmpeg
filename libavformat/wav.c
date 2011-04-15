@@ -195,6 +195,7 @@ static int wav_read_header(AVFormatContext *s,
     AVIOContext *pb = s->pb;
     AVStream *st;
     WAVContext *wav = s->priv_data;
+    int ret;
 
     /* check RIFF header */
     tag = avio_rl32(pb);
@@ -227,7 +228,9 @@ static int wav_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
 
-    ff_get_wav_header(pb, st->codec, size);
+    ret = ff_get_wav_header(pb, st->codec, size);
+    if (ret < 0)
+        return ret;
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
     av_set_pts_info(st, 64, 1, st->codec->sample_rate);
@@ -383,6 +386,7 @@ static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
     WAVContext    *wav = s->priv_data;
     AVStream *st;
     uint8_t guid[16];
+    int ret;
 
     avio_read(pb, guid, 16);
     if (memcmp(guid, guid_riff, 16))
@@ -408,7 +412,9 @@ static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(ENOMEM);
 
     /* subtract chunk header size - normal wav file doesn't count it */
-    ff_get_wav_header(pb, st->codec, size - 24);
+    ret = ff_get_wav_header(pb, st->codec, size - 24);
+    if (ret < 0)
+        return ret;
     avio_skip(pb, FFALIGN(size, INT64_C(8)) - size);
 
     st->need_parsing = AVSTREAM_PARSE_FULL;

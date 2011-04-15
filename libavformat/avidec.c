@@ -345,6 +345,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int avih_width=0, avih_height=0;
     int amv_file_format=0;
     uint64_t list_end = 0;
+    int ret;
 
     avi->stream_index= -1;
 
@@ -623,7 +624,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 //                    avio_skip(pb, size - 5 * 4);
                     break;
                 case AVMEDIA_TYPE_AUDIO:
-                    ff_get_wav_header(pb, st->codec, size);
+                    ret = ff_get_wav_header(pb, st->codec, size);
+                    if (ret < 0)
+                        return ret;
                     ast->dshow_block_align= st->codec->block_align;
                     if(ast->sample_size && st->codec->block_align && ast->sample_size != st->codec->block_align){
                         av_log(s, AV_LOG_WARNING, "sample size (%d) != block align (%d)\n", ast->sample_size, st->codec->block_align);

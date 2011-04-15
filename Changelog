@@ -93,6 +93,7 @@ version <next>:
 - fieldorder video filter added
 - AAC encoding via libvo-aacenc
 - AMR-WB encoding via libvo-amrwbenc
+- xWMA demuxer
 
 
 version 0.6:

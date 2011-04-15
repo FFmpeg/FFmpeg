@@ -280,7 +280,9 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
 
     st->codec->codec_type = type;
     if (type == AVMEDIA_TYPE_AUDIO) {
-        ff_get_wav_header(pb, st->codec, type_specific_size);
+        int ret = ff_get_wav_header(pb, st->codec, type_specific_size);
+        if (ret < 0)
+            return ret;
         if (is_dvr_ms_audio) {
             // codec_id and codec_tag are unreliable in dvr_ms
             // files. Set them later by probing stream.
