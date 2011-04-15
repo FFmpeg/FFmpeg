@@ -1010,7 +1010,8 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
     reset_block_bap(s);
     mantissa_bits = 0;
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-        AC3Block *block;
+        AC3Block *block = &s->blocks[blk];
+        AC3Block *ref_block;
         // initialize grouped mantissa counts. these are set so that they are
         // padded to the next whole group size when bits are counted in
         // compute_mantissa_size_final
@@ -1022,14 +1023,17 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
                blocks within a frame are the exponent values.  We can take
                advantage of that by reusing the bit allocation pointers
                whenever we reuse exponents. */
-            block = s->blocks[blk].exp_ref_block[ch];
+            ref_block = block->exp_ref_block[ch];
             if (s->exp_strategy[ch][blk] != EXP_REUSE) {
-                s->ac3dsp.bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
-                                          s->nb_coefs[ch], snr_offset,
-                                          s->bit_alloc.floor, ff_ac3_bap_tab,
-                                          block->bap[ch]);
+                s->ac3dsp.bit_alloc_calc_bap(ref_block->mask[ch],
+                                             ref_block->psd[ch], 0,
+                                             s->nb_coefs[ch], snr_offset,
+                                             s->bit_alloc.floor, ff_ac3_bap_tab,
+                                             ref_block->bap[ch]);
             }
-            mantissa_bits += s->ac3dsp.compute_mantissa_size(mant_cnt, block->bap[ch], s->nb_coefs[ch]);
+            mantissa_bits += s->ac3dsp.compute_mantissa_size(mant_cnt,
+                                                             ref_block->bap[ch],
+                                                             s->nb_coefs[ch]);
         }
         mantissa_bits += compute_mantissa_size_final(mant_cnt);
     }
