@@ -258,7 +258,7 @@ static int start_frame(AVCodecContext          *avctx,
     pic_param->seq_fields.bits.delta_pic_order_always_zero_flag = h->sps.delta_pic_order_always_zero_flag;
     pic_param->num_slice_groups_minus1                          = h->pps.slice_group_count - 1;
     pic_param->slice_group_map_type                             = h->pps.mb_slice_group_map_type;
-    pic_param->slice_group_change_rate_minus1                   = 0; /* XXX: unimplemented in FFmpeg */
+    pic_param->slice_group_change_rate_minus1                   = 0; /* XXX: unimplemented in Libav */
     pic_param->pic_init_qp_minus26                              = h->pps.init_qp - 26;
     pic_param->pic_init_qs_minus26                              = h->pps.init_qs - 26;
     pic_param->chroma_qp_index_offset                           = h->pps.chroma_qp_index_offset[0];

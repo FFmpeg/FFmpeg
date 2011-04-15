@@ -24,7 +24,7 @@
 #include "vc1.h"
 #include "vc1data.h"
 
-/** Translate FFmpeg MV modes to VA API */
+/** Translate Libav MV modes to VA API */
 static int get_VAMvModeVC1(enum MVModes mv_mode)
 {
     switch (mv_mode) {
@@ -116,7 +116,7 @@ static inline VAMvModeVC1 vc1_get_MVMODE2(VC1Context *v)
     return 0;
 }
 
-/** Pack FFmpeg bitplanes into a VABitPlaneBuffer element */
+/** Pack Libav bitplanes into a VABitPlaneBuffer element */
 static inline void vc1_pack_bitplanes(uint8_t *bitplane, int n, const uint8_t *ff_bp[3], int x, int y, int stride)
 {
     const int bitplane_index = n / 2;

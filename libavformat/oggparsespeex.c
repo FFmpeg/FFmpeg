@@ -59,7 +59,7 @@ static int speex_header(AVFormatContext *s, int idx) {
         st->codec->channels = AV_RL32(p + 48);
 
         /* We treat the whole Speex packet as a single frame everywhere Speex
-           is handled in FFmpeg.  This avoids the complexities of splitting
+           is handled in Libav.  This avoids the complexities of splitting
            and joining individual Speex frames, which are not always
            byte-aligned. */
         st->codec->frame_size = AV_RL32(p + 56);

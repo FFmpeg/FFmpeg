@@ -64,7 +64,7 @@ typedef struct TM2Context{
 * Huffman codes for each of streams
 */
 typedef struct TM2Codes{
-    VLC vlc; ///< table for FFmpeg bitstream reader
+    VLC vlc; ///< table for Libav bitstream reader
     int bits;
     int *recode; ///< table for converting from code indexes to values
     int length;

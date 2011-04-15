@@ -50,7 +50,7 @@
 
 #define AVERROR_EOF         AVERROR(EPIPE)   ///< End of file
 
-#define AVERROR_PATCHWELCOME    (-MKTAG('P','A','W','E')) ///< Not yet implemented in FFmpeg, patches welcome
+#define AVERROR_PATCHWELCOME    (-MKTAG('P','A','W','E')) ///< Not yet implemented in Libav, patches welcome
 
 #if LIBAVUTIL_VERSION_MAJOR > 50
 #define AVERROR_INVALIDDATA     (-MKTAG('I','N','D','A')) ///< Invalid data found when processing input

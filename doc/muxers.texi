@@ -167,7 +167,7 @@ Set the first PID for data packets (default 0x0100, max 0x0f00).
 
 The recognized metadata settings in mpegts muxer are @code{service_provider}
 and @code{service_name}. If they are not set the default for
-@code{service_provider} is "FFmpeg" and the default for
+@code{service_provider} is "Libav" and the default for
 @code{service_name} is "Service01".
 
 @example

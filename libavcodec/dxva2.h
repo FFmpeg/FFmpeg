@@ -60,7 +60,7 @@ struct dxva_context {
     uint64_t workaround;
 
     /**
-     * Private to the FFmpeg AVHWAccel implementation
+     * Private to the Libav AVHWAccel implementation
      */
     unsigned report_id;
 };

@@ -118,7 +118,7 @@ static SchroBuffer* FfmpegFindNextSchroParseUnit(FfmpegSchroParseUnitContext *pa
 }
 
 /**
-* Returns FFmpeg chroma format.
+* Returns Libav chroma format.
 */
 static enum PixelFormat GetFfmpegChromaFormat(SchroChromaFormat schro_pix_fmt)
 {
@@ -169,7 +169,7 @@ static void libschroedinger_handle_first_access_unit(AVCodecContext *avccontext)
 
     p_schro_params->format = schro_decoder_get_video_format(decoder);
 
-    /* Tell FFmpeg about sequence details. */
+    /* Tell Libav about sequence details. */
     if (av_image_check_size(p_schro_params->format->width, p_schro_params->format->height,
                             0, avccontext) < 0) {
         av_log(avccontext, AV_LOG_ERROR, "invalid dimensions (%dx%d)\n",

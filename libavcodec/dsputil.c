@@ -4061,7 +4061,7 @@ int ff_check_alignment(void){
                 "Compiler did not align stack variables. Libavcodec has been miscompiled\n"
                 "and may be very slow or crash. This is not a bug in libavcodec,\n"
                 "but in the compiler. You may try recompiling using gcc >= 4.2.\n"
-                "Do not report crashes to FFmpeg developers.\n");
+                "Do not report crashes to Libav developers.\n");
 #endif
             did_fail=1;
         }
