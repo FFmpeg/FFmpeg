@@ -342,6 +342,7 @@ enum CodecID {
     CODEC_ID_BINKAUDIO_DCT,
     CODEC_ID_AAC_LATM,
     CODEC_ID_QDMC,
+    CODEC_ID_CELT,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,

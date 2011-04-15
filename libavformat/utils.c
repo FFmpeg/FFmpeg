@@ -2084,7 +2084,8 @@ static int has_codec_parameters(AVCodecContext *enc)
             enc->codec_id == CODEC_ID_MP1 ||
             enc->codec_id == CODEC_ID_MP2 ||
             enc->codec_id == CODEC_ID_MP3 ||
-            enc->codec_id == CODEC_ID_SPEEX))
+            enc->codec_id == CODEC_ID_SPEEX ||
+            enc->codec_id == CODEC_ID_CELT))
             return 0;
         break;
     case AVMEDIA_TYPE_VIDEO:
