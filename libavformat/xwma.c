@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "avformat.h"
 #include "riff.h"
 
@@ -144,11 +146,13 @@ static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             /* Compute the number of entries in the dpds chunk. */
             if (size & 3) {  /* Size should be divisible by four */
-                av_log(s, AV_LOG_WARNING, "dpds chunk size "PRId64" not divisible by 4\n", size);
+                av_log(s, AV_LOG_WARNING,
+                       "dpds chunk size %"PRId64" not divisible by 4\n", size);
             }
             dpds_table_size = size / 4;
             if (dpds_table_size == 0 || dpds_table_size >= INT_MAX / 4) {
-                av_log(s, AV_LOG_ERROR, "dpds chunk size "PRId64" invalid\n", size);
+                av_log(s, AV_LOG_ERROR,
+                       "dpds chunk size %"PRId64" invalid\n", size);
                 return -1;
             }
 
