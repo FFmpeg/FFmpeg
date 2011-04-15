@@ -521,11 +521,13 @@ static void apply_rematrixing(AC3EncodeContext *s)
  */
 static av_cold void exponent_init(AC3EncodeContext *s)
 {
-    int i;
-    for (i = 73; i < 256; i++) {
-        exponent_group_tab[0][i] = (i - 1) /  3;
-        exponent_group_tab[1][i] = (i + 2) /  6;
-        exponent_group_tab[2][i] = (i + 8) / 12;
+    int expstr, i, grpsize;
+
+    for (expstr = EXP_D15-1; expstr <= EXP_D45-1; expstr++) {
+        grpsize = 3 << expstr;
+        for (i = 73; i < 256; i++) {
+            exponent_group_tab[expstr][i] = (i + grpsize - 4) / grpsize;
+        }
     }
     /* LFE */
     exponent_group_tab[0][7] = 2;
