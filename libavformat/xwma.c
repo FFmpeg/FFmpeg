@@ -90,7 +90,7 @@ static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
          * codecs require extradata, so we provide our own fake extradata.
          *
          * First, check that there really was no extradata in the header. If
-         * there was, then try to use, after asking the the user to provide a
+         * there was, then try to use it, after asking the user to provide a
          * sample of this unusual file.
          */
         if (st->codec->extradata_size != 0) {
@@ -129,7 +129,7 @@ static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
             /* Quoting the MSDN xWMA docs on the dpds chunk: "Contains the
              * decoded packet cumulative data size array, each element is the
              * number of bytes accumulated after the corresponding xWMA packet
-             * is decoded in order"
+             * is decoded in order."
              *
              * Each packet has size equal to st->codec->block_align, which in
              * all cases I saw so far was always 2230. Thus, we can use the
