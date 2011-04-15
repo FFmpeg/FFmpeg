@@ -1198,24 +1198,22 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     sws_init_swScale_c(c);
 
 #if CONFIG_RUNTIME_CPUDETECT
-    int flags = c->flags;
-
 #if ARCH_X86
     // ordered per speed fastest first
-    if (flags & SWS_CPU_CAPS_MMX2) {
+    if (c->flags & SWS_CPU_CAPS_MMX2) {
         sws_init_swScale_MMX2(c);
         return swScale_MMX2;
-    } else if (flags & SWS_CPU_CAPS_3DNOW) {
+    } else if (c->flags & SWS_CPU_CAPS_3DNOW) {
         sws_init_swScale_3DNow(c);
         return swScale_3DNow;
-    } else if (flags & SWS_CPU_CAPS_MMX) {
+    } else if (c->flags & SWS_CPU_CAPS_MMX) {
         sws_init_swScale_MMX(c);
         return swScale_MMX;
     }
 
 #else
 #if COMPILE_ALTIVEC
-    if (flags & SWS_CPU_CAPS_ALTIVEC) {
+    if (c->flags & SWS_CPU_CAPS_ALTIVEC) {
         sws_init_swScale_altivec(c);
         return swScale_altivec;
     }
