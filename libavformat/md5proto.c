@@ -36,7 +36,7 @@ static int md5_open(URLContext *h, const char *filename, int flags)
         return -1;
     }
 
-    if (flags != AVIO_WRONLY)
+    if (!flags & AVIO_FLAG_WRITE)
         return AVERROR(EINVAL);
 
     av_md5_init(h->priv_data);
@@ -65,7 +65,7 @@ static int md5_close(URLContext *h)
     av_strstart(filename, "md5:", &filename);
 
     if (*filename) {
-        err = ffurl_open(&out, filename, AVIO_WRONLY);
+        err = ffurl_open(&out, filename, AVIO_FLAG_WRITE);
         if (err)
             return err;
         err = ffurl_write(out, buf, i*2+1);

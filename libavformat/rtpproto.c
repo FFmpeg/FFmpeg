@@ -145,7 +145,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     char path[1024];
     const char *p;
 
-    is_output = (flags & AVIO_WRONLY);
+    is_output = (flags & AVIO_FLAG_WRITE);
 
     s = av_mallocz(sizeof(RTPContext));
     if (!s)

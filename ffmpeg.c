@@ -3750,7 +3750,7 @@ static void opt_output_file(const char *filename)
         }
 
         /* open the file */
-        if ((err = avio_open(&oc->pb, filename, AVIO_WRONLY)) < 0) {
+        if ((err = avio_open(&oc->pb, filename, AVIO_FLAG_WRITE)) < 0) {
             print_error(filename, err);
             ffmpeg_exit(1);
         }

@@ -129,7 +129,7 @@ int ffurl_connect(URLContext* uc)
         return err;
     uc->is_connected = 1;
     //We must be careful here as ffurl_seek() could be slow, for example for http
-    if(   (uc->flags & (AVIO_WRONLY | AVIO_RDWR))
+    if(   (uc->flags & AVIO_FLAG_WRITE)
        || !strcmp(uc->prot->name, "file"))
         if(!uc->is_streamed && ffurl_seek(uc, 0, SEEK_SET) < 0)
             uc->is_streamed= 1;
@@ -289,21 +289,21 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
 
 int ffurl_read(URLContext *h, unsigned char *buf, int size)
 {
-    if (h->flags & AVIO_WRONLY)
+    if (h->flags & AVIO_FLAG_WRITE)
         return AVERROR(EIO);
     return retry_transfer_wrapper(h, buf, size, 1, h->prot->url_read);
 }
 
 int ffurl_read_complete(URLContext *h, unsigned char *buf, int size)
 {
-    if (h->flags & AVIO_WRONLY)
+    if (h->flags & AVIO_FLAG_WRITE)
         return AVERROR(EIO);
     return retry_transfer_wrapper(h, buf, size, size, h->prot->url_read);
 }
 
 int ffurl_write(URLContext *h, const unsigned char *buf, int size)
 {
-    if (!(h->flags & (AVIO_WRONLY | AVIO_RDWR)))
+    if (!(h->flags & AVIO_FLAG_WRITE))
         return AVERROR(EIO);
     /* avoid sending too big packets */
     if (h->max_packet_size && size > h->max_packet_size)
@@ -342,7 +342,7 @@ int ffurl_close(URLContext *h)
 int url_exist(const char *filename)
 {
     URLContext *h;
-    if (ffurl_open(&h, filename, AVIO_RDONLY) < 0)
+    if (ffurl_open(&h, filename, AVIO_FLAG_READ) < 0)
         return 0;
     ffurl_close(h);
     return 1;

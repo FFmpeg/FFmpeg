@@ -561,7 +561,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
        hack needed to handle RTSP/TCP */
     if (!fmt || !(fmt->flags & AVFMT_NOFILE)) {
         /* if no file needed do not try to open one */
-        if ((err=avio_open(&pb, filename, AVIO_RDONLY)) < 0) {
+        if ((err=avio_open(&pb, filename, AVIO_FLAG_READ)) < 0) {
             goto fail;
         }
         if (buf_size > 0) {

@@ -347,7 +347,7 @@ attribute_deprecated int url_exist(const char *url);
 #endif // FF_API_OLD_AVIO
 
 /**
- * Return AVIO_* access flags corresponding to the access permissions
+ * Return AVIO_FLAG_* access flags corresponding to the access permissions
  * of the resource in url, or a negative value corresponding to an
  * AVERROR code in case of failure. The returned access flags are
  * masked by the value in flags.
@@ -527,9 +527,9 @@ int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
  * constants, optionally ORed with other flags.
  * @{
  */
-#define AVIO_RDONLY 1  /**< read-only */
-#define AVIO_WRONLY 2  /**< write-only */
-#define AVIO_RDWR   4  /**< read-write */
+#define AVIO_FLAG_READ  1                                      /**< read-only */
+#define AVIO_FLAG_WRITE 2                                      /**< write-only */
+#define AVIO_FLAG_READ_WRITE (AVIO_FLAG_READ|AVIO_FLAG_WRITE)  /**< read-write pseudo flag */
 /**
  * @}
  */
