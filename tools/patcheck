@@ -16,7 +16,7 @@ echo patCHeck 1e10.0
 echo This tool is intended to help a human check/review patches it is very far from
 echo being free of false positives and negatives, its output are just hints of what
 echo may or may not be bad. When you use it and it misses something or detects
-echo something wrong, fix it and send a patch to the ffmpeg-dev ML
+echo something wrong, fix it and send a patch to the libav-devel mailing list.
 echo License:GPL Autor: Michael Niedermayer
 
 ERE_PRITYP='(unsigned *|)(char|short|long|int|long *int|short *int|void|float|double|(u|)int(8|16|32|64)_t)'
