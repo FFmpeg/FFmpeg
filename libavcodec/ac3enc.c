@@ -52,12 +52,6 @@
 /** Maximum number of exponent groups. +1 for separate DC exponent. */
 #define AC3_MAX_EXP_GROUPS 85
 
-/* stereo rematrixing algorithms */
-#define AC3_REMATRIXING_IS_STATIC 0x1
-#define AC3_REMATRIXING_SUMS    0
-#define AC3_REMATRIXING_NONE    1
-#define AC3_REMATRIXING_ALWAYS  3
-
 #if CONFIG_AC3ENC_FLOAT
 #define MAC_COEF(d,a,b) ((d)+=(a)*(b))
 typedef float SampleType;
@@ -103,6 +97,7 @@ typedef struct AC3EncOptions {
 
     /* other encoding options */
     int allow_per_frame_metadata;
+    int stereo_rematrixing;
 } AC3EncOptions;
 
 /**
@@ -170,7 +165,7 @@ typedef struct AC3EncodeContext {
     int bandwidth_code[AC3_MAX_CHANNELS];   ///< bandwidth code (0 to 60)               (chbwcod)
     int nb_coefs[AC3_MAX_CHANNELS];
 
-    int rematrixing;                        ///< determines how rematrixing strategy is calculated
+    int rematrixing_enabled;                ///< stereo rematrixing enabled
     int num_rematrixing_bands;              ///< number of rematrixing bands
 
     /* bitrate allocation control */
@@ -269,6 +264,8 @@ static const AVOption options[] = {
 {"ad_conv_type", "A/D Converter Type", OFFSET(ad_converter_type), FF_OPT_TYPE_INT, -1, -1, 1, AC3ENC_PARAM, "ad_conv_type"},
     {"standard", "Standard (default)", 0, FF_OPT_TYPE_CONST, 0, INT_MIN, INT_MAX, AC3ENC_PARAM, "ad_conv_type"},
     {"hdcd",     "HDCD",               0, FF_OPT_TYPE_CONST, 1, INT_MIN, INT_MAX, AC3ENC_PARAM, "ad_conv_type"},
+/* Other Encoding Options */
+{"stereo_rematrixing", "Stereo Rematrixing", OFFSET(stereo_rematrixing), FF_OPT_TYPE_INT, 1, 0, 1, AC3ENC_PARAM},
 {NULL}
 };
 
@@ -431,28 +428,6 @@ static void apply_mdct(AC3EncodeContext *s)
 
 
 /**
- * Initialize stereo rematrixing.
- * If the strategy does not change for each frame, set the rematrixing flags.
- */
-static void rematrixing_init(AC3EncodeContext *s)
-{
-    if (s->channel_mode == AC3_CHMODE_STEREO)
-        s->rematrixing = AC3_REMATRIXING_SUMS;
-    else
-        s->rematrixing = AC3_REMATRIXING_NONE;
-    /* NOTE: AC3_REMATRIXING_ALWAYS might be used in
-             the future in conjunction with channel coupling. */
-
-    if (s->rematrixing & AC3_REMATRIXING_IS_STATIC) {
-        int flag = (s->rematrixing == AC3_REMATRIXING_ALWAYS);
-        s->blocks[0].new_rematrixing_strategy = 1;
-        memset(s->blocks[0].rematrixing_flags, flag,
-               sizeof(s->blocks[0].rematrixing_flags));
-    }
-}
-
-
-/**
  * Determine rematrixing flags for each block and band.
  */
 static void compute_rematrixing_strategy(AC3EncodeContext *s)
@@ -461,16 +436,18 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
     int blk, bnd, i;
     AC3Block *block, *block0;
 
-    s->num_rematrixing_bands = 4;
-
-    if (s->rematrixing & AC3_REMATRIXING_IS_STATIC)
+    if (s->channel_mode != AC3_CHMODE_STEREO)
         return;
+
+    s->num_rematrixing_bands = 4;
 
     nb_coefs = FFMIN(s->nb_coefs[0], s->nb_coefs[1]);
 
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         block = &s->blocks[blk];
         block->new_rematrixing_strategy = !blk;
+        if (!s->rematrixing_enabled)
+            continue;
         for (bnd = 0; bnd < s->num_rematrixing_bands; bnd++) {
             /* calculate calculate sum of squared coeffs for one band in one block */
             int start = ff_ac3_rematrix_band_tab[bnd];
@@ -514,7 +491,7 @@ static void apply_rematrixing(AC3EncodeContext *s)
     int start, end;
     uint8_t *flags;
 
-    if (s->rematrixing == AC3_REMATRIXING_NONE)
+    if (!s->rematrixing_enabled)
         return;
 
     nb_coefs = FFMIN(s->nb_coefs[0], s->nb_coefs[1]);
@@ -2088,6 +2065,9 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
     if (ret)
         return ret;
 
+    s->rematrixing_enabled = s->options.stereo_rematrixing &&
+                             (s->channel_mode == AC3_CHMODE_STEREO);
+
     return 0;
 }
 
@@ -2245,8 +2225,6 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
     }
 
     set_bandwidth(s);
-
-    rematrixing_init(s);
 
     exponent_init(s);
 
