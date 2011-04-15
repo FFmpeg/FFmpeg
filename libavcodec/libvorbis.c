@@ -96,6 +96,35 @@ static av_cold int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avcco
         vorbis_encode_ctl(vi, OV_ECTL_IBLOCK_SET, &context->iblock);
     }
 
+    if (avccontext->channels == 3 &&
+            avccontext->channel_layout != (AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER) ||
+        avccontext->channels == 4 &&
+            avccontext->channel_layout != AV_CH_LAYOUT_2_2 &&
+            avccontext->channel_layout != AV_CH_LAYOUT_QUAD ||
+        avccontext->channels == 5 &&
+            avccontext->channel_layout != AV_CH_LAYOUT_5POINT0 &&
+            avccontext->channel_layout != AV_CH_LAYOUT_5POINT0_BACK ||
+        avccontext->channels == 6 &&
+            avccontext->channel_layout != AV_CH_LAYOUT_5POINT1 &&
+            avccontext->channel_layout != AV_CH_LAYOUT_5POINT1_BACK ||
+        avccontext->channels == 7 &&
+            avccontext->channel_layout != (AV_CH_LAYOUT_5POINT1|AV_CH_BACK_CENTER) ||
+        avccontext->channels == 8 &&
+            avccontext->channel_layout != AV_CH_LAYOUT_7POINT1) {
+        if (avccontext->channel_layout) {
+            char name[32];
+            av_get_channel_layout_string(name, sizeof(name), avccontext->channels,
+                                         avccontext->channel_layout);
+            av_log(avccontext, AV_LOG_ERROR, "%s not supported by Vorbis: "
+                                             "output stream will have incorrect "
+                                             "channel layout.\n", name);
+        } else {
+            av_log(avccontext, AV_LOG_WARNING, "No channel layout specified. The encoder "
+                                               "will use Vorbis channel layout for "
+                                               "%d channels.\n", avccontext->channels);
+        }
+    }
+
     return vorbis_encode_setup_init(vi);
 }
 
