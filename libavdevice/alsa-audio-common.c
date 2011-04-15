@@ -282,7 +282,7 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
             if (!s->reorder_buf)
                 goto fail1;
         } else {
-            char name[16];
+            char name[32];
             av_get_channel_layout_string(name, sizeof(name), channels, layout);
             av_log(ctx, AV_LOG_WARNING,
                    "ALSA channel layout unknown or unimplemented for %s %s.\n",
