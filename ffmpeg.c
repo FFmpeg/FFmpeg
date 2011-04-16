@@ -1132,8 +1132,8 @@ static void do_video_out(AVFormatContext *s,
         av_log(NULL, AV_LOG_INFO,
                "Input stream #%d.%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
                ist->file_index, ist->index,
-               ost->resample_width  , ost->resample_height  , avcodec_get_pix_fmt_name(ost->resample_pix_fmt),
-               ist->st->codec->width, ist->st->codec->height, avcodec_get_pix_fmt_name(ist->st->codec->pix_fmt));
+               ost->resample_width, ost->resample_height, avcodec_get_pix_fmt_name(ost->resample_pix_fmt),
+               dec->width         , dec->height         , avcodec_get_pix_fmt_name(dec->pix_fmt));
         if(!ost->video_resample)
             ffmpeg_exit(1);
     }
