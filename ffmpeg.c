@@ -1078,7 +1078,7 @@ static void do_video_out(AVFormatContext *s,
                          AVFrame *in_picture,
                          int *frame_size)
 {
-    int nb_frames, i, ret;
+    int nb_frames, i, ret, resample_changed;
     AVFrame *final_picture, *formatted_picture, *resampling_dst;
     AVCodecContext *enc, *dec;
     double sync_ipts;
@@ -1126,9 +1126,11 @@ static void do_video_out(AVFormatContext *s,
     final_picture = formatted_picture;
     resampling_dst = &ost->pict_tmp;
 
-    if (   ost->resample_height != ist->st->codec->height
-        || ost->resample_width  != ist->st->codec->width
-        || (ost->resample_pix_fmt!= ist->st->codec->pix_fmt) ) {
+    resample_changed = ost->resample_width   != dec->width  ||
+                       ost->resample_height  != dec->height ||
+                       ost->resample_pix_fmt != dec->pix_fmt;
+
+    if (resample_changed) {
         av_log(NULL, AV_LOG_INFO,
                "Input stream #%d.%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
                ist->file_index, ist->index,
@@ -1141,10 +1143,7 @@ static void do_video_out(AVFormatContext *s,
 #if !CONFIG_AVFILTER
     if (ost->video_resample) {
         final_picture = &ost->pict_tmp;
-        if(  ost->resample_height != ist->st->codec->height
-          || ost->resample_width  != ist->st->codec->width
-          || (ost->resample_pix_fmt!= ist->st->codec->pix_fmt) ) {
-
+        if (resample_changed) {
             /* initialize a new scaler context */
             sws_freeContext(ost->img_resample_ctx);
             ost->img_resample_ctx = sws_getContext(
