@@ -162,7 +162,7 @@ typedef struct AC3EncodeContext {
     int loro_surround_mix_level;            ///< Lo/Ro surround mix level code
 
     int cutoff;                             ///< user-specified cutoff frequency, in Hz
-    int bandwidth_code[AC3_MAX_CHANNELS];   ///< bandwidth code (0 to 60)               (chbwcod)
+    int bandwidth_code;                     ///< bandwidth code (0 to 60)               (chbwcod)
     int nb_coefs[AC3_MAX_CHANNELS];
 
     int rematrixing_enabled;                ///< stereo rematrixing enabled
@@ -1407,7 +1407,7 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
     /* bandwidth */
     for (ch = 0; ch < s->fbw_channels; ch++) {
         if (s->exp_strategy[ch][blk] != EXP_REUSE)
-            put_bits(&s->pb, 6, s->bandwidth_code[ch]);
+            put_bits(&s->pb, 6, s->bandwidth_code);
     }
 
     /* exponents */
@@ -2047,22 +2047,21 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
  */
 static av_cold void set_bandwidth(AC3EncodeContext *s)
 {
-    int ch, bw_code;
+    int ch;
 
     if (s->cutoff) {
         /* calculate bandwidth based on user-specified cutoff frequency */
         int fbw_coeffs;
         fbw_coeffs     = s->cutoff * 2 * AC3_MAX_COEFS / s->sample_rate;
-        bw_code        = av_clip((fbw_coeffs - 73) / 3, 0, 60);
+        s->bandwidth_code = av_clip((fbw_coeffs - 73) / 3, 0, 60);
     } else {
         /* use default bandwidth setting */
-        bw_code = ac3_bandwidth_tab[s->fbw_channels-1][s->bit_alloc.sr_code][s->frame_size_code/2];
+        s->bandwidth_code = ac3_bandwidth_tab[s->fbw_channels-1][s->bit_alloc.sr_code][s->frame_size_code/2];
     }
 
     /* set number of coefficients for each channel */
     for (ch = 0; ch < s->fbw_channels; ch++) {
-        s->bandwidth_code[ch] = bw_code;
-        s->nb_coefs[ch]       = bw_code * 3 + 73;
+        s->nb_coefs[ch] = s->bandwidth_code * 3 + 73;
     }
     if (s->lfe_on)
         s->nb_coefs[s->lfe_channel] = 7; /* LFE channel always has 7 coefs */
