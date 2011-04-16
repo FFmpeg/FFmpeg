@@ -98,8 +98,8 @@ static void scale_coefficients(AC3EncodeContext *s)
 }
 
 
-AVCodec ff_ac3_encoder = {
-    "ac3",
+AVCodec ff_ac3_float_encoder = {
+    "ac3_float",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AC3,
     sizeof(AC3EncodeContext),
@@ -110,5 +110,5 @@ AVCodec ff_ac3_encoder = {
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
     .priv_class = &ac3enc_class,
-    .channel_layouts = ac3_channel_layouts,
+    .channel_layouts = ff_ac3_channel_layouts,
 };

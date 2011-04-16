@@ -76,36 +76,6 @@ typedef struct AC3MDCTContext {
 } AC3MDCTContext;
 
 /**
- * Encoding Options used by AVOption.
- */
-typedef struct AC3EncOptions {
-    /* AC-3 metadata options*/
-    int dialogue_level;
-    int bitstream_mode;
-    float center_mix_level;
-    float surround_mix_level;
-    int dolby_surround_mode;
-    int audio_production_info;
-    int mixing_level;
-    int room_type;
-    int copyright;
-    int original;
-    int extended_bsi_1;
-    int preferred_stereo_downmix;
-    float ltrt_center_mix_level;
-    float ltrt_surround_mix_level;
-    float loro_center_mix_level;
-    float loro_surround_mix_level;
-    int extended_bsi_2;
-    int dolby_surround_ex_mode;
-    int dolby_headphone_mode;
-    int ad_converter_type;
-
-    /* other encoding options */
-    int allow_per_frame_metadata;
-} AC3EncOptions;
-
-/**
  * Data for a single audio block.
  */
 typedef struct AC3Block {
@@ -229,7 +199,8 @@ static const float extmixlev_options[EXTMIXLEV_NUM_OPTIONS] = {
 #define OFFSET(param) offsetof(AC3EncodeContext, options.param)
 #define AC3ENC_PARAM (AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 
-static const AVOption options[] = {
+#if CONFIG_AC3ENC_FLOAT || !CONFIG_AC3_FLOAT_ENCODER //we need this exactly once compiled in
+const AVOption ff_ac3_options[] = {
 /* Metadata Options */
 {"per_frame_metadata", "Allow Changing Metadata Per-Frame", OFFSET(allow_per_frame_metadata), FF_OPT_TYPE_INT, 0, 0, 1, AC3ENC_PARAM},
 /* downmix levels */
@@ -271,13 +242,14 @@ static const AVOption options[] = {
     {"hdcd",     "HDCD",               0, FF_OPT_TYPE_CONST, 1, INT_MIN, INT_MAX, AC3ENC_PARAM, "ad_conv_type"},
 {NULL}
 };
+#endif
 
 #if CONFIG_AC3ENC_FLOAT
 static AVClass ac3enc_class = { "AC-3 Encoder", av_default_item_name,
-                                options, LIBAVUTIL_VERSION_INT };
+                                ff_ac3_options, LIBAVUTIL_VERSION_INT };
 #else
 static AVClass ac3enc_class = { "Fixed-Point AC-3 Encoder", av_default_item_name,
-                                options, LIBAVUTIL_VERSION_INT };
+                                ff_ac3_options, LIBAVUTIL_VERSION_INT };
 #endif
 
 
@@ -306,7 +278,8 @@ static uint8_t exponent_group_tab[3][256];
 /**
  * List of supported channel layouts.
  */
-static const int64_t ac3_channel_layouts[] = {
+#if CONFIG_AC3ENC_FLOAT || !CONFIG_AC3_FLOAT_ENCODER //we need this exactly once compiled in
+const int64_t ff_ac3_channel_layouts[] = {
      AV_CH_LAYOUT_MONO,
      AV_CH_LAYOUT_STEREO,
      AV_CH_LAYOUT_2_1,
@@ -327,6 +300,7 @@ static const int64_t ac3_channel_layouts[] = {
      AV_CH_LAYOUT_5POINT1_BACK,
      0
 };
+#endif
 
 
 /**
