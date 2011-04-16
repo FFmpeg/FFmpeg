@@ -107,6 +107,8 @@ double parse_number_or_die(const char *context, const char *numstr, int type, do
         error= "The value for %s was %s which is not within %f - %f\n";
     else if(type == OPT_INT64 && (int64_t)d != d)
         error= "Expected int64 for %s but found %s\n";
+    else if (type == OPT_INT && (int)d != d)
+        error= "Expected int for %s but found %s\n";
     else
         return d;
     fprintf(stderr, error, context, numstr, min, max);
