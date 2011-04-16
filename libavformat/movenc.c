@@ -247,10 +247,20 @@ static void putDescr(AVIOContext *pb, int tag, unsigned int size)
     avio_w8(pb, size & 0x7F);
 }
 
+static unsigned compute_avg_bitrate(MOVTrack *track)
+{
+    uint64_t size = 0;
+    int i;
+    for (i = 0; i < track->entry; i++)
+        size += track->cluster[i].size;
+    return size * 8 * track->timescale / track->trackDuration;
+}
+
 static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
 {
     int64_t pos = avio_tell(pb);
     int decoderSpecificInfoLen = track->vosLen ? 5+track->vosLen : 0;
+    unsigned avg_bitrate;
 
     avio_wb32(pb, 0); // size
     ffio_wfourcc(pb, "esds");
@@ -282,11 +292,10 @@ static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
     avio_w8(pb,  track->enc->rc_buffer_size>>(3+16));      // Buffersize DB (24 bits)
     avio_wb16(pb, (track->enc->rc_buffer_size>>3)&0xFFFF); // Buffersize DB
 
-    avio_wb32(pb, FFMAX(track->enc->bit_rate, track->enc->rc_max_rate)); // maxbitrate (FIXME should be max rate in any 1 sec window)
-    if(track->enc->rc_max_rate != track->enc->rc_min_rate || track->enc->rc_min_rate==0)
-        avio_wb32(pb, 0); // vbr
-    else
-        avio_wb32(pb, track->enc->rc_max_rate); // avg bitrate
+    avg_bitrate = compute_avg_bitrate(track);
+    // maxbitrate (FIXME should be max rate in any 1 sec window)
+    avio_wb32(pb, FFMAX3(track->enc->bit_rate, track->enc->rc_max_rate, avg_bitrate));
+    avio_wb32(pb, avg_bitrate);
 
     if (track->vosLen) {
         // DecoderSpecific info descriptor
