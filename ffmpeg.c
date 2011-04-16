@@ -1076,7 +1076,7 @@ static void do_video_out(AVFormatContext *s,
                          int *frame_size)
 {
     int nb_frames, i, ret;
-    AVFrame *final_picture, *formatted_picture, *resampling_dst, *padding_src;
+    AVFrame *final_picture, *formatted_picture, *resampling_dst;
     AVCodecContext *enc, *dec;
     double sync_ipts;
 
@@ -1121,7 +1121,6 @@ static void do_video_out(AVFormatContext *s,
 
     formatted_picture = in_picture;
     final_picture = formatted_picture;
-    padding_src = formatted_picture;
     resampling_dst = &ost->pict_tmp;
 
     if (   ost->resample_height != ist->st->codec->height
@@ -1135,7 +1134,6 @@ static void do_video_out(AVFormatContext *s,
 
 #if !CONFIG_AVFILTER
     if (ost->video_resample) {
-        padding_src = NULL;
         final_picture = &ost->pict_tmp;
         if(  ost->resample_height != ist->st->codec->height
           || ost->resample_width  != ist->st->codec->width
