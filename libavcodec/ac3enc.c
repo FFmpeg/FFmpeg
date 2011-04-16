@@ -1123,27 +1123,6 @@ static int downgrade_exponents(AC3EncodeContext *s)
 
 
 /**
- * Reduce the bandwidth to reduce the number of bits used for a given SNR offset.
- * This is a second fallback for when bit allocation still fails after exponents
- * have been downgraded.
- * @return non-zero if bandwidth reduction was unsuccessful
- */
-static int reduce_bandwidth(AC3EncodeContext *s, int min_bw_code)
-{
-    int ch;
-
-    if (s->bandwidth_code[0] > min_bw_code) {
-        for (ch = 0; ch < s->fbw_channels; ch++) {
-            s->bandwidth_code[ch]--;
-            s->nb_coefs[ch] = s->bandwidth_code[ch] * 3 + 73;
-        }
-        return 0;
-    }
-    return -1;
-}
-
-
-/**
  * Perform bit allocation search.
  * Finds the SNR offset value that maximizes quality and fits in the specified
  * frame size.  Output is the SNR offset and a set of bit allocation pointers
@@ -1164,15 +1143,6 @@ static int compute_bit_allocation(AC3EncodeContext *s)
             extract_exponents(s);
             encode_exponents(s);
             group_exponents(s);
-            ret = compute_bit_allocation(s);
-            continue;
-        }
-
-        /* fallback 2: reduce bandwidth */
-        /* only do this if the user has not specified a specific cutoff
-           frequency */
-        if (!s->cutoff && !reduce_bandwidth(s, 0)) {
-            process_exponents(s);
             ret = compute_bit_allocation(s);
             continue;
         }
