@@ -2171,9 +2171,9 @@ static int transcode(AVFormatContext **output_files,
                     fprintf(stderr, "Video pixel format is unknown, stream cannot be encoded\n");
                     ffmpeg_exit(1);
                 }
-                ost->video_resample = (codec->width != icodec->width   ||
-                                       codec->height != icodec->height ||
-                        (codec->pix_fmt != icodec->pix_fmt));
+                ost->video_resample = codec->width   != icodec->width  ||
+                                      codec->height  != icodec->height ||
+                                      codec->pix_fmt != icodec->pix_fmt;
                 if (ost->video_resample) {
 #if !CONFIG_AVFILTER
                     avcodec_get_frame_defaults(&ost->pict_tmp);
