@@ -365,8 +365,9 @@ void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec)
         /* We need to use a differnt system to pass options to the private context because
            it is not known which codec and thus context kind that will be when parsing options
            we thus use opt_values directly instead of opts_ctx */
-        if(!str && priv_ctx && av_get_string(priv_ctx, opt_names[i], &opt, buf, sizeof(buf))){
-            av_set_string3(priv_ctx, opt_names[i], opt_values[i], 1, NULL);
+        if(!str && priv_ctx) {
+            if (av_find_opt(priv_ctx, opt_names[i], NULL, flags, flags))
+                av_set_string3(priv_ctx, opt_names[i], opt_values[i], 0, NULL);
         }
     }
 }
