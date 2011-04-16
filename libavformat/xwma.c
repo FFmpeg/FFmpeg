@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+
 #include "avformat.h"
 #include "riff.h"
 
@@ -90,7 +92,7 @@ static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
          * codecs require extradata, so we provide our own fake extradata.
          *
          * First, check that there really was no extradata in the header. If
-         * there was, then try to use, after asking the the user to provide a
+         * there was, then try to use it, after asking the user to provide a
          * sample of this unusual file.
          */
         if (st->codec->extradata_size != 0) {
@@ -129,7 +131,7 @@ static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
             /* Quoting the MSDN xWMA docs on the dpds chunk: "Contains the
              * decoded packet cumulative data size array, each element is the
              * number of bytes accumulated after the corresponding xWMA packet
-             * is decoded in order"
+             * is decoded in order."
              *
              * Each packet has size equal to st->codec->block_align, which in
              * all cases I saw so far was always 2230. Thus, we can use the
@@ -144,11 +146,13 @@ static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             /* Compute the number of entries in the dpds chunk. */
             if (size & 3) {  /* Size should be divisible by four */
-                av_log(s, AV_LOG_WARNING, "dpds chunk size "PRId64" not divisible by 4\n", size);
+                av_log(s, AV_LOG_WARNING,
+                       "dpds chunk size %"PRId64" not divisible by 4\n", size);
             }
             dpds_table_size = size / 4;
             if (dpds_table_size == 0 || dpds_table_size >= INT_MAX / 4) {
-                av_log(s, AV_LOG_ERROR, "dpds chunk size "PRId64" invalid\n", size);
+                av_log(s, AV_LOG_ERROR,
+                       "dpds chunk size %"PRId64" invalid\n", size);
                 return -1;
             }
 
