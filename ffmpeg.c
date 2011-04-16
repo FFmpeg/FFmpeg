@@ -289,10 +289,6 @@ typedef struct AVOutputStream {
 
     float frame_aspect_ratio;
 
-    /* full frame size of first frame */
-    int original_height;
-    int original_width;
-
     /* forced key frames */
     int64_t *forced_kf_pts;
     int forced_kf_count;
@@ -2310,9 +2306,6 @@ static int transcode(AVFormatContext **output_files,
                         fprintf(stderr, "Cannot get resampling context\n");
                         ffmpeg_exit(1);
                     }
-
-                    ost->original_height = icodec->height;
-                    ost->original_width  = icodec->width;
 #endif
                     codec->bits_per_raw_sample= frame_bits_per_raw_sample;
                 }
