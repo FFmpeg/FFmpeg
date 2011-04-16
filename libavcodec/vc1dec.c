@@ -3319,7 +3319,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     s->mb_width = (avctx->coded_width+15)>>4;
     s->mb_height = (avctx->coded_height+15)>>4;
 
-    if (v->res_fasttx) {
+    if (v->profile == PROFILE_ADVANCED || v->res_fasttx) {
         for (i = 0; i < 64;  i++) {
 #define transpose(x) ((x>>3) | ((x&7)<<3))
             v->zz_8x8[0][i] = transpose(wmv1_scantable[0][i]);
