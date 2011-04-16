@@ -93,6 +93,8 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
     memcpy(c->frame.linesize, frame->linesize, sizeof(frame->linesize));
     c->frame.interlaced_frame= frame->interlaced_frame;
     c->frame.top_field_first = frame->top_field_first;
+    c->frame.key_frame = frame->key_frame;
+    c->frame.pict_type = frame->pict_type;
     c->pts = pts;
     c->pixel_aspect = pixel_aspect;
     c->has_frame = 1;
@@ -182,6 +184,8 @@ static int request_frame(AVFilterLink *link)
     picref->video->pixel_aspect    = c->pixel_aspect;
     picref->video->interlaced      = c->frame.interlaced_frame;
     picref->video->top_field_first = c->frame.top_field_first;
+    picref->video->key_frame       = c->frame.key_frame;
+    picref->video->pict_type       = c->frame.pict_type;
     avfilter_start_frame(link, avfilter_ref_buffer(picref, ~0));
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);

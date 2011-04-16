@@ -26,7 +26,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 78
+#define LIBAVFILTER_VERSION_MINOR 79
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -115,6 +115,8 @@ typedef struct AVFilterBufferRefVideoProps {
     AVRational pixel_aspect;    ///< pixel aspect ratio
     int interlaced;             ///< is frame interlaced
     int top_field_first;        ///< field order
+    int pict_type;              ///< Picture type of the frame
+    int key_frame;              ///< 1 -> keyframe, 0-> not
 } AVFilterBufferRefVideoProps;
 
 /**
