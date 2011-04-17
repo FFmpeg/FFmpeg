@@ -234,7 +234,7 @@ static void memset_float(float *buf, float val, int size)
  *        be a multiple of four.
  * @return the LPC value
  *
- * @todo reuse code from vorbis_dec.c: vorbis_floor0_decode
+ * @todo reuse code from Vorbis decoder: vorbis_floor0_decode
  */
 static float eval_lpc_spectrum(const float *lsp, float cos_val, int order)
 {
