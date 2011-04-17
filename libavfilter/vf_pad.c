@@ -25,12 +25,46 @@
  */
 
 #include "avfilter.h"
+#include "libavutil/avstring.h"
+#include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/parseutils.h"
 #include "drawutils.h"
+
+static const char *var_names[] = {
+    "PI",
+    "PHI",
+    "E",
+    "in_w",   "iw",
+    "in_h",   "ih",
+    "out_w",  "ow",
+    "out_h",  "oh",
+    "x",
+    "y",
+    "a",
+    "hsub",
+    "vsub",
+    NULL
+};
+
+enum var_name {
+    VAR_PI,
+    VAR_PHI,
+    VAR_E,
+    VAR_IN_W,   VAR_IW,
+    VAR_IN_H,   VAR_IH,
+    VAR_OUT_W,  VAR_OW,
+    VAR_OUT_H,  VAR_OH,
+    VAR_X,
+    VAR_Y,
+    VAR_A,
+    VAR_HSUB,
+    VAR_VSUB,
+    VARS_NB
+};
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -58,6 +92,11 @@ typedef struct {
     int x, y;               ///< offsets of the input area with respect to the padded area
     int in_w, in_h;         ///< width and height for the padded input video, which has to be aligned to the chroma values in order to avoid chroma issues
 
+    char w_expr[256];       ///< width  expression string
+    char h_expr[256];       ///< height expression string
+    char x_expr[256];       ///< width  expression string
+    char y_expr[256];       ///< height expression string
+
     uint8_t color[4];       ///< color expressed either in YUVA or RGBA colorspace for the padding area
     uint8_t *line[4];
     int      line_step[4];
@@ -70,17 +109,17 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     PadContext *pad = ctx->priv;
     char color_string[128] = "black";
 
+    av_strlcpy(pad->w_expr, "iw", sizeof(pad->w_expr));
+    av_strlcpy(pad->h_expr, "ih", sizeof(pad->h_expr));
+    av_strlcpy(pad->x_expr, "0" , sizeof(pad->w_expr));
+    av_strlcpy(pad->y_expr, "0" , sizeof(pad->h_expr));
+
     if (args)
-        sscanf(args, "%d:%d:%d:%d:%s", &pad->w, &pad->h, &pad->x, &pad->y, color_string);
+        sscanf(args, "%255[^:]:%255[^:]:%255[^:]:%255[^:]:%255s",
+               pad->w_expr, pad->h_expr, pad->x_expr, pad->y_expr, color_string);
 
     if (av_parse_color(pad->color, color_string, -1, ctx) < 0)
         return AVERROR(EINVAL);
-
-    /* sanity check params */
-    if (pad->w < 0 || pad->h < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Negative size values are not acceptable.\n");
-        return AVERROR(EINVAL);
-    }
 
     return 0;
 }
@@ -102,10 +141,63 @@ static int config_input(AVFilterLink *inlink)
     PadContext *pad = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
     uint8_t rgba_color[4];
-    int is_packed_rgba;
+    int ret, is_packed_rgba;
+    double var_values[VARS_NB], res;
+    char *expr;
 
     pad->hsub = pix_desc->log2_chroma_w;
     pad->vsub = pix_desc->log2_chroma_h;
+
+    var_values[VAR_PI]    = M_PI;
+    var_values[VAR_PHI]   = M_PHI;
+    var_values[VAR_E]     = M_E;
+    var_values[VAR_IN_W]  = var_values[VAR_IW] = inlink->w;
+    var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
+    var_values[VAR_OUT_W] = var_values[VAR_OW] = NAN;
+    var_values[VAR_OUT_H] = var_values[VAR_OH] = NAN;
+    var_values[VAR_A]     = (float) inlink->w / inlink->h;
+    var_values[VAR_HSUB]  = 1<<pad->hsub;
+    var_values[VAR_VSUB]  = 2<<pad->vsub;
+
+    /* evaluate width and height */
+    av_expr_parse_and_eval(&res, (expr = pad->w_expr),
+                           var_names, var_values,
+                           NULL, NULL, NULL, NULL, NULL, 0, ctx);
+    pad->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = res;
+    if ((ret = av_expr_parse_and_eval(&res, (expr = pad->h_expr),
+                                      var_names, var_values,
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto eval_fail;
+    pad->h = var_values[VAR_OUT_H] = var_values[VAR_OH] = res;
+    /* evaluate the width again, as it may depend on the evaluated output height */
+    if ((ret = av_expr_parse_and_eval(&res, (expr = pad->w_expr),
+                                      var_names, var_values,
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto eval_fail;
+    pad->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = res;
+
+    /* evaluate x and y */
+    av_expr_parse_and_eval(&res, (expr = pad->x_expr),
+                           var_names, var_values,
+                           NULL, NULL, NULL, NULL, NULL, 0, ctx);
+    pad->x = var_values[VAR_X] = res;
+    if ((ret = av_expr_parse_and_eval(&res, (expr = pad->y_expr),
+                                      var_names, var_values,
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto eval_fail;
+    pad->y = var_values[VAR_Y] = res;
+    /* evaluate x again, as it may depend on the evaluated y value */
+    if ((ret = av_expr_parse_and_eval(&res, (expr = pad->x_expr),
+                                      var_names, var_values,
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto eval_fail;
+    pad->x = var_values[VAR_X] = res;
+
+    /* sanity check params */
+    if (pad->w < 0 || pad->h < 0 || pad->x < 0 || pad->y < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Negative values are not acceptable.\n");
+        return AVERROR(EINVAL);
+    }
 
     if (!pad->w)
         pad->w = inlink->w;
@@ -140,6 +232,12 @@ static int config_input(AVFilterLink *inlink)
     }
 
     return 0;
+
+eval_fail:
+    av_log(NULL, AV_LOG_ERROR,
+           "Error when evaluating the expression '%s'\n", expr);
+    return ret;
+
 }
 
 static int config_output(AVFilterLink *outlink)

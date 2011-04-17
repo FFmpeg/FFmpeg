@@ -985,6 +985,39 @@ given coordinates @var{x}, @var{y}.
 It accepts the following parameters:
 @var{width}:@var{height}:@var{x}:@var{y}:@var{color}.
 
+The parameters @var{width}, @var{height}, @var{x}, and @var{y} are
+expressions containing the following constants:
+
+@table @option
+@item E, PI, PHI
+the corresponding mathematical approximated values for e
+(euler number), pi (greek PI), phi (golden ratio)
+
+@item in_w, in_h
+the input video width and heigth
+
+@item iw, ih
+same as @var{in_w} and @var{in_h}
+
+@item out_w, out_h
+the output width and heigth, that is the size of the padded area as
+specified by the @var{width} and @var{height} expressions
+
+@item ow, oh
+same as @var{out_w} and @var{out_h}
+
+@item x, y
+x and y offsets as specified by the @var{x} and @var{y}
+expressions, or NAN if not yet specified
+
+@item a
+input display aspect ratio, same as @var{iw} / @var{ih}
+
+@item hsub, vsub
+horizontal and vertical chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
+@end table
+
 Follows the description of the accepted parameters.
 
 @table @option
@@ -994,12 +1027,18 @@ Specify the size of the output image with the paddings added. If the
 value for @var{width} or @var{height} is 0, the corresponding input size
 is used for the output.
 
+The @var{width} expression can reference the value set by the
+@var{height} expression, and viceversa.
+
 The default value of @var{width} and @var{height} is 0.
 
 @item x, y
 
 Specify the offsets where to place the input image in the padded area
 with respect to the top/left border of the output image.
+
+The @var{x} expression can reference the value set by the @var{y}
+expression, and viceversa.
 
 The default value of @var{x} and @var{y} is 0.
 
@@ -1012,13 +1051,29 @@ The default value of @var{color} is "black".
 
 @end table
 
-For example:
+Some examples follow:
 
 @example
 # Add paddings with color "violet" to the input video. Output video
 # size is 640x480, the top-left corner of the input video is placed at
 # column 0, row 40.
 pad=640:480:0:40:violet
+
+# pad the input to get an output with dimensions increased bt 3/2,
+# and put the input video at the center of the padded area
+pad="3/2*iw:3/2*ih:(ow-iw)/2:(oh-ih)/2"
+
+# pad the input to get a squared output with size equal to the maximum
+# value between the input width and height, and put the input video at
+# the center of the padded area
+pad="max(iw\,ih):ow:(ow-iw)/2:(oh-ih)/2"
+
+# pad the input to get a final w/h ratio of 16:9
+pad="ih*16/9:ih:(ow-iw)/2:(oh-ih)/2"
+
+# double output size and put the input video in the bottom-right
+# corner of the output padded area
+pad="2*iw:2*ih:ow-iw:oh-ih"
 @end example
 
 @section pixdesctest
