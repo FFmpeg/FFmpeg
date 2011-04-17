@@ -588,7 +588,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
                     /* Extract palette from extradata if bpp <= 8. */
                     /* This code assumes that extradata contains only palette. */
-                    /* This is true for all paletted codecs implemented in Libav. */
+                    /* This is true for all paletted codecs implemented in FFmpeg. */
                     if (st->codec->extradata_size && (st->codec->bits_per_coded_sample <= 8)) {
 #if HAVE_BIGENDIAN
                         for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)

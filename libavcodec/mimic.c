@@ -209,7 +209,7 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
 
         value = get_bits(&ctx->gb, num_bits);
 
-        /* Libav's IDCT behaves somewhat different from the original code, so
+        /* FFmpeg's IDCT behaves somewhat different from the original code, so
          * a factor of 4 was added to the input */
 
         coeff = vlcdec_lookup[num_bits][value];
