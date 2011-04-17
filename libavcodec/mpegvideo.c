@@ -316,6 +316,7 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
     s->prev_pict_types[0]= s->dropable ? FF_B_TYPE : s->pict_type;
     if(pic->age < PREV_PICT_TYPES_BUFFER_SIZE && s->prev_pict_types[pic->age] == FF_B_TYPE)
         pic->age= INT_MAX; // Skipped MBs in B-frames are quite rare in MPEG-1/2 and it is a bit tricky to skip them anyway.
+    pic->owner2 = s;
 
     return 0;
 fail: //for the FF_ALLOCZ_OR_GOTO macro
@@ -946,6 +947,21 @@ void init_vlc_rl(RLTable *rl)
     }
 }
 
+void ff_release_unused_pictures(MpegEncContext *s, int remove_current)
+{
+    int i;
+
+    /* release non reference frames */
+    for(i=0; i<s->picture_count; i++){
+        if(s->picture[i].data[0] && !s->picture[i].reference
+           && s->picture[i].owner2 == s
+           && (remove_current || &s->picture[i] != s->current_picture_ptr)
+           /*&& s->picture[i].type!=FF_BUFFER_TYPE_SHARED*/){
+            free_frame_buffer(s, &s->picture[i]);
+        }
+    }
+}
+
 int ff_find_unused_picture(MpegEncContext *s, int shared){
     int i;
 
@@ -1025,12 +1041,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     }
 
     if(!s->encoding){
-        /* release non reference frames */
-        for(i=0; i<s->picture_count; i++){
-            if(s->picture[i].data[0] && !s->picture[i].reference /*&& s->picture[i].type!=FF_BUFFER_TYPE_SHARED*/){
-                free_frame_buffer(s, &s->picture[i]);
-            }
-        }
+        ff_release_unused_pictures(s, 1);
 
         if(s->current_picture_ptr && s->current_picture_ptr->data[0]==NULL)
             pic= s->current_picture_ptr; //we already have a unused image (maybe it was set before reading the header)

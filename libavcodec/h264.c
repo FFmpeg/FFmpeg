@@ -715,7 +715,7 @@ static int decode_update_thread_context(AVCodecContext *dst, const AVCodecContex
     copy_fields(h, h1, short_ref, cabac_init_idc);
 
     copy_picture_range(h->short_ref,   h1->short_ref,   32, s, s1);
-    copy_picture_range(h->long_ref,    h1->long_ref,    32,  s, s1);
+    copy_picture_range(h->long_ref,    h1->long_ref,    32, s, s1);
     copy_picture_range(h->delayed_pic, h1->delayed_pic, MAX_DELAYED_PIC_COUNT+2, s, s1);
 
     h->last_slice_type = h1->last_slice_type;
@@ -930,6 +930,8 @@ static void decode_postinit(H264Context *h){
 
     if(out_of_order || pics > s->avctx->has_b_frames){
         out->reference &= ~DELAYED_PIC_REF;
+        out->owner2 = s; // for frame threading, the owner must be the second field's thread
+                         // or else the first thread can release the picture and reuse it unsafely
         for(i=out_idx; h->delayed_pic[i]; i++)
             h->delayed_pic[i] = h->delayed_pic[i+1];
     }
@@ -2049,9 +2051,13 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             s0->first_field = FIELD_PICTURE;
         }
 
-        if((!FIELD_PICTURE || s0->first_field) && ff_h264_frame_start(h) < 0) {
-            s0->first_field = 0;
-            return -1;
+        if(!FIELD_PICTURE || s0->first_field) {
+            if (ff_h264_frame_start(h) < 0) {
+                s0->first_field = 0;
+                return -1;
+            }
+        } else {
+            ff_release_unused_pictures(s, 0);
         }
     }
     if(h != h0)
