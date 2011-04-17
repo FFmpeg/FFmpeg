@@ -192,9 +192,9 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
 
     if (dba_mode == DBA_REUSE || dba_mode == DBA_NEW) {
         int i, seg, delta;
-        if (dba_nsegs >= 8)
+        if (dba_nsegs > 8)
             return -1;
-        band = 0;
+        band = band_start;
         for (seg = 0; seg < dba_nsegs; seg++) {
             band += dba_offsets[seg];
             if (band >= AC3_CRITICAL_BANDS || dba_lengths[seg] > AC3_CRITICAL_BANDS-band)
