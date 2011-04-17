@@ -1912,7 +1912,7 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
     *data_size = 0;
 
     /* Packets are sometimes a multiple of ctx->block_align, with a packet
-     * header at each ctx->block_align bytes. However, FFmpeg's ASF demuxer
+     * header at each ctx->block_align bytes. However, Libav's ASF demuxer
      * feeds us ASF packets, which may concatenate multiple "codec" packets
      * in a single "muxer" packet, so we artificially emulate that by
      * capping the packet size at ctx->block_align. */

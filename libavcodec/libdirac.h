@@ -30,7 +30,7 @@
 #include <libdirac_common/dirac_types.h>
 
 /**
-* Table providing a Dirac chroma format to FFmpeg pixel format mapping.
+* Table providing a Dirac chroma format to Libav pixel format mapping.
 */
 static const struct {
     enum PixelFormat ff_pix_fmt;

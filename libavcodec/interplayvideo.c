@@ -77,6 +77,7 @@ typedef struct IpvideoContext {
     int stride;
     int upper_motion_limit_offset;
 
+    uint32_t pal[256];
 } IpvideoContext;
 
 #define CHECK_STREAM_PTR(stream_ptr, stream_end, n) \
@@ -969,7 +970,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
 
     if (!s->is_16bpp) {
         /* this is PAL8, so make the palette available */
-        memcpy(s->current_frame.data[1], s->avctx->palctrl->palette, PALETTE_COUNT * 4);
+        memcpy(s->current_frame.data[1], s->pal, AVPALETTE_SIZE);
 
         s->stride = s->current_frame.linesize[0];
         s->stream_ptr = s->buf + 14;  /* data starts 14 bytes in */
@@ -1023,10 +1024,6 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
 
     s->is_16bpp = avctx->bits_per_coded_sample == 16;
     avctx->pix_fmt = s->is_16bpp ? PIX_FMT_RGB555 : PIX_FMT_PAL8;
-    if (!s->is_16bpp && s->avctx->palctrl == NULL) {
-        av_log(avctx, AV_LOG_ERROR, " Interplay video: palette expected.\n");
-        return -1;
-    }
 
     dsputil_init(&s->dsp, avctx);
 
@@ -1046,7 +1043,6 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     IpvideoContext *s = avctx->priv_data;
-    AVPaletteControl *palette_control = avctx->palctrl;
 
     /* compressed buffer needs to be large enough to at least hold an entire
      * decoding map */
@@ -1063,12 +1059,15 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    ipvideo_decode_opcodes(s);
-
-    if (!s->is_16bpp && palette_control->palette_changed) {
-        palette_control->palette_changed = 0;
-        s->current_frame.palette_has_changed = 1;
+    if (!s->is_16bpp) {
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+        if (pal) {
+            s->current_frame.palette_has_changed = 1;
+            memcpy(s->pal, pal, AVPALETTE_SIZE);
+        }
     }
+
+    ipvideo_decode_opcodes(s);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->current_frame;

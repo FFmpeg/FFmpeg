@@ -47,7 +47,7 @@ typedef struct FfmpegDiracDecoderParams {
 
 
 /**
-* returns FFmpeg chroma format
+* returns Libav chroma format
 */
 static enum PixelFormat GetFfmpegChromaFormat(dirac_chroma_t dirac_pix_fmt)
 {
@@ -103,7 +103,7 @@ static int libdirac_decode_frame(AVCodecContext *avccontext,
 
         case STATE_SEQUENCE:
         {
-            /* tell FFmpeg about sequence details */
+            /* tell Libav about sequence details */
             dirac_sourceparams_t *src_params = &p_dirac_params->p_decoder->src_params;
 
             if (av_image_check_size(src_params->width, src_params->height,

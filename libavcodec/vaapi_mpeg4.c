@@ -129,7 +129,7 @@ static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
 
     /* video_plane_with_short_video_header() contains all GOBs
      * in-order, and this is what VA API (Intel backend) expects: only
-     * a single slice param. So fake macroblock_number for FFmpeg so
+     * a single slice param. So fake macroblock_number for Libav so
      * that we don't call vaapi_mpeg4_decode_slice() again
      */
     if (avctx->codec->id == CODEC_ID_H263)

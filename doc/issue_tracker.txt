@@ -15,7 +15,7 @@ be properly added to the respective issue.
 The subscription URL for the ffmpeg-issues list is:
 http://live.polito/mailman/listinfo/ffmpeg-issues
 The URL of the webinterface of the tracker is:
-http(s)://roundup.ffmpeg/roundup/ffmpeg/
+http(s)://roundup.libav.org/
 Note the URLs in this document are obfuscated, you must append the top level
 domain for non-profit organizations to the tracker, and of Italy to the
 mailing list.
@@ -187,7 +187,7 @@ feature_request/closed/wont_implement
     be legal, philosophical or others.
 
 Note, please do not use type-status-substatus combinations other than the
-above without asking on ffmpeg-dev first!
+above without asking on libav-devel first!
 
 Note2, if you provide the requested info do not forget to remove the
 needs_more_info substate.

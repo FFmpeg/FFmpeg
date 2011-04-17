@@ -40,7 +40,7 @@
 * (or test broken JPEG-LS decoder) and slow down ordinary decoding a bit.
 *
 * There is no Golomb code with length >= 32 bits possible, so check and
-* avoid situation of 32 zeros, FFmpeg Golomb decoder is painfully slow
+* avoid situation of 32 zeros, Libav Golomb decoder is painfully slow
 * on this errors.
 */
 //#define JLS_BROKEN

@@ -30,7 +30,7 @@
  * and o_ prefixes on variables which are libogg types.
  */
 
-/* FFmpeg includes */
+/* Libav includes */
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/base64.h"

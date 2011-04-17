@@ -171,13 +171,6 @@ static int decode_frame(AVCodecContext *avctx,
         stride = -p->linesize[0];
     }
 
-    if(avctx->pix_fmt == PIX_FMT_PAL8 && avctx->palctrl){
-        memcpy(p->data[1], avctx->palctrl->palette, AVPALETTE_SIZE);
-        if(avctx->palctrl->palette_changed){
-            p->palette_has_changed = 1;
-            avctx->palctrl->palette_changed = 0;
-        }
-    }
     if(colors){
         size_t pal_size;
         if((colors + first_clr) > 256){

@@ -46,6 +46,7 @@ typedef struct QtrleContext {
     const unsigned char *buf;
     int size;
 
+    uint32_t pal[256];
 } QtrleContext;
 
 #define CHECK_STREAM_PTR(n) \
@@ -511,12 +512,15 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     }
 
     if(has_palette) {
-        /* make the palette available on the way out */
-        memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
-        if (s->avctx->palctrl->palette_changed) {
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+
+        if (pal) {
             s->frame.palette_has_changed = 1;
-            s->avctx->palctrl->palette_changed = 0;
+            memcpy(s->pal, pal, AVPALETTE_SIZE);
         }
+
+        /* make the palette available on the way out */
+        memcpy(s->frame.data[1], s->pal, AVPALETTE_SIZE);
     }
 
 done:

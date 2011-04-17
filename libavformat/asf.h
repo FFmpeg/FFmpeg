@@ -45,6 +45,8 @@ typedef struct {
 
     uint16_t stream_language_index;
 
+    int      palette_changed;
+    uint32_t palette[256];
 } ASFStream;
 
 typedef struct {

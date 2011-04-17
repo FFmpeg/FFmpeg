@@ -123,6 +123,8 @@ typedef struct MOVStreamContext {
     int width;            ///< tkhd width
     int height;           ///< tkhd height
     int dts_shift;        ///< dts shift when ctts is negative
+    uint32_t palette[256];
+    int has_palette;
 } MOVStreamContext;
 
 typedef struct MOVContext {

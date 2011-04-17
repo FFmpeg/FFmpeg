@@ -95,7 +95,7 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     pp->wBitFields                    = ((s->picture_structure != PICT_FRAME) <<  0) |
                                         (h->sps.mb_aff                        <<  1) |
                                         (h->sps.residual_color_transform_flag <<  2) |
-                                        /* sp_for_switch_flag (not implemented by FFmpeg) */
+                                        /* sp_for_switch_flag (not implemented by Libav) */
                                         (0                                    <<  3) |
                                         (h->sps.chroma_format_idc             <<  4) |
                                         ((h->nal_ref_idc != 0)                <<  6) |
@@ -146,8 +146,8 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     pp->deblocking_filter_control_present_flag = h->pps.deblocking_filter_parameters_present;
     pp->redundant_pic_cnt_present_flag= h->pps.redundant_pic_cnt_present;
     pp->Reserved8BitsB                = 0;
-    pp->slice_group_change_rate_minus1= 0;  /* XXX not implemented by FFmpeg */
-    //pp->SliceGroupMap[810];               /* XXX not implemented by FFmpeg */
+    pp->slice_group_change_rate_minus1= 0;  /* XXX not implemented by Libav */
+    //pp->SliceGroupMap[810];               /* XXX not implemented by Libav */
 }
 
 static void fill_scaling_lists(const H264Context *h, DXVA_Qmatrix_H264 *qm)
@@ -243,7 +243,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
             }
         }
     }
-    slice->slice_qs_delta    = 0; /* XXX not implemented by FFmpeg */
+    slice->slice_qs_delta    = 0; /* XXX not implemented by Libav */
     slice->slice_qp_delta    = s->qscale - h->pps.init_qp;
     slice->redundant_pic_cnt = h->redundant_pic_count;
     if (h->slice_type == FF_B_TYPE)

@@ -67,6 +67,7 @@ typedef struct CinepakContext {
 
     int sega_film_skip_bytes;
 
+    uint32_t pal[256];
 } CinepakContext;
 
 static void cinepak_decode_codebook (cvid_codebook *codebook,
@@ -395,7 +396,7 @@ static av_cold int cinepak_decode_init(AVCodecContext *avctx)
     s->sega_film_skip_bytes = -1;  /* uninitialized state */
 
     // check for paletted data
-    if ((avctx->palctrl == NULL) || (avctx->bits_per_coded_sample == 40)) {
+    if (avctx->bits_per_coded_sample != 8) {
         s->palette_video = 0;
         avctx->pix_fmt = PIX_FMT_YUV420P;
     } else {
@@ -427,16 +428,18 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
+    if (s->palette_video) {
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+        if (pal) {
+            s->frame.palette_has_changed = 1;
+            memcpy(s->pal, pal, AVPALETTE_SIZE);
+        }
+    }
+
     cinepak_decode(s);
 
-    if (s->palette_video) {
-        memcpy (s->frame.data[1], avctx->palctrl->palette, AVPALETTE_SIZE);
-        if (avctx->palctrl->palette_changed) {
-            s->frame.palette_has_changed = 1;
-            avctx->palctrl->palette_changed = 0;
-        } else
-            s->frame.palette_has_changed = 0;
-    }
+    if (s->palette_video)
+        memcpy (s->frame.data[1], s->pal, AVPALETTE_SIZE);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;

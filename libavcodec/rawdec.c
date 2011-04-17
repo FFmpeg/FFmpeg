@@ -158,9 +158,13 @@ static int raw_decode(AVCodecContext *avctx,
         (av_pix_fmt_descriptors[avctx->pix_fmt].flags & PIX_FMT_PAL))){
         frame->data[1]= context->palette;
     }
-    if (avctx->palctrl && avctx->palctrl->palette_changed) {
-        memcpy(frame->data[1], avctx->palctrl->palette, AVPALETTE_SIZE);
-        avctx->palctrl->palette_changed = 0;
+    if (avctx->pix_fmt == PIX_FMT_PAL8) {
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+
+        if (pal) {
+            memcpy(frame->data[1], pal, AVPALETTE_SIZE);
+            frame->palette_has_changed = 1;
+        }
     }
     if(avctx->pix_fmt==PIX_FMT_BGR24 && ((frame->linesize[0]+3)&~3)*avctx->height <= buf_size)
         frame->linesize[0] = (frame->linesize[0]+3)&~3;
