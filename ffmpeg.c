@@ -1378,7 +1378,7 @@ static void print_report(AVFormatContext **output_files,
     if (ti1 < 0.01)
         ti1 = 0.01;
 
-    if (verbose || is_last_report) {
+    if (verbose > 0 || is_last_report) {
         bitrate = (double)(total_size * 8) / ti1 / 1000.0;
 
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
@@ -4047,7 +4047,7 @@ static void opt_target(const char *arg)
                 }
             }
         }
-        if(verbose && norm != UNKNOWN)
+        if(verbose > 0 && norm != UNKNOWN)
             fprintf(stderr, "Assuming %s for target.\n", norm == PAL ? "PAL" : "NTSC");
     }
 
