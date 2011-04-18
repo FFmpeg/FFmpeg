@@ -119,7 +119,7 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
 
 AVCodec ff_libvo_amrwbenc_encoder = {
     "libvo_amrwbenc",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AMR_WB,
     sizeof(AMRWBContext),
     amr_wb_encode_init,

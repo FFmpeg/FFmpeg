@@ -59,7 +59,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (s->codec_api.SetParam(s->handle, VO_PID_AAC_ENCPARAM, &params)
         != VO_ERR_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set encoding parameters\n");
-        return AVERROR_UNKNOWN;
+        return AVERROR(EINVAL);
     }
 
     for (index = 0; index < 16; index++)
@@ -68,7 +68,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (index == 16) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate %d\n",
                                     avctx->sample_rate);
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
     }
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         avctx->extradata_size = 2;
@@ -110,14 +110,14 @@ static int aac_encode_frame(AVCodecContext *avctx,
     if (s->codec_api.GetOutputData(s->handle, &output, &output_info)
         != VO_ERR_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Unable to encode frame\n");
-        return AVERROR_UNKNOWN;
+        return AVERROR(EINVAL);
     }
     return output.Length;
 }
 
 AVCodec ff_libvo_aacenc_encoder = {
     "libvo_aacenc",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AAC,
     sizeof(AACContext),
     aac_encode_init,
