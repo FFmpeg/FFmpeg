@@ -252,6 +252,8 @@ static int movie_get_frame(AVFilterLink *outlink)
                     st->sample_aspect_ratio : movie->codec_ctx->sample_aspect_ratio;
                 movie->picref->video->interlaced      = movie->frame->interlaced_frame;
                 movie->picref->video->top_field_first = movie->frame->top_field_first;
+                movie->picref->video->key_frame       = movie->frame->key_frame;
+                movie->picref->video->pict_type       = movie->frame->pict_type;
                 av_dlog(outlink->src,
                         "movie_get_frame(): file:'%s' pts:%"PRId64" time:%lf pos:%"PRId64" aspect:%d/%d\n",
                         movie->file_name, movie->picref->pts,
