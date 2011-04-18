@@ -13,8 +13,8 @@ rm -f $logfile
 for i in $list ; do
     echo ---------------- >> $logfile
     echo $i >> $logfile
-    ./ffmpeg_g -flags +bitexact -i $i -acodec copy -vcodec copy -y first.nut
-    ./ffmpeg_g -flags +bitexact -i first.nut -acodec copy -vcodec copy -y second.nut
+    ./ffmpeg -flags +bitexact -i $i -acodec copy -vcodec copy -y first.nut
+    ./ffmpeg -flags +bitexact -i first.nut -acodec copy -vcodec copy -y second.nut
     cmp first.nut second.nut >> $logfile
     md5sum first.nut >> $logfile
 done

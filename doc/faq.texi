@@ -415,12 +415,6 @@ be rewritten in a formal object language. Further, many of the developers
 favor straight C; it works for them. For more arguments on this matter,
 read "Programming Religion" at (@url{http://www.tux.org/lkml/#s15}).
 
-@section Why are the ffmpeg programs devoid of debugging symbols?
-
-The build process creates ffmpeg_g, ffplay_g, etc. which contain full debug
-information. Those binaries are stripped to create ffmpeg, ffplay, etc. If
-you need the debug information, use the *_g versions.
-
 @section I do not like the LGPL, can I contribute code under the GPL instead?
 
 Yes, as long as the code is optional and can easily and cleanly be placed
