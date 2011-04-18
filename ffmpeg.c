@@ -235,6 +235,7 @@ static int audio_volume = 256;
 static int exit_on_error = 0;
 static int using_stdin = 0;
 static int verbose = 1;
+static int daemon  = 0;
 static int thread_count= 1;
 static int q_pressed = 0;
 static int64_t video_size = 0;
@@ -444,7 +445,8 @@ static void term_exit(void)
 {
     av_log(NULL, AV_LOG_QUIET, "");
 #if HAVE_TERMIOS_H
-    tcsetattr (0, TCSANOW, &oldtty);
+    if(!daemon)
+        tcsetattr (0, TCSANOW, &oldtty);
 #endif
 }
 
@@ -461,6 +463,7 @@ sigterm_handler(int sig)
 static void term_init(void)
 {
 #if HAVE_TERMIOS_H
+    if(!daemon){
     struct termios tty;
 
     tcgetattr (0, &tty);
@@ -478,6 +481,7 @@ static void term_init(void)
 
     tcsetattr (0, TCSANOW, &tty);
     signal(SIGQUIT, sigterm_handler); /* Quit (POSIX).  */
+    }
 #endif
 
     signal(SIGINT , sigterm_handler); /* Interrupt (ANSI).  */
@@ -495,6 +499,9 @@ static int read_key(void)
     unsigned char ch;
     struct timeval tv;
     fd_set rfds;
+
+    if(daemon)
+        return -1;
 
     FD_ZERO(&rfds);
     FD_SET(0, &rfds);
@@ -4266,6 +4273,10 @@ static int opt_preset(const char *opt, const char *arg)
     return 0;
 }
 
+static void log_callback_null(void* ptr, int level, const char* fmt, va_list vl)
+{
+}
+
 static const OptionDef options[] = {
     /* main options */
 #include "cmdutils_common_opts.h"
@@ -4408,6 +4419,14 @@ int main(int argc, char **argv)
     int64_t ti;
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
+
+    if(argc>1 && !strcmp(argv[1], "-d")){
+        daemon=1;
+        verbose=-1;
+        av_log_set_callback(log_callback_null);
+        argc--;
+        argv++;
+    }
 
     avcodec_register_all();
 #if CONFIG_AVDEVICE
