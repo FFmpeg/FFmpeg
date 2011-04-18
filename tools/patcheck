@@ -12,7 +12,7 @@ GREP=grep
 EGREP=egrep
 TMP=patcheck.tmp
 OPT="-nH"
-#FILES=`$GREP '^+++' $* | sed 's/+++ //g'`
+#FILES=$($GREP '^+++' $* | sed 's/+++ //g')
 
 echo patCHeck 1e10.0
 echo This tool is intended to help a human check/review patches it is very far from
@@ -43,7 +43,7 @@ hiegrep2(){
 }
 
 hiegrep '[[:space:]]$'    'trailing whitespace' $*
-hiegrep "`echo x | tr 'x' '\t'`"         'tabs' $*
+hiegrep "$(echo x | tr 'x' '\t')"         'tabs' $*
 #hiegrep ':\+$'          'Empty lines' $*
 hiegrep ';;'              'double ;' $*
 hiegrep2 '\b_[a-zA-Z0-9_]{1,}' '__(asm|attribute)([^a-zA-Z0-9]|$)' 'reserved identifer' $*
@@ -106,9 +106,9 @@ hiegrep ':\+  *{ *$' '{ should be on the same line as the related previous state
 
 
 rm $TMP
-for i in `$GREP -H '^+.*@param' $*| sed 's/^\([^:]*\):.*@param\(\[.*\]\|\) *\([a-zA-Z0-9_]*\) .*$/\1:\3/'` ; do
-    doxpar=`echo $i | sed 's/^.*:\(.*\)$/\1/'`
-    file=`echo $i | sed 's/^\([^:]*\):.*$/\1/'`
+for i in $($GREP -H '^+.*@param' $*| sed 's/^\([^:]*\):.*@param\(\[.*\]\|\) *\([a-zA-Z0-9_]*\) .*$/\1:\3/') ; do
+    doxpar=$(echo $i | sed 's/^.*:\(.*\)$/\1/')
+    file=$(echo $i | sed 's/^\([^:]*\):.*$/\1/')
     $GREP " *$doxpar *[),]" $file | $GREP -v '@param' >/dev/null || $GREP --color=always "@param *$doxpar" $file >>$TMP
 done
 if test -e $TMP ; then
@@ -121,11 +121,11 @@ cat $TMP
 
 rm $TMP
 for i in \
-    `$EGREP -H '^\+ *'"$ERE_TYPES" $* |\
+    $($EGREP -H '^\+ *'"$ERE_TYPES" $*  |\
     $GREP -v '(' | $EGREP -v '\Wgoto\W' |\
     xargs -d '\n' -n 1 |\
     $GREP -o '[* ][* ]*[a-zA-Z][0-9a-zA-Z_]* *[,;=]' |\
-    sed 's/.[* ]*\([a-zA-Z][0-9a-zA-Z_]*\) *[,;=]/\1/'` \
+    sed 's/.[* ]*\([a-zA-Z][0-9a-zA-Z_]*\) *[,;=]/\1/') \
     ; do
     echo $i | $GREP '^NULL$' && continue
     $EGREP $i' *(\+|-|\*|/|\||&|%|)=[^=]' $* >/dev/null || echo "possibly never written:"$i >> $TMP
