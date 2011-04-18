@@ -290,6 +290,8 @@ static int request_frame(AVFilterLink *outlink)
     avfilter_start_frame(outlink, outpicref);
     avfilter_draw_slice(outlink, 0, outlink->h, 1);
     avfilter_end_frame(outlink);
+    avfilter_unref_buffer(movie->picref);
+    movie->picref = NULL;
 
     return 0;
 }
