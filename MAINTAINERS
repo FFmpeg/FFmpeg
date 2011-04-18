@@ -159,6 +159,7 @@ Codecs:
   indeo5*                               Kostya Shishkov
   interplayvideo.c                      Mike Melanson
   ivi*                                  Kostya Shishkov
+  jacosub*                              Clément Bœsch
   jpeg_ls.c                             Kostya Shishkov
   jvdec.c                               Peter Ross
   kmvc.c                                Kostya Shishkov
@@ -315,6 +316,7 @@ Muxers/Demuxers:
   ipmovie.c                             Mike Melanson
   img2.c                                Michael Niedermayer
   iss.c                                 Stefan Gehrer
+  jacosub*                              Clément Bœsch
   jvdec.c                               Peter Ross
   libmodplug.c                          Clément Bœsch
   libnut.c                              Oded Shimon

@@ -397,6 +397,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (ASS, ass);
     REGISTER_ENCDEC  (DVBSUB, dvbsub);
     REGISTER_ENCDEC  (DVDSUB, dvdsub);
+    REGISTER_DECODER (JACOSUB, jacosub);
     REGISTER_DECODER (MICRODVD, microdvd);
     REGISTER_DECODER (PGSSUB, pgssub);
     REGISTER_ENCDEC  (SRT, srt);
