@@ -71,8 +71,7 @@ static int celt_header(AVFormatContext *s, int idx)
         st->codec->sample_fmt     = AV_SAMPLE_FMT_S16;
         st->codec->extradata      = extradata;
         st->codec->extradata_size = 2 * sizeof(uint32_t);
-        if (sample_rate)
-            av_set_pts_info(st, 64, 1, sample_rate);
+        av_set_pts_info(st, 64, 1, sample_rate);
         priv->extra_headers_left  = 1 + extra_headers;
         os->private = priv;
         AV_WL32(extradata + 0, overlap);
