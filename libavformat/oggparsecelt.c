@@ -61,21 +61,21 @@ static int celt_header(AVFormatContext *s, int idx)
         overlap          = AV_RL32(p + 48);
         bytes_per_packet = AV_RL32(p + 52); /* unused */
         extra_headers    = AV_RL32(p + 56);
-        av_free(os->private);
-        av_free(st->codec->extradata);
         st->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id       = CODEC_ID_CELT;
         st->codec->sample_rate    = sample_rate;
         st->codec->channels       = nb_channels;
         st->codec->frame_size     = frame_size;
         st->codec->sample_fmt     = AV_SAMPLE_FMT_S16;
-        st->codec->extradata      = extradata;
-        st->codec->extradata_size = 2 * sizeof(uint32_t);
         av_set_pts_info(st, 64, 1, sample_rate);
         priv->extra_headers_left  = 1 + extra_headers;
+        av_free(os->private);
         os->private = priv;
         AV_WL32(extradata + 0, overlap);
         AV_WL32(extradata + 4, version);
+        av_free(st->codec->extradata);
+        st->codec->extradata = extradata;
+        st->codec->extradata_size = 2 * sizeof(uint32_t);
         return 1;
 
     } else if(priv && priv->extra_headers_left) {
