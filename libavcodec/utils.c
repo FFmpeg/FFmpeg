@@ -578,6 +578,13 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
                 }
             }
         }
+        if (avctx->channel_layout && avctx->channels) {
+            if (av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels) {
+                av_log(avctx, AV_LOG_ERROR, "channel layout does not match number of channels\n");
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            }
+        }
     }
 
     if(avctx->codec->init && !(avctx->active_thread_type&FF_THREAD_FRAME)){
