@@ -262,13 +262,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
             return -1;
     }
 
-    if (x4->fastfirstpass)
-        x264_param_apply_fastfirstpass(&x4->params);
-
-    if (x4->profile)
-        if (x264_param_apply_profile(&x4->params, x4->profile) < 0)
-            return -1;
-
     x4->params.pf_log               = X264_log;
     x4->params.p_log_private        = avctx;
     x4->params.i_log_level          = X264_LOG_DEBUG;
@@ -301,6 +294,13 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.f_vbv_buffer_init =
             (float)avctx->rc_initial_buffer_occupancy / avctx->rc_buffer_size;
     }
+
+    if (x4->fastfirstpass)
+        x264_param_apply_fastfirstpass(&x4->params);
+
+    if (x4->profile)
+        if (x264_param_apply_profile(&x4->params, x4->profile) < 0)
+            return -1;
 
     x4->params.i_width          = avctx->width;
     x4->params.i_height         = avctx->height;
