@@ -584,6 +584,8 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
                 ret = AVERROR(EINVAL);
                 goto free_and_end;
             }
+        } else if (avctx->channel_layout) {
+            avctx->channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
         }
     }
 
