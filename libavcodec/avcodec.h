@@ -2836,6 +2836,13 @@ typedef struct AVCodecContext {
      * - decoding: Set by libavcodec.
      */
     enum AVAudioServiceType audio_service_type;
+
+    /**
+     * Used to request a sample format from the decoder.
+     * - encoding: unused.
+     * - decoding: Set by user.
+     */
+    enum AVSampleFormat request_sample_fmt;
 } AVCodecContext;
 
 /**
