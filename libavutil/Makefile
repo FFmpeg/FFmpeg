@@ -35,7 +35,6 @@ HEADERS = adler32.h                                                     \
           rational.h                                                    \
           samplefmt.h                                                   \
           sha.h                                                         \
-          sha1.h                                                        \
 
 BUILT_HEADERS = avconfig.h
 
