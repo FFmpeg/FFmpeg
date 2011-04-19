@@ -29,6 +29,7 @@
 
 typedef struct AnmContext {
     AVFrame frame;
+    int palette[AVPALETTE_COUNT];
     int x;  ///< x coordinate position
 } AnmContext;
 
@@ -44,14 +45,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return -1;
 
     s->frame.reference = 1;
-    if (avctx->get_buffer(avctx, &s->frame) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
-    }
 
     buf = avctx->extradata + 16*8;
     for (i = 0; i < 256; i++)
-        ((uint32_t*)s->frame.data[1])[i] = bytestream_get_le32(&buf);
+        s->palette[i] = bytestream_get_le32(&buf);
 
     return 0;
 }
@@ -169,6 +166,8 @@ static int decode_frame(AVCodecContext *avctx,
             if (OP(type == 2 ? &buf : NULL, pixel, count)) break;
         }
     } while (buf + 1 < buf_end);
+
+    memcpy(s->frame.data[1], s->palette, AVPALETTE_SIZE);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;

@@ -1,0 +1,4561 @@
+This file lists authorship of commits that have been merged from
+ffmpeg-mt. These commits where not classically merged because this
+would have pulled in duplicated history of all commits in ffmpeg.
+Which a majority of developers opposed.
+
+
+commit 002a0939cdf01faa8270d41b3045c08ac12d8975
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 20 20:24:36 2010 -0500
+
+    Update todo
+
+commit 0040d6f2ba7189ca9bab4cf17c0d150416391dec
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 24 18:33:16 2010 -0500
+
+    Remove a malloc() per frame by keeping an array of 32 buffers.
+
+    Requested in original review. Should be slightly faster but does
+    have a 32-element linear search (since buffers are freed out of order).
+
+    Introducing array_next_nonzero or something would speed up this
+    and h264 decoding.
+
+commit 00425e98fba903dceecb89763b57b8f3b7a1abf3
+Merge: 20997d6 e320c22
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jul 2 04:59:42 2009 -0400
+
+    Merge mainline.
+
+    Having to move the setting of key_frame confused me for far too
+    long.
+
+commit 0097d3b01e33d1e0f636a19778a0435a730d4590
+Merge: 9e981c8 44c4fd1
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Sep 9 19:19:34 2010 -0400
+
+    Merge mainline and libswscale.
+
+    Another one coming after h264 is converted to yasm.
+
+    Conflicts:
+            libavcodec/avcodec.h
+
+commit 00bbca77f3fe0960cbf0986ea214ce022204837c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 16 02:18:12 2011 -0500
+
+    h264: Early-exit condition for await_references()
+
+    Saves even more zero checking in refs[][], although it still leaves many
+    useless checks when nrefs[i]>1, because the array indexes are scattered.
+
+    About ~.8% faster decoding.
+
+commit 00c4b0bb5a7801d14627015d38762ec314639d3d
+Merge: 63d086d feadf1b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Mar 13 23:50:33 2009 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/h263.c
+            libavcodec/h263dec.c
+            libavcodec/h264.c
+            libavcodec/mpeg12.c
+            libavcodec/mpegvideo.c
+            libavcodec/options.c
+            libavutil/log.c
+
+commit 01006069782b1b8fe0bfe0eabe4876062e057c11
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jan 13 01:30:01 2009 -0500
+
+    Fix possibly not allocating obmc_scratchpad with PAFF/weighted prediction
+
+commit 011a76824f384a315ce4b0474a2811d463b5746b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Sep 1 00:40:40 2008 -0400
+
+    Whitespace and variable name cosmetics for clarity.
+
+commit 02376cec6531a931330798af67c62a029a3435a1
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 11 14:40:27 2009 -0700
+
+    Normalize how decode_postinit() is called.
+
+    Move it next to the hwaccel call to save an if statement.
+
+commit 031abc50708c616058020dcf7a1b62bc9b895446
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Aug 22 20:43:38 2008 -0400
+
+    Improve comments in thread.h
+
+commit 032432ad56fd88a7e9ba6ce9ccd39925854b027a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 20 20:48:10 2010 -0500
+
+    Remove FF_THREAD_DEFAULT.
+
+    It obviously makes no sense to define the default in a public header.
+
+commit 03980f22907206b52e64439ebcc4445719801035
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 11 17:22:22 2008 -0400
+
+    Mark functions inline to avoid unused function warnings.
+
+commit 0488ed2d9ff609ec4a6be008c81603b62ce67785
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 4 15:55:00 2008 -0400
+
+    Align the stack in decode_frame_thread.
+
+commit 0553196aa797d58f0687890c66e1b1cdfa52f419
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed May 28 00:44:13 2008 -0400
+
+    Add the frame-threading support code.
+
+commit 056dce6c969acec1224eaa9fc73d930d1e56b299
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Aug 15 16:44:33 2008 -0400
+
+    h264: Redo finding the output frame during header parsing after merging mainline.
+
+    This works with PAFF and CODEC_FLAG2_CHUNKS, though the second is useless and should be removed.
+
+commit 05a3af85edd15fef223f0376d3241cc5c7aa3ed5
+Merge: 8ba50a9 fa43cf8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Apr 19 02:41:54 2010 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/h264.c
+
+commit 05e37cada02dc1ac58e7ce93418cbf33e3a09ad6
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 27 21:00:34 2008 -0400
+
+    Add the AVCodec/AVCodecContext fields needed for multithreading and increment the API minor version.
+
+commit 061586a260a564080be8c1ed9af4e83888fe3543
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Sep 4 01:41:53 2008 -0400
+
+    Remove error check that can never fail.
+
+commit 06407ff8706c7fe28c5b925c4b1dd52641714cb9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jun 16 18:21:04 2008 -0400
+
+    Multithreading support for MPEG-1.
+
+commit 065ee0d04a6539c08bddfa1edc628906494c22f2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 1 12:24:37 2010 -0400
+
+    vp3: Report INT_MAX instead of height at the end of a frame
+
+    This saves having to clip to height in await_reference_row.
+
+commit 067c30c63499d5cca5613725de936fb70047aec3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 22 03:29:23 2008 -0400
+
+    Cosmetics: opening function braces on their own line.
+
+commit 06ac5ac98dbf03889eb7cccf67fe0cb95615613d
+Merge: febe154 987789a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 20 04:29:03 2010 -0700
+
+    Merge mainline.
+
+    Document ONLY_IF_THREADS_ENABLED along the way.
+
+    Conflicts:
+            libavutil/internal.h
+
+commit 07474003407915e5462ed3582a1dae8baa06f296
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 10 11:25:48 2009 -0700
+
+    Move frame_thread_init() down to avoid prototyping its callees.
+
+commit 076bf916d79c39ec055a53f2ee5eadf20c21b988
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 25 14:32:41 2008 -0400
+
+    Increase max delayed buffers for safety
+
+commit 079cd64ef92cb1670a420a16e38c645cc8f28caa
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Sep 2 11:38:29 2008 -0400
+
+    Ignore codecs returning NULL when draining frames.
+
+commit 090c1f4c99b9c5cefa3bad7698f33516baa87c6e
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue Nov 6 13:08:04 2007 +0000
+
+    fix predictor initialization for adpcm-ima encoder not to lose first sample
+    in block in adpcm-ima decoder
+    Patch by Timofei V. Bondarenko: tim commit 09bb0dafa746203f98ff478a5121b3b0ffb3f46e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jul 22 22:20:47 2008 -0400
+
+    Switch from MB row to pixel row precision for h264 progress.
+
+    This makes it easier to think about interlacing and the deblock filter, and also fixes decoding entirely.
+
+commit 0a51c1e9ebf09d302e44daaca3147e7cca2f0457
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 3 16:04:31 2008 -0400
+
+    Use threading macros in mpeg12.c.
+
+commit 0ac282b447075a0645036fba56d2881bbcc8f471
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 17 03:44:26 2011 -0500
+
+    Update multithreading.txt for thread_safe_callbacks and pkt_dts
+
+commit 0b64ceb6b15560313d0a6ac7cffe9270d7b8e0e8
+Merge: 9ec9f08 e220e91
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 10 03:22:51 2010 -0700
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+
+commit 0b8add0862f841dfc8dbbc8d89dfb3712ce3a698
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 18 16:47:21 2008 -0400
+
+    Allow avcodec_default_release_buffer to be called after avcodec_default_free_buffers.
+
+commit 0b8c3d23339b5f646ae702f30141e223596f9ff9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jul 27 21:55:53 2008 -0400
+
+    Reindent.
+
+commit 0be0d5714347f63b0e391ad3e9202f9d5107bb5f
+Merge: f550857 8c00628
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Mar 28 03:40:27 2010 -0400
+
+    Merge mainline.
+
+commit 0c73945d0cc40a6ade8ca78dfa0d9bea178f4743
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 01:07:17 2008 -0400
+
+    Clarify comment for new AVFrame members
+
+    They are set by libavcodec even if they aren't used for anything useful ATM.
+
+commit 0cac0f3bd81287db20bbbae5aaff22e381e09663
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jul 13 02:40:22 2008 -0400
+
+    Add report/await_decode_progress for progressive H264
+    Multithreading works with no visible problems for progressive sequences, but there is still some problem causing framecrc differences.
+    1 thread  - 99% cpu 14s
+    2 threads - 183% cpu 8.6s
+
+commit 0cae6d85e8a33b826611ced69902f2a4d16f0c7a
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Fri Jun 1 12:03:33 2007 +0000
+
+    A bit more clear FAQ 1.2
+    Patch by V
+�commit 0d25fc9993407335bc98b91296f9f78b634dd8a0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 24 21:39:39 2008 -0400
+
+    Remove newly-duplicated memset().
+
+commit 0e41f7596f06a758c0f1cb9e48e67ef896c5c05a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 11 18:09:02 2008 -0400
+
+    Reindent.
+
+commit 0ef99ed28b24757a30b1e805f2ff1ea6d90b9b71
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 25 03:17:46 2010 -0500
+
+    Remove item from todo
+
+commit 0fad6cca0a7e34dfa62c3934eb5316e2c9649e66
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jul 22 01:00:07 2008 -0400
+
+    Fix height passed to ff_draw_band for interlaced H.264.
+
+    Without this, it passes y 0 h 16, y 32 h 16, etc.
+
+commit 0fb994fbdbf4f985ec9c0d5a681e7a5bf620a765
+Merge: 5eb0c64 ace7af3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jan 20 01:58:15 2010 -0500
+
+    Merge mainline.
+
+    This was done by hand since git can't track the h264/h263 decoder
+    splits properly.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/h263.c
+            libavcodec/h263dec.c
+            libavcodec/h264.c
+
+commit 0ff629947b15955603cdb7978770ca64c2323262
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 18 05:09:01 2009 -0400
+
+    Don't call report_field_progress for non-referenced H264 frames.
+
+commit 111fa56db1bfefc245c499f465783a5abc04f7c2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jul 19 00:12:00 2008 -0400
+
+    Set start/end_mb_y properly in MpegEncContext.
+
+commit 115adc279240b6c7155781b5a16177a140eaad4f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 21 23:10:18 2008 -0400
+
+    Add an update_context for codecs that just use MpegEncContext.
+
+commit 116ca147f03ca02b55c2fceef7b82c1b251b32f6
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 14:10:31 2008 -0400
+
+    Merge fallout: move AVCodec additions back to the end of the struct
+
+commit 11b1a8ee92128524a3259903c28da54ffd9a60fa
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 30 10:02:16 2010 -0700
+
+    Update todo.
+
+    I appear to have fixed the bug (the problem doesn't show in test.sh
+    anymore). Of course, there might be more.
+
+commit 120d790a3918f77444eed295aec6d8c34e4b532a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jul 17 18:00:07 2008 -0400
+
+    Simplify draw_edges changes and handle interlacing properly.
+
+commit 1239bcba12d0c57005ae59405e8b080ac3c7bd65
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 18 18:59:29 2008 -0400
+
+    Simplify: store FrameThreadContext in the user's context.
+
+commit 1292a1840bb5319f1438b63b7be35363ba4fe5b6
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jan 13 01:33:47 2009 -0500
+
+    Copy width/height between thread contexts for all codecs.
+
+    This makes it user-visible and fixes compatibility with
+    bad demuxers that don't set it in avctx.
+
+commit 12c5de8ead7c7a1b4c03eb095a2db4357aa2538d
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Thu Jan 3 08:39:38 2008 +0000
+
+    Make filterDelimiters and optionDelimiters two static constant array of
+    characters, should move them to .rodata.
+    Patch by Diego 'Flameeyes' Petten
+� flameeyes commit 1327c17ca423f248dbce8172476dd69208f7d74b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat May 23 21:52:24 2009 -0400
+
+    Stopgap hack: don't crash with size-changing streams+frame threads
+
+    MPEG1 and H.264 need their own checks, otherwise they immediately
+    deallocate shared data and crash. Another check is added to get_buffer
+    to cover remaining codecs (although it may not actually do this).
+
+    This currently involves ugly code duplication, which can hopefully
+    be eventually removed. Unfortunately this is already not handled
+    well on mainline (such as in the previous commit).
+
+commit 138ec8aad228862d58582aa4bbd367b7fa7b8d81
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jul 24 16:06:17 2008 -0400
+
+    Factor out copying picture pointers in update_context.
+
+commit 13c48792ac24329c9055f6e98b5e61c278f1aa57
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 9 00:02:20 2010 -0500
+
+    Fix wrong timestamps with -threads 2 and BBB 1080p Theora
+
+    It was caused by adding thread delay to has_b_frames.
+    -threads 2 -> has_b_frames 1 -> "delay==1" is true and the
+    "invalid dts/pts combination" was triggered. Not sure about this fix,
+    but I think it's harmless.
+
+commit 141516ca4f2b0008539ceeb70b46ebb6cfe4a1c0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 15 17:44:29 2008 -0400
+
+    Cosmetics: use USE_ macro.
+
+commit 14476d56276a77a237834e88b28427fe491ac689
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 14:11:41 2008 -0400
+
+    Correct AVCodec member comments
+
+commit 14bdf768314413a099fe570891761360733b148c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 9 01:15:03 2010 -0500
+
+    Update sws.
+
+commit 14df94ceacecf041d33b8600bc9097d4befd79dd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Feb 14 23:57:37 2010 -0500
+
+    Add a convenience function for avoiding deadlocks with decoder errors
+
+commit 156f6ba4db96f57c3c105b71986acaa9be13d5ab
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 17 00:19:10 2008 -0400
+
+    Update todo
+
+commit 16343b25d2ffc7c18a00ec62db8e76d7f8217de5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 20 22:39:05 2010 -0500
+
+    Rewrite comments for new codec callbacks
+
+commit 16b71c003150c3a44135ffa1bbc870ea43c15f7a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Dec 18 14:37:04 2008 -0500
+
+    Some todo entries I forgot to add
+
+commit 16bde8c7df438f5283de102e3c872ef309a8d0b5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 5 00:11:43 2008 -0400
+
+    Implement avcodec_flush_buffers for multithreaded codecs.
+
+commit 17b3c2a080f7ec1f548494e0e2b905ad0e2690c0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 18 20:36:54 2008 -0400
+
+    Clarify use of is_copy
+
+commit 17d7a98c7aadc2be1ceadf875ae2ca71b08a5611
+Merge: 0097d3b 981f8d0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Sep 29 22:55:44 2010 -0400
+
+    Merge mainline.
+
+    Fix misplaced lowres check from previous merge. (or maybe it was fine?)
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/utils.c
+
+commit 17dcbec74c0630e44029dd5e4efd8f9bb2ddee13
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 24 16:51:14 2009 -0400
+
+    Fix typo in huffyuv, broke mt decoding with newer huffyuv versions.
+
+commit 17ef916da54e5cbaf2ce97cba565ba4730dcd847
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 11 14:39:44 2010 -0400
+
+    Cosmetics: remove stray spaces in pthread.c
+
+commit 1846cc0549bf3d45fb2a5a2152b7335c794146e8
+Merge: 5323bc6 cd23ede
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Mar 8 04:30:32 2010 -0500
+
+    Merge mainline.
+
+    The VP3 decoder has been heavily changed upstream and this commit
+    removes mt optimizations. They will be readded later.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/h264.c
+            libavcodec/h264.h
+            libavcodec/h264_direct.c
+            libavcodec/vp3.c
+
+commit 1878dce0e65b2fab94612c950fac51e3de741636
+Merge: b7d1826 2b13612
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 24 01:37:21 2009 -0400
+
+    Merge mainline.
+
+commit 1884de3ffb775bb23cbfbf977ea48841c2b2ae16
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri May 8 00:15:50 2009 -0400
+
+    Correct comment about decoding delay.
+
+commit 18893e1423c3d8a65ca753806638ac160fefe342
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Oct 23 18:13:56 2010 -0400
+
+    Add a -vsync test to test.sh.
+
+    The files x-1-vsync.txt and x-3-vsync.txt should have the same MD5.
+    Even more ideally, all files should have the same MD5, but it's not our problem if they don't.
+
+    h264 and theora pass, didn't test others.
+
+commit 18dc6b6010200c45827d14594a5d7b7b2b28d8e0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 6 20:31:04 2008 -0400
+
+    Move ff_frame_thread_init above its uses and make it static since it has only one caller.
+
+commit 190d65b24795208e30c06369e34769ffeb9b5cc8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 24 01:31:00 2008 -0400
+
+    Add a longer comment for update_context
+
+commit 19b159260eb5eddfd296cac179d59ba218f881ac
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jan 21 01:22:43 2011 -0500
+
+    Adopt pkt_pts/pkt_dts in lavc clients
+
+    This makes DTS reliable with threads.
+
+commit 1a0d8d0cd0d7d0dc44d1747b2c8c93c73bc09cd8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 4 03:59:20 2010 -0500
+
+    Note in todo that 'make test' doesn't pass ATM.
+
+    Also note a harmless warning emitted, which I haven't
+    though of a good fix for yet.
+
+commit 1a216093ed2f201814287a32b5d8f22781c6d8d1
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 25 01:02:29 2008 -0400
+
+    Comment another strange line
+
+commit 1a4740fed38a69202c762e3cd786dd3c7c23dd40
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jan 15 17:02:46 2011 -0500
+
+    Make ARM asm #error out, since the offset values are out of date here
+
+commit 1ac02d2ff0dd39d8baf68cf7e0490de4db9b88cc
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 10 14:24:40 2009 -0400
+
+    Fix the error in avcodec_thread_init to actually not do anything.
+
+commit 1b735c493b0fe8c1aaff3d06214c24e8556b111c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 25 14:40:54 2008 -0400
+
+    Remove some context variable copies which were overwriting user settings
+
+commit 1b755181905bed35b2edd723c137b8f0af9c31c3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 23 23:14:20 2008 -0400
+
+    Add a FIXME for PAFF
+
+commit 1c187ba01c332b3d99681cfffb90f0247a836303
+Merge: 8022069 0309093
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 05:32:06 2010 -0500
+
+    Merge mainline.
+
+    Conflicts:
+            doc/APIchanges
+            libavcodec/avcodec.h
+
+commit 1c39407876cb6689e313ce27a51d83d77ac0c4e4
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 23 03:40:43 2010 -0400
+
+    Fix crash with ffplay.
+
+    Caused by the buffer functions being changed after codec init.
+
+commit 1c70dfb14a5e6e322f66d1175045eb13ac96d2f8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 20 22:10:38 2010 -0500
+
+    Rewrite thread.h comments for clarity
+
+commit 1c8037ec029ffe790b39b0cf0e67468db5f8c4a8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 25 03:59:02 2010 -0500
+
+    Fix references to renamed avail_motion() in the todo.
+
+    Delete the second entry mentioning it, since I don't think it's a
+    good idea anymore.
+
+commit 1ca44079c06a2080c2a0deb9cbc8fa757a5be540
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 15 20:34:08 2008 -0400
+
+    Delete unused variables. The frame counters will stay around for now for debugging.
+
+commit 1d15df4fd2b4583d56159a7938ef3699c7f46261
+Merge: 8f759fa b3b80f1
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sat May 31 17:56:44 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 1da82befe53bc245ba94cf1012fcd0156040353c
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Mon Jan 7 12:40:39 2008 +0000
+
+    Remove unused symbol.
+
+    Patch by Diego 'Flameeyes' Petten
+� flameeyes commit 1e8abec2eecd831c55e34c09fc9a38833d69c180
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 10 14:28:54 2009 -0400
+
+    Fix default value of thread_count.
+
+    Adding a flag named "threads" somehow disabled the default value
+    of the option named "threads", which allowed thread_count to be 0
+    for non-ffmpeg/ffplay clients (which don't always reset it).
+
+    Not sure why AVOption works this way.
+
+commit 1eff8ec8e1772334cd74129f8cc068483c757b40
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Fri Aug 10 07:28:18 2007 +0000
+
+    Prefix with "opt_" the functions ffmpeg.c:show_{version,license,formats}.
+    patch by Stefano Sabatini [stefano tod sabatini-lala commit 1fae9e952cee3c499313b5a9b5c2e3dda096ee30
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Mar 10 01:44:05 2011 -0500
+
+    Delete the libswscale submodule for svn->git merge.
+
+commit 2037d9714bc51ccb57a82aba95a52a5b49bdc401
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 24 21:16:50 2008 -0400
+
+    Comment this just in case someone doesn't get it
+
+commit 2063f77f904af3544021e16d6da76acf5d9beaed
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 05:40:04 2010 -0500
+
+    Delete beosthread.c which is gone from mainline
+
+commit 207f434446b40b29311e81233167bd03de16bf0c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jul 30 20:14:56 2008 -0400
+
+    Cosmetics: whitespace adjustments.
+
+commit 20997d60c8ec84dd0dd68055901e847c4b4e171a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 27 22:33:17 2009 -0400
+
+    Frame threading for VP3 [2/2].
+
+    The performance with different thread counts is different from
+    MPEG codecs; trying more or less granular synchronization would
+    be interesting.
+
+commit 20a85842c46b547331c5884e015dd781108c6d17
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Oct 11 16:43:39 2008 -0400
+
+    Save PAFF vs MBAFF information for pictures.
+
+    This already exists differently in mainline, but this way is more useful
+    since MPEG-2 has field pictures but not MBAFF.
+
+commit 20d6c336b37a7bf7313865a397f19ef33595adf8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Dec 23 17:49:51 2008 -0500
+
+    More todo entries
+
+commit 210b4a63100e5f4ba5ab23e84460614ca59b7817
+Merge: fc957c7 59b0bd5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 24 22:26:23 2010 -0400
+
+    Merge mainline.
+
+commit 21cede4223d4bcfcc0f6a91bbc84354238201fea
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Apr 19 03:30:45 2010 -0400
+
+    Fix possible overlapping memcpy()+crash at the end of decode
+
+    Increasingly dissatisfied with having to do this.
+
+commit 22a56df3f22e5c32c5f2fd06db8d644157da1877
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 14 23:12:17 2008 -0400
+
+    Remove dead code.
+
+commit 22d953bd1ef2b61ec272be03aa8f81587e0ac046
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 25 04:54:34 2008 -0400
+
+    Remove zeroing mbskip_table
+    It's unnecessary with the previous commit.
+
+commit 22e9455a663acc4d34f76130f2603b41b3940b9e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Aug 22 16:25:45 2008 -0400
+
+    Comment and rename context variables in pthread.c.
+
+commit 2331711a5ff0908a37005a0e500804a5a8a61e5d
+Author: Michael Niedermayer <michaelni@gmx.at>
+Date:   Wed Apr 6 00:15:42 2011 +0200
+
+    Fix ffmpeg-mt fixme in h264
+
+    Uncommenting this code no longer seems to cause valgrind problems or crashes.
+    Behavior is unchanged.
+
+commit 234887b836f9b0306388d20499c8025ac916e11b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 21:17:15 2008 -0400
+
+    Normalize if (err)
+
+commit 2412ad4778734a19638c997d5567f5d53d135a9a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 17 15:57:00 2011 -0500
+
+    pthread: Document release_delayed_buffers
+
+commit 24345e509df0b92a3592cfb15db12b1aecd78ffe
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 26 02:26:07 2008 -0400
+
+    Fix spelling and rewrap multithreading.txt to the right number of columns.
+
+commit 2485cfd74cf5012fdce8582b7094ddbd09bd70c9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 24 03:38:22 2009 -0400
+
+    10l: pred_direct_motion fix missed several mb_type accesses
+
+    I have not proven this correct yet; it's not too hard with some work
+    (record the last row accessed and waited for, and make sure they
+    correspond). Therefore, I suspect it still isn't correct, since
+    framecrc still shows mismatches. It does fix the worst visible
+    errors, though.
+
+commit 25a2f117ad6d6dc2592e77369bed23e53241b218
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jan 21 03:24:41 2011 -0500
+
+    Cosmetic: shorter line variable declaration
+
+commit 26151296236e0381c1c40e0d97ead8c5ab26b57c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Nov 2 02:33:12 2010 -0400
+
+    vp3: Lift up loop-invariant checks and simplify away 'border' which == 1
+
+commit 27026500c9a25bf409b55186d9bceada4bf2ba5c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jul 19 02:09:18 2008 -0400
+
+    Fix mpegvideo crashing without --enable-pthreads due to the number of thread_contexts changing.
+
+    -threads X no longer has any effect since all threading code is now gone without an actual threading library.
+    I think this is a nice minor size optimization, but if it's necessary to keep regression tests working with frame-threaded encoding I'll have to revisit it.
+
+commit 2742b2a142ff98e4611f96ddf47ab5a5233f4692
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Thu Jan 10 10:15:07 2008 +0000
+
+    Reduce the size of the replaceTable entries.
+    Patch by Diego 'Flameeyes' Petten
+� flameeyes commit 287e761820e85514e00eb6c5958496ecb61825cb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Dec 24 22:21:37 2009 -0500
+
+    Fix error return being ignored in VP3 allocate_tables().
+
+    Based on a patch by Yuriy M. Kaminskiy.
+
+commit 29c2b04f5074e49aa63cf50fb90e3a51e853ad9d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Apr 4 00:35:28 2009 -0400
+
+    More todos related to init api
+
+commit 2a7a86a64f153befafabcbb987e2793fa4bb0e18
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 27 22:17:41 2009 -0400
+
+    Split out error returns in VP3.
+
+commit 2a9b493a5a0f46f43959ce2466849dd6a6217012
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Feb 2 02:12:29 2011 -0500
+
+    Fix memory abandonment + unnecessary realloc in mpeg4
+
+    Fixes Sample1.mkv from ffms running out of address space (and more).
+    Note the file doesn't display properly in ffplay, so there's still bugs left.
+
+commit 2ae310bf292c1f34be006e9be7fbceb4c0f1b068
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 3 04:20:42 2008 -0400
+
+    Comment next_*_index.
+
+commit 2b74560715c3d4f331156d8745ce801c1de4d467
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Nov 18 14:31:17 2008 -0500
+
+    Revert accidental warning change
+
+commit 2b7d2acccb45e89bfc77564bcdaee68fcb4ac4c7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Feb 1 23:05:43 2011 -0500
+
+    Revert 99ed04d4d7b7183a4d0a1b8833eee3b506e13ff0
+
+    Broke big_buck_bunny_720p_stereo.ogg with 2 threads.
+
+commit 2bbb64dae018cbb09ea47a6bdcb184f551136c26
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Dec 15 16:15:21 2010 -0500
+
+    Fix definition of CODEC_CAP_FRAME_THREADS to not conflict.
+
+commit 2bc23e009291d727eed7a4f803a2793f5fa715b0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 26 03:03:38 2008 -0400
+
+    Update avcodec.h comments
+
+commit 2bcbffdbf53bd2918ba6ade66d12fb97021032c7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 15 20:26:59 2008 -0400
+
+    Combine all the condition variables into one.
+
+commit 2beb042a202d00dbb2baef3970f058994aeec027
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 23 19:32:56 2008 -0400
+
+    Split thread_algorithm into two more sanely defined variables.
+
+    Also improves correctness in some ways.
+
+commit 2c0e016af759adfdc34a6a1b8592ec0a1ef56da9
+Merge: d5ea5fc c2c8552
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu May 7 17:36:13 2009 -0400
+
+    Merge mainline.
+
+    Uses the minimal changes to get the new AVPacket API working.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/h264.c
+            libavcodec/mimic.c
+            libavcodec/options.c
+            libavcodec/utils.c
+
+commit 2c3cd96bf1cb1757407c973416f7928d492e2156
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 18 22:59:19 2008 -0400
+
+    Cosmetic rearranging of MPEG update_context functions
+
+commit 2cb0db5ba7d77ed8180f0551462c836047ea262e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 18 16:19:33 2009 -0400
+
+    Fix invalid Mimic stream handling + frame threads
+
+    Releasing a frame after frame_setup_done isn't allowed, and
+    it must do report_decode_progress as if it was finished.
+
+commit 2d0370118996148f1c64b9c6b4a2ff632fcaf609
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 31 03:56:04 2008 -0400
+
+    Add fixme for copying packet data.
+
+commit 2e121780400cb6630a66a0b7bd3fe84ad539b882
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 11 18:21:08 2008 -0400
+
+    Increase the released buffer size to 16. H264 can release this many at an IDR, can other codecs have even more?
+
+commit 2e5a5baf540ae0d1ac16ae52f66254b7233aabf7
+Merge: 5d82241 31f0027
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 29 04:35:46 2011 -0400
+
+    Merge branch 'master' of git://git.libav.org/libav
+
+    Conflicts:
+            libavcodec/dsputil.c
+            libavcodec/mpegvideo.c
+            libavcodec/snow.c
+            libavcodec/vp8.c
+            libavcodec/x86/dsputil_mmx.c
+
+commit 2e9d8893eac232b782b479378cf13d484ab9cc1e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed May 28 22:49:33 2008 -0400
+
+    Add thread.h
+
+commit 2eeab8f6ad07611e46b3377ddf73e1d7f1f2bb78
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 24 21:16:31 2008 -0400
+
+    General description and porting guide
+
+commit 2f1fec650f4bb351fa819fb7e11b4766a43fa30f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 01:20:32 2008 -0400
+
+    Simplify mimic_decode_end changes
+
+commit 2f48eac011767ba2d60329c10a22499c228a31d8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Nov 18 15:27:24 2008 -0500
+
+    Missed fixing pthread.c in merge.
+
+commit 2f8f77021011eec5af8cab80ee7bdc574ad3f37b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jan 21 03:01:42 2011 -0500
+
+    pthread: Style and comment nitpick for validate_thread_parameters()
+
+commit 300b5819426ed6b35aaa480502070382e5295111
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 17 14:07:06 2008 -0400
+
+    Copy aspect ratio info between contexts.
+
+commit 3029628ce39e37c9ae77cb78f22ab9d4846e6610
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 31 15:15:15 2008 -0400
+
+    Fix compiler warnings
+
+commit 303cd6307958792faac1ce8c8c81eea2651b002f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 19 18:31:17 2008 -0400
+
+    Use MPV_report_decode_progress in mpeg12, and call it before mb_y++.
+
+commit 30e540672df8523a47013d92592b744459040904
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Oct 13 15:00:39 2008 -0400
+
+    Make every thread lock the same buffer_mutex for get_buffer.
+
+    Otherwise it isn't actually protecting anything...
+
+commit 3106e8ebe7c55eba3e41f3a11cc23eb249a4ff3b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 14 23:09:47 2008 -0400
+
+    Always set thread_context[0] in MpegEncContext.
+    This fixes mpeg* encoders always crashing, but most of the regression tests are still failing.
+
+commit 3127a4bd6e36bb2d9cd2fe12a96fa776d94fed94
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sat Nov 2 10:47:44 2002 +0000
+
+    added BeOS net_server support (R5 network stack), basically the same
+    problems as with winsock (sockets != fd), and the broken select().
+    based on older patch by Andrew Bachmann.
+    patch by (Fran
+commit 314c2b1d2f94be3b6aca3dd1ae0f30c05f10f2ee
+Merge: 9816b66 bd8850b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Feb 17 22:41:31 2009 -0500
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+    Conflicts:
+
+            libavcodec/avcodec.h
+            libavcodec/mimic.c
+            libavcodec/mpeg12.c
+            libavcodec/mpegvideo.c
+
+commit 314e5630e389457319ff2d11e856fab6b1d8b250
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Mon Jan 7 12:47:14 2008 +0000
+
+    Move wmv1_scantable to .rodata section by making it an array of arrays.
+    Patch by Diego 'Flameeyes' Petten
+� flameeyes commit 31e3f669b598302b2a487dab84e08bf4d1e79983
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu May 7 18:06:52 2009 -0400
+
+    Fix mplayer patch's calculation of extra delay.
+
+    It's only (num_threads-1) frames with MT on, not num_threads.
+
+commit 31f1a603dcfe885c41d123832f102a3ccc55c6dd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 24 00:20:03 2008 -0400
+
+    Rename threading functions with 'decode' in their name
+
+commit 333777b56b942a11db5d672433357bcbbf0d6e47
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 01:14:48 2008 -0400
+
+    Cosmetic changes to mimic
+
+commit 33bc3cc94a5a6e2679306da899afb1e0ce6b78c6
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 14 14:01:15 2008 -0400
+
+    Reindent.
+
+commit 3444ffe523dd65b788791dfb2c6cbd7031cfec97
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 6 20:24:44 2008 -0400
+
+    Cosmetics: rename last_thread to prev_thread to avoid final vs. previous confusion.
+
+commit 344df336a0b5e70ef9fcea33f612f759bc045552
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Apr 19 03:31:30 2010 -0400
+
+    Reindent
+
+commit 3547c7f44108f1080f90de1844c36fb172528994
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 20 19:40:48 2010 -0500
+
+    API simplification: remove ff_report/await_frame_progress()
+
+    The field variants are enough.
+    Note that mpegvideo.c thread code doesn't need to support any codecs
+    with field pictures.
+
+commit 3630d89a7bd6443f9aeda2f6997fb2ea5da5c97d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Dec 18 12:36:20 2008 -0500
+
+    Copy dequant4/8_buffer between H264 decoding threads.
+
+    Fixes at least:
+    MSG00 ED.mkv
+    freedom EP1 sample.mkv
+    made with unknown encoders.
+
+commit 36977df5243521eaa3ab1b67f3c89d1a1ba4c8f7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 18 22:03:25 2008 -0400
+
+    Move copying idct_algo to the right place
+
+commit 379271216e0d522b675e97189ab5d4e5cf7f5f70
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Apr 19 03:35:28 2010 -0400
+
+    Update todo.
+
+commit 37b38ff868fa39f75df9c1bd543fd1c2dc7134ae
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 20 20:31:16 2010 -0500
+
+    Update the comment for FF_THREAD_FRAME.
+
+commit 382e06ef4ba568c565b9d67b33b1688a32b2b80e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 11 06:21:06 2010 -0400
+
+    pthread: Use av_fast_malloc to allocate the frame buffer
+
+    Also delete the FIXME; it's impossible because the AVPacket memory
+    API doesn't actually work.
+
+commit 3934d02026fb67b46441176c4160c0f854c12825
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 21 18:10:58 2008 -0400
+
+    Reindent.
+
+commit 39eee0b91b9b6b75c54ff68d51ecc0ba1816c88f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 22 03:36:24 2008 -0400
+
+    Multithreading support for MPEG-4
+    This requires more parallelism barriers than usual because of the horrible skip MB structure in B-frames.
+
+commit 3ad85b1741ca6d36126bbf674f5b82d550107bae
+Merge: ff4c627 4495490
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Oct 6 16:12:06 2009 -0400
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/mpegvideo_enc.c
+            libavcodec/snow.c
+            libavcodec/vp3.c
+
+commit 3afd3f52b940d0bfa756e1a7496a20d103c5a7f0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 25 03:25:00 2008 -0400
+
+    Merge MPV_update_picture_pointers() into its only caller.
+
+commit 3ba8143c5da92197eb45fa120bfa95b38adfd3bf
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sat Nov 2 10:35:07 2002 +0000
+
+    added BeOS net_server support (R5 network stack), basically the same
+    problems as with winsock (sockets != fd), and the broken select().
+    based on older patch by Andrew Bachmann.
+    patch by (Fran
+commit 3bac11e47a0ec7c6036c53a1173bce276abccfeb
+Merge: 53fff22 3d42d49
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Apr 9 21:30:16 2011 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/h264.c
+
+commit 3bef1503e0f23c0f30c2e3b2de64a9b2618807d2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 27 16:18:44 2009 -0400
+
+    Add debugging hooks to show ff_report/ff_await calls.
+
+commit 3c3a3648317737830fc863371b455624d093f8e6
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Oct 18 17:39:17 2008 -0400
+
+    Fix possible null pointer access after seek.
+
+commit 3c7a8d94b97003b118c2438343d06ad7cf26198a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 9 00:04:51 2010 -0500
+
+    Reimplement VP3 multithreading.
+
+    Synchronization is now not very fine-grained, because it reuses
+    vp3_draw_horiz_band which runs every ~64 pixel rows.
+
+commit 3cfd7b2e788c3d8e31c91ed529f3e3730f836395
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jun 23 23:14:05 2008 -0400
+
+    Wrong kind of #if.
+
+commit 3f7521893b9072181763ea176ef8da0c0ad1922a
+Merge: ed42183 206c937
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Oct 10 01:47:32 2010 -0400
+
+    Merge mainline.
+
+    API change: CODEC_CAP_FRAME_THREADS is now defined as 0x800.
+
+    Conflicts:
+            libavcodec/avcodec.h
+
+commit 3f858091f8f3cd43f1eed396e85f6956ee5068a0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 02:35:52 2008 -0400
+
+    Fix losing frames at the end of an encode
+
+commit 3ffe81697018042b27a31f20c1d30c988b688d60
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 12 18:22:42 2008 -0400
+
+    Reindent.
+
+commit 401a6bc7f0fe26963f63778c5092ae96c4262634
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 25 19:07:58 2009 -0400
+
+    Frame threading for VP3 [1/2]
+
+    update_context function and compatibility fixes.
+
+commit 40265f10de7698bb2fe23857cf261a0f04fe18a1
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Oct 13 14:19:27 2008 -0400
+
+    Fix edge drawing for non-mod-16 files.
+
+commit 4074c8bfba918988029ce106eda3d41486f12966
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jul 12 00:11:35 2008 -0400
+
+    Copy more MpegEncContext variables.
+    These are needed for proper DivX/H.264 decoding.
+
+commit 40ffd3a664e36f44ebdf4d2603e42c7c59502599
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jul 23 21:40:06 2009 -0400
+
+    100l, fix compile error introduced by automerge
+
+commit 4118a72e28be1cee657561a1f45dc3ce160dbf07
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Mar 10 02:46:14 2011 -0500
+
+    Update todo.txt
+
+commit 41e0f81a58493a0a15cb18c7ff00920f0fd124a3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 24 02:52:18 2008 -0400
+
+    Remove unneeded stubs from thread.h
+
+commit 4259f9fcf4edc5c92bc02d37d85493b3eb917075
+Merge: 2615129 fb61692
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Nov 2 02:36:20 2010 -0400
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 4293f5ba301cd751257705bfe6fc8b12337dccab
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 14 23:20:17 2008 -0400
+
+    Disable multithreading for packed B-frames.
+    The bitstream buffer is updated after decoding, so it has to be changed to find the frame end before starting the actual decode. Assuming that's not too slow.
+
+commit 42b521db9177ed2d4e62845659fdcd44c59757f9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri May 8 00:40:57 2009 -0400
+
+    10l: dequant_coeff must be copied along with dequant_buffer
+
+    Fixes more Blu-Ray streams which change CQM, including Slumdog
+    Millionaire.
+
+    Noticed by Haruhiko Yamagata.
+
+commit 435ace7689e2794ddbb4013de097bdaf487f7365
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Apr 9 21:47:12 2011 -0400
+
+    Update test scripts to use ffmpeg instead of ffmpeg_g
+
+commit 435adcd213762869c6a6f806481450216720b364
+Merge: 6ee99a7 11dcccd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Mar 10 01:25:24 2011 -0500
+
+    Merge remote-tracking branch 'socrep/last_mainline_point' into last_git_point
+
+commit 451af22792e7bec6f3b347ba801ba186102a85da
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 14 04:13:33 2008 -0400
+
+    Call draw_edges per-MB-row instead of per-frame when possible.
+    This is necessary for multithreading, since rows aren't complete until their edges are mirrored.
+    It should also be somewhat more cache-efficient, but I haven't benchmarked it properly yet.
+    I don't like adding new MpegEncContext variables, but edge_y lets it do the right thing wrt. error resilience and codecs that don't call ff_draw_horiz_slice.
+
+commit 452fb04633126605afbb2cd0d6383bb75fe01f38
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Fri Nov 8 20:54:44 2002 +0000
+
+    ringbuffer patch by (Fran
+commit 4681ac8f618586d4a3ecb04784b9cf896d070f1b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 11 14:43:29 2010 -0400
+
+    Cosmetics: vertical alignment
+
+commit 468eba33060aa87117ac6b617d4eae776951cbf6
+Merge: 3c7a8d9 aa86abc
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 9 00:55:42 2010 -0500
+
+    Merge mainline.
+
+    The error condition in vp3_decode_frame was uglified to make the
+    diff simpler.
+
+    Conflicts:
+            libavcodec/vp3.c
+
+commit 46a45ad599db4037006b335fca2c7b7bed7018ab
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 2 00:22:16 2008 -0400
+
+    Clear thread variables in avcodec after freeing them.
+
+commit 46b495ebc4a7fb7662580791e4ed10130b00fead
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 12 17:16:31 2008 -0400
+
+    Don't allocate duplicate contexts if they're not going to be used.
+
+commit 46ec6b90e7b2d6b1d83a207025a691c56176d686
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jun 16 18:21:04 2008 -0400
+
+    Multithreading support for MPEG-1.
+
+commit 46fc25f5c225e2f33430e31a0d0ad375455e9cef
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 1 12:20:12 2010 -0400
+
+    Update todo.txt
+
+commit 473799e0c3b647d73046c3b4de30e85bf57ba610
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 21:16:59 2008 -0400
+
+    Whitespace fix
+
+commit 47869edb7f0aede0a2bfd178ef9937e28bf8b01f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Feb 14 23:41:12 2010 -0500
+
+    Fix buffer leak in VP3 by allowing update_context() with the same context.
+
+    I assumed update_context() would only be used to copy values, so skipped
+    calling it with duplicate parameters (during flush and free) for optimization.
+
+    But VP3's release_buffer call was moved from the end of decoding to the
+    end of update_context(), so flushing would skip releasing a frame and
+    eventually run out of buffers.
+
+    Unfortunately this makes update_context() much uglier in codecs that
+    already worked, because memcpy doesn't allow src and dst to be the same.
+
+commit 480a82da7912bc5034a4b0bc2090879920567521
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Sep 30 01:13:43 2010 -0400
+
+    Update todo.
+
+    ffplay/ffmpeg support for better a/v sync support is in progress.
+    If Theora uses PTS (I think it does), then once ffmpeg.c i
+    ready it can be submitted to mainline.
+
+commit 4845b04ed3d6bc513a272da718629d110bc8186f
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Mon Jan 7 12:43:04 2008 +0000
+
+    Mark the tables in g726.c as constant.
+    Patch by Diego 'Flameeyes' Petten
+� flameeyes commit 485d8e9e3c5de803075c8440922e6e09b10a1e57
+Author: Alexander Strange <astrange@resnet-022-195.spsu.edu>
+Date:   Sun Sep 14 20:45:58 2008 -0400
+
+    Fix ff_report_*_progress side of H264 multithreading and merge draw_horiz_band into it.
+
+commit 4874d258345ec305b0eca78c41491878d42a900d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 11 14:45:39 2010 -0400
+
+    Cosmetics: reorder variable declarations
+
+commit 48d2183d902db7cc42c9f84d2bad6eccc35d0221
+Author: Ronald Bultje <rbultje@google.com>
+Date:   Mon Apr 11 14:58:11 2011 -0400
+
+    Release unused pictures even when not calling ff_h264_frame_start()
+
+    Unused pictures assigned to the thread can build up and cause it to
+    run out of buffers if the thread only ever decodes bottom field pictures.
+
+commit 48d7f5a8f3f14535d74f0e4b0a736e3f5dc336b2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 18 19:58:18 2008 -0400
+
+    Factor out freeing delayed released buffers.
+
+commit 49652059c673eb977e5b69ffb0c8a543c3210e16
+Merge: a2efd25 48e59eb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jan 15 17:01:41 2011 -0500
+
+    Merge mainline.
+
+    Conflicts:
+            doc/APIchanges
+            libavcodec/avcodec.h
+            libavcodec/h264.c
+            libavcodec/utils.c
+
+commit 4969bb89e592c003a560e321f3cacb412a192db9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jul 31 14:30:40 2008 -0400
+
+    Copy avcC variables in H264Context.
+
+commit 496ec27adcef84278e650b29f4d22aba383d705a
+Author: Alexander Strange <astrange@resnet-022-195.spsu.edu>
+Date:   Sat Sep 13 16:20:03 2008 -0400
+
+    Correct interlaced draw_edges.
+
+    There is still a race condition when fields are decoded in different threads,
+    so for now we pretend EMU_EDGE is set instead of using the edges.
+
+commit 498ddbb3b2d78819540c1b8fff9a2bc495a33346
+Merge: aaa05da 95b6213
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Nov 3 18:34:04 2010 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+
+commit 49e377f9f23904ed790e98175b1575bba6ecc6cb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jul 15 03:30:28 2008 -0400
+
+    Add update_context() for H.264.
+    This seems to lose reference frames for my PAFF sample, which I'll fix after I find out how PAFF works.
+
+commit 4adb7fbed7dcb12dda0f3919188334a3b96efb0a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 18 20:02:12 2008 -0400
+
+    Cosmetics: get rid of unhelpful comments, useless braces, and some whitespace/align issues
+
+commit 4af5480a021156089c193ce2215994cfd170e4e6
+Merge: 2f48eac 1bf5327
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Nov 28 22:48:24 2008 -0500
+
+    Merge mainline.
+
+    Conflicts:
+
+            libavcodec/h264.c
+            libavcodec/mpegvideo_enc.c
+
+commit 4b9ce55576ab27f6a45d542bfda7c1e21fb967f8
+Merge: 1fae9e9 435adcd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Mar 10 01:54:16 2011 -0500
+
+    Merge branch 'git_equiv_of_mainline'
+
+commit 4c726e5e30e1f48619eecbec5442acd63e895318
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed May 28 22:40:30 2008 -0400
+
+    Rename pthread.c to thread.c
+    The remaining *thread.c files will be merged into it later.
+
+commit 4c802e44f13672dd4527f51fc2f07a1e21be4a5c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jun 2 04:31:45 2008 -0400
+
+    Simplify ff_await_decode_progress.
+
+    Always set and allocate the progress pointer, so ff_await_decode_progress doesn't have to check for threading to be on.
+
+commit 4cdd15a3cf5dfec32ace278cd445f04130ddbee0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jan 15 19:26:14 2011 -0500
+
+    pthread: Call external get_buffer() on the client's thread by default
+
+    This fixes several mplayer VOs that crashed when they were called from decoding
+    threads.
+
+    Not a complete fix as mplayer still doesn't work right with draw_horiz_band()
+    being called from decoding threads, but that doesn't crash at least.
+
+commit 4d2f536b72ec9121b5afe858b69c93d9cc75f20a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 30 04:20:20 2008 -0400
+
+    Simplify draw_edges changes by removing edge_y (which is useless with slices)
+
+commit 4d8525ab388d34e128629b08ab88c6a16f3aa406
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sun Jul 21 07:59:17 2002 +0000
+
+    nanosleep patch by Fran
+commit 4edb9a7f780a6eaef36512724e6a34c3f38d67ce
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Feb 15 00:31:31 2010 -0500
+
+    Disable mpeg1 frame threading.
+
+    Seeking doesn't work (it triggers false error conditions) and it doesn't
+    pass test.sh (-threads 2-4 match but 1 doesn't somehow). Will be reenabled
+    when those are fixed.
+
+commit 4f9364563f388af84b9a02930b375ff52eee1394
+Merge: 3bac11e 347b375
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Apr 9 21:30:47 2011 -0400
+
+    Merge branch 'master' of git://git.libav.org/libav
+
+commit 4fb1fdf1ca1a48aff176b8f833ca596d245d6d36
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jul 15 03:30:50 2008 -0400
+
+    Reindent.
+
+commit 4fb33e68ec34cbc135ce4ebb86f7e1399ba97115
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jun 23 22:11:58 2008 -0400
+
+    Merge statements.
+
+commit 5022ee29ac6d4b2ee992115c3bf997e7bd1ab7a4
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 5 20:30:27 2008 -0400
+
+    Add delayed_release_buffer for handling reference frames.
+
+commit 5066a4656963dd3b4e847a540353bf71d318de14
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue Nov 5 00:07:05 2002 +0000
+
+    lrintf detection (based upon a patch by Fran
+commit 50d1ce2db57e39b6115642d3c4397e9f67f758e3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 24 00:08:03 2009 -0400
+
+    Call codec init at a more reasonable time.
+
+    Previously it was delayed until the first decode_video() call,
+    but it can be moved into avcodec_thread_init(). This makes pix_fmt
+    available to clients after init again, which should make them happier.
+
+commit 50eaf4979eb085e2c58c06912bb0c885404d4470
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 28 17:39:28 2008 -0400
+
+    Simplify changes to non-pthreads and don't call thread_init from open if it was already called.
+
+    This will cause an assert failure if clients call thread_init again after open.
+
+commit 51428e56c71512a57f81d85acee3ced7cc0d2983
+Merge: 00425e9 03586fd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jul 4 16:41:31 2009 -0400
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 517d68c2642aee3c14fc71031c1e44c0803a664e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Mar 8 04:43:06 2010 -0500
+
+    h264: change the definition of col_fieldoff to avoid divisions
+
+commit 5186276ed120294fb6a4f2cf5a40d5019012482f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 16 22:01:18 2011 -0500
+
+    libavfilter input_get_buffer is thread-safe
+
+    Slightly faster ffplay playback
+
+commit 51ead6d2c40c5defdd211f435aec49b19f5f6a18
+Author: Ronald Bultje <rbultje@google.com>
+Date:   Mon Apr 11 10:14:38 2011 -0400
+
+    h264: Fix decoding race condition with PAFF
+
+    A thread can release a Picture and immediately reuse the same Picture
+    for a different frame. This is fine, unless the picture released was
+    a field-picture. In that case, there may be a future thread still decoding
+    the second field of the picture, and reusing it overwrites the shared fields
+    in the Picture.
+
+    Fixed by tracking ownership of Pictures and allowing it to be reassigned
+    to the second thread's context.
+
+    Fixes conformance sample HPCAMAPALQ_BRCM_B.264.
+    vsync still fails, and therefore FATE does as well.
+
+commit 521f07e3cf2dfb9b0473027ae2fbb6bd4f203ce4
+Merge: 7d0709e 4a8d06e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 31 00:08:08 2009 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+
+commit 52b214211060b56e7aac6b9743fa27bc79f789d1
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed May 28 02:15:47 2008 -0400
+
+    Enable multithreading for Mimic.
+
+commit 5323bc6e8adbff2b6849a08e9e071f22241fd807
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 20 22:48:51 2010 -0500
+
+    Cosmetics: add () to function name
+
+commit 5340d1ffae10b1545d88b9dd8ca86a5a3aaffca7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed May 28 02:15:47 2008 -0400
+
+    Enable multithreading for Mimic.
+
+commit 534516ac79adc69d8773ff934955532a92db2cf1
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 00:01:07 2008 -0400
+
+    Fix a memory corruption bug in update_context and reenable H264 multithreading.
+
+commit 535de6d374ab6b06041f5e3cb392327abd2ce054
+Merge: 6abde3d cc8161e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 11 04:08:37 2010 -0400
+
+    Merge mainline.
+
+commit 5380fee33a871580fe9f3424767eaf2362c8cde0
+Merge: ef2d866 08c0efd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 13 23:43:37 2010 -0700
+
+    Merge mainline.
+
+commit 538a29e12f115390a64ceb3d4909a4a67cad26cd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 15:48:55 2008 -0400
+
+    Make diff smaller
+
+commit 53c86e82af6757c12df3a99aede6862a311f050b
+Merge: fa8a82e ae2df26
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sat May 3 16:13:06 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 53cd195c8885125351a03cfb6f1d93e66d433b86
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 05:00:01 2010 -0500
+
+    Rewrite multithreading.txt
+
+commit 53fff221cdb9f18df2f2f52bd48731ce0fa9e114
+Author: Maksym Veremeyenko <verem@m1.tv>
+Date:   Wed Mar 30 13:20:23 2011 +0300
+
+    mingw32 compilation after 'unbreak avcodec_thread_init'
+
+commit 5402adfa2e9c159e7d13ee07e142cb035a77ef95
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Dec 16 16:54:20 2008 -0500
+
+    Only write to stderr once for each av_log().
+
+    This makes logging somewhat easier to read with multiple threads.
+
+commit 541d79def90226cc9b17e6ccc9eb2ff2549bea46
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri May 15 17:54:20 2009 -0400
+
+    Remove useless volatile qualifiers
+
+    All such accesses must be protected by a mutex anyway, which is
+    already a memory barrier, so this doesn't change anything (assuming
+    a working compiler).
+
+commit 544c6a6709833f1a449b8faf4478ab529e269240
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Mar 29 02:28:29 2009 -0400
+
+    Frame threading support for HuffYUV decoding
+
+commit 54c0c3d2ce69606a5aa508659d3322f48ada77cb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Sep 3 11:59:59 2008 -0400
+
+    Call decode_postinit from the right place to avoid race conditions
+
+commit 552a89508fddc64d4217b9d845e458f504b63593
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 27 15:22:52 2009 -0400
+
+    Print md5s of test output files in test.sh.
+
+commit 55c511eedb24ffb09aef7072c02e911576c9900b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 25 02:47:19 2010 -0500
+
+    Did a todo item
+
+commit 574d2e5b942aa1e093bf768cc6321f3b081d3aeb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jul 5 23:36:08 2008 -0400
+
+    Merge enum with its only use.
+
+commit 578f45c15026e778ef54694d98a9ec446810a897
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 15 17:42:56 2008 -0400
+
+    Reindent.
+
+commit 5918efedbb7928031b6af745acb8b4233c08fb06
+Merge: 7d09b68 c2a400d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 14 21:37:03 2008 -0400
+
+    Merge branch 'mainline'
+
+commit 59d787ffccaf42e992229649c23e624ea7d71635
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 05:39:12 2010 -0500
+
+    Delete os2thread.c which is gone from mainline
+
+commit 5a7146bf75a2170f33ff25b88b91f667574d2919
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 11 01:33:20 2010 -0700
+
+    vp3: Fix a crash decoding files with <thread_count frames
+
+commit 5a75822b584676672fbb887d4b828abc80ffd89c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Apr 1 19:19:34 2011 -0400
+
+    pthread: validate_thread_parameters() ignored slice-threading being intentionally off
+
+commit 5b7c668d1f64facfe8b9f86e2491085595fa9bc7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 12 20:26:26 2008 -0400
+
+    Document thread-safety requirements for user callbacks in AVCodecContext.
+
+commit 5bacdcc1a52e2b1d32bad9e9f250ceb6cc37f366
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Oct 11 15:40:47 2008 -0400
+
+    Fix progressive height values in avail_motion()
+
+commit 5c46573ed07b092aea0db6560ade77bc299c28cb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 25 22:16:23 2009 -0400
+
+    Whitespace error
+
+commit 5c4c8ed51da0be4f141a4de339db77f4a0a6c783
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Sep 1 03:18:55 2008 -0400
+
+    Remove unused variable
+
+commit 5d3c2f7512746dd0adf067952ed38d8111d7571d
+Merge: 7041a16 5a70b15
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sun Jul 6 12:38:18 2008 +0900
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 5d53ada4cbd323d66b61965b1442d0abd63361b2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 24 17:00:18 2010 -0500
+
+    Don't load PerThreadContext until it's needed in ff_await/report_*.
+
+    Should avoid crashes if anything calls them without using ff_get_buffer.
+
+commit 5d7dfbb887f263b036224bf4510db176fa6cff73
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jun 16 18:18:53 2008 -0400
+
+    Utility functions for mpegvideo threading.
+
+commit 5d82241b49a1fb1dbecd1b279045cce9f099c775
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Mar 24 03:34:48 2011 -0400
+
+    Update todo.
+
+commit 5eb0c649c780e26a77085bd213f945d88761ad00
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 4 04:12:44 2010 -0500
+
+    Make ffplay -drp the default.
+
+    Ignoring reordered/delayed PTS never works with frame threading.
+    This may be changing behavior too much; I haven't tested this
+    with non-mt files, but I think the current behavior must cause
+    A/V desync even there.
+
+commit 5eb679f0fff432ba2c9e0cdada254dbe4bd4a45d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 02:53:14 2010 -0500
+
+    Remove width/height changing checks from h264/mpeg12
+
+    These should be moved to pthread.c update_context_from_thread() if they're needed,
+    not kept in specific codecs. Hopefully the error return from get_buffer() is
+    enough to make it not crash anyway.
+
+commit 5edf2cc5acbb410ba50a3770e8565fb39206f406
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jun 16 18:20:54 2008 -0400
+
+    Multithreading support for mpegvideo decoding in general.
+
+commit 5ef4af7de47c3913ddc1e09e43887ac04ecfaba3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 15 01:58:15 2008 -0400
+
+    Fix ff_delayed_release_buffer crashing with slice-threading.
+
+commit 604ee5471f21d310f4014011a20c00c28a31995b
+Merge: 3792712 7838828
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Apr 21 22:04:21 2010 -0400
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 607edd221a3b7a300fbaa4a5495ffd30f8dc9fa8
+Author: stefano <stefano@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Mon Jul 26 14:30:47 2010 +0000
+
+    Define static functions fill_image_linesize() and
+    fill_image_data_ptr(). ff_fill_linesize() and ff_fill_pointer() now wrap
+    these functions.
+
+    The new functions are more generic, and are going to be exported in a
+    future patch.
+
+    Patch by S.N. Hemanth Meenakshisundaram smeenaks # ucsd commit 60be6c15c4d23c5107f14e408043988918a44c76
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 20 16:07:58 2009 -0400
+
+    Add a valgrind script so I don't have to type it all the time.
+
+commit 614d2308b343ec6af6bf72ada08884684bb66df0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Sep 3 22:55:22 2008 -0400
+
+    Update header guard
+
+commit 62830f5772dd8971032aa9f8d52a8f6c00c92487
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jul 17 19:04:19 2008 -0400
+
+    Remove next_delayed_pic, it doesn't prevent any race conditions.
+
+    This part is now entirely out of sync with mainline.
+
+commit 62ba7a4acc98b691ab3152356cf0c21a52f7e03b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 15 19:22:41 2008 -0400
+
+    Fix the main thread hanging if there's an error before all of the frame is decoded.
+
+commit 63d086d2585d3275a6b9068ee1ca957617ecf902
+Merge: 314c2b1 712afbf
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Feb 18 21:29:44 2009 -0500
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 63f663f09320851b9ed76f489fdab590da2fc7f0
+Merge: 64df3aa d61efce
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sat May 10 07:51:22 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 63ff6aa525faf65f86dfbc8ec571fd260844100f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Oct 23 18:07:14 2010 -0400
+
+    Don't set avctx->thread_count to 0 in avcodec_thread_init.
+
+    h264 crashes during decode init with 0 (instead of 1) threads.
+    Note that this isn't a regression from -mt, but is actually a bug present in mainline.
+
+    -threads 0 should preferrably set auto threads, but doesn't.
+
+commit 641f2752c16aaa25c5854d34726b72f226003b87
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sat May 3 12:20:42 2008 +0200
+
+    Ignore stuff
+
+commit 6446d2b0931c6a9637077b18b98af911d438057f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu May 7 01:38:16 2009 -0400
+
+    Update mplayer.diff line numbers to match mplayer r29269 (20090505)
+
+commit 647f6cf3144934e3c2c22b06601d23a1217a2b86
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat May 23 20:09:07 2009 -0400
+
+    H264: Print an error instead of failing silently for size changes with slice threads.
+
+commit 64df3aa6a32a87d96f650b8535c88e1d65b52524
+Merge: 53c86e8 72c8992
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sun May 4 22:24:35 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 65b3e34fc8a52f4f1a48fce7c8cddd80db8fade9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 1 12:20:24 2010 -0400
+
+    Update the test script to show results more clearly
+
+commit 65e8486a1dd1efbf2750d0bc25c326f8dc836bcd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Mar 29 03:10:53 2009 -0400
+
+    Fix nonsense 2am code - left the huffman tables uninited.
+
+    It would be faster to copy the VLCs but it would require more code.
+    And this could be factored into another function.
+
+commit 661ca4010c548e135ce1c0c819d0c05a94b66985
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 10 14:32:04 2009 -0400
+
+    Cosmetics: get rid of pointless parameter.
+
+commit 66204771dd8e479d30ef71ad85c162e1a34e4104
+Merge: 3f75218 76dd0e7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Oct 23 17:41:42 2010 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/options.c
+
+commit 66a34dee4443dd6ccabb53ca09a1c45bc95f4d24
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 12 00:39:28 2008 -0400
+
+    Don't run the last part of decode_update_context() when the last frame was dropped.
+
+    This fixes mplayer -framedrop crashing. Of course, they're still run in some cases when it wouldn't be without threads, but those are all error conditions.
+
+commit 66cf3f781d73fed502d80cce01dbd16b25bc3a71
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 2 19:27:12 2008 -0400
+
+    Correct 6b037a88 for PAFF/MBAFF.
+
+commit 66d9c0c9f6b2a4309dd4a41f88dd9a1dccb323e3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 23 19:56:21 2008 -0400
+
+    Wait for predecode to finish just before calling update_context, instead of as soon as possible.
+
+commit 66ef4712c357514602f6b47311874e9ebf7376e3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 4 15:57:36 2008 -0400
+
+    Handle zero-byte input correctly. (for CODEC_CAP_DELAY)
+
+commit 68682144289b05c830fd64a651526c4708666874
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 04:08:42 2008 -0400
+
+    Fix accidentally calling execute_ref_pic_marking() while draining delayed_pics at the end.
+
+commit 686ea24614fded4d7501f71901aae61f5160f018
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 16 22:15:28 2011 -0500
+
+    Update APIchanges to match mainline_patches branch
+
+commit 68ef172444124e9e6dd2a69df00ae72a64e795cb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 11 05:34:20 2010 -0400
+
+    Pass the complete AVPacket through pthread.c decoding
+
+    Part of a patch from VLC.
+
+commit 6913bf9451bdaef16cd7748c93358baeec57d33b
+Author: Michael Niedermayer <michaelni@gmx.at>
+Date:   Wed Apr 6 00:14:56 2011 +0200
+
+    Fix REBASE_PICTURE with h.264
+
+    It was possible for last_picture_ptr to point into h.ref_list
+    instead of h.s.picture, which caused a bad pointer to be set.
+    Fixes some valgrind warnings, presumably improves behavior but
+    no changes were found.
+
+commit 6998f46dec036f2ab39d6389747a95a7f5808f19
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 20 22:32:39 2010 -0500
+
+    Cosmetics: Rename init_copy and update_context to have 'thread' in the name
+
+commit 69f085cebf61a64352e623d3c4a5d6032329473d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 10 11:33:47 2009 -0700
+
+    Don't change avctx->thread_count if frame_thread_init() fails.
+
+commit 69f6e77a9a9ddfc386d43f5a350df5c960c0203d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 24 04:11:52 2008 -0400
+
+    Remove useless check
+
+commit 6a26fe72383c0ab088c8d92733221bf2911231ce
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Oct 17 14:45:47 2008 -0400
+
+    Fix nonsense logic in copy_parameter_set()
+
+commit 6a3821cf92ef5aaba020a0b7c8d06df5926bd362
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 3 04:13:55 2008 -0400
+
+    Merge statements in mimic.
+
+commit 6abde3d9e6ccfb062c6f547334171665386b0d85
+Merge: d8014c6 4448f8c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri May 7 04:42:38 2010 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/options.c
+
+commit 6ae441be729df8064f1b1244acc82fead9cb1918
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 01:27:54 2008 -0400
+
+    Reduce code duplication in MPV_lowest_referenced_row
+
+commit 6b037a889a34f8f2dd8ad188cda6f4d09d9f4710
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jul 27 00:58:54 2008 -0400
+
+    Avoid a deadlock in damaged streams where the current picture ends up in h->ref_list.
+
+commit 6b5aa5cb4d105c4ed118d5ea07f64bbe1e94d135
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat May 23 23:10:33 2009 -0400
+
+    Remove inaccurate comment.
+
+    ff_report_frame_setup_done() is called properly for the first field.
+
+commit 6c575595d9d0e2974e326ad86db61bb61163753a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 21:01:51 2008 -0400
+
+    Add flag for thread algorithm
+
+commit 6d4679e9d5fedff6aa1eed964aa1449716f02682
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jan 20 02:17:36 2010 -0500
+
+    Add a FIXME comment to a commented-out part of h264.c.
+
+commit 6e508a7ab927ce7280688d822d3529dfbf17ec88
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Sep 4 17:40:59 2008 -0400
+
+    Fix field progress allocation.
+
+commit 6fad2f2300fb9e6288d4c9cdf3028d07d3dd63a9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 17 15:41:20 2011 -0500
+
+    pthread: Fix missing mutex unlock in error condition
+
+    Also remove stray ;
+
+commit 700a6622f378b5169d8d54ea5bdb4d8b67262a22
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 24 23:29:40 2008 -0400
+
+    Merge another ++.
+
+commit 701ddc74e17de9f76eabf00a9e8d16adac7c2954
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue Nov 5 00:38:06 2002 +0000
+
+    BeOS Audio ouput patch by (Fran
+commit 7041a164baed1c643f0cfa1207fbb2fd06d81f38
+Merge: 84cde2e 483385a
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sun Jun 29 16:34:45 2008 +0900
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 70595dcbdbc01bb1f8f331c0998ee11f04577091
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 24 17:33:22 2010 -0500
+
+    unnecessary freep
+
+commit 706e94d6531daa0b179613dbef51af8ec5bbe1dd
+Merge: 7e928f6 e42b282
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jul 17 18:47:45 2010 -0700
+
+    Merge mainline and swscale.
+
+    One valgrind test currently fails.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/beosthread.c
+            libavcodec/h264.c
+            libavcodec/options.c
+            libavcodec/os2thread.c
+            libavcodec/utils.c
+            tests/ref/vsynth1/rgb
+            tests/ref/vsynth1/yuv
+            tests/ref/vsynth2/rgb
+            tests/ref/vsynth2/yuv
+
+commit 70bf5912700d0519f3d607784654c394633effac
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 18 21:58:17 2008 -0400
+
+    Add an mpegvideo wrapper around ff_report_decode_progress.
+
+commit 70fb3fdcf2c5f01a555d87f8113efb50286493f7
+Merge: 1d15df4 0b034be
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Mon Jun 9 18:03:54 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 71419720215a7ca7d1b1780564f21cb51d9df0a2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 6 15:45:52 2008 -0400
+
+    Copy all the MPEG-2 interlacing flags, as well as *_picture, in ff_mpeg_update_context().
+
+commit 73608e1fa14434599aab86d2198a05ec4ca21c59
+Merge: a5285ae 6a7ac9c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Sep 16 14:38:47 2009 -0400
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+    The definition of CODEC_CAP_FRAME_THREADS changed, but
+    clients shouldn't have had to check it for anything.
+
+commit 73ad08d3b0867db89e5a81b9aec44b053e855ab3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Mar 24 03:31:14 2011 -0400
+
+    Draw edges in MPV_frame_end when encoding
+
+    These pictures don't get draw_horiz_band called on them.
+    I thought I had tried this, but after thinking about it realized I'd made
+    a typo the first time.
+
+    Fixes make test.
+
+commit 74f382ae597d9cf69c885bc03c716d18fdbd413c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Mar 16 23:12:44 2009 -0400
+
+    Disable frame threading for MPEG-4
+
+    It seems to have problems with packed B-frames in mplayer.
+    I don't know if any other players work (at least ffplay does).
+
+commit 753aecc29f8f4727326f0f371fa99fefbc369d0c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jul 15 02:58:51 2008 -0400
+
+    Lift H.264 display-order code before decode_slices.
+    This is needed for multithreading and should get us closer to CODEC_CAP_DRAW_HORIZ_BAND.
+
+commit 759176e401ebe8911e071f860f59b05d482315d0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Mar 10 02:36:33 2011 -0500
+
+    Reorder picture_count in mpegvideo to fix ARM asm
+
+commit 75d4208c3a6ea4b9973b05ce930258ca8c3db224
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 25 01:06:31 2008 -0400
+
+    Disable mbskip copy avoidance harder with threads on
+    Fixes seeking in mpeg4.
+
+commit 76211d5890819ae687cc73520bcda17115a65697
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 23 23:14:10 2008 -0400
+
+    Update threading comments in avcodec.h
+
+commit 776e2fc2d7df09d184caf414cb1d93829fe1c38d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 9 01:11:58 2010 -0500
+
+    Fix missed things in previous VP3 commits
+
+    Optimization improvements only, because the pessimizations hid the bugs.
+
+commit 77f7818ac7b881a5aa024e31147255ed3a413141
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 24 19:00:24 2010 -0500
+
+    Fixed memory leak in todo
+
+commit 78c5ca40fac2dc13dac72cada9cc4b80551ee94c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 16 02:31:44 2011 -0500
+
+    Update todo.txt
+
+commit 78feacc6fae50a72dff68e75d0f718bc136dbe7b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 21 23:05:45 2008 -0400
+
+    Copy the other parts of MpegEncContext needed for h263
+    I'm not sure if mbskip can be made compatible with frame threads yet, so it's all zeroed for now.
+
+commit 795b6f2d87b241e98472c8d9771d4327712c6db9
+Merge: 20d6c33 4f24e1c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jan 13 01:52:27 2009 -0500
+
+    Merge mainline.
+
+    The conflict fix in h264.c has a strange-looking diff
+    but probably isn't a problem.
+    Reverted regression tests to mainline's.
+
+    Conflicts:
+
+            libavcodec/avcodec.h
+            libavcodec/h264.c
+            libavcodec/mpegvideo.c
+            libavcodec/utils.c
+            tests/seek.regression.ref
+
+commit 79f3159ebbc55b4f2f885943badc5a847ecd612f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 26 03:09:09 2008 -0400
+
+    Split longer lines
+
+commit 7a08d7653f38851bd950264fa78174616395fd9a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 21 22:09:12 2008 -0400
+
+    Park all the threads in ff_frame_thread_free before ending them.
+
+commit 7aabc98254731f46d39fb0770b1445fe332797de
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jan 20 02:38:42 2010 -0500
+
+    The mplayer patch doesn't need to change vd_ffmpeg anymore.
+
+commit 7b14ed499f5dab39586f3b75ee03e29425b9383e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Aug 22 16:25:59 2008 -0400
+
+    Remove an unused variable.
+
+commit 7b46b8dc0c04a77108f0150a6fdf58a9b65d4aed
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 11 18:02:57 2008 -0400
+
+    Use USE_AVCODEC_EXECUTE instead of checking thread_count in h264.
+
+commit 7c7f43547b0ad8907d097b99a66f0fc3f171c9f3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jul 31 18:22:55 2008 -0400
+
+    Rename H264Context got_avcC to got_extradata.
+
+commit 7d0709ea04d6f2023052506c969d6db9b79f2963
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 26 00:39:26 2009 -0400
+
+    Reindent
+
+commit 7d09b684e9948bbe0e663e40ff0ce616018c0091
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 14 20:30:42 2008 -0400
+
+    Revert some h264 multithreading changes to make merging easier.
+
+commit 7e85791de30c9005ac722afd59c713c7faef5d7e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 15:41:14 2008 -0400
+
+    Retypeset/fix comments
+
+commit 7e8d959053b29d975c600eb89eb453496a860961
+Author: stefano <stefano@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sat May 15 17:34:45 2010 +0000
+
+    Avoid mixed declaration and code, fix C89 compatibility.
+
+    Patch by Fran
+commit 7e928f69148f6c90d35715f4380accb6fc4e88c4
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 24 02:41:43 2010 -0700
+
+    todo: Add secondary bug not fixed in last commit
+
+commit 7eac0bccc22daa54db7c40b530cf692af3f41274
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 18 16:55:03 2009 -0400
+
+    Update todo.
+
+commit 7ec92357ae09969eb5254ab6954b712d95b4630f
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue May 22 07:58:22 2007 +0000
+
+    cosmetic v1/v2 renaming
+    patch by Andreas
+�commit 7f86539559480910beab0ef568571dbe524ecda1
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 25 02:46:29 2010 -0500
+
+    Rename avail_motion() and associated functions to something better.
+
+    What did "avail" mean, anyway?
+
+commit 7fc3b0d1f996b8a832017095244a3187b8d80f38
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Apr 4 00:23:21 2009 -0400
+
+    Remove client calls to avcodec_thread_init.
+
+    This function has no effect under ffmpeg-mt, since avcodec_open()
+    calls it anyway.
+
+commit 802206985550e6f685e42595f529133186388acc
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 05:19:58 2010 -0500
+
+    Update todo.txt
+
+commit 8047714299aa3fb377b011cd68858b76a666c7cc
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 25 19:39:24 2008 -0400
+
+    Whitespace nits
+
+commit 80a20f0fda854e6c8de05b971164d25425105c82
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 23 21:52:47 2008 -0400
+
+    Don't call ff_report_decode_progress for h264 B-frames.
+
+commit 80a7538f955a9cd931d840e1cb4e4c81e9d85165
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 04:14:51 2010 -0500
+
+    Write APIchanges.
+
+    avcodec_thread_init() will not be deprecated in this repository to
+    avoid generating warnings for users who shouldn't remove it just yet.
+
+commit 80ab88e74f9864442afca19ecc6ee0428623ff22
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 15 17:46:30 2008 -0400
+
+    Cosmetics: rename context variable.
+
+commit 8218d5319067aa1ac06c601e5dc530ebdab7c01f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 18 18:43:02 2008 -0400
+
+    Properly handle error returns from codec functions.
+
+commit 821c4d0996689ab27d5ab1b6bca0695503b02670
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 21 22:54:52 2008 -0400
+
+    Add 16x8 and 8x8 MVs to MPV_lowest_referenced_row()
+
+commit 822ed86c0ac4de7c38d443e23fcabf1b627118ea
+Merge: e340cac 17c125c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Nov 18 13:58:23 2008 -0500
+
+    Merge mainline.
+
+    Conflicts:
+
+            libavcodec/h264.c
+            libavcodec/mpegvideo_enc.c
+
+commit 82324906156d303d5f3b3e10a1855bf05614ebfc
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jul 18 02:24:09 2010 -0700
+
+    Revisit d812c6f8b1d897734d6f7b5f1a5c95d3aa10a3ea
+
+    The sps/pps_buffers logic wasn't correct, considering that SPS/PPS
+    can be found far before the first working frame.
+
+    Unfortunately this adds more code than it removes.
+
+    Fixes a crash and a memory leak in premiere_paff.ts.
+
+commit 824ee1ac826b89b84cc93fb77f38ec6530909f2b
+Merge: 686ea24 11dcccd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 17 03:39:49 2011 -0500
+
+    Merge remote branch 'mainline/master'
+
+commit 83b344d87b97ef6b72e84c145f2185f87ce22e9b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Apr 4 00:27:47 2009 -0400
+
+    Forbid calling avcodec_thread_init after avcodec_open.
+
+    Although ffplay used to do this, it never worked, since codecs
+    were free to check thread_count in their init functions.
+
+commit 83c7cc1ca1afe68b339b8554634a3a1effc76b45
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 21:24:03 2008 -0400
+
+    Add more to todo
+
+commit 83cbbb1a92d58a850d5b254b5f54e78a7bad8ca5
+Merge: ae7e6bb 7e61a90
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 30 09:59:29 2010 -0700
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/h264.c
+
+commit 8414fc85d03776bc622c9451e9b08f047af42676
+Author: Uoti Urpala <uau@glyph.nonexistent.invalid>
+Date:   Sun Jan 2 11:52:30 2011 +0200
+
+    pthread: fix failure to initialize frame fields after flush
+
+    Commit b67d7055bf ("Clear returned pictures immediately after copying
+    them.") moved some code used to (re)initialize per-thread data before
+    starting to decode a new frame. The commit changed this to be done
+    after the results of decoding the previous frame had been returned to
+    the caller. This was buggy: when decoding state is flushed some
+    decoded frames may never be returned to caller, and thus there would
+    be no reinitialization before reusing the same thread for another
+    frame after the flush. In particular, *got_picture_ptr could be
+    incorrectly set when calling avcodec_decode_video2() after seeking.
+
+    Move the initialization code back to the previous location before
+    starting to decode a frame, but leave a line setting
+    PerThreadContext->got_picture to 0 also after returning a frame and
+    add a comment explaining why it is there.
+
+commit 846ae640182b4775db5b32cb027d964bf85d54a5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jan 21 03:16:03 2011 -0500
+
+    Longer comments in thread.h
+
+commit 84a94407509525ffca2e1691a73d186d0d10b1fd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 01:14:36 2008 -0400
+
+    Remove whitespace change from mainline
+
+commit 84cde2e4c7d97f3a9b5f9d4a4c722ccf38c82742
+Merge: f139f42 e73c602
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Tue Jun 24 13:31:01 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 854cff1a75a0c4433d6a25517326b2660a56693d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed May 28 01:05:33 2008 -0400
+
+    Enable multithreaded MDEC.
+
+commit 85730bc96115f75524f2780059a26ee6dbd8695e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 01:30:59 2008 -0400
+
+    H264: Skip filling in the parts of frame num gaps that are bigger than the number of reference frames.
+
+    My sample with a 256 frame or so gap doesn't work with ff_delayed_release_buffer otherwise.
+    No change on MR3_TANDBERG_B.264.
+
+commit 8666b987a1df652d830db8bae9c2d56287a8fc88
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 14:18:13 2008 -0400
+
+    Clarify comment for AVCodecContext frame_number
+
+    Number of frames returned vs. decoded isn't the same anymore
+
+commit 8682f8c0c7396bfe1bf9b4be3293beb4c6a10927
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Aug 22 03:25:03 2008 -0400
+
+    Rename and update comments for AVCodecContext variables.
+
+commit 86c6c4cff0bf8a734592f31591ec6fafb456387b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 9 01:46:32 2010 -0500
+
+    Cosmetics: fix overindent
+
+commit 878ad7601ad8eddec124877eb9b30b3df4a8c8b8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Feb 1 21:45:18 2011 -0500
+
+    Add missing test script.
+
+    Haven't used this one in a while.
+
+commit 87a9ad1b28ec7a4c9b08b949486010098c06a752
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 14 23:17:13 2008 -0400
+
+    Don't copy padding_bug_score.
+    This changes during h263 decode so it introduces a race condition.
+    Having a score for only every 1/n-threads frames is hopefully not too much less inaccurate.
+
+commit 880990f352fd8d557538535fc0496aec47d1c407
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 00:42:56 2008 -0400
+
+    Cosmetics: rename input and output context members
+
+commit 8884655418183d2ccde654febc9a88e8398c978a
+Merge: 8232490 f991c07
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 1 04:46:21 2010 -0700
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/vp8.c
+
+commit 8919a66d8ff492adc9455fd73f1da05d154281ff
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jan 15 19:27:39 2011 -0500
+
+    Re-enable multithreaded mpeg4.
+
+    Seems to work in mplayer, and is needed so I can investigate fixing the buffer
+    age+skip optimization.
+
+commit 8969edf8b07437e9110db82b7c75e57c00c3e842
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Aug 22 02:53:04 2008 -0400
+
+    Split a long line further.
+
+commit 899a30063b23ff008bbea3560c28fa194cfb1d77
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 11 18:04:42 2008 -0400
+
+    Simple patch to keep the non-pthreads OSes working.
+
+    They ignore thread_algorithm being set by the user for some minor simplicity gain, since I'd still like to see these files gone from mainline.
+
+commit 8a2e487269389d778ddf517baaff590b0a7b3f46
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 24 16:55:35 2010 -0500
+
+    Don't allocate thread_opaque progress with frame threading off.
+
+    It's not needed for anything and the extra check in ff_await/report_*
+    isn't slow.
+
+commit 8aa204a70a7f068f46f00e0983b4617f8030544a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu May 29 00:19:26 2008 -0400
+
+    Fix comments for new avcodec fields.
+
+commit 8ae6601b670156b36b227e2a3c0d9cdc72294bd5
+Merge: c91d7a2 cef0309
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 23 01:43:27 2010 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+
+commit 8ae9683ebce1e42c5bd1a24a2bcdcbf2cbfe6ccb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 16 02:29:08 2011 -0500
+
+    Update mplayer.diff to work around incompatibility with draw_horiz_band()
+
+commit 8af63f450185c3b15cc2ca32d2bc1a19f5d2a28e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 20 20:02:34 2010 -0500
+
+    Cosmetics: rename thread.h functions for consistency
+
+commit 8b7a5375ad0956f546c2b614594b79c3ec54de3d
+Merge: 3ad85b1 875fcc3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Oct 28 13:11:58 2009 -0400
+
+    Merge mainline.
+
+commit 8ba50a98f87edb2b87df042f09573ea8be4a8696
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Mar 28 03:54:31 2010 -0400
+
+    h264: Fix ff_h264_execute_ref_pic_marking() not being called with PAFF+threads
+
+    With some PAFF files, field_end() can call ff_h264_execute_ref_pic_marking()
+    during slice header decoding. This was disabled with threads on, which was wrong.
+
+    This patch fixes it at the cost of making control flow more confusing.
+
+    Partial fix for Chalet-Tire.mp4 from ffdshow.
+
+commit 8c946d1672281fc997dfb2679e7cbed48dd09216
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 14 23:07:07 2008 -0400
+
+    Set decoding progress as high as possible when multithreading is off.
+    This avoids possible crashes from trying to lock progress_mutex when it hasn't been created.
+
+commit 8d466e182aa89ca8cfbe57ce60f2a1e2a7ecebc7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Oct 13 14:37:22 2008 -0400
+
+    Fix incorrect frame num gap handling.
+
+    Fixes ORF1HD.Demo-Loop.720p.DD5.1.mkv from x264 samples.
+
+commit 8d8229014f489e1b2417676d9753f784d995e6c0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Dec 1 17:21:38 2008 -0500
+
+    Don't crash if flush_buffers is called after init and before the first decode.
+
+    Fixes mplayer -ss
+
+commit 8f759fa0e956f8cc33ccd423cefae23e25c16caf
+Merge: 9be00ab 1e8ecf7
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Tue May 20 11:46:04 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 9017898687ebedca27e47fdd13e6e5e208a5fbb6
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 28 00:52:29 2008 -0400
+
+    Pad the frame data properly
+
+commit 9059683b29cd601361e477289a194e679aa72f8c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 12 16:22:27 2008 -0400
+
+    Limit ff_find_unused_picture to only part of s->picture.
+
+     Otherwise, a thread may call delayed_release_buffer and then later allocate a picture in the same place, reusing the other Picture variables while they're still in use.
+
+commit 9077d0ba4ed18e1f106723d155e81461c8951764
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Feb 17 00:55:36 2010 -0500
+
+    Comment recent change to update_context API.
+
+    Notes:
+    - It might be possible to revert this by making the vp3 decoder
+    behave like mpegvideo. Not faster but the code will be simpler.
+    - I don't like any of the old comments, they're too wordy.
+
+commit 9153938f1c1f0933ec59cee14cc26b8f99bd9090
+Merge: 661ca40 e48fb07
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jul 23 21:14:58 2009 -0400
+
+    Merge mainline.
+
+commit 91a7b18346baf82e0ccf6dfb53ada22299396f17
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 16:42:33 2008 -0400
+
+    Call codec init and free on the first thread context instead of the main context.
+
+    This is needed so we can stop using the main context for decoding threads.
+
+commit 91a7c2254bb3e82862c4cd916bd9f2ac1dd4c170
+Author: lucabe <lucabe@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Thu Sep 23 09:16:05 2010 +0000
+
+    Allow to set the frame rate in v4l2 devices
+    Patch by Jos
+� Miguel Gon
+commit 91cd95a84759702b85de68047d21a6ef9d32eaca
+Merge: 77f7818 f9f7b02
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 24 21:39:20 2010 -0500
+
+    Merge mainline and libswscale.
+
+    Upstream now always calls avcodec_thread_init().
+    It's better to do that differently here, so the
+    current code in ffmpeg.c has been kept.
+
+commit 92672ea0eee93244cc78e5023f6469c5b21754b5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 18 19:10:01 2008 -0400
+
+    Simplify: better use of variable names instead of weird struct accesses
+
+commit 93ac615ccf788df20279aa613f3fdc78d4bfcf18
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 14 23:56:22 2008 -0400
+
+    Simplify assert.
+
+commit 9457fb1458998f893b7e1f06f1144f8203cd0025
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 25 22:38:36 2009 -0400
+
+    Don't try to check list1 when it's not filled.
+
+    9.1s -> 9.0s on 5cm.mp4
+
+commit 94985fa9745e2affd0cf3145fa35cb8ae87e7848
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 31 00:08:41 2009 -0400
+
+    Ensure the minor version is higher than mainline.
+
+    Missed this in previous merges, but I think it's important
+    to avoid confusing anyone reading ffmpeg tool output.
+
+commit 9576774bbee0215c0ab7bbb868ff35dff00ab900
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 24 03:02:44 2008 -0400
+
+    Merge ff_*_release_buffer into one function for simplicity and correctness (the non-delayed version was not really ever safe).
+
+commit 967e65496780c089956f2dc199b541dae3a3d9cb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Dec 18 14:37:04 2008 -0500
+
+    Some todo entries I forgot to add
+
+commit 96d6751af35556785037bdddb500eeb7b47795e6
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 14 23:08:45 2008 -0400
+
+    Call ff_thread_init() before the codec init.
+    This makes USE_AVCODEC_EXECUTE() properly available during init.
+
+commit 9816b66fb55fe03fd6f2a4db9390bdaa59eac697
+Merge: 1292a18 918f7b5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jan 22 03:39:04 2009 -0500
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+    Changed the value of CODEC_CAP_FRAME_THREADS and
+    adjusted use of config variables to match mainline.
+
+    Conflicts:
+
+            libavcodec/h263.c
+            libavcodec/h264.c
+            libavcodec/mpeg12.c
+            libavcodec/mpegvideo.c
+            libavcodec/pthread.c
+            libavutil/common.h
+
+commit 99ed04d4d7b7183a4d0a1b8833eee3b506e13ff0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jan 21 01:34:57 2011 -0500
+
+    Remove change to compute_pkt_fields which is no longer needed
+
+    May have been fixed by introduction of pkt_dts, but I'm not sure.
+    Either way, tests pass.
+
+commit 9a88884c03cd40d1fcbd247f1b004848fb629a11
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 6 20:55:20 2008 -0400
+
+    Simplify thread init and make more of its functions static.
+
+commit 9b27ce1e721a021128380e47e83a06f25c52e998
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri May 15 15:53:28 2009 -0400
+
+    Fix race condition decoding H264 direct prediction
+
+    There may be some code merging possible here.
+
+commit 9bac2ee137d9b8152e3beb98681b07f665cd58ee
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 5 20:36:38 2008 -0400
+
+    Cosmetics: rename ff_mt_*_buffer.
+
+commit 9be00ab6113d71a020eea4fd4483b8483efbb29d
+Merge: 63f663f 1531623
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sun May 11 08:53:10 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit 9c241058a255e1da6adec7db81e22d4ff8b2b6b2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 04:09:25 2008 -0400
+
+    Copy the entire reference list arrays in case they're used.
+
+    And that's it for SoC period commits.
+
+commit 9cd1083269334de974acdf13dd94451c178a0eca
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 29 04:47:23 2011 -0400
+
+    Fix mdec
+
+    init_copy rotted due to data structure changes.
+
+commit 9e0e492fe88ec0c7ec400e9afdbef8356280fc16
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 5 00:21:25 2008 -0400
+
+    Update the guard clause on avcodec_thread_execute().
+
+    It already works fine, since all codecs check USE_AVCODEC_EXECUTE themselves before calling it, but the function is for some reason part of the public API.
+
+commit 9e615b8534c98947cbbe6ada5047e95c36e14cde
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Sep 3 20:40:45 2008 -0400
+
+    Rename symbols to not mention decoding
+
+commit 9e981c8d263986e67de6170895125b1de7e62ddd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 11 02:05:50 2010 -0700
+
+    vp3: fix mt decode of 4:2:2 and 4:4:4 content
+
+    The threading improvements are poor and looks strange:
+    real        0m14.337s
+    user        0m13.200s
+    sys        0m1.132s
+
+    real        0m13.434s
+    user        0m19.409s
+    sys        0m7.091s
+
+    real        0m11.610s
+    user        0m21.870s
+    sys        0m7.303s
+
+    real        0m7.976s
+    user        0m20.681s
+    sys        0m3.277s
+
+    There may be a bug related to await_reference_row() being called too many times,
+    as it's in a loop per-chroma superblock and there are 2x as many of those
+    in 4:2:2, but not 2x as many MVs.
+
+    No idea why 4 threads have less sys overhead.
+
+commit 9ec47e33af6776b94875c91288db852a333a6f63
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 21 22:01:43 2008 -0400
+
+    Split the code for completing all current frames out of ff_frame_thread_flush.
+
+commit 9ec9f0868de2df3d3448dec887e7440ebb006b27
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 2 16:14:21 2010 -0700
+
+    Fix the last commit testing the wrong variable.
+
+    Luckily the idea was still right.
+
+commit 9ede817a98a263093ca7965f8754a1770ef031de
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 11 23:01:47 2008 -0400
+
+    Add a new -debug for tracing get_buffer calls.
+
+commit 9f15b87679392902206264383c16c7440d8c0f06
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jul 6 15:35:10 2008 -0400
+
+    Extra line snuck in while merging mainline.
+
+commit 9f6a425684e0fd0ac3f8bbd37ca4e2bc96e05d5b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 25 20:30:08 2009 -0400
+
+    Fix race condition with MBAFF frames.
+
+    mb_linesize is 2*linesize for MB_MBAFF too, which wasn't counted
+    in mc_dir_part_y, so the part of the MV added to 16*mb_y was 1/2
+    the right magnitude. Fix this by halving mb_y too (safe) and
+    doubling row values for MBAFF later.
+
+commit 9ff8764a15cce3fcf3f64270d7d4ec52a3ca7d1a
+Merge: 94985fa 08bbd7d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 31 01:19:07 2009 -0400
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit a1005396f05f5bc13c6aa6875337dbd0e6c4cd03
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 6 20:45:06 2008 -0400
+
+    Merge framethread.c into pthread.c.
+
+    Git doesn't track this very well...
+
+commit a1a5c549efd3a376fd5c8c77d49acfab89f8fdba
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jul 12 02:19:59 2008 -0400
+
+    Factor out size of delayed_pic.
+
+commit a210b422361b051ba73c115fe6bf65eaa745b19a
+Merge: f9515a4 ec6213f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Dec 24 22:08:34 2009 -0500
+
+    Merge mainline and update swscale.
+
+    As a side effect, this fixes Theora/VP3 decode being broken.
+
+    Conflicts:
+            ffmpeg.c
+            libavcodec/avcodec.h
+            libavcodec/h264.c
+            libavcodec/mpeg12.c
+            libavcodec/mpegvideo.c
+            libavcodec/vp3.c
+
+commit a2371d6c9b8837b472e22539642883979eac2ddf
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Nov 18 14:26:37 2008 -0500
+
+    Update todo.
+
+commit a2efd25ba04e0cb61823cbf765651f437b691b09
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jan 6 06:31:45 2011 -0500
+
+    Update todo.txt and move one issue out of bug fixes that isn't a major issue
+
+commit a2fb22fb6988742ee28ee61e2e21fa05125517a9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 30 04:20:03 2008 -0400
+
+    Don't prefix static function names.
+
+commit a3a2674e27f8f2641d1603ee9e92e854289a0527
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Feb 1 23:13:49 2011 -0500
+
+    Fix pkt_pts change to ffmpeg.c
+
+    Caused tons of regressions in make fate.
+    This needs to be merged to mainline_patches.
+
+commit a4599a7f4e4a865a0b402297b4f5a11e9ca34a27
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Thu Jan 10 10:16:36 2008 +0000
+
+    Make pp_help a constant array of characters to move it to .rodata.
+    Patch by Diego 'Flameeyes' Petten
+� flameeyes commit a5285ae4d452abed92f43e2a7a24dd821343a39c
+Merge: a7b8cb3 6a3f0e9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 23 22:31:19 2009 -0400
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit a564fda546ce3bfd04cf8a0e4ec4fb1b6d40e010
+Merge: 287e761 5b4608b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 4 03:56:32 2010 -0500
+
+    Merge mainline and libswscale.
+
+    Auto-merge failed on h263.c for no apparent reason; the patch was
+    reimplemented by hand. Note that mt isn't enabled for h263 at the moment.
+
+    Conflicts:
+            ffmpeg.c
+            ffplay.c
+            libavcodec/h263.c
+
+commit a5cdcc9d4efcc043c01019f632dc1e5ad318802a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 25 20:16:54 2009 -0400
+
+    Rewrite mc_dir_part_y().
+
+    The previous one used a completely wrong value for filter_height
+    and didn't properly account for MVs extending past the top of the screen.
+    I'm not sure if MVs can be more than -pic_height, if they can this
+    may still be wrong.
+
+commit a61ab604725f647c1bcb46aa8cfb303a5c78a2b0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 25 16:39:14 2009 -0400
+
+    Theora: factor out updating last_frame.
+
+commit a74b85567073a424d5b7fc4bd8cc1e125df170f5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Sep 1 02:34:59 2008 -0400
+
+    Comment adjustment
+
+commit a7b8cb3c942fed6c80111519ba5505f11d61f3af
+Merge: 17dcbec 23e6da5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 20 16:47:50 2009 -0400
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit a903974adc7c8dd33dfb0acc4e2d6d10c09a23c8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Nov 11 12:45:09 2009 -0500
+
+    Add a next_outputed_poc to H264Context.
+
+    Doesn't do anything yet, but makes the next merge easier.
+
+commit aa11b5e0df5dfcaba21552e4864807f7aa65f5c5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 11 06:36:55 2010 -0400
+
+    pthread: Remove pointless line from frame_worker_thread()
+
+    It was introduced in the first commit, where it probably did something.
+
+commit aaa05da15fa7710503544d4a94319cb10d49a8f2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Nov 2 02:59:16 2010 -0400
+
+    vp3: Remove redundant y*fragment_width+x calculations
+
+commit aacc74c0e2b047340a1a22f5c28aa03a4294aa03
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 14 03:40:15 2008 -0400
+
+    Reindent.
+
+commit ab4c84dd28c0375a6ed4f77f37ada3b94b2136a0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Dec 1 17:20:10 2008 -0500
+
+    Don't hide the warning about direct rendering in mplayer.
+
+commit abb53ce0e02d31fb282f55cecb58f9b0c4f5c136
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Feb 6 19:18:31 2011 -0500
+
+    pthread: Remove useless line
+
+commit ac2e1b12b5e608b80581d731c4f3a0d6c033e9e0
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue May 29 14:35:29 2007 +0000
+
+    allocate PPS and SPS dynamically
+    patch by Andreas
+�commit ac4539fba6d825d683d4a7d27f0045d068fe4595
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Mon Jan 7 12:48:42 2008 +0000
+
+    Mark the ff_svq1_frame_size_table as constant.
+    Patch by Diego 'Flameeyes' Petten
+� flameeyes commit ac4c37360b21a14e9b26502a299f831b8448a10b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 02:43:15 2010 -0500
+
+    Cosmetics: remove the COPY() macro
+
+commit ac7f2102c4249a89144c36944e13bf6be56e9190
+Author: kabi <kabi@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Mon Apr 8 12:32:01 2002 +0000
+
+    * support for .au .gif .mov .mp4  by Fran
+commit adfaa1f86196156e30c54799303269f4a4f84a2d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jul 26 16:14:00 2008 -0400
+
+    Cosmetics: split a long line.
+
+commit ae2790af78a332a6aa836607a14546c5cc1865e5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Oct 12 18:55:48 2008 -0400
+
+    Add multithreading for PAFF/MBAFF.
+
+commit ae4251429ee5e333fc705c61959417c1d9364b9e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Nov 18 14:15:24 2008 -0500
+
+    Switch to mphq git module
+
+commit ae7e6bb9708a0f0dac89295c788266e0f15899d2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 25 03:14:27 2010 -0400
+
+    H.264: Fix rare race condition.
+
+    h->mb was not cleared when initializing a new decoder thread.
+    This could cause wrong pixel values in the first macroblock of
+    the first frame to be decoded by each thread.
+
+    I suspect this is nearly the last visible bug affecting x264 content.
+
+    Fixes [SS]_Angel_Beats!_-_06_(1280x720_H.264)_[A01DDBD8].mkv.
+
+commit af52a126f36cd6339f9f4a1152103ef88b4b8fee
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 27 18:09:49 2009 -0400
+
+    Call handle_delayed_releases() before update_context().
+
+    This allows releasing frames in update_context(), which would
+    previously cause a race condition/deadlock.
+
+commit af79370b65b396e05c319d29356e456a8f5e8233
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Mon Jan 7 12:44:49 2008 +0000
+
+    Make the av_class member of PPContext a poiner to constant AVClass.
+    Patch by Diego 'Flameeyes' Petten
+� flameeyes commit afafe7361da5a9373d02dc60d597da8f2185edd3
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sat Nov 2 10:31:37 2002 +0000
+
+    added perm inheritance from ffmpeg_g (it looks like 'strip' in BeOS doesn't keep them, though the Linux one does !?)
+    patch by (Fran
+commit afc391b7ab5eda271733bbe55ef46118aba75bff
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sat Jul 20 20:05:50 2002 +0000
+
+    beos/mov/adpcm patch by Fran
+commit afe0428ae38f68a467b43cc9358b7a1a2f85d36b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 18:09:11 2008 -0400
+
+    Fix memory leak in mpegvideo
+
+commit b05eb30ba838b981c769217e1d2215777484f25a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jan 21 02:34:46 2011 -0500
+
+    Make the src parameter of update_thread_context() const
+
+commit b07e45974b2772e3a747502f976dc08d0ffcff74
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 18 16:21:03 2009 -0400
+
+    Indent.
+
+commit b125b68fe6dc2d0064d45d0cffc3bcb47263f32c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 24 18:50:32 2010 -0500
+
+    Remove fixed entry from the todo.
+
+commit b18683e3adc997b19cf56f459ce5f8a7428c0909
+Author: diego <diego@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sun Oct 18 14:34:45 2009 +0000
+
+    Fix typo that mistakenly slipped into previous commit:
+    CONFIG_MPEG_XVMC_DECODER was changed to CONFIG_MPEGVIDEO_XVMC_DECODER.
+    patch by Onur K
+�
+commit b1c8c18fe11d3155b1df6a19117d14fa633bcd15
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sat Nov 2 10:39:22 2002 +0000
+
+    added MACE (Macintosh Audio Compression/Expansion) 3:1 & 6:1 support
+    contribution by Laszlo Torok <torokl@alpha.dfmk.hu>
+    4CC 'MAC3' and 'MAC6' in Quicktime.
+    It works for mono streams, needs to be fixed for stereo when I get my hands on a stereo sample :)
+    patch by (Fran
+commit b3cdfccd2b11e247e0c17e02d0c958888da5585b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 04:14:41 2010 -0500
+
+    avcodec.h: Update comments
+
+commit b3d5e9333051802b20446076605b404e418323c4
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 26 00:34:11 2009 -0400
+
+    Skip unnecessary lock-wait-unlocks for condition variables.
+
+commit b3e3f071ca5ad99444bac95e4128c01a8ae7bae3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 11 11:32:00 2009 -0700
+
+    Split out if (current_slice == 1)
+
+commit b4221d5453d6dc893e87b77eecc845da121ddb56
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 18 17:06:32 2008 -0400
+
+    Reorder ff_frame_thread_free to fix memory errors.
+
+    This fixes using mutexes after they're destroyed and not calling release_buffer on every buffer.
+    Unfortunately the change to MPV_common_end is exactly the opposite of what's needed for supporting width/height changes.
+
+commit b483ed4f4af9444cfaa6ff9336645d799d2254dd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 6 20:33:51 2008 -0400
+
+    Remove the unused debugging counters from frame threading.
+
+commit b67d7055bf60313c40b6369f98cfc9d1eae3aefb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Sep 2 00:52:48 2008 -0400
+
+    Clear returned pictures immediately after copying them.
+
+    This isn't protected by a mutex but is still safe.
+    Needed for the next commit.
+
+commit b68110d079914d16c9fc5d1cc8c6e10d78dbdbca
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 15:05:49 2008 -0400
+
+    H264: Set the decode progress for fake reference frames to the maximum.
+
+    Fixes deadlock in premiere-paff.ts at the expense of some indeterminism on the first frame.
+
+commit b77accec9077ae8f072091fc7301d661bc9487ba
+Merge: 5d3c2f7 392faa1
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Tue Jul 29 15:11:05 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit b7d182610b592eef0714c1d2de18c3233a289b69
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 24 01:06:33 2009 -0400
+
+    Update mplayer.diff whitespace
+
+commit b7e0f1a3bfd00b0256dcdd3efc4b7b77c086e70e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 24 22:38:42 2008 -0400
+
+    Rename doxygen group to not conflict with h264
+
+commit b88c3baf94247f2687ca0c05b0ce6af7c905e02a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 24 22:40:00 2010 -0400
+
+    Fix more old merge glitches.
+
+commit b9a8973031be583af53be890ccdef07841394385
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 15 22:31:35 2008 -0400
+
+    Use output_cond for notifying the main thread.
+
+commit ba073d39f18679835b48b96f20feae96dad1f343
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Apr 11 23:00:19 2011 -0400
+
+    h264: cosmetic whitespace change
+
+commit ba8b789143dc6a14c29393e40fb361c1a3e2ccd4
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 01:53:10 2008 -0400
+
+    Update todo
+
+commit babb66241ae51e2956aa698d425c645ad056936e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Oct 17 14:52:35 2008 -0400
+
+    Copy avctx->height/width for mpegvideo.
+
+    Not sure what the difference between the three width variables is, really.
+
+commit bad2bf8621c04791f0d9a0a2873a3b6042d4ba83
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun May 24 00:48:57 2009 -0400
+
+    Copy new fields in update_context_from_copy().
+
+commit bb67674aa57e23893f2f19bd4ffb4a92b5a01e83
+Merge: 06ac5ac 6051838
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 20 17:39:15 2010 -0700
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit bba0e098a75f14af80bfd4fdfdf9edcaf8f3fee5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 20 03:32:19 2009 -0400
+
+    Factor out vp3 table allocation into new function.
+
+commit bbc5744117da188c43e00c4f02f6ff0fe984d4f8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jul 13 15:52:21 2008 -0400
+
+    Print the AVCodecContext address in av_log instead of AVClass.
+    This makes logging much easier to read when there's more than one context.
+
+commit bc1cc6f39a0f6df2cc1d0fecd3eb14efd150763a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Feb 3 01:29:21 2010 -0500
+
+    Cosmetics: Don't use #if HAVE_PTHREADS in thread.h.
+
+    These two macros will be removed entirely in the future.
+
+commit bd392934097dc5c909e9b06550ec1d13d92fa134
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Aug 15 23:34:32 2008 -0400
+
+    Set output_size properly before calling the decoder so it doesn't return nonsense and crash at the end
+
+commit bd63cf4721466aea490f6f0455a32060d572d5ba
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sun Jul 21 07:54:53 2002 +0000
+
+    YUV410P to YUV420P patch by Fran
+commit bdaeaaa58f24393027e112c02896b23fe0b3cc01
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Oct 13 11:23:47 2008 -0400
+
+    Add buffer padding to the end of bitstream_buffer.
+
+    Fixes a warning in valgrind.
+
+commit bdef29429d4f488012cb492e61cf20ffe0b858a7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jul 6 15:48:52 2008 -0400
+
+    Fix compilation with threads disabled.
+
+commit be45bc423ba576e1d06df3664cfe91e02d78ffa5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Feb 15 00:00:35 2010 -0500
+
+    Fix a deadlock in mpeg1 threaded decoding
+
+    Fake frames need their progress set to INT_MAX.
+
+    This can be triggered by seeking in mpeg1, but this is not the correct fix,
+    since seeking to keyframes does seem to work properly without threads.
+
+commit bf806642ab67148d93a4f24e7dbdc8644575c45b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 24 18:59:28 2010 -0500
+
+    When frame_thread_init() fails, free the failed thread context as well.
+
+commit bffb1c874ec2c9f7ea9c6830d852955a3c2805a0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 6 20:51:34 2008 -0400
+
+    Make ff_*_thread_free static.
+
+commit c01185fe11dd2ce35f798d16faec17fcfc64c7c4
+Author: kabi <kabi@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Fri Mar 8 09:09:57 2002 +0000
+
+    * BeOS patch by Fran
+commit c05a51580b56d1479083b1460dc29492b3fb6b16
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 00:53:15 2008 -0400
+
+    Track allocated buffer size properly. Don't allocate buffer padding since the user already did it.
+
+commit c1b0bddeaf947ef49c63b412918d73fe7a645ba5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 04:08:01 2010 -0500
+
+    pthread: Update and sort the fields copied in update_context_from_thread/update_context_from_user
+
+    Changes to pthread.c are finished.
+
+commit c29d645dfd2c8168e7c9009638ddb88928e706be
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 11 06:12:26 2010 -0400
+
+    Copy time_base between threads.
+
+    Appears to be used by the h263 decoder.
+
+commit c2a400d3a5da10f8f2a9c2aa89d9396efe428029
+Merge: b77acce e96a4b0
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Thu Aug 14 22:16:09 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit c2e19261fe08c2d96d4bf082e97bebcdf12566f2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 20 21:24:24 2010 -0500
+
+    Remove USE_FRAME_THREADING and USE_AVCODEC_EXECUTE macros.
+
+    Requested in original review, might help making sure pthread emulation
+    works for encoding tests.
+
+commit c2e9a1fc965de63271c7c4ddffd7e938ce1bfd93
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue Nov 6 16:28:32 2007 +0000
+
+    ffplay currently needs special handling for pausing in some protocols.
+    Patch by Bj
+�rn Axelsson: bjorn ; axelsson commit c2eed2a91101a90f2172e81755ca4d655de90443
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Nov 3 22:13:07 2010 -0400
+
+    vp3: Cosmetic changes
+
+commit c370b927b6d1f0e092e43d58ee29046e5accad1a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Feb 6 19:18:10 2011 -0500
+
+    Improve comment in avcodec.h
+
+commit c378f545f65d536e55ebe1ac85d170a15e7748eb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 6 20:12:01 2008 -0400
+
+    Reindent.
+
+commit c45bb41ec61522dcdb97618a0f6fafd8a32d529b
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Mon Jan 7 12:42:02 2008 +0000
+
+    Make v4l.c's video_formats constant and static.
+    Patch by Diego 'Flameeyes' Petten
+� flameeyes commit c4649d2e370c04c7f5cfcf0b444edc6116ba03f8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 25 03:16:09 2010 -0500
+
+    Avoid freeing buffers twice when closing mpegvideo.
+
+    This fixes a harmless "unreleased buffers" warning due to the design
+    of delayed releasing. This is probably a bad way to do it (won't
+    work if resolution changing is supported) but I can't think of a
+    better one that's simple.
+
+commit c5137d0d9e355aecc7e60cef0d2314468b77a147
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jan 15 22:52:30 2011 -0500
+
+    Update todo.txt
+
+commit c563b57b187279c1af0f723110bdab815fac6385
+Merge: 65e8486 6a3327b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Apr 3 21:23:47 2009 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/mpegvideo.c
+
+commit c58218c681e51a1b392ddb0177dcff8fc8e99d1c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 12 00:45:01 2008 -0400
+
+    Use HAVE_PTHREADS instead of ENABLE_PTHREADS for mplayer compatibility.
+
+commit c5ca1f6b5227f8f7a26f889c123c4358ee15596e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jan 15 22:51:43 2011 -0500
+
+    Pass pkt_dts properly through multithreading
+
+    A/V sync should work in all cases now once guess_correct_pts()/clients
+    adopt AVFrame.pkt_dts.
+
+commit c6a59ddd734c7ca92862bce47ec686e16da627ee
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jun 19 18:32:12 2009 -0400
+
+    Remove frame_num stuff from todo.
+
+    The current code is actually correct.
+
+commit c6bbd5d91408d6dd795dfbbdfba2cef62696d765
+Author: michael <michael@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sun Jan 8 17:06:26 2006 +0000
+
+    fixing second last time Fran
+commit c6f5097967de5ed420cd56a1a77b60a705fcee48
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 05:09:03 2008 -0400
+
+    Disable frame threading if low_delay or randomly truncated frames are used.
+
+commit c75cec5217fc23206476e2d1c894e8a6ddcd81b9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Mar 29 02:25:19 2009 -0400
+
+    Fix missing ff_get/release_buffer calls in mdec.
+
+commit c83670eeb613b9509555d4ddcac559a37cc1c5bc
+Merge: 2063f77 dde06af
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Dec 15 15:20:06 2010 -0500
+
+    Merge mainline.
+
+    Version wasn't updated this time.
+
+    Conflicts:
+            doc/APIchanges
+            libavcodec/avcodec.h
+
+commit c91d7a205df4dd224461b96749b9ce12e2bf6825
+Merge: 4874d25 04c74fc
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed May 19 16:51:42 2010 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/options.c
+            libavcodec/utils.c
+
+commit ca89b49eff34604b1354888cd041f474d988c122
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jun 23 04:16:16 2008 -0400
+
+    Fix ff_frame_thread_flush()
+    It should setup the context to be just like decoding starting from scratch.
+
+commit cac4bca0570a9b9ffdd3b49590fe1e41fd5568b0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 27 15:02:21 2009 -0400
+
+    Fix conditions for drawing edges.
+
+    They shouldn't be drawn for B-frames/intra only (for speed)
+    and when hwaccel is on (for correctness).
+
+commit cba830597c99b7a6de57b3cd2209d22598bb72b1
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Feb 13 22:45:07 2010 -0500
+
+    Backport VP3 crash/deadlock fix from mainline r21781.
+
+    Previously, if get_buffer() failed when allocating a golden frame,
+    it would access it in a later frame without checking it first.
+    r21781 unintentionally fixed this.
+
+    This should be impossible to trigger, but some other bug in -mt
+    causes this with frequent seeking.
+
+commit cbaa375d4cb1320093199e8abe1ce7bcf389036d
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sat Nov 2 21:05:54 2002 +0000
+
+    gcc optimization on BeOS (patch by Fran
+commit cbc8d8bec42b371522b0724f27454a96881c4164
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Apr 19 02:47:32 2010 -0400
+
+    Disable multithreading the first field in PAFF.
+
+    At least one PAFF .mp4 file has two fields per packet, which can't
+    work with -mt - instead it needs to split the fields up like packed
+    B-frames do.
+
+    Fixes Chalet-Tire.mp4. Pessimizes otherwise working files.
+
+commit cc33ba7cd7ebbf14b62b0783fb7272e41b484aea
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 11 14:41:53 2010 -0400
+
+    Cosmetics: arbitrary reordering of some pthread struct members
+
+commit ccd0d039a3d2fd70a9e947cc2faf79ca091dd687
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Fri Apr 25 21:52:45 2008 +0200
+
+    Incorporate swscale as submodule
+
+commit cd71fb4386961bc860c3abc4cf464b580366d57d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jan 25 16:33:26 2011 -0500
+
+    Forgot to git add the test failures list
+
+commit cdc193d0dbc2f0775d177f46036eca0d813f56ff
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jul 6 15:53:33 2008 -0400
+
+    Use static functions instead of macros for consistency.
+
+commit cf2561f8dcc3143f9c479bba1d9be91339f23726
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jan 21 02:22:56 2011 -0500
+
+    Write longer comments for callbacks
+
+    Also neglected to update get_buffer to mention thread_safe_callbacks
+
+commit cf528d74cd7321219880eb06b94a8de0ba5741ff
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 17 16:50:51 2008 -0400
+
+    Fix another memory leak.
+
+commit cf56bb126e7c056740e51c6c13304b03260b4b47
+Merge: ccd0d03 08baa31
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sat May 3 12:18:40 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit d0c772c8021702ca79ce2aceeba75902231c0101
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue Jul 23 22:05:35 2002 +0000
+
+    patch by Fran
+commit d103d4fac41b32915b45534d49d1e6a195b4220b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Feb 3 01:00:14 2010 -0500
+
+    Simplify thread.h by removing the stub functions.
+
+    They don't really help anything, if (HAVE_PTHREADS && ...) is sufficient.
+
+commit d15ab0f03a257293c0e13eac8b9b031da73c48f3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 3 04:41:33 2008 -0400
+
+    Macroize some threading checks.
+
+commit d21f769ead6bd4c24d867b7e9beeb8ffcc86b271
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Aug 6 20:36:04 2008 -0400
+
+    Revert renaming pthread.c.
+
+commit d2f8287d8526f814bcc88d827775d39ddc5c5f22
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 17 14:34:22 2011 -0500
+
+    Update todo.txt to put important things at the top
+
+commit d359ab19a25afa7dae20229e62dc0e37b6179ea7
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Mon Jul 22 01:44:08 2002 +0000
+
+    adpcm encoding patch by Fran
+commit d419a1c1d30e1b171fba7dc31a909e77a08016ba
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 24 03:51:18 2008 -0400
+
+    Comment utility functions in pthread.c
+
+commit d460fd8d253c90f20536dffe69a6ea20dc113106
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 15:57:28 2008 -0400
+
+    Simplify codec close
+
+commit d4fad7c7f05e6fd7d677eaf1069e04c94b946a0c
+Merge: f3f3d11 980ab8d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Feb 2 21:41:11 2010 -0500
+
+    Merge mainline and libswscale.
+
+    ffplay's pts reordering is better now, so ffplay.c has been reverted
+    to mainline.
+
+    Conflicts:
+            ffplay.c
+            libavcodec/avcodec.h
+            libavcodec/h264.c
+
+commit d5227efafd855f028338480f937b6ad4a86ef7ac
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 12 18:24:28 2008 -0400
+
+    Don't check MAX_THREADS unless slice threading is on.
+
+commit d5c16c23327d84373fca125b884254550b79c8d7
+Author: mmu_man <mmu_man@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Sun Jan 23 09:59:36 2005 +0000
+
+    Revert the fixed-size-sample patch as it brokes  and others
+    WTF I thought I had commited this yesterday... was probably too asleep :commit d5ea5fc7342e3a1b082659bccd5ffd90a911b780
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu May 7 01:19:55 2009 -0400
+
+    Replace the number of frames option with a number of frames to skip.
+
+    The old option wasn't really useful (ffmpeg -t saves more time)
+    and this is needed to deal with broken stream clips, which are
+    common and tend to decode differently under mt anyway, which I
+    don't really care about.
+
+commit d611b2bcb3ce231242f566cee08a61798a36abc8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 18 05:03:36 2009 -0400
+
+    Fix race condition upon return from decode_init().
+
+    We can't call report_frame_progress on every returned frame,
+    because they may be returned while a past thread is still decoding
+    them. Instead ensure frames always have this called on them after
+    their decode is done.
+
+    Should fix all bugs for valid H.264 streams without frame num gaps.
+
+commit d62b7c03b163c3dc067f122ab9fec44de87b37ae
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 9 01:54:27 2010 -0500
+
+    VP3: Only call await_reference_row() for luma
+
+    4.3% -> 2.1% cpu on big_buck_bunny_1080p_stereo.ogg.
+    It should be further reducable since VP3 has limited MV range.
+
+commit d6bb0443c9b316b8cf29720524b4819fb2e6b6a1
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Sep 4 01:50:20 2008 -0400
+
+    Don't mention nonexistant variables in comments
+
+commit d71a7eef9e540b00b0f91d840116e43206390645
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 24 16:45:27 2010 -0400
+
+    h264: Delete lines accidentally left behind during a merge
+
+commit d7cfe6d5cbffa42e178d88d7c647d37431e21861
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Feb 1 22:20:19 2011 -0500
+
+    Fix dropped frames at the beginning of h264 decoding, fixes FATE tests
+
+    Patch by Ronald Bultje (rsbultje@gmail.com)
+
+commit d8014c67ff1ef20ca05302dea9e262a3089d996e
+Merge: 604ee54 4ce0d81
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat May 1 04:03:03 2010 -0400
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit d812c6f8b1d897734d6f7b5f1a5c95d3aa10a3ea
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 24 02:25:25 2010 -0700
+
+    Fix crash on close when decoding a single-frame h264 file with 3+ threads
+
+    Problematic code path:
+    1. sps_buffers[0] is allocated in the first thread's codec context when the
+    decoder is opened.
+    2. The first thread context is memcpy'd to the other threads by frame_thread_init().
+    3. The first thread is closed and its sps_buffers[0] is freed.
+    4. The third thread is closed.
+    Because it never got to decode a frame, update_thread_context was never called,
+    and sps_buffers[0] still contained the first thread's pointer.
+
+    Fixed by not trying to free sps/pps buffers if the thread wasn't initialized.
+    I didn't properly consider this when designing it but this seems to be the
+    best approach anyway.
+
+    Fixes still2.mp4 crash from Chromium
+
+commit d84fc3dfd3e051c782d063ccba4cc8cadba38797
+Author: michaelni <michaelni@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue Nov 5 00:56:08 2002 +0000
+
+    MIN/MAX sys/param.h patch by (Fran
+commit d93fe0ea6b1b8121fdb9521fa7eeac0dc494deeb
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue Nov 6 16:19:09 2007 +0000
+
+    Allow propagation of stream selection through the ASF demuxer to the
+    MMSH protocol handler.
+    Patch by Bj
+�rn Axelsson: bjorn ; axelsson commit d955ab0dfa73578eaa6a9d1dcb821ce9db409738
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 29 04:53:11 2011 -0400
+
+    Update todo. More items appeared...
+
+commit da70ded7141aa191b92672c343cd29a0014d861f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Dec 18 13:27:51 2008 -0500
+
+    Update todo
+
+commit da7bdb1273da15a90bfe08ead91e397247916d11
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 24 03:24:17 2008 -0400
+
+    Get rid of tabs
+
+commit da86d2da9f6a76238a9d788ecd77f714981e666d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Sep 4 01:40:51 2008 -0400
+
+    Reindent.
+
+commit da95175e7ce1f911db992fef213322345200feaf
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jul 14 01:52:37 2008 -0400
+
+    Add a parameter to not draw top/bottom in draw_edges.
+
+commit db2a99d28931128c8598067ae06444ab79f579f8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 9 17:29:47 2009 -0700
+
+    Fix typo in comment.
+
+commit dbfbadaa095b65a724ac848d551cfa2aa33e2f6a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 11 05:16:14 2010 -0400
+
+    Update todo.
+
+    Got another h264 bug report with the same cause as before.
+
+commit dc53861aadac1d43391b28e4e9793393b26394b9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 18 20:52:34 2008 -0400
+
+    Always set decode progress to the maximum at the end of decoding
+    This saves doing it for frames with AC partitioning and such.
+    We can't do it if the codec didn't return a frame, so there is still an opportunity for deadlocks here, maybe.
+
+commit dc7c4d436681e43a9f351dd18f70d0dc008aa55e
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Thu Jan 10 10:18:00 2008 +0000
+
+    Make MMX vectors constants.
+    Patch by Diego 'Flameeyes' Petten
+� flameeyes commit dd9e04497937b7fffdcc65a2b41e36089412d975
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 29 17:18:21 2011 -0400
+
+    Remove unnecessary parameter from ff_thread_init() and fix behavior
+
+    thread_count passed to ff_thread_init() is only used to set AVCodecContext.
+    thread_count, and can be removed. Instead move it to the legacy implementation
+    of avcodec_thread_init().
+
+    This also fixes the problem that calling avcodec_thread_init() with pthreads
+    enabled did not set it since ff1efc524cb3c60f2f746e3b4550bb1a86c65316.
+
+commit ddc8310d2a9300139d1821954dfa2d0b775edaa1
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Feb 11 22:12:03 2010 -0500
+
+    Fix mutex leak introduced in 0040d6f2ba.
+
+    If allocate_progress() failed, the error condition returned before
+    unlocking its mutex.
+
+commit de365823ec9546a3bd688690e79fc15281a68f1f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 23 01:26:42 2010 -0700
+
+    todo: fix ugly word wrapping
+
+commit de736aacd945d66109197a6f04baf915d458f5ac
+Merge: 7eac0bc 780a37c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 18 17:53:09 2009 -0400
+
+    Merge mainline.
+
+commit de8abf54671555bb166bb1d44a34fe14e360e2a5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 24 16:37:24 2010 -0500
+
+    Rename and document MAX_DELAYED_RELEASED_BUFFERS.
+
+commit dedc2982f2f845357f28dff401fe5df8510c6a8f
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue May 22 08:28:32 2007 +0000
+
+    id3v2 writer
+    patch by Andreas
+�commit df444fadf045bf70058da9b074b8f848fc2209b1
+Merge: 14bdf76 1476e6a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 9 02:04:43 2010 -0500
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit df5d7acdcd0dcbfca6f8fd4f76c9369cb1674435
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 17:32:24 2008 -0400
+
+    Don't reuse the user's AVCodecContext for the first decoding thread, and copy more values between them as needed.
+
+    This fixes a large class of race conditions (coded_frame works again) and should improve frame dropping.
+
+commit dfb8be0a60b9562cf7bb6e54dd67088ff51f83b0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 24 21:35:14 2008 -0400
+
+    Call avcodec_get_frame_defaults() before decoding.
+
+commit e0285f04bed7fefba5f75d05c81b145f44fc49f5
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jul 31 18:40:46 2008 -0400
+
+    Use got_extradata instead of frame_number to guard against rereading extradata.
+
+    frame_number is no longer valid internally, since I don't want to change its definition from the user's perspective.
+    mpeg12 does the same thing, but I can't find or create any mpeg1+extradata samples to check it.
+
+commit e044d5c79ab340cf52842ba8452d670959eb37c0
+Merge: 3c3a364 5115473
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Nov 7 04:54:47 2008 -0500
+
+    Merge mainline into ffmpeg-mt
+
+    - Handle reordered_opaque properly
+    - Picture.field_picture is a duplicate of Picture.mbaff,
+    but is necessary, since interlaced_frame can't be trusted
+    and mbaff can't be interpreted without it.
+
+commit e0dc361e0f0aa315320a549a4fda3424226c556f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Sep 1 03:35:23 2008 -0400
+
+    Update todo
+
+commit e174657cbb973abf5de9085d00d85ac04d29a475
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 28 17:11:09 2008 -0400
+
+    Move avcodec_thread_init call before avcodec_open in ffplay.
+
+    It makes no sense to have it after, since a decoder is not forbidden from reading it during init.
+    Encoders already do.
+
+commit e1f49541b976cdd091aa41f116e7c9fd0c740cf3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 17 23:35:55 2008 -0400
+
+    Fix rounding for mpeg1 MVs.
+
+commit e23b687201a076161384fbc7a2f76bd0092dd34c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jan 20 02:36:18 2010 -0500
+
+    Include the delay from frame threads in has_b_frames.
+
+    This is an API change, but anything that already counted thread_count
+    just has an incorrectly high max delay size, which shouldn't be a
+    problem.
+
+commit e2b9383929e2c703eabd1df8afcb9fa5ad7106ec
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jun 15 17:36:59 2008 -0400
+
+    Add choice of threading algorithm to AVCodecContext.
+
+     Use it to simplify USE_* macros.
+     FF_THREAD_AUTO needs to be handled better - even if a codec can handle frame-threads, we still don't want to use them if there are enough slices available.
+
+commit e2ecdd48d664f2660bfd661f1cef6276b986743b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jul 25 03:12:58 2008 -0400
+
+    Simplify mpeg_decode_update_context.
+
+commit e303003362829a7f2f1dcbc45d6abc9ac7a59b6a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 14 22:59:01 2008 -0400
+
+    Reindent.
+
+commit e340cacc56545c5fc3a903c68fec99e8921d579e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Nov 8 06:13:23 2008 -0500
+
+    Disable r15412 for now to avoid crashes.
+
+    update_context can't handle picture pts not pointing to picture and I couldn't think of a better way to do it at 5 am.
+    May not actually fix anything.
+
+commit e345a54e5f86d9777e4c3ccb04aad84f9cd77ff0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Mar 8 04:55:43 2010 -0500
+
+    Add optimization note to todo.
+
+commit e39c3828e02fe71ce627170bc8c26a558f29f4b8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Feb 15 00:39:39 2010 -0500
+
+    Update todo
+
+commit e3f13a4f70b1310309ebb462b1011721cb3692fe
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Sep 4 14:05:31 2008 -0400
+
+    Rename new symbols to be shorter
+
+commit e4565c5731bfcd8808d02f47f115e21dc6fc8b35
+Merge: 4b9ce55 fb61a7c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Mar 10 02:25:55 2011 -0500
+
+    Merge branch 'master' of git://git.ffmpeg.org/ffmpeg
+
+    Conflicts:
+            .gitignore
+            doc/APIchanges
+            ffplay.c
+            libavcodec/arm/asm-offsets.h
+            libavcodec/avcodec.h
+            libavcodec/h264.c
+            libavcodec/mpegvideo.h
+            libavcodec/options.c
+            libavcodec/pthread.c
+            libavcodec/thread.h
+            libavcodec/utils.c
+            libavcodec/vp3.c
+            libavcodec/vp8.c
+            libavformat/utils.c
+
+commit e45cf6d46cb45e6edcf9e4ac368b2a013ba30158
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 14 04:01:08 2008 -0400
+
+    Add todo and some other files.
+
+    Trailing whitespace in mplayer isn't my fault.
+
+commit e4df986f3d2d3e1be9b0f4eeda463fa854910b8f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 28 00:41:52 2008 -0400
+
+    Revert unnecessary setting of the wrong variable
+
+commit e53d020b37ca26ffa4cdb22d2b40321897f52ba9
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 23 20:39:06 2008 -0400
+
+    Warn if users try to use frame threading without pthreads.
+
+commit e717770ee8437c296e012e908b772ba2eaeb2ed3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jul 15 03:16:22 2008 -0400
+
+    Create next_delayed_pic for multithreading purposes
+    unreference_pic is intentionally unchanged.
+
+commit e71a2b5017728022fa1f992a8b541260615016b2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 18 23:22:01 2008 -0400
+
+    Use USE_FRAME_THREADING instead of checking for thread_opaque, since it might be the wrong type.
+
+commit e74ef89858732b9fc4a90c8ec8fbb701407eb987
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed May 28 22:50:22 2008 -0400
+
+    Split setting avctx->thread_count from the rest of pthread init.
+    Make sure it's called from whichever of avcodec_open and avcodec_thread_init comes later.
+
+commit e7519b6532409e332fc9727ea5a57e148e6655a6
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Thu May 15 01:03:48 2008 +0000
+
+    Make av_set_string() fail when number could not be set.
+    Patch by Stefano Sabatini stefanocommit e8bc7da9d69234ebbcbde371c5a0e20f8b5cfccc
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 25 02:59:00 2010 -0500
+
+    Remove accidental extra variable declaration
+
+commit e95251807c0ae66ffef1e4ad113b9773a287fa5a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 27 22:14:45 2009 -0400
+
+    Get rid of static variables in VP3.
+
+    These are pointless and might behave wrong with thread-local
+    statics.
+
+commit e9a0e5eaf5207321baf90160b1094300f3810ecf
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jun 23 21:21:44 2008 -0400
+
+    Use FF_INPUT_BUFFER_PADDING_SIZE for the buffer.
+
+commit ea396d38059476a54c5855e0bd81955c60238b22
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Nov 3 22:50:02 2010 -0400
+
+    Rewrite comments in thread.h and fix parameter names in ff_thread_decode_frame
+
+commit ebce21c15f3aaf1b4512436ed8fc2e71a504bb11
+Merge: 3630d89 5570afd
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Dec 18 12:49:54 2008 -0500
+
+    Merge mainline.
+
+    Conflicts:
+
+            libavcodec/avcodec.h
+            libavcodec/mpegvideo.c
+            libavcodec/utils.c
+
+commit ed3e2ae1277cc425ef133f10700ace86629381ef
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jul 13 16:05:09 2008 -0400
+
+    Remove useless variable.
+
+commit ed42183540e2a886a7368b8220e0b50aaf363551
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Sep 30 16:53:03 2010 -0400
+
+    Fix hang decoding VP3/Theora.
+
+    draw_horiz_band changed to only draw the displayed height instead of the
+    decoded height. This meant that we never reported progress for the last few
+    decoded pixels, but still awaited them, which deadlocked.
+
+    This shouldn't cause any race conditions, because it always decodes the last
+    few pixels along with the last decoded pixels.
+
+    Patch by Yuriy Kaminsky (yumkam mail ru).
+
+commit ed5e8392e2fce8e6b0468de4ae1a4310d338ee46
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 28 02:29:08 2008 -0400
+
+    Simplify(?) threaded avcodec_flush_buffers
+
+commit ed728b0a05c2154b07cc3d8330d5900dbc45f1d7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue May 27 23:25:47 2008 -0400
+
+    Guard against avcodec_thread_execute() being called without being setup.
+
+commit edb60439feb2c5d39cda314178686eea151185b3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 1 12:54:47 2010 -0400
+
+    vp3: Assume MVs are their maximum length of 16 pixels
+
+    This makes it worse (although slightly simpler) in preparation for further
+    optimization.
+
+commit ee8430539ec7cc23b7cf6332e26751f539315d5b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jul 6 15:56:28 2008 -0400
+
+    Don't include the codecs' threading support functions without some kind of threading enabled.
+    As a side effect this makes non-pthreads threading even more problematic.
+
+commit eed4b9708287066ccc1b3042110f7c3379f63ee2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Aug 28 01:44:44 2008 -0400
+
+    Simplify disabling MB skipping
+
+commit ef26f878e0e581cb61f1e9b376bec4f7ff07397a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Mar 9 01:48:18 2010 -0500
+
+    Cosmetics: fix outdated comment
+
+commit ef2d8664f1eff56e969801ecd1c5b7c729902819
+Merge: 11b1a8e 9c7037f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Jun 8 14:29:22 2010 -0700
+
+    Merge mainline and libswscale
+
+commit efd1fb08db3e7964357dc00fd514cfb156b4ee69
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 11 11:33:09 2009 -0700
+
+    Reindent.
+
+commit f139f42301a5ee861f1a91cdfcceb2a85349fa29
+Merge: 70fb3fd 7210b4e
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sun Jun 22 12:08:59 2008 +0200
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit f143b66d9bf8b23985bf8ec6acf8273c3e9ccd1d
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Aug 19 21:12:32 2008 -0400
+
+    Handle NULL threads if they aren't started because of an init error.
+
+commit f1936d87290c7444090d6cb101b0d7c9270f0a81
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Thu Jun 24 15:22:33 2010 +0000
+
+    Set an opaque alpha value when decoding rgba ffv1.
+    Patch by Thad Ward coderjoe69commit f1fe312cb47cbc540da764cbab3582739a20a8d2
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 5 20:30:58 2008 -0400
+
+    Cosmetics: make thread.h look like other prototypes.
+
+commit f374d2ee585d7f6c98ffd3a7803223552497904e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jan 21 04:13:06 2011 -0500
+
+    Simplify change to avcodec_close() and fix a merge glitch in avcodec_open()
+
+commit f3c88f32b8c806b352cf6e00d6ac80fd32e9f54c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Sep 3 11:45:09 2008 -0400
+
+    Field picture API support
+
+commit f3f3d1189de648862ca204676dd7591262f590df
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Jan 25 04:12:34 2010 -0500
+
+    Add todo note about a change to thread.h I mean to do.
+
+commit f4d4d43f3a596941b2214ac1e71bb818eb230d6b
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Fri Jan 21 02:43:30 2011 -0500
+
+    Minor update to thread.h comment
+
+commit f4fb456b114eafc22b8ab9bb0bb3e7f13a4fbd9a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Nov 2 02:56:12 2010 -0400
+
+    vp3: Revert motion_y removal
+
+    Although it doesn't have much of an effect on speed either way, I reconsidered
+    the simplification I wanted to do, and now I'd rather keep this as an example
+    of proper multithreading structure.
+
+commit f52df8ebae0ad1db15c5e804a458ca81e04c6156
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Aug 25 14:33:09 2008 -0400
+
+    Fix whitespace mistake
+
+commit f550857de3ffcb6b2980c4c952b7e84db478d399
+Merge: d62b7c0 a175a04
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Mar 27 02:01:59 2010 -0400
+
+    Merge mainline.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/h264.c
+            libavcodec/options.c
+            libavcodec/vp3.c
+
+commit f5596f046c05bc7d8afda7658f891d69587934f0
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon Nov 15 01:38:36 2010 -0500
+
+    Rewrite comments and cosmetic changes to pthread.c
+
+    Some small code changes, but there shouldn't be any behavior change.
+
+commit f695698a78e07a45f4cc9d24ae95fd73f25600e7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jan 26 12:43:05 2011 -0500
+
+    Update todo.txt with review feedback
+
+commit f6d7d0c03c8d7c91a39c9374d9cee83e32627681
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Feb 6 19:04:21 2011 -0500
+
+    pthread: Cosmetic changes and renaming
+
+    Rename frame->packet, picture->frame.
+    Use /**< to point to the right field in doxygen.
+    Fix some typos.
+
+commit f71e7068faabecc32abc798a09b9df403f85e33f
+Merge: 2bbb64d a4f892e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jan 6 05:45:03 2011 -0500
+
+    Merge mainline.
+
+    Conflicts:
+            doc/APIchanges
+
+commit f7cc4441b7046a542ef655575ce3e8684ff12e02
+Merge: bba0e09 9eac0a6
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jun 20 15:58:38 2009 -0400
+
+    Merge mainline.
+
+commit f9515a4e57356bce4d652451fbaccd071d91dbe9
+Merge: a903974 0c28ee7
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Nov 11 15:38:20 2009 -0500
+
+    Merge mainline.
+
+    In h264, next_outputed_poc is now used in decode_postinit()
+    where mainline uses outputed_poc.
+
+    Conflicts:
+            libavcodec/avcodec.h
+            libavcodec/h263dec.c
+            libavcodec/h264.c
+            libavcodec/utils.c
+
+commit f9b01bbf85d68f23a81ec5325fae81c8518cc385
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 25 20:06:00 2009 -0400
+
+    Remove unnecessary check from mc_dir_part_y().
+
+    This was already remove from mc_dir_part(). I hope it's unnecessary
+    here too.
+
+commit fa3f68f39f4a96a1170eadfe6ba4677d5d25017f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 16 04:23:20 2008 -0400
+
+    Document functions in thread.h
+
+commit fa8a82e991280b7ccac89ed2a29b332e609bc370
+Author: Luca Barbato <lu_zero@gentoo.org>
+Date:   Sat May 3 15:18:01 2008 +0200
+
+    Switch to the gitorius mirror of libswscale
+
+commit fafaae289235b361b6786745dcbdf6fa938c3c2e
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Dec 4 01:46:22 2008 -0500
+
+    Don't compare pthread_t to NULL
+
+    It's not required to be a pointer, and it doesn't
+    need to be validated since pthread_join will just
+    return an error if it doesn't exist.
+
+    Reverts f143b66d9bf8b23985bf8ec6acf8273c3e9ccd1d
+
+commit fb1afd9eba5fe2752b83c4b3de24ed88e14b534a
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Mar 14 00:56:54 2009 -0400
+
+    Rewrite todo (again...) split up so other people should be able to understand it.
+    Add yuvcmp, though maybe it should go somewhere else.
+
+commit fb1f31ff6cbcbbde72920e731223fd0fb8f05d02
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Aug 30 04:26:47 2008 -0400
+
+    Update multithreading doc
+
+commit fb7dfc0e9e9ff8a5030cde46e28d49d6ce73e453
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Jan 24 22:15:56 2010 -0500
+
+    Always call avcodec_thread_init() in avcodec_open().
+
+    This matches upstream behavior, but neither of them have any effect.
+    It allows implementing automatic thread counts, though.
+
+commit fbb871069bd106bfd47d215216be01d1ef30aec8
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Feb 14 23:47:42 2010 -0500
+
+    Reindent vp3.c.
+
+commit fc957c71da6c9a7e5c769e15f256652352f7b4a4
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 24 17:31:38 2010 -0400
+
+    Fix compile with --disable-optimizations.
+
+    gcc can't remove dead code like:
+    int threaded = HAVE_PTHREADS;
+    if (threaded) ...
+
+commit fd1b8587a4186b30c5922e3053c869726cca23df
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Nov 4 03:55:19 2010 -0400
+
+    Remove ff_thread_finish_frame() as it seems not useful enough
+
+commit fd9ae0065aa268c4b3e46706d775cf4ba1df8ed3
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed May 28 01:34:30 2008 -0400
+
+    Obfusticate the decoder to make the context copyable earlier.
+
+commit fda3e64cd474b5886457c6a1ffff8906f76a9bbc
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Thu Jun 18 16:11:26 2009 -0400
+
+    Mimic: move up a line changing buf_ptrs.
+
+    No effect on decoding, but it breaks the rule about changing
+    things after frame_setup_done.
+
+commit fdb381e68a3828dcc7eb1c93cf174b702cc78d2c
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Feb 17 00:39:42 2010 -0500
+
+    Cosmetics: rename function parameters
+
+commit fe4e238f573bab53760408b3376dbba0255e5b51
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 25 20:00:50 2009 -0400
+
+    Fix unnecessarily long wait for direct+progressive MBs.
+
+commit fe529c93b41f2d7406b76e7e5943b82acd789cb4
+Author: benoit <benoit@9553f0bf-9b14-0410-a0b8-cfaf0461ba5b>
+Date:   Tue May 22 08:23:45 2007 +0000
+
+    id3v2 reader
+    patch by Andreas
+�commit febe154099b8f31817e8c047cb3c8dee51b52117
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Wed Jun 16 14:54:00 2010 -0700
+
+    Fix merge glitch: pix_fmts should have been deleted
+
+commit feca6e0009da2b344b2c1be8f30a55c23623d77e
+Merge: 2485cfd feaafaa
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Mon May 25 19:58:17 2009 -0400
+
+    Merge branch 'master' of git://git.mplayerhq.hu/ffmpeg
+
+commit ff08d3a1629ab442f78a1d2fde496b727a1a9deb
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sat Jul 12 22:26:43 2008 -0400
+
+    Fix MPV_lowest_referenced_row to not be completely wrong.
+    The not handling qpel and emu_edge bugs were masked by the other bugs preventing almost all parallelism.
+
+commit ff4c627baab555a4ea6275c919d9f4259adc0e58
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Tue Oct 6 15:41:35 2009 -0400
+
+    Word-wrap todo.txt.
+
+    Try to make some of it cleaner
+    so other people can actually
+    use it.
+
+commit ff69da3564ab912f7e7331f8c8389a96a254e16f
+Author: Alexander Strange <astrange@ithinksw.com>
+Date:   Sun Aug 1 20:33:57 2010 -0700
+
+    Fix the decoder not returning any frames if the frame count is less than the number of threads
+
+    Fixes ./mt-work/test.sh with still2.mp4
+

@@ -1114,13 +1114,13 @@ static void asf_reset_header(AVFormatContext *s)
 
 static int asf_read_close(AVFormatContext *s)
 {
-    int i;
-
     asf_reset_header(s);
+
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
         av_free(st->codec->palctrl);
     }
+
     return 0;
 }
 

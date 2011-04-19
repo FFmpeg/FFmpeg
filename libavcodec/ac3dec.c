@@ -1175,8 +1175,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         /* channel delta offset, len and bit allocation */
         for (ch = !cpl_in_use; ch <= fbw_channels; ch++) {
             if (s->dba_mode[ch] == DBA_NEW) {
-                s->dba_nsegs[ch] = get_bits(gbc, 3);
-                for (seg = 0; seg <= s->dba_nsegs[ch]; seg++) {
+                s->dba_nsegs[ch] = get_bits(gbc, 3) + 1;
+                for (seg = 0; seg < s->dba_nsegs[ch]; seg++) {
                     s->dba_offsets[ch][seg] = get_bits(gbc, 5);
                     s->dba_lengths[ch][seg] = get_bits(gbc, 4);
                     s->dba_values[ch][seg] = get_bits(gbc, 3);

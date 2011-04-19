@@ -1993,6 +1993,10 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         /* from x264 or from bytestream h264 */
         /* nal reformating needed */
         size = ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
+    } else if (enc->codec_id == CODEC_ID_AAC && pkt->size > 2 &&
+               (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
+        av_log(s, AV_LOG_ERROR, "malformated aac bitstream, use -absf aac_adtstoasc\n");
+        return -1;
     } else {
         avio_write(pb, pkt->data, size);
     }
