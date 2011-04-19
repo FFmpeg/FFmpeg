@@ -223,15 +223,6 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
 int sws_scale(struct SwsContext *context, const uint8_t* const srcSlice[], const int srcStride[],
               int srcSliceY, int srcSliceH, uint8_t* const dst[], const int dstStride[]);
 
-#if LIBSWSCALE_VERSION_MAJOR < 1
-/**
- * @deprecated Use sws_scale() instead.
- */
-int sws_scale_ordered(struct SwsContext *context, const uint8_t* const src[],
-                      int srcStride[], int srcSliceY, int srcSliceH,
-                      uint8_t* dst[], int dstStride[]) attribute_deprecated;
-#endif
-
 /**
  * @param inv_table the yuv2rgb coefficients, normally ff_yuv2rgb_coeffs[x]
  * @param fullRange if 1 then the luma range is 0..255 if 0 it is 16..235
@@ -290,13 +281,6 @@ void sws_shiftVec(SwsVector *a, int shift);
  * with the same coefficients as a.
  */
 SwsVector *sws_cloneVec(SwsVector *a);
-
-#if LIBSWSCALE_VERSION_MAJOR < 1
-/**
- * @deprecated Use sws_printVec2() instead.
- */
-attribute_deprecated void sws_printVec(SwsVector *a);
-#endif
 
 /**
  * Prints with av_log() a textual representation of the vector a

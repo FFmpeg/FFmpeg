@@ -68,16 +68,6 @@ void shuffle_bytes_1230(const uint8_t *src, uint8_t *dst, long src_size);
 void shuffle_bytes_3012(const uint8_t *src, uint8_t *dst, long src_size);
 void shuffle_bytes_3210(const uint8_t *src, uint8_t *dst, long src_size);
 
-#if LIBSWSCALE_VERSION_MAJOR < 1
-/* deprecated, use the public versions in swscale.h */
-attribute_deprecated void palette8topacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-attribute_deprecated void palette8topacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-
-/* totally deprecated, please fix code that uses this */
-attribute_deprecated void palette8torgb16(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-attribute_deprecated void palette8tobgr16(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-#endif
-
 /**
  * Height should be a multiple of 2 and width should be a multiple of 16.
  * (If this is a problem for anyone then tell me, and I will fix it.)
