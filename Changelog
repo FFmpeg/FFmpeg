@@ -4,6 +4,11 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+- Lots of deprecated API cruft removed
+
+
+version 0.7_beta1:
+
 - WebM support in Matroska de/muxer
 - low overhead Ogg muxing
 - MMS-TCP support
