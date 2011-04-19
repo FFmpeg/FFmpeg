@@ -38,6 +38,7 @@ typedef struct X264Context {
     const char *preset;
     const char *tune;
     const char *profile;
+    const char *level;
     int fastfirstpass;
 } X264Context;
 
@@ -163,6 +164,15 @@ static av_cold int X264_close(AVCodecContext *avctx)
     return 0;
 }
 
+#define OPT_STR(opt, param)                                             \
+    do {                                                                \
+        if (param && x264_param_parse(&x4->params, opt, param) < 0) {   \
+            av_log(avctx, AV_LOG_ERROR,                                 \
+                   "bad value for '%s': '%s'\n", opt, param);           \
+            return -1;                                                  \
+        }                                                               \
+    } while (0);                                                        \
+
 static av_cold int X264_init(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;
@@ -249,9 +259,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.i_trellis          = avctx->trellis;
     x4->params.analyse.i_noise_reduction  = avctx->noise_reduction;
 
-    if (avctx->level > 0)
-        x4->params.i_level_idc = avctx->level;
-
     x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
@@ -294,6 +301,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.f_vbv_buffer_init =
             (float)avctx->rc_initial_buffer_occupancy / avctx->rc_buffer_size;
     }
+
+    OPT_STR("level", x4->level);
 
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
@@ -361,6 +370,7 @@ static const AVOption options[] = {
     {"tune", "Tune the encoding params", OFFSET(tune), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     {"fastfirstpass", "Use fast settings when encoding first pass", OFFSET(fastfirstpass), FF_OPT_TYPE_INT, 1, 0, 1, VE},
     {"profile", "Set profile restrictions", OFFSET(profile), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
+    {"level", "Specify level (as defined by Annex A)", OFFSET(level), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     { NULL },
 };
 
