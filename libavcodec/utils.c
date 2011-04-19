@@ -542,8 +542,9 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         ret = AVERROR(EINVAL);
         goto free_and_end;
     }
-    if (avctx->codec->sample_fmts && avctx->codec->encode) {
+    if (avctx->codec->encode) {
         int i;
+        if (avctx->codec->sample_fmts) {
         for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++)
             if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
                 break;
@@ -551,6 +552,31 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
             av_log(avctx, AV_LOG_ERROR, "Specified sample_fmt is not supported.\n");
             ret = AVERROR(EINVAL);
             goto free_and_end;
+        }
+        }
+        if (avctx->codec->supported_samplerates) {
+            for (i = 0; avctx->codec->supported_samplerates[i] != 0; i++)
+                if (avctx->sample_rate == avctx->codec->supported_samplerates[i])
+                    break;
+            if (avctx->codec->supported_samplerates[i] == 0) {
+                av_log(avctx, AV_LOG_ERROR, "Specified sample_rate is not supported\n");
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            }
+        }
+        if (avctx->codec->channel_layouts) {
+            if (!avctx->channel_layout) {
+                av_log(avctx, AV_LOG_WARNING, "channel_layout not specified\n");
+            } else {
+                for (i = 0; avctx->codec->channel_layouts[i] != 0; i++)
+                    if (avctx->channel_layout == avctx->codec->channel_layouts[i])
+                        break;
+                if (avctx->codec->channel_layouts[i] == 0) {
+                    av_log(avctx, AV_LOG_ERROR, "Specified channel_layout is not supported\n");
+                    ret = AVERROR(EINVAL);
+                    goto free_and_end;
+                }
+            }
         }
     }
 
