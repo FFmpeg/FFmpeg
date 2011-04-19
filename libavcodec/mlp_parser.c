@@ -326,10 +326,6 @@ static int mlp_parse(AVCodecParserContext *s,
                 avctx->channels = truehd_channels(mh.channels_thd_stream1);
                 avctx->channel_layout = ff_truehd_layout(mh.channels_thd_stream1);
             }
-            if (av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels) {
-                avctx->channel_layout = 0;
-                av_log_ask_for_sample(avctx, "Unknown channel layout.");
-            }
         }
 
         if (!mh.is_vbr) /* Stream is CBR */
