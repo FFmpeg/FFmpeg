@@ -79,12 +79,8 @@ void uninit_opts(void)
     av_freep(&sws_opts);
 #endif
     for (i = 0; i < opt_name_count; i++) {
-        //opt_values are only stored for codec-specific options in which case
-        //both the name and value are dup'd
-        if (opt_values[i]) {
-            av_freep(&opt_names[i]);
-            av_freep(&opt_values[i]);
-        }
+        av_freep(&opt_names[i]);
+        av_freep(&opt_values[i]);
     }
     av_freep(&opt_names);
     av_freep(&opt_values);
@@ -235,6 +231,23 @@ int opt_default(const char *opt, const char *arg){
     int ret= 0;
     const AVOption *o= NULL;
     int opt_types[]={AV_OPT_FLAG_VIDEO_PARAM, AV_OPT_FLAG_AUDIO_PARAM, 0, AV_OPT_FLAG_SUBTITLE_PARAM, 0};
+    AVCodec *p = NULL;
+    AVOutputFormat *oformat = NULL;
+
+    while ((p = av_codec_next(p))) {
+        AVClass *c = p->priv_class;
+        if (c && av_find_opt(&c, opt, NULL, 0, 0))
+            break;
+    }
+    if (p)
+        goto out;
+    while ((oformat = av_oformat_next(oformat))) {
+        const AVClass *c = oformat->priv_class;
+        if (c && av_find_opt(&c, opt, NULL, 0, 0))
+            break;
+    }
+    if (oformat)
+        goto out;
 
     for(type=0; *avcodec_opts && type<AVMEDIA_TYPE_NB && ret>= 0; type++){
         const AVOption *o2 = av_find_opt(avcodec_opts[0], opt, NULL, opt_types[type], opt_types[type]);
@@ -252,39 +265,25 @@ int opt_default(const char *opt, const char *arg){
             ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_VIDEO], opt+1, arg, 1, &o);
         else if(opt[0] == 's' && avcodec_opts[AVMEDIA_TYPE_SUBTITLE])
             ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_SUBTITLE], opt+1, arg, 1, &o);
+        if (ret >= 0)
+            opt += 1;
     }
     if (o && ret < 0) {
         fprintf(stderr, "Invalid value '%s' for option '%s'\n", arg, opt);
         exit(1);
     }
     if (!o) {
-        AVCodec *p = NULL;
-        AVOutputFormat *oformat = NULL;
-        while ((p=av_codec_next(p))){
-            AVClass *c= p->priv_class;
-            if(c && av_find_opt(&c, opt, NULL, 0, 0))
-                break;
-        }
-        if (!p) {
-            while ((oformat = av_oformat_next(oformat))) {
-                const AVClass *c = oformat->priv_class;
-                if (c && av_find_opt(&c, opt, NULL, 0, 0))
-                    break;
-            }
-        }
-        if(!p && !oformat){
-            fprintf(stderr, "Unrecognized option '%s'\n", opt);
-            exit(1);
-        }
+        fprintf(stderr, "Unrecognized option '%s'\n", opt);
+        exit(1);
     }
 
+ out:
 //    av_log(NULL, AV_LOG_ERROR, "%s:%s: %f 0x%0X\n", opt, arg, av_get_double(avcodec_opts, opt, NULL), (int)av_get_int(avcodec_opts, opt, NULL));
 
-    //FIXME we should always use avcodec_opts, ... for storing options so there will not be any need to keep track of what i set over this
     opt_values= av_realloc(opt_values, sizeof(void*)*(opt_name_count+1));
-    opt_values[opt_name_count]= o ? NULL : av_strdup(arg);
+    opt_values[opt_name_count] = av_strdup(arg);
     opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
-    opt_names[opt_name_count++]= o ? o->name : av_strdup(opt);
+    opt_names[opt_name_count++] = av_strdup(opt);
 
     if ((*avcodec_opts && avcodec_opts[0]->debug) || (avformat_opts && avformat_opts->debug))
         av_log_set_level(AV_LOG_DEBUG);
@@ -358,16 +357,22 @@ void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec)
     for(i=0; i<opt_name_count; i++){
         char buf[256];
         const AVOption *opt;
-        const char *str= av_get_string(opts_ctx, opt_names[i], &opt, buf, sizeof(buf));
-        /* if an option with name opt_names[i] is present in opts_ctx then str is non-NULL */
-        if(str && ((opt->flags & flags) == flags))
-            av_set_string3(ctx, opt_names[i], str, 1, NULL);
-        /* We need to use a differnt system to pass options to the private context because
-           it is not known which codec and thus context kind that will be when parsing options
-           we thus use opt_values directly instead of opts_ctx */
-        if(!str && priv_ctx) {
-            if (av_find_opt(priv_ctx, opt_names[i], NULL, flags, flags))
-                av_set_string3(priv_ctx, opt_names[i], opt_values[i], 0, NULL);
+        const char *str;
+        if (priv_ctx) {
+            if (av_find_opt(priv_ctx, opt_names[i], NULL, flags, flags)) {
+                if (av_set_string3(priv_ctx, opt_names[i], opt_values[i], 0, NULL) < 0) {
+                    fprintf(stderr, "Invalid value '%s' for option '%s'\n",
+                            opt_names[i], opt_values[i]);
+                    exit(1);
+                }
+            } else
+                goto global;
+        } else {
+        global:
+            str = av_get_string(opts_ctx, opt_names[i], &opt, buf, sizeof(buf));
+            /* if an option with name opt_names[i] is present in opts_ctx then str is non-NULL */
+            if (str && ((opt->flags & flags) == flags))
+                av_set_string3(ctx, opt_names[i], str, 1, NULL);
         }
     }
 }
