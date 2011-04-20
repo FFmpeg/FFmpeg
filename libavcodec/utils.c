@@ -48,7 +48,7 @@ static int volatile entangled_thread_counter=0;
 static int (*ff_lockmgr_cb)(void **mutex, enum AVLockOp op);
 static void *codec_mutex;
 
-void *av_fast_realloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_size)
+void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
 {
     if(min_size < *size)
         return ptr;
@@ -64,7 +64,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_s
     return ptr;
 }
 
-void av_fast_malloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_size)
+void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size)
 {
     void **p = ptr;
     if (min_size < *size)
@@ -93,13 +93,6 @@ void avcodec_register(AVCodec *codec)
     *p = codec;
     codec->next = NULL;
 }
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-void register_avcodec(AVCodec *codec)
-{
-    avcodec_register(codec);
-}
-#endif
 
 unsigned avcodec_get_edge_width(void)
 {
@@ -223,12 +216,6 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
     align = FFMAX3(align, linesize_align[1], linesize_align[2]);
     *width=FFALIGN(*width, align);
 }
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-int avcodec_check_dimensions(void *av_log_ctx, unsigned int w, unsigned int h){
-    return av_image_check_size(w, h, 0, av_log_ctx);
-}
-#endif
 
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     int i;
@@ -482,7 +469,7 @@ static void avcodec_get_subtitle_defaults(AVSubtitle *sub)
 
 int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 {
-    int ret= -1;
+    int ret = 0;
 
     /* If there is a user-supplied mutex locking routine, call it. */
     if (ff_lockmgr_cb) {
@@ -493,11 +480,14 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     entangled_thread_counter++;
     if(entangled_thread_counter != 1){
         av_log(avctx, AV_LOG_ERROR, "insufficient thread locking around avcodec_open/close()\n");
+        ret = -1;
         goto end;
     }
 
-    if(avctx->codec || !codec)
+    if(avctx->codec || !codec) {
+        ret = AVERROR(EINVAL);
         goto end;
+    }
 
     if (codec->priv_data_size > 0) {
       if(!avctx->priv_data){
@@ -547,6 +537,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     if (avctx->codec_id != codec->id || (avctx->codec_type != codec->type
                            && avctx->codec_type != AVMEDIA_TYPE_ATTACHMENT)) {
         av_log(avctx, AV_LOG_ERROR, "codec type or id mismatches\n");
+        ret = AVERROR(EINVAL);
         goto free_and_end;
     }
     avctx->frame_number = 0;
@@ -561,6 +552,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     if (avctx->codec->max_lowres < avctx->lowres) {
         av_log(avctx, AV_LOG_ERROR, "The maximum value for lowres supported by the decoder is %d\n",
                avctx->codec->max_lowres);
+        ret = AVERROR(EINVAL);
         goto free_and_end;
     }
     if (avctx->codec->sample_fmts && avctx->codec->encode) {
@@ -570,6 +562,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
                 break;
         if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
             av_log(avctx, AV_LOG_ERROR, "Specified sample_fmt is not supported.\n");
+            ret = AVERROR(EINVAL);
             goto free_and_end;
         }
     }
@@ -736,20 +729,6 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     return ret;
 }
 
-#if FF_API_AUDIO_OLD
-int attribute_align_arg avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
-                         int *frame_size_ptr,
-                         const uint8_t *buf, int buf_size)
-{
-    AVPacket avpkt;
-    av_init_packet(&avpkt);
-    avpkt.data = buf;
-    avpkt.size = buf_size;
-
-    return avcodec_decode_audio3(avctx, samples, frame_size_ptr, &avpkt);
-}
-#endif
-
 int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          AVPacket *avpkt)
@@ -778,20 +757,6 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
     }
     return ret;
 }
-
-#if FF_API_SUBTITLE_OLD
-int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
-                            int *got_sub_ptr,
-                            const uint8_t *buf, int buf_size)
-{
-    AVPacket avpkt;
-    av_init_packet(&avpkt);
-    avpkt.data = buf;
-    avpkt.size = buf_size;
-
-    return avcodec_decode_subtitle2(avctx, sub, got_sub_ptr, &avpkt);
-}
-#endif
 
 int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                             int *got_sub_ptr,
@@ -1225,20 +1190,6 @@ unsigned int av_xiphlacing(unsigned char *s, unsigned int v)
     return n;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
-#include "libavutil/parseutils.h"
-
-int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str)
-{
-    return av_parse_video_size(width_ptr, height_ptr, str);
-}
-
-int av_parse_video_frame_rate(AVRational *frame_rate, const char *arg)
-{
-    return av_parse_video_rate(frame_rate, arg);
-}
-#endif
-
 int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b){
     int i;
     for(i=0; i<size && !(tab[i][0]==a && tab[i][1]==b); i++);
@@ -1341,23 +1292,6 @@ void ff_thread_report_progress(AVFrame *f, int progress, int field)
 
 void ff_thread_await_progress(AVFrame *f, int progress, int field)
 {
-}
-
-#endif
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-
-int avcodec_thread_init(AVCodecContext *s, int thread_count)
-{
-    s->thread_count = thread_count;
-    return ff_thread_init(s);
-}
-
-void avcodec_thread_free(AVCodecContext *s)
-{
-#if HAVE_THREADS
-    ff_thread_free(s);
-#endif
 }
 
 #endif

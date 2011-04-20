@@ -50,10 +50,6 @@ static const AVOption options[]={
 {"noparse", "disable AVParsers, this needs nofillin too", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_NOPARSE, INT_MIN, INT_MAX, D, "fflags"},
 {"igndts", "ignore dts", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_IGNDTS, INT_MIN, INT_MAX, D, "fflags"},
 {"rtphint", "add rtp hinting", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_RTP_HINT, INT_MIN, INT_MAX, E, "fflags"},
-#if FF_API_OLD_METADATA
-{"track", " set the track number", OFFSET(track), FF_OPT_TYPE_INT, DEFAULT, 0, INT_MAX, E},
-{"year", "set the year", OFFSET(year), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, E},
-#endif
 {"analyzeduration", "how many microseconds are analyzed to estimate duration", OFFSET(max_analyze_duration), FF_OPT_TYPE_INT, 5*AV_TIME_BASE, 0, INT_MAX, D},
 {"cryptokey", "decryption key", OFFSET(key), FF_OPT_TYPE_BINARY, 0, 0, 0, D},
 {"indexmem", "max memory used for timestamp index (per stream)", OFFSET(max_index_size), FF_OPT_TYPE_INT, 1<<20, 0, INT_MAX, D},
@@ -88,10 +84,3 @@ AVFormatContext *avformat_alloc_context(void)
     ic->av_class = &av_format_context_class;
     return ic;
 }
-
-#if FF_API_ALLOC_FORMAT_CONTEXT
-AVFormatContext *av_alloc_format_context(void)
-{
-    return avformat_alloc_context();
-}
-#endif

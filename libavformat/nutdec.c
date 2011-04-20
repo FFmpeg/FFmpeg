@@ -30,11 +30,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-#if FF_API_MAX_STREAMS
-#define NUT_MAX_STREAMS MAX_STREAMS
-#else
 #define NUT_MAX_STREAMS 256    /* arbitrary sanity check value */
-#endif
 
 static int get_str(AVIOContext *bc, char *string, unsigned int maxlen){
     unsigned int len= ffio_read_varlen(bc);

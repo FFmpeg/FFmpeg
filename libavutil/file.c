@@ -47,7 +47,6 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
     av_unused void *ptr;
     off_t off_size;
     char errbuf[128];
-    size_t max_size = HAVE_MMAP ? SIZE_MAX : FF_INTERNAL_MEM_TYPE_MAX_VALUE;
     *bufptr = NULL;
 
     if (fd < 0) {
@@ -66,7 +65,7 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
     }
 
     off_size = st.st_size;
-    if (off_size > max_size) {
+    if (off_size > SIZE_MAX) {
         av_log(&file_log_ctx, AV_LOG_ERROR,
                "File size for file '%s' is too big\n", filename);
         close(fd);

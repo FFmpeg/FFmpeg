@@ -285,17 +285,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     s->options.max_partition_order = ((int[]){  2,  2,  3,  3,  3,  8,  8,  8,  8,  8,  8,  8,  8})[level];
 
     /* set compression option overrides from AVCodecContext */
-#if FF_API_USE_LPC
-    /* for compatibility with deprecated AVCodecContext.use_lpc */
-    if (avctx->use_lpc == 0) {
-        s->options.lpc_type = AV_LPC_TYPE_FIXED;
-    } else if (avctx->use_lpc == 1) {
-        s->options.lpc_type = AV_LPC_TYPE_LEVINSON;
-    } else if (avctx->use_lpc > 1) {
-        s->options.lpc_type   = AV_LPC_TYPE_CHOLESKY;
-        s->options.lpc_passes = avctx->use_lpc - 1;
-    }
-#endif
     if (avctx->lpc_type > AV_LPC_TYPE_DEFAULT) {
         if (avctx->lpc_type > AV_LPC_TYPE_CHOLESKY) {
             av_log(avctx, AV_LOG_ERROR, "unknown lpc type: %d\n", avctx->lpc_type);

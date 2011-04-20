@@ -12,6 +12,11 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2011-04-15 - lavc 52.120.0 - avcodec.h
+  AVPacket structure got additional members for passing side information:
+    4de339e introduce side information for AVPacket
+    2d8591c make containers pass palette change in AVPacket
+
 2011-04-12 - lavf 52.107.0 - avio.h
   Avio cleanup, part II - deprecate the entire URLContext API:
     175389c add avio_check as a replacement for url_exist

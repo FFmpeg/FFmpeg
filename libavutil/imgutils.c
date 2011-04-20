@@ -266,32 +266,3 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
         }
     }
 }
-
-#if FF_API_OLD_IMAGE_NAMES
-void av_fill_image_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
-                                const AVPixFmtDescriptor *pixdesc)
-{
-    av_image_fill_max_pixsteps(max_pixsteps, max_pixstep_comps, pixdesc);
-}
-
-int av_get_image_linesize(enum PixelFormat pix_fmt, int width, int plane)
-{
-    return av_image_get_linesize(pix_fmt, width, plane);
-}
-
-int av_fill_image_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int width)
-{
-    return av_image_fill_linesizes(linesizes, pix_fmt, width);
-}
-
-int av_fill_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int height,
-                           uint8_t *ptr, const int linesizes[4])
-{
-    return av_image_fill_pointers(data, pix_fmt, height, ptr, linesizes);
-}
-
-int av_check_image_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx)
-{
-    return av_image_check_size(w, h, log_offset, log_ctx);
-}
-#endif

@@ -425,39 +425,10 @@ const char *avcodec_get_pix_fmt_name(enum PixelFormat pix_fmt)
         return av_pix_fmt_descriptors[pix_fmt].name;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
-enum PixelFormat avcodec_get_pix_fmt(const char *name)
-{
-    return av_get_pix_fmt(name);
-}
-
-void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
-{
-    av_get_pix_fmt_string(buf, buf_size, pix_fmt);
-}
-#endif
-
 int ff_is_hwaccel_pix_fmt(enum PixelFormat pix_fmt)
 {
     return av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_HWACCEL;
 }
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-int ff_set_systematic_pal(uint32_t pal[256], enum PixelFormat pix_fmt){
-    return ff_set_systematic_pal2(pal, pix_fmt);
-}
-
-int ff_fill_linesize(AVPicture *picture, enum PixelFormat pix_fmt, int width)
-{
-    return av_image_fill_linesizes(picture->linesize, pix_fmt, width);
-}
-
-int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
-                    int height)
-{
-    return av_image_fill_pointers(picture->data, pix_fmt, height, ptr, picture->linesize);
-}
-#endif
 
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    enum PixelFormat pix_fmt, int width, int height)
@@ -692,28 +663,6 @@ enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelForma
         *loss_ptr = avcodec_get_pix_fmt_loss(dst_pix_fmt, src_pix_fmt, has_alpha);
     return dst_pix_fmt;
 }
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-void ff_img_copy_plane(uint8_t *dst, int dst_wrap,
-                           const uint8_t *src, int src_wrap,
-                           int width, int height)
-{
-    av_image_copy_plane(dst, dst_wrap, src, src_wrap, width, height);
-}
-
-int ff_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane)
-{
-    return av_image_get_linesize(pix_fmt, width, plane);
-}
-
-void av_picture_data_copy(uint8_t *dst_data[4], int dst_linesize[4],
-                          uint8_t *src_data[4], int src_linesize[4],
-                          enum PixelFormat pix_fmt, int width, int height)
-{
-    av_image_copy(dst_data, dst_linesize, src_data, src_linesize,
-                  pix_fmt, width, height);
-}
-#endif
 
 void av_picture_copy(AVPicture *dst, const AVPicture *src,
                      enum PixelFormat pix_fmt, int width, int height)

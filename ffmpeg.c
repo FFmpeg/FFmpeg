@@ -34,7 +34,7 @@
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
-#include "libavcodec/opt.h"
+#include "libavutil/opt.h"
 #include "libavcodec/audioconvert.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/parseutils.h"
@@ -113,9 +113,7 @@ typedef struct AVChapterMap {
 static const OptionDef options[];
 
 #define MAX_FILES 100
-#if !FF_API_MAX_STREAMS
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
-#endif
 
 static const char *last_asked_format = NULL;
 static AVFormatContext *input_files[MAX_FILES];
@@ -3869,7 +3867,7 @@ static void opt_output_file(const char *filename)
             (strchr(filename, ':') == NULL ||
              filename[1] == ':' ||
              av_strstart(filename, "file:", NULL))) {
-            if (url_exist(filename)) {
+            if (avio_check(filename, 0) == 0) {
                 if (!using_stdin) {
                     fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
                     fflush(stderr);
@@ -3886,7 +3884,7 @@ static void opt_output_file(const char *filename)
         }
 
         /* open the file */
-        if ((err = avio_open(&oc->pb, filename, AVIO_WRONLY)) < 0) {
+        if ((err = avio_open(&oc->pb, filename, AVIO_FLAG_WRITE)) < 0) {
             print_error(filename, err);
             ffmpeg_exit(1);
         }

@@ -105,43 +105,6 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
     }
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
-/**
- *
- * @param buf           input
- * @param buf_size      input length, to signal EOF, this should be 0 (so that the last frame can be output)
- * @param pts           input presentation timestamp
- * @param dts           input decoding timestamp
- * @param poutbuf       will contain a pointer to the first byte of the output frame
- * @param poutbuf_size  will contain the length of the output frame
- * @return the number of bytes of the input bitstream used
- *
- * Example:
- * @code
- *   while(in_len){
- *       len = av_parser_parse(myparser, AVCodecContext, &data, &size,
- *                                       in_data, in_len,
- *                                       pts, dts);
- *       in_data += len;
- *       in_len  -= len;
- *
- *       if(size)
- *          decode_frame(data, size);
- *   }
- * @endcode
- *
- * @deprecated Use av_parser_parse2() instead.
- */
-int av_parser_parse(AVCodecParserContext *s,
-                    AVCodecContext *avctx,
-                    uint8_t **poutbuf, int *poutbuf_size,
-                    const uint8_t *buf, int buf_size,
-                    int64_t pts, int64_t dts)
-{
-    return av_parser_parse2(s, avctx, poutbuf, poutbuf_size, buf, buf_size, pts, dts, AV_NOPTS_VALUE);
-}
-#endif
-
 int av_parser_parse2(AVCodecParserContext *s,
                      AVCodecContext *avctx,
                      uint8_t **poutbuf, int *poutbuf_size,

@@ -218,17 +218,6 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
     return s;
 }
 
-#if FF_API_AUDIO_OLD
-ReSampleContext *audio_resample_init(int output_channels, int input_channels,
-                                     int output_rate, int input_rate)
-{
-    return av_audio_resample_init(output_channels, input_channels,
-                                  output_rate, input_rate,
-                                  AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16,
-                                  TAPS, 10, 0, 0.8);
-}
-#endif
-
 /* resample audio. 'nb_samples' is the number of input samples */
 /* XXX: optimize it ! */
 int audio_resample(ReSampleContext *s, short *output, short *input, int nb_samples)

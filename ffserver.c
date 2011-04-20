@@ -40,7 +40,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
-#include "libavcodec/opt.h"
+#include "libavutil/opt.h"
 #include <stdarg.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -95,9 +95,7 @@ static const char *http_state[] = {
     "RTSP_SEND_PACKET",
 };
 
-#if !FF_API_MAX_STREAMS
 #define MAX_STREAMS 20
-#endif
 
 #define IOBUFFER_INIT_SIZE 8192
 
@@ -2944,11 +2942,9 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
         snprintf(avc->filename, 1024, "rtp://0.0.0.0");
     }
 
-#if !FF_API_MAX_STREAMS
     if (avc->nb_streams >= INT_MAX/sizeof(*avc->streams) ||
         !(avc->streams = av_malloc(avc->nb_streams * sizeof(*avc->streams))))
         goto sdp_done;
-#endif
     if (avc->nb_streams >= INT_MAX/sizeof(*avs) ||
         !(avs = av_malloc(avc->nb_streams * sizeof(*avs))))
         goto sdp_done;
@@ -2961,9 +2957,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     av_sdp_create(&avc, 1, *pbuffer, 2048);
 
  sdp_done:
-#if !FF_API_MAX_STREAMS
     av_free(avc->streams);
-#endif
     av_metadata_free(&avc->metadata);
     av_free(avc);
     av_free(avs);
@@ -3428,7 +3422,7 @@ static int rtp_new_av_stream(HTTPContext *c,
                      "rtp://%s:%d", ipaddr, ntohs(dest_addr->sin_port));
         }
 
-        if (url_open(&h, ctx->filename, AVIO_WRONLY) < 0)
+        if (url_open(&h, ctx->filename, AVIO_FLAG_WRITE) < 0)
             goto fail;
         c->rtp_handles[stream_index] = h;
         max_packet_size = url_get_max_packet_size(h);
@@ -3685,7 +3679,7 @@ static void build_feed_streams(void)
     for(feed = first_feed; feed != NULL; feed = feed->next_feed) {
         int fd;
 
-        if (url_exist(feed->feed_filename)) {
+        if (avio_check(feed->feed_filename, AVIO_FLAG_READ) > 0) {
             /* See if it matches */
             AVFormatContext *s;
             int matches = 0;
@@ -3758,7 +3752,7 @@ static void build_feed_streams(void)
                 unlink(feed->feed_filename);
             }
         }
-        if (!url_exist(feed->feed_filename)) {
+        if (avio_check(feed->feed_filename, AVIO_FLAG_WRITE) <= 0) {
             AVFormatContext s1 = {0}, *s = &s1;
 
             if (feed->readonly) {
@@ -3768,7 +3762,7 @@ static void build_feed_streams(void)
             }
 
             /* only write the header of the ffm file */
-            if (avio_open(&s->pb, feed->feed_filename, AVIO_WRONLY) < 0) {
+            if (avio_open(&s->pb, feed->feed_filename, AVIO_FLAG_WRITE) < 0) {
                 http_log("Could not open output feed file '%s'\n",
                          feed->feed_filename);
                 exit(1);

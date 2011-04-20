@@ -676,11 +676,6 @@ static int mpegts_push_data(MpegTSFilter *filter,
                         code == 0x1be) /* padding_stream */
                         goto skip;
 
-#if FF_API_MAX_STREAMS
-                    if (!pes->st && pes->stream->nb_streams == MAX_STREAMS)
-                        goto skip;
-#endif
-
                     /* stream not present in PMT */
                     if (!pes->st) {
                         pes->st = av_new_stream(ts->stream, pes->pid);
