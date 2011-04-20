@@ -70,7 +70,7 @@ void ff_http_set_headers(URLContext *h, const char *headers)
     int len = strlen(headers);
 
     if (len && strcmp("\r\n", headers + len - 2))
-        av_log(NULL, AV_LOG_ERROR, "No trailing CRLF found in HTTP header.\n");
+        av_log(h, AV_LOG_ERROR, "No trailing CRLF found in HTTP header.\n");
 
     av_strlcpy(s->headers, headers, sizeof(s->headers));
 }
@@ -232,7 +232,7 @@ static int process_line(URLContext *h, char *line, int line_count,
          * don't abort until all headers have been parsed. */
         if (s->http_code >= 400 && s->http_code < 600 && s->http_code != 401) {
             end += strspn(end, SPACE_CHARS);
-            av_log(NULL, AV_LOG_WARNING, "HTTP error %d %s\n",
+            av_log(h, AV_LOG_WARNING, "HTTP error %d %s\n",
                    s->http_code, end);
             return -1;
         }

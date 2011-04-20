@@ -266,7 +266,7 @@ int ff_udp_set_remote_url(URLContext *h, const char *uri)
                 if (connect(s->udp_fd, (struct sockaddr *) &s->dest_addr,
                             s->dest_addr_len)) {
                     s->is_connected = 0;
-                    av_log(NULL, AV_LOG_ERROR, "connect: %s\n", strerror(errno));
+                    av_log(h, AV_LOG_ERROR, "connect: %s\n", strerror(errno));
                     return AVERROR(EIO);
                 }
             }
@@ -410,7 +410,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         /* limit the tx buf size to limit latency */
         tmp = s->buffer_size;
         if (setsockopt(udp_fd, SOL_SOCKET, SO_SNDBUF, &tmp, sizeof(tmp)) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "setsockopt(SO_SNDBUF): %s\n", strerror(errno));
+            av_log(h, AV_LOG_ERROR, "setsockopt(SO_SNDBUF): %s\n", strerror(errno));
             goto fail;
         }
     } else {
@@ -418,14 +418,14 @@ static int udp_open(URLContext *h, const char *uri, int flags)
          * avoid losing data on OSes that set this too low by default. */
         tmp = s->buffer_size;
         if (setsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, sizeof(tmp)) < 0) {
-            av_log(NULL, AV_LOG_WARNING, "setsockopt(SO_RECVBUF): %s\n", strerror(errno));
+            av_log(h, AV_LOG_WARNING, "setsockopt(SO_RECVBUF): %s\n", strerror(errno));
         }
         /* make the socket non-blocking */
         ff_socket_nonblock(udp_fd, 1);
     }
     if (s->is_connected) {
         if (connect(udp_fd, (struct sockaddr *) &s->dest_addr, s->dest_addr_len)) {
-            av_log(NULL, AV_LOG_ERROR, "connect: %s\n", strerror(errno));
+            av_log(h, AV_LOG_ERROR, "connect: %s\n", strerror(errno));
             goto fail;
         }
     }
