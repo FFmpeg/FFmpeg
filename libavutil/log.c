@@ -91,7 +91,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     line[0]=0;
 #undef fprintf
     if(print_prefix && avc) {
-        if(avc->version >= (50<<16 | 15<<8 | 3) && avc->parent_log_context_offset){
+        if (avc->parent_log_context_offset) {
             AVClass** parent= *(AVClass***)(((uint8_t*)ptr) + avc->parent_log_context_offset);
             if(parent && *parent){
                 snprintf(line, sizeof(line), "[%s @ %p] ", (*parent)->item_name(parent), parent);
