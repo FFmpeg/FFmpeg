@@ -37,7 +37,7 @@
 #define AVUNERROR(e) (e)
 #endif
 
-#define AVERROR_EOF         AVERROR(EPIPE)   ///< End of file
+#define AVERROR_EOF             (-MKTAG('E','O','F',' ')) ///< End of file
 
 #define AVERROR_PATCHWELCOME    (-MKTAG('P','A','W','E')) ///< Not yet implemented in Libav, patches welcome
 
