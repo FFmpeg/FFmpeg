@@ -545,14 +545,14 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     if (avctx->codec->encode) {
         int i;
         if (avctx->codec->sample_fmts) {
-        for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++)
-            if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
-                break;
-        if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
-            av_log(avctx, AV_LOG_ERROR, "Specified sample_fmt is not supported.\n");
-            ret = AVERROR(EINVAL);
-            goto free_and_end;
-        }
+            for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++)
+                if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
+                    break;
+            if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
+                av_log(avctx, AV_LOG_ERROR, "Specified sample_fmt is not supported.\n");
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            }
         }
         if (avctx->codec->supported_samplerates) {
             for (i = 0; avctx->codec->supported_samplerates[i] != 0; i++)
