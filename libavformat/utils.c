@@ -672,6 +672,8 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
                     s->streams[i]->request_probe = -1;
             continue;
         }
+
+        av_packet_merge_side_data(pkt);
         st= s->streams[pkt->stream_index];
 
         switch(st->codec->codec_type){
