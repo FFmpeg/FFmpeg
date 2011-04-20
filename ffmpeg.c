@@ -1428,7 +1428,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     int ret, i;
     int got_output;
     AVFrame picture;
-    void *buffer_to_free;
+    void *buffer_to_free = NULL;
     static unsigned int samples_size= 0;
     AVSubtitle subtitle, *subtitle_to_free;
     int64_t pkt_pts = AV_NOPTS_VALUE;
@@ -1530,6 +1530,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             ist->st->codec->time_base.den;
                     }
                     avpkt.size = 0;
+                    buffer_to_free = NULL;
+                    pre_process_video_frame(ist, (AVPicture *)&picture, &buffer_to_free);
                     break;
             case AVMEDIA_TYPE_SUBTITLE:
                 ret = avcodec_decode_subtitle2(ist->st->codec,
@@ -1562,12 +1564,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
             }
             ret = avpkt.size;
             avpkt.size = 0;
-        }
-
-        buffer_to_free = NULL;
-        if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            pre_process_video_frame(ist, (AVPicture *)&picture,
-                                    &buffer_to_free);
         }
 
 #if CONFIG_AVFILTER
