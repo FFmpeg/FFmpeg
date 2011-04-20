@@ -65,5 +65,8 @@
 #ifndef FF_API_OPT_H
 #define FF_API_OPT_H            (LIBAVCODEC_VERSION_MAJOR < 54)
 #endif
+#ifndef FF_API_THREAD_INIT
+#define FF_API_THREAD_INIT      (LIBAVCODEC_VERSION_MAJOR < 54)
+#endif
 
 #endif /* AVCODEC_VERSION_H */
