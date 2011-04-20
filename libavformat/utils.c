@@ -2564,6 +2564,7 @@ void avformat_free_context(AVFormatContext *s)
     av_freep(&s->chapters);
     av_metadata_free(&s->metadata);
     av_freep(&s->key);
+    av_freep(&s->streams);
     av_free(s);
 }
 
