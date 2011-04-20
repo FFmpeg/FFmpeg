@@ -40,6 +40,7 @@ typedef struct X264Context {
     const char *profile;
     const char *level;
     int fastfirstpass;
+    const char *stats;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -173,6 +174,15 @@ static av_cold int X264_close(AVCodecContext *avctx)
         }                                                               \
     } while (0);                                                        \
 
+#define OPT_STR(opt, param)                                             \
+    do {                                                                \
+        if (param && x264_param_parse(&x4->params, opt, param) < 0) {   \
+            av_log(avctx, AV_LOG_ERROR,                                 \
+                   "bad value for '%s': '%s'\n", opt, param);           \
+            return -1;                                                  \
+        }                                                               \
+    } while (0);                                                        \
+
 static av_cold int X264_init(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;
@@ -291,6 +301,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         }
     }
 
+    OPT_STR("stats", x4->stats);
+
     // if neither crf nor cqp modes are selected we have to enable the RC
     // we do it this way because we cannot check if the bitrate has been set
     if (!(avctx->crf || (avctx->cqp > -1)))
@@ -371,6 +383,7 @@ static const AVOption options[] = {
     {"fastfirstpass", "Use fast settings when encoding first pass", OFFSET(fastfirstpass), FF_OPT_TYPE_INT, 1, 0, 1, VE},
     {"profile", "Set profile restrictions", OFFSET(profile), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     {"level", "Specify level (as defined by Annex A)", OFFSET(level), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
+    {"passlogfile", "Filename for 2 pass stats", OFFSET(stats), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     { NULL },
 };
 

@@ -207,7 +207,7 @@ static int do_hex_dump = 0;
 static int do_pkt_dump = 0;
 static int do_psnr = 0;
 static int do_pass = 0;
-static char *pass_logfilename_prefix = NULL;
+static const char *pass_logfilename_prefix;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
 static int subtitle_stream_copy = 0;
@@ -2331,7 +2331,7 @@ static int transcode(AVFormatContext **output_files,
                 break;
             }
             /* two pass mode */
-            if (ost->encoding_needed &&
+            if (ost->encoding_needed && codec->codec_id != CODEC_ID_H264 &&
                 (codec->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
                 char logfilename[1024];
                 FILE *f;
@@ -4268,6 +4268,12 @@ static void log_callback_null(void* ptr, int level, const char* fmt, va_list vl)
 {
 }
 
+static void opt_passlogfile(const char *arg)
+{
+    pass_logfilename_prefix = arg;
+    opt_default("passlogfile", arg);
+}
+
 static const OptionDef options[] = {
     /* main options */
 #include "cmdutils_common_opts.h"
@@ -4341,7 +4347,7 @@ static const OptionDef options[] = {
     { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quality},
       "use same quantizer as source (implies VBR)" },
     { "pass", HAS_ARG | OPT_FUNC2 | OPT_VIDEO, {(void*)opt_pass}, "select the pass number (1 or 2)", "n" },
-    { "passlogfile", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void*)&pass_logfilename_prefix}, "select two pass log file name prefix", "prefix" },
+    { "passlogfile", HAS_ARG | OPT_VIDEO, {(void*)&opt_passlogfile}, "select two pass log file name prefix", "prefix" },
     { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace},
       "deinterlace pictures" },
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
