@@ -389,8 +389,8 @@ RTPDynamicProtocolHandler ff_theora_dynamic_handler = {
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = CODEC_ID_THEORA,
     .parse_sdp_a_line = xiph_parse_sdp_line,
-    .open             = xiph_new_context,
-    .close            = xiph_free_context,
+    .alloc            = xiph_new_context,
+    .free             = xiph_free_context,
     .parse_packet     = xiph_handle_packet
 };
 
@@ -399,7 +399,7 @@ RTPDynamicProtocolHandler ff_vorbis_dynamic_handler = {
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = CODEC_ID_VORBIS,
     .parse_sdp_a_line = xiph_parse_sdp_line,
-    .open             = xiph_new_context,
-    .close            = xiph_free_context,
+    .alloc            = xiph_new_context,
+    .free             = xiph_free_context,
     .parse_packet     = xiph_handle_packet
 };

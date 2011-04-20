@@ -551,8 +551,8 @@ static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
     .codec_type       = t, \
     .codec_id         = CODEC_ID_NONE, \
     .parse_sdp_a_line = rdt_parse_sdp_line, \
-    .open             = rdt_new_context, \
-    .close            = rdt_free_context, \
+    .alloc            = rdt_new_context, \
+    .free             = rdt_free_context, \
     .parse_packet     = rdt_parse_packet \
 }
 

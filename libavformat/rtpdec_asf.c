@@ -286,8 +286,8 @@ RTPDynamicProtocolHandler ff_ms_rtp_ ## n ## _handler = { \
     .codec_type       = t, \
     .codec_id         = CODEC_ID_NONE, \
     .parse_sdp_a_line = asfrtp_parse_sdp_line, \
-    .open             = asfrtp_new_context, \
-    .close            = asfrtp_free_context, \
+    .alloc            = asfrtp_new_context, \
+    .free             = asfrtp_free_context, \
     .parse_packet     = asfrtp_parse_packet,   \
 }
 
