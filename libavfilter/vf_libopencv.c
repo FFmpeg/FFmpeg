@@ -158,7 +158,7 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
         }
         w++;
     }
-    if (*rows > (FF_INTERNAL_MEM_TYPE_MAX_VALUE / (sizeof(int)) / *cols)) {
+    if (*rows > (SIZE_MAX / sizeof(int) / *cols)) {
         av_log(log_ctx, AV_LOG_ERROR, "File with size %dx%d is too big\n",
                *rows, *cols);
         return AVERROR_INVALIDDATA;
