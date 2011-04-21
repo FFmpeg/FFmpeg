@@ -142,6 +142,7 @@ typedef struct {
 
     /* Options */
     uint32_t sWidth;
+    uint8_t bframe_bug;
 } CHDContext;
 
 static const AVOption options[] = {
@@ -744,7 +745,7 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
             }
 
             if (avctx->codec->id == CODEC_ID_MPEG4 &&
-                output.PicInfo.timeStamp == 0) {
+                output.PicInfo.timeStamp == 0 && priv->bframe_bug) {
                 av_log(avctx, AV_LOG_VERBOSE,
                        "CrystalHD: Not returning packed frame twice.\n");
                 priv->last_picture++;
@@ -809,6 +810,22 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
     uint8_t pic_type   = 0;
 
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: decode_frame\n");
+
+    if (avpkt->size == 7 && !priv->bframe_bug) {
+        /*
+         * The use of a drop frame triggers the bug
+         */
+        av_log(avctx, AV_LOG_INFO,
+               "CrystalHD: Enabling work-around for packed b-frame bug\n");
+        priv->bframe_bug = 1;
+    } else if (avpkt->size == 8 && priv->bframe_bug) {
+        /*
+         * Delay frames don't trigger the bug
+         */
+        av_log(avctx, AV_LOG_INFO,
+               "CrystalHD: Disabling work-around for packed b-frame bug\n");
+        priv->bframe_bug = 0;
+    }
 
     if (len) {
         int32_t tx_free = (int32_t)DtsTxFreeSize(dev);
