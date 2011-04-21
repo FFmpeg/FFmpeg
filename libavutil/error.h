@@ -37,15 +37,6 @@
 #define AVUNERROR(e) (e)
 #endif
 
-#define AVERROR_IO          AVERROR(EIO)     ///< I/O error
-#define AVERROR_NOENT       AVERROR(ENOENT)  ///< No such file or directory
-#define AVERROR_NOFMT       AVERROR(EILSEQ)  ///< Unknown format
-#define AVERROR_NOMEM       AVERROR(ENOMEM)  ///< Not enough memory
-#define AVERROR_NOTSUPP     AVERROR(ENOSYS)  ///< Operation not supported
-#define AVERROR_UNKNOWN     AVERROR(EINVAL)  ///< Unknown error
-
-
-
 #define AVERROR_BSF_NOT_FOUND      (-MKTAG(0xF8,'B','S','F')) ///< Bitstream filter not found
 #define AVERROR_DECODER_NOT_FOUND  (-MKTAG(0xF8,'D','E','C')) ///< Decoder not found
 #define AVERROR_DEMUXER_NOT_FOUND  (-MKTAG(0xF8,'D','E','M')) ///< Demuxer not found
