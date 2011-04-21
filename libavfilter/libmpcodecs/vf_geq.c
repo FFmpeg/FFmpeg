@@ -116,7 +116,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
             const_values[3]=y;
             for(x=0; x<w; x++){
                 const_values[2]=x;
-                dst[x + y * dst_stride] = av_eval_expr(vf->priv->e[plane],
+                dst[x + y * dst_stride] = av_expr_eval(vf->priv->e[plane],
                                                        const_values, vf);
             }
         }
@@ -176,7 +176,7 @@ static int vf_open(vf_instance_t *vf, char *args){
             plane==0 ? lum : (plane==1 ? cb : cr),
             NULL
         };
-        res = av_parse_expr(&vf->priv->e[plane], eq[plane], const_names, NULL, NULL, func2_names, func2, 0, NULL);
+        res = av_expr_parse(&vf->priv->e[plane], eq[plane], const_names, NULL, NULL, func2_names, func2, 0, NULL);
 
         if (res < 0) {
             mp_msg(MSGT_VFILTER, MSGL_ERR, "geq: error loading equation `%s'\n", eq[plane]);

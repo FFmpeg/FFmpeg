@@ -69,7 +69,7 @@ static int config(struct vf_instance *vf,
             double temp_val;
             int res;
 
-            res= av_parse_and_eval_expr(&temp_val, vf->priv->eq, const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+            res= av_expr_parse_and_eval(&temp_val, vf->priv->eq, const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, NULL);
 
             if (res < 0){
                 mp_msg(MSGT_VFILTER, MSGL_ERR, "qp: Error evaluating \"%s\" \n", vf->priv->eq);
