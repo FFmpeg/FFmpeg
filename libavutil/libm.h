@@ -86,6 +86,13 @@ static av_always_inline av_const float roundf(float x)
 }
 #endif /* HAVE_ROUNDF */
 
+#if !HAVE_TRUNC
+static av_always_inline av_const double trunc(double x)
+{
+    return (x > 0) ? floor(x) : ceil(x);
+}
+#endif /* HAVE_TRUNC */
+
 #if !HAVE_TRUNCF
 static av_always_inline av_const float truncf(float x)
 {
