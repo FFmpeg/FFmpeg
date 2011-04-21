@@ -93,6 +93,7 @@ tools/%.o: tools/%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(CC_O) $<
 
 -include $(wildcard tools/*.d)
+-include $(wildcard tests/*.d)
 
 ffplay.o: CFLAGS += $(SDL_CFLAGS)
 

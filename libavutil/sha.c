@@ -25,7 +25,6 @@
 #include "avutil.h"
 #include "bswap.h"
 #include "sha.h"
-#include "sha1.h"
 #include "intreadwrite.h"
 
 /** hash context */
@@ -323,29 +322,6 @@ void av_sha_final(AVSHA* ctx, uint8_t *digest)
     for (i = 0; i < ctx->digest_len; i++)
         AV_WB32(digest + i*4, ctx->state[i]);
 }
-
-#if LIBAVUTIL_VERSION_MAJOR < 51
-struct AVSHA1 {
-    AVSHA sha;
-};
-
-const int av_sha1_size = sizeof(struct AVSHA1);
-
-void av_sha1_init(struct AVSHA1* context)
-{
-    av_sha_init(&context->sha, 160);
-}
-
-void av_sha1_update(struct AVSHA1* context, const uint8_t* data, unsigned int len)
-{
-    av_sha_update(&context->sha, data, len);
-}
-
-void av_sha1_final(struct AVSHA1* context, uint8_t digest[20])
-{
-    av_sha_final(&context->sha, digest);
-}
-#endif
 
 #ifdef TEST
 #include <stdio.h>
