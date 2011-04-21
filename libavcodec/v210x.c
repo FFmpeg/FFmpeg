@@ -52,7 +52,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
     if(avpkt->size > avctx->width * avctx->height * 8 / 3){
-        av_log(avctx, AV_LOG_ERROR, "Probably padded data, need sample!\n");
+        av_log_ask_for_sample(avctx, "Probably padded data\n");
     }
 
     pic->reference= 0;
