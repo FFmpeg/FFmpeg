@@ -1237,7 +1237,7 @@ mdct_select="fft"
 rdft_select="fft"
 
 # decoders / encoders / hardware accelerators
-aac_decoder_select="mdct rdft sinewin"
+aac_decoder_select="mdct sinewin"
 aac_encoder_select="mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="mdct ac3dsp ac3_parser"
