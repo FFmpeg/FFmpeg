@@ -867,7 +867,6 @@ static void end_frame(AVFilterLink *inlink)
 {
     MPContext *m = inlink->dst->priv;
     AVFilterBufferRef *inpic  = inlink->cur_buf;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
     int i;
     double pts= MP_NOPTS_VALUE;
     mp_image_t* mpi = new_mp_image(inpic->video->w, inpic->video->h);
