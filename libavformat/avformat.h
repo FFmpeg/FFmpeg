@@ -104,6 +104,7 @@ struct AVFormatContext;
  * service_provider -- name of the service provider in broadcasting.
  * title        -- name of the work.
  * track        -- number of this work in the set, can be in form current/total.
+ * variant_bitrate -- the total bitrate of the bitrate variant that the current stream is part of
  */
 
 #define AV_METADATA_MATCH_CASE      1

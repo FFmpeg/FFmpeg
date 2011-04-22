@@ -680,6 +680,10 @@ typedef struct RcOverride{
  * Codec supports frame-level multithreading.
  */
 #define CODEC_CAP_FRAME_THREADS    0x1000
+/**
+ * Codec supports slice-based (or partition-based) multithreading.
+ */
+#define CODEC_CAP_SLICE_THREADS    0x2000
 
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
@@ -3632,6 +3636,14 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
                                int linesize_align[4]);
 
 enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat * fmt);
+
+#if FF_API_THREAD_INIT
+/**
+ * @deprecated Set s->thread_count before calling avcodec_open() instead of calling this.
+ */
+attribute_deprecated
+int avcodec_thread_init(AVCodecContext *s, int thread_count);
+#endif
 
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);

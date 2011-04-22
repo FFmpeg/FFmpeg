@@ -877,7 +877,8 @@ static void validate_thread_parameters(AVCodecContext *avctx)
         avctx->active_thread_type = 0;
     } else if (frame_threading_supported && (avctx->thread_type & FF_THREAD_FRAME)) {
         avctx->active_thread_type = FF_THREAD_FRAME;
-    } else if (avctx->thread_type & FF_THREAD_SLICE) {
+    } else if (avctx->codec->capabilities & CODEC_CAP_SLICE_THREADS &&
+               avctx->thread_type & FF_THREAD_SLICE) {
         avctx->active_thread_type = FF_THREAD_SLICE;
     }
 }

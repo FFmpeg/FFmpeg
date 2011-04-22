@@ -1795,7 +1795,7 @@ AVCodec ff_ffv1_decoder = {
     NULL,
     common_end,
     decode_frame,
-    CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
+    CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/ | CODEC_CAP_SLICE_THREADS,
     NULL,
     .long_name= NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
 };
@@ -1809,6 +1809,7 @@ AVCodec ff_ffv1_encoder = {
     encode_init,
     encode_frame,
     common_end,
+    .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV444P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_RGB32, PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
 };

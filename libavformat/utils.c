@@ -586,7 +586,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     /* check filename in case an image number is expected */
     if (fmt->flags & AVFMT_NEEDNUMBER) {
         if (!av_filename_number_test(filename)) {
-            err = AVERROR_NUMEXPECTED;
+            err = AVERROR(EINVAL);
             goto fail;
         }
     }

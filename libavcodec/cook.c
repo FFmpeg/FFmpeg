@@ -1136,7 +1136,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         switch (q->subpacket[s].cookversion) {
             case MONO:
                 if (q->nb_channels != 1) {
-                    av_log(avctx,AV_LOG_ERROR,"Container channels != 1, report sample!\n");
+                    av_log_ask_for_sample(avctx, "Container channels != 1.!\n");
                     return -1;
                 }
                 av_log(avctx,AV_LOG_DEBUG,"MONO\n");
@@ -1150,7 +1150,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
                 break;
             case JOINT_STEREO:
                 if (q->nb_channels != 2) {
-                    av_log(avctx,AV_LOG_ERROR,"Container channels != 2, report sample!\n");
+                    av_log_ask_for_sample(avctx, "Container channels != 2.\n");
                     return -1;
                 }
                 av_log(avctx,AV_LOG_DEBUG,"JOINT_STEREO\n");
@@ -1188,7 +1188,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
                 break;
             default:
-                av_log(avctx,AV_LOG_ERROR,"Unknown Cook version, report sample!\n");
+                av_log_ask_for_sample(avctx, "Unknown Cook version.\n");
                 return -1;
                 break;
         }
@@ -1205,7 +1205,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
         /* Try to catch some obviously faulty streams, othervise it might be exploitable */
         if (q->subpacket[s].total_subbands > 53) {
-            av_log(avctx,AV_LOG_ERROR,"total_subbands > 53, report sample!\n");
+            av_log_ask_for_sample(avctx, "total_subbands > 53\n");
             return -1;
         }
 
@@ -1215,7 +1215,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         }
 
         if (q->subpacket[s].subbands > 50) {
-            av_log(avctx,AV_LOG_ERROR,"subbands > 50, report sample!\n");
+            av_log_ask_for_sample(avctx, "subbands > 50\n");
             return -1;
         }
         q->subpacket[s].gains1.now      = q->subpacket[s].gain_1;
@@ -1226,7 +1226,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         q->num_subpackets++;
         s++;
         if (s > MAX_SUBPACKETS) {
-            av_log(avctx,AV_LOG_ERROR,"Too many subpackets > 5, report file!\n");
+            av_log_ask_for_sample(avctx, "Too many subpackets > 5\n");
             return -1;
         }
     }

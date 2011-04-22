@@ -3852,7 +3852,7 @@ static void opt_output_file(const char *filename)
     /* check filename in case of an image number is expected */
     if (oc->oformat->flags & AVFMT_NEEDNUMBER) {
         if (!av_filename_number_test(oc->filename)) {
-            print_error(oc->filename, AVERROR_NUMEXPECTED);
+            print_error(oc->filename, AVERROR(EINVAL));
             ffmpeg_exit(1);
         }
     }

@@ -1297,6 +1297,7 @@ AVCodec ff_dvvideo_encoder = {
     sizeof(DVVideoContext),
     dvvideo_init_encoder,
     dvvideo_encode_frame,
+    .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts  = (const enum PixelFormat[]) {PIX_FMT_YUV411P, PIX_FMT_YUV422P, PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
 };
@@ -1312,7 +1313,7 @@ AVCodec ff_dvvideo_decoder = {
     NULL,
     dvvideo_close,
     dvvideo_decode_frame,
-    CODEC_CAP_DR1,
+    CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
     NULL,
     .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),

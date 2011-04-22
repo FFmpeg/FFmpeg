@@ -3467,7 +3467,9 @@ AVCodec ff_h264_decoder = {
     NULL,
     ff_h264_decode_end,
     decode_frame,
-    /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_FRAME_THREADS,
+    /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_DELAY |
+        CODEC_CAP_FRAME_THREADS |
+        CODEC_CAP_SLICE_THREADS,
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),

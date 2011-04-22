@@ -367,6 +367,7 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for (i = 0; i < c->n_variants; i++) {
         struct variant *v = c->variants[i];
         AVInputFormat *in_fmt = NULL;
+        char bitrate_str[20];
         if (v->n_segments == 0)
             continue;
 
@@ -393,6 +394,7 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (ret < 0)
             goto fail;
         v->stream_offset = stream_offset;
+        snprintf(bitrate_str, sizeof(bitrate_str), "%d", v->bandwidth);
         /* Create new AVStreams for each stream in this variant */
         for (j = 0; j < v->ctx->nb_streams; j++) {
             AVStream *st = av_new_stream(s, i);
@@ -401,6 +403,7 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 goto fail;
             }
             avcodec_copy_context(st->codec, v->ctx->streams[j]->codec);
+            av_metadata_set2(&st->metadata, "variant_bitrate", bitrate_str, 0);
         }
         stream_offset += v->ctx->nb_streams;
     }

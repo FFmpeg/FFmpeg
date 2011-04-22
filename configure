@@ -1128,6 +1128,7 @@ HAVE_LIST="
     ten_operands
     termios_h
     threads
+    trunc
     truncf
     vfp_args
     VirtualAlloc
@@ -2887,6 +2888,7 @@ check_mathfunc lrint
 check_mathfunc lrintf
 check_mathfunc round
 check_mathfunc roundf
+check_mathfunc trunc
 check_mathfunc truncf
 
 # these are off by default, so fail if requested and not available

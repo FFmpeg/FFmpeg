@@ -64,4 +64,15 @@ Note that the pattern must not necessarily contain "%d" or
 ffmpeg -f image2 -i img.jpeg img.png
 @end example
 
+@section applehttp
+
+Apple HTTP Live Streaming demuxer.
+
+This demuxer presents all AVStreams from all variant streams.
+The id field is set to the bitrate variant index number. By setting
+the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
+the caller can decide which variant streams to actually receive.
+The total bitrate of the variant that the stream belongs to is
+available in a metadata key named "variant_bitrate".
+
 @c man end INPUT DEVICES
