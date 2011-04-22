@@ -1803,14 +1803,13 @@ static int video_thread(void *arg)
 {
     VideoState *is = arg;
     AVFrame *frame= avcodec_alloc_frame();
-    int64_t pts_int;
+    int64_t pts_int, pos;
     double pts;
     int ret;
 
 #if CONFIG_AVFILTER
     AVFilterGraph *graph = avfilter_graph_alloc();
     AVFilterContext *filt_out = NULL;
-    int64_t pos;
 
     if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
         goto the_end;
@@ -1844,6 +1843,7 @@ static int video_thread(void *arg)
         }
 #else
         ret = get_video_frame(is, frame, &pts_int, &pkt);
+        pos = pkt.pos;
 #endif
 
         if (ret < 0) goto the_end;
@@ -1853,10 +1853,8 @@ static int video_thread(void *arg)
 
         pts = pts_int*av_q2d(is->video_st->time_base);
 
-#if CONFIG_AVFILTER
         ret = output_picture(is, frame, pts, pos);
-#else
-        ret = output_picture(is, frame, pts,  pkt.pos);
+#if !CONFIG_AVFILTER
         av_free_packet(&pkt);
 #endif
         if (ret < 0)
