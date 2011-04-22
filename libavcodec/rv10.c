@@ -656,6 +656,8 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     const uint8_t *slices_hdr = NULL;
 
     av_dlog(avctx, "*****frame %d size=%d\n", avctx->frame_number, buf_size);
+    s->flags  = avctx->flags;
+    s->flags2 = avctx->flags2;
 
     /* no supplementary picture */
     if (buf_size == 0) {
