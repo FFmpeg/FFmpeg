@@ -1133,13 +1133,19 @@ void av_log_missing_feature(void *avc, const char *feature, int want_sample)
         av_log(avc, AV_LOG_WARNING, "\n");
 }
 
-void av_log_ask_for_sample(void *avc, const char *msg)
+void av_log_ask_for_sample(void *avc, const char *msg, ...)
 {
+    va_list argument_list;
+
+    va_start(argument_list, msg);
+
     if (msg)
-        av_log(avc, AV_LOG_WARNING, "%s ", msg);
+        av_vlog(avc, AV_LOG_WARNING, msg, argument_list);
     av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
             "of this file to ftp://upload.libav.org/incoming/ "
             "and contact the libav-devel mailing list.\n");
+
+    va_end(argument_list);
 }
 
 static AVHWAccel *first_hwaccel = NULL;
