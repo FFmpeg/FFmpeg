@@ -1359,13 +1359,30 @@ static void alloc_picture(void *opaque)
     SDL_UnlockMutex(is->pictq_mutex);
 }
 
-/**
- *
- * @param pts the dts of the pkt / pts of the frame and guessed if not known
- */
-static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t pos)
+static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
 {
     VideoPicture *vp;
+    double frame_delay, pts = pts1;
+
+    /* compute the exact PTS for the picture if it is omitted in the stream
+     * pts1 is the dts of the pkt / pts of the frame */
+    if (pts != 0) {
+        /* update video clock with pts, if present */
+        is->video_clock = pts;
+    } else {
+        pts = is->video_clock;
+    }
+    /* update video clock for next frame */
+    frame_delay = av_q2d(is->video_st->codec->time_base);
+    /* for MPEG2, the frame can be repeated, so we update the
+       clock accordingly */
+    frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
+    is->video_clock += frame_delay;
+
+#if defined(DEBUG_SYNC) && 0
+    printf("frame_type=%c clock=%0.3f pts=%0.3f\n",
+           av_get_pict_type_char(src_frame->pict_type), pts, pts1);
+#endif
 
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
@@ -1467,36 +1484,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         SDL_UnlockMutex(is->pictq_mutex);
     }
     return 0;
-}
-
-/**
- * compute the exact PTS for the picture if it is omitted in the stream
- * @param pts1 the dts of the pkt / pts of the frame
- */
-static int output_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
-{
-    double frame_delay, pts;
-
-    pts = pts1;
-
-    if (pts != 0) {
-        /* update video clock with pts, if present */
-        is->video_clock = pts;
-    } else {
-        pts = is->video_clock;
-    }
-    /* update video clock for next frame */
-    frame_delay = av_q2d(is->video_st->codec->time_base);
-    /* for MPEG2, the frame can be repeated, so we update the
-       clock accordingly */
-    frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
-    is->video_clock += frame_delay;
-
-#if defined(DEBUG_SYNC) && 0
-    printf("frame_type=%c clock=%0.3f pts=%0.3f\n",
-           av_get_pict_type_char(src_frame->pict_type), pts, pts1);
-#endif
-    return queue_picture(is, src_frame, pts, pos);
 }
 
 static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt)
@@ -1853,7 +1840,7 @@ static int video_thread(void *arg)
 
         pts = pts_int*av_q2d(is->video_st->time_base);
 
-        ret = output_picture(is, frame, pts, pos);
+        ret = queue_picture(is, frame, pts, pos);
 #if !CONFIG_AVFILTER
         av_free_packet(&pkt);
 #endif
