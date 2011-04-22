@@ -1117,7 +1117,7 @@ static double compute_target_time(double frame_current_pts, VideoState *is)
 }
 
 /* called to display each frame */
-static void video_refresh_timer(void *opaque)
+static void video_refresh(void *opaque)
 {
     VideoState *is = opaque;
     VideoPicture *vp;
@@ -2872,7 +2872,7 @@ static void event_loop(void)
             alloc_picture(event.user.data1);
             break;
         case FF_REFRESH_EVENT:
-            video_refresh_timer(event.user.data1);
+            video_refresh(event.user.data1);
             cur_stream->refresh=0;
             break;
         default:
