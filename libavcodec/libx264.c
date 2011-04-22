@@ -199,15 +199,6 @@ static void check_default_settings(AVCodecContext *avctx)
         }                                                               \
     } while (0);                                                        \
 
-#define OPT_STR(opt, param)                                             \
-    do {                                                                \
-        if (param && x264_param_parse(&x4->params, opt, param) < 0) {   \
-            av_log(avctx, AV_LOG_ERROR,                                 \
-                   "bad value for '%s': '%s'\n", opt, param);           \
-            return -1;                                                  \
-        }                                                               \
-    } while (0);                                                        \
-
 static av_cold int X264_init(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;
