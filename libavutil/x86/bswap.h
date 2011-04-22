@@ -29,9 +29,9 @@
 #include "libavutil/attributes.h"
 
 #define av_bswap16 av_bswap16
-static av_always_inline av_const uint16_t av_bswap16(uint16_t x)
+static av_always_inline av_const unsigned av_bswap16(unsigned x)
 {
-    __asm__("rorw $8, %0" : "+r"(x));
+    __asm__("rorw $8, %w0" : "+r"(x));
     return x;
 }
 
