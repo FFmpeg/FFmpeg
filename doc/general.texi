@@ -96,7 +96,7 @@ library:
     @tab Only embedded audio is decoded.
 @item FLI/FLC/FLX animation     @tab   @tab X
     @tab .fli/.flc files
-@item Flash Video (FLV)         @tab   @tab X
+@item Flash Video (FLV)         @tab X @tab X
     @tab Macromedia Flash video files
 @item framecrc testing format   @tab X @tab
 @item FunCom ISS                @tab   @tab X
