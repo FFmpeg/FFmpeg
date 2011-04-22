@@ -233,7 +233,7 @@ static int audio_volume = 256;
 static int exit_on_error = 0;
 static int using_stdin = 0;
 static int verbose = 1;
-static int daemon  = 0;
+static int run_as_daemon  = 0;
 static int thread_count= 1;
 static int q_pressed = 0;
 static int64_t video_size = 0;
@@ -439,7 +439,7 @@ static void term_exit(void)
 {
     av_log(NULL, AV_LOG_QUIET, "");
 #if HAVE_TERMIOS_H
-    if(!daemon)
+    if(!run_as_daemon)
         tcsetattr (0, TCSANOW, &oldtty);
 #endif
 }
@@ -457,7 +457,7 @@ sigterm_handler(int sig)
 static void term_init(void)
 {
 #if HAVE_TERMIOS_H
-    if(!daemon){
+    if(!run_as_daemon){
     struct termios tty;
 
     tcgetattr (0, &tty);
@@ -494,7 +494,7 @@ static int read_key(void)
     struct timeval tv;
     fd_set rfds;
 
-    if(daemon)
+    if(run_as_daemon)
         return -1;
 
     FD_ZERO(&rfds);
@@ -4414,7 +4414,7 @@ int main(int argc, char **argv)
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
     if(argc>1 && !strcmp(argv[1], "-d")){
-        daemon=1;
+        run_as_daemon=1;
         verbose=-1;
         av_log_set_callback(log_callback_null);
         argc--;
