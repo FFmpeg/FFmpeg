@@ -107,7 +107,8 @@ static int oma_read_header(AVFormatContext *s,
         case OMA_CODECID_ATRAC3:
             samplerate = srate_tab[(codec_params >> 13) & 7]*100;
             if (samplerate != 44100)
-                av_log(s, AV_LOG_ERROR, "Unsupported sample rate, send sample file to developers: %d\n", samplerate);
+                av_log_ask_for_sample(s, "Unsupported sample rate: %d\n",
+                                      samplerate);
 
             framesize = (codec_params & 0x3FF) * 8;
             jsflag = (codec_params >> 17) & 1; /* get stereo coding mode, 1 for joint-stereo */

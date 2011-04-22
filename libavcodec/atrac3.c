@@ -186,7 +186,7 @@ static int decode_bytes(const uint8_t* inbuffer, uint8_t* out, int bytes){
         obuf[i] = c ^ buf[i];
 
     if (off)
-        av_log(NULL,AV_LOG_DEBUG,"Offset of %d not handled, post sample on ffmpeg-dev.\n",off);
+        av_log_ask_for_sample(NULL, "Offset of %d not handled.\n", off);
 
     return off;
 }
