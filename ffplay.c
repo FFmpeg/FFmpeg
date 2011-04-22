@@ -752,8 +752,8 @@ static void video_image_display(VideoState *is)
         }
         rect.x = is->xleft + x;
         rect.y = is->ytop  + y;
-        rect.w = width;
-        rect.h = height;
+        rect.w = FFMAX(width,  1);
+        rect.h = FFMAX(height, 1);
         SDL_DisplayYUVOverlay(vp->bmp, &rect);
     } else {
 #if 0
