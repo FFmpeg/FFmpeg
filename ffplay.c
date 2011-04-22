@@ -206,7 +206,6 @@ typedef struct VideoState {
     struct SwsContext *img_convert_ctx;
 #endif
 
-    //    QETimer *video_timer;
     char filename[1024];
     int width, height, xleft, ytop;
 
