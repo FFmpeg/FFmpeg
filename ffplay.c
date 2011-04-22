@@ -1064,7 +1064,7 @@ static void stream_seek(VideoState *is, int64_t pos, int64_t rel, int seek_by_by
 }
 
 /* pause or resume the video */
-static void stream_pause(VideoState *is)
+static void stream_toggle_pause(VideoState *is)
 {
     if (is->paused) {
         is->frame_timer += av_gettime() / 1000000.0 + is->video_current_pts_drift - is->video_current_pts;
@@ -1865,7 +1865,7 @@ static int video_thread(void *arg)
 
         if (step)
             if (cur_stream)
-                stream_pause(cur_stream);
+                stream_toggle_pause(cur_stream);
     }
  the_end:
 #if CONFIG_AVFILTER
@@ -1944,7 +1944,7 @@ static int subtitle_thread(void *arg)
         av_free_packet(pkt);
 //        if (step)
 //            if (cur_stream)
-//                stream_pause(cur_stream);
+//                stream_toggle_pause(cur_stream);
     }
  the_end:
     return 0;
@@ -2713,7 +2713,7 @@ static void toggle_full_screen(void)
 static void toggle_pause(void)
 {
     if (cur_stream)
-        stream_pause(cur_stream);
+        stream_toggle_pause(cur_stream);
     step = 0;
 }
 
@@ -2722,7 +2722,7 @@ static void step_to_next_frame(void)
     if (cur_stream) {
         /* if the stream is paused unpause it, then step */
         if (cur_stream->paused)
-            stream_pause(cur_stream);
+            stream_toggle_pause(cur_stream);
     }
     step = 1;
 }
