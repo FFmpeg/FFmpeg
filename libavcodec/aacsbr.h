@@ -36,7 +36,7 @@
 /** Initialize SBR. */
 av_cold void ff_aac_sbr_init(void);
 /** Initialize one SBR context. */
-av_cold void ff_aac_sbr_ctx_init(SpectralBandReplication *sbr);
+av_cold void ff_aac_sbr_ctx_init(AACContext *ac, SpectralBandReplication *sbr);
 /** Close one SBR context. */
 av_cold void ff_aac_sbr_ctx_close(SpectralBandReplication *sbr);
 /** Decode one SBR element. */

@@ -1626,7 +1626,9 @@ static int dca_decode_frame(AVCodecContext * avctx,
     int lfe_samples;
     int num_core_channels = 0;
     int i;
-    int16_t *samples = data;
+    float   *samples_flt = data;
+    int16_t *samples_s16 = data;
+    int out_size;
     DCAContext *s = avctx->priv_data;
     int channels;
     int core_ss_end;
@@ -1812,9 +1814,11 @@ static int dca_decode_frame(AVCodecContext * avctx,
         return -1;
     }
 
-    if (*data_size < (s->sample_blocks / 8) * 256 * sizeof(int16_t) * channels)
+    out_size = 256 / 8 * s->sample_blocks * channels *
+               (av_get_bits_per_sample_fmt(avctx->sample_fmt) / 8);
+    if (*data_size < out_size)
         return -1;
-    *data_size = 256 / 8 * s->sample_blocks * sizeof(int16_t) * channels;
+    *data_size = out_size;
 
     /* filter to get final output */
     for (i = 0; i < (s->sample_blocks / 8); i++) {
@@ -1833,8 +1837,16 @@ static int dca_decode_frame(AVCodecContext * avctx,
             }
         }
 
-        s->fmt_conv.float_to_int16_interleave(samples, s->samples_chanptr, 256, channels);
-        samples += 256 * channels;
+        if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT) {
+            s->fmt_conv.float_interleave(samples_flt, s->samples_chanptr, 256,
+                                         channels);
+            samples_flt += 256 * channels;
+        } else {
+            s->fmt_conv.float_to_int16_interleave(samples_s16,
+                                                  s->samples_chanptr, 256,
+                                                  channels);
+            samples_s16 += 256 * channels;
+        }
     }
 
     /* update lfe history */
@@ -1870,9 +1882,14 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
 
     for (i = 0; i < DCA_PRIM_CHANNELS_MAX+1; i++)
         s->samples_chanptr[i] = s->samples + i * 256;
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
-    s->scale_bias = 1.0;
+    if (avctx->request_sample_fmt == AV_SAMPLE_FMT_FLT) {
+        avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+        s->scale_bias = 1.0 / 32768.0;
+    } else {
+        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+        s->scale_bias = 1.0;
+    }
 
     /* allow downmixing to stereo */
     if (avctx->channels > 0 && avctx->request_channels < avctx->channels &&
@@ -1909,5 +1926,8 @@ AVCodec ff_dca_decoder = {
     .close = dca_decode_end,
     .long_name = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
     .capabilities = CODEC_CAP_CHANNEL_CONF,
+    .sample_fmts = (const enum AVSampleFormat[]) {
+        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
+    },
     .profiles = NULL_IF_CONFIG_SMALL(profiles),
 };
