@@ -1,8 +1,8 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle FFprobe Documentation
+@settitle ffprobe Documentation
 @titlepage
-@center @titlefont{FFprobe Documentation}
+@center @titlefont{ffprobe Documentation}
 @end titlepage
 
 @top
@@ -119,7 +119,7 @@ with name "STREAM".
 @ignore
 
 @setfilename ffprobe
-@settitle FFprobe media prober
+@settitle ffprobe media prober
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffserver(1) and the Libav HTML documentation

@@ -1,8 +1,8 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle FFplay Documentation
+@settitle ffplay Documentation
 @titlepage
-@center @titlefont{FFplay Documentation}
+@center @titlefont{ffplay Documentation}
 @end titlepage
 
 @top

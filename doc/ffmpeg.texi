@@ -1,8 +1,8 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle FFmpeg Documentation
+@settitle ffmpeg Documentation
 @titlepage
-@center @titlefont{FFmpeg Documentation}
+@center @titlefont{ffmpeg Documentation}
 @end titlepage
 
 @top
@@ -1046,7 +1046,7 @@ file to which you want to add them.
 @ignore
 
 @setfilename ffmpeg
-@settitle FFmpeg video converter
+@settitle ffmpeg video converter
 
 @c man begin SEEALSO
 ffplay(1), ffprobe(1), ffserver(1) and the Libav HTML documentation

@@ -1,8 +1,8 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle FFserver Documentation
+@settitle ffserver Documentation
 @titlepage
-@center @titlefont{FFserver Documentation}
+@center @titlefont{ffserver Documentation}
 @end titlepage
 
 @top
@@ -261,7 +261,7 @@ rather than as a daemon.
 @ignore
 
 @setfilename ffserver
-@settitle FFserver video server
+@settitle ffserver video server
 
 @c man begin SEEALSO
 
