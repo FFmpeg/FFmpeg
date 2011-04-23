@@ -92,7 +92,7 @@ void ff_read_chan_chunk(AVFormatContext *s, int64_t size, AVCodecContext *codec)
     const CafChannelLayout *caf_layout = caf_channel_layout;
     if (size != 12) {
         // Channel descriptions not implemented
-        av_log_ask_for_sample(s, "Unimplemented channel layout.");
+        av_log_ask_for_sample(s, "Unimplemented channel layout.\n");
         avio_skip(pb, size);
         return;
     }
@@ -110,7 +110,7 @@ void ff_read_chan_chunk(AVFormatContext *s, int64_t size, AVCodecContext *codec)
         caf_layout++;
     }
     if (!codec->channel_layout)
-        av_log(s, AV_LOG_WARNING, "Unknown channel layout.");
+        av_log(s, AV_LOG_WARNING, "Unknown channel layout.\n");
     avio_skip(pb, 8);
 }
 
