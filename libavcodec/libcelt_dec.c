@@ -43,7 +43,7 @@ static int ff_celt_error_to_averror(int err)
         case CELT_UNIMPLEMENTED:    return AVERROR(ENOTSUP);
         case CELT_INVALID_STATE:    return AVERROR(ENOTRECOVERABLE);
         case CELT_ALLOC_FAIL:       return AVERROR(ENOMEM);
-        default:                    return AVERROR_UNKNOWN;
+        default:                    return AVERROR(EINVAL);
     }
 }
 
