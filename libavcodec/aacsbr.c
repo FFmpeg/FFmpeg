@@ -32,6 +32,7 @@
 #include "aacsbrdata.h"
 #include "fft.h"
 #include "aacps.h"
+#include "libavutil/libm.h"
 
 #include <stdint.h>
 #include <float.h>
