@@ -280,7 +280,7 @@ Just create an "input.avs" text file with this single line ...
 @example
   DirectShowSource("C:\path to your file\yourfile.asf")
 @end example
-... and then feed that text file to FFmpeg:
+... and then feed that text file to ffmpeg:
 @example
   ffmpeg -i input.avs
 @end example
@@ -348,7 +348,7 @@ ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
 rm temp[12].[av] all.[av]
 @end example
 
-@section FFmpeg does not adhere to the -maxrate setting, some frames are bigger than maxrate/fps.
+@section The ffmpeg program does not respect the -maxrate setting, some frames are bigger than maxrate/fps.
 
 Read the MPEG spec about video buffer verifier.
 
