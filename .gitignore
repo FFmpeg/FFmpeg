@@ -6,7 +6,6 @@
 *.ho
 *-example
 *-test
-*_g
 config.*
 doc/*.1
 doc/*.html
@@ -17,7 +16,6 @@ ffplay
 ffprobe
 ffserver
 libavcodec/libavcodec*
-libavcore/libavcore*
 libavdevice/libavdevice*
 libavfilter/libavfilter*
 libavformat/libavformat*

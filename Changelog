@@ -27,7 +27,6 @@ version 0.7_beta1:
 - RTP depacketization of QDM2
 - ANSI/ASCII art playback system
 - Lego Mindstorms RSO de/muxer
-- libavcore added
 - SubRip subtitle file muxer and demuxer
 - Chinese AVS encoding via libxavs
 - ffprobe -show_packets option added
