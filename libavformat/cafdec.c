@@ -257,6 +257,12 @@ static int read_header(AVFormatContext *s,
             read_info_chunk(s, size);
             break;
 
+        case MKBETAG('c','h','a','n'):
+            if (size < 12)
+                return AVERROR_INVALIDDATA;
+            ff_read_chan_chunk(s, size, st->codec);
+            break;
+
         default:
 #define _(x) ((x) >= ' ' ? (x) : ' ')
             av_log(s, AV_LOG_WARNING, "skipping CAF chunk: %08X (%c%c%c%c), size %"PRId64"\n",
