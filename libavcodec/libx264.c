@@ -366,7 +366,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.b_repeat_headers = 0;
 
     // update AVCodecContext with x264 parameters
-    avctx->has_b_frames = x4->params.i_bframe_pyramid ? 2 : !!x4->params.i_bframe;
+    avctx->has_b_frames = x4->params.i_bframe ?
+        x4->params.i_bframe_pyramid ? 2 : 1 : 0;
     avctx->bit_rate = x4->params.rc.i_bitrate*1000;
     avctx->crf = x4->params.rc.f_rf_constant;
 
