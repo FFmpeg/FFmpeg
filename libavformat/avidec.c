@@ -590,12 +590,16 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     /* This code assumes that extradata contains only palette. */
                     /* This is true for all paletted codecs implemented in Libav. */
                     if (st->codec->extradata_size && (st->codec->bits_per_coded_sample <= 8)) {
+                        int pal_size = (1 << st->codec->bits_per_coded_sample) << 2;
+                        const uint8_t *pal_src;
+
+                        pal_size = FFMIN(pal_size, st->codec->extradata_size);
+                        pal_src = st->codec->extradata + st->codec->extradata_size - pal_size;
 #if HAVE_BIGENDIAN
-                        for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)
-                            ast->pal[i] = av_bswap32(((uint32_t*)st->codec->extradata)[i]);
+                        for (i = 0; i < pal_size/4; i++)
+                            ast->pal[i] = av_bswap32(((uint32_t*)pal_src)[i]);
 #else
-                        memcpy(ast->pal, st->codec->extradata,
-                               FFMIN(st->codec->extradata_size, AVPALETTE_SIZE));
+                        memcpy(ast->pal, pal_src, pal_size);
 #endif
                         ast->has_pal = 1;
                     }
