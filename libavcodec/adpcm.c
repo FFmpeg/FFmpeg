@@ -92,6 +92,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     case CODEC_ID_ADPCM_EA_R1:
     case CODEC_ID_ADPCM_EA_R2:
     case CODEC_ID_ADPCM_EA_R3:
+    case CODEC_ID_ADPCM_EA_XAS:
         max_channels = 6;
         break;
     }
