@@ -43,6 +43,7 @@ easier to use. The changes are:
 - XMV demuxer
 - Windows Media Image decoder
 - LATM muxer
+- showinfo filter
 
 
 version 0.7:

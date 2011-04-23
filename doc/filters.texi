@@ -1210,6 +1210,65 @@ settb=2*intb
 settb=AVTB
 @end example
 
+@section showinfo
+
+Show a line containing various information for each input video frame.
+The input video is not modified.
+
+The shown line contains a sequence of key/value pairs of the form
+@var{key}:@var{value}.
+
+A description of each shown parameter follows:
+
+@table @option
+@item n
+sequential number of the input frame, starting from 0
+
+@item pts
+Presentation TimeStamp of the input frame, expressed as a number of
+time base units. The time base unit depends on the filter input pad.
+
+@item pts_time
+Presentation TimeStamp of the input frame, expressed as a number of
+seconds
+
+@item pos
+position of the frame in the input stream, -1 if this information in
+unavailable and/or meanigless (for example in case of synthetic video)
+
+@item fmt
+pixel format name
+
+@item sar
+sample aspect ratio of the input frame, expressed in the form
+@var{num}/@var{den}
+
+@item s
+size of the input frame, expressed in the form
+@var{width}x@var{height}
+
+@item i
+interlaced mode ("P" for "progressive", "T" for top field first, "B"
+for bottom field first)
+
+@item iskey
+1 if the frame is a key frame, 0 otherwise
+
+@item type
+picture type of the input frame ("I" for an I-frame, "P" for a
+P-frame, "B" for a B-frame, "?" for unknown type).
+Check also the documentation of the @code{AVPictureType} enum and of
+the @code{av_get_picture_type_char} function defined in
+@file{libavutil/avutil.h}.
+
+@item checksum
+Adler-32 checksum of all the planes of the input frame
+
+@item plane_checksum
+Adler-32 checksum of each plane of the input frame, expressed in the form
+"[@var{c0} @var{c1} @var{c2} @var{c3}]"
+@end table
+
 @section slicify
 
 Pass the images of input video on to next video filter as multiple
