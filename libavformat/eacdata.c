@@ -39,7 +39,7 @@ static int cdata_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
-    if (b[0] == 0x04 && (b[1] == 0x00 || b[1] == 0x04 || b[1] == 0x0C))
+    if (b[0] == 0x04 && (b[1] == 0x00 || b[1] == 0x04 || b[1] == 0x0C || b[1] == 0x14))
         return AVPROBE_SCORE_MAX/8;
     return 0;
 }
@@ -56,6 +56,7 @@ static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
         case 0x0400: cdata->channels = 1; break;
         case 0x0404: cdata->channels = 2; break;
         case 0x040C: cdata->channels = 4; break;
+        case 0x0414: cdata->channels = 6; break;
         default:
             av_log(s, AV_LOG_INFO, "unknown header 0x%04x\n", header);
             return -1;
