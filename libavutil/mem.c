@@ -69,21 +69,21 @@ void *av_malloc(size_t size)
 #endif
 
     /* let's disallow possible ambiguous cases */
-    if(size > (INT_MAX-16) )
+    if(size > (INT_MAX-32) )
         return NULL;
 
 #if CONFIG_MEMALIGN_HACK
-    ptr = malloc(size+16);
+    ptr = malloc(size+32);
     if(!ptr)
         return ptr;
-    diff= ((-(long)ptr - 1)&15) + 1;
+    diff= ((-(long)ptr - 1)&31) + 1;
     ptr = (char*)ptr + diff;
     ((char*)ptr)[-1]= diff;
 #elif HAVE_POSIX_MEMALIGN
-    if (posix_memalign(&ptr,16,size))
+    if (posix_memalign(&ptr,32,size))
         ptr = NULL;
 #elif HAVE_MEMALIGN
-    ptr = memalign(16,size);
+    ptr = memalign(32,size);
     /* Why 64?
        Indeed, we should align it:
          on 4 for 386
@@ -93,10 +93,8 @@ void *av_malloc(size_t size)
        Because L1 and L2 caches are aligned on those values.
        But I don't want to code such logic here!
      */
-     /* Why 16?
-        Because some CPUs need alignment, for example SSE2 on P4, & most RISC CPUs
-        it will just trigger an exception and the unaligned load will be done in the
-        exception handler or it will just segfault (SSE2 on P4).
+     /* Why 32?
+        For AVX ASM. SSE / NEON needs only 16.
         Why not larger? Because I did not see a difference in benchmarks ...
      */
      /* benchmarks with P3
