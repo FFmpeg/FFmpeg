@@ -72,6 +72,7 @@ static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_id = CODEC_ID_ADPCM_EA_XAS;
     st->codec->channels = cdata->channels;
     st->codec->sample_rate = sample_rate;
+    st->codec->sample_fmt = AV_SAMPLE_FMT_S16;
     av_set_pts_info(st, 64, 1, sample_rate);
 
     cdata->audio_pts = 0;
