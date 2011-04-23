@@ -39,7 +39,7 @@ NOTE: issue = (bug report || patch || feature request)
 Type:
 -----
 bug
-    An error, flaw, mistake, failure, or fault in FFmpeg or libav* that
+    An error, flaw, mistake, failure, or fault in ffmpeg or libav* that
     prevents it from behaving as intended.
 
 feature request

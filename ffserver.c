@@ -2265,7 +2265,7 @@ static int http_prepare_data(HTTPContext *c)
 
         /*
          * HACK to avoid mpeg ps muxer to spit many underflow errors
-         * Default value from FFmpeg
+         * Default value from Libav
          * Try to set it use configuration option
          */
         c->fmt_ctx.preload   = (int)(0.5*AV_TIME_BASE);

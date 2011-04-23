@@ -268,7 +268,7 @@ library:
 
 @section Image Formats
 
-FFmpeg can read and write images for each frame of a video sequence. The
+Libav can read and write images for each frame of a video sequence. The
 following image formats are supported:
 
 @multitable @columnfractions .4 .1 .1 .4

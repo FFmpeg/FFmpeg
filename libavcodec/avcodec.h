@@ -960,7 +960,7 @@ typedef struct AVPanScan{
     int64_t reordered_opaque;\
 \
     /**\
-     * hardware accelerator private data (FFmpeg allocated)\
+     * hardware accelerator private data (Libav-allocated)\
      * - encoding: unused\
      * - decoding: Set by libavcodec\
      */\
@@ -2633,8 +2633,8 @@ typedef struct AVCodecContext {
      * Hardware accelerator context.
      * For some hardware accelerators, a global context needs to be
      * provided by the user. In that case, this holds display-dependent
-     * data FFmpeg cannot instantiate itself. Please refer to the
-     * FFmpeg HW accelerator documentation to know how to fill this
+     * data Libav cannot instantiate itself. Please refer to the
+     * Libav HW accelerator documentation to know how to fill this
      * is. e.g. for VA API, this is a struct vaapi_context.
      * - encoding: unused
      * - decoding: Set by user
