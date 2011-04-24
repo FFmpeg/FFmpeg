@@ -46,6 +46,7 @@ typedef struct FrapsContext{
     AVCodecContext *avctx;
     AVFrame frame;
     uint8_t *tmpbuf;
+    int tmpbuf_size;
     DSPContext dsp;
 } FrapsContext;
 
@@ -272,7 +273,7 @@ static int decode_frame(AVCodecContext *avctx,
         offs[planes] = buf_size;
         for(i = 0; i < planes; i++){
             is_chroma = !!i;
-            s->tmpbuf = av_realloc(s->tmpbuf, offs[i + 1] - offs[i] - 1024 + FF_INPUT_BUFFER_PADDING_SIZE);
+            av_fast_malloc(&s->tmpbuf, &s->tmpbuf_size, offs[i + 1] - offs[i] - 1024 + FF_INPUT_BUFFER_PADDING_SIZE);
             if(fraps2_decode_plane(s, f->data[i], f->linesize[i], avctx->width >> is_chroma,
                     avctx->height >> is_chroma, buf + offs[i], offs[i + 1] - offs[i], is_chroma, 1) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding plane %i\n", i);
@@ -314,7 +315,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
         offs[planes] = buf_size;
         for(i = 0; i < planes; i++){
-            s->tmpbuf = av_realloc(s->tmpbuf, offs[i + 1] - offs[i] - 1024 + FF_INPUT_BUFFER_PADDING_SIZE);
+            av_fast_malloc(&s->tmpbuf, &s->tmpbuf_size, offs[i + 1] - offs[i] - 1024 + FF_INPUT_BUFFER_PADDING_SIZE);
             if(fraps2_decode_plane(s, f->data[0] + i + (f->linesize[0] * (avctx->height - 1)), -f->linesize[0],
                     avctx->width, avctx->height, buf + offs[i], offs[i + 1] - offs[i], 0, 3) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding plane %i\n", i);
