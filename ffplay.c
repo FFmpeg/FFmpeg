@@ -2412,6 +2412,23 @@ static int decode_thread(void *arg)
     if(genpts)
         ic->flags |= AVFMT_FLAG_GENPTS;
 
+    /* Set AVCodecContext options so they will be seen by av_find_stream_info() */
+    for (i = 0; i < ic->nb_streams; i++) {
+        AVCodecContext *dec = ic->streams[i]->codec;
+        switch (dec->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO],
+                             AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM,
+                             NULL);
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO],
+                             AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM,
+                             NULL);
+            break;
+        }
+    }
+
     err = av_find_stream_info(ic);
     if (err < 0) {
         fprintf(stderr, "%s: could not find codec parameters\n", is->filename);

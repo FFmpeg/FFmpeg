@@ -546,6 +546,46 @@ static void choose_sample_fmt(AVStream *st, AVCodec *codec)
     }
 }
 
+/**
+ * Update the requested input sample format based on the output sample format.
+ * This is currently only used to request float output from decoders which
+ * support multiple sample formats, one of which is AV_SAMPLE_FMT_FLT.
+ * Ideally this will be removed in the future when decoders do not do format
+ * conversion and only output in their native format.
+ */
+static void update_sample_fmt(AVCodecContext *dec, AVCodec *dec_codec,
+                              AVCodecContext *enc)
+{
+    /* if sample formats match or a decoder sample format has already been
+       requested, just return */
+    if (enc->sample_fmt == dec->sample_fmt ||
+        dec->request_sample_fmt > AV_SAMPLE_FMT_NONE)
+        return;
+
+    /* if decoder supports more than one output format */
+    if (dec_codec && dec_codec->sample_fmts &&
+        dec_codec->sample_fmts[0] != AV_SAMPLE_FMT_NONE &&
+        dec_codec->sample_fmts[1] != AV_SAMPLE_FMT_NONE) {
+        enum AVSampleFormat *p;
+        int min_dec = -1, min_inc = -1;
+
+        /* find a matching sample format in the encoder */
+        for (p = dec_codec->sample_fmts; *p != AV_SAMPLE_FMT_NONE; p++) {
+            if (*p == enc->sample_fmt) {
+                dec->request_sample_fmt = *p;
+                return;
+            } else if (*p > enc->sample_fmt) {
+                min_inc = FFMIN(min_inc, *p - enc->sample_fmt);
+            } else
+                min_dec = FFMIN(min_dec, enc->sample_fmt - *p);
+        }
+
+        /* if none match, provide the one that matches quality closest */
+        dec->request_sample_fmt = min_inc > 0 ? enc->sample_fmt + min_inc :
+                                  enc->sample_fmt - min_dec;
+    }
+}
+
 static void choose_sample_rate(AVStream *st, AVCodec *codec)
 {
     if(codec && codec->supported_samplerates){
@@ -751,7 +791,7 @@ need_realloc:
         ffmpeg_exit(1);
     }
 
-    if (enc->channels != dec->channels)
+    if (enc->channels != dec->channels || enc->sample_rate != dec->sample_rate)
         ost->audio_resample = 1;
 
     resample_changed = ost->resample_sample_fmt  != dec->sample_fmt ||
@@ -777,7 +817,7 @@ need_realloc:
             ost->resample_sample_rate == enc->sample_rate) {
             ost->resample = NULL;
             ost->audio_resample = 0;
-        } else {
+        } else if (ost->audio_resample) {
             if (dec->sample_fmt != AV_SAMPLE_FMT_S16)
                 fprintf(stderr, "Warning, using s16 intermediate sample format for resampling\n");
             ost->resample = av_audio_resample_init(enc->channels,    dec->channels,
@@ -2308,6 +2348,17 @@ static int transcode(AVFormatContext **output_files,
                 ret = AVERROR(EINVAL);
                 goto dump_format;
             }
+
+            /* update requested sample format for the decoder based on the
+               corresponding encoder sample format */
+            for (j = 0; j < nb_ostreams; j++) {
+                ost = ost_table[j];
+                if (ost->source_index == i) {
+                    update_sample_fmt(ist->st->codec, codec, ost->st->codec);
+                    break;
+                }
+            }
+
             if (avcodec_open(ist->st->codec, codec) < 0) {
                 snprintf(error, sizeof(error), "Error while opening decoder for input stream #%d.%d",
                         ist->file_index, ist->index);
@@ -3178,6 +3229,23 @@ static void opt_input_file(const char *filename)
     }
 
     ic->loop_input = loop_input;
+
+    /* Set AVCodecContext options so they will be seen by av_find_stream_info() */
+    for (i = 0; i < ic->nb_streams; i++) {
+        AVCodecContext *dec = ic->streams[i]->codec;
+        switch (dec->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO],
+                             AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM,
+                             NULL);
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO],
+                             AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM,
+                             NULL);
+            break;
+        }
+    }
 
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. (used in mpeg case for example) */
