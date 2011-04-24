@@ -242,14 +242,14 @@ ogg_read_page (AVFormatContext * s, int *str)
     idx = ogg_find_stream (ogg, serial);
     if (idx < 0){
         if (ogg->headers) {
-                int n;
+            int n;
 
-                for (n = 0; n < ogg->nstreams; n++) {
-                    av_freep(&ogg->streams[n].buf);
-                    av_freep(&ogg->streams[n].private);
-                }
-                ogg->curidx   = -1;
-                ogg->nstreams = 0;
+            for (n = 0; n < ogg->nstreams; n++) {
+                av_freep(&ogg->streams[n].buf);
+                av_freep(&ogg->streams[n].private);
+            }
+            ogg->curidx   = -1;
+            ogg->nstreams = 0;
         }
         idx = ogg_new_stream (s, serial);
         if (idx < 0)
