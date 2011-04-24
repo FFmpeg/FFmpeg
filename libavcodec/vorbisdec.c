@@ -539,7 +539,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             rangemax = (1 << rangebits);
             if (rangemax > vc->blocksize[1] / 2) {
                 av_log(vc->avccontext, AV_LOG_ERROR,
-                       "Floor value is too large for blocksize: %d (%d)\n",
+                       "Floor value is too large for blocksize: %"PRIuFAST32" (%"PRIuFAST32")\n",
                        rangemax, vc->blocksize[1] / 2);
                 return -1;
             }
