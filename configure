@@ -2963,7 +2963,14 @@ check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_def
 check_header dev/ic/bt8xx.h
 
 check_header sndio.h
-check_header sys/soundcard.h
+if check_struct sys/soundcard.h audio_buf_info bytes; then
+    enable_safe sys/soundcard.h
+else
+    check_cc -D__BSD_VISIBLE -D__XSI_VISIBLE <<EOF && add_cppflags -D__BSD_VISIBLE -D__XSI_VISIBLE && enable_safe sys/soundcard.h
+    #include <sys/soundcard.h>
+    audio_buf_info abc;
+EOF
+fi
 check_header soundcard.h
 
 enabled_any alsa_indev alsa_outdev && check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
