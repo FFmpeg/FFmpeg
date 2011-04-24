@@ -853,7 +853,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
 
     if (ffio_init_context(*s, buffer, buffer_size,
                       h->flags & AVIO_FLAG_WRITE, h,
-                      ffurl_read, ffurl_write, ffurl_seek) < 0) {
+                      (void*)ffurl_read, (void*)ffurl_write, (void*)ffurl_seek) < 0) {
         av_free(buffer);
         av_freep(s);
         return AVERROR(EIO);
