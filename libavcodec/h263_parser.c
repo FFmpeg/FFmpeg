@@ -73,13 +73,13 @@ static int h263_parse(AVCodecParserContext *s,
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
     } else {
-    next= ff_h263_find_frame_end(pc, buf, buf_size);
+        next= ff_h263_find_frame_end(pc, buf, buf_size);
 
-    if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
-        *poutbuf = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
-    }
+        if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
+            *poutbuf = NULL;
+            *poutbuf_size = 0;
+            return buf_size;
+        }
     }
 
     *poutbuf = buf;
