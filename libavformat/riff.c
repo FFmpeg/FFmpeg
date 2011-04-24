@@ -180,6 +180,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_RAWVIDEO,     MKTAG('Y', '4', '2', 'B') },
     { CODEC_ID_RAWVIDEO,     MKTAG('Y', 'U', 'V', '9') },
     { CODEC_ID_RAWVIDEO,     MKTAG('Y', 'V', 'U', '9') },
+    { CODEC_ID_RAWVIDEO,     MKTAG('a', 'u', 'v', '2') },
     { CODEC_ID_FRWU,         MKTAG('F', 'R', 'W', 'U') },
     { CODEC_ID_R10K,         MKTAG('R', '1', '0', 'k') },
     { CODEC_ID_R210,         MKTAG('r', '2', '1', '0') },
