@@ -68,7 +68,16 @@ typedef struct FmtConvertContext {
      */
     void (*float_to_int16_interleave)(int16_t *dst, const float **src,
                                       long len, int channels);
+
+    /**
+     * Convert an array of interleaved float to multiple arrays of float.
+     */
+    void (*float_interleave)(float *dst, const float **src, unsigned int len,
+                             int channels);
 } FmtConvertContext;
+
+void ff_float_interleave_c(float *dst, const float **src, unsigned int len,
+                           int channels);
 
 void ff_fmt_convert_init(FmtConvertContext *c, AVCodecContext *avctx);
 
