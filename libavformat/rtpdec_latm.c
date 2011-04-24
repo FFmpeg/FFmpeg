@@ -181,7 +181,7 @@ RTPDynamicProtocolHandler ff_mp4a_latm_dynamic_handler = {
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = CODEC_ID_AAC,
     .parse_sdp_a_line   = latm_parse_sdp_line,
-    .open               = latm_new_context,
-    .close              = latm_free_context,
+    .alloc              = latm_new_context,
+    .free               = latm_free_context,
     .parse_packet       = latm_parse_packet
 };

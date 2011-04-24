@@ -463,6 +463,11 @@ static int decode_audio_specific_config(AACContext *ac,
     GetBitContext gb;
     int i;
 
+    av_dlog(avctx, "extradata size %d\n", avctx->extradata_size);
+    for (i = 0; i < avctx->extradata_size; i++)
+         av_dlog(avctx, "%02x ", avctx->extradata[i]);
+    av_dlog(avctx, "\n");
+
     init_get_bits(&gb, data, data_size * 8);
 
     if ((i = ff_mpeg4audio_get_config(m4ac, data, data_size)) < 0)
@@ -488,6 +493,10 @@ static int decode_audio_specific_config(AACContext *ac,
                m4ac->sbr == 1? "SBR+" : "", m4ac->object_type);
         return -1;
     }
+
+    av_dlog(avctx, "AOT %d chan config %d sampling index %d (%d) SBR %d PS %d\n",
+            m4ac->object_type, m4ac->chan_config, m4ac->sampling_index,
+            m4ac->sample_rate, m4ac->sbr, m4ac->ps);
 
     return get_bits_count(&gb);
 }

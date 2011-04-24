@@ -1136,7 +1136,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         switch (q->subpacket[s].cookversion) {
             case MONO:
                 if (q->nb_channels != 1) {
-                    av_log_ask_for_sample(avctx, "Container channels != 1.!\n");
+                    av_log_ask_for_sample(avctx, "Container channels != 1.\n");
                     return -1;
                 }
                 av_log(avctx,AV_LOG_DEBUG,"MONO\n");

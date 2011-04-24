@@ -223,7 +223,7 @@ RTPDynamicProtocolHandler ff_qcelp_dynamic_handler = {
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = CODEC_ID_QCELP,
     .static_payload_id  = 12,
-    .open               = qcelp_new_context,
-    .close              = qcelp_free_context,
+    .alloc              = qcelp_new_context,
+    .free               = qcelp_free_context,
     .parse_packet       = qcelp_parse_packet
 };

@@ -132,8 +132,8 @@ static void init_rtp_handler(RTPDynamicProtocolHandler *handler,
         return;
     codec->codec_id          = handler->codec_id;
     rtsp_st->dynamic_handler = handler;
-    if (handler->open)
-        rtsp_st->dynamic_protocol_context = handler->open();
+    if (handler->alloc)
+        rtsp_st->dynamic_protocol_context = handler->alloc();
 }
 
 /* parse the rtpmap description: <codec_name>/<clock_rate>[/<other params>] */
@@ -526,7 +526,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
         rtsp_st = rt->rtsp_streams[i];
         if (rtsp_st) {
             if (rtsp_st->dynamic_handler && rtsp_st->dynamic_protocol_context)
-                rtsp_st->dynamic_handler->close(
+                rtsp_st->dynamic_handler->free(
                     rtsp_st->dynamic_protocol_context);
             av_free(rtsp_st);
         }

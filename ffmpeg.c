@@ -1,5 +1,5 @@
 /*
- * FFmpeg main
+ * ffmpeg main
  * Copyright (c) 2000-2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -85,7 +85,7 @@
 
 #include "libavutil/avassert.h"
 
-const char program_name[] = "FFmpeg";
+const char program_name[] = "ffmpeg";
 const int program_birth_year = 2000;
 
 /* select an input stream for an output stream */

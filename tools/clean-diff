@@ -1,6 +1,6 @@
 #!/bin/sh
 sed '/^+[^+]/!s/	/TaBBaT/g' |\
- expand -t `seq -s , 9 8 200` |\
+ expand -t $(seq -s , 9 8 200) |\
  sed 's/TaBBaT/	/g' |\
  sed '/^+[^+]/s/ * $//' |\
  tr -d '\015' |\

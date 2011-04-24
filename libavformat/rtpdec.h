@@ -126,8 +126,8 @@ struct RTPDynamicProtocolHandler_s {
                              int st_index,
                              PayloadContext *priv_data,
                              const char *line); ///< Parse the a= line from the sdp field
-    PayloadContext *(*open) (void); ///< allocate any data needed by the rtp parsing for this dynamic data.
-    void (*close)(PayloadContext *protocol_data); ///< free any data needed by the rtp parsing for this dynamic data.
+    PayloadContext *(*alloc) (void); ///< allocate any data needed by the rtp parsing for this dynamic data.
+    void (*free)(PayloadContext *protocol_data); ///< free any data needed by the rtp parsing for this dynamic data.
     DynamicPayloadPacketHandlerProc parse_packet; ///< parse handler for this dynamic packet.
 
     struct RTPDynamicProtocolHandler_s *next;

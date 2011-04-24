@@ -1,5 +1,5 @@
 /*
- * FFplay : Simple Media Player based on the FFmpeg libraries
+ * ffplay : Simple Media Player based on the FFmpeg libraries
  * Copyright (c) 2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -56,7 +56,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-const char program_name[] = "FFplay";
+const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
 
 //#define DEBUG

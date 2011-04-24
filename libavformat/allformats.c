@@ -237,6 +237,7 @@ void av_register_all(void)
     /* protocols */
     REGISTER_PROTOCOL (APPLEHTTP, applehttp);
     REGISTER_PROTOCOL (CONCAT, concat);
+    REGISTER_PROTOCOL (CRYPTO, crypto);
     REGISTER_PROTOCOL (FILE, file);
     REGISTER_PROTOCOL (GOPHER, gopher);
     REGISTER_PROTOCOL (HTTP, http);
