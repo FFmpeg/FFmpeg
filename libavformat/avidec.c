@@ -726,7 +726,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if(!avi->index_loaded && pb->seekable)
         avi_load_index(s);
     avi->index_loaded = 1;
-    avi->non_interleaved |= guess_ni_flag(s);
+    avi->non_interleaved |= guess_ni_flag(s) | (s->flags & AVFMT_FLAG_SORT_DTS);
     for(i=0; i<s->nb_streams; i++){
         AVStream *st = s->streams[i];
         if(st->nb_index_entries)
