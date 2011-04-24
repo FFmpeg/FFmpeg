@@ -167,7 +167,7 @@ typedef struct VideoState {
     enum AVSampleFormat audio_src_fmt;
     AVAudioConvert *reformat_ctx;
 
-    enum {
+    enum ShowMode {
         SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB
     } show_mode;
     int16_t sample_array[SAMPLE_ARRAY_SIZE];
@@ -264,7 +264,7 @@ static int exit_on_keydown;
 static int exit_on_mousedown;
 static int loop=1;
 static int framedrop=1;
-static int show_mode = SHOW_MODE_VIDEO;
+static enum ShowMode show_mode = SHOW_MODE_VIDEO;
 
 static int rdftspeed=20;
 #if CONFIG_AVFILTER
