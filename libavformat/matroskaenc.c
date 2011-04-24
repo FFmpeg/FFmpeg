@@ -586,6 +586,25 @@ static int mkv_write_tracks(AVFormatContext *s)
                 // XXX: interlace flag?
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , codec->width);
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, codec->height);
+                if ((tag = av_metadata_get(s->metadata, "stereo_mode", NULL, 0))) {
+                    uint8_t stereo_fmt = atoi(tag->value);
+                    int valid_fmt = 0;
+
+                    switch (mkv->mode) {
+                    case MODE_WEBM:
+                        if (stereo_fmt <= MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM
+                            || stereo_fmt == MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT)
+                            valid_fmt = 1;
+                        break;
+                    case MODE_MATROSKAv2:
+                        if (stereo_fmt <= MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_RL)
+                            valid_fmt = 1;
+                        break;
+                    }
+
+                    if (valid_fmt)
+                        put_ebml_uint (pb, MATROSKA_ID_VIDEOSTEREOMODE, stereo_fmt);
+                }
                 if (st->sample_aspect_ratio.num) {
                     int d_width = codec->width*av_q2d(st->sample_aspect_ratio);
                     put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width);
