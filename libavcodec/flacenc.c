@@ -425,6 +425,28 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
 
+    if (channels == 3 &&
+            avctx->channel_layout != (AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER) ||
+        channels == 4 &&
+            avctx->channel_layout != AV_CH_LAYOUT_2_2 &&
+            avctx->channel_layout != AV_CH_LAYOUT_QUAD ||
+        channels == 5 &&
+            avctx->channel_layout != AV_CH_LAYOUT_5POINT0 &&
+            avctx->channel_layout != AV_CH_LAYOUT_5POINT0_BACK ||
+        channels == 6 &&
+            avctx->channel_layout != AV_CH_LAYOUT_5POINT1 &&
+            avctx->channel_layout != AV_CH_LAYOUT_5POINT1_BACK) {
+        if (avctx->channel_layout) {
+            av_log(avctx, AV_LOG_ERROR, "Channel layout not supported by Flac, "
+                                             "output stream will have incorrect "
+                                             "channel layout.\n");
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The encoder "
+                                               "will use Flac channel layout for "
+                                               "%d channels.\n", channels);
+        }
+    }
+
     ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size,
                       s->options.max_prediction_order, AV_LPC_TYPE_LEVINSON);
 
