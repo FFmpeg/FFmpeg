@@ -505,7 +505,9 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 goto fail;
             }
             avcodec_copy_context(st->codec, v->ctx->streams[j]->codec);
-            av_metadata_set2(&st->metadata, "variant_bitrate", bitrate_str, 0);
+            if (v->bandwidth)
+                av_metadata_set2(&st->metadata, "variant_bitrate", bitrate_str,
+                                 0);
         }
         stream_offset += v->ctx->nb_streams;
     }
