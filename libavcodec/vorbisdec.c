@@ -1007,12 +1007,9 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
     avccontext->channels    = vc->audio_channels;
     avccontext->sample_rate = vc->audio_samplerate;
     avccontext->frame_size  = FFMIN(vc->blocksize[0], vc->blocksize[1]) >> 2;
-    /* ffdshow custom code */
-#if CONFIG_AUDIO_FLOAT
-    avccontext->sample_fmt  = AV_SAMPLE_FMT_FLT;
-#else
-    avccontext->sample_fmt  = AV_SAMPLE_FMT_S16;
-#endif
+    avccontext->sample_fmt  =
+        avccontext->request_sample_fmt == AV_SAMPLE_FMT_FLT ?
+        AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
 
     return 0 ;
 }
@@ -1640,15 +1637,15 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
                               len * ff_vorbis_channel_layout_offsets[vc->audio_channels - 1][i];
     }
 
-    /* ffdshow custom code */
-#if CONFIG_AUDIO_FLOAT
-    float_interleave(data, channel_ptrs, len, vc->audio_channels);
-    *data_size = len * sizeof(float) * vc->audio_channels;
-#else
-    vc->fmt_conv.float_to_int16_interleave(data, channel_ptrs, len,
-                                           vc->audio_channels);
-    *data_size = len * 2 * vc->audio_channels;
-#endif
+    *data_size = len * vc->audio_channels;
+    if (avccontext->sample_fmt == AV_SAMPLE_FMT_FLT) {
+        float_interleave(data, channel_ptrs, len, vc->audio_channels);
+        *data_size *= sizeof(float);
+    } else {
+        vc->fmt_conv.float_to_int16_interleave(data, channel_ptrs, len,
+                                               vc->audio_channels);
+        *data_size *= 2;
+    }
 
     return buf_size ;
 }
