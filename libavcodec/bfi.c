@@ -34,6 +34,7 @@ typedef struct BFIContext {
     AVCodecContext *avctx;
     AVFrame frame;
     uint8_t *dst;
+    uint32_t pal[256];
 } BFIContext;
 
 static av_cold int bfi_decode_init(AVCodecContext * avctx)
@@ -85,10 +86,13 @@ static int bfi_decode_frame(AVCodecContext * avctx, void *data,
                     (avctx->extradata[i * 3 + j] >> 4)) << shift;
             pal++;
         }
+        memcpy(bfi->pal, bfi->frame.data[1], sizeof(bfi->pal));
         bfi->frame.palette_has_changed = 1;
     } else {
         bfi->frame.pict_type = FF_P_TYPE;
         bfi->frame.key_frame = 0;
+        bfi->frame.palette_has_changed = 0;
+        memcpy(bfi->frame.data[1], bfi->pal, sizeof(bfi->pal));
     }
 
     buf += 4; //Unpacked size, not required.
