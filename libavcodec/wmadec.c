@@ -489,6 +489,11 @@ static int wma_decode_block(WMACodecContext *s)
         s->block_len_bits = s->frame_len_bits;
     }
 
+    if (s->frame_len_bits - s->block_len_bits >= s->nb_block_sizes){
+        av_log(s->avctx, AV_LOG_ERROR, "block_len_bits not initialized to a valid value\n");
+        return -1;
+    }
+
     /* now check if the block length is coherent with the frame length */
     s->block_len = 1 << s->block_len_bits;
     if ((s->block_pos + s->block_len) > s->frame_len){
