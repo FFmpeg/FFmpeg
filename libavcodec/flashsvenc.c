@@ -106,7 +106,7 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 
     if ((avctx->width > 4095) || (avctx->height > 4095)) {
         av_log(avctx, AV_LOG_ERROR, "Input dimensions too large, input must be max 4096x4096 !\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     // Needed if zlib unused or init aborted before deflateInit
@@ -122,7 +122,7 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 
     if (!s->tmpblock || !s->encbuffer) {
         av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
-        return -1;
+        return AVERROR(ENOMEM);
     }
 
     return 0;
@@ -222,7 +222,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf,
         s->previous_frame = av_mallocz(FFABS(p->linesize[0]) * s->image_height);
         if (!s->previous_frame) {
             av_log(avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
-            return -1;
+            return AVERROR(ENOMEM);
         }
         I_frame = 1;
     }

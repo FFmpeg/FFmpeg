@@ -133,7 +133,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
         av_free(s->tmpblock);
         if ((s->tmpblock = av_malloc(3 * s->block_width * s->block_height)) == NULL) {
             av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
-            return -1;
+            return AVERROR(ENOMEM);
         }
     }
     s->block_size = s->block_width * s->block_height;
