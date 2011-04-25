@@ -102,6 +102,13 @@ static int wma_decode_init(AVCodecContext * avctx)
     s->use_bit_reservoir = flags2 & 0x0002;
     s->use_variable_block_len = flags2 & 0x0004;
 
+    if(avctx->codec->id == CODEC_ID_WMAV2 && avctx->extradata_size >= 8){
+        if(!AV_RL16(extradata+6) && s->use_variable_block_len){
+            av_log(avctx, AV_LOG_WARNING, "Disabling use_variable_block_len, if this fails contact the ffmpeg developers and send us the file\n");
+            s->use_variable_block_len= 0; // this fixes issue1503
+        }
+    }
+
     if(ff_wma_init(avctx, flags2)<0)
         return -1;
 
