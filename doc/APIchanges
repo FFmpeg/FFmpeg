@@ -1,16 +1,25 @@
-Never assume the API of libav* to be stable unless at least 1 week has passed since
-the last major version increase.
+Never assume the API of libav* to be stable unless at least 1 month has passed
+since the last major version increase.
+
 The last version increases were:
-libavcodec:  ?
-libavdevice: ?
-libavfilter: 2009-10-18
-libavformat: ?
-libpostproc: ?
-libswscale:  ?
-libavutil:   2009-03-08
+libavcodec:  2011-04-18
+libavdevice: 2011-04-18
+libavfilter: 2011-04-18
+libavformat: 2011-04-18
+libpostproc: 2011-04-18
+libswscale:  2011-04-18
+libavutil:   2011-04-18
 
 
 API changes, most recent first:
+
+2011-04-21 - 94f7451 - lavc 53.1.0 - avcodec.h
+  Add CODEC_CAP_SLICE_THREADS for codecs supporting sliced threading.
+
+2011-04-15 - lavc 52.120.0 - avcodec.h
+  AVPacket structure got additional members for passing side information:
+    4de339e introduce side information for AVPacket
+    2d8591c make containers pass palette change in AVPacket
 
 2011-04-12 - lavf 52.107.0 - avio.h
   Avio cleanup, part II - deprecate the entire URLContext API:

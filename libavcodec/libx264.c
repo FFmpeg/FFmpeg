@@ -38,7 +38,9 @@ typedef struct X264Context {
     const char *preset;
     const char *tune;
     const char *profile;
+    const char *level;
     int fastfirstpass;
+    const char *stats;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -144,7 +146,8 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     }
 
     x4->out_pic.key_frame = pic_out.b_keyframe;
-    x4->out_pic.quality   = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
+    if (bufsize)
+        x4->out_pic.quality = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
 
     return bufsize;
 }
@@ -161,6 +164,40 @@ static av_cold int X264_close(AVCodecContext *avctx)
 
     return 0;
 }
+
+/**
+ * Detect default settings and use default profile to avoid libx264 failure.
+ */
+static void check_default_settings(AVCodecContext *avctx)
+{
+    X264Context *x4 = avctx->priv_data;
+
+    int score = 0;
+    score += x4->params.analyse.i_me_range == 0;
+    score += x4->params.rc.i_qp_step == 3;
+    score += x4->params.i_keyint_max == 12;
+    score += x4->params.rc.i_qp_min == 2;
+    score += x4->params.rc.i_qp_max == 31;
+    score += x4->params.rc.f_qcompress == 0.5;
+    score += fabs(x4->params.rc.f_ip_factor - 1.25) < 0.01;
+    score += fabs(x4->params.rc.f_pb_factor - 1.25) < 0.01;
+    score += x4->params.analyse.inter == 0 && x4->params.analyse.i_subpel_refine == 8;
+    if (score >= 5) {
+        av_log(avctx, AV_LOG_ERROR, "Default settings detected, using medium profile\n");
+        x4->preset = "medium";
+        if (avctx->bit_rate == 200*100)
+            avctx->crf = 23;
+    }
+}
+
+#define OPT_STR(opt, param)                                             \
+    do {                                                                \
+        if (param && x264_param_parse(&x4->params, opt, param) < 0) {   \
+            av_log(avctx, AV_LOG_ERROR,                                 \
+                   "bad value for '%s': '%s'\n", opt, param);           \
+            return -1;                                                  \
+        }                                                               \
+    } while (0);                                                        \
 
 static av_cold int X264_init(AVCodecContext *avctx)
 {
@@ -248,25 +285,18 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.i_trellis          = avctx->trellis;
     x4->params.analyse.i_noise_reduction  = avctx->noise_reduction;
 
-    if (avctx->level > 0)
-        x4->params.i_level_idc = avctx->level;
-
     x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
 
+    if (!x4->preset)
+        check_default_settings(avctx);
+
     if (x4->preset || x4->tune) {
         if (x264_param_default_preset(&x4->params, x4->preset, x4->tune) < 0)
             return -1;
     }
-
-    if (x4->fastfirstpass)
-        x264_param_apply_fastfirstpass(&x4->params);
-
-    if (x4->profile)
-        if (x264_param_apply_profile(&x4->params, x4->profile) < 0)
-            return -1;
 
     x4->params.pf_log               = X264_log;
     x4->params.p_log_private        = avctx;
@@ -290,6 +320,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         }
     }
 
+    OPT_STR("stats", x4->stats);
+
     // if neither crf nor cqp modes are selected we have to enable the RC
     // we do it this way because we cannot check if the bitrate has been set
     if (!(avctx->crf || (avctx->cqp > -1)))
@@ -300,6 +332,15 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.f_vbv_buffer_init =
             (float)avctx->rc_initial_buffer_occupancy / avctx->rc_buffer_size;
     }
+
+    OPT_STR("level", x4->level);
+
+    if (x4->fastfirstpass)
+        x264_param_apply_fastfirstpass(&x4->params);
+
+    if (x4->profile)
+        if (x264_param_apply_profile(&x4->params, x4->profile) < 0)
+            return -1;
 
     x4->params.i_width          = avctx->width;
     x4->params.i_height         = avctx->height;
@@ -325,7 +366,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.b_repeat_headers = 0;
 
     // update AVCodecContext with x264 parameters
-    avctx->has_b_frames = x4->params.i_bframe_pyramid ? 2 : !!x4->params.i_bframe;
+    avctx->has_b_frames = x4->params.i_bframe ?
+        x4->params.i_bframe_pyramid ? 2 : 1 : 0;
     avctx->bit_rate = x4->params.rc.i_bitrate*1000;
     avctx->crf = x4->params.rc.f_rf_constant;
 
@@ -360,6 +402,8 @@ static const AVOption options[] = {
     {"tune", "Tune the encoding params", OFFSET(tune), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     {"fastfirstpass", "Use fast settings when encoding first pass", OFFSET(fastfirstpass), FF_OPT_TYPE_INT, 1, 0, 1, VE},
     {"profile", "Set profile restrictions", OFFSET(profile), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
+    {"level", "Specify level (as defined by Annex A)", OFFSET(level), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
+    {"passlogfile", "Filename for 2 pass stats", OFFSET(stats), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     { NULL },
 };
 

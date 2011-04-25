@@ -31,6 +31,7 @@
  ***********************************/
 
 #include <float.h>
+#include <math.h>
 #include "avcodec.h"
 #include "put_bits.h"
 #include "aac.h"

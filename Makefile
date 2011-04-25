@@ -93,6 +93,7 @@ tools/%.o: tools/%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(CC_O) $<
 
 -include $(wildcard tools/*.d)
+-include $(wildcard tests/*.d)
 
 ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
@@ -290,7 +291,7 @@ fate: $(FATE)
 
 $(FATE): ffmpeg$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 	@echo "TEST    $(@:fate-%=%)"
-	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)'
+	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)'
 
 fate-list:
 	@printf '%s\n' $(sort $(FATE))

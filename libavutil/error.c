@@ -28,11 +28,12 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
     case AVERROR_EOF:               errstr = "End of file"; break;
     case AVERROR_INVALIDDATA:       errstr = "Invalid data found when processing input"; break;
     case AVERROR_NUMEXPECTED:       errstr = "Number syntax expected in filename"; break;
-    case AVERROR_PATCHWELCOME:      errstr = "Not yet implemented in FFmpeg, patches welcome"; break;
+    case AVERROR_PATCHWELCOME:      errstr = "Not yet implemented in Libav, patches welcome"; break;
     case AVERROR_DEMUXER_NOT_FOUND: errstr = "Demuxer not found"; break;
     case AVERROR_MUXER_NOT_FOUND:   errstr = "Muxer not found"; break;
     case AVERROR_DECODER_NOT_FOUND: errstr = "Decoder not found"; break;
     case AVERROR_ENCODER_NOT_FOUND: errstr = "Encoder not found"; break;
+    case AVERROR_OPTION_NOT_FOUND:  errstr = "Option not found"; break;
     case AVERROR_PROTOCOL_NOT_FOUND:errstr = "Protocol not found"; break;
     case AVERROR_FILTER_NOT_FOUND:  errstr = "Filter not found"; break;
     case AVERROR_BSF_NOT_FOUND:     errstr = "Bitstream filter not found"; break;

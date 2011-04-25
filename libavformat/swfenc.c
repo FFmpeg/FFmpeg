@@ -421,7 +421,7 @@ static int swf_write_video(AVFormatContext *s,
         put_swf_tag(s, TAG_STREAMBLOCK | TAG_LONG);
         avio_wl16(pb, swf->sound_samples);
         avio_wl16(pb, 0); // seek samples
-        av_fifo_generic_read(swf->audio_fifo, pb, frame_size, &avio_write);
+        av_fifo_generic_read(swf->audio_fifo, pb, frame_size, (void*)avio_write);
         put_swf_end_tag(s);
 
         /* update FIFO */

@@ -23,6 +23,7 @@
 #include "avformat.h"
 #include "pcm.h"
 #include "aiff.h"
+#include "caf.h"
 
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
@@ -252,6 +253,11 @@ static int aiff_read_header(AVFormatContext *s,
                 return AVERROR(ENOMEM);
             st->codec->extradata_size = size;
             avio_read(pb, st->codec->extradata, size);
+            break;
+        case MKTAG('C','H','A','N'):
+            if (size < 12)
+                return AVERROR_INVALIDDATA;
+            ff_read_chan_chunk(s, size, st->codec);
             break;
         default: /* Jump */
             if (size & 1)   /* Always even aligned */

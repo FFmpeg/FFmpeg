@@ -58,7 +58,8 @@
  * They may change, break or disappear at any time.
  */
 #ifndef FF_API_OLD_EVAL_NAMES
-#define FF_API_OLD_EVAL_NAMES (LIBAVUTIL_VERSION_MAJOR < 51)
+#define FF_API_OLD_EVAL_NAMES (LIBAVUTIL_VERSION_MAJOR < 52)
+
 #endif
 
 /**

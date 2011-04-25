@@ -9,6 +9,11 @@ version <next>:
 - mpeg2 aspect ratio dection fixed
 - libxvid aspect pickiness fixed
 - Frame multithreaded decoding
+- Lots of deprecated API cruft removed
+
+
+version 0.7_beta1:
+
 - WebM support in Matroska de/muxer
 - low overhead Ogg muxing
 - MMS-TCP support

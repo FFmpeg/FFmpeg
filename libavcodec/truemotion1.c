@@ -353,7 +353,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         s->flags = FLAG_KEYFRAME;
 
     if (s->flags & FLAG_SPRITE) {
-        av_log(s->avctx, AV_LOG_INFO, "SPRITE frame found, please report the sample to the developers\n");
+        av_log_ask_for_sample(s->avctx, "SPRITE frame found.\n");
         /* FIXME header.width, height, xoffset and yoffset aren't initialized */
 #if 0
         s->w = header.width;
@@ -370,7 +370,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
             if ((s->w < 213) && (s->h >= 176))
             {
                 s->flags |= FLAG_INTERPOLATED;
-                av_log(s->avctx, AV_LOG_INFO, "INTERPOLATION selected, please report the sample to the developers\n");
+                av_log_ask_for_sample(s->avctx, "INTERPOLATION selected.\n");
             }
         }
     }

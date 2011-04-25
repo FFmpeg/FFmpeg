@@ -59,7 +59,7 @@
 
 #include "cmdutils.h"
 
-const char program_name[] = "FFserver";
+const char program_name[] = "ffserver";
 const int program_birth_year = 2000;
 
 static const OptionDef options[];

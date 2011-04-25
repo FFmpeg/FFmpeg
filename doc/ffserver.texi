@@ -1,8 +1,8 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle FFserver Documentation
+@settitle ffserver Documentation
 @titlepage
-@center @titlefont{FFserver Documentation}
+@center @titlefont{ffserver Documentation}
 @end titlepage
 
 @top
@@ -22,12 +22,12 @@ ffserver [options]
 @chapter Description
 @c man begin DESCRIPTION
 
-FFserver is a streaming server for both audio and video. It supports
+ffserver is a streaming server for both audio and video. It supports
 several live feeds, streaming from files and time shifting on live feeds
 (you can seek to positions in the past on each live feed, provided you
 specify a big enough feed storage in ffserver.conf).
 
-FFserver runs in daemon mode by default; that is, it puts itself in
+ffserver runs in daemon mode by default; that is, it puts itself in
 the background and detaches from its TTY, unless it is launched in
 debug mode or a NoDaemon option is specified in the configuration
 file.
@@ -39,7 +39,7 @@ information.
 
 @section How does it work?
 
-FFserver receives prerecorded files or FFM streams from some ffmpeg
+ffserver receives prerecorded files or FFM streams from some ffmpeg
 instance as input, then streams them over RTP/RTSP/HTTP.
 
 An ffserver instance will listen on some port as specified in the
@@ -57,7 +57,7 @@ file.
 
 @section Status stream
 
-FFserver supports an HTTP interface which exposes the current status
+ffserver supports an HTTP interface which exposes the current status
 of the server.
 
 Simply point your browser to the address of the special status stream
@@ -249,8 +249,8 @@ For example:   @samp{http://localhost:8080/test.asf?date=2002-07-26T23:05:00}.
 Use @file{configfile} instead of @file{/etc/ffserver.conf}.
 @item -n
 Enable no-launch mode. This option disables all the Launch directives
-within the various <Stream> sections. FFserver will not launch any
-ffmpeg instance, so you will have to launch them manually.
+within the various <Stream> sections. Since ffserver will not launch
+any ffmpeg instances, you will have to launch them manually.
 @item -d
 Enable debug mode. This option increases log verbosity, directs log
 messages to stdout and causes ffserver to run in the foreground
@@ -261,7 +261,7 @@ rather than as a daemon.
 @ignore
 
 @setfilename ffserver
-@settitle FFserver video server
+@settitle ffserver video server
 
 @c man begin SEEALSO
 

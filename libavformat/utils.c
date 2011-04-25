@@ -594,9 +594,9 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
         *fmt = av_probe_input_format2(&pd, 1, &score);
         if(*fmt){
             if(score <= AVPROBE_SCORE_MAX/4){ //this can only be true in the last iteration
-                av_log(logctx, AV_LOG_WARNING, "Format detected only with low score of %d, misdetection possible!\n", score);
+                av_log(logctx, AV_LOG_WARNING, "Format %s detected only with low score of %d, misdetection possible!\n", (*fmt)->name, score);
             }else
-                av_log(logctx, AV_LOG_DEBUG, "Probed with size=%d and score=%d\n", probe_size, score);
+                av_log(logctx, AV_LOG_DEBUG, "Format %s probed with size=%d and score=%d\n", (*fmt)->name, probe_size, score);
         }
     }
 
@@ -2084,7 +2084,8 @@ static int has_codec_parameters(AVCodecContext *enc)
             enc->codec_id == CODEC_ID_MP1 ||
             enc->codec_id == CODEC_ID_MP2 ||
             enc->codec_id == CODEC_ID_MP3 ||
-            enc->codec_id == CODEC_ID_SPEEX))
+            enc->codec_id == CODEC_ID_SPEEX ||
+            enc->codec_id == CODEC_ID_CELT))
             return 0;
         break;
     case AVMEDIA_TYPE_VIDEO:

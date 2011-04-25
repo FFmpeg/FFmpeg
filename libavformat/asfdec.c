@@ -1258,27 +1258,6 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
         /* find the position */
         pos = st->index_entries[index].pos;
 
-    // various attempts to find key frame have failed so far
-    //    asf_reset_header(s);
-    //    avio_seek(s->pb, pos, SEEK_SET);
-    //    key_pos = pos;
-    //     for(i=0;i<16;i++){
-    //         pos = avio_tell(s->pb);
-    //         if (av_read_frame(s, &pkt) < 0){
-    //             av_log(s, AV_LOG_INFO, "seek failed\n");
-    //             return -1;
-    //         }
-    //         asf_st = s->streams[stream_index]->priv_data;
-    //         pos += st->parser->frame_offset;
-    //
-    //         if (pkt.size > b) {
-    //             b = pkt.size;
-    //             key_pos = pos;
-    //         }
-    //
-    //         av_free_packet(&pkt);
-    //     }
-
         /* do the seek */
         av_log(s, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos);
         avio_seek(s->pb, pos, SEEK_SET);

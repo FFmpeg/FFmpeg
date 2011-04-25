@@ -244,8 +244,8 @@ RTPDynamicProtocolHandler ff_ ## m ## _rtp_ ## n ## _handler = { \
     .enc_name         = s, \
     .codec_type       = t, \
     .codec_id         = CODEC_ID_NONE, \
-    .open             = qt_rtp_new,    \
-    .close            = qt_rtp_free,   \
+    .alloc            = qt_rtp_new,    \
+    .free             = qt_rtp_free,   \
     .parse_packet     = qt_rtp_parse_packet, \
 }
 

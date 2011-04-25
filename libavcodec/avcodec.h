@@ -342,6 +342,7 @@ enum CodecID {
     CODEC_ID_BINKAUDIO_DCT,
     CODEC_ID_AAC_LATM,
     CODEC_ID_QDMC,
+    CODEC_ID_CELT,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
@@ -700,6 +701,10 @@ typedef struct RcOverride{
  * Codec supports frame-level multithreading.
  */
 #define CODEC_CAP_FRAME_THREADS    0x1000
+/**
+ * Codec supports slice-based (or partition-based) multithreading.
+ */
+#define CODEC_CAP_SLICE_THREADS    0x2000
 
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
@@ -3702,7 +3707,7 @@ int avcodec_check_dimensions(void *av_log_ctx, unsigned int w, unsigned int h);
 
 enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat * fmt);
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_THREAD_INIT
 /**
  * @deprecated Set s->thread_count before calling avcodec_open() instead of calling this.
  */
@@ -4319,7 +4324,7 @@ void av_log_missing_feature(void *avc, const char *feature, int want_sample);
  * a pointer to an AVClass struct
  * @param[in] msg string containing an optional message, or NULL if no message
  */
-void av_log_ask_for_sample(void *avc, const char *msg);
+void av_log_ask_for_sample(void *avc, const char *msg, ...);
 
 /**
  * Register the hardware accelerator hwaccel.

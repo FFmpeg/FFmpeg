@@ -61,9 +61,9 @@
 
 #define CHECK_PIXEL_PTR(n) \
     if (pixel_ptr + n > pixel_limit) { \
-        av_log (s->avctx, AV_LOG_INFO, "Problem: pixel_ptr >= pixel_limit (%d >= %d)\n", \
+        av_log (s->avctx, AV_LOG_ERROR, "Invalid pixel_ptr = %d > pixel_limit = %d\n", \
         pixel_ptr + n, pixel_limit); \
-        return -1; \
+        return AVERROR_INVALIDDATA; \
     } \
 
 typedef struct FlicDecodeContext {
@@ -181,6 +181,11 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
     /* iterate through the chunks */
     while ((frame_size > 0) && (num_chunks > 0)) {
         chunk_size = AV_RL32(&buf[stream_ptr]);
+        if (chunk_size > frame_size) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "Invalid chunk_size = %u > frame_size = %u\n", chunk_size, frame_size);
+            chunk_size = frame_size;
+        }
         stream_ptr += 4;
         chunk_type = AV_RL16(&buf[stream_ptr]);
         stream_ptr += 2;

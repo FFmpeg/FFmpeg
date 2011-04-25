@@ -1,5 +1,5 @@
 /*
- * FFplay : Simple Media Player based on the FFmpeg libraries
+ * ffplay : Simple Media Player based on the FFmpeg libraries
  * Copyright (c) 2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -56,7 +56,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-const char program_name[] = "FFplay";
+const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
 
 //#define DEBUG
@@ -206,7 +206,6 @@ typedef struct VideoState {
     struct SwsContext *img_convert_ctx;
 #endif
 
-    //    QETimer *video_timer;
     char filename[1024];
     int width, height, xleft, ytop;
 
@@ -753,8 +752,8 @@ static void video_image_display(VideoState *is)
         }
         rect.x = is->xleft + x;
         rect.y = is->ytop  + y;
-        rect.w = width;
-        rect.h = height;
+        rect.w = FFMAX(width,  1);
+        rect.h = FFMAX(height, 1);
         SDL_DisplayYUVOverlay(vp->bmp, &rect);
     } else {
 #if 0
@@ -1064,7 +1063,7 @@ static void stream_seek(VideoState *is, int64_t pos, int64_t rel, int seek_by_by
 }
 
 /* pause or resume the video */
-static void stream_pause(VideoState *is)
+static void stream_toggle_pause(VideoState *is)
 {
     if (is->paused) {
         is->frame_timer += av_gettime() / 1000000.0 + is->video_current_pts_drift - is->video_current_pts;
@@ -1804,14 +1803,13 @@ static int video_thread(void *arg)
 {
     VideoState *is = arg;
     AVFrame *frame= avcodec_alloc_frame();
-    int64_t pts_int;
+    int64_t pts_int, pos;
     double pts;
     int ret;
 
 #if CONFIG_AVFILTER
     AVFilterGraph *graph = avfilter_graph_alloc();
     AVFilterContext *filt_out = NULL;
-    int64_t pos;
 
     if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
         goto the_end;
@@ -1845,6 +1843,7 @@ static int video_thread(void *arg)
         }
 #else
         ret = get_video_frame(is, frame, &pts_int, &pkt);
+        pos = pkt.pos;
 #endif
 
         if (ret < 0) goto the_end;
@@ -1854,10 +1853,8 @@ static int video_thread(void *arg)
 
         pts = pts_int*av_q2d(is->video_st->time_base);
 
-#if CONFIG_AVFILTER
         ret = output_picture(is, frame, pts, pos);
-#else
-        ret = output_picture(is, frame, pts,  pkt.pos);
+#if !CONFIG_AVFILTER
         av_free_packet(&pkt);
 #endif
         if (ret < 0)
@@ -1865,7 +1862,7 @@ static int video_thread(void *arg)
 
         if (step)
             if (cur_stream)
-                stream_pause(cur_stream);
+                stream_toggle_pause(cur_stream);
     }
  the_end:
 #if CONFIG_AVFILTER
@@ -1944,7 +1941,7 @@ static int subtitle_thread(void *arg)
         av_free_packet(pkt);
 //        if (step)
 //            if (cur_stream)
-//                stream_pause(cur_stream);
+//                stream_toggle_pause(cur_stream);
     }
  the_end:
     return 0;
@@ -2713,7 +2710,7 @@ static void toggle_full_screen(void)
 static void toggle_pause(void)
 {
     if (cur_stream)
-        stream_pause(cur_stream);
+        stream_toggle_pause(cur_stream);
     step = 0;
 }
 
@@ -2722,7 +2719,7 @@ static void step_to_next_frame(void)
     if (cur_stream) {
         /* if the stream is paused unpause it, then step */
         if (cur_stream->paused)
-            stream_pause(cur_stream);
+            stream_toggle_pause(cur_stream);
     }
     step = 1;
 }

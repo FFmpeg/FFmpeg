@@ -161,6 +161,7 @@ Configuration options:
 External library support:
   --enable-avisynth        enable reading of AVISynth script files [no]
   --enable-bzlib           enable bzlib [autodetect]
+  --enable-libcelt         enable CELT/Opus decoding via libcelt [no]
   --enable-frei0r          enable frei0r video filtering
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
@@ -929,6 +930,7 @@ CONFIG_LIST="
     h264pred
     hardcoded_tables
     huffman
+    libcelt
     libdc1394
     libdirac
     libfaac
@@ -1126,6 +1128,7 @@ HAVE_LIST="
     ten_operands
     termios_h
     threads
+    trunc
     truncf
     vfp_args
     VirtualAlloc
@@ -1245,7 +1248,7 @@ mdct_select="fft"
 rdft_select="fft"
 
 # decoders / encoders / hardware accelerators
-aac_decoder_select="mdct rdft sinewin"
+aac_decoder_select="mdct sinewin"
 aac_encoder_select="mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="mdct ac3dsp ac3_parser"
@@ -1393,6 +1396,7 @@ vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 h264_parser_select="golomb h264dsp h264pred"
 
 # external libraries
+libcelt_decoder_deps="libcelt"
 libdirac_decoder_deps="libdirac !libschroedinger"
 libdirac_encoder_deps="libdirac"
 libfaac_encoder_deps="libfaac"
@@ -2870,7 +2874,7 @@ for thread in $THREADS_LIST; do
     fi
 done
 
-check_lib math.h sin -lm
+check_lib math.h sin -lm && LIBM="-lm"
 disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersion -lcrystalhd || disable crystalhd
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
@@ -2884,10 +2888,12 @@ check_mathfunc lrint
 check_mathfunc lrintf
 check_mathfunc round
 check_mathfunc roundf
+check_mathfunc trunc
 check_mathfunc truncf
 
 # these are off by default, so fail if requested and not available
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
+enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled libdirac   && require_pkg_config dirac                          \
     "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
@@ -2957,7 +2963,14 @@ check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_def
 check_header dev/ic/bt8xx.h
 
 check_header sndio.h
-check_header sys/soundcard.h
+if check_struct sys/soundcard.h audio_buf_info bytes; then
+    enable_safe sys/soundcard.h
+else
+    check_cc -D__BSD_VISIBLE -D__XSI_VISIBLE <<EOF && add_cppflags -D__BSD_VISIBLE -D__XSI_VISIBLE && enable_safe sys/soundcard.h
+    #include <sys/soundcard.h>
+    audio_buf_info abc;
+EOF
+fi
 check_header soundcard.h
 
 enabled_any alsa_indev alsa_outdev && check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
@@ -3167,6 +3180,7 @@ echo "threading support         ${thread_type-no}"
 echo "SDL support               ${sdl-no}"
 echo "Sun medialib support      ${mlib-no}"
 echo "AVISynth enabled          ${avisynth-no}"
+echo "libcelt enabled           ${libcelt-no}"
 echo "frei0r enabled            ${frei0r-no}"
 echo "libdc1394 support         ${libdc1394-no}"
 echo "libdirac enabled          ${libdirac-no}"
@@ -3471,10 +3485,10 @@ Cflags: -I\${includedir}
 EOF
 }
 
-pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION"
-pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs"
+pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION" "$LIBM"
+pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs $LIBM" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "libavcodec = $LIBAVCODEC_VERSION"
 pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "libavformat = $LIBAVFORMAT_VERSION"
 pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs"
-pkgconfig_generate libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION"
-pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
+pkgconfig_generate libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
+pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"

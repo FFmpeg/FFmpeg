@@ -180,9 +180,8 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static av_cold int che_configure(AACContext *ac,
-                         enum ChannelPosition che_pos[4][MAX_ELEM_ID],
-                         int type, int id,
-                         int *channels)
+                                 enum ChannelPosition che_pos[4][MAX_ELEM_ID],
+                                 int type, int id, int *channels)
 {
     if (che_pos[type][id]) {
         if (!ac->che[type][id] && !(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
@@ -212,9 +211,9 @@ static av_cold int che_configure(AACContext *ac,
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static av_cold int output_configure(AACContext *ac,
-                            enum ChannelPosition che_pos[4][MAX_ELEM_ID],
-                            enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
-                            int channel_config, enum OCStatus oc_type)
+                                    enum ChannelPosition che_pos[4][MAX_ELEM_ID],
+                                    enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
+                                    int channel_config, enum OCStatus oc_type)
 {
     AVCodecContext *avctx = ac->avctx;
     int i, type, channels = 0, ret;
@@ -231,7 +230,7 @@ static av_cold int output_configure(AACContext *ac,
                 return ret;
         }
 
-        memset(ac->tag_che_map, 0,       4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
+        memset(ac->tag_che_map, 0, 4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
 
         avctx->channel_layout = aac_channel_layout[channel_config - 1];
     } else {
@@ -346,8 +345,8 @@ static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static av_cold int set_default_channel_config(AVCodecContext *avctx,
-                                      enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
-                                      int channel_config)
+                                              enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
+                                              int channel_config)
 {
     if (channel_config < 1 || channel_config > 7) {
         av_log(avctx, AV_LOG_ERROR, "invalid default channel configuration (%d)\n",
@@ -464,6 +463,11 @@ static int decode_audio_specific_config(AACContext *ac,
     GetBitContext gb;
     int i;
 
+    av_dlog(avctx, "extradata size %d\n", avctx->extradata_size);
+    for (i = 0; i < avctx->extradata_size; i++)
+         av_dlog(avctx, "%02x ", avctx->extradata[i]);
+    av_dlog(avctx, "\n");
+
     init_get_bits(&gb, data, data_size * 8);
 
     if ((i = ff_mpeg4audio_get_config(m4ac, data, data_size)) < 0)
@@ -489,6 +493,10 @@ static int decode_audio_specific_config(AACContext *ac,
                m4ac->sbr == 1? "SBR+" : "", m4ac->object_type);
         return -1;
     }
+
+    av_dlog(avctx, "AOT %d chan config %d sampling index %d (%d) SBR %d PS %d\n",
+            m4ac->object_type, m4ac->chan_config, m4ac->sampling_index,
+            m4ac->sample_rate, m4ac->sbr, m4ac->ps);
 
     return get_bits_count(&gb);
 }
@@ -1240,7 +1248,7 @@ static av_always_inline float flt16_trunc(float pf)
 
 static av_always_inline void predict(PredictorState *ps, float *coef,
                                      float sf_scale, float inv_sf_scale,
-                    int output_enable)
+                                     int output_enable)
 {
     const float a     = 0.953125; // 61.0 / 64
     const float alpha = 0.90625;  // 29.0 / 32

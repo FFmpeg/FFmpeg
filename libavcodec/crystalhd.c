@@ -87,6 +87,7 @@
 #include "h264.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 
 /** Timeout parameter passed to DtsProcOutput() in us */
 #define OUTPUT_PROC_TIMEOUT 50
@@ -118,6 +119,7 @@ typedef struct OpaqueList {
 } OpaqueList;
 
 typedef struct {
+    AVClass *av_class;
     AVCodecContext *avctx;
     AVFrame pic;
     HANDLE dev;
@@ -137,7 +139,19 @@ typedef struct {
 
     OpaqueList *head;
     OpaqueList *tail;
+
+    /* Options */
+    uint32_t sWidth;
 } CHDContext;
+
+static const AVOption options[] = {
+    { "crystalhd_downscale_width",
+      "Turn on downscaling to the specified width",
+      offsetof(CHDContext, sWidth),
+      FF_OPT_TYPE_INT, 0, 0, UINT32_MAX,
+      AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, },
+    { NULL, },
+};
 
 
 /*****************************************************************************
@@ -433,6 +447,11 @@ static av_cold int init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
     format.mSubtype = subtype;
+
+    if (priv->sWidth) {
+        format.bEnableScaling = 1;
+        format.ScalingParams.sWidth = priv->sWidth;
+    }
 
     /* Get a decoder instance */
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: starting up\n");
@@ -948,6 +967,13 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
 
 
 #if CONFIG_H264_CRYSTALHD_DECODER
+static AVClass h264_class = {
+    "h264_crystalhd",
+    av_default_item_name,
+    options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_h264_crystalhd_decoder = {
     .name           = "h264_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -960,10 +986,18 @@ AVCodec ff_h264_crystalhd_decoder = {
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (CrystalHD acceleration)"),
     .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .priv_class     = &h264_class,
 };
 #endif
 
 #if CONFIG_MPEG2_CRYSTALHD_DECODER
+static AVClass mpeg2_class = {
+    "mpeg2_crystalhd",
+    av_default_item_name,
+    options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_mpeg2_crystalhd_decoder = {
     .name           = "mpeg2_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -976,10 +1010,18 @@ AVCodec ff_mpeg2_crystalhd_decoder = {
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 Video (CrystalHD acceleration)"),
     .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .priv_class     = &mpeg2_class,
 };
 #endif
 
 #if CONFIG_MPEG4_CRYSTALHD_DECODER
+static AVClass mpeg4_class = {
+    "mpeg4_crystalhd",
+    av_default_item_name,
+    options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_mpeg4_crystalhd_decoder = {
     .name           = "mpeg4_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -992,10 +1034,18 @@ AVCodec ff_mpeg4_crystalhd_decoder = {
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Part 2 (CrystalHD acceleration)"),
     .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .priv_class     = &mpeg4_class,
 };
 #endif
 
 #if CONFIG_MSMPEG4_CRYSTALHD_DECODER
+static AVClass msmpeg4_class = {
+    "msmpeg4_crystalhd",
+    av_default_item_name,
+    options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_msmpeg4_crystalhd_decoder = {
     .name           = "msmpeg4_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -1008,10 +1058,18 @@ AVCodec ff_msmpeg4_crystalhd_decoder = {
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Part 2 Microsoft variant version 3 (CrystalHD acceleration)"),
     .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .priv_class     = &msmpeg4_class,
 };
 #endif
 
 #if CONFIG_VC1_CRYSTALHD_DECODER
+static AVClass vc1_class = {
+    "vc1_crystalhd",
+    av_default_item_name,
+    options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_vc1_crystalhd_decoder = {
     .name           = "vc1_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -1024,10 +1082,18 @@ AVCodec ff_vc1_crystalhd_decoder = {
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-1 (CrystalHD acceleration)"),
     .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .priv_class     = &vc1_class,
 };
 #endif
 
 #if CONFIG_WMV3_CRYSTALHD_DECODER
+static AVClass wmv3_class = {
+    "wmv3_crystalhd",
+    av_default_item_name,
+    options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_wmv3_crystalhd_decoder = {
     .name           = "wmv3_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -1040,5 +1106,6 @@ AVCodec ff_wmv3_crystalhd_decoder = {
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 (CrystalHD acceleration)"),
     .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .priv_class     = &wmv3_class,
 };
 #endif

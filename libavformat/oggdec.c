@@ -45,6 +45,7 @@ static const struct ogg_codec * const ogg_codecs[] = {
     &ff_vorbis_codec,
     &ff_theora_codec,
     &ff_flac_codec,
+    &ff_celt_codec,
     &ff_old_dirac_codec,
     &ff_old_flac_codec,
     &ff_ogm_video_codec,
@@ -242,14 +243,14 @@ ogg_read_page (AVFormatContext * s, int *str)
     idx = ogg_find_stream (ogg, serial);
     if (idx < 0){
         if (ogg->headers) {
-                int n;
+            int n;
 
-                for (n = 0; n < ogg->nstreams; n++) {
-                    av_freep(&ogg->streams[n].buf);
-                    av_freep(&ogg->streams[n].private);
-                }
-                ogg->curidx   = -1;
-                ogg->nstreams = 0;
+            for (n = 0; n < ogg->nstreams; n++) {
+                av_freep(&ogg->streams[n].buf);
+                av_freep(&ogg->streams[n].private);
+            }
+            ogg->curidx   = -1;
+            ogg->nstreams = 0;
         }
         idx = ogg_new_stream (s, serial);
         if (idx < 0)

@@ -482,7 +482,7 @@ static void avcodec_get_subtitle_defaults(AVSubtitle *sub)
 
 int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 {
-    int ret= -1;
+    int ret = 0;
 
     /* If there is a user-supplied mutex locking routine, call it. */
     if (ff_lockmgr_cb) {
@@ -493,11 +493,14 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     entangled_thread_counter++;
     if(entangled_thread_counter != 1){
         av_log(avctx, AV_LOG_ERROR, "insufficient thread locking around avcodec_open/close()\n");
+        ret = -1;
         goto end;
     }
 
-    if(avctx->codec || !codec)
+    if(avctx->codec || !codec) {
+        ret = AVERROR(EINVAL);
         goto end;
+    }
 
     if (codec->priv_data_size > 0) {
       if(!avctx->priv_data){
@@ -547,6 +550,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     if (avctx->codec_id != codec->id || (avctx->codec_type != codec->type
                            && avctx->codec_type != AVMEDIA_TYPE_ATTACHMENT)) {
         av_log(avctx, AV_LOG_ERROR, "codec type or id mismatches\n");
+        ret = AVERROR(EINVAL);
         goto free_and_end;
     }
     avctx->frame_number = 0;
@@ -561,6 +565,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     if (avctx->codec->max_lowres < avctx->lowres) {
         av_log(avctx, AV_LOG_ERROR, "The maximum value for lowres supported by the decoder is %d\n",
                avctx->codec->max_lowres);
+        ret = AVERROR(EINVAL);
         goto free_and_end;
     }
     if (avctx->codec->sample_fmts && avctx->codec->encode) {
@@ -570,6 +575,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
                 break;
         if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
             av_log(avctx, AV_LOG_ERROR, "Specified sample_fmt is not supported.\n");
+            ret = AVERROR(EINVAL);
             goto free_and_end;
         }
     }
@@ -1257,13 +1263,19 @@ void av_log_missing_feature(void *avc, const char *feature, int want_sample)
         av_log(avc, AV_LOG_WARNING, "\n");
 }
 
-void av_log_ask_for_sample(void *avc, const char *msg)
+void av_log_ask_for_sample(void *avc, const char *msg, ...)
 {
+    va_list argument_list;
+
+    va_start(argument_list, msg);
+
     if (msg)
-        av_log(avc, AV_LOG_WARNING, "%s ", msg);
+        av_vlog(avc, AV_LOG_WARNING, msg, argument_list);
     av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
             "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
             "and contact the ffmpeg-devel mailing list.\n");
+
+    va_end(argument_list);
 }
 
 static AVHWAccel *first_hwaccel = NULL;
@@ -1345,8 +1357,7 @@ void ff_thread_await_progress(AVFrame *f, int progress, int field)
 
 #endif
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
-
+#if FF_API_THREAD_INIT
 int avcodec_thread_init(AVCodecContext *s, int thread_count)
 {
     s->thread_count = thread_count;

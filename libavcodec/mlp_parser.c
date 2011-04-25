@@ -43,7 +43,7 @@ static const uint8_t mlp_channels[32] = {
     5, 6, 5, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-static const uint64_t mlp_layout[32] = {
+const uint64_t ff_mlp_layout[32] = {
     AV_CH_LAYOUT_MONO,
     AV_CH_LAYOUT_STEREO,
     AV_CH_LAYOUT_2_1,
@@ -107,7 +107,7 @@ static int truehd_channels(int chanmap)
     return channels;
 }
 
-static int64_t truehd_layout(int chanmap)
+int64_t ff_truehd_layout(int chanmap)
 {
     int layout = 0, i;
 
@@ -316,19 +316,15 @@ static int mlp_parse(AVCodecParserContext *s,
         if (mh.stream_type == 0xbb) {
             /* MLP stream */
             avctx->channels = mlp_channels[mh.channels_mlp];
-            avctx->channel_layout = mlp_layout[mh.channels_mlp];
+            avctx->channel_layout = ff_mlp_layout[mh.channels_mlp];
         } else { /* mh.stream_type == 0xba */
             /* TrueHD stream */
             if (mh.channels_thd_stream2) {
                 avctx->channels = truehd_channels(mh.channels_thd_stream2);
-                avctx->channel_layout = truehd_layout(mh.channels_thd_stream2);
+                avctx->channel_layout = ff_truehd_layout(mh.channels_thd_stream2);
             } else {
                 avctx->channels = truehd_channels(mh.channels_thd_stream1);
-                avctx->channel_layout = truehd_layout(mh.channels_thd_stream1);
-            }
-            if (av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels) {
-                avctx->channel_layout = 0;
-                av_log_ask_for_sample(avctx, "Unknown channel layout.");
+                avctx->channel_layout = ff_truehd_layout(mh.channels_thd_stream1);
             }
         }
 

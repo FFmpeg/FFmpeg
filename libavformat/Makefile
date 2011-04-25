@@ -24,7 +24,7 @@ OBJS-$(CONFIG_AC3_DEMUXER)               += ac3dec.o rawdec.o
 OBJS-$(CONFIG_AC3_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_ADTS_MUXER)                += adtsenc.o
 OBJS-$(CONFIG_AEA_DEMUXER)               += aea.o pcm.o
-OBJS-$(CONFIG_AIFF_DEMUXER)              += aiffdec.o riff.o pcm.o
+OBJS-$(CONFIG_AIFF_DEMUXER)              += aiffdec.o riff.o pcm.o caf.o
 OBJS-$(CONFIG_AIFF_MUXER)                += aiffenc.o riff.o
 OBJS-$(CONFIG_AMR_DEMUXER)               += amr.o
 OBJS-$(CONFIG_AMR_MUXER)                 += amr.o
@@ -164,6 +164,7 @@ OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o nut.o riff.o
 OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o nut.o riff.o
 OBJS-$(CONFIG_NUV_DEMUXER)               += nuv.o riff.o
 OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
+                                            oggparsecelt.o   \
                                             oggparsedirac.o  \
                                             oggparseflac.o   \
                                             oggparseogm.o    \
@@ -316,6 +317,7 @@ OBJS+= avio.o aviobuf.o
 
 OBJS-$(CONFIG_APPLEHTTP_PROTOCOL)        += applehttpproto.o
 OBJS-$(CONFIG_CONCAT_PROTOCOL)           += concat.o
+OBJS-$(CONFIG_CRYPTO_PROTOCOL)           += crypto.o
 OBJS-$(CONFIG_FILE_PROTOCOL)             += file.o
 OBJS-$(CONFIG_GOPHER_PROTOCOL)           += gopher.o
 OBJS-$(CONFIG_HTTP_PROTOCOL)             += http.o httpauth.o

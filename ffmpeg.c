@@ -1,5 +1,5 @@
 /*
- * FFmpeg main
+ * ffmpeg main
  * Copyright (c) 2000-2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -85,7 +85,7 @@
 
 #include "libavutil/avassert.h"
 
-const char program_name[] = "FFmpeg";
+const char program_name[] = "ffmpeg";
 const int program_birth_year = 2000;
 
 /* select an input stream for an output stream */
@@ -209,7 +209,7 @@ static int do_hex_dump = 0;
 static int do_pkt_dump = 0;
 static int do_psnr = 0;
 static int do_pass = 0;
-static char *pass_logfilename_prefix = NULL;
+static const char *pass_logfilename_prefix;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
 static int subtitle_stream_copy = 0;
@@ -235,7 +235,7 @@ static int audio_volume = 256;
 static int exit_on_error = 0;
 static int using_stdin = 0;
 static int verbose = 1;
-static int daemon  = 0;
+static int run_as_daemon  = 0;
 static int thread_count= 1;
 static int q_pressed = 0;
 static int64_t video_size = 0;
@@ -288,10 +288,6 @@ typedef struct AVOutputStream {
     int resample_pix_fmt;
 
     float frame_aspect_ratio;
-
-    /* full frame size of first frame */
-    int original_height;
-    int original_width;
 
     /* forced key frames */
     int64_t *forced_kf_pts;
@@ -445,7 +441,7 @@ static void term_exit(void)
 {
     av_log(NULL, AV_LOG_QUIET, "");
 #if HAVE_TERMIOS_H
-    if(!daemon)
+    if(!run_as_daemon)
         tcsetattr (0, TCSANOW, &oldtty);
 #endif
 }
@@ -463,7 +459,7 @@ sigterm_handler(int sig)
 static void term_init(void)
 {
 #if HAVE_TERMIOS_H
-    if(!daemon){
+    if(!run_as_daemon){
     struct termios tty;
 
     tcgetattr (0, &tty);
@@ -500,7 +496,7 @@ static int read_key(void)
     struct timeval tv;
     fd_set rfds;
 
-    if(daemon)
+    if(run_as_daemon)
         return -1;
 
     FD_ZERO(&rfds);
@@ -1145,8 +1141,8 @@ static void do_video_out(AVFormatContext *s,
                          AVFrame *in_picture,
                          int *frame_size)
 {
-    int nb_frames, i, ret;
-    AVFrame *final_picture, *formatted_picture, *resampling_dst, *padding_src;
+    int nb_frames, i, ret, resample_changed;
+    AVFrame *final_picture, *formatted_picture, *resampling_dst;
     AVCodecContext *enc, *dec;
     double sync_ipts;
 
@@ -1191,26 +1187,26 @@ static void do_video_out(AVFormatContext *s,
 
     formatted_picture = in_picture;
     final_picture = formatted_picture;
-    padding_src = formatted_picture;
     resampling_dst = &ost->pict_tmp;
 
-    if (   ost->resample_height != ist->st->codec->height
-        || ost->resample_width  != ist->st->codec->width
-        || (ost->resample_pix_fmt!= ist->st->codec->pix_fmt) ) {
+    resample_changed = ost->resample_width   != dec->width  ||
+                       ost->resample_height  != dec->height ||
+                       ost->resample_pix_fmt != dec->pix_fmt;
 
-        fprintf(stderr,"Input Stream #%d.%d frame size changed to %dx%d, %s\n", ist->file_index, ist->index, ist->st->codec->width,     ist->st->codec->height,avcodec_get_pix_fmt_name(ist->st->codec->pix_fmt));
+    if (resample_changed) {
+        av_log(NULL, AV_LOG_INFO,
+               "Input stream #%d.%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
+               ist->file_index, ist->index,
+               ost->resample_width, ost->resample_height, avcodec_get_pix_fmt_name(ost->resample_pix_fmt),
+               dec->width         , dec->height         , avcodec_get_pix_fmt_name(dec->pix_fmt));
         if(!ost->video_resample)
             ffmpeg_exit(1);
     }
 
 #if !CONFIG_AVFILTER
     if (ost->video_resample) {
-        padding_src = NULL;
         final_picture = &ost->pict_tmp;
-        if(  ost->resample_height != ist->st->codec->height
-          || ost->resample_width  != ist->st->codec->width
-          || (ost->resample_pix_fmt!= ist->st->codec->pix_fmt) ) {
-
+        if (resample_changed) {
             /* initialize a new scaler context */
             sws_freeContext(ost->img_resample_ctx);
             sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
@@ -1495,7 +1491,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     int ret, i;
     int got_picture;
     AVFrame picture;
-    void *buffer_to_free;
+    void *buffer_to_free = NULL;
     static unsigned int samples_size= 0;
     AVSubtitle subtitle, *subtitle_to_free;
     int64_t pkt_pts = AV_NOPTS_VALUE;
@@ -1596,6 +1592,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             ist->st->codec->time_base.den;
                     }
                     avpkt.size = 0;
+                    buffer_to_free = NULL;
+                    pre_process_video_frame(ist, (AVPicture *)&picture, &buffer_to_free);
                     break;
             case AVMEDIA_TYPE_SUBTITLE:
                 ret = avcodec_decode_subtitle2(ist->st->codec,
@@ -1628,12 +1626,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
             }
             ret = avpkt.size;
             avpkt.size = 0;
-        }
-
-        buffer_to_free = NULL;
-        if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            pre_process_video_frame(ist, (AVPicture *)&picture,
-                                    &buffer_to_free);
         }
 
 #if CONFIG_AVFILTER
@@ -2288,9 +2280,9 @@ static int transcode(AVFormatContext **output_files,
                     fprintf(stderr, "Video pixel format is unknown, stream cannot be encoded\n");
                     ffmpeg_exit(1);
                 }
-                ost->video_resample = (codec->width != icodec->width   ||
-                                       codec->height != icodec->height ||
-                        (codec->pix_fmt != icodec->pix_fmt));
+                ost->video_resample = codec->width   != icodec->width  ||
+                                      codec->height  != icodec->height ||
+                                      codec->pix_fmt != icodec->pix_fmt;
                 if (ost->video_resample) {
 #if !CONFIG_AVFILTER
                     avcodec_get_frame_defaults(&ost->pict_tmp);
@@ -2312,9 +2304,6 @@ static int transcode(AVFormatContext **output_files,
                         fprintf(stderr, "Cannot get resampling context\n");
                         ffmpeg_exit(1);
                     }
-
-                    ost->original_height = icodec->height;
-                    ost->original_width  = icodec->width;
 #endif
                     codec->bits_per_raw_sample= frame_bits_per_raw_sample;
                 }
@@ -2340,7 +2329,7 @@ static int transcode(AVFormatContext **output_files,
                 break;
             }
             /* two pass mode */
-            if (ost->encoding_needed &&
+            if (ost->encoding_needed && codec->codec_id != CODEC_ID_H264 &&
                 (codec->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
                 char logfilename[1024];
                 FILE *f;
@@ -4277,6 +4266,12 @@ static void log_callback_null(void* ptr, int level, const char* fmt, va_list vl)
 {
 }
 
+static void opt_passlogfile(const char *arg)
+{
+    pass_logfilename_prefix = arg;
+    opt_default("passlogfile", arg);
+}
+
 static const OptionDef options[] = {
     /* main options */
 #include "cmdutils_common_opts.h"
@@ -4350,7 +4345,7 @@ static const OptionDef options[] = {
     { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quality},
       "use same quantizer as source (implies VBR)" },
     { "pass", HAS_ARG | OPT_FUNC2 | OPT_VIDEO, {(void*)opt_pass}, "select the pass number (1 or 2)", "n" },
-    { "passlogfile", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void*)&pass_logfilename_prefix}, "select two pass log file name prefix", "prefix" },
+    { "passlogfile", HAS_ARG | OPT_VIDEO, {(void*)&opt_passlogfile}, "select two pass log file name prefix", "prefix" },
     { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace},
       "deinterlace pictures" },
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
@@ -4421,7 +4416,7 @@ int main(int argc, char **argv)
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
     if(argc>1 && !strcmp(argv[1], "-d")){
-        daemon=1;
+        run_as_daemon=1;
         verbose=-1;
         av_log_set_callback(log_callback_null);
         argc--;

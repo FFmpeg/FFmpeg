@@ -96,11 +96,13 @@ static int decode_frame(AVCodecContext *avctx,
     else {
         l->shift = 8 - (buf[2] >> 4);
         if (l->shift > 4) {
-            av_log(avctx, AV_LOG_ERROR, "Unknown WNV1 frame header value %i, please upload file for study\n", buf[2] >> 4);
+            av_log_ask_for_sample(avctx, "Unknown WNV1 frame header value %i\n",
+                                  buf[2] >> 4);
             l->shift = 4;
         }
         if (l->shift < 1) {
-            av_log(avctx, AV_LOG_ERROR, "Unknown WNV1 frame header value %i, please upload file for study\n", buf[2] >> 4);
+            av_log_ask_for_sample(avctx, "Unknown WNV1 frame header value %i\n",
+                                  buf[2] >> 4);
             l->shift = 1;
         }
     }

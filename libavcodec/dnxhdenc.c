@@ -869,6 +869,7 @@ AVCodec ff_dnxhd_encoder = {
     dnxhd_encode_init,
     dnxhd_encode_picture,
     dnxhd_encode_end,
+    .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
     .priv_class = &class,

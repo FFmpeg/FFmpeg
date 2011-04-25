@@ -366,7 +366,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR,
                    "Could not get frame filename number %d from pattern '%s'\n",
                    img->img_number, img->path);
-            return AVERROR(EIO);
+            return AVERROR(EINVAL);
         }
         for(i=0; i<3; i++){
             if (avio_open(&pb[i], filename, AVIO_WRONLY) < 0) {

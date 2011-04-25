@@ -606,8 +606,10 @@ static int aac_encode_frame(AVCodecContext *avctx,
         }
 
         frame_bits = put_bits_count(&s->pb);
-        if (frame_bits <= 6144 * avctx->channels - 3)
+        if (frame_bits <= 6144 * avctx->channels - 3) {
+            s->psy.bitres.bits = frame_bits / avctx->channels;
             break;
+        }
 
         s->lambda *= avctx->bit_rate * 1024.0f / avctx->sample_rate / frame_bits;
 
