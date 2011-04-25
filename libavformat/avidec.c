@@ -734,6 +734,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if(st->nb_index_entries)
             break;
     }
+    // DV-in-AVI cannot be non-interleaved, if set this must be
+    // a mis-detection.
+    if(avi->dv_demux)
+        avi->non_interleaved=0;
     if(i==s->nb_streams && avi->non_interleaved) {
         av_log(s, AV_LOG_WARNING, "non-interleaved AVI without index, switching to interleaved\n");
         avi->non_interleaved=0;
