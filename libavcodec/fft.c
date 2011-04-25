@@ -93,6 +93,44 @@ av_cold void ff_init_ff_cos_tabs(int index)
 #endif
 }
 
+static const int avx_tab[] = {
+    0, 4, 1, 5, 8, 12, 9, 13, 2, 6, 3, 7, 10, 14, 11, 15
+};
+
+static int is_second_half_of_fft32(int i, int n)
+{
+    if (n <= 32)
+        return i >= 16;
+    else if (i < n/2)
+        return is_second_half_of_fft32(i, n/2);
+    else if (i < 3*n/4)
+        return is_second_half_of_fft32(i - n/2, n/4);
+    else
+        return is_second_half_of_fft32(i - 3*n/4, n/4);
+}
+
+static av_cold void fft_perm_avx(FFTContext *s)
+{
+    int i;
+    int n = 1 << s->nbits;
+
+    for (i = 0; i < n; i += 16) {
+        int k;
+        if (is_second_half_of_fft32(i, n)) {
+            for (k = 0; k < 16; k++)
+                s->revtab[-split_radix_permutation(i + k, n, s->inverse) & (n - 1)] =
+                    i + avx_tab[k];
+
+        } else {
+            for (k = 0; k < 16; k++) {
+                int j = i + k;
+                j = (j & ~7) | ((j >> 1) & 3) | ((j << 2) & 4);
+                s->revtab[-split_radix_permutation(i + k, n, s->inverse) & (n - 1)] = j;
+            }
+        }
+    }
+}
+
 av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 {
     int i, j, n;
@@ -132,11 +170,16 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     for(j=4; j<=nbits; j++) {
         ff_init_ff_cos_tabs(j);
     }
-    for(i=0; i<n; i++) {
-        int j = i;
-        if (s->fft_permutation == FF_FFT_PERM_SWAP_LSBS)
-            j = (j&~3) | ((j>>1)&1) | ((j<<1)&2);
-        s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = j;
+
+    if (s->fft_permutation == FF_FFT_PERM_AVX) {
+        fft_perm_avx(s);
+    } else {
+        for(i=0; i<n; i++) {
+            int j = i;
+            if (s->fft_permutation == FF_FFT_PERM_SWAP_LSBS)
+                j = (j&~3) | ((j>>1)&1) | ((j<<1)&2);
+            s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = j;
+        }
     }
 
     return 0;

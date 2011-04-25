@@ -223,9 +223,9 @@ typedef struct {
     float sf[120];                                  ///< scalefactors
     int sf_idx[128];                                ///< scalefactor indices (used by encoder)
     uint8_t zeroes[128];                            ///< band is not coded (used by encoder)
-    DECLARE_ALIGNED(16, float,   coeffs)[1024];     ///< coefficients for IMDCT
-    DECLARE_ALIGNED(16, float,   saved)[1024];      ///< overlap
-    DECLARE_ALIGNED(16, float,   ret)[2048];        ///< PCM output
+    DECLARE_ALIGNED(32, float,   coeffs)[1024];     ///< coefficients for IMDCT
+    DECLARE_ALIGNED(32, float,   saved)[1024];      ///< overlap
+    DECLARE_ALIGNED(32, float,   ret)[2048];        ///< PCM output
     DECLARE_ALIGNED(16, int16_t, ltp_state)[3072];  ///< time signal for LTP
     PredictorState predictor_state[MAX_PREDICTORS];
 } SingleChannelElement;
@@ -272,7 +272,7 @@ typedef struct {
      * @defgroup temporary aligned temporary buffers (We do not want to have these on the stack.)
      * @{
      */
-    DECLARE_ALIGNED(16, float, buf_mdct)[1024];
+    DECLARE_ALIGNED(32, float, buf_mdct)[1024];
     /** @} */
 
     /**
@@ -296,7 +296,7 @@ typedef struct {
     int sf_offset;                                    ///< offset into pow2sf_tab as appropriate for dsp.float_to_int16
     /** @} */
 
-    DECLARE_ALIGNED(16, float, temp)[128];
+    DECLARE_ALIGNED(32, float, temp)[128];
 
     enum OCStatus output_configured;
 } AACContext;
