@@ -811,7 +811,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                                 "audible artifact, there may be a bug in the "
                                 "decoder. ", offset[2], clipped_offset);
                     }
-                    sf[idx] = ff_aac_pow2sf_tab[-clipped_offset + 200];
+                    sf[idx] = ff_aac_pow2sf_tab[-clipped_offset + POW_SF2_ZERO];
                 }
             } else if (band_type[idx] == NOISE_BT) {
                 for (; i < run_end; i++, idx++) {
@@ -826,7 +826,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                                 "artifact, there may be a bug in the decoder. ",
                                 offset[1], clipped_offset);
                     }
-                    sf[idx] = -ff_aac_pow2sf_tab[clipped_offset + sf_offset + 100];
+                    sf[idx] = -ff_aac_pow2sf_tab[clipped_offset + sf_offset - 100 + POW_SF2_ZERO];
                 }
             } else {
                 for (; i < run_end; i++, idx++) {
@@ -836,7 +836,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                                "%s (%d) out of range.\n", sf_str[0], offset[0]);
                         return -1;
                     }
-                    sf[idx] = -ff_aac_pow2sf_tab[ offset[0] + sf_offset];
+                    sf[idx] = -ff_aac_pow2sf_tab[offset[0] + sf_offset - 200 + POW_SF2_ZERO];
                 }
             }
         }
