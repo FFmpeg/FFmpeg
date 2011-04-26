@@ -578,12 +578,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 
     ac->random_state = 0x1f2e3d4c;
 
-    // -1024 - Compensate wrong IMDCT method.
-    // 60    - Required to scale values to the correct range [-32768,32767]
-    //         for float to int16 conversion. (1 << (60 / 4)) == 32768
-    ac->sf_scale  = 1. / -1024.;
-    ac->sf_offset = 60;
-
     ff_aac_tableinit();
 
     INIT_VLC_STATIC(&vlc_scalefactors,7,FF_ARRAY_ELEMS(ff_aac_scalefactor_code),
@@ -591,9 +585,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
                     ff_aac_scalefactor_code, sizeof(ff_aac_scalefactor_code[0]), sizeof(ff_aac_scalefactor_code[0]),
                     352);
 
-    ff_mdct_init(&ac->mdct,       11, 1, 1.0);
-    ff_mdct_init(&ac->mdct_small,  8, 1, 1.0);
-    ff_mdct_init(&ac->mdct_ltp,   11, 0, 2.0);
+    ff_mdct_init(&ac->mdct,       11, 1, 1.0/1024.0);
+    ff_mdct_init(&ac->mdct_small,  8, 1, 1.0/128.0);
+    ff_mdct_init(&ac->mdct_ltp,   11, 0, -2.0);
     // window initialization
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
@@ -651,7 +645,7 @@ static void decode_ltp(AACContext *ac, LongTermPrediction *ltp,
     int sfb;
 
     ltp->lag  = get_bits(gb, 11);
-    ltp->coef = ltp_coef[get_bits(gb, 3)] * ac->sf_scale;
+    ltp->coef = ltp_coef[get_bits(gb, 3)];
     for (sfb = 0; sfb < FFMIN(max_sfb, MAX_LTP_LONG_SFB); sfb++)
         ltp->used[sfb] = get_bits1(gb);
 }
@@ -789,7 +783,6 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                                enum BandType band_type[120],
                                int band_type_run_end[120])
 {
-    const int sf_offset = ac->sf_offset + (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE ? 12 : 0);
     int g, i, idx = 0;
     int offset[3] = { global_gain, global_gain - 90, 0 };
     int clipped_offset;
@@ -826,7 +819,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                                 "artifact, there may be a bug in the decoder. ",
                                 offset[1], clipped_offset);
                     }
-                    sf[idx] = -ff_aac_pow2sf_tab[clipped_offset + sf_offset - 100 + POW_SF2_ZERO];
+                    sf[idx] = -ff_aac_pow2sf_tab[clipped_offset + POW_SF2_ZERO];
                 }
             } else {
                 for (; i < run_end; i++, idx++) {
@@ -836,7 +829,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                                "%s (%d) out of range.\n", sf_str[0], offset[0]);
                         return -1;
                     }
-                    sf[idx] = -ff_aac_pow2sf_tab[offset[0] + sf_offset - 200 + POW_SF2_ZERO];
+                    sf[idx] = -ff_aac_pow2sf_tab[offset[0] - 100 + POW_SF2_ZERO];
                 }
             }
         }
@@ -1247,7 +1240,6 @@ static av_always_inline float flt16_trunc(float pf)
 }
 
 static av_always_inline void predict(PredictorState *ps, float *coef,
-                                     float sf_scale, float inv_sf_scale,
                                      int output_enable)
 {
     const float a     = 0.953125; // 61.0 / 64
@@ -1264,9 +1256,9 @@ static av_always_inline void predict(PredictorState *ps, float *coef,
 
     pv = flt16_round(k1 * r0 + k2 * r1);
     if (output_enable)
-        *coef += pv * sf_scale;
+        *coef += pv;
 
-    e0 = *coef * inv_sf_scale;
+    e0 = *coef;
     e1 = e0 - k1 * r0;
 
     ps->cor1 = flt16_trunc(alpha * cor1 + r1 * e1);
@@ -1284,7 +1276,6 @@ static av_always_inline void predict(PredictorState *ps, float *coef,
 static void apply_prediction(AACContext *ac, SingleChannelElement *sce)
 {
     int sfb, k;
-    float sf_scale = ac->sf_scale, inv_sf_scale = 1 / ac->sf_scale;
 
     if (!sce->ics.predictor_initialized) {
         reset_all_predictors(sce->predictor_state);
@@ -1295,7 +1286,6 @@ static void apply_prediction(AACContext *ac, SingleChannelElement *sce)
         for (sfb = 0; sfb < ff_aac_pred_sfb_max[ac->m4ac.sampling_index]; sfb++) {
             for (k = sce->ics.swb_offset[sfb]; k < sce->ics.swb_offset[sfb + 1]; k++) {
                 predict(&sce->predictor_state[k], &sce->coeffs[k],
-                        sf_scale, inv_sf_scale,
                         sce->ics.predictor_present && sce->ics.prediction_used[sfb]);
             }
         }
