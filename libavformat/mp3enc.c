@@ -163,18 +163,13 @@ AVOutputFormat ff_mp2_muxer = {
 typedef struct MP3Context {
     const AVClass *class;
     int id3v2_version;
-    struct xing_header {
-        int64_t offset;
-        int32_t frames;
-        int32_t size;
-        /* following lame's "VbrTag.c". */
-        struct xing_toc {
-            uint32_t want;
-            uint32_t seen;
-            uint32_t pos;
-            uint64_t bag[VBR_NUM_BAGS];
-        } toc;
-    } xing_header;
+    int64_t offset;
+    int32_t frames;
+    int32_t size;
+    uint32_t want;
+    uint32_t seen;
+    uint32_t pos;
+    uint64_t bag[VBR_NUM_BAGS];
 } MP3Context;
 
 static const AVOption options[] = {
@@ -271,11 +266,11 @@ static int mp3_write_xing(AVFormatContext *s)
     avio_wb32(s->pb, MKBETAG('X', 'i', 'n', 'g'));
     avio_wb32(s->pb, 0x01 | 0x02 | 0x04);  // frames/size/toc
 
-    mp3->xing_header.offset = avio_tell(s->pb);
-    mp3->xing_header.size = c.frame_size;
-    mp3->xing_header.toc.want=1;
-    mp3->xing_header.toc.seen=0;
-    mp3->xing_header.toc.pos=0;
+    mp3->offset = avio_tell(s->pb);
+    mp3->size = c.frame_size;
+    mp3->want=1;
+    mp3->seen=0;
+    mp3->pos=0;
 
     avio_wb32(s->pb, 0);  // frames
     avio_wb32(s->pb, 0);  // size
@@ -297,48 +292,44 @@ static int mp3_write_xing(AVFormatContext *s)
 static void mp3_xing_add_frame(AVFormatContext *s, AVPacket *pkt)
 {
     MP3Context  *mp3 = s->priv_data;
-    struct xing_header *xing_header = &mp3->xing_header;
-    struct xing_toc *toc = &xing_header->toc;
     int i;
 
-    ++xing_header->frames;
-    xing_header->size += pkt->size;
+    ++mp3->frames;
+    mp3->size += pkt->size;
 
-    if (toc->want == ++toc->seen) {
-        toc->bag[toc->pos] = xing_header->size;
+    if (mp3->want == ++mp3->seen) {
+        mp3->bag[mp3->pos] = mp3->size;
 
-        if (VBR_NUM_BAGS == ++toc->pos) {
+        if (VBR_NUM_BAGS == ++mp3->pos) {
             /* shrink table to half size by throwing away each second bag. */
             for (i = 1; i < VBR_NUM_BAGS; i += 2)
-                toc->bag[i >> 1] = toc->bag[i];
+                mp3->bag[i >> 1] = mp3->bag[i];
 
             /* double wanted amount per bag. */
-            toc->want <<= 1;
+            mp3->want <<= 1;
             /* adjust current position to half of table size. */
-            toc->pos >>= 1;
+            mp3->pos >>= 1;
         }
 
-        toc->seen = 0;
+        mp3->seen = 0;
     }
 }
 
 static void mp3_fix_xing(AVFormatContext *s)
 {
     MP3Context  *mp3 = s->priv_data;
-    struct xing_header *xing_header = &mp3->xing_header;
-    struct xing_toc *toc = &xing_header->toc;
     int i;
 
     avio_flush(s->pb);
-    avio_seek(s->pb, xing_header->offset, SEEK_SET);
-    avio_wb32(s->pb, xing_header->frames);
-    avio_wb32(s->pb, xing_header->size);
+    avio_seek(s->pb, mp3->offset, SEEK_SET);
+    avio_wb32(s->pb, mp3->frames);
+    avio_wb32(s->pb, mp3->size);
 
     avio_w8(s->pb, 0);  // first toc entry has to be zero.
 
     for (i = 1; i < VBR_TOC_SIZE; ++i) {
-        int j = i * toc->pos / VBR_TOC_SIZE;
-        int seek_point = 256LL * toc->bag[j] / xing_header->size;
+        int j = i * mp3->pos / VBR_TOC_SIZE;
+        int seek_point = 256LL * mp3->bag[j] / mp3->size;
         avio_w8(s->pb, FFMIN(seek_point, 255));
     }
 
@@ -429,7 +420,7 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
             return 0;
 #endif
 
-        if (0 < mp3->xing_header.offset)
+        if (0 < mp3->offset)
             mp3_xing_add_frame(s, pkt);
 
         return ff_raw_write_packet(s, pkt);
@@ -444,7 +435,7 @@ static int mp3_write_trailer(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    if (0 < mp3->xing_header.offset)
+    if (0 < mp3->offset)
         mp3_fix_xing(s);
 
     return 0;
