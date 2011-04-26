@@ -146,9 +146,6 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     AVFrame * const p= (AVFrame*)&s->picture;
     int start;
 
-    if(p->data[0])
-        avctx->release_buffer(avctx, p);
-
     p->reference = 1;
     p->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     if (avctx->reget_buffer(avctx, p)) {
