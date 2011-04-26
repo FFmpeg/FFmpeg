@@ -199,7 +199,7 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 
 void sws_rgb2rgb_init(int flags)
 {
-#if HAVE_MMX2 || HAVE_AMD3DNOW || HAVE_MMX
+#if HAVE_SSE2 || HAVE_MMX2 || HAVE_AMD3DNOW || HAVE_MMX
     if (flags & SWS_CPU_CAPS_SSE2)
         rgb2rgb_init_SSE2();
     else if (flags & SWS_CPU_CAPS_MMX2)
