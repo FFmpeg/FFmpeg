@@ -997,7 +997,6 @@ static void fill_decode_caches(H264Context *h, int mb_type){
     }
     }
 
-#if 1
     if(IS_INTER(mb_type) || (IS_DIRECT(mb_type) && h->direct_spatial_mv_pred)){
         int list;
         for(list=0; list<h->list_count; list++){
@@ -1172,7 +1171,6 @@ static void fill_decode_caches(H264Context *h, int mb_type){
             }
         }
     }
-#endif
 
         h->neighbor_transform_size= !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[0]);
 }

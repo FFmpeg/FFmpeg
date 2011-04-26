@@ -175,7 +175,6 @@ static void build_frame_code(AVFormatContext *s){
         }
 
         key_frame= intra_only;
-#if 1
         if(is_audio){
             int frame_bytes= codec->frame_size*(int64_t)codec->bit_rate / (8*codec->sample_rate);
             int pts;
@@ -199,7 +198,6 @@ static void build_frame_code(AVFormatContext *s){
             ft->pts_delta=1;
             start2++;
         }
-#endif
 
         if(codec->has_b_frames){
             pred_count=5;

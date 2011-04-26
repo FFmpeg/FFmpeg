@@ -985,10 +985,9 @@ void ff_msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n)
             if(level<=MAX_LEVEL && run<=MAX_RUN){
                 s->ac_stats[s->mb_intra][n>3][level][run][last]++;
             }
-#if 0
-else
-    s->ac_stats[s->mb_intra][n>3][40][63][0]++; //esc3 like
-#endif
+
+            s->ac_stats[s->mb_intra][n > 3][40][63][0]++; //esc3 like
+
             code = get_rl_index(rl, last, run, level);
             put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
             if (code == rl->n) {

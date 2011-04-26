@@ -2100,7 +2100,6 @@ QPEL_MC(0, avg_       , _       , op_avg)
 #define put_no_rnd_qpel8_mc00_c  ff_put_pixels8x8_c
 #define put_no_rnd_qpel16_mc00_c ff_put_pixels16x16_c
 
-#if 1
 #define H264_LOWPASS(OPNAME, OP, OP2) \
 static av_unused void OPNAME ## h264_qpel2_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int h=2;\
@@ -2522,7 +2521,6 @@ H264_MC(avg_, 16)
 #undef op_put
 #undef op2_avg
 #undef op2_put
-#endif
 
 #define put_h264_qpel8_mc00_c  ff_put_pixels8x8_c
 #define avg_h264_qpel8_mc00_c  ff_avg_pixels8x8_c
