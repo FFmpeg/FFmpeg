@@ -172,7 +172,6 @@ typedef struct MP3Context {
             uint32_t want;
             uint32_t seen;
             uint32_t pos;
-            uint64_t sum;
             uint64_t bag[VBR_NUM_BAGS];
         } toc;
     } xing_header;
@@ -277,7 +276,6 @@ static int mp3_write_xing(AVFormatContext *s)
     mp3->xing_header.toc.want=1;
     mp3->xing_header.toc.seen=0;
     mp3->xing_header.toc.pos=0;
-    mp3->xing_header.toc.sum=0;
 
     avio_wb32(s->pb, 0);  // frames
     avio_wb32(s->pb, 0);  // size
@@ -296,7 +294,7 @@ static int mp3_write_xing(AVFormatContext *s)
  * Add a frame to XING data.
  * Following lame's "VbrTag.c".
  */
-static void mp3_xing_add_frame(AVFormatContext *s, AVPacket *pkt, MPADecodeHeader *c)
+static void mp3_xing_add_frame(AVFormatContext *s, AVPacket *pkt)
 {
     MP3Context  *mp3 = s->priv_data;
     struct xing_header *xing_header = &mp3->xing_header;
@@ -305,10 +303,9 @@ static void mp3_xing_add_frame(AVFormatContext *s, AVPacket *pkt, MPADecodeHeade
 
     ++xing_header->frames;
     xing_header->size += pkt->size;
-    toc->sum += c->bit_rate / 1000;
 
     if (toc->want == ++toc->seen) {
-        toc->bag[toc->pos] = toc->sum;
+        toc->bag[toc->pos] = xing_header->size;
 
         if (VBR_NUM_BAGS == ++toc->pos) {
             /* shrink table to half size by throwing away each second bag. */
@@ -342,8 +339,7 @@ static void mp3_fix_xing(AVFormatContext *s)
 
     for (i = 1; i < VBR_TOC_SIZE; ++i) {
         int j = (int)floor(scale * i);
-        int seek_point = (int)floor(256.0 * toc->bag[j] / toc->sum);
-
+        int seek_point = (int)floor(256.0 * toc->bag[j] / xing_header->size);
         avio_w8(s->pb, (uint8_t)(seek_point < 256 ? seek_point : 255));
     }
 
@@ -414,9 +410,9 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
         MPADecodeHeader c;
         int base;
 
+#ifdef FILTER_VBR_HEADERS
         ff_mpegaudio_decode_header(&c, AV_RB32(pkt->data));
 
-#ifdef FILTER_VBR_HEADERS
         /* filter out XING and INFO headers. */
         base = 4 + xing_offtbl[c.lsf == 1][c.nb_channels == 1];
 
@@ -435,7 +431,7 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
 #endif
 
         if (0 < mp3->xing_header.offset)
-            mp3_xing_add_frame(s, pkt, &c);
+            mp3_xing_add_frame(s, pkt);
 
         return ff_raw_write_packet(s, pkt);
     }
