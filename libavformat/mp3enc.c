@@ -163,7 +163,7 @@ AVOutputFormat ff_mp2_muxer = {
 typedef struct MP3Context {
     const AVClass *class;
     int id3v2_version;
-    int64_t offset;
+    int64_t frames_offset;
     int32_t frames;
     int32_t size;
     uint32_t want;
@@ -266,7 +266,7 @@ static int mp3_write_xing(AVFormatContext *s)
     avio_wb32(s->pb, MKBETAG('X', 'i', 'n', 'g'));
     avio_wb32(s->pb, 0x01 | 0x02 | 0x04);  // frames/size/toc
 
-    mp3->offset = avio_tell(s->pb);
+    mp3->frames_offset = avio_tell(s->pb);
     mp3->size = c.frame_size;
     mp3->want=1;
     mp3->seen=0;
@@ -321,7 +321,7 @@ static void mp3_fix_xing(AVFormatContext *s)
     int i;
 
     avio_flush(s->pb);
-    avio_seek(s->pb, mp3->offset, SEEK_SET);
+    avio_seek(s->pb, mp3->frames_offset, SEEK_SET);
     avio_wb32(s->pb, mp3->frames);
     avio_wb32(s->pb, mp3->size);
 
@@ -420,7 +420,7 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
             return 0;
 #endif
 
-        if (0 < mp3->offset)
+        if (0 < mp3->frames_offset)
             mp3_xing_add_frame(s, pkt);
 
         return ff_raw_write_packet(s, pkt);
@@ -435,7 +435,7 @@ static int mp3_write_trailer(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    if (0 < mp3->offset)
+    if (0 < mp3->frames_offset)
         mp3_fix_xing(s);
 
     return 0;
