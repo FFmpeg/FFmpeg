@@ -327,7 +327,6 @@ static void mp3_fix_xing(AVFormatContext *s)
     MP3Context  *mp3 = s->priv_data;
     struct xing_header *xing_header = &mp3->xing_header;
     struct xing_toc *toc = &xing_header->toc;
-    double scale = (double)toc->pos / (double)VBR_TOC_SIZE;
     int i;
 
     avio_flush(s->pb);
@@ -338,8 +337,8 @@ static void mp3_fix_xing(AVFormatContext *s)
     avio_w8(s->pb, 0);  // first toc entry has to be zero.
 
     for (i = 1; i < VBR_TOC_SIZE; ++i) {
-        int j = (int)floor(scale * i);
-        int seek_point = (int)floor(256.0 * toc->bag[j] / xing_header->size);
+        int j = i * toc->pos / VBR_TOC_SIZE;
+        int seek_point = 256LL * toc->bag[j] / xing_header->size;
         avio_w8(s->pb, (uint8_t)(seek_point < 256 ? seek_point : 255));
     }
 
