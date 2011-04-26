@@ -222,15 +222,7 @@ static void gen_image(int num, int w, int h)
     for ( i=0 ; i<w ; i++ ) {
       x += c;
       y -= s;
-#if 1
       put_pixel(i, j, ipol(tab_r, x, y), ipol(tab_g, x, y), ipol(tab_b, x, y));
-#else
-      {
-          unsigned dep;
-          dep = ((x>>16)&255) + (((y>>16)&255)<<8);
-          put_pixel(i, j, tab_r[dep], tab_g[dep], tab_b[dep]);
-      }
-#endif
     }
   }
 }
