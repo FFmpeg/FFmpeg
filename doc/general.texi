@@ -604,7 +604,7 @@ following image formats are supported:
     @tab Codec used in Delphine Software International games.
 @item COOK                   @tab     @tab  X
     @tab All versions except 5.1 are supported.
-@item DCA (DTS Coherent Acoustics)  @tab     @tab  X
+@item DCA (DTS Coherent Acoustics)  @tab  X  @tab  X
 @item DPCM id RoQ            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item DPCM Interplay         @tab     @tab  X
