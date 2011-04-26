@@ -217,21 +217,6 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         }
         break;
     case 32:
-#if 0
-        GetColorInfo (image, &c_info);
-        if ( c_info.alpha_mask == 0xff000000 && image->green_mask == 0x0000ff00) {
-            /* byte order is relevant here, not endianness
-             * endianness is handled by avcodec, but atm no such thing
-             * as having ABGR, instead of ARGB in a word. Since we
-             * need this for Solaris/SPARC, but need to do the conversion
-             * for every frame we do it outside of this loop, cf. below
-             * this matches both ARGB32 and ABGR32 */
-            input_pixfmt = PIX_FMT_ARGB32;
-        }  else {
-            av_log(s1, AV_LOG_ERROR,"image depth %i not supported ... aborting\n", image->bits_per_pixel);
-            return AVERROR(EIO);
-        }
-#endif
         input_pixfmt = PIX_FMT_RGB32;
         break;
     default:
