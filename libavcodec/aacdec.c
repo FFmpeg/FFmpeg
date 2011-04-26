@@ -593,7 +593,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 
     ff_mdct_init(&ac->mdct,       11, 1, 1.0);
     ff_mdct_init(&ac->mdct_small,  8, 1, 1.0);
-    ff_mdct_init(&ac->mdct_ltp,   11, 0, 1.0);
+    ff_mdct_init(&ac->mdct_ltp,   11, 0, 2.0);
     // window initialization
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
