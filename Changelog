@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version 0.6.3:
 - AMV: Fix possibly exploitable crash.
+- Fix apparently exploitable race condition.
 
 
 version 0.6.2:
