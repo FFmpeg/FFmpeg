@@ -1640,7 +1640,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     av_vsrc_buffer_add_frame2(ost->input_video_filter, &picture,
                                              ist->pts,
                                              sar, ist->st->codec->width, ist->st->codec->height,
-                                             ist->st->codec->pix_fmt, "0:0"); //TODO user setable params
+                                             ist->st->codec->pix_fmt, ""); //TODO user setable params
                 }
             }
         }

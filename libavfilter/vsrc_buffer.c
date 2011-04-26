@@ -35,6 +35,7 @@ typedef struct {
     enum PixelFormat  pix_fmt;
     AVRational        time_base;     ///< time_base to set in the output link
     AVRational        pixel_aspect;
+    char              sws_param[256];
 } BufferSourceContext;
 
 int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
@@ -53,12 +54,16 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
         //return -1;
     }
 
+    if(!c->sws_param[0]){
+        snprintf(c->sws_param, 255, "%d:%d:%s", c->w, c->h, sws_param);
+    }
+
     if(width != c->w || height != c->h || pix_fmt != c->pix_fmt){
         AVFilterContext *scale= buffer_filter->outputs[0]->dst;
         AVFilterLink *link;
 
         av_log(buffer_filter, AV_LOG_INFO, "Changing filter graph input to accept %dx%d %d (%d %d)\n",
-               width,height,pix_fmt, c->pix_fmt, scale->outputs[0]->format);
+               width,height,pix_fmt, c->pix_fmt, scale && scale->outputs ? scale->outputs[0]->format : -123);
 
         if(!scale || strcmp(scale->filter->name,"scale")){
             AVFilter *f= avfilter_get_by_name("scale");
@@ -67,7 +72,7 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
             if(avfilter_open(&scale, f, "Input equalizer") < 0)
                 return -1;
 
-            if((ret=avfilter_init_filter(scale, sws_param, NULL))<0){
+            if((ret=avfilter_init_filter(scale, c->sws_param, NULL))<0){
                 avfilter_free(scale);
                 return ret;
             }
@@ -76,8 +81,12 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
                 avfilter_free(scale);
                 return ret;
             }
+            scale->outputs[0]->time_base = scale->inputs[0]->time_base;
 
             scale->outputs[0]->format= c->pix_fmt;
+        } else if(!strcmp(scale->filter->name, "scale")) {
+            snprintf(c->sws_param, 255, "%d:%d:%s", scale->outputs[0]->w, scale->outputs[0]->h, sws_param);
+            scale->filter->init(scale, c->sws_param, NULL);
         }
 
         c->pix_fmt= scale->inputs[0]->format= pix_fmt;

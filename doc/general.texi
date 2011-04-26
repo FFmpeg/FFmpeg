@@ -446,6 +446,7 @@ following image formats are supported:
 @item Miro VideoXL           @tab     @tab  X
     @tab fourcc: VIXL
 @item MJPEG (Motion JPEG)    @tab  X  @tab  X
+@item Mobotix MxPEG video    @tab     @tab  X
 @item Motion Pixels video    @tab     @tab  X
 @item MPEG-1 video           @tab  X  @tab  X
 @item MPEG-1/2 video XvMC (X-Video Motion Compensation)  @tab     @tab  X
@@ -604,7 +605,7 @@ following image formats are supported:
     @tab Codec used in Delphine Software International games.
 @item COOK                   @tab     @tab  X
     @tab All versions except 5.1 are supported.
-@item DCA (DTS Coherent Acoustics)  @tab     @tab  X
+@item DCA (DTS Coherent Acoustics)  @tab  X  @tab  X
 @item DPCM id RoQ            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item DPCM Interplay         @tab     @tab  X

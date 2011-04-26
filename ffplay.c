@@ -167,8 +167,8 @@ typedef struct VideoState {
     enum AVSampleFormat audio_src_fmt;
     AVAudioConvert *reformat_ctx;
 
-    enum {
-        SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB
+    enum ShowMode {
+        SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB
     } show_mode;
     int16_t sample_array[SAMPLE_ARRAY_SIZE];
     int sample_array_index;
@@ -264,7 +264,7 @@ static int exit_on_keydown;
 static int exit_on_mousedown;
 static int loop=1;
 static int framedrop=1;
-static int show_mode = SHOW_MODE_VIDEO;
+static enum ShowMode show_mode = SHOW_MODE_NONE;
 
 static int rdftspeed=20;
 #if CONFIG_AVFILTER
@@ -2471,10 +2471,8 @@ static int decode_thread(void *arg)
         ret= stream_component_open(is, st_index[AVMEDIA_TYPE_VIDEO]);
     }
     is->refresh_tid = SDL_CreateThread(refresh_thread, is);
-    if(ret<0) {
-        if (!display_disable)
-            is->show_mode = SHOW_MODE_RDFT;
-    }
+    if (is->show_mode == SHOW_MODE_NONE)
+        is->show_mode = ret >= 0 ? SHOW_MODE_VIDEO : SHOW_MODE_RDFT;
 
     if (st_index[AVMEDIA_TYPE_SUBTITLE] >= 0) {
         stream_component_open(is, st_index[AVMEDIA_TYPE_SUBTITLE]);

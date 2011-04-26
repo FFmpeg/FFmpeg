@@ -456,6 +456,7 @@ static const AVOption options[]={
 {"em", "Emergency",          0, FF_OPT_TYPE_CONST, AV_AUDIO_SERVICE_TYPE_EMERGENCY,         INT_MIN, INT_MAX, A|E, "audio_service_type"},
 {"vo", "Voice Over",         0, FF_OPT_TYPE_CONST, AV_AUDIO_SERVICE_TYPE_VOICE_OVER,        INT_MIN, INT_MAX, A|E, "audio_service_type"},
 {"ka", "Karaoke",            0, FF_OPT_TYPE_CONST, AV_AUDIO_SERVICE_TYPE_KARAOKE,           INT_MIN, INT_MAX, A|E, "audio_service_type"},
+{"request_sample_fmt", "sample format audio decoders should prefer", OFFSET(request_sample_fmt), FF_OPT_TYPE_INT, AV_SAMPLE_FMT_NONE, AV_SAMPLE_FMT_NONE, AV_SAMPLE_FMT_NB-1, A|D},
 {NULL},
 };
 

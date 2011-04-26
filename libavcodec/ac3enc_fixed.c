@@ -36,7 +36,7 @@
  */
 static av_cold void mdct_end(AC3MDCTContext *mdct)
 {
-    ff_fft_end(&mdct->fft);
+    ff_mdct_end(&mdct->fft);
 }
 
 

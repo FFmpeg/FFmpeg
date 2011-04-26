@@ -99,6 +99,7 @@ version 0.7_beta1:
 - AAC encoding via libvo-aacenc
 - AMR-WB encoding via libvo-amrwbenc
 - xWMA demuxer
+- Mobotix MxPEG decoder
 
 
 version 0.6:
