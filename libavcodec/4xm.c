@@ -773,12 +773,9 @@ static int decode_frame(AVCodecContext *avctx,
 
     avctx->flags |= CODEC_FLAG_EMU_EDGE; // alternatively we would have to use our own buffer management
 
-    if(p->data[0])
-        avctx->release_buffer(avctx, p);
-
     p->reference= 1;
-    if(avctx->get_buffer(avctx, p) < 0){
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if (avctx->reget_buffer(avctx, p) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
 
