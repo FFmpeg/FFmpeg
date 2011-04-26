@@ -207,11 +207,6 @@ static int id3v2_check_write_tag(AVFormatContext *s, AVMetadataTag *t, const cha
 }
 
 static const int64_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
-static const uint32_t XING = MKBETAG('X', 'i', 'n', 'g');
-#ifdef FILTER_VBR_HEADERS
-static const uint32_t INFO = MKBETAG('I', 'n', 'f', 'o');
-static const uint32_t VBRI = MKBETAG('V', 'B', 'R', 'I');
-#endif
 
 /*
  * Write an empty XING header and initialize respective data.
@@ -274,7 +269,7 @@ static int mp3_write_xing(AVFormatContext *s)
 
     avio_wb32(s->pb, header);
     ffio_fill(s->pb, 0, xing_offset);
-    avio_wb32(s->pb, XING);
+    avio_wb32(s->pb, MKBETAG('X', 'i', 'n', 'g'));
     avio_wb32(s->pb, 0x01 | 0x02 | 0x04);  // frames/size/toc
 
     mp3->xing_header.offset = avio_tell(s->pb);
@@ -430,14 +425,14 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (base + 4 <= pkt->size) {
             uint32_t v = AV_RB32(pkt->data + base);
 
-            if (XING == v || INFO == v)
+            if (MKBETAG('X','i','n','g') == v || MKBETAG('I','n','f','o') == v)
                 return 0;
         }
 
         /* filter out VBRI headers. */
         base = 4 + 32;
 
-        if (base + 4 <= pkt->size && VBRI == AV_RB32(pkt->data + base))
+        if (base + 4 <= pkt->size && MKBETAG('V','B','R','I') == AV_RB32(pkt->data + base))
             return 0;
 #endif
 
