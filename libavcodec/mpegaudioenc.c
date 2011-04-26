@@ -315,8 +315,6 @@ static void filter(MpegAudioContext *s, int ch, const short *samples, int incr)
     int tmp1[32];
     int *out;
 
-    //    print_pow1(samples, 1152);
-
     offset = s->samples_offset[ch];
     out = &s->sb_samples[ch][0][0][0];
     for(j=0;j<36;j++) {
@@ -360,8 +358,6 @@ static void filter(MpegAudioContext *s, int ch, const short *samples, int incr)
         }
     }
     s->samples_offset[ch] = offset;
-
-    //    print_pow(s->sb_samples, 1152);
 }
 
 static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
