@@ -13,15 +13,15 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2011-04-XX - XXXXXXX - lavu 51.1.0 - avutil.h
+2011-04-XX - bebe72f - lavu 51.1.0 - avutil.h
   Add AVPictureType enum and av_get_picture_type_char(), deprecate
   FF_*_TYPE defines and av_get_pict_type_char() defined in
   libavcodec/avcodec.h.
 
-2011-04-xx - xxxxxx - lavfi 2.3.0 - avfilter.h
+2011-04-xx - 10d3940 - lavfi 2.3.0 - avfilter.h
   Add pict_type and key_frame fields to AVFilterBufferRefVideo.
 
-2011-04-xx - xxxxxx - lavfi 2.2.0 - vsrc_buffer
+2011-04-xx - 7a11c82 - lavfi 2.2.0 - vsrc_buffer
   Add sample_aspect_ratio fields to vsrc_buffer arguments
 
 2011-04-21 - 94f7451 - lavc 53.1.0 - avcodec.h
