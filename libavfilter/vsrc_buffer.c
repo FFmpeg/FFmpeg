@@ -85,6 +85,7 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
 
             scale->outputs[0]->format= c->pix_fmt;
         } else if(!strcmp(scale->filter->name, "scale")) {
+            snprintf(c->sws_param, 255, "%d:%d:%s", scale->outputs[0]->w, scale->outputs[0]->h, sws_param);
             scale->filter->init(scale, c->sws_param, NULL);
         }
 
