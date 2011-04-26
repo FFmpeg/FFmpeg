@@ -420,7 +420,7 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
             return 0;
 #endif
 
-        if (0 < mp3->frames_offset)
+        if (mp3->frames_offset)
             mp3_xing_add_frame(s, pkt);
 
         return ff_raw_write_packet(s, pkt);
@@ -435,7 +435,7 @@ static int mp3_write_trailer(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    if (0 < mp3->frames_offset)
+    if (mp3->frames_offset)
         mp3_fix_xing(s);
 
     return 0;
