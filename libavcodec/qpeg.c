@@ -259,12 +259,9 @@ static int decode_frame(AVCodecContext *avctx,
     int delta;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
 
-    if(p->data[0])
-        avctx->release_buffer(avctx, p);
-
-    p->reference= 0;
-    if(avctx->get_buffer(avctx, p) < 0){
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    p->reference = 3;
+    if (avctx->reget_buffer(avctx, p) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
     outdata = a->pic.data[0];
