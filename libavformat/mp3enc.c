@@ -339,7 +339,7 @@ static void mp3_fix_xing(AVFormatContext *s)
     for (i = 1; i < VBR_TOC_SIZE; ++i) {
         int j = i * toc->pos / VBR_TOC_SIZE;
         int seek_point = 256LL * toc->bag[j] / xing_header->size;
-        avio_w8(s->pb, (uint8_t)(seek_point < 256 ? seek_point : 255));
+        avio_w8(s->pb, FFMIN(seek_point, 255));
     }
 
     avio_flush(s->pb);
