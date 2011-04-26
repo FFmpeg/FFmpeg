@@ -35,6 +35,7 @@ typedef struct {
     enum PixelFormat  pix_fmt;
     AVRational        time_base;     ///< time_base to set in the output link
     AVRational        pixel_aspect;
+    char              sws_param[256];
 } BufferSourceContext;
 
 int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
@@ -53,6 +54,10 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
         //return -1;
     }
 
+    if(!c->sws_param[0]){
+        snprintf(c->sws_param, 255, "%d:%d:%s", c->w, c->h, sws_param);
+    }
+
     if(width != c->w || height != c->h || pix_fmt != c->pix_fmt){
         AVFilterContext *scale= buffer_filter->outputs[0]->dst;
         AVFilterLink *link;
@@ -67,7 +72,7 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
             if(avfilter_open(&scale, f, "Input equalizer") < 0)
                 return -1;
 
-            if((ret=avfilter_init_filter(scale, sws_param, NULL))<0){
+            if((ret=avfilter_init_filter(scale, c->sws_param, NULL))<0){
                 avfilter_free(scale);
                 return ret;
             }
