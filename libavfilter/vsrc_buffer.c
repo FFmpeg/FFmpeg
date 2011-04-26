@@ -58,7 +58,7 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
         AVFilterLink *link;
 
         av_log(buffer_filter, AV_LOG_INFO, "Changing filter graph input to accept %dx%d %d (%d %d)\n",
-               width,height,pix_fmt, c->pix_fmt, scale->outputs[0]->format);
+               width,height,pix_fmt, c->pix_fmt, scale && scale->outputs ? scale->outputs[0]->format : -123);
 
         if(!scale || strcmp(scale->filter->name,"scale")){
             AVFilter *f= avfilter_get_by_name("scale");
