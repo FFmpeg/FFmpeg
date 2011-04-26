@@ -791,7 +791,8 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
 {
     const int sf_offset = ac->sf_offset + (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE ? 12 : 0);
     int g, i, idx = 0;
-    int offset[3] = { global_gain, global_gain - 90, 100 };
+    int offset[3] = { global_gain, global_gain - 90, 0 };
+    int clipped_offset;
     int noise_flag = 1;
     static const char *sf_str[3] = { "Global gain", "Noise gain", "Intensity stereo position" };
     for (g = 0; g < ics->num_window_groups; g++) {
@@ -803,12 +804,14 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
             } else if ((band_type[idx] == INTENSITY_BT) || (band_type[idx] == INTENSITY_BT2)) {
                 for (; i < run_end; i++, idx++) {
                     offset[2] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
-                    if (offset[2] > 255U) {
-                        av_log(ac->avctx, AV_LOG_ERROR,
-                               "%s (%d) out of range.\n", sf_str[2], offset[2]);
-                        return -1;
+                    clipped_offset = av_clip(offset[2], -155, 100);
+                    if (offset[2] != clipped_offset) {
+                        av_log_ask_for_sample(ac->avctx, "Intensity stereo "
+                                "position clipped (%d -> %d).\nIf you heard an "
+                                "audible artifact, there may be a bug in the "
+                                "decoder. ", offset[2], clipped_offset);
                     }
-                    sf[idx] = ff_aac_pow2sf_tab[-offset[2] + 300];
+                    sf[idx] = ff_aac_pow2sf_tab[-clipped_offset + 200];
                 }
             } else if (band_type[idx] == NOISE_BT) {
                 for (; i < run_end; i++, idx++) {
@@ -816,12 +819,14 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                         offset[1] += get_bits(gb, 9) - 256;
                     else
                         offset[1] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
-                    if (offset[1] > 255U) {
-                        av_log(ac->avctx, AV_LOG_ERROR,
-                               "%s (%d) out of range.\n", sf_str[1], offset[1]);
-                        return -1;
+                    clipped_offset = av_clip(offset[1], -100, 155);
+                    if (offset[2] != clipped_offset) {
+                        av_log_ask_for_sample(ac->avctx, "Noise gain clipped "
+                                "(%d -> %d).\nIf you heard an audible "
+                                "artifact, there may be a bug in the decoder. ",
+                                offset[1], clipped_offset);
                     }
-                    sf[idx] = -ff_aac_pow2sf_tab[offset[1] + sf_offset + 100];
+                    sf[idx] = -ff_aac_pow2sf_tab[clipped_offset + sf_offset + 100];
                 }
             } else {
                 for (; i < run_end; i++, idx++) {
