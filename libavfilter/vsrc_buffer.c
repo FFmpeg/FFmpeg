@@ -81,6 +81,7 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
                 avfilter_free(scale);
                 return ret;
             }
+            scale->outputs[0]->time_base = scale->inputs[0]->time_base;
 
             scale->outputs[0]->format= c->pix_fmt;
         }
