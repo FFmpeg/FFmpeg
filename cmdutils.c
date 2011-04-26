@@ -154,6 +154,7 @@ static const OptionDef* find_option(const OptionDef *po, const char *name){
 }
 
 #if defined(_WIN32) && !defined(__MINGW32CE__)
+#include <windows.h>
 /* Will be leaked on exit */
 static char** win32_argv_utf8 = NULL;
 static int win32_argc = 0;
