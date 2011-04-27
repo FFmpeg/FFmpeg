@@ -58,10 +58,12 @@ AVCodecParserContext *av_parser_init(int codec_id)
     if (!s)
         return NULL;
     s->parser = parser;
-    s->priv_data = av_mallocz(parser->priv_data_size);
-    if (!s->priv_data) {
-        av_free(s);
-        return NULL;
+    if (parser->priv_data_size) {
+        s->priv_data = av_mallocz(parser->priv_data_size);
+        if (!s->priv_data) {
+            av_free(s);
+            return NULL;
+        }
     }
     if (parser->parser_init) {
         ret = parser->parser_init(s);
