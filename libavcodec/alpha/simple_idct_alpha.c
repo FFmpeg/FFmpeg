@@ -33,13 +33,13 @@
 // cos(i * M_PI / 16) * sqrt(2) * (1 << 14)
 // W4 is actually exactly 16384, but using 16383 works around
 // accumulating rounding errors for some encoders
-#define W1 ((int_fast32_t) 22725)
-#define W2 ((int_fast32_t) 21407)
-#define W3 ((int_fast32_t) 19266)
-#define W4 ((int_fast32_t) 16383)
-#define W5 ((int_fast32_t) 12873)
-#define W6 ((int_fast32_t)  8867)
-#define W7 ((int_fast32_t)  4520)
+#define W1 22725
+#define W2 21407
+#define W3 19266
+#define W4 16383
+#define W5 12873
+#define W6  8867
+#define W7  4520
 #define ROW_SHIFT 11
 #define COL_SHIFT 20
 
