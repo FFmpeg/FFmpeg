@@ -520,6 +520,8 @@ av_cold int MPV_common_init(MpegEncContext *s)
     s->flags= s->avctx->flags;
     s->flags2= s->avctx->flags2;
 
+    if (s->width && s->height) {
+
     s->mb_width  = (s->width  + 15) / 16;
     s->mb_stride = s->mb_width + 1;
     s->b8_stride = s->mb_width*2 + 1;
@@ -599,10 +601,15 @@ av_cold int MPV_common_init(MpegEncContext *s)
             FF_ALLOCZ_OR_GOTO(s->avctx, s->dct_offset, 2 * 64 * sizeof(uint16_t), fail)
         }
     }
+
+    }
+
     FF_ALLOCZ_OR_GOTO(s->avctx, s->picture, MAX_PICTURE_COUNT * sizeof(Picture), fail)
     for(i = 0; i < MAX_PICTURE_COUNT; i++) {
         avcodec_get_frame_defaults((AVFrame *)&s->picture[i]);
     }
+
+    if (s->width && s->height) {
 
     FF_ALLOCZ_OR_GOTO(s->avctx, s->error_status_table, mb_array_size*sizeof(uint8_t), fail)
 
@@ -658,8 +665,11 @@ av_cold int MPV_common_init(MpegEncContext *s)
        s->visualization_buffer[1] = av_malloc((s->mb_width*16 + 2*EDGE_WIDTH) * s->mb_height*16 + 2*EDGE_WIDTH);
        s->visualization_buffer[2] = av_malloc((s->mb_width*16 + 2*EDGE_WIDTH) * s->mb_height*16 + 2*EDGE_WIDTH);
     }
+    }
 
     s->context_initialized = 1;
+
+    if (s->width && s->height) {
 
     s->thread_context[0]= s;
     threads = s->avctx->thread_count;
@@ -674,6 +684,8 @@ av_cold int MPV_common_init(MpegEncContext *s)
            goto fail;
         s->thread_context[i]->start_mb_y= (s->mb_height*(i  ) + s->avctx->thread_count/2) / s->avctx->thread_count;
         s->thread_context[i]->end_mb_y  = (s->mb_height*(i+1) + s->avctx->thread_count/2) / s->avctx->thread_count;
+    }
+
     }
 
     return 0;
