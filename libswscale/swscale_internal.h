@@ -459,6 +459,7 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_BGR32_1     \
         || (x)==PIX_FMT_RGB32       \
         || (x)==PIX_FMT_RGB32_1     \
+        || (x)==PIX_FMT_PAL8        \
         || (x)==PIX_FMT_GRAY8A      \
         || (x)==PIX_FMT_YUVA420P    \
     )

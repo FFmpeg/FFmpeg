@@ -3068,6 +3068,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_BGR32  :
         case PIX_FMT_BGR32_1: c->alpToYV12 = abgrToA; break;
         case PIX_FMT_GRAY8A : c->alpToYV12 = RENAME(yuy2ToY); break;
+        case PIX_FMT_PAL8   : c->alpToYV12 = palToA; break;
         }
     }
 
