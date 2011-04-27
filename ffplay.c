@@ -1381,7 +1381,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
 #if defined(DEBUG_SYNC) && 0
     printf("frame_type=%c clock=%0.3f pts=%0.3f\n",
-           av_get_pict_type_char(src_frame->pict_type), pts, pts1);
+           av_get_picture_type_char(src_frame->pict_type), pts, pts1);
 #endif
 
     /* wait until we have space to put a new picture */
