@@ -87,11 +87,10 @@ static void add_paeth_prediction_##cpu(uint8_t *dst, uint8_t *src, uint8_t *top,
         "pand      %%mm1, %%mm6 \n"\
         "pand      %%mm4, %%mm2 \n"\
         "punpcklbw %%mm7, %%mm0 \n"\
-        "movq      %6,    %%mm5 \n"\
         "paddw     %%mm6, %%mm0 \n"\
         "paddw     %%mm2, %%mm3 \n"\
         "paddw     %%mm3, %%mm0 \n"\
-        "pand      %%mm5, %%mm0 \n"\
+        "pand      %6   , %%mm0 \n"\
         "movq      %%mm0, %%mm3 \n"\
         "packuswb  %%mm3, %%mm3 \n"\
         "movd      %%mm3, (%1,%0) \n"\
