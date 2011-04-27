@@ -429,7 +429,8 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
         bp = buf + count / 3 * off * 2;
         off = (type_sizes[type] - 1) << 3;
         for(i = 0; i < count / 3; i++){
-            j = (tget(&rp, type, s->le) >> off) << 16;
+            j = 0xff << 24;
+            j |= (tget(&rp, type, s->le) >> off) << 16;
             j |= (tget(&gp, type, s->le) >> off) << 8;
             j |= tget(&bp, type, s->le) >> off;
             pal[i] = j;
