@@ -587,7 +587,8 @@ int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *in
     ret->av_class = &avfilter_class;
     ret->filter   = filter;
     ret->name     = inst_name ? av_strdup(inst_name) : NULL;
-    ret->priv     = av_mallocz(filter->priv_size);
+    if (filter->priv_size)
+        ret->priv     = av_mallocz(filter->priv_size);
 
     ret->input_count  = pad_count(filter->inputs);
     if (ret->input_count) {
