@@ -624,7 +624,9 @@ static av_cold int png_dec_init(AVCodecContext *avctx)
     avcodec_get_frame_defaults(&s->picture1);
     avcodec_get_frame_defaults(&s->picture2);
 
+#ifdef HAVE_MMX
     ff_png_init_mmx(s);
+#endif
 
     if (!s->add_paeth_prediction)
         s->add_paeth_prediction = add_paeth_prediction_c;
