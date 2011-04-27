@@ -83,7 +83,8 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix=1;
     static int count;
-    static char line[1024], prev[1024];
+    static char prev[1024];
+    char line[1024];
     static int is_atty;
     AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
     if(level>av_log_level)
@@ -108,7 +109,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     if(!is_atty) is_atty= isatty(2) ? 1 : -1;
 #endif
 
-    if(print_prefix && (flags & AV_LOG_SKIP_REPEATED) && !strcmp(line, prev)){
+    if(print_prefix && (flags & AV_LOG_SKIP_REPEATED) && !strncmp(line, prev, sizeof line)){
         count++;
         if(is_atty==1)
             fprintf(stderr, "    Last message repeated %d times\r", count);
@@ -119,7 +120,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
         count=0;
     }
     colored_fputs(av_clip(level>>3, 0, 6), line);
-    strcpy(prev, line);
+    strncpy(prev, line, sizeof line);
 }
 
 static void (*av_log_callback)(void*, int, const char*, va_list) = av_log_default_callback;
