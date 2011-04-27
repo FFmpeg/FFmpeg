@@ -1,6 +1,7 @@
 ;******************************************************************************
 ;* FFT transform with SSE/3DNow optimizations
 ;* Copyright (c) 2008 Loren Merritt
+;* Copyright (c) 2011 Vitor Sessak
 ;*
 ;* This algorithm (though not any of the implementation details) is
 ;* based on libdjbfft by D. J. Bernstein.
@@ -49,9 +50,21 @@ endstruc
 SECTION_RODATA
 
 %define M_SQRT1_2 0.70710678118654752440
-ps_root2: times 4 dd M_SQRT1_2
-ps_root2mppm: dd -M_SQRT1_2, M_SQRT1_2, M_SQRT1_2, -M_SQRT1_2
-ps_p1p1m1p1: dd 0, 0, 1<<31, 0
+%define M_COS_PI_1_8 0.923879532511287
+%define M_COS_PI_3_8 0.38268343236509
+
+align 32
+ps_cos16_1: dd 1.0, M_COS_PI_1_8, M_SQRT1_2, M_COS_PI_3_8, 1.0, M_COS_PI_1_8, M_SQRT1_2, M_COS_PI_3_8
+ps_cos16_2: dd 0, M_COS_PI_3_8, M_SQRT1_2, M_COS_PI_1_8, 0, -M_COS_PI_3_8, -M_SQRT1_2, -M_COS_PI_1_8
+
+ps_root2: times 8 dd M_SQRT1_2
+ps_root2mppm: dd -M_SQRT1_2, M_SQRT1_2, M_SQRT1_2, -M_SQRT1_2, -M_SQRT1_2, M_SQRT1_2, M_SQRT1_2, -M_SQRT1_2
+ps_p1p1m1p1: dd 0, 0, 1<<31, 0, 0, 0, 1<<31, 0
+
+perm1: dd 0x00, 0x02, 0x03, 0x01, 0x03, 0x00, 0x02, 0x01
+perm2: dd 0x00, 0x01, 0x02, 0x03, 0x01, 0x00, 0x02, 0x03
+ps_p1p1m1p1root2: dd 1.0, 1.0, -1.0, 1.0, M_SQRT1_2, M_SQRT1_2, M_SQRT1_2, M_SQRT1_2
+ps_m1m1p1m1p1m1m1m1: dd 1<<31, 1<<31, 0, 1<<31, 0, 1<<31, 1<<31, 1<<31
 ps_m1p1: dd 1<<31, 0
 
 %assign i 16
@@ -96,51 +109,80 @@ section .text align=16
     SWAP     %3, %6
 %endmacro
 
-; in:  %1={r0,i0,r2,i2} %2={r1,i1,r3,i3}
-; out: %1={r0,r1,r2,r3} %2={i0,i1,i2,i3}
-%macro T4_SSE 3
-    mova     %3, %1
-    addps    %1, %2       ; {t1,t2,t6,t5}
-    subps    %3, %2       ; {t3,t4,-t8,t7}
-    xorps    %3, [ps_p1p1m1p1]
-    mova     %2, %1
-    shufps   %1, %3, 0x44 ; {t1,t2,t3,t4}
-    shufps   %2, %3, 0xbe ; {t6,t5,t7,t8}
-    mova     %3, %1
-    addps    %1, %2       ; {r0,i0,r1,i1}
-    subps    %3, %2       ; {r2,i2,r3,i3}
-    mova     %2, %1
-    shufps   %1, %3, 0x88 ; {r0,r1,r2,r3}
-    shufps   %2, %3, 0xdd ; {i0,i1,i2,i3}
+;  in: %1 = {r0,i0,r2,i2,r4,i4,r6,i6}
+;      %2 = {r1,i1,r3,i3,r5,i5,r7,i7}
+;      %3, %4, %5 tmp
+; out: %1 = {r0,r1,r2,r3,i0,i1,i2,i3}
+;      %2 = {r4,r5,r6,r7,i4,i5,i6,i7}
+%macro T8_AVX 5
+    vsubps     %5, %1, %2       ; v  = %1 - %2
+    vaddps     %3, %1, %2       ; w  = %1 + %2
+    vmulps     %2, %5, [ps_p1p1m1p1root2]  ; v *= vals1
+    vpermilps  %2, %2, [perm1]
+    vblendps   %1, %2, %3, 0x33 ; q = {w1,w2,v4,v2,w5,w6,v7,v6}
+    vshufps    %5, %3, %2, 0x4e ; r = {w3,w4,v1,v3,w7,w8,v8,v5}
+    vsubps     %4, %5, %1       ; s = r - q
+    vaddps     %1, %5, %1       ; u = r + q
+    vpermilps  %1, %1, [perm2]  ; k  = {u1,u2,u3,u4,u6,u5,u7,u8}
+    vshufps    %5, %4, %1, 0xbb
+    vshufps    %3, %4, %1, 0xee
+    vperm2f128 %3, %3, %5, 0x13
+    vxorps     %4, %4, [ps_m1m1p1m1p1m1m1m1]  ; s *= {1,1,-1,-1,1,-1,-1,-1}
+    vshufps    %2, %1, %4, 0xdd
+    vshufps    %1, %1, %4, 0x88
+    vperm2f128 %4, %2, %1, 0x02 ; v  = {k1,k3,s1,s3,k2,k4,s2,s4}
+    vperm2f128 %1, %1, %2, 0x13 ; w  = {k6,k8,s6,s8,k5,k7,s5,s7}
+    vsubps     %5, %1, %3
+    vblendps   %1, %5, %1, 0x55 ; w -= {0,s7,0,k7,0,s8,0,k8}
+    vsubps     %2, %4, %1       ; %2 = v - w
+    vaddps     %1, %4, %1       ; %1 = v + w
 %endmacro
 
+; In SSE mode do one fft4 transforms
+; in:  %1={r0,i0,r2,i2} %2={r1,i1,r3,i3}
+; out: %1={r0,r1,r2,r3} %2={i0,i1,i2,i3}
+;
+; In AVX mode do two fft4 transforms
+; in:  %1={r0,i0,r2,i2,r4,i4,r6,i6} %2={r1,i1,r3,i3,r5,i5,r7,i7}
+; out: %1={r0,r1,r2,r3,r4,r5,r6,r7} %2={i0,i1,i2,i3,i4,i5,i6,i7}
+%macro T4_SSE 3
+    subps    %3, %1, %2       ; {t3,t4,-t8,t7}
+    addps    %1, %1, %2       ; {t1,t2,t6,t5}
+    xorps    %3, %3, [ps_p1p1m1p1]
+    shufps   %2, %1, %3, 0xbe ; {t6,t5,t7,t8}
+    shufps   %1, %1, %3, 0x44 ; {t1,t2,t3,t4}
+    subps    %3, %1, %2       ; {r2,i2,r3,i3}
+    addps    %1, %1, %2       ; {r0,i0,r1,i1}
+    shufps   %2, %1, %3, 0xdd ; {i0,i1,i2,i3}
+    shufps   %1, %1, %3, 0x88 ; {r0,r1,r2,r3}
+%endmacro
+
+; In SSE mode do one FFT8
 ; in:  %1={r0,r1,r2,r3} %2={i0,i1,i2,i3} %3={r4,i4,r6,i6} %4={r5,i5,r7,i7}
 ; out: %1={r0,r1,r2,r3} %2={i0,i1,i2,i3} %1={r4,r5,r6,r7} %2={i4,i5,i6,i7}
+;
+; In AVX mode do two FFT8
+; in:  %1={r0,i0,r2,i2,r8, i8, r10,i10} %2={r1,i1,r3,i3,r9, i9, r11,i11}
+;      %3={r4,i4,r6,i6,r12,i12,r14,i14} %4={r5,i5,r7,i7,r13,i13,r15,i15}
+; out: %1={r0,r1,r2,r3,r8, r9, r10,r11} %2={i0,i1,i2,i3,i8, i9, i10,i11}
+;      %3={r4,r5,r6,r7,r12,r13,r14,r15} %4={i4,i5,i6,i7,i12,i13,i14,i15}
 %macro T8_SSE 6
-    mova     %6, %3
-    subps    %3, %4       ; {r5,i5,r7,i7}
-    addps    %6, %4       ; {t1,t2,t3,t4}
-    mova     %4, %3
-    shufps   %4, %4, 0xb1 ; {i5,r5,i7,r7}
-    mulps    %3, [ps_root2mppm] ; {-r5,i5,r7,-i7}
-    mulps    %4, [ps_root2]
-    addps    %3, %4       ; {t8,t7,ta,t9}
-    mova     %4, %6
-    shufps   %6, %3, 0x36 ; {t3,t2,t9,t8}
-    shufps   %4, %3, 0x9c ; {t1,t4,t7,ta}
-    mova     %3, %6
-    addps    %6, %4       ; {t1,t2,t9,ta}
-    subps    %3, %4       ; {t6,t5,tc,tb}
-    mova     %4, %6
-    shufps   %6, %3, 0xd8 ; {t1,t9,t5,tb}
-    shufps   %4, %3, 0x8d ; {t2,ta,t6,tc}
-    mova     %3, %1
-    mova     %5, %2
-    addps    %1, %6       ; {r0,r1,r2,r3}
-    addps    %2, %4       ; {i0,i1,i2,i3}
-    subps    %3, %6       ; {r4,r5,r6,r7}
-    subps    %5, %4       ; {i4,i5,i6,i7}
-    SWAP     %4, %5
+    addps    %6, %3, %4       ; {t1,t2,t3,t4}
+    subps    %3, %3, %4       ; {r5,i5,r7,i7}
+    shufps   %4, %3, %3, 0xb1 ; {i5,r5,i7,r7}
+    mulps    %3, %3, [ps_root2mppm] ; {-r5,i5,r7,-i7}
+    mulps    %4, %4, [ps_root2]
+    addps    %3, %3, %4       ; {t8,t7,ta,t9}
+    shufps   %4, %6, %3, 0x9c ; {t1,t4,t7,ta}
+    shufps   %6, %6, %3, 0x36 ; {t3,t2,t9,t8}
+    subps    %3, %6, %4       ; {t6,t5,tc,tb}
+    addps    %6, %6, %4       ; {t1,t2,t9,ta}
+    shufps   %5, %6, %3, 0x8d ; {t2,ta,t6,tc}
+    shufps   %6, %6, %3, 0xd8 ; {t1,t9,t5,tb}
+    subps    %3, %1, %6       ; {r4,r5,r6,r7}
+    addps    %1, %1, %6       ; {r0,r1,r2,r3}
+    subps    %4, %2, %5       ; {i4,i5,i6,i7}
+    addps    %2, %2, %5       ; {i0,i1,i2,i3}
 %endmacro
 
 ; scheduled for cpu-bound sizes
@@ -148,52 +190,44 @@ section .text align=16
 IF%1 mova    m4, Z(4)
 IF%1 mova    m5, Z(5)
     mova     m0, %2 ; wre
-    mova     m2, m4
     mova     m1, %3 ; wim
-    mova     m3, m5
-    mulps    m2, m0 ; r2*wre
+    mulps    m2, m4, m0 ; r2*wre
 IF%1 mova    m6, Z2(6)
-    mulps    m3, m1 ; i2*wim
+    mulps    m3, m5, m1 ; i2*wim
 IF%1 mova    m7, Z2(7)
-    mulps    m4, m1 ; r2*wim
-    mulps    m5, m0 ; i2*wre
-    addps    m2, m3 ; r2*wre + i2*wim
-    mova     m3, m1
-    mulps    m1, m6 ; r3*wim
-    subps    m5, m4 ; i2*wre - r2*wim
-    mova     m4, m0
-    mulps    m3, m7 ; i3*wim
-    mulps    m4, m6 ; r3*wre
-    mulps    m0, m7 ; i3*wre
-    subps    m4, m3 ; r3*wre - i3*wim
+    mulps    m4, m4, m1 ; r2*wim
+    mulps    m5, m5, m0 ; i2*wre
+    addps    m2, m2, m3 ; r2*wre + i2*wim
+    mulps    m3, m1, m7 ; i3*wim
+    subps    m5, m5, m4 ; i2*wre - r2*wim
+    mulps    m1, m1, m6 ; r3*wim
+    mulps    m4, m0, m6 ; r3*wre
+    mulps    m0, m0, m7 ; i3*wre
+    subps    m4, m4, m3 ; r3*wre - i3*wim
     mova     m3, Z(0)
-    addps    m0, m1 ; i3*wre + r3*wim
-    mova     m1, m4
-    addps    m4, m2 ; t5
-    subps    m1, m2 ; t3
-    subps    m3, m4 ; r2
-    addps    m4, Z(0) ; r0
+    addps    m0, m0, m1 ; i3*wre + r3*wim
+    subps    m1, m4, m2 ; t3
+    addps    m4, m4, m2 ; t5
+    subps    m3, m3, m4 ; r2
+    addps    m4, m4, Z(0) ; r0
     mova     m6, Z(2)
     mova   Z(4), m3
     mova   Z(0), m4
-    mova     m3, m5
-    subps    m5, m0 ; t4
-    mova     m4, m6
-    subps    m6, m5 ; r3
-    addps    m5, m4 ; r1
-    mova  Z2(6), m6
-    mova   Z(2), m5
+    subps    m3, m5, m0 ; t4
+    subps    m4, m6, m3 ; r3
+    addps    m3, m3, m6 ; r1
+    mova  Z2(6), m4
+    mova   Z(2), m3
     mova     m2, Z(3)
-    addps    m3, m0 ; t6
-    subps    m2, m1 ; i3
+    addps    m3, m5, m0 ; t6
+    subps    m2, m2, m1 ; i3
     mova     m7, Z(1)
-    addps    m1, Z(3) ; i1
+    addps    m1, m1, Z(3) ; i1
     mova  Z2(7), m2
     mova   Z(3), m1
-    mova     m4, m7
-    subps    m7, m3 ; i2
-    addps    m3, m4 ; i0
-    mova   Z(5), m7
+    subps    m4, m7, m3 ; i2
+    addps    m3, m3, m7 ; i0
+    mova   Z(5), m4
     mova   Z(1), m3
 %endmacro
 
@@ -201,77 +235,55 @@ IF%1 mova    m7, Z2(7)
 %macro PASS_BIG 1 ; (!interleave)
     mova     m4, Z(4) ; r2
     mova     m5, Z(5) ; i2
-    mova     m2, m4
     mova     m0, [wq] ; wre
-    mova     m3, m5
     mova     m1, [wq+o1q] ; wim
-    mulps    m2, m0 ; r2*wre
+    mulps    m2, m4, m0 ; r2*wre
     mova     m6, Z2(6) ; r3
-    mulps    m3, m1 ; i2*wim
+    mulps    m3, m5, m1 ; i2*wim
     mova     m7, Z2(7) ; i3
-    mulps    m4, m1 ; r2*wim
-    mulps    m5, m0 ; i2*wre
-    addps    m2, m3 ; r2*wre + i2*wim
-    mova     m3, m1
-    mulps    m1, m6 ; r3*wim
-    subps    m5, m4 ; i2*wre - r2*wim
-    mova     m4, m0
-    mulps    m3, m7 ; i3*wim
-    mulps    m4, m6 ; r3*wre
-    mulps    m0, m7 ; i3*wre
-    subps    m4, m3 ; r3*wre - i3*wim
+    mulps    m4, m4, m1 ; r2*wim
+    mulps    m5, m5, m0 ; i2*wre
+    addps    m2, m2, m3 ; r2*wre + i2*wim
+    mulps    m3, m1, m7 ; i3*wim
+    mulps    m1, m1, m6 ; r3*wim
+    subps    m5, m5, m4 ; i2*wre - r2*wim
+    mulps    m4, m0, m6 ; r3*wre
+    mulps    m0, m0, m7 ; i3*wre
+    subps    m4, m4, m3 ; r3*wre - i3*wim
     mova     m3, Z(0)
-    addps    m0, m1 ; i3*wre + r3*wim
-    mova     m1, m4
-    addps    m4, m2 ; t5
-    subps    m1, m2 ; t3
-    subps    m3, m4 ; r2
-    addps    m4, Z(0) ; r0
+    addps    m0, m0, m1 ; i3*wre + r3*wim
+    subps    m1, m4, m2 ; t3
+    addps    m4, m4, m2 ; t5
+    subps    m3, m3, m4 ; r2
+    addps    m4, m4, Z(0) ; r0
     mova     m6, Z(2)
     mova   Z(4), m3
     mova   Z(0), m4
-    mova     m3, m5
-    subps    m5, m0 ; t4
-    mova     m4, m6
-    subps    m6, m5 ; r3
-    addps    m5, m4 ; r1
-IF%1 mova Z2(6), m6
-IF%1 mova  Z(2), m5
+    subps    m3, m5, m0 ; t4
+    subps    m4, m6, m3 ; r3
+    addps    m3, m3, m6 ; r1
+IF%1 mova Z2(6), m4
+IF%1 mova  Z(2), m3
     mova     m2, Z(3)
-    addps    m3, m0 ; t6
-    subps    m2, m1 ; i3
+    addps    m5, m5, m0 ; t6
+    subps    m2, m2, m1 ; i3
     mova     m7, Z(1)
-    addps    m1, Z(3) ; i1
+    addps    m1, m1, Z(3) ; i1
 IF%1 mova Z2(7), m2
 IF%1 mova  Z(3), m1
-    mova     m4, m7
-    subps    m7, m3 ; i2
-    addps    m3, m4 ; i0
-IF%1 mova  Z(5), m7
-IF%1 mova  Z(1), m3
+    subps    m6, m7, m5 ; i2
+    addps    m5, m5, m7 ; i0
+IF%1 mova  Z(5), m6
+IF%1 mova  Z(1), m5
 %if %1==0
-    mova     m4, m5 ; r1
-    mova     m0, m6 ; r3
-    unpcklps m5, m1
-    unpckhps m4, m1
-    unpcklps m6, m2
-    unpckhps m0, m2
+    INTERL m1, m3, m7, Z, 2
+    INTERL m2, m4, m0, Z2, 6
+
     mova     m1, Z(0)
     mova     m2, Z(4)
-    mova   Z(2), m5
-    mova   Z(3), m4
-    mova  Z2(6), m6
-    mova  Z2(7), m0
-    mova     m5, m1 ; r0
-    mova     m4, m2 ; r2
-    unpcklps m1, m3
-    unpckhps m5, m3
-    unpcklps m2, m7
-    unpckhps m4, m7
-    mova   Z(0), m1
-    mova   Z(1), m5
-    mova   Z(4), m2
-    mova   Z(5), m4
+
+    INTERL m5, m1, m3, Z, 0
+    INTERL m6, m2, m7, Z, 4
 %endif
 %endmacro
 
@@ -281,13 +293,106 @@ IF%1 mova  Z(1), m3
     punpckhdq %3, %2
 %endmacro
 
-INIT_XMM
-%define mova movaps
-
 %define Z(x) [r0+mmsize*x]
 %define Z2(x) [r0+mmsize*x]
+%define ZH(x) [r0+mmsize*x+mmsize/2]
+
+INIT_YMM
 
 align 16
+fft8_avx:
+    mova      m0, Z(0)
+    mova      m1, Z(1)
+    T8_AVX    m0, m1, m2, m3, m4
+    mova      Z(0), m0
+    mova      Z(1), m1
+    ret
+
+
+align 16
+fft16_avx:
+    mova       m2, Z(2)
+    mova       m3, Z(3)
+    T4_SSE     m2, m3, m7
+
+    mova       m0, Z(0)
+    mova       m1, Z(1)
+    T8_AVX     m0, m1, m4, m5, m7
+
+    mova       m4, [ps_cos16_1]
+    mova       m5, [ps_cos16_2]
+    vmulps     m6, m2, m4
+    vmulps     m7, m3, m5
+    vaddps     m7, m7, m6
+    vmulps     m2, m2, m5
+    vmulps     m3, m3, m4
+    vsubps     m3, m3, m2
+    vblendps   m2, m7, m3, 0xf0
+    vperm2f128 m3, m7, m3, 0x21
+    vaddps     m4, m2, m3
+    vsubps     m2, m3, m2
+    vperm2f128 m2, m2, m2, 0x01
+    vsubps     m3, m1, m2
+    vaddps     m1, m1, m2
+    vsubps     m5, m0, m4
+    vaddps     m0, m0, m4
+    vextractf128   Z(0), m0, 0
+    vextractf128  ZH(0), m1, 0
+    vextractf128   Z(1), m0, 1
+    vextractf128  ZH(1), m1, 1
+    vextractf128   Z(2), m5, 0
+    vextractf128  ZH(2), m3, 0
+    vextractf128   Z(3), m5, 1
+    vextractf128  ZH(3), m3, 1
+    ret
+
+align 16
+fft32_avx:
+    call fft16_avx
+
+    mova m0, Z(4)
+    mova m1, Z(5)
+
+    T4_SSE      m0, m1, m4
+
+    mova m2, Z(6)
+    mova m3, Z(7)
+
+    T8_SSE      m0, m1, m2, m3, m4, m6
+    ; m0={r0,r1,r2,r3,r8, r9, r10,r11} m1={i0,i1,i2,i3,i8, i9, i10,i11}
+    ; m2={r4,r5,r6,r7,r12,r13,r14,r15} m3={i4,i5,i6,i7,i12,i13,i14,i15}
+
+    vperm2f128  m4, m0, m2, 0x20
+    vperm2f128  m5, m1, m3, 0x20
+    vperm2f128  m6, m0, m2, 0x31
+    vperm2f128  m7, m1, m3, 0x31
+
+    PASS_SMALL 0, [cos_32], [cos_32+32]
+
+    ret
+
+fft32_interleave_avx:
+    call fft32_avx
+    mov r2d, 32
+.deint_loop:
+    mova     m2, Z(0)
+    mova     m3, Z(1)
+    vunpcklps      m0, m2, m3
+    vunpckhps      m1, m2, m3
+    vextractf128   Z(0), m0, 0
+    vextractf128  ZH(0), m1, 0
+    vextractf128   Z(1), m0, 1
+    vextractf128  ZH(1), m1, 1
+    add r0, mmsize*2
+    sub r2d, mmsize/4
+    jg .deint_loop
+    ret
+
+INIT_XMM
+%define movdqa  movaps
+
+align 16
+fft4_avx:
 fft4_sse:
     mova     m0, Z(0)
     mova     m1, Z(1)
@@ -406,6 +511,8 @@ FFT48_3DN _3dn
 
 %define Z(x) [zq + o1q*(x&6) + mmsize*(x&1)]
 %define Z2(x) [zq + o3q + mmsize*(x&1)]
+%define ZH(x) [zq + o1q*(x&6) + mmsize*(x&1) + mmsize/2]
+%define Z2H(x) [zq + o3q + mmsize*(x&1) + mmsize/2]
 
 %macro DECL_PASS 2+ ; name, payload
 align 16
@@ -423,8 +530,34 @@ DEFINE_ARGS z, w, n, o1, o3
     rep ret
 %endmacro
 
+INIT_YMM
+
+%macro INTERL_AVX 5
+    vunpckhps      %3, %2, %1
+    vunpcklps      %2, %2, %1
+    vextractf128   %4(%5), %2, 0
+    vextractf128  %4 %+ H(%5), %3, 0
+    vextractf128   %4(%5 + 1), %2, 1
+    vextractf128  %4 %+ H(%5 + 1), %3, 1
+%endmacro
+
+%define INTERL INTERL_AVX
+
+DECL_PASS pass_avx, PASS_BIG 1
+DECL_PASS pass_interleave_avx, PASS_BIG 0
+
 INIT_XMM
-%define mova movaps
+
+%macro INTERL_SSE 5
+    mova     %3, %2
+    unpcklps %2, %1
+    unpckhps %3, %1
+    mova  %4(%5), %2
+    mova  %4(%5+1), %3
+%endmacro
+
+%define INTERL INTERL_SSE
+
 DECL_PASS pass_sse, PASS_BIG 1
 DECL_PASS pass_interleave_sse, PASS_BIG 0
 
@@ -457,8 +590,11 @@ DECL_PASS pass_interleave_3dn, PASS_BIG 0
 
 %macro DECL_FFT 2-3 ; nbits, cpu, suffix
 %xdefine list_of_fft fft4%2 SECTION_REL, fft8%2 SECTION_REL
-%if %1==5
+%if %1>=5
 %xdefine list_of_fft list_of_fft, fft16%2 SECTION_REL
+%endif
+%if %1>=6
+%xdefine list_of_fft list_of_fft, fft32%3%2 SECTION_REL
 %endif
 
 %assign n 1<<%1
@@ -492,9 +628,14 @@ section .text
 ; The others pass args in registers and don't spill anything.
 cglobal fft_dispatch%3%2, 2,5,8, z, nbits
     FFT_DISPATCH %3%2, nbits
+%ifidn %2, _avx
+    vzeroupper
+%endif
     RET
 %endmacro ; DECL_FFT
 
+DECL_FFT 6, _avx
+DECL_FFT 6, _avx, _interleave
 DECL_FFT 5, _sse
 DECL_FFT 5, _sse, _interleave
 DECL_FFT 4, _3dn
@@ -533,21 +674,53 @@ INIT_XMM
 %endmacro
 
 %macro CMUL 6 ;j, xmm0, xmm1, 3, 4, 5
-    movaps   xmm6, [%4+%1*2]
-    movaps   %2,   [%4+%1*2+0x10]
-    movaps   %3,   xmm6
-    movaps   xmm7, %2
-    mulps    xmm6, [%5+%1]
-    mulps    %2,   [%6+%1]
-    mulps    %3,   [%6+%1]
-    mulps    xmm7, [%5+%1]
-    subps    %2,   xmm6
-    addps    %3,   xmm7
+    mulps      m6, %3, [%5+%1]
+    mulps      m7, %2, [%5+%1]
+    mulps      %2, %2, [%6+%1]
+    mulps      %3, %3, [%6+%1]
+    subps      %2, %2, m6
+    addps      %3, %3, m7
+%endmacro
+
+%macro POSROTATESHUF_AVX 5 ;j, k, z+n8, tcos+n8, tsin+n8
+.post:
+    vmovaps      ymm1,   [%3+%1*2]
+    vmovaps      ymm0,   [%3+%1*2+0x20]
+    vmovaps      ymm3,   [%3+%2*2]
+    vmovaps      ymm2,   [%3+%2*2+0x20]
+
+    CMUL         %1, ymm0, ymm1, %3, %4, %5
+    CMUL         %2, ymm2, ymm3, %3, %4, %5
+    vshufps      ymm1, ymm1, ymm1, 0x1b
+    vshufps      ymm3, ymm3, ymm3, 0x1b
+    vperm2f128   ymm1, ymm1, ymm1, 0x01
+    vperm2f128   ymm3, ymm3, ymm3, 0x01
+    vunpcklps    ymm6, ymm2, ymm1
+    vunpckhps    ymm4, ymm2, ymm1
+    vunpcklps    ymm7, ymm0, ymm3
+    vunpckhps    ymm5, ymm0, ymm3
+
+    vextractf128 [%3+%1*2],      ymm7, 0
+    vextractf128 [%3+%1*2+0x10], ymm5, 0
+    vextractf128 [%3+%1*2+0x20], ymm7, 1
+    vextractf128 [%3+%1*2+0x30], ymm5, 1
+
+    vextractf128 [%3+%2*2],      ymm6, 0
+    vextractf128 [%3+%2*2+0x10], ymm4, 0
+    vextractf128 [%3+%2*2+0x20], ymm6, 1
+    vextractf128 [%3+%2*2+0x30], ymm4, 1
+    sub      %2,   0x20
+    add      %1,   0x20
+    jl       .post
 %endmacro
 
 %macro POSROTATESHUF 5 ;j, k, z+n8, tcos+n8, tsin+n8
 .post:
+    movaps   xmm1, [%3+%1*2]
+    movaps   xmm0, [%3+%1*2+0x10]
     CMUL     %1,   xmm0, xmm1, %3, %4, %5
+    movaps   xmm5, [%3+%2*2]
+    movaps   xmm4, [%3+%2*2+0x10]
     CMUL     %2,   xmm4, xmm5, %3, %4, %5
     shufps   xmm1, xmm1, 0x1b
     shufps   xmm5, xmm5, 0x1b
@@ -566,7 +739,8 @@ INIT_XMM
     jl       .post
 %endmacro
 
-cglobal imdct_half_sse, 3,7,8; FFTContext *s, FFTSample *output, const FFTSample *input
+%macro DECL_IMDCT 2
+cglobal imdct_half%1, 3,7,8; FFTContext *s, FFTSample *output, const FFTSample *input
 %ifdef ARCH_X86_64
 %define rrevtab r10
 %define rtcos   r11
@@ -641,7 +815,7 @@ cglobal imdct_half_sse, 3,7,8; FFTContext *s, FFTSample *output, const FFTSample
     mov  r0, r1
     mov  r1d, [r5+FFTContext.nbits]
 
-    FFT_DISPATCH _sse, r1
+    FFT_DISPATCH %1, r1
 
     mov  r0d, [r5+FFTContext.mdctsize]
     add  r6, r0
@@ -653,9 +827,9 @@ cglobal imdct_half_sse, 3,7,8; FFTContext *s, FFTSample *output, const FFTSample
     mov  rtsin, [esp+4]
 %endif
     neg  r0
-    mov  r1, -16
+    mov  r1, -mmsize
     sub  r1, r0
-    POSROTATESHUF r0, r1, r6, rtcos, rtsin
+    %2 r0, r1, r6, rtcos, rtsin
 %ifdef ARCH_X86_64
     pop  r14
     pop  r13
@@ -663,4 +837,14 @@ cglobal imdct_half_sse, 3,7,8; FFTContext *s, FFTSample *output, const FFTSample
 %else
     add esp, 12
 %endif
+%ifidn avx_enabled, 1
+    vzeroupper
+%endif
     RET
+%endmacro
+
+DECL_IMDCT _sse, POSROTATESHUF
+
+INIT_YMM
+
+DECL_IMDCT _avx, POSROTATESHUF_AVX

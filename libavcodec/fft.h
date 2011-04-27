@@ -85,6 +85,7 @@ struct FFTContext {
     int fft_permutation;
 #define FF_FFT_PERM_DEFAULT   0
 #define FF_FFT_PERM_SWAP_LSBS 1
+#define FF_FFT_PERM_AVX       2
     int mdct_permutation;
 #define FF_MDCT_PERM_NONE       0
 #define FF_MDCT_PERM_INTERLEAVE 1
@@ -97,7 +98,7 @@ struct FFTContext {
 #endif
 
 #define COSTABLE(size) \
-    COSTABLE_CONST DECLARE_ALIGNED(16, FFTSample, FFT_NAME(ff_cos_##size))[size/2]
+    COSTABLE_CONST DECLARE_ALIGNED(32, FFTSample, FFT_NAME(ff_cos_##size))[size/2]
 
 extern COSTABLE(16);
 extern COSTABLE(32);

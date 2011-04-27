@@ -74,8 +74,8 @@ typedef struct {
     int               gcBlkSwitch;
     gain_block        gainBlock[2];
 
-    DECLARE_ALIGNED(16, float, spectrum)[1024];
-    DECLARE_ALIGNED(16, float, IMDCT_buf)[1024];
+    DECLARE_ALIGNED(32, float, spectrum)[1024];
+    DECLARE_ALIGNED(32, float, IMDCT_buf)[1024];
 
     float             delayBuf1[46]; ///<qmf delay buffers
     float             delayBuf2[46];
@@ -122,7 +122,7 @@ typedef struct {
     FFTContext          mdct_ctx;
 } ATRAC3Context;
 
-static DECLARE_ALIGNED(16, float,mdct_window)[512];
+static DECLARE_ALIGNED(32, float, mdct_window)[512];
 static VLC              spectral_coeff_tab[7];
 static float            gain_tab1[16];
 static float            gain_tab2[31];

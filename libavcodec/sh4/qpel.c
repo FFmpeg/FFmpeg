@@ -897,7 +897,6 @@ QPEL_MC(0, avg_       , _       , op_avg)
 #undef op_put
 #undef op_put_no_rnd
 
-#if 1
 #define H264_LOWPASS(OPNAME, OP, OP2) \
 static inline void OPNAME ## h264_qpel_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride,int w,int h){\
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
@@ -1298,7 +1297,6 @@ H264_MC(avg_, 16)
 #undef op_put
 #undef op2_avg
 #undef op2_put
-#endif
 
 static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;

@@ -37,6 +37,7 @@
 #include "aac.h"
 #include "aacenc.h"
 #include "aactab.h"
+#include "libavutil/libm.h"
 
 /** bits needed to code codebook run value for long windows */
 static const uint8_t run_value_bits_long[64] = {

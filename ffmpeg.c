@@ -2908,6 +2908,10 @@ static void opt_frame_aspect_ratio(const char *arg)
         ffmpeg_exit(1);
     }
     frame_aspect_ratio = ar;
+
+    x = vfilters ? strlen(vfilters) : 0;
+    vfilters = av_realloc(vfilters, x+100);
+    snprintf(vfilters+x, x+100, "%csetdar=%f\n", x?',':' ', ar);
 }
 
 static int opt_metadata(const char *opt, const char *arg)

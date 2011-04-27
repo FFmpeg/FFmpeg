@@ -88,7 +88,7 @@ typedef struct {
 
     DSPContext dsp;
     FFTContext fft;
-    DECLARE_ALIGNED(16, FFTComplex, samples)[COEFFS/2];
+    DECLARE_ALIGNED(32, FFTComplex, samples)[COEFFS/2];
     float *out_samples;
 } IMCContext;
 

@@ -47,7 +47,7 @@ static av_cold void mdct_end(AC3MDCTContext *mdct)
 static av_cold int mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
                              int nbits)
 {
-    int ret = ff_mdct_init(&mdct->fft, nbits, 0, 1.0);
+    int ret = ff_mdct_init(&mdct->fft, nbits, 0, -1.0);
     mdct->window = ff_ac3_window;
     return ret;
 }
