@@ -55,8 +55,11 @@ static void add_bytes_l2_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
 #define PAETH(cpu, abs3)\
 static void add_paeth_prediction_##cpu(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp)\
 {\
-    x86_reg i = -bpp;\
-    x86_reg end = w-3;\
+    x86_reg i, end;\
+    if(bpp>4) add_paeth_prediction_##cpu(dst+bpp/2, src+bpp/2, top+bpp/2, w-bpp/2, -bpp);\
+    if(bpp<0) bpp=-bpp;\
+    i= -bpp;\
+    end = w-3;\
     __asm__ volatile(\
         "pxor      %%mm7, %%mm7 \n"\
         "movd    (%1,%0), %%mm0 \n"\
