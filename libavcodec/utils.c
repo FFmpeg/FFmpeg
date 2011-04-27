@@ -1154,11 +1154,9 @@ void av_log_missing_feature(void *avc, const char *feature, int want_sample)
     av_log(avc, AV_LOG_WARNING, "%s not implemented. Update your Libav "
             "version to the newest one from Git. If the problem still "
             "occurs, it means that your file has a feature which has not "
-            "been implemented.", feature);
+            "been implemented.\n", feature);
     if(want_sample)
         av_log_ask_for_sample(avc, NULL);
-    else
-        av_log(avc, AV_LOG_WARNING, "\n");
 }
 
 void av_log_ask_for_sample(void *avc, const char *msg, ...)
