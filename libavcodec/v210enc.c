@@ -43,7 +43,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     avctx->coded_frame = avcodec_alloc_frame();
 
     avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = FF_I_TYPE;
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     return 0;
 }

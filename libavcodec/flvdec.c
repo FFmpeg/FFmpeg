@@ -88,10 +88,10 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
     s->width = width;
     s->height = height;
 
-    s->pict_type = FF_I_TYPE + get_bits(&s->gb, 2);
-    s->dropable= s->pict_type > FF_P_TYPE;
+    s->pict_type = AV_PICTURE_TYPE_I + get_bits(&s->gb, 2);
+    s->dropable= s->pict_type > AV_PICTURE_TYPE_P;
     if (s->dropable)
-        s->pict_type = FF_P_TYPE;
+        s->pict_type = AV_PICTURE_TYPE_P;
 
     skip_bits1(&s->gb); /* deblocking flag */
     s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);

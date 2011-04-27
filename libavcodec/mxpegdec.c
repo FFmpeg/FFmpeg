@@ -256,11 +256,11 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
                         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                         return AVERROR(ENOMEM);
                     }
-                    jpg->picture_ptr->pict_type = FF_P_TYPE;
+                    jpg->picture_ptr->pict_type = AV_PICTURE_TYPE_P;
                     jpg->picture_ptr->key_frame = 0;
                     jpg->got_picture = 1;
                 } else {
-                    jpg->picture_ptr->pict_type = FF_I_TYPE;
+                    jpg->picture_ptr->pict_type = AV_PICTURE_TYPE_I;
                     jpg->picture_ptr->key_frame = 1;
                 }
 

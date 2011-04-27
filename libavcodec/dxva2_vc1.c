@@ -42,11 +42,11 @@ static void fill_picture_parameters(AVCodecContext *avctx,
     memset(pp, 0, sizeof(*pp));
     pp->wDecodedPictureIndex    =
     pp->wDeblockedPictureIndex  = ff_dxva2_get_surface_index(ctx, current_picture);
-    if (s->pict_type != FF_I_TYPE)
+    if (s->pict_type != AV_PICTURE_TYPE_I)
         pp->wForwardRefPictureIndex = ff_dxva2_get_surface_index(ctx, &s->last_picture);
     else
         pp->wForwardRefPictureIndex = 0xffff;
-    if (s->pict_type == FF_B_TYPE)
+    if (s->pict_type == AV_PICTURE_TYPE_B)
         pp->wBackwardRefPictureIndex = ff_dxva2_get_surface_index(ctx, &s->next_picture);
     else
         pp->wBackwardRefPictureIndex = 0xffff;
@@ -69,8 +69,8 @@ static void fill_picture_parameters(AVCodecContext *avctx,
     if (s->picture_structure & PICT_BOTTOM_FIELD)
         pp->bPicStructure      |= 0x02;
     pp->bSecondField            = v->interlace && v->fcm != 0x03 && !s->first_field;
-    pp->bPicIntra               = s->pict_type == FF_I_TYPE;
-    pp->bPicBackwardPrediction  = s->pict_type == FF_B_TYPE;
+    pp->bPicIntra               = s->pict_type == AV_PICTURE_TYPE_I;
+    pp->bPicBackwardPrediction  = s->pict_type == AV_PICTURE_TYPE_B;
     pp->bBidirectionalAveragingMode = (1                                           << 7) |
                                       ((ctx->cfg->ConfigIntraResidUnsigned != 0)   << 6) |
                                       ((ctx->cfg->ConfigResidDiffAccelerator != 0) << 5) |
@@ -108,10 +108,10 @@ static void fill_picture_parameters(AVCodecContext *avctx,
                                   (v->interlace                << 5) |
                                   (v->tfcntrflag               << 4) |
                                   (v->finterpflag              << 3) |
-                                  ((s->pict_type != FF_B_TYPE) << 2) |
+                                  ((s->pict_type != AV_PICTURE_TYPE_B) << 2) |
                                   (v->psf                      << 1) |
                                   (v->extended_dmv                 );
-    if (s->pict_type != FF_I_TYPE)
+    if (s->pict_type != AV_PICTURE_TYPE_I)
         pp->bPic4MVallowed      = v->mv_mode == MV_PMODE_MIXED_MV ||
                                   (v->mv_mode == MV_PMODE_INTENSITY_COMP &&
                                    v->mv_mode2 == MV_PMODE_MIXED_MV);

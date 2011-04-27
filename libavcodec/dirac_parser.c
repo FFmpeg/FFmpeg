@@ -194,7 +194,7 @@ static int dirac_combine_frame(AVCodecParserContext *s, AVCodecContext *avctx,
                 avctx->has_b_frames = 1;
         }
         if (avctx->has_b_frames && s->pts == s->dts)
-             s->pict_type = FF_B_TYPE;
+             s->pict_type = AV_PICTURE_TYPE_B;
 
         /* Finally have a complete Dirac data unit */
         *buf      = pc->dirac_unit;

@@ -72,10 +72,10 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
     pic_param->picture_coding_extension.bits.is_first_field     = mpeg2_get_is_frame_start(s);
 
     switch (s->pict_type) {
-    case FF_B_TYPE:
+    case AV_PICTURE_TYPE_B:
         pic_param->backward_reference_picture = ff_vaapi_get_surface_id(&s->next_picture);
         // fall-through
-    case FF_P_TYPE:
+    case AV_PICTURE_TYPE_P:
         pic_param->forward_reference_picture = ff_vaapi_get_surface_id(&s->last_picture);
         break;
     }

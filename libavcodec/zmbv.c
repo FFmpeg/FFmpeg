@@ -500,11 +500,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
     if(c->flags & ZMBV_KEYFRAME) {
         c->pic.key_frame = 1;
-        c->pic.pict_type = FF_I_TYPE;
+        c->pic.pict_type = AV_PICTURE_TYPE_I;
         c->decode_intra(c);
     } else {
         c->pic.key_frame = 0;
-        c->pic.pict_type = FF_P_TYPE;
+        c->pic.pict_type = AV_PICTURE_TYPE_P;
         if(c->decomp_len)
             c->decode_xor(c);
     }

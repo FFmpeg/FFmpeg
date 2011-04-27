@@ -61,7 +61,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (avctx->get_buffer(avctx, pic) < 0)
         return -1;
 
-    pic->pict_type = FF_I_TYPE;
+    pic->pict_type = AV_PICTURE_TYPE_I;
     pic->key_frame = 1;
     pic->interlaced_frame = 1;
     pic->top_field_first = 1;

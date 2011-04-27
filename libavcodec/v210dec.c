@@ -63,7 +63,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     y = (uint16_t*)pic->data[0];
     u = (uint16_t*)pic->data[1];
     v = (uint16_t*)pic->data[2];
-    pic->pict_type = FF_I_TYPE;
+    pic->pict_type = AV_PICTURE_TYPE_I;
     pic->key_frame = 1;
 
 #define READ_PIXELS(a, b, c)         \

@@ -92,7 +92,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         if (!context->buffer)
             return -1;
     }
-    context->pic.pict_type = FF_I_TYPE;
+    context->pic.pict_type = AV_PICTURE_TYPE_I;
     context->pic.key_frame = 1;
 
     avctx->coded_frame= &context->pic;

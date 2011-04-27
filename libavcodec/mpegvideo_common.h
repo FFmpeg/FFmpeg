@@ -649,7 +649,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
 
     prefetch_motion(s, ref_picture, dir);
 
-    if(!is_mpeg12 && s->obmc && s->pict_type != FF_B_TYPE){
+    if(!is_mpeg12 && s->obmc && s->pict_type != AV_PICTURE_TYPE_B){
         int16_t mv_cache[4][4][2];
         const int xy= s->mb_x + s->mb_y*s->mb_stride;
         const int mot_stride= s->b8_stride;
@@ -816,7 +816,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
                             s->mv[dir][1][0], s->mv[dir][1][1], 8, mb_y);
             }
         } else {
-            if(s->picture_structure != s->field_select[dir][0] + 1 && s->pict_type != FF_B_TYPE && !s->first_field){
+            if(s->picture_structure != s->field_select[dir][0] + 1 && s->pict_type != AV_PICTURE_TYPE_B && !s->first_field){
                 ref_picture= s->current_picture_ptr->data;
             }
 
@@ -831,7 +831,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
             uint8_t ** ref2picture;
 
             if(s->picture_structure == s->field_select[dir][i] + 1
-               || s->pict_type == FF_B_TYPE || s->first_field){
+               || s->pict_type == AV_PICTURE_TYPE_B || s->first_field){
                 ref2picture= ref_picture;
             }else{
                 ref2picture= s->current_picture_ptr->data;

@@ -180,7 +180,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (video_size) {
         s->frame.key_frame           = 1;
-        s->frame.pict_type           = FF_I_TYPE;
+        s->frame.pict_type           = AV_PICTURE_TYPE_I;
         s->frame.palette_has_changed = s->palette_has_changed;
         s->palette_has_changed       = 0;
         memcpy(s->frame.data[1], s->palette, AVPALETTE_SIZE);

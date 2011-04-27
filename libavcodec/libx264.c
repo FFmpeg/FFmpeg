@@ -110,9 +110,9 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
 
         x4->pic.i_pts  = frame->pts;
         x4->pic.i_type =
-            frame->pict_type == FF_I_TYPE ? X264_TYPE_KEYFRAME :
-            frame->pict_type == FF_P_TYPE ? X264_TYPE_P :
-            frame->pict_type == FF_B_TYPE ? X264_TYPE_B :
+            frame->pict_type == AV_PICTURE_TYPE_I ? X264_TYPE_KEYFRAME :
+            frame->pict_type == AV_PICTURE_TYPE_P ? X264_TYPE_P :
+            frame->pict_type == AV_PICTURE_TYPE_B ? X264_TYPE_B :
                                             X264_TYPE_AUTO;
         if (x4->params.b_tff != frame->top_field_first) {
             x4->params.b_tff = frame->top_field_first;
@@ -135,14 +135,14 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     switch (pic_out.i_type) {
     case X264_TYPE_IDR:
     case X264_TYPE_I:
-        x4->out_pic.pict_type = FF_I_TYPE;
+        x4->out_pic.pict_type = AV_PICTURE_TYPE_I;
         break;
     case X264_TYPE_P:
-        x4->out_pic.pict_type = FF_P_TYPE;
+        x4->out_pic.pict_type = AV_PICTURE_TYPE_P;
         break;
     case X264_TYPE_B:
     case X264_TYPE_BREF:
-        x4->out_pic.pict_type = FF_B_TYPE;
+        x4->out_pic.pict_type = AV_PICTURE_TYPE_B;
         break;
     }
 

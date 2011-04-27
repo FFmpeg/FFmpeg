@@ -918,7 +918,7 @@ static void decode_postinit(H264Context *h){
     else if((out_of_order && pics-1 == s->avctx->has_b_frames && s->avctx->has_b_frames < MAX_DELAYED_PIC_COUNT)
        || (s->low_delay &&
         ((h->next_outputed_poc != INT_MIN && out->poc > h->next_outputed_poc + 2)
-         || cur->pict_type == FF_B_TYPE)))
+         || cur->pict_type == AV_PICTURE_TYPE_B)))
     {
         s->low_delay = 0;
         s->avctx->has_b_frames++;
@@ -1449,7 +1449,7 @@ static int pred_weight_table(H264Context *h){
                 }
             }
         }
-        if(h->slice_type_nos != FF_B_TYPE) break;
+        if(h->slice_type_nos != AV_PICTURE_TYPE_B) break;
     }
     h->use_weight= h->use_weight || h->use_weight_chroma;
     return 0;
@@ -1817,7 +1817,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         h->slice_type_fixed=0;
 
     slice_type= golomb_to_pict_type[ slice_type ];
-    if (slice_type == FF_I_TYPE
+    if (slice_type == AV_PICTURE_TYPE_I
         || (h0->current_slice != 0 && slice_type == h0->last_slice_type) ) {
         default_ref_list_done = 1;
     }
@@ -2110,15 +2110,15 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->ref_count[0]= h->pps.ref_count[0];
     h->ref_count[1]= h->pps.ref_count[1];
 
-    if(h->slice_type_nos != FF_I_TYPE){
-        if(h->slice_type_nos == FF_B_TYPE){
+    if(h->slice_type_nos != AV_PICTURE_TYPE_I){
+        if(h->slice_type_nos == AV_PICTURE_TYPE_B){
             h->direct_spatial_mv_pred= get_bits1(&s->gb);
         }
         num_ref_idx_active_override_flag= get_bits1(&s->gb);
 
         if(num_ref_idx_active_override_flag){
             h->ref_count[0]= get_ue_golomb(&s->gb) + 1;
-            if(h->slice_type_nos==FF_B_TYPE)
+            if(h->slice_type_nos==AV_PICTURE_TYPE_B)
                 h->ref_count[1]= get_ue_golomb(&s->gb) + 1;
 
             if(h->ref_count[0]-1 > 32-1 || h->ref_count[1]-1 > 32-1){
@@ -2127,7 +2127,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 return -1;
             }
         }
-        if(h->slice_type_nos == FF_B_TYPE)
+        if(h->slice_type_nos == AV_PICTURE_TYPE_B)
             h->list_count= 2;
         else
             h->list_count= 1;
@@ -2138,22 +2138,22 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         ff_h264_fill_default_ref_list(h);
     }
 
-    if(h->slice_type_nos!=FF_I_TYPE && ff_h264_decode_ref_pic_list_reordering(h) < 0)
+    if(h->slice_type_nos!=AV_PICTURE_TYPE_I && ff_h264_decode_ref_pic_list_reordering(h) < 0)
         return -1;
 
-    if(h->slice_type_nos!=FF_I_TYPE){
+    if(h->slice_type_nos!=AV_PICTURE_TYPE_I){
         s->last_picture_ptr= &h->ref_list[0][0];
         ff_copy_picture(&s->last_picture, s->last_picture_ptr);
     }
-    if(h->slice_type_nos==FF_B_TYPE){
+    if(h->slice_type_nos==AV_PICTURE_TYPE_B){
         s->next_picture_ptr= &h->ref_list[1][0];
         ff_copy_picture(&s->next_picture, s->next_picture_ptr);
     }
 
-    if(   (h->pps.weighted_pred          && h->slice_type_nos == FF_P_TYPE )
-       ||  (h->pps.weighted_bipred_idc==1 && h->slice_type_nos== FF_B_TYPE ) )
+    if(   (h->pps.weighted_pred          && h->slice_type_nos == AV_PICTURE_TYPE_P )
+       ||  (h->pps.weighted_bipred_idc==1 && h->slice_type_nos== AV_PICTURE_TYPE_B ) )
         pred_weight_table(h);
-    else if(h->pps.weighted_bipred_idc==2 && h->slice_type_nos== FF_B_TYPE){
+    else if(h->pps.weighted_bipred_idc==2 && h->slice_type_nos== AV_PICTURE_TYPE_B){
         implicit_weight_table(h, -1);
     }else {
         h->use_weight = 0;
@@ -2169,17 +2169,17 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(FRAME_MBAFF){
         ff_h264_fill_mbaff_ref_list(h);
 
-        if(h->pps.weighted_bipred_idc==2 && h->slice_type_nos== FF_B_TYPE){
+        if(h->pps.weighted_bipred_idc==2 && h->slice_type_nos== AV_PICTURE_TYPE_B){
             implicit_weight_table(h, 0);
             implicit_weight_table(h, 1);
         }
     }
 
-    if(h->slice_type_nos==FF_B_TYPE && !h->direct_spatial_mv_pred)
+    if(h->slice_type_nos==AV_PICTURE_TYPE_B && !h->direct_spatial_mv_pred)
         ff_h264_direct_dist_scale_factor(h);
     ff_h264_direct_ref_list_init(h);
 
-    if( h->slice_type_nos != FF_I_TYPE && h->pps.cabac ){
+    if( h->slice_type_nos != AV_PICTURE_TYPE_I && h->pps.cabac ){
         tmp = get_ue_golomb_31(&s->gb);
         if(tmp > 2){
             av_log(s->avctx, AV_LOG_ERROR, "cabac_init_idc overflow\n");
@@ -2198,10 +2198,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
     h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
     //FIXME qscale / qp ... stuff
-    if(h->slice_type == FF_SP_TYPE){
+    if(h->slice_type == AV_PICTURE_TYPE_SP){
         get_bits1(&s->gb); /* sp_for_switch_flag */
     }
-    if(h->slice_type==FF_SP_TYPE || h->slice_type == FF_SI_TYPE){
+    if(h->slice_type==AV_PICTURE_TYPE_SP || h->slice_type == AV_PICTURE_TYPE_SI){
         get_se_golomb(&s->gb); /* slice_qs_delta */
     }
 
@@ -2230,8 +2230,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
 
     if(   s->avctx->skip_loop_filter >= AVDISCARD_ALL
-       ||(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && h->slice_type_nos != FF_I_TYPE)
-       ||(s->avctx->skip_loop_filter >= AVDISCARD_BIDIR  && h->slice_type_nos == FF_B_TYPE)
+       ||(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && h->slice_type_nos != AV_PICTURE_TYPE_I)
+       ||(s->avctx->skip_loop_filter >= AVDISCARD_BIDIR  && h->slice_type_nos == AV_PICTURE_TYPE_B)
        ||(s->avctx->skip_loop_filter >= AVDISCARD_NONREF && h->nal_ref_idc == 0))
         h->deblocking_filter= 0;
 
@@ -2315,7 +2315,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                h->deblocking_filter, h->slice_alpha_c0_offset/2-26, h->slice_beta_offset/2-26,
                h->use_weight,
                h->use_weight==1 && h->use_weight_chroma ? "c" : "",
-               h->slice_type == FF_B_TYPE ? (h->direct_spatial_mv_pred ? "SPAT" : "TEMP") : ""
+               h->slice_type == AV_PICTURE_TYPE_B ? (h->direct_spatial_mv_pred ? "SPAT" : "TEMP") : ""
                );
     }
 
@@ -2325,11 +2325,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 int ff_h264_get_slice_type(const H264Context *h)
 {
     switch (h->slice_type) {
-    case FF_P_TYPE:  return 0;
-    case FF_B_TYPE:  return 1;
-    case FF_I_TYPE:  return 2;
-    case FF_SP_TYPE: return 3;
-    case FF_SI_TYPE: return 4;
+    case AV_PICTURE_TYPE_P:  return 0;
+    case AV_PICTURE_TYPE_B:  return 1;
+    case AV_PICTURE_TYPE_I:  return 2;
+    case AV_PICTURE_TYPE_SP: return 3;
+    case AV_PICTURE_TYPE_SI: return 4;
     default:         return -1;
     }
 }
@@ -3000,8 +3000,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 
             if(hx->redundant_pic_count==0
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
-               && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=FF_B_TYPE)
-               && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==FF_I_TYPE)
+               && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=AV_PICTURE_TYPE_B)
+               && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==AV_PICTURE_TYPE_I)
                && avctx->skip_frame < AVDISCARD_ALL){
                 if(avctx->hwaccel) {
                     if (avctx->hwaccel->decode_slice(avctx, &buf[buf_index - consumed], consumed) < 0)
@@ -3037,8 +3037,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             if(hx->redundant_pic_count==0 && hx->intra_gb_ptr && hx->s.data_partitioning
                && s->context_initialized
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
-               && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=FF_B_TYPE)
-               && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==FF_I_TYPE)
+               && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=AV_PICTURE_TYPE_B)
+               && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==AV_PICTURE_TYPE_I)
                && avctx->skip_frame < AVDISCARD_ALL)
                 context_count++;
             break;

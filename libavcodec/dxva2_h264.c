@@ -246,7 +246,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
     slice->slice_qs_delta    = 0; /* XXX not implemented by FFmpeg */
     slice->slice_qp_delta    = s->qscale - h->pps.init_qp;
     slice->redundant_pic_cnt = h->redundant_pic_count;
-    if (h->slice_type == FF_B_TYPE)
+    if (h->slice_type == AV_PICTURE_TYPE_B)
         slice->direct_spatial_mv_pred_flag = h->direct_spatial_mv_pred;
     slice->cabac_init_idc = h->pps.cabac ? h->cabac_init_idc : 0;
     if (h->deblocking_filter < 2)
@@ -403,7 +403,7 @@ static int decode_slice(AVCodecContext *avctx,
                         position, size);
     ctx_pic->slice_count++;
 
-    if (h->slice_type != FF_I_TYPE && h->slice_type != FF_SI_TYPE)
+    if (h->slice_type != AV_PICTURE_TYPE_I && h->slice_type != AV_PICTURE_TYPE_SI)
         ctx_pic->pp.wBitFields &= ~(1 << 15); /* Set IntraPicFlag to 0 */
     return 0;
 }

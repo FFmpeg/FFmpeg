@@ -259,10 +259,10 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, AVPa
 
     if (header & KMVC_KEYFRAME) {
         ctx->pic.key_frame = 1;
-        ctx->pic.pict_type = FF_I_TYPE;
+        ctx->pic.pict_type = AV_PICTURE_TYPE_I;
     } else {
         ctx->pic.key_frame = 0;
-        ctx->pic.pict_type = FF_P_TYPE;
+        ctx->pic.pict_type = AV_PICTURE_TYPE_P;
     }
 
     if (header & KMVC_PALETTE) {

@@ -313,8 +313,8 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
     /* It might be nicer if the application would keep track of these
      * but it would require an API change. */
     memmove(s->prev_pict_types+1, s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE-1);
-    s->prev_pict_types[0]= s->dropable ? FF_B_TYPE : s->pict_type;
-    if(pic->age < PREV_PICT_TYPES_BUFFER_SIZE && s->prev_pict_types[pic->age] == FF_B_TYPE)
+    s->prev_pict_types[0]= s->dropable ? AV_PICTURE_TYPE_B : s->pict_type;
+    if(pic->age < PREV_PICT_TYPES_BUFFER_SIZE && s->prev_pict_types[pic->age] == AV_PICTURE_TYPE_B)
         pic->age= INT_MAX; // Skipped MBs in B-frames are quite rare in MPEG-1/2 and it is a bit tricky to skip them anyway.
     pic->owner2 = s;
 
@@ -527,7 +527,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src
         s->last_pict_type= s1->pict_type;
         if (s1->current_picture_ptr) s->last_lambda_for[s1->pict_type] = s1->current_picture_ptr->quality;
 
-        if(s1->pict_type!=FF_B_TYPE){
+        if(s1->pict_type!=AV_PICTURE_TYPE_B){
             s->last_non_b_pict_type= s1->pict_type;
         }
     }
@@ -1023,7 +1023,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     assert(s->last_picture_ptr==NULL || s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3);
 
     /* mark&release old frames */
-    if (s->pict_type != FF_B_TYPE && s->last_picture_ptr && s->last_picture_ptr != s->next_picture_ptr && s->last_picture_ptr->data[0]) {
+    if (s->pict_type != AV_PICTURE_TYPE_B && s->last_picture_ptr && s->last_picture_ptr != s->next_picture_ptr && s->last_picture_ptr->data[0]) {
       if(s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3){
           free_frame_buffer(s, s->last_picture_ptr);
 
@@ -1054,7 +1054,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         if (!s->dropable){
             if (s->codec_id == CODEC_ID_H264)
                 pic->reference = s->picture_structure;
-            else if (s->pict_type != FF_B_TYPE)
+            else if (s->pict_type != AV_PICTURE_TYPE_B)
                 pic->reference = 3;
         }
 
@@ -1077,11 +1077,11 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     s->current_picture_ptr->pict_type= s->pict_type;
 //    if(s->flags && CODEC_FLAG_QSCALE)
   //      s->current_picture_ptr->quality= s->new_picture_ptr->quality;
-    s->current_picture_ptr->key_frame= s->pict_type == FF_I_TYPE;
+    s->current_picture_ptr->key_frame= s->pict_type == AV_PICTURE_TYPE_I;
 
     ff_copy_picture(&s->current_picture, s->current_picture_ptr);
 
-    if (s->pict_type != FF_B_TYPE) {
+    if (s->pict_type != AV_PICTURE_TYPE_B) {
         s->last_picture_ptr= s->next_picture_ptr;
         if(!s->dropable)
             s->next_picture_ptr= s->current_picture_ptr;
@@ -1093,7 +1093,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         s->pict_type, s->dropable);*/
 
     if(s->codec_id != CODEC_ID_H264){
-        if((s->last_picture_ptr==NULL || s->last_picture_ptr->data[0]==NULL) && s->pict_type!=FF_I_TYPE){
+        if((s->last_picture_ptr==NULL || s->last_picture_ptr->data[0]==NULL) && s->pict_type!=AV_PICTURE_TYPE_I){
             av_log(avctx, AV_LOG_ERROR, "warning: first frame is no keyframe\n");
             /* Allocate a dummy frame */
             i= ff_find_unused_picture(s, 0);
@@ -1103,7 +1103,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             ff_thread_report_progress((AVFrame*)s->last_picture_ptr, INT_MAX, 0);
             ff_thread_report_progress((AVFrame*)s->last_picture_ptr, INT_MAX, 1);
         }
-        if((s->next_picture_ptr==NULL || s->next_picture_ptr->data[0]==NULL) && s->pict_type==FF_B_TYPE){
+        if((s->next_picture_ptr==NULL || s->next_picture_ptr->data[0]==NULL) && s->pict_type==AV_PICTURE_TYPE_B){
             /* Allocate a dummy frame */
             i= ff_find_unused_picture(s, 0);
             s->next_picture_ptr= &s->picture[i];
@@ -1117,7 +1117,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     if(s->last_picture_ptr) ff_copy_picture(&s->last_picture, s->last_picture_ptr);
     if(s->next_picture_ptr) ff_copy_picture(&s->next_picture, s->next_picture_ptr);
 
-    assert(s->pict_type == FF_I_TYPE || (s->last_picture_ptr && s->last_picture_ptr->data[0]));
+    assert(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr && s->last_picture_ptr->data[0]));
 
     if(s->picture_structure!=PICT_FRAME && s->out_format != FMT_H264){
         int i;
@@ -1185,7 +1185,7 @@ void MPV_frame_end(MpegEncContext *s)
 
     s->last_pict_type    = s->pict_type;
     s->last_lambda_for[s->pict_type]= s->current_picture_ptr->quality;
-    if(s->pict_type!=FF_B_TYPE){
+    if(s->pict_type!=AV_PICTURE_TYPE_B){
         s->last_non_b_pict_type= s->pict_type;
     }
 #if 0
@@ -1314,12 +1314,12 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
 
         av_log(s->avctx,AV_LOG_DEBUG,"New frame, type: ");
         switch (pict->pict_type) {
-            case FF_I_TYPE: av_log(s->avctx,AV_LOG_DEBUG,"I\n"); break;
-            case FF_P_TYPE: av_log(s->avctx,AV_LOG_DEBUG,"P\n"); break;
-            case FF_B_TYPE: av_log(s->avctx,AV_LOG_DEBUG,"B\n"); break;
-            case FF_S_TYPE: av_log(s->avctx,AV_LOG_DEBUG,"S\n"); break;
-            case FF_SI_TYPE: av_log(s->avctx,AV_LOG_DEBUG,"SI\n"); break;
-            case FF_SP_TYPE: av_log(s->avctx,AV_LOG_DEBUG,"SP\n"); break;
+            case AV_PICTURE_TYPE_I: av_log(s->avctx,AV_LOG_DEBUG,"I\n"); break;
+            case AV_PICTURE_TYPE_P: av_log(s->avctx,AV_LOG_DEBUG,"P\n"); break;
+            case AV_PICTURE_TYPE_B: av_log(s->avctx,AV_LOG_DEBUG,"B\n"); break;
+            case AV_PICTURE_TYPE_S: av_log(s->avctx,AV_LOG_DEBUG,"S\n"); break;
+            case AV_PICTURE_TYPE_SI: av_log(s->avctx,AV_LOG_DEBUG,"SI\n"); break;
+            case AV_PICTURE_TYPE_SP: av_log(s->avctx,AV_LOG_DEBUG,"SP\n"); break;
         }
         for(y=0; y<s->mb_height; y++){
             for(x=0; x<s->mb_width; x++){
@@ -1415,15 +1415,15 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                   for(type=0; type<3; type++){
                     int direction = 0;
                     switch (type) {
-                      case 0: if ((!(s->avctx->debug_mv&FF_DEBUG_VIS_MV_P_FOR)) || (pict->pict_type!=FF_P_TYPE))
+                      case 0: if ((!(s->avctx->debug_mv&FF_DEBUG_VIS_MV_P_FOR)) || (pict->pict_type!=AV_PICTURE_TYPE_P))
                                 continue;
                               direction = 0;
                               break;
-                      case 1: if ((!(s->avctx->debug_mv&FF_DEBUG_VIS_MV_B_FOR)) || (pict->pict_type!=FF_B_TYPE))
+                      case 1: if ((!(s->avctx->debug_mv&FF_DEBUG_VIS_MV_B_FOR)) || (pict->pict_type!=AV_PICTURE_TYPE_B))
                                 continue;
                               direction = 0;
                               break;
-                      case 2: if ((!(s->avctx->debug_mv&FF_DEBUG_VIS_MV_B_BACK)) || (pict->pict_type!=FF_B_TYPE))
+                      case 2: if ((!(s->avctx->debug_mv&FF_DEBUG_VIS_MV_B_BACK)) || (pict->pict_type!=AV_PICTURE_TYPE_B))
                                 continue;
                               direction = 1;
                               break;
@@ -1819,7 +1819,7 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
                         ref_picture, pix_op,
                         s->mv[dir][1][0], s->mv[dir][1][1], block_s, mb_y);
         } else {
-            if(s->picture_structure != s->field_select[dir][0] + 1 && s->pict_type != FF_B_TYPE && !s->first_field){
+            if(s->picture_structure != s->field_select[dir][0] + 1 && s->pict_type != AV_PICTURE_TYPE_B && !s->first_field){
                 ref_picture= s->current_picture_ptr->data;
             }
 
@@ -1833,7 +1833,7 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
         for(i=0; i<2; i++){
             uint8_t ** ref2picture;
 
-            if(s->picture_structure == s->field_select[dir][i] + 1 || s->pict_type == FF_B_TYPE || s->first_field){
+            if(s->picture_structure == s->field_select[dir][i] + 1 || s->pict_type == AV_PICTURE_TYPE_B || s->first_field){
                 ref2picture= ref_picture;
             }else{
                 ref2picture= s->current_picture_ptr->data;
@@ -2029,14 +2029,14 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
     else if (!is_mpeg12 && (s->h263_pred || s->h263_aic))
         s->mbintra_table[mb_xy]=1;
 
-    if ((s->flags&CODEC_FLAG_PSNR) || !(s->encoding && (s->intra_only || s->pict_type==FF_B_TYPE) && s->avctx->mb_decision != FF_MB_DECISION_RD)) { //FIXME precalc
+    if ((s->flags&CODEC_FLAG_PSNR) || !(s->encoding && (s->intra_only || s->pict_type==AV_PICTURE_TYPE_B) && s->avctx->mb_decision != FF_MB_DECISION_RD)) { //FIXME precalc
         uint8_t *dest_y, *dest_cb, *dest_cr;
         int dct_linesize, dct_offset;
         op_pixels_func (*op_pix)[4];
         qpel_mc_func (*op_qpix)[16];
         const int linesize= s->current_picture.linesize[0]; //not s->linesize as this would be wrong for field pics
         const int uvlinesize= s->current_picture.linesize[1];
-        const int readable= s->pict_type != FF_B_TYPE || s->encoding || s->avctx->draw_horiz_band || lowres_flag;
+        const int readable= s->pict_type != AV_PICTURE_TYPE_B || s->encoding || s->avctx->draw_horiz_band || lowres_flag;
         const int block_size= lowres_flag ? 8>>s->avctx->lowres : 8;
 
         /* avoid copy if macroblock skipped in last frame too */
@@ -2049,7 +2049,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
 
             if (s->mb_skipped) {
                 s->mb_skipped= 0;
-                assert(s->pict_type!=FF_I_TYPE);
+                assert(s->pict_type!=AV_PICTURE_TYPE_I);
 
                 (*mbskip_ptr) ++; /* indicate that this time we skipped it */
                 if(*mbskip_ptr >99) *mbskip_ptr= 99;
@@ -2105,7 +2105,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                     }
                 }else{
                     op_qpix= s->me.qpel_put;
-                    if ((!s->no_rounding) || s->pict_type==FF_B_TYPE){
+                    if ((!s->no_rounding) || s->pict_type==AV_PICTURE_TYPE_B){
                         op_pix = s->dsp.put_pixels_tab;
                     }else{
                         op_pix = s->dsp.put_no_rnd_pixels_tab;
@@ -2123,8 +2123,8 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
 
             /* skip dequant / idct if we are really late ;) */
             if(s->avctx->skip_idct){
-                if(  (s->avctx->skip_idct >= AVDISCARD_NONREF && s->pict_type == FF_B_TYPE)
-                   ||(s->avctx->skip_idct >= AVDISCARD_NONKEY && s->pict_type != FF_I_TYPE)
+                if(  (s->avctx->skip_idct >= AVDISCARD_NONREF && s->pict_type == AV_PICTURE_TYPE_B)
+                   ||(s->avctx->skip_idct >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I)
                    || s->avctx->skip_idct >= AVDISCARD_ALL)
                     goto skip_idct;
             }
@@ -2287,14 +2287,14 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
         AVFrame *src;
         int offset[4];
 
-        if(s->pict_type==FF_B_TYPE || s->low_delay || (s->avctx->slice_flags&SLICE_FLAG_CODED_ORDER))
+        if(s->pict_type==AV_PICTURE_TYPE_B || s->low_delay || (s->avctx->slice_flags&SLICE_FLAG_CODED_ORDER))
             src= (AVFrame*)s->current_picture_ptr;
         else if(s->last_picture_ptr)
             src= (AVFrame*)s->last_picture_ptr;
         else
             return;
 
-        if(s->pict_type==FF_B_TYPE && s->picture_structure == PICT_FRAME && s->out_format != FMT_H264){
+        if(s->pict_type==AV_PICTURE_TYPE_B && s->picture_structure == PICT_FRAME && s->out_format != FMT_H264){
             offset[0]=
             offset[1]=
             offset[2]=
@@ -2330,7 +2330,7 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     s->dest[1] = s->current_picture.data[1] + ((s->mb_x - 1) << (mb_size - s->chroma_x_shift));
     s->dest[2] = s->current_picture.data[2] + ((s->mb_x - 1) << (mb_size - s->chroma_x_shift));
 
-    if(!(s->pict_type==FF_B_TYPE && s->avctx->draw_horiz_band && s->picture_structure==PICT_FRAME))
+    if(!(s->pict_type==AV_PICTURE_TYPE_B && s->avctx->draw_horiz_band && s->picture_structure==PICT_FRAME))
     {
         if(s->picture_structure==PICT_FRAME){
         s->dest[0] += s->mb_y *   linesize << mb_size;
@@ -2609,6 +2609,6 @@ void ff_set_qscale(MpegEncContext * s, int qscale)
 
 void MPV_report_decode_progress(MpegEncContext *s)
 {
-    if (s->pict_type != FF_B_TYPE && !s->partitioned_frame)
+    if (s->pict_type != AV_PICTURE_TYPE_B && !s->partitioned_frame)
         ff_thread_report_progress((AVFrame*)s->current_picture_ptr, s->mb_y, 0);
 }

@@ -1493,7 +1493,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         avctx->release_buffer(avctx, curframe);
 
     curframe->key_frame = s->keyframe;
-    curframe->pict_type = s->keyframe ? FF_I_TYPE : FF_P_TYPE;
+    curframe->pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     curframe->reference = referenced ? 3 : 0;
     if ((ret = avctx->get_buffer(avctx, curframe))) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed!\n");

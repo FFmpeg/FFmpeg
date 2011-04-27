@@ -55,7 +55,7 @@ static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
     ctx->avctx = avctx;
     dsputil_init(&ctx->dsp, avctx);
     avctx->coded_frame = &ctx->picture;
-    ctx->picture.type = FF_I_TYPE;
+    ctx->picture.type = AV_PICTURE_TYPE_I;
     ctx->picture.key_frame = 1;
     return 0;
 }
