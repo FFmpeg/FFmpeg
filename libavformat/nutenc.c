@@ -584,7 +584,8 @@ static int write_header(AVFormatContext *s){
     nut->avf= s;
 
     nut->stream   = av_mallocz(sizeof(StreamContext)*s->nb_streams);
-    nut->chapter  = av_mallocz(sizeof(ChapterContext)*s->nb_chapters);
+    if (s->nb_chapters)
+        nut->chapter  = av_mallocz(sizeof(ChapterContext)*s->nb_chapters);
     nut->time_base= av_mallocz(sizeof(AVRational   )*(s->nb_streams +
                                                       s->nb_chapters));
 
