@@ -67,6 +67,7 @@ static const CafChannelLayout caf_channel_layout[] = {
     { AV_CH_LAYOUT_STEREO,                       (101<<16) | 2}, //< kCAFChannelLayoutTag_Stereo
     { AV_CH_LAYOUT_STEREO,                       (102<<16) | 2}, //< kCAFChannelLayoutTag_StereoHeadphones
     { AV_CH_LAYOUT_2_1,                          (131<<16) | 3}, //< kCAFChannelLayoutTag_ITU_2_1
+    { AV_CH_LAYOUT_QUAD,                         (132<<16) | 4}, //< kCAFChannelLayoutTag_ITU_2_2
     { AV_CH_LAYOUT_2_2,                          (132<<16) | 4}, //< kCAFChannelLayoutTag_ITU_2_2
     { AV_CH_LAYOUT_QUAD,                         (108<<16) | 4}, //< kCAFChannelLayoutTag_Quadraphonic
     { AV_CH_LAYOUT_SURROUND,                     (113<<16) | 3}, //< kCAFChannelLayoutTag_MPEG_3_0_A
@@ -79,6 +80,7 @@ static const CafChannelLayout caf_channel_layout[] = {
     { AV_CH_LAYOUT_7POINT1_WIDE,                 (126<<16) | 8}, //< kCAFChannelLayoutTag_MPEG_7_1_A
     { AV_CH_LAYOUT_STEREO|AV_CH_LOW_FREQUENCY,   (133<<16) | 3}, //< kCAFChannelLayoutTag_DVD_4
     { AV_CH_LAYOUT_2_1|AV_CH_LOW_FREQUENCY,      (134<<16) | 4}, //< kCAFChannelLayoutTag_DVD_5
+    { AV_CH_LAYOUT_QUAD|AV_CH_LOW_FREQUENCY,     (135<<16) | 4}, //< kCAFChannelLayoutTag_DVD_6
     { AV_CH_LAYOUT_2_2|AV_CH_LOW_FREQUENCY,      (135<<16) | 4}, //< kCAFChannelLayoutTag_DVD_6
     { AV_CH_LAYOUT_SURROUND|AV_CH_LOW_FREQUENCY, (136<<16) | 4}, //< kCAFChannelLayoutTag_DVD_10
     { AV_CH_LAYOUT_4POINT0|AV_CH_LOW_FREQUENCY,  (137<<16) | 5}, //< kCAFChannelLayoutTag_DVD_11
