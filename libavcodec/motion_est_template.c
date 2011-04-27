@@ -158,6 +158,7 @@ static int hpel_motion_search(MpegEncContext * s,
         const int b= score_map[(index+(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)]
                      + (mv_penalty[bx   - pred_x] + mv_penalty[by+2 - pred_y])*c->penalty_factor;
 
+#if 1
         int key;
         int map_generation= c->map_generation;
 #ifndef NDEBUG
@@ -171,6 +172,7 @@ static int hpel_motion_search(MpegEncContext * s,
         assert(map[(index+1)&(ME_MAP_SIZE-1)] == key);
         key= ((my)<<ME_MAP_MV_BITS) + (mx-1) + map_generation;
         assert(map[(index-1)&(ME_MAP_SIZE-1)] == key);
+#endif
         if(t<=b){
             CHECK_HALF_MV(0, 1, mx  ,my-1)
             if(l<=r){
