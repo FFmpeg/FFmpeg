@@ -28,8 +28,7 @@
 
 typedef struct QpegContext{
     AVCodecContext *avctx;
-    AVFrame pic;
-    uint8_t *refdata;
+    AVFrame pic, ref;
     uint32_t pal[256];
 } QpegContext;
 
@@ -124,9 +123,12 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
     int filled = 0;
     int orig_height;
 
+    if(!refdata)
+        refdata= dst;
+
     /* copy prev frame */
     for(i = 0; i < height; i++)
-        memcpy(refdata + (i * width), dst + (i * stride), width);
+        memcpy(dst + (i * stride), refdata + (i * stride), width);
 
     orig_height = height;
     height--;
@@ -172,10 +174,10 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
                                me_x, me_y, me_w, me_h, filled, height);
                     else {
                         /* do motion compensation */
-                        me_plane = refdata + (filled + me_x) + (height - me_y) * width;
+                        me_plane = refdata + (filled + me_x) + (height - me_y) * stride;
                         for(j = 0; j < me_h; j++) {
                             for(i = 0; i < me_w; i++)
-                                dst[filled + i - (j * stride)] = me_plane[i - (j * width)];
+                                dst[filled + i - (j * stride)] = me_plane[i - (j * stride)];
                         }
                     }
                 }
@@ -254,15 +256,17 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     QpegContext * const a = avctx->priv_data;
-    AVFrame * const p= (AVFrame*)&a->pic;
+    AVFrame * p= (AVFrame*)&a->pic;
+    AVFrame * ref= (AVFrame*)&a->ref;
     uint8_t* outdata;
     int delta;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
 
-    if(p->data[0])
-        avctx->release_buffer(avctx, p);
+    if(ref->data[0])
+        avctx->release_buffer(avctx, ref);
+    FFSWAP(AVFrame, *ref, *p);
 
-    p->reference= 0;
+    p->reference= 3;
     if(avctx->get_buffer(avctx, p) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
@@ -272,7 +276,7 @@ static int decode_frame(AVCodecContext *avctx,
         qpeg_decode_intra(buf+0x86, outdata, buf_size - 0x86, a->pic.linesize[0], avctx->width, avctx->height);
     } else {
         delta = buf[0x85];
-        qpeg_decode_inter(buf+0x86, outdata, buf_size - 0x86, a->pic.linesize[0], avctx->width, avctx->height, delta, buf + 4, a->refdata);
+        qpeg_decode_inter(buf+0x86, outdata, buf_size - 0x86, a->pic.linesize[0], avctx->width, avctx->height, delta, buf + 4, a->ref.data[0]);
     }
 
     /* make the palette available on the way out */
@@ -293,7 +297,6 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
     a->avctx = avctx;
     avctx->pix_fmt= PIX_FMT_PAL8;
-    a->refdata = av_malloc(avctx->width * avctx->height);
 
     return 0;
 }
@@ -301,11 +304,13 @@ static av_cold int decode_init(AVCodecContext *avctx){
 static av_cold int decode_end(AVCodecContext *avctx){
     QpegContext * const a = avctx->priv_data;
     AVFrame * const p= (AVFrame*)&a->pic;
+    AVFrame * const ref= (AVFrame*)&a->ref;
 
     if(p->data[0])
         avctx->release_buffer(avctx, p);
+    if(ref->data[0])
+        avctx->release_buffer(avctx, ref);
 
-    av_free(a->refdata);
     return 0;
 }
 
