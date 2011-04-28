@@ -555,15 +555,50 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         ret = AVERROR(EINVAL);
         goto free_and_end;
     }
-    if (avctx->codec->sample_fmts && avctx->codec->encode) {
+    if (avctx->codec->encode) {
         int i;
-        for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++)
-            if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
-                break;
-        if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
-            av_log(avctx, AV_LOG_ERROR, "Specified sample_fmt is not supported.\n");
-            ret = AVERROR(EINVAL);
-            goto free_and_end;
+        if (avctx->codec->sample_fmts) {
+            for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++)
+                if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
+                    break;
+            if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
+                av_log(avctx, AV_LOG_ERROR, "Specified sample_fmt is not supported.\n");
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            }
+        }
+        if (avctx->codec->supported_samplerates) {
+            for (i = 0; avctx->codec->supported_samplerates[i] != 0; i++)
+                if (avctx->sample_rate == avctx->codec->supported_samplerates[i])
+                    break;
+            if (avctx->codec->supported_samplerates[i] == 0) {
+                av_log(avctx, AV_LOG_ERROR, "Specified sample_rate is not supported\n");
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            }
+        }
+        if (avctx->codec->channel_layouts) {
+            if (!avctx->channel_layout) {
+                av_log(avctx, AV_LOG_WARNING, "channel_layout not specified\n");
+            } else {
+                for (i = 0; avctx->codec->channel_layouts[i] != 0; i++)
+                    if (avctx->channel_layout == avctx->codec->channel_layouts[i])
+                        break;
+                if (avctx->codec->channel_layouts[i] == 0) {
+                    av_log(avctx, AV_LOG_ERROR, "Specified channel_layout is not supported\n");
+                    ret = AVERROR(EINVAL);
+                    goto free_and_end;
+                }
+            }
+        }
+        if (avctx->channel_layout && avctx->channels) {
+            if (av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels) {
+                av_log(avctx, AV_LOG_ERROR, "channel layout does not match number of channels\n");
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            }
+        } else if (avctx->channel_layout) {
+            avctx->channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
         }
     }
 
@@ -1194,11 +1229,9 @@ void av_log_missing_feature(void *avc, const char *feature, int want_sample)
     av_log(avc, AV_LOG_WARNING, "%s not implemented. Update your FFmpeg "
             "version to the newest one from Git. If the problem still "
             "occurs, it means that your file has a feature which has not "
-            "been implemented.", feature);
+            "been implemented.\n", feature);
     if(want_sample)
         av_log_ask_for_sample(avc, NULL);
-    else
-        av_log(avc, AV_LOG_WARNING, "\n");
 }
 
 void av_log_ask_for_sample(void *avc, const char *msg, ...)

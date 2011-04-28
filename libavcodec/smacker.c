@@ -360,8 +360,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     if(buf_size <= 769)
         return 0;
-    if(smk->pic.data[0])
-            avctx->release_buffer(avctx, &smk->pic);
 
     smk->pic.reference = 1;
     smk->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
