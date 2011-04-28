@@ -374,7 +374,7 @@ void put_nbyte(AVIOContext *s, int b, int count)
 
 int url_fopen(AVIOContext **s, const char *filename, int flags)
 {
-    return avio_open(s, filename, flags);
+    return avio_open(s, filename, flags+1);
 }
 int url_fclose(AVIOContext *s)
 {
