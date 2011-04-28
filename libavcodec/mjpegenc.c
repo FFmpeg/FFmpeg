@@ -156,7 +156,7 @@ static void jpeg_put_comments(MpegEncContext *s)
     int size;
     uint8_t *ptr;
 
-    if (s->aspect_ratio_info /* && !lossless */)
+    if (s->avctx->sample_aspect_ratio.num /* && !lossless */)
     {
     /* JFIF header */
     put_marker(p, APP0);
