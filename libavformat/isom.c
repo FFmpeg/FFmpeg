@@ -458,7 +458,7 @@ void ff_mov_read_chan(AVFormatContext *s, int64_t size, AVCodecContext *codec)
     const MovChannelLayout *layouts = mov_channel_layout;
     if (size != 12) {
         // Channel descriptions not implemented
-        av_log_ask_for_sample(s, "Unimplemented channel layout.\n");
+        av_log_ask_for_sample(s, "Unimplemented container channel layout.\n");
         avio_skip(pb, size);
         return;
     }
@@ -476,7 +476,7 @@ void ff_mov_read_chan(AVFormatContext *s, int64_t size, AVCodecContext *codec)
         layouts++;
     }
     if (!codec->channel_layout)
-        av_log(s, AV_LOG_WARNING, "Unknown channel layout.\n");
+        av_log(s, AV_LOG_WARNING, "Unknown container channel layout.\n");
     avio_skip(pb, 8);
 }
 
