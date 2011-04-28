@@ -1138,7 +1138,7 @@ static int vorbis_floor1_decode(vorbis_context *vc,
     uint_fast16_t floor1_Y[258];
     uint_fast16_t floor1_Y_final[258];
     int floor1_flag[258];
-    uint_fast8_t class;
+    uint_fast8_t partition_class;
     uint_fast8_t cdim;
     uint_fast8_t cbits;
     uint_fast8_t csub;
@@ -1162,20 +1162,20 @@ static int vorbis_floor1_decode(vorbis_context *vc,
 
     offset = 2;
     for (i = 0; i < vf->partitions; ++i) {
-        class = vf->partition_class[i];
-        cdim   = vf->class_dimensions[class];
-        cbits  = vf->class_subclasses[class];
+        partition_class = vf->partition_class[i];
+        cdim   = vf->class_dimensions[partition_class];
+        cbits  = vf->class_subclasses[partition_class];
         csub = (1 << cbits) - 1;
         cval = 0;
 
         AV_DEBUG("Cbits %d \n", cbits);
 
         if (cbits) // this reads all subclasses for this partition's class
-            cval = get_vlc2(gb, vc->codebooks[vf->class_masterbook[class]].vlc.table,
-                            vc->codebooks[vf->class_masterbook[class]].nb_bits, 3);
+            cval = get_vlc2(gb, vc->codebooks[vf->class_masterbook[partition_class]].vlc.table,
+                            vc->codebooks[vf->class_masterbook[partition_class]].nb_bits, 3);
 
         for (j = 0; j < cdim; ++j) {
-            book = vf->subclass_books[class][cval & csub];
+            book = vf->subclass_books[partition_class][cval & csub];
 
             AV_DEBUG("book %d Cbits %d cval %d  bits:%d \n", book, cbits, cval, get_bits_count(gb));
 
