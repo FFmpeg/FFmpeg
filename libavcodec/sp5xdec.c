@@ -90,7 +90,6 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     recoded[j++] = 0xFF;
     recoded[j++] = 0xD9;
 
-    avctx->flags &= ~CODEC_FLAG_EMU_EDGE;
     av_init_packet(&avpkt_recoded);
     avpkt_recoded.data = recoded;
     avpkt_recoded.size = j;
@@ -216,6 +215,6 @@ AVCodec amv_decoder = {
     NULL,
     ff_mjpeg_decode_end,
     sp5x_decode_frame,
-    CODEC_CAP_DR1,
+    0,
     .long_name = NULL_IF_CONFIG_SMALL("AMV Video"),
 };
