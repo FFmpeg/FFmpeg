@@ -252,9 +252,9 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     outlink->out_buf = outpicref;
 
-    av_reduce(&outpicref->video->pixel_aspect.num, &outpicref->video->pixel_aspect.den,
-              (int64_t)picref->video->pixel_aspect.num * outlink->h * link->w,
-              (int64_t)picref->video->pixel_aspect.den * outlink->w * link->h,
+    av_reduce(&outpicref->video->sample_aspect_ratio.num, &outpicref->video->sample_aspect_ratio.den,
+              (int64_t)picref->video->sample_aspect_ratio.num * outlink->h * link->w,
+              (int64_t)picref->video->sample_aspect_ratio.den * outlink->w * link->h,
               INT_MAX);
 
     scale->slice_y = 0;

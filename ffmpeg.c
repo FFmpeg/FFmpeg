@@ -1696,7 +1696,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         case AVMEDIA_TYPE_VIDEO:
 #if CONFIG_AVFILTER
                             if (ost->picref->video && !ost->frame_aspect_ratio)
-                                ost->st->codec->sample_aspect_ratio = ost->picref->video->pixel_aspect;
+                                ost->st->codec->sample_aspect_ratio = ost->picref->video->sample_aspect_ratio;
 #endif
                             do_video_out(os, ost, ist, &picture, &frame_size);
                             if (vstats_filename && frame_size)

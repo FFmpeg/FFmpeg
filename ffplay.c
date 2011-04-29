@@ -692,10 +692,10 @@ static void video_image_display(VideoState *is)
     vp = &is->pictq[is->pictq_rindex];
     if (vp->bmp) {
 #if CONFIG_AVFILTER
-         if (vp->picref->video->pixel_aspect.num == 0)
+         if (vp->picref->video->sample_aspect_ratio.num == 0)
              aspect_ratio = 0;
          else
-             aspect_ratio = av_q2d(vp->picref->video->pixel_aspect);
+             aspect_ratio = av_q2d(vp->picref->video->sample_aspect_ratio);
 #else
 
         /* XXX: use variable in the frame */
@@ -1688,7 +1688,7 @@ static int input_request_frame(AVFilterLink *link)
 
     picref->pts = pts;
     picref->pos = priv->frame->pkt_pos;
-    picref->video->pixel_aspect = priv->frame->sample_aspect_ratio;
+    picref->video->sample_aspect_ratio = priv->frame->sample_aspect_ratio;
     avfilter_start_frame(link, picref);
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);

@@ -238,7 +238,7 @@ static void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
 
     if (ref->video) {
         av_dlog(ctx, " a:%d/%d s:%dx%d i:%c iskey:%d type:%c",
-                ref->video->pixel_aspect.num, ref->video->pixel_aspect.den,
+                ref->video->sample_aspect_ratio.num, ref->video->sample_aspect_ratio.den,
                 ref->video->w, ref->video->h,
                 !ref->video->interlaced     ? 'P' :         /* Progressive  */
                 ref->video->top_field_first ? 'T' : 'B',    /* Top / Bottom */

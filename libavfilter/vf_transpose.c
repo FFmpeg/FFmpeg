@@ -122,11 +122,11 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
                                                  outlink->w, outlink->h);
     outlink->out_buf->pts = picref->pts;
 
-    if (picref->video->pixel_aspect.num == 0) {
-        outlink->out_buf->video->pixel_aspect = picref->video->pixel_aspect;
+    if (picref->video->sample_aspect_ratio.num == 0) {
+        outlink->out_buf->video->sample_aspect_ratio = picref->video->sample_aspect_ratio;
     } else {
-        outlink->out_buf->video->pixel_aspect.num = picref->video->pixel_aspect.den;
-        outlink->out_buf->video->pixel_aspect.den = picref->video->pixel_aspect.num;
+        outlink->out_buf->video->sample_aspect_ratio.num = picref->video->sample_aspect_ratio.den;
+        outlink->out_buf->video->sample_aspect_ratio.den = picref->video->sample_aspect_ratio.num;
     }
 
     avfilter_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));

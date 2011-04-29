@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-05-01 - xxxxxxx - lavfi 2.4.0 - avfilter.h
+  Rename AVFilterBufferRefVideoProps.pixel_aspect to
+  sample_aspect_ratio.
+
 2011-05-01 - xxxxxxx - lavc 53.3.0 - AVFrame
   Add a sample_aspect_ratio field to AVFrame.
 

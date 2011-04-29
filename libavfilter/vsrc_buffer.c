@@ -34,7 +34,7 @@ typedef struct {
     int               h, w;
     enum PixelFormat  pix_fmt;
     AVRational        time_base;     ///< time_base to set in the output link
-    AVRational        pixel_aspect;
+    AVRational        sample_aspect_ratio;
     char              sws_param[256];
 } BufferSourceContext;
 
@@ -130,7 +130,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if (!args ||
         (n = sscanf(args, "%d:%d:%127[^:]:%d:%d:%d:%d", &c->w, &c->h, pix_fmt_str,
                     &c->time_base.num, &c->time_base.den,
-                    &c->pixel_aspect.num, &c->pixel_aspect.den)) != 7) {
+                    &c->sample_aspect_ratio.num, &c->sample_aspect_ratio.den)) != 7) {
         av_log(ctx, AV_LOG_ERROR, "Expected 7 arguments, but only %d found in '%s'\n", n, args);
         return AVERROR(EINVAL);
     }
@@ -162,7 +162,7 @@ static int config_props(AVFilterLink *link)
 
     link->w = c->w;
     link->h = c->h;
-    link->sample_aspect_ratio = c->pixel_aspect;
+    link->sample_aspect_ratio = c->sample_aspect_ratio;
     link->time_base = c->time_base;
 
     return 0;
@@ -190,7 +190,7 @@ static int request_frame(AVFilterLink *link)
                   picref->format, link->w, link->h);
 
     picref->pts                    = c->pts;
-    picref->video->pixel_aspect    = c->frame.sample_aspect_ratio;
+    picref->video->sample_aspect_ratio = c->frame.sample_aspect_ratio;
     picref->video->interlaced      = c->frame.interlaced_frame;
     picref->video->top_field_first = c->frame.top_field_first;
     picref->video->key_frame       = c->frame.key_frame;
