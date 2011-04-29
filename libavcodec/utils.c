@@ -341,8 +341,13 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     }
     s->internal_buffer_count++;
 
-    if(s->pkt) pic->pkt_pts= s->pkt->pts;
-    else       pic->pkt_pts= AV_NOPTS_VALUE;
+    if (s->pkt) {
+        pic->pkt_pts = s->pkt->pts;
+        pic->pkt_pos = s->pkt->pos;
+    } else {
+        pic->pkt_pts = AV_NOPTS_VALUE;
+        pic->pkt_pos = -1;
+    }
     pic->reordered_opaque= s->reordered_opaque;
 
     if(s->debug&FF_DEBUG_BUFFERS)
@@ -448,6 +453,7 @@ void avcodec_get_frame_defaults(AVFrame *pic){
     memset(pic, 0, sizeof(AVFrame));
 
     pic->pts = pic->best_effort_timestamp = AV_NOPTS_VALUE;
+    pic->pkt_pos = -1;
     pic->key_frame= 1;
 }
 
@@ -730,6 +736,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
             ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
                               avpkt);
             picture->pkt_dts= avpkt->dts;
+            picture->pkt_pos= avpkt->pos;
         }
 
         emms_c(); //needed to avoid an emms_c() call before every return;

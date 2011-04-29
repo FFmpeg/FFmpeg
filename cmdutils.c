@@ -907,6 +907,7 @@ int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
 
     memcpy(frame->data,     picref->data,     sizeof(frame->data));
     memcpy(frame->linesize, picref->linesize, sizeof(frame->linesize));
+    frame->pkt_pos          = picref->pos;
     frame->interlaced_frame = picref->video->interlaced;
     frame->top_field_first  = picref->video->top_field_first;
     frame->key_frame        = picref->video->key_frame;

@@ -230,7 +230,6 @@ static int movie_get_frame(AVFilterLink *outlink)
     while ((ret = av_read_frame(movie->format_ctx, &pkt)) >= 0) {
         // Is this a packet from the video stream?
         if (pkt.stream_index == movie->stream_index) {
-            movie->codec_ctx->reordered_opaque = pkt.pos;
             avcodec_decode_video2(movie->codec_ctx, movie->frame, &frame_decoded, &pkt);
 
             if (frame_decoded) {
@@ -247,7 +246,7 @@ static int movie_get_frame(AVFilterLink *outlink)
                 movie->picref->pts = movie->frame->pkt_pts == AV_NOPTS_VALUE ?
                     movie->frame->pkt_dts : movie->frame->pkt_pts;
 
-                movie->picref->pos                    = movie->frame->reordered_opaque;
+                movie->picref->pos                    = movie->frame->pkt_pos;
                 movie->picref->video->pixel_aspect = st->sample_aspect_ratio.num ?
                     st->sample_aspect_ratio : movie->codec_ctx->sample_aspect_ratio;
                 movie->picref->video->interlaced      = movie->frame->interlaced_frame;

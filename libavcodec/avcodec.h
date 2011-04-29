@@ -1004,6 +1004,13 @@ typedef struct AVPanScan{
      * - decoding: set by libavcodec, read by user.\
      */\
     int64_t best_effort_timestamp;\
+\
+    /**\
+     * reordered pos from the last AVPacket that has been input into the decoder\
+     * - encoding: unused\
+     * - decoding: Read by user.\
+     */\
+    int64_t pkt_pos;\
 
 
 #define FF_QSCALE_TYPE_MPEG1 0
