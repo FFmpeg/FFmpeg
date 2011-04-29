@@ -342,6 +342,7 @@ version 0.5:
 - Gopher client support
 - MXF D-10 muxer
 - generic metadata API
+- flash ScreenVideo2 encoder
 
 
 version 0.4.9-pre1:
