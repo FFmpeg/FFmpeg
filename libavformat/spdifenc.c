@@ -93,7 +93,12 @@ static const AVOption options[] = {
 { NULL },
 };
 
-static const AVClass class = { "spdif", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
+static const AVClass class = {
+    .class_name     = "spdif",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
 
 static int spdif_header_ac3(AVFormatContext *s, AVPacket *pkt)
 {

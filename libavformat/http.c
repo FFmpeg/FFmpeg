@@ -58,7 +58,10 @@ static const AVOption options[] = {
 {NULL}
 };
 static const AVClass httpcontext_class = {
-    "HTTP", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+    .class_name     = "HTTP",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
 };
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,

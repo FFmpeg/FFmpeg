@@ -167,10 +167,10 @@ static const AVOption options[] = {
 };
 
 static const AVClass mp3_muxer_class = {
-    "MP3 muxer",
-    av_default_item_name,
-    options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name     = "MP3 muxer",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
 };
 
 static int id3v2_check_write_tag(AVFormatContext *s, AVMetadataTag *t, const char table[][4],
