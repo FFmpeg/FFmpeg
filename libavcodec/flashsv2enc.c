@@ -242,7 +242,6 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
 static int new_key_frame(FlashSV2Context * s)
 {
     int i;
-    FFSWAP(uint8_t * , s->keybuffer, s->encbuffer);
     memcpy(s->key_blocks, s->frame_blocks, s->blocks_size);
     memcpy(s->key_frame, s->current_frame, s->frame_size);
 
@@ -252,6 +251,7 @@ static int new_key_frame(FlashSV2Context * s)
         s->key_blocks[i].sl_end   = 0;
         s->key_blocks[i].data     = 0;
     }
+    FFSWAP(uint8_t * , s->keybuffer, s->encbuffer);
 
     return 0;
 }
