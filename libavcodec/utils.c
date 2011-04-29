@@ -455,6 +455,7 @@ void avcodec_get_frame_defaults(AVFrame *pic){
     pic->pts = pic->best_effort_timestamp = AV_NOPTS_VALUE;
     pic->pkt_pos = -1;
     pic->key_frame= 1;
+    pic->sample_aspect_ratio = (AVRational){0, 1};
 }
 
 AVFrame *avcodec_alloc_frame(void){
@@ -737,6 +738,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
                               avpkt);
             picture->pkt_dts= avpkt->dts;
             picture->pkt_pos= avpkt->pos;
+            if (!picture->sample_aspect_ratio.num)
+                picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
         }
 
         emms_c(); //needed to avoid an emms_c() call before every return;

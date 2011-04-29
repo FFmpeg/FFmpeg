@@ -1631,13 +1631,12 @@ static int output_packet(AVInputStream *ist, int ist_index,
             for(i=0;i<nb_ostreams;i++) {
                 ost = ost_table[i];
                 if (ost->input_video_filter && ost->source_index == ist_index) {
-                    AVRational sar;
-                    if (ist->st->sample_aspect_ratio.num) sar = ist->st->sample_aspect_ratio;
-                    else                                  sar = ist->st->codec->sample_aspect_ratio;
+                    if (!picture.sample_aspect_ratio.num)
+                        picture.sample_aspect_ratio = ist->st->sample_aspect_ratio;
                     // add it to be filtered
                     av_vsrc_buffer_add_frame2(ost->input_video_filter, &picture,
                                              ist->pts,
-                                             sar, ist->st->codec->width, ist->st->codec->height,
+                                             ist->st->codec->width, ist->st->codec->height,
                                              ist->st->codec->pix_fmt, ""); //TODO user setable params
                 }
             }

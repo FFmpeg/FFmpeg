@@ -39,7 +39,7 @@ typedef struct {
 } BufferSourceContext;
 
 int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
-                              int64_t pts, AVRational pixel_aspect, int width,
+                              int64_t pts, int width,
                               int height, enum PixelFormat  pix_fmt,
                               const char *sws_param)
 {
@@ -104,20 +104,20 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
     c->frame.top_field_first = frame->top_field_first;
     c->frame.key_frame = frame->key_frame;
     c->frame.pict_type = frame->pict_type;
+    c->frame.sample_aspect_ratio = frame->sample_aspect_ratio;
     c->pts = pts;
-    c->pixel_aspect = pixel_aspect;
     c->has_frame = 1;
 
     return 0;
 }
 
 int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
-                             int64_t pts, AVRational pixel_aspect)
+                             int64_t pts)
 {
     BufferSourceContext *c = buffer_filter->priv;
 
     return av_vsrc_buffer_add_frame2(buffer_filter, frame,
-                              pts, pixel_aspect, c->w,
+                              pts, c->w,
                               c->h, c->pix_fmt, "");
 }
 
@@ -190,7 +190,7 @@ static int request_frame(AVFilterLink *link)
                   picref->format, link->w, link->h);
 
     picref->pts                    = c->pts;
-    picref->video->pixel_aspect    = c->pixel_aspect;
+    picref->video->pixel_aspect    = c->frame.sample_aspect_ratio;
     picref->video->interlaced      = c->frame.interlaced_frame;
     picref->video->top_field_first = c->frame.top_field_first;
     picref->video->key_frame       = c->frame.key_frame;
