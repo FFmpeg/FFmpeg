@@ -1108,7 +1108,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 }
                 AV_ZERO16(h->mvd_cache [list][scan8[4 ]]);
                 AV_ZERO16(h->mvd_cache [list][scan8[12]]);
-                if(h->slice_type_nos == FF_B_TYPE){
+                if(h->slice_type_nos == AV_PICTURE_TYPE_B){
                     fill_rectangle(&h->direct_cache[scan8[0]], 4, 4, 8, MB_TYPE_16x16>>1, 1);
 
                     if(IS_DIRECT(top_type)){
@@ -1245,7 +1245,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
         }
     }
 
-    if(h->slice_type_nos == FF_B_TYPE && CABAC){
+    if(h->slice_type_nos == AV_PICTURE_TYPE_B && CABAC){
         if(IS_8X8(mb_type)){
             uint8_t *direct_table = &h->direct_table[4*h->mb_xy];
             direct_table[1] = h->sub_mb_type[1]>>1;
@@ -1276,7 +1276,7 @@ static void av_unused decode_mb_skip(H264Context *h){
     if(MB_FIELD)
         mb_type|= MB_TYPE_INTERLACED;
 
-    if( h->slice_type_nos == FF_B_TYPE )
+    if( h->slice_type_nos == AV_PICTURE_TYPE_B )
     {
         // just for fill_caches. pred_direct_motion will set the real mb_type
         mb_type|= MB_TYPE_L0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;

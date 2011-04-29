@@ -245,7 +245,7 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
     init_put_bits(&pb2, buf2, buf_size);
 
     *p = *pict;
-    p->pict_type= FF_I_TYPE;
+    p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
     if(avctx->pix_fmt == PIX_FMT_GRAY8 || avctx->pix_fmt == PIX_FMT_GRAY16)

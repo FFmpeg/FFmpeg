@@ -150,7 +150,7 @@ static int gif_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     uint8_t *end = outbuf + buf_size;
 
     *p = *pict;
-    p->pict_type = FF_I_TYPE;
+    p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
     gif_image_write_header(avctx, &outbuf_ptr, (uint32_t *)pict->data[1]);
     gif_image_write_image(avctx, &outbuf_ptr, end, pict->data[0], pict->linesize[0]);

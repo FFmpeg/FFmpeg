@@ -218,7 +218,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
     assert(s->mb_skipped==0);
 
     if (s->mb_skip_run-- != 0) {
-        if (s->pict_type == FF_P_TYPE) {
+        if (s->pict_type == AV_PICTURE_TYPE_P) {
             s->mb_skipped = 1;
             s->current_picture.mb_type[ s->mb_x + s->mb_y*s->mb_stride ]= MB_TYPE_SKIP | MB_TYPE_L0 | MB_TYPE_16x16;
         } else {
@@ -244,7 +244,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
 
     switch(s->pict_type) {
     default:
-    case FF_I_TYPE:
+    case AV_PICTURE_TYPE_I:
         if (get_bits1(&s->gb) == 0) {
             if (get_bits1(&s->gb) == 0){
                 av_log(s->avctx, AV_LOG_ERROR, "invalid mb type in I Frame at %d %d\n", s->mb_x, s->mb_y);
@@ -255,7 +255,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
             mb_type = MB_TYPE_INTRA;
         }
         break;
-    case FF_P_TYPE:
+    case AV_PICTURE_TYPE_P:
         mb_type = get_vlc2(&s->gb, mb_ptype_vlc.table, MB_PTYPE_VLC_BITS, 1);
         if (mb_type < 0){
             av_log(s->avctx, AV_LOG_ERROR, "invalid mb type in P Frame at %d %d\n", s->mb_x, s->mb_y);
@@ -263,7 +263,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
         }
         mb_type = ptype2mb_type[ mb_type ];
         break;
-    case FF_B_TYPE:
+    case AV_PICTURE_TYPE_B:
         mb_type = get_vlc2(&s->gb, mb_btype_vlc.table, MB_BTYPE_VLC_BITS, 1);
         if (mb_type < 0){
             av_log(s->avctx, AV_LOG_ERROR, "invalid mb type in B Frame at %d %d\n", s->mb_x, s->mb_y);
@@ -1333,7 +1333,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
         return -1;
 
     vbv_delay= get_bits(&s->gb, 16);
-    if (s->pict_type == FF_P_TYPE || s->pict_type == FF_B_TYPE) {
+    if (s->pict_type == AV_PICTURE_TYPE_P || s->pict_type == AV_PICTURE_TYPE_B) {
         s->full_pel[0] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0 && avctx->error_recognition >= FF_ER_COMPLIANT)
@@ -1341,7 +1341,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
         s->mpeg_f_code[0][0] = f_code;
         s->mpeg_f_code[0][1] = f_code;
     }
-    if (s->pict_type == FF_B_TYPE) {
+    if (s->pict_type == AV_PICTURE_TYPE_B) {
         s->full_pel[1] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0 && avctx->error_recognition >= FF_ER_COMPLIANT)
@@ -1350,7 +1350,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
         s->mpeg_f_code[1][1] = f_code;
     }
     s->current_picture.pict_type= s->pict_type;
-    s->current_picture.key_frame= s->pict_type == FF_I_TYPE;
+    s->current_picture.key_frame= s->pict_type == AV_PICTURE_TYPE_I;
 
     if(avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_DEBUG, "vbv_delay %d, ref %d type:%d\n", vbv_delay, ref, s->pict_type);
@@ -1498,13 +1498,13 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
         av_log(s->avctx, AV_LOG_ERROR, "Missing picture start code, guessing missing values\n");
         if(s->mpeg_f_code[1][0] == 15 && s->mpeg_f_code[1][1]==15){
             if(s->mpeg_f_code[0][0] == 15 && s->mpeg_f_code[0][1] == 15)
-                s->pict_type= FF_I_TYPE;
+                s->pict_type= AV_PICTURE_TYPE_I;
             else
-                s->pict_type= FF_P_TYPE;
+                s->pict_type= AV_PICTURE_TYPE_P;
         }else
-            s->pict_type= FF_B_TYPE;
+            s->pict_type= AV_PICTURE_TYPE_B;
         s->current_picture.pict_type= s->pict_type;
-        s->current_picture.key_frame= s->pict_type == FF_I_TYPE;
+        s->current_picture.key_frame= s->pict_type == AV_PICTURE_TYPE_I;
     }
     s->intra_dc_precision = get_bits(&s->gb, 2);
     s->picture_structure = get_bits(&s->gb, 2);
@@ -1713,7 +1713,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
         if(s->avctx->debug&FF_DEBUG_PICT_INFO){
              av_log(s->avctx, AV_LOG_DEBUG, "qp:%d fc:%2d%2d%2d%2d %s %s %s %s %s dc:%d pstruct:%d fdct:%d cmv:%d qtype:%d ivlc:%d rff:%d %s\n",
                  s->qscale, s->mpeg_f_code[0][0],s->mpeg_f_code[0][1],s->mpeg_f_code[1][0],s->mpeg_f_code[1][1],
-                 s->pict_type == FF_I_TYPE ? "I" : (s->pict_type == FF_P_TYPE ? "P" : (s->pict_type == FF_B_TYPE ? "B" : "S")),
+                 s->pict_type == AV_PICTURE_TYPE_I ? "I" : (s->pict_type == AV_PICTURE_TYPE_P ? "P" : (s->pict_type == AV_PICTURE_TYPE_B ? "B" : "S")),
                  s->progressive_sequence ? "ps" :"", s->progressive_frame ? "pf" : "", s->alternate_scan ? "alt" :"", s->top_field_first ? "top" :"",
                  s->intra_dc_precision, s->picture_structure, s->frame_pred_frame_dct, s->concealment_motion_vectors,
                  s->q_scale_type, s->intra_vlc_format, s->repeat_first_field, s->chroma_420_type ? "420" :"");
@@ -1736,7 +1736,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
 
             for(i=0; i<2; i++){
                 for(dir=0; dir<2; dir++){
-                    if (s->mb_intra || (dir==1 && s->pict_type != FF_B_TYPE)) {
+                    if (s->mb_intra || (dir==1 && s->pict_type != AV_PICTURE_TYPE_B)) {
                         motion_x = motion_y = 0;
                     }else if (s->mv_type == MV_TYPE_16X16 || (s->mv_type == MV_TYPE_FIELD && field_pic)){
                         motion_x = s->mv[dir][0][0];
@@ -1775,7 +1775,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
 
             if(s->mb_y >= s->mb_height){
                 int left= get_bits_left(&s->gb);
-                int is_d10= s->chroma_format==2 && s->pict_type==FF_I_TYPE && avctx->profile==0 && avctx->level==5
+                int is_d10= s->chroma_format==2 && s->pict_type==AV_PICTURE_TYPE_I && avctx->profile==0 && avctx->level==5
                             && s->intra_dc_precision == 2 && s->q_scale_type == 1 && s->alternate_scan == 0
                             && s->progressive_frame == 0 /* vbv_delay == 0xBBB || 0xE10*/;
 
@@ -1818,7 +1818,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
             }
             if(s->mb_skip_run){
                 int i;
-                if(s->pict_type == FF_I_TYPE){
+                if(s->pict_type == AV_PICTURE_TYPE_I){
                     av_log(s->avctx, AV_LOG_ERROR, "skipped MB in I frame at %d %d\n", s->mb_x, s->mb_y);
                     return -1;
                 }
@@ -1831,7 +1831,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
                     s->mv_type = MV_TYPE_16X16;
                 else
                     s->mv_type = MV_TYPE_FIELD;
-                if (s->pict_type == FF_P_TYPE) {
+                if (s->pict_type == AV_PICTURE_TYPE_P) {
                     /* if P type, zero motion vector is implied */
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mv[0][0][0] = s->mv[0][0][1] = 0;
@@ -1922,7 +1922,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
 
         MPV_frame_end(s);
 
-        if (s->pict_type == FF_B_TYPE || s->low_delay) {
+        if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
             *pict= *(AVFrame*)s->current_picture_ptr;
             ff_print_debug_info(s, pict);
         } else {
@@ -2261,7 +2261,7 @@ static int decode_chunks(AVCodecContext *avctx,
         uint32_t start_code = -1;
         buf_ptr = ff_find_start_code(buf_ptr,buf_end, &start_code);
         if (start_code > 0x1ff){
-            if(s2->pict_type != FF_B_TYPE || avctx->skip_frame <= AVDISCARD_DEFAULT){
+            if(s2->pict_type != AV_PICTURE_TYPE_B || avctx->skip_frame <= AVDISCARD_DEFAULT){
                 if(avctx->thread_count > 1){
                     int i;
 
@@ -2387,19 +2387,19 @@ static int decode_chunks(AVCodecContext *avctx,
 
                 if(s2->last_picture_ptr==NULL){
                 /* Skip B-frames if we do not have reference frames and gop is not closed */
-                    if(s2->pict_type==FF_B_TYPE){
+                    if(s2->pict_type==AV_PICTURE_TYPE_B){
                         if(!s2->closed_gop)
                             break;
                     }
                 }
-                if(s2->pict_type==FF_I_TYPE)
+                if(s2->pict_type==AV_PICTURE_TYPE_I)
                     s->sync=1;
                 if(s2->next_picture_ptr==NULL){
                 /* Skip P-frames if we do not have a reference frame or we have an invalid header. */
-                    if(s2->pict_type==FF_P_TYPE && !s->sync) break;
+                    if(s2->pict_type==AV_PICTURE_TYPE_P && !s->sync) break;
                 }
-                if(  (avctx->skip_frame >= AVDISCARD_NONREF && s2->pict_type==FF_B_TYPE)
-                    ||(avctx->skip_frame >= AVDISCARD_NONKEY && s2->pict_type!=FF_I_TYPE)
+                if(  (avctx->skip_frame >= AVDISCARD_NONREF && s2->pict_type==AV_PICTURE_TYPE_B)
+                    ||(avctx->skip_frame >= AVDISCARD_NONKEY && s2->pict_type!=AV_PICTURE_TYPE_I)
                     || avctx->skip_frame >= AVDISCARD_ALL)
                     break;
 

@@ -63,7 +63,7 @@ avs_decode_frame(AVCodecContext * avctx,
         return -1;
     }
     p->reference = 1;
-    p->pict_type = FF_P_TYPE;
+    p->pict_type = AV_PICTURE_TYPE_P;
     p->key_frame = 0;
 
     out = avs->picture.data[0];
@@ -93,7 +93,7 @@ avs_decode_frame(AVCodecContext * avctx,
 
     switch (sub_type) {
     case AVS_I_FRAME:
-        p->pict_type = FF_I_TYPE;
+        p->pict_type = AV_PICTURE_TYPE_I;
         p->key_frame = 1;
     case AVS_P_FRAME_3X3:
         vect_w = 3;

@@ -222,7 +222,7 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_qscale,  ctx->m.mb_num   *sizeof(uint8_t) , fail);
 
     ctx->frame.key_frame = 1;
-    ctx->frame.pict_type = FF_I_TYPE;
+    ctx->frame.pict_type = AV_PICTURE_TYPE_I;
     ctx->m.avctx->coded_frame = &ctx->frame;
 
     if (avctx->thread_count > MAX_THREADS) {

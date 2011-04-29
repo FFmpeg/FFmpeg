@@ -203,7 +203,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     my = s->mv[dir][0][1];
 
     // store motion vectors for further use in B frames
-    if(s->pict_type == FF_P_TYPE) {
+    if(s->pict_type == AV_PICTURE_TYPE_P) {
         s->current_picture.motion_val[1][s->block_index[0]][0] = mx;
         s->current_picture.motion_val[1][s->block_index[0]][1] = my;
     }
@@ -3061,7 +3061,7 @@ static void vc1_decode_skip_blocks(VC1Context *v)
         ff_draw_horiz_band(s, s->mb_y * 16, 16);
         s->first_slice_line = 0;
     }
-    s->pict_type = FF_P_TYPE;
+    s->pict_type = AV_PICTURE_TYPE_P;
 }
 
 static void vc1_decode_blocks(VC1Context *v, int mby_start, int mby_end)
@@ -3072,19 +3072,19 @@ static void vc1_decode_blocks(VC1Context *v, int mby_start, int mby_end)
         ff_intrax8_decode_picture(&v->x8, 2*v->pq+v->halfpq, v->pq*(!v->pquantizer) );
     }else{
         switch(v->s.pict_type) {
-        case FF_I_TYPE:
+        case AV_PICTURE_TYPE_I:
             if(v->profile == PROFILE_ADVANCED)
                 vc1_decode_i_blocks_adv(v, mby_start, mby_end);
             else
                 vc1_decode_i_blocks(v);
             break;
-        case FF_P_TYPE:
+        case AV_PICTURE_TYPE_P:
             if(v->p_frame_skipped)
                 vc1_decode_skip_blocks(v);
             else
                 vc1_decode_p_blocks(v, mby_start, mby_end);
             break;
-        case FF_B_TYPE:
+        case AV_PICTURE_TYPE_B:
             if(v->bi_type){
                 if(v->profile == PROFILE_ADVANCED)
                     vc1_decode_i_blocks_adv(v, mby_start, mby_end);
@@ -3498,26 +3498,26 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if (v->res_sprite && s->pict_type!=FF_I_TYPE) {
+    if (v->res_sprite && s->pict_type!=AV_PICTURE_TYPE_I) {
         av_log(v->s.avctx, AV_LOG_WARNING, "Sprite decoder: expected I-frame\n");
     }
 
     // for skipping the frame
     s->current_picture.pict_type= s->pict_type;
-    s->current_picture.key_frame= s->pict_type == FF_I_TYPE;
+    s->current_picture.key_frame= s->pict_type == AV_PICTURE_TYPE_I;
 
     /* skip B-frames if we don't have reference frames */
-    if(s->last_picture_ptr==NULL && (s->pict_type==FF_B_TYPE || s->dropable)){
+    if(s->last_picture_ptr==NULL && (s->pict_type==AV_PICTURE_TYPE_B || s->dropable)){
         goto err;
     }
-    if(   (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==FF_B_TYPE)
-       || (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=FF_I_TYPE)
+    if(   (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==AV_PICTURE_TYPE_B)
+       || (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=AV_PICTURE_TYPE_I)
        ||  avctx->skip_frame >= AVDISCARD_ALL) {
         goto end;
     }
 
     if(s->next_p_frame_damaged){
-        if(s->pict_type==FF_B_TYPE)
+        if(s->pict_type==AV_PICTURE_TYPE_B)
             goto end;
         else
             s->next_p_frame_damaged=0;
@@ -3561,7 +3561,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
 
 assert(s->current_picture.pict_type == s->current_picture_ptr->pict_type);
 assert(s->current_picture.pict_type == s->pict_type);
-    if (s->pict_type == FF_B_TYPE || s->low_delay) {
+    if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
         *pict= *(AVFrame*)s->current_picture_ptr;
     } else if (s->last_picture_ptr != NULL) {
         *pict= *(AVFrame*)s->last_picture_ptr;

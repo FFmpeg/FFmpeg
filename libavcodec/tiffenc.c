@@ -221,7 +221,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     s->buf_size = buf_size;
 
     *p = *pict;
-    p->pict_type = FF_I_TYPE;
+    p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
     avctx->coded_frame= &s->picture;
 

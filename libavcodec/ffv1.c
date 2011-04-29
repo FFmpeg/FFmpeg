@@ -1160,7 +1160,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
     *p = *pict;
-    p->pict_type= FF_I_TYPE;
+    p->pict_type= AV_PICTURE_TYPE_I;
 
     if(avctx->gop_size==0 || f->picture_number % avctx->gop_size == 0){
         put_rac(c, &keystate, 1);
@@ -1723,7 +1723,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
 
-    p->pict_type= FF_I_TYPE; //FIXME I vs. P
+    p->pict_type= AV_PICTURE_TYPE_I; //FIXME I vs. P
     if(get_rac(c, &keystate)){
         p->key_frame= 1;
         if(read_header(f) < 0)

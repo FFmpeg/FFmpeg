@@ -215,7 +215,7 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    p->pict_type = FF_I_TYPE;
+    p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
     out_buf = p->data[0];
 

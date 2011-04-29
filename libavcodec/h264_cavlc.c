@@ -541,7 +541,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
     tprintf(s->avctx, "pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
                 down the code */
-    if(h->slice_type_nos != FF_I_TYPE){
+    if(h->slice_type_nos != AV_PICTURE_TYPE_I){
         if(s->mb_skip_run==-1)
             s->mb_skip_run= get_ue_golomb(&s->gb);
 
@@ -562,7 +562,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
     h->prev_mb_skipped= 0;
 
     mb_type= get_ue_golomb(&s->gb);
-    if(h->slice_type_nos == FF_B_TYPE){
+    if(h->slice_type_nos == AV_PICTURE_TYPE_B){
         if(mb_type < 23){
             partition_count= b_mb_type_info[mb_type].partition_count;
             mb_type=         b_mb_type_info[mb_type].type;
@@ -570,7 +570,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
             mb_type -= 23;
             goto decode_intra_mb;
         }
-    }else if(h->slice_type_nos == FF_P_TYPE){
+    }else if(h->slice_type_nos == AV_PICTURE_TYPE_P){
         if(mb_type < 5){
             partition_count= p_mb_type_info[mb_type].partition_count;
             mb_type=         p_mb_type_info[mb_type].type;
@@ -579,8 +579,8 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
             goto decode_intra_mb;
         }
     }else{
-       assert(h->slice_type_nos == FF_I_TYPE);
-        if(h->slice_type == FF_SI_TYPE && mb_type)
+       assert(h->slice_type_nos == AV_PICTURE_TYPE_I);
+        if(h->slice_type == AV_PICTURE_TYPE_SI && mb_type)
             mb_type--;
 decode_intra_mb:
         if(mb_type > 25){
@@ -671,7 +671,7 @@ decode_intra_mb:
     }else if(partition_count==4){
         int i, j, sub_partition_count[4], list, ref[2][4];
 
-        if(h->slice_type_nos == FF_B_TYPE){
+        if(h->slice_type_nos == AV_PICTURE_TYPE_B){
             for(i=0; i<4; i++){
                 h->sub_mb_type[i]= get_ue_golomb_31(&s->gb);
                 if(h->sub_mb_type[i] >=13){
@@ -689,7 +689,7 @@ decode_intra_mb:
                 h->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
             }
         }else{
-            assert(h->slice_type_nos == FF_P_TYPE); //FIXME SP correct ?
+            assert(h->slice_type_nos == AV_PICTURE_TYPE_P); //FIXME SP correct ?
             for(i=0; i<4; i++){
                 h->sub_mb_type[i]= get_ue_golomb_31(&s->gb);
                 if(h->sub_mb_type[i] >=4){

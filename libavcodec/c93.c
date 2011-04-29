@@ -137,10 +137,10 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     stride = newpic->linesize[0];
 
     if (buf[0] & C93_FIRST_FRAME) {
-        newpic->pict_type = FF_I_TYPE;
+        newpic->pict_type = AV_PICTURE_TYPE_I;
         newpic->key_frame = 1;
     } else {
-        newpic->pict_type = FF_P_TYPE;
+        newpic->pict_type = AV_PICTURE_TYPE_P;
         newpic->key_frame = 0;
     }
 

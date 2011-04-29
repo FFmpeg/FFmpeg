@@ -39,7 +39,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf,
     }
 
     *p           = *pict;
-    p->pict_type = FF_I_TYPE;
+    p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
     s->bytestream_start =

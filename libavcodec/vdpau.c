@@ -225,12 +225,12 @@ void ff_vdpau_mpeg_picture_complete(MpegEncContext *s, const uint8_t *buf,
     render->info.mpeg.backward_reference         = VDP_INVALID_HANDLE;
 
     switch(s->pict_type){
-    case  FF_B_TYPE:
+    case  AV_PICTURE_TYPE_B:
         next = (struct vdpau_render_state *)s->next_picture.data[0];
         assert(next);
         render->info.mpeg.backward_reference     = next->surface;
         // no return here, going to set forward prediction
-    case  FF_P_TYPE:
+    case  AV_PICTURE_TYPE_P:
         last = (struct vdpau_render_state *)s->last_picture.data[0];
         if (!last) // FIXME: Does this test make sense?
             last = render; // predict second field from the first
@@ -295,12 +295,12 @@ void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
         render->info.vc1.picture_type = s->pict_type - 1 + s->pict_type / 3;
 
     switch(s->pict_type){
-    case  FF_B_TYPE:
+    case  AV_PICTURE_TYPE_B:
         next = (struct vdpau_render_state *)s->next_picture.data[0];
         assert(next);
         render->info.vc1.backward_reference = next->surface;
         // no break here, going to set forward prediction
-    case  FF_P_TYPE:
+    case  AV_PICTURE_TYPE_P:
         last = (struct vdpau_render_state *)s->last_picture.data[0];
         if (!last) // FIXME: Does this test make sense?
             last = render; // predict second field from the first
@@ -351,13 +351,13 @@ void ff_vdpau_mpeg4_decode_picture(MpegEncContext *s, const uint8_t *buf,
     render->info.mpeg4.backward_reference                = VDP_INVALID_HANDLE;
 
     switch (s->pict_type) {
-    case FF_B_TYPE:
+    case AV_PICTURE_TYPE_B:
         next = (struct vdpau_render_state *)s->next_picture.data[0];
         assert(next);
         render->info.mpeg4.backward_reference     = next->surface;
         render->info.mpeg4.vop_coding_type        = 2;
         // no break here, going to set forward prediction
-    case FF_P_TYPE:
+    case AV_PICTURE_TYPE_P:
         last = (struct vdpau_render_state *)s->last_picture.data[0];
         assert(last);
         render->info.mpeg4.forward_reference      = last->surface;

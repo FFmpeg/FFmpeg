@@ -183,7 +183,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     // flip upside down, add difference frame
     if (buf[0] & 1) { // keyframe
-        c->pic.pict_type = FF_I_TYPE;
+        c->pic.pict_type = AV_PICTURE_TYPE_I;
         c->pic.key_frame = 1;
         switch (c->bpp) {
           case 16:
@@ -197,7 +197,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                                  c->linelen, c->height);
         }
     } else {
-        c->pic.pict_type = FF_P_TYPE;
+        c->pic.pict_type = AV_PICTURE_TYPE_P;
         c->pic.key_frame = 0;
         switch (c->bpp) {
           case 16:

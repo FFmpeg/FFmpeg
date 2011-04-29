@@ -59,7 +59,7 @@ static int tmv_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    tmv->pic.pict_type = FF_I_TYPE;
+    tmv->pic.pict_type = AV_PICTURE_TYPE_I;
     tmv->pic.key_frame = 1;
     dst                = tmv->pic.data[0];
 

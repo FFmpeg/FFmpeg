@@ -52,7 +52,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     }
     s->h263_plus = 0;
 
-    s->pict_type = FF_I_TYPE + get_bits1(&s->gb);
+    s->pict_type = AV_PICTURE_TYPE_I + get_bits1(&s->gb);
 
     s->unrestricted_mv = get_bits1(&s->gb);
     s->h263_long_vectors = s->unrestricted_mv;

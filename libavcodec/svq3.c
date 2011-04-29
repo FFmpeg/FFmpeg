@@ -438,10 +438,10 @@ static int svq3_decode_mb(H264Context *h, unsigned int mb_type)
     h->topright_samples_available = 0xFFFF;
 
     if (mb_type == 0) {           /* SKIP */
-        if (s->pict_type == FF_P_TYPE || s->next_picture.mb_type[mb_xy] == -1) {
+        if (s->pict_type == AV_PICTURE_TYPE_P || s->next_picture.mb_type[mb_xy] == -1) {
             svq3_mc_dir_part(s, 16*s->mb_x, 16*s->mb_y, 16, 16, 0, 0, 0, 0, 0, 0);
 
-            if (s->pict_type == FF_B_TYPE) {
+            if (s->pict_type == AV_PICTURE_TYPE_B) {
                 svq3_mc_dir_part(s, 16*s->mb_x, 16*s->mb_y, 16, 16, 0, 0, 0, 0, 1, 1);
             }
 
@@ -502,15 +502,15 @@ static int svq3_decode_mb(H264Context *h, unsigned int mb_type)
             }else
                 memset(&h->ref_cache[m][scan8[0] - 1*8 - 1], PART_NOT_AVAILABLE, 8);
 
-            if (s->pict_type != FF_B_TYPE)
+            if (s->pict_type != AV_PICTURE_TYPE_B)
                 break;
         }
 
         /* decode motion vector(s) and form prediction(s) */
-        if (s->pict_type == FF_P_TYPE) {
+        if (s->pict_type == AV_PICTURE_TYPE_P) {
             if (svq3_mc_dir(h, (mb_type - 1), mode, 0, 0) < 0)
                 return -1;
-        } else {        /* FF_B_TYPE */
+        } else {        /* AV_PICTURE_TYPE_B */
             if (mb_type != 2) {
                 if (svq3_mc_dir(h, 0, mode, 0, 0) < 0)
                     return -1;
@@ -609,11 +609,11 @@ static int svq3_decode_mb(H264Context *h, unsigned int mb_type)
         mb_type = MB_TYPE_INTRA16x16;
     }
 
-    if (!IS_INTER(mb_type) && s->pict_type != FF_I_TYPE) {
+    if (!IS_INTER(mb_type) && s->pict_type != AV_PICTURE_TYPE_I) {
         for (i = 0; i < 4; i++) {
             memset(s->current_picture.motion_val[0][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
         }
-        if (s->pict_type == FF_B_TYPE) {
+        if (s->pict_type == AV_PICTURE_TYPE_B) {
             for (i = 0; i < 4; i++) {
                 memset(s->current_picture.motion_val[1][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
             }
@@ -622,12 +622,12 @@ static int svq3_decode_mb(H264Context *h, unsigned int mb_type)
     if (!IS_INTRA4x4(mb_type)) {
         memset(h->intra4x4_pred_mode+h->mb2br_xy[mb_xy], DC_PRED, 8);
     }
-    if (!IS_SKIP(mb_type) || s->pict_type == FF_B_TYPE) {
+    if (!IS_SKIP(mb_type) || s->pict_type == AV_PICTURE_TYPE_B) {
         memset(h->non_zero_count_cache + 8, 0, 4*9*sizeof(uint8_t));
         s->dsp.clear_blocks(h->mb);
     }
 
-    if (!IS_INTRA16x16(mb_type) && (!IS_SKIP(mb_type) || s->pict_type == FF_B_TYPE)) {
+    if (!IS_INTRA16x16(mb_type) && (!IS_SKIP(mb_type) || s->pict_type == AV_PICTURE_TYPE_B)) {
         if ((vlc = svq3_get_ue_golomb(&s->gb)) >= 48){
             av_log(h->s.avctx, AV_LOG_ERROR, "cbp_vlc=%d\n", vlc);
             return -1;
@@ -635,7 +635,7 @@ static int svq3_decode_mb(H264Context *h, unsigned int mb_type)
 
         cbp = IS_INTRA(mb_type) ? golomb_to_intra4x4_cbp[vlc] : golomb_to_inter_cbp[vlc];
     }
-    if (IS_INTRA16x16(mb_type) || (s->pict_type != FF_I_TYPE && s->adaptive_quant && cbp)) {
+    if (IS_INTRA16x16(mb_type) || (s->pict_type != AV_PICTURE_TYPE_I && s->adaptive_quant && cbp)) {
         s->qscale += svq3_get_se_golomb(&s->gb);
 
         if (s->qscale > 31){
@@ -947,18 +947,18 @@ static int svq3_decode_frame(AVCodecContext *avctx,
 
     /* for skipping the frame */
     s->current_picture.pict_type = s->pict_type;
-    s->current_picture.key_frame = (s->pict_type == FF_I_TYPE);
+    s->current_picture.key_frame = (s->pict_type == AV_PICTURE_TYPE_I);
 
     /* Skip B-frames if we do not have reference frames. */
-    if (s->last_picture_ptr == NULL && s->pict_type == FF_B_TYPE)
+    if (s->last_picture_ptr == NULL && s->pict_type == AV_PICTURE_TYPE_B)
         return 0;
-    if (  (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type == FF_B_TYPE)
-        ||(avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type != FF_I_TYPE)
+    if (  (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type == AV_PICTURE_TYPE_B)
+        ||(avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I)
         || avctx->skip_frame >= AVDISCARD_ALL)
         return 0;
 
     if (s->next_p_frame_damaged) {
-        if (s->pict_type == FF_B_TYPE)
+        if (s->pict_type == AV_PICTURE_TYPE_B)
             return 0;
         else
             s->next_p_frame_damaged = 0;
@@ -967,7 +967,7 @@ static int svq3_decode_frame(AVCodecContext *avctx,
     if (ff_h264_frame_start(h) < 0)
         return -1;
 
-    if (s->pict_type == FF_B_TYPE) {
+    if (s->pict_type == AV_PICTURE_TYPE_B) {
         h->frame_num_offset = (h->slice_num - h->prev_frame_num);
 
         if (h->frame_num_offset < 0) {
@@ -1016,9 +1016,9 @@ static int svq3_decode_frame(AVCodecContext *avctx,
 
             mb_type = svq3_get_ue_golomb(&s->gb);
 
-            if (s->pict_type == FF_I_TYPE) {
+            if (s->pict_type == AV_PICTURE_TYPE_I) {
                 mb_type += 8;
-            } else if (s->pict_type == FF_B_TYPE && mb_type >= 4) {
+            } else if (s->pict_type == AV_PICTURE_TYPE_B && mb_type >= 4) {
                 mb_type += 4;
             }
             if (mb_type > 33 || svq3_decode_mb(h, mb_type)) {
@@ -1030,9 +1030,9 @@ static int svq3_decode_frame(AVCodecContext *avctx,
                 ff_h264_hl_decode_mb (h);
             }
 
-            if (s->pict_type != FF_B_TYPE && !s->low_delay) {
+            if (s->pict_type != AV_PICTURE_TYPE_B && !s->low_delay) {
                 s->current_picture.mb_type[s->mb_x + s->mb_y*s->mb_stride] =
-                    (s->pict_type == FF_P_TYPE && mb_type < 8) ? (mb_type - 1) : -1;
+                    (s->pict_type == AV_PICTURE_TYPE_P && mb_type < 8) ? (mb_type - 1) : -1;
             }
         }
 
@@ -1041,7 +1041,7 @@ static int svq3_decode_frame(AVCodecContext *avctx,
 
     MPV_frame_end(s);
 
-    if (s->pict_type == FF_B_TYPE || s->low_delay) {
+    if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
         *(AVFrame *) data = *(AVFrame *) &s->current_picture;
     } else {
         *(AVFrame *) data = *(AVFrame *) &s->last_picture;
