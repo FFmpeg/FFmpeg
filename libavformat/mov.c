@@ -2001,6 +2001,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVFragment *frag = &c->fragment;
     AVStream *st = NULL;
     MOVStreamContext *sc;
+    MOVStts *ctts_data;
     uint64_t offset;
     int64_t dts;
     int data_offset = 0;
@@ -2024,18 +2025,33 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     flags = avio_rb24(pb);
     entries = avio_rb32(pb);
     av_dlog(c->fc, "flags 0x%x entries %d\n", flags, entries);
-    if (flags & 0x001) data_offset        = avio_rb32(pb);
-    if (flags & 0x004) first_sample_flags = avio_rb32(pb);
-    if (flags & 0x800) {
-        MOVStts *ctts_data;
-        if ((uint64_t)entries+sc->ctts_count >= UINT_MAX/sizeof(*sc->ctts_data))
-            return -1;
-        ctts_data = av_realloc(sc->ctts_data,
-                               (entries+sc->ctts_count)*sizeof(*sc->ctts_data));
+
+    /* Always assume the presence of composition time offsets.
+     * Without this assumption, for instance, we cannot deal with a track in fragmented movies that meet the following.
+     *  1) in the initial movie, there are no samples.
+     *  2) in the first movie fragment, there is only one sample without composition time offset.
+     *  3) in the subsequent movie fragments, there are samples with composition time offset. */
+    if (!sc->ctts_count && sc->sample_count)
+    {
+        /* Complement ctts table if moov atom doesn't have ctts atom. */
+        ctts_data = av_malloc(sizeof(*sc->ctts_data));
         if (!ctts_data)
             return AVERROR(ENOMEM);
         sc->ctts_data = ctts_data;
+        sc->ctts_data[sc->ctts_count].count = sc->sample_count;
+        sc->ctts_data[sc->ctts_count].duration = 0;
+        sc->ctts_count++;
     }
+    if ((uint64_t)entries+sc->ctts_count >= UINT_MAX/sizeof(*sc->ctts_data))
+        return -1;
+    ctts_data = av_realloc(sc->ctts_data,
+                           (entries+sc->ctts_count)*sizeof(*sc->ctts_data));
+    if (!ctts_data)
+        return AVERROR(ENOMEM);
+    sc->ctts_data = ctts_data;
+
+    if (flags & 0x001) data_offset        = avio_rb32(pb);
+    if (flags & 0x004) first_sample_flags = avio_rb32(pb);
     dts = st->duration;
     offset = frag->base_data_offset + data_offset;
     distance = 0;
@@ -2049,11 +2065,9 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (flags & 0x100) sample_duration = avio_rb32(pb);
         if (flags & 0x200) sample_size     = avio_rb32(pb);
         if (flags & 0x400) sample_flags    = avio_rb32(pb);
-        if (flags & 0x800) {
-            sc->ctts_data[sc->ctts_count].count = 1;
-            sc->ctts_data[sc->ctts_count].duration = avio_rb32(pb);
-            sc->ctts_count++;
-        }
+        sc->ctts_data[sc->ctts_count].count = 1;
+        sc->ctts_data[sc->ctts_count].duration = (flags & 0x800) ? avio_rb32(pb) : 0;
+        sc->ctts_count++;
         if ((keyframe = st->codec->codec_type == AVMEDIA_TYPE_AUDIO ||
              (flags & 0x004 && !i && !sample_flags) || sample_flags & 0x2000000))
             distance = 0;
