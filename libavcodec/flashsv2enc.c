@@ -123,14 +123,14 @@ typedef struct FlashSV2Context {
 
 static av_cold void cleanup(FlashSV2Context * s)
 {
-        av_free(s->encbuffer);
-        av_free(s->keybuffer);
-        av_free(s->databuffer);
-        av_free(s->current_frame);
-        av_free(s->key_frame);
+    av_freep(&s->encbuffer);
+    av_freep(&s->keybuffer);
+    av_freep(&s->databuffer);
+    av_freep(&s->current_frame);
+    av_freep(&s->key_frame);
 
-        av_free(s->frame_blocks);
-        av_free(s->key_blocks);
+    av_freep(&s->frame_blocks);
+    av_freep(&s->key_blocks);
 }
 
 static void init_blocks(FlashSV2Context * s, Block * blocks,
