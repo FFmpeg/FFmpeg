@@ -53,9 +53,7 @@ unsigned int ff_vorbis_nth_root(unsigned int x, unsigned int n)
 // reasonable to check redundantly.
 int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
 {
-    uint_fast32_t exit_at_level[33] = {
-        404, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    uint32_t exit_at_level[33] = { 404 };
 
     unsigned i, j, p, code;
 
@@ -106,7 +104,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
 
 #ifdef V_DEBUG
         av_log(NULL, AV_LOG_INFO, " %d. code len %d code %d - ", p, bits[p], codes[p]);
-        init_get_bits(&gb, (uint_fast8_t *)&codes[p], bits[p]);
+        init_get_bits(&gb, (uint8_t *)&codes[p], bits[p]);
         for (i = 0; i < bits[p]; ++i)
             av_log(NULL, AV_LOG_INFO, "%s", get_bits1(&gb) ? "1" : "0");
         av_log(NULL, AV_LOG_INFO, "\n");
@@ -206,7 +204,7 @@ static void render_line(int x0, int y0, int x1, int y1, float *buf)
 }
 
 void ff_vorbis_floor1_render_list(vorbis_floor1_entry * list, int values,
-                                  uint_fast16_t *y_list, int *flag,
+                                  uint16_t *y_list, int *flag,
                                   int multiplier, float *out, int samples)
 {
     int lx, ly, i;
