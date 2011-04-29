@@ -2100,13 +2100,6 @@ static int hadamard8_diff8x8_c(/*MpegEncContext*/ void *s, uint8_t *dst, uint8_t
             +BUTTERFLYA(temp[8*2+i], temp[8*6+i])
             +BUTTERFLYA(temp[8*3+i], temp[8*7+i]);
     }
-#if 0
-static int maxi=0;
-if(sum>maxi){
-    maxi=sum;
-    printf("MAX:%d\n", maxi);
-}
-#endif
     return sum;
 }
 

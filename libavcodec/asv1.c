@@ -450,17 +450,6 @@ static int decode_frame(AVCodecContext *avctx,
             idct_put(a, mb_x, mb_y);
         }
     }
-#if 0
-int i;
-printf("%d %d\n", 8*buf_size, get_bits_count(&a->gb));
-for(i=get_bits_count(&a->gb); i<8*buf_size; i++){
-    printf("%d", get_bits1(&a->gb));
-}
-
-for(i=0; i<s->avctx->extradata_size; i++){
-    printf("%c\n", ((uint8_t*)s->avctx->extradata)[i]);
-}
-#endif
 
     *picture= *(AVFrame*)&a->picture;
     *data_size = sizeof(AVPicture);

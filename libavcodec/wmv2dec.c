@@ -116,16 +116,6 @@ int ff_wmv2_decode_picture_header(MpegEncContext * s)
     Wmv2Context * const w= (Wmv2Context*)s;
     int code;
 
-#if 0
-{
-int i;
-for(i=0; i<s->gb.size*8; i++)
-    printf("%d", get_bits1(&s->gb));
-//    get_bits1(&s->gb);
-printf("END\n");
-return -1;
-}
-#endif
     if(s->picture_number==0)
         decode_ext_header(w);
 
@@ -316,10 +306,6 @@ static inline int wmv2_decode_inter_block(Wmv2Context *w, DCTELEM *block, int n,
 
     if(w->per_block_abt)
         w->abt_type= decode012(&s->gb);
-#if 0
-    if(w->per_block_abt)
-        printf("B%d", w->abt_type);
-#endif
     w->abt_type_table[n]= w->abt_type;
 
     if(w->abt_type){

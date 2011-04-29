@@ -3327,7 +3327,6 @@ static void opt_input_file(const char *filename)
         case AVMEDIA_TYPE_AUDIO:
             input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(audio_codec_name);
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
-            //fprintf(stderr, "\nInput Audio channels: %d", dec->channels);
             channel_layout    = dec->channel_layout;
             audio_channels    = dec->channels;
             audio_sample_rate = dec->sample_rate;

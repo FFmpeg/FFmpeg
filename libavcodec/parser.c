@@ -272,12 +272,11 @@ int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_s
         pc->overread++;
     }
 
-#if 0
     if(pc->overread){
-        printf("overread %d, state:%X next:%d index:%d o_index:%d\n", pc->overread, pc->state, next, pc->index, pc->overread_index);
-        printf("%X %X %X %X\n", (*buf)[0], (*buf)[1],(*buf)[2],(*buf)[3]);
+        av_dlog(pc, "overread %d, state:%X next:%d index:%d o_index:%d\n",
+                pc->overread, pc->state, next, pc->index, pc->overread_index);
+        av_dlog(pc, "%X %X %X %X\n", (*buf)[0], (*buf)[1],(*buf)[2],(*buf)[3]);
     }
-#endif
 
     return 0;
 }

@@ -617,10 +617,6 @@ void msmpeg4_encode_mb(MpegEncContext * s,
             }
             coded_cbp |= val << (5 - i);
         }
-#if 0
-        if (coded_cbp)
-            printf("cbp=%x %x\n", cbp, coded_cbp);
-#endif
 
         if(s->msmpeg4_version<=2){
             if (s->pict_type == FF_I_TYPE) {
@@ -1382,17 +1378,6 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
 int msmpeg4_decode_picture_header(MpegEncContext * s)
 {
     int code;
-
-#if 0
-{
-int i;
-for(i=0; i<s->gb.size_in_bits; i++)
-    av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&s->gb));
-//    get_bits1(&s->gb);
-av_log(s->avctx, AV_LOG_DEBUG, "END\n");
-return -1;
-}
-#endif
 
     if(s->msmpeg4_version==1){
         int start_code = get_bits_long(&s->gb, 32);

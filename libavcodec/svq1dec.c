@@ -378,13 +378,6 @@ static int svq1_motion_inter_block (MpegEncContext *s, GetBitContext *bitbuf,
   if(x + (mv.x >> 1)<0)
      mv.x= 0;
 
-#if 0
-  int w= (s->width+15)&~15;
-  int h= (s->height+15)&~15;
-  if(x + (mv.x >> 1)<0 || y + (mv.y >> 1)<0 || x + (mv.x >> 1) + 16 > w || y + (mv.y >> 1) + 16> h)
-      av_log(s->avctx, AV_LOG_INFO, "%d %d %d %d\n", x, y, x + (mv.x >> 1), y + (mv.y >> 1));
-#endif
-
   src = &previous[(x + (mv.x >> 1)) + (y + (mv.y >> 1))*pitch];
   dst = current;
 
@@ -461,12 +454,6 @@ static int svq1_motion_inter_4v_block (MpegEncContext *s, GetBitContext *bitbuf,
     if(x + (mvx >> 1)<0)
        mvx= 0;
 
-#if 0
-  int w= (s->width+15)&~15;
-  int h= (s->height+15)&~15;
-  if(x + (mvx >> 1)<0 || y + (mvy >> 1)<0 || x + (mvx >> 1) + 8 > w || y + (mvy >> 1) + 8> h)
-      av_log(s->avctx, AV_LOG_INFO, "%d %d %d %d\n", x, y, x + (mvx >> 1), y + (mvy >> 1));
-#endif
     src = &previous[(x + (mvx >> 1)) + (y + (mvy >> 1))*pitch];
     dst = current;
 
