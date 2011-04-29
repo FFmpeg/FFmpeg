@@ -123,20 +123,13 @@ typedef struct FlashSV2Context {
 
 static av_cold void cleanup(FlashSV2Context * s)
 {
-    if (s->encbuffer)
         av_free(s->encbuffer);
-    if (s->keybuffer)
         av_free(s->keybuffer);
-    if (s->databuffer)
         av_free(s->databuffer);
-    if (s->current_frame)
         av_free(s->current_frame);
-    if (s->key_frame)
         av_free(s->key_frame);
 
-    if (s->frame_blocks)
         av_free(s->frame_blocks);
-    if (s->key_blocks)
         av_free(s->key_blocks);
 }
 
