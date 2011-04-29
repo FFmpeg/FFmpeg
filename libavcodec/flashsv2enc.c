@@ -315,14 +315,14 @@ static int write_block(Block * b, uint8_t * buf, int buf_size)
     buf[buf_pos++] = b->flags;
 
     if (b->flags & HAS_DIFF_BLOCKS) {
-        buf[buf_pos++] = (uint8_t) (b->start);
-        buf[buf_pos++] = (uint8_t) (b->len);
+        buf[buf_pos++] = (b->start);
+        buf[buf_pos++] = (b->len);
     }
 
     if (b->flags & ZLIB_PRIME_COMPRESS_CURRENT) {
         //This feature of the format is poorly understood, and as of now, unused.
-        buf[buf_pos++] = (uint8_t) (b->col);
-        buf[buf_pos++] = (uint8_t) (b->row);
+        buf[buf_pos++] = (b->col);
+        buf[buf_pos++] = (b->row);
     }
 
     memcpy(buf + buf_pos, b->data, b->data_size);
@@ -437,10 +437,10 @@ static int write_pixel_15_7(Palette * palette, uint8_t * dest, const uint8_t * s
     int c7 = pixel_color7_fast(palette, c15);
     int d7 = chroma_diff(color, palette->colors[c7]);
     if (dist + d15 >= d7) {
-        dest[0] = (uint8_t) c7;
+        dest[0] = c7;
         return 1;
     } else {
-        dest[0] = 0x80 | (uint8_t) (c15 >> 8);
+        dest[0] = 0x80 | (c15 >> 8);
         dest[1] = c15 & 0xff;
         return 2;
     }
