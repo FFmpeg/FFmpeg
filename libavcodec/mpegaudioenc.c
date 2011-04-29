@@ -399,10 +399,8 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
                 index = 62; /* value 63 is not allowed */
             }
 
-#if 0
-            printf("%2d:%d in=%x %x %d\n",
-                   j, i, vmax, scale_factor_table[index], index);
-#endif
+            av_dlog(NULL, "%2d:%d in=%x %x %d\n",
+                    j, i, vmax, scale_factor_table[index], index);
             /* store the scale factor */
             assert(index >=0 && index <= 63);
             sf[i] = index;
@@ -470,10 +468,8 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
             code = 0;           /* kill warning */
         }
 
-#if 0
-        printf("%d: %2d %2d %2d %d %d -> %d\n", j,
-               sf[0], sf[1], sf[2], d1, d2, code);
-#endif
+        av_dlog(NULL, "%d: %2d %2d %2d %d %d -> %d\n", j,
+                sf[0], sf[1], sf[2], d1, d2, code);
         scale_code[j] = code;
         sf += 3;
     }
@@ -547,11 +543,9 @@ static void compute_bit_allocation(MpegAudioContext *s,
                 }
             }
         }
-#if 0
-        printf("current=%d max=%d max_sb=%d alloc=%d\n",
-               current_frame_size, max_frame_size, max_sb,
-               bit_alloc[max_sb]);
-#endif
+        av_dlog(NULL, "current=%d max=%d max_sb=%d alloc=%d\n",
+                current_frame_size, max_frame_size, max_sb,
+                bit_alloc[max_sb]);
         if (max_sb < 0)
             break;
 

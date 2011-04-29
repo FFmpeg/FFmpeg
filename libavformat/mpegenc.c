@@ -662,10 +662,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
 
     id = stream->id;
 
-#if 0
-    printf("packet ID=%2x PTS=%0.3f\n",
-           id, pts / 90000.0);
-#endif
+    av_dlog(ctx, "packet ID=%2x PTS=%0.3f\n", id, pts / 90000.0);
 
     buf_ptr = buffer;
 
@@ -1078,10 +1075,8 @@ retry:
                 best_dts= pkt_desc->dts;
         }
 
-#if 0
-        av_log(ctx, AV_LOG_DEBUG, "bumping scr, scr:%f, dts:%f\n",
-               scr/90000.0, best_dts/90000.0);
-#endif
+        av_dlog(ctx, AV_LOG_DEBUG, "bumping scr, scr:%f, dts:%f\n",
+                scr / 90000.0, best_dts / 90000.0);
         if(best_dts == INT64_MAX)
             return 0;
 

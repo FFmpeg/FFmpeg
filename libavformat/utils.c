@@ -1974,22 +1974,20 @@ static void av_estimate_timings(AVFormatContext *ic, int64_t old_offset)
     }
     av_update_stream_timings(ic);
 
-#if 0
     {
         int i;
         AVStream *st;
         for(i = 0;i < ic->nb_streams; i++) {
             st = ic->streams[i];
-        printf("%d: start_time: %0.3f duration: %0.3f\n",
-               i, (double)st->start_time / AV_TIME_BASE,
-               (double)st->duration / AV_TIME_BASE);
+            av_dlog(ic, "%d: start_time: %0.3f duration: %0.3f\n", i,
+                    (double) st->start_time / AV_TIME_BASE,
+                    (double) st->duration   / AV_TIME_BASE);
         }
-        printf("stream: start_time: %0.3f duration: %0.3f bitrate=%d kb/s\n",
-               (double)ic->start_time / AV_TIME_BASE,
-               (double)ic->duration / AV_TIME_BASE,
-               ic->bit_rate / 1000);
+        av_dlog(ic, "stream: start_time: %0.3f duration: %0.3f bitrate=%d kb/s\n",
+                (double) ic->start_time / AV_TIME_BASE,
+                (double) ic->duration   / AV_TIME_BASE,
+                ic->bit_rate / 1000);
     }
-#endif
 }
 
 static int has_codec_parameters(AVCodecContext *enc)

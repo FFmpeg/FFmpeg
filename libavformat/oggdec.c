@@ -316,9 +316,7 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize, int64_t *fpo
     int complete = 0;
     int segp = 0, psize = 0;
 
-#if 0
-    av_log (s, AV_LOG_DEBUG, "ogg_packet: curidx=%i\n", ogg->curidx);
-#endif
+    av_dlog(s, AV_LOG_DEBUG, "ogg_packet: curidx=%i\n", ogg->curidx);
 
     do{
         idx = ogg->curidx;
@@ -330,11 +328,9 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize, int64_t *fpo
 
         os = ogg->streams + idx;
 
-#if 0
-        av_log (s, AV_LOG_DEBUG,
+        av_dlog(s, AV_LOG_DEBUG,
                 "ogg_packet: idx=%d pstart=%d psize=%d segp=%d nsegs=%d\n",
                 idx, os->pstart, os->psize, os->segp, os->nsegs);
-#endif
 
         if (!os->codec){
             if (os->header < 0){
@@ -366,11 +362,9 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize, int64_t *fpo
         }
     }while (!complete);
 
-#if 0
-    av_log (s, AV_LOG_DEBUG,
+    av_dlog(s, AV_LOG_DEBUG,
             "ogg_packet: idx %i, frame size %i, start %i\n",
             idx, os->psize, os->pstart);
-#endif
 
     if (os->granule == -1)
         av_log(s, AV_LOG_WARNING, "Page at %"PRId64" is missing granule\n", os->page_pos);
@@ -451,9 +445,7 @@ ogg_get_headers (AVFormatContext * s)
             return -1;
     }while (!ogg->headers);
 
-#if 0
-    av_log (s, AV_LOG_DEBUG, "found headers\n");
-#endif
+    av_dlog(s, AV_LOG_DEBUG, "found headers\n");
 
     return 0;
 }
