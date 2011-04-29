@@ -178,15 +178,6 @@ static void wma_lsp_to_curve_init(WMACodecContext *s, int frame_len)
         s->lsp_pow_m_table2[i] = b - a;
         b = a;
     }
-#if 0
-    for(i=1;i<20;i++) {
-        float v, r1, r2;
-        v = 5.0 / i;
-        r1 = pow_m1_4(s, v);
-        r2 = pow(v,-0.25);
-        printf("%f^-0.25=%f e=%f\n", v, r1, r2 - r1);
-    }
-#endif
 }
 
 /**

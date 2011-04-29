@@ -293,23 +293,6 @@ static int rv20_decode_picture_header(MpegEncContext *s)
 {
     int seq, mb_pos, i;
 
-#if 0
-    GetBitContext gb= s->gb;
-    for(i=0; i<64; i++){
-        av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&gb));
-        if(i%4==3) av_log(s->avctx, AV_LOG_DEBUG, " ");
-    }
-    av_log(s->avctx, AV_LOG_DEBUG, "\n");
-#endif
-#if 0
-    av_log(s->avctx, AV_LOG_DEBUG, "%3dx%03d/%02Xx%02X ", s->width, s->height, s->width/4, s->height/4);
-    for(i=0; i<s->avctx->extradata_size; i++){
-        av_log(s->avctx, AV_LOG_DEBUG, "%02X ", ((uint8_t*)s->avctx->extradata)[i]);
-        if(i%4==3) av_log(s->avctx, AV_LOG_DEBUG, " ");
-    }
-    av_log(s->avctx, AV_LOG_DEBUG, "\n");
-#endif
-
     if(s->avctx->sub_id == 0x30202002 || s->avctx->sub_id == 0x30203002){
         if (get_bits(&s->gb, 3)){
             av_log(s->avctx, AV_LOG_ERROR, "unknown triplet set\n");

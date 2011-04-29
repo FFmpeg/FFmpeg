@@ -417,9 +417,6 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ffm->header[1] & FLAG_DTS)
             if (ffm_read_data(s, ffm->header+16, 4, 1) != 4)
                 return -1;
-#if 0
-        av_hexdump_log(s, AV_LOG_DEBUG, ffm->header, FRAME_HEADER_SIZE);
-#endif
         ffm->read_state = READ_DATA;
         /* fall thru */
     case READ_DATA:

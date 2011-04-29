@@ -806,14 +806,6 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         rcc->last_mc_mb_var_sum= pic->mc_mb_var_sum;
         rcc->last_mb_var_sum= pic->mb_var_sum;
     }
-#if 0
-{
-    static int mvsum=0, texsum=0;
-    mvsum += s->mv_bits;
-    texsum += s->i_tex_bits + s->p_tex_bits;
-    printf("%d %d//\n\n", mvsum, texsum);
-}
-#endif
     return q;
 }
 

@@ -888,10 +888,6 @@ static void mpeg1_encode_block(MpegEncContext *s,
         j = s->intra_scantable.permutated[i];
         level = block[j];
     next_coef:
-#if 0
-        if (level != 0)
-            av_dlog(s->avctx, "level[%d]=%d\n", i, level);
-#endif
         /* encode using VLC */
         if (level != 0) {
             run = i - last_non_zero - 1;

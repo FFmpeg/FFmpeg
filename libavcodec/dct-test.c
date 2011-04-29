@@ -493,25 +493,6 @@ static void idct248_error(const char *name,
             if (v > err_max)
                 err_max = v;
         }
-#if 0
-        printf("ref=\n");
-        for(i=0;i<8;i++) {
-            int j;
-            for(j=0;j<8;j++) {
-                printf(" %3d", img_dest1[i*8+j]);
-            }
-            printf("\n");
-        }
-
-        printf("out=\n");
-        for(i=0;i<8;i++) {
-            int j;
-            for(j=0;j<8;j++) {
-                printf(" %3d", img_dest[i*8+j]);
-            }
-            printf("\n");
-        }
-#endif
     }
     printf("%s %s: err_inf=%d\n",
            1 ? "IDCT248" : "DCT248",
