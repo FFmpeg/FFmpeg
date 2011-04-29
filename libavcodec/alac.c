@@ -284,20 +284,9 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
             buffer_out[i+1] = val;
         }
 
-#if 0
     /* 4 and 8 are very common cases (the only ones i've seen). these
      * should be unrolled and optimized
      */
-    if (predictor_coef_num == 4) {
-        /* FIXME: optimized general case */
-        return;
-    }
-
-    if (predictor_coef_table == 8) {
-        /* FIXME: optimized general case */
-        return;
-    }
-#endif
 
     /* general case */
     if (predictor_coef_num > 0) {
