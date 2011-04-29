@@ -52,7 +52,10 @@ static const AVOption options[] = {
 };
 
 static const AVClass crypto_class = {
-    "crypto", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+    .class_name     = "crypto",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
 };
 
 static int crypto_open(URLContext *h, const char *uri, int flags)

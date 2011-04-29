@@ -89,10 +89,10 @@ static const AVOption options[] = {
 };
 
 static const AVClass mpegts_muxer_class = {
-    "MPEGTS muxer",
-    av_default_item_name,
-    options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name     = "MPEGTS muxer",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
 };
 
 /* NOTE: 4 bytes must be left at the end for the crc32 */
