@@ -1047,6 +1047,7 @@ int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
     frame->top_field_first  = picref->video->top_field_first;
     frame->key_frame        = picref->video->key_frame;
     frame->pict_type        = picref->video->pict_type;
+    frame->sample_aspect_ratio = picref->video->pixel_aspect;
 
     return 1;
 }

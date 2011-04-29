@@ -248,8 +248,8 @@ static int movie_get_frame(AVFilterLink *outlink)
                     movie->frame->pkt_dts : movie->frame->pkt_pts;
 
                 movie->picref->pos                    = movie->frame->reordered_opaque;
-                movie->picref->video->pixel_aspect = st->sample_aspect_ratio.num ?
-                    st->sample_aspect_ratio : movie->codec_ctx->sample_aspect_ratio;
+                if (!movie->frame->sample_aspect_ratio.num)
+                    movie->picref->video->pixel_aspect = st->sample_aspect_ratio;
                 movie->picref->video->interlaced      = movie->frame->interlaced_frame;
                 movie->picref->video->top_field_first = movie->frame->top_field_first;
                 movie->picref->video->key_frame       = movie->frame->key_frame;

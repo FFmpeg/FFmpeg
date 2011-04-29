@@ -1258,6 +1258,13 @@ typedef struct AVFrame {
      * decoding: set by AVCodecContext.get_buffer()
      */
     uint8_t **extended_data;
+
+    /**
+     * sample aspect ratio for the video frame, 0/1 if unknown\unspecified
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    AVRational sample_aspect_ratio;
 } AVFrame;
 
 struct AVCodecInternal;
