@@ -429,15 +429,13 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         tag = avio_rl32(pb);
         tag_size = avio_rb32(pb);
         avio_rb16(pb);
-#if 0
-        printf("tag=%c%c%c%c (%08x) size=%d\n",
-               (tag) & 0xff,
-               (tag >> 8) & 0xff,
-               (tag >> 16) & 0xff,
-               (tag >> 24) & 0xff,
-               tag,
-               tag_size);
-#endif
+        av_dlog(s, "tag=%c%c%c%c (%08x) size=%d\n",
+                (tag      ) & 0xff,
+                (tag >>  8) & 0xff,
+                (tag >> 16) & 0xff,
+                (tag >> 24) & 0xff,
+                tag,
+                tag_size);
         if (tag_size < 10 && tag != MKTAG('D', 'A', 'T', 'A'))
             return -1;
         switch(tag) {

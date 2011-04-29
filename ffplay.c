@@ -1958,11 +1958,9 @@ static int synchronize_audio(VideoState *is, short *samples,
                         samples_size = wanted_size;
                     }
                 }
-#if 0
-                printf("diff=%f adiff=%f sample_diff=%d apts=%0.3f vpts=%0.3f %f\n",
-                       diff, avg_diff, samples_size - samples_size1,
-                       is->audio_clock, is->video_clock, is->audio_diff_threshold);
-#endif
+                av_dlog(NULL, "diff=%f adiff=%f sample_diff=%d apts=%0.3f vpts=%0.3f %f\n",
+                        diff, avg_diff, samples_size - samples_size1,
+                        is->audio_clock, is->video_clock, is->audio_diff_threshold);
             }
         } else {
             /* too big difference : may be initial PTS errors, so

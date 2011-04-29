@@ -662,10 +662,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
 
     id = stream->id;
 
-#if 0
-    printf("packet ID=%2x PTS=%0.3f\n",
-           id, pts / 90000.0);
-#endif
+    av_dlog(ctx, "packet ID=%2x PTS=%0.3f\n", id, pts / 90000.0);
 
     buf_ptr = buffer;
 
