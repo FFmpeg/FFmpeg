@@ -1622,6 +1622,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
+    int data_size_tmp;
 
     int lfe_samples;
     int num_core_channels = 0;
@@ -1813,10 +1814,11 @@ static int dca_decode_frame(AVCodecContext * avctx,
         return -1;
     }
 
-    /* ffdshow custom code */
-    if (*data_size < (s->sample_blocks / 8) * 256 * sizeof(samples[0]) * channels)
+    data_size_tmp = (s->sample_blocks / 8) * 256 * channels;
+    data_size_tmp *= avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? sizeof(*samples_flt) : sizeof(*samples);
+    if (*data_size < data_size_tmp)
         return -1;
-    *data_size = 256 / 8 * s->sample_blocks * sizeof(samples[0]) * channels;
+    *data_size = data_size_tmp;
 
     /* filter to get final output */
     for (i = 0; i < (s->sample_blocks / 8); i++) {
