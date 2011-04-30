@@ -27,7 +27,7 @@
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     if (avctx->width & 1) {
-        av_log(avctx, AV_LOG_ERROR, "FRWU needs even width\n");
+        av_log(avctx, AV_LOG_ERROR, "frwu needs even width\n");
         return -1;
     }
     avctx->pix_fmt = PIX_FMT_UYVY422;
@@ -110,7 +110,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_frwu_decoder = {
-    "FRWU",
+    "frwu",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_FRWU,
     0,
