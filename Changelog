@@ -4,6 +4,12 @@ releases are sorted from youngest to oldest.
 version 0.6.3:
 
 - fix compilation with --enable-hardcoded-tables
+- mjpeg: Detect overreads in mjpeg_decode_scan() and error out.
+- aac: add headers needed for log2f()
+- Fix races in default av_log handler (possibly exploitable)
+- lavf: inspect more frames for fps when container time base is coarse
+- AMV: disable DR1 and don't override EMU_EDGE
+  (addresses http://seclists.org/bugtraq/2011/Apr/257)
 
 
 version 0.6.2:
