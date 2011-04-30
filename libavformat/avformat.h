@@ -285,10 +285,9 @@ typedef struct AVOutputFormat {
      * AVFMT_NODIMENSIONS, AVFMT_NOSTREAMS
      */
     int flags;
-    /**
-     * Currently only used to set pixel format if not YUV420P.
-     */
-    int (*set_parameters)(struct AVFormatContext *, AVFormatParameters *);
+
+    void *dummy;
+
     int (*interleave_packet)(struct AVFormatContext *, AVPacket *out,
                              AVPacket *in, int flush);
 

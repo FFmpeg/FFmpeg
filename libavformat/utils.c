@@ -2716,11 +2716,6 @@ int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
     } else
         s->priv_data = NULL;
 
-    if (s->oformat->set_parameters) {
-        ret = s->oformat->set_parameters(s, ap);
-        if (ret < 0)
-            return ret;
-    }
     return 0;
 }
 
