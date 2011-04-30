@@ -59,7 +59,8 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix=1;
     static int count;
-    static char line[1024], prev[1024];
+    static char prev[1024];
+    char line[1024];
     static const uint8_t color[]={0x41,0x41,0x11,0x03,9,9,9};
     AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
     if(level>av_log_level)
@@ -73,7 +74,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     vsnprintf(line + strlen(line), sizeof(line) - strlen(line), fmt, vl);
 
     print_prefix= line[strlen(line)-1] == '\n';
-    if(print_prefix && !strcmp(line, prev)){
+    if(print_prefix && !strncmp(line, prev, sizeof line)){
         count++;
         return;
     }
@@ -82,7 +83,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
         count=0;
     }
     colored_fputs(color[av_clip(level>>3, 0, 6)], line);
-    strcpy(prev, line);
+    strncpy(prev, line, sizeof line);
 }
 
 static void (*av_log_callback)(void*, int, const char*, va_list) = av_log_default_callback;
