@@ -1016,7 +1016,7 @@ resync:
             ast->packet_size= 0;
         }
 
-        if(!avi->non_interleaved && ast->seek_pos > pkt->pos){
+        if(!avi->non_interleaved && pkt->pos >= 0 && ast->seek_pos > pkt->pos){
             av_free_packet(pkt);
             goto resync;
         }
