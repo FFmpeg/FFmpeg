@@ -3258,10 +3258,16 @@ static void opt_input_file(const char *filename)
     ic->subtitle_codec_id=
         find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0,
                           avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->strict_std_compliance);
-    ic->flags |= AVFMT_FLAG_NONBLOCK;
+    ic->flags |= AVFMT_FLAG_NONBLOCK | AVFMT_FLAG_PRIV_OPT;
 
     /* open the input file with generic libav function */
     err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
+    if(err >= 0){
+        set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM, NULL);
+        err = av_demuxer_open(ic, ap);
+        if(err < 0)
+            avformat_free_context(ic);
+    }
     if (err < 0) {
         print_error(filename, err);
         ffmpeg_exit(1);

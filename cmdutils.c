@@ -297,6 +297,7 @@ int opt_default(const char *opt, const char *arg){
     int opt_types[]={AV_OPT_FLAG_VIDEO_PARAM, AV_OPT_FLAG_AUDIO_PARAM, 0, AV_OPT_FLAG_SUBTITLE_PARAM, 0};
     AVCodec *p = NULL;
     AVOutputFormat *oformat = NULL;
+    AVInputFormat *iformat = NULL;
 
     while ((p = av_codec_next(p))) {
         AVClass *c = p->priv_class;
@@ -311,6 +312,13 @@ int opt_default(const char *opt, const char *arg){
             break;
     }
     if (oformat)
+        goto out;
+    while ((iformat = av_iformat_next(iformat))) {
+        const AVClass *c = iformat->priv_class;
+        if (c && av_find_opt(&c, opt, NULL, 0, 0))
+            break;
+    }
+    if (iformat)
         goto out;
 
     for(type=0; *avcodec_opts && type<AVMEDIA_TYPE_NB && ret>= 0; type++){
@@ -414,6 +422,8 @@ void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec)
     } else if (!strcmp("AVFormatContext", (*(AVClass**)ctx)->class_name)) {
         AVFormatContext *avctx = ctx;
         if (avctx->oformat && avctx->oformat->priv_class) {
+            priv_ctx = avctx->priv_data;
+        } else if (avctx->iformat && avctx->iformat->priv_class) {
             priv_ctx = avctx->priv_data;
         }
     }
