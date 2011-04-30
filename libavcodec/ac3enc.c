@@ -838,10 +838,6 @@ static void count_frame_bits_fixed(AC3EncodeContext *s)
         if (!blk)
             frame_bits++;
 
-        /* stereo rematrixing */
-        if (s->channel_mode == AC3_CHMODE_STEREO)
-            frame_bits++;
-
         /* exponent strategy */
         frame_bits += 2 * s->fbw_channels;
         if (s->lfe_on)
@@ -931,9 +927,10 @@ static void count_frame_bits(AC3EncodeContext *s)
     /* audio blocks */
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         /* stereo rematrixing */
-        if (s->channel_mode == AC3_CHMODE_STEREO &&
-            s->blocks[blk].new_rematrixing_strategy) {
-            frame_bits += s->num_rematrixing_bands;
+        if (s->channel_mode == AC3_CHMODE_STEREO) {
+            frame_bits++;
+            if (s->blocks[blk].new_rematrixing_strategy)
+                frame_bits += s->num_rematrixing_bands;
         }
 
         /* bandwidth codes & gain range */
