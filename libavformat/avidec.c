@@ -25,6 +25,7 @@
 #include <strings.h>
 #include "libavutil/intreadwrite.h"
 #include "libavutil/bswap.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "avi.h"
 #include "dv.h"
@@ -59,6 +60,7 @@ typedef struct AVIStream {
 } AVIStream;
 
 typedef struct {
+    const AVClass *class;
     int64_t  riff_end;
     int64_t  movi_end;
     int64_t  fsize;
@@ -70,8 +72,23 @@ typedef struct {
     int stream_index;
     DVDemuxContext* dv_demux;
     int odml_depth;
+    int use_odml;
 #define MAX_ODML_DEPTH 1000
 } AVIContext;
+
+
+static const AVOption options[] = {
+    { "use_odml", "use odml index", offsetof(AVIContext, use_odml), FF_OPT_TYPE_INT, 1, -1, 1, AV_OPT_FLAG_DECODING_PARAM},
+    { NULL },
+};
+
+static const AVClass demuxer_class = {
+    "AVI demuxer",
+    av_default_item_name,
+    options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 
 static const char avi_headers[][8] = {
     { 'R', 'I', 'F', 'F',    'A', 'V', 'I', ' ' },
@@ -353,6 +370,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if (get_riff(s, pb) < 0)
         return -1;
+
+    av_log(avi, AV_LOG_DEBUG, "use odml:%d\n", avi->use_odml);
 
     avi->fsize = avio_size(pb);
     if(avi->fsize<=0)
@@ -673,7 +692,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         case MKTAG('i', 'n', 'd', 'x'):
             i= avio_tell(pb);
-            if(pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX)){
+            if(pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) && avi->use_odml){
                 read_braindead_odml_indx(s, 0);
             }
             avio_seek(pb, i+size, SEEK_SET);
@@ -1385,4 +1404,5 @@ AVInputFormat ff_avi_demuxer = {
     avi_read_packet,
     avi_read_close,
     avi_read_seek,
+    .priv_class = &demuxer_class,
 };
