@@ -236,9 +236,10 @@ typedef struct AVFormatParameters {
     int channel; /**< Used to select DV channel. */
     const char *standard; /**< TV standard, NTSC, PAL, SECAM */
     unsigned int mpeg2ts_raw:1;  /**< Force raw MPEG-2 transport stream output, if possible. */
-    unsigned int mpeg2ts_compute_pcr:1; /**< Compute exact PCR for each transport
-                                            stream packet (only meaningful if
-                                            mpeg2ts_raw is TRUE). */
+#if FF_API_FORMAT_PARAMETERS
+    /**< deprecated, use mpegtsraw demuxer-specific options instead */
+    attribute_deprecated unsigned int mpeg2ts_compute_pcr:1;
+#endif
     unsigned int initial_pause:1;       /**< Do not begin to play the stream
                                             immediately (RTSP only). */
     unsigned int prealloced_context:1;

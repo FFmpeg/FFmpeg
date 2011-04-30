@@ -25,6 +25,8 @@
 
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "mpegts.h"
@@ -86,6 +88,7 @@ struct Program {
 };
 
 struct MpegTSContext {
+    const AVClass *class;
     /* user data */
     AVFormatContext *stream;
     /** raw packet size, including FEC if present            */
@@ -120,6 +123,19 @@ struct MpegTSContext {
 
     /** filters for various streams specified by PMT + for the PAT and PMT */
     MpegTSFilter *pids[NB_PID_MAX];
+};
+
+static const AVOption options[] = {
+    {"compute_pcr", "Compute exact PCR for each transport stream packet.", offsetof(MpegTSContext, mpeg2ts_compute_pcr), FF_OPT_TYPE_INT,
+     {.dbl = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass mpegtsraw_class = {
+    .class_name = "mpegtsraw demuxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 /* TS stream handling */
@@ -1455,7 +1471,10 @@ static int mpegts_read_header(AVFormatContext *s,
     int64_t pos;
 
     if (ap) {
-        ts->mpeg2ts_compute_pcr = ap->mpeg2ts_compute_pcr;
+#if FF_API_FORMAT_PARAMETERS
+        if (ap->mpeg2ts_compute_pcr)
+            ts->mpeg2ts_compute_pcr = ap->mpeg2ts_compute_pcr;
+#endif
         if(ap->mpeg2ts_raw){
             av_log(s, AV_LOG_ERROR, "use mpegtsraw_demuxer!\n");
             return -1;
@@ -1878,4 +1897,5 @@ AVInputFormat ff_mpegtsraw_demuxer = {
 #ifdef USE_SYNCPOINT_SEARCH
     .read_seek2 = read_seek2,
 #endif
+    .priv_class = &mpegtsraw_class,
 };
