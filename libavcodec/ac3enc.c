@@ -818,35 +818,57 @@ static void count_frame_bits_fixed(AC3EncodeContext *s)
      *   no auxilliary data
      */
 
-    /* header size */
+    /* header */
     frame_bits = 65;
     frame_bits += frame_bits_inc[s->channel_mode];
 
     /* audio blocks */
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-        frame_bits += s->fbw_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
-        if (s->channel_mode == AC3_CHMODE_STEREO) {
-            frame_bits++; /* rematstr */
-        }
-        frame_bits += 2 * s->fbw_channels; /* chexpstr[2] * c */
-        if (s->lfe_on)
-            frame_bits++; /* lfeexpstr */
-        frame_bits++; /* baie */
-        frame_bits++; /* snr */
-        frame_bits += 2; /* delta / skip */
-    }
-    frame_bits++; /* cplinu for block 0 */
-    /* bit alloc info */
-    /* sdcycod[2], fdcycod[2], sgaincod[2], dbpbcod[2], floorcod[3] */
-    /* csnroffset[6] */
-    /* (fsnoffset[4] + fgaincod[4]) * c */
-    frame_bits += 2*4 + 3 + 6 + s->channels * (4 + 3);
+        /* block switch flags */
+        frame_bits += s->fbw_channels;
 
-    /* auxdatae, crcrsv */
-    frame_bits += 2;
+        /* dither flags */
+        frame_bits += s->fbw_channels;
+
+        /* dynamic range */
+        frame_bits++;
+
+        /* coupling strategy */
+        frame_bits++;
+        if (!blk)
+            frame_bits++;
+
+        /* stereo rematrixing */
+        if (s->channel_mode == AC3_CHMODE_STEREO)
+            frame_bits++;
+
+        /* exponent strategy */
+        frame_bits += 2 * s->fbw_channels;
+        if (s->lfe_on)
+            frame_bits++;
+
+        /* bit allocation params */
+        frame_bits++;
+        if (!blk)
+            frame_bits += 2 + 2 + 2 + 2 + 3;
+
+        /* snr offsets and fast gain codes */
+        frame_bits++;
+        if (!blk)
+            frame_bits += 6 + s->channels * (4 + 3);
+
+        /* delta bit allocation */
+        frame_bits++;
+
+        /* skipped data */
+        frame_bits++;
+    }
+
+    /* auxiliary data */
+    frame_bits++;
 
     /* CRC */
-    frame_bits += 16;
+    frame_bits += 1 + 16;
 
     s->frame_bits_fixed = frame_bits;
 }
@@ -896,6 +918,7 @@ static void count_frame_bits(AC3EncodeContext *s)
     int blk, ch;
     int frame_bits = 0;
 
+    /* header */
     if (opt->audio_production_info)
         frame_bits += 7;
     if (s->bitstream_id == 6) {
@@ -905,6 +928,7 @@ static void count_frame_bits(AC3EncodeContext *s)
             frame_bits += 14;
     }
 
+    /* audio blocks */
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         /* stereo rematrixing */
         if (s->channel_mode == AC3_CHMODE_STEREO &&
@@ -912,11 +936,13 @@ static void count_frame_bits(AC3EncodeContext *s)
             frame_bits += s->num_rematrixing_bands;
         }
 
+        /* bandwidth codes & gain range */
         for (ch = 0; ch < s->fbw_channels; ch++) {
             if (s->exp_strategy[ch][blk] != EXP_REUSE)
-                frame_bits += 6 + 2; /* chbwcod[6], gainrng[2] */
+                frame_bits += 6 + 2;
         }
     }
+
     s->frame_bits = s->frame_bits_fixed + frame_bits;
 }
 
