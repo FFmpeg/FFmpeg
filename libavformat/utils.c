@@ -2719,6 +2719,50 @@ int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
+AVFormatContext *avformat_alloc_output_context(const char *format, AVOutputFormat *oformat, const char *filename){
+    AVFormatContext *s= avformat_alloc_context();
+    if(!s)
+        goto nomem;
+
+    if(!oformat){
+        if (format) {
+            oformat = av_guess_format(format, NULL, NULL);
+            if (!oformat) {
+                av_log(s, AV_LOG_ERROR, "Requested output format '%s' is not a suitable output format\n", format);
+                goto error;
+            }
+        } else {
+            oformat = av_guess_format(NULL, filename, NULL);
+            if (!oformat) {
+                av_log(s, AV_LOG_ERROR, "Unable to find a suitable output format for '%s'\n",
+                        filename);
+                goto error;
+            }
+        }
+    }
+
+    s->oformat= oformat;
+    if (s->oformat->priv_data_size > 0) {
+        s->priv_data = av_mallocz(s->oformat->priv_data_size);
+        if (!s->priv_data)
+            goto nomem;
+        if (s->oformat->priv_class) {
+            *(const AVClass**)s->priv_data= s->oformat->priv_class;
+            av_opt_set_defaults(s->priv_data);
+        }
+    } else
+        s->priv_data = NULL;
+
+    if(filename)
+        av_strlcpy(s->filename, filename, sizeof(s->filename));
+    return s;
+nomem:
+    av_log(s, AV_LOG_ERROR, "Out of memory\n");
+error:
+    avformat_free_context(s);
+    return NULL;
+}
+
 static int validate_codec_tag(AVFormatContext *s, AVStream *st)
 {
     const AVCodecTag *avctag;

@@ -3779,30 +3779,13 @@ static void opt_output_file(const char *filename)
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
-    oc = avformat_alloc_context();
+    oc = avformat_alloc_output_context(last_asked_format, NULL, filename);
+    last_asked_format = NULL;
     if (!oc) {
         print_error(filename, AVERROR(ENOMEM));
         ffmpeg_exit(1);
     }
-
-    if (last_asked_format) {
-        file_oformat = av_guess_format(last_asked_format, NULL, NULL);
-        if (!file_oformat) {
-            fprintf(stderr, "Requested output format '%s' is not a suitable output format\n", last_asked_format);
-            ffmpeg_exit(1);
-        }
-        last_asked_format = NULL;
-    } else {
-        file_oformat = av_guess_format(NULL, filename, NULL);
-        if (!file_oformat) {
-            fprintf(stderr, "Unable to find a suitable output format for '%s'\n",
-                    filename);
-            ffmpeg_exit(1);
-        }
-    }
-
-    oc->oformat = file_oformat;
-    av_strlcpy(oc->filename, filename, sizeof(oc->filename));
+    file_oformat= oc->oformat;
 
     if (!strcmp(file_oformat->name, "ffm") &&
         av_strstart(filename, "http:", NULL)) {

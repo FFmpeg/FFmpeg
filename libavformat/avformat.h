@@ -1048,6 +1048,13 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 AVFormatContext *avformat_alloc_context(void);
 
 /**
+ * Allocate an AVFormatContext.
+ * avformat_free_context() can be used to free the context and everything
+ * allocated by the framework within it.
+ */
+AVFormatContext *avformat_alloc_output_context(const char *format, AVOutputFormat *oformat, const char *filename);
+
+/**
  * Read packets of a media file to get stream information. This
  * is useful for file formats with no headers such as MPEG. This
  * function also computes the real framerate in case of MPEG-2 repeat
@@ -1295,7 +1302,7 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index,
 /**
  * media file output
  */
-int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
+attribute_deprecated int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
 
 /**
  * Split a URL string into components.
