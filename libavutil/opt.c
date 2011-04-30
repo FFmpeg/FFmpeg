@@ -163,8 +163,8 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
             {
                 const AVOption *o_named= av_find_opt(obj, buf, o->unit, 0, 0);
                 if (o_named && o_named->type == FF_OPT_TYPE_CONST)
-                    d= o_named->default_val;
-                else if (!strcmp(buf, "default")) d= o->default_val;
+                    d= o_named->default_val.dbl;
+                else if (!strcmp(buf, "default")) d= o->default_val.dbl;
                 else if (!strcmp(buf, "max"    )) d= o->max;
                 else if (!strcmp(buf, "min"    )) d= o->min;
                 else if (!strcmp(buf, "none"   )) d= 0;
@@ -414,28 +414,19 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                 /* Nothing to be done here */
             break;
             case FF_OPT_TYPE_FLAGS:
-            case FF_OPT_TYPE_INT: {
-                int val;
-                val = opt->default_val;
-                av_set_int(s, opt->name, val);
-            }
-            break;
+            case FF_OPT_TYPE_INT:
             case FF_OPT_TYPE_INT64:
-                if ((double)(opt->default_val+0.6) == opt->default_val)
-                    av_log(s, AV_LOG_DEBUG, "loss of precision in default of %s\n", opt->name);
-                av_set_int(s, opt->name, opt->default_val);
-            break;
+                av_set_int(s, opt->name, opt->default_val.i64);
+                break;
             case FF_OPT_TYPE_DOUBLE:
             case FF_OPT_TYPE_FLOAT: {
                 double val;
-                val = opt->default_val;
+                val = opt->default_val.dbl;
                 av_set_double(s, opt->name, val);
             }
             break;
             case FF_OPT_TYPE_RATIONAL: {
-                AVRational val;
-                val = av_d2q(opt->default_val, INT_MAX);
-                av_set_q(s, opt->name, val);
+                av_set_q(s, opt->name, opt->default_val.q);
             }
             break;
             case FF_OPT_TYPE_STRING:
