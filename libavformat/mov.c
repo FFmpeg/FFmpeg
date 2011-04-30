@@ -2458,7 +2458,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 #if CONFIG_DV_DEMUXER
         if (mov->dv_demux && sc->dv_audio_container) {
-            dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
+            dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size, pkt->pos);
             av_free(pkt->data);
             pkt->size = 0;
             ret = dv_get_packet(mov->dv_demux, pkt);

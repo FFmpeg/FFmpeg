@@ -973,7 +973,7 @@ resync:
         if (CONFIG_DV_DEMUXER && avi->dv_demux) {
             dstr = pkt->destruct;
             size = dv_produce_packet(avi->dv_demux, pkt,
-                                    pkt->data, pkt->size);
+                                    pkt->data, pkt->size, pkt->pos);
             pkt->destruct = dstr;
             pkt->flags |= AV_PKT_FLAG_KEY;
             if (size < 0)

@@ -316,7 +316,7 @@ int dv_get_packet(DVDemuxContext *c, AVPacket *pkt)
 }
 
 int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
-                      uint8_t* buf, int buf_size)
+                      uint8_t* buf, int buf_size, int64_t pos)
 {
     int size, i;
     uint8_t *ppcm[4] = {0};
@@ -331,6 +331,7 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     /* FIXME: in case of no audio/bad audio we have to do something */
     size = dv_extract_audio_info(c, buf);
     for (i = 0; i < c->ach; i++) {
+       c->audio_pkt[i].pos  = pos;
        c->audio_pkt[i].size = size;
        c->audio_pkt[i].pts  = c->abytes * 30000*8 / c->ast[i]->codec->bit_rate;
        ppcm[i] = c->audio_buf[i];
@@ -354,6 +355,7 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     size = dv_extract_video_info(c, buf);
     av_init_packet(pkt);
     pkt->data         = buf;
+    pkt->pos          = pos;
     pkt->size         = size;
     pkt->flags       |= AV_PKT_FLAG_KEY;
     pkt->stream_index = c->vst->id;
@@ -452,13 +454,14 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
     size = dv_get_packet(c->dv_demux, pkt);
 
     if (size < 0) {
+        int64_t pos = avio_tell(s->pb);
         if (!c->dv_demux->sys)
             return AVERROR(EIO);
         size = c->dv_demux->sys->frame_size;
         if (avio_read(s->pb, c->buf, size) <= 0)
             return AVERROR(EIO);
 
-        size = dv_produce_packet(c->dv_demux, pkt, c->buf, size);
+        size = dv_produce_packet(c->dv_demux, pkt, c->buf, size, pos);
     }
 
     return size;
