@@ -423,6 +423,8 @@ typedef struct AVInputFormat {
     const AVMetadataConv *metadata_conv;
 #endif
 
+    const AVClass *priv_class; ///< AVClass for the private context
+
     /* private fields */
     struct AVInputFormat *next;
 } AVInputFormat;
@@ -726,6 +728,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_NOPARSE      0x0020 ///< Do not use AVParsers, you also must set AVFMT_FLAG_NOFILLIN as the fillin code works on frames and no parsing -> no frames. Also seeking to frames can not work if parsing to find frame boundaries has been disabled
 #define AVFMT_FLAG_RTP_HINT     0x0040 ///< Add RTP hinting to the output file
 #define AVFMT_FLAG_SORT_DTS    0x10000 ///< try to interleave outputted packets by dts (using this flag can slow demuxing down)
+#define AVFMT_FLAG_PRIV_OPT    0x20000 ///< Enable use of private options by delaying codec open (this could be made default once all code is converted)
 
     int loop_input;
 
@@ -1039,6 +1042,8 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVInputFormat *fmt,
                        int buf_size,
                        AVFormatParameters *ap);
+
+int av_demuxer_open(AVFormatContext *ic, AVFormatParameters *ap);
 
 /**
  * Allocate an AVFormatContext.

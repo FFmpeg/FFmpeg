@@ -429,6 +429,10 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
             err = AVERROR(ENOMEM);
             goto fail;
         }
+        if (fmt->priv_class) {
+            *(const AVClass**)ic->priv_data= fmt->priv_class;
+            av_opt_set_defaults(ic->priv_data);
+        }
     } else {
         ic->priv_data = NULL;
     }
@@ -437,13 +441,13 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     if (ic->pb)
         ff_id3v2_read(ic, ID3v2_DEFAULT_MAGIC);
 
-    if (ic->iformat->read_header) {
+    if (!(ic->flags&AVFMT_FLAG_PRIV_OPT) && ic->iformat->read_header) {
         err = ic->iformat->read_header(ic, ap);
         if (err < 0)
             goto fail;
     }
 
-    if (pb && !ic->data_offset)
+    if (!(ic->flags&AVFMT_FLAG_PRIV_OPT) && pb && !ic->data_offset)
         ic->data_offset = avio_tell(ic->pb);
 
     ic->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
@@ -469,6 +473,22 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     *ic_ptr = NULL;
     return err;
 }
+
+int av_demuxer_open(AVFormatContext *ic, AVFormatParameters *ap){
+    int err;
+
+    if (ic->iformat->read_header) {
+        err = ic->iformat->read_header(ic, ap);
+        if (err < 0)
+            return err;
+    }
+
+    if (ic->pb && !ic->data_offset)
+        ic->data_offset = avio_tell(ic->pb);
+
+    return 0;
+}
+
 
 /** size of probe buffer, for guessing file type from file contents */
 #define PROBE_BUF_MIN 2048
