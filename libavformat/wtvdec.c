@@ -252,7 +252,7 @@ static AVIOContext * wtvfile_open2(AVFormatContext *s, const uint8_t *buf, int b
         int dir_length, name_size, first_sector, depth;
         uint64_t file_length;
         const uint8_t *name;
-        if (ff_guidcmp(buf, dir_entry_guid)) {
+        if (ff_guidcmp(buf, ff_dir_entry_guid)) {
             av_log(s, AV_LOG_ERROR, "unknown guid "FF_PRI_GUID", expected dir_entry_guid; "
                    "remaining directory entries ignored\n", FF_ARG_GUID(buf));
             break;
@@ -375,7 +375,7 @@ static const ff_asf_guid format_mpeg2_video =
 
 static int read_probe(AVProbeData *p)
 {
-    return ff_guidcmp(p->buf, wtv_guid) ? 0 : AVPROBE_SCORE_MAX;
+    return ff_guidcmp(p->buf, ff_wtv_guid) ? 0 : AVPROBE_SCORE_MAX;
 }
 
 /**
@@ -613,7 +613,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         st = parse_media_type(s, st, sid, mediatype, actual_subtype, actual_formattype, size - 32);
         avio_skip(pb, 32);
         return st;
-    } else if (!ff_guidcmp(mediatype, mediatype_audio)) {
+    } else if (!ff_guidcmp(mediatype, ff_mediatype_audio)) {
         st = new_stream(s, st, sid, AVMEDIA_TYPE_AUDIO);
         if (!st)
             return NULL;
@@ -622,7 +622,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
             if (ret < 0)
                 return NULL;
         } else {
-            if (ff_guidcmp(formattype, format_none))
+            if (ff_guidcmp(formattype, ff_format_none))
                 av_log(s, AV_LOG_WARNING, "unknown formattype:"FF_PRI_GUID"\n", FF_ARG_GUID(formattype));
             avio_skip(pb, size);
         }
@@ -640,7 +640,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
                 av_log(s, AV_LOG_WARNING, "unknown subtype:"FF_PRI_GUID"\n", FF_ARG_GUID(subtype));
         }
         return st;
-    } else if (!ff_guidcmp(mediatype, mediatype_video)) {
+    } else if (!ff_guidcmp(mediatype, ff_mediatype_video)) {
         st = new_stream(s, st, sid, AVMEDIA_TYPE_VIDEO);
         if (!st)
             return NULL;
@@ -651,7 +651,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
             int consumed = parse_videoinfoheader2(s, st);
             avio_skip(pb, FFMAX(size - consumed, 0));
         } else {
-            if (ff_guidcmp(formattype, format_none))
+            if (ff_guidcmp(formattype, ff_format_none))
                 av_log(s, AV_LOG_WARNING, "unknown formattype:"FF_PRI_GUID"\n", FF_ARG_GUID(formattype));
             avio_skip(pb, size);
         }
@@ -659,7 +659,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         if (!memcmp(subtype + 4, (const uint8_t[]){FF_MEDIASUBTYPE_BASE_GUID}, 12)) {
             st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, AV_RL32(subtype));
         } else {
-            st->codec->codec_id = ff_codec_guid_get_id(video_guids, subtype);
+            st->codec->codec_id = ff_codec_guid_get_id(ff_video_guids, subtype);
         }
         if (st->codec->codec_id == CODEC_ID_NONE)
             av_log(s, AV_LOG_WARNING, "unknown subtype:"FF_PRI_GUID"\n", FF_ARG_GUID(subtype));
@@ -669,7 +669,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         st = new_stream(s, st, sid, AVMEDIA_TYPE_SUBTITLE);
         if (!st)
             return NULL;
-        if (ff_guidcmp(formattype, format_none))
+        if (ff_guidcmp(formattype, ff_format_none))
             av_log(s, AV_LOG_WARNING, "unknown formattype:"FF_PRI_GUID"\n", FF_ARG_GUID(formattype));
         avio_skip(pb, size);
         st->codec->codec_id = CODEC_ID_DVB_SUBTITLE;
@@ -679,14 +679,14 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         st = new_stream(s, st, sid, AVMEDIA_TYPE_SUBTITLE);
         if (!st)
             return NULL;
-        if (ff_guidcmp(formattype, format_none))
+        if (ff_guidcmp(formattype, ff_format_none))
             av_log(s, AV_LOG_WARNING, "unknown formattype:"FF_PRI_GUID"\n", FF_ARG_GUID(formattype));
         avio_skip(pb, size);
         st->codec->codec_id   = CODEC_ID_DVB_TELETEXT;
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_mpeg2_sections) &&
                !ff_guidcmp(subtype, mediasubtype_mpeg2_sections)) {
-        if (ff_guidcmp(formattype, format_none))
+        if (ff_guidcmp(formattype, ff_format_none))
             av_log(s, AV_LOG_WARNING, "unknown formattype:"FF_PRI_GUID"\n", FF_ARG_GUID(formattype));
         avio_skip(pb, size);
         return NULL;
@@ -727,7 +727,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
         avio_skip(pb, 8);
         consumed = 32;
 
-        if (!ff_guidcmp(g, stream_guid)) {
+        if (!ff_guidcmp(g, ff_stream_guid)) {
             if (ff_find_stream_index(s, sid) < 0) {
                 ff_asf_guid mediatype, subtype, formattype;
                 int size;
@@ -816,7 +816,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 }
                 consumed += 15;
             }
-        } else if (!ff_guidcmp(g, timestamp_guid)) {
+        } else if (!ff_guidcmp(g, ff_timestamp_guid)) {
             int stream_index = ff_find_stream_index(s, sid);
             if (stream_index >= 0) {
                 avio_skip(pb, 8);
@@ -835,7 +835,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 }
                 }
             }
-        } else if (!ff_guidcmp(g, data_guid)) {
+        } else if (!ff_guidcmp(g, ff_data_guid)) {
             int stream_index = ff_find_stream_index(s, sid);
             if (mode == SEEK_TO_DATA && stream_index >= 0 && len > 32) {
                 WtvStream *wst = s->streams[stream_index]->priv_data;

@@ -29,13 +29,13 @@
 #define WTV_SECTOR_SIZE    (1 << WTV_SECTOR_BITS)
 #define WTV_BIGSECTOR_BITS 18
 
-extern const ff_asf_guid dir_entry_guid;
-extern const ff_asf_guid wtv_guid;
-extern const ff_asf_guid timestamp_guid;
-extern const ff_asf_guid data_guid;
-extern const ff_asf_guid stream_guid;
-extern const ff_asf_guid mediatype_audio;
-extern const ff_asf_guid mediatype_video;
-extern const ff_asf_guid format_none;
-extern const AVCodecGuid video_guids[];
+extern const ff_asf_guid ff_dir_entry_guid;
+extern const ff_asf_guid ff_wtv_guid;
+extern const ff_asf_guid ff_timestamp_guid;
+extern const ff_asf_guid ff_data_guid;
+extern const ff_asf_guid ff_stream_guid;
+extern const ff_asf_guid ff_mediatype_audio;
+extern const ff_asf_guid ff_mediatype_video;
+extern const ff_asf_guid ff_format_none;
+extern const AVCodecGuid ff_video_guids[];
 #endif /* AVFORMAT_WTV_H */
