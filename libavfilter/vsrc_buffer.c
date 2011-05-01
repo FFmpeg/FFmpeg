@@ -62,8 +62,10 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
         AVFilterContext *scale= buffer_filter->outputs[0]->dst;
         AVFilterLink *link;
 
-        av_log(buffer_filter, AV_LOG_INFO, "Changing filter graph input to accept %dx%d %d (%d %d)\n",
-               width,height,pix_fmt, c->pix_fmt, scale && scale->outputs ? scale->outputs[0]->format : -123);
+        av_log(buffer_filter, AV_LOG_INFO,
+               "Buffer video input changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
+               c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name,
+               width, height, av_pix_fmt_descriptors[pix_fmt].name);
 
         if(!scale || strcmp(scale->filter->name,"scale")){
             AVFilter *f= avfilter_get_by_name("scale");
