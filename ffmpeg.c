@@ -2803,9 +2803,11 @@ static void opt_frame_aspect_ratio(const char *arg)
     }
     frame_aspect_ratio = ar;
 
+#if CONFIG_AVFILTER
     x = vfilters ? strlen(vfilters) : 0;
     vfilters = av_realloc(vfilters, x+100);
     snprintf(vfilters+x, x+100, "%csetdar=%f\n", x?',':' ', ar);
+#endif
 }
 
 static int opt_metadata(const char *opt, const char *arg)
