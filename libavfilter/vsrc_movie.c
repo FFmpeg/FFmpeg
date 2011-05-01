@@ -35,6 +35,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavformat/avformat.h"
+#include "avcodec.h"
 #include "avfilter.h"
 
 typedef struct {
@@ -239,20 +240,15 @@ static int movie_get_frame(AVFilterLink *outlink)
                 av_image_copy(movie->picref->data, movie->picref->linesize,
                               movie->frame->data,  movie->frame->linesize,
                               movie->picref->format, outlink->w, outlink->h);
+                avfilter_copy_frame_props(movie->picref, movie->frame);
 
                 /* FIXME: use a PTS correction mechanism as that in
                  * ffplay.c when some API will be available for that */
                 /* use pkt_dts if pkt_pts is not available */
                 movie->picref->pts = movie->frame->pkt_pts == AV_NOPTS_VALUE ?
                     movie->frame->pkt_dts : movie->frame->pkt_pts;
-
-                movie->picref->pos                    = movie->frame->pkt_pos;
                 if (!movie->frame->sample_aspect_ratio.num)
                     movie->picref->video->sample_aspect_ratio = st->sample_aspect_ratio;
-                movie->picref->video->interlaced      = movie->frame->interlaced_frame;
-                movie->picref->video->top_field_first = movie->frame->top_field_first;
-                movie->picref->video->key_frame       = movie->frame->key_frame;
-                movie->picref->video->pict_type       = movie->frame->pict_type;
                 av_dlog(outlink->src,
                         "movie_get_frame(): file:'%s' pts:%"PRId64" time:%lf pos:%"PRId64" aspect:%d/%d\n",
                         movie->file_name, movie->picref->pts,

@@ -24,6 +24,7 @@
  */
 
 #include "avfilter.h"
+#include "avcodec.h"
 #include "vsrc_buffer.h"
 #include "libavutil/imgutils.h"
 
@@ -193,13 +194,9 @@ static int request_frame(AVFilterLink *link)
     av_image_copy(picref->data, picref->linesize,
                   c->frame.data, c->frame.linesize,
                   picref->format, link->w, link->h);
+    avfilter_copy_frame_props(picref, &c->frame);
+    picref->pts = c->pts;
 
-    picref->pts                    = c->pts;
-    picref->video->sample_aspect_ratio = c->frame.sample_aspect_ratio;
-    picref->video->interlaced      = c->frame.interlaced_frame;
-    picref->video->top_field_first = c->frame.top_field_first;
-    picref->video->key_frame       = c->frame.key_frame;
-    picref->video->pict_type       = c->frame.pict_type;
     avfilter_start_frame(link, avfilter_ref_buffer(picref, ~0));
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);

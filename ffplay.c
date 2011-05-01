@@ -40,6 +40,7 @@
 #include "libavcodec/avfft.h"
 
 #if CONFIG_AVFILTER
+# include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
 #endif
@@ -1686,9 +1687,9 @@ static int input_request_frame(AVFilterLink *link)
     }
     av_free_packet(&pkt);
 
+    avfilter_copy_frame_props(picref, priv->frame);
     picref->pts = pts;
-    picref->pos = priv->frame->pkt_pos;
-    picref->video->sample_aspect_ratio = priv->frame->sample_aspect_ratio;
+
     avfilter_start_frame(link, picref);
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);

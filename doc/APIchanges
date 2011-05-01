@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-05-07 - xxxxxxx - lavfi 2.5.0 - avcodec.h
+  Add libavfilter/avcodec.h header and avfilter_copy_frame_props()
+  function.
+
 2011-05-07 - xxxxxxx - lavc 53.5.0 - AVFrame
   Add format field to AVFrame.
 

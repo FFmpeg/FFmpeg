@@ -50,6 +50,7 @@
 #include "libavformat/ffm.h" // not public API
 
 #if CONFIG_AVFILTER
+# include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
 # include "libavfilter/vsrc_buffer.h"
