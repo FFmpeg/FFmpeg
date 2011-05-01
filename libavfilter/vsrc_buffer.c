@@ -104,6 +104,7 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
     memcpy(c->frame.linesize, frame->linesize, sizeof(frame->linesize));
     c->frame.width  = frame->width;
     c->frame.height = frame->height;
+    c->frame.format = frame->format;
     c->frame.interlaced_frame= frame->interlaced_frame;
     c->frame.top_field_first = frame->top_field_first;
     c->frame.key_frame = frame->key_frame;
