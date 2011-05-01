@@ -602,6 +602,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
         picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
         picture->width  = avctx->width;
         picture->height = avctx->height;
+        picture->format = avctx->pix_fmt;
 
         /*
          * A later call with avkpt->size == 0 may loop over all threads,

@@ -1272,6 +1272,15 @@ typedef struct AVFrame {
      * - decoding: Read by user.
      */
     int width, height;
+
+    /**
+     * format of the frame, -1 if unknown or unset
+     * Values correspond to enum PixelFormat for video frames,
+     * enum AVSampleFormat for audio)
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int format;
 } AVFrame;
 
 struct AVCodecInternal;
