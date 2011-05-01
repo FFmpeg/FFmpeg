@@ -240,6 +240,7 @@ static int movie_get_frame(AVFilterLink *outlink)
                 av_image_copy(movie->picref->data, movie->picref->linesize,
                               movie->frame->data,  movie->frame->linesize,
                               movie->picref->format, outlink->w, outlink->h);
+                avfilter_copy_frame_props(movie->picref, movie->frame);
 
                 /* FIXME: use a PTS correction mechanism as that in
                  * ffplay.c when some API will be available for that */
@@ -250,10 +251,6 @@ static int movie_get_frame(AVFilterLink *outlink)
                 movie->picref->pos                    = movie->frame->reordered_opaque;
                 if (!movie->frame->sample_aspect_ratio.num)
                     movie->picref->video->pixel_aspect = st->sample_aspect_ratio;
-                movie->picref->video->interlaced      = movie->frame->interlaced_frame;
-                movie->picref->video->top_field_first = movie->frame->top_field_first;
-                movie->picref->video->key_frame       = movie->frame->key_frame;
-                movie->picref->video->pict_type       = movie->frame->pict_type;
                 av_dlog(outlink->src,
                         "movie_get_frame(): file:'%s' pts:%"PRId64" time:%lf pos:%"PRId64" aspect:%d/%d\n",
                         movie->file_name, movie->picref->pts,

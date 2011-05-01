@@ -25,6 +25,7 @@
 #include "libavutil/rational.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/imgutils.h"
+#include "libavcodec/avcodec.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -681,3 +682,21 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     return ret;
 }
 
+int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
+{
+    if (dst->type != AVMEDIA_TYPE_VIDEO)
+        return AVERROR(EINVAL);
+
+    dst->pts    = src->pts;
+    dst->format = src->format;
+
+    dst->video->w                   = src->width;
+    dst->video->h                   = src->height;
+    dst->video->pixel_aspect        = src->sample_aspect_ratio;
+    dst->video->interlaced          = src->interlaced_frame;
+    dst->video->top_field_first     = src->top_field_first;
+    dst->video->key_frame           = src->key_frame;
+    dst->video->pict_type           = src->pict_type;
+
+    return 0;
+}

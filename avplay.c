@@ -1649,9 +1649,9 @@ static int input_request_frame(AVFilterLink *link)
     }
     av_free_packet(&pkt);
 
+    avfilter_copy_frame_props(picref, priv->frame);
     picref->pts = pts;
-    picref->pos = pkt.pos;
-    picref->video->pixel_aspect = priv->frame->sample_aspect_ratio;
+
     avfilter_start_frame(link, picref);
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);

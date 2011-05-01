@@ -27,6 +27,7 @@
 #include "libavutil/samplefmt.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
+#include "libavcodec/avcodec.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
 #define LIBAVFILTER_VERSION_MINOR  13
@@ -861,5 +862,13 @@ static inline void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
     avfilter_insert_pad(index, &f->output_count, offsetof(AVFilterLink, srcpad),
                         &f->output_pads, &f->outputs, p);
 }
+
+/**
+ * Copy the frame properties of src to dst, without copying the actual
+ * image data.
+ *
+ * @return 0 on success, a negative number on error.
+ */
+int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src);
 
 #endif /* AVFILTER_AVFILTER_H */
