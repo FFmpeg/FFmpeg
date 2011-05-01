@@ -1018,6 +1018,13 @@ typedef struct AVPanScan{
      * - decoding: Read by user.\
      */\
     AVRational sample_aspect_ratio;\
+\
+    /**\
+     * width and height of the video frame\
+     * - encoding: unused\
+     * - decoding: Read by user.\
+     */\
+    int width, height;\
 
 
 #define FF_QSCALE_TYPE_MPEG1 0
