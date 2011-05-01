@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "libavutil/avassert.h"
 #include "internal.h"
 #include "dsputil.h"
 #include "avcodec.h"
@@ -476,7 +477,7 @@ static void print_long_term(H264Context *h) {
 
 void ff_generate_sliding_window_mmcos(H264Context *h) {
     MpegEncContext * const s = &h->s;
-    assert(h->long_ref_count + h->short_ref_count <= h->sps.ref_frame_count);
+    av_assert0(h->long_ref_count + h->short_ref_count <= h->sps.ref_frame_count);
 
     h->mmco_index= 0;
     if(h->short_ref_count && h->long_ref_count + h->short_ref_count == h->sps.ref_frame_count &&
