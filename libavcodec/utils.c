@@ -860,6 +860,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
                               avpkt);
             picture->pkt_dts= avpkt->dts;
             picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
+            picture->width  = avctx->width;
+            picture->height = avctx->height;
         }
 
         emms_c(); //needed to avoid an emms_c() call before every return;
