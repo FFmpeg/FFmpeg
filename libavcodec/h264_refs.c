@@ -622,7 +622,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         }
     }
 
-    if (h->long_ref_count + h->short_ref_count > h->sps.ref_frame_count){
+    if (h->long_ref_count + h->short_ref_count > FFMAX(h->sps.ref_frame_count, 1)){
 
         /* We have too many reference frames, probably due to corrupted
          * stream. Need to discard one frame. Prevents overrun of the
