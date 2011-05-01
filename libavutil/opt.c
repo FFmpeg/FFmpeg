@@ -119,7 +119,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
         *o_out = o;
     if (!o)
         return AVERROR_OPTION_NOT_FOUND;
-    if (!val || o->offset<=0)
+    if ((!val && o->type != FF_OPT_TYPE_STRING) || o->offset<=0)
         return AVERROR(EINVAL);
 
     if (o->type == FF_OPT_TYPE_BINARY) {
