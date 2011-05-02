@@ -1204,14 +1204,28 @@ static void do_video_out(AVFormatContext *s,
                ist->file_index, ist->index,
                ost->resample_width, ost->resample_height, avcodec_get_pix_fmt_name(ost->resample_pix_fmt),
                dec->width         , dec->height         , avcodec_get_pix_fmt_name(dec->pix_fmt));
-        if(!ost->video_resample)
-            ffmpeg_exit(1);
+        ost->resample_width   = dec->width;
+        ost->resample_height  = dec->height;
+        ost->resample_pix_fmt = dec->pix_fmt;
     }
 
 #if !CONFIG_AVFILTER
+    ost->video_resample = dec->width   != enc->width  ||
+                          dec->height  != enc->height ||
+                          dec->pix_fmt != enc->pix_fmt;
+
     if (ost->video_resample) {
         final_picture = &ost->pict_tmp;
-        if (resample_changed) {
+        if (!ost->img_resample_ctx || resample_changed) {
+            /* initialize the destination picture */
+            if (!ost->pict_tmp.data[0]) {
+                avcodec_get_frame_defaults(&ost->pict_tmp);
+                if (avpicture_alloc((AVPicture *)&ost->pict_tmp, enc->pix_fmt,
+                                    enc->width, enc->height)) {
+                    fprintf(stderr, "Cannot allocate temp picture, check pix fmt\n");
+                    ffmpeg_exit(1);
+                }
+            }
             /* initialize a new scaler context */
             sws_freeContext(ost->img_resample_ctx);
             sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
@@ -2290,27 +2304,6 @@ static int transcode(AVFormatContext **output_files,
                                       codec->height  != icodec->height ||
                                       codec->pix_fmt != icodec->pix_fmt;
                 if (ost->video_resample) {
-#if !CONFIG_AVFILTER
-                    avcodec_get_frame_defaults(&ost->pict_tmp);
-                    if(avpicture_alloc((AVPicture*)&ost->pict_tmp, codec->pix_fmt,
-                                         codec->width, codec->height)) {
-                        fprintf(stderr, "Cannot allocate temp picture, check pix fmt\n");
-                        ffmpeg_exit(1);
-                    }
-                    sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
-                    ost->img_resample_ctx = sws_getContext(
-                        icodec->width,
-                        icodec->height,
-                            icodec->pix_fmt,
-                            codec->width,
-                            codec->height,
-                            codec->pix_fmt,
-                            sws_flags, NULL, NULL, NULL);
-                    if (ost->img_resample_ctx == NULL) {
-                        fprintf(stderr, "Cannot get resampling context\n");
-                        ffmpeg_exit(1);
-                    }
-#endif
                     codec->bits_per_raw_sample= frame_bits_per_raw_sample;
                 }
                 ost->resample_height = icodec->height;
