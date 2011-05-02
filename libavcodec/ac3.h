@@ -158,6 +158,7 @@ typedef struct AC3EncOptions {
 
     /* other encoding options */
     int allow_per_frame_metadata;
+    int stereo_rematrixing;    
 } AC3EncOptions;
 
 

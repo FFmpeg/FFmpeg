@@ -52,12 +52,6 @@
 /** Maximum number of exponent groups. +1 for separate DC exponent. */
 #define AC3_MAX_EXP_GROUPS 85
 
-/* stereo rematrixing algorithms */
-#define AC3_REMATRIXING_IS_STATIC 0x1
-#define AC3_REMATRIXING_SUMS    0
-#define AC3_REMATRIXING_NONE    1
-#define AC3_REMATRIXING_ALWAYS  3
-
 #if CONFIG_AC3ENC_FLOAT
 #define MAC_COEF(d,a,b) ((d)+=(a)*(b))
 typedef float SampleType;
@@ -137,10 +131,10 @@ typedef struct AC3EncodeContext {
     int loro_surround_mix_level;            ///< Lo/Ro surround mix level code
 
     int cutoff;                             ///< user-specified cutoff frequency, in Hz
-    int bandwidth_code[AC3_MAX_CHANNELS];   ///< bandwidth code (0 to 60)               (chbwcod)
+    int bandwidth_code;                     ///< bandwidth code (0 to 60)               (chbwcod)
     int nb_coefs[AC3_MAX_CHANNELS];
 
-    int rematrixing;                        ///< determines how rematrixing strategy is calculated
+    int rematrixing_enabled;                ///< stereo rematrixing enabled
     int num_rematrixing_bands;              ///< number of rematrixing bands
 
     /* bitrate allocation control */
@@ -240,6 +234,8 @@ const AVOption ff_ac3_options[] = {
 {"ad_conv_type", "A/D Converter Type", OFFSET(ad_converter_type), FF_OPT_TYPE_INT, {.dbl = -1 }, -1, 1, AC3ENC_PARAM, "ad_conv_type"},
     {"standard", "Standard (default)", 0, FF_OPT_TYPE_CONST, {.dbl = 0 }, INT_MIN, INT_MAX, AC3ENC_PARAM, "ad_conv_type"},
     {"hdcd",     "HDCD",               0, FF_OPT_TYPE_CONST, {.dbl = 1 }, INT_MIN, INT_MAX, AC3ENC_PARAM, "ad_conv_type"},
+/* Other Encoding Options */
+{"stereo_rematrixing", "Stereo Rematrixing", OFFSET(stereo_rematrixing), FF_OPT_TYPE_INT, {.dbl = 1 }, 0, 1, AC3ENC_PARAM},
 {NULL}
 };
 #endif
@@ -405,28 +401,6 @@ static void apply_mdct(AC3EncodeContext *s)
 
 
 /**
- * Initialize stereo rematrixing.
- * If the strategy does not change for each frame, set the rematrixing flags.
- */
-static void rematrixing_init(AC3EncodeContext *s)
-{
-    if (s->channel_mode == AC3_CHMODE_STEREO)
-        s->rematrixing = AC3_REMATRIXING_SUMS;
-    else
-        s->rematrixing = AC3_REMATRIXING_NONE;
-    /* NOTE: AC3_REMATRIXING_ALWAYS might be used in
-             the future in conjunction with channel coupling. */
-
-    if (s->rematrixing & AC3_REMATRIXING_IS_STATIC) {
-        int flag = (s->rematrixing == AC3_REMATRIXING_ALWAYS);
-        s->blocks[0].new_rematrixing_strategy = 1;
-        memset(s->blocks[0].rematrixing_flags, flag,
-               sizeof(s->blocks[0].rematrixing_flags));
-    }
-}
-
-
-/**
  * Determine rematrixing flags for each block and band.
  */
 static void compute_rematrixing_strategy(AC3EncodeContext *s)
@@ -435,16 +409,18 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
     int blk, bnd, i;
     AC3Block *block, *block0;
 
-    s->num_rematrixing_bands = 4;
-
-    if (s->rematrixing & AC3_REMATRIXING_IS_STATIC)
+    if (s->channel_mode != AC3_CHMODE_STEREO)
         return;
+
+    s->num_rematrixing_bands = 4;
 
     nb_coefs = FFMIN(s->nb_coefs[0], s->nb_coefs[1]);
 
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         block = &s->blocks[blk];
         block->new_rematrixing_strategy = !blk;
+        if (!s->rematrixing_enabled)
+            continue;
         for (bnd = 0; bnd < s->num_rematrixing_bands; bnd++) {
             /* calculate calculate sum of squared coeffs for one band in one block */
             int start = ff_ac3_rematrix_band_tab[bnd];
@@ -488,7 +464,7 @@ static void apply_rematrixing(AC3EncodeContext *s)
     int start, end;
     uint8_t *flags;
 
-    if (s->rematrixing == AC3_REMATRIXING_NONE)
+    if (!s->rematrixing_enabled)
         return;
 
     nb_coefs = FFMIN(s->nb_coefs[0], s->nb_coefs[1]);
@@ -518,11 +494,13 @@ static void apply_rematrixing(AC3EncodeContext *s)
  */
 static av_cold void exponent_init(AC3EncodeContext *s)
 {
-    int i;
-    for (i = 73; i < 256; i++) {
-        exponent_group_tab[0][i] = (i - 1) /  3;
-        exponent_group_tab[1][i] = (i + 2) /  6;
-        exponent_group_tab[2][i] = (i + 8) / 12;
+    int expstr, i, grpsize;
+
+    for (expstr = EXP_D15-1; expstr <= EXP_D45-1; expstr++) {
+        grpsize = 3 << expstr;
+        for (i = 73; i < 256; i++) {
+            exponent_group_tab[expstr][i] = (i + grpsize - 4) / grpsize;
+        }
     }
     /* LFE */
     exponent_group_tab[0][7] = 2;
@@ -556,55 +534,46 @@ static void extract_exponents(AC3EncodeContext *s)
 
 
 /**
- * Calculate exponent strategies for all blocks in a single channel.
- */
-static void compute_exp_strategy_ch(AC3EncodeContext *s, uint8_t *exp_strategy,
-                                    uint8_t *exp)
-{
-    int blk, blk1;
-    int exp_diff;
-
-    /* estimate if the exponent variation & decide if they should be
-       reused in the next frame */
-    exp_strategy[0] = EXP_NEW;
-    exp += AC3_MAX_COEFS;
-    for (blk = 1; blk < AC3_MAX_BLOCKS; blk++) {
-        exp_diff = s->dsp.sad[0](NULL, exp, exp - AC3_MAX_COEFS, 16, 16);
-        if (exp_diff > EXP_DIFF_THRESHOLD)
-            exp_strategy[blk] = EXP_NEW;
-        else
-            exp_strategy[blk] = EXP_REUSE;
-        exp += AC3_MAX_COEFS;
-    }
-
-    /* now select the encoding strategy type : if exponents are often
-       recoded, we use a coarse encoding */
-    blk = 0;
-    while (blk < AC3_MAX_BLOCKS) {
-        blk1 = blk + 1;
-        while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1] == EXP_REUSE)
-            blk1++;
-        switch (blk1 - blk) {
-        case 1:  exp_strategy[blk] = EXP_D45; break;
-        case 2:
-        case 3:  exp_strategy[blk] = EXP_D25; break;
-        default: exp_strategy[blk] = EXP_D15; break;
-        }
-        blk = blk1;
-    }
-}
-
-
-/**
  * Calculate exponent strategies for all channels.
  * Array arrangement is reversed to simplify the per-channel calculation.
  */
 static void compute_exp_strategy(AC3EncodeContext *s)
 {
-    int ch, blk;
+    int ch, blk, blk1;
 
     for (ch = 0; ch < s->fbw_channels; ch++) {
-        compute_exp_strategy_ch(s, s->exp_strategy[ch], s->blocks[0].exp[ch]);
+        uint8_t *exp_strategy = s->exp_strategy[ch];
+        uint8_t *exp          = s->blocks[0].exp[ch];
+        int exp_diff;
+
+        /* estimate if the exponent variation & decide if they should be
+           reused in the next frame */
+        exp_strategy[0] = EXP_NEW;
+        exp += AC3_MAX_COEFS;
+        for (blk = 1; blk < AC3_MAX_BLOCKS; blk++) {
+            exp_diff = s->dsp.sad[0](NULL, exp, exp - AC3_MAX_COEFS, 16, 16);
+            if (exp_diff > EXP_DIFF_THRESHOLD)
+                exp_strategy[blk] = EXP_NEW;
+            else
+                exp_strategy[blk] = EXP_REUSE;
+            exp += AC3_MAX_COEFS;
+        }
+
+        /* now select the encoding strategy type : if exponents are often
+           recoded, we use a coarse encoding */
+        blk = 0;
+        while (blk < AC3_MAX_BLOCKS) {
+            blk1 = blk + 1;
+            while (blk1 < AC3_MAX_BLOCKS && exp_strategy[blk1] == EXP_REUSE)
+                blk1++;
+            switch (blk1 - blk) {
+            case 1:  exp_strategy[blk] = EXP_D45; break;
+            case 2:
+            case 3:  exp_strategy[blk] = EXP_D25; break;
+            default: exp_strategy[blk] = EXP_D15; break;
+            }
+            blk = blk1;
+        }
     }
     if (s->lfe_on) {
         ch = s->lfe_channel;
@@ -1005,7 +974,8 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
     reset_block_bap(s);
     mantissa_bits = 0;
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-        AC3Block *block;
+        AC3Block *block = &s->blocks[blk];
+        AC3Block *ref_block;
         // initialize grouped mantissa counts. these are set so that they are
         // padded to the next whole group size when bits are counted in
         // compute_mantissa_size_final
@@ -1017,14 +987,17 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
                blocks within a frame are the exponent values.  We can take
                advantage of that by reusing the bit allocation pointers
                whenever we reuse exponents. */
-            block = s->blocks[blk].exp_ref_block[ch];
+            ref_block = block->exp_ref_block[ch];
             if (s->exp_strategy[ch][blk] != EXP_REUSE) {
-                s->ac3dsp.bit_alloc_calc_bap(block->mask[ch], block->psd[ch], 0,
-                                          s->nb_coefs[ch], snr_offset,
-                                          s->bit_alloc.floor, ff_ac3_bap_tab,
-                                          block->bap[ch]);
+                s->ac3dsp.bit_alloc_calc_bap(ref_block->mask[ch],
+                                             ref_block->psd[ch], 0,
+                                             s->nb_coefs[ch], snr_offset,
+                                             s->bit_alloc.floor, ff_ac3_bap_tab,
+                                             ref_block->bap[ch]);
             }
-            mantissa_bits += s->ac3dsp.compute_mantissa_size(mant_cnt, block->bap[ch], s->nb_coefs[ch]);
+            mantissa_bits += s->ac3dsp.compute_mantissa_size(mant_cnt,
+                                                             ref_block->bap[ch],
+                                                             s->nb_coefs[ch]);
         }
         mantissa_bits += compute_mantissa_size_final(mant_cnt);
     }
@@ -1043,7 +1016,8 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
     int snr_offset, snr_incr;
 
     bits_left = 8 * s->frame_size - (s->frame_bits + s->exponent_bits);
-    av_assert2(bits_left >= 0);
+    if (bits_left < 0)
+        return AVERROR(EINVAL);
 
     snr_offset = s->coarse_snr_offset << 4;
 
@@ -1122,27 +1096,6 @@ static int downgrade_exponents(AC3EncodeContext *s)
 
 
 /**
- * Reduce the bandwidth to reduce the number of bits used for a given SNR offset.
- * This is a second fallback for when bit allocation still fails after exponents
- * have been downgraded.
- * @return non-zero if bandwidth reduction was unsuccessful
- */
-static int reduce_bandwidth(AC3EncodeContext *s, int min_bw_code)
-{
-    int ch;
-
-    if (s->bandwidth_code[0] > min_bw_code) {
-        for (ch = 0; ch < s->fbw_channels; ch++) {
-            s->bandwidth_code[ch]--;
-            s->nb_coefs[ch] = s->bandwidth_code[ch] * 3 + 73;
-        }
-        return 0;
-    }
-    return -1;
-}
-
-
-/**
  * Perform bit allocation search.
  * Finds the SNR offset value that maximizes quality and fits in the specified
  * frame size.  Output is the SNR offset and a set of bit allocation pointers
@@ -1163,15 +1116,6 @@ static int compute_bit_allocation(AC3EncodeContext *s)
             extract_exponents(s);
             encode_exponents(s);
             group_exponents(s);
-            ret = compute_bit_allocation(s);
-            continue;
-        }
-
-        /* fallback 2: reduce bandwidth */
-        /* only do this if the user has not specified a specific cutoff
-           frequency */
-        if (!s->cutoff && !reduce_bandwidth(s, 0)) {
-            process_exponents(s);
             ret = compute_bit_allocation(s);
             continue;
         }
@@ -1436,7 +1380,7 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
     /* bandwidth */
     for (ch = 0; ch < s->fbw_channels; ch++) {
         if (s->exp_strategy[ch][blk] != EXP_REUSE)
-            put_bits(&s->pb, 6, s->bandwidth_code[ch]);
+            put_bits(&s->pb, 6, s->bandwidth_code);
     }
 
     /* exponents */
@@ -2062,6 +2006,9 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
     if (ret)
         return ret;
 
+    s->rematrixing_enabled = s->options.stereo_rematrixing &&
+                             (s->channel_mode == AC3_CHMODE_STEREO);
+
     return 0;
 }
 
@@ -2073,22 +2020,21 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
  */
 static av_cold void set_bandwidth(AC3EncodeContext *s)
 {
-    int ch, bw_code;
+    int ch;
 
     if (s->cutoff) {
         /* calculate bandwidth based on user-specified cutoff frequency */
         int fbw_coeffs;
         fbw_coeffs     = s->cutoff * 2 * AC3_MAX_COEFS / s->sample_rate;
-        bw_code        = av_clip((fbw_coeffs - 73) / 3, 0, 60);
+        s->bandwidth_code = av_clip((fbw_coeffs - 73) / 3, 0, 60);
     } else {
         /* use default bandwidth setting */
-        bw_code = ac3_bandwidth_tab[s->fbw_channels-1][s->bit_alloc.sr_code][s->frame_size_code/2];
+        s->bandwidth_code = ac3_bandwidth_tab[s->fbw_channels-1][s->bit_alloc.sr_code][s->frame_size_code/2];
     }
 
     /* set number of coefficients for each channel */
     for (ch = 0; ch < s->fbw_channels; ch++) {
-        s->bandwidth_code[ch] = bw_code;
-        s->nb_coefs[ch]       = bw_code * 3 + 73;
+        s->nb_coefs[ch] = s->bandwidth_code * 3 + 73;
     }
     if (s->lfe_on)
         s->nb_coefs[s->lfe_channel] = 7; /* LFE channel always has 7 coefs */
@@ -2219,8 +2165,6 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
     }
 
     set_bandwidth(s);
-
-    rematrixing_init(s);
 
     exponent_init(s);
 

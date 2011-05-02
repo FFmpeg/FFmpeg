@@ -8,6 +8,7 @@ that is provided separately from the actual source distribution.
 Use the following command to get the fate test samples
 
 # rsync -aL rsync://rsync.mplayerhq.hu:/samples/fate-suite/ fate/fate-suite
+# rsync -aL rsync://fate-suite.libav.org:/fate-suite/ fate-suite
 
 To inform the build system about the testsuite location, pass
 `--samples=<path to the samples>` to configure or set the SAMPLES Make

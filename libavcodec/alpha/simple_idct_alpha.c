@@ -46,7 +46,7 @@
 /* 0: all entries 0, 1: only first entry nonzero, 2: otherwise  */
 static inline int idct_row(DCTELEM *row)
 {
-    int_fast32_t a0, a1, a2, a3, b0, b1, b2, b3, t;
+    int a0, a1, a2, a3, b0, b1, b2, b3, t;
     uint64_t l, r, t2;
     l = ldq(row);
     r = ldq(row + 4);
@@ -154,7 +154,7 @@ static inline int idct_row(DCTELEM *row)
 
 static inline void idct_col(DCTELEM *col)
 {
-    int_fast32_t a0, a1, a2, a3, b0, b1, b2, b3;
+    int a0, a1, a2, a3, b0, b1, b2, b3;
 
     col[0] += (1 << (COL_SHIFT - 1)) / W4;
 
@@ -235,7 +235,7 @@ static inline void idct_col2(DCTELEM *col)
     uint64_t l, r;
 
     for (i = 0; i < 8; ++i) {
-        int_fast32_t a0 = col[i] + (1 << (COL_SHIFT - 1)) / W4;
+        int a0 = col[i] + (1 << (COL_SHIFT - 1)) / W4;
 
         a0 *= W4;
         col[i] = a0 >> COL_SHIFT;
