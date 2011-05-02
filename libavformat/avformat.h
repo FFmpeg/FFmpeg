@@ -303,10 +303,9 @@ typedef struct AVOutputFormat {
      * AVFMT_NODIMENSIONS, AVFMT_NOSTREAMS
      */
     int flags;
-    /**
-     * Currently only used to set pixel format if not YUV420P.
-     */
-    int (*set_parameters)(struct AVFormatContext *, AVFormatParameters *);
+
+    void *dummy;
+
     int (*interleave_packet)(struct AVFormatContext *, AVPacket *out,
                              AVPacket *in, int flush);
 
@@ -441,6 +440,8 @@ typedef struct AVInputFormat {
 #if FF_API_OLD_METADATA2
     const AVMetadataConv *metadata_conv;
 #endif
+
+    const AVClass *priv_class; ///< AVClass for the private context
 
     /* private fields */
     struct AVInputFormat *next;
@@ -790,6 +791,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_NOPARSE      0x0020 ///< Do not use AVParsers, you also must set AVFMT_FLAG_NOFILLIN as the fillin code works on frames and no parsing -> no frames. Also seeking to frames can not work if parsing to find frame boundaries has been disabled
 #define AVFMT_FLAG_RTP_HINT     0x0040 ///< Add RTP hinting to the output file
 #define AVFMT_FLAG_SORT_DTS    0x10000 ///< try to interleave outputted packets by dts (using this flag can slow demuxing down)
+#define AVFMT_FLAG_PRIV_OPT    0x20000 ///< Enable use of private options by delaying codec open (this could be made default once all code is converted)
 
     int loop_input;
 
@@ -1127,6 +1129,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
  */
 attribute_deprecated AVFormatContext *av_alloc_format_context(void);
 #endif
+int av_demuxer_open(AVFormatContext *ic, AVFormatParameters *ap);
 
 /**
  * Allocate an AVFormatContext.
@@ -1134,6 +1137,13 @@ attribute_deprecated AVFormatContext *av_alloc_format_context(void);
  * allocated by the framework within it.
  */
 AVFormatContext *avformat_alloc_context(void);
+
+/**
+ * Allocate an AVFormatContext.
+ * avformat_free_context() can be used to free the context and everything
+ * allocated by the framework within it.
+ */
+AVFormatContext *avformat_alloc_output_context(const char *format, AVOutputFormat *oformat, const char *filename);
 
 /**
  * Read packets of a media file to get stream information. This
@@ -1383,7 +1393,7 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index,
 /**
  * media file output
  */
-int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
+attribute_deprecated int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
 
 /**
  * Split a URL string into components.

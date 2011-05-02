@@ -80,7 +80,7 @@ untested special converters
            (x)==PIX_FMT_PAL8        \
         || (x)==PIX_FMT_YUYV422     \
         || (x)==PIX_FMT_UYVY422     \
-        || (x)==PIX_FMT_Y400A       \
+        || (x)==PIX_FMT_GRAY8A       \
         || isAnyRGB(x)              \
     )
 
@@ -1158,6 +1158,16 @@ BGR2UV(uint16_t, bgr15ToUV, 0, 0, 0, 0,   0x001F, 0x03E0,   0x7C00, RU<<10, GU<<
 BGR2UV(uint16_t, rgb16ToUV, 0, 0, 0, 0,   0xF800, 0x07E0,   0x001F, RU    , GU<<5, BU<<11, RV    , GV<<5, BV<<11, RGB2YUV_SHIFT+8)
 BGR2UV(uint16_t, rgb15ToUV, 0, 0, 0, 0,   0x7C00, 0x03E0,   0x001F, RU    , GU<<5, BU<<10, RV    , GV<<5, BV<<10, RGB2YUV_SHIFT+7)
 
+static inline void palToA(uint8_t *dst, const uint8_t *src, long width, uint32_t *pal)
+{
+    int i;
+    for (i=0; i<width; i++) {
+        int d= src[i];
+
+        dst[i]= pal[d] >> 24;
+    }
+}
+
 static inline void palToY(uint8_t *dst, const uint8_t *src, long width, uint32_t *pal)
 {
     int i;
@@ -1528,7 +1538,7 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
     uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
     const uint8_t *srcPtr= src[0];
 
-    if (srcFormat == PIX_FMT_Y400A) {
+    if (srcFormat == PIX_FMT_GRAY8A) {
         switch (dstFormat) {
         case PIX_FMT_RGB32  : conv = gray8aToPacked32; break;
         case PIX_FMT_BGR32  : conv = gray8aToPacked32; break;
@@ -1999,9 +2009,10 @@ int sws_scale(SwsContext *c, const uint8_t* const src[], const int srcStride[], 
 
     if (usePal(c->srcFormat)) {
         for (i=0; i<256; i++) {
-            int p, r, g, b,y,u,v;
+            int p, r, g, b, y, u, v, a = 0xff;
             if(c->srcFormat == PIX_FMT_PAL8) {
                 p=((const uint32_t*)(src[1]))[i];
+                a= (p>>24)&0xFF;
                 r= (p>>16)&0xFF;
                 g= (p>> 8)&0xFF;
                 b=  p     &0xFF;
@@ -2017,7 +2028,7 @@ int sws_scale(SwsContext *c, const uint8_t* const src[], const int srcStride[], 
                 r= (i>>3    )*255;
                 g= ((i>>1)&3)*85;
                 b= (i&1     )*255;
-            } else if(c->srcFormat == PIX_FMT_GRAY8 || c->srcFormat == PIX_FMT_Y400A) {
+            } else if(c->srcFormat == PIX_FMT_GRAY8 || c->srcFormat == PIX_FMT_GRAY8A) {
                 r = g = b = i;
             } else {
                 assert(c->srcFormat == PIX_FMT_BGR4_BYTE);
@@ -2028,33 +2039,33 @@ int sws_scale(SwsContext *c, const uint8_t* const src[], const int srcStride[], 
             y= av_clip_uint8((RY*r + GY*g + BY*b + ( 33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
             u= av_clip_uint8((RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
             v= av_clip_uint8((RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
-            c->pal_yuv[i]= y + (u<<8) + (v<<16);
+            c->pal_yuv[i]= y + (u<<8) + (v<<16) + (a<<24);
 
             switch(c->dstFormat) {
             case PIX_FMT_BGR32:
 #if !HAVE_BIGENDIAN
             case PIX_FMT_RGB24:
 #endif
-                c->pal_rgb[i]=  r + (g<<8) + (b<<16);
+                c->pal_rgb[i]=  r + (g<<8) + (b<<16) + (a<<24);
                 break;
             case PIX_FMT_BGR32_1:
 #if HAVE_BIGENDIAN
             case PIX_FMT_BGR24:
 #endif
-                c->pal_rgb[i]= (r + (g<<8) + (b<<16)) << 8;
+                c->pal_rgb[i]= a + (r<<8) + (g<<16) + (b<<24);
                 break;
             case PIX_FMT_RGB32_1:
 #if HAVE_BIGENDIAN
             case PIX_FMT_RGB24:
 #endif
-                c->pal_rgb[i]= (b + (g<<8) + (r<<16)) << 8;
+                c->pal_rgb[i]= a + (b<<8) + (g<<16) + (r<<24);
                 break;
             case PIX_FMT_RGB32:
 #if !HAVE_BIGENDIAN
             case PIX_FMT_BGR24:
 #endif
             default:
-                c->pal_rgb[i]=  b + (g<<8) + (r<<16);
+                c->pal_rgb[i]=  b + (g<<8) + (r<<16) + (a<<24);
             }
         }
     }

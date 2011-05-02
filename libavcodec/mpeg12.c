@@ -2574,6 +2574,7 @@ static const AVProfile mpeg2_video_profiles[] = {
     { FF_PROFILE_MPEG2_SIMPLE,       "Simple"             },
     { FF_PROFILE_RESERVED,           "Reserved"           },
     { FF_PROFILE_RESERVED,           "Reserved"           },
+    { FF_PROFILE_UNKNOWN },
 };
 
 

@@ -205,6 +205,16 @@ static int tta_get_unary(GetBitContext *gb)
     return ret;
 }
 
+static const int64_t tta_channel_layouts[7] = {
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_STEREO|AV_CH_LOW_FREQUENCY,
+    AV_CH_LAYOUT_QUAD,
+    0,
+    AV_CH_LAYOUT_5POINT1_BACK,
+    AV_CH_LAYOUT_5POINT1_BACK|AV_CH_BACK_CENTER,
+    AV_CH_LAYOUT_7POINT1_WIDE
+};
+
 static av_cold int tta_decode_init(AVCodecContext * avctx)
 {
     TTAContext *s = avctx->priv_data;
@@ -234,6 +244,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         }
         s->is_float = (s->flags == FORMAT_FLOAT);
         avctx->channels = s->channels = get_bits(&s->gb, 16);
+        if (s->channels > 1 && s->channels < 9)
+            avctx->channel_layout = tta_channel_layouts[s->channels-2];
         avctx->bits_per_coded_sample = get_bits(&s->gb, 16);
         s->bps = (avctx->bits_per_coded_sample + 7) / 8;
         avctx->sample_rate = get_bits_long(&s->gb, 32);
@@ -286,6 +298,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         }
 
         s->decode_buffer = av_mallocz(sizeof(int32_t)*s->frame_length*s->channels);
+        if (!s->decode_buffer)
+            return AVERROR(ENOMEM);
         s->ch_ctx = av_malloc(avctx->channels * sizeof(*s->ch_ctx));
         if (!s->ch_ctx)
             return AVERROR(ENOMEM);

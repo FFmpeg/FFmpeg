@@ -27,11 +27,8 @@
 #ifndef AVFORMAT_CAF_H
 #define AVFORMAT_CAF_H
 
-#include "avformat.h"
 #include "internal.h"
 
 extern const AVCodecTag ff_codec_caf_tags[];
-
-void ff_read_chan_chunk(AVFormatContext *s, int64_t size, AVCodecContext *codec);
 
 #endif /* AVFORMAT_CAF_H */

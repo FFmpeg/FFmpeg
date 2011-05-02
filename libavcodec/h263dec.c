@@ -567,14 +567,6 @@ retry:
                s->workaround_bugs, s->lavc_build, s->xvid_build, s->divx_version, s->divx_build,
                s->divx_packed ? "p" : "");
 
-#if 0 // dump bits per frame / qp / complexity
-{
-    static FILE *f=NULL;
-    if(!f) f=fopen("rate_qp_cplx.txt", "w");
-    fprintf(f, "%d %d %f\n", buf_size, s->qscale, buf_size*(double)s->qscale);
-}
-#endif
-
 #if HAVE_MMX
     if (s->codec_id == CODEC_ID_MPEG4 && s->xvid_build>=0 && avctx->idct_algo == FF_IDCT_AUTO && (av_get_cpu_flags() & AV_CPU_FLAG_MMX)) {
         avctx->idct_algo= FF_IDCT_XVIDMMX;

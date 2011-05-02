@@ -2910,10 +2910,6 @@ static void opt_frame_aspect_ratio(const char *arg)
         ffmpeg_exit(1);
     }
     frame_aspect_ratio = ar;
-
-    x = vfilters ? strlen(vfilters) : 0;
-    vfilters = av_realloc(vfilters, x+100);
-    snprintf(vfilters+x, x+100, "%csetdar=%f\n", x?',':' ', ar);
 }
 
 static int opt_metadata(const char *opt, const char *arg)
@@ -3264,10 +3260,16 @@ static void opt_input_file(const char *filename)
     ic->subtitle_codec_id=
         find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0,
                           avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->strict_std_compliance);
-    ic->flags |= AVFMT_FLAG_NONBLOCK;
+    ic->flags |= AVFMT_FLAG_NONBLOCK | AVFMT_FLAG_PRIV_OPT;
 
     /* open the input file with generic libav function */
     err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
+    if(err >= 0){
+        set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM, NULL);
+        err = av_demuxer_open(ic, ap);
+        if(err < 0)
+            avformat_free_context(ic);
+    }
     if (err < 0) {
         print_error(filename, err);
         ffmpeg_exit(1);
@@ -3333,7 +3335,6 @@ static void opt_input_file(const char *filename)
         case AVMEDIA_TYPE_AUDIO:
             input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(audio_codec_name);
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
-            //fprintf(stderr, "\nInput Audio channels: %d", dec->channels);
             channel_layout    = dec->channel_layout;
             audio_channels    = dec->channels;
             audio_sample_rate = dec->sample_rate;
@@ -3786,30 +3787,13 @@ static void opt_output_file(const char *filename)
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
-    oc = avformat_alloc_context();
+    oc = avformat_alloc_output_context(last_asked_format, NULL, filename);
+    last_asked_format = NULL;
     if (!oc) {
         print_error(filename, AVERROR(ENOMEM));
         ffmpeg_exit(1);
     }
-
-    if (last_asked_format) {
-        file_oformat = av_guess_format(last_asked_format, NULL, NULL);
-        if (!file_oformat) {
-            fprintf(stderr, "Requested output format '%s' is not a suitable output format\n", last_asked_format);
-            ffmpeg_exit(1);
-        }
-        last_asked_format = NULL;
-    } else {
-        file_oformat = av_guess_format(NULL, filename, NULL);
-        if (!file_oformat) {
-            fprintf(stderr, "Unable to find a suitable output format for '%s'\n",
-                    filename);
-            ffmpeg_exit(1);
-        }
-    }
-
-    oc->oformat = file_oformat;
-    av_strlcpy(oc->filename, filename, sizeof(oc->filename));
+    file_oformat= oc->oformat;
 
     if (!strcmp(file_oformat->name, "ffm") &&
         av_strstart(filename, "http:", NULL)) {

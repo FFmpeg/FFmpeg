@@ -11,6 +11,8 @@ version <next>:
 - Frame multithreaded decoding
 - Lots of deprecated API cruft removed
 - fft and imdct optimizations for AVX (Sandy Bridge) processors
+- showinfo filter added
+
 
 version 0.7_beta1:
 
@@ -340,6 +342,7 @@ version 0.5:
 - Gopher client support
 - MXF D-10 muxer
 - generic metadata API
+- flash ScreenVideo2 encoder
 
 
 version 0.4.9-pre1:

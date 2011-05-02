@@ -158,6 +158,7 @@ static int hpel_motion_search(MpegEncContext * s,
         const int b= score_map[(index+(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)]
                      + (mv_penalty[bx   - pred_x] + mv_penalty[by+2 - pred_y])*c->penalty_factor;
 
+#if 1
         int key;
         int map_generation= c->map_generation;
 #ifndef NDEBUG
@@ -171,6 +172,7 @@ static int hpel_motion_search(MpegEncContext * s,
         assert(map[(index+1)&(ME_MAP_SIZE-1)] == key);
         key= ((my)<<ME_MAP_MV_BITS) + (mx-1) + map_generation;
         assert(map[(index-1)&(ME_MAP_SIZE-1)] == key);
+#endif
         if(t<=b){
             CHECK_HALF_MV(0, 1, mx  ,my-1)
             if(l<=r){
@@ -632,25 +634,6 @@ static int funny_diamond_search(MpegEncContext * s, int *best, int dmin,
 
         if(x!=best[0] || y!=best[1])
             dia_size=0;
-#if 0
-{
-int dx, dy, i;
-static int stats[8*8];
-dx= FFABS(x-best[0]);
-dy= FFABS(y-best[1]);
-if(dy>dx){
-    dx^=dy; dy^=dx; dx^=dy;
-}
-stats[dy*8 + dx] ++;
-if(256*256*256*64 % (stats[0]+1)==0){
-    for(i=0; i<64; i++){
-        if((i&7)==0) printf("\n");
-        printf("%8d ", stats[i]);
-    }
-    printf("\n");
-}
-}
-#endif
     }
     return dmin;
 }
@@ -983,22 +966,6 @@ static int var_diamond_search(MpegEncContext * s, int *best, int dmin,
 
         if(x!=best[0] || y!=best[1])
             dia_size=0;
-#if 0
-{
-int dx, dy, i;
-static int stats[8*8];
-dx= FFABS(x-best[0]);
-dy= FFABS(y-best[1]);
-stats[dy*8 + dx] ++;
-if(256*256*256*64 % (stats[0]+1)==0){
-    for(i=0; i<64; i++){
-        if((i&7)==0) printf("\n");
-        printf("%6d ", stats[i]);
-    }
-    printf("\n");
-}
-}
-#endif
     }
     return dmin;
 }

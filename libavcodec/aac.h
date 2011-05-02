@@ -130,6 +130,7 @@ typedef struct {
 #define SCALE_MAX_POS   255    ///< scalefactor index maximum value
 #define SCALE_MAX_DIFF   60    ///< maximum scalefactor difference allowed by standard
 #define SCALE_DIFF_ZERO  60    ///< codebook index corresponding to zero scalefactor indices difference
+#define POW_SF2_ZERO    200    ///< ff_aac_pow2sf_tab index corresponding to pow(2, 0);
 
 /**
  * Long Term Prediction
@@ -292,8 +293,6 @@ typedef struct {
      * @{
      */
     float *output_data[MAX_CHANNELS];                 ///< Points to each element's 'ret' buffer (PCM output).
-    float sf_scale;                                   ///< Pre-scale for correct IMDCT and dsp.float_to_int16.
-    int sf_offset;                                    ///< offset into pow2sf_tab as appropriate for dsp.float_to_int16
     /** @} */
 
     DECLARE_ALIGNED(32, float, temp)[128];

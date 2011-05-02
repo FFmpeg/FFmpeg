@@ -260,7 +260,7 @@ static int read_header(AVFormatContext *s,
         case MKBETAG('c','h','a','n'):
             if (size < 12)
                 return AVERROR_INVALIDDATA;
-            ff_read_chan_chunk(s, size, st->codec);
+            ff_mov_read_chan(s, size, st->codec);
             break;
 
         default:

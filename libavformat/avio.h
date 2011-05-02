@@ -152,9 +152,9 @@ attribute_deprecated int url_poll(URLPollEntry *poll_table, int n, int timeout);
  * constants, optionally ORed with other flags.
  * @{
  */
-#define URL_RDONLY 0  /**< read-only */
-#define URL_WRONLY 1  /**< write-only */
-#define URL_RDWR   2  /**< read-write */
+#define URL_RDONLY 1  /**< read-only */
+#define URL_WRONLY 2  /**< write-only */
+#define URL_RDWR   (URL_RDONLY|URL_WRONLY)  /**< read-write */
 /**
  * @}
  */

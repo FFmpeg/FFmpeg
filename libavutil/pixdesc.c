@@ -861,8 +861,8 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .log2_chroma_h = 1,
         .flags = PIX_FMT_HWACCEL,
     },
-    [PIX_FMT_Y400A] = {
-        .name = "y400a",
+    [PIX_FMT_GRAY8A] = {
+        .name = "gray8a",
         .nb_components= 2,
         .comp = {
             {0,1,1,0,7},        /* Y */

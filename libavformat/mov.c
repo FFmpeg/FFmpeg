@@ -144,9 +144,12 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'n','a','m'): key = "title";     break;
     case MKTAG(0xa9,'a','u','t'):
     case MKTAG(0xa9,'A','R','T'): key = "artist";    break;
+    case MKTAG( 'a','A','R','T'): key = "album_artist";break;
     case MKTAG(0xa9,'w','r','t'): key = "composer";  break;
     case MKTAG( 'c','p','r','t'):
     case MKTAG(0xa9,'c','p','y'): key = "copyright"; break;
+    case MKTAG(0xa9,'g','r','p'): key = "grouping"; break;
+    case MKTAG(0xa9,'l','y','r'): key = "lyrics"; break;
     case MKTAG(0xa9,'c','m','t'):
     case MKTAG(0xa9,'i','n','f'): key = "comment";   break;
     case MKTAG(0xa9,'a','l','b'): key = "album";     break;
@@ -2181,6 +2184,15 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    if (atom.size < 16)
+        return AVERROR_INVALIDDATA;
+    avio_skip(pb, 4);
+    ff_mov_read_chan(c->fc, atom.size - 4, c->fc->streams[0]->codec);
+    return 0;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('a','v','s','s'), mov_read_extradata },
 { MKTAG('c','h','p','l'), mov_read_chpl },
@@ -2234,6 +2246,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('d','a','c','3'), mov_read_dac3 }, /* AC-3 info */
 { MKTAG('w','i','d','e'), mov_read_wide }, /* place holder */
 { MKTAG('c','m','o','v'), mov_read_cmov },
+{ MKTAG('c','h','a','n'), mov_read_chan },
 { 0, NULL }
 };
 

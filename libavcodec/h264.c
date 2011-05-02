@@ -153,10 +153,6 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src, int *dst_l
     h->nal_unit_type= src[0]&0x1F;
 
     src++; length--;
-#if 0
-    for(i=0; i<length; i++)
-        printf("%2X ", src[i]);
-#endif
 
 #if HAVE_FAST_UNALIGNED
 # if HAVE_FAST_64BIT

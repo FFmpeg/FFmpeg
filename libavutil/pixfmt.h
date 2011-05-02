@@ -132,7 +132,7 @@ enum PixelFormat {
     PIX_FMT_RGB444BE,  ///< packed RGB 4:4:4, 16bpp, (msb)4A 4R 4G 4B(lsb), big-endian, most significant bits to 0
     PIX_FMT_BGR444LE,  ///< packed BGR 4:4:4, 16bpp, (msb)4A 4B 4G 4R(lsb), little-endian, most significant bits to 1
     PIX_FMT_BGR444BE,  ///< packed BGR 4:4:4, 16bpp, (msb)4A 4B 4G 4R(lsb), big-endian, most significant bits to 1
-    PIX_FMT_Y400A,     ///< 8bit gray, 8bit alpha
+    PIX_FMT_GRAY8A,    ///< 8bit gray, 8bit alpha
     PIX_FMT_BGR48BE,   ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as big-endian
     PIX_FMT_BGR48LE,   ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as little-endian
 
@@ -144,6 +144,8 @@ enum PixelFormat {
 
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
+
+#define PIX_FMT_Y400A PIX_FMT_GRAY8A
 
 #if AV_HAVE_BIGENDIAN
 #   define PIX_FMT_NE(be, le) PIX_FMT_##be

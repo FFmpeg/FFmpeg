@@ -41,6 +41,7 @@ typedef struct X264Context {
     const char *level;
     int fastfirstpass;
     const char *stats;
+    const char *weightp;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -252,7 +253,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.i_direct_mv_pred  = avctx->directpred;
 
     x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
-    x4->params.analyse.i_weighted_pred = avctx->weighted_p_pred;
 
     if (avctx->me_method == ME_EPZS)
         x4->params.analyse.i_me_method = X264_ME_DIA;
@@ -301,6 +301,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.pf_log               = X264_log;
     x4->params.p_log_private        = avctx;
     x4->params.i_log_level          = X264_LOG_DEBUG;
+
+    OPT_STR("weightp", x4->weightp);
 
     x4->params.b_intra_refresh      = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     x4->params.rc.i_bitrate         = avctx->bit_rate       / 1000;
@@ -404,6 +406,7 @@ static const AVOption options[] = {
     {"profile", "Set profile restrictions", OFFSET(profile), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     {"level", "Specify level (as defined by Annex A)", OFFSET(level), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     {"passlogfile", "Filename for 2 pass stats", OFFSET(stats), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
+    {"wpredp", "Weighted prediction for P-frames", OFFSET(weightp), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     { NULL },
 };
 

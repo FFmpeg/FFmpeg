@@ -78,7 +78,7 @@ static inline int ff_network_wait_fd(int fd, int write)
     struct pollfd p = { .fd = fd, .events = ev, .revents = 0 };
     int ret;
     ret = poll(&p, 1, 100);
-    return ret < 0 ? ff_neterrno() : p.revents & ev ? 0 : AVERROR(EAGAIN);
+    return ret < 0 ? ff_neterrno() : p.revents & (ev | POLLERR | POLLHUP) ? 0 : AVERROR(EAGAIN);
 }
 
 static inline void ff_network_close(void)

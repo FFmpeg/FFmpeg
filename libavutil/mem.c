@@ -71,6 +71,8 @@ void *av_malloc(FF_INTERNAL_MEM_TYPE size)
     /* let's disallow possible ambiguous cases */
     if(size > (INT_MAX-32) )
         return NULL;
+    else if(!size)
+        size= 1;
 
 #if CONFIG_MEMALIGN_HACK
     ptr = malloc(size+32);

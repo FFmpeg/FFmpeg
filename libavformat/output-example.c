@@ -442,26 +442,16 @@ int main(int argc, char **argv)
 
     filename = argv[1];
 
-    /* auto detect the output format from the name. default is
-       mpeg. */
-    fmt = av_guess_format(NULL, filename, NULL);
-    if (!fmt) {
-        printf("Could not deduce output format from file extension: using MPEG.\n");
-        fmt = av_guess_format("mpeg", NULL, NULL);
-    }
-    if (!fmt) {
-        fprintf(stderr, "Could not find suitable output format\n");
-        exit(1);
-    }
-
     /* allocate the output media context */
-    oc = avformat_alloc_context();
+    oc = avformat_alloc_output_context(NULL, NULL, filename);
     if (!oc) {
-        fprintf(stderr, "Memory error\n");
+        printf("Could not deduce output format from file extension: using MPEG.\n");
+        oc = avformat_alloc_output_context("mpeg", NULL, filename);
+    }
+    if (!oc) {
         exit(1);
     }
-    oc->oformat = fmt;
-    snprintf(oc->filename, sizeof(oc->filename), "%s", filename);
+    fmt= oc->oformat;
 
     /* add the audio and video streams using the default format codecs
        and initialize the codecs */
@@ -472,13 +462,6 @@ int main(int argc, char **argv)
     }
     if (fmt->audio_codec != CODEC_ID_NONE) {
         audio_st = add_audio_stream(oc, fmt->audio_codec);
-    }
-
-    /* set the output parameters (must be done even if no
-       parameters). */
-    if (av_set_parameters(oc, NULL) < 0) {
-        fprintf(stderr, "Invalid output format parameters\n");
-        exit(1);
     }
 
     av_dump_format(oc, 0, filename, 1);

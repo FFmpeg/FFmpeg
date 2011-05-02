@@ -126,7 +126,7 @@ enum {
 };
 
 typedef struct VideoState {
-    SDL_Thread *parse_tid;
+    SDL_Thread *read_tid;
     SDL_Thread *video_tid;
     SDL_Thread *refresh_tid;
     AVInputFormat *iformat;
@@ -1117,7 +1117,7 @@ static double compute_target_time(double frame_current_pts, VideoState *is)
 }
 
 /* called to display each frame */
-static void video_refresh_timer(void *opaque)
+static void video_refresh(void *opaque)
 {
     VideoState *is = opaque;
     VideoPicture *vp;
@@ -1270,7 +1270,7 @@ static void stream_close(VideoState *is)
     int i;
     /* XXX: use a special url_shutdown call to abort parse cleanly */
     is->abort_request = 1;
-    SDL_WaitThread(is->parse_tid, NULL);
+    SDL_WaitThread(is->read_tid, NULL);
     SDL_WaitThread(is->refresh_tid, NULL);
 
     /* free all pictures */
@@ -1359,13 +1359,30 @@ static void alloc_picture(void *opaque)
     SDL_UnlockMutex(is->pictq_mutex);
 }
 
-/**
- *
- * @param pts the dts of the pkt / pts of the frame and guessed if not known
- */
-static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t pos)
+static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
 {
     VideoPicture *vp;
+    double frame_delay, pts = pts1;
+
+    /* compute the exact PTS for the picture if it is omitted in the stream
+     * pts1 is the dts of the pkt / pts of the frame */
+    if (pts != 0) {
+        /* update video clock with pts, if present */
+        is->video_clock = pts;
+    } else {
+        pts = is->video_clock;
+    }
+    /* update video clock for next frame */
+    frame_delay = av_q2d(is->video_st->codec->time_base);
+    /* for MPEG2, the frame can be repeated, so we update the
+       clock accordingly */
+    frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
+    is->video_clock += frame_delay;
+
+#if defined(DEBUG_SYNC) && 0
+    printf("frame_type=%c clock=%0.3f pts=%0.3f\n",
+           av_get_pict_type_char(src_frame->pict_type), pts, pts1);
+#endif
 
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
@@ -1467,36 +1484,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         SDL_UnlockMutex(is->pictq_mutex);
     }
     return 0;
-}
-
-/**
- * compute the exact PTS for the picture if it is omitted in the stream
- * @param pts1 the dts of the pkt / pts of the frame
- */
-static int output_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
-{
-    double frame_delay, pts;
-
-    pts = pts1;
-
-    if (pts != 0) {
-        /* update video clock with pts, if present */
-        is->video_clock = pts;
-    } else {
-        pts = is->video_clock;
-    }
-    /* update video clock for next frame */
-    frame_delay = av_q2d(is->video_st->codec->time_base);
-    /* for MPEG2, the frame can be repeated, so we update the
-       clock accordingly */
-    frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
-    is->video_clock += frame_delay;
-
-#if defined(DEBUG_SYNC) && 0
-    printf("frame_type=%c clock=%0.3f pts=%0.3f\n",
-           av_get_pict_type_char(src_frame->pict_type), pts, pts1);
-#endif
-    return queue_picture(is, src_frame, pts, pos);
 }
 
 static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt)
@@ -1853,7 +1840,7 @@ static int video_thread(void *arg)
 
         pts = pts_int*av_q2d(is->video_st->time_base);
 
-        ret = output_picture(is, frame, pts, pos);
+        ret = queue_picture(is, frame, pts, pos);
 #if !CONFIG_AVFILTER
         av_free_packet(&pkt);
 #endif
@@ -2366,7 +2353,7 @@ static int decode_interrupt_cb(void)
 }
 
 /* this thread gets the stream from the disk or the network */
-static int decode_thread(void *arg)
+static int read_thread(void *arg)
 {
     VideoState *is = arg;
     AVFormatContext *ic;
@@ -2637,8 +2624,8 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is->subpq_cond = SDL_CreateCond();
 
     is->av_sync_type = av_sync_type;
-    is->parse_tid = SDL_CreateThread(decode_thread, is);
-    if (!is->parse_tid) {
+    is->read_tid = SDL_CreateThread(read_thread, is);
+    if (!is->read_tid) {
         av_free(is);
         return NULL;
     }
@@ -2872,7 +2859,7 @@ static void event_loop(void)
             alloc_picture(event.user.data1);
             break;
         case FF_REFRESH_EVENT:
-            video_refresh_timer(event.user.data1);
+            video_refresh(event.user.data1);
             cur_stream->refresh=0;
             break;
         default:
