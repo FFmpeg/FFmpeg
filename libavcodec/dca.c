@@ -321,16 +321,16 @@ typedef struct {
 
     /* Subband samples history (for ADPCM) */
     float subband_samples_hist[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][4];
-    DECLARE_ALIGNED(16, float, subband_fir_hist)[DCA_PRIM_CHANNELS_MAX][512];
-    DECLARE_ALIGNED(16, float, subband_fir_noidea)[DCA_PRIM_CHANNELS_MAX][32];
+    DECLARE_ALIGNED(32, float, subband_fir_hist)[DCA_PRIM_CHANNELS_MAX][512];
+    DECLARE_ALIGNED(32, float, subband_fir_noidea)[DCA_PRIM_CHANNELS_MAX][32];
     int hist_index[DCA_PRIM_CHANNELS_MAX];
-    DECLARE_ALIGNED(16, float, raXin)[32];
+    DECLARE_ALIGNED(32, float, raXin)[32];
 
     int output;                 ///< type of output
     float scale_bias;           ///< output scale
 
-    DECLARE_ALIGNED(16, float, subband_samples)[DCA_BLOCKS_MAX][DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][8];
-    DECLARE_ALIGNED(16, float, samples)[(DCA_PRIM_CHANNELS_MAX+1)*256];
+    DECLARE_ALIGNED(32, float, subband_samples)[DCA_BLOCKS_MAX][DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][8];
+    DECLARE_ALIGNED(32, float, samples)[(DCA_PRIM_CHANNELS_MAX+1)*256];
     const float *samples_chanptr[DCA_PRIM_CHANNELS_MAX+1];
 
     uint8_t dca_buffer[DCA_MAX_FRAME_SIZE + DCA_MAX_EXSS_HEADER_SIZE + DCA_BUFFER_PADDING_SIZE];

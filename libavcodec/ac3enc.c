@@ -171,7 +171,7 @@ typedef struct AC3EncodeContext {
 
     uint8_t exp_strategy[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< exponent strategies
 
-    DECLARE_ALIGNED(16, SampleType, windowed_samples)[AC3_WINDOW_SIZE];
+    DECLARE_ALIGNED(32, SampleType, windowed_samples)[AC3_WINDOW_SIZE];
 } AC3EncodeContext;
 
 typedef struct AC3Mant {

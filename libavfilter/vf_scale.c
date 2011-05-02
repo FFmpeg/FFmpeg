@@ -75,8 +75,8 @@ typedef struct {
     int input_is_pal;           ///< set to 1 if the input format is paletted
     int interlaced;
 
-    char w_expr[256];             ///< width  expression string
-    char h_expr[256];             ///< height expression string
+    char w_expr[256];           ///< width  expression string
+    char h_expr[256];           ///< height expression string
 } ScaleContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)

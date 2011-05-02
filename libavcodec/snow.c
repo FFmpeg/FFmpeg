@@ -3293,10 +3293,8 @@ static void iterative_me(SnowContext *s){
                 }
                 best_rd= ref_rd;
                 *block= ref_b;
-#if 1
                 check_block(s, mb_x, mb_y, color, 1, *obmc_edged, &best_rd);
                 //FIXME RD style color selection
-#endif
                 if(!same_block(block, &backup)){
                     if(tb ) tb ->type &= ~BLOCK_OPT;
                     if(lb ) lb ->type &= ~BLOCK_OPT;

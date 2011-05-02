@@ -787,7 +787,7 @@ typedef struct AVPanScan{
      * - encoding: Set by libavcodec. for coded_picture (and set by user for input).\
      * - decoding: Set by libavcodec.\
      */\
-    int pict_type;\
+    enum AVPictureType pict_type;\
 \
     /**\
      * presentation timestamp in time_base units (time when frame should be shown to user)\
@@ -1037,14 +1037,16 @@ typedef struct AVPanScan{
 #define FF_BUFFER_TYPE_SHARED   4 ///< Buffer from somewhere else; don't deallocate image (data/base), all other tables are not shared.
 #define FF_BUFFER_TYPE_COPY     8 ///< Just a (modified) copy of some other buffer, don't deallocate anything.
 
-
-#define FF_I_TYPE  1 ///< Intra
-#define FF_P_TYPE  2 ///< Predicted
-#define FF_B_TYPE  3 ///< Bi-dir predicted
-#define FF_S_TYPE  4 ///< S(GMC)-VOP MPEG4
-#define FF_SI_TYPE 5 ///< Switching Intra
-#define FF_SP_TYPE 6 ///< Switching Predicted
-#define FF_BI_TYPE 7
+#if FF_API_OLD_FF_PICT_TYPES
+/* DEPRECATED, directly use the AV_PICTURE_TYPE_* enum values */
+#define FF_I_TYPE  AV_PICTURE_TYPE_I  ///< Intra
+#define FF_P_TYPE  AV_PICTURE_TYPE_P  ///< Predicted
+#define FF_B_TYPE  AV_PICTURE_TYPE_B  ///< Bi-dir predicted
+#define FF_S_TYPE  AV_PICTURE_TYPE_S  ///< S(GMC)-VOP MPEG4
+#define FF_SI_TYPE AV_PICTURE_TYPE_SI ///< Switching Intra
+#define FF_SP_TYPE AV_PICTURE_TYPE_SP ///< Switching Predicted
+#define FF_BI_TYPE AV_PICTURE_TYPE_BI
+#endif
 
 #define FF_BUFFER_HINTS_VALID    0x01 // Buffer hints value is meaningful (if 0 ignore).
 #define FF_BUFFER_HINTS_READABLE 0x02 // Codec will read from buffer.
@@ -1224,16 +1226,6 @@ typedef struct AVCodecContext {
      */
     enum PixelFormat pix_fmt;
 
-#if FF_API_RATE_EMU
-    /**
-     * Frame rate emulation. If not zero, the lower layer (i.e. format handler)
-     * has to read frames at native frame rate.
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int rate_emu;
-#endif
-
     /**
      * If non NULL, 'draw_horiz_band' is called by the libavcodec
      * decoder to draw a horizontal band. It improves cache usage. Not
@@ -1337,16 +1329,6 @@ typedef struct AVCodecContext {
 #define FF_RC_STRATEGY_XVID 1
 
     int b_frame_strategy;
-
-#if FF_API_HURRY_UP
-    /**
-     * hurry up amount
-     * - encoding: unused
-     * - decoding: Set by user. 1-> Skip B-frames, 2-> Skip IDCT/dequant too, 5-> Skip everything except header
-     * @deprecated Deprecated in favor of skip_idct and skip_frame.
-     */
-    attribute_deprecated int hurry_up;
-#endif
 
     struct AVCodec *codec;
 
@@ -1833,22 +1815,6 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     uint64_t error[4];
-
-#if FF_API_MB_Q
-    /**
-     * minimum MB quantizer
-     * - encoding: unused
-     * - decoding: unused
-     */
-    attribute_deprecated int mb_qmin;
-
-    /**
-     * maximum MB quantizer
-     * - encoding: unused
-     * - decoding: unused
-     */
-    attribute_deprecated int mb_qmax;
-#endif
 
     /**
      * motion estimation comparison function
@@ -3983,13 +3949,17 @@ void avcodec_default_free_buffers(AVCodecContext *s);
 
 /* misc useful functions */
 
+#if FF_API_OLD_FF_PICT_TYPES
 /**
  * Return a single letter to describe the given picture type pict_type.
  *
  * @param[in] pict_type the picture type
  * @return A single character representing the picture type.
+ * @deprecated Use av_get_picture_type_char() instead.
  */
+attribute_deprecated
 char av_get_pict_type_char(int pict_type);
+#endif
 
 /**
  * Return codec bits per sample.

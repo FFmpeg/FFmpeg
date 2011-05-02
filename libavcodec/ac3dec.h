@@ -201,13 +201,13 @@ typedef struct {
 ///@}
 
 ///@defgroup arrays aligned arrays
-    DECLARE_ALIGNED(16, int,   fixed_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];       ///< fixed-point transform coefficients
-    DECLARE_ALIGNED(16, float, transform_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< transform coefficients
-    DECLARE_ALIGNED(16, float, delay)[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];             ///< delay - added to the next block
-    DECLARE_ALIGNED(16, float, window)[AC3_BLOCK_SIZE];                              ///< window coefficients
-    DECLARE_ALIGNED(16, float, tmp_output)[AC3_BLOCK_SIZE];                          ///< temporary storage for output before windowing
-    DECLARE_ALIGNED(16, float, output)[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];            ///< output after imdct transform and windowing
-    DECLARE_ALIGNED(16, uint8_t, input_buffer)[AC3_FRAME_BUFFER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE]; ///< temp buffer to prevent overread
+    DECLARE_ALIGNED(16, int,   fixed_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];       ///> fixed-point transform coefficients
+    DECLARE_ALIGNED(32, float, transform_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< transform coefficients
+    DECLARE_ALIGNED(32, float, delay)[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];             ///< delay - added to the next block
+    DECLARE_ALIGNED(32, float, window)[AC3_BLOCK_SIZE];                              ///< window coefficients
+    DECLARE_ALIGNED(32, float, tmp_output)[AC3_BLOCK_SIZE];                          ///< temporary storage for output before windowing
+    DECLARE_ALIGNED(32, float, output)[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];            ///< output after imdct transform and windowing
+    DECLARE_ALIGNED(32, uint8_t, input_buffer)[AC3_FRAME_BUFFER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE]; ///< temp buffer to prevent overread
 ///@}
 } AC3DecodeContext;
 

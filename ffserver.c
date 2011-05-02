@@ -2187,10 +2187,8 @@ static int open_input_stream(HTTPContext *c, const char *info)
         }
     }
 
-#if 1
     if (c->fmt_in->iformat->read_seek)
         av_seek_frame(c->fmt_in, -1, stream_pos, 0);
-#endif
     /* set the start time (needed for maxtime and RTP packet timing) */
     c->start_time = cur_time;
     c->first_pts = AV_NOPTS_VALUE;

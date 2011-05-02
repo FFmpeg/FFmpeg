@@ -312,18 +312,16 @@ static void dct_error(const char *name, int is_idct,
     }
     for(i=0; i<64; i++) sysErrMax= FFMAX(sysErrMax, FFABS(sysErr[i]));
 
-#if 1 // dump systematic errors
     for(i=0; i<64; i++){
         if(i%8==0) printf("\n");
         printf("%7d ", (int)sysErr[i]);
     }
     printf("\n");
-#endif
 
     printf("%s %s: err_inf=%d err2=%0.8f syserr=%0.8f maxout=%d blockSumErr=%d\n",
            is_idct ? "IDCT" : "DCT",
            name, err_inf, (double)err2 / NB_ITS / 64.0, (double)sysErrMax / NB_ITS, maxout, blockSumErrMax);
-#if 1 //Speed test
+
     /* speed test */
     for(i=0;i<64;i++)
         block1[i] = 0;
@@ -376,7 +374,6 @@ static void dct_error(const char *name, int is_idct,
     printf("%s %s: %0.1f kdct/s\n",
            is_idct ? "IDCT" : "DCT",
            name, (double)it1 * 1000.0 / (double)ti1);
-#endif
 }
 
 DECLARE_ALIGNED(8, static uint8_t, img_dest)[64];

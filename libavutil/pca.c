@@ -218,7 +218,6 @@ int main(void){
         printf("\n");
     }
 
-#if 1
     for(i=0; i<LEN; i++){
         double v[LEN];
         double error=0;
@@ -233,7 +232,7 @@ int main(void){
         printf("%f ", error);
     }
     printf("\n");
-#endif
+
     for(i=0; i<LEN; i++){
         for(j=0; j<LEN; j++){
             printf("%9.6f ", eigenvector[i + j*LEN]);
