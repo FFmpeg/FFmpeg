@@ -29,7 +29,6 @@
 #include "libavutil/imgutils.h"
 
 typedef struct {
-    int64_t           pts;
     AVFrame           frame;
     int               has_frame;
     int               h, w;
@@ -40,8 +39,6 @@ typedef struct {
 } BufferSourceContext;
 
 int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
-                              int64_t pts, int width,
-                              int height, enum PixelFormat  pix_fmt,
                               const char *sws_param)
 {
     BufferSourceContext *c = buffer_filter->priv;
@@ -59,14 +56,14 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
         snprintf(c->sws_param, 255, "%d:%d:%s", c->w, c->h, sws_param);
     }
 
-    if(width != c->w || height != c->h || pix_fmt != c->pix_fmt){
+    if (frame->width != c->w || frame->height != c->h || frame->format != c->pix_fmt) {
         AVFilterContext *scale= buffer_filter->outputs[0]->dst;
         AVFilterLink *link;
 
         av_log(buffer_filter, AV_LOG_INFO,
                "Buffer video input changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
                c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name,
-               width, height, av_pix_fmt_descriptors[pix_fmt].name);
+               frame->width, frame->height, av_pix_fmt_descriptors[frame->format].name);
 
         if(!scale || strcmp(scale->filter->name,"scale")){
             AVFilter *f= avfilter_get_by_name("scale");
@@ -92,39 +89,26 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
             scale->filter->init(scale, c->sws_param, NULL);
         }
 
-        c->pix_fmt= scale->inputs[0]->format= pix_fmt;
-        c->w= scale->inputs[0]->w= width;
-        c->h= scale->inputs[0]->h= height;
+        c->pix_fmt = scale->inputs[0]->format = frame->format;
+        c->w       = scale->inputs[0]->w      = frame->width;
+        c->h       = scale->inputs[0]->h      = frame->height;
 
         link= scale->outputs[0];
         if ((ret =  link->srcpad->config_props(link)) < 0)
             return ret;
     }
 
+    c->frame = *frame;
     memcpy(c->frame.data    , frame->data    , sizeof(frame->data));
     memcpy(c->frame.linesize, frame->linesize, sizeof(frame->linesize));
-    c->frame.width  = frame->width;
-    c->frame.height = frame->height;
-    c->frame.format = frame->format;
-    c->frame.interlaced_frame= frame->interlaced_frame;
-    c->frame.top_field_first = frame->top_field_first;
-    c->frame.key_frame = frame->key_frame;
-    c->frame.pict_type = frame->pict_type;
-    c->frame.sample_aspect_ratio = frame->sample_aspect_ratio;
-    c->pts = pts;
     c->has_frame = 1;
 
     return 0;
 }
 
-int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
-                             int64_t pts)
+int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame)
 {
-    BufferSourceContext *c = buffer_filter->priv;
-
-    return av_vsrc_buffer_add_frame2(buffer_filter, frame,
-                              pts, c->w,
-                              c->h, c->pix_fmt, "");
+    return av_vsrc_buffer_add_frame2(buffer_filter, frame, "");
 }
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -195,7 +179,6 @@ static int request_frame(AVFilterLink *link)
                   c->frame.data, c->frame.linesize,
                   picref->format, link->w, link->h);
     avfilter_copy_frame_props(picref, &c->frame);
-    picref->pts = c->pts;
 
     avfilter_start_frame(link, avfilter_ref_buffer(picref, ~0));
     avfilter_draw_slice(link, 0, link->h, 1);
