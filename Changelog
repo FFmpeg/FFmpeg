@@ -1,10 +1,19 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.6.4:
+
+- fix compilation with --enable-hardcoded-tables
+- mjpeg: Detect overreads in mjpeg_decode_scan() and error out.
+- aac: add headers needed for log2f()
+- lavf: inspect more frames for fps when container time base is coarse
+
+
 version 0.6.3:
+
 - AMV: Fix possibly exploitable crash.
 - Fix apparently exploitable race condition.
-
+  (addresses http://seclists.org/bugtraq/2011/Apr/257)
 
 version 0.6.2:
 
