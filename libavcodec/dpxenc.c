@@ -167,7 +167,7 @@ AVCodec ff_dpx_encoder = {
     .id   = CODEC_ID_DPX,
     .priv_data_size = sizeof(DPXContext),
     .init   = encode_init,
-    .decode = encode_frame,
+    .encode = encode_frame,
     .pix_fmts = (const enum PixelFormat[]){
         PIX_FMT_RGB24,
         PIX_FMT_RGBA,
