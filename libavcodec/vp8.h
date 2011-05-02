@@ -86,6 +86,7 @@ typedef struct {
 typedef struct {
     AVCodecContext *avctx;
     AVFrame *framep[4];
+    AVFrame *next_framep[4];
     uint8_t *edge_emu_buffer;
 
     uint16_t mb_width;   /* number of horizontal MB */
@@ -235,7 +236,7 @@ typedef struct {
     VP8DSPContext vp8dsp;
     H264PredContext hpc;
     vp8_mc_func put_pixels_tab[3][3][3];
-    AVFrame frames[4];
+    AVFrame frames[5];
 } VP8Context;
 
 #endif
