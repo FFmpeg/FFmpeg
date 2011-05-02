@@ -263,7 +263,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             return -1;
         }
         else switch(s->bps) {
-//            case 1: avctx->sample_fmt = AV_SAMPLE_FMT_U8; break;
+            case 1: avctx->sample_fmt = AV_SAMPLE_FMT_U8; break;
             case 2: avctx->sample_fmt = AV_SAMPLE_FMT_S16; break;
 //            case 3: avctx->sample_fmt = AV_SAMPLE_FMT_S24; break;
             case 4: avctx->sample_fmt = AV_SAMPLE_FMT_S32; break;
@@ -442,6 +442,13 @@ static int tta_decode_frame(AVCodecContext *avctx,
 
         // convert to output buffer
         switch(s->bps) {
+            case 1: {
+                uint8_t *samples = data;
+                for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
+                    *samples++ = *p + 0x80;
+                *data_size = samples - (uint8_t *)data;
+                break;
+            }
             case 2: {
                 uint16_t *samples = data;
                 for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++) {
