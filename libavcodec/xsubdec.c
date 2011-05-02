@@ -51,7 +51,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     AVSubtitle *sub = data;
     const uint8_t *buf_end = buf + buf_size;
     uint8_t *bitmap;
-    int w, h, x, y, rlelen, i;
+    int w, h, x, y, i;
     int64_t packet_time = 0;
     GetBitContext gb;
     int has_alpha = avctx->codec_tag == MKTAG('D','X','S','A');
@@ -83,7 +83,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     // skip bottom right position, it gives no new information
     bytestream_get_le16(&buf);
     bytestream_get_le16(&buf);
-    rlelen = bytestream_get_le16(&buf);
+    // The following value is supposed to indicate the start offset
+    // (relative to the palette) of the data for the second field,
+    // however there are files  where it has a bogus value and thus
+    // we just ignore it
+    bytestream_get_le16(&buf);
 
     // allocate sub and set values
     sub->rects =  av_mallocz(sizeof(*sub->rects));
@@ -105,8 +109,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         ((uint32_t*)sub->rects[0]->pict.data[1])[i] |= (has_alpha ? *buf++ : (i ? 0xff : 0)) << 24;
 
     // process RLE-compressed data
-    rlelen = FFMIN(rlelen, buf_end - buf);
-    init_get_bits(&gb, buf, rlelen * 8);
+    init_get_bits(&gb, buf, (buf_end - buf) * 8);
     bitmap = sub->rects[0]->pict.data[0];
     for (y = 0; y < h; y++) {
         // interlaced: do odd lines
