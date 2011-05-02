@@ -84,6 +84,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 
     if (!s->picture_ptr)
         s->picture_ptr = &s->picture;
+    avcodec_get_frame_defaults(&s->picture);
 
     s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);

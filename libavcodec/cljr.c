@@ -118,6 +118,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 static av_cold void common_init(AVCodecContext *avctx){
     CLJRContext * const a = avctx->priv_data;
 
+    avcodec_get_frame_defaults(&a->picture);
     avctx->coded_frame= (AVFrame*)&a->picture;
     a->avctx= avctx;
 }

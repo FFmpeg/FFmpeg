@@ -231,6 +231,7 @@ static av_cold int decode_init(AVCodecContext *avctx) {
             return 1;
     }
     c->bpp = avctx->bits_per_coded_sample;
+    avcodec_get_frame_defaults(&c->pic);
     c->pic.data[0] = NULL;
     c->linelen = avctx->width * avctx->bits_per_coded_sample / 8;
     c->height = avctx->height;

@@ -146,6 +146,7 @@ static av_cold void common_init(AVCodecContext *avctx){
     VCR1Context * const a = avctx->priv_data;
 
     avctx->coded_frame= (AVFrame*)&a->picture;
+    avcodec_get_frame_defaults(&a->picture);
     a->avctx= avctx;
 }
 

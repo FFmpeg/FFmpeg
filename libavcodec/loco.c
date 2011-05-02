@@ -272,6 +272,8 @@ static av_cold int decode_init(AVCodecContext *avctx){
     if(avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_INFO, "lossy:%i, version:%i, mode: %i\n", l->lossy, version, l->mode);
 
+    avcodec_get_frame_defaults(&l->pic);
+
     return 0;
 }
 

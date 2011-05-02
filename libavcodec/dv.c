@@ -1093,6 +1093,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
 
+    avcodec_get_frame_defaults(&s->picture);
     s->picture.reference = 0;
     s->picture.key_frame = 1;
     s->picture.pict_type = AV_PICTURE_TYPE_I;

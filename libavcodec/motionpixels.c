@@ -61,6 +61,7 @@ static av_cold int mp_decode_init(AVCodecContext *avctx)
     mp->vpt = av_mallocz(avctx->height * sizeof(YuvPixel));
     mp->hpt = av_mallocz(avctx->height * avctx->width / 16 * sizeof(YuvPixel));
     avctx->pix_fmt = PIX_FMT_RGB555;
+    avcodec_get_frame_defaults(&mp->frame);
     return 0;
 }
 

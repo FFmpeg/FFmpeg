@@ -339,6 +339,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     s->bpp = avctx->bits_per_coded_sample;
+    avcodec_get_frame_defaults(&s->frame);
 
     if ((err = extract_header(avctx, NULL)) < 0)
         return err;

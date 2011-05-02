@@ -81,6 +81,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->fg          = DEFAULT_FG_COLOR;
     s->bg          = DEFAULT_BG_COLOR;
 
+    avcodec_get_frame_defaults(&s->frame);
     if (!avctx->width || !avctx->height)
         avcodec_set_dimensions(avctx, 80<<3, 25<<4);
 

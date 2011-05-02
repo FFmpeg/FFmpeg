@@ -967,6 +967,7 @@ static av_cold int indeo3_decode_init(AVCodecContext *avctx)
     s->width = avctx->width;
     s->height = avctx->height;
     avctx->pix_fmt = PIX_FMT_YUV410P;
+    avcodec_get_frame_defaults(&s->frame);
 
     if (!(ret = build_modpred(s)))
         ret = iv_alloc_frames(s);

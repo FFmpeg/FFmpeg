@@ -55,6 +55,8 @@ static av_cold int tgv_decode_init(AVCodecContext *avctx){
     s->avctx = avctx;
     avctx->time_base = (AVRational){1, 15};
     avctx->pix_fmt = PIX_FMT_PAL8;
+    avcodec_get_frame_defaults(&s->frame);
+    avcodec_get_frame_defaults(&s->last_frame);
     return 0;
 }
 

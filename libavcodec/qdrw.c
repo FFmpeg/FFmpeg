@@ -133,8 +133,9 @@ static int decode_frame(AVCodecContext *avctx,
 }
 
 static av_cold int decode_init(AVCodecContext *avctx){
-//    QdrawContext * const a = avctx->priv_data;
+    QdrawContext * const a = avctx->priv_data;
 
+    avcodec_get_frame_defaults(&a->pic);
     avctx->pix_fmt= PIX_FMT_PAL8;
 
     return 0;

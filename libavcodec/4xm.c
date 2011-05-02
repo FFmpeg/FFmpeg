@@ -832,6 +832,8 @@ static av_cold int decode_init(AVCodecContext *avctx){
         return 1;
     }
 
+    avcodec_get_frame_defaults(&f->current_picture);
+    avcodec_get_frame_defaults(&f->last_picture);
     f->version= AV_RL32(avctx->extradata)>>16;
     common_init(avctx);
     init_vlcs(f);

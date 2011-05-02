@@ -599,6 +599,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->width = avctx->width;
     c->height = avctx->height;
+    avcodec_get_frame_defaults(&c->pic);
 
     c->bpp = avctx->bits_per_coded_sample;
 

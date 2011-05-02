@@ -653,8 +653,10 @@ av_cold void ff_vp56_init(AVCodecContext *avctx, int flip, int has_alpha)
     ff_vp56dsp_init(&s->vp56dsp, avctx->codec->id);
     ff_init_scantable(s->dsp.idct_permutation, &s->scantable,ff_zigzag_direct);
 
-    for (i=0; i<4; i++)
+    for (i=0; i<4; i++) {
         s->framep[i] = &s->frames[i];
+        avcodec_get_frame_defaults(&s->frames[i]);
+    }
     s->framep[VP56_FRAME_UNUSED] = s->framep[VP56_FRAME_GOLDEN];
     s->framep[VP56_FRAME_UNUSED2] = s->framep[VP56_FRAME_GOLDEN2];
     s->edge_emu_buffer_alloc = NULL;

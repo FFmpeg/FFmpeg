@@ -150,6 +150,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_RGB555;
+    avcodec_get_frame_defaults(&c->pic);
 
     return 0;
 }

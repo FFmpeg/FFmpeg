@@ -121,8 +121,9 @@ static int decode_frame(AVCodecContext *avctx,
 }
 
 static av_cold int decode_init(AVCodecContext *avctx){
-//    VideoXLContext * const a = avctx->priv_data;
+    VideoXLContext * const a = avctx->priv_data;
 
+    avcodec_get_frame_defaults(&a->pic);
     avctx->pix_fmt= PIX_FMT_YUV411P;
 
     return 0;

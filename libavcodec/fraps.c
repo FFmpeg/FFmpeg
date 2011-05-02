@@ -60,6 +60,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     FrapsContext * const s = avctx->priv_data;
 
+    avcodec_get_frame_defaults(&s->frame);
     avctx->coded_frame = (AVFrame*)&s->frame;
 
     s->avctx = avctx;
