@@ -325,7 +325,7 @@ static int tta_decode_frame(AVCodecContext *avctx,
         int cur_chan = 0, framelen = s->frame_length;
         int32_t *p;
 
-        if (*data_size < (framelen * s->channels * 2)) {
+        if (*data_size < (framelen * s->channels * av_get_bits_per_sample_fmt(avctx->sample_fmt) / 8)) {
             av_log(avctx, AV_LOG_ERROR, "Output buffer size is too small.\n");
             return -1;
         }
