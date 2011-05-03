@@ -72,6 +72,10 @@ integer. For example, "floor(-1.5)" is "-2.0".
 @item trunc(expr)
 Round the value of expression @var{expr} towards zero to the nearest
 integer. For example, "trunc(-1.5)" is "-1.0".
+
+@item sqrt(expr)
+Compute the square root of @var{expr}. This is equivalent to
+"(@var{expr})^.5".
 @end table
 
 Note that:
