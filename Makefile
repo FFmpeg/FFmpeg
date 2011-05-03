@@ -286,7 +286,7 @@ else
 fate-rsync:
 	@echo "use 'make fate-rsync SAMPLES=/path/to/samples' to sync the fate suite"
 $(FATE_TESTS):
-	@echo "SAMPLES not specified, cannot run FATE"
+       @echo "SAMPLES not specified, cannot run FATE. See doc/fate.txt for more information."
 endif
 
 FATE_UTILS = base64 tiny_psnr
