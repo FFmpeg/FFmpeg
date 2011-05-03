@@ -910,6 +910,8 @@ static int decode_codestream(J2kDecoderContext *s)
         }
 
         marker = bytestream_get_be16(&s->buf);
+        if(s->avctx->debug & FF_DEBUG_STARTCODE)
+            av_log(s->avctx, AV_LOG_DEBUG, "marker 0x%.4X at pos 0x%x\n", marker, s->buf - s->buf_start - 4);
         oldbuf = s->buf;
 
         if (marker == J2K_SOD){
