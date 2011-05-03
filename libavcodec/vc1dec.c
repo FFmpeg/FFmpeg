@@ -2764,7 +2764,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
 
 /** Decode blocks of I-frame for advanced profile
  */
-static void vc1_decode_i_blocks_adv(VC1Context *v, int mby_start, int mby_end)
+static void vc1_decode_i_blocks_adv(VC1Context *v)
 {
     int k;
     MpegEncContext *s = &v->s;
@@ -2805,14 +2805,14 @@ static void vc1_decode_i_blocks_adv(VC1Context *v, int mby_start, int mby_end)
     s->mb_x = s->mb_y = 0;
     s->mb_intra = 1;
     s->first_slice_line = 1;
-    s->mb_y = mby_start;
-    if (mby_start) {
+    s->mb_y = s->start_mb_y;
+    if (s->start_mb_y) {
         s->mb_x = 0;
         ff_init_block_index(s);
         memset(&s->coded_block[s->block_index[0]-s->b8_stride], 0,
                s->b8_stride * sizeof(*s->coded_block));
     }
-    for(; s->mb_y < mby_end; s->mb_y++) {
+    for(; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
         ff_init_block_index(s);
         for(;s->mb_x < s->mb_width; s->mb_x++) {
@@ -2898,7 +2898,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v, int mby_start, int mby_end)
             if(v->s.loop_filter) vc1_loop_filter_iblk(v, v->pq);
 
             if(get_bits_count(&s->gb) > v->bits) {
-                ff_er_add_slice(s, 0, mby_start, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END));
+                ff_er_add_slice(s, 0, s->start_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END));
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i\n", get_bits_count(&s->gb), v->bits);
                 return;
             }
@@ -2911,10 +2911,10 @@ static void vc1_decode_i_blocks_adv(VC1Context *v, int mby_start, int mby_end)
     }
     if (v->s.loop_filter)
         ff_draw_horiz_band(s, (s->mb_height-1)*16, 16);
-    ff_er_add_slice(s, 0, mby_start, s->mb_width - 1, mby_end - 1, (AC_END|DC_END|MV_END));
+    ff_er_add_slice(s, 0, s->start_mb_y, s->mb_width - 1, s->end_mb_y - 1, (AC_END|DC_END|MV_END));
 }
 
-static void vc1_decode_p_blocks(VC1Context *v, int mby_start, int mby_end)
+static void vc1_decode_p_blocks(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     int apply_loop_filter;
@@ -2947,17 +2947,17 @@ static void vc1_decode_p_blocks(VC1Context *v, int mby_start, int mby_end)
     apply_loop_filter = s->loop_filter && !(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY);
     s->first_slice_line = 1;
     memset(v->cbp_base, 0, sizeof(v->cbp_base[0])*2*s->mb_stride);
-    for(s->mb_y = mby_start; s->mb_y < mby_end; s->mb_y++) {
+    for(s->mb_y = s->start_mb_y; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
         ff_init_block_index(s);
         for(; s->mb_x < s->mb_width; s->mb_x++) {
             ff_update_block_index(s);
 
             vc1_decode_p_mb(v);
-            if (s->mb_y != mby_start && apply_loop_filter)
+            if (s->mb_y != s->start_mb_y && apply_loop_filter)
                 vc1_apply_p_loop_filter(v);
             if(get_bits_count(&s->gb) > v->bits || get_bits_count(&s->gb) < 0) {
-                ff_er_add_slice(s, 0, mby_start, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END));
+                ff_er_add_slice(s, 0, s->start_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END));
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i at %ix%i\n", get_bits_count(&s->gb), v->bits,s->mb_x,s->mb_y);
                 return;
             }
@@ -2966,7 +2966,7 @@ static void vc1_decode_p_blocks(VC1Context *v, int mby_start, int mby_end)
         memmove(v->ttblk_base, v->ttblk, sizeof(v->ttblk_base[0])*s->mb_stride);
         memmove(v->is_intra_base, v->is_intra, sizeof(v->is_intra_base[0])*s->mb_stride);
         memmove(v->luma_mv_base, v->luma_mv, sizeof(v->luma_mv_base[0])*s->mb_stride);
-        if (s->mb_y != mby_start) ff_draw_horiz_band(s, (s->mb_y-1) * 16, 16);
+        if (s->mb_y != s->start_mb_y) ff_draw_horiz_band(s, (s->mb_y-1) * 16, 16);
         s->first_slice_line = 0;
     }
     if (apply_loop_filter) {
@@ -2977,12 +2977,12 @@ static void vc1_decode_p_blocks(VC1Context *v, int mby_start, int mby_end)
             vc1_apply_p_loop_filter(v);
         }
     }
-    if (mby_end >= mby_start)
-        ff_draw_horiz_band(s, (mby_end-1) * 16, 16);
-    ff_er_add_slice(s, 0, mby_start, s->mb_width - 1, mby_end - 1, (AC_END|DC_END|MV_END));
+    if (s->end_mb_y >= s->start_mb_y)
+        ff_draw_horiz_band(s, (s->end_mb_y-1) * 16, 16);
+    ff_er_add_slice(s, 0, s->start_mb_y, s->mb_width - 1, s->end_mb_y - 1, (AC_END|DC_END|MV_END));
 }
 
-static void vc1_decode_b_blocks(VC1Context *v, int mby_start, int mby_end)
+static void vc1_decode_b_blocks(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
 
@@ -3012,7 +3012,7 @@ static void vc1_decode_b_blocks(VC1Context *v, int mby_start, int mby_end)
     }
 
     s->first_slice_line = 1;
-    for(s->mb_y = mby_start; s->mb_y < mby_end; s->mb_y++) {
+    for(s->mb_y = s->start_mb_y; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
         ff_init_block_index(s);
         for(; s->mb_x < s->mb_width; s->mb_x++) {
@@ -3020,7 +3020,7 @@ static void vc1_decode_b_blocks(VC1Context *v, int mby_start, int mby_end)
 
             vc1_decode_b_mb(v);
             if(get_bits_count(&s->gb) > v->bits || get_bits_count(&s->gb) < 0) {
-                ff_er_add_slice(s, 0, mby_start, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END));
+                ff_er_add_slice(s, 0, s->start_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END));
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i at %ix%i\n", get_bits_count(&s->gb), v->bits,s->mb_x,s->mb_y);
                 return;
             }
@@ -3034,7 +3034,7 @@ static void vc1_decode_b_blocks(VC1Context *v, int mby_start, int mby_end)
     }
     if (v->s.loop_filter)
         ff_draw_horiz_band(s, (s->mb_height-1)*16, 16);
-    ff_er_add_slice(s, 0, mby_start, s->mb_width - 1, mby_end - 1, (AC_END|DC_END|MV_END));
+    ff_er_add_slice(s, 0, s->start_mb_y, s->mb_width - 1, s->end_mb_y - 1, (AC_END|DC_END|MV_END));
 }
 
 static void vc1_decode_skip_blocks(VC1Context *v)
@@ -3056,7 +3056,7 @@ static void vc1_decode_skip_blocks(VC1Context *v)
     s->pict_type = AV_PICTURE_TYPE_P;
 }
 
-static void vc1_decode_blocks(VC1Context *v, int mby_start, int mby_end)
+static void vc1_decode_blocks(VC1Context *v)
 {
 
     v->s.esc3_level_length = 0;
@@ -3066,7 +3066,7 @@ static void vc1_decode_blocks(VC1Context *v, int mby_start, int mby_end)
         switch(v->s.pict_type) {
         case AV_PICTURE_TYPE_I:
             if(v->profile == PROFILE_ADVANCED)
-                vc1_decode_i_blocks_adv(v, mby_start, mby_end);
+                vc1_decode_i_blocks_adv(v);
             else
                 vc1_decode_i_blocks(v);
             break;
@@ -3074,16 +3074,16 @@ static void vc1_decode_blocks(VC1Context *v, int mby_start, int mby_end)
             if(v->p_frame_skipped)
                 vc1_decode_skip_blocks(v);
             else
-                vc1_decode_p_blocks(v, mby_start, mby_end);
+                vc1_decode_p_blocks(v);
             break;
         case AV_PICTURE_TYPE_B:
             if(v->bi_type){
                 if(v->profile == PROFILE_ADVANCED)
-                    vc1_decode_i_blocks_adv(v, mby_start, mby_end);
+                    vc1_decode_i_blocks_adv(v);
                 else
                     vc1_decode_i_blocks(v);
             }else
-                vc1_decode_b_blocks(v, mby_start, mby_end);
+                vc1_decode_b_blocks(v);
             break;
         }
     }
@@ -3539,8 +3539,9 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         for (i = 0; i <= n_slices; i++) {
             if (i && get_bits1(&s->gb))
                 vc1_parse_frame_header_adv(v, &s->gb);
-            vc1_decode_blocks(v, i == 0 ? 0 : FFMAX(0, slices[i-1].mby_start),
-                i == n_slices ? s->mb_height : FFMIN(s->mb_height, slices[i].mby_start));
+            s->start_mb_y = (i == 0)        ? 0 : FFMAX(0, slices[i-1].mby_start);
+            s->end_mb_y   = (i == n_slices) ? s->mb_height : FFMIN(s->mb_height, slices[i].mby_start);
+            vc1_decode_blocks(v);
             if (i != n_slices) s->gb = slices[i].gb;
         }
 //av_log(s->avctx, AV_LOG_INFO, "Consumed %i/%i bits\n", get_bits_count(&s->gb), s->gb.size_in_bits);
