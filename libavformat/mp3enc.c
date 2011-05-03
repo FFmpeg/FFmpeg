@@ -24,6 +24,7 @@
 #include "id3v1.h"
 #include "id3v2.h"
 #include "rawenc.h"
+#include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 
@@ -32,7 +33,7 @@ static int id3v1_set_string(AVFormatContext *s, const char *key,
 {
     AVMetadataTag *tag;
     if ((tag = av_metadata_get(s->metadata, key, NULL, 0)))
-        strncpy(buf, tag->value, buf_size);
+        av_strlcpy(buf, tag->value, buf_size);
     return !!tag;
 }
 

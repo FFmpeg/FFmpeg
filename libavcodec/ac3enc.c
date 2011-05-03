@@ -33,6 +33,7 @@
 
 #include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -1578,10 +1579,10 @@ static void dprint_options(AVCodecContext *avctx)
     char strbuf[32];
 
     switch (s->bitstream_id) {
-    case  6:  strncpy(strbuf, "AC-3 (alt syntax)", 32);      break;
-    case  8:  strncpy(strbuf, "AC-3 (standard)", 32);        break;
-    case  9:  strncpy(strbuf, "AC-3 (dnet half-rate)", 32);  break;
-    case 10:  strncpy(strbuf, "AC-3 (dnet quater-rate", 32); break;
+    case  6:  av_strlcpy(strbuf, "AC-3 (alt syntax)", 32);      break;
+    case  8:  av_strlcpy(strbuf, "AC-3 (standard)", 32);        break;
+    case  9:  av_strlcpy(strbuf, "AC-3 (dnet half-rate)", 32);  break;
+    case 10:  av_strlcpy(strbuf, "AC-3 (dnet quater-rate", 32); break;
     default: snprintf(strbuf, 32, "ERROR");
     }
     av_dlog(avctx, "bitstream_id: %s (%d)\n", strbuf, s->bitstream_id);
@@ -1608,9 +1609,9 @@ static void dprint_options(AVCodecContext *avctx)
     if (opt->audio_production_info) {
         av_dlog(avctx, "mixing_level: %ddB\n", opt->mixing_level);
         switch (opt->room_type) {
-        case 0:  strncpy(strbuf, "notindicated", 32); break;
-        case 1:  strncpy(strbuf, "large", 32);        break;
-        case 2:  strncpy(strbuf, "small", 32);        break;
+        case 0:  av_strlcpy(strbuf, "notindicated", 32); break;
+        case 1:  av_strlcpy(strbuf, "large", 32);        break;
+        case 2:  av_strlcpy(strbuf, "small", 32);        break;
         default: snprintf(strbuf, 32, "ERROR (%d)", opt->room_type);
         }
         av_dlog(avctx, "room_type: %s\n", strbuf);
@@ -1622,9 +1623,9 @@ static void dprint_options(AVCodecContext *avctx)
     av_dlog(avctx, "dialnorm: %ddB\n", opt->dialogue_level);
     if (s->channel_mode == AC3_CHMODE_STEREO) {
         switch (opt->dolby_surround_mode) {
-        case 0:  strncpy(strbuf, "notindicated", 32); break;
-        case 1:  strncpy(strbuf, "on", 32);           break;
-        case 2:  strncpy(strbuf, "off", 32);          break;
+        case 0:  av_strlcpy(strbuf, "notindicated", 32); break;
+        case 1:  av_strlcpy(strbuf, "on", 32);           break;
+        case 2:  av_strlcpy(strbuf, "off", 32);          break;
         default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_surround_mode);
         }
         av_dlog(avctx, "dsur_mode: %s\n", strbuf);
@@ -1636,9 +1637,9 @@ static void dprint_options(AVCodecContext *avctx)
     if (s->bitstream_id == 6) {
         if (opt->extended_bsi_1) {
             switch (opt->preferred_stereo_downmix) {
-            case 0:  strncpy(strbuf, "notindicated", 32); break;
-            case 1:  strncpy(strbuf, "ltrt", 32);         break;
-            case 2:  strncpy(strbuf, "loro", 32);         break;
+            case 0:  av_strlcpy(strbuf, "notindicated", 32); break;
+            case 1:  av_strlcpy(strbuf, "ltrt", 32);         break;
+            case 2:  av_strlcpy(strbuf, "loro", 32);         break;
             default: snprintf(strbuf, 32, "ERROR (%d)", opt->preferred_stereo_downmix);
             }
             av_dlog(avctx, "dmix_mode: %s\n", strbuf);
@@ -1655,23 +1656,23 @@ static void dprint_options(AVCodecContext *avctx)
         }
         if (opt->extended_bsi_2) {
             switch (opt->dolby_surround_ex_mode) {
-            case 0:  strncpy(strbuf, "notindicated", 32); break;
-            case 1:  strncpy(strbuf, "on", 32);           break;
-            case 2:  strncpy(strbuf, "off", 32);          break;
+            case 0:  av_strlcpy(strbuf, "notindicated", 32); break;
+            case 1:  av_strlcpy(strbuf, "on", 32);           break;
+            case 2:  av_strlcpy(strbuf, "off", 32);          break;
             default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_surround_ex_mode);
             }
             av_dlog(avctx, "dsurex_mode: %s\n", strbuf);
             switch (opt->dolby_headphone_mode) {
-            case 0:  strncpy(strbuf, "notindicated", 32); break;
-            case 1:  strncpy(strbuf, "on", 32);           break;
-            case 2:  strncpy(strbuf, "off", 32);          break;
+            case 0:  av_strlcpy(strbuf, "notindicated", 32); break;
+            case 1:  av_strlcpy(strbuf, "on", 32);           break;
+            case 2:  av_strlcpy(strbuf, "off", 32);          break;
             default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_headphone_mode);
             }
             av_dlog(avctx, "dheadphone_mode: %s\n", strbuf);
 
             switch (opt->ad_converter_type) {
-            case 0:  strncpy(strbuf, "standard", 32); break;
-            case 1:  strncpy(strbuf, "hdcd", 32);     break;
+            case 0:  av_strlcpy(strbuf, "standard", 32); break;
+            case 1:  av_strlcpy(strbuf, "hdcd", 32);     break;
             default: snprintf(strbuf, 32, "ERROR (%d)", opt->ad_converter_type);
             }
             av_dlog(avctx, "ad_conv_type: %s\n", strbuf);

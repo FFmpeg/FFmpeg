@@ -3695,8 +3695,7 @@ static int opt_streamid(const char *opt, const char *arg)
     char *p;
     char idx_str[16];
 
-    strncpy(idx_str, arg, sizeof(idx_str));
-    idx_str[sizeof(idx_str)-1] = '\0';
+    av_strlcpy(idx_str, arg, sizeof(idx_str));
     p = strchr(idx_str, ':');
     if (!p) {
         fprintf(stderr,

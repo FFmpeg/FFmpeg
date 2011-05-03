@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "ass.h"
+#include "libavutil/avstring.h"
 
 /**
  * Generate a suitable AVCodecContext.subtitle_header for SUBTITLE_ASS.
@@ -117,8 +118,7 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
     rects[sub->num_rects]->type = SUBTITLE_ASS;
     rects[sub->num_rects]->ass  = av_malloc(len + dlen + 1);
     strcpy (rects[sub->num_rects]->ass      , header);
-    strncpy(rects[sub->num_rects]->ass + len, dialog, dlen);
-    rects[sub->num_rects]->ass[len+dlen] = 0;
+    av_strlcpy(rects[sub->num_rects]->ass + len, dialog, dlen + 1);
     sub->num_rects++;
     return dlen;
 }
