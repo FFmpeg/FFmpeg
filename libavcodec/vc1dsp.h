@@ -40,8 +40,10 @@ typedef struct VC1DSPContext {
     void (*vc1_inv_trans_8x4_dc)(uint8_t *dest, int line_size, DCTELEM *block);
     void (*vc1_inv_trans_4x8_dc)(uint8_t *dest, int line_size, DCTELEM *block);
     void (*vc1_inv_trans_4x4_dc)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*vc1_v_overlap)(uint8_t* src, int stride);
-    void (*vc1_h_overlap)(uint8_t* src, int stride);
+    void (*vc1_v_overlap)(uint8_t *src, int stride);
+    void (*vc1_h_overlap)(uint8_t *src, int stride);
+    void (*vc1_v_s_overlap)(DCTELEM *top,  DCTELEM *bottom);
+    void (*vc1_h_s_overlap)(DCTELEM *left, DCTELEM *right);
     void (*vc1_v_loop_filter4)(uint8_t *src, int stride, int pq);
     void (*vc1_h_loop_filter4)(uint8_t *src, int stride, int pq);
     void (*vc1_v_loop_filter8)(uint8_t *src, int stride, int pq);

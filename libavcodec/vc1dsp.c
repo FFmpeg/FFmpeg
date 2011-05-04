@@ -78,6 +78,58 @@ static void vc1_h_overlap_c(uint8_t* src, int stride)
     }
 }
 
+static void vc1_v_s_overlap_c(DCTELEM *top,  DCTELEM *bottom)
+{
+    int i;
+    int a, b, c, d;
+    int d1, d2;
+    int rnd1 = 4, rnd2 = 3;
+    for(i = 0; i < 8; i++) {
+        a = top[48];
+        b = top[56];
+        c = bottom[0];
+        d = bottom[8];
+        d1 = a - d;
+        d2 = a - d + b - c;
+
+        top[48]   = ((a << 3) - d1 + rnd1) >> 3;
+        top[56]   = ((b << 3) - d2 + rnd2) >> 3;
+        bottom[0] = ((c << 3) + d2 + rnd1) >> 3;
+        bottom[8] = ((d << 3) + d1 + rnd2) >> 3;
+
+        bottom++;
+        top++;
+        rnd2 = 7 - rnd2;
+        rnd1 = 7 - rnd1;
+    }
+}
+
+static void vc1_h_s_overlap_c(DCTELEM *left, DCTELEM *right)
+{
+    int i;
+    int a, b, c, d;
+    int d1, d2;
+    int rnd1 = 4, rnd2 = 3;
+    for(i = 0; i < 8; i++) {
+        a = left[6];
+        b = left[7];
+        c = right[0];
+        d = right[1];
+        d1 = a - d;
+        d2 = a - d + b - c;
+
+        left[6]  = ((a << 3) - d1 + rnd1) >> 3;
+        left[7]  = ((b << 3) - d2 + rnd2) >> 3;
+        right[0] = ((c << 3) + d2 + rnd1) >> 3;
+        right[1] = ((d << 3) + d1 + rnd2) >> 3;
+
+        right += 8;
+        left += 8;
+        rnd2 = 7 - rnd2;
+        rnd1 = 7 - rnd1;
+    }
+}
+
 /**
  * VC-1 in-loop deblocking filter for one line
  * @param src source block type
@@ -672,6 +724,8 @@ av_cold void ff_vc1dsp_init(VC1DSPContext* dsp) {
     dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_c;
     dsp->vc1_h_overlap = vc1_h_overlap_c;
     dsp->vc1_v_overlap = vc1_v_overlap_c;
+    dsp->vc1_h_s_overlap = vc1_h_s_overlap_c;
+    dsp->vc1_v_s_overlap = vc1_v_s_overlap_c;
     dsp->vc1_v_loop_filter4 = vc1_v_loop_filter4_c;
     dsp->vc1_h_loop_filter4 = vc1_h_loop_filter4_c;
     dsp->vc1_v_loop_filter8 = vc1_v_loop_filter8_c;
