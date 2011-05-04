@@ -78,8 +78,8 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
     *p = *pict;
     if(!c->prev)
         c->prev = av_malloc(avctx->width * 3 * (avctx->height + 3));
-    prevptr = c->prev + avctx->width * 3 * (((avctx->height + 3)&~3) - 1);
-    src = (uint16_t*)(p->data[0] + p->linesize[0]*(((avctx->height + 3)&~3) - 1));
+    prevptr = c->prev + avctx->width * 3 * (FFALIGN(avctx->height, 4) - 1);
+    src = (uint16_t*)(p->data[0] + p->linesize[0]*(FFALIGN(avctx->height, 4) - 1));
     if(c->keyint >= avctx->keyint_min)
         keyframe = 1;
 
@@ -96,7 +96,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
                 for(i = 0; i < 4; i++){
                     uint16_t val = src[x + i - j*p->linesize[0]/2];
                     for(k = 0; k < 3; k++){
-                        c->block[(i + j*4)*3 + k] = (val >> (10-k*5)) & 0x1F;
+                        c->block[(i + j*4)*3 + k] =
                         c->block2[remap[i + j*4]*3 + k] = (val >> (10-k*5)) & 0x1F;
                     }
                 }
@@ -293,6 +293,6 @@ AVCodec ff_msvideo1_encoder = {
     encode_init,
     encode_frame,
     encode_end,
-    .pix_fmts = (enum PixelFormat[]){PIX_FMT_RGB555, PIX_FMT_NONE},
+    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB555, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Microsoft Video-1"),
 };
