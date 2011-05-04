@@ -701,7 +701,7 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         energy2 = sqrt(energy2/(s->channels*s->block_align));
-        energy1 = sqrt(2.0)*energy1/(s->channels*s->block_align);
+        energy1 = M_SQRT2*energy1/(s->channels*s->block_align);
 
         // increase bitrate when samples are like a gaussian distribution
         // reduce bitrate when samples are like a two-tailed exponential distribution
