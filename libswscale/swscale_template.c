@@ -951,7 +951,7 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const 
 #if COMPILE_TEMPLATE_MMX
     if(!(c->flags & SWS_BITEXACT)) {
         long p= 4;
-        const uint8_t *src[4]= {alpSrc + dstW, lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
+        const int16_t *src[4]= {alpSrc + dstW, lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
         uint8_t *dst[4]= {aDest, dest, uDest, vDest};
         x86_reg counter[4]= {dstW, dstW, chrDstW, chrDstW};
 
