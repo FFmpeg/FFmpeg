@@ -1831,6 +1831,7 @@ static int video_thread(void *arg)
 #else
         ret = get_video_frame(is, frame, &pts_int, &pkt);
         pos = pkt.pos;
+        av_free_packet(&pkt);
 #endif
 
         if (ret < 0) goto the_end;
@@ -1841,9 +1842,7 @@ static int video_thread(void *arg)
         pts = pts_int*av_q2d(is->video_st->time_base);
 
         ret = queue_picture(is, frame, pts, pos);
-#if !CONFIG_AVFILTER
-        av_free_packet(&pkt);
-#endif
+
         if (ret < 0)
             goto the_end;
 
