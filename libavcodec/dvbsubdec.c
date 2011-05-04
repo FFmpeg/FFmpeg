@@ -321,20 +321,9 @@ static void delete_region_display_list(DVBSubContext *ctx, DVBSubRegion *region)
 
 }
 
-static void delete_state(DVBSubContext *ctx)
+static void delete_cluts(DVBSubContext *ctx)
 {
-    DVBSubRegion *region;
     DVBSubCLUT *clut;
-
-    while (ctx->region_list) {
-        region = ctx->region_list;
-
-        ctx->region_list = region->next;
-
-        delete_region_display_list(ctx, region);
-        av_free(region->pbuf);
-        av_free(region);
-    }
 
     while (ctx->clut_list) {
         clut = ctx->clut_list;
@@ -343,12 +332,35 @@ static void delete_state(DVBSubContext *ctx)
 
         av_free(clut);
     }
+}
 
-    av_freep(&ctx->display_definition);
+static void delete_objects(DVBSubContext *ctx)
+{
+    DVBSubObject *object;
 
-    /* Should already be null */
-    if (ctx->object_list)
-        av_log(0, AV_LOG_ERROR, "Memory deallocation error!\n");
+    while (ctx->object_list) {
+        object = ctx->object_list;
+
+        ctx->object_list = object->next;
+
+        av_free(object);
+    }
+}
+
+static void delete_regions(DVBSubContext *ctx)
+{
+    DVBSubRegion *region;
+
+    while (ctx->region_list) {
+        region = ctx->region_list;
+
+        ctx->region_list = region->next;
+
+        delete_region_display_list(ctx, region);
+
+        av_free(region->pbuf);
+        av_free(region);
+    }
 }
 
 static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
@@ -433,7 +445,13 @@ static av_cold int dvbsub_close_decoder(AVCodecContext *avctx)
     DVBSubContext *ctx = avctx->priv_data;
     DVBSubRegionDisplay *display;
 
-    delete_state(ctx);
+    delete_regions(ctx);
+
+    delete_objects(ctx);
+
+    delete_cluts(ctx);
+
+    av_freep(&ctx->display_definition);
 
     while (ctx->display_list) {
         display = ctx->display_list;
@@ -1125,7 +1143,9 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
     av_dlog(avctx, "Page time out %ds, state %d\n", ctx->time_out, page_state);
 
     if (page_state == 2) {
-        delete_state(ctx);
+        delete_regions(ctx);
+        delete_objects(ctx);
+        delete_cluts(ctx);
     }
 
     tmp_display_list = ctx->display_list;
