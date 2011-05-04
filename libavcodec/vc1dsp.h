@@ -30,13 +30,9 @@
 
 #include "dsputil.h"
 
-typedef void (*vc1_idct_func)(uint8_t *dest, int line_size, DCTELEM *block);
-
 typedef struct VC1DSPContext {
     /* vc1 functions */
-    vc1_idct_func vc1_inv_trans_8x8_add;
-    vc1_idct_func vc1_inv_trans_8x8_put_signed[2];
-    vc1_idct_func vc1_inv_trans_8x8_put[2];
+    void (*vc1_inv_trans_8x8)(DCTELEM *b);
     void (*vc1_inv_trans_8x4)(uint8_t *dest, int line_size, DCTELEM *block);
     void (*vc1_inv_trans_4x8)(uint8_t *dest, int line_size, DCTELEM *block);
     void (*vc1_inv_trans_4x4)(uint8_t *dest, int line_size, DCTELEM *block);
