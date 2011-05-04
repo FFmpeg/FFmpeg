@@ -280,7 +280,11 @@ fate-seek:   $(FATE_SEEK)
 
 ifdef SAMPLES
 FATE += $(FATE_TESTS)
+fate-rsync:
+	rsync -vaLW rsync://fate-suite.libav.org/fate-suite/ $(SAMPLES)
 else
+fate-rsync:
+	@echo "use 'make fate-rsync SAMPLES=/path/to/samples' to sync the fate suite"
 $(FATE_TESTS):
 	@echo "SAMPLES not specified, cannot run FATE"
 endif
