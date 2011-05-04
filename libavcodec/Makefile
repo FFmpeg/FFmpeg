@@ -546,6 +546,7 @@ OBJS-$(CONFIG_SPDIF_DEMUXER)           += aacadtsdec.o mpeg4audio.o
 OBJS-$(CONFIG_WEBM_MUXER)              += xiph.o mpeg4audio.o \
                                           flacdec.o flacdata.o flac.o \
                                           mpegaudiodata.o
+OBJS-$(CONFIG_WTV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 
 # external codec libraries
 OBJS-$(CONFIG_LIBDIRAC_DECODER)           += libdiracdec.o
