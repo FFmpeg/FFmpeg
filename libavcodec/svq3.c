@@ -932,7 +932,7 @@ static int svq3_decode_frame(AVCodecContext *avctx,
     H264Context *h = &svq3->h;
     MpegEncContext *s = &h->s;
     int buf_size = avpkt->size;
-    int m, mb_type;
+    int m, mb_type, left;
 
     /* special case for last picture */
     if (buf_size == 0) {
@@ -1052,6 +1052,18 @@ static int svq3_decode_frame(AVCodecContext *avctx,
         }
 
         ff_draw_horiz_band(s, 16*s->mb_y, 16);
+    }
+
+    left = buf_size*8 - get_bits_count(&s->gb);
+
+    if (s->mb_y != s->mb_height || s->mb_x != s->mb_width) {
+        av_log(avctx, AV_LOG_INFO, "frame num %d incomplete pic x %d y %d left %d\n", avctx->frame_number, s->mb_y, s->mb_x, left);
+        //av_hex_dump(stderr, buf+buf_size-8, 8);
+    }
+
+    if (left < 0) {
+        av_log(avctx, AV_LOG_ERROR, "frame num %d left %d\n", avctx->frame_number, left);
+        return -1;
     }
 
     MPV_frame_end(s);
