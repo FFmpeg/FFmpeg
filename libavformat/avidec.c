@@ -1002,6 +1002,23 @@ resync:
                 e= &st->index_entries[index];
 
                 if(index >= 0 && e->timestamp == ast->frame_offset){
+                    if (index == st->nb_index_entries-1){
+                        int key=1;
+                        int i;
+                        uint32_t state=-1;
+                        for(i=0; i<FFMIN(size,256); i++){
+                            if(st->codec->codec_id == CODEC_ID_MPEG4){
+                                if(state == 0x1B6){
+                                    key= !(pkt->data[i]&0xC0);
+                                    break;
+                                }
+                            }else
+                                break;
+                            state= (state<<8) + pkt->data[i];
+                        }
+                        if(!key)
+                            e->flags &= ~AVINDEX_KEYFRAME;
+                    }
                     if (e->flags & AVINDEX_KEYFRAME)
                         pkt->flags |= AV_PKT_FLAG_KEY;
                 }
