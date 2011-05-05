@@ -1617,7 +1617,7 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
     int mx, my, src_x, src_y, uvsrc_x, uvsrc_y, uvlinesize, linesize, sx, sy, uvsx, uvsy;
     const int lowres= s->avctx->lowres;
-    const int op_index= FFMIN(lowres, 2);
+    const int op_index= FFMIN(lowres-1+s->chroma_x_shift, 2);
     const int block_s= 8>>lowres;
     const int s_mask= (2<<lowres)-1;
     const int h_edge_pos = s->h_edge_pos >> lowres;
@@ -1652,12 +1652,29 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
         uvsrc_x = s->mb_x*block_s               + (mx >> lowres);
         uvsrc_y =    mb_y*block_s               + (my >> lowres);
     } else {
-        mx = motion_x / 2;
-        my = motion_y / 2;
-        uvsx = mx & s_mask;
-        uvsy = my & s_mask;
-        uvsrc_x = s->mb_x*block_s               + (mx >> (lowres+1));
-        uvsrc_y =(   mb_y*block_s>>field_based) + (my >> (lowres+1));
+        if(s->chroma_y_shift){
+            mx = motion_x / 2;
+            my = motion_y / 2;
+            uvsx = mx & s_mask;
+            uvsy = my & s_mask;
+            uvsrc_x = s->mb_x*block_s               + (mx >> (lowres+1));
+            uvsrc_y =(   mb_y*block_s>>field_based) + (my >> (lowres+1));
+        } else {
+            if(s->chroma_x_shift){
+            //Chroma422
+                mx = motion_x / 2;
+                uvsx = mx & s_mask;
+                uvsy = motion_y & s_mask;
+                uvsrc_y = src_y;
+                uvsrc_x = s->mb_x*2*block_s               + (mx >> (lowres+1));
+            } else {
+            //Chroma444
+                uvsx = motion_x & s_mask;
+                uvsy = motion_y & s_mask;
+                uvsrc_x = src_x;
+                uvsrc_y = src_y;
+            }
+        }
     }
 
     ptr_y  = ref_picture[0] + src_y * linesize + src_x;
@@ -2163,17 +2180,17 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                     }else{
                         //chroma422
                         dct_linesize = uvlinesize << s->interlaced_dct;
-                        dct_offset =(s->interlaced_dct)? uvlinesize : uvlinesize*8;
+                        dct_offset =(s->interlaced_dct)? uvlinesize : uvlinesize*block_size;
 
                         add_dct(s, block[4], 4, dest_cb, dct_linesize);
                         add_dct(s, block[5], 5, dest_cr, dct_linesize);
                         add_dct(s, block[6], 6, dest_cb+dct_offset, dct_linesize);
                         add_dct(s, block[7], 7, dest_cr+dct_offset, dct_linesize);
                         if(!s->chroma_x_shift){//Chroma444
-                            add_dct(s, block[8], 8, dest_cb+8, dct_linesize);
-                            add_dct(s, block[9], 9, dest_cr+8, dct_linesize);
-                            add_dct(s, block[10], 10, dest_cb+8+dct_offset, dct_linesize);
-                            add_dct(s, block[11], 11, dest_cr+8+dct_offset, dct_linesize);
+                            add_dct(s, block[8], 8, dest_cb+block_size, dct_linesize);
+                            add_dct(s, block[9], 9, dest_cr+block_size, dct_linesize);
+                            add_dct(s, block[10], 10, dest_cb+block_size+dct_offset, dct_linesize);
+                            add_dct(s, block[11], 11, dest_cr+block_size+dct_offset, dct_linesize);
                         }
                     }
                 }//fi gray
