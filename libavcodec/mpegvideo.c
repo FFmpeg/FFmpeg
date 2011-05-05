@@ -2215,17 +2215,17 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                     }else{
 
                         dct_linesize = uvlinesize << s->interlaced_dct;
-                        dct_offset =(s->interlaced_dct)? uvlinesize : uvlinesize*8;
+                        dct_offset =(s->interlaced_dct)? uvlinesize : uvlinesize*block_size;
 
                         s->dsp.idct_put(dest_cb,              dct_linesize, block[4]);
                         s->dsp.idct_put(dest_cr,              dct_linesize, block[5]);
                         s->dsp.idct_put(dest_cb + dct_offset, dct_linesize, block[6]);
                         s->dsp.idct_put(dest_cr + dct_offset, dct_linesize, block[7]);
                         if(!s->chroma_x_shift){//Chroma444
-                            s->dsp.idct_put(dest_cb + 8,              dct_linesize, block[8]);
-                            s->dsp.idct_put(dest_cr + 8,              dct_linesize, block[9]);
-                            s->dsp.idct_put(dest_cb + 8 + dct_offset, dct_linesize, block[10]);
-                            s->dsp.idct_put(dest_cr + 8 + dct_offset, dct_linesize, block[11]);
+                            s->dsp.idct_put(dest_cb + block_size,              dct_linesize, block[8]);
+                            s->dsp.idct_put(dest_cr + block_size,              dct_linesize, block[9]);
+                            s->dsp.idct_put(dest_cb + block_size + dct_offset, dct_linesize, block[10]);
+                            s->dsp.idct_put(dest_cr + block_size + dct_offset, dct_linesize, block[11]);
                         }
                     }
                 }//gray
