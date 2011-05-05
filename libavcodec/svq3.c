@@ -1037,7 +1037,7 @@ static int svq3_decode_frame(AVCodecContext *avctx,
             } else if (s->pict_type == AV_PICTURE_TYPE_B && mb_type >= 4) {
                 mb_type += 4;
             }
-            if (mb_type > 33 || svq3_decode_mb(svq3, mb_type)) {
+            if ((unsigned)mb_type > 33 || svq3_decode_mb(svq3, mb_type)) {
                 av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
                 return -1;
             }
