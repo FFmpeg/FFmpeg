@@ -1228,14 +1228,9 @@ static void do_video_out(AVFormatContext *s,
             /* initialize a new scaler context */
             sws_freeContext(ost->img_resample_ctx);
             sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
-            ost->img_resample_ctx = sws_getContext(
-                ist->st->codec->width,
-                ist->st->codec->height,
-                ist->st->codec->pix_fmt,
-                ost->st->codec->width,
-                ost->st->codec->height,
-                ost->st->codec->pix_fmt,
-                sws_flags, NULL, NULL, NULL);
+            ost->img_resample_ctx = sws_getContext(dec->width, dec->height, dec->pix_fmt,
+                                                   enc->width, enc->height, enc->pix_fmt,
+                                                   sws_flags, NULL, NULL, NULL);
             if (ost->img_resample_ctx == NULL) {
                 fprintf(stderr, "Cannot get resampling context\n");
                 ffmpeg_exit(1);
