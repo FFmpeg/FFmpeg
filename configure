@@ -1857,6 +1857,11 @@ set_default cc nm pkg_config strip sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
+if ! $pkg_config --version >/dev/null 2>&1; then
+    warn "$pkg_config not found, library detection may fail."
+    pkg_config=false
+fi
+
 exesuf() {
     case $1 in
         mingw32*|cygwin*|*-dos|freedos|opendos|os/2*|symbian) echo .exe ;;
