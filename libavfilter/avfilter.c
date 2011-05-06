@@ -25,6 +25,7 @@
 #include "libavutil/rational.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/avassert.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -69,12 +70,50 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
     return ret;
 }
 
+static void store_in_pool(AVFilterBufferRef *ref)
+{
+    int i;
+    AVFilterLink *link= ref->buf->priv;
+    AVFilterPool *pool;
+
+    av_assert0(ref->buf->data[0]);
+
+    if(!link->pool)
+        link->pool = av_mallocz(sizeof(AVFilterPool));
+    pool= link->pool;
+
+    if(pool->count == POOL_SIZE){
+        AVFilterBufferRef *ref1= pool->pic[0];
+        av_freep(&ref1->video);
+        av_freep(&ref1->audio);
+        av_freep(&ref1->buf->data[0]);
+        av_freep(&ref1->buf);
+        av_free(ref1);
+        memmove(&pool->pic[0], &pool->pic[1], sizeof(void*)*(POOL_SIZE-1));
+        pool->count--;
+        pool->pic[POOL_SIZE-1] = NULL;
+    }
+
+    for(i=0; i<POOL_SIZE; i++){
+        if(!pool->pic[i]){
+            pool->pic[i]= ref;
+            pool->count++;
+            break;
+        }
+    }
+}
+
 void avfilter_unref_buffer(AVFilterBufferRef *ref)
 {
     if (!ref)
         return;
-    if (!(--ref->buf->refcount))
+    if (!(--ref->buf->refcount)){
+        if(!ref->buf->free){
+            store_in_pool(ref);
+            return;
+        }
         ref->buf->free(ref->buf);
+    }
     av_freep(&ref->video);
     av_freep(&ref->audio);
     av_free(ref);
@@ -646,6 +685,7 @@ void avfilter_free(AVFilterContext *filter)
         if ((link = filter->inputs[i])) {
             if (link->src)
                 link->src->outputs[link->srcpad - link->src->output_pads] = NULL;
+            av_freep(&link->pool);
             avfilter_formats_unref(&link->in_formats);
             avfilter_formats_unref(&link->out_formats);
         }
@@ -655,6 +695,7 @@ void avfilter_free(AVFilterContext *filter)
         if ((link = filter->outputs[i])) {
             if (link->dst)
                 link->dst->inputs[link->dstpad - link->dst->input_pads] = NULL;
+            av_freep(&link->pool);
             avfilter_formats_unref(&link->in_formats);
             avfilter_formats_unref(&link->out_formats);
         }

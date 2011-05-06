@@ -619,6 +619,8 @@ struct AVFilterLink {
      * input link is assumed to be an unchangeable property.
      */
     AVRational time_base;
+
+    struct AVFilterPool *pool;
 };
 
 /**

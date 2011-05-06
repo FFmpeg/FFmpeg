@@ -27,6 +27,12 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
+#define POOL_SIZE 32
+typedef struct AVFilterPool {
+    AVFilterBufferRef *pic[POOL_SIZE];
+    int count;
+}AVFilterPool;
+
 /**
  * Check for the validity of graph.
  *
