@@ -537,8 +537,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
                 wi[ch].num_windows    = 1;
                 wi[ch].grouping[0]    = 1;
             } else {
-                wi[ch] = ff_psy_suggest_window(&s->psy, samples2, la, cur_channel,
-                                               ics->window_sequence[0]);
+                wi[ch] = s->psy.model->window(&s->psy, samples2, la, cur_channel,
+                                              ics->window_sequence[0]);
             }
             ics->window_sequence[1] = ics->window_sequence[0];
             ics->window_sequence[0] = wi[ch].window_type[0];
@@ -570,7 +570,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
             put_bits(&s->pb, 4, chan_el_counter[tag]++);
             for (ch = 0; ch < chans; ch++) {
                 s->cur_channel = start_ch + ch;
-                ff_psy_set_band_info(&s->psy, s->cur_channel, cpe->ch[ch].coeffs, &wi[ch]);
+                s->psy.model->analyze(&s->psy, s->cur_channel, cpe->ch[ch].coeffs, &wi[ch]);
                 s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
             }
             cpe->common_window = 0;

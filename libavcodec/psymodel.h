@@ -80,8 +80,30 @@ typedef struct FFPsyContext {
 typedef struct FFPsyModel {
     const char *name;
     int  (*init)   (FFPsyContext *apc);
+
+    /**
+     * Suggest window sequence for channel.
+     *
+     * @param ctx       model context
+     * @param audio     samples for the current frame
+     * @param la        lookahead samples (NULL when unavailable)
+     * @param channel   number of channel element to analyze
+     * @param prev_type previous window type
+     *
+     * @return suggested window information in a structure
+     */
     FFPsyWindowInfo (*window)(FFPsyContext *ctx, const int16_t *audio, const int16_t *la, int channel, int prev_type);
+
+    /**
+     * Perform psychoacoustic analysis and set band info (threshold, energy).
+     *
+     * @param ctx     model context
+     * @param channel audio channel number
+     * @param coeffs  pointer to the transformed coefficients
+     * @param wi      window information
+     */
     void (*analyze)(FFPsyContext *ctx, int channel, const float *coeffs, const FFPsyWindowInfo *wi);
+
     void (*end)    (FFPsyContext *apc);
 } FFPsyModel;
 
@@ -99,33 +121,6 @@ typedef struct FFPsyModel {
 av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx,
                         int num_lens,
                         const uint8_t **bands, const int* num_bands);
-
-/**
- * Suggest window sequence for channel.
- *
- * @param ctx       model context
- * @param audio     samples for the current frame
- * @param la        lookahead samples (NULL when unavailable)
- * @param channel   number of channel element to analyze
- * @param prev_type previous window type
- *
- * @return suggested window information in a structure
- */
-FFPsyWindowInfo ff_psy_suggest_window(FFPsyContext *ctx,
-                                      const int16_t *audio, const int16_t *la,
-                                      int channel, int prev_type);
-
-
-/**
- * Perform psychoacoustic analysis and set band info (threshold, energy).
- *
- * @param ctx     model context
- * @param channel audio channel number
- * @param coeffs  pointer to the transformed coefficients
- * @param wi      window information
- */
-void ff_psy_set_band_info(FFPsyContext *ctx, int channel, const float *coeffs,
-                          const FFPsyWindowInfo *wi);
 
 /**
  * Cleanup model context at the end.
