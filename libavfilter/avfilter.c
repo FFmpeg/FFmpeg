@@ -73,14 +73,9 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
 static void store_in_pool(AVFilterBufferRef *ref)
 {
     int i;
-    AVFilterLink *link= ref->buf->priv;
-    AVFilterPool *pool;
+    AVFilterPool *pool= ref->buf->priv;
 
     av_assert0(ref->buf->data[0]);
-
-    if(!link->pool)
-        link->pool = av_mallocz(sizeof(AVFilterPool));
-    pool= link->pool;
 
     if(pool->count == POOL_SIZE){
         AVFilterBufferRef *ref1= pool->pic[0];
@@ -685,7 +680,6 @@ void avfilter_free(AVFilterContext *filter)
         if ((link = filter->inputs[i])) {
             if (link->src)
                 link->src->outputs[link->srcpad - link->src->output_pads] = NULL;
-            av_freep(&link->pool);
             avfilter_formats_unref(&link->in_formats);
             avfilter_formats_unref(&link->out_formats);
         }
@@ -695,7 +689,6 @@ void avfilter_free(AVFilterContext *filter)
         if ((link = filter->outputs[i])) {
             if (link->dst)
                 link->dst->inputs[link->dstpad - link->dst->input_pads] = NULL;
-            av_freep(&link->pool);
             avfilter_formats_unref(&link->in_formats);
             avfilter_formats_unref(&link->out_formats);
         }
