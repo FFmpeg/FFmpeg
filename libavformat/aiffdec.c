@@ -68,19 +68,20 @@ static int get_tag(AVIOContext *pb, uint32_t * tag)
 static void get_meta(AVFormatContext *s, const char *key, int size)
 {
     uint8_t *str = av_malloc(size+1);
-    int res;
 
-    if (!str) {
-        avio_skip(s->pb, size);
-        return;
-    }
+    if (str) {
+        int res = avio_read(s->pb, str, size);
+        if (res < 0){
+            av_free(str);
+            return;
+        }
+        size += (size&1)-res;
+        str[res] = 0;
+        av_metadata_set2(&s->metadata, key, str, AV_METADATA_DONT_STRDUP_VAL);
+    }else
+        size+= size&1;
 
-    res = avio_read(s->pb, str, size);
-    if (res < 0)
-        return;
-
-    str[res] = 0;
-    av_metadata_set2(&s->metadata, key, str, AV_METADATA_DONT_STRDUP_VAL);
+    avio_skip(s->pb, size);
 }
 
 /* Returns the number of sound data frames or negative on error */
