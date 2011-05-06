@@ -1666,7 +1666,7 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
                 uvsx = mx & s_mask;
                 uvsy = motion_y & s_mask;
                 uvsrc_y = src_y;
-                uvsrc_x = s->mb_x*2*block_s               + (mx >> (lowres+1));
+                uvsrc_x = s->mb_x*block_s               + (mx >> (lowres+1));
             } else {
             //Chroma444
                 uvsx = motion_x & s_mask;
