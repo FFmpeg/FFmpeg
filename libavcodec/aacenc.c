@@ -489,7 +489,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
     AACEncContext *s = avctx->priv_data;
     int16_t *samples = s->samples, *samples2, *la;
     ChannelElement *cpe;
-    int i, j, chans, tag, start_ch;
+    int i, ch, w, chans, tag, start_ch;
     const uint8_t *chan_map = aac_chan_configs[avctx->channels-1];
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
@@ -524,34 +524,33 @@ static int aac_encode_frame(AVCodecContext *avctx,
         tag      = chan_map[i+1];
         chans    = tag == TYPE_CPE ? 2 : 1;
         cpe      = &s->cpe[i];
-        for (j = 0; j < chans; j++) {
-            IndividualChannelStream *ics = &cpe->ch[j].ics;
-            int k;
-            int cur_channel = start_ch + j;
+        for (ch = 0; ch < chans; ch++) {
+            IndividualChannelStream *ics = &cpe->ch[ch].ics;
+            int cur_channel = start_ch + ch;
             samples2 = samples + cur_channel;
             la       = samples2 + (448+64) * avctx->channels;
             if (!data)
                 la = NULL;
             if (tag == TYPE_LFE) {
-                wi[j].window_type[0] = ONLY_LONG_SEQUENCE;
-                wi[j].window_shape   = 0;
-                wi[j].num_windows    = 1;
-                wi[j].grouping[0]    = 1;
+                wi[ch].window_type[0] = ONLY_LONG_SEQUENCE;
+                wi[ch].window_shape   = 0;
+                wi[ch].num_windows    = 1;
+                wi[ch].grouping[0]    = 1;
             } else {
-                wi[j] = ff_psy_suggest_window(&s->psy, samples2, la, cur_channel,
-                                              ics->window_sequence[0]);
+                wi[ch] = ff_psy_suggest_window(&s->psy, samples2, la, cur_channel,
+                                               ics->window_sequence[0]);
             }
             ics->window_sequence[1] = ics->window_sequence[0];
-            ics->window_sequence[0] = wi[j].window_type[0];
+            ics->window_sequence[0] = wi[ch].window_type[0];
             ics->use_kb_window[1]   = ics->use_kb_window[0];
-            ics->use_kb_window[0]   = wi[j].window_shape;
-            ics->num_windows        = wi[j].num_windows;
+            ics->use_kb_window[0]   = wi[ch].window_shape;
+            ics->num_windows        = wi[ch].num_windows;
             ics->swb_sizes          = s->psy.bands    [ics->num_windows == 8];
             ics->num_swb            = tag == TYPE_LFE ? 12 : s->psy.num_bands[ics->num_windows == 8];
-            for (k = 0; k < ics->num_windows; k++)
-                ics->group_len[k] = wi[j].grouping[k];
+            for (w = 0; w < ics->num_windows; w++)
+                ics->group_len[w] = wi[ch].grouping[w];
 
-            apply_window_and_mdct(avctx, s, &cpe->ch[j], samples2);
+            apply_window_and_mdct(avctx, s, &cpe->ch[ch], samples2);
         }
         start_ch += chans;
     }
@@ -569,10 +568,10 @@ static int aac_encode_frame(AVCodecContext *avctx,
             cpe      = &s->cpe[i];
             put_bits(&s->pb, 3, tag);
             put_bits(&s->pb, 4, chan_el_counter[tag]++);
-            for (j = 0; j < chans; j++) {
-                s->cur_channel = start_ch + j;
-                ff_psy_set_band_info(&s->psy, s->cur_channel, cpe->ch[j].coeffs, &wi[j]);
-                s->coder->search_for_quantizers(avctx, s, &cpe->ch[j], s->lambda);
+            for (ch = 0; ch < chans; ch++) {
+                s->cur_channel = start_ch + ch;
+                ff_psy_set_band_info(&s->psy, s->cur_channel, cpe->ch[ch].coeffs, &wi[ch]);
+                s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
             }
             cpe->common_window = 0;
             if (chans > 1
@@ -580,8 +579,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
                 && wi[0].window_shape   == wi[1].window_shape) {
 
                 cpe->common_window = 1;
-                for (j = 0; j < wi[0].num_windows; j++) {
-                    if (wi[0].grouping[j] != wi[1].grouping[j]) {
+                for (w = 0; w < wi[0].num_windows; w++) {
+                    if (wi[0].grouping[w] != wi[1].grouping[w]) {
                         cpe->common_window = 0;
                         break;
                     }
@@ -598,9 +597,9 @@ static int aac_encode_frame(AVCodecContext *avctx,
                     encode_ms_info(&s->pb, cpe);
                 }
             }
-            for (j = 0; j < chans; j++) {
-                s->cur_channel = start_ch + j;
-                encode_individual_channel(avctx, s, &cpe->ch[j], cpe->common_window);
+            for (ch = 0; ch < chans; ch++) {
+                s->cur_channel = start_ch + ch;
+                encode_individual_channel(avctx, s, &cpe->ch[ch], cpe->common_window);
             }
             start_ch += chans;
         }
