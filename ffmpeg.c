@@ -285,7 +285,7 @@ typedef struct AVOutputStream {
     AVBitStreamFilterContext *bitstream_filters;
     /* video only */
     int video_resample;
-    AVFrame pict_tmp;      /* temporary image for resampling */
+    AVFrame resample_frame;              /* temporary frame for image resampling */
     struct SwsContext *img_resample_ctx; /* for image resampling */
     int resample_height;
     int resample_width;
@@ -1214,12 +1214,12 @@ static void do_video_out(AVFormatContext *s,
                           dec->pix_fmt != enc->pix_fmt;
 
     if (ost->video_resample) {
-        final_picture = &ost->pict_tmp;
+        final_picture = &ost->resample_frame;
         if (!ost->img_resample_ctx || resample_changed) {
             /* initialize the destination picture */
-            if (!ost->pict_tmp.data[0]) {
-                avcodec_get_frame_defaults(&ost->pict_tmp);
-                if (avpicture_alloc((AVPicture *)&ost->pict_tmp, enc->pix_fmt,
+            if (!ost->resample_frame.data[0]) {
+                avcodec_get_frame_defaults(&ost->resample_frame);
+                if (avpicture_alloc((AVPicture *)&ost->resample_frame, enc->pix_fmt,
                                     enc->width, enc->height)) {
                     fprintf(stderr, "Cannot allocate temp picture, check pix fmt\n");
                     ffmpeg_exit(1);
@@ -1237,7 +1237,7 @@ static void do_video_out(AVFormatContext *s,
             }
         }
         sws_scale(ost->img_resample_ctx, formatted_picture->data, formatted_picture->linesize,
-                  0, ost->resample_height, ost->pict_tmp.data, ost->pict_tmp.linesize);
+                  0, ost->resample_height, ost->resample_frame.data, ost->resample_frame.linesize);
     }
 #endif
 
@@ -2789,7 +2789,7 @@ static int transcode(AVFormatContext **output_files,
                 av_fifo_free(ost->fifo); /* works even if fifo is not
                                              initialized but set to zero */
                 av_freep(&ost->st->codec->subtitle_header);
-                av_free(ost->pict_tmp.data[0]);
+                av_free(ost->resample_frame.data[0]);
                 av_free(ost->forced_kf_pts);
                 if (ost->video_resample)
                     sws_freeContext(ost->img_resample_ctx);
