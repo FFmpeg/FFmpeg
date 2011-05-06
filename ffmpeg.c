@@ -1147,7 +1147,7 @@ static void do_video_out(AVFormatContext *s,
                          int *frame_size)
 {
     int nb_frames, i, ret, resample_changed;
-    AVFrame *final_picture, *formatted_picture, *resampling_dst;
+    AVFrame *final_picture, *formatted_picture;
     AVCodecContext *enc, *dec;
     double sync_ipts;
 
@@ -1192,7 +1192,6 @@ static void do_video_out(AVFormatContext *s,
 
     formatted_picture = in_picture;
     final_picture = formatted_picture;
-    resampling_dst = &ost->pict_tmp;
 
     resample_changed = ost->resample_width   != dec->width  ||
                        ost->resample_height  != dec->height ||
@@ -1243,7 +1242,7 @@ static void do_video_out(AVFormatContext *s,
             }
         }
         sws_scale(ost->img_resample_ctx, formatted_picture->data, formatted_picture->linesize,
-              0, ost->resample_height, resampling_dst->data, resampling_dst->linesize);
+                  0, ost->resample_height, ost->pict_tmp.data, ost->pict_tmp.linesize);
     }
 #endif
 
