@@ -1146,7 +1146,7 @@ static void do_video_out(AVFormatContext *s,
                          AVFrame *in_picture,
                          int *frame_size)
 {
-    int nb_frames, i, ret, resample_changed;
+    int nb_frames, i, ret, av_unused resample_changed;
     AVFrame *final_picture, *formatted_picture;
     AVCodecContext *enc, *dec;
     double sync_ipts;
@@ -1193,6 +1193,7 @@ static void do_video_out(AVFormatContext *s,
     formatted_picture = in_picture;
     final_picture = formatted_picture;
 
+#if !CONFIG_AVFILTER
     resample_changed = ost->resample_width   != dec->width  ||
                        ost->resample_height  != dec->height ||
                        ost->resample_pix_fmt != dec->pix_fmt;
@@ -1208,7 +1209,6 @@ static void do_video_out(AVFormatContext *s,
         ost->resample_pix_fmt = dec->pix_fmt;
     }
 
-#if !CONFIG_AVFILTER
     ost->video_resample = dec->width   != enc->width  ||
                           dec->height  != enc->height ||
                           dec->pix_fmt != enc->pix_fmt;
