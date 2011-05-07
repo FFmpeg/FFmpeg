@@ -1163,6 +1163,122 @@ scale="trunc(3/2*iw/hsub)*hsub:trunc(3/2*ih/vsub)*vsub"
 scale='min(500\, iw*3/2):-1'
 @end example
 
+@section select
+Select frames to pass in output.
+
+It accepts in input an expression, which is evaluated for each input
+frame. If the expression is evaluated to a non-zero value, the frame
+is selected and passed to the output, otherwise it is discarded.
+
+The expression can contain the following constants:
+
+@table @option
+@item PI
+Greek PI
+
+@item PHI
+golden ratio
+
+@item E
+Euler number
+
+@item n
+the sequential number of the filtered frame, starting from 0
+
+@item selected_n
+the sequential number of the selected frame, starting from 0
+
+@item prev_selected_n
+the sequential number of the last selected frame, NAN if undefined
+
+@item TB
+timebase of the input timestamps
+
+@item pts
+the PTS (Presentation TimeStamp) of the filtered video frame,
+expressed in @var{TB} units, NAN if undefined
+
+@item t
+the PTS (Presentation TimeStamp) of the filtered video frame,
+expressed in seconds, NAN if undefined
+
+@item prev_pts
+the PTS of the previously filtered video frame, NAN if undefined
+
+@item prev_selected_pts
+the PTS of the last previously filtered video frame, NAN if undefined
+
+@item prev_selected_t
+the PTS of the last previously selected video frame, NAN if undefined
+
+@item start_pts
+the PTS of the first video frame in the video, NAN if undefined
+
+@item start_t
+the time of the first video frame in the video, NAN if undefined
+
+@item pict_type
+the picture type of the filtered frame, can assume one of the following
+values:
+@table @option
+@item PICT_TYPE_I
+@item PICT_TYPE_P
+@item PICT_TYPE_B
+@item PICT_TYPE_S
+@item PICT_TYPE_SI
+@item PICT_TYPE_SP
+@item PICT_TYPE_BI
+@end table
+
+@item interlace_type
+the frame interlace type, can assume one of the following values:
+@table @option
+@item INTERLACE_TYPE_P
+the frame is progressive (not interlaced)
+@item INTERLACE_TYPE_T
+the frame is top-field-first
+@item INTERLACE_TYPE_B
+the frame is bottom-field-first
+@end table
+
+@item key
+1 if the filtered frame is a key-frame, 0 otherwise
+
+@item pos
+the position in the file of the filtered frame, -1 if the information
+is not available (e.g. for synthetic video)
+@end table
+
+The default value of the select expression is "1".
+
+Some examples follow:
+
+@example
+# select all frames in input
+select
+
+# the above is the same as:
+select=1
+
+# skip all frames:
+select=0
+
+# select only I-frames
+select='eq(pict_type\,PICT_TYPE_I)'
+
+# select one frame every 100
+select='not(mod(n\,100))'
+
+# select only frames contained in the 10-20 time interval
+select='gte(t\,10)*lte(t\,20)'
+
+# select only I frames contained in the 10-20 time interval
+select='gte(t\,10)*lte(t\,20)*eq(pict_type\,PICT_TYPE_I)'
+
+# select frames with a minimum distance of 10 seconds
+select='isnan(prev_selected_t)+gte(t-prev_selected_t\,10)'
+@end example
+
 @anchor{setdar}
 @section setdar
 
