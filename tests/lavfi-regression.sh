@@ -19,8 +19,8 @@ do_video_filter() {
     filters=$2
     shift 2
     printf '%-20s' $label >>$logfile
-    run_ffmpeg -f image2 -vcodec pgmyuv -i $raw_src    \
-        -vf "$filters" -vcodec rawvideo $* -f nut md5: >>$logfile
+    run_ffmpeg $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src    \
+        $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5: >>$logfile
 }
 
 do_lavfi() {
