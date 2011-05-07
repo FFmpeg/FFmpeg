@@ -315,6 +315,10 @@ static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
     if (get_bits1(gb))
         skip_bits(gb, 3); // mixdown_coeff_index and pseudo_surround
 
+    if (get_bits_left(gb) < 4 * (num_front + num_side + num_back + num_lfe + num_assoc_data + num_cc)) {
+        av_log(avctx, AV_LOG_ERROR, overread_err);
+        return -1;
+    }
     decode_channel_map(new_che_pos[TYPE_CPE], new_che_pos[TYPE_SCE], AAC_CHANNEL_FRONT, gb, num_front);
     decode_channel_map(new_che_pos[TYPE_CPE], new_che_pos[TYPE_SCE], AAC_CHANNEL_SIDE,  gb, num_side );
     decode_channel_map(new_che_pos[TYPE_CPE], new_che_pos[TYPE_SCE], AAC_CHANNEL_BACK,  gb, num_back );
