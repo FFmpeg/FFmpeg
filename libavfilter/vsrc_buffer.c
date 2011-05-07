@@ -29,8 +29,7 @@
 #include "libavutil/imgutils.h"
 
 typedef struct {
-    AVFrame           frame;
-    int               has_frame;
+    AVFilterBufferRef *picref;
     int               h, w;
     enum PixelFormat  pix_fmt;
     AVRational        time_base;     ///< time_base to set in the output link
@@ -38,13 +37,14 @@ typedef struct {
     char              sws_param[256];
 } BufferSourceContext;
 
-int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
-                              const char *sws_param)
+int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilterBufferRef *picref,
+                                         const char *sws_param)
 {
     BufferSourceContext *c = buffer_filter->priv;
+    AVFilterLink *outlink = buffer_filter->outputs[0];
     int ret;
 
-    if (c->has_frame) {
+    if (c->picref) {
         av_log(buffer_filter, AV_LOG_ERROR,
                "Buffering several frames is not supported. "
                "Please consume all available frames before adding a new one.\n"
@@ -56,14 +56,14 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
         snprintf(c->sws_param, 255, "%d:%d:%s", c->w, c->h, sws_param);
     }
 
-    if (frame->width != c->w || frame->height != c->h || frame->format != c->pix_fmt) {
+    if (picref->video->w != c->w || picref->video->h != c->h || picref->format != c->pix_fmt) {
         AVFilterContext *scale= buffer_filter->outputs[0]->dst;
         AVFilterLink *link;
 
         av_log(buffer_filter, AV_LOG_INFO,
                "Buffer video input changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
                c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name,
-               frame->width, frame->height, av_pix_fmt_descriptors[frame->format].name);
+               picref->video->w, picref->video->h, av_pix_fmt_descriptors[picref->format].name);
 
         if(!scale || strcmp(scale->filter->name,"scale")){
             AVFilter *f= avfilter_get_by_name("scale");
@@ -89,26 +89,28 @@ int av_vsrc_buffer_add_frame2(AVFilterContext *buffer_filter, AVFrame *frame,
             scale->filter->init(scale, c->sws_param, NULL);
         }
 
-        c->pix_fmt = scale->inputs[0]->format = frame->format;
-        c->w       = scale->inputs[0]->w      = frame->width;
-        c->h       = scale->inputs[0]->h      = frame->height;
+        c->pix_fmt = scale->inputs[0]->format = picref->format;
+        c->w       = scale->inputs[0]->w      = picref->video->w;
+        c->h       = scale->inputs[0]->h      = picref->video->h;
 
         link= scale->outputs[0];
         if ((ret =  link->srcpad->config_props(link)) < 0)
             return ret;
     }
 
-    c->frame = *frame;
-    memcpy(c->frame.data    , frame->data    , sizeof(frame->data));
-    memcpy(c->frame.linesize, frame->linesize, sizeof(frame->linesize));
-    c->has_frame = 1;
+    c->picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
+                                          picref->video->w, picref->video->h);
+    av_image_copy(c->picref->data, c->picref->linesize,
+                  picref->data, picref->linesize,
+                  picref->format, picref->video->w, picref->video->h);
+    avfilter_copy_buffer_ref_props(c->picref, picref);
 
     return 0;
 }
 
-int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame)
+int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter, AVFilterBufferRef *picref)
 {
-    return av_vsrc_buffer_add_frame2(buffer_filter, frame, "");
+    return av_vsrc_buffer_add_video_buffer_ref2(buffer_filter, picref, "");
 }
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -164,31 +166,18 @@ static int config_props(AVFilterLink *link)
 static int request_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
-    AVFilterBufferRef *picref;
 
-    if (!c->has_frame) {
+    if (!c->picref) {
         av_log(link->src, AV_LOG_ERROR,
                "request_frame() called with no available frame!\n");
         //return -1;
     }
 
-    /* This picture will be needed unmodified later for decoding the next
-     * frame */
-    picref = avfilter_get_video_buffer(link, AV_PERM_WRITE | AV_PERM_PRESERVE |
-                                       AV_PERM_REUSE2,
-                                       link->w, link->h);
-
-    av_image_copy(picref->data, picref->linesize,
-                  c->frame.data, c->frame.linesize,
-                  picref->format, link->w, link->h);
-    avfilter_copy_frame_props(picref, &c->frame);
-
-    avfilter_start_frame(link, avfilter_ref_buffer(picref, ~0));
+    avfilter_start_frame(link, avfilter_ref_buffer(c->picref, ~0));
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);
-    avfilter_unref_buffer(picref);
-
-    c->has_frame = 0;
+    avfilter_unref_buffer(c->picref);
+    c->picref = NULL;
 
     return 0;
 }
@@ -196,7 +185,7 @@ static int request_frame(AVFilterLink *link)
 static int poll_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
-    return !!(c->has_frame);
+    return !!(c->picref);
 }
 
 AVFilter avfilter_vsrc_buffer = {

@@ -1643,13 +1643,20 @@ static int output_packet(AVInputStream *ist, int ist_index,
 #if CONFIG_AVFILTER
         if(ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             for(i=0;i<nb_ostreams;i++) {
+                AVFilterBufferRef *picref;
                 ost = ost_table[i];
                 if (ost->input_video_filter && ost->source_index == ist_index) {
                     if (!picture.sample_aspect_ratio.num)
                         picture.sample_aspect_ratio = ist->st->sample_aspect_ratio;
                     picture.pts = ist->pts;
-                    // add it to be filtered
-                    av_vsrc_buffer_add_frame2(ost->input_video_filter, &picture, ""); //TODO user setable params
+
+                    picref = avfilter_get_video_buffer_ref_from_arrays(
+                        picture.data, picture.linesize, AV_PERM_WRITE,
+                        picture.width, picture.height, picture.format);
+                    avfilter_copy_frame_props(picref, &picture);
+                    av_vsrc_buffer_add_video_buffer_ref2(ost->input_video_filter, picref, ""); //TODO user setable params
+                    picref->buf->data[0] = NULL;
+                    avfilter_unref_buffer(picref);
                 }
             }
         }
