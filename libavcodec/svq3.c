@@ -949,8 +949,8 @@ static int svq3_decode_frame(AVCodecContext *avctx,
     s->mb_x = s->mb_y = h->mb_xy = 0;
 
     if (svq3->watermark_key) {
-        svq3->buf = av_fast_realloc(svq3->buf, &svq3->buf_size,
-                                    buf_size+FF_INPUT_BUFFER_PADDING_SIZE);
+        av_fast_malloc(&svq3->buf, &svq3->buf_size,
+                       buf_size+FF_INPUT_BUFFER_PADDING_SIZE);
         if (!svq3->buf)
             return AVERROR(ENOMEM);
         memcpy(svq3->buf, avpkt->data, buf_size);
