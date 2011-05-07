@@ -356,7 +356,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIContext *avi = s->priv_data;
     AVIOContext *pb = s->pb;
     unsigned int tag, tag1, handler;
-    int codec_type, stream_index, frame_period, bit_rate;
+    int codec_type, stream_index, frame_period;
     unsigned int size;
     int i;
     AVStream *st;
@@ -428,7 +428,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             /* AVI header */
             /* using frame_period is bad idea */
             frame_period = avio_rl32(pb);
-            bit_rate = avio_rl32(pb) * 8;
+            avio_rl32(pb); /* max. bytes per second */
             avio_rl32(pb);
             avi->non_interleaved |= avio_rl32(pb) & AVIF_MUSTUSEINDEX;
 
@@ -1303,7 +1303,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 {
     AVIContext *avi = s->priv_data;
     AVStream *st;
-    int i, index, j;
+    int i, index;
     int64_t pos, pos_min;
     AVIStream *ast;
 
