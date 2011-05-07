@@ -1233,8 +1233,8 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                     : "%r8"
                 );
 #else
-                *(const uint16_t **)(&c->u_temp)=abuf0;
-                *(const uint16_t **)(&c->v_temp)=abuf1;
+                c->u_temp=(intptr_t)abuf0;
+                c->v_temp=(intptr_t)abuf1;
                 __asm__ volatile(
                     "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                     "mov        %4, %%"REG_b"               \n\t"
