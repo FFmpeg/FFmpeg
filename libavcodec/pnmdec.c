@@ -33,7 +33,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     PNMContext * const s = avctx->priv_data;
     AVFrame *picture     = data;
     AVFrame * const p    = (AVFrame*)&s->picture;
-    int i, j, n, linesize, h, upgrade = 0;
+    int i, j, n, linesize, h, upgrade = 0, is_mono = 0;
     unsigned char *ptr;
     int components, sample_len;
 
@@ -88,6 +88,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         n = (avctx->width + 7) >> 3;
         components=1;
         sample_len=1;
+        is_mono = 1;
     do_read:
         ptr      = p->data[0];
         linesize = p->linesize[0];
@@ -104,10 +105,16 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
                         s->bytestream++;
                     if(s->bytestream >= s->bytestream_end)
                         return -1;
+                    if (is_mono) {
+                        /* read a single digit */
+                        v = (*s->bytestream++) - '0';
+                    } else {
+                    /* read a sequence of digits */
                     do{
                         v= 10*v + c;
                         c= (*s->bytestream++) - '0';
                     }while(c <= 9);
+                    }
                     put_bits(&pb, sample_len, (((1<<sample_len)-1)*v + (s->maxval>>1))/s->maxval);
                 }
                 flush_put_bits(&pb);
