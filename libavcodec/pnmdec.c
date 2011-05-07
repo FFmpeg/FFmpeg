@@ -109,11 +109,11 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
                         /* read a single digit */
                         v = (*s->bytestream++) - '0';
                     } else {
-                    /* read a sequence of digits */
-                    do{
-                        v= 10*v + c;
-                        c= (*s->bytestream++) - '0';
-                    }while(c <= 9);
+                        /* read a sequence of digits */
+                        do {
+                            v = 10*v + c;
+                            c = (*s->bytestream++) - '0';
+                        } while (c <= 9);
                     }
                     put_bits(&pb, sample_len, (((1<<sample_len)-1)*v + (s->maxval>>1))/s->maxval);
                 }
