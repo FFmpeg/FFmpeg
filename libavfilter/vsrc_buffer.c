@@ -133,7 +133,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         }
     }
 
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d pixfmt:%s\n", c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name);
+    av_log(ctx, AV_LOG_INFO, "w:%d h:%d pixfmt:%s tb:%d/%d sar:%d/%d\n",
+           c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name,
+           c->time_base.num, c->time_base.den,
+           c->sample_aspect_ratio.num, c->sample_aspect_ratio.den);
     return 0;
 }
 
