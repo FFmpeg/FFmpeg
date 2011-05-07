@@ -168,7 +168,7 @@ do_image_formats sgi
 fi
 
 if [ -n "$do_jpg" ] ; then
-do_image_formats jpg "-flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p" "-f image2"
+do_image_formats jpg "-pix_fmt yuvj420p" "-f image2"
 fi
 
 if [ -n "$do_pcx" ] ; then
