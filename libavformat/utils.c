@@ -2972,12 +2972,12 @@ static int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacke
 {
     AVStream *st = s->streams[ pkt ->stream_index];
     AVStream *st2= s->streams[ next->stream_index];
-    int64_t a= st2->time_base.num * (int64_t)st ->time_base.den;
-    int64_t b= st ->time_base.num * (int64_t)st2->time_base.den;
-    int64_t dts1 = av_rescale_rnd(pkt->dts, b, a, AV_ROUND_DOWN);
-    if (dts1 == next->dts)
+    int comp = av_compare_ts(next->dts, st2->time_base, pkt->dts,
+                             st->time_base);
+
+    if (comp == 0)
         return pkt->stream_index < next->stream_index;
-    return dts1 < next->dts;
+    return comp > 0;
 }
 
 int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
