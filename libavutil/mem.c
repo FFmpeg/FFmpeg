@@ -71,8 +71,6 @@ void *av_malloc(size_t size)
     /* let's disallow possible ambiguous cases */
     if(size > (INT_MAX-32) )
         return NULL;
-    else if(!size)
-        size= 1;
 
 #if CONFIG_MEMALIGN_HACK
     ptr = malloc(size+32);
@@ -113,6 +111,8 @@ void *av_malloc(size_t size)
 #else
     ptr = malloc(size);
 #endif
+    if(!ptr && !size)
+        ptr= av_malloc(1);
     return ptr;
 }
 
