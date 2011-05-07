@@ -491,7 +491,7 @@ ogg_get_length (AVFormatContext * s)
     ogg_restore (s, 0);
 
     ogg_save (s);
-    url_fseek (s->pb, 0, SEEK_SET);
+    avio_seek (s->pb, 0, SEEK_SET);
     while (!ogg_read_page (s, &i)){
         if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
             ogg->streams[i].codec) {
