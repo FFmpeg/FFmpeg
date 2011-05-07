@@ -3305,6 +3305,8 @@ static void opt_input_file(const char *filename)
     av_freep(&video_codec_name);
     av_freep(&audio_codec_name);
     av_freep(&subtitle_codec_name);
+    uninit_opts();
+    init_opts();
 }
 
 static void check_inputs(int *has_video_ptr,
@@ -3850,6 +3852,8 @@ static void opt_output_file(const char *filename)
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM, NULL);
 
     av_freep(&forced_key_frames);
+    uninit_opts();
+    init_opts();
 }
 
 /* same option as mencoder */
