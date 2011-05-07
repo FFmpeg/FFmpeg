@@ -397,10 +397,10 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
         return ff_raw_write_packet(s, pkt);
     else {
         MP3Context  *mp3 = s->priv_data;
+#ifdef FILTER_VBR_HEADERS
         MPADecodeHeader c;
         int base;
 
-#ifdef FILTER_VBR_HEADERS
         ff_mpegaudio_decode_header(&c, AV_RB32(pkt->data));
 
         /* filter out XING and INFO headers. */
