@@ -251,7 +251,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
         return -1;
     }
     if (ape->seektablelength && (ape->seektablelength / sizeof(*ape->seektable)) < ape->totalframes) {
-        av_log(s, AV_LOG_ERROR, "Number of seek entries is less than number of frames: %d vs. %d\n",
+        av_log(s, AV_LOG_ERROR, "Number of seek entries is less than number of frames: %zd vs. %d\n",
                ape->seektablelength / sizeof(*ape->seektable), ape->totalframes);
         return AVERROR_INVALIDDATA;
     }
