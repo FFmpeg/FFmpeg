@@ -2191,6 +2191,9 @@ static int stream_component_open(VideoState *is, int stream_index)
     }
 
     codec = avcodec_find_decoder(avctx->codec_id);
+    if (!codec)
+        return -1;
+
     avctx->debug_mv = debug_mv;
     avctx->debug = debug;
     avctx->workaround_bugs = workaround_bugs;
@@ -2210,8 +2213,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     if(codec->capabilities & CODEC_CAP_DR1)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
-    if (!codec ||
-        avcodec_open(avctx, codec) < 0)
+    if (avcodec_open(avctx, codec) < 0)
         return -1;
 
     /* prepare audio output */
