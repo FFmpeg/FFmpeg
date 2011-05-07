@@ -132,7 +132,7 @@ void *av_realloc(void *ptr, size_t size)
     diff= ((char*)ptr)[-1];
     return (char*)realloc((char*)ptr - diff, size + diff) + diff;
 #else
-    return realloc(ptr, size);
+    return realloc(ptr, size + !size);
 #endif
 }
 
