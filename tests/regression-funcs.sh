@@ -121,13 +121,13 @@ do_video_decoding()
 do_video_encoding()
 {
     file=${outfile}$1
-    do_ffmpeg $file $2 -f image2 -vcodec pgmyuv -i $raw_src $3
+    do_ffmpeg $file -f image2 -vcodec pgmyuv -i $raw_src $2
 }
 
 do_audio_encoding()
 {
     file=${outfile}$1
-    do_ffmpeg $file -ab 128k -ac 2 -f s16le -i $pcm_src $3
+    do_ffmpeg $file -ab 128k -ac 2 -f s16le -i $pcm_src $2
 }
 
 do_audio_decoding()
