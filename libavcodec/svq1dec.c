@@ -142,7 +142,7 @@ static const uint8_t string_table[256] = {
         break;\
       /* add child nodes */\
       list[n++] = list[i];\
-      list[n++] = list[i] + (((level & 1) ? pitch : 1) << ((level / 2) + 1));\
+      list[n++] = list[i] + (((level & 1) ? pitch : 1) << ((level >> 1) + 1));\
     }
 
 #define SVQ1_ADD_CODEBOOK()\
