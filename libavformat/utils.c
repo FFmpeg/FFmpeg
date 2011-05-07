@@ -2723,8 +2723,6 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int6
 
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
 {
-    int ret;
-
     if (s->oformat->priv_data_size > 0) {
         s->priv_data = av_mallocz(s->oformat->priv_data_size);
         if (!s->priv_data)
