@@ -725,6 +725,8 @@ static av_cold int common_init(AVCodecContext *avctx){
     s->avctx= avctx;
     s->flags= avctx->flags;
 
+    avcodec_get_frame_defaults(&s->picture);
+
     dsputil_init(&s->dsp, avctx);
 
     s->width = avctx->width;
