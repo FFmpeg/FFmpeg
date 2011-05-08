@@ -252,6 +252,7 @@ typedef struct FFV1Context{
     int colorspace;
     int_fast16_t *sample_buffer;
     int gob_count;
+    int packed_at_lsb;
 
     int quant_table_count;
 
@@ -609,8 +610,14 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
             }
             encode_line(s, w, sample, plane_index, 8);
         }else{
-            for(x=0; x<w; x++){
-                sample[0][x]= ((uint16_t*)(src + stride*y))[x] >> (16 - s->avctx->bits_per_raw_sample);
+            if(s->packed_at_lsb){
+                for(x=0; x<w; x++){
+                    sample[0][x]= ((uint16_t*)(src + stride*y))[x];
+                }
+            }else{
+                for(x=0; x<w; x++){
+                    sample[0][x]= ((uint16_t*)(src + stride*y))[x] >> (16 - s->avctx->bits_per_raw_sample);
+                }
             }
             encode_line(s, w, sample, plane_index, s->avctx->bits_per_raw_sample);
         }
@@ -966,6 +973,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     avctx->coded_frame= &s->picture;
     switch(avctx->pix_fmt){
+    case PIX_FMT_YUV420P10:
+    case PIX_FMT_YUV422P10:
+        s->packed_at_lsb = 1;
     case PIX_FMT_YUV444P16:
     case PIX_FMT_YUV422P16:
     case PIX_FMT_YUV420P16:
@@ -1812,7 +1822,7 @@ AVCodec ff_ffv1_encoder = {
     encode_frame,
     common_end,
     .capabilities = CODEC_CAP_SLICE_THREADS,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV444P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_RGB32, PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV444P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_RGB32, PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16, PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
 };
 #endif
