@@ -1910,9 +1910,15 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                     }
                 } else if (src_depth < dst_depth) {
                     for (i = 0; i < height; i++) {
-                        for (j = 0; j < length; j++)
-                            dstPtr2[j] = (srcPtr2[j]<<(dst_depth-src_depth)) |
-                                (srcPtr2[j]>>(2*src_depth-dst_depth));
+                        if(isBE(c->dstFormat)){
+                            for (j = 0; j < length; j++)
+                                AV_WB16(&dstPtr2[j], (srcPtr2[j]<<(dst_depth-src_depth)) |
+                                                     (srcPtr2[j]>>(2*src_depth-dst_depth)));
+                        }else{
+                            for (j = 0; j < length; j++)
+                                AV_WL16(&dstPtr2[j], (srcPtr2[j]<<(dst_depth-src_depth)) |
+                                                     (srcPtr2[j]>>(2*src_depth-dst_depth)));
+                        }
                         dstPtr2 += dstStride[plane]/2;
                         srcPtr2 += srcStride[plane]/2;
                     }
