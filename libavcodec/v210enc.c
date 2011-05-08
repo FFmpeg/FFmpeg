@@ -66,11 +66,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         return -1;
     }
 
+#define CLIP(v) av_clip(v, 4, 1019)
+
 #define WRITE_PIXELS(a, b, c)           \
     do {                                \
-        val =   *a++;             \
-        val |= (*b++ << 10) |     \
-               (*c++ << 20);      \
+        val =   CLIP(*a++);             \
+        val |= (CLIP(*b++) << 10) |     \
+               (CLIP(*c++) << 20);      \
         bytestream_put_le32(&p, val);   \
     } while (0)
 
@@ -85,15 +87,15 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         if (w < avctx->width - 1) {
             WRITE_PIXELS(u, y, v);
 
-            val =   *y++;
+            val = CLIP(*y++);
             if (w == avctx->width - 2)
                 bytestream_put_le32(&p, val);
         }
         if (w < avctx->width - 3) {
-            val |= (*u++ << 10) | (*y++ << 20);
+            val |= (CLIP(*u++) << 10) | (CLIP(*y++) << 20);
             bytestream_put_le32(&p, val);
 
-            val = *v++ | (*y++ << 10);
+            val = CLIP(*v++) | (CLIP(*y++) << 10);
             bytestream_put_le32(&p, val);
         }
 
