@@ -401,23 +401,76 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
     }
 }
 
+static av_always_inline void yuv2yuvXNinC_template(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                                   const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                                   const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest,
+                                                   int dstW, int chrDstW, int big_endian, int depth)
+{
+    //FIXME Optimize (just quickly written not optimized..)
+    int i;
+
+    for (i = 0; i < dstW; i++) {
+        int val = 1 << (26-depth);
+        int j;
+
+        for (j = 0; j < lumFilterSize; j++)
+            val += lumSrc[j][i] * lumFilter[j];
+
+        if (big_endian) {
+            AV_WB16(&dest[i], av_clip(val >> (27-depth), 0, (1<<depth)-1));
+        } else {
+            AV_WL16(&dest[i], av_clip(val >> (27-depth), 0, (1<<depth)-1));
+        }
+    }
+
+    if (uDest) {
+        for (i = 0; i < chrDstW; i++) {
+            int u = 1 << (26-depth);
+            int v = 1 << (26-depth);
+            int j;
+
+            for (j = 0; j < chrFilterSize; j++) {
+                u += chrSrc[j][i       ] * chrFilter[j];
+                v += chrSrc[j][i + VOFW] * chrFilter[j];
+            }
+
+            if (big_endian) {
+                AV_WB16(&uDest[i], av_clip(u >> (27-depth), 0, (1<<depth)-1));
+                AV_WB16(&vDest[i], av_clip(v >> (27-depth), 0, (1<<depth)-1));
+            } else {
+                AV_WL16(&uDest[i], av_clip(u >> (27-depth), 0, (1<<depth)-1));
+                AV_WL16(&vDest[i], av_clip(v >> (27-depth), 0, (1<<depth)-1));
+            }
+        }
+    }
+}
+
 static inline void yuv2yuvX16inC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                  const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                                  const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest, int dstW, int chrDstW,
                                  enum PixelFormat dstFormat)
 {
-    if (isBE(dstFormat)) {
-        yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize,
-                               chrFilter, chrSrc, chrFilterSize,
-                               alpSrc,
-                               dest, uDest, vDest, aDest,
-                               dstW, chrDstW, 1);
+    if (isNBPS(dstFormat)) {
+        const int depth = av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1+1;
+        yuv2yuvXNinC_template(lumFilter, lumSrc, lumFilterSize,
+                              chrFilter, chrSrc, chrFilterSize,
+                              alpSrc,
+                              dest, uDest, vDest, aDest,
+                              dstW, chrDstW, isBE(dstFormat), depth);
     } else {
-        yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize,
-                               chrFilter, chrSrc, chrFilterSize,
-                               alpSrc,
-                               dest, uDest, vDest, aDest,
-                               dstW, chrDstW, 0);
+        if (isBE(dstFormat)) {
+            yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize,
+                                   chrFilter, chrSrc, chrFilterSize,
+                                   alpSrc,
+                                   dest, uDest, vDest, aDest,
+                                   dstW, chrDstW, 1);
+        } else {
+            yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize,
+                                   chrFilter, chrSrc, chrFilterSize,
+                                   alpSrc,
+                                   dest, uDest, vDest, aDest,
+                                   dstW, chrDstW, 0);
+        }
     }
 }
 
@@ -1823,34 +1876,62 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                 length*=2;
             fillPlane(dst[plane], dstStride[plane], length, height, y, (plane==3) ? 255 : 128);
         } else {
-            if(isNBPS(c->srcFormat)) {
-                const int depth = av_pix_fmt_descriptors[c->srcFormat].comp[plane].depth_minus1+1;
+            if(isNBPS(c->srcFormat) || isNBPS(c->dstFormat)) {
+                const int src_depth = av_pix_fmt_descriptors[c->srcFormat].comp[plane].depth_minus1+1;
+                const int dst_depth = av_pix_fmt_descriptors[c->dstFormat].comp[plane].depth_minus1+1;
                 uint16_t *srcPtr2 = (uint16_t*)srcPtr;
+                uint16_t *dstPtr2 = (uint16_t*)dstPtr;
 
-                if (is16BPS(c->dstFormat)) {
-                    uint16_t *dstPtr2 = (uint16_t*)dstPtr;
+                if (dst_depth == 8) {
+                    for (i = 0; i < height; i++) {
+                        uint8_t *dither= dithers[src_depth-9][i&7];
+                        for (j = 0; j < length-7; j+=8){
+                            dstPtr[j+0] = (srcPtr2[j+0] + dither[0])>>(src_depth-8);
+                            dstPtr[j+1] = (srcPtr2[j+1] + dither[1])>>(src_depth-8);
+                            dstPtr[j+2] = (srcPtr2[j+2] + dither[2])>>(src_depth-8);
+                            dstPtr[j+3] = (srcPtr2[j+3] + dither[3])>>(src_depth-8);
+                            dstPtr[j+4] = (srcPtr2[j+4] + dither[4])>>(src_depth-8);
+                            dstPtr[j+5] = (srcPtr2[j+5] + dither[5])>>(src_depth-8);
+                            dstPtr[j+6] = (srcPtr2[j+6] + dither[6])>>(src_depth-8);
+                            dstPtr[j+7] = (srcPtr2[j+7] + dither[7])>>(src_depth-8);
+                        }
+                        for (; j < length; j++)
+                            dstPtr[j] = (srcPtr2[j] + dither[j&7])>>(src_depth-8);
+                        dstPtr  += dstStride[plane];
+                        srcPtr2 += srcStride[plane]/2;
+                    }
+                } else if (src_depth == 8) {
                     for (i = 0; i < height; i++) {
                         for (j = 0; j < length; j++)
-                            dstPtr2[j] = (srcPtr2[j]<<(16-depth)) | (srcPtr2[j]>>(2*depth-16));
+                            dstPtr2[j] = (srcPtr[j]<<(dst_depth-8)) |
+                                (srcPtr[j]>>(2*8-dst_depth));
+                        dstPtr2 += dstStride[plane]/2;
+                        srcPtr  += srcStride[plane];
+                    }
+                } else if (src_depth < dst_depth) {
+                    for (i = 0; i < height; i++) {
+                        for (j = 0; j < length; j++)
+                            dstPtr2[j] = (srcPtr2[j]<<(dst_depth-src_depth)) |
+                                (srcPtr2[j]>>(2*src_depth-dst_depth));
                         dstPtr2 += dstStride[plane]/2;
                         srcPtr2 += srcStride[plane]/2;
                     }
                 } else {
                     for (i = 0; i < height; i++) {
-                        uint8_t *dither= dithers[depth-9][i&7];
+                        uint8_t *dither= dithers[src_depth-9][i&7];
                         for (j = 0; j < length-7; j+=8){
-                            dstPtr[j+0] = (srcPtr2[j+0] + dither[0])>>(depth-8);
-                            dstPtr[j+1] = (srcPtr2[j+1] + dither[1])>>(depth-8);
-                            dstPtr[j+2] = (srcPtr2[j+2] + dither[2])>>(depth-8);
-                            dstPtr[j+3] = (srcPtr2[j+3] + dither[3])>>(depth-8);
-                            dstPtr[j+4] = (srcPtr2[j+4] + dither[4])>>(depth-8);
-                            dstPtr[j+5] = (srcPtr2[j+5] + dither[5])>>(depth-8);
-                            dstPtr[j+6] = (srcPtr2[j+6] + dither[6])>>(depth-8);
-                            dstPtr[j+7] = (srcPtr2[j+7] + dither[7])>>(depth-8);
+                            dstPtr2[j+0] = (srcPtr2[j+0] + dither[0])>>(src_depth-dst_depth);
+                            dstPtr2[j+1] = (srcPtr2[j+1] + dither[1])>>(src_depth-dst_depth);
+                            dstPtr2[j+2] = (srcPtr2[j+2] + dither[2])>>(src_depth-dst_depth);
+                            dstPtr2[j+3] = (srcPtr2[j+3] + dither[3])>>(src_depth-dst_depth);
+                            dstPtr2[j+4] = (srcPtr2[j+4] + dither[4])>>(src_depth-dst_depth);
+                            dstPtr2[j+5] = (srcPtr2[j+5] + dither[5])>>(src_depth-dst_depth);
+                            dstPtr2[j+6] = (srcPtr2[j+6] + dither[6])>>(src_depth-dst_depth);
+                            dstPtr2[j+7] = (srcPtr2[j+7] + dither[7])>>(src_depth-dst_depth);
                         }
                         for (; j < length; j++)
-                            dstPtr[j] = (srcPtr2[j] + dither[j&7])>>(depth-8);
-                        dstPtr  += dstStride[plane];
+                            dstPtr2[j] = (srcPtr2[j] + dither[j&7])>>(src_depth-dst_depth);
+                        dstPtr2 += dstStride[plane];
                         srcPtr2 += srcStride[plane]/2;
                     }
                 }

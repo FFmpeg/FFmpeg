@@ -2817,7 +2817,7 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
             } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
-                if (is16BPS(dstFormat)) {
+                if (is16BPS(dstFormat) || isNBPS(dstFormat)) {
                     yuv2yuvX16inC(
                                   vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                                   vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
@@ -2894,7 +2894,7 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
             } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
-                if (is16BPS(dstFormat)) {
+                if (is16BPS(dstFormat) || isNBPS(dstFormat)) {
                     yuv2yuvX16inC(
                                   vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                                   vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
@@ -2979,6 +2979,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_BGR4_BYTE:
         case PIX_FMT_RGB4_BYTE: c->chrToYV12 = palToUV; break;
         case PIX_FMT_YUV420P9 : c->chrToYV12 = (void*)RENAME(yuv9ToUV ); break;
+        case PIX_FMT_YUV422P10:
         case PIX_FMT_YUV420P10: c->chrToYV12 = (void*)RENAME(yuv10ToUV); break;
         case PIX_FMT_YUV420P16BE:
         case PIX_FMT_YUV422P16BE:
@@ -3027,6 +3028,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     c->alpToYV12 = NULL;
     switch (srcFormat) {
     case PIX_FMT_YUV420P9 : c->lumToYV12 = (void*)RENAME(yuv9ToY ); break;
+    case PIX_FMT_YUV422P10:
     case PIX_FMT_YUV420P10: c->lumToYV12 = (void*)RENAME(yuv10ToY); break;
     case PIX_FMT_YUYV422  :
     case PIX_FMT_YUV420P16BE:
