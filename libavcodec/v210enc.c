@@ -31,8 +31,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if (avctx->pix_fmt != PIX_FMT_YUV422P16) {
-        av_log(avctx, AV_LOG_ERROR, "v210 needs YUV422P16\n");
+    if (avctx->pix_fmt != PIX_FMT_YUV422P10) {
+        av_log(avctx, AV_LOG_ERROR, "v210 needs YUV422P10\n");
         return -1;
     }
 
@@ -68,9 +68,9 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
 #define WRITE_PIXELS(a, b, c)           \
     do {                                \
-        val =  (*a++           >>  6) | \
-              ((*b++ & 0xFFC0) <<  4);  \
-        val|=  (*c++ & 0xFFC0) << 14;   \
+        val =   *a++;             \
+        val |= (*b++ << 10) |     \
+               (*c++ << 20);      \
         bytestream_put_le32(&p, val);   \
     } while (0)
 
@@ -85,17 +85,15 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         if (w < avctx->width - 1) {
             WRITE_PIXELS(u, y, v);
 
-            val =   *y++           >>  6;
+            val =   *y++;
             if (w == avctx->width - 2)
                 bytestream_put_le32(&p, val);
         }
         if (w < avctx->width - 3) {
-            val |=((*u++ & 0xFFC0) <<  4) |
-                  ((*y++ & 0xFFC0) << 14);
+            val |= (*u++ << 10) | (*y++ << 20);
             bytestream_put_le32(&p, val);
 
-            val =  (*v++           >>  6) |
-                   (*y++ & 0xFFC0) <<  4;
+            val = *v++ | (*y++ << 10);
             bytestream_put_le32(&p, val);
         }
 
@@ -124,6 +122,6 @@ AVCodec ff_v210_encoder = {
     .init           = encode_init,
     .encode         = encode_frame,
     .close          = encode_close,
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV422P16, PIX_FMT_NONE},
+    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
 };
