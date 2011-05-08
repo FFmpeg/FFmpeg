@@ -274,24 +274,27 @@ static inline unsigned char adpcm_ima_compress_sample(ADPCMChannelStatus *c, sho
 static inline unsigned char adpcm_ima_qt_compress_sample(ADPCMChannelStatus *c, short sample)
 {
     int delta = sample - c->prev_sample;
-    int mask, step = step_table[c->step_index];
-    int diff = step >> 3;
-    int nibble = 0;
+    int diff, step = step_table[c->step_index];
+    int nibble = 8*(delta < 0);
 
-    if (delta < 0) {
-        nibble = 8;
-        delta = -delta;
-    }
+    delta= abs(delta);
+    diff = delta + (step >> 3);
 
-    for (mask = 4; mask;) {
-        if (delta >= step) {
-            nibble |= mask;
-            delta -= step;
-            diff += step;
-        }
-        step >>= 1;
-        mask >>= 1;
+    if (delta >= step) {
+        nibble |= 4;
+        delta -= step;
     }
+    step >>= 1;
+    if (delta >= step) {
+        nibble |= 2;
+        delta -= step;
+    }
+    step >>= 1;
+    if (delta >= step) {
+        nibble |= 1;
+        delta -= step;
+    }
+    diff -= delta;
 
     if (nibble & 8)
         c->prev_sample -= diff;
