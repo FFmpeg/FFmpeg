@@ -402,7 +402,7 @@ static void crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
  */
 static int oledate_to_iso8601(char *buf, int buf_size, int64_t value)
 {
-    time_t t = 631112400LL + 86400*av_int2dbl(value);
+    time_t t = (av_int2dbl(value) - 25569.0) * 86400;
     struct tm result;
     if (!gmtime_r(&t, &result))
         return -1;
