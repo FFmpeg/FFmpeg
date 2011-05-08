@@ -45,17 +45,13 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
-#define MAX_EXPANDED_TEXT_SIZE 2048
-
 typedef struct {
     const AVClass *class;
-    char *fontfile;                 ///< font to be used
-    char *text;                     ///< text to be drawn
+    uint8_t *fontfile;              ///< font to be used
+    uint8_t *text;                  ///< text to be drawn
+    uint8_t *text_priv;             ///< used to detect whether text changed
     int ft_load_flags;              ///< flags used for loading fonts, see FT_LOAD_*
-    /** buffer containing the text expanded by strftime */
-    char expanded_text[MAX_EXPANDED_TEXT_SIZE];
-    /** positions for each element in the text */
-    FT_Vector positions[MAX_EXPANDED_TEXT_SIZE];
+    FT_Vector *positions;           ///< positions for each element in the text
     char *textfile;                 ///< file with text to be drawn
     unsigned int x;                 ///< x position to start drawing text
     unsigned int y;                 ///< y position to start drawing text
@@ -157,9 +153,10 @@ typedef struct {
     int bitmap_top;
 } Glyph;
 
-static int glyph_cmp(const Glyph *a, const Glyph *b)
+static int glyph_cmp(void *key, const void *b)
 {
-    int64_t diff = (int64_t)a->code - (int64_t)b->code;
+    const Glyph *a = key, *bb = b;
+    int64_t diff = (int64_t)a->code - (int64_t)bb->code;
     return diff > 0 ? 1 : diff < 0 ? -1 : 0;
 }
 
@@ -169,21 +166,26 @@ static int glyph_cmp(const Glyph *a, const Glyph *b)
 static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
 {
     DrawTextContext *dtext = ctx->priv;
-    Glyph *glyph = av_mallocz(sizeof(Glyph));
+    Glyph *glyph;
     struct AVTreeNode *node = NULL;
     int ret;
 
     /* load glyph into dtext->face->glyph */
-    ret = FT_Load_Char(dtext->face, code, dtext->ft_load_flags);
-    if (ret)
+    if (FT_Load_Char(dtext->face, code, dtext->ft_load_flags))
         return AVERROR(EINVAL);
 
     /* save glyph */
+    if (!(glyph = av_mallocz(sizeof(*glyph))) ||
+        !(glyph->glyph = av_mallocz(sizeof(*glyph->glyph)))) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
     glyph->code  = code;
-    glyph->glyph = av_mallocz(sizeof(FT_Glyph));
-    ret = FT_Get_Glyph(dtext->face->glyph, glyph->glyph);
-    if (ret)
-        return AVERROR(EINVAL);
+
+    if (FT_Get_Glyph(dtext->face->glyph, glyph->glyph)) {
+        ret = AVERROR(EINVAL);
+        goto error;
+    }
 
     glyph->bitmap      = dtext->face->glyph->bitmap;
     glyph->bitmap_left = dtext->face->glyph->bitmap_left;
@@ -194,19 +196,29 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
     FT_Glyph_Get_CBox(*glyph->glyph, ft_glyph_bbox_pixels, &glyph->bbox);
 
     /* cache the newly created glyph */
-    if (!node)
-        node = av_mallocz(av_tree_node_size);
-    av_tree_insert(&dtext->glyphs, glyph, (void *)glyph_cmp, &node);
+    if (!(node = av_mallocz(av_tree_node_size))) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+    av_tree_insert(&dtext->glyphs, glyph, glyph_cmp, &node);
 
     if (glyph_ptr)
         *glyph_ptr = glyph;
     return 0;
+
+error:
+    if (glyph)
+        av_freep(&glyph->glyph);
+    av_freep(&glyph);
+    av_freep(&node);
+    return ret;
 }
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     int err;
     DrawTextContext *dtext = ctx->priv;
+    Glyph *glyph;
 
     dtext->class = &drawtext_class;
     av_opt_set_defaults2(dtext, 0, 0);
@@ -294,14 +306,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     /* load the fallback glyph with code 0 */
     load_glyph(ctx, NULL, 0);
 
+    /* set the tabsize in pixels */
+    if ((err = load_glyph(ctx, &glyph, ' ') < 0)) {
+        av_log(ctx, AV_LOG_ERROR, "Could not set tabsize.\n");
+        return err;
+    }
+    dtext->tabsize *= glyph->advance;
+
 #if !HAVE_LOCALTIME_R
     av_log(ctx, AV_LOG_WARNING, "strftime() expansion unavailable!\n");
-#else
-    if (strlen(dtext->text) >= MAX_EXPANDED_TEXT_SIZE) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Impossible to print text, string is too big\n");
-        return AVERROR(EINVAL);
-    }
 #endif
 
     return 0;
@@ -338,6 +351,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&dtext->text);
     av_freep(&dtext->fontcolor_string);
     av_freep(&dtext->boxcolor_string);
+    av_freep(&dtext->positions);
     av_freep(&dtext->shadowcolor_string);
     av_tree_enumerate(dtext->glyphs, NULL, NULL, glyph_enu_free);
     av_tree_destroy(dtext->glyphs);
@@ -393,7 +407,7 @@ static int config_input(AVFilterLink *inlink)
     luma_pos    = ((x)          ) + ((y)          ) * picref->linesize[0]; \
     alpha = yuva_color[3] * (val) * 129;                               \
     picref->data[0][luma_pos]    = (alpha * yuva_color[0] + (255*255*129 - alpha) * picref->data[0][luma_pos]   ) >> 23; \
-    if(((x) & ((1<<(hsub))-1))==0 && ((y) & ((1<<(vsub))-1))==0){\
+    if (((x) & ((1<<(hsub)) - 1)) == 0 && ((y) & ((1<<(vsub)) - 1)) == 0) {\
         chroma_pos1 = ((x) >> (hsub)) + ((y) >> (vsub)) * picref->linesize[1]; \
         chroma_pos2 = ((x) >> (hsub)) + ((y) >> (vsub)) * picref->linesize[2]; \
         picref->data[1][chroma_pos1] = (alpha * yuva_color[1] + (255*255*129 - alpha) * picref->data[1][chroma_pos1]) >> 23; \
@@ -403,7 +417,7 @@ static int config_input(AVFilterLink *inlink)
 
 static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap, unsigned int x,
                                  unsigned int y, unsigned int width, unsigned int height,
-                                 unsigned char yuva_color[4], int hsub, int vsub)
+                                 const uint8_t yuva_color[4], int hsub, int vsub)
 {
     int r, c, alpha;
     unsigned int luma_pos, chroma_pos1, chroma_pos2;
@@ -439,7 +453,7 @@ static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap, u
 static inline int draw_glyph_rgb(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
                                  unsigned int x, unsigned int y,
                                  unsigned int width, unsigned int height, int pixel_step,
-                                 unsigned char rgba_color[4], uint8_t rgba_map[4])
+                                 const uint8_t rgba_color[4], const uint8_t rgba_map[4])
 {
     int r, c, alpha;
     uint8_t *p;
@@ -495,10 +509,15 @@ static inline void drawbox(AVFilterBufferRef *picref, unsigned int x, unsigned i
     }
 }
 
+static inline int is_newline(uint32_t c)
+{
+    return (c == '\n' || c == '\r' || c == '\f' || c == '\v');
+}
+
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
                        int width, int height, const uint8_t rgbcolor[4], const uint8_t yuvcolor[4], int x, int y)
 {
-    char *text = HAVE_LOCALTIME_R ? dtext->expanded_text : dtext->text;
+    char *text = dtext->text;
     uint32_t code = 0;
     int i;
     uint8_t *p;
@@ -537,44 +556,53 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
                      int width, int height)
 {
     DrawTextContext *dtext = ctx->priv;
-    char *text = dtext->text;
     uint32_t code = 0, prev_code = 0;
     int x = 0, y = 0, i = 0, ret;
     int text_height, baseline;
     uint8_t *p;
-    int str_w, str_w_max;
+    int str_w = 0;
     int y_min = 32000, y_max = -32000;
     FT_Vector delta;
     Glyph *glyph = NULL, *prev_glyph = NULL;
     Glyph dummy = { 0 };
 
+    if (dtext->text != dtext->text_priv) {
 #if HAVE_LOCALTIME_R
-    time_t now = time(0);
-    struct tm ltime;
-    size_t expanded_text_len;
+        time_t now = time(0);
+        struct tm ltime;
+        uint8_t *buf = NULL;
+        int     buflen = 2*strlen(dtext->text) + 1, len;
 
-    dtext->expanded_text[0] = '\1';
-    expanded_text_len = strftime(dtext->expanded_text, MAX_EXPANDED_TEXT_SIZE,
-                                 text, localtime_r(&now, &ltime));
-    text = dtext->expanded_text;
-    if (expanded_text_len == 0 && dtext->expanded_text[0] != '\0') {
-        av_log(ctx, AV_LOG_ERROR,
-               "Impossible to print text, string is too big\n");
-        return AVERROR(EINVAL);
-    }
+        localtime_r(&now, &ltime);
+
+        while ((buf = av_realloc(buf, buflen))) {
+            *buf = 1;
+            if ((len = strftime(buf, buflen, dtext->text, &ltime)) != 0 || *buf == 0)
+                break;
+            buflen *= 2;
+        }
+        if (!buf)
+            return AVERROR(ENOMEM);
+        av_freep(&dtext->text);
+        dtext->text = dtext->text_priv = buf;
+#else
+        dtext->text_priv = dtext->text;
 #endif
+        if (!(dtext->positions = av_realloc(dtext->positions,
+                                            strlen(dtext->text)*sizeof(*dtext->positions))))
+            return AVERROR(ENOMEM);
+    }
 
-    str_w = str_w_max = 0;
     x = dtext->x;
     y = dtext->y;
 
     /* load and cache glyphs */
-    for (i = 0, p = text; *p; i++) {
+    for (i = 0, p = dtext->text; *p; i++) {
         GET_UTF8(code, *p++, continue;);
 
         /* get glyph */
         dummy.code = code;
-        glyph = av_tree_find(dtext->glyphs, &dummy, (void *)glyph_cmp, NULL);
+        glyph = av_tree_find(dtext->glyphs, &dummy, glyph_cmp, NULL);
         if (!glyph)
             load_glyph(ctx, &glyph, code);
 
@@ -586,17 +614,25 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
     /* compute and save position for each glyph */
     glyph = NULL;
-    for (i = 0, p = text; *p; i++) {
+    for (i = 0, p = dtext->text; *p; i++) {
         GET_UTF8(code, *p++, continue;);
 
         /* skip the \n in the sequence \r\n */
         if (prev_code == '\r' && code == '\n')
             continue;
 
+        prev_code = code;
+        if (is_newline(code)) {
+            str_w = FFMAX(str_w, x - dtext->x);
+            y += text_height;
+            x = dtext->x;
+            continue;
+        }
+
         /* get glyph */
         prev_glyph = glyph;
         dummy.code = code;
-        glyph = av_tree_find(dtext->glyphs, &dummy, (void *)glyph_cmp, NULL);
+        glyph = av_tree_find(dtext->glyphs, &dummy, glyph_cmp, NULL);
 
         /* kerning */
         if (dtext->use_kerning && prev_glyph && glyph->code) {
@@ -605,9 +641,8 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
             x += delta.x >> 6;
         }
 
-        if (x + glyph->advance >= width || code == '\r' || code == '\n') {
-            if (x + glyph->advance >= width)
-                str_w_max = width - dtext->x - 1;
+        if (x + glyph->bbox.xMax >= width) {
+            str_w = FFMAX(str_w, x - dtext->x);
             y += text_height;
             x = dtext->x;
         }
@@ -615,38 +650,27 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         /* save position */
         dtext->positions[i].x = x + glyph->bitmap_left;
         dtext->positions[i].y = y - glyph->bitmap_top + baseline;
-        if (code != '\n' && code != '\r') {
-            int advance = glyph->advance;
-            if (code == '\t')
-                advance *= dtext->tabsize;
-            x     += advance;
-            str_w += advance;
-        }
-        prev_code = code;
+        if (code == '\t') x  = (x / dtext->tabsize + 1)*dtext->tabsize;
+        else              x += glyph->advance;
     }
 
-    y += text_height;
-    if (str_w_max == 0)
-        str_w_max = str_w;
+    str_w = FFMIN(width - dtext->x - 1, FFMAX(str_w, x - dtext->x));
+    y     = FFMIN(y + text_height, height - 1);
 
     /* draw box */
-    if (dtext->draw_box) {
-        /* check if it doesn't pass the limits */
-        str_w_max = FFMIN(str_w_max, width - dtext->x - 1);
-        y = FFMIN(y, height - 1);
-
-        /* draw background */
-        drawbox(picref, dtext->x, dtext->y, str_w_max, y-dtext->y,
+    if (dtext->draw_box)
+        drawbox(picref, dtext->x, dtext->y, str_w, y-dtext->y,
                 dtext->box_line, dtext->pixel_step, dtext->boxcolor,
                 dtext->hsub, dtext->vsub, dtext->is_packed_rgb, dtext->rgba_map);
-    }
 
-    if(dtext->shadowx || dtext->shadowy){
-        if((ret=draw_glyphs(dtext, picref, width, height, dtext->shadowcolor_rgba, dtext->shadowcolor, dtext->shadowx, dtext->shadowy))<0)
+    if (dtext->shadowx || dtext->shadowy) {
+        if ((ret = draw_glyphs(dtext, picref, width, height, dtext->shadowcolor_rgba,
+                               dtext->shadowcolor, dtext->shadowx, dtext->shadowy)) < 0)
             return ret;
     }
 
-    if((ret=draw_glyphs(dtext, picref, width, height, dtext->fontcolor_rgba, dtext->fontcolor, 0, 0))<0)
+    if ((ret = draw_glyphs(dtext, picref, width, height, dtext->fontcolor_rgba,
+                           dtext->fontcolor, 0, 0)) < 0)
         return ret;
 
     return 0;
