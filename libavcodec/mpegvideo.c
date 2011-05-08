@@ -1319,15 +1319,8 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
     if(s->avctx->debug&(FF_DEBUG_SKIP | FF_DEBUG_QP | FF_DEBUG_MB_TYPE)){
         int x,y;
 
-        av_log(s->avctx,AV_LOG_DEBUG,"New frame, type: ");
-        switch (pict->pict_type) {
-            case AV_PICTURE_TYPE_I: av_log(s->avctx,AV_LOG_DEBUG,"I\n"); break;
-            case AV_PICTURE_TYPE_P: av_log(s->avctx,AV_LOG_DEBUG,"P\n"); break;
-            case AV_PICTURE_TYPE_B: av_log(s->avctx,AV_LOG_DEBUG,"B\n"); break;
-            case AV_PICTURE_TYPE_S: av_log(s->avctx,AV_LOG_DEBUG,"S\n"); break;
-            case AV_PICTURE_TYPE_SI: av_log(s->avctx,AV_LOG_DEBUG,"SI\n"); break;
-            case AV_PICTURE_TYPE_SP: av_log(s->avctx,AV_LOG_DEBUG,"SP\n"); break;
-        }
+        av_log(s->avctx, AV_LOG_DEBUG, "New frame, type: %c\n",
+               av_get_picture_type_char(pict->pict_type));
         for(y=0; y<s->mb_height; y++){
             for(x=0; x<s->mb_width; x++){
                 if(s->avctx->debug&FF_DEBUG_SKIP){
