@@ -35,8 +35,6 @@
 #include "dsputil.h"
 #include "dct.h"
 
-#define CONFIG_AUDIO_NONSHORT 0
-
 /* max frame size, in samples */
 #define MPA_FRAME_SIZE 1152
 
@@ -73,12 +71,6 @@
 #if CONFIG_FLOAT
 typedef float OUT_INT;
 #define OUT_FMT AV_SAMPLE_FMT_FLT
-#elif CONFIG_MPEGAUDIO_HP && CONFIG_AUDIO_NONSHORT
-typedef int32_t OUT_INT;
-#define OUT_MAX INT32_MAX
-#define OUT_MIN INT32_MIN
-#define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 31)
-#define OUT_FMT AV_SAMPLE_FMT_S32
 #else
 typedef int16_t OUT_INT;
 #define OUT_MAX INT16_MAX
