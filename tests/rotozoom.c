@@ -234,7 +234,7 @@ static void gen_image(int num, int w, int h)
 #define W 256
 #define H 256
 
-static void init_demo(const char *filename)
+static int init_demo(const char *filename)
 {
     int i, j;
     int h;
@@ -246,7 +246,7 @@ static void init_demo(const char *filename)
     fichier = fopen(filename, "rb");
     if (!fichier) {
         perror(filename);
-        exit(1);
+        return 1;
     }
 
     fread(line, 1, 15, fichier);
@@ -267,6 +267,8 @@ static void init_demo(const char *filename)
         h_cos[i] = h * int_sin(radian + MY_PI / 2) / 2 / FIXP;
         h_sin[i] = h * int_sin(radian)             / 2 / FIXP;
     }
+
+  return 0;
 }
 
 int main(int argc, char **argv)
@@ -288,7 +290,8 @@ int main(int argc, char **argv)
     width   = w;
     height  = h;
 
-    init_demo(argv[2]);
+    if (init_demo(argv[2]))
+        return 1;
 
     for (i = 0; i < DEFAULT_NB_PICT; i++) {
         snprintf(buf, sizeof(buf), "%s%02d.pgm", argv[1], i);
