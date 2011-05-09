@@ -241,18 +241,18 @@ static int init_demo(const char *filename)
     int radian;
     char line[3 * W];
 
-    FILE *fichier;
+    FILE *input_file;
 
-    fichier = fopen(filename, "rb");
-    if (!fichier) {
+    input_file = fopen(filename, "rb");
+    if (!input_file) {
         perror(filename);
         return 1;
     }
 
-    if (fread(line, 1, 15, fichier) != 15)
+    if (fread(line, 1, 15, input_file) != 15)
         return 1;
     for (i = 0; i < H; i++) {
-        if (fread(line, 1, 3 * W, fichier) != 3 * W)
+        if (fread(line, 1, 3 * W, input_file) != 3 * W)
             return 1;
         for (j = 0; j < W; j++) {
             tab_r[W * i + j] = line[3 * j    ];
@@ -260,7 +260,7 @@ static int init_demo(const char *filename)
             tab_b[W * i + j] = line[3 * j + 2];
         }
     }
-    fclose(fichier);
+    fclose(input_file);
 
     /* tables sin/cos */
     for (i = 0; i < 360; i++) {
