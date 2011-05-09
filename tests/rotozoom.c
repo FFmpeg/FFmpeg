@@ -56,14 +56,14 @@ static int64_t int_sin(int64_t a)
 #define SCALEBITS 8
 #define ONE_HALF  (1 << (SCALEBITS - 1))
 #define FIX(x)    ((int) ((x) * (1L << SCALEBITS) + 0.5))
-typedef unsigned char UINT8;
 
-static void rgb24_to_yuv420p(UINT8 *lum, UINT8 *cb, UINT8 *cr,
-                             UINT8 *src, int width, int height)
+static void rgb24_to_yuv420p(unsigned char *lum, unsigned char *cb,
+                             unsigned char *cr, unsigned char *src,
+                             int width, int height)
 {
     int wrap, wrap3, x, y;
     int r, g, b, r1, g1, b1;
-    UINT8 *p;
+    unsigned char *p;
 
     wrap  = width;
     wrap3 = width * 3;
