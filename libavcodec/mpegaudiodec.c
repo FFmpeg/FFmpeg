@@ -31,7 +31,6 @@
 
 /*
  * TODO:
- *  - in low precision mode, use more 16 bit multiplies in synth filter
  *  - test lsf / mpeg25 extensively.
  */
 
@@ -540,24 +539,6 @@ static inline float round_sample(float *sum)
 
 #define MLSS(rt, ra, rb) rt-=(ra)*(rb)
 
-#elif FRAC_BITS <= 15
-
-static inline int round_sample(int *sum)
-{
-    int sum1;
-    sum1 = (*sum) >> OUT_SHIFT;
-    *sum &= (1<<OUT_SHIFT)-1;
-    return av_clip(sum1, OUT_MIN, OUT_MAX);
-}
-
-/* signed 16x16 -> 32 multiply add accumulate */
-#define MACS(rt, ra, rb) MAC16(rt, ra, rb)
-
-/* signed 16x16 -> 32 multiply */
-#define MULS(ra, rb) MUL16(ra, rb)
-
-#define MLSS(rt, ra, rb) MLS16(rt, ra, rb)
-
 #else
 
 static inline int round_sample(int64_t *sum)
@@ -624,8 +605,6 @@ void av_cold RENAME(ff_mpa_synth_init)(MPA_INT *window)
         v = ff_mpa_enwindow[i];
 #if CONFIG_FLOAT
         v *= 1.0 / (1LL<<(16 + FRAC_BITS));
-#elif WFRAC_BITS < 16
-        v = (v + (1 << (16 - WFRAC_BITS - 1))) >> (16 - WFRAC_BITS);
 #endif
         window[i] = v;
         if ((i & 63) != 0)
@@ -652,8 +631,6 @@ static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
     OUT_INT *samples2;
 #if CONFIG_FLOAT
     float sum, sum2;
-#elif FRAC_BITS <= 15
-    int sum, sum2;
 #else
     int64_t sum, sum2;
 #endif
@@ -710,25 +687,11 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
 {
     register MPA_INT *synth_buf;
     int offset;
-#if FRAC_BITS <= 15
-    int32_t tmp[32];
-    int j;
-#endif
 
     offset = *synth_buf_offset;
     synth_buf = synth_buf_ptr + offset;
 
-#if FRAC_BITS <= 15
-    dct32(tmp, sb_samples);
-    for(j=0;j<32;j++) {
-        /* NOTE: can cause a loss in precision if very high amplitude
-           sound */
-        synth_buf[j] = av_clip_int16(tmp[j]);
-    }
-#else
     dct32(synth_buf, sb_samples);
-#endif
-
     apply_window_mp3_c(synth_buf, window, dither_state, samples, incr);
 
     offset = (offset - 32) & 511;

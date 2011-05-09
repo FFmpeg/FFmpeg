@@ -56,12 +56,9 @@
 
 #define MP3_MASK 0xFFFE0CCF
 
-#if CONFIG_MPEGAUDIO_HP
+#ifndef FRAC_BITS
 #define FRAC_BITS   23   /* fractional bits for sb_samples and dct */
 #define WFRAC_BITS  16   /* fractional bits for window */
-#else
-#define FRAC_BITS   15   /* fractional bits for sb_samples and dct */
-#define WFRAC_BITS  14   /* fractional bits for window */
 #endif
 
 #define FRAC_ONE    (1 << FRAC_BITS)

@@ -38,6 +38,8 @@ static uint32_t expval_table[512][16];
 static float exp_table_float[512];
 static float expval_table_float[512][16];
 
+#define FRAC_BITS 23
+
 static void mpegaudio_tableinit(void)
 {
     int i, value, exponent;

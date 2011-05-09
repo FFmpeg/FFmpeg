@@ -94,7 +94,6 @@ Configuration options:
   --enable-w32threads      use Win32 threads [no]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
-  --disable-mpegaudio-hp   faster (but less accurate) MPEG audio decoding [no]
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-fastdiv        disable table-based division
@@ -953,7 +952,6 @@ CONFIG_LIST="
     mdct
     memalign_hack
     mlib
-    mpegaudio_hp
     network
     nonfree
     pic
@@ -1643,7 +1641,6 @@ enable ffmpeg
 enable ffplay
 enable ffprobe
 enable ffserver
-enable mpegaudio_hp
 enable network
 enable optimizations
 enable protocols

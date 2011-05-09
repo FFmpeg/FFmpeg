@@ -27,8 +27,9 @@
 #include "avcodec.h"
 #include "put_bits.h"
 
-#undef  CONFIG_MPEGAUDIO_HP
-#define CONFIG_MPEGAUDIO_HP 0
+#define FRAC_BITS   15   /* fractional bits for sb_samples and dct */
+#define WFRAC_BITS  14   /* fractional bits for window */
+
 #include "mpegaudio.h"
 
 /* currently, cannot change these constants (need to modify
