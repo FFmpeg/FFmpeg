@@ -1897,7 +1897,9 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                 length*=2;
             fillPlane(dst[plane], dstStride[plane], length, height, y, (plane==3) ? 255 : 128);
         } else {
-            if(isNBPS(c->srcFormat) || isNBPS(c->dstFormat)) {
+            if(isNBPS(c->srcFormat) || isNBPS(c->dstFormat)
+               || (is16BPS(c->srcFormat) && !is16BPS(c->dstFormat))
+            ) {
                 const int src_depth = av_pix_fmt_descriptors[c->srcFormat].comp[plane].depth_minus1+1;
                 const int dst_depth = av_pix_fmt_descriptors[c->dstFormat].comp[plane].depth_minus1+1;
                 uint16_t *srcPtr2 = (uint16_t*)srcPtr;
@@ -1937,14 +1939,6 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                     }else{
                         DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, av_bswap16)
                     }
-                }
-            } else if(is16BPS(c->srcFormat) && !is16BPS(c->dstFormat)) {
-                //FIXME add dither
-                if (!isBE(c->srcFormat)) srcPtr++;
-                for (i=0; i<height; i++) {
-                    for (j=0; j<length; j++) dstPtr[j] = srcPtr[j<<1];
-                    srcPtr+= srcStride[plane];
-                    dstPtr+= dstStride[plane];
                 }
             } else if(!is16BPS(c->srcFormat) && is16BPS(c->dstFormat)) {
                 for (i=0; i<height; i++) {
