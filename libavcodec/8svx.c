@@ -23,6 +23,15 @@
  * 8svx audio decoder
  * supports: fibonacci delta encoding
  *         : exponential encoding
+ *
+ * For more information about the 8SVX format:
+ * http://netghost.narod.ru/gff/vendspec/iff/iff.txt
+ * http://sox.sourceforge.net/AudioFormats-11.html
+ * http://aminet.net/package/mus/misc/wavepak
+ * http://amigan.1emu.net/reg/8SVX.txt
+ *
+ * Samples can be found here:
+ * http://aminet.net/mods/smpl/
  */
 
 #include "avcodec.h"
