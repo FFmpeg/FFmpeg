@@ -135,13 +135,13 @@ static void pgmyuv_save(const char *filename, int w, int h,
     unsigned char *lum_tab, *cb_tab, *cr_tab;
 
     lum_tab = malloc(w * h);
-    cb_tab  = malloc((w * h) / 4);
-    cr_tab  = malloc((w * h) / 4);
+    cb_tab  = malloc(w * h / 4);
+    cr_tab  = malloc(w * h / 4);
 
     rgb24_to_yuv420p(lum_tab, cb_tab, cr_tab, rgb_tab, w, h);
 
     f = fopen(filename, "wb");
-    fprintf(f, "P5\n%d %d\n%d\n", w, (h * 3) / 2, 255);
+    fprintf(f, "P5\n%d %d\n%d\n", w, h * 3 / 2, 255);
     fwrite(lum_tab, 1, w * h, f);
     h2 = h / 2;
     w2 = w / 2;
@@ -264,8 +264,8 @@ static void init_demo(const char *filename)
     for (i = 0; i < 360; i++) {
         radian = 2 * i * MY_PI / 360;
         h      = 2 * FIXP + int_sin (radian);
-        h_cos[i] = (h * int_sin(radian + MY_PI / 2)) / 2 / FIXP;
-        h_sin[i] = (h * int_sin(radian)            ) / 2 / FIXP;
+        h_cos[i] = h * int_sin(radian + MY_PI / 2) / 2 / FIXP;
+        h_sin[i] = h * int_sin(radian)             / 2 / FIXP;
     }
 }
 
