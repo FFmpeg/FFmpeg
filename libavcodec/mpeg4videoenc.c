@@ -880,7 +880,7 @@ void ff_set_mpeg4_time(MpegEncContext * s){
         ff_mpeg4_init_direct_mv(s);
     }else{
         s->last_time_base= s->time_base;
-        s->time_base= s->time/s->avctx->time_base.den;
+        s->time_base= FFUDIV(s->time, s->avctx->time_base.den);
     }
 }
 
@@ -895,11 +895,12 @@ static void mpeg4_encode_gop_header(MpegEncContext * s){
     if(s->reordered_input_picture[1])
         time= FFMIN(time, s->reordered_input_picture[1]->pts);
     time= time*s->avctx->time_base.num;
+    s->last_time_base= FFUDIV(time, s->avctx->time_base.den);
 
-    seconds= time/s->avctx->time_base.den;
-    minutes= seconds/60; seconds %= 60;
-    hours= minutes/60; minutes %= 60;
-    hours%=24;
+    seconds= FFUDIV(time, s->avctx->time_base.den);
+    minutes= FFUDIV(seconds, 60); FFUMOD(seconds, 60);
+    hours  = FFUDIV(minutes, 60); FFUMOD(minutes, 60);
+    hours  = FFUMOD(hours  , 24);
 
     put_bits(&s->pb, 5, hours);
     put_bits(&s->pb, 6, minutes);
@@ -908,8 +909,6 @@ static void mpeg4_encode_gop_header(MpegEncContext * s){
 
     put_bits(&s->pb, 1, !!(s->flags&CODEC_FLAG_CLOSED_GOP));
     put_bits(&s->pb, 1, 0); //broken link == NO
-
-    s->last_time_base= time / s->avctx->time_base.den;
 
     ff_mpeg4_stuffing(&s->pb);
 }
@@ -1083,9 +1082,8 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     put_bits(&s->pb, 16, VOP_STARTCODE);    /* vop header */
     put_bits(&s->pb, 2, s->pict_type - 1);  /* pict type: I = 0 , P = 1 */
 
-    assert(s->time>=0);
-    time_div= s->time/s->avctx->time_base.den;
-    time_mod= s->time%s->avctx->time_base.den;
+    time_div= FFUDIV(s->time, s->avctx->time_base.den);
+    time_mod= FFUMOD(s->time, s->avctx->time_base.den);
     time_incr= time_div - s->last_time_base;
     assert(time_incr >= 0);
     while(time_incr--)
