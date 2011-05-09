@@ -817,6 +817,11 @@ typedef struct AVFormatContext {
      * - decoding: Unused.
      */
     int64_t start_time_realtime;
+
+    /**
+     * decoding: number of frames used to probe fps
+     */
+    int fps_probe_size;
 } AVFormatContext;
 
 typedef struct AVPacketList {
