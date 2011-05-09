@@ -387,6 +387,8 @@ send a reminder by email. Your patch should eventually be dealt with.
 @item
     Lines with similar content should be aligned vertically when doing so
     improves readability.
+@item
+    Consider to add a regression test for your code.
 @end enumerate
 
 @section Patch review process
