@@ -1,5 +1,4 @@
 /*
- * 8SVX audio decoder
  * Copyright (C) 2008 Jaikrishnan Menon
  *
  * This file is part of FFmpeg.
@@ -22,7 +21,6 @@
 /**
  * @file
  * 8svx audio decoder
- * @author Jaikrishnan Menon
  * supports: fibonacci delta encoding
  *         : exponential encoding
  */
