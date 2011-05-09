@@ -212,6 +212,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (RPL,              rpl);
     REGISTER_MUXDEMUX(RSO,              rso);
     REGISTER_MUXDEMUX(RTP,              rtp);
+    REGISTER_MUXER   (RTP_MPEGTS,       rtp_mpegts);
     REGISTER_MUXDEMUX(RTSP,             rtsp);
     REGISTER_MUXDEMUX(SAP,              sap);
     REGISTER_DEMUXER (SDP,              sdp);
