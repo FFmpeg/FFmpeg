@@ -241,7 +241,7 @@ Note, these rules are mostly borrowed from the MPlayer project.
 
 @section Submitting patches
 
-First, (@pxref{Coding Rules}) above if you did not yet.
+First, read the (@pxref{Coding Rules}) above if you did not yet.
 
 When you submit your patch, try to send a unified diff (diff '-up'
 option). We cannot read other diffs :-)
