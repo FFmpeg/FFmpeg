@@ -40,7 +40,7 @@ typedef struct TiffContext {
     int width, height;
     unsigned int bpp;
     int le;
-    int compr;
+    enum TiffCompr compr;
     int invert;
     int fax_opts;
     int predictor;
