@@ -5,34 +5,17 @@ NOTE: This is a draft.
 
 Overview:
 ---------
-FFmpeg uses Roundup for tracking issues, new issues and changes to
-existing issues can be done through a web interface and through email.
+FFmpeg uses Trac for tracking issues, new issues and changes to
+existing issues can be done through a web interface.
 It is possible to subscribe to individual issues by adding yourself to the
 nosy list or to subscribe to the ffmpeg-issues mailing list which receives
 a mail for every change to every issue. Replies to such mails will also
 be properly added to the respective issue.
 (the above does all work already after light testing)
-The subscription URL for the ffmpeg-issues list is:
-http://live.polito/mailman/listinfo/ffmpeg-issues
+The subscription URL for the ffmpeg-trac list is:
+http(s)://ffmpeg.org/mailman/listinfo/ffmpeg-trac
 The URL of the webinterface of the tracker is:
-http(s)://roundup.ffmpeg/roundup/ffmpeg/
-Note the URLs in this document are obfuscated, you must append the top level
-domain for non-profit organizations to the tracker, and of Italy to the
-mailing list.
-
-Email Interface:
-----------------
-There is a mailing list to which all new issues and changes to existing issues
-are sent. You can subscribe through
-http://live.polito/mailman/listinfo/ffmpeg-issues
-Replies to messages there will have their text added to the specific issues.
-Attachments will be added as if they had been uploaded via the web interface.
-You can change the status, substatus, topic, ... by changing the subject in
-your reply like:
-Re: [issue94] register_avcodec and allcodecs.h [type=patch;status=open;substatus=approved]
-Roundup will then change things as you requested and remove the [...] from
-the subject before forwarding the mail to the mailing list.
-
+http(s)://ffmpeg.org/trac/ffmpeg
 
 NOTE: issue = (bug report || patch || feature request)
 
