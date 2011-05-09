@@ -1857,6 +1857,26 @@ static int packedCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
     return srcSliceH;
 }
 
+#define DITHER_COPY(dst, dstStride, src, srcStride)\
+    for (i = 0; i < height; i++) {\
+        uint8_t *dither= dithers[src_depth-9][i&7];\
+        for (j = 0; j < length-7; j+=8){\
+            dst[j+0] = (src[j+0] + dither[0])>>(src_depth-dst_depth);\
+            dst[j+1] = (src[j+1] + dither[1])>>(src_depth-dst_depth);\
+            dst[j+2] = (src[j+2] + dither[2])>>(src_depth-dst_depth);\
+            dst[j+3] = (src[j+3] + dither[3])>>(src_depth-dst_depth);\
+            dst[j+4] = (src[j+4] + dither[4])>>(src_depth-dst_depth);\
+            dst[j+5] = (src[j+5] + dither[5])>>(src_depth-dst_depth);\
+            dst[j+6] = (src[j+6] + dither[6])>>(src_depth-dst_depth);\
+            dst[j+7] = (src[j+7] + dither[7])>>(src_depth-dst_depth);\
+        }\
+        for (; j < length; j++)\
+            dst[j] = (src[j] + dither[j&7])>>(src_depth-dst_depth);\
+        dst += dstStride;\
+        src += srcStride;\
+    }
+
+
 static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                              int srcSliceH, uint8_t* dst[], int dstStride[])
 {
@@ -1883,23 +1903,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                 uint16_t *dstPtr2 = (uint16_t*)dstPtr;
 
                 if (dst_depth == 8) {
-                    for (i = 0; i < height; i++) {
-                        uint8_t *dither= dithers[src_depth-9][i&7];
-                        for (j = 0; j < length-7; j+=8){
-                            dstPtr[j+0] = (srcPtr2[j+0] + dither[0])>>(src_depth-8);
-                            dstPtr[j+1] = (srcPtr2[j+1] + dither[1])>>(src_depth-8);
-                            dstPtr[j+2] = (srcPtr2[j+2] + dither[2])>>(src_depth-8);
-                            dstPtr[j+3] = (srcPtr2[j+3] + dither[3])>>(src_depth-8);
-                            dstPtr[j+4] = (srcPtr2[j+4] + dither[4])>>(src_depth-8);
-                            dstPtr[j+5] = (srcPtr2[j+5] + dither[5])>>(src_depth-8);
-                            dstPtr[j+6] = (srcPtr2[j+6] + dither[6])>>(src_depth-8);
-                            dstPtr[j+7] = (srcPtr2[j+7] + dither[7])>>(src_depth-8);
-                        }
-                        for (; j < length; j++)
-                            dstPtr[j] = (srcPtr2[j] + dither[j&7])>>(src_depth-8);
-                        dstPtr  += dstStride[plane];
-                        srcPtr2 += srcStride[plane]/2;
-                    }
+                    DITHER_COPY(dstPtr, dstStride[plane], srcPtr2, srcStride[plane]/2)
                 } else if (src_depth == 8) {
                     for (i = 0; i < height; i++) {
                         for (j = 0; j < length; j++)
@@ -1923,23 +1927,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                         srcPtr2 += srcStride[plane]/2;
                     }
                 } else {
-                    for (i = 0; i < height; i++) {
-                        uint8_t *dither= dithers[src_depth-9][i&7];
-                        for (j = 0; j < length-7; j+=8){
-                            dstPtr2[j+0] = (srcPtr2[j+0] + dither[0])>>(src_depth-dst_depth);
-                            dstPtr2[j+1] = (srcPtr2[j+1] + dither[1])>>(src_depth-dst_depth);
-                            dstPtr2[j+2] = (srcPtr2[j+2] + dither[2])>>(src_depth-dst_depth);
-                            dstPtr2[j+3] = (srcPtr2[j+3] + dither[3])>>(src_depth-dst_depth);
-                            dstPtr2[j+4] = (srcPtr2[j+4] + dither[4])>>(src_depth-dst_depth);
-                            dstPtr2[j+5] = (srcPtr2[j+5] + dither[5])>>(src_depth-dst_depth);
-                            dstPtr2[j+6] = (srcPtr2[j+6] + dither[6])>>(src_depth-dst_depth);
-                            dstPtr2[j+7] = (srcPtr2[j+7] + dither[7])>>(src_depth-dst_depth);
-                        }
-                        for (; j < length; j++)
-                            dstPtr2[j] = (srcPtr2[j] + dither[j&7])>>(src_depth-dst_depth);
-                        dstPtr2 += dstStride[plane];
-                        srcPtr2 += srcStride[plane]/2;
-                    }
+                    DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2)
                 }
             } else if(is16BPS(c->srcFormat) && !is16BPS(c->dstFormat)) {
                 //FIXME add dither
