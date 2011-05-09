@@ -1,5 +1,4 @@
 /*
- * TIFF image decoder
  * Copyright (c) 2006 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
@@ -20,9 +19,8 @@
  */
 
 /**
- * TIFF image decoder
  * @file
- * @author Konstantin Shishkov
+ * TIFF image decoder
  */
 #include "avcodec.h"
 #if CONFIG_ZLIB
