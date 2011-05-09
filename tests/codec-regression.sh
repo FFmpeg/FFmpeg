@@ -318,12 +318,12 @@ fi
 
 if [ -n "$do_wmav1" ] ; then
 do_audio_encoding wmav1.asf "-acodec wmav1"
-do_ffmpeg_nomd5 $pcm_dst -i $target_path/$file -f wav
+do_ffmpeg_nomd5 $pcm_dst $DEC_OPTS -i $target_path/$file -f wav
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
 fi
 if [ -n "$do_wmav2" ] ; then
 do_audio_encoding wmav2.asf "-acodec wmav2"
-do_ffmpeg_nomd5 $pcm_dst -i $target_path/$file -f wav
+do_ffmpeg_nomd5 $pcm_dst $DEC_OPTS -i $target_path/$file -f wav
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
 fi
 
