@@ -101,7 +101,7 @@ static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src,
 static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uint8_t *src, int size, int lines){
     int c, line, pixels, code;
     const uint8_t *ssrc = src;
-    int width = s->width * s->bpp >> 3;
+    int width = ((s->width * s->bpp) + 7) >> 3;
 #if CONFIG_ZLIB
     uint8_t *zbuf; unsigned long outlen;
 
