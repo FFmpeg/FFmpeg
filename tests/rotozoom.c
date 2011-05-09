@@ -249,9 +249,11 @@ static int init_demo(const char *filename)
         return 1;
     }
 
-    fread(line, 1, 15, fichier);
+    if (fread(line, 1, 15, fichier) != 15)
+        return 1;
     for (i = 0; i < H; i++) {
-        fread(line, 1, 3 * W, fichier);
+        if (fread(line, 1, 3 * W, fichier) != 3 * W)
+            return 1;
         for (j = 0; j < W; j++) {
             tab_r[W * i + j] = line[3 * j    ];
             tab_g[W * i + j] = line[3 * j + 1];
