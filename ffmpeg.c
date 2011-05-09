@@ -245,8 +245,6 @@ static char *forced_key_frames = NULL;
 
 static float dts_delta_threshold = 10;
 
-static unsigned int sws_flags = SWS_BICUBIC;
-
 static int64_t timer_start;
 
 static uint8_t *audio_buf;
@@ -303,6 +301,8 @@ typedef struct AVOutputStream {
     AVAudioConvert *reformat_ctx;
     AVFifoBuffer *fifo;     /* for compression: one audio fifo per codec */
     FILE *logfile;
+
+   int sws_flags;
 } AVOutputStream;
 
 static AVOutputStream **output_streams_for_file[MAX_FILES] = { NULL };
@@ -378,7 +378,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         snprintf(args, 255, "%d:%d:flags=0x%X",
                  codec->width,
                  codec->height,
-                 (int)av_get_int(sws_opts, "sws_flags", NULL));
+                 ost->sws_flags);
         if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
                                                 NULL, args, NULL, graph)) < 0)
             return ret;
@@ -387,7 +387,7 @@ static int configure_filters(AVInputStream *ist, AVOutputStream *ost)
         last_filter = filter;
     }
 
-    snprintf(args, sizeof(args), "flags=0x%X", (int)av_get_int(sws_opts, "sws_flags", NULL));
+    snprintf(args, sizeof(args), "flags=0x%X", ost->sws_flags);
     graph->scale_sws_opts = av_strdup(args);
 
     if (vfilters) {
@@ -617,6 +617,8 @@ static AVOutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
     }
     ost->file_index = file_idx;
     ost->index = idx;
+
+    ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
     return ost;
 }
 
@@ -1141,7 +1143,6 @@ static void do_video_out(AVFormatContext *s,
 
             /* initialize a new scaler context */
             sws_freeContext(ost->img_resample_ctx);
-            sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
             ost->img_resample_ctx = sws_getContext(
                 ist->st->codec->width,
                 ist->st->codec->height,
@@ -1149,7 +1150,7 @@ static void do_video_out(AVFormatContext *s,
                 ost->st->codec->width,
                 ost->st->codec->height,
                 ost->st->codec->pix_fmt,
-                sws_flags, NULL, NULL, NULL);
+                ost->sws_flags, NULL, NULL, NULL);
             if (ost->img_resample_ctx == NULL) {
                 fprintf(stderr, "Cannot get resampling context\n");
                 ffmpeg_exit(1);
@@ -2177,7 +2178,6 @@ static int transcode(AVFormatContext **output_files,
                         fprintf(stderr, "Cannot allocate temp picture, check pix fmt\n");
                         ffmpeg_exit(1);
                     }
-                    sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
                     ost->img_resample_ctx = sws_getContext(
                         icodec->width,
                         icodec->height,
@@ -2185,7 +2185,7 @@ static int transcode(AVFormatContext **output_files,
                             codec->width,
                             codec->height,
                             codec->pix_fmt,
-                            sws_flags, NULL, NULL, NULL);
+                            ost->sws_flags, NULL, NULL, NULL);
                     if (ost->img_resample_ctx == NULL) {
                         fprintf(stderr, "Cannot get resampling context\n");
                         ffmpeg_exit(1);
