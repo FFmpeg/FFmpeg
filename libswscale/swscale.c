@@ -1904,7 +1904,11 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                 uint16_t *dstPtr2 = (uint16_t*)dstPtr;
 
                 if (dst_depth == 8) {
-                    DITHER_COPY(dstPtr, dstStride[plane], srcPtr2, srcStride[plane]/2, )
+                    if(isBE(c->srcFormat) == HAVE_BIGENDIAN){
+                        DITHER_COPY(dstPtr, dstStride[plane], srcPtr2, srcStride[plane]/2, )
+                    } else {
+                        DITHER_COPY(dstPtr, dstStride[plane], srcPtr2, srcStride[plane]/2, av_bswap16)
+                    }
                 } else if (src_depth == 8) {
                     for (i = 0; i < height; i++) {
                         for (j = 0; j < length; j++)
