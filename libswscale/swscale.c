@@ -1928,8 +1928,11 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                         srcPtr2 += srcStride[plane]/2;
                     }
                 } else {
-                    //FIXME non native endian
-                    DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, )
+                    if(isBE(c->srcFormat) == HAVE_BIGENDIAN){
+                        DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, )
+                    }else{
+                        DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, av_bswap16)
+                    }
                 }
             } else if(is16BPS(c->srcFormat) && !is16BPS(c->dstFormat)) {
                 //FIXME add dither
