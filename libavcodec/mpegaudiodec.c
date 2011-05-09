@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "mathops.h"
 
 /*
  * TODO:
@@ -36,8 +37,6 @@
 
 #include "mpegaudio.h"
 #include "mpegaudiodecheader.h"
-
-#include "mathops.h"
 
 #if CONFIG_FLOAT
 #   define SHR(a,b)       ((a)*(1.0f/(1<<(b))))
