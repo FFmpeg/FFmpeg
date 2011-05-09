@@ -180,10 +180,13 @@ should also be avoided if they don't make the code easier to understand.
    Always fill out the commit log message. Describe in a few lines what you
    changed and why. You can refer to mailing list postings if you fix a
    particular bug. Comments such as "fixed!" or "Changed it." are unacceptable.
+   Recommanded format:
+   area changed: Short 1 line description
+
+   details describing what and why and giving references.
 @item
-   If you apply a patch by someone else, include the name and email address in
-   the log message. Since the ffmpeg-cvslog mailing list is publicly
-   archived you should add some SPAM protection to the email address. Send an
+   Make sure the author of the commit is set correctly. (see git commit --author)
+   If you apply a patch, send an
    answer to ffmpeg-devel (or wherever you got the patch from) saying that
    you applied the patch.
 @item
@@ -243,8 +246,8 @@ Note, these rules are mostly borrowed from the MPlayer project.
 
 First, read the (@pxref{Coding Rules}) above if you did not yet.
 
-When you submit your patch, try to send a unified diff (diff '-up'
-option). We cannot read other diffs :-)
+When you submit your patch, please use @code{git format-patch} or
+@code{git send-email}. We cannot read other diffs :-)
 
 Also please do not submit a patch which contains several unrelated changes.
 Split it into separate, self-contained pieces. This does not mean splitting
