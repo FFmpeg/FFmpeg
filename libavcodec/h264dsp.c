@@ -99,15 +99,15 @@ H264_WEIGHT(2,2)
 #undef op_scale2
 #undef H264_WEIGHT
 
-static av_always_inline av_flatten void h264_loop_filter_luma_c(uint8_t *pix, int xstride, int ystride, int alpha, int beta, int8_t *tc0)
+static av_always_inline av_flatten void h264_loop_filter_luma_c(uint8_t *pix, int xstride, int ystride, int inner_iters, int alpha, int beta, int8_t *tc0)
 {
     int i, d;
     for( i = 0; i < 4; i++ ) {
         if( tc0[i] < 0 ) {
-            pix += 4*ystride;
+            pix += inner_iters*ystride;
             continue;
         }
-        for( d = 0; d < 4; d++ ) {
+        for( d = 0; d < inner_iters; d++ ) {
             const int p0 = pix[-1*xstride];
             const int p1 = pix[-2*xstride];
             const int p2 = pix[-3*xstride];
@@ -143,17 +143,21 @@ static av_always_inline av_flatten void h264_loop_filter_luma_c(uint8_t *pix, in
 }
 static void h264_v_loop_filter_luma_c(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    h264_loop_filter_luma_c(pix, stride, 1, alpha, beta, tc0);
+    h264_loop_filter_luma_c(pix, stride, 1, 4, alpha, beta, tc0);
 }
 static void h264_h_loop_filter_luma_c(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    h264_loop_filter_luma_c(pix, 1, stride, alpha, beta, tc0);
+    h264_loop_filter_luma_c(pix, 1, stride, 4, alpha, beta, tc0);
+}
+static void h264_h_loop_filter_luma_mbaff_c(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+{
+    h264_loop_filter_luma_c(pix, 1, stride, 2, alpha, beta, tc0);
 }
 
-static av_always_inline av_flatten void h264_loop_filter_luma_intra_c(uint8_t *pix, int xstride, int ystride, int alpha, int beta)
+static av_always_inline av_flatten void h264_loop_filter_luma_intra_c(uint8_t *pix, int xstride, int ystride, int inner_iters, int alpha, int beta)
 {
     int d;
-    for( d = 0; d < 16; d++ ) {
+    for( d = 0; d < 4 * inner_iters; d++ ) {
         const int p2 = pix[-3*xstride];
         const int p1 = pix[-2*xstride];
         const int p0 = pix[-1*xstride];
@@ -200,23 +204,27 @@ static av_always_inline av_flatten void h264_loop_filter_luma_intra_c(uint8_t *p
 }
 static void h264_v_loop_filter_luma_intra_c(uint8_t *pix, int stride, int alpha, int beta)
 {
-    h264_loop_filter_luma_intra_c(pix, stride, 1, alpha, beta);
+    h264_loop_filter_luma_intra_c(pix, stride, 1, 4, alpha, beta);
 }
 static void h264_h_loop_filter_luma_intra_c(uint8_t *pix, int stride, int alpha, int beta)
 {
-    h264_loop_filter_luma_intra_c(pix, 1, stride, alpha, beta);
+    h264_loop_filter_luma_intra_c(pix, 1, stride, 4, alpha, beta);
+}
+static void h264_h_loop_filter_luma_mbaff_intra_c(uint8_t *pix, int stride, int alpha, int beta)
+{
+    h264_loop_filter_luma_intra_c(pix, 1, stride, 2, alpha, beta);
 }
 
-static av_always_inline av_flatten void h264_loop_filter_chroma_c(uint8_t *pix, int xstride, int ystride, int alpha, int beta, int8_t *tc0)
+static av_always_inline av_flatten void h264_loop_filter_chroma_c(uint8_t *pix, int xstride, int ystride, int inner_iters, int alpha, int beta, int8_t *tc0)
 {
     int i, d;
     for( i = 0; i < 4; i++ ) {
         const int tc = tc0[i];
         if( tc <= 0 ) {
-            pix += 2*ystride;
+            pix += inner_iters*ystride;
             continue;
         }
-        for( d = 0; d < 2; d++ ) {
+        for( d = 0; d < inner_iters; d++ ) {
             const int p0 = pix[-1*xstride];
             const int p1 = pix[-2*xstride];
             const int q0 = pix[0];
@@ -237,17 +245,21 @@ static av_always_inline av_flatten void h264_loop_filter_chroma_c(uint8_t *pix, 
 }
 static void h264_v_loop_filter_chroma_c(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    h264_loop_filter_chroma_c(pix, stride, 1, alpha, beta, tc0);
+    h264_loop_filter_chroma_c(pix, stride, 1, 2, alpha, beta, tc0);
 }
 static void h264_h_loop_filter_chroma_c(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    h264_loop_filter_chroma_c(pix, 1, stride, alpha, beta, tc0);
+    h264_loop_filter_chroma_c(pix, 1, stride, 2, alpha, beta, tc0);
+}
+static void h264_h_loop_filter_chroma_mbaff_c(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+{
+    h264_loop_filter_chroma_c(pix, 1, stride, 1, alpha, beta, tc0);
 }
 
-static av_always_inline av_flatten void h264_loop_filter_chroma_intra_c(uint8_t *pix, int xstride, int ystride, int alpha, int beta)
+static av_always_inline av_flatten void h264_loop_filter_chroma_intra_c(uint8_t *pix, int xstride, int ystride, int inner_iters, int alpha, int beta)
 {
     int d;
-    for( d = 0; d < 8; d++ ) {
+    for( d = 0; d < 4 * inner_iters; d++ ) {
         const int p0 = pix[-1*xstride];
         const int p1 = pix[-2*xstride];
         const int q0 = pix[0];
@@ -265,11 +277,15 @@ static av_always_inline av_flatten void h264_loop_filter_chroma_intra_c(uint8_t 
 }
 static void h264_v_loop_filter_chroma_intra_c(uint8_t *pix, int stride, int alpha, int beta)
 {
-    h264_loop_filter_chroma_intra_c(pix, stride, 1, alpha, beta);
+    h264_loop_filter_chroma_intra_c(pix, stride, 1, 2, alpha, beta);
 }
 static void h264_h_loop_filter_chroma_intra_c(uint8_t *pix, int stride, int alpha, int beta)
 {
-    h264_loop_filter_chroma_intra_c(pix, 1, stride, alpha, beta);
+    h264_loop_filter_chroma_intra_c(pix, 1, stride, 2, alpha, beta);
+}
+static void h264_h_loop_filter_chroma_mbaff_intra_c(uint8_t *pix, int stride, int alpha, int beta)
+{
+    h264_loop_filter_chroma_intra_c(pix, 1, stride, 1, alpha, beta);
 }
 
 void ff_h264dsp_init(H264DSPContext *c)
@@ -307,12 +323,16 @@ void ff_h264dsp_init(H264DSPContext *c)
 
     c->h264_v_loop_filter_luma= h264_v_loop_filter_luma_c;
     c->h264_h_loop_filter_luma= h264_h_loop_filter_luma_c;
+    c->h264_h_loop_filter_luma_mbaff= h264_h_loop_filter_luma_mbaff_c;
     c->h264_v_loop_filter_luma_intra= h264_v_loop_filter_luma_intra_c;
     c->h264_h_loop_filter_luma_intra= h264_h_loop_filter_luma_intra_c;
+    c->h264_h_loop_filter_luma_mbaff_intra= h264_h_loop_filter_luma_mbaff_intra_c;
     c->h264_v_loop_filter_chroma= h264_v_loop_filter_chroma_c;
     c->h264_h_loop_filter_chroma= h264_h_loop_filter_chroma_c;
+    c->h264_h_loop_filter_chroma_mbaff= h264_h_loop_filter_chroma_mbaff_c;
     c->h264_v_loop_filter_chroma_intra= h264_v_loop_filter_chroma_intra_c;
     c->h264_h_loop_filter_chroma_intra= h264_h_loop_filter_chroma_intra_c;
+    c->h264_h_loop_filter_chroma_mbaff_intra= h264_h_loop_filter_chroma_mbaff_intra_c;
     c->h264_loop_filter_strength= NULL;
 
     if (ARCH_ARM) ff_h264dsp_init_arm(c);
