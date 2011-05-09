@@ -30,8 +30,7 @@ do_image_formats()
     outfile="$datadir/images/$1/"
     mkdir -p "$outfile"
     file=${outfile}%02d.$1
-    $echov $ffmpeg -t 0.5 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $2 $3 -flags +bitexact -sws_flags +accurate_rnd+bitexact $target_path/$file
-    $ffmpeg -t 0.5 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $2 $3 -flags +bitexact -sws_flags +accurate_rnd+bitexact $target_path/$file
+    run_ffmpeg -t 0.5 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $2 $3 -flags +bitexact -sws_flags +accurate_rnd+bitexact $target_path/$file
     do_md5sum ${outfile}02.$1 >> $logfile
     do_ffmpeg_crc $file $3 -i $target_path/$file
     wc -c ${outfile}02.$1 >> $logfile
@@ -169,7 +168,7 @@ do_image_formats sgi
 fi
 
 if [ -n "$do_jpg" ] ; then
-do_image_formats jpg "-flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p" "-f image2"
+do_image_formats jpg "-pix_fmt yuvj420p" "-f image2"
 fi
 
 if [ -n "$do_pcx" ] ; then

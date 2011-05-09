@@ -111,7 +111,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 
     vsnprintf(line + strlen(line), sizeof(line) - strlen(line), fmt, vl);
 
-    print_prefix= line[strlen(line)-1] == '\n';
+    print_prefix = strlen(line) && line[strlen(line)-1] == '\n';
 
 #if HAVE_ISATTY
     if(!is_atty) is_atty= isatty(2) ? 1 : -1;
