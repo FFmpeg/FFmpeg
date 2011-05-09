@@ -39,17 +39,6 @@ typedef enum {
 } mask_type;
 
 /**
- * Gets the actual extra data after video preperties which contains
- * the raw CMAP palette data beyond the IFF extra context.
- *
- * @param avctx the AVCodecContext where to extract raw palette data from
- * @return pointer to raw CMAP palette data
- */
-static av_always_inline uint8_t *get_palette_data(const AVCodecContext *const avctx) {
-    return avctx->extradata + AV_RB16(avctx->extradata);
-}
-
-/**
  * Gets the size of CMAP palette data beyond the IFF extra context.
  * Please note that any value < 2 of IFF extra context or
  * raw extradata < 0 is considered as illegal extradata.
@@ -184,7 +173,7 @@ static av_always_inline uint32_t gray2rgb(const uint32_t x) {
 static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
 {
     int count, i;
-    const uint8_t *const extradata = get_palette_data(avctx);
+    const uint8_t *const palette = avctx->extradata + AV_RB16(avctx->extradata);
 
     if (avctx->bits_per_coded_sample > 8) {
         av_log(avctx, AV_LOG_ERROR, "bit_per_coded_sample > 8 not supported\n");
@@ -196,7 +185,7 @@ static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
     count = FFMIN(get_palette_size(avctx) / 3, count);
     if (count) {
         for (i=0; i < count; i++) {
-            pal[i] = 0xFF000000 | AV_RB24(extradata + i*3);
+            pal[i] = 0xFF000000 | AV_RB24(palette + i*3);
         }
     } else { // Create gray-scale color palette for bps < 8
         count = 1 << avctx->bits_per_coded_sample;
@@ -272,7 +261,7 @@ static int extract_header(AVCodecContext *const avctx,
 
         if (s->ham) {
             int i, count = FFMIN(get_palette_size(avctx) / 3, 1 << s->ham);
-            const uint8_t *const extradata = get_palette_data(avctx);
+            const uint8_t *const palette = avctx->extradata + AV_RB16(avctx->extradata);
             s->ham_buf = av_malloc((s->planesize * 8) + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!s->ham_buf)
                 return AVERROR(ENOMEM);
@@ -287,7 +276,7 @@ static int extract_header(AVCodecContext *const avctx,
                 // prefill with black and palette and set HAM take direct value mask to zero
                 memset(s->ham_palbuf, 0, (1 << s->ham) * 2 * sizeof (uint32_t));
                 for (i=0; i < count; i++) {
-                    s->ham_palbuf[i*2+1] = AV_RL24(extradata + i*3);
+                    s->ham_palbuf[i*2+1] = AV_RL24(palette + i*3);
                 }
                 count = 1 << s->ham;
             } else { // HAM with grayscale color palette
