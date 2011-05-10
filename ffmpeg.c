@@ -316,6 +316,8 @@ typedef struct AVOutputStream {
     char *avfilter;
     AVFilterGraph *graph;
 #endif
+
+   int sws_flags;
 } AVOutputStream;
 
 static AVOutputStream **output_streams_for_file[MAX_FILES] = { NULL };
@@ -393,7 +395,7 @@ static int configure_video_filters(AVInputStream *ist, AVOutputStream *ost)
         snprintf(args, 255, "%d:%d:flags=0x%X",
                  codec->width,
                  codec->height,
-                 (int)av_get_int(sws_opts, "sws_flags", NULL));
+                 ost->sws_flags);
         if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
                                                 NULL, args, NULL, ost->graph)) < 0)
             return ret;
@@ -402,7 +404,7 @@ static int configure_video_filters(AVInputStream *ist, AVOutputStream *ost)
         last_filter = filter;
     }
 
-    snprintf(args, sizeof(args), "flags=0x%X", (int)av_get_int(sws_opts, "sws_flags", NULL));
+    snprintf(args, sizeof(args), "flags=0x%X", ost->sws_flags);
     ost->graph->scale_sws_opts = av_strdup(args);
 
     if (ost->avfilter) {
@@ -690,6 +692,8 @@ static AVOutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
     }
     ost->file_index = file_idx;
     ost->index = idx;
+
+    ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
     return ost;
 }
 
@@ -1227,10 +1231,9 @@ static void do_video_out(AVFormatContext *s,
             }
             /* initialize a new scaler context */
             sws_freeContext(ost->img_resample_ctx);
-            sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
             ost->img_resample_ctx = sws_getContext(dec->width, dec->height, dec->pix_fmt,
                                                    enc->width, enc->height, enc->pix_fmt,
-                                                   sws_flags, NULL, NULL, NULL);
+                                                   ost->sws_flags, NULL, NULL, NULL);
             if (ost->img_resample_ctx == NULL) {
                 fprintf(stderr, "Cannot get resampling context\n");
                 ffmpeg_exit(1);
@@ -3406,6 +3409,8 @@ static void opt_input_file(const char *filename)
     av_freep(&video_codec_name);
     av_freep(&audio_codec_name);
     av_freep(&subtitle_codec_name);
+    uninit_opts();
+    init_opts();
 }
 
 static void check_inputs(int *has_video_ptr,
@@ -3939,6 +3944,8 @@ static void opt_output_file(const char *filename)
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM, NULL);
 
     av_freep(&forced_key_frames);
+    uninit_opts();
+    init_opts();
 }
 
 /* same option as mencoder */

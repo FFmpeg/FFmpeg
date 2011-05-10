@@ -84,6 +84,7 @@ void uninit_opts(void)
     }
     av_freep(&opt_names);
     av_freep(&opt_values);
+    opt_name_count = 0;
 }
 
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)

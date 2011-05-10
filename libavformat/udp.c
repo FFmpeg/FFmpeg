@@ -315,7 +315,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     h->is_streamed = 1;
     h->max_packet_size = 1472;
 
-    is_output = (flags & AVIO_FLAG_WRITE);
+    is_output = !(flags & AVIO_FLAG_READ);
 
     s = av_mallocz(sizeof(UDPContext));
     if (!s)
@@ -358,14 +358,14 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     /* XXX: fix av_url_split */
     if (hostname[0] == '\0' || hostname[0] == '?') {
         /* only accepts null hostname if input */
-        if (flags & AVIO_FLAG_WRITE)
+        if (!(flags & AVIO_FLAG_READ))
             goto fail;
     } else {
         if (ff_udp_set_remote_url(h, uri) < 0)
             goto fail;
     }
 
-    if (s->is_multicast && !(h->flags & AVIO_FLAG_WRITE))
+    if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
         s->local_port = port;
     udp_fd = udp_socket_create(s, &my_addr, &len);
     if (udp_fd < 0)
@@ -382,7 +382,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     /* the bind is needed to give a port to the socket now */
     /* if multicast, try the multicast address bind first */
-    if (s->is_multicast && !(h->flags & AVIO_FLAG_WRITE)) {
+    if (s->is_multicast && (h->flags & AVIO_FLAG_READ)) {
         bind_ret = bind(udp_fd,(struct sockaddr *)&s->dest_addr, len);
     }
     /* bind to the local address if not multicast or if the multicast
@@ -395,7 +395,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     s->local_port = udp_port(&my_addr, len);
 
     if (s->is_multicast) {
-        if (h->flags & AVIO_FLAG_WRITE) {
+        if (!(h->flags & AVIO_FLAG_READ)) {
             /* output */
             if (udp_set_multicast_ttl(udp_fd, s->ttl, (struct sockaddr *)&s->dest_addr) < 0)
                 goto fail;
@@ -478,7 +478,7 @@ static int udp_close(URLContext *h)
 {
     UDPContext *s = h->priv_data;
 
-    if (s->is_multicast && !(h->flags & AVIO_FLAG_WRITE))
+    if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
     closesocket(s->udp_fd);
     av_free(s);

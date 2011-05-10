@@ -61,7 +61,7 @@ do_video_decoding
 
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2reuse.mpg
-do_ffmpeg $file -sameq -me_threshold 256 -mb_threshold 1024 -i ${target_path}/${outfile}mpeg2thread.mpg -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 4
+do_ffmpeg $file $DEC_OPTS -me_threshold 256 -i ${target_path}/${outfile}mpeg2thread.mpg $ENC_OPTS -sameq -me_threshold 256 -mb_threshold 1024 -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 4
 do_video_decoding
 fi
 
@@ -328,12 +328,12 @@ fi
 
 if [ -n "$do_wmav1" ] ; then
 do_audio_encoding wmav1.asf "-acodec wmav1"
-do_ffmpeg_nomd5 $pcm_dst -i $target_path/$file -f wav
+do_ffmpeg_nomd5 $pcm_dst $DEC_OPTS -i $target_path/$file -f wav
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
 fi
 if [ -n "$do_wmav2" ] ; then
 do_audio_encoding wmav2.asf "-acodec wmav2"
-do_ffmpeg_nomd5 $pcm_dst -i $target_path/$file -f wav
+do_ffmpeg_nomd5 $pcm_dst $DEC_OPTS -i $target_path/$file -f wav
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
 fi
 

@@ -588,7 +588,7 @@ static int mpegts_write_header(AVFormatContext *s)
     av_free(pids);
     for(i = 0;i < s->nb_streams; i++) {
         st = s->streams[i];
-        av_free(st->priv_data);
+        av_freep(&st->priv_data);
     }
     return -1;
 }

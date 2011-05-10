@@ -694,14 +694,6 @@ $(SUBDIR)cos_fixed_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
 $(SUBDIR)sin_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
 	$(M)./$< sin > $@
 
-ifdef CONFIG_MPEGAUDIO_HP
-$(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=23
-$(SUBDIR)mpegaudio_tablegen.ho: CPPFLAGS += -DFRAC_BITS=23
-else
-$(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=15
-$(SUBDIR)mpegaudio_tablegen.ho: CPPFLAGS += -DFRAC_BITS=15
-endif
-
 ifdef CONFIG_SMALL
 $(SUBDIR)%_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DCONFIG_SMALL=1
 else

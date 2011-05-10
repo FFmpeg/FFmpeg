@@ -53,7 +53,10 @@ echov(){
 
 . $(dirname $0)/md5.sh
 
-FFMPEG_OPTS="-v 0 -threads $threads -y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
+FFMPEG_OPTS="-v 0 -y"
+COMMON_OPTS="-flags +bitexact -idct simple -sws_flags +accurate_rnd+bitexact"
+DEC_OPTS="$COMMON_OPTS -threads $threads"
+ENC_OPTS="$COMMON_OPTS -dct fastint"
 
 run_ffmpeg()
 {
@@ -115,22 +118,22 @@ do_ffmpeg_nocheck()
 
 do_video_decoding()
 {
-    do_ffmpeg $raw_dst $1 -i $target_path/$file -f rawvideo $2
+    do_ffmpeg $raw_dst $DEC_OPTS $1 -i $target_path/$file -f rawvideo $ENC_OPTS $2
 }
 
 do_video_encoding()
 {
     file=${outfile}$1
-    do_ffmpeg $file -f image2 -vcodec pgmyuv -i $raw_src $2
+    do_ffmpeg $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS $2
 }
 
 do_audio_encoding()
 {
     file=${outfile}$1
-    do_ffmpeg $file -ab 128k -ac 2 -f s16le -i $pcm_src $2
+    do_ffmpeg $file $DEC_OPTS -ac 2 -f s16le -i $pcm_src -ab 128k $ENC_OPTS $2
 }
 
 do_audio_decoding()
 {
-    do_ffmpeg $pcm_dst -i $target_path/$file -sample_fmt s16 -f wav
+    do_ffmpeg $pcm_dst $DEC_OPTS -i $target_path/$file -sample_fmt s16 -f wav
 }
