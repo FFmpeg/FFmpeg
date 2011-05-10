@@ -381,6 +381,14 @@ static void guess_mv(MpegEncContext *s){
         fixed[mb_xy]= f;
         if(f==MV_FROZEN)
             num_avail++;
+        else if(s->last_picture.data[0]){
+            const int mb_y= mb_xy / s->mb_stride;
+            const int mb_x= mb_xy % s->mb_stride;
+            const int mot_index= (mb_x + mb_y*mot_stride) * mot_step;
+            s->current_picture.motion_val[0][mot_index][0]= s->last_picture.motion_val[0][mot_index][0];
+            s->current_picture.motion_val[0][mot_index][1]= s->last_picture.motion_val[0][mot_index][1];
+            s->current_picture.ref_index[0][4*mb_xy]      = s->last_picture.ref_index[0][4*mb_xy];
+        }
     }
 
     if((!(s->avctx->error_concealment&FF_EC_GUESS_MVS)) || num_avail <= mb_width/2){
