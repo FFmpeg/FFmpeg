@@ -280,7 +280,7 @@ static int iff_read_header(AVFormatContext *s,
             return -1;
         }
 
-        st->codec->bits_per_coded_sample = 8;
+        st->codec->bits_per_coded_sample = iff->svx8_compression == COMP_NONE ? 8 : 4;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate * st->codec->bits_per_coded_sample;
         st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
         break;
