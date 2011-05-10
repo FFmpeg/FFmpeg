@@ -88,7 +88,8 @@ typedef struct {
     uint32_t  body_size;
     uint32_t  sent_bytes;
     uint32_t  audio_frame_count;
-    unsigned  compression;  ///< delta compression method used
+    svx8_compression_type   svx8_compression;
+    bitmap_compression_type bitmap_compression;  ///< delta compression method used
     unsigned  bpp;          ///< bits per plane to decode (differs from bits_per_coded_sample if HAM)
     unsigned  ham;          ///< 0 if non-HAM or number of hold bits (6 for bpp > 6, 4 otherwise)
     unsigned  flags;        ///< 1 for EHB, 0 is no extra half darkening
@@ -146,7 +147,6 @@ static int iff_read_header(AVFormatContext *s,
     AVStream *st;
     uint8_t *buf;
     uint32_t chunk_id, data_size;
-    int compression = -1;
     uint32_t screenmode = 0;
     unsigned transparency = 0;
     unsigned masking = 0; // no mask
@@ -178,7 +178,7 @@ static int iff_read_header(AVFormatContext *s,
             st->codec->sample_rate = avio_rb16(pb);
             if (data_size >= 16) {
                 avio_skip(pb, 1);
-                compression        = avio_r8(pb);
+                iff->svx8_compression = avio_r8(pb);
             }
             break;
 
@@ -209,6 +209,7 @@ static int iff_read_header(AVFormatContext *s,
             break;
 
         case ID_BMHD:
+            iff->bitmap_compression = -1;
             st->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
             if (data_size <= 8)
                 return AVERROR_INVALIDDATA;
@@ -219,7 +220,7 @@ static int iff_read_header(AVFormatContext *s,
             if (data_size >= 10)
                 masking                      = avio_r8(pb);
             if (data_size >= 11)
-                compression                  = avio_r8(pb);
+                iff->bitmap_compression      = avio_r8(pb);
             if (data_size >= 14) {
                 avio_skip(pb, 1); // padding
                 transparency                 = avio_rb16(pb);
@@ -263,7 +264,7 @@ static int iff_read_header(AVFormatContext *s,
     case AVMEDIA_TYPE_AUDIO:
         av_set_pts_info(st, 32, 1, st->codec->sample_rate);
 
-        switch(compression) {
+        switch (iff->svx8_compression) {
         case COMP_NONE:
             st->codec->codec_id = CODEC_ID_PCM_S8;
             break;
@@ -274,7 +275,8 @@ static int iff_read_header(AVFormatContext *s,
             st->codec->codec_id = CODEC_ID_8SVX_EXP;
             break;
         default:
-            av_log(s, AV_LOG_ERROR, "unknown compression method\n");
+            av_log(s, AV_LOG_ERROR,
+                   "Unknown SVX8 compression method '%d'\n", iff->svx8_compression);
             return -1;
         }
 
@@ -284,7 +286,6 @@ static int iff_read_header(AVFormatContext *s,
         break;
 
     case AVMEDIA_TYPE_VIDEO:
-        iff->compression  = compression;
         iff->bpp          = st->codec->bits_per_coded_sample;
         if ((screenmode & 0x800 /* Hold And Modify */) && iff->bpp <= 8) {
             iff->ham      = iff->bpp > 6 ? 6 : 4;
@@ -302,14 +303,14 @@ static int iff_read_header(AVFormatContext *s,
         }
         buf = st->codec->extradata;
         bytestream_put_be16(&buf, IFF_EXTRA_VIDEO_SIZE);
-        bytestream_put_byte(&buf, iff->compression);
+        bytestream_put_byte(&buf, iff->bitmap_compression);
         bytestream_put_byte(&buf, iff->bpp);
         bytestream_put_byte(&buf, iff->ham);
         bytestream_put_byte(&buf, iff->flags);
         bytestream_put_be16(&buf, iff->transparency);
         bytestream_put_byte(&buf, iff->masking);
 
-        switch (compression) {
+        switch (iff->bitmap_compression) {
         case BITMAP_RAW:
             st->codec->codec_id = CODEC_ID_IFF_ILBM;
             break;
@@ -317,7 +318,8 @@ static int iff_read_header(AVFormatContext *s,
             st->codec->codec_id = CODEC_ID_IFF_BYTERUN1;
             break;
         default:
-            av_log(s, AV_LOG_ERROR, "unknown compression method\n");
+            av_log(s, AV_LOG_ERROR,
+                   "Unknown bitmap compression method '%d'\n", iff->bitmap_compression);
             return AVERROR_INVALIDDATA;
         }
         break;
