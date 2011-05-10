@@ -457,3 +457,8 @@
     pshufw     %1, %2, (%3)*0x55
 %endif
 %endmacro
+
+%macro CLIPW 3 ;(dst, min, max)
+    pmaxsw %1, %2
+    pminsw %1, %3
+%endmacro
