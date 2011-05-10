@@ -1872,7 +1872,6 @@ static int mp_decode_frame(MPADecodeContext *s,
     if (s->error_protection)
         skip_bits(&s->gb, 16);
 
-    av_dlog(s->avctx, "frame %d:\n", s->frame_count);
     switch(s->layer) {
     case 1:
         s->avctx->frame_size = 384;
