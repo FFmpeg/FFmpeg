@@ -341,6 +341,24 @@ DECLARE_ALIGNED(8, const uint8_t, dithers)[8][8][8]={
   { 112, 16,104,  8,118, 22,110, 14,},
 }};
 
+uint16_t dither_scale[15][16]={
+{    2,    3,    3,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,},
+{    2,    3,    7,    7,   13,   13,   25,   25,   25,   25,   25,   25,   25,   25,   25,   25,},
+{    3,    3,    4,   15,   15,   29,   57,   57,   57,  113,  113,  113,  113,  113,  113,  113,},
+{    3,    4,    4,    5,   31,   31,   61,  121,  241,  241,  241,  241,  481,  481,  481,  481,},
+{    3,    4,    5,    5,    6,   63,   63,  125,  249,  497,  993,  993,  993,  993,  993, 1985,},
+{    3,    5,    6,    6,    6,    7,  127,  127,  253,  505, 1009, 2017, 4033, 4033, 4033, 4033,},
+{    3,    5,    6,    7,    7,    7,    8,  255,  255,  509, 1017, 2033, 4065, 8129,16257,16257,},
+{    3,    5,    6,    8,    8,    8,    8,    9,  511,  511, 1021, 2041, 4081, 8161,16321,32641,},
+{    3,    5,    7,    8,    9,    9,    9,    9,   10, 1023, 1023, 2045, 4089, 8177,16353,32705,},
+{    3,    5,    7,    8,   10,   10,   10,   10,   10,   11, 2047, 2047, 4093, 8185,16369,32737,},
+{    3,    5,    7,    8,   10,   11,   11,   11,   11,   11,   12, 4095, 4095, 8189,16377,32753,},
+{    3,    5,    7,    9,   10,   12,   12,   12,   12,   12,   12,   13, 8191, 8191,16381,32761,},
+{    3,    5,    7,    9,   10,   12,   13,   13,   13,   13,   13,   13,   14,16383,16383,32765,},
+{    3,    5,    7,    9,   10,   12,   14,   14,   14,   14,   14,   14,   14,   15,32767,32767,},
+{    3,    5,    7,    9,   11,   12,   14,   15,   15,   15,   15,   15,   15,   15,   16,65535,},
+};
+
 static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                                     const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                                                     const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest,
@@ -1858,21 +1876,22 @@ static int packedCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
 }
 
 #define DITHER_COPY(dst, dstStride, src, srcStride, bswap)\
+    uint16_t scale= dither_scale[dst_depth-1][src_depth-1];\
+    int shift= src_depth-dst_depth + dither_scale[src_depth-2][dst_depth-1];\
     for (i = 0; i < height; i++) {\
-        int shift= src_depth-dst_depth;\
         uint8_t *dither= dithers[src_depth-9][i&7];\
         for (j = 0; j < length-7; j+=8){\
-            dst[j+0] = (bswap(src[j+0]) + dither[0])>>shift;\
-            dst[j+1] = (bswap(src[j+1]) + dither[1])>>shift;\
-            dst[j+2] = (bswap(src[j+2]) + dither[2])>>shift;\
-            dst[j+3] = (bswap(src[j+3]) + dither[3])>>shift;\
-            dst[j+4] = (bswap(src[j+4]) + dither[4])>>shift;\
-            dst[j+5] = (bswap(src[j+5]) + dither[5])>>shift;\
-            dst[j+6] = (bswap(src[j+6]) + dither[6])>>shift;\
-            dst[j+7] = (bswap(src[j+7]) + dither[7])>>shift;\
+            dst[j+0] = (bswap(src[j+0]) + dither[0])*scale>>shift;\
+            dst[j+1] = (bswap(src[j+1]) + dither[1])*scale>>shift;\
+            dst[j+2] = (bswap(src[j+2]) + dither[2])*scale>>shift;\
+            dst[j+3] = (bswap(src[j+3]) + dither[3])*scale>>shift;\
+            dst[j+4] = (bswap(src[j+4]) + dither[4])*scale>>shift;\
+            dst[j+5] = (bswap(src[j+5]) + dither[5])*scale>>shift;\
+            dst[j+6] = (bswap(src[j+6]) + dither[6])*scale>>shift;\
+            dst[j+7] = (bswap(src[j+7]) + dither[7])*scale>>shift;\
         }\
         for (; j < length; j++)\
-            dst[j] = (bswap(src[j]) + dither[j&7])>>shift;\
+            dst[j] = (bswap(src[j]) + dither[j&7])*scale>>shift;\
         dst += dstStride;\
         src += srcStride;\
     }
@@ -1919,7 +1938,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                         dstPtr2 += dstStride[plane]/2;
                         srcPtr  += srcStride[plane];
                     }
-                } else if (src_depth < dst_depth) {
+                } else if (src_depth <= dst_depth) {
                     for (i = 0; i < height; i++) {
                         if(isBE(c->dstFormat)){
                             for (j = 0; j < length; j++)
