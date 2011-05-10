@@ -156,6 +156,11 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
         av_log(NULL, AV_LOG_ERROR, "Resampling with input channels greater than 2 unsupported.\n");
         return NULL;
       }
+    if (output_channels > 2 && !(output_channels == 6 && input_channels == 2)) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Resampling output channel count must be 1 or 2 for mono input and 1, 2 or 6 for stereo input.\n");
+        return NULL;
+    }
 
     s = av_mallocz(sizeof(ReSampleContext));
     if (!s)
