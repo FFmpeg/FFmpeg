@@ -2700,7 +2700,11 @@ static int transcode(AVFormatContext **output_files,
 
         /* finish if recording time exhausted */
         if (recording_time != INT64_MAX &&
-            av_compare_ts(pkt.pts, ist->st->time_base, recording_time + start_time, (AVRational){1, 1000000}) >= 0) {
+            (pkt.pts != AV_NOPTS_VALUE || pkt.dts != AV_NOPTS_VALUE ?
+                av_compare_ts(pkt.pts, ist->st->time_base, recording_time + start_time, (AVRational){1, 1000000})
+                    :
+                av_compare_ts(ist->pts, AV_TIME_BASE_Q, recording_time + start_time, (AVRational){1, 1000000})
+            )>= 0) {
             ist->is_past_recording_time = 1;
             goto discard_packet;
         }
