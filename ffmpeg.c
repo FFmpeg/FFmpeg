@@ -221,7 +221,7 @@ static int video_sync_method= -1;
 static int audio_sync_method= 0;
 static float audio_drift_threshold= 0.1;
 static int copy_ts= 0;
-static int copy_tb;
+static int copy_tb= 0;
 static int opt_shortest = 0;
 static int video_global_header = 0;
 static char *vstats_filename;
