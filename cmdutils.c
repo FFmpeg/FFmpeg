@@ -435,7 +435,7 @@ void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec)
         const char *str;
         if (priv_ctx) {
             if (av_find_opt(priv_ctx, opt_names[i], NULL, flags, flags)) {
-                if (av_set_string3(priv_ctx, opt_names[i], opt_values[i], 0, NULL) < 0) {
+                if (av_set_string3(priv_ctx, opt_names[i], opt_values[i], 1, NULL) < 0) {
                     fprintf(stderr, "Invalid value '%s' for option '%s'\n",
                             opt_names[i], opt_values[i]);
                     exit(1);

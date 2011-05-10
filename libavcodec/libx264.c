@@ -35,13 +35,13 @@ typedef struct X264Context {
     uint8_t        *sei;
     int             sei_size;
     AVFrame         out_pic;
-    const char *preset;
-    const char *tune;
-    const char *profile;
-    const char *level;
+    char *preset;
+    char *tune;
+    char *profile;
+    char *level;
     int fastfirstpass;
-    const char *stats;
-    const char *weightp;
+    char *stats;
+    char *weightp;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -163,6 +163,13 @@ static av_cold int X264_close(AVCodecContext *avctx)
     if (x4->enc)
         x264_encoder_close(x4->enc);
 
+    av_free(x4->preset);
+    av_free(x4->tune);
+    av_free(x4->profile);
+    av_free(x4->level);
+    av_free(x4->stats);
+    av_free(x4->weightp);
+
     return 0;
 }
 
@@ -185,7 +192,7 @@ static void check_default_settings(AVCodecContext *avctx)
     score += x4->params.analyse.inter == 0 && x4->params.analyse.i_subpel_refine == 8;
     if (score >= 5) {
         av_log(avctx, AV_LOG_ERROR, "Default settings detected, using medium profile\n");
-        x4->preset = "medium";
+        x4->preset = av_strdup("medium");
         if (avctx->bit_rate == 200*100)
             avctx->crf = 23;
     }
