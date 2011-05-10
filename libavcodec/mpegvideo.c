@@ -680,6 +680,7 @@ av_cold int MPV_common_init(MpegEncContext *s)
             FF_ALLOCZ_OR_GOTO(s->avctx, s->dct_offset, 2 * 64 * sizeof(uint16_t), fail)
         }
     }
+
     s->picture_count = MAX_PICTURE_COUNT * FFMAX(1, s->avctx->thread_count);
     FF_ALLOCZ_OR_GOTO(s->avctx, s->picture, s->picture_count * sizeof(Picture), fail)
     for(i = 0; i < s->picture_count; i++) {
@@ -754,7 +755,7 @@ av_cold int MPV_common_init(MpegEncContext *s)
 
         for(i=0; i<threads; i++){
             if(init_duplicate_context(s->thread_context[i], s) < 0)
-               goto fail;
+                goto fail;
             s->thread_context[i]->start_mb_y= (s->mb_height*(i  ) + s->avctx->thread_count/2) / s->avctx->thread_count;
             s->thread_context[i]->end_mb_y  = (s->mb_height*(i+1) + s->avctx->thread_count/2) / s->avctx->thread_count;
         }

@@ -663,6 +663,7 @@ static int is_intra_more_likely(MpegEncContext *s){
                 uint8_t *last_mb_ptr= s->last_picture.data   [0] + mb_x*16 + mb_y*16*s->linesize;
 
                 is_intra_likely += s->dsp.sad[0](NULL, last_mb_ptr, mb_ptr                    , s->linesize, 16);
+                // FIXME need await_progress() here
                 is_intra_likely -= s->dsp.sad[0](NULL, last_mb_ptr, last_mb_ptr+s->linesize*16, s->linesize, 16);
             }else{
                 if(IS_INTRA(s->current_picture.mb_type[mb_xy]))
@@ -1000,6 +1001,7 @@ void ff_er_frame_end(MpegEncContext *s){
                     int time_pp= s->pp_time;
                     int time_pb= s->pb_time;
 
+                    // FIXME await_progress here
                     s->mv[0][0][0] = s->next_picture.motion_val[0][xy][0]*time_pb/time_pp;
                     s->mv[0][0][1] = s->next_picture.motion_val[0][xy][1]*time_pb/time_pp;
                     s->mv[1][0][0] = s->next_picture.motion_val[0][xy][0]*(time_pb - time_pp)/time_pp;
