@@ -305,11 +305,11 @@ static const AVOption options[]={
 {"error", NULL, OFFSET(error_rate), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 #if FF_API_ANTIALIAS_ALGO
 {"antialias", "MP3 antialias algorithm", OFFSET(antialias_algo), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|D, "aa"},
-#endif
 {"auto", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_AA_AUTO }, INT_MIN, INT_MAX, V|D, "aa"},
 {"fastint", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_AA_FASTINT }, INT_MIN, INT_MAX, V|D, "aa"},
 {"int", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_AA_INT }, INT_MIN, INT_MAX, V|D, "aa"},
 {"float", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_AA_FLOAT }, INT_MIN, INT_MAX, V|D, "aa"},
+#endif
 {"qns", "quantizer noise shaping", OFFSET(quantizer_noise_shaping), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"threads", NULL, OFFSET(thread_count), FF_OPT_TYPE_INT, {.dbl = 1 }, INT_MIN, INT_MAX, V|E|D},
 {"me_threshold", "motion estimaton threshold", OFFSET(me_threshold), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
