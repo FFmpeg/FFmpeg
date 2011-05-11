@@ -648,15 +648,15 @@ static int ogg_probe(AVProbeData *p)
 }
 
 AVInputFormat ff_ogg_demuxer = {
-    "ogg",
-    NULL_IF_CONFIG_SMALL("Ogg"),
-    sizeof (struct ogg),
-    ogg_probe,
-    ogg_read_header,
-    ogg_read_packet,
-    ogg_read_close,
-    ogg_read_seek,
-    ogg_read_timestamp,
-    .extensions = "ogg",
-    .flags = AVFMT_GENERIC_INDEX,
+    .name           = "ogg",
+    .long_name      = NULL_IF_CONFIG_SMALL("Ogg"),
+    .priv_data_size = sizeof(struct ogg),
+    .read_probe     = ogg_probe,
+    .read_header    = ogg_read_header,
+    .read_packet    = ogg_read_packet,
+    .read_close     = ogg_read_close,
+    .read_seek      = ogg_read_seek,
+    .read_timestamp = ogg_read_timestamp,
+    .extensions     = "ogg",
+    .flags          = AVFMT_GENERIC_INDEX,
 };
