@@ -35,8 +35,6 @@
  * and Edouard Gomez <ed.gomez@free.fr>.
  */
 
-#define _XOPEN_SOURCE 600
-
 #include "config.h"
 #include "libavformat/avformat.h"
 #include <time.h>

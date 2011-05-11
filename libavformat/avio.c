@@ -19,9 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* needed for usleep() */
-#define _XOPEN_SOURCE 600
 #include <unistd.h>
+
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "os_support.h"

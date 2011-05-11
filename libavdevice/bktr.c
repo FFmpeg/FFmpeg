@@ -24,10 +24,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define _BSD_SOURCE 1
-#define _NETBSD_SOURCE
-#define _XOPEN_SOURCE 600
-
 #include "libavformat/avformat.h"
 #if HAVE_DEV_BKTR_IOCTL_METEOR_H && HAVE_DEV_BKTR_IOCTL_BT848_H
 # include <dev/bktr/ioctl_meteor.h>
