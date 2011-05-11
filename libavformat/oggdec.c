@@ -148,7 +148,7 @@ ogg_find_codec (uint8_t * buf, int size)
 }
 
 static int
-ogg_new_stream (AVFormatContext * s, uint32_t serial)
+ogg_new_stream (AVFormatContext *s, uint32_t serial, int new_avstream)
 {
 
     struct ogg *ogg = s->priv_data;
@@ -165,11 +165,13 @@ ogg_new_stream (AVFormatContext * s, uint32_t serial)
     os->buf = av_malloc(os->bufsize);
     os->header = -1;
 
-    st = av_new_stream (s, idx);
-    if (!st)
-        return AVERROR(ENOMEM);
+    if (new_avstream) {
+        st = av_new_stream(s, idx);
+        if (!st)
+            return AVERROR(ENOMEM);
 
-    av_set_pts_info(st, 64, 1, 1000000);
+        av_set_pts_info(st, 64, 1, 1000000);
+    }
 
     return idx;
 }
@@ -250,8 +252,10 @@ ogg_read_page (AVFormatContext * s, int *str)
             }
             ogg->curidx   = -1;
             ogg->nstreams = 0;
+            idx = ogg_new_stream(s, serial, 0);
+        } else {
+            idx = ogg_new_stream(s, serial, 1);
         }
-        idx = ogg_new_stream (s, serial);
         if (idx < 0)
             return -1;
     }
