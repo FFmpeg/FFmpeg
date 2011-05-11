@@ -55,8 +55,7 @@ static const struct ogg_codec * const ogg_codecs[] = {
 };
 
 //FIXME We could avoid some structure duplication
-static int
-ogg_save (AVFormatContext * s)
+static int ogg_save(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_state *ost =
@@ -80,8 +79,7 @@ ogg_save (AVFormatContext * s)
     return 0;
 }
 
-static int
-ogg_restore (AVFormatContext * s, int discard)
+static int ogg_restore(AVFormatContext *s, int discard)
 {
     struct ogg *ogg = s->priv_data;
     AVIOContext *bc = s->pb;
@@ -109,8 +107,7 @@ ogg_restore (AVFormatContext * s, int discard)
     return 0;
 }
 
-static int
-ogg_reset (struct ogg * ogg)
+static int ogg_reset(struct ogg *ogg)
 {
     int i;
 
@@ -134,8 +131,7 @@ ogg_reset (struct ogg * ogg)
     return 0;
 }
 
-static const struct ogg_codec *
-ogg_find_codec (uint8_t * buf, int size)
+static const struct ogg_codec *ogg_find_codec(uint8_t *buf, int size)
 {
     int i;
 
@@ -147,8 +143,7 @@ ogg_find_codec (uint8_t * buf, int size)
     return NULL;
 }
 
-static int
-ogg_new_stream (AVFormatContext *s, uint32_t serial, int new_avstream)
+static int ogg_new_stream(AVFormatContext *s, uint32_t serial, int new_avstream)
 {
 
     struct ogg *ogg = s->priv_data;
@@ -176,8 +171,7 @@ ogg_new_stream (AVFormatContext *s, uint32_t serial, int new_avstream)
     return idx;
 }
 
-static int
-ogg_new_buf(struct ogg *ogg, int idx)
+static int ogg_new_buf(struct ogg *ogg, int idx)
 {
     struct ogg_stream *os = ogg->streams + idx;
     uint8_t *nb = av_malloc(os->bufsize);
@@ -193,8 +187,7 @@ ogg_new_buf(struct ogg *ogg, int idx)
     return 0;
 }
 
-static int
-ogg_read_page (AVFormatContext * s, int *str)
+static int ogg_read_page(AVFormatContext *s, int *str)
 {
     AVIOContext *bc = s->pb;
     struct ogg *ogg = s->priv_data;
@@ -311,8 +304,8 @@ ogg_read_page (AVFormatContext * s, int *str)
     return 0;
 }
 
-static int
-ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize, int64_t *fpos)
+static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
+                      int64_t *fpos)
 {
     struct ogg *ogg = s->priv_data;
     int idx, i;
@@ -439,8 +432,7 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize, int64_t *fpo
     return 0;
 }
 
-static int
-ogg_get_headers (AVFormatContext * s)
+static int ogg_get_headers(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
 
@@ -454,8 +446,7 @@ ogg_get_headers (AVFormatContext * s)
     return 0;
 }
 
-static int
-ogg_get_length (AVFormatContext * s)
+static int ogg_get_length(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
     int i;
@@ -491,9 +482,7 @@ ogg_get_length (AVFormatContext * s)
     return 0;
 }
 
-
-static int
-ogg_read_header (AVFormatContext * s, AVFormatParameters * ap)
+static int ogg_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     struct ogg *ogg = s->priv_data;
     int i;
@@ -544,8 +533,7 @@ static int64_t ogg_calc_pts(AVFormatContext *s, int idx, int64_t *dts)
     return pts;
 }
 
-static int
-ogg_read_packet (AVFormatContext * s, AVPacket * pkt)
+static int ogg_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     struct ogg *ogg;
     struct ogg_stream *os;
@@ -585,9 +573,7 @@ retry:
     return psize;
 }
 
-
-static int
-ogg_read_close (AVFormatContext * s)
+static int ogg_read_close(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
     int i;
@@ -600,10 +586,8 @@ ogg_read_close (AVFormatContext * s)
     return 0;
 }
 
-
-static int64_t
-ogg_read_timestamp (AVFormatContext * s, int stream_index, int64_t * pos_arg,
-                    int64_t pos_limit)
+static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
+                                  int64_t *pos_arg, int64_t pos_limit)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + stream_index;
@@ -626,7 +610,8 @@ ogg_read_timestamp (AVFormatContext * s, int stream_index, int64_t * pos_arg,
     return pts;
 }
 
-static int ogg_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
+static int ogg_read_seek(AVFormatContext *s, int stream_index,
+                         int64_t timestamp, int flags)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + stream_index;
