@@ -642,12 +642,9 @@ static int ogg_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
 static int ogg_probe(AVProbeData *p)
 {
-    if (p->buf[0] == 'O' && p->buf[1] == 'g' &&
-        p->buf[2] == 'g' && p->buf[3] == 'S' &&
-        p->buf[4] == 0x0 && p->buf[5] <= 0x7 )
+    if (!memcmp("OggS", p->buf, 5) && p->buf[5] <= 0x7)
         return AVPROBE_SCORE_MAX;
-    else
-        return 0;
+    return 0;
 }
 
 AVInputFormat ff_ogg_demuxer = {
