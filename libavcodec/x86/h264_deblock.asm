@@ -106,47 +106,6 @@ cextern pb_A1
     TRANSPOSE4x8_LOAD bw, wd, dq, %1, %2, %3, %4, %5, %6, %7, %8
 %endmacro
 
-%macro TRANSPOSE4x8W_LOAD 8
-%if mmsize==16
-    TRANSPOSE4x8_LOAD wd, dq, qdq, %1, %2, %3, %4, %5, %6, %7, %8
-%else
-    SWAP  1, 4, 2, 3
-    mova  m0, [t5]
-    mova  m1, [t5+r1]
-    mova  m2, [t5+r1*2]
-    mova  m3, [t5+t6]
-    TRANSPOSE4x4W 0, 1, 2, 3, 4
-%endif
-%endmacro
-
-%macro TRANSPOSE8x2W_STORE 8
-    punpckhwd  m0, m1, m2
-    punpcklwd  m1, m2
-%if mmsize==8
-    movd       %3, m0
-    movd       %1, m1
-    psrlq      m1, 32
-    psrlq      m0, 32
-    movd       %2, m1
-    movd       %4, m0
-%else
-    movd       %5, m0
-    movd       %1, m1
-    psrldq     m1, 4
-    psrldq     m0, 4
-    movd       %2, m1
-    movd       %6, m0
-    psrldq     m1, 4
-    psrldq     m0, 4
-    movd       %3, m1
-    movd       %7, m0
-    psrldq     m1, 4
-    psrldq     m0, 4
-    movd       %4, m1
-    movd       %8, m0
-%endif
-%endmacro
-
 %macro SBUTTERFLY3 4
     punpckh%1  %4, %2, %3
     punpckl%1  %2, %3

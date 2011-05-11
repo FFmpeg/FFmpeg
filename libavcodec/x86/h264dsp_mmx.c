@@ -236,10 +236,18 @@ LF_FUNC (h,  luma,         depth, sse2)\
 LF_IFUNC(h,  luma_intra,   depth, sse2)\
 LF_FUNC (v,  luma,         depth, sse2)\
 LF_IFUNC(v,  luma_intra,   depth, sse2)\
+LF_FUNC (h,  chroma,       depth, sse2)\
+LF_IFUNC(h,  chroma_intra, depth, sse2)\
+LF_FUNC (v,  chroma,       depth, sse2)\
+LF_IFUNC(v,  chroma_intra, depth, sse2)\
 LF_FUNC (h,  luma,         depth,  avx)\
 LF_IFUNC(h,  luma_intra,   depth,  avx)\
 LF_FUNC (v,  luma,         depth,  avx)\
-LF_IFUNC(v,  luma_intra,   depth,  avx)
+LF_IFUNC(v,  luma_intra,   depth,  avx)\
+LF_FUNC (h,  chroma,       depth,  avx)\
+LF_IFUNC(h,  chroma_intra, depth,  avx)\
+LF_FUNC (v,  chroma,       depth,  avx)\
+LF_IFUNC(v,  chroma_intra, depth,  avx)
 
 LF_FUNCS( uint8_t,  8)
 LF_FUNCS(uint16_t, 10)
@@ -401,12 +409,16 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth)
     if (mm_flags & AV_CPU_FLAG_MMX) {
         if (mm_flags & AV_CPU_FLAG_MMX2) {
 #if ARCH_X86_32
+            c->h264_v_loop_filter_chroma= ff_deblock_v_chroma_10_mmxext;
+            c->h264_v_loop_filter_chroma_intra= ff_deblock_v_chroma_intra_10_mmxext;
             c->h264_v_loop_filter_luma= ff_deblock_v_luma_10_mmxext;
             c->h264_h_loop_filter_luma= ff_deblock_h_luma_10_mmxext;
             c->h264_v_loop_filter_luma_intra = ff_deblock_v_luma_intra_10_mmxext;
             c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_10_mmxext;
 #endif
             if (mm_flags&AV_CPU_FLAG_SSE2) {
+                c->h264_v_loop_filter_chroma= ff_deblock_v_chroma_10_sse2;
+                c->h264_v_loop_filter_chroma_intra= ff_deblock_v_chroma_intra_10_sse2;
 #if HAVE_ALIGNED_STACK
                 c->h264_v_loop_filter_luma = ff_deblock_v_luma_10_sse2;
                 c->h264_h_loop_filter_luma = ff_deblock_h_luma_10_sse2;
@@ -415,6 +427,8 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth)
 #endif
             }
             if (mm_flags&AV_CPU_FLAG_AVX) {
+                c->h264_v_loop_filter_chroma= ff_deblock_v_chroma_10_avx;
+                c->h264_v_loop_filter_chroma_intra= ff_deblock_v_chroma_intra_10_avx;
 #if HAVE_ALIGNED_STACK
                 c->h264_v_loop_filter_luma = ff_deblock_v_luma_10_avx;
                 c->h264_h_loop_filter_luma = ff_deblock_h_luma_10_avx;

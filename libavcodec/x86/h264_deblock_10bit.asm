@@ -34,6 +34,7 @@ pw_pixel_max: times 8 dw ((1 << 10)-1)
 SECTION .text
 
 cextern pw_2
+cextern pw_3
 cextern pw_4
 
 ; out: %4 = |%1-%2|-%3
@@ -802,3 +803,108 @@ INIT_AVX
 DEBLOCK_LUMA avx
 DEBLOCK_LUMA_INTRA avx
 %endif
+
+; in: %1=p0, %2=q0, %3=p1, %4=q1, %5=mask, %6=tmp, %7=tmp
+; out: %1=p0', %2=q0'
+%macro CHROMA_DEBLOCK_P0_Q0_INTRA 7
+    mova    %6, [pw_2]
+    paddw   %6, %3
+    paddw   %6, %4
+    paddw   %7, %6, %2
+    paddw   %6, %1
+    paddw   %6, %3
+    paddw   %7, %4
+    psraw   %6, 2
+    psraw   %7, 2
+    psubw   %6, %1
+    psubw   %7, %2
+    pand    %6, %5
+    pand    %7, %5
+    paddw   %1, %6
+    paddw   %2, %7
+%endmacro
+
+%macro CHROMA_V_LOAD 1
+    mova        m0, [r0]    ; p1
+    mova        m1, [r0+r1] ; p0
+    mova        m2, [%1]    ; q0
+    mova        m3, [%1+r1] ; q1
+%endmacro
+
+%macro CHROMA_V_STORE 0
+    mova [r0+1*r1], m1
+    mova [r0+2*r1], m2
+%endmacro
+
+%macro DEBLOCK_CHROMA 1
+;-----------------------------------------------------------------------------
+; void deblock_v_chroma( uint16_t *pix, int stride, int alpha, int beta, int8_t *tc0 )
+;-----------------------------------------------------------------------------
+cglobal deblock_v_chroma_10_%1, 5,7-(mmsize/16),8*(mmsize/16)
+    mov         r5, r0
+    sub         r0, r1
+    sub         r0, r1
+    shl        r2d, 2
+    shl        r3d, 2
+%if mmsize < 16
+    mov         r6, 16/mmsize
+.loop:
+%endif
+    CHROMA_V_LOAD r5
+    LOAD_AB     m4, m5, r2, r3
+    LOAD_MASK   m0, m1, m2, m3, m4, m5, m7, m6, m4
+    pxor        m4, m4
+    LOAD_TC     m6, r4
+    psubw       m6, [pw_3]
+    pmaxsw      m6, m4
+    pand        m7, m6
+    DEBLOCK_P0_Q0 m1, m2, m0, m3, m7, m5, m6
+    CHROMA_V_STORE
+%if mmsize < 16
+    add         r0, mmsize
+    add         r5, mmsize
+    add         r4, mmsize/8
+    dec         r6
+    jg .loop
+    REP_RET
+%else
+    RET
+%endif
+
+;-----------------------------------------------------------------------------
+; void deblock_v_chroma_intra( uint16_t *pix, int stride, int alpha, int beta )
+;-----------------------------------------------------------------------------
+cglobal deblock_v_chroma_intra_10_%1, 4,6-(mmsize/16),8*(mmsize/16)
+    mov         r4, r0
+    sub         r0, r1
+    sub         r0, r1
+    shl        r2d, 2
+    shl        r3d, 2
+%if mmsize < 16
+    mov         r5, 16/mmsize
+.loop:
+%endif
+    CHROMA_V_LOAD r4
+    LOAD_AB     m4, m5, r2, r3
+    LOAD_MASK   m0, m1, m2, m3, m4, m5, m7, m6, m4
+    CHROMA_DEBLOCK_P0_Q0_INTRA m1, m2, m0, m3, m7, m5, m6
+    CHROMA_V_STORE
+%if mmsize < 16
+    add         r0, mmsize
+    add         r4, mmsize
+    dec         r5
+    jg .loop
+    REP_RET
+%else
+    RET
+%endif
+%endmacro
+
+%ifndef ARCH_X86_64
+INIT_MMX
+DEBLOCK_CHROMA mmxext
+%endif
+INIT_XMM
+DEBLOCK_CHROMA sse2
+INIT_AVX
+DEBLOCK_CHROMA avx
