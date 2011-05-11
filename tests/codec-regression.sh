@@ -263,6 +263,11 @@ do_video_encoding qtrle.mov "-an -vcodec qtrle"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
+if [ -n "$do_qtrlegray" ] ; then
+do_video_encoding qtrlegray.mov "-an -vcodec qtrle -pix_fmt gray"
+do_video_decoding "" "-pix_fmt yuv420p"
+fi
+
 if [ -n "$do_rgb" ] ; then
 do_video_encoding rgb.avi "-an -vcodec rawvideo -pix_fmt bgr24"
 do_video_decoding "" "-pix_fmt yuv420p"
