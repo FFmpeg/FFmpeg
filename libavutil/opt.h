@@ -67,6 +67,9 @@ typedef struct AVOption {
     union {
         double dbl;
         const char *str;
+        /* TODO those are unused now */
+        int64_t i64;
+        AVRational q;
     } default_val;
     double min;                 ///< minimum valid value for the option
     double max;                 ///< maximum valid value for the option

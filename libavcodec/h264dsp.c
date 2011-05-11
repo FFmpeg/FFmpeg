@@ -30,15 +30,15 @@
 #include "h264dsp.h"
 
 #define BIT_DEPTH 8
-#include "h264dsp_internal.h"
+#include "h264dsp_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 9
-#include "h264dsp_internal.h"
+#include "h264dsp_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 10
-#include "h264dsp_internal.h"
+#include "h264dsp_template.c"
 #undef BIT_DEPTH
 
 void ff_h264dsp_init(H264DSPContext *c, const int bit_depth)
@@ -47,58 +47,62 @@ void ff_h264dsp_init(H264DSPContext *c, const int bit_depth)
 #define FUNC(a, depth) a ## _ ## depth ## _c
 
 #define H264_DSP(depth) \
-    c->h264_idct_add                   = FUNC(ff_h264_idct_add               , depth);\
-    c->h264_idct8_add                  = FUNC(ff_h264_idct8_add              , depth);\
-    c->h264_idct_dc_add                = FUNC(ff_h264_idct_dc_add            , depth);\
-    c->h264_idct8_dc_add               = FUNC(ff_h264_idct8_dc_add           , depth);\
-    c->h264_idct_add16                 = FUNC(ff_h264_idct_add16             , depth);\
-    c->h264_idct8_add4                 = FUNC(ff_h264_idct8_add4             , depth);\
-    c->h264_idct_add8                  = FUNC(ff_h264_idct_add8              , depth);\
-    c->h264_idct_add16intra            = FUNC(ff_h264_idct_add16intra        , depth);\
-    c->h264_luma_dc_dequant_idct       = FUNC(ff_h264_luma_dc_dequant_idct   , depth);\
-    c->h264_chroma_dc_dequant_idct     = FUNC(ff_h264_chroma_dc_dequant_idct , depth);\
+    c->h264_idct_add= FUNC(ff_h264_idct_add, depth);\
+    c->h264_idct8_add= FUNC(ff_h264_idct8_add, depth);\
+    c->h264_idct_dc_add= FUNC(ff_h264_idct_dc_add, depth);\
+    c->h264_idct8_dc_add= FUNC(ff_h264_idct8_dc_add, depth);\
+    c->h264_idct_add16     = FUNC(ff_h264_idct_add16, depth);\
+    c->h264_idct8_add4     = FUNC(ff_h264_idct8_add4, depth);\
+    c->h264_idct_add8      = FUNC(ff_h264_idct_add8, depth);\
+    c->h264_idct_add16intra= FUNC(ff_h264_idct_add16intra, depth);\
+    c->h264_luma_dc_dequant_idct= FUNC(ff_h264_luma_dc_dequant_idct, depth);\
+    c->h264_chroma_dc_dequant_idct= FUNC(ff_h264_chroma_dc_dequant_idct, depth);\
 \
-    c->weight_h264_pixels_tab[0]       = FUNC(  weight_h264_pixels16x16      , depth);\
-    c->weight_h264_pixels_tab[1]       = FUNC(  weight_h264_pixels16x8       , depth);\
-    c->weight_h264_pixels_tab[2]       = FUNC(  weight_h264_pixels8x16       , depth);\
-    c->weight_h264_pixels_tab[3]       = FUNC(  weight_h264_pixels8x8        , depth);\
-    c->weight_h264_pixels_tab[4]       = FUNC(  weight_h264_pixels8x4        , depth);\
-    c->weight_h264_pixels_tab[5]       = FUNC(  weight_h264_pixels4x8        , depth);\
-    c->weight_h264_pixels_tab[6]       = FUNC(  weight_h264_pixels4x4        , depth);\
-    c->weight_h264_pixels_tab[7]       = FUNC(  weight_h264_pixels4x2        , depth);\
-    c->weight_h264_pixels_tab[8]       = FUNC(  weight_h264_pixels2x4        , depth);\
-    c->weight_h264_pixels_tab[9]       = FUNC(  weight_h264_pixels2x2        , depth);\
-    c->biweight_h264_pixels_tab[0]     = FUNC(biweight_h264_pixels16x16      , depth);\
-    c->biweight_h264_pixels_tab[1]     = FUNC(biweight_h264_pixels16x8       , depth);\
-    c->biweight_h264_pixels_tab[2]     = FUNC(biweight_h264_pixels8x16       , depth);\
-    c->biweight_h264_pixels_tab[3]     = FUNC(biweight_h264_pixels8x8        , depth);\
-    c->biweight_h264_pixels_tab[4]     = FUNC(biweight_h264_pixels8x4        , depth);\
-    c->biweight_h264_pixels_tab[5]     = FUNC(biweight_h264_pixels4x8        , depth);\
-    c->biweight_h264_pixels_tab[6]     = FUNC(biweight_h264_pixels4x4        , depth);\
-    c->biweight_h264_pixels_tab[7]     = FUNC(biweight_h264_pixels4x2        , depth);\
-    c->biweight_h264_pixels_tab[8]     = FUNC(biweight_h264_pixels2x4        , depth);\
-    c->biweight_h264_pixels_tab[9]     = FUNC(biweight_h264_pixels2x2        , depth);\
+    c->weight_h264_pixels_tab[0]= FUNC(weight_h264_pixels16x16, depth);\
+    c->weight_h264_pixels_tab[1]= FUNC(weight_h264_pixels16x8, depth);\
+    c->weight_h264_pixels_tab[2]= FUNC(weight_h264_pixels8x16, depth);\
+    c->weight_h264_pixels_tab[3]= FUNC(weight_h264_pixels8x8, depth);\
+    c->weight_h264_pixels_tab[4]= FUNC(weight_h264_pixels8x4, depth);\
+    c->weight_h264_pixels_tab[5]= FUNC(weight_h264_pixels4x8, depth);\
+    c->weight_h264_pixels_tab[6]= FUNC(weight_h264_pixels4x4, depth);\
+    c->weight_h264_pixels_tab[7]= FUNC(weight_h264_pixels4x2, depth);\
+    c->weight_h264_pixels_tab[8]= FUNC(weight_h264_pixels2x4, depth);\
+    c->weight_h264_pixels_tab[9]= FUNC(weight_h264_pixels2x2, depth);\
+    c->biweight_h264_pixels_tab[0]= FUNC(biweight_h264_pixels16x16, depth);\
+    c->biweight_h264_pixels_tab[1]= FUNC(biweight_h264_pixels16x8, depth);\
+    c->biweight_h264_pixels_tab[2]= FUNC(biweight_h264_pixels8x16, depth);\
+    c->biweight_h264_pixels_tab[3]= FUNC(biweight_h264_pixels8x8, depth);\
+    c->biweight_h264_pixels_tab[4]= FUNC(biweight_h264_pixels8x4, depth);\
+    c->biweight_h264_pixels_tab[5]= FUNC(biweight_h264_pixels4x8, depth);\
+    c->biweight_h264_pixels_tab[6]= FUNC(biweight_h264_pixels4x4, depth);\
+    c->biweight_h264_pixels_tab[7]= FUNC(biweight_h264_pixels4x2, depth);\
+    c->biweight_h264_pixels_tab[8]= FUNC(biweight_h264_pixels2x4, depth);\
+    c->biweight_h264_pixels_tab[9]= FUNC(biweight_h264_pixels2x2, depth);\
 \
-    c->h264_v_loop_filter_luma         = FUNC(h264_v_loop_filter_luma        , depth);\
-    c->h264_h_loop_filter_luma         = FUNC(h264_h_loop_filter_luma        , depth);\
-    c->h264_v_loop_filter_luma_intra   = FUNC(h264_v_loop_filter_luma_intra  , depth);\
-    c->h264_h_loop_filter_luma_intra   = FUNC(h264_h_loop_filter_luma_intra  , depth);\
-    c->h264_v_loop_filter_chroma       = FUNC(h264_v_loop_filter_chroma      , depth);\
-    c->h264_h_loop_filter_chroma       = FUNC(h264_h_loop_filter_chroma      , depth);\
-    c->h264_v_loop_filter_chroma_intra = FUNC(h264_v_loop_filter_chroma_intra, depth);\
-    c->h264_h_loop_filter_chroma_intra = FUNC(h264_h_loop_filter_chroma_intra, depth);\
+    c->h264_v_loop_filter_luma= FUNC(h264_v_loop_filter_luma, depth);\
+    c->h264_h_loop_filter_luma= FUNC(h264_h_loop_filter_luma, depth);\
+    c->h264_h_loop_filter_luma_mbaff= FUNC(h264_h_loop_filter_luma_mbaff, depth);\
+    c->h264_v_loop_filter_luma_intra= FUNC(h264_v_loop_filter_luma_intra, depth);\
+    c->h264_h_loop_filter_luma_intra= FUNC(h264_h_loop_filter_luma_intra, depth);\
+    c->h264_h_loop_filter_luma_mbaff_intra= FUNC(h264_h_loop_filter_luma_mbaff_intra, depth);\
+    c->h264_v_loop_filter_chroma= FUNC(h264_v_loop_filter_chroma, depth);\
+    c->h264_h_loop_filter_chroma= FUNC(h264_h_loop_filter_chroma, depth);\
+    c->h264_h_loop_filter_chroma_mbaff= FUNC(h264_h_loop_filter_chroma_mbaff, depth);\
+    c->h264_v_loop_filter_chroma_intra= FUNC(h264_v_loop_filter_chroma_intra, depth);\
+    c->h264_h_loop_filter_chroma_intra= FUNC(h264_h_loop_filter_chroma_intra, depth);\
+    c->h264_h_loop_filter_chroma_mbaff_intra= FUNC(h264_h_loop_filter_chroma_mbaff_intra, depth);\
     c->h264_loop_filter_strength= NULL;
 
     switch (bit_depth) {
-        case 9:
-            H264_DSP(9);
-            break;
-        case 10:
-            H264_DSP(10);
-            break;
-        default:
-            H264_DSP(8);
-            break;
+    case 9:
+        H264_DSP(9);
+        break;
+    case 10:
+        H264_DSP(10);
+        break;
+    default:
+        H264_DSP(8);
+        break;
     }
 
     if (ARCH_ARM) ff_h264dsp_init_arm(c, bit_depth);

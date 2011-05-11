@@ -13,6 +13,12 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-05-10 - xxxxxxx - lavc 53.3.0 - avcodec.h
+  Deprecate AVLPCType and the following fields in
+  AVCodecContext: lpc_coeff_precision, prediction_order_method,
+  min_partition_order, max_partition_order, lpc_type, lpc_passes.
+  Corresponding FLAC encoder options should be used instead.
+
 2011-05-07 - xxxxxxx - lavfi 2.5.0 - avcodec.h
   Add libavfilter/avcodec.h header and avfilter_copy_frame_props()
   function.

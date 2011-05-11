@@ -1297,9 +1297,9 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
 unsigned int ff_toupper4(unsigned int x)
 {
     return     toupper( x     &0xFF)
-    + (toupper((x>>8 )&0xFF)<<8 )
-    + (toupper((x>>16)&0xFF)<<16)
-    + (toupper((x>>24)&0xFF)<<24);
+            + (toupper((x>>8 )&0xFF)<<8 )
+            + (toupper((x>>16)&0xFF)<<16)
+            + (toupper((x>>24)&0xFF)<<24);
 }
 
 #if !HAVE_PTHREADS

@@ -108,7 +108,7 @@
  */
 #define DELAYED_PIC_REF 4
 
-#define QP_MAX_MAX (51 + 2*6)           // The maximum supported qp
+#define QP_MAX_NUM (51 + 2*6)           // The maximum supported qp
 
 /* NAL unit types */
 enum {
@@ -266,7 +266,7 @@ typedef struct MMCO{
 typedef struct H264Context{
     MpegEncContext s;
     H264DSPContext h264dsp;
-    int pixel_shift;
+    int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
     int chroma_qp[2]; //QPc
 
     int qp_thresh;      ///< QP threshold to skip loopfilter
@@ -355,8 +355,8 @@ typedef struct H264Context{
      */
     PPS pps; //FIXME move to Picture perhaps? (->no) do we need that?
 
-    uint32_t dequant4_buffer[6][QP_MAX_MAX+1][16]; //FIXME should these be moved down?
-    uint32_t dequant8_buffer[2][QP_MAX_MAX+1][64];
+    uint32_t dequant4_buffer[6][QP_MAX_NUM+1][16]; //FIXME should these be moved down?
+    uint32_t dequant8_buffer[2][QP_MAX_NUM+1][64];
     uint32_t (*dequant4_coeff[6])[16];
     uint32_t (*dequant8_coeff[2])[64];
 
@@ -597,7 +597,7 @@ typedef struct H264Context{
 }H264Context;
 
 
-extern const uint8_t ff_h264_chroma_qp[3][QP_MAX_MAX+1]; ///< One chroma qp table for each supported bit depth (8, 9, 10).
+extern const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM+1]; ///< One chroma qp table for each supported bit depth (8, 9, 10).
 
 /**
  * Decode SEI

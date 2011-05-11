@@ -965,10 +965,10 @@ H264_WEIGHT( 8, 8)
 H264_WEIGHT( 8, 4)
 
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
-    const int h264_high_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
 
     if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
-    if (!h264_high_depth) {
+    if (!high_bit_depth) {
         c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
         c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
 

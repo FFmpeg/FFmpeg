@@ -35,11 +35,22 @@
 #define MIN_LPC_ORDER        1
 #define MAX_LPC_ORDER       32
 
+/**
+ * LPC analysis type
+ */
+enum FFLPCType {
+    FF_LPC_TYPE_DEFAULT     = -1, ///< use the codec default LPC type
+    FF_LPC_TYPE_NONE        =  0, ///< do not use LPC prediction or use all zero coefficients
+    FF_LPC_TYPE_FIXED       =  1, ///< fixed LPC coefficients
+    FF_LPC_TYPE_LEVINSON    =  2, ///< Levinson-Durbin recursion
+    FF_LPC_TYPE_CHOLESKY    =  3, ///< Cholesky factorization
+    FF_LPC_TYPE_NB              , ///< Not part of ABI
+};
 
 typedef struct LPCContext {
     int blocksize;
     int max_order;
-    enum AVLPCType lpc_type;
+    enum FFLPCType lpc_type;
     double *windowed_samples;
 
     /**
@@ -77,14 +88,14 @@ int ff_lpc_calc_coefs(LPCContext *s,
                       const int32_t *samples, int blocksize, int min_order,
                       int max_order, int precision,
                       int32_t coefs[][MAX_LPC_ORDER], int *shift,
-                      enum AVLPCType lpc_type, int lpc_passes,
+                      enum FFLPCType lpc_type, int lpc_passes,
                       int omethod, int max_shift, int zero_shift);
 
 /**
  * Initialize LPCContext.
  */
 int ff_lpc_init(LPCContext *s, int blocksize, int max_order,
-                enum AVLPCType lpc_type);
+                enum FFLPCType lpc_type);
 void ff_lpc_init_x86(LPCContext *s);
 
 /**

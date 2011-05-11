@@ -629,8 +629,9 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
          * short_ref and long_ref buffers.
          */
         av_log(h->s.avctx, AV_LOG_ERROR,
-               "number of reference frames exceeds max (probably "
-               "corrupt input), discarding one long:%d short:%d max:%d\n", h->long_ref_count, h->short_ref_count, h->sps.ref_frame_count);
+               "number of reference frames (%d+%d) exceeds max (%d; probably "
+               "corrupt input), discarding one\n",
+               h->long_ref_count, h->short_ref_count, h->sps.ref_frame_count);
 
         if (h->long_ref_count && !h->short_ref_count) {
             for (i = 0; i < 16; ++i)
