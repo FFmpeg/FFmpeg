@@ -2946,6 +2946,12 @@ if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
     check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
     enable sdl &&
     check_struct SDL.h SDL_VideoInfo current_w $sdl_cflags && enable sdl_video_size
+else
+    if check_pkg_config sdl SDL_version.h SDL_Linked_Version; then
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
+        enable sdl &&
+        check_struct SDL.h SDL_VideoInfo current_w $sdl_cflags && enable sdl_video_size
+    fi
 fi
 
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
