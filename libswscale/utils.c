@@ -143,9 +143,13 @@ int sws_isSupportedInput(enum PixelFormat pix_fmt)
         || (x)==PIX_FMT_GRAY8       \
         || (x)==PIX_FMT_YUV410P     \
         || (x)==PIX_FMT_YUV440P     \
+        || (x)==PIX_FMT_YUV420P9LE    \
+        || (x)==PIX_FMT_YUV420P10LE   \
         || (x)==PIX_FMT_YUV420P16LE   \
         || (x)==PIX_FMT_YUV422P16LE   \
         || (x)==PIX_FMT_YUV444P16LE   \
+        || (x)==PIX_FMT_YUV420P9BE    \
+        || (x)==PIX_FMT_YUV420P10BE   \
         || (x)==PIX_FMT_YUV420P16BE   \
         || (x)==PIX_FMT_YUV422P16BE   \
         || (x)==PIX_FMT_YUV444P16BE   \

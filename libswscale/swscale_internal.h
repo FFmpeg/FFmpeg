@@ -354,7 +354,7 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_YUV422P16BE \
         || (x)==PIX_FMT_YUV444P16BE \
     )
-#define isNBPS(x)       (           \
+#define is9_OR_10BPS(x) (           \
            (x)==PIX_FMT_YUV420P9LE  \
         || (x)==PIX_FMT_YUV420P9BE  \
         || (x)==PIX_FMT_YUV420P10LE \

@@ -639,7 +639,7 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
             } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
-                if (is16BPS(dstFormat)) {
+                if (is16BPS(dstFormat) || is9_OR_10BPS(dstFormat)) {
                     yuv2yuvX16inC(
                                   vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                                   vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
@@ -716,7 +716,7 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
             } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
-                if (is16BPS(dstFormat)) {
+                if (is16BPS(dstFormat) || is9_OR_10BPS(dstFormat)) {
                     yuv2yuvX16inC(
                                   vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                                   vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
