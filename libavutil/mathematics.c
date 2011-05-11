@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <limits.h>
 #include "mathematics.h"
+#include "libavutil/common.h"
 
 const uint8_t ff_sqrt_tab[256]={
   0, 16, 23, 28, 32, 36, 40, 43, 46, 48, 51, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 77, 79, 80, 82, 84, 85, 87, 88, 90,
@@ -139,6 +140,8 @@ int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq){
 int av_compare_ts(int64_t ts_a, AVRational tb_a, int64_t ts_b, AVRational tb_b){
     int64_t a= tb_a.num * (int64_t)tb_b.den;
     int64_t b= tb_b.num * (int64_t)tb_a.den;
+    if((FFABS(ts_a)|a|FFABS(ts_b)|b)<=INT_MAX)
+        return (ts_a*a > ts_b*b) - (ts_a*a < ts_b*b);
     if (av_rescale_rnd(ts_a, a, b, AV_ROUND_DOWN) < ts_b) return -1;
     if (av_rescale_rnd(ts_b, b, a, AV_ROUND_DOWN) < ts_a) return  1;
     return 0;
