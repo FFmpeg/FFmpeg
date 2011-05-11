@@ -1282,9 +1282,7 @@ static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
     const uint8_t *buf_ptr;
     unsigned int v, v2;
     int val;
-#ifdef DEBUG
     int skipped=0;
-#endif
 
     buf_ptr = *pbuf_ptr;
     while (buf_ptr < buf_end) {
@@ -1294,9 +1292,7 @@ static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
             val = *buf_ptr++;
             goto found;
         }
-#ifdef DEBUG
         skipped++;
-#endif
     }
     val = -1;
 found:
