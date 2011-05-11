@@ -14,6 +14,7 @@
 #   undef rnd_avg_pixel4
 #   undef AV_RN2P
 #   undef AV_RN4P
+#   undef AV_RN4PA
 #   undef AV_WN2P
 #   undef AV_WN4P
 #   undef AV_WN4PA
@@ -46,6 +47,7 @@ CLIP_PIXEL(10)
 #   define    rnd_avg_pixel4    rnd_avg64
 #   define AV_RN2P  AV_RN32
 #   define AV_RN4P  AV_RN64
+#   define AV_RN4PA AV_RN64A
 #   define AV_WN2P  AV_WN32
 #   define AV_WN4P  AV_WN64
 #   define AV_WN4PA AV_WN64A
@@ -61,6 +63,7 @@ CLIP_PIXEL(10)
 #   define    rnd_avg_pixel4    rnd_avg32
 #   define AV_RN2P  AV_RN16
 #   define AV_RN4P  AV_RN32
+#   define AV_RN4PA AV_RN32A
 #   define AV_WN2P  AV_WN16
 #   define AV_WN4P  AV_WN32
 #   define AV_WN4PA AV_WN32A
