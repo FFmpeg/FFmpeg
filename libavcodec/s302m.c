@@ -64,6 +64,16 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
         avctx->sample_fmt = SAMPLE_FMT_S16;
 
     avctx->channels    = channels;
+    switch(channels) {
+        case 2:
+            avctx->channel_layout = AV_CH_LAYOUT_STEREO;
+            break;
+        case 4:
+            avctx->channel_layout = AV_CH_LAYOUT_QUAD;
+            break;
+        case 8:
+            avctx->channel_layout = AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX;
+    }
     avctx->sample_rate = 48000;
     avctx->bit_rate    = 48000 * avctx->channels * (avctx->bits_per_coded_sample + 4) +
                          32 * (48000 / (buf_size * 8 /
