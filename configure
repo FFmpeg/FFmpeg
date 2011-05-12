@@ -1069,7 +1069,6 @@ HAVE_LIST="
     inet_aton
     inline_asm
     isatty
-    kbhit
     ldbrx
     libdc1394_1
     libdc1394_2
@@ -2792,7 +2791,6 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func  setrlimit
 check_func  strerror_r
 check_func  strtok_r
-check_func_headers conio.h kbhit
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi

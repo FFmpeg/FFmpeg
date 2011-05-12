@@ -66,9 +66,6 @@
 #include <sys/select.h>
 #endif
 
-#if HAVE_KBHIT
-#include <conio.h>
-#endif
 #include <time.h>
 
 #include "cmdutils.h"
@@ -229,7 +226,6 @@ static int exit_on_error = 0;
 static int using_stdin = 0;
 static int verbose = 1;
 static int thread_count= 1;
-static int q_pressed = 0;
 static int64_t video_size = 0;
 static int64_t audio_size = 0;
 static int64_t extra_size = 0;
@@ -440,19 +436,9 @@ static void term_init(void)
 #endif
 }
 
-/* read a key without blocking */
-static int read_key(void)
-{
-#if HAVE_KBHIT
-    if(kbhit())
-        return(getch());
-#endif
-    return -1;
-}
-
 static int decode_interrupt_cb(void)
 {
-    return q_pressed || (q_pressed = read_key() == 'q');
+    return received_sigterm;
 }
 
 static int ffmpeg_exit(int ret)
@@ -1894,7 +1880,6 @@ static int transcode(AVFormatContext **output_files,
     AVInputStream *ist, **ist_table = NULL;
     AVInputFile *file_table;
     char error[1024];
-    int key;
     int want_sdp = 1;
     uint8_t no_packet[MAX_FILES]={0};
     int no_packet_count=0;
@@ -2456,14 +2441,8 @@ static int transcode(AVFormatContext **output_files,
         print_sdp(output_files, nb_output_files);
     }
 
-    if (!using_stdin && verbose >= 0) {
-#if HAVE_KBHIT
-        fprintf(stderr, "Press [q] to stop encoding\n");
-#else
+    if (verbose >= 0)
         fprintf(stderr, "Press ctrl-c to stop encoding\n");
-#endif
-        avio_set_interrupt_cb(decode_interrupt_cb);
-    }
     term_init();
 
     timer_start = av_gettime();
@@ -2477,15 +2456,6 @@ static int transcode(AVFormatContext **output_files,
     redo:
         ipts_min= 1e100;
         opts_min= 1e100;
-        /* if 'q' pressed, exits */
-        if (!using_stdin) {
-            if (q_pressed)
-                break;
-            /* read_key() returns 0 on EOF */
-            key = read_key();
-            if (key == 'q')
-                break;
-        }
 
         /* select the stream that we must read now by looking at the
            smallest output pts */
@@ -4372,10 +4342,7 @@ int main(int argc, char **argv)
 #endif
     av_register_all();
 
-#if HAVE_ISATTY
-    if(isatty(STDIN_FILENO))
-        avio_set_interrupt_cb(decode_interrupt_cb);
-#endif
+    avio_set_interrupt_cb(decode_interrupt_cb);
 
     init_opts();
 

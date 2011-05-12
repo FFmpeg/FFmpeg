@@ -8,6 +8,7 @@ version <next>:
 - fft and imdct optimizations for AVX (Sandy Bridge) processors
 - DPX image encoder
 - SMPTE 302M AES3 audio decoder
+- Remove support for quitting ffmpeg with 'q', ctrl+c should be used.
 
 
 version 0.7_beta1:
