@@ -168,7 +168,13 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
         }
         switch(s->compr){
         case TIFF_RAW:
-            memcpy(dst, src, width);
+            if (!s->fill_order) {
+                memcpy(dst, src, width);
+            } else {
+                int i;
+                for (i = 0; i < width; i++)
+                    dst[i] = av_reverse[src[i]];
+            }
             src += width;
             break;
         case TIFF_PACKBITS:

@@ -30,6 +30,8 @@
  * add sane pulse detection
  ***********************************/
 
+#include "libavutil/libm.h" // brought forward to work around cygwin header breakage
+
 #include <float.h>
 #include <math.h>
 #include "avcodec.h"
@@ -37,7 +39,6 @@
 #include "aac.h"
 #include "aacenc.h"
 #include "aactab.h"
-#include "libavutil/libm.h"
 
 /** bits needed to code codebook run value for long windows */
 static const uint8_t run_value_bits_long[64] = {

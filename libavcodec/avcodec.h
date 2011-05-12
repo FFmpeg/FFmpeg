@@ -232,6 +232,7 @@ enum CodecID {
     CODEC_ID_PCM_F64LE,
     CODEC_ID_PCM_BLURAY,
     CODEC_ID_PCM_LXF,
+    CODEC_ID_S302M,
 
     /* various ADPCM codecs */
     CODEC_ID_ADPCM_IMA_QT= 0x11000,

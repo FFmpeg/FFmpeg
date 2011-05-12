@@ -12,6 +12,8 @@ version <next>:
 - Lots of deprecated API cruft removed
 - fft and imdct optimizations for AVX (Sandy Bridge) processors
 - showinfo filter added
+- DPX image encoder
+- SMPTE 302M AES3 audio decoder
 
 
 version 0.7_beta1:

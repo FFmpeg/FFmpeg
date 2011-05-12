@@ -663,11 +663,11 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
         }
         if (*p == -1) {
             if(st->codec->pix_fmt != PIX_FMT_NONE)
-            av_log(NULL, AV_LOG_WARNING,
-                   "Incompatible pixel format '%s' for codec '%s', auto-selecting format '%s'\n",
-                   av_pix_fmt_descriptors[st->codec->pix_fmt].name,
-                   codec->name,
-                   av_pix_fmt_descriptors[codec->pix_fmts[0]].name);
+                av_log(NULL, AV_LOG_WARNING,
+                        "Incompatible pixel format '%s' for codec '%s', auto-selecting format '%s'\n",
+                        av_pix_fmt_descriptors[st->codec->pix_fmt].name,
+                        codec->name,
+                        av_pix_fmt_descriptors[codec->pix_fmts[0]].name);
             st->codec->pix_fmt = codec->pix_fmts[0];
         }
     }
