@@ -1272,14 +1272,14 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
     if((asf->index_read && st->index_entries)){
         index= av_index_search_timestamp(st, pts, flags);
         if(index >= 0) {
-        /* find the position */
-        pos = st->index_entries[index].pos;
+            /* find the position */
+            pos = st->index_entries[index].pos;
 
-        /* do the seek */
-        av_log(s, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos);
-        avio_seek(s->pb, pos, SEEK_SET);
-        asf_reset_header(s);
-        return 0;
+            /* do the seek */
+            av_log(s, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos);
+            avio_seek(s->pb, pos, SEEK_SET);
+            asf_reset_header(s);
+            return 0;
         }
     }
     /* no index or seeking by index failed */
