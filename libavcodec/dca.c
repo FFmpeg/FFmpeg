@@ -1793,6 +1793,10 @@ static int dca_decode_frame(AVCodecContext * avctx,
             s->output = DCA_STEREO;
             avctx->channel_layout = AV_CH_LAYOUT_STEREO;
         }
+        else if (avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE) {
+            static const int8_t dca_channel_order_native[9] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+            s->channel_order_tab = dca_channel_order_native;
+        }
     } else {
         av_log(avctx, AV_LOG_ERROR, "Non standard configuration %d !\n",s->amode);
         return -1;
