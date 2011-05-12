@@ -1797,18 +1797,23 @@ static int av_has_duration(AVFormatContext *ic)
  */
 static void av_update_stream_timings(AVFormatContext *ic)
 {
-    int64_t start_time, start_time1, end_time, end_time1;
+    int64_t start_time, start_time1, start_time_text, end_time, end_time1;
     int64_t duration, duration1;
     int i;
     AVStream *st;
 
     start_time = INT64_MAX;
+    start_time_text = INT64_MAX;
     end_time = INT64_MIN;
     duration = INT64_MIN;
     for(i = 0;i < ic->nb_streams; i++) {
         st = ic->streams[i];
         if (st->start_time != AV_NOPTS_VALUE && st->time_base.den) {
             start_time1= av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q);
+            if (st->codec->codec_id == CODEC_ID_DVB_TELETEXT) {
+                if (start_time1 < start_time_text)
+                    start_time_text = start_time1;
+            } else
             if (start_time1 < start_time)
                 start_time = start_time1;
             if (st->duration != AV_NOPTS_VALUE) {
@@ -1824,6 +1829,8 @@ static void av_update_stream_timings(AVFormatContext *ic)
                 duration = duration1;
         }
     }
+    if (start_time == INT64_MAX || (start_time > start_time_text && start_time - start_time_text < AV_TIME_BASE))
+        start_time = start_time_text;
     if (start_time != INT64_MAX) {
         ic->start_time = start_time;
         if (end_time != INT64_MIN) {
