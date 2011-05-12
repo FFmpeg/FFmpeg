@@ -4,11 +4,15 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+
+version 0.7_beta2:
+
 - Lots of deprecated API cruft removed
 - fft and imdct optimizations for AVX (Sandy Bridge) processors
 - DPX image encoder
 - SMPTE 302M AES3 audio decoder
 - Remove support for quitting ffmpeg with 'q', ctrl+c should be used.
+- 9bit and 10bit per sample support in the h264 decoder
 
 
 version 0.7_beta1:
