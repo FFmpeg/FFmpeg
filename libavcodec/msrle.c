@@ -53,6 +53,9 @@ static av_cold int msrle_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     switch (avctx->bits_per_coded_sample) {
+    case 1:
+        avctx->pix_fmt = PIX_FMT_MONOWHITE;
+        break;
     case 4:
     case 8:
         avctx->pix_fmt = PIX_FMT_PAL8;
