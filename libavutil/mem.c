@@ -24,6 +24,8 @@
  * default memory allocator for libavutil
  */
 
+#define _XOPEN_SOURCE 600
+
 #include "config.h"
 
 #include <limits.h>
