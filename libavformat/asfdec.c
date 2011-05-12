@@ -856,10 +856,6 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
         }
         //printf("Fragsize %d\n", asf->packet_frag_size);
     } else {
-        if (rsize > asf->packet_size_left) {
-            av_log(s, AV_LOG_ERROR, "packet_replic_size is invalid\n");
-            return -1;
-        }
         asf->packet_frag_size = asf->packet_size_left - rsize;
         //printf("Using rest  %d %d %d\n", asf->packet_frag_size, asf->packet_size_left, rsize);
     }
