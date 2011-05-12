@@ -381,7 +381,7 @@ static void guess_mv(MpegEncContext *s){
         fixed[mb_xy]= f;
         if(f==MV_FROZEN)
             num_avail++;
-        else if(s->last_picture.data[0]){
+        else if(s->last_picture.data[0] && s->last_picture.motion_val[0]){
             const int mb_y= mb_xy / s->mb_stride;
             const int mb_x= mb_xy % s->mb_stride;
             const int mot_index= (mb_x + mb_y*mot_stride) * mot_step;
