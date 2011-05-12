@@ -88,7 +88,7 @@ Configuration options:
   --disable-avcodec        disable libavcodec build
   --disable-avformat       disable libavformat build
   --disable-swscale        disable libswscale build
-  --enable-postproc        enable GPLed postprocessing support [no]
+  --disable-postproc       disable libpostproc build
   --disable-avfilter       disable video filter support [no]
   --disable-pthreads       disable pthreads [auto]
   --enable-w32threads      use Win32 threads [no]
@@ -1474,6 +1474,7 @@ yadif_filter_deps="gpl"
 # libraries
 avdevice_deps="avcodec avformat"
 avformat_deps="avcodec"
+postproc_deps="gpl"
 
 # programs
 ffmpeg_deps="avcodec avformat swscale"
@@ -1643,6 +1644,7 @@ enable ffprobe
 enable ffserver
 enable network
 enable optimizations
+enable postproc
 enable protocols
 enable static
 enable swscale
@@ -2531,7 +2533,6 @@ die_license_disabled() {
 die_license_disabled gpl libx264
 die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
-die_license_disabled gpl postproc
 die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libfaac
