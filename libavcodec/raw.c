@@ -122,6 +122,7 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { PIX_FMT_UYVY422, MKTAG('A', 'V', 'U', 'I') }, /* FIXME merge both fields */
     { PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', '2') },
     { PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', 's') },
+    { PIX_FMT_YUYV422, MKTAG('D', 'V', 'O', 'O') }, /* Digital Voodoo SD 8 Bit */
     { PIX_FMT_PAL8,    MKTAG('W', 'R', 'A', 'W') },
     { PIX_FMT_RGB555LE,MKTAG('L', '5', '5', '5') },
     { PIX_FMT_RGB565LE,MKTAG('L', '5', '6', '5') },
