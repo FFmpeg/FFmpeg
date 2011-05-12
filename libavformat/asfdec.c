@@ -852,7 +852,10 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
     }
     if (asf->packet_flags & 0x01) {
         DO_2BITS(asf->packet_segsizetype >> 6, asf->packet_frag_size, 0); // 0 is illegal
-        if(asf->packet_frag_size > asf->packet_size_left - rsize){
+        if (rsize > asf->packet_size_left) {
+            av_log(s, AV_LOG_ERROR, "packet_replic_size is invalid\n");
+            return -1;
+        } else if(asf->packet_frag_size > asf->packet_size_left - rsize){
             if (asf->packet_frag_size > asf->packet_size_left - rsize + asf->packet_padsize) {
                 av_log(s, AV_LOG_ERROR, "packet_frag_size is invalid (%d-%d)\n", asf->packet_size_left, rsize);
                 return -1;
