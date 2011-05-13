@@ -67,9 +67,6 @@ typedef struct {
     sem_t circular_buffer_semaphore;
 } UDPContext;
 
-#define min(X,Y)                ((X)<(Y) ? (X):(Y))
-#define max(X,Y)                ((X)>(Y) ? (X):(Y))
-
 #define UDP_TX_BUF_SIZE 32768
 #define UDP_MAX_PKT_SIZE 65536
 
@@ -351,7 +348,7 @@ static void *circular_buffer_task( void *_URLContext)
         left = s->circular_buffer_size-s->circular_buffer_head;
         /* Whats the minimum we can read so that we dont comletely fill the buffer */
         sem_wait( &s->circular_buffer_semaphore);
-        left = min( left, s->circular_buffer_size-s->circular_buffer_available);
+        left = FFMIN( left, s->circular_buffer_size-s->circular_buffer_available);
         sem_post( &s->circular_buffer_semaphore );
         /* No Space left, error, what do we do now */
         if( !left) {
@@ -369,7 +366,7 @@ static void *circular_buffer_task( void *_URLContext)
         s->circular_buffer_head += len;
         sem_wait( &s->circular_buffer_semaphore);
         s->circular_buffer_available += len;
-        s->circular_buffer_available_max = max( s->circular_buffer_available_max, s->circular_buffer_available);
+        s->circular_buffer_available_max = FFMAX( s->circular_buffer_available_max, s->circular_buffer_available);
         sem_post( &s->circular_buffer_semaphore );
         if( s->circular_buffer_head>=s->circular_buffer_size)
             s->circular_buffer_head -= s->circular_buffer_size;
@@ -560,11 +557,11 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
             if (avail) { // >=size) {
 
                 // Maximum amount available
-                size = min( avail, size);
+                size = FFMIN( avail, size);
                 // Whats left till the end of the circular buffer
                 left = s->circular_buffer_size-s->circular_buffer_tail;
                 // How much do we need, all?
-                left = min( left, size);
+                left = FFMIN( left, size);
                 // Get the first block
                 memcpy( buf, s->circular_buffer+s->circular_buffer_tail, left);
                 // Have we any more, this will be from the start of the buffer
