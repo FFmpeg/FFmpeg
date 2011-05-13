@@ -743,6 +743,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
             ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
                               avpkt);
             picture->pkt_dts= avpkt->dts;
+
+            if(!avctx->has_b_frames){
             picture->pkt_pos= avpkt->pos;
             if (!picture->sample_aspect_ratio.num)
                 picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
@@ -752,6 +754,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
                 picture->height = avctx->height;
             if (picture->format == PIX_FMT_NONE)
                 picture->format = avctx->pix_fmt;
+            }
         }
 
         emms_c(); //needed to avoid an emms_c() call before every return;
