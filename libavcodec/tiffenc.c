@@ -210,7 +210,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     uint32_t *strip_offsets = NULL;
     int bytes_per_row;
     uint32_t res[2] = { 72, 1 };        // image resolution (72/1)
-    static const uint16_t bpp_tab[] = { 8, 8, 8, 8 };
+    uint16_t bpp_tab[] = { 8, 8, 8, 8 };
     int ret = -1;
     int is_yuv = 0;
     uint8_t *yuv_line = NULL;
@@ -258,6 +258,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     case PIX_FMT_MONOWHITE:
         s->bpp = 1;
         s->photometric_interpretation = avctx->pix_fmt == PIX_FMT_MONOBLACK;
+        bpp_tab[0] = 1;
         break;
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
