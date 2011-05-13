@@ -255,12 +255,9 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         s->photometric_interpretation = 3;
         break;
     case PIX_FMT_MONOBLACK:
-        s->bpp = 1;
-        s->photometric_interpretation = 1;
-        break;
     case PIX_FMT_MONOWHITE:
         s->bpp = 1;
-        s->photometric_interpretation = 0;
+        s->photometric_interpretation = avctx->pix_fmt == PIX_FMT_MONOBLACK;
         break;
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
