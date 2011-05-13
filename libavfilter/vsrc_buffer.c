@@ -52,12 +52,12 @@ int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilte
         //return -1;
     }
 
-    if(!c->sws_param[0]){
+    if (!c->sws_param[0]) {
         snprintf(c->sws_param, 255, "%d:%d:%s", c->w, c->h, sws_param);
     }
 
     if (picref->video->w != c->w || picref->video->h != c->h || picref->format != c->pix_fmt) {
-        AVFilterContext *scale= buffer_filter->outputs[0]->dst;
+        AVFilterContext *scale = buffer_filter->outputs[0]->dst;
         AVFilterLink *link;
 
         av_log(buffer_filter, AV_LOG_INFO,
@@ -65,26 +65,26 @@ int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilte
                c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name,
                picref->video->w, picref->video->h, av_pix_fmt_descriptors[picref->format].name);
 
-        if(!scale || strcmp(scale->filter->name,"scale")){
-            AVFilter *f= avfilter_get_by_name("scale");
+        if (!scale || strcmp(scale->filter->name, "scale")) {
+            AVFilter *f = avfilter_get_by_name("scale");
 
             av_log(buffer_filter, AV_LOG_INFO, "Inserting scaler filter\n");
-            if(avfilter_open(&scale, f, "Input equalizer") < 0)
+            if (avfilter_open(&scale, f, "Input equalizer") < 0)
                 return -1;
 
-            if((ret=avfilter_init_filter(scale, c->sws_param, NULL))<0){
+            if ((ret = avfilter_init_filter(scale, c->sws_param, NULL)) < 0) {
                 avfilter_free(scale);
                 return ret;
             }
 
-            if((ret=avfilter_insert_filter(buffer_filter->outputs[0], scale, 0, 0))<0){
+            if ((ret = avfilter_insert_filter(buffer_filter->outputs[0], scale, 0, 0)) < 0) {
                 avfilter_free(scale);
                 return ret;
             }
             scale->outputs[0]->time_base = scale->inputs[0]->time_base;
 
             scale->outputs[0]->format= c->pix_fmt;
-        } else if(!strcmp(scale->filter->name, "scale")) {
+        } else if (!strcmp(scale->filter->name, "scale")) {
             snprintf(c->sws_param, 255, "%d:%d:%s", scale->outputs[0]->w, scale->outputs[0]->h, sws_param);
             scale->filter->init(scale, c->sws_param, NULL);
         }
@@ -93,7 +93,7 @@ int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilte
         c->w       = scale->inputs[0]->w      = picref->video->w;
         c->h       = scale->inputs[0]->h      = picref->video->h;
 
-        link= scale->outputs[0];
+        link = scale->outputs[0];
         if ((ret =  link->srcpad->config_props(link)) < 0)
             return ret;
     }
