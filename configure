@@ -1479,7 +1479,7 @@ mmst_protocol_deps="network"
 rtmp_protocol_select="tcp_protocol"
 rtp_protocol_select="udp_protocol"
 tcp_protocol_deps="network"
-udp_protocol_deps="network"
+udp_protocol_deps="network pthreads"
 
 # filters
 blackframe_filter_deps="gpl"
