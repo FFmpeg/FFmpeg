@@ -69,8 +69,8 @@ int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilte
             AVFilter *f = avfilter_get_by_name("scale");
 
             av_log(buffer_filter, AV_LOG_INFO, "Inserting scaler filter\n");
-            if (avfilter_open(&scale, f, "Input equalizer") < 0)
-                return -1;
+            if ((ret = avfilter_open(&scale, f, "Input equalizer")) < 0)
+                return ret;
 
             if ((ret = avfilter_init_filter(scale, c->sws_param, NULL)) < 0) {
                 avfilter_free(scale);
