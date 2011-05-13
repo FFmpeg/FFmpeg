@@ -1329,9 +1329,7 @@ static av_always_inline void filter_level_for_mb(VP8Context *s, VP8Macroblock *m
         filter_level += s->lf_delta.mode[mb->mode];
     }
 
-/* Like av_clip for inputs 0 and max, where max is equal to (2^n-1) */
-#define POW2CLIP(x,max) (((x) & ~max) ? (-(x))>>31 & max : (x));
-    filter_level = POW2CLIP(filter_level, 63);
+    filter_level = av_clip_uintp2(filter_level, 6);
 
     interior_limit = filter_level;
     if (s->filter.sharpness) {
