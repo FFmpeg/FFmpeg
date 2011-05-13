@@ -358,6 +358,7 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_YUV422P10LE \
         || (x)==PIX_FMT_YUV422P10BE \
     )
+#define is9_OR_10BPS isNBPS //for ronald
 #define isBE(x) ((x)&1)
 #define isPlanar8YUV(x) (           \
            (x)==PIX_FMT_YUV410P     \

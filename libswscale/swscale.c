@@ -1875,23 +1875,23 @@ static int packedCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
     return srcSliceH;
 }
 
-#define DITHER_COPY(dst, dstStride, src, srcStride, bswap)\
+#define DITHER_COPY(dst, dstStride, src, srcStride, bswap, dbswap)\
     uint16_t scale= dither_scale[dst_depth-1][src_depth-1];\
     int shift= src_depth-dst_depth + dither_scale[src_depth-2][dst_depth-1];\
     for (i = 0; i < height; i++) {\
         uint8_t *dither= dithers[src_depth-9][i&7];\
         for (j = 0; j < length-7; j+=8){\
-            dst[j+0] = (bswap(src[j+0]) + dither[0])*scale>>shift;\
-            dst[j+1] = (bswap(src[j+1]) + dither[1])*scale>>shift;\
-            dst[j+2] = (bswap(src[j+2]) + dither[2])*scale>>shift;\
-            dst[j+3] = (bswap(src[j+3]) + dither[3])*scale>>shift;\
-            dst[j+4] = (bswap(src[j+4]) + dither[4])*scale>>shift;\
-            dst[j+5] = (bswap(src[j+5]) + dither[5])*scale>>shift;\
-            dst[j+6] = (bswap(src[j+6]) + dither[6])*scale>>shift;\
-            dst[j+7] = (bswap(src[j+7]) + dither[7])*scale>>shift;\
+            dst[j+0] = dbswap((bswap(src[j+0]) + dither[0])*scale>>shift);\
+            dst[j+1] = dbswap((bswap(src[j+1]) + dither[1])*scale>>shift);\
+            dst[j+2] = dbswap((bswap(src[j+2]) + dither[2])*scale>>shift);\
+            dst[j+3] = dbswap((bswap(src[j+3]) + dither[3])*scale>>shift);\
+            dst[j+4] = dbswap((bswap(src[j+4]) + dither[4])*scale>>shift);\
+            dst[j+5] = dbswap((bswap(src[j+5]) + dither[5])*scale>>shift);\
+            dst[j+6] = dbswap((bswap(src[j+6]) + dither[6])*scale>>shift);\
+            dst[j+7] = dbswap((bswap(src[j+7]) + dither[7])*scale>>shift);\
         }\
         for (; j < length; j++)\
-            dst[j] = (bswap(src[j]) + dither[j&7])*scale>>shift;\
+            dst[j] = dbswap((bswap(src[j]) + dither[j&7])*scale>>shift);\
         dst += dstStride;\
         src += srcStride;\
     }
@@ -1921,42 +1921,66 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
             ) {
                 const int src_depth = av_pix_fmt_descriptors[c->srcFormat].comp[plane].depth_minus1+1;
                 const int dst_depth = av_pix_fmt_descriptors[c->dstFormat].comp[plane].depth_minus1+1;
-                uint16_t *srcPtr2 = (uint16_t*)srcPtr;
+                const uint16_t *srcPtr2 = (const uint16_t*)srcPtr;
                 uint16_t *dstPtr2 = (uint16_t*)dstPtr;
 
                 if (dst_depth == 8) {
                     if(isBE(c->srcFormat) == HAVE_BIGENDIAN){
-                        DITHER_COPY(dstPtr, dstStride[plane], srcPtr2, srcStride[plane]/2, )
+                        DITHER_COPY(dstPtr, dstStride[plane], srcPtr2, srcStride[plane]/2, , )
                     } else {
-                        DITHER_COPY(dstPtr, dstStride[plane], srcPtr2, srcStride[plane]/2, av_bswap16)
+                        DITHER_COPY(dstPtr, dstStride[plane], srcPtr2, srcStride[plane]/2, av_bswap16, )
                     }
                 } else if (src_depth == 8) {
                     for (i = 0; i < height; i++) {
-                        for (j = 0; j < length; j++)
-                            dstPtr2[j] = (srcPtr[j]<<(dst_depth-8)) |
-                                (srcPtr[j]>>(2*8-dst_depth));
+                        if(isBE(c->dstFormat)){
+                            for (j = 0; j < length; j++)
+                                AV_WB16(&dstPtr2[j], (srcPtr[j]<<(dst_depth-8)) |
+                                                     (srcPtr[j]>>(2*8-dst_depth)));
+                        } else {
+                            for (j = 0; j < length; j++)
+                                AV_WL16(&dstPtr2[j], (srcPtr[j]<<(dst_depth-8)) |
+                                                     (srcPtr[j]>>(2*8-dst_depth)));
+                        }
                         dstPtr2 += dstStride[plane]/2;
                         srcPtr  += srcStride[plane];
                     }
                 } else if (src_depth <= dst_depth) {
                     for (i = 0; i < height; i++) {
-                        if(isBE(c->dstFormat)){
-                            for (j = 0; j < length; j++)
-                                AV_WB16(&dstPtr2[j], (srcPtr2[j]<<(dst_depth-src_depth)) |
-                                                     (srcPtr2[j]>>(2*src_depth-dst_depth)));
-                        }else{
-                            for (j = 0; j < length; j++)
-                                AV_WL16(&dstPtr2[j], (srcPtr2[j]<<(dst_depth-src_depth)) |
-                                                     (srcPtr2[j]>>(2*src_depth-dst_depth)));
+#define COPY_UP(r,w) \
+    for (j = 0; j < length; j++){ \
+        unsigned int v= r(&srcPtr2[j]);\
+        w(&dstPtr2[j], (v<<(dst_depth-src_depth)) | \
+                       (v>>(2*src_depth-dst_depth)));\
+    }
+                        if(isBE(c->srcFormat)){
+                            if(isBE(c->dstFormat)){
+                                COPY_UP(AV_RB16, AV_WB16)
+                            } else {
+                                COPY_UP(AV_RB16, AV_WL16)
+                            }
+                        } else {
+                            if(isBE(c->dstFormat)){
+                                COPY_UP(AV_RL16, AV_WB16)
+                            } else {
+                                COPY_UP(AV_RL16, AV_WL16)
+                            }
                         }
                         dstPtr2 += dstStride[plane]/2;
                         srcPtr2 += srcStride[plane]/2;
                     }
                 } else {
                     if(isBE(c->srcFormat) == HAVE_BIGENDIAN){
-                        DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, )
+                        if(isBE(c->dstFormat) == HAVE_BIGENDIAN){
+                            DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, , )
+                        } else {
+                            DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, , av_bswap16)
+                        }
                     }else{
-                        DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, av_bswap16)
+                        if(isBE(c->dstFormat) == HAVE_BIGENDIAN){
+                            DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, av_bswap16, )
+                        } else {
+                            DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, av_bswap16, av_bswap16)
+                        }
                     }
                 }
             } else if(is16BPS(c->srcFormat) && is16BPS(c->dstFormat)

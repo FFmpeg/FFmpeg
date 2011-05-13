@@ -25,9 +25,6 @@
  * @author Adam Thayer (krevnik@comcast.net)
  */
 
-/* needed for mkstemp() */
-#define _XOPEN_SOURCE 600
-
 #include <xvid.h>
 #include <unistd.h>
 #include "avcodec.h"

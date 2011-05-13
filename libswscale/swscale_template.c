@@ -1678,6 +1678,8 @@ static inline void RENAME(LEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *s
     );
 #else
     int i;
+    // FIXME I don't think this code is right for YUV444/422, since then h is not subsampled so
+    // we need to skip each second pixel. Same for BEToUV.
     for (i=0; i<width; i++) {
         dstU[i]= src1[2*i + 1];
         dstV[i]= src2[2*i + 1];
@@ -1827,27 +1829,29 @@ static inline void RENAME(nv21ToUV)(uint8_t *dstU, uint8_t *dstV,
 }
 
 // FIXME Maybe dither instead.
-#define YUV_NBPS(depth) \
-static inline void RENAME(yuv ## depth ## ToUV)(uint8_t *dstU, uint8_t *dstV, \
-                                     const uint16_t *srcU, const uint16_t *srcV, \
-                                     long width, uint32_t *unused) \
+#define YUV_NBPS(depth, endianness, rfunc) \
+static inline void endianness ## depth ## ToUV_c(uint8_t *dstU, uint8_t *dstV, \
+                                          const uint16_t *srcU, const uint16_t *srcV, \
+                                          long width, uint32_t *unused) \
 { \
     int i; \
     for (i = 0; i < width; i++) { \
-        dstU[i] = srcU[i]>>(depth-8); \
-        dstV[i] = srcV[i]>>(depth-8); \
+        dstU[i] = rfunc(&srcU[i])>>(depth-8); \
+        dstV[i] = rfunc(&srcV[i])>>(depth-8); \
     } \
 } \
 \
-static inline void RENAME(yuv ## depth ## ToY)(uint8_t *dstY, const uint16_t *srcY, long width, uint32_t *unused) \
+static inline void endianness ## depth ## ToY_c(uint8_t *dstY, const uint16_t *srcY, long width, uint32_t *unused) \
 { \
     int i; \
     for (i = 0; i < width; i++) \
-        dstY[i] = srcY[i]>>(depth-8); \
+        dstY[i] = rfunc(&srcY[i])>>(depth-8); \
 } \
 
-YUV_NBPS( 9)
-YUV_NBPS(10)
+YUV_NBPS( 9, LE, AV_RL16)
+YUV_NBPS( 9, BE, AV_RB16)
+YUV_NBPS(10, LE, AV_RL16)
+YUV_NBPS(10, BE, AV_RB16)
 
 #if COMPILE_TEMPLATE_MMX
 static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long width, enum PixelFormat srcFormat)
@@ -2978,9 +2982,12 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_PAL8     :
         case PIX_FMT_BGR4_BYTE:
         case PIX_FMT_RGB4_BYTE: c->chrToYV12 = palToUV; break;
-        case PIX_FMT_YUV420P9 : c->chrToYV12 = (void*)RENAME(yuv9ToUV ); break;
-        case PIX_FMT_YUV422P10:
-        case PIX_FMT_YUV420P10: c->chrToYV12 = (void*)RENAME(yuv10ToUV); break;
+        case PIX_FMT_YUV420P9BE: c->chrToYV12 = BE9ToUV_c; break;
+        case PIX_FMT_YUV420P9LE: c->chrToYV12 = LE9ToUV_c; break;
+        case PIX_FMT_YUV422P10BE:
+        case PIX_FMT_YUV420P10BE: c->chrToYV12 = BE10ToUV_c; break;
+        case PIX_FMT_YUV422P10LE:
+        case PIX_FMT_YUV420P10LE: c->chrToYV12 = LE10ToUV_c; break;
         case PIX_FMT_YUV420P16BE:
         case PIX_FMT_YUV422P16BE:
         case PIX_FMT_YUV444P16BE: c->chrToYV12 = RENAME(BEToUV); break;
@@ -3027,9 +3034,12 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     c->lumToYV12 = NULL;
     c->alpToYV12 = NULL;
     switch (srcFormat) {
-    case PIX_FMT_YUV420P9 : c->lumToYV12 = (void*)RENAME(yuv9ToY ); break;
-    case PIX_FMT_YUV422P10:
-    case PIX_FMT_YUV420P10: c->lumToYV12 = (void*)RENAME(yuv10ToY); break;
+    case PIX_FMT_YUV420P9BE: c->lumToYV12 = BE9ToY_c; break;
+    case PIX_FMT_YUV420P9LE: c->lumToYV12 = LE9ToY_c; break;
+    case PIX_FMT_YUV422P10BE:
+    case PIX_FMT_YUV420P10BE: c->lumToYV12 = BE10ToY_c; break;
+    case PIX_FMT_YUV422P10LE:
+    case PIX_FMT_YUV420P10LE: c->lumToYV12 = LE10ToY_c; break;
     case PIX_FMT_YUYV422  :
     case PIX_FMT_YUV420P16BE:
     case PIX_FMT_YUV422P16BE:

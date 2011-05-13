@@ -2166,13 +2166,13 @@ free_and_return:
 static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVStreamContext *sc;
-    int i, edit_count;
+    int i, edit_count, version;
 
     if (c->fc->nb_streams < 1)
         return 0;
     sc = c->fc->streams[c->fc->nb_streams-1]->priv_data;
 
-    avio_r8(pb); /* version */
+    version = avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
     edit_count = avio_rb32(pb); /* entries */
 
@@ -2180,9 +2180,15 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return -1;
 
     for(i=0; i<edit_count; i++){
-        int time;
-        int duration = avio_rb32(pb); /* Track duration */
-        time = avio_rb32(pb); /* Media time */
+        int64_t time;
+        int64_t duration;
+        if (version == 1) {
+            duration = avio_rb64(pb);
+            time     = avio_rb64(pb);
+        } else {
+            duration = avio_rb32(pb); /* segment duration */
+            time     = avio_rb32(pb); /* media time */
+        }
         avio_rb32(pb); /* Media rate */
         if (i == 0 && time >= -1) {
             sc->time_offset = time != -1 ? time : -duration;

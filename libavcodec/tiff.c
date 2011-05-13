@@ -38,7 +38,7 @@ typedef struct TiffContext {
     AVFrame picture;
 
     int width, height;
-    unsigned int bpp;
+    unsigned int bpp, bppcount;
     int le;
     enum TiffCompr compr;
     int invert;
@@ -214,6 +214,55 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
     return 0;
 }
 
+static int init_image(TiffContext *s)
+{
+    int i, ret;
+    uint32_t *pal;
+
+    switch (s->bpp * 10 + s->bppcount) {
+    case 11:
+        s->avctx->pix_fmt = PIX_FMT_MONOBLACK;
+        break;
+    case 81:
+        s->avctx->pix_fmt = PIX_FMT_PAL8;
+        break;
+    case 243:
+        s->avctx->pix_fmt = PIX_FMT_RGB24;
+        break;
+    case 161:
+        s->avctx->pix_fmt = PIX_FMT_GRAY16BE;
+        break;
+    case 324:
+        s->avctx->pix_fmt = PIX_FMT_RGBA;
+        break;
+    case 483:
+        s->avctx->pix_fmt = s->le ? PIX_FMT_RGB48LE : PIX_FMT_RGB48BE;
+        break;
+    default:
+        av_log(s->avctx, AV_LOG_ERROR,
+               "This format is not supported (bpp=%d, bppcount=%d)\n",
+               s->bpp, s->bppcount);
+        return AVERROR_INVALIDDATA;
+    }
+    if (s->width != s->avctx->width || s->height != s->avctx->height) {
+        if ((ret = av_image_check_size(s->width, s->height, 0, s->avctx)) < 0)
+            return ret;
+        avcodec_set_dimensions(s->avctx, s->width, s->height);
+    }
+    if (s->picture.data[0])
+        s->avctx->release_buffer(s->avctx, &s->picture);
+    if ((ret = s->avctx->get_buffer(s->avctx, &s->picture)) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
+    if (s->bpp == 8 && s->picture.data[1]){
+        /* make default grayscale pal */
+        pal = (uint32_t *) s->picture.data[1];
+        for (i = 0; i < 256; i++)
+            pal[i] = i * 0x010101;
+    }
+    return 0;
+}
 
 static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *buf, const uint8_t *end_buf)
 {
@@ -267,6 +316,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
         s->height = value;
         break;
     case TIFF_BPP:
+        s->bppcount = count;
         if(count > 4){
             av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%d, %d components)\n", s->bpp, count);
             return -1;
@@ -286,46 +336,16 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
                 s->bpp = -1;
             }
         }
-        switch(s->bpp*10 + count){
-        case 11:
-            s->avctx->pix_fmt = PIX_FMT_MONOBLACK;
-            break;
-        case 81:
-            s->avctx->pix_fmt = PIX_FMT_PAL8;
-            break;
-        case 243:
-            s->avctx->pix_fmt = PIX_FMT_RGB24;
-            break;
-        case 161:
-            s->avctx->pix_fmt = PIX_FMT_GRAY16BE;
-            break;
-        case 324:
-            s->avctx->pix_fmt = PIX_FMT_RGBA;
-            break;
-        case 483:
-            s->avctx->pix_fmt = s->le ? PIX_FMT_RGB48LE : PIX_FMT_RGB48BE;
-            break;
-        default:
-            av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%d, %d components)\n", s->bpp, count);
-            return -1;
+        break;
+    case TIFF_SAMPLES_PER_PIXEL:
+        if (count != 1) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Samples per pixel requires a single value, many provided\n");
+            return AVERROR_INVALIDDATA;
         }
-        if(s->width != s->avctx->width || s->height != s->avctx->height){
-            if(av_image_check_size(s->width, s->height, 0, s->avctx))
-                return -1;
-            avcodec_set_dimensions(s->avctx, s->width, s->height);
-        }
-        if(s->picture.data[0])
-            s->avctx->release_buffer(s->avctx, &s->picture);
-        if(s->avctx->get_buffer(s->avctx, &s->picture) < 0){
-            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            return -1;
-        }
-        if(s->bpp == 8){
-            /* make default grayscale pal */
-            pal = (uint32_t *) s->picture.data[1];
-            for(i = 0; i < 256; i++)
-                pal[i] = i * 0x010101;
-        }
+        if (s->bppcount == 1)
+            s->bpp *= value;
+        s->bppcount = value;
         break;
     case TIFF_COMPR:
         s->compr = value;
@@ -468,7 +488,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *picture = data;
     AVFrame * const p= (AVFrame*)&s->picture;
     const uint8_t *orig_buf = buf, *end_buf = buf + buf_size;
-    int id, le, off;
+    int id, le, off, ret;
     int i, j, entries;
     int stride, soff, ssize;
     uint8_t *dst;
@@ -509,21 +529,9 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
     /* now we have the data and may start decoding */
-    if(!p->data[0]){
-        s->bpp = 1;
-        avctx->pix_fmt = PIX_FMT_MONOBLACK;
-        if(s->width != s->avctx->width || s->height != s->avctx->height){
-            if(av_image_check_size(s->width, s->height, 0, s->avctx))
-                return -1;
-            avcodec_set_dimensions(s->avctx, s->width, s->height);
-        }
-        if(s->picture.data[0])
-            s->avctx->release_buffer(s->avctx, &s->picture);
-        if(s->avctx->get_buffer(s->avctx, &s->picture) < 0){
-            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            return -1;
-        }
-    }
+    if ((ret = init_image(s)) < 0)
+        return ret;
+
     if(s->strips == 1 && !s->stripsize){
         av_log(avctx, AV_LOG_WARNING, "Image data size missing\n");
         s->stripsize = buf_size - s->stripoff;
