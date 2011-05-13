@@ -10,6 +10,7 @@ version 0.6.3:
 - lavf: inspect more frames for fps when container time base is coarse
 - AMV: disable DR1 and don't override EMU_EDGE
   (addresses http://seclists.org/bugtraq/2011/Apr/257)
+- AAC encoding via libvo-aacenc
 
 
 version 0.6.2:

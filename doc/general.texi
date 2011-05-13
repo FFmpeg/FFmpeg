@@ -511,7 +511,7 @@ following image formats are supported:
 @item Name @tab Encoding @tab Decoding @tab Comments
 @item 8SVX audio             @tab     @tab  X
 @item AAC                    @tab  E  @tab  X
-    @tab encoding supported through external library libfaac
+    @tab encoding supported through external library libfaac and libvo-aacenc
 @item AC-3                   @tab IX  @tab  X
 @item ADPCM 4X Movie         @tab     @tab  X
 @item ADPCM CDROM XA         @tab     @tab  X
