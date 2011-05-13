@@ -218,6 +218,20 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
     int i;
     int shift = 11 + 16 - output_bits;
 
+#define output_pixel(pos, val) \
+    if (big_endian) { \
+        if (output_bits == 16) { \
+            AV_WB16(pos, av_clip_uint16(val >> shift)); \
+        } else { \
+            AV_WB16(pos, av_clip_uintp2(val >> shift, output_bits)); \
+        } \
+    } else { \
+        if (output_bits == 16) { \
+            AV_WL16(pos, av_clip_uint16(val >> shift)); \
+        } else { \
+            AV_WL16(pos, av_clip_uintp2(val >> shift, output_bits)); \
+        } \
+    }
     for (i = 0; i < dstW; i++) {
         int val = 1 << 10;
         int j;
@@ -225,11 +239,7 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
         for (j = 0; j < lumFilterSize; j++)
             val += lumSrc[j][i] * lumFilter[j];
 
-        if (big_endian) {
-            AV_WB16(&dest[i], av_clip_uint16(val >> shift));
-        } else {
-            AV_WL16(&dest[i], av_clip_uint16(val >> shift));
-        }
+        output_pixel(&dest[i], val);
     }
 
     if (uDest) {
@@ -243,13 +253,8 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
                 v += chrSrc[j][i + VOFW] * chrFilter[j];
             }
 
-            if (big_endian) {
-                AV_WB16(&uDest[i], av_clip_uint16(u >> shift));
-                AV_WB16(&vDest[i], av_clip_uint16(v >> shift));
-            } else {
-                AV_WL16(&uDest[i], av_clip_uint16(u >> shift));
-                AV_WL16(&vDest[i], av_clip_uint16(v >> shift));
-            }
+            output_pixel(&uDest[i], u);
+            output_pixel(&vDest[i], v);
         }
     }
 
@@ -261,11 +266,7 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
             for (j = 0; j < lumFilterSize; j++)
                 val += alpSrc[j][i] * lumFilter[j];
 
-            if (big_endian) {
-                AV_WB16(&aDest[i], av_clip_uint16(val >> shift));
-            } else {
-                AV_WL16(&aDest[i], av_clip_uint16(val >> shift));
-            }
+            output_pixel(&aDest[i], val);
         }
     }
 }
