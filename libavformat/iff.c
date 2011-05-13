@@ -232,21 +232,10 @@ static int iff_read_header(AVFormatContext *s,
             break;
 
         case ID_ANNO:
-        case ID_TEXT:
-            metadata_tag = "comment";
-            break;
-
-        case ID_AUTH:
-            metadata_tag = "artist";
-            break;
-
-        case ID_COPYRIGHT:
-            metadata_tag = "copyright";
-            break;
-
-        case ID_NAME:
-            metadata_tag = "title";
-            break;
+        case ID_TEXT:      metadata_tag = "comment";   break;
+        case ID_AUTH:      metadata_tag = "artist";    break;
+        case ID_COPYRIGHT: metadata_tag = "copyright"; break;
+        case ID_NAME:      metadata_tag = "title";     break;
         }
 
         if (metadata_tag) {
