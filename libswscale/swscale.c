@@ -271,6 +271,27 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
     }
 }
 
+#define yuv2NBPS(bits, BE_LE, is_be) \
+static void yuv2yuvX ## bits ## BE_LE ## _c(const int16_t *lumFilter, \
+                              const int16_t **lumSrc, int lumFilterSize, \
+                              const int16_t *chrFilter, const int16_t **chrSrc, \
+                              int chrFilterSize, const int16_t **alpSrc, \
+                              uint16_t *dest, uint16_t *uDest, uint16_t *vDest, \
+                              uint16_t *aDest, int dstW, int chrDstW) \
+{ \
+    yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize, \
+                           chrFilter, chrSrc, chrFilterSize, \
+                           alpSrc, \
+                           dest, uDest, vDest, aDest, \
+                           dstW, chrDstW, is_be, bits); \
+}
+yuv2NBPS( 9, BE, 1);
+yuv2NBPS( 9, LE, 0);
+yuv2NBPS(10, BE, 1);
+yuv2NBPS(10, LE, 0);
+yuv2NBPS(16, BE, 1);
+yuv2NBPS(16, LE, 0);
+
 static inline void yuv2yuvX16inC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                  const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                                  const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest, int dstW, int chrDstW,
@@ -278,17 +299,17 @@ static inline void yuv2yuvX16inC(const int16_t *lumFilter, const int16_t **lumSr
 {
 #define conv16(bits) \
     if (isBE(dstFormat)) { \
-        yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize, \
+        yuv2yuvX ## bits ## BE_c(lumFilter, lumSrc, lumFilterSize, \
                                chrFilter, chrSrc, chrFilterSize, \
                                alpSrc, \
                                dest, uDest, vDest, aDest, \
-                               dstW, chrDstW, 1, bits); \
+                               dstW, chrDstW); \
     } else { \
-        yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize, \
+        yuv2yuvX ## bits ## LE_c(lumFilter, lumSrc, lumFilterSize, \
                                chrFilter, chrSrc, chrFilterSize, \
                                alpSrc, \
                                dest, uDest, vDest, aDest, \
-                               dstW, chrDstW, 0, bits); \
+                               dstW, chrDstW); \
     }
     if (is16BPS(dstFormat)) {
         conv16(16);
