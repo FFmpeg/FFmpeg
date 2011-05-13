@@ -637,15 +637,6 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         s->low_delay= s->max_b_frames ? 0 : 1;
         avctx->delay= s->low_delay ? 0 : (s->max_b_frames + 1);
         break;
-    case CODEC_ID_MSMPEG4V1:
-        s->out_format = FMT_H263;
-        s->h263_msmpeg4 = 1;
-        s->h263_pred = 1;
-        s->unrestricted_mv = 1;
-        s->msmpeg4_version= 1;
-        avctx->delay=0;
-        s->low_delay=1;
-        break;
     case CODEC_ID_MSMPEG4V2:
         s->out_format = FMT_H263;
         s->h263_msmpeg4 = 1;
@@ -3803,18 +3794,6 @@ AVCodec ff_h263p_encoder = {
     .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
-};
-
-AVCodec ff_msmpeg4v1_encoder = {
-    "msmpeg4v1",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_MSMPEG4V1,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 1"),
 };
 
 AVCodec ff_msmpeg4v2_encoder = {
