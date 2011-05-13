@@ -34,6 +34,9 @@
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
+#include <pthread.h>
+#include <semaphore.h>
+#include <sys/resource.h>
 #include <sys/time.h>
 
 #ifndef IPV6_ADD_MEMBERSHIP
@@ -51,7 +54,21 @@ typedef struct {
     struct sockaddr_storage dest_addr;
     int dest_addr_len;
     int is_connected;
+
+    /* Circular Buffer variables for use in UDP receive code */
+    unsigned char *circular_buffer;
+    int circular_buffer_head;
+    int circular_buffer_size;
+    int circular_buffer_tail;
+    int circular_buffer_available;
+    int circular_buffer_available_max;
+    int circular_buffer_error;
+    pthread_t circular_buffer_thread;
+    sem_t circular_buffer_semaphore;
 } UDPContext;
+
+#define min(X,Y)                ((X)<(Y) ? (X):(Y))
+#define max(X,Y)                ((X)>(Y) ? (X):(Y))
 
 #define UDP_TX_BUF_SIZE 32768
 #define UDP_MAX_PKT_SIZE 65536
@@ -298,6 +315,69 @@ static int udp_get_file_handle(URLContext *h)
     return s->udp_fd;
 }
 
+static void *circular_buffer_task( void *_URLContext)
+{
+    URLContext *h = _URLContext;
+    UDPContext *s = h->priv_data;
+    fd_set rfds;
+    struct timeval tv;
+
+    for(;;) {
+        int left;
+        int ret;
+        int len;
+
+        if (url_interrupt_cb()) {
+            s->circular_buffer_error = EINTR;
+            return NULL;
+        }
+
+        FD_ZERO(&rfds);
+        FD_SET(s->udp_fd, &rfds);
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+        ret = select(s->udp_fd + 1, &rfds, NULL, NULL, &tv);
+        if (ret < 0) {
+            if (ff_neterrno() == AVERROR(EINTR))
+                continue;
+            s->circular_buffer_error = EIO;
+            return NULL;
+        }
+
+        if (!(ret > 0 && FD_ISSET(s->udp_fd, &rfds)))
+            continue;
+
+        /* How much do we have left to the end of the buffer */
+        left = s->circular_buffer_size-s->circular_buffer_head;
+        /* Whats the minimum we can read so that we dont comletely fill the buffer */
+        sem_wait( &s->circular_buffer_semaphore);
+        left = min( left, s->circular_buffer_size-s->circular_buffer_available);
+        sem_post( &s->circular_buffer_semaphore );
+        /* No Space left, error, what do we do now */
+        if( !left) {
+            av_log(h, AV_LOG_ERROR, "circular_buffer: OVERRUN\n");
+            s->circular_buffer_error = EIO;
+            return NULL;
+        }
+        len = recv(s->udp_fd, s->circular_buffer+s->circular_buffer_head, left, 0);
+        if (len < 0) {
+            if (ff_neterrno() != AVERROR(EAGAIN) && ff_neterrno() != AVERROR(EINTR)) {
+                s->circular_buffer_error = EIO;
+                return NULL;
+            }
+        }
+        s->circular_buffer_head += len;
+        sem_wait( &s->circular_buffer_semaphore);
+        s->circular_buffer_available += len;
+        s->circular_buffer_available_max = max( s->circular_buffer_available_max, s->circular_buffer_available);
+        sem_post( &s->circular_buffer_semaphore );
+        if( s->circular_buffer_head>=s->circular_buffer_size)
+            s->circular_buffer_head -= s->circular_buffer_size;
+    }
+
+    return NULL;
+}
+
 /* put it in UDP context */
 /* return non zero if error */
 static int udp_open(URLContext *h, const char *uri, int flags)
@@ -325,10 +405,12 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     s->ttl = 16;
     s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_MAX_PKT_SIZE;
 
+    s->circular_buffer_size = 7*188*4096;
+
     p = strchr(uri, '?');
     if (p) {
         if (av_find_info_tag(buf, sizeof(buf), "reuse", p)) {
-            const char *endptr=NULL;
+            char *endptr=NULL;
             s->reuse_socket = strtol(buf, &endptr, 10);
             /* assume if no digits were found it is a request to enable it */
             if (buf == endptr)
@@ -349,6 +431,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "connect", p)) {
             s->is_connected = strtol(buf, NULL, 10);
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "buf_size", p)) {
+            s->circular_buffer_size = strtol(buf, NULL, 10)*188;
         }
     }
 
@@ -431,10 +516,28 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     }
 
     s->udp_fd = udp_fd;
+
+    if (!is_output && s->circular_buffer_size) {
+        /* start the task going */
+        s->circular_buffer = av_malloc( s->circular_buffer_size);
+        if (sem_init( &s->circular_buffer_semaphore, PTHREAD_PROCESS_PRIVATE, 1 )) {
+            av_log(h, AV_LOG_ERROR, "sem_init failed\n");
+            goto fail;
+        }
+        if (pthread_create(&s->circular_buffer_thread, NULL, circular_buffer_task, h)) {
+            av_log(h, AV_LOG_ERROR, "pthread_create failed\n");
+            goto fail;
+        }
+    }
+
     return 0;
  fail:
     if (udp_fd >= 0)
         closesocket(udp_fd);
+        if (s->circular_buffer) {
+            sem_destroy( &s->circular_buffer_semaphore);
+            av_free( s->circular_buffer);
+        }
     av_free(s);
     return AVERROR(EIO);
 }
@@ -443,6 +546,51 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
     int ret;
+    int avail;
+    int left;
+    fd_set rfds;
+    struct timeval tv;
+
+    if (s->circular_buffer_thread) {
+
+        do {
+            sem_wait( &s->circular_buffer_semaphore );
+            avail = s->circular_buffer_available;
+            sem_post( &s->circular_buffer_semaphore );
+            if (avail) { // >=size) {
+
+                // Maximum amount available
+                size = min( avail, size);
+                // Whats left till the end of the circular buffer
+                left = s->circular_buffer_size-s->circular_buffer_tail;
+                // How much do we need, all?
+                left = min( left, size);
+                // Get the first block
+                memcpy( buf, s->circular_buffer+s->circular_buffer_tail, left);
+                // Have we any more, this will be from the start of the buffer
+                if (size-left)
+                    memcpy( buf+left, s->circular_buffer, size-left);
+                // Check for the tail wrapping around
+                s->circular_buffer_tail += size;
+                if( s->circular_buffer_tail>=s->circular_buffer_size)
+                    s->circular_buffer_tail -= s->circular_buffer_size;
+                // Update the available amount
+                sem_wait( &s->circular_buffer_semaphore );
+                s->circular_buffer_available -= size;
+                sem_post( &s->circular_buffer_semaphore );
+                return size;
+            }
+            else {
+                FD_ZERO(&rfds);
+                FD_SET(s->udp_fd, &rfds);
+                tv.tv_sec = 1;
+                tv.tv_usec = 0;
+                ret = select(s->udp_fd + 1, &rfds, NULL, NULL, &tv);
+                if (ret<0)
+                    return ret;
+            }
+        } while( 1);
+    }
 
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
         ret = ff_network_wait_fd(s->udp_fd, 0);
@@ -450,6 +598,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
             return ret;
     }
     ret = recv(s->udp_fd, buf, size, 0);
+
     return ret < 0 ? ff_neterrno() : ret;
 }
 
@@ -481,6 +630,11 @@ static int udp_close(URLContext *h)
     if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
     closesocket(s->udp_fd);
+    if (s->circular_buffer) {
+        sem_destroy( &s->circular_buffer_semaphore);
+        av_free( s->circular_buffer);
+        av_log( h, AV_LOG_INFO, "circular_buffer_info max:%d%%\r\n", (s->circular_buffer_available_max*100)/s->circular_buffer_size);
+    }
     av_free(s);
     return 0;
 }
