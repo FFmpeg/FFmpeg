@@ -2591,6 +2591,18 @@ static int transcode(AVFormatContext **output_files,
             key = read_key();
             if (key == 'q')
                 break;
+            if (key == '+') verbose++;
+            if (key == '-') verbose--;
+            if (key == 's') qp_hist     ^= 1;
+            if (key == 'h'){
+                if (do_hex_dump){
+                    do_hex_dump = do_pkt_dump = 0;
+                } else if(do_pkt_dump){
+                    do_hex_dump = 1;
+                } else
+                    do_pkt_dump = 1;
+                av_log_set_level(AV_LOG_DEBUG);
+            }
         }
 
         /* select the stream that we must read now by looking at the
