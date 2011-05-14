@@ -121,6 +121,7 @@ static int raw_decode(AVCodecContext *avctx,
     AVFrame * frame = (AVFrame *) data;
     AVPicture * picture = (AVPicture *) data;
 
+    frame->pict_type        = avctx->coded_frame->pict_type;
     frame->interlaced_frame = avctx->coded_frame->interlaced_frame;
     frame->top_field_first = avctx->coded_frame->top_field_first;
     frame->reordered_opaque = avctx->reordered_opaque;
