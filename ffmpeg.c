@@ -1650,11 +1650,9 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         picture.sample_aspect_ratio = ist->st->sample_aspect_ratio;
                     picture.pts = ist->pts;
 
-                    picref = avfilter_get_video_buffer_ref_from_arrays(
-                        picture.data, picture.linesize, AV_PERM_WRITE,
-                        picture.width, picture.height, picture.format);
-                    avfilter_copy_frame_props(picref, &picture);
-                    av_vsrc_buffer_add_video_buffer_ref2(ost->input_video_filter, picref, ""); //TODO user setable params
+                    picref =
+                        avfilter_get_video_buffer_ref_from_frame(&picture, AV_PERM_WRITE);
+                    av_vsrc_buffer_add_video_buffer_ref(ost->input_video_filter, picref, ""); //TODO user setable params
                     picref->buf->data[0] = NULL;
                     avfilter_unref_buffer(picref);
                 }
