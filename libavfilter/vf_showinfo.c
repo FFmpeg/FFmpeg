@@ -89,7 +89,7 @@ AVFilter avfilter_vf_showinfo = {
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .start_frame      = avfilter_null_start_frame,
                                     .end_frame        = end_frame,
-                                    .min_perms       = AV_PERM_READ, },
+                                    .min_perms        = AV_PERM_READ, },
                                   { .name = NULL}},
 
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
