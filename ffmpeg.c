@@ -2567,7 +2567,7 @@ static int transcode(AVFormatContext **output_files,
 
     if (!using_stdin) {
         if(verbose >= 0)
-            fprintf(stderr, "Press [q] to stop encoding\n");
+            fprintf(stderr, "Press [q] to stop, [?] for help\n");
         avio_set_interrupt_cb(decode_interrupt_cb);
     }
     term_init();
@@ -2602,6 +2602,16 @@ static int transcode(AVFormatContext **output_files,
                 } else
                     do_pkt_dump = 1;
                 av_log_set_level(AV_LOG_DEBUG);
+            }
+            if (key == '?'){
+                fprintf(stderr, "key    function\n"
+                                "?      show this help\n"
+                                "+      increase verbosity\n"
+                                "-      decrease verbosity\n"
+                                "h      dump packets/hex press to cycle through the 3 states\n"
+                                "q      quit\n"
+                                "s      Show QP histogram\n"
+                );
             }
         }
 
