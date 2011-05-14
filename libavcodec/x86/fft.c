@@ -57,7 +57,9 @@ av_cold void ff_fft_init_mmx(FFTContext *s)
 av_cold void ff_dct_init_mmx(DCTContext *s)
 {
     int has_vectors = av_get_cpu_flags();
-    if (has_vectors & AV_CPU_FLAG_SSE && HAVE_SSE)
+    if (has_vectors & AV_CPU_FLAG_AVX && HAVE_AVX)
+        s->dct32 = ff_dct32_float_avx;
+    else if (has_vectors & AV_CPU_FLAG_SSE && HAVE_SSE)
         s->dct32 = ff_dct32_float_sse;
 }
 #endif
