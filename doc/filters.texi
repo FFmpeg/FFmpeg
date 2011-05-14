@@ -1360,12 +1360,12 @@ Check also the documentation of the @code{AVPictureType} enum and of
 the @code{av_get_picture_type_char} function defined in
 @file{libavutil/avutil.h}.
 
-@item crc
-Adler-32 CRC of the input frame
+@item checksum
+Adler-32 checksum of all the planes of the input frame
 
-@item plane_crc
-Adler-32 CRC of each plane of the input frame, expressed in the form
-"[@var{crc0} @var{crc1} @var{crc2} @var{crc3}]"
+@item plane_checksum
+Adler-32 checksum of each plane of the input frame, expressed in the form
+"[@var{c0} @var{c1} @var{c2} @var{c3}]"
 @end table
 
 @section slicify
