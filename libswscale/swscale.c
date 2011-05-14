@@ -362,10 +362,11 @@ uint16_t dither_scale[15][16]={
 static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                                     const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                                                     const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest,
-                                                    int dstW, int chrDstW, int big_endian)
+                                                    int dstW, int chrDstW, int big_endian, int output_bits)
 {
     //FIXME Optimize (just quickly written not optimized..)
     int i;
+    int shift = 11 + 16 - output_bits;
 
 #define output_pixel(pos, val) \
     if (big_endian) { \
@@ -482,13 +483,13 @@ static inline void yuv2yuvX16inC(const int16_t *lumFilter, const int16_t **lumSr
                                    chrFilter, chrSrc, chrFilterSize,
                                    alpSrc,
                                    dest, uDest, vDest, aDest,
-                                   dstW, chrDstW, 1);
+                                   dstW, chrDstW, 1, 16);
         } else {
             yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize,
                                    chrFilter, chrSrc, chrFilterSize,
                                    alpSrc,
                                    dest, uDest, vDest, aDest,
-                                   dstW, chrDstW, 0);
+                                   dstW, chrDstW, 0, 16);
         }
     }
 }
