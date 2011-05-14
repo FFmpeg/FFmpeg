@@ -43,13 +43,19 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     ShowInfoContext *showinfo = ctx->priv;
     AVFilterBufferRef *picref = inlink->cur_buf;
-    uint32_t plane_crc[4], crc = 0;
-    int plane;
+    uint32_t plane_crc[4] = {0}, crc = 0;
+    int i, plane, vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
 
-    for (plane = 0; plane < 4; plane++) {
+    for (plane = 0; picref->data[plane] && plane < 4; plane++) {
         size_t linesize = av_image_get_linesize(picref->format, picref->video->w, plane);
-        plane_crc[plane] = av_adler32_update(0  , picref->data[plane], linesize);
-        crc              = av_adler32_update(crc, picref->data[plane], linesize);
+        uint8_t *data = picref->data[plane];
+        int h = plane == 1 || plane == 2 ? inlink->h >> vsub : inlink->h;
+
+        for (i = 0; i < h; i++) {
+            plane_crc[plane] = av_adler32_update(plane_crc[plane], data, linesize);
+            crc = av_adler32_update(crc, data, linesize);
+            data += picref->linesize[plane];
+        }
     }
 
     av_log(ctx, AV_LOG_INFO,
