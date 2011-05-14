@@ -36,7 +36,6 @@
 #include "os_support.h"
 #include "url.h"
 #include <pthread.h>
-#include <sys/resource.h>
 #include <sys/time.h>
 
 #ifndef IPV6_ADD_MEMBERSHIP
