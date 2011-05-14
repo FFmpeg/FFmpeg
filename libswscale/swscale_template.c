@@ -1829,6 +1829,7 @@ static inline void RENAME(nv21ToUV)(uint8_t *dstU, uint8_t *dstV,
 }
 
 // FIXME Maybe dither instead.
+#ifndef YUV_NBPS
 #define YUV_NBPS(depth, endianness, rfunc) \
 static inline void endianness ## depth ## ToUV_c(uint8_t *dstU, uint8_t *dstV, \
                                           const uint16_t *srcU, const uint16_t *srcV, \
@@ -1852,6 +1853,7 @@ YUV_NBPS( 9, LE, AV_RL16)
 YUV_NBPS( 9, BE, AV_RB16)
 YUV_NBPS(10, LE, AV_RL16)
 YUV_NBPS(10, BE, AV_RB16)
+#endif // YUV_NBPS
 
 #if COMPILE_TEMPLATE_MMX
 static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long width, enum PixelFormat srcFormat)
