@@ -1250,10 +1250,8 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     } else
 #endif
 #if HAVE_ALTIVEC
-    if (cpu_flags & AV_CPU_FLAG_ALTIVEC) {
+    if (cpu_flags & AV_CPU_FLAG_ALTIVEC)
         sws_init_swScale_altivec(c);
-        return swScale_altivec;
-    } else
 #endif
 
     return swScale_c;
