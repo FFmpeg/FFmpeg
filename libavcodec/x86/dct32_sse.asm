@@ -156,7 +156,7 @@ cglobal dct32_float_sse, 2,3,8, out, in, tmp
 
     movaps      m1, [outq+16]
     BUTTERFLY3  m1, m3, m2, m5
-    movaps      [outq+16], m1
+    movaps      [outq+96], m1
 
     BUTTERFLY3  m4, m3, m2, m5
     movaps      [outq+64], m4
@@ -173,47 +173,46 @@ cglobal dct32_float_sse, 2,3,8, out, in, tmp
     movaps      [outq+48], m4
 
     BUTTERFLY3  m6, m3, m2, m7
-    movaps      [outq+96], m6
+    movaps      [outq+16], m6
 
     BUTTERFLY3  m0, m3, m2, m7
     movaps      [outq+112], m0
 
 
     ;    pass 6, no SIMD...
-    movss         m3, [outq+56]
     mov         tmpd, [outq+4]
-    addss         m3, [outq+60]
     movss         m7, [outq+72]
+    addss         m7, [outq+76]
+    movss         m3, [outq+56]
+    addss         m3, [outq+60]
     addss         m4, m3
     movss         m2, [outq+52]
     addss         m2, m3
-    movss         m3, [outq+24]
-    addss         m3, [outq+28]
-    addss         m7, [outq+76]
+    movss         m3, [outq+104]
+    addss         m3, [outq+108]
     addss         m1, m3
     addss         m5, m4
     movss [outq+ 16], m1
-    movss         m1, [outq+20]
+    movss         m1, [outq+100]
     addss         m1, m3
     movss         m3, [outq+40]
     movss [outq+ 48], m1
     addss         m3, [outq+44]
-    movss         m1, [outq+20]
+    movss         m1, [outq+100]
     addss         m4, m3
     addss         m3, m2
-    addss         m1, [outq+28]
+    addss         m1, [outq+108]
     movss [outq+ 40], m3
     addss         m2, [outq+36]
     movss         m3, [outq+8]
     movss [outq+ 56], m2
     addss         m3, [outq+12]
-    movss [outq+  8], m5
     movss [outq+ 32], m3
-    movss         m2, [outq+52]
     movss         m3, [outq+80]
-    movss         m5, [outq+120]
+    movss [outq+  8], m5
     movss [outq+ 80], m1
-    movss [outq+ 24], m4
+    movss         m2, [outq+52]
+    movss         m5, [outq+120]
     addss         m5, [outq+124]
     movss         m1, [outq+64]
     addss         m2, [outq+60]
@@ -223,67 +222,68 @@ cglobal dct32_float_sse, 2,3,8, out, in, tmp
     addss         m6, m0
     addss         m1, m6
     mov         tmpd, [outq+12]
-    movss [outq+  4], m1
-    movss         m1, [outq+88]
     mov   [outq+ 96], tmpd
-    addss         m1, [outq+92]
-    movss         m4, [outq+104]
-    mov         tmpd, [outq+28]
-    addss         m4, [outq+108]
-    addss         m0, m4
-    addss         m3, m1
-    addss         m1, [outq+84]
-    addss         m4, m5
+    movss [outq+  4], m1
+    movss         m1, [outq+24]
+    movss [outq+ 24], m4
+    movss         m4, [outq+88]
+    addss         m4, [outq+92]
+    addss         m3, m4
+    addss         m4, [outq+84]
+    mov         tmpd, [outq+108]
+    addss         m1, [outq+28]
+    addss         m0, m1
+    addss         m1, m5
     addss         m6, m3
     addss         m3, m0
     addss         m0, m7
-    addss         m5, [outq+100]
-    addss         m7, m4
+    addss         m5, [outq+20]
+    addss         m7, m1
+    movss [outq+ 12], m6
     mov   [outq+112], tmpd
+    movss         m6, [outq+28]
     movss [outq+ 28], m0
     movss         m0, [outq+36]
     movss [outq+ 36], m7
-    addss         m4, m1
+    addss         m1, m4
     movss         m7, [outq+116]
     addss         m0, m2
     addss         m7, [outq+124]
     movss [outq+ 72], m0
     movss         m0, [outq+44]
-    movss [outq+ 12], m6
-    movss [outq+ 20], m3
     addss         m2, m0
-    movss [outq+ 44], m4
+    movss [outq+ 44], m1
     movss [outq+ 88], m2
     addss         m0, [outq+60]
     mov         tmpd, [outq+60]
     mov   [outq+120], tmpd
     movss [outq+104], m0
-    addss         m1, m5
+    addss         m4, m5
     addss         m5, [outq+68]
-    movss  [outq+52], m1
+    movss  [outq+52], m4
     movss  [outq+60], m5
-    movss         m1, [outq+68]
-    movss         m5, [outq+100]
+    movss         m4, [outq+68]
+    movss         m5, [outq+20]
+    movss [outq+ 20], m3
     addss         m5, m7
-    addss         m7, [outq+108]
-    addss         m1, m5
+    addss         m7, m6
+    addss         m4, m5
     movss         m2, [outq+84]
     addss         m2, [outq+92]
     addss         m5, m2
-    movss [outq+ 68], m1
+    movss [outq+ 68], m4
     addss         m2, m7
-    movss         m1, [outq+76]
+    movss         m4, [outq+76]
     movss [outq+ 84], m2
     movss [outq+ 76], m5
-    movss         m2, [outq+108]
-    addss         m7, m1
-    addss         m2, [outq+124]
-    addss         m1, m2
-    addss         m2, [outq+92]
-    movss [outq+100], m1
-    movss [outq+108], m2
-    movss         m2, [outq+92]
-    movss [outq+ 92], m7
-    addss         m2, [outq+124]
-    movss [outq+116], m2
+    addss         m7, m4
+    addss         m6, [outq+124]
+    addss         m4, m6
+    addss         m6, [outq+92]
+    movss [outq+100], m4
+    movss [outq+108], m6
+    movss         m6, [outq+92]
+    movss  [outq+92], m7
+    addss         m6, [outq+124]
+    movss [outq+116], m6
     RET
