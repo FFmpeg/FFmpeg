@@ -534,7 +534,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
     fd_set rfds;
     struct timeval tv;
 
-    if (s->circular_buffer_thread) {
+    if (s->fifo) {
 
         do {
             avail = av_fifo_size(s->fifo);
