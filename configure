@@ -2487,6 +2487,7 @@ case $target_os in
         enable dos_paths
         ;;
     gnu/kfreebsd)
+        add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600 -D_BSD_SOURCE
         ;;
     gnu)
         ;;
