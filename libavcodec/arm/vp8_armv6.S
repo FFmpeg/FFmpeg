@@ -180,7 +180,7 @@ function ff_decode_block_coeffs_armv6, export=1
         rac_get_prob    r5,  r6,  r7,  r8,  r0,  r9,  r10
         mov             r9,  #8
         addge           r12, r12, #1
-        movrel          r4,  ff_vp8_dct_cat_prob
+        movrel          r4,  X(ff_vp8_dct_cat_prob)
         lsl             r9,  r9,  r12
         ldr             r4,  [r4, r12, lsl #2]
         add             r12, r9,  #3
