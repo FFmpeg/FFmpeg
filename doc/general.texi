@@ -72,7 +72,7 @@ library:
     @tab Multimedia format used by Delphine Software games.
 @item CD+G                      @tab   @tab X
     @tab Video format used by CD+G karaoke disks
-@item Core Audio Format         @tab   @tab X
+@item Core Audio Format         @tab X @tab X
     @tab Apple Core Audio Format
 @item CRC testing format        @tab X @tab
 @item Creative Voice            @tab X @tab X

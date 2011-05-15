@@ -14,6 +14,7 @@ version <next>:
 - showinfo filter added
 - DPX image encoder
 - SMPTE 302M AES3 audio decoder
+- Apple Core Audio Format muxer
 
 
 version 0.7_beta1:
