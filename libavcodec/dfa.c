@@ -186,7 +186,6 @@ static int decode_dds1(uint8_t *frame, int width, int height,
 static int decode_bdlt(uint8_t *frame, int width, int height,
                        const uint8_t *src, const uint8_t *src_end)
 {
-    const uint8_t *frame_end = frame + width * height;
     uint8_t *line_ptr;
     int count, lines, segments;
 
