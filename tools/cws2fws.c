@@ -35,14 +35,14 @@ int main(int argc, char *argv[])
     fd_in = open(argv[1], O_RDONLY);
     if (fd_in < 0)
     {
-        perror("Error while opening: ");
+        perror("Error opening input file");
         exit(1);
     }
 
     fd_out = open(argv[2], O_WRONLY|O_CREAT, 00644);
     if (fd_out < 0)
     {
-        perror("Error while opening: ");
+        perror("Error opening output file");
         close(fd_in);
         exit(1);
     }
