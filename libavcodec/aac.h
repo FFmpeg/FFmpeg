@@ -227,7 +227,7 @@ typedef struct {
     DECLARE_ALIGNED(32, float,   coeffs)[1024];     ///< coefficients for IMDCT
     DECLARE_ALIGNED(32, float,   saved)[1024];      ///< overlap
     DECLARE_ALIGNED(32, float,   ret)[2048];        ///< PCM output
-    DECLARE_ALIGNED(16, int16_t, ltp_state)[3072];  ///< time signal for LTP
+    DECLARE_ALIGNED(16, float,   ltp_state)[3072];  ///< time signal for LTP
     PredictorState predictor_state[MAX_PREDICTORS];
 } SingleChannelElement;
 
