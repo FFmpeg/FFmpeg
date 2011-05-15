@@ -15,6 +15,9 @@ ffmpeg
 ffplay
 ffprobe
 ffserver
+libavcodec/*_tablegen
+libavcodec/*_tables.c
+libavcodec/*_tables.h
 libavcodec/libavcodec*
 libavdevice/libavdevice*
 libavfilter/libavfilter*
